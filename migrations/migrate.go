@@ -134,6 +134,7 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 	// upgrades so only the actual River schema is covered (no default privileges).
 	if _, err = lockConn.Exec(ctx, `GRANT USAGE ON SCHEMA river TO commerce_worker;
 		GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river TO commerce_worker;
+		REVOKE ALL ON river.river_migration FROM commerce_worker;
 		GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river TO commerce_worker`); err != nil {
 		return err
 	}
