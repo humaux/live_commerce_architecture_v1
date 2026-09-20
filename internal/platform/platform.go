@@ -62,6 +62,12 @@ func OpenBuyerIssuerPool(ctx context.Context, dsn string) (*pgxpool.Pool, error)
 	return openPool(ctx, dsn, "buyer_issuer")
 }
 
+// OpenWorkerPool is a separate non-HTTP authority. River's lifecycle grants
+// must never be inherited by a merchant, buyer, or identity service login.
+func OpenWorkerPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
+	return openPool(ctx, dsn, "worker")
+}
+
 func openPool(ctx context.Context, dsn string, authority string) (*pgxpool.Pool, error) {
 	if strings.TrimSpace(dsn) == "" {
 		return nil, errors.New("database url required")
@@ -83,7 +89,7 @@ func openPool(ctx context.Context, dsn string, authority string) (*pgxpool.Pool,
 		return nil, fmt.Errorf("database unavailable: %w", err)
 	}
 
-	var superuser, bypassRLS, roleAdmin, databaseCreator, replication, objectOwner, runtimeMember, authMember, identityMember, buyerRuntimeMember, buyerIssuerMember, canSetPrivileged bool
+	var superuser, bypassRLS, roleAdmin, databaseCreator, replication, objectOwner, runtimeMember, authMember, identityMember, buyerRuntimeMember, buyerIssuerMember, workerMember, canSetPrivileged bool
 	err = pool.QueryRow(startup, `
 		SELECT r.rolsuper, r.rolbypassrls, r.rolcreaterole, r.rolcreatedb, r.rolreplication,
 		       (EXISTS (
@@ -102,6 +108,7 @@ func openPool(ctx context.Context, dsn string, authority string) (*pgxpool.Pool,
 		       pg_has_role(current_user, 'commerce_identity', 'MEMBER'),
 		       pg_has_role(current_user, 'commerce_buyer_runtime', 'MEMBER'),
 		       pg_has_role(current_user, 'commerce_buyer_issuer', 'MEMBER'),
+		       pg_has_role(current_user, 'commerce_worker', 'MEMBER'),
 		       EXISTS (
 			   SELECT 1 FROM pg_roles candidate
 			   WHERE (candidate.rolsuper OR candidate.rolbypassrls OR candidate.rolcreaterole OR candidate.rolcreatedb OR candidate.rolreplication
@@ -119,7 +126,7 @@ func openPool(ctx context.Context, dsn string, authority string) (*pgxpool.Pool,
 			     AND pg_has_role(current_user, candidate.oid, 'SET')
 		       )
 		FROM pg_roles r WHERE r.rolname = current_user`).
-		Scan(&superuser, &bypassRLS, &roleAdmin, &databaseCreator, &replication, &objectOwner, &runtimeMember, &authMember, &identityMember, &buyerRuntimeMember, &buyerIssuerMember, &canSetPrivileged)
+		Scan(&superuser, &bypassRLS, &roleAdmin, &databaseCreator, &replication, &objectOwner, &runtimeMember, &authMember, &identityMember, &buyerRuntimeMember, &buyerIssuerMember, &workerMember, &canSetPrivileged)
 	if err != nil {
 		pool.Close()
 		return nil, fmt.Errorf("validate runtime role: %w", err)
@@ -127,7 +134,7 @@ func openPool(ctx context.Context, dsn string, authority string) (*pgxpool.Pool,
 	// Exactly one authority, including indirect grants. Checking only the desired
 	// role would let a mixed login smuggle merchant privileges into buyer code.
 	memberships := map[string]bool{"runtime": runtimeMember, "identity": identityMember,
-		"buyer_runtime": buyerRuntimeMember, "buyer_issuer": buyerIssuerMember}
+		"buyer_runtime": buyerRuntimeMember, "buyer_issuer": buyerIssuerMember, "worker": workerMember}
 	roleCount := 0
 	for _, member := range memberships {
 		if member {
