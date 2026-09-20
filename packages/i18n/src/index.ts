@@ -79,9 +79,10 @@ function qualityRanges(header: string): Array<{ range: string; q: number; order:
     if (!/^(?:\*|[a-z]{2,8}(?:-[a-z0-9]{1,8})*)$/i.test(range)) return { range, q: -1, order };
     const qParams = params.filter((p) => /^\s*q\s*=/i.test(p));
     if (qParams.length > 1) return { range, q: -1, order };
-    const rawQ = qParams[0]?.split('=')[1]?.trim();
-    if (rawQ !== undefined && !/^(?:0(?:\.\d{0,3})?|1(?:\.0{0,3})?)$/.test(rawQ)) return { range, q: -1, order };
-    return { range, q: rawQ === undefined ? 1 : Number(rawQ), order };
+    // Consume the complete parameter: split('=')[1] accidentally accepts q=0.5=0.
+    const qMatch = qParams[0]?.match(/^\s*q\s*=\s*(0(?:\.\d{0,3})?|1(?:\.0{0,3})?)\s*$/i);
+    if (qParams.length && !qMatch) return { range, q: -1, order };
+    return { range, q: qMatch ? Number(qMatch[1]) : 1, order };
   }).filter((item) => item.q > 0).sort((a, b) => b.q - a.q || a.order - b.order);
 }
 
@@ -92,8 +93,10 @@ function languageToLocale(range: string): Locale | undefined {
   const subtags = parts.slice(1);
   const script = subtags.find((part) => /^(?:hans|hant)$/i.test(part));
   const region = subtags.find((part) => /^(?:[a-z]{2}|\d{3})$/i.test(part));
-  if (script?.toLowerCase() === 'hant' || ['tw', 'hk', 'mo'].includes(region ?? '')) return 'zh-TW';
-  if (script?.toLowerCase() === 'hans' || ['cn', 'sg'].includes(region ?? '') || parts.length === 1) return 'zh-CN';
+  if (script === 'hant') return 'zh-TW';
+  if (script === 'hans') return 'zh-CN';
+  if (['tw', 'hk', 'mo'].includes(region ?? '')) return 'zh-TW';
+  if (['cn', 'sg'].includes(region ?? '') || parts.length === 1) return 'zh-CN';
   return undefined;
 }
 

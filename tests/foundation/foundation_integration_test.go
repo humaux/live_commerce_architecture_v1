@@ -376,14 +376,15 @@ func TestScopeIsolationAndSessionRevocation(t *testing.T) {
 
 	cases := []struct {
 		name, token, store, permission string
+		want                           error
 	}{
-		{"no token", "", f.storeA1, "store:read"},
-		{"cross tenant", f.tokens["a"], f.storeB, "store:read"},
-		{"same tenant cross store", f.tokens["a"], f.storeA2, "store:read"},
-		{"wrong audience", f.tokens["buyer"], f.storeA1, "store:read"},
-		{"expired", f.tokens["expired"], f.storeA1, "store:read"},
-		{"revoked", f.tokens["revoked"], f.storeA1, "store:read"},
-		{"missing permission", f.tokens["a"], f.storeA1, "grant:write"},
+		{"no token", "", f.storeA1, "store:read", platform.ErrUnauthorized},
+		{"cross tenant", f.tokens["a"], f.storeB, "store:read", platform.ErrScopeNotFound},
+		{"same tenant cross store", f.tokens["a"], f.storeA2, "store:read", platform.ErrScopeNotFound},
+		{"wrong audience", f.tokens["buyer"], f.storeA1, "store:read", platform.ErrUnauthorized},
+		{"expired", f.tokens["expired"], f.storeA1, "store:read", platform.ErrUnauthorized},
+		{"revoked", f.tokens["revoked"], f.storeA1, "store:read", platform.ErrUnauthorized},
+		{"missing permission", f.tokens["a"], f.storeA1, "grant:write", platform.ErrForbidden},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -391,8 +392,8 @@ func TestScopeIsolationAndSessionRevocation(t *testing.T) {
 				t.Fatal("unauthorized callback executed")
 				return nil
 			})
-			if !errors.Is(err, platform.ErrUnauthorized) {
-				t.Fatalf("error = %v, want ErrUnauthorized", err)
+			if !errors.Is(err, tc.want) {
+				t.Fatalf("error = %v, want %v", err, tc.want)
 			}
 		})
 	}
@@ -402,8 +403,8 @@ func TestScopeIsolationAndSessionRevocation(t *testing.T) {
 		t.Fatal(err)
 	}
 	err := platform.WithScope(ctx, f.runtime, f.tokens["revoked_grant"], f.storeA1, "store:read", func(pgx.Tx, platform.Scope) error { return nil })
-	if !errors.Is(err, platform.ErrUnauthorized) {
-		t.Fatalf("revoked grant error = %v, want ErrUnauthorized", err)
+	if !errors.Is(err, platform.ErrScopeNotFound) {
+		t.Fatalf("revoked grant error = %v, want ErrScopeNotFound", err)
 	}
 }
 
@@ -649,13 +650,19 @@ func TestHTTPBearerScopeAndUntrustedHeaders(t *testing.T) {
 		assertSafeHTTPResponse(t, res, f.tokens["a"])
 	})
 
-	t.Run("cross store remains generic unauthorized", func(t *testing.T) {
+	t.Run("cross store remains non-disclosing not found", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/v1/admin/stores/"+f.storeB, nil)
 		req.Header.Set("Authorization", "Bearer "+f.tokens["a"])
 		res := httptest.NewRecorder()
 		handler.ServeHTTP(res, req)
-		if res.Code != http.StatusUnauthorized || strings.TrimSpace(res.Body.String()) != `{"error":"unauthorized"}` {
-			t.Fatalf("status=%d body=%q, want generic 401", res.Code, res.Body.String())
+		var envelope struct {
+			Code string `json:"code"`
+		}
+		if err := json.Unmarshal(res.Body.Bytes(), &envelope); err != nil {
+			t.Fatal(err)
+		}
+		if res.Code != http.StatusNotFound || envelope.Code != "not_found" {
+			t.Fatalf("status=%d body=%q, want non-disclosing 404", res.Code, res.Body.String())
 		}
 		assertSafeHTTPResponse(t, res, f.tokens["a"])
 	})

@@ -12,11 +12,15 @@ import (
 	"strings"
 	"time"
 
+	"livecommerce/internal/httperror"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var ErrUnauthorized = errors.New("unauthorized")
+var ErrForbidden = errors.New("forbidden")
+var ErrScopeNotFound = errors.New("scope not found")
 
 const (
 	storeReadPermission = "store:read"
@@ -26,7 +30,7 @@ const (
 	lockTimeout         = time.Second
 )
 
-// Scope is resolved by identity.resolve_scope and is not derived from HTTP input.
+// Scope is resolved by identity.resolve_access and is not derived from HTTP input.
 type Scope struct {
 	TenantID    string
 	StoreID     string
@@ -131,14 +135,24 @@ func withScopeContext(ctx context.Context, pool *pgxpool.Pool, token, storeID, p
 	if err != nil {
 		return err
 	}
-	err = transaction.QueryRow(scopeCtx, `SELECT tenant_id::text, principal_id::text, authz_revision
-		FROM identity.resolve_scope($1, $2::uuid, $3)`, hash[:], storeID, permission).
-		Scan(&scope.TenantID, &scope.PrincipalID, &scope.Revision)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return ErrUnauthorized
-	}
+	var access string
+	err = transaction.QueryRow(scopeCtx, `SELECT access_status, coalesce(tenant_id::text,''),
+        coalesce(principal_id::text,''), coalesce(authz_revision,0)
+		FROM identity.resolve_access($1, $2::uuid, $3)`, hash[:], storeID, permission).
+		Scan(&access, &scope.TenantID, &scope.PrincipalID, &scope.Revision)
 	if err != nil {
 		return err
+	}
+	switch access {
+	case "unauthorized":
+		return ErrUnauthorized
+	case "not_found":
+		return ErrScopeNotFound
+	case "forbidden":
+		return ErrForbidden
+	case "ok":
+	default:
+		return errors.New("invalid access result")
 	}
 	scope.StoreID = storeID
 	_, err = transaction.Exec(scopeCtx, `SELECT
@@ -201,7 +215,7 @@ func NewHandler(pool *pgxpool.Pool) http.Handler {
 	})
 	mux.HandleFunc("GET /v1/admin/stores/{store_id}", storeHandler(pool))
 	mux.HandleFunc("GET /v1/admin/stores/{store_id}/audit-events", auditHandler(pool))
-	return noStore(mux)
+	return httperror.Middleware(mux)
 }
 
 func storeHandler(pool *pgxpool.Pool) http.HandlerFunc {
@@ -217,6 +231,10 @@ func storeHandler(pool *pgxpool.Pool) http.HandlerFunc {
 				Scan(&store.ID, &store.Name, &store.Currency)
 		})
 		switch {
+		case errors.Is(err, ErrScopeNotFound):
+			writeError(w, http.StatusNotFound, "not_found")
+		case errors.Is(err, ErrForbidden):
+			writeError(w, http.StatusForbidden, "forbidden")
 		case errors.Is(err, ErrUnauthorized):
 			writeError(w, http.StatusUnauthorized, "unauthorized")
 		case errors.Is(err, pgx.ErrNoRows):
@@ -257,6 +275,14 @@ func auditHandler(pool *pgxpool.Pool) http.HandlerFunc {
 			}
 			return rows.Err()
 		})
+		if errors.Is(err, ErrScopeNotFound) {
+			writeError(w, http.StatusNotFound, "not_found")
+			return
+		}
+		if errors.Is(err, ErrForbidden) {
+			writeError(w, http.StatusForbidden, "forbidden")
+			return
+		}
 		if errors.Is(err, ErrUnauthorized) {
 			writeError(w, http.StatusUnauthorized, "unauthorized")
 			return
@@ -279,13 +305,6 @@ func withRequestScope(r *http.Request, pool *pgxpool.Pool, storeID, permission s
 	return withScopeContext(requestCtx, pool, token, storeID, permission, fn)
 }
 
-func noStore(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Cache-Control", "no-store")
-		next.ServeHTTP(w, r)
-	})
-}
-
 func bearerToken(r *http.Request) (string, bool) {
 	value := r.Header.Get("Authorization")
 	if !strings.HasPrefix(value, "Bearer ") {
@@ -296,7 +315,7 @@ func bearerToken(r *http.Request) (string, bool) {
 }
 
 func writeError(w http.ResponseWriter, status int, code string) {
-	writeJSON(w, status, map[string]string{"error": code})
+	httperror.Write(w, status, code)
 }
 
 func writeJSON(w http.ResponseWriter, status int, value any) {

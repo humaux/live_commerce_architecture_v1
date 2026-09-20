@@ -19,7 +19,8 @@ func TestClassifyDoesNotExposeDriverDetails(t *testing.T) {
 		status int
 		code   string
 	}{
-		{platform.ErrUnauthorized, 401, "unauthorized"}, {command.ErrInvalid, 400, "invalid_request"},
+		{platform.ErrUnauthorized, 401, "unauthorized"}, {command.ErrInvalid, 422, "invalid_request"},
+		{platform.ErrScopeNotFound, 404, "not_found"}, {platform.ErrForbidden, 403, "forbidden"},
 		{command.ErrNotFound, 404, "not_found"}, {command.ErrConflict, 409, "conflict"},
 		{command.ErrInsufficient, 409, "insufficient_inventory"}, {context.DeadlineExceeded, 503, "retry_later"},
 		{&pgconn.PgError{Code: "23505", Message: "sensitive sku value"}, 409, "conflict"},
