@@ -23,54 +23,81 @@ var (
 	pricingGrantErr  error
 )
 
+func TestPricingCalculation(t *testing.T) {
+	base := pricing.Policy{MarketID: "00000000-0000-4000-8000-000000000001", Country: "US", Method: "home", Currency: "USD", ShippingMode: "country_flat", TaxMode: "exclusive", TaxBasis: "goods_and_shipping", Version: 1, ShippingMinor: 50, TaxRateBPS: 500, QuoteTTLSeconds: 300, Enabled: true}
+	got, err := pricing.Calculate(base, []pricing.AmountLine{{UnitPriceMinor: 100, Quantity: 1}})
+	if err != nil || got.SubtotalMinor != 100 || got.TaxMinor != 8 || got.ShippingTaxMinor != 3 || got.TotalMinor != 158 || got.Lines[0].TaxMinor != 5 || got.Lines[0].TotalMinor != 105 {
+		t.Fatalf("exclusive calculation=%+v err=%v", got, err)
+	}
+	inclusive := base
+	inclusive.TaxMode, inclusive.TaxBasis, inclusive.ShippingMinor = "inclusive", "goods_and_shipping", 105
+	got, err = pricing.Calculate(inclusive, []pricing.AmountLine{{UnitPriceMinor: 105, Quantity: 1}})
+	if err != nil || got.TaxMinor != 10 || got.ShippingTaxMinor != 5 || got.TotalMinor != 210 || got.Lines[0].TaxMinor != 5 || got.Lines[0].TotalMinor != 105 {
+		t.Fatalf("inclusive calculation=%+v err=%v", got, err)
+	}
+	half := base
+	half.TaxRateBPS, half.ShippingMinor, half.TaxBasis = 5000, 0, "goods"
+	got, err = pricing.Calculate(half, []pricing.AmountLine{{UnitPriceMinor: 1, Quantity: 1}})
+	if err != nil || got.TaxMinor != 1 || got.TotalMinor != 2 {
+		t.Fatalf("exclusive HALF_UP boundary=%+v err=%v", got, err)
+	}
+	inclusiveTie := half
+	inclusiveTie.TaxMode, inclusiveTie.TaxRateBPS = "inclusive", 10000
+	got, err = pricing.Calculate(inclusiveTie, []pricing.AmountLine{{UnitPriceMinor: 1, Quantity: 1}})
+	if err != nil || got.TaxMinor != 0 || got.TotalMinor != 1 {
+		t.Fatalf("inclusive net HALF_UP tie=%+v err=%v", got, err)
+	}
+	none := base
+	none.TaxMode, none.TaxRateBPS, none.ShippingMinor = "none", 0, 0
+	got, err = pricing.Calculate(none, []pricing.AmountLine{{UnitPriceMinor: 1, Quantity: 1}})
+	if err != nil || got.TaxMinor != 0 || got.TotalMinor != 1 {
+		t.Fatalf("explicit zero tax=%+v err=%v", got, err)
+	}
+	for _, line := range []pricing.AmountLine{{UnitPriceMinor: -1, Quantity: 1}, {UnitPriceMinor: 1, Quantity: 0}, {UnitPriceMinor: 1, Quantity: command.MaxQuantity + 1}} {
+		if _, err := pricing.Calculate(base, []pricing.AmountLine{line}); !errors.Is(err, command.ErrInvalid) {
+			t.Fatalf("invalid line=%+v err=%v", line, err)
+		}
+	}
+	if _, err := pricing.Calculate(base, []pricing.AmountLine{{UnitPriceMinor: command.MaxMoney, Quantity: 2}}); !errors.Is(err, command.ErrInvalid) {
+		t.Fatalf("multiplication overflow err=%v", err)
+	}
+	if _, err := pricing.Calculate(base, []pricing.AmountLine{{UnitPriceMinor: command.MaxMoney, Quantity: 1}, {UnitPriceMinor: 1, Quantity: 1}}); !errors.Is(err, command.ErrInvalid) {
+		t.Fatalf("sum overflow err=%v", err)
+	}
+	taxOverflow := base
+	taxOverflow.TaxRateBPS, taxOverflow.ShippingMinor, taxOverflow.TaxBasis = 10000, 0, "goods"
+	if _, err := pricing.Calculate(taxOverflow, []pricing.AmountLine{{UnitPriceMinor: command.MaxMoney, Quantity: 1}}); !errors.Is(err, command.ErrInvalid) {
+		t.Fatalf("tax total overflow err=%v", err)
+	}
+	shippingOverflow := none
+	shippingOverflow.ShippingMinor = command.MaxMoney
+	if _, err := pricing.Calculate(shippingOverflow, []pricing.AmountLine{{UnitPriceMinor: 1, Quantity: 1}}); !errors.Is(err, command.ErrInvalid) {
+		t.Fatalf("shipping total overflow err=%v", err)
+	}
+	if _, err := pricing.Calculate(base, nil); !errors.Is(err, command.ErrInvalid) {
+		t.Fatalf("empty quote err=%v", err)
+	}
+	tooMany := make([]pricing.AmountLine, 51)
+	for i := range tooMany {
+		tooMany[i] = pricing.AmountLine{UnitPriceMinor: 1, Quantity: 1}
+	}
+	if _, err := pricing.Calculate(base, tooMany); !errors.Is(err, command.ErrInvalid) {
+		t.Fatalf("51 lines err=%v", err)
+	}
+	invalidNone := base
+	invalidNone.TaxMode, invalidNone.TaxRateBPS = "none", 1
+	if _, err := pricing.Calculate(invalidNone, []pricing.AmountLine{{UnitPriceMinor: 1, Quantity: 1}}); !errors.Is(err, command.ErrInvalid) {
+		t.Fatalf("none with tax err=%v", err)
+	}
+	encoded, err := json.Marshal(got)
+	if err != nil || !strings.Contains(string(encoded), `"shipping_tax_minor"`) || strings.Contains(string(encoded), "ShippingTaxMinor") {
+		t.Fatalf("calculation JSON=%s err=%v", encoded, err)
+	}
+}
+
 func TestPricingBoundary(t *testing.T) {
 	f := pricingFixture(t)
 	ctx := context.Background()
-
-	t.Run("checked HALF_UP calculation", func(t *testing.T) {
-		base := pricing.Policy{MarketID: randomUUID(), Country: "US", Method: "home", Currency: "USD", ShippingMode: "country_flat", TaxMode: "exclusive", TaxBasis: "goods_and_shipping", Version: 1, ShippingMinor: 50, TaxRateBPS: 500, QuoteTTLSeconds: 300, Enabled: true}
-		got, err := pricing.Calculate(base, []pricing.AmountLine{{UnitPriceMinor: 100, Quantity: 1}})
-		if err != nil || got.SubtotalMinor != 100 || got.TaxMinor != 8 || got.ShippingTaxMinor != 3 || got.TotalMinor != 158 || got.Lines[0].TaxMinor != 5 || got.Lines[0].TotalMinor != 105 {
-			t.Fatalf("exclusive calculation=%+v err=%v", got, err)
-		}
-		inclusive := base
-		inclusive.TaxMode, inclusive.TaxBasis, inclusive.ShippingMinor = "inclusive", "goods_and_shipping", 105
-		got, err = pricing.Calculate(inclusive, []pricing.AmountLine{{UnitPriceMinor: 105, Quantity: 1}})
-		if err != nil || got.TaxMinor != 10 || got.ShippingTaxMinor != 5 || got.TotalMinor != 210 || got.Lines[0].TaxMinor != 5 || got.Lines[0].TotalMinor != 105 {
-			t.Fatalf("inclusive calculation=%+v err=%v", got, err)
-		}
-		half := base
-		half.TaxRateBPS, half.ShippingMinor, half.TaxBasis = 5000, 0, "goods"
-		got, err = pricing.Calculate(half, []pricing.AmountLine{{UnitPriceMinor: 1, Quantity: 1}})
-		if err != nil || got.TaxMinor != 1 || got.TotalMinor != 2 {
-			t.Fatalf("HALF_UP boundary=%+v err=%v", got, err)
-		}
-		if _, err := pricing.Calculate(base, []pricing.AmountLine{{UnitPriceMinor: command.MaxMoney, Quantity: 2}}); !errors.Is(err, command.ErrInvalid) {
-			t.Fatalf("multiplication overflow err=%v", err)
-		}
-		if _, err := pricing.Calculate(base, []pricing.AmountLine{{UnitPriceMinor: command.MaxMoney, Quantity: 1}, {UnitPriceMinor: 1, Quantity: 1}}); !errors.Is(err, command.ErrInvalid) {
-			t.Fatalf("sum overflow err=%v", err)
-		}
-		if _, err := pricing.Calculate(base, nil); !errors.Is(err, command.ErrInvalid) {
-			t.Fatalf("empty quote err=%v", err)
-		}
-		tooMany := make([]pricing.AmountLine, 51)
-		for i := range tooMany {
-			tooMany[i] = pricing.AmountLine{UnitPriceMinor: 1, Quantity: 1}
-		}
-		if _, err := pricing.Calculate(base, tooMany); !errors.Is(err, command.ErrInvalid) {
-			t.Fatalf("51 lines err=%v", err)
-		}
-		invalidNone := base
-		invalidNone.TaxMode, invalidNone.TaxRateBPS = "none", 1
-		if _, err := pricing.Calculate(invalidNone, []pricing.AmountLine{{UnitPriceMinor: 1, Quantity: 1}}); !errors.Is(err, command.ErrInvalid) {
-			t.Fatalf("none with tax err=%v", err)
-		}
-		encoded, err := json.Marshal(got)
-		if err != nil || !strings.Contains(string(encoded), `"shipping_tax_minor"`) || strings.Contains(string(encoded), "ShippingTaxMinor") {
-			t.Fatalf("calculation JSON=%s err=%v", encoded, err)
-		}
-	})
 
 	marketKey := t04Key("pricing-market")
 	market, err := pricingScoped(ctx, f, f.tokens["a"], f.storeA1, "pricing:write", func(tx pgx.Tx, scope platform.Scope) (pricing.Market, error) {
