@@ -24,6 +24,17 @@ func main() {
 }
 
 func run() error {
+	identityConfig, err := loadIdentityConfig(os.Getenv)
+	if err != nil {
+		return err
+	}
+	addr := os.Getenv("LISTEN_ADDR")
+	if addr == "" {
+		addr = "127.0.0.1:8080"
+	}
+	if identityConfig.enabled && !privateIdentityAddress(addr) {
+		return errors.New("identity requires a literal loopback listener")
+	}
 	dsn := os.Getenv("DATABASE_URL")
 	pool, err := platform.OpenPool(context.Background(), dsn)
 	if err != nil {
@@ -31,13 +42,21 @@ func run() error {
 	}
 	defer pool.Close()
 
-	addr := os.Getenv("LISTEN_ADDR")
-	if addr == "" {
-		addr = "127.0.0.1:8080"
+	identityHandler, closeIdentity, err := buildIdentityHandler(context.Background(), identityConfig)
+	if err != nil {
+		return err
+	}
+	defer closeIdentity()
+	handler := httpapi.NewHandler(pool)
+	if identityHandler != nil {
+		mux := http.NewServeMux()
+		mux.Handle("/v1/identity/", identityHandler)
+		mux.Handle("/", handler)
+		handler = mux
 	}
 	server := &http.Server{
 		Addr:              addr,
-		Handler:           httpapi.NewHandler(pool),
+		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      15 * time.Second,

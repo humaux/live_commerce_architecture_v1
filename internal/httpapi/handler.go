@@ -97,7 +97,7 @@ func NewHandler(pool *pgxpool.Pool) http.Handler {
 		return inventory.AdjustOnHand(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)
 	}))
 	foundation := platform.NewHandler(pool)
-	for _, pattern := range []string{"GET /healthz", "GET /readyz", "GET " + base, "GET " + base + "/audit-events"} {
+	for _, pattern := range []string{"GET /healthz", "GET /readyz", "GET /v1/admin/stores", "GET " + base, "GET " + base + "/audit-events"} {
 		mux.Handle(pattern, foundation)
 	}
 	return httperror.Middleware(mux)

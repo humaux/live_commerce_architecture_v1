@@ -270,6 +270,7 @@ func NewHandler(pool *pgxpool.Pool) http.Handler {
 		}
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
+	mux.HandleFunc("GET /v1/admin/stores", sessionStoresHandler(pool))
 	mux.HandleFunc("GET /v1/admin/stores/{store_id}", storeHandler(pool))
 	mux.HandleFunc("GET /v1/admin/stores/{store_id}/audit-events", auditHandler(pool))
 	return httperror.Middleware(mux)
