@@ -205,9 +205,9 @@
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
-      "implementation": "PARTIAL_CATALOG_INVENTORY_HTTP_AND_THREE_LOCALE_ADMIN_UI",
+      "implementation": "PARTIAL_CATALOG_INVENTORY_ADMIN_AND_INTERNAL_MARKET_CART_QUOTE",
       "unit_mock": "PASS_CATALOG_INVENTORY_SLICE",
-      "real_pg": "PASS_23_GROUPS_INCLUDING_FOUNDATION",
+      "real_pg": "PASS_96_AGGREGATE_TESTS_AT_E2CBFD5",
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
       "independent_review": "PASS_LEDGER_PG_BFF_FIXTURE_P0_P1_CLOSURE_AND_VISUAL_FIX_LIST_SHIP",
@@ -220,8 +220,9 @@
       "prior_baseline_evidence": "docs/implementation/2026-09-20-catalog-inventory-acceptance.md",
       "global_gate_pass": false,
       "completed_additions": ["绑定租户店铺与筛选的有界keyset分页", "同事务catalog:read与inventory:read账簿投影", "zh-CN/zh-TW/en商品库存页面及浏览器真实API验收"],
-      "remaining": ["市场报价/税费折扣", "商品媒体/属性矩阵", "正式身份和商店开通", "完整交易和付款状态迁移", "全产品页面和浏览器验收"],
-      "latest_go_aggregate": "2026-09-20基线6b1a5c2全Go race/vet实际通过；详见merchant-identity-acceptance，不代表全产品功能通过"
+      "remaining": ["公开市场报价入口/政策管理界面与折扣", "商品媒体/属性矩阵", "真实身份提供商和生产商店开通", "完整交易和付款状态迁移", "全产品页面和浏览器验收"],
+      "cart_quote_evidence": "docs/implementation/2026-09-20-cart-quote-acceptance.md",
+      "latest_go_aggregate": "2026-09-20基线e2cbfd5真实隔离PG 96顶层测试0失败0跳过，race/vet及独立cart-quote审查通过；不是checkout或全产品通过"
     }
   },
   {
