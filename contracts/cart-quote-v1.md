@@ -42,6 +42,12 @@ and `command.ValidID`. No pool, HTTP handler, new dependency or public route.
 - `SetMarketActive(ctx,tx,platform.Scope,key,id,expectedVersion,active) (Market,error)`
   changes only active state and increments version with CAS; currency/code do not
   change. Market creation/state writes require `pricing:write` scoped transaction.
+- Both market commands use `command.Run` and atomic `command.Audit`, including
+  principal ID in the canonical request, with the same store-global replay scope
+  documented for SetPolicy. Failed audit rolls back market and receipt together.
+- `LockMarket(ctx,tx,tenantID,storeID,id) (Market,error)` locks FOR SHARE and
+  returns active state (including inactive). Quote rejects inactive markets;
+  merchant policy configuration may prepare an inactive market for later use.
 - `Policy`: `MarketID, Country, Method, Currency, ShippingMode, TaxMode, TaxBasis string`,
   `Version, ShippingMinor, TaxRateBPS, QuoteTTLSeconds int64`, `Enabled bool`.
 - `PolicyInput`: same business fields except Version; `ExpectedVersion int64`,
@@ -116,6 +122,10 @@ partial refunds, never re-price historical snapshots.
 - `GetQuote(ctx,tx,buyer.Scope,id) (Quote,error)`: exact immutable historical
   snapshot only, including expired ones; cross-owner/store uniformly NotFound.
   Reading a quote is not a current-price/inventory/checkout authorization check.
+- Future BeginCheckout must in one transaction recheck expiry, cart version,
+  active catalog and versions, active market/version, current enabled policy head,
+  and verified destination binding before inventory locking/reservation. This
+  contract does not implement or bypass those gates.
 
 ## Frozen persistence (root migration 0007)
 
@@ -153,7 +163,8 @@ explicit rights. Market/policy tables are not a second catalog or FX engine.
 
 ## Acceptance gate
 
-Pure money boundary/rounding/overflow tests; real PG both audiences, two tenants,
+Market create/state same-key replay, different-body conflict, CAS concurrency,
+audit-failure rollback; pure money boundary/rounding/overflow tests; real PG both audiences, two tenants,
 multiple stores/owners; cart no-write GET, absolute quantity replacement, same-key
 replay/conflict, expected-version concurrency, no stock mutation, archived SKU;
 missing/disabled/changed policy, currency mismatch, explicit zero vs omitted;
