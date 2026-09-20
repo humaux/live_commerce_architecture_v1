@@ -1,6 +1,6 @@
 # 依赖准入与当前清单
 
-版本来自当前 `go.mod`/`go.sum` 和本阶段已记录的锁定证据；license 是上游声明，不等于本项目已完成法务准入。升级必须先改表、跑 gate、再改锁文件。
+版本来自当前 `go.mod`/`go.sum` 和本阶段已记录的锁定证据；license 是上游声明，不等于本项目已完成法务准入。升级流程是确认候选版本、更新锁文件与本表、在候选版本上跑 gate，通过后再合并。
 
 |依赖|固定版本|许可证|实际调用者|用途|升级测试|
 |---|---|---|---|---|---|
@@ -16,7 +16,7 @@
 |依赖|状态与边界|准入条件|
 |---|---|---|
 |sqlc|NOT_INSTALLED；当前 SQL 为显式参数化，尚无生成物|冻结 queries/schema 后由 integrator 锁版本，审生成 diff，跑真实 PG/RLS/事务 gate|
-|Next.js / Node 24 LTS|NOT_INSTALLED；当前无前端源码|冻结 storefront/admin DTO 后单独锁 Node/pnpm，跑 strict build、浏览器权限 smoke；不把交易规则放浏览器|
+|Next.js / Node 24 LTS|前端项目 NOT_CONFIGURED；本机已有 Node 24.15.0/pnpm 11.2.2，不等于项目已安装 Next.js|冻结 storefront/admin DTO 后单独锁 Node/pnpm，跑 strict build、浏览器权限 smoke；不把交易规则放浏览器|
 |LiveKit|NOT_INSTALLED；媒体与 API 尚未接入|先完成托管/自托管能力与授权探针、mock→sandbox gate；媒体失败不得改变订单真源|
 |PSP|NOT_INSTALLED；无真实收款/退款调用|先确认商家 MoR、sandbox 账户与 webhook 幂等/对账；live 需明确授权、金额、回执和回滚边界|
 

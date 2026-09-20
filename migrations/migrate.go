@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log/slog"
 	"time"
 
@@ -22,7 +23,7 @@ var files embed.FS
 var ErrMigrationBusy = errors.New("another migration is running")
 
 // Apply requires an explicitly provisioned migration-owner pool, never the API pool.
-// ponytail: a single forward migration now; add ordered migration discovery when a second exists.
+// Embedded numbered SQL files apply in lexical order; old checksums never change.
 func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
@@ -63,25 +64,30 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 	if _, err = tx.Exec(ctx, `CREATE TABLE IF NOT EXISTS public.lc_schema_migrations (version text PRIMARY KEY, checksum text NOT NULL, applied_at timestamptz NOT NULL DEFAULT now())`); err != nil {
 		return err
 	}
-	const version = "0001_foundation.sql"
-	body, err := files.ReadFile(version)
-	if err != nil {
-		return err
+	versions, err := fs.Glob(files, "[0-9][0-9][0-9][0-9]_*.sql")
+	if err != nil || len(versions) == 0 {
+		return fmt.Errorf("discover migrations: %v", err)
 	}
-	want := fmt.Sprintf("%x", sha256.Sum256(body))
-	var have string
-	if err = tx.QueryRow(ctx, `SELECT coalesce((SELECT checksum FROM public.lc_schema_migrations WHERE version=$1),'')`, version).Scan(&have); err != nil {
-		return err
-	}
-	if have != "" && have != want {
-		return fmt.Errorf("migration checksum mismatch: %s", version)
-	}
-	if have == "" {
-		if _, err = tx.Exec(ctx, string(body)); err != nil {
+	for _, version := range versions {
+		body, err := files.ReadFile(version)
+		if err != nil {
 			return err
 		}
-		if _, err = tx.Exec(ctx, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES ($1,$2)`, version, want); err != nil {
+		want := fmt.Sprintf("%x", sha256.Sum256(body))
+		var have string
+		if err = tx.QueryRow(ctx, `SELECT coalesce((SELECT checksum FROM public.lc_schema_migrations WHERE version=$1),'')`, version).Scan(&have); err != nil {
 			return err
+		}
+		if have != "" && have != want {
+			return fmt.Errorf("migration checksum mismatch: %s", version)
+		}
+		if have == "" {
+			if _, err = tx.Exec(ctx, string(body)); err != nil {
+				return fmt.Errorf("apply %s: %w", version, err)
+			}
+			if _, err = tx.Exec(ctx, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES ($1,$2)`, version, want); err != nil {
+				return err
+			}
 		}
 	}
 	if err = tx.Commit(ctx); err != nil {
