@@ -285,15 +285,15 @@
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
-      "implementation": "PARTIAL_INTERNAL_OPERATION_LEDGER",
-      "unit_mock": "PASS_INTERNAL_SLICE",
-      "real_pg": "PASS_INTERNAL_SLICE_106_TESTS",
-      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
-      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
-      "independent_review": "PASS_BOUNDED_INTERNAL_SLICE"
+      "implementation": "PARTIAL_INTERNAL_LEDGER_AND_RIVER_DISPATCHER",
+      "unit_mock": "PASS_INTERNAL_LEDGER_AND_DISPATCHER",
+      "real_pg": "PASS_INTERNAL_DISPATCHER_123_TOP_LEVEL_TESTS",
+      "provider_sandbox": "NOT_RUN",
+      "provider_live": "NOT_RUN",
+      "independent_review": "PASS_BOUNDED_INTERNAL_LEDGER_AND_DISPATCHER"
     },
-    "evidence": "docs/implementation/2026-09-20-external-operation-acceptance.md; code 9bac8e4; root-reviewed.log SHA256 f1d1710eb2b2289cfd288054877889a58f32180b0a8c411fea4d99b3626edf30",
-    "remaining": "实际外部操作dispatcher、provider策略/资格、跨进程恢复、inbox/webhook、授权取消及完整G02/G04/G14仍未验收；队列probe不是业务dispatcher",
+    "evidence": "docs/implementation/2026-09-20-external-operation-acceptance.md (ledger 9bac8e4, 106 tests); docs/implementation/2026-09-20-dispatcher-acceptance.md (8e7c4d8, 123 top-level PASS, real SIGKILL/JobRescuer, browser regression); root-dispatcher-final-fixed.log SHA256 f176e38d129547fad9f14832a85f756b9d70d8d2f21d4a4ea1f064ececf05b07",
+    "remaining": "provider适配器/策略资格/凭证及sandbox/live、全局配额与Retry-After、inbox/webhook、授权恢复UI、buyer checkout和完整G02/G04/G14仍未验收；内部mock远端故障恢复不等于生产外部效果",
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
   {

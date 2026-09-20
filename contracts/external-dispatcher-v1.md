@@ -1,8 +1,11 @@
 # T06 external-operation dispatcher v1
 
-Status: FROZEN_FOR_IMPLEMENTATION, 2026-09-20. Extends the accepted internal ledger in
-`external-operation-v1.md`; no new queue, dependency or public endpoint. Real
-provider eligibility and full T06 remain separate gates.
+Status: INTERNAL_DISPATCHER_ACCEPTED, 2026-09-20, code baseline `8e7c4d8`.
+Extends the accepted internal ledger in `external-operation-v1.md`; no new queue,
+dependency or public endpoint. Independent bounded review, 123-test real-PG/race/vet
+run, actual process crash recovery and browser regression are recorded in
+[acceptance](../docs/implementation/2026-09-20-dispatcher-acceptance.md).
+Real provider eligibility and full T06 remain separate gates.
 
 ## Code and authority boundary
 

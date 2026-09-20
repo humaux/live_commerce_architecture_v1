@@ -4,7 +4,7 @@ Status: INTERNAL_SLICE_ACCEPTED, 2026-09-20, code baseline `9bac8e4`. Contribute
 
 ## Boundary and reuse
 
-Go/pgx caller-owned transactions and the pinned River OSS client remain the only queue mechanism. No new dependency, queue engine, generic workflow DSL or secret store. `integration` is an internal module, not a microservice. These primitives precede a runnable dispatcher and the buyer checkout authority bridge. A buyer is never impersonated as a merchant membership.
+Go/pgx caller-owned transactions and the pinned River OSS client remain the only queue mechanism. No new dependency, queue engine, generic workflow DSL or secret store. `integration` is an internal module, not a microservice. The later runnable dispatcher is accepted separately in [external-dispatcher-v1.md](external-dispatcher-v1.md); the buyer checkout authority bridge remains unimplemented. A buyer is never impersonated as a merchant membership.
 
 The initial producer is a trusted merchant-domain transaction with a server-resolved `platform.Scope`. A future checkout producer needs a separately reviewed buyer bridge; this slice gives buyer runtime/issuer no integration or River grants. Functions are not mounted on public routes. A typed Scope must match transaction-local tenant/store/principal, not just contain valid UUIDs.
 
@@ -39,9 +39,15 @@ Worker functions accept caller-owned short transactions. Database EXECUTE grants
 4. Expired DISPATCHING, UNKNOWN or ACKNOWLEDGED: increment generation; state UNKNOWN; mode `reconcile`; new lease. Never return dispatch, even when the earlier process may have died before sending.
 5. Disabled/changed binding: only a never-dispatched READY becomes terminal STALE_BINDING. An expired dispatch/UNKNOWN/ACKNOWLEDGED becomes or remains UNKNOWN with disposition `blocked_binding`, clears lease and prevents calls using the replacement account. Preserve the possible remote side effect. Repeated unchanged blocked-binding reads need not append events. A future authorized reconciliation route must query the frozen asset; no silent new-account fallback.
 
-`Complete(ctx, tx, operationID, generation, leaseToken, outcome)` locks binding then operation, requires matching token digest AND generation AND unexpired lease, then atomically records state/event and clears lease. Allowed outcomes: SUCCEEDED, FAILED_FINAL, UNKNOWN, ACKNOWLEDGED. Result code is machine identifier 1–80 chars; provider reference <=200 chars, no arbitrary error text. Binding change during work does NOT erase an observed remote success: record the result for the frozen action plus event reason `completed_binding_changed`. Unknown stays UNKNOWN. Stale generation/expired lease returns conflict and writes nothing; an outcome arriving after lease loss needs future reconciliation, never a blind redispatch.
+`Complete(ctx, tx, operationID, generation, leaseToken, outcome)` locks binding then operation, requires matching token digest AND generation AND unexpired lease, then atomically records state/event and clears lease. Base migration 0008 outcomes: SUCCEEDED, FAILED_FINAL, UNKNOWN, ACKNOWLEDGED; migration 0009 additionally accepts BLOCKED_POLICY only under the restricted dispatcher condition below. Result code is machine identifier 1–80 chars; provider reference <=200 chars, no arbitrary error text. Binding change during work does NOT erase an observed remote success: record the result for the frozen action plus event reason `completed_binding_changed`. Unknown stays UNKNOWN. Stale generation/expired lease returns conflict and writes nothing; an outcome arriving after lease loss needs future reconciliation, never a blind redispatch.
 
 No automatic UNKNOWN→READY, no same-action redispatch, no retry under another semantic key, no cancellation-as-remote-reversal claim. ACKNOWLEDGED is not success. Query attempts can repeat under fresh leases but only query/reconcile, never execute. An adapter that proves an action was not performed and wants retry must add a reviewed policy/transition; v1 does not guess it.
+
+Dispatcher extension: forward migration `0009_dispatch_policy_outcome.sql` also permits
+BLOCKED_POLICY only with a valid `dispatch` lease and empty provider reference.
+It does not allow reconciliation to erase a possible remote effect. Migration 0008
+and the historical 106-test ledger acceptance remain unchanged; see the dispatcher
+contract for callback ownership, timing, durable budget and later acceptance.
 
 ## Locking and recovery limits
 
@@ -64,4 +70,11 @@ Real isolated PostgreSQL, ordinary runtime + worker logins (not only mocks):
 
 A real River probe worker using the ordinary restricted worker login has started, consumed its exact fixture job, persisted `completed`, and stopped under the test harness. This proves queue lifecycle privileges only, not an external-operation dispatcher.
 
-NOT_RUN until later: actual external-operation dispatcher/adapter calls, cross-process shutdown/crash recovery, query/dispatch policy, retries/backoff/deadlines/quotas, inbox/webhook ingress, authorized cancellation/requeue UI, real credentials/provider sandbox/live, buyer checkout, global G04 and full T06.
+Later internal dispatcher acceptance at `8e7c4d8` adds actual River consumption,
+mock callback dispatch/query policy, bounded deadlines/retries, shutdown and real
+cross-process crash recovery; [123-test evidence](../docs/implementation/2026-09-20-dispatcher-acceptance.md).
+This supersedes the earlier dispatcher NOT_RUN status, not the historical probe's scope.
+
+Still NOT_RUN: production adapters/eligibility/credentials and provider sandbox/live,
+global quotas/durable Retry-After, inbox/webhook ingress, authorized cancellation/requeue
+UI, buyer checkout, full global gates and full T06.
