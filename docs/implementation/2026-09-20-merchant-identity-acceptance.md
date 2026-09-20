@@ -33,7 +33,7 @@
 ## 仍未通过的范围
 
 - 生产 IdP/邮件、开放注册或邀请制、正式币种/市场/套餐策略、平台员工身份 realm、MFA/再认证及生命周期运维未选定。
-- `internal/identity` 尚未接入公开 HTTP/BFF；Secure/HttpOnly cookie、CSRF、防登录滥用/速率限制、过期 flow 清理、浏览器登录→首店→账簿→注销闭环尚未实现或验收。`New` 的 onboarding 默认禁用，必须明确策略。
+- 本记录后续的 HTTP/BFF、Secure/HttpOnly Cookie、CSRF 和本地浏览器链已由 [浏览器身份验收](2026-09-20-browser-identity-acceptance.md) 覆盖；外部 IdP 仍是签名 mock。防登录滥用/速率限制、过期 flow 清理与生产安全运维仍未验收。`New` 的 onboarding 默认禁用，必须明确策略。
 - 登录/首店页面需遵循用户“先视觉稿确认再开发”。本轮没有跳过视觉确认写新 UI；现有商品库存 UI 的浏览器证据沿用自己的验收文档，不冒充新登录 UI 验收。
 - 其他 audience、域名、多店生命周期、结账/支付、跨境超商履约、直播、原生聊天/Meta/平台支持等仍按任务合同继续；G01/G02/G11 不得全局标 PASS。
 
