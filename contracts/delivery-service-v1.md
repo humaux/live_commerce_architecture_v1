@@ -37,7 +37,7 @@ reference the current enabled policy. The only stale/disabled-policy exception i
 an existing Enabled=true service being switched to false with all fields unchanged
 except Enabled and optional Visible true->false. It preserves the exact historical
 policy/binding references (never any other old version) and does not require current
-binding readiness; an operator must always be able to stop new use. Other changes
+binding readiness or an active market; an operator must always be able to stop new use. Other changes
 must use the current enabled policy. The historical FK must still exist.
 
 ## Persistence and transitions
