@@ -139,7 +139,7 @@ CREATE TABLE inventory.ledger (
     reservation_id uuid,
     reason text NOT NULL DEFAULT '' CHECK (length(reason)<=240),
     principal_id uuid NOT NULL,
-    balance_version bigint NOT NULL CHECK (balance_version>0),
+    balance_version bigint NOT NULL DEFAULT 1 CHECK (balance_version>0),
     created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
     PRIMARY KEY (tenant_id,store_id,id),
     UNIQUE (tenant_id,store_id,operation,command_key,warehouse_id,sku_id,kind),
@@ -157,6 +157,7 @@ CREATE TABLE inventory.ledger (
 -- to the non-login trigger owner, with a fixed search_path and no membership grant.
 CREATE FUNCTION inventory.apply_ledger() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE resulting_version bigint;
 BEGIN
     IF NEW.tenant_id IS DISTINCT FROM nullif(current_setting('app.tenant_id',true),'')::uuid
        OR NEW.store_id IS DISTINCT FROM nullif(current_setting('app.store_id',true),'')::uuid
@@ -171,17 +172,22 @@ BEGIN
         version=version+1
     WHERE tenant_id=NEW.tenant_id AND store_id=NEW.store_id
         AND warehouse_id=NEW.warehouse_id AND sku_id=NEW.sku_id
-    RETURNING version INTO NEW.balance_version;
-    IF NEW.balance_version IS NULL THEN
+    RETURNING version INTO resulting_version;
+    IF resulting_version IS NULL THEN
         RAISE EXCEPTION 'inventory scope missing' USING ERRCODE='42501';
     END IF;
+    UPDATE inventory.ledger SET balance_version=resulting_version
+    WHERE tenant_id=NEW.tenant_id AND store_id=NEW.store_id AND id=NEW.id;
     RETURN NEW;
 END $$;
 ALTER FUNCTION inventory.apply_ledger() OWNER TO commerce_inventory_writer;
 REVOKE ALL ON FUNCTION inventory.apply_ledger() FROM PUBLIC;
-CREATE TRIGGER ledger_balance BEFORE INSERT ON inventory.ledger
+-- AFTER INSERT is essential: BEFORE would change balance even when an INSERT
+-- ON CONFLICT DO NOTHING skips the ledger row. Never count an uninserted event.
+CREATE TRIGGER ledger_balance AFTER INSERT ON inventory.ledger
 FOR EACH ROW EXECUTE FUNCTION inventory.apply_ledger();
 GRANT SELECT,INSERT,UPDATE ON inventory.balances TO commerce_inventory_writer;
+GRANT SELECT,UPDATE(balance_version) ON inventory.ledger TO commerce_inventory_writer;
 
 -- SELECT FOR UPDATE itself requires UPDATE privilege. Expose only a scoped
 -- lock/read function, not UPDATE(balance), so domains cannot bypass the ledger.
@@ -213,9 +219,17 @@ BEGIN
                AND store_id=nullif(current_setting(''app.store_id'',true),'''')::uuid)',relation_name);
     END LOOP;
 END $$;
+CREATE POLICY command_actor ON ops.command_results AS RESTRICTIVE FOR INSERT TO commerce_runtime
+WITH CHECK (principal_id=nullif(current_setting('app.principal_id',true),'')::uuid);
+CREATE POLICY price_actor ON catalog.price_history AS RESTRICTIVE FOR INSERT TO commerce_runtime
+WITH CHECK (principal_id=nullif(current_setting('app.principal_id',true),'')::uuid);
+CREATE POLICY ledger_actor ON inventory.ledger AS RESTRICTIVE FOR INSERT TO commerce_runtime
+WITH CHECK (principal_id=nullif(current_setting('app.principal_id',true),'')::uuid);
 GRANT SELECT,INSERT ON ops.command_results,catalog.price_history,inventory.reservation_lines,inventory.ledger TO commerce_runtime;
 GRANT SELECT,INSERT,UPDATE ON catalog.products TO commerce_runtime;
-GRANT SELECT,INSERT ON catalog.skus TO commerce_runtime;
+GRANT SELECT ON catalog.skus TO commerce_runtime;
+-- HS confirmation is a separate not-yet-implemented merchant attestation.
+GRANT INSERT(tenant_id,store_id,id,product_id,code,status,currency,price_minor,version,weight_grams,length_mm,width_mm,height_mm,origin_country,customs_name,hs_candidate) ON catalog.skus TO commerce_runtime;
 GRANT UPDATE(code,status,price_minor,version,weight_grams,length_mm,width_mm,height_mm,origin_country,customs_name,hs_candidate,updated_at) ON catalog.skus TO commerce_runtime;
 GRANT SELECT,INSERT ON inventory.warehouses TO commerce_runtime;
 GRANT SELECT,INSERT,UPDATE(state) ON inventory.reservations TO commerce_runtime;

@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/fs"
 	"log/slog"
+	"slices"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -68,6 +69,26 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 	if err != nil || len(versions) == 0 {
 		return fmt.Errorf("discover migrations: %v", err)
 	}
+	rows, err := tx.Query(ctx, `SELECT version FROM public.lc_schema_migrations ORDER BY version`)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var applied string
+		if err = rows.Scan(&applied); err != nil {
+			rows.Close()
+			return err
+		}
+		if !slices.Contains(versions, applied) {
+			rows.Close()
+			return fmt.Errorf("database migration unknown to this binary: %s", applied)
+		}
+	}
+	if err = rows.Err(); err != nil {
+		rows.Close()
+		return err
+	}
+	rows.Close()
 	for _, version := range versions {
 		body, err := files.ReadFile(version)
 		if err != nil {
