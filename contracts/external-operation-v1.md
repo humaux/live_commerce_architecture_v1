@@ -1,6 +1,6 @@
 # T06 internal external-operation ledger v1
 
-Status: FROZEN_FOR_IMPLEMENTATION, 2026-09-20. Contributes to I04/I06/I14/I20 and G02/G04; not a provider, public HTTP, payment or production gate.
+Status: INTERNAL_SLICE_ACCEPTED, 2026-09-20, code baseline `9bac8e4`. Contributes to I04/I06/I14/I20 and G02/G04; not a provider, public HTTP, payment or production gate. Independent bounded review and 106-test real-PG/race/vet evidence: [acceptance](../docs/implementation/2026-09-20-external-operation-acceptance.md). Full T06 remains IN_PROGRESS.
 
 ## Boundary and reuse
 
@@ -62,4 +62,6 @@ Real isolated PostgreSQL, ordinary runtime + worker logins (not only mocks):
 6. Forced event insertion failure rolls back claim/completion. Transaction/lock cancellation does not leak scope or orphan partial state.
 7. Full existing Go real-PG race + vet suite remains passing. Review by an agent other than the implementation author.
 
-NOT_RUN until later: actual River worker process/adapter calls, cross-process shutdown/crash recovery, query/dispatch policy, retries/backoff/deadlines/quotas, inbox/webhook ingress, authorized cancellation/requeue UI, real credentials/provider sandbox/live, buyer checkout, global G04 and full T06.
+A real River probe worker using the ordinary restricted worker login has started, consumed its exact fixture job, persisted `completed`, and stopped under the test harness. This proves queue lifecycle privileges only, not an external-operation dispatcher.
+
+NOT_RUN until later: actual external-operation dispatcher/adapter calls, cross-process shutdown/crash recovery, query/dispatch policy, retries/backoff/deadlines/quotas, inbox/webhook ingress, authorized cancellation/requeue UI, real credentials/provider sandbox/live, buyer checkout, global G04 and full T06.

@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|
 |Go toolchain|1.27.1|BSD-3-Clause|全部 Go 包|编译、标准库、测试|`go test -race ./...`、`go vet ./...`、govulncheck；记录实际 toolchain|
 |`github.com/jackc/pgx/v5`|v5.11.0|MIT|`internal/platform/platform.go`；`migrations/migrate.go`；`tests/foundation/*`|PG 协议、显式事务、连接池、事务类型|真实 PG18 基础 gate：RLS、scope 回收、超时、回滚、池上限、HTTP；再跑 unit/race/vet|
-|`github.com/riverqueue/river`|v0.40.0|MPL-2.0|`migrations/migrate.go`；`tests/foundation/foundation_integration_test.go`|同库任务迁移、driver、事务入队探针|重复/并发迁移、enum 事务边界、runtime 仅 insert/受限 update、audit+job 同 commit/rollback|
+|`github.com/riverqueue/river`|v0.40.0|MPL-2.0|`migrations/migrate.go`；`internal/integrations/core/service.go`；`tests/foundation/{foundation_integration,external_operation,external_operation_authority}_test.go`|同库任务迁移、事务入队、受限 worker 生命周期探针；尚无真实业务 dispatcher|重复/并发迁移、enum 事务边界、runtime 仅 insert/受限 update、操作/event/audit/job/receipt 同 commit/rollback、worker 实际启停和禁止改迁移历史|
 |`river/riverdriver/riverpgxv5`|v0.40.0|MPL-2.0|同上|River 的 pgx driver|同 River gate；确认 schema 与权限不漂移|
 |`github.com/coreos/go-oidc/v3`|v3.21.0|Apache-2.0|`internal/oidclogin`|发现、JWKS 签名及 issuer/audience/expiry 验证；nonce/subject/azp 由适配层额外验证。避免自制 JWT 验证器|签名 mock IdP 正负例、轮换/网络失败边界、真实提供商 sandbox 后才可上线|
 |`golang.org/x/oauth2`|v0.37.0|BSD-3-Clause|`internal/oidclogin`|固定回调的授权码交换与 S256 PKCE；不存储提供商 token|错误 verifier、code replay、端点/重定向与超时负例|
@@ -41,6 +41,16 @@ SQL 依赖入口及将来开放 HTTP 前的条件见 `contracts/buyer-capability
 `tests/foundation/{pricing,cart_quote}_test.go` 的策略版本、金额、RLS、CAS、锁竞态、
 并发 replay、原子回滚 gate。合同与证据分别见 `cart-quote-v1.md`、
 `2026-09-20-cart-quote-acceptance.md`；没有引入第二交易引擎。
+
+内部 external-operation 继续复用 pgx、River InsertTx、`command.Run` 与标准库
+JSON/crypto：`internal/integrations/core` 负责精确权限、不可变意图摘要和租约 token
+包装；`migrations/0008_external_operations.sql` 是 worker 状态迁移的唯一写入口。
+`platform.OpenWorkerPool` 拒绝 owner/混合权限；`migrations/migrate.go` 在 River
+迁移之后重设运行权限，并明确收回 worker 对 `river_migration` 的所有权限。
+升级 River/PG/pgx 必须重跑 `external_operation*_test.go`：单赢家 claim、过期仅
+reconcile、旧 token/generation 拒绝、binding 撤销仍保留远端已知结果、跨权限拒绝、
+五类事实原子回滚、缺 receipt 后永久摘要仍冲突，以及普通 worker 的真实启停。
+该探针不构成 dispatcher/provider 验收；详见 `2026-09-20-external-operation-acceptance.md`。
 
 2026-09-20：上述前端版本通过 npm registry 元数据与本地锁文件核对。`pnpm audit --prod` 返回 No known vulnerabilities found；这是当时依赖审计，不代表整体安全验收。Next 的匹配版本文档随 `apps/admin/node_modules/next/dist/docs` 提供；standalone 显式补齐 public/static，不使用有警告的 next start。
 
