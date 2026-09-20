@@ -252,7 +252,11 @@ func isCanonicalUUID(value string) bool {
 
 // NewHandler returns the small API surface. Authorization permissions are fixed
 // constants selected by the route, never supplied by a caller.
-func NewHandler(pool *pgxpool.Pool) http.Handler {
+// HandlerOptions enables only explicitly wired authentication projections.
+// The ordinary fixture/business handler must not expand its discovery surface.
+type HandlerOptions struct{ SessionStoreList bool }
+
+func NewHandler(pool *pgxpool.Pool, options ...HandlerOptions) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
@@ -270,7 +274,9 @@ func NewHandler(pool *pgxpool.Pool) http.Handler {
 		}
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
-	mux.HandleFunc("GET /v1/admin/stores", sessionStoresHandler(pool))
+	if len(options) > 0 && options[0].SessionStoreList {
+		mux.HandleFunc("GET /v1/admin/stores", sessionStoresHandler(pool))
+	}
 	mux.HandleFunc("GET /v1/admin/stores/{store_id}", storeHandler(pool))
 	mux.HandleFunc("GET /v1/admin/stores/{store_id}/audit-events", auditHandler(pool))
 	return httperror.Middleware(mux)

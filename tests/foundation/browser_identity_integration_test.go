@@ -13,6 +13,7 @@ import (
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/identity"
 	"livecommerce/internal/identityhttp"
+	"livecommerce/internal/platform"
 )
 
 type sessionStore struct {
@@ -23,7 +24,7 @@ type sessionStore struct {
 
 func sessionStoreList(t *testing.T, token string, status int) []sessionStore {
 	t.Helper()
-	w := adminRequest(httpapi.NewHandler(fixture(t).runtime), "GET", "/v1/admin/stores", token, nil, "", nil)
+	w := adminRequest(httpapi.NewHandler(fixture(t).runtime, platform.HandlerOptions{SessionStoreList: true}), "GET", "/v1/admin/stores", token, nil, "", nil)
 	if w.Code != status {
 		t.Fatalf("store list status=%d want=%d", w.Code, status)
 	}
@@ -141,8 +142,25 @@ func TestBrowserSessionStoreListLimitsAndRuntimePrivileges(t *testing.T) {
 	if owner != "commerce_auth" || !definer || publicExec || len(config) != 1 || config[0] != "search_path=pg_catalog" {
 		t.Fatal("unsafe store-list function authority")
 	}
-	w := adminRequest(httpapi.NewHandler(f.runtime), "GET", "/v1/admin/stores?tenant_id="+created.TenantID, session.Token, nil, "", nil)
+	w := adminRequest(httpapi.NewHandler(f.runtime, platform.HandlerOptions{SessionStoreList: true}), "GET", "/v1/admin/stores?tenant_id="+created.TenantID, session.Token, nil, "", nil)
 	assertAdminError(t, w, 422, "invalid_request", session.Token)
+}
+
+func TestBrowserSessionStoreListDisabledWithValidToken(t *testing.T) {
+	f := fixture(t)
+	s, _, _ := identityFixture(t)
+	session := identityLogin(t, s)
+	if _, err := s.CreateInitialStore(context.Background(), session.Token, "disabled-list-create", firstStoreRequest()); err != nil {
+		t.Fatal(err)
+	}
+	for _, handler := range []http.Handler{httpapi.NewHandler(f.runtime), platform.NewHandler(f.runtime), httpapi.NewHandler(nil), platform.NewHandler(nil)} {
+		// nil pools additionally prove default-off never attempts the SQL query.
+		w := adminRequest(handler, "GET", "/v1/admin/stores", session.Token, nil, "", nil)
+		assertAdminError(t, w, 404, "not_found", session.Token)
+	}
+	if len(sessionStoreList(t, session.Token, 200)) != 1 {
+		t.Fatal("enabled projection did not recover")
+	}
 }
 
 func TestPrivateIdentityHTTPWithRealDatabase(t *testing.T) {

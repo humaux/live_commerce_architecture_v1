@@ -28,7 +28,7 @@ import (
 // NewHandler keeps transport validation separate from domain invariants. There
 // is deliberately no public Reserve route: only a validated BeginCheckout may
 // eventually call it, never a GET, comment event, or client-selected tenant.
-func NewHandler(pool *pgxpool.Pool) http.Handler {
+func NewHandler(pool *pgxpool.Pool, options ...platform.HandlerOptions) http.Handler {
 	mux := http.NewServeMux()
 	const base = "/v1/admin/stores/{store_id}"
 	mux.HandleFunc("GET "+base+"/catalog-ledger", scoped(pool, "catalog:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
@@ -96,8 +96,11 @@ func NewHandler(pool *pgxpool.Pool) http.Handler {
 	mux.HandleFunc("POST "+base+"/inventory/adjustments", bodyRoute(pool, "inventory:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in inventory.Adjustment) (any, error) {
 		return inventory.AdjustOnHand(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)
 	}))
-	foundation := platform.NewHandler(pool)
-	for _, pattern := range []string{"GET /healthz", "GET /readyz", "GET /v1/admin/stores", "GET " + base, "GET " + base + "/audit-events"} {
+	foundation := platform.NewHandler(pool, options...)
+	if len(options) > 0 && options[0].SessionStoreList {
+		mux.Handle("GET /v1/admin/stores", foundation)
+	}
+	for _, pattern := range []string{"GET /healthz", "GET /readyz", "GET " + base, "GET " + base + "/audit-events"} {
 		mux.Handle(pattern, foundation)
 	}
 	return httperror.Middleware(mux)

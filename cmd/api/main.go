@@ -47,7 +47,7 @@ func run() error {
 		return err
 	}
 	defer closeIdentity()
-	handler := httpapi.NewHandler(pool)
+	handler := httpapi.NewHandler(pool, platform.HandlerOptions{SessionStoreList: identityConfig.enabled})
 	if identityHandler != nil {
 		mux := http.NewServeMux()
 		mux.Handle("/v1/identity/", identityHandler)
