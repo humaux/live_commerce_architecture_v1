@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"livecommerce/internal/httpapi"
 	"livecommerce/internal/platform"
 )
 
@@ -36,7 +37,7 @@ func run() error {
 	}
 	server := &http.Server{
 		Addr:              addr,
-		Handler:           platform.NewHandler(pool),
+		Handler:           httpapi.NewHandler(pool),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      15 * time.Second,
