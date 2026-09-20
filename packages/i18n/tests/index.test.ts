@@ -23,6 +23,9 @@ test('locale precedence and language quality mapping', () => {
   assert.equal(resolveLocale({ ...base, pathname: '/products', acceptLanguage: 'zh-Hant;q=0.9,en;q=0' }), 'zh-TW');
   assert.equal(resolveLocale({ ...base, pathname: '/products', acceptLanguage: 'fr;q=1' }), 'en');
   assert.equal(resolveLocale({ ...base, pathname: '/products', acceptLanguage: 'zh-TW;q=abc,en;q=0.4' }), 'en');
+  assert.equal(resolveLocale({ ...base, pathname: '/products', acceptLanguage: 'zh-TW;q=0.5=0,en;q=0.4' }), 'en');
+  assert.equal(resolveLocale({ ...base, pathname: '/products', acceptLanguage: 'zh-Hans-TW' }), 'zh-CN');
+  assert.equal(resolveLocale({ ...base, pathname: '/products', acceptLanguage: 'zh-Hant-CN' }), 'zh-TW');
   assert.equal(resolveLocale({ ...base, pathname: '/products', acceptLanguage: 'zh-TW;q=0.5;q=0.2,en;q=0.4' }), 'en');
   assert.equal(resolveLocale({ ...base, pathname: '/products', acceptLanguage: 'zh-TW;q=2,en;q=0.4' }), 'en');
   assert.equal(resolveLocale({ ...base, pathname: '/products', acceptLanguage: `${'en,'.repeat(40)}zh-CN` }), 'en');

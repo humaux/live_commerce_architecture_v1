@@ -1,6 +1,7 @@
 package platform
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -20,9 +21,10 @@ func TestHealthzNeedsNoDatabase(t *testing.T) {
 func TestReadyzUnavailableWithoutPool(t *testing.T) {
 	response := httptest.NewRecorder()
 	NewHandler(nil).ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/readyz", nil))
-	if response.Code != http.StatusServiceUnavailable || response.Body.String() != "{\"error\":\"unavailable\"}\n" {
+	if response.Code != http.StatusServiceUnavailable {
 		t.Fatalf("readyz = %d, %q", response.Code, response.Body.String())
 	}
+	assertErrorEnvelope(t, response, "unavailable", true)
 }
 
 func TestAdminRejectsCookieAndTenantHeadersWithoutBearer(t *testing.T) {
@@ -31,8 +33,26 @@ func TestAdminRejectsCookieAndTenantHeadersWithoutBearer(t *testing.T) {
 	request.Header.Set("X-Tenant", "other-tenant")
 	response := httptest.NewRecorder()
 	NewHandler(nil).ServeHTTP(response, request)
-	if response.Code != http.StatusUnauthorized || response.Body.String() != "{\"error\":\"unauthorized\"}\n" {
+	if response.Code != http.StatusUnauthorized {
 		t.Fatalf("admin response = %d, %q", response.Code, response.Body.String())
+	}
+	assertErrorEnvelope(t, response, "unauthorized", false)
+}
+
+func assertErrorEnvelope(t *testing.T, response *httptest.ResponseRecorder, code string, retryable bool) {
+	t.Helper()
+	var got struct {
+		Code      string         `json:"code"`
+		Message   string         `json:"message"`
+		RequestID string         `json:"request_id"`
+		Retryable bool           `json:"retryable"`
+		Details   map[string]any `json:"details"`
+	}
+	if err := json.Unmarshal(response.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Code != code || got.Message == "" || len(got.RequestID) != 32 || got.RequestID != response.Header().Get("X-Request-ID") || got.Retryable != retryable || got.Details == nil {
+		t.Fatalf("invalid envelope %+v", got)
 	}
 }
 

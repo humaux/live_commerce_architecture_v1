@@ -116,7 +116,7 @@ func TestCatalogInventoryHTTPRealWorkflow(t *testing.T) {
 	if sku.Status != "archived" || p.Status != "archived" {
 		t.Fatal("archive status not persisted")
 	}
-	request("POST", fmt.Sprintf("/v1/admin/stores/%s/products", f.storeA2), t04Key("http-cross-store"), in, 401, nil)
+	request("POST", fmt.Sprintf("/v1/admin/stores/%s/products", f.storeA2), t04Key("http-cross-store"), in, 404, nil)
 }
 
 func TestCatalogHTTPPermissionIsRouteOwned(t *testing.T) {

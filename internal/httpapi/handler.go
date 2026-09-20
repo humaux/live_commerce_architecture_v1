@@ -17,6 +17,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"livecommerce/internal/catalog"
 	"livecommerce/internal/command"
+	"livecommerce/internal/httperror"
 	"livecommerce/internal/inventory"
 	"livecommerce/internal/platform"
 )
@@ -66,12 +67,11 @@ func NewHandler(pool *pgxpool.Pool) http.Handler {
 	mux.HandleFunc("POST "+base+"/inventory/adjustments", bodyRoute(pool, "inventory:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in inventory.Adjustment) (any, error) {
 		return inventory.AdjustOnHand(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)
 	}))
-	mux.Handle("/", platform.NewHandler(pool))
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Cache-Control", "no-store")
-		w.Header().Set("X-Content-Type-Options", "nosniff")
-		mux.ServeHTTP(w, r)
-	})
+	foundation := platform.NewHandler(pool)
+	for _, pattern := range []string{"GET /healthz", "GET /readyz", "GET " + base, "GET " + base + "/audit-events"} {
+		mux.Handle(pattern, foundation)
+	}
+	return httperror.Middleware(mux)
 }
 
 type versionInput struct {
@@ -138,10 +138,14 @@ func scoped(pool *pgxpool.Pool, permission string, fn action) http.HandlerFunc {
 // Map only stable classes. Raw pgconn messages can include customer values.
 func classify(err error) (int, string) {
 	switch {
+	case errors.Is(err, platform.ErrScopeNotFound):
+		return http.StatusNotFound, "not_found"
+	case errors.Is(err, platform.ErrForbidden):
+		return http.StatusForbidden, "forbidden"
 	case errors.Is(err, platform.ErrUnauthorized):
 		return http.StatusUnauthorized, "unauthorized"
 	case errors.Is(err, command.ErrInvalid):
-		return http.StatusBadRequest, "invalid_request"
+		return http.StatusUnprocessableEntity, "invalid_request"
 	case errors.Is(err, command.ErrConflict):
 		return http.StatusConflict, "conflict"
 	case errors.Is(err, command.ErrNotFound), errors.Is(err, pgx.ErrNoRows):
@@ -159,7 +163,7 @@ func classify(err error) (int, string) {
 		case "23503":
 			return http.StatusNotFound, "not_found"
 		case "23514", "22003", "22P02":
-			return http.StatusBadRequest, "invalid_request"
+			return http.StatusUnprocessableEntity, "invalid_request"
 		case "55P03", "57014":
 			return http.StatusServiceUnavailable, "retry_later"
 		}
@@ -168,7 +172,7 @@ func classify(err error) (int, string) {
 }
 
 func respondError(w http.ResponseWriter, status int, code string) {
-	respond(w, status, map[string]string{"error": code})
+	httperror.Write(w, status, code)
 }
 func respond(w http.ResponseWriter, status int, value any) {
 	w.Header().Set("Content-Type", "application/json")
