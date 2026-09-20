@@ -85,9 +85,14 @@ the tax is the exact remainder). Shipping tax is rounded separately
 only for `goods_and_shipping`. Exclusive adds tax; inclusive reports the included
 component without charging it twice. Store these exact allocations for future
 partial refunds, never re-price historical snapshots.
+`Calculation.TaxMinor` is the total of all line tax plus ShippingTaxMinor;
+exclusive total is subtotal + shipping + total tax (shipping tax is not added twice).
 
 `internal/buyer`:
 
+- `CheckScope(ctx,tx,Scope) error` validates canonical IDs and equality to the
+  transaction-local tenant/store/buyer/session settings, with merchant principal
+  cleared. Reads and command replay use it; it is not a token authenticator.
 - Add `RunCommand(ctx,tx,Scope,operation,key,request,result,fn) error` using the
   same canonical JSON/advisory replay pattern as merchant command.Run, but a new
   private receipt table keyed by tenant/store/owner/session/operation/key. Do not

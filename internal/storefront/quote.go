@@ -1,0 +1,136 @@
+package storefront
+
+import (
+	"context"
+	"encoding/json"
+	"time"
+
+	"github.com/jackc/pgx/v5"
+	"livecommerce/internal/buyer"
+	"livecommerce/internal/command"
+	"livecommerce/internal/pricing" // The only calculator; snapshots never re-price on GET.
+)
+
+type QuoteInput struct {
+	CartVersion int64  `json:"cart_version"`
+	MarketID    string `json:"market_id"`
+	Country     string `json:"country"`
+	Method      string `json:"method"`
+}
+type QuoteLine struct {
+	SKUID          string             `json:"sku_id"`
+	ProductID      string             `json:"product_id"`
+	Code           string             `json:"code"`
+	Name           string             `json:"name"`
+	Description    string             `json:"description"`
+	SKUVersion     int64              `json:"sku_version"`
+	ProductVersion int64              `json:"product_version"`
+	Quantity       int64              `json:"quantity"`
+	UnitPriceMinor int64              `json:"unit_price_minor"`
+	Amount         pricing.LineAmount `json:"amount"`
+}
+type Quote struct {
+	ID                 string              `json:"id"`
+	CartID             string              `json:"cart_id"`
+	Currency           string              `json:"currency"`
+	CalculationVersion string              `json:"calculation_version"`
+	CartVersion        int64               `json:"cart_version"`
+	MarketVersion      int64               `json:"market_version"`
+	Policy             pricing.Policy      `json:"policy"`
+	Lines              []QuoteLine         `json:"lines"`
+	Amount             pricing.Calculation `json:"amount"`
+	CreatedAt          time.Time           `json:"created_at"`
+	ExpiresAt          time.Time           `json:"expires_at"`
+}
+
+func CreateQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string, in QuoteInput) (out Quote, err error) {
+	if in.CartVersion < 1 || !command.ValidID(in.MarketID) || len(in.Country) != 2 || in.Country[0] < 'A' || in.Country[0] > 'Z' || in.Country[1] < 'A' || in.Country[1] > 'Z' || (in.Method != "home" && in.Method != "cvs_711" && in.Method != "cvs_familymart") {
+		return out, command.ErrInvalid
+	}
+	err = buyer.RunCommand(ctx, tx, s, "quote.create", key, in, &out, func() error {
+		cart, err := readCart(ctx, tx, s, false)
+		if err != nil {
+			return err
+		}
+		if cart.Version != in.CartVersion {
+			return command.ErrConflict
+		}
+		if len(cart.Items) == 0 {
+			return command.ErrInvalid
+		}
+		market, err := pricing.LockMarket(ctx, tx, s.TenantID, s.StoreID, in.MarketID)
+		if err != nil {
+			return err
+		}
+		if !market.Active || market.Currency != cart.Currency {
+			return command.ErrConflict
+		}
+		policy, err := pricing.LockCurrent(ctx, tx, s.TenantID, s.StoreID, in.MarketID, in.Country, in.Method)
+		if err != nil {
+			return err
+		}
+		if policy.Currency != cart.Currency {
+			return command.ErrConflict
+		}
+		lines, err := lockCatalog(ctx, tx, s, cart.Currency, cart.Items)
+		if err != nil {
+			return err
+		}
+		inputs := make([]pricing.AmountLine, len(lines))
+		for i, line := range lines {
+			inputs[i] = pricing.AmountLine{UnitPriceMinor: line.UnitPriceMinor, Quantity: line.Quantity}
+		}
+		amount, err := pricing.Calculate(policy, inputs)
+		if err != nil {
+			return err
+		}
+		for i := range lines {
+			lines[i].Amount = amount.Lines[i]
+		}
+		out = Quote{CartID: cart.ID, Currency: cart.Currency, CalculationVersion: "v1", CartVersion: cart.Version, MarketVersion: market.Version, Policy: policy, Lines: lines, Amount: amount}
+		if err = tx.QueryRow(ctx, `SELECT gen_random_uuid()::text,clock_timestamp()`).Scan(&out.ID, &out.CreatedAt); err != nil {
+			return err
+		}
+		out.ExpiresAt = out.CreatedAt.Add(time.Duration(policy.QuoteTTLSeconds) * time.Second)
+		snapshot, err := json.Marshal(out)
+		if err != nil {
+			return err
+		}
+		if len(snapshot) > 1048576 {
+			return command.ErrInvalid
+		}
+		_, err = tx.Exec(ctx, `INSERT INTO storefront.quotes(tenant_id,store_id,owner_id,id,cart_id,creator_session_id,cart_version,market_id,market_version,country,method,policy_version,currency,created_at,expires_at,snapshot)
+			VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`, s.TenantID, s.StoreID, s.OwnerID, out.ID, cart.ID, s.SessionID, cart.Version, market.ID, market.Version, policy.Country, policy.Method, policy.Version, cart.Currency, out.CreatedAt, out.ExpiresAt, snapshot)
+		if err != nil {
+			return err
+		}
+		return event(ctx, tx, s, cart.ID, out.ID, "quote.created")
+	})
+	return out, err
+}
+
+// GetQuote is historical: expiration is returned, never extended. Future
+// checkout must revalidate in its own atomic transaction before charging money.
+func GetQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, id string) (out Quote, err error) {
+	if !command.ValidID(id) {
+		return out, command.ErrInvalid
+	}
+	if err = buyer.CheckScope(ctx, tx, s); err != nil {
+		return out, err
+	}
+	var body []byte
+	var cart, currency, market, country, method string
+	var cartVersion, marketVersion, policyVersion int64
+	var created, expires time.Time
+	err = tx.QueryRow(ctx, `SELECT snapshot,cart_id::text,currency,market_id::text,country,method,cart_version,market_version,policy_version,created_at,expires_at FROM storefront.quotes WHERE tenant_id=$1 AND store_id=$2 AND owner_id=$3 AND id=$4`, s.TenantID, s.StoreID, s.OwnerID, id).Scan(&body, &cart, &currency, &market, &country, &method, &cartVersion, &marketVersion, &policyVersion, &created, &expires)
+	if err != nil {
+		return out, notFound(err)
+	}
+	if err = json.Unmarshal(body, &out); err != nil {
+		return out, err
+	}
+	if out.ID != id || out.CartID != cart || out.Currency != currency || out.CartVersion != cartVersion || out.MarketVersion != marketVersion || out.CalculationVersion != "v1" || out.Policy.MarketID != market || out.Policy.Country != country || out.Policy.Method != method || out.Policy.Version != policyVersion || out.Policy.Currency != currency || !out.CreatedAt.Equal(created) || !out.ExpiresAt.Equal(expires) {
+		return Quote{}, command.ErrConflict
+	}
+	return out, nil
+}
