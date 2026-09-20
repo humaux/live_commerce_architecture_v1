@@ -42,6 +42,12 @@ SQL 依赖入口及将来开放 HTTP 前的条件见 `contracts/buyer-capability
 并发 replay、原子回滚 gate。合同与证据分别见 `cart-quote-v1.md`、
 `2026-09-20-cart-quote-acceptance.md`；没有引入第二交易引擎。
 
+`internal/storefront/revalidate.go` 继续调用同一 `pricing.Calculate`、cart/catalog
+锁读取与 pgx 事务，不另写 SQL 计价器或增加校验签名依赖。共享 `readQuote` 将
+损坏的存储 JSON 统一映射为 conflict。升级这些入口/PG/pgx 时，追加运行
+`tests/foundation/checkout_quote_test.go` 的版本/金额损坏、锁等待后过期和取消
+后连接池复用 gate；它不替代完整 checkout/PSP/物流验收。
+
 内部 external-operation 继续复用 pgx、River InsertTx、`command.Run` 与标准库
 JSON/crypto：`internal/integrations/core` 负责精确权限、不可变意图摘要和租约 token
 包装；迁移 0008 定义的受限 SQL 函数是 worker 状态迁移的唯一写入口，前向

@@ -132,6 +132,11 @@ exclusive total is subtotal + shipping + total tax (shipping tax is not added tw
   and verified destination binding before inventory locking/reservation. This
   contract does not implement or bypass those gates.
 
+The later [RevalidateQuote prerequisite](checkout-quote-validation-v1.md) now
+implements locked current-price/catalog/policy/expiry checks without durable writes.
+It does not grant checkout SQL authority or destination eligibility, and callers
+must still check expiry after later allocation/balance lock waits before holding stock.
+
 ## Frozen persistence (root migration 0007)
 
 - `pricing.markets`: tenant/store/id PK, unique store/code, immutable currency FK

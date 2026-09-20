@@ -1,8 +1,10 @@
 # Checkout quote revalidation v1
 
-Status: FROZEN_FOR_IMPLEMENTATION, 2026-09-20, baseline `909cb3b`.
+Status: INTERNAL_PREREQUISITE_ACCEPTED, 2026-09-20, code/test baseline `0db6eb1`.
 Mandatory executable prerequisite of BeginCheckout; not checkout/fulfillment/payment
 acceptance. Extends `cart-quote-v1.md`, reusing the one existing pricing calculator.
+Real-PG/race/vet, lock/clock/forged-snapshot cases and browser regression are in
+[acceptance](../docs/implementation/2026-09-20-checkout-quote-acceptance.md).
 
 ## Surface and ownership
 

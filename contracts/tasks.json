@@ -451,23 +451,27 @@
     "role": "commerce_worker",
     "write_paths": [
       "internal/checkout/**",
+      "internal/storefront/revalidate.go",
+      "tests/foundation/checkout_quote_test.go",
       "internal/payments/**",
       "tests/payments/**",
       "internal/orders/**",
       "internal/integrations/psp/**",
       "tests/orders/**"
     ],
-    "status": "NOT_STARTED",
+    "status": "IN_PROGRESS",
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
-      "implementation": "NOT_STARTED",
-      "unit_mock": "NOT_RUN",
-      "real_pg": "NOT_RUN",
-      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
-      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
-      "independent_review": "NOT_RUN"
+      "implementation": "PARTIAL_QUOTE_REVALIDATION_PREREQUISITE_ONLY",
+      "unit_mock": "PASS_EXISTING_INTERNAL_REGRESSION",
+      "real_pg": "PASS_PREREQUISITE_WITH_128_TEST_REGRESSION",
+      "provider_sandbox": "NOT_RUN",
+      "provider_live": "NOT_RUN",
+      "independent_review": "PASS_BOUNDED_QUOTE_PREREQUISITE"
     },
+    "evidence": "docs/implementation/2026-09-20-checkout-quote-acceptance.md; code/tests 0db6eb1; 5 new top-level tests with 40 subcases; full 128 PASS/0 FAIL/0 SKIP real PG/race/vet and browser identity regression",
+    "remaining": "BeginCheckout权限桥/订单/预留/到期、配送与allocation权威、StartPayment/PSP/退款/支付对账、provider sandbox/live和完整G03/G05均未实现或验收；报价重验不是可扣款授权",
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
   {
