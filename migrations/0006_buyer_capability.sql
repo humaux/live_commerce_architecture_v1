@@ -126,7 +126,7 @@ BEGIN
     END IF;
     SELECT c.* INTO v_session FROM buyer.capability_sessions c
       WHERE c.token_hash=p_hash AND c.store_id=p_store FOR UPDATE OF c;
-    IF NOT FOUND OR v_session.revoked_at IS NOT NULL THEN RETURN; END IF;
+    IF NOT FOUND OR v_session.revoked_at IS NOT NULL OR v_session.expires_at<=clock_timestamp() THEN RETURN; END IF;
     UPDATE buyer.capability_sessions SET revoked_at=clock_timestamp() WHERE id=v_session.id;
     INSERT INTO buyer.capability_events(tenant_id,store_id,owner_id,session_id,action)
       VALUES(v_session.tenant_id,v_session.store_id,v_session.owner_id,v_session.id,'capability.revoked');
