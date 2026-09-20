@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"regexp"
 
 	"github.com/jackc/pgx/v5" // Explicit caller-owned PG transaction; no ORM/pool.
@@ -29,7 +30,7 @@ var (
 // Run serializes one scoped command. Only successful, fully serialized results
 // are saved; there is no durable "pending" placeholder to strand on crashes.
 func Run(ctx context.Context, tx pgx.Tx, scope platform.Scope, operation, key string, request, result any, fn func() error) error {
-	if tx == nil || fn == nil || result == nil || !keyPattern.MatchString(key) || !opPattern.MatchString(operation) ||
+	if tx == nil || fn == nil || !resultPointer(result) || !keyPattern.MatchString(key) || !opPattern.MatchString(operation) ||
 		!ValidID(scope.TenantID) || !ValidID(scope.StoreID) || !ValidID(scope.PrincipalID) {
 		return ErrInvalid
 	}
@@ -44,7 +45,19 @@ func Run(ctx context.Context, tx pgx.Tx, scope platform.Scope, operation, key st
 	// LOCK: stable scope/operation/key, never payload. Hash collisions only cause
 	// harmless extra serialization; equality is checked using the full SQL key.
 	lockKey := "command|" + scope.TenantID + "|" + scope.StoreID + "|" + operation + "|" + key
+	// A valid duplicate may outlive the short row-lock timeout. Only this advisory
+	// wait uses the enclosing request/statement deadline; restore row policy next.
+	var rowLockTimeout string
+	if err = tx.QueryRow(ctx, `SHOW lock_timeout`).Scan(&rowLockTimeout); err != nil {
+		return err
+	}
+	if _, err = tx.Exec(ctx, `SELECT set_config('lock_timeout','0',true)`); err != nil {
+		return err
+	}
 	if _, err = tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,0))`, lockKey); err != nil {
+		return err
+	}
+	if _, err = tx.Exec(ctx, `SELECT set_config('lock_timeout',$1,true)`, rowLockTimeout); err != nil {
 		return err
 	}
 	var previousHash, previousJSON []byte
@@ -73,6 +86,14 @@ func Run(ctx context.Context, tx pgx.Tx, scope platform.Scope, operation, key st
 	_, err = tx.Exec(ctx, `INSERT INTO ops.command_results(tenant_id,store_id,operation,idempotency_key,request_hash,response,principal_id)
 		VALUES($1,$2,$3,$4,$5,$6,$7)`, scope.TenantID, scope.StoreID, operation, key, digest[:], encoded, scope.PrincipalID)
 	return err
+}
+
+func resultPointer(result any) bool {
+	if result == nil {
+		return false
+	}
+	v := reflect.ValueOf(result)
+	return v.Kind() == reflect.Pointer && !v.IsNil()
 }
 
 const MaxMoney int64 = 1_000_000_000_000

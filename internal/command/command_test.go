@@ -42,3 +42,15 @@ func TestIDValidation(t *testing.T) {
 		}
 	}
 }
+
+func TestResultMustBeNonNilPointer(t *testing.T) {
+	var nilPointer *struct{ ID string }
+	for _, v := range []any{nil, nilPointer, struct{ ID string }{}, "text", 42} {
+		if resultPointer(v) {
+			t.Fatalf("accepted invalid result %T", v)
+		}
+	}
+	if !resultPointer(&struct{ ID string }{}) {
+		t.Fatal("rejected result pointer")
+	}
+}
