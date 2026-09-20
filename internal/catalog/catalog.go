@@ -122,7 +122,7 @@ func ArchiveProduct(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, i
 		if err := lockProduct(ctx, tx, scope, id); err != nil {
 			return err
 		}
-		if _, err := tx.Exec(ctx, `SELECT id FROM catalog.skus WHERE tenant_id=$1 AND store_id=$2 AND product_id=$3 FOR UPDATE`, scope.TenantID, scope.StoreID, id); err != nil {
+		if _, err := tx.Exec(ctx, `SELECT id FROM catalog.skus WHERE tenant_id=$1 AND store_id=$2 AND product_id=$3 ORDER BY id FOR UPDATE`, scope.TenantID, scope.StoreID, id); err != nil {
 			return err
 		}
 		err := tx.QueryRow(ctx, `UPDATE catalog.products SET status='archived',version=version+1,updated_at=clock_timestamp()
@@ -175,6 +175,9 @@ func CreateSKU(ctx context.Context, tx pgx.Tx, scope platform.Scope, key string,
 			RETURNING id::text,product_id::text,code,status,currency,price_minor,version,weight_grams,length_mm,width_mm,height_mm,origin_country,customs_name,hs_candidate`,
 			scope.TenantID, scope.StoreID, in.ProductID, in.Code, currency, in.PriceMinor, in.WeightGrams, in.LengthMM, in.WidthMM, in.HeightMM, in.OriginCountry, in.CustomsName, in.HSCandidate).Scan(skuFields(&out)...)
 		if err != nil {
+			return err
+		}
+		if err := appendPriceHistory(ctx, tx, scope, out); err != nil {
 			return err
 		}
 		return command.Audit(ctx, tx, scope, "catalog.sku.created")
@@ -234,9 +237,7 @@ func SetSKUPrice(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, id s
 			RETURNING id::text,product_id::text,code,status,currency,price_minor,version,weight_grams,length_mm,width_mm,height_mm,origin_country,customs_name,hs_candidate`, scope.TenantID, scope.StoreID, in.PriceMinor, id, in.ExpectedVersion).Scan(skuFields(&out)...); err != nil {
 			return err
 		}
-		_, err = tx.Exec(ctx, `INSERT INTO catalog.price_history(tenant_id,store_id,sku_id,version,price_minor,currency,principal_id)
-			VALUES($1,$2,$3,$4,$5,$6,$7)`, scope.TenantID, scope.StoreID, id, out.Version, out.PriceMinor, out.Currency, scope.PrincipalID)
-		if err != nil {
+		if err := appendPriceHistory(ctx, tx, scope, out); err != nil {
 			return err
 		}
 		return command.Audit(ctx, tx, scope, "catalog.sku.price_changed")
@@ -332,6 +333,14 @@ func storeCurrency(ctx context.Context, tx pgx.Tx, scope platform.Scope) (string
 	var c string
 	err := tx.QueryRow(ctx, `SELECT currency FROM control.stores WHERE tenant_id=$1 AND id=$2`, scope.TenantID, scope.StoreID).Scan(&c)
 	return c, mapError(err)
+}
+
+// appendPriceHistory keeps the create price (version 1) and later price changes
+// in the same append-only stream, before the command result/audit can commit.
+func appendPriceHistory(ctx context.Context, tx pgx.Tx, scope platform.Scope, sku SKU) error {
+	_, err := tx.Exec(ctx, `INSERT INTO catalog.price_history(tenant_id,store_id,sku_id,version,price_minor,currency,principal_id)
+		VALUES($1,$2,$3,$4,$5,$6,$7)`, scope.TenantID, scope.StoreID, sku.ID, sku.Version, sku.PriceMinor, sku.Currency, scope.PrincipalID)
+	return err
 }
 func skuFields(s *SKU) []any {
 	return []any{&s.ID, &s.ProductID, &s.Code, &s.Status, &s.Currency, &s.PriceMinor, &s.Version, &s.WeightGrams, &s.LengthMM, &s.WidthMM, &s.HeightMM, &s.OriginCountry, &s.CustomsName, &s.HSCandidate}
