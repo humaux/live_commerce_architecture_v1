@@ -62,7 +62,7 @@ func ListLedger(ctx context.Context, tx pgx.Tx, scope platform.Scope, in LedgerR
 	args := []any{scope.TenantID, scope.StoreID, warehouse}
 	filters := ""
 	if query != "" {
-		filters += ` AND (p.name ILIKE '%' || $4 || '%' ESCAPE '\\' OR s.code ILIKE '%' || $4 || '%' ESCAPE '\\')`
+		filters += ` AND (p.name ILIKE '%' || $4 || '%' ESCAPE '!' OR s.code ILIKE '%' || $4 || '%' ESCAPE '!')`
 		args = append(args, escapeLike(query))
 	}
 	if status != "all" {
@@ -114,6 +114,7 @@ func ledgerFilter(q, status string) (string, string, bool) {
 	return q, status, status == "all" || status == "active" || status == "archived"
 }
 func escapeLike(s string) string {
-	return strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(s)
+	// Explicit single-character escape avoids standard_conforming_strings drift.
+	return strings.NewReplacer(`!`, `!!`, `%`, `!%`, `_`, `!_`).Replace(s)
 }
 func itoa(n int) string { return strconv.Itoa(n) }
