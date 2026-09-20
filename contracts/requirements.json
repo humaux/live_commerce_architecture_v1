@@ -1,0 +1,134 @@
+[
+  {
+    "id": "R01",
+    "description": "多商家、店铺、员工权限及外部资产隔离",
+    "priority": "P0",
+    "source": "user_requirements_or_necessary_derived_requirement"
+  },
+  {
+    "id": "R02",
+    "description": "固定模板独立站、自有域名和移动端结账",
+    "priority": "P0",
+    "source": "user_requirements_or_necessary_derived_requirement"
+  },
+  {
+    "id": "R03",
+    "description": "商品、精确 SKU、成本/报关字段、统一库存真源",
+    "priority": "P0",
+    "source": "user_requirements_or_necessary_derived_requirement"
+  },
+  {
+    "id": "R04",
+    "description": "浏览器设备/外部输入、双目的地直播与监看",
+    "priority": "P0",
+    "source": "user_requirements_or_necessary_derived_requirement"
+  },
+  {
+    "id": "R05",
+    "description": "FB/IG 评论、私信、客服分配和人工接管",
+    "priority": "P0",
+    "source": "user_requirements_or_necessary_derived_requirement"
+  },
+  {
+    "id": "R06",
+    "description": "关键词→SKU/数量→购物车、免重复选规格",
+    "priority": "P0",
+    "source": "user_requirements_or_necessary_derived_requirement"
+  },
+  {
+    "id": "R07",
+    "description": "库存保留、支付、退款、异常与对账",
+    "priority": "P0",
+    "source": "user_requirements_or_necessary_derived_requirement"
+  },
+  {
+    "id": "R08",
+    "description": "国际物流账号、费率、面单、包裹轨迹与异常",
+    "priority": "P0",
+    "source": "user_requirements_or_necessary_derived_requirement"
+  },
+  {
+    "id": "R09",
+    "description": "客户资料、可撤销身份关联、来源与受众分群",
+    "priority": "P0",
+    "source": "user_requirements_or_necessary_derived_requirement"
+  },
+  {
+    "id": "R10",
+    "description": "商家广告账户、预算审批、投放模板和报表",
+    "priority": "P0",
+    "source": "user_requirements_or_necessary_derived_requirement"
+  },
+  {
+    "id": "R11",
+    "description": "Pixel/CAPI、事件去重、同意与营销目的控制",
+    "priority": "P0",
+    "source": "user_requirements_or_necessary_derived_requirement"
+  },
+  {
+    "id": "R12",
+    "description": "套餐、用量账本、欠费与商户停用策略",
+    "priority": "P0",
+    "source": "user_requirements_or_necessary_derived_requirement"
+  },
+  {
+    "id": "R13",
+    "description": "API 故障、限流、凭据失效、补偿和故障队列",
+    "priority": "P0",
+    "source": "user_requirements_or_necessary_derived_requirement"
+  },
+  {
+    "id": "R14",
+    "description": "隐私、删除导出、安全审计和恢复",
+    "priority": "P0",
+    "source": "user_requirements_or_necessary_derived_requirement"
+  },
+  {
+    "id": "R15",
+    "description": "轻量稳定高并发选型及可复现性能预算",
+    "priority": "P0",
+    "source": "user_requirements_or_necessary_derived_requirement"
+  },
+  {
+    "id": "R16",
+    "description": "Codex 任务 DAG、子 Agent 分工与独立验收",
+    "priority": "P0",
+    "source": "user_requirements_or_necessary_derived_requirement"
+  },
+  {
+    "id": "R17",
+    "description": "安全负对照、优化消融、语言与并行实验",
+    "priority": "P0",
+    "source": "user_requirements_or_necessary_derived_requirement"
+  },
+  {
+    "id": "R18",
+    "description": "订单利润、退款后报表和归因不确定性",
+    "priority": "P0",
+    "source": "user_requirements_or_necessary_derived_requirement"
+  },
+  {
+    "id": "R19",
+    "description": "直播回放/录像与商品时间轴",
+    "priority": "P1",
+    "source": "user_requirements_or_necessary_derived_requirement"
+  },
+  {
+    "id": "R20",
+    "description": "多仓库/合包拆包/退货处理的模型兼容",
+    "priority": "P0",
+    "source": "user_requirements_or_necessary_derived_requirement"
+  },
+  {
+    "id": "R21",
+    "description": "开源许可/版本/SBOM/升级和回滚",
+    "priority": "P0",
+    "source": "user_requirements_or_necessary_derived_requirement"
+  },
+  {
+    "id": "R22",
+    "description": "真实外部账号准入，不以 mock 冒充上线",
+    "priority": "P0",
+    "source": "user_requirements_or_necessary_derived_requirement"
+  }
+]

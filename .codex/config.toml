@@ -1,0 +1,11 @@
+# 按2026-09-08官方文档编写；T00必须在实际Codex版本smoke验证。
+# 不配置未知model；继承用户当前已验证的父会话模型。
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 4
+
+[sandbox_workspace_write]
+network_access = false

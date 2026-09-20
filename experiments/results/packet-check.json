@@ -1,0 +1,51 @@
+{
+  "checked_at_utc": "2026-09-20T02:37:59.951328+00:00",
+  "status": "PASS_PACKET_STRUCTURE_ONLY",
+  "delivery_baseline_checked": false,
+  "counts": {
+    "requirements": 22,
+    "invariants": 24,
+    "gates": 15,
+    "tasks": 23,
+    "risks": 32,
+    "sources": 50,
+    "roles": 7,
+    "openapi_draft_operations": 8,
+    "chapters": 30
+  },
+  "task_topological_order": [
+    "T00",
+    "T01",
+    "T02",
+    "T03",
+    "T04",
+    "T05",
+    "T06",
+    "T07",
+    "T08",
+    "T11",
+    "T19",
+    "T09",
+    "T10",
+    "T13",
+    "T12",
+    "T14",
+    "T17",
+    "T15",
+    "T16",
+    "T18",
+    "T20",
+    "T21",
+    "T22"
+  ],
+  "model_source_sha256": "9e3288a624d7eb2410faf439b26ec730e439bb37e64fbb801f5f1107307795a2",
+  "not_verified": [
+    "SaaS production source",
+    "real PostgreSQL/River",
+    "Codex runtime loading/models/spawns",
+    "complete OpenAPI/JSON Schema conformance",
+    "live provider permissions",
+    "performance",
+    "legal eligibility"
+  ]
+}

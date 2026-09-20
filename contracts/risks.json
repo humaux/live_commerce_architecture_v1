@@ -1,0 +1,402 @@
+[
+  {
+    "id": "K01",
+    "severity": "P0",
+    "failure_mode": "把商家传入tenant/Host当授权",
+    "control": "服务端scope、域名白名单、RLS；G01/G02",
+    "gates": [
+      "G01",
+      "G02"
+    ],
+    "owner_and_residual": "后端+安全；框架/SQL改动需持续回归",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K02",
+    "severity": "P0",
+    "failure_mode": "同租户不同店铺误共享客户",
+    "control": "store_grant及复合外键；G01",
+    "gates": [
+      "G01"
+    ],
+    "owner_and_residual": "后端；组织模式变更需ADR",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K03",
+    "severity": "P0",
+    "failure_mode": "缓存/导出/对象路径串租户",
+    "control": "可信完整cache key、私有资源授权；G01/G11",
+    "gates": [
+      "G01",
+      "G11"
+    ],
+    "owner_and_residual": "前后端；CDN配置同样要验收",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K04",
+    "severity": "P0",
+    "failure_mode": "ACK后崩溃丢评论/任务",
+    "control": "Inbox+River同事务；G04",
+    "gates": [
+      "G04"
+    ],
+    "owner_and_residual": "集成；PG故障仍需恢复策略",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K05",
+    "severity": "P0",
+    "failure_mode": "并发库存余额正常但实际超卖",
+    "control": "原子保留+守恒+两进程争抢；G03",
+    "gates": [
+      "G03"
+    ],
+    "owner_and_residual": "交易；真实DB测试未运行",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K06",
+    "severity": "P0",
+    "failure_mode": "支付晚到与库存释放竞态",
+    "control": "PAYMENT_PENDING、取消确认、补偿；G03/G05",
+    "gates": [
+      "G03",
+      "G05"
+    ],
+    "owner_and_residual": "支付；远端延迟不能消除",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K07",
+    "severity": "P0",
+    "failure_mode": "错账户/金额/币种回调记入订单",
+    "control": "支付事实多字段绑定；G05",
+    "gates": [
+      "G05"
+    ],
+    "owner_and_residual": "支付；PSP契约需实际核验",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K08",
+    "severity": "P0",
+    "failure_mode": "部分退款并发超额",
+    "control": "已退+退款预留额度约束；G05",
+    "gates": [
+      "G05"
+    ],
+    "owner_and_residual": "支付；争议/手续费独立处理",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K09",
+    "severity": "P0",
+    "failure_mode": "超时后重复扣费/广告/买面单",
+    "control": "稳定操作台账、UNKNOWN对账；G04/G08/G10",
+    "gates": [
+      "G04",
+      "G08",
+      "G10"
+    ],
+    "owner_and_residual": "集成；无远端幂等时需人工",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K10",
+    "severity": "P0",
+    "failure_mode": "Token刷新误停全部任务或资产换绑误放行",
+    "control": "secret版本与语义binding版本分离；G04/G10",
+    "gates": [
+      "G04",
+      "G10"
+    ],
+    "owner_and_residual": "集成；权限变化仍需复核",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K11",
+    "severity": "P0",
+    "failure_mode": "过期worker仍提交结果",
+    "control": "generation/CAS；G04",
+    "gates": [
+      "G04"
+    ],
+    "owner_and_residual": "后端；不能撤回已发出的网络请求",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K12",
+    "severity": "P0",
+    "failure_mode": "直播结束/撤销同意后发私信",
+    "control": "dispatch时重新判断；G07/G09",
+    "gates": [
+      "G07",
+      "G09"
+    ],
+    "owner_and_residual": "消息；已发送不能回溯未发送",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K13",
+    "severity": "P0",
+    "failure_mode": "链接转发导致错误合并身份",
+    "control": "来源边与身份边分开；G09",
+    "gates": [
+      "G09"
+    ],
+    "owner_and_residual": "客户数据；无证据时保留未知",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K14",
+    "severity": "P0",
+    "failure_mode": "跨商家受众混用、私密数据出口",
+    "control": "租户+目的+授权检查；G09",
+    "gates": [
+      "G09"
+    ],
+    "owner_and_residual": "隐私；地区法律和合同仍未知",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K15",
+    "severity": "P0",
+    "failure_mode": "广告自动加预算或假硬停投",
+    "control": "冻结草稿、审批、延迟可见；G10",
+    "gates": [
+      "G10"
+    ],
+    "owner_and_residual": "投放；平台花费延迟存在",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K16",
+    "severity": "P1",
+    "failure_mode": "预览正常误报FB/IG已直播",
+    "control": "每目的地状态和UNKNOWN；G06",
+    "gates": [
+      "G06"
+    ],
+    "owner_and_residual": "媒体；平台观众端可观测性有限",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K17",
+    "severity": "P1",
+    "failure_mode": "重复开播/孤儿转码持续扣费",
+    "control": "attempt租约、查询恢复、回收；G06/G12",
+    "gates": [
+      "G06",
+      "G12"
+    ],
+    "owner_and_residual": "媒体；供应商状态可能延迟",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K18",
+    "severity": "P0",
+    "failure_mode": "SSRF/上传/XSS读取秘密",
+    "control": "出站网络隔离、白名单、CSP；G02",
+    "gates": [
+      "G02"
+    ],
+    "owner_and_residual": "安全；依赖漏洞需持续响应",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K19",
+    "severity": "P1",
+    "failure_mode": "一个租户洪峰拖死支付和其他商家",
+    "control": "分级队列、租户配额、有界缓冲；G12",
+    "gates": [
+      "G12"
+    ],
+    "owner_and_residual": "平台；公平调度需真实实现验证",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K20",
+    "severity": "P0",
+    "failure_mode": "物流reference碰撞或把面单当发货",
+    "control": "内部唯一op+provider资源ID、分状态；G08",
+    "gates": [
+      "G08"
+    ],
+    "owner_and_residual": "履约；线路差异由adapter覆盖",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K21",
+    "severity": "P0",
+    "failure_mode": "异步provider对象误跨账户关联",
+    "control": "provider+account+object复合键；G05/G08",
+    "gates": [
+      "G05",
+      "G08"
+    ],
+    "owner_and_residual": "集成；不能只查object_id",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K22",
+    "severity": "P1",
+    "failure_mode": "税费/运费/货币舍入变化导致错单",
+    "control": "冻结Quote、显式过期确认；G03/G11",
+    "gates": [
+      "G03",
+      "G11"
+    ],
+    "owner_and_residual": "交易+owner；市场范围未确定",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K23",
+    "severity": "P0",
+    "failure_mode": "恢复备份重新营销已退订客户",
+    "control": "先恢复墓碑和同意，再开放出口；G09/G12",
+    "gates": [
+      "G09",
+      "G12"
+    ],
+    "owner_and_residual": "运维+隐私；备份保留须评审",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K24",
+    "severity": "P1",
+    "failure_mode": "过度自研或组件膨胀延误交付",
+    "control": "有限交易切片、L01、变更ADR；G12/G14",
+    "gates": [
+      "G12",
+      "G14"
+    ],
+    "owner_and_residual": "架构+owner；开发成本未实测",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K25",
+    "severity": "P0",
+    "failure_mode": "子Agent并发覆盖迁移/锁文件",
+    "control": "worktree+写路径租约+单合并人；G13",
+    "gates": [
+      "G13"
+    ],
+    "owner_and_residual": "集成者；角色并非安全沙箱",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K26",
+    "severity": "P0",
+    "failure_mode": "作者自改测试放宽门槛",
+    "control": "独立复跑/变异检查/证据；G13/G15",
+    "gates": [
+      "G13",
+      "G15"
+    ],
+    "owner_and_residual": "验收；模型审查不等于人员独立",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K27",
+    "severity": "P0",
+    "failure_mode": "mock绿灯被称为能上线",
+    "control": "证据级别和外部门禁；G14",
+    "gates": [
+      "G14"
+    ],
+    "owner_and_residual": "owner；真实审核/商户资格未知",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K28",
+    "severity": "P1",
+    "failure_mode": "付费版功能或许可证误用",
+    "control": "逐依赖tag许可准入；G14",
+    "gates": [
+      "G14"
+    ],
+    "owner_and_residual": "架构+owner；必要时法律审核",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K29",
+    "severity": "P1",
+    "failure_mode": "模板/数据库升级无法回退",
+    "control": "兼容迁移、旧新版本测试；G14",
+    "gates": [
+      "G14"
+    ],
+    "owner_and_residual": "集成+运维；不可逆财务事实不可回滚",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K30",
+    "severity": "P0",
+    "failure_mode": "财务主体/责任和资金流不明确",
+    "control": "U01/U05/U08、PSP合同确认；G05/G14",
+    "gates": [
+      "G05",
+      "G14"
+    ],
+    "owner_and_residual": "owner；生产收款阻塞",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K31",
+    "severity": "P1",
+    "failure_mode": "买家未知数据被当0进入归因",
+    "control": "可见性标记、水位、口径并列；G09/G10",
+    "gates": [
+      "G09",
+      "G10"
+    ],
+    "owner_and_residual": "分析；不承诺完整跨设备跟踪",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  },
+  {
+    "id": "K32",
+    "severity": "P1",
+    "failure_mode": "公平性/性能实验口径造假",
+    "control": "固定安全语义、开环负载、记录所有失败；G12/G15",
+    "gates": [
+      "G12",
+      "G15"
+    ],
+    "owner_and_residual": "验收；本次仅运行模型",
+    "status": "OPEN_REQUIRES_IMPLEMENTATION_AND_EVIDENCE",
+    "closure_evidence": []
+  }
+]

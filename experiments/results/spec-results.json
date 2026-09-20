@@ -1,0 +1,322 @@
+{
+  "schema_version": 1,
+  "executed_at_utc": "2026-09-07T20:50:13.900961+00:00",
+  "environment": {
+    "python": "3.13.5",
+    "platform": "Linux-6.18.35-x86_64-with-glibc2.41"
+  },
+  "source_sha256": "9e3288a624d7eb2410faf439b26ec730e439bb37e64fbb801f5f1107307795a2",
+  "evidence_level": "EXECUTABLE_SPEC_MODEL_ONLY",
+  "not_tested": [
+    "production_code",
+    "PostgreSQL",
+    "River",
+    "Go/Rust/Node_language_comparison",
+    "Meta",
+    "LiveKit",
+    "Stripe",
+    "carriers",
+    "Codex_parallel_execution"
+  ],
+  "safety_negative_controls": [
+    {
+      "id": "M01",
+      "mechanism": "comment-idempotency",
+      "baseline_pass": true,
+      "mutant_killed": true,
+      "baseline_observations": {
+        "actions": 1,
+        "expected_actions": 1
+      },
+      "mutant_observations": {
+        "actions": 3,
+        "expected_actions": 1
+      }
+    },
+    {
+      "id": "M02",
+      "mechanism": "tenant-scoped-lookup",
+      "baseline_pass": true,
+      "mutant_killed": true,
+      "baseline_observations": {
+        "returned_tenant": "A",
+        "authorized_tenant": "A"
+      },
+      "mutant_observations": {
+        "returned_tenant": "B",
+        "authorized_tenant": "A"
+      }
+    },
+    {
+      "id": "M03",
+      "mechanism": "transactional-intent",
+      "baseline_pass": true,
+      "mutant_killed": true,
+      "baseline_observations": {
+        "observations": [
+          {
+            "cut": "before_commit",
+            "order": false,
+            "job": false
+          },
+          {
+            "cut": "after_commit",
+            "order": true,
+            "job": true
+          },
+          {
+            "cut": "after_schedule",
+            "order": true,
+            "job": true
+          }
+        ],
+        "lost_jobs": 0
+      },
+      "mutant_observations": {
+        "observations": [
+          {
+            "cut": "before_commit",
+            "order": false,
+            "job": false
+          },
+          {
+            "cut": "after_commit",
+            "order": true,
+            "job": false
+          },
+          {
+            "cut": "after_schedule",
+            "order": true,
+            "job": true
+          }
+        ],
+        "lost_jobs": 1
+      }
+    },
+    {
+      "id": "M04",
+      "mechanism": "atomic-stock-reservation",
+      "baseline_pass": true,
+      "mutant_killed": true,
+      "baseline_observations": {
+        "schedules": 6,
+        "violations": 0,
+        "counterexamples": []
+      },
+      "mutant_observations": {
+        "schedules": 6,
+        "violations": 4,
+        "counterexamples": [
+          {
+            "schedule": [
+              "A_read",
+              "B_read",
+              "A_commit",
+              "B_commit"
+            ],
+            "allocated": 2,
+            "available": 0
+          },
+          {
+            "schedule": [
+              "A_read",
+              "B_read",
+              "B_commit",
+              "A_commit"
+            ],
+            "allocated": 2,
+            "available": 0
+          },
+          {
+            "schedule": [
+              "B_read",
+              "A_read",
+              "A_commit",
+              "B_commit"
+            ],
+            "allocated": 2,
+            "available": 0
+          },
+          {
+            "schedule": [
+              "B_read",
+              "A_read",
+              "B_commit",
+              "A_commit"
+            ],
+            "allocated": 2,
+            "available": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "M05",
+      "mechanism": "dispatch-consent-recheck",
+      "baseline_pass": true,
+      "mutant_killed": true,
+      "baseline_observations": {
+        "sent_after_revocation": false
+      },
+      "mutant_observations": {
+        "sent_after_revocation": true
+      }
+    },
+    {
+      "id": "M06",
+      "mechanism": "frozen-credential-binding",
+      "baseline_pass": true,
+      "mutant_killed": true,
+      "baseline_observations": {
+        "sent": false,
+        "charged_tenant": null,
+        "state": "STALE_BINDING"
+      },
+      "mutant_observations": {
+        "sent": true,
+        "charged_tenant": "B",
+        "state": "ACKNOWLEDGED"
+      }
+    },
+    {
+      "id": "M07",
+      "mechanism": "unknown-outcome-no-blind-retry",
+      "baseline_pass": true,
+      "mutant_killed": true,
+      "baseline_observations": {
+        "external_purchases": 1,
+        "state": "UNKNOWN",
+        "auto_retry": false
+      },
+      "mutant_observations": {
+        "external_purchases": 2,
+        "state": "ACKNOWLEDGED",
+        "auto_retry": true
+      }
+    },
+    {
+      "id": "M08",
+      "mechanism": "attribution-not-identity",
+      "baseline_pass": true,
+      "mutant_killed": true,
+      "baseline_observations": {
+        "customer_order_owner": "Bob",
+        "touchpoint_owner": "Alice",
+        "payer": "Bob",
+        "identity_merge": false
+      },
+      "mutant_observations": {
+        "customer_order_owner": "Alice",
+        "touchpoint_owner": "Alice",
+        "payer": "Bob",
+        "identity_merge": true
+      }
+    },
+    {
+      "id": "M09",
+      "mechanism": "late-payment-no-oversell",
+      "baseline_pass": true,
+      "mutant_killed": true,
+      "baseline_observations": {
+        "stock": 1,
+        "fulfillable_orders": [
+          "B"
+        ],
+        "A_state": "PAID_ALLOCATION_FAILED_REFUND_PENDING"
+      },
+      "mutant_observations": {
+        "stock": 1,
+        "fulfillable_orders": [
+          "B",
+          "A"
+        ],
+        "A_state": "FULFILLABLE"
+      }
+    },
+    {
+      "id": "M10",
+      "mechanism": "hostname-scoped-cache",
+      "baseline_pass": true,
+      "mutant_killed": true,
+      "baseline_observations": {
+        "B_page": "product-B"
+      },
+      "mutant_observations": {
+        "B_page": "product-A"
+      }
+    },
+    {
+      "id": "M11",
+      "mechanism": "message-expiry-at-dispatch",
+      "baseline_pass": true,
+      "mutant_killed": true,
+      "baseline_observations": {
+        "sent_after_live_ended": false
+      },
+      "mutant_observations": {
+        "sent_after_live_ended": true
+      }
+    },
+    {
+      "id": "M12",
+      "mechanism": "payment-account-binding",
+      "baseline_pass": true,
+      "mutant_killed": true,
+      "baseline_observations": {
+        "marked_paid": false
+      },
+      "mutant_observations": {
+        "marked_paid": true
+      }
+    }
+  ],
+  "optimization_ablation": {
+    "id": "A00",
+    "scope": "synthetic_queue_model",
+    "full": {
+      "variant": "round_robin",
+      "jobs": 510,
+      "total_service_ticks": 510,
+      "overall_mean_completion_ticks": 255.5,
+      "by_tenant": {
+        "A": {
+          "n": 500,
+          "mean_completion_ticks": 260.39,
+          "p95_completion_ticks": 485,
+          "max_completion_ticks": 510
+        },
+        "B": {
+          "n": 10,
+          "mean_completion_ticks": 11.0,
+          "p95_completion_ticks": 20,
+          "max_completion_ticks": 20
+        }
+      }
+    },
+    "without_fair_scheduler": {
+      "variant": "fifo",
+      "jobs": 510,
+      "total_service_ticks": 510,
+      "overall_mean_completion_ticks": 255.5,
+      "by_tenant": {
+        "A": {
+          "n": 500,
+          "mean_completion_ticks": 250.5,
+          "p95_completion_ticks": 475,
+          "max_completion_ticks": 500
+        },
+        "B": {
+          "n": 10,
+          "mean_completion_ticks": 505.5,
+          "p95_completion_ticks": 510,
+          "max_completion_ticks": 510
+        }
+      }
+    }
+  },
+  "summary": {
+    "baselines_passed": 12,
+    "mutants_killed": 12,
+    "cases": 12
+  }
+}

@@ -1,0 +1,839 @@
+[
+  {
+    "id": "T00",
+    "title": "环境、商业范围、版本及Codex能力预检",
+    "depends_on": [],
+    "requirements": [
+      "R15",
+      "R16",
+      "R21",
+      "R22"
+    ],
+    "gates": [
+      "G13",
+      "G14"
+    ],
+    "role": "integrator",
+    "write_paths": [
+      "docs/discovery/**",
+      "contracts/versions.candidate.json"
+    ],
+    "status": "NOT_STARTED",
+    "done_requires": "主Agent/integrator保存环境核验与unknown清单；platform_explorer只读取证；生产外部阻塞不伪造PASS。",
+    "max_attempts_before_escalation": 2,
+    "helpers": [
+      "platform_explorer"
+    ],
+    "completion_dimensions": {
+      "implementation": "NOT_STARTED",
+      "unit_mock": "NOT_RUN",
+      "real_pg": "NOT_RUN",
+      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
+      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
+      "independent_review": "NOT_RUN"
+    },
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+  },
+  {
+    "id": "T01",
+    "title": "冻结OpenAPI/事件/领域schema与反例",
+    "depends_on": [
+      "T00"
+    ],
+    "requirements": [
+      "R01",
+      "R13",
+      "R16"
+    ],
+    "gates": [
+      "G01",
+      "G02",
+      "G04"
+    ],
+    "role": "integrator",
+    "write_paths": [
+      "contracts/**",
+      "migrations/**",
+      "go.mod",
+      "go.sum",
+      "package.json",
+      "pnpm-lock.yaml"
+    ],
+    "status": "NOT_STARTED",
+    "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
+    "max_attempts_before_escalation": 2,
+    "completion_dimensions": {
+      "implementation": "NOT_STARTED",
+      "unit_mock": "NOT_RUN",
+      "real_pg": "NOT_RUN",
+      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
+      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
+      "independent_review": "NOT_RUN"
+    },
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+  },
+  {
+    "id": "T02",
+    "title": "Go骨架、PG事务、日志、健康检查、CI",
+    "depends_on": [
+      "T01"
+    ],
+    "requirements": [
+      "R13",
+      "R15",
+      "R21"
+    ],
+    "gates": [
+      "G04",
+      "G12",
+      "G14"
+    ],
+    "role": "commerce_worker",
+    "write_paths": [
+      "cmd/**",
+      "internal/platform/**",
+      "tests/platform/**",
+      ".github/workflows/**",
+      "scripts/dev/**",
+      "infra/local/**",
+      "internal/ui_events/**",
+      "tests/ui_events/**"
+    ],
+    "status": "NOT_STARTED",
+    "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
+    "max_attempts_before_escalation": 2,
+    "completion_dimensions": {
+      "implementation": "NOT_STARTED",
+      "unit_mock": "NOT_RUN",
+      "real_pg": "NOT_RUN",
+      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
+      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
+      "independent_review": "NOT_RUN"
+    },
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+  },
+  {
+    "id": "T03",
+    "title": "身份、店铺/域名服务、RLS授权与审计",
+    "depends_on": [
+      "T02"
+    ],
+    "requirements": [
+      "R01",
+      "R14",
+      "R02"
+    ],
+    "gates": [
+      "G01",
+      "G02",
+      "G11"
+    ],
+    "role": "commerce_worker",
+    "write_paths": [
+      "internal/identity/**",
+      "internal/tenancy/**",
+      "tests/tenancy/**",
+      "internal/stores/**",
+      "internal/domains/**",
+      "internal/audit/**",
+      "tests/domains/**"
+    ],
+    "status": "NOT_STARTED",
+    "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
+    "max_attempts_before_escalation": 2,
+    "completion_dimensions": {
+      "implementation": "NOT_STARTED",
+      "unit_mock": "NOT_RUN",
+      "real_pg": "NOT_RUN",
+      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
+      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
+      "independent_review": "NOT_RUN"
+    },
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+  },
+  {
+    "id": "T04",
+    "title": "商品SKU/价格/库存账本/预留",
+    "depends_on": [
+      "T03"
+    ],
+    "requirements": [
+      "R03",
+      "R06",
+      "R07"
+    ],
+    "gates": [
+      "G03"
+    ],
+    "role": "commerce_worker",
+    "write_paths": [
+      "internal/catalog/**",
+      "internal/inventory/**",
+      "tests/inventory/**",
+      "internal/pricing/**",
+      "tests/pricing/**"
+    ],
+    "status": "NOT_STARTED",
+    "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
+    "max_attempts_before_escalation": 2,
+    "completion_dimensions": {
+      "implementation": "NOT_STARTED",
+      "unit_mock": "NOT_RUN",
+      "real_pg": "NOT_RUN",
+      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
+      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
+      "independent_review": "NOT_RUN"
+    },
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+  },
+  {
+    "id": "T05",
+    "title": "店铺模板、域名、SSR和购物车界面",
+    "depends_on": [
+      "T03"
+    ],
+    "requirements": [
+      "R02"
+    ],
+    "gates": [
+      "G02",
+      "G11"
+    ],
+    "role": "ui_worker",
+    "write_paths": [
+      "apps/storefront/**",
+      "packages/ui/**",
+      "tests/storefront/**"
+    ],
+    "status": "NOT_STARTED",
+    "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
+    "max_attempts_before_escalation": 2,
+    "completion_dimensions": {
+      "implementation": "NOT_STARTED",
+      "unit_mock": "NOT_RUN",
+      "real_pg": "NOT_RUN",
+      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
+      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
+      "independent_review": "NOT_RUN"
+    },
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+  },
+  {
+    "id": "T06",
+    "title": "集成入口、binding、capability、操作台账与用途策略接口",
+    "depends_on": [
+      "T03"
+    ],
+    "requirements": [
+      "R13",
+      "R22",
+      "R14"
+    ],
+    "gates": [
+      "G02",
+      "G04",
+      "G14"
+    ],
+    "role": "integration_worker",
+    "write_paths": [
+      "internal/integrations/core/**",
+      "tests/integrations/core/**",
+      "internal/privacy/policy/**",
+      "tests/privacy/policy/**"
+    ],
+    "status": "NOT_STARTED",
+    "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
+    "max_attempts_before_escalation": 2,
+    "completion_dimensions": {
+      "implementation": "NOT_STARTED",
+      "unit_mock": "NOT_RUN",
+      "real_pg": "NOT_RUN",
+      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
+      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
+      "independent_review": "NOT_RUN"
+    },
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+  },
+  {
+    "id": "T07",
+    "title": "Meta能力探针、评论/会话与合法发送适配",
+    "depends_on": [
+      "T06"
+    ],
+    "requirements": [
+      "R04",
+      "R05",
+      "R22"
+    ],
+    "gates": [
+      "G06",
+      "G07",
+      "G14"
+    ],
+    "role": "integration_worker",
+    "write_paths": [
+      "internal/integrations/meta/**",
+      "tests/integrations/meta/**",
+      "docs/discovery/meta/**",
+      "internal/inbox/**",
+      "tests/inbox/**"
+    ],
+    "status": "NOT_STARTED",
+    "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
+    "max_attempts_before_escalation": 2,
+    "completion_dimensions": {
+      "implementation": "NOT_STARTED",
+      "unit_mock": "NOT_RUN",
+      "real_pg": "NOT_RUN",
+      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
+      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
+      "independent_review": "NOT_RUN"
+    },
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+  },
+  {
+    "id": "T08",
+    "title": "LiveKit适配、节目和目的地编排",
+    "depends_on": [
+      "T06"
+    ],
+    "requirements": [
+      "R04",
+      "R19"
+    ],
+    "gates": [
+      "G06"
+    ],
+    "role": "integration_worker",
+    "write_paths": [
+      "internal/live/**",
+      "internal/integrations/livekit/**",
+      "tests/live/**",
+      "internal/mediaassets/**"
+    ],
+    "status": "NOT_STARTED",
+    "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
+    "max_attempts_before_escalation": 2,
+    "completion_dimensions": {
+      "implementation": "NOT_STARTED",
+      "unit_mock": "NOT_RUN",
+      "real_pg": "NOT_RUN",
+      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
+      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
+      "independent_review": "NOT_RUN"
+    },
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+  },
+  {
+    "id": "T09",
+    "title": "工作室、评论台和人工接管界面",
+    "depends_on": [
+      "T05",
+      "T07",
+      "T08"
+    ],
+    "requirements": [
+      "R04",
+      "R05"
+    ],
+    "gates": [
+      "G06",
+      "G07"
+    ],
+    "role": "ui_worker",
+    "write_paths": [
+      "apps/admin/studio/**",
+      "apps/admin/inbox/**",
+      "tests/studio/**"
+    ],
+    "status": "NOT_STARTED",
+    "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
+    "max_attempts_before_escalation": 2,
+    "completion_dimensions": {
+      "implementation": "NOT_STARTED",
+      "unit_mock": "NOT_RUN",
+      "real_pg": "NOT_RUN",
+      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
+      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
+      "independent_review": "NOT_RUN"
+    },
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+  },
+  {
+    "id": "T10",
+    "title": "关键词grammar/报价/声明/合并购物车",
+    "depends_on": [
+      "T04",
+      "T07"
+    ],
+    "requirements": [
+      "R06"
+    ],
+    "gates": [
+      "G03",
+      "G07"
+    ],
+    "role": "commerce_worker",
+    "write_paths": [
+      "internal/claims/**",
+      "internal/cart/**",
+      "tests/claims/**"
+    ],
+    "status": "NOT_STARTED",
+    "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
+    "max_attempts_before_escalation": 2,
+    "completion_dimensions": {
+      "implementation": "NOT_STARTED",
+      "unit_mock": "NOT_RUN",
+      "real_pg": "NOT_RUN",
+      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
+      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
+      "independent_review": "NOT_RUN"
+    },
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+  },
+  {
+    "id": "T11",
+    "title": "结账、PSP、退款与支付对账",
+    "depends_on": [
+      "T04",
+      "T06"
+    ],
+    "requirements": [
+      "R07"
+    ],
+    "gates": [
+      "G03",
+      "G05"
+    ],
+    "role": "commerce_worker",
+    "write_paths": [
+      "internal/checkout/**",
+      "internal/payments/**",
+      "tests/payments/**",
+      "internal/orders/**",
+      "internal/integrations/psp/**",
+      "tests/orders/**"
+    ],
+    "status": "NOT_STARTED",
+    "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
+    "max_attempts_before_escalation": 2,
+    "completion_dimensions": {
+      "implementation": "NOT_STARTED",
+      "unit_mock": "NOT_RUN",
+      "real_pg": "NOT_RUN",
+      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
+      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
+      "independent_review": "NOT_RUN"
+    },
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+  },
+  {
+    "id": "T12",
+    "title": "核心成交闭环独立集成验收",
+    "depends_on": [
+      "T09",
+      "T10",
+      "T11"
+    ],
+    "requirements": [
+      "R02",
+      "R04",
+      "R05",
+      "R06",
+      "R07",
+      "R22"
+    ],
+    "gates": [
+      "G01",
+      "G03",
+      "G04",
+      "G05",
+      "G06",
+      "G07"
+    ],
+    "role": "test_worker",
+    "write_paths": [
+      "tests/e2e/commerce/**",
+      "evidence/commerce/**"
+    ],
+    "status": "NOT_STARTED",
+    "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
+    "max_attempts_before_escalation": 2,
+    "completion_dimensions": {
+      "implementation": "NOT_STARTED",
+      "unit_mock": "NOT_RUN",
+      "real_pg": "NOT_RUN",
+      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
+      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
+      "independent_review": "NOT_RUN"
+    },
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+  },
+  {
+    "id": "T13",
+    "title": "物流适配、仓库包裹、面单与RMA",
+    "depends_on": [
+      "T11"
+    ],
+    "requirements": [
+      "R08",
+      "R20"
+    ],
+    "gates": [
+      "G08"
+    ],
+    "role": "integration_worker",
+    "write_paths": [
+      "internal/fulfillment/**",
+      "internal/integrations/shipping/**",
+      "tests/fulfillment/**"
+    ],
+    "status": "NOT_STARTED",
+    "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
+    "max_attempts_before_escalation": 2,
+    "completion_dimensions": {
+      "implementation": "NOT_STARTED",
+      "unit_mock": "NOT_RUN",
+      "real_pg": "NOT_RUN",
+      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
+      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
+      "independent_review": "NOT_RUN"
+    },
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+  },
+  {
+    "id": "T14",
+    "title": "客户关系图、同意、删除与来源",
+    "depends_on": [
+      "T10",
+      "T11"
+    ],
+    "requirements": [
+      "R09",
+      "R11",
+      "R14"
+    ],
+    "gates": [
+      "G09"
+    ],
+    "role": "commerce_worker",
+    "write_paths": [
+      "internal/customers/**",
+      "internal/privacy/**",
+      "tests/privacy/**"
+    ],
+    "status": "NOT_STARTED",
+    "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
+    "max_attempts_before_escalation": 2,
+    "completion_dimensions": {
+      "implementation": "NOT_STARTED",
+      "unit_mock": "NOT_RUN",
+      "real_pg": "NOT_RUN",
+      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
+      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
+      "independent_review": "NOT_RUN"
+    },
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+  },
+  {
+    "id": "T15",
+    "title": "广告账户/草稿/预算审批/报表",
+    "depends_on": [
+      "T06",
+      "T14"
+    ],
+    "requirements": [
+      "R10"
+    ],
+    "gates": [
+      "G10"
+    ],
+    "role": "integration_worker",
+    "write_paths": [
+      "internal/ads/**",
+      "internal/integrations/meta_ads/**",
+      "tests/ads/**"
+    ],
+    "status": "NOT_STARTED",
+    "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
+    "max_attempts_before_escalation": 2,
+    "completion_dimensions": {
+      "implementation": "NOT_STARTED",
+      "unit_mock": "NOT_RUN",
+      "real_pg": "NOT_RUN",
+      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
+      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
+      "independent_review": "NOT_RUN"
+    },
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+  },
+  {
+    "id": "T16",
+    "title": "CAPI/目录映射/受众导出",
+    "depends_on": [
+      "T14",
+      "T15"
+    ],
+    "requirements": [
+      "R09",
+      "R11"
+    ],
+    "gates": [
+      "G09",
+      "G10"
+    ],
+    "role": "integration_worker",
+    "write_paths": [
+      "internal/attribution/**",
+      "internal/audiences/**",
+      "tests/attribution/**",
+      "internal/integrations/meta_catalog/**"
+    ],
+    "status": "NOT_STARTED",
+    "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
+    "max_attempts_before_escalation": 2,
+    "completion_dimensions": {
+      "implementation": "NOT_STARTED",
+      "unit_mock": "NOT_RUN",
+      "real_pg": "NOT_RUN",
+      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
+      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
+      "independent_review": "NOT_RUN"
+    },
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+  },
+  {
+    "id": "T17",
+    "title": "套餐用量、欠费、财务视图",
+    "depends_on": [
+      "T11",
+      "T13"
+    ],
+    "requirements": [
+      "R12",
+      "R18"
+    ],
+    "gates": [
+      "G05",
+      "G08",
+      "G12"
+    ],
+    "role": "commerce_worker",
+    "write_paths": [
+      "internal/billing/**",
+      "internal/reporting/**",
+      "tests/billing/**",
+      "internal/notifications/**"
+    ],
+    "status": "NOT_STARTED",
+    "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
+    "max_attempts_before_escalation": 2,
+    "completion_dimensions": {
+      "implementation": "NOT_STARTED",
+      "unit_mock": "NOT_RUN",
+      "real_pg": "NOT_RUN",
+      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
+      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
+      "independent_review": "NOT_RUN"
+    },
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+  },
+  {
+    "id": "T18",
+    "title": "物流/客户/广告/账单运营界面",
+    "depends_on": [
+      "T13",
+      "T14",
+      "T15",
+      "T17"
+    ],
+    "requirements": [
+      "R08",
+      "R09",
+      "R10",
+      "R12",
+      "R18"
+    ],
+    "gates": [
+      "G08",
+      "G09",
+      "G10",
+      "G11"
+    ],
+    "role": "ui_worker",
+    "write_paths": [
+      "apps/admin/operations/**",
+      "tests/admin/**"
+    ],
+    "status": "NOT_STARTED",
+    "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
+    "max_attempts_before_escalation": 2,
+    "completion_dimensions": {
+      "implementation": "NOT_STARTED",
+      "unit_mock": "NOT_RUN",
+      "real_pg": "NOT_RUN",
+      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
+      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
+      "independent_review": "NOT_RUN"
+    },
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+  },
+  {
+    "id": "T19",
+    "title": "语言基准与优化消融",
+    "depends_on": [
+      "T02",
+      "T04",
+      "T06"
+    ],
+    "requirements": [
+      "R15",
+      "R17"
+    ],
+    "gates": [
+      "G12",
+      "G15"
+    ],
+    "role": "test_worker",
+    "write_paths": [
+      "bench/**",
+      "experiments/product/**",
+      "evidence/performance/**"
+    ],
+    "status": "NOT_STARTED",
+    "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
+    "max_attempts_before_escalation": 2,
+    "completion_dimensions": {
+      "implementation": "NOT_STARTED",
+      "unit_mock": "NOT_RUN",
+      "real_pg": "NOT_RUN",
+      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
+      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
+      "independent_review": "NOT_RUN"
+    },
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+  },
+  {
+    "id": "T20",
+    "title": "安全/隔离/故障注入与恢复",
+    "depends_on": [
+      "T12",
+      "T13",
+      "T16",
+      "T17"
+    ],
+    "requirements": [
+      "R01",
+      "R13",
+      "R14"
+    ],
+    "gates": [
+      "G01",
+      "G02",
+      "G04",
+      "G05",
+      "G08",
+      "G09",
+      "G12"
+    ],
+    "role": "test_worker",
+    "write_paths": [
+      "tests/acceptance/**",
+      "tests/chaos/**",
+      "evidence/acceptance/**"
+    ],
+    "status": "NOT_STARTED",
+    "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
+    "max_attempts_before_escalation": 2,
+    "completion_dimensions": {
+      "implementation": "NOT_STARTED",
+      "unit_mock": "NOT_RUN",
+      "real_pg": "NOT_RUN",
+      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
+      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
+      "independent_review": "NOT_RUN"
+    },
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+  },
+  {
+    "id": "T21",
+    "title": "独立架构与安全审查",
+    "depends_on": [
+      "T18",
+      "T19",
+      "T20"
+    ],
+    "requirements": [
+      "R01",
+      "R14",
+      "R16",
+      "R21"
+    ],
+    "gates": [
+      "G01",
+      "G13",
+      "G14"
+    ],
+    "role": "security_reviewer",
+    "write_paths": [],
+    "status": "NOT_STARTED",
+    "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
+    "max_attempts_before_escalation": 2,
+    "completion_dimensions": {
+      "implementation": "NOT_STARTED",
+      "unit_mock": "NOT_RUN",
+      "real_pg": "NOT_RUN",
+      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
+      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
+      "independent_review": "NOT_RUN"
+    },
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+  },
+  {
+    "id": "T22",
+    "title": "发布准入、真实商户试点与回滚演练",
+    "depends_on": [
+      "T21"
+    ],
+    "requirements": [
+      "R21",
+      "R22"
+    ],
+    "gates": [
+      "G01",
+      "G02",
+      "G03",
+      "G04",
+      "G05",
+      "G06",
+      "G07",
+      "G08",
+      "G09",
+      "G10",
+      "G11",
+      "G12",
+      "G13",
+      "G14",
+      "G15"
+    ],
+    "role": "integrator",
+    "write_paths": [
+      "deploy/**",
+      "docs/runbooks/**",
+      "evidence/release/**"
+    ],
+    "status": "NOT_STARTED",
+    "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
+    "max_attempts_before_escalation": 2,
+    "completion_dimensions": {
+      "implementation": "NOT_STARTED",
+      "unit_mock": "NOT_RUN",
+      "real_pg": "NOT_RUN",
+      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
+      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
+      "independent_review": "NOT_RUN"
+    },
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+  }
+]

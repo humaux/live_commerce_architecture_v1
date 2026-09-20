@@ -1,0 +1,49 @@
+{
+  "status": "CANDIDATE_NOT_ACCOUNT_VALIDATED_NOT_OPTIMIZED",
+  "source": "S39",
+  "checked_at": "2026-09-08",
+  "active_configuration": "继承用户已验证父会话；本表不自动启用模型。",
+  "candidates": [
+    {
+      "roles": [
+        "primary",
+        "security_reviewer",
+        "integrator"
+      ],
+      "model": "gpt-6-astra",
+      "fallback_to_validate": "gpt-5.6-sol"
+    },
+    {
+      "roles": [
+        "commerce_worker",
+        "integration_worker",
+        "ui_worker"
+      ],
+      "model": "gpt-5.6-terra",
+      "escalation": "复杂交易/权限先验证强推理模型"
+    },
+    {
+      "roles": [
+        "platform_explorer"
+      ],
+      "model": "gpt-5.6-luna",
+      "escalation": "冲突证据/复杂判断升级"
+    },
+    {
+      "roles": [
+        "test_worker"
+      ],
+      "model": "gpt-5.6-sol",
+      "escalation": "关键故障设计可升级；简单测试执行可低成本"
+    }
+  ],
+  "required_smoke": [
+    "actual client and model availability",
+    "read-only task",
+    "bounded write task",
+    "known-defect review",
+    "effective sandbox",
+    "worktree and path ownership"
+  ],
+  "effort_rule": "选择实际模型/客户端支持的档位；默认开始，复杂任务按证据提高。A05再选并发与路由。"
+}

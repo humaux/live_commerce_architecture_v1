@@ -1,0 +1,245 @@
+[
+  {
+    "id": "G01",
+    "name": "租户与店铺隔离",
+    "invariants": [
+      "I01",
+      "I09",
+      "I15"
+    ],
+    "required_cases": [
+      "同一外部 ID 在 A/B 各存在，逐路径越权均拒绝",
+      "同租户 store-1 员工不能读 store-2 客户",
+      "数据库 owner/BYPASSRLS 与池复用负测"
+    ],
+    "status": "NOT_RUN_PRODUCT",
+    "evidence_paths": []
+  },
+  {
+    "id": "G02",
+    "name": "网络入口与安全",
+    "invariants": [
+      "I01",
+      "I11"
+    ],
+    "required_cases": [
+      "签名错误/超大报文/重复回调/错误OAuth state均拒绝",
+      "域名未验证和 X-Forwarded-Host 伪造不能选择租户",
+      "跨租户资源404不泄漏内容"
+    ],
+    "status": "NOT_RUN_PRODUCT",
+    "evidence_paths": []
+  },
+  {
+    "id": "G03",
+    "name": "库存与购买声明",
+    "invariants": [
+      "I02",
+      "I03",
+      "I08",
+      "I24"
+    ],
+    "required_cases": [
+      "单 SKU 库存1，两进程同时预留仅1成功",
+      "重复评论和修改数量语义固定",
+      "保留过期、付款竞态、已付款晚到均守恒"
+    ],
+    "status": "NOT_RUN_PRODUCT",
+    "evidence_paths": []
+  },
+  {
+    "id": "G04",
+    "name": "持久事件与worker",
+    "invariants": [
+      "I04",
+      "I06",
+      "I14",
+      "I20"
+    ],
+    "required_cases": [
+      "每个提交边界注入 kill -9 后无孤儿订单",
+      "重复任务、租约过期、双worker均不重复副作用",
+      "ACK未知时查询/人工确认，不盲重试"
+    ],
+    "status": "NOT_RUN_PRODUCT",
+    "evidence_paths": []
+  },
+  {
+    "id": "G05",
+    "name": "支付退款对账",
+    "invariants": [
+      "I05",
+      "I06",
+      "I13",
+      "I24"
+    ],
+    "required_cases": [
+      "重复/乱序/错账户/错金额回调不得记账",
+      "并发部分退款不超过已收款额扣除已退及预留退款",
+      "晚到成功与超时取消相遇时重新分配或退款，禁止超卖"
+    ],
+    "status": "NOT_RUN_PRODUCT",
+    "evidence_paths": []
+  },
+  {
+    "id": "G06",
+    "name": "直播与媒体",
+    "invariants": [
+      "I10",
+      "I17",
+      "I23"
+    ],
+    "required_cases": [
+      "FB成功IG失败显示PARTIAL而非全部LIVE",
+      "流恢复不自动复制另一平台直播",
+      "节目预览正常但平台离线仍告警，关机后资源回收"
+    ],
+    "status": "NOT_RUN_PRODUCT",
+    "evidence_paths": []
+  },
+  {
+    "id": "G07",
+    "name": "互动消息资格",
+    "invariants": [
+      "I02",
+      "I07",
+      "I17"
+    ],
+    "required_cases": [
+      "首条私密回复与后续会话分开",
+      "排队后下播/撤权/窗口过期禁止发送",
+      "人工接管期间自动回复不得越权发送"
+    ],
+    "status": "NOT_RUN_PRODUCT",
+    "evidence_paths": []
+  },
+  {
+    "id": "G08",
+    "name": "物流与退货",
+    "invariants": [
+      "I06",
+      "I13",
+      "I20"
+    ],
+    "required_cases": [
+      "reference碰撞不能操作错运单",
+      "采购面单响应丢失不重复购买",
+      "拆包/合包/RMA/部分签收和退款金额不串单"
+    ],
+    "status": "NOT_RUN_PRODUCT",
+    "evidence_paths": []
+  },
+  {
+    "id": "G09",
+    "name": "画像与营销合规",
+    "invariants": [
+      "I09",
+      "I11",
+      "I12",
+      "I22"
+    ],
+    "required_cases": [
+      "转发链接不自动合并身份",
+      "同意撤回后尚未发送CAPI/audience任务阻止",
+      "数据删除和法定保留分离，备份恢复不能复活营销记录"
+    ],
+    "status": "NOT_RUN_PRODUCT",
+    "evidence_paths": []
+  },
+  {
+    "id": "G10",
+    "name": "广告动作与预算",
+    "invariants": [
+      "I06",
+      "I07",
+      "I12"
+    ],
+    "required_cases": [
+      "草稿经审批才可发布；凭据换商户拒绝旧任务",
+      "API tier/权限/账户资格分开验收",
+      "延迟报表不能承诺精确硬停投"
+    ],
+    "status": "NOT_RUN_PRODUCT",
+    "evidence_paths": []
+  },
+  {
+    "id": "G11",
+    "name": "站点与域名",
+    "invariants": [
+      "I08",
+      "I11",
+      "I15"
+    ],
+    "required_cases": [
+      "A/B同URL缓存不串店",
+      "未验证域名/解绑旧域名访问失败关闭",
+      "过期报价重报价，买家看见变化并确认"
+    ],
+    "status": "NOT_RUN_PRODUCT",
+    "evidence_paths": []
+  },
+  {
+    "id": "G12",
+    "name": "容量与恢复",
+    "invariants": [
+      "I19",
+      "I23"
+    ],
+    "required_cases": [
+      "独立负载机开环压测，含热点SKU/租户洪峰/外部429",
+      "保存数据库锁等待、队列年龄、RSS和CPU，不只HTTP QPS",
+      "同AZ失败/数据库故障/备份恢复/RPO-RTO实测"
+    ],
+    "status": "NOT_RUN_PRODUCT",
+    "evidence_paths": []
+  },
+  {
+    "id": "G13",
+    "name": "Agent与变更治理",
+    "invariants": [
+      "I16",
+      "I18",
+      "I21"
+    ],
+    "required_cases": [
+      "角色/模型/工作树smoke实际可见",
+      "作者与验收人分离，P0/P1未解决不可合并",
+      "1/2/4并行按同一任务包比较返工后交付时间"
+    ],
+    "status": "NOT_RUN_PRODUCT",
+    "evidence_paths": []
+  },
+  {
+    "id": "G14",
+    "name": "证据与开源供应链",
+    "invariants": [
+      "I17",
+      "I18",
+      "I20"
+    ],
+    "required_cases": [
+      "版本/镜像摘要/许可证/SBOM/漏洞扫描有记录",
+      "同一commit的新旧版本兼容和前向迁移演练",
+      "mock仅为mock，真实渠道资格记录独立"
+    ],
+    "status": "NOT_RUN_PRODUCT",
+    "evidence_paths": []
+  },
+  {
+    "id": "G15",
+    "name": "消融与负对照",
+    "invariants": [
+      "I03",
+      "I04",
+      "I16",
+      "I18"
+    ],
+    "required_cases": [
+      "模型级负对照与真实集成分开标记",
+      "优化消融固定实验单元/硬件/数据/不变量",
+      "无样本/空产物不得自动PASS"
+    ],
+    "status": "NOT_RUN_PRODUCT",
+    "evidence_paths": []
+  }
+]

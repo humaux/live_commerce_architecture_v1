@@ -1,0 +1,51 @@
+{
+  "status": "CANDIDATE_NOT_RUNTIME_VALIDATED",
+  "checked_at": "2026-09-08",
+  "selected_backend": "Go",
+  "items": [
+    {
+      "component": "Go",
+      "candidate": "1.27.1",
+      "source": "S01"
+    },
+    {
+      "component": "PostgreSQL",
+      "candidate": "18.6",
+      "source": "S48"
+    },
+    {
+      "component": "Node.js",
+      "candidate": "24.20.0 LTS",
+      "source": "S46"
+    },
+    {
+      "component": "TypeScript/React/Next.js",
+      "candidate": "T00锁定相容stable安全补丁，不使用latest浮动镜像",
+      "source": null
+    },
+    {
+      "component": "pgx/sqlc/River/LiveKit SDK",
+      "candidate": "T00锁tag+commit+依赖许可证；River仅OSS基线",
+      "source": "S10"
+    },
+    {
+      "component": "Codex CLI",
+      "candidate": "T00记录真实版本并验证当前配置schema",
+      "source": "S36"
+    },
+    {
+      "component": "Codex models",
+      "candidate": "T00记录账号实际可用model/effort，配置默认继承父会话",
+      "source": "S39"
+    }
+  ],
+  "production_pin_required": [
+    "exact_version",
+    "source_commit_or_module_checksum",
+    "container_digest",
+    "license",
+    "sbom",
+    "security_scan",
+    "verified_at"
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "checked_at": "2026-09-20T02:08:51+08:00",
+  "evidence_level": "DOCUMENT_AND_PACKET_STRUCTURE_ONLY",
+  "command_exit_code": 0,
+  "packet_entrypoint": "runpy.run_path(scripts/check_packet.py, run_name=packet_readonly)[main](True)",
+  "packet_status": "PASS_PACKET_STRUCTURE_ONLY",
+  "delivery_baseline_checked": true,
+  "packet_result_unchanged_during_check": true,
+  "original_counts": {
+    "requirements": 22,
+    "invariants": 24,
+    "gates": 15,
+    "tasks": 23,
+    "risks": 32,
+    "sources": 50
+  },
+  "document_files": 8,
+  "local_links_missing": [],
+  "coverage": {"M": 22, "R": 22, "G": 15, "U": 17, "TW": 10, "SA": 14},
+  "manifest_mismatches": ["experiments/results/packet-check.json"],
+  "known_mismatch_cause": "Earlier subagent ran the writing __main__ entrypoint without a pre-run backup; already reported. No other original manifest mismatch.",
+  "not_verified": ["production software", "live customer App access", "live message sending", "checkout/payment", "pickup callback", "cross-border carrier eligibility", "shipment/COD", "performance"],
+  "first_document_check": "exit 1: local checker expected TW01 followed immediately by pipe, but headings have a space; regex corrected without changing document requirements or removing test cases",
+  "final_recheck": "exit 0: links exclude fenced code; TW cases counted within the case table, not again in traceability table; four new FR to M/T/G mappings verified",
+  "independent_review": {"P0": 0, "P1": 0, "memory_id": "b65e7ea0-40d4-45c2-a2bf-edba02eb948c"}
+}
