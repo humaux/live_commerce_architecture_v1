@@ -1,0 +1,32 @@
+[
+  {
+    "selector": ".entry-form small",
+    "foreground": "rgb(83, 107, 131)",
+    "background": "rgb(255, 255, 255)",
+    "ratio": 5.5283282378371705
+  },
+  {
+    "selector": ".entry-steps li:last-child",
+    "foreground": "rgb(83, 107, 131)",
+    "background": "rgb(247, 249, 252)",
+    "ratio": 5.241581505078863
+  },
+  {
+    "selector": ".entry-steps li.current .entry-step-number",
+    "foreground": "rgb(255, 255, 255)",
+    "background": "rgb(36, 121, 101)",
+    "ratio": 5.25278458942359
+  },
+  {
+    "selector": ".entry-steps li:last-child .entry-step-number",
+    "foreground": "rgb(77, 100, 122)",
+    "background": "rgb(231, 237, 243)",
+    "ratio": 5.207170101367438
+  },
+  {
+    "selector": ".entry-completed-row",
+    "foreground": "rgb(83, 107, 131)",
+    "background": "rgb(245, 247, 250)",
+    "ratio": 5.151145330688009
+  }
+]

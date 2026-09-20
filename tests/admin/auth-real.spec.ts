@@ -196,6 +196,7 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
   await page.getByRole("button", { name: "建立內部工作區" }).click();
   const createdResponse = await createdResponsePromise;
   expect(createdResponse.status()).toBe(200);
+  const originalReceipt = await createdResponse.json();
   await expect(page.getByRole("status")).toContainText("內部工作區已建立");
   const idempotencyKey =
     createdResponse.request().headers()["idempotency-key"] ?? "";
@@ -226,6 +227,7 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
     writeOptions,
   );
   expect(replayed.status).toBe(200);
+  expect(replayed.body).toEqual(originalReceipt);
   const created = replayed.body as {
     tenant_id: string;
     store_id: string;

@@ -52,6 +52,8 @@ export function Entry({
   currencies: string[];
 }) {
   const c = entryCopy[locale];
+  // Native locale data labels currencies; the selected ISO value never changes.
+  const currencyNames = new Intl.DisplayNames([locale], { type: "currency" });
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [draft, setDraft] = useState<EntryDraft>(() =>
     emptyEntryDraft(currencies[0] ?? ""),
@@ -528,7 +530,7 @@ export function Entry({
                       {currencies.length === 0 && <option value="">—</option>}
                       {currencies.map((currency) => (
                         <option key={currency} value={currency}>
-                          {currency}
+                          {currency} · {currencyNames.of(currency) ?? currency}
                         </option>
                       ))}
                     </select>

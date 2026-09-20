@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { createServer, type IncomingMessage } from "node:http";
-import { mkdir } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 
 const apiOrigin = "http://127.0.0.1:19111";
 const publicOrigin = "http://127.0.0.1:3100";
@@ -26,6 +26,18 @@ let logoutCalls = 0;
 const server = createServer(async (request, response) => {
   let body = "";
   for await (const chunk of request) body += chunk;
+  // Serve the redirect destination for real on loopback: page.route only
+  // handles the first request of a redirect chain, not the target URL.
+  if (
+    request.method === "GET" &&
+    request.url === "/authorize?state=state-one"
+  ) {
+    response.setHeader("Content-Type", "text/html; charset=utf-8");
+    response.end(
+      "<!doctype html><title>Mock provider</title><body>provider mock</body>",
+    );
+    return;
+  }
   response.setHeader("Content-Type", "application/json");
   response.setHeader("Cache-Control", "no-store");
   const identity = request.url?.startsWith("/v1/identity/");
@@ -41,8 +53,7 @@ const server = createServer(async (request, response) => {
     if (request.url === "/v1/identity/login/start") {
       response.end(
         JSON.stringify({
-          authorization_url:
-            "https://provider.example/authorize?state=state-one",
+          authorization_url: `${apiOrigin}/authorize?state=state-one`,
           binding,
           expires_at: new Date(Date.now() + 300_000).toISOString(),
         }),
@@ -146,17 +157,19 @@ test.beforeEach(() => {
 });
 
 async function login(page: import("@playwright/test").Page) {
-  await page.route("https://provider.example/**", async (route) => {
-    await route.fulfill({ contentType: "text/html", body: "provider mock" });
-  });
   await page.goto("/en/?auth=failed");
   await expect(page.locator('.entry-message[role="alert"]')).toContainText(
     "Sign-in did not complete",
   );
   await Promise.all([
-    page.waitForRequest(/provider\.example\/authorize/),
+    // A request event precedes navigation commit. Wait for the fulfilled mock
+    // page before starting callback navigation, or the two navigations race.
+    page.waitForURL(`${apiOrigin}/authorize?state=state-one`, {
+      waitUntil: "load",
+    }),
     page.getByRole("button", { name: "Sign in with identity service" }).click(),
   ]);
+  await expect(page.locator("body")).toHaveText("provider mock");
   await page.goto(
     `/api/auth/callback?state=state-one&code=code-one&iss=${encodeURIComponent(issuer)}`,
   );
@@ -248,6 +261,115 @@ test("wizard preserves draft and recovers an unknown result with exact bytes", a
   await expect(
     page.getByRole("heading", { name: "Products & inventory" }),
   ).toBeVisible();
+});
+
+test("three-locale mobile long names and normal text meet the finish gate", async ({
+  page,
+}) => {
+  await login(page);
+  await page.getByLabel("Merchant name").fill("A".repeat(120));
+  await page.getByRole("button", { name: "Next: store settings" }).click();
+  await page.locator('select[name="currency"]').selectOption("TWD");
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const locale of ["en", "zh-TW", "zh-CN"]) {
+    await page.locator(".entry-language select").selectOption(locale);
+    await expect(page).toHaveURL(new RegExp(`/${locale}/?$`));
+    await expect(page.locator('select[name="currency"]')).toHaveValue("TWD");
+    const label = await page
+      .locator('select[name="currency"] option:checked')
+      .textContent();
+    expect(label).toMatch(/^TWD · .+/);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    expect(
+      await page
+        .locator(".entry-completed-row")
+        .evaluate((node) => node.scrollWidth <= node.clientWidth),
+    ).toBe(true);
+    await page.screenshot({
+      path: `.impeccable/review/t03-entry-long-name-${locale}.png`,
+      fullPage: true,
+      animations: "disabled",
+    });
+  }
+  // Check actual computed foreground/background pairs, including inherited
+  // transparent backgrounds, rather than merely asserting selected hex tokens.
+  const ratios = await page.evaluate(() => {
+    function luminance(color: string) {
+      const rgb = color
+        .match(/[\d.]+/g)!
+        .slice(0, 3)
+        .map(Number)
+        .map((v) => {
+          const channel = v / 255;
+          return channel <= 0.04045
+            ? channel / 12.92
+            : ((channel + 0.055) / 1.055) ** 2.4;
+        });
+      return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
+    }
+    return [
+      ".entry-form small",
+      ".entry-steps li:last-child",
+      ".entry-steps li.current .entry-step-number",
+      ".entry-steps li:last-child .entry-step-number",
+      ".entry-completed-row",
+    ].map((selector) => {
+      const node = document.querySelector(selector)!;
+      let backgroundNode: Element | null = node;
+      let background = "rgb(255, 255, 255)";
+      while (backgroundNode) {
+        const color = getComputedStyle(backgroundNode).backgroundColor;
+        if (color !== "rgba(0, 0, 0, 0)" && color !== "transparent") {
+          background = color;
+          break;
+        }
+        backgroundNode = backgroundNode.parentElement;
+      }
+      const foreground = getComputedStyle(node).color;
+      const a = luminance(foreground),
+        b = luminance(background);
+      return {
+        selector,
+        foreground,
+        background,
+        ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05),
+      };
+    });
+  });
+  for (const sample of ratios)
+    expect(sample.ratio, sample.selector).toBeGreaterThanOrEqual(4.5);
+  await writeFile(
+    ".impeccable/review/t03-entry-contrast.json",
+    JSON.stringify(ratios, null, 2),
+  );
+  expect(
+    await page
+      .locator('template[data-commerce-design-contract="57bb98dc"]')
+      .evaluate((node) => {
+        const contract = (node as HTMLTemplateElement).content.firstChild;
+        // Next/React inserts an empty hidden Suspense boundary before authored
+        // body children. Accept only that exact inert prefix, not visible UI.
+        const prefix = node.previousElementSibling;
+        const firstAuthored =
+          !prefix ||
+          (prefix === document.body.firstElementChild &&
+            prefix.tagName === "DIV" &&
+            prefix.hasAttribute("hidden") &&
+            prefix.children.length === 0 &&
+            prefix.textContent === "");
+        return (
+          node.parentElement === document.body &&
+          firstAuthored &&
+          contract?.nodeType === Node.COMMENT_NODE &&
+          contract.textContent?.includes("FIRST VIEWPORT:")
+        );
+      }),
+  ).toBe(true);
+  expect(onboardingCalls).toHaveLength(0);
 });
 
 test("401 clears the old session-bound draft before reauthentication", async ({

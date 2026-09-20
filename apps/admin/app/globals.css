@@ -1178,7 +1178,7 @@ code {
   display: grid;
   justify-items: center;
   gap: 8px;
-  color: #667a91;
+  color: #536b83;
   font-weight: 600;
 }
 .entry-steps li:not(:last-child)::after {
@@ -1203,7 +1203,7 @@ code {
   height: 34px;
   border-radius: 50%;
   background: #e7edf3;
-  color: #597087;
+  color: #4d647a;
   font-variant-numeric: tabular-nums;
 }
 .entry-steps li.complete,
@@ -1212,7 +1212,7 @@ code {
 }
 .entry-steps li.complete .entry-step-number,
 .entry-steps li.current .entry-step-number {
-  background: #268a74;
+  background: var(--teal);
   color: #fff;
 }
 .entry-wizard,
@@ -1251,7 +1251,11 @@ code {
   padding: 12px 27px;
   border-radius: 5px;
   background: #f5f7fa;
-  color: #60748a;
+  color: #536b83;
+}
+.entry-completed-row > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .entry-completed-row strong {
   margin-left: 8px;
@@ -1300,7 +1304,7 @@ code {
   font-weight: 400;
 }
 .entry-form small {
-  color: #6b7f94;
+  color: #536b83;
   font-size: 13px;
   font-weight: 400;
 }
