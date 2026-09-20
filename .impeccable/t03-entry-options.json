@@ -1,0 +1,71 @@
+{
+  "title": "登录与首店开通：选一个布局",
+  "question": "保持现有海军蓝/青绿操作台风格，三种方案只比较信息排列和操作顺序。图中均为演示内容，未代表系统已上线。",
+  "options": [
+    {
+      "id": "setup-ledger",
+      "label": "A · 逐项开通核对单",
+      "kicker": "THE ROLL",
+      "thesis": "四项资料同屏核对，底部汇总后一次创建。",
+      "palette": [
+        "#193c61",
+        "#f5f7fa",
+        "#ffffff",
+        "#247965"
+      ],
+      "materials": [
+        "细分隔线",
+        "无衬线表单",
+        "底部确认区"
+      ],
+      "viewport": "左侧流程提示，主区为商户、店铺、币种和库存仓四行资料，下方固定确认区。",
+      "risk": "信息密度略高，但与现有商品账簿最容易衔接。",
+      "comp": ".impeccable/mocks/decision/t03-setup-ledger.png"
+    },
+    {
+      "id": "setup-receipt",
+      "label": "B · 左右双联凭单",
+      "thesis": "左侧填写，右侧只读核对将创建的内部工作区。",
+      "palette": [
+        "#193c61",
+        "#f5f7fa",
+        "#ffffff",
+        "#247965"
+      ],
+      "materials": [
+        "双栏工作面",
+        "文字摘要",
+        "细规则"
+      ],
+      "viewport": "左侧依次填写四项，右侧大块预览商户、店铺、库存仓及独立币种；主按钮位于预览底部。",
+      "risk": "桌面预览直观，手机上需把预览下移避免反复滚动。",
+      "comp": ".impeccable/mocks/decision/t03-setup-receipt.png"
+    },
+    {
+      "id": "setup-wizard",
+      "label": "C · 三步聚焦向导",
+      "thesis": "一次聚焦一组资料，最后核对再创建。",
+      "palette": [
+        "#193c61",
+        "#f5f7fa",
+        "#ffffff",
+        "#247965"
+      ],
+      "materials": [
+        "步骤导航",
+        "单列表单",
+        "收敛的操作区"
+      ],
+      "viewport": "上方显示商户资料→店铺设置→库存仓，当前只展开店铺名称与币种，已填信息可返回修改。",
+      "risk": "新用户容易理解，但比同屏方案多两次点击。",
+      "comp": ".impeccable/mocks/decision/t03-setup-wizard.png"
+    }
+  ],
+  "reroll": true,
+  "steer": true,
+  "canon": false,
+  "buildPath": {
+    "value": "comp",
+    "toggle": true
+  }
+}
