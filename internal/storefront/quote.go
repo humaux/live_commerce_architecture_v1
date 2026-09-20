@@ -132,8 +132,10 @@ func readQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, id string) (out Qu
 	if err != nil {
 		return out, notFound(err)
 	}
+	// Buyer runtime may insert snapshots. Malformed stored JSON is a conflicting
+	// immutable fact, not a decoder detail to expose through Get/Revalidate.
 	if err = json.Unmarshal(body, &out); err != nil {
-		return out, err
+		return Quote{}, command.ErrConflict
 	}
 	if out.ID != id || out.CartID != cart || out.Currency != currency || out.CartVersion != cartVersion || out.MarketVersion != marketVersion || out.CalculationVersion != "v1" || out.Policy.MarketID != market || out.Policy.Country != country || out.Policy.Method != method || out.Policy.Version != policyVersion || out.Policy.Currency != currency || !out.CreatedAt.Equal(created) || !out.ExpiresAt.Equal(expires) {
 		return Quote{}, command.ErrConflict
