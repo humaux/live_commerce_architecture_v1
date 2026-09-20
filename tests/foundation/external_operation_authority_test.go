@@ -3,13 +3,18 @@ package foundation_test
 import (
 	"context"
 	"fmt"
+	"io"
+	"log/slog"
 	"net/url"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/riverqueue/river"
+	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"livecommerce/internal/platform"
 )
 
@@ -203,6 +208,10 @@ func TestT06SQLLeaseOwnershipExpiryAndNoRedispatch(t *testing.T) {
 	if c = t06AuthorityTake(t, p, id, a); c.disposition != "terminal" || c.generation != 4 {
 		t.Fatalf("terminal re-executed: %+v", c)
 	}
+	var events int
+	if err := f.owner.QueryRow(ctx, `SELECT count(*) FROM integration.operation_events WHERE operation_id=$1`, id).Scan(&events); err != nil || events != 7 {
+		t.Fatalf("rejected/replayed lease wrote events: count=%d err=%v", events, err)
+	}
 }
 
 func TestT06SQLConcurrentClaimAndBindingOutcomeFacts(t *testing.T) {
@@ -317,5 +326,79 @@ func TestT06SQLEventFailureRollsBackClaimAndCompletion(t *testing.T) {
 	}
 	if err := f.owner.QueryRow(ctx, `SELECT state,generation FROM integration.operations WHERE id=$1`, id).Scan(&state, &gen); err != nil || state != "DISPATCHING" || gen != 1 {
 		t.Fatalf("completion partial write %s/%d: %v", state, gen, err)
+	}
+}
+
+type t06AuthorityArgs struct {
+	ProbeID string `json:"probe_id"`
+}
+
+func (t06AuthorityArgs) Kind() string { return "t06_authority_probe" }
+
+type t06AuthorityWorker struct {
+	river.WorkerDefaults[t06AuthorityArgs]
+	seen chan int64
+}
+
+func (w *t06AuthorityWorker) Work(ctx context.Context, job *river.Job[t06AuthorityArgs]) error {
+	select {
+	case w.seen <- job.ID:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+func TestT06OrdinaryWorkerStartsProcessesAndStops(t *testing.T) {
+	ctx := context.Background()
+	_, pool := t06AuthorityLogin(t, "commerce_worker")
+	queue := "t06_" + strings.ReplaceAll(randomUUID(), "-", "")
+	seen := make(chan int64, 2)
+	workers := river.NewWorkers()
+	river.AddWorker(workers, &t06AuthorityWorker{seen: seen})
+	client, err := river.NewClient(riverpgxv5.New(pool), &river.Config{
+		Schema: "river", Workers: workers,
+		Queues: map[string]river.QueueConfig{queue: {MaxWorkers: 1}},
+		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	job, err := client.Insert(ctx, t06AuthorityArgs{ProbeID: randomUUID()}, &river.InsertOpts{Queue: queue})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = client.Start(ctx); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		stop, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := client.StopAndCancel(stop); err != nil {
+			t.Error(err)
+		}
+	})
+	select {
+	case id := <-seen:
+		if id != job.Job.ID {
+			t.Fatalf("wrong job executed: %d", id)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("ordinary worker did not execute isolated probe")
+	}
+	// Wait for River's persisted completion, not merely the Work callback.
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		var state string
+		if err = pool.QueryRow(ctx, `SELECT state FROM river.river_job WHERE id=$1`, job.Job.ID).Scan(&state); err != nil {
+			t.Fatal(err)
+		}
+		if state == "completed" {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("worker callback not persisted: %s", state)
+		}
+		time.Sleep(20 * time.Millisecond)
 	}
 }
