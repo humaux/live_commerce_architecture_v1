@@ -325,7 +325,7 @@ func validateTransactionScope(ctx context.Context, tx pgx.Tx, scope platform.Sco
 }
 
 func canonicalObject(raw json.RawMessage) (map[string]any, []byte, error) {
-	if len(raw) == 0 || len(raw) > maxRequestBytes {
+	if len(raw) == 0 || len(raw) > maxRequestBytes || !utf8.Valid(raw) {
 		return nil, nil, command.ErrInvalid
 	}
 	decoder := json.NewDecoder(bytes.NewReader(raw))

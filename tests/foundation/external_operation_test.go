@@ -306,6 +306,27 @@ func TestT06GoPlanAtomicReplayCanonicalAndReadback(t *testing.T) {
 	if !errors.Is(err, command.ErrConflict) {
 		t.Fatalf("changed request err=%v, want conflict", err)
 	}
+	// Queue retention and binding revocation cannot turn a historical receipt
+	// into a new remote action. Delete only this synthetic operation's records.
+	err = f.scoped(ctx, f.token, f.store, func(tx pgx.Tx, scope platform.Scope) error {
+		_, err := f.service.SetBindingEnabled(ctx, tx, scope, f.token, uniqueAction("t06.replay.revoke"), binding.ID, 1, false)
+		return err
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = f.base.owner.Exec(ctx, `DELETE FROM river.river_job WHERE id=$1`, planned.JobID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = f.base.owner.Exec(ctx, `DELETE FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2 AND operation='integration.operation.plan' AND idempotency_key=$3`, f.tenant, f.store, key); err != nil {
+		t.Fatal(err)
+	}
+	if got := f.plan(t, key, binding, `{"amount":9007199254740993,"nested":{"a":1,"b":2}}`); got != planned {
+		t.Fatalf("historical replay changed IDs: %+v", got)
+	}
+	if err := f.base.owner.QueryRow(ctx, `SELECT count(*) FROM river.river_job WHERE kind='external_operation_v1' AND args->>'operation_id'=$1`, planned.OperationID).Scan(&jobs); err != nil || jobs != 0 {
+		t.Fatalf("historical replay recreated queue job: count=%d err=%v", jobs, err)
+	}
 }
 
 func TestT06GoConcurrentReplayForeignBindingAndValidation(t *testing.T) {
@@ -427,15 +448,18 @@ func TestT06GoAtomicFailuresAndWorkerTokenFence(t *testing.T) {
 			if err == nil {
 				t.Fatalf("%s failure unexpectedly committed", stage)
 			}
-			var operations, jobs int
+			var operations, jobs, events, receipts, audits int
 			if err := f.base.owner.QueryRow(ctx, `SELECT
 				(SELECT count(*) FROM integration.operations WHERE tenant_id=$1 AND semantic_key=$2),
-				(SELECT count(*) FROM river.river_job WHERE kind='external_operation_v1' AND args->>'operation_id'=$3)`,
-				f.tenant, key, planned.OperationID).Scan(&operations, &jobs); err != nil {
+				(SELECT count(*) FROM river.river_job WHERE kind='external_operation_v1' AND args->>'operation_id'=$3),
+				(SELECT count(*) FROM integration.operation_events WHERE tenant_id=$1 AND operation_id::text=$3),
+				(SELECT count(*) FROM ops.command_results WHERE tenant_id=$1 AND operation='integration.operation.plan' AND idempotency_key=$2),
+				(SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND action='integration.operation.planned')`,
+				f.tenant, key, planned.OperationID).Scan(&operations, &jobs, &events, &receipts, &audits); err != nil {
 				t.Fatal(err)
 			}
-			if operations != 0 || jobs != 0 {
-				t.Fatalf("%s rollback left operation=%d jobs=%d", stage, operations, jobs)
+			if operations != 0 || jobs != 0 || events != 0 || receipts != 0 || audits != 0 {
+				t.Fatalf("%s rollback left operation=%d jobs=%d events=%d receipts=%d audits=%d", stage, operations, jobs, events, receipts, audits)
 			}
 		})
 	}
