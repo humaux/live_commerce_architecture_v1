@@ -34,7 +34,15 @@ and `command.ValidID`. No pool, HTTP handler, new dependency or public route.
 
 `internal/pricing` (merchant policy + pure money calculation):
 
-- `Policy`: `Country, Method, Currency, ShippingMode, TaxMode, TaxBasis string`,
+- `Market { ID, Code, Name, Currency string; Version int64; Active bool }`;
+  `MarketInput { Code, Name, Currency string }`.
+- `CreateMarket(ctx,tx,platform.Scope,key,MarketInput) (Market,error)`: creates
+  active version1; currency must equal store currency and is immutable. Code is
+  `[a-z][a-z0-9_-]{0,39}`, name1..120 printable characters. No locale mapping.
+- `SetMarketActive(ctx,tx,platform.Scope,key,id,expectedVersion,active) (Market,error)`
+  changes only active state and increments version with CAS; currency/code do not
+  change. Market creation/state writes require `pricing:write` scoped transaction.
+- `Policy`: `MarketID, Country, Method, Currency, ShippingMode, TaxMode, TaxBasis string`,
   `Version, ShippingMinor, TaxRateBPS, QuoteTTLSeconds int64`, `Enabled bool`.
 - `PolicyInput`: same business fields except Version; `ExpectedVersion int64`,
   `ShippingMinor, TaxRateBPS *int64` to distinguish omission from explicit zero,
@@ -43,8 +51,10 @@ and `command.ValidID`. No pool, HTTP handler, new dependency or public route.
   creates, later exact expected version appends a new immutable revision and moves
   the current head. Currency must match the store. Atomically records merchant
   command receipt and audit. Canonical request includes principal ID. Caller must
-  have `catalog:write` until a separately reviewed permissions split exists.
-- `LockCurrent(ctx,tx,tenantID,storeID,country,method) (Policy,error)`: locks the
+  have `pricing:write` in its scoped transaction. This uses existing merchant
+  store-global operation/key receipts plus principal-in-hash, so another merchant
+  actor reusing that key conflicts; it does NOT claim full actor namespace §17.2.
+- `LockCurrent(ctx,tx,tenantID,storeID,marketID,country,method) (Policy,error)`: locks the
   current policy head FOR SHARE; reads immutable version. Missing or disabled
   policy -> `ErrNotFound`. RLS denies wrong scope; no ConfigurationRef is returned.
 - `AmountLine { UnitPriceMinor, Quantity int64 }`.
@@ -64,7 +74,8 @@ addition; multiplication uses CheckMoney. Nonempty quote, max 50 lines.
 
 Calculation v1: no discounts (stored zero); round nonnegative tax HALF_UP at each
 line in integer minor units. Exclusive: `(base*bps+5000)/10000`; inclusive tax
-component: `(base*bps+(10000+bps)/2)/(10000+bps)`. Shipping tax is rounded separately
+component: `base-(base*10000+(10000+bps)/2)/(10000+bps)` (HALF_UP net first;
+the tax is the exact remainder). Shipping tax is rounded separately
 only for `goods_and_shipping`. Exclusive adds tax; inclusive reports the included
 component without charging it twice. Store these exact allocations for future
 partial refunds, never re-price historical snapshots.
@@ -91,14 +102,14 @@ partial refunds, never re-price historical snapshots.
   rejects duplicate SKUs, locks/creates owner cart, checks version, locks catalog,
   replaces all lines and increments version once. Atomic receipt/event; failures
   leave no partial cart. Initial expected version0 only; others must match.
-- `QuoteInput { CartVersion int64; Country, Method string }`.
+- `QuoteInput { CartVersion int64; MarketID, Country, Method string }`.
 - `QuoteLine { SKUID, ProductID, Code, Name, Description string; SKUVersion,
   ProductVersion, Quantity, UnitPriceMinor int64; Amount pricing.LineAmount }`.
-- `Quote { ID, CartID, Currency, CalculationVersion string; CartVersion int64;
+- `Quote { ID, CartID, Currency, CalculationVersion string; CartVersion, MarketVersion int64;
   Policy pricing.Policy; Lines []QuoteLine; Amount pricing.Calculation;
   CreatedAt, ExpiresAt time.Time }`.
 - `CreateQuote(ctx,tx,buyer.Scope,key,QuoteInput) (Quote,error)`: locks owned cart
-  and validates nonempty/current version; locks current enabled policy; locks all
+  and validates nonempty/current version; locks active market, current enabled policy; locks all
   referenced products then all SKUs in sorted stable order; validates active state,
   currency and money; snapshots names/descriptions/prices/versions/allocations;
   uses DB clock expiry. Saves immutable quote + event + replay receipt together.
@@ -108,7 +119,10 @@ partial refunds, never re-price historical snapshots.
 
 ## Frozen persistence (root migration 0007)
 
-- `pricing.policy_versions`: tenant/store/country/method/version composite PK,
+- `pricing.markets`: tenant/store/id PK, unique store/code, immutable currency FK
+  to `(control.stores.tenant_id,id,currency)`, active/version. Quote locks market
+  FOR SHARE and snapshots market version; one country may have multiple markets.
+- `pricing.policy_versions`: tenant/store/market/country/method/version composite PK,
   immutable policy fields, configuration_ref, principal_id FK to membership.
 - `pricing.policy_heads`: same key without version; current_version FK to the
   immutable version. Policy edit serializes that key before creating/updating head.
@@ -118,7 +132,7 @@ partial refunds, never re-price historical snapshots.
   currency, version>=0; cart_lines FK to exact cart and store-scoped SKU. The
   transient new version0 head must be updated within the same successful command.
 - `storefront.quotes`: id + exact owner/cart/creator-session, cart_version,
-  country/method/policy_version FK, created/expires DB times, JSON snapshot <=1MiB.
+  market_id/market_version/country/method/policy_version FK, created/expires DB times, JSON snapshot <=1MiB.
   Quote JSON is a fully typed server-generated immutable value. IDs/times/policy
   binding must match the relational header on insert/read; no client JSON stored.
 - `storefront.events`: scope/owner/session/cart, optional quote ID, action only
@@ -132,6 +146,10 @@ fields. Row locks use exact UPDATE-column grants with UPDATE visibility policies
 and WITH CHECK(false), never permit actual catalog/policy mutation. Cart/Quote
 RLS binds tenant/store/owner; INSERT creator session matches current session.
 Private buyer credential tables remain inaccessible. No grants to buyer issuer.
+Add explicit `pricing:read` and `pricing:write` permission identifiers. New-store
+owners receive these through the existing trusted onboarding function; do not
+silently backfill new rights to existing memberships. Tests grant synthetic users
+explicit rights. Market/policy tables are not a second catalog or FX engine.
 
 ## Acceptance gate
 
