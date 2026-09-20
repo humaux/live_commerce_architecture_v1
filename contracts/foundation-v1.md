@@ -4,7 +4,7 @@
 
 ## Go interfaces
 
-Module `livecommerce`, pgx/v5.11.0, River/riverpgxv5 v0.40.0; local Go 1.26.2. Use net/http and slog. No live provider requests.
+Module `livecommerce`, pgx/v5.11.0, River/riverpgxv5 v0.40.0; project Go 1.27.1 and x/text v0.39.0 pinned after vulnerability scanning. Use net/http and slog. No live provider requests.
 
 Package `internal/platform`:
 
@@ -18,7 +18,7 @@ func NewHandler(pool *pgxpool.Pool) http.Handler
 
 `WithScope` begins READ COMMITTED transaction; hashes opaque token SHA256, rejects token <32 or >512 bytes and invalid canonical UUID store before SQL; calls `identity.resolve_scope($hash,$storeUUID,$permission)` INSIDE transaction. No row -> ErrUnauthorized, no existence leak. Function returns tenant_id, principal_id, authz_revision from stored grants. It then calls parameterized set_config for `app.tenant_id`, `app.store_id`, `app.principal_id` with is_local=true. Callback success commits; error/cancel/panic rolls back; cleanup context bounded and independent of cancelled request. Permission is a server constant, never HTTP-supplied. Scope/DSN/tokens are not logged. Do not expose pool to domain repositories.
 
-OpenPool: max 8 connections, bounded startup ping, validate current role is not superuser/BYPASSRLS/schema owner, no startup migrations. Owner credentials are only used by a separate migration/test path.
+OpenPool: max 8 connections, caller-respecting 2s startup budget. Require commerce_runtime membership; reject superuser/BYPASSRLS/schema owner, membership in commerce_auth, or ability to SET ROLE to a privileged/schema-owner role. No startup migrations. Owner credentials are only used by a separate migration/test path. HTTP business queries and scope transactions have a 5s context budget plus transaction-local statement/idle timeouts of 5s and lock timeout of 1s.
 
 ## HTTP
 
@@ -39,7 +39,7 @@ control.tenants(id,name,active); control.stores(tenant_id,id,name,currency,activ
 
 `ops.audit_events(tenant_id,store_id,id,principal_id,action,created_at)` scoped composite FK and append-only runtime INSERT/SELECT; no body/PII. Store/audit policies compare BOTH tenant and store; missing local context fails closed.
 
-River migrations use upstream rivermigrate, NEVER hand-written job schema. Test-only atomic-enqueue fixture writes an audit row and a `foundation_probe` River job inside one scope transaction; failed transaction must leave neither. No external sending worker is enabled in this slice; trusted worker credential/routing is separate future T06 work.
+River migrations use upstream rivermigrate, NEVER hand-written job schema. A dedicated connection holds a session advisory lock across the business migration and River's per-step transaction boundaries. Do not wrap all River migrations in one transaction: upstream step 006 adds an enum value that later steps need after commit. Checksums and upstream migration ledger allow rerunning after partial migration; the API is not started until Apply succeeds. Test-only atomic-enqueue fixture writes an audit row and a `foundation_probe` River job inside one scope transaction; failed transaction must leave neither. No external sending worker is enabled in this slice; trusted worker credential/routing is separate future T06 work.
 
 ## Required negative checks
 
