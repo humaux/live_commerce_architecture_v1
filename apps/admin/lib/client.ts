@@ -14,6 +14,17 @@ export const unknownError: APIError = {
   details: {},
 };
 
+function csrfToken() {
+  const values = document.cookie
+    .split(";")
+    .map((part) => part.trim())
+    .filter((part) => part.startsWith("__Host-commerce_csrf="))
+    .map((part) => part.slice("__Host-commerce_csrf=".length));
+  return values.length === 1 && /^[A-Za-z0-9_-]{43}$/.test(values[0])
+    ? values[0]
+    : "";
+}
+
 // A retry sends the exact original key AND bytes. Never generate a fresh command
 // after a lost response: the transaction may already have committed.
 export async function sendCommand(store: string, command: PendingCommand) {
@@ -23,6 +34,7 @@ export async function sendCommand(store: string, command: PendingCommand) {
       headers: {
         "Content-Type": "application/json",
         "Idempotency-Key": command.key,
+        "X-CSRF-Token": csrfToken(),
       },
       body: command.body,
       signal: AbortSignal.timeout(8000),
