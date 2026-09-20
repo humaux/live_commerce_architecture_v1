@@ -380,9 +380,14 @@ func TestCartConcurrentCASAndPriceLock(t *testing.T) {
 func TestCartForeignKeysArchivedCatalogAndMarket(t *testing.T) {
 	h := cqSetup(t)
 	c := h.oneCart(t)
-	foreign := t04CreateStock(t, h.f, h.f.tokens["b"], h.f.storeB, 5)
+	// This FK fixture owns a fresh foreign store. Do not populate storeB: the
+	// earlier catalog regression deliberately asserts its initial empty state.
+	foreignTenant, foreignStore, _ := seedBuyerStores(t, h.f)
+	foreignProduct, foreignSKU := randomUUID(), randomUUID()
+	mustExec(t, h.f.owner, `INSERT INTO catalog.products(tenant_id,store_id,id,name) VALUES($1,$2,$3,'foreign FK fixture')`, foreignTenant, foreignStore, foreignProduct)
+	mustExec(t, h.f.owner, `INSERT INTO catalog.skus(tenant_id,store_id,id,product_id,code,currency,price_minor) VALUES($1,$2,$3,$4,'foreign-fk','USD',1)`, foreignTenant, foreignStore, foreignSKU, foreignProduct)
 	err := buyer.WithScope(context.Background(), h.a.runtime, h.cap.Token, h.f.storeA1, func(ctx context.Context, tx pgx.Tx, s buyer.Scope) error {
-		_, err := tx.Exec(ctx, `INSERT INTO storefront.cart_lines(tenant_id,store_id,owner_id,cart_id,sku_id,quantity) VALUES($1,$2,$3,$4,$5,1)`, s.TenantID, s.StoreID, s.OwnerID, c.ID, foreign.skus[0].ID)
+		_, err := tx.Exec(ctx, `INSERT INTO storefront.cart_lines(tenant_id,store_id,owner_id,cart_id,sku_id,quantity) VALUES($1,$2,$3,$4,$5,1)`, s.TenantID, s.StoreID, s.OwnerID, c.ID, foreignSKU)
 		return err
 	})
 	requirePGCode(t, err, "23503", "cross-store SKU FK")
