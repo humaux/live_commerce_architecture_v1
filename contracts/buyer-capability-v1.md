@@ -44,7 +44,7 @@ anonymous owners; no automatic recovery/merge or exactly-once issuance is claime
   `fn(context.Context,pgx.Tx,buyer.Scope) error`. It validates input before SQL,
   resolves the opaque capability, and runs one bounded transaction. Resolve
   returns `(tenant_id,store_id,owner_id,session_id)` or zero rows. It locks the
-  session/owner/store/tenant FOR SHARE, then checks active/revoked and DB clock
+  tenant/store/owner/session in that fixed order FOR SHARE, then checks active/revoked and DB clock
   expiry. A request authorized before revocation may finish; revocation waits
   for that transaction. New requests after revocation commits fail closed.
 - Scope sets transaction-local `app.tenant_id`, `app.store_id`, `app.buyer_id`,
@@ -55,6 +55,9 @@ anonymous owners; no automatic recovery/merge or exactly-once issuance is claime
 - `Service.Revoke(ctx,token,storeID) error` revokes only that hash/store, records
   one event, and is idempotent/no-op for unknown, expired or already-revoked
   well-formed credentials. Wrong store cannot revoke another store's capability.
+  Revoke permits row-lock waits within the bounded request deadline (no shorter
+  one-second lock timeout). Deadline/DB failure is an error, not a successful
+  revocation; a committed revocation is the point after which new requests fail.
 - `buyer.ErrInvalid` and `buyer.ErrUnauthorized` are stable sentinel errors.
   Do not expose token, hash, DSN, DB details or internal IDs in public errors.
 

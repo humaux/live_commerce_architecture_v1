@@ -1,8 +1,8 @@
 -- Anonymous cart authority is not a merchant membership or a verified customer.
 -- Neither login role has table access, and neither is granted to merchant roles.
-CREATE ROLE commerce_buyer_runtime NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE;
-CREATE ROLE commerce_buyer_issuer NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE;
-CREATE ROLE commerce_buyer_writer NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE;
+CREATE ROLE commerce_buyer_runtime NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION;
+CREATE ROLE commerce_buyer_issuer NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION;
+CREATE ROLE commerce_buyer_writer NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION;
 CREATE SCHEMA buyer;
 REVOKE ALL ON SCHEMA buyer FROM PUBLIC;
 GRANT USAGE ON SCHEMA buyer TO commerce_buyer_runtime, commerce_buyer_issuer, commerce_buyer_writer;
@@ -73,9 +73,12 @@ BEGIN
        OR p_ttl IS NULL OR p_ttl<60 OR p_ttl>2592000 THEN
         RAISE EXCEPTION 'invalid buyer capability request' USING ERRCODE='PT400';
     END IF;
-    SELECT s.tenant_id,s.active,t.active INTO v_tenant,v_store_active,v_tenant_active
-      FROM control.stores s JOIN control.tenants t ON t.id=s.tenant_id
-      WHERE s.id=p_store FOR SHARE OF s,t;
+    SELECT s.tenant_id INTO v_tenant FROM control.stores s WHERE s.id=p_store;
+    -- Fixed scope lock order: tenant -> store -> owner -> session. Initial reads
+    -- only locate rows; authorization is rechecked after all locks are held.
+    SELECT t.active INTO v_tenant_active FROM control.tenants t WHERE t.id=v_tenant FOR SHARE OF t;
+    SELECT s.active INTO v_store_active FROM control.stores s
+      WHERE (s.tenant_id,s.id)=(v_tenant,p_store) FOR SHARE OF s;
     IF NOT FOUND OR NOT v_store_active OR NOT v_tenant_active THEN
         RAISE EXCEPTION 'unauthorized' USING ERRCODE='PT401';
     END IF;
@@ -96,17 +99,20 @@ DECLARE v_session buyer.capability_sessions%ROWTYPE; v_owner_active boolean;
     v_store_active boolean; v_tenant_active boolean;
 BEGIN
     SELECT c.* INTO v_session FROM buyer.capability_sessions c
-      WHERE c.token_hash=p_hash AND c.store_id=p_store FOR SHARE OF c;
+      WHERE c.token_hash=p_hash AND c.store_id=p_store;
     IF NOT FOUND THEN RETURN; END IF;
+    SELECT t.active INTO v_tenant_active FROM control.tenants t
+      WHERE t.id=v_session.tenant_id FOR SHARE OF t;
+    SELECT s.active INTO v_store_active FROM control.stores s
+      WHERE (s.tenant_id,s.id)=(v_session.tenant_id,p_store) FOR SHARE OF s;
     SELECT o.active INTO v_owner_active FROM buyer.owners o
       WHERE (o.tenant_id,o.store_id,o.id)=(v_session.tenant_id,p_store,v_session.owner_id)
       FOR SHARE OF o;
-    SELECT s.active,t.active INTO v_store_active,v_tenant_active FROM control.stores s
-      JOIN control.tenants t ON t.id=s.tenant_id
-      WHERE (s.tenant_id,s.id)=(v_session.tenant_id,p_store) FOR SHARE OF s,t;
+    SELECT c.* INTO v_session FROM buyer.capability_sessions c
+      WHERE c.token_hash=p_hash AND c.store_id=p_store FOR SHARE OF c;
     -- Evaluate expiry AFTER acquiring every lock, not before a potentially long
     -- wait. Locks last through the caller's transaction; revoke waits for it.
-    IF v_owner_active IS NOT TRUE OR v_store_active IS NOT TRUE OR v_tenant_active IS NOT TRUE
+    IF NOT FOUND OR v_owner_active IS NOT TRUE OR v_store_active IS NOT TRUE OR v_tenant_active IS NOT TRUE
        OR v_session.revoked_at IS NOT NULL OR v_session.expires_at<=clock_timestamp() THEN RETURN; END IF;
     RETURN QUERY SELECT v_session.tenant_id,v_session.store_id,v_session.owner_id,v_session.id;
 END $$;
