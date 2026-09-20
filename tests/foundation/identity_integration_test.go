@@ -212,12 +212,14 @@ func TestIdentityInitialStoreAtomicIdempotentAndScoped(t *testing.T) {
 	if _, err := s.CreateInitialStore(ctx, session.Token, key, request); !errors.Is(err, identity.ErrConflict) {
 		t.Fatalf("changed body: %v", err)
 	}
-	var grants, warehouses, audits int
-	if err := f.owner.QueryRow(ctx, `SELECT (SELECT count(*) FROM identity.store_grants WHERE tenant_id=$1::uuid),(SELECT count(*) FROM inventory.warehouses WHERE tenant_id=$1::uuid),(SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1::uuid AND action='merchant.store_created')`, a.TenantID).Scan(&grants, &warehouses, &audits); err != nil {
+	var grants []string
+	var warehouses, audits int
+	if err := f.owner.QueryRow(ctx, `SELECT ARRAY(SELECT permission FROM identity.store_grants WHERE tenant_id=$1::uuid ORDER BY permission),(SELECT count(*) FROM inventory.warehouses WHERE tenant_id=$1::uuid),(SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1::uuid AND action='merchant.store_created')`, a.TenantID).Scan(&grants, &warehouses, &audits); err != nil {
 		t.Fatal(err)
 	}
-	if grants != 8 || warehouses != 1 || audits != 1 {
-		t.Fatalf("bootstrap counts %d %d %d", grants, warehouses, audits)
+	wantGrants := "audit:read,audit:write,catalog:read,catalog:write,inventory:read,inventory:reserve,inventory:write,pricing:read,pricing:write,store:read"
+	if strings.Join(grants, ",") != wantGrants || warehouses != 1 || audits != 1 {
+		t.Fatalf("bootstrap grants=%v warehouses=%d audits=%d", grants, warehouses, audits)
 	}
 	if err := platform.WithScope(ctx, f.runtime, session.Token, a.StoreID, "catalog:write", func(tx pgx.Tx, scope platform.Scope) error {
 		if scope.PrincipalID != session.PrincipalID || scope.TenantID != a.TenantID {
