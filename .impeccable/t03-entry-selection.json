@@ -1,0 +1,10 @@
+{
+  "selected": "setup-wizard",
+  "label": "C · 三步聚焦向导",
+  "approved": true,
+  "source": "user chat: C分步向导",
+  "date": "2026-09-20",
+  "buildPath": "comp",
+  "comp": ".impeccable/mocks/decision/t03-setup-wizard.png",
+  "scope": "Merchant login and first-store setup only; no change to backend identity, publishing, payment or logistics authority"
+}
