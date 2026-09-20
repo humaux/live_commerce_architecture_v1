@@ -174,6 +174,103 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	}
 }
 
+func TestPoolAuthorityCannotBeDisguisedWithStartupRole(t *testing.T) {
+	f := fixture(t)
+	ctx := context.Background()
+	for _, tc := range []struct {
+		role string
+		open func(context.Context, string) (*pgxpool.Pool, error)
+	}{
+		{"commerce_runtime", platform.OpenPool},
+		{"commerce_identity", platform.OpenIdentityPool},
+		{"commerce_buyer_runtime", platform.OpenBuyerPool},
+		{"commerce_buyer_issuer", platform.OpenBuyerIssuerPool},
+		{"commerce_worker", platform.OpenWorkerPool},
+	} {
+		t.Run(tc.role, func(t *testing.T) {
+			masked, err := url.Parse(f.databaseURL)
+			if err != nil {
+				t.Fatal("parse fixture DSN")
+			}
+			query := masked.Query()
+			query.Set("options", "-c role="+tc.role)
+			masked.RawQuery = query.Encode()
+			if pool, err := tc.open(ctx, masked.String()); err == nil {
+				pool.Close()
+				t.Fatal("owner admitted under startup role")
+			}
+			if tc.role != "commerce_worker" {
+				return
+			}
+			// Independently prove the dangerous current_user/session_user split
+			// with SET ROLE after authentication. Startup option rejection alone
+			// could be a parser/auth failure rather than our authority gate.
+			cfg, err := pgxpool.ParseConfig(f.databaseURL)
+			if err != nil {
+				t.Fatal("parse supplied fixture pool")
+			}
+			cfg.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+				_, err := conn.Exec(ctx, `SET ROLE commerce_worker`)
+				return err
+			}
+			pool, err := pgxpool.NewWithConfig(ctx, cfg)
+			if err != nil {
+				t.Fatal("open masked fixture pool")
+			}
+			defer pool.Close()
+			var role string
+			var same bool
+			if err := pool.QueryRow(ctx, `SELECT current_user, session_user=current_user`).Scan(&role, &same); err != nil {
+				t.Fatal("read masked fixture identity")
+			}
+			if same || role != tc.role {
+				t.Fatal("fixture did not disguise owner")
+			}
+			if err := platform.ValidateWorkerPool(ctx, pool); err == nil {
+				t.Fatal("supplied owner pool admitted under SET ROLE")
+			}
+			if err := pool.Ping(ctx); err != nil {
+				t.Fatal("validator closed supplied pool")
+			}
+		})
+	}
+}
+
+func TestT06PolicyOutcomeCannotErasePossibleRemoteEffect(t *testing.T) {
+	_, pool := t06AuthorityLogin(t, "commerce_worker")
+	ctx := context.Background()
+	id, _ := t06AuthorityOperation(t)
+	token := []byte(strings.Repeat("p", 32))
+	claim := t06AuthorityTake(t, pool, id, token)
+	_, err := pool.Exec(ctx, `SELECT integration.complete_operation($1,$2,$3,'BLOCKED_POLICY','policy_denied','')`, id, claim.generation, token)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var state, code string
+	if err := pool.QueryRow(ctx, `SELECT state,result_code FROM integration.operations WHERE id=$1`, id).Scan(&state, &code); err != nil {
+		t.Fatal(err)
+	}
+	if state != "BLOCKED_POLICY" || code != "policy_denied" {
+		t.Fatalf("unexpected policy fact %s/%s", state, code)
+	}
+	uncertain, _ := t06AuthorityOperation(t)
+	claim = t06AuthorityTake(t, pool, uncertain, token)
+	if err := t06AuthorityFinish(pool, uncertain, claim.generation, token, "UNKNOWN"); err != nil {
+		t.Fatal(err)
+	}
+	claim = t06AuthorityTake(t, pool, uncertain, token)
+	_, err = pool.Exec(ctx, `SELECT integration.complete_operation($1,$2,$3,'BLOCKED_POLICY','policy_denied','')`, uncertain, claim.generation, token)
+	if err == nil {
+		t.Fatal("reconcile relabelled possible side effect as policy denied")
+	}
+	if err := pool.QueryRow(ctx, `SELECT state FROM integration.operations WHERE id=$1`, uncertain).Scan(&state); err != nil {
+		t.Fatal(err)
+	}
+	if state != "UNKNOWN" {
+		t.Fatalf("lost possible effect: %s", state)
+	}
+}
+
 func TestT06SQLLeaseOwnershipExpiryAndNoRedispatch(t *testing.T) {
 	f := fixture(t)
 	ctx := context.Background()

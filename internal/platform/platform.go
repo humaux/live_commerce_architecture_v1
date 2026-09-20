@@ -108,9 +108,9 @@ func ValidateWorkerPool(ctx context.Context, pool *pgxpool.Pool) error {
 }
 
 func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority string) error {
-	var superuser, bypassRLS, roleAdmin, databaseCreator, replication, objectOwner, runtimeMember, authMember, identityMember, buyerRuntimeMember, buyerIssuerMember, workerMember, canSetPrivileged bool
+	var sameLogin, superuser, bypassRLS, roleAdmin, databaseCreator, replication, objectOwner, runtimeMember, authMember, identityMember, buyerRuntimeMember, buyerIssuerMember, workerMember, canSetPrivileged bool
 	err := pool.QueryRow(ctx, `
-		SELECT r.rolsuper, r.rolbypassrls, r.rolcreaterole, r.rolcreatedb, r.rolreplication,
+		SELECT session_user=current_user, r.rolsuper, r.rolbypassrls, r.rolcreaterole, r.rolcreatedb, r.rolreplication,
 		       (EXISTS (
 			   SELECT 1 FROM pg_namespace n
 			   WHERE n.nspowner = r.oid
@@ -122,12 +122,12 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 			   SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 			   WHERE p.proowner=r.oid AND n.nspname NOT IN ('pg_catalog','information_schema')
 		       )),
-		       pg_has_role(current_user, 'commerce_runtime', 'MEMBER'),
-		       pg_has_role(current_user, 'commerce_auth', 'MEMBER'),
-		       pg_has_role(current_user, 'commerce_identity', 'MEMBER'),
-		       pg_has_role(current_user, 'commerce_buyer_runtime', 'MEMBER'),
-		       pg_has_role(current_user, 'commerce_buyer_issuer', 'MEMBER'),
-		       pg_has_role(current_user, 'commerce_worker', 'MEMBER'),
+		       pg_has_role(session_user, 'commerce_runtime', 'MEMBER'),
+		       pg_has_role(session_user, 'commerce_auth', 'MEMBER'),
+		       pg_has_role(session_user, 'commerce_identity', 'MEMBER'),
+		       pg_has_role(session_user, 'commerce_buyer_runtime', 'MEMBER'),
+		       pg_has_role(session_user, 'commerce_buyer_issuer', 'MEMBER'),
+		       pg_has_role(session_user, 'commerce_worker', 'MEMBER'),
 		       EXISTS (
 			   SELECT 1 FROM pg_roles candidate
 			   WHERE (candidate.rolsuper OR candidate.rolbypassrls OR candidate.rolcreaterole OR candidate.rolcreatedb OR candidate.rolreplication
@@ -142,10 +142,10 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 				   SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 				   WHERE p.proowner=candidate.oid AND n.nspname NOT IN ('pg_catalog','information_schema')
 			       ))
-			     AND pg_has_role(current_user, candidate.oid, 'SET')
+			     AND pg_has_role(session_user, candidate.oid, 'SET')
 		       )
-		FROM pg_roles r WHERE r.rolname = current_user`).
-		Scan(&superuser, &bypassRLS, &roleAdmin, &databaseCreator, &replication, &objectOwner, &runtimeMember, &authMember, &identityMember, &buyerRuntimeMember, &buyerIssuerMember, &workerMember, &canSetPrivileged)
+		FROM pg_roles r WHERE r.rolname = session_user`).
+		Scan(&sameLogin, &superuser, &bypassRLS, &roleAdmin, &databaseCreator, &replication, &objectOwner, &runtimeMember, &authMember, &identityMember, &buyerRuntimeMember, &buyerIssuerMember, &workerMember, &canSetPrivileged)
 	if err != nil {
 		return fmt.Errorf("validate runtime role: %w", err)
 	}
@@ -160,7 +160,9 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 		}
 	}
 	roleValid := memberships[authority] && roleCount == 1
-	if superuser || bypassRLS || roleAdmin || databaseCreator || replication || objectOwner || !roleValid || authMember || canSetPrivileged {
+	// A privileged login cannot launder its authority with startup SET ROLE:
+	// RESET ROLE would recover the session_user's capabilities after admission.
+	if !sameLogin || superuser || bypassRLS || roleAdmin || databaseCreator || replication || objectOwner || !roleValid || authMember || canSetPrivileged {
 		return errors.New("unsafe runtime database role")
 	}
 	return nil
