@@ -41,6 +41,16 @@ type Scope struct {
 // OpenPool opens the runtime pool and rejects privileged or schema-owning logins.
 // A login granted commerce_runtime is valid when it is itself not privileged.
 func OpenPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
+	return openPool(ctx, dsn, false)
+}
+
+// OpenIdentityPool is only for the trusted login/onboarding service. Never pass
+// this pool into business handlers: identity issuance is a different authority.
+func OpenIdentityPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
+	return openPool(ctx, dsn, true)
+}
+
+func openPool(ctx context.Context, dsn string, identity bool) (*pgxpool.Pool, error) {
 	if strings.TrimSpace(dsn) == "" {
 		return nil, errors.New("database url required")
 	}
@@ -61,33 +71,50 @@ func OpenPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("database unavailable: %w", err)
 	}
 
-	var superuser, bypassRLS, schemaOwner, runtimeMember, authMember, canSetPrivileged bool
+	var superuser, bypassRLS, roleAdmin, databaseCreator, replication, objectOwner, runtimeMember, authMember, identityMember, canSetPrivileged bool
 	err = pool.QueryRow(startup, `
-		SELECT r.rolsuper, r.rolbypassrls,
-		       EXISTS (
+		SELECT r.rolsuper, r.rolbypassrls, r.rolcreaterole, r.rolcreatedb, r.rolreplication,
+		       (EXISTS (
 			   SELECT 1 FROM pg_namespace n
 			   WHERE n.nspowner = r.oid
 			     AND n.nspname NOT IN ('pg_catalog', 'information_schema')
-		       ),
+		       ) OR EXISTS (
+			   SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+			   WHERE c.relowner=r.oid AND n.nspname NOT IN ('pg_catalog','information_schema')
+		       ) OR EXISTS (
+			   SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+			   WHERE p.proowner=r.oid AND n.nspname NOT IN ('pg_catalog','information_schema')
+		       )),
 		       pg_has_role(current_user, 'commerce_runtime', 'MEMBER'),
 		       pg_has_role(current_user, 'commerce_auth', 'MEMBER'),
+		       pg_has_role(current_user, 'commerce_identity', 'MEMBER'),
 		       EXISTS (
 			   SELECT 1 FROM pg_roles candidate
-			   WHERE (candidate.rolsuper OR candidate.rolbypassrls
+			   WHERE (candidate.rolsuper OR candidate.rolbypassrls OR candidate.rolcreaterole OR candidate.rolcreatedb OR candidate.rolreplication
 			       OR EXISTS (
 				   SELECT 1 FROM pg_namespace n
 				   WHERE n.nspowner = candidate.oid
 				     AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+			       ) OR EXISTS (
+				   SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+				   WHERE c.relowner=candidate.oid AND n.nspname NOT IN ('pg_catalog','information_schema')
+			       ) OR EXISTS (
+				   SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+				   WHERE p.proowner=candidate.oid AND n.nspname NOT IN ('pg_catalog','information_schema')
 			       ))
 			     AND pg_has_role(current_user, candidate.oid, 'SET')
 		       )
 		FROM pg_roles r WHERE r.rolname = current_user`).
-		Scan(&superuser, &bypassRLS, &schemaOwner, &runtimeMember, &authMember, &canSetPrivileged)
+		Scan(&superuser, &bypassRLS, &roleAdmin, &databaseCreator, &replication, &objectOwner, &runtimeMember, &authMember, &identityMember, &canSetPrivileged)
 	if err != nil {
 		pool.Close()
 		return nil, fmt.Errorf("validate runtime role: %w", err)
 	}
-	if superuser || bypassRLS || schemaOwner || !runtimeMember || authMember || canSetPrivileged {
+	roleValid := runtimeMember && !identityMember
+	if identity {
+		roleValid = identityMember && !runtimeMember
+	}
+	if superuser || bypassRLS || roleAdmin || databaseCreator || replication || objectOwner || !roleValid || authMember || canSetPrivileged {
 		pool.Close()
 		return nil, errors.New("unsafe runtime database role")
 	}

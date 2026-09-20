@@ -1,0 +1,36 @@
+# T03 merchant identity — bounded backend contract
+
+Status: implementation contract, not a claim of production IdP or browser-login acceptance.
+
+## Authority and scope
+
+- A configured, verified OIDC provider authenticates `(issuer, subject)`. Email, Meta OAuth, browser tenant headers and fixture bearer tokens never create or merge merchant identity.
+- `commerce_identity` is a dedicated trusted authentication-service group, not a schema owner, superuser, RLS bypass role or business API role. Its pool must never be passed to domain handlers. It has only schema USAGE and EXECUTE on fixed login/bootstrap/logout functions, not direct table access. A separate non-login `commerce_identity_writer` owns those SECURITY DEFINER functions with fixed `pg_catalog` search paths and PUBLIC execution revoked. No function takes an arbitrary principal/tenant/permission target. A credential compromise can still impersonate a provider subject (this is an identity authority); it cannot directly mutate arbitrary tenant permissions or forge arbitrary audit rows. Production must provision a distinct login/secret and endpoint rate limits.
+- Existing `commerce_auth` remains a read-only SECURITY DEFINER owner. Existing `commerce_runtime` cannot read identity mappings/flows or write sessions, memberships or grants. Both pool constructors reject cross-membership and privilege escalation.
+- This slice handles only merchant identity. Buyer, support, platform audiences remain separate and are not silently enabled.
+
+## Login state machine
+
+1. Start generates independent 256-bit state, browser binding, nonce and PKCE verifier. A five-minute flow stores state/binding hashes, nonce/verifier and a deployment-controlled provider key. Browser binding is destined for a Secure/HttpOnly, SameSite=Lax cookie, not client storage or a URL.
+2. Callback requires exact state plus binding, the same configured provider key, a nonempty code and an unexpired flow. Atomic deletion is committed **before** exchanging the code. Failed or ambiguous exchange/commit requires restarting login; no consumed code is retried.
+3. OIDC verifies signature, issuer, audience, expiry, nonce, subject and PKCE. Callback/issuer are HTTPS except explicit loopback test mode. Redirect URI is fixed in configuration, never taken from a callback parameter.
+4. Mapping + active principal + opaque merchant session + session-issued audit share one transaction. Only token hashes persist; provider access/refresh/ID tokens are not retained. Session TTL is explicit policy (5 minutes–24 hours), not inferred from provider tokens.
+5. Logout revokes the one current token and appends one audit record atomically. Repeated logout is harmless. No session or customer data is deleted.
+
+## First-store transaction
+
+- Onboarding is disabled unless explicitly enabled by deployment policy. Supported currencies must be supplied by policy; this implementation does not decide market, tax, plan, payment provider or logistics carrier.
+- Inputs: idempotency key (8–128 ASCII safe characters), tenant/store/initial warehouse names (1–120 Unicode characters), configured allowed currency. No tenant ID, principal ID, owner permissions or token duration are accepted from the client.
+- A valid, active, unrevoked merchant session is required. Lock session and principal, then create tenant, store, membership, the fixed existing owner permission set, the user-named initial warehouse, onboarding receipt and `merchant.store_created` audit in one transaction.
+- One initial-store receipt per principal. Same key + canonical payload returns the original IDs; changed key or payload conflicts. Concurrent requests serialize on the principal. Failed transactions leave no partial tenant/store/grants/warehouse/audit.
+- This is initial-store creation only, not arbitrary extra stores, invitations, ownership transfers or merchant lifecycle management.
+
+## Acceptance and stop lines
+
+Required: signed mock IdP positive and negative tests; real PG18 single-use flow and concurrency tests; active/revoked/expired/audience session checks; literal identity mapping (no email merge); idempotent/concurrent onboarding and failure rollback; cross-tenant 401/403/404 and runtime/auth role separation. Root replays tests independently.
+
+Still required before T03/global G01/G02/G11 PASS: approved login/onboarding visual comps; production BFF cookie/CSRF integration; real browser login→store→ledger→logout; chosen IdP/registration policy, deployment secret provisioning, rate limiting and lifecycle/retention operations. Local signed mock evidence must remain labelled `PROVIDER_MOCK`.
+
+## Dependencies and simplicity decision
+
+Reuse PostgreSQL transactions/constraints and the existing merchant session resolver. Use maintained `coreos/go-oidc/v3` for JOSE/OIDC and `x/oauth2` for code/PKCE exchange; do not write a JWT verifier or password store. No extra cache/session service is introduced. The provider interface is a testing seam for signed mock and failure injection, not a pluggable marketplace.

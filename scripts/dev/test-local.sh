@@ -27,10 +27,15 @@ for ((attempt=0; attempt<40; attempt++)); do
   sleep 0.5
 done
 docker exec "$test_container" pg_isready -U postgres -d lc_foundation_test >/dev/null
+# The fixture safety guard needs a distinct, explicitly disposable database.
+# Reuse this owned cluster, not a developer's running UI fixture or credentials.
+docker exec "$test_container" createdb -U postgres lc_admin_fixture
 test_port="$(docker port "$test_container" 5432/tcp)"
 [[ "$test_port" == 127.0.0.1:* ]]
 export LC_TEST_DATABASE_URL="postgres://postgres:${POSTGRES_PASSWORD}@${test_port}/lc_foundation_test?sslmode=disable"
 export LC_TEST_DATABASE_ALLOWED=1
+export COMMERCE_FIXTURE_ALLOWED=1
+export LC_ADMIN_GUARD_DSN="postgres://postgres:${POSTGRES_PASSWORD}@${test_port}/lc_admin_fixture?sslmode=disable"
 GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=120s -v ./...
 GOTOOLCHAIN=go1.27.1 go vet ./...
 printf 'PASS: isolated real PostgreSQL foundation tests; fixture removed at exit.\n'
