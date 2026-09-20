@@ -56,6 +56,10 @@ CREATE POLICY events_writer ON buyer.capability_events TO commerce_buyer_writer 
 GRANT SELECT,INSERT ON buyer.owners,buyer.capability_sessions,buyer.capability_events TO commerce_buyer_writer;
 GRANT SELECT ON control.tenants,control.stores TO commerce_buyer_writer;
 CREATE POLICY stores_buyer_lookup ON control.stores FOR SELECT TO commerce_buyer_writer USING (true);
+-- PG also checks UPDATE-row visibility for SELECT ... FOR SHARE. This permits
+-- locking visible stores, but WITH CHECK false still rejects an actual UPDATE.
+CREATE POLICY stores_buyer_lock ON control.stores FOR UPDATE TO commerce_buyer_writer
+    USING (true) WITH CHECK (false);
 -- Row locks require an UPDATE column grant. No public/login role inherits this
 -- role; the fixed functions below never update these identity/scope columns.
 GRANT UPDATE (id) ON control.tenants,control.stores,buyer.owners TO commerce_buyer_writer;
