@@ -5,11 +5,13 @@ import (
 	"context"
 	"errors"
 	"regexp"
+	"strconv"
 	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"livecommerce/internal/command"
+	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
 )
 
@@ -138,24 +140,47 @@ func ArchiveProduct(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, i
 }
 
 func ListProducts(ctx context.Context, tx pgx.Tx, scope platform.Scope) ([]Product, error) {
+	page, err := ListProductsPage(ctx, tx, scope, pagination.Request{Limit: 100})
+	return page.Items, err
+}
+
+func ListProductsPage(ctx context.Context, tx pgx.Tx, scope platform.Scope, request pagination.Request) (pagination.Page[Product], error) {
+	page := pagination.Page[Product]{Items: make([]Product, 0)}
 	if !validScope(tx, scope) {
-		return nil, command.ErrInvalid
+		return page, command.ErrInvalid
 	}
-	rows, err := tx.Query(ctx, `SELECT id::text,name,description,status,version FROM catalog.products
-		WHERE tenant_id=$1 AND store_id=$2 ORDER BY id LIMIT 100`, scope.TenantID, scope.StoreID)
+	binding := pagination.Binding{TenantID: scope.TenantID, StoreID: scope.StoreID, Collection: "products"}
+	limit, after, err := pagination.Decode(request, binding, 1)
 	if err != nil {
-		return nil, mapError(err)
+		return page, err
+	}
+	args := []any{scope.TenantID, scope.StoreID}
+	if len(after) == 1 {
+		args = append(args, after[0])
+	}
+	query := `SELECT id::text,name,description,status,version FROM catalog.products WHERE tenant_id=$1 AND store_id=$2` + keysetID(after, 3) + ` ORDER BY id LIMIT $` + strconv.Itoa(len(args)+1)
+	args = append(args, limit+1)
+	rows, err := tx.Query(ctx, query, args...)
+	if err != nil {
+		return page, mapError(err)
 	}
 	defer rows.Close()
-	out := make([]Product, 0)
 	for rows.Next() {
 		var p Product
 		if err := rows.Scan(&p.ID, &p.Name, &p.Description, &p.Status, &p.Version); err != nil {
-			return nil, err
+			return page, err
 		}
-		out = append(out, p)
+		page.Items = append(page.Items, p)
 	}
-	return out, mapError(rows.Err())
+	if err := rows.Err(); err != nil {
+		return page, mapError(err)
+	}
+	if len(page.Items) <= limit {
+		return page, nil
+	}
+	page.Items = page.Items[:limit]
+	page.NextCursor, err = pagination.Encode(binding, []string{page.Items[len(page.Items)-1].ID})
+	return page, err
 }
 
 func CreateSKU(ctx context.Context, tx pgx.Tx, scope platform.Scope, key string, in SKUInput) (out SKU, err error) {
@@ -273,28 +298,59 @@ func ArchiveSKU(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, id st
 }
 
 func ListSKUs(ctx context.Context, tx pgx.Tx, scope platform.Scope, productID string) ([]SKU, error) {
+	page, err := ListSKUsPage(ctx, tx, scope, productID, pagination.Request{Limit: 100})
+	return page.Items, err
+}
+
+func ListSKUsPage(ctx context.Context, tx pgx.Tx, scope platform.Scope, productID string, request pagination.Request) (pagination.Page[SKU], error) {
+	page := pagination.Page[SKU]{Items: make([]SKU, 0)}
 	if !validScope(tx, scope) || !command.ValidID(productID) {
-		return nil, command.ErrInvalid
+		return page, command.ErrInvalid
 	}
 	if err := lockProduct(ctx, tx, scope, productID); err != nil {
-		return nil, mapError(err)
+		return page, mapError(err)
 	}
-	rows, err := tx.Query(ctx, `SELECT id::text,product_id::text,code,status,currency,price_minor,version,weight_grams,length_mm,width_mm,height_mm,origin_country,customs_name,hs_candidate FROM catalog.skus
-		WHERE tenant_id=$1 AND store_id=$2 AND product_id=$3 ORDER BY id LIMIT 100`, scope.TenantID, scope.StoreID, productID)
+	binding := pagination.Binding{TenantID: scope.TenantID, StoreID: scope.StoreID, Collection: "skus", ParentID: productID}
+	limit, after, err := pagination.Decode(request, binding, 1)
 	if err != nil {
-		return nil, mapError(err)
+		return page, err
+	}
+	query := `SELECT id::text,product_id::text,code,status,currency,price_minor,version,weight_grams,length_mm,width_mm,height_mm,origin_country,customs_name,hs_candidate FROM catalog.skus WHERE tenant_id=$1 AND store_id=$2 AND product_id=$3` + keysetID(after, 4) + ` ORDER BY id LIMIT $` + placeholder(4+len(after))
+	args := []any{scope.TenantID, scope.StoreID, productID}
+	if len(after) == 1 {
+		args = append(args, after[0])
+	}
+	args = append(args, limit+1)
+	rows, err := tx.Query(ctx, query, args...)
+	if err != nil {
+		return page, mapError(err)
 	}
 	defer rows.Close()
-	out := make([]SKU, 0)
 	for rows.Next() {
 		var sku SKU
 		if err := rows.Scan(skuFields(&sku)...); err != nil {
-			return nil, err
+			return page, err
 		}
-		out = append(out, sku)
+		page.Items = append(page.Items, sku)
 	}
-	return out, mapError(rows.Err())
+	if err := rows.Err(); err != nil {
+		return page, mapError(err)
+	}
+	if len(page.Items) <= limit {
+		return page, nil
+	}
+	page.Items = page.Items[:limit]
+	page.NextCursor, err = pagination.Encode(binding, []string{page.Items[len(page.Items)-1].ID})
+	return page, err
 }
+
+func keysetID(after []string, position int) string {
+	if len(after) == 1 {
+		return ` AND id>$` + strconv.Itoa(position) + `::uuid`
+	}
+	return ``
+}
+func placeholder(number int) string { return strconv.Itoa(number) }
 
 func lockProduct(ctx context.Context, tx pgx.Tx, scope platform.Scope, id string) error {
 	var ignored string
