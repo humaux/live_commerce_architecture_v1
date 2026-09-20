@@ -59,7 +59,9 @@ export function isLocale(value: unknown): value is Locale {
 
 function firstPathSegment(pathname: string): string | undefined {
   if (!pathname.startsWith('/') || pathname.startsWith('//') || /[\\\u0000-\u001f\u007f]/.test(pathname)) return undefined;
-  const segment = pathname.slice(1).split('/')[0];
+  const cut = pathname.search(/[?#]/);
+  const pathOnly = cut < 0 ? pathname : pathname.slice(0, cut);
+  const segment = pathOnly.slice(1).split('/')[0];
   return segment || undefined;
 }
 
@@ -74,17 +76,24 @@ function qualityRanges(header: string): Array<{ range: string; q: number; order:
     const [rawRange, ...params] = part.trim().split(';');
     const range = rawRange.trim().toLowerCase();
     if (!range) return { range, q: -1, order };
-    const qParam = params.find((p) => /^\s*q\s*=/i.test(p));
-    const q = qParam ? Number(qParam.split('=')[1]?.trim()) : 1;
-    return { range, q: Number.isFinite(q) && q >= 0 && q <= 1 ? q : -1, order };
+    if (!/^(?:\*|[a-z]{2,8}(?:-[a-z0-9]{1,8})*)$/i.test(range)) return { range, q: -1, order };
+    const qParams = params.filter((p) => /^\s*q\s*=/i.test(p));
+    if (qParams.length > 1) return { range, q: -1, order };
+    const rawQ = qParams[0]?.split('=')[1]?.trim();
+    if (rawQ !== undefined && !/^(?:0(?:\.\d{0,3})?|1(?:\.0{0,3})?)$/.test(rawQ)) return { range, q: -1, order };
+    return { range, q: rawQ === undefined ? 1 : Number(rawQ), order };
   }).filter((item) => item.q > 0).sort((a, b) => b.q - a.q || a.order - b.order);
 }
 
 function languageToLocale(range: string): Locale | undefined {
   if (range === 'en' || range.startsWith('en-')) return 'en';
-  if (range === 'zh-hans' || ['zh-cn', 'zh-sg'].includes(range)) return 'zh-CN';
-  if (range === 'zh-hant' || ['zh-tw', 'zh-hk', 'zh-mo'].includes(range)) return 'zh-TW';
-  if (range === 'zh') return 'zh-CN';
+  const parts = range.split('-');
+  if (parts[0] !== 'zh') return undefined;
+  const subtags = parts.slice(1);
+  const script = subtags.find((part) => /^(?:hans|hant)$/i.test(part));
+  const region = subtags.find((part) => /^(?:[a-z]{2}|\d{3})$/i.test(part));
+  if (script?.toLowerCase() === 'hant' || ['tw', 'hk', 'mo'].includes(region ?? '')) return 'zh-TW';
+  if (script?.toLowerCase() === 'hans' || ['cn', 'sg'].includes(region ?? '') || parts.length === 1) return 'zh-CN';
   return undefined;
 }
 
@@ -120,13 +129,14 @@ function validatePath(path: string): { pathname: string; suffix: string } {
     if (next === decoded) break;
     decoded = next;
   }
-  if (/[\\\u0000-\u001f\u007f]/.test(decoded) || decoded.split('/').some((part) => part === '.' || part === '..')) throw new RangeError('Invalid localized path');
+  if (/%[0-9a-f]{2}/i.test(decoded) || /[\\\u0000-\u001f\u007f]/.test(decoded) || decoded.split('/').some((part) => part === '.' || part === '..')) throw new RangeError('Invalid localized path');
   return { pathname, suffix };
 }
 
 export function localizedPath(locale: Locale, path: string): string {
   if (!isLocale(locale)) throw new RangeError('Invalid locale');
   const { pathname, suffix } = validatePath(path);
+  if (pathname === '/') return `/${locale}${suffix}`;
   const segments = pathname.split('/');
   if (isLocale(segments[1])) segments[1] = locale;
   else segments.splice(1, 0, locale);

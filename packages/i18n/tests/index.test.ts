@@ -14,23 +14,33 @@ test('locale precedence and language quality mapping', () => {
   assert.equal(resolveLocale({ ...base, preference: 'en', acceptLanguage: 'en;q=1' }), 'zh-TW');
   assert.equal(resolveLocale({ ...base, pathname: '/products', preference: 'zh-CN' }), 'zh-CN');
   assert.equal(resolveLocale({ ...base, pathname: '/products', preference: 'bad', acceptLanguage: 'zh-Hant-TW;q=0.9,en;q=1' }), 'en');
+  for (const range of ['zh-Hant', 'zh-Hant-TW', 'zh-Hant-HK', 'zh-Hant-MO']) {
+    assert.equal(resolveLocale({ ...base, pathname: '/products', acceptLanguage: `${range};q=0.9` }), 'zh-TW');
+  }
+  for (const range of ['zh-Hans', 'zh-Hans-CN', 'zh-CN', 'zh-SG', 'zh']) {
+    assert.equal(resolveLocale({ ...base, pathname: '/products', acceptLanguage: `${range};q=0.9` }), 'zh-CN');
+  }
   assert.equal(resolveLocale({ ...base, pathname: '/products', acceptLanguage: 'zh-Hant;q=0.9,en;q=0' }), 'zh-TW');
   assert.equal(resolveLocale({ ...base, pathname: '/products', acceptLanguage: 'fr;q=1' }), 'en');
-  assert.equal(resolveLocale({ ...base, pathname: '/products', acceptLanguage: 'fr;q=no,en;q=0.4' }), 'en');
+  assert.equal(resolveLocale({ ...base, pathname: '/products', acceptLanguage: 'zh-TW;q=abc,en;q=0.4' }), 'en');
+  assert.equal(resolveLocale({ ...base, pathname: '/products', acceptLanguage: 'zh-TW;q=0.5;q=0.2,en;q=0.4' }), 'en');
+  assert.equal(resolveLocale({ ...base, pathname: '/products', acceptLanguage: 'zh-TW;q=2,en;q=0.4' }), 'en');
   assert.equal(resolveLocale({ ...base, pathname: '/products', acceptLanguage: `${'en,'.repeat(40)}zh-CN` }), 'en');
 });
 
 test('localized paths preserve deep links and reject dangerous input', () => {
   assert.equal(localizedPath('en', '/products/42?x=1#top'), '/en/products/42?x=1#top');
   assert.equal(localizedPath('zh-CN', '/zh-TW/products/42'), '/zh-CN/products/42');
-  assert.equal(localizedPath('en', '/'), '/en/');
-  for (const path of ['https://evil.test/x', '//evil.test/x', '/a/../b', '/a/%2e%2e/b', '/a/%252e%252e/b', '/a/%2f/b', '/a/%252f/b', '/a/%', '/a\\b', '/a\u0000b', `/${'x'.repeat(4096)}`]) {
+  assert.equal(localizedPath('en', '/'), '/en');
+  for (const path of ['https://evil.test/x', '//evil.test/x', '/a/../b', '/a/%2e%2e/b', '/a/%252e%252e/b', '/a/%2525252525252e%2525252525252e/b', '/a/%2f/b', '/a/%252f/b', '/a/%2525252525252f/b', '/a/%', '/a\\b', '/a\u0000b', `/${'x'.repeat(4096)}`]) {
     assert.throws(() => localizedPath('en', path), RangeError);
   }
 });
 
 test('path locale only matches a canonical first segment', () => {
   assert.equal(localeFromPath('/en/products'), 'en');
+  assert.equal(localeFromPath('/en?x=1'), 'en');
+  assert.equal(localeFromPath('/zh-TW#top'), 'zh-TW');
   assert.equal(localeFromPath('/en-US/products'), undefined);
   assert.equal(localeFromPath('/products/en'), undefined);
   assert.equal(localeFromPath('https://example.test/en'), undefined);
