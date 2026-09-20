@@ -1,0 +1,273 @@
+// Package platform provides the narrow HTTP and database foundation shared by
+// the API process. Domain packages receive a scoped transaction, never a pool.
+package platform
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+var ErrUnauthorized = errors.New("unauthorized")
+
+const (
+	storeReadPermission = "store:read"
+	auditReadPermission = "audit:read"
+)
+
+// Scope is resolved by identity.resolve_scope and is not derived from HTTP input.
+type Scope struct {
+	TenantID    string
+	StoreID     string
+	PrincipalID string
+	Revision    int64
+}
+
+// OpenPool opens the runtime pool and rejects privileged or schema-owning logins.
+// A login granted commerce_runtime is valid when it is itself not privileged.
+func OpenPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
+	if strings.TrimSpace(dsn) == "" {
+		return nil, errors.New("database url required")
+	}
+	config, err := pgxpool.ParseConfig(dsn)
+	if err != nil {
+		return nil, fmt.Errorf("parse database config: %w", err)
+	}
+	config.MaxConns = 8
+
+	pool, err := pgxpool.NewWithConfig(ctx, config)
+	if err != nil {
+		return nil, fmt.Errorf("open database pool: %w", err)
+	}
+	startup, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if err := pool.Ping(startup); err != nil {
+		pool.Close()
+		return nil, fmt.Errorf("database unavailable: %w", err)
+	}
+
+	var superuser, bypassRLS, schemaOwner bool
+	err = pool.QueryRow(startup, `
+		SELECT r.rolsuper, r.rolbypassrls,
+		       EXISTS (
+			   SELECT 1 FROM pg_namespace n
+			   WHERE n.nspowner = r.oid
+			     AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+		       )
+		FROM pg_roles r WHERE r.rolname = current_user`).
+		Scan(&superuser, &bypassRLS, &schemaOwner)
+	if err != nil {
+		pool.Close()
+		return nil, fmt.Errorf("validate runtime role: %w", err)
+	}
+	if superuser || bypassRLS || schemaOwner {
+		pool.Close()
+		return nil, errors.New("unsafe runtime database role")
+	}
+	return pool, nil
+}
+
+// WithScope resolves an opaque session inside a transaction, sets transaction-local
+// RLS context, and runs fn. Every non-success path rolls back with an independent,
+// bounded cleanup context.
+func WithScope(ctx context.Context, pool *pgxpool.Pool, token, storeID, permission string, fn func(pgx.Tx, Scope) error) (err error) {
+	if pool == nil || fn == nil || len(token) < 32 || len(token) > 512 || !isCanonicalUUID(storeID) {
+		return ErrUnauthorized
+	}
+	transaction, err := pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			rollback(transaction)
+			panic(recovered)
+		}
+		if err != nil {
+			rollback(transaction)
+		}
+	}()
+
+	hash := sha256.Sum256([]byte(token))
+	var scope Scope
+	err = transaction.QueryRow(ctx, `SELECT tenant_id::text, principal_id::text, authz_revision
+		FROM identity.resolve_scope($1, $2::uuid, $3)`, hash[:], storeID, permission).
+		Scan(&scope.TenantID, &scope.PrincipalID, &scope.Revision)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrUnauthorized
+	}
+	if err != nil {
+		return err
+	}
+	scope.StoreID = storeID
+	_, err = transaction.Exec(ctx, `SELECT
+		set_config('app.tenant_id', $1, true),
+		set_config('app.store_id', $2, true),
+		set_config('app.principal_id', $3, true)`, scope.TenantID, scope.StoreID, scope.PrincipalID)
+	if err != nil {
+		return err
+	}
+	if err = fn(transaction, scope); err != nil {
+		return err
+	}
+	return transaction.Commit(ctx)
+}
+
+func rollback(transaction pgx.Tx) {
+	cleanup, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	_ = transaction.Rollback(cleanup)
+}
+
+func isCanonicalUUID(value string) bool {
+	if len(value) != 36 || value != strings.ToLower(value) {
+		return false
+	}
+	for index, character := range value {
+		switch index {
+		case 8, 13, 18, 23:
+			if character != '-' {
+				return false
+			}
+		default:
+			if !(character >= '0' && character <= '9' || character >= 'a' && character <= 'f') {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// NewHandler returns the small API surface. Authorization permissions are fixed
+// constants selected by the route, never supplied by a caller.
+func NewHandler(pool *pgxpool.Pool) http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	})
+	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
+		if pool == nil {
+			writeError(w, http.StatusServiceUnavailable, "unavailable")
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		defer cancel()
+		if err := pool.Ping(ctx); err != nil {
+			writeError(w, http.StatusServiceUnavailable, "unavailable")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	})
+	mux.HandleFunc("GET /v1/admin/stores/{store_id}", storeHandler(pool))
+	mux.HandleFunc("GET /v1/admin/stores/{store_id}/audit-events", auditHandler(pool))
+	return noStore(mux)
+}
+
+func storeHandler(pool *pgxpool.Pool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		token, ok := bearerToken(r)
+		if !ok {
+			writeError(w, http.StatusUnauthorized, "unauthorized")
+			return
+		}
+		storeID := r.PathValue("store_id")
+		var store struct {
+			ID       string `json:"id"`
+			Name     string `json:"name"`
+			Currency string `json:"currency"`
+		}
+		err := WithScope(r.Context(), pool, token, storeID, storeReadPermission, func(tx pgx.Tx, _ Scope) error {
+			return tx.QueryRow(r.Context(), `SELECT id::text, name, currency FROM control.stores WHERE id = $1::uuid`, storeID).
+				Scan(&store.ID, &store.Name, &store.Currency)
+		})
+		switch {
+		case errors.Is(err, ErrUnauthorized):
+			writeError(w, http.StatusUnauthorized, "unauthorized")
+		case errors.Is(err, pgx.ErrNoRows):
+			writeError(w, http.StatusNotFound, "not_found")
+		case err != nil:
+			writeError(w, http.StatusInternalServerError, "internal")
+		default:
+			writeJSON(w, http.StatusOK, store)
+		}
+	}
+}
+
+func auditHandler(pool *pgxpool.Pool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		token, ok := bearerToken(r)
+		if !ok {
+			writeError(w, http.StatusUnauthorized, "unauthorized")
+			return
+		}
+		storeID := r.PathValue("store_id")
+		events := make([]struct {
+			ID        string    `json:"id"`
+			Action    string    `json:"action"`
+			CreatedAt time.Time `json:"created_at"`
+		}, 0)
+		err := WithScope(r.Context(), pool, token, storeID, auditReadPermission, func(tx pgx.Tx, _ Scope) error {
+			rows, err := tx.Query(r.Context(), `SELECT id::text, action, created_at
+				FROM ops.audit_events WHERE store_id = $1::uuid ORDER BY created_at DESC LIMIT 50`, storeID)
+			if err != nil {
+				return err
+			}
+			defer rows.Close()
+			for rows.Next() {
+				var event struct {
+					ID        string    `json:"id"`
+					Action    string    `json:"action"`
+					CreatedAt time.Time `json:"created_at"`
+				}
+				if err := rows.Scan(&event.ID, &event.Action, &event.CreatedAt); err != nil {
+					return err
+				}
+				events = append(events, event)
+			}
+			return rows.Err()
+		})
+		if errors.Is(err, ErrUnauthorized) {
+			writeError(w, http.StatusUnauthorized, "unauthorized")
+			return
+		}
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "internal")
+			return
+		}
+		writeJSON(w, http.StatusOK, events)
+	}
+}
+
+func noStore(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		next.ServeHTTP(w, r)
+	})
+}
+
+func bearerToken(r *http.Request) (string, bool) {
+	value := r.Header.Get("Authorization")
+	if !strings.HasPrefix(value, "Bearer ") {
+		return "", false
+	}
+	token := strings.TrimPrefix(value, "Bearer ")
+	return token, token != ""
+}
+
+func writeError(w http.ResponseWriter, status int, code string) {
+	writeJSON(w, status, map[string]string{"error": code})
+}
+
+func writeJSON(w http.ResponseWriter, status int, value any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(value)
+}
