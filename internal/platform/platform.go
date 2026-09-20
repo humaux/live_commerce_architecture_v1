@@ -21,6 +21,9 @@ var ErrUnauthorized = errors.New("unauthorized")
 const (
 	storeReadPermission = "store:read"
 	auditReadPermission = "audit:read"
+	requestTimeout      = 5 * time.Second
+	startupTimeout      = 2 * time.Second
+	lockTimeout         = time.Second
 )
 
 // Scope is resolved by identity.resolve_scope and is not derived from HTTP input.
@@ -43,32 +46,44 @@ func OpenPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	}
 	config.MaxConns = 8
 
-	pool, err := pgxpool.NewWithConfig(ctx, config)
+	startup, cancel := context.WithTimeout(ctx, startupTimeout)
+	defer cancel()
+	pool, err := pgxpool.NewWithConfig(startup, config)
 	if err != nil {
 		return nil, fmt.Errorf("open database pool: %w", err)
 	}
-	startup, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
 	if err := pool.Ping(startup); err != nil {
 		pool.Close()
 		return nil, fmt.Errorf("database unavailable: %w", err)
 	}
 
-	var superuser, bypassRLS, schemaOwner bool
+	var superuser, bypassRLS, schemaOwner, runtimeMember, authMember, canSetPrivileged bool
 	err = pool.QueryRow(startup, `
 		SELECT r.rolsuper, r.rolbypassrls,
 		       EXISTS (
 			   SELECT 1 FROM pg_namespace n
 			   WHERE n.nspowner = r.oid
 			     AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+		       ),
+		       pg_has_role(current_user, 'commerce_runtime', 'MEMBER'),
+		       pg_has_role(current_user, 'commerce_auth', 'MEMBER'),
+		       EXISTS (
+			   SELECT 1 FROM pg_roles candidate
+			   WHERE (candidate.rolsuper OR candidate.rolbypassrls
+			       OR EXISTS (
+				   SELECT 1 FROM pg_namespace n
+				   WHERE n.nspowner = candidate.oid
+				     AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+			       ))
+			     AND pg_has_role(current_user, candidate.oid, 'SET')
 		       )
 		FROM pg_roles r WHERE r.rolname = current_user`).
-		Scan(&superuser, &bypassRLS, &schemaOwner)
+		Scan(&superuser, &bypassRLS, &schemaOwner, &runtimeMember, &authMember, &canSetPrivileged)
 	if err != nil {
 		pool.Close()
 		return nil, fmt.Errorf("validate runtime role: %w", err)
 	}
-	if superuser || bypassRLS || schemaOwner {
+	if superuser || bypassRLS || schemaOwner || !runtimeMember || authMember || canSetPrivileged {
 		pool.Close()
 		return nil, errors.New("unsafe runtime database role")
 	}
@@ -79,10 +94,21 @@ func OpenPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 // RLS context, and runs fn. Every non-success path rolls back with an independent,
 // bounded cleanup context.
 func WithScope(ctx context.Context, pool *pgxpool.Pool, token, storeID, permission string, fn func(pgx.Tx, Scope) error) (err error) {
+	if fn == nil {
+		return ErrUnauthorized
+	}
+	return withScopeContext(ctx, pool, token, storeID, permission, func(_ context.Context, tx pgx.Tx, scope Scope) error {
+		return fn(tx, scope)
+	})
+}
+
+func withScopeContext(ctx context.Context, pool *pgxpool.Pool, token, storeID, permission string, fn func(context.Context, pgx.Tx, Scope) error) (err error) {
 	if pool == nil || fn == nil || len(token) < 32 || len(token) > 512 || !isCanonicalUUID(storeID) {
 		return ErrUnauthorized
 	}
-	transaction, err := pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
+	scopeCtx, cancel := context.WithTimeout(ctx, requestTimeout)
+	defer cancel()
+	transaction, err := pool.BeginTx(scopeCtx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
 	if err != nil {
 		return err
 	}
@@ -98,7 +124,14 @@ func WithScope(ctx context.Context, pool *pgxpool.Pool, token, storeID, permissi
 
 	hash := sha256.Sum256([]byte(token))
 	var scope Scope
-	err = transaction.QueryRow(ctx, `SELECT tenant_id::text, principal_id::text, authz_revision
+	_, err = transaction.Exec(scopeCtx, `SELECT
+		set_config('statement_timeout', $1, true),
+		set_config('lock_timeout', $2, true),
+		set_config('idle_in_transaction_session_timeout', $3, true)`, requestTimeout.String(), lockTimeout.String(), requestTimeout.String())
+	if err != nil {
+		return err
+	}
+	err = transaction.QueryRow(scopeCtx, `SELECT tenant_id::text, principal_id::text, authz_revision
 		FROM identity.resolve_scope($1, $2::uuid, $3)`, hash[:], storeID, permission).
 		Scan(&scope.TenantID, &scope.PrincipalID, &scope.Revision)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -108,17 +141,17 @@ func WithScope(ctx context.Context, pool *pgxpool.Pool, token, storeID, permissi
 		return err
 	}
 	scope.StoreID = storeID
-	_, err = transaction.Exec(ctx, `SELECT
+	_, err = transaction.Exec(scopeCtx, `SELECT
 		set_config('app.tenant_id', $1, true),
 		set_config('app.store_id', $2, true),
 		set_config('app.principal_id', $3, true)`, scope.TenantID, scope.StoreID, scope.PrincipalID)
 	if err != nil {
 		return err
 	}
-	if err = fn(transaction, scope); err != nil {
+	if err = fn(scopeCtx, transaction, scope); err != nil {
 		return err
 	}
-	return transaction.Commit(ctx)
+	return transaction.Commit(scopeCtx)
 }
 
 func rollback(transaction pgx.Tx) {
@@ -158,7 +191,7 @@ func NewHandler(pool *pgxpool.Pool) http.Handler {
 			writeError(w, http.StatusServiceUnavailable, "unavailable")
 			return
 		}
-		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		ctx, cancel := context.WithTimeout(r.Context(), startupTimeout)
 		defer cancel()
 		if err := pool.Ping(ctx); err != nil {
 			writeError(w, http.StatusServiceUnavailable, "unavailable")
@@ -173,19 +206,14 @@ func NewHandler(pool *pgxpool.Pool) http.Handler {
 
 func storeHandler(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		token, ok := bearerToken(r)
-		if !ok {
-			writeError(w, http.StatusUnauthorized, "unauthorized")
-			return
-		}
 		storeID := r.PathValue("store_id")
 		var store struct {
 			ID       string `json:"id"`
 			Name     string `json:"name"`
 			Currency string `json:"currency"`
 		}
-		err := WithScope(r.Context(), pool, token, storeID, storeReadPermission, func(tx pgx.Tx, _ Scope) error {
-			return tx.QueryRow(r.Context(), `SELECT id::text, name, currency FROM control.stores WHERE id = $1::uuid`, storeID).
+		err := withRequestScope(r, pool, storeID, storeReadPermission, func(ctx context.Context, tx pgx.Tx, _ Scope) error {
+			return tx.QueryRow(ctx, `SELECT id::text, name, currency FROM control.stores WHERE id = $1::uuid`, storeID).
 				Scan(&store.ID, &store.Name, &store.Currency)
 		})
 		switch {
@@ -203,19 +231,14 @@ func storeHandler(pool *pgxpool.Pool) http.HandlerFunc {
 
 func auditHandler(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		token, ok := bearerToken(r)
-		if !ok {
-			writeError(w, http.StatusUnauthorized, "unauthorized")
-			return
-		}
 		storeID := r.PathValue("store_id")
 		events := make([]struct {
 			ID        string    `json:"id"`
 			Action    string    `json:"action"`
 			CreatedAt time.Time `json:"created_at"`
 		}, 0)
-		err := WithScope(r.Context(), pool, token, storeID, auditReadPermission, func(tx pgx.Tx, _ Scope) error {
-			rows, err := tx.Query(r.Context(), `SELECT id::text, action, created_at
+		err := withRequestScope(r, pool, storeID, auditReadPermission, func(ctx context.Context, tx pgx.Tx, _ Scope) error {
+			rows, err := tx.Query(ctx, `SELECT id::text, action, created_at
 				FROM ops.audit_events WHERE store_id = $1::uuid ORDER BY created_at DESC LIMIT 50`, storeID)
 			if err != nil {
 				return err
@@ -244,6 +267,16 @@ func auditHandler(pool *pgxpool.Pool) http.HandlerFunc {
 		}
 		writeJSON(w, http.StatusOK, events)
 	}
+}
+
+func withRequestScope(r *http.Request, pool *pgxpool.Pool, storeID, permission string, fn func(context.Context, pgx.Tx, Scope) error) error {
+	token, ok := bearerToken(r)
+	if !ok {
+		return ErrUnauthorized
+	}
+	requestCtx, cancel := context.WithTimeout(r.Context(), requestTimeout)
+	defer cancel()
+	return withScopeContext(requestCtx, pool, token, storeID, permission, fn)
 }
 
 func noStore(next http.Handler) http.Handler {
