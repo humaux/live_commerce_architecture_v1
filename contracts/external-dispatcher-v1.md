@@ -8,7 +8,9 @@ provider eligibility and full T06 remain separate gates.
 
 `core.NewDispatcher(ctx, pool, routes, options)` validates the existing pool as
 an ordinary, exact `commerce_worker` login using shared platform validation.
-No owner, merchant, identity, buyer or mixed-authority pool is accepted. It
+No owner, merchant, identity, buyer or mixed-authority pool is accepted. The
+validator checks session_user authority and rejects session_user != current_user;
+startup SET ROLE cannot disguise an owner login. It
 returns a River worker for the existing `external_operation_v1` job, registered
 with `river.AddWorker`; it owns neither the supplied pool nor River lifecycle.
 There is no production command populated with a pretend provider adapter.
@@ -52,8 +54,15 @@ River attempt, generation, process, credential rotation or job retention.
    becomes UNKNOWN with a fixed code, never a fabricated remote rejection.
 6. SUCCEEDED/FAILED_FINAL finish the River job. UNKNOWN/ACKNOWLEDGED snooze for
    query-only follow-up. A bounded number of claimed generations stops automatic
-   reconciliation with a cancelled queue job and UNKNOWN/ACKNOWLEDGED preserved
-   for manual recovery. Queue completion/cancellation is not business success.
+   reconciliation with UNKNOWN/ACKNOWLEDGED preserved and result/event code
+   `reconcile_budget_exhausted` committed before cancelling the queue job. This
+   code exposes manual-required state to the merchant ledger, without River read
+   grants. Failed/uncertain Complete must retry/read back, not cancel blindly.
+   Generation equal to the budget permits its last query; a terminal observed
+   result still wins. An already exhausted result cancels without a new claim.
+   A crash at the final generation may take one cleanup-only lease to persist
+   exhaustion, but makes no further callback. Busy active leases are not cancelled
+   as budget exhaustion. Queue completion/cancellation is not business success.
 
 Explicit policy denial before first Dispatch records BLOCKED_POLICY with a
 policy-denied code (no remote action occurred). Forward migration 0009 admits
@@ -100,8 +109,8 @@ time.Duration, MaxGenerations int64. `DefaultDispatcherOptions()` returns
 30 seconds / 2 seconds / 10 seconds / 5 seconds / 10 respectively. Require lease
 5–300 seconds, DB timeout 100ms–5s, total call timeout 100ms–60s, retry delay
 100ms–5m, generations 2–100, and CallTimeout + 2*DBTimeout + 1s < lease.
-`NewDispatcher` returns `(*Dispatcher,error)`; exported `RunOperation(ctx,id)` is
-the same internal execution path used by Work, not a public API. Worker Timeout
+`NewDispatcher` returns `(*Dispatcher,error)`; unexported `runOperation(ctx,id)` is
+called only by Work. No queue-bypassing manual execution API is introduced. Worker Timeout
 is bounded/non-negative; registry and caller-owned pool are immutable/retained.
 
 ## Required gates
