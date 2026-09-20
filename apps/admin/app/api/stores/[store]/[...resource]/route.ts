@@ -1,4 +1,14 @@
 import { callBackend, fixtureSession } from "@/lib/backend";
+import {
+  authConfig,
+  authenticatedStores,
+  clearAuthCookies,
+  localError,
+  requireCSRF,
+  requireOrigin,
+  safeError,
+  sessionToken,
+} from "@/lib/auth";
 
 const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const routes: Record<string, RegExp> = {
@@ -12,59 +22,46 @@ const routes: Record<string, RegExp> = {
 };
 type Context = { params: Promise<{ store: string; resource: string[] }> };
 
-const messages: Record<string, string> = {
-  unauthorized: "Sign-in required.",
-  not_found: "Resource not found.",
-  forbidden: "Access denied.",
-  json_required: "JSON content required.",
-  invalid_request: "Invalid request.",
-  invalid_json: "Invalid JSON body.",
-  method_not_allowed: "Method not allowed.",
-};
-function localError(status: number, code: string) {
-  const requestID = crypto.randomUUID().replaceAll("-", "");
-  return Response.json(
-    {
-      code,
-      message: messages[code] ?? "Request failed.",
-      request_id: requestID,
-      retryable: false,
-      details: {},
-    },
-    {
-      status,
-      headers: {
-        "Cache-Control": "no-store",
-        "X-Request-ID": requestID,
-        ...(status === 405 ? { Allow: "GET, POST, PATCH" } : {}),
-      },
-    },
-  );
-}
-
 async function proxy(request: Request, context: Context) {
   const error = localError;
-  const session = fixtureSession();
-  if (!session) return error(401, "unauthorized");
   const { store, resource } = await context.params;
-  if (store !== session.storeID) return error(404, "not_found");
   const path = resource.join("/");
   if (!routes[request.method]?.test(path)) return error(404, "not_found");
   const url = new URL(request.url);
-  if (url.hostname !== "127.0.0.1" && url.hostname !== "localhost")
-    return error(403, "forbidden");
-  // Next's dev proxy normalizes request.url to localhost even when the browser
-  // uses 127.0.0.1. Bind Origin to an exact allowed Host, never forwarded headers
-  // or an arbitrary Host-derived origin (which would admit DNS rebinding).
-  const host = request.headers.get("host");
-  if (host !== "127.0.0.1:3100" && host !== "localhost:3100")
-    return error(403, "forbidden");
+  let token: string | undefined;
+  if (authConfig) {
+    token = sessionToken(request) ?? undefined;
+    if (!token) return error(401, "unauthorized");
+    if (
+      request.method !== "GET" &&
+      (!requireOrigin(request) || !requireCSRF(request))
+    )
+      return error(403, "forbidden");
+    const listed = await authenticatedStores(token);
+    if (!listed.stores) {
+      const denied = await safeError(listed.response);
+      if (denied.status === 401) clearAuthCookies(denied.headers);
+      return denied;
+    }
+    if (!listed.stores.some((item) => item.id === store))
+      return error(404, "not_found");
+  } else {
+    const session = fixtureSession();
+    if (!session) return error(401, "unauthorized");
+    if (store !== session.storeID) return error(404, "not_found");
+    if (url.hostname !== "127.0.0.1" && url.hostname !== "localhost")
+      return error(403, "forbidden");
+    const host = request.headers.get("host");
+    if (host !== "127.0.0.1:3100" && host !== "localhost:3100")
+      return error(403, "forbidden");
+  }
   const init: RequestInit = { method: request.method };
   if (request.method !== "GET") {
-    // Same-origin writes only; never forward browser-supplied authorization or
-    // tenant headers. The development fixture has no cookie-based authority.
-    if (request.headers.get("origin") !== `http://${host}`)
-      return error(403, "forbidden");
+    if (!authConfig) {
+      const host = request.headers.get("host");
+      if (request.headers.get("origin") !== `http://${host}`)
+        return error(403, "forbidden");
+    }
     if (
       request.headers.get("content-type")?.split(";")[0] !== "application/json"
     )
@@ -98,7 +95,13 @@ async function proxy(request: Request, context: Context) {
       "Idempotency-Key": key,
     };
   }
-  const response = await callBackend(path + url.search, init);
+  const response = await callBackend(path + url.search, init, token, store);
+  if (authConfig && response.status === 401) {
+    const denied = await safeError(response);
+    clearAuthCookies(denied.headers);
+    return denied;
+  }
+  if (!response.ok) return safeError(response);
   return new Response(response.body, {
     status: response.status,
     headers: {
@@ -111,7 +114,8 @@ async function proxy(request: Request, context: Context) {
 export const GET = proxy;
 export const POST = proxy;
 export const PATCH = proxy;
-const unsupported = () => localError(405, "method_not_allowed");
+const unsupported = () =>
+  localError(405, "method_not_allowed", "GET, POST, PATCH");
 export const PUT = unsupported;
 export const DELETE = unsupported;
 export const OPTIONS = unsupported;

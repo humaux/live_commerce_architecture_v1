@@ -18,6 +18,12 @@ export type LedgerRow = {
 };
 export type Page<T> = { items: T[]; next_cursor: string };
 export type Warehouse = { id: string; name: string };
+export type Store = { id: string; name: string; currency: string };
+export type InitialStore = {
+  tenant_id: string;
+  store_id: string;
+  warehouse_id: string;
+};
 export type APIError = {
   code: string;
   message: string;

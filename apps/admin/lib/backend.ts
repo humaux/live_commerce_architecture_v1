@@ -1,4 +1,14 @@
 import "server-only";
+import { headers } from "next/headers";
+import {
+  authConfig,
+  authenticatedStores,
+  exactCookieHeader,
+  isBase64URL32,
+  merchantBackend,
+  safeError,
+  SESSION_COOKIE,
+} from "./auth";
 import type {
   APIError,
   LedgerRow,
@@ -11,6 +21,7 @@ import type {
 // production Next build. OIDC-backed per-user sessions replace it in T03; an env
 // bearer must never become a shared production merchant login.
 export function fixtureSession() {
+  if (authConfig) return null;
   if (
     process.env.NODE_ENV !== "development" ||
     process.env.COMMERCE_FIXTURE_ENABLED !== "1"
@@ -53,7 +64,33 @@ export const noSessionError: APIError = {
   details: {},
 };
 
-export async function callBackend(resource: string, init: RequestInit = {}) {
+async function currentSessionToken() {
+  if (!authConfig) return null;
+  const token =
+    exactCookieHeader((await headers()).get("cookie"), SESSION_COOKIE) ?? "";
+  return isBase64URL32(token) ? token : null;
+}
+
+async function responseError(response: Response) {
+  return (await (await safeError(response)).json()) as APIError;
+}
+
+export async function callBackend(
+  resource: string,
+  init: RequestInit = {},
+  token?: string,
+  storeID?: string,
+) {
+  if (authConfig) {
+    const current = token ?? (await currentSessionToken());
+    if (!current || !storeID)
+      return Response.json(noSessionError, { status: 401 });
+    return merchantBackend(
+      `/v1/admin/stores/${storeID}/${resource}`,
+      current,
+      init,
+    );
+  }
   const session = fixtureSession();
   if (!session) return Response.json(noSessionError, { status: 401 });
   // Resource is built only by the bounded route allowlist below, never a URL.
@@ -91,7 +128,6 @@ export async function workspaceData(
   status = "all",
   cursor = "",
 ): Promise<WorkspaceData> {
-  const session = fixtureSession();
   const empty: WorkspaceData = {
     storeID: "",
     storeName: "",
@@ -102,6 +138,58 @@ export async function workspaceData(
     warehouseID: "",
     error: noSessionError,
   };
+  if (authConfig) {
+    const token = await currentSessionToken();
+    if (!token) return empty;
+    const listed = await authenticatedStores(token);
+    if (!listed.stores)
+      return { ...empty, error: await responseError(listed.response) };
+    const store = [...listed.stores].sort((a, b) =>
+      a.id.localeCompare(b.id),
+    )[0];
+    if (!store) return { ...empty, error: null };
+    const warehouseResult = await callBackend(
+      "warehouses",
+      {},
+      token,
+      store.id,
+    );
+    if (!warehouseResult.ok)
+      return {
+        ...empty,
+        storeID: store.id,
+        storeName: store.name,
+        error: await responseError(warehouseResult),
+      };
+    const warehouses = (await warehouseResult.json()) as Page<Warehouse>;
+    const warehouseID = warehouse || warehouses.items[0]?.id || "";
+    const initial = {
+      ...empty,
+      storeID: store.id,
+      storeName: store.name,
+      warehouses: warehouses.items,
+      warehouseCursor: warehouses.next_cursor,
+      warehouseID,
+      error: null,
+    };
+    if (!warehouseID) return initial;
+    const params = new URLSearchParams({
+      warehouse_id: warehouseID,
+      q: query,
+      status,
+      cursor,
+    });
+    const rows = await callBackend(
+      `catalog-ledger?${params}`,
+      {},
+      token,
+      store.id,
+    );
+    return rows.ok
+      ? { ...initial, rows: (await rows.json()) as Page<LedgerRow> }
+      : { ...initial, error: await responseError(rows) };
+  }
+  const session = fixtureSession();
   if (!session) return empty;
   const result = await callBackend("warehouses");
   if (!result.ok)
