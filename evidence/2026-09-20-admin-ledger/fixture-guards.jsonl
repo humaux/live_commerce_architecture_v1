@@ -1,0 +1,16 @@
+{"Time":"2026-09-20T13:17:20.517946+08:00","Action":"start","Package":"livecommerce/cmd/admin-fixture"}
+{"Time":"2026-09-20T13:17:20.89951+08:00","Action":"run","Package":"livecommerce/cmd/admin-fixture","Test":"TestOwnerFileIsPrivateOneUseAndRejectsSymlink"}
+{"Time":"2026-09-20T13:17:20.899621+08:00","Action":"output","Package":"livecommerce/cmd/admin-fixture","Test":"TestOwnerFileIsPrivateOneUseAndRejectsSymlink","Output":"=== RUN   TestOwnerFileIsPrivateOneUseAndRejectsSymlink\n","OutputType":"frame"}
+{"Time":"2026-09-20T13:17:20.901421+08:00","Action":"output","Package":"livecommerce/cmd/admin-fixture","Test":"TestOwnerFileIsPrivateOneUseAndRejectsSymlink","Output":"--- PASS: TestOwnerFileIsPrivateOneUseAndRejectsSymlink (0.00s)\n","OutputType":"frame"}
+{"Time":"2026-09-20T13:17:20.901498+08:00","Action":"pass","Package":"livecommerce/cmd/admin-fixture","Test":"TestOwnerFileIsPrivateOneUseAndRejectsSymlink","Elapsed":0}
+{"Time":"2026-09-20T13:17:20.901545+08:00","Action":"run","Package":"livecommerce/cmd/admin-fixture","Test":"TestFixtureConfigRejectsFallbackAndOtherDatabases"}
+{"Time":"2026-09-20T13:17:20.90157+08:00","Action":"output","Package":"livecommerce/cmd/admin-fixture","Test":"TestFixtureConfigRejectsFallbackAndOtherDatabases","Output":"=== RUN   TestFixtureConfigRejectsFallbackAndOtherDatabases\n","OutputType":"frame"}
+{"Time":"2026-09-20T13:17:20.901782+08:00","Action":"output","Package":"livecommerce/cmd/admin-fixture","Test":"TestFixtureConfigRejectsFallbackAndOtherDatabases","Output":"--- PASS: TestFixtureConfigRejectsFallbackAndOtherDatabases (0.00s)\n","OutputType":"frame"}
+{"Time":"2026-09-20T13:17:20.901826+08:00","Action":"pass","Package":"livecommerce/cmd/admin-fixture","Test":"TestFixtureConfigRejectsFallbackAndOtherDatabases","Elapsed":0}
+{"Time":"2026-09-20T13:17:20.901857+08:00","Action":"run","Package":"livecommerce/cmd/admin-fixture","Test":"TestFixtureEmptyDatabaseRejectsPublicTableWithoutSideEffects"}
+{"Time":"2026-09-20T13:17:20.901871+08:00","Action":"output","Package":"livecommerce/cmd/admin-fixture","Test":"TestFixtureEmptyDatabaseRejectsPublicTableWithoutSideEffects","Output":"=== RUN   TestFixtureEmptyDatabaseRejectsPublicTableWithoutSideEffects\n","OutputType":"frame"}
+{"Time":"2026-09-20T13:17:20.98994+08:00","Action":"output","Package":"livecommerce/cmd/admin-fixture","Test":"TestFixtureEmptyDatabaseRejectsPublicTableWithoutSideEffects","Output":"--- PASS: TestFixtureEmptyDatabaseRejectsPublicTableWithoutSideEffects (0.09s)\n","OutputType":"frame"}
+{"Time":"2026-09-20T13:17:20.990009+08:00","Action":"pass","Package":"livecommerce/cmd/admin-fixture","Test":"TestFixtureEmptyDatabaseRejectsPublicTableWithoutSideEffects","Elapsed":0.09}
+{"Time":"2026-09-20T13:17:20.990056+08:00","Action":"output","Package":"livecommerce/cmd/admin-fixture","Output":"PASS\n","OutputType":"frame"}
+{"Time":"2026-09-20T13:17:20.991097+08:00","Action":"output","Package":"livecommerce/cmd/admin-fixture","Output":"ok  \tlivecommerce/cmd/admin-fixture\t0.473s\n"}
+{"Time":"2026-09-20T13:17:20.991143+08:00","Action":"pass","Package":"livecommerce/cmd/admin-fixture","Elapsed":0.473}

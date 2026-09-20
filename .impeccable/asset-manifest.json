@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "project": "live_commerce_architecture_v1",
+  "approved_mock": ".impeccable/mocks/composition/wide-ledger.png",
+  "approved_choice": "a30e0e29",
+  "purpose": "Demo-only synthetic product imagery; CSS crops cells for the approved wide ledger comp. Not merchant catalog inventory.",
+  "produce": [
+    {
+      "id": "demo-product-atlas",
+      "source_crop": "approved mock product thumbnail roles in wide-ledger.png; mock pixels were not shipped",
+      "output_path": "apps/admin/public/demo-assets/hearing-aid-accessory-atlas.png",
+      "strategy": "native image generation; single purpose-built 3x3 atlas",
+      "prompt_used": "Edit this synthetic product-photo atlas for use as tiny admin inventory thumbnails. Keep exactly nine cells in a 3x3 grid, same square cell geometry and order, no gutters that alter alignment, no text or labels. Cell order top-left to bottom-right: pair of beige behind-ear hearing aids; closed black oval portable case; cleaning-care set with three bottles; pair of SMALL silicone ear tips; pair MEDIUM ear tips; pair LARGE ear tips; coiled black USB-C cable; dark gray fabric pouch; dark handled cleaning brush. Improve recognizability at a 50px thumbnail: each item or group should fill 78-85% of its own cell width/height, preserve whole objects with small margins, use crisp real studio-photographic silhouettes, clean bright off-white cell backgrounds, stronger midtone contrast and restrained contact shadows. Ear tips must be charcoal gray silicone (not white on white), visibly different sizes. Cleaning bottles use dark gray/white mix and distinct profiles. Keep camera framing standardized, high product/background separation. These are fictional generic demo accessories only, no medical effect claims, no trademarks, no certification icons. Preserve a perfectly square 3-by-3 standalone sprite atlas, NOT a UI screenshot.",
+      "dimensions": { "width": 1254, "height": 1254, "cell_width": 418, "cell_height": 418, "cell_minimum": 300 },
+      "format": "PNG",
+      "transparency": false,
+      "provenance": {
+        "generated_source": ".impeccable/asset-sources/hearing-aid-accessory-atlas.contrast.png",
+        "parent_reference": ".impeccable/asset-sources/hearing-aid-accessory-atlas.generated.png",
+        "native_result": "/Users/luolimo/.codex/generated_images/01a09abf-2a0d-78e0-a4d5-0e33cd1a6fd6/exec-0419fb70-18ee-4913-a5c9-68a03ab43340.png",
+        "prompt_embedded": true,
+        "generator": "native image_gen",
+        "source_mock_used_as_reference_only": true
+      },
+      "layout": {
+        "grid": "3x3",
+        "cells": [
+          { "id": "hearing-aid", "row": 1, "column": 1, "x": 0, "y": 0, "width": 418, "height": 418, "role": "hearing aid pair" },
+          { "id": "black-case", "row": 1, "column": 2, "x": 418, "y": 0, "width": 418, "height": 418, "role": "black hard carrying case" },
+          { "id": "cleaning-bottles", "row": 1, "column": 3, "x": 836, "y": 0, "width": 418, "height": 418, "role": "cleaning bottle set" },
+          { "id": "ear-tip-s", "row": 2, "column": 1, "x": 0, "y": 418, "width": 418, "height": 418, "role": "small ear tips" },
+          { "id": "ear-tip-m", "row": 2, "column": 2, "x": 418, "y": 418, "width": 418, "height": 418, "role": "medium ear tips" },
+          { "id": "ear-tip-l", "row": 2, "column": 3, "x": 836, "y": 418, "width": 418, "height": 418, "role": "large ear tips" },
+          { "id": "usb-c-cable", "row": 3, "column": 1, "x": 0, "y": 836, "width": 418, "height": 418, "role": "USB-C cable" },
+          { "id": "carrying-pouch", "row": 3, "column": 2, "x": 418, "y": 836, "width": 418, "height": 418, "role": "fabric carrying pouch" },
+          { "id": "cleaning-brush", "row": 3, "column": 3, "x": 836, "y": 836, "width": 418, "height": 418, "role": "cleaning brush" }
+        ]
+      },
+      "qa_status": "accepted",
+      "qa": ["1254x1254 PNG readback", "418px cells exceed 300px minimum", "all nine objects visible and isolated", "uniform light-gray background", "no UI/text/watermark", "prompt embedded in PNG tEXt"]
+    }
+  ],
+  "direct": [],
+  "semantic": [
+    {
+      "id": "admin-navigation-chrome",
+      "implementation": "HTML navigation rail with inline SVG/icon-library icons and semantic labels; CSS owns navy surface, selected state, spacing, and responsive collapse.",
+      "notes": "Do not rasterize sidebar, header, tabs, buttons, badges, or status dots.",
+      "qa_status": "accepted"
+    },
+    {
+      "id": "ledger-table",
+      "implementation": "Semantic table with the atlas as a thumbnail background/image source; CSS owns row rules, checkbox states, numeric tabular figures, status words, actions, and responsive overflow.",
+      "notes": "Use object-position or a background-position crop against the 3x3 atlas; keep demo-data labeling in HTML.",
+      "qa_status": "accepted"
+    },
+    {
+      "id": "inspector-tray",
+      "implementation": "Semantic bottom inspector/tray with the selected atlas cell, inventory values, form controls, and action button; CSS owns panel, borders, radius, and layout.",
+      "notes": "The tray must retain explicit pending/success/error text and must not bake controls into the bitmap.",
+      "qa_status": "accepted"
+    },
+    {
+      "id": "demo-label-and-status",
+      "implementation": "HTML text for demo-data disclosure, status words, channel connection states, and all navigation labels; use accessible live regions for operation feedback.",
+      "notes": "No medical claims, arrows, or catalog claims belong in raster assets.",
+      "qa_status": "accepted"
+    }
+  ],
+  "execution_order": ["load atlas once", "crop cells via CSS background-position/object-position", "compose semantic table/navigation/tray in UI code"],
+  "blockers": [],
+  "assumptions": ["The parent implementation will use 418px cell coordinates at natural scale and CSS will own clipping, radius, borders, shadows, and responsive sizing.", "The atlas is intentionally synthetic and generic per the approved mock's demo-data boundary."],
+  "limitations": ["Atlas cells are generated as a unified image; CSS cropping isolates each cell but cannot provide independent alpha cutouts.", "The hearing-aid/accessory forms are generic demo representations, not verified merchant SKUs."]
+}

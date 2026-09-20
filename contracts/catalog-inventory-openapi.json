@@ -6,6 +6,352 @@
     "description": "T04 merchant-only slice, not a complete SaaS/live-provider approval. Runtime requests derive Scope from a merchant session; client tenant headers and Host are not authority. No public reserve route."
   },
   "paths": {
+    "/v1/admin/stores/{store_id}/catalog-ledger": {
+      "get": {
+        "operationId": "listCatalogLedger",
+        "description": "Requires BOTH catalog:read and inventory:read in the same scoped transaction. q is a literal case-insensitive name/SKU substring (%, _, ! and backslash are literal); cursor binds store, warehouse, normalized q and status. Active warehouse required.",
+        "security": [
+          {
+            "merchantBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "warehouse_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 120
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "active",
+                "archived"
+              ],
+              "default": "all"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scoped SKU-stock projection. No balance row returns zero values. Keyset cursor is not a snapshot.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "next_cursor"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "maxItems": 100,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "product_id",
+                          "sku_id",
+                          "warehouse_id",
+                          "product_name",
+                          "product_description",
+                          "code",
+                          "currency",
+                          "status",
+                          "price_minor",
+                          "sku_version",
+                          "on_hand",
+                          "reserved",
+                          "allocated",
+                          "unavailable",
+                          "available",
+                          "balance_version"
+                        ],
+                        "properties": {
+                          "product_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "sku_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "warehouse_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "product_name": {
+                            "type": "string"
+                          },
+                          "product_description": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "currency": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "archived"
+                            ]
+                          },
+                          "price_minor": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "sku_version": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "on_hand": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "reserved": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "allocated": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "unavailable": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "available": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "balance_version": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        }
+                      }
+                    },
+                    "next_cursor": {
+                      "type": "string",
+                      "maxLength": 1024
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid merchant session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "403": {
+            "description": "Visible store but operation not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not visible in current scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict, stale version or insufficient inventory",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "415": {
+            "description": "application/json required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "422": {
+            "description": "Semantic validation or query/cursor invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "503": {
+            "description": "Retry later with same key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/admin/stores/{store_id}/products": {
       "get": {
         "operationId": "listProducts",

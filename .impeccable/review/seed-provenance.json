@@ -1,0 +1,22 @@
+{
+  "seed": "3046f272",
+  "scope": "direction",
+  "mode": "operate",
+  "source": "api",
+  "approved_pool": "c3b204a1eed6",
+  "approved_count": 306,
+  "catalog_count": 564,
+  "assigned_index": 4,
+  "execution_timestamp": "2026-09-20T03:44:05.957Z",
+  "choice_receipt_timestamp": "2026-09-20T03:57:05.865Z",
+  "choice_receipt_execution_id": "exec-a25690ff-57f3-4f81-ae55-625448c65ac2",
+  "choice_receipt": "choice recorded",
+  "thread_id": "01a09abf-2a0d-78e0-a4d5-0e33cd1a6fd6",
+  "source_kind": "same-task completed command records, recovered without reroll",
+  "custom_quality_reference": ".impeccable/mocks/decision/assigned.png",
+  "quality_reference_provenance": ".impeccable/mocks/decision/assigned.png.json",
+  "external_custom_quality_card": null,
+  "approved_composition": ".impeccable/mocks/composition/wide-ledger.png",
+  "composition_approval": "a30e0e29",
+  "native_dimensions": [1586, 992]
+}

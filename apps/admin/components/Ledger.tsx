@@ -1,0 +1,764 @@
+"use client";
+
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
+  locales,
+  localeNames,
+  localizedPath,
+  type Locale,
+} from "@live-commerce/i18n";
+import { copy, type Copy } from "@/lib/copy";
+import type { APIError, WorkspaceData } from "@/lib/model";
+import { money, sendCommand, type PendingCommand } from "@/lib/client";
+import { ProductPhoto } from "./ProductPhoto";
+import { Icon } from "./Icon";
+
+function errorText(error: APIError, c: Copy) {
+  if (error.code === "unauthorized") return c.noSession;
+  if (error.code === "forbidden") return c.forbidden;
+  if (error.code === "command_storage_unavailable") return c.storageUnavailable;
+  if (error.code === "conflict" || error.code === "insufficient_inventory")
+    return c.conflict;
+  if (error.code === "invalid_request" || error.code === "invalid_json")
+    return c.validation;
+  return c.failed;
+}
+
+export function Ledger({
+  locale,
+  initial,
+}: {
+  locale: Locale;
+  initial: WorkspaceData;
+}) {
+  const c = copy[locale],
+    router = useRouter(),
+    pathname = usePathname(),
+    search = useSearchParams();
+  const searchQuery = search.get("q") ?? "";
+  const [selectedID, select] = useState(
+    initial.fixture
+      ? (initial.rows.items[1]?.sku_id ?? initial.rows.items[0]?.sku_id ?? "")
+      : "",
+  );
+  const selected = initial.rows.items.find((row) => row.sku_id === selectedID);
+  const [query, setQuery] = useState(searchQuery);
+  const [navOpen, setNavOpen] = useState(false),
+    [section, setSection] = useState("products");
+  const [createOpen, setCreateOpen] = useState(false),
+    [productID, setProductID] = useState("");
+  const [pending, setPending] = useState<PendingCommand | null>(null),
+    [busy, setBusy] = useState(false);
+  const [journalReady, setJournalReady] = useState(false);
+  const [notice, setNotice] = useState(""),
+    [error, setError] = useState<APIError | null>(null);
+  const [delta, setDelta] = useState("0"),
+    [reason, setReason] = useState("");
+  const [warehouseChoices, setWarehouseChoices] = useState(initial.warehouses);
+  const [warehouseCursor, setWarehouseCursor] = useState(
+    initial.warehouseCursor,
+  );
+  const [warehouseLoading, setWarehouseLoading] = useState(false);
+  const locked = busy || pending !== null || !journalReady;
+  const key = `commerce-pending:${initial.storeID}`;
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // A server refresh may replace the search object without changing its query.
+  // Preserve text being typed while that refresh completes.
+  useEffect(() => {
+    setQuery(searchQuery);
+  }, [searchQuery]);
+  useEffect(() => {
+    setWarehouseChoices(initial.warehouses);
+    setWarehouseCursor(initial.warehouseCursor);
+  }, [initial]);
+  useEffect(() => {
+    // No credentials are persisted. This tiny command journal survives reloads
+    // so a browser failure cannot turn an uncertain write into a duplicate.
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        const cmd = JSON.parse(saved);
+        if (
+          typeof cmd.key !== "string" ||
+          !["adjust", "product", "sku"].includes(cmd.kind) ||
+          !["products", "skus", "inventory/adjustments"].includes(
+            cmd.resource,
+          ) ||
+          typeof cmd.body !== "string"
+        )
+          throw new Error("Invalid journal");
+        setPending(cmd);
+      }
+      const unfinished = localStorage.getItem(`${key}:product`);
+      if (unfinished) {
+        setProductID(unfinished);
+        setCreateOpen(true);
+      }
+      if (!navigator.locks) throw new Error("Cross-tab lock unavailable");
+      setJournalReady(true);
+    } catch {
+      setError({
+        code: "command_storage_unavailable",
+        message: "",
+        request_id: "",
+        retryable: false,
+        details: {},
+      });
+    }
+  }, [key]);
+  useEffect(() => {
+    if (!locked) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [locked]);
+
+  function navigate(values: Record<string, string>, resetCursor = true) {
+    if (locked) return;
+    const params = new URLSearchParams(search.toString());
+    if (resetCursor) params.delete("cursor");
+    for (const [name, value] of Object.entries(values)) {
+      if (value) params.set(name, value);
+      else params.delete(name);
+    }
+    select("");
+    router.push(`${pathname}?${params}`);
+  }
+  async function submit(command: PendingCommand) {
+    if (busy || !journalReady) return;
+    setBusy(true);
+    setNotice("");
+    setError(null);
+    try {
+      await navigator.locks.request(key, async () => {
+        const existing = localStorage.getItem(key);
+        if (existing) {
+          const prior = JSON.parse(existing) as PendingCommand;
+          if (prior.key !== command.key) {
+            setPending(prior);
+            return;
+          }
+          // The persisted bytes, not editable UI fields, are authoritative on retry.
+          command = prior;
+        }
+        const encoded = JSON.stringify(command);
+        localStorage.setItem(key, encoded);
+        if (localStorage.getItem(key) !== encoded)
+          throw new Error("Journal not durable");
+        setPending(command);
+        const result = await sendCommand(initial.storeID, command);
+        if (result.uncertain) {
+          setError(result.body);
+          return;
+        }
+        if (result.status >= 400) {
+          localStorage.removeItem(key);
+          setPending(null);
+          setError(result.body);
+          return;
+        }
+        if (command.kind === "product") {
+          localStorage.setItem(`${key}:product`, result.body.id);
+          setProductID(result.body.id);
+          setCreateOpen(true);
+          setNotice(c.productSaved);
+        } else if (command.kind === "sku") {
+          localStorage.removeItem(`${key}:product`);
+          setProductID("");
+          setCreateOpen(false);
+          setNotice(c.skuSaved);
+        } else {
+          setDelta("0");
+          setReason("");
+          setNotice(c.success);
+        }
+        localStorage.removeItem(key);
+        setPending(null);
+        router.refresh();
+      });
+    } catch {
+      setError({
+        code: "command_storage_unavailable",
+        message: "",
+        request_id: "",
+        retryable: false,
+        details: {},
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+  function command(
+    kind: PendingCommand["kind"],
+    resource: string,
+    payload: Record<string, unknown>,
+  ) {
+    if (locked) return;
+    void submit({
+      kind,
+      resource,
+      body: JSON.stringify(payload),
+      key: crypto.randomUUID(),
+    });
+  }
+  function adjust(event: FormEvent) {
+    event.preventDefault();
+    const quantity = Number(delta);
+    if (
+      !selected ||
+      !Number.isSafeInteger(quantity) ||
+      quantity === 0 ||
+      !reason.trim()
+    ) {
+      setError({
+        code: "invalid_request",
+        message: "",
+        request_id: "",
+        retryable: false,
+        details: {},
+      });
+      return;
+    }
+    command("adjust", "inventory/adjustments", {
+      warehouse_id: selected.warehouse_id,
+      sku_id: selected.sku_id,
+      expected_version: selected.balance_version,
+      delta: quantity,
+      reason: reason.trim(),
+    });
+  }
+  function create(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    if (!productID)
+      command("product", "products", {
+        name: data.get("name"),
+        description: data.get("description"),
+      });
+    else
+      command("sku", "skus", {
+        product_id: productID,
+        code: data.get("code"),
+        price_minor: Number(data.get("price")),
+        expected_version: 0,
+      });
+  }
+  async function moreWarehouses() {
+    setWarehouseLoading(true);
+    try {
+      const response = await fetch(
+        `/api/stores/${initial.storeID}/warehouses?cursor=${encodeURIComponent(warehouseCursor)}`,
+      );
+      const result = await response.json();
+      if (!response.ok) setError(result);
+      else {
+        setWarehouseChoices((current) => [...current, ...result.items]);
+        setWarehouseCursor(result.next_cursor);
+      }
+    } catch {
+      setError({
+        code: "retry_later",
+        message: "",
+        request_id: "",
+        retryable: true,
+        details: {},
+      });
+    } finally {
+      setWarehouseLoading(false);
+    }
+  }
+  const nav = [
+    ["products", "product", c.products],
+    ["inventory", "inventory", c.inventory],
+    ["live", "live", c.live],
+    ["siteChat", "chat", c.siteChat],
+    ["meta", "meta", c.meta],
+    ["support", "support", c.support],
+    ["settings", "settings", c.settings],
+  ];
+
+  return (
+    <div className="workspace">
+      <a className="skip-link" href="#main">
+        {c.heading}
+      </a>
+      <aside className={`rail ${navOpen ? "open" : ""}`}>
+        <div className="brand">{c.title}</div>
+        <nav aria-label={c.title}>
+          {nav.map(([id, icon, label]) => (
+            <button
+              key={id}
+              disabled={locked}
+              className={section === id ? "nav-item active" : "nav-item"}
+              aria-current={section === id ? "page" : undefined}
+              onClick={() => {
+                setSection(id);
+                setNavOpen(false);
+              }}
+            >
+              <Icon name={icon} />
+              <span>{label}</span>
+            </button>
+          ))}
+        </nav>
+        <div className="channel-status">
+          <h2>{c.channels}</h2>
+          {[c.website, "Facebook", "Instagram", "WhatsApp", "LINE"].map(
+            (name) => (
+              <div key={name}>
+                <span>{name}</span>
+                <span className="disconnected">{c.notConnected}</span>
+              </div>
+            ),
+          )}
+        </div>
+      </aside>
+      <div className="work-area">
+        <header className="topbar">
+          <button
+            className="mobile-menu icon-button"
+            aria-label={c.menu}
+            aria-expanded={navOpen}
+            onClick={() => setNavOpen(!navOpen)}
+          >
+            <Icon name="menu" />
+          </button>
+          <div className="store-label">
+            <Icon name="inventory" />
+            <span>{initial.fixture ? c.store : c.notConnected}</span>
+          </div>
+          <div className="top-spacer" />
+          <label className="language">
+            <span className="sr-only">{c.language}</span>
+            <select
+              aria-label={c.language}
+              value={locale}
+              disabled={locked}
+              onChange={(event) =>
+                router.push(
+                  localizedPath(
+                    event.target.value as Locale,
+                    `${pathname}?${search}`,
+                  ),
+                )
+              }
+            >
+              {locales.map((lang) => (
+                <option key={lang} value={lang}>
+                  {localeNames[lang]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="user-label">
+            <span className="avatar">M</span>
+            {c.user}
+          </div>
+        </header>
+        <main id="main" className="main">
+          {section !== "products" && section !== "inventory" ? (
+            <section className="unavailable">
+              <Icon
+                name={nav.find((n) => n[0] === section)?.[1] ?? "product"}
+                size={32}
+              />
+              <h1>{nav.find((n) => n[0] === section)?.[2]}</h1>
+              <p>{c.unavailable}</p>
+              <p>{c.sectionHint}</p>
+              <button onClick={() => setSection("products")}>
+                {c.products}
+              </button>
+            </section>
+          ) : (
+            <>
+              <div className="heading-row">
+                <div>
+                  <h1>{c.heading}</h1>
+                  <p>{c.subtitle}</p>
+                </div>
+                <button
+                  className="primary create-button"
+                  disabled={!initial.fixture || locked}
+                  onClick={() => {
+                    setCreateOpen(!createOpen);
+                    setTimeout(
+                      () => formRef.current?.querySelector("input")?.focus(),
+                      0,
+                    );
+                  }}
+                >
+                  <Icon name="plus" size={18} />
+                  {c.create}
+                </button>
+              </div>
+              <div className="section-bar">
+                <span>
+                  {section === "inventory" ? c.inventory : c.products} / SKU
+                </span>
+                {initial.fixture && <small>{c.fixture}</small>}
+              </div>
+              {(initial.error || error) && (
+                <div className="message error" role="alert">
+                  <strong>{errorText(error ?? initial.error!, c)}</strong>
+                  {(error ?? initial.error)?.code === "unauthorized" && (
+                    <p>{c.noSessionHint}</p>
+                  )}
+                  {(error ?? initial.error)?.request_id && (
+                    <small>
+                      {c.requestID}: {(error ?? initial.error)?.request_id}
+                    </small>
+                  )}
+                </div>
+              )}
+              {notice && (
+                <p className="message success" role="status">
+                  {notice}
+                </p>
+              )}
+              {pending && !busy && (
+                <div className="message pending" role="status">
+                  <span>{c.failed}</span>
+                  <button onClick={() => void submit(pending)}>
+                    {c.retry}
+                  </button>
+                </div>
+              )}
+              {createOpen && (
+                <section className="create-panel" aria-label={c.create}>
+                  <h2>{productID ? c.createSKU : c.create}</h2>
+                  <p>{productID ? c.productSaved : c.createHint}</p>
+                  <form ref={formRef} onSubmit={create}>
+                    <fieldset disabled={locked}>
+                      {productID ? (
+                        <>
+                          <label>
+                            {c.skuCode}
+                            <input name="code" required maxLength={64} />
+                          </label>
+                          <label>
+                            {c.priceMinor}
+                            <input
+                              name="price"
+                              type="number"
+                              min="0"
+                              max="1000000000000"
+                              step="1"
+                              required
+                            />
+                          </label>
+                        </>
+                      ) : (
+                        <>
+                          <label>
+                            {c.name}
+                            <input name="name" required maxLength={120} />
+                          </label>
+                          <label>
+                            {c.description}
+                            <input name="description" maxLength={4000} />
+                          </label>
+                        </>
+                      )}
+                      <button className="primary" type="submit">
+                        {busy ? c.pending : productID ? c.createSKU : c.create}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCreateOpen(false)}
+                      >
+                        {c.cancel}
+                      </button>
+                    </fieldset>
+                  </form>
+                </section>
+              )}
+              <section className="ledger-card" aria-label={c.heading}>
+                <form
+                  className="filters"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    navigate({ q: query });
+                  }}
+                >
+                  <div className="search-field">
+                    <Icon name="search" size={17} />
+                    <input
+                      aria-label={c.search}
+                      placeholder={c.search}
+                      value={query}
+                      disabled={locked}
+                      maxLength={120}
+                      onChange={(event) => setQuery(event.target.value)}
+                    />
+                    <button type="submit" disabled={locked}>
+                      {c.searchAction}
+                    </button>
+                  </div>
+                  <label>
+                    <span className="sr-only">{c.warehouse}</span>
+                    <select
+                      aria-label={c.warehouse}
+                      disabled={locked || !warehouseChoices.length}
+                      value={initial.warehouseID}
+                      onChange={(event) =>
+                        navigate({ warehouse: event.target.value })
+                      }
+                    >
+                      {!warehouseChoices.length && (
+                        <option value="">{c.selectWarehouse}</option>
+                      )}
+                      {warehouseChoices.map((warehouse) => (
+                        <option key={warehouse.id} value={warehouse.id}>
+                          {warehouse.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {warehouseCursor && (
+                    <button
+                      type="button"
+                      disabled={warehouseLoading || locked}
+                      onClick={() => void moreWarehouses()}
+                    >
+                      {c.next}
+                    </button>
+                  )}
+                  <label>
+                    <span className="sr-only">{c.status}</span>
+                    <select
+                      aria-label={c.status}
+                      value={search.get("status") ?? "all"}
+                      disabled={locked}
+                      onChange={(event) =>
+                        navigate({ status: event.target.value })
+                      }
+                    >
+                      <option value="all">{c.all}</option>
+                      <option value="active">{c.active}</option>
+                      <option value="archived">{c.archived}</option>
+                    </select>
+                  </label>
+                  <button
+                    disabled={locked}
+                    type="button"
+                    onClick={() => {
+                      setQuery("");
+                      navigate({ q: "", status: "" });
+                    }}
+                  >
+                    {c.reset}
+                  </button>
+                  <button
+                    className="refresh-button"
+                    type="button"
+                    disabled={locked}
+                    onClick={() => router.refresh()}
+                  >
+                    {c.refresh}
+                  </button>
+                </form>
+                <div className="table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th className="selection-col">
+                          <span className="sr-only">{c.edit}</span>
+                        </th>
+                        <th>{c.product}</th>
+                        <th className="sku-col">SKU</th>
+                        <th className="numeric">{c.price}</th>
+                        <th className="numeric stock-col">{c.onHand}</th>
+                        <th className="numeric stock-col">{c.reserved}</th>
+                        <th className="numeric">{c.available}</th>
+                        <th className="status-col">{c.status}</th>
+                        <th className="action-col">{c.actions}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {initial.rows.items.map((row) => (
+                        <tr
+                          key={row.sku_id}
+                          className={
+                            row.sku_id === selectedID ? "selected" : ""
+                          }
+                        >
+                          <td className="selection-col">
+                            <input
+                              type="radio"
+                              name="sku"
+                              aria-label={`${c.edit} ${row.code}`}
+                              checked={row.sku_id === selectedID}
+                              disabled={locked}
+                              onChange={() => {
+                                select(row.sku_id);
+                                setDelta("0");
+                                setReason("");
+                                setError(null);
+                              }}
+                            />
+                          </td>
+                          <th scope="row">
+                            <div className="product-cell">
+                              <ProductPhoto
+                                code={row.code}
+                                name={row.product_name}
+                                demo={initial.fixture}
+                              />
+                              <div>
+                                <button
+                                  className="product-name"
+                                  disabled={locked}
+                                  onClick={() => select(row.sku_id)}
+                                >
+                                  {row.product_name}
+                                </button>
+                                <small>
+                                  {initial.fixture ? c.demo : row.code}
+                                </small>
+                                <small className="mobile-sku">{row.code}</small>
+                              </div>
+                            </div>
+                          </th>
+                          <td className="sku-col">
+                            <code>{row.code}</code>
+                          </td>
+                          <td className="numeric">
+                            {money(locale, row.currency, row.price_minor)}
+                          </td>
+                          <td className="numeric stock-col">{row.on_hand}</td>
+                          <td className="numeric stock-col">{row.reserved}</td>
+                          <td className="numeric available-value">
+                            {row.available}
+                          </td>
+                          <td className="status-col">
+                            <span className={`status ${row.status}`}>
+                              {row.status === "active" ? c.active : c.archived}
+                            </span>
+                          </td>
+                          <td className="action-col">
+                            <button
+                              className="text-button"
+                              disabled={locked}
+                              onClick={() => select(row.sku_id)}
+                            >
+                              {c.edit}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {!initial.rows.items.length && (
+                    <div className="empty-state">
+                      <Icon name="product" size={30} />
+                      <h2>{initial.error ? c.noSession : c.empty}</h2>
+                      <p>{initial.error ? c.noSessionHint : c.emptyHint}</p>
+                    </div>
+                  )}
+                </div>
+                {(initial.rows.next_cursor || search.get("cursor")) && (
+                  <div className="pagination">
+                    <button
+                      disabled={locked || !search.get("cursor")}
+                      onClick={() => navigate({ cursor: "" })}
+                    >
+                      {c.reset}
+                    </button>
+                    <button
+                      disabled={locked || !initial.rows.next_cursor}
+                      onClick={() =>
+                        navigate({ cursor: initial.rows.next_cursor }, false)
+                      }
+                    >
+                      {c.next}
+                      <Icon name="chevron" size={15} />
+                    </button>
+                  </div>
+                )}
+              </section>
+              {selected ? (
+                <section className="inspector" aria-label={c.selected}>
+                  <button
+                    className="close-details icon-button"
+                    aria-label={c.close}
+                    disabled={locked}
+                    onClick={() => select("")}
+                  >
+                    <Icon name="close" size={17} />
+                  </button>
+                  <div className="selected-product">
+                    <ProductPhoto
+                      code={selected.code}
+                      name={selected.product_name}
+                      demo={initial.fixture}
+                      large
+                    />
+                    <div>
+                      <h2>{selected.product_name}</h2>
+                      <p>SKU: {selected.code}</p>
+                      <span className={`status ${selected.status}`}>
+                        {selected.status === "active" ? c.active : c.archived}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="stock-summary">
+                    <h2>{c.stockInfo}</h2>
+                    <dl>
+                      {[
+                        [c.onHand, selected.on_hand],
+                        [c.reserved, selected.reserved],
+                        [c.available, selected.available],
+                      ].map(([label, value]) => (
+                        <div key={label}>
+                          <dt>{label}</dt>
+                          <dd>{value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                  <form className="adjustment" onSubmit={adjust}>
+                    <h2>{c.adjustment}</h2>
+                    <fieldset disabled={locked || selected.status !== "active"}>
+                      <label>
+                        {c.quantity}
+                        <input
+                          aria-label={c.quantity}
+                          type="number"
+                          step="1"
+                          required
+                          value={delta}
+                          onChange={(event) => setDelta(event.target.value)}
+                        />
+                      </label>
+                      <label className="reason-field">
+                        {c.reason}
+                        <input
+                          aria-label={c.reason}
+                          required
+                          maxLength={240}
+                          placeholder={c.reasonHint}
+                          value={reason}
+                          onChange={(event) => setReason(event.target.value)}
+                        />
+                      </label>
+                      <button type="submit" className="primary">
+                        {busy ? c.pending : c.confirm}
+                      </button>
+                    </fieldset>
+                    <p className="audit-hint">{c.auditHint}</p>
+                  </form>
+                </section>
+              ) : (
+                <p className="selection-hint">{c.choose}</p>
+              )}
+            </>
+          )}
+        </main>
+      </div>
+    </div>
+  );
+}

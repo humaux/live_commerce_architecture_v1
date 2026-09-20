@@ -3,10 +3,21 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.33.0",
-  "engines": { "node": ">=24 <25" },
+  "engines": {
+    "node": ">=24 <25"
+  },
   "scripts": {
     "test:i18n": "node --test --experimental-strip-types packages/i18n/tests/*.test.ts",
-    "typecheck:i18n": "tsc --noEmit --strict --target ES2023 --module NodeNext --moduleResolution NodeNext --allowImportingTsExtensions packages/i18n/src/index.ts"
+    "typecheck:i18n": "tsc --noEmit --strict --target ES2023 --module NodeNext --moduleResolution NodeNext --allowImportingTsExtensions packages/i18n/src/index.ts",
+    "dev:admin": "pnpm --filter @live-commerce/admin dev",
+    "build:admin": "pnpm --filter @live-commerce/admin build",
+    "typecheck:admin": "pnpm --filter @live-commerce/admin typecheck",
+    "test:admin": "playwright test",
+    "start:admin": "pnpm --filter @live-commerce/admin start"
   },
-  "devDependencies": { "typescript": "7.0.2" }
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "prettier": "3.9.8",
+    "typescript": "7.0.2"
+  }
 }

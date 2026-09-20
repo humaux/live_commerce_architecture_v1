@@ -9,3 +9,7 @@ coverage.out
 node_modules/
 .next/
 .impeccable/questions/
+*.tsbuildinfo
+test-results/
+playwright-report/
+output/playwright/
