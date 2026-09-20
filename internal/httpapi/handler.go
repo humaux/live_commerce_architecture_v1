@@ -9,6 +9,8 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -19,6 +21,7 @@ import (
 	"livecommerce/internal/command"
 	"livecommerce/internal/httperror"
 	"livecommerce/internal/inventory"
+	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
 )
 
@@ -28,8 +31,8 @@ import (
 func NewHandler(pool *pgxpool.Pool) http.Handler {
 	mux := http.NewServeMux()
 	const base = "/v1/admin/stores/{store_id}"
-	mux.HandleFunc("GET "+base+"/products", scoped(pool, "catalog:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
-		return catalog.ListProducts(ctx, tx, s)
+	mux.HandleFunc("GET "+base+"/products", listRoute(pool, "catalog:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, page pagination.Request) (any, error) {
+		return catalog.ListProductsPage(ctx, tx, s, page)
 	}))
 	mux.HandleFunc("POST "+base+"/products", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.ProductInput) (any, error) {
 		return catalog.CreateProduct(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)
@@ -40,8 +43,8 @@ func NewHandler(pool *pgxpool.Pool) http.Handler {
 	mux.HandleFunc("POST "+base+"/products/{product_id}/archive", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in versionInput) (any, error) {
 		return catalog.ArchiveProduct(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), in.ExpectedVersion)
 	}))
-	mux.HandleFunc("GET "+base+"/products/{product_id}/skus", scoped(pool, "catalog:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
-		return catalog.ListSKUs(ctx, tx, s, r.PathValue("product_id"))
+	mux.HandleFunc("GET "+base+"/products/{product_id}/skus", listRoute(pool, "catalog:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, page pagination.Request) (any, error) {
+		return catalog.ListSKUsPage(ctx, tx, s, r.PathValue("product_id"), page)
 	}))
 	mux.HandleFunc("POST "+base+"/skus", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.SKUInput) (any, error) {
 		return catalog.CreateSKU(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)
@@ -55,14 +58,14 @@ func NewHandler(pool *pgxpool.Pool) http.Handler {
 	mux.HandleFunc("POST "+base+"/skus/{sku_id}/archive", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in versionInput) (any, error) {
 		return catalog.ArchiveSKU(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("sku_id"), in.ExpectedVersion)
 	}))
-	mux.HandleFunc("GET "+base+"/warehouses", scoped(pool, "inventory:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
-		return inventory.ListWarehouses(ctx, tx, s)
+	mux.HandleFunc("GET "+base+"/warehouses", listRoute(pool, "inventory:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, page pagination.Request) (any, error) {
+		return inventory.ListWarehousesPage(ctx, tx, s, page)
 	}))
 	mux.HandleFunc("POST "+base+"/warehouses", bodyRoute(pool, "inventory:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in warehouseInput) (any, error) {
 		return inventory.CreateWarehouse(ctx, tx, s, r.Header.Get("Idempotency-Key"), in.Name)
 	}))
-	mux.HandleFunc("GET "+base+"/inventory", scoped(pool, "inventory:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
-		return inventory.ListBalances(ctx, tx, s)
+	mux.HandleFunc("GET "+base+"/inventory", listRoute(pool, "inventory:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, page pagination.Request) (any, error) {
+		return inventory.ListBalancesPage(ctx, tx, s, page)
 	}))
 	mux.HandleFunc("POST "+base+"/inventory/adjustments", bodyRoute(pool, "inventory:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in inventory.Adjustment) (any, error) {
 		return inventory.AdjustOnHand(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)
@@ -81,6 +84,50 @@ type warehouseInput struct {
 	Name string `json:"name"`
 }
 type action func(context.Context, pgx.Tx, platform.Scope, *http.Request) (any, error)
+
+func listRoute(pool *pgxpool.Pool, permission string, fn func(context.Context, pgx.Tx, platform.Scope, *http.Request, pagination.Request) (any, error)) http.HandlerFunc {
+	return scoped(pool, permission, func(ctx context.Context, tx pgx.Tx, scope platform.Scope, r *http.Request) (any, error) {
+		page, err := parsePage(r.URL.RawQuery)
+		if err != nil {
+			return nil, err
+		}
+		return fn(ctx, tx, scope, r, page)
+	})
+}
+
+func parsePage(raw string) (pagination.Request, error) {
+	var page pagination.Request
+	if len(raw) > 4096 {
+		return page, command.ErrInvalid
+	}
+	values, err := url.ParseQuery(raw)
+	if err != nil {
+		return page, command.ErrInvalid
+	}
+	for key, list := range values {
+		if len(list) != 1 {
+			return page, command.ErrInvalid
+		}
+		switch key {
+		case "cursor":
+			if len(list[0]) > 1024 {
+				return page, command.ErrInvalid
+			}
+			page.Cursor = list[0]
+		case "limit":
+			if list[0] == "" || strings.Trim(list[0], "0123456789") != "" {
+				return page, command.ErrInvalid
+			}
+			page.Limit, err = strconv.Atoi(list[0])
+			if err != nil || page.Limit < 1 || page.Limit > 100 {
+				return page, command.ErrInvalid
+			}
+		default:
+			return page, command.ErrInvalid
+		}
+	}
+	return page, nil
+}
 
 // bodyRoute rejects unknown fields/trailing values and caps allocation before
 // opening a database transaction. It never logs bodies or bearer credentials.

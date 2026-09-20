@@ -34,6 +34,18 @@ func TestClassifyDoesNotExposeDriverDetails(t *testing.T) {
 	}
 }
 
+func TestPageQueryValidation(t *testing.T) {
+	for _, raw := range []string{"limit=0", "limit=-1", "limit=101", "limit=+1", "limit=1.0", "limit=1&limit=2", "unknown=x", "cursor=a&cursor=b", "limit=%zz", "cursor=" + strings.Repeat("a", 1025)} {
+		if _, err := parsePage(raw); !errors.Is(err, command.ErrInvalid) {
+			t.Fatalf("accepted bad page query %q", raw)
+		}
+	}
+	got, err := parsePage("limit=20&cursor=opaque")
+	if err != nil || got.Limit != 20 || got.Cursor != "opaque" {
+		t.Fatalf("valid page %+v %v", got, err)
+	}
+}
+
 func TestAdminHTTPTransportGuards(t *testing.T) {
 	h := NewHandler(nil)
 	const path = "/v1/admin/stores/11111111-1111-4111-8111-111111111111/products"
