@@ -1,0 +1,22 @@
+{
+  "checked_at_utc": "2026-09-20T03:13:00Z",
+  "fixture_query": {
+    "chunk_id": "339415",
+    "wall_time_seconds": 0.032465916,
+    "exit_code": 0,
+    "original_token_count": 0,
+    "output": ""
+  },
+  "remaining_services": {
+    "chunk_id": "35a4b8",
+    "wall_time_seconds": 0.000007167,
+    "exit_code": 0,
+    "original_token_count": 16,
+    "output": "humaux-thread-qdrant\tUp 33 hours\nhumaux-thread-pg\tUp 33 hours\n"
+  },
+  "worktrees": {
+    "platform": "clean merged worktree removed; branch and commits retained",
+    "tests": "clean merged worktree removed; branch and commits retained"
+  },
+  "production_mutations": []
+}

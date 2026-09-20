@@ -97,8 +97,9 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 	if _, err = upstream.Migrate(ctx, rivermigrate.DirectionUp, nil); err != nil {
 		return err
 	}
-	// Insert-only API role. A future worker receives separately scoped operational privileges.
-	if _, err = lockConn.Exec(ctx, `GRANT SELECT, INSERT ON river.river_job TO commerce_runtime; GRANT USAGE ON SEQUENCE river.river_job_id_seq TO commerce_runtime`); err != nil {
+	// River InsertTx's ON CONFLICT returns the existing job by updating kind only.
+	// Do not grant worker permissions to mutate state, attempts, payload or delete.
+	if _, err = lockConn.Exec(ctx, `GRANT SELECT, INSERT, UPDATE(kind) ON river.river_job TO commerce_runtime; GRANT USAGE ON SEQUENCE river.river_job_id_seq TO commerce_runtime`); err != nil {
 		return err
 	}
 	return nil

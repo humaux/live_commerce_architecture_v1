@@ -45,4 +45,6 @@ River migrations use upstream rivermigrate, NEVER hand-written job schema. A ded
 
 Real PG18: non-owner/no-BYPASS runtime; no-scope reads empty; cross-tenant and same-tenant cross-store denied; composite FK rejects foreign tenant; invalid/expired/revoked token and revoked grant rejected; failed callback and panic leave no audit/job; successful callback commits both; scope does not leak after pool reuse; cancelled context returns boundedly; runtime cannot read auth tables or mutate grant/audit history. HTTP: no bearer cannot exploit cookie/Host/X-Tenant/permission query; authorized store JSON; no token or SQL details in errors.
 
+River's InsertTx upsert needs SELECT, INSERT and UPDATE(kind), plus sequence USAGE; runtime gets no UPDATE(state/args/attempts) or DELETE. No tenant job-list endpoint exists. This synthetic enqueue/rollback check is not proof of full queue tenant isolation; tenant-bound job envelopes and worker validation are a future T06 gate.
+
 Four conversation domains remain identity/webchat/social/support, no universal messages table. Taiwan identifiers remain strings and selection requires server-bound nonce/revision/provider checks; those features are NOT implemented by this foundation migration. Checkout schema/payment/stock contracts are next T01 sub-slices, not silently implied by this API.

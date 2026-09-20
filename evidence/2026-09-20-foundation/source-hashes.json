@@ -1,0 +1,58 @@
+{
+  "algorithm": "SHA-256",
+  "purpose": "Tested implementation source snapshot, excluding documentation-only state changes",
+  "files": [
+    {
+      "path": "go.mod",
+      "sha256": "4ead1878f8efa155c87b70a5511d1b8cee74f091b2ec0e9d2a09a23d33446a7a"
+    },
+    {
+      "path": "go.sum",
+      "sha256": "b25a1a2ee1b9282030af08d9d63cea55fcb65a21be6c1db939a9db7191a5271b"
+    },
+    {
+      "path": "cmd/api/main.go",
+      "sha256": "69bdad5b763736538e535e11cfb255cf1333c5d381bec0f6c1236dbb9b8c918f"
+    },
+    {
+      "path": "internal/platform/platform.go",
+      "sha256": "2e213295d19170bcff936ae8e2f9b19e8db3ef09cdb78d49c7705405939abf5f"
+    },
+    {
+      "path": "internal/platform/platform_test.go",
+      "sha256": "f9ef8ba6d3bc8030e148d5c82a76c8f90b5dbbb083f5ca1206e44bce59f8958d"
+    },
+    {
+      "path": "migrations/0001_foundation.sql",
+      "sha256": "90fd808126efb21fe60eec50fb97033f5eff6f48b0aa2b3bb95b909c6b343d02"
+    },
+    {
+      "path": "migrations/migrate.go",
+      "sha256": "fb17e177c320ee59f6c08937c423fe84524fee4ea510f270b0bce922a42e153f"
+    },
+    {
+      "path": "tests/foundation/foundation_integration_test.go",
+      "sha256": "5ee27e9247bda1fc86af020394fe9001dcc148e8a32dafc16236c237e1c012ac"
+    },
+    {
+      "path": "tests/foundation/acceptance_test.go",
+      "sha256": "6ed85632c5029cfa218c3ea7ac32ccf69d361c71a5ac9d673663250d9b8688e4"
+    },
+    {
+      "path": "scripts/dev/test-local.sh",
+      "sha256": "3eba90e40de5f794a6cc533985d46e240d150f6512cf544d7c4befb10e8e357d"
+    },
+    {
+      "path": ".github/workflows/foundation.yml",
+      "sha256": "99c2d305d7bed5da3693810d9811ade2654247d5fd2ae57f0818d99e1984935d"
+    },
+    {
+      "path": "contracts/foundation-v1.md",
+      "sha256": "54eb4e75e38f25aa72040a86f39688cf822190c6f53d4ac333b04eadf255f0d9"
+    },
+    {
+      "path": "contracts/foundation-openapi.json",
+      "sha256": "3e20225850fa347ff3d150f3b03aa6a050ce8940d6ad2cecf206df82b0b6d86b"
+    }
+  ]
+}

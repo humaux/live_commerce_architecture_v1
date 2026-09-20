@@ -1,0 +1,10 @@
+{
+  "recorded_at": "2026-09-20",
+  "level": "STATIC_VULNERABILITY_SCAN",
+  "command": "GOTOOLCHAIN=go1.27.1 go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...",
+  "chunk_id": "32cf17",
+  "wall_time_seconds": 0.00000575,
+  "exit_code": 0,
+  "original_token_count": 7,
+  "output": "No vulnerabilities found.\n"
+}

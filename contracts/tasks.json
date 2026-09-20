@@ -18,21 +18,27 @@
       "docs/discovery/**",
       "contracts/versions.candidate.json"
     ],
-    "status": "NOT_STARTED",
+    "status": "IN_PROGRESS",
     "done_requires": "主Agent/integrator保存环境核验与unknown清单；platform_explorer只读取证；生产外部阻塞不伪造PASS。",
     "max_attempts_before_escalation": 2,
     "helpers": [
       "platform_explorer"
     ],
     "completion_dimensions": {
-      "implementation": "NOT_STARTED",
-      "unit_mock": "NOT_RUN",
-      "real_pg": "NOT_RUN",
+      "implementation": "PARTIAL_FOUNDATION",
+      "unit_mock": "NOT_APPLICABLE",
+      "real_pg": "PASS_FOUNDATION_ONLY",
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
-      "independent_review": "NOT_RUN"
+      "independent_review": "PASS_FOUNDATION_ONLY"
     },
-    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。",
+    "local_slice": {
+      "as_of": "2026-09-20",
+      "scope": "环境与分工核实；商业资格、外部账号及容量仍开放",
+      "evidence": "docs/implementation/2026-09-20-foundation-acceptance.md",
+      "global_gate_pass": false
+    }
   },
   {
     "id": "T01",
@@ -59,18 +65,24 @@
       "package.json",
       "pnpm-lock.yaml"
     ],
-    "status": "NOT_STARTED",
+    "status": "IN_PROGRESS",
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
-      "implementation": "NOT_STARTED",
-      "unit_mock": "NOT_RUN",
-      "real_pg": "NOT_RUN",
+      "implementation": "PARTIAL_FOUNDATION",
+      "unit_mock": "PASS_FOUNDATION_ONLY",
+      "real_pg": "PASS_FOUNDATION_ONLY",
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
-      "independent_review": "NOT_RUN"
+      "independent_review": "PASS_FOUNDATION_ONLY"
     },
-    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。",
+    "local_slice": {
+      "as_of": "2026-09-20",
+      "scope": "foundation SQL/OpenAPI 已冻结及验收；全量成交/四域会话/超商合同仍待冻结",
+      "evidence": "docs/implementation/2026-09-20-foundation-acceptance.md",
+      "global_gate_pass": false
+    }
   },
   {
     "id": "T02",
@@ -99,18 +111,24 @@
       "internal/ui_events/**",
       "tests/ui_events/**"
     ],
-    "status": "NOT_STARTED",
+    "status": "IN_PROGRESS",
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
-      "implementation": "NOT_STARTED",
-      "unit_mock": "NOT_RUN",
-      "real_pg": "NOT_RUN",
+      "implementation": "PARTIAL_FOUNDATION",
+      "unit_mock": "PASS_FOUNDATION_ONLY",
+      "real_pg": "PASS_FOUNDATION_ONLY",
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
-      "independent_review": "NOT_RUN"
+      "independent_review": "PASS_FOUNDATION_ONLY"
     },
-    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。",
+    "local_slice": {
+      "as_of": "2026-09-20",
+      "scope": "Go HTTP/PG/River基础、race/vet及本地隔离脚本通过；GitHub CI仅配置未实跑",
+      "evidence": "docs/implementation/2026-09-20-foundation-acceptance.md",
+      "global_gate_pass": false
+    }
   },
   {
     "id": "T03",
@@ -138,18 +156,24 @@
       "internal/audit/**",
       "tests/domains/**"
     ],
-    "status": "NOT_STARTED",
+    "status": "IN_PROGRESS",
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
-      "implementation": "NOT_STARTED",
-      "unit_mock": "NOT_RUN",
-      "real_pg": "NOT_RUN",
+      "implementation": "PARTIAL_FOUNDATION",
+      "unit_mock": "PASS_FOUNDATION_ONLY",
+      "real_pg": "PASS_FOUNDATION_ONLY",
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
-      "independent_review": "NOT_RUN"
+      "independent_review": "PASS_FOUNDATION_ONLY"
     },
-    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。",
+    "local_slice": {
+      "as_of": "2026-09-20",
+      "scope": "merchant会话授权/店铺RLS/审计基础通过；完整登录、域名与其他audience尚未实现",
+      "evidence": "docs/implementation/2026-09-20-foundation-acceptance.md",
+      "global_gate_pass": false
+    }
   },
   {
     "id": "T04",

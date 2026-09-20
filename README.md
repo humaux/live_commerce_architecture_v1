@@ -1,5 +1,19 @@
 # 直播电商 SaaS 架构与 Codex 启动包
 
+## 2026-09-20 实施入口
+
+已开始开发，当前实现为 **Go/PostgreSQL 基础切片，不是完整 SaaS 或生产上线版本**：店铺作用域、服务端会话授权、RLS、追加式审计、四个基础 HTTP 接口与 River 同事务入队验收。
+
+- 当前实现：[foundation 合同](contracts/foundation-v1.md)、[基础 OpenAPI](contracts/foundation-openapi.json)、[实施说明](docs/implementation/2026-09-20-kickoff.md)。
+- 本地一键验收：`bash scripts/dev/test-local.sh`。需要 Docker、Go 启动器和已下载的固定 PG18.6 镜像（镜像 digest 见脚本）；会创建本任务临时数据库，退出自动移除，不读取现有 `DATABASE_URL`。
+- 仅编译/单测：`GOTOOLCHAIN=go1.27.1 go test -race ./...`。未配置隔离数据库时，集成测试明确 SKIP，不能视为数据库通过。
+- 服务入口：`GOTOOLCHAIN=go1.27.1 go run ./cmd/api`。需要已迁移数据库和 **commerce_runtime 成员、非 owner 的独立登录**，通过环境变量 `DATABASE_URL` 传入。默认仅监听 `127.0.0.1:8080`；程序不会自动迁移、生成用户或放宽授权。
+- GitHub 检查配置已加入 `.github/workflows/foundation.yml`，但尚无远端仓库或真实 CI 执行回执。
+
+下文保留原设计包的基线说明；`MANIFEST.sha256` 对应原包，不能拿来验证新增实现。商品/结账、四域会话业务、台湾超商/跨境物流、Meta/支付/直播和三端 UI 仍需继续实现与独立验收。全局 G01–G15 未宣称通过。
+
+## 原设计包基线
+
 核验基准：2026-09-08。版本1.0。**架构设计与规格模型，不是已经完成的SaaS。**
 
 主文档是 [`架构.md`](架构.md)。交付明确选择Go业务后端、PostgreSQL+River、TypeScript网页层和托管LiveKit媒体，不宣称语言性能或外部账号能力已验证。
