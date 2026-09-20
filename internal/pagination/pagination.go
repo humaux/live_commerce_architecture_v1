@@ -33,6 +33,7 @@ type Binding struct {
 	StoreID    string `json:"store_id"`
 	Collection string `json:"collection"`
 	ParentID   string `json:"parent_id"`
+	Filter     string `json:"filter,omitempty"`
 }
 
 type cursor struct {
@@ -105,9 +106,11 @@ func validBinding(b Binding) bool {
 	}
 	switch b.Collection {
 	case "products", "warehouses", "inventory":
-		return b.ParentID == ""
+		return b.ParentID == "" && b.Filter == ""
 	case "skus":
-		return command.ValidID(b.ParentID)
+		return command.ValidID(b.ParentID) && b.Filter == ""
+	case "catalog-ledger":
+		return command.ValidID(b.ParentID) && len(b.Filter) == 64
 	default:
 		return false
 	}
