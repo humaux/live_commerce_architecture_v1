@@ -183,6 +183,20 @@ CREATE TRIGGER ledger_balance BEFORE INSERT ON inventory.ledger
 FOR EACH ROW EXECUTE FUNCTION inventory.apply_ledger();
 GRANT SELECT,INSERT,UPDATE ON inventory.balances TO commerce_inventory_writer;
 
+-- SELECT FOR UPDATE itself requires UPDATE privilege. Expose only a scoped
+-- lock/read function, not UPDATE(balance), so domains cannot bypass the ledger.
+CREATE FUNCTION inventory.lock_balance(p_warehouse uuid,p_sku uuid)
+RETURNS SETOF inventory.balances LANGUAGE sql VOLATILE SECURITY DEFINER
+SET search_path=pg_catalog AS $$
+    SELECT b.* FROM inventory.balances b
+    WHERE b.tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid
+      AND b.store_id=nullif(current_setting('app.store_id',true),'')::uuid
+      AND b.warehouse_id=p_warehouse AND b.sku_id=p_sku FOR UPDATE
+$$;
+ALTER FUNCTION inventory.lock_balance(uuid,uuid) OWNER TO commerce_inventory_writer;
+REVOKE ALL ON FUNCTION inventory.lock_balance(uuid,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION inventory.lock_balance(uuid,uuid) TO commerce_runtime;
+
 -- All tenant/store relations, including append-only histories, fail closed without Scope.
 DO $$
 DECLARE relation_name text;
