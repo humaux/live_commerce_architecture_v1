@@ -118,6 +118,12 @@ func GetQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, id string) (out Quo
 	if err = buyer.CheckScope(ctx, tx, s); err != nil {
 		return out, err
 	}
+	return readQuote(ctx, tx, s, id)
+}
+
+// readQuote keeps the immutable JSON and relational header consistency check in
+// one place. Callers must validate the ID and bind the buyer scope first.
+func readQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, id string) (out Quote, err error) {
 	var body []byte
 	var cart, currency, market, country, method string
 	var cartVersion, marketVersion, policyVersion int64
