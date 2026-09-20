@@ -364,7 +364,7 @@ func validPurpose(value string) bool {
 }
 
 func validOutcome(out Outcome) bool {
-	validState := out.State == "SUCCEEDED" || out.State == "FAILED_FINAL" || out.State == "UNKNOWN" || out.State == "ACKNOWLEDGED"
+	validState := out.State == "SUCCEEDED" || out.State == "FAILED_FINAL" || out.State == "UNKNOWN" || out.State == "ACKNOWLEDGED" || out.State == "BLOCKED_POLICY"
 	return validState && codePattern.MatchString(out.Code) && validReference(out.ProviderReference)
 }
 

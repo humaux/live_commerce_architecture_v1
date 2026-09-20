@@ -107,12 +107,27 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 		t.Fatal(err)
 	}
 	checked.Close()
+	if err := platform.ValidateWorkerPool(ctx, p); err != nil {
+		t.Fatalf("ordinary worker pool rejected: %v", err)
+	}
+	for _, unsafe := range []*pgxpool.Pool{nil, f.owner, f.runtime} {
+		if err := platform.ValidateWorkerPool(ctx, unsafe); err == nil {
+			t.Fatal("unsafe existing worker pool accepted")
+		}
+	}
+	// The validator does not own or close supplied pools on failure.
+	if err := f.runtime.Ping(ctx); err != nil {
+		t.Fatal("validation closed caller-owned pool")
+	}
 	if unsafe, err := platform.OpenPool(ctx, dsn); err == nil {
 		unsafe.Close()
 		t.Fatal("worker admitted as merchant")
 	}
 	for _, roles := range []string{"commerce_worker,commerce_runtime", "commerce_worker,commerce_buyer_runtime", "commerce_worker,commerce_integration_writer"} {
-		mixed, _ := t06AuthorityLogin(t, roles)
+		mixed, mixedPool := t06AuthorityLogin(t, roles)
+		if err := platform.ValidateWorkerPool(ctx, mixedPool); err == nil {
+			t.Fatalf("mixed existing worker pool accepted: %s", roles)
+		}
 		if unsafe, err := platform.OpenWorkerPool(ctx, mixed); err == nil {
 			unsafe.Close()
 			t.Fatalf("mixed worker accepted: %s", roles)

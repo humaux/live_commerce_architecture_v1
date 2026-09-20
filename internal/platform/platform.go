@@ -88,9 +88,28 @@ func openPool(ctx context.Context, dsn string, authority string) (*pgxpool.Pool,
 		pool.Close()
 		return nil, fmt.Errorf("database unavailable: %w", err)
 	}
+	if err := validatePoolAuthority(startup, pool, authority); err != nil {
+		pool.Close()
+		return nil, err
+	}
+	return pool, nil
+}
 
+// ValidateWorkerPool reuses the startup authority gate when an internal worker
+// receives an existing pool. The caller retains ownership of that pool; failure
+// never closes it. A nil pool and an owner/mixed-role connection fail closed.
+func ValidateWorkerPool(ctx context.Context, pool *pgxpool.Pool) error {
+	if pool == nil {
+		return errors.New("worker database pool required")
+	}
+	bounded, cancel := context.WithTimeout(ctx, startupTimeout)
+	defer cancel()
+	return validatePoolAuthority(bounded, pool, "worker")
+}
+
+func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority string) error {
 	var superuser, bypassRLS, roleAdmin, databaseCreator, replication, objectOwner, runtimeMember, authMember, identityMember, buyerRuntimeMember, buyerIssuerMember, workerMember, canSetPrivileged bool
-	err = pool.QueryRow(startup, `
+	err := pool.QueryRow(ctx, `
 		SELECT r.rolsuper, r.rolbypassrls, r.rolcreaterole, r.rolcreatedb, r.rolreplication,
 		       (EXISTS (
 			   SELECT 1 FROM pg_namespace n
@@ -128,8 +147,7 @@ func openPool(ctx context.Context, dsn string, authority string) (*pgxpool.Pool,
 		FROM pg_roles r WHERE r.rolname = current_user`).
 		Scan(&superuser, &bypassRLS, &roleAdmin, &databaseCreator, &replication, &objectOwner, &runtimeMember, &authMember, &identityMember, &buyerRuntimeMember, &buyerIssuerMember, &workerMember, &canSetPrivileged)
 	if err != nil {
-		pool.Close()
-		return nil, fmt.Errorf("validate runtime role: %w", err)
+		return fmt.Errorf("validate runtime role: %w", err)
 	}
 	// Exactly one authority, including indirect grants. Checking only the desired
 	// role would let a mixed login smuggle merchant privileges into buyer code.
@@ -143,10 +161,9 @@ func openPool(ctx context.Context, dsn string, authority string) (*pgxpool.Pool,
 	}
 	roleValid := memberships[authority] && roleCount == 1
 	if superuser || bypassRLS || roleAdmin || databaseCreator || replication || objectOwner || !roleValid || authMember || canSetPrivileged {
-		pool.Close()
-		return nil, errors.New("unsafe runtime database role")
+		return errors.New("unsafe runtime database role")
 	}
-	return pool, nil
+	return nil
 }
 
 // WithScope resolves an opaque session inside a transaction, sets transaction-local
