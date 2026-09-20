@@ -149,6 +149,8 @@
     "role": "commerce_worker",
     "write_paths": [
       "internal/identity/**",
+      "internal/buyer/**",
+      "tests/foundation/buyer_capability_test.go",
       "internal/tenancy/**",
       "tests/tenancy/**",
       "internal/stores/**",

@@ -1,6 +1,8 @@
 # 开发任务依赖与写路径
 
-**状态：所有产品开发任务尚未执行。角色是委派候选，不是已运行Agent。**
+**本表是开发任务 DAG 和默认角色，不是实时完成状态。** 当前切片状态见
+`contracts/tasks.json` 与 `docs/implementation/` 的实际验收记录；已落地的基础、
+商品库存和身份切片不代表整个任务或全局门禁完成。实际 agent/worktree 另记在交付证据中。
 
 T00由integrator记录只读explorer的结果；T01只冻结首个切片及公共不变量，不要求第一天建齐所有表。
 任务gate表示贡献范围，不要求每个局部任务先通过整个全局门禁。真实外部资格另列，不得以mock结果代替。
@@ -49,7 +51,7 @@ T00由integrator记录只读explorer的结果；T01只冻结首个切片及公�
 
 ### T03 身份、店铺/域名服务、RLS授权与审计
 
-`internal/identity/**`, `internal/tenancy/**`, `tests/tenancy/**`, `internal/stores/**`, `internal/domains/**`, `internal/audit/**`, `tests/domains/**`
+`internal/identity/**`, `internal/buyer/**`, `tests/foundation/buyer_capability_test.go`, `internal/tenancy/**`, `tests/tenancy/**`, `internal/stores/**`, `internal/domains/**`, `internal/audit/**`, `tests/domains/**`
 
 ### T04 商品SKU/价格/库存账本/预留
 
