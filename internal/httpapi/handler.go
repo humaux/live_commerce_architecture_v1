@@ -31,6 +31,32 @@ import (
 func NewHandler(pool *pgxpool.Pool) http.Handler {
 	mux := http.NewServeMux()
 	const base = "/v1/admin/stores/{store_id}"
+	mux.HandleFunc("GET "+base+"/catalog-ledger", scoped(pool, "catalog:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
+		if err := platform.RequirePermission(ctx, tx, s, strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "), "inventory:read"); err != nil {
+			return nil, err
+		}
+		if len(r.URL.RawQuery) > 4096 {
+			return nil, command.ErrInvalid
+		}
+		values, err := url.ParseQuery(r.URL.RawQuery)
+		if err != nil {
+			return nil, command.ErrInvalid
+		}
+		for _, v := range values {
+			if len(v) != 1 {
+				return nil, command.ErrInvalid
+			}
+		}
+		in := catalog.LedgerRequest{WarehouseID: values.Get("warehouse_id"), Query: values.Get("q"), Status: values.Get("status")}
+		values.Del("warehouse_id")
+		values.Del("q")
+		values.Del("status")
+		in.Page, err = parsePage(values.Encode())
+		if err != nil {
+			return nil, err
+		}
+		return catalog.ListLedger(ctx, tx, s, in)
+	}))
 	mux.HandleFunc("GET "+base+"/products", listRoute(pool, "catalog:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, page pagination.Request) (any, error) {
 		return catalog.ListProductsPage(ctx, tx, s, page)
 	}))

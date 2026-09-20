@@ -106,6 +106,36 @@ func WithScope(ctx context.Context, pool *pgxpool.Pool, token, storeID, permissi
 	})
 }
 
+// RequirePermission checks a second fixed route permission inside the existing
+// scoped transaction. It cannot change scope or open a separate auth snapshot.
+func RequirePermission(ctx context.Context, tx pgx.Tx, scope Scope, token, permission string) error {
+	if tx == nil || len(token) < 32 || len(token) > 512 {
+		return ErrUnauthorized
+	}
+	hash := sha256.Sum256([]byte(token))
+	var status, tenant, principal string
+	var revision int64
+	err := tx.QueryRow(ctx, `SELECT access_status,coalesce(tenant_id::text,''),coalesce(principal_id::text,''),coalesce(authz_revision,0) FROM identity.resolve_access($1,$2::uuid,$3)`, hash[:], scope.StoreID, permission).Scan(&status, &tenant, &principal, &revision)
+	if err != nil {
+		return err
+	}
+	switch status {
+	case "unauthorized":
+		return ErrUnauthorized
+	case "not_found":
+		return ErrScopeNotFound
+	case "forbidden":
+		return ErrForbidden
+	case "ok":
+		if tenant == scope.TenantID && principal == scope.PrincipalID && revision == scope.Revision {
+			return nil
+		}
+		return ErrForbidden
+	default:
+		return errors.New("invalid access result")
+	}
+}
+
 func withScopeContext(ctx context.Context, pool *pgxpool.Pool, token, storeID, permission string, fn func(context.Context, pgx.Tx, Scope) error) (err error) {
 	if pool == nil || fn == nil || len(token) < 32 || len(token) > 512 || !isCanonicalUUID(storeID) {
 		return ErrUnauthorized
