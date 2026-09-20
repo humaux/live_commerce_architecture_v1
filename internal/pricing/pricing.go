@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"regexp"
+	"strings"
 	"unicode"
 	"unicode/utf8"
 
@@ -224,7 +225,7 @@ func SetPolicy(ctx context.Context, tx pgx.Tx, scope platform.Scope, key string,
 
 func LockCurrent(ctx context.Context, tx pgx.Tx, tenantID, storeID, marketID, country, method string) (out Policy, err error) {
 	if tx == nil || !command.ValidID(tenantID) || !command.ValidID(storeID) || !command.ValidID(marketID) ||
-		!countryPattern.MatchString(country) || !validMethod(method) {
+		!countryPattern.MatchString(country) || !ValidMethod(method) {
 		return out, command.ErrInvalid
 	}
 	var currentVersion int64
@@ -300,7 +301,7 @@ func Calculate(policy Policy, lines []AmountLine) (Calculation, error) {
 
 func validPolicyInput(in PolicyInput) bool {
 	return command.ValidID(in.MarketID) && in.ExpectedVersion >= 0 && in.ShippingMinor != nil && in.TaxRateBPS != nil &&
-		currencyPattern.MatchString(in.Currency) && countryPattern.MatchString(in.Country) && validMethod(in.Method) &&
+		currencyPattern.MatchString(in.Currency) && countryPattern.MatchString(in.Country) && ValidMethod(in.Method) &&
 		in.ShippingMode == "country_flat" && validTax(in.TaxMode, in.TaxBasis, *in.TaxRateBPS) &&
 		*in.ShippingMinor >= 0 && *in.ShippingMinor <= command.MaxMoney && in.QuoteTTLSeconds >= 60 && in.QuoteTTLSeconds <= 1800 &&
 		printable(in.ConfigurationRef, 240)
@@ -308,7 +309,7 @@ func validPolicyInput(in PolicyInput) bool {
 
 func validPolicy(p Policy) bool {
 	return command.ValidID(p.MarketID) && p.Version > 0 && p.Enabled && currencyPattern.MatchString(p.Currency) &&
-		countryPattern.MatchString(p.Country) && validMethod(p.Method) && p.ShippingMode == "country_flat" &&
+		countryPattern.MatchString(p.Country) && ValidMethod(p.Method) && p.ShippingMode == "country_flat" &&
 		p.ShippingMinor >= 0 && p.ShippingMinor <= command.MaxMoney && validTax(p.TaxMode, p.TaxBasis, p.TaxRateBPS) &&
 		p.QuoteTTLSeconds >= 60 && p.QuoteTTLSeconds <= 1800
 }
@@ -318,8 +319,21 @@ func validTax(mode, basis string, bps int64) bool {
 		(mode == "exclusive" || mode == "inclusive" || mode == "none") && (mode != "none" || bps == 0)
 }
 
-func validMethod(method string) bool {
-	return method == "home" || method == "cvs_711" || method == "cvs_familymart"
+// ValidMethod reports whether method is a supported legacy or delivery-service key.
+func ValidMethod(method string) bool {
+	if method == "home" || method == "cvs_711" || method == "cvs_familymart" {
+		return true
+	}
+	code, ok := strings.CutPrefix(method, "delivery:")
+	return ok && marketCodePattern.MatchString(code)
+}
+
+// DeliveryMethod returns the reserved pricing key for one delivery service.
+func DeliveryMethod(code string) (string, error) {
+	if !marketCodePattern.MatchString(code) {
+		return "", command.ErrInvalid
+	}
+	return "delivery:" + code, nil
 }
 
 func printable(value string, max int) bool {
