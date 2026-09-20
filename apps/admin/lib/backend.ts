@@ -64,6 +64,22 @@ export const noSessionError: APIError = {
   details: {},
 };
 
+export function onboardingPolicy() {
+  const enabled = process.env.COMMERCE_ONBOARDING_ENABLED ?? "";
+  if (enabled === "" || enabled === "0")
+    return { enabled: false, currencies: [] as string[] };
+  if (enabled !== "1") throw new Error("invalid COMMERCE_ONBOARDING_ENABLED");
+  const raw = process.env.COMMERCE_ONBOARDING_CURRENCIES ?? "";
+  const currencies = raw.split(",");
+  if (
+    currencies.length === 0 ||
+    currencies.some((currency) => !/^[A-Z]{3}$/.test(currency)) ||
+    new Set(currencies).size !== currencies.length
+  )
+    throw new Error("invalid COMMERCE_ONBOARDING_CURRENCIES");
+  return { enabled: true, currencies };
+}
+
 async function currentSessionToken() {
   if (!authConfig) return null;
   const token =

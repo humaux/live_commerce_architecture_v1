@@ -1084,3 +1084,387 @@ code {
     scroll-behavior: auto !important;
   }
 }
+
+/* Merchant entry and first-workspace setup: approved T03 wizard C. */
+.entry-root {
+  min-height: 100vh;
+  background: #f7f9fc;
+  color: var(--ink);
+}
+.entry-topbar {
+  display: flex;
+  align-items: stretch;
+  min-height: 74px;
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+}
+.entry-brand {
+  display: flex;
+  align-items: center;
+  width: 223px;
+  flex: 0 0 223px;
+  padding: 0 23px;
+  background: var(--navy);
+  color: #fff;
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+.entry-manage {
+  display: flex;
+  align-items: center;
+  align-self: center;
+  gap: 11px;
+  min-width: 196px;
+  min-height: 46px;
+  margin-left: 22px;
+  padding: 0 18px;
+  border: 1px solid #d7e1ec;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 700;
+}
+.entry-account-tools {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
+  padding: 0 26px;
+  color: #334b67;
+  font-weight: 600;
+}
+.entry-language select {
+  min-height: 38px;
+  border-color: transparent;
+  background: transparent;
+  font-weight: 600;
+}
+.entry-avatar {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #edf2f7;
+  font-weight: 700;
+}
+.entry-signout {
+  min-height: 34px;
+  padding: 6px 10px;
+  border-color: transparent;
+  color: #516982;
+  font-size: 13px;
+}
+.entry-main {
+  width: min(866px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 55px 0 52px;
+}
+.entry-title {
+  text-align: center;
+  font-size: 33px;
+  letter-spacing: -0.8px;
+}
+.entry-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  width: min(600px, 100%);
+  margin: 28px auto 30px;
+  padding: 0;
+  list-style: none;
+}
+.entry-steps li {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  color: #667a91;
+  font-weight: 600;
+}
+.entry-steps li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: 16px;
+  left: calc(50% + 20px);
+  width: calc(100% - 40px);
+  height: 2px;
+  background: #d7e0e9;
+}
+.entry-steps li.complete:not(:last-child)::after {
+  background: var(--teal);
+}
+.entry-step-number {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #e7edf3;
+  color: #597087;
+  font-variant-numeric: tabular-nums;
+}
+.entry-steps li.complete,
+.entry-steps li.current {
+  color: var(--ink);
+}
+.entry-steps li.complete .entry-step-number,
+.entry-steps li.current .entry-step-number {
+  background: #268a74;
+  color: #fff;
+}
+.entry-wizard,
+.entry-auth-panel {
+  border: 1px solid #d8e2ed;
+  border-radius: 7px;
+  background: #fff;
+}
+.entry-wizard {
+  padding: 30px;
+}
+.entry-auth-panel {
+  width: min(620px, 100%);
+  margin: 92px auto 0;
+  padding: 42px;
+  text-align: center;
+}
+.entry-auth-panel h1 {
+  margin-bottom: 14px;
+  font-size: 29px;
+}
+.entry-auth-panel > p {
+  max-width: 58ch;
+  margin: 0 auto 24px;
+  color: var(--muted);
+}
+.entry-auth-panel form {
+  margin-top: 24px;
+}
+.entry-completed-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 60px;
+  margin-bottom: 35px;
+  padding: 12px 27px;
+  border-radius: 5px;
+  background: #f5f7fa;
+  color: #60748a;
+}
+.entry-completed-row strong {
+  margin-left: 8px;
+  color: var(--ink);
+}
+.entry-completed-row button {
+  min-height: 32px;
+  margin-left: auto;
+  padding: 4px 8px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--focus);
+}
+.entry-form {
+  display: grid;
+  gap: 24px;
+}
+.entry-heading-group {
+  display: grid;
+  gap: 8px;
+}
+.entry-form h2 {
+  font-size: 24px;
+  line-height: 1.35;
+  letter-spacing: -0.3px;
+}
+.entry-heading-group p,
+.entry-final-hint {
+  color: var(--muted);
+}
+.entry-form label {
+  display: grid;
+  gap: 9px;
+  font-weight: 700;
+}
+.entry-form label > span::before {
+  content: "*";
+  margin-right: 7px;
+  color: #c53e36;
+}
+.entry-form input,
+.entry-form select {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 16px;
+  font-weight: 400;
+}
+.entry-form small {
+  color: #6b7f94;
+  font-size: 13px;
+  font-weight: 400;
+}
+.entry-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 12px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+}
+.entry-actions.end {
+  justify-content: flex-end;
+}
+.entry-primary {
+  min-height: 48px;
+  padding: 10px 30px;
+  border-color: var(--teal);
+  background: var(--teal);
+  color: #fff;
+  font-size: 15px;
+}
+.entry-primary:hover:not(:disabled) {
+  border-color: #1c6554;
+  background: #1c6554;
+}
+.entry-review {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #f8fafc;
+}
+.entry-review h3 {
+  margin: 0 0 12px;
+  font-size: 14px;
+}
+.entry-review dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: 0;
+}
+.entry-review dl div {
+  display: grid;
+  gap: 4px;
+  padding: 11px 12px;
+  border-top: 1px solid var(--line);
+}
+.entry-review dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+.entry-review dd {
+  margin: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.entry-message {
+  margin-top: 20px;
+  padding: 13px 15px;
+  border-radius: 5px;
+  line-height: 1.55;
+}
+.entry-message.error {
+  background: #fdecea;
+  color: #7f2d27;
+}
+.entry-message.pending {
+  background: #fff5da;
+  color: #6c5014;
+}
+.entry-message.success {
+  background: #e3f4ed;
+  color: #185c4b;
+}
+.entry-check {
+  display: block;
+  margin: 12px auto 0;
+}
+.entry-scope {
+  max-width: 680px;
+  margin: 23px auto 0;
+  color: #536b83;
+  text-align: center;
+}
+
+@media (max-width: 680px) {
+  .entry-topbar {
+    min-height: 58px;
+  }
+  .entry-brand {
+    width: auto;
+    flex-basis: auto;
+    padding: 0 14px;
+    font-size: 17px;
+  }
+  .entry-manage,
+  .entry-avatar,
+  .entry-account-label {
+    display: none;
+  }
+  .entry-account-tools {
+    gap: 4px;
+    padding: 0 8px;
+  }
+  .entry-language select {
+    max-width: 108px;
+    padding-inline: 6px;
+  }
+  .entry-signout {
+    padding-inline: 6px;
+  }
+  .entry-main {
+    width: calc(100% - 28px);
+    padding: 30px 0 36px;
+  }
+  .entry-title {
+    font-size: 25px;
+  }
+  .entry-steps {
+    margin: 23px auto 24px;
+  }
+  .entry-steps li {
+    gap: 6px;
+    font-size: 12px;
+    text-align: center;
+  }
+  .entry-steps li:not(:last-child)::after {
+    left: calc(50% + 17px);
+    width: calc(100% - 34px);
+  }
+  .entry-wizard,
+  .entry-auth-panel {
+    padding: 20px;
+  }
+  .entry-auth-panel {
+    margin-top: 52px;
+  }
+  .entry-auth-panel h1 {
+    font-size: 24px;
+  }
+  .entry-completed-row {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 7px 12px;
+    margin-bottom: 26px;
+    padding: 13px 14px;
+  }
+  .entry-completed-row button {
+    margin-left: auto;
+  }
+  .entry-form {
+    gap: 20px;
+  }
+  .entry-form h2 {
+    font-size: 20px;
+  }
+  .entry-actions {
+    padding-top: 22px;
+  }
+  .entry-actions button {
+    flex: 1;
+    padding-inline: 12px;
+  }
+  .entry-review dl {
+    grid-template-columns: 1fr;
+  }
+}

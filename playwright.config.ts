@@ -6,6 +6,7 @@ const suite = process.env.LC_BROWSER_SUITE ?? "ledger";
 const suites: Record<string, string[]> = {
   ledger: ["ledger.spec.ts", "production.spec.ts", "visual-states.spec.ts"],
   "identity-mock": ["auth.spec.ts"],
+  "entry-mock": ["entry.spec.ts"],
   "identity-real": ["auth-real.spec.ts"],
 };
 if (!Object.hasOwn(suites, suite)) throw new Error("Invalid LC_BROWSER_SUITE");
