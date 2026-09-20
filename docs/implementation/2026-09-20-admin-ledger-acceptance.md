@@ -1,6 +1,6 @@
 # 商品库存账簿：三语言 UI 与隔离 API 验收
 
-日期：2026-09-20。主线后端基线 `7f9ed8c`，本文件同一提交包含 UI、测试、隔离 fixture 与打包脚本。**只证明商品库存账簿切片；不是全 SaaS 上线许可。** 客户生产、直播、支付、订单和消息均未写入。
+日期：2026-09-20。主线后端基线 `7f9ed8c`，UI/测试/隔离 fixture/打包脚本提交 `43d27f5`；后续文档提交只归档真实设计与边界。**只证明商品库存账簿切片；不是全 SaaS 上线许可。** 客户生产、直播、支付、订单和消息均未写入。
 
 ## 已验证范围
 
@@ -25,6 +25,7 @@
 |构建与格式|`pnpm build:admin`、Prettier check、`git diff --check` PASS；生产包附带 public 和 static|
 |fixture 安全负例|3/3 PASS，0 skipped，0.473 秒；一次性私有文件与 symlink 拒绝；配置拒绝远程 host/多 host fallback/其他 DB；真实 PG public-only 旧数据拒绝，保留 marker 且不迁移；`evidence/2026-09-20-admin-ledger/fixture-guards.jsonl`|
 |激活样式|新增浏览器用例 1/1 PASS；真实文字选中/光标/740px 横向滚动 readback；`visual-states-results.json` 和 `.impeccable/review/active-style-evidence.json`|
+|设计规范归档|`DESIGN.md` 与 `.impeccable/design.json` 从真实样式抽取；YAML/JSON、token引用、组件属性白名单与sidecar引用校验通过；未推定的统一行高/字重未写入规范|
 
 独立视觉第二轮定点复验 `ship`，评分清单剩余项清零，无新可见回归；不是全产品审查。视觉记录：`.impeccable/review/finish-review.md`。fixture 安全独立复核 P0=0/P1=0，macOS `ps eww` 无 owner DSN/password、一次性文件已删除、无 idle postgres，Humaux `b96d4671-a43f-4dbd-9297-5d1de490eb51`。BFF 两项 P1 已独立关闭，Humaux `3ce8a6cb-1578-4df9-8e64-dea62164d6fc`。
 

@@ -32,7 +32,7 @@ web
 
 ## Evidence on Hand
 
-`docs/discovery/2026-09-20-shopline/` 有实际业务调研；`contracts/` 有任务、门禁与协议；`docs/implementation/` 与 `evidence/` 记录开发验收。没有批准的客户商标、营销证明或界面视觉稿。
+`docs/discovery/2026-09-20-shopline/` 有实际业务调研；`contracts/` 有任务、门禁与协议；`docs/implementation/` 与 `evidence/` 记录开发验收。商品库存账簿方向（`6ecd43a2`）及宽表格/下方操作托盘视觉稿（`a30e0e29`）已获用户批准，具体表达保存在 `.impeccable/mocks/` 与该页面的视觉 brief；这不代表其他页面也已批准。没有批准的客户商标或营销证明。
 
 ## Product Principles
 

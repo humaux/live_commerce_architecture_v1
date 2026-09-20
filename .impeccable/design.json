@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-20T05:23:06Z",
+  "title": "Design System: 商品对账簿",
+  "extensions": {
+    "colorMeta": {
+      "navigation-navy": {"role": "primary", "displayName": "Navigation Navy", "canonical": "#193c61", "tonalRamp": ["#091522", "#0e2135", "#132d49", "#193c61", "#4c6784", "#8194a8", "#b5c1cc", "#dae0e6"]},
+      "ledger-ink": {"role": "neutral", "displayName": "Ledger Ink", "canonical": "#142942", "tonalRamp": ["#070e17", "#0b1724", "#0f1f32", "#142942", "#48586c", "#7e8997", "#b4bbc3", "#d9dde1"]},
+      "muted-text": {"role": "neutral", "displayName": "Muted Text", "canonical": "#64758a", "tonalRamp": ["#232930", "#37404c", "#4b5868", "#64758a", "#8693a4", "#aab3bf", "#cdd3da", "#e6e9ec"]},
+      "ledger-line": {"role": "neutral", "displayName": "Ledger Line", "canonical": "#dde5ee", "tonalRamp": ["#4d5053", "#7a7e83", "#a6acb3", "#dde5ee", "#e4ebf2", "#ecf1f6", "#f4f7fa", "#fafbfc"]},
+      "canvas": {"role": "neutral", "displayName": "Cool Canvas", "canonical": "#f5f7fa", "tonalRamp": ["#565658", "#87888a", "#b8b9bc", "#f5f7fa", "#f7f9fb", "#fafbfc", "#fcfcfd", "#fdfefe"]},
+      "surface": {"role": "neutral", "displayName": "Working Surface", "canonical": "#ffffff", "tonalRamp": ["#595959", "#8c8c8c", "#bfbfbf", "#ffffff", "#ffffff", "#ffffff", "#ffffff", "#ffffff"]},
+      "action-teal": {"role": "primary", "displayName": "Action Teal", "canonical": "#247965", "tonalRamp": ["#0d2a23", "#144338", "#1b5b4c", "#247965", "#549687", "#87b5aa", "#b9d4ce", "#dceae6"]},
+      "action-teal-hover": {"role": "primary", "displayName": "Action Teal Hover", "canonical": "#1c6554", "tonalRamp": ["#0a231d", "#0f382e", "#154c3f", "#1c6554", "#508c7a", "#83afa3", "#b7d1ca", "#dbe8e5"]},
+      "focus-blue": {"role": "secondary", "displayName": "Focus Blue", "canonical": "#1264ba", "tonalRamp": ["#062341", "#0a3766", "#0e4b8c", "#1264ba", "#4686c9", "#7daad9", "#b3cde9", "#d9e6f4"]},
+      "selected-row": {"role": "secondary", "displayName": "Selected Row", "canonical": "#e5f2ff", "tonalRamp": ["#505559", "#7e858c", "#acb6bf", "#e5f2ff", "#ebf5ff", "#f1f8ff", "#f7fbff", "#fbfdff"]},
+      "selection-mint": {"role": "secondary", "displayName": "Selection Mint", "canonical": "#c9e6de", "tonalRamp": ["#46514e", "#6f7f7a", "#97ada7", "#c9e6de", "#d5ece5", "#e1f1ed", "#eef7f4", "#f6fbfa"]},
+      "active-fill": {"role": "tertiary", "displayName": "Active Fill", "canonical": "#d9f2e9", "tonalRamp": ["#4c5552", "#778580", "#a3b6af", "#d9f2e9", "#e1f5ee", "#eaf8f3", "#f3fbf8", "#f9fdfb"]},
+      "active-text": {"role": "tertiary", "displayName": "Active Text", "canonical": "#126953", "tonalRamp": ["#06251d", "#0a3a2e", "#0e4f3e", "#126953", "#468f7b", "#7db5a6", "#b3d3ca", "#d9e9e5"]}
+    },
+    "typographyMeta": {
+      "headline": {"displayName": "Task Headline", "purpose": "Merchant workspace page titles; restrained hierarchy rather than a marketing display voice."},
+      "title": {"displayName": "Section Title", "purpose": "Inspector, product, and grouped task headings; no shared line-height is asserted."},
+      "body": {"displayName": "UI Body", "purpose": "Ordinary control copy; paragraphs alone use the implemented 1.6 line-height."},
+      "data": {"displayName": "Ledger Data", "purpose": "Aligned SKU, money, and inventory values with tabular figures."},
+      "table-header": {"displayName": "Table Header", "purpose": "12px, weight 700 column headings."},
+      "field-label": {"displayName": "Field and Status Label", "purpose": "12px regular labels and metadata; status badges alone use line-height 1.3."},
+      "action": {"displayName": "Action Label", "purpose": "Primary creation and submission actions."}
+    },
+    "shadows": [],
+    "motion": [
+      {"name": "mobile-nav-slide", "value": "transform 150ms ease", "purpose": "Only the 680px-and-below navigation drawer transition."},
+      {"name": "reduced-motion", "value": "none", "purpose": "Remove transitions and smooth scrolling when prefers-reduced-motion is reduce."}
+    ],
+    "breakpoints": [
+      {"name": "wide-ledger", "value": "1500px"},
+      {"name": "tray-wrap", "value": "1280px"},
+      {"name": "compact-rail", "value": "900px"},
+      {"name": "mobile-drawer", "value": "680px"}
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Single committed action in a task region.",
+      "html": "<button class=\"ds-button-primary\">确认调整</button>",
+      "css": ".ds-button-primary{min-height:38px;padding:10px 24px;border:1px solid var(--teal,#247965);border-radius:5px;background:var(--teal,#247965);color:#fff;font:600 15px Arial,'PingFang SC','Microsoft YaHei',sans-serif}.ds-button-primary:hover{background:#1c6554}.ds-button-primary:focus-visible{outline:3px solid var(--focus,#1264ba);outline-offset:3px}.ds-button-primary:disabled{cursor:not-allowed;opacity:.55}"
+    },
+    {
+      "name": "Ledger Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Compact searchable or auditable text input.",
+      "html": "<label class=\"ds-field-label\">调整原因（必填）<input class=\"ds-field\" value=\"盘点修正\"></label>",
+      "css": ".ds-field-label{display:flex;flex-direction:column;gap:5px;color:#64758a;font:400 12px Arial,'PingFang SC','Microsoft YaHei',sans-serif}.ds-field{min-height:39px;padding:8px 11px;border:1px solid #cbd6e2;border-radius:5px;background:#fff;color:#142942;font:400 14px Arial,'PingFang SC','Microsoft YaHei',sans-serif;caret-color:#247965}.ds-field:focus-visible{outline:3px solid #1264ba;outline-offset:3px}.ds-field::selection{background:#c9e6de;color:#142942}"
+    },
+    {
+      "name": "Active Status",
+      "kind": "chip",
+      "refersTo": "status-active",
+      "description": "A compact word-bearing inventory state.",
+      "html": "<span class=\"ds-status-active\">在售</span>",
+      "css": ".ds-status-active{display:inline-block;padding:3px 13px;border-radius:20px;background:#d9f2e9;color:#126953;font:400 12px/1.3 Arial,'PingFang SC','Microsoft YaHei',sans-serif;white-space:nowrap}"
+    },
+    {
+      "name": "Active Navigation Item",
+      "kind": "nav",
+      "description": "Selected merchant domain with one consistent line icon.",
+      "html": "<button class=\"ds-nav-active\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 7l8-4 8 4v10l-8 4-8-4V7zm0 0 8 4 8-4M12 11v10\"/></svg><span>商品</span></button>",
+      "css": ".ds-nav-active{display:flex;align-items:center;gap:19px;width:214px;height:56px;padding:0 24px;border:0;border-left:4px solid #6ca7d3;border-radius:0;background:#28567f;color:#f7faff;font:700 16px Arial,'PingFang SC','Microsoft YaHei',sans-serif;text-align:left}.ds-nav-active svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7}.ds-nav-active:focus-visible{outline:3px solid #1264ba;outline-offset:-3px}"
+    },
+    {
+      "name": "Inventory Context Tray",
+      "kind": "custom",
+      "description": "Selected SKU, three stock buckets, and one auditable adjustment action.",
+      "html": "<section class=\"ds-tray\"><div><strong>便携收纳盒</strong><small>SKU: AC-002-BK</small></div><dl><div><dt>现有</dt><dd>300</dd></div><div><dt>预留</dt><dd>12</dd></div><div><dt>可售</dt><dd>288</dd></div></dl><button>确认调整</button></section>",
+      "css": ".ds-tray{display:flex;align-items:center;gap:26px;min-height:180px;padding:24px 16px;border:1px solid #dde5ee;border-radius:7px;background:#fff;color:#142942;font-family:Arial,'PingFang SC','Microsoft YaHei',sans-serif}.ds-tray small{display:block;margin-top:7px;color:#64758a}.ds-tray dl{display:flex;gap:25px;margin:0;padding:0 20px;border-left:1px solid #dde5ee}.ds-tray dt{color:#64758a;font-size:12px}.ds-tray dd{margin:5px 0 0;font-size:25px;font-weight:700;font-variant-numeric:tabular-nums}.ds-tray button{margin-left:auto;min-height:38px;padding:8px 16px;border:1px solid #247965;border-radius:5px;background:#247965;color:#fff;font-weight:600}.ds-tray button:focus-visible{outline:3px solid #1264ba;outline-offset:3px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Auditable Ledger",
+    "overview": "商品对账簿是一套 Operate-first 的商家工作台系统：像一张经过整理的数字账页，优先让人定位 SKU、核对现有/预留/可售关系，再留下可追溯的库存调整。它不追求展示型视觉声量；可信度来自对齐、密度、真实状态和稳定的任务顺序。\n\n该世界由用户在 decision `6ecd43a2` 选择，FORM seed 为 `3046f272`，并以 decision `a30e0e29` 批准 wide-ledger 组合。桌面以全宽账簿和下方上下文托盘为签名关系；移动端保留同一任务顺序而不是压缩全部列。系统只描述已实现的商家商品/库存表面，不代表其他产品模块已经完成。",
+    "keyCharacteristics": ["冷静的深海军蓝框架与克制的青绿色操作色。", "细冷色规则、紧凑行高、右对齐且等宽的数字列。", "单行选择持续保留列表上下文，下方托盘完成调整。", "演示、未连接、错误、等待与成功状态均用文字说明，不靠颜色暗示。", "zh-CN、zh-TW、en 是平等选择；语言不改变店铺、币种或权限。"],
+    "rules": [
+      {"name": "The Earned Accent Rule", "body": "青绿色只属于已实现的提交动作和输入光标；选择、焦点与链接使用蓝色语义，不把所有可点击元素染成同一种强调色。", "section": "colors"},
+      {"name": "The State Has Words Rule", "body": "在售、归档、未连接、错误、等待与成功必须保留可读文字；颜色永远不是唯一状态载体。", "section": "colors"},
+      {"name": "The Ledger Numbers Align Rule", "body": "金额和库存值右对齐并使用 tabular numerals；不要用比例字体或居中排版破坏纵向核对。", "section": "typography"},
+      {"name": "The List Before Action Rule", "body": "无论宽屏或窄屏，先保留可扫描列表，再呈现所选对象与调整动作；不要用 modal 替换这条上下文链。", "section": "layout"},
+      {"name": "The Priority Collapse Rule", "body": "响应式先隐藏低优先列和次级操作，再重排托盘；不要把完整桌面表格等比缩小到手机。", "section": "layout"},
+      {"name": "The Rules Over Shadows Rule", "body": "账簿与托盘使用边框、分隔线和色面表达层级；不要为普通容器添加阴影来补偿结构不清。", "section": "elevation"},
+      {"name": "The Small Radius Rule", "body": "大容器保持 7px、控件保持 5px；除短状态标签外，不把操作面做成药丸。", "section": "shapes"}
+    ],
+    "dos": ["Do 保持网站客服、Meta 消息和平台支持为独立导航与授权域。", "Do 在每个数据密集表面使用稳定列对齐、tabular numerals 和文字状态。", "Do 让 zh-CN、zh-TW、en 切换保留当前路径与查询，同时保持店铺和币种不变。", "Do 为真实加载、空、错误、等待、成功、disabled 和键盘焦点提供明确状态。", "Do 在 680px 以下按任务优先级重排，而不是缩小桌面构图。"],
+    "donts": ["Don't 把演示 fixture、合成商品 atlas 或示例价格当作客户目录资产或商业事实。", "Don't 为未实现模块制造看似可用的 tab、通知、渠道同步或安全库存控制。", "Don't 合并聊天域、从语言推导市场/币种，或用乐观界面覆盖交易与权限真相。", "Don't 引入 KPI 卡片墙、装饰性 hero、重阴影、玻璃效果、渐变文字或无语义动画。"]
+  }
+}
