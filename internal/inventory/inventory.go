@@ -5,12 +5,14 @@ import (
 	"context"
 	"errors"
 	"sort"
+	"strconv"
 	"time"
 	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"livecommerce/internal/command"
+	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
 )
 
@@ -65,44 +67,100 @@ func CreateWarehouse(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, 
 }
 
 func ListWarehouses(ctx context.Context, tx pgx.Tx, scope platform.Scope) ([]Warehouse, error) {
+	page, err := ListWarehousesPage(ctx, tx, scope, pagination.Request{Limit: 100})
+	return page.Items, err
+}
+func ListWarehousesPage(ctx context.Context, tx pgx.Tx, scope platform.Scope, request pagination.Request) (pagination.Page[Warehouse], error) {
+	page := pagination.Page[Warehouse]{Items: make([]Warehouse, 0)}
 	if !validScope(tx, scope) {
-		return nil, command.ErrInvalid
+		return page, command.ErrInvalid
 	}
-	rows, err := tx.Query(ctx, `SELECT id::text,name FROM inventory.warehouses WHERE tenant_id=$1 AND store_id=$2 ORDER BY id LIMIT 100`, scope.TenantID, scope.StoreID)
+	binding := pagination.Binding{TenantID: scope.TenantID, StoreID: scope.StoreID, Collection: "warehouses"}
+	limit, after, err := pagination.Decode(request, binding, 1)
 	if err != nil {
-		return nil, mapError(err)
+		return page, err
+	}
+	args := []any{scope.TenantID, scope.StoreID}
+	if len(after) == 1 {
+		args = append(args, after[0])
+	}
+	query := `SELECT id::text,name FROM inventory.warehouses WHERE tenant_id=$1 AND store_id=$2` + keysetID(after, 3) + ` ORDER BY id LIMIT $` + strconv.Itoa(len(args)+1)
+	args = append(args, limit+1)
+	rows, err := tx.Query(ctx, query, args...)
+	if err != nil {
+		return page, mapError(err)
 	}
 	defer rows.Close()
-	out := make([]Warehouse, 0)
 	for rows.Next() {
 		var w Warehouse
 		if err := rows.Scan(&w.ID, &w.Name); err != nil {
-			return nil, err
+			return page, err
 		}
-		out = append(out, w)
+		page.Items = append(page.Items, w)
 	}
-	return out, mapError(rows.Err())
+	if err := rows.Err(); err != nil {
+		return page, mapError(err)
+	}
+	if len(page.Items) <= limit {
+		return page, nil
+	}
+	page.Items = page.Items[:limit]
+	page.NextCursor, err = pagination.Encode(binding, []string{page.Items[len(page.Items)-1].ID})
+	return page, err
 }
 
 func ListBalances(ctx context.Context, tx pgx.Tx, scope platform.Scope) ([]Balance, error) {
+	page, err := ListBalancesPage(ctx, tx, scope, pagination.Request{Limit: 100})
+	return page.Items, err
+}
+func ListBalancesPage(ctx context.Context, tx pgx.Tx, scope platform.Scope, request pagination.Request) (pagination.Page[Balance], error) {
+	page := pagination.Page[Balance]{Items: make([]Balance, 0)}
 	if !validScope(tx, scope) {
-		return nil, command.ErrInvalid
+		return page, command.ErrInvalid
 	}
-	rows, err := tx.Query(ctx, `SELECT warehouse_id::text,sku_id::text,on_hand,reserved,allocated,unavailable,version FROM inventory.balances WHERE tenant_id=$1 AND store_id=$2 ORDER BY warehouse_id,sku_id LIMIT 100`, scope.TenantID, scope.StoreID)
+	binding := pagination.Binding{TenantID: scope.TenantID, StoreID: scope.StoreID, Collection: "inventory"}
+	limit, after, err := pagination.Decode(request, binding, 2)
 	if err != nil {
-		return nil, mapError(err)
+		return page, err
+	}
+	args := []any{scope.TenantID, scope.StoreID}
+	predicate := ""
+	if len(after) == 2 {
+		predicate = ` AND (warehouse_id,sku_id)>($3::uuid,$4::uuid)`
+		args = append(args, after[0], after[1])
+	}
+	query := `SELECT warehouse_id::text,sku_id::text,on_hand,reserved,allocated,unavailable,version FROM inventory.balances WHERE tenant_id=$1 AND store_id=$2` + predicate + ` ORDER BY warehouse_id,sku_id LIMIT $` + strconv.Itoa(len(args)+1)
+	args = append(args, limit+1)
+	rows, err := tx.Query(ctx, query, args...)
+	if err != nil {
+		return page, mapError(err)
 	}
 	defer rows.Close()
-	out := make([]Balance, 0)
 	for rows.Next() {
 		var b Balance
 		if err := rows.Scan(balanceFields(&b)...); err != nil {
-			return nil, err
+			return page, err
 		}
 		b.Available = b.OnHand - b.Reserved - b.Allocated - b.Unavailable
-		out = append(out, b)
+		page.Items = append(page.Items, b)
 	}
-	return out, mapError(rows.Err())
+	if err := rows.Err(); err != nil {
+		return page, mapError(err)
+	}
+	if len(page.Items) <= limit {
+		return page, nil
+	}
+	page.Items = page.Items[:limit]
+	last := page.Items[len(page.Items)-1]
+	page.NextCursor, err = pagination.Encode(binding, []string{last.WarehouseID, last.SKUID})
+	return page, err
+}
+
+func keysetID(after []string, position int) string {
+	if len(after) == 1 {
+		return ` AND id>$` + strconv.Itoa(position) + `::uuid`
+	}
+	return ``
 }
 
 func AdjustOnHand(ctx context.Context, tx pgx.Tx, scope platform.Scope, key string, in Adjustment) (out Balance, err error) {
