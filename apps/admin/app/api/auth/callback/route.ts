@@ -70,10 +70,12 @@ export async function GET(request: Request) {
 }
 
 const unsupported = () =>
-  new Response(null, {
-    status: 405,
-    headers: { Allow: "GET", "Cache-Control": "no-store" },
-  });
+  authConfig
+    ? new Response(null, {
+        status: 405,
+        headers: { Allow: "GET", "Cache-Control": "no-store" },
+      })
+    : disabledResponse();
 export const POST = unsupported;
 export const PUT = unsupported;
 export const DELETE = unsupported;

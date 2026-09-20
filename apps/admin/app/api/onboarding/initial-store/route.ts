@@ -70,7 +70,10 @@ export async function POST(request: Request) {
   });
 }
 
-const unsupported = () => localError(405, "method_not_allowed", "POST");
+const unsupported = () =>
+  authConfig
+    ? localError(405, "method_not_allowed", "POST")
+    : disabledResponse();
 export const GET = unsupported;
 export const PUT = unsupported;
 export const DELETE = unsupported;

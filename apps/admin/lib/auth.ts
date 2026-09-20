@@ -56,7 +56,7 @@ function exactIssuer(value: string, allowLoopback: boolean) {
     url.hash
   )
     throw new Error("invalid commerce issuer configuration");
-  return `${url.origin}${url.pathname === "/" ? "" : url.pathname.replace(/\/$/, "")}`;
+  return value;
 }
 
 function required(name: string) {
@@ -127,9 +127,9 @@ export function isLocale(value: string): value is Locale {
   return locales.includes(value as Locale);
 }
 
-function cookieParts(request: Request, name: string) {
+function cookieParts(cookieHeader: string | null, name: string) {
   const values: string[] = [];
-  for (const part of (request.headers.get("cookie") ?? "").split(";")) {
+  for (const part of (cookieHeader ?? "").split(";")) {
     const at = part.indexOf("=");
     if (at < 0 || part.slice(0, at).trim() !== name) continue;
     values.push(part.slice(at + 1).trim());
@@ -138,7 +138,11 @@ function cookieParts(request: Request, name: string) {
 }
 
 export function exactCookie(request: Request, name: string) {
-  const values = cookieParts(request, name);
+  return exactCookieHeader(request.headers.get("cookie"), name);
+}
+
+export function exactCookieHeader(cookieHeader: string | null, name: string) {
+  const values = cookieParts(cookieHeader, name);
   return values.length === 1 ? values[0] : null;
 }
 
@@ -185,9 +189,28 @@ export async function readBody(request: Request, mime: string, limit = 65536) {
   )
     throw new Error("mime");
   const length = Number(request.headers.get("content-length") ?? "0");
-  if (!Number.isFinite(length) || length > limit) throw new Error("size");
-  const bytes = new Uint8Array(await request.arrayBuffer());
-  if (bytes.byteLength > limit) throw new Error("size");
+  if (!Number.isFinite(length) || length < 0 || length > limit)
+    throw new Error("size");
+  const reader = request.body?.getReader();
+  if (!reader) return "";
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  while (true) {
+    const part = await reader.read();
+    if (part.done) break;
+    size += part.value.byteLength;
+    if (size > limit) {
+      await reader.cancel();
+      throw new Error("size");
+    }
+    chunks.push(part.value);
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
   return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
 }
 

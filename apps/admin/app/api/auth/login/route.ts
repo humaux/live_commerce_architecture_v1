@@ -52,7 +52,10 @@ export async function POST(request: Request) {
   return response;
 }
 
-export const GET = () => localError(405, "method_not_allowed", "POST");
+export const GET = () =>
+  authConfig
+    ? localError(405, "method_not_allowed", "POST")
+    : disabledResponse();
 export const PUT = GET;
 export const DELETE = GET;
 export const PATCH = GET;

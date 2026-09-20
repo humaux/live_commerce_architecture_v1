@@ -1,8 +1,13 @@
 import { expect, test } from "@playwright/test";
-import { createServer, type IncomingMessage } from "node:http";
+import {
+  createServer,
+  request as httpRequest,
+  type IncomingMessage,
+} from "node:http";
 
 const apiOrigin = "http://127.0.0.1:19111";
 const publicOrigin = "http://127.0.0.1:3100";
+const issuer = "https://provider.example/realm/";
 const bffKey = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 const binding = `${"B".repeat(42)}A`;
 const session = `${"C".repeat(42)}A`;
@@ -101,6 +106,11 @@ const server = createServer(async (request, response) => {
     response.end(JSON.stringify({ ok: true }));
     return;
   }
+  if (request.url === `/v1/admin/stores/${storeID}/warehouses`) {
+    response.setHeader("Content-Type", "text/plain");
+    response.writeHead(503).end("private diagnostic must not escape");
+    return;
+  }
   response.writeHead(404).end(JSON.stringify({ code: "not_found" }));
 });
 
@@ -124,6 +134,34 @@ function cookieValue(headers: Record<string, string>, name: string) {
   );
 }
 
+async function chunkedOverflow() {
+  return new Promise<number>((resolve, reject) => {
+    const request = httpRequest(
+      `${publicOrigin}/api/auth/login`,
+      {
+        method: "POST",
+        headers: {
+          Origin: publicOrigin,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      },
+      (response) => {
+        response.resume();
+        response.once("end", () => {
+          request.destroy();
+          resolve(response.statusCode ?? 0);
+        });
+      },
+    );
+    request.once("error", reject);
+    request.write(Buffer.alloc(65_537, 97));
+    setTimeout(() => {
+      request.destroy();
+      reject(new Error("server waited for the unbounded request to end"));
+    }, 2_000).unref();
+  });
+}
+
 test("PROVIDER_MOCK browser BFF enforces binding, cookies, CSRF and revocation order", async ({
   page,
 }) => {
@@ -132,6 +170,9 @@ test("PROVIDER_MOCK browser BFF enforces binding, cookies, CSRF and revocation o
     maxRedirects: 0,
   });
   expect(rejected.status()).toBe(403);
+  expect(requests).toHaveLength(0);
+
+  expect(await chunkedOverflow()).toBe(422);
   expect(requests).toHaveLength(0);
 
   const started = await page.request.post("/api/auth/login", {
@@ -149,10 +190,31 @@ test("PROVIDER_MOCK browser BFF enforces binding, cookies, CSRF and revocation o
   );
   const loginCookie = cookieValue(started.headers(), "__Host-commerce_login");
 
-  const completed = await page.request.get(
-    "/api/auth/callback?state=state-one&code=code-one",
+  const beforeWrongIssuer = requests.length;
+  const wrongIssuer = await page.request.get(
+    "/api/auth/callback?state=state-one&code=code-one&iss=https%3A%2F%2Fprovider.example%2Frealm",
     {
       headers: { Cookie: `__Host-commerce_login=${loginCookie}` },
+      maxRedirects: 0,
+    },
+  );
+  expect(wrongIssuer.headers()["location"]).toBe("/zh-TW/?auth=failed");
+  expect(requests).toHaveLength(beforeWrongIssuer);
+
+  const restarted = await page.request.post("/api/auth/login", {
+    form: { locale: "zh-TW" },
+    headers: { Origin: publicOrigin },
+    maxRedirects: 0,
+  });
+  const restartedCookie = cookieValue(
+    restarted.headers(),
+    "__Host-commerce_login",
+  );
+
+  const completed = await page.request.get(
+    `/api/auth/callback?state=state-one&code=code-one&iss=${encodeURIComponent(issuer)}`,
+    {
+      headers: { Cookie: `__Host-commerce_login=${restartedCookie}` },
       maxRedirects: 0,
     },
   );
@@ -167,6 +229,23 @@ test("PROVIDER_MOCK browser BFF enforces binding, cookies, CSRF and revocation o
   );
   const csrf = cookieValue(completed.headers(), "__Host-commerce_csrf");
   const authorityCookie = `__Host-commerce_session=${sessionCookie}; __Host-commerce_csrf=${csrf}`;
+
+  const beforeAmbiguousSSR = requests.length;
+  const ambiguousSSR = await page.request.get("/zh-CN/", {
+    headers: {
+      Cookie: `__Host-commerce_session=${sessionCookie}; __Host-commerce_session=${"D".repeat(42)}A`,
+    },
+  });
+  expect(ambiguousSSR.status()).toBe(200);
+  expect(requests).toHaveLength(beforeAmbiguousSSR);
+
+  const safeSSR = await page.request.get("/zh-CN/", {
+    headers: { Cookie: authorityCookie },
+  });
+  expect(safeSSR.status()).toBe(200);
+  expect(await safeSSR.text()).not.toContain(
+    "private diagnostic must not escape",
+  );
 
   const listed = await page.request.get("/api/stores", {
     headers: { Cookie: authorityCookie },

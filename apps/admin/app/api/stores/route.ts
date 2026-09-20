@@ -29,7 +29,10 @@ export async function GET(request: Request) {
   );
 }
 
-const unsupported = () => localError(405, "method_not_allowed", "GET");
+const unsupported = () =>
+  authConfig
+    ? localError(405, "method_not_allowed", "GET")
+    : disabledResponse();
 export const POST = unsupported;
 export const PUT = unsupported;
 export const DELETE = unsupported;

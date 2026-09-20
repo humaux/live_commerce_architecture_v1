@@ -1,10 +1,12 @@
 import "server-only";
-import { cookies } from "next/headers";
+import { headers } from "next/headers";
 import {
   authConfig,
   authenticatedStores,
+  exactCookieHeader,
   isBase64URL32,
   merchantBackend,
+  safeError,
   SESSION_COOKIE,
 } from "./auth";
 import type {
@@ -64,8 +66,13 @@ export const noSessionError: APIError = {
 
 async function currentSessionToken() {
   if (!authConfig) return null;
-  const token = (await cookies()).get(SESSION_COOKIE)?.value ?? "";
+  const token =
+    exactCookieHeader((await headers()).get("cookie"), SESSION_COOKIE) ?? "";
   return isBase64URL32(token) ? token : null;
+}
+
+async function responseError(response: Response) {
+  return (await (await safeError(response)).json()) as APIError;
 }
 
 export async function callBackend(
@@ -136,7 +143,7 @@ export async function workspaceData(
     if (!token) return empty;
     const listed = await authenticatedStores(token);
     if (!listed.stores)
-      return { ...empty, error: (await listed.response.json()) as APIError };
+      return { ...empty, error: await responseError(listed.response) };
     const store = [...listed.stores].sort((a, b) =>
       a.id.localeCompare(b.id),
     )[0];
@@ -152,7 +159,7 @@ export async function workspaceData(
         ...empty,
         storeID: store.id,
         storeName: store.name,
-        error: (await warehouseResult.json()) as APIError,
+        error: await responseError(warehouseResult),
       };
     const warehouses = (await warehouseResult.json()) as Page<Warehouse>;
     const warehouseID = warehouse || warehouses.items[0]?.id || "";
@@ -180,7 +187,7 @@ export async function workspaceData(
     );
     return rows.ok
       ? { ...initial, rows: (await rows.json()) as Page<LedgerRow> }
-      : { ...initial, error: (await rows.json()) as APIError };
+      : { ...initial, error: await responseError(rows) };
   }
   const session = fixtureSession();
   if (!session) return empty;
