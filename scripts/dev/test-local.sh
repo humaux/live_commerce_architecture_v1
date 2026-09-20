@@ -3,6 +3,18 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 command -v docker >/dev/null
 command -v go >/dev/null
+test_mode="${1:-foundation}"
+if [[ "$#" -gt 1 ]] || [[ "$test_mode" != foundation && "$test_mode" != --browser-identity ]]; then
+  printf 'Usage: bash scripts/dev/test-local.sh [--browser-identity]\n' >&2
+  exit 2
+fi
+if [[ "$test_mode" == --browser-identity ]]; then
+  command -v pnpm >/dev/null
+  command -v node >/dev/null
+  # Production package, but local-only runtime configuration is injected by the
+  # tagged test. Build never needs an IdP or database credential.
+  COMMERCE_IDENTITY_ENABLED=0 COMMERCE_FIXTURE_ENABLED=0 pnpm run build:admin
+fi
 # A task-owned, temporary PG only. Never use a developer's existing DATABASE_URL.
 test_container="lc-foundation-test-$$"
 test_owned=0
@@ -36,6 +48,11 @@ export LC_TEST_DATABASE_URL="postgres://postgres:${POSTGRES_PASSWORD}@${test_por
 export LC_TEST_DATABASE_ALLOWED=1
 export COMMERCE_FIXTURE_ALLOWED=1
 export LC_ADMIN_GUARD_DSN="postgres://postgres:${POSTGRES_PASSWORD}@${test_port}/lc_admin_fixture?sslmode=disable"
-GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=120s -v ./...
-GOTOOLCHAIN=go1.27.1 go vet ./...
-printf 'PASS: isolated real PostgreSQL foundation tests; fixture removed at exit.\n'
+if [[ "$test_mode" == --browser-identity ]]; then
+  LC_BROWSER_IDENTITY_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=120s -run '^TestBrowserIdentityRealChain$' -v ./tests/foundation
+  printf 'PASS: isolated PG + signed MOCK IdP browser chain; fixture removed at exit.\n'
+else
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=120s -v ./...
+  GOTOOLCHAIN=go1.27.1 go vet ./...
+  printf 'PASS: isolated real PostgreSQL foundation tests; fixture removed at exit.\n'
+fi
