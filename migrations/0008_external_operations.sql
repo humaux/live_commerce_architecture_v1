@@ -2,6 +2,10 @@
 -- River owns job execution state; permanent business dedup lives below.
 CREATE ROLE commerce_worker NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION;
 CREATE ROLE commerce_integration_writer NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION;
+-- Extend the permission vocabulary only; never auto-authorize existing users.
+ALTER TABLE identity.store_grants DROP CONSTRAINT store_grants_permission_check;
+ALTER TABLE identity.store_grants ADD CONSTRAINT store_grants_permission_check CHECK
+(permission IN ('store:read','audit:read','audit:write','catalog:read','catalog:write','inventory:read','inventory:write','inventory:reserve','pricing:read','pricing:write','integration:manage','integration:execute','integration:read'));
 CREATE SCHEMA integration;
 REVOKE ALL ON SCHEMA integration FROM PUBLIC;
 GRANT USAGE ON SCHEMA integration TO commerce_runtime,commerce_worker,commerce_integration_writer;
