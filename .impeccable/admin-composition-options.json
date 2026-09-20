@@ -1,0 +1,28 @@
+{
+  "title": "商品对账簿 · 最终布局确认",
+  "question": "三张都延续已选A的风格。请选择要实施的布局；也可以说明需要组合或修改的部分。图片为演示数据，实际文案、权限和响应式交互会在开发中校正。",
+  "options": [
+    {
+      "id": "original",
+      "label": "1 · 原稿右侧详情",
+      "thesis": "表格和详情同屏，适合边看商品边核对库存。",
+      "comp": ".impeccable/mocks/decision/assigned.png",
+      "risk": "右侧栏会压缩宽表，较窄屏幕需改为详情抽屉。"
+    },
+    {
+      "id": "wide-ledger",
+      "label": "2 · 宽表格，下方详情",
+      "thesis": "更容易横向核对SKU，选中项的操作放在表格下方。",
+      "comp": ".impeccable/mocks/composition/wide-ledger.png",
+      "risk": "操作区在下方，长列表需要滚动或固定托盘。"
+    },
+    {
+      "id": "compact-inspector",
+      "label": "3 · 紧凑表格，窄详情栏",
+      "thesis": "单屏呈现更多SKU，保留随手操作的详情栏。",
+      "comp": ".impeccable/mocks/composition/compact-inspector.png",
+      "risk": "密度更高，需要更严格地控制字段和移动端布局。"
+    }
+  ],
+  "steer": true
+}

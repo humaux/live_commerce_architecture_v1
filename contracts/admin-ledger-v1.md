@@ -1,0 +1,13 @@
+# Scoped product ledger read projection
+
+Purpose: render the approved wide SKU ledger without N+1 calls or joining truncated client pages. This is a read projection, not a second inventory truth or a new product workflow.
+
+`catalog.LedgerRow` JSON fields: `product_id, product_name, product_description, sku_id, code, status, currency, price_minor, sku_version, warehouse_id, on_hand, reserved, allocated, unavailable, available, balance_version`. IDs/text string, amounts/versions int64. Warehouse is explicit. Missing balance => zero quantities/version0, which correctly permits first adjustment using ExpectedVersion0. Exclude archived warehouses; product or SKU archived makes row status archived. No synthetic photos or price values returned by this API.
+
+`catalog.LedgerRequest{Page pagination.Request; WarehouseID, Query, Status string}`. `ListLedger(ctx,tx,scope,in LedgerRequest)(pagination.Page[LedgerRow],error)`. Validate accessible active warehouse (404 foreign/missing); Query trim+<=120 Unicode runes, no control characters; Status empty/all/active/archived only, normalize empty to all. Literal case-insensitive matching across product name and SKU code, escaping LIKE wildcard characters, bound parameters only. Scope and FORCE RLS apply to all joins. Sort by SKU UUID ascending; limit+1, default50/max100. Product+SKU+selected warehouse balance is one SQL projection, plus warehouse visibility validation, no per-row queries.
+
+Extend pagination.Binding with `Filter string json:"filter,omitempty"`; all existing collection bindings require empty Filter. Collection `catalog-ledger` requires ParentID canonical warehouse UUID and Filter lowercase SHA256 of normalized query + NUL + normalized status. This binds cursor to filters+warehouse as well as tenant/store and prevents accidental cross-filter traversal. It remains an untrusted cursor, not auth.
+
+HTTP integrator route: GET `/v1/admin/stores/{store_id}/catalog-ledger`, permission `catalog:read` plus `inventory:read` before projection (do not show inventory via catalog-only grants). Query whitelist `warehouse_id`, `q`, `status`, `limit`, `cursor`, single value each. Separate current permission checks must remain in the same scoped transaction. Schema function helper or SQL grants check stays in auth layer, not caller header. No totals, invented categories, or optimistic client-calculated stock.
+
+Gate: real PG >100 rows, missing balance, active/archive filters, literal `%`/`_` search, wrong store/warehouse, filter-bound cursor mismatch, both-permissions denied individually, quantities equal actual scoped balances, limit+1 endpoint matrix. This projection does not authorize publishing/channel synchronization or customer messages.

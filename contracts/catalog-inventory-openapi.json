@@ -9,7 +9,7 @@
     "/v1/admin/stores/{store_id}/products": {
       "get": {
         "operationId": "listProducts",
-        "description": "Requires catalog:read. Bounded to 100 rows in stable ID order.",
+        "description": "Requires catalog:read. Stable keyset cursor, default 50/max100. No snapshot across requests.",
         "security": [
           {
             "merchantBearer": []
@@ -24,6 +24,24 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
           }
         ],
         "responses": {
@@ -32,12 +50,34 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Product"
-                  },
-                  "maxItems": 100
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "next_cursor"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Product"
+                      },
+                      "maxItems": 100
+                    },
+                    "next_cursor": {
+                      "type": "string",
+                      "maxLength": 1024
+                    }
+                  }
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -49,25 +89,67 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "401": {
-            "description": "No authorized merchant Scope",
+            "description": "Invalid merchant session",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
-          "404": {
-            "description": "Not found in scope",
+          "403": {
+            "description": "Visible store but operation not permitted",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not visible in current scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -79,6 +161,14 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "415": {
@@ -88,6 +178,32 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "422": {
+            "description": "Semantic validation or query/cursor invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -99,6 +215,14 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "503": {
@@ -108,6 +232,14 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           }
@@ -150,6 +282,14 @@
                   "$ref": "#/components/schemas/Product"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "400": {
@@ -160,25 +300,67 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "401": {
-            "description": "No authorized merchant Scope",
+            "description": "Invalid merchant session",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
-          "404": {
-            "description": "Not found in scope",
+          "403": {
+            "description": "Visible store but operation not permitted",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not visible in current scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -190,6 +372,14 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "415": {
@@ -199,6 +389,32 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "422": {
+            "description": "Semantic validation or query/cursor invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -210,6 +426,14 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "503": {
@@ -219,6 +443,14 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           }
@@ -282,6 +514,14 @@
                   "$ref": "#/components/schemas/Product"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "400": {
@@ -292,25 +532,67 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "401": {
-            "description": "No authorized merchant Scope",
+            "description": "Invalid merchant session",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
-          "404": {
-            "description": "Not found in scope",
+          "403": {
+            "description": "Visible store but operation not permitted",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not visible in current scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -322,6 +604,14 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "415": {
@@ -331,6 +621,32 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "422": {
+            "description": "Semantic validation or query/cursor invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -342,6 +658,14 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "503": {
@@ -351,6 +675,14 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           }
@@ -414,6 +746,14 @@
                   "$ref": "#/components/schemas/Product"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "400": {
@@ -424,25 +764,67 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "401": {
-            "description": "No authorized merchant Scope",
+            "description": "Invalid merchant session",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
-          "404": {
-            "description": "Not found in scope",
+          "403": {
+            "description": "Visible store but operation not permitted",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not visible in current scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -454,6 +836,14 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "415": {
@@ -463,6 +853,32 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "422": {
+            "description": "Semantic validation or query/cursor invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -474,6 +890,14 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "503": {
@@ -483,6 +907,14 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           }
@@ -502,7 +934,7 @@
     "/v1/admin/stores/{store_id}/products/{product_id}/skus": {
       "get": {
         "operationId": "listSKUs",
-        "description": "Requires catalog:read. Bounded to 100 rows in stable ID order.",
+        "description": "Requires catalog:read. Stable keyset cursor, default 50/max100. No snapshot across requests.",
         "security": [
           {
             "merchantBearer": []
@@ -526,6 +958,24 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
           }
         ],
         "responses": {
@@ -534,12 +984,34 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/SKU"
-                  },
-                  "maxItems": 100
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "next_cursor"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SKU"
+                      },
+                      "maxItems": 100
+                    },
+                    "next_cursor": {
+                      "type": "string",
+                      "maxLength": 1024
+                    }
+                  }
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -551,25 +1023,67 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "401": {
-            "description": "No authorized merchant Scope",
+            "description": "Invalid merchant session",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
-          "404": {
-            "description": "Not found in scope",
+          "403": {
+            "description": "Visible store but operation not permitted",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not visible in current scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -581,6 +1095,14 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "415": {
@@ -590,6 +1112,32 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "422": {
+            "description": "Semantic validation or query/cursor invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -601,6 +1149,14 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "503": {
@@ -610,6 +1166,14 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           }
@@ -654,6 +1218,14 @@
                   "$ref": "#/components/schemas/SKU"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "400": {
@@ -664,25 +1236,67 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "401": {
-            "description": "No authorized merchant Scope",
+            "description": "Invalid merchant session",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
-          "404": {
-            "description": "Not found in scope",
+          "403": {
+            "description": "Visible store but operation not permitted",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not visible in current scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -694,6 +1308,14 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "415": {
@@ -703,6 +1325,32 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "422": {
+            "description": "Semantic validation or query/cursor invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -714,6 +1362,14 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "503": {
@@ -723,6 +1379,14 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           }
@@ -786,6 +1450,14 @@
                   "$ref": "#/components/schemas/SKU"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "400": {
@@ -796,25 +1468,67 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "401": {
-            "description": "No authorized merchant Scope",
+            "description": "Invalid merchant session",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
-          "404": {
-            "description": "Not found in scope",
+          "403": {
+            "description": "Visible store but operation not permitted",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not visible in current scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -826,6 +1540,14 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "415": {
@@ -835,6 +1557,32 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "422": {
+            "description": "Semantic validation or query/cursor invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -846,6 +1594,14 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "503": {
@@ -855,6 +1611,14 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           }
@@ -918,6 +1682,14 @@
                   "$ref": "#/components/schemas/SKU"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "400": {
@@ -928,25 +1700,67 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "401": {
-            "description": "No authorized merchant Scope",
+            "description": "Invalid merchant session",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
-          "404": {
-            "description": "Not found in scope",
+          "403": {
+            "description": "Visible store but operation not permitted",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not visible in current scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -958,6 +1772,14 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "415": {
@@ -967,6 +1789,32 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "422": {
+            "description": "Semantic validation or query/cursor invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -978,6 +1826,14 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "503": {
@@ -987,6 +1843,14 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           }
@@ -1050,6 +1914,14 @@
                   "$ref": "#/components/schemas/SKU"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "400": {
@@ -1060,25 +1932,67 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "401": {
-            "description": "No authorized merchant Scope",
+            "description": "Invalid merchant session",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
-          "404": {
-            "description": "Not found in scope",
+          "403": {
+            "description": "Visible store but operation not permitted",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not visible in current scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -1090,6 +2004,14 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "415": {
@@ -1099,6 +2021,32 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "422": {
+            "description": "Semantic validation or query/cursor invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -1110,6 +2058,14 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "503": {
@@ -1119,6 +2075,14 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           }
@@ -1138,7 +2102,7 @@
     "/v1/admin/stores/{store_id}/warehouses": {
       "get": {
         "operationId": "listWarehouses",
-        "description": "Requires inventory:read. Bounded to 100 rows in stable ID order.",
+        "description": "Requires inventory:read. Stable keyset cursor, default 50/max100. No snapshot across requests.",
         "security": [
           {
             "merchantBearer": []
@@ -1153,6 +2117,24 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
           }
         ],
         "responses": {
@@ -1161,12 +2143,34 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Warehouse"
-                  },
-                  "maxItems": 100
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "next_cursor"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Warehouse"
+                      },
+                      "maxItems": 100
+                    },
+                    "next_cursor": {
+                      "type": "string",
+                      "maxLength": 1024
+                    }
+                  }
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -1178,25 +2182,67 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "401": {
-            "description": "No authorized merchant Scope",
+            "description": "Invalid merchant session",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
-          "404": {
-            "description": "Not found in scope",
+          "403": {
+            "description": "Visible store but operation not permitted",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not visible in current scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -1208,6 +2254,14 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "415": {
@@ -1217,6 +2271,32 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "422": {
+            "description": "Semantic validation or query/cursor invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -1228,6 +2308,14 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "503": {
@@ -1237,6 +2325,14 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           }
@@ -1279,6 +2375,14 @@
                   "$ref": "#/components/schemas/Warehouse"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "400": {
@@ -1289,25 +2393,67 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "401": {
-            "description": "No authorized merchant Scope",
+            "description": "Invalid merchant session",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
-          "404": {
-            "description": "Not found in scope",
+          "403": {
+            "description": "Visible store but operation not permitted",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not visible in current scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -1319,6 +2465,14 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "415": {
@@ -1328,6 +2482,32 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "422": {
+            "description": "Semantic validation or query/cursor invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -1339,6 +2519,14 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "503": {
@@ -1348,6 +2536,14 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           }
@@ -1367,7 +2563,7 @@
     "/v1/admin/stores/{store_id}/inventory": {
       "get": {
         "operationId": "listBalances",
-        "description": "Requires inventory:read. Bounded to 100 rows in stable ID order.",
+        "description": "Requires inventory:read. Stable keyset cursor, default 50/max100. No snapshot across requests.",
         "security": [
           {
             "merchantBearer": []
@@ -1382,6 +2578,24 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            }
           }
         ],
         "responses": {
@@ -1390,12 +2604,34 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Balance"
-                  },
-                  "maxItems": 100
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "next_cursor"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Balance"
+                      },
+                      "maxItems": 100
+                    },
+                    "next_cursor": {
+                      "type": "string",
+                      "maxLength": 1024
+                    }
+                  }
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -1407,25 +2643,67 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "401": {
-            "description": "No authorized merchant Scope",
+            "description": "Invalid merchant session",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
-          "404": {
-            "description": "Not found in scope",
+          "403": {
+            "description": "Visible store but operation not permitted",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not visible in current scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -1437,6 +2715,14 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "415": {
@@ -1446,6 +2732,32 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "422": {
+            "description": "Semantic validation or query/cursor invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -1457,6 +2769,14 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "503": {
@@ -1466,6 +2786,14 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           }
@@ -1510,6 +2838,14 @@
                   "$ref": "#/components/schemas/Balance"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "400": {
@@ -1520,25 +2856,67 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "401": {
-            "description": "No authorized merchant Scope",
+            "description": "Invalid merchant session",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
-          "404": {
-            "description": "Not found in scope",
+          "403": {
+            "description": "Visible store but operation not permitted",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not visible in current scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -1550,6 +2928,14 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "415": {
@@ -1559,6 +2945,32 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "422": {
+            "description": "Semantic validation or query/cursor invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           },
@@ -1570,6 +2982,14 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
             }
           },
           "503": {
@@ -1579,6 +2999,14 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
               }
             }
           }
@@ -1992,15 +3420,33 @@
       "Error": {
         "type": "object",
         "additionalProperties": false,
+        "required": [
+          "code",
+          "message",
+          "request_id",
+          "retryable",
+          "details"
+        ],
         "properties": {
-          "error": {
+          "code": {
             "type": "string",
             "maxLength": 80
+          },
+          "message": {
+            "type": "string"
+          },
+          "request_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{32}$"
+          },
+          "retryable": {
+            "type": "boolean"
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": true
           }
-        },
-        "required": [
-          "error"
-        ]
+        }
       }
     }
   }
