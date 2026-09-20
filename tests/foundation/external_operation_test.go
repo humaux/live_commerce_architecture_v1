@@ -2,6 +2,7 @@ package foundation_test
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -306,6 +307,37 @@ func TestT06GoPlanAtomicReplayCanonicalAndReadback(t *testing.T) {
 	if !errors.Is(err, command.ErrConflict) {
 		t.Fatalf("changed request err=%v, want conflict", err)
 	}
+	// Exercise the operation's own immutable digest, not command.Run's receipt.
+	if _, err = f.base.owner.Exec(ctx, `DELETE FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2 AND operation='integration.operation.plan' AND idempotency_key=$3`, f.tenant, f.store, key); err != nil {
+		t.Fatal(err)
+	}
+	var actor string
+	var storedHash []byte
+	if err = f.base.owner.QueryRow(ctx, `SELECT principal_id::text,request_hash FROM integration.operations WHERE id=$1`, planned.OperationID).Scan(&actor, &storedHash); err != nil {
+		t.Fatal(err)
+	}
+	expectedHash := sha256.Sum256([]byte(fmt.Sprintf(`{"principal_id":"%s","binding_id":"%s","binding_version":1,"purpose":"transactional","action":"payment.authorize","request":{"amount":9007199254740993,"nested":{"a":1,"b":2}}}`, actor, binding.ID)))
+	if hex.EncodeToString(storedHash) != hex.EncodeToString(expectedHash[:]) {
+		t.Fatal("persisted operation digest differs from independent canonical input")
+	}
+	for _, changed := range []struct {
+		token   string
+		request json.RawMessage
+	}{
+		{f.token, json.RawMessage(`{"amount":9007199254740994}`)},
+		{f.otherToken, json.RawMessage(`{"amount":9007199254740993,"nested":{"a":1,"b":2}}`)},
+	} {
+		err = f.scoped(ctx, changed.token, f.store, func(tx pgx.Tx, scope platform.Scope) error {
+			_, err := f.service.Plan(ctx, tx, scope, changed.token, key, integration.PlanInput{BindingID: binding.ID, ExpectedBindingVersion: 1, Purpose: "transactional", Action: "payment.authorize", Request: changed.request})
+			return err
+		})
+		if !errors.Is(err, command.ErrConflict) {
+			t.Fatalf("receiptless permanent conflict bypassed: %v", err)
+		}
+	}
+	if err = f.base.owner.QueryRow(ctx, `SELECT (SELECT count(*) FROM ops.command_results WHERE tenant_id=$1 AND operation='integration.operation.plan' AND idempotency_key=$2),(SELECT count(*) FROM river.river_job WHERE kind='external_operation_v1' AND args->>'operation_id'=$3)`, f.tenant, key, planned.OperationID).Scan(&receipts, &jobs); err != nil || receipts != 0 || jobs != 1 {
+		t.Fatalf("conflict left receipt/job facts: %d/%d err=%v", receipts, jobs, err)
+	}
 	// Queue retention and binding revocation cannot turn a historical receipt
 	// into a new remote action. Delete only this synthetic operation's records.
 	err = f.scoped(ctx, f.token, f.store, func(tx pgx.Tx, scope platform.Scope) error {
@@ -476,7 +508,7 @@ func TestT06GoAtomicFailuresAndWorkerTokenFence(t *testing.T) {
 	}
 	if claim.Disposition != "claimed" || claim.Mode != "dispatch" || len(claim.LeaseToken) != 32 {
 		_ = tx.Rollback(ctx)
-		t.Fatalf("claim=%+v", claim)
+		t.Fatalf("claim disposition=%s mode=%s generation=%d token_bytes=%d", claim.Disposition, claim.Mode, claim.Generation, len(claim.LeaseToken))
 	}
 	if err := tx.Commit(ctx); err != nil {
 		t.Fatal(err)
@@ -492,7 +524,7 @@ func TestT06GoAtomicFailuresAndWorkerTokenFence(t *testing.T) {
 	}
 	if busy.Disposition != "busy" || len(busy.LeaseToken) != 0 {
 		_ = tx.Rollback(ctx)
-		t.Fatalf("busy claim leaked token: %+v", busy)
+		t.Fatalf("busy disposition=%s mode=%s generation=%d token_bytes=%d", busy.Disposition, busy.Mode, busy.Generation, len(busy.LeaseToken))
 	}
 	if err := tx.Commit(ctx); err != nil {
 		t.Fatal(err)
