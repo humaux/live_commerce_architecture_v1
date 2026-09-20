@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
 	"sync"
@@ -110,14 +111,13 @@ func newFixture() (*testFixture, string, error) {
 		owner.Close()
 		return nil, "", fmt.Errorf("create runtime login: %w", err)
 	}
-	runtimeConfig, err := pgxpool.ParseConfig(databaseURL)
+	runtimeURL, err := url.Parse(databaseURL)
 	if err != nil {
 		owner.Close()
 		return nil, "", errors.New("reparse test database config")
 	}
-	runtimeConfig.ConnConfig.User = "foundation_api"
-	runtimeConfig.ConnConfig.Password = password
-	runtime, err := platform.OpenPool(ctx, runtimeConfig.ConnString())
+	runtimeURL.User = url.UserPassword("foundation_api", password)
+	runtime, err := platform.OpenPool(ctx, runtimeURL.String())
 	if err != nil {
 		owner.Close()
 		return nil, "", fmt.Errorf("open runtime pool: %w", err)
@@ -216,12 +216,34 @@ func insertSession(ctx context.Context, tx pgx.Tx, token, principal, audience st
 func TestMigrationIsIdempotentAndRuntimeRoleIsOrdinary(t *testing.T) {
 	f := fixture(t)
 	ctx := context.Background()
+	var currentUser string
+	if err := f.runtime.QueryRow(ctx, `SELECT current_user`).Scan(&currentUser); err != nil {
+		t.Fatal(err)
+	}
+	if currentUser != "foundation_api" {
+		t.Fatalf("runtime current_user=%q, want foundation_api", currentUser)
+	}
 	var migrationCount int
 	if err := f.owner.QueryRow(ctx, `SELECT count(*) FROM public.lc_schema_migrations WHERE version='0001_foundation.sql'`).Scan(&migrationCount); err != nil {
 		t.Fatal(err)
 	}
 	if migrationCount != 1 {
 		t.Fatalf("migration row count = %d, want 1", migrationCount)
+	}
+	singleConfig, err := pgxpool.ParseConfig(f.databaseURL)
+	if err != nil {
+		t.Fatal("reparse isolated database URL")
+	}
+	singleConfig.MaxConns = 1
+	singlePool, err := pgxpool.NewWithConfig(ctx, singleConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer singlePool.Close()
+	migrateCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	if err := migrations.Apply(migrateCtx, singlePool); err != nil {
+		t.Fatalf("idempotent Apply with MaxConns=1: %v", err)
 	}
 	var login, super, bypass, createRole, createDB, runtimeMember bool
 	if err := f.owner.QueryRow(ctx, `SELECT rolcanlogin,rolsuper,rolbypassrls,rolcreaterole,rolcreatedb,pg_has_role('foundation_api','commerce_runtime','member') FROM pg_roles WHERE rolname='foundation_api'`).
@@ -237,19 +259,89 @@ func TestMigrationIsIdempotentAndRuntimeRoleIsOrdinary(t *testing.T) {
 	}
 }
 
-func TestOpenPoolRejectsLoginThatInheritsAuthPrivileges(t *testing.T) {
+func TestMigrationBusyFailsFastWithoutLeakingSingleConnectionPool(t *testing.T) {
 	f := fixture(t)
-	password := hex.EncodeToString(randomBytes(32))
-	if _, err := f.owner.Exec(context.Background(), `CREATE ROLE foundation_unsafe LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE IN ROLE commerce_runtime,commerce_auth PASSWORD '`+password+`'`); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	holder, err := f.owner.Acquire(ctx)
+	if err != nil {
 		t.Fatal(err)
 	}
-	config, err := pgxpool.ParseConfig(f.databaseURL)
+	locked := true
+	defer func() {
+		if locked {
+			cleanup, stop := context.WithTimeout(context.Background(), 2*time.Second)
+			_, _ = holder.Exec(cleanup, `SELECT pg_advisory_unlock(718020260920)`)
+			stop()
+		}
+		holder.Release()
+	}()
+	if _, err := holder.Exec(ctx, `SELECT pg_advisory_lock(718020260920)`); err != nil {
+		t.Fatal(err)
+	}
+
+	singleConfig, err := pgxpool.ParseConfig(f.databaseURL)
 	if err != nil {
 		t.Fatal("reparse isolated database URL")
 	}
-	config.ConnConfig.User = "foundation_unsafe"
-	config.ConnConfig.Password = password
-	pool, err := platform.OpenPool(context.Background(), config.ConnString())
+	singleConfig.MaxConns = 1
+	singlePool, err := pgxpool.NewWithConfig(ctx, singleConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer singlePool.Close()
+
+	started := time.Now()
+	err = migrations.Apply(ctx, singlePool)
+	if !errors.Is(err, migrations.ErrMigrationBusy) {
+		t.Fatalf("Apply error=%v, want ErrMigrationBusy", err)
+	}
+	if elapsed := time.Since(started); elapsed > 2*time.Second {
+		t.Fatalf("busy migration returned in %s, want <=2s", elapsed)
+	}
+	var one int
+	if err := singlePool.QueryRow(ctx, `SELECT 1`).Scan(&one); err != nil || one != 1 {
+		t.Fatalf("single-connection pool leaked after busy result: value=%d err=%v", one, err)
+	}
+
+	var unlocked bool
+	if err := holder.QueryRow(ctx, `SELECT pg_advisory_unlock(718020260920)`).Scan(&unlocked); err != nil || !unlocked {
+		t.Fatalf("release migration advisory lock: unlocked=%t err=%v", unlocked, err)
+	}
+	locked = false
+	if err := migrations.Apply(ctx, singlePool); err != nil {
+		t.Fatalf("Apply after lock release: %v", err)
+	}
+}
+
+func TestOpenPoolRejectsLoginThatInheritsAuthPrivileges(t *testing.T) {
+	f := fixture(t)
+	password := hex.EncodeToString(randomBytes(32))
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if _, err := f.owner.Exec(ctx, `CREATE ROLE foundation_unsafe LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE IN ROLE commerce_runtime,commerce_auth PASSWORD '`+password+`'`); err != nil {
+		t.Fatal(err)
+	}
+	unsafeURL, err := url.Parse(f.databaseURL)
+	if err != nil {
+		t.Fatal("reparse isolated database URL")
+	}
+	unsafeURL.User = url.UserPassword("foundation_unsafe", password)
+	identityPool, err := pgxpool.New(ctx, unsafeURL.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var currentUser string
+	if err := identityPool.QueryRow(ctx, `SELECT current_user`).Scan(&currentUser); err != nil {
+		identityPool.Close()
+		t.Fatal(err)
+	}
+	identityPool.Close()
+	if currentUser != "foundation_unsafe" {
+		t.Fatalf("unsafe probe current_user=%q, want foundation_unsafe", currentUser)
+	}
+	pool, err := platform.OpenPool(ctx, unsafeURL.String())
 	if pool != nil {
 		pool.Close()
 	}
@@ -262,14 +354,24 @@ func TestScopeIsolationAndSessionRevocation(t *testing.T) {
 	f := fixture(t)
 	ctx := context.Background()
 	var got platform.Scope
-	if err := platform.WithScope(ctx, f.runtime, f.tokens["a"], f.storeA1, "store:read", func(_ pgx.Tx, scope platform.Scope) error {
+	var statementTimeout, lockTimeout, idleTimeout string
+	if err := platform.WithScope(ctx, f.runtime, f.tokens["a"], f.storeA1, "store:read", func(tx pgx.Tx, scope platform.Scope) error {
 		got = scope
-		return nil
+		if err := tx.QueryRow(ctx, `SHOW statement_timeout`).Scan(&statementTimeout); err != nil {
+			return err
+		}
+		if err := tx.QueryRow(ctx, `SHOW lock_timeout`).Scan(&lockTimeout); err != nil {
+			return err
+		}
+		return tx.QueryRow(ctx, `SHOW idle_in_transaction_session_timeout`).Scan(&idleTimeout)
 	}); err != nil {
 		t.Fatalf("valid scope: %v", err)
 	}
 	if got.TenantID != f.tenantA || got.StoreID != f.storeA1 || got.PrincipalID != f.principalA || got.Revision != 1 {
 		t.Fatalf("wrong resolved scope: %+v", got)
+	}
+	if statementTimeout != "5s" || lockTimeout != "1s" || idleTimeout != "5s" {
+		t.Fatalf("scope timeouts statement=%q lock=%q idle-in-tx=%q, want 5s/1s/5s", statementTimeout, lockTimeout, idleTimeout)
 	}
 
 	cases := []struct {
@@ -325,6 +427,12 @@ func TestDatabaseConstraintsAndRuntimePrivileges(t *testing.T) {
 	}
 	if _, err := f.runtime.Exec(ctx, `UPDATE identity.store_grants SET permission='audit:read'`); sqlState(err) != "42501" {
 		t.Fatalf("runtime grant mutation state=%q err=%v, want 42501", sqlState(err), err)
+	}
+	if _, err := f.runtime.Exec(ctx, `UPDATE river.river_job SET state='completed'`); sqlState(err) != "42501" {
+		t.Fatalf("runtime River state mutation state=%q err=%v, want 42501", sqlState(err), err)
+	}
+	if _, err := f.runtime.Exec(ctx, `DELETE FROM river.river_job`); sqlState(err) != "42501" {
+		t.Fatalf("runtime River delete state=%q err=%v, want 42501", sqlState(err), err)
 	}
 }
 
