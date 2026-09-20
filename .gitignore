@@ -8,3 +8,4 @@ bin/
 coverage.out
 node_modules/
 .next/
+.impeccable/questions/

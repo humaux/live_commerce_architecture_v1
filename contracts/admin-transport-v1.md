@@ -1,0 +1,25 @@
+# Admin transport completion: error envelope and cursor lists
+
+2026-09-20, integrator-owned. This augments catalog-inventory-v1 before any production client exists. No real customer state changes.
+
+## Stable pagination
+
+Four admin GET lists (`products`, product `skus`, `warehouses`, `inventory`) return `{items: [...], next_cursor: "..."}`; empty items is `[]`, terminal cursor is `""`. Default limit 50, allowed 1..100. Only `limit` and `cursor` are accepted; duplicate or unknown query parameters, malformed integer, oversized/invalid cursor => 422. Sort products, SKUs and warehouses by UUID `id ASC`; balances by `(warehouse_id,sku_id) ASC`. Keyset predicates use the same order, fetching limit+1. No total count query, OFFSET or silent truncation.
+
+`internal/pagination` exports `Request{Limit int; Cursor string}`, `Page[T any]{Items []T; NextCursor string}` with snake_case JSON, `Binding{TenantID,StoreID,Collection,ParentID string}`, `Decode(Request,Binding,keyCount int)(limit int,after []string,err error)`, `Encode(Binding,keys []string)(string,error)`. Invalid input wraps `command.ErrInvalid`. Cursor is bounded <=1024 bytes, raw URL-safe base64 JSON version 1, strict fields/no trailing data, canonical UUID keys (1 or 2), and exact binding match. Encode the tenant/store/collection/product binding alongside the keys. A cursor is an untrusted position, not an authority or snapshot; all SQL is still scoped and RLS-protected. Signing it adds no authorization in this contract. Independent inserts with keys before the cursor are seen on refresh, not promised in the current scan.
+
+Add `ListProductsPage(ctx,tx,scope,request) (pagination.Page[Product],error)`, `ListSKUsPage(ctx,tx,scope,productID,request) (pagination.Page[SKU],error)`, `ListWarehousesPage(...) (pagination.Page[Warehouse],error)`, `ListBalancesPage(...) (pagination.Page[Balance],error)`. Existing list functions remain thin compatibility wrappers during pre-UI migration; production HTTP must use Page methods. SKU lists validate accessible parent even when empty. A foreign scope/product cursor is rejected, not silently ignored. Scope and parent checks remain mandatory independent of cursor.
+
+Acceptance: >100 rows traversal without duplicates/omission on static data, zero rows, final exact page size, 2-key balance ties, parent/store/cross-collection cursor mismatch, malformed/oversized/duplicate query, SQL-injection strings, insertion between pages semantics. Real PG gate plus independent review; no timing claim from unit tests.
+
+## Errors and request correlation
+
+One shared `internal/httperror` transport utility (no domain dependency): `Envelope{Code,Message,RequestID string; Retryable bool; Details map[string]any}` with snake_case JSON and non-nil details. `Middleware(http.Handler) http.Handler` creates a random server request ID, sets `X-Request-ID`, Cache-Control no-store and nosniff; never trusts a caller-selected request ID. `Write(w,status,code)` emits the envelope with a fixed safe message and no original error/body/SQL/credential. Fixed maps suffice; no translation framework inside errors (UI translates code).
+
+401 invalid/expired/revoked/wrong-audience session; 404 valid merchant identity with no readable target store (nonexistent, inactive, foreign tenant, revoked membership or no store:read grant); 403 valid readable store membership but missing requested operation. Do not return scope identifiers for either denial. 409 version/idempotency/stock conflict; 422 semantic validation; 400 malformed JSON; 415 wrong media; 503 bounded transient DB/timeout failure with retryable=true; 500 generic error. Retryable does not authorize a new command key: the client must use the original idempotency key for uncertain writes. A 409 stale-version conflict is not auto-retryable.
+
+Migration 0003 adds `identity.resolve_access(bytea,uuid,text)` SECURITY DEFINER owned by non-login commerce_auth, fixed pg_catalog search_path, revoke PUBLIC, runtime EXECUTE only. Returns exactly one row `(access_status text,tenant_id uuid,principal_id uuid,authz_revision bigint)`; scope columns are NULL unless status='ok'. It authenticates session first, checks store visibility with store:read, then operation grant. Existing resolve_scope function remains compatible for foundation evidence; new WithScope maps statuses to ErrUnauthorized / ErrScopeNotFound / ErrForbidden before setting transaction-local scope.
+
+All existing platform and catalog handlers use the same envelope. Health response remains a health payload. Unknown routes and wrong methods must also produce JSON envelope (retain Allow where relevant), not HTML. There is no live payment/provider call and no production schema migration in this unit.
+
+Acceptance: real PG 401/403/404 matrix, no denied callback execution, expired/revoked/wrong audience/foreign/inactive visibility, same-store read-only identity cannot write; request IDs are generated and differ across requests; forged header ignored, every error has all five fields, no SQL/secret echo, JSON 404/405, validation distinctions, full prior suite stays green.

@@ -197,18 +197,24 @@
       "internal/pricing/**",
       "tests/pricing/**"
     ],
-    "status": "NOT_STARTED",
+    "status": "IN_PROGRESS_SLICE_PASS",
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
-      "implementation": "NOT_STARTED",
-      "unit_mock": "NOT_RUN",
-      "real_pg": "NOT_RUN",
+      "implementation": "PARTIAL_CATALOG_INVENTORY_HTTP",
+      "unit_mock": "PASS_CATALOG_INVENTORY_SLICE",
+      "real_pg": "PASS_23_GROUPS_INCLUDING_FOUNDATION",
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
-      "independent_review": "NOT_RUN"
+      "independent_review": "PASS_SHARED_SQL_HELPER_AND_REAL_PG_NEGATIVE_TESTS"
     },
-    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。",
+    "local_slice": {
+      "evidence": "docs/implementation/2026-09-20-catalog-inventory-acceptance.md",
+      "code_baseline": "0f631ac",
+      "global_gate_pass": false,
+      "remaining": ["市场报价/税费折扣", "商品媒体/属性矩阵", "有界列表分页", "完整交易和付款状态迁移", "UI与浏览器验收"]
+    }
   },
   {
     "id": "T05",

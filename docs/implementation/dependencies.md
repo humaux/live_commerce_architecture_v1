@@ -8,6 +8,8 @@
 |`github.com/jackc/pgx/v5`|v5.11.0|MIT|`internal/platform/platform.go`；`migrations/migrate.go`；`tests/foundation/*`|PG 协议、显式事务、连接池、事务类型|真实 PG18 基础 gate：RLS、scope 回收、超时、回滚、池上限、HTTP；再跑 unit/race/vet|
 |`github.com/riverqueue/river`|v0.40.0|MPL-2.0|`migrations/migrate.go`；`tests/foundation/foundation_integration_test.go`|同库任务迁移、driver、事务入队探针|重复/并发迁移、enum 事务边界、runtime 仅 insert/受限 update、audit+job 同 commit/rollback|
 |`river/riverdriver/riverpgxv5`|v0.40.0|MPL-2.0|同上|River 的 pgx driver|同 River gate；确认 schema 与权限不漂移|
+|Node.js / pnpm|24.15.0 / 10.33.0|MIT / MIT|根 `package.json`；`packages/i18n/tests`|现有本机运行时；原生 TypeScript strip 执行纯函数测试，pnpm workspace 锁定解析|`pnpm run test:i18n`；所有 workspace 集成测试；不跨大版本自动升级|
+|TypeScript|7.0.2|Apache-2.0|根 `package.json` 的 `typecheck:i18n`|编译期严格检查三语言字典和公共路由类型，非浏览器运行依赖|`pnpm run typecheck:i18n`；新 UI 接入后加入应用 strict build|
 
 间接模块由 Go module 解析，不在业务代码中直接调用；升级仍须保留 `go.sum`、扫描漏洞并跑上述 gate。不得用版本兼容或 CI 绿灯推断生产可用。
 
@@ -16,7 +18,7 @@
 |依赖|状态与边界|准入条件|
 |---|---|---|
 |sqlc|NOT_INSTALLED；当前 SQL 为显式参数化，尚无生成物|冻结 queries/schema 后由 integrator 锁版本，审生成 diff，跑真实 PG/RLS/事务 gate|
-|Next.js / Node 24 LTS|前端项目 NOT_CONFIGURED；本机已有 Node 24.15.0/pnpm 11.2.2，不等于项目已安装 Next.js|冻结 storefront/admin DTO 后单独锁 Node/pnpm，跑 strict build、浏览器权限 smoke；不把交易规则放浏览器|
+|Next.js / React|前端应用 NOT_CONFIGURED；Node/pnpm workspace 已锁定，不等于 Next.js 已安装。npm registry 候选为 Next 16.3.5、React 19.3.0，采用前仍需独立准入|冻结 storefront/admin DTO 后锁应用版本，跑 strict build、浏览器权限 smoke；不把交易规则放浏览器|
 |LiveKit|NOT_INSTALLED；媒体与 API 尚未接入|先完成托管/自托管能力与授权探针、mock→sandbox gate；媒体失败不得改变订单真源|
 |PSP|NOT_INSTALLED；无真实收款/退款调用|先确认商家 MoR、sandbox 账户与 webhook 幂等/对账；live 需明确授权、金额、回执和回滚边界|
 

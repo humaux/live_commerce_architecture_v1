@@ -1,0 +1,205 @@
+{
+  "title": "直播商家操作台 · 视觉方向",
+  "question": "先看视觉稿，再确定界面开发方向。图中内容为演示数据，不代表真实经营或已连接服务。",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "A · 商品对账簿",
+      "thesis": "以可核对的SKU与库存变化作为第一屏中心。",
+      "palette": [
+        "#f5f7fa",
+        "#193c61",
+        "#2b7666"
+      ],
+      "materials": [
+        "白色操作纸面",
+        "整齐数字列",
+        "细分区线"
+      ],
+      "viewport": "窄侧栏、全宽商品库存表、选中行详情；语言和店铺各有独立入口。",
+      "risk": "信息密度高，手机需要拆成重点字段和详情。",
+      "comp": ".impeccable/mocks/decision/assigned.png",
+      "raised": [
+        {
+          "from": "云层结构",
+          "raise": "清晰的层级分区"
+        },
+        {
+          "from": "深度导航",
+          "raise": "阶段与当前位置信息"
+        },
+        {
+          "from": "空间主机",
+          "raise": "当前操作的焦点状态"
+        },
+        {
+          "from": "平面海报",
+          "raise": "简洁、明确的主要动作"
+        },
+        {
+          "from": "字符场景",
+          "raise": "数字列的稳定对齐"
+        },
+        {
+          "from": "剪辑台轨道",
+          "raise": "记住上次选择与未完成工作"
+        }
+      ]
+    },
+    {
+      "id": "model-pick",
+      "label": "B · 商品运营工作台",
+      "kicker": "IMPECCABLE’S PICK",
+      "thesis": "产品目录在左，当前SKU编辑在右，减少来回跳页。",
+      "palette": [
+        "#f6f8fa",
+        "#193c61",
+        "#087e83"
+      ],
+      "materials": [
+        "清晰分栏",
+        "柔和选中面",
+        "紧凑工具条"
+      ],
+      "viewport": "主区商品清单加图片缩略图，右侧编辑库存与价格，独立直播/消息入口。",
+      "risk": "布局熟悉高效，也较接近同类管理工具。",
+      "comp": ".impeccable/mocks/decision/model-pick.png"
+    },
+    {
+      "id": "challenger-cloud-quarry",
+      "label": "云层结构",
+      "verdict": "declined",
+      "thesis": "已评估，不作为商品库存首页首选。",
+      "palette": [
+        "#f5f7fa",
+        "#75b8e8"
+      ],
+      "materials": [
+        "层块分区"
+      ],
+      "viewport": "将商品、库存和当前操作映射到此视觉系统。",
+      "case": "仓库分层可对应库存，但体积云场景不利于密集校对。",
+      "kept": "清晰的层级分区",
+      "risk": "陌生表达增加日常任务学习成本。",
+      "hero": "https://impeccable.style/worlds/cards/dream-surreal-impossible-worlds-cloud-quarry-hero.webp"
+    },
+    {
+      "id": "challenger-deep-dive",
+      "label": "深度导航",
+      "verdict": "declined",
+      "thesis": "已评估，不作为商品库存首页首选。",
+      "palette": [
+        "#10283d",
+        "#35b9c7"
+      ],
+      "materials": [
+        "深度刻度"
+      ],
+      "viewport": "将商品、库存和当前操作映射到此视觉系统。",
+      "case": "多阶段可映射流程，但潜水导航离商家常用任务过远。",
+      "kept": "阶段与当前位置信息",
+      "risk": "陌生表达增加日常任务学习成本。",
+      "hero": "https://impeccable.style/worlds/cards/rivers-tides-ocean-depths-mesophotic-deep-dive-hero.webp"
+    },
+    {
+      "id": "challenger-console",
+      "label": "空间主机",
+      "verdict": "declined",
+      "thesis": "已评估，不作为商品库存首页首选。",
+      "palette": [
+        "#10151f",
+        "#d8bd8b"
+      ],
+      "materials": [
+        "空间选择"
+      ],
+      "viewport": "将商品、库存和当前操作映射到此视觉系统。",
+      "case": "浮动房间适合探索，不适合库存数字的快速比较。",
+      "kept": "当前操作的焦点状态",
+      "risk": "陌生表达增加日常任务学习成本。",
+      "hero": "https://impeccable.style/worlds/cards/digital-design-canon-console-dashboard-atmosphere-hero.webp"
+    },
+    {
+      "id": "challenger-park",
+      "label": "平面海报",
+      "verdict": "declined",
+      "thesis": "已评估，不作为商品库存首页首选。",
+      "palette": [
+        "#13645e",
+        "#cc9d56"
+      ],
+      "materials": [
+        "平面色区"
+      ],
+      "viewport": "将商品、库存和当前操作映射到此视觉系统。",
+      "case": "海报能宣传商品，但第一屏需要编辑而不是浏览宣传。",
+      "kept": "简洁、明确的主要动作",
+      "risk": "陌生表达增加日常任务学习成本。",
+      "hero": "https://impeccable.style/worlds/cards/posters-covers-sleeves-wpa-park-poster-hero.webp"
+    },
+    {
+      "id": "challenger-ascii",
+      "label": "字符场景",
+      "verdict": "declined",
+      "thesis": "已评估，不作为商品库存首页首选。",
+      "palette": [
+        "#111914",
+        "#74b184"
+      ],
+      "materials": [
+        "字符网格"
+      ],
+      "viewport": "将商品、库存和当前操作映射到此视觉系统。",
+      "case": "字符图会占用数据表的信息预算，也不适合三语界面。",
+      "kept": "数字列的稳定对齐",
+      "risk": "陌生表达增加日常任务学习成本。",
+      "hero": "https://impeccable.style/worlds/cards/medium-native-ascii-live-scene-render-hero.webp"
+    },
+    {
+      "id": "challenger-film",
+      "label": "剪辑台轨道",
+      "verdict": "declined",
+      "thesis": "已评估，不作为商品库存首页首选。",
+      "palette": [
+        "#151515",
+        "#f07d28"
+      ],
+      "materials": [
+        "连续选片轨"
+      ],
+      "viewport": "将商品、库存和当前操作映射到此视觉系统。",
+      "case": "更适合后续直播节目页；橙色大面积选片轨不适合本页SKU对账。",
+      "kept": "记住上次选择与未完成工作",
+      "risk": "陌生表达增加日常任务学习成本。",
+      "hero": "https://impeccable.style/worlds/cards/operate-a-cutting-bench-select-rail-hero.webp"
+    }
+  ],
+  "reroll": {
+    "registers": [
+      "safer",
+      "bolder"
+    ]
+  },
+  "buildPath": {
+    "value": "comp",
+    "toggle": true
+  },
+  "canon": true,
+  "canonCard": {
+    "label": "C · 通用管理后台",
+    "thesis": "标准左侧导航加商品列表，常见后台逻辑。",
+    "palette": [
+      "#ffffff",
+      "#243247",
+      "#2874cd"
+    ],
+    "materials": [
+      "标准表格",
+      "轻量面板"
+    ],
+    "viewport": "商品列表一屏展示，编辑操作进入独立页面，侧栏常驻。",
+    "risk": "需要更多页面跳转，视觉识别性较弱。",
+    "comp": ".impeccable/mocks/decision/canon.png"
+  },
+  "steer": true
+}
