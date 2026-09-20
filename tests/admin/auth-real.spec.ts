@@ -98,21 +98,13 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
   });
 
   await page.goto(`${publicOrigin}/en/`);
+  await page.getByLabel("Language", { exact: true }).selectOption("zh-TW");
+  await expect(page).toHaveURL(/\/zh-TW\/?$/);
   await Promise.all([
     page.waitForURL(
       (url) => url.origin === publicOrigin && /^\/zh-TW\/?$/.test(url.pathname),
     ),
-    page.evaluate(() => {
-      const form = document.createElement("form");
-      form.method = "post";
-      form.action = "/api/auth/login";
-      const locale = document.createElement("input");
-      locale.name = "locale";
-      locale.value = "zh-TW";
-      form.append(locale);
-      document.body.append(form);
-      form.submit();
-    }),
+    page.getByRole("button", { name: "透過身分服務登入" }).click(),
   ]);
   if (!sawIssuer || !callbackURL)
     throw new Error("OIDC browser redirects were not observed");
@@ -191,26 +183,50 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
   const emptyStores = await browserJSON(page, "/api/stores");
   expect(emptyStores).toEqual({ status: 200, body: { items: [] } });
 
-  const idempotencyKey = "browser-onboard-0001";
-  const initialBody = {
+  await page.getByLabel("商戶名稱").fill("Browser Merchant");
+  await page.getByRole("button", { name: "下一步：商店設定" }).click();
+  await page.getByLabel("商店名稱").fill("Browser Store");
+  await page.getByLabel("交易幣別").selectOption("TWD");
+  await page.getByRole("button", { name: "下一步：庫存倉" }).click();
+  await page.getByLabel("初始庫存倉名稱").fill("Browser Warehouse");
+  const createdResponsePromise = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === "/api/onboarding/initial-store",
+  );
+  await page.getByRole("button", { name: "建立內部工作區" }).click();
+  const createdResponse = await createdResponsePromise;
+  expect(createdResponse.status()).toBe(200);
+  await expect(page.getByRole("status")).toContainText("內部工作區已建立");
+  const idempotencyKey =
+    createdResponse.request().headers()["idempotency-key"] ?? "";
+  expect(idempotencyKey).toMatch(/^[A-Za-z0-9_.:-]{8,128}$/);
+  const initialBody = JSON.parse(
+    createdResponse.request().postData() ?? "null",
+  ) as {
+    tenant_name: string;
+    store_name: string;
+    warehouse_name: string;
+    currency: string;
+  };
+  expect(initialBody).toEqual({
     tenant_name: "Browser Merchant",
     store_name: "Browser Store",
     warehouse_name: "Browser Warehouse",
     currency: "TWD",
-  };
+  });
   const writeOptions = {
     method: "POST",
     body: initialBody,
     csrf: true,
     headers: { "Idempotency-Key": idempotencyKey },
   };
-  const createdResponse = await browserJSON(
+  const replayed = await browserJSON(
     page,
     "/api/onboarding/initial-store",
     writeOptions,
   );
-  expect(createdResponse.status).toBe(200);
-  const created = createdResponse.body as {
+  expect(replayed.status).toBe(200);
+  const created = replayed.body as {
     tenant_id: string;
     store_id: string;
     warehouse_id: string;
@@ -218,13 +234,6 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
   expect(created.tenant_id).toMatch(uuid);
   expect(created.store_id).toMatch(uuid);
   expect(created.warehouse_id).toMatch(uuid);
-
-  const replayed = await browserJSON(
-    page,
-    "/api/onboarding/initial-store",
-    writeOptions,
-  );
-  expect(replayed).toEqual({ status: 200, body: created });
 
   const changed = await browserJSON(page, "/api/onboarding/initial-store", {
     ...writeOptions,
@@ -245,6 +254,8 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
       ],
     },
   });
+  await page.getByRole("button", { name: "進入工作區" }).click();
+  await expect(page.getByRole("heading", { name: "商品與庫存" })).toBeVisible();
 
   const warehouses = await browserJSON(
     page,

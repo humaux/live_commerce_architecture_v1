@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import { isLocale } from "@live-commerce/i18n";
-import { workspaceData } from "@/lib/backend";
+import { onboardingPolicy, workspaceData } from "@/lib/backend";
+import { authConfig } from "@/lib/auth";
 import { Ledger } from "@/components/Ledger";
+import { Entry } from "@/components/Entry";
 
 export default async function Page({
   params,
@@ -21,5 +23,23 @@ export default async function Page({
     one("status") || "all",
     one("cursor"),
   );
-  return <Ledger locale={locale} initial={initial} />;
+  if (initial.storeID || initial.fixture)
+    return <Ledger locale={locale} initial={initial} />;
+  const policy = onboardingPolicy();
+  const status = !authConfig
+    ? "disabled"
+    : initial.error?.code === "unauthorized"
+      ? "signed-out"
+      : initial.error
+        ? "unavailable"
+        : "onboarding";
+  return (
+    <Entry
+      locale={locale}
+      status={status}
+      authResult={one("auth")}
+      onboardingEnabled={policy.enabled}
+      currencies={policy.currencies}
+    />
+  );
 }
