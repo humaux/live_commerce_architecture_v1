@@ -92,7 +92,7 @@ func TestIdentityConcurrentFlowsShareOneLiteralIdentity(t *testing.T) {
 		sessions = append(sessions, result.session)
 	}
 	if len(sessions) != 2 || sessions[0].PrincipalID != sessions[1].PrincipalID || sessions[0].Token == sessions[1].Token {
-		t.Fatalf("concurrent identity mapping: %+v", sessions)
+		t.Fatal("concurrent identity mapping did not share one principal with distinct opaque sessions")
 	}
 
 	var identities, principals, storedSessions, issuedEvents int

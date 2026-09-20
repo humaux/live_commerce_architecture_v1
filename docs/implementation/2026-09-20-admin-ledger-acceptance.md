@@ -37,7 +37,7 @@
 - Next 开发浮标会遮挡手机行，使用受支持的 `devIndicators:false` 关闭。框架仍保留隐藏工具 DOM，验收断言应检查不可见，而非不存在；真实截图没有浮标。光标用 ArrowRight 折叠选择再验收，不用 macOS 上语义不同的 End 键。标准 overlay 滚动条可能在静态截图自动隐藏，保留实际滚动位置和计算样式证据，不伪造常显截图。
 - 账簿搜索原 LIKE escape 触发 SQLSTATE 22025；改成 `ESCAPE '!'`。独立真实 PG 测试覆盖 `%`、`_`、`!`、反斜线、游标绑定与双权限。后端证据在 `/Volumes/data/output/live-commerce-ledger-tests/fixed-realpg.log`，原失败记录保留。
 - 本轮第一次浏览器复跑未给测试 runner 加载 fixture 环境变量，第 5 项明确失败，2 项未运行。修正启动步骤后完整 8 项通过；增加激活样式覆盖并修正隐藏开发 DOM 的断言后，在全新隔离数据库完整 9 项通过。
-- 最新完整 Go race/vet 聚合命令**不能记 PASS**：macOS 首次启动数个测试二进制长时间没有 RUN，超过外层 180 秒；独立 ledger PG 和 foundation 测试已通过，部分直接单测后续通过。历史 `0f631ac` 全套 PASS 不等于最新版本全套 PASS。未关闭系统安全服务或放宽业务超时。
+- 本次 UI 验收当时的完整 Go race/vet 聚合命令**不能记 PASS**：macOS 首次启动数个测试二进制长时间没有 RUN，超过外层 180 秒；独立 ledger PG 和 foundation 测试已通过，部分直接单测后续通过。历史 `0f631ac` 全套 PASS 不等于该次版本全套 PASS。未关闭系统安全服务或放宽业务超时。后续 T03 后端整合已在指定新基线重跑通过，见 `2026-09-20-merchant-identity-acceptance.md`；不覆盖这里的历史失败记录。
 
 ## 可重复本地运行
 

@@ -160,18 +160,18 @@
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
-      "implementation": "PARTIAL_FOUNDATION",
-      "unit_mock": "PASS_FOUNDATION_ONLY",
-      "real_pg": "PASS_FOUNDATION_ONLY",
-      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
-      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
-      "independent_review": "PASS_FOUNDATION_ONLY"
+      "implementation": "PARTIAL_IDENTITY_BACKEND",
+      "unit_mock": "PASS_OIDC_PROVIDER_MOCK",
+      "real_pg": "PASS_MERCHANT_IDENTITY_SLICE",
+      "provider_sandbox": "NOT_RUN",
+      "provider_live": "NOT_RUN",
+      "independent_review": "PASS_IDENTITY_BACKEND_ONLY"
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。",
     "local_slice": {
       "as_of": "2026-09-20",
-      "scope": "merchant会话授权/店铺RLS/审计基础通过；完整登录、域名与其他audience尚未实现",
-      "evidence": "docs/implementation/2026-09-20-foundation-acceptance.md",
+      "scope": "OIDC签名mock、merchant身份/会话、首店原子幂等与受限SQL函数通过；HTTP/BFF/视觉确认/浏览器登录、真实IdP、域名和其他audience未完成",
+      "evidence": "docs/implementation/2026-09-20-merchant-identity-acceptance.md",
       "global_gate_pass": false
     }
   },
@@ -216,7 +216,8 @@
       "prior_baseline_evidence": "docs/implementation/2026-09-20-catalog-inventory-acceptance.md",
       "global_gate_pass": false,
       "completed_additions": ["绑定租户店铺与筛选的有界keyset分页", "同事务catalog:read与inventory:read账簿投影", "zh-CN/zh-TW/en商品库存页面及浏览器真实API验收"],
-      "remaining": ["市场报价/税费折扣", "商品媒体/属性矩阵", "正式身份和商店开通", "完整交易和付款状态迁移", "全产品页面和浏览器验收", "最新全套Go race/vet聚合gate主机启动延迟待闭环"]
+      "remaining": ["市场报价/税费折扣", "商品媒体/属性矩阵", "正式身份和商店开通", "完整交易和付款状态迁移", "全产品页面和浏览器验收"],
+      "latest_go_aggregate": "2026-09-20基线6b1a5c2全Go race/vet实际通过；详见merchant-identity-acceptance，不代表全产品功能通过"
     }
   },
   {
