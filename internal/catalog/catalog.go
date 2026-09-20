@@ -307,7 +307,10 @@ func ListSKUsPage(ctx context.Context, tx pgx.Tx, scope platform.Scope, productI
 	if !validScope(tx, scope) || !command.ValidID(productID) {
 		return page, command.ErrInvalid
 	}
-	if err := lockProduct(ctx, tx, scope, productID); err != nil {
+	// A read-only parent visibility check must not hold a row write lock until
+	// the caller's transaction ends. Mutation helpers retain their own locks.
+	var visible bool
+	if err := tx.QueryRow(ctx, `SELECT true FROM catalog.products WHERE tenant_id=$1 AND store_id=$2 AND id=$3`, scope.TenantID, scope.StoreID, productID).Scan(&visible); err != nil {
 		return page, mapError(err)
 	}
 	binding := pagination.Binding{TenantID: scope.TenantID, StoreID: scope.StoreID, Collection: "skus", ParentID: productID}

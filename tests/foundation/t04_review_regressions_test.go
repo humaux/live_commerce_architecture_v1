@@ -10,10 +10,57 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"livecommerce/internal/catalog"
 	"livecommerce/internal/command"
+	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
 	"livecommerce/migrations"
 )
+
+func TestSKUReadTransactionDoesNotBlockProductUpdate(t *testing.T) {
+	f := t04Fixture(t)
+	stock := t04CreateStock(t, f, f.tokens["a"], f.storeA1, 1)
+	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+	defer cancel()
+	readReady, release := make(chan struct{}), make(chan struct{})
+	done := make(chan error, 1)
+	go func() {
+		done <- platform.WithScope(ctx, f.runtime, f.tokens["a"], f.storeA1, "catalog:read", func(tx pgx.Tx, s platform.Scope) error {
+			if _, err := catalog.ListSKUsPage(ctx, tx, s, stock.product.ID, pagination.Request{}); err != nil {
+				return err
+			}
+			close(readReady)
+			select {
+			case <-release:
+				return nil
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		})
+	}()
+	select {
+	case <-readReady:
+	case err := <-done:
+		t.Fatalf("read failed: %v", err)
+	case <-ctx.Done():
+		t.Fatal(ctx.Err())
+	}
+	// Keep the read transaction alive while both another read and update finish.
+	err := platform.WithScope(ctx, f.runtime, f.tokens["a"], f.storeA1, "catalog:write", func(tx pgx.Tx, s platform.Scope) error {
+		if _, err := catalog.ListSKUsPage(ctx, tx, s, stock.product.ID, pagination.Request{}); err != nil {
+			return err
+		}
+		_, err := catalog.UpdateProduct(ctx, tx, s, t04Key("read-unlocked"), stock.product.ID, catalog.ProductInput{Name: "nonblocking update", ExpectedVersion: stock.product.Version})
+		return err
+	})
+	close(release)
+	if readErr := <-done; readErr != nil {
+		t.Fatal(readErr)
+	}
+	if err != nil {
+		t.Fatalf("open SKU read blocked update: %v", err)
+	}
+}
 
 func TestT04ActorAndAttestationCannotBeForged(t *testing.T) {
 	f := t04Fixture(t)
