@@ -10,6 +10,7 @@ import (
 	"livecommerce/internal/catalog"
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/inventory"
+	"livecommerce/internal/pagination"
 )
 
 func TestCatalogInventoryHTTPRealWorkflow(t *testing.T) {
@@ -56,10 +57,10 @@ func TestCatalogInventoryHTTPRealWorkflow(t *testing.T) {
 	}
 	in.Name = "Changed payload"
 	request("POST", base+"/products", key, in, 409, nil)
-	var products []catalog.Product
+	var products pagination.Page[catalog.Product]
 	request("GET", base+"/products", "", nil, 200, &products)
-	if len(products) == 0 || len(products) > 100 {
-		t.Fatalf("bad product list %d", len(products))
+	if len(products.Items) == 0 || len(products.Items) > 50 {
+		t.Fatalf("bad product list %d", len(products.Items))
 	}
 	in.ExpectedVersion = 1
 	request("PATCH", base+"/products/"+p.ID, t04Key("http-update"), in, 200, &p)
@@ -77,16 +78,16 @@ func TestCatalogInventoryHTTPRealWorkflow(t *testing.T) {
 	sin.WeightGrams = 300
 	request("PATCH", base+"/skus/"+sku.ID, t04Key("http-sku-edit"), sin, 200, &sku)
 	request("POST", base+"/skus/"+sku.ID+"/price", t04Key("http-price"), catalog.PriceInput{PriceMinor: 13500, ExpectedVersion: sku.Version}, 200, &sku)
-	var skus []catalog.SKU
+	var skus pagination.Page[catalog.SKU]
 	request("GET", base+"/products/"+p.ID+"/skus", "", nil, 200, &skus)
-	if len(skus) != 1 || skus[0].PriceMinor != 13500 || skus[0].WeightGrams != 300 {
+	if len(skus.Items) != 1 || skus.Items[0].PriceMinor != 13500 || skus.Items[0].WeightGrams != 300 || skus.NextCursor != "" {
 		t.Fatal("sku readback mismatch")
 	}
 	var warehouse inventory.Warehouse
 	request("POST", base+"/warehouses", t04Key("http-warehouse"), map[string]string{"name": "HTTP仓-" + t04Tag()}, 200, &warehouse)
-	var warehouses []inventory.Warehouse
+	var warehouses pagination.Page[inventory.Warehouse]
 	request("GET", base+"/warehouses", "", nil, 200, &warehouses)
-	if warehouse.ID == "" || len(warehouses) == 0 || len(warehouses) > 100 {
+	if warehouse.ID == "" || len(warehouses.Items) == 0 || len(warehouses.Items) > 50 {
 		t.Fatal("warehouse readback mismatch")
 	}
 	var balance inventory.Balance
@@ -97,16 +98,23 @@ func TestCatalogInventoryHTTPRealWorkflow(t *testing.T) {
 	if balance.OnHand != 5 || balance.Available != 5 || balance.Version != 1 {
 		t.Fatalf("duplicate adjustment: %+v", balance)
 	}
-	var balances []inventory.Balance
-	request("GET", base+"/inventory", "", nil, 200, &balances)
+	var balances pagination.Page[inventory.Balance]
 	found := false
-	for _, b := range balances {
-		if b.SKUID == sku.ID {
-			found = true
-			if b != balance {
-				t.Fatal("inventory readback mismatch")
+	cursor := ""
+	for page := 0; page < 1000; page++ {
+		request("GET", base+"/inventory?cursor="+cursor, "", nil, 200, &balances)
+		for _, b := range balances.Items {
+			if b.SKUID == sku.ID {
+				found = true
+				if b != balance {
+					t.Fatal("inventory readback mismatch")
+				}
 			}
 		}
+		if found || balances.NextCursor == "" {
+			break
+		}
+		cursor = balances.NextCursor
 	}
 	if !found {
 		t.Fatal("missing inventory")
