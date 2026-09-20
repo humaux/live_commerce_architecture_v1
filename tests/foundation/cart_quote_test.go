@@ -434,6 +434,129 @@ func TestCartForeignKeysArchivedCatalogAndMarket(t *testing.T) {
 	}
 }
 
+func TestQuoteCartMarketPolicyRaceSnapshots(t *testing.T) {
+	for _, target := range []string{"cart", "market-version", "market-disabled", "policy-version", "policy-disabled"} {
+		t.Run(target, func(t *testing.T) {
+			h := cqSetup(t)
+			c := h.oneCart(t)
+			owner, err := h.f.owner.Begin(context.Background())
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer owner.Rollback(context.Background())
+			expectedCart := c.Version
+			switch target {
+			case "cart":
+				_, err = owner.Exec(context.Background(), `UPDATE storefront.carts SET version=version+1 WHERE owner_id=$1`, h.cap.Scope.OwnerID)
+				if err == nil {
+					_, err = owner.Exec(context.Background(), `UPDATE storefront.cart_lines SET quantity=3 WHERE owner_id=$1`, h.cap.Scope.OwnerID)
+				}
+				expectedCart++
+			case "market-version", "market-disabled":
+				_, err = owner.Exec(context.Background(), `UPDATE pricing.markets SET version=version+1,active=$2 WHERE id=$1`, h.market.ID, target != "market-disabled")
+			case "policy-version", "policy-disabled":
+				_, err = owner.Exec(context.Background(), `INSERT INTO pricing.policy_versions(tenant_id,store_id,market_id,country,method,version,currency,shipping_mode,shipping_minor,tax_mode,tax_basis,tax_rate_bps,quote_ttl_seconds,enabled,configuration_ref,principal_id)
+				 SELECT tenant_id,store_id,market_id,country,method,2,currency,shipping_mode,80,tax_mode,tax_basis,tax_rate_bps,quote_ttl_seconds,$2,configuration_ref,principal_id FROM pricing.policy_versions WHERE market_id=$1 AND version=1`, h.market.ID, target != "policy-disabled")
+				if err == nil {
+					_, err = owner.Exec(context.Background(), `UPDATE pricing.policy_heads SET current_version=2 WHERE market_id=$1`, h.market.ID)
+				}
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			appName := "cq_" + strings.ReplaceAll(target, "-", "_") + "_" + t04Tag()
+			pool, err := platform.OpenBuyerPool(context.Background(), withApplicationName(t, h.a.runtimeURL, appName))
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer pool.Close()
+			locked := h
+			locked.a.runtime = pool
+			type result struct {
+				q storefront.Quote
+				e error
+			}
+			done := make(chan result, 1)
+			go func() { q, e := locked.quote(t04Key("cq-race"), expectedCart); done <- result{q, e} }()
+			waitForDatabaseLock(t, h.f.owner, appName)
+			if err = owner.Commit(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+			select {
+			case got := <-done:
+				if target == "market-disabled" || target == "policy-disabled" {
+					want := command.ErrConflict
+					if target == "policy-disabled" {
+						want = command.ErrNotFound
+					}
+					if !errors.Is(got.e, want) {
+						t.Fatalf("disabled race %v", got.e)
+					}
+					if countRows(t, h.f.owner, `SELECT count(*) FROM storefront.quotes WHERE owner_id=$1`, h.cap.Scope.OwnerID) != 0 {
+						t.Fatal("disabled dependency left quote")
+					}
+					return
+				}
+				if got.e != nil {
+					t.Fatal(got.e)
+				}
+				switch target {
+				case "cart":
+					if got.q.CartVersion != 2 || got.q.Lines[0].Quantity != 3 {
+						t.Fatalf("torn cart snapshot %+v", got.q)
+					}
+				case "market-version":
+					if got.q.MarketVersion != 2 {
+						t.Fatalf("stale market %+v", got.q)
+					}
+				case "policy-version":
+					if got.q.Policy.Version != 2 || got.q.Amount.ShippingMinor != 80 {
+						t.Fatalf("stale policy %+v", got.q)
+					}
+				}
+			case <-time.After(6 * time.Second):
+				t.Fatal("quote race did not settle")
+			}
+		})
+	}
+}
+
+func TestBuyerConcurrentSameKeyReplay(t *testing.T) {
+	h := cqSetup(t)
+	key := t04Key("cq-duplicate")
+	in := storefront.CartInput{Items: []storefront.Item{{SKUID: h.stock.skus[0].ID, Quantity: 2}}}
+	type result struct {
+		c storefront.Cart
+		e error
+	}
+	done := make(chan result, 8)
+	for i := 0; i < 8; i++ {
+		go func() { c, e := h.cart(key, in); done <- result{c, e} }()
+	}
+	id := ""
+	for i := 0; i < 8; i++ {
+		select {
+		case got := <-done:
+			if got.e != nil {
+				t.Fatal(got.e)
+			}
+			if id == "" {
+				id = got.c.ID
+			}
+			if got.c.ID != id || got.c.Version != 1 {
+				t.Fatalf("nonidentical replay %+v", got.c)
+			}
+		case <-time.After(6 * time.Second):
+			t.Fatal("duplicate did not settle")
+		}
+	}
+	for _, table := range []string{"storefront.carts", "storefront.cart_lines", "storefront.events", "buyer.command_results"} {
+		if countRows(t, h.f.owner, `SELECT count(*) FROM `+table+` WHERE owner_id=$1`, h.cap.Scope.OwnerID) != 1 {
+			t.Fatalf("duplicate side effect %s", table)
+		}
+	}
+}
+
 func TestBuyerCommandGuardsAndReceiptRollback(t *testing.T) {
 	h := cqSetup(t)
 	for _, kind := range []string{"nil", "non-pointer", "bad-key", "bad-operation", "wrong-session", "large-request", "callback-error", "large-result"} {
