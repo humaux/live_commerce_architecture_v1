@@ -41,16 +41,28 @@ type Scope struct {
 // OpenPool opens the runtime pool and rejects privileged or schema-owning logins.
 // A login granted commerce_runtime is valid when it is itself not privileged.
 func OpenPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
-	return openPool(ctx, dsn, false)
+	return openPool(ctx, dsn, "runtime")
 }
 
 // OpenIdentityPool is only for the trusted login/onboarding service. Never pass
 // this pool into business handlers: identity issuance is a different authority.
 func OpenIdentityPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
-	return openPool(ctx, dsn, true)
+	return openPool(ctx, dsn, "identity")
 }
 
-func openPool(ctx context.Context, dsn string, identity bool) (*pgxpool.Pool, error) {
+// OpenBuyerPool cannot read merchant tables, even when a buyer has the same
+// tenant/store context. Buyer resource grants are separate from merchant RBAC.
+func OpenBuyerPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
+	return openPool(ctx, dsn, "buyer_runtime")
+}
+
+// OpenBuyerIssuerPool is an internal capability authority, never a public
+// store-ID-to-token endpoint. See contracts/buyer-capability-v1.md.
+func OpenBuyerIssuerPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
+	return openPool(ctx, dsn, "buyer_issuer")
+}
+
+func openPool(ctx context.Context, dsn string, authority string) (*pgxpool.Pool, error) {
 	if strings.TrimSpace(dsn) == "" {
 		return nil, errors.New("database url required")
 	}
@@ -71,7 +83,7 @@ func openPool(ctx context.Context, dsn string, identity bool) (*pgxpool.Pool, er
 		return nil, fmt.Errorf("database unavailable: %w", err)
 	}
 
-	var superuser, bypassRLS, roleAdmin, databaseCreator, replication, objectOwner, runtimeMember, authMember, identityMember, canSetPrivileged bool
+	var superuser, bypassRLS, roleAdmin, databaseCreator, replication, objectOwner, runtimeMember, authMember, identityMember, buyerRuntimeMember, buyerIssuerMember, canSetPrivileged bool
 	err = pool.QueryRow(startup, `
 		SELECT r.rolsuper, r.rolbypassrls, r.rolcreaterole, r.rolcreatedb, r.rolreplication,
 		       (EXISTS (
@@ -88,6 +100,8 @@ func openPool(ctx context.Context, dsn string, identity bool) (*pgxpool.Pool, er
 		       pg_has_role(current_user, 'commerce_runtime', 'MEMBER'),
 		       pg_has_role(current_user, 'commerce_auth', 'MEMBER'),
 		       pg_has_role(current_user, 'commerce_identity', 'MEMBER'),
+		       pg_has_role(current_user, 'commerce_buyer_runtime', 'MEMBER'),
+		       pg_has_role(current_user, 'commerce_buyer_issuer', 'MEMBER'),
 		       EXISTS (
 			   SELECT 1 FROM pg_roles candidate
 			   WHERE (candidate.rolsuper OR candidate.rolbypassrls OR candidate.rolcreaterole OR candidate.rolcreatedb OR candidate.rolreplication
@@ -105,15 +119,22 @@ func openPool(ctx context.Context, dsn string, identity bool) (*pgxpool.Pool, er
 			     AND pg_has_role(current_user, candidate.oid, 'SET')
 		       )
 		FROM pg_roles r WHERE r.rolname = current_user`).
-		Scan(&superuser, &bypassRLS, &roleAdmin, &databaseCreator, &replication, &objectOwner, &runtimeMember, &authMember, &identityMember, &canSetPrivileged)
+		Scan(&superuser, &bypassRLS, &roleAdmin, &databaseCreator, &replication, &objectOwner, &runtimeMember, &authMember, &identityMember, &buyerRuntimeMember, &buyerIssuerMember, &canSetPrivileged)
 	if err != nil {
 		pool.Close()
 		return nil, fmt.Errorf("validate runtime role: %w", err)
 	}
-	roleValid := runtimeMember && !identityMember
-	if identity {
-		roleValid = identityMember && !runtimeMember
+	// Exactly one authority, including indirect grants. Checking only the desired
+	// role would let a mixed login smuggle merchant privileges into buyer code.
+	memberships := map[string]bool{"runtime": runtimeMember, "identity": identityMember,
+		"buyer_runtime": buyerRuntimeMember, "buyer_issuer": buyerIssuerMember}
+	roleCount := 0
+	for _, member := range memberships {
+		if member {
+			roleCount++
+		}
 	}
+	roleValid := memberships[authority] && roleCount == 1
 	if superuser || bypassRLS || roleAdmin || databaseCreator || replication || objectOwner || !roleValid || authMember || canSetPrivileged {
 		pool.Close()
 		return nil, errors.New("unsafe runtime database role")
