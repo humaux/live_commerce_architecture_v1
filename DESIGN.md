@@ -104,7 +104,7 @@ components:
 
 商品对账簿是一套 Operate-first 的商家工作台系统：像一张经过整理的数字账页，优先让人定位 SKU、核对现有/预留/可售关系，再留下可追溯的库存调整。它不追求展示型视觉声量；可信度来自对齐、密度、真实状态和稳定的任务顺序。
 
-该世界由用户在 decision `6ecd43a2` 选择，FORM seed 为 `3046f272`，并以 decision `a30e0e29` 批准 wide-ledger 组合。桌面以全宽账簿和下方上下文托盘为签名关系；移动端保留同一任务顺序而不是压缩全部列。已实现的登录与首店入口复用此世界的控件和状态语言；其获准的 C 三步构图、尺寸与行为单独记录在 `docs/implementation/2026-09-20-entry-visual-brief.md`。这里不代表其他产品模块已经完成。
+该世界由用户在 decision `6ecd43a2` 选择，FORM seed 为 `3046f272`，并以 decision `a30e0e29` 批准 wide-ledger 组合。桌面以全宽账簿和下方上下文托盘为签名关系；移动端保留同一任务顺序而不是压缩全部列。已实现的登录与首店入口复用此世界的控件和状态语言；其获准的 C 三步构图、尺寸与行为单独记录在 `docs/implementation/2026-09-20-entry-visual-brief.md`。已实现的 Merchant Settings A 表面也复用此世界；其四步设置流程、状态列和表面局部样式记录在 `.impeccable/merchant-settings-brief.md`。这里不代表其他产品模块已经完成。
 
 **Key Characteristics:**
 
@@ -131,7 +131,7 @@ components:
 ### Neutral
 
 - **Ledger Ink** (`ledger-ink`): 标题、正文、数据与高价值数字。
-- **Muted Text** (`muted-text`): 辅助标签、审计提示和次要元数据。
+- **Muted Text** (`muted-text`): 辅助标签、审计提示和次要元数据；Merchant Settings 的局部对比度调整见其表面 brief。
 - **Canvas / Surface** (`canvas`, `surface`): 冷灰页面底与白色工作面。
 - **Ledger Line** (`ledger-line`): 表格、输入和容器的细分隔。
 - **Selected Row** (`selected-row`): 当前 SKU 的整行上下文强调。
