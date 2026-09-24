@@ -1,6 +1,8 @@
 {
   "use_case": "ui-mockup",
-  "approved": false,
+  "approved": true,
+  "approval_source": "User: B 商品详情直接选购",
+  "approved_on": "2026-09-25",
   "tool": "image_gen",
   "reference": "../../review/merchant-settings/mobile.png",
   "logical_viewport": {

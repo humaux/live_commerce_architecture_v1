@@ -1,6 +1,6 @@
 # Buyer purchase surface — composition proposal
 
-Status: PROPOSED, not approved, not a shipping UI. Source baseline `84c1169`.
+Status: B APPROVED FOR IMPLEMENTATION, not a shipping UI. Source baseline `84c1169`.
 
 ## Audit before design
 
@@ -86,7 +86,40 @@ for every image (same 1:2 aspect, equivalent to the 390×780 logical composition
 proposals, not browser acceptance screenshots. Decision page key `16c33590` was
 served and opened; `--wait` returned exit 4 (page closed without an answer).
 The three images were therefore presented inline and the structured question
-was sent as the documented fallback. **Approval is still pending.**
+was sent as the documented fallback. On 2026-09-25 the user explicitly answered
+**B 商品详情直接选购**. This supersedes the pending approval, not the original
+decision-page outcome. Only B's sidecar is marked approved; A and C remain
+unapproved alternatives and will not be implemented.
+
+## Approved B direction contract and ingredient inventory
+
+Approved comp: `.impeccable/mocks/decision/buyer-inline-detail.png`.
+Use one continuous, mobile-first product page: store/locale header, product title,
+price and description, a quiet divider, large vertical SKU radio rows and an
+aligned quantity control. A single light sticky footer holds subtotal, shipping
+qualification and the teal delivery action. Keep the existing navy/teal system,
+white working surface, fine gray rules, 5px control corners, restrained 7px
+surfaces and no elevation. The focal point is readable inline selection, not a
+hero card or progress wizard. Desktop adapts this hierarchy without adding admin
+navigation or repeating the CTA. All controls and text remain semantic and all
+three locales remain freely selectable. Currency, pricing and eligibility come
+from the actual API; the comp's synthetic product is test data only. Shipping,
+quote and payment availability must be explicit; selection alone is not payment.
+
+| Visible ingredient | Medium and fidelity commitment |
+| --- | --- |
+| Header and locale | Semantic header/select; compact single row, roughly 54px tall at 390px viewport. No invented shop identity. The decorative hamburger has no destination in current scope and is explicitly omitted. |
+| Product content | Semantic h1, currency output and description; bold navy title about 28px, green price about 32px, body 16px in the existing Arial/PingFang stack. No rasterized text, fictitious photo or rating. |
+| Demonstration notice | Text only in synthetic fixture; never hardcode the example product into the actual storefront or call real orders demonstrations. |
+| SKU choices | Native radio group with generous vertical hit rows, fine 1px borders and a pale selected surface; approximately 56px row height and 10px gap. |
+| Quantity | Labeled numeric control with semantic minus/plus buttons, at least 44px targets; one aligned row, no independent card. |
+| Footer and primary CTA | Semantic subtotal plus one teal button, fine top rule, no shadow or painted texture; shipping qualification subordinate. Reserve content space and safe-area padding so it never hides choices. |
+| Imagery/materials | No image-native region exists in B; all visible ingredients are text or precisely specified controls. Raster comp is evidence, not a shipping background. |
+
+Implementation acceptance includes real catalog states, unsupported route/locale,
+no GET-side mutation, mobile/desktop keyboard and touch access, long translated
+content, session recovery and a real API-backed next action. Approval of this
+product page is not approval of a fabricated working checkout or new delivery UI.
 
 After approval: record selection and sidecar approval; implement semantic controls,
 all three locales, responsive desktop/mobile; prove matched comp dimensions and
