@@ -302,3 +302,189 @@ test("BFF rejects cross-store, foreign origin, route injection and oversized wri
   const html = await page.content();
   expect(html).not.toContain(process.env.COMMERCE_FIXTURE_TOKEN!);
 });
+
+test("purchase-entry proxy only accepts the scoped GET locale query", async ({
+  request,
+}) => {
+  const store = process.env.COMMERCE_FIXTURE_STORE_ID!;
+  const warehouses = await request.get(`/api/stores/${store}/warehouses`);
+  const warehouseID = (await warehouses.json()).items[0].id;
+  const ledger = await request.get(
+    `/api/stores/${store}/catalog-ledger?warehouse_id=${warehouseID}`,
+  );
+  const productID = (await ledger.json()).items[0].product_id;
+  const path = `/api/stores/${store}/products/${productID}/purchase-entry`;
+  const valid = await request.get(`${path}?locale=en`);
+  expect(valid.status()).toBe(200);
+  const projection = await valid.json();
+  expect(Object.keys(projection).sort()).toEqual([
+    "locale",
+    "product_id",
+    "state",
+    "url",
+  ]);
+  expect(projection.product_id).toBe(productID);
+  for (const suffix of [
+    "",
+    "?",
+    "?locale=",
+    "?locale=fr",
+    "?locale=en&locale=en",
+    "?locale=en&extra=1",
+    "?locale=%65n",
+  ]) {
+    const denied = await request.get(path + suffix);
+    expect(denied.status(), suffix).toBe(422);
+  }
+  const key = await request.get(`${path}?locale=en`, {
+    headers: { "Idempotency-Key": "unexpected-key" },
+  });
+  expect(key.status()).toBe(422);
+  const post = await request.post(`${path}?locale=en`, { data: {} });
+  expect(post.status()).toBe(404);
+});
+
+test("purchase-entry read failure keeps product and SKU write receipts", async ({
+  page,
+}) => {
+  const name = `Entry read failure ${Date.now()}`;
+  const code = `PE-${Date.now()}`;
+  let productWrites = 0;
+  let skuWrites = 0;
+  let reads = 0;
+  page.on("request", (request) => {
+    const path = new URL(request.url()).pathname;
+    if (request.method() === "POST" && path.endsWith("/products"))
+      productWrites++;
+    if (request.method() === "POST" && path.endsWith("/skus")) skuWrites++;
+  });
+  await page.route(
+    /\/api\/stores\/[^/]+\/products\/[^/]+\/purchase-entry\?locale=en$/,
+    async (route) => {
+      reads++;
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({
+          code: "unavailable",
+          message: "",
+          request_id: "",
+          retryable: true,
+          details: {},
+        }),
+      });
+    },
+  );
+  await page.goto("/en");
+  await page.getByRole("button", { name: "Add product", exact: true }).click();
+  await page.getByRole("textbox", { name: "Product name" }).fill(name);
+  await page
+    .locator(".create-panel")
+    .getByRole("button", { name: "Add product" })
+    .click();
+  await expect(page.getByRole("heading", { name: "Add first SKU" })).toBeVisible();
+  await expect(
+    page.getByTestId("purchase-entry").getByRole("alert"),
+  ).toContainText("saved product is unchanged");
+  await expect(page.locator(".message.success")).toContainText(
+    "Product saved. Add its first SKU below.",
+  );
+  await page.getByRole("textbox", { name: "SKU code" }).fill(code);
+  await page
+    .getByRole("spinbutton", { name: "Price in minor units" })
+    .fill("12345");
+  await page
+    .locator(".create-panel")
+    .getByRole("button", { name: "Add first SKU" })
+    .click();
+  await expect(
+    page.getByText("Product and SKU saved", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByTestId("purchase-entry").getByRole("alert"),
+  ).toContainText("saved product is unchanged");
+  expect(productWrites).toBe(1);
+  expect(skuWrites).toBe(1);
+  expect(reads).toBeGreaterThanOrEqual(2);
+});
+
+test("catalog write denial reports permission without claiming a product was saved", async ({
+  page,
+}) => {
+  let writes = 0;
+  await page.route(/\/api\/stores\/[^/]+\/products$/, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    writes++;
+    await route.fulfill({
+      status: 403,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: "forbidden",
+        message: "",
+        request_id: "",
+        retryable: false,
+        details: {},
+      }),
+    });
+  });
+  await page.goto("/en");
+  await page.getByRole("button", { name: "Add product", exact: true }).click();
+  await page.getByRole("textbox", { name: "Product name" }).fill("Permission probe");
+  await page
+    .locator(".create-panel")
+    .getByRole("button", { name: "Add product" })
+    .click();
+  await expect(page.locator('.message[role="alert"]')).toContainText(
+    "cannot perform this action",
+  );
+  await expect(
+    page.getByText("Product saved. Add its first SKU below.", { exact: true }),
+  ).toHaveCount(0);
+  expect(writes).toBe(1);
+});
+
+test("purchase controls recheck current state before copying or opening", async ({
+  page,
+}) => {
+  let available = true;
+  let reads = 0;
+  await page.route(
+    /\/api\/stores\/[^/]+\/products\/[^/]+\/purchase-entry\?locale=en$/,
+    async (route) => {
+      reads++;
+      const requestURL = new URL(route.request().url());
+      const productID = requestURL.pathname.split("/").at(-2)!;
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          product_id: productID,
+          locale: "en",
+          state: available ? "configured" : "storefront_unavailable",
+          url: available
+            ? `https://shop.example/en/products/${productID}`
+            : "",
+        }),
+      });
+    },
+  );
+  await page.goto("/en");
+  const panel = page.getByTestId("purchase-entry");
+  await expect(panel.getByRole("button", { name: "Copy address" })).toBeVisible();
+  available = false;
+  await panel.getByRole("button", { name: "Copy address" }).click();
+  await expect(panel).toContainText(
+    "No verified, published storefront address is available.",
+  );
+  await expect(panel.getByRole("button", { name: "Copy address" })).toHaveCount(0);
+  expect(reads).toBeGreaterThanOrEqual(2);
+  available = true;
+  await panel.getByRole("button", { name: "Refresh" }).click();
+  await expect(panel.getByRole("button", { name: "Open purchase page" })).toBeVisible();
+  await page.route("https://shop.example/**", async (route) => {
+    await route.fulfill({ status: 200, contentType: "text/html", body: "<title>Buyer page</title>" });
+  });
+  await panel.getByRole("button", { name: "Open purchase page" }).click();
+  await expect(page).toHaveURL(/https:\/\/shop\.example\/en\/products\//);
+  expect(reads).toBeGreaterThanOrEqual(4);
+});
