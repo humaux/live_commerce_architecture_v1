@@ -53,3 +53,34 @@ func TestProviderAccountCursorIsScoped(t *testing.T) {
 		t.Fatalf("account cursor roundtrip: keys=%v err=%v", keys, err)
 	}
 }
+
+func TestDeliveryCodeCursorIsBoundToMarketAndCountry(t *testing.T) {
+	delivery := Binding{TenantID: binding.TenantID, StoreID: binding.StoreID, Collection: "delivery-services", ParentID: key, Filter: "TW"}
+	encoded, err := Encode(delivery, []string{"manual_home"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, keys, err := Decode(Request{Cursor: encoded}, delivery, 1); err != nil || len(keys) != 1 || keys[0] != "manual_home" {
+		t.Fatalf("delivery cursor: keys=%v err=%v", keys, err)
+	}
+	for _, changed := range []Binding{
+		{TenantID: binding.TenantID, StoreID: binding.StoreID, Collection: "delivery-services", ParentID: "44444444-4444-4444-8444-444444444444", Filter: "TW"},
+		{TenantID: binding.TenantID, StoreID: binding.StoreID, Collection: "delivery-services", ParentID: key, Filter: "US"},
+		{TenantID: binding.TenantID, StoreID: binding.StoreID, Collection: "markets"},
+	} {
+		if _, _, err := Decode(Request{Cursor: encoded}, changed, 1); !errors.Is(err, command.ErrInvalid) {
+			t.Fatalf("cross-binding cursor accepted: %+v", changed)
+		}
+	}
+	for _, bad := range []string{"UPPER", "1leading", "bad:code", strings.Repeat("a", 41), key} {
+		if _, err := Encode(delivery, []string{bad}); !errors.Is(err, command.ErrInvalid) {
+			t.Fatalf("invalid delivery code %q accepted: %v", bad, err)
+		}
+	}
+	if _, err := Encode(delivery, []string{"a", "b"}); !errors.Is(err, command.ErrInvalid) {
+		t.Fatalf("two-key delivery cursor accepted: %v", err)
+	}
+	if _, err := Encode(binding, []string{"manual_home"}); !errors.Is(err, command.ErrInvalid) {
+		t.Fatalf("old collection accepted code cursor: %v", err)
+	}
+}

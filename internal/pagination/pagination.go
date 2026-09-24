@@ -8,9 +8,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"regexp"
 
 	"livecommerce/internal/command"
 )
+
+var deliveryCode = regexp.MustCompile(`^[a-z][a-z0-9_-]{0,39}$`)
 
 const (
 	defaultLimit = 50
@@ -43,7 +46,7 @@ type cursor struct {
 }
 
 func Decode(request Request, binding Binding, keyCount int) (int, []string, error) {
-	if !validBinding(binding) || (keyCount != 1 && keyCount != 2) || request.Limit < 0 || request.Limit > maxLimit {
+	if !validBinding(binding) || !validKeyCount(binding.Collection, keyCount) || request.Limit < 0 || request.Limit > maxLimit {
 		return 0, nil, invalid("request")
 	}
 	limit := request.Limit
@@ -73,7 +76,7 @@ func Decode(request Request, binding Binding, keyCount int) (int, []string, erro
 		return 0, nil, invalid("cursor")
 	}
 	for _, key := range value.Keys {
-		if !command.ValidID(key) {
+		if !validKey(binding.Collection, key) {
 			return 0, nil, invalid("cursor")
 		}
 	}
@@ -81,11 +84,11 @@ func Decode(request Request, binding Binding, keyCount int) (int, []string, erro
 }
 
 func Encode(binding Binding, keys []string) (string, error) {
-	if !validBinding(binding) || (len(keys) != 1 && len(keys) != 2) {
+	if !validBinding(binding) || !validKeyCount(binding.Collection, len(keys)) {
 		return "", invalid("cursor")
 	}
 	for _, key := range keys {
-		if !command.ValidID(key) {
+		if !validKey(binding.Collection, key) {
 			return "", invalid("cursor")
 		}
 	}
@@ -105,8 +108,11 @@ func validBinding(b Binding) bool {
 		return false
 	}
 	switch b.Collection {
-	case "products", "warehouses", "inventory", "provider-accounts":
+	case "products", "warehouses", "inventory", "provider-accounts", "markets":
 		return b.ParentID == "" && b.Filter == ""
+	case "delivery-services":
+		return command.ValidID(b.ParentID) && len(b.Filter) == 2 &&
+			b.Filter[0] >= 'A' && b.Filter[0] <= 'Z' && b.Filter[1] >= 'A' && b.Filter[1] <= 'Z'
 	case "skus":
 		return command.ValidID(b.ParentID) && b.Filter == ""
 	case "catalog-ledger":
@@ -114,6 +120,20 @@ func validBinding(b Binding) bool {
 	default:
 		return false
 	}
+}
+
+func validKey(collection, key string) bool {
+	if collection == "delivery-services" {
+		return deliveryCode.MatchString(key)
+	}
+	return command.ValidID(key)
+}
+
+func validKeyCount(collection string, count int) bool {
+	if collection == "delivery-services" || collection == "markets" {
+		return count == 1
+	}
+	return count == 1 || count == 2
 }
 
 func invalid(what string) error { return fmt.Errorf("%w: invalid %s", command.ErrInvalid, what) }
