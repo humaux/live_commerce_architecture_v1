@@ -423,3 +423,88 @@ func TestMerchantAccountsConcurrentReplayAndRotationCAS(t *testing.T) {
 		t.Fatal("CAS appended extra secret versions")
 	}
 }
+
+func TestMerchantAccountsBindingTargetConstraints(t *testing.T) {
+	m := maSetup(t)
+	for _, kind := range []string{"foreign_store", "wrong_provider", "wrong_account", "wrong_environment"} {
+		t.Run(kind, func(t *testing.T) {
+			in := maInput()
+			bindingStore, provider, asset := m.f.store, "payuni", "SANDBOX:"+in.AccountID
+			switch kind {
+			case "foreign_store":
+				bindingStore = m.f.otherStore
+			case "wrong_provider":
+				provider = "mock_provider"
+			case "wrong_account":
+				asset = "SANDBOX:other_account"
+			case "wrong_environment":
+				asset = "LIVE:" + in.AccountID
+			}
+			var bindingID string
+			e := m.f.scoped(context.Background(), m.f.token, bindingStore, func(tx pgx.Tx, s platform.Scope) error {
+				b, e := m.f.service.RegisterBinding(context.Background(), tx, s, m.f.token, t04Key("ma-target"), provider, asset)
+				bindingID = b.ID
+				return e
+			})
+			if e != nil {
+				t.Fatal(e)
+			}
+			before := m.facts(t)
+			e = m.f.scoped(context.Background(), m.f.token, m.f.store, func(tx pgx.Tx, s platform.Scope) error {
+				_, e := tx.Exec(context.Background(), `INSERT INTO integration.merchant_accounts(id,tenant_id,store_id,principal_id,provider,environment,account_id,binding_id,credential_version) VALUES($1,$2,$3,$4,'payuni','SANDBOX',$5,$6,1)`, randomUUID(), s.TenantID, s.StoreID, s.PrincipalID, in.AccountID, bindingID)
+				return e
+			})
+			var pg *pgconn.PgError
+			if !errors.As(e, &pg) || pg.Code != "23503" || !strings.Contains(pg.ConstraintName, "binding") {
+				t.Fatalf("target FK not the rejecting cause: %v", e)
+			}
+			if m.facts(t) != before {
+				t.Fatal("bad binding target left state")
+			}
+		})
+	}
+}
+
+func TestMerchantAccountsRotationAtomicFaultRollback(t *testing.T) {
+	for _, table := range []string{"integration.merchant_accounts", "integration.account_credentials", "ops.audit_events", "ops.command_results"} {
+		t.Run(table, func(t *testing.T) {
+			m := maSetup(t)
+			in := maInput()
+			a, e := m.create(m.f.token, m.f.store, t04Key("ma-beforefault"), in)
+			if e != nil {
+				t.Fatal(e)
+			}
+			before := m.facts(t)
+			name := "ma_rotate_fault_" + t04Tag()
+			event := "INSERT"
+			if table == "integration.merchant_accounts" {
+				event = "UPDATE"
+			}
+			mustExec(t, m.f.base.owner, `CREATE SEQUENCE public.`+name+`_hits`)
+			mustExec(t, m.f.base.owner, `GRANT USAGE ON SEQUENCE public.`+name+`_hits TO commerce_runtime`)
+			mustExec(t, m.f.base.owner, `CREATE FUNCTION public.`+name+`() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF current_setting('app.tenant_id',true)=`+quoteLiteral(m.f.tenant)+` THEN PERFORM nextval('public.`+name+`_hits'); RAISE EXCEPTION 'credential rotation synthetic fault'; END IF; RETURN NEW; END $$`)
+			mustExec(t, m.f.base.owner, `CREATE TRIGGER `+name+` BEFORE `+event+` ON `+table+` FOR EACH ROW EXECUTE FUNCTION public.`+name+`()`)
+			t.Cleanup(func() {
+				mustExec(t, m.f.base.owner, `DROP TRIGGER `+name+` ON `+table)
+				mustExec(t, m.f.base.owner, `DROP FUNCTION public.`+name+`()`)
+				mustExec(t, m.f.base.owner, `DROP SEQUENCE public.`+name+`_hits`)
+			})
+			_, e = m.rotate(m.f.token, t04Key("ma-rotatefault"), accounts.RotateInput{ConnectionID: a.ID, ExpectedVersion: 1, Credentials: accounts.Credentials{HashKey: "new_key", HashIV: "new_iv"}})
+			if e == nil {
+				t.Fatal("rotation fault accepted")
+			}
+			var fired bool
+			if e = m.f.base.owner.QueryRow(context.Background(), `SELECT is_called FROM public.`+name+`_hits`).Scan(&fired); e != nil || !fired {
+				t.Fatalf("rotation did not reach injection: %v", e)
+			}
+			if m.facts(t) != before {
+				t.Fatal("failed rotation left partial aggregate")
+			}
+			got, e := m.get(m.f.token, m.f.store, a.ID)
+			if e != nil || got.CredentialVersion != 1 {
+				t.Fatal("failed rotation changed head")
+			}
+			maAssertPersistedSecret(t, m, a, 1, in.Credentials)
+		})
+	}
+}
