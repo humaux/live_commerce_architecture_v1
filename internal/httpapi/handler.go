@@ -96,6 +96,7 @@ func NewHandler(pool *pgxpool.Pool, options ...platform.HandlerOptions) http.Han
 	mux.HandleFunc("POST "+base+"/inventory/adjustments", bodyRoute(pool, "inventory:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in inventory.Adjustment) (any, error) {
 		return inventory.AdjustOnHand(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)
 	}))
+	registerSettingsRoutes(mux, pool)
 	foundation := platform.NewHandler(pool, options...)
 	if len(options) > 0 && options[0].SessionStoreList {
 		mux.Handle("GET /v1/admin/stores", foundation)

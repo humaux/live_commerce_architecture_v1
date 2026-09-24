@@ -177,7 +177,15 @@ func SetService(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key
 		}
 		return command.Audit(ctx, tx, scope, "fulfillment.service.set")
 	})
-	return out, mapError(err)
+	if err != nil {
+		return Service{}, mapError(err)
+	}
+	// Both a new command and a saved replay may wait on locks. Re-resolve the
+	// grant before returning so the caller rolls back if it was revoked meanwhile.
+	if err = authorize(ctx, tx, scope, token, managePermission); err != nil {
+		return Service{}, err
+	}
+	return out, nil
 }
 
 func GetService(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, marketID, country, code string) (out Service, err error) {
@@ -193,6 +201,9 @@ func GetService(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, mar
 	}
 	if !exists {
 		return Service{}, command.ErrNotFound
+	}
+	if err = authorize(ctx, tx, scope, token, readPermission); err != nil {
+		return Service{}, err
 	}
 	return out, nil
 }

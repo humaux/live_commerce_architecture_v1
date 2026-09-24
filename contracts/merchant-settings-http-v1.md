@@ -51,6 +51,12 @@ Do not equate the old platform's “自主模式” label with manual fulfillmen
 This slice makes existing configuration accessible to an authenticated admin
 client; it does not claim automatic collection, shipment creation or settlement.
 
+Independent preflight found `fulfillment.SetService/GetService` only checked
+permission before potentially waiting. The root-owned minimal domain fix rechecks
+authorization after a write/replay/read, matching the existing payment-method
+pattern. It applies to every caller, not just an HTTP wrapper. A denial returns
+an empty DTO and causes the scoped transaction to roll back.
+
 ## Acceptance gates
 
 - H01: real PG + actual HTTP handler saves and GET reads the same full three-language
@@ -70,3 +76,4 @@ client; it does not claim automatic collection, shipment creation or settlement.
 Root owns this contract and independent PG acceptance. One isolated commerce
 worker owns only `internal/httpapi/settings.go`, its unit tests, and the single
 registration call in `handler.go`; no shared domain/schema/lockfile modifications.
+Root additionally owns the final authorization fix in `fulfillment/service.go`.
