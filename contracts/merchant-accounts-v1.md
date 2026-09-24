@@ -38,7 +38,7 @@ New(keys *Keyring, bindings *core.Service) (*Service, error)
 (*Service).Create(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key string, in CreateInput) (Connection, error)
 (*Service).Rotate(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key string, in RotateInput) (Connection, error)
 (*Service).Get(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, connectionID string) (Connection, error)
-NewKeyring(activeID string, keys map[string][]byte) (*Keyring, error)
+NewKeyring(activeID string, keys map[string][]byte, replayKey []byte) (*Keyring, error)
 ```
 
 可增加包内 helper/测试，但不新增其他公开凭据取出 API。
@@ -63,12 +63,23 @@ key_id、nonce、ciphertext、principal、created_at。复用 integration schema
   ciphertext；只允许 INSERT 加密版本。worker/buyer/checkout/issuer 不授该表权限。
   主密钥只在配置服务内存，数据库所有者也不能只靠数据库内容恢复明文。
 - AES-256-GCM 使用随机 12-byte nonce，16-byte tag；AAD 固定 JSON 结构含
-  format_version=1、tenant/store/connection/provider/environment/account/credential_version。
+  以下字段名和顺序：format_version=1、tenant_id、store_id、connection_id、provider、
+  environment、account_id、credential_version。明文固定JSON字段顺序 hash_key、hash_iv。
   AAD 绑定 scope 与版本，跨连接/环境/版本替换、nonce/tag/ciphertext 损坏必须失败。
   keyring 复制 key bytes；1..16把唯一 keyID，每把32byte；activeID必须存在。
   不得回显 key bytes，旧钥缺失时安全失败，不能偷偷用 active key 解密旧版本。
-- Provider密钥不进入命令请求/回执/审计/任务JSON或错误文本。幂等输入使用规范化
-  密钥内容的 SHA256 摘要（高熵供应商密钥），不使用随机密文摘要，否则重放会冲突。
+- Provider密钥不进入命令请求/回执/审计/任务JSON或错误文本。幂等输入使用独立
+  32-byte服务器 replayKey 的 HMAC-SHA256（带固定domain和scope）；不能用裸SHA256，
+  否则允许的弱输入会被只读数据库者枚举。不使用随机密文摘要，否则重放会冲突。
+  replayKey 独立从环境注入并复制入内存，不落库；它不随加密active key切换。
+  永久幂等记录仍使用时不能直接换 replayKey；以后要轮换须先设计版本迁移，不能
+  静默令旧请求冲突。保管与备份此部署密钥是上线前置，不能通过数据库恢复。
+  HMAC消息固定为 Go encoding/json 的无额外空白UTF-8对象，字段顺序
+  `domain,tenant_id,store_id,hash_key,hash_iv`，domain固定
+  `merchant-account-credential-replay-v1`，摘要lowercase hex；actor、provider、
+  environment、account及预期版本仍进入外层command.Run规范请求。Golden vector：
+  replayKey为32个0x01，tenant-a/store-a/hash-key/hash-iv，摘要
+  `8893dfddde5f8130f187c286bdf6258599583baf81034a3432f865bea5cc37c3`。
   Credentials 的 JSON/String/GoString 输出必须隐藏明文；不要记录原始输入。
 - keyID 1..40 `[a-zA-Z0-9_-]`；MerID 1..64 ASCII 字母数字 `_`/`-`；HashKey/HashIV
   各1..512可打印非空ASCII、首尾无空格。此范围只是本地安全输入限制，不证明
@@ -83,8 +94,11 @@ key_id、nonce、ciphertext、principal、created_at。复用 integration schema
 ## Gate
 
 1. 加密 roundtrip/随机nonce/篡改/跨scope+环境+版本/缺旧钥/复制keyring/边界输入。
-2. 真实PG Create/Get/Rotate读回；数据库无明文，回执/审计/错误无密钥；普通角色
-   不能读密文列，外店/外租户/无权限/伪scope不能读写；相同账户分环境隔离。
+2. 真实PG Create/Get/Rotate读回；owner fixture读取已存nonce/cipher/keyID并用已知
+   测试密钥独立解密，证明实际存储AAD/版本/明文对应而不只测内存算法。数据库无明文，回执/审计/错误无密钥；普通角色
+   不能读密文列，外店/外租户/无权限/伪scope不能通过服务API读写；相同账户分环境隔离。
+   DB RLS是可信runtime的scope隔离，不声称它单独识别每个integration权限；权限通过
+   RequirePermission验证，不把伪造GUC后的runtime SQL当无权限终端用户。
 3. 幂等 replay、异参冲突、不同 key 重复账户回滚、同 key 并发单赢家、轮换CAS
    与授权撤销后的历史重放拒绝；停用绑定不被rotate重新启用。
 4. 绑定/头/凭据/审计/回执故障实际触及注入点后全回滚；不产生外部operation/job。
