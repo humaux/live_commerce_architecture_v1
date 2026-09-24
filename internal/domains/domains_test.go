@@ -16,7 +16,7 @@ func TestOriginGrammar(t *testing.T) {
 	for _, origin := range []string{
 		"https://shop.example", "https://a-b.example", "https://xn--bcher-kva.example", "https://1a.example", "https://" + longest,
 	} {
-		if !validOrigin(origin) {
+		if !ValidOrigin(origin) {
 			t.Errorf("valid origin rejected: %q", origin)
 		}
 	}
@@ -29,7 +29,7 @@ func TestOriginGrammar(t *testing.T) {
 		"https://bücher.example", "https://shop.example ", "https://shop.example\n", "https://shop.example\x00",
 		"https://" + longest + "x", "https://" + strings.Repeat("a", 64) + ".example",
 	} {
-		if validOrigin(origin) {
+		if ValidOrigin(origin) {
 			t.Errorf("invalid origin accepted: %q", origin)
 		}
 	}
