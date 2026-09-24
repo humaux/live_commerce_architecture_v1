@@ -29,6 +29,25 @@ func TestEnvelopeAndNestedCorrelation(t *testing.T) {
 	}
 }
 
+func TestNonRetryableFailurePreservesSafeEnvelope(t *testing.T) {
+	for _, status := range []int{401, 404, 429, 503} {
+		w := httptest.NewRecorder()
+		Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			WriteNonRetryable(w, status, "unavailable")
+		})).ServeHTTP(w, httptest.NewRequest("POST", "/session", nil))
+		var e Envelope
+		if err := json.Unmarshal(w.Body.Bytes(), &e); err != nil {
+			t.Fatal(err)
+		}
+		if w.Code != status || e.Retryable || e.Code != "unavailable" || e.Message != "Temporarily unavailable." || e.Details == nil || e.RequestID != w.Header().Get("X-Request-ID") || len(e.RequestID) != 32 {
+			t.Fatal("nonretryable envelope changed or implied retry")
+		}
+		if w.Header().Get("Cache-Control") != "no-store" || w.Header().Get("X-Content-Type-Options") != "nosniff" {
+			t.Fatal("missing safe response headers")
+		}
+	}
+}
+
 func TestRouterFailuresRemainJSON(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /only", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) })

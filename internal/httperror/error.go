@@ -39,6 +39,16 @@ func Middleware(next http.Handler) http.Handler {
 }
 
 func Write(w http.ResponseWriter, status int, code string) {
+	write(w, status, code, status == http.StatusServiceUnavailable || status == http.StatusTooManyRequests)
+}
+
+// WriteNonRetryable is for non-idempotent operations such as issuing a new
+// anonymous owner. A 503 does not prove that the database failed to commit.
+func WriteNonRetryable(w http.ResponseWriter, status int, code string) {
+	write(w, status, code, false)
+}
+
+func write(w http.ResponseWriter, status int, code string, retryable bool) {
 	messages := map[string]string{
 		"unauthorized": "Sign-in required.", "forbidden": "Operation not permitted.",
 		"not_found": "Resource not found.", "method_not_allowed": "Method not allowed.",
@@ -56,7 +66,7 @@ func Write(w http.ResponseWriter, status int, code string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(Envelope{Code: code, Message: message,
-		RequestID: w.Header().Get("X-Request-ID"), Retryable: status == http.StatusServiceUnavailable || status == http.StatusTooManyRequests,
+		RequestID: w.Header().Get("X-Request-ID"), Retryable: retryable,
 		Details: map[string]any{}})
 }
 
