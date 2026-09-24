@@ -20,7 +20,8 @@
 - 支付方式配置：PAYUNi 五类方式的三语名称、展示、排序、金额限制及自有账户关联已有内部版本化配置与诊断；[合同](contracts/payment-methods-v1.md)、[验收边界](docs/implementation/2026-09-24-payment-methods-acceptance.md)。当前仅可保存禁用草稿，诊断明确 `ADAPTER_UNAVAILABLE`，不是已接通收款；实际支付链及设置页面仍待实现。
 - PAYUNi wire 协议：标准库实现五种 UPP 托管付款表单、通知验签与单次交易查询；[合同](contracts/payuni-wire-v1.md)、[验收边界](docs/implementation/2026-09-24-payuni-wire-acceptance.md)。协议模拟与官方加密向量验证通过，查询现已由下述内部 worker 调用；未接通托管付款表单、通知入账、商家沙箱或支付页面，不解除上述启用限制。
 - 内部发起支付：真实买家权限、冻结金额/账户版本、订单与待支付库存/attempt/查询意图/回执/队列同事务；[合同](contracts/payment-start-v1.md)、[246项真实PG/race/vet及失败修正证据](docs/implementation/2026-09-24-payment-start-acceptance.md)。仅信用卡PROVIDER_MOCK内核；后续查询执行见下项，真实账户资格、付款表单、通知入账/退款/对账及公开页面仍待完成。
-- 支付查询与可信报告：精确租约读取历史凭据、实际 River 查询执行、验签后报告与 UNKNOWN 完成同事务、并发去重及持久化查询时限；[合同](contracts/payment-query-v1.md)、[265项回归与独立终审](docs/implementation/2026-09-24-payment-query-acceptance.md)。供应商为签名报文模拟，未调用真实 PSP；查询成功不是收款成功，不改变订单/库存，不开放商家启用。
+- 支付查询与可信报告：精确租约读取历史凭据、实际 River 查询执行、验签后报告与 UNKNOWN 完成同事务、并发去重及持久化查询时限；[合同](contracts/payment-query-v1.md)、[查询阶段验收](docs/implementation/2026-09-24-payment-query-acceptance.md)。查询成功不是收款成功；后续财务判断由独立本地入账流程处理。
+- 信用卡入账与库存承诺：完整请款证据、不可变财务事实、预留转待履约库存、订单确认和耐久商家待办同事务；逆序授权不会误锁履约，退款／晚款异常转粘性复核；[合同](contracts/payment-capture-v1.md)、[284项真实PG/race/vet证据](docs/implementation/2026-09-24-payment-capture-acceptance.md)。供应商仍是签名报文模拟，无真实PSP调用；不等于银行结算、退款功能或上线准入，不开放商家收款开关。
 - 商家配送配置内部内核：版本化启用／展示、独立运费、权限隔离、幂等与回滚已通过；[138 项后端回归及浏览器身份链证据](docs/implementation/2026-09-24-delivery-service-acceptance.md)。API 模式仍仅禁用草稿，不代表承运商已接通；公开设置页面和支付待实现。
 - 配送仓库配置与纯分配算法：逐配送方式保存仓库优先级、按可用库存拆仓，缺货不输出部分计划；[150 项回归、随机输入及浏览器兼容证据](docs/implementation/2026-09-24-delivery-allocation-acceptance.md)。后续已由下述内部 checkout 在余额行锁内消费；该历史纯函数验收本身不是并发防超卖证据。
 - 买家收货与门市来源：owner 隔离快照、可信门市引用、改选 CAS、回执隐私和锁等待后重验；[164 项真实 PG/race/vet 回归及浏览器兼容](docs/implementation/2026-09-24-buyer-destination-acceptance.md)。门市当前仅人工核验来源，不是官方目录／承运商接通；商家自助页面与完整支付链仍待实现。

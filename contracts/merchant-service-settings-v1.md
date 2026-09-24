@@ -89,7 +89,7 @@ Humaux `f31f5676-97cb-41e5-be58-aff580bf19f3`。仅证明本设计与用户需�
 |物流方式启用／展示|0010 的独立开关/权限/CAS/审计、内部 checkout 重验，以及商家 GET/PUT HTTP 已验收；[HTTP验收](../docs/implementation/2026-09-24-merchant-settings-http-acceptance.md)另修复领域锁等待后撤权竞态|商家设置 UI/列表、公开买家选择入口及 API 模式连接|
 |仓库与收货前置|0011 仓库优先级／纯分配计划、0012 人工核验门市来源和买家快照已由内部 checkout 在行锁下消费并形成库存预留，见[下单验收](../docs/implementation/2026-09-24-buyer-checkout-acceptance.md)|正式目录地图回调、公开收货 UI、可达性及第三方运输证明；本地库存预留不等于实际运输|
 |第三方自助连接|PAYUNi 内部账户登记／加密版本／轮换已实现，见[凭据验收](../docs/implementation/2026-09-24-merchant-accounts-acceptance.md)；generic binding 仍仅执行绑定引用，`CONFIGURED_UNVERIFIED` 不等于已连接|自助 HTTP/UI、生产主密钥管理与装配、供应商验证、完整能力目录、真实供应商准入与其他供应商|
-|支付方式设置|五类禁用草稿与商家GET/PUT/诊断已验收；0016内部StartPayment及0017查询worker/历史凭据/可信报告已有内部验收，见[支付事务](../docs/implementation/2026-09-24-payment-start-acceptance.md)和[查询证据](../docs/implementation/2026-09-24-payment-query-acceptance.md)。商家启用仍拒绝，查询报告不等于入账，MOCK不等于真实准入|自助UI/列表、真实商户验证与启用、托管表单释放、生产worker装配、回调入账／退款／对账、其他支付方式|
+|支付方式设置|五类禁用草稿与商家GET/PUT/诊断已验收；0016内部StartPayment、0017查询和0018信用卡完整请款证据→财务事实/库存/订单/耐久商家待办同事务已有内部验收，见[支付事务](../docs/implementation/2026-09-24-payment-start-acceptance.md)、[查询证据](../docs/implementation/2026-09-24-payment-query-acceptance.md)和[入账证据](../docs/implementation/2026-09-24-payment-capture-acceptance.md)。商家启用仍拒绝，MOCK不等于真实准入|自助UI/列表、真实商户验证与启用、托管表单释放、生产worker装配、回调入口／退款／银行对账、人工复核处理、其他支付方式|
 |截图中的服务商|PAYUNi有独立UPP表单/验签/查询协议库及官方向量/模拟测试，见[wire验收](../docs/implementation/2026-09-24-payuni-wire-acceptance.md)；其他仍为候选|PAYUNi支付业务装配及各服务商sandbox/live未验收；独立LINE Pay、绿界、黑猫／新竹adapter仍未实现|
 
 当前物流 API 模式在 Go 与 SQL 中被明确限制为禁用草稿；不得为了做出与截图

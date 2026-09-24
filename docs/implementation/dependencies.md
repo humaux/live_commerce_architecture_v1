@@ -163,7 +163,20 @@ Claim/Complete、pgx及标准库，不增加依赖。query-only客户端禁表�
 升级以上依赖或0017必须跑`payment_query_test.go`、全部T06及完整race/vet；涵盖
 历史密钥轮换、坏签名/金额/商户、超时/panic、租约锁等待、跨attempt引用、并发去重、
 预算持久化和父取消。详见[查询验收](2026-09-24-payment-query-acceptance.md)。
-本层仅留存可信报告，未接财务入账、退款、生产进程或支付页面，不开放商家启用。
+查询层只留存可信报告；后续入账由下述独立本地事务完成，不开放商家启用。
+
+0018把该报告与 `payment_reconcile_v1` 的PG规范化hash/args一起提交；
+`payments.NewCaptureWorker` → `payments.apply_capture` → 单一库存ledger触发器，
+在订单→预留→排序余额锁内原子写财务事实、allocated、订单和商家待办。
+复用已有checkout私有writer，不加新的stock writer、planner或空carrier job。
+依赖River消费允许乱序：旧authorization-only缺少更晚阶段证据不等于冲突，
+显式取消/失败、退款提示与不一致金额仍可粘性hold；原始checkout session
+与后来付款session必须分开。SQL固定22023/PT409为永久任务拒绝，其余DB错误
+重试且不泄露原文。River表读授权在upstream迁移后，不放入应用SQL建表阶段。
+升级River/PG/pgx或金额/状态投影须跑`payment_capture_test.go`、全部既有支付/T06
+和完整race/vet，包含真实队列、跨租户、逆序、多SKU及各写入点因果故障。
+见[入账验收](2026-09-24-payment-capture-acceptance.md)。无新增依赖；银行结算、
+完整退款历史、复核处理、真实资格、生产进程和公开页面仍未交付。
 
 内部 external-operation 继续复用 pgx、River InsertTx、`command.Run` 与标准库
 JSON/crypto：`internal/integrations/core` 负责精确权限、不可变意图摘要和租约 token
