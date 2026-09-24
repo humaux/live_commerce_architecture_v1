@@ -59,6 +59,7 @@ was not used to claim browser acceptance.
 | New address/order actual UI | 15 scenarios, six buyers, PASS; race-enabled foundation 13.692s | `/Volumes/data/output/buyer-order-gate-root-independent.log`; `output/playwright/buyer-order-2076912888/` |
 | Same gate after visual corrections | 15 scenarios, six buyers, PASS; foundation 14.954s | `/Volumes/data/output/buyer-order-gate-root-visual-fixes.log`; `output/playwright/buyer-order-491481612/` |
 | Existing actual buyer regression | 13 scenarios PASS; foundation 8.779s | `/Volumes/data/output/buyer-order-ui-existing-regression-final.log`; `output/playwright/buyer-real-2097184543/` |
+| Existing buyer regression after visual corrections | 13 scenarios PASS; foundation 9.455s | `/Volumes/data/output/buyer-order-ui-existing-regression-post-visual.log`; `output/playwright/buyer-real-4255746899/` |
 | Full Go/isolated PostgreSQL regression, race and vet | 376 top-level tests PASS; foundation 150.085s; runner exit 0 | `/Volumes/data/output/buyer-order-ui-full-regression.log` |
 | Typecheck / production build | PASS | `npx tsc --noEmit`; both browser runner logs include the production build |
 
@@ -80,6 +81,10 @@ plus a focused desktop address viewport are under
 `.impeccable/review/buyer-order/`. Full-page fixed-footer compositing is not the
 sole layout evidence. Independent visual review and its final disposition are
 recorded separately in the built design record; this file does not pre-approve it.
+The returned verdict `bb4c4c60-4bbb-42b9-a1d8-d60adb2ca3fc` is **ship limited to
+F1/F2**: both listed findings resolved. It does not certify the whole surface,
+payment or production. All five replacement captures were inspected; no second
+detector or unrelated polish loop was run.
 
 Still required for the full product: explicit next purchase with retained order
 history, secure guest/account access recovery, trusted CVS pickup selection,
