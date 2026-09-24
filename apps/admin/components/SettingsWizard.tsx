@@ -846,7 +846,12 @@ export function SettingsWizard({
           command = previous;
           if (!command.secret) body = command.body!;
         } else {
-          const encoded = JSON.stringify(command);
+          // A secret may have committed before this tab receives its response.
+          // Persist that uncertainty before dispatch; the first in-memory
+          // attempt still distinguishes a definite server rejection.
+          const encoded = JSON.stringify(
+            command.secret ? { ...command, uncertain: true } : command,
+          );
           localStorage.setItem(journalKey.current, encoded);
           if (localStorage.getItem(journalKey.current) !== encoded)
             throw new Error("storage");
