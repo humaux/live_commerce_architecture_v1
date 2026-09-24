@@ -133,21 +133,42 @@ func TestBuyerHTTPRetirementConcurrentAndUncommittedWinner(t *testing.T) {
 
 // Seed only disposable quota-count fixtures, not accepted orders or payments.
 // Fill this and the next minute so a clock rollover cannot make a flaky429.
-func btFillQuota(t *testing.T, h bhHarness) {
+func btFillQuota(t *testing.T, h bhHarness, ceiling int) {
 	t.Helper()
-	mustExec(t, h.f.owner, `DO $body$
-DECLARE m timestamptz; n integer; o uuid; k integer;
-BEGIN
- FOR k IN 0..1 LOOP
-  m:=date_trunc('minute',clock_timestamp(),'UTC')+make_interval(mins=>k);
-  SELECT greatest(0,600-count(*))::integer INTO n FROM buyer.capability_sessions WHERE store_id='`+h.f.storeA1+`'::uuid AND created_at>=m AND created_at<m+interval '1 minute';
-  FOR i IN 1..n LOOP
-   INSERT INTO buyer.owners(tenant_id,store_id) VALUES('`+h.f.tenantA+`','`+h.f.storeA1+`') RETURNING id INTO o;
-   INSERT INTO buyer.capability_sessions(tenant_id,store_id,owner_id,token_hash,created_at,expires_at)
-    VALUES('`+h.f.tenantA+`','`+h.f.storeA1+`',o,decode(md5(o::text)||md5(o::text||'fixture'),'hex'),m,m+interval '1 hour');
-  END LOOP;
- END LOOP;
-END $body$`)
+	var owned []string
+	t.Cleanup(func() {
+		// The shared foundation store survives this test; remove ONLY these seed
+		// rows, never another test's owner or any issued/revoked runtime event.
+		mustExec(t, h.f.owner, `DELETE FROM buyer.capability_sessions WHERE owner_id=ANY($1::uuid[])`, owned)
+		mustExec(t, h.f.owner, `DELETE FROM buyer.owners WHERE id=ANY($1::uuid[])`, owned)
+	})
+	for minute := 0; minute < 2; minute++ {
+		rows, err := h.f.owner.Query(context.Background(), `WITH quota_window AS (
+          SELECT date_trunc('minute',clock_timestamp(),'UTC')+make_interval(mins=>$4) AS m
+        ), needed AS (
+          SELECT greatest(0,$3-count(c.id))::integer AS n FROM quota_window w LEFT JOIN buyer.capability_sessions c
+          ON c.store_id=$2 AND c.created_at>=w.m AND c.created_at<w.m+interval '1 minute'
+        ), owners AS (
+          INSERT INTO buyer.owners(tenant_id,store_id) SELECT $1,$2 FROM needed,generate_series(1,needed.n) RETURNING id
+        ) INSERT INTO buyer.capability_sessions(tenant_id,store_id,owner_id,token_hash,created_at,expires_at)
+          SELECT $1,$2,o.id,decode(md5(o.id::text)||md5(o.id::text||'fixture'),'hex'),w.m,w.m+interval '1 hour'
+          FROM owners o CROSS JOIN quota_window w RETURNING owner_id::text`, h.f.tenantA, h.f.storeA1, ceiling, minute)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for rows.Next() {
+			var id string
+			if err = rows.Scan(&id); err != nil {
+				rows.Close()
+				t.Fatal(err)
+			}
+			owned = append(owned, id)
+		}
+		rows.Close()
+		if rows.Err() != nil {
+			t.Fatal(rows.Err())
+		}
+	}
 }
 
 func TestBuyerHTTPSharedQuotaReplayRetireAndIsolation(t *testing.T) {
@@ -163,7 +184,7 @@ func TestBuyerHTTPSharedQuotaReplayRetireAndIsolation(t *testing.T) {
 	if _, err = stale.Exec(ctx, `SELECT txid_current_snapshot()`); err != nil {
 		t.Fatal(err)
 	}
-	btFillQuota(t, h)
+	btFillQuota(t, h, 600)
 	before := brCounts(t, h)
 	other := h
 	other.server = httptest.NewServer(brHandler(t, h, time.Hour))
@@ -195,6 +216,61 @@ func TestBuyerHTTPSharedQuotaReplayRetireAndIsolation(t *testing.T) {
 	brRead(t, other, brToken())
 	brAssertDelta(t, h, before, 1)
 	bhError(t, other.request(t, "POST", retirePath, h.cap.Token, "", struct{}{}, nil), 401, "unauthorized")
+}
+
+func TestBuyerHTTPSharedQuotaSerializesLastSlotAcrossInstances(t *testing.T) {
+	h := bhSetup(t)
+	ctx := context.Background()
+	// Keep this causal wait/commit inside one quota window. Waiting at most10s
+	// here is fixture clock alignment, never an application retry/relaxed gate.
+	var second float64
+	if err := h.f.owner.QueryRow(ctx, `SELECT extract(second FROM clock_timestamp())::float8`).Scan(&second); err != nil {
+		t.Fatal(err)
+	}
+	if second > 50 {
+		time.Sleep(time.Duration((60.05 - second) * float64(time.Second)))
+	}
+	btFillQuota(t, h, 599)
+	before := brCounts(t, h)
+	tx, err := h.a.issuer.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback(ctx)
+	winnerToken := brToken()
+	winnerHash := sha256.Sum256([]byte(winnerToken))
+	var winnerID string
+	if err = tx.QueryRow(ctx, `SELECT session_id::text FROM buyer.register_capability_limited($1,$2,3600)`, h.f.storeA1, winnerHash[:]).Scan(&winnerID); err != nil {
+		t.Fatal(err)
+	}
+	app := "quota-loser-" + t04Tag()
+	pool, err := platform.OpenBuyerIssuerPool(ctx, withApplicationName(t, h.a.issuerURL, app))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer pool.Close()
+	svc, err := buyer.New(pool, time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan error, 1)
+	go func() { _, e := svc.RegisterForTrustedStore(ctx, h.f.storeA1, brToken()); done <- e }()
+	waitForDatabaseLock(t, h.f.owner, app)
+	var advisory bool
+	if err = h.f.owner.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE application_name=$1 AND wait_event_type='Lock' AND wait_event='advisory')`, app).Scan(&advisory); err != nil || !advisory {
+		t.Fatal("last-slot competitor did not wait on store admission lock")
+	}
+	if err = tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err = waitError(t, done); !errors.Is(err, buyer.ErrRateLimited) {
+		t.Fatalf("last-slot loser result=%v, want limited", err)
+	}
+	brAssertDelta(t, h, before, 1)
+	if brStored(t, h, winnerToken).Scope.SessionID != winnerID {
+		t.Fatal("quota winner changed")
+	}
+	brRead(t, h, winnerToken)
 }
 
 func TestBuyerHTTPRetirementAuthorityAndStrictInput(t *testing.T) {
