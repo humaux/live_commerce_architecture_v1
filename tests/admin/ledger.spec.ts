@@ -218,7 +218,10 @@ test("stale balance fails closed and refresh enables a new command", async ({
   await expect(page.locator('.message[role="alert"]')).toContainText(
     "Inventory changed",
   );
-  await page.getByRole("button", { name: "Refresh", exact: true }).click();
+  await page
+    .getByRole("region", { name: "Products & inventory", exact: true })
+    .getByRole("button", { name: "Refresh", exact: true })
+    .click();
   await expect(page.locator("tbody .available-value")).toHaveText(
     String(row.available + 1),
   );
@@ -324,6 +327,12 @@ test("purchase-entry proxy only accepts the scoped GET locale query", async ({
     "url",
   ]);
   expect(projection.product_id).toBe(productID);
+  // Valid URL encoding is equivalent under the frozen locale contract.
+  // Next normalizes the incoming query before this BFF receives Request.url;
+  // invalid encodings remain a denial case below, not a locale alias.
+  const encoded = await request.get(`${path}?locale=%65n`);
+  expect(encoded.status()).toBe(200);
+  expect(await encoded.json()).toEqual(projection);
   for (const suffix of [
     "",
     "?",
@@ -331,7 +340,7 @@ test("purchase-entry proxy only accepts the scoped GET locale query", async ({
     "?locale=fr",
     "?locale=en&locale=en",
     "?locale=en&extra=1",
-    "?locale=%65n",
+    "?locale=%zz",
   ]) {
     const denied = await request.get(path + suffix);
     expect(denied.status(), suffix).toBe(422);
@@ -377,12 +386,16 @@ test("purchase-entry read failure keeps product and SKU write receipts", async (
   );
   await page.goto("/en");
   await page.getByRole("button", { name: "Add product", exact: true }).click();
-  await page.getByRole("textbox", { name: "Product name" }).fill(name);
+  await page
+    .getByRole("textbox", { name: "Product name", exact: true })
+    .fill(name);
   await page
     .locator(".create-panel")
     .getByRole("button", { name: "Add product" })
     .click();
-  await expect(page.getByRole("heading", { name: "Add first SKU" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Add first SKU" }),
+  ).toBeVisible();
   await expect(
     page.getByTestId("purchase-entry").getByRole("alert"),
   ).toContainText("saved product is unchanged");
@@ -429,7 +442,9 @@ test("catalog write denial reports permission without claiming a product was sav
   });
   await page.goto("/en");
   await page.getByRole("button", { name: "Add product", exact: true }).click();
-  await page.getByRole("textbox", { name: "Product name" }).fill("Permission probe");
+  await page
+    .getByRole("textbox", { name: "Product name", exact: true })
+    .fill("Permission probe");
   await page
     .locator(".create-panel")
     .getByRole("button", { name: "Add product" })
@@ -461,28 +476,36 @@ test("purchase controls recheck current state before copying or opening", async 
           product_id: productID,
           locale: "en",
           state: available ? "configured" : "storefront_unavailable",
-          url: available
-            ? `https://shop.example/en/products/${productID}`
-            : "",
+          url: available ? `https://shop.example/en/products/${productID}` : "",
         }),
       });
     },
   );
   await page.goto("/en");
   const panel = page.getByTestId("purchase-entry");
-  await expect(panel.getByRole("button", { name: "Copy address" })).toBeVisible();
+  await expect(
+    panel.getByRole("button", { name: "Copy address" }),
+  ).toBeVisible();
   available = false;
   await panel.getByRole("button", { name: "Copy address" }).click();
   await expect(panel).toContainText(
     "No verified, published storefront address is available.",
   );
-  await expect(panel.getByRole("button", { name: "Copy address" })).toHaveCount(0);
+  await expect(panel.getByRole("button", { name: "Copy address" })).toHaveCount(
+    0,
+  );
   expect(reads).toBeGreaterThanOrEqual(2);
   available = true;
   await panel.getByRole("button", { name: "Refresh" }).click();
-  await expect(panel.getByRole("button", { name: "Open purchase page" })).toBeVisible();
+  await expect(
+    panel.getByRole("button", { name: "Open purchase page" }),
+  ).toBeVisible();
   await page.route("https://shop.example/**", async (route) => {
-    await route.fulfill({ status: 200, contentType: "text/html", body: "<title>Buyer page</title>" });
+    await route.fulfill({
+      status: 200,
+      contentType: "text/html",
+      body: "<title>Buyer page</title>",
+    });
   });
   await panel.getByRole("button", { name: "Open purchase page" }).click();
   await expect(page).toHaveURL(/https:\/\/shop\.example\/en\/products\//);

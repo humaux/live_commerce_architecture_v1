@@ -117,6 +117,6 @@ Their evidence and authority do not establish global design-system rules.
 Author boundary: `impeccable_documenter`, isolated branch
 `commerce/buyer-design-record-20260925`, base `ec926ae`, worktree
 `/Volumes/data/live-commerce-worktrees/buyer-design-record-20260925`.
-Runtime reports inherited GPT-6; the exact backend model identifier and reasoning
-setting are not exposed to this agent. The integrator owns independent review
+The agent inherits the caller configuration; the exact backend model identifier
+and reasoning setting are not exposed by this tool. The integrator owns independent review
 and merge; this documentation task creates no servers, fixtures or temp assets.

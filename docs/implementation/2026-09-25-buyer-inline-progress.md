@@ -29,8 +29,9 @@ live accounts, payment links or funds have been changed.
   prove a lost command committed or make an address eligible for checkout.
 - Admin purchase-entry UI is integrated at `a14f38d` (author `c483a16`): original
   catalog receipts remain separate; lookup failure does not re-submit a write;
-  copy/open refresh their configured URL. Admin and joint browser gate remain
-  pending, so this is not release authorization.
+  copy/open refresh their configured URL. Its 11-test admin browser regression
+  passed independently and in root's separate rerun. The real merchant-to-buyer
+  joint gate remains pending, so this is not release authorization.
 
 No new external dependency. Storefront consumes existing workspace
 `@live-commerce/i18n`; Next/React versions and BFF authority are unchanged.
@@ -44,6 +45,7 @@ Evidence root: `/Volumes/data/output/live-commerce-buyer-inline-tests/`.
 | Current destination PG/HTTP | `current-destination-pg-5.log`, exit 0; 23 buyer HTTP tests; explicit destination head/snapshot/event/receipt counters unchanged by current read. |
 | Frontend helpers/transport | Node `--test --experimental-strip-types apps/storefront/tests/*.test.mjs`, 13 PASS; typecheck exit 0. |
 | Actual production UI and transport | `browser-3.log`, exit 0; 13 scenarios; Chromium → two production Next instances → Go → isolated PostgreSQL. |
+| Admin browser | `/Volumes/data/output/live-commerce-purchase-entry-admin-gate/rerun-3/ledger.log`: 11 PASS; independent root rerun `root-independent/ledger.log`: 11 PASS, 7.1 s. Next dev + isolated PG; receipt-error/state-change injections and final `shop.example` page use route mocks. This does not prove a shared deployed buyer origin or successful clipboard write. |
 | Actual UI business extent | Select SKU/quantity → cart → delivery → quote; 3 locales preserve quantity/currency/session; reload restores quote. No UI order/payment claim. |
 | Cross-tab recovery | Cart commits with responses dropped; second tab resets and activates a new session; old tab adopts it without revoking it or becoming stuck on its old journal. |
 | Existing transport regression | Original catalog/cart/quote/destination/order flow still yields exactly one DRAFT order and hold across replay; **test-driven transport flow**, not an implemented order UI. |
@@ -82,16 +84,25 @@ After quote recovery, the footer displays the actual total, `Not paid` and
 states before and after reload. The independent reviewer scored both listed
 fixes resolved, `disposition: ship` at that bounded scope, memory
 `1f916eca-9755-4ce3-beb5-781eb39cfb01`. This is not a whole-checkout approval.
-Built-surface documentation is the next finish step.
+[Built-surface documentation](2026-09-25-buyer-inline-design-record.md) records
+the final implementation while preserving the incumbent global design system.
+
+The admin run also exposed two ambiguous test locator families (inventory versus
+purchase-entry Refresh, product-name input versus search input), now narrowed to
+the correct region/exact accessible name. Its locale test incorrectly treated
+valid `%65n` encoding as invalid; frozen contract and Go parser allow it, and
+Next normalizes it before constructing the BFF Request. The test now retains it
+as canonical-projection equality and separately denies invalid `%zz`. Application
+authorization and query guards were not loosened; initial failure evidence remains.
 
 ## Remaining gates / next implementation
 
-1. Record the built surface's design documentation (visual fix verdict closed).
-2. Admin browser and saved product/SKU → actual public URL joint gate.
-3. Buyer address/current-head confirmation, DRAFT order UI and exact recovery.
-4. Per-order hosted checkout from authoritative total, merchant account and
+1. Saved product/SKU → actual public buyer URL joint browser gate; admin and
+   buyer isolated suites are not this combined proof.
+2. Buyer address/current-head confirmation, DRAFT order UI and exact recovery.
+3. Per-order hosted checkout from authoritative total, merchant account and
    environment/currency, webhook/expiry/stock lifecycle and provider sandbox gate.
-5. Trusted CVS/carrier acceptance, real publication DNS/TLS, deployment,
+4. Trusted CVS/carrier acceptance, real publication DNS/TLS, deployment,
    performance/restore and all SaaS release gates.
 
 Address and payment are explicitly not open on this page yet. This is an

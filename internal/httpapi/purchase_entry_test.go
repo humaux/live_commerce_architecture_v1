@@ -22,7 +22,7 @@ func TestPurchaseEntryQuery(t *testing.T) {
 			t.Fatalf("accepted %q: %v", raw, err)
 		}
 	}
-	for _, raw := range []string{"?locale=en", "?locale=zh-CN", "?locale=zh-TW"} {
+	for _, raw := range []string{"?locale=en", "?locale=%65n", "?locale=zh-CN", "?locale=zh-TW"} {
 		r := httptest.NewRequest(http.MethodGet, purchaseEntryPath+raw, nil)
 		if value, err := purchaseEntryLocale(r.URL); err != nil || value == "" {
 			t.Fatalf("rejected %q: %v", raw, err)
