@@ -210,3 +210,119 @@ func TestBuyerCheckoutExpiryRollbackAndRetry(t *testing.T) {
 		})
 	}
 }
+
+func TestBuyerCheckoutJobInvisibleUntilCommit(t *testing.T) {
+	b := bcSetup(t)
+	name := "bc_commit_" + t04Tag()
+	lockKey := "checkout.commit.fixture." + name
+	pool, e := platform.OpenCheckoutPool(context.Background(), withApplicationName(t, b.poolURL, name))
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer pool.Close()
+	b.service = bcService(t, pool)
+	mustExec(t, b.f.owner, `CREATE FUNCTION public.`+name+`() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.owner_id=`+quoteLiteral(b.cap.Scope.OwnerID)+`::uuid THEN PERFORM pg_advisory_xact_lock(hashtextextended(`+quoteLiteral(lockKey)+`,0)); END IF; RETURN NEW; END $$`)
+	mustExec(t, b.f.owner, `CREATE TRIGGER `+name+` BEFORE INSERT ON checkout.orders FOR EACH ROW EXECUTE FUNCTION public.`+name+`()`)
+	t.Cleanup(func() {
+		mustExec(t, b.f.owner, `DROP TRIGGER `+name+` ON checkout.orders`)
+		mustExec(t, b.f.owner, `DROP FUNCTION public.`+name+`()`)
+	})
+	holder, e := b.f.owner.Begin(context.Background())
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer holder.Rollback(context.Background())
+	if _, e = holder.Exec(context.Background(), `SELECT pg_advisory_xact_lock(hashtextextended($1,0))`, lockKey); e != nil {
+		t.Fatal(e)
+	}
+	before := b.facts(t)
+	done := make(chan error, 1)
+	go func() { _, e := b.begin(t04Key("bc-commit")); done <- e }()
+	waitForDatabaseLock(t, b.f.owner, name)
+	// The gate is after River InsertTx and before the first order INSERT. A
+	// different connection must still see zero new orders, stock facts AND jobs.
+	if got := b.facts(t); got != before {
+		t.Fatalf("uncommitted checkout visible: %v -> %v", before, got)
+	}
+	if e = holder.Commit(context.Background()); e != nil {
+		t.Fatal(e)
+	}
+	if e = waitError(t, done); e != nil {
+		t.Fatal(e)
+	}
+	after := b.facts(t)
+	for i := range after {
+		if after[i]-before[i] != 1 {
+			t.Fatalf("committed facts[%d] missing", i)
+		}
+	}
+}
+
+func TestBuyerCheckoutFinalPickupClockAfterBalanceWait(t *testing.T) {
+	b := bcCVS(t)
+	name := "bc-source-wait-" + t04Tag()
+	pool, e := platform.OpenCheckoutPool(context.Background(), withApplicationName(t, b.poolURL, name))
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer pool.Close()
+	b.service = bcService(t, pool)
+	holder, e := b.f.owner.Begin(context.Background())
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer holder.Rollback(context.Background())
+	if _, e = holder.Exec(context.Background(), `SELECT 1 FROM inventory.balances WHERE warehouse_id=$1 AND sku_id=$2 FOR UPDATE`, b.stock.warehouse.ID, b.stock.skus[0].ID); e != nil {
+		t.Fatal(e)
+	}
+	var expiry time.Time
+	if e = b.f.owner.QueryRow(context.Background(), `UPDATE fulfillment.pickup_versions SET valid_until=clock_timestamp()+interval '700 milliseconds' WHERE id=$1 RETURNING valid_until`, b.destination.Pickup.ID).Scan(&expiry); e != nil {
+		t.Fatal(e)
+	}
+	mustExec(t, b.f.owner, `UPDATE storefront.destination_snapshots SET expires_at=$2 WHERE id=$1`, b.destination.ID, expiry)
+	before := b.facts(t)
+	done := make(chan error, 1)
+	go func() { _, e := b.begin(t04Key("bc-pickup-expiry")); done <- e }()
+	waitForDatabaseLock(t, b.f.owner, name)
+	var valid bool
+	if e = b.f.owner.QueryRow(context.Background(), `SELECT clock_timestamp()<$1`, expiry).Scan(&valid); e != nil || !valid {
+		t.Fatalf("missed source wait window: %v", e)
+	}
+	mustExec(t, b.f.owner, `SELECT pg_sleep(GREATEST(0,extract(epoch FROM $1::timestamptz-clock_timestamp()))+0.02)`, expiry)
+	if e = holder.Commit(context.Background()); e != nil {
+		t.Fatal(e)
+	}
+	if e = waitError(t, done); !errors.Is(e, command.ErrConflict) {
+		t.Fatalf("expired source accepted: %v", e)
+	}
+	if b.facts(t) != before {
+		t.Fatal("expired source left hold")
+	}
+}
+
+func TestBuyerCheckoutForeignInputsCannotCreateHold(t *testing.T) {
+	b := bcSetup(t)
+	foreign := b
+	foreign.prepare(t, mustIssue(t, b.cqHarness.service, b.f.storeA1), []storefront.Item{{SKUID: b.stock.skus[0].ID, Quantity: 1}})
+	for _, kind := range []string{"quote", "destination", "store"} {
+		t.Run(kind, func(t *testing.T) {
+			in := b.input
+			store := b.f.storeA1
+			switch kind {
+			case "quote":
+				in.QuoteID = foreign.input.QuoteID
+			case "destination":
+				in.DestinationID = foreign.input.DestinationID
+			case "store":
+				store = b.f.storeA2
+			}
+			before := b.facts(t)
+			if _, e := b.service.Begin(context.Background(), b.cap.Token, store, t04Key("bc-foreign"), in); e == nil {
+				t.Fatal("foreign input accepted")
+			}
+			if b.facts(t) != before {
+				t.Fatal("foreign input left facts")
+			}
+		})
+	}
+}
