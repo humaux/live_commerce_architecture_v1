@@ -6,6 +6,9 @@ Existing buyer, storefront, fulfillment and checkout contracts remain authoritat
 The later [catalog-discovery amendment](buyer-catalog-discovery-v1.md) and
 [checkout-options amendment](buyer-checkout-options-v1.md) each add one read-only
 route and a narrowly scoped query exception; neither adds public access.
+The [session-registration amendment](buyer-session-registration-v1.md) adds a
+private same-token retry path and one issuer-only SQL function; old issuance is
+unchanged and no browser boundary is opened.
 
 ## Authority and lifecycle
 
@@ -54,6 +57,7 @@ is limited to the explicit catalog/options GET amendments below.
 | Method and path | Input | Operation / response |
 | --- | --- | --- |
 | POST /v1/buyer/session | `{}` | Issue; private `{token,expires_at}` only |
+| POST /v1/buyer/session/bootstrap | `{}` with canonical Bearer, no Idempotency-Key | Trusted BFF token registration/replay; `{authenticated:true,expires_at}`; registration amendment governs |
 | GET /v1/buyer/session | no body | Resolve capability; `{authenticated:true}` |
 | DELETE /v1/buyer/session | no body | Revoke; empty 204 |
 | GET /v1/buyer/catalog | no body; bounded product_id/limit/cursor query | Active SKU display page; catalog amendment governs strict parsing/projection |
@@ -67,7 +71,7 @@ is limited to the explicit catalog/options GET amendments below.
 | POST /v1/buyer/checkout | checkout.Input | Begin / receipt projection |
 | GET /v1/buyer/orders/{id} | no body | Get / order projection |
 
-Writes other than session require one `Idempotency-Key`, matching existing
+Writes other than session issuance/registration require one `Idempotency-Key`, matching existing
 `^[A-Za-z0-9_.:-]{8,128}$`. Session and reads reject Idempotency-Key rather than
 suggesting replay support. JSON input is bounded to 64 KiB, application/json,
 unknown fields/null at ANY depth/trailing values rejected (optional fields may

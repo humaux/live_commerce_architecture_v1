@@ -2,6 +2,9 @@
 
 Status: FROZEN after independent preflight of 55f5840 (no open P0/P1/P2). This is a
 dependency of the public buyer BFF, not a public login or a browser release.
+Implementation SR01–SR06: PASS_BOUNDED_PRIVATE_REGISTRATION at source `669e148`;
+[real HTTP/PG and 361-test acceptance](../docs/implementation/2026-09-25-buyer-session-registration-acceptance.md).
+Public browser bootstrap and automatic payment entry remain NOT_RUN.
 
 ## Reason and reuse
 

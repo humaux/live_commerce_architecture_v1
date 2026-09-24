@@ -81,6 +81,18 @@ SQL 依赖入口及将来开放 HTTP 前的条件见 `contracts/buyer-capability
 HTTP/PG和实际cmd/api三池清理测试，再跑全量race/vet。公开BFF/cookie/CSRF
 和浏览器验收仍为独立前置。见 [私有HTTP验收](2026-09-25-buyer-private-http-acceptance.md)。
 
+安全重试注册 `buyer.Service.RegisterForTrustedStore` 仍借用 issuer pool，标准库
+SHA256 只持久化服务端已有随机 token 的摘要；不引入缓存、HMAC 派生或新依赖。
+0021 的 `buyer.register_capability` 复用 0006 的 hash 唯一约束、issue 和
+resolve_scope：只在异常子事务内插入，精确匹配 token constraint/schema/table
+后回滚竞争失败方，再按既有锁顺序读取原身份和期限。PUBLIC/runtime 不得执行。
+`buyerhttp` 新增内部 POST session/bootstrap，拒绝浏览器头和幂等 key，返回
+固定两字段；旧 POST session 仍不可自动重试。升级 PG、pgx、会话规则时跑
+`TestBuyerHTTPRegistration*`：丢响应、两个实例、强制 unique wait、无孤立 owner、
+非目标23505传播、REPEATABLE READ失效快照、ACL、撤销和发布状态变化，然后全量
+race/vet。它不解决首次 Cookie 多标签竞争；公开BFF/CSRF/限流和浏览器验收仍待。
+见 [注册合同](../../contracts/buyer-session-registration-v1.md)。
+
 买家商品发现 `storefront.ListCatalog` 复用 `buyer.WithScope/CheckScope`、
 0007 的 catalog/control 列级 SELECT 和 RLS，只读联结 active 商品/规格及
 当前店铺币种；没有第二商品真源或新增角色。`pagination.Request/Page` 复用
