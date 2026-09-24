@@ -47,7 +47,7 @@ This is not a claim that checkout, payment or public purchase is implemented.
 - Inventory ledger's store-global key must be derived from the private checkout
   UUID, not the public owner idempotency key (different owners may choose it).
 - Lock order: capability tenant/store/owner/session → private owner receipt key →
-  cart/Quote → market/current policy → sorted products/SKUs → destination/source →
+  cart/Quote → market/current policy → sorted products/SKUs → pickup source head → destination head →
   merchant service head → allocation head → sorted warehouses/balances → final DB-clock
   expiry → durable facts.
   Reuse no merchant command locks. External I/O happens before/after, not while
@@ -74,8 +74,9 @@ This is not a claim that checkout, payment or public purchase is implemented.
 
 ## Gate before implementing the aggregate
 
-Freeze destination-directory provenance, merchant service revisions and server
-allocation configuration, with explicit MANUAL versus API eligibility gates.
+Destination/source semantics are frozen in [buyer destination](buyer-destination-v1.md);
+merchant service revisions and server allocation configuration have separate bounded
+internal acceptance. Consume them with explicit MANUAL versus API eligibility gates.
 A single selected carrier/contract is not a prerequisite for carrier-neutral
 selection or merchant-arranged checkout. Real API dispatch still needs its exact
 account/service capability; local synthetic adapters never prove that capability.
