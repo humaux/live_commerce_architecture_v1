@@ -34,3 +34,22 @@ func TestRejectsBoundsAndMalformedCursor(t *testing.T) {
 		}
 	}
 }
+
+func TestProviderAccountCursorIsScoped(t *testing.T) {
+	accountBinding := Binding{TenantID: binding.TenantID, StoreID: binding.StoreID, Collection: "provider-accounts"}
+	encoded, err := Encode(accountBinding, []string{key})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, changed := range []Binding{
+		{TenantID: binding.TenantID, StoreID: "44444444-4444-4444-8444-444444444444", Collection: "provider-accounts"},
+		binding,
+	} {
+		if _, _, err := Decode(Request{Cursor: encoded}, changed, 1); !errors.Is(err, command.ErrInvalid) {
+			t.Fatalf("cross-scope cursor accepted: %+v", changed)
+		}
+	}
+	if _, keys, err := Decode(Request{Cursor: encoded}, accountBinding, 1); err != nil || len(keys) != 1 || keys[0] != key {
+		t.Fatalf("account cursor roundtrip: keys=%v err=%v", keys, err)
+	}
+}
