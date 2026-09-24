@@ -1,6 +1,7 @@
 # Delivery warehouse allocation v1
 
-Status: FROZEN_FOR_IMPLEMENTATION, 2026-09-24, parent `669fbbb`.
+Status: INTERNAL_IMPLEMENTATION_ACCEPTED, 2026-09-24, code/test `8f83201`.
+See [bounded acceptance](../docs/implementation/2026-09-24-delivery-allocation-acceptance.md).
 This is a merchant configuration and pure allocation prerequisite, NOT a
 checkout, stock hold, carrier connection, public API or payment implementation.
 

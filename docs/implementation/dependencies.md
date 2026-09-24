@@ -56,6 +56,15 @@ SQL 依赖入口及将来开放 HTTP 前的条件见 `contracts/buyer-capability
 replay、GUC/权限、policy/market 独立停用与审计/回执故障回滚。SQL 与 Go Unicode
 名称规则的已知 P2 差异及精确边界见 `2026-09-24-delivery-service-acceptance.md`。
 
+仓库配置继续复用 `fulfillment.authorize`、`command.Run/Audit`、pgx 与既有
+inventory writer；`inventory.lock_warehouse` 只读加锁，不授 runtime UPDATE。
+0011 的 header/children 延迟完整性约束和 scoped FK 是正式提交门禁，不可被
+仅 Go 校验替代。`inventory.PlanAllocation` 是标准库排序／映射的纯函数，复用
+Line/Balance/MaxQuantity，不建第二库存账簿。升级 PG/pgx/权限入口须跑
+`delivery_allocation_test.go` 的提交约束、晚插入、跨 scope、回放、锁等待与故障回滚；
+替换规划器需保留 800 行边界、缺货无部分计划和数量守恒测试。详见
+`2026-09-24-delivery-allocation-acceptance.md`，实际 checkout 消费仍未接通。
+
 内部 external-operation 继续复用 pgx、River InsertTx、`command.Run` 与标准库
 JSON/crypto：`internal/integrations/core` 负责精确权限、不可变意图摘要和租约 token
 包装；迁移 0008 定义的受限 SQL 函数是 worker 状态迁移的唯一写入口，前向

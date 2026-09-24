@@ -478,7 +478,14 @@
       "aggregate": "138 top-level PASS/0 FAIL/0 SKIP real PG/race/vet; browser identity 1/1 MOCK IdP",
       "independent_review": "P0=0/P1=0; P2 Unicode SQL label limitation documented; Humaux 2ca0099c-8ed0-497a-b2ab-1460e6b8830f"
     },
-    "remaining": "BeginCheckout权限桥/订单/预留/到期、destination与allocation权威、配送配置公开API/UI、StartPayment/PSP/退款/支付对账、provider sandbox/live和完整G03/G05均未实现或验收；已验收的商家配送配置不是实际运输或可扣款授权",
+    "allocation_prerequisite": {
+      "code_baseline": "8f83201",
+      "evidence": "docs/implementation/2026-09-24-delivery-allocation-acceptance.md",
+      "status": "PASS_INTERNAL_CONFIGURATION_AND_PURE_PLANNER_ONLY",
+      "aggregate": "150 top-level PASS/0 FAIL/0 SKIP real PG/race/vet; root fuzz334833; browser identity1/1 MOCK IdP",
+      "independent_review": "P0=0/P1=0; Humaux1785fd7c-c432-49a0-b279-b36b3c4670b8; no aggregate checkout acceptance"
+    },
+    "remaining": "BeginCheckout权限桥/订单/预留/到期、destination权威与allocation在checkout事务中锁定消费、配送配置公开API/UI、StartPayment/PSP/退款/支付对账、provider sandbox/live和完整G03/G05均未实现或验收；已验收的商家配置和纯分配算法不是实际运输、库存保留或可扣款授权",
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
   {
