@@ -16,6 +16,8 @@ import {
   writeCheckout,
   currentDestination,
   forgetAddressAttempt,
+  continueShopping,
+  validOrderSummary,
 } from "../lib/purchase.ts";
 
 // Deterministic browser-client tests only. Real Next/Go/PG gates are separate;
@@ -108,6 +110,8 @@ const input = {
 function order(state = "DRAFT") {
   return {
     order_id: uid(6),
+    cart_id: cart.id,
+    cart_version: cart.version,
     commercial_state: state,
     fulfillment_state:
       state === "CANCELLED" ? "CANCELLED" : "MANUAL_UNASSIGNED",
@@ -298,6 +302,175 @@ test("private quote/option authority fields are required; only exact MANUAL home
   );
   assert.equal(validOrder({ ...order(), hold_expires_at: undefined }), false);
   assert(validOrder(order("CANCELLED")));
+});
+
+function locateOrder() {
+  localStorage.setItem(
+    `commerce-purchase-order-v1:${context}`,
+    JSON.stringify({ v: 1, context, order_id: uid(6) }),
+  );
+}
+const nextCart = () => ({ ...cart, version: cart.version + 1, items: [] });
+
+test("continue shopping advances only ordered version, clears hint, keeps SQL history authoritative", async () =>
+  browserFixture(async (f) => {
+    locateOrder();
+    let current = cart;
+    f.route(async (r) => {
+      if (r.path === `orders/${uid(6)}`) return Response.json(order());
+      assert.equal(r.path, "cart");
+      if (r.method === "PUT") {
+        assert.deepEqual(r.body, { expected_version: cart.version, items: [] });
+        current = nextCart();
+      }
+      return Response.json(current);
+    });
+    assert.deepEqual(await continueShopping(context, uid(6)), nextCart());
+    assert.equal(knownOrderID(context), null);
+    assert.equal(pendingPurchase(context), null);
+    assert.equal(f.requests.filter((r) => r.method === "PUT").length, 1);
+  }));
+
+test("lost next-cart response retries identical key/body and preserves a newer cart", async () =>
+  browserFixture(async (f) => {
+    locateOrder();
+    let current = cart,
+      first = true;
+    const newer = {
+      ...cart,
+      version: cart.version + 2,
+      items: [{ sku_id: uid(12), quantity: 3 }],
+    };
+    f.route(async (r) => {
+      if (r.path.startsWith("orders/")) return Response.json(order());
+      if (r.method === "PUT") {
+        if (first) {
+          first = false;
+          current = newer;
+          throw new Error("lost response");
+        }
+        return Response.json(nextCart()); // Permanent command receipt, not current state.
+      }
+      return Response.json(current);
+    });
+    await assert.rejects(continueShopping(context, uid(6)));
+    assert.equal(pendingPurchase(context).kind, "next-cart");
+    assert(orderRecoveryRequired(context));
+    assert.deepEqual(await continueShopping(context), newer);
+    const puts = f.requests.filter((r) => r.method === "PUT");
+    assert.equal(puts.length, 2);
+    assert.equal(puts[0].key, puts[1].key);
+    assert.deepEqual(puts[0].body, puts[1].body);
+  }));
+
+test("continuation never overwrites an already advanced cart", async () =>
+  browserFixture(async (f) => {
+    locateOrder();
+    const newer = { ...cart, version: cart.version + 2 };
+    f.route(async (r) => {
+      assert.equal(r.method, "GET");
+      return Response.json(r.path.startsWith("orders/") ? order() : newer);
+    });
+    assert.deepEqual(await continueShopping(context, uid(6)), newer);
+    assert.equal(knownOrderID(context), null);
+  }));
+
+test("unknown checkout blocks continuation without any business request", async () =>
+  browserFixture(async (f) => {
+    locateOrder();
+    localStorage.setItem(
+      `commerce-purchase-pending-v1:${context}`,
+      JSON.stringify({
+        v: 1,
+        context,
+        key: uid(17),
+        kind: "checkout",
+        body: input,
+      }),
+    );
+    await assert.rejects(
+      continueShopping(context, uid(6)),
+      (e) => e.code === "uncertain",
+    );
+    assert.equal(f.requests.length, 0);
+    assert.equal(pendingPurchase(context).kind, "checkout");
+  }));
+
+test("two queued continuation clicks mutate once; stale order ID cannot clear another order", async () =>
+  browserFixture(async (f) => {
+    locateOrder();
+    let current = cart;
+    f.route(async (r) => {
+      if (r.path.startsWith("orders/")) return Response.json(order());
+      if (r.method === "PUT") current = nextCart();
+      return Response.json(current);
+    });
+    const results = await Promise.allSettled([
+      continueShopping(context, uid(6)),
+      continueShopping(context, uid(6)),
+    ]);
+    assert.equal(results.filter((r) => r.status === "fulfilled").length, 1);
+    assert.equal(f.requests.filter((r) => r.method === "PUT").length, 1);
+  }));
+
+test("CAS conflict resolves only after a newer cart is read", async () =>
+  browserFixture(async (f) => {
+    locateOrder();
+    let reads = 0;
+    f.route(async (r) => {
+      if (r.path.startsWith("orders/")) return Response.json(order());
+      if (r.method === "PUT") return denial(409);
+      return Response.json(++reads === 1 ? cart : nextCart());
+    });
+    assert.deepEqual(await continueShopping(context, uid(6)), nextCart());
+    assert.equal(pendingPurchase(context), null);
+  }));
+
+test("locator removal failure retains next-cart journal and recovery survives missing locator", async () =>
+  browserFixture(async (f) => {
+    locateOrder();
+    let current = cart;
+    f.route(async (r) => {
+      if (r.path.startsWith("orders/")) return Response.json(order());
+      if (r.method === "PUT") current = nextCart();
+      return Response.json(current);
+    });
+    const remove = localStorage.removeItem;
+    localStorage.removeItem = (k) => {
+      remove(k);
+      if (k.startsWith("commerce-purchase-order"))
+        throw new Error("partial removal");
+    };
+    await assert.rejects(
+      continueShopping(context, uid(6)),
+      (e) => e.code === "unavailable",
+    );
+    assert.equal(knownOrderID(context), null);
+    assert(orderRecoveryRequired(context));
+    localStorage.removeItem = remove;
+    await continueShopping(context);
+    assert.equal(pendingPurchase(context), null);
+    const puts = f.requests.filter((r) => r.method === "PUT");
+    assert.equal(puts[0].key, puts[1].key);
+  }));
+
+test("order history summary rejects PII/unknown fields and malformed scope IDs", () => {
+  const summary = {
+    order_id: uid(6),
+    cart_id: cart.id,
+    cart_version: cart.version,
+    commercial_state: "DRAFT",
+    fulfillment_state: "MANUAL_UNASSIGNED",
+    created_at: until,
+    currency: "TWD",
+    total_minor: 500,
+  };
+  assert(validOrderSummary(summary));
+  assert(
+    !validOrderSummary({ ...summary, recipient_name: address.recipient_name }),
+  );
+  assert(!validOrderSummary({ ...summary, cart_id: "other" }));
+  assert(!validOrderSummary({ ...summary, total_minor: -1 }));
 });
 
 test("native address validation mirrors printable Unicode, limits and phone; journal forbids PII", () => {

@@ -257,6 +257,18 @@ test("bad host, cookie, query and method never reach private API", async () => {
     assert.equal(response.status, 405);
     response = await handleBuyerRequest(req("GET", "quotes/not-a-uuid"));
     assert.equal(response.status, 422);
+    for (const path of [
+      "orders?owner_id=other",
+      "orders?country=TW",
+      "orders?limit=101",
+      "orders?limit=1&limit=2",
+      "orders?cursor=bad%2Bcursor",
+    ])
+      assert.equal((await handleBuyerRequest(req("GET", path))).status, 422);
+    assert.equal(
+      (await handleBuyerRequest(req("POST", "orders", { body: "{}" }))).status,
+      405,
+    );
   } finally {
     globalThis.fetch = old;
   }

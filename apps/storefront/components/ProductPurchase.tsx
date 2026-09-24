@@ -11,6 +11,8 @@ import {
 import { purchaseCopy } from "../lib/purchase-copy";
 import { orderCopy } from "../lib/order-copy";
 import OrderFlow, { OrderDetails } from "./OrderFlow";
+import OrderHistory from "./OrderHistory";
+import { historyCopy } from "../lib/history-copy";
 import {
   cartSelection,
   assertPurchaseContext,
@@ -29,6 +31,7 @@ import {
   writeCheckout,
   orderRecoveryRequired,
   forgetAddressAttempt,
+  continueShopping,
 } from "../lib/purchase";
 import type { Cart, Product, Option, Quote, Order } from "../lib/purchase";
 
@@ -64,8 +67,10 @@ export default function ProductPurchase({
   const [recoveryCountry, setRecoveryCountry] = useState<string | null>(null);
   const [orderLocked, setOrderLocked] = useState(false);
   const [order, setOrder] = useState<Order | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const epoch = useRef(0);
   const currentContext = useRef("");
+  const currentOrder = useRef<Order | null>(null);
   const working = useRef(false);
   const deliveryRef = useRef<HTMLElement>(null);
   const quoteRef = useRef<HTMLElement>(null);
@@ -96,6 +101,8 @@ export default function ProductPurchase({
       setCart(null);
       setQuote(null);
       setOrder(null);
+      currentOrder.current = null;
+      setHistoryOpen(false);
     } else if (reason instanceof BuyerClientError && reason.status === 409)
       setError("conflict");
     else setError("failed");
@@ -109,11 +116,16 @@ export default function ProductPurchase({
       waiting?.kind === "destination" ? waiting.body.country : null,
     );
     const id = knownOrderID(ctx);
-    setOrderLocked(waiting?.kind === "checkout" || id !== null);
+    setOrderLocked(
+      waiting?.kind === "checkout" ||
+        waiting?.kind === "next-cart" ||
+        id !== null,
+    );
     return { waiting, id };
   }
 
   function acceptOrder(value: Order) {
+    currentOrder.current = value;
     setOrder(value);
     setOrderLocked(true);
     setQuote(null);
@@ -128,6 +140,7 @@ export default function ProductPurchase({
     setError(null);
     setQuote(null);
     setOrder(null);
+    currentOrder.current = null;
     setDeliveryOpen(false);
     try {
       // Capture the expired context BEFORE initialization rejects it. This
@@ -146,7 +159,8 @@ export default function ProductPurchase({
       currentContext.current = ctx;
       setContext(ctx);
       const recovery = syncRecovery(ctx);
-      if (recovery.waiting?.kind === "checkout") setError("pending");
+      if (["checkout", "next-cart"].includes(recovery.waiting?.kind ?? ""))
+        setError("pending");
       if (recovery.id) {
         const existing = await readOrder(ctx, recovery.id);
         if (version === epoch.current) acceptOrder(existing);
@@ -287,14 +301,23 @@ export default function ProductPurchase({
     if (!context) return;
     let active = true;
     const check = async () => {
+      const version = epoch.current;
       try {
         await assertPurchaseContext(context);
-        if (active) {
+        if (active && version === epoch.current) {
           const recovery = syncRecovery(context);
-          if (recovery.waiting?.kind === "checkout") setError("pending");
+          if (["checkout", "next-cart"].includes(recovery.waiting?.kind ?? ""))
+            setError("pending");
           if (recovery.id) {
             const current = await readOrder(context, recovery.id);
-            if (active) acceptOrder(current);
+            if (
+              active &&
+              version === epoch.current &&
+              knownOrderID(context) === recovery.id
+            )
+              acceptOrder(current);
+          } else if (!recovery.waiting && currentOrder.current) {
+            await load();
           }
         }
       } catch (reason) {
@@ -309,8 +332,11 @@ export default function ProductPurchase({
         event.key === "commerce-buyer-pending-v1" ||
         event.key === `commerce-purchase-pending-v1:${context}` ||
         event.key === `commerce-purchase-order-v1:${context}`
-      )
+      ) {
+        // Another tab finished continuation. Reload current cart/quote rather
+        // than leaving this tab's old order/quotation actionable.
         void check();
+      }
     };
     window.addEventListener("storage", changed);
     window.addEventListener("focus", check);
@@ -416,6 +442,18 @@ export default function ProductPurchase({
       </header>
       {demonstration && <p className="demonstration">{copy.demonstration}</p>}
       <main className="purchase-main" aria-busy={loading || busy}>
+        <nav
+          className="purchase-navigation"
+          aria-label={historyCopy[locale].title}
+        >
+          <button
+            data-testid="toggle-order-history"
+            disabled={busy || loading || pending || error === "session"}
+            onClick={() => setHistoryOpen((value) => !value)}
+          >
+            {historyOpen ? historyCopy[locale].back : historyCopy[locale].title}
+          </button>
+        </nav>
         {error && (
           <div role="alert" className="purchase-error">
             <p>
@@ -429,6 +467,11 @@ export default function ProductPurchase({
                 disabled={busy}
                 onClick={() =>
                   void act(async (isCurrent) => {
+                    if (pendingKind === "next-cart") {
+                      await continueShopping(context);
+                      if (isCurrent()) await load();
+                      return;
+                    }
                     if (pendingKind === "checkout") {
                       const current = await writeCheckout(context);
                       if (isCurrent()) acceptOrder(current);
@@ -479,21 +522,47 @@ export default function ProductPurchase({
             )}
           </div>
         )}
-        {order && (
-          <OrderDetails
-            order={order}
+        {historyOpen && context && (
+          <OrderHistory
+            key={context}
+            context={context}
             locale={locale}
             money={money}
-            busy={busy}
-            refresh={() =>
-              void act(async (isCurrent) => {
-                const current = await readOrder(context, order.order_id);
-                if (isCurrent()) acceptOrder(current);
-              })
-            }
+            onError={showError}
           />
         )}
-        {loading ? (
+        {order && !historyOpen && (
+          <>
+            <OrderDetails
+              order={order}
+              locale={locale}
+              money={money}
+              busy={busy}
+              refresh={() =>
+                void act(async (isCurrent) => {
+                  const current = await readOrder(context, order.order_id);
+                  if (isCurrent()) acceptOrder(current);
+                })
+              }
+            />
+            <div className="next-purchase">
+              <p className="order-note">{historyCopy[locale].note}</p>
+              <button
+                data-testid="continue-shopping"
+                disabled={busy || pending || error === "session"}
+                onClick={() =>
+                  void act(async () => {
+                    await continueShopping(context, order.order_id);
+                    await load();
+                  })
+                }
+              >
+                {historyCopy[locale].next}
+              </button>
+            </div>
+          </>
+        )}
+        {historyOpen ? null : loading ? (
           <p role="status">{copy.loading}</p>
         ) : order ? null : !products.length ? (
           <p>{copy.empty}</p>
@@ -768,7 +837,7 @@ export default function ProductPurchase({
           </>
         )}
       </main>
-      {selected && !order && !orderLocked && (
+      {selected && !historyOpen && !order && !orderLocked && (
         <footer className="purchase-footer">
           <div className="footer-inner">
             <div>

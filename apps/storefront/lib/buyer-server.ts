@@ -26,7 +26,7 @@ type Route = {
   method: string;
   privatePath: string;
   body?: "empty" | "cart" | "quote" | "destination" | "checkout";
-  query?: "catalog" | "options";
+  query?: "catalog" | "options" | "orders";
   session?: string;
 };
 
@@ -289,6 +289,7 @@ function route(
       PUT: { privatePath: "destination", body: "destination" },
     },
     checkout: { POST: { privatePath: "checkout", body: "checkout" } },
+    orders: { GET: { privatePath: "orders", query: "orders" } },
   };
   if (Object.hasOwn(exact, suffix)) {
     const selected = exact[suffix][method];
@@ -322,7 +323,9 @@ function validQuery(rawURL: string, kind?: Route["query"]): string | null {
   const allowed =
     kind === "catalog"
       ? ["product_id", "limit", "cursor"]
-      : ["market_id", "country", "limit", "cursor"];
+      : kind === "orders"
+        ? ["limit", "cursor"]
+        : ["market_id", "country", "limit", "cursor"];
   const seen = new Set<string>();
   for (const part of raw.split("&")) {
     const at = part.indexOf("=");
