@@ -3,6 +3,9 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 command -v docker >/dev/null
 command -v go >/dev/null
+# PAYUNi protocol tests compare Go forms with independent Node/OpenSSL and the
+# public official golden vector; missing Node must fail before starting fixtures.
+command -v node >/dev/null
 test_mode="${1:-foundation}"
 if [[ "$#" -gt 1 ]] || [[ "$test_mode" != foundation && "$test_mode" != --browser-identity && "$test_mode" != --checkout ]]; then
   printf 'Usage: bash scripts/dev/test-local.sh [--browser-identity|--checkout]\n' >&2

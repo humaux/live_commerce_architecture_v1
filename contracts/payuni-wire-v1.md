@@ -31,7 +31,7 @@ nonce/AAD). Protocol limitations and merchant secret lifecycle require productio
   PAYUNi formally disallows every other format. Config and Client formatting and
   JSON redact secrets; client owns its copied immutable configuration.
 - `(*Client).BuildHosted(HostedRequest) (HostedForm,error)`; no network call.
-  HostedRequest: MerTradeNo string, AmountTWD int64, Timestamp int64 (>0), Description
+  HostedRequest: MerTradeNo string (1..25 ASCII alphanumeric/underscore/hyphen), AmountTWD int64, Timestamp int64 (>0), Description
   string (nonempty printable UTF8 <=550 bytes, fail rather than silently truncate),
   Method string (five payuni_* codes), Installments []int (only installment: explicit
   unique ascending subset of 3,6,9,12; others require empty), ExpireDate string
@@ -55,9 +55,18 @@ nonce/AAD). Protocol limitations and merchant secret lifecycle require productio
   (Observation,error)`; one POST to official `/api/trade/query`, no automatic retry.
   Request uses TradeNo if expected supplies one, otherwise MerTradeNo, not both.
 
-ExpectedTrade: MerTradeNo, TradeNo(optional), AmountTWD, Currency("TWD" only), Method,
+ExpectedTrade: MerTradeNo (same bounds as request), TradeNo(optional; local bounded
+1..64 ASCII alphanumeric/underscore/hyphen profile), AmountTWD, Currency("TWD" only), Method,
 Installments ([]int frozen allowed tenors, same validation as request). Query expected
 must come from a durable attempt, not arbitrary caller/user-provided business facts.
+The caller MUST select Client configuration from that attempt's frozen tenant/store,
+merchant-account ID, environment and credential-version/key reference. Never pick the
+current active credentials or treat unsigned outer MerID as account authority. An outer
+identifier can at most narrow candidates before authenticating against persisted context.
+The wire contains no environment/tenant/store proof; those boundaries belong to the
+durable caller. Preserve historical credential references for outstanding attempts;
+old-key notification behavior and credential rotation for queries need merchant sandbox
+verification, not an assumed automatic fallback to new credentials.
 Observation contains MerTradeNo, TradeNo, AmountTWD, PaymentType string, TradeStatus
 string, Status string, AuthType string, CardInst int, DataSource string, CloseStatus
 string. No Paid bool, capture claim, raw body, card data, account keys or generic map.
@@ -81,6 +90,9 @@ Outer MerID matches configured merchant, Version=2.0, signed inner payload is re
 unsigned ERROR/other envelopes fail uncertain, not a final financial failure.
 Callback inner MerID must match too. Inner notification Status supports SUCCESS,
 UNKNOWN,UNAPPROVED only; other outcomes return ErrUncertain for later query.
+Official page34 uses outer `Unapproved` with inner `UNAPPROVED`; accept that exact
+documented pair, not arbitrary case folding. All other supported outer/inner states
+must agree; the unsigned outer status can never upgrade the authenticated result.
 Only projection with exact MerTradeNo/amount/optional knownTradeNo, expected
 PaymentType(credit/installment1,ATM2,CVS3,LINE9) and Gateway=2 is accepted.
 Credit AuthType must be1 for single payment,2 for installment; installment CardInst
@@ -122,6 +134,7 @@ Full Go race/vet regression and independent payment review. No provider transact
 No credentials lookup, durable attempt, production worker, replay ledger/inbox or
 callback HTTP handler here. UPP front-channel return must not commit money. Official
 callback ACK/retry policy unresolved; do not invent ACK. StartPayment integration must
-freeze attempt identity/deadlines and move stock to PAYMENT_PENDING atomically before
+freeze the exact account/environment/credential version, attempt identity/deadlines,
+and move stock to PAYMENT_PENDING atomically before
 exposing hosted form; query/notification facts require separate idempotent reconciliation.
 Method enabled guard stays until that integration and real supplier admission pass.
