@@ -1,6 +1,6 @@
 # Order-bound hosted payment preparation and one-shot handoff v1
 
-Status: DRAFT_REVIEW, 2026-09-25, baseline `f17b915`. Internal implementation
+Status: FROZEN_IMPLEMENTATION, 2026-09-25, baseline `f17b915`. Internal implementation
 precedes buyer transport/UI and provider qualification. No production enablement.
 
 ## Evidence and decisions
@@ -43,7 +43,9 @@ the existing transaction/scope/digest; do not add a second start implementation.
   credit only; locale exactly `zh-CN`, `zh-TW`, `en`. Provider language maps both
   Chinese locales to `zh-tw`, English to `en`.
 - `NewHostedPaymentStarter(ctx, checkoutPool, jobs, profile, keys, config)` returns
-  an immutable service. Reuse existing pool/job/keyring validation; no provider I/O.
+  an immutable service. Call `platform.ValidateHostedPool` directly; do not call
+  `New`/`NewPaymentStarter`, whose generic checkout validator rejects hosted roles.
+  Reuse the same transaction helper/job/keyring; no provider I/O.
   Keys never become public fields, logs or JSON. Existing query-only clients remain
   unable to generate forms. No injectable real-provider endpoint or transport.
 - `BeginHosted(ctx, token, storeID, key, HostedInput) (PaymentResult, error)`:
@@ -62,13 +64,26 @@ the existing transaction/scope/digest; do not add a second start implementation.
   revoked authority fails closed. Response is returned only after transaction
   commit; uncertain commit cannot cause a second release.
 
+`accounts.HostedConfig` is the two-URL configuration (checkout may alias it).
+`Keyring.BuildPaymentHosted(ctx, tx, tokenHash, storeID, orderID, profile, locale,
+config) (BuiltHostedPayment, error)` loads the SQL material and decrypts with the
+existing private AAD/open implementation. Return only `Form payuni.HostedForm`,
+`PreparedAt`, `ExpiresAt`; never credentials or a general provider client.
+The request uses fixed `ProdDesc="Store order"`, no mutable catalog text or PII.
+Canonical config digest is SHA256 of Go JSON with ordered string fields
+`version`, `return_url`, `notify_url`, with version `payuni-hosted-v1` and URLs
+validated/canonicalized before hashing. Both callers use that same digest.
+Stored/public form uses lowercase `action` and `fields`, all four field values
+strings; convert singleton `url.Values` explicitly, not its default JSON arrays.
+
 The internal `PaymentResult` contains private operation/job identifiers: later
 buyer HTTP must use a separate minimal projection, not marshal this struct.
 
 ## SQL authority and storage (next migration reserved to integrator)
 
-One `checkout.hosted_payment_pages` row per scoped owner/order and attempt,
-foreign-keyed to the immutable attempt. Columns include locale, config digest,
+One `checkout.hosted_payment_pages` row keyed only by `attempt_id`, foreign-keyed
+to `checkout.payment_attempts(id)`. Scope/order derive from the immutable attempt;
+no caller-controlled duplicate owner/order columns. Columns include locale, config digest,
 prepared_at, expires_at, exact bounded provider form JSON and nullable handed_out_at.
 The form has only fixed `action` and four single-valued `fields`: `MerID`,
 `Version`, `EncryptInfo`, `HashInfo`. It contains no raw key, IV, card or buyer PII.
@@ -76,9 +91,21 @@ No new cart/order/financial state machine. No raw form is written to browser sto
 
 Use the existing private non-login `commerce_checkout_writer`, forced owner RLS,
 fixed `search_path=pg_catalog`, exact column grants and explicit PUBLIC revokes.
-Only `commerce_checkout_runtime` may execute the new buyer entry functions.
-No ordinary buyer/merchant/worker role receives ciphertext-table SELECT or handoff
+Only new `commerce_hosted_runtime` may execute the three new hosted functions.
+It is NOLOGIN INHERIT, a member of `commerce_checkout_runtime`, never a private
+writer. A dedicated LOGIN principal inherits it, with no SET ROLE: startup checks
+session_user=current_user=DSN username, effective hosted USAGE, only the checkout
+authority family, no privileged/writer/merchant/worker/owner capabilities.
+`platform.OpenHostedPool`/`ValidateHostedPool` enforce this; generic checkout pools
+reject hosted membership. Ordinary runtime roles cannot escalate to hosted.
+No ordinary buyer/checkout/merchant/worker role receives ciphertext-table SELECT or handoff
 execution. The existing leased `integration.load_payment_query` remains unchanged.
+
+The hosted Go service plus keyring and its isolated DB login is a trusted signing
+boundary. Neither HTTP nor ordinary checkout callers accept a form body. SQL checks
+outer fields/authority but cannot decrypt `EncryptInfo`; a compromised privileged
+hosted signer is not defended by this contract. Do not claim SQL can authenticate
+inner amount/URLs. This explicit boundary avoids a second DB signing-key protocol.
 
 Material-loading entry re-authenticates the capability, sets scope from it and
 locks order → reservation → payment head → account → binding → qualification,
@@ -91,7 +118,8 @@ never from a caller-supplied account/version. It checks:
   credential version, unrevoked matching qualification valid at database time;
 - `PROVIDER_MOCK` only uses SANDBOX mock evidence; SANDBOX/LIVE require exact REAL
   qualification. An existing MOCK form never becomes a real profile form;
-- no financial review/confirmed result permits another handoff.
+- no financial fact (including AUTHORIZED), review case or confirmed result
+  permits a first handoff.
 
 The new material function returns only encrypted historical credential material
 and immutable form inputs to the trusted keyring boundary, within that transaction.
@@ -99,17 +127,40 @@ The writer gets only the needed credential columns under scoped policy; runtime
 gets no general credential read. The keyring decrypts through existing AAD/open.
 There is no latest-credential substitution after rotation.
 
-Server policy: preparation uses a database timestamp, `TradeLExpireSec=300`, and a
+Server policy: prepared_at equals immutable attempt.created_at, provider Timestamp
+is its floored Unix seconds, `TradeLExpireSec=300`, and a
 local handoff deadline of the earlier of prepared_at + 60 seconds and qualification
 expiry. This is our release window, NOT a claim about the PSP timestamp window or
 when its payment-page timer starts. A deadline is never renewed on replay.
 
 Saving the form validates its fixed environment-specific action/field shape,
-config digest, amount source and unchanged authority; it repeats capability and
+MerID/Version, config digest and unchanged frozen attempt authority (the trusted
+keyring supplies the inner amount/URLs); it repeats capability and
 database-time fences after all writes/FK/trigger waits. Handoff takes the same
 order-first lock and repeats live eligibility/deadline checks before the first
 release. Concurrent takes produce exactly one ISSUED response. The nullable
 handoff timestamp may transition once, never clear or extend it.
+
+Frozen SQL entry signatures (SECURITY DEFINER, fixed search_path, PUBLIC revoked):
+
+- `checkout.load_hosted_material(bytea,uuid,uuid,text,text)` takes capability hash,
+  store, order, profile, locale; returns tenant_id/store_id/connection_id UUIDs,
+  provider/environment/account_id text, credential_version bigint, key_id text,
+  nonce/ciphertext bytea, merchant_trade_no/currency text, amount_minor bigint,
+  method_code text, prepared_at/expires_at timestamptz, in that order.
+- `checkout.save_hosted_page(bytea,uuid,uuid,text,text,bytea,jsonb) RETURNS void`:
+  hash/store/order/profile/locale/config_digest/form. No caller time or placeholder.
+- `checkout.take_hosted_page(bytea,uuid,uuid,text,bytea) RETURNS jsonb`:
+  hash/store/order/profile/config_digest, returning the handoff DTO above.
+
+All resolve capability and explicit owned order; never trust pre-set GUCs.
+Private eligibility helper may return the attempt and is not executable by runtime
+roles. Repeated take authenticates scope/profile/config and returns ALREADY_ISSUED
+without a form even after expiry/binding disable; first take requires full current
+eligibility. Save/take repeat capability and deadline fences after trigger/FK waits.
+Table has non-null immutable form/deadline; only handed_out_at NULL to non-NULL is
+updatable (column grant and one-way RLS). All row scope policies join the attempt
+with explicit tenant/store/owner checks, independent of broader capture RLS.
 
 After handoff, current binding disable/credential rotation still cannot redirect
 query/capture to a new account: existing historical query/capture policy wins.
@@ -120,13 +171,15 @@ read checks do not acquire operation locks or introduce another inventory writer
 
 HP01 actual PG preparation commits one original start/attempt/query job/receipt/
      stock transition and one form; local crypto/body/storage failure rolls all back.
-HP02 identical key/input replays the receipt and exact persisted form/deadline;
+HP02 identical key/input replays only the receipt; persisted form/deadline unchanged;
      changed input/locale/config/profile conflicts; different keys cannot duplicate
      an order's attempt. Legacy StartPayment tests remain unchanged and pass.
 HP03 first committed take returns one form, concurrent/repeated takes return none;
      lost response/ambiguous commit never reissues; no provider network call is made.
 HP04 cross-owner/store, forged GUC, expired/revoked capability, wrong role and
-     forged provider/action/form are denied; exact grants/policies are asserted.
+     forged provider/action/outer form shape are denied; exact grants/policies are
+     asserted. Ordinary checkout SQL cannot load/save/take even a copied valid
+     form. Trusted signer wire binding is independently decrypted under HP06.
 HP05 qualification/credential/method/binding drift before prepare/take and expiry
      during lock/FK/fault waits fail closed; MOCK cannot qualify SANDBOX/LIVE.
 HP06 decrypt the synthetic form using an independent wire verifier: exact frozen
