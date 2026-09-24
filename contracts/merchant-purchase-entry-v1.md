@@ -1,7 +1,8 @@
 # Merchant purchase-entry projection v1
 
-Status: DRAFT_FOR_INDEPENDENT_PREFLIGHT, 2026-09-25. No implementation or gate
-pass is implied. Baseline `f6c5cdb`. Implements the missing catalog-to-published-
+Status: FROZEN_FOR_IMPLEMENTATION, 2026-09-25. Independent preflight on `0a2e896`
+has no remaining P0/P1/P2 (memory `8737f904-f447-424e-b0fd-bf0568db1e9c`).
+No implementation or gate pass is implied. Baseline `f6c5cdb`. Implements the missing catalog-to-published-
 origin connection in [automatic product payment entry](product-payment-entry-v1.md).
 
 ## User outcome and non-goals
