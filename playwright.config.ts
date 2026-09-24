@@ -8,6 +8,7 @@ const suites: Record<string, string[]> = {
   "identity-mock": ["auth.spec.ts"],
   "entry-mock": ["entry.spec.ts"],
   "identity-real": ["auth-real.spec.ts"],
+  "settings-real": ["settings-real.spec.ts"],
 };
 if (!Object.hasOwn(suites, suite)) throw new Error("Invalid LC_BROWSER_SUITE");
 

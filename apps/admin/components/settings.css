@@ -1,4 +1,6 @@
 .settings-page {
+  /* Scoped contrast fix: inherited muted ink failed 4.5:1 on the canvas. */
+  --muted: #5f7083;
   max-width: 1500px;
   margin: 6px auto 0;
 }
@@ -153,10 +155,9 @@
   accent-color: var(--teal);
 }
 .settings-radio {
-  display: flex;
-  gap: 20px;
-  align-items: center;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 .settings-radio legend {
   width: 100%;
@@ -164,9 +165,31 @@
   margin-bottom: 6px;
 }
 .settings-radio label {
-  flex-direction: row;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 17px minmax(0, 1fr);
+  gap: 5px 10px;
+  align-items: start;
   font-weight: 400;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  cursor: pointer;
+}
+.settings-radio label:has(input:checked) {
+  border-color: #8ebbdc;
+  background: #f1f8ff;
+}
+.settings-radio label small {
+  grid-column: 2;
+}
+.settings-safety {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.settings-safety svg {
+  flex: 0 0 18px;
+  margin-top: 1px;
 }
 .settings-platforms {
   display: grid;
@@ -320,6 +343,9 @@
   }
 }
 @media (max-width: 680px) {
+  .settings-radio {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .settings-heading {
     padding: 0 0 16px;
   }

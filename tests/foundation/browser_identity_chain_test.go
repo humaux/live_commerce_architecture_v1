@@ -36,9 +36,19 @@ import (
 
 // This optional gate connects the actual Next BFF and Go authority to a real,
 // task-owned PG. Only the external IdP is mocked. It is not a real-provider or
-// approved-UI acceptance: the browser spec submits a test-only native form.
+// provider acceptance. The settings suite below exercises the actual approved UI.
 // Explicit build tag keeps ordinary Go tests independent of Node/Chromium.
 func TestBrowserIdentityRealChain(t *testing.T) {
+	runBrowserIdentityChain(t, false)
+}
+
+func TestBrowserSettingsWizardRealChain(t *testing.T) {
+	runBrowserIdentityChain(t, true)
+}
+
+// The same signed IdP/BFF/PG harness is shared, but the wizard has no market seed.
+func runBrowserIdentityChain(t *testing.T, wizard bool) {
+	t.Helper()
 	if os.Getenv("LC_BROWSER_IDENTITY_ACCEPTANCE") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
 		t.Fatal("use scripts/dev/test-local.sh --browser-identity; isolated fixtures are required")
 	}
@@ -104,11 +114,9 @@ func TestBrowserIdentityRealChain(t *testing.T) {
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		recorded := httptest.NewRecorder()
 		mux.ServeHTTP(recorded, r)
-		// Market discovery/setup has no public route yet. Seed only this test's
-		// onboarding receipt into the isolated database; NEVER synthesize grants,
-		// provider qualifications or a settings response. Browser PUT/inspect below
-		// still cross the real BFF, domain validation, runtime role and persistence.
-		if r.Method == "POST" && r.URL.Path == "/v1/identity/initial-store" && recorded.Code == http.StatusOK {
+		// Historical transport suite keeps its isolated fixture. The new settings
+		// suite MUST create markets through the actual UI and HTTP command instead.
+		if !wizard && r.Method == "POST" && r.URL.Path == "/v1/identity/initial-store" && recorded.Code == http.StatusOK {
 			var created identity.Store
 			if err := json.Unmarshal(recorded.Body.Bytes(), &created); err != nil {
 				t.Error("fixture could not decode successful store receipt")
@@ -136,7 +144,11 @@ func TestBrowserIdentityRealChain(t *testing.T) {
 	t.Cleanup(api.Close)
 
 	// Per-run evidence, no tokens/DB credentials in console or process args.
-	evidence := filepath.Join(root, "output", "playwright", "identity-chain-"+time.Now().UTC().Format("20060102T150405.000000000"))
+	suite, spec := "identity-real", "auth-real.spec.ts"
+	if wizard {
+		suite, spec = "settings-real", "settings-real.spec.ts"
+	}
+	evidence := filepath.Join(root, "output", "playwright", suite+"-"+time.Now().UTC().Format("20060102T150405.000000000"))
 	if err := os.MkdirAll(evidence, 0700); err != nil {
 		t.Fatal(err)
 	}
@@ -185,10 +197,10 @@ func TestBrowserIdentityRealChain(t *testing.T) {
 		t.Fatalf("Next readiness failed; local evidence: %s", evidence)
 	}
 	browserLogFile := browserLog(t, filepath.Join(evidence, "playwright.log"))
-	browser := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/auth-real.spec.ts", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
+	browser := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/"+spec, "--reporter=list", "--output="+filepath.Join(evidence, "results"))
 	browser.Dir = root
 	browser.Env = browserEnvironment(map[string]string{
-		"LC_BROWSER_SUITE":         "identity-real",
+		"LC_BROWSER_SUITE":         suite,
 		"LC_BROWSER_PUBLIC_ORIGIN": publicOrigin, "LC_BROWSER_API_ORIGIN": api.URL,
 		"LC_BROWSER_ISSUER":    idp.server.URL,
 		"LC_BROWSER_MARKET_ID": browserMarketID,
@@ -222,7 +234,13 @@ func TestBrowserIdentityRealChain(t *testing.T) {
 		LEFT JOIN integration.account_credentials c ON c.tenant_id=a.tenant_id AND c.store_id=a.store_id AND c.connection_id=a.id
 		WHERE e.issuer=$1 AND e.subject='browser-subject' GROUP BY s.tenant_id`, idp.server.URL).
 		Scan(&accountCount, &credentialCount, &qualifications, &credentialVersion, &operations)
-	if err != nil || accountCount != 1 || credentialCount != 2 || qualifications != 0 || credentialVersion != 2 || operations != 0 {
+	wantAccounts, wantCredentials, wantCredentialVersion := 1, 2, 2
+	if wizard {
+		// One initial credential despite crash/retries, plus one independent
+		// account proving fresh UI hydration follows the saved method binding.
+		wantAccounts, wantCredentialVersion = 2, 1
+	}
+	if err != nil || accountCount != wantAccounts || credentialCount != wantCredentials || qualifications != 0 || credentialVersion != wantCredentialVersion || operations != 0 {
 		t.Fatalf("browser account persistence proof failed: accounts=%d credentials=%d qualifications=%d version=%d operations=%d err=%v", accountCount, credentialCount, qualifications, credentialVersion, operations, err)
 	}
 	var methodVersions, methodHeads, enabledMethods, inspectCommands int
@@ -234,8 +252,32 @@ func TestBrowserIdentityRealChain(t *testing.T) {
 		FROM identity.initial_stores s JOIN identity.external_identities e ON e.principal_id=s.principal_id
 		WHERE e.issuer=$1 AND e.subject='browser-subject'`, idp.server.URL).
 		Scan(&methodVersions, &methodHeads, &enabledMethods, &inspectCommands)
-	if err != nil || methodVersions != 2 || methodHeads != 1 || enabledMethods != 0 || inspectCommands != 0 {
+	// Wizard revision 2 is an independent concurrent editor; the stale UI must
+	// not overwrite it with an implicitly upgraded expected_version.
+	wantMethodVersions := 2
+	if err != nil || methodVersions != wantMethodVersions || methodHeads != 1 || enabledMethods != 0 || inspectCommands != 0 {
 		t.Fatalf("browser method/inspection persistence proof: versions=%d heads=%d enabled=%d inspect_commands=%d err=%v", methodVersions, methodHeads, enabledMethods, inspectCommands, err)
+	}
+	if wizard {
+		var markets, policies, services, commands int
+		err = f.owner.QueryRow(ctx, `SELECT
+		 (SELECT count(*) FROM pricing.markets m WHERE m.tenant_id=s.tenant_id),
+		 (SELECT count(*) FROM pricing.policy_versions p WHERE p.tenant_id=s.tenant_id),
+		 (SELECT count(*) FROM fulfillment.service_versions f WHERE f.tenant_id=s.tenant_id),
+		 (SELECT count(*) FROM ops.command_results c WHERE c.tenant_id=s.tenant_id AND c.operation='pricing.market.create')
+		 FROM identity.initial_stores s JOIN identity.external_identities e ON e.principal_id=s.principal_id
+		 WHERE e.issuer=$1 AND e.subject='browser-subject'`, idp.server.URL).Scan(&markets, &policies, &services, &commands)
+		if err != nil || markets != 1 || policies != 1 || services != 1 || commands != 1 {
+			t.Fatalf("wizard fresh setup persistence: markets=%d policies=%d services=%d market_commands=%d err=%v", markets, policies, services, commands, err)
+		}
+		var methodName string
+		err = f.owner.QueryRow(ctx, `SELECT m.name_en FROM payments.method_versions m
+		 JOIN identity.initial_stores s ON s.tenant_id=m.tenant_id AND s.store_id=m.store_id
+		 JOIN identity.external_identities e ON e.principal_id=s.principal_id
+		 WHERE e.issuer=$1 AND e.subject='browser-subject' AND m.version=2`, idp.server.URL).Scan(&methodName)
+		if err != nil || methodName != "Remote saved name" {
+			t.Fatalf("wizard stale draft overwrote concurrent editor or failed readback: err=%v", err)
+		}
 	}
 	idp.mu.Lock()
 	exchanges, keys := idp.exchanges, idp.keyReads

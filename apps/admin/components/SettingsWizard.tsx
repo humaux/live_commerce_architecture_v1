@@ -1220,6 +1220,16 @@ export function SettingsWizard({
     clearSecrets();
     const next = {
       ...draft,
+      // Explicit discard must drop the unsaved account choice too. Otherwise
+      // hydration would pair that old binding with a newly read method version.
+      ...(draft.branch === "payuni"
+        ? {
+            accountChoiceTouched: false,
+            accountID: "",
+            merchantID: "",
+            methodBinding: null,
+          }
+        : {}),
       methodObservation: null,
       policyObservation: null,
       serviceObservation: null,
@@ -1853,21 +1863,25 @@ export function SettingsWizard({
                               <input
                                 type="radio"
                                 name="environment"
+                                aria-label={c.sandbox}
                                 checked={draft.environment === "SANDBOX"}
                                 onChange={() =>
                                   update("environment", "SANDBOX")
                                 }
                               />
-                              {c.sandbox}
+                              <strong>{c.sandbox}</strong>
+                              <small>{c.sandboxHint}</small>
                             </label>
                             <label>
                               <input
                                 type="radio"
                                 name="environment"
+                                aria-label={c.live}
                                 checked={draft.environment === "LIVE"}
                                 onChange={() => update("environment", "LIVE")}
                               />
-                              {c.live}
+                              <strong>{c.live}</strong>
+                              <small>{c.liveHint}</small>
                             </label>
                           </fieldset>
                           <label>
@@ -1906,7 +1920,21 @@ export function SettingsWizard({
                           <p className="settings-note">{c.secretHint}</p>
                         </>
                       )}
-                      <p className="settings-warning">{c.accountUnverified}</p>
+                      <p className="settings-warning settings-safety">
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.7"
+                          aria-hidden="true"
+                        >
+                          <circle cx="12" cy="12" r="9" />
+                          <path d="M12 7v1m0 3v6" />
+                        </svg>
+                        <span>{c.accountUnverified}</span>
+                      </p>
                       <div className="settings-actions">
                         <button type="button" onClick={() => goStep(1)}>
                           {c.back}
@@ -2492,7 +2520,7 @@ export function SettingsWizard({
                       <dt>{c.account}</dt>
                       <dd>
                         {activeAccount
-                          ? `${activeAccount.account_id} · ${activeAccount.state} · v${activeAccount.credential_version}`
+                          ? `${activeAccount.account_id} · ${activeAccount.state === "CONFIGURED_UNVERIFIED" ? c.savedUnverified : c.notChecked} · v${activeAccount.credential_version}`
                           : c.notConfigured}
                       </dd>
                     </div>
@@ -2585,7 +2613,7 @@ export function SettingsWizard({
                   <dt>{c.account}</dt>
                   <dd>
                     {activeAccount
-                      ? `${activeAccount.account_id} · ${activeAccount.state}`
+                      ? `${activeAccount.account_id} · ${activeAccount.state === "CONFIGURED_UNVERIFIED" ? c.savedUnverified : c.notChecked}`
                       : c.notConfigured}
                   </dd>
                 </div>
@@ -2639,7 +2667,7 @@ export function SettingsWizard({
                 {step === 1
                   ? c.payuniHint
                   : step === 2
-                    ? c.accountUnverified
+                    ? c.accountNext
                     : step === 3
                       ? draft.branch === "payuni"
                         ? c.disabledReason
