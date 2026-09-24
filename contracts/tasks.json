@@ -521,7 +521,7 @@
       "evidence": "docs/implementation/2026-09-24-payuni-wire-acceptance.md",
       "aggregate": "226 top-level PASS/0 FAIL/0 SKIP real PG/race/vet exit0;16 PAYUNi top-level including exact TWD minor-unit conversion;official vector plus Node/OpenSSL10 forms;zero provider network",
       "independent_review": "c8f4ebd2-4f49-49be-9ffc-380f9fc45818;no confirmed P0/P1;reviewer independently ran package race/vet and checked final226 full logs;prior contract P1 superseded",
-      "not_ready": "Wire remains unconnected to hosted form release, historical credential reader, financial transition/refund/query worker or provider sandbox/live; later internal attempt transaction is separate below."
+      "not_ready": "Wire has a historical reader and internal query worker in payment_query_internal below; hosted form release, financial transitions/refunds and provider sandbox/live remain unverified."
     },
     "merchant_settings_http": {
       "code_baseline": "d86aa84",
@@ -537,9 +537,17 @@
       "evidence": "docs/implementation/2026-09-24-payment-start-acceptance.md",
       "aggregate": "246 top-level PASS/0 FAIL/0 SKIP real PG/race/vet exit0; 9 new PG + 2 unit; first failed attempts preserved; no provider requests",
       "independent_review": "ef135ed8-f7cd-4958-bbc1-c08ab3f3cf7c; P0=0/P1=0; exact proof scope/profile, buyer query-only actor, replay, concurrency, causal fault/expiry gates and full log/hash reviewed",
-      "not_ready": "Only internal payuni_credit start; no real proof issuer, hosted form, query worker, historical credential reader, financial settlement/refund, public HTTP/UI or other payment methods. Merchant enabling still rejected."
+      "not_ready": "Only internal payuni_credit start; subsequent query execution is separate below. No real proof issuer, hosted form, financial settlement/refund, public HTTP/UI or other payment methods. Merchant enabling still rejected."
     },
-    "remaining": "生产checkout/worker装配与到期巡检、公开买家HTTP/UI、正式门市目录/地图回调、第三方账户自助连接与真实准入、配送/支付设置UI及列表、历史凭据读取、托管表单释放、query worker/回调入账/退款/支付对账、provider sandbox/live及完整G03/G05仍待实现或验收。内部信用卡StartPayment已通过真实PG竞态及原子事务MOCK验收，复用T06查询台账但无执行worker；其他支付方式仍禁用；内部预留/待支付不是实际运输或收到资金。",
+    "payment_query_internal": {
+      "code_baseline": "3029998",
+      "status": "PASS_BOUNDED_INTERNAL_QUERY_AND_AUTHENTICATED_REPORTS",
+      "evidence": "docs/implementation/2026-09-24-payment-query-acceptance.md",
+      "aggregate": "265 top-level PASS/0 FAIL/0 SKIP real PG/race/vet exit0; 11 new PG and 8 unit tests; actual River with signed mock transport, no provider requests; foundation167.629s",
+      "independent_review": "a90c8824-8680-4e50-91b2-9a91b1ce5d72; no unresolved P0/P1; final log/hash, exact six-function ACL, historical credential and lease fences checked",
+      "not_ready": "Authenticated observations only, no payment capture/refund or order/stock transition. CloseAmt and financial facts, notification inbox, production worker/qualification, hosted form, public HTTP/UI and sandbox/live remain pending."
+    },
+    "remaining": "生产checkout/worker装配与到期巡检、公开买家HTTP/UI、正式门市目录/地图回调、第三方账户自助连接与真实准入、配送/支付设置UI及列表、托管表单释放、请款/退款字段、回调入账/原子库存分配/退款/支付对账、provider sandbox/live及完整G03/G05仍待实现或验收。内部信用卡StartPayment及历史凭据查询worker/可信报告已通过PG与签名MOCK验收；商家启用仍拒绝，查询成功不等于收到资金，内部预留也不等于实际运输。",
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
   {

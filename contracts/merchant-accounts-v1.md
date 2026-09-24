@@ -15,8 +15,9 @@
 - 内部 `accounts.New(keys, bindings)`；keys 为不可变 AES-256-GCM keyring。
   部署主密钥通过环境加载后注入，不写入数据库、源码、日志或命令回执。
   使用 Go 标准库，无新依赖。不要新增微服务、队列或第二套授权。
-- 本单元只交付内部 Go/SQL。HTTP/UI、真实验证、支付配置、StartPayment、worker
-  取凭据及 PSP adapter 接下来分别实现；这里不授 worker 任意解密／扫库权限。
+- 本单元只交付内部 Go/SQL。后续支付配置、内部 StartPayment 和
+  [精确租约查询取凭据](payment-query-v1.md)分别交付，不授 worker 任意解密／扫库权限。
+  自助凭据 HTTP/UI、真实账户验证和生产装配仍未交付。
 
 ## 冻结接口
 

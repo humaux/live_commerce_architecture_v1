@@ -136,8 +136,11 @@ signed UNKNOWN/number-issued/incomplete records never becoming paid, HTTPS query
 mock transport (one call, response bounded, redirects/cancel/error sanitized).
 Full Go race/vet regression and independent payment review. No provider transactions.
 
-No credentials lookup, durable attempt, production worker, replay ledger/inbox or
-callback HTTP handler here. UPP front-channel return must not commit money. Official
+This wire package does not own credentials lookup, durable attempts, production
+worker assembly, replay ledger/inbox or a callback HTTP handler. The following
+[query increment](payment-query-v1.md) composes a historical reader and internal
+River worker outside this package; it does not settle funds. UPP front-channel
+return must not commit money. Official
 callback ACK/retry policy unresolved; do not invent ACK. StartPayment integration must
 freeze the exact account/environment/credential version, attempt identity/deadlines,
 and move stock to PAYMENT_PENDING atomically before

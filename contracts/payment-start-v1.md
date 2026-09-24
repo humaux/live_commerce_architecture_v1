@@ -57,9 +57,10 @@ public checkout, payment success, hosted form release or provider qualification.
 - Generic merchant Get/Dispatcher excludes this family. Existing Claim/Complete
   fencing is reused: query claims reconcile only, and current binding disable or
   revision change does not prevent querying its immutable historical target.
-- This increment queues a durable query intent but does not register a payment
-  query worker or expose a form. Credentials, verified observations, settlement,
-  reconciliation horizon and actual provider workers are following work.
+- This increment queues a durable query intent but does not expose a form.
+  The following [query increment](payment-query-v1.md) loads historical
+  credentials, executes that job and retains authenticated observations with a
+  bounded reconciliation horizon. Financial settlement is still separate work.
   UNKNOWN cannot book payment, consume stock or imply safe release.
 
 ## Acceptance gates

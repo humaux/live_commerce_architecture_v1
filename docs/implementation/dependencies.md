@@ -123,8 +123,8 @@ SQL 约束错因核对及用 sequence 证明到达注入点的八类原子回滚
 InsertTx 和私有回执，调用0016的 `checkout.start_payment`；不依赖 HTTP/PSP wire，
 不读密文。资格表当前没有应用签发者，MOCK只在隔离测试中注入。operation新增
 BUYER_PAYMENT_QUERY family；merchant Get/Dispatcher排除，Claim只为此family允许
-历史停用绑定的reconcile。未来payment_query_v1 worker须读frozen credential版本，
-不能复用商家Dispatcher的重试期限。升级这些模块/PG/River时重跑TestBuyerPayment
+历史停用绑定的reconcile。payment_query_v1 worker读取frozen credential版本，
+不复用商家Dispatcher的重试期限。升级这些模块/PG/River时重跑TestBuyerPayment
 和全部T06；--payment仅诊断，全量包runner240s但各测试期限不变。无新增依赖；
 边界及失败证据见 `2026-09-24-payment-start-acceptance.md`。
 实证见 `2026-09-24-payment-methods-acceptance.md`，无供应商交易和支付页面验收。
@@ -141,18 +141,29 @@ BUYER_PAYMENT_QUERY family；merchant Get/Dispatcher排除，Claim只为此famil
 `internal/integrations/psp/payuni` 不新增 Go module，不导入 SQL、River 或账户库。
 标准库 `crypto/aes/cipher/sha256/subtle`、`net/http`、`net/url`、`encoding/*`
 实现官方 UPP v2.0 与查询 wire；固定官方端点、TLS1.2+、10秒、一次请求无重定向。
-客户自有 HashKey/IV 由未来调用者按 durable attempt 的准确账户/环境/历史版本加载，
+客户自有 HashKey/IV 由查询读取器按 durable attempt 的准确账户/环境/历史版本加载，
 不是任意商家可调用的通用解密 API；未签名的 outer MerID 不能提供账户权威。
 供应商固定 IV/GCM 是 wire 兼容限制，禁止拿来替换本地随机 nonce/AAD 存储加密。
 未知、取号、处理中、不完整记录只是 `Observation`，没有 `Paid` 或入账副作用。
 未引入/复制上游 PHP SDK，其固定提交仅作 wire 参考（尤其不能复制其关闭 TLS 的设置）。
 测试独立使用 Node24.15.0 内建 OpenSSL 核对官方固定向量及 Go 五种表单；无需 npm 包，
-`test-local.sh` 在创建 PG 前检查 Node。更新 Go/Node/协议时须跑所有16个同包顶层测试、
+`test-local.sh` 在创建 PG 前检查 Node。更新 Go/Node/协议时须跑全部同包顶层测试、
 完整 race/vet；供应商字段/原始 Result 编码/回调 ACK/轮换规则仍需商家沙箱验收。
 `AmountTWDFromMinor` 仅精确转换本系统两位TWD minor units，不舍入或覆盖订单价格；
 金额单位或Intl依赖变更须复核转换与界面缩放一致性。两种PG fixture均等待TCP就绪，
 不可退回socket探针（官方镜像初始化临时服务会先通过socket后关闭）。
 见 `2026-09-24-payuni-wire-acceptance.md`；适配库存在不等于已准入或可以启用收款。
+
+`accounts.LoadPaymentQuery` → 0017精确租约/历史版本 → Keyring.open →
+`payuni.NewQuery` → `payments.NewQueryWorker` 是查询执行链；复用 River、core
+Claim/Complete、pgx及标准库，不增加依赖。query-only客户端禁表单/通知且不保留
+空闲连接；仅MOCK允许显式RoundTripper，SANDBOX/LIVE不得注入。DB读事务先提交，
+网络仅一次调用；结果与UNKNOWN完成同事务，错误/预算也在写入后再次核租约时限。
+历史解密失败保留已验证年龄，防止绕过24小时预算；只有SQL成功后才可保留该年龄。
+升级以上依赖或0017必须跑`payment_query_test.go`、全部T06及完整race/vet；涵盖
+历史密钥轮换、坏签名/金额/商户、超时/panic、租约锁等待、跨attempt引用、并发去重、
+预算持久化和父取消。详见[查询验收](2026-09-24-payment-query-acceptance.md)。
+本层仅留存可信报告，未接财务入账、退款、生产进程或支付页面，不开放商家启用。
 
 内部 external-operation 继续复用 pgx、River InsertTx、`command.Run` 与标准库
 JSON/crypto：`internal/integrations/core` 负责精确权限、不可变意图摘要和租约 token
