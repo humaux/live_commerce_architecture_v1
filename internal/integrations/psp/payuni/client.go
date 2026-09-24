@@ -103,16 +103,22 @@ type ExpectedTrade struct {
 
 // Observation is an authenticated provider report, not a paid or settled flag.
 type Observation struct {
-	MerTradeNo  string
-	TradeNo     string
-	AmountTWD   int64
-	PaymentType string
-	TradeStatus string
-	Status      string
-	AuthType    string
-	CardInst    int
-	DataSource  string
-	CloseStatus string
+	MerTradeNo          string
+	TradeNo             string
+	AmountTWD           int64
+	PaymentType         string
+	TradeStatus         string
+	Status              string
+	AuthType            string
+	CardInst            int
+	DataSource          string
+	CloseStatus         string
+	CloseAmountTWD      *int64 `json:"CloseAmountTWD,omitempty"`
+	CardRefundType      string `json:"CardRefundType,omitempty"`
+	CardRefundStatus    string `json:"CardRefundStatus,omitempty"`
+	CardRefundAmountTWD *int64 `json:"CardRefundAmountTWD,omitempty"`
+	CardRefundDay       string `json:"CardRefundDay,omitempty"`
+	CardRemainAmountTWD *int64 `json:"CardRemainAmountTWD,omitempty"`
 }
 
 func New(config Config) (*Client, error) {
@@ -657,7 +663,60 @@ func project(fields map[string]string, expected ExpectedTrade, query bool) (Obse
 			return Observation{}, ErrUncertain
 		}
 	}
+	if query && paymentType == "1" {
+		out.CloseAmountTWD, err = optionalQueryAmount(fields["CloseAmt"])
+		if err != nil {
+			return Observation{}, err
+		}
+		if typeCode := fields["RefundType"]; typeCode != "" && typeCode != "2" && typeCode != "3" {
+			return Observation{}, ErrUncertain
+		}
+		if status := fields["RefundStatus"]; status != "" && status != "1" && status != "2" && status != "3" && status != "8" {
+			return Observation{}, ErrUncertain
+		}
+		if day := fields["RefundDay"]; day != "" && !validQueryLocalDay(day) {
+			return Observation{}, ErrUncertain
+		}
+		out.CardRefundType = fields["RefundType"]
+		out.CardRefundStatus = fields["RefundStatus"]
+		out.CardRefundDay = fields["RefundDay"]
+		out.CardRefundAmountTWD, err = optionalQueryAmount(fields["RefundAmount"])
+		if err != nil {
+			return Observation{}, err
+		}
+		out.CardRemainAmountTWD, err = optionalQueryAmount(fields["RemainAmount"])
+		if err != nil {
+			return Observation{}, err
+		}
+	}
 	return out, nil
+}
+
+func optionalQueryAmount(raw string) (*int64, error) {
+	if raw == "" {
+		return nil, nil
+	}
+	if len(raw) > 6 || (raw != "0" && (raw[0] < '1' || raw[0] > '9')) {
+		return nil, ErrUncertain
+	}
+	for i := 1; i < len(raw); i++ {
+		if raw[i] < '0' || raw[i] > '9' {
+			return nil, ErrUncertain
+		}
+	}
+	amount, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || amount > 199999 {
+		return nil, ErrUncertain
+	}
+	return &amount, nil
+}
+
+func validQueryLocalDay(day string) bool {
+	if len(day) != 19 {
+		return false
+	}
+	parsed, err := time.Parse("2006-01-02 15:04:05", day)
+	return err == nil && parsed.Year() > 0 && parsed.Format("2006-01-02 15:04:05") == day
 }
 
 func containsInt(values []int, needle int) bool {
