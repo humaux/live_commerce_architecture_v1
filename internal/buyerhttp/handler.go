@@ -13,7 +13,9 @@ import (
 	"mime"
 	"net"
 	"net/http"
+	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,6 +26,7 @@ import (
 	"livecommerce/internal/command"
 	"livecommerce/internal/domains"
 	"livecommerce/internal/httperror"
+	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
 	"livecommerce/internal/storefront"
 )
@@ -65,6 +68,7 @@ type routeKind uint8
 const (
 	unknownRoute routeKind = iota
 	sessionRoute
+	catalogRoute
 	cartRoute
 	quotesRoute
 	quoteRoute
@@ -83,6 +87,8 @@ func matchRoute(path string) route {
 	switch path {
 	case "/v1/buyer/session":
 		return route{kind: sessionRoute}
+	case "/v1/buyer/catalog":
+		return route{kind: catalogRoute}
 	case "/v1/buyer/cart":
 		return route{kind: cartRoute}
 	case "/v1/buyer/quotes":
@@ -107,6 +113,8 @@ func allowed(kind routeKind, method string) bool {
 	switch kind {
 	case sessionRoute:
 		return method == http.MethodGet || method == http.MethodPost || method == http.MethodDelete
+	case catalogRoute:
+		return method == http.MethodGet
 	case cartRoute:
 		return method == http.MethodGet || method == http.MethodPut
 	case quotesRoute, checkoutRoute:
@@ -137,7 +145,8 @@ func oneHeader(r *http.Request, name string) (string, bool) {
 }
 
 func forbiddenInput(r *http.Request) bool {
-	if r.URL == nil || r.URL.ForceQuery || r.URL.RawQuery != "" {
+	catalogQuery := r.URL != nil && r.Method == http.MethodGet && r.URL.Path == "/v1/buyer/catalog" && r.URL.EscapedPath() == r.URL.Path
+	if r.URL == nil || r.URL.ForceQuery || (!catalogQuery && r.URL.RawQuery != "") {
 		return true
 	}
 	for _, name := range []string{"Cookie", "Origin", "X-Tenant-ID", "X-Store-ID"} {
@@ -146,6 +155,47 @@ func forbiddenInput(r *http.Request) bool {
 		}
 	}
 	return false
+}
+
+func catalogRequest(raw string) (storefront.CatalogRequest, error) {
+	var request storefront.CatalogRequest
+	if len(raw) > 2048 || strings.Contains(raw, ";") || strings.HasPrefix(raw, "&") || strings.HasSuffix(raw, "&") || strings.Contains(raw, "&&") {
+		return request, command.ErrInvalid
+	}
+	values, err := url.ParseQuery(raw)
+	if err != nil {
+		return request, command.ErrInvalid
+	}
+	for name, values := range values {
+		if len(values) != 1 || values[0] == "" {
+			return request, command.ErrInvalid
+		}
+		switch name {
+		case "product_id":
+			if !command.ValidID(values[0]) {
+				return request, command.ErrInvalid
+			}
+			request.ProductID = values[0]
+		case "limit":
+			if len(values[0]) > 3 {
+				return request, command.ErrInvalid
+			}
+			for _, digit := range values[0] {
+				if digit < '0' || digit > '9' {
+					return request, command.ErrInvalid
+				}
+			}
+			request.Page.Limit, err = strconv.Atoi(values[0])
+			if err != nil || request.Page.Limit < 1 || request.Page.Limit > 100 {
+				return request, command.ErrInvalid
+			}
+		case "cursor":
+			request.Page.Cursor = values[0]
+		default:
+			return request, command.ErrInvalid
+		}
+	}
+	return request, nil
 }
 
 func bearer(r *http.Request) (string, bool) {
@@ -300,6 +350,18 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 	var out any
 	var err error
 	switch selected.kind {
+	case catalogRoute:
+		var request storefront.CatalogRequest
+		request, err = catalogRequest(r.URL.RawQuery)
+		if err == nil {
+			var page pagination.Page[storefront.CatalogItem]
+			page, err = scoped(ctx, h.pool, token, storeID, func(c context.Context, tx pgx.Tx, s buyer.Scope) (pagination.Page[storefront.CatalogItem], error) {
+				return storefront.ListCatalog(c, tx, s, request)
+			})
+			if err == nil {
+				out = projectCatalog(page)
+			}
+		}
 	case cartRoute:
 		if r.Method == http.MethodGet {
 			out, err = scoped(ctx, h.pool, token, storeID, storefront.GetCart)

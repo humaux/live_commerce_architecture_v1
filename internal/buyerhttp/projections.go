@@ -4,8 +4,35 @@ import (
 	"time"
 
 	"livecommerce/internal/checkout"
+	"livecommerce/internal/pagination"
 	"livecommerce/internal/storefront"
 )
+
+type catalogItemResponse struct {
+	ProductID   string `json:"product_id"`
+	SKUID       string `json:"sku_id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	SKUCode     string `json:"sku_code"`
+	Currency    string `json:"currency"`
+	PriceMinor  int64  `json:"price_minor"`
+}
+
+type catalogResponse struct {
+	Items      []catalogItemResponse `json:"items"`
+	NextCursor string                `json:"next_cursor"`
+}
+
+func projectCatalog(page pagination.Page[storefront.CatalogItem]) catalogResponse {
+	out := catalogResponse{Items: make([]catalogItemResponse, 0, len(page.Items)), NextCursor: page.NextCursor}
+	for _, item := range page.Items {
+		out.Items = append(out.Items, catalogItemResponse{
+			ProductID: item.ProductID, SKUID: item.SKUID, Name: item.Name, Description: item.Description,
+			SKUCode: item.SKUCode, Currency: item.Currency, PriceMinor: item.PriceMinor,
+		})
+	}
+	return out
+}
 
 type cartItemResponse struct {
 	SKUID    string `json:"sku_id"`
