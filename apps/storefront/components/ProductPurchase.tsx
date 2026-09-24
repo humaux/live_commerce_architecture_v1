@@ -61,6 +61,7 @@ export default function ProductPurchase({
   const [quote, setQuote] = useState<Quote | null>(null);
   const [pending, setPending] = useState(false);
   const [pendingKind, setPendingKind] = useState<string | null>(null);
+  const [recoveryCountry, setRecoveryCountry] = useState<string | null>(null);
   const [orderLocked, setOrderLocked] = useState(false);
   const [order, setOrder] = useState<Order | null>(null);
   const epoch = useRef(0);
@@ -104,6 +105,9 @@ export default function ProductPurchase({
     const waiting = pendingPurchase(ctx);
     setPending(waiting !== null);
     setPendingKind(waiting?.kind ?? null);
+    setRecoveryCountry(
+      waiting?.kind === "destination" ? waiting.body.country : null,
+    );
     const id = knownOrderID(ctx);
     setOrderLocked(waiting?.kind === "checkout" || id !== null);
     return { waiting, id };
@@ -732,27 +736,35 @@ export default function ProductPurchase({
                 </button>
               </section>
             )}
-            {quote && cart && !orderLocked && error !== "session" && (
-              <OrderFlow
-                key={`${context}:${quote.id}`}
-                context={context}
-                cart={cart}
-                quote={quote}
-                locale={locale}
-                busy={busy}
-                blocked={pending && pendingKind !== "destination"}
-                recoveringDestination={pendingKind === "destination"}
-                run={act}
-                money={money}
-                onOrder={acceptOrder}
-                reload={async () => {
-                  sessionStorage.removeItem(
-                    `commerce-purchase-quote-v1:${context}`,
-                  );
-                  await load();
-                }}
-              />
-            )}
+            {(quote || pendingKind === "destination") &&
+              cart &&
+              !orderLocked &&
+              error !== "session" && (
+                <OrderFlow
+                  key={`${context}:${quote?.id ?? "address-recovery"}`}
+                  context={context}
+                  cart={cart}
+                  quote={quote}
+                  recoveryCountry={recoveryCountry}
+                  locale={locale}
+                  busy={busy}
+                  blocked={pending && pendingKind !== "destination"}
+                  recoveringDestination={pendingKind === "destination"}
+                  run={act}
+                  money={money}
+                  onOrder={acceptOrder}
+                  reload={async () => {
+                    // Requotation may unmount the form, so first resolve its
+                    // PII-free destination journal through explicit confirmation.
+                    if (pendingPurchase(context)?.kind === "destination")
+                      return;
+                    sessionStorage.removeItem(
+                      `commerce-purchase-quote-v1:${context}`,
+                    );
+                    await load();
+                  }}
+                />
+              )}
           </>
         )}
       </main>
