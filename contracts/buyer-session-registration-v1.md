@@ -1,6 +1,6 @@
 # Retry-safe private buyer session registration v1
 
-Status: DRAFT, independent preflight required before implementation. This is a
+Status: FROZEN after independent preflight of 55f5840 (no open P0/P1/P2). This is a
 dependency of the public buyer BFF, not a public login or a browser release.
 
 ## Reason and reuse
@@ -12,7 +12,7 @@ registration operation, rather than another identity system or plaintext token
 storage. Reuse `buyer.capability_sessions.token_hash` uniqueness, existing
 owner/session/event tables, scope locks, expiry and published-origin admission.
 
-## Frozen interface proposal
+## Frozen interface
 
 - `buyer.Service.RegisterForTrustedStore(ctx, storeID, token) (Capability, error)`
   accepts only the existing canonical 32-byte raw-base64url token and UUID rules.
@@ -39,7 +39,9 @@ owner/session/event tables, scope locks, expiry and published-origin admission.
 2. If the hash is new, call existing `buyer.issue_capability` inside a PL/pgSQL
    exception subtransaction. A concurrent token-hash uniqueness conflict rolls
    back the losing owner/session/event before replay. Catch only the exact
-   token-hash constraint; unrelated uniqueness errors propagate unchanged.
+   token-hash constraint, schema and table; unrelated uniqueness errors propagate
+   unchanged. READ COMMITTED/default volatile SQL sees the committed winner after
+   waiting. Stronger isolation failures fail safely, without an internal retry loop.
 3. For an existing hash, require the exact same store and resolve via existing
    `buyer.resolve_scope`: active tenant/store/owner, live nonrevoked session and
    expiry evaluated after tenant -> store -> owner -> session locks. Return the
@@ -71,7 +73,7 @@ multi-tab races. Do not expose the private API until that boundary is accepted.
 | Gate | Evidence required |
 | --- | --- |
 | SR01 | Real PG HTTP first registration, discard response, same-token retry preserves scope, expiry, cart and exactly one owner/session/event delta |
-| SR02 | Two independent handler/service instances concurrently register one token; all results equal, one owner/session/event; separate tokens create separate owners |
+| SR02 | Two independent handler/service instances concurrently register one token; all results equal, one owner/session/event; separate tokens create separate owners. Also hold a winner's insert uncommitted, observe the loser waiting on its unique conflict, then commit and prove loser-owner rollback; goroutine timing alone is insufficient |
 | SR03 | Expired/revoked/inactive tenant/store/owner and cross-store/hash reuse deny without new facts or expiry refresh; revoke race resolves with existing locks |
 | SR04 | Invalid/null/hash/TTL SQL inputs, runtime/merchant/PUBLIC EXECUTE denied, issuer direct tables denied; canonical Go token validation |
 | SR05 | Exact HTTP path/method/body/key/header checks; safe exact response; legacy issuance/error semantics unchanged; current published-origin checks enforced on replay |
