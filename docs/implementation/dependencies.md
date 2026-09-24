@@ -65,6 +65,16 @@ Line/Balance/MaxQuantity，不建第二库存账簿。升级 PG/pgx/权限入口
 替换规划器需保留 800 行边界、缺货无部分计划和数量守恒测试。详见
 `2026-09-24-delivery-allocation-acceptance.md`，实际 checkout 消费仍未接通。
 
+门市来源／收货快照仍不新增依赖：`fulfillment/pickup.go` 复用已有鉴权、
+`command.Run/Audit`、pgx；`storefront/destination.go` 复用 buyer scope/command、
+cart share lock 和 fulfillment 的只读／加锁投影。标准库只做输入与时间校验，
+没有新目录抓取、carrier SDK 或密钥服务。迁移 0012 的 scoped FK、FORCE RLS、
+buyer no-op UPDATE 拒绝、主体／会话 provenance 不能由 UI 校验替代。
+升级 PG/pgx/权限包装或上述依赖入口须跑 `buyer_destination_test.go` 的真实角色、
+CAS、直接买家 SQL、回执隐私、事务回滚和真实锁等待过期 gate；将来正式目录 adapter
+需另有来源证明及回调验收，不得沿用 MANUAL_ATTESTED 标签伪称官方验证。
+见 `2026-09-24-buyer-destination-acceptance.md`；没有新增 checkout 库存写权限。
+
 内部 external-operation 继续复用 pgx、River InsertTx、`command.Run` 与标准库
 JSON/crypto：`internal/integrations/core` 负责精确权限、不可变意图摘要和租约 token
 包装；迁移 0008 定义的受限 SQL 函数是 worker 状态迁移的唯一写入口，前向

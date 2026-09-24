@@ -1,7 +1,8 @@
 # Buyer destination and carrier-neutral pickup source v1
 
-Status: FROZEN_FOR_IMPLEMENTATION, 2026-09-24, parent `9b91fc0`.
+Status: IMPLEMENTED_INTERNAL_ONLY, 2026-09-24; contract `f974391`, code/tests `5cefa83`.
 Prerequisite only: no actual checkout/stock write, provider, map callback or public route.
+Actual bounded gates: [164-test regression and browser compatibility](../docs/implementation/2026-09-24-buyer-destination-acceptance.md).
 
 ## Merchant-attested source (fulfillment)
 
