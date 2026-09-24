@@ -60,6 +60,10 @@ func TestExactRoutesAndMethods(t *testing.T) {
 		{"/v1/buyer/destination", http.MethodGet, destinationRoute, true},
 		{"/v1/buyer/destinations/00000000-0000-0000-0000-000000000001", http.MethodGet, destinationItemRoute, true},
 		{"/v1/buyer/checkout", http.MethodPost, checkoutRoute, true},
+		{"/v1/buyer/orders", http.MethodGet, ordersRoute, true},
+		{"/v1/buyer/orders", http.MethodPost, ordersRoute, false},
+		{"/v1/buyer/orders", http.MethodHead, ordersRoute, false},
+		{"/v1/buyer/orders/", http.MethodGet, unknownRoute, false},
 		{"/v1/buyer/orders/00000000-0000-0000-0000-000000000001", http.MethodGet, orderRoute, true},
 		{"/v1/buyer/session/", http.MethodGet, unknownRoute, false},
 		{"/v1/buyer/quotes/a/b", http.MethodGet, unknownRoute, false},
@@ -69,6 +73,27 @@ func TestExactRoutesAndMethods(t *testing.T) {
 		if found.kind != tc.kind || allowed(found.kind, tc.method) != tc.ok {
 			t.Fatalf("route %s %s: got kind=%d allowed=%v", tc.method, tc.path, found.kind, allowed(found.kind, tc.method))
 		}
+	}
+}
+
+func TestOrdersStrictQuery(t *testing.T) {
+	for _, raw := range []string{"", "limit=1", "limit=100&cursor=opaque"} {
+		if _, err := ordersRequest(raw); err != nil {
+			t.Fatalf("valid orders query %q: %v", raw, err)
+		}
+	}
+	for _, raw := range []string{"limit=0", "limit=101", "limit=-1", "limit=%2B1", "limit=1.0", "limit=", "limit=1&limit=2", "cursor=", "cursor=a&cursor=b", "country=TW", "market_id=11111111-1111-1111-1111-111111111111", "owner_id=x", "other=x", "limit=1;cursor=a", "&limit=1", "limit=1&", "limit=1&&cursor=a", "cursor=%", "cursor=" + strings.Repeat("a", 1025)} {
+		if _, err := ordersRequest(raw); !errors.Is(err, command.ErrInvalid) {
+			t.Fatalf("invalid orders query accepted %q", raw)
+		}
+	}
+	r := httptest.NewRequest(http.MethodGet, "http://internal/v1/buyer/orders?limit=1", nil)
+	if forbiddenInput(r) {
+		t.Fatal("orders read query rejected before strict parsing")
+	}
+	r.Method = http.MethodPost
+	if !forbiddenInput(r) {
+		t.Fatal("orders write query permitted")
 	}
 }
 

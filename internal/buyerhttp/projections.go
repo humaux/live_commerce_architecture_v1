@@ -263,6 +263,8 @@ type orderSnapshotResponse struct {
 
 type orderResponse struct {
 	OrderID          string                `json:"order_id"`
+	CartID           string                `json:"cart_id"`
+	CartVersion      int64                 `json:"cart_version"`
 	CommercialState  string                `json:"commercial_state"`
 	FulfillmentState string                `json:"fulfillment_state"`
 	HoldExpiresAt    *time.Time            `json:"hold_expires_at,omitempty"`
@@ -274,6 +276,7 @@ func projectOrder(order checkout.Order) orderResponse {
 	destination := order.Snapshot.Destination
 	out := orderResponse{
 		OrderID: order.OrderID, CommercialState: order.CommercialState, FulfillmentState: order.FulfillmentState,
+		CartID: quote.CartID, CartVersion: quote.CartVersion,
 		Snapshot: orderSnapshotResponse{
 			Quote: orderQuoteResponse{
 				Currency: quote.Currency, Lines: projectQuoteLines(quote.Lines),
@@ -309,6 +312,34 @@ func projectOrder(order checkout.Order) orderResponse {
 			Code: destination.Pickup.Code, Name: destination.Pickup.Name,
 			Address: destination.Pickup.Address, Country: destination.Pickup.Country,
 		}
+	}
+	return out
+}
+
+type orderSummaryResponse struct {
+	OrderID          string    `json:"order_id"`
+	CreatedAt        time.Time `json:"created_at"`
+	CartID           string    `json:"cart_id"`
+	CartVersion      int64     `json:"cart_version"`
+	CommercialState  string    `json:"commercial_state"`
+	FulfillmentState string    `json:"fulfillment_state"`
+	Currency         string    `json:"currency"`
+	TotalMinor       int64     `json:"total_minor"`
+}
+
+type ordersResponse struct {
+	Items      []orderSummaryResponse `json:"items"`
+	NextCursor string                 `json:"next_cursor"`
+}
+
+func projectOrders(page pagination.Page[checkout.OrderSummary]) ordersResponse {
+	out := ordersResponse{Items: make([]orderSummaryResponse, 0, len(page.Items)), NextCursor: page.NextCursor}
+	for _, order := range page.Items {
+		out.Items = append(out.Items, orderSummaryResponse{
+			OrderID: order.OrderID, CreatedAt: order.CreatedAt, CartID: order.CartID, CartVersion: order.CartVersion,
+			CommercialState: order.CommercialState, FulfillmentState: order.FulfillmentState,
+			Currency: order.Currency, TotalMinor: order.TotalMinor,
+		})
 	}
 	return out
 }

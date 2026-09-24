@@ -11,6 +11,7 @@ import (
 
 	"livecommerce/internal/checkout"
 	"livecommerce/internal/fulfillment"
+	"livecommerce/internal/pagination"
 	"livecommerce/internal/pricing"
 	"livecommerce/internal/storefront"
 )
@@ -164,13 +165,29 @@ func TestProjectCheckoutReceiptOnly(t *testing.T) {
 	}
 }
 
+func TestProjectOrderSummaryExactKeys(t *testing.T) {
+	order := checkout.OrderSummary{OrderID: "order-id", CreatedAt: time.Date(2026, 9, 1, 12, 0, 0, 0, time.UTC), CartID: "cart-id", CartVersion: 3, CommercialState: "DRAFT", FulfillmentState: "MANUAL_UNASSIGNED", Currency: "USD", TotalMinor: 1234}
+	got := projectOrders(pagination.Page[checkout.OrderSummary]{Items: []checkout.OrderSummary{order}, NextCursor: "opaque"})
+	assertExactKeys(t, got, map[string][]string{
+		"$":          {"items", "next_cursor"},
+		"$.items[0]": {"order_id", "created_at", "cart_id", "cart_version", "commercial_state", "fulfillment_state", "currency", "total_minor"},
+	})
+	if got.Items[0].TotalMinor != 1234 || got.Items[0].CartVersion != 3 || got.NextCursor != "opaque" {
+		t.Fatal("summary lost frozen fields")
+	}
+	empty := projectOrders(pagination.Page[checkout.OrderSummary]{})
+	if empty.Items == nil || len(empty.Items) != 0 || empty.NextCursor != "" {
+		t.Fatal("empty history must be []")
+	}
+}
+
 func TestProjectOrderExactDisplayAndDraftOnlyExpiry(t *testing.T) {
 	expires := time.Date(2026, 9, 1, 12, 15, 0, 0, time.UTC)
 	order := checkout.Order{
 		Result:          checkout.Result{OrderID: "order-1", ReservationID: "private-reservation", Generation: 8, ExpiresAt: expires, JobID: 42},
 		CommercialState: "DRAFT", FulfillmentState: "MANUAL_UNASSIGNED",
 		Snapshot: checkout.Snapshot{
-			Quote: storefront.Quote{ID: "private-quote-id", CartID: "private-cart-id", MarketVersion: 5, Currency: "USD", Policy: pricing.Policy{MarketID: "private-market-id", Version: 6},
+			Quote: storefront.Quote{ID: "private-quote-id", CartID: "order-cart-id", CartVersion: 7, MarketVersion: 5, Currency: "USD", Policy: pricing.Policy{MarketID: "private-market-id", Version: 6},
 				Lines:  []storefront.QuoteLine{{SKUID: "sku-1", ProductID: "private-product-id", Code: "ITEM-1", Name: "Tea", Description: "Tea leaves", SKUVersion: 3, ProductVersion: 4, Quantity: 2, UnitPriceMinor: 1250, Amount: pricing.LineAmount{SubtotalMinor: 2500, TaxMinor: 125, TotalMinor: 2625}}},
 				Amount: pricing.Calculation{SubtotalMinor: 2500, ShippingMinor: 50, ShippingTaxMinor: 3, TaxMinor: 125, TotalMinor: 2678, Lines: []pricing.LineAmount{{SubtotalMinor: 2500}}}},
 			Destination: storefront.Destination{ID: "private-destination-id", Version: 3, CartID: "private-cart-id", CartVersion: 4, Kind: "cvs_familymart", Country: "TW", RecipientName: "Buyer Name", Phone: "+886900000001", HomeAddress: storefront.HomeAddress{City: "Taipei", Line1: "3 Main St"}, Pickup: &fulfillment.Pickup{ID: "private-pickup-id", Kind: "cvs_familymart", Namespace: "fixture.local", Code: "017888", Name: "Shop", Address: "4 Side St", Country: "TW", VerificationKind: "private-proof", Version: 9}},
@@ -180,7 +197,7 @@ func TestProjectOrderExactDisplayAndDraftOnlyExpiry(t *testing.T) {
 	}
 	got := projectOrder(order)
 	want := map[string][]string{
-		"$":                                   {"order_id", "commercial_state", "fulfillment_state", "hold_expires_at", "snapshot"},
+		"$":                                   {"order_id", "cart_id", "cart_version", "commercial_state", "fulfillment_state", "hold_expires_at", "snapshot"},
 		"$.snapshot":                          {"quote", "destination", "service"},
 		"$.snapshot.quote":                    {"currency", "lines", "amount"},
 		"$.snapshot.quote.lines[0]":           {"sku_id", "code", "name", "description", "quantity", "unit_price_minor", "amount"},
@@ -192,6 +209,9 @@ func TestProjectOrderExactDisplayAndDraftOnlyExpiry(t *testing.T) {
 		"$.snapshot.service":                  {"code", "name_hans", "name_hant", "name_en", "delivery_kind", "mode"},
 	}
 	raw := assertExactKeys(t, got, want)
+	if got.CartID != "order-cart-id" || got.CartVersion != 7 {
+		t.Fatal("order cart provenance must come from immutable quote")
+	}
 	if got.OrderID != order.OrderID || got.HoldExpiresAt == nil || !got.HoldExpiresAt.Equal(expires) || got.Snapshot.Quote.Lines[0].UnitPriceMinor != 1250 || got.Snapshot.Quote.Amount.TotalMinor != 2678 || got.Snapshot.Destination.RecipientName != "Buyer Name" || got.Snapshot.Destination.Pickup == nil || got.Snapshot.Destination.Pickup.Code != "017888" || got.Snapshot.Service.NameEN != "Standard delivery" {
 		t.Fatalf("order display lost required values: %+v", got)
 	}
@@ -206,7 +226,7 @@ func TestProjectOrderExactDisplayAndDraftOnlyExpiry(t *testing.T) {
 		t.Fatal("non-DRAFT order retained a hold expiry")
 	}
 	if raw := assertExactKeys(t, paid, map[string][]string{
-		"$":                                   {"order_id", "commercial_state", "fulfillment_state", "snapshot"},
+		"$":                                   {"order_id", "cart_id", "cart_version", "commercial_state", "fulfillment_state", "snapshot"},
 		"$.snapshot":                          {"quote", "destination", "service"},
 		"$.snapshot.quote":                    {"currency", "lines", "amount"},
 		"$.snapshot.quote.lines[0]":           {"sku_id", "code", "name", "description", "quantity", "unit_price_minor", "amount"},
@@ -226,7 +246,7 @@ func TestProjectOrderExactDisplayAndDraftOnlyExpiry(t *testing.T) {
 		t.Fatal("empty order quote lines must be [] and absent pickup must remain omitted")
 	}
 	if raw := assertExactKeys(t, withoutOptionals, map[string][]string{
-		"$":                                   {"order_id", "commercial_state", "fulfillment_state", "snapshot"},
+		"$":                                   {"order_id", "cart_id", "cart_version", "commercial_state", "fulfillment_state", "snapshot"},
 		"$.snapshot":                          {"quote", "destination", "service"},
 		"$.snapshot.quote":                    {"currency", "lines", "amount"},
 		"$.snapshot.quote.amount":             {"subtotal_minor", "discount_minor", "shipping_minor", "shipping_tax_minor", "tax_minor", "total_minor"},
