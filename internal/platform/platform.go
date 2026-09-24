@@ -123,6 +123,19 @@ func ValidateCheckoutPool(ctx context.Context, pool *pgxpool.Pool) error {
 	return validatePoolAuthority(bounded, pool, "checkout_runtime")
 }
 
+// ValidateBuyerIssuerPool checks an existing issuer pool without taking ownership.
+func ValidateBuyerIssuerPool(ctx context.Context, pool *pgxpool.Pool) error {
+	if ctx == nil {
+		return errors.New("buyer issuer context required")
+	}
+	if pool == nil {
+		return errors.New("buyer issuer database pool required")
+	}
+	bounded, cancel := context.WithTimeout(ctx, startupTimeout)
+	defer cancel()
+	return validatePoolAuthority(bounded, pool, "buyer_issuer")
+}
+
 func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority string) error {
 	var sameLogin, superuser, bypassRLS, roleAdmin, databaseCreator, replication, objectOwner, runtimeMember, authMember, identityMember, buyerRuntimeMember, buyerIssuerMember, workerMember, checkoutMember, checkoutWriterMember, canSetPrivileged bool
 	err := pool.QueryRow(ctx, `
