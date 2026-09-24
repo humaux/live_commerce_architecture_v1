@@ -1,7 +1,6 @@
 # Buyer checkout v1 — authority decision and implementation gate
 
-Status: AUTHORITY_DECISION_FROZEN; aggregate schema and delivery/expiry contracts
-PENDING, 2026-09-20, based on `909cb3b` and prerequisite `dc73e67`.
+Status: INTERNAL_AGGREGATE_CONTRACT_FROZEN, 2026-09-24, based on `71c7623`.
 This is not a claim that checkout, payment or public purchase is implemented.
 
 ## Decisions
@@ -94,6 +93,131 @@ receipt roll back on every injected failure; no runnable job before commit;
 expiry/StartPayment race and final expiry after waits; cancelled transaction has
 no leaked scope or hold. Provider sandbox/live and complete G03/G04/G05 remain
 separate gates and cannot be inferred from internal tests.
+
+## Internal implementation interface (0013)
+
+This section freezes the implementation boundary, not an acceptance result.
+Independent preflight: Humaux `b1a34f48-3f8b-438e-9e16-ee6fe5f40ec2`.
+
+### Go and SQL boundary
+
+- `checkout.New(ctx, checkoutPool, jobs) (*Service,error)` checks the exact new
+  authority using `platform.ValidateCheckoutPool`; `OpenCheckoutPool` provisions
+  no roles, just validates an existing nonprivileged login. Every existing pool
+  gate also rejects membership in the checkout role. No role inheritance shortcut.
+- `(*Service).Begin(ctx, token, storeID, key, Input) (Result,error)` owns the
+  bounded transaction via `buyer.WithScope`. `Input` has only `QuoteID`,
+  `DestinationID`, `CartVersion`, `ServiceVersion`, `AllocationVersion`, with JSON
+  snake_case tags. Service code, market, country, prices and warehouse plan are
+  server-derived. `Result` contains `OrderID`, `ReservationID`, `Generation`,
+  `ExpiresAt`, `JobID` with snake_case tags, no token or delivery PII.
+- `(*Service).Get(ctx, token, storeID, orderID) (Order,error)` is owner-scoped and
+  read-only. `Order` embeds `Result`, plus `CommercialState`, `FulfillmentState`
+  and `Snapshot`. `Snapshot` contains exported typed `Quote`, `Destination`,
+  `Service`, `Allocation` using existing package types, JSON keys respectively
+  `quote`, `destination`, `service`, `allocation`. Its quote lines are immutable
+  order-line/price/product snapshots; no second price calculator/table copy.
+- SQL entrypoint `checkout.begin_hold(bytea,uuid,text,bytea,uuid,jsonb,jsonb,bigint)`
+  takes token hash, store, key, request digest, generated order UUID, Snapshot,
+  allocated lines, expiry job ID; returns Result JSON. `p_lines` uses existing
+  `inventory.Line` JSON (`warehouse_id`, `sku_id`, `quantity`). It is executable
+  only by checkout runtime and owned by private checkout writer. Inputs are from
+  trusted Go, not a public SQL command. No arbitrary URLs/provider actions.
+- SQL `checkout.expire_held(uuid,bigint)` takes order ID and expected generation,
+  returning one `(disposition text,retry_at timestamptz)` row: `EXPIRED`, `STALE`
+  (missing/terminal/changed generation), or `NOT_DUE`. Only ordinary worker may
+  execute; the private writer owns this fixed function as well.
+- SQL errors: `PT400` malformed input, `PT401` invalid capability, `PT409`
+  stale/conflicting state; stock shortage maps to `inventory.ErrInsufficient` in
+  Go. Never expose raw database details or arguments to browser/logs.
+
+### Durable facts and immutable bindings
+
+- New private schema `checkout` contains `orders`, `command_results`, `events`.
+  `orders` stores tenant/store/owner/id, creator_session_id, cart_id/cart_version,
+  quote_id/destination_id, market_id/country/service_code/service_version/
+  allocation_version, currency/total_minor, commercial_state, fulfillment_state,
+  generation, expires_at, job_id, snapshot, created_at/updated_at. IDs are UUID;
+  generation starts at 1; job_id is unique; ID is globally unique for the worker.
+- Order and reservation deliberately share one generated UUID, distinct typed
+  domains. Scoped deferred FKs bind both directions, including owner and creator
+  session provenance. Quote/cart/destination/service/allocation references are
+  composite tenant/store/owner as applicable. SQL validates snapshot metadata,
+  bounded sizes/counts, line uniqueness and exact plan-to-quote SKU quantity
+  conservation. No mutable commercial/payment/provider facts inside Snapshot.
+- `command_results` key is tenant/store/owner/operation/idempotency_key;
+  operation fixed `checkout.begin`; columns include creator_session_id,
+  request_hash (32 bytes), order_id and response JSON. It is not buyer-writable.
+  Digest is SHA256 of validated Input JSON, not mutable reloaded prices.
+- One active order per tenant/store/owner/cart/cart_version (DRAFT,
+  AWAITING_PAYMENT or CONFIRMED) prevents new-key duplicate holds. CANCELLED
+  permits a new checkout, but the old idempotency key always replays old IDs.
+- `inventory.reservations` adds nullable checkout_id, buyer_owner_id,
+  buyer_session_id and positive generation=1. Merchant rows have all three NULL;
+  checkout rows bind the order provenance and share its ID.
+- `inventory.ledger` adds checkout_id, buyer_owner_id, buyer_session_id and
+  actor_kind (`MERCHANT`, `BUYER`, `SYSTEM_EXPIRY`), default MERCHANT. Only the
+  merchant family has principal_id; buyer/system families retain original buyer
+  provenance with NULL principal. Exact actor-family constraints, scoped FKs,
+  and trigger checks are mandatory. Private UUID-derived ledger command key;
+  `inventory.apply_ledger` remains the sole balance writer.
+- Restrictive DB policies fence *all* existing merchant reservation state,
+  reservation-line and ledger INSERT paths from checkout-owned stock. Ordinary
+  buyer/issuer/identity roles cannot write any aggregate or execute these writers.
+  Checkout runtime reads only scoped required projections and uses narrow row-lock
+  grants with direct UPDATE checks false; no pickup evidence/principal disclosure.
+
+### Transaction sequence and worker
+
+1. Resolve capability; acquire transaction advisory lock
+   `checkout.begin|<tenant>|<store>|<owner>|<key>` using hashtextextended(...,0).
+   Read private receipt before current-state validation: same digest replays,
+   different digest conflicts. Reauthenticate even on replay.
+2. Acquire `checkout.cart|<tenant>|<store>|<owner>` advisory lock, then reuse
+   `RevalidateQuote`. Refuse another active order for this cart/version before
+   touching inventory. Derive code from `delivery:<code>` policy method.
+3. Revalidate current destination, then lock service head and allocation head.
+   Service must be visible, enabled, MANUAL, same market/country/currency and
+   exact quoted policy revision/method, with the expected service version and
+   matching destination kind. Reject API until its real dependency gates exist.
+   Allocation expected version is current and nonempty; its observed service
+   version is provenance, not an equality gate after a harmless service rename.
+4. Lock active warehouses by sorted UUID, then all warehouse/SKU balances by
+   sorted pair (absent balance means zero). Call existing `PlanAllocation` in
+   configured preference order. Up to 16 warehouses x 50 SKUs = 800 plan lines;
+   do not reuse merchant Reserve's 50-pair input limit or impersonate membership.
+5. Recheck database clock after all waits, including quote/destination/source and
+   capability expiry. Generate order UUID and enqueue private River
+   `checkout_expiry_v1` args `{order_id,generation:1,version:1}` using InsertTx,
+   scheduled for database-now + 15 minutes, then call `begin_hold` in SAME tx.
+   Writer re-resolves capability, exact scope, final clock and immutable references;
+   creates DRAFT / MANUAL_UNASSIGNED order, HELD reservation, exact lines,
+   RESERVE ledger, event, receipt. It verifies the same-tx job kind/args. Hold TTL
+   is database acceptance time + 15 minutes, not a buyer input. No payment job.
+6. Worker uses a checked ordinary worker pool and bounded transaction. Fixed
+   expiry function looks up private order, sets scope from durable provenance,
+   locks order then reservation then sorted balances. Matching generation +
+   DRAFT + HELD + final DB time due releases exact original lines once, marks
+   reservation EXPIRED and commercial order CANCELLED and appends SYSTEM_EXPIRY
+   event atomically. Stale jobs do nothing; early jobs return River JobSnooze
+   based on retry_at. Pending/committed states are never released. No token,
+   address, phone, merchant credential or snapshot in job args.
+7. `checkout.NewExpiryWorker(ctx, workerPool)` returns a typed River worker usable
+   with `river.AddWorker`. Its Args type remains private, as in T06 dispatcher.
+   Worker/client lifecycle belongs to the process; no fake standalone daemon.
+
+### Acceptance required for this unit
+
+Real PG tests must cover role exclusivity/direct-SQL denials, exact durable
+facts+job in one transaction, owner replay across sessions and input conflict,
+same-cart different-key conflict, two-buyer stock=1 and reversed SKU contention,
+cart/price/destination/source/service/allocation/warehouse stale gates and clock
+expiry after actual lock waits, injected order/line/ledger/event/job/receipt
+rollback, old merchant write paths denied, and actual River due/early/stale/
+duplicate expiry with conservation. Readback and job/receipt privacy are required.
+Future StartPayment race is NOT_RUN until StartPayment exists; fixture-seeded
+PAYMENT_PENDING protection is only a state-fence test, not that full integration.
+Public checkout UI, payment/provider sandbox/live and full SaaS gates remain open.
 
 ## Rejected alternatives and upgrade signals
 
