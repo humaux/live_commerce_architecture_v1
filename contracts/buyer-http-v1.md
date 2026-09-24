@@ -11,7 +11,8 @@ Existing buyer, storefront, fulfillment and checkout contracts remain authoritat
   creates the existing domain resolver and buyer issuer, and borrows all pools.
   The supplied checkout service is created by `checkout.New`; no pool ownership
   or queue worker moves into the handler. No new dependencies or migrations.
-- Mount `/v1/buyer/` only when `COMMERCE_BUYER_ENABLED=true`. Disabled mode reads
+- Mount `/v1/buyer/` only when `COMMERCE_BUYER_ENABLED=1` (existing flag grammar).
+  Disabled mode reads
   only that flag. Enabled mode requires a literal loopback listener, separate
   `COMMERCE_BUYER_BFF_KEY` (canonical 32-byte raw base64url), three nonempty DSNs
   (`COMMERCE_BUYER_ISSUER_DATABASE_URL`, `COMMERCE_BUYER_DATABASE_URL`,
