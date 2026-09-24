@@ -388,7 +388,9 @@ func TestBuyerDestinationRevalidationRejectsDrift(t *testing.T) {
 					t.Fatal(e)
 				}
 			case "expired":
-				mustExec(t, h.f.owner, `UPDATE storefront.destination_snapshots SET selected_at=clock_timestamp()-interval '31 minutes',expires_at=clock_timestamp()-interval '1 minute' WHERE id=$1`, d.ID)
+				selected := d.Pickup.AttestedAt.Add(time.Microsecond)
+				mustExec(t, h.f.owner, `UPDATE storefront.destination_snapshots SET selected_at=$2,expires_at=$3 WHERE id=$1`, d.ID, selected, selected.Add(time.Microsecond))
+				bdAssertExpiredDestination(t, h, *d.Pickup, selected, selected.Add(time.Microsecond))
 			case "future":
 				mustExec(t, h.f.owner, `UPDATE storefront.destination_snapshots SET selected_at=clock_timestamp()+interval '1 minute',expires_at=clock_timestamp()+interval '2 minutes' WHERE id=$1`, d.ID)
 			case "source-expiry":
@@ -672,7 +674,9 @@ func TestBuyerDestinationDirectSQLIsNotAttestation(t *testing.T) {
 			case "overlong":
 				expires = now.Add(31 * time.Minute)
 			case "expired":
-				selected, expires = now.Add(-time.Minute), now.Add(-time.Second)
+				selected = source.AttestedAt.Add(time.Microsecond)
+				expires = selected.Add(time.Microsecond)
+				bdAssertExpiredDestination(t, h, source, selected, expires)
 			case "beyond-source":
 				expires = now.Add(20 * time.Minute)
 			}
@@ -707,5 +711,19 @@ func TestBuyerDestinationDirectSQLIsNotAttestation(t *testing.T) {
 				t.Fatal("forged-row validation wrote facts")
 			}
 		})
+	}
+}
+
+// Isolate destination expiry: otherwise a selection that predates attestation
+// would fail source chronology even if the destination expiry check were removed.
+func bdAssertExpiredDestination(t *testing.T, h cqHarness, source fulfillment.Pickup, selected, expires time.Time) {
+	t.Helper()
+	if _, e := bdPickup(h, h.cap, source.ID, true); e != nil {
+		t.Fatalf("expiry control source is not eligible: %v", e)
+	}
+	var isolated bool
+	err := h.f.owner.QueryRow(context.Background(), `SELECT $1::timestamptz >= $2 AND $3::timestamptz > $1 AND $3 < clock_timestamp() AND $4::timestamptz > clock_timestamp()`, selected, source.AttestedAt, expires, source.ValidUntil).Scan(&isolated)
+	if err != nil || !isolated {
+		t.Fatalf("expiry test did not isolate the destination clock predicate: %v", err)
 	}
 }
