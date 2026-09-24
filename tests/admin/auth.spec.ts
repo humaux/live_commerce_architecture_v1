@@ -111,6 +111,11 @@ const server = createServer(async (request, response) => {
     response.writeHead(503).end("private diagnostic must not escape");
     return;
   }
+  if (request.url?.startsWith(`/v1/admin/stores/${storeID}/markets`)) {
+    // Transport-only fixture; this response never claims business persistence.
+    response.end(JSON.stringify({ transport: "MOCK" }));
+    return;
+  }
   response.writeHead(404).end(JSON.stringify({ code: "not_found" }));
 });
 
@@ -298,6 +303,78 @@ test("PROVIDER_MOCK browser BFF enforces binding, cookies, CSRF and revocation o
   expect(adjustment.headers.authorization).toBe(`Bearer ${session}`);
   expect(adjustment.headers.cookie).toBeUndefined();
   expect(adjustment.headers["x-commerce-bff-key"]).toBeUndefined();
+
+  const market = "44444444-4444-4444-8444-444444444444";
+  const discoveryBase = `/api/stores/${storeID}/markets`;
+  const delivery = `${discoveryBase}/${market}/countries/TW/delivery-services`;
+  const policy = `${delivery}/home/policy`;
+  const paymentList = `${discoveryBase}/${market}/countries/TW/payment-methods`;
+  for (const path of [
+    discoveryBase + "?limit=2&cursor=test-cursor",
+    delivery + "?limit=1",
+    paymentList,
+    policy,
+  ]) {
+    const response = await page.request.get(path, {
+      headers: { Cookie: authorityCookie, Authorization: "Bearer forged" },
+    });
+    expect(response.status()).toBe(200);
+    const sent = requests.at(-1)!;
+    expect(sent.path).toBe(path.replace("/api/stores/", "/v1/admin/stores/"));
+    expect(sent.headers.authorization).toBe(`Bearer ${session}`);
+    expect(sent.headers.cookie).toBeUndefined();
+  }
+  for (const path of [paymentList + "?limit=1", policy + "?version=1"]) {
+    const before = requests.length;
+    expect(
+      (
+        await page.request.get(path, { headers: { Cookie: authorityCookie } })
+      ).status(),
+    ).toBe(422);
+    expect(requests).toHaveLength(before);
+  }
+  for (const [method, path] of [
+    ["POST", discoveryBase],
+    ["PUT", policy],
+  ]) {
+    const before = requests.length;
+    expect(
+      (
+        await page.request.fetch(path, {
+          method,
+          headers: { Cookie: authorityCookie, Origin: publicOrigin },
+          data: {},
+        })
+      ).status(),
+    ).toBe(403);
+    expect(requests).toHaveLength(before);
+    const body = JSON.stringify({ fixture: "transport-only" });
+    const response = await page.request.fetch(path, {
+      method,
+      headers: {
+        Cookie: authorityCookie,
+        Origin: publicOrigin,
+        "X-CSRF-Token": csrf!,
+        "Idempotency-Key": "wizard-mock-key",
+        "Content-Type": "application/json",
+      },
+      data: body,
+    });
+    expect(response.status()).toBe(200);
+    expect(requests.at(-1)!.body).toBe(body);
+    expect(requests.at(-1)!.headers["idempotency-key"]).toBe("wizard-mock-key");
+  }
+  const beforeForeignSetup = requests.length;
+  expect(
+    (
+      await page.request.get(discoveryBase.replace(storeID, market), {
+        headers: { Cookie: authorityCookie },
+      })
+    ).status(),
+  ).toBe(404);
+  expect(
+    requests.slice(beforeForeignSetup).map((request) => request.path),
+  ).toEqual(["/v1/admin/stores"]);
 
   const onboarding = await page.request.post("/api/onboarding/initial-store", {
     headers: {

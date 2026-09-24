@@ -14,18 +14,25 @@ const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const account = `provider-accounts(?:/${uuid})?`;
 const setting = `markets/${uuid}/countries/[A-Z]{2}/(?:delivery-services|payment-methods)/[a-z][a-z0-9_-]{0,39}`;
 const inspect = `markets/${uuid}/countries/[A-Z]{2}/payment-methods/[a-z][a-z0-9_-]{0,39}/inspect`;
+const deliveryCollection = `markets/${uuid}/countries/[A-Z]{2}/delivery-services`;
+const paymentCollection = `markets/${uuid}/countries/TW/payment-methods`;
+const policy = `${deliveryCollection}/[a-z][a-z0-9_-]{0,39}/policy`;
 const routes: Record<string, RegExp> = {
   GET: new RegExp(
-    `^(catalog-ledger|products|warehouses|inventory|products/${uuid}/skus|${account}|${setting})$`,
+    `^(catalog-ledger|products|warehouses|inventory|products/${uuid}/skus|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy})$`,
   ),
   POST: new RegExp(
-    `^(products|skus|warehouses|inventory/adjustments|products/${uuid}/archive|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect})$`,
+    `^(products|skus|warehouses|inventory/adjustments|products/${uuid}/archive|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets)$`,
   ),
   PATCH: new RegExp(`^(products/${uuid}|skus/${uuid})$`),
-  PUT: new RegExp(`^${setting}$`),
+  PUT: new RegExp(`^(${setting}|${policy})$`),
 };
 const exactStore = new RegExp(`^${uuid}$`);
 const inspectRoute = new RegExp(`^${inspect}$`);
+const discoveryRoute = new RegExp(
+  `^(markets|${deliveryCollection}|${paymentCollection}|${policy})$`,
+);
+const pagedSettingsRoute = new RegExp(`^(markets|${deliveryCollection})$`);
 type Context = { params: Promise<{ store: string; resource: string[] }> };
 
 async function proxy(request: Request, context: Context) {
@@ -36,12 +43,14 @@ async function proxy(request: Request, context: Context) {
     return error(404, "not_found");
   const accountRoute = path.startsWith("provider-accounts");
   const inspection = request.method === "POST" && inspectRoute.test(path);
-  // A local shared fixture bearer is never authority to intake provider secrets.
-  if (accountRoute && !authConfig) return error(404, "not_found");
+  // New setup routes require actual session/store authority, never a shared fixture.
+  if ((accountRoute || discoveryRoute.test(path)) && !authConfig)
+    return error(404, "not_found");
   // URL.search drops an empty trailing '?'. Exact resources must reject that too;
-  // only account collection GET inherits the bounded pagination parser in Go.
+  // Only collection GETs inherit the bounded pagination parser in Go.
   const exactResource =
-    path.startsWith("markets/") ||
+    ((path === "markets" || path.startsWith("markets/")) &&
+      !(request.method === "GET" && pagedSettingsRoute.test(path))) ||
     (accountRoute &&
       !(request.method === "GET" && path === "provider-accounts"));
   if (exactResource && request.url.includes("?"))
