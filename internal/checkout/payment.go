@@ -85,50 +85,60 @@ func (s *PaymentStarter) StartPayment(ctx context.Context, token, storeID, key s
 	tokenHash := sha256.Sum256([]byte(token))
 	var out PaymentResult
 	err = buyer.WithScope(ctx, s.pool, token, storeID, func(callCtx context.Context, tx pgx.Tx, scope buyer.Scope) error {
-		if err := lockPaymentKey(callCtx, tx, scope, key); err != nil {
-			return err
-		}
-		saved, found, err := readPaymentReceipt(callCtx, tx, scope, key, digest, in.OrderID)
-		if err != nil {
-			return err
-		}
-		if found {
-			if err = checkCapability(callCtx, tx, tokenHash[:], storeID, scope); err != nil {
-				return err
-			}
-			out = saved
-			return nil
-		}
-		var attemptID string
-		var now time.Time
-		if err = tx.QueryRow(callCtx, `SELECT gen_random_uuid()::text,clock_timestamp()`).Scan(&attemptID, &now); err != nil {
-			return err
-		}
-		job, err := s.jobs.InsertTx(callCtx, tx, paymentQueryArgs{OperationID: attemptID, Version: 1},
-			&river.InsertOpts{ScheduledAt: now.Add(5 * time.Second)})
-		if err != nil {
-			return err
-		}
-		var response []byte
-		err = tx.QueryRow(callCtx, `SELECT checkout.start_payment($1,$2::uuid,$3,$4,$5::uuid,$6,$7::bigint,$8,$9::uuid,$10::bigint)`,
-			tokenHash[:], storeID, key, digest[:], in.OrderID, in.MethodCode, in.MethodVersion,
-			s.profile, attemptID, job.Job.ID).Scan(&response)
-		if err != nil {
-			return err
-		}
-		if err = checkCapability(callCtx, tx, tokenHash[:], storeID, scope); err != nil {
-			return err
-		}
-		if err = json.Unmarshal(response, &out); err != nil || !validPaymentResult(out, in.OrderID) ||
-			out.AttemptID != attemptID || out.JobID != job.Job.ID {
-			return command.ErrConflict
-		}
-		return nil
+		var err error
+		out, _, err = s.startPaymentTx(callCtx, tx, scope, tokenHash[:], storeID, key, in, digest)
+		return err
 	})
 	if err != nil {
 		return PaymentResult{}, safeError(ctx, err)
 	}
 	return out, nil
+}
+
+// startPaymentTx owns the one payment-start path for legacy and hosted callers.
+// found means an authenticated durable receipt was replayed, so callers must
+// not regenerate provider material or renew its deadline.
+func (s *PaymentStarter) startPaymentTx(ctx context.Context, tx pgx.Tx, scope buyer.Scope, tokenHash []byte,
+	storeID, key string, in PaymentInput, digest [32]byte) (PaymentResult, bool, error) {
+	if err := lockPaymentKey(ctx, tx, scope, key); err != nil {
+		return PaymentResult{}, false, err
+	}
+	saved, found, err := readPaymentReceipt(ctx, tx, scope, key, digest, in.OrderID)
+	if err != nil {
+		return PaymentResult{}, false, err
+	}
+	if found {
+		if err = checkCapability(ctx, tx, tokenHash, storeID, scope); err != nil {
+			return PaymentResult{}, false, err
+		}
+		return saved, true, nil
+	}
+	var attemptID string
+	var now time.Time
+	if err = tx.QueryRow(ctx, `SELECT gen_random_uuid()::text,clock_timestamp()`).Scan(&attemptID, &now); err != nil {
+		return PaymentResult{}, false, err
+	}
+	job, err := s.jobs.InsertTx(ctx, tx, paymentQueryArgs{OperationID: attemptID, Version: 1},
+		&river.InsertOpts{ScheduledAt: now.Add(5 * time.Second)})
+	if err != nil {
+		return PaymentResult{}, false, err
+	}
+	var response []byte
+	err = tx.QueryRow(ctx, `SELECT checkout.start_payment($1,$2::uuid,$3,$4,$5::uuid,$6,$7::bigint,$8,$9::uuid,$10::bigint)`,
+		tokenHash, storeID, key, digest[:], in.OrderID, in.MethodCode, in.MethodVersion,
+		s.profile, attemptID, job.Job.ID).Scan(&response)
+	if err != nil {
+		return PaymentResult{}, false, err
+	}
+	if err = checkCapability(ctx, tx, tokenHash, storeID, scope); err != nil {
+		return PaymentResult{}, false, err
+	}
+	var out PaymentResult
+	if err = json.Unmarshal(response, &out); err != nil || !validPaymentResult(out, in.OrderID) ||
+		out.AttemptID != attemptID || out.JobID != job.Job.ID {
+		return PaymentResult{}, false, command.ErrConflict
+	}
+	return out, false, nil
 }
 
 func lockPaymentKey(ctx context.Context, tx pgx.Tx, scope buyer.Scope, key string) error {

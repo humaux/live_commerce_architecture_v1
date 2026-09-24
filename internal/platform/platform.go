@@ -62,6 +62,12 @@ func OpenCheckoutPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	return openPool(ctx, dsn, "checkout_runtime")
 }
 
+// OpenHostedPool is the trusted payment signing authority. Its LOGIN inherits
+// commerce_hosted_runtime, which in turn inherits checkout runtime grants.
+func OpenHostedPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
+	return openPool(ctx, dsn, "hosted_runtime")
+}
+
 // OpenBuyerIssuerPool is an internal capability authority, never a public
 // store-ID-to-token endpoint. See contracts/buyer-capability-v1.md.
 func OpenBuyerIssuerPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
@@ -123,6 +129,15 @@ func ValidateCheckoutPool(ctx context.Context, pool *pgxpool.Pool) error {
 	return validatePoolAuthority(bounded, pool, "checkout_runtime")
 }
 
+func ValidateHostedPool(ctx context.Context, pool *pgxpool.Pool) error {
+	if ctx == nil || pool == nil {
+		return errors.New("hosted context and database pool required")
+	}
+	bounded, cancel := context.WithTimeout(ctx, startupTimeout)
+	defer cancel()
+	return validatePoolAuthority(bounded, pool, "hosted_runtime")
+}
+
 // ValidateBuyerPool checks a borrowed buyer pool before it enters buyer.WithScope.
 // It must not inherit issuer, merchant, owner, or checkout authority.
 func ValidateBuyerPool(ctx context.Context, pool *pgxpool.Pool) error {
@@ -148,9 +163,9 @@ func ValidateBuyerIssuerPool(ctx context.Context, pool *pgxpool.Pool) error {
 }
 
 func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority string) error {
-	var sameLogin, superuser, bypassRLS, roleAdmin, databaseCreator, replication, objectOwner, runtimeMember, authMember, identityMember, buyerRuntimeMember, buyerIssuerMember, workerMember, checkoutMember, checkoutWriterMember, canSetPrivileged bool
+	var sameLogin, dsnUserMatch, superuser, bypassRLS, roleAdmin, databaseCreator, replication, objectOwner, runtimeMember, authMember, identityMember, buyerRuntimeMember, buyerIssuerMember, workerMember, checkoutMember, hostedMember, hostedUsage, hostedSet, checkoutWriterMember, canSetPrivileged bool
 	err := pool.QueryRow(ctx, `
-		SELECT session_user=current_user, r.rolsuper, r.rolbypassrls, r.rolcreaterole, r.rolcreatedb, r.rolreplication,
+		SELECT session_user=current_user, session_user=$1, r.rolsuper, r.rolbypassrls, r.rolcreaterole, r.rolcreatedb, r.rolreplication,
 		       (EXISTS (
 			   SELECT 1 FROM pg_namespace n
 			   WHERE n.nspowner = r.oid
@@ -169,6 +184,9 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 		       pg_has_role(session_user, 'commerce_buyer_issuer', 'MEMBER'),
 		       pg_has_role(session_user, 'commerce_worker', 'MEMBER'),
 		       coalesce(pg_has_role(session_user, to_regrole('commerce_checkout_runtime'), 'MEMBER'),false),
+		       coalesce(pg_has_role(session_user, to_regrole('commerce_hosted_runtime'), 'MEMBER'),false),
+		       coalesce(pg_has_role(session_user, to_regrole('commerce_hosted_runtime'), 'USAGE'),false),
+		       coalesce(pg_has_role(session_user, to_regrole('commerce_hosted_runtime'), 'SET'),false),
 		       coalesce(pg_has_role(session_user, to_regrole('commerce_checkout_writer'), 'MEMBER'),false),
 		       EXISTS (
 			   SELECT 1 FROM pg_roles candidate
@@ -186,8 +204,8 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 			       ))
 			     AND pg_has_role(session_user, candidate.oid, 'SET')
 		       )
-		FROM pg_roles r WHERE r.rolname = session_user`).
-		Scan(&sameLogin, &superuser, &bypassRLS, &roleAdmin, &databaseCreator, &replication, &objectOwner, &runtimeMember, &authMember, &identityMember, &buyerRuntimeMember, &buyerIssuerMember, &workerMember, &checkoutMember, &checkoutWriterMember, &canSetPrivileged)
+		FROM pg_roles r WHERE r.rolname = session_user`, pool.Config().ConnConfig.User).
+		Scan(&sameLogin, &dsnUserMatch, &superuser, &bypassRLS, &roleAdmin, &databaseCreator, &replication, &objectOwner, &runtimeMember, &authMember, &identityMember, &buyerRuntimeMember, &buyerIssuerMember, &workerMember, &checkoutMember, &hostedMember, &hostedUsage, &hostedSet, &checkoutWriterMember, &canSetPrivileged)
 	if err != nil {
 		return fmt.Errorf("validate runtime role: %w", err)
 	}
@@ -202,10 +220,13 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 			roleCount++
 		}
 	}
-	roleValid := memberships[authority] && roleCount == 1
+	roleValid := memberships[authority] && roleCount == 1 && !hostedMember
+	if authority == "hosted_runtime" {
+		roleValid = checkoutMember && hostedMember && hostedUsage && !hostedSet && roleCount == 1
+	}
 	// A privileged login cannot launder its authority with startup SET ROLE:
 	// RESET ROLE would recover the session_user's capabilities after admission.
-	if !sameLogin || superuser || bypassRLS || roleAdmin || databaseCreator || replication || objectOwner || !roleValid || authMember || checkoutWriterMember || canSetPrivileged {
+	if !sameLogin || !dsnUserMatch || superuser || bypassRLS || roleAdmin || databaseCreator || replication || objectOwner || !roleValid || authMember || checkoutWriterMember || canSetPrivileged {
 		return errors.New("unsafe runtime database role")
 	}
 	return nil
