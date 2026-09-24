@@ -62,10 +62,23 @@ func bcatRead(t *testing.T, h bhHarness, query string) bcatPage {
 	return out
 }
 
+func bcatForeignStore(t *testing.T, h bhHarness, tenant string) (store, product string) {
+	t.Helper()
+	store, product = randomUUID(), randomUUID()
+	// Own fresh stores in the disposable test database. Other foundation gates
+	// intentionally reserve storeA2/storeB as empty isolation negative controls.
+	// These synthetic read-only targets need no stock ledger or merchant writes.
+	mustExec(t, h.f.owner, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,'BCAT isolated target','USD')`, tenant, store)
+	mustExec(t, h.f.owner, `INSERT INTO catalog.products(tenant_id,store_id,id,name) VALUES($1,$2,$3,'BCAT foreign product')`, tenant, store, product)
+	mustExec(t, h.f.owner, `INSERT INTO catalog.skus(tenant_id,store_id,id,product_id,code,currency,price_minor)
+		VALUES($1,$2,$3,$4,'BCAT-FOREIGN','USD',1250)`, tenant, store, randomUUID(), product)
+	return store, product
+}
+
 func TestBuyerHTTPCatalogPaginationScopeAndReadOnly(t *testing.T) {
 	h := bhSetup(t)
-	other := t04CreateStock(t, h.f, h.f.tokens["a2"], h.f.storeA2, 1)
-	foreign := t04CreateStock(t, h.f, h.f.tokens["b"], h.f.storeB, 1)
+	otherStore, otherProduct := bcatForeignStore(t, h, h.f.tenantA)
+	_, foreignProduct := bcatForeignStore(t, h, h.f.tenantB)
 	before := h.facts(t)
 	readFacts := func() []int {
 		out := make([]int, 0, 5)
@@ -110,7 +123,7 @@ func TestBuyerHTTPCatalogPaginationScopeAndReadOnly(t *testing.T) {
 			t.Fatal("product filter leaked another SKU")
 		}
 	}
-	for _, product := range []string{other.product.ID, foreign.product.ID, randomUUID()} {
+	for _, product := range []string{otherProduct, foreignProduct, randomUUID()} {
 		page := bcatRead(t, h, "product_id="+product)
 		if len(page.Items) != 0 || page.NextCursor != "" {
 			t.Fatal("foreign or missing product is distinguishable from empty")
@@ -130,10 +143,15 @@ func TestBuyerHTTPCatalogPaginationScopeAndReadOnly(t *testing.T) {
 			t.Fatal("unfiltered result is outside active buyer store catalog")
 		}
 	}
-	bhError(t, h.request(t, "GET", "/v1/buyer/catalog?product_id="+other.product.ID+"&cursor="+first.NextCursor,
+	bhError(t, h.request(t, "GET", "/v1/buyer/catalog?product_id="+otherProduct+"&cursor="+first.NextCursor,
 		h.cap.Token, "", nil, nil), 422, "invalid_request")
-	bhPublish(t, h.bcHarness, "https://catalog-other.example", h.f.tenantA, h.f.storeA2)
-	otherCap := mustIssue(t, h.cqHarness.service, h.f.storeA2)
+	bhPublish(t, h.bcHarness, "https://catalog-other.example", h.f.tenantA, otherStore)
+	otherCap := mustIssue(t, h.cqHarness.service, otherStore)
+	positive := bhRead[bcatPage](t, h.request(t, "GET", "/v1/buyer/catalog?product_id="+otherProduct,
+		otherCap.Token, "", nil, func(r *http.Request) { r.Header.Set("X-Commerce-Storefront-Origin", "https://catalog-other.example") }), 200)
+	if len(positive.Items) != 1 || positive.Items[0].ProductID != otherProduct {
+		t.Fatal("other-store isolation negative control lacks a readable positive")
+	}
 	bhError(t, h.request(t, "GET", "/v1/buyer/catalog?product_id="+h.stock.product.ID+"&cursor="+first.NextCursor,
 		otherCap.Token, "", nil, func(r *http.Request) { r.Header.Set("X-Commerce-Storefront-Origin", "https://catalog-other.example") }), 422, "invalid_request")
 	if h.facts(t) != before || !reflect.DeepEqual(readFacts(), beforeRead) {
@@ -201,9 +219,7 @@ func TestBuyerHTTPCatalogStrictQueryAndAuthority(t *testing.T) {
 	bhError(t, h.request(t, "GET", path+"?", h.cap.Token, "", nil, nil), 403, "forbidden")
 	bhError(t, h.request(t, "GET", "/v1/buyer/cart?limit=1", h.cap.Token, "", nil, nil), 403, "forbidden")
 	bhError(t, h.request(t, "GET", path, h.cap.Token, t04Key("not-a-write"), nil, nil), 422, "invalid_request")
-	if r := h.request(t, "GET", path, h.cap.Token, "", struct{}{}, nil); r.status < 400 {
-		t.Fatal("GET body accepted")
-	}
+	bhError(t, h.request(t, "GET", path, h.cap.Token, "", struct{}{}, nil), 422, "invalid_request")
 	bhError(t, h.request(t, "POST", path, h.cap.Token, "", nil, nil), 405, "method_not_allowed")
 	bhError(t, h.request(t, "GET", path+"/", h.cap.Token, "", nil, nil), 404, "not_found")
 	bhError(t, h.request(t, "GET", path, "", "", nil, nil), 401, "unauthorized")
