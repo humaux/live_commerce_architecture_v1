@@ -193,11 +193,26 @@ func TestPublishedStorefrontAuthorityAndConstraints(t *testing.T) {
 		})
 	}
 	for _, table := range []string{"control.storefront_publications", "control.storefront_domains"} {
-		for _, role := range []string{"commerce_runtime", "commerce_auth", "commerce_identity", "commerce_buyer_runtime", "commerce_buyer_issuer", "commerce_checkout_runtime", "commerce_worker"} {
+		for _, role := range []string{"commerce_runtime", "commerce_identity", "commerce_buyer_runtime", "commerce_buyer_issuer", "commerce_checkout_runtime", "commerce_worker"} {
 			var access bool
 			if err := f.owner.QueryRow(ctx, `SELECT has_table_privilege($1,$2,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') OR has_any_column_privilege($1,$2,'SELECT,INSERT,UPDATE,REFERENCES')`, role, table).Scan(&access); err != nil || access {
 				t.Fatalf("unexpected direct table or column privilege: role=%s table=%s err=%v", role, table, err)
 			}
+		}
+		// 0023 deliberately grants the non-login auth owner a precise SELECT
+		// column set for the token-authenticated inverse reader. All other
+		// column/table powers, and all application-role access above, stay denied.
+		allowed := []string{"tenant_id", "store_id", "published"}
+		if table == "control.storefront_domains" {
+			allowed = []string{"tenant_id", "store_id", "origin", "state", "ownership_verified_at", "tls_verified_at", "valid_until"}
+		}
+		var exact bool
+		if err := f.owner.QueryRow(ctx, `SELECT
+			NOT has_table_privilege('commerce_auth',$1,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+			AND NOT has_any_column_privilege('commerce_auth',$1,'INSERT,UPDATE,REFERENCES')
+			AND (SELECT bool_and(has_column_privilege('commerce_auth',a.attrelid,a.attnum,'SELECT')=(a.attname=ANY($2::text[])))
+			FROM pg_attribute a WHERE a.attrelid=$1::regclass AND a.attnum>0 AND NOT a.attisdropped)`, table, allowed).Scan(&exact); err != nil || !exact {
+			t.Fatalf("auth owner column whitelist changed: table=%s err=%v", table, err)
 		}
 		for _, query := range []string{"SELECT * FROM " + table, "DELETE FROM " + table + " WHERE false", "UPDATE " + table + " SET version=version WHERE false"} {
 			_, err := a.issuer.Exec(ctx, query)

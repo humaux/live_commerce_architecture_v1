@@ -121,6 +121,15 @@ func TestMerchantPurchaseEntryAuthorityAndACL(t *testing.T) {
 		FROM pg_proc WHERE oid='identity.resolve_storefront_origin(bytea,uuid)'::regprocedure`).Scan(&owner, &volatility, &secure); err != nil || owner != "commerce_auth" || volatility != "v" || !secure {
 		t.Fatalf("function ownership/volatility: %s %s %v %v", owner, volatility, secure, err)
 	}
+	var restricted bool
+	if err := tf.f.owner.QueryRow(ctx, `SELECT p.proconfig=ARRAY['search_path=pg_catalog']::text[]
+		AND NOT r.rolcanlogin AND NOT r.rolsuper AND NOT r.rolbypassrls
+		AND NOT EXISTS (SELECT 1 FROM aclexplode(p.proacl) a WHERE a.privilege_type='EXECUTE'
+		AND a.grantee NOT IN ('commerce_auth'::regrole,'commerce_runtime'::regrole))
+		FROM pg_proc p JOIN pg_roles r ON r.oid=p.proowner
+		WHERE p.oid='identity.resolve_storefront_origin(bytea,uuid)'::regprocedure`).Scan(&restricted); err != nil || !restricted {
+		t.Fatalf("search_path/owner/PUBLIC execute boundary: %v", err)
+	}
 	for _, role := range []string{"commerce_runtime", "commerce_buyer_runtime", "commerce_buyer_issuer", "commerce_checkout_runtime", "commerce_worker", "commerce_identity"} {
 		var execute, tables, member bool
 		if err := tf.f.owner.QueryRow(ctx, `SELECT has_function_privilege($1,'identity.resolve_storefront_origin(bytea,uuid)','EXECUTE'),
