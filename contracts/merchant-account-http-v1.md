@@ -28,13 +28,17 @@ metadata is CONFIGURED_UNVERIFIED, never evidence of provider admission.
   Existing no-option callers remain valid. Convert the few composition callers;
   platform.Options stays provider-neutral. Nil Accounts fails authenticated account
   routes with 503, not a fake connection or fixture fallback.
-- Credential writes have a small bounded process-wide admission budget: 60 per
-  rolling fixed window of one minute, counted after scope authorization before
-  domain execution (including replay/invalid semantic requests). Stdlib mutex and
-  monotonic time, no per-account map, timer or new dependency. Exhaustion is safe
-  429 `rate_limited` with Retry-After 60, no durable effect. This is process load
-  protection, not distributed tenant quota; edge anti-abuse remains a deployment
-  requirement. Reads and unrelated commerce routes do not consume this budget.
+- Credential writes have a per-authenticated-tenant/store admission budget: 60
+  per fixed window of one minute, counted after scope authorization before domain
+  execution (including replay/invalid semantic requests). Stdlib mutex/monotonic
+  time; at most 4096 active scope windows. Prune expired windows when admitting
+  a new scope at capacity; if still full, fail the new scope with 503, leaving
+  existing scopes usable. No raw tokens/account IDs, timers or new dependency.
+  One scope's exhaustion is 429 `rate_limited`, Retry-After 60, zero durable effect;
+  it cannot consume another scope's allowance. This is bounded process protection,
+  not a distributed quota; edge anti-abuse remains a deployment requirement.
+  Reads/unrelated commerce routes do not consume the budget. The initial global
+  60/min proposal was rejected by independent preflight for cross-tenant starvation.
 
 ## Deployment secret boundary
 
@@ -76,6 +80,7 @@ requires explicit re-entry with retained nonsecret command identity, never autof
   and disabled binding stay correct; revoked permission and foreign-store reject.
 - AC03: invalid paths/queries/body/secret format/config, expired/missing session,
   nil service, rate exhaustion and malformed pagination fail safely, no input echo.
+  Limiter tests prove independent scope budgets, reset, pruning/capacity and races.
 - AC04: real Chromium → packaged Next BFF → Go → isolated PG with signed MOCK IdP:
   save/read/rotate/list, CSRF/origin rejection, secrets absent from responses/storage,
   settings PUT allowed and inspect read-only. Synthetic keys only; no live PSP.
