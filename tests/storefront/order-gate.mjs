@@ -83,7 +83,11 @@ async function quotePage(c,clock=false) {
   return {p,quote};
 }
 async function fill(p,values=pii) {for(const [key,value] of Object.entries(values))await p.locator(`input[name="${key}"]`).fill(value);}
-async function confirm(p) {await p.getByTestId("confirm-address").click();await expect(p.getByTestId("create-order")).toBeEnabled();}
+async function confirm(p) {
+  await p.getByTestId("confirm-address").click();
+  await expect(p.getByTestId("create-order")).toBeEnabled();
+  await expect(p.getByRole("button",{name:"View quotation",exact:true})).not.toHaveClass(/\bprimary\b/);
+}
 async function created(p,quote) {
   await expect(p.getByTestId("order-section")).toBeVisible();
   await expect(p.getByTestId("order-state")).toHaveAttribute("data-state","DRAFT");
@@ -93,6 +97,11 @@ async function created(p,quote) {
   for(const key of ["orders","holds","jobs","receipts","reserve_lines"])assert.equal(f[key],1,`per-buyer ${key}`);
   assert.equal(f.hold_state,"HELD");
   assert.equal(f.total,quote.amount.total_minor);assert.equal(f.currency,quote.currency);assert.equal(f.country,quote.country);
+  const breakdown=p.getByTestId("order-breakdown").locator("div");
+  await expect(breakdown).toHaveCount(3);
+  for(const [index,key] of ["shipping_minor","tax_minor","discount_minor"].entries()) {
+    await expect(breakdown.nth(index).locator("dd")).toHaveText(new Intl.NumberFormat("en",{style:"currency",currency:quote.currency}).format(quote.amount[key]/100));
+  }
   await expect(p.getByTestId("create-order")).toHaveCount(0);
   await expect(p.getByRole("button",{name:/^(Pay now|Continue to payment)$/i})).toHaveCount(0);
   if(!orders.includes(id))orders.push(id);return id;

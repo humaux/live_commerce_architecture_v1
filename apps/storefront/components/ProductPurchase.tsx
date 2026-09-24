@@ -783,7 +783,7 @@ export default function ProductPurchase({
               <small>{quote ? copy.unpaid : copy.shippingLater}</small>
             </div>
             <button
-              className="primary"
+              className={quote ? "quote-navigation" : "primary"}
               disabled={
                 busy ||
                 loading ||

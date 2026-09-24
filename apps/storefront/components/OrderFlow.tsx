@@ -429,6 +429,25 @@ export function OrderDetails({
           </li>
         ))}
       </ul>
+      <dl className="order-breakdown" data-testid="order-breakdown">
+        {(
+          [
+            [common.shipping, "shipping_minor"],
+            [common.taxes, "tax_minor"],
+            [common.discount, "discount_minor"],
+          ] as const
+        ).map(([label, key]) => (
+          <div key={key}>
+            <dt>{label}</dt>
+            <dd>
+              {money(
+                order.snapshot.quote.amount[key],
+                order.snapshot.quote.currency,
+              )}
+            </dd>
+          </div>
+        ))}
+      </dl>
       <p className="order-total">
         {common.total}{" "}
         <strong>

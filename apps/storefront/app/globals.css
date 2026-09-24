@@ -323,7 +323,8 @@ h2 {
   margin: 0;
 }
 .quotation li,
-.quotation dl > div {
+.quotation dl > div,
+.order-breakdown > div {
   display: flex;
   justify-content: space-between;
   gap: 20px;
@@ -425,6 +426,15 @@ h2 {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   flex-shrink: 0;
+}
+.order-breakdown dd {
+  margin: 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.quote-navigation {
+  min-height: 44px;
+  background: white;
 }
 .order-total {
   border-block: 1px solid var(--line);
