@@ -18,6 +18,7 @@ import (
 var (
 	ErrInvalid      = errors.New("invalid buyer capability request")
 	ErrUnauthorized = errors.New("unauthorized")
+	ErrRateLimited  = errors.New("buyer capability admission limited")
 	errUnavailable  = errors.New("buyer capability unavailable")
 )
 
@@ -183,6 +184,8 @@ func translate(ctx context.Context, err error) error {
 			return ErrInvalid
 		case "PT401":
 			return ErrUnauthorized
+		case "PT429":
+			return ErrRateLimited
 		}
 	}
 	return errUnavailable

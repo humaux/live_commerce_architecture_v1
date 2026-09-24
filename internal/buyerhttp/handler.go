@@ -69,6 +69,7 @@ const (
 	unknownRoute routeKind = iota
 	sessionRoute
 	bootstrapRoute
+	retireRoute
 	catalogRoute
 	optionsRoute
 	cartRoute
@@ -91,6 +92,8 @@ func matchRoute(path string) route {
 		return route{kind: sessionRoute}
 	case "/v1/buyer/session/bootstrap":
 		return route{kind: bootstrapRoute}
+	case "/v1/buyer/session/retire":
+		return route{kind: retireRoute}
 	case "/v1/buyer/catalog":
 		return route{kind: catalogRoute}
 	case "/v1/buyer/checkout-options":
@@ -119,7 +122,7 @@ func allowed(kind routeKind, method string) bool {
 	switch kind {
 	case sessionRoute:
 		return method == http.MethodGet || method == http.MethodPost || method == http.MethodDelete
-	case bootstrapRoute:
+	case bootstrapRoute, retireRoute:
 		return method == http.MethodPost
 	case catalogRoute, optionsRoute:
 		return method == http.MethodGet
@@ -318,7 +321,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		fail(http.StatusUnprocessableEntity, "invalid_request")
 		return
 	}
-	noReplayKey := issue || selected.kind == bootstrapRoute
+	noReplayKey := issue || selected.kind == bootstrapRoute || selected.kind == retireRoute
 	write := r.Method == http.MethodPut || (r.Method == http.MethodPost && !noReplayKey)
 	key, valid := keyFor(r, noReplayKey, write)
 	if !valid {
@@ -391,6 +394,19 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 			Authenticated bool      `json:"authenticated"`
 			ExpiresAt     time.Time `json:"expires_at"`
 		}{true, capability.ExpiresAt})
+		return nil
+	}
+	if selected.kind == retireRoute {
+		if err := decodeJSON(r, &struct{}{}); err != nil {
+			return err
+		}
+		if err := h.issuer.RetireForTrustedStore(ctx, storeID, token); err != nil {
+			return err
+		}
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		w.WriteHeader(http.StatusNoContent)
 		return nil
 	}
 	if r.Method == http.MethodGet || r.Method == http.MethodDelete {
@@ -607,6 +623,8 @@ func classify(err error) (int, string) {
 	switch {
 	case errors.Is(err, buyer.ErrUnauthorized):
 		return http.StatusUnauthorized, "unauthorized"
+	case errors.Is(err, buyer.ErrRateLimited):
+		return http.StatusTooManyRequests, "rate_limited"
 	case errors.Is(err, domains.ErrInvalid), errors.Is(err, buyer.ErrInvalid), errors.Is(err, command.ErrInvalid):
 		return http.StatusUnprocessableEntity, "invalid_request"
 	case errors.Is(err, platform.ErrForbidden):
