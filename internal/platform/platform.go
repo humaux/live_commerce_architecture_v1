@@ -123,6 +123,17 @@ func ValidateCheckoutPool(ctx context.Context, pool *pgxpool.Pool) error {
 	return validatePoolAuthority(bounded, pool, "checkout_runtime")
 }
 
+// ValidateBuyerPool checks a borrowed buyer pool before it enters buyer.WithScope.
+// It must not inherit issuer, merchant, owner, or checkout authority.
+func ValidateBuyerPool(ctx context.Context, pool *pgxpool.Pool) error {
+	if ctx == nil || pool == nil {
+		return errors.New("buyer context and runtime pool required")
+	}
+	bounded, cancel := context.WithTimeout(ctx, startupTimeout)
+	defer cancel()
+	return validatePoolAuthority(bounded, pool, "buyer_runtime")
+}
+
 // ValidateBuyerIssuerPool checks an existing issuer pool without taking ownership.
 func ValidateBuyerIssuerPool(ctx context.Context, pool *pgxpool.Pool) error {
 	if ctx == nil {

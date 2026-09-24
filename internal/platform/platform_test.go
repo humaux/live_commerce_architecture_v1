@@ -17,6 +17,12 @@ func TestCheckoutPoolRequiresDedicatedConnection(t *testing.T) {
 	}
 }
 
+func TestBuyerBorrowedPoolRequiresContextAndAuthority(t *testing.T) {
+	if ValidateBuyerPool(context.Background(), nil) == nil || ValidateBuyerPool(nil, nil) == nil {
+		t.Fatal("missing buyer runtime dependency accepted")
+	}
+}
+
 func TestHealthzNeedsNoDatabase(t *testing.T) {
 	response := httptest.NewRecorder()
 	NewHandler(nil).ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/healthz", nil))
