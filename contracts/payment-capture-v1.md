@@ -87,6 +87,9 @@ GUCs from that record, never the job. Lock order → reservation → globally so
 warehouse/SKU balances; query lease is not held by the separate local worker.
 Apply independently re-reads and rechecks under the same locks.
 It must not lock integration bindings/operations while holding order locks.
+Inventory/event provenance and app.buyer_session_id use order.creator_session_id
+equal to reservation.buyer_session_id; attempt.session_id may be a newer session
+of the same owner and must not replace the original checkout identity.
 Buyer/merchant/runtime/PUBLIC have no execution or financial-table writes.
 
 The signed adapter is the trusted verifier; the database receives its bounded
