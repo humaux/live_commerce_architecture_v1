@@ -93,6 +93,65 @@ func TestConfigRedactionAndValidation(t *testing.T) {
 	}
 }
 
+func TestQueryOnlyClientCannotUsePaymentOrNotification(t *testing.T) {
+	config := Config{Environment: "SANDBOX", MerchantID: "AAA", HashKey: testKey, HashIV: testIV}
+	transport := roundTripFunc(func(*http.Request) (*http.Response, error) {
+		t.Fatal("unexpected provider request")
+		return nil, nil
+	})
+	client, err := NewQuery(config, transport)
+	if err != nil || !client.queryOnly {
+		t.Fatalf("query-only constructor: %v", err)
+	}
+	if _, err := client.BuildHosted(HostedRequest{}); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("query client built hosted payment: %v", err)
+	}
+	if _, err := client.VerifyNotification(nil, testExpected("payuni_credit")); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("query client verified notification: %v", err)
+	}
+	config.NotifyURL = "https://shop.example.com/notify"
+	if _, err := NewQuery(config); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("query-only client accepted callback URL: %v", err)
+	}
+	config.NotifyURL = ""
+	config.Environment = "LIVE"
+	if _, err := NewQuery(config, transport); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("live query client accepted mock transport: %v", err)
+	}
+	if _, err := NewQuery(config); err != nil {
+		t.Fatalf("live query with fixed transport rejected: %v", err)
+	}
+	if _, err := New(config); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("hosted constructor accepted empty callback URLs: %v", err)
+	}
+}
+
+func TestQueryOnlyClientUsesSignedWire(t *testing.T) {
+	config := Config{Environment: "SANDBOX", MerchantID: "AAA", HashKey: testKey, HashIV: testIV}
+	var client *Client
+	calls := 0
+	transport := roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		calls++
+		if r.URL.String() != "https://sandbox-api.payuni.com.tw/api/trade/query" || r.Method != http.MethodPost {
+			t.Fatal("query client used wrong endpoint")
+		}
+		row := baseObservation()
+		row.Del("Status")
+		row.Set("DataSource", "A")
+		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(queryEnvelope(t, client, row))),
+			Header: make(http.Header)}, nil
+	})
+	var err error
+	client, err = NewQuery(config, transport)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := client.Query(context.Background(), testExpected("payuni_credit"), 1760000000)
+	if err != nil || calls != 1 || got.AmountTWD != 100 || got.DataSource != "A" {
+		t.Fatalf("signed query failed: %+v, calls=%d, err=%v", got, calls, err)
+	}
+}
+
 func TestBuildHostedBindsOnePaymentSelector(t *testing.T) {
 	c := testClient(t)
 	timestamp := int64(1760000000)
