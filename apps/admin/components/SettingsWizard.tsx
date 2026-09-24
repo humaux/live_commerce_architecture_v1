@@ -37,6 +37,11 @@ import "./settings.css";
 
 type Branch = "payuni" | "manual";
 type Observation = { target: string; version: number; dirty: boolean };
+type MethodBinding = {
+  connectionID: string;
+  bindingVersion: number;
+  environment: "SANDBOX" | "LIVE";
+};
 type Draft = {
   branch: Branch;
   accountID: string;
@@ -68,6 +73,7 @@ type Draft = {
   serviceVisible: boolean;
   reference: string;
   methodObservation: Observation | null;
+  methodBinding: MethodBinding | null;
   policyObservation: Observation | null;
   serviceObservation: Observation | null;
 };
@@ -102,6 +108,7 @@ const emptyDraft: Draft = {
   serviceVisible: false,
   reference: "",
   methodObservation: null,
+  methodBinding: null,
   policyObservation: null,
   serviceObservation: null,
 };
@@ -160,6 +167,8 @@ export function SettingsWizard({
     servicePageRead = useRef(0);
   const draftRef = useRef(draft);
   draftRef.current = draft;
+  const accountsRef = useRef(accounts);
+  accountsRef.current = accounts;
   const stepRef = useRef(step);
   stepRef.current = step;
   const [methodListTarget, setMethodListTarget] = useState("");
@@ -188,10 +197,46 @@ export function SettingsWizard({
     draftRef.current = next;
     setDraft(next);
   }
-  function hydrateMethod(current: Draft, saved: Method | null): Draft {
+  function hydrateMethod(
+    current: Draft,
+    saved: Method | null,
+    fetchedAccount?: Account | null,
+  ): Draft {
     const labels = names[current.methodCode];
+    const rebind =
+      !!saved &&
+      current.accountChoiceTouched &&
+      !!current.accountID &&
+      (current.accountID !== saved.connection_id ||
+        (!!current.methodBinding &&
+          current.methodBinding.bindingVersion !== saved.binding_version));
+    const boundAccount = saved
+      ? (fetchedAccount ??
+        accountsRef.current.find((item) => item.id === saved.connection_id))
+      : null;
     return {
       ...current,
+      accountID:
+        saved && !current.accountChoiceTouched
+          ? saved.connection_id
+          : current.accountID,
+      environment:
+        saved && !current.accountChoiceTouched
+          ? saved.environment
+          : current.environment,
+      merchantID:
+        saved && !current.accountChoiceTouched
+          ? (boundAccount?.account_id ?? "")
+          : current.merchantID,
+      methodBinding: rebind
+        ? current.methodBinding
+        : saved
+          ? {
+              connectionID: saved.connection_id,
+              bindingVersion: saved.binding_version,
+              environment: saved.environment,
+            }
+          : current.methodBinding,
       nameHans: saved?.name_hans ?? labels[0],
       nameHant: saved?.name_hant ?? labels[1],
       nameEN: saved?.name_en ?? labels[2],
@@ -202,8 +247,43 @@ export function SettingsWizard({
       methodObservation: {
         target: `${current.marketID}:TW:${current.methodCode}`,
         version: saved?.version ?? 0,
-        dirty: false,
+        dirty: rebind,
       },
+    };
+  }
+  function withAccountBinding(current: Draft, account: Account | null): Draft {
+    const binding: MethodBinding | null = account
+      ? {
+          connectionID: account.id,
+          bindingVersion: account.binding_version,
+          environment: account.environment,
+        }
+      : null;
+    const old = current.methodBinding;
+    const changed =
+      old?.connectionID !== binding?.connectionID ||
+      old?.bindingVersion !== binding?.bindingVersion ||
+      old?.environment !== binding?.environment;
+    const target = `${current.marketID}:TW:${current.methodCode}`;
+    return {
+      ...current,
+      accountID: account?.id ?? "",
+      accountChoiceTouched: true,
+      environment: account?.environment ?? "SANDBOX",
+      merchantID: account?.account_id ?? "",
+      rotate: false,
+      methodBinding: binding,
+      methodObservation:
+        changed && current.marketID
+          ? {
+              target,
+              version:
+                current.methodObservation?.target === target
+                  ? current.methodObservation.version
+                  : -1,
+              dirty: true,
+            }
+          : current.methodObservation,
     };
   }
   function hydrateService(current: Draft, saved: Service | null): Draft {
@@ -466,17 +546,24 @@ export function SettingsWizard({
         (await sessionBoundary()) !== boundary.current
       )
         return;
-      setAccounts(
-        selected && !accountPage.items.some((item) => item.id === selected.id)
-          ? [...accountPage.items, selected]
-          : accountPage.items,
-      );
+      setAccounts((rows) => {
+        const page =
+          selected && !accountPage.items.some((item) => item.id === selected.id)
+            ? [...accountPage.items, selected]
+            : accountPage.items;
+        return [
+          ...page,
+          ...rows.filter((item) => !page.some((row) => row.id === item.id)),
+        ];
+      });
       setMarkets(marketPage.items);
       setAccountCursor(accountPage.next_cursor);
       setMarketCursor(marketPage.next_cursor);
       const chosen =
         selected ??
-        (!selectedID && !draftRef.current.accountChoiceTouched
+        (!selectedID &&
+        !draftRef.current.accountChoiceTouched &&
+        !draftRef.current.marketID
           ? (accountPage.items[0] ?? null)
           : null);
       if (
@@ -487,9 +574,14 @@ export function SettingsWizard({
         const next = {
           ...draftRef.current,
           accountID: chosen.id,
-          accountChoiceTouched: true,
+          accountChoiceTouched: draftRef.current.accountChoiceTouched,
           environment: chosen.environment,
           merchantID: chosen.account_id,
+          methodBinding: draftRef.current.methodBinding ?? {
+            connectionID: chosen.id,
+            bindingVersion: chosen.binding_version,
+            environment: chosen.environment,
+          },
         };
         saveDraft(next);
       }
@@ -519,16 +611,36 @@ export function SettingsWizard({
             : Promise.resolve({ items: [], next_cursor: "" }),
           readSettings<Page<Service>>(store.id, `${base}/delivery-services`),
         ]);
+        const methodCode = draftRef.current.methodCode;
+        const savedMethod =
+          methodPage.items.find((item) => item.code === methodCode) ?? null;
+        const boundAccount =
+          savedMethod &&
+          !accountsRef.current.some(
+            (item) => item.id === savedMethod.connection_id,
+          )
+            ? await readSettings<Account>(
+                store.id,
+                `provider-accounts/${savedMethod.connection_id}`,
+              )
+            : null;
         if (
           !mounted.current ||
           token !== epoch.current ||
           request !== marketRead.current ||
           draftRef.current.marketID !== marketID ||
           draftRef.current.country !== country ||
+          draftRef.current.methodCode !== methodCode ||
           (await sessionBoundary()) !== boundary.current
         )
           return;
         setMethods(methodPage.items);
+        if (boundAccount)
+          setAccounts((rows) =>
+            rows.some((item) => item.id === boundAccount.id)
+              ? rows
+              : [...rows, boundAccount],
+          );
         setServices(servicePage.items);
         setMethodListTarget(`${marketID}:${country}`);
         setServiceCursor(servicePage.next_cursor);
@@ -537,11 +649,9 @@ export function SettingsWizard({
         if (current.branch === "payuni" && country === "TW") {
           const target = `${marketID}:TW:${current.methodCode}`;
           const observed = current.methodObservation;
-          const saved =
-            methodPage.items.find((item) => item.code === current.methodCode) ??
-            null;
+          const saved = savedMethod;
           if (!observed || observed.target !== target || !observed.dirty)
-            saveDraft(hydrateMethod(current, saved));
+            saveDraft(hydrateMethod(current, saved, boundAccount));
           else if (observed.version === -1 && !saved)
             saveDraft({
               ...current,
@@ -573,7 +683,14 @@ export function SettingsWizard({
   );
   useEffect(() => {
     if (ready && draft.marketID) void loadMarket(draft.marketID, draft.country);
-  }, [ready, draft.marketID, draft.country, draft.branch, loadMarket]);
+  }, [
+    ready,
+    draft.marketID,
+    draft.country,
+    draft.branch,
+    draft.methodCode,
+    loadMarket,
+  ]);
 
   async function moreAccounts() {
     if (!store || !ready || !accountCursor) return;
@@ -999,17 +1116,7 @@ export function SettingsWizard({
           ...rows.filter((row) => row.id !== saved.id),
           saved,
         ]);
-        commitDraft(
-          {
-            ...draft,
-            accountID: saved.id,
-            accountChoiceTouched: true,
-            environment: saved.environment,
-            merchantID: saved.account_id,
-            rotate: false,
-          },
-          3,
-        );
+        commitDraft(withAccountBinding(draftRef.current, saved), 3);
         setNotice(c.accountSaved);
       } else if (resource === "markets") {
         const saved = value as Market;
@@ -1155,17 +1262,7 @@ export function SettingsWizard({
           setAccounts((rows) =>
             rows.map((row) => (row.id === saved.id ? saved : row)),
           );
-          commitDraft(
-            {
-              ...draft,
-              accountID: saved.id,
-              accountChoiceTouched: true,
-              environment: saved.environment,
-              merchantID: saved.account_id,
-              rotate: false,
-            },
-            3,
-          );
+          commitDraft(withAccountBinding(draftRef.current, saved), 3);
           setNotice(c.accountSaved);
         },
       );
@@ -1186,17 +1283,7 @@ export function SettingsWizard({
       (value) => {
         const saved = value as Account;
         setAccounts((rows) => [...rows, saved]);
-        commitDraft(
-          {
-            ...draft,
-            accountID: saved.id,
-            accountChoiceTouched: true,
-            environment: saved.environment,
-            merchantID: saved.account_id,
-            rotate: false,
-          },
-          3,
-        );
+        commitDraft(withAccountBinding(draftRef.current, saved), 3);
         setNotice(c.accountSaved);
       },
     );
@@ -1281,6 +1368,16 @@ export function SettingsWizard({
       setError({ ...unknown, code: "invalid_request" });
       return;
     }
+    const binding = draft.methodBinding;
+    if (
+      !binding ||
+      binding.connectionID !== activeAccount.id ||
+      binding.bindingVersion !== activeAccount.binding_version ||
+      binding.environment !== activeAccount.environment
+    ) {
+      setError({ ...unknown, code: "conflict" });
+      return;
+    }
     const expected = baseline(
       draft.methodObservation,
       methodTarget,
@@ -1295,9 +1392,9 @@ export function SettingsWizard({
         market_id: activeMarket.id,
         country: "TW",
         code: draft.methodCode,
-        environment: activeAccount.environment,
-        connection_id: activeAccount.id,
-        binding_version: activeAccount.binding_version,
+        environment: binding.environment,
+        connection_id: binding.connectionID,
+        binding_version: binding.bindingVersion,
         expected_version: expected,
         name_hans: draft.nameHans.trim(),
         name_hant: draft.nameHant.trim(),
@@ -1700,14 +1797,10 @@ export function SettingsWizard({
                             const selected = accounts.find(
                               (item) => item.id === event.target.value,
                             );
-                            const next = {
-                              ...draft,
-                              accountID: event.target.value,
-                              accountChoiceTouched: true,
-                              rotate: false,
-                              environment: selected?.environment ?? "SANDBOX",
-                              merchantID: selected?.account_id ?? "",
-                            };
+                            const next = withAccountBinding(
+                              draft,
+                              selected ?? null,
+                            );
                             try {
                               saveDraft(next);
                               clearSecrets();
