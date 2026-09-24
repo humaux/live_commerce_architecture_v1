@@ -17,9 +17,10 @@ const inspect = `markets/${uuid}/countries/[A-Z]{2}/payment-methods/[a-z][a-z0-9
 const deliveryCollection = `markets/${uuid}/countries/[A-Z]{2}/delivery-services`;
 const paymentCollection = `markets/${uuid}/countries/TW/payment-methods`;
 const policy = `${deliveryCollection}/[a-z][a-z0-9_-]{0,39}/policy`;
+const purchaseEntry = `products/${uuid}/purchase-entry`;
 const routes: Record<string, RegExp> = {
   GET: new RegExp(
-    `^(catalog-ledger|products|warehouses|inventory|products/${uuid}/skus|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy})$`,
+    `^(catalog-ledger|products|warehouses|inventory|products/${uuid}/skus|${purchaseEntry}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy})$`,
   ),
   POST: new RegExp(
     `^(products|skus|warehouses|inventory/adjustments|products/${uuid}/archive|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets)$`,
@@ -33,6 +34,7 @@ const discoveryRoute = new RegExp(
   `^(markets|${deliveryCollection}|${paymentCollection}|${policy})$`,
 );
 const pagedSettingsRoute = new RegExp(`^(markets|${deliveryCollection})$`);
+const purchaseEntryRoute = new RegExp(`^${purchaseEntry}$`);
 type Context = { params: Promise<{ store: string; resource: string[] }> };
 
 async function proxy(request: Request, context: Context) {
@@ -56,6 +58,17 @@ async function proxy(request: Request, context: Context) {
   if (exactResource && request.url.includes("?"))
     return error(422, "invalid_request");
   const url = new URL(request.url);
+  if (
+    request.method === "GET" &&
+    purchaseEntryRoute.test(path) &&
+    (!/^\?locale=(?:en|zh-CN|zh-TW)$/.test(url.search) ||
+      request.body !== null ||
+      request.headers.has("idempotency-key") ||
+      (request.headers.has("content-length") &&
+        request.headers.get("content-length") !== "0") ||
+      request.headers.has("transfer-encoding"))
+  )
+    return error(422, "invalid_request");
   let token: string | undefined;
   if (authConfig) {
     token = sessionToken(request) ?? undefined;

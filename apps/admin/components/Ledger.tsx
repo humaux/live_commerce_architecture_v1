@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { type Locale } from "@live-commerce/i18n";
 import { copy, type Copy } from "@/lib/copy";
-import type { APIError, WorkspaceData } from "@/lib/model";
+import type { APIError, PurchaseEntry, WorkspaceData } from "@/lib/model";
 import { money, sendCommand, type PendingCommand } from "@/lib/client";
 import { ProductPhoto } from "./ProductPhoto";
 import { Icon } from "./Icon";
@@ -19,6 +19,71 @@ function errorText(error: APIError, c: Copy) {
   if (error.code === "invalid_request" || error.code === "invalid_json")
     return c.validation;
   return c.failed;
+}
+
+function purchaseEntryValid(
+  value: unknown,
+  productID: string,
+  locale: Locale,
+): value is PurchaseEntry {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const row = value as Record<string, unknown>;
+  if (
+    Object.keys(row).sort().join(",") !== "locale,product_id,state,url" ||
+    row.product_id !== productID ||
+    row.locale !== locale ||
+    typeof row.url !== "string"
+  )
+    return false;
+  if (row.state !== "configured")
+    return (
+      row.url === "" &&
+      [
+        "product_inactive",
+        "no_active_sku",
+        "storefront_unavailable",
+        "domain_selection_required",
+      ].includes(String(row.state))
+    );
+  try {
+    const url = new URL(row.url);
+    return (
+      url.protocol === "https:" &&
+      !!url.hostname &&
+      !url.port &&
+      !url.username &&
+      !url.password &&
+      !url.search &&
+      !url.hash &&
+      url.pathname === `/${locale}/products/${productID}` &&
+      url.toString() === row.url
+    );
+  } catch {
+    return false;
+  }
+}
+
+async function readPurchaseEntry(
+  store: string,
+  product: string,
+  locale: Locale,
+  signal: AbortSignal,
+) {
+  const response = await fetch(
+    `/api/stores/${store}/products/${product}/purchase-entry?locale=${locale}`,
+    { cache: "no-store", signal },
+  );
+  if (!response.ok) throw response.status;
+  const value: unknown = await response.json();
+  if (!purchaseEntryValid(value, product, locale)) throw 503;
+  return value;
+}
+
+function purchaseReadError(error: unknown, c: Copy) {
+  if (error === 401) return c.noSession;
+  if (error === 403) return c.forbidden;
+  if (error === 404) return c.purchaseNotFound;
+  return c.purchaseFailed;
 }
 
 export function Ledger({
@@ -39,10 +104,22 @@ export function Ledger({
       : "",
   );
   const selected = initial.rows.items.find((row) => row.sku_id === selectedID);
-  const [query, setQuery] = useState(searchQuery);
-  const [section, setSection] = useState("products");
   const [createOpen, setCreateOpen] = useState(false),
     [productID, setProductID] = useState("");
+  const [lastSavedProductID, setLastSavedProductID] = useState("");
+  const [entryRefresh, setEntryRefresh] = useState(0);
+  const entryProductID = selected?.product_id || productID || lastSavedProductID;
+  const entryScope = `${initial.storeID}:${locale}:${selectedID}:${entryProductID}`;
+  const currentEntryScope = useRef(entryScope);
+  currentEntryScope.current = entryScope;
+  const entryEpoch = useRef(0);
+  const entryController = useRef<AbortController | null>(null);
+  const [entry, setEntry] = useState<PurchaseEntry | null>(null);
+  const [entryLoading, setEntryLoading] = useState(false);
+  const [entryError, setEntryError] = useState("");
+  const [entryFeedback, setEntryFeedback] = useState("");
+  const [query, setQuery] = useState(searchQuery);
+  const [section, setSection] = useState("products");
   const [pending, setPending] = useState<PendingCommand | null>(null),
     [busy, setBusy] = useState(false);
   const [journalReady, setJournalReady] = useState(false);
@@ -112,6 +189,113 @@ export function Ledger({
     return () => window.removeEventListener("beforeunload", warn);
   }, [locked]);
 
+  useEffect(() => {
+    const epoch = ++entryEpoch.current;
+    entryController.current?.abort();
+    setEntry(null);
+    setEntryError("");
+    setEntryFeedback("");
+    if (!entryProductID || !initial.storeID) {
+      setEntryLoading(false);
+      return;
+    }
+    const controller = new AbortController();
+    entryController.current = controller;
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    setEntryLoading(true);
+    void readPurchaseEntry(
+      initial.storeID,
+      entryProductID,
+      locale,
+      controller.signal,
+    )
+      .then((value) => {
+        if (
+          epoch === entryEpoch.current &&
+          currentEntryScope.current === entryScope
+        )
+          setEntry(value);
+      })
+      .catch((failure: unknown) => {
+        if (
+          epoch === entryEpoch.current &&
+          currentEntryScope.current === entryScope
+        )
+          setEntryError(purchaseReadError(failure, c));
+      })
+      .finally(() => {
+        clearTimeout(timeout);
+        if (epoch === entryEpoch.current) setEntryLoading(false);
+      });
+    return () => {
+      controller.abort();
+      clearTimeout(timeout);
+      if (entryController.current === controller)
+        entryController.current = null;
+      ++entryEpoch.current;
+    };
+  }, [
+    entryScope,
+    entryRefresh,
+    initial.rows,
+    c,
+    entryProductID,
+    initial.storeID,
+    locale,
+  ]);
+
+  async function usePurchaseEntry(action: "copy" | "open") {
+    if (!entryProductID || !initial.storeID || entryLoading || locked) return;
+    const epoch = ++entryEpoch.current;
+    const scope = entryScope;
+    entryController.current?.abort();
+    const controller = new AbortController();
+    entryController.current = controller;
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    setEntryLoading(true);
+    setEntry(null);
+    setEntryError("");
+    setEntryFeedback("");
+    try {
+      const fresh = await readPurchaseEntry(
+        initial.storeID,
+        entryProductID,
+        locale,
+        controller.signal,
+      );
+      if (epoch !== entryEpoch.current || currentEntryScope.current !== scope)
+        return;
+      setEntry(fresh);
+      if (fresh.state !== "configured") return;
+      if (action === "open") {
+        window.location.assign(fresh.url);
+      } else {
+        try {
+          await navigator.clipboard.writeText(fresh.url);
+          if (
+            epoch === entryEpoch.current &&
+            currentEntryScope.current === scope
+          )
+            setEntryFeedback(c.purchaseCopied);
+        } catch {
+          if (
+            epoch === entryEpoch.current &&
+            currentEntryScope.current === scope
+          )
+            setEntryFeedback(c.purchaseCopyFailed);
+        }
+      }
+    } catch (failure) {
+      if (epoch === entryEpoch.current && currentEntryScope.current === scope)
+        setEntryError(purchaseReadError(failure, c));
+    } finally {
+      clearTimeout(timeout);
+      if (entryController.current === controller)
+        entryController.current = null;
+      if (epoch === entryEpoch.current) setEntryLoading(false);
+    }
+  }
+
   function navigate(values: Record<string, string>, resetCursor = true) {
     if (locked) return;
     const params = new URLSearchParams(search.toString());
@@ -121,6 +305,7 @@ export function Ledger({
       else params.delete(name);
     }
     select("");
+    setLastSavedProductID("");
     router.push(`${pathname}?${params}`);
   }
   async function submit(command: PendingCommand) {
@@ -158,11 +343,16 @@ export function Ledger({
         }
         if (command.kind === "product") {
           localStorage.setItem(`${key}:product`, result.body.id);
+          select("");
           setProductID(result.body.id);
+          setLastSavedProductID(result.body.id);
+          setEntryRefresh((current) => current + 1);
           setCreateOpen(true);
           setNotice(c.productSaved);
         } else if (command.kind === "sku") {
           localStorage.removeItem(`${key}:product`);
+          setLastSavedProductID(result.body.product_id);
+          setEntryRefresh((current) => current + 1);
           setProductID("");
           setCreateOpen(false);
           setNotice(c.skuSaved);
@@ -306,7 +496,7 @@ export function Ledger({
             </div>
             <button
               className="primary create-button"
-              disabled={!initial.fixture || locked}
+              disabled={!initial.storeID || locked}
               onClick={() => {
                 setCreateOpen(!createOpen);
                 setTimeout(
@@ -665,8 +855,75 @@ export function Ledger({
                 <p className="audit-hint">{c.auditHint}</p>
               </form>
             </section>
-          ) : (
+          ) : !entryProductID ? (
             <p className="selection-hint">{c.choose}</p>
+          ) : null}
+          {entryProductID && (
+            <section
+              className="purchase-entry"
+              aria-label={c.purchaseEntry}
+              data-testid="purchase-entry"
+            >
+              <div className="purchase-entry-copy">
+                <h2>{c.purchaseEntry}</h2>
+                {entryLoading ? (
+                  <p role="status">{c.purchaseLoading}</p>
+                ) : entryError ? (
+                  <p role="alert">{entryError}</p>
+                ) : entry ? (
+                  <p role="status">
+                    {{
+                      configured: c.purchaseConfigured,
+                      product_inactive: c.purchaseInactive,
+                      no_active_sku: c.purchaseNoSKU,
+                      storefront_unavailable: c.purchaseUnavailable,
+                      domain_selection_required: c.purchaseAmbiguous,
+                    }[entry.state]}
+                  </p>
+                ) : null}
+                {entry?.state === "configured" && (
+                  <small>{c.purchaseHint}</small>
+                )}
+                {entryFeedback && <small role="status">{entryFeedback}</small>}
+              </div>
+              <div className="purchase-entry-controls">
+                {entry?.state === "configured" && (
+                  <input
+                    aria-label={c.purchaseEntry}
+                    readOnly
+                    value={entry.url}
+                    onFocus={(event) => event.currentTarget.select()}
+                  />
+                )}
+                <div className="purchase-entry-actions">
+                  <button
+                    type="button"
+                    disabled={entryLoading || locked}
+                    onClick={() => setEntryRefresh((current) => current + 1)}
+                  >
+                    {c.refresh}
+                  </button>
+                  {entry?.state === "configured" && (
+                    <>
+                      <button
+                        type="button"
+                        disabled={entryLoading || locked}
+                        onClick={() => void usePurchaseEntry("copy")}
+                      >
+                        {c.copyPurchaseLink}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={entryLoading || locked}
+                        onClick={() => void usePurchaseEntry("open")}
+                      >
+                        {c.openPurchasePage}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </section>
           )}
         </>
       )}

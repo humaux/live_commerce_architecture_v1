@@ -31,6 +31,17 @@ export type APIError = {
   retryable: boolean;
   details: Record<string, unknown>;
 };
+export type PurchaseEntry = {
+  product_id: string;
+  locale: string;
+  state:
+    | "configured"
+    | "product_inactive"
+    | "no_active_sku"
+    | "storefront_unavailable"
+    | "domain_selection_required";
+  url: string;
+};
 export type WorkspaceData = {
   storeID: string;
   storeName: string;
