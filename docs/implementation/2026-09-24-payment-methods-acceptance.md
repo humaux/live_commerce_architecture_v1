@@ -67,8 +67,10 @@ inactive市场/stale绑定仍可隐藏解绑、同键并发与CAS单赢家、SQL
 
 ## 下一交付与仍未验收
 
-PAYUNi hosted UPP协议、操作范围内凭据读取、StartPayment与永久交易标识、
-验签回调/查询/退款/对账仍未实现。后续不能只删除 enabled 的SQL限制来开放收款，
+后续更新：PAYUNi hosted UPP表单/验签/查询的独立协议库已实现并通过本地协议验收，
+见[wire验收](2026-09-24-payuni-wire-acceptance.md)，未接入支付业务或供应商沙箱。
+操作范围内凭据读取、StartPayment与永久交易标识、回调入账/退款/对账仍未实现。
+后续不能只删除 enabled 的SQL限制来开放收款，
 必须同时接入可证实的adapter/环境/商家资格与下单最终重验。
 
 三语设置HTTP/UI、买家支付选择及实际支付浏览器验收、生产密钥装配、

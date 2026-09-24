@@ -10,7 +10,7 @@
 |`river/riverdriver/riverpgxv5`|v0.40.0|MPL-2.0|同上|River 的 pgx driver|同 River gate；确认 schema 与权限不漂移|
 |`github.com/coreos/go-oidc/v3`|v3.21.0|Apache-2.0|`internal/oidclogin`|发现、JWKS 签名及 issuer/audience/expiry 验证；nonce/subject/azp 由适配层额外验证。避免自制 JWT 验证器|签名 mock IdP 正负例、轮换/网络失败边界、真实提供商 sandbox 后才可上线|
 |`golang.org/x/oauth2`|v0.37.0|BSD-3-Clause|`internal/oidclogin`|固定回调的授权码交换与 S256 PKCE；不存储提供商 token|错误 verifier、code replay、端点/重定向与超时负例|
-|Node.js / pnpm|24.15.0 / 10.33.0|MIT / MIT|根 `package.json`；`packages/i18n/tests`|现有本机运行时；原生 TypeScript strip 执行纯函数测试，pnpm workspace 锁定解析|`pnpm run test:i18n`；所有 workspace 集成测试；不跨大版本自动升级|
+|Node.js / pnpm|24.15.0 / 10.33.0|MIT / MIT|根 `package.json`；`packages/i18n/tests`；`payuni/acceptance_test.go` 调用 `scripts/dev/payuni-wire-check.mjs`|现有本机运行时；原生 TypeScript strip 测试与 pnpm 解析；Node/OpenSSL 独立核对 Go PAYUNi 表单（仅测试依赖）|`pnpm run test:i18n`；完整 Go gate 中的跨语言协议核对；所有 workspace 集成测试；不跨大版本自动升级|
 |TypeScript|7.0.2|Apache-2.0|根 `package.json` 的 `typecheck:i18n`|编译期严格检查三语言字典和公共路由类型，非浏览器运行依赖|`pnpm run typecheck:i18n`；新 UI 接入后加入应用 strict build|
 |Next.js / React / React DOM|16.3.5 / 19.3.0 / 19.3.0|MIT|`apps/admin/app`、`proxy.ts`、BFF route、客户端 Ledger|多语言 SSR 路由、交互和服务端令牌边界；遵循既定 Next 基线，未另外引入状态管理/表格库|strict typecheck、standalone build、三语言/手机/权限/幂等真实浏览器 gate|
 |Playwright Test|1.63.0|Apache-2.0|`playwright.config.ts`、`tests/admin`|真实 Chromium 浏览器与网络丢响应/存储故障注入|九项台账回归 + BFF mock边界 + 实际PG/Next/Go签名mockIdP浏览器链，三组fixture隔离；不得把 mock 当生产验收|
@@ -25,7 +25,7 @@
 |---|---|---|
 |sqlc|NOT_INSTALLED；当前 SQL 为显式参数化，尚无生成物|冻结 queries/schema 后由 integrator 锁版本，审生成 diff，跑真实 PG/RLS/事务 gate|
 |LiveKit|NOT_INSTALLED；媒体与 API 尚未接入|先完成托管/自托管能力与授权探针、mock→sandbox gate；媒体失败不得改变订单真源|
-|PSP|NOT_INSTALLED；无真实收款/退款调用|先确认商家 MoR、sandbox 账户与 webhook 幂等/对账；live 需明确授权、金额、回执和回滚边界|
+|PSP SDK|NOT_INSTALLED；PAYUNi 有标准库 wire adapter，PROTOCOL_MOCK；无真实收款/退款调用|先确认商家 MoR、sandbox 账户与 webhook 幂等/对账；live 需明确授权、金额、回执和回滚边界|
 
 任何新依赖须说明为何标准库/现有包不能满足、调用者、license、版本来源、移除/升级测试和生产影响；未满足前标 `NOT_INSTALLED` 或 `BLOCKED_EXTERNAL`，不伪造可用性。
 
@@ -99,7 +99,7 @@ River due/early/stale/duplicate；`--checkout` 仅快速定向，不替代整套
 商家供应商凭据 `internal/integrations/accounts` 继续复用 pgx、
 `core.RegisterBinding`、`command.Run/Audit` 与 `platform.RequirePermission`，
 不建新授权/队列。Go 标准库 AES-256-GCM 做本地存储加密，HMAC-SHA256 使用独立
-稳定 replayKey；这与 PAYUNi 传输协议的加密/签名不是同一个功能，当前没有 PSP adapter。
+稳定 replayKey；这与下述 PAYUNi 传输协议的加密/签名不是同一个功能，不能互换。
 Keyring 复制输入，AAD/明文及 HMAC 字段顺序在 `merchant-accounts-v1.md` 冻结，
 golden digest 防止无意改动永久幂等编码。正常加密 active key切换可继续原请求
 重放，但不允许直接替换 replayKey；生产环境加载、密钥托管/备份与迁移尚未装配。
@@ -119,6 +119,22 @@ golden digest 防止无意改动永久幂等编码。正常加密 active key切�
 SQL 约束错因核对及用 sequence 证明到达注入点的八类原子回滚。
 `InspectMethod` 是商家诊断，不是给将来买家 StartPayment 缓存的授权票据。
 实证见 `2026-09-24-payment-methods-acceptance.md`，无供应商交易和支付页面验收。
+
+`internal/integrations/psp/payuni` 不新增 Go module，不导入 SQL、River 或账户库。
+标准库 `crypto/aes/cipher/sha256/subtle`、`net/http`、`net/url`、`encoding/*`
+实现官方 UPP v2.0 与查询 wire；固定官方端点、TLS1.2+、10秒、一次请求无重定向。
+客户自有 HashKey/IV 由未来调用者按 durable attempt 的准确账户/环境/历史版本加载，
+不是任意商家可调用的通用解密 API；未签名的 outer MerID 不能提供账户权威。
+供应商固定 IV/GCM 是 wire 兼容限制，禁止拿来替换本地随机 nonce/AAD 存储加密。
+未知、取号、处理中、不完整记录只是 `Observation`，没有 `Paid` 或入账副作用。
+未引入/复制上游 PHP SDK，其固定提交仅作 wire 参考（尤其不能复制其关闭 TLS 的设置）。
+测试独立使用 Node24.15.0 内建 OpenSSL 核对官方固定向量及 Go 五种表单；无需 npm 包，
+`test-local.sh` 在创建 PG 前检查 Node。更新 Go/Node/协议时须跑所有16个同包顶层测试、
+完整 race/vet；供应商字段/原始 Result 编码/回调 ACK/轮换规则仍需商家沙箱验收。
+`AmountTWDFromMinor` 仅精确转换本系统两位TWD minor units，不舍入或覆盖订单价格；
+金额单位或Intl依赖变更须复核转换与界面缩放一致性。两种PG fixture均等待TCP就绪，
+不可退回socket探针（官方镜像初始化临时服务会先通过socket后关闭）。
+见 `2026-09-24-payuni-wire-acceptance.md`；适配库存在不等于已准入或可以启用收款。
 
 内部 external-operation 继续复用 pgx、River InsertTx、`command.Run` 与标准库
 JSON/crypto：`internal/integrations/core` 负责精确权限、不可变意图摘要和租约 token

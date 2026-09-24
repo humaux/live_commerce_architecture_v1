@@ -471,12 +471,12 @@
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
-      "implementation": "PARTIAL_INTERNAL_CHECKOUT_AND_PAYMENT_METHOD_DRAFTS",
-      "unit_mock": "PASS_EXISTING_INTERNAL_REGRESSION",
-      "real_pg": "PASS_INTERNAL_REGRESSION_210_TOP_LEVEL_TESTS",
+      "implementation": "PARTIAL_INTERNAL_CHECKOUT_METHOD_DRAFTS_AND_PAYUNI_WIRE",
+      "unit_mock": "PASS_PAYUNI_OFFICIAL_VECTOR_NODE_INTEROP_AND_NEGATIVES",
+      "real_pg": "PASS_INTERNAL_REGRESSION_226_TOP_LEVEL_TESTS",
       "provider_sandbox": "NOT_RUN",
       "provider_live": "NOT_RUN",
-      "independent_review": "PASS_BOUNDED_INTERNAL_CHECKOUT_AND_METHOD_DRAFTS"
+      "independent_review": "PASS_BOUNDED_INTERNAL_CHECKOUT_METHOD_DRAFTS_AND_PROTOCOL_MOCK"
     },
     "evidence": "docs/implementation/2026-09-24-buyer-checkout-acceptance.md; code/tests 162b619; full 187 PASS/0 FAIL/0 SKIP real PG/race/vet foundation68.828s; browser identity1/1 signed MOCK IdP; prior quote evidence retained in docs/implementation/2026-09-20-checkout-quote-acceptance.md",
     "delivery_prerequisite": {
@@ -515,7 +515,15 @@
       "independent_review": "173155ca-4ebc-43d3-8216-90d80faf39c2; no confirmed P0/P1; immutable scoped configuration, final authorization, CAS and causal rollback reviewed",
       "not_ready": "All payment methods remain disabled drafts; no adapter/account entitlement gate, no buyer payment authority or settings UI"
     },
-    "remaining": "生产checkout/worker装配与过期任务巡检恢复、公开买家HTTP/UI、正式门市目录/地图回调、第三方账户自助连接与真实供应商准入、配送/支付设置公开API/UI、StartPayment/PSP/退款/支付对账、provider sandbox/live和完整G03/G05均未实现或验收；已有商家支付方法诊断不等于买家授权；PAYMENT_PENDING/COMMITTED仅fixture状态栅栏，不是StartPayment竞态验收；内部预留不等于实际运输或可扣款授权",
+    "payuni_wire": {
+      "code_baseline": "31dac4a",
+      "status": "PASS_BOUNDED_PROTOCOL_MOCK_ONLY",
+      "evidence": "docs/implementation/2026-09-24-payuni-wire-acceptance.md",
+      "aggregate": "226 top-level PASS/0 FAIL/0 SKIP real PG/race/vet exit0;16 PAYUNi top-level including exact TWD minor-unit conversion;official vector plus Node/OpenSSL10 forms;zero provider network",
+      "independent_review": "c8f4ebd2-4f49-49be-9ffc-380f9fc45818;no confirmed P0/P1;reviewer independently ran package race/vet and checked final226 full logs;prior contract P1 superseded",
+      "not_ready": "No durable payment attempt/StartPayment/admission/credential reader/inbox financial transition/refund/query orchestration or provider sandbox/live;methods remain disabled"
+    },
+    "remaining": "生产checkout/worker装配与过期任务巡检恢复、公开买家HTTP/UI、正式门市目录/地图回调、第三方账户自助连接与真实供应商准入、配送/支付设置公开API/UI、StartPayment/回调入账/退款/支付对账、provider sandbox/live和完整G03/G05均未实现或验收；PAYUNi仅有wire协议库与精确金额转换；现有T06商家principal不能冒用于买家，停用绑定后的旧支付对账须单独核准；诊断不等于买家授权；PAYMENT_PENDING/COMMITTED仅fixture状态栅栏，不是StartPayment竞态验收；内部预留不等于实际运输或可扣款授权",
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
   {

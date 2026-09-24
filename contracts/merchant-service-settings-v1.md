@@ -90,7 +90,7 @@ Humaux `f31f5676-97cb-41e5-be58-aff580bf19f3`。仅证明本设计与用户需�
 |仓库与收货前置|0011 仓库优先级／纯分配计划、0012 人工核验门市来源和买家快照已由内部 checkout 在行锁下消费并形成库存预留，见[下单验收](../docs/implementation/2026-09-24-buyer-checkout-acceptance.md)|正式目录地图回调、公开收货 UI、可达性及第三方运输证明；本地库存预留不等于实际运输|
 |第三方自助连接|PAYUNi 内部账户登记／加密版本／轮换已实现，见[凭据验收](../docs/implementation/2026-09-24-merchant-accounts-acceptance.md)；generic binding 仍仅执行绑定引用，`CONFIGURED_UNVERIFIED` 不等于已连接|自助 HTTP/UI、生产主密钥管理与装配、供应商验证、完整能力目录、真实供应商准入与其他供应商|
 |支付方式设置|0015 + `payments.SetMethod/GetMethod/InspectMethod` 已实现 PAYUNi 五类禁用草稿、三语/金额/排序/展示与账户关联，真实 PG/并发/回滚通过；见[配置验收](../docs/implementation/2026-09-24-payment-methods-acceptance.md)。诊断独立检查版本/环境/币种/金额/市场/绑定，当前恒不可支付|自助 UI/HTTP、真实 adapter 与商户资格检查、启用和买家最终可用性重验、StartPayment、回调／退款／对账|
-|截图中的服务商|PAYUNi、LINE Pay、绿界、黑猫／新竹等仅是候选接入清单|各自账户授权、adapter、sandbox 和 live 验收均 NOT_RUN|
+|截图中的服务商|PAYUNi有独立UPP表单/验签/查询协议库及官方向量/模拟测试，见[wire验收](../docs/implementation/2026-09-24-payuni-wire-acceptance.md)；其他仍为候选|PAYUNi支付业务装配及各服务商sandbox/live未验收；独立LINE Pay、绿界、黑猫／新竹adapter仍未实现|
 
 当前物流 API 模式在 Go 与 SQL 中被明确限制为禁用草稿；不得为了做出与截图
 相同的开关而解除这一门禁。商家自行安排／人工转帐是独立选项，不能作为第三方
