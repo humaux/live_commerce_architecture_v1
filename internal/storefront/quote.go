@@ -44,7 +44,7 @@ type Quote struct {
 }
 
 func CreateQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string, in QuoteInput) (out Quote, err error) {
-	if in.CartVersion < 1 || !command.ValidID(in.MarketID) || len(in.Country) != 2 || in.Country[0] < 'A' || in.Country[0] > 'Z' || in.Country[1] < 'A' || in.Country[1] > 'Z' || (in.Method != "home" && in.Method != "cvs_711" && in.Method != "cvs_familymart") {
+	if in.CartVersion < 1 || !command.ValidID(in.MarketID) || len(in.Country) != 2 || in.Country[0] < 'A' || in.Country[0] > 'Z' || in.Country[1] < 'A' || in.Country[1] > 'Z' || !pricing.ValidMethod(in.Method) {
 		return out, command.ErrInvalid
 	}
 	err = buyer.RunCommand(ctx, tx, s, "quote.create", key, in, &out, func() error {

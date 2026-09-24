@@ -22,6 +22,16 @@ Currency is derived from locked market/policy, never a free input. CVS requires 
 Output includes those saved configuration fields, Version, Currency, PolicyMethod.
 No `available=true`, credentials, external asset ID or carrier-verification claim.
 
+Label validation uses Go's UTF-8/Unicode printable rules at the supported SetService
+boundary. SQL additionally guards length, ASCII-space-only and control labels; its
+locale-based character classes are not Go Unicode parity. A trusted runtime SQL
+caller can bypass some cosmetic Unicode rules, but cannot bypass the API-disabled,
+binding, scope or composite-FK constraints. No public SQL write interface is exposed.
+Do not replace the SQL regex with `[:print:]` and claim equivalent validation;
+PG18.6 accepts format/private-use characters that Go rejects. If another label-write
+entrypoint is added, it must reuse the Go validation or receive a separate reviewed
+database validation gate. This bounded defense-in-depth limitation remains P2.
+
 ## Pricing without a second engine
 
 Extend allowed pricing method keys to existing legacy values OR
