@@ -9,6 +9,8 @@ import {
   resetBuyerSession,
 } from "../lib/buyer-client";
 import { purchaseCopy } from "../lib/purchase-copy";
+import { orderCopy } from "../lib/order-copy";
+import OrderFlow, { OrderDetails } from "./OrderFlow";
 import {
   cartSelection,
   assertPurchaseContext,
@@ -22,11 +24,16 @@ import {
   validProduct,
   validQuote,
   writePurchase,
+  knownOrderID,
+  readOrder,
+  writeCheckout,
+  orderRecoveryRequired,
+  forgetAddressAttempt,
 } from "../lib/purchase";
-import type { Cart, Product, Option, Quote } from "../lib/purchase";
+import type { Cart, Product, Option, Quote, Order } from "../lib/purchase";
 
 export default function ProductPurchase({
-  locale,
+  locale: initialLocale,
   productID,
   demonstration = false,
 }: {
@@ -34,6 +41,7 @@ export default function ProductPurchase({
   productID: string;
   demonstration?: boolean;
 }) {
+  const [locale, setLocale] = useState(initialLocale);
   const copy = purchaseCopy[locale];
   const [products, setProducts] = useState<Product[]>([]);
   const [cursor, setCursor] = useState("");
@@ -52,6 +60,9 @@ export default function ProductPurchase({
   const [method, setMethod] = useState("");
   const [quote, setQuote] = useState<Quote | null>(null);
   const [pending, setPending] = useState(false);
+  const [pendingKind, setPendingKind] = useState<string | null>(null);
+  const [orderLocked, setOrderLocked] = useState(false);
+  const [order, setOrder] = useState<Order | null>(null);
   const epoch = useRef(0);
   const currentContext = useRef("");
   const working = useRef(false);
@@ -83,9 +94,27 @@ export default function ProductPurchase({
       setError("session");
       setCart(null);
       setQuote(null);
+      setOrder(null);
     } else if (reason instanceof BuyerClientError && reason.status === 409)
       setError("conflict");
     else setError("failed");
+  }
+
+  function syncRecovery(ctx: string) {
+    const waiting = pendingPurchase(ctx);
+    setPending(waiting !== null);
+    setPendingKind(waiting?.kind ?? null);
+    const id = knownOrderID(ctx);
+    setOrderLocked(waiting?.kind === "checkout" || id !== null);
+    return { waiting, id };
+  }
+
+  function acceptOrder(value: Order) {
+    setOrder(value);
+    setOrderLocked(true);
+    setQuote(null);
+    setDeliveryOpen(false);
+    forgetAddressAttempt();
   }
 
   async function load() {
@@ -94,11 +123,31 @@ export default function ProductPurchase({
     setPending(false);
     setError(null);
     setQuote(null);
+    setOrder(null);
     setDeliveryOpen(false);
     try {
+      // Capture the expired context BEFORE initialization rejects it. This
+      // preserves the reset guard for an unknown or already-known old order.
+      const before = await readBuyerSession();
+      if (before.context) {
+        if (version !== epoch.current) return;
+        currentContext.current = before.context;
+        setContext(before.context);
+        syncRecovery(before.context);
+      }
       const session = await initializeBuyerSession();
       if (!session.context) throw new BuyerClientError("requires_reset");
       const ctx = session.context;
+      if (version !== epoch.current) return;
+      currentContext.current = ctx;
+      setContext(ctx);
+      const recovery = syncRecovery(ctx);
+      if (recovery.waiting?.kind === "checkout") setError("pending");
+      if (recovery.id) {
+        const existing = await readOrder(ctx, recovery.id);
+        if (version === epoch.current) acceptOrder(existing);
+        return;
+      }
       let [page, current] = await Promise.all([
         purchasePage(
           `catalog?product_id=${productID}&limit=100`,
@@ -180,7 +229,7 @@ export default function ProductPurchase({
       }
       setSKU(selectedID);
       setQuantity(qty);
-      const unresolved = pendingPurchase(ctx) !== null;
+      const unresolved = syncRecovery(ctx).waiting !== null;
       setPending(unresolved);
       if (unresolved) setError("pending");
       const quoteID = sessionStorage.getItem(
@@ -194,7 +243,8 @@ export default function ProductPurchase({
         );
         if (
           version === epoch.current &&
-          previous.cart_version === current.version
+          previous.cart_version === current.version &&
+          previous.cart_id === current.id
         )
           setQuote(previous);
       }
@@ -209,8 +259,25 @@ export default function ProductPurchase({
     void load();
     return () => {
       epoch.current++;
+      forgetAddressAttempt();
     };
   }, [productID]); // Route locale never changes account/currency.
+
+  useEffect(() => {
+    setLocale(initialLocale);
+    document.documentElement.lang = initialLocale;
+  }, [initialLocale]);
+
+  useEffect(() => {
+    if (order || orderLocked)
+      requestAnimationFrame(() =>
+        document
+          .querySelector(
+            order ? '[data-testid="order-section"]' : ".purchase-error",
+          )
+          ?.scrollIntoView({ behavior: "auto", block: "start" }),
+      );
+  }, [order?.order_id, orderLocked]);
 
   useEffect(() => {
     if (!context) return;
@@ -218,6 +285,14 @@ export default function ProductPurchase({
     const check = async () => {
       try {
         await assertPurchaseContext(context);
+        if (active) {
+          const recovery = syncRecovery(context);
+          if (recovery.waiting?.kind === "checkout") setError("pending");
+          if (recovery.id) {
+            const current = await readOrder(context, recovery.id);
+            if (active) acceptOrder(current);
+          }
+        }
       } catch (reason) {
         if (active) {
           epoch.current++;
@@ -226,7 +301,12 @@ export default function ProductPurchase({
       }
     };
     const changed = (event: StorageEvent) => {
-      if (event.key === "commerce-buyer-pending-v1") void check();
+      if (
+        event.key === "commerce-buyer-pending-v1" ||
+        event.key === `commerce-purchase-pending-v1:${context}` ||
+        event.key === `commerce-purchase-order-v1:${context}`
+      )
+        void check();
     };
     window.addEventListener("storage", changed);
     window.addEventListener("focus", check);
@@ -238,6 +318,7 @@ export default function ProductPurchase({
   }, [context]);
 
   function select(nextSKU: string, nextQuantity: string) {
+    if (busy || pending || orderLocked || error === "session") return;
     setSKU(nextSKU);
     setQuantity(nextQuantity);
     setQuote(null);
@@ -267,10 +348,10 @@ export default function ProductPurchase({
       if (isCurrent()) showError(reason);
     } finally {
       try {
-        if (currentContext.current)
-          setPending(pendingPurchase(currentContext.current) !== null);
+        if (currentContext.current) syncRecovery(currentContext.current);
       } catch {
         setPending(true);
+        setOrderLocked(true);
       }
       working.current = false;
       setBusy(false);
@@ -310,9 +391,14 @@ export default function ProductPurchase({
                   draftKey(context),
                   JSON.stringify({ sku, quantity }),
                 );
-                window.location.assign(
-                  `/${event.target.value}/products/${productID}`,
+                const next = event.target.value as Locale;
+                window.history.replaceState(
+                  window.history.state,
+                  "",
+                  `/${next}/products/${productID}`,
                 );
+                document.documentElement.lang = next;
+                setLocale(next);
               } catch {
                 setError("failed");
               }
@@ -328,12 +414,28 @@ export default function ProductPurchase({
       <main className="purchase-main" aria-busy={loading || busy}>
         {error && (
           <div role="alert" className="purchase-error">
-            <p>{copy[error]}</p>
+            <p>
+              {error === "session" && orderLocked
+                ? orderCopy[locale].recovery
+                : copy[error]}
+            </p>
             {pending && error !== "session" ? (
               <button
+                data-testid="recover-purchase"
                 disabled={busy}
                 onClick={() =>
                   void act(async (isCurrent) => {
+                    if (pendingKind === "checkout") {
+                      const current = await writeCheckout(context);
+                      if (isCurrent()) acceptOrder(current);
+                      return;
+                    }
+                    if (pendingKind === "destination") {
+                      document
+                        .querySelector('[data-testid="address-section"]')
+                        ?.scrollIntoView({ behavior: "auto", block: "start" });
+                      return;
+                    }
                     const result = await writePurchase(context);
                     if (!isCurrent()) return;
                     if (result.kind === "cart") {
@@ -344,7 +446,9 @@ export default function ProductPurchase({
                   })
                 }
               >
-                {copy.recover}
+                {pendingKind === "destination"
+                  ? orderCopy[locale].review
+                  : copy.recover}
               </button>
             ) : (
               <button
@@ -353,6 +457,12 @@ export default function ProductPurchase({
                   void act(async () => {
                     if (error === "session") {
                       const current = await readBuyerSession();
+                      if (
+                        current.context &&
+                        current.state !== "active" &&
+                        orderRecoveryRequired(current.context)
+                      )
+                        throw new BuyerClientError("requires_reset");
                       if (current.context && current.state !== "active")
                         await resetBuyerSession(current.context);
                     }
@@ -360,14 +470,28 @@ export default function ProductPurchase({
                   })
                 }
               >
-                {error === "session" ? copy.renew : copy.retry}
+                {error === "session" && !orderLocked ? copy.renew : copy.retry}
               </button>
             )}
           </div>
         )}
+        {order && (
+          <OrderDetails
+            order={order}
+            locale={locale}
+            money={money}
+            busy={busy}
+            refresh={() =>
+              void act(async (isCurrent) => {
+                const current = await readOrder(context, order.order_id);
+                if (isCurrent()) acceptOrder(current);
+              })
+            }
+          />
+        )}
         {loading ? (
           <p role="status">{copy.loading}</p>
-        ) : !products.length ? (
+        ) : order ? null : !products.length ? (
           <p>{copy.empty}</p>
         ) : (
           <>
@@ -382,7 +506,10 @@ export default function ProductPurchase({
                 {selected?.description ?? products[0].description}
               </p>
             </section>
-            <fieldset className="sku-options" disabled={busy || pending}>
+            <fieldset
+              className="sku-options"
+              disabled={busy || pending || orderLocked || error === "session"}
+            >
               <legend>{copy.choose}</legend>
               {products.map((p) => (
                 <label
@@ -438,7 +565,13 @@ export default function ProductPurchase({
               <div className="stepper">
                 <button
                   aria-label={copy.decrease}
-                  disabled={busy || pending || Number(quantity) <= 1}
+                  disabled={
+                    busy ||
+                    pending ||
+                    orderLocked ||
+                    error === "session" ||
+                    Number(quantity) <= 1
+                  }
                   onClick={() => select(sku, String(Number(quantity) - 1))}
                 >
                   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -453,14 +586,20 @@ export default function ProductPurchase({
                   max="1000000000"
                   step="1"
                   value={quantity}
-                  disabled={busy || pending}
+                  disabled={
+                    busy || pending || orderLocked || error === "session"
+                  }
                   onChange={(e) => select(sku, e.target.value)}
                   aria-invalid={subtotal === null}
                 />
                 <button
                   aria-label={copy.increase}
                   disabled={
-                    busy || pending || Number(quantity) >= 1_000_000_000
+                    busy ||
+                    pending ||
+                    orderLocked ||
+                    error === "session" ||
+                    Number(quantity) >= 1_000_000_000
                   }
                   onClick={() => select(sku, String(Number(quantity) + 1))}
                 >
@@ -491,7 +630,9 @@ export default function ProductPurchase({
                     <select
                       id="delivery"
                       value={method}
-                      disabled={busy || pending}
+                      disabled={
+                        busy || pending || orderLocked || error === "session"
+                      }
                       onChange={(e) => {
                         setMethod(e.target.value);
                         setQuote(null);
@@ -577,7 +718,9 @@ export default function ProductPurchase({
                 <p>{copy.noPayment}</p>
                 <button
                   className="text-button"
-                  disabled={busy || pending}
+                  disabled={
+                    busy || pending || orderLocked || error === "session"
+                  }
                   onClick={() =>
                     void act(async (isCurrent) => {
                       await deliveryOptions();
@@ -589,10 +732,31 @@ export default function ProductPurchase({
                 </button>
               </section>
             )}
+            {quote && cart && !orderLocked && error !== "session" && (
+              <OrderFlow
+                key={`${context}:${quote.id}`}
+                context={context}
+                cart={cart}
+                quote={quote}
+                locale={locale}
+                busy={busy}
+                blocked={pending && pendingKind !== "destination"}
+                recoveringDestination={pendingKind === "destination"}
+                run={act}
+                money={money}
+                onOrder={acceptOrder}
+                reload={async () => {
+                  sessionStorage.removeItem(
+                    `commerce-purchase-quote-v1:${context}`,
+                  );
+                  await load();
+                }}
+              />
+            )}
           </>
         )}
       </main>
-      {selected && (
+      {selected && !order && !orderLocked && (
         <footer className="purchase-footer">
           <div className="footer-inner">
             <div>
