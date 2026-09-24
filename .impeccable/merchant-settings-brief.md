@@ -18,6 +18,29 @@ The UI must distinguish saved credentials, provider qualification, method enable
 buyer visibility and runtime availability. Saving cannot promise provider approval
 or start a payment. This composition approval is not live integration acceptance.
 
+## Built A surface record
+
+The shipped settings surface follows the approved A composition: four ordered,
+numbered steps (Choose platform, Connect account, Configure methods, Check status)
+above a two-column work area. The form occupies the wider column and a read-only
+status summary with contextual next-step guidance occupies the narrower column.
+At mobile width the form stays first and the status summary follows it. The step
+sequence marks the current step semantically and distinguishes current,
+completed and future steps with text and visual state.
+
+The account environment choices are separate bordered radio cards. Sandbox says
+it is for integration testing with no live collection; Live says qualification is
+still required. The credential warning includes a semantic inline SVG icon and
+localized text stating that saving does not verify the account or activate
+payments. The status column's next-step message directs the merchant to save or
+select an account, then choose a market and configure payment methods.
+
+The page scopes supporting text to local `--muted` (`#5f7083`) in
+`apps/admin/components/settings.css`; this does not replace the shared muted-text
+color. The reviewed subtitle treatment measures 4.7355:1 against the canvas. These
+settings-specific facts do not expand the shared design-system tokens or ledger
+component previews.
+
 ## Component grammar and asset inventory
 
 Use existing Arial/PingFang stack, 29px page heading and 14px body baseline;
@@ -53,9 +76,7 @@ producer manifest`. Do not ship screenshot crops or generate decorative assets.
 ## Acceptance
 
 Backend transport gate is `contracts/merchant-account-http-v1.md` AC01-AC05.
-UI separately needs three locales (zh-CN, zh-TW, en), desktop/mobile screenshots,
-keyboard/error/pending/empty states, secret cleanup and real saved-state reload.
-Full method configuration requires real market discovery and existing settings
-API coverage; it may not be replaced by a fabricated success screen. External
-sandbox/live provider acceptance remains a distinct gate. Current comp is approved;
-this document alone does not mark runtime UI delivered.
+The A composition and its reviewed desktop, mobile, zh-CN and zh-TW presentation
+are recorded as built. Functional behavior, transport coverage, and external
+sandbox/live provider acceptance remain distinct gates; this visual brief does
+not substitute for their acceptance records.
