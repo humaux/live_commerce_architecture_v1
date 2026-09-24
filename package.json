@@ -13,7 +13,9 @@
     "build:admin": "pnpm --filter @live-commerce/admin build",
     "typecheck:admin": "pnpm --filter @live-commerce/admin typecheck",
     "test:admin": "playwright test",
-    "start:admin": "pnpm --filter @live-commerce/admin start"
+    "start:admin": "pnpm --filter @live-commerce/admin start",
+    "build:storefront": "pnpm --filter @live-commerce/storefront build",
+    "typecheck:storefront": "pnpm --filter @live-commerce/storefront typecheck"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
