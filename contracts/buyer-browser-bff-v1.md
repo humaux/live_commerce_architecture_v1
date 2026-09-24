@@ -1,6 +1,7 @@
 # Public buyer browser transport v1
 
-Status: DRAFT; independent protocol review before implementation. Builds on
+Status: FROZEN after independent preflight of 8735aa2 and the two explicit
+amendments below (READ COMMITTED admission and definite-negative recovery). Builds on
 the accepted private buyer HTTP, published-origin and session-registration
 contracts. No buyer visual page is approved by this transport document.
 
@@ -83,8 +84,11 @@ contracts. No buyer visual page is approved by this transport document.
   issuance. Unknown-token retirement uses the same limited wrapper and must
   fail explicitly if no tombstone can be persisted; existing-row retirement
   remains available at quota. New SQL name: `buyer.register_capability_limited`.
+  Both new SQL functions reject non-READ-COMMITTED callers with PT503 before
+  any side effect: an advisory lock does not refresh a stale snapshot. Test a
+  REPEATABLE READ caller anchored before another instance fills the quota.
 
-## Frozen implementation interfaces (pending preflight)
+## Frozen implementation interfaces
 
 - Runtime variables: `COMMERCE_BUYER_WEB_ENABLED` (absent/0 disabled, 1 enabled;
   other values invalid), `COMMERCE_BUYER_API_ORIGIN`, `COMMERCE_BUYER_BFF_KEY`,
@@ -146,10 +150,17 @@ contracts. No buyer visual page is approved by this transport document.
   phase. No bearer/auth token in storage and no HMAC derivation from that ID.
   Web Locks/storage unavailable -> fail closed before network mutation.
 - On fulfilled response, re-read status under lock and clear the marker only
-  when the new valid context differs from baseline. On network uncertainty,
+  when the new valid context differs from baseline. A fully received and parsed
+  trusted local non-2xx response is also conclusive: the protocol forbids all
+  error responses from Set-Cookie, so clear this operation's journal and report
+  the failure. Do not turn a definite429/422 into a permanent browser dead end.
+  On network uncertainty,
   abort or tab death, keep marker. Later tabs may only query status: valid new
   context proves the sole outstanding prepare's cookie arrived; same/absent
   context means interrupted initialization, NOT permission for a second prepare.
+  While such a journal is unresolved, prohibit prepare/reset/logout/activate
+  mutations, not only a second prepare. A malformed/unrecognized error response
+  is uncertain and cannot clear the journal.
   No timeout is considered proof of network quiescence. Exceptional unrecoverable
   cases explain using a fresh isolated browser context, not silent cart reset.
 - Activation/retirement have no cookie writes and are retried with the same
