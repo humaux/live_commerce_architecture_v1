@@ -1,6 +1,8 @@
 # Published storefront resolver v1
 
-Status: FROZEN / local prerequisite, not public checkout or domain provisioning.
+Status: PASS_BOUNDED_INTERNAL_PUBLISHED_ORIGIN_RESOLVER, code `cbffd8a`.
+See [317-test acceptance](../docs/implementation/2026-09-25-published-storefront-resolver-acceptance.md).
+Local prerequisite only, not public checkout or domain provisioning.
 Baseline: `1baa0d2`. Contributes to T03; full G01/G02/G11 remain NOT_RUN.
 
 ## Decision and scope

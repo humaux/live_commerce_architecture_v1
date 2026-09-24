@@ -151,6 +151,7 @@
       "internal/identity/**",
       "internal/buyer/**",
       "tests/foundation/buyer_capability_test.go",
+      "tests/foundation/published_storefront_test.go",
       "internal/tenancy/**",
       "tests/tenancy/**",
       "internal/stores/**",
@@ -162,21 +163,22 @@
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
-      "implementation": "PARTIAL_MERCHANT_C_WIZARD_AND_BUYER_AUTHORITY",
+      "implementation": "PARTIAL_MERCHANT_C_WIZARD_BUYER_AUTHORITY_AND_PUBLISHED_RESOLVER",
       "unit_mock": "PASS_OIDC_PROVIDER_MOCK",
-      "real_pg": "PASS_MERCHANT_IDENTITY_BROWSER_CHAIN_AND_BUYER_CAPABILITY",
+      "real_pg": "PASS_MERCHANT_IDENTITY_BUYER_CAPABILITY_AND_PUBLISHED_RESOLVER",
       "browser": "PASS_APPROVED_C_WIZARD_AND_REAL_PG_SIGNED_MOCK_IDP",
       "provider_sandbox": "NOT_RUN",
       "provider_live": "NOT_RUN",
-      "independent_review": "PASS_IDENTITY_TRANSPORT_HARNESS_AND_BUYER_AUTHORITY_SCOPE"
+      "independent_review": "PASS_IDENTITY_BUYER_AUTHORITY_AND_INTERNAL_PUBLISHED_RESOLVER_SCOPE"
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。",
     "local_slice": {
-      "as_of": "2026-09-20",
-      "scope": "merchant身份/C三步向导与独立buyer匿名凭证内核通过本地验收；内部购物车报价见T04。真实IdP、公共buyer入口、域名、结账与生产安全运维未完成",
+      "as_of": "2026-09-25",
+      "scope": "merchant身份/C三步向导、独立buyer匿名凭证及内部已发布域名解析内核通过本地PG验收；内部购物车报价见T04。可信域名/发布写入、真实IdP、公共buyer入口、结账与生产安全运维未完成",
       "evidence": "docs/implementation/2026-09-20-browser-identity-acceptance.md",
       "entry_ui_evidence": "docs/implementation/2026-09-20-entry-wizard-acceptance.md",
       "buyer_authority_evidence": "docs/implementation/2026-09-20-buyer-capability-acceptance.md",
+      "published_resolver_evidence": "docs/implementation/2026-09-25-published-storefront-resolver-acceptance.md",
       "global_gate_pass": false
     }
   },

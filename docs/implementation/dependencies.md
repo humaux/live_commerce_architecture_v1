@@ -61,6 +61,16 @@ Go 发现接口还须保留真实 PG 锁等待撤权负例。验收与外部资�
 SQL 依赖入口及将来开放 HTTP 前的条件见 `contracts/buyer-capability-v1.md`；
 改动 PG/pgx 或事务包装时，必须重跑真实数据库的角色矩阵、撤销/过期锁竞争和回滚负例。
 
+已发布域名解析前置也不新增依赖：`internal/domains` 调用现有
+`platform.ValidateBuyerIssuerPool`（复用启动角色检查）及 `command.ValidID`，
+用 pgx 参数化调用 `buyer.resolve_published_store(text)`。0020 的两个 control
+表仅给 non-login buyer writer SELECT；issuer 只可执行固定函数。
+解析没有缓存，不负责 DNS/TLS 验证、发布写入或买家身份。升级 PG、pgx、角色
+包装或域名语法时必须跑 `TestPublishedStorefront*` 的真实 SQL/Go 语法一致性、
+权限、租户 FK、停用和锁等待后过期用例，以及全量后端回归。合同：
+[published-storefront-resolver-v1](../../contracts/published-storefront-resolver-v1.md)。
+可信控制面写入与公开 HTTP/浏览器准入仍是独立门禁。
+
 内部 pricing/cart/quote 同样不新增依赖：`internal/pricing` 以现有 pgx 和受限整数
 计算；`internal/buyer/command.go` 复用事务、JSON/SHA-256；`internal/storefront`
 消费这些服务及 catalog 的 PG 行锁。升级 PG/pgx 时追加运行
