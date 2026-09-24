@@ -523,7 +523,15 @@
       "independent_review": "c8f4ebd2-4f49-49be-9ffc-380f9fc45818;no confirmed P0/P1;reviewer independently ran package race/vet and checked final226 full logs;prior contract P1 superseded",
       "not_ready": "No durable payment attempt/StartPayment/admission/credential reader/inbox financial transition/refund/query orchestration or provider sandbox/live;methods remain disabled"
     },
-    "remaining": "生产checkout/worker装配与过期任务巡检恢复、公开买家HTTP/UI、正式门市目录/地图回调、第三方账户自助连接与真实供应商准入、配送/支付设置公开API/UI、StartPayment/回调入账/退款/支付对账、provider sandbox/live和完整G03/G05均未实现或验收；PAYUNi仅有wire协议库与精确金额转换；现有T06商家principal不能冒用于买家，停用绑定后的旧支付对账须单独核准；诊断不等于买家授权；PAYMENT_PENDING/COMMITTED仅fixture状态栅栏，不是StartPayment竞态验收；内部预留不等于实际运输或可扣款授权",
+    "merchant_settings_http": {
+      "code_baseline": "d86aa84",
+      "status": "PASS_BOUNDED_MERCHANT_METHOD_HTTP_ONLY",
+      "evidence": "docs/implementation/2026-09-24-merchant-settings-http-acceptance.md",
+      "aggregate": "235 top-level PASS/0 FAIL/0 SKIP real PG/race/vet exit0; before-fix causal revoke test RED in write/replay/read; no settings UI/provider call",
+      "independent_review": "e77b1daa-6efb-4d4f-9516-5089f1aa4f8a; P0=0/P1=0; exact target five routes, final domain authorization and real PG red/green evidence",
+      "not_ready": "No settings UI/list/catalog/credential transport, buyer payment or provider sandbox/live; all existing enable gates unchanged"
+    },
+    "remaining": "生产checkout/worker装配与过期任务巡检恢复、公开买家HTTP/UI、正式门市目录/地图回调、第三方账户自助连接与真实供应商准入、配送/支付设置UI及列表、StartPayment/回调入账/退款/支付对账、provider sandbox/live和完整G03/G05均未实现或验收；方式配置已有五条商家HTTP但无设置页面；PAYUNi仅有wire协议库与精确金额转换；现有T06商家principal不能冒用于买家，停用绑定后的旧支付对账须单独核准；诊断不等于买家授权；PAYMENT_PENDING/COMMITTED仅fixture状态栅栏，不是StartPayment竞态验收；内部预留不等于实际运输或可扣款授权",
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
   {

@@ -120,6 +120,15 @@ SQL 约束错因核对及用 sequence 证明到达注入点的八类原子回滚
 `InspectMethod` 是商家诊断，不是给将来买家 StartPayment 缓存的授权票据。
 实证见 `2026-09-24-payment-methods-acceptance.md`，无供应商交易和支付页面验收。
 
+`internal/httpapi/settings.go` 注册五个方式配置/诊断路由，复用同包
+`scoped/bodyRoute`、`httperror` 与 `fulfillment.SetService/GetService`、
+`payments.SetMethod/GetMethod/InspectMethod`。不接受凭据，不改变领域启用门禁。
+升级 HTTP/认证/command/fulfillment/payments/PG 时重跑
+`settings_test.go` 与 `merchant_settings_http_test.go`：精确目标、完整 PUT、永久
+回执/CAS、诊断无写入、撤权后锁等待的新写/重放/读取拒绝。最终权限检查放在领域
+函数中，不能退化为只有 HTTP 包装层检查。见 `2026-09-24-merchant-settings-http-acceptance.md`；
+没有新增依赖、数据库迁移或浏览器/供应商调用。
+
 `internal/integrations/psp/payuni` 不新增 Go module，不导入 SQL、River 或账户库。
 标准库 `crypto/aes/cipher/sha256/subtle`、`net/http`、`net/url`、`encoding/*`
 实现官方 UPP v2.0 与查询 wire；固定官方端点、TLS1.2+、10秒、一次请求无重定向。
