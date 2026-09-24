@@ -16,6 +16,7 @@
 - 内部操作台账：精确权限、永久幂等、原子入队、租约 token/generation 和 SQL-only worker 写边界通过；[合同](contracts/external-operation-v1.md)、[106 项后端验收](docs/implementation/2026-09-20-external-operation-acceptance.md)。
 - 内部 River 执行器：真实任务消费、并发去重、UNKNOWN 仅查询、进程 SIGKILL 后 JobRescuer 恢复通过；[合同](contracts/external-dispatcher-v1.md)、[123 项测试及浏览器回归](docs/implementation/2026-09-20-dispatcher-acceptance.md)。远端使用显式 mock，生产 provider 适配器尚未实现；本地下单到期任务见下文。
 - 商家金流/物流设置：[合同](contracts/merchant-service-settings-v1.md)已按用户截图补充账户连接、方法启用与买家展示分离；支持商家自带物流，选店不要求固定承运商。当前为设计边界，UI/API及第三方接通仍待实现和逐项验收。
+- 商家自有账户凭据：PAYUNi 分环境登记、AES-GCM 加密存储、不可变密钥版本、HMAC 幂等与正常轮换已有内部实现；[合同](contracts/merchant-accounts-v1.md)、[验收边界](docs/implementation/2026-09-24-merchant-accounts-acceptance.md)。保存后明确为 `CONFIGURED_UNVERIFIED`，不是已授权、已收款或可启用的支付方式；自助 HTTP/UI、生产密钥装配和供应商验证仍待实现。
 - 商家配送配置内部内核：版本化启用／展示、独立运费、权限隔离、幂等与回滚已通过；[138 项后端回归及浏览器身份链证据](docs/implementation/2026-09-24-delivery-service-acceptance.md)。API 模式仍仅禁用草稿，不代表承运商已接通；公开设置页面和支付待实现。
 - 配送仓库配置与纯分配算法：逐配送方式保存仓库优先级、按可用库存拆仓，缺货不输出部分计划；[150 项回归、随机输入及浏览器兼容证据](docs/implementation/2026-09-24-delivery-allocation-acceptance.md)。后续已由下述内部 checkout 在余额行锁内消费；该历史纯函数验收本身不是并发防超卖证据。
 - 买家收货与门市来源：owner 隔离快照、可信门市引用、改选 CAS、回执隐私和锁等待后重验；[164 项真实 PG/race/vet 回归及浏览器兼容](docs/implementation/2026-09-24-buyer-destination-acceptance.md)。门市当前仅人工核验来源，不是官方目录／承运商接通；第三方账户与支付设置仍待实现。

@@ -88,7 +88,7 @@ Humaux `f31f5676-97cb-41e5-be58-aff580bf19f3`。仅证明本设计与用户需�
 |---|---|---|
 |物流方式启用／展示|0010 + `fulfillment.SetService/GetService` 的内部版本配置、独立开关、权限、CAS及审计已验收；内部 checkout 已锁定重验启用／展示与政策版本|商家设置 HTTP/UI、公开买家选择入口及 API 模式连接|
 |仓库与收货前置|0011 仓库优先级／纯分配计划、0012 人工核验门市来源和买家快照已由内部 checkout 在行锁下消费并形成库存预留，见[下单验收](../docs/implementation/2026-09-24-buyer-checkout-acceptance.md)|正式目录地图回调、公开收货 UI、可达性及第三方运输证明；本地库存预留不等于实际运输|
-|第三方自助连接|合同保留商家自有账户与多供应商；generic binding 仅可复用为执行绑定引用，不是凭据连接／就绪记录|能力目录、凭据录入／保管与检查、环境隔离连接流程、runtime availability evaluator|
+|第三方自助连接|PAYUNi 内部账户登记／加密版本／轮换已实现，见[凭据验收](../docs/implementation/2026-09-24-merchant-accounts-acceptance.md)；generic binding 仍仅执行绑定引用，`CONFIGURED_UNVERIFIED` 不等于已连接|自助 HTTP/UI、生产主密钥管理与装配、供应商验证、完整能力目录、runtime availability evaluator及其他供应商|
 |支付方式设置|本合同的多 PSP、按方式启用、账户绑定和回调边界|支付配置后端与 UI、StartPayment、PSP adapter、回调／退款／对账|
 |截图中的服务商|PAYUNi、LINE Pay、绿界、黑猫／新竹等仅是候选接入清单|各自账户授权、adapter、sandbox 和 live 验收均 NOT_RUN|
 

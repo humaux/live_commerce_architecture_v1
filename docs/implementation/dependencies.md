@@ -96,6 +96,19 @@ actor 与父预留约束、scoped FK、永久私有回执一起阻止普通角�
 River due/early/stale/duplicate；`--checkout` 仅快速定向，不替代整套门禁。
 完整证据见 `2026-09-24-buyer-checkout-acceptance.md`，无生产 PSP／物流调用。
 
+商家供应商凭据 `internal/integrations/accounts` 继续复用 pgx、
+`core.RegisterBinding`、`command.Run/Audit` 与 `platform.RequirePermission`，
+不建新授权/队列。Go 标准库 AES-256-GCM 做本地存储加密，HMAC-SHA256 使用独立
+稳定 replayKey；这与 PAYUNi 传输协议的加密/签名不是同一个功能，当前没有 PSP adapter。
+Keyring 复制输入，AAD/明文及 HMAC 字段顺序在 `merchant-accounts-v1.md` 冻结，
+golden digest 防止无意改动永久幂等编码。正常加密 active key切换可继续原请求
+重放，但不允许直接替换 replayKey；生产环境加载、密钥托管/备份与迁移尚未装配。
+0014 复合 FK 绑定准确商户/环境，credential 正文只有 INSERT 权限，runtime仅能
+读元数据，worker没有任意解密权限。升级 crypto/pgx/PG/command/binding 时重跑
+`merchant_accounts_test.go`：实际持久密文独立解密、错scope/AAD、密钥切换重放、
+不同key账户重复、轮换CAS、精确列权限与sequence证实故障回滚。生产取凭据须
+以持久操作的准确账户和权限为入口，不能直接把内部密文表暴露为通用查询 API。
+
 内部 external-operation 继续复用 pgx、River InsertTx、`command.Run` 与标准库
 JSON/crypto：`internal/integrations/core` 负责精确权限、不可变意图摘要和租约 token
 包装；迁移 0008 定义的受限 SQL 函数是 worker 状态迁移的唯一写入口，前向

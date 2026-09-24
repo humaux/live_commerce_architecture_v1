@@ -1,6 +1,8 @@
 # 商家自有供应商账户凭据 v1
 
-2026-09-24，IMPLEMENTATION_CONTRACT_FROZEN；基线 a21a7f7。
+2026-09-24，PASS_BOUNDED_INTERNAL_CREDENTIAL_REGISTRATION；代码/测试3063ed7。
+合同最初基于 a21a7f7 冻结；[实际验收](../docs/implementation/2026-09-24-merchant-accounts-acceptance.md)
+覆盖199项后端回归与既有身份浏览器兼容，不覆盖生产密钥装配、供应商验证或支付。
 从[服务设置合同](merchant-service-settings-v1.md)补齐真实凭据登记，不把配置伪装为
 供应商授权成功。首个支持录入的 provider 是 `payuni`；不创建交易、不自动启用方法。
 

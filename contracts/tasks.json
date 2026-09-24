@@ -285,15 +285,23 @@
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
-      "implementation": "PARTIAL_INTERNAL_LEDGER_AND_RIVER_DISPATCHER",
-      "unit_mock": "PASS_INTERNAL_LEDGER_AND_DISPATCHER",
-      "real_pg": "PASS_INTERNAL_DISPATCHER_123_TOP_LEVEL_TESTS",
+      "implementation": "PARTIAL_INTERNAL_LEDGER_DISPATCHER_AND_ACCOUNT_CREDENTIALS",
+      "unit_mock": "PASS_INTERNAL_LEDGER_DISPATCHER_AND_ACCOUNT_CRYPTO",
+      "real_pg": "PASS_INTERNAL_REGRESSION_199_TOP_LEVEL_TESTS",
       "provider_sandbox": "NOT_RUN",
       "provider_live": "NOT_RUN",
-      "independent_review": "PASS_BOUNDED_INTERNAL_LEDGER_AND_DISPATCHER"
+      "independent_review": "PASS_BOUNDED_INTERNAL_LEDGER_DISPATCHER_AND_ACCOUNT_CREDENTIALS"
     },
     "evidence": "docs/implementation/2026-09-20-external-operation-acceptance.md (ledger 9bac8e4, 106 tests); docs/implementation/2026-09-20-dispatcher-acceptance.md (8e7c4d8, 123 top-level PASS, real SIGKILL/JobRescuer, browser regression); root-dispatcher-final-fixed.log SHA256 f176e38d129547fad9f14832a85f756b9d70d8d2f21d4a4ea1f064ececf05b07",
-    "remaining": "provider适配器/策略资格/凭证及sandbox/live、全局配额与Retry-After、inbox/webhook、授权恢复UI、公开buyer checkout/StartPayment和完整G02/G04/G14仍未验收；T11内部下单/到期已验收，内部mock远端故障恢复不等于生产外部效果",
+    "merchant_accounts": {
+      "code_baseline": "3063ed7",
+      "status": "PASS_BOUNDED_INTERNAL_CREDENTIAL_REGISTRATION",
+      "evidence": "docs/implementation/2026-09-24-merchant-accounts-acceptance.md",
+      "aggregate": "199 top-level PASS/0 FAIL/0 SKIP real PG/race/vet; browser identity1/1 signed MOCK IdP",
+      "independent_review": "4ed8845b-0770-4f5d-8d01-2306ef6d49ac; no P0/P1; prior unkeyed-fingerprint and persisted-decryption evidence gaps closed",
+      "not_ready": "CONFIGURED_UNVERIFIED; no credential HTTP/UI, production key assembly, provider verification, payment method or provider adapter"
+    },
+    "remaining": "provider适配器/策略资格、凭据自助HTTP/UI及生产密钥装配和sandbox/live、全局配额与Retry-After、inbox/webhook、授权恢复UI、公开buyer checkout/StartPayment和完整G02/G04/G14仍未验收；内部凭据登记不等于已连接或可支付；T11内部下单/到期已验收，内部mock远端故障恢复不等于生产外部效果",
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
   {
