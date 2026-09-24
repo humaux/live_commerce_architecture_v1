@@ -185,6 +185,7 @@ func TestBuyerHTTPWorkflowReplayAndProjection(t *testing.T) {
 	}
 	in := checkout.Input{QuoteID: q.ID, DestinationID: d.ID, CartVersion: c.Version, ServiceVersion: 1, AllocationVersion: 1}
 	key := t04Key("http-checkout")
+	before := h.facts(t)
 	first := h.request(t, "POST", "/v1/buyer/checkout", token, key, in, nil)
 	type receipt struct {
 		OrderID   string    `json:"order_id"`
@@ -195,8 +196,10 @@ func TestBuyerHTTPWorkflowReplayAndProjection(t *testing.T) {
 		t.Fatal("checkout receipt missing")
 	}
 	facts := h.facts(t)
-	if facts[0] != 1 || facts[1] != 1 || facts[3] != 1 || facts[5] != 1 {
-		t.Fatal("checkout did not atomically create one order/receipt/hold/job")
+	for i, after := range facts {
+		if delta := after - before[i]; delta != 1 {
+			t.Fatalf("checkout did not atomically create one fact[%d]: before=%d after=%d", i, before[i], after)
+		}
 	}
 	second := h.request(t, "POST", "/v1/buyer/checkout", token, key, in, nil)
 	if second.status != 200 || !bytes.Equal(first.body, second.body) || h.facts(t) != facts {
