@@ -47,8 +47,8 @@ This is not a claim that checkout, payment or public purchase is implemented.
 - Inventory ledger's store-global key must be derived from the private checkout
   UUID, not the public owner idempotency key (different owners may choose it).
 - Lock order: capability tenant/store/owner/session → private owner receipt key →
-  cart/Quote → market/current policy → sorted products/SKUs → destination/allocation
-  and merchant service revision → sorted warehouses/balances → final DB-clock
+  cart/Quote → market/current policy → sorted products/SKUs → destination/source →
+  merchant service head → allocation head → sorted warehouses/balances → final DB-clock
   expiry → durable facts.
   Reuse no merchant command locks. External I/O happens before/after, not while
   holding the database transaction. Locks do not freeze wall-clock validity.
