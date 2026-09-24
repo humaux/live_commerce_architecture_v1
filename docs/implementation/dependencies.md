@@ -81,6 +81,16 @@ SQL 依赖入口及将来开放 HTTP 前的条件见 `contracts/buyer-capability
 HTTP/PG和实际cmd/api三池清理测试，再跑全量race/vet。公开BFF/cookie/CSRF
 和浏览器验收仍为独立前置。见 [私有HTTP验收](2026-09-25-buyer-private-http-acceptance.md)。
 
+买家商品发现 `storefront.ListCatalog` 复用 `buyer.WithScope/CheckScope`、
+0007 的 catalog/control 列级 SELECT 和 RLS，只读联结 active 商品/规格及
+当前店铺币种；没有第二商品真源或新增角色。`pagination.Request/Page` 复用
+列表类型，但不复用包含明文 tenant/store 的旧游标编码；新的标准库 JSON、
+SHA256、base64url 只绑定分页位置，不提供身份授权。`buyerhttp.projectCatalog`
+固定七个展示字段；只有规范 `GET /v1/buyer/catalog` 接受三个查询参数，旧路由
+仍拒绝 query。修改这些边界时运行 `TestBuyerHTTPCatalog*` 的真实PG/HTTP、
+域单元游标反例及完整race/vet；不得将商品展示价格当成最终报价或收款资格。
+合同见 [buyer-catalog-discovery-v1](../../contracts/buyer-catalog-discovery-v1.md)。
+
 内部 pricing/cart/quote 同样不新增依赖：`internal/pricing` 以现有 pgx 和受限整数
 计算；`internal/buyer/command.go` 复用事务、JSON/SHA-256；`internal/storefront`
 消费这些服务及 catalog 的 PG 行锁。升级 PG/pgx 时追加运行

@@ -1,6 +1,8 @@
 # Buyer catalog discovery v1
 
 Status: FROZEN after independent preflight on 2026-09-25 (no open P0/P1/P2).
+Implementation accepted at source `286bfa0`: scoped PG/HTTP gates, 345-test full
+regression and independent review passed; see the [bounded acceptance evidence](../docs/implementation/2026-09-25-buyer-catalog-discovery-acceptance.md).
 This is the first dependency of
 [automatic product payment entry](product-payment-entry-v1.md), not that entire
 flow or a public product page. No provider call, catalog write or new database

@@ -23,6 +23,7 @@
 - PAYUNi wire 协议：标准库实现五种 UPP 托管付款表单、通知验签与单次交易查询；[合同](contracts/payuni-wire-v1.md)、[验收边界](docs/implementation/2026-09-24-payuni-wire-acceptance.md)。协议模拟与官方加密向量验证通过，查询现已由下述内部 worker 调用；未接通托管付款表单、通知入账、商家沙箱或支付页面，不解除上述启用限制。
 - Stripe 操作端沙盒：用户授权的 HKD10 测试链接已创建，API持久回读与独立收银台显示通过；[证据及限制](docs/implementation/2026-09-25-stripe-sandbox-link-verification.md)。这是 Codex 插件核验，不是服务器 Stripe 适配器接入；测试付款、订单回调及对账尚未执行，正式账户未改动。
 - 商品自动收款入口：已纳入[架构及 PE01–PE10 合同](contracts/product-payment-entry-v1.md)。保存价格后自动提供稳定购买入口，确认规格/数量/配送后按订单生成支付页，无需逐商品手工建 PSP 链接；当前为需求/设计，完整功能未实现，不能用上述沙盒链接替代验收。
+- 买家商品数据前置：私有 `GET /v1/buyer/catalog` 已支持当前有效商品/SKU/现价、店铺隔离、受限查询和分页；[345 项回归与独立审查](docs/implementation/2026-09-25-buyer-catalog-discovery-acceptance.md)通过。这不是公开商城页面，也未生成分享链接或支付页。
 - 内部发起支付：真实买家权限、冻结金额/账户版本、订单与待支付库存/attempt/查询意图/回执/队列同事务；[合同](contracts/payment-start-v1.md)、[246项真实PG/race/vet及失败修正证据](docs/implementation/2026-09-24-payment-start-acceptance.md)。仅信用卡PROVIDER_MOCK内核；后续查询执行见下项，真实账户资格、付款表单、通知入账/退款/对账及公开页面仍待完成。
 - 支付查询与可信报告：精确租约读取历史凭据、实际 River 查询执行、验签后报告与 UNKNOWN 完成同事务、并发去重及持久化查询时限；[合同](contracts/payment-query-v1.md)、[查询阶段验收](docs/implementation/2026-09-24-payment-query-acceptance.md)。查询成功不是收款成功；后续财务判断由独立本地入账流程处理。
 - 信用卡入账与库存承诺：完整请款证据、不可变财务事实、预留转待履约库存、订单确认和耐久商家待办同事务；逆序授权不会误锁履约，退款／晚款异常转粘性复核；[合同](contracts/payment-capture-v1.md)、[284项真实PG/race/vet证据](docs/implementation/2026-09-24-payment-capture-acceptance.md)。供应商仍是签名报文模拟，无真实PSP调用；不等于银行结算、退款功能或上线准入，不开放商家收款开关。

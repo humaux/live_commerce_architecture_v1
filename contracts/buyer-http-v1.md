@@ -3,6 +3,8 @@
 Status: FROZEN after independent preflight of 0de251e (no open P0/P1/P2). This is the private
 Go boundary for the future storefront BFF, not a publicly exposed checkout.
 Existing buyer, storefront, fulfillment and checkout contracts remain authoritative.
+The later [catalog-discovery amendment](buyer-catalog-discovery-v1.md) adds one
+read-only route and its narrowly scoped query exception; it adds no public access.
 
 ## Authority and lifecycle
 
@@ -21,7 +23,8 @@ Existing buyer, storefront, fulfillment and checkout contracts remain authoritat
   `COMMERCE_BFF_KEY`. Partial startup closes every newly opened pool.
 - Every request requires exactly one `X-Commerce-Buyer-BFF-Key` matching the
   separate configured key in constant time and one `X-Commerce-Storefront-Origin`.
-  Reject Cookie, Origin, query strings (including a bare `?`), and any client
+  Reject Cookie, Origin, query strings except the exact GET catalog amendment
+  (a bare `?` is still forbidden), and any client
   scope headers `X-Tenant-ID` / `X-Store-ID`. Never derive scope from Host or
   forwarded headers. The future BFF must construct, not forward, these headers.
 - Resolve the exact published origin on **every** admitted request, including
@@ -44,13 +47,15 @@ Existing buyer, storefront, fulfillment and checkout contracts remain authoritat
 ## Routes and strict input
 
 Successful responses use 200 (DELETE session uses 204). There are no payment,
-provider side-effect, catalog-discovery or public domain-management routes here.
+provider side-effect or public domain-management routes here. Catalog discovery
+is limited to the explicit GET amendment below.
 
 | Method and path | Input | Operation / response |
 | --- | --- | --- |
 | POST /v1/buyer/session | `{}` | Issue; private `{token,expires_at}` only |
 | GET /v1/buyer/session | no body | Resolve capability; `{authenticated:true}` |
 | DELETE /v1/buyer/session | no body | Revoke; empty 204 |
+| GET /v1/buyer/catalog | no body; bounded product_id/limit/cursor query | Active SKU display page; catalog amendment governs strict parsing/projection |
 | GET /v1/buyer/cart | no body | GetCart / cart projection |
 | PUT /v1/buyer/cart | storefront.CartInput | SetCart / cart projection |
 | POST /v1/buyer/quotes | storefront.QuoteInput | CreateQuote / quote projection |
