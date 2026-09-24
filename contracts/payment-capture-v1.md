@@ -17,7 +17,9 @@ RefundStatus has different meanings for ATM and credit; never share classifiers.
   a late report cannot replace a CAPTURED fact with PENDING/FAILED.
 - Query SUCCESS alone is not payment. Record AUTHORIZED only for a complete,
   matched credit trade with TradeStatus1 and nonempty pinned provider reference.
-  Record CAPTURED only when CloseStatus2 and CloseAmt exactly match frozen total.
+  Record CAPTURED only when ALL of those conditions hold and CloseStatus2 and
+  CloseAmt exactly match frozen total (DataSource A, matched account/attempt,
+  one-time credit PaymentType1/AuthType1, TradeStatus1, nonempty pinned reference).
   Partial/missing capture evidence creates a review case, never a full capture.
 - Confirm an order only from full CAPTURED evidence, not authorization. This is
   our explicit engineering policy, not a claim about PAYUNi fulfillment policy.
@@ -123,7 +125,9 @@ Current expiry only releases DRAFT/HELD, not PAYMENT_PENDING. Automatic late-sto
 reallocation is deferred until a payment-expiry/recovery protocol exists; it will
 reuse PlanAllocation, not introduce a second planner.
 
-Reports indicating refund/conflicting state create/hold REVIEW_REQUIRED work,
+Reports without a capture fact retain review only in payments.review_cases.
+Reports indicating refund/conflicting state create/hold REVIEW_REQUIRED work
+only when a genuine capture fact exists for its foreign key,
 retain captured facts and allocated stock, and do not guess net payment. Refund
 operations, dispute/payout facts and manual resolution are follow-up modules.
 Review evaluation must precede any already-processed/no-capture early return.
