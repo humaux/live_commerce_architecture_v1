@@ -99,7 +99,10 @@ func boptOtherStore(t *testing.T, h bhHarness, tenant, token string) (store, mar
 		t.Fatal(err)
 	}
 	mustExec(t, f.owner, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,'Options isolated shop','USD')`, tenant, f.storeA1)
-	mustExec(t, f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'pricing:write'),($1,$2,$3,'integration:manage')`, tenant, f.storeA1, f.principalA)
+	mustExec(t, f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'pricing:write'),($1,$2,$3,'integration:manage'),($1,$2,$3,'store:read')`, tenant, f.storeA1, f.principalA)
+	t.Cleanup(func() {
+		mustExec(t, f.owner, `DELETE FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3`, tenant, f.storeA1, f.principalA)
+	})
 	m, err := createPricingMarket(context.Background(), &f, "options")
 	if err != nil {
 		t.Fatal(err)
@@ -171,8 +174,8 @@ func TestBuyerHTTPOptionsPaginationScopeAndNoWrites(t *testing.T) {
 			t.Fatal("foreign/missing market exposed")
 		}
 	}
-	bhError(t, h.request(t, "GET", "/v1/buyer/checkout-options?market_id="+h.market.ID+"&country=HK&cursor="+url.QueryEscape(first.NextCursor), h.cap.Token, "", nil, nil), 422, "invalid")
-	bhError(t, h.request(t, "GET", "/v1/buyer/catalog?cursor="+url.QueryEscape(first.NextCursor), h.cap.Token, "", nil, nil), 422, "invalid")
+	bhError(t, h.request(t, "GET", "/v1/buyer/checkout-options?market_id="+h.market.ID+"&country=HK&cursor="+url.QueryEscape(first.NextCursor), h.cap.Token, "", nil, nil), 422, "invalid_request")
+	bhError(t, h.request(t, "GET", "/v1/buyer/catalog?cursor="+url.QueryEscape(first.NextCursor), h.cap.Token, "", nil, nil), 422, "invalid_request")
 	other := h
 	other.origin = "https://options-other.example"
 	other.cap = mustIssue(t, h.cqHarness.service, otherStore)
@@ -183,7 +186,7 @@ func TestBuyerHTTPOptionsPaginationScopeAndNoWrites(t *testing.T) {
 	if got := boptRead(t, other, "market_id="+h.market.ID); len(got.Items) != 0 {
 		t.Fatal("reverse cross-store exposure")
 	}
-	bhError(t, other.request(t, "GET", "/v1/buyer/checkout-options?"+query+"&cursor="+url.QueryEscape(first.NextCursor), other.cap.Token, "", nil, nil), 422, "invalid")
+	bhError(t, other.request(t, "GET", "/v1/buyer/checkout-options?"+query+"&cursor="+url.QueryEscape(first.NextCursor), other.cap.Token, "", nil, nil), 422, "invalid_request")
 	if h.facts(t) != before || !reflect.DeepEqual(readFacts(), beforeReads) {
 		t.Fatal("discovery changed purchase facts or queued work")
 	}
@@ -235,15 +238,19 @@ func TestBuyerHTTPOptionsCurrentEligibility(t *testing.T) {
 					t.Fatal(err)
 				}
 			case "store-currency":
-				mustExec(t, h.f.owner, `UPDATE control.stores SET currency='TWD' WHERE tenant_id=$1 AND id=$2`, h.f.tenantA, h.f.storeA1)
-				t.Cleanup(func() {
-					mustExec(t, h.f.owner, `UPDATE control.stores SET currency='USD' WHERE tenant_id=$1 AND id=$2`, h.f.tenantA, h.f.storeA1)
-				})
+				// Existing composite FKs reject drift even for the fixture owner;
+				// never disable constraints to manufacture an impossible market.
+				_, err := h.f.owner.Exec(context.Background(), `UPDATE control.stores SET currency='TWD' WHERE tenant_id=$1 AND id=$2`, h.f.tenantA, h.f.storeA1)
+				daSQLState(t, err, "23503")
 			}
 			got := boptRead(t, h, query)
 			if change == "rename" {
 				if len(got.Items) != 1 || got.Items[0].ServiceVersion != 2 || got.Items[0].AllocationVersion != 1 || got.Items[0].NameEN != in.NameEN {
 					t.Fatal("historical allocation provenance incorrectly blocks current service")
+				}
+			} else if change == "store-currency" {
+				if len(got.Items) != 1 || got.Items[0].Currency != "USD" {
+					t.Fatal("currency invariant failed to preserve current option")
 				}
 			} else if len(got.Items) != 0 {
 				t.Fatal("ineligible configuration still exposed")
@@ -317,7 +324,7 @@ func TestBuyerHTTPOptionsCVSIsConfigurationOnly(t *testing.T) {
 		// Discovery must not manufacture a trusted pickup source for a CVS choice.
 		in := storefront.DestinationInput{ExpectedVersion: h.destination.Version, CartVersion: h.input.CartVersion,
 			Kind: kind, Country: "TW", RecipientName: "Synthetic Buyer", Phone: "+886 900 000 000"}
-		bhError(t, h.request(t, "PUT", "/v1/buyer/destination", h.cap.Token, t04Key("options-cvs-no-pickup"), in, nil), 422, "invalid")
+		bhError(t, h.request(t, "PUT", "/v1/buyer/destination", h.cap.Token, t04Key("options-cvs-no-pickup"), in, nil), 422, "invalid_request")
 	}
 }
 
@@ -325,11 +332,11 @@ func TestBuyerHTTPOptionsStrictQueryAndAuthority(t *testing.T) {
 	h := bhSetup(t)
 	path := "/v1/buyer/checkout-options"
 	for _, query := range []string{"limit=0", "limit=101", "limit=-1", "limit=+1", "limit=1.5", "limit=1&limit=2", "limit=", "country=tw", "country=TWN", "country=", "market_id=bad", "market_id=", "cursor=bad", "cursor=", "cursor=" + strings.Repeat("A", 1025), "tenant_id=" + h.f.tenantA, "limit=1;country=TW", "limit=1&&country=TW", "&limit=1", "limit=1&", "x=%GG", strings.Repeat("a", 2049)} {
-		bhError(t, h.request(t, "GET", path+"?"+query, h.cap.Token, "", nil, nil), 422, "invalid")
+		bhError(t, h.request(t, "GET", path+"?"+query, h.cap.Token, "", nil, nil), 422, "invalid_request")
 	}
 	bhError(t, h.request(t, "GET", path+"?", h.cap.Token, "", nil, nil), 403, "forbidden")
-	bhError(t, h.request(t, "GET", path, h.cap.Token, t04Key("read-idem"), nil, nil), 422, "invalid")
-	bhError(t, h.request(t, "GET", path, h.cap.Token, "", struct{}{}, nil), 422, "invalid")
+	bhError(t, h.request(t, "GET", path, h.cap.Token, t04Key("read-idem"), nil, nil), 422, "invalid_request")
+	bhError(t, h.request(t, "GET", path, h.cap.Token, "", struct{}{}, nil), 422, "invalid_request")
 	bhError(t, h.request(t, "POST", path, h.cap.Token, "", nil, nil), 405, "method_not_allowed")
 	bhError(t, h.request(t, "GET", path+"/", h.cap.Token, "", nil, nil), 404, "not_found")
 	bhError(t, h.request(t, "GET", path, "", "", nil, nil), 401, "unauthorized")
