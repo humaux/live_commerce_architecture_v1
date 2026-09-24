@@ -325,7 +325,7 @@ export default function ProductPurchase({
           }
         }
       } catch (reason) {
-        if (active) {
+        if (active && version === epoch.current) {
           epoch.current++;
           showError(reason);
         }
