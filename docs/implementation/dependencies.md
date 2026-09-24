@@ -71,6 +71,16 @@ SQL 依赖入口及将来开放 HTTP 前的条件见 `contracts/buyer-capability
 [published-storefront-resolver-v1](../../contracts/published-storefront-resolver-v1.md)。
 可信控制面写入与公开 HTTP/浏览器准入仍是独立门禁。
 
+买家私有 HTTP 同样不新增依赖：`cmd/api/buyer.go` 负责三个既有独立权限池
+的装配/失败关闭，`internal/buyerhttp` 借用池并消费 `domains`、`buyer`、
+`storefront`、`checkout`，不新增 SQL writer 或运行 River worker。标准库
+`net/http` 负责严格路由和请求期限，`encoding/json` 负责有界类型解码，
+`httperror` 负责公共错误封装；具体 projection 类型不序列化内部原始结构。
+外层 mount 保留原始路径送入内层校验，不能换成自动清理路径的重定向。
+升级上述入口、Go/pgx、权限、期限或 DTO 时须运行 `--buyer-http` 的真实
+HTTP/PG和实际cmd/api三池清理测试，再跑全量race/vet。公开BFF/cookie/CSRF
+和浏览器验收仍为独立前置。见 [私有HTTP验收](2026-09-25-buyer-private-http-acceptance.md)。
+
 内部 pricing/cart/quote 同样不新增依赖：`internal/pricing` 以现有 pgx 和受限整数
 计算；`internal/buyer/command.go` 复用事务、JSON/SHA-256；`internal/storefront`
 消费这些服务及 catalog 的 PG 行锁。升级 PG/pgx 时追加运行
