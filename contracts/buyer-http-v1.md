@@ -63,7 +63,8 @@ provider side-effect, catalog-discovery or public domain-management routes here.
 Writes other than session require one `Idempotency-Key`, matching existing
 `^[A-Za-z0-9_.:-]{8,128}$`. Session and reads reject Idempotency-Key rather than
 suggesting replay support. JSON input is bounded to 64 KiB, application/json,
-unknown fields/null/trailing values rejected. No-body routes reject any bytes.
+unknown fields/null at ANY depth/trailing values rejected (optional fields may
+be omitted, but explicit null is not accepted). No-body routes reject any bytes.
 Path IDs use the existing canonical UUID validator. Unknown routes return 404;
 known routes with unsupported methods (including HEAD/OPTIONS) return 405.
 No automatic redirects or HTML error bodies. Generic errors use httperror with
@@ -73,6 +74,10 @@ json_required; missing/invalid buyer or BFF credential 401 unauthorized; forbidd
 browser/scope headers 403 forbidden; unpublished/unknown origin and missing owned
 resource 404 not_found; conflict 409; insufficient inventory 409
 insufficient_inventory; timeout/database/unclassified errors 503 unavailable.
+All POST session errors, including resolver failures, use the shared
+`httperror.WriteNonRetryable` envelope so `retryable:false`; other routes retain
+the existing shared envelope semantics. A lost session issuance response remains
+unknown and must not be automatically retried even without an HTTP response.
 
 ## Explicit response projections (frozen function names)
 
@@ -122,7 +127,8 @@ tests assert exact recursive JSON keys and preservation, not just denylist text.
 
 ## Implementation ownership
 
-Integrator owns this contract, cmd/api wiring, platform validator, PG tests,
+Integrator owns this contract, cmd/api wiring, platform validator, shared
+httperror.WriteNonRetryable helper (preserving existing Write behavior), PG tests,
 test runner and acceptance docs. HTTP author owns handler.go/handler_test.go;
 projection author owns projections.go/projections_test.go. Each writer uses an
 isolated worktree. Independent review must approve the contract before writers
