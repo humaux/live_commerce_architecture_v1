@@ -66,7 +66,7 @@ export default async function SettingsPage({
   }
   return (
     <SettingsWizard
-      key={store?.id ?? "no-store"}
+      key={`${locale}:${store?.id ?? "no-store"}`}
       locale={locale}
       initial={{ store, error }}
     />
