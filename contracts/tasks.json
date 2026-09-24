@@ -307,9 +307,17 @@
       "evidence": "docs/implementation/2026-09-24-merchant-account-http-acceptance.md",
       "aggregate": "302 top-level PASS/0 FAIL/0 SKIP real PG/race/vet; separate browser-tag gate 2 PASS/0 FAIL/0 SKIP: actual cmd/api process restart and real Chromium/Next/Go/PG signed MOCK IdP",
       "independent_review": "89366cfd-a812-4a22-8d34-fc208d9a8728; no open P0/P1/P2 in bounded final review; failure-path cleanup race corrected and gates rerun",
-      "not_ready": "No runtime settings wizard, market/method discovery, real provider verification/admission, production key custody/deployment or distributed quota. Account saving is CONFIGURED_UNVERIFIED, payment enabling remains rejected."
+      "not_ready": "Historical HTTP-only baseline; local settings wizard and discovery are accepted in merchant_settings_wizard below. Real provider admission, production key custody/deployment and distributed quota remain unverified. Account saving is CONFIGURED_UNVERIFIED, payment enabling remains rejected."
     },
-    "remaining": "provider适配器/策略资格、凭据自助UI及真实生产密钥托管部署和sandbox/live、分布式配额、inbox/webhook、授权恢复UI、公开buyer checkout/StartPayment和完整G02/G04/G14仍未验收；账户HTTP/BFF与每店限流和Retry-After通过本地验收，凭据登记不等于已连接或可支付；T11内部下单/到期已验收，内部mock远端故障恢复不等于生产外部效果",
+    "merchant_settings_wizard": {
+      "code_baseline": "1a5c64b",
+      "status": "PASS_BOUNDED_LOCAL_WIZARD",
+      "evidence": "docs/implementation/2026-09-24-merchant-settings-wizard-acceptance.md",
+      "aggregate": "308 top-level real PG/race/vet PASS; browser identity/settings/process restart 3 PASS; existing ledger/disabled production 8 PASS; i18n 4 PASS; no customer production or provider request",
+      "independent_review": "Safety e3d50cc4-7b91-49e9-bf27-741bf148de02 no remaining P0/P1 at scope; visual333388a4-8f34-4859-96aa-b55c7bea2968 SHIP only for three scored fixes",
+      "not_ready": "Credential registration, disabled payment drafts and explicit manual delivery only. Real provider qualification, payment collection, carrier booking and production IdP/HTTPS are NOT_RUN."
+    },
+    "remaining": "provider适配器/策略资格、真实生产密钥托管部署和sandbox/live、分布式配额、inbox/webhook、授权恢复UI、公开buyer checkout/StartPayment和完整G02/G04/G14仍未验收；账户HTTP/BFF及A设置向导已通过本地隔离验收，凭据登记不等于已连接或可支付；T11内部下单/到期已验收，内部mock远端故障恢复不等于生产外部效果",
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
   {
@@ -537,7 +545,7 @@
       "evidence": "docs/implementation/2026-09-24-merchant-settings-http-acceptance.md",
       "aggregate": "235 top-level PASS/0 FAIL/0 SKIP real PG/race/vet exit0; before-fix causal revoke test RED in write/replay/read; no settings UI/provider call",
       "independent_review": "e77b1daa-6efb-4d4f-9516-5089f1aa4f8a; P0=0/P1=0; exact target five routes, final domain authorization and real PG red/green evidence",
-      "not_ready": "No settings UI/list/catalog/credential transport or real buyer payment/provider sandbox/live; merchant enable gate remains closed."
+      "not_ready": "Historical settings HTTP baseline. Local UI/list/catalog/credential transport are covered by the later merchant-settings-wizard acceptance; real buyer payment/provider sandbox/live remain NOT_RUN and merchant enable gate remains closed."
     },
     "payment_start_internal": {
       "code_baseline": "eff808f",
@@ -561,9 +569,15 @@
       "evidence": "docs/implementation/2026-09-24-payment-capture-acceptance.md",
       "aggregate": "284 top-level PASS/0 FAIL/0 SKIP real PG/race/vet exit0, foundation150.976s; real River with signed mock query, no provider requests",
       "independent_review": "426fb968-24b8-431e-8d9b-a562931ff74c; final84c6af1 no unresolved P0/P1; reverse-order P1 causal RED/GREEN verified, final log/hash independently read; reviewer did not rerun PG",
-      "not_ready": "Internal full one-time-card capture only, no live admission. Merchant self-service UI, real qualification, hosted form release, notification inbox, payout/refunds/partial captures, review resolution, production worker assembly and other methods remain pending."
+      "not_ready": "Internal full one-time-card capture only, no live admission. Later merchant-settings-wizard local UI acceptance is separate. Real qualification, hosted form release, notification inbox, payout/refunds/partial captures, review resolution, production worker assembly and other methods remain pending."
     },
-    "remaining": "生产checkout/worker装配与到期巡检、公开买家HTTP/UI、正式门市目录/地图回调、第三方账户自助连接与真实准入、配送/支付设置UI及列表、托管表单释放、请款/退款字段、回调入账/原子库存分配/退款/支付对账、provider sandbox/live及完整G03/G05仍待实现或验收。内部信用卡StartPayment及历史凭据查询worker/可信报告已通过PG与签名MOCK验收；商家启用仍拒绝，查询成功不等于收到资金，内部预留也不等于实际运输。",
+    "merchant_settings_wizard": {
+      "status": "PASS_BOUNDED_LOCAL_WIZARD",
+      "code_baseline": "1a5c64b",
+      "evidence": "docs/implementation/2026-09-24-merchant-settings-wizard-acceptance.md",
+      "scope": "A four-step UI, account registration, market/method/service discovery, explicit pricing and manual delivery; disabled payment drafts only. Full provider acceptance remains NOT_RUN."
+    },
+    "remaining": "生产checkout/worker装配与到期巡检、公开买家HTTP/UI、正式门市目录/地图回调、第三方真实准入、托管表单释放、请款/退款字段、回调入账/退款/支付对账、provider sandbox/live及完整G03/G05仍待实现或验收。账户/配送/支付设置A向导及列表已通过本地验收；内部信用卡StartPayment及历史凭据查询worker/可信报告已通过PG与签名MOCK验收；商家启用仍拒绝，查询成功不等于收到资金，内部预留也不等于实际运输。",
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
   {

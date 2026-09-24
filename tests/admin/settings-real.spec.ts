@@ -94,6 +94,12 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
     contentType: "application/json",
   });
   expect(renderedStyle.contrast).toBeGreaterThanOrEqual(4.5);
+  console.info("Settings rendered contrast:", JSON.stringify(renderedStyle));
+  await page.screenshot({
+    path: testInfo.outputPath("a-hero-repro.png"),
+    fullPage: false,
+    animations: "disabled",
+  });
   await page.screenshot({
     path: testInfo.outputPath("a-desktop-account.png"),
     fullPage: true,

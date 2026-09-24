@@ -32,6 +32,19 @@ HttpOnly 会话、CSRF/Origin 和授权店铺列表，不转发浏览器提供�
 升级这些入口须跑账户HTTP真实PG、密钥配置负例与真实浏览器BFF链；
 配置及轮换边界见 [account-credential-configuration](account-credential-configuration.md)。
 
+## 商家设置向导复用关系
+
+`SettingsWizard` → 同源 Next BFF → Go `settings_discovery.go` →
+`pricing` / `payments` / `fulfillment` 的现有事务与命令回执；没有新增包或 migration。
+市场分页复用 UUID keyset；配送服务目录按稳定 code 游标；台湾收款方式固定五种。
+页面复用 `WorkspaceFrame`，所有语言由真实店铺和 session 决定上下文，语言不改币种。
+账户 credential 只保留在内存输入框；请求派发前仅把原 key/非秘密上下文写入恢复日志，
+不得记录密钥。非秘密草稿携带目标和已观测版本，显式重载会丢弃未保存账户绑定；
+自动刷新不能给脏表单升级 CAS 基线。升级必须跑真实 browser-identity gate（包含
+settings-real），保留崩溃恢复、双账户非首项回填、并发修改与跨会话零写测试；
+Go 发现接口还须保留真实 PG 锁等待撤权负例。验收与外部资格边界见
+[merchant-settings-wizard-acceptance](2026-09-24-merchant-settings-wizard-acceptance.md)。
+
 ## 计划依赖（当前 NOT_INSTALLED）
 
 |依赖|状态与边界|准入条件|
