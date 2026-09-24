@@ -41,9 +41,9 @@ and every candidate balance in warehouse/SKU order, not preference order.
 
 Migration 0011: immutable allocation_versions + allocation_warehouses + mutable
 head. Composite FKs bind service revision, actor membership, and each warehouse.
-Position 1..16 is unique; warehouse is unique per revision. A deferred header INSERT
-constraint checks exact count and contiguous positions at commit, including empty
-list. Forced store RLS, actor-bound version INSERT; runtime SELECT/INSERT and head
+Position 1..16 is unique; warehouse is unique per revision. Deferred header/child
+INSERT constraints check exact count and contiguous positions at commit, including
+empty list and later append attempts. Forced store RLS, actor-bound version INSERT; runtime SELECT/INSERT and head
 UPDATE(current_version) only. No buyer/worker/issuer permissions or history edits.
 
 ## Pure planner

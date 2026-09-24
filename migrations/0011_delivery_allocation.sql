@@ -30,19 +30,25 @@ CREATE TABLE fulfillment.allocation_heads (
 -- A successful commit cannot preserve a partial or gapped immutable priority list.
 CREATE FUNCTION fulfillment.check_allocation_complete() RETURNS trigger
 LANGUAGE plpgsql SET search_path=pg_catalog AS $$
-DECLARE actual_count bigint; last_position integer;
+DECLARE expected_count integer; actual_count bigint; last_position integer;
 BEGIN
+ SELECT warehouse_count INTO expected_count FROM fulfillment.allocation_versions
+ WHERE tenant_id=NEW.tenant_id AND store_id=NEW.store_id AND market_id=NEW.market_id
+  AND country=NEW.country AND code=NEW.code AND version=NEW.version;
  SELECT count(*),coalesce(max(position),0) INTO actual_count,last_position
  FROM fulfillment.allocation_warehouses
  WHERE tenant_id=NEW.tenant_id AND store_id=NEW.store_id AND market_id=NEW.market_id
   AND country=NEW.country AND code=NEW.code AND version=NEW.version;
- IF actual_count<>NEW.warehouse_count OR last_position<>NEW.warehouse_count THEN
+ IF expected_count IS NULL OR actual_count<>expected_count OR last_position<>expected_count THEN
   RAISE EXCEPTION 'incomplete allocation warehouse list' USING ERRCODE='23514';
  END IF;
  RETURN NULL;
 END $$;
 REVOKE ALL ON FUNCTION fulfillment.check_allocation_complete() FROM PUBLIC;
 CREATE CONSTRAINT TRIGGER allocation_complete AFTER INSERT ON fulfillment.allocation_versions
+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fulfillment.check_allocation_complete();
+-- Also reject later attempts to append to an already committed revision.
+CREATE CONSTRAINT TRIGGER allocation_children_complete AFTER INSERT ON fulfillment.allocation_warehouses
  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fulfillment.check_allocation_complete();
 
 DO $$
