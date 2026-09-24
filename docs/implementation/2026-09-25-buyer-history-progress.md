@@ -3,8 +3,9 @@
 Baseline `1b35842`; protocol `b8aa993`; frontend/index `d68845f`; delayed-load
 and storage fences `ddbcf21` / `e322f2b`; backend `75e77cb` (author `4954573`).
 Browser extension `442cbe7` (independent author `76452ff`).
-Status: source and real browser gates passed; independent visual verdict `ship`
-for this local extension. Built design documentation is being recorded.
+Status: this bounded increment is accepted: source and real browser gates passed,
+independent visual verdict `ship`, and the [built local design record](2026-09-25-buyer-history-design-record.md)
+is retained (independent author `09fd3ee`).
 This is not payment, expired-account recovery, deployment or whole-SaaS release.
 
 ## Why this shape
@@ -83,8 +84,9 @@ behavioral browser checks are not a substitute for that broader visual scope.
 
 - Independent new real-browser A/B purchases, history and delayed-GET race gate
   are passed by both author and root; preserve this regression gate.
-- Record the reviewed local extension without changing global DESIGN.md or the
-  approved B composition. The independent visual disposition is bounded `ship`.
+- The reviewed local extension is recorded without changing global DESIGN.md or
+  the approved B composition. Root independently checked all eight capture hashes
+  and linked artifacts; the independent visual disposition remains bounded `ship`.
 - Secure expired-guest identity recovery remains required. Reset issues a new
   owner; order IDs, recipient names/phones and local hints cannot prove ownership.
 - Hosted per-order payment, trusted CVS/carrier mapping, real DNS/TLS deployment,

@@ -265,7 +265,8 @@
       "evidence": "docs/implementation/2026-09-25-buyer-history-progress.md",
       "source_baseline": "442cbe7",
       "global_gate_pass": false,
-      "remaining": ["历史页面局部设计记录", "按订单托管支付页与真实沙箱回调", "过期买家身份安全恢复", "可信超商选店", "商家分享与真实公开路由联合验收", "真实DNS/TLS部署及完整产品门禁"]
+      "design_record": "docs/implementation/2026-09-25-buyer-history-design-record.md",
+      "remaining": ["按订单托管支付页与真实沙箱回调", "过期买家身份安全恢复", "可信超商选店", "商家分享与真实公开路由联合验收", "真实DNS/TLS部署及完整产品门禁"]
     }
   },
   {
