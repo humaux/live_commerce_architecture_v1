@@ -16,6 +16,7 @@
 - 内部操作台账：精确权限、永久幂等、原子入队、租约 token/generation 和 SQL-only worker 写边界通过；[合同](contracts/external-operation-v1.md)、[106 项后端验收](docs/implementation/2026-09-20-external-operation-acceptance.md)。
 - 内部 River 执行器：真实任务消费、并发去重、UNKNOWN 仅查询、进程 SIGKILL 后 JobRescuer 恢复通过；[合同](contracts/external-dispatcher-v1.md)、[123 项测试及浏览器回归](docs/implementation/2026-09-20-dispatcher-acceptance.md)。远端使用显式 mock，生产 provider 适配器和 buyer checkout 尚未实现。
 - 商家金流/物流设置：[合同](contracts/merchant-service-settings-v1.md)已按用户截图补充账户连接、方法启用与买家展示分离；支持商家自带物流，选店不要求固定承运商。当前为设计边界，UI/API及第三方接通仍待实现和逐项验收。
+- 商家配送配置内部内核：版本化启用／展示、独立运费、权限隔离、幂等与回滚已通过；[138 项后端回归及浏览器身份链证据](docs/implementation/2026-09-24-delivery-service-acceptance.md)。API 模式仍仅禁用草稿，不代表承运商已接通；公开设置页面、买家订单和支付待实现。
 
 下文保留原设计包的基线说明；`MANIFEST.sha256` 对应原包，不能拿来验证新增实现。商品/结账、四域会话业务、台湾超商/跨境物流、Meta/支付/直播和三端 UI 仍需继续实现与独立验收。全局 G01–G15 未宣称通过。
 

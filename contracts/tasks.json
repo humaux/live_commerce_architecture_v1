@@ -471,7 +471,14 @@
       "independent_review": "PASS_BOUNDED_QUOTE_PREREQUISITE"
     },
     "evidence": "docs/implementation/2026-09-20-checkout-quote-acceptance.md; code/tests 0db6eb1; 5 new top-level tests with 40 subcases; full 128 PASS/0 FAIL/0 SKIP real PG/race/vet and browser identity regression",
-    "remaining": "BeginCheckout权限桥/订单/预留/到期、配送与allocation权威、StartPayment/PSP/退款/支付对账、provider sandbox/live和完整G03/G05均未实现或验收；报价重验不是可扣款授权",
+    "delivery_prerequisite": {
+      "code_baseline": "2a5e43c",
+      "evidence": "docs/implementation/2026-09-24-delivery-service-acceptance.md",
+      "status": "PASS_INTERNAL_DELIVERY_CONFIGURATION_ONLY",
+      "aggregate": "138 top-level PASS/0 FAIL/0 SKIP real PG/race/vet; browser identity 1/1 MOCK IdP",
+      "independent_review": "P0=0/P1=0; P2 Unicode SQL label limitation documented; Humaux 2ca0099c-8ed0-497a-b2ab-1460e6b8830f"
+    },
+    "remaining": "BeginCheckout权限桥/订单/预留/到期、destination与allocation权威、配送配置公开API/UI、StartPayment/PSP/退款/支付对账、provider sandbox/live和完整G03/G05均未实现或验收；已验收的商家配送配置不是实际运输或可扣款授权",
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
   {
@@ -536,6 +543,7 @@
       "tests/fulfillment/**"
     ],
     "status": "NOT_STARTED",
+    "prerequisite_note": "T11已先验收共享配送配置内核2a5e43c（见delivery-service-acceptance）；本T13完整物流适配/包裹/面单/RMA仍未启动或验收，不因此改变依赖和G08状态",
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {

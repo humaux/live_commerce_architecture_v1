@@ -48,6 +48,14 @@ SQL 依赖入口及将来开放 HTTP 前的条件见 `contracts/buyer-capability
 `tests/foundation/checkout_quote_test.go` 的版本/金额损坏、锁等待后过期和取消
 后连接池复用 gate；它不替代完整 checkout/PSP/物流验收。
 
+`internal/fulfillment/service.go` 复用 pgx、`platform.RequirePermission`、
+`command.Run/Audit`、pricing 的版本化政策和市场锁；不调用 River 或供应商。
+`pricing.ValidMethod/DeliveryMethod` 与 Quote 共用受限 method 闭集；不复制运费
+计算。迁移 0010 保证同店历史政策/binding 外键、API-disabled 及历史不可改。
+升级上述入口/PG/pgx 时须跑 `tests/foundation/delivery_service_test.go` 的并发 CAS、
+replay、GUC/权限、policy/market 独立停用与审计/回执故障回滚。SQL 与 Go Unicode
+名称规则的已知 P2 差异及精确边界见 `2026-09-24-delivery-service-acceptance.md`。
+
 内部 external-operation 继续复用 pgx、River InsertTx、`command.Run` 与标准库
 JSON/crypto：`internal/integrations/core` 负责精确权限、不可变意图摘要和租约 token
 包装；迁移 0008 定义的受限 SQL 函数是 worker 状态迁移的唯一写入口，前向

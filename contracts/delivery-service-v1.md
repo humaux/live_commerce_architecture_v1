@@ -3,6 +3,8 @@
 Status: FROZEN_FOR_IMPLEMENTATION, 2026-09-20, base `058912c`.
 Executable prerequisite of checkout, not complete shipping, public UI or carrier
 acceptance. Implements the configuration portion of merchant-service-settings-v1.
+Internal configuration accepted at `2a5e43c` on 2026-09-24;
+see [real-PG and independent review evidence](../docs/implementation/2026-09-24-delivery-service-acceptance.md).
 
 ## Surface
 
