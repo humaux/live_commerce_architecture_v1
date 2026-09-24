@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"livecommerce/internal/command"
 	"livecommerce/internal/platform"
 
 	"github.com/jackc/pgx/v5"
@@ -98,32 +99,11 @@ func translate(ctx context.Context, err error) error {
 }
 
 func validRoute(route Route, origin string) bool {
-	return validUUID(route.DomainID) && validUUID(route.StoreID) &&
+	return command.ValidID(route.DomainID) && command.ValidID(route.StoreID) &&
+		route.DomainID != "00000000-0000-0000-0000-000000000000" &&
+		route.StoreID != "00000000-0000-0000-0000-000000000000" &&
 		route.DomainVersion > 0 && route.PublicationVersion > 0 &&
 		route.Origin == origin && validOrigin(route.Origin)
-}
-
-func validUUID(value string) bool {
-	if len(value) != 36 || value == "00000000-0000-0000-0000-000000000000" {
-		return false
-	}
-	for i := 0; i < len(value); i++ {
-		switch i {
-		case 8, 13, 18, 23:
-			if value[i] != '-' {
-				return false
-			}
-		default:
-			if !lowerHex(value[i]) {
-				return false
-			}
-		}
-	}
-	return true
-}
-
-func lowerHex(ch byte) bool {
-	return ch >= '0' && ch <= '9' || ch >= 'a' && ch <= 'f'
 }
 
 func validOrigin(origin string) bool {
