@@ -41,7 +41,7 @@ domain choice is a separate reviewed upgrade, not another guessed default here.
 ## Private database reader (migration 0023)
 
 Add `identity.resolve_storefront_origin(p_hash bytea, p_store uuid)`, a bounded
-read-only SECURITY DEFINER function owned by existing non-login `commerce_auth`,
+read-only **VOLATILE** SECURITY DEFINER function owned by existing non-login `commerce_auth`,
 fixed `search_path=pg_catalog`, fully qualified references, PUBLIC EXECUTE revoked,
 EXECUTE granted only to `commerce_runtime`. No application login gains role
 membership or direct access to either publication table. Grant SELECT on those
@@ -61,14 +61,17 @@ The function returns exactly one internal row `(state text, origin text)`:
 3. Require transaction-local `app.tenant_id`, `app.store_id`, `app.principal_id`
    to match the resolved authorization and store (missing/malformed/mismatch
    denies); the normal caller is inside existing `platform.WithScope`.
-4. Read only that authorized tenant/store. Require active tenant/store,
+4. Sample `t0=clock_timestamp()` once after authorization. Use one coherent
+   domain/publication/store/tenant SELECT for only that authorized scope. Require active tenant/store,
    published=true, ACTIVE domain, ownership/TLS verification at or before the
-   admission clock and validity strictly after it, just like the existing
+   `t0` and validity strictly after `t0`, just like the existing
    [origin resolver](published-storefront-resolver-v1.md).
-5. Bound eligible candidate collection to two. Two candidates deny URL selection
-   even if one expires during the read. For a sole candidate, sample the clock
-   again after the read and reject expired/future proof. Never let truncation or
-   one stale candidate turn an actually ambiguous set into an arbitrary URL.
+5. Apply **all** these eligibility predicates in that SELECT's WHERE **before**
+   LIMIT 2. Two rows unconditionally yield ambiguity, even if one expires during
+   the read. For a sole row, sample `t1=clock_timestamp()` after the read and
+   reject expired/future proof on that same captured row. Do not prune an expired
+   candidate and choose another, requery a fallback, or LIMIT raw unfiltered
+   domain rows. Truncation must never hide a second eligible domain.
 6. Return no domain IDs, evidence references, proof times, internal versions,
    tenant/member data or credentials. No DNS/network request or state mutation.
 
@@ -87,6 +90,16 @@ return or persist it. This extra token parameter is deliberate: the new privileg
 origin reader cannot trust a fabricated Scope/GUC alone. Do not open a second
 pool or transaction; reuse the merchant READ COMMITTED scope and five-second
 request deadline.
+
+Use a local error translator, not unchanged `catalog.mapError`: map PT400 to
+`command.ErrInvalid`, PT401 to `platform.ErrUnauthorized`, PT403 to
+`platform.ErrForbidden`, PT404 to `platform.ErrScopeNotFound`. Non-RC is exactly
+PT503 and maps to an explicit unavailable sentinel handled as sanitized HTTP503.
+Preserve context cancellation/deadline and sanitize unknown driver errors through
+the existing HTTP error path. Existing generic catalog operations retain their
+error behavior. The second authorization can differ from WithScope's first one;
+revocation/missing permission is not a database500. WithScope does not provide a
+final authorization check after the callback and none is presumed here.
 
 Return an explicit DTO with exactly four JSON keys:
 `product_id`, `locale`, `state`, `url`. State is one of:
@@ -126,9 +139,9 @@ settlement of a previously agreed order.
 | Gate | Required actual evidence |
 | --- | --- |
 | MPE01 | Real ordinary merchant PG: own active product/SKU + one verified published origin yields exact locale URL; price update and command replay preserve product identity; zero-priced SKU handled without pretending payment readiness. |
-| MPE02 | Unknown/foreign product, archive, no SKU, wrong currency, unpublished, inactive tenant/store, suspended/detached, future/expired proof, two eligible domains; no URL on any blocker and no arbitrary primary selection. |
+| MPE02 | Unknown/foreign product, archive, no SKU, wrong currency, unpublished, inactive tenant/store, suspended/detached, future/expired proof, two eligible domains; at least three raw domains including ineligible ones cannot hide two eligible ones. Two initially eligible candidates remain ambiguous if one expires between capture and final clock; no arbitrary primary selection. |
 | MPE03 | Direct SQL ACL/ownership/FORCE RLS and non-RC; runtime cannot read/write tables; other app roles cannot execute; forged/missing GUC, invalid/revoked/foreign token and missing permission fail; no evidence/credentials in DTO. |
-| MPE04 | Real admin HTTP authorization, method/body/query/locale/idempotency boundaries, exact four-key DTO, no-store, canonical URLs; no raw database errors. |
+| MPE04 | Real admin HTTP authorization, method/body/query/locale/idempotency boundaries, exact four-key DTO, no-store, canonical URLs; no raw database errors. Causally revoke authorization after WithScope succeeds and before the new reader: exact401/403/404 (as applicable), never500. Direct non-RC produces PT503 and transport maps it to503. |
 | MPE05 | Catalog save/replay/price edits plus lookup leave one original product/SKU receipt; lookup does not change inventory/order/payment/session/provider facts; revoked publication is reflected without restart. |
 | MPE06 | Focused checks, full real-PG race/vet, independent source/evidence review, dependency notes, code index and Humaux canvas. Buyer page/merchant copy UI and live PSP are NOT covered by this backend gate. |
 
