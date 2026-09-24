@@ -31,11 +31,12 @@ docker run -d --pull=never --name "$fixture_name" --label "livecommerce.fixture=
   postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 \
   -c shared_buffers=32MB -c max_connections=30 >/dev/null
 fixture_owned=1
+# Ignore the socket-only initdb server: it shuts down before the final TCP server.
 for ((attempt=0;attempt<40;attempt++)); do
-  if docker exec "$fixture_name" pg_isready -U postgres -d lc_admin_fixture >/dev/null 2>&1; then break; fi
+  if docker exec "$fixture_name" pg_isready -h 127.0.0.1 -U postgres -d lc_admin_fixture >/dev/null 2>&1; then break; fi
   sleep .5
 done
-docker exec "$fixture_name" pg_isready -U postgres -d lc_admin_fixture >/dev/null
+docker exec "$fixture_name" pg_isready -h 127.0.0.1 -U postgres -d lc_admin_fixture >/dev/null
 fixture_host="$(docker port "$fixture_name" 5432/tcp)"
 [[ "$fixture_host" == 127.0.0.1:* ]]
 GOTOOLCHAIN=go1.27.1 go build -o "$fixture_dir/server" ./cmd/admin-fixture

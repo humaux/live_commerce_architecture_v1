@@ -37,11 +37,13 @@ docker run -d --pull=never --name "$test_container" \
   postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 \
   -c shared_buffers=32MB -c max_connections=30 >/dev/null
 test_owned=1
+# The image starts a socket-only temporary server during initdb, then stops it.
+# TCP readiness must wait for the final server; socket pg_isready can race createdb.
 for ((attempt=0; attempt<40; attempt++)); do
-  if docker exec "$test_container" pg_isready -U postgres -d lc_foundation_test >/dev/null 2>&1; then break; fi
+  if docker exec "$test_container" pg_isready -h 127.0.0.1 -U postgres -d lc_foundation_test >/dev/null 2>&1; then break; fi
   sleep 0.5
 done
-docker exec "$test_container" pg_isready -U postgres -d lc_foundation_test >/dev/null
+docker exec "$test_container" pg_isready -h 127.0.0.1 -U postgres -d lc_foundation_test >/dev/null
 # The fixture safety guard needs a distinct, explicitly disposable database.
 # Reuse this owned cluster, not a developer's running UI fixture or credentials.
 docker exec "$test_container" createdb -U postgres lc_admin_fixture
