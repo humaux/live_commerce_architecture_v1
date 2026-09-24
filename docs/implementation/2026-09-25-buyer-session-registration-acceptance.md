@@ -75,7 +75,7 @@ source and root log hashes/counts, but did not independently rerun PG or unit te
 Root indexed five Go files (98 entities) and linked
 registration and its causal concurrency gate to the independent design rationale.
 Dependency and private HTTP contracts name all changed call paths and upgrade tests.
-Five documentation files have 57 local links, none missing. `check_packet.py`
+Five documentation files have 58 local links, none missing. `check_packet.py`
 passes structure only (not a SaaS product gate); `git diff --check` passes.
 
 Still NOT_RUN: public session cookie delivery and initial multi-tab/reset/logout
