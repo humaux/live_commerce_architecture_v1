@@ -128,7 +128,7 @@ Independent preflight: Humaux `b1a34f48-3f8b-438e-9e16-ee6fe5f40ec2`.
   (missing/terminal/changed generation), or `NOT_DUE`. Only ordinary worker may
   execute; the private writer owns this fixed function as well.
 - SQL errors: `PT400` malformed input, `PT401` invalid capability, `PT409`
-  stale/conflicting state; stock shortage maps to `inventory.ErrInsufficient` in
+  stale/conflicting state; `PT402` stock shortage maps to `command.ErrInsufficient` in
   Go. Never expose raw database details or arguments to browser/logs.
 
 ### Durable facts and immutable bindings
