@@ -21,9 +21,10 @@ contracts. No buyer visual page is approved by this transport document.
   this candidate to existing Go published-origin resolution; never cache that
   decision or accept browser tenant/store IDs as authority. Ignore Forwarded
   and X-Forwarded-* for authority. API destination is fixed, not Host-derived.
-- Test-only explicit loopback mode may use HTTP localhost/127.0.0.1 with a fixed
-  synthetic published-origin mapping supplied by test configuration; production
-  must reject this mapping. This is fixture authority, not DNS/TLS acceptance.
+- No production test-origin mapping or forwarded-origin override. Browser tests
+  route synthetic HTTPS origins through a test-owned network proxy to the real
+  loopback production Next output, supplying that fixture's exact Host. This is
+  browser/application acceptance, not real DNS/TLS/ingress acceptance.
 - All public responses no-store/nosniff, no CORS, no leaked backend headers,
   cookies, tokens or diagnostics. Fixed safe JSON error envelopes. Body 64KiB,
   upstream response 1MiB, bounded deadlines and no automatic fetch redirects.
@@ -71,10 +72,69 @@ contracts. No buyer visual page is approved by this transport document.
   600 new capability rows per store per UTC minute across API instances; same-hash
   replay and existing-row retirement do not consume quota. Add a store/created-at
   index and a small issuer-only wrapper around existing registration, serialized
-  by store advisory lock. No extra quota table or process-global shared budget.
+  by store advisory lock. Check AFTER insertion in the exact UTC minute of that
+  row's created_at; an excess rolls back owner/session/event together. This
+  avoids counting one minute then inserting into the next. Bound the count to
+  601 indexed rows. No extra quota table or process-global shared budget.
   The value is an initial admission ceiling, not a proven production capacity;
   ingress per-client and volumetric controls remain a deployment gate. Reject
   quota with safe429. Private legacy issue is not exposed by the public BFF.
+  The cap applies to the new public registration wrapper, not legacy private
+  issuance. Unknown-token retirement uses the same limited wrapper and must
+  fail explicitly if no tombstone can be persisted; existing-row retirement
+  remains available at quota. New SQL name: `buyer.register_capability_limited`.
+
+## Frozen implementation interfaces (pending preflight)
+
+- Runtime variables: `COMMERCE_BUYER_WEB_ENABLED` (absent/0 disabled, 1 enabled;
+  other values invalid), `COMMERCE_BUYER_API_ORIGIN`, `COMMERCE_BUYER_BFF_KEY`,
+  `COMMERCE_BUYER_COOKIE_KEY`, `COMMERCE_BUYER_SESSION_TTL`. No NEXT_PUBLIC secret.
+  Cookie and BFF keys must differ. Disabled routes return 404 without reading
+  other variables. Invalid enabled config returns safe503 and prevents writes.
+  Private API origin permits only an exact origin (no path/query/userinfo),
+  canonical HTTPS or HTTP with literal 127.0.0.1/localhost and explicit port.
+- One `apps/storefront/app/api/buyer/[...path]/route.ts` delegates to
+  `apps/storefront/lib/buyer-server.ts` `handleBuyerRequest(request: Request)`.
+  Node runtime, force-dynamic. Export all HTTP methods so HEAD/OPTIONS and known
+  unsupported methods are explicitly rejected with safe405, not framework HTML.
+- Public session routes: GET `/api/buyer/session` ->
+  `{state: "absent"|"expired"|"inactive"|"active", context: string|null,
+  expires_at: string|null}`. Absent has both null; invalid cookie returns401
+  instead of claiming absence. All other public session routes are POST with
+  exact `{}` and no Idempotency-Key: `/session/prepare`, `/session/activate`,
+  `/session/reset`, `/session/logout`. Prepare/reset return the new envelope's
+  inactive status with its context; activate returns active status; logout204.
+  Prepare alone accepts absent context; reset/logout accept expired signed
+  envelopes with matching context. Prepare/reset alone may Set-Cookie, and only
+  after all preconditions/retirement succeed. For clarity both are the same
+  cookie-preparation operation; no other endpoint writes a cookie.
+- Safe public errors use `{code,message,request_id,retryable,details:{}}` with
+  newly generated request_id. Only fixed code/message mappings, never proxy raw
+  error text/headers. Local context mismatch is409 `context_changed`, unsupported
+  cookie401 `unauthorized`; timeouts503 and quota429. Prepare/reset errors always
+  `retryable:false`; other503/429 may retry SAME token/context/idempotency key.
+- Data route suffixes and bodies exactly match private buyer HTTP's allowlist;
+  all reads as well as writes require current X-Buyer-Context. Session routes
+  cannot accept buyer Authorization, scope or private BFF/origin headers. Reject
+  these on data too; ignore forwarding metadata and never relay it. Queries are
+  only allowed for GET catalog/options, with their existing strict field names,
+  bounds and no duplicates. JSON disallows null at any depth and duplicate keys.
+  Private upstream requests use 12s timeout, redirect error, no-store; never
+  return a successful result if the public request is already aborted.
+- `apps/storefront/lib/buyer-client.ts` is browser-only coordination with no
+  React import. Export `readBuyerSession()`, `initializeBuyerSession()`,
+  `resetBuyerSession(expectedContext: string)`,
+  `logoutBuyerSession(expectedContext: string)` and
+  `buyerRequest(method, suffix, context, body?, idempotencyKey?)`. The latter never
+  initializes/resets a session or changes caller drafts automatically. Session
+  operations lock `commerce-buyer-session-v1`; journal storage key
+  `commerce-buyer-pending-v1`. Changed/uncertain context is a typed client error,
+  not a fabricated empty cart. Malformed journal fails closed before mutation.
+- No shipping browser test/debug route or visual page. Tests serve a minimal
+  test-owned HTML runner and the actual client module through browser routing,
+  call actual production Next route handlers and actual private Go HTTP + PG.
+  Root owns package.json/tsconfig/Next config/build and harness; isolated author
+  owns the two lib modules, the catch-all route and their focused tests.
 
 ## Browser coordination
 
