@@ -24,6 +24,11 @@ nonce/AAD). Protocol limitations and merchant secret lifecycle require productio
 
 `internal/integrations/psp/payuni` uses stdlib only, no SQL/River dependencies. Functions:
 
+- `AmountTWDFromMinor(currency string, amountMinor int64) (int64,error)` is the
+  explicit boundary from the repository's TWD two-decimal minor units to PAYUNi
+  integer yuan. Require currency=TWD, amount>0 and amount%100=0; divide exactly,
+  never round/truncate/re-price the order. It is not method-limit/admission validation;
+  BuildHosted and the payment orchestrator must still validate those independently.
 - `New(Config) (*Client,error)`; Config Environment SANDBOX/LIVE, MerchantID
   `[A-Za-z0-9_-]{1,64}`, HashKey, HashIV, ReturnURL, NotifyURL. This initial supported
   interoperability profile requires exactly 32 printable ASCII key bytes and 16 IV
