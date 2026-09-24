@@ -129,6 +129,13 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 	if _, err = lockConn.Exec(ctx, `GRANT SELECT, INSERT, UPDATE(kind) ON river.river_job TO commerce_runtime; GRANT USAGE ON SEQUENCE river.river_job_id_seq TO commerce_runtime`); err != nil {
 		return err
 	}
+	// Checkout schedules only its fixed expiry job in the caller's transaction.
+	// The private writer can read that row to prove kind/args before holding stock.
+	if _, err = lockConn.Exec(ctx, `GRANT SELECT, INSERT, UPDATE(kind) ON river.river_job TO commerce_checkout_runtime;
+		GRANT USAGE ON SEQUENCE river.river_job_id_seq TO commerce_checkout_runtime;
+		GRANT SELECT ON river.river_job TO commerce_checkout_writer`); err != nil {
+		return err
+	}
 	// River's ordinary worker login needs queue lifecycle/leader/client tables,
 	// but receives no identity or commerce authority. Reapply after upstream
 	// upgrades so only the actual River schema is covered (no default privileges).
