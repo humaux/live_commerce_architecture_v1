@@ -63,7 +63,7 @@ inventory writer；`inventory.lock_warehouse` 只读加锁，不授 runtime UPDA
 Line/Balance/MaxQuantity，不建第二库存账簿。升级 PG/pgx/权限入口须跑
 `delivery_allocation_test.go` 的提交约束、晚插入、跨 scope、回放、锁等待与故障回滚；
 替换规划器需保留 800 行边界、缺货无部分计划和数量守恒测试。详见
-`2026-09-24-delivery-allocation-acceptance.md`，实际 checkout 消费仍未接通。
+`2026-09-24-delivery-allocation-acceptance.md`；后续 checkout 消费证据见下节。
 
 门市来源／收货快照仍不新增依赖：`fulfillment/pickup.go` 复用已有鉴权、
 `command.Run/Audit`、pgx；`storefront/destination.go` 复用 buyer scope/command、
@@ -74,6 +74,27 @@ buyer no-op UPDATE 拒绝、主体／会话 provenance 不能由 UI 校验替代
 CAS、直接买家 SQL、回执隐私、事务回滚和真实锁等待过期 gate；将来正式目录 adapter
 需另有来源证明及回调验收，不得沿用 MANUAL_ATTESTED 标签伪称官方验证。
 见 `2026-09-24-buyer-destination-acceptance.md`；没有新增 checkout 库存写权限。
+
+内部 checkout 不新增模块依赖：`checkout.Service.Begin/Get` 复用 pgx、
+`buyer.WithScope/CheckScope`、`storefront.RevalidateQuote/RevalidateDestination`、
+`fulfillment` 当前服务／仓库配置和 `inventory.PlanAllocation`。锁住余额后再分配，
+最后重验 DB 时间与 capability。普通 buyer 权限不升级；新的专用 pool 使用
+`platform.OpenCheckoutPool/ValidateCheckoutPool`，所有其他角色也拒绝混入此权限。
+迁移 0013 的固定 SECURITY DEFINER writer 只授 checkout runtime EXECUTE，
+重解 scope 并清除商家 GUC；价格真源仍是同一个 Go calculator，不能绕过 Go 层
+把该可信服务凭证当作公开 SQL API。库存余额仍只由原 `inventory.apply_ledger`
+更新，不复制台账或新增订单行价格引擎。BUYER／MERCHANT／SYSTEM_EXPIRY 的
+actor 与父预留约束、scoped FK、永久私有回执一起阻止普通角色伪造 checkout。
+
+`checkout.NewExpiryWorker` 使用已经固定的 River typed worker、`InsertTx` 和
+`JobSnooze`；同事务插入 `checkout_expiry_v1`（只有 order ID/generation/version），
+真正到期以锁后的 DB 时钟为准，不用调度器时间推导订单状态。SQL expire 函数
+锁定订单／预留／余额，原子释放并写事件；早到 snooze，旧 generation／终态无操作。
+这是内部可装配库，生产进程装配和到期任务巡检恢复尚未交付。升级 River／pgx／PG、
+权限、计价器或规划器时必须跑 `buyer_checkout{,_edges}_test.go` 的真实 PG 全套，
+包括最终等待后过期、7类写入故障因果、提交前不可见、legacy权限防绕过及实际
+River due/early/stale/duplicate；`--checkout` 仅快速定向，不替代整套门禁。
+完整证据见 `2026-09-24-buyer-checkout-acceptance.md`，无生产 PSP／物流调用。
 
 内部 external-operation 继续复用 pgx、River InsertTx、`command.Run` 与标准库
 JSON/crypto：`internal/integrations/core` 负责精确权限、不可变意图摘要和租约 token

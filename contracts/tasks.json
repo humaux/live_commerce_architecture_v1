@@ -293,7 +293,7 @@
       "independent_review": "PASS_BOUNDED_INTERNAL_LEDGER_AND_DISPATCHER"
     },
     "evidence": "docs/implementation/2026-09-20-external-operation-acceptance.md (ledger 9bac8e4, 106 tests); docs/implementation/2026-09-20-dispatcher-acceptance.md (8e7c4d8, 123 top-level PASS, real SIGKILL/JobRescuer, browser regression); root-dispatcher-final-fixed.log SHA256 f176e38d129547fad9f14832a85f756b9d70d8d2f21d4a4ea1f064ececf05b07",
-    "remaining": "provider适配器/策略资格/凭证及sandbox/live、全局配额与Retry-After、inbox/webhook、授权恢复UI、buyer checkout和完整G02/G04/G14仍未验收；内部mock远端故障恢复不等于生产外部效果",
+    "remaining": "provider适配器/策略资格/凭证及sandbox/live、全局配额与Retry-After、inbox/webhook、授权恢复UI、公开buyer checkout/StartPayment和完整G02/G04/G14仍未验收；T11内部下单/到期已验收，内部mock远端故障恢复不等于生产外部效果",
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
   {
@@ -463,14 +463,14 @@
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
-      "implementation": "PARTIAL_QUOTE_REVALIDATION_PREREQUISITE_ONLY",
+      "implementation": "PARTIAL_INTERNAL_DRAFT_HELD_EXPIRY",
       "unit_mock": "PASS_EXISTING_INTERNAL_REGRESSION",
-      "real_pg": "PASS_PREREQUISITE_WITH_128_TEST_REGRESSION",
+      "real_pg": "PASS_INTERNAL_CHECKOUT_WITH_187_TEST_REGRESSION",
       "provider_sandbox": "NOT_RUN",
       "provider_live": "NOT_RUN",
-      "independent_review": "PASS_BOUNDED_QUOTE_PREREQUISITE"
+      "independent_review": "PASS_BOUNDED_INTERNAL_CHECKOUT"
     },
-    "evidence": "docs/implementation/2026-09-20-checkout-quote-acceptance.md; code/tests 0db6eb1; 5 new top-level tests with 40 subcases; full 128 PASS/0 FAIL/0 SKIP real PG/race/vet and browser identity regression",
+    "evidence": "docs/implementation/2026-09-24-buyer-checkout-acceptance.md; code/tests 162b619; full 187 PASS/0 FAIL/0 SKIP real PG/race/vet foundation68.828s; browser identity1/1 signed MOCK IdP; prior quote evidence retained in docs/implementation/2026-09-20-checkout-quote-acceptance.md",
     "delivery_prerequisite": {
       "code_baseline": "2a5e43c",
       "evidence": "docs/implementation/2026-09-24-delivery-service-acceptance.md",
@@ -492,7 +492,14 @@
       "aggregate": "164 top-level PASS/0 FAIL/0 SKIP real PG/race/vet; browser identity1/1 MOCK IdP",
       "independent_review": "P0=0/P1=0; Humaux6f4d72d0-4c5a-4be0-b8a5-127399cf42e0; prior coverage gaps and causal expiry false-pass closed; internal prerequisite only"
     },
-    "remaining": "BeginCheckout权限桥/订单/预留/到期、destination/source/service/allocation在checkout事务中锁定消费、正式门市目录/地图回调、第三方账户自助连接与runtime availability、配送/支付设置公开API/UI、StartPayment/PSP/退款/支付对账、provider sandbox/live和完整G03/G05均未实现或验收；已验收的内部前置配置不是实际运输、库存保留或可扣款授权",
+    "checkout_internal": {
+      "code_baseline": "162b619",
+      "status": "PASS_BOUNDED_INTERNAL_DRAFT_HELD_EXPIRY",
+      "evidence": "docs/implementation/2026-09-24-buyer-checkout-acceptance.md",
+      "aggregate": "187 top-level PASS/0 FAIL/0 SKIP real PG/race/vet; browser identity1/1 signed MOCK IdP; no checkout UI acceptance",
+      "independent_review": "Combined Go/SQL P0=0/P1=0 at bb3dc90, Humaux c7407dae-016e-43f3-a3f6-39ff3d12f68e; final162b619 tests/log review8c07e875-b84f-4816-b0c6-461ecfe1e090 no additional P0/P1; P2 combined source/destination expiry does not independently isolate source TTL predicate"
+    },
+    "remaining": "生产checkout/worker装配与过期任务巡检恢复、公开买家HTTP/UI、正式门市目录/地图回调、第三方账户自助连接与runtime availability、配送/支付设置公开API/UI、StartPayment/PSP/退款/支付对账、provider sandbox/live和完整G03/G05均未实现或验收；PAYMENT_PENDING/COMMITTED仅fixture状态栅栏，不是StartPayment竞态验收；内部预留不等于实际运输或可扣款授权",
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
   {

@@ -1,7 +1,10 @@
 # Buyer checkout v1 — authority decision and implementation gate
 
-Status: INTERNAL_AGGREGATE_CONTRACT_FROZEN, 2026-09-24, based on `71c7623`.
-This is not a claim that checkout, payment or public purchase is implemented.
+Status: PASS_BOUNDED_INTERNAL_DRAFT_HELD_EXPIRY, 2026-09-24, code/tests `162b619`.
+The internal Go/SQL aggregate is implemented and locally accepted; see
+[187-test acceptance evidence](../docs/implementation/2026-09-24-buyer-checkout-acceptance.md).
+Payment, public purchase HTTP/UI and production worker assembly are not implemented.
+The contract was frozen at `1641699`, based on `71c7623`.
 
 ## Decisions
 

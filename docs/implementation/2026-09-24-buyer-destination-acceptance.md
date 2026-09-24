@@ -76,6 +76,10 @@ event/audit/receipt 故障原子回滚、source/destination/cart 行锁持有至
 
 ## 未完成与继续顺序
 
+后续更新：内部 DRAFT+HELD、锁定消费与 River 到期释放已在 `162b619` 实现并
+[单独验收](2026-09-24-buyer-checkout-acceptance.md)。以下为本前置单元交付当时的边界，
+不应据此判断后续 checkout 仍未实现；正式运输、支付和公开 UI 的缺口仍保留。
+
 真实买家下单 DRAFT+HELD、锁定消费以上前置数据、到期处理、支付发起和库存竞态仍待实现。
 正式门市目录／地图回调、运行时运输能力、COD、商家自有第三方账户连接、支付方式、
 PSP／物流 adapter、sandbox/live、公开三语设置和结账页面仍为 NOT_RUN。

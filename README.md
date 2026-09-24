@@ -2,7 +2,7 @@
 
 ## 2026-09-20 实施入口
 
-已开始开发，当前已验收 **Go/PostgreSQL 基础、商品库存台账、商家登录/首店 C 分步向导、内部购物车报价与操作台账切片，不是完整 SaaS 或生产上线版本**。真实登录提供商、买家公开入口及其余业务模块仍未交付。
+已开始开发，当前已验收 **Go/PostgreSQL 基础、商品库存台账、商家登录/首店 C 分步向导、内部购物车报价、操作台账及下单预留／到期释放切片，不是完整 SaaS 或生产上线版本**。真实登录提供商、买家公开入口、支付及其余业务模块仍未交付。
 
 - 当前实现：[foundation 合同](contracts/foundation-v1.md)、[基础 OpenAPI](contracts/foundation-openapi.json)、[实施说明](docs/implementation/2026-09-20-kickoff.md)。
 - 本地一键验收：`bash scripts/dev/test-local.sh`。需要 Docker、Go 启动器和已下载的固定 PG18.6 镜像（镜像 digest 见脚本）；会创建本任务临时数据库，退出自动移除，不读取现有 `DATABASE_URL`。
@@ -14,11 +14,12 @@
 - 内部购物车/报价：owner 隔离、版本化市场计价、不可变快照、并发与回滚通过；[合同](contracts/cart-quote-v1.md)、[96 项后端验收](docs/implementation/2026-09-20-cart-quote-acceptance.md)。未开放 HTTP，不创建订单或扣库存。
 - 下单前报价重验：锁定当前购物车/政策/商品、复用原计价器核对金额，在锁等待后检查 DB 时间；[合同](contracts/checkout-quote-validation-v1.md)、[128 项回归与 40 个新细分场景](docs/implementation/2026-09-20-checkout-quote-acceptance.md)。仅成交前置校验，不代表已经创建订单、预留库存或允许扣款。
 - 内部操作台账：精确权限、永久幂等、原子入队、租约 token/generation 和 SQL-only worker 写边界通过；[合同](contracts/external-operation-v1.md)、[106 项后端验收](docs/implementation/2026-09-20-external-operation-acceptance.md)。
-- 内部 River 执行器：真实任务消费、并发去重、UNKNOWN 仅查询、进程 SIGKILL 后 JobRescuer 恢复通过；[合同](contracts/external-dispatcher-v1.md)、[123 项测试及浏览器回归](docs/implementation/2026-09-20-dispatcher-acceptance.md)。远端使用显式 mock，生产 provider 适配器和 buyer checkout 尚未实现。
+- 内部 River 执行器：真实任务消费、并发去重、UNKNOWN 仅查询、进程 SIGKILL 后 JobRescuer 恢复通过；[合同](contracts/external-dispatcher-v1.md)、[123 项测试及浏览器回归](docs/implementation/2026-09-20-dispatcher-acceptance.md)。远端使用显式 mock，生产 provider 适配器尚未实现；本地下单到期任务见下文。
 - 商家金流/物流设置：[合同](contracts/merchant-service-settings-v1.md)已按用户截图补充账户连接、方法启用与买家展示分离；支持商家自带物流，选店不要求固定承运商。当前为设计边界，UI/API及第三方接通仍待实现和逐项验收。
-- 商家配送配置内部内核：版本化启用／展示、独立运费、权限隔离、幂等与回滚已通过；[138 项后端回归及浏览器身份链证据](docs/implementation/2026-09-24-delivery-service-acceptance.md)。API 模式仍仅禁用草稿，不代表承运商已接通；公开设置页面、买家订单和支付待实现。
-- 配送仓库配置与纯分配算法：逐配送方式保存仓库优先级、按可用库存拆仓，缺货不输出部分计划；[150 项回归、随机输入及浏览器兼容证据](docs/implementation/2026-09-24-delivery-allocation-acceptance.md)。尚未接入真实买家订单事务，不能据此宣称已防止并发超卖。
-- 买家收货与门市来源：owner 隔离快照、可信门市引用、改选 CAS、回执隐私和锁等待后重验；[164 项真实 PG/race/vet 回归及浏览器兼容](docs/implementation/2026-09-24-buyer-destination-acceptance.md)。门市当前仅人工核验来源，不是官方目录／承运商接通；实际 checkout、第三方账户与支付设置仍待实现。
+- 商家配送配置内部内核：版本化启用／展示、独立运费、权限隔离、幂等与回滚已通过；[138 项后端回归及浏览器身份链证据](docs/implementation/2026-09-24-delivery-service-acceptance.md)。API 模式仍仅禁用草稿，不代表承运商已接通；公开设置页面和支付待实现。
+- 配送仓库配置与纯分配算法：逐配送方式保存仓库优先级、按可用库存拆仓，缺货不输出部分计划；[150 项回归、随机输入及浏览器兼容证据](docs/implementation/2026-09-24-delivery-allocation-acceptance.md)。后续已由下述内部 checkout 在余额行锁内消费；该历史纯函数验收本身不是并发防超卖证据。
+- 买家收货与门市来源：owner 隔离快照、可信门市引用、改选 CAS、回执隐私和锁等待后重验；[164 项真实 PG/race/vet 回归及浏览器兼容](docs/implementation/2026-09-24-buyer-destination-acceptance.md)。门市当前仅人工核验来源，不是官方目录／承运商接通；第三方账户与支付设置仍待实现。
+- 内部买家下单与到期释放：独立 checkout 权限、同事务 DRAFT 订单／HELD 预留／台账／River 任务、永久幂等、锁等待后重验和重复释放防护；[合同](contracts/buyer-checkout-v1.md)、[187 项真实 PG/race/vet 及浏览器兼容证据](docs/implementation/2026-09-24-buyer-checkout-acceptance.md)。仅内部 Go/SQL 内核，没有公开结账 HTTP/UI、StartPayment、生产 worker 装配或第三方扣款。
 
 下文保留原设计包的基线说明；`MANIFEST.sha256` 对应原包，不能拿来验证新增实现。商品/结账、四域会话业务、台湾超商/跨境物流、Meta/支付/直播和三端 UI 仍需继续实现与独立验收。全局 G01–G15 未宣称通过。
 
