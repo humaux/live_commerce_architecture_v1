@@ -24,6 +24,13 @@ Final command above: **exit 0**, 8 browser cases, 3 locales, one top-level Go
 test PASS; foundation package 4.862s. Node syntax check, `git diff --check`, and
 `GOTOOLCHAIN=go1.27.1 go vet -tags browser ./tests/foundation` also exit 0.
 
+Root independently inspected both test files, integrated them as `1a91d71`, and
+re-ran the same command: **exit 0**, 8 cases/3 locales, foundation 4.598s (test
+3.10s). Evidence: `/Volumes/data/output/merchant-buyer-joint-root-independent.log`
+and main-worktree `output/playwright/merchant-buyer-real-1055176228/`.
+That build also includes the new, not-yet-exposed buyer recovery client; it does
+not turn this read-only product-page gate into address/order UI acceptance.
+
 | Gate | Real evidence |
 | --- | --- |
 | Merchant save | Browser follows signed MOCK IdP redirect; UI saves one product and one SKU through the actual BFF/Go routes. Independent PG readback matches tenant, store, product, SKU, currency and 12345 minor units; exactly two new merchant command receipts. |

@@ -27,6 +27,9 @@ export type Option = {
   currency: string;
   method: string;
   delivery_kind: string;
+  service_version: number;
+  allocation_version: number;
+  mode: "MANUAL" | "API";
   name_hans: string;
   name_hant: string;
   name_en: string;
@@ -41,7 +44,11 @@ export async function assertPurchaseContext(context: string) {
 }
 export type Quote = {
   id: string;
+  cart_id: string;
   cart_version: number;
+  market_id: string;
+  country: string;
+  method: string;
   currency: string;
   expires_at: string;
   lines: {
@@ -68,8 +75,78 @@ type QuoteWrite = {
   method: string;
 };
 type Pending = { v: 1; context: string; key: string } & (
-  { kind: "cart"; body: CartWrite } | { kind: "quote"; body: QuoteWrite }
+  | { kind: "cart"; body: CartWrite }
+  | { kind: "quote"; body: QuoteWrite }
+  | { kind: "destination"; body: DestinationMarker }
+  | { kind: "checkout"; body: CheckoutWrite }
 );
+export type HomeAddress = {
+  region: string;
+  city: string;
+  postal_code: string;
+  line1: string;
+  line2: string;
+};
+type DestinationMarker = {
+  expected_version: number;
+  cart_version: number;
+  kind: "home";
+  country: string;
+};
+export type DestinationWrite = DestinationMarker & {
+  recipient_name: string;
+  phone: string;
+  home_address: HomeAddress;
+};
+type DestinationDetails = {
+  kind: "home" | "cvs_711" | "cvs_familymart";
+  country: string;
+  recipient_name: string;
+  phone: string;
+  home_address: HomeAddress;
+  pickup?: {
+    kind: string;
+    namespace: string;
+    code: string;
+    name: string;
+    address: string;
+    country: string;
+  };
+};
+export type Destination = DestinationDetails & {
+  id: string;
+  version: number;
+  cart_id: string;
+  cart_version: number;
+  selected_at: string;
+  expires_at: string;
+};
+export type CheckoutWrite = {
+  quote_id: string;
+  destination_id: string;
+  cart_version: number;
+  service_version: number;
+  allocation_version: number;
+};
+export type Order = {
+  order_id: string;
+  commercial_state: "DRAFT" | "AWAITING_PAYMENT" | "CONFIRMED" | "CANCELLED";
+  fulfillment_state:
+    "MANUAL_UNASSIGNED" | "CANCELLED" | "PAID_ALLOCATION_FAILED";
+  hold_expires_at?: string;
+  snapshot: {
+    quote: Pick<Quote, "currency" | "lines" | "amount">;
+    destination: DestinationDetails;
+    service: {
+      code: string;
+      name_hans: string;
+      name_hant: string;
+      name_en: string;
+      delivery_kind: string;
+      mode: string;
+    };
+  };
+};
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 const CONTEXT = /^[A-Za-z0-9_-]{43}$/;
 const MAX_AMOUNT = 1_000_000_000_000;
@@ -84,6 +161,12 @@ const integer = (
 const id = (v: unknown): v is string => typeof v === "string" && UUID.test(v);
 const currency = (v: unknown): v is string =>
   typeof v === "string" && /^[A-Z]{3}$/.test(v);
+const country = (v: unknown): v is string =>
+  typeof v === "string" && /^[A-Z]{2}$/.test(v);
+const deliveryMethod = (v: unknown): v is string =>
+  typeof v === "string" && /^delivery:[a-z0-9_-]+$/.test(v);
+const timestamp = (v: unknown): v is string =>
+  typeof v === "string" && Number.isFinite(Date.parse(v));
 const exact = (v: Record<string, unknown>, keys: string[]) =>
   Object.keys(v).sort().join() === keys.sort().join();
 export const validItems = (v: unknown): v is Item[] =>
@@ -114,20 +197,17 @@ export const validOption = (v: unknown): v is Option =>
   record(v) &&
   id(v.market_id) &&
   currency(v.currency) &&
-  typeof v.country === "string" &&
-  /^[A-Z]{2}$/.test(v.country) &&
-  typeof v.method === "string" &&
-  /^delivery:[a-z0-9_-]+$/.test(v.method) &&
+  country(v.country) &&
+  deliveryMethod(v.method) &&
+  integer(v.service_version, 1) &&
+  integer(v.allocation_version, 1) &&
+  ["MANUAL", "API"].includes(String(v.mode)) &&
   ["home", "cvs_711", "cvs_familymart"].includes(String(v.delivery_kind)) &&
   [v.name_hans, v.name_hant, v.name_en].every((x) => typeof x === "string") &&
   integer(v.sort_order, -2147483648, 2147483647);
-export const validQuote = (v: unknown): v is Quote =>
+const validQuoteSummary = (v: unknown): v is Order["snapshot"]["quote"] =>
   record(v) &&
-  id(v.id) &&
-  integer(v.cart_version, 1) &&
   currency(v.currency) &&
-  typeof v.expires_at === "string" &&
-  Number.isFinite(Date.parse(v.expires_at)) &&
   Array.isArray(v.lines) &&
   v.lines.length > 0 &&
   v.lines.every(
@@ -154,6 +234,168 @@ export const validQuote = (v: unknown): v is Quote =>
       MAX_AMOUNT,
     ),
   );
+export const validQuote = (v: unknown): v is Quote =>
+  record(v) &&
+  id(v.id) &&
+  id(v.cart_id) &&
+  id(v.market_id) &&
+  country(v.country) &&
+  deliveryMethod(v.method) &&
+  integer(v.cart_version, 1) &&
+  timestamp(v.expires_at) &&
+  validQuoteSummary(v);
+
+// The private API may return a previous CVS head even though the first inline
+// address form writes only home destinations. Validate it, do not auto-confirm.
+const validDestinationDetails = (v: unknown): v is DestinationDetails =>
+  record(v) &&
+  ["home", "cvs_711", "cvs_familymart"].includes(String(v.kind)) &&
+  country(v.country) &&
+  typeof v.recipient_name === "string" &&
+  typeof v.phone === "string" &&
+  record(v.home_address) &&
+  ["region", "city", "postal_code", "line1", "line2"].every(
+    (k) => typeof (v.home_address as Record<string, unknown>)[k] === "string",
+  ) &&
+  (v.kind === "home"
+    ? v.pickup === undefined
+    : record(v.pickup) &&
+      ["kind", "namespace", "code", "name", "address", "country"].every(
+        (k) => typeof (v.pickup as Record<string, unknown>)[k] === "string",
+      ));
+export const validDestination = (v: unknown): v is Destination =>
+  record(v) &&
+  id(v.id) &&
+  integer(v.version, 1) &&
+  id(v.cart_id) &&
+  integer(v.cart_version, 1) &&
+  timestamp(v.selected_at) &&
+  timestamp(v.expires_at) &&
+  validDestinationDetails(v);
+export const validOrder = (v: unknown): v is Order =>
+  record(v) &&
+  id(v.order_id) &&
+  ["DRAFT", "AWAITING_PAYMENT", "CONFIRMED", "CANCELLED"].includes(
+    String(v.commercial_state),
+  ) &&
+  ["MANUAL_UNASSIGNED", "CANCELLED", "PAID_ALLOCATION_FAILED"].includes(
+    String(v.fulfillment_state),
+  ) &&
+  (v.commercial_state === "DRAFT"
+    ? timestamp(v.hold_expires_at)
+    : v.hold_expires_at === undefined) &&
+  record(v.snapshot) &&
+  validQuoteSummary(v.snapshot.quote) &&
+  validDestinationDetails(v.snapshot.destination) &&
+  record(v.snapshot.service) &&
+  ["code", "name_hans", "name_hant", "name_en", "delivery_kind", "mode"].every(
+    (k) =>
+      typeof (v.snapshot as Order["snapshot"]).service[
+        k as keyof Order["snapshot"]["service"]
+      ] === "string",
+  );
+const validDestinationMarker = (v: unknown): v is DestinationMarker =>
+  record(v) &&
+  exact(v, ["expected_version", "cart_version", "kind", "country"]) &&
+  integer(v.expected_version, 0, Number.MAX_SAFE_INTEGER - 1) &&
+  integer(v.cart_version, 1) &&
+  v.kind === "home" &&
+  country(v.country);
+const destinationMarker = (v: DestinationWrite): DestinationMarker => ({
+  expected_version: v.expected_version,
+  cart_version: v.cart_version,
+  kind: v.kind,
+  country: v.country,
+});
+// Match Go's printable Unicode policy; lengths count Unicode code points,
+// not UTF-16 units. This is input feedback, never a substitute for server rules.
+const destinationText = (
+  v: unknown,
+  max: number,
+  required = false,
+): v is string =>
+  typeof v === "string" &&
+  v === v.trim() &&
+  [...v].length <= max &&
+  (!required || v.length > 0) &&
+  /^[\p{L}\p{M}\p{N}\p{P}\p{S}\x20]*$/u.test(v);
+export const validDestinationWrite = (v: unknown): v is DestinationWrite =>
+  record(v) &&
+  exact(v, [
+    "expected_version",
+    "cart_version",
+    "kind",
+    "country",
+    "recipient_name",
+    "phone",
+    "home_address",
+  ]) &&
+  validDestinationMarker(destinationMarker(v as DestinationWrite)) &&
+  destinationText(v.recipient_name, 120, true) &&
+  typeof v.phone === "string" &&
+  v.phone === v.phone.trim() &&
+  /^[0-9+() -]{6,32}$/.test(v.phone) &&
+  /^[0-9]{6,20}$/.test(v.phone.replace(/\D/g, "")) &&
+  record(v.home_address) &&
+  exact(v.home_address, ["region", "city", "postal_code", "line1", "line2"]) &&
+  destinationText(v.home_address.region, 100) &&
+  destinationText(v.home_address.city, 100, true) &&
+  destinationText(v.home_address.postal_code, 20) &&
+  destinationText(v.home_address.line1, 200, true) &&
+  destinationText(v.home_address.line2, 200);
+const validCheckoutWrite = (v: unknown): v is CheckoutWrite =>
+  record(v) &&
+  exact(v, [
+    "quote_id",
+    "destination_id",
+    "cart_version",
+    "service_version",
+    "allocation_version",
+  ]) &&
+  id(v.quote_id) &&
+  id(v.destination_id) &&
+  integer(v.cart_version, 1) &&
+  integer(v.service_version, 1) &&
+  integer(v.allocation_version, 1);
+
+export function checkoutInput(
+  quote: Quote,
+  option: Option,
+  cart: Cart,
+  destination: Destination,
+  now = Date.now(),
+): CheckoutWrite {
+  if (
+    !validQuote(quote) ||
+    !validOption(option) ||
+    !validCart(cart) ||
+    !validDestination(destination) ||
+    quote.cart_id !== cart.id ||
+    quote.cart_version !== cart.version ||
+    quote.market_id !== option.market_id ||
+    quote.country !== option.country ||
+    quote.method !== option.method ||
+    quote.currency !== option.currency ||
+    quote.currency !== cart.currency ||
+    option.mode !== "MANUAL" ||
+    option.delivery_kind !== "home" ||
+    destination.kind !== "home" ||
+    destination.cart_id !== cart.id ||
+    destination.cart_version !== cart.version ||
+    destination.country !== quote.country ||
+    !Number.isFinite(now) ||
+    Date.parse(quote.expires_at) <= now ||
+    Date.parse(destination.expires_at) <= now
+  )
+    throw new BuyerClientError("request_failed");
+  return {
+    quote_id: quote.id,
+    destination_id: destination.id,
+    cart_version: cart.version,
+    service_version: option.service_version,
+    allocation_version: option.allocation_version,
+  };
+}
 
 export function lineSubtotal(price: number, quantity: number): number | null {
   if (
@@ -251,6 +493,9 @@ export function parsePending(raw: string, context: string): Pending {
       /^delivery:[a-z0-9_-]+$/.test(b.method)
     )
       return v as Pending;
+    if (v.kind === "destination" && validDestinationMarker(b))
+      return v as Pending;
+    if (v.kind === "checkout" && validCheckoutWrite(b)) return v as Pending;
     throw new Error();
   } catch {
     throw new BuyerClientError("uncertain");
@@ -267,8 +512,75 @@ export function pendingPurchase(context: string): Pending | null {
   }
 }
 
-// Only non-PII cart/quote requests belong here. Destination bodies and bearer
-// tokens must never be added to this journal. Both tabs and retry use one key.
+function persistPending(pending: Pending) {
+  const raw = JSON.stringify(pending);
+  parsePending(raw, pending.context); // Reject an accidental PII field before storage.
+  try {
+    localStorage.setItem(storageKey(pending.context), raw);
+    if (localStorage.getItem(storageKey(pending.context)) !== raw)
+      throw new Error();
+  } catch {
+    throw new BuyerClientError("unavailable");
+  }
+}
+
+function clearPending(pending: Pending) {
+  if (pendingPurchase(pending.context)?.key !== pending.key)
+    throw new BuyerClientError("uncertain");
+  try {
+    localStorage.removeItem(storageKey(pending.context));
+    if (localStorage.getItem(storageKey(pending.context)) !== null)
+      throw new Error();
+  } catch {
+    throw new BuyerClientError("unavailable");
+  }
+}
+
+function orderKey(context: string) {
+  storageKey(context); // Same strict context validation, no foreign-context lookup.
+  return `commerce-purchase-order-v1:${context}`;
+}
+
+export function knownOrderID(context: string): string | null {
+  let raw: string | null;
+  try {
+    raw = localStorage.getItem(orderKey(context));
+  } catch {
+    throw new BuyerClientError("unavailable");
+  }
+  if (raw === null) return null;
+  try {
+    if (raw.length > 250) throw new Error();
+    const v: unknown = JSON.parse(raw);
+    if (
+      !record(v) ||
+      !exact(v, ["v", "context", "order_id"]) ||
+      v.v !== 1 ||
+      v.context !== context ||
+      !id(v.order_id)
+    )
+      throw new Error();
+    return v.order_id;
+  } catch {
+    throw new BuyerClientError("uncertain");
+  }
+}
+
+// Call before offering a session reset. Losing access to an order is not proof
+// it failed. The UI must retain its old-context recovery record, not place anew.
+export function orderRecoveryRequired(context: string): boolean {
+  return (
+    pendingPurchase(context)?.kind === "checkout" ||
+    knownOrderID(context) !== null
+  );
+}
+
+function assertNoOrder(context: string) {
+  if (orderRecoveryRequired(context)) throw new BuyerClientError("uncertain");
+}
+
+// Destination PII is deliberately absent from this persisted journal. Its
+// metadata marker and checkout IDs share the SAME lock with cart/quote writes.
 export async function writePurchase(
   context: string,
   input?:
@@ -276,7 +588,10 @@ export async function writePurchase(
 ): Promise<{ kind: "cart"; value: Cart } | { kind: "quote"; value: Quote }> {
   if (!navigator.locks) throw new BuyerClientError("unavailable");
   return navigator.locks.request("commerce-purchase-write-v1", async () => {
+    assertNoOrder(context);
     let pending = pendingPurchase(context);
+    if (pending && pending.kind !== "cart" && pending.kind !== "quote")
+      throw new BuyerClientError("uncertain");
     if (
       pending &&
       input &&
@@ -293,14 +608,10 @@ export async function writePurchase(
         key: crypto.randomUUID(),
       });
       pending = parsePending(raw, context);
-      try {
-        localStorage.setItem(storageKey(context), raw);
-        if (localStorage.getItem(storageKey(context)) !== raw)
-          throw new Error();
-      } catch {
-        throw new BuyerClientError("unavailable");
-      }
+      persistPending(pending);
     }
+    if (pending.kind !== "cart" && pending.kind !== "quote")
+      throw new BuyerClientError("uncertain");
     const response = await buyerRequest(
       pending.kind === "cart" ? "PUT" : "POST",
       pending.kind === "cart" ? "cart" : "quotes",
@@ -327,7 +638,7 @@ export async function writePurchase(
         value.retryable === false &&
         typeof value.code === "string"
       ) {
-        localStorage.removeItem(storageKey(context));
+        clearPending(pending);
         throw new BuyerClientError("request_failed", response.status);
       }
       throw new BuyerClientError("uncertain", response.status);
@@ -349,9 +660,217 @@ export async function writePurchase(
         `commerce-purchase-quote-v1:${context}`,
         (value as Quote).id,
       );
-    localStorage.removeItem(storageKey(context));
+    clearPending(pending);
     return pending.kind === "cart"
       ? { kind: "cart", value: value as Cart }
       : { kind: "quote", value: value as Quote };
+  });
+}
+
+export async function currentDestination(
+  context: string,
+): Promise<Destination | null> {
+  const result = await readPurchase(
+    "destination",
+    context,
+    (v): v is { destination: Destination | null } =>
+      record(v) && (v.destination === null || validDestination(v.destination)),
+  );
+  return result.destination;
+}
+
+// One tab's exact address attempt may be retained ONLY in memory for replay.
+// A reload/other tab cannot reconstruct it and must confirm a new CAS intent.
+let addressAttempt: {
+  context: string;
+  key: string;
+  body: DestinationWrite;
+} | null = null;
+export function forgetAddressAttempt() {
+  addressAttempt = null;
+}
+
+async function commandResponse(
+  response: Response,
+  pending: Pending,
+  recovering: boolean,
+): Promise<unknown> {
+  if (!response.ok) {
+    const definitive =
+      response.status < 500 && (await definiteError(response.clone()));
+    const value: unknown = await response.json().catch(() => null);
+    // A denial during replay cannot exclude a commit before access was revoked.
+    if (
+      !recovering &&
+      definitive &&
+      record(value) &&
+      value.retryable === false
+    ) {
+      clearPending(pending);
+      throw new BuyerClientError("request_failed", response.status);
+    }
+    throw new BuyerClientError("uncertain", response.status);
+  }
+  try {
+    return await response.json();
+  } catch {
+    throw new BuyerClientError("uncertain");
+  }
+}
+
+export async function writeDestination(
+  context: string,
+  input: DestinationWrite,
+  replacePendingKey?: string,
+): Promise<Destination> {
+  if (!validDestinationWrite(input))
+    throw new BuyerClientError("request_failed");
+  // Freeze intent before waiting for the lock; a form edit must not mutate a
+  // queued request behind an already-recorded idempotency key.
+  const body: DestinationWrite = structuredClone(input);
+  if (!navigator.locks) throw new BuyerClientError("unavailable");
+  return navigator.locks.request("commerce-purchase-write-v1", async () => {
+    assertNoOrder(context);
+    let pending = pendingPurchase(context);
+    if (pending && pending.kind !== "destination")
+      throw new BuyerClientError("uncertain");
+    if (replacePendingKey !== undefined) {
+      if (
+        !pending ||
+        pending.key !== replacePendingKey ||
+        body.expected_version < pending.body.expected_version
+      )
+        throw new BuyerClientError("uncertain");
+      const current = await currentDestination(context);
+      if ((current?.version ?? 0) !== body.expected_version)
+        throw new BuyerClientError("request_failed", 409);
+      // Caller explicitly reconfirmed the displayed current head. Do not clear
+      // first: replace and read back the marker before sending this NEW intent.
+      pending = null;
+    }
+    const recovering = pending !== null;
+    if (pending) {
+      if (
+        addressAttempt?.context !== context ||
+        addressAttempt.key !== pending.key ||
+        JSON.stringify(addressAttempt.body) !== JSON.stringify(body)
+      )
+        throw new BuyerClientError("uncertain");
+    } else {
+      pending = {
+        v: 1,
+        context,
+        key: crypto.randomUUID(),
+        kind: "destination",
+        body: destinationMarker(body),
+      };
+      persistPending(pending);
+      addressAttempt = { context, key: pending.key, body };
+    }
+    const response = await buyerRequest(
+      "PUT",
+      "destination",
+      context,
+      body,
+      pending.key,
+    );
+    const receipt = await commandResponse(response, pending, recovering);
+    if (!validDestination(receipt)) throw new BuyerClientError("uncertain");
+    const current = await currentDestination(context);
+    // Receipt may be historical. Compare both its identity and the exact PII
+    // in memory to the current head before handing a confirmed snapshot to UI.
+    const matches =
+      current?.id === receipt.id &&
+      current.kind === body.kind &&
+      current.country === body.country &&
+      current.cart_version === body.cart_version &&
+      current.version === body.expected_version + 1 &&
+      current.recipient_name === body.recipient_name &&
+      current.phone === body.phone &&
+      Object.keys(body.home_address).every(
+        (k) =>
+          current.home_address[k as keyof HomeAddress] ===
+          body.home_address[k as keyof HomeAddress],
+      );
+    clearPending(pending);
+    forgetAddressAttempt();
+    if (!matches || !current || Date.parse(current.expires_at) <= Date.now())
+      throw new BuyerClientError("request_failed", 409);
+    return current;
+  });
+}
+
+export async function readOrder(
+  context: string,
+  orderID: string,
+): Promise<Order> {
+  if (!id(orderID)) throw new BuyerClientError("invalid_response");
+  const order = await readPurchase(`orders/${orderID}`, context, validOrder);
+  if (order.order_id !== orderID)
+    throw new BuyerClientError("invalid_response");
+  return order;
+}
+
+export async function writeCheckout(
+  context: string,
+  input?: CheckoutWrite,
+): Promise<Order> {
+  if (input !== undefined && !validCheckoutWrite(input))
+    throw new BuyerClientError("request_failed");
+  const body = input === undefined ? undefined : structuredClone(input);
+  if (!navigator.locks) throw new BuyerClientError("unavailable");
+  return navigator.locks.request("commerce-purchase-write-v1", async () => {
+    let pending = pendingPurchase(context);
+    const existingID = knownOrderID(context);
+    if (pending && pending.kind !== "checkout")
+      throw new BuyerClientError("uncertain");
+    if (!pending && existingID) return readOrder(context, existingID);
+    const recovering = pending !== null;
+    if (
+      pending &&
+      body &&
+      JSON.stringify(pending.body) !== JSON.stringify(body)
+    )
+      throw new BuyerClientError("uncertain");
+    if (!pending) {
+      if (!body) throw new BuyerClientError("request_failed");
+      pending = {
+        v: 1,
+        context,
+        key: crypto.randomUUID(),
+        kind: "checkout",
+        body,
+      };
+      persistPending(pending);
+    }
+    const response = await buyerRequest(
+      "POST",
+      "checkout",
+      context,
+      pending.body,
+      pending.key,
+    );
+    const receipt = await commandResponse(response, pending, recovering);
+    if (
+      !record(receipt) ||
+      !id(receipt.order_id) ||
+      !timestamp(receipt.hold_expires_at) ||
+      (existingID !== null && existingID !== receipt.order_id)
+    )
+      throw new BuyerClientError("uncertain");
+    await assertPurchaseContext(context);
+    try {
+      localStorage.setItem(
+        orderKey(context),
+        JSON.stringify({ v: 1, context, order_id: receipt.order_id }),
+      );
+      if (knownOrderID(context) !== receipt.order_id) throw new Error();
+    } catch {
+      throw new BuyerClientError("unavailable");
+    }
+    clearPending(pending);
+    // Server GET, not the historical checkout receipt or elapsed browser timer,
+    // decides whether this order is now DRAFT, cancelled, pending or confirmed.
+    return readOrder(context, receipt.order_id);
   });
 }

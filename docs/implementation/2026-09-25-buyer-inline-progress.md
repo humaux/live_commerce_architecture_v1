@@ -30,8 +30,15 @@ live accounts, payment links or funds have been changed.
 - Admin purchase-entry UI is integrated at `a14f38d` (author `c483a16`): original
   catalog receipts remain separate; lookup failure does not re-submit a write;
   copy/open refresh their configured URL. Its 11-test admin browser regression
-  passed independently and in root's separate rerun. The real merchant-to-buyer
-  joint gate remains pending, so this is not release authorization.
+  passed independently and in root's separate rerun. The actual merchant-to-buyer
+  [joint gate](2026-09-25-merchant-buyer-joint-gate.md) is now independently
+  accepted at `1a91d71`: 8 cases, 3 locales, actual product/SKU writes and exact
+  configured buyer URL. Local TLS/signed MOCK IdP do not prove deployment.
+- The next [address/order client increment](2026-09-25-buyer-order-client.md)
+  extends that same coordinator with non-PII destination metadata and exact
+  checkout IDs/versions, plus current-order readback. It is not yet connected to
+  an address/order form. 26 total Node tests and the existing 13 real buyer
+  browser scenarios pass; the new BO01–07 UI gates remain NOT_RUN.
 
 No new external dependency. Storefront consumes existing workspace
 `@live-commerce/i18n`; Next/React versions and BFF authority are unchanged.
@@ -97,12 +104,11 @@ authorization and query guards were not loosened; initial failure evidence remai
 
 ## Remaining gates / next implementation
 
-1. Saved product/SKU → actual public buyer URL joint browser gate; admin and
-   buyer isolated suites are not this combined proof.
-2. Buyer address/current-head confirmation, DRAFT order UI and exact recovery.
-3. Per-order hosted checkout from authoritative total, merchant account and
+1. Buyer address/current-head confirmation, DRAFT order UI and exact recovery.
+   The client is prepared; the actual form and BO01–07 gates are still pending.
+2. Per-order hosted checkout from authoritative total, merchant account and
    environment/currency, webhook/expiry/stock lifecycle and provider sandbox gate.
-4. Trusted CVS/carrier acceptance, real publication DNS/TLS, deployment,
+3. Trusted CVS/carrier acceptance, real publication DNS/TLS, deployment,
    performance/restore and all SaaS release gates.
 
 Address and payment are explicitly not open on this page yet. This is an
