@@ -311,7 +311,7 @@ DECLARE v_scope record; v_tenant uuid; v_owner uuid; v_session uuid;
  v_dest storefront.destination_snapshots%ROWTYPE; v_market pricing.markets%ROWTYPE;
  v_policy pricing.policy_versions%ROWTYPE; v_service fulfillment.service_versions%ROWTYPE;
  v_allocation fulfillment.allocation_versions%ROWTYPE;
- v_source fulfillment.pickup_versions%ROWTYPE; v_source_enabled boolean;
+ v_source record; v_source_enabled boolean;
  v_head_version bigint; v_head_id uuid; v_line record; v_quote_line record;
  v_now timestamptz; v_expires timestamptz; v_result jsonb;
  v_count integer; v_distinct integer; v_mismatch integer;
@@ -391,7 +391,8 @@ BEGIN
       'line1',v_dest.line1,'line2',v_dest.line2) THEN
   RAISE EXCEPTION 'destination changed' USING ERRCODE='PT409'; END IF;
  IF v_dest.pickup_id IS NOT NULL THEN
-  SELECT p.* INTO v_source FROM fulfillment.pickup_versions p WHERE p.tenant_id=v_tenant
+  SELECT p.id,p.kind,p.namespace,p.code,p.version,p.country,p.verification_kind,
+   p.attested_at,p.valid_until INTO v_source FROM fulfillment.pickup_versions p WHERE p.tenant_id=v_tenant
    AND p.store_id=p_store AND p.id=v_dest.pickup_id;
   IF NOT FOUND OR v_source.kind<>v_dest.kind OR v_source.country<>v_dest.country
      OR v_source.verification_kind<>'MANUAL_ATTESTED'
