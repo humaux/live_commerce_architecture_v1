@@ -37,7 +37,7 @@
   },
   {
     "id": "R07",
-    "description": "库存保留、支付、退款、异常与对账",
+    "description": "商品录入价格后自动提供对应收款入口；库存保留、按订单生成支付页、支付、退款、异常与对账",
     "priority": "P0",
     "source": "user_requirements_or_necessary_derived_requirement"
   },
