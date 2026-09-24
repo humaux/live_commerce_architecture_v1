@@ -64,12 +64,23 @@ SQL 依赖入口及将来开放 HTTP 前的条件见 `contracts/buyer-capability
 已发布域名解析前置也不新增依赖：`internal/domains` 调用现有
 `platform.ValidateBuyerIssuerPool`（复用启动角色检查）及 `command.ValidID`，
 用 pgx 参数化调用 `buyer.resolve_published_store(text)`。0020 的两个 control
-表仅给 non-login buyer writer SELECT；issuer 只可执行固定函数。
+表原先仅给 non-login buyer writer SELECT；issuer 只可执行固定函数。
+0023 的商家反向入口额外给现有 non-login commerce_auth 所需列的 SELECT，
+配套单独只读 RLS policy；不扩大任何应用角色的表读取或写入权限。
 解析没有缓存，不负责 DNS/TLS 验证、发布写入或买家身份。升级 PG、pgx、角色
 包装或域名语法时必须跑 `TestPublishedStorefront*` 的真实 SQL/Go 语法一致性、
 权限、租户 FK、停用和锁等待后过期用例，以及全量后端回归。合同：
 [published-storefront-resolver-v1](../../contracts/published-storefront-resolver-v1.md)。
 可信控制面写入与公开 HTTP/浏览器准入仍是独立门禁。
+
+商家商品购买入口不新增外部依赖：`httpapi` GET → 既有 `platform.WithScope`
+→ `catalog.ReadPurchaseEntry` → `identity.resolve_storefront_origin`，后者再次
+验证会话与 catalog:read 并匹配事务 GUC，再读取已发布域名。URL 语法复用
+`domains.ValidOrigin`，不维护第二套弱校验。SQL0023 的候选资格在同一 SELECT
+内先过滤再 LIMIT 2，多域名不猜主域名，唯一域名在返回前复核时钟。既有
+商品/SKU命令与原始幂等回执保持不变；URL读取不调用 PSP 或创建买家订单。
+修改角色、校验、事务或投影须跑 `--purchase-entry` 真实 PG/HTTP 子集与
+完整 race/vet；复制入口和实际买家页面仍必须另过浏览器 gate。
 
 买家私有 HTTP 同样不新增依赖：`cmd/api/buyer.go` 负责三个既有独立权限池
 的装配/失败关闭，`internal/buyerhttp` 借用池并消费 `domains`、`buyer`、
