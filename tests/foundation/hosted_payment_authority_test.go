@@ -12,6 +12,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"livecommerce/internal/command"
 	"livecommerce/internal/platform"
 )
 
@@ -299,7 +300,7 @@ func TestBuyerPaymentHostedQualificationExpiresDuringTakeWait(t *testing.T) {
 	}
 	done := make(chan error, 1)
 	go func() { _, e := h.take(); done <- e }()
-	time.Sleep(150 * time.Millisecond)
+	hpAwaitOrderLock(t, h, tx.Conn().PgConn().PID())
 	mustExec(t, h.f.owner, `UPDATE payments.account_qualifications SET expires_at=clock_timestamp()+interval '1 second' WHERE id=$1`, h.proof)
 	time.Sleep(1200 * time.Millisecond)
 	if err := tx.Commit(context.Background()); err != nil {
@@ -367,28 +368,64 @@ func TestBuyerPaymentHostedWriterCannotMutateFormOrClearHandoff(t *testing.T) {
 	}
 }
 
-func hpDelayPageWrite(t *testing.T, h hpHarness, event string) {
+func hpDelayPageWrite(t *testing.T, h hpHarness, event string) string {
 	t.Helper()
 	name := "hp_delay_" + t04Tag()
 	fn := pgx.Identifier{name}.Sanitize()
 	trigger := pgx.Identifier{name + "_trigger"}.Sanitize()
-	mustExec(t, h.f.owner, fmt.Sprintf(`CREATE FUNCTION public.%s() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM pg_sleep(2.5); RETURN NEW; END $$`, fn))
+	sequenceName := name + "_seq"
+	sequence := pgx.Identifier{sequenceName}.Sanitize()
+	mustExec(t, h.f.owner, fmt.Sprintf(`CREATE SEQUENCE public.%s`, sequence))
+	mustExec(t, h.f.owner, fmt.Sprintf(`CREATE FUNCTION public.%s() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$ BEGIN PERFORM nextval('public.%s'::regclass); PERFORM pg_sleep(2.5); RETURN NEW; END $$`, fn, sequenceName))
 	mustExec(t, h.f.owner, fmt.Sprintf(`CREATE TRIGGER %s BEFORE %s ON checkout.hosted_payment_pages FOR EACH ROW EXECUTE FUNCTION public.%s()`, trigger, event, fn))
 	t.Cleanup(func() {
 		mustExec(t, h.f.owner, fmt.Sprintf(`DROP TRIGGER IF EXISTS %s ON checkout.hosted_payment_pages`, trigger))
 		mustExec(t, h.f.owner, fmt.Sprintf(`DROP FUNCTION IF EXISTS public.%s()`, fn))
+		mustExec(t, h.f.owner, fmt.Sprintf(`DROP SEQUENCE IF EXISTS public.%s`, sequence))
 	})
+	return sequenceName
+}
+
+func hpAssertDelayedWriteEntered(t *testing.T, h hpHarness, sequenceName string) {
+	t.Helper()
+	var entered bool
+	if err := h.f.owner.QueryRow(context.Background(), `SELECT is_called FROM public.`+pgx.Identifier{sequenceName}.Sanitize()).Scan(&entered); err != nil || !entered {
+		t.Fatalf("HP05 delayed write trigger was never entered: %v", err)
+	}
+}
+
+func hpAwaitOrderLock(t *testing.T, h hpHarness, blockerPID uint32) {
+	t.Helper()
+	ctx := context.Background()
+	login := h.pool.Config().ConnConfig.User
+	deadline := time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) {
+		var waiting bool
+		err := h.f.owner.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM pg_stat_activity
+		 WHERE datname=current_database() AND usename=$1 AND state='active'
+		 AND query LIKE '%checkout.take_hosted_page%' AND wait_event_type='Lock'
+		 AND $2::int=ANY(pg_blocking_pids(pid)))`, login, int32(blockerPID)).Scan(&waiting)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if waiting {
+			return
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	t.Fatal("HP04/HP05 take never reached the held order lock")
 }
 
 func TestBuyerPaymentHostedQualificationExpiresDuringFinalWrites(t *testing.T) {
 	t.Run("prepare-insert", func(t *testing.T) {
 		h := hpSetup(t)
 		before := h.counts(t)
-		hpDelayPageWrite(t, h, "INSERT")
+		sequence := hpDelayPageWrite(t, h, "INSERT")
 		mustExec(t, h.f.owner, `UPDATE payments.account_qualifications SET expires_at=clock_timestamp()+interval '2 seconds' WHERE id=$1`, h.proof)
-		if _, err := h.begin(t04Key("hp-expire-save")); err == nil {
-			t.Fatal("HP05 qualification expired during form insert but preparation committed")
+		if _, err := h.begin(t04Key("hp-expire-save")); !errors.Is(err, command.ErrConflict) {
+			t.Fatalf("HP05 late insert did not return conflict: %v", err)
 		}
+		hpAssertDelayedWriteEntered(t, h, sequence)
 		if h.counts(t) != before {
 			t.Fatal("HP05 late preparation failure committed partial payment facts")
 		}
@@ -399,11 +436,12 @@ func TestBuyerPaymentHostedQualificationExpiresDuringFinalWrites(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		hpDelayPageWrite(t, h, "UPDATE OF handed_out_at")
+		sequence := hpDelayPageWrite(t, h, "UPDATE OF handed_out_at")
 		mustExec(t, h.f.owner, `UPDATE payments.account_qualifications SET expires_at=clock_timestamp()+interval '2 seconds' WHERE id=$1`, h.proof)
-		if _, err := h.take(); err == nil {
-			t.Fatal("HP05 qualification expired during one-shot update but form escaped")
+		if _, err := h.take(); !errors.Is(err, command.ErrConflict) {
+			t.Fatalf("HP05 late handoff update did not return conflict: %v", err)
 		}
+		hpAssertDelayedWriteEntered(t, h, sequence)
 		_, _, _, handed := h.page(t, result.AttemptID)
 		if handed != nil {
 			t.Fatal("HP05 late take failure committed handoff timestamp")
@@ -428,7 +466,7 @@ func TestBuyerPaymentHostedCapabilityRevokedDuringTakeWait(t *testing.T) {
 	}
 	done := make(chan error, 1)
 	go func() { _, e := h.take(); done <- e }()
-	time.Sleep(150 * time.Millisecond)
+	hpAwaitOrderLock(t, h, tx.Conn().PgConn().PID())
 	mustExec(t, h.f.owner, `UPDATE buyer.capability_sessions SET revoked_at=clock_timestamp() WHERE id=$1`, h.cap.Scope.SessionID)
 	if err := tx.Commit(ctx); err != nil {
 		t.Fatal(err)
