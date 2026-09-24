@@ -68,6 +68,7 @@ func (Config) MarshalJSON() ([]byte, error) { return []byte(`"payuni.Config{reda
 type Client struct {
 	config     Config
 	httpClient *http.Client
+	queryOnly  bool
 }
 
 func (Client) String() string               { return "payuni.Client{redacted}" }
@@ -115,16 +116,39 @@ type Observation struct {
 }
 
 func New(config Config) (*Client, error) {
+	return newClient(config, false, nil)
+}
+
+// NewQuery constructs a client that can only authenticate and query a trade.
+// Query does not use callback URLs, and this client cannot build hosted forms
+// or verify notifications.
+func NewQuery(config Config, transport ...http.RoundTripper) (*Client, error) {
+	if len(transport) > 1 || (len(transport) == 1 && (transport[0] == nil || config.Environment != "SANDBOX")) {
+		return nil, ErrInvalid
+	}
+	if len(transport) == 1 {
+		return newClient(config, true, transport[0])
+	}
+	return newClient(config, true, nil)
+}
+
+func newClient(config Config, queryOnly bool, transport http.RoundTripper) (*Client, error) {
 	if (config.Environment != "SANDBOX" && config.Environment != "LIVE") ||
 		!merchantPattern.MatchString(config.MerchantID) ||
 		!printableASCII(config.HashKey, 32) || strings.TrimSpace(config.HashKey) != config.HashKey ||
 		!printableASCII(config.HashIV, 16) || strings.TrimSpace(config.HashIV) != config.HashIV ||
-		!validCallback(config.ReturnURL) || !validCallback(config.NotifyURL) {
+		(queryOnly && (config.ReturnURL != "" || config.NotifyURL != "")) ||
+		(!queryOnly && (!validCallback(config.ReturnURL) || !validCallback(config.NotifyURL))) {
 		return nil, ErrInvalid
 	}
-	return &Client{config: config, httpClient: &http.Client{
+	if transport == nil {
+		// A query client is one-shot; do not retain idle sockets per leased job.
+		transport = &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12},
+			DisableKeepAlives: queryOnly}
+	}
+	return &Client{config: config, queryOnly: queryOnly, httpClient: &http.Client{
 		Timeout:       10 * time.Second,
-		Transport:     &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12}},
+		Transport:     transport,
 		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
 	}}, nil
 }
@@ -255,7 +279,10 @@ func (c *Client) endpoint(path string) string {
 }
 
 func (c *Client) BuildHosted(in HostedRequest) (HostedForm, error) {
-	if c == nil || !tradePattern.MatchString(in.MerTradeNo) || !validTimestamp(in.Timestamp) ||
+	if c == nil || c.queryOnly {
+		return HostedForm{}, ErrInvalid
+	}
+	if !tradePattern.MatchString(in.MerTradeNo) || !validTimestamp(in.Timestamp) ||
 		!validMethodAmount(in.Method, in.AmountTWD, in.Installments) || !validDescription(in.Description) ||
 		!validExpiry(in.Timestamp, in.Method, in.ExpireDate) ||
 		in.PageExpirySeconds < 60 || in.PageExpirySeconds > 600 ||
@@ -466,7 +493,7 @@ func (c *Client) authenticate(outer map[string]string, query bool) (map[string]s
 }
 
 func (c *Client) VerifyNotification(body []byte, expected ExpectedTrade) (Observation, error) {
-	if c == nil || !validExpected(expected) {
+	if c == nil || c.queryOnly || !validExpected(expected) {
 		return Observation{}, ErrInvalid
 	}
 	outer, err := parseForm(body)

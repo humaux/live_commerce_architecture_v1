@@ -63,7 +63,7 @@ elif [[ "$test_mode" == --checkout ]]; then
   printf 'PASS: checkout subset only; full regression still required.\n'
 elif [[ "$test_mode" == --payment ]]; then
   GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=120s -run '^TestBuyerPayment' -v ./tests/foundation
-  printf 'PASS: payment-start subset only; full regression still required.\n'
+  printf 'PASS: payment start/query subset only; full regression still required.\n'
 else
   # The growing serial real-PG suite includes a deliberate ~35s process-crash
   # rescue. This is the package envelope, not a relaxation of per-case fences.

@@ -161,15 +161,27 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	}
 	var functions int
 	var safe bool
-	err = f.owner.QueryRow(ctx, `SELECT count(*),bool_and(p.prosecdef AND p.proconfig @> ARRAY['search_path=pg_catalog']
+	// Enumerate exact signatures, not just a count: an added overload must fail
+	// closed, and the shared private guard must never be callable by workers.
+	err = f.owner.QueryRow(ctx, `WITH approved(oid,worker_execute) AS (VALUES
+	 ('integration.claim_operation(uuid,integer,bytea)'::regprocedure::oid,true),
+	 ('integration.complete_operation(uuid,bigint,bytea,text,text,text)'::regprocedure::oid,true),
+	 ('integration.require_payment_query(uuid,bigint,bytea,text)'::regprocedure::oid,false),
+	 ('integration.load_payment_query(uuid,bigint,bytea,text)'::regprocedure::oid,true),
+	 ('integration.record_payment_query(uuid,bigint,bytea,text,jsonb)'::regprocedure::oid,true),
+	 ('integration.finish_payment_query(uuid,bigint,bytea,text,text,text)'::regprocedure::oid,true))
+	 SELECT count(*),bool_and(a.oid IS NOT NULL AND p.prosecdef AND p.proconfig = ARRAY['search_path=pg_catalog']
 	 AND pg_get_userbyid(p.proowner)='commerce_integration_writer'
-	 AND has_function_privilege('commerce_worker',p.oid,'EXECUTE')
+	 AND has_function_privilege('commerce_worker',p.oid,'EXECUTE')=a.worker_execute
 	 AND NOT has_function_privilege('commerce_runtime',p.oid,'EXECUTE')
 	 AND NOT has_function_privilege('commerce_buyer_runtime',p.oid,'EXECUTE')
 	 AND NOT has_function_privilege('commerce_buyer_issuer',p.oid,'EXECUTE')
+	 AND NOT has_function_privilege('commerce_checkout_runtime',p.oid,'EXECUTE')
+	 AND NOT has_function_privilege('commerce_checkout_writer',p.oid,'EXECUTE')
 	 AND NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'))
-	 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='integration'`).Scan(&functions, &safe)
-	if err != nil || functions != 2 || !safe {
+	 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+	 LEFT JOIN approved a ON a.oid=p.oid WHERE n.nspname='integration'`).Scan(&functions, &safe)
+	if err != nil || functions != 6 || !safe {
 		t.Fatalf("fixed function ACL: count=%d safe=%v err=%v", functions, safe, err)
 	}
 }

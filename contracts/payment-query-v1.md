@@ -1,6 +1,7 @@
 # Payment query and authenticated observations v1
 
-Status: IMPLEMENTING, 2026-09-24. Follows payment-start-v1 at 30a0498.
+Status: PASS_BOUNDED_INTERNAL_QUERY_AND_AUTHENTICATED_REPORTS, 2026-09-24.
+Follows payment-start-v1 at 30a0498. [Acceptance and limits](../docs/implementation/2026-09-24-payment-query-acceptance.md).
 This is the real query execution path and durable authenticated report intake,
 not financial capture, refund, stock allocation or permission to release forms.
 
@@ -20,7 +21,7 @@ not financial capture, refund, stock allocation or permission to release forms.
   provider reference, and database-clock attempt age. No caller-selected scope,
   account, credentials or URLs. Ordinary roles have no ciphertext SELECT.
 - Server-owned profile must equal attempt profile; SANDBOX/LIVE must also equal
-  account environment. Historical disabled/revised methods or bindings, rotated
+  account environment; PROVIDER_MOCK only uses SANDBOX accounts. Historical disabled/revised methods or bindings, rotated
   keys and expired admission evidence do not erase outstanding payment facts.
   A missing historical key fails closed, never tries the latest credentials.
 
@@ -31,19 +32,35 @@ not financial capture, refund, stock allocation or permission to release forms.
   opens the exact AAD/version and constructs the existing redacted payuni.Client.
   Material has Client, Expected payuni.ExpectedTrade and Age time.Duration.
   Fixed error sentinel; no plaintext key returned, logged or serialized.
+  After SQL authenticates the row, failed local materialization may return Age
+  alone with that error, so a missing historical key cannot bypass the age
+  budget. Invalid SQL scope/profile/lease returns zero material.
+  Use payuni.NewQuery: no dummy callback URLs; the client rejects BuildHosted
+  and VerifyNotification. An optional trusted RoundTripper tests the actual
+  fixed-endpoint encrypted query without weakening normal TLS/redirect limits.
 - `payments.NewQueryWorker(ctx,pool,keys,profile,QueryWorkerOptions)` validates
   real worker session authority. `DefaultQueryWorkerOptions`: lease30s, DB2s,
   shared load+wire call10s, retry2min, maxage24h, maxgeneration720. All bounded;
   call + 2*DB +1s < lease. The caller owns River/pool lifecycle.
+  Options.MockTransport is required only for PROVIDER_MOCK and forbidden for
+  SANDBOX/LIVE. LoadPaymentQuery accepts at most one optional nonnil transport
+  only with MOCK. Tests still pass through real wire authentication/projection;
+  no injectable callback may manufacture a verified Observation.
 - private job args exactly operation_id/version1. Read exact family before
   Claim; never claim or complete a merchant operation. Claim commits before
   loading/querying. Load transaction commits before one wire query. No dispatch.
 - Persist one verified projection via `integration.record_payment_query(op,
   generation,token,profile,jsonb)` and Complete UNKNOWN/payment_report_observed
   in the same transaction; then snooze. No financial interpretation here.
+  DataSource B is incomplete: snooze at least ten minutes per PAYUNi query docs.
 - Failure/panic/timeout/missing key only fixed persisted codes and UNKNOWN,
   never fail/release stock or expose raw wire/PG error. Parent cancellation does
   not detach external I/O. Completion uses bounded context if parent still live.
+  `integration.finish_payment_query(op,generation,token,profile,code,reference)`
+  wraps existing Complete with exact reference/profile and post-write clock
+  fences. Its fixed code allowlist is budget_exhausted, timeout,
+  material_unavailable, panic, wire_failed, record_failed, all prefixed
+  `payment_query_`; it records only UNKNOWN and cannot pin a new reference.
 - If frozen attempt age or claim generation exceeds budget, persist
   UNKNOWN/payment_query_budget_exhausted and cancel River. On later job retry,
   that persisted code with no live lease cancels without provider calls. A
@@ -58,7 +75,8 @@ The projected JSON uses the existing ten Go Observation field names. SQL checks
 exact keys/types and frozen amount/trade/method, provider response SUCCESS,
 credit PaymentType1/AuthType1/CardInst0, TradeStatus 0/1/2/3/4/8/9,
 DataSource A/B and optional CloseStatus 1/2/3/7/9. Not a payment-success flag.
-An established nonempty TradeNo cannot change; one provider trade cannot attach
+An initially empty TradeNo can be retained for pending reports. An established
+nonempty TradeNo cannot change or become empty; one provider trade cannot attach
 to two attempts of the same account. All writes and completion recheck lease
 after waits; faults/stale token/profile mismatch commit no partial report.
 
