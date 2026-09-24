@@ -20,7 +20,7 @@ const origin = "https://buyer.example";
 const journal = "commerce-buyer-pending-v1";
 const deferred = () => { let resolve; const promise = new Promise(r => resolve = r); return { promise, resolve }; };
 const sockets = new Set(), children = new Set(), logs = [];
-let browser, edge, proxy, nextIndex = 0, hook, cases = 0, orderID = "";
+let browser, edge, proxy, nextIndex = 0, hook, cases = 0, prepares = 0, orderID = "";
 const certDir = await mkdtemp(path.join(tmpdir(), "lc-buyer-edge-"));
 const pass = name => { cases++; console.log(`PASS ${name}`); };
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -66,8 +66,9 @@ try {
       if(req.url==="/") { res.writeHead(200,{"content-type":"text/html","cache-control":"no-store"});res.end('<!doctype html><title>Buyer transport gate</title><p>Test-only runner, not storefront UI.</p><script type="module">import * as buyer from "/__gate_client.js"; window.buyer=buyer;</script>');return; }
       if(req.url==="/__gate_client.js") {res.writeHead(200,{"content-type":"text/javascript","cache-control":"no-store"});res.end(clientJS);return;}
       const chunks=[];for await(const x of req) chunks.push(x);let body=Buffer.concat(chunks);
+      if(req.url==="/api/buyer/session/prepare") prepares++;
       const current=hook&&hook.path===req.url?hook:null;
-      if(current) {hook=null;current.entered.resolve();if(current.before) await current.release.promise;if(current.invalid) body=Buffer.from('{"unexpected":true}');}
+      if(current) {if(!current.repeat) hook=null;current.entered.resolve();if(current.before) await current.release.promise;if(current.invalid) body=Buffer.from('{"unexpected":true}');}
       const index=nextIndex++%2;hits[index]++;
       const out=await relay(next[index].port,req,body);
       if(current) current.result.resolve(out.status);
@@ -140,9 +141,11 @@ try {
   assert.notEqual(await caught(pn),"success");assert.equal(await pending(pn),null);assert.equal((await init(pn)).state,"active");await cn.close();
   pass("definite local422 clears pending journal and permits explicit retry");
 
-  const cl=await context(), pl=await page(cl);arm("prepare",{drop:true});
-  assert.notEqual(await caught(pl),"success");assert(await pending(pl));assert.equal((await cl.cookies(origin)).length,0);
-  assert.notEqual(await caught(pl),"success");assert(await pending(pl));await cl.close();
+  // Chromium may transparently retry an empty response on a reused connection.
+  // Keep the fault window closed until fetch actually fails, not for one packet.
+  const cl=await context(), pl=await page(cl);arm("prepare",{drop:true,repeat:true});
+  assert.notEqual(await caught(pl),"success");hook=null;assert(await pending(pl));assert.equal((await cl.cookies(origin)).length,0);
+  const prepareCount=prepares;assert.notEqual(await caught(pl),"success");assert(await pending(pl));assert.equal(prepares,prepareCount);await cl.close();
   pass("lost prepare before headers stays fail-closed without remint");
 
   const ca=await context();await ca.addInitScript(()=>{const original=window.fetch;window.fetch=(input,options)=>{if(String(input).endsWith("/session/prepare")){const controller=new AbortController();window.abortPrepare=()=>controller.abort();return original(input,{...options,signal:controller.signal});}return original(input,options);};});
@@ -166,8 +169,8 @@ try {
   const pc2=await page(cc);assert.equal((await init(pc2)).state,"active");assert((await cc.cookies(origin))[0].value===closedCookie);hc.release.resolve();pausedStatus.release.resolve();await cc.close();
   pass("tab death releases Web Lock; another tab reconciles persisted journal");
 
-  const ci=await context(), pi=await page(ci);const hi=arm("activate",{drop:true});
-  assert.notEqual(await caught(pi),"success");assert.equal(await hi.result.promise,200);
+  const ci=await context(), pi=await page(ci);const hi=arm("activate",{drop:true,repeat:true});
+  assert.notEqual(await caught(pi),"success");hook=null;assert.equal(await hi.result.promise,200);
   const existing=await state(pi);assert.equal(existing.state,"active");assert.equal((await init(pi)).context,existing.context);await ci.close();
   pass("lost activation response reads committed session without duplicate issue");
 
