@@ -1,0 +1,467 @@
+"use client";
+
+// Local extension of approved B: native address form after the real quotation;
+// no new wizard, payment claim or persistent address cache. Transport/CAS and
+// receipt recovery live in purchase.ts, not in this rendering component.
+import { useEffect, useRef, useState } from "react";
+import type { Locale } from "@live-commerce/i18n";
+import { BuyerClientError } from "../lib/buyer-client";
+import { orderCopy } from "../lib/order-copy";
+import { purchaseCopy } from "../lib/purchase-copy";
+import {
+  checkoutInput,
+  currentDestination,
+  pendingPurchase,
+  purchasePage,
+  readPurchase,
+  validCart,
+  validOption,
+  validDestinationWrite,
+  writeDestination,
+  writeCheckout,
+} from "../lib/purchase";
+import type {
+  Cart,
+  Destination,
+  DestinationWrite,
+  HomeAddress,
+  Option,
+  Order,
+  Quote,
+} from "../lib/purchase";
+
+type Fields = HomeAddress & { recipient_name: string; phone: string };
+const empty: Fields = {
+  recipient_name: "",
+  phone: "",
+  region: "",
+  city: "",
+  postal_code: "",
+  line1: "",
+  line2: "",
+};
+const fieldsOf = (d: DestinationWrite | Destination): Fields => ({
+  recipient_name: d.recipient_name,
+  phone: d.phone,
+  ...d.home_address,
+});
+type Run = (work: (isCurrent: () => boolean) => Promise<void>) => Promise<void>;
+type Money = (amount: number, currency: string) => string;
+const inputs = [
+  ["recipient_name", "name", 120, true],
+  ["phone", "tel", 32, true],
+  ["region", "address-level1", 100, false],
+  ["city", "address-level2", 100, true],
+  ["postal_code", "postal-code", 20, false],
+  ["line1", "address-line1", 200, true],
+  ["line2", "address-line2", 200, false],
+] as const;
+
+export default function OrderFlow({
+  context,
+  cart,
+  quote,
+  locale,
+  busy,
+  blocked,
+  recoveringDestination,
+  run,
+  reload,
+  onOrder,
+  money,
+}: {
+  context: string;
+  cart: Cart;
+  quote: Quote;
+  locale: Locale;
+  busy: boolean;
+  blocked: boolean;
+  recoveringDestination: boolean;
+  run: Run;
+  reload: () => Promise<void>;
+  onOrder: (order: Order) => void;
+  money: Money;
+}) {
+  const copy = orderCopy[locale];
+  const [fields, setFields] = useState<Fields>(empty);
+  const [head, setHead] = useState<Destination | null>(null);
+  const [option, setOption] = useState<Option | null>(null);
+  const [confirmed, setConfirmed] = useState<Destination | null>(null);
+  const [notice, setNotice] = useState<
+    "loading" | "recovered" | "failed" | "invalid" | "uncertain" | null
+  >("loading");
+  const [headLoaded, setHeadLoaded] = useState(false);
+  const [expired, setExpired] = useState(
+    Date.parse(quote.expires_at) <= Date.now(),
+  );
+  const live = useRef(0);
+  const attempt = useRef<{ body: DestinationWrite; key: string } | null>(null);
+
+  useEffect(() => {
+    const version = ++live.current;
+    void (async () => {
+      try {
+        const [current, currentCart] = await Promise.all([
+          currentDestination(context),
+          readPurchase("cart", context, validCart),
+        ]);
+        if (
+          currentCart.id !== cart.id ||
+          currentCart.version !== cart.version ||
+          quote.cart_id !== cart.id ||
+          quote.cart_version !== cart.version
+        )
+          throw new BuyerClientError("request_failed", 409);
+        if (version !== live.current) return;
+        setHead(current);
+        setHeadLoaded(true);
+        if (current?.kind === "home" && current.country === quote.country)
+          setFields(fieldsOf(current));
+        let found: Option | undefined,
+          cursor = "";
+        const seen = new Set<string>();
+        do {
+          const page = await purchasePage(
+            `checkout-options?market_id=${quote.market_id}&country=${quote.country}&limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
+            context,
+            validOption,
+          );
+          found = page.items.find(
+            (o) =>
+              o.market_id === quote.market_id &&
+              o.country === quote.country &&
+              o.method === quote.method &&
+              o.currency === quote.currency &&
+              o.mode === "MANUAL" &&
+              o.delivery_kind === "home",
+          );
+          cursor = page.next_cursor;
+          if (cursor && (seen.has(cursor) || seen.size >= 100))
+            throw new BuyerClientError("invalid_response");
+          seen.add(cursor);
+        } while (!found && cursor);
+        if (!found) throw new BuyerClientError("request_failed");
+        if (version !== live.current) return;
+        setHead(current);
+        setOption(found);
+        if (current?.kind === "home" && current.country === quote.country) {
+          setFields(fieldsOf(current));
+          setNotice("recovered");
+        } else setNotice(null);
+      } catch {
+        if (version === live.current) setNotice("failed");
+      }
+    })();
+    const timer = window.setTimeout(
+      () => {
+        setExpired(true);
+        setConfirmed(null);
+      },
+      Math.max(
+        0,
+        Math.min(2_147_483_647, Date.parse(quote.expires_at) - Date.now()),
+      ),
+    );
+    return () => {
+      live.current++;
+      window.clearTimeout(timer);
+      attempt.current = null;
+    };
+  }, [context, quote.id, cart.id, cart.version]);
+
+  useEffect(() => {
+    let active = true;
+    const recheck = async () => {
+      setConfirmed(null);
+      try {
+        const latest = await currentDestination(context);
+        if (active) setHead(latest);
+      } catch {}
+    };
+    const changed = (event: StorageEvent) => {
+      if (event.key === `commerce-purchase-pending-v1:${context}`)
+        void recheck();
+    };
+    window.addEventListener("storage", changed);
+    window.addEventListener("focus", recheck);
+    return () => {
+      active = false;
+      window.removeEventListener("storage", changed);
+      window.removeEventListener("focus", recheck);
+    };
+  }, [context]);
+
+  async function confirm(isCurrent: () => boolean) {
+    const version = live.current;
+    const current = () => version === live.current && isCurrent();
+    setConfirmed(null);
+    const quoteExpired = Date.parse(quote.expires_at) <= Date.now();
+    if (quoteExpired) {
+      setExpired(true);
+      if (!recoveringDestination) return;
+    }
+    const { recipient_name, phone, ...home_address } = fields;
+    let body: DestinationWrite = {
+      expected_version: head?.version ?? 0,
+      cart_version: cart.version,
+      kind: "home",
+      country: quote.country,
+      recipient_name,
+      phone,
+      home_address,
+    };
+    if (!validDestinationWrite(body)) {
+      setNotice("invalid");
+      return;
+    }
+    const pending = pendingPurchase(context);
+    let replace: string | undefined;
+    if (pending?.kind === "destination") {
+      if (
+        attempt.current?.key === pending.key &&
+        JSON.stringify(fieldsOf(attempt.current.body)) ===
+          JSON.stringify(fields)
+      )
+        body = attempt.current.body;
+      else replace = pending.key; // Explicit reconfirmation of the displayed head, never silent replay of lost PII.
+    }
+    try {
+      const saved = await writeDestination(context, body, replace);
+      if (!current()) return;
+      setHead(saved);
+      setConfirmed(quoteExpired ? null : saved);
+      setNotice(null);
+      attempt.current = null;
+    } catch (reason) {
+      if (current()) {
+        const waiting = pendingPurchase(context);
+        if (waiting?.kind === "destination")
+          attempt.current = { key: waiting.key, body };
+        setNotice("uncertain");
+        // Re-read the observed CAS head, but never replace typed fields or mark
+        // it confirmed. A new intent requires the buyer's next explicit click.
+        try {
+          const latest = await currentDestination(context);
+          if (current()) setHead(latest);
+        } catch {}
+      }
+      throw reason;
+    }
+  }
+
+  return (
+    <section
+      className="address-section"
+      data-testid="address-section"
+      aria-labelledby="address-title"
+    >
+      <h2 id="address-title">{copy.address}</h2>
+      <p>{copy.explain}</p>
+      <p className="address-total">
+        {purchaseCopy[locale].total}:{" "}
+        <strong>{money(quote.amount.total_minor, quote.currency)}</strong> ·{" "}
+        {copy.country}: {quote.country}
+      </p>
+      {notice && (
+        <p
+          role={
+            notice === "failed" || notice === "invalid" ? "alert" : "status"
+          }
+        >
+          {copy[notice]}
+        </p>
+      )}
+      {expired && <p role="alert">{copy.expired}</p>}
+      {(notice === "failed" || expired) && (
+        <button
+          className="text-button"
+          disabled={busy || blocked}
+          onClick={() => void run(reload)}
+        >
+          {copy.reload}
+        </button>
+      )}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void run(confirm);
+        }}
+      >
+        <fieldset
+          disabled={
+            busy ||
+            blocked ||
+            !headLoaded ||
+            (!recoveringDestination && (!option || expired))
+          }
+          className="address-fields"
+        >
+          <legend className="sr-only">{copy.address}</legend>
+          {inputs.map(([name, autoComplete, maxLength, required]) => (
+            <label
+              key={name}
+              className={
+                name === "line1" || name === "line2" ? "wide" : undefined
+              }
+            >
+              <span>{copy[name]}</span>
+              <input
+                name={name}
+                type={name === "phone" ? "tel" : "text"}
+                autoComplete={autoComplete}
+                maxLength={maxLength}
+                required={required}
+                value={fields[name]}
+                onChange={(event) => {
+                  setFields({ ...fields, [name]: event.target.value });
+                  setConfirmed(null);
+                  if (notice === "invalid") setNotice(null);
+                }}
+              />
+            </label>
+          ))}
+          <button
+            type="submit"
+            data-testid="confirm-address"
+            className="address-confirm"
+          >
+            {expired && recoveringDestination
+              ? copy.recoverAddress
+              : copy.confirm}
+          </button>
+        </fieldset>
+      </form>
+      {confirmed && (
+        <p role="status" className="address-confirmed">
+          {copy.confirmed}
+        </p>
+      )}
+      <button
+        data-testid="create-order"
+        className="primary create-order"
+        disabled={busy || blocked || expired || !confirmed || !option}
+        onClick={() =>
+          void run(async (isCurrent) => {
+            if (!confirmed || !option) return;
+            const version = live.current;
+            try {
+              const result = await writeCheckout(
+                context,
+                checkoutInput(quote, option, cart, confirmed),
+              );
+              if (isCurrent() && version === live.current) onOrder(result);
+            } catch (reason) {
+              if (version === live.current) setConfirmed(null);
+              throw reason;
+            }
+          })
+        }
+      >
+        {copy.create}
+      </button>
+      <p className="order-note">{copy.unavailable}</p>
+    </section>
+  );
+}
+
+export function OrderDetails({
+  order,
+  locale,
+  money,
+  refresh,
+  busy,
+}: {
+  order: Order;
+  locale: Locale;
+  money: Money;
+  refresh: () => void;
+  busy: boolean;
+}) {
+  const copy = orderCopy[locale],
+    common = purchaseCopy[locale],
+    destination = order.snapshot.destination;
+  return (
+    <section
+      className="order-section"
+      data-testid="order-section"
+      aria-labelledby="order-title"
+    >
+      <h1 id="order-title">{copy.order}</h1>
+      <p
+        className="order-state"
+        data-testid="order-state"
+        data-state={order.commercial_state}
+      >
+        {copy[order.commercial_state]}
+      </p>
+      <p>
+        {copy.orderID}:{" "}
+        <span data-testid="order-id" className="order-id">
+          {order.order_id}
+        </span>
+      </p>
+      <ul className="order-lines">
+        {order.snapshot.quote.lines.map((line) => (
+          <li key={line.sku_id}>
+            <span>
+              {line.name} · {line.code} × {line.quantity}
+            </span>
+            <span>
+              {money(
+                line.unit_price_minor * line.quantity,
+                order.snapshot.quote.currency,
+              )}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="order-total">
+        {common.total}{" "}
+        <strong>
+          {money(
+            order.snapshot.quote.amount.total_minor,
+            order.snapshot.quote.currency,
+          )}
+        </strong>
+      </p>
+      <h2>{copy.address}</h2>
+      <address>
+        {destination.recipient_name}
+        <br />
+        {destination.phone}
+        <br />
+        {[
+          destination.home_address.region,
+          destination.home_address.city,
+          destination.home_address.postal_code,
+          destination.home_address.line1,
+          destination.home_address.line2,
+        ]
+          .filter(Boolean)
+          .join(" · ")}
+        {destination.pickup &&
+          `${destination.pickup.name} · ${destination.pickup.code} · ${destination.pickup.address}`}
+        <br />
+        {destination.country}
+      </address>
+      {order.hold_expires_at && (
+        <>
+          <p>
+            {copy.hold}{" "}
+            {new Intl.DateTimeFormat(locale, {
+              dateStyle: "short",
+              timeStyle: "short",
+            }).format(new Date(order.hold_expires_at))}
+          </p>
+          <p className="order-note">{copy.holdNote}</p>
+        </>
+      )}
+      {order.commercial_state === "DRAFT" && (
+        <p className="order-note">{copy.unavailable}</p>
+      )}
+      <button disabled={busy} onClick={refresh}>
+        {copy.refresh}
+      </button>
+    </section>
+  );
+}
