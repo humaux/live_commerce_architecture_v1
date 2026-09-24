@@ -1,0 +1,40 @@
+{
+  "title": "買家購買頁：選擇操作布局",
+  "question": "三版沿用同一藍綠視覺系統。你希望採用哪一版？也可指出要合併或調整的部分。圖中商品與金額均為示意，不會下單。",
+  "options": [
+    {
+      "id": "buyer-purchase-region",
+      "label": "A 商品摘要＋底部選購區",
+      "kicker": "THE ROLL",
+      "thesis": "先看商品，再在固定下方區域選規格和數量。",
+      "palette": ["#193c61", "#247965", "#f5f7fa", "#ffffff"],
+      "materials": ["冷白工作面", "細分隔線", "原生表單控件"],
+      "viewport": "上方商品文字與售價，下方非彈窗選購區集中 SKU、數量、小計和下一步。",
+      "risk": "底部選購區會壓縮長商品說明的首屏空間。",
+      "comp": ".impeccable/mocks/decision/buyer-purchase-region.png"
+    },
+    {
+      "id": "buyer-inline-detail",
+      "label": "B 商品詳情直選",
+      "thesis": "商品說明與規格選擇順序展開，底欄保留小計和操作。",
+      "palette": ["#193c61", "#247965", "#f5f7fa", "#ffffff"],
+      "materials": ["冷白工作面", "細分隔線", "原生表單控件"],
+      "viewport": "標題與價格在前，說明、SKU和數量直接展示；固定底欄只有小計與選擇配送。",
+      "risk": "商品說明較長時，需要捲動才能看到全部選項。",
+      "comp": ".impeccable/mocks/decision/buyer-inline-detail.png"
+    },
+    {
+      "id": "buyer-step-checkout",
+      "label": "C 分步購買",
+      "thesis": "規格與數量、配送、確認付款分成三步，一次只處理一組信息。",
+      "palette": ["#193c61", "#247965", "#f5f7fa", "#ffffff"],
+      "materials": ["冷白工作面", "細分隔線", "原生表單控件"],
+      "viewport": "短商品摘要與三步進度，當前步驟只顯示SKU和數量，下方小計及下一步。",
+      "risk": "核對全部資料需要在步驟間切換；必須保留輸入且避免重複下單。",
+      "comp": ".impeccable/mocks/decision/buyer-step-checkout.png"
+    }
+  ],
+  "reroll": true,
+  "steer": true,
+  "buildPath": {"value": "comp", "toggle": true}
+}
