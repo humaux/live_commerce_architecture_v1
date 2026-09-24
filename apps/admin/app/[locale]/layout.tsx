@@ -17,6 +17,7 @@ OWN-WORLD: Navy frame, teal actions, cool-white work surface, system sans, fine-
 STORY: OIDC sign-in; merchant name, store/currency, warehouse; submit four fields once, then enter the SKU ledger.
 FIRST VIEWPORT: Approved C uses a light identity/language bar, centered title and three-step rail, an 866px form, one current primary action; mobile preserves task order.
 FORM: Operate, C three-step wizard, ranked structure 2, surface seed 57bb98dc. Existing ledger seed 3046f272 remains unchanged.
+SETTINGS: Approved A horizontal four-step sequence and right read-only status column. The form owns the primary action; mobile places status below. PAYUNi credentials start blank, and saved configuration never claims provider qualification or live collection. Merchant-arranged manual delivery is a separate choice. See .impeccable/merchant-settings-brief.md and contracts/merchant-settings-wizard-v1.md.
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
 -->`;
 
