@@ -106,6 +106,10 @@ func TestBuyerPaymentHostedSQLAuthorityAndScope(t *testing.T) {
 	if _, err := h.api.TakeHosted(ctx, h.cap.Token, randomUUID(), h.hold.OrderID); err == nil {
 		t.Fatal("HP04 cross-store form release succeeded")
 	}
+	other := mustIssue(t, h.cqHarness.service, h.f.storeA1)
+	if _, err := h.api.TakeHosted(ctx, other.Token, h.f.storeA1, h.hold.OrderID); err == nil {
+		t.Fatal("HP04 cross-owner form release succeeded")
+	}
 	if _, err := h.api.TakeHosted(ctx, h.cap.Token, h.f.storeA1, randomUUID()); err == nil {
 		t.Fatal("HP04 cross-order form release succeeded")
 	}
@@ -201,6 +205,9 @@ func TestBuyerPaymentHostedDriftAndFinancialReviewDenyFirstTake(t *testing.T) {
 		"qualification-revoked": func(t *testing.T, h hpHarness, _ checkoutResult) {
 			mustExec(t, h.f.owner, `UPDATE payments.account_qualifications SET revoked_at=clock_timestamp() WHERE id=$1`, h.proof)
 		},
+		"credential-rotated": func(t *testing.T, h hpHarness, _ checkoutResult) {
+			hpRotateFixtureHead(t, h)
+		},
 		"financial-authorized": func(t *testing.T, h hpHarness, result checkoutResult) {
 			hpSeedReviewFact(t, h, result, false)
 		},
@@ -233,7 +240,6 @@ type checkoutResult struct {
 
 func hpSeedReviewFact(t *testing.T, h hpHarness, result checkoutResult, review bool) {
 	t.Helper()
-	ctx := context.Background()
 	report := []byte(`{"synthetic":"hosted-gate"}`)
 	mustExec(t, h.f.owner, `INSERT INTO payments.provider_observations(tenant_id,store_id,attempt_id,source,execution_profile,environment,first_generation,report,report_hash)
 	 SELECT tenant_id,store_id,id,'QUERY',execution_profile,environment,generation,$2::jsonb,sha256(convert_to($2::jsonb::text,'UTF8'))
@@ -247,7 +253,6 @@ func hpSeedReviewFact(t *testing.T, h hpHarness, result checkoutResult, review b
 		 SELECT tenant_id,store_id,id,'AUTHORIZED',$3,currency,'hosted_fixture_reference',connection_id,execution_profile,environment,sha256(convert_to($2::jsonb::text,'UTF8'))
 		 FROM checkout.payment_attempts WHERE id=$1`, result.ID, report, result.Amount)
 	}
-	_ = ctx
 }
 
 func TestBuyerPaymentHostedReplayAfterDisableAndRevokedCapability(t *testing.T) {
@@ -306,5 +311,151 @@ func TestBuyerPaymentHostedQualificationExpiresDuringTakeWait(t *testing.T) {
 	_, _, _, handed := h.page(t, result.AttemptID)
 	if handed != nil {
 		t.Fatal("HP05 expired wait committed handoff timestamp")
+	}
+}
+
+func TestBuyerPaymentHostedWriterCannotMutateFormOrClearHandoff(t *testing.T) {
+	h := hpSetup(t)
+	result, err := h.begin(t04Key("hp-immutable"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	scope := func(tx pgx.Tx) {
+		t.Helper()
+		for setting, value := range map[string]string{
+			"app.tenant_id": h.f.tenantA, "app.store_id": h.f.storeA1,
+			"app.buyer_id": h.cap.Scope.OwnerID, "app.buyer_session_id": h.cap.Scope.SessionID,
+		} {
+			if _, err := tx.Exec(ctx, `SELECT set_config($1,$2,true)`, setting, value); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if _, err := tx.Exec(ctx, `SET LOCAL ROLE commerce_checkout_writer`); err != nil {
+			t.Fatal(err)
+		}
+	}
+	tx, err := h.f.owner.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	scope(tx)
+	if _, err := tx.Exec(ctx, `UPDATE checkout.hosted_payment_pages SET form=form WHERE attempt_id=$1`, result.AttemptID); !hpSQLState(err, "42501") {
+		t.Fatal("HP04 private writer could mutate frozen form")
+	}
+	if err := tx.Rollback(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := h.take(); err != nil {
+		t.Fatal(err)
+	}
+	tx, err = h.f.owner.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	scope(tx)
+	tag, err := tx.Exec(ctx, `UPDATE checkout.hosted_payment_pages SET handed_out_at=NULL WHERE attempt_id=$1`, result.AttemptID)
+	if err != nil || tag.RowsAffected() != 0 {
+		t.Fatalf("HP04 one-way handoff timestamp reset: %v", err)
+	}
+	if err := tx.Rollback(ctx); err != nil {
+		t.Fatal(err)
+	}
+	_, _, _, handed := h.page(t, result.AttemptID)
+	if handed == nil {
+		t.Fatal("HP04 handoff timestamp was cleared")
+	}
+}
+
+func hpDelayPageWrite(t *testing.T, h hpHarness, event string) {
+	t.Helper()
+	name := "hp_delay_" + t04Tag()
+	fn := pgx.Identifier{name}.Sanitize()
+	trigger := pgx.Identifier{name + "_trigger"}.Sanitize()
+	mustExec(t, h.f.owner, fmt.Sprintf(`CREATE FUNCTION public.%s() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM pg_sleep(2.5); RETURN NEW; END $$`, fn))
+	mustExec(t, h.f.owner, fmt.Sprintf(`CREATE TRIGGER %s BEFORE %s ON checkout.hosted_payment_pages FOR EACH ROW EXECUTE FUNCTION public.%s()`, trigger, event, fn))
+	t.Cleanup(func() {
+		mustExec(t, h.f.owner, fmt.Sprintf(`DROP TRIGGER IF EXISTS %s ON checkout.hosted_payment_pages`, trigger))
+		mustExec(t, h.f.owner, fmt.Sprintf(`DROP FUNCTION IF EXISTS public.%s()`, fn))
+	})
+}
+
+func TestBuyerPaymentHostedQualificationExpiresDuringFinalWrites(t *testing.T) {
+	t.Run("prepare-insert", func(t *testing.T) {
+		h := hpSetup(t)
+		before := h.counts(t)
+		hpDelayPageWrite(t, h, "INSERT")
+		mustExec(t, h.f.owner, `UPDATE payments.account_qualifications SET expires_at=clock_timestamp()+interval '2 seconds' WHERE id=$1`, h.proof)
+		if _, err := h.begin(t04Key("hp-expire-save")); err == nil {
+			t.Fatal("HP05 qualification expired during form insert but preparation committed")
+		}
+		if h.counts(t) != before {
+			t.Fatal("HP05 late preparation failure committed partial payment facts")
+		}
+	})
+	t.Run("handoff-update", func(t *testing.T) {
+		h := hpSetup(t)
+		result, err := h.begin(t04Key("hp-expire-take"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		hpDelayPageWrite(t, h, "UPDATE OF handed_out_at")
+		mustExec(t, h.f.owner, `UPDATE payments.account_qualifications SET expires_at=clock_timestamp()+interval '2 seconds' WHERE id=$1`, h.proof)
+		if _, err := h.take(); err == nil {
+			t.Fatal("HP05 qualification expired during one-shot update but form escaped")
+		}
+		_, _, _, handed := h.page(t, result.AttemptID)
+		if handed != nil {
+			t.Fatal("HP05 late take failure committed handoff timestamp")
+		}
+	})
+}
+
+func TestBuyerPaymentHostedCapabilityRevokedDuringTakeWait(t *testing.T) {
+	h := hpSetup(t)
+	result, err := h.begin(t04Key("hp-cap-wait"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	tx, err := h.f.owner.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback(ctx)
+	if _, err := tx.Exec(ctx, `SELECT id FROM checkout.orders WHERE id=$1 FOR UPDATE`, h.hold.OrderID); err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan error, 1)
+	go func() { _, e := h.take(); done <- e }()
+	time.Sleep(150 * time.Millisecond)
+	mustExec(t, h.f.owner, `UPDATE buyer.capability_sessions SET revoked_at=clock_timestamp() WHERE id=$1`, h.cap.Scope.SessionID)
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := <-done; err == nil {
+		t.Fatal("HP04 capability revoked during order wait released form")
+	}
+	_, _, _, handed := h.page(t, result.AttemptID)
+	if handed != nil {
+		t.Fatal("HP04 revoked capability committed handoff timestamp")
+	}
+}
+
+func TestBuyerPaymentHostedLocalDeadlineFence(t *testing.T) {
+	h := hpSetup(t)
+	result, err := h.begin(t04Key("hp-deadline"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Test-only owner time shift exercises the same database-clock comparison as
+	// an elapsed minute, without adding a minute to every full suite run.
+	mustExec(t, h.f.owner, `UPDATE checkout.payment_attempts SET created_at=clock_timestamp()-interval '61 seconds' WHERE id=$1`, result.AttemptID)
+	if _, err := h.take(); err == nil {
+		t.Fatal("HP05 expired local release window emitted a form")
+	}
+	_, _, _, handed := h.page(t, result.AttemptID)
+	if handed != nil {
+		t.Fatal("HP05 deadline denial consumed the handoff")
 	}
 }
