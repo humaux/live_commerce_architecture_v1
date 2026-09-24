@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"livecommerce/internal/buyer"
@@ -262,6 +263,22 @@ func TestBuyerHTTPRegistrationAuthorityAndInvalidSQL(t *testing.T) {
 	}
 	if _, err := service.RegisterForTrustedStore(ctx, randomUUID(), token); !errors.Is(err, buyer.ErrUnauthorized) {
 		t.Fatal("unknown store accepted")
+	}
+	brAssertDelta(t, h, before, 0)
+
+	// A synthetic constraint confined to a new fixture store forces a different
+	// 23505. It must propagate, not become a successful token-conflict replay.
+	_, isolatedStore, _ := seedBuyerStores(t, h.f)
+	mustIssue(t, service, isolatedStore)
+	index := "registration_unrelated_" + strings.ReplaceAll(randomUUID(), "-", "")
+	mustExec(t, h.f.owner, `CREATE UNIQUE INDEX `+pgx.Identifier{index}.Sanitize()+` ON buyer.owners(store_id) WHERE store_id='`+isolatedStore+`'::uuid`)
+	t.Cleanup(func() { mustExec(t, h.f.owner, `DROP INDEX buyer.`+pgx.Identifier{index}.Sanitize()) })
+	before = brCounts(t, h)
+	otherHash := sha256.Sum256([]byte(brToken()))
+	_, err = h.a.issuer.Exec(ctx, query, isolatedStore, otherHash[:], 60)
+	var unique *pgconn.PgError
+	if !errors.As(err, &unique) || unique.Code != "23505" || unique.ConstraintName != index || unique.TableName != "owners" {
+		t.Fatal("unrelated uniqueness error was swallowed")
 	}
 	brAssertDelta(t, h, before, 0)
 }
