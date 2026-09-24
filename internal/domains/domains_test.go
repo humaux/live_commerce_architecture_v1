@@ -46,6 +46,7 @@ func TestReturnedRouteShape(t *testing.T) {
 	}
 	bad := []Route{
 		{}, {DomainID: "00000000-0000-0000-0000-000000000000", StoreID: good.StoreID, DomainVersion: 1, PublicationVersion: 2, Origin: origin},
+		{DomainID: good.DomainID, StoreID: "00000000-0000-0000-0000-000000000000", DomainVersion: 1, PublicationVersion: 2, Origin: origin},
 		{DomainID: "123E4567-e89b-12d3-a456-426614174000", StoreID: good.StoreID, DomainVersion: 1, PublicationVersion: 2, Origin: origin},
 		{DomainID: good.DomainID, StoreID: "bad", DomainVersion: 1, PublicationVersion: 2, Origin: origin},
 		{DomainID: good.DomainID, StoreID: good.StoreID, DomainVersion: 0, PublicationVersion: 2, Origin: origin},
