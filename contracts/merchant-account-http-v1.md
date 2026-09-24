@@ -10,6 +10,12 @@ metadata is CONFIGURED_UNVERIFIED, never evidence of provider admission.
 - Base `/v1/admin/stores/{store_id}/provider-accounts`.
 - GET collection: existing pagination `limit/cursor`, scoped UUID keyset, default
   50/max 100, `items/next_cursor`. No credentials or encryption key IDs.
+  `accounts.Service.List(ctx,tx,scope,token,pagination.Request)` uses binding
+  `{TenantID:scope.TenantID,StoreID:scope.StoreID,Collection:"provider-accounts"}`;
+  extend pagination's collection allowlist. SQL explicitly filters both scope IDs,
+  orders by account UUID and fetches limit+1. Require integration:read before the
+  query and after closing rows; an after-wait denial returns no DTO/cursor. Never
+  read ciphertext/nonce, and never accept a cursor from another store/collection.
 - POST collection: `{provider,environment,account_id,credentials:{hash_key,hash_iv}}`.
 - GET `/{connection_id}`: safe metadata.
 - POST `/{connection_id}/rotate`: `{expected_version,credentials:{hash_key,hash_iv}}`;
