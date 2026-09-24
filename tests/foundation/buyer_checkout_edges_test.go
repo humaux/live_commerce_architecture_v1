@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"livecommerce/internal/buyer"
 	"livecommerce/internal/command"
 	"livecommerce/internal/fulfillment"

@@ -153,8 +153,9 @@ Independent preflight: Humaux `b1a34f48-3f8b-438e-9e16-ee6fe5f40ec2`.
   AWAITING_PAYMENT or CONFIRMED) prevents new-key duplicate holds. CANCELLED
   permits a new checkout, but the old idempotency key always replays old IDs.
 - `inventory.reservations` adds nullable checkout_id, buyer_owner_id,
-  buyer_session_id and positive generation=1. Merchant rows have all three NULL;
-  checkout rows bind the order provenance and share its ID.
+  buyer_session_id and generation. Legacy merchant rows have all four NULL;
+  checkout rows bind the order provenance, share its ID and require a non-NULL
+  positive generation starting at 1. Existing merchant hold semantics are unchanged.
 - `inventory.ledger` adds checkout_id, buyer_owner_id, buyer_session_id and
   actor_kind (`MERCHANT`, `BUYER`, `SYSTEM_EXPIRY`), default MERCHANT. Only the
   merchant family has principal_id; buyer/system families retain original buyer

@@ -353,7 +353,11 @@ func TestBuyerCheckoutAuthorityAndLegacyMerchantFence(t *testing.T) {
 		_, e = t04Scoped(context.Background(), b.f, b.f.tokens["a"], b.f.storeA1, "inventory:reserve", func(tx pgx.Tx, s platform.Scope) (int, error) {
 			args := []any{result.ReservationID}
 			if strings.Contains(sql, "$2") {
-				args = append(args, b.stock.warehouse.ID, b.stock.skus[0].ID)
+				sku := b.stock.skus[0].ID
+				if strings.Contains(sql, "INSERT INTO inventory.reservation_lines") {
+					sku = b.stock.skus[1].ID
+				}
+				args = append(args, b.stock.warehouse.ID, sku)
 			}
 			if strings.Contains(sql, "$4") {
 				args = append(args, s.PrincipalID)
@@ -366,6 +370,9 @@ func TestBuyerCheckoutAuthorityAndLegacyMerchantFence(t *testing.T) {
 		})
 		if e != nil && e.Error() == "legacy mutation succeeded" {
 			t.Fatal(e)
+		}
+		if strings.HasPrefix(sql, "INSERT") {
+			daSQLState(t, e, "42501")
 		}
 	}
 	if b.facts(t) != before {
@@ -445,14 +452,23 @@ func TestBuyerCheckoutAtomicFaultRollback(t *testing.T) {
 			// Isolated fixture only. Scope the trigger to this buyer or its job kind;
 			// transaction rollback, not test teardown, must remove every attempted fact.
 			condition := `current_setting('app.buyer_id',true)=` + quoteLiteral(b.cap.Scope.OwnerID)
-			mustExec(t, b.f.owner, `CREATE FUNCTION public.`+name+`() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF `+condition+` THEN RAISE EXCEPTION 'checkout synthetic fault'; END IF; RETURN NEW; END $$`)
+			// Sequence progress is deliberately nontransactional: proves this exact
+			// injection fired instead of accepting an unrelated earlier failure.
+			mustExec(t, b.f.owner, `CREATE SEQUENCE public.`+name+`_hits`)
+			mustExec(t, b.f.owner, `GRANT USAGE ON SEQUENCE public.`+name+`_hits TO commerce_checkout_runtime,commerce_checkout_writer`)
+			mustExec(t, b.f.owner, `CREATE FUNCTION public.`+name+`() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF `+condition+` THEN PERFORM nextval('public.`+name+`_hits'); RAISE EXCEPTION 'checkout synthetic fault'; END IF; RETURN NEW; END $$`)
 			mustExec(t, b.f.owner, `CREATE TRIGGER `+name+` BEFORE INSERT ON `+table+` FOR EACH ROW EXECUTE FUNCTION public.`+name+`()`)
 			t.Cleanup(func() {
 				mustExec(t, b.f.owner, `DROP TRIGGER `+name+` ON `+table)
 				mustExec(t, b.f.owner, `DROP FUNCTION public.`+name+`()`)
+				mustExec(t, b.f.owner, `DROP SEQUENCE public.`+name+`_hits`)
 			})
 			if _, e := b.begin(t04Key("bc-fault")); e == nil {
 				t.Fatal("fault did not fire")
+			}
+			var fired bool
+			if e := b.f.owner.QueryRow(context.Background(), `SELECT is_called FROM public.`+name+`_hits`).Scan(&fired); e != nil || !fired {
+				t.Fatalf("injected table not reached: %s %v", table, e)
 			}
 			if b.facts(t) != before {
 				t.Fatal("rollback left checkout or orphan job")
@@ -595,12 +611,32 @@ func TestBuyerCheckoutExpiryFencesAndConservation(t *testing.T) {
 }
 
 func TestBuyerCheckoutActualRiverExpiry(t *testing.T) {
+	for _, mode := range []string{"due", "early", "stale", "duplicate"} {
+		t.Run(mode, func(t *testing.T) { bcActualRiverExpiry(t, mode) })
+	}
+}
+
+type bcExpiryJob struct {
+	OrderID    string `json:"order_id"`
+	Generation int64  `json:"generation"`
+	Version    int    `json:"version"`
+}
+
+func (bcExpiryJob) Kind() string { return "checkout_expiry_v1" }
+
+func bcActualRiverExpiry(t *testing.T, mode string) {
 	b := bcSetup(t)
 	r, e := b.begin(t04Key("bc-river"))
 	if e != nil {
 		t.Fatal(e)
 	}
-	bcDue(t, b, r)
+	if mode != "early" {
+		bcDue(t, b, r)
+	}
+	if mode == "stale" {
+		mustExec(t, b.f.owner, `UPDATE checkout.orders SET generation=2 WHERE id=$1`, r.OrderID)
+		mustExec(t, b.f.owner, `UPDATE inventory.reservations SET generation=2 WHERE id=$1`, r.OrderID)
+	}
 	queue := "checkout_" + strings.ReplaceAll(randomUUID(), "-", "")
 	mustExec(t, b.f.owner, `UPDATE river.river_job SET queue=$2,state='available',scheduled_at=clock_timestamp() WHERE id=$1`, r.JobID, queue)
 	w, e := checkout.NewExpiryWorker(context.Background(), b.worker)
@@ -612,6 +648,14 @@ func TestBuyerCheckoutActualRiverExpiry(t *testing.T) {
 	client, e := river.NewClient(riverpgxv5.New(b.worker), &river.Config{Schema: "river", Workers: workers, Queues: map[string]river.QueueConfig{queue: {MaxWorkers: 2}}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
 	if e != nil {
 		t.Fatal(e)
+	}
+	var duplicateID int64
+	if mode == "duplicate" {
+		inserted, e := client.Insert(context.Background(), bcExpiryJob{OrderID: r.OrderID, Generation: 1, Version: 1}, &river.InsertOpts{Queue: queue})
+		if e != nil {
+			t.Fatal(e)
+		}
+		duplicateID = inserted.Job.ID
 	}
 	if e = client.Start(context.Background()); e != nil {
 		t.Fatal(e)
@@ -625,11 +669,35 @@ func TestBuyerCheckoutActualRiverExpiry(t *testing.T) {
 	})
 	deadline := time.Now().Add(5 * time.Second)
 	var state, job string
+	var attempted bool
 	for time.Now().Before(deadline) {
-		if e = b.f.owner.QueryRow(context.Background(), `SELECT o.commercial_state,j.state FROM checkout.orders o JOIN river.river_job j ON j.id=o.job_id WHERE o.id=$1`, r.OrderID).Scan(&state, &job); e != nil {
+		if e = b.f.owner.QueryRow(context.Background(), `SELECT o.commercial_state,j.state,j.attempted_at IS NOT NULL FROM checkout.orders o JOIN river.river_job j ON j.id=o.job_id WHERE o.id=$1`, r.OrderID).Scan(&state, &job, &attempted); e != nil {
 			t.Fatal(e)
 		}
-		if state == "CANCELLED" && job == "completed" {
+		wantState, wantJob := "CANCELLED", "completed"
+		if mode == "early" {
+			wantState, wantJob = "DRAFT", "scheduled"
+		} else if mode == "stale" {
+			wantState = "DRAFT"
+		}
+		if state == wantState && job == wantJob && attempted {
+			if duplicateID != 0 {
+				var duplicateState string
+				if e = b.f.owner.QueryRow(context.Background(), `SELECT state FROM river.river_job WHERE id=$1`, duplicateID).Scan(&duplicateState); e != nil {
+					t.Fatal(e)
+				}
+				if duplicateState != "completed" {
+					time.Sleep(20 * time.Millisecond)
+					continue
+				}
+			}
+			wantReleases := 0
+			if wantState == "CANCELLED" {
+				wantReleases = 1
+			}
+			if n := countRows(t, b.f.owner, `SELECT count(*) FROM inventory.ledger WHERE checkout_id=$1 AND kind='RELEASE'`, r.OrderID); n != wantReleases {
+				t.Fatalf("River release count=%d want%d", n, wantReleases)
+			}
 			return
 		}
 		time.Sleep(20 * time.Millisecond)

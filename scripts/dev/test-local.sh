@@ -4,8 +4,8 @@ cd "$(dirname "$0")/../.."
 command -v docker >/dev/null
 command -v go >/dev/null
 test_mode="${1:-foundation}"
-if [[ "$#" -gt 1 ]] || [[ "$test_mode" != foundation && "$test_mode" != --browser-identity ]]; then
-  printf 'Usage: bash scripts/dev/test-local.sh [--browser-identity]\n' >&2
+if [[ "$#" -gt 1 ]] || [[ "$test_mode" != foundation && "$test_mode" != --browser-identity && "$test_mode" != --checkout ]]; then
+  printf 'Usage: bash scripts/dev/test-local.sh [--browser-identity|--checkout]\n' >&2
   exit 2
 fi
 if [[ "$test_mode" == --browser-identity ]]; then
@@ -51,6 +51,11 @@ export LC_ADMIN_GUARD_DSN="postgres://postgres:${POSTGRES_PASSWORD}@${test_port}
 if [[ "$test_mode" == --browser-identity ]]; then
   LC_BROWSER_IDENTITY_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=120s -run '^TestBrowserIdentityRealChain$' -v ./tests/foundation
   printf 'PASS: isolated PG + signed MOCK IdP browser chain; fixture removed at exit.\n'
+elif [[ "$test_mode" == --checkout ]]; then
+  # Focused diagnosis uses the same isolated real PG and cleanup guard. It never
+  # substitutes for the full foundation/race/vet release gate below.
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=120s -run '^TestBuyerCheckout' -v ./tests/foundation
+  printf 'PASS: checkout subset only; full regression still required.\n'
 else
   GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=120s -v ./...
   GOTOOLCHAIN=go1.27.1 go vet ./...
