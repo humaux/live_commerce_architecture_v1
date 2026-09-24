@@ -59,6 +59,12 @@ purchase flow, not an extra task for the merchant.
   Validate HTTPS/provider host, mode, account, order, amount, currency and expiry;
   never accept arbitrary browser return URLs. Hosted URLs are sensitive and
   excluded from logs, shared caches and the reusable public product entry.
+- Provider-side optional quantity changes, shipping selection, discounts, tax
+  or currency conversion must not silently alter the accepted order's amount
+  or currency. Derive checkout parameters from the order snapshot and verify
+  the resulting totals. Use per-session configuration; do not silently change
+  a merchant's global PSP settings. Automatic provider capabilities do not
+  override the existing merchant-of-record or single-currency order decision.
 - A disabled/expired/missing provider qualification is a setup blocker, not a
   simulated payment. SANDBOX and LIVE remain separate configurations and gates.
   Provider session creation errors surface pending/failed/unknown honestly,
