@@ -168,7 +168,7 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 ('integration.complete_operation(uuid,bigint,bytea,text,text,text)'::regprocedure::oid,true),
 	 ('integration.require_payment_query(uuid,bigint,bytea,text)'::regprocedure::oid,false),
 	 ('integration.load_payment_query(uuid,bigint,bytea,text)'::regprocedure::oid,true),
-	 ('integration.record_payment_query(uuid,bigint,bytea,text,jsonb)'::regprocedure::oid,true),
+ ('integration.record_payment_query(uuid,bigint,bytea,text,jsonb,bigint)'::regprocedure::oid,true),
 	 ('integration.finish_payment_query(uuid,bigint,bytea,text,text,text)'::regprocedure::oid,true))
 	 SELECT count(*),bool_and(a.oid IS NOT NULL AND p.prosecdef AND p.proconfig = ARRAY['search_path=pg_catalog']
 	 AND pg_get_userbyid(p.proowner)='commerce_integration_writer'

@@ -144,7 +144,11 @@ Absence on a later or older report never clears review. Incomplete B
 alone neither produces financial facts nor downgrades an existing capture.
 Partial/missing CloseAmt while CloseStatus2 creates CAPTURE_EVIDENCE_INCOMPLETE;
 a later full capture still stays on review until explicit resolution. Conflicting
-complete reports after capture likewise hold work without erasing facts/stock.
+complete reports with explicit failure/cancellation/expiry (TradeStatus2/3/4,
+or CloseStatus3) after capture likewise hold work without erasing facts/stock.
+An older complete pending/authorization-only report is not contradictory merely
+because it lacks later-stage capture evidence; processing it last cannot hold
+otherwise READY work. River does not guarantee observation-order consumption.
 Durable merchant work is readable by the same scoped merchant read boundary;
 processing/resolution UI and explicit review clearance remain NOT_IMPLEMENTED.
 
@@ -156,6 +160,9 @@ CF02 real River query → durable observation+reconcile job → local worker →
 fact/order/reservation/ledger/fulfillment work; original on_hand is unchanged.
 CF03 replay/concurrency/changed report, authorization-only/partial/refund/conflict,
 wrong account/profile/amount, forged jobs and runtime-role negatives.
+Include a real same-owner second-session payment: ledger/event provenance stays
+on the original checkout session. Worker has apply EXECUTE only, no direct
+financial/ledger/work-item writes; permanent malformed jobs cancel, DB faults retry.
 CF04 real PG expired/released/cancelled anomaly retains capture + review with no
 partial stock/reopening; capture/adjust lock concurrency. Do not claim a production
 PAYMENT_PENDING expiry path or successful automatic late-stock recovery exists.

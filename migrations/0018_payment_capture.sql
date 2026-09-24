@@ -2,7 +2,8 @@
 -- five-argument entry must not remain an unaudited ingestion path.
 DROP FUNCTION integration.record_payment_query(uuid,bigint,bytea,text,jsonb);
 GRANT USAGE ON SCHEMA river TO commerce_integration_writer;
-GRANT SELECT ON river.river_job TO commerce_integration_writer;
+-- River tables are created after application migrations. Their narrow SELECT
+-- grant is applied by migrate.go alongside the existing checkout-writer grant.
 
 CREATE FUNCTION integration.record_payment_query(p_id uuid,p_generation bigint,p_token bytea,
  p_profile text,p_report jsonb,p_reconcile_job bigint)
@@ -303,8 +304,12 @@ BEGIN
  END IF;
  SELECT EXISTS(SELECT 1 FROM payments.facts f WHERE f.tenant_id=a.tenant_id
   AND f.store_id=a.store_id AND f.attempt_id=a.id AND f.kind='CAPTURED') INTO v_captured;
+ -- River may consume an older authorization after a newer capture. Absence of
+ -- later-stage proof is not a contradiction: only explicit adverse states hold
+ -- already captured work here. Partial/missing close amounts are handled above.
  IF v_conflict OR (v_captured AND obs.report->>'TradeNo'<>''
-  AND obs.report->>'DataSource'='A' AND NOT v_capture) THEN
+  AND obs.report->>'DataSource'='A' AND (obs.report->>'TradeStatus' IN ('2','3','4')
+   OR obs.report->>'CloseStatus'='3')) THEN
   INSERT INTO payments.review_cases(tenant_id,store_id,attempt_id,reason,source_report_hash)
    VALUES(a.tenant_id,a.store_id,a.id,'CONFLICTING_REPORT',obs.report_hash)
    ON CONFLICT DO NOTHING;

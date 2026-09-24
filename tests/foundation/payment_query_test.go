@@ -42,8 +42,14 @@ type pqFixture struct {
 var pqOldSecret = accounts.Credentials{HashKey: strings.Repeat("K", 32), HashIV: strings.Repeat("V", 16)}
 
 func pqSetup(t *testing.T) pqFixture {
+	return pqSetupSession(t, false)
+}
+func pqSetupSession(t *testing.T, freshSession bool) pqFixture {
+	return pqSetupItems(t, freshSession, 1)
+}
+func pqSetupItems(t *testing.T, freshSession bool, skuCount int) pqFixture {
 	t.Helper()
-	p := psSetup(t)
+	p := psSetupItems(t, skuCount)
 	keys, e := accounts.NewKeyring("query_test", map[string][]byte{"query_test": randomBytes(32)}, randomBytes(32))
 	if e != nil {
 		t.Fatal(e)
@@ -56,7 +62,11 @@ func pqSetup(t *testing.T) pqFixture {
 	q.rotate(t, 1, pqOldSecret)
 	// This disposable owner seeds MOCK qualification only; real issuers remain closed.
 	mustExec(t, p.f.owner, `UPDATE payments.account_qualifications SET credential_version=2 WHERE id=$1`, p.proof)
-	q.result, e = p.start(t04Key("pq-start"))
+	if freshSession {
+		q.cap.Token, q.cap.Scope.SessionID = randomToken(), randomUUID()
+		mustExec(t, p.f.owner, `INSERT INTO buyer.capability_sessions(tenant_id,store_id,owner_id,id,token_hash,expires_at) VALUES($1,$2,$3,$4,$5,clock_timestamp()+interval '1 hour')`, q.cap.Scope.TenantID, q.cap.Scope.StoreID, q.cap.Scope.OwnerID, q.cap.Scope.SessionID, tokenHash(q.cap.Token))
+	}
+	q.result, e = q.start(t04Key("pq-start"))
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -95,8 +105,34 @@ func pqReport(q pqFixture) map[string]any {
 }
 func pqJSON(v any) []byte { b, _ := json.Marshal(v); return b }
 func (q pqFixture) record(c integration.ClaimResult, report any) error {
-	_, e := q.worker.Exec(context.Background(), `SELECT integration.record_payment_query($1,$2,$3,'PROVIDER_MOCK',$4::jsonb)`, q.result.OperationID, c.Generation, c.LeaseToken, pqJSON(report))
-	return e
+	return pqRecord(q.worker, q.result.OperationID, c, "PROVIDER_MOCK", report)
+}
+
+// Like the real query worker, these protocol probes persist the observation and
+// its reconciliation job in one transaction. A failed SQL fence rolls back both.
+func pqRecord(pool *pgxpool.Pool, operation string, c integration.ClaimResult, profile string, report any) error {
+	ctx := context.Background()
+	tx, e := pool.Begin(ctx)
+	if e != nil {
+		return e
+	}
+	defer tx.Rollback(ctx)
+	var hash string
+	if e = tx.QueryRow(ctx, `SELECT encode(sha256(convert_to($1::jsonb::text,'UTF8')),'hex')`, pqJSON(report)).Scan(&hash); e != nil {
+		return e
+	}
+	jobs, e := river.NewClient(riverpgxv5.New(pool), &river.Config{Schema: "river"})
+	if e != nil {
+		return e
+	}
+	job, e := jobs.InsertTx(ctx, tx, pcArgs{OperationID: operation, ReportHash: hash, Version: 1}, nil)
+	if e != nil {
+		return e
+	}
+	if _, e = tx.Exec(ctx, `SELECT integration.record_payment_query($1,$2,$3,$4,$5::jsonb,$6)`, operation, c.Generation, c.LeaseToken, profile, pqJSON(report), job.Job.ID); e != nil {
+		return e
+	}
+	return tx.Commit(ctx)
 }
 func (q pqFixture) reportCount(t *testing.T) int {
 	t.Helper()
@@ -147,7 +183,7 @@ func TestBuyerPaymentQueryHistoricalCredentialAndACL(t *testing.T) {
 		t.Fatal(e)
 	}
 	var loadOID, guardOID, recordOID, credentialOID, observationOID uint32
-	if e = q.f.owner.QueryRow(ctx, `SELECT 'integration.load_payment_query(uuid,bigint,bytea,text)'::regprocedure::oid,'integration.require_payment_query(uuid,bigint,bytea,text)'::regprocedure::oid,'integration.record_payment_query(uuid,bigint,bytea,text,jsonb)'::regprocedure::oid,'integration.account_credentials'::regclass::oid,'payments.provider_observations'::regclass::oid`).Scan(&loadOID, &guardOID, &recordOID, &credentialOID, &observationOID); e != nil {
+	if e = q.f.owner.QueryRow(ctx, `SELECT 'integration.load_payment_query(uuid,bigint,bytea,text)'::regprocedure::oid,'integration.require_payment_query(uuid,bigint,bytea,text)'::regprocedure::oid,'integration.record_payment_query(uuid,bigint,bytea,text,jsonb,bigint)'::regprocedure::oid,'integration.account_credentials'::regclass::oid,'payments.provider_observations'::regclass::oid`).Scan(&loadOID, &guardOID, &recordOID, &credentialOID, &observationOID); e != nil {
 		t.Fatal(e)
 	}
 	for _, pool := range []*pgxpool.Pool{q.f.runtime, q.a.runtime, q.pool, q.worker} {
@@ -185,7 +221,7 @@ func TestBuyerPaymentQueryReportAtomicDedupAndBinding(t *testing.T) {
 		}
 	}
 	for _, profile := range []string{"SANDBOX", "LIVE"} {
-		if _, e := q.worker.Exec(context.Background(), `SELECT integration.record_payment_query($1,$2,$3,$4,$5::jsonb)`, q.result.OperationID, c.Generation, c.LeaseToken, profile, pqJSON(report)); e == nil {
+		if e := pqRecord(q.worker, q.result.OperationID, c, profile, report); e == nil {
 			t.Fatal("profile mismatch accepted")
 		}
 	}
@@ -261,8 +297,7 @@ func TestBuyerPaymentQueryFaultAndLeaseWaitRollback(t *testing.T) {
 	}
 	done := make(chan error, 1)
 	go func() {
-		_, e := pool.Exec(ctx, `SELECT integration.record_payment_query($1,$2,$3,'PROVIDER_MOCK',$4::jsonb)`, q.result.OperationID, c.Generation, c.LeaseToken, pqJSON(pqReport(q)))
-		done <- e
+		done <- pqRecord(pool, q.result.OperationID, c, "PROVIDER_MOCK", pqReport(q))
 	}()
 	waitForDatabaseLock(t, q.f.owner, name)
 	var before bool
@@ -293,6 +328,20 @@ func pqSignedResponse(report map[string]any) string {
 	row := url.Values{"Status": {"SUCCESS"}}
 	for k, v := range report {
 		if k != "AmountTWD" && k != "Status" {
+			switch k {
+			case "CloseAmountTWD":
+				k = "CloseAmt"
+			case "CardRefundType":
+				k = "RefundType"
+			case "CardRefundStatus":
+				k = "RefundStatus"
+			case "CardRefundAmountTWD":
+				k = "RefundAmt"
+			case "CardRefundDay":
+				k = "RefundDay"
+			case "CardRemainAmountTWD":
+				k = "RemainAmt"
+			}
 			row.Set("Result[0]["+k+"]", fmt.Sprint(v))
 		}
 	}

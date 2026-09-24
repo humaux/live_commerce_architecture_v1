@@ -50,6 +50,9 @@ func psStarter(t *testing.T, pool *pgxpool.Pool, profile string) *checkout.Payme
 // All identities/keys/proofs are fictional; the task-owned PG container is the
 // teardown boundary. No production role can mint this MOCK qualification.
 func psSetup(t *testing.T) psHarness {
+	return psSetupItems(t, 1)
+}
+func psSetupItems(t *testing.T, skuCount int) psHarness {
 	t.Helper()
 	ctx := context.Background()
 	f := *fixture(t)
@@ -71,7 +74,11 @@ func psSetup(t *testing.T) psHarness {
 	if e = tx.Commit(ctx); e != nil {
 		t.Fatal(e)
 	}
-	h := cqHarness{f: &f, a: openBuyerTestPools(t, &f), stock: t04CreateStock(t, &f, f.tokens["a"], f.storeA1, 10)}
+	quantities := make([]int64, skuCount)
+	for i := range quantities {
+		quantities[i] = 10
+	}
+	h := cqHarness{f: &f, a: openBuyerTestPools(t, &f), stock: t04CreateStock(t, &f, f.tokens["a"], f.storeA1, quantities...)}
 	h.service, e = buyer.New(h.a.issuer, time.Hour)
 	if e != nil {
 		t.Fatal(e)
@@ -106,7 +113,11 @@ func psSetup(t *testing.T) psHarness {
 	}
 	t.Cleanup(worker.Close)
 	b := bcHarness{cqHarness: h, pool: pool, worker: worker, service: bcService(t, pool), delivery: delivery, allocation: allocation, poolURL: poolURL}
-	b.prepare(t, h.cap, []storefront.Item{{SKUID: h.stock.skus[0].ID, Quantity: 2}})
+	items := make([]storefront.Item, skuCount)
+	for i := range items {
+		items[i] = storefront.Item{SKUID: h.stock.skus[skuCount-1-i].ID, Quantity: 2}
+	}
+	b.prepare(t, h.cap, items)
 	hold, e := b.begin(t04Key("ps-hold"))
 	if e != nil {
 		t.Fatal(e)
