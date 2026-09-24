@@ -127,6 +127,8 @@ BEGIN
  SELECT * INTO sf FROM buyer.resolve_scope(p_hash,p_store);
  IF NOT FOUND OR sf.tenant_id<>s.tenant_id OR sf.owner_id<>s.owner_id OR sf.session_id<>s.session_id THEN
   RAISE EXCEPTION 'buyer capability expired' USING ERRCODE='PT401'; END IF;
+ IF p_live AND least(a.created_at+interval '60 seconds',q.expires_at)<=clock_timestamp() THEN
+  RAISE EXCEPTION 'hosted release expired' USING ERRCODE='PT409'; END IF;
  RETURN a;
 END $$;
 ALTER FUNCTION checkout.hosted_guard(bytea,uuid,uuid,text,boolean) OWNER TO commerce_checkout_writer;
@@ -180,7 +182,8 @@ BEGIN
  FROM payments.account_qualifications q WHERE q.tenant_id=a.tenant_id AND q.store_id=a.store_id AND q.id=a.qualification_id;
  IF p_form->>'action'<>(CASE WHEN a.environment='SANDBOX' THEN 'https://sandbox-api.payuni.com.tw/api/upp'
  ELSE 'https://api.payuni.com.tw/api/upp' END) OR f->>'MerID'<>v_account OR f->>'Version'<>'2.0'
- OR f->>'EncryptInfo' !~ '^[0-9a-f]{16,24576}$' OR length(f->>'EncryptInfo')%2<>0
+ OR length(f->>'EncryptInfo') NOT BETWEEN 16 AND 24576 OR f->>'EncryptInfo' !~ '^[0-9a-f]+$'
+ OR length(f->>'EncryptInfo')%2<>0
  OR f->>'HashInfo' !~ '^[0-9A-F]{64}$' THEN
   RAISE EXCEPTION 'invalid hosted form' USING ERRCODE='22023'; END IF;
  -- SQL authenticates the scope/outer shape. Only the trusted Go keyring can
