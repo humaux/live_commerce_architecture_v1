@@ -63,7 +63,8 @@ func OpenCheckoutPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 }
 
 // OpenHostedPool is the trusted payment signing authority. Its LOGIN inherits
-// commerce_hosted_runtime, which in turn inherits checkout runtime grants.
+// commerce_hosted_runtime (GRANT ... WITH INHERIT TRUE, SET FALSE), which in
+// turn inherits checkout runtime grants. Admission checks both options.
 func OpenHostedPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	return openPool(ctx, dsn, "hosted_runtime")
 }
