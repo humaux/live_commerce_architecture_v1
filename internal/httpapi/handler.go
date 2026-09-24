@@ -107,6 +107,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 		return inventory.AdjustOnHand(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)
 	}))
 	registerSettingsRoutes(mux, pool)
+	registerSettingsDiscoveryRoutes(mux, pool)
 	registerAccountRoutes(mux, pool, configured.Accounts)
 	foundation := platform.NewHandler(pool, platform.HandlerOptions{SessionStoreList: configured.SessionStoreList})
 	if configured.SessionStoreList {
