@@ -100,7 +100,10 @@ func (s *HostedPaymentStarter) BeginHosted(ctx context.Context, token, storeID, 
 			tokenHash[:], storeID, in.OrderID, s.starter.profile, in.Locale, s.configDigest[:], body); err != nil {
 			return err
 		}
-		return checkCapability(callCtx, tx, tokenHash[:], storeID, scope)
+		if err := checkCapability(callCtx, tx, tokenHash[:], storeID, scope); err != nil {
+			return err
+		}
+		return checkHostedDeadline(callCtx, tx, built.ExpiresAt)
 	})
 	if err != nil {
 		return PaymentResult{}, safeError(ctx, err)
@@ -127,7 +130,13 @@ func (s *HostedPaymentStarter) TakeHosted(ctx context.Context, token, storeID, o
 		if err := decoder.Decode(&out); err != nil || !validHostedHandoff(out, orderID, s.starter.profile) {
 			return command.ErrConflict
 		}
-		return checkCapability(callCtx, tx, tokenHash[:], storeID, scope)
+		if err := checkCapability(callCtx, tx, tokenHash[:], storeID, scope); err != nil {
+			return err
+		}
+		if out.Disposition == "ISSUED" {
+			return checkHostedDeadline(callCtx, tx, out.ExpiresAt)
+		}
+		return nil
 	})
 	if err != nil {
 		return HostedHandoff{}, safeError(ctx, err)
@@ -159,6 +168,9 @@ func boundedHostedForm(raw payuni.HostedForm, profile string) (HostedForm, error
 }
 
 func validHostedForm(form HostedForm, profile string) bool {
+	if !validPaymentProfile(profile) {
+		return false
+	}
 	action := "https://sandbox-api.payuni.com.tw/api/upp"
 	if profile == "LIVE" {
 		action = "https://api.payuni.com.tw/api/upp"
@@ -166,13 +178,46 @@ func validHostedForm(form HostedForm, profile string) bool {
 	if form.Action != action || len(form.Fields) != 4 || form.Fields["Version"] != "2.0" {
 		return false
 	}
-	for _, key := range []string{"MerID", "Version", "EncryptInfo", "HashInfo"} {
-		value, ok := form.Fields[key]
-		if !ok || len(value) == 0 || len(value) > 8192 {
+	merchant := form.Fields["MerID"]
+	if len(merchant) < 1 || len(merchant) > 64 {
+		return false
+	}
+	for _, ch := range merchant {
+		if ch != '-' && ch != '_' && (ch < 'a' || ch > 'z') &&
+			(ch < 'A' || ch > 'Z') && (ch < '0' || ch > '9') {
+			return false
+		}
+	}
+	encrypted := form.Fields["EncryptInfo"]
+	if len(encrypted) < 16 || len(encrypted) > 24576 || len(encrypted)%2 != 0 {
+		return false
+	}
+	for _, ch := range encrypted {
+		if (ch < '0' || ch > '9') && (ch < 'a' || ch > 'f') {
+			return false
+		}
+	}
+	hash := form.Fields["HashInfo"]
+	if len(hash) != 64 {
+		return false
+	}
+	for _, ch := range hash {
+		if (ch < '0' || ch > '9') && (ch < 'A' || ch > 'F') {
 			return false
 		}
 	}
 	return true
+}
+
+func checkHostedDeadline(ctx context.Context, tx pgx.Tx, deadline time.Time) error {
+	var current bool
+	if err := tx.QueryRow(ctx, `SELECT clock_timestamp() < $1::timestamptz`, deadline).Scan(&current); err != nil {
+		return err
+	}
+	if !current {
+		return command.ErrConflict
+	}
+	return nil
 }
 
 func validHostedHandoff(out HostedHandoff, orderID, profile string) bool {
