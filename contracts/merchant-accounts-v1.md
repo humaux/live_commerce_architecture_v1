@@ -17,7 +17,9 @@
   使用 Go 标准库，无新依赖。不要新增微服务、队列或第二套授权。
 - 本单元只交付内部 Go/SQL。后续支付配置、内部 StartPayment 和
   [精确租约查询取凭据](payment-query-v1.md)分别交付，不授 worker 任意解密／扫库权限。
-  自助凭据 HTTP/UI、真实账户验证和生产装配仍未交付。
+  本次内部单元不包含 HTTP/UI。后续[账户HTTP增量](merchant-account-http-v1.md)
+  已实现安全 BFF、元数据列表与默认关闭的环境装配，见[独立验收](../docs/implementation/2026-09-24-merchant-account-http-acceptance.md)；
+  实际自助 UI、真实账户验证与生产密钥托管部署仍未验收。
 
 ## 冻结接口
 
@@ -112,5 +114,6 @@ key_id、nonce、ciphertext、principal、created_at。复用 integration schema
 PAYUNi [官方文档](https://docs.payuni.com.tw/web/#/7/34)要求商家自己的 MerID、
 HashKey、HashIV；单笔交易查询需要交易编号，当前尚未确认可用于初次验证的
 无交易只读接口。不为探测凭据创建假订单。供应商 adapter/回调单独冻结并验收；
-准备开放自助HTTP前必须补限流、CSRF、TLS、秘密输入清除及生产密钥管理/轮换流程。
+后续 HTTP 增量已有范围隔离限流、CSRF/Origin、私有 Go 监听与配置校验；
+自助 UI 的秘密输入清除、生产 TLS 和真实密钥托管/恢复仍须按各自 gate 验收。
 正式密钥托管/KMS在部署环境确定后评估，不先引入未使用的SDK。

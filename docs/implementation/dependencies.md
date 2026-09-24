@@ -19,6 +19,19 @@
 
 间接模块由 Go module 解析，不在业务代码中直接调用；升级仍须保留 `go.sum`、扫描漏洞并跑上述 gate。不得用版本兼容或 CI 绿灯推断生产可用。
 
+## 商家账户接入复用关系
+
+商家凭据HTTP/BFF不新增依赖：`cmd/api/accounts.go` 从受控环境读取 keyring，
+复用 `accounts.NewKeyring`、`core.New` 和不启动 worker 的 River/pgx client；
+`internal/httpapi/accounts.go` 复用 scoped transaction、严格 JSON/安全错误与既有
+Create/Rotate/Get，`accounts/list.go` 复用绑定 tenant/store/collection 的 keyset 游标。
+限流仅标准库 mutex/time，按已授权 tenant/store 分桶（60/min、4096 活跃桶），
+不是分布式配额。`apps/admin/app/api/stores/[store]/[...resource]/route.ts` 复用
+HttpOnly 会话、CSRF/Origin 和授权店铺列表，不转发浏览器提供的权限头。
+0019只扩新店主 read/manage，升级须保留旧成员不回填和撤权后重放不复活测试。
+升级这些入口须跑账户HTTP真实PG、密钥配置负例与真实浏览器BFF链；
+配置及轮换边界见 [account-credential-configuration](account-credential-configuration.md)。
+
 ## 计划依赖（当前 NOT_INSTALLED）
 
 |依赖|状态与边界|准入条件|

@@ -1,7 +1,9 @@
 # Merchant-owned account browser intake v1
 
-2026-09-24, draft for independent preflight. Extends merchant-accounts-v1 and
-merchant-settings-http-v1; no migration, new provider, collection or shipment.
+2026-09-24, PASS_BOUNDED_ACCOUNT_HTTP_BFF_AND_PROCESS_RESTART.
+Evidence: [302 full-suite tests and two browser/process gates](../docs/implementation/2026-09-24-merchant-account-http-acceptance.md).
+Extends merchant-accounts-v1 and merchant-settings-http-v1; no new provider,
+payment collection or shipment.
 User selected a wizard: platform → own account → methods → status. Saved account
 metadata is CONFIGURED_UNVERIFIED, never evidence of provider admission.
 
@@ -34,6 +36,11 @@ metadata is CONFIGURED_UNVERIFIED, never evidence of provider admission.
   Existing no-option callers remain valid. Convert the few composition callers;
   platform.Options stays provider-neutral. Nil Accounts fails authenticated account
   routes with 503, not a fake connection or fixture fallback.
+- Actual browser acceptance exposed an onboarding gap: migration 0007 grants new
+  owners pricing but not integration configuration permissions. Additive 0019
+  extends only NEW initial-store owners with integration:read/manage, not execute.
+  No existing-member backfill; replay must never restore revoked permissions.
+  Keep the existing SECURITY DEFINER owner, search path, ACL and lock order.
 - Credential writes have a per-authenticated-tenant/store admission budget: 60
   per fixed window of one minute, counted after scope authorization before domain
   execution (including replay/invalid semantic requests). Stdlib mutex/monotonic

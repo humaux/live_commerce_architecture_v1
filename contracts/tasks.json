@@ -299,9 +299,17 @@
       "evidence": "docs/implementation/2026-09-24-merchant-accounts-acceptance.md",
       "aggregate": "199 top-level PASS/0 FAIL/0 SKIP real PG/race/vet; browser identity1/1 signed MOCK IdP",
       "independent_review": "4ed8845b-0770-4f5d-8d01-2306ef6d49ac; no P0/P1; prior unkeyed-fingerprint and persisted-decryption evidence gaps closed",
-      "not_ready": "CONFIGURED_UNVERIFIED; no credential HTTP/UI, production key assembly, provider verification, payment method or provider adapter"
+      "not_ready": "Historical internal-only increment. Later credential HTTP/BFF/configuration is tracked in merchant_account_http below; CONFIGURED_UNVERIFIED remains, with no real provider qualification."
     },
-    "remaining": "provider适配器/策略资格、凭据自助HTTP/UI及生产密钥装配和sandbox/live、全局配额与Retry-After、inbox/webhook、授权恢复UI、公开buyer checkout/StartPayment和完整G02/G04/G14仍未验收；内部凭据登记不等于已连接或可支付；T11内部下单/到期已验收，内部mock远端故障恢复不等于生产外部效果",
+    "merchant_account_http": {
+      "code_baseline": "8318069 + c2a3e4d + c59dd06 + 6054014 + a5c4260",
+      "status": "PASS_BOUNDED_ACCOUNT_HTTP_BFF_AND_PROCESS_RESTART",
+      "evidence": "docs/implementation/2026-09-24-merchant-account-http-acceptance.md",
+      "aggregate": "302 top-level PASS/0 FAIL/0 SKIP real PG/race/vet; separate browser-tag gate 2 PASS/0 FAIL/0 SKIP: actual cmd/api process restart and real Chromium/Next/Go/PG signed MOCK IdP",
+      "independent_review": "89366cfd-a812-4a22-8d34-fc208d9a8728; no open P0/P1/P2 in bounded final review; failure-path cleanup race corrected and gates rerun",
+      "not_ready": "No runtime settings wizard, market/method discovery, real provider verification/admission, production key custody/deployment or distributed quota. Account saving is CONFIGURED_UNVERIFIED, payment enabling remains rejected."
+    },
+    "remaining": "provider适配器/策略资格、凭据自助UI及真实生产密钥托管部署和sandbox/live、分布式配额、inbox/webhook、授权恢复UI、公开buyer checkout/StartPayment和完整G02/G04/G14仍未验收；账户HTTP/BFF与每店限流和Retry-After通过本地验收，凭据登记不等于已连接或可支付；T11内部下单/到期已验收，内部mock远端故障恢复不等于生产外部效果",
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
   {
