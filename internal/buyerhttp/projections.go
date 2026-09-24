@@ -8,6 +8,43 @@ import (
 	"livecommerce/internal/storefront"
 )
 
+type optionResponse struct {
+	MarketID          string `json:"market_id"`
+	MarketCode        string `json:"market_code"`
+	MarketName        string `json:"market_name"`
+	Country           string `json:"country"`
+	Currency          string `json:"currency"`
+	DeliveryCode      string `json:"delivery_code"`
+	Method            string `json:"method"`
+	ServiceVersion    int64  `json:"service_version"`
+	AllocationVersion int64  `json:"allocation_version"`
+	DeliveryKind      string `json:"delivery_kind"`
+	Mode              string `json:"mode"`
+	NameHans          string `json:"name_hans"`
+	NameHant          string `json:"name_hant"`
+	NameEN            string `json:"name_en"`
+	SortOrder         int    `json:"sort_order"`
+}
+
+type optionsResponse struct {
+	Items      []optionResponse `json:"items"`
+	NextCursor string           `json:"next_cursor"`
+}
+
+func projectOptions(page pagination.Page[checkout.Option]) optionsResponse {
+	out := optionsResponse{Items: make([]optionResponse, 0, len(page.Items)), NextCursor: page.NextCursor}
+	for _, item := range page.Items {
+		out.Items = append(out.Items, optionResponse{
+			MarketID: item.MarketID, MarketCode: item.MarketCode, MarketName: item.MarketName,
+			Country: item.Country, Currency: item.Currency, DeliveryCode: item.DeliveryCode, Method: item.Method,
+			ServiceVersion: item.ServiceVersion, AllocationVersion: item.AllocationVersion,
+			DeliveryKind: item.DeliveryKind, Mode: item.Mode, NameHans: item.NameHans, NameHant: item.NameHant,
+			NameEN: item.NameEN, SortOrder: item.SortOrder,
+		})
+	}
+	return out
+}
+
 type catalogItemResponse struct {
 	ProductID   string `json:"product_id"`
 	SKUID       string `json:"sku_id"`

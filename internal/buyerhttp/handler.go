@@ -69,6 +69,7 @@ const (
 	unknownRoute routeKind = iota
 	sessionRoute
 	catalogRoute
+	optionsRoute
 	cartRoute
 	quotesRoute
 	quoteRoute
@@ -89,6 +90,8 @@ func matchRoute(path string) route {
 		return route{kind: sessionRoute}
 	case "/v1/buyer/catalog":
 		return route{kind: catalogRoute}
+	case "/v1/buyer/checkout-options":
+		return route{kind: optionsRoute}
 	case "/v1/buyer/cart":
 		return route{kind: cartRoute}
 	case "/v1/buyer/quotes":
@@ -113,7 +116,7 @@ func allowed(kind routeKind, method string) bool {
 	switch kind {
 	case sessionRoute:
 		return method == http.MethodGet || method == http.MethodPost || method == http.MethodDelete
-	case catalogRoute:
+	case catalogRoute, optionsRoute:
 		return method == http.MethodGet
 	case cartRoute:
 		return method == http.MethodGet || method == http.MethodPut
@@ -145,8 +148,9 @@ func oneHeader(r *http.Request, name string) (string, bool) {
 }
 
 func forbiddenInput(r *http.Request) bool {
-	catalogQuery := r.URL != nil && r.Method == http.MethodGet && r.URL.Path == "/v1/buyer/catalog" && r.URL.EscapedPath() == r.URL.Path
-	if r.URL == nil || r.URL.ForceQuery || (!catalogQuery && r.URL.RawQuery != "") {
+	queryRoute := r.URL != nil && r.Method == http.MethodGet && r.URL.EscapedPath() == r.URL.Path &&
+		(r.URL.Path == "/v1/buyer/catalog" || r.URL.Path == "/v1/buyer/checkout-options")
+	if r.URL == nil || r.URL.ForceQuery || (!queryRoute && r.URL.RawQuery != "") {
 		return true
 	}
 	for _, name := range []string{"Cookie", "Origin", "X-Tenant-ID", "X-Store-ID"} {
@@ -191,6 +195,53 @@ func catalogRequest(raw string) (storefront.CatalogRequest, error) {
 			}
 		case "cursor":
 			request.Page.Cursor = values[0]
+		default:
+			return request, command.ErrInvalid
+		}
+	}
+	return request, nil
+}
+
+func optionsRequest(raw string) (checkout.OptionsRequest, error) {
+	var request checkout.OptionsRequest
+	if len(raw) > 2048 || strings.Contains(raw, ";") || strings.HasPrefix(raw, "&") || strings.HasSuffix(raw, "&") || strings.Contains(raw, "&&") {
+		return request, command.ErrInvalid
+	}
+	values, err := url.ParseQuery(raw)
+	if err != nil {
+		return request, command.ErrInvalid
+	}
+	for name, entries := range values {
+		if len(entries) != 1 || entries[0] == "" {
+			return request, command.ErrInvalid
+		}
+		value := entries[0]
+		switch name {
+		case "market_id":
+			if !command.ValidID(value) {
+				return request, command.ErrInvalid
+			}
+			request.MarketID = value
+		case "country":
+			if len(value) != 2 || value[0] < 'A' || value[0] > 'Z' || value[1] < 'A' || value[1] > 'Z' {
+				return request, command.ErrInvalid
+			}
+			request.Country = value
+		case "limit":
+			if len(value) > 3 {
+				return request, command.ErrInvalid
+			}
+			for _, digit := range value {
+				if digit < '0' || digit > '9' {
+					return request, command.ErrInvalid
+				}
+			}
+			request.Page.Limit, err = strconv.Atoi(value)
+			if err != nil || request.Page.Limit < 1 || request.Page.Limit > 100 {
+				return request, command.ErrInvalid
+			}
+		case "cursor":
+			request.Page.Cursor = value
 		default:
 			return request, command.ErrInvalid
 		}
@@ -350,6 +401,16 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 	var out any
 	var err error
 	switch selected.kind {
+	case optionsRoute:
+		var request checkout.OptionsRequest
+		request, err = optionsRequest(r.URL.RawQuery)
+		if err == nil {
+			var page pagination.Page[checkout.Option]
+			page, err = h.checkout.ListOptions(ctx, token, storeID, request)
+			if err == nil {
+				out = projectOptions(page)
+			}
+		}
 	case catalogRoute:
 		var request storefront.CatalogRequest
 		request, err = catalogRequest(r.URL.RawQuery)
