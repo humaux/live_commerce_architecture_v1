@@ -76,6 +76,7 @@ type QuoteWrite = {
 };
 type Pending = { v: 1; context: string; key: string } & (
   | { kind: "cart"; body: CartWrite }
+  | { kind: "next-cart"; body: CartWrite }
   | { kind: "quote"; body: QuoteWrite }
   | { kind: "destination"; body: DestinationMarker }
   | { kind: "checkout"; body: CheckoutWrite }
@@ -130,6 +131,8 @@ export type CheckoutWrite = {
 };
 export type Order = {
   order_id: string;
+  cart_id: string;
+  cart_version: number;
   commercial_state: "DRAFT" | "AWAITING_PAYMENT" | "CONFIRMED" | "CANCELLED";
   fulfillment_state:
     "MANUAL_UNASSIGNED" | "CANCELLED" | "PAID_ALLOCATION_FAILED";
@@ -147,6 +150,14 @@ export type Order = {
     };
   };
 };
+export type OrderSummary = Pick<
+  Order,
+  | "order_id"
+  | "cart_id"
+  | "cart_version"
+  | "commercial_state"
+  | "fulfillment_state"
+> & { created_at: string; currency: string; total_minor: number };
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 const CONTEXT = /^[A-Za-z0-9_-]{43}$/;
 const MAX_AMOUNT = 1_000_000_000_000;
@@ -275,6 +286,8 @@ export const validDestination = (v: unknown): v is Destination =>
 export const validOrder = (v: unknown): v is Order =>
   record(v) &&
   id(v.order_id) &&
+  id(v.cart_id) &&
+  integer(v.cart_version, 1) &&
   ["DRAFT", "AWAITING_PAYMENT", "CONFIRMED", "CANCELLED"].includes(
     String(v.commercial_state),
   ) &&
@@ -294,6 +307,31 @@ export const validOrder = (v: unknown): v is Order =>
         k as keyof Order["snapshot"]["service"]
       ] === "string",
   );
+export const validOrderSummary = (v: unknown): v is OrderSummary =>
+  record(v) &&
+  exact(v, [
+    "order_id",
+    "cart_id",
+    "cart_version",
+    "commercial_state",
+    "fulfillment_state",
+    "created_at",
+    "currency",
+    "total_minor",
+  ]) &&
+  id(v.order_id) &&
+  id(v.cart_id) &&
+  integer(v.cart_version, 1) &&
+  ["DRAFT", "AWAITING_PAYMENT", "CONFIRMED", "CANCELLED"].includes(
+    String(v.commercial_state),
+  ) &&
+  ["MANUAL_UNASSIGNED", "CANCELLED", "PAID_ALLOCATION_FAILED"].includes(
+    String(v.fulfillment_state),
+  ) &&
+  timestamp(v.created_at) &&
+  typeof v.currency === "string" &&
+  /^[A-Z]{3}$/.test(v.currency) &&
+  integer(v.total_minor, 0, MAX_AMOUNT);
 const validDestinationMarker = (v: unknown): v is DestinationMarker =>
   record(v) &&
   exact(v, ["expected_version", "cart_version", "kind", "country"]) &&
@@ -476,10 +514,11 @@ export function parsePending(raw: string, context: string): Pending {
       throw new Error();
     const b = v.body;
     if (
-      v.kind === "cart" &&
+      (v.kind === "cart" || v.kind === "next-cart") &&
       exact(b, ["expected_version", "items"]) &&
       integer(b.expected_version) &&
-      validItems(b.items)
+      validItems(b.items) &&
+      (v.kind !== "next-cart" || (b.items as Item[]).length === 0)
     )
       return v as Pending;
     if (
@@ -570,7 +609,7 @@ export function knownOrderID(context: string): string | null {
 // it failed. The UI must retain its old-context recovery record, not place anew.
 export function orderRecoveryRequired(context: string): boolean {
   return (
-    pendingPurchase(context)?.kind === "checkout" ||
+    ["checkout", "next-cart"].includes(pendingPurchase(context)?.kind ?? "") ||
     knownOrderID(context) !== null
   );
 }
@@ -809,6 +848,95 @@ export async function readOrder(
   if (order.order_id !== orderID)
     throw new BuyerClientError("invalid_response");
   return order;
+}
+
+// Starting a new purchase never cancels the previous order/hold. The permanent
+// cart.set receipt and CAS are the existing server authority; local storage is
+// only a crash-safe intent journal. History is queried from the owned SQL list.
+export async function continueShopping(
+  context: string,
+  expectedOrderID?: string,
+): Promise<Cart> {
+  if (!navigator.locks) throw new BuyerClientError("unavailable");
+  return navigator.locks.request("commerce-purchase-write-v1", async () => {
+    await assertPurchaseContext(context);
+    let pending = pendingPurchase(context);
+    if (pending && pending.kind !== "next-cart")
+      throw new BuyerClientError("uncertain");
+    const existing = knownOrderID(context);
+    if (expectedOrderID !== undefined && existing !== expectedOrderID)
+      throw new BuyerClientError("uncertain");
+    let current: Cart;
+    if (!pending) {
+      if (!existing) throw new BuyerClientError("request_failed");
+      const previous = await readOrder(context, existing);
+      current = await readPurchase("cart", context, validCart);
+      if (
+        current.id !== previous.cart_id ||
+        current.version < previous.cart_version
+      )
+        throw new BuyerClientError("uncertain");
+      // Never clear a cart already advanced by another authorized actor.
+      if (current.version === previous.cart_version) {
+        pending = {
+          v: 1,
+          context,
+          key: crypto.randomUUID(),
+          kind: "next-cart",
+          body: { expected_version: current.version, items: [] },
+        };
+        persistPending(pending);
+      }
+    }
+    if (pending) {
+      const response = await buyerRequest(
+        "PUT",
+        "cart",
+        context,
+        pending.body,
+        pending.key,
+      );
+      if (
+        !response.ok &&
+        !(response.status === 409 && (await definiteError(response.clone())))
+      )
+        throw new BuyerClientError("uncertain", response.status);
+      if (response.ok) {
+        let receipt: unknown;
+        try {
+          receipt = await response.json();
+        } catch {
+          throw new BuyerClientError("uncertain");
+        }
+        if (
+          !validCart(receipt) ||
+          receipt.version !== pending.body.expected_version + 1 ||
+          receipt.items.length
+        )
+          throw new BuyerClientError("uncertain");
+      }
+      current = await readPurchase("cart", context, validCart);
+      if (current.version <= pending.body.expected_version)
+        throw new BuyerClientError("uncertain");
+    }
+    await assertPurchaseContext(context);
+    // Clear the navigation hint only after a newer cart is authoritative. Keep
+    // the journal until both removals read back, so a partial storage failure
+    // cannot masquerade as a fresh checkout on reload.
+    try {
+      if (knownOrderID(context) !== existing) throw new Error();
+      sessionStorage.removeItem(`commerce-purchase-quote-v1:${context}`);
+      if (sessionStorage.getItem(`commerce-purchase-quote-v1:${context}`) !== null)
+        throw new Error();
+      localStorage.removeItem(orderKey(context));
+      if (knownOrderID(context) !== null) throw new Error();
+    } catch {
+      throw new BuyerClientError("unavailable");
+    }
+    if (pending) clearPending(pending);
+    forgetAddressAttempt();
+    return current!;
+  });
 }
 
 export async function writeCheckout(
