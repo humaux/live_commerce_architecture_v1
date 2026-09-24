@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 
@@ -34,6 +35,14 @@ func (paymentReconcileArgs) Kind() string { return "payment_reconcile_v1" }
 func validCaptureArgs(args paymentReconcileArgs) bool {
 	return args.Version == 1 && command.ValidID(args.OperationID) &&
 		captureHashPattern.MatchString(args.ReportHash)
+}
+
+func captureApplyError(err error) error {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && (pgErr.Code == "22023" || pgErr.Code == "PT409") {
+		return river.JobCancel(errCaptureJob)
+	}
+	return errCaptureDatabase
 }
 
 // CaptureWorker applies only a previously persisted authenticated query report.
@@ -84,7 +93,7 @@ func (w *CaptureWorker) Work(ctx context.Context, job *river.Job[paymentReconcil
 	}
 	if _, err = tx.Exec(bounded, `SELECT payments.apply_capture($1::uuid,$2::bytea)`,
 		job.Args.OperationID, reportHash); err != nil {
-		return errCaptureDatabase
+		return captureApplyError(err)
 	}
 	if err = tx.Commit(bounded); err != nil {
 		return errCaptureDatabase
