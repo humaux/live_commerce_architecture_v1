@@ -70,7 +70,7 @@ try {
       if(current) current.result.resolve(out.status);
       if(current?.drop) {res.destroy();return;}
       const headers={...out.headers};delete headers["transfer-encoding"];delete headers.connection;
-      if(current?.after) {res.writeHead(out.status,headers);res.flushHeaders();current.headers.resolve();await current.release.promise;}
+      if(current?.after) {if(current.followStatus) hook=current.followStatus;res.writeHead(out.status,headers);res.flushHeaders();current.headers.resolve();await current.release.promise;}
       else res.writeHead(out.status,headers);
       if(!res.destroyed) res.end(out.body);
     } catch {if(!res.headersSent) res.writeHead(502);res.end();}
@@ -100,6 +100,9 @@ try {
   const cookies=await c.cookies(origin);assert.equal(cookies.length,1);assert(cookies[0].httpOnly&&cookies[0].secure&&cookies[0].sameSite==="Lax");
   assert.equal(await a.evaluate(()=>document.cookie),"");
   const storage=await a.evaluate(()=>JSON.stringify({...localStorage}));assert(!storage.includes(cookies[0].value));
+  // Inspect the signed test cookie in Node, never send its bearer into page JS.
+  const bareToken=JSON.parse(Buffer.from(cookies[0].value.split(".")[0],"base64url").toString()).token;
+  const dom=await a.content();assert(!storage.includes(bareToken)&&!dom.includes(bareToken)&&!JSON.stringify([sa,sb]).includes(bareToken));
   pass("multi-tab initialization reuses one context; HttpOnly cookie absent from JS");
 
   const scope=sa.context;
@@ -114,6 +117,7 @@ try {
   const receipt=await api(a,"POST","checkout",scope,checkout,"browser-checkout-1");assert.equal(receipt.status,200);orderID=receipt.body.order_id;
   assert.deepEqual((await api(b,"POST","checkout",scope,checkout,"browser-checkout-1")).body,receipt.body);
   const order=await api(a,"GET","orders/"+orderID,scope);assert.equal(order.status,200);assert.equal(order.body.commercial_state,"DRAFT");
+  assert(!JSON.stringify([cat,options,cart,quote,destination,receipt,order]).includes(bareToken));
   pass("actual catalog/options/cart/quote/home/checkout/order; cross-instance replay");
 
   next[0].child.kill("SIGTERM");await once(next[0].child,"exit");children.delete(next[0].child);next[0]=await startNext(0);
@@ -143,15 +147,20 @@ try {
   // Header delivery, not a rejected Promise, is the cookie evidence.
   await pa.waitForFunction(()=>Boolean(window.abortPrepare));
   for(let i=0;i<50&&(await ca.cookies(origin)).length===0;i++) await wait(10);
-  assert.equal((await ca.cookies(origin)).length,1);await pa.evaluate(()=>window.abortPrepare());assert.notEqual(await aborted,"success");assert(await pending(pa));ha.release.resolve();
-  const pa2=await page(ca);assert.equal((await init(pa2)).state,"active");assert.equal(await pending(pa2),null);await ca.close();
+  assert.equal((await ca.cookies(origin)).length,1);const preparedCookie=(await ca.cookies(origin))[0].value;
+  await pa.evaluate(()=>window.abortPrepare());await aborted;ha.release.resolve();
+  // The client may already confirm headers through status without reading the
+  // response body. Either path must retain precisely the prepared capability.
+  const pa2=await page(ca);assert.equal((await init(pa2)).state,"active");assert.equal(await pending(pa2),null);assert((await ca.cookies(origin))[0].value===preparedCookie);await ca.close();
   pass("abort after Set-Cookie headers recovers same prepared context");
 
-  const cc=await context(), pc=await page(cc), hc=arm("prepare",{after:true});
-  const closing=caught(pc).catch(()=>"closed");await hc.headers.promise;
+  const cc=await context(), pc=await page(cc);
+  const pausedStatus={path:"/api/buyer/session",before:true,entered:deferred(),release:deferred(),result:deferred()};
+  const hc=arm("prepare",{after:true,followStatus:pausedStatus});
+  const closing=caught(pc).catch(()=>"closed");await hc.headers.promise;await pausedStatus.entered.promise;
   for(let i=0;i<50&&(await cc.cookies(origin)).length===0;i++) await wait(10);
-  assert.equal((await cc.cookies(origin)).length,1);await pc.close();await closing;
-  const pc2=await page(cc);assert.equal((await init(pc2)).state,"active");hc.release.resolve();await cc.close();
+  assert.equal((await cc.cookies(origin)).length,1);const closedCookie=(await cc.cookies(origin))[0].value;assert(await pc.evaluate(k=>Boolean(localStorage.getItem(k)),journal));await pc.close();await closing;
+  const pc2=await page(cc);assert.equal((await init(pc2)).state,"active");assert((await cc.cookies(origin))[0].value===closedCookie);hc.release.resolve();pausedStatus.release.resolve();await cc.close();
   pass("tab death releases Web Lock; another tab reconciles persisted journal");
 
   const ci=await context(), pi=await page(ci);const hi=arm("activate",{drop:true});
