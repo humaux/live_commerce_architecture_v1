@@ -513,7 +513,7 @@
       "evidence": "docs/implementation/2026-09-24-payment-methods-acceptance.md",
       "aggregate": "210 top-level PASS/0 FAIL/0 SKIP real PG/race/vet; browser identity1/1 signed MOCK IdP compatibility only",
       "independent_review": "173155ca-4ebc-43d3-8216-90d80faf39c2; no confirmed P0/P1; immutable scoped configuration, final authorization, CAS and causal rollback reviewed",
-      "not_ready": "All payment methods remain disabled drafts; no adapter/account entitlement gate, no buyer payment authority or settings UI"
+      "not_ready": "Merchant methods remain disabled drafts; no real account qualification issuer or settings UI. Later internal payment start evidence is separate below."
     },
     "payuni_wire": {
       "code_baseline": "31dac4a",
@@ -521,7 +521,7 @@
       "evidence": "docs/implementation/2026-09-24-payuni-wire-acceptance.md",
       "aggregate": "226 top-level PASS/0 FAIL/0 SKIP real PG/race/vet exit0;16 PAYUNi top-level including exact TWD minor-unit conversion;official vector plus Node/OpenSSL10 forms;zero provider network",
       "independent_review": "c8f4ebd2-4f49-49be-9ffc-380f9fc45818;no confirmed P0/P1;reviewer independently ran package race/vet and checked final226 full logs;prior contract P1 superseded",
-      "not_ready": "No durable payment attempt/StartPayment/admission/credential reader/inbox financial transition/refund/query orchestration or provider sandbox/live;methods remain disabled"
+      "not_ready": "Wire remains unconnected to hosted form release, historical credential reader, financial transition/refund/query worker or provider sandbox/live; later internal attempt transaction is separate below."
     },
     "merchant_settings_http": {
       "code_baseline": "d86aa84",
@@ -529,9 +529,17 @@
       "evidence": "docs/implementation/2026-09-24-merchant-settings-http-acceptance.md",
       "aggregate": "235 top-level PASS/0 FAIL/0 SKIP real PG/race/vet exit0; before-fix causal revoke test RED in write/replay/read; no settings UI/provider call",
       "independent_review": "e77b1daa-6efb-4d4f-9516-5089f1aa4f8a; P0=0/P1=0; exact target five routes, final domain authorization and real PG red/green evidence",
-      "not_ready": "No settings UI/list/catalog/credential transport, buyer payment or provider sandbox/live; all existing enable gates unchanged"
+      "not_ready": "No settings UI/list/catalog/credential transport or real buyer payment/provider sandbox/live; merchant enable gate remains closed."
     },
-    "remaining": "生产checkout/worker装配与过期任务巡检恢复、公开买家HTTP/UI、正式门市目录/地图回调、第三方账户自助连接与真实供应商准入、配送/支付设置UI及列表、StartPayment/回调入账/退款/支付对账、provider sandbox/live和完整G03/G05均未实现或验收；方式配置已有五条商家HTTP但无设置页面；PAYUNi仅有wire协议库与精确金额转换；现有T06商家principal不能冒用于买家，停用绑定后的旧支付对账须单独核准；诊断不等于买家授权；PAYMENT_PENDING/COMMITTED仅fixture状态栅栏，不是StartPayment竞态验收；内部预留不等于实际运输或可扣款授权",
+    "payment_start_internal": {
+      "code_baseline": "eff808f",
+      "status": "PASS_BOUNDED_INTERNAL_PROVIDER_MOCK",
+      "evidence": "docs/implementation/2026-09-24-payment-start-acceptance.md",
+      "aggregate": "246 top-level PASS/0 FAIL/0 SKIP real PG/race/vet exit0; 9 new PG + 2 unit; first failed attempts preserved; no provider requests",
+      "independent_review": "ef135ed8-f7cd-4958-bbc1-c08ab3f3cf7c; P0=0/P1=0; exact proof scope/profile, buyer query-only actor, replay, concurrency, causal fault/expiry gates and full log/hash reviewed",
+      "not_ready": "Only internal payuni_credit start; no real proof issuer, hosted form, query worker, historical credential reader, financial settlement/refund, public HTTP/UI or other payment methods. Merchant enabling still rejected."
+    },
+    "remaining": "生产checkout/worker装配与到期巡检、公开买家HTTP/UI、正式门市目录/地图回调、第三方账户自助连接与真实准入、配送/支付设置UI及列表、历史凭据读取、托管表单释放、query worker/回调入账/退款/支付对账、provider sandbox/live及完整G03/G05仍待实现或验收。内部信用卡StartPayment已通过真实PG竞态及原子事务MOCK验收，复用T06查询台账但无执行worker；其他支付方式仍禁用；内部预留/待支付不是实际运输或收到资金。",
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
   {

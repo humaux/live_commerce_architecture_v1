@@ -3,7 +3,9 @@
 Status: PASS_BOUNDED_INTERNAL_DRAFT_HELD_EXPIRY, 2026-09-24, code/tests `162b619`.
 The internal Go/SQL aggregate is implemented and locally accepted; see
 [187-test acceptance evidence](../docs/implementation/2026-09-24-buyer-checkout-acceptance.md).
-Payment, public purchase HTTP/UI and production worker assembly are not implemented.
+The later [payment-start-v1](payment-start-v1.md) implements the bounded internal
+credit-card start transaction with MOCK qualification. Actual provider payment,
+public purchase HTTP/UI and production worker assembly remain unimplemented.
 The contract was frozen at `1641699`, based on `71c7623`.
 
 ## Decisions

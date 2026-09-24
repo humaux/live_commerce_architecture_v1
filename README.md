@@ -2,7 +2,7 @@
 
 ## 2026-09-20 实施入口
 
-已开始开发，当前已验收 **Go/PostgreSQL 基础、商品库存台账、商家登录/首店 C 分步向导、内部购物车报价、操作台账及下单预留／到期释放切片，不是完整 SaaS 或生产上线版本**。真实登录提供商、买家公开入口、支付及其余业务模块仍未交付。
+已开始开发，当前已验收 **Go/PostgreSQL 基础、商品库存台账、商家登录/首店 C 分步向导、内部购物车报价、操作台账、下单预留／到期释放及内部发起支付事务，不是完整 SaaS 或生产上线版本**。真实登录提供商、买家公开入口、真实收款及其余业务模块仍未交付。
 
 - 当前实现：[foundation 合同](contracts/foundation-v1.md)、[基础 OpenAPI](contracts/foundation-openapi.json)、[实施说明](docs/implementation/2026-09-20-kickoff.md)。
 - 本地一键验收：`bash scripts/dev/test-local.sh`。需要 Docker、Go 启动器和已下载的固定 PG18.6 镜像（镜像 digest 见脚本）；会创建本任务临时数据库，退出自动移除，不读取现有 `DATABASE_URL`。
@@ -19,10 +19,11 @@
 - 商家自有账户凭据：PAYUNi 分环境登记、AES-GCM 加密存储、不可变密钥版本、HMAC 幂等与正常轮换已有内部实现；[合同](contracts/merchant-accounts-v1.md)、[验收边界](docs/implementation/2026-09-24-merchant-accounts-acceptance.md)。保存后明确为 `CONFIGURED_UNVERIFIED`，不是已授权、已收款或可启用的支付方式；自助 HTTP/UI、生产密钥装配和供应商验证仍待实现。
 - 支付方式配置：PAYUNi 五类方式的三语名称、展示、排序、金额限制及自有账户关联已有内部版本化配置与诊断；[合同](contracts/payment-methods-v1.md)、[验收边界](docs/implementation/2026-09-24-payment-methods-acceptance.md)。当前仅可保存禁用草稿，诊断明确 `ADAPTER_UNAVAILABLE`，不是已接通收款；实际支付链及设置页面仍待实现。
 - PAYUNi wire 协议：标准库实现五种 UPP 托管付款表单、通知验签与单次交易查询；[合同](contracts/payuni-wire-v1.md)、[验收边界](docs/implementation/2026-09-24-payuni-wire-acceptance.md)。仅协议模拟与官方加密向量验证，未接入 StartPayment、通知入账、商家沙箱或支付页面；不解除上述启用限制。
+- 内部发起支付：真实买家权限、冻结金额/账户版本、订单与待支付库存/attempt/查询意图/回执/队列同事务；[合同](contracts/payment-start-v1.md)、[246项真实PG/race/vet及失败修正证据](docs/implementation/2026-09-24-payment-start-acceptance.md)。仅信用卡PROVIDER_MOCK内核，未释放付款表单或注册查询worker；真实账户资格、支付通知、入账/退款/对账及公开页面仍待完成。
 - 商家配送配置内部内核：版本化启用／展示、独立运费、权限隔离、幂等与回滚已通过；[138 项后端回归及浏览器身份链证据](docs/implementation/2026-09-24-delivery-service-acceptance.md)。API 模式仍仅禁用草稿，不代表承运商已接通；公开设置页面和支付待实现。
 - 配送仓库配置与纯分配算法：逐配送方式保存仓库优先级、按可用库存拆仓，缺货不输出部分计划；[150 项回归、随机输入及浏览器兼容证据](docs/implementation/2026-09-24-delivery-allocation-acceptance.md)。后续已由下述内部 checkout 在余额行锁内消费；该历史纯函数验收本身不是并发防超卖证据。
 - 买家收货与门市来源：owner 隔离快照、可信门市引用、改选 CAS、回执隐私和锁等待后重验；[164 项真实 PG/race/vet 回归及浏览器兼容](docs/implementation/2026-09-24-buyer-destination-acceptance.md)。门市当前仅人工核验来源，不是官方目录／承运商接通；商家自助页面与完整支付链仍待实现。
-- 内部买家下单与到期释放：独立 checkout 权限、同事务 DRAFT 订单／HELD 预留／台账／River 任务、永久幂等、锁等待后重验和重复释放防护；[合同](contracts/buyer-checkout-v1.md)、[187 项真实 PG/race/vet 及浏览器兼容证据](docs/implementation/2026-09-24-buyer-checkout-acceptance.md)。仅内部 Go/SQL 内核，没有公开结账 HTTP/UI、StartPayment、生产 worker 装配或第三方扣款。
+- 内部买家下单与到期释放：独立 checkout 权限、同事务 DRAFT 订单／HELD 预留／台账／River 任务、永久幂等、锁等待后重验和重复释放防护；[合同](contracts/buyer-checkout-v1.md)、[187 项真实 PG/race/vet 及浏览器兼容证据](docs/implementation/2026-09-24-buyer-checkout-acceptance.md)。后续内部StartPayment见上方；仍没有公开结账HTTP/UI、生产worker装配或第三方扣款。
 
 下文保留原设计包的基线说明；`MANIFEST.sha256` 对应原包，不能拿来验证新增实现。商品/结账、四域会话业务、台湾超商/跨境物流、Meta/支付/直播和三端 UI 仍需继续实现与独立验收。全局 G01–G15 未宣称通过。
 

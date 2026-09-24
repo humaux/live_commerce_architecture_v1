@@ -78,8 +78,11 @@ ADAPTER_UNAVAILABLE. Unlinked skips binding/credential reasons. Last reason alwa
 present in v1; unsupported still fails closed. A credential rotation changes observed
 CredentialVersion, never method/binding semantic version. Output has no credentials.
 
-Next actual adapter slice must replace disabled-only SQL guard only alongside tested
-provider admission and final StartPayment revalidation. This diagnostic API is not a
+Successor 0016 explicitly replaces the disabled-only SQL guard with a scoped
+qualification reference requirement; [payment-start-v1](payment-start-v1.md) rechecks
+it transactionally. No application qualification issuer exists, and merchant
+SetMethod still rejects enabling. MOCK evidence never qualifies SANDBOX/LIVE.
+This diagnostic API is not a
 cached reusable authorization ticket. Existing in-flight facts must not be cancelled
 or rewritten by method hide/disable/relink.
 

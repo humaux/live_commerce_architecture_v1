@@ -118,6 +118,15 @@ golden digest 防止无意改动永久幂等编码。正常加密 active key切�
 `payment_methods_test.go`：并发同键/CAS、实际阻塞后撤权、环境与账户隔离、
 SQL 约束错因核对及用 sequence 证明到达注入点的八类原子回滚。
 `InspectMethod` 是商家诊断，不是给将来买家 StartPayment 缓存的授权票据。
+
+`internal/checkout/payment.go` 复用 buyer.WithScope、checkout pool 验证、River
+InsertTx 和私有回执，调用0016的 `checkout.start_payment`；不依赖 HTTP/PSP wire，
+不读密文。资格表当前没有应用签发者，MOCK只在隔离测试中注入。operation新增
+BUYER_PAYMENT_QUERY family；merchant Get/Dispatcher排除，Claim只为此family允许
+历史停用绑定的reconcile。未来payment_query_v1 worker须读frozen credential版本，
+不能复用商家Dispatcher的重试期限。升级这些模块/PG/River时重跑TestBuyerPayment
+和全部T06；--payment仅诊断，全量包runner240s但各测试期限不变。无新增依赖；
+边界及失败证据见 `2026-09-24-payment-start-acceptance.md`。
 实证见 `2026-09-24-payment-methods-acceptance.md`，无供应商交易和支付页面验收。
 
 `internal/httpapi/settings.go` 注册五个方式配置/诊断路由，复用同包
