@@ -29,12 +29,15 @@ async function listen(server) { server.listen(0,"127.0.0.1"); await once(server,
 async function startNext(index) {
   const reserve=net.createServer(), port=await listen(reserve); await new Promise(r=>reserve.close(r));
   const log=createWriteStream(path.join(evidence,`next-${index}-${Date.now()}.log`),{flags:"wx",mode:0o600}); logs.push(log);
+  await once(log,"open"); // spawn requires an open file descriptor, not a pending stream
   const child=spawn(process.execPath,[path.join(root,"apps/storefront/node_modules/next/dist/bin/next"),"start","--hostname","127.0.0.1","--port",String(port)],{
     cwd:path.join(root,"apps/storefront"),env:{...process.env,NODE_ENV:"production",NEXT_TELEMETRY_DISABLED:"1"},stdio:["ignore",log,log],
   }); children.add(child);
   for(let i=0;i<100;i++) {
     if(child.exitCode!==null) throw new Error("owned Next exited before readiness");
-    try { const res=await fetch(`http://127.0.0.1:${port}/api/buyer/session`,{headers:{host:"buyer.example"},signal:AbortSignal.timeout(500)}); if(res.status===200) return {port,child}; } catch {}
+    // Node24 fetch ignores a supplied Host; raw http preserves the virtual
+    // hostname the real TLS edge will forward. Readiness must test that route.
+    try { const res=await relay(port,{url:"/api/buyer/session",method:"GET",headers:{host:"buyer.example"}},Buffer.alloc(0)); if(res.status===200) return {port,child}; } catch {}
     await wait(50);
   }
   throw new Error("owned Next readiness timeout");
@@ -175,7 +178,7 @@ try {
   assert.equal((await state(pr2)).state,"inactive");await cr.close();
   pass("logout retires token before delayed activation from closed tab");
 
-  const raw=async(headers,body="{}",suffix="session/prepare",method="POST")=>fetch(`http://127.0.0.1:${next[0].port}/api/buyer/${suffix}`,{method,headers:{host:"buyer.example","content-type":"application/json",origin,...headers},body:method==="GET"?undefined:body});
+  const raw=async(headers,body="{}",suffix="session/prepare",method="POST")=>relay(next[0].port,{url:`/api/buyer/${suffix}`,method,headers:{host:"buyer.example","content-type":"application/json",origin,...headers}},Buffer.from(method==="GET"?"":body));
   assert.equal((await raw({origin:"https://attacker.example"})).status,403);
   assert.equal((await raw({"x-store-id":"client-authority"})).status,403);
   assert.equal((await raw({authorization:"Bearer forged"})).status,403);
