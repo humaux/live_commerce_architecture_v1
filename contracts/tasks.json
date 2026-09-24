@@ -247,18 +247,26 @@
       "packages/ui/**",
       "tests/storefront/**"
     ],
-    "status": "NOT_STARTED",
+    "status": "IN_PROGRESS_SLICE_PASS",
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
-      "implementation": "NOT_STARTED",
-      "unit_mock": "NOT_RUN",
-      "real_pg": "NOT_RUN",
+      "implementation": "PARTIAL_B_INLINE_HOME_ORDER_AND_ACTIVE_OWNER_HISTORY",
+      "unit_mock": "PASS_34_STOREFRONT_TESTS_AND_STRICT_TYPECHECK",
+      "real_pg": "PASS_382_AGGREGATE_AND_ACTUAL_BROWSER_CHAIN",
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
-      "independent_review": "NOT_RUN"
+      "independent_review": "PASS_HISTORY_SOURCE_RACE_FIX_BROWSER_AUTHOR_AND_BOUNDED_VISUAL_SHIP",
+      "browser": "PASS_ROOT_23_ORDER_HISTORY_CASES_SIX_BUYERS_SEVEN_ORDERS"
     },
-    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。",
+    "local_slice": {
+      "as_of": "2026-09-25",
+      "evidence": "docs/implementation/2026-09-25-buyer-history-progress.md",
+      "source_baseline": "442cbe7",
+      "global_gate_pass": false,
+      "remaining": ["历史页面局部设计记录", "按订单托管支付页与真实沙箱回调", "过期买家身份安全恢复", "可信超商选店", "商家分享与真实公开路由联合验收", "真实DNS/TLS部署及完整产品门禁"]
+    }
   },
   {
     "id": "T06",

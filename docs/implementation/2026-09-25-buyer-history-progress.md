@@ -2,7 +2,9 @@
 
 Baseline `1b35842`; protocol `b8aa993`; frontend/index `d68845f`; delayed-load
 and storage fences `ddbcf21` / `e322f2b`; backend `75e77cb` (author `4954573`).
-Status: source and regression gates passed; new browser/visual gate in progress.
+Browser extension `442cbe7` (independent author `76452ff`).
+Status: source and real browser gates passed; independent visual verdict `ship`
+for this local extension. Built design documentation is being recorded.
 This is not payment, expired-account recovery, deployment or whole-SaaS release.
 
 ## Why this shape
@@ -44,20 +46,45 @@ The frozen behavior and negative gates are in
 | Full Go/PG/race/vet | 382 top-level tests PASS; foundation 147.280 s; includes migration 0024 | `/Volumes/data/output/buyer-history-full-regression.log` |
 | Existing buyer browser | 13 cases PASS, foundation 8.496 s | `/Volumes/data/output/buyer-history-existing-browser-regression.log`; `output/playwright/buyer-real-2965457144` |
 | Existing address/order browser | 15 cases, 6 buyers PASS; exactly one order/hold/job/receipt/reserve each; foundation 13.521 s | `/Volumes/data/output/buyer-history-existing-order-regression.log`; `output/playwright/buyer-order-2768957055` |
+| Extended history/order browser | 23 cases PASS; 6 buyers, 7 orders; one owner with two orders, five with one; exact facts and no payment/integration delta; foundation 16.695 s | `/Volumes/data/output/buyer-history-browser-root-final.log`; `output/playwright/buyer-order-615346821` |
 | Independent initial-load race | P2 resolved; old source negative control fails; fixed empty/B locator paths pass SOURCE/MOCK only | Humaux `e2d462b8-ba0f-411b-8c85-a3c37fe43394` |
 | Style detector | One call, incumbent Arial warning only; approved Operate world retained | `/Volumes/data/output/buyer-history-detector.json` |
+| Independent visual finish | `ship` for captured history/navigation/continuation extension; no material fixes | Humaux `dbea47ab-f474-471e-a3c2-6906d49dde14` |
 
 Tests use synthetic local HTTPS edges and disposable PostgreSQL. No customer
 platform changes, charges, cancellations or production writes occurred. The
 original failed backend assertion log is retained: it prohibited the newly
 approved public cart provenance; the corrected test asserts exact original
-cart values and still forbids internal metadata.
+cart values and still forbids internal metadata. The independent browser author's
+earlier failing assertion expected an empty quote after removing only the order
+locator; retaining the session quote is valid. That failed evidence remains in
+`output/playwright/buyer-order-774012255` in the author's worktree. The corrected
+test checks history availability and absence of a pinned order, not an invented
+empty-cart state. No production guard was relaxed.
+
+The eight added browser cases exercise lost continuation response and reload with
+one original key/body and receipt; an actual delayed initial order GET across
+tabs; distinct A/B orders with unchanged A snapshot and replay; owned pagination,
+detail/back/loading and all three locales; history after locator loss; preservation
+of a newer cart without a clearing PUT; no-op quote removal and recovery; empty
+foreign history and rejected foreign/malformed cursors. All owned test processes
+and disposable fixtures exited. These are actual Next/Go/PG tests, not provider
+sandbox payment tests.
+
+The root browser log SHA-256 is
+`cb0c974f0b68cfd6a5f05664d2ce783912d797280d424bcb9aa04fe3f112cada`.
+The visual reviewer opened all eight required captures and the approved B comp.
+No standalone QUALITY BAR card was supplied: the approved ancestor, inherited
+Operate world and craft floor were used. Dedicated historical-detail, empty/error
+and all-locale screenshots were not separately supplied or visually certified;
+behavioral browser checks are not a substitute for that broader visual scope.
 
 ## Remaining acceptance and scope
 
-- Independent new real-browser A/B purchases, history and delayed-GET race gate.
-- Review the built history at desktop/mobile widths, then record the local
-  extension without changing global DESIGN.md or the approved B composition.
+- Independent new real-browser A/B purchases, history and delayed-GET race gate
+  are passed by both author and root; preserve this regression gate.
+- Record the reviewed local extension without changing global DESIGN.md or the
+  approved B composition. The independent visual disposition is bounded `ship`.
 - Secure expired-guest identity recovery remains required. Reset issues a new
   owner; order IDs, recipient names/phones and local hints cannot prove ownership.
 - Hosted per-order payment, trusted CVS/carrier mapping, real DNS/TLS deployment,

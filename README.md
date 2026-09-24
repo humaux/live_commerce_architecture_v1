@@ -26,7 +26,7 @@
 - 买家商品数据前置：私有 `GET /v1/buyer/catalog` 已支持当前有效商品/SKU/现价、店铺隔离、受限查询和分页；[345 项回归与独立审查](docs/implementation/2026-09-25-buyer-catalog-discovery-acceptance.md)通过。这不是公开商城页面，也未生成分享链接或支付页。
 - 买家结账选项：私有 `GET /v1/buyer/checkout-options` 提供当前市场、地区、三语配送名称及下单所需版本；[353 项回归及 HTTP 选项→报价→宅配订单证据](docs/implementation/2026-09-25-buyer-checkout-options-acceptance.md)。复用现有结账权限与规则，不保证库存或承运资格；公开页面、可信超商选店和支付页仍待完成。
 - 买家会话重试前置：可信 BFF 用同一随机凭证调用私有 `POST /v1/buyer/session/bootstrap`，响应丢失或实例并发时保留同一身份、购物车及原期限；[17 项定向、361 项全量 race/vet 证据](docs/implementation/2026-09-25-buyer-session-registration-acceptance.md)。该历史切片仅为内部前置，后续浏览器传输见下一项。
-- 买家浏览器传输：`apps/storefront` 已有默认关闭的公开BFF、HttpOnly/context-CSRF、跨标签协调、持久退出与共享配额；[366项后端、7项前端单测、11场景真实Chromium→Next→Go→PG验收](docs/implementation/2026-09-25-buyer-browser-bff-acceptance.md)。实际传输链路到DRAFT订单/唯一库存预留。批准的[B商品详情直接选购](docs/implementation/2026-09-25-buyer-inline-progress.md)正在接入：真实页面已走到商品→购物车→报价，三语及跨标签恢复浏览器回归通过；地址/下单/支付UI、联合发布和真实DNS/TLS仍待完成。
+- 买家浏览器与B商品直购：`apps/storefront` 的默认关闭BFF、HttpOnly/context-CSRF、跨标签协调、持久退出与共享配额已有[传输验收](docs/implementation/2026-09-25-buyer-browser-bff-acceptance.md)。真实页面现覆盖商品→购物车→报价→宅配地址确认→未付款订单，以及显式继续选购和当前身份历史订单；[34项前端、382项后端/PG/race/vet、23场景订单/历史浏览器证据](docs/implementation/2026-09-25-buyer-history-progress.md)。三语保持身份及币种；独立历史视觉增量结论为有限范围 `ship`。支付UI、过期身份安全恢复、联合发布和真实DNS/TLS仍待完成。
 - 商家商品购买入口后端：只读返回已授权商品的三语购买URL，不增加PSP操作或修改原商品/SKU收据；[真实PG/HTTP与375项全量race/vet记录](docs/implementation/2026-09-25-merchant-purchase-entry-acceptance.md)。configured仅说明当前数据库发布配置，复制/打开UI必须与真实B买家路由一起验收；不是已完成自动收款。
 - 内部发起支付：真实买家权限、冻结金额/账户版本、订单与待支付库存/attempt/查询意图/回执/队列同事务；[合同](contracts/payment-start-v1.md)、[246项真实PG/race/vet及失败修正证据](docs/implementation/2026-09-24-payment-start-acceptance.md)。仅信用卡PROVIDER_MOCK内核；后续查询执行见下项，真实账户资格、付款表单、通知入账/退款/对账及公开页面仍待完成。
 - 支付查询与可信报告：精确租约读取历史凭据、实际 River 查询执行、验签后报告与 UNKNOWN 完成同事务、并发去重及持久化查询时限；[合同](contracts/payment-query-v1.md)、[查询阶段验收](docs/implementation/2026-09-24-payment-query-acceptance.md)。查询成功不是收款成功；后续财务判断由独立本地入账流程处理。
@@ -34,7 +34,7 @@
 - 商家配送配置内部内核：版本化启用／展示、独立运费、权限隔离、幂等与回滚已通过；[138 项后端回归及浏览器身份链证据](docs/implementation/2026-09-24-delivery-service-acceptance.md)。A向导已覆盖显式计价和商家自行安排配送；API模式仍仅禁用草稿，不代表承运商已接通，也不承诺任何物流都能投递超商。
 - 配送仓库配置与纯分配算法：逐配送方式保存仓库优先级、按可用库存拆仓，缺货不输出部分计划；[150 项回归、随机输入及浏览器兼容证据](docs/implementation/2026-09-24-delivery-allocation-acceptance.md)。后续已由下述内部 checkout 在余额行锁内消费；该历史纯函数验收本身不是并发防超卖证据。
 - 买家收货与门市来源：owner 隔离快照、可信门市引用、改选 CAS、回执隐私和锁等待后重验；[164 项真实 PG/race/vet 回归及浏览器兼容](docs/implementation/2026-09-24-buyer-destination-acceptance.md)。门市当前仅人工核验来源，不是官方目录／承运商接通；商家自助页面与完整支付链仍待实现。
-- 内部买家下单与到期释放：独立 checkout 权限、同事务 DRAFT 订单／HELD 预留／台账／River 任务、永久幂等、锁等待后重验和重复释放防护；[合同](contracts/buyer-checkout-v1.md)、[187 项真实 PG/race/vet 及浏览器兼容证据](docs/implementation/2026-09-24-buyer-checkout-acceptance.md)。后续内部StartPayment见上方；仍没有公开结账HTTP/UI、生产worker装配或第三方扣款。
+- 买家下单与到期释放内核：独立 checkout 权限、同事务 DRAFT 订单／HELD 预留／台账／River 任务、永久幂等、锁等待后重验和重复释放防护；[合同](contracts/buyer-checkout-v1.md)、[历史内核验收](docs/implementation/2026-09-24-buyer-checkout-acceptance.md)。后续默认关闭的结账HTTP/UI已在上述B商品直购切片验收；内部StartPayment见上方，生产worker装配与第三方扣款仍待完成。
 
 下文保留原设计包的基线说明；`MANIFEST.sha256` 对应原包，不能拿来验证新增实现。商品/结账、四域会话业务、台湾超商/跨境物流、Meta/支付/直播和三端 UI 仍需继续实现与独立验收。全局 G01–G15 未宣称通过。
 
