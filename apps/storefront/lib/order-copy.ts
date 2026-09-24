@@ -20,6 +20,8 @@ const en = {
   uncertain:
     "The address request could not be confirmed. Confirm again to recover it before continuing.",
   recoverAddress: "Recover saved address",
+  recoverWithoutQuote:
+    "Check and recover your saved address first. Then request a new quotation before ordering.",
   recovered:
     "A saved address was found. Check it and confirm again before ordering.",
   failed:
@@ -65,6 +67,7 @@ export const orderCopy: Record<Locale, Copy> = {
     confirmed: "收货信息与总额已确认。修改任一字段后，需要重新确认。",
     uncertain: "地址请求结果尚未确认，请再次确认以恢复该请求，再继续操作。",
     recoverAddress: "恢复已保存地址",
+    recoverWithoutQuote: "请先核对并恢复已保存的地址，再获取新的报价后下单。",
     recovered: "已找到之前保存的地址，请核对后重新确认。",
     failed: "暂时无法确认收货信息，请重新加载最新报价后重试。",
     expired: "报价已过期，请获取新的总额后再确认收货信息。",
@@ -101,6 +104,7 @@ export const orderCopy: Record<Locale, Copy> = {
     confirmed: "收件資訊與總額已確認。修改任一欄位後，需要重新確認。",
     uncertain: "地址請求結果尚未確認，請再次確認以恢復該請求，再繼續操作。",
     recoverAddress: "恢復已儲存地址",
+    recoverWithoutQuote: "請先核對並恢復已儲存的地址，再取得新的報價後下單。",
     recovered: "已找到先前儲存的地址，請核對後重新確認。",
     failed: "暫時無法確認收件資訊，請重新載入最新報價後重試。",
     expired: "報價已過期，請取得新的總額後再確認收件資訊。",

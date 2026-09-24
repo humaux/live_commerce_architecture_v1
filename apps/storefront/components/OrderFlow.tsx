@@ -61,6 +61,7 @@ export default function OrderFlow({
   context,
   cart,
   quote,
+  recoveryCountry,
   locale,
   busy,
   blocked,
@@ -72,7 +73,8 @@ export default function OrderFlow({
 }: {
   context: string;
   cart: Cart;
-  quote: Quote;
+  quote: Quote | null;
+  recoveryCountry: string | null;
   locale: Locale;
   busy: boolean;
   blocked: boolean;
@@ -83,6 +85,9 @@ export default function OrderFlow({
   money: Money;
 }) {
   const copy = orderCopy[locale];
+  // A destination journal intentionally stores no PII or quotation. A fresh
+  // tab must still offer explicit address recovery when it has no quote ID.
+  const country = quote?.country ?? recoveryCountry ?? "";
   const [fields, setFields] = useState<Fields>(empty);
   const [head, setHead] = useState<Destination | null>(null);
   const [option, setOption] = useState<Option | null>(null);
@@ -92,7 +97,7 @@ export default function OrderFlow({
   >("loading");
   const [headLoaded, setHeadLoaded] = useState(false);
   const [expired, setExpired] = useState(
-    Date.parse(quote.expires_at) <= Date.now(),
+    !quote || Date.parse(quote.expires_at) <= Date.now(),
   );
   const live = useRef(0);
   const attempt = useRef<{ body: DestinationWrite; key: string } | null>(null);
@@ -108,15 +113,18 @@ export default function OrderFlow({
         if (
           currentCart.id !== cart.id ||
           currentCart.version !== cart.version ||
-          quote.cart_id !== cart.id ||
-          quote.cart_version !== cart.version
+          (quote &&
+            (quote.cart_id !== cart.id || quote.cart_version !== cart.version))
         )
           throw new BuyerClientError("request_failed", 409);
         if (version !== live.current) return;
         setHead(current);
         setHeadLoaded(true);
-        if (current?.kind === "home" && current.country === quote.country)
+        if (current?.kind === "home" && current.country === country) {
           setFields(fieldsOf(current));
+          setNotice("recovered");
+        } else setNotice(null);
+        if (!quote) return;
         let found: Option | undefined,
           cursor = "";
         const seen = new Set<string>();
@@ -142,32 +150,31 @@ export default function OrderFlow({
         } while (!found && cursor);
         if (!found) throw new BuyerClientError("request_failed");
         if (version !== live.current) return;
-        setHead(current);
         setOption(found);
-        if (current?.kind === "home" && current.country === quote.country) {
-          setFields(fieldsOf(current));
-          setNotice("recovered");
-        } else setNotice(null);
+        // Options can arrive after the buyer edits or confirms a recovered
+        // address. Never hydrate fields/head again from that older snapshot.
       } catch {
         if (version === live.current) setNotice("failed");
       }
     })();
-    const timer = window.setTimeout(
-      () => {
-        setExpired(true);
-        setConfirmed(null);
-      },
-      Math.max(
-        0,
-        Math.min(2_147_483_647, Date.parse(quote.expires_at) - Date.now()),
-      ),
-    );
+    const timer = quote
+      ? window.setTimeout(
+          () => {
+            setExpired(true);
+            setConfirmed(null);
+          },
+          Math.max(
+            0,
+            Math.min(2_147_483_647, Date.parse(quote.expires_at) - Date.now()),
+          ),
+        )
+      : undefined;
     return () => {
       live.current++;
       window.clearTimeout(timer);
       attempt.current = null;
     };
-  }, [context, quote.id, cart.id, cart.version]);
+  }, [context, quote?.id, country, cart.id, cart.version]);
 
   useEffect(() => {
     let active = true;
@@ -195,7 +202,7 @@ export default function OrderFlow({
     const version = live.current;
     const current = () => version === live.current && isCurrent();
     setConfirmed(null);
-    const quoteExpired = Date.parse(quote.expires_at) <= Date.now();
+    const quoteExpired = !quote || Date.parse(quote.expires_at) <= Date.now();
     if (quoteExpired) {
       setExpired(true);
       if (!recoveringDestination) return;
@@ -205,7 +212,7 @@ export default function OrderFlow({
       expected_version: head?.version ?? 0,
       cart_version: cart.version,
       kind: "home",
-      country: quote.country,
+      country,
       recipient_name,
       phone,
       home_address,
@@ -229,7 +236,9 @@ export default function OrderFlow({
       const saved = await writeDestination(context, body, replace);
       if (!current()) return;
       setHead(saved);
-      setConfirmed(quoteExpired ? null : saved);
+      setConfirmed(
+        !quote || Date.parse(quote.expires_at) <= Date.now() ? null : saved,
+      );
       setNotice(null);
       attempt.current = null;
     } catch (reason) {
@@ -256,11 +265,16 @@ export default function OrderFlow({
       aria-labelledby="address-title"
     >
       <h2 id="address-title">{copy.address}</h2>
-      <p>{copy.explain}</p>
+      <p>{quote ? copy.explain : copy.recoverWithoutQuote}</p>
       <p className="address-total">
-        {purchaseCopy[locale].total}:{" "}
-        <strong>{money(quote.amount.total_minor, quote.currency)}</strong> ·{" "}
-        {copy.country}: {quote.country}
+        {quote && (
+          <>
+            {purchaseCopy[locale].total}:{" "}
+            <strong>{money(quote.amount.total_minor, quote.currency)}</strong>{" "}
+            ·{" "}
+          </>
+        )}
+        {copy.country}: {country}
       </p>
       {notice && (
         <p
@@ -271,11 +285,11 @@ export default function OrderFlow({
           {copy[notice]}
         </p>
       )}
-      {expired && <p role="alert">{copy.expired}</p>}
+      {quote && expired && <p role="alert">{copy.expired}</p>}
       {(notice === "failed" || expired) && (
         <button
           className="text-button"
-          disabled={busy || blocked}
+          disabled={busy || blocked || recoveringDestination}
           onClick={() => void run(reload)}
         >
           {copy.reload}
@@ -342,7 +356,7 @@ export default function OrderFlow({
         disabled={busy || blocked || expired || !confirmed || !option}
         onClick={() =>
           void run(async (isCurrent) => {
-            if (!confirmed || !option) return;
+            if (!quote || !confirmed || !option) return;
             const version = live.current;
             try {
               const result = await writeCheckout(
