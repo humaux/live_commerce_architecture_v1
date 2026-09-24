@@ -131,7 +131,7 @@ func allowed(kind routeKind, method string) bool {
 	case quotesRoute, checkoutRoute:
 		return method == http.MethodPost
 	case destinationRoute:
-		return method == http.MethodPut
+		return method == http.MethodGet || method == http.MethodPut
 	case quoteRoute, destinationItemRoute, orderRoute:
 		return method == http.MethodGet
 	}
@@ -494,6 +494,21 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 			out = projectQuote(out.(storefront.Quote))
 		}
 	case destinationRoute:
+		if r.Method == http.MethodGet {
+			var current *storefront.Destination
+			current, err = scoped(ctx, h.pool, token, storeID, func(c context.Context, tx pgx.Tx, s buyer.Scope) (*storefront.Destination, error) {
+				return storefront.CurrentDestination(c, tx, s)
+			})
+			result := struct {
+				Destination *destinationResponse `json:"destination"`
+			}{}
+			if err == nil && current != nil {
+				projected := projectDestination(*current)
+				result.Destination = &projected
+			}
+			out = result
+			break
+		}
 		var in storefront.DestinationInput
 		if err = decodeJSON(r, &in); err == nil {
 			out, err = scoped(ctx, h.pool, token, storeID, func(c context.Context, tx pgx.Tx, s buyer.Scope) (storefront.Destination, error) {

@@ -77,6 +77,8 @@ test("private authority, cookie lifecycle and strict local denial", async () => 
       });
     if (String(url).endsWith("/session"))
       return Response.json({ authenticated: true });
+    if (String(url).endsWith("/destination"))
+      return Response.json({ destination: null });
     return Response.json({
       id: "cart",
       currency: "TWD",
@@ -166,6 +168,28 @@ test("private authority, cookie lifecycle and strict local denial", async () => 
       items: [],
     });
     assert.equal(response.headers.get("set-cookie"), null);
+
+    response = await handleBuyerRequest(
+      req("GET", "destination", {
+        cookie: firstCookie,
+        context: prepared.context,
+      }),
+    );
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { destination: null });
+    assert.equal(response.headers.get("cache-control"), "no-store");
+    assert.equal(response.headers.get("set-cookie"), null);
+    const countBefore = calls.length;
+    for (const suffix of ["destination?owner_id=x", "destination?"]) {
+      const denied = await handleBuyerRequest(
+        req("GET", suffix, {
+          cookie: firstCookie,
+          context: prepared.context,
+        }),
+      );
+      assert.equal(denied.status, 422);
+      assert.equal(calls.length, countBefore);
+    }
 
     response = await handleBuyerRequest(
       req("POST", "session/reset", {

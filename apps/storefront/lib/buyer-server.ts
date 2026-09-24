@@ -284,7 +284,10 @@ function route(
       PUT: { privatePath: "cart", body: "cart" },
     },
     quotes: { POST: { privatePath: "quotes", body: "quote" } },
-    destination: { PUT: { privatePath: "destination", body: "destination" } },
+    destination: {
+      GET: { privatePath: "destination" },
+      PUT: { privatePath: "destination", body: "destination" },
+    },
     checkout: { POST: { privatePath: "checkout", body: "checkout" } },
   };
   if (Object.hasOwn(exact, suffix)) {

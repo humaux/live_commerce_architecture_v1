@@ -169,6 +169,37 @@ func GetDestination(ctx context.Context, tx pgx.Tx, s buyer.Scope, id string) (D
 	return readDestination(ctx, tx, s, id)
 }
 
+// CurrentDestination discovers the owned cart's current immutable selection.
+// It deliberately includes expired/stale selections: the head version is needed
+// for the next CAS write. This read neither renews validity nor proves that a
+// particular idempotency key committed. Checkout still revalidates every fact.
+func CurrentDestination(ctx context.Context, tx pgx.Tx, s buyer.Scope) (*Destination, error) {
+	if err := buyer.CheckScope(ctx, tx, s); err != nil {
+		return nil, err
+	}
+	var id string
+	var version int64
+	err := tx.QueryRow(ctx, `SELECT h.destination_id::text,h.current_version
+		FROM storefront.destination_heads h JOIN storefront.carts c
+		ON c.tenant_id=h.tenant_id AND c.store_id=h.store_id AND c.owner_id=h.owner_id AND c.id=h.cart_id
+		WHERE h.tenant_id=$1 AND h.store_id=$2 AND h.owner_id=$3`,
+		s.TenantID, s.StoreID, s.OwnerID).Scan(&id, &version)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	out, err := readDestination(ctx, tx, s, id)
+	if err != nil {
+		return nil, err
+	}
+	if out.Version != version {
+		return nil, command.ErrConflict
+	}
+	return &out, nil
+}
+
 // RevalidateDestination locks current inputs in checkout order. Callers with
 // later lock waits must check final database time again before a durable hold.
 func RevalidateDestination(ctx context.Context, tx pgx.Tx, s buyer.Scope, id string, cartVersion int64, country, kind string) (Destination, error) {

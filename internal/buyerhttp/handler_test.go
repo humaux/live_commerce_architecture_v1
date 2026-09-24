@@ -57,6 +57,7 @@ func TestExactRoutesAndMethods(t *testing.T) {
 		{"/v1/buyer/quotes", http.MethodPost, quotesRoute, true},
 		{"/v1/buyer/quotes/00000000-0000-0000-0000-000000000001", http.MethodGet, quoteRoute, true},
 		{"/v1/buyer/destination", http.MethodPut, destinationRoute, true},
+		{"/v1/buyer/destination", http.MethodGet, destinationRoute, true},
 		{"/v1/buyer/destinations/00000000-0000-0000-0000-000000000001", http.MethodGet, destinationItemRoute, true},
 		{"/v1/buyer/checkout", http.MethodPost, checkoutRoute, true},
 		{"/v1/buyer/orders/00000000-0000-0000-0000-000000000001", http.MethodGet, orderRoute, true},
