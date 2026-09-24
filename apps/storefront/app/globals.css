@@ -423,6 +423,8 @@ h2 {
 .order-lines li span:last-child {
   text-align: right;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .order-total {
   border-block: 1px solid var(--line);
