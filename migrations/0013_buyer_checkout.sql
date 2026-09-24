@@ -503,11 +503,13 @@ BEGIN
     OR v_scope.session_id<>v_session THEN
   RAISE EXCEPTION 'buyer capability expired' USING ERRCODE='PT401'; END IF;
  IF v_quote.created_at>v_now OR v_quote.expires_at<=v_now
-    OR v_dest.selected_at>v_now OR v_dest.expires_at<=v_now
-    OR (v_dest.pickup_id IS NOT NULL AND (v_source.attested_at>v_dest.selected_at
-      OR v_source.attested_at>v_now OR v_source.valid_until<=v_now
-      OR v_dest.expires_at>v_source.valid_until)) THEN
+    OR v_dest.selected_at>v_now OR v_dest.expires_at<=v_now THEN
   RAISE EXCEPTION 'checkout source expired' USING ERRCODE='PT409'; END IF;
+ IF v_dest.pickup_id IS NOT NULL THEN
+  IF v_source.attested_at>v_dest.selected_at OR v_source.attested_at>v_now
+     OR v_source.valid_until<=v_now OR v_dest.expires_at>v_source.valid_until THEN
+   RAISE EXCEPTION 'pickup source expired' USING ERRCODE='PT409'; END IF;
+ END IF;
  IF NOT EXISTS(SELECT 1 FROM river.river_job j WHERE j.id=p_job_id
   AND j.kind='checkout_expiry_v1' AND j.args->>'order_id'=p_order::text
   AND j.args->>'generation'='1' AND j.args->>'version'='1') THEN
