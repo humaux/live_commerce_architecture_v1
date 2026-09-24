@@ -1,6 +1,8 @@
 # Buyer payment start v1
 
-Status: FROZEN, implementation and gates pending. Internal transaction, not a
+Status: PASS_BOUNDED_INTERNAL_PROVIDER_MOCK, 2026-09-24, 246 top-level PG/race/vet
+PASS, 0 FAIL/SKIP. See [acceptance](../docs/implementation/2026-09-24-payment-start-acceptance.md).
+Internal transaction, not a
 public checkout, payment success, hosted form release or provider qualification.
 
 ## Boundary
@@ -27,16 +29,19 @@ public checkout, payment success, hosted form release or provider qualification.
   in disposable PG, never merchant HTTP. SANDBOX/LIVE require matching REAL
   evidence and reject MOCK; current production methods remain disabled.
 - Go takes `checkout.payment.start|tenant|store|owner|key` advisory lock before
-  checking the existing private receipt. Same key/request returns original IDs,
+  checking the existing private receipt. Buyer.WithScope must authenticate before
+  any receipt read; reauthenticate after waits on both new and replay paths.
+  Same key/request returns original IDs,
   without another job or effect; changed profile/input conflicts. Fresh sessions
   of the same owner may replay, revoked sessions cannot.
 - Go inserts River `payment_query_v1` args exactly `{operation_id,version:1}` in
   the same transaction, then calls `checkout.start_payment(hash,store,key,
   request_hash,order,method,method_version,profile,attempt,job_id)` returning JSON.
 - SQL resolves the buyer again, repeats the command lock, rejects an existing
-  receipt (Go handles replay before job insertion), locks order -> reservation
+  receipt (Go handles replay before job insertion), locks order -> reservation -> market
   -> payment head -> account -> binding -> qualification. It checks all scopes,
   current versions, enabled/visible, expiry and final capability after waits.
+  An inactive market blocks new payment; price remains the existing order's total.
 - The transaction freezes the method/qualification/account/credential/binding,
   total and unique merchant trade number; moves DRAFT/HELD to
   AWAITING_PAYMENT/PAYMENT_PENDING; advances both generations; writes one attempt,

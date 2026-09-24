@@ -262,7 +262,7 @@ func (s *Service) Get(ctx context.Context, tx pgx.Tx, scope platform.Scope, toke
 	err = tx.QueryRow(ctx, `SELECT id::text,tenant_id::text,store_id::text,principal_id::text,binding_id::text,
 		binding_version,provider,external_asset_id,purpose,action,semantic_key,request,job_id,state,generation,
 		lease_mode,lease_until,result_code,provider_reference,created_at,updated_at
-		FROM integration.operations WHERE tenant_id=$1 AND store_id=$2 AND id=$3`,
+		FROM integration.operations WHERE tenant_id=$1 AND store_id=$2 AND id=$3 AND actor_kind='MERCHANT'`,
 		scope.TenantID, scope.StoreID, operationID).Scan(
 		&out.ID, &out.TenantID, &out.StoreID, &out.PrincipalID, &out.BindingID,
 		&out.BindingVersion, &out.Provider, &out.ExternalAssetID, &out.Purpose, &out.Action,

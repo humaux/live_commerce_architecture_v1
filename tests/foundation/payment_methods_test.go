@@ -452,7 +452,9 @@ func TestPaymentMethodsSQLGuardAndScopedTargets(t *testing.T) {
 		t.Fatalf("worker acquired settings: %v", e)
 	}
 	for _, tc := range []struct{ name, expr, sqlstate, constraint string }{
-		{"enabled", "true,connection_id,environment,store_id,market_id", "23514", "method_not_admitted"},
+		// 0016 replaces the disabled-only guard with a required scoped proof;
+		// this ordinary merchant still cannot enable an unqualified method.
+		{"enabled", "true,connection_id,environment,store_id,market_id", "23514", "method_admission_reference"},
 		{"environment", "false,connection_id,'LIVE',store_id,market_id", "23503", "method_account_target_fk"},
 		{"connection", "false,gen_random_uuid(),environment,store_id,market_id", "23503", "method_account_target_fk"},
 		{"market", "false,connection_id,environment,store_id,gen_random_uuid()", "23503", "method_market_target_fk"},

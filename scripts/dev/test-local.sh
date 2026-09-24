@@ -7,8 +7,8 @@ command -v go >/dev/null
 # public official golden vector; missing Node must fail before starting fixtures.
 command -v node >/dev/null
 test_mode="${1:-foundation}"
-if [[ "$#" -gt 1 ]] || [[ "$test_mode" != foundation && "$test_mode" != --browser-identity && "$test_mode" != --checkout ]]; then
-  printf 'Usage: bash scripts/dev/test-local.sh [--browser-identity|--checkout]\n' >&2
+if [[ "$#" -gt 1 ]] || [[ "$test_mode" != foundation && "$test_mode" != --browser-identity && "$test_mode" != --checkout && "$test_mode" != --payment ]]; then
+  printf 'Usage: bash scripts/dev/test-local.sh [--browser-identity|--checkout|--payment]\n' >&2
   exit 2
 fi
 if [[ "$test_mode" == --browser-identity ]]; then
@@ -61,8 +61,13 @@ elif [[ "$test_mode" == --checkout ]]; then
   # substitutes for the full foundation/race/vet release gate below.
   GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=120s -run '^TestBuyerCheckout' -v ./tests/foundation
   printf 'PASS: checkout subset only; full regression still required.\n'
+elif [[ "$test_mode" == --payment ]]; then
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=120s -run '^TestBuyerPayment' -v ./tests/foundation
+  printf 'PASS: payment-start subset only; full regression still required.\n'
 else
-  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=120s -v ./...
+  # The growing serial real-PG suite includes a deliberate ~35s process-crash
+  # rescue. This is the package envelope, not a relaxation of per-case fences.
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=240s -v ./...
   GOTOOLCHAIN=go1.27.1 go vet ./...
   printf 'PASS: isolated real PostgreSQL foundation tests; fixture removed at exit.\n'
 fi

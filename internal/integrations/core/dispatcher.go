@@ -386,14 +386,14 @@ func (d *Dispatcher) finalDispatchGate(ctx context.Context, operation Operation,
 		  AND o.lease_token_hash=sha256($8) AND o.state=CASE WHEN $7='dispatch' THEN 'DISPATCHING' ELSE 'UNKNOWN' END
 		FROM integration.operations o
 		JOIN integration.bindings b ON b.id=o.binding_id AND b.tenant_id=o.tenant_id AND b.store_id=o.store_id
-		WHERE o.id=$1`, operation.ID, operation.BindingID, operation.BindingVersion, operation.Provider,
+		WHERE o.id=$1 AND o.actor_kind='MERCHANT'`, operation.ID, operation.BindingID, operation.BindingVersion, operation.Provider,
 		operation.ExternalAssetID, claim.Generation, claim.Mode, claim.LeaseToken).Scan(&gate.frozen, &gate.binding, &gate.lease)
 	return gate, err
 }
 
 const operationQuery = `SELECT id::text,tenant_id::text,store_id::text,principal_id::text,binding_id::text,
 	binding_version,provider,external_asset_id,purpose,action,request,state,generation,lease_mode,lease_until,
-	result_code,provider_reference FROM integration.operations WHERE id=$1`
+	result_code,provider_reference FROM integration.operations WHERE id=$1 AND actor_kind='MERCHANT'`
 
 type rowScanner interface {
 	Scan(...any) error
