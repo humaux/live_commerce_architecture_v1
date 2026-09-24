@@ -163,7 +163,11 @@ export default function ProductPurchase({
         setError("pending");
       if (recovery.id) {
         const existing = await readOrder(ctx, recovery.id);
-        if (version === epoch.current) acceptOrder(existing);
+        if (version !== epoch.current) return;
+        // The locator can change while this initial GET is in flight. A late
+        // old-order response must not undo another tab's explicit continuation.
+        if (knownOrderID(ctx) === recovery.id) acceptOrder(existing);
+        else await load();
         return;
       }
       let [page, current] = await Promise.all([

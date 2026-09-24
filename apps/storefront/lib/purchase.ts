@@ -926,6 +926,8 @@ export async function continueShopping(
     try {
       if (knownOrderID(context) !== existing) throw new Error();
       sessionStorage.removeItem(`commerce-purchase-quote-v1:${context}`);
+      if (sessionStorage.getItem(`commerce-purchase-quote-v1:${context}`) !== null)
+        throw new Error();
       localStorage.removeItem(orderKey(context));
       if (knownOrderID(context) !== null) throw new Error();
     } catch {

@@ -74,6 +74,7 @@ is limited to the explicit catalog/options GET amendments below.
 | GET /v1/buyer/destinations/{id} | no body | GetDestination / destination projection |
 | POST /v1/buyer/checkout | checkout.Input | Begin / receipt projection |
 | GET /v1/buyer/orders/{id} | no body | Get / order projection |
+| GET /v1/buyer/orders | limit/cursor only | owner-scoped history summary |
 
 Writes other than session issuance/registration/retirement require one `Idempotency-Key`, matching existing
 `^[A-Za-z0-9_.:-]{8,128}$`. Session and reads reject Idempotency-Key rather than
@@ -115,10 +116,12 @@ tests assert exact recursive JSON keys and preservation, not just denylist text.
   code,name,address,country` only. No source evidence, actor or verification claim.
 - Checkout receipt: `order_id,hold_expires_at`. This is a historical command
   receipt, not the current reservation/payment state. GET order is authoritative.
-- Order: `order_id,commercial_state,fulfillment_state,snapshot`; optional
+- Order: `order_id,cart_id,cart_version,commercial_state,fulfillment_state,snapshot`; optional
   `hold_expires_at` only for DRAFT. Snapshot has `quote,destination,service`.
   Order quote display: `currency,lines,amount` with the same safe line/totals
-  projection; no quote/cart/market/version IDs. Destination display:
+  projection; no quote/market IDs or service/allocation authority in the display.
+  Top-level cart ID/version come from the immutable quote for explicit safe
+  continuation, not from the current mutable cart. Destination display:
   `kind,country,recipient_name,phone,home_address` plus optional pickup display
   (`kind,namespace,code,name,address,country`, no ID). Service display:
   `code,name_hans,name_hant,name_en,delivery_kind,mode` only.
@@ -127,6 +130,9 @@ tests assert exact recursive JSON keys and preservation, not just denylist text.
   Workflow opaque IDs/CAS versions are intentionally retained where subsequent
   commands require them; they are not authentication credentials. Service and
   allocation version discovery remains a separate prerequisite for browser UI.
+- Owner history and explicit continuation follow
+  [buyer-order-history-v1.md](buyer-order-history-v1.md). The eight-field summary
+  omits all destination/recipient data; the cursor never authenticates a buyer.
 
 ## Acceptance gate and exclusions
 
