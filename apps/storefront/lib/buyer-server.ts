@@ -523,6 +523,7 @@ const shapes: Record<Exclude<Route["body"], undefined>, Shape> = {
 function matchesShape(value: unknown, shape: Shape): boolean {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   return Object.entries(value).every(([key, field]) => {
+    if (!Object.hasOwn(shape, key)) return false;
     const expected = shape[key];
     if (!expected) return false;
     if (expected === "string") return typeof field === "string";

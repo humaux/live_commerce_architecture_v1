@@ -93,6 +93,16 @@ test("private authority, cookie lifecycle and strict local denial", async () => 
     });
     assert.equal(calls.length, 0);
 
+    for (const body of ['{"__proto__":{}}', '{"constructor":{}}']) {
+      const rejected = await handleBuyerRequest(
+        req("POST", "session/prepare", { body }),
+      );
+      assert.equal(rejected.status, 400);
+      assert.equal((await rejected.json()).retryable, false);
+      assert.equal(rejected.headers.get("set-cookie"), null);
+      assert.equal(calls.length, 0);
+    }
+
     response = await handleBuyerRequest(
       req("POST", "session/prepare", { body: "{}" }),
     );
@@ -120,6 +130,8 @@ test("private authority, cookie lifecycle and strict local denial", async () => 
       '{"items":null}',
       '{"items":[],"items":[]}',
       '{"items":[{"sku_id":"x","quantity":1,"extra":1}]}',
+      '{"items":[{"constructor":{}}]}',
+      '{"items":[{"__proto__":{}}]}',
     ]) {
       const bad = await handleBuyerRequest(
         req("PUT", "cart", {
