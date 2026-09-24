@@ -2,10 +2,19 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"errors"
+	"net/http"
+	"net/http/httptest"
+	"os"
 	"strings"
+	"sync/atomic"
 	"testing"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"livecommerce/internal/httpapi"
 )
 
 func accountTestEnv() map[string]string {
@@ -30,6 +39,42 @@ func TestDisabledAccountsReadNoSecrets(t *testing.T) {
 	}
 	if service, err := buildAccountsService(nil, config); err != nil || service != nil {
 		t.Fatalf("disabled build: service=%v err=%v", service, err)
+	}
+}
+
+// Configuration/constructor smoke only; real authenticated persistence is
+// covered independently by foundation HTTP/PG and the signed-IdP browser gate.
+func TestEnabledAccountsEnvironmentAssemblyStartsNoWorker(t *testing.T) {
+	for name, value := range accountTestEnv() {
+		t.Setenv(name, value)
+	}
+	config, err := loadAccountConfig(os.Getenv, true, "127.0.0.1:8080")
+	if err != nil || !config.enabled {
+		t.Fatal("enabled environment did not load")
+	}
+	poolConfig, err := pgxpool.ParseConfig("postgres://fixture@127.0.0.1:1/fixture")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var connects atomic.Int32
+	poolConfig.BeforeConnect = func(context.Context, *pgx.ConnConfig) error {
+		connects.Add(1)
+		return errors.New("constructor must not open a database connection")
+	}
+	pool, err := pgxpool.NewWithConfig(context.Background(), poolConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer pool.Close()
+	service, err := buildAccountsService(pool, config)
+	if err != nil || service == nil {
+		t.Fatal("enabled account service did not assemble")
+	}
+	handler := httpapi.NewHandler(pool, httpapi.Options{SessionStoreList: true, Accounts: service})
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/v1/admin/stores/11111111-1111-4111-8111-111111111111/provider-accounts", nil))
+	if w.Code != http.StatusUnauthorized || connects.Load() != 0 {
+		t.Fatal("unauthenticated assembly performed work or bypassed authority")
 	}
 }
 

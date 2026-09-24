@@ -312,6 +312,289 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
   );
   expect(foreign.status).toBe(404);
 
+  // Real Chromium -> Next BFF -> Go -> PG. Synthetic credentials only. This
+  // exercises transport, not the still separately gated settings UI/provider.
+  const accountPath = `/api/stores/${created.store_id}/provider-accounts`;
+  const accountBody = {
+    provider: "payuni",
+    environment: "SANDBOX",
+    account_id: "browser_fixture_account",
+    credentials: { hash_key: "K".repeat(32), hash_iv: "V".repeat(16) },
+  };
+  const accountOptions = {
+    method: "POST",
+    csrf: true,
+    headers: { "Idempotency-Key": "browser-account-create-0001" },
+    body: accountBody,
+  };
+  expect((await browserJSON(page, accountPath)).body).toEqual({
+    items: [],
+    next_cursor: "",
+  });
+  expect(
+    (await browserJSON(page, accountPath, { ...accountOptions, csrf: false }))
+      .status,
+  ).toBe(403);
+  expect(
+    (await browserJSON(page, accountPath + "?unexpected=1", accountOptions))
+      .status,
+  ).toBe(422);
+  expect(
+    (await browserJSON(page, accountPath, { ...accountOptions, headers: {} }))
+      .status,
+  ).toBe(422);
+  const account = await browserJSON(page, accountPath, {
+    ...accountOptions,
+    headers: {
+      ...accountOptions.headers,
+      Authorization: "Bearer attacker",
+      "X-Tenant-ID": "attacker",
+    },
+  });
+  expect(account.status).toBe(200);
+  expect(account.body).toMatchObject({
+    id: expect.stringMatching(uuid),
+    provider: "payuni",
+    environment: "SANDBOX",
+    account_id: accountBody.account_id,
+    credential_version: 1,
+    state: "CONFIGURED_UNVERIFIED",
+  });
+  const safeAccount = (body: unknown) => {
+    const text = JSON.stringify(body);
+    for (const forbidden of [
+      "key_id",
+      "ciphertext",
+      "nonce",
+      accountBody.credentials.hash_key,
+      accountBody.credentials.hash_iv,
+      "N".repeat(32),
+      "W".repeat(16),
+    ]) {
+      expect(text.includes(forbidden)).toBe(false);
+    }
+  };
+  safeAccount(account.body);
+  expect((await browserJSON(page, accountPath, accountOptions)).body).toEqual(
+    account.body,
+  );
+  expect(
+    (
+      await browserJSON(page, accountPath, {
+        ...accountOptions,
+        body: {
+          ...accountBody,
+          credentials: { ...accountBody.credentials, hash_key: "Z".repeat(32) },
+        },
+      })
+    ).status,
+  ).toBe(409);
+  const detailPath = `${accountPath}/${account.body.id}`;
+  expect((await browserJSON(page, detailPath)).body).toEqual(account.body);
+  const rotationOptions = {
+    method: "POST",
+    csrf: true,
+    headers: { "Idempotency-Key": "browser-account-rotate-0001" },
+    body: {
+      expected_version: 1,
+      credentials: { hash_key: "N".repeat(32), hash_iv: "W".repeat(16) },
+    },
+  };
+  const rotated = await browserJSON(
+    page,
+    `${detailPath}/rotate`,
+    rotationOptions,
+  );
+  expect(rotated.status).toBe(200);
+  expect(rotated.body.credential_version).toBe(2);
+  safeAccount(rotated.body);
+  expect(
+    (await browserJSON(page, `${detailPath}/rotate`, rotationOptions)).body,
+  ).toEqual(rotated.body);
+  expect(
+    (
+      await browserJSON(page, `${detailPath}/rotate`, {
+        ...rotationOptions,
+        headers: { "Idempotency-Key": "browser-account-stale-0001" },
+      })
+    ).status,
+  ).toBe(409);
+  expect((await browserJSON(page, accountPath + "?limit=1")).body).toEqual({
+    items: [rotated.body],
+    next_cursor: "",
+  });
+  expect((await browserJSON(page, accountPath + "?limit=101")).status).toBe(
+    422,
+  );
+  expect(
+    (
+      await browserJSON(
+        page,
+        `/api/stores/00000000-0000-4000-8000-000000000000/provider-accounts`,
+      )
+    ).status,
+  ).toBe(404);
+  expect((await browserJSON(page, `${detailPath}/decrypt`)).status).toBe(404);
+  expect(
+    (await browserJSON(page, detailPath, { method: "DELETE", csrf: true }))
+      .status,
+  ).toBe(405);
+
+  // Chromium accepts Secure cookies on explicit test loopback; Playwright's
+  // HTTP client does not auto-send them there. Forward these exact issued test
+  // cookies, first prove same-origin authority, then vary ONLY Origin.
+  const issuedCookies = `${sessionName}=${sessionCookie.value}; ${csrfName}=${csrfCookie.value}`;
+  const originControl = await context.request.post(accountPath, {
+    headers: {
+      Cookie: issuedCookies,
+      Origin: publicOrigin,
+      "X-CSRF-Token": csrfCookie.value,
+      "Idempotency-Key": accountOptions.headers["Idempotency-Key"],
+    },
+    data: accountBody,
+  });
+  expect(originControl.status()).toBe(200);
+  const badOrigin = await context.request.post(accountPath, {
+    headers: {
+      Cookie: issuedCookies,
+      Origin: "https://attacker.invalid",
+      "X-CSRF-Token": csrfCookie.value,
+      "Idempotency-Key": "browser-account-origin-0001",
+    },
+    data: accountBody,
+  });
+  expect(badOrigin.status()).toBe(403);
+  const storage = await page.evaluate(() => [
+    JSON.stringify(localStorage),
+    JSON.stringify(sessionStorage),
+  ]);
+  storage.forEach(safeAccount);
+
+  const marketID = process.env.LC_BROWSER_MARKET_ID;
+  expect(marketID).toMatch(uuid);
+  const methodPath = `/api/stores/${created.store_id}/markets/${marketID}/countries/TW/payment-methods/payuni_credit`;
+  const methodBody = {
+    market_id: marketID,
+    country: "TW",
+    code: "payuni_credit",
+    environment: "SANDBOX",
+    connection_id: rotated.body.id,
+    binding_version: rotated.body.binding_version,
+    expected_version: 0,
+    name_hans: "信用卡",
+    name_hant: "信用卡",
+    name_en: "Credit card",
+    enabled: false,
+    visible: true,
+    sort_order: 10,
+    min_amount_minor: 100,
+    max_amount_minor: 100000,
+  };
+  const methodOptions = {
+    method: "PUT",
+    csrf: true,
+    body: methodBody,
+    headers: { "Idempotency-Key": "browser-method-create-0001" },
+  };
+  const savedMethod = await browserJSON(page, methodPath, methodOptions);
+  expect(savedMethod.status).toBe(200);
+  expect(savedMethod.body).toMatchObject({
+    version: 1,
+    enabled: false,
+    visible: true,
+    connection_id: rotated.body.id,
+  });
+  expect((await browserJSON(page, methodPath)).body).toEqual(savedMethod.body);
+  expect((await browserJSON(page, methodPath, methodOptions)).body).toEqual(
+    savedMethod.body,
+  );
+  const inspectOptions = {
+    method: "POST",
+    csrf: true,
+    body: {
+      market_id: marketID,
+      country: "TW",
+      code: "payuni_credit",
+      environment: "SANDBOX",
+      expected_version: 1,
+      currency: "TWD",
+      amount_minor: 1000,
+    },
+  };
+  const inspected = await browserJSON(
+    page,
+    `${methodPath}/inspect`,
+    inspectOptions,
+  );
+  expect(inspected.status).toBe(200);
+  expect(inspected.body.available).toBe(false);
+  expect(inspected.body.reasons.length).toBeGreaterThan(0);
+  // Inspect is a read-only POST: CSRF required, mutation idempotency key absent.
+  expect(
+    (await browserJSON(page, `${methodPath}/inspect`, inspectOptions)).body,
+  ).toEqual(inspected.body);
+  expect(
+    (
+      await browserJSON(page, `${methodPath}/inspect`, {
+        ...inspectOptions,
+        csrf: false,
+      })
+    ).status,
+  ).toBe(403);
+  expect(
+    (await browserJSON(page, `${methodPath}?unexpected=1`, methodOptions))
+      .status,
+  ).toBe(422);
+  expect(
+    (await browserJSON(page, methodPath, { ...methodOptions, headers: {} }))
+      .status,
+  ).toBe(422);
+  const changedMethod = await browserJSON(page, methodPath, {
+    ...methodOptions,
+    body: { ...methodBody, expected_version: 1, visible: false },
+    headers: { "Idempotency-Key": "browser-method-hide-0001" },
+  });
+  expect(changedMethod.status).toBe(200);
+  expect(changedMethod.body).toMatchObject({
+    version: 2,
+    visible: false,
+    enabled: false,
+  });
+  expect((await browserJSON(page, methodPath)).body).toEqual(
+    changedMethod.body,
+  );
+  expect(
+    (
+      await browserJSON(page, methodPath, {
+        ...methodOptions,
+        body: { ...methodBody, expected_version: 2, enabled: true },
+        headers: { "Idempotency-Key": "browser-method-enable-0001" },
+      })
+    ).status,
+  ).toBe(409);
+
+  const rateResponse = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === accountPath &&
+      response.status() === 429,
+  );
+  let limited = false;
+  for (let attempt = 0; attempt < 61; attempt++) {
+    const replay = await browserJSON(page, accountPath, accountOptions);
+    if (replay.status === 429) {
+      expect(replay.body).toMatchObject({
+        code: "rate_limited",
+        retryable: true,
+      });
+      limited = true;
+      break;
+    }
+    expect(replay.status).toBe(200);
+  }
+  expect(limited).toBe(true);
+  expect((await rateResponse).headers()["retry-after"]).toBe("60");
+  expect((await browserJSON(page, detailPath)).body).toEqual(rotated.body);
+
   const logout = await browserJSON(page, "/api/auth/logout", {
     method: "POST",
     body: {},

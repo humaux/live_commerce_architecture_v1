@@ -59,7 +59,7 @@ func TestRateLimitCodeUsesFixedPublicMessage(t *testing.T) {
 	if err := json.Unmarshal(w.Body.Bytes(), &envelope); err != nil {
 		t.Fatal(err)
 	}
-	if w.Code != 429 || envelope.Code != "rate_limited" || envelope.Message != "Too many requests." || envelope.Retryable {
+	if w.Code != 429 || envelope.Code != "rate_limited" || envelope.Message != "Too many requests." || !envelope.Retryable {
 		t.Fatalf("unsafe rate response: %+v", envelope)
 	}
 }

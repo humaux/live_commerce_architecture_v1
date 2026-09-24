@@ -24,7 +24,7 @@ type sessionStore struct {
 
 func sessionStoreList(t *testing.T, token string, status int) []sessionStore {
 	t.Helper()
-	w := adminRequest(httpapi.NewHandler(fixture(t).runtime, platform.HandlerOptions{SessionStoreList: true}), "GET", "/v1/admin/stores", token, nil, "", nil)
+	w := adminRequest(httpapi.NewHandler(fixture(t).runtime, httpapi.Options{SessionStoreList: true}), "GET", "/v1/admin/stores", token, nil, "", nil)
 	if w.Code != status {
 		t.Fatalf("store list status=%d want=%d", w.Code, status)
 	}
@@ -142,7 +142,7 @@ func TestBrowserSessionStoreListLimitsAndRuntimePrivileges(t *testing.T) {
 	if owner != "commerce_auth" || !definer || publicExec || len(config) != 1 || config[0] != "search_path=pg_catalog" {
 		t.Fatal("unsafe store-list function authority")
 	}
-	w := adminRequest(httpapi.NewHandler(f.runtime, platform.HandlerOptions{SessionStoreList: true}), "GET", "/v1/admin/stores?tenant_id="+created.TenantID, session.Token, nil, "", nil)
+	w := adminRequest(httpapi.NewHandler(f.runtime, httpapi.Options{SessionStoreList: true}), "GET", "/v1/admin/stores?tenant_id="+created.TenantID, session.Token, nil, "", nil)
 	assertAdminError(t, w, 422, "invalid_request", session.Token)
 }
 
