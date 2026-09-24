@@ -866,7 +866,11 @@ export function SettingsWizard({
     setAvailability(null);
     const token = epoch.current;
     try {
-      if ((await sessionBoundary()) !== boundary.current)
+      const csrf = csrfCookie();
+      if (
+        (await sessionBoundary(csrf)) !== boundary.current ||
+        csrfCookie() !== csrf
+      )
         throw new Error("session_changed");
       const response = await fetch(
         `/api/stores/${store.id}/markets/${activeMarket.id}/countries/TW/payment-methods/${activeMethod.code}/inspect`,
@@ -875,7 +879,7 @@ export function SettingsWizard({
           credentials: "same-origin",
           headers: {
             "Content-Type": "application/json",
-            "X-CSRF-Token": csrfCookie(),
+            "X-CSRF-Token": csrf,
           },
           body: JSON.stringify({
             market_id: activeMarket.id,
@@ -1008,6 +1012,7 @@ export function SettingsWizard({
               <div className="settings-empty">
                 <h2>{c.noStore}</h2>
                 <p>{displayError(initial.error)}</p>
+                <a href={`/${locale}/`}>{c.recoverWorkspace}</a>
               </div>
             ) : null}
             {store && step === 1 && (

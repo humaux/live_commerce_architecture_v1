@@ -30,6 +30,8 @@ export async function sessionBoundary(cookie = csrfCookie()) {
     "SHA-256",
     new TextEncoder().encode(cookie),
   );
+  // Hashing yields to the browser: reject a cookie changed during that await.
+  if (csrfCookie() !== cookie) throw new Error("session_changed");
   return [...new Uint8Array(digest)]
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
