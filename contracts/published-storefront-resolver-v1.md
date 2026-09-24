@@ -1,6 +1,6 @@
 # Published storefront resolver v1
 
-Status: DESIGN / local prerequisite, not public checkout or domain provisioning.
+Status: FROZEN / local prerequisite, not public checkout or domain provisioning.
 Baseline: `1baa0d2`. Contributes to T03; full G01/G02/G11 remain NOT_RUN.
 
 ## Decision and scope
@@ -27,7 +27,8 @@ and the separate cookie/CSRF/rate-limit/HTTP/browser gates are implemented.
   1`; `state` in REQUESTED, OWNERSHIP_PENDING, TLS_PENDING, ACTIVE, SUSPENDED,
   DETACHED (default REQUESTED); optional ownership_verified_at, tls_verified_at,
   valid_until and evidence_ref. ACTIVE requires all three timestamps and a
-  nonblank evidence_ref of at most 240 characters, with valid_until later than
+  nonblank evidence_ref of at most 240 characters, all supplied timestamps finite,
+  with valid_until later than
   both verification timestamps. Check origin shape/length in both Go and SQL.
 - Both tables FORCE RLS. Ordinary runtime, merchant identity, buyer runtime,
   buyer issuer, checkout and worker logins receive no direct table privileges.
