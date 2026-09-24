@@ -1,8 +1,7 @@
 import type { NextConfig } from "next";
 
-// Transport-only package. There is deliberately no buyer visual page or test
-// route until the storefront composition is approved. DNS/TLS/ingress and final
-// standalone asset packaging remain deployment gates, not BFF auth shortcuts.
+// Approved B product surface shares the verified buyer BFF. There are no public
+// fixture routes. DNS/TLS/ingress remain independent deployment gates.
 const config: NextConfig = {
   agentRules: false,
   devIndicators: false,

@@ -7,12 +7,12 @@ import https from "node:https";
 import net from "node:net";
 import { spawn, execFileSync } from "node:child_process";
 import { once } from "node:events";
-import { readFile, writeFile, mkdtemp, rm } from "node:fs/promises";
+import { readFile, writeFile, mkdtemp, rm, mkdir } from "node:fs/promises";
 import { createWriteStream } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { stripTypeScriptTypes } from "node:module";
-import { chromium } from "@playwright/test";
+import { chromium, expect } from "@playwright/test";
 
 const root = process.cwd(), evidence = process.env.LC_BUYER_EVIDENCE;
 assert(evidence && process.env.COMMERCE_BUYER_API_ORIGIN?.startsWith("http://127.0.0.1:"));
@@ -189,6 +189,69 @@ try {
   assert((await raw({cookie:"__Host-commerce_buyer=forged"},undefined,"session","GET")).status>=400);
   assert(hits.every(x=>x>5));
   pass("cross-origin, private authority injection, malformed/forged inputs rejected");
+
+  // Render the actual approved B route, not the transport-only fixture page.
+  // This proves catalog -> preserved cart -> current quote, not hosted payment.
+  const productID=cat.body.items.find(item=>item.sku_id===process.env.LC_BUYER_SKU).product_id;
+  const uiContext=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width:390,height:780},deviceScaleFactor:887/390});
+  const ui=await uiContext.newPage();
+  await ui.goto(`${origin}/zh-TW/products/${productID}`);
+  await expect(ui.getByRole("heading",{name:"帆布收納袋（兩入組）"})).toBeVisible();
+  await expect(ui.getByRole("radio").first()).toBeEnabled();
+  await expect(ui.getByText("示意資料 · 測試環境",{exact:true})).toBeVisible();
+  assert.equal(await ui.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  await mkdir(path.join(root,".impeccable/review"),{recursive:true});
+  await mkdir(path.join(root,".impeccable/review/buyer-inline"),{recursive:true});
+  await ui.screenshot({path:path.join(root,".impeccable/review/buyer-inline/hero-repro.png")});
+  await ui.screenshot({path:path.join(evidence,"buyer-mobile.png"),fullPage:true});
+  await ui.getByRole("button",{name:"增加數量",exact:true}).click();
+  await expect(ui.getByRole("spinbutton")).toHaveValue("2");
+  await ui.getByRole("combobox",{name:"語言",exact:true}).selectOption("en");
+  await ui.waitForURL(`**/en/products/${productID}`);
+  await expect(ui.getByRole("spinbutton")).toHaveValue("2");
+  await ui.getByRole("button",{name:"Choose delivery",exact:true}).click();
+  await expect(ui.getByRole("heading",{name:"Delivery and quotation",exact:true})).toBeVisible();
+  await ui.getByRole("button",{name:"Get current total",exact:true}).click();
+  await expect(ui.getByRole("heading",{name:"Items in this quotation",exact:true})).toBeVisible();
+  await expect(ui.getByText("No payment has been taken.",{exact:false})).toBeVisible();
+  await expect(ui.getByRole("button",{name:"View quotation",exact:true})).toBeEnabled();
+  await expect(ui.getByText("Not paid",{exact:true})).toBeVisible();
+  await ui.reload();
+  await expect(ui.getByRole("heading",{name:"Items in this quotation",exact:true})).toBeVisible();
+  await expect(ui.getByRole("button",{name:"View quotation",exact:true})).toBeEnabled();
+  await expect(ui.getByText("Not paid",{exact:true})).toBeVisible();
+  await expect(ui.getByRole("button",{name:"Choose delivery",exact:true})).toHaveCount(0);
+  const uiState=await ui.evaluate(async()=>{const r=await fetch("/api/buyer/session");return r.json();});
+  const currentCart=await ui.evaluate(async ctx=>{const r=await fetch("/api/buyer/cart",{headers:{"X-Buyer-Context":ctx}});return r.json();},uiState.context);
+  assert.equal(currentCart.version,1);assert.equal(currentCart.items[0].quantity,2);
+  await ui.setViewportSize({width:1440,height:900});
+  assert.equal(await ui.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  await ui.screenshot({path:path.join(evidence,"buyer-desktop.png"),fullPage:true});
+  await ui.getByRole("combobox",{name:"Language",exact:true}).selectOption("zh-CN");
+  await ui.waitForURL(`**/zh-CN/products/${productID}`);
+  await expect(ui.getByRole("spinbutton")).toHaveValue("2");
+  await expect(ui.getByRole("heading",{name:"本次报价商品",exact:true})).toBeVisible();
+  // Actual cart commit with every response dropped leaves the original key.
+  // A second tab changes the session; recovery must adopt it, not reset it or
+  // restore the old act.finally pending flag and deadlock the page.
+  await ui.getByRole("spinbutton").fill("3");
+  const lostCart={path:"/api/buyer/cart",drop:true,repeat:true,entered:deferred(),release:deferred(),headers:deferred(),result:deferred()};hook=lostCart;
+  await ui.getByRole("button",{name:"选择配送",exact:true}).click();
+  await expect(ui.getByRole("button",{name:"恢复上一笔请求",exact:true})).toBeVisible();
+  hook=null;assert.equal(await lostCart.result.promise,200);
+  const otherTab=await page(uiContext), oldUI=await state(otherTab);
+  await otherTab.evaluate(ctx=>window.buyer.resetBuyerSession(ctx),oldUI.context);
+  const newUI=await init(otherTab);assert.notEqual(newUI.context,oldUI.context);
+  await expect(ui.getByRole("button",{name:"更新购物会话",exact:true})).toBeVisible();
+  await ui.getByRole("button",{name:"更新购物会话",exact:true}).click();
+  await expect(ui.getByRole("radio").first()).toBeEnabled();
+  await expect(ui.getByRole("button",{name:"选择配送",exact:true})).toBeEnabled();
+  assert.equal((await state(otherTab)).context,newUI.context);
+  await expect(ui.getByRole("spinbutton")).toHaveValue("1");
+  pass("actual lost cart response plus second-tab reset recovers new session without revocation or stale pending deadlock");
+  await ui.goto(`${origin}/xx/products/${productID}`);assert.equal((await ui.request.get(`${origin}/xx/products/${productID}`)).status(),404);
+  await uiContext.close();
+  pass("approved B real product route; mobile/desktop, three locales, preserved quantity, cart and recovered quote; no payment claim");
   await writeFile(path.join(evidence,"result.json"),JSON.stringify({cases,order_id:orderID,next_instances:2,edge:"synthetic TLS/CONNECT; not deployment proof"},null,2));
 } finally {
   if(browser) await browser.close();

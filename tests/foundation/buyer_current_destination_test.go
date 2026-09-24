@@ -26,12 +26,16 @@ func TestBuyerHTTPCurrentDestinationRecovery(t *testing.T) {
 		return bhRead[current](t, r, 200)
 	}
 	before := h.facts(t)
+	destinationFacts := bdFacts(t, h.cqHarness)
 	first := read(h.cap.Token).Destination
 	if first == nil || first.ID != h.destination.ID || first.Version != 1 || first.RecipientName != h.destination.RecipientName {
 		t.Fatal("owned selection was not discovered")
 	}
 	if !reflect.DeepEqual(before, h.facts(t)) {
 		t.Fatal("read changed transactional facts")
+	}
+	if bdFacts(t, h.cqHarness) != destinationFacts {
+		t.Fatal("read changed destination heads, snapshots, events or receipts")
 	}
 	issued := bhRead[struct {
 		Token string `json:"token"`
@@ -40,7 +44,9 @@ func TestBuyerHTTPCurrentDestinationRecovery(t *testing.T) {
 		t.Fatal("another owner saw a destination")
 	}
 	// After expiry, hide neither the UUID nor head version and do not renew it.
-	mustExec(t, h.f.owner, `UPDATE storefront.destination_snapshots SET selected_at=clock_timestamp()-interval '31 minutes',expires_at=clock_timestamp()-interval '1 minute' WHERE id=$1`, first.ID)
+	// One statement clock preserves the exact maximum TTL; two volatile clock
+	// reads can differ by microseconds and violate the database constraint.
+	mustExec(t, h.f.owner, `UPDATE storefront.destination_snapshots SET selected_at=statement_timestamp()-interval '31 minutes',expires_at=statement_timestamp()-interval '1 minute' WHERE id=$1`, first.ID)
 	expired := read(h.cap.Token).Destination
 	if expired == nil || expired.Version != 1 || !expired.ExpiresAt.Before(first.ExpiresAt) {
 		t.Fatal("expired head must remain available for explicit replacement")

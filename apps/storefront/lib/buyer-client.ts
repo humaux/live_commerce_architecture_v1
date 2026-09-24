@@ -202,7 +202,7 @@ async function recover(
 
 // A received, parsed local error is conclusive because the server never sets a
 // cookie on errors. HTML, malformed JSON, aborts and lost responses are not.
-async function definiteError(response: Response): Promise<boolean> {
+export async function definiteError(response: Response): Promise<boolean> {
   if (
     response.ok ||
     response.headers.get("content-type")?.split(";", 1)[0] !==

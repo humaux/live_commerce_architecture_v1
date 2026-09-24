@@ -82,6 +82,14 @@ SQL 依赖入口及将来开放 HTTP 前的条件见 `contracts/buyer-capability
 修改角色、校验、事务或投影须跑 `--purchase-entry` 真实 PG/HTTP 子集与
 完整 race/vet；复制入口和实际买家页面仍必须另过浏览器 gate。
 
+B 商品页复用上述公开 BFF 与 `buyer-client` 会话协调器：`ProductPurchase`
+→ `purchase.ts` → `buyerRequest` → 私有 Go cart/quote。`purchase.ts` 只持久
+非 PII 的 cart/quote 幂等请求，复用 `definiteError` 判定确定失败；不能扩展为
+姓名/电话/地址或 bearer 存储。CurrentDestination GET 复用原 destination
+投影与 RLS，发现 head 不证明丢失请求的归因。三语复用 workspace i18n；没有
+新增外部库或第二交易引擎。更改请求/恢复须跑 storefront Node tests 和实际
+`--browser-buyer`；[当前范围与未完成门禁](2026-09-25-buyer-inline-progress.md)。
+
 买家私有 HTTP 同样不新增依赖：`cmd/api/buyer.go` 负责三个既有独立权限池
 的装配/失败关闭，`internal/buyerhttp` 借用池并消费 `domains`、`buyer`、
 `storefront`、`checkout`，不新增 SQL writer 或运行 River worker。标准库

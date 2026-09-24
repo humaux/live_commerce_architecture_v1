@@ -21,6 +21,14 @@ func TestBrowserBuyerRealChain(t *testing.T) {
 		t.Fatal("use scripts/dev/test-local.sh --browser-buyer")
 	}
 	h := bhSetup(t)
+	// Visual acceptance uses declared synthetic catalog content through the real
+	// database/API. No public fixture route or fabricated production claims.
+	mustExec(t, h.f.owner, `UPDATE catalog.products SET name='帆布收納袋（兩入組）',description='一組兩入，方便分類收納日常小物。' WHERE id=$1`, h.stock.product.ID)
+	for i, code := range []string{"NAVY-01", "SAND-01"} {
+		if i < len(h.stock.skus) {
+			mustExec(t, h.f.owner, `UPDATE catalog.skus SET code=$2,price_minor=39000 WHERE id=$1`, h.stock.skus[i].ID, code)
+		}
+	}
 	root, err := filepath.Abs("../..")
 	if err != nil {
 		t.Fatal(err)
@@ -44,7 +52,8 @@ func TestBrowserBuyerRealChain(t *testing.T) {
 	cmd.Dir = root
 	cmd.Env = browserEnvironment(map[string]string{
 		"COMMERCE_BUYER_WEB_ENABLED": "1", "COMMERCE_BUYER_API_ORIGIN": h.server.URL,
-		"COMMERCE_BUYER_BFF_KEY": h.key, "COMMERCE_BUYER_COOKIE_KEY": brToken(), "COMMERCE_BUYER_SESSION_TTL": "3600",
+		"COMMERCE_BUYER_DEMO_LABEL": "1",
+		"COMMERCE_BUYER_BFF_KEY":    h.key, "COMMERCE_BUYER_COOKIE_KEY": brToken(), "COMMERCE_BUYER_SESSION_TTL": "3600",
 		"LC_BUYER_EVIDENCE": evidence, "LC_BUYER_SKU": h.stock.skus[0].ID, "LC_BUYER_MARKET": h.market.ID, "LC_BUYER_METHOD": "delivery:" + h.delivery.Code,
 	})
 	log := browserLog(t, filepath.Join(evidence, "browser.log"))

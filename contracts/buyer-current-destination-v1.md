@@ -1,6 +1,8 @@
 # Current buyer destination — recovery projection v1
 
-Status: IMPLEMENTING; gates are not accepted until real PostgreSQL/HTTP tests pass.
+Status: ACCEPTED_READ_PROJECTION, 2026-09-25. Real PostgreSQL/private HTTP gates
+pass; buyer address confirmation UI and lost-write resolution are not accepted
+by this bounded contract.
 
 `GET /v1/buyer/destination` (private) and same-origin
 `GET /api/buyer/destination` (browser BFF) return exactly
@@ -27,3 +29,11 @@ current and historical reads; expiry readable without renewal; CAS replacement
 and late old-version conflict; other owner/host denied or null as appropriate;
 strict GET admission; read leaves destination events, receipts, orders and holds
 unchanged. Browser UI must separately prove reload and explicit confirmation.
+
+Evidence: `tests/foundation/buyer_current_destination_test.go`,
+`/Volumes/data/output/live-commerce-buyer-inline-tests/current-destination-pg-5.log`
+(23 private HTTP tests pass), and `full-regression.log` (376 top-level Go/PG
+tests pass with race/vet). Destination head/snapshot/event/receipt counts are
+explicitly unchanged by the current read. The synthetic expiry setup uses one
+statement timestamp; it does not weaken the database's 30-minute TTL constraint.
+See [current UI scope](../docs/implementation/2026-09-25-buyer-inline-progress.md).
