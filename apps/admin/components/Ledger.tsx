@@ -2,17 +2,13 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import {
-  locales,
-  localeNames,
-  localizedPath,
-  type Locale,
-} from "@live-commerce/i18n";
+import { type Locale } from "@live-commerce/i18n";
 import { copy, type Copy } from "@/lib/copy";
 import type { APIError, WorkspaceData } from "@/lib/model";
 import { money, sendCommand, type PendingCommand } from "@/lib/client";
 import { ProductPhoto } from "./ProductPhoto";
 import { Icon } from "./Icon";
+import { WorkspaceFrame } from "./WorkspaceFrame";
 
 function errorText(error: APIError, c: Copy) {
   if (error.code === "unauthorized") return c.noSession;
@@ -44,8 +40,7 @@ export function Ledger({
   );
   const selected = initial.rows.items.find((row) => row.sku_id === selectedID);
   const [query, setQuery] = useState(searchQuery);
-  const [navOpen, setNavOpen] = useState(false),
-    [section, setSection] = useState("products");
+  const [section, setSection] = useState("products");
   const [createOpen, setCreateOpen] = useState(false),
     [productID, setProductID] = useState("");
   const [pending, setPending] = useState<PendingCommand | null>(null),
@@ -282,483 +277,399 @@ export function Ledger({
   ];
 
   return (
-    <div className="workspace">
-      <a className="skip-link" href="#main">
-        {c.heading}
-      </a>
-      <aside className={`rail ${navOpen ? "open" : ""}`}>
-        <div className="brand">{c.title}</div>
-        <nav aria-label={c.title}>
-          {nav.map(([id, icon, label]) => (
+    <WorkspaceFrame
+      locale={locale}
+      storeName={
+        initial.storeName || (initial.fixture ? c.store : c.notConnected)
+      }
+      active={section}
+      locked={locked}
+      onSection={setSection}
+    >
+      {section !== "products" && section !== "inventory" ? (
+        <section className="unavailable">
+          <Icon
+            name={nav.find((n) => n[0] === section)?.[1] ?? "product"}
+            size={32}
+          />
+          <h1>{nav.find((n) => n[0] === section)?.[2]}</h1>
+          <p>{c.unavailable}</p>
+          <p>{c.sectionHint}</p>
+          <button onClick={() => setSection("products")}>{c.products}</button>
+        </section>
+      ) : (
+        <>
+          <div className="heading-row">
+            <div>
+              <h1>{c.heading}</h1>
+              <p>{c.subtitle}</p>
+            </div>
             <button
-              key={id}
-              disabled={locked}
-              className={section === id ? "nav-item active" : "nav-item"}
-              aria-current={section === id ? "page" : undefined}
+              className="primary create-button"
+              disabled={!initial.fixture || locked}
               onClick={() => {
-                setSection(id);
-                setNavOpen(false);
+                setCreateOpen(!createOpen);
+                setTimeout(
+                  () => formRef.current?.querySelector("input")?.focus(),
+                  0,
+                );
               }}
             >
-              <Icon name={icon} />
-              <span>{label}</span>
+              <Icon name="plus" size={18} />
+              {c.create}
             </button>
-          ))}
-        </nav>
-        <div className="channel-status">
-          <h2>{c.channels}</h2>
-          {[c.website, "Facebook", "Instagram", "WhatsApp", "LINE"].map(
-            (name) => (
-              <div key={name}>
-                <span>{name}</span>
-                <span className="disconnected">{c.notConnected}</span>
-              </div>
-            ),
+          </div>
+          <div className="section-bar">
+            <span>
+              {section === "inventory" ? c.inventory : c.products} / SKU
+            </span>
+            {initial.fixture && <small>{c.fixture}</small>}
+          </div>
+          {(initial.error || error) && (
+            <div className="message error" role="alert">
+              <strong>{errorText(error ?? initial.error!, c)}</strong>
+              {(error ?? initial.error)?.code === "unauthorized" && (
+                <p>{c.noSessionHint}</p>
+              )}
+              {(error ?? initial.error)?.request_id && (
+                <small>
+                  {c.requestID}: {(error ?? initial.error)?.request_id}
+                </small>
+              )}
+            </div>
           )}
-        </div>
-      </aside>
-      <div className="work-area">
-        <header className="topbar">
-          <button
-            className="mobile-menu icon-button"
-            aria-label={c.menu}
-            aria-expanded={navOpen}
-            onClick={() => setNavOpen(!navOpen)}
-          >
-            <Icon name="menu" />
-          </button>
-          <div className="store-label">
-            <Icon name="inventory" />
-            <span>{initial.fixture ? c.store : c.notConnected}</span>
-          </div>
-          <div className="top-spacer" />
-          <label className="language">
-            <span className="sr-only">{c.language}</span>
-            <select
-              aria-label={c.language}
-              value={locale}
-              disabled={locked}
-              onChange={(event) =>
-                router.push(
-                  localizedPath(
-                    event.target.value as Locale,
-                    `${pathname}?${search}`,
-                  ),
-                )
-              }
-            >
-              {locales.map((lang) => (
-                <option key={lang} value={lang}>
-                  {localeNames[lang]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="user-label">
-            <span className="avatar">M</span>
-            {c.user}
-          </div>
-        </header>
-        <main id="main" className="main">
-          {section !== "products" && section !== "inventory" ? (
-            <section className="unavailable">
-              <Icon
-                name={nav.find((n) => n[0] === section)?.[1] ?? "product"}
-                size={32}
-              />
-              <h1>{nav.find((n) => n[0] === section)?.[2]}</h1>
-              <p>{c.unavailable}</p>
-              <p>{c.sectionHint}</p>
-              <button onClick={() => setSection("products")}>
-                {c.products}
-              </button>
+          {notice && (
+            <p className="message success" role="status">
+              {notice}
+            </p>
+          )}
+          {pending && !busy && (
+            <div className="message pending" role="status">
+              <span>{c.failed}</span>
+              <button onClick={() => void submit(pending)}>{c.retry}</button>
+            </div>
+          )}
+          {createOpen && (
+            <section className="create-panel" aria-label={c.create}>
+              <h2>{productID ? c.createSKU : c.create}</h2>
+              <p>{productID ? c.productSaved : c.createHint}</p>
+              <form ref={formRef} onSubmit={create}>
+                <fieldset disabled={locked}>
+                  {productID ? (
+                    <>
+                      <label>
+                        {c.skuCode}
+                        <input name="code" required maxLength={64} />
+                      </label>
+                      <label>
+                        {c.priceMinor}
+                        <input
+                          name="price"
+                          type="number"
+                          min="0"
+                          max="1000000000000"
+                          step="1"
+                          required
+                        />
+                      </label>
+                    </>
+                  ) : (
+                    <>
+                      <label>
+                        {c.name}
+                        <input name="name" required maxLength={120} />
+                      </label>
+                      <label>
+                        {c.description}
+                        <input name="description" maxLength={4000} />
+                      </label>
+                    </>
+                  )}
+                  <button className="primary" type="submit">
+                    {busy ? c.pending : productID ? c.createSKU : c.create}
+                  </button>
+                  <button type="button" onClick={() => setCreateOpen(false)}>
+                    {c.cancel}
+                  </button>
+                </fieldset>
+              </form>
             </section>
-          ) : (
-            <>
-              <div className="heading-row">
-                <div>
-                  <h1>{c.heading}</h1>
-                  <p>{c.subtitle}</p>
-                </div>
-                <button
-                  className="primary create-button"
-                  disabled={!initial.fixture || locked}
-                  onClick={() => {
-                    setCreateOpen(!createOpen);
-                    setTimeout(
-                      () => formRef.current?.querySelector("input")?.focus(),
-                      0,
-                    );
-                  }}
-                >
-                  <Icon name="plus" size={18} />
-                  {c.create}
+          )}
+          <section className="ledger-card" aria-label={c.heading}>
+            <form
+              className="filters"
+              onSubmit={(event) => {
+                event.preventDefault();
+                navigate({ q: query });
+              }}
+            >
+              <div className="search-field">
+                <Icon name="search" size={17} />
+                <input
+                  aria-label={c.search}
+                  placeholder={c.search}
+                  value={query}
+                  disabled={locked}
+                  maxLength={120}
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+                <button type="submit" disabled={locked}>
+                  {c.searchAction}
                 </button>
               </div>
-              <div className="section-bar">
-                <span>
-                  {section === "inventory" ? c.inventory : c.products} / SKU
-                </span>
-                {initial.fixture && <small>{c.fixture}</small>}
-              </div>
-              {(initial.error || error) && (
-                <div className="message error" role="alert">
-                  <strong>{errorText(error ?? initial.error!, c)}</strong>
-                  {(error ?? initial.error)?.code === "unauthorized" && (
-                    <p>{c.noSessionHint}</p>
-                  )}
-                  {(error ?? initial.error)?.request_id && (
-                    <small>
-                      {c.requestID}: {(error ?? initial.error)?.request_id}
-                    </small>
-                  )}
-                </div>
-              )}
-              {notice && (
-                <p className="message success" role="status">
-                  {notice}
-                </p>
-              )}
-              {pending && !busy && (
-                <div className="message pending" role="status">
-                  <span>{c.failed}</span>
-                  <button onClick={() => void submit(pending)}>
-                    {c.retry}
-                  </button>
-                </div>
-              )}
-              {createOpen && (
-                <section className="create-panel" aria-label={c.create}>
-                  <h2>{productID ? c.createSKU : c.create}</h2>
-                  <p>{productID ? c.productSaved : c.createHint}</p>
-                  <form ref={formRef} onSubmit={create}>
-                    <fieldset disabled={locked}>
-                      {productID ? (
-                        <>
-                          <label>
-                            {c.skuCode}
-                            <input name="code" required maxLength={64} />
-                          </label>
-                          <label>
-                            {c.priceMinor}
-                            <input
-                              name="price"
-                              type="number"
-                              min="0"
-                              max="1000000000000"
-                              step="1"
-                              required
-                            />
-                          </label>
-                        </>
-                      ) : (
-                        <>
-                          <label>
-                            {c.name}
-                            <input name="name" required maxLength={120} />
-                          </label>
-                          <label>
-                            {c.description}
-                            <input name="description" maxLength={4000} />
-                          </label>
-                        </>
-                      )}
-                      <button className="primary" type="submit">
-                        {busy ? c.pending : productID ? c.createSKU : c.create}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setCreateOpen(false)}
-                      >
-                        {c.cancel}
-                      </button>
-                    </fieldset>
-                  </form>
-                </section>
-              )}
-              <section className="ledger-card" aria-label={c.heading}>
-                <form
-                  className="filters"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    navigate({ q: query });
-                  }}
+              <label>
+                <span className="sr-only">{c.warehouse}</span>
+                <select
+                  aria-label={c.warehouse}
+                  disabled={locked || !warehouseChoices.length}
+                  value={initial.warehouseID}
+                  onChange={(event) =>
+                    navigate({ warehouse: event.target.value })
+                  }
                 >
-                  <div className="search-field">
-                    <Icon name="search" size={17} />
-                    <input
-                      aria-label={c.search}
-                      placeholder={c.search}
-                      value={query}
-                      disabled={locked}
-                      maxLength={120}
-                      onChange={(event) => setQuery(event.target.value)}
-                    />
-                    <button type="submit" disabled={locked}>
-                      {c.searchAction}
-                    </button>
-                  </div>
-                  <label>
-                    <span className="sr-only">{c.warehouse}</span>
-                    <select
-                      aria-label={c.warehouse}
-                      disabled={locked || !warehouseChoices.length}
-                      value={initial.warehouseID}
-                      onChange={(event) =>
-                        navigate({ warehouse: event.target.value })
-                      }
-                    >
-                      {!warehouseChoices.length && (
-                        <option value="">{c.selectWarehouse}</option>
-                      )}
-                      {warehouseChoices.map((warehouse) => (
-                        <option key={warehouse.id} value={warehouse.id}>
-                          {warehouse.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  {warehouseCursor && (
-                    <button
-                      type="button"
-                      disabled={warehouseLoading || locked}
-                      onClick={() => void moreWarehouses()}
-                    >
-                      {c.next}
-                    </button>
+                  {!warehouseChoices.length && (
+                    <option value="">{c.selectWarehouse}</option>
                   )}
-                  <label>
-                    <span className="sr-only">{c.status}</span>
-                    <select
-                      aria-label={c.status}
-                      value={search.get("status") ?? "all"}
-                      disabled={locked}
-                      onChange={(event) =>
-                        navigate({ status: event.target.value })
-                      }
+                  {warehouseChoices.map((warehouse) => (
+                    <option key={warehouse.id} value={warehouse.id}>
+                      {warehouse.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {warehouseCursor && (
+                <button
+                  type="button"
+                  disabled={warehouseLoading || locked}
+                  onClick={() => void moreWarehouses()}
+                >
+                  {c.next}
+                </button>
+              )}
+              <label>
+                <span className="sr-only">{c.status}</span>
+                <select
+                  aria-label={c.status}
+                  value={search.get("status") ?? "all"}
+                  disabled={locked}
+                  onChange={(event) => navigate({ status: event.target.value })}
+                >
+                  <option value="all">{c.all}</option>
+                  <option value="active">{c.active}</option>
+                  <option value="archived">{c.archived}</option>
+                </select>
+              </label>
+              <button
+                disabled={locked}
+                type="button"
+                onClick={() => {
+                  setQuery("");
+                  navigate({ q: "", status: "" });
+                }}
+              >
+                {c.reset}
+              </button>
+              <button
+                className="refresh-button"
+                type="button"
+                disabled={locked}
+                onClick={() => router.refresh()}
+              >
+                {c.refresh}
+              </button>
+            </form>
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th className="selection-col">
+                      <span className="sr-only">{c.edit}</span>
+                    </th>
+                    <th>{c.product}</th>
+                    <th className="sku-col">SKU</th>
+                    <th className="numeric">{c.price}</th>
+                    <th className="numeric stock-col">{c.onHand}</th>
+                    <th className="numeric stock-col">{c.reserved}</th>
+                    <th className="numeric">{c.available}</th>
+                    <th className="status-col">{c.status}</th>
+                    <th className="action-col">{c.actions}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {initial.rows.items.map((row) => (
+                    <tr
+                      key={row.sku_id}
+                      className={row.sku_id === selectedID ? "selected" : ""}
                     >
-                      <option value="all">{c.all}</option>
-                      <option value="active">{c.active}</option>
-                      <option value="archived">{c.archived}</option>
-                    </select>
-                  </label>
-                  <button
-                    disabled={locked}
-                    type="button"
-                    onClick={() => {
-                      setQuery("");
-                      navigate({ q: "", status: "" });
-                    }}
-                  >
-                    {c.reset}
-                  </button>
-                  <button
-                    className="refresh-button"
-                    type="button"
-                    disabled={locked}
-                    onClick={() => router.refresh()}
-                  >
-                    {c.refresh}
-                  </button>
-                </form>
-                <div className="table-scroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th className="selection-col">
-                          <span className="sr-only">{c.edit}</span>
-                        </th>
-                        <th>{c.product}</th>
-                        <th className="sku-col">SKU</th>
-                        <th className="numeric">{c.price}</th>
-                        <th className="numeric stock-col">{c.onHand}</th>
-                        <th className="numeric stock-col">{c.reserved}</th>
-                        <th className="numeric">{c.available}</th>
-                        <th className="status-col">{c.status}</th>
-                        <th className="action-col">{c.actions}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {initial.rows.items.map((row) => (
-                        <tr
-                          key={row.sku_id}
-                          className={
-                            row.sku_id === selectedID ? "selected" : ""
-                          }
-                        >
-                          <td className="selection-col">
-                            <input
-                              type="radio"
-                              name="sku"
-                              aria-label={`${c.edit} ${row.code}`}
-                              checked={row.sku_id === selectedID}
-                              disabled={locked}
-                              onChange={() => {
-                                select(row.sku_id);
-                                setDelta("0");
-                                setReason("");
-                                setError(null);
-                              }}
-                            />
-                          </td>
-                          <th scope="row">
-                            <div className="product-cell">
-                              <ProductPhoto
-                                code={row.code}
-                                name={row.product_name}
-                                demo={initial.fixture}
-                              />
-                              <div>
-                                <button
-                                  className="product-name"
-                                  disabled={locked}
-                                  onClick={() => select(row.sku_id)}
-                                >
-                                  {row.product_name}
-                                </button>
-                                <small>
-                                  {initial.fixture ? c.demo : row.code}
-                                </small>
-                                <small className="mobile-sku">{row.code}</small>
-                              </div>
-                            </div>
-                          </th>
-                          <td className="sku-col">
-                            <code>{row.code}</code>
-                          </td>
-                          <td className="numeric">
-                            {money(locale, row.currency, row.price_minor)}
-                          </td>
-                          <td className="numeric stock-col">{row.on_hand}</td>
-                          <td className="numeric stock-col">{row.reserved}</td>
-                          <td className="numeric available-value">
-                            {row.available}
-                          </td>
-                          <td className="status-col">
-                            <span className={`status ${row.status}`}>
-                              {row.status === "active" ? c.active : c.archived}
-                            </span>
-                          </td>
-                          <td className="action-col">
+                      <td className="selection-col">
+                        <input
+                          type="radio"
+                          name="sku"
+                          aria-label={`${c.edit} ${row.code}`}
+                          checked={row.sku_id === selectedID}
+                          disabled={locked}
+                          onChange={() => {
+                            select(row.sku_id);
+                            setDelta("0");
+                            setReason("");
+                            setError(null);
+                          }}
+                        />
+                      </td>
+                      <th scope="row">
+                        <div className="product-cell">
+                          <ProductPhoto
+                            code={row.code}
+                            name={row.product_name}
+                            demo={initial.fixture}
+                          />
+                          <div>
                             <button
-                              className="text-button"
+                              className="product-name"
                               disabled={locked}
                               onClick={() => select(row.sku_id)}
                             >
-                              {c.edit}
+                              {row.product_name}
                             </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {!initial.rows.items.length && (
-                    <div className="empty-state">
-                      <Icon name="product" size={30} />
-                      <h2>{initial.error ? c.noSession : c.empty}</h2>
-                      <p>{initial.error ? c.noSessionHint : c.emptyHint}</p>
-                    </div>
-                  )}
-                </div>
-                {(initial.rows.next_cursor || search.get("cursor")) && (
-                  <div className="pagination">
-                    <button
-                      disabled={locked || !search.get("cursor")}
-                      onClick={() => navigate({ cursor: "" })}
-                    >
-                      {c.reset}
-                    </button>
-                    <button
-                      disabled={locked || !initial.rows.next_cursor}
-                      onClick={() =>
-                        navigate({ cursor: initial.rows.next_cursor }, false)
-                      }
-                    >
-                      {c.next}
-                      <Icon name="chevron" size={15} />
-                    </button>
-                  </div>
-                )}
-              </section>
-              {selected ? (
-                <section className="inspector" aria-label={c.selected}>
-                  <button
-                    className="close-details icon-button"
-                    aria-label={c.close}
-                    disabled={locked}
-                    onClick={() => select("")}
-                  >
-                    <Icon name="close" size={17} />
-                  </button>
-                  <div className="selected-product">
-                    <ProductPhoto
-                      code={selected.code}
-                      name={selected.product_name}
-                      demo={initial.fixture}
-                      large
-                    />
-                    <div>
-                      <h2>{selected.product_name}</h2>
-                      <p>SKU: {selected.code}</p>
-                      <span className={`status ${selected.status}`}>
-                        {selected.status === "active" ? c.active : c.archived}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="stock-summary">
-                    <h2>{c.stockInfo}</h2>
-                    <dl>
-                      {[
-                        [c.onHand, selected.on_hand],
-                        [c.reserved, selected.reserved],
-                        [c.available, selected.available],
-                      ].map(([label, value]) => (
-                        <div key={label}>
-                          <dt>{label}</dt>
-                          <dd>{value}</dd>
+                            <small>{initial.fixture ? c.demo : row.code}</small>
+                            <small className="mobile-sku">{row.code}</small>
+                          </div>
                         </div>
-                      ))}
-                    </dl>
-                  </div>
-                  <form className="adjustment" onSubmit={adjust}>
-                    <h2>{c.adjustment}</h2>
-                    <fieldset disabled={locked || selected.status !== "active"}>
-                      <label>
-                        {c.quantity}
-                        <input
-                          aria-label={c.quantity}
-                          type="number"
-                          step="1"
-                          required
-                          value={delta}
-                          onChange={(event) => setDelta(event.target.value)}
-                        />
-                      </label>
-                      <label className="reason-field">
-                        {c.reason}
-                        <input
-                          aria-label={c.reason}
-                          required
-                          maxLength={240}
-                          placeholder={c.reasonHint}
-                          value={reason}
-                          onChange={(event) => setReason(event.target.value)}
-                        />
-                      </label>
-                      <button type="submit" className="primary">
-                        {busy ? c.pending : c.confirm}
-                      </button>
-                    </fieldset>
-                    <p className="audit-hint">{c.auditHint}</p>
-                  </form>
-                </section>
-              ) : (
-                <p className="selection-hint">{c.choose}</p>
+                      </th>
+                      <td className="sku-col">
+                        <code>{row.code}</code>
+                      </td>
+                      <td className="numeric">
+                        {money(locale, row.currency, row.price_minor)}
+                      </td>
+                      <td className="numeric stock-col">{row.on_hand}</td>
+                      <td className="numeric stock-col">{row.reserved}</td>
+                      <td className="numeric available-value">
+                        {row.available}
+                      </td>
+                      <td className="status-col">
+                        <span className={`status ${row.status}`}>
+                          {row.status === "active" ? c.active : c.archived}
+                        </span>
+                      </td>
+                      <td className="action-col">
+                        <button
+                          className="text-button"
+                          disabled={locked}
+                          onClick={() => select(row.sku_id)}
+                        >
+                          {c.edit}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {!initial.rows.items.length && (
+                <div className="empty-state">
+                  <Icon name="product" size={30} />
+                  <h2>{initial.error ? c.noSession : c.empty}</h2>
+                  <p>{initial.error ? c.noSessionHint : c.emptyHint}</p>
+                </div>
               )}
-            </>
+            </div>
+            {(initial.rows.next_cursor || search.get("cursor")) && (
+              <div className="pagination">
+                <button
+                  disabled={locked || !search.get("cursor")}
+                  onClick={() => navigate({ cursor: "" })}
+                >
+                  {c.reset}
+                </button>
+                <button
+                  disabled={locked || !initial.rows.next_cursor}
+                  onClick={() =>
+                    navigate({ cursor: initial.rows.next_cursor }, false)
+                  }
+                >
+                  {c.next}
+                  <Icon name="chevron" size={15} />
+                </button>
+              </div>
+            )}
+          </section>
+          {selected ? (
+            <section className="inspector" aria-label={c.selected}>
+              <button
+                className="close-details icon-button"
+                aria-label={c.close}
+                disabled={locked}
+                onClick={() => select("")}
+              >
+                <Icon name="close" size={17} />
+              </button>
+              <div className="selected-product">
+                <ProductPhoto
+                  code={selected.code}
+                  name={selected.product_name}
+                  demo={initial.fixture}
+                  large
+                />
+                <div>
+                  <h2>{selected.product_name}</h2>
+                  <p>SKU: {selected.code}</p>
+                  <span className={`status ${selected.status}`}>
+                    {selected.status === "active" ? c.active : c.archived}
+                  </span>
+                </div>
+              </div>
+              <div className="stock-summary">
+                <h2>{c.stockInfo}</h2>
+                <dl>
+                  {[
+                    [c.onHand, selected.on_hand],
+                    [c.reserved, selected.reserved],
+                    [c.available, selected.available],
+                  ].map(([label, value]) => (
+                    <div key={label}>
+                      <dt>{label}</dt>
+                      <dd>{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+              <form className="adjustment" onSubmit={adjust}>
+                <h2>{c.adjustment}</h2>
+                <fieldset disabled={locked || selected.status !== "active"}>
+                  <label>
+                    {c.quantity}
+                    <input
+                      aria-label={c.quantity}
+                      type="number"
+                      step="1"
+                      required
+                      value={delta}
+                      onChange={(event) => setDelta(event.target.value)}
+                    />
+                  </label>
+                  <label className="reason-field">
+                    {c.reason}
+                    <input
+                      aria-label={c.reason}
+                      required
+                      maxLength={240}
+                      placeholder={c.reasonHint}
+                      value={reason}
+                      onChange={(event) => setReason(event.target.value)}
+                    />
+                  </label>
+                  <button type="submit" className="primary">
+                    {busy ? c.pending : c.confirm}
+                  </button>
+                </fieldset>
+                <p className="audit-hint">{c.auditHint}</p>
+              </form>
+            </section>
+          ) : (
+            <p className="selection-hint">{c.choose}</p>
           )}
-        </main>
-      </div>
-    </div>
+        </>
+      )}
+    </WorkspaceFrame>
   );
 }
