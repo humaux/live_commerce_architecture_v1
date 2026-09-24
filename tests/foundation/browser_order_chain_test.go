@@ -45,8 +45,10 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 		Receipts     int    `json:"receipts"`
 		ReserveLines int    `json:"reserve_lines"`
 		HoldState    string `json:"hold_state"`
+		CartReceipts int    `json:"cart_receipts"`
+		SnapshotHash string `json:"snapshot_hash"`
 	}
-	// This readback contains only IDs/counts; never snapshots or addresses.
+	// This readback contains scalar facts and snapshot digests, never addresses.
 	facts := func(ctx context.Context) ([]orderFact, error) {
 		rows, err := h.f.owner.Query(ctx, `SELECT o.id::text,o.owner_id::text,o.commercial_state,o.total_minor,o.currency,o.country,
 		 (SELECT count(*) FROM checkout.orders z WHERE z.owner_id=o.owner_id),
@@ -54,7 +56,8 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 		 (SELECT count(*) FROM river.river_job z JOIN checkout.orders q ON q.job_id=z.id WHERE q.owner_id=o.owner_id AND z.kind='checkout_expiry_v1'),
 		 (SELECT count(*) FROM checkout.command_results z WHERE z.owner_id=o.owner_id),
 		 (SELECT count(*) FROM inventory.ledger z WHERE z.buyer_owner_id=o.owner_id AND z.kind='RESERVE'),
-		 (SELECT z.state FROM inventory.reservations z WHERE z.id=o.id)
+		 (SELECT z.state FROM inventory.reservations z WHERE z.id=o.id),
+		 (SELECT count(*) FROM buyer.command_results z WHERE z.owner_id=o.owner_id AND z.operation='cart.set'),md5(o.snapshot::text)
 		 FROM checkout.orders o WHERE o.store_id=$1 ORDER BY o.id`, h.f.storeA1)
 		if err != nil {
 			return nil, err
@@ -63,7 +66,7 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 		out := []orderFact{}
 		for rows.Next() {
 			var f orderFact
-			if err := rows.Scan(&f.ID, &f.Owner, &f.State, &f.Total, &f.Currency, &f.Country, &f.Orders, &f.Holds, &f.Jobs, &f.Receipts, &f.ReserveLines, &f.HoldState); err != nil {
+			if err := rows.Scan(&f.ID, &f.Owner, &f.State, &f.Total, &f.Currency, &f.Country, &f.Orders, &f.Holds, &f.Jobs, &f.Receipts, &f.ReserveLines, &f.HoldState, &f.CartReceipts, &f.SnapshotHash); err != nil {
 				return nil, err
 			}
 			out = append(out, f)
@@ -182,10 +185,11 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 		t.Fatal(err)
 	}
 	var result struct {
-		Cases  int      `json:"cases"`
-		Orders []string `json:"orders"`
+		Cases          int      `json:"cases"`
+		Orders         []string `json:"orders"`
+		RepeatedOrders []string `json:"repeated_orders"`
 	}
-	if json.Unmarshal(data, &result) != nil || result.Cases != 15 || len(result.Orders) != 6 {
+	if json.Unmarshal(data, &result) != nil || result.Cases != 23 || len(result.Orders) != 7 || len(result.RepeatedOrders) != 2 || result.RepeatedOrders[0] == result.RepeatedOrders[1] {
 		t.Fatal("incomplete browser order evidence")
 	}
 	after, err := facts(context.Background())
@@ -199,8 +203,19 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 		}
 		want[id] = true
 	}
+	owners := map[string]int{}
+	repeatedOwner := ""
 	for _, f := range after {
-		if !want[f.ID] || f.Orders != 1 || f.Holds != 1 || f.Jobs != 1 || f.Receipts != 1 || f.ReserveLines != 1 {
+		owners[f.Owner]++
+		ownerOrders := 1
+		if f.ID == result.RepeatedOrders[0] || f.ID == result.RepeatedOrders[1] {
+			ownerOrders = 2
+			if repeatedOwner != "" && repeatedOwner != f.Owner {
+				t.Fatal("second purchase belongs to a different buyer")
+			}
+			repeatedOwner = f.Owner
+		}
+		if !want[f.ID] || f.Orders != ownerOrders || f.Holds != ownerOrders || f.Jobs != ownerOrders || f.Receipts != ownerOrders || f.ReserveLines != ownerOrders {
 			t.Fatal("per-buyer order/hold/job/receipt/ledger gate failed")
 		}
 		if f.Currency != "USD" || f.Country != "TW" || f.Total <= 0 || (f.State != "DRAFT" && f.State != "CANCELLED") {
@@ -209,6 +224,9 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 		if (f.State == "DRAFT" && f.HoldState != "HELD") || (f.State == "CANCELLED" && f.HoldState != "EXPIRED") {
 			t.Fatal("persisted order/hold state mismatch")
 		}
+	}
+	if !want[result.RepeatedOrders[0]] || !want[result.RepeatedOrders[1]] || len(owners) != 6 || owners[repeatedOwner] != 2 {
+		t.Fatal("expected exactly six buyers, one with two distinct orders")
 	}
 	for i, q := range countQueries {
 		want := len(result.Orders)
@@ -219,5 +237,5 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 			t.Fatal("global order/hold/job/receipt or forbidden payment/integration delta")
 		}
 	}
-	t.Logf("PASS: actual order UI; cases=%d; buyers=%d; exactly one order/hold/job/receipt/reserve per buyer; evidence=%s", result.Cases, len(after), evidence)
+	t.Logf("PASS: actual order UI/history; cases=%d; buyers=%d; orders=%d; exact order/hold/job/receipt/reserve counts (one buyer twice, five once); evidence=%s", result.Cases, len(owners), len(after), evidence)
 }

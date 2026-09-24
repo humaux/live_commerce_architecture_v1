@@ -24,6 +24,7 @@ const listen=async s=>{s.listen(0,"127.0.0.1");await once(s,"listening");return 
 const pass=name=>{observations.push(name);console.log(`PASS ${name}`);};
 const certDir=await mkdtemp(path.join(tmpdir(),"lc-order-edge-"));
 const review=path.join(root,".impeccable/review/buyer-order");
+const historyReview=path.join(root,".impeccable/review/buyer-history");
 let browser,edge,proxy,hook,sessionResets=0;
 const calls=[];
 async function control(resource,method="GET") {
@@ -59,6 +60,11 @@ async function newContext(mobile=false) {
   await c.exposeBinding("__gateStorageWrite",(_,value)=>storageWrites.push(value));
   await c.addInitScript(()=>{
     const native=Storage.prototype.setItem;
+    const remove=Storage.prototype.removeItem;
+    Storage.prototype.removeItem=function(key){
+      if(window.__keepQuoteLocator && this===sessionStorage && String(key).startsWith("commerce-purchase-quote-v1:"))return;
+      return remove.call(this,key);
+    };
     Storage.prototype.setItem=function(key,value){
       void window.__gateStorageWrite({kind:this===localStorage?"local":"session",key:String(key),value:String(value)});
       if(window.__failOrderLocator && String(key).startsWith("commerce-purchase-order-v1:"))throw new DOMException("Synthetic gate storage failure","QuotaExceededError");
@@ -72,8 +78,8 @@ async function newContext(mobile=false) {
   });return c;
 }
 const requestIs=(response,suffix,method)=>new URL(response.url()).pathname===`/api/buyer/${suffix}`&&response.request().method()===method;
-async function quotePage(c,clock=false) {
-  const p=await c.newPage();if(clock)await p.clock.install();await p.goto(origin+productPath);
+async function quotePage(c,clock=false,p) {
+  if(!p){p=await c.newPage();if(clock)await p.clock.install();await p.goto(origin+productPath);}
   await p.getByRole("button",{name:"Choose delivery",exact:true}).click();
   const pending=p.waitForResponse(r=>requestIs(r,"quotes","POST"));
   await p.getByRole("button",{name:"Get current total",exact:true}).click();
@@ -88,13 +94,13 @@ async function confirm(p) {
   await expect(p.getByTestId("create-order")).toBeEnabled();
   await expect(p.getByRole("button",{name:"View quotation",exact:true})).not.toHaveClass(/\bprimary\b/);
 }
-async function created(p,quote) {
+async function created(p,quote,ownerOrders=1) {
   await expect(p.getByTestId("order-section")).toBeVisible();
   await expect(p.getByTestId("order-state")).toHaveAttribute("data-state","DRAFT");
   await expect(p.getByTestId("order-state")).toHaveText(/Not paid/i);
   const id=(await p.getByTestId("order-id").innerText()).trim();assert.match(id,/^[a-f0-9-]{36}$/);
   const f=(await control("facts")).find(x=>x.id===id);assert(f);
-  for(const key of ["orders","holds","jobs","receipts","reserve_lines"])assert.equal(f[key],1,`per-buyer ${key}`);
+  for(const key of ["orders","holds","jobs","receipts","reserve_lines"])assert.equal(f[key],ownerOrders,`per-buyer ${key}`);
   assert.equal(f.hold_state,"HELD");
   assert.equal(f.total,quote.amount.total_minor);assert.equal(f.currency,quote.currency);assert.equal(f.country,quote.country);
   const breakdown=p.getByTestId("order-breakdown").locator("div");
@@ -120,7 +126,11 @@ async function rememberCookie(c) {
   const cookie=(await c.cookies(origin))[0];assert(cookie?.httpOnly&&cookie.secure&&cookie.sameSite==="Lax");
   secrets.push(cookie.value);const payload=JSON.parse(Buffer.from(cookie.value.split(".")[0],"base64url").toString());if(payload.token)secrets.push(payload.token);
 }
-async function capture(p,name,fullPage=true) {await mkdir(review,{recursive:true});await p.screenshot({path:path.join(evidence,name),fullPage});await copyFile(path.join(evidence,name),path.join(review,name));}
+async function capture(p,name,fullPage=true,directory=review) {
+  await mkdir(directory,{recursive:true});
+  if(directory===historyReview)await writeFile(path.join(directory,".gitignore"),"*\n");
+  await p.screenshot({path:path.join(evidence,name),fullPage});await copyFile(path.join(evidence,name),path.join(directory,name));
+}
 try {
   execFileSync("openssl",["req","-x509","-newkey","rsa:2048","-nodes","-keyout",path.join(certDir,"key.pem"),"-out",path.join(certDir,"cert.pem"),"-days","1","-subj","/CN=buyer.example"],{stdio:"ignore"});
   const port=await startNext();
@@ -242,6 +252,7 @@ try {
   const lostStart=calls.length,dropCheckout=arm("checkout",{method:"POST",drop:true,repeat:true});
   await lost.getByTestId("create-order").click();assert.equal(await dropCheckout.result.promise,200);await expect(lost.getByTestId("recover-purchase")).toBeVisible();hook=null;
   const lostPending=await stored(lost);assert.equal(lostPending.kind,"checkout");
+  await expect(lost.getByTestId("continue-shopping")).toHaveCount(0);
   assert.deepEqual(Object.keys(lostPending.body).sort(),["allocation_version","cart_version","destination_id","quote_id","service_version"]);
   await lost.reload();await expect(lost.getByTestId("recover-purchase")).toBeVisible();assert.deepEqual(await stored(lost),lostPending);
   await lost.getByTestId("recover-purchase").click();await created(lost,q4);
@@ -306,9 +317,121 @@ try {
   await expect(noQuoteTab.getByTestId("order-section")).toHaveCount(0);
   pass("BO03 expired pending address retains recovery; quote-less new tab explicitly repairs shared intent");
 
+  // BH01/02: delay the new tab's INITIAL owned GET while the original tab
+  // commits continuation, loses its reply, reloads and recovers the same key.
+  const originalOrder=(await api(a,"GET",`orders/${order1}`)).body;
+  const originalFact=(await control("facts")).find(x=>x.id===order1);
+  const originalCheckout=calls.find(x=>x.path==="/api/buyer/checkout"&&x.method==="POST"&&x.status===200&&JSON.parse(x.body).quote_id===q1.id);
+  assert(originalCheckout);
+  const initialOrder={entered:deferred(),release:deferred()};
+  const late=await c1.newPage();
+  // Hold this tab's actual responses, including storage-event refreshes. If an
+  // intermediate refresh could render A, later pointer removal would invalidate
+  // the initial load and accidentally hide the original race from this gate.
+  const lateOrderRoute=async route=>{
+    const response=await route.fetch();assert.equal(response.status(),200);
+    initialOrder.entered.resolve();await initialOrder.release.promise;await route.fulfill({response});
+  };
+  await late.route(`${origin}/api/buyer/orders/${order1}`,lateOrderRoute);
+  await late.goto(origin+productPath);await initialOrder.entered.promise;
+  await expect(late.getByTestId("order-section")).toHaveCount(0);
+  const continuationStart=calls.length,dropCart=arm("cart",{method:"PUT",drop:true,repeat:true});
+  await a.getByTestId("continue-shopping").click();assert.equal(await dropCart.result.promise,200);
+  await expect(a.getByTestId("recover-purchase")).toBeVisible();hook=null;
+  const nextIntent=await stored(a);assert.equal(nextIntent.kind,"next-cart");
+  assert.deepEqual(nextIntent.body,{expected_version:originalOrder.cart_version,items:[]});
+  await a.reload();await expect(a.getByTestId("recover-purchase")).toBeVisible();assert.deepEqual(await stored(a),nextIntent);
+  await a.getByTestId("recover-purchase").click();await expect(a.getByRole("button",{name:"Choose delivery",exact:true})).toBeEnabled();
+  assert.equal(await stored(a),null);assert.equal(await stored(a,"commerce-purchase-order-v1:"),null);
+  const continuationCalls=calls.slice(continuationStart).filter(x=>x.path==="/api/buyer/cart"&&x.method==="PUT");
+  assert(continuationCalls.length>=2);assert.equal(new Set(continuationCalls.map(x=>x.key)).size,1);assert.equal(new Set(continuationCalls.map(x=>x.body)).size,1);
+  assert.equal((await control("facts")).find(x=>x.id===order1).cart_receipts,originalFact.cart_receipts+1);
+  const continuedCart=(await api(a,"GET","cart")).body;assert.equal(continuedCart.version,originalOrder.cart_version+1);assert.deepEqual(continuedCart.items,[]);
+  pass("BH01 lost next-cart reply reload keeps original key/body and exactly one cart receipt");
+  await expect(late.getByTestId("order-section")).toHaveCount(0);
+  initialOrder.release.resolve();
+  await expect(late.getByRole("button",{name:"Choose delivery",exact:true})).toBeEnabled();
+  await expect(late.getByTestId("order-section")).toHaveCount(0);
+  assert.equal(await stored(late,"commerce-purchase-order-v1:"),null);
+  assert.deepEqual((await api(late,"GET","cart")).body,continuedCart);
+  await late.unroute(`${origin}/api/buyer/orders/${order1}`,lateOrderRoute);
+  pass("BH02 delayed initial owned GET cannot restore the old order after another tab continues");
+
+  const {quote:qB}=await quotePage(c1,false,a);await fill(a);await confirm(a);
+  await a.getByTestId("create-order").click();const orderB=await created(a,qB,2);assert.notEqual(orderB,order1);
+  assert.deepEqual((await api(a,"GET",`orders/${order1}`)).body,originalOrder);
+  assert.equal((await control("facts")).find(x=>x.id===order1).snapshot_hash,originalFact.snapshot_hash);
+  const replayA=await api(a,"POST","checkout",JSON.parse(originalCheckout.body),originalCheckout.key);
+  assert.equal(replayA.status,200);assert.equal(replayA.body.order_id,order1);
+  assert.equal((await stored(a,"commerce-purchase-order-v1:")).order_id,orderB);
+  for(const f of (await control("facts")).filter(x=>[order1,orderB].includes(x.id)))for(const key of ["orders","holds","jobs","receipts","reserve_lines"])assert.equal(f[key],2);
+  pass("BH03 same buyer creates distinct B with two exact order facts and unchanged A snapshot/key replay");
+
+  const firstHistory=await api(a,"GET","orders?limit=1");assert.equal(firstHistory.status,200);
+  assert.deepEqual(firstHistory.body.items.map(x=>x.order_id),[orderB]);assert(firstHistory.body.next_cursor);
+  const secondHistory=await api(a,"GET",`orders?limit=1&cursor=${encodeURIComponent(firstHistory.body.next_cursor)}`);
+  assert.equal(secondHistory.status,200);assert.deepEqual(secondHistory.body.items.map(x=>x.order_id),[order1]);assert.equal(secondHistory.body.next_cursor,"");
+  const summaryKeys=["order_id","created_at","cart_id","cart_version","commercial_state","fulfillment_state","currency","total_minor"].sort();
+  for(const summary of [...firstHistory.body.items,...secondHistory.body.items])assert.deepEqual(Object.keys(summary).sort(),summaryKeys);
+  const pointerB=await stored(a,"commerce-purchase-order-v1:"),cartB=(await api(a,"GET","cart")).body;
+  const historyLoading=arm("orders?limit=20",{method:"GET",after:true});await a.getByTestId("toggle-order-history").click();
+  assert.equal(await historyLoading.result.promise,200);await expect(a.getByTestId("order-history").getByRole("status")).toBeVisible();historyLoading.release.resolve();
+  await expect(a.locator(".history-list li")).toHaveCount(2);
+  await expect(a.locator(".history-list li").first().locator("button")).toHaveAttribute("data-order-id",orderB);
+  await capture(a,"desktop-history.png",true,historyReview);
+  await a.setViewportSize({width:390,height:844});await capture(a,"mobile-history.png",true,historyReview);
+  assert(await a.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await a.setViewportSize({width:1440,height:900});
+  await a.locator(`button[data-order-id="${order1}"]`).click();await expect(a.getByTestId("order-id")).toHaveText(order1);
+  await expect(a.getByTestId("order-state")).toHaveAttribute("data-state","CANCELLED");
+  assert.deepEqual(await stored(a,"commerce-purchase-order-v1:"),pointerB);assert.deepEqual((await api(a,"GET","cart")).body,cartB);
+  await a.getByRole("button",{name:"Back to orders",exact:true}).click();
+  for(const [locale,title] of [["zh-CN","我的订单"],["zh-TW","我的訂單"],["en","Your orders"]]){
+    await a.locator("header select").selectOption(locale);await expect(a.locator("html")).toHaveAttribute("lang",locale);
+    await expect(a.getByTestId("order-history").getByRole("heading",{name:title,exact:true})).toBeVisible();
+    await expect(a.locator(".history-list li")).toHaveCount(2);assert.deepEqual(await stored(a,"commerce-purchase-order-v1:"),pointerB);
+  }
+  await a.getByTestId("toggle-order-history").click();await expect(a.getByTestId("order-id")).toHaveText(orderB);
+  pass("BH04 owned keyset pages and history loading/detail/locales/back preserve current B locator and cart");
+
+  // Lose only the convenience locator, retaining the same HttpOnly credential.
+  const cookieHistory=(await c1.cookies(origin))[0].value;
+  await a.evaluate(()=>{for(const key of Object.keys(localStorage))if(key.startsWith("commerce-purchase-order-v1:"))localStorage.removeItem(key);});
+  await a.reload();await expect(a.getByTestId("toggle-order-history")).toBeEnabled();await expect(a.getByTestId("order-section")).toHaveCount(0);
+  await a.getByTestId("toggle-order-history").click();await expect(a.locator(".history-list li")).toHaveCount(2);
+  await a.locator(`button[data-order-id="${order1}"]`).click();await expect(a.getByTestId("order-id")).toHaveText(order1);
+  assert.equal(await stored(a,"commerce-purchase-order-v1:"),null);assert.equal((await c1.cookies(origin))[0].value,cookieHistory);
+  await a.getByTestId("toggle-order-history").click();await expect(a.getByTestId("order-section")).toHaveCount(0);
+  pass("BH05 authoritative history survives noncredential locator loss without repinning an old order");
+
+  // Preserve an already advanced cart, including another tab's selected items.
+  const previousCart=(await api(tab1,"GET","cart")).body;
+  const advanced=await api(tab2,"PUT","cart",{expected_version:previousCart.version,items:previousCart.items.map(x=>({...x,quantity:2}))},crypto.randomUUID());assert.equal(advanced.status,200);
+  const advancedStart=calls.length;await tab1.getByTestId("continue-shopping").click();
+  await expect(tab1.getByRole("button",{name:"Choose delivery",exact:true})).toBeEnabled();
+  assert.deepEqual((await api(tab1,"GET","cart")).body,advanced.body);
+  assert.equal(calls.slice(advancedStart).filter(x=>x.path==="/api/buyer/cart"&&x.method==="PUT").length,0);
+  pass("BH06 explicit continuation preserves a newer authoritative cart without issuing a clearing PUT");
+
+  // A quote removal no-op must retain the journal and old order pointer.
+  await fault.evaluate(()=>window.__keepQuoteLocator=true);
+  const quoteFailureStart=calls.length;await fault.getByTestId("continue-shopping").click();await expect(fault.getByTestId("recover-purchase")).toBeVisible();
+  const failedNext=await stored(fault);assert.equal(failedNext.kind,"next-cart");assert(await stored(fault,"commerce-purchase-order-v1:"));
+  await fault.reload();await expect(fault.getByTestId("recover-purchase")).toBeVisible();assert.deepEqual(await stored(fault),failedNext);
+  await fault.getByTestId("recover-purchase").click();await expect(fault.getByRole("button",{name:"Choose delivery",exact:true})).toBeEnabled();
+  const quoteFailureCalls=calls.slice(quoteFailureStart).filter(x=>x.path==="/api/buyer/cart"&&x.method==="PUT");assert.equal(quoteFailureCalls.length,2);
+  assert.equal(quoteFailureCalls[0].key,quoteFailureCalls[1].key);assert.equal(quoteFailureCalls[0].body,quoteFailureCalls[1].body);
+  assert.equal(await stored(fault),null);assert.equal(await stored(fault,"commerce-purchase-order-v1:"),null);
+  pass("BH07 failed quote removal preserves continuation recovery and original key across reload");
+
   // Cross-owner read is a real HTTP denial and must never display a snapshot.
   const c7=await newContext(),{p:foreign}=await quotePage(c7);const otherOrder=await api(foreign,"GET",`orders/${order1}`);assert.equal(otherOrder.status,404);
   await expect(foreign.getByTestId("order-section")).toHaveCount(0);
+  const foreignHistory=await api(foreign,"GET","orders?limit=1");assert.equal(foreignHistory.status,200);assert.deepEqual(foreignHistory.body,{items:[],next_cursor:""});
+  assert.equal((await api(foreign,"GET",`orders?cursor=${encodeURIComponent(firstHistory.body.next_cursor)}`)).status,422);
+  assert.equal((await api(a,"GET","orders?cursor=bad")).status,422);
+  await foreign.getByTestId("toggle-order-history").click();await expect(foreign.getByTestId("order-history")).toContainText("No orders in this shopping session.");
+  await foreign.getByTestId("toggle-order-history").click();await expect(foreign.getByTestId("address-section")).toBeVisible();
+  pass("BH08 foreign buyer history is empty and foreign or malformed cursors are denied");
   await fill(foreign);await confirm(foreign);const serviceBefore=(await control("facts")).length;
   await control("service-drift","POST");const serviceDenied=foreign.waitForResponse(r=>requestIs(r,"checkout","POST"));
   await foreign.getByTestId("create-order").click();assert.equal((await serviceDenied).status(),409);
@@ -326,7 +449,7 @@ try {
   }
   assert.equal(pageErrors.length,0,"browser application exception");
   pass("BO06 all attempted local/session writes, URLs and console exclude PII/bearer; other owner denied");
-  await writeFile(path.join(evidence,"result.json"),JSON.stringify({cases:observations.length,orders,observations,storage_write_attempts:storageWrites.length,scope:"actual UI/Next/Go/isolated PG; synthetic TLS and buyer data; no PSP/production",not_run:["full foundation/race/vet and existing browser regression are separate root gates","independent visual review"]},null,2),{mode:0o600});
+  await writeFile(path.join(evidence,"result.json"),JSON.stringify({cases:observations.length,orders,repeated_orders:[order1,orderB],observations,storage_write_attempts:storageWrites.length,scope:"actual UI/Next/Go/isolated PG; synthetic TLS and buyer data; no PSP/production",not_run:["full foundation/race/vet and existing browser regression are separate root gates","independent visual review"]},null,2),{mode:0o600});
 }finally{
   if(hook?.release)hook.release.resolve();
   if(browser)await browser.close();for(const s of sockets)s.destroy();
