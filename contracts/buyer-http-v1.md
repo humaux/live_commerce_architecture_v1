@@ -9,6 +9,10 @@ route and a narrowly scoped query exception; neither adds public access.
 The [session-registration amendment](buyer-session-registration-v1.md) adds a
 private same-token retry path and one issuer-only SQL function; old issuance is
 unchanged and no browser boundary is opened.
+The later [public browser transport](buyer-browser-bff-v1.md) adds private POST
+`session/retire` (exact `{}`, Bearer, no Idempotency-Key; empty204) and switches
+trusted registration to the shared limited wrapper in migration0022. It does not
+change legacy issue/DELETE semantics; unknown-token DELETE is NOT retirement.
 
 ## Authority and lifecycle
 
@@ -71,7 +75,7 @@ is limited to the explicit catalog/options GET amendments below.
 | POST /v1/buyer/checkout | checkout.Input | Begin / receipt projection |
 | GET /v1/buyer/orders/{id} | no body | Get / order projection |
 
-Writes other than session issuance/registration require one `Idempotency-Key`, matching existing
+Writes other than session issuance/registration/retirement require one `Idempotency-Key`, matching existing
 `^[A-Za-z0-9_.:-]{8,128}$`. Session and reads reject Idempotency-Key rather than
 suggesting replay support. JSON input is bounded to 64 KiB, application/json,
 unknown fields/null at ANY depth/trailing values rejected (optional fields may

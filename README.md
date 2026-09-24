@@ -2,7 +2,7 @@
 
 ## 2026-09-20 实施入口
 
-已开始开发，当前已验收 **Go/PostgreSQL 基础、商品库存台账、商家登录/首店 C 分步向导、内部购物车报价、操作台账、下单预留／到期释放及内部发起支付事务，不是完整 SaaS 或生产上线版本**。真实登录提供商、买家公开入口、真实收款及其余业务模块仍未交付。
+已开始开发，当前已验收 **Go/PostgreSQL 基础、商品库存台账、商家登录/首店 C 分步向导、买家浏览器传输及购物车报价、操作台账、下单预留／到期释放及内部发起支付事务，不是完整 SaaS 或生产上线版本**。真实登录提供商、买家商品/支付页面、真实收款及其余业务模块仍未交付。
 
 - 当前实现：[foundation 合同](contracts/foundation-v1.md)、[基础 OpenAPI](contracts/foundation-openapi.json)、[实施说明](docs/implementation/2026-09-20-kickoff.md)。
 - 本地一键验收：`bash scripts/dev/test-local.sh`。需要 Docker、Go 启动器和已下载的固定 PG18.6 镜像（镜像 digest 见脚本）；会创建本任务临时数据库，退出自动移除，不读取现有 `DATABASE_URL`。
@@ -10,7 +10,7 @@
 - 服务入口：`GOTOOLCHAIN=go1.27.1 go run ./cmd/api`。需要已迁移数据库和 **commerce_runtime 成员、非 owner 的独立登录**，通过环境变量 `DATABASE_URL` 传入。默认仅监听 `127.0.0.1:8080`；程序不会自动迁移、生成用户或放宽授权。
 - GitHub 检查配置已加入 `.github/workflows/foundation.yml`，但尚无远端仓库或真实 CI 执行回执。
 - 身份浏览器链：`bash scripts/dev/test-local.sh --browser-identity`。真实隔离 PG + Next/Go，外部 IdP 为签名 mock；[合同](contracts/merchant-browser-auth-v1.md)、[传输验收](docs/implementation/2026-09-20-browser-identity-acceptance.md)。用户已批准 C 分步向导，[界面与最终浏览器验收](docs/implementation/2026-09-20-entry-wizard-acceptance.md)；身份开关仍默认关闭，未接通生产 IdP。
-- 买家匿名凭证：独立 SQL 角色、hash-only、过期/撤销与并发隔离已通过真实 PG 验收；[合同](contracts/buyer-capability-v1.md)、[证据](docs/implementation/2026-09-20-buyer-capability-acceptance.md)。内部权限内核现由下述私有 HTTP 消费，尚未开放浏览器购物车/结账。
+- 买家匿名凭证：独立 SQL 角色、hash-only、过期/撤销与并发隔离已通过真实 PG 验收；[合同](contracts/buyer-capability-v1.md)、[证据](docs/implementation/2026-09-20-buyer-capability-acceptance.md)。内部权限内核由私有 HTTP 消费，后续浏览器传输验收见下。
 - 已发布域名解析前置：独立发布状态、精确 HTTPS 域名映射、验证期限、停用与角色隔离已有本地实现；[5项定向PG及317项后端回归](docs/implementation/2026-09-25-published-storefront-resolver-acceptance.md)。测试域名事实均为合成；可信域名/发布写入、公开买家接口和真实部署仍待完成。
 - 买家私有 HTTP：独立 BFF 凭据、逐请求已发布域名解析、买家权限、严格 JSON、白名单响应、启动失败池清理；[合同](contracts/buyer-http-v1.md)、[4项真实HTTP/PG及339项race/vet回归](docs/implementation/2026-09-25-buyer-private-http-acceptance.md)。仅默认关闭的 loopback 传输，不是公开 BFF、买家页面或真实支付接通。
 - 内部购物车/报价：owner 隔离、版本化市场计价、不可变快照、并发与回滚通过；[合同](contracts/cart-quote-v1.md)、[96 项历史后端验收](docs/implementation/2026-09-20-cart-quote-acceptance.md)。现有私有 HTTP 包装；购物车/报价本身不创建订单或扣库存。
@@ -25,7 +25,8 @@
 - 商品自动收款入口：已纳入[架构及 PE01–PE10 合同](contracts/product-payment-entry-v1.md)。保存价格后自动提供稳定购买入口，确认规格/数量/配送后按订单生成支付页，无需逐商品手工建 PSP 链接；当前为需求/设计，完整功能未实现，不能用上述沙盒链接替代验收。
 - 买家商品数据前置：私有 `GET /v1/buyer/catalog` 已支持当前有效商品/SKU/现价、店铺隔离、受限查询和分页；[345 项回归与独立审查](docs/implementation/2026-09-25-buyer-catalog-discovery-acceptance.md)通过。这不是公开商城页面，也未生成分享链接或支付页。
 - 买家结账选项：私有 `GET /v1/buyer/checkout-options` 提供当前市场、地区、三语配送名称及下单所需版本；[353 项回归及 HTTP 选项→报价→宅配订单证据](docs/implementation/2026-09-25-buyer-checkout-options-acceptance.md)。复用现有结账权限与规则，不保证库存或承运资格；公开页面、可信超商选店和支付页仍待完成。
-- 买家会话重试前置：可信 BFF 用同一随机凭证调用私有 `POST /v1/buyer/session/bootstrap`，响应丢失或实例并发时保留同一身份、购物车及原期限；[17 项定向、361 项全量 race/vet 证据](docs/implementation/2026-09-25-buyer-session-registration-acceptance.md)。不新增身份表或浏览器公开权限，Cookie 首次交付、多标签与 CSRF 仍待验收。
+- 买家会话重试前置：可信 BFF 用同一随机凭证调用私有 `POST /v1/buyer/session/bootstrap`，响应丢失或实例并发时保留同一身份、购物车及原期限；[17 项定向、361 项全量 race/vet 证据](docs/implementation/2026-09-25-buyer-session-registration-acceptance.md)。该历史切片仅为内部前置，后续浏览器传输见下一项。
+- 买家浏览器传输：`apps/storefront` 已有默认关闭的公开BFF、HttpOnly/context-CSRF、跨标签协调、持久退出与共享配额；[366项后端、7项前端单测、11场景真实Chromium→Next→Go→PG验收](docs/implementation/2026-09-25-buyer-browser-bff-acceptance.md)。实际链路到DRAFT订单/唯一库存预留，支持断网和跨实例重试；还没有获批的买家视觉页面、商品分享路由、真实DNS/TLS或PSP支付页。
 - 内部发起支付：真实买家权限、冻结金额/账户版本、订单与待支付库存/attempt/查询意图/回执/队列同事务；[合同](contracts/payment-start-v1.md)、[246项真实PG/race/vet及失败修正证据](docs/implementation/2026-09-24-payment-start-acceptance.md)。仅信用卡PROVIDER_MOCK内核；后续查询执行见下项，真实账户资格、付款表单、通知入账/退款/对账及公开页面仍待完成。
 - 支付查询与可信报告：精确租约读取历史凭据、实际 River 查询执行、验签后报告与 UNKNOWN 完成同事务、并发去重及持久化查询时限；[合同](contracts/payment-query-v1.md)、[查询阶段验收](docs/implementation/2026-09-24-payment-query-acceptance.md)。查询成功不是收款成功；后续财务判断由独立本地入账流程处理。
 - 信用卡入账与库存承诺：完整请款证据、不可变财务事实、预留转待履约库存、订单确认和耐久商家待办同事务；逆序授权不会误锁履约，退款／晚款异常转粘性复核；[合同](contracts/payment-capture-v1.md)、[284项真实PG/race/vet证据](docs/implementation/2026-09-24-payment-capture-acceptance.md)。供应商仍是签名报文模拟，无真实PSP调用；不等于银行结算、退款功能或上线准入，不开放商家收款开关。

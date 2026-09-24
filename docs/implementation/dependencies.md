@@ -90,8 +90,25 @@ resolve_scope：只在异常子事务内插入，精确匹配 token constraint/s
 固定两字段；旧 POST session 仍不可自动重试。升级 PG、pgx、会话规则时跑
 `TestBuyerHTTPRegistration*`：丢响应、两个实例、强制 unique wait、无孤立 owner、
 非目标23505传播、REPEATABLE READ失效快照、ACL、撤销和发布状态变化，然后全量
-race/vet。它不解决首次 Cookie 多标签竞争；公开BFF/CSRF/限流和浏览器验收仍待。
+race/vet。它自身不解决首次 Cookie 多标签竞争；后续公开BFF见下一段。
 见 [注册合同](../../contracts/buyer-session-registration-v1.md)。
+
+公开买家传输 `apps/storefront/lib/buyer-server.ts` 使用已有 Next/React/TypeScript
+版本及 Node crypto/net；固定上游、逐请求 published-origin、host-only HttpOnly
+签名 cookie、独立 context/CSRF、严格 JSON（含 own-key）及有界流读取。无新认证
+框架或支付 SDK。`buyer-client.ts` 仅用 Fetch/Web Locks/localStorage；pending
+journal 不是身份凭据，未知交付禁止再次准备，明确失败可以恢复。prepare/reset
+之外不写 cookie。修改 cookie/fetch/锁/Next/Node 时必须跑真实 `--browser-buyer`，
+仅 stub fetch 单测无法证明浏览器 cookie 交付、原生重试、退出或多标签行为。
+
+Go `RetireForTrustedStore`/HTTP retire 调0022的固定 SECURITY DEFINER 函数：
+未知 hash 在同一事务 register+revoke，保留原行防止迟到 bootstrap 复活；原 DELETE
+的 unknown204仍只是no-op。`RegisterForTrustedStore` 改调 limited wrapper，按店铺
+advisory lock、插入时间所属UTC分钟的索引计数限600新行；非READ COMMITTED失败关闭。
+不新建身份/配额表；旧私有issue不在公开限额承诺内。修改PG/锁/函数授权时运行
+`TestBuyerHTTPRetirement*`/`TestBuyerHTTPSharedQuota*`及全量race/vet。
+三语买家UI、分享路由、真实DNS/TLS控制面、PSP和可信CVS仍独立验收，详见
+[公开传输验收](2026-09-25-buyer-browser-bff-acceptance.md)。
 
 买家商品发现 `storefront.ListCatalog` 复用 `buyer.WithScope/CheckScope`、
 0007 的 catalog/control 列级 SELECT 和 RLS，只读联结 active 商品/规格及

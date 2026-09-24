@@ -5,6 +5,11 @@ amendments below (READ COMMITTED admission and definite-negative recovery). Buil
 the accepted private buyer HTTP, published-origin and session-registration
 contracts. No buyer visual page is approved by this transport document.
 
+Implementation `d2c5187` passed bounded local transport acceptance:366 backend
+tests,7 focused browser-boundary tests and11 real Chromium/Next/Go/PG scenarios.
+See [evidence and remaining gates](../docs/implementation/2026-09-25-buyer-browser-bff-acceptance.md).
+This does not approve a buyer UI, domain deployment or provider payment.
+
 ## Deployment and authority
 
 - New `apps/storefront` uses the existing Next/React/TypeScript versions, no new
