@@ -1,11 +1,14 @@
 package buyerhttp
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -16,6 +19,28 @@ import (
 )
 
 const testBuyerKey = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+
+type failedBody struct{ err error }
+
+func (b failedBody) Read([]byte) (int, error) { return 0, b.err }
+
+func TestBodyTimeoutIsUnavailableNotMalformedInput(t *testing.T) {
+	for _, decode := range []func(*http.Request) error{
+		noBody,
+		func(r *http.Request) error { return decodeJSON(r, &struct{}{}) },
+	} {
+		for _, err := range []error{os.ErrDeadlineExceeded, context.DeadlineExceeded, context.Canceled} {
+			r := httptest.NewRequest("POST", "/v1/buyer/session", nil)
+			r.Header.Set("Content-Type", "application/json")
+			r.Body = io.NopCloser(failedBody{err})
+			r.ContentLength = -1
+			status, code := classify(decode(r))
+			if status != 503 || code != "unavailable" {
+				t.Fatal("body timeout or cancellation mislabeled as caller input error")
+			}
+		}
+	}
+}
 
 func TestExactRoutesAndMethods(t *testing.T) {
 	for _, tc := range []struct {

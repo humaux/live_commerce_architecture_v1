@@ -39,6 +39,10 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	buyerConfig, err := loadBuyerConfig(os.Getenv, addr)
+	if err != nil {
+		return err
+	}
 	dsn := os.Getenv("DATABASE_URL")
 	pool, err := platform.OpenPool(context.Background(), dsn)
 	if err != nil {
@@ -51,6 +55,11 @@ func run() error {
 		return err
 	}
 	defer closeIdentity()
+	buyerHandler, closeBuyer, err := buildBuyerHandler(context.Background(), buyerConfig)
+	if err != nil {
+		return err
+	}
+	defer closeBuyer()
 	accountService, err := buildAccountsService(pool, accountConfig)
 	if err != nil {
 		return err
@@ -62,6 +71,7 @@ func run() error {
 		mux.Handle("/", handler)
 		handler = mux
 	}
+	handler = mountBuyer(handler, buyerHandler)
 	server := &http.Server{
 		Addr:              addr,
 		Handler:           handler,

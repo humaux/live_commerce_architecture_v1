@@ -11,6 +11,7 @@ import (
 	"errors"
 	"io"
 	"mime"
+	"net"
 	"net/http"
 	"regexp"
 	"strings"
@@ -392,6 +393,12 @@ func noBody(r *http.Request) error {
 	}
 	var one [1]byte
 	n, err := io.ReadFull(r.Body, one[:])
+	if errors.Is(err, context.Canceled) {
+		return context.Canceled
+	}
+	if bodyTimeout(err) {
+		return context.DeadlineExceeded
+	}
 	if n != 0 || err != nil && !errors.Is(err, io.EOF) {
 		return responseError{http.StatusUnprocessableEntity, "invalid_request"}
 	}
@@ -411,6 +418,12 @@ func decodeJSON(r *http.Request, value any) error {
 		return responseError{http.StatusBadRequest, "invalid_json"}
 	}
 	body, err := io.ReadAll(io.LimitReader(r.Body, maxJSON+1))
+	if errors.Is(err, context.Canceled) {
+		return context.Canceled
+	}
+	if bodyTimeout(err) {
+		return context.DeadlineExceeded
+	}
 	if err != nil {
 		return responseError{http.StatusBadRequest, "invalid_json"}
 	}
@@ -461,6 +474,11 @@ func classify(err error) (int, string) {
 	default:
 		return http.StatusServiceUnavailable, "unavailable"
 	}
+}
+
+func bodyTimeout(err error) bool {
+	var timed net.Error
+	return errors.Is(err, context.DeadlineExceeded) || (errors.As(err, &timed) && timed.Timeout())
 }
 
 func writeOK(w http.ResponseWriter, value any) {

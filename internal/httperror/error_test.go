@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestEnvelopeAndNestedCorrelation(t *testing.T) {
@@ -45,6 +46,28 @@ func TestNonRetryableFailurePreservesSafeEnvelope(t *testing.T) {
 		if w.Header().Get("Cache-Control") != "no-store" || w.Header().Get("X-Content-Type-Options") != "nosniff" {
 			t.Fatal("missing safe response headers")
 		}
+	}
+}
+
+type deadlineWriter struct {
+	*httptest.ResponseRecorder
+	read, write time.Time
+}
+
+func (w *deadlineWriter) SetReadDeadline(at time.Time) error  { w.read = at; return nil }
+func (w *deadlineWriter) SetWriteDeadline(at time.Time) error { w.write = at; return nil }
+
+func TestResponseControllerReachesUnderlyingWriter(t *testing.T) {
+	w := &deadlineWriter{ResponseRecorder: httptest.NewRecorder()}
+	deadline := time.Now().Add(time.Second)
+	Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c := http.NewResponseController(w)
+		if c.SetReadDeadline(deadline) != nil || c.SetWriteDeadline(deadline) != nil {
+			t.Fatal("middleware hid transport deadlines")
+		}
+	})).ServeHTTP(w, httptest.NewRequest("GET", "/", nil))
+	if w.read != deadline || w.write != deadline {
+		t.Fatal("deadline controller did not unwrap middleware")
 	}
 }
 
