@@ -1,6 +1,7 @@
 # Buyer checkout options v1
 
-Status: DRAFT for independent preflight, 2026-09-25. This joins the existing
+Status: FROZEN after independent preflight (no open P0/P1/P2), 2026-09-25.
+This joins the existing
 market, pricing and fulfillment configuration into buyer-safe choices. It is a
 dependency of automatic product payment entry, not payment or carrier acceptance.
 
