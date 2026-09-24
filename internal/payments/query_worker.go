@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
+	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 
 	"livecommerce/internal/command"
 	"livecommerce/internal/integrations/accounts"
@@ -69,6 +70,7 @@ type QueryWorker struct {
 	profile string
 	options QueryWorkerOptions
 	core    core.Service
+	jobs    *river.Client[pgx.Tx]
 }
 
 var _ river.Worker[paymentQueryArgs] = (*QueryWorker)(nil)
@@ -82,7 +84,11 @@ func NewQueryWorker(ctx context.Context, pool *pgxpool.Pool, keys *accounts.Keyr
 	if err := platform.ValidateWorkerPool(ctx, pool); err != nil {
 		return nil, errPaymentQueryDatabase
 	}
-	return &QueryWorker{pool: pool, keys: keys, profile: profile, options: options}, nil
+	jobs, err := river.NewClient(riverpgxv5.New(pool), &river.Config{Schema: "river"})
+	if err != nil {
+		return nil, errPaymentQueryDatabase
+	}
+	return &QueryWorker{pool: pool, keys: keys, profile: profile, options: options, jobs: jobs}, nil
 }
 
 func validQueryWorkerProfile(profile string) bool {
@@ -275,6 +281,9 @@ func queryOnce(ctx context.Context, material accounts.PaymentQueryMaterial) (obs
 }
 
 func (w *QueryWorker) record(ctx context.Context, id string, claim core.ClaimResult, report payuni.Observation) error {
+	if w == nil || w.jobs == nil {
+		return errPaymentQueryDatabase
+	}
 	encoded, err := json.Marshal(report)
 	if err != nil {
 		return errPaymentQueryDatabase
@@ -286,8 +295,18 @@ func (w *QueryWorker) record(ctx context.Context, id string, claim core.ClaimRes
 		return err
 	}
 	defer w.rollback(tx)
-	if _, err = tx.Exec(bounded, `SELECT integration.record_payment_query($1::uuid,$2::bigint,$3::bytea,$4::text,$5::jsonb)`,
-		id, claim.Generation, claim.LeaseToken, w.profile, encoded); err != nil {
+	var reportHash string
+	if err = tx.QueryRow(bounded, `SELECT encode(sha256(convert_to($1::jsonb::text,'UTF8')),'hex')`,
+		encoded).Scan(&reportHash); err != nil {
+		return err
+	}
+	job, err := w.jobs.InsertTx(bounded, tx, paymentReconcileArgs{
+		OperationID: id, ReportHash: reportHash, Version: 1}, nil)
+	if err != nil {
+		return err
+	}
+	if _, err = tx.Exec(bounded, `SELECT integration.record_payment_query($1::uuid,$2::bigint,$3::bytea,$4::text,$5::jsonb,$6::bigint)`,
+		id, claim.Generation, claim.LeaseToken, w.profile, encoded, job.Job.ID); err != nil {
 		return err
 	}
 	return tx.Commit(bounded)
