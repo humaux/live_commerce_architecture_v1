@@ -27,7 +27,8 @@ and the separate cookie/CSRF/rate-limit/HTTP/browser gates are implemented.
   1`; `state` in REQUESTED, OWNERSHIP_PENDING, TLS_PENDING, ACTIVE, SUSPENDED,
   DETACHED (default REQUESTED); optional ownership_verified_at, tls_verified_at,
   valid_until and evidence_ref. ACTIVE requires all three timestamps and a
-  nonblank evidence_ref of at most 240 characters, all supplied timestamps finite,
+  evidence_ref of at most 240 characters containing a non-whitespace character
+  (PG POSIX space class) and no control characters, all supplied timestamps finite,
   with valid_until later than
   both verification timestamps. Check origin shape/length in both Go and SQL.
 - Both tables FORCE RLS. Ordinary runtime, merchant identity, buyer runtime,
@@ -45,7 +46,7 @@ and the separate cookie/CSRF/rate-limit/HTTP/browser gates are implemented.
 - Origin is `https://` followed by an ASCII lowercase DNS hostname, at most 253
   hostname characters, at least two labels, labels 1..63 characters; letters,
   digits and interior hyphens only; final label begins with a letter. No IP,
-  localhost, wildcard, path (including `/`), port (including `:443`), userinfo,
+  localhost or `*.localhost`, wildcard, path (including `/`), port (including `:443`), userinfo,
   query, fragment, trailing dot, Unicode or whitespace. Already encoded `xn--`
   DNS labels are allowed; no implicit normalization or DNS lookup. A future
   configuration form may normalize deliberately before this trust boundary.

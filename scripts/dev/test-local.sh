@@ -7,8 +7,8 @@ command -v go >/dev/null
 # public official golden vector; missing Node must fail before starting fixtures.
 command -v node >/dev/null
 test_mode="${1:-foundation}"
-if [[ "$#" -gt 1 ]] || [[ "$test_mode" != foundation && "$test_mode" != --browser-identity && "$test_mode" != --checkout && "$test_mode" != --payment ]]; then
-  printf 'Usage: bash scripts/dev/test-local.sh [--browser-identity|--checkout|--payment]\n' >&2
+if [[ "$#" -gt 1 ]] || [[ "$test_mode" != foundation && "$test_mode" != --browser-identity && "$test_mode" != --checkout && "$test_mode" != --payment && "$test_mode" != --storefront-resolver ]]; then
+  printf 'Usage: bash scripts/dev/test-local.sh [--browser-identity|--checkout|--payment|--storefront-resolver]\n' >&2
   exit 2
 fi
 if [[ "$test_mode" == --browser-identity ]]; then
@@ -64,6 +64,9 @@ elif [[ "$test_mode" == --checkout ]]; then
 elif [[ "$test_mode" == --payment ]]; then
   GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=120s -run '^TestBuyerPayment' -v ./tests/foundation
   printf 'PASS: payment start/query subset only; full regression still required.\n'
+elif [[ "$test_mode" == --storefront-resolver ]]; then
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=120s -run '^TestPublishedStorefront' -v ./tests/foundation
+  printf 'PASS: published-origin resolver subset only; not public HTTP or provider proof.\n'
 else
   # The growing serial real-PG suite includes a deliberate ~35s process-crash
   # rescue. This is the package envelope, not a relaxation of per-case fences.
