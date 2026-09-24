@@ -66,7 +66,7 @@ func (r *Resolver) Resolve(ctx context.Context, origin string) (Route, error) {
 	if err := ctx.Err(); err != nil {
 		return Route{}, err
 	}
-	if !validOrigin(origin) {
+	if !ValidOrigin(origin) {
 		return Route{}, ErrInvalid
 	}
 	callCtx, cancel := context.WithTimeout(ctx, requestTimeout)
@@ -103,10 +103,12 @@ func validRoute(route Route, origin string) bool {
 		route.DomainID != "00000000-0000-0000-0000-000000000000" &&
 		route.StoreID != "00000000-0000-0000-0000-000000000000" &&
 		route.DomainVersion > 0 && route.PublicationVersion > 0 &&
-		route.Origin == origin && validOrigin(route.Origin)
+		route.Origin == origin && ValidOrigin(route.Origin)
 }
 
-func validOrigin(origin string) bool {
+// ValidOrigin matches the canonical HTTPS domain grammar admitted by the
+// storefront publication schema, for both buyer and merchant read paths.
+func ValidOrigin(origin string) bool {
 	if !strings.HasPrefix(origin, "https://") {
 		return false
 	}

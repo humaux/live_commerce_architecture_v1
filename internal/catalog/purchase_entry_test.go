@@ -98,6 +98,11 @@ func TestReadPurchaseEntryFailClosed(t *testing.T) {
 		{"unknown state", purchaseRow{values: []any{"other", ""}}, ErrPurchaseEntryUnavailable},
 		{"unexpected origin", purchaseRow{values: []any{"storefront_unavailable", "https://shop.example"}}, ErrPurchaseEntryUnavailable},
 		{"unsafe origin", purchaseRow{values: []any{"configured", "https://shop.example/path"}}, ErrPurchaseEntryUnavailable},
+		{"localhost origin", purchaseRow{values: []any{"configured", "https://localhost"}}, ErrPurchaseEntryUnavailable},
+		{"loopback origin", purchaseRow{values: []any{"configured", "https://127.0.0.1"}}, ErrPurchaseEntryUnavailable},
+		{"localhost subdomain", purchaseRow{values: []any{"configured", "https://a.localhost"}}, ErrPurchaseEntryUnavailable},
+		{"trailing dot", purchaseRow{values: []any{"configured", "https://shop.example."}}, ErrPurchaseEntryUnavailable},
+		{"underscore", purchaseRow{values: []any{"configured", "https://bad_name.example"}}, ErrPurchaseEntryUnavailable},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			tx := &purchaseTx{rows: []purchaseRow{tc.origin}}

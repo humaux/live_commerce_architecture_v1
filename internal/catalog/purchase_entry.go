@@ -4,12 +4,11 @@ import (
 	"context"
 	"crypto/sha256"
 	"errors"
-	"net/url"
-	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"livecommerce/internal/command"
+	"livecommerce/internal/domains"
 	"livecommerce/internal/platform"
 )
 
@@ -84,14 +83,7 @@ func validPurchaseOrigin(state, origin string) bool {
 	if state == "storefront_unavailable" || state == "domain_selection_required" {
 		return origin == ""
 	}
-	if state != "configured" || origin == "" {
-		return false
-	}
-	u, err := url.Parse(origin)
-	if err != nil || u.Scheme != "https" || u.Opaque != "" || u.Host == "" || u.User != nil || u.Path != "" || u.RawPath != "" || u.RawQuery != "" || u.Fragment != "" || u.ForceQuery {
-		return false
-	}
-	return u.Host == u.Hostname() && u.Host == strings.ToLower(u.Host) && u.String() == origin
+	return state == "configured" && domains.ValidOrigin(origin)
 }
 
 func purchaseEntryDBError(ctx context.Context, err error) error {
