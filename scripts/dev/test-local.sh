@@ -54,7 +54,7 @@ export LC_TEST_DATABASE_ALLOWED=1
 export COMMERCE_FIXTURE_ALLOWED=1
 export LC_ADMIN_GUARD_DSN="postgres://postgres:${POSTGRES_PASSWORD}@${test_port}/lc_admin_fixture?sslmode=disable"
 if [[ "$test_mode" == --browser-identity ]]; then
-  LC_BROWSER_IDENTITY_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=120s -run '^TestBrowserIdentityRealChain$' -v ./tests/foundation
+  LC_BROWSER_IDENTITY_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=120s -run '^(TestBrowserIdentityRealChain|TestMerchantAccountAPIProcessRestart)$' -v ./tests/foundation
   printf 'PASS: isolated PG + signed MOCK IdP browser chain; fixture removed at exit.\n'
 elif [[ "$test_mode" == --checkout ]]; then
   # Focused diagnosis uses the same isolated real PG and cleanup guard. It never

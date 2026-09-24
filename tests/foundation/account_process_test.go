@@ -99,14 +99,22 @@ func TestMerchantAccountAPIProcessRestart(t *testing.T) {
 			t.Fatalf("start API %s: %v", name, err)
 		}
 		done := make(chan error, 1)
-		go func() { done <- cmd.Wait() }()
+		go func() {
+			done <- cmd.Wait()
+			close(done)
+		}()
 		t.Cleanup(func() {
-			if cmd.ProcessState == nil {
-				_ = cmd.Process.Kill()
-				select {
-				case <-done:
-				case <-time.After(5 * time.Second):
-				}
+			// Only the Wait goroutine owns ProcessState until completion.
+			select {
+			case <-done:
+				return
+			default:
+			}
+			_ = cmd.Process.Kill()
+			select {
+			case <-done:
+			case <-time.After(5 * time.Second):
+				t.Errorf("API PID %d did not exit during cleanup", cmd.Process.Pid)
 			}
 		})
 		deadline := time.Now().Add(15 * time.Second)
