@@ -68,6 +68,7 @@ type routeKind uint8
 const (
 	unknownRoute routeKind = iota
 	sessionRoute
+	bootstrapRoute
 	catalogRoute
 	optionsRoute
 	cartRoute
@@ -88,6 +89,8 @@ func matchRoute(path string) route {
 	switch path {
 	case "/v1/buyer/session":
 		return route{kind: sessionRoute}
+	case "/v1/buyer/session/bootstrap":
+		return route{kind: bootstrapRoute}
 	case "/v1/buyer/catalog":
 		return route{kind: catalogRoute}
 	case "/v1/buyer/checkout-options":
@@ -116,6 +119,8 @@ func allowed(kind routeKind, method string) bool {
 	switch kind {
 	case sessionRoute:
 		return method == http.MethodGet || method == http.MethodPost || method == http.MethodDelete
+	case bootstrapRoute:
+		return method == http.MethodPost
 	case catalogRoute, optionsRoute:
 		return method == http.MethodGet
 	case cartRoute:
@@ -258,9 +263,9 @@ func bearer(r *http.Request) (string, bool) {
 	return token, canonicalSecret(token)
 }
 
-func keyFor(r *http.Request, issue bool, write bool) (string, bool) {
+func keyFor(r *http.Request, noReplayKey bool, write bool) (string, bool) {
 	values := r.Header.Values("Idempotency-Key")
-	if issue || !write {
+	if noReplayKey || !write {
 		return "", len(values) == 0
 	}
 	returnValue, one := oneHeader(r, "Idempotency-Key")
@@ -313,8 +318,9 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		fail(http.StatusUnprocessableEntity, "invalid_request")
 		return
 	}
-	write := r.Method == http.MethodPut || (r.Method == http.MethodPost && !issue)
-	key, valid := keyFor(r, issue, write)
+	noReplayKey := issue || selected.kind == bootstrapRoute
+	write := r.Method == http.MethodPut || (r.Method == http.MethodPost && !noReplayKey)
+	key, valid := keyFor(r, noReplayKey, write)
 	if !valid {
 		fail(http.StatusUnprocessableEntity, "invalid_request")
 		return
@@ -368,6 +374,23 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 			Token     string    `json:"token"`
 			ExpiresAt time.Time `json:"expires_at"`
 		}{capability.Token, capability.ExpiresAt})
+		return nil
+	}
+	if selected.kind == bootstrapRoute {
+		if err := decodeJSON(r, &struct{}{}); err != nil {
+			return err
+		}
+		capability, err := h.issuer.RegisterForTrustedStore(ctx, storeID, token)
+		if err != nil {
+			return err
+		}
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		writeOK(w, struct {
+			Authenticated bool      `json:"authenticated"`
+			ExpiresAt     time.Time `json:"expires_at"`
+		}{true, capability.ExpiresAt})
 		return nil
 	}
 	if r.Method == http.MethodGet || r.Method == http.MethodDelete {
