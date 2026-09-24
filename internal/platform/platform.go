@@ -56,6 +56,12 @@ func OpenBuyerPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	return openPool(ctx, dsn, "buyer_runtime")
 }
 
+// OpenCheckoutPool admits only the dedicated internal checkout login. It is
+// never a public buyer SQL credential or a merchant authority.
+func OpenCheckoutPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
+	return openPool(ctx, dsn, "checkout_runtime")
+}
+
 // OpenBuyerIssuerPool is an internal capability authority, never a public
 // store-ID-to-token endpoint. See contracts/buyer-capability-v1.md.
 func OpenBuyerIssuerPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
@@ -107,8 +113,18 @@ func ValidateWorkerPool(ctx context.Context, pool *pgxpool.Pool) error {
 	return validatePoolAuthority(bounded, pool, "worker")
 }
 
+// ValidateCheckoutPool checks an existing pool without taking ownership of it.
+func ValidateCheckoutPool(ctx context.Context, pool *pgxpool.Pool) error {
+	if pool == nil {
+		return errors.New("checkout database pool required")
+	}
+	bounded, cancel := context.WithTimeout(ctx, startupTimeout)
+	defer cancel()
+	return validatePoolAuthority(bounded, pool, "checkout_runtime")
+}
+
 func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority string) error {
-	var sameLogin, superuser, bypassRLS, roleAdmin, databaseCreator, replication, objectOwner, runtimeMember, authMember, identityMember, buyerRuntimeMember, buyerIssuerMember, workerMember, canSetPrivileged bool
+	var sameLogin, superuser, bypassRLS, roleAdmin, databaseCreator, replication, objectOwner, runtimeMember, authMember, identityMember, buyerRuntimeMember, buyerIssuerMember, workerMember, checkoutMember, checkoutWriterMember, canSetPrivileged bool
 	err := pool.QueryRow(ctx, `
 		SELECT session_user=current_user, r.rolsuper, r.rolbypassrls, r.rolcreaterole, r.rolcreatedb, r.rolreplication,
 		       (EXISTS (
@@ -128,6 +144,8 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 		       pg_has_role(session_user, 'commerce_buyer_runtime', 'MEMBER'),
 		       pg_has_role(session_user, 'commerce_buyer_issuer', 'MEMBER'),
 		       pg_has_role(session_user, 'commerce_worker', 'MEMBER'),
+		       coalesce(pg_has_role(session_user, to_regrole('commerce_checkout_runtime'), 'MEMBER'),false),
+		       coalesce(pg_has_role(session_user, to_regrole('commerce_checkout_writer'), 'MEMBER'),false),
 		       EXISTS (
 			   SELECT 1 FROM pg_roles candidate
 			   WHERE (candidate.rolsuper OR candidate.rolbypassrls OR candidate.rolcreaterole OR candidate.rolcreatedb OR candidate.rolreplication
@@ -145,14 +163,15 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 			     AND pg_has_role(session_user, candidate.oid, 'SET')
 		       )
 		FROM pg_roles r WHERE r.rolname = session_user`).
-		Scan(&sameLogin, &superuser, &bypassRLS, &roleAdmin, &databaseCreator, &replication, &objectOwner, &runtimeMember, &authMember, &identityMember, &buyerRuntimeMember, &buyerIssuerMember, &workerMember, &canSetPrivileged)
+		Scan(&sameLogin, &superuser, &bypassRLS, &roleAdmin, &databaseCreator, &replication, &objectOwner, &runtimeMember, &authMember, &identityMember, &buyerRuntimeMember, &buyerIssuerMember, &workerMember, &checkoutMember, &checkoutWriterMember, &canSetPrivileged)
 	if err != nil {
 		return fmt.Errorf("validate runtime role: %w", err)
 	}
 	// Exactly one authority, including indirect grants. Checking only the desired
 	// role would let a mixed login smuggle merchant privileges into buyer code.
 	memberships := map[string]bool{"runtime": runtimeMember, "identity": identityMember,
-		"buyer_runtime": buyerRuntimeMember, "buyer_issuer": buyerIssuerMember, "worker": workerMember}
+		"buyer_runtime": buyerRuntimeMember, "buyer_issuer": buyerIssuerMember, "worker": workerMember,
+		"checkout_runtime": checkoutMember}
 	roleCount := 0
 	for _, member := range memberships {
 		if member {
@@ -162,7 +181,7 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 	roleValid := memberships[authority] && roleCount == 1
 	// A privileged login cannot launder its authority with startup SET ROLE:
 	// RESET ROLE would recover the session_user's capabilities after admission.
-	if !sameLogin || superuser || bypassRLS || roleAdmin || databaseCreator || replication || objectOwner || !roleValid || authMember || canSetPrivileged {
+	if !sameLogin || superuser || bypassRLS || roleAdmin || databaseCreator || replication || objectOwner || !roleValid || authMember || checkoutWriterMember || canSetPrivileged {
 		return errors.New("unsafe runtime database role")
 	}
 	return nil
