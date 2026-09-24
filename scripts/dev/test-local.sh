@@ -7,9 +7,15 @@ command -v go >/dev/null
 # public official golden vector; missing Node must fail before starting fixtures.
 command -v node >/dev/null
 test_mode="${1:-foundation}"
-if [[ "$#" -gt 1 ]] || [[ "$test_mode" != foundation && "$test_mode" != --browser-identity && "$test_mode" != --checkout && "$test_mode" != --payment && "$test_mode" != --storefront-resolver && "$test_mode" != --buyer-http ]]; then
-  printf 'Usage: bash scripts/dev/test-local.sh [--browser-identity|--checkout|--payment|--storefront-resolver|--buyer-http]\n' >&2
+if [[ "$#" -gt 1 ]] || [[ "$test_mode" != foundation && "$test_mode" != --browser-identity && "$test_mode" != --browser-buyer && "$test_mode" != --checkout && "$test_mode" != --payment && "$test_mode" != --storefront-resolver && "$test_mode" != --buyer-http ]]; then
+  printf 'Usage: bash scripts/dev/test-local.sh [--browser-identity|--browser-buyer|--checkout|--payment|--storefront-resolver|--buyer-http]\n' >&2
   exit 2
+fi
+if [[ "$test_mode" == --browser-buyer ]]; then
+  command -v pnpm >/dev/null
+  command -v openssl >/dev/null
+  COMMERCE_BUYER_WEB_ENABLED=0 pnpm run build:storefront
+  mkdir -p output/playwright
 fi
 if [[ "$test_mode" == --browser-identity ]]; then
   command -v pnpm >/dev/null
@@ -56,6 +62,9 @@ export LC_ADMIN_GUARD_DSN="postgres://postgres:${POSTGRES_PASSWORD}@${test_port}
 if [[ "$test_mode" == --browser-identity ]]; then
   LC_BROWSER_IDENTITY_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=180s -run '^(TestBrowserIdentityRealChain|TestBrowserSettingsWizardRealChain|TestMerchantAccountAPIProcessRestart)$' -v ./tests/foundation
   printf 'PASS: isolated PG + signed MOCK IdP browser chain; fixture removed at exit.\n'
+elif [[ "$test_mode" == --browser-buyer ]]; then
+  LC_BROWSER_BUYER_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=180s -run '^TestBrowserBuyerRealChain$' -v ./tests/foundation
+  printf 'PASS: isolated PG + real buyer browser transport; not UI/PSP/deployment acceptance.\n'
 elif [[ "$test_mode" == --checkout ]]; then
   # Focused diagnosis uses the same isolated real PG and cleanup guard. It never
   # substitutes for the full foundation/race/vet release gate below.
