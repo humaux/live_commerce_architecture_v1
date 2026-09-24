@@ -142,7 +142,9 @@ func newClient(config Config, queryOnly bool, transport http.RoundTripper) (*Cli
 		return nil, ErrInvalid
 	}
 	if transport == nil {
-		transport = &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12}}
+		// A query client is one-shot; do not retain idle sockets per leased job.
+		transport = &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12},
+			DisableKeepAlives: queryOnly}
 	}
 	return &Client{config: config, queryOnly: queryOnly, httpClient: &http.Client{
 		Timeout:       10 * time.Second,

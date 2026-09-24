@@ -161,11 +161,11 @@ func (w *QueryWorker) Work(ctx context.Context, job *river.Job[paymentQueryArgs]
 	if callCtx.Err() != nil {
 		return w.finish(ctx, id, claim, providerReference, "payment_query_timeout", false)
 	}
-	if err != nil {
-		return w.finish(ctx, id, claim, providerReference, "payment_query_material_unavailable", false)
-	}
 	if material.Age >= w.options.MaxAge {
 		return w.finish(ctx, id, claim, providerReference, "payment_query_budget_exhausted", true)
+	}
+	if err != nil {
+		return w.finish(ctx, id, claim, providerReference, "payment_query_material_unavailable", false)
 	}
 	observation, wireErr, panicked := queryOnce(callCtx, material)
 	if ctx.Err() != nil {
@@ -256,7 +256,7 @@ func (w *QueryWorker) load(ctx context.Context, id string, claim core.ClaimResul
 		material, err = w.keys.LoadPaymentQuery(bounded, tx, id, claim.Generation, claim.LeaseToken, w.profile)
 	}
 	if err != nil {
-		return accounts.PaymentQueryMaterial{}, err
+		return material, err
 	}
 	if err = tx.Commit(bounded); err != nil {
 		return accounts.PaymentQueryMaterial{}, err

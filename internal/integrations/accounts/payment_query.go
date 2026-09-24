@@ -17,6 +17,8 @@ var ErrPaymentQueryMaterial = errors.New("payment_query_material_unavailable")
 
 // PaymentQueryMaterial contains only a redacted client and immutable trade
 // expectations. The historical credential never leaves the client boundary.
+// When the authenticated SQL row is valid but local materialization fails,
+// only Age is returned alongside ErrPaymentQueryMaterial for budget handling.
 type PaymentQueryMaterial struct {
 	Client   *payuni.Client
 	Expected payuni.ExpectedTrade
@@ -48,25 +50,28 @@ func (k *Keyring) LoadPaymentQuery(ctx context.Context, tx pgx.Tx, operationID s
 		!validQueryEnvironment(profile, environment) {
 		return PaymentQueryMaterial{}, ErrPaymentQueryMaterial
 	}
+	material := PaymentQueryMaterial{Age: time.Duration(ageSeconds * float64(time.Second))}
 	amountTWD, err := payuni.AmountTWDFromMinor(currency, amount)
 	if err != nil || amountTWD > 199999 {
-		return PaymentQueryMaterial{}, ErrPaymentQueryMaterial
+		return material, ErrPaymentQueryMaterial
 	}
 	aad := credentialAAD{FormatVersion: 1, TenantID: tenantID, StoreID: storeID,
 		ConnectionID: connectionID, Provider: provider, Environment: environment,
 		AccountID: accountID, CredentialVersion: version}
 	credentials, err := k.open(aad, keyID, nonce, ciphertext)
 	if err != nil {
-		return PaymentQueryMaterial{}, ErrPaymentQueryMaterial
+		return material, ErrPaymentQueryMaterial
 	}
 	client, err := payuni.NewQuery(payuni.Config{Environment: environment, MerchantID: accountID,
 		HashKey: credentials.HashKey, HashIV: credentials.HashIV}, mockTransport...)
 	if err != nil {
-		return PaymentQueryMaterial{}, ErrPaymentQueryMaterial
+		return material, ErrPaymentQueryMaterial
 	}
-	return PaymentQueryMaterial{Client: client, Expected: payuni.ExpectedTrade{
+	material.Client = client
+	material.Expected = payuni.ExpectedTrade{
 		MerTradeNo: merchantTradeNo, TradeNo: providerReference, AmountTWD: amountTWD,
-		Currency: currency, Method: method}, Age: time.Duration(ageSeconds * float64(time.Second))}, nil
+		Currency: currency, Method: method}
+	return material, nil
 }
 
 func validQueryProfile(profile string) bool {

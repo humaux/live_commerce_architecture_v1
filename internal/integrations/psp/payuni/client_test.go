@@ -103,6 +103,16 @@ func TestQueryOnlyClientCannotUsePaymentOrNotification(t *testing.T) {
 	if err != nil || !client.queryOnly {
 		t.Fatalf("query-only constructor: %v", err)
 	}
+	defaultClient, err := NewQuery(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if built, ok := defaultClient.httpClient.Transport.(*http.Transport); !ok || !built.DisableKeepAlives {
+		t.Fatal("one-shot query retained idle connection")
+	}
+	if built, ok := testClient(t).httpClient.Transport.(*http.Transport); !ok || built.DisableKeepAlives {
+		t.Fatal("hosted client transport changed")
+	}
 	if _, err := client.BuildHosted(HostedRequest{}); !errors.Is(err, ErrInvalid) {
 		t.Fatalf("query client built hosted payment: %v", err)
 	}
