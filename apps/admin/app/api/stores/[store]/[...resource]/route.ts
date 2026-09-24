@@ -11,22 +11,41 @@ import {
 } from "@/lib/auth";
 
 const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+const account = `provider-accounts(?:/${uuid})?`;
+const setting = `markets/${uuid}/countries/[A-Z]{2}/(?:delivery-services|payment-methods)/[a-z][a-z0-9_-]{0,39}`;
+const inspect = `markets/${uuid}/countries/[A-Z]{2}/payment-methods/[a-z][a-z0-9_-]{0,39}/inspect`;
 const routes: Record<string, RegExp> = {
   GET: new RegExp(
-    `^(catalog-ledger|products|warehouses|inventory|products/${uuid}/skus)$`,
+    `^(catalog-ledger|products|warehouses|inventory|products/${uuid}/skus|${account}|${setting})$`,
   ),
   POST: new RegExp(
-    `^(products|skus|warehouses|inventory/adjustments|products/${uuid}/archive|skus/${uuid}/(archive|price))$`,
+    `^(products|skus|warehouses|inventory/adjustments|products/${uuid}/archive|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect})$`,
   ),
   PATCH: new RegExp(`^(products/${uuid}|skus/${uuid})$`),
+  PUT: new RegExp(`^${setting}$`),
 };
+const exactStore = new RegExp(`^${uuid}$`);
+const inspectRoute = new RegExp(`^${inspect}$`);
 type Context = { params: Promise<{ store: string; resource: string[] }> };
 
 async function proxy(request: Request, context: Context) {
   const error = localError;
   const { store, resource } = await context.params;
   const path = resource.join("/");
-  if (!routes[request.method]?.test(path)) return error(404, "not_found");
+  if (!exactStore.test(store) || !routes[request.method]?.test(path))
+    return error(404, "not_found");
+  const accountRoute = path.startsWith("provider-accounts");
+  const inspection = request.method === "POST" && inspectRoute.test(path);
+  // A local shared fixture bearer is never authority to intake provider secrets.
+  if (accountRoute && !authConfig) return error(404, "not_found");
+  // URL.search drops an empty trailing '?'. Exact resources must reject that too;
+  // only account collection GET inherits the bounded pagination parser in Go.
+  const exactResource =
+    path.startsWith("markets/") ||
+    (accountRoute &&
+      !(request.method === "GET" && path === "provider-accounts"));
+  if (exactResource && request.url.includes("?"))
+    return error(422, "invalid_request");
   const url = new URL(request.url);
   let token: string | undefined;
   if (authConfig) {
@@ -67,7 +86,7 @@ async function proxy(request: Request, context: Context) {
     )
       return error(415, "json_required");
     const key = request.headers.get("idempotency-key") ?? "";
-    if (!/^[A-Za-z0-9_.:-]{8,128}$/.test(key))
+    if (!inspection && !/^[A-Za-z0-9_.:-]{8,128}$/.test(key))
       return error(422, "invalid_request");
     const reader = request.body?.getReader();
     if (!reader) return error(400, "invalid_json");
@@ -92,7 +111,7 @@ async function proxy(request: Request, context: Context) {
     init.body = new TextDecoder().decode(data);
     init.headers = {
       "Content-Type": "application/json",
-      "Idempotency-Key": key,
+      ...(!inspection ? { "Idempotency-Key": key } : {}),
     };
   }
   const response = await callBackend(path + url.search, init, token, store);
@@ -114,9 +133,9 @@ async function proxy(request: Request, context: Context) {
 export const GET = proxy;
 export const POST = proxy;
 export const PATCH = proxy;
+export const PUT = proxy;
 const unsupported = () =>
-  localError(405, "method_not_allowed", "GET, POST, PATCH");
-export const PUT = unsupported;
+  localError(405, "method_not_allowed", "GET, POST, PATCH, PUT");
 export const DELETE = unsupported;
 export const OPTIONS = unsupported;
 export const HEAD = unsupported;

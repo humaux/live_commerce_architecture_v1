@@ -24,11 +24,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/riverqueue/river"
+	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/identity"
 	"livecommerce/internal/identityhttp"
+	"livecommerce/internal/integrations/accounts"
+	"livecommerce/internal/integrations/core"
 	"livecommerce/internal/oidclogin"
-	"livecommerce/internal/platform"
 )
 
 // This optional gate connects the actual Next BFF and Go authority to a real,
@@ -79,10 +82,49 @@ func TestBrowserIdentityRealChain(t *testing.T) {
 	}
 	mux := http.NewServeMux()
 	mux.Handle("/v1/identity/", private)
-	mux.Handle("/", httpapi.NewHandler(f.runtime, platform.HandlerOptions{SessionStoreList: true}))
+	// Insert-only dependency, no worker/provider is started. Random fixture keys
+	// are held only in Go memory, never in the Next environment or browser.
+	jobs, err := river.NewClient(riverpgxv5.New(f.runtime), &river.Config{Schema: "river"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	bindings, err := core.New(jobs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	accountKeys, err := accounts.NewKeyring("browser_fixture", map[string][]byte{"browser_fixture": randomBytes(32)}, randomBytes(32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	accountService, err := accounts.New(accountKeys, bindings)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mux.Handle("/", httpapi.NewHandler(f.runtime, httpapi.Options{SessionStoreList: true, Accounts: accountService}))
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		recorded := httptest.NewRecorder()
 		mux.ServeHTTP(recorded, r)
+		// Market discovery/setup has no public route yet. Seed only this test's
+		// onboarding receipt into the isolated database; NEVER synthesize grants,
+		// provider qualifications or a settings response. Browser PUT/inspect below
+		// still cross the real BFF, domain validation, runtime role and persistence.
+		if r.Method == "POST" && r.URL.Path == "/v1/identity/initial-store" && recorded.Code == http.StatusOK {
+			var created identity.Store
+			if err := json.Unmarshal(recorded.Body.Bytes(), &created); err != nil {
+				t.Error("fixture could not decode successful store receipt")
+				w.WriteHeader(500)
+				return
+			}
+			_, err := f.owner.Exec(r.Context(), `INSERT INTO pricing.markets(tenant_id,store_id,id,code,name,currency,principal_id)
+				SELECT i.tenant_id,i.store_id,$1,'browser_tw','Browser fixture Taiwan','TWD',i.principal_id
+				FROM identity.initial_stores i WHERE i.tenant_id=$2 AND i.store_id=$3
+				ON CONFLICT(tenant_id,store_id,id) DO NOTHING`, browserMarketID, created.TenantID, created.StoreID)
+			if err != nil {
+				t.Error("isolated browser market fixture failed")
+				w.WriteHeader(500)
+				return
+			}
+		}
 		for name, values := range recorded.Header() {
 			w.Header()[name] = values
 		}
@@ -148,7 +190,8 @@ func TestBrowserIdentityRealChain(t *testing.T) {
 	browser.Env = browserEnvironment(map[string]string{
 		"LC_BROWSER_SUITE":         "identity-real",
 		"LC_BROWSER_PUBLIC_ORIGIN": publicOrigin, "LC_BROWSER_API_ORIGIN": api.URL,
-		"LC_BROWSER_ISSUER": idp.server.URL,
+		"LC_BROWSER_ISSUER":    idp.server.URL,
+		"LC_BROWSER_MARKET_ID": browserMarketID,
 	})
 	browser.Stdout, browser.Stderr = browserLogFile, browserLogFile
 	if err := browser.Run(); err != nil {
@@ -167,6 +210,32 @@ func TestBrowserIdentityRealChain(t *testing.T) {
 		WHERE e.issuer=$1 AND e.subject='browser-subject'`, idp.server.URL).Scan(&stores)
 	if err != nil || stores != 1 {
 		t.Fatalf("database bootstrap receipt proof: stores=%d err=%v", stores, err)
+	}
+	var accountCount, credentialCount, qualifications, credentialVersion, operations int
+	err = f.owner.QueryRow(ctx, `SELECT count(DISTINCT a.id), count(c.version),
+		(SELECT count(*) FROM payments.account_qualifications q WHERE q.tenant_id=s.tenant_id),
+		coalesce(max(a.credential_version),0),
+		(SELECT count(*) FROM integration.operations o WHERE o.tenant_id=s.tenant_id)
+		FROM identity.initial_stores s
+		JOIN identity.external_identities e ON e.principal_id=s.principal_id
+		LEFT JOIN integration.merchant_accounts a ON a.tenant_id=s.tenant_id AND a.store_id=s.store_id
+		LEFT JOIN integration.account_credentials c ON c.tenant_id=a.tenant_id AND c.store_id=a.store_id AND c.connection_id=a.id
+		WHERE e.issuer=$1 AND e.subject='browser-subject' GROUP BY s.tenant_id`, idp.server.URL).
+		Scan(&accountCount, &credentialCount, &qualifications, &credentialVersion, &operations)
+	if err != nil || accountCount != 1 || credentialCount != 2 || qualifications != 0 || credentialVersion != 2 || operations != 0 {
+		t.Fatalf("browser account persistence proof failed: accounts=%d credentials=%d qualifications=%d version=%d operations=%d err=%v", accountCount, credentialCount, qualifications, credentialVersion, operations, err)
+	}
+	var methodVersions, methodHeads, enabledMethods, inspectCommands int
+	err = f.owner.QueryRow(ctx, `SELECT
+		(SELECT count(*) FROM payments.method_versions m WHERE m.tenant_id=s.tenant_id),
+		(SELECT count(*) FROM payments.method_heads m WHERE m.tenant_id=s.tenant_id),
+		(SELECT count(*) FROM payments.method_versions m WHERE m.tenant_id=s.tenant_id AND m.enabled),
+		(SELECT count(*) FROM ops.command_results c WHERE c.tenant_id=s.tenant_id AND c.operation LIKE '%inspect%')
+		FROM identity.initial_stores s JOIN identity.external_identities e ON e.principal_id=s.principal_id
+		WHERE e.issuer=$1 AND e.subject='browser-subject'`, idp.server.URL).
+		Scan(&methodVersions, &methodHeads, &enabledMethods, &inspectCommands)
+	if err != nil || methodVersions != 2 || methodHeads != 1 || enabledMethods != 0 || inspectCommands != 0 {
+		t.Fatalf("browser method/inspection persistence proof: versions=%d heads=%d enabled=%d inspect_commands=%d err=%v", methodVersions, methodHeads, enabledMethods, inspectCommands, err)
 	}
 	idp.mu.Lock()
 	exchanges, keys := idp.exchanges, idp.keyReads
@@ -205,6 +274,7 @@ func browserEnvironment(values map[string]string) []string {
 }
 
 const browserClientID = "isolated-browser-client"
+const browserMarketID = "99999999-9999-4999-8999-999999999999"
 
 type observedBrowserProvider struct {
 	*oidclogin.Provider

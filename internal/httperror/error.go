@@ -56,7 +56,7 @@ func Write(w http.ResponseWriter, status int, code string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(Envelope{Code: code, Message: message,
-		RequestID: w.Header().Get("X-Request-ID"), Retryable: status == http.StatusServiceUnavailable,
+		RequestID: w.Header().Get("X-Request-ID"), Retryable: status == http.StatusServiceUnavailable || status == http.StatusTooManyRequests,
 		Details: map[string]any{}})
 }
 

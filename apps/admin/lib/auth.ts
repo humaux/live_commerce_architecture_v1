@@ -97,6 +97,7 @@ const messages: Record<string, string> = {
   invalid_json: "Invalid JSON body.",
   json_required: "JSON content required.",
   retry_later: "Temporarily unavailable.",
+  rate_limited: "Too many requests. Try again later.",
   method_not_allowed: "Method not allowed.",
 };
 
@@ -106,7 +107,7 @@ export function localError(status: number, code: string, allow?: string) {
     code,
     message: messages[code] ?? "Request failed.",
     request_id: requestID,
-    retryable: status >= 500,
+    retryable: status >= 500 || status === 429,
     details: {},
   };
   return Response.json(body, {
@@ -310,10 +311,18 @@ export async function safeError(response: Response) {
     typeof body?.code === "string" && /^[a-z0-9_]{1,64}$/.test(body.code)
       ? body.code
       : "retry_later";
-  return localError(
+  const safe = localError(
     response.status >= 400 && response.status <= 599 ? response.status : 503,
     code,
   );
+  // Preserve only bounded numeric backoff, never arbitrary provider diagnostics.
+  const retryAfter = response.headers.get("retry-after") ?? "";
+  if (
+    response.status === 429 &&
+    /^(?:[1-9][0-9]{0,2}|[12][0-9]{3}|3[0-5][0-9]{2}|3600)$/.test(retryAfter)
+  )
+    safe.headers.set("Retry-After", retryAfter);
+  return safe;
 }
 
 function maxAge(expiresAt: unknown, ceiling: number) {
