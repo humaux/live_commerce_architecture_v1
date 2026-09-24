@@ -228,6 +228,33 @@ func TestBuyerHTTPRegistrationConcurrentAndLosingOwnerRollback(t *testing.T) {
 		t.Fatal("registration loser did not return")
 	}
 	brAssertDelta(t, h, before, 2)
+
+	// A stale REPEATABLE READ snapshot cannot see a later winner. It must fail
+	// closed, not invent another owner or spin in an internal retry loop.
+	stale, err := h.a.issuer.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer stale.Rollback(ctx)
+	anchor := sha256.Sum256([]byte(h.cap.Token))
+	var anchorOwner string
+	if err = stale.QueryRow(ctx, `SELECT owner_id::text FROM buyer.register_capability($1,$2,3600)`, h.f.storeA1, anchor[:]).Scan(&anchorOwner); err != nil {
+		t.Fatal(err)
+	}
+	newToken := brToken()
+	if _, err = service.RegisterForTrustedStore(ctx, h.f.storeA1, newToken); err != nil {
+		t.Fatal(err)
+	}
+	newHash := sha256.Sum256([]byte(newToken))
+	_, err = stale.Exec(ctx, `SELECT * FROM buyer.register_capability($1,$2,3600)`, h.f.storeA1, newHash[:])
+	var failure *pgconn.PgError
+	if !errors.As(err, &failure) || (failure.Code != "PT401" && failure.Code != "40001") {
+		t.Fatal("stale snapshot did not fail closed")
+	}
+	if err = stale.Rollback(ctx); err != nil {
+		t.Fatal(err)
+	}
+	brAssertDelta(t, h, before, 3)
 }
 
 func TestBuyerHTTPRegistrationAuthorityAndInvalidSQL(t *testing.T) {
