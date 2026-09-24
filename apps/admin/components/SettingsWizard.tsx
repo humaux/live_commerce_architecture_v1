@@ -36,9 +36,11 @@ import type { APIError, Page } from "@/lib/model";
 import "./settings.css";
 
 type Branch = "payuni" | "manual";
+type Observation = { target: string; version: number; dirty: boolean };
 type Draft = {
   branch: Branch;
   accountID: string;
+  accountChoiceTouched: boolean;
   environment: "SANDBOX" | "LIVE";
   merchantID: string;
   rotate: boolean;
@@ -65,10 +67,14 @@ type Draft = {
   serviceEnabled: boolean;
   serviceVisible: boolean;
   reference: string;
+  methodObservation: Observation | null;
+  policyObservation: Observation | null;
+  serviceObservation: Observation | null;
 };
 const emptyDraft: Draft = {
   branch: "payuni",
   accountID: "",
+  accountChoiceTouched: false,
   environment: "SANDBOX",
   merchantID: "",
   rotate: false,
@@ -95,6 +101,9 @@ const emptyDraft: Draft = {
   serviceEnabled: false,
   serviceVisible: false,
   reference: "",
+  methodObservation: null,
+  policyObservation: null,
+  serviceObservation: null,
 };
 const names: Record<MethodCode, [string, string, string]> = {
   payuni_credit: ["信用卡", "信用卡", "Credit card"],
@@ -145,6 +154,15 @@ export function SettingsWizard({
     busyRef = useRef(false);
   const marketRead = useRef(0),
     policyRead = useRef(0);
+  const serviceRead = useRef(0),
+    accountPageRead = useRef(0),
+    marketPageRead = useRef(0),
+    servicePageRead = useRef(0);
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  const stepRef = useRef(step);
+  stepRef.current = step;
+  const [methodListTarget, setMethodListTarget] = useState("");
   const hashKey = useRef<HTMLInputElement>(null),
     hashIV = useRef<HTMLInputElement>(null);
   const activeAccount =
@@ -155,14 +173,89 @@ export function SettingsWizard({
     methods.find((item) => item.code === draft.methodCode) ?? null;
   const activeService =
     services.find((item) => item.code === draft.serviceCode) ?? null;
+  const methodTarget = draft.marketID
+    ? `${draft.marketID}:TW:${draft.methodCode}`
+    : "";
+  const serviceTarget =
+    draft.marketID &&
+    validCountry(draft.country) &&
+    validCode(draft.serviceCode)
+      ? `${draft.marketID}:${draft.country}:${draft.serviceCode}`
+      : "";
+
+  function saveDraft(next: Draft, atStep = stepRef.current) {
+    persistDraft(next, atStep);
+    draftRef.current = next;
+    setDraft(next);
+  }
+  function hydrateMethod(current: Draft, saved: Method | null): Draft {
+    const labels = names[current.methodCode];
+    return {
+      ...current,
+      nameHans: saved?.name_hans ?? labels[0],
+      nameHant: saved?.name_hant ?? labels[1],
+      nameEN: saved?.name_en ?? labels[2],
+      visible: saved?.visible ?? false,
+      sort: String(saved?.sort_order ?? 10),
+      min: String(saved?.min_amount_minor ?? 1),
+      max: String(saved?.max_amount_minor ?? 1000000000000),
+      methodObservation: {
+        target: `${current.marketID}:TW:${current.methodCode}`,
+        version: saved?.version ?? 0,
+        dirty: false,
+      },
+    };
+  }
+  function hydrateService(current: Draft, saved: Service | null): Draft {
+    return {
+      ...current,
+      nameHans: saved?.name_hans ?? "",
+      nameHant: saved?.name_hant ?? "",
+      nameEN: saved?.name_en ?? "",
+      serviceKind: saved?.delivery_kind ?? current.serviceKind,
+      serviceEnabled: saved?.enabled ?? false,
+      serviceVisible: saved?.visible ?? false,
+      sort: String(saved?.sort_order ?? 10),
+      serviceObservation: {
+        target: `${current.marketID}:${current.country}:${current.serviceCode}`,
+        version: saved?.version ?? 0,
+        dirty: false,
+      },
+    };
+  }
+  function hydratePolicy(current: Draft, saved: Policy | null): Draft {
+    return {
+      ...current,
+      shipping: String(saved?.shipping_minor ?? 0),
+      taxMode: saved?.tax_mode ?? "none",
+      taxBasis: saved?.tax_basis ?? "goods",
+      taxRate: String(saved?.tax_rate_bps ?? 0),
+      ttl: String(saved?.quote_ttl_seconds ?? 300),
+      policyEnabled: saved?.enabled ?? false,
+      reference: "",
+      policyObservation: {
+        target: `${current.marketID}:${current.country}:${current.serviceCode}`,
+        version: saved?.version ?? 0,
+        dirty: false,
+      },
+    };
+  }
 
   function clearSecrets() {
     if (hashKey.current) hashKey.current.value = "";
     if (hashIV.current) hashIV.current.value = "";
   }
+  async function stillSession() {
+    try {
+      return (await sessionBoundary()) === boundary.current;
+    } catch {
+      return false;
+    }
+  }
   function displayError(value: APIError | null) {
     if (!value) return "";
     if (value.code === "command_storage_unavailable") return c.storage;
+    if (value.code === "secret_retry_mismatch") return c.secretRetryMismatch;
     if (value.code === "session_changed" || value.code === "unauthorized")
       return c.session;
     if (value.code === "conflict") return c.conflict;
@@ -188,10 +281,73 @@ export function SettingsWizard({
   }
   function update<K extends keyof Draft>(field: K, value: Draft[K]) {
     const next = { ...draft, [field]: value };
-    if (field === "serviceCode" || field === "marketID" || field === "country")
+    if (
+      field === "serviceCode" ||
+      field === "marketID" ||
+      field === "country"
+    ) {
       setPolicy(null);
+      next.policyObservation = null;
+      next.serviceObservation = null;
+      if (field !== "serviceCode") next.methodObservation = null;
+      policyRead.current += 1;
+      serviceRead.current += 1;
+      marketRead.current += 1;
+    }
+    if (
+      [
+        "nameHans",
+        "nameHant",
+        "nameEN",
+        "visible",
+        "sort",
+        "min",
+        "max",
+      ].includes(field) &&
+      draft.branch === "payuni"
+    )
+      next.methodObservation = {
+        target: methodTarget,
+        version: next.methodObservation?.version ?? -1,
+        dirty: true,
+      };
+    if (
+      [
+        "nameHans",
+        "nameHant",
+        "nameEN",
+        "serviceKind",
+        "serviceEnabled",
+        "serviceVisible",
+        "sort",
+      ].includes(field) &&
+      draft.branch === "manual"
+    )
+      next.serviceObservation = {
+        target: serviceTarget,
+        version: next.serviceObservation?.version ?? -1,
+        dirty: true,
+      };
+    if (
+      [
+        "shipping",
+        "taxMode",
+        "taxBasis",
+        "taxRate",
+        "ttl",
+        "policyEnabled",
+        "reference",
+      ].includes(field) &&
+      draft.branch === "manual"
+    )
+      next.policyObservation = {
+        target: serviceTarget,
+        version: next.policyObservation?.version ?? -1,
+        dirty: true,
+      };
     try {
       persistDraft(next, step);
+      draftRef.current = next;
       setDraft(next);
       setError(null);
     } catch {
@@ -200,7 +356,6 @@ export function SettingsWizard({
   }
   function goStep(next: 1 | 2 | 3 | 4) {
     clearSecrets();
-    epoch.current += 1;
     try {
       persistDraft(draft, next);
       setStep(next);
@@ -212,7 +367,20 @@ export function SettingsWizard({
   }
   function changeBranch(branch: Branch) {
     clearSecrets();
-    update("branch", branch);
+    const next = {
+      ...draft,
+      branch,
+      methodObservation: null,
+      policyObservation: null,
+      serviceObservation: null,
+    };
+    try {
+      saveDraft(next);
+      setPolicy(null);
+      setError(null);
+    } catch {
+      storageError();
+    }
   }
 
   useEffect(() => {
@@ -273,54 +441,75 @@ export function SettingsWizard({
     // Locale changes remount but retain the session-scoped nonsecret draft.
   }, [store?.id]);
 
-  const loadBase = useCallback(
-    async (cursor = "", append = false) => {
-      if (!store) return;
-      const token = epoch.current;
-      setLoading(true);
-      try {
-        const [accountPage, marketPage] = await Promise.all([
-          readSettings<Page<Account>>(
+  const loadBase = useCallback(async () => {
+    if (!store) return;
+    const token = epoch.current;
+    accountPageRead.current += 1;
+    marketPageRead.current += 1;
+    setLoading(true);
+    try {
+      const [accountPage, marketPage] = await Promise.all([
+        readSettings<Page<Account>>(store.id, "provider-accounts"),
+        readSettings<Page<Market>>(store.id, "markets"),
+      ]);
+      const selectedID = draftRef.current.accountID;
+      const selected = selectedID
+        ? (accountPage.items.find((item) => item.id === selectedID) ??
+          (await readSettings<Account>(
             store.id,
-            `provider-accounts${cursor && append ? `?cursor=${encodeURIComponent(cursor)}` : ""}`,
-          ),
-          readSettings<Page<Market>>(
-            store.id,
-            `markets${cursor && append ? `?cursor=${encodeURIComponent(cursor)}` : ""}`,
-          ),
-        ]);
-        if (
-          !mounted.current ||
-          token !== epoch.current ||
-          (await sessionBoundary()) !== boundary.current
-        )
-          return;
-        setAccounts((previous) =>
-          append ? [...previous, ...accountPage.items] : accountPage.items,
-        );
-        setMarkets((previous) =>
-          append ? [...previous, ...marketPage.items] : marketPage.items,
-        );
-        setAccountCursor(accountPage.next_cursor);
-        setMarketCursor(marketPage.next_cursor);
-      } catch (value) {
-        if (mounted.current && token === epoch.current)
-          setError(safeError(value));
-      } finally {
-        if (mounted.current && token === epoch.current) setLoading(false);
+            `provider-accounts/${selectedID}`,
+          )))
+        : null;
+      if (
+        !mounted.current ||
+        token !== epoch.current ||
+        (await sessionBoundary()) !== boundary.current
+      )
+        return;
+      setAccounts(
+        selected && !accountPage.items.some((item) => item.id === selected.id)
+          ? [...accountPage.items, selected]
+          : accountPage.items,
+      );
+      setMarkets(marketPage.items);
+      setAccountCursor(accountPage.next_cursor);
+      setMarketCursor(marketPage.next_cursor);
+      const chosen =
+        selected ??
+        (!selectedID && !draftRef.current.accountChoiceTouched
+          ? (accountPage.items[0] ?? null)
+          : null);
+      if (
+        chosen &&
+        (!draftRef.current.accountID ||
+          draftRef.current.accountID === chosen.id)
+      ) {
+        const next = {
+          ...draftRef.current,
+          accountID: chosen.id,
+          accountChoiceTouched: true,
+          environment: chosen.environment,
+          merchantID: chosen.account_id,
+        };
+        saveDraft(next);
       }
-    },
-    [store],
-  );
+    } catch (value) {
+      if (mounted.current && token === epoch.current && (await stillSession()))
+        setError(safeError(value));
+    } finally {
+      if (mounted.current && token === epoch.current) setLoading(false);
+    }
+  }, [store]);
   useEffect(() => {
     if (ready) void loadBase();
   }, [ready, loadBase]);
 
   const loadMarket = useCallback(
-    async (marketID: string, country: string, cursor = "", append = false) => {
+    async (marketID: string, country: string) => {
       if (!store || !marketID || !validCountry(country)) return;
       const token = epoch.current,
         request = ++marketRead.current;
+      servicePageRead.current += 1;
       setLoading(true);
       try {
         const base = `markets/${marketID}/countries/${country}`;
@@ -328,29 +517,47 @@ export function SettingsWizard({
           country === "TW"
             ? readSettings<Page<Method>>(store.id, `${base}/payment-methods`)
             : Promise.resolve({ items: [], next_cursor: "" }),
-          readSettings<Page<Service>>(
-            store.id,
-            `${base}/delivery-services${cursor && append ? `?cursor=${encodeURIComponent(cursor)}` : ""}`,
-          ),
+          readSettings<Page<Service>>(store.id, `${base}/delivery-services`),
         ]);
         if (
           !mounted.current ||
           token !== epoch.current ||
           request !== marketRead.current ||
+          draftRef.current.marketID !== marketID ||
+          draftRef.current.country !== country ||
           (await sessionBoundary()) !== boundary.current
         )
           return;
         setMethods(methodPage.items);
-        setServices((previous) =>
-          append ? [...previous, ...servicePage.items] : servicePage.items,
-        );
+        setServices(servicePage.items);
+        setMethodListTarget(`${marketID}:${country}`);
         setServiceCursor(servicePage.next_cursor);
         setAvailability(null);
+        const current = draftRef.current;
+        if (current.branch === "payuni" && country === "TW") {
+          const target = `${marketID}:TW:${current.methodCode}`;
+          const observed = current.methodObservation;
+          const saved =
+            methodPage.items.find((item) => item.code === current.methodCode) ??
+            null;
+          if (!observed || observed.target !== target || !observed.dirty)
+            saveDraft(hydrateMethod(current, saved));
+          else if (observed.version === -1 && !saved)
+            saveDraft({
+              ...current,
+              methodObservation: { ...observed, version: 0 },
+            });
+          else if (observed.version !== (saved?.version ?? 0))
+            setError({ ...unknown, code: "conflict" });
+        }
       } catch (value) {
         if (
           mounted.current &&
           token === epoch.current &&
-          request === marketRead.current
+          request === marketRead.current &&
+          draftRef.current.marketID === marketID &&
+          draftRef.current.country === country &&
+          (await stillSession())
         )
           setError(safeError(value));
       } finally {
@@ -366,60 +573,252 @@ export function SettingsWizard({
   );
   useEffect(() => {
     if (ready && draft.marketID) void loadMarket(draft.marketID, draft.country);
-  }, [ready, draft.marketID, draft.country, loadMarket]);
+  }, [ready, draft.marketID, draft.country, draft.branch, loadMarket]);
+
+  async function moreAccounts() {
+    if (!store || !ready || !accountCursor) return;
+    const token = epoch.current,
+      request = ++accountPageRead.current,
+      cursor = accountCursor;
+    try {
+      const page = await readSettings<Page<Account>>(
+        store.id,
+        `provider-accounts?cursor=${encodeURIComponent(cursor)}`,
+      );
+      if (
+        !mounted.current ||
+        token !== epoch.current ||
+        request !== accountPageRead.current ||
+        (await sessionBoundary()) !== boundary.current
+      )
+        return;
+      setAccounts((rows) => [
+        ...rows,
+        ...page.items.filter((item) => !rows.some((row) => row.id === item.id)),
+      ]);
+      setAccountCursor(page.next_cursor);
+    } catch (issue) {
+      if (
+        mounted.current &&
+        request === accountPageRead.current &&
+        (await stillSession())
+      )
+        setError(safeError(issue));
+    }
+  }
+  async function moreMarkets() {
+    if (!store || !ready || !marketCursor) return;
+    const token = epoch.current,
+      request = ++marketPageRead.current,
+      cursor = marketCursor;
+    try {
+      const page = await readSettings<Page<Market>>(
+        store.id,
+        `markets?cursor=${encodeURIComponent(cursor)}`,
+      );
+      if (
+        !mounted.current ||
+        token !== epoch.current ||
+        request !== marketPageRead.current ||
+        (await sessionBoundary()) !== boundary.current
+      )
+        return;
+      setMarkets((rows) => [
+        ...rows,
+        ...page.items.filter((item) => !rows.some((row) => row.id === item.id)),
+      ]);
+      setMarketCursor(page.next_cursor);
+    } catch (issue) {
+      if (
+        mounted.current &&
+        request === marketPageRead.current &&
+        (await stillSession())
+      )
+        setError(safeError(issue));
+    }
+  }
+  async function moreServices() {
+    if (!store || !ready || !activeMarket || !serviceCursor) return;
+    const token = epoch.current,
+      request = ++servicePageRead.current;
+    const marketID = activeMarket.id,
+      country = draft.country,
+      cursor = serviceCursor;
+    try {
+      const page = await readSettings<Page<Service>>(
+        store.id,
+        `markets/${marketID}/countries/${country}/delivery-services?cursor=${encodeURIComponent(cursor)}`,
+      );
+      if (
+        !mounted.current ||
+        token !== epoch.current ||
+        request !== servicePageRead.current ||
+        draftRef.current.marketID !== marketID ||
+        draftRef.current.country !== country ||
+        (await sessionBoundary()) !== boundary.current
+      )
+        return;
+      setServices((rows) => [
+        ...rows,
+        ...page.items.filter(
+          (item) => !rows.some((row) => row.code === item.code),
+        ),
+      ]);
+      setServiceCursor(page.next_cursor);
+    } catch (issue) {
+      if (
+        mounted.current &&
+        request === servicePageRead.current &&
+        draftRef.current.marketID === marketID &&
+        draftRef.current.country === country &&
+        (await stillSession())
+      )
+        setError(safeError(issue));
+    }
+  }
 
   const loadPolicy = useCallback(
-    async (code: string, snapshot: Draft, currentStep: 1 | 2 | 3 | 4) => {
-      if (!store || !draft.marketID || !validCode(code)) {
+    async (marketID: string, country: string, code: string) => {
+      if (!store || !marketID || !validCountry(country) || !validCode(code)) {
         setPolicy(null);
         return;
       }
       const token = epoch.current,
         request = ++policyRead.current;
+      const target = `${marketID}:${country}:${code}`;
       try {
         const result = await readSettings<Policy>(
           store.id,
-          `markets/${draft.marketID}/countries/${draft.country}/delivery-services/${code}/policy`,
+          `markets/${marketID}/countries/${country}/delivery-services/${code}/policy`,
         );
         if (
           mounted.current &&
           token === epoch.current &&
           request === policyRead.current &&
+          `${draftRef.current.marketID}:${draftRef.current.country}:${draftRef.current.serviceCode}` ===
+            target &&
           (await sessionBoundary()) === boundary.current
         ) {
           setPolicy(result);
-          if (!snapshot.reference && snapshot.serviceCode === code) {
-            const next = {
-              ...snapshot,
-              shipping: String(result.shipping_minor),
-              taxMode: result.tax_mode,
-              taxBasis: result.tax_basis,
-              taxRate: String(result.tax_rate_bps),
-              ttl: String(result.quote_ttl_seconds),
-              policyEnabled: result.enabled,
-            };
-            persistDraft(next, currentStep);
-            setDraft(next);
-          }
+          const current = draftRef.current,
+            observed = current.policyObservation;
+          if (!observed || observed.target !== target || !observed.dirty)
+            saveDraft(hydratePolicy(current, result));
+          else if (observed.version !== result.version)
+            setError({ ...unknown, code: "conflict" });
         }
       } catch (value) {
         const issue = safeError(value);
         if (
           mounted.current &&
           token === epoch.current &&
-          request === policyRead.current
+          request === policyRead.current &&
+          `${draftRef.current.marketID}:${draftRef.current.country}:${draftRef.current.serviceCode}` ===
+            target &&
+          (await stillSession())
         ) {
           setPolicy(null);
-          if (issue.code !== "not_found") setError(issue);
+          if (issue.code === "not_found") {
+            const current = draftRef.current,
+              observed = current.policyObservation;
+            if (!observed || observed.target !== target || !observed.dirty)
+              saveDraft(hydratePolicy(current, null));
+            else if (observed.version === -1)
+              saveDraft({
+                ...current,
+                policyObservation: { ...observed, version: 0 },
+              });
+            else if (observed.version !== 0)
+              setError({ ...unknown, code: "conflict" });
+          } else setError(issue);
         }
       }
     },
-    [store, draft.marketID, draft.country],
+    [store],
   );
   useEffect(() => {
     if (ready && draft.branch === "manual")
-      void loadPolicy(draft.serviceCode, draft, step);
-  }, [ready, draft.branch, draft.serviceCode, loadPolicy]);
+      void loadPolicy(draft.marketID, draft.country, draft.serviceCode);
+  }, [
+    ready,
+    draft.branch,
+    draft.marketID,
+    draft.country,
+    draft.serviceCode,
+    loadPolicy,
+  ]);
+
+  const loadService = useCallback(
+    async (marketID: string, country: string, code: string) => {
+      if (!store || !marketID || !validCountry(country) || !validCode(code))
+        return;
+      const token = epoch.current,
+        request = ++serviceRead.current;
+      const target = `${marketID}:${country}:${code}`;
+      try {
+        const result = await readSettings<Service>(
+          store.id,
+          `markets/${marketID}/countries/${country}/delivery-services/${code}`,
+        );
+        if (
+          !mounted.current ||
+          token !== epoch.current ||
+          request !== serviceRead.current ||
+          `${draftRef.current.marketID}:${draftRef.current.country}:${draftRef.current.serviceCode}` !==
+            target ||
+          (await sessionBoundary()) !== boundary.current
+        )
+          return;
+        setServices((rows) => [
+          ...rows.filter((row) => row.code !== result.code),
+          result,
+        ]);
+        const current = draftRef.current,
+          observed = current.serviceObservation;
+        if (!observed || observed.target !== target || !observed.dirty)
+          saveDraft(hydrateService(current, result));
+        else if (observed.version !== result.version)
+          setError({ ...unknown, code: "conflict" });
+      } catch (value) {
+        const issue = safeError(value);
+        if (
+          !mounted.current ||
+          token !== epoch.current ||
+          request !== serviceRead.current ||
+          `${draftRef.current.marketID}:${draftRef.current.country}:${draftRef.current.serviceCode}` !==
+            target ||
+          !(await stillSession())
+        )
+          return;
+        if (issue.code === "not_found") {
+          setServices((rows) => rows.filter((row) => row.code !== code));
+          const current = draftRef.current,
+            observed = current.serviceObservation;
+          if (!observed || observed.target !== target || !observed.dirty)
+            saveDraft(hydrateService(current, null));
+          else if (observed.version === -1)
+            saveDraft({
+              ...current,
+              serviceObservation: { ...observed, version: 0 },
+            });
+          else if (observed.version !== 0)
+            setError({ ...unknown, code: "conflict" });
+        } else setError(issue);
+      }
+    },
+    [store],
+  );
+  useEffect(() => {
+    if (ready && draft.branch === "manual")
+      void loadService(draft.marketID, draft.country, draft.serviceCode);
+  }, [
+    ready,
+    draft.branch,
+    draft.marketID,
+    draft.country,
+    draft.serviceCode,
+    loadService,
+  ]);
 
   async function savePending(
     command: Pending,
@@ -463,8 +862,23 @@ export function SettingsWizard({
           throw new Error("session_changed");
         if (!mounted.current || startEpoch !== epoch.current) return;
         if (result.uncertain) {
+          const retry = { ...command, uncertain: true };
+          const encoded = JSON.stringify(retry);
+          localStorage.setItem(journalKey.current, encoded);
+          if (localStorage.getItem(journalKey.current) !== encoded)
+            throw new Error("storage");
+          setPending(retry);
           setNotice(c.unknown);
           setError(result.error);
+          return;
+        }
+        if (
+          command.secret &&
+          command.uncertain &&
+          result.error?.code === "conflict"
+        ) {
+          setPending(command);
+          setError({ ...result.error, code: "secret_retry_mismatch" });
           return;
         }
         localStorage.removeItem(journalKey.current);
@@ -580,7 +994,17 @@ export function SettingsWizard({
           ...rows.filter((row) => row.id !== saved.id),
           saved,
         ]);
-        commitDraft({ ...draft, accountID: saved.id, rotate: false }, 3);
+        commitDraft(
+          {
+            ...draft,
+            accountID: saved.id,
+            accountChoiceTouched: true,
+            environment: saved.environment,
+            merchantID: saved.account_id,
+            rotate: false,
+          },
+          3,
+        );
         setNotice(c.accountSaved);
       } else if (resource === "markets") {
         const saved = value as Market;
@@ -588,11 +1012,29 @@ export function SettingsWizard({
           ...rows.filter((row) => row.id !== saved.id),
           saved,
         ]);
-        commitDraft({ ...draft, marketID: saved.id }, 3);
+        commitDraft(
+          {
+            ...draft,
+            marketID: saved.id,
+            methodObservation: null,
+            policyObservation: null,
+            serviceObservation: null,
+          },
+          3,
+        );
         setNotice(c.saved);
       } else if (resource.endsWith("/policy")) {
-        setPolicy(value as Policy);
-        update("reference", "");
+        const saved = value as Policy;
+        setPolicy(saved);
+        saveDraft({
+          ...draft,
+          reference: "",
+          policyObservation: {
+            target: `${saved.market_id}:${saved.country}:${draft.serviceCode}`,
+            version: saved.version,
+            dirty: false,
+          },
+        });
         setNotice(c.policySaved);
       } else if (resource.includes("payment-methods")) {
         const saved = value as Method;
@@ -600,7 +1042,17 @@ export function SettingsWizard({
           ...rows.filter((row) => row.code !== saved.code),
           saved,
         ]);
-        goStep(4);
+        commitDraft(
+          {
+            ...draft,
+            methodObservation: {
+              target: `${saved.market_id}:${saved.country}:${saved.code}`,
+              version: saved.version,
+              dirty: false,
+            },
+          },
+          4,
+        );
         setNotice(c.methodSaved);
       } else if (resource.includes("delivery-services")) {
         const saved = value as Service;
@@ -608,7 +1060,17 @@ export function SettingsWizard({
           ...rows.filter((row) => row.code !== saved.code),
           saved,
         ]);
-        goStep(4);
+        commitDraft(
+          {
+            ...draft,
+            serviceObservation: {
+              target: `${saved.market_id}:${saved.country}:${saved.code}`,
+              version: saved.version,
+              dirty: false,
+            },
+          },
+          4,
+        );
         setNotice(c.serviceSaved);
       }
     });
@@ -617,15 +1079,64 @@ export function SettingsWizard({
     clearSecrets();
     try {
       persistDraft(next, nextStep);
+      draftRef.current = next;
       setDraft(next);
       setStep(nextStep);
     } catch {
       storageError();
     }
   }
+  function baseline(
+    observed: Observation | null,
+    target: string,
+    currentVersion: number,
+  ) {
+    if (
+      !observed ||
+      !target ||
+      observed.target !== target ||
+      observed.version < 0 ||
+      observed.version !== currentVersion
+    ) {
+      setError({ ...unknown, code: "conflict" });
+      return null;
+    }
+    return observed.version;
+  }
+  async function reloadCurrent() {
+    if (!store || !ready || pending || busyRef.current) return;
+    clearSecrets();
+    const next = {
+      ...draft,
+      methodObservation: null,
+      policyObservation: null,
+      serviceObservation: null,
+      reference: "",
+    };
+    try {
+      saveDraft(next);
+      setError(null);
+      setNotice("");
+    } catch {
+      storageError();
+      return;
+    }
+    await loadBase();
+    if (next.marketID) await loadMarket(next.marketID, next.country);
+    if (next.branch === "manual" && validCode(next.serviceCode))
+      await Promise.all([
+        loadPolicy(next.marketID, next.country, next.serviceCode),
+        loadService(next.marketID, next.country, next.serviceCode),
+      ]);
+    if (mounted.current) setNotice(c.reloaded);
+  }
   function accountSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (draft.accountID && !draft.rotate) {
+      if (!activeAccount) {
+        setError({ ...unknown, code: "conflict" });
+        return;
+      }
       goStep(3);
       return;
     }
@@ -639,8 +1150,18 @@ export function SettingsWizard({
           setAccounts((rows) =>
             rows.map((row) => (row.id === saved.id ? saved : row)),
           );
+          commitDraft(
+            {
+              ...draft,
+              accountID: saved.id,
+              accountChoiceTouched: true,
+              environment: saved.environment,
+              merchantID: saved.account_id,
+              rotate: false,
+            },
+            3,
+          );
           setNotice(c.accountSaved);
-          goStep(3);
         },
       );
       return;
@@ -660,7 +1181,17 @@ export function SettingsWizard({
       (value) => {
         const saved = value as Account;
         setAccounts((rows) => [...rows, saved]);
-        commitDraft({ ...draft, accountID: saved.id, rotate: false }, 3);
+        commitDraft(
+          {
+            ...draft,
+            accountID: saved.id,
+            accountChoiceTouched: true,
+            environment: saved.environment,
+            merchantID: saved.account_id,
+            rotate: false,
+          },
+          3,
+        );
         setNotice(c.accountSaved);
       },
     );
@@ -682,7 +1213,16 @@ export function SettingsWizard({
       (value) => {
         const saved = value as Market;
         setMarkets((rows) => [...rows, saved]);
-        commitDraft({ ...draft, marketID: saved.id }, 3);
+        commitDraft(
+          {
+            ...draft,
+            marketID: saved.id,
+            methodObservation: null,
+            policyObservation: null,
+            serviceObservation: null,
+          },
+          3,
+        );
         setNotice(c.saved);
       },
     );
@@ -690,20 +1230,26 @@ export function SettingsWizard({
   function selectMethod(code: MethodCode) {
     const saved = methods.find((item) => item.code === code);
     const labels = names[code];
-    const next = {
+    const nextBase = {
       ...draft,
       methodCode: code,
-      nameHans: saved?.name_hans ?? labels[0],
-      nameHant: saved?.name_hant ?? labels[1],
-      nameEN: saved?.name_en ?? labels[2],
-      visible: saved?.visible ?? false,
-      sort: String(saved?.sort_order ?? 10),
-      min: String(saved?.min_amount_minor ?? 1),
-      max: String(saved?.max_amount_minor ?? 1000000000000),
+      methodObservation: null,
     };
+    const next =
+      methodListTarget === `${draft.marketID}:TW`
+        ? hydrateMethod(nextBase, saved ?? null)
+        : {
+            ...nextBase,
+            nameHans: labels[0],
+            nameHant: labels[1],
+            nameEN: labels[2],
+            visible: false,
+            sort: "10",
+            min: "1",
+            max: "1000000000000",
+          };
     try {
-      persistDraft(next, step);
-      setDraft(next);
+      saveDraft(next);
       setAvailability(null);
     } catch {
       storageError();
@@ -730,6 +1276,12 @@ export function SettingsWizard({
       setError({ ...unknown, code: "invalid_request" });
       return;
     }
+    const expected = baseline(
+      draft.methodObservation,
+      methodTarget,
+      activeMethod?.version ?? 0,
+    );
+    if (expected === null) return;
     const resource = `markets/${activeMarket.id}/countries/TW/payment-methods/${draft.methodCode}`;
     command(
       "PUT",
@@ -741,7 +1293,7 @@ export function SettingsWizard({
         environment: activeAccount.environment,
         connection_id: activeAccount.id,
         binding_version: activeAccount.binding_version,
-        expected_version: activeMethod?.version ?? 0,
+        expected_version: expected,
         name_hans: draft.nameHans.trim(),
         name_hant: draft.nameHant.trim(),
         name_en: draft.nameEN.trim(),
@@ -757,8 +1309,18 @@ export function SettingsWizard({
           ...rows.filter((row) => row.code !== saved.code),
           saved,
         ]);
+        commitDraft(
+          {
+            ...draft,
+            methodObservation: {
+              target: methodTarget,
+              version: saved.version,
+              dirty: false,
+            },
+          },
+          4,
+        );
         setNotice(c.methodSaved);
-        goStep(4);
       },
     );
   }
@@ -784,6 +1346,12 @@ export function SettingsWizard({
       setError({ ...unknown, code: "invalid_request" });
       return;
     }
+    const expected = baseline(
+      draft.policyObservation,
+      serviceTarget,
+      policy?.version ?? 0,
+    );
+    if (expected === null) return;
     const resource = `markets/${activeMarket.id}/countries/${draft.country}/delivery-services/${draft.serviceCode}/policy`;
     command(
       "PUT",
@@ -800,12 +1368,21 @@ export function SettingsWizard({
         tax_rate_bps: tax,
         quote_ttl_seconds: ttl,
         enabled: draft.policyEnabled,
-        expected_version: policy?.version ?? 0,
+        expected_version: expected,
         configuration_ref: ref,
       },
       (value) => {
-        setPolicy(value as Policy);
-        update("reference", "");
+        const saved = value as Policy;
+        setPolicy(saved);
+        saveDraft({
+          ...draft,
+          reference: "",
+          policyObservation: {
+            target: serviceTarget,
+            version: saved.version,
+            dirty: false,
+          },
+        });
         setNotice(c.policySaved);
       },
     );
@@ -827,6 +1404,16 @@ export function SettingsWizard({
       setError({ ...unknown, code: "invalid_request" });
       return;
     }
+    const expected = baseline(
+      draft.serviceObservation,
+      serviceTarget,
+      activeService?.version ?? 0,
+    );
+    if (
+      expected === null ||
+      baseline(draft.policyObservation, serviceTarget, policy.version) === null
+    )
+      return;
     const resource = `markets/${activeMarket.id}/countries/${draft.country}/delivery-services/${draft.serviceCode}`;
     command(
       "PUT",
@@ -835,8 +1422,8 @@ export function SettingsWizard({
         market_id: activeMarket.id,
         country: draft.country,
         code: draft.serviceCode,
-        expected_version: activeService?.version ?? 0,
-        policy_version: policy.version,
+        expected_version: expected,
+        policy_version: draft.policyObservation!.version,
         name_hans: draft.nameHans.trim(),
         name_hant: draft.nameHant.trim(),
         name_en: draft.nameEN.trim(),
@@ -852,8 +1439,18 @@ export function SettingsWizard({
           ...rows.filter((row) => row.code !== saved.code),
           saved,
         ]);
+        commitDraft(
+          {
+            ...draft,
+            serviceObservation: {
+              target: serviceTarget,
+              version: saved.version,
+              dirty: false,
+            },
+          },
+          4,
+        );
         setNotice(c.serviceSaved);
-        goStep(4);
       },
     );
   }
@@ -1101,14 +1698,13 @@ export function SettingsWizard({
                             const next = {
                               ...draft,
                               accountID: event.target.value,
+                              accountChoiceTouched: true,
                               rotate: false,
-                              environment:
-                                selected?.environment ?? draft.environment,
+                              environment: selected?.environment ?? "SANDBOX",
                               merchantID: selected?.account_id ?? "",
                             };
                             try {
-                              persistDraft(next, step);
-                              setDraft(next);
+                              saveDraft(next);
                               clearSecrets();
                             } catch {
                               storageError();
@@ -1127,17 +1723,8 @@ export function SettingsWizard({
                       {accountCursor && (
                         <button
                           type="button"
-                          onClick={() =>
-                            void readSettings<Page<Account>>(
-                              store.id,
-                              `provider-accounts?cursor=${encodeURIComponent(accountCursor)}`,
-                            )
-                              .then((page) => {
-                                setAccounts((rows) => [...rows, ...page.items]);
-                                setAccountCursor(page.next_cursor);
-                              })
-                              .catch((issue) => setError(safeError(issue)))
-                          }
+                          disabled={busy || !!pending}
+                          onClick={() => void moreAccounts()}
                         >
                           {c.loadMore}
                         </button>
@@ -1263,19 +1850,20 @@ export function SettingsWizard({
                   {marketCursor && (
                     <button
                       type="button"
-                      onClick={() =>
-                        void readSettings<Page<Market>>(
-                          store.id,
-                          `markets?cursor=${encodeURIComponent(marketCursor)}`,
-                        )
-                          .then((page) => {
-                            setMarkets((rows) => [...rows, ...page.items]);
-                            setMarketCursor(page.next_cursor);
-                          })
-                          .catch((issue) => setError(safeError(issue)))
-                      }
+                      disabled={busy || !!pending}
+                      onClick={() => void moreMarkets()}
                     >
                       {c.loadMore}
+                    </button>
+                  )}
+                  {activeMarket && (
+                    <button
+                      type="button"
+                      data-testid="settings-reload-current"
+                      disabled={!ready || busy || !!pending}
+                      onClick={() => void reloadCurrent()}
+                    >
+                      {c.reloadCurrent}
                     </button>
                   )}
                 </div>
@@ -1499,17 +2087,11 @@ export function SettingsWizard({
                                   const next = {
                                     ...draft,
                                     serviceCode: selected.code,
-                                    serviceKind: selected.delivery_kind,
-                                    nameHans: selected.name_hans,
-                                    nameHant: selected.name_hant,
-                                    nameEN: selected.name_en,
-                                    serviceEnabled: selected.enabled,
-                                    serviceVisible: selected.visible,
-                                    sort: String(selected.sort_order),
+                                    policyObservation: null,
                                   };
                                   try {
-                                    persistDraft(next, step);
-                                    setDraft(next);
+                                    setPolicy(null);
+                                    saveDraft(hydrateService(next, selected));
                                   } catch {
                                     storageError();
                                   }
@@ -1527,20 +2109,8 @@ export function SettingsWizard({
                           {serviceCursor && (
                             <button
                               type="button"
-                              onClick={() =>
-                                void readSettings<Page<Service>>(
-                                  store.id,
-                                  `markets/${activeMarket.id}/countries/${draft.country}/delivery-services?cursor=${encodeURIComponent(serviceCursor)}`,
-                                )
-                                  .then((page) => {
-                                    setServices((rows) => [
-                                      ...rows,
-                                      ...page.items,
-                                    ]);
-                                    setServiceCursor(page.next_cursor);
-                                  })
-                                  .catch((issue) => setError(safeError(issue)))
-                              }
+                              disabled={busy || !!pending}
+                              onClick={() => void moreServices()}
                             >
                               {c.loadMore}
                             </button>

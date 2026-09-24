@@ -21,6 +21,8 @@ const en = {
   saveContinue: "Save account and continue",
   save: "Save",
   refresh: "Refresh status",
+  reloadCurrent: "Reload saved values",
+  reloaded: "Saved values loaded. Review them before saving.",
   accountTitle: "Your PAYUNi account",
   accountHint: "Choose a saved account or enter new merchant credentials.",
   accountChoice: "Account",
@@ -102,6 +104,8 @@ const en = {
   notApproved: "Not verified",
   unknown:
     "Result unknown. Keep this command and retry with the same key; credentials require re-entry.",
+  secretRetryMismatch:
+    "Those credentials did not match the pending command. Re-enter the original credentials and retry with the same request identifier.",
   retry: "Retry pending command",
   pending: "Saving…",
   requestID: "Request ID",
@@ -140,6 +144,8 @@ export const settingsCopy: Record<Locale, SettingsCopy> = {
     saveContinue: "保存账户并继续",
     save: "保存",
     refresh: "刷新状态",
+    reloadCurrent: "重新读取已保存值",
+    reloaded: "已读取保存值，请核对后再提交。",
     accountTitle: "您的 PAYUNi 账户",
     accountHint: "选择已保存账户，或输入新的商户凭据。",
     accountChoice: "账户",
@@ -215,6 +221,8 @@ export const settingsCopy: Record<Locale, SettingsCopy> = {
     notConfigured: "未配置",
     notApproved: "未验证",
     unknown: "结果未知。保留原请求标识重试；凭据需重新输入。",
+    secretRetryMismatch:
+      "本次凭据与待确认指令不一致。请重新输入原凭据，并沿用原请求标识重试。",
     retry: "重试待确认指令",
     pending: "保存中…",
     requestID: "请求 ID",
@@ -249,6 +257,8 @@ export const settingsCopy: Record<Locale, SettingsCopy> = {
     saveContinue: "儲存帳戶並繼續",
     save: "儲存",
     refresh: "重新整理狀態",
+    reloadCurrent: "重新讀取已儲存值",
+    reloaded: "已讀取儲存值，請核對後再送出。",
     accountTitle: "您的 PAYUNi 帳戶",
     accountHint: "選擇已儲存帳戶，或輸入新的商戶憑證。",
     accountChoice: "帳戶",
@@ -324,6 +334,8 @@ export const settingsCopy: Record<Locale, SettingsCopy> = {
     notConfigured: "未設定",
     notApproved: "未驗證",
     unknown: "結果未知。保留原請求識別碼重試；憑證須重新輸入。",
+    secretRetryMismatch:
+      "本次憑證與待確認指令不一致。請重新輸入原憑證，並沿用原請求識別碼重試。",
     retry: "重試待確認指令",
     pending: "儲存中…",
     requestID: "請求 ID",
