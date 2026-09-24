@@ -6,6 +6,7 @@ export type Pending = {
   resource: string;
   body?: string;
   secret?: "create" | "rotate";
+  uncertain?: boolean;
   context?: {
     provider?: "payuni";
     environment?: string;
