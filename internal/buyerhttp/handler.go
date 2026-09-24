@@ -78,6 +78,7 @@ const (
 	destinationRoute
 	destinationItemRoute
 	checkoutRoute
+	ordersRoute
 	orderRoute
 )
 
@@ -106,6 +107,8 @@ func matchRoute(path string) route {
 		return route{kind: destinationRoute}
 	case "/v1/buyer/checkout":
 		return route{kind: checkoutRoute}
+	case "/v1/buyer/orders":
+		return route{kind: ordersRoute}
 	}
 	for _, entry := range []struct {
 		prefix string
@@ -124,7 +127,7 @@ func allowed(kind routeKind, method string) bool {
 		return method == http.MethodGet || method == http.MethodPost || method == http.MethodDelete
 	case bootstrapRoute, retireRoute:
 		return method == http.MethodPost
-	case catalogRoute, optionsRoute:
+	case catalogRoute, optionsRoute, ordersRoute:
 		return method == http.MethodGet
 	case cartRoute:
 		return method == http.MethodGet || method == http.MethodPut
@@ -157,7 +160,7 @@ func oneHeader(r *http.Request, name string) (string, bool) {
 
 func forbiddenInput(r *http.Request) bool {
 	queryRoute := r.URL != nil && r.Method == http.MethodGet && r.URL.EscapedPath() == r.URL.Path &&
-		(r.URL.Path == "/v1/buyer/catalog" || r.URL.Path == "/v1/buyer/checkout-options")
+		(r.URL.Path == "/v1/buyer/catalog" || r.URL.Path == "/v1/buyer/checkout-options" || r.URL.Path == "/v1/buyer/orders")
 	if r.URL == nil || r.URL.ForceQuery || (!queryRoute && r.URL.RawQuery != "") {
 		return true
 	}
@@ -255,6 +258,14 @@ func optionsRequest(raw string) (checkout.OptionsRequest, error) {
 		}
 	}
 	return request, nil
+}
+
+func ordersRequest(raw string) (pagination.Request, error) {
+	request, err := optionsRequest(raw)
+	if err != nil || request.MarketID != "" || request.Country != "" || len(request.Page.Cursor) > 1024 {
+		return pagination.Request{}, command.ErrInvalid
+	}
+	return request.Page, nil
 }
 
 func bearer(r *http.Request) (string, bool) {
@@ -440,6 +451,16 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 	var out any
 	var err error
 	switch selected.kind {
+	case ordersRoute:
+		var request pagination.Request
+		request, err = ordersRequest(r.URL.RawQuery)
+		if err == nil {
+			var page pagination.Page[checkout.OrderSummary]
+			page, err = h.checkout.ListOrders(ctx, token, storeID, request)
+			if err == nil {
+				out = projectOrders(page)
+			}
+		}
 	case optionsRoute:
 		var request checkout.OptionsRequest
 		request, err = optionsRequest(r.URL.RawQuery)

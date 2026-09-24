@@ -213,6 +213,8 @@ func TestBuyerHTTPWorkflowReplayAndProjection(t *testing.T) {
 	order := h.request(t, "GET", "/v1/buyer/orders/"+out.OrderID, token, "", nil, nil)
 	type orderDisplay struct {
 		OrderID          string `json:"order_id"`
+		CartID           string `json:"cart_id"`
+		CartVersion      int64  `json:"cart_version"`
 		CommercialState  string `json:"commercial_state"`
 		FulfillmentState string `json:"fulfillment_state"`
 		Snapshot         struct {
@@ -228,7 +230,10 @@ func TestBuyerHTTPWorkflowReplayAndProjection(t *testing.T) {
 	if display.OrderID != out.OrderID || display.CommercialState != "DRAFT" || display.Snapshot.Quote.Currency != c.Currency || display.Snapshot.Destination.RecipientName != "Synthetic Buyer" {
 		t.Fatal("buyer order display lost required fields")
 	}
-	for _, forbidden := range []string{"tenant_id", "owner_id", "job_id", "reservation_id", "generation", "warehouse_ids", "allocation", "binding_id", "binding_version", "calculation_version", "policy", "cart_id", "market_id"} {
+	if display.CartID != c.ID || display.CartVersion != q.CartVersion {
+		t.Fatal("buyer order display lost immutable quote cart provenance")
+	}
+	for _, forbidden := range []string{"tenant_id", "owner_id", "job_id", "reservation_id", "generation", "warehouse_ids", "allocation", "binding_id", "binding_version", "calculation_version", "policy", "market_id"} {
 		if bytes.Contains(order.body, []byte(`"`+forbidden+`"`)) {
 			t.Fatalf("internal order field exposed: %s", forbidden)
 		}
