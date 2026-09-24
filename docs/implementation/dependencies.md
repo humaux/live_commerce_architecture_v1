@@ -231,6 +231,18 @@ golden digest 防止无意改动永久幂等编码。正常加密 active key切�
 SQL 约束错因核对及用 sequence 证明到达注入点的八类原子回滚。
 `InspectMethod` 是商家诊断，不是给将来买家 StartPayment 缓存的授权票据。
 
+托管付款内核（合同 `contracts/payment-hosted-v1.md`，当前为待验收实现）：
+`checkout.BeginHosted` → 共用 `startPaymentTx` → 原0016支付/库存/任务事务 →
+`accounts.Keyring.BuildPaymentHosted` → 0025精确订单历史凭据 → 原PAYUNi
+`BuildHosted` → 0025不可变表单，全部在同一 `buyer.WithScope` 事务中提交。
+`TakeHosted` 只在一次性交付标记提交后返回表单；重放不返回表单、不更新时限。
+0025函数和普通checkout SQL账号隔离；`platform.OpenHostedPool` 要求独立LOGIN
+继承 `commerce_hosted_runtime`（INHERIT TRUE、SET FALSE），不持有writer身份。
+配置的ReturnURL/NotifyURL由服务端固定，凭据沿用原Keyring/AAD，SQL不解密内层
+交易金额；可信Go签名边界需由独立wire解密门禁验证。没有新增第三方依赖。
+升级platform/pgx/PG/River/Keyring/PAYUNi时须重跑HP01–07及原支付/入账/T06全套；
+只过此内核不表示公开付款路由、实际供应商收款、资格或生产部署已经可用。
+
 `internal/checkout/payment.go` 复用 buyer.WithScope、checkout pool 验证、River
 InsertTx 和私有回执，调用0016的 `checkout.start_payment`；不依赖 HTTP/PSP wire，
 不读密文。资格表当前没有应用签发者，MOCK只在隔离测试中注入。operation新增

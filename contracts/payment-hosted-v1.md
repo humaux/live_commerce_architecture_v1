@@ -96,6 +96,9 @@ It is NOLOGIN INHERIT, a member of `commerce_checkout_runtime`, never a private
 writer. A dedicated LOGIN principal inherits it, with no SET ROLE: startup checks
 session_user=current_user=DSN username, effective hosted USAGE, only the checkout
 authority family, no privileged/writer/merchant/worker/owner capabilities.
+Provision membership with `WITH INHERIT TRUE, SET FALSE`; hosted startup also
+rejects a login that can SET the hosted group role. Migrations do not provision
+login names or passwords; production credentials remain deployment-owned.
 `platform.OpenHostedPool`/`ValidateHostedPool` enforce this; generic checkout pools
 reject hosted membership. Ordinary runtime roles cannot escalate to hosted.
 No ordinary buyer/checkout/merchant/worker role receives ciphertext-table SELECT or handoff
