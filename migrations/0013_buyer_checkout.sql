@@ -75,7 +75,7 @@ ALTER TABLE inventory.reservations
 ALTER TABLE inventory.reservations ADD CONSTRAINT reservation_checkout_family CHECK
  ((checkout_id IS NULL AND buyer_owner_id IS NULL AND buyer_session_id IS NULL AND generation IS NULL)
   OR (checkout_id IS NOT NULL AND checkout_id=id AND buyer_owner_id IS NOT NULL
-      AND buyer_session_id IS NOT NULL AND generation>0));
+      AND buyer_session_id IS NOT NULL AND generation IS NOT NULL AND generation>0));
 ALTER TABLE inventory.reservations ADD CONSTRAINT reservation_buyer_session_fk
  FOREIGN KEY(tenant_id,store_id,buyer_owner_id,buyer_session_id)
  REFERENCES buyer.capability_sessions(tenant_id,store_id,owner_id,id);
