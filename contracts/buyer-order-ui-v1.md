@@ -1,7 +1,9 @@
 # B buyer address and order UI v1
 
-Status: protocol frozen after read-only preflight, 2026-09-25;
-implementation/browser gates NOT_RUN. Preflight memory:
+Status: protocol frozen after read-only preflight, 2026-09-25. Later bounded
+implementation and real browser evidence are in
+[the integration record](../docs/implementation/2026-09-25-buyer-order-ui-progress.md),
+not a declaration of full checkout/payment release. Preflight memory:
 `9499b780-dcf9-4c12-b717-f0bc6602f107`.
 Extends the approved B inline surface, not a new wizard. Reuse the existing
 buyer capability/BFF, destination CAS, Quote and checkout engine; no new DB

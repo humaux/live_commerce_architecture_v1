@@ -1,7 +1,9 @@
 # B inline purchase — address/order recovery client
 
-Status: source/client-unit accepted; **not wired to UI**, BO01–07 real new UI
-gates NOT_RUN. No customer system, live stream, provider or funds were touched.
+Historical checkpoint: source/client-unit accepted at `438ba4c`, before UI wiring.
+The later [UI integration evidence](2026-09-25-buyer-order-ui-progress.md) records
+the native form and real browser acceptance; the client-only evidence below is
+preserved at its original scope. No customer system, live stream, provider or funds were touched.
 This is an increment toward the original full SaaS goal, not a reduced goal.
 
 ## Contract and dependencies
