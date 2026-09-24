@@ -1,6 +1,6 @@
 # Buyer private HTTP transport v1
 
-Status: DESIGN — preflight required before implementation. This is the private
+Status: FROZEN after independent preflight of 0de251e (no open P0/P1/P2). This is the private
 Go boundary for the future storefront BFF, not a publicly exposed checkout.
 Existing buyer, storefront, fulfillment and checkout contracts remain authoritative.
 
