@@ -107,7 +107,8 @@ func (s *Service) Revoke(ctx context.Context, token, storeID string) error {
 }
 
 // WithScope resolves one opaque capability and runs fn in that same bounded
-// transaction. Only the dedicated buyer runtime pool belongs here.
+// transaction. Only a separately validated buyer or internal checkout pool
+// belongs here; the caller must validate its pool authority before use.
 func WithScope(ctx context.Context, buyerPool *pgxpool.Pool, token, storeID string, fn func(context.Context, pgx.Tx, Scope) error) (err error) {
 	if buyerPool == nil || fn == nil || !validToken(token) || !validUUID(storeID) {
 		return ErrUnauthorized

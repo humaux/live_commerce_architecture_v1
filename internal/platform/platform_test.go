@@ -1,11 +1,21 @@
 package platform
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
+
+func TestCheckoutPoolRequiresDedicatedConnection(t *testing.T) {
+	if _, err := OpenCheckoutPool(context.Background(), ""); err == nil {
+		t.Fatal("empty checkout DSN accepted")
+	}
+	if err := ValidateCheckoutPool(context.Background(), nil); err == nil {
+		t.Fatal("nil checkout pool accepted")
+	}
+}
 
 func TestHealthzNeedsNoDatabase(t *testing.T) {
 	response := httptest.NewRecorder()
