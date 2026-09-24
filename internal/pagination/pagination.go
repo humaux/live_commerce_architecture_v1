@@ -105,7 +105,7 @@ func validBinding(b Binding) bool {
 		return false
 	}
 	switch b.Collection {
-	case "products", "warehouses", "inventory":
+	case "products", "warehouses", "inventory", "provider-accounts":
 		return b.ParentID == "" && b.Filter == ""
 	case "skus":
 		return command.ValidID(b.ParentID) && b.Filter == ""

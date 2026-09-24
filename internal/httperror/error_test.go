@@ -51,3 +51,15 @@ func TestRouterFailuresRemainJSON(t *testing.T) {
 		}
 	}
 }
+
+func TestRateLimitCodeUsesFixedPublicMessage(t *testing.T) {
+	w := httptest.NewRecorder()
+	Write(w, http.StatusTooManyRequests, "rate_limited")
+	var envelope Envelope
+	if err := json.Unmarshal(w.Body.Bytes(), &envelope); err != nil {
+		t.Fatal(err)
+	}
+	if w.Code != 429 || envelope.Code != "rate_limited" || envelope.Message != "Too many requests." || envelope.Retryable {
+		t.Fatalf("unsafe rate response: %+v", envelope)
+	}
+}

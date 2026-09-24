@@ -35,6 +35,10 @@ func run() error {
 	if identityConfig.enabled && !privateIdentityAddress(addr) {
 		return errors.New("identity requires a literal loopback listener")
 	}
+	accountConfig, err := loadAccountConfig(os.Getenv, identityConfig.enabled, addr)
+	if err != nil {
+		return err
+	}
 	dsn := os.Getenv("DATABASE_URL")
 	pool, err := platform.OpenPool(context.Background(), dsn)
 	if err != nil {
@@ -47,7 +51,11 @@ func run() error {
 		return err
 	}
 	defer closeIdentity()
-	handler := httpapi.NewHandler(pool, platform.HandlerOptions{SessionStoreList: identityConfig.enabled})
+	accountService, err := buildAccountsService(pool, accountConfig)
+	if err != nil {
+		return err
+	}
+	handler := httpapi.NewHandler(pool, httpapi.Options{SessionStoreList: identityConfig.enabled, Accounts: accountService})
 	if identityHandler != nil {
 		mux := http.NewServeMux()
 		mux.Handle("/v1/identity/", identityHandler)

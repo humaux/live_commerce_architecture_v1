@@ -44,6 +44,7 @@ func Write(w http.ResponseWriter, status int, code string) {
 		"not_found": "Resource not found.", "method_not_allowed": "Method not allowed.",
 		"invalid_request": "Request validation failed.", "invalid_json": "Malformed JSON body.",
 		"json_required": "JSON content type required.", "conflict": "Request conflicts with current state.",
+		"rate_limited":           "Too many requests.",
 		"insufficient_inventory": "Insufficient available inventory.",
 		"retry_later":            "Temporarily unavailable.", "unavailable": "Temporarily unavailable.",
 		"internal": "Request could not be completed.",

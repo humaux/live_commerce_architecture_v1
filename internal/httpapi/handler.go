@@ -20,6 +20,7 @@ import (
 	"livecommerce/internal/catalog"
 	"livecommerce/internal/command"
 	"livecommerce/internal/httperror"
+	"livecommerce/internal/integrations/accounts"
 	"livecommerce/internal/inventory"
 	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
@@ -28,8 +29,17 @@ import (
 // NewHandler keeps transport validation separate from domain invariants. There
 // is deliberately no public Reserve route: only a validated BeginCheckout may
 // eventually call it, never a GET, comment event, or client-selected tenant.
-func NewHandler(pool *pgxpool.Pool, options ...platform.HandlerOptions) http.Handler {
+type Options struct {
+	SessionStoreList bool
+	Accounts         *accounts.Service
+}
+
+func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	mux := http.NewServeMux()
+	var configured Options
+	if len(options) > 0 {
+		configured = options[0]
+	}
 	const base = "/v1/admin/stores/{store_id}"
 	mux.HandleFunc("GET "+base+"/catalog-ledger", scoped(pool, "catalog:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
 		if err := platform.RequirePermission(ctx, tx, s, strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "), "inventory:read"); err != nil {
@@ -97,8 +107,9 @@ func NewHandler(pool *pgxpool.Pool, options ...platform.HandlerOptions) http.Han
 		return inventory.AdjustOnHand(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)
 	}))
 	registerSettingsRoutes(mux, pool)
-	foundation := platform.NewHandler(pool, options...)
-	if len(options) > 0 && options[0].SessionStoreList {
+	registerAccountRoutes(mux, pool, configured.Accounts)
+	foundation := platform.NewHandler(pool, platform.HandlerOptions{SessionStoreList: configured.SessionStoreList})
+	if configured.SessionStoreList {
 		mux.Handle("GET /v1/admin/stores", foundation)
 	}
 	for _, pattern := range []string{"GET /healthz", "GET /readyz", "GET " + base, "GET " + base + "/audit-events"} {
@@ -204,6 +215,9 @@ func scoped(pool *pgxpool.Pool, permission string, fn action) http.HandlerFunc {
 			return inner
 		})
 		if err != nil {
+			if errors.Is(err, errAccountRateLimited) {
+				w.Header().Set("Retry-After", "60")
+			}
 			status, code := classify(err)
 			respondError(w, status, code)
 			return
@@ -215,6 +229,10 @@ func scoped(pool *pgxpool.Pool, permission string, fn action) http.HandlerFunc {
 // Map only stable classes. Raw pgconn messages can include customer values.
 func classify(err error) (int, string) {
 	switch {
+	case errors.Is(err, errAccountRateLimited):
+		return http.StatusTooManyRequests, "rate_limited"
+	case errors.Is(err, errAccountCapacity), errors.Is(err, errAccountUnavailable):
+		return http.StatusServiceUnavailable, "unavailable"
 	case errors.Is(err, platform.ErrScopeNotFound):
 		return http.StatusNotFound, "not_found"
 	case errors.Is(err, platform.ErrForbidden):
