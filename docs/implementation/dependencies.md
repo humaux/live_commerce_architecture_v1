@@ -109,6 +109,17 @@ golden digest 防止无意改动永久幂等编码。正常加密 active key切�
 不同key账户重复、轮换CAS、精确列权限与sequence证实故障回滚。生产取凭据须
 以持久操作的准确账户和权限为入口，不能直接把内部密文表暴露为通用查询 API。
 
+支付方法配置 `internal/payments` 不增加依赖，复用 pgx、`pricing.LockMarket`、
+`platform.RequirePermission` 与 `command.Run/Audit`。不把支付配置塞进配送费政策，
+不另建计价器、通用供应商框架或队列。0015 的 revision/head、完整范围 FK、RLS
+和列权限保护历史；Go/SQL 同时禁止在没有 adapter 时启用。方法状态与连接密钥
+版本分离，读取诊断只查账户/绑定元数据，不读密文。锁序 market→method→account
+→binding 与账户轮换保持一致；所有等待后再核权限。升级这些依赖时必须重跑
+`payment_methods_test.go`：并发同键/CAS、实际阻塞后撤权、环境与账户隔离、
+SQL 约束错因核对及用 sequence 证明到达注入点的八类原子回滚。
+`InspectMethod` 是商家诊断，不是给将来买家 StartPayment 缓存的授权票据。
+实证见 `2026-09-24-payment-methods-acceptance.md`，无供应商交易和支付页面验收。
+
 内部 external-operation 继续复用 pgx、River InsertTx、`command.Run` 与标准库
 JSON/crypto：`internal/integrations/core` 负责精确权限、不可变意图摘要和租约 token
 包装；迁移 0008 定义的受限 SQL 函数是 worker 状态迁移的唯一写入口，前向

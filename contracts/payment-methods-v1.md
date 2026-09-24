@@ -34,7 +34,7 @@ Installment tenors and payment-specific options belong to the adapter follow-up;
 no default tenor, surcharge or COD is inferred. CVS code payment is not pickup/COD.
 Environment exactly SANDBOX/LIVE, Country exactly TW, Currency exactly TWD for
 this first slice. Market UUID and optional connection UUID must be canonical valid
-IDs. Labels trimmed nonempty UTF-8 <=120 runes without control characters. Sort
+IDs. Labels nonempty after whitespace checking, UTF-8 <=120 printable runes. Sort
 0..1000. Amounts integer minor units: 1 <= min <= max <= 1_000_000_000_000;
 these are merchant restrictions, not assertions of provider limits or wire units.
 ExpectedVersion >=0 and <MaxInt64; BindingVersion positive if linked.
