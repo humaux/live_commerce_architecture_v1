@@ -51,6 +51,8 @@ func validOptionCountry(country string) bool {
 	return len(country) == 2 && country[0] >= 'A' && country[0] <= 'Z' && country[1] >= 'A' && country[1] <= 'Z'
 }
 
+// This digest binds a cursor position to scope and filters; the capability and
+// database RLS authenticate the read. It is deliberately not a signature.
 func optionsBinding(scope buyer.Scope, in OptionsRequest) string {
 	raw, _ := json.Marshal(struct {
 		Collection string `json:"collection"`
@@ -122,6 +124,9 @@ func (s *Service) ListOptions(ctx context.Context, token, storeID string, in Opt
 		if position.MarketID != "" {
 			afterMarket, afterCountry, afterCode = position.MarketID, position.Country, position.DeliveryCode
 		}
+		// Allocation.service_version is historical write-CAS provenance, not an
+		// eligibility equality against the current (possibly renamed) service.
+		// The count/all_active gate checks every assigned warehouse, not SKU stock.
 		rows, err := tx.Query(callCtx, `SELECT m.id::text,m.code,m.name,sv.country,sv.currency,sv.code,sv.policy_method,
 			sv.version,av.version,sv.delivery_kind,sv.mode,sv.name_hans,sv.name_hant,sv.name_en,sv.sort_order
 			FROM pricing.markets m
