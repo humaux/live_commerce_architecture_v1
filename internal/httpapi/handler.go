@@ -70,6 +70,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	mux.HandleFunc("GET "+base+"/products", listRoute(pool, "catalog:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, page pagination.Request) (any, error) {
 		return catalog.ListProductsPage(ctx, tx, s, page)
 	}))
+	mux.HandleFunc("GET "+base+"/products/{product_id}/purchase-entry", purchaseEntryRoute(pool))
 	mux.HandleFunc("POST "+base+"/products", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.ProductInput) (any, error) {
 		return catalog.CreateProduct(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)
 	}))
@@ -126,6 +127,43 @@ type warehouseInput struct {
 	Name string `json:"name"`
 }
 type action func(context.Context, pgx.Tx, platform.Scope, *http.Request) (any, error)
+
+func purchaseEntryRoute(pool *pgxpool.Pool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Go's GET ServeMux pattern also matches HEAD; this projection does not.
+		if r.Method != http.MethodGet {
+			respondError(w, http.StatusMethodNotAllowed, "method_not_allowed")
+			return
+		}
+		if _, present := r.Header[http.CanonicalHeaderKey("Idempotency-Key")]; present || r.ContentLength != 0 || len(r.TransferEncoding) != 0 {
+			respondError(w, http.StatusUnprocessableEntity, "invalid_request")
+			return
+		}
+		locale, err := purchaseEntryLocale(r.URL)
+		if err != nil {
+			respondError(w, http.StatusUnprocessableEntity, "invalid_request")
+			return
+		}
+		scoped(pool, "catalog:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
+			return catalog.ReadPurchaseEntry(ctx, tx, s, strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "), r.PathValue("product_id"), locale)
+		})(w, r)
+	}
+}
+
+func purchaseEntryLocale(u *url.URL) (string, error) {
+	if u.ForceQuery || u.RawQuery == "" || len(u.RawQuery) > 64 {
+		return "", command.ErrInvalid
+	}
+	values, err := url.ParseQuery(u.RawQuery)
+	if err != nil || len(values) != 1 || len(values["locale"]) != 1 {
+		return "", command.ErrInvalid
+	}
+	locale := values["locale"][0]
+	if locale != "zh-CN" && locale != "zh-TW" && locale != "en" {
+		return "", command.ErrInvalid
+	}
+	return locale, nil
+}
 
 func listRoute(pool *pgxpool.Pool, permission string, fn func(context.Context, pgx.Tx, platform.Scope, *http.Request, pagination.Request) (any, error)) http.HandlerFunc {
 	return scoped(pool, permission, func(ctx context.Context, tx pgx.Tx, scope platform.Scope, r *http.Request) (any, error) {
@@ -233,6 +271,8 @@ func classify(err error) (int, string) {
 	case errors.Is(err, errAccountRateLimited):
 		return http.StatusTooManyRequests, "rate_limited"
 	case errors.Is(err, errAccountCapacity), errors.Is(err, errAccountUnavailable):
+		return http.StatusServiceUnavailable, "unavailable"
+	case errors.Is(err, catalog.ErrPurchaseEntryUnavailable):
 		return http.StatusServiceUnavailable, "unavailable"
 	case errors.Is(err, platform.ErrScopeNotFound):
 		return http.StatusNotFound, "not_found"
