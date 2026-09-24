@@ -91,6 +91,14 @@ SHA256、base64url 只绑定分页位置，不提供身份授权。`buyerhttp.pr
 域单元游标反例及完整race/vet；不得将商品展示价格当成最终报价或收款资格。
 合同见 [buyer-catalog-discovery-v1](../../contracts/buyer-catalog-discovery-v1.md)。
 
+`checkout.Service.ListOptions` 使用已校验的 checkout runtime pool，而不是增加
+buyer pool 权限或伪造商家授权。0013 已提供所有参与表的只读权限及 RLS；
+当前市场/政策/配送和分仓配置通过完整自然键联结。分仓保存时的 service_version
+只是写入 CAS 来源，不应在服务改名后强制相等；每个已分配仓库仍须有效，但
+发现列表不计算可售库存。`buyerhttp.projectOptions` 固定十五字段，最终 Quote/
+Begin 继续作计价与锁库存校验。改动需复跑 `TestBuyerHTTPOptions*`、游标/投影
+单测和全量 race/vet，见 [合同](../../contracts/buyer-checkout-options-v1.md)。
+
 内部 pricing/cart/quote 同样不新增依赖：`internal/pricing` 以现有 pgx 和受限整数
 计算；`internal/buyer/command.go` 复用事务、JSON/SHA-256；`internal/storefront`
 消费这些服务及 catalog 的 PG 行锁。升级 PG/pgx 时追加运行

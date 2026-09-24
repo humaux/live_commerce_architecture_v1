@@ -1,6 +1,8 @@
 # Buyer checkout options v1
 
 Status: FROZEN after independent preflight (no open P0/P1/P2), 2026-09-25.
+Implementation `83e5ed6` accepted: CO01–CO05 bounded private HTTP/PG gates,
+353-test full regression and independent review passed. [Evidence and limits](../docs/implementation/2026-09-25-buyer-checkout-options-acceptance.md).
 This joins the existing
 market, pricing and fulfillment configuration into buyer-safe choices. It is a
 dependency of automatic product payment entry, not payment or carrier acceptance.
@@ -84,7 +86,7 @@ trailing path404; existing private BFF secret, exact published-origin resolution
 buyer capability, forbidden Cookie/Origin/scope headers, deadline, no-store and
 safe error behavior remain. Browser input never chooses a tenant/store.
 
-## Acceptance gates (initially NOT_RUN)
+## Acceptance gates (bounded PASS; evidence above)
 
 - CO01 real private HTTP + PostgreSQL ordinary roles: rows/three languages/exact
   fields, multi-page stable traversal, each optional filter, foreign scope empty,
