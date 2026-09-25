@@ -169,6 +169,35 @@ func pwOldQuerySetupOn(t *testing.T, f *testFixture, keys *accounts.Keyring) pqF
 	return q
 }
 
+func pwDefaultDomainJobs(t *testing.T, q pqFixture) (expiryID, externalID int64) {
+	t.Helper()
+	ctx := context.Background()
+	if err := q.f.owner.QueryRow(ctx, `SELECT job_id FROM checkout.orders WHERE id=$1`, q.hold.OrderID).Scan(&expiryID); err != nil {
+		t.Fatal(err)
+	}
+	jobs, err := river.NewClient(riverpgxv5.New(q.f.runtime), &river.Config{Schema: "river"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	service, err := integration.New(jobs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = platform.WithScope(ctx, q.f.runtime, q.f.tokens["a"], q.f.storeA1, "store:read", func(tx pgx.Tx, scope platform.Scope) error {
+		planned, err := service.Plan(ctx, tx, scope, q.f.tokens["a"], t04Key("pw-external"), integration.PlanInput{
+			BindingID: q.binding, ExpectedBindingVersion: 1, Purpose: "transactional", Action: "payment.authorize", Request: json.RawMessage(`{"amount":1}`),
+		})
+		if err == nil {
+			externalID = planned.JobID
+		}
+		return err
+	})
+	if err != nil || externalID < 1 || pwQueue(t, q.f.owner, expiryID) != "default" || pwQueue(t, q.f.owner, externalID) != "default" {
+		t.Fatalf("actual default domain jobs unavailable: expiry=%d external=%d err=%v", expiryID, externalID, err)
+	}
+	return expiryID, externalID
+}
+
 func pwAwaitJob(t *testing.T, q pqFixture, id int64, state string) {
 	t.Helper()
 	deadline := time.Now().Add(8 * time.Second)
@@ -235,6 +264,8 @@ func TestBuyerPaymentWorkerRealRiverTwoTenantCaptureAndRestart(t *testing.T) {
 	keys := pwKeys(t)
 	first := pqSetupItemsOn(t, f, keys, false, 1)
 	second := pqSetupItemsOn(t, f, keys, false, 1)
+	expiryID, externalID := pwDefaultDomainJobs(t, first)
+	expiryBefore, externalBefore := pwJobExceptQueue(t, f.owner, expiryID), pwJobExceptQueue(t, f.owner, externalID)
 	if first.result.AttemptID == second.result.AttemptID || first.f.tenantA == second.f.tenantA {
 		t.Fatal("two-tenant worker fixture collapsed")
 	}
@@ -333,6 +364,9 @@ func TestBuyerPaymentWorkerRealRiverTwoTenantCaptureAndRestart(t *testing.T) {
 			t.Fatal("restart duplicated money or fulfillment")
 		}
 	}
+	if pwQueue(t, f.owner, expiryID) != "default" || pwQueue(t, f.owner, externalID) != "default" || pwJobExceptQueue(t, f.owner, expiryID) != expiryBefore || pwJobExceptQueue(t, f.owner, externalID) != externalBefore {
+		t.Fatal("payment client changed actual checkout expiry or external operation default jobs")
+	}
 }
 
 func TestBuyerPaymentWorkerLateDefaultInsertPollAndProfileIsolation(t *testing.T) {
@@ -391,6 +425,7 @@ func TestBuyerPaymentWorkerLateDefaultInsertPollAndProfileIsolation(t *testing.T
 	if pwQueue(t, f.owner, notifiedID) != "payment_mock_v1" {
 		t.Fatal("old default-notified reconcile was not routed")
 	}
+	mustExec(t, f.owner, `UPDATE river.river_job SET scheduled_at=clock_timestamp()+interval '1 hour' WHERE id=$1`, notified.result.JobID)
 	pwAwaitJob(t, notified, notifiedID, "completed")
 	pcAssertStock(t, notified, 0, 2, "CONFIRMED", "COMMITTED")
 	foreign := pqSetupItemsOn(t, f, keys, false, 1)
@@ -408,6 +443,15 @@ func TestBuyerPaymentWorkerLateDefaultInsertPollAndProfileIsolation(t *testing.T
 	}
 	if generationAfter != generationBefore || pwQueue(t, f.owner, foreign.result.JobID) != "payment_sandbox_v1" {
 		t.Fatal("MOCK consumer claimed a SANDBOX attempt")
+	}
+	var foreignAttempts, foreignObservations, foreignFacts int
+	var multiReady bool
+	if err := f.owner.QueryRow(context.Background(), `SELECT j.attempt,
+	 (SELECT count(*) FROM payments.provider_observations WHERE attempt_id=$1),
+	 (SELECT count(*) FROM payments.facts WHERE attempt_id=$1),
+	 integration.payment_queue_ready()
+	 FROM river.river_job j WHERE j.id=$2`, foreign.result.AttemptID, foreign.result.JobID).Scan(&foreignAttempts, &foreignObservations, &foreignFacts, &multiReady); err != nil || foreignAttempts != 0 || foreignObservations != 0 || foreignFacts != 0 || !multiReady {
+		t.Fatalf("cross-profile isolation/admission: attempts=%d observations=%d facts=%d ready=%t err=%v", foreignAttempts, foreignObservations, foreignFacts, multiReady, err)
 	}
 	if pwJobExceptQueue(t, f.owner, unrelated) != unrelatedBefore || pwQueue(t, f.owner, unrelated) != "default" {
 		t.Fatal("ordinary default River job changed")
@@ -464,17 +508,20 @@ func TestBuyerPaymentWorkerProcessSignalAndPoolCleanup(t *testing.T) {
 	seen := false
 	for time.Now().Before(deadline) {
 		var count int
-		if err := f.owner.QueryRow(context.Background(), `SELECT count(*) FROM pg_stat_activity WHERE datname='lc_foundation_test' AND application_name=$1`, app).Scan(&count); err != nil {
+		var queueStarted bool
+		if err := f.owner.QueryRow(context.Background(), `SELECT
+		 (SELECT count(*) FROM pg_stat_activity WHERE datname='lc_foundation_test' AND application_name=$1),
+		 EXISTS(SELECT 1 FROM river.river_queue WHERE name='payment_sandbox_v1')`, app).Scan(&count, &queueStarted); err != nil {
 			t.Fatal(err)
 		}
-		if count > 0 {
+		if count > 0 && queueStarted {
 			seen = true
 			break
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
 	if !seen {
-		t.Fatalf("enabled process never opened worker pool: %q", output.String())
+		t.Fatalf("enabled process never started SANDBOX River producer: %q", output.String())
 	}
 	if err := cmd.Process.Signal(syscall.SIGTERM); err != nil {
 		t.Fatal(err)
@@ -607,6 +654,7 @@ func TestBuyerPaymentWorkerRealCrashAndRiverLeaseRescue(t *testing.T) {
 	mustExec(t, f.owner, `UPDATE river.river_job SET attempted_at=clock_timestamp()-interval '2 hours' WHERE id=$1 AND state='running'`, q.result.JobID)
 	var calls atomic.Int32
 	opts := payments.DefaultQueryWorkerOptions()
+	opts.RetryDelay = time.Second // bounded fixture rescue, using River's own scheduler
 	body := pqSignedResponse(pcFull(q))
 	opts.MockTransport = pqTransport(func(*http.Request) (*http.Response, error) {
 		calls.Add(1)
@@ -620,9 +668,27 @@ func TestBuyerPaymentWorkerRealCrashAndRiverLeaseRescue(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer pwStopClient(t, client)
-	deadline := time.Now().Add(45 * time.Second)
+	// Observe River's actual rescue before checking its scheduled retry. The
+	// test uses a one-second worker retry policy; no job state or due time is
+	// manually rewritten after the crash.
+	rescueDeadline := time.Now().Add(40 * time.Second)
+	rescued := false
+	for time.Now().Before(rescueDeadline) {
+		var jobState string
+		if err := f.owner.QueryRow(context.Background(), `SELECT state,coalesce(errors::text LIKE '%Stuck job rescued by JobRescuer%',false) FROM river.river_job WHERE id=$1`, q.result.JobID).Scan(&jobState, &rescued); err != nil {
+			t.Fatal(err)
+		}
+		if jobState == "retryable" && rescued {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	if !rescued {
+		t.Fatal("River did not rescue the crashed running job")
+	}
+	deadline := time.Now().Add(12 * time.Second)
+	captured, work := 0, 0
 	for time.Now().Before(deadline) {
-		var captured, work int
 		if err := f.owner.QueryRow(context.Background(), `SELECT (SELECT count(*) FROM payments.facts WHERE attempt_id=$1 AND kind='CAPTURED'),(SELECT count(*) FROM fulfillment.payment_work_items WHERE attempt_id=$1)`, q.result.AttemptID).Scan(&captured, &work); err != nil {
 			t.Fatal(err)
 		}
@@ -631,13 +697,25 @@ func TestBuyerPaymentWorkerRealCrashAndRiverLeaseRescue(t *testing.T) {
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
+	if captured != 1 || work != 1 {
+		var jobState string
+		var jobAttempt int
+		var scheduled time.Time
+		var rescued bool
+		var finalGeneration int64
+		if err := f.owner.QueryRow(context.Background(), `SELECT j.state,j.attempt,j.scheduled_at,j.errors::text LIKE '%Stuck job rescued by JobRescuer%',o.generation FROM river.river_job j JOIN integration.operations o ON o.id=$2 WHERE j.id=$1`, q.result.JobID, q.result.OperationID).Scan(&jobState, &jobAttempt, &scheduled, &rescued, &finalGeneration); err != nil {
+			t.Fatal(err)
+		}
+		t.Fatalf("rescue stopped before capture: job=%s attempt=%d scheduled_in=%s rescued=%t operation_generation=%d calls=%d observations=%d", jobState, jobAttempt, time.Until(scheduled), rescued, finalGeneration, calls.Load(), q.reportCount(t))
+	}
 	pcAssertStock(t, q, 0, 2, "CONFIRMED", "COMMITTED")
 	pcAssertWork(t, q, "READY")
 	if calls.Load() != 1 || q.reportCount(t) != 1 || pcCount(t, q, "payments.facts", " AND kind='CAPTURED'") != 1 {
 		t.Fatalf("rescue query/report/capture counts: %d/%d/%d", calls.Load(), q.reportCount(t), pcCount(t, q, "payments.facts", " AND kind='CAPTURED'"))
 	}
-	var rescued bool
-	if err := f.owner.QueryRow(context.Background(), `SELECT errors::text LIKE '%Stuck job rescued by JobRescuer%' FROM river.river_job WHERE id=$1`, q.result.JobID).Scan(&rescued); err != nil || !rescued {
-		t.Fatalf("real River rescuer evidence missing: %t %v", rescued, err)
+	var finalGeneration int64
+	var finalAttempt int
+	if err := f.owner.QueryRow(context.Background(), `SELECT o.generation,j.attempt FROM river.river_job j JOIN integration.operations o ON o.id=$2 WHERE j.id=$1`, q.result.JobID, q.result.OperationID).Scan(&finalGeneration, &finalAttempt); err != nil || finalGeneration <= generation || finalAttempt < 1 {
+		t.Fatalf("same job was not retried after lease recovery: generation=%d→%d attempt=%d err=%v", generation, finalGeneration, finalAttempt, err)
 	}
 }
