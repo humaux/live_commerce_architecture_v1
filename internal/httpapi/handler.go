@@ -22,6 +22,7 @@ import (
 	"livecommerce/internal/httperror"
 	"livecommerce/internal/integrations/accounts"
 	"livecommerce/internal/inventory"
+	"livecommerce/internal/merchantorders"
 	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
 )
@@ -110,6 +111,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerSettingsRoutes(mux, pool)
 	registerSettingsDiscoveryRoutes(mux, pool)
 	registerAccountRoutes(mux, pool, configured.Accounts)
+	registerOrderRoutes(mux, pool)
 	foundation := platform.NewHandler(pool, platform.HandlerOptions{SessionStoreList: configured.SessionStoreList})
 	if configured.SessionStoreList {
 		mux.Handle("GET /v1/admin/stores", foundation)
@@ -273,6 +275,8 @@ func classify(err error) (int, string) {
 	case errors.Is(err, errAccountCapacity), errors.Is(err, errAccountUnavailable):
 		return http.StatusServiceUnavailable, "unavailable"
 	case errors.Is(err, catalog.ErrPurchaseEntryUnavailable):
+		return http.StatusServiceUnavailable, "unavailable"
+	case errors.Is(err, merchantorders.ErrUnavailable):
 		return http.StatusServiceUnavailable, "unavailable"
 	case errors.Is(err, platform.ErrScopeNotFound):
 		return http.StatusNotFound, "not_found"
