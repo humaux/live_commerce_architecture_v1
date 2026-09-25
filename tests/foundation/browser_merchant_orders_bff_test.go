@@ -322,7 +322,9 @@ func TestBrowserMerchantOrdersBFFRealChain(t *testing.T) {
 		t.Fatalf("authority stripping/order read proof failed: stripped=%d calls=%d evidence=%s", strippedFailures.Load(), orderCalls.Load(), evidence)
 	}
 	var issued int
-	if err := q.f.owner.QueryRow(ctx, `SELECT count(*) FROM identity.sessions s JOIN identity.external_identities e ON e.principal_id=s.principal_id
+	if err := q.f.owner.QueryRow(ctx, `SELECT count(*) FROM identity.sessions s
+		JOIN identity.session_events ev ON ev.session_id=s.id AND ev.action='session.issued'
+		JOIN identity.external_identities e ON e.principal_id=s.principal_id
 		WHERE e.issuer=$1 AND e.subject='browser-subject' AND s.token_hash<>$2`, idp.server.URL, tokenHash(q.f.tokens["a"])).Scan(&issued); err != nil || issued != 1 {
 		t.Fatalf("signed browser session persistence proof: count=%d err=%v", issued, err)
 	}
