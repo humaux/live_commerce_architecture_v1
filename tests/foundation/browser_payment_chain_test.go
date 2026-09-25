@@ -141,5 +141,17 @@ func TestBrowserBuyerPaymentUI(t *testing.T) {
 			t.Fatal("browser native POST differs from persisted hosted page")
 		}
 	}
+	var orders, attempts, pages, issued, facts, reviews int
+	err = h.f.owner.QueryRow(context.Background(), `SELECT
+	 (SELECT count(*) FROM checkout.orders WHERE store_id=$1),
+	 (SELECT count(*) FROM checkout.payment_attempts WHERE store_id=$1),
+	 (SELECT count(*) FROM checkout.hosted_payment_pages p JOIN checkout.payment_attempts a ON a.id=p.attempt_id WHERE a.store_id=$1),
+	 (SELECT count(*) FROM checkout.hosted_payment_pages p JOIN checkout.payment_attempts a ON a.id=p.attempt_id WHERE a.store_id=$1 AND p.handed_out_at IS NOT NULL),
+	 (SELECT count(*) FROM payments.facts WHERE store_id=$1),
+	 (SELECT count(*) FROM payments.review_cases WHERE store_id=$1)`, h.f.storeA1).
+		Scan(&orders, &attempts, &pages, &issued, &facts, &reviews)
+	if err != nil || orders != 5 || attempts != 4 || pages != 4 || issued != 4 || facts != 0 || reviews != 0 {
+		t.Fatal("browser payment global order/attempt/page/issue or financial-fact counts diverged")
+	}
 	t.Logf("PASS: actual Next-Go-PG payment UI, two native mock PSP posts, exact persisted form digests; cases=%d evidence=%s", result.Cases, evidence)
 }
