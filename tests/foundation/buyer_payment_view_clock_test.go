@@ -48,12 +48,14 @@ func TestBuyerPaymentViewFinalDatabaseClock(t *testing.T) {
 			}
 			var expiry time.Time
 			switch stage {
+			// The existing buyer transaction has a 1s lock timeout. Exercise
+			// expiry inside that bound, not its unrelated unavailable fallback.
 			case "capability":
-				err = h.f.owner.QueryRow(ctx, `UPDATE buyer.capability_sessions SET expires_at=clock_timestamp()+interval '1 second' WHERE id=$1 RETURNING expires_at`, h.cap.Scope.SessionID).Scan(&expiry)
+				err = h.f.owner.QueryRow(ctx, `UPDATE buyer.capability_sessions SET expires_at=clock_timestamp()+interval '450 milliseconds' WHERE id=$1 RETURNING expires_at`, h.cap.Scope.SessionID).Scan(&expiry)
 			case "qualification":
-				err = h.f.owner.QueryRow(ctx, `UPDATE payments.account_qualifications SET expires_at=clock_timestamp()+interval '1 second' WHERE id=$1 RETURNING expires_at`, h.proof).Scan(&expiry)
+				err = h.f.owner.QueryRow(ctx, `UPDATE payments.account_qualifications SET expires_at=clock_timestamp()+interval '450 milliseconds' WHERE id=$1 RETURNING expires_at`, h.proof).Scan(&expiry)
 			case "page":
-				err = h.f.owner.QueryRow(ctx, `UPDATE checkout.hosted_payment_pages SET expires_at=clock_timestamp()+interval '1 second' WHERE attempt_id=(SELECT id FROM checkout.payment_attempts WHERE order_id=$1) RETURNING expires_at`, h.hold.OrderID).Scan(&expiry)
+				err = h.f.owner.QueryRow(ctx, `UPDATE checkout.hosted_payment_pages SET expires_at=clock_timestamp()+interval '450 milliseconds' WHERE attempt_id=(SELECT id FROM checkout.payment_attempts WHERE order_id=$1) RETURNING expires_at`, h.hold.OrderID).Scan(&expiry)
 			}
 			if err != nil {
 				t.Fatal(err)
