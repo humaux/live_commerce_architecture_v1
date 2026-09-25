@@ -1,0 +1,12 @@
+{
+  "title": "商家订单页：选择布局",
+  "question": "沿用现有后台风格，先查看订单、付款与收货资料。以下都是合成数据视觉稿，不代表真实收款。选择最适合日常核单的一版，也可以提出修改。",
+  "options": [
+    {"id":"orders-split","label":"A 左右对照","kicker":"THE ROLL","lineage":"现有商品对账簿","thesis":"左侧连续看订单，右侧即时核对所选订单资料。","palette":["#193c61","#f5f7fa","#247965"],"materials":["紧凑列表","白色核对面"],"viewport":"左侧订单列表占六成，右侧保留付款、商品和收货资料。","risk":"窄屏需要切换至单笔详情，不能同时保留两栏。","comp":".impeccable/mocks/decision/merchant-orders-split.png"},
+    {"id":"orders-review","label":"B 逐单核对","lineage":"现有商品对账簿","thesis":"顶部选订单，下方一张完整单据，适合逐单检查。","palette":["#193c61","#f5f7fa","#247965"],"materials":["订单索引条","整页单据"],"viewport":"顶部横向订单索引，下方大面积商品清单与收货资料。","risk":"同时比较多笔订单的效率不如列表式布局。","comp":".impeccable/mocks/decision/merchant-orders-review.png"},
+    {"id":"orders-inline","label":"C 表格原位展开","lineage":"现有商品对账簿","thesis":"列表占满工作区，点击订单后直接在该行下方展开详情。","palette":["#193c61","#f5f7fa","#247965"],"materials":["宽表格","行内详情"],"viewport":"上方筛选和全宽表格，选中行下紧接商品与收货详情。","risk":"展开明细会推低后续订单，需要更多纵向滚动。","comp":".impeccable/mocks/decision/merchant-orders-inline.png"}
+  ],
+  "buildPath":{"value":"comp","toggle":true},
+  "reroll":true,
+  "steer":true
+}
