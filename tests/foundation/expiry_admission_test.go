@@ -3,6 +3,7 @@ package foundation_test
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -100,12 +101,26 @@ func TestBuyerCheckoutExpiryRuntimeAdmission(t *testing.T) {
 	if client, err := checkout.NewExpiryClient(context.Background(), f.owner, 1); client != nil || err == nil || err.Error() != "expiry_worker_database" {
 		t.Fatal("migration owner admitted as worker")
 	}
+	var signatures []string
+	if err := f.owner.QueryRow(context.Background(), `SELECT array_agg(p.oid::regprocedure::text ORDER BY p.oid::regprocedure::text)
+	 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='checkout'
+	 AND p.proname IN ('expiry_job_linked','route_expiry_queue_v1','expiry_queue_ready')`).Scan(&signatures); err != nil ||
+		strings.Join(signatures, ",") != "checkout.expiry_job_linked(bigint),checkout.expiry_queue_ready(),checkout.route_expiry_queue_v1()" {
+		t.Fatal("expiry function signature set has missing or additional overloads")
+	}
 	if n := countRows(t, f.owner, `SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 	 JOIN pg_roles r ON r.oid=p.proowner WHERE n.nspname='checkout'
 	 AND p.proname IN ('expiry_job_linked','route_expiry_queue_v1','expiry_queue_ready')
 	 AND p.prosecdef AND r.rolname='commerce_checkout_writer' AND NOT r.rolcanlogin
 	 AND p.proconfig=ARRAY['search_path=pg_catalog']::text[]`); n != 3 {
 		t.Fatal("expiry helper owner/search_path/definer drift")
+	}
+	if n := countRows(t, f.owner, `SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+	 CROSS JOIN LATERAL aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a
+	 WHERE n.nspname='checkout' AND p.proname IN ('expiry_job_linked','route_expiry_queue_v1','expiry_queue_ready')
+	 AND a.privilege_type='EXECUTE' AND a.grantee<>p.proowner
+	 AND NOT (p.proname='expiry_queue_ready' AND a.grantee='commerce_worker'::regrole)`); n != 0 {
+		t.Fatal("expiry functions grant PUBLIC or another unexpected principal EXECUTE")
 	}
 	t.Run("bounded audit", func(t *testing.T) {
 		tx, err := f.owner.Begin(context.Background())
