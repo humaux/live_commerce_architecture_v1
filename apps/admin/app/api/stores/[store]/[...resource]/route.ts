@@ -18,9 +18,10 @@ const deliveryCollection = `markets/${uuid}/countries/[A-Z]{2}/delivery-services
 const paymentCollection = `markets/${uuid}/countries/TW/payment-methods`;
 const policy = `${deliveryCollection}/[a-z][a-z0-9_-]{0,39}/policy`;
 const purchaseEntry = `products/${uuid}/purchase-entry`;
+const orders = `orders(?:/${uuid})?`;
 const routes: Record<string, RegExp> = {
   GET: new RegExp(
-    `^(catalog-ledger|products|warehouses|inventory|products/${uuid}/skus|${purchaseEntry}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy})$`,
+    `^(catalog-ledger|products|warehouses|inventory|products/${uuid}/skus|${purchaseEntry}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy}|${orders})$`,
   ),
   POST: new RegExp(
     `^(products|skus|warehouses|inventory/adjustments|products/${uuid}/archive|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets)$`,
@@ -35,6 +36,14 @@ const discoveryRoute = new RegExp(
 );
 const pagedSettingsRoute = new RegExp(`^(markets|${deliveryCollection})$`);
 const purchaseEntryRoute = new RegExp(`^${purchaseEntry}$`);
+const orderRoute = new RegExp(`^${orders}$`);
+const orderStates = new Set([
+  "all",
+  "DRAFT",
+  "AWAITING_PAYMENT",
+  "CONFIRMED",
+  "CANCELLED",
+]);
 type Context = { params: Promise<{ store: string; resource: string[] }> };
 
 async function proxy(request: Request, context: Context) {
@@ -43,10 +52,11 @@ async function proxy(request: Request, context: Context) {
   const path = resource.join("/");
   if (!exactStore.test(store) || !routes[request.method]?.test(path))
     return error(404, "not_found");
+  const order = request.method === "GET" && orderRoute.test(path);
   const accountRoute = path.startsWith("provider-accounts");
   const inspection = request.method === "POST" && inspectRoute.test(path);
   // New setup routes require actual session/store authority, never a shared fixture.
-  if ((accountRoute || discoveryRoute.test(path)) && !authConfig)
+  if ((order || accountRoute || discoveryRoute.test(path)) && !authConfig)
     return error(404, "not_found");
   // URL.search drops an empty trailing '?'. Exact resources must reject that too;
   // Only collection GETs inherit the bounded pagination parser in Go.
@@ -58,6 +68,34 @@ async function proxy(request: Request, context: Context) {
   if (exactResource && request.url.includes("?"))
     return error(422, "invalid_request");
   const url = new URL(request.url);
+  if (order) {
+    if (
+      request.body !== null ||
+      request.headers.has("transfer-encoding") ||
+      request.headers.has("idempotency-key") ||
+      (request.headers.has("content-length") &&
+        request.headers.get("content-length") !== "0")
+    )
+      return error(422, "invalid_request");
+    if (path !== "orders") {
+      if (request.url.includes("?")) return error(422, "invalid_request");
+    } else if (request.url.includes("?")) {
+      const raw = request.url.slice(request.url.indexOf("?") + 1);
+      const seen = new Set<string>();
+      for (const segment of raw.split("&")) {
+        const match = /^(limit|cursor|state)=([A-Za-z0-9_-]+)$/.exec(segment);
+        if (!match || seen.has(match[1])) return error(422, "invalid_request");
+        seen.add(match[1]);
+        const [, key, value] = match;
+        if (
+          (key === "limit" && !/^(?:[1-9]|[1-9][0-9]|100)$/.test(value)) ||
+          (key === "cursor" && value.length > 1024) ||
+          (key === "state" && !orderStates.has(value))
+        )
+          return error(422, "invalid_request");
+      }
+    }
+  }
   if (
     request.method === "GET" &&
     purchaseEntryRoute.test(path) &&
@@ -72,7 +110,11 @@ async function proxy(request: Request, context: Context) {
   let token: string | undefined;
   if (authConfig) {
     token = sessionToken(request) ?? undefined;
-    if (!token) return error(401, "unauthorized");
+    if (!token) {
+      const denied = error(401, "unauthorized");
+      if (order) clearAuthCookies(denied.headers);
+      return denied;
+    }
     if (
       request.method !== "GET" &&
       (!requireOrigin(request) || !requireCSRF(request))
@@ -147,7 +189,7 @@ async function proxy(request: Request, context: Context) {
     status: response.status,
     headers: {
       "Content-Type": "application/json",
-      "Cache-Control": "no-store",
+      "Cache-Control": order ? "private, no-store" : "no-store",
       "X-Request-ID": response.headers.get("x-request-id") ?? "",
     },
   });
