@@ -16,11 +16,13 @@ export default function OrderHistory({
   locale,
   money,
   onError,
+  onPaymentBusy,
 }: {
   context: string;
   locale: Locale;
   money: (amount: number, currency: string) => string;
   onError: (reason: unknown) => void;
+  onPaymentBusy: (busy: boolean) => void;
 }) {
   const copy = historyCopy[locale];
   const [items, setItems] = useState<OrderSummary[]>([]);
@@ -28,7 +30,10 @@ export default function OrderHistory({
   const [detail, setDetail] = useState<Order | null>(null);
   const [busy, setBusy] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [paymentBusy, setPaymentBusy] = useState(false);
   const epoch = useRef(0);
+  const selected = useRef<string | null>(null);
+  const selectionGeneration = useRef(0);
   const retry = useRef<() => Promise<void>>(async () => {});
   async function run(action: () => Promise<void>) {
     const version = epoch.current;
@@ -75,9 +80,16 @@ export default function OrderHistory({
   }
   async function view(id: string) {
     const version = epoch.current;
+    const generation = ++selectionGeneration.current;
+    selected.current = id;
     await run(async () => {
       const order = await readOrder(context, id);
-      if (version === epoch.current) setDetail(order);
+      if (
+        version === epoch.current &&
+        generation === selectionGeneration.current &&
+        selected.current === id
+      )
+        setDetail(order);
     });
   }
   useEffect(() => {
@@ -85,6 +97,8 @@ export default function OrderHistory({
     void load();
     return () => {
       epoch.current++;
+      selected.current = null;
+      selectionGeneration.current++;
     };
   }, [context]);
   return (
@@ -103,14 +117,33 @@ export default function OrderHistory({
       )}
       {detail ? (
         <>
-          <button disabled={busy} onClick={() => setDetail(null)}>
+          <button
+            disabled={busy || paymentBusy}
+            onClick={() => {
+              selected.current = null;
+              selectionGeneration.current++;
+              setDetail(null);
+            }}
+          >
             {copy.list}
           </button>
           <OrderDetails
+            context={context}
             order={detail}
             locale={locale}
             money={money}
-            busy={busy}
+            busy={busy || paymentBusy}
+            onPaymentBusy={(value) => {
+              setPaymentBusy(value);
+              onPaymentBusy(value);
+            }}
+            isSelected={(() => {
+              const id = detail.order_id,
+                generation = selectionGeneration.current;
+              return () =>
+                selected.current === id &&
+                selectionGeneration.current === generation;
+            })()}
             refresh={() => void view(detail.order_id)}
           />
         </>

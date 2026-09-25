@@ -109,7 +109,9 @@ async function created(p,quote,ownerOrders=1) {
     await expect(breakdown.nth(index).locator("dd")).toHaveText(new Intl.NumberFormat("en",{style:"currency",currency:quote.currency}).format(quote.amount[key]/100));
   }
   await expect(p.getByTestId("create-order")).toHaveCount(0);
-  await expect(p.getByRole("button",{name:/^(Pay now|Continue to payment)$/i})).toHaveCount(0);
+  // This legacy fixture does not enable buyer payment. New payment UI must not
+  // manufacture an available method merely because an order was created.
+  await expect(p.getByTestId("pay-order")).toHaveCount(0);
   if(!orders.includes(id))orders.push(id);return id;
 }
 async function stored(p,prefix="commerce-purchase-pending-v1:") {
