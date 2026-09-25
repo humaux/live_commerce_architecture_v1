@@ -217,7 +217,7 @@ func TestIdentityInitialStoreAtomicIdempotentAndScoped(t *testing.T) {
 	if err := f.owner.QueryRow(ctx, `SELECT ARRAY(SELECT permission FROM identity.store_grants WHERE tenant_id=$1::uuid ORDER BY permission),(SELECT count(*) FROM inventory.warehouses WHERE tenant_id=$1::uuid),(SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1::uuid AND action='merchant.store_created')`, a.TenantID).Scan(&grants, &warehouses, &audits); err != nil {
 		t.Fatal(err)
 	}
-	wantGrants := "audit:read,audit:write,catalog:read,catalog:write,integration:manage,integration:read,inventory:read,inventory:reserve,inventory:write,pricing:read,pricing:write,store:read"
+	wantGrants := "audit:read,audit:write,catalog:read,catalog:write,integration:manage,integration:read,inventory:read,inventory:reserve,inventory:write,orders:read,pricing:read,pricing:write,store:read"
 	if strings.Join(grants, ",") != wantGrants || warehouses != 1 || audits != 1 {
 		t.Fatalf("bootstrap grants=%v warehouses=%d audits=%d", grants, warehouses, audits)
 	}
