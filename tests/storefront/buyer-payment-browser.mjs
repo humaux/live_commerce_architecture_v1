@@ -138,12 +138,25 @@ try{
   await page.getByTestId("pay-order").click();await expect(page.getByTestId("payment-error")).toBeVisible();
   assert.deepEqual(await control(),initial);assert.equal(await paymentMarker(page,b),null);passed("BPU02 closed child causes zero prepare/take");
   await page.evaluate(()=>{window.open=window.__nativeOpen;});
-  postOrder=b;const pop=page.waitForEvent("popup");await page.getByTestId("pay-order").click();const child=await pop;
-  await expect.poll(()=>posts.length).toBe(1);assert.equal(await child.evaluate(()=>window.opener),null);
+  postOrder=b;const firstPrepare=arm(`/api/buyer/orders/${b}/payment/prepare`,"hold");
+  const pop=page.waitForEvent("popup");await page.getByTestId("pay-order").click();const child=await pop;
+  assert.equal(await firstPrepare.result.promise,200);
+  await expect(page.getByTestId("pay-order")).toHaveCount(0);
+  const other=await c.newPage();await other.goto(product);
+  await expect(other.getByTestId("order-id")).toHaveText(b);
+  await expect(other.getByTestId("pay-order")).toBeVisible();
+  const secondPop=other.waitForEvent("popup");await other.getByTestId("pay-order").click();await secondPop;
+  await expect.poll(()=>other.evaluate(async()=>(await navigator.locks.query()).pending.filter(x=>x.name==="commerce-purchase-write-v1").length)).toBeGreaterThan(0);
+  firstPrepare.release.resolve();
+  await expect.poll(()=>posts.length).toBe(1);await child.waitForURL(psp);await child.waitForLoadState("domcontentloaded");
+  assert.equal(await child.evaluate(()=>window.opener),null);
+  await expect(other.getByTestId("payment-error")).toBeVisible();
+  assert.equal(paymentCalls(b,"prepare").length,1);assert.equal(paymentCalls(b,"handoff").length,1);
   await expect(page.getByTestId("payment-status")).toHaveAttribute("data-state","PENDING");
   assert.equal((await paymentMarker(page,b)).stage,"handoff_started");await storageSafe(page);
   assert.equal(paymentCalls(b,"prepare").length,1);assert.equal(paymentCalls(b,"handoff").length,1);
   passed("BPU02 fresh native POST equals one prepare/take, one pending fact, no persisted form");
+  passed("BPU02 concurrent tabs queue on actual Web Lock; duplicate Pay adds no prepare/take/form");
 
   await page.getByTestId("toggle-order-history").click();await page.locator(`button[data-order-id="${a}"]`).click();
   await expect(page.getByTestId("order-id")).toHaveText(a);await expect(page.getByTestId("payment-status")).toHaveAttribute("data-state","NOT_STARTED");
@@ -155,7 +168,8 @@ try{
   const marker=await paymentMarker(page,a);assert.equal(marker.stage,"prepare");
   const beforeReplay=paymentCalls(a,"prepare").length;postOrder=a;
   const historical=page.waitForEvent("popup");await page.getByTestId("pay-order").click();const historyChild=await historical;
-  await expect.poll(()=>posts.length).toBe(2);assert.equal(await historyChild.evaluate(()=>window.opener),null);
+  await expect.poll(()=>posts.length).toBe(2);await historyChild.waitForURL(psp);await historyChild.waitForLoadState("domcontentloaded");
+  assert.equal(await historyChild.evaluate(()=>window.opener),null);
   const replay=paymentCalls(a,"prepare").slice(beforeReplay);assert.equal(replay.length,1);
   assert.equal(replay[0].key,paymentCalls(a,"prepare")[0].key);assert.equal(replay[0].body,paymentCalls(a,"prepare")[0].body);
   assert.equal(paymentCalls(a,"handoff").length,1);await storageSafe(page);
@@ -172,17 +186,26 @@ try{
   await page.getByTestId("pay-order").click();await preparePopup;assert.equal(await lostPrepare.result.promise,200);
   await expect(page.getByTestId("payment-error")).toBeVisible();assert.equal((await paymentMarker(page,d)).stage,"prepare");
   assert.equal(paymentCalls(d,"handoff").length,0);
-  const lost=arm(`/api/buyer/orders/${d}/payment/handoff`,"drop");const lostPopup=page.waitForEvent("popup");
-  await page.getByTestId("pay-order").click();await lostPopup;assert.equal(await lost.result.promise,200);
+  const closedAfterTake=arm(`/api/buyer/orders/${d}/payment/handoff`,"hold");const closedPopup=page.waitForEvent("popup");
+  await page.getByTestId("pay-order").click();const closedChild=await closedPopup;assert.equal(await closedAfterTake.result.promise,200);
+  await closedChild.close();closedAfterTake.release.resolve();
   await expect(page.getByTestId("payment-error")).toBeVisible();assert.equal((await paymentMarker(page,d)).stage,"handoff_started");
   const prepareCalls=paymentCalls(d,"prepare");assert.equal(prepareCalls.length,2);
   assert.equal(prepareCalls[0].key,prepareCalls[1].key);assert.equal(prepareCalls[0].body,prepareCalls[1].body);
   assert.equal(paymentCalls(d,"handoff").length,1);assert.equal(posts.length,2);
+  passed("BPU02 child closed after committed Take cannot release cached form or retry");
+
+  await page.getByTestId("continue-shopping").click();await expect(page.getByRole("button",{name:"Choose delivery",exact:true})).toBeEnabled();
+  const lostOrder=await makeOrder(page);
+  const lost=arm(`/api/buyer/orders/${lostOrder}/payment/handoff`,"drop");const lostPopup=page.waitForEvent("popup");
+  await page.getByTestId("pay-order").click();await lostPopup;assert.equal(await lost.result.promise,200);
+  await expect(page.getByTestId("payment-error")).toBeVisible();assert.equal((await paymentMarker(page,lostOrder)).stage,"handoff_started");
+  assert.equal(paymentCalls(lostOrder,"prepare").length,1);assert.equal(paymentCalls(lostOrder,"handoff").length,1);assert.equal(posts.length,2);
   await page.reload();await page.bringToFront();await expect(page.getByTestId("order-payment")).toBeVisible();
-  assert.equal(paymentCalls(d,"handoff").length,1);await expect(page.getByTestId("pay-order")).toHaveCount(0);
-  assert.equal((await control()).issued,3);await storageSafe(page);
+  assert.equal(paymentCalls(lostOrder,"handoff").length,1);await expect(page.getByTestId("pay-order")).toHaveCount(0);
+  assert.equal((await control()).issued,4);await storageSafe(page);
   await page.screenshot({path:path.join(evidence,"mobile-payment-readonly.png"),fullPage:true});
-  passed("BPU02 lost prepare exact replay; lost handoff/reload/focus is GET-only on mobile");
+  passed("BPU02 lost prepare exact replay; separate lost handoff/reload/focus is GET-only on mobile");
 
   const markerText="untrusted-payment-callback-marker";
   const get=await relay(port,{url:`/payment/return?proof=${markerText}`,method:"GET",headers:{host:"buyer.example"}},Buffer.alloc(0));
@@ -197,7 +220,7 @@ try{
     assert.match(policy,/default-src 'none'/);assert.match(policy,/style-src 'sha256-[^']+'/);
     assert.match(policy,/form-action 'none'/);assert(!policy.includes("form-action 'self'"));
   }
-  assert.equal((await control()).issued,3);assert.equal(posts.length,2);
+  assert.equal((await control()).issued,4);assert.equal(posts.length,2);
   const returnPage=await c.newPage();await returnPage.goto(`${origin}/payment/return`);
   await returnPage.screenshot({path:path.join(evidence,"desktop-payment-return.png"),fullPage:true});
   await returnPage.setViewportSize({width:390,height:844});await returnPage.screenshot({path:path.join(evidence,"mobile-payment-return.png"),fullPage:true});
