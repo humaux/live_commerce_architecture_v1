@@ -91,6 +91,46 @@ test("BPU01 malformed server handoff never submits and Take remains nonretryable
   assert.equal(pendingOrderPayment(context,orderID).stage,"handoff_started");await assert.rejects(g.pay());assert.equal(posts(g,"handoff").length,1);
 }));
 
+test("BPU01 marker replacement before Take and after Take blocks release/form reuse",async()=>{
+  await fixture(async g=>{
+    const original=localStorage.getItem.bind(localStorage);let changed=false;
+    localStorage.getItem=key=>{
+      const value=original(key);
+      if(!changed&&key.startsWith("commerce-order-payment-v1:")&&value?.includes('"handoff_started"')){
+        changed=true;g.data.set(key,JSON.stringify({...JSON.parse(value),key:id(99)}));
+      }
+      return value;
+    };
+    await assert.rejects(g.pay(),{code:"uncertain"});assert(changed);
+    assert.equal(posts(g,"prepare").length,1);assert.equal(posts(g,"handoff").length,0);assert.equal(g.submitted.length,0);
+  });
+  await fixture(async g=>{
+    const normal=g.route;g.route=async req=>{
+      const response=await normal(req);
+      if(req.path.endsWith("/handoff")){
+        const key=`commerce-order-payment-v1:${context}:${orderID}`;
+        g.data.set(key,JSON.stringify({...JSON.parse(g.data.get(key)),key:id(98)}));
+      }
+      return response;
+    };
+    await assert.rejects(g.pay(),{code:"uncertain"});
+    assert.equal(posts(g,"handoff").length,1);assert.equal(g.submitted.length,0);
+  });
+});
+
+test("BPU01 context replacement after prepare and after Take closes destination without form",async()=>{
+  await fixture(async g=>{
+    const normal=g.route;g.route=async req=>{const response=await normal(req);if(req.path.endsWith("/prepare"))g.active="b".repeat(43);return response;};
+    await assert.rejects(g.pay(),{code:"context_changed"});assert.equal(posts(g,"prepare").length,1);
+    assert.equal(posts(g,"handoff").length,0);assert.equal(g.submitted.length,0);assert(g.closed>0);
+  });
+  await fixture(async g=>{
+    const normal=g.route;g.route=async req=>{const response=await normal(req);if(req.path.endsWith("/handoff"))g.active="b".repeat(43);return response;};
+    await assert.rejects(g.pay(),{code:"context_changed"});assert.equal(posts(g,"handoff").length,1);
+    assert.equal(g.submitted.length,0);assert(g.closed>0);
+  });
+});
+
 test("BPU01 synchronous destination refuses invalid locale before opening a window",()=>{
   assert.throws(()=>openPaymentDestination("fr"),{code:"request_failed"});
 });

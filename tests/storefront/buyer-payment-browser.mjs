@@ -69,6 +69,8 @@ async function context(mobile=false){
 }
 const requestIs=(response,suffix,method)=>new URL(response.url()).pathname===`/api/buyer/${suffix}`&&response.request().method()===method;
 async function makeOrder(page){
+  await expect(page.locator("#quantity")).toBeEnabled();
+  await page.locator("#quantity").fill("2");
   await page.getByRole("button",{name:"Choose delivery",exact:true}).click();
   const quotation=page.waitForResponse(r=>requestIs(r,"quotes","POST"));
   await page.getByRole("button",{name:"Get current total",exact:true}).click();assert.equal((await quotation).status(),200);
@@ -78,6 +80,14 @@ async function makeOrder(page){
   await page.getByTestId("create-order").click();await expect(page.getByTestId("order-section")).toBeVisible();
   const id=(await page.getByTestId("order-id").innerText()).trim();assert.match(id,/^[0-9a-f-]{36}$/);
   await expect(page.getByTestId("order-payment")).toBeVisible();await expect(page.getByTestId("payment-status")).toHaveAttribute("data-state","NOT_STARTED");
+  const payment=await page.evaluate(async orderID=>{
+    const session=await(await fetch("/api/buyer/session",{cache:"no-store"})).json();
+    const response=await fetch(`/api/buyer/orders/${orderID}/payment`,{headers:{"X-Buyer-Context":session.context},cache:"no-store"});
+    return {status:response.status,body:await response.json()};
+  },id);
+  assert.equal(payment.status,200);assert.equal(payment.body.currency,"TWD");assert.equal(payment.body.total_minor,2500);
+  assert.deepEqual(payment.body.methods.map(x=>[x.code,x.version]),[["payuni_credit",1]]);
+  await expect(page.getByTestId("pay-order")).toBeVisible();
   await expect(page.getByTestId("payment-test-mode")).toBeVisible();return id;
 }
 async function paymentMarker(page,id){
@@ -116,6 +126,8 @@ try{
   const entry=await page.goto(product);assert(entry);const csp=entry.headers()["content-security-policy"]??"";
   assert.match(csp,/form-action/);assert(csp.includes("'self'")&&csp.includes(psp)&&csp.includes("https://api.payuni.com.tw/api/upp"));
   const a=await makeOrder(page);passed("BPU02 actual fresh order/payment snapshot and exact PSP CSP");
+  await page.getByTestId("order-payment").screenshot({path:path.join(evidence,"desktop-payment-ready.png")});
+  await page.screenshot({path:path.join(evidence,"desktop-order-ready.png"),fullPage:true});
   await page.getByTestId("continue-shopping").click();await expect(page.getByRole("button",{name:"Choose delivery",exact:true})).toBeEnabled();
   const b=await makeOrder(page);assert.notEqual(a,b);
   const initial=await control();assert.equal(initial.attempts,0);assert.equal(initial.pages,0);
@@ -155,6 +167,7 @@ try{
   await page.getByTestId("continue-shopping").click();await page.locator("header select").selectOption("en");
   await expect(page.getByRole("button",{name:"Choose delivery",exact:true})).toBeEnabled();const d=await makeOrder(page);
   await page.setViewportSize({width:390,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await page.getByTestId("order-payment").screenshot({path:path.join(evidence,"mobile-payment-ready.png")});
   const lostPrepare=arm(`/api/buyer/orders/${d}/payment/prepare`,"drop");const preparePopup=page.waitForEvent("popup");
   await page.getByTestId("pay-order").click();await preparePopup;assert.equal(await lostPrepare.result.promise,200);
   await expect(page.getByTestId("payment-error")).toBeVisible();assert.equal((await paymentMarker(page,d)).stage,"prepare");
@@ -168,6 +181,7 @@ try{
   await page.reload();await page.bringToFront();await expect(page.getByTestId("order-payment")).toBeVisible();
   assert.equal(paymentCalls(d,"handoff").length,1);await expect(page.getByTestId("pay-order")).toHaveCount(0);
   assert.equal((await control()).issued,3);await storageSafe(page);
+  await page.screenshot({path:path.join(evidence,"mobile-payment-readonly.png"),fullPage:true});
   passed("BPU02 lost prepare exact replay; lost handoff/reload/focus is GET-only on mobile");
 
   const markerText="untrusted-payment-callback-marker";
@@ -184,6 +198,10 @@ try{
     assert.match(policy,/form-action 'none'/);assert(!policy.includes("form-action 'self'"));
   }
   assert.equal((await control()).issued,3);assert.equal(posts.length,2);
+  const returnPage=await c.newPage();await returnPage.goto(`${origin}/payment/return`);
+  await returnPage.screenshot({path:path.join(evidence,"desktop-payment-return.png"),fullPage:true});
+  await returnPage.setViewportSize({width:390,height:844});await returnPage.screenshot({path:path.join(evidence,"mobile-payment-return.png"),fullPage:true});
+  await returnPage.close();
   passed("BPU02 neutral GET/POST return never reports payment or changes facts");
   for(const locale of ["zh-CN","zh-TW","en"]){await page.locator("header select").selectOption(locale);await expect(page.locator("html")).toHaveAttribute("lang",locale);await expect(page.getByTestId("payment-test-mode")).toBeVisible();}
   passed("BPU02 three locales and mobile retain server test-mode disclosure");
