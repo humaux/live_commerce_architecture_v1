@@ -19,6 +19,10 @@ they are not considered delivered by these private HTTP tests.
 `(*checkout.HostedPaymentStarter).PaymentView(ctx, token, storeID, orderID string)
 (OrderPayment, error)` uses its existing dedicated hosted pool/profile/config.
 No additional service/queue/table/secret is needed.
+Go `PaymentMethodOption` has Code string, Version int64, NameHans/NameHant/NameEN
+string. `OrderPayment` uses OrderID/Currency/CommercialState/PaymentState/
+HandoffState string, TotalMinor int64, HandoffExpiresAt *time.Time (no omitempty),
+Methods []PaymentMethodOption; JSON tags are exactly the snake_case fields below.
 
 Integrator reserves migration0026 for
 `checkout.hosted_payment_view(bytea,uuid,uuid,text,bytea) RETURNS jsonb`:
@@ -95,6 +99,10 @@ More than one optional service is invalid. No service-locator/provider abstracti
 New `COMMERCE_BUYER_PAYMENT_ENABLED` flag follows existing flag grammar. Disabled
 mode reads only this flag. Enabled mode requires enabled buyer API/private listener
 and a separate `COMMERCE_HOSTED_DATABASE_URL` verified by OpenHostedPool.
+It is nested in buyerConfig: a disabled root buyer API still ignores all buyer
+subconfiguration and reads only its existing root flag. When the root is enabled,
+loadBuyerConfig calls the private payment loader; buildBuyerHandler keeps its
+existing public signature and consumes the nested optional payment config.
 Require `COMMERCE_PAYMENT_PROFILE` in PROVIDER_MOCK/SANDBOX/LIVE and fixed valid
 `COMMERCE_PAYMENT_RETURN_URL`, `COMMERCE_PAYMENT_NOTIFY_URL`.
 Reuse the existing COMMERCE_ACCOUNT_ACTIVE_KEY_ID / KEYS_JSON / REPLAY_KEY parser
