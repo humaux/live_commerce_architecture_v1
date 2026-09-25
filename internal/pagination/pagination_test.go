@@ -1,6 +1,7 @@
 package pagination
 
 import (
+	"encoding/base64"
 	"errors"
 	"strings"
 	"testing"
@@ -82,5 +83,46 @@ func TestDeliveryCodeCursorIsBoundToMarketAndCountry(t *testing.T) {
 	}
 	if _, err := Encode(binding, []string{"manual_home"}); !errors.Is(err, command.ErrInvalid) {
 		t.Fatalf("old collection accepted code cursor: %v", err)
+	}
+}
+
+func TestMerchantOrdersTimestampIDCursor(t *testing.T) {
+	b := Binding{TenantID: binding.TenantID, StoreID: binding.StoreID, Collection: "merchant-orders", Filter: "all"}
+	stamp := "2026-09-25T04:05:06.123456Z"
+	encoded, err := Encode(b, []string{stamp, key})
+	if err != nil {
+		t.Fatal(err)
+	}
+	limit, keys, err := Decode(Request{Limit: 100, Cursor: encoded}, b, 2)
+	if err != nil || limit != 100 || len(keys) != 2 || keys[0] != stamp || keys[1] != key {
+		t.Fatalf("limit=%d keys=%v err=%v", limit, keys, err)
+	}
+	for _, change := range []Binding{
+		{TenantID: binding.TenantID, StoreID: "44444444-4444-4444-8444-444444444444", Collection: "merchant-orders", Filter: "all"},
+		{TenantID: binding.TenantID, StoreID: binding.StoreID, Collection: "merchant-orders", Filter: "DRAFT"},
+		binding,
+	} {
+		if _, _, err := Decode(Request{Cursor: encoded}, change, 2); !errors.Is(err, command.ErrInvalid) {
+			t.Fatalf("cross-binding accepted: %+v %v", change, err)
+		}
+	}
+	for _, bad := range [][]string{
+		{stamp}, {stamp, "NOT-A-UUID"}, {"2026-09-25T04:05:06Z", key},
+		{"2026-09-25T04:05:06.123456+00:00", key}, {"2026-09-25T04:05:06.1234567Z", key},
+	} {
+		if _, err := Encode(b, bad); !errors.Is(err, command.ErrInvalid) {
+			t.Fatalf("invalid keys accepted: %v %v", bad, err)
+		}
+	}
+	if _, err := Encode(Binding{TenantID: binding.TenantID, StoreID: binding.StoreID, Collection: "merchant-orders"}, []string{stamp, key}); !errors.Is(err, command.ErrInvalid) {
+		t.Fatalf("missing state accepted: %v", err)
+	}
+	decoded, _ := base64.RawURLEncoding.DecodeString(encoded)
+	for _, malformed := range []string{
+		encoded + "=", encoded + "\n", base64.RawURLEncoding.EncodeToString(append([]byte(" "), decoded...)),
+	} {
+		if _, _, err := Decode(Request{Cursor: malformed}, b, 2); !errors.Is(err, command.ErrInvalid) {
+			t.Fatalf("noncanonical cursor accepted: %q %v", malformed, err)
+		}
 	}
 }
