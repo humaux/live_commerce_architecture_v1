@@ -50,6 +50,8 @@ Preserve existing distinctions: invalid session/principal -> PT401; invisible or
 inactive scope/store:read -> PT404; missing orders:read or changed revision ->
 PT403. Do not globally change legacy auth behavior in this delivery. Go also
 checks RequirePermission against its original Scope after the read.
+The fresh final SQL auth fence runs before any empty-list/detail-not-found branch
+or return, so revoked callers cannot distinguish existing and missing orders.
 No fabricated Scope/GUC, wrong-store token or raw API header is authority.
 
 Add an index on checkout.orders(tenant_id,store_id,created_at DESC,id DESC).
@@ -135,6 +137,7 @@ Render these strings as text in the future UI; no raw HTML or automatic exports.
    session expiry/revocation, grant removal, tenant/store/membership disable or
    revision change before release: final fresh SQL auth rejects without returning
    data, including direct function invocation without the Go final fence.
+   Include missing/other-store detail and empty-list cases after revocation.
    Read counts leave orders/attempts/facts/stock/receipts/events/queue unchanged.
 6. Independent source/security and independent PG tests, root repeat focused
    plus full Go/PG/race/vet; docs/dependencies/graph/fixture cleanup. Existing
