@@ -16,7 +16,7 @@ const en = {
   uncertain:
     "The payment page could not be confirmed. Refresh this order to check its status. A payment page that was already issued will not be issued again.",
   submitted:
-    "Payment page opened. Complete payment there, then return and refresh this order.",
+    "Payment handoff requested. Check the other tab, then refresh this order for the result. This does not confirm payment.",
   readOnly:
     "Continue in the payment tab already opened. If it is unavailable, refresh this order or contact the store; do not pay again.",
   test: "Test payment — not a live payment",
@@ -41,7 +41,8 @@ export const paymentCopy: Record<Locale, Copy> = {
     blocked: "未能打开付款标签页，请允许此商店弹出窗口后重试。",
     uncertain:
       "尚未确认付款页是否打开，请刷新此订单查询状态。已经发出的付款页不会重复发出。",
-    submitted: "已打开付款页，请在那里完成付款，再回到这里刷新订单。",
+    submitted:
+      "已请求跳转付款，请查看另一个标签页，再刷新此订单查询结果。这不代表付款成功。",
     readOnly:
       "请在已打开的付款标签页继续。如无法使用，请刷新此订单或联系商家，不要重复付款。",
     test: "测试付款，不是真实付款",
@@ -63,7 +64,8 @@ export const paymentCopy: Record<Locale, Copy> = {
     blocked: "無法開啟付款分頁，請允許此商店的彈出式視窗後重試。",
     uncertain:
       "尚未確認付款頁是否開啟，請重新整理此訂單查詢狀態。已發出的付款頁不會重複發出。",
-    submitted: "已開啟付款頁，請在該頁完成付款，再回到這裡重新整理訂單。",
+    submitted:
+      "已請求跳轉付款，請查看另一個分頁，再重新整理此訂單查詢結果。這不代表付款成功。",
     readOnly:
       "請在已開啟的付款分頁繼續。如無法使用，請重新整理此訂單或聯絡商家，不要重複付款。",
     test: "測試付款，不是真實付款",
