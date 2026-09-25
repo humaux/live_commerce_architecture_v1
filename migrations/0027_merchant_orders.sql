@@ -179,7 +179,7 @@ BEGIN
  IF v_auth_error IS NOT NULL THEN RAISE EXCEPTION 'order read access denied' USING ERRCODE=v_auth_error; END IF;
  IF p_order IS NOT NULL AND jsonb_array_length(v_result)=0 THEN
   RAISE EXCEPTION 'order not found' USING ERRCODE='PT404'; END IF;
- IF octet_length(v_result::text)>CASE WHEN p_order IS NULL THEN 131072 ELSE 262144 END THEN
+ IF octet_length(v_result::text)>(CASE WHEN p_order IS NULL THEN 131072 ELSE 262144 END) THEN
   RAISE EXCEPTION 'order read unavailable' USING ERRCODE='PT503'; END IF;
  RETURN v_result;
 END $$;
