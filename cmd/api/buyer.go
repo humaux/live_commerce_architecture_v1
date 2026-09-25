@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"livecommerce/internal/buyerhttp"
@@ -39,6 +40,7 @@ type buyerConfig struct {
 	issuerDSN, buyerDSN, checkoutDSN string
 	bffKey                           string
 	ttl                              time.Duration
+	payment                          buyerPaymentConfig
 }
 
 // The buyer capability is distinct from a merchant login. Disabled mode must
@@ -66,6 +68,10 @@ func loadBuyerConfig(getenv func(string) string, addr string) (buyerConfig, erro
 		return buyerConfig{}, errBuyerConfig
 	}
 	c.enabled = true
+	c.payment, err = loadBuyerPaymentConfig(getenv, addr)
+	if err != nil {
+		return buyerConfig{}, errBuyerConfig
+	}
 	return c, nil
 }
 
@@ -88,7 +94,15 @@ func buildBuyerHandler(ctx context.Context, c buyerConfig) (http.Handler, func()
 		issuer.Close()
 		return nil, nil, errBuyerConfig
 	}
-	closePools := func() { checkoutPool.Close(); runtime.Close(); issuer.Close() }
+	var hostedPool *pgxpool.Pool
+	closePools := func() {
+		if hostedPool != nil {
+			hostedPool.Close()
+		}
+		checkoutPool.Close()
+		runtime.Close()
+		issuer.Close()
+	}
 	// River is used only to insert the expiry task in Begin's transaction. API
 	// startup does not start workers or gain provider dispatch authority.
 	jobs, err := river.NewClient(riverpgxv5.New(checkoutPool), &river.Config{Schema: "river"})
@@ -101,7 +115,13 @@ func buildBuyerHandler(ctx context.Context, c buyerConfig) (http.Handler, func()
 		closePools()
 		return nil, nil, errBuyerConfig
 	}
-	h, err := buyerhttp.New(ctx, issuer, runtime, service, c.bffKey, c.ttl)
+	payment, openedHostedPool, err := buildBuyerPayment(ctx, c.payment)
+	if err != nil {
+		closePools()
+		return nil, nil, errBuyerConfig
+	}
+	hostedPool = openedHostedPool
+	h, err := buyerhttp.New(ctx, issuer, runtime, service, c.bffKey, c.ttl, payment)
 	if err != nil {
 		closePools()
 		return nil, nil, errBuyerConfig
