@@ -24,6 +24,9 @@ fi
 if [[ "$test_mode" == --browser-merchant-orders-bff ]]; then
   test -f tests/foundation/browser_merchant_orders_bff_test.go
   test -f tests/admin/orders-bff.spec.ts
+  # Raw URL grammar is shared by Proxy and route; real HTTP below additionally
+  # proves that the framework cannot normalize a rejected request past it.
+  node --test --experimental-strip-types tests/admin/orders-request.test.ts
   mkdir -p output/playwright
 fi
 if [[ "$test_mode" == --browser-buyer || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-order || "$test_mode" == --browser-payment ]]; then
