@@ -99,3 +99,13 @@ BPU04 bounded visual audit desktop/mobile, one detector run, fresh finish review
 and local built record. Global DESIGN.md and its sidecar remain unchanged.
 These gates do not satisfy real-provider qualification/notify/query/capture,
 merchant onboarding, production DNS/TLS or the full SaaS release gate.
+
+## Bounded execution record
+
+`c149a20` passed 55 storefront Node tests, strict typecheck, production build and
+11 actual browser cases against private Go/isolated PG/local mock PSP; existing
+order/history regression passed 23 cases. The independent visual reviewer scored
+its two currency/status-label fixes resolved. Exact execution versions, failures,
+checksums and limitations are in the
+[acceptance record](../docs/implementation/2026-09-25-buyer-payment-ui-acceptance.md).
+This records the gates above; it does not loosen their provider/deployment limits.

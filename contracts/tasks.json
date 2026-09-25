@@ -600,6 +600,15 @@
       "independent_review": "89b697c3-1975-4037-8516-3ffd289931f0 reviewed a78a108..f3de924 no unresolvedP0/P1/P2; independentNode authorabc6e26d-dc2a-4c6b-9a35-8cfbc14358d1.",
       "not_ready": "No payment UI, native form POST, safe return, browser payment chain or real provider acceptance. Deadline test is simulated abort, not new real browser evidence. Merchant enabling remains closed."
     },
+    "buyer_payment_ui": {
+      "code_baseline": "af8feb8 controller plus 91abbc9 return headers and 8a27351 visual-copy fixes",
+      "tested_tree": "c149a20",
+      "status": "PASS_BOUNDED_LOCAL_BROWSER_MOCK",
+      "evidence": "docs/implementation/2026-09-25-buyer-payment-ui-acceptance.md",
+      "aggregate": "55 Node PASS/0FAIL/0SKIP, strict TS and production Next build exit0. 11 actual Next-Go-PG18-Chromium cases7.52s, exact2native mockPSP forms and4attempt/page/issue counts, zero financialfacts. Actual context replacement and separate touch Android Chromium included, plus exact TWD/status labels. Existing order regression23cases15.28s. Physicalphone/otherengines not tested.",
+      "independent_review": "8381f1c1-7852-4bce-abcf-b3265eaac95a source; 6db9d069-f344-41bb-9ffd-121192df5b9d browser causality; visual85ae8e24 two fixes resolved by verdictc162f2fe-f623-478f-b81d-fe5469e9c7d8, ship at listed-fix scope. Final test-author bd3dc950-d6b6-4c2e-bc84-5ef79711c220.",
+      "not_ready": "Local UI and mock PSP only. No real provider, production worker/notify assembly, qualification, merchant enablement or central ReturnURL DNS/TLS proof. Handoff/redirect never means paid. Global T11 remains IN_PROGRESS."
+    },
     "payment_hosted_internal": {
       "code_baseline": "dac73ca",
       "tested_tree": "cce122d",
@@ -615,7 +624,7 @@
       "evidence": "docs/implementation/2026-09-24-merchant-settings-wizard-acceptance.md",
       "scope": "A four-step UI, account registration, market/method/service discovery, explicit pricing and manual delivery; disabled payment drafts only. Full provider acceptance remains NOT_RUN."
     },
-    "remaining": "生产checkout/worker装配与到期巡检、公开买家付款UI及返回页和真实浏览器付款链、正式门市目录/地图回调、第三方真实准入、通知收件/入账与退款/支付对账、provider sandbox/live及完整G03/G05仍待实现或验收。B商品直购/未付款订单/历史与账户配送支付设置A向导已有本地验收；内部信用卡StartPayment、托管表单原子准备/一次性交付、历史凭据查询及本地请款入账，以及私有付款状态/准备/交付HTTP与默认关闭装配已通过真实PG与签名MOCK验收。公开付款BFF和客户端精确传输已有Node/构建验收，不等于完整付款浏览器或真实供应商。过期或丢失交付不能自动新建支付或释放库存；商家启用仍拒绝，查询成功不等于收到资金，内部预留也不等于实际运输。",
+    "remaining": "生产checkout/worker装配与到期巡检、正式门市目录/地图回调、第三方真实准入、通知收件/入账与退款/支付对账、provider sandbox/live及完整G03/G05仍待实现或验收。B商品直购/未付款订单/历史与账户配送支付设置A向导已有本地验收；内部StartPayment/托管表单/历史查询/本地请款及私有HTTP已通过真实PG签名MOCK验收；公开BFF、付款UI、中立返回页已有55Node和11实际浏览器模拟PSP验收。尚未证明真实供应商、实体手机或中央返回域名DNS/TLS。下一付款worker需先隔离River队列并处理既存默认队列付款job，不能用局部worker领取其他任务。过期或丢失交付不能自动新建支付或释放库存；商家启用仍拒绝，查询成功不等于收到资金，内部预留也不等于实际运输。",
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
   {
