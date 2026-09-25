@@ -97,6 +97,8 @@ func run(ctx context.Context, getenv func(string) string) error {
 		return err
 	}
 	defer cancelWorker()
+	// Fixed local startup witness; never implies provider access or payment.
+	slog.Info("payment_worker_ready")
 	<-ctx.Done()
 	graceful, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	err = client.Stop(graceful)

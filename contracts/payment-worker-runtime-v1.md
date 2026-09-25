@@ -91,6 +91,8 @@ notification names its originally requested default queue.
   cancellation stop with a separate 5s bound, and closes the owned pool. Startup
   failures close acquired resources. Errors are fixed diagnostic codes, not
   remote response/SQL/secret dumps. Use River's existing durable retry semantics.
+  Emit the fixed `payment_worker_ready` log only after successful startup and
+  watchdog disarm. It carries no fields or secrets and is not a payment claim.
 
 The query worker continues using frozen historical account, credential version
 and execution profile even if current account/method qualification changes.
