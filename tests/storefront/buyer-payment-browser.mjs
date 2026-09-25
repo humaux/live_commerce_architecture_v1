@@ -131,6 +131,8 @@ try{
   const entry=await page.goto(product);assert(entry);const csp=entry.headers()["content-security-policy"]??"";
   assert.match(csp,/form-action/);assert(csp.includes("'self'")&&csp.includes(psp)&&csp.includes("https://api.payuni.com.tw/api/upp"));
   const a=await makeOrder(page);passed("BPU02 actual fresh order/payment snapshot and exact PSP CSP");
+  await expect(page.getByTestId("payment-status")).toHaveText("Payment status: Not paid");
+  await expect(page.getByTestId("payment-commercial-status")).toHaveText("Order status: Not paid");
   await page.getByTestId("order-payment").screenshot({path:path.join(evidence,"desktop-payment-ready.png")});
   await page.screenshot({path:path.join(evidence,"desktop-order-ready.png"),fullPage:true});
   await page.getByTestId("continue-shopping").click();await expect(page.getByRole("button",{name:"Choose delivery",exact:true})).toBeEnabled();
@@ -170,6 +172,9 @@ try{
   await mobilePage.getByTestId("toggle-order-history").click();await mobilePage.locator(`button[data-order-id="${a}"]`).click();
   await expect(mobilePage.getByTestId("order-id")).toHaveText(a);await expect(mobilePage.getByTestId("payment-status")).toHaveAttribute("data-state","NOT_STARTED");
   await expect(mobilePage.locator("html")).toHaveAttribute("lang","zh-TW");
+  await expect(mobilePage.locator(".order-total")).toContainText(/TWD\s*25\.00/);
+  await expect(mobilePage.getByTestId("payment-status")).toHaveText("付款狀態: 尚未付款");
+  await expect(mobilePage.getByTestId("payment-commercial-status")).toHaveText("訂單狀態: 尚未付款");
   await mobilePage.getByTestId("order-payment").screenshot({path:path.join(evidence,"mobile-native-history-ready.png")});
   const stalled=arm(`/api/buyer/orders/${a}/payment/prepare`,"hold");
   const changed=mobilePage.waitForEvent("popup");await mobilePage.getByTestId("pay-order").click();const unowned=await changed;
