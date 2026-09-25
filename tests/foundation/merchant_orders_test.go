@@ -16,9 +16,13 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"livecommerce/internal/buyer"
+	"livecommerce/internal/fulfillment"
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/merchantorders"
 	"livecommerce/internal/pagination"
+	"livecommerce/internal/platform"
+	"livecommerce/internal/pricing"
 	"livecommerce/internal/storefront"
 	"livecommerce/migrations"
 )
@@ -58,6 +62,73 @@ func moGrant(t *testing.T, f *testFixture, tenant, store, principal string) {
 		VALUES($1,$2,$3,'orders:read') ON CONFLICT DO NOTHING`, tenant, store, principal)
 }
 
+// Create a real checkout order in a fresh store while retaining the supplied
+// tenant when requested. All product, buyer, quote, delivery and stock setup
+// uses the ordinary APIs; no order row or financial fact is fabricated.
+func moBeginInOtherStore(t *testing.T, base *testFixture, sameTenant bool) (string, string) {
+	t.Helper()
+	ctx := context.Background()
+	f := *base
+	if !sameTenant {
+		f.tenantA = randomUUID()
+		mustExec(t, f.owner, `INSERT INTO control.tenants(id,name) VALUES($1,'merchant order foreign tenant')`, f.tenantA)
+	}
+	f.storeA1, f.principalA = randomUUID(), randomUUID()
+	f.tokens = map[string]string{"a": randomToken()}
+	mustExec(t, f.owner, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,'merchant order foreign store','TWD')`, f.tenantA, f.storeA1)
+	mustExec(t, f.owner, `INSERT INTO identity.principals(id) VALUES($1)`, f.principalA)
+	mustExec(t, f.owner, `INSERT INTO identity.memberships(tenant_id,principal_id) VALUES($1,$2)`, f.tenantA, f.principalA)
+	mustExec(t, f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission)
+		SELECT $1,$2,$3,p FROM unnest(ARRAY['store:read','catalog:read','catalog:write',
+		'inventory:read','inventory:write','inventory:reserve','pricing:read','pricing:write',
+		'integration:manage','integration:read','orders:read']) p`, f.tenantA, f.storeA1, f.principalA)
+	tx, err := f.owner.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := insertSession(ctx, tx, f.tokens["a"], f.principalA, "merchant", time.Now().Add(time.Hour), nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	h := cqHarness{f: &f, a: openBuyerTestPools(t, &f), stock: t04CreateStock(t, &f, f.tokens["a"], f.storeA1, 10)}
+	h.service, err = buyer.New(h.a.issuer, time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h.cap = mustIssue(t, h.service, f.storeA1)
+	h.market, err = pricingScoped(ctx, &f, f.tokens["a"], f.storeA1, "pricing:write", func(tx pgx.Tx, scope platform.Scope) (pricing.Market, error) {
+		return pricing.CreateMarket(ctx, tx, scope, t04Key("mo-other-market"), pricing.MarketInput{Code: "tw", Name: "Other store market", Currency: "TWD"})
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	zero := int64(0)
+	h.policy = pricing.PolicyInput{MarketID: h.market.ID, Country: "TW", Currency: "TWD", ShippingMode: "country_flat", ShippingMinor: &zero, TaxMode: "none", TaxBasis: "goods", TaxRateBPS: &zero, QuoteTTLSeconds: 300, Enabled: true, ConfigurationRef: "synthetic merchant order fixture"}
+	delivery := fulfillment.ServiceInput{MarketID: h.market.ID, Country: "TW", Code: "home", PolicyVersion: 1, NameHans: "测试配送", NameHant: "測試配送", NameEN: "Mock delivery", DeliveryKind: "home", Mode: "MANUAL", Enabled: true, Visible: true}
+	dsPolicy(t, h, delivery, 0, 0, true)
+	if _, err = dsSet(h, t04Key("mo-other-delivery"), delivery); err != nil {
+		t.Fatal(err)
+	}
+	allocation := fulfillment.AllocationInput{MarketID: h.market.ID, Country: "TW", Code: "home", ExpectedServiceVersion: 1, WarehouseIDs: []string{h.stock.warehouse.ID}}
+	if _, err = daSet(h, t04Key("mo-other-allocation"), allocation); err != nil {
+		t.Fatal(err)
+	}
+	pool, err := platform.OpenCheckoutPool(ctx, bcRole(t, &f, "commerce_checkout_runtime"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(pool.Close)
+	b := bcHarness{cqHarness: h, pool: pool, service: bcService(t, pool), delivery: delivery, allocation: allocation}
+	b.prepare(t, h.cap, []storefront.Item{{SKUID: h.stock.skus[0].ID, Quantity: 1}})
+	order, err := b.begin(t04Key("mo-other-begin"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return f.storeA1, order.OrderID
+}
+
 func TestMerchantOrdersAuthorityAndOnboarding(t *testing.T) {
 	f := fixture(t)
 	ctx := context.Background()
@@ -73,7 +144,16 @@ func TestMerchantOrdersAuthorityAndOnboarding(t *testing.T) {
 	if owner != "commerce_auth" || volatility != "v" || !definer || !noLogin || !noBypass || !fixedPath || publicExec {
 		t.Fatalf("private read definer drift: owner=%s volatility=%s definer=%v no_login=%v no_bypass=%v path=%v public=%v", owner, volatility, definer, noLogin, noBypass, fixedPath, publicExec)
 	}
-	for _, role := range []string{"commerce_runtime", "commerce_buyer_runtime", "commerce_buyer_issuer", "commerce_checkout_runtime", "commerce_worker", "commerce_identity"} {
+	var execPrincipals []string
+	if err := f.owner.QueryRow(ctx, `SELECT ARRAY(SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END
+		FROM pg_proc p CROSS JOIN LATERAL aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a
+		WHERE p.oid=$1::regprocedure AND a.privilege_type='EXECUTE' ORDER BY 1)`, moFunction).Scan(&execPrincipals); err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(execPrincipals, []string{"commerce_auth", "commerce_runtime"}) {
+		t.Fatalf("merchant read EXECUTE ACL principals=%v", execPrincipals)
+	}
+	for _, role := range []string{"commerce_runtime", "commerce_hosted_runtime", "commerce_buyer_runtime", "commerce_buyer_issuer", "commerce_checkout_runtime", "commerce_worker", "commerce_identity"} {
 		var execute, checkoutUsage, orderRead, attemptRead, authMember bool
 		if err := f.owner.QueryRow(ctx, `SELECT has_function_privilege($1,$2,'EXECUTE'),
 			has_schema_privilege($1,'checkout','USAGE'),has_any_column_privilege($1,'checkout.orders','SELECT'),
@@ -242,6 +322,13 @@ func TestMerchantOrdersSQLProjectionAndIsolation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	sameTenantStore, sameTenantOrder := moBeginInOtherStore(t, b.f, true)
+	otherTenantStore, otherTenantOrder := moBeginInOtherStore(t, b.f, false)
+	for _, foreignOrder := range []string{sameTenantOrder, otherTenantOrder} {
+		if got := countRows(t, b.f.owner, `SELECT count(*) FROM checkout.orders WHERE id=$1`, foreignOrder); got != 1 {
+			t.Fatalf("foreign order witness %s not created through checkout", foreignOrder)
+		}
+	}
 	moGrant(t, b.f, b.f.tenantA, b.f.storeA1, b.f.principalA)
 	rows, err := moRead(ctx, b.f.runtime, b.f.tokens["a"], b.f.tenantA, b.f.storeA1, b.f.principalA, "", "all", 101)
 	if err != nil {
@@ -251,6 +338,9 @@ func TestMerchantOrdersSQLProjectionAndIsolation(t *testing.T) {
 	ids := map[string]bool{first.OrderID: false, second.OrderID: false}
 	for _, row := range rows {
 		id, _ := row["order_id"].(string)
+		if id == sameTenantOrder || id == otherTenantOrder {
+			t.Fatalf("authorized A1 list leaked actual foreign order %s", id)
+		}
 		if _, ok := ids[id]; !ok {
 			continue // Other serial foundation cases may have created this base-store order.
 		}
@@ -284,11 +374,17 @@ func TestMerchantOrdersSQLProjectionAndIsolation(t *testing.T) {
 	}
 	// A same-tenant second store and a second tenant remain invisible even to
 	// a caller holding orders:read on the first store.
-	for _, foreignStore := range []string{b.f.storeA2, b.f.storeB} {
+	for _, foreignStore := range []string{sameTenantStore, otherTenantStore} {
 		_, err := moRead(ctx, b.f.runtime, b.f.tokens["a"], b.f.tenantA, foreignStore, b.f.principalA, first.OrderID, "all", 1)
 		if sqlState(err) != "PT404" {
 			t.Fatalf("foreign store %s disclosed detail: %v", foreignStore, err)
 		}
+	}
+	moGrant(t, b.f, b.f.tenantA, sameTenantStore, b.f.principalA)
+	mustExec(t, b.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'store:read') ON CONFLICT DO NOTHING`, b.f.tenantA, sameTenantStore, b.f.principalA)
+	foreignRows, err := moRead(ctx, b.f.runtime, b.f.tokens["a"], b.f.tenantA, sameTenantStore, b.f.principalA, "", "all", 101)
+	if err != nil || len(foreignRows) != 1 || foreignRows[0]["order_id"] != sameTenantOrder {
+		t.Fatalf("authorized same-tenant second store row=%+v err=%v", foreignRows, err)
 	}
 	_, err = moRead(ctx, b.f.runtime, b.f.tokens["buyer"], b.f.tenantA, b.f.storeA1, b.f.principalA, first.OrderID, "all", 1)
 	if sqlState(err) != "PT401" {
@@ -306,6 +402,7 @@ func TestMerchantOrdersFinalSQLFenceAfterObservedDataLock(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	_, foreignOrder := moBeginInOtherStore(t, b.f, true)
 	ctx := context.Background()
 	// Each case gets its own principal/session, so revocation remains durable and
 	// a later case cannot accidentally inherit a repaired grant.
@@ -324,6 +421,7 @@ func TestMerchantOrdersFinalSQLFenceAfterObservedDataLock(t *testing.T) {
 		{"tenant disabled", "PT404", "UPDATE control.tenants SET active=false WHERE id=$1", order.OrderID},
 		{"store disabled", "PT404", "UPDATE control.stores SET active=false WHERE id=$1", order.OrderID},
 		{"missing detail after revoke", "PT401", "UPDATE identity.sessions SET revoked_at=clock_timestamp() WHERE token_hash=$1", randomUUID()},
+		{"foreign detail after revoke", "PT401", "UPDATE identity.sessions SET revoked_at=clock_timestamp() WHERE token_hash=$1", foreignOrder},
 		{"empty list after revoke", "PT401", "UPDATE identity.sessions SET revoked_at=clock_timestamp() WHERE token_hash=$1", ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -347,7 +445,7 @@ func TestMerchantOrdersFinalSQLFenceAfterObservedDataLock(t *testing.T) {
 				t.Fatal(err)
 			}
 			_, err = moRead(ctx, b.f.runtime, token, b.f.tenantA, store, principal, tc.order, "all", 1)
-			if tc.name == "missing detail after revoke" {
+			if tc.name == "missing detail after revoke" || tc.name == "foreign detail after revoke" {
 				if sqlState(err) != "PT404" {
 					t.Fatalf("pre-wait missing detail=%v", err)
 				}
@@ -575,6 +673,17 @@ func TestMerchantOrdersHTTPPaginationPrivacyAndNoEffects(t *testing.T) {
 	for _, table := range []string{"checkout.orders", "checkout.payment_attempts", "payments.facts", "inventory.ledger", "checkout.command_results", "checkout.events", "fulfillment.payment_work_items", "river.river_job"} {
 		before[table] = countRows(t, q.f.owner, "SELECT count(*) FROM "+table)
 	}
+	fingerprint := func() [2]string {
+		t.Helper()
+		var hashes [2]string
+		if err := q.f.owner.QueryRow(context.Background(), `SELECT
+			(SELECT md5(coalesce(string_agg(o::text,'|' ORDER BY o.id),'')) FROM checkout.orders o WHERE o.tenant_id=$1 AND o.store_id=$2),
+			(SELECT md5(coalesce(string_agg(b::text,'|' ORDER BY b.warehouse_id,b.sku_id),'')) FROM inventory.balances b WHERE b.tenant_id=$1 AND b.store_id=$2)`, q.f.tenantA, q.f.storeA1).Scan(&hashes[0], &hashes[1]); err != nil {
+			t.Fatal(err)
+		}
+		return hashes
+	}
+	beforeRows := fingerprint()
 	full := readPage(base)
 	if len(full.Items) != 2 || full.NextCursor != "" {
 		t.Fatalf("all-buyers store page=%+v", full)
@@ -698,6 +807,9 @@ func TestMerchantOrdersHTTPPaginationPrivacyAndNoEffects(t *testing.T) {
 		if after := countRows(t, q.f.owner, "SELECT count(*) FROM "+table); after != count {
 			t.Fatalf("read mutated %s: %d -> %d", table, count, after)
 		}
+	}
+	if afterRows := fingerprint(); afterRows != beforeRows {
+		t.Fatalf("read changed existing order/balance rows: before=%v after=%v", beforeRows, afterRows)
 	}
 }
 
