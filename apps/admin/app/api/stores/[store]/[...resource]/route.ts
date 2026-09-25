@@ -1,4 +1,5 @@
 import { callBackend, fixtureSession } from "@/lib/backend";
+import { validOrdersQuery } from "@/lib/orders-request";
 import {
   authConfig,
   authenticatedStores,
@@ -37,13 +38,6 @@ const discoveryRoute = new RegExp(
 const pagedSettingsRoute = new RegExp(`^(markets|${deliveryCollection})$`);
 const purchaseEntryRoute = new RegExp(`^${purchaseEntry}$`);
 const orderRoute = new RegExp(`^${orders}$`);
-const orderStates = new Set([
-  "all",
-  "DRAFT",
-  "AWAITING_PAYMENT",
-  "CONFIRMED",
-  "CANCELLED",
-]);
 type Context = { params: Promise<{ store: string; resource: string[] }> };
 
 async function proxy(request: Request, context: Context) {
@@ -77,24 +71,8 @@ async function proxy(request: Request, context: Context) {
         request.headers.get("content-length") !== "0")
     )
       return error(422, "invalid_request");
-    if (path !== "orders") {
-      if (request.url.includes("?")) return error(422, "invalid_request");
-    } else if (request.url.includes("?")) {
-      const raw = request.url.slice(request.url.indexOf("?") + 1);
-      const seen = new Set<string>();
-      for (const segment of raw.split("&")) {
-        const match = /^(limit|cursor|state)=([A-Za-z0-9_-]+)$/.exec(segment);
-        if (!match || seen.has(match[1])) return error(422, "invalid_request");
-        seen.add(match[1]);
-        const [, key, value] = match;
-        if (
-          (key === "limit" && !/^(?:[1-9]|[1-9][0-9]|100)$/.test(value)) ||
-          (key === "cursor" && value.length > 1024) ||
-          (key === "state" && !orderStates.has(value))
-        )
-          return error(422, "invalid_request");
-      }
-    }
+    if (!validOrdersQuery(request.url, path !== "orders"))
+      return error(422, "invalid_request");
   }
   if (
     request.method === "GET" &&
