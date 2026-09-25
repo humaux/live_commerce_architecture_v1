@@ -19,6 +19,7 @@ import (
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"github.com/riverqueue/river/rivertype"
+	"livecommerce/internal/buyer"
 	"livecommerce/internal/checkout"
 	"livecommerce/internal/storefront"
 	"livecommerce/migrations"
@@ -56,6 +57,29 @@ func ewJob(t *testing.T, pool *pgxpool.Pool, id int64) (state string, attempt in
 	return
 }
 
+// A second row-lock waiter can be soft-blocked by the first waiter rather
+// than directly by the holder. Follow PostgreSQL's actual blocker chain to
+// the owned transaction instead of guessing which backend is the head.
+func ewBlockedContenders(t *testing.T, owner *pgxpool.Pool, jobID int64, paymentRole, workerRole string, holderPID int) (state string, payment, expiry bool) {
+	t.Helper()
+	err := owner.QueryRow(context.Background(), `WITH RECURSIVE chain(root_role,pid,seen) AS (
+	 SELECT a.usename,a.pid,ARRAY[a.pid] FROM pg_stat_activity a
+	 WHERE a.usename IN ($2,$3) AND a.wait_event_type='Lock'
+	 UNION ALL
+	 SELECT c.root_role,b.pid,c.seen||b.pid FROM chain c
+	 CROSS JOIN LATERAL unnest(pg_blocking_pids(c.pid)) AS b(pid)
+	 WHERE NOT b.pid=ANY(c.seen) AND cardinality(c.seen)<8
+	 )
+	 SELECT j.state,
+	 coalesce((SELECT bool_or(root_role=$2 AND pid=$4) FROM chain),false),
+	 coalesce((SELECT bool_or(root_role=$3 AND pid=$4) FROM chain),false)
+	 FROM river.river_job j WHERE j.id=$1`, jobID, paymentRole, workerRole, holderPID).Scan(&state, &payment, &expiry)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return
+}
+
 func ewAwait(t *testing.T, pool *pgxpool.Pool, id int64, want string) int {
 	t.Helper()
 	deadline := time.Now().Add(8 * time.Second)
@@ -69,6 +93,27 @@ func ewAwait(t *testing.T, pool *pgxpool.Pool, id int64, want string) int {
 	state, attempt := ewJob(t, pool, id)
 	t.Fatalf("expiry job %d state=%s attempt=%d, want %s after actual claim", id, state, attempt, want)
 	return 0
+}
+
+func ewAwaitSnooze(t *testing.T, pool *pgxpool.Pool, id int64) {
+	t.Helper()
+	deadline := time.Now().Add(8 * time.Second)
+	for time.Now().Before(deadline) {
+		var state string
+		var attempt int
+		var attempted, future bool
+		if err := pool.QueryRow(context.Background(), `SELECT state,attempt,attempted_at IS NOT NULL,scheduled_at>clock_timestamp()
+		 FROM river.river_job WHERE id=$1`, id).Scan(&state, &attempt, &attempted, &future); err != nil {
+			t.Fatal(err)
+		}
+		// River decrements attempt on JobSnooze. attempted_at proves this
+		// observed scheduled state followed a real claim, not initial insertion.
+		if state == "scheduled" && attempt == 0 && attempted && future {
+			return
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	t.Fatal("early expiry was not claimed and snoozed against DB deadline")
 }
 
 func ewClient(t *testing.T, pool *pgxpool.Pool, concurrency int) *river.Client[pgx.Tx] {
@@ -121,7 +166,31 @@ func ewRouterAbsent(t *testing.T, owner *pgxpool.Pool) {
 func ewOldBegin(t *testing.T, p psHarness) checkout.Result {
 	t.Helper()
 	b := p.bcHarness
-	b.prepare(t, b.cap, []storefront.Item{{SKUID: b.stock.skus[0].ID, Quantity: 1}})
+	var currentVersion int64
+	if err := b.f.owner.QueryRow(context.Background(), `SELECT version FROM storefront.carts WHERE owner_id=$1`, b.cap.Scope.OwnerID).Scan(&currentVersion); err != nil {
+		t.Fatalf("old begin read cart: %v", err)
+	}
+	cart, err := b.cart(t04Key("ew-cart"), storefront.CartInput{ExpectedVersion: currentVersion, Items: []storefront.Item{{SKUID: b.stock.skus[0].ID, Quantity: 1}}})
+	if err != nil {
+		t.Fatalf("old begin set cart: %v", err)
+	}
+	var destinationVersion int64
+	if err := b.f.owner.QueryRow(context.Background(), `SELECT current_version FROM storefront.destination_heads WHERE owner_id=$1 AND cart_id=$2`, b.cap.Scope.OwnerID, cart.ID).Scan(&destinationVersion); err != nil {
+		t.Fatalf("old begin read destination head: %v", err)
+	}
+	destinationInput := bdHome(cart)
+	destinationInput.ExpectedVersion = destinationVersion
+	destination, err := bdSet(b.cqHarness, t04Key("ew-destination"), destinationInput)
+	if err != nil {
+		t.Fatalf("old begin destination: %v", err)
+	}
+	quote, err := cqBuyer(b.a.runtime, b.cap, func(ctx context.Context, tx pgx.Tx, s buyer.Scope) (storefront.Quote, error) {
+		return storefront.CreateQuote(ctx, tx, s, t04Key("ew-quote"), storefront.QuoteInput{CartVersion: cart.Version, MarketID: b.market.ID, Country: "TW", Method: "delivery:" + b.delivery.Code})
+	})
+	if err != nil {
+		t.Fatalf("old begin quote: %v", err)
+	}
+	b.input.QuoteID, b.input.DestinationID, b.input.CartVersion = quote.ID, destination.ID, cart.Version
 	middleware := river.JobInsertMiddlewareFunc(func(ctx context.Context, params []*rivertype.JobInsertParams, next func(context.Context) ([]*rivertype.JobInsertResult, error)) ([]*rivertype.JobInsertResult, error) {
 		for _, row := range params {
 			if row.Kind == ewQueue {
@@ -132,15 +201,15 @@ func ewOldBegin(t *testing.T, p psHarness) checkout.Result {
 	})
 	jobs, err := river.NewClient(riverpgxv5.New(b.pool), &river.Config{Schema: "river", JobInsertMiddleware: []rivertype.JobInsertMiddleware{middleware}})
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("old begin river client: %v", err)
 	}
 	service, err := checkout.New(context.Background(), b.pool, jobs)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("old begin checkout service: %v", err)
 	}
 	result, err := service.Begin(context.Background(), b.cap.Token, b.f.storeA1, t04Key("ew-legacy"), b.input)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("old begin checkout service.Begin: %v", err)
 	}
 	return result
 }
@@ -158,9 +227,17 @@ func TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger(t *testing.
 	if queue := pwQueue(t, f.owner, legacy.JobID); queue != "default" {
 		t.Fatalf("legacy producer queue=%s", queue)
 	}
+	if _, err := p.start(t04Key("ew-upgrade-pending")); err != nil {
+		t.Fatal(err)
+	}
+	var advancedGeneration int64
+	if err := f.owner.QueryRow(context.Background(), `SELECT generation FROM checkout.orders WHERE id=$1`, p.hold.OrderID).Scan(&advancedGeneration); err != nil || advancedGeneration != 2 {
+		t.Fatalf("pre-upgrade payment did not advance current generation: %d %v", advancedGeneration, err)
+	}
+	advancedBefore := pwJobExceptQueue(t, f.owner, p.hold.JobID)
 	// The original due time and every other River column must survive the move.
 	before := pwJobExceptQueue(t, f.owner, legacy.JobID)
-	terminal := p.hold.JobID
+	terminal := ewOldBegin(t, p).JobID
 	mustExec(t, f.owner, `UPDATE river.river_job SET state='completed',queue='default',finalized_at=clock_timestamp() WHERE id=$1`, terminal)
 	terminalBefore := pwJobExceptQueue(t, f.owner, terminal)
 	var unrelated int64
@@ -182,12 +259,14 @@ func TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger(t *testing.
 			mustExec(t, f.owner, tc.mutation, legacy.JobID)
 			rowBefore := pwJobExceptQueue(t, f.owner, legacy.JobID)
 			queueBefore := pwQueue(t, f.owner, legacy.JobID)
+			validBefore := pwJobExceptQueue(t, f.owner, p.hold.JobID)
 			if err := migrations.Apply(context.Background(), f.owner); err == nil {
 				t.Fatal("invalid active expiry row migrated")
 			}
 			ewRouterAbsent(t, f.owner)
-			if pwJobExceptQueue(t, f.owner, legacy.JobID) != rowBefore || pwQueue(t, f.owner, legacy.JobID) != queueBefore {
-				t.Fatal("failed migration changed legacy row")
+			if pwJobExceptQueue(t, f.owner, legacy.JobID) != rowBefore || pwQueue(t, f.owner, legacy.JobID) != queueBefore ||
+				pwJobExceptQueue(t, f.owner, p.hold.JobID) != validBefore || pwQueue(t, f.owner, p.hold.JobID) != "default" {
+				t.Fatal("failed migration changed invalid or valid legacy row")
 			}
 			if strings.Contains(tc.restore, "$2") {
 				mustExec(t, f.owner, tc.restore, legacy.JobID, validArgs)
@@ -204,11 +283,17 @@ func TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger(t *testing.
 		t.Fatal("foreign reserved kind passed upgrade")
 	}
 	ewRouterAbsent(t, f.owner)
+	if pwQueue(t, f.owner, p.hold.JobID) != "default" || pwJobExceptQueue(t, f.owner, p.hold.JobID) != advancedBefore {
+		t.Fatal("foreign-kind failed migration partially moved valid row")
+	}
 	mustExec(t, f.owner, `DELETE FROM river.river_job WHERE id=$1`, foreign)
 	if err := migrations.Apply(context.Background(), f.owner); err != nil {
 		t.Fatalf("valid upgrade: %v", err)
 	}
-	if pwQueue(t, f.owner, legacy.JobID) != ewQueue || pwJobExceptQueue(t, f.owner, legacy.JobID) != before || pwQueue(t, f.owner, terminal) != "default" || pwJobExceptQueue(t, f.owner, terminal) != terminalBefore || pwQueue(t, f.owner, unrelated) != "default" || pwJobExceptQueue(t, f.owner, unrelated) != unrelatedBefore || !ewReady(t, worker) {
+	if pwQueue(t, f.owner, legacy.JobID) != ewQueue || pwJobExceptQueue(t, f.owner, legacy.JobID) != before ||
+		pwQueue(t, f.owner, p.hold.JobID) != ewQueue || pwJobExceptQueue(t, f.owner, p.hold.JobID) != advancedBefore ||
+		pwQueue(t, f.owner, terminal) != "default" || pwJobExceptQueue(t, f.owner, terminal) != terminalBefore ||
+		pwQueue(t, f.owner, unrelated) != "default" || pwJobExceptQueue(t, f.owner, unrelated) != unrelatedBefore || !ewReady(t, worker) {
 		t.Fatal("backfill changed non-queue fields/history/unrelated job or left router unready")
 	}
 	if err := migrations.Apply(context.Background(), f.owner); err != nil {
@@ -232,19 +317,33 @@ func TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger(t *testing.
 	if pwQueue(t, f.owner, late.JobID) != ewQueue {
 		t.Fatal("old job-before-order producer was not routed at commit")
 	}
+	// The order advanced to generation 2 before upgrade. Its immutable
+	// generation-1 task still routes, then the business transition returns STALE.
+	bcDue(t, p.bcHarness, p.hold)
+	mustExec(t, f.owner, `UPDATE river.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, p.hold.JobID)
+	client := ewClient(t, worker, 1)
+	ewAwait(t, f.owner, p.hold.JobID, "completed")
+	pwStopClient(t, client)
+	var order, reservation string
+	if err := f.owner.QueryRow(context.Background(), `SELECT o.commercial_state,r.state FROM checkout.orders o JOIN inventory.reservations r ON r.id=o.id WHERE o.id=$1`, p.hold.OrderID).Scan(&order, &reservation); err != nil || order != "AWAITING_PAYMENT" || reservation != "PAYMENT_PENDING" {
+		t.Fatalf("advanced legacy order released: %s/%s %v", order, reservation, err)
+	}
+	if n := countRows(t, f.owner, `SELECT count(*) FROM inventory.ledger WHERE checkout_id=$1 AND kind='RELEASE'`, p.hold.OrderID); n != 0 {
+		t.Fatalf("advanced legacy job released stock %d times", n)
+	}
 }
 
 func ewAssertOrder(t *testing.T, p psHarness, orderState, reservationState string, releases int) {
 	t.Helper()
 	var actualOrder, actualReservation string
-	var reserved, allocated int64
+	var reserved, allocated, onHand int64
 	err := p.f.owner.QueryRow(context.Background(), `SELECT o.commercial_state,r.state,
-	 coalesce(sum(b.reserved),0),coalesce(sum(b.allocated),0)
+	 coalesce(sum(b.reserved),0),coalesce(sum(b.allocated),0),coalesce(sum(b.on_hand),0)
 	 FROM checkout.orders o JOIN inventory.reservations r ON r.id=o.id
 	 JOIN inventory.reservation_lines l ON l.reservation_id=r.id
 	 JOIN inventory.balances b ON (b.tenant_id,b.store_id,b.warehouse_id,b.sku_id)=(l.tenant_id,l.store_id,l.warehouse_id,l.sku_id)
 	 WHERE o.id=$1 GROUP BY o.commercial_state,r.state`, p.hold.OrderID).
-		Scan(&actualOrder, &actualReservation, &reserved, &allocated)
+		Scan(&actualOrder, &actualReservation, &reserved, &allocated, &onHand)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -259,8 +358,8 @@ func ewAssertOrder(t *testing.T, p psHarness, orderState, reservationState strin
 	if orderState == "CONFIRMED" {
 		wantAllocated = int64(2 * len(p.stock.skus))
 	}
-	if reserved != wantReserved || allocated != wantAllocated {
-		t.Fatalf("balance reserved/allocated=%d/%d want %d/%d", reserved, allocated, wantReserved, wantAllocated)
+	if reserved != wantReserved || allocated != wantAllocated || onHand != int64(10*len(p.stock.skus)) {
+		t.Fatalf("balance reserved/allocated/on_hand=%d/%d/%d want %d/%d/%d", reserved, allocated, onHand, wantReserved, wantAllocated, 10*len(p.stock.skus))
 	}
 	if n := countRows(t, p.f.owner, `SELECT count(*) FROM inventory.ledger WHERE checkout_id=$1 AND kind='RELEASE'`, p.hold.OrderID); n != releases {
 		t.Fatalf("release ledger=%d want %d", n, releases)
@@ -285,6 +384,10 @@ func TestBuyerCheckoutExpiryRuntimeRiverTwoTenantReplayAndIsolation(t *testing.T
 	if err := f.owner.QueryRow(context.Background(), `SELECT id FROM river.river_job WHERE kind='payment_query_v1' AND args->>'operation_id'=$1`, unrelated.result.OperationID).Scan(&paymentJob); err != nil {
 		t.Fatal(err)
 	}
+	// River's global scheduler promotes any due payment job from scheduled to
+	// available regardless of which queue this client consumes. Start the
+	// unrelated job in available so full-row readback isolates this client.
+	mustExec(t, f.owner, `UPDATE river.river_job SET state='available',scheduled_at=clock_timestamp() WHERE id=$1`, paymentJob)
 	otherIDs := []int64{unrelatedExpiry, external, paymentJob}
 	otherBefore := make([]string, len(otherIDs))
 	for i, id := range otherIDs {
@@ -316,7 +419,7 @@ func TestBuyerCheckoutExpiryRuntimeRiverTwoTenantReplayAndIsolation(t *testing.T
 	pwStopClient(t, restarted)
 	for i, id := range otherIDs {
 		if after := pwJobExceptQueue(t, f.owner, id); after != otherBefore[i] {
-			t.Fatalf("expiry client changed unrelated job %d", id)
+			t.Fatalf("expiry client changed unrelated job %d: before=%s after=%s", id, otherBefore[i], after)
 		}
 	}
 	if pwQueue(t, f.owner, external) != "default" || pwQueue(t, f.owner, paymentJob) == ewQueue {
@@ -344,7 +447,7 @@ func TestBuyerCheckoutExpiryRuntimeEarlyStalePendingAndConfirmed(t *testing.T) {
 	}
 	ewDue(t, confirmed.psHarness)
 	client := ewClient(t, early.worker, 2)
-	ewAwait(t, f.owner, early.hold.JobID, "scheduled")
+	ewAwaitSnooze(t, f.owner, early.hold.JobID)
 	ewAwait(t, f.owner, stale.hold.JobID, "completed")
 	ewAwait(t, f.owner, pending.hold.JobID, "completed")
 	ewAwait(t, f.owner, confirmed.hold.JobID, "completed")
@@ -365,41 +468,112 @@ func TestBuyerCheckoutExpiryRuntimeEarlyStalePendingAndConfirmed(t *testing.T) {
 
 func TestBuyerCheckoutExpiryRuntimePaymentStartRace(t *testing.T) {
 	f := ewFixture(t)
-	p := ewSetup(t, f, 1)
-	bcDue(t, p.bcHarness, p.hold)
-	client := ewClient(t, p.worker, 1)
-	start := make(chan struct{})
-	result := make(chan error, 1)
-	go func() {
-		<-start
-		_, err := p.start(t04Key("ew-race-payment"))
-		result <- err
-	}()
-	close(start)
-	mustExec(t, f.owner, `UPDATE river.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, p.hold.JobID)
-	select {
-	case <-result:
-	case <-time.After(8 * time.Second):
-		t.Fatal("payment start did not settle")
-	}
-	ewAwait(t, f.owner, p.hold.JobID, "completed")
-	pwStopClient(t, client)
-	var order, reservation string
-	var attempts, releases int
-	if err := f.owner.QueryRow(context.Background(), `SELECT o.commercial_state,r.state,
-	 (SELECT count(*) FROM checkout.payment_attempts WHERE order_id=o.id),
-	 (SELECT count(*) FROM inventory.ledger WHERE checkout_id=o.id AND kind='RELEASE')
-	 FROM checkout.orders o JOIN inventory.reservations r ON r.id=o.id WHERE o.id=$1`, p.hold.OrderID).
-		Scan(&order, &reservation, &attempts, &releases); err != nil {
-		t.Fatal(err)
-	}
-	switch {
-	case order == "CANCELLED" && reservation == "EXPIRED" && attempts == 0 && releases == 1:
-		ewAssertOrder(t, p, "CANCELLED", "EXPIRED", 1)
-	case order == "AWAITING_PAYMENT" && reservation == "PAYMENT_PENDING" && attempts == 1 && releases == 0:
-		ewAssertOrder(t, p, "AWAITING_PAYMENT", "PAYMENT_PENDING", 0)
-	default:
-		t.Fatalf("non-serial expiry/payment outcome: %s/%s attempts=%d releases=%d", order, reservation, attempts, releases)
+	for _, dueWhileWaiting := range []bool{false, true} {
+		name := "payment-valid"
+		if dueWhileWaiting {
+			name = "expires-while-both-wait"
+		}
+		t.Run(name, func(t *testing.T) {
+			p := ewSetup(t, f, 1)
+			lock, err := f.owner.Begin(context.Background())
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer lock.Rollback(context.Background())
+			var holderPID int
+			if err := lock.QueryRow(context.Background(), `SELECT pg_backend_pid()`).Scan(&holderPID); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := lock.Exec(context.Background(), `SELECT 1 FROM checkout.orders WHERE id=$1 FOR UPDATE`, p.hold.OrderID); err != nil {
+				t.Fatal(err)
+			}
+			mustExec(t, f.owner, `UPDATE river.river_job SET state='available',scheduled_at=clock_timestamp() WHERE id=$1`, p.hold.JobID)
+			client := ewClient(t, p.worker, 1)
+			mustExec(t, f.owner, `UPDATE river.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, p.hold.JobID)
+			type paymentOutcome struct {
+				result checkout.PaymentResult
+				err    error
+			}
+			paymentDone := make(chan paymentOutcome, 1)
+			// Arm the payment contender as soon as the actual River worker is
+			// blocked. Its SQL lock timeout is one second, so a blind wait for
+			// both callers would miss the lease's first attempt.
+			deadline := time.Now().Add(8 * time.Second)
+			var state string
+			var paymentWaiting, expiryWaiting bool
+			for time.Now().Before(deadline) {
+				state, _, expiryWaiting = ewBlockedContenders(t, f.owner, p.hold.JobID, p.pool.Config().ConnConfig.User, p.worker.Config().ConnConfig.User, holderPID)
+				if state == "running" && expiryWaiting {
+					break
+				}
+				time.Sleep(10 * time.Millisecond)
+			}
+			if state != "running" || !expiryWaiting {
+				t.Fatalf("River expiry did not block on owned order row: state=%s blocked=%t", state, expiryWaiting)
+			}
+			go func() {
+				result, err := p.start(t04Key("ew-race-payment"))
+				paymentDone <- paymentOutcome{result, err}
+			}()
+			// Both real callers must be blocked by this transaction's order row,
+			// while River visibly holds a running lease. This is the race witness.
+			deadline = time.Now().Add(2 * time.Second)
+			witness := false
+			for time.Now().Before(deadline) {
+				state, paymentWaiting, expiryWaiting = ewBlockedContenders(t, f.owner, p.hold.JobID, p.pool.Config().ConnConfig.User, p.worker.Config().ConnConfig.User, holderPID)
+				if state == "running" && paymentWaiting && expiryWaiting {
+					witness = true
+					break
+				}
+				time.Sleep(10 * time.Millisecond)
+			}
+			if !witness {
+				t.Fatalf("payment and River expiry did not contend: state=%s payment_blocked=%t expiry_blocked=%t roles=%s/%s",
+					state, paymentWaiting, expiryWaiting, p.pool.Config().ConnConfig.User, p.worker.Config().ConnConfig.User)
+			}
+			if dueWhileWaiting {
+				if _, err := lock.Exec(context.Background(), `UPDATE checkout.orders SET expires_at=clock_timestamp()-interval '1 second',created_at=clock_timestamp()-interval '901 seconds' WHERE id=$1`, p.hold.OrderID); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := lock.Exec(context.Background(), `UPDATE inventory.reservations SET expires_at=clock_timestamp()-interval '1 second',created_at=clock_timestamp()-interval '901 seconds' WHERE id=$1`, p.hold.OrderID); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := lock.Commit(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+			var outcome paymentOutcome
+			select {
+			case outcome = <-paymentDone:
+			case <-time.After(8 * time.Second):
+				t.Fatal("contending payment start did not settle")
+			}
+			if dueWhileWaiting {
+				if outcome.err == nil || outcome.result.AttemptID != "" {
+					t.Fatalf("expired order admitted payment attempt: %+v %v", outcome.result, outcome.err)
+				}
+				ewAwait(t, f.owner, p.hold.JobID, "completed")
+				ewAssertOrder(t, p, "CANCELLED", "EXPIRED", 1)
+				if n := countRows(t, f.owner, `SELECT count(*) FROM checkout.payment_attempts WHERE order_id=$1`, p.hold.OrderID); n != 0 {
+					t.Fatalf("expired order has %d payment attempts", n)
+				}
+			} else {
+				if outcome.err != nil || outcome.result.AttemptID == "" {
+					t.Fatalf("valid contending payment was rejected: %+v %v", outcome.result, outcome.err)
+				}
+				// The expiry worker either snoozes an early hold or observes
+				// payment's new generation and completes STALE. Both preserve stock.
+				ewAssertOrder(t, p, "AWAITING_PAYMENT", "PAYMENT_PENDING", 0)
+				if n := countRows(t, f.owner, `SELECT count(*) FROM checkout.payment_attempts WHERE order_id=$1`, p.hold.OrderID); n != 1 {
+					t.Fatalf("valid order has %d payment attempts", n)
+				}
+				var persistedAttempt string
+				if err := f.owner.QueryRow(context.Background(), `SELECT id::text FROM checkout.payment_attempts WHERE order_id=$1`, p.hold.OrderID).Scan(&persistedAttempt); err != nil || persistedAttempt != outcome.result.AttemptID {
+					t.Fatalf("payment result does not match durable attempt: result=%s persisted=%s err=%v", outcome.result.AttemptID, persistedAttempt, err)
+				}
+			}
+			pwStopClient(t, client)
+		})
 	}
 }
 
