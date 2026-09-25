@@ -698,17 +698,16 @@ func TestBuyerPaymentWorkerRealCrashAndRiverLeaseRescue(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer pwStopClient(t, client)
-	// Observe River's actual rescue before checking its scheduled retry. The
-	// test uses a one-second worker retry policy; no job state or due time is
+	// Observe River's durable rescue marker: retryable is transient and may
+	// already have advanced before this poll. No job state or due time is
 	// manually rewritten after the crash.
 	rescueDeadline := time.Now().Add(40 * time.Second)
 	rescued := false
 	for time.Now().Before(rescueDeadline) {
-		var jobState string
-		if err := f.owner.QueryRow(context.Background(), `SELECT state,coalesce(errors::text LIKE '%Stuck job rescued by JobRescuer%',false) FROM river.river_job WHERE id=$1`, q.result.JobID).Scan(&jobState, &rescued); err != nil {
+		if err := f.owner.QueryRow(context.Background(), `SELECT coalesce(errors::text LIKE '%Stuck job rescued by JobRescuer%',false) FROM river.river_job WHERE id=$1`, q.result.JobID).Scan(&rescued); err != nil {
 			t.Fatal(err)
 		}
-		if jobState == "retryable" && rescued {
+		if rescued {
 			break
 		}
 		time.Sleep(100 * time.Millisecond)
@@ -738,6 +737,9 @@ func TestBuyerPaymentWorkerRealCrashAndRiverLeaseRescue(t *testing.T) {
 		}
 		t.Fatalf("rescue stopped before capture: job=%s attempt=%d scheduled_in=%s rescued=%t operation_generation=%d calls=%d observations=%d", jobState, jobAttempt, time.Until(scheduled), rescued, finalGeneration, calls.Load(), q.reportCount(t))
 	}
+	// Freeze the accepted recovery before checking counts; this worker keeps
+	// polling after a successful observation using the fixture's short retry.
+	pwStopClient(t, client)
 	pcAssertStock(t, q, 0, 2, "CONFIRMED", "COMMITTED")
 	pcAssertWork(t, q, "READY")
 	if calls.Load() != 1 || q.reportCount(t) != 1 || pcCount(t, q, "payments.facts", " AND kind='CAPTURED'") != 1 {
