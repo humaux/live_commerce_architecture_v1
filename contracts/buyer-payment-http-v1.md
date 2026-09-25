@@ -4,6 +4,10 @@
 Base `18f5a2d`; builds on `payment-hosted-v1.md`, `buyer-http-v1.md` and
 `buyer-browser-bff-v1.md`. No second payment attempt engine or PSP product link.
 
+Bounded implementation evidence: [BPH01–06 private HTTP acceptance](../docs/implementation/2026-09-25-buyer-payment-http-acceptance.md),
+source `34a9169`, tested tree `7f4e8be`, 421 actual PG/race/vet tests and independent
+source/evidence review. This does not change the public/provider boundary below.
+
 ## Decisions and scope
 
 Expose the existing hosted core through the same BFF-only buyer router. Add a

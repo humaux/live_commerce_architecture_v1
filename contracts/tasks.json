@@ -582,6 +582,15 @@
       "independent_review": "426fb968-24b8-431e-8d9b-a562931ff74c; final84c6af1 no unresolved P0/P1; reverse-order P1 causal RED/GREEN verified, final log/hash independently read; reviewer did not rerun PG",
       "not_ready": "Internal full one-time-card capture only, no live admission. Later merchant-settings-wizard local UI acceptance is separate. Real qualification, hosted form release, notification inbox, payout/refunds/partial captures, review resolution, production worker assembly and other methods remain pending."
     },
+    "buyer_payment_private_http": {
+      "code_baseline": "34a9169",
+      "tested_tree": "7f4e8be",
+      "status": "PASS_BOUNDED_PRIVATE_HTTP_PROVIDER_MOCK",
+      "evidence": "docs/implementation/2026-09-25-buyer-payment-http-acceptance.md",
+      "aggregate": "421 top-level PASS/0 FAIL/0 SKIP full actual PG18/race/vet exit0; foundation171.368s. Includes single-snapshot owned projection, three-locale private HTTP, 22 candidate changes, exact-blocker final-clock gates and real four-role API assembly/connection cleanup. No provider network request.",
+      "independent_review": "85bbfc20-fcf0-4139-b339-a93c74f0de3e; final7f4e8be source/evidence no unresolved P0/P1/P2; reviewer read full log/hash but did not rerun full. Author BPH01-04 record e7ed2500-7378-4cf4-bfc2-5c09e587982b.",
+      "not_ready": "Private Go router and disabled hosted assembly only. Public BFF/payment UI, one-shot form submission and uncertain recovery, return/notify/worker assembly, real qualification and provider sandbox/live remain separate. Test-mode history is labelled; redirect or handoff is not paid; no merchant enablement."
+    },
     "payment_hosted_internal": {
       "code_baseline": "dac73ca",
       "tested_tree": "cce122d",
@@ -597,7 +606,7 @@
       "evidence": "docs/implementation/2026-09-24-merchant-settings-wizard-acceptance.md",
       "scope": "A four-step UI, account registration, market/method/service discovery, explicit pricing and manual delivery; disabled payment drafts only. Full provider acceptance remains NOT_RUN."
     },
-    "remaining": "生产checkout/worker装配与到期巡检、公开买家付款选项/状态HTTP/BFF/UI及返回页、正式门市目录/地图回调、第三方真实准入、通知收件/入账与退款/支付对账、provider sandbox/live及完整G03/G05仍待实现或验收。B商品直购/未付款订单/历史与账户配送支付设置A向导已有本地验收；内部信用卡StartPayment、托管表单原子准备/一次性交付、历史凭据查询及本地请款入账已通过真实PG与签名MOCK验收。过期或丢失交付不能自动新建支付或释放库存；商家启用仍拒绝，查询成功不等于收到资金，内部预留也不等于实际运输。",
+    "remaining": "生产checkout/worker装配与到期巡检、公开买家付款BFF/UI及返回页、正式门市目录/地图回调、第三方真实准入、通知收件/入账与退款/支付对账、provider sandbox/live及完整G03/G05仍待实现或验收。B商品直购/未付款订单/历史与账户配送支付设置A向导已有本地验收；内部信用卡StartPayment、托管表单原子准备/一次性交付、历史凭据查询及本地请款入账，以及私有付款状态/准备/交付HTTP与默认关闭装配已通过真实PG与签名MOCK验收。过期或丢失交付不能自动新建支付或释放库存；商家启用仍拒绝，查询成功不等于收到资金，内部预留也不等于实际运输。",
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
   {

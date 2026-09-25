@@ -244,6 +244,19 @@ SQL 约束错因核对及用 sequence 证明到达注入点的八类原子回滚
 升级platform/pgx/PG/River/Keyring/PAYUNi时须重跑HP01–07及原支付/入账/T06全套；
 只过此内核不表示公开付款路由、实际供应商收款、资格或生产部署已经可用。
 
+买家付款私有接口（`contracts/buyer-payment-http-v1.md`）：
+`cmd/api.loadBuyerConfig` → 默认关闭的 `loadBuyerPaymentConfig` → 原
+`loadAccountKeys` + 独立 `OpenHostedPool` → `buyerhttp.New` 的可选 hosted 服务。
+GET `PaymentView` → SQL0026 单快照查原订单、冻结支付事实、当前付款方式资格；
+末尾重复 capability/DB 时间检查，HTTP 不返回账户标识、凭据或表单。
+POST prepare → 原 `BeginHosted`，仅投影四个回执字段；POST handoff → 原
+`TakeHosted`，禁止 body/replay key，所有交付失败不可自动重试。返回/通知URL
+固定在服务端；API 只插入原 River 任务，不启动 worker。升级通用 buyer router、
+Keyring、PG/pgx 或 hosted 内核须同时重跑 BPH01–06 和 HP01–07；
+[私有接口验收](2026-09-25-buyer-payment-http-acceptance.md)保留实际角色装配、
+连接回收、锁等待过期与三语 HTTP 证据。没有新增依赖；公开 BFF/付款UI及真实
+供应商准入仍独立验收，不允许把通用前端重试日志用于 handoff 或保存付款表单。
+
 `internal/checkout/payment.go` 复用 buyer.WithScope、checkout pool 验证、River
 InsertTx 和私有回执，调用0016的 `checkout.start_payment`；不依赖 HTTP/PSP wire，
 不读密文。资格表当前没有应用签发者，MOCK只在隔离测试中注入。operation新增

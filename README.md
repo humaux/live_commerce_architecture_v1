@@ -30,6 +30,7 @@
 - 商家商品购买入口后端：只读返回已授权商品的三语购买URL，不增加PSP操作或修改原商品/SKU收据；[真实PG/HTTP与375项全量race/vet记录](docs/implementation/2026-09-25-merchant-purchase-entry-acceptance.md)。configured仅说明当前数据库发布配置，复制/打开UI必须与真实B买家路由一起验收；不是已完成自动收款。
 - 内部发起支付：真实买家权限、冻结金额/账户版本、订单与待支付库存/attempt/查询意图/回执/队列同事务；[合同](contracts/payment-start-v1.md)、[246项真实PG/race/vet及失败修正证据](docs/implementation/2026-09-24-payment-start-acceptance.md)。仅信用卡PROVIDER_MOCK内核；后续托管表单和查询执行见下项，真实账户资格、通知入账/退款/对账及公开付款页面仍待完成。
 - 订单绑定托管付款内核：沿用原订单/支付尝试冻结金额、账户和凭据版本，同事务保存一份表单；独立签名角色、一次性交付、失去COMMIT应答不补发及过期/撤权防护通过。[HP01–07合同](contracts/payment-hosted-v1.md)、[404项全量真实PG/race/vet及独立复核](docs/implementation/2026-09-25-payment-hosted-acceptance.md)。没有供应商网络请求；公开HTTP/BFF/付款按钮与返回页面仍待实现，不代表支付成功或允许商家启用。
+- 买家付款私有接口：默认关闭的独立角色装配、只读付款状态／方式、按原订单准备及一次性交付，已通过[421项全量真实PG/race/vet及独立复核](docs/implementation/2026-09-25-buyer-payment-http-acceptance.md)。包含三语实际HTTP、配置变化、等待锁期间过期及连接回收；不代表公开付款UI、真实供应商准入或商家收款开关已开放。
 - 支付查询与可信报告：精确租约读取历史凭据、实际 River 查询执行、验签后报告与 UNKNOWN 完成同事务、并发去重及持久化查询时限；[合同](contracts/payment-query-v1.md)、[查询阶段验收](docs/implementation/2026-09-24-payment-query-acceptance.md)。查询成功不是收款成功；后续财务判断由独立本地入账流程处理。
 - 信用卡入账与库存承诺：完整请款证据、不可变财务事实、预留转待履约库存、订单确认和耐久商家待办同事务；逆序授权不会误锁履约，退款／晚款异常转粘性复核；[合同](contracts/payment-capture-v1.md)、[284项真实PG/race/vet证据](docs/implementation/2026-09-24-payment-capture-acceptance.md)。供应商仍是签名报文模拟，无真实PSP调用；不等于银行结算、退款功能或上线准入，不开放商家收款开关。
 - 商家配送配置内部内核：版本化启用／展示、独立运费、权限隔离、幂等与回滚已通过；[138 项后端回归及浏览器身份链证据](docs/implementation/2026-09-24-delivery-service-acceptance.md)。A向导已覆盖显式计价和商家自行安排配送；API模式仍仅禁用草稿，不代表承运商已接通，也不承诺任何物流都能投递超商。
