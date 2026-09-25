@@ -2,6 +2,8 @@ import type { Locale } from "@live-commerce/i18n";
 
 const en = {
   title: "Payment",
+  paymentState: "Payment status",
+  orderState: "Order status",
   pay: "Pay in a new tab",
   recover: "Continue original payment",
   loading: "Checking payment availability…",
@@ -31,6 +33,8 @@ export const paymentCopy: Record<Locale, Copy> = {
   en,
   "zh-CN": {
     title: "付款",
+    paymentState: "付款状态",
+    orderState: "订单状态",
     pay: "前往新标签页付款",
     recover: "继续原付款请求",
     loading: "正在确认付款方式…",
@@ -54,6 +58,8 @@ export const paymentCopy: Record<Locale, Copy> = {
   },
   "zh-TW": {
     title: "付款",
+    paymentState: "付款狀態",
+    orderState: "訂單狀態",
     pay: "前往新分頁付款",
     recover: "繼續原付款請求",
     loading: "正在確認付款方式…",
