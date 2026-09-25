@@ -22,7 +22,8 @@ No additional service/queue/table/secret is needed.
 Go `PaymentMethodOption` has Code string, Version int64, NameHans/NameHant/NameEN
 string. `OrderPayment` uses OrderID/Currency/CommercialState/PaymentState/
 HandoffState string, TotalMinor int64, HandoffExpiresAt *time.Time (no omitempty),
-Methods []PaymentMethodOption; JSON tags are exactly the snake_case fields below.
+TestMode bool, Methods []PaymentMethodOption; JSON tags are exactly the snake_case
+fields below.
 
 Integrator reserves migration0026 for
 `checkout.hosted_payment_view(bytea,uuid,uuid,text,bytea) RETURNS jsonb`:
@@ -34,7 +35,8 @@ Resolve capability and replace GUC scope before reading. Explicit tenant/store/
 owner/order predicates are mandatory (capture's broader attempt RLS is not enough).
 Only READ COMMITTED, read-only business effects, final active-capability recheck
 in SQL and Go. Missing/foreign order returns PT404; invalid input PT400;
-absent/revoked capability PT401; an existing different-profile attempt PT409.
+absent/revoked capability PT401. A different-profile historical attempt remains
+readable from its frozen facts, but cannot be handed out by the new profile.
 Extend checkout.safeError with PT404 -> command.ErrNotFound, retaining all existing
 error mappings. Verify the actual missing/foreign SQL -> Go -> HTTP404 chain.
 
@@ -47,12 +49,16 @@ reservation or admission ticket; Begin/Take recheck their full existing gates.
 Exact `OrderPayment` wire shape (same internal Go result, no private IDs):
 
 - `order_id`, `currency`, `total_minor`, `commercial_state` from the owned order.
+- `test_mode`: true for a historical SANDBOX/non-LIVE attempt, false only for a
+  LIVE attempt; without attempt, derived from current service profile. Later UI
+  must label test payments explicitly, including after server profile changes.
 - `payment_state`: `NOT_STARTED` if no attempt; otherwise `REVIEW_REQUIRED` when
   a review row exists, then `CAPTURED`, then `AUTHORIZED`, otherwise `PENDING`.
   Facts qualify only with the original attempt's exact scope, amount, currency,
   connection, profile and environment. Full CAPTURED is not bank settlement.
   An attempt/UNKNOWN/NOT_FOUND/elapsed deadline alone never means paid or failed.
-- `handoff_state`: `NONE` without page; otherwise `ISSUED` if already handed out;
+- `handoff_state`: `UNAVAILABLE` for a different-profile historical attempt;
+  otherwise `NONE` without page; otherwise `ISSUED` if already handed out;
   else `UNAVAILABLE` if config digest differs; else `EXPIRED` if DB time is at or
   after its deadline; otherwise `PREPARED`. PREPARED is not permission to bypass
   live Take eligibility. Never expose stored form bytes on this GET.
@@ -127,6 +133,8 @@ expiry and owned absent/foreign/scope/profile denial; exact JSON with no secrets
 BPH02 pending/authorized/captured/review precedence from actual signed test reports
 and existing capture path; page NONE/PREPARED/ISSUED/EXPIRED/config mismatch;
 view has zero payment/stock/event/job/receipt mutations. Redirect is not evidence.
+After a server-profile switch, frozen historical facts remain readable with exact
+test_mode disclosure, no methods and UNAVAILABLE handoff; Begin/Take still deny.
 BPH03 actual private HTTP + PG prepare -> view -> one-shot handoff -> view/repeat;
 exact keys/projections, original frozen amount, 3 locales, no provider request.
 BPH04 all new routes: early auth/origin/revocation/foreign/path/query/null/unknown
