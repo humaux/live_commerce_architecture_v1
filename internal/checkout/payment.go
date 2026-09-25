@@ -14,6 +14,7 @@ import (
 
 	"livecommerce/internal/buyer"
 	"livecommerce/internal/command"
+	"livecommerce/internal/jobqueue"
 )
 
 const paymentOperation = "checkout.payment.start"
@@ -119,7 +120,7 @@ func (s *PaymentStarter) startPaymentTx(ctx context.Context, tx pgx.Tx, scope bu
 		return PaymentResult{}, false, err
 	}
 	job, err := s.jobs.InsertTx(ctx, tx, paymentQueryArgs{OperationID: attemptID, Version: 1},
-		&river.InsertOpts{ScheduledAt: now.Add(5 * time.Second)})
+		&river.InsertOpts{Queue: jobqueue.ForProfile(s.profile), ScheduledAt: now.Add(5 * time.Second)})
 	if err != nil {
 		return PaymentResult{}, false, err
 	}
