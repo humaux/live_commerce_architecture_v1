@@ -9,26 +9,22 @@ import (
 	"strconv"
 	"syscall"
 
-	"livecommerce/internal/integrations/accounts"
+	"livecommerce/internal/checkout"
 	"livecommerce/internal/jobqueue"
-	"livecommerce/internal/payments"
 	"livecommerce/internal/platform"
 )
 
 var (
-	errWorkerConfig   = errors.New("payment_worker_invalid_config")
-	errWorkerKeyring  = errors.New("payment_worker_invalid_keyring")
-	errWorkerDatabase = errors.New("payment_worker_database")
-	errWorkerStart    = errors.New("payment_worker_start_failed")
-	errWorkerStop     = errors.New("payment_worker_stop_failed")
+	errWorkerConfig   = errors.New("expiry_worker_invalid_config")
+	errWorkerDatabase = errors.New("expiry_worker_database")
+	errWorkerStart    = errors.New("expiry_worker_start_failed")
+	errWorkerStop     = errors.New("expiry_worker_stop_failed")
 )
 
 type workerConfig struct {
 	enabled     bool
 	dsn         string
-	profile     string
 	concurrency int
-	keys        *accounts.Keyring
 }
 
 func main() {
@@ -45,7 +41,7 @@ func loadConfig(getenv func(string) string) (workerConfig, error) {
 	if getenv == nil {
 		return config, errWorkerConfig
 	}
-	switch getenv("COMMERCE_PAYMENT_WORKER_ENABLED") {
+	switch getenv("COMMERCE_EXPIRY_WORKER_ENABLED") {
 	case "", "0":
 		return config, nil
 	case "1":
@@ -53,24 +49,17 @@ func loadConfig(getenv func(string) string) (workerConfig, error) {
 	default:
 		return workerConfig{}, errWorkerConfig
 	}
-	config.dsn = getenv("COMMERCE_PAYMENT_WORKER_DATABASE_URL")
-	config.profile = getenv("COMMERCE_PAYMENT_WORKER_PROFILE")
-	if config.dsn == "" || (config.profile != "SANDBOX" && config.profile != "LIVE") {
+	config.dsn = getenv("COMMERCE_EXPIRY_WORKER_DATABASE_URL")
+	if config.dsn == "" {
 		return workerConfig{}, errWorkerConfig
 	}
-	rawConcurrency := getenv("COMMERCE_PAYMENT_WORKER_CONCURRENCY")
 	config.concurrency = 4
-	if rawConcurrency != "" {
-		n, err := strconv.Atoi(rawConcurrency)
-		if err != nil || n < 1 || n > 16 || strconv.Itoa(n) != rawConcurrency {
+	if raw := getenv("COMMERCE_EXPIRY_WORKER_CONCURRENCY"); raw != "" {
+		n, err := strconv.Atoi(raw)
+		if err != nil || n < 1 || n > 16 || strconv.Itoa(n) != raw {
 			return workerConfig{}, errWorkerConfig
 		}
 		config.concurrency = n
-	}
-	var err error
-	config.keys, err = accounts.LoadKeyring(getenv)
-	if err != nil {
-		return workerConfig{}, errWorkerKeyring
 	}
 	return config, nil
 }
@@ -85,13 +74,11 @@ func run(ctx context.Context, getenv func(string) string) error {
 		return errWorkerDatabase
 	}
 	defer pool.Close()
-	client, err := payments.NewWorkerClient(ctx, pool, config.keys, config.profile,
-		config.concurrency, payments.DefaultQueryWorkerOptions())
+	client, err := checkout.NewExpiryClient(ctx, pool, config.concurrency)
 	if err != nil {
 		return err
 	}
-	// Fixed local startup witness; never implies provider access or payment.
-	switch err := jobqueue.Run(ctx, client, "payment_worker_ready"); {
+	switch err := jobqueue.Run(ctx, client, "expiry_worker_ready"); {
 	case errors.Is(err, jobqueue.ErrStart):
 		return errWorkerStart
 	case errors.Is(err, jobqueue.ErrStop):

@@ -1,6 +1,7 @@
 package jobqueue
 
 const (
+	CheckoutExpiry = "checkout_expiry_v1"
 	PaymentMock    = "payment_mock_v1"
 	PaymentSandbox = "payment_sandbox_v1"
 	PaymentLive    = "payment_live_v1"
