@@ -180,6 +180,7 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 AND NOT has_function_privilege('commerce_buyer_runtime',p.oid,'EXECUTE')
 	 AND NOT has_function_privilege('commerce_buyer_issuer',p.oid,'EXECUTE')
 	 AND NOT has_function_privilege('commerce_checkout_runtime',p.oid,'EXECUTE')
+	 AND NOT has_function_privilege('commerce_hosted_runtime',p.oid,'EXECUTE')
 	 AND NOT has_function_privilege('commerce_checkout_writer',p.oid,'EXECUTE')
 	 AND NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'))
 	 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
