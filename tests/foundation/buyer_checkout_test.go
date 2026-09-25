@@ -154,12 +154,12 @@ func TestBuyerCheckoutCreatesAtomicHoldAndOwnerReplay(t *testing.T) {
 		t.Fatalf("hold conservation/actor: %d/%d/%s/%s", reserved, qty, state, actor)
 	}
 	var raw, receipt []byte
-	var kind, jobState string
-	if err = b.f.owner.QueryRow(context.Background(), `SELECT kind,state,args FROM river.river_job WHERE id=$1`, result.JobID).Scan(&kind, &jobState, &raw); err != nil {
+	var kind, jobState, jobQueue string
+	if err = b.f.owner.QueryRow(context.Background(), `SELECT kind,state,queue,args FROM river.river_job WHERE id=$1`, result.JobID).Scan(&kind, &jobState, &jobQueue, &raw); err != nil {
 		t.Fatal(err)
 	}
 	var args map[string]any
-	if err = json.Unmarshal(raw, &args); err != nil || len(args) != 3 || args["order_id"] != result.OrderID || args["generation"] != float64(1) || args["version"] != float64(1) || kind != "checkout_expiry_v1" || jobState != "scheduled" {
+	if err = json.Unmarshal(raw, &args); err != nil || len(args) != 3 || args["order_id"] != result.OrderID || args["generation"] != float64(1) || args["version"] != float64(1) || kind != "checkout_expiry_v1" || jobState != "scheduled" || jobQueue != "checkout_expiry_v1" {
 		t.Fatalf("private delayed job: %s %s %s", kind, jobState, raw)
 	}
 	if err = b.f.owner.QueryRow(context.Background(), `SELECT response FROM checkout.command_results WHERE owner_id=$1 AND idempotency_key=$2`, b.cap.Scope.OwnerID, key).Scan(&receipt); err != nil {
@@ -637,6 +637,9 @@ func bcActualRiverExpiry(t *testing.T, mode string) {
 		mustExec(t, b.f.owner, `UPDATE checkout.orders SET generation=2 WHERE id=$1`, r.OrderID)
 		mustExec(t, b.f.owner, `UPDATE inventory.reservations SET generation=2 WHERE id=$1`, r.OrderID)
 	}
+	// This legacy worker-unit integration uses the shared suite database. Owner
+	// relocation after commit isolates it from other cases; production startup
+	// and fixed-queue admission are tested on fresh clusters in expiry_runtime.
 	queue := "checkout_" + strings.ReplaceAll(randomUUID(), "-", "")
 	mustExec(t, b.f.owner, `UPDATE river.river_job SET queue=$2,state='available',scheduled_at=clock_timestamp() WHERE id=$1`, r.JobID, queue)
 	w, e := checkout.NewExpiryWorker(context.Background(), b.worker)
@@ -648,14 +651,6 @@ func bcActualRiverExpiry(t *testing.T, mode string) {
 	client, e := river.NewClient(riverpgxv5.New(b.worker), &river.Config{Schema: "river", Workers: workers, Queues: map[string]river.QueueConfig{queue: {MaxWorkers: 2}}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
 	if e != nil {
 		t.Fatal(e)
-	}
-	var duplicateID int64
-	if mode == "duplicate" {
-		inserted, e := client.Insert(context.Background(), bcExpiryJob{OrderID: r.OrderID, Generation: 1, Version: 1}, &river.InsertOpts{Queue: queue})
-		if e != nil {
-			t.Fatal(e)
-		}
-		duplicateID = inserted.Job.ID
 	}
 	if e = client.Start(context.Background()); e != nil {
 		t.Fatal(e)
@@ -670,8 +665,9 @@ func bcActualRiverExpiry(t *testing.T, mode string) {
 	deadline := time.Now().Add(5 * time.Second)
 	var state, job string
 	var attempted bool
+	var attempts, firstAttempts int
 	for time.Now().Before(deadline) {
-		if e = b.f.owner.QueryRow(context.Background(), `SELECT o.commercial_state,j.state,j.attempted_at IS NOT NULL FROM checkout.orders o JOIN river.river_job j ON j.id=o.job_id WHERE o.id=$1`, r.OrderID).Scan(&state, &job, &attempted); e != nil {
+		if e = b.f.owner.QueryRow(context.Background(), `SELECT o.commercial_state,j.state,j.attempted_at IS NOT NULL,j.attempt FROM checkout.orders o JOIN river.river_job j ON j.id=o.job_id WHERE o.id=$1`, r.OrderID).Scan(&state, &job, &attempted, &attempts); e != nil {
 			t.Fatal(e)
 		}
 		wantState, wantJob := "CANCELLED", "completed"
@@ -681,12 +677,15 @@ func bcActualRiverExpiry(t *testing.T, mode string) {
 			wantState = "DRAFT"
 		}
 		if state == wantState && job == wantJob && attempted {
-			if duplicateID != 0 {
-				var duplicateState string
-				if e = b.f.owner.QueryRow(context.Background(), `SELECT state FROM river.river_job WHERE id=$1`, duplicateID).Scan(&duplicateState); e != nil {
-					t.Fatal(e)
+			if mode == "duplicate" {
+				if firstAttempts == 0 {
+					// Redeliver the linked job, not a new orphan ID forbidden by
+					// admission. River must actually execute another attempt.
+					firstAttempts = attempts
+					mustExec(t, b.f.owner, `UPDATE river.river_job SET state='available',finalized_at=NULL,scheduled_at=clock_timestamp() WHERE id=$1`, r.JobID)
+					continue
 				}
-				if duplicateState != "completed" {
+				if attempts <= firstAttempts {
 					time.Sleep(20 * time.Millisecond)
 					continue
 				}

@@ -193,8 +193,8 @@ func pwDefaultDomainJobs(t *testing.T, q pqFixture) (expiryID, externalID int64)
 		}
 		return err
 	})
-	if err != nil || externalID < 1 || pwQueue(t, q.f.owner, expiryID) != "default" || pwQueue(t, q.f.owner, externalID) != "default" {
-		t.Fatalf("actual default domain jobs unavailable: expiry=%d external=%d err=%v", expiryID, externalID, err)
+	if err != nil || externalID < 1 || pwQueue(t, q.f.owner, expiryID) != "checkout_expiry_v1" || pwQueue(t, q.f.owner, externalID) != "default" {
+		t.Fatalf("actual non-payment domain jobs unavailable: expiry=%d external=%d err=%v", expiryID, externalID, err)
 	}
 	return expiryID, externalID
 }
@@ -365,8 +365,8 @@ func TestBuyerPaymentWorkerRealRiverTwoTenantCaptureAndRestart(t *testing.T) {
 			t.Fatal("restart duplicated money or fulfillment")
 		}
 	}
-	if pwQueue(t, f.owner, expiryID) != "default" || pwQueue(t, f.owner, externalID) != "default" || pwJobExceptQueue(t, f.owner, expiryID) != expiryBefore || pwJobExceptQueue(t, f.owner, externalID) != externalBefore {
-		t.Fatal("payment client changed actual checkout expiry or external operation default jobs")
+	if pwQueue(t, f.owner, expiryID) != "checkout_expiry_v1" || pwQueue(t, f.owner, externalID) != "default" || pwJobExceptQueue(t, f.owner, expiryID) != expiryBefore || pwJobExceptQueue(t, f.owner, externalID) != externalBefore {
+		t.Fatal("payment client changed actual checkout expiry or external operation jobs")
 	}
 }
 
