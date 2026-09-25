@@ -5,7 +5,9 @@ model identifier or reasoning setting, so neither is inferred here. Base:
 `d6720aa`; isolated branch/worktree:
 `codex/commerce-hosted-pg-20260925` at
 `/Volumes/data/worktrees/commerce-hosted-pg-20260925`. This task owns only
-`tests/foundation/hosted_payment*_test.go` and this record. Test commits:
+`tests/foundation/hosted_payment_test.go`,
+`tests/foundation/hosted_payment_authority_test.go` and this record. The separate
+`hosted_payment_commit_test.go` is root-authored. Test commits:
 `7d3107b`, `f0b284a` and `aa0bec5`. Dependency commits pulled from integrator/Go author:
 `f938e6f`, `4450831`, `12571fb`, `3645071`; no dependency files authored here.
 Frozen contract: `contracts/payment-hosted-v1.md`. Humaux coordination task:

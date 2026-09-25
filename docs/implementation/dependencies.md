@@ -231,7 +231,8 @@ golden digest 防止无意改动永久幂等编码。正常加密 active key切�
 SQL 约束错因核对及用 sequence 证明到达注入点的八类原子回滚。
 `InspectMethod` 是商家诊断，不是给将来买家 StartPayment 缓存的授权票据。
 
-托管付款内核（合同 `contracts/payment-hosted-v1.md`，当前为待验收实现）：
+托管付款内核（合同 `contracts/payment-hosted-v1.md`；HP01–07限定内部MOCK验收
+通过，见 `2026-09-25-payment-hosted-acceptance.md`）：
 `checkout.BeginHosted` → 共用 `startPaymentTx` → 原0016支付/库存/任务事务 →
 `accounts.Keyring.BuildPaymentHosted` → 0025精确订单历史凭据 → 原PAYUNi
 `BuildHosted` → 0025不可变表单，全部在同一 `buyer.WithScope` 事务中提交。
