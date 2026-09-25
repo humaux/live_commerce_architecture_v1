@@ -9,11 +9,14 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"time"
 
 	"livecommerce/internal/command"
 )
 
 var deliveryCode = regexp.MustCompile(`^[a-z][a-z0-9_-]{0,39}$`)
+
+const merchantOrderTime = "2006-01-02T15:04:05.000000Z"
 
 const (
 	defaultLimit = 50
@@ -59,8 +62,11 @@ func Decode(request Request, binding Binding, keyCount int) (int, []string, erro
 	if len(request.Cursor) > maxCursor {
 		return 0, nil, invalid("cursor")
 	}
-	raw, err := base64.RawURLEncoding.DecodeString(request.Cursor)
+	raw, err := base64.RawURLEncoding.Strict().DecodeString(request.Cursor)
 	if err != nil || len(raw) == 0 {
+		return 0, nil, invalid("cursor")
+	}
+	if binding.Collection == "merchant-orders" && base64.RawURLEncoding.EncodeToString(raw) != request.Cursor {
 		return 0, nil, invalid("cursor")
 	}
 	decoder := json.NewDecoder(bytes.NewReader(raw))
@@ -72,11 +78,17 @@ func Decode(request Request, binding Binding, keyCount int) (int, []string, erro
 	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
 		return 0, nil, invalid("cursor")
 	}
+	if binding.Collection == "merchant-orders" {
+		canonical, err := json.Marshal(value)
+		if err != nil || !bytes.Equal(raw, canonical) {
+			return 0, nil, invalid("cursor")
+		}
+	}
 	if value.Version != 1 || value.Binding != binding || len(value.Keys) != keyCount {
 		return 0, nil, invalid("cursor")
 	}
-	for _, key := range value.Keys {
-		if !validKey(binding.Collection, key) {
+	for i, key := range value.Keys {
+		if !validPositionKey(binding.Collection, i, key) {
 			return 0, nil, invalid("cursor")
 		}
 	}
@@ -87,8 +99,8 @@ func Encode(binding Binding, keys []string) (string, error) {
 	if !validBinding(binding) || !validKeyCount(binding.Collection, len(keys)) {
 		return "", invalid("cursor")
 	}
-	for _, key := range keys {
-		if !validKey(binding.Collection, key) {
+	for i, key := range keys {
+		if !validPositionKey(binding.Collection, i, key) {
 			return "", invalid("cursor")
 		}
 	}
@@ -110,6 +122,8 @@ func validBinding(b Binding) bool {
 	switch b.Collection {
 	case "products", "warehouses", "inventory", "provider-accounts", "markets":
 		return b.ParentID == "" && b.Filter == ""
+	case "merchant-orders":
+		return b.ParentID == "" && (b.Filter == "all" || b.Filter == "DRAFT" || b.Filter == "AWAITING_PAYMENT" || b.Filter == "CONFIRMED" || b.Filter == "CANCELLED")
 	case "delivery-services":
 		return command.ValidID(b.ParentID) && len(b.Filter) == 2 &&
 			b.Filter[0] >= 'A' && b.Filter[0] <= 'Z' && b.Filter[1] >= 'A' && b.Filter[1] <= 'Z'
@@ -122,7 +136,14 @@ func validBinding(b Binding) bool {
 	}
 }
 
-func validKey(collection, key string) bool {
+func validPositionKey(collection string, position int, key string) bool {
+	if collection == "merchant-orders" {
+		if position == 0 {
+			parsed, err := time.Parse(merchantOrderTime, key)
+			return err == nil && parsed.Format(merchantOrderTime) == key
+		}
+		return command.ValidID(key)
+	}
 	if collection == "delivery-services" {
 		return deliveryCode.MatchString(key)
 	}
@@ -130,6 +151,9 @@ func validKey(collection, key string) bool {
 }
 
 func validKeyCount(collection string, count int) bool {
+	if collection == "merchant-orders" {
+		return count == 2
+	}
 	if collection == "delivery-services" || collection == "markets" {
 		return count == 1
 	}
