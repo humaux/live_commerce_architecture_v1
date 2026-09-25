@@ -6,6 +6,8 @@ const CONTEXT = /^[A-Za-z0-9_-]{43}$/;
 const KEY = /^[A-Za-z0-9_.:-]{8,128}$/;
 const OPERATION =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const HANDOFF =
+  /^orders\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/payment\/handoff$/;
 
 export type SessionStatus = {
   state: "absent" | "expired" | "inactive" | "active";
@@ -365,9 +367,14 @@ export async function buyerRequest(
     suffix.startsWith("/")
   )
     throw new BuyerClientError("request_failed");
+  const handoff = method === "POST" && HANDOFF.test(suffix);
   if (method !== "GET") {
     if (journal(storage())) throw new BuyerClientError("uncertain");
-    if (!idempotencyKey || !KEY.test(idempotencyKey) || body === undefined)
+    if (
+      handoff
+        ? body !== undefined || idempotencyKey !== undefined
+        : !idempotencyKey || !KEY.test(idempotencyKey) || body === undefined
+    )
       throw new BuyerClientError("request_failed");
   } else if (body !== undefined || idempotencyKey !== undefined)
     throw new BuyerClientError("request_failed");

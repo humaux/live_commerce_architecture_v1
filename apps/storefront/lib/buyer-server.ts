@@ -1,5 +1,10 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { isIP } from "node:net";
+import {
+  validHostedHandoff,
+  validOrderPayment,
+  validPaymentPrepared,
+} from "./payment-contract.ts";
 
 const COOKIE = "__Host-commerce_buyer";
 const MAX_JSON = 64 * 1024;
@@ -25,9 +30,11 @@ type Session = {
 type Route = {
   method: string;
   privatePath: string;
-  body?: "empty" | "cart" | "quote" | "destination" | "checkout";
+  body?: "empty" | "cart" | "quote" | "destination" | "checkout" | "payment";
   query?: "catalog" | "options" | "orders";
   session?: string;
+  payment?: "view" | "prepare" | "handoff";
+  orderID?: string;
 };
 
 const messages: Record<string, string> = {
@@ -298,6 +305,27 @@ function route(
       route: selected ? { ...selected, method } : undefined,
     };
   }
+  const payment = /^orders\/([^/]+)\/payment(?:\/(prepare|handoff))?$/.exec(
+    suffix,
+  );
+  if (payment) {
+    if (!UUID.test(payment[1])) return { known: true, invalidID: true };
+    const kind = payment[2] ?? "view";
+    const allowed = kind === "view" ? "GET" : "POST";
+    return {
+      known: true,
+      route:
+        method === allowed
+          ? {
+              method,
+              privatePath: suffix,
+              body: kind === "prepare" ? "payment" : undefined,
+              payment: kind as Route["payment"],
+              orderID: payment[1],
+            }
+          : undefined,
+    };
+  }
   const item = /^(quotes|destinations|orders)\/([^/]+)$/.exec(suffix);
   if (!item) return { known: false };
   if (!UUID.test(item[2])) return { known: true, invalidID: true };
@@ -404,7 +432,7 @@ async function readBounded(
 
 // JSON.parse alone drops duplicate keys. This small scanner rejects them and
 // null at any depth before a commerce command reaches the private transport.
-function strictJSON(text: string): unknown {
+function strictJSON(text: string, allowNull = false): unknown {
   let at = 0;
   const space = () => {
     while (/\s/.test(text[at] ?? "") && at < text.length) at++;
@@ -474,7 +502,11 @@ function strictJSON(text: string): unknown {
         at += literal.length;
         return;
       }
-    if (text.startsWith("null", at)) throw new Error("null");
+    if (text.startsWith("null", at)) {
+      if (!allowNull) throw new Error("null");
+      at += 4;
+      return;
+    }
     const number = /^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?/.exec(
       text.slice(at),
     );
@@ -524,6 +556,11 @@ const shapes: Record<Exclude<Route["body"], undefined>, Shape> = {
     service_version: "integer",
     allocation_version: "integer",
   },
+  payment: {
+    method_code: "string",
+    method_version: "integer",
+    locale: "string",
+  },
 };
 
 function matchesShape(value: unknown, shape: Shape): boolean {
@@ -568,7 +605,23 @@ async function bodyJSON(
     return { error: failure(400, "invalid_json", nonretryable) };
   }
   try {
-    if (!matchesShape(strictJSON(text), shape))
+    const parsed = strictJSON(text);
+    if (
+      !matchesShape(parsed, shape) ||
+      (shape === shapes.payment &&
+        (!parsed ||
+          typeof parsed !== "object" ||
+          Array.isArray(parsed) ||
+          Object.keys(parsed).length !== 3 ||
+          (parsed as Record<string, unknown>).method_code !== "payuni_credit" ||
+          !Number.isSafeInteger(
+            (parsed as Record<string, unknown>).method_version,
+          ) ||
+          ((parsed as Record<string, unknown>).method_version as number) < 1 ||
+          !["zh-CN", "zh-TW", "en"].includes(
+            (parsed as Record<string, string>).locale,
+          )))
+    )
       return { error: failure(400, "invalid_json", nonretryable) };
   } catch {
     return { error: failure(400, "invalid_json", nonretryable) };
@@ -624,13 +677,18 @@ async function upstream(
   }
 }
 
-async function upstreamJSON(response: Response): Promise<unknown | null> {
+async function upstreamJSON(
+  response: Response,
+  payment = false,
+): Promise<unknown | null> {
+  const mime = response.headers.get("content-type") ?? "";
   if (
-    response.headers
-      .get("content-type")
-      ?.split(";", 1)[0]
-      .trim()
-      .toLowerCase() !== "application/json"
+    (payment &&
+      response.headers.has("content-encoding") &&
+      response.headers.get("content-encoding") !== "identity") ||
+    (payment
+      ? !/^application\/json(?:\s*;\s*charset=(?:utf-8|"utf-8"))?$/i.test(mime)
+      : mime.split(";", 1)[0].trim().toLowerCase() !== "application/json")
   )
     return null;
   const advertised = response.headers.get("content-length");
@@ -642,9 +700,8 @@ async function upstreamJSON(response: Response): Promise<unknown | null> {
   try {
     const bytes = await readBounded(response.body, MAX_UPSTREAM);
     if (!bytes) return null;
-    return JSON.parse(
-      new TextDecoder("utf-8", { fatal: true }).decode(bytes),
-    ) as unknown;
+    const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    return payment ? strictJSON(text, true) : (JSON.parse(text) as unknown);
   } catch {
     return null;
   }
@@ -710,11 +767,13 @@ function forbiddenHeaders(request: Request): boolean {
 
 export async function handleBuyerRequest(request: Request): Promise<Response> {
   const pathname = new URL(request.url).pathname;
+  const handoff =
+    /^\/api\/buyer\/orders\/[^/]+\/payment\/handoff(?:\/.*)?$/.test(pathname);
   const changingCookie =
     request.method === "POST" &&
     /^\/api\/buyer\/session\/(?:prepare|reset)$/.test(pathname);
   const fail = (status: number, code: string) =>
-    failure(status, code, changingCookie);
+    failure(status, code, changingCookie || handoff);
   let cfg: Config | null;
   try {
     cfg = config();
@@ -745,7 +804,7 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
     return fail(409, "context_changed");
   const isSession = !!target.session;
   const key = request.headers.get("idempotency-key");
-  if (isSession || request.method === "GET") {
+  if (isSession || request.method === "GET" || handoff) {
     if (key !== null) return fail(422, "invalid_request");
   } else if (!key || !KEY.test(key)) return fail(422, "invalid_request");
   if (
@@ -879,9 +938,20 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
     key ?? undefined,
   );
   if (request.signal.aborted) return fail(503, "unavailable");
-  if (!response.ok) return upstreamError(response);
-  const data = await upstreamJSON(response);
+  if (!response.ok) return upstreamError(response, handoff);
+  const data = await upstreamJSON(response, !!target.payment);
   if (request.signal.aborted || data === null || typeof data !== "object")
+    return fail(503, "unavailable");
+  if (
+    target.payment &&
+    (response.status !== 200 ||
+      (target.payment === "view" &&
+        !validOrderPayment(data, target.orderID!)) ||
+      (target.payment === "prepare" &&
+        !validPaymentPrepared(data, target.orderID!)) ||
+      (target.payment === "handoff" &&
+        !validHostedHandoff(data, target.orderID!)))
+  )
     return fail(503, "unavailable");
   return success(data);
 }
