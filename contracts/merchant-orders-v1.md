@@ -1,6 +1,8 @@
 # Merchant order reads v1
 
-Draft on `a85a8aa`, 2026-09-25. Not implemented or accepted yet. Next T11
+Frozen after independent preflight of `a8aba0c`, 2026-09-25 (research
+`dee6530d-791e-4647-b320-57f420413b6f`, decision
+`9ed17103-ff27-43a3-9c4d-d593babd58dc`). Not implemented or accepted yet. Next T11
 delivery is an authenticated merchant list/detail read, not shipment creation,
 manual payment confirmation, refunds, or a replacement for buyer capability APIs.
 The admin UI remains a subsequent consumer of this frozen transport contract.
