@@ -48,11 +48,20 @@ func pqSetupSession(t *testing.T, freshSession bool) pqFixture {
 	return pqSetupItems(t, freshSession, 1)
 }
 func pqSetupItems(t *testing.T, freshSession bool, skuCount int) pqFixture {
+	return pqSetupItemsOn(t, fixture(t), nil, freshSession, skuCount)
+}
+
+// Optional shared keys model the one runtime keyring serving multiple tenants;
+// nil retains the existing single-tenant fixture's independently generated keys.
+func pqSetupItemsOn(t *testing.T, base *testFixture, keys *accounts.Keyring, freshSession bool, skuCount int) pqFixture {
 	t.Helper()
-	p := psSetupItems(t, skuCount)
-	keys, e := accounts.NewKeyring("query_test", map[string][]byte{"query_test": randomBytes(32)}, randomBytes(32))
-	if e != nil {
-		t.Fatal(e)
+	p := psSetupItemsOn(t, base, skuCount)
+	var e error
+	if keys == nil {
+		keys, e = accounts.NewKeyring("query_test", map[string][]byte{"query_test": randomBytes(32)}, randomBytes(32))
+		if e != nil {
+			t.Fatal(e)
+		}
 	}
 	service, e := accounts.New(keys, &integration.Service{})
 	if e != nil {

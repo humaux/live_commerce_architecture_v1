@@ -53,9 +53,15 @@ func psSetup(t *testing.T) psHarness {
 	return psSetupItems(t, 1)
 }
 func psSetupItems(t *testing.T, skuCount int) psHarness {
+	return psSetupItemsOn(t, fixture(t), skuCount)
+}
+
+// Runtime queue audits require an isolated database, not the shared fixture's
+// deliberately corrupted/relocated jobs. Domain setup remains identical.
+func psSetupItemsOn(t *testing.T, base *testFixture, skuCount int) psHarness {
 	t.Helper()
 	ctx := context.Background()
-	f := *fixture(t)
+	f := *base
 	f.tenantA, f.storeA1, f.principalA = randomUUID(), randomUUID(), randomUUID()
 	f.tokens = map[string]string{"a": randomToken()}
 	mustExec(t, f.owner, `INSERT INTO control.tenants(id,name) VALUES($1,'payment mock tenant')`, f.tenantA)
