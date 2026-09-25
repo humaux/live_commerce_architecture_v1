@@ -11,7 +11,7 @@ import {readFile,writeFile,mkdtemp,rm} from "node:fs/promises";
 import {createWriteStream} from "node:fs";
 import {tmpdir} from "node:os";
 import path from "node:path";
-import {chromium,expect} from "@playwright/test";
+import {chromium,devices,expect} from "@playwright/test";
 
 const root=process.cwd(), evidence=process.env.LC_PAYMENT_EVIDENCE;
 assert(evidence && /^http:\/\/127\.0\.0\.1:\d+$/.test(process.env.LC_PAYMENT_CONTROL));
@@ -52,7 +52,7 @@ async function control(){
   assert.equal(response.status,200);return response.json();
 }
 async function context(mobile=false){
-  const c=await browser.newContext({ignoreHTTPSErrors:true,viewport:mobile?{width:390,height:844}:{width:1440,height:900}});contexts.push(c);
+  const c=await browser.newContext(mobile?{...devices["Pixel 7"],viewport:{width:390,height:844},screen:{width:390,height:844},ignoreHTTPSErrors:true}:{ignoreHTTPSErrors:true,viewport:{width:1440,height:900}});contexts.push(c);
   await c.route(/https:\/\/(?:sandbox-api|api)\.payuni\.com\.tw\//,route=>{throw new Error(`unexpected PSP route ${route.request().url()}`);});
   await c.route(psp,async route=>{
     const req=route.request();assert.equal(req.method(),"POST");assert(req.isNavigationRequest());assert.equal(req.url(),psp);assert(postOrder);
@@ -163,26 +163,33 @@ try{
   passed("BPU02 fresh native POST equals one prepare/take, one pending fact, no persisted form");
   passed("BPU02 concurrent tabs queue on actual Web Lock; duplicate Pay adds no prepare/take/form");
 
-  await page.getByTestId("toggle-order-history").click();await page.locator(`button[data-order-id="${a}"]`).click();
-  await expect(page.getByTestId("order-id")).toHaveText(a);await expect(page.getByTestId("payment-status")).toHaveAttribute("data-state","NOT_STARTED");
-  await page.locator("header select").selectOption("zh-TW");await expect(page.locator("html")).toHaveAttribute("lang","zh-TW");
+  const mobile=await context(true);await mobile.addCookies(await c.cookies(origin));
+  const mobilePage=await mobile.newPage();await mobilePage.goto(product);
+  assert(await mobilePage.evaluate(()=>navigator.maxTouchPoints>0&&navigator.userAgent.includes("Android")));
+  await mobilePage.locator("header select").selectOption("zh-TW");
+  await mobilePage.getByTestId("toggle-order-history").click();await mobilePage.locator(`button[data-order-id="${a}"]`).click();
+  await expect(mobilePage.getByTestId("order-id")).toHaveText(a);await expect(mobilePage.getByTestId("payment-status")).toHaveAttribute("data-state","NOT_STARTED");
+  await expect(mobilePage.locator("html")).toHaveAttribute("lang","zh-TW");
+  await mobilePage.getByTestId("order-payment").screenshot({path:path.join(evidence,"mobile-native-history-ready.png")});
   const stalled=arm(`/api/buyer/orders/${a}/payment/prepare`,"hold");
-  const changed=page.waitForEvent("popup");await page.getByTestId("pay-order").click();const unowned=await changed;
+  const changed=mobilePage.waitForEvent("popup");await mobilePage.getByTestId("pay-order").click();const unowned=await changed;
   assert.equal(await stalled.result.promise,200);await unowned.goto("about:blank#foreign");stalled.release.resolve();
-  await expect(page.getByTestId("payment-error")).toBeVisible();assert.equal(paymentCalls(a,"handoff").length,0);
-  const marker=await paymentMarker(page,a);assert.equal(marker.stage,"prepare");
+  await expect(mobilePage.getByTestId("payment-error")).toBeVisible();assert.equal(paymentCalls(a,"handoff").length,0);
+  const marker=await paymentMarker(mobilePage,a);assert.equal(marker.stage,"prepare");
   const beforeReplay=paymentCalls(a,"prepare").length;postOrder=a;
-  const historical=page.waitForEvent("popup");await page.getByTestId("pay-order").click();const historyChild=await historical;
+  const historical=mobilePage.waitForEvent("popup");await mobilePage.getByTestId("pay-order").click();const historyChild=await historical;
   await expect.poll(()=>posts.length).toBe(2);await historyChild.waitForURL(psp);await historyChild.waitForLoadState("domcontentloaded");
   assert.equal(await historyChild.evaluate(()=>window.opener),null);
   const replay=paymentCalls(a,"prepare").slice(beforeReplay);assert.equal(replay.length,1);
   assert.equal(replay[0].key,paymentCalls(a,"prepare")[0].key);assert.equal(replay[0].body,paymentCalls(a,"prepare")[0].body);
-  assert.equal(paymentCalls(a,"handoff").length,1);await storageSafe(page);
-  passed("BPU02 history Pay replays original key/body after navigated child, then posts once");
+  assert.equal(paymentCalls(a,"handoff").length,1);await storageSafe(mobilePage);
+  await expect(mobilePage.getByTestId("payment-status")).toHaveAttribute("data-state","PENDING");
+  await expect(mobilePage.getByTestId("order-payment")).toHaveAttribute("aria-busy","false");
+  await mobilePage.screenshot({path:path.join(evidence,"mobile-native-history-readonly.png"),fullPage:true});
+  passed("BPU02 touch/Android Chromium history Pay replays original key/body after navigated child, then posts once");
 
   await page.locator("header select").selectOption("zh-CN");await expect(page.locator("html")).toHaveAttribute("lang","zh-CN");
-  await page.getByRole("button",{name:/返回订单|返回訂單|Back to orders/}).click();
-  await page.getByTestId("toggle-order-history").click();await expect(page.getByTestId("order-id")).toHaveText(b);
+  await expect(page.getByTestId("order-id")).toHaveText(b);
   await page.getByTestId("continue-shopping").click();await page.locator("header select").selectOption("en");
   await expect(page.getByRole("button",{name:"Choose delivery",exact:true})).toBeEnabled();const d=await makeOrder(page);
   await page.setViewportSize({width:390,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
@@ -242,7 +249,8 @@ try{
   assert.equal((await control()).issued,4);assert.equal(posts.length,2);
   const returnPage=await c.newPage();await returnPage.goto(`${origin}/payment/return`);
   await returnPage.screenshot({path:path.join(evidence,"desktop-payment-return.png"),fullPage:true});
-  await returnPage.setViewportSize({width:390,height:844});await returnPage.screenshot({path:path.join(evidence,"mobile-payment-return.png"),fullPage:true});
+  const mobileReturn=await mobile.newPage();await mobileReturn.goto(`${origin}/payment/return`);
+  await mobileReturn.screenshot({path:path.join(evidence,"mobile-payment-return.png"),fullPage:true});await mobileReturn.close();
   await returnPage.close();
   passed("BPU02 neutral GET/POST return never reports payment or changes facts");
   for(const locale of ["zh-CN","zh-TW","en"]){await page.locator("header select").selectOption(locale);await expect(page.locator("html")).toHaveAttribute("lang",locale);await expect(page.getByTestId("payment-test-mode")).toBeVisible();}
