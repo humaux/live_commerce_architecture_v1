@@ -498,14 +498,14 @@
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
-      "implementation": "PARTIAL_INTERNAL_CHECKOUT_METHOD_DRAFTS_AND_PAYUNI_WIRE",
+      "implementation": "PARTIAL_CHECKOUT_BUYER_PAYMENT_UI_AND_ISOLATED_PAYMENT_RUNTIME",
       "unit_mock": "PASS_PAYUNI_OFFICIAL_VECTOR_NODE_INTEROP_AND_NEGATIVES",
-      "real_pg": "PASS_INTERNAL_REGRESSION_226_TOP_LEVEL_TESTS",
+      "real_pg": "PASS_BOUNDED_REGRESSION_433_TOP_LEVEL_TESTS_AT_e6f052f",
       "provider_sandbox": "NOT_RUN",
       "provider_live": "NOT_RUN",
-      "independent_review": "PASS_BOUNDED_INTERNAL_CHECKOUT_METHOD_DRAFTS_AND_PROTOCOL_MOCK"
+      "independent_review": "PASS_BOUNDED_INTERNAL_AND_PAYMENT_RUNTIME_SIGNED_MOCK"
     },
-    "evidence": "docs/implementation/2026-09-24-buyer-checkout-acceptance.md; code/tests 162b619; full 187 PASS/0 FAIL/0 SKIP real PG/race/vet foundation68.828s; browser identity1/1 signed MOCK IdP; prior quote evidence retained in docs/implementation/2026-09-20-checkout-quote-acceptance.md",
+    "evidence": "Latest bounded runtime: docs/implementation/2026-09-25-payment-worker-acceptance.md; source/tests e6f052f; full433 PASS/0FAIL/0SKIP actual PG18/race/vet215.448s; buyer Node55 and actual browser11cases. Earlier per-slice evidence retained below; this is not real PSP or complete G03/G05 acceptance.",
     "delivery_prerequisite": {
       "code_baseline": "2a5e43c",
       "evidence": "docs/implementation/2026-09-24-delivery-service-acceptance.md",
@@ -618,13 +618,21 @@
       "independent_review": "3986e0c9-aa95-4766-ac35-7b468c00a4a3 production source; final24e02274-ab4e-43e1-81a9-4c1b282d0c15 reviewed07f10ca..cce122d test-causality and final log: no unresolved P0/P1/P2 within trusted signer boundary. Author PG evidence821746d1-d66b-4ce9-a95f-409aab6bd673.",
       "not_ready": "Only atomic original-order preparation and one-shot server handoff. Public payment options/status HTTP/BFF/UI, safe return, real qualification, notification/worker assembly, expiry/uncertain-payment resolution and authorized provider sandbox/live remain open. No production merchant enablement."
     },
+    "payment_worker_runtime": {
+      "tested_tree": "e6f052fc317b4206403329ed53275071d1fd7a2e",
+      "status": "PASS_BOUNDED_REAL_PG_SIGNED_MOCK",
+      "evidence": "docs/implementation/2026-09-25-payment-worker-acceptance.md",
+      "aggregate": "433 top-level PASS/0FAIL/0SKIP actual PG18/race/vet215.448s exit0; focused8 top-level includes1childhelper,43.831s. BuyerNode55/strictTS and actualNext-Go-PG browser11case7.60s pass. No realproviderrequests.",
+      "independent_review": "SQL782c9306-446b-46c6-a6b4-18e3dc99e7d0; startupP1closure98d20fa2-d6e4-44d7-8eef-7c40dd767131; finalsource/test01972c3e-9f4a-4826-af77-234a6182c610 no remainingP0/P1/P2 in boundedchange.",
+      "not_ready": "Only isolated payment queues/runtime accepted. Expiry/default external-operation worker, official Notify HTTP/ACK, trusted qualification, merchant enablement, realprovider sandbox/live, recovery SLO, observability and production rollout remain open. Test lease aging and1sMOCKretry do not prove production wallclock recovery."
+    },
     "merchant_settings_wizard": {
       "status": "PASS_BOUNDED_LOCAL_WIZARD",
       "code_baseline": "1a5c64b",
       "evidence": "docs/implementation/2026-09-24-merchant-settings-wizard-acceptance.md",
       "scope": "A four-step UI, account registration, market/method/service discovery, explicit pricing and manual delivery; disabled payment drafts only. Full provider acceptance remains NOT_RUN."
     },
-    "remaining": "生产checkout/worker装配与到期巡检、正式门市目录/地图回调、第三方真实准入、通知收件/入账与退款/支付对账、provider sandbox/live及完整G03/G05仍待实现或验收。B商品直购/未付款订单/历史与账户配送支付设置A向导已有本地验收；内部StartPayment/托管表单/历史查询/本地请款及私有HTTP已通过真实PG签名MOCK验收；公开BFF、付款UI、中立返回页已有55Node和11实际浏览器模拟PSP验收。尚未证明真实供应商、实体手机或中央返回域名DNS/TLS。下一付款worker需先隔离River队列并处理既存默认队列付款job，不能用局部worker领取其他任务。过期或丢失交付不能自动新建支付或释放库存；商家启用仍拒绝，查询成功不等于收到资金，内部预留也不等于实际运输。",
+    "remaining": "订单到期专用运行入口与巡检、正式门市目录/地图回调、第三方真实准入、通知HTTP/ACK/收件与退款对账、provider sandbox/live及完整G03/G05仍待实现或验收。B商品直购/订单历史/付款页、账户配送支付A向导及独立付款worker已有分层本地验收；当前433后端/55Node/11付款浏览器回归不等于真实PSP或部署。付款任务已按冻结环境隔离并支持旧默认队列提交时路由；下一到期worker同样不能用局部消费者领取共享default中的外部操作。过期或丢失交付不能自动新建支付或释放不确定库存。尚未证明真实供应商、实体手机、中央返回域名DNS/TLS及运维恢复SLO；商家启用仍拒绝，查询成功不等于收到资金，内部预留不等于实际运输。",
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
   {
