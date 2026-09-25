@@ -18,7 +18,7 @@ func TestMerchantOrdersQuery(t *testing.T) {
 			t.Fatalf("valid %q: %v", raw, err)
 		}
 	}
-	for _, raw := range []string{"limit=0", "limit=101", "limit=01", "limit=", "limit=1&limit=2", "cursor=", "state=", "state=draft", "state=DRAFT&state=all", "other=x", "limit=bad", "limit=1;state=DRAFT"} {
+	for _, raw := range []string{"limit=0", "limit=101", "limit=01", "limit=", "limit=1&limit=2", "limit=1&", "state=all&&limit=1", "cursor=", "state=", "state=draft", "state=DRAFT&state=all", "other=x", "limit=bad", "limit=1;state=DRAFT"} {
 		u := &url.URL{RawQuery: raw}
 		if _, err := parseOrdersQuery(u); !errors.Is(err, command.ErrInvalid) {
 			t.Fatalf("invalid %q accepted: %v", raw, err)

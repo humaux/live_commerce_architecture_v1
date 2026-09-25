@@ -57,6 +57,13 @@ func parseOrdersQuery(u *url.URL) (merchantorders.ListRequest, error) {
 	if u.ForceQuery || len(u.RawQuery) > 4096 {
 		return in, command.ErrInvalid
 	}
+	if u.RawQuery != "" {
+		for _, field := range strings.Split(u.RawQuery, "&") {
+			if field == "" || !strings.Contains(field, "=") {
+				return in, command.ErrInvalid
+			}
+		}
+	}
 	values, err := url.ParseQuery(u.RawQuery)
 	if err != nil {
 		return in, command.ErrInvalid
