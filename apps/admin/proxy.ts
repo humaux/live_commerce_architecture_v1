@@ -4,10 +4,42 @@ import {
   localizedPath,
   resolveLocale,
 } from "@live-commerce/i18n";
+import { validOrdersQuery } from "./lib/orders-request";
 
-// Routing preference only. This is not authentication and never selects a tenant.
+const uuid = "[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}";
+const orderPath = new RegExp(`^/api/stores/${uuid}/orders(?:/${uuid})?$`);
+
+// Guard raw order query syntax before Next normalizes it; auth stays in the route/Go.
+// Other requests still receive only the existing locale routing preference.
 export function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
+  if (path.startsWith("/api/")) {
+    let decoded: string;
+    try {
+      decoded = decodeURIComponent(path);
+    } catch {
+      return NextResponse.next();
+    }
+    if (orderPath.test(decoded) && request.method === "GET") {
+      if (!validOrdersQuery(request.url, !decoded.endsWith("/orders"))) {
+        const requestID = crypto.randomUUID().replaceAll("-", "");
+        return NextResponse.json(
+          {
+            code: "invalid_request",
+            message: "Invalid request.",
+            request_id: requestID,
+            retryable: false,
+            details: {},
+          },
+          {
+            status: 422,
+            headers: { "Cache-Control": "no-store", "X-Request-ID": requestID },
+          },
+        );
+      }
+    }
+    return NextResponse.next();
+  }
   const locale = resolveLocale({
     pathname: path,
     preference: request.cookies.get("commerce_locale")?.value,
@@ -36,5 +68,8 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next|demo-assets|favicon.ico|robots.txt).*)"],
+  matcher: [
+    "/((?!api|_next|demo-assets|favicon.ico|robots.txt).*)",
+    "/api/:path*",
+  ],
 };
