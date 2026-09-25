@@ -459,13 +459,12 @@ func TestBuyerPaymentQueryBudgetDurabilityAndNoSend(t *testing.T) {
 			var calls atomic.Int32
 			opts := payments.DefaultQueryWorkerOptions()
 			opts.MockTransport = pqTransport(func(*http.Request) (*http.Response, error) { calls.Add(1); return nil, errors.New("must_not_query") })
-			client, queue := pqStartWorker(t, q, opts)
+			pqStartWorker(t, q, opts)
 			pqAwait(t, q, q.result.JobID, "payment_query_budget_exhausted", "cancelled")
-			job, e := client.Insert(context.Background(), pqArgs{OperationID: q.result.OperationID, Version: 1}, &river.InsertOpts{Queue: queue})
-			if e != nil {
-				t.Fatal(e)
-			}
-			pqAwait(t, q, job.Job.ID, "payment_query_budget_exhausted", "cancelled")
+			// Owner-only redelivery of the same linked job: commit-time routing now
+			// rejects a second orphan job ID before the worker could see it.
+			mustExec(t, q.f.owner, `UPDATE river.river_job SET state='available',finalized_at=NULL,scheduled_at=clock_timestamp() WHERE id=$1`, q.result.JobID)
+			pqAwait(t, q, q.result.JobID, "payment_query_budget_exhausted", "cancelled")
 			if calls.Load() != 0 || q.reportCount(t) != 0 {
 				t.Fatal("budget retry queried provider")
 			}
@@ -648,16 +647,16 @@ func TestBuyerPaymentQueryCrossAttemptTokenAndMerchantJob(t *testing.T) {
 	var calls atomic.Int32
 	opts := payments.DefaultQueryWorkerOptions()
 	opts.MockTransport = pqTransport(func(*http.Request) (*http.Response, error) { calls.Add(1); return nil, errors.New("must_not_query") })
-	client, queue := pqStartWorker(t, q, opts)
-	job, e := client.Insert(context.Background(), pqArgs{OperationID: op.OperationID, Version: 1}, &river.InsertOpts{Queue: queue})
-	if e != nil {
-		t.Fatal(e)
-	}
+	// Corrupt an admitted job only through the isolated fixture owner. The
+	// deferred insert fence independently rejects new unlinked merchant jobs.
+	mustExec(t, q.f.owner, `UPDATE river.river_job SET args=jsonb_build_object('operation_id',$2::text,'version',1) WHERE id=$1`, q.result.JobID, op.OperationID)
+	pqStartWorker(t, q, opts)
+	var e error
 	deadline := time.Now().Add(5 * time.Second)
 	cancelled := false
 	for time.Now().Before(deadline) {
 		var state string
-		if e = f.base.owner.QueryRow(context.Background(), `SELECT state FROM river.river_job WHERE id=$1`, job.Job.ID).Scan(&state); e != nil {
+		if e = f.base.owner.QueryRow(context.Background(), `SELECT state FROM river.river_job WHERE id=$1`, q.result.JobID).Scan(&state); e != nil {
 			t.Fatal(e)
 		}
 		if state == "cancelled" {
