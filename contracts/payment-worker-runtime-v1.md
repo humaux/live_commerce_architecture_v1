@@ -1,25 +1,45 @@
 # Payment worker runtime v1
 
-Draft 2026-09-25 on accepted `68f27ad`. This joins the existing payment query and
+Design 2026-09-25 on accepted `68f27ad`. This joins the existing payment query and
 capture workers to a separately deployable process. It does not approve a provider,
 open merchant payment methods, add callback financial authority or replace River.
 
 ## Queue ownership and rolling upgrade
 
-Use the fixed queue `payment_v1` for exactly `payment_query_v1` and
-`payment_reconcile_v1`. Keep private job arguments and existing atomic inserts.
-Both producers explicitly set that queue through one shared constant, without
+Use fixed queues `payment_mock_v1`, `payment_sandbox_v1`, `payment_live_v1` for
+exactly `payment_query_v1` and `payment_reconcile_v1`, selected by the immutable
+attempt execution profile, never job-supplied environment. A single queue is
+unsafe: QueryWorker claims before checking profile, so a wrong-profile consumer
+can exhaust another attempt's lease/generation budget. Keep private job arguments
+and existing atomic inserts. Both producers explicitly set their profile queue
+through one shared mapping, without
 changing scheduled time, attempts, receipts or idempotency. No configurable queue
 name, generic dispatcher, second ledger or new dependency.
 
-Old binaries may still insert to `default` during rollout. A narrowly scoped
-BEFORE INSERT trigger on `river.river_job` routes these two kinds to `payment_v1`
-and rejects any other kind explicitly targeting that reserved queue. It does not
-validate payment truth, alter payload/state or route unrelated jobs. Reject
+Old binaries may still insert to `default` during rollout, before the attempt
+exists. A DEFERRABLE INITIALLY DEFERRED AFTER INSERT constraint trigger on
+`river.river_job` resolves exact attempt/QUERY-observation linkage at transaction
+commit, routes these two kinds to the frozen profile queue, and rejects any other
+kind targeting a reserved payment queue. The job is invisible to other sessions
+until routing and domain writes commit together. Re-read the current inserted row
+by ID; reject changed kind/args or missing linkage, rather than relying on stale
+NEW values. This is routing evidence, not proof of payment. No payload/state
+changes. Reject payment inserts naming any queue except default or the correct
+profile queue. Owner-only test relocation after insertion stays possible. Reject
 non-null unique keys for routed payment inserts: existing producers are nonunique,
 and a key computed using another queue must not silently retain different meaning.
 No UPDATE trigger: normal River lifecycle updates remain unchanged. A privileged
 operator changing routing is outside the buyer/merchant authority boundary.
+
+Reuse the existing NOLOGIN commerce_integration_writer as SECURITY DEFINER owner,
+with fixed pg_catalog search_path, fully qualified names, no PUBLIC execute and
+only additional UPDATE(queue) privilege. It already has narrow frozen-attempt
+and observation SELECT policies. Do not grant caller access to payment records.
+`integration.payment_queue_ready()` is a worker-executable, boolean-only startup
+audit of trigger timing/enabled state and active job linkage/routing across all
+three profiles; it returns no credentials, IDs or reports. Private route helpers
+are not executable by runtime logins. Ordinary deferred constraints must remain
+enabled; forcing early validation fails closed if domain rows do not exist yet.
 
 River tables do not exist during the current business migration phase. Add a
 checksummed `post_river/0001_payment_queue.sql` phase AFTER upstream River migrations,
@@ -35,7 +55,7 @@ running, uses an unexpected queue, has a unique key, or lacks exact durable
 linkage. Query linkage is the immutable attempt job_id and exact operation_id /
 version args; reconcile linkage is an authenticated QUERY observation with exact
 attempt_id / report_hash / version args. Reject foreign kinds in the reserved
-queue. Move only default-queue payment jobs in available, pending, scheduled or
+queues. Move only default-queue payment jobs in available, pending, scheduled or
 retryable state. Preserve all columns except queue. Terminal historical jobs and
 all unrelated jobs remain byte-for-byte unchanged. No runtime repair/backfill.
 
@@ -60,10 +80,11 @@ notification names its originally requested default queue.
   other inappropriate credentials through the existing role gate. No API/hosted
   pool fallback and no schema migration privilege in the process.
 - Before starting River, verify the expected routing trigger is installed and
-  enabled, no active payment job is outside payment_v1, and no foreign kind is in
-  that queue. Fail closed before consumption; do not silently move/delete jobs.
+  enabled and initially deferred, each active payment job matches its frozen
+  profile queue, and no foreign kind is in a reserved queue. Other valid profiles
+  may coexist. Fail closed before consumption; do not silently move/delete jobs.
 - A small shared payment-client assembly function registers the existing query
-  and capture workers, one fixed queue, bounded workers and the existing defaults.
+  and capture workers, one fixed profile queue, bounded workers and existing defaults.
   Tests may inject the existing signed MOCK query transport through the existing
   QueryWorkerOptions seam; production CLI cannot configure this seam.
 - SIGINT/SIGTERM stops fetching, waits a bounded 15s for work, then uses River's
@@ -88,7 +109,10 @@ PW02: actual PG fresh and upgrade migrations, repeated application/checksum and
 unknown-version rejection; causal running-job and malformed/orphan/unique-key
 rollback; exact valid legacy job transfer and immutable fields; unrelated rows
 unchanged. Old-style default inserts route after migration; no unknown kind can
-be inserted into payment_v1. Preserve normal non-payment River behavior.
+be inserted into a reserved queue. A transaction inserting the job before its
+attempt must commit and route correctly; a concurrently active different profile
+must not be claimed by this consumer or lose operation generations. Preserve
+normal non-payment River behavior.
 
 PW03: actual River + PG signed MOCK query -> persisted observation + reconcile
 job -> capture/order/stock, at least two tenants; duplicate/restart/idempotency;
@@ -107,3 +131,6 @@ checksums, dependency/lifecycle notes and retained limitations. T11 remains open
 Notification intake/ACK is a separate contract: official ACK/retry behavior and
 safe historical candidate selection are not established. No affirmative callback
 ACK or direct callback-to-financial-fact shortcut is added here.
+
+References: PostgreSQL 18 [constraint trigger timing](https://www.postgresql.org/docs/18/sql-createtrigger.html)
+and [SECURITY DEFINER safety](https://www.postgresql.org/docs/18/sql-createfunction.html).
