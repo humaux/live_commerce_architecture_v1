@@ -626,13 +626,21 @@
       "independent_review": "SQL782c9306-446b-46c6-a6b4-18e3dc99e7d0; startupP1closure98d20fa2-d6e4-44d7-8eef-7c40dd767131; finalsource/test01972c3e-9f4a-4826-af77-234a6182c610 no remainingP0/P1/P2 in boundedchange.",
       "not_ready": "Only isolated payment queues/runtime accepted. Expiry/default external-operation worker, official Notify HTTP/ACK, trusted qualification, merchant enablement, realprovider sandbox/live, recovery SLO, observability and production rollout remain open. Test lease aging and1sMOCKretry do not prove production wallclock recovery."
     },
+    "checkout_expiry_runtime": {
+      "tested_tree": "5cea8b91963e6c519d6a8e4621fe544389e63992",
+      "status": "PASS_BOUNDED_LOCAL_RUNTIME",
+      "evidence": "docs/implementation/2026-09-25-expiry-worker-acceptance.md",
+      "aggregate": "444 top-level PASS/0FAIL/0SKIP actual PG18/race/vet274.541s exit0. Expiry-focused9 tests53.271s, corrected payment-worker8 including childhelper44.108s. Node55/strictTS and actualNext-Go-PG browser11payment+23order cases pass. Fixed expiry queue, exact deferred admission, old producers, two-tenant replay, causal payment race, actual SIGTERM/SIGKILL rescue. No provider traffic or production changes.",
+      "independent_review": "Final d6a80595-844a-4dc5-8e04-c27c99f80860 source/test/log no openP0/P1/P2; expiry causal review0563015a-b497-4c58-be39-3850ffc709fe; payment rescue correction98c52acb-b582-4e80-8b00-66037d3296ce.",
+      "not_ready": "Only due DRAFT/HELD release, not uncertain-payment cancellation. River global scheduling can touch other queue states without consuming them. Test lease aging is not wallclock recovery SLA; terminal-failure reconciliation, capacity/alerts, external-operation runtime, realprovider and production deployment remain open."
+    },
     "merchant_settings_wizard": {
       "status": "PASS_BOUNDED_LOCAL_WIZARD",
       "code_baseline": "1a5c64b",
       "evidence": "docs/implementation/2026-09-24-merchant-settings-wizard-acceptance.md",
       "scope": "A four-step UI, account registration, market/method/service discovery, explicit pricing and manual delivery; disabled payment drafts only. Full provider acceptance remains NOT_RUN."
     },
-    "remaining": "订单到期专用运行入口与巡检、正式门市目录/地图回调、第三方真实准入、通知HTTP/ACK/收件与退款对账、provider sandbox/live及完整G03/G05仍待实现或验收。B商品直购/订单历史/付款页、账户配送支付A向导及独立付款worker已有分层本地验收；当前433后端/55Node/11付款浏览器回归不等于真实PSP或部署。付款任务已按冻结环境隔离并支持旧默认队列提交时路由；下一到期worker同样不能用局部消费者领取共享default中的外部操作。过期或丢失交付不能自动新建支付或释放不确定库存。尚未证明真实供应商、实体手机、中央返回域名DNS/TLS及运维恢复SLO；商家启用仍拒绝，查询成功不等于收到资金，内部预留不等于实际运输。",
+    "remaining": "订单到期失败巡检、正式门市目录/地图回调、第三方真实准入、通知HTTP/ACK/收件与退款对账、provider sandbox/live及完整G03/G05仍待实现或验收。B商品直购/订单历史/付款页、账户配送支付A向导及独立付款/到期worker已有分层本地验收；当前444后端/55Node/11付款及23订单浏览器回归不等于真实PSP或部署。两类worker消费固定专用队列并支持旧生产者提交时路由，不领取共享default中的外部操作；River全局调度维护不等于跨队列业务消费。过期或丢失交付不能自动新建支付或释放不确定库存。尚未证明真实供应商、实体手机、中央返回域名DNS/TLS及运维恢复SLO；商家启用仍拒绝，查询成功不等于收到资金，内部预留不等于实际运输。",
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
   {

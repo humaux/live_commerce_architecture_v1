@@ -2,7 +2,7 @@
 
 范围仅是已有 DRAFT／HELD 订单到期后的安全释放。复用原
 `checkout.ExpiryWorker` → `checkout.expire_held`，不是新的库存写入或付款超时引擎。
-验收依据 [EW01–05 合同](../../contracts/checkout-expiry-runtime-v1.md)及单独验收记录；
+验收依据 [EW01–05 合同](../../contracts/checkout-expiry-runtime-v1.md)及[局部验收记录](2026-09-25-expiry-worker-acceptance.md)；
 本文不代表已在客户生产部署。客户现有平台、直播与订单不能被迁移测试影响。
 
 ## 启动和依赖

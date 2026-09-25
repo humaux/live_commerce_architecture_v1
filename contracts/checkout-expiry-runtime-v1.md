@@ -3,8 +3,10 @@
 Design on accepted `04ec2f7`, 2026-09-25. This connects the existing
 `checkout.ExpiryWorker` to a separately deployable local-only process. It does not
 add a new stock writer, payment timeout decision, sweeper or provider adapter.
-Contract frozen after independent design preflight (no P0/P1). Implementation
-and gates below remain NOT_RUN until independently verified.
+Contract frozen after independent design preflight (no P0/P1). EW01–EW05 now have
+bounded local evidence at `5cea8b9`: [acceptance record](../docs/implementation/2026-09-25-expiry-worker-acceptance.md).
+Actual PG/River/race/process and browser regression passed; this is not real
+provider, production deployment or recovery-SLO acceptance.
 
 ## Fixed queue and old producers
 
