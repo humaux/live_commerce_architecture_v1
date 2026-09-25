@@ -629,12 +629,14 @@
       "not_ready": "Only isolated payment queues/runtime accepted. Expiry/default external-operation worker, official Notify HTTP/ACK, trusted qualification, merchant enablement, realprovider sandbox/live, recovery SLO, observability and production rollout remain open. Test lease aging and1sMOCKretry do not prove production wallclock recovery."
     },
     "merchant_order_reads": {
-      "source_tree": "3b8fb92",
-      "status": "IMPLEMENTED_PENDING_FINAL_GATES",
+      "tested_tree": "25d43035f55497a782499b6fc745fa63faec9dfa",
+      "status": "PASS_BOUNDED_LOCAL_MERCHANT_READ",
       "contract": "contracts/merchant-orders-v1.md",
       "runbook": "docs/implementation/merchant-order-reads.md",
+      "evidence": "docs/implementation/2026-09-25-merchant-orders-acceptance.md",
+      "aggregate": "Final root458 top-levelPASS/0FAIL/0SKIP actualPG18/race/vet263.909s exit0; focused7 top-level/12 observed-blocking auth cases/6 financial-state cases PASS7.589s. Final log SHA256 ae7075f1b871c388b3fdb74bfe47acad13f4fcc160082a2708e8d5fa56645b61. HTTP handler tests are realPG httptest, not browser acceptance; no provider or production calls.",
       "scope": "Merchant-only orders:read list/detail, bounded coherent snapshot, private projection, fresh post-wait authorization, frozen history and scoped keyset cursor. No raw runtime checkout grants, no existing-member backfill.",
-      "independent_review": "Frozen contract9ed17103-ff27-43a3-9c4d-d593babd58dc; SQLca89aa52-ffe6-43aa-b8be-b3400aaa929f noP0/P1. Final Go/test and root full gates pending.",
+      "independent_review": "Final3aa55596-f0eb-4bba-bbd3-21d265e6cdae source/test/log no openP0/P1/P2. Frozen contract9ed17103-ff27-43a3-9c4d-d593babd58dc; SQLca89aa52-ffe6-43aa-b8be-b3400aaa929f; Go5a982c61-469d-47d1-8d59-f50752451ea5. Three test P2 findings closed at e5f399f; exact legacy onboarding grant expectation correction25d4303 reviewed without relaxing equality.",
       "not_ready": "Merchant UI, shipment/labels/refunds/export, provider integration and production rollout are not included. Atomic index/constraint migration needs production lock-budget review and approval."
     },
     "checkout_expiry_runtime": {
@@ -651,7 +653,7 @@
       "evidence": "docs/implementation/2026-09-24-merchant-settings-wizard-acceptance.md",
       "scope": "A four-step UI, account registration, market/method/service discovery, explicit pricing and manual delivery; disabled payment drafts only. Full provider acceptance remains NOT_RUN."
     },
-    "remaining": "订单到期失败巡检、正式门市目录/地图回调、第三方真实准入、通知HTTP/ACK/收件与退款对账、provider sandbox/live及完整G03/G05仍待实现或验收。B商品直购/订单历史/付款页、账户配送支付A向导及独立付款/到期worker已有分层本地验收；当前444后端/55Node/11付款及23订单浏览器回归不等于真实PSP或部署。两类worker消费固定专用队列并支持旧生产者提交时路由，不领取共享default中的外部操作；River全局调度维护不等于跨队列业务消费。过期或丢失交付不能自动新建支付或释放不确定库存。尚未证明真实供应商、实体手机、中央返回域名DNS/TLS及运维恢复SLO；商家启用仍拒绝，查询成功不等于收到资金，内部预留不等于实际运输。",
+    "remaining": "商家订单UI/履约、订单到期失败巡检、正式门市目录/地图回调、第三方真实准入、通知HTTP/ACK/收件与退款对账、provider sandbox/live及完整G03/G05仍待实现或验收。B商品直购/订单历史/付款页、账户配送支付A向导、独立付款/到期worker及商家订单读取后端已有分层本地验收；当前458后端回归与此前55Node/11付款及23订单浏览器证据不等于真实PSP或部署。本轮仅后端变更，没有新的商家UI浏览器验收。两类worker消费固定专用队列并支持旧生产者提交时路由，不领取共享default中的外部操作；River全局调度维护不等于跨队列业务消费。过期或丢失交付不能自动新建支付或释放不确定库存。尚未证明真实供应商、实体手机、中央返回域名DNS/TLS及运维恢复SLO；商家启用仍拒绝，查询成功不等于收到资金，内部预留不等于实际运输。",
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
   {

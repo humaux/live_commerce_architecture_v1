@@ -40,7 +40,9 @@ pgx 显式事务和现有 `commerce_auth`，未增加依赖。`internal/merchant
 `identity.read_merchant_orders` 读取原 checkout 快照和付款事实；不调用供应商、不
 创建任务或新交易台账。0027 的列级授权、单语句数据快照、等待后的授权复查和
 原商家成员不自动加权必须随 PG/pgx 升级重验，见
-[商家订单读取与部署边界](merchant-order-reads.md)。该增量的独立门禁尚在进行中。
+[商家订单读取与部署边界](merchant-order-reads.md)。该增量已通过
+[MOR01–06 本地后端验收](2026-09-25-merchant-orders-acceptance.md)：最终 458 项
+PG/race/vet 回归、跨店隔离和等待后权限复验；不含商家 UI 或正式部署。
 
 ## 独立付款 worker 复用关系
 

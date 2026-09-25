@@ -2,8 +2,9 @@
 
 Frozen after independent preflight of `a8aba0c`, 2026-09-25 (research
 `dee6530d-791e-4647-b320-57f420413b6f`, decision
-`9ed17103-ff27-43a3-9c4d-d593babd58dc`). Not implemented or accepted yet. Next T11
-delivery is an authenticated merchant list/detail read, not shipment creation,
+`9ed17103-ff27-43a3-9c4d-d593babd58dc`). Implemented and accepted as a bounded
+local backend increment at `25d4303`; [MOR01–06 evidence](../docs/implementation/2026-09-25-merchant-orders-acceptance.md).
+This delivery is an authenticated merchant list/detail read, not shipment creation,
 manual payment confirmation, refunds, or a replacement for buyer capability APIs.
 The admin UI remains a subsequent consumer of this frozen transport contract.
 

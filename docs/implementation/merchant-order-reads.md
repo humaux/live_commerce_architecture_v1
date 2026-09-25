@@ -1,9 +1,10 @@
 # Merchant order reads: authority and rollout
 
-Implementation in progress against the frozen
-[merchant order contract](../../contracts/merchant-orders-v1.md). This document
-describes the boundary, not an acceptance claim. MOR01–06 evidence is required
-before rollout. Merchant UI and shipment operations are separate deliveries.
+Implemented against the frozen
+[merchant order contract](../../contracts/merchant-orders-v1.md), with bounded
+local [MOR01–06 acceptance](2026-09-25-merchant-orders-acceptance.md) at `25d4303`.
+This runbook does not authorize production rollout. Merchant UI and shipment
+operations are separate deliveries.
 
 ## Call chain and stored data
 
