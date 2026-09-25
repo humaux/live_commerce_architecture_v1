@@ -501,13 +501,13 @@ func TestBuyerPaymentWorkerProcessSignalAndPoolCleanup(t *testing.T) {
 	if err := cmd.Start(); err != nil {
 		t.Fatal(err)
 	}
-	done := make(chan error, 1)
-	go func() { done <- cmd.Wait() }()
 	ready := make(chan struct{}, 1)
+	readerDone := make(chan struct{})
 	go func() {
+		defer close(readerDone)
 		scan := bufio.NewScanner(stderr)
 		for scan.Scan() {
-			if strings.Contains(scan.Text(), "msg=payment_worker_ready") {
+			if strings.HasSuffix(scan.Text(), " INFO payment_worker_ready") {
 				select {
 				case ready <- struct{}{}:
 				default:
@@ -515,20 +515,22 @@ func TestBuyerPaymentWorkerProcessSignalAndPoolCleanup(t *testing.T) {
 			}
 		}
 	}()
-	running := true
+	waited := false
 	defer func() {
-		if running {
+		if !waited {
 			_ = cmd.Process.Kill()
 			select {
-			case <-done:
+			case <-readerDone:
 			case <-time.After(3 * time.Second):
 			}
+			_ = cmd.Wait()
 		}
 	}()
 	select {
 	case <-ready:
-	case err := <-done:
-		running = false
+	case <-readerDone:
+		err := cmd.Wait()
+		waited = true
 		t.Fatalf("payment-worker exited before ready marker: %v", err)
 	case <-time.After(8 * time.Second):
 		t.Fatal("payment-worker did not report ready after River start")
@@ -556,8 +558,9 @@ func TestBuyerPaymentWorkerProcessSignalAndPoolCleanup(t *testing.T) {
 		t.Fatal(err)
 	}
 	select {
-	case err := <-done:
-		running = false
+	case <-readerDone:
+		err := cmd.Wait()
+		waited = true
 		if err != nil {
 			t.Fatalf("SIGTERM worker exit: %v", err)
 		}
