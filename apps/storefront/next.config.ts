@@ -14,6 +14,14 @@ const config: NextConfig = {
         headers: [
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
+        ],
+      },
+      {
+        // Next configuration headers override Route Handler headers. The fixed
+        // neutral return supplies its own default-src/form-action none + style
+        // hash and no-referrer, so the shopping policy must not match that path.
+        source: "/((?!payment/return/?$).*)",
+        headers: [
           { key: "Referrer-Policy", value: "same-origin" },
           {
             key: "Content-Security-Policy",
