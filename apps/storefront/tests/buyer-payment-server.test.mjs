@@ -130,6 +130,8 @@ test("BPT02 payment routes reject untrusted path, context, headers, key and body
     const input = { body: '{"method_code":"payuni_credit","method_version":1,"locale":"en"}', idempotencyKey: key };
     const cases = [
       request("GET", `${path}?x=1`, auth),
+      request("GET", `${path}#fragment`, auth),
+      request("POST", `${path}`, auth),
       request("POST", `${path}/prepare?x=1`, { ...auth, ...input }),
       request("POST", `${path}/handoff?x=1`, auth),
       request("POST", `orders/${orderID.toUpperCase()}/payment/handoff`, auth),
@@ -145,6 +147,8 @@ test("BPT02 payment routes reject untrusted path, context, headers, key and body
       request("POST", `${path}/handoff`, { ...auth, extra: { Authorization: "Bearer attacker" } }),
       request("POST", `${path}/handoff`, { ...auth, extra: { "X-Commerce-Buyer-BFF-Key": "attacker" } }),
       request("POST", `${path}/handoff`, { ...auth, extra: { "X-Store-ID": orderID } }),
+      request("POST", `${path}/handoff`, { ...auth, extra: { "X-Tenant-ID": orderID } }),
+      request("POST", `${path}/handoff`, { ...auth, extra: { "X-Commerce-Storefront-Origin": origin } }),
     ];
     for (const [index, candidate] of cases.entries()) {
       const rejected = await handleBuyerRequest(candidate);
@@ -157,6 +161,7 @@ test("BPT02 payment routes reject untrusted path, context, headers, key and body
       '{"method_code":"payuni_credit","method_version":1,"locale":"en","locale":"zh-TW"}',
       '{"method_code":"payuni_credit","method_version":1,"locale":"en","extra":1}',
       '{"method_code":{"nested":1},"method_version":1,"locale":"en"}',
+      '{"method_code":{"nested":1,"nested":2},"method_version":1,"locale":"en"}',
       '{"method_code":"payuni_atm","method_version":1,"locale":"en"}',
       '{"method_code":"payuni_credit","method_version":0,"locale":"en"}',
       '{"method_code":"payuni_credit","method_version":1,"locale":"fr"}',
@@ -172,6 +177,45 @@ test("BPT02 payment routes reject untrusted path, context, headers, key and body
     const oversized = await payment("POST", "/prepare", auth, { body: "x".repeat(65537), idempotencyKey: key });
     assert.equal(oversized.status, 422);
     assert.equal(calls, 0);
+    const brokenInput = new Request(`${origin}/api/buyer/${path}/prepare`, {
+      method: "POST",
+      headers: {
+        Host: "shop.example", Origin: origin, Cookie: auth.cookie,
+        "X-Buyer-Context": auth.context, "Idempotency-Key": key,
+        "Content-Type": "application/json",
+      },
+      body: new ReadableStream({ pull() { throw new Error("synthetic input read error"); } }),
+      duplex: "half",
+    });
+    assert.equal((await handleBuyerRequest(brokenInput)).status, 503);
+    assert.equal(calls, 0);
+    const brokenHandoff = new Request(`${origin}/api/buyer/${path}/handoff`, {
+      method: "POST",
+      headers: { Host: "shop.example", Origin: origin, Cookie: auth.cookie, "X-Buyer-Context": auth.context },
+      body: new ReadableStream({ pull() { throw new Error("synthetic no-body read error"); } }),
+      duplex: "half",
+    });
+    await safeFailure(await handleBuyerRequest(brokenHandoff), 503);
+    assert.equal(calls, 0);
+    const duplicateCookie = request("POST", `${path}/handoff`, auth);
+    duplicateCookie.headers.append("Cookie", auth.cookie);
+    const duplicateKey = request("POST", `${path}/prepare`, { ...auth, ...input });
+    duplicateKey.headers.append("Idempotency-Key", key);
+    for (const candidate of [duplicateCookie, duplicateKey]) {
+      const rejected = await handleBuyerRequest(candidate);
+      assert.ok(rejected.status >= 400);
+      assert.equal(calls, 0);
+    }
+    const clock = Date.now;
+    Date.now = () => clock() + 3601_000;
+    try {
+      const expired = await payment("POST", "/handoff", auth);
+      assert.equal(expired.status, 401);
+      assert.equal((await expired.json()).retryable, false);
+      assert.equal(calls, 0);
+    } finally {
+      Date.now = clock;
+    }
   } finally {
     globalThis.fetch = old;
   }
@@ -207,8 +251,11 @@ test("BPT03 hostile upstream success is sanitized, never returned as payment dat
       new Response(duplicate, { status: 200, headers: { "Content-Type": "application/json" } }),
       new Response(Buffer.from([0xc3, 0x28]), { status: 200, headers: { "Content-Type": "application/json" } }),
       new Response(JSON.stringify(handoff), { status: 200, headers: { "Content-Type": "text/html" } }),
+      new Response(JSON.stringify(handoff), { status: 200, headers: { "Content-Type": "application/json; charset=iso-8859-1" } }),
+      new Response(JSON.stringify(handoff), { status: 200, headers: { "Content-Type": "application/json", "Content-Encoding": "gzip" } }),
       new Response(JSON.stringify(handoff), { status: 200, headers: { "Content-Type": "application/json", "Content-Length": "1048577" } }),
       new Response("x".repeat(1048577), { status: 200, headers: { "Content-Type": "application/json" } }),
+      new Response(new ReadableStream({ pull() { throw new Error("upstream-secret-marker"); } }), { status: 200, headers: { "Content-Type": "application/json" } }),
       new Response(JSON.stringify(handoff), { status: 201, headers: { "Content-Type": "application/json" } }),
       new Response(null, { status: 204 }),
     ]) {
