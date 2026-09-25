@@ -102,7 +102,12 @@ without release; stale generation/payment pending/confirmed cannot release.
 Repeat/redelivery/restart after committed expiry is idempotent. Concurrent payment
 start versus expiry is serializable through existing order locks: either expired
 with no payment attempt, or payment pending with stock retained, never both.
-Actual payment/default external-operation jobs remain unclaimed and unchanged.
+Actual payment/default external-operation jobs remain unclaimed/unexecuted:
+their queue, kind, args and domain facts stay unchanged, with no attempt started.
+River v0.40's leader JobScheduler is global (JobSchedule has no queue filter),
+so normal maintenance may promote a due job in another queue from scheduled to
+available. Queue isolation is consumption isolation, not a ban on River's global
+maintenance. Tests must distinguish that transition from an expiry claim.
 
 EW04: real enabled binary readiness -> SIGTERM -> exit0/no remaining pool;
 real killed process with outstanding work recovers via River lease rescue without

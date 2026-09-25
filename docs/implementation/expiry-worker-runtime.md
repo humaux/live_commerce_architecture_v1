@@ -10,6 +10,9 @@
 构建：`go build -o /受控输出目录/expiry-worker ./cmd/expiry-worker`。
 进程没有 HTTP 端口，不读取商家凭据、付款 keyring 或供应商地址。仅注册一种
 到期任务，消费固定 `checkout_expiry_v1` 队列，不消费 `default` 或付款队列。
+River 的 leader 调度维护是全局的，可能把其他队列已到期任务从 scheduled
+置为 available；这不是领取或执行业务任务。队列隔离不等于该进程对其他
+River 行完全零维护写入，不能据此宣称整行永远不变。
 
 | 环境变量 | 规则 |
 | --- | --- |
