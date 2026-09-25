@@ -36,11 +36,22 @@ func loadAccountConfig(getenv func(string) string, identityEnabled bool, addr st
 	if !identityEnabled || !privateIdentityAddress(addr) {
 		return config, errAccountConfig
 	}
+	config.keys, err = loadAccountKeys(getenv)
+	if err != nil {
+		return accountConfig{}, errAccountConfig
+	}
+	config.enabled = true
+	return config, nil
+}
+
+// Both merchant administration and hosted signing must read the same historical
+// keyring format. This parser grants no merchant HTTP authority by itself.
+func loadAccountKeys(getenv func(string) string) (*accounts.Keyring, error) {
 	activeID := getenv("COMMERCE_ACCOUNT_ACTIVE_KEY_ID")
 	rawKeys := getenv("COMMERCE_ACCOUNT_KEYS_JSON")
 	rawReplay := getenv("COMMERCE_ACCOUNT_REPLAY_KEY")
 	if len(rawKeys) == 0 || len(rawKeys) > 8192 {
-		return config, errAccountConfig
+		return nil, errAccountConfig
 	}
 	var entries []struct {
 		ID        string `json:"id"`
@@ -49,33 +60,32 @@ func loadAccountConfig(getenv func(string) string, identityEnabled bool, addr st
 	decoder := json.NewDecoder(bytes.NewBufferString(rawKeys))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&entries); err != nil {
-		return config, errAccountConfig
+		return nil, errAccountConfig
 	}
 	var trailing any
 	if err := decoder.Decode(&trailing); err != io.EOF || len(entries) < 1 || len(entries) > 16 {
-		return config, errAccountConfig
+		return nil, errAccountConfig
 	}
 	keys := make(map[string][]byte, len(entries))
 	for _, entry := range entries {
 		if _, duplicate := keys[entry.ID]; duplicate {
-			return config, errAccountConfig
+			return nil, errAccountConfig
 		}
 		key, ok := canonicalAccountKey(entry.KeyBase64)
 		if !ok {
-			return config, errAccountConfig
+			return nil, errAccountConfig
 		}
 		keys[entry.ID] = key
 	}
 	replay, ok := canonicalAccountKey(rawReplay)
 	if !ok {
-		return config, errAccountConfig
+		return nil, errAccountConfig
 	}
-	config.keys, err = accounts.NewKeyring(activeID, keys, replay)
+	keyring, err := accounts.NewKeyring(activeID, keys, replay)
 	if err != nil {
-		return accountConfig{}, errAccountConfig
+		return nil, errAccountConfig
 	}
-	config.enabled = true
-	return config, nil
+	return keyring, nil
 }
 
 func canonicalAccountKey(raw string) ([]byte, bool) {

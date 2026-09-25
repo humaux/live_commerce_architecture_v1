@@ -40,14 +40,20 @@ type handler struct {
 	issuer   *buyer.Service
 	pool     *pgxpool.Pool
 	checkout *checkout.Service
+	payment  *checkout.HostedPaymentStarter
 	bffKey   string
 }
 
 // New validates both borrowed authorities and builds the private transport.
 // The caller retains ownership of every pool and the checkout service.
-func New(ctx context.Context, issuerPool, buyerPool *pgxpool.Pool, checkoutService *checkout.Service, bffKey string, ttl time.Duration) (http.Handler, error) {
-	if ctx == nil || checkoutService == nil || !canonicalSecret(bffKey) {
+func New(ctx context.Context, issuerPool, buyerPool *pgxpool.Pool, checkoutService *checkout.Service, bffKey string, ttl time.Duration,
+	payment ...*checkout.HostedPaymentStarter) (http.Handler, error) {
+	if ctx == nil || checkoutService == nil || !canonicalSecret(bffKey) || len(payment) > 1 {
 		return nil, command.ErrInvalid
+	}
+	var hosted *checkout.HostedPaymentStarter
+	if len(payment) == 1 {
+		hosted = payment[0]
 	}
 	issuer, err := buyer.New(issuerPool, ttl)
 	if err != nil {
@@ -60,7 +66,8 @@ func New(ctx context.Context, issuerPool, buyerPool *pgxpool.Pool, checkoutServi
 	if err = platform.ValidateBuyerPool(ctx, buyerPool); err != nil {
 		return nil, err
 	}
-	return httperror.Middleware(&handler{resolver: resolver, issuer: issuer, pool: buyerPool, checkout: checkoutService, bffKey: bffKey}), nil
+	return httperror.Middleware(&handler{resolver: resolver, issuer: issuer, pool: buyerPool,
+		checkout: checkoutService, payment: hosted, bffKey: bffKey}), nil
 }
 
 type routeKind uint8
@@ -80,6 +87,9 @@ const (
 	checkoutRoute
 	ordersRoute
 	orderRoute
+	paymentRoute
+	paymentPrepareRoute
+	paymentHandoffRoute
 )
 
 type route struct {
@@ -110,6 +120,16 @@ func matchRoute(path string) route {
 	case "/v1/buyer/orders":
 		return route{kind: ordersRoute}
 	}
+	if rest, ok := strings.CutPrefix(path, "/v1/buyer/orders/"); ok {
+		for _, entry := range []struct {
+			suffix string
+			kind   routeKind
+		}{{"/payment/prepare", paymentPrepareRoute}, {"/payment/handoff", paymentHandoffRoute}, {"/payment", paymentRoute}} {
+			if id, matched := strings.CutSuffix(rest, entry.suffix); matched && id != "" && !strings.Contains(id, "/") {
+				return route{kind: entry.kind, id: id}
+			}
+		}
+	}
 	for _, entry := range []struct {
 		prefix string
 		kind   routeKind
@@ -127,11 +147,13 @@ func allowed(kind routeKind, method string) bool {
 		return method == http.MethodGet || method == http.MethodPost || method == http.MethodDelete
 	case bootstrapRoute, retireRoute:
 		return method == http.MethodPost
-	case catalogRoute, optionsRoute, ordersRoute:
+	case catalogRoute, optionsRoute, ordersRoute, paymentRoute:
 		return method == http.MethodGet
 	case cartRoute:
 		return method == http.MethodGet || method == http.MethodPut
 	case quotesRoute, checkoutRoute:
+		return method == http.MethodPost
+	case paymentPrepareRoute, paymentHandoffRoute:
 		return method == http.MethodPost
 	case destinationRoute:
 		return method == http.MethodGet || method == http.MethodPut
@@ -288,8 +310,10 @@ func keyFor(r *http.Request, noReplayKey bool, write bool) (string, bool) {
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	issue := r.Method == http.MethodPost && r.URL != nil && r.URL.Path == "/v1/buyer/session"
+	handoff := r.URL != nil && strings.HasPrefix(r.URL.Path, "/v1/buyer/orders/") &&
+		strings.HasSuffix(r.URL.Path, "/payment/handoff")
 	fail := func(status int, code string) {
-		if issue {
+		if issue || handoff {
 			httperror.WriteNonRetryable(w, status, code)
 		} else {
 			httperror.Write(w, status, code)
@@ -332,7 +356,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		fail(http.StatusUnprocessableEntity, "invalid_request")
 		return
 	}
-	noReplayKey := issue || selected.kind == bootstrapRoute || selected.kind == retireRoute
+	noReplayKey := issue || selected.kind == bootstrapRoute || selected.kind == retireRoute || selected.kind == paymentHandoffRoute
 	write := r.Method == http.MethodPut || (r.Method == http.MethodPost && !noReplayKey)
 	key, valid := keyFor(r, noReplayKey, write)
 	if !valid {
@@ -373,6 +397,9 @@ type responseError struct {
 func (e responseError) Error() string { return e.code }
 
 func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.Request, selected route, storeID, token, key string) error {
+	if isPaymentRoute(selected.kind) && h.payment == nil {
+		return responseError{http.StatusNotFound, "not_found"}
+	}
 	if selected.kind == sessionRoute && r.Method == http.MethodPost {
 		if err := decodeJSON(r, &struct{}{}); err != nil {
 			return err
@@ -420,7 +447,7 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 		w.WriteHeader(http.StatusNoContent)
 		return nil
 	}
-	if r.Method == http.MethodGet || r.Method == http.MethodDelete {
+	if r.Method == http.MethodGet || r.Method == http.MethodDelete || selected.kind == paymentHandoffRoute {
 		if err := noBody(r); err != nil {
 			return err
 		}
@@ -451,6 +478,8 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 	var out any
 	var err error
 	switch selected.kind {
+	case paymentRoute, paymentPrepareRoute, paymentHandoffRoute:
+		out, err = h.paymentRequest(ctx, r, selected, storeID, token, key)
 	case ordersRoute:
 		var request pagination.Request
 		request, err = ordersRequest(r.URL.RawQuery)
