@@ -3,6 +3,7 @@ package foundation_test
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -21,6 +22,7 @@ import (
 	"github.com/riverqueue/river/rivertype"
 	"livecommerce/internal/buyer"
 	"livecommerce/internal/checkout"
+	"livecommerce/internal/command"
 	"livecommerce/internal/storefront"
 	"livecommerce/migrations"
 )
@@ -549,8 +551,8 @@ func TestBuyerCheckoutExpiryRuntimePaymentStartRace(t *testing.T) {
 				t.Fatal("contending payment start did not settle")
 			}
 			if dueWhileWaiting {
-				if outcome.err == nil || outcome.result.AttemptID != "" {
-					t.Fatalf("expired order admitted payment attempt: %+v %v", outcome.result, outcome.err)
+				if !errors.Is(outcome.err, command.ErrConflict) || outcome.result.AttemptID != "" {
+					t.Fatalf("expired order did not return business conflict: %+v %v", outcome.result, outcome.err)
 				}
 				ewAwait(t, f.owner, p.hold.JobID, "completed")
 				ewAssertOrder(t, p, "CANCELLED", "EXPIRED", 1)
