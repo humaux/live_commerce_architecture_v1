@@ -69,6 +69,11 @@ TWD whole-dollar amount 100..19999900 minor units and configured limits; exact
 payuni merchant account/environment, enabled binding + semantic version/asset,
 current credential-qualified proof observed <= DB now < expiry, non-revoked,
 and exact PROVIDER_MOCK / REAL_SANDBOX / REAL_LIVE profile rules from0016/0025.
+In particular m.connection_id=a.id, q.connection_id=a.id,
+q.credential_version=a.credential_version, q.environment=a.environment,
+q.code=m.code, a.binding_id=b.id, b.provider=a.provider,
+b.external_asset_id=a.binding_asset and b.semantic_version=m.binding_version.
+PROVIDER_MOCK must use SANDBOX (not merely a matching MOCK proof).
 No alternative method is invented when admission fails. View uses DB time, and
 the final capability check may only remove stale time-sensitive options or mark
 an expired unissued handoff expired; it must not renew eligibility/deadlines.
@@ -126,7 +131,9 @@ BPH03 actual private HTTP + PG prepare -> view -> one-shot handoff -> view/repea
 exact keys/projections, original frozen amount, 3 locales, no provider request.
 BPH04 all new routes: early auth/origin/revocation/foreign/path/query/null/unknown
 field/method/key denials, repeated/concurrent handoff returns at most one form;
-every handoff failure nonretryable, including unavailable domain/disabled feature.
+every handoff failure nonretryable, including unavailable domain/disabled feature,
+explicit noBody rejection on POST and early503. Include credential rotation and
+method-to-qualification swap among BPH01's candidate drift cases.
 BPH05 config negative/disabled-not-reading-secrets; exact hosted DSN role and
 key/config assembly; no changes to existing disabled/API routes or account parser.
 BPH06 full real PG/race/vet plus independent source and evidence review; no old
