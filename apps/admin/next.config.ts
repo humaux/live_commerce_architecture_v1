@@ -5,6 +5,8 @@ const config: NextConfig = {
   devIndicators: false, // Do not cover merchant controls in local visual acceptance.
   poweredByHeader: false,
   reactStrictMode: true,
+  // The orders proxy must see raw '?' and percent escapes before Next rewrites URLs.
+  skipProxyUrlNormalize: true,
   output: "standalone",
   transpilePackages: ["@live-commerce/i18n"],
   async headers() {
