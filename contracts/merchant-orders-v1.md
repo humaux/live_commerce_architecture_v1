@@ -34,9 +34,16 @@ fulfillment.payment_work_items; add SELECT policies for this private reader.
 Do not grant commerce_runtime direct checkout schema/table access. The function
 independently verifies token/store/orders:read, matches resolved tenant/store/
 principal against transaction GUCs as text, and rejects non-READ-COMMITTED calls.
-After its data query it resolves access again, checking principal/tenant/revision
-and current validity, so a table-lock wait cannot leak data after revocation or
-expiry. Go also checks RequirePermission against its original Scope after read.
+After its data query, use a direct auth SELECT inside this VOLATILE function at
+READ COMMITTED (fresh internal statement snapshot), checking merchant session,
+principal, tenant/store/membership active, store:read, orders:read and the same
+principal/tenant/revision, with session expiry against `clock_timestamp()`.
+Do NOT reuse `resolve_access` for this final SQL fence: it is STABLE and uses
+`statement_timestamp()`, so a nested second call can retain pre-wait authority.
+Preserve existing distinctions: invalid session/principal -> PT401; invisible or
+inactive scope/store:read -> PT404; missing orders:read or changed revision ->
+PT403. Do not globally change legacy auth behavior in this delivery. Go also
+checks RequirePermission against its original Scope after the read.
 No fabricated Scope/GUC, wrong-store token or raw API header is authority.
 
 Add an index on checkout.orders(tenant_id,store_id,created_at DESC,id DESC).
@@ -114,7 +121,8 @@ Render these strings as text in the future UI; no raw HTML or automatic exports.
    mutable catalog/destination edits. No manual provider-result fabrication.
 5. Real blocked data-query witness (pg_stat_activity/pg_blocking_pids), then
    session expiry/revocation, grant removal, tenant/store/membership disable or
-   revision change before release: final auth rejects without returning data.
+   revision change before release: final fresh SQL auth rejects without returning
+   data, including direct function invocation without the Go final fence.
    Read counts leave orders/attempts/facts/stock/receipts/events/queue unchanged.
 6. Independent source/security and independent PG tests, root repeat focused
    plus full Go/PG/race/vet; docs/dependencies/graph/fixture cleanup. Existing
