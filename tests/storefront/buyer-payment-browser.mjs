@@ -191,12 +191,26 @@ try{
   await page.getByTestId("pay-order").click();await preparePopup;assert.equal(await lostPrepare.result.promise,200);
   await expect(page.getByTestId("payment-error")).toBeVisible();assert.equal((await paymentMarker(page,d)).stage,"prepare");
   assert.equal(paymentCalls(d,"handoff").length,0);
+  const originalCookies=await c.cookies(origin);assert(originalCookies.length>0);
+  const contextAtPrepare=(await paymentMarker(page,d)).context;
+  const changedContext=arm(`/api/buyer/orders/${d}/payment/prepare`,"hold");const stalePopup=page.waitForEvent("popup");
+  await page.getByTestId("pay-order").click();await stalePopup;assert.equal(await changedContext.result.promise,200);
+  await c.clearCookies();const replacement=await c.newPage();await replacement.goto(product);
+  await expect(replacement.locator("#quantity")).toBeEnabled();
+  const replacementSession=await replacement.evaluate(async()=> (await(await fetch("/api/buyer/session",{cache:"no-store"})).json()).context);
+  assert(replacementSession&&replacementSession!==contextAtPrepare);
+  changedContext.release.resolve();
+  await expect(page.getByTestId("order-payment")).toHaveAttribute("aria-busy","false");
+  assert.equal(paymentCalls(d,"handoff").length,0);assert.equal((await paymentMarker(page,d)).stage,"prepare");
+  await replacement.close();await c.clearCookies();await c.addCookies(originalCookies);
+  await page.reload();await expect(page.getByTestId("order-id")).toHaveText(d);await expect(page.getByTestId("pay-order")).toBeVisible();
+  passed("BPU02 committed prepare with replaced buyer context cannot Take; original session can explicitly replay");
   const closedAfterTake=arm(`/api/buyer/orders/${d}/payment/handoff`,"hold");const closedPopup=page.waitForEvent("popup");
   await page.getByTestId("pay-order").click();const closedChild=await closedPopup;assert.equal(await closedAfterTake.result.promise,200);
   await closedChild.close();closedAfterTake.release.resolve();
   await expect(page.getByTestId("payment-error")).toBeVisible();assert.equal((await paymentMarker(page,d)).stage,"handoff_started");
-  const prepareCalls=paymentCalls(d,"prepare");assert.equal(prepareCalls.length,2);
-  assert.equal(prepareCalls[0].key,prepareCalls[1].key);assert.equal(prepareCalls[0].body,prepareCalls[1].body);
+  const prepareCalls=paymentCalls(d,"prepare");assert.equal(prepareCalls.length,3);
+  assert(prepareCalls.every(x=>x.key===prepareCalls[0].key&&x.body===prepareCalls[0].body));
   assert.equal(paymentCalls(d,"handoff").length,1);assert.equal(posts.length,2);
   passed("BPU02 child closed after committed Take cannot release cached form or retry");
 
