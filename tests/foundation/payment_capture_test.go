@@ -587,8 +587,16 @@ func TestBuyerPaymentCaptureForgedRiverJobCancelsWithoutMoney(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	job, e := client.Insert(ctx, pcArgs{q.result.OperationID, strings.Repeat("a", 64), 1}, &river.InsertOpts{Queue: queue})
-	if e != nil {
+	// Begin with valid committed intake, then use fixture-owner corruption to
+	// exercise the worker's defense behind the new commit-time insert fence.
+	if e = q.record(q.claim(t), pqReport(q)); e != nil {
+		t.Fatal(e)
+	}
+	var jobID int64
+	if e = q.f.owner.QueryRow(ctx, `UPDATE river.river_job SET queue=$2,
+		args=jsonb_set(args,'{report_hash}',to_jsonb($3::text))
+		WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1 RETURNING id`,
+		q.result.OperationID, queue, strings.Repeat("a", 64)).Scan(&jobID); e != nil {
 		t.Fatal(e)
 	}
 	if e = client.Start(ctx); e != nil {
@@ -605,11 +613,11 @@ func TestBuyerPaymentCaptureForgedRiverJobCancelsWithoutMoney(t *testing.T) {
 	for time.Now().Before(deadline) {
 		var state string
 		var attempts int
-		if e = q.f.owner.QueryRow(ctx, `SELECT state,attempt FROM river.river_job WHERE id=$1`, job.Job.ID).Scan(&state, &attempts); e != nil {
+		if e = q.f.owner.QueryRow(ctx, `SELECT state,attempt FROM river.river_job WHERE id=$1`, jobID).Scan(&state, &attempts); e != nil {
 			t.Fatal(e)
 		}
 		if state == "cancelled" {
-			if attempts != 1 || pcCount(t, q, "payments.facts", "") != 0 || q.reportCount(t) != 0 {
+			if attempts != 1 || pcCount(t, q, "payments.facts", "") != 0 || q.reportCount(t) != 1 {
 				t.Fatal("forged job retried or wrote money")
 			}
 			q.pending(t)
