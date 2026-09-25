@@ -371,6 +371,11 @@ export async function payOrder({
       await fence();
       persistMarker(started, marker);
       await fence();
+      if (
+        JSON.stringify(pendingOrderPayment(context, order.order_id)) !==
+        JSON.stringify(started)
+      )
+        throw new BuyerClientError("uncertain");
       // TakeHosted is one-shot. No catch path may clear this marker or replay Take.
       const handoff = await buyerRequest(
         "POST",
@@ -393,6 +398,11 @@ export async function payOrder({
       )
         throw new BuyerClientError("uncertain");
       await fence();
+      if (
+        JSON.stringify(pendingOrderPayment(context, order.order_id)) !==
+        JSON.stringify(started)
+      )
+        throw new BuyerClientError("uncertain");
       destination.submit(result.form);
     });
   } catch (error) {
