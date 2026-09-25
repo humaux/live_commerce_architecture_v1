@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"livecommerce/internal/checkout"
 	"livecommerce/internal/command"
 	"livecommerce/internal/integrations/accounts"
@@ -128,8 +129,17 @@ func TestBuyerPaymentViewEligibleAndExactNames(t *testing.T) {
 
 func TestBuyerPaymentViewCandidateDrift(t *testing.T) {
 	for name, change := range map[string]func(*testing.T, hpHarness){
+		"market-inactive": func(t *testing.T, h hpHarness) {
+			mustExec(t, h.f.owner, `UPDATE pricing.markets SET active=false,version=version+1 WHERE id=(SELECT market_id FROM checkout.orders WHERE id=$1)`, h.hold.OrderID)
+		},
+		"method-disabled": func(t *testing.T, h hpHarness) {
+			mustExec(t, h.f.owner, `UPDATE payments.method_versions SET enabled=false WHERE connection_id=$1`, h.account)
+		},
 		"binding-disabled": func(t *testing.T, h hpHarness) {
 			mustExec(t, h.f.owner, `UPDATE integration.bindings SET enabled=false WHERE id=$1`, h.binding)
+		},
+		"binding-version": func(t *testing.T, h hpHarness) {
+			mustExec(t, h.f.owner, `UPDATE integration.bindings SET semantic_version=semantic_version+1 WHERE id=$1`, h.binding)
 		},
 		"method-hidden": func(t *testing.T, h hpHarness) {
 			mustExec(t, h.f.owner, `UPDATE payments.method_versions SET visible=false WHERE connection_id=$1`, h.account)
@@ -141,7 +151,28 @@ func TestBuyerPaymentViewCandidateDrift(t *testing.T) {
 		"qualification-expired": func(t *testing.T, h hpHarness) {
 			mustExec(t, h.f.owner, `UPDATE payments.account_qualifications SET expires_at=clock_timestamp() WHERE id=$1`, h.proof)
 		},
+		"qualification-future": func(t *testing.T, h hpHarness) {
+			mustExec(t, h.f.owner, `UPDATE payments.account_qualifications SET observed_at=clock_timestamp()+interval '1 minute' WHERE id=$1`, h.proof)
+		},
 		"hold-expired": func(t *testing.T, h hpHarness) { bcDue(t, h.bcHarness, h.hold) },
+		"hold-generation": func(t *testing.T, h hpHarness) {
+			mustExec(t, h.f.owner, `UPDATE inventory.reservations SET generation=generation+1 WHERE id=$1`, h.hold.OrderID)
+		},
+		"below-config-min": func(t *testing.T, h hpHarness) {
+			mustExec(t, h.f.owner, `UPDATE checkout.orders SET total_minor=0 WHERE id=$1`, h.hold.OrderID)
+		},
+		"above-config-max": func(t *testing.T, h hpHarness) {
+			mustExec(t, h.f.owner, `UPDATE checkout.orders SET total_minor=20000000 WHERE id=$1`, h.hold.OrderID)
+		},
+		"fractional-twd": func(t *testing.T, h hpHarness) {
+			mustExec(t, h.f.owner, `UPDATE checkout.orders SET total_minor=2501 WHERE id=$1`, h.hold.OrderID)
+		},
+		"below-method-min": func(t *testing.T, h hpHarness) {
+			mustExec(t, h.f.owner, `UPDATE payments.method_versions SET min_amount_minor=3000 WHERE connection_id=$1`, h.account)
+		},
+		"above-method-max": func(t *testing.T, h hpHarness) {
+			mustExec(t, h.f.owner, `UPDATE payments.method_versions SET max_amount_minor=1000 WHERE connection_id=$1`, h.account)
+		},
 		"method-proof-swapped": func(t *testing.T, h hpHarness) {
 			other := randomUUID()
 			mustExec(t, h.f.owner, `INSERT INTO payments.account_qualifications(id,tenant_id,store_id,connection_id,credential_version,environment,code,proof_class,evidence_ref,observed_at,expires_at,revoked_at)
@@ -161,6 +192,41 @@ func TestBuyerPaymentViewCandidateDrift(t *testing.T) {
 			after, afterOther := bpCounts(t, h)
 			if after != before || afterOther != beforeOther {
 				t.Fatal("BPH01 candidate read changed financial facts")
+			}
+		})
+	}
+	t.Run("current-method-head", func(t *testing.T) {
+		h := hpSetup(t)
+		mustExec(t, h.f.owner, `INSERT INTO payments.method_versions
+		 (tenant_id,store_id,market_id,country,code,version,provider,environment,connection_id,binding_version,currency,name_hans,name_hant,name_en,enabled,visible,sort_order,min_amount_minor,max_amount_minor,principal_id,qualification_id)
+		 SELECT tenant_id,store_id,market_id,country,code,2,provider,environment,connection_id,binding_version,currency,name_hans,name_hant,'Current Head',enabled,visible,sort_order,min_amount_minor,max_amount_minor,principal_id,qualification_id
+		 FROM payments.method_versions WHERE connection_id=$1 AND version=1`, h.account)
+		mustExec(t, h.f.owner, `UPDATE payments.method_heads SET current_version=2 WHERE tenant_id=$1 AND store_id=$2 AND code='payuni_credit'`, h.f.tenantA, h.f.storeA1)
+		view, _ := bpView(t, h.api.(*checkout.HostedPaymentStarter), h.cap.Token, h.f.storeA1, h.hold.OrderID)
+		if len(view.Methods) != 1 || view.Methods[0].Version != 2 || view.Methods[0].NameEN != "Current Head" {
+			t.Fatal("BPH01 projection used stale method version after head advanced")
+		}
+	})
+	for _, trial := range []struct{ name, sql string }{
+		{"binding-asset-fk", `UPDATE integration.bindings SET external_asset_id='SANDBOX:other' WHERE id=$1`},
+		{"account-asset-fk", `UPDATE integration.merchant_accounts SET account_id='other' WHERE id=$1`},
+		{"account-environment-fk", `UPDATE integration.merchant_accounts SET environment='LIVE' WHERE id=$1`},
+		{"account-provider-check", `UPDATE integration.merchant_accounts SET provider='other' WHERE id=$1`},
+	} {
+		t.Run(trial.name, func(t *testing.T) {
+			h := hpSetup(t)
+			id := h.account
+			if trial.name == "binding-asset-fk" {
+				id = h.binding
+			}
+			_, err := h.f.owner.Exec(context.Background(), trial.sql, id)
+			var pgErr *pgconn.PgError
+			if !errors.As(err, &pgErr) || (pgErr.Code != "23503" && pgErr.Code != "23514") {
+				t.Fatalf("BPH01 schema allowed disconnected account/binding target: %v", err)
+			}
+			view, _ := bpView(t, h.api.(*checkout.HostedPaymentStarter), h.cap.Token, h.f.storeA1, h.hold.OrderID)
+			if len(view.Methods) != 1 {
+				t.Fatal("BPH01 rejected schema drift unexpectedly removed current method")
 			}
 		})
 	}
