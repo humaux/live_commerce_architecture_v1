@@ -1,6 +1,6 @@
 # Buyer order payment projection and private transport v1
 
-2026-09-25. DRAFT — independent preflight required before implementation.
+2026-09-25. FROZEN_IMPLEMENTATION — independent preflight corrections adopted.
 Base `18f5a2d`; builds on `payment-hosted-v1.md`, `buyer-http-v1.md` and
 `buyer-browser-bff-v1.md`. No second payment attempt engine or PSP product link.
 
@@ -129,7 +129,8 @@ Enabling the private feature does not issue REAL qualification or enable methods
 ## Acceptance gates
 
 BPH01 real PG view: eligible DRAFT + 3-name values, all no-option admission drifts,
-expiry and owned absent/foreign/scope/profile denial; exact JSON with no secrets.
+expiry and owned absent/foreign/scope denial; exact JSON with no secrets.
+Historical profile-switch disclosure/recovery belongs to BPH02.
 BPH02 pending/authorized/captured/review precedence from actual signed test reports
 and existing capture path; page NONE/PREPARED/ISSUED/EXPIRED/config mismatch;
 view has zero payment/stock/event/job/receipt mutations. Redirect is not evidence.
