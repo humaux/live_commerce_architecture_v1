@@ -491,6 +491,8 @@
       "internal/payments/**",
       "tests/payments/**",
       "internal/orders/**",
+      "internal/merchantorders/**",
+      "tests/foundation/merchant_orders*_test.go",
       "internal/integrations/psp/**",
       "tests/orders/**"
     ],
@@ -625,6 +627,15 @@
       "aggregate": "433 top-level PASS/0FAIL/0SKIP actual PG18/race/vet215.448s exit0; focused8 top-level includes1childhelper,43.831s. BuyerNode55/strictTS and actualNext-Go-PG browser11case7.60s pass. No realproviderrequests.",
       "independent_review": "SQL782c9306-446b-46c6-a6b4-18e3dc99e7d0; startupP1closure98d20fa2-d6e4-44d7-8eef-7c40dd767131; finalsource/test01972c3e-9f4a-4826-af77-234a6182c610 no remainingP0/P1/P2 in boundedchange.",
       "not_ready": "Only isolated payment queues/runtime accepted. Expiry/default external-operation worker, official Notify HTTP/ACK, trusted qualification, merchant enablement, realprovider sandbox/live, recovery SLO, observability and production rollout remain open. Test lease aging and1sMOCKretry do not prove production wallclock recovery."
+    },
+    "merchant_order_reads": {
+      "source_tree": "3b8fb92",
+      "status": "IMPLEMENTED_PENDING_FINAL_GATES",
+      "contract": "contracts/merchant-orders-v1.md",
+      "runbook": "docs/implementation/merchant-order-reads.md",
+      "scope": "Merchant-only orders:read list/detail, bounded coherent snapshot, private projection, fresh post-wait authorization, frozen history and scoped keyset cursor. No raw runtime checkout grants, no existing-member backfill.",
+      "independent_review": "Frozen contract9ed17103-ff27-43a3-9c4d-d593babd58dc; SQLca89aa52-ffe6-43aa-b8be-b3400aaa929f noP0/P1. Final Go/test and root full gates pending.",
+      "not_ready": "Merchant UI, shipment/labels/refunds/export, provider integration and production rollout are not included. Atomic index/constraint migration needs production lock-budget review and approval."
     },
     "checkout_expiry_runtime": {
       "tested_tree": "5cea8b91963e6c519d6a8e4621fe544389e63992",
