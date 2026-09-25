@@ -21,7 +21,8 @@
 
 ## 商家账户接入复用关系
 
-商家凭据HTTP/BFF不新增依赖：`cmd/api/accounts.go` 从受控环境读取 keyring，
+商家凭据HTTP/BFF不新增依赖：`cmd/api/accounts.go` 通过
+`internal/integrations/accounts/env.go` 从受控环境读取 keyring，
 复用 `accounts.NewKeyring`、`core.New` 和不启动 worker 的 River/pgx client；
 `internal/httpapi/accounts.go` 复用 scoped transaction、严格 JSON/安全错误与既有
 Create/Rotate/Get，`accounts/list.go` 复用绑定 tenant/store/collection 的 keyset 游标。
@@ -31,6 +32,24 @@ HttpOnly 会话、CSRF/Origin 和授权店铺列表，不转发浏览器提供�
 0019只扩新店主 read/manage，升级须保留旧成员不回填和撤权后重放不复活测试。
 升级这些入口须跑账户HTTP真实PG、密钥配置负例与真实浏览器BFF链；
 配置及轮换边界见 [account-credential-configuration](account-credential-configuration.md)。
+
+## 独立付款 worker 复用关系
+
+`cmd/payment-worker` → `accounts.LoadKeyring` / `platform.OpenWorkerPool` →
+`payments.NewWorkerClient` → 原 `QueryWorker` / `CaptureWorker`。没有新增模块、
+队列中间件或交易台账。`internal/jobqueue` 按服务端执行环境选择三条固定队列；
+买家发起和查询后入账任务仍与各自业务写入同事务。
+
+`migrations.Apply` 先应用业务 SQL，再运行 River v0.40.0 自身迁移，最后应用
+带相对路径校验和的 `post_river/*.sql`。延迟约束触发器复用 PG18 提交时检查，
+以冻结尝试／可信 QUERY 观察记录确定队列；旧客户端仍可默认入队。
+既有非登录 integration writer 仅增加 River `UPDATE(queue)`，付款进程只取得
+布尔型 `integration.payment_queue_ready()`，不直接读取凭据表。
+
+升级 River/PG/pgx 时须重跑全量真实 PG/race/vet，尤其新库／旧任务升级、失败
+原子回滚、旧通知队列与轮询、混合环境、重复入账及进程退出门禁。固定队列只覆盖
+付款查询和入账，不会启动默认队列的过期／外部操作 worker。部署开关、历史密钥
+及回退边界见 [付款 worker 运行说明](payment-worker-runtime.md)。
 
 ## 商家设置向导复用关系
 
