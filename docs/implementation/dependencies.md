@@ -33,7 +33,7 @@ HttpOnly 会话、CSRF/Origin 和授权店铺列表，不转发浏览器提供�
 升级这些入口须跑账户HTTP真实PG、密钥配置负例与真实浏览器BFF链；
 配置及轮换边界见 [account-credential-configuration](account-credential-configuration.md)。
 
-## 独立付款 worker 复用关系
+## 商家订单读取复用关系
 
 商家订单只读增量复用 `platform.WithScope` / `RequirePermission`、`pagination.Page`、
 pgx 显式事务和现有 `commerce_auth`，未增加依赖。`internal/merchantorders` 通过
@@ -41,6 +41,8 @@ pgx 显式事务和现有 `commerce_auth`，未增加依赖。`internal/merchant
 创建任务或新交易台账。0027 的列级授权、单语句数据快照、等待后的授权复查和
 原商家成员不自动加权必须随 PG/pgx 升级重验，见
 [商家订单读取与部署边界](merchant-order-reads.md)。该增量的独立门禁尚在进行中。
+
+## 独立付款 worker 复用关系
 
 `cmd/payment-worker` → `accounts.LoadKeyring` / `platform.OpenWorkerPool` →
 `payments.NewWorkerClient` → 原 `QueryWorker` / `CaptureWorker`。没有新增模块、
