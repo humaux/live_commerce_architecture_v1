@@ -35,10 +35,13 @@ owner/order predicates are mandatory (capture's broader attempt RLS is not enoug
 Only READ COMMITTED, read-only business effects, final active-capability recheck
 in SQL and Go. Missing/foreign order returns PT404; invalid input PT400;
 absent/revoked capability PT401; an existing different-profile attempt PT409.
+Extend checkout.safeError with PT404 -> command.ErrNotFound, retaining all existing
+error mappings. Verify the actual missing/foreign SQL -> Go -> HTTP404 chain.
 
 One statement reads order, original attempt, facts/review, page metadata and
-method candidates from the same snapshot. No row/advisory locks or provider
-requests are introduced for this projection. Eligibility is a snapshot, never a
+method candidates from the same snapshot. No additional business-row/advisory
+locks or provider requests are introduced; retain resolve_scope's existing
+capability FOR SHARE locks. Eligibility is a snapshot, never a
 reservation or admission ticket; Begin/Take recheck their full existing gates.
 
 Exact `OrderPayment` wire shape (same internal Go result, no private IDs):
