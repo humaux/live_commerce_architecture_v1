@@ -1,6 +1,7 @@
 package foundation_test
 
 import (
+	"bufio"
 	"context"
 	"crypto/aes"
 	"crypto/cipher"
@@ -492,18 +493,46 @@ func TestBuyerPaymentWorkerProcessSignalAndPoolCleanup(t *testing.T) {
 	env := []string{"PATH=" + os.Getenv("PATH"), "COMMERCE_PAYMENT_WORKER_ENABLED=1", "COMMERCE_PAYMENT_WORKER_PROFILE=SANDBOX", "COMMERCE_PAYMENT_WORKER_CONCURRENCY=1", "COMMERCE_PAYMENT_WORKER_DATABASE_URL=" + u.String(), "COMMERCE_ACCOUNT_ACTIVE_KEY_ID=query_test", "COMMERCE_ACCOUNT_KEYS_JSON=" + string(keysJSON), "COMMERCE_ACCOUNT_REPLAY_KEY=" + base64.StdEncoding.EncodeToString(randomBytes(32))}
 	cmd := exec.Command(binary)
 	cmd.Env = env
-	var output strings.Builder
-	cmd.Stdout, cmd.Stderr = &output, &output
+	cmd.Stdout = io.Discard
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := cmd.Start(); err != nil {
 		t.Fatal(err)
 	}
+	done := make(chan error, 1)
+	go func() { done <- cmd.Wait() }()
+	ready := make(chan struct{}, 1)
+	go func() {
+		scan := bufio.NewScanner(stderr)
+		for scan.Scan() {
+			if strings.Contains(scan.Text(), "msg=payment_worker_ready") {
+				select {
+				case ready <- struct{}{}:
+				default:
+				}
+			}
+		}
+	}()
 	running := true
 	defer func() {
 		if running {
 			_ = cmd.Process.Kill()
-			_ = cmd.Wait()
+			select {
+			case <-done:
+			case <-time.After(3 * time.Second):
+			}
 		}
 	}()
+	select {
+	case <-ready:
+	case err := <-done:
+		running = false
+		t.Fatalf("payment-worker exited before ready marker: %v", err)
+	case <-time.After(8 * time.Second):
+		t.Fatal("payment-worker did not report ready after River start")
+	}
 	deadline := time.Now().Add(8 * time.Second)
 	seen := false
 	for time.Now().Before(deadline) {
@@ -521,18 +550,16 @@ func TestBuyerPaymentWorkerProcessSignalAndPoolCleanup(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 	}
 	if !seen {
-		t.Fatalf("enabled process never started SANDBOX River producer: %q", output.String())
+		t.Fatal("ready process has no SANDBOX River producer or worker pool")
 	}
 	if err := cmd.Process.Signal(syscall.SIGTERM); err != nil {
 		t.Fatal(err)
 	}
-	done := make(chan error, 1)
-	go func() { done <- cmd.Wait() }()
 	select {
 	case err := <-done:
 		running = false
 		if err != nil {
-			t.Fatalf("SIGTERM worker exit: %v %q", err, output.String())
+			t.Fatalf("SIGTERM worker exit: %v", err)
 		}
 	case <-time.After(8 * time.Second):
 		t.Fatal("payment-worker did not stop after SIGTERM with no due jobs")
