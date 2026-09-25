@@ -4,6 +4,7 @@
 // no new wizard, payment claim or persistent address cache. Transport/CAS and
 // receipt recovery live in purchase.ts, not in this rendering component.
 import { useEffect, useRef, useState } from "react";
+import OrderPayment from "./OrderPayment";
 import type { Locale } from "@live-commerce/i18n";
 import { BuyerClientError } from "../lib/buyer-client";
 import { orderCopy } from "../lib/order-copy";
@@ -379,18 +380,25 @@ export default function OrderFlow({
 }
 
 export function OrderDetails({
+  context,
   order,
   locale,
   money,
   refresh,
   busy,
+  onPaymentBusy,
+  isSelected,
 }: {
+  context: string;
   order: Order;
   locale: Locale;
   money: Money;
   refresh: () => void;
   busy: boolean;
+  onPaymentBusy: (busy: boolean) => void;
+  isSelected: () => boolean;
 }) {
+  const [paymentRefresh, setPaymentRefresh] = useState(0);
   const copy = orderCopy[locale],
     common = purchaseCopy[locale],
     destination = order.snapshot.destination;
@@ -489,10 +497,24 @@ export function OrderDetails({
           <p className="order-note">{copy.holdNote}</p>
         </>
       )}
-      {order.commercial_state === "DRAFT" && (
-        <p className="order-note">{copy.unavailable}</p>
-      )}
-      <button disabled={busy} onClick={refresh}>
+      <OrderPayment
+        key={`${context}:${order.order_id}`}
+        context={context}
+        order={order}
+        locale={locale}
+        busy={busy}
+        refreshToken={paymentRefresh}
+        onBusy={onPaymentBusy}
+        isSelected={isSelected}
+      />
+      <button
+        data-testid="refresh-order"
+        disabled={busy}
+        onClick={() => {
+          setPaymentRefresh((v) => v + 1);
+          refresh();
+        }}
+      >
         {copy.refresh}
       </button>
     </section>

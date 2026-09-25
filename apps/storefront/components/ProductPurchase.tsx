@@ -54,6 +54,12 @@ export default function ProductPurchase({
   const [quantity, setQuantity] = useState("1");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [paymentBusy, setPaymentBusy] = useState(false);
+  const paymentWorking = useRef(false);
+  const onPaymentBusy = (value: boolean) => {
+    paymentWorking.current = value;
+    setPaymentBusy(value);
+  };
   const [error, setError] = useState<
     "failed" | "session" | "conflict" | "pending" | null
   >(null);
@@ -68,6 +74,8 @@ export default function ProductPurchase({
   const [orderLocked, setOrderLocked] = useState(false);
   const [order, setOrder] = useState<Order | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const historyVisible = useRef(false);
+  historyVisible.current = historyOpen;
   const epoch = useRef(0);
   const currentContext = useRef("");
   const currentOrder = useRef<Order | null>(null);
@@ -305,6 +313,9 @@ export default function ProductPurchase({
     if (!context) return;
     let active = true;
     const check = async () => {
+      // Opening/returning to the child can focus this tab mid-handoff. Do not
+      // replace the selected order object underneath its one-shot transaction.
+      if (paymentWorking.current) return;
       const version = epoch.current;
       try {
         await assertPurchaseContext(context);
@@ -368,7 +379,7 @@ export default function ProductPurchase({
   }
 
   async function act(fn: (isCurrent: () => boolean) => Promise<void>) {
-    if (working.current) return;
+    if (working.current || paymentWorking.current) return;
     const version = epoch.current;
     const startedContext = currentContext.current;
     const isCurrent = () =>
@@ -418,7 +429,7 @@ export default function ProductPurchase({
           <span className="sr-only">{copy.language}</span>
           <select
             value={locale}
-            disabled={busy}
+            disabled={busy || paymentBusy}
             onChange={(event) => {
               try {
                 sessionStorage.setItem(
@@ -445,14 +456,19 @@ export default function ProductPurchase({
         </label>
       </header>
       {demonstration && <p className="demonstration">{copy.demonstration}</p>}
-      <main className="purchase-main" aria-busy={loading || busy}>
+      <main
+        className="purchase-main"
+        aria-busy={loading || busy || paymentBusy}
+      >
         <nav
           className="purchase-navigation"
           aria-label={historyCopy[locale].title}
         >
           <button
             data-testid="toggle-order-history"
-            disabled={busy || loading || pending || error === "session"}
+            disabled={
+              busy || paymentBusy || loading || pending || error === "session"
+            }
             onClick={() => setHistoryOpen((value) => !value)}
           >
             {historyOpen ? historyCopy[locale].back : historyCopy[locale].title}
@@ -533,15 +549,25 @@ export default function ProductPurchase({
             locale={locale}
             money={money}
             onError={showError}
+            onPaymentBusy={onPaymentBusy}
           />
         )}
         {order && !historyOpen && (
           <>
             <OrderDetails
+              context={context}
               order={order}
               locale={locale}
               money={money}
-              busy={busy}
+              busy={busy || paymentBusy}
+              onPaymentBusy={onPaymentBusy}
+              isSelected={(() => {
+                const generation = epoch.current;
+                return () =>
+                  generation === epoch.current &&
+                  !historyVisible.current &&
+                  currentOrder.current?.order_id === order.order_id;
+              })()}
               refresh={() =>
                 void act(async (isCurrent) => {
                   const current = await readOrder(context, order.order_id);
@@ -553,7 +579,7 @@ export default function ProductPurchase({
               <p className="order-note">{historyCopy[locale].note}</p>
               <button
                 data-testid="continue-shopping"
-                disabled={busy || pending || error === "session"}
+                disabled={busy || paymentBusy || pending || error === "session"}
                 onClick={() =>
                   void act(async () => {
                     await continueShopping(context, order.order_id);

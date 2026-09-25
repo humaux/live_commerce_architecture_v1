@@ -36,6 +36,8 @@ pendingPurchase and frozen DTO guards. Export:
 Use the existing origin-scoped `commerce-purchase-write-v1` Web Lock. Check active
 buyer context, no unresolved purchase journal, selected-screen epoch and target
 readiness inside it before every irreversible step. Recheck after awaited calls.
+History selection generation changes synchronously on detail/list transitions;
+match both captured generation and immutable selected order ID, not only mount.
 Do not overwrite/clear purchase journal, current-order locator, address or cart.
 Historical payment must not displace a newer purchase's recovery locator.
 
@@ -80,6 +82,8 @@ never wildcard. Child gets no-referrer policy and pinned form policy. Fixed glob
 Ignore request body/query/cookies and never echo callback data, redirect, resolve
 tenant or write payment/order state. It instructs returning to the original store
 tab and refreshing; losing that tab does not magically recover its tenant.
+Deployment must prove the configured absolute ReturnURL on the designated central
+host reaches this neutral handler. A local path test alone does not prove that.
 
 ## Gates
 

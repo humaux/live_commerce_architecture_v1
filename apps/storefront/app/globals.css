@@ -485,6 +485,28 @@ h2 {
 .order-section address {
   font-style: normal;
 }
+.order-payment {
+  border-top: 1px solid var(--line);
+  margin-block: 28px 20px;
+  padding-top: 4px;
+}
+.order-payment .payment-state {
+  font-weight: 700;
+}
+.payment-test-mode {
+  font-weight: 700;
+  color: var(--navy);
+}
+.payment-pay {
+  background: var(--teal);
+  color: #fff;
+  border-color: var(--teal);
+  min-height: 48px;
+  width: 100%;
+}
+.payment-pay:hover:not(:disabled) {
+  background: #1c6554;
+}
 @media (min-width: 600px) {
   .address-fields {
     grid-template-columns: 1fr 1fr;
