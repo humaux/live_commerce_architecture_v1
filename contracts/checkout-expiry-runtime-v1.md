@@ -3,7 +3,8 @@
 Design on accepted `04ec2f7`, 2026-09-25. This connects the existing
 `checkout.ExpiryWorker` to a separately deployable local-only process. It does not
 add a new stock writer, payment timeout decision, sweeper or provider adapter.
-Gates below are NOT_RUN until independently verified.
+Contract frozen after independent design preflight (no P0/P1). Implementation
+and gates below remain NOT_RUN until independently verified.
 
 ## Fixed queue and old producers
 
@@ -17,7 +18,9 @@ order; therefore a BEFORE INSERT linkage guard is wrong.
 Add checksummed `post_river/0002_checkout_expiry_queue.sql` using the existing
 post-River migration phase/advisory lock. Take SHARE ROW EXCLUSIVE on river_job.
 For active expiry rows, require a durable order with exact `orders.job_id = job.id`
-and exact JSON `{order_id: order.id, generation: 1, version: 1}`. The original
+and exact JSON `{order_id: order.id, generation: 1, version: 1}`. Require textual
+numeric values `1` as well (JSONB numeric equality alone admits `1.0`, which Go's
+integer decoder rejects). The original
 generation is always 1 in this producer. Do NOT match the order's current
 generation/status: payment-start advances generation, and old tasks must still
 reach the existing STALE guard without releasing PAYMENT_PENDING stock.
@@ -43,7 +46,8 @@ All three functions belong to existing NOLOGIN `commerce_checkout_writer`, fixed
 reads orders and River jobs; grant only additional `UPDATE(queue)` on river_job.
 Expose only `checkout.expiry_queue_ready() RETURNS boolean` to commerce_worker.
 It audits exact enabled/deferred trigger identity/definer owner and all active
-expiry rows/foreign reserved kinds; no order details or mutation. Private helpers
+expiry rows/foreign reserved kinds, including non-null unique keys; no order
+details or mutation. Private helpers
 are not executable by API, buyer, hosted or worker logins. Preserve RLS/role gates.
 
 ## Process and reuse
@@ -81,7 +85,7 @@ or abandoned payment handoff with permission to release uncertain payment stock.
 
 EW01: default-off flag-only/no resources; invalid flag/DSN/concurrency, worker-role
 checks, bounded startup, missing/disabled/immediate router, malformed/orphan/foreign
-queue drift rejects before consumption. Private helper and ready-function exact
+queue/unique-key drift rejects before consumption. Private helper and ready-function exact
 ACL/RLS tests. Expiry binary never reads payment keyring/provider environment.
 
 EW02: actual PG fresh/upgrade/repeat/checksum/unknown version; failed backfill
