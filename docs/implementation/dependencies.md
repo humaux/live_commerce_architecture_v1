@@ -257,6 +257,17 @@ Keyring、PG/pgx 或 hosted 内核须同时重跑 BPH01–06 和 HP01–07；
 连接回收、锁等待过期与三语 HTTP 证据。没有新增依赖；公开 BFF/付款UI及真实
 供应商准入仍独立验收，不允许把通用前端重试日志用于 handoff 或保存付款表单。
 
+买家付款公开传输（`contracts/buyer-payment-public-v1.md`）：
+`handleBuyerRequest` → 原 cookie/context/Origin 检查 → 单次私有 Go 请求 →
+`payment-contract.ts` 三个精确类型守卫。仅新付款响应使用可识别 null 的重复键
+扫描，普通请求仍默认拒绝 null；准备回执限制为当前信用卡 TWD 整元准入。
+`buyerRequest` 仅对精确的 POST `orders/{uuid}/payment/handoff` 放行空 body/key，
+保留会话 journal 检查；它不负责重放、保存表单或认定已付款。新 UI 必须在原
+购买锁内协调并仅用 GET 恢复未知交付，不能接入通用购买重试按钮。
+没有新增依赖。升级 Next/fetch、cookie／JSON 校验、付款 DTO 或 Go hosted wire
+时重跑 BPT01–06、原34项前端回归和 BPH01–06；真实付款浏览器链仍独立验收。
+详见[公开传输验收边界](2026-09-25-buyer-payment-public-acceptance.md)。
+
 `internal/checkout/payment.go` 复用 buyer.WithScope、checkout pool 验证、River
 InsertTx 和私有回执，调用0016的 `checkout.start_payment`；不依赖 HTTP/PSP wire，
 不读密文。资格表当前没有应用签发者，MOCK只在隔离测试中注入。operation新增

@@ -767,6 +767,8 @@ function forbiddenHeaders(request: Request): boolean {
 
 export async function handleBuyerRequest(request: Request): Promise<Response> {
   const pathname = new URL(request.url).pathname;
+  // Classify before config/auth: even an early failure must not invite a second
+  // one-shot handoff. See buyer-payment-public-v1, not ordinary keyed writes.
   const handoff =
     /^\/api\/buyer\/orders\/[^/]+\/payment\/handoff(?:\/.*)?$/.test(pathname);
   const changingCookie =

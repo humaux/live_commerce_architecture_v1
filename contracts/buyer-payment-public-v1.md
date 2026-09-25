@@ -4,6 +4,13 @@
 prepared-amount/name-bound corrections. Base `5258928`.
 Extends `buyer-payment-http-v1.md` and `buyer-browser-bff-v1.md`.
 
+Bounded implementation: source `c9f380b`, tested tree `f3de924`; 45 Node tests,
+root typecheck/production build, unchanged backend421PG/race/vet and existing
+B order/history23-case browser regression passed. Independent final review
+`89b697c3-1975-4037-8516-3ffd289931f0` found no unresolved P0/P1/P2 here.
+See [acceptance scope](../docs/implementation/2026-09-25-buyer-payment-public-acceptance.md).
+No new payment UI/browser/provider acceptance is implied.
+
 ## Smallest boundary
 
 Reuse the existing Next BFF, signed HttpOnly buyer cookie, origin/context checks,

@@ -6,6 +6,8 @@ const CONTEXT = /^[A-Za-z0-9_-]{43}$/;
 const KEY = /^[A-Za-z0-9_.:-]{8,128}$/;
 const OPERATION =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+// The only no-key mutation: a committed one-shot form release, never a replay.
+// Keep this exception exact; payment UI owns GET-only recovery after uncertainty.
 const HANDOFF =
   /^orders\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/payment\/handoff$/;
 
