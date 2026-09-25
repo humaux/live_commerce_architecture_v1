@@ -308,6 +308,8 @@ func safeError(ctx context.Context, err error) error {
 			return buyer.ErrUnauthorized
 		case "PT402":
 			return command.ErrInsufficient
+		case "PT404":
+			return command.ErrNotFound
 		case "PT409":
 			return command.ErrConflict
 		}
