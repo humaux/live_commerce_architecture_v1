@@ -16,6 +16,7 @@ import (
 	"livecommerce/internal/integrations/accounts"
 	"livecommerce/internal/integrations/core"
 	"livecommerce/internal/integrations/psp/payuni"
+	"livecommerce/internal/jobqueue"
 	"livecommerce/internal/platform"
 )
 
@@ -301,7 +302,7 @@ func (w *QueryWorker) record(ctx context.Context, id string, claim core.ClaimRes
 		return err
 	}
 	job, err := w.jobs.InsertTx(bounded, tx, paymentReconcileArgs{
-		OperationID: id, ReportHash: reportHash, Version: 1}, nil)
+		OperationID: id, ReportHash: reportHash, Version: 1}, &river.InsertOpts{Queue: jobqueue.ForProfile(w.profile)})
 	if err != nil {
 		return err
 	}
