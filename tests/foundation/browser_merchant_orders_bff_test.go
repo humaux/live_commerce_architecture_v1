@@ -3,6 +3,7 @@
 package foundation_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net"
@@ -21,6 +22,7 @@ import (
 	"livecommerce/internal/identity"
 	"livecommerce/internal/identityhttp"
 	"livecommerce/internal/oidclogin"
+	"livecommerce/internal/storefront"
 )
 
 // MBT04 uses signed browser login, the real Next route, Go HTTP, and disposable PG.
@@ -33,6 +35,13 @@ func TestBrowserMerchantOrdersBFFRealChain(t *testing.T) {
 	defer cancel()
 	q := pqSetup(t)
 	moGrant(t, q.f, q.f.tenantA, q.f.storeA1, q.f.principalA)
+	secondBuyer := mustIssue(t, q.cqHarness.service, q.f.storeA1)
+	secondHarness := q.bcHarness
+	secondHarness.prepare(t, secondBuyer, []storefront.Item{{SKUID: q.stock.skus[0].ID, Quantity: 1}})
+	second, err := secondHarness.begin(t04Key("mbt-second-order"))
+	if err != nil {
+		t.Fatal(err)
+	}
 	foreignStore, foreignOrder := moBeginInOtherStore(t, q.f, true)
 	for _, permission := range []string{"store:read", "orders:read"} {
 		mustExec(t, q.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission)
@@ -160,6 +169,29 @@ func TestBrowserMerchantOrdersBFFRealChain(t *testing.T) {
 	fixtureAddress := fixtureListener.Addr().String()
 	_ = fixtureListener.Close()
 	_, fixturePort, _ := net.SplitHostPort(fixtureAddress)
+	nextEnvPath := filepath.Join(root, "apps/admin/next-env.d.ts")
+	nextEnvBefore, err := os.ReadFile(nextEnvPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	devNextEnv := bytes.ReplaceAll(nextEnvBefore, []byte("./.next/types/"), []byte("./.next/dev/types/"))
+	t.Cleanup(func() {
+		current, err := os.ReadFile(nextEnvPath)
+		if err != nil {
+			t.Error("could not read Next generated type file during cleanup")
+			return
+		}
+		if bytes.Equal(current, nextEnvBefore) {
+			return
+		}
+		if !bytes.Equal(current, devNextEnv) {
+			t.Error("Next type file changed outside the expected dev rewrite; preserving it for review")
+			return
+		}
+		if err := os.WriteFile(nextEnvPath, nextEnvBefore, 0644); err != nil {
+			t.Error("could not restore Next generated type file")
+		}
+	})
 	fixtureLog := browserLog(t, filepath.Join(evidence, "fixture-next.log"))
 	fixtureNext := exec.CommandContext(ctx, "node", filepath.Join(root, "apps/admin/node_modules/next/dist/bin/next"), "dev", "--hostname", "127.0.0.1", "--port", fixturePort)
 	fixtureNext.Dir = filepath.Join(root, "apps/admin")
@@ -276,7 +308,8 @@ func TestBrowserMerchantOrdersBFFRealChain(t *testing.T) {
 	browser.Env = browserEnvironment(map[string]string{
 		"LC_BROWSER_SUITE": "merchant-orders-bff", "LC_BROWSER_PUBLIC_ORIGIN": publicOrigin,
 		"LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_ORDER_STORE": q.f.storeA1,
-		"LC_BROWSER_ORDER_ID": q.hold.OrderID, "LC_BROWSER_FOREIGN_STORE": foreignStore,
+		"LC_BROWSER_ORDER_ID": q.hold.OrderID, "LC_BROWSER_SECOND_ORDER_ID": second.OrderID,
+		"LC_BROWSER_FOREIGN_STORE":    foreignStore,
 		"LC_BROWSER_FOREIGN_ORDER_ID": foreignOrder, "LC_BROWSER_UNLISTED_STORE": q.f.storeB,
 		"LC_BROWSER_NO_ORDERS_TOKEN": noOrdersToken,
 		"LC_BROWSER_EXPIRED_TOKEN":   expiredToken, "LC_BROWSER_REVOKED_TOKEN": revokedToken,

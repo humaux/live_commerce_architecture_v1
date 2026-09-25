@@ -10,6 +10,7 @@ const publicOrigin = required("LC_BROWSER_PUBLIC_ORIGIN");
 const apiOrigin = required("LC_BROWSER_API_ORIGIN");
 const store = required("LC_BROWSER_ORDER_STORE");
 const order = required("LC_BROWSER_ORDER_ID");
+const secondOrder = required("LC_BROWSER_SECOND_ORDER_ID");
 const foreignStore = required("LC_BROWSER_FOREIGN_STORE");
 const foreignOrder = required("LC_BROWSER_FOREIGN_ORDER_ID");
 const unlistedStore = required("LC_BROWSER_UNLISTED_STORE");
@@ -118,7 +119,7 @@ test("MBT01-04 signed cookie, raw route policy and real Go/PG order reads", asyn
   const cookie = `${cookieName}=${cookies[0].value}`;
   const authorized = { Cookie: cookie };
 
-  const first = await raw(`${base}?limit=1&state=all`, "GET", {
+  const first = await raw(`${base}?limit=100&state=all`, "GET", {
     Cookie: `${cookie}; browser_bogus=header`,
     Authorization: "Bearer browser-bogus-token",
     "X-Tenant-ID": "browser-bogus-tenant",
@@ -131,11 +132,50 @@ test("MBT01-04 signed cookie, raw route policy and real Go/PG order reads", asyn
     items: Array<{ order_id: string }>;
     next_cursor: string;
   };
-  expect(pageBody.items.map((item) => item.order_id)).toContain(order);
+  expect(pageBody.items.map((item) => item.order_id).sort()).toEqual(
+    [order, secondOrder].sort(),
+  );
   expect((await observation()).last_uri).toBe(
-    `/v1/admin/stores/${store}/orders?limit=1&state=all`,
+    `/v1/admin/stores/${store}/orders?limit=100&state=all`,
   );
   expect((await observation()).last_method).toBe("GET");
+
+  const firstPage = await raw(`${base}?limit=1`, "GET", authorized);
+  expect(firstPage.status).toBe(200);
+  expect(firstPage.headers["cache-control"]).toBe("private, no-store");
+  const paged = JSON.parse(firstPage.body) as {
+    items: Array<{ order_id: string }>;
+    next_cursor: string;
+  };
+  expect(paged.items).toHaveLength(1);
+  expect(paged.next_cursor).toMatch(/^[A-Za-z0-9_-]{1,1024}$/);
+  const nextPath = `${base}?limit=1&cursor=${paged.next_cursor}`;
+  const secondPage = await raw(nextPath, "GET", authorized);
+  expect(secondPage.status).toBe(200);
+  expect(secondPage.headers["cache-control"]).toBe("private, no-store");
+  expect(
+    (JSON.parse(secondPage.body) as { items: Array<{ order_id: string }> })
+      .items[0].order_id,
+  ).not.toBe(paged.items[0].order_id);
+  expect((await observation()).last_uri).toBe(
+    `/v1/admin/stores/${store}/orders?limit=1&cursor=${paged.next_cursor}`,
+  );
+  for (const headers of [
+    authorized,
+    { ...authorized, "Content-Length": "0" },
+  ]) {
+    const noQuery = await raw(base, "GET", headers);
+    expect(noQuery.status).toBe(200);
+    expect(noQuery.headers["cache-control"]).toBe("private, no-store");
+    expect((await observation()).last_uri).toBe(
+      `/v1/admin/stores/${store}/orders`,
+    );
+  }
+  const opaqueCursor = await raw(`${base}?cursor=abc_-`, "GET", authorized);
+  expectSafe(opaqueCursor, 422); // Go validates signature/scope, after BFF forwards syntax.
+  expect((await observation()).last_uri).toBe(
+    `/v1/admin/stores/${store}/orders?cursor=abc_-`,
+  );
 
   const detail = await raw(`${base}/${order}`, "GET", authorized);
   expect(detail.status).toBe(200);
@@ -157,10 +197,12 @@ test("MBT01-04 signed cookie, raw route policy and real Go/PG order reads", asyn
   expectSafe(missing, 404);
   expectSafe(crossStore, 404);
   expect(JSON.parse(crossStore.body).code).toBe(JSON.parse(missing.body).code);
+  const beforeUnlisted = (await observation()).count;
   expectSafe(
     await raw(`/api/stores/${unlistedStore}/orders`, "GET", authorized),
     404,
   );
+  expect((await observation()).count).toBe(beforeUnlisted);
 
   const invalidFailures: string[] = [];
   for (const [path, method, extra, payload] of [
@@ -210,6 +252,20 @@ test("MBT01-04 signed cookie, raw route policy and real Go/PG order reads", asyn
     expectSafe(await raw(path, "GET", authorized), 404);
     expect((await observation()).count).toBe(before);
   }
+  for (const path of [
+    `/api/stores/${store}/%6frders?limit=%31`,
+    `/api/stores/${store}/orders%2F${order}?limit=1`,
+  ]) {
+    const before = (await observation()).count;
+    const response = await raw(path, "GET", authorized);
+    if (![400, 404, 422].includes(response.status))
+      invalidFailures.push(`${path.slice(0, 120)}: ${response.status}`);
+    const after = (await observation()).count;
+    if (after !== before)
+      invalidFailures.push(
+        `${path.slice(0, 120)}: upstream +${after - before}`,
+      );
+  }
   for (const method of ["POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]) {
     const before = (await observation()).count;
     const response = await raw(base, method, authorized);
@@ -218,7 +274,9 @@ test("MBT01-04 signed cookie, raw route policy and real Go/PG order reads", asyn
     expect((await observation()).count).toBe(before);
   }
 
+  const beforeNoCookie = (await observation()).count;
   const noCookie = await raw(base);
+  expect((await observation()).count).toBe(beforeNoCookie);
   const wrong = await raw(base, "GET", {
     Cookie: `${cookieName}=not-a-token`,
   });
