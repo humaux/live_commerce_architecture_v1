@@ -268,6 +268,22 @@ Keyring、PG/pgx 或 hosted 内核须同时重跑 BPH01–06 和 HP01–07；
 时重跑 BPT01–06、原34项前端回归和 BPH01–06；真实付款浏览器链仍独立验收。
 详见[公开传输验收边界](2026-09-25-buyer-payment-public-acceptance.md)。
 
+买家 B 付款界面（`contracts/buyer-payment-ui-v1.md`，浏览器增量验收中）：
+当前订单与历史详情共用 `OrderDetails` → `OrderPayment` → `order-payment.ts`
+→ 原 `buyerRequest` / `readPurchase` → 上述 BFF / Go hosted 内核。
+`order-payment.ts` 在原 `commerce-purchase-write-v1` Web Lock 内使用独立的
+逐订单非敏感意图标记，不覆盖购买恢复日志或当前订单定位器；原 key/body
+仅显式重放 prepare，handoff_started 持久化后仅 GET 恢复，不重放 Take。
+浏览器原生 Window/DOM/form 提交只面向固定白名单；受控空白子页先断开 opener，
+再以文档身份、所选订单代次和买家上下文作前后校验。表单不进入持久存储。
+`payment-return.ts` 仅依赖 Node crypto 为固定样式产生 CSP hash；固定 GET/POST
+路由完全不读取请求，无 cookie、跳转或交易写入。部署必须另外验证中央 HTTPS
+ReturnURL 的实际域名与路由，不凭本地通过宣称生产就绪。
+未新增依赖。升级浏览器 API、React 生命周期、Next headers 或既有会话锁时，
+需重跑 BPU01–04 与 BPT/BPH 回归；三语、原生表单、历史选择切换和丢响应均为
+验收项。提供商不可用/路由默认关闭与临时读取失败不在客户端猜测区分，统一
+停止付款并允许 GET 刷新；只有有效 PaymentView 的空 methods 才表示无可用方式。
+
 `internal/checkout/payment.go` 复用 buyer.WithScope、checkout pool 验证、River
 InsertTx 和私有回执，调用0016的 `checkout.start_payment`；不依赖 HTTP/PSP wire，
 不读密文。资格表当前没有应用签发者，MOCK只在隔离测试中注入。operation新增
