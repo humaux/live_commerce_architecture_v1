@@ -31,9 +31,15 @@ or PT404. No dynamic SQL, writes, row locks or second domain state machine.
 Only grant commerce_auth the columns actually used on checkout.orders (including
 its frozen snapshot), checkout.payment_attempts, payments.facts/review_cases and
 fulfillment.payment_work_items; add SELECT policies for this private reader.
+Grant that owner USAGE on exactly checkout, payments and fulfillment schemas.
+Preserve the existing 0018 runtime grants on facts/review/work; this delivery's
+no-direct-access boundary is checkout orders/attempts, not a retroactive revocation.
 Do not grant commerce_runtime direct checkout schema/table access. The function
 independently verifies token/store/orders:read, matches resolved tenant/store/
 principal against transaction GUCs as text, and rejects non-READ-COMMITTED calls.
+Use one data SELECT statement for the whole page/detail: orders, attempt,
+financial facts, review/work and frozen detail projection share one snapshot.
+Do not assemble them with successive inner queries that could straddle capture.
 After its data query, use a direct auth SELECT inside this VOLATILE function at
 READ COMMITTED (fresh internal statement snapshot), checking merchant session,
 principal, tenant/store/membership active, store:read, orders:read and the same
@@ -60,6 +66,8 @@ transport. Add internal/merchantorders (not a second checkout service):
   `cursor` (max1024), `state` (default all). Keyset order created_at DESC,id DESC.
   Collection merchant-orders uses existing pagination envelope bound to exact
   tenant/store/state. Two keys are canonical UTC microsecond timestamp then UUID;
+  explicitly extend the existing collection/key validator for this pair (the
+  current UUID-only validator cannot accept this cursor without that change).
   malformed position, cross-store/state and other collection cursors are rejected.
   Newer insertions do not restart an existing page; state changes may change
   membership between pages, so this is not a point-in-time export.
@@ -73,6 +81,8 @@ transport. Add internal/merchantorders (not a second checkout service):
 
 Summary has exactly order_id,created_at,updated_at,currency,total_minor,
 commercial_state,fulfillment_state,payment_state,test_mode,work_state.
+Fulfillment states are MANUAL_UNASSIGNED, CANCELLED and PAID_ALLOCATION_FAILED;
+preserve the latter as a separate allocation failure, not ordinary fulfillment.
 No buyer owner/session/cart IDs, address, phone, raw snapshot, PSP reference,
 connection/credential/attempt IDs, keys, hosted form or reconciliation payload.
 
@@ -108,6 +118,7 @@ Render these strings as text in the future UI; no raw HTML or automatic exports.
 1. New permission valid; fresh real onboarding grants it once. Replay does not
    restore a removed grant; preexisting principals are not auto-elevated.
    Exact private function ownership/ACL/search_path and minimal column grants;
+   required owner schema USAGE and no new runtime checkout USAGE/SELECT;
    buyer/worker/identity/hosted/PUBLIC callers cannot execute or read new data.
 2. Real two-tenant, same-tenant two-store and two-owner order fixtures. Merchant
    sees all authorized-store buyers and no other store. No-address summary keys
@@ -117,6 +128,7 @@ Render these strings as text in the future UI; no raw HTML or automatic exports.
    Missing detail is indistinguishable from other-store; safe errors/no secrets.
 4. Real DRAFT/unpaid, AWAITING_PAYMENT/pending, authorized, captured READY,
    sticky review and cancelled expired states via existing business/worker APIs.
+   Include real PAID_ALLOCATION_FAILED with review work and separate states.
    History retains original items/totals/recipient/pickup leading zeroes after
    mutable catalog/destination edits. No manual provider-result fabrication.
 5. Real blocked data-query witness (pg_stat_activity/pg_blocking_pids), then
