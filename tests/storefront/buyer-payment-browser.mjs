@@ -110,6 +110,11 @@ try{
       if(active){hook=null;active.entered.resolve();}
       const out=await relay(port,req,body);if(active)active.result.resolve(out.status);
       if(active?.mode==="drop"){res.destroy();return;}
+      if(active?.mode==="partial"){
+        const headers={...out.headers};delete headers.connection;delete headers["transfer-encoding"];delete headers["content-encoding"];
+        headers["content-length"]=String(out.body.length+16);
+        res.writeHead(out.status,headers);res.write(out.body.subarray(0,1));res.flushHeaders();await pause(10);res.destroy();return;
+      }
       if(active?.mode==="hold")await active.release.promise;
       const headers={...out.headers};delete headers.connection;delete headers["transfer-encoding"];
       res.writeHead(out.status,headers);res.end(out.body);
@@ -182,7 +187,7 @@ try{
   await expect(page.getByRole("button",{name:"Choose delivery",exact:true})).toBeEnabled();const d=await makeOrder(page);
   await page.setViewportSize({width:390,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   await page.getByTestId("order-payment").screenshot({path:path.join(evidence,"mobile-payment-ready.png")});
-  const lostPrepare=arm(`/api/buyer/orders/${d}/payment/prepare`,"drop");const preparePopup=page.waitForEvent("popup");
+  const lostPrepare=arm(`/api/buyer/orders/${d}/payment/prepare`,"partial");const preparePopup=page.waitForEvent("popup");
   await page.getByTestId("pay-order").click();await preparePopup;assert.equal(await lostPrepare.result.promise,200);
   await expect(page.getByTestId("payment-error")).toBeVisible();assert.equal((await paymentMarker(page,d)).stage,"prepare");
   assert.equal(paymentCalls(d,"handoff").length,0);
@@ -197,7 +202,7 @@ try{
 
   await page.getByTestId("continue-shopping").click();await expect(page.getByRole("button",{name:"Choose delivery",exact:true})).toBeEnabled();
   const lostOrder=await makeOrder(page);
-  const lost=arm(`/api/buyer/orders/${lostOrder}/payment/handoff`,"drop");const lostPopup=page.waitForEvent("popup");
+  const lost=arm(`/api/buyer/orders/${lostOrder}/payment/handoff`,"partial");const lostPopup=page.waitForEvent("popup");
   await page.getByTestId("pay-order").click();await lostPopup;assert.equal(await lost.result.promise,200);
   await expect(page.getByTestId("payment-error")).toBeVisible();assert.equal((await paymentMarker(page,lostOrder)).stage,"handoff_started");
   assert.equal(paymentCalls(lostOrder,"prepare").length,1);assert.equal(paymentCalls(lostOrder,"handoff").length,1);assert.equal(posts.length,2);
