@@ -14,7 +14,12 @@ sandbox acceptance. Does not enable payment methods, create attempts or book mon
   https://github.com/payuni/PHP_SDK/blob/bba8ddd831321aebc0123478b34fecfbc11ed70a/src/PayuniApi.php
 
 SPA source text was read via official read-only page/info API. Requests and decrypted
-responses are URL-form encoded; HTTP query envelope is JSON; UPP notification is form.
+responses are URL-form encoded; HTTP query envelope is JSON. The local
+VerifyNotification parser supports a bounded form envelope. The 2026-09-25
+official-source recheck did not establish the background NotifyURL transport,
+Content-Type or ACK/retry contract: explicit Form Post wording covers the UPP
+submission and foreground ReturnURL, not proof of background HTTP delivery.
+Do not expose this helper as a production callback receiver without that gate.
 Never copy SDK disabled TLS verification or treat its `success=true` ERROR response as
 a payment success. Provider protocol uses a fixed merchant IV; this is vendor wire
 compatibility only, NEVER reuse this construction for storage (accounts uses random
