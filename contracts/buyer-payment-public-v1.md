@@ -1,6 +1,7 @@
 # Buyer payment public transport v1
 
-2026-09-25. DRAFT_PREFLIGHT. Base `5258928`.
+2026-09-25. FROZEN_IMPLEMENTATION after independent contract preflight and
+prepared-amount/name-bound corrections. Base `5258928`.
 Extends `buyer-payment-http-v1.md` and `buyer-browser-bff-v1.md`.
 
 ## Smallest boundary
@@ -63,12 +64,14 @@ NONE/PREPARED/ISSUED/EXPIRED/UNAVAILABLE; test_mode boolean. The handoff timesta
 is null or parseable UTC RFC3339 (Go fractional seconds accepted); NONE requires
 null, PREPARED/ISSUED/EXPIRED require non-null. UNAVAILABLE permits either.
 Methods is an array of zero or one exact five-field record with payuni_credit,
-positive safe version and non-empty bounded three-language names. Methods may
+positive safe version and three-language names of 1..120 Unicode code points,
+not whitespace-only and without control characters (matching SQL0015). Methods may
 appear only for NOT_STARTED + DRAFT + NONE. Currency/amount must not be inferred
 from browser state; this read response is informational, not admission authority.
 
-`PaymentPrepared` has exactly order_id, state PAYMENT_PENDING, currency and
-amount_minor using the same monetary validation. No hosted form on prepare.
+`PaymentPrepared` has exactly order_id, state PAYMENT_PENDING, currency TWD and
+amount_minor as a safe integer100..19999900 divisible by100, matching the current
+hosted credit-card admission (not the broader historical view). No form on prepare.
 
 `HostedHandoff` has exactly order_id, disposition, expires_at plus form ONLY
 when disposition ISSUED. The only other success is ALREADY_ISSUED with no form.
@@ -89,7 +92,8 @@ profile. Invalid response yields sanitized503, nonretryable for handoff.
   expired/forged cookie; unknown/null/duplicate prepare fields. Existing routes
   and disabled-root behavior remain unchanged.
 - BPT03 hostile upstream payment responses: extra private fields, wrong order,
-  wrong enums/money/timestamps/methods, duplicate JSON, unexpected status, invalid
+  wrong enums/money/timestamps/methods, prepared zero/USD/non-whole-TWD/over-limit,
+  duplicate JSON, unexpected status, invalid
   content type/encoding/size, malicious form URL/field/length; none leak onward.
 - BPT04 every handoff error path nonretryable, sanitized and no-store; network,
   abort/deadline/503/429 do not replay. ALREADY_ISSUED never includes form.
