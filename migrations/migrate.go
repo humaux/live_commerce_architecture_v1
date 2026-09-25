@@ -13,12 +13,13 @@ import (
 	"slices"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"github.com/riverqueue/river/rivermigrate"
 )
 
-//go:embed *.sql
+//go:embed *.sql post_river/*.sql
 var files embed.FS
 
 var ErrMigrationBusy = errors.New("another migration is running")
@@ -69,6 +70,11 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 	if err != nil || len(versions) == 0 {
 		return fmt.Errorf("discover migrations: %v", err)
 	}
+	postVersions, err := fs.Glob(files, "post_river/[0-9][0-9][0-9][0-9]_*.sql")
+	if err != nil || len(postVersions) == 0 {
+		return fmt.Errorf("discover post-River migrations: %v", err)
+	}
+	knownVersions := append(slices.Clone(versions), postVersions...)
 	rows, err := tx.Query(ctx, `SELECT version FROM public.lc_schema_migrations ORDER BY version`)
 	if err != nil {
 		return err
@@ -79,7 +85,7 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 			rows.Close()
 			return err
 		}
-		if !slices.Contains(versions, applied) {
+		if !slices.Contains(knownVersions, applied) {
 			rows.Close()
 			return fmt.Errorf("database migration unknown to this binary: %s", applied)
 		}
@@ -89,27 +95,8 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 		return err
 	}
 	rows.Close()
-	for _, version := range versions {
-		body, err := files.ReadFile(version)
-		if err != nil {
-			return err
-		}
-		want := fmt.Sprintf("%x", sha256.Sum256(body))
-		var have string
-		if err = tx.QueryRow(ctx, `SELECT coalesce((SELECT checksum FROM public.lc_schema_migrations WHERE version=$1),'')`, version).Scan(&have); err != nil {
-			return err
-		}
-		if have != "" && have != want {
-			return fmt.Errorf("migration checksum mismatch: %s", version)
-		}
-		if have == "" {
-			if _, err = tx.Exec(ctx, string(body)); err != nil {
-				return fmt.Errorf("apply %s: %w", version, err)
-			}
-			if _, err = tx.Exec(ctx, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES ($1,$2)`, version, want); err != nil {
-				return err
-			}
-		}
+	if err = applyVersions(ctx, tx, versions); err != nil {
+		return err
 	}
 	if err = tx.Commit(ctx); err != nil {
 		return err
@@ -145,6 +132,47 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 		REVOKE ALL ON river.river_migration FROM commerce_worker;
 		GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river TO commerce_worker`); err != nil {
 		return err
+	}
+	// Application-owned River routing depends on upstream tables. Keep its
+	// backfill, trigger and checksum atomic, under the same session advisory lock.
+	postTx, err := lockConn.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		cleanup, stop := context.WithTimeout(context.Background(), 2*time.Second)
+		defer stop()
+		_ = postTx.Rollback(cleanup)
+	}()
+	if err = applyVersions(ctx, postTx, postVersions); err != nil {
+		return err
+	}
+	return postTx.Commit(ctx)
+}
+
+// Both phases use the same ledger and reject changed SQL, never overwrite it.
+func applyVersions(ctx context.Context, tx pgx.Tx, versions []string) error {
+	for _, version := range versions {
+		body, err := files.ReadFile(version)
+		if err != nil {
+			return err
+		}
+		want := fmt.Sprintf("%x", sha256.Sum256(body))
+		var have string
+		if err = tx.QueryRow(ctx, `SELECT coalesce((SELECT checksum FROM public.lc_schema_migrations WHERE version=$1),'')`, version).Scan(&have); err != nil {
+			return err
+		}
+		if have != "" && have != want {
+			return fmt.Errorf("migration checksum mismatch: %s", version)
+		}
+		if have == "" {
+			if _, err = tx.Exec(ctx, string(body)); err != nil {
+				return fmt.Errorf("apply %s: %w", version, err)
+			}
+			if _, err = tx.Exec(ctx, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES ($1,$2)`, version, want); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
