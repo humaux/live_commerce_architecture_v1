@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -38,6 +39,7 @@ func TestBrowserMerchantOrdersBFFRealChain(t *testing.T) {
 			VALUES($1,$2,$3,$4)`, q.f.tenantA, foreignStore, q.f.principalA, permission)
 	}
 	noOrdersPrincipal, noOrdersToken := randomUUID(), randomToken()
+	expiredToken, revokedToken := randomToken(), randomToken()
 	mustExec(t, q.f.owner, `INSERT INTO identity.principals(id) VALUES($1)`, noOrdersPrincipal)
 	mustExec(t, q.f.owner, `INSERT INTO identity.memberships(tenant_id,principal_id) VALUES($1,$2)`, q.f.tenantA, noOrdersPrincipal)
 	mustExec(t, q.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission)
@@ -46,7 +48,16 @@ func TestBrowserMerchantOrdersBFFRealChain(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := insertSession(ctx, tx, noOrdersToken, noOrdersPrincipal, "merchant", time.Now().Add(time.Hour), nil); err != nil {
+	now := time.Now()
+	if err := insertSession(ctx, tx, noOrdersToken, noOrdersPrincipal, "merchant", now.Add(time.Hour), nil); err != nil {
+		_ = tx.Rollback(ctx)
+		t.Fatal(err)
+	}
+	if err := insertSession(ctx, tx, expiredToken, q.f.principalA, "merchant", now.Add(-time.Minute), nil); err != nil {
+		_ = tx.Rollback(ctx)
+		t.Fatal(err)
+	}
+	if err := insertSession(ctx, tx, revokedToken, q.f.principalA, "merchant", now.Add(time.Hour), now); err != nil {
 		_ = tx.Rollback(ctx)
 		t.Fatal(err)
 	}
@@ -94,16 +105,18 @@ func TestBrowserMerchantOrdersBFFRealChain(t *testing.T) {
 	mux.Handle("/v1/identity/", private)
 	mux.Handle("/", httpapi.NewHandler(q.f.runtime, httpapi.Options{SessionStoreList: true}))
 	var orderCalls, strippedFailures atomic.Int64
-	var lastURI atomic.Value
+	var lastURI, lastMethod atomic.Value
 	lastURI.Store("")
+	lastMethod.Store("")
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/__test/order-observation" {
 			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(map[string]any{"count": orderCalls.Load(), "last_uri": lastURI.Load()})
+			_ = json.NewEncoder(w).Encode(map[string]any{"count": orderCalls.Load(), "last_method": lastMethod.Load(), "last_uri": lastURI.Load()})
 			return
 		}
-		if r.Method == "GET" && strings.HasPrefix(r.URL.Path, "/v1/admin/stores/") && strings.Contains(r.URL.Path, "/orders") {
+		if strings.HasPrefix(r.URL.Path, "/v1/admin/stores/") && strings.Contains(r.URL.Path, "/orders") {
 			orderCalls.Add(1)
+			lastMethod.Store(r.Method)
 			lastURI.Store(r.RequestURI)
 			if r.Header.Get("Cookie") != "" || r.Header.Get("X-Tenant-ID") != "" ||
 				r.Header.Get("X-BFF-Test") != "" || r.Header.Get("X-Forwarded-Host") != "" ||
@@ -138,6 +151,81 @@ func TestBrowserMerchantOrdersBFFRealChain(t *testing.T) {
 	if err := os.MkdirAll(evidence, 0700); err != nil {
 		t.Fatal(err)
 	}
+	// Prove the fixture actually works on a second, local Next process, then
+	// require orders to remain hidden when real identity transport is disabled.
+	fixtureListener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fixtureAddress := fixtureListener.Addr().String()
+	_ = fixtureListener.Close()
+	_, fixturePort, _ := net.SplitHostPort(fixtureAddress)
+	fixtureLog := browserLog(t, filepath.Join(evidence, "fixture-next.log"))
+	fixtureNext := exec.CommandContext(ctx, "node", filepath.Join(root, "apps/admin/node_modules/next/dist/bin/next"), "dev", "--hostname", "127.0.0.1", "--port", fixturePort)
+	fixtureNext.Dir = filepath.Join(root, "apps/admin")
+	fixtureNext.Env = browserEnvironment(map[string]string{
+		"NODE_ENV": "development", "COMMERCE_IDENTITY_ENABLED": "0",
+		"COMMERCE_FIXTURE_ENABLED": "1", "COMMERCE_FIXTURE_ALLOWED": "1",
+		"COMMERCE_FIXTURE_TOKEN": q.f.tokens["a"], "COMMERCE_FIXTURE_STORE_ID": q.f.storeA1,
+		"COMMERCE_API_ORIGIN": api.URL,
+	})
+	fixtureNext.Stdout, fixtureNext.Stderr = fixtureLog, fixtureLog
+	if err := fixtureNext.Start(); err != nil {
+		t.Fatal("could not start local fixture Next")
+	}
+	fixtureDone := make(chan error, 1)
+	go func() { fixtureDone <- fixtureNext.Wait() }()
+	var stopFixtureOnce sync.Once
+	stopFixture := func() {
+		stopFixtureOnce.Do(func() {
+			_ = fixtureNext.Process.Signal(os.Interrupt)
+			select {
+			case <-fixtureDone:
+			case <-time.After(5 * time.Second):
+				_ = fixtureNext.Process.Kill()
+				<-fixtureDone
+			}
+		})
+	}
+	t.Cleanup(stopFixture)
+	fixtureClient := &http.Client{Timeout: 2 * time.Second}
+	fixtureRead := func(resource string) (*http.Response, error) {
+		req, err := http.NewRequestWithContext(ctx, "GET", "http://"+fixtureAddress+"/api/stores/"+q.f.storeA1+"/"+resource, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Host = "127.0.0.1:3100" // The existing fixture adapter has this exact loopback Host guard.
+		return fixtureClient.Do(req)
+	}
+	fixtureReady := false
+	for attempt := 0; attempt < 100; attempt++ {
+		response, err := fixtureRead("warehouses")
+		if err == nil {
+			_ = response.Body.Close()
+			fixtureReady = response.StatusCode == http.StatusOK
+		}
+		if fixtureReady {
+			break
+		}
+		select {
+		case <-ctx.Done():
+			t.Fatal("fixture Next readiness deadline")
+		case <-time.After(100 * time.Millisecond):
+		}
+	}
+	if !fixtureReady {
+		t.Fatalf("fixture Next did not expose warehouses; local evidence: %s", evidence)
+	}
+	beforeFixtureOrders := orderCalls.Load()
+	fixtureOrder, err := fixtureRead("orders")
+	if err != nil {
+		t.Fatal("fixture-only orders request failed")
+	}
+	_ = fixtureOrder.Body.Close()
+	if fixtureOrder.StatusCode != http.StatusNotFound || fixtureOrder.Header.Get("Cache-Control") != "no-store" || orderCalls.Load() != beforeFixtureOrders {
+		t.Fatalf("fixture-only orders not isolated: status=%d upstream_delta=%d evidence=%s", fixtureOrder.StatusCode, orderCalls.Load()-beforeFixtureOrders, evidence)
+	}
+	stopFixture()
 	serverLog := browserLog(t, filepath.Join(evidence, "next.log"))
 	server := exec.CommandContext(ctx, "node", filepath.Join(root, "apps/admin/.next/standalone/apps/admin/server.js"))
 	server.Dir = root
@@ -191,7 +279,7 @@ func TestBrowserMerchantOrdersBFFRealChain(t *testing.T) {
 		"LC_BROWSER_ORDER_ID": q.hold.OrderID, "LC_BROWSER_FOREIGN_STORE": foreignStore,
 		"LC_BROWSER_FOREIGN_ORDER_ID": foreignOrder, "LC_BROWSER_UNLISTED_STORE": q.f.storeB,
 		"LC_BROWSER_NO_ORDERS_TOKEN": noOrdersToken,
-		"LC_BROWSER_EXPIRED_TOKEN": q.f.tokens["expired"], "LC_BROWSER_REVOKED_TOKEN": q.f.tokens["revoked"],
+		"LC_BROWSER_EXPIRED_TOKEN":   expiredToken, "LC_BROWSER_REVOKED_TOKEN": revokedToken,
 	})
 	browser.Stdout, browser.Stderr = browserLogFile, browserLogFile
 	if err := browser.Run(); err != nil {

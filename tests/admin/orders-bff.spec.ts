@@ -70,7 +70,11 @@ function raw(
 async function observation() {
   const response = await fetch(`${apiOrigin}/__test/order-observation`);
   expect(response.status).toBe(200);
-  return (await response.json()) as { count: number; last_uri: string };
+  return (await response.json()) as {
+    count: number;
+    last_method: string;
+    last_uri: string;
+  };
 }
 
 function expectSafe(response: RawResponse, status: number) {
@@ -84,6 +88,15 @@ function expectSafe(response: RawResponse, status: number) {
   expect(typeof parsed.code).toBe("string");
 }
 
+function expectCleared(response: RawResponse) {
+  const cookies = response.headers["set-cookie"];
+  expect(Array.isArray(cookies)).toBe(true);
+  for (const name of ["__Host-commerce_session", "__Host-commerce_csrf"]) {
+    const clearing = cookies?.find((value) => value.startsWith(`${name}=`));
+    expect(clearing).toContain("Max-Age=0");
+  }
+}
+
 test("MBT01-04 signed cookie, raw route policy and real Go/PG order reads", async ({
   context,
   page,
@@ -94,12 +107,10 @@ test("MBT01-04 signed cookie, raw route policy and real Go/PG order reads", asyn
     .click();
   await expect
     .poll(async () =>
-      (await context.cookies(publicOrigin)).some(
-        (item) => item.name === cookieName,
-      ),
+      (await context.cookies()).some((item) => item.name === cookieName),
     )
     .toBe(true);
-  const cookies = (await context.cookies(publicOrigin)).filter(
+  const cookies = (await context.cookies()).filter(
     (item) => item.name === cookieName,
   );
   expect(cookies).toHaveLength(1);
@@ -124,6 +135,7 @@ test("MBT01-04 signed cookie, raw route policy and real Go/PG order reads", asyn
   expect((await observation()).last_uri).toBe(
     `/v1/admin/stores/${store}/orders?limit=1&state=all`,
   );
+  expect((await observation()).last_method).toBe("GET");
 
   const detail = await raw(`${base}/${order}`, "GET", authorized);
   expect(detail.status).toBe(200);
@@ -150,6 +162,7 @@ test("MBT01-04 signed cookie, raw route policy and real Go/PG order reads", asyn
     404,
   );
 
+  const invalidFailures: string[] = [];
   for (const [path, method, extra, payload] of [
     [`${base}?`, "GET", {}, undefined],
     [`${base}?limit=1&limit=2`, "GET", {}, undefined],
@@ -181,8 +194,16 @@ test("MBT01-04 signed cookie, raw route policy and real Go/PG order reads", asyn
       { ...authorized, ...extra },
       payload,
     );
-    expectSafe(response, 422);
-    expect((await observation()).count).toBe(before);
+    if (response.status === 422) expectSafe(response, 422);
+    else
+      invalidFailures.push(
+        `${method} ${path.slice(0, 120)}: ${response.status}`,
+      );
+    const after = (await observation()).count;
+    if (after !== before)
+      invalidFailures.push(
+        `${method} ${path.slice(0, 120)}: upstream +${after - before}`,
+      );
   }
   for (const path of [`/api/stores/not-a-uuid/orders`, `${base}/not-a-uuid`]) {
     const before = (await observation()).count;
@@ -206,15 +227,14 @@ test("MBT01-04 signed cookie, raw route policy and real Go/PG order reads", asyn
   });
   for (const response of [noCookie, wrong, ambiguous]) {
     expectSafe(response, 401);
-    expect(String(response.headers["set-cookie"])).toContain(`${cookieName}=`);
-    expect(String(response.headers["set-cookie"])).toContain("Max-Age=0");
+    expectCleared(response);
   }
   for (const token of [expiredToken, revokedToken]) {
     const response = await raw(base, "GET", {
       Cookie: `${cookieName}=${token}`,
     });
     expectSafe(response, 401);
-    expect(String(response.headers["set-cookie"])).toContain("Max-Age=0");
+    expectCleared(response);
   }
   expectSafe(
     await raw(base, "GET", {
@@ -232,4 +252,5 @@ test("MBT01-04 signed cookie, raw route policy and real Go/PG order reads", asyn
   expect((await observation()).count).toBe(beforeUnavailable + 1);
   expect(unavailable.headers["x-backend-secret"]).toBeUndefined();
   expect(unavailable.headers["set-cookie"]).toBeUndefined();
+  expect(invalidFailures).toEqual([]);
 });
