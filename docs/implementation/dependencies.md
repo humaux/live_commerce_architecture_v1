@@ -35,6 +35,13 @@ HttpOnly 会话、CSRF/Origin 和授权店铺列表，不转发浏览器提供�
 
 ## 独立付款 worker 复用关系
 
+商家订单只读增量复用 `platform.WithScope` / `RequirePermission`、`pagination.Page`、
+pgx 显式事务和现有 `commerce_auth`，未增加依赖。`internal/merchantorders` 通过
+`identity.read_merchant_orders` 读取原 checkout 快照和付款事实；不调用供应商、不
+创建任务或新交易台账。0027 的列级授权、单语句数据快照、等待后的授权复查和
+原商家成员不自动加权必须随 PG/pgx 升级重验，见
+[商家订单读取与部署边界](merchant-order-reads.md)。该增量的独立门禁尚在进行中。
+
 `cmd/payment-worker` → `accounts.LoadKeyring` / `platform.OpenWorkerPool` →
 `payments.NewWorkerClient` → 原 `QueryWorker` / `CaptureWorker`。没有新增模块、
 队列中间件或交易台账。`internal/jobqueue` 按服务端执行环境选择三条固定队列；
