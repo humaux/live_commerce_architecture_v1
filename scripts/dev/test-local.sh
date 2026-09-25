@@ -114,7 +114,10 @@ else
   # Serial gates include two independent worker crash-rescue suites and fresh
   # migration clusters. Only this additive package envelope grows; individual
   # gate deadlines and production rescue defaults are unchanged.
-  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=360s -v ./...
+  # Run package binaries serially: independent author and root parallel runs
+  # stalled before checkout's test output on this host. This does not disable
+  # -race, in-test concurrency or any test; it is not a product root-cause fix.
+  GOTOOLCHAIN=go1.27.1 go test -p 1 -race -count=1 -timeout=360s -v ./...
   GOTOOLCHAIN=go1.27.1 go vet ./...
   printf 'PASS: isolated real PostgreSQL foundation tests; fixture removed at exit.\n'
 fi
