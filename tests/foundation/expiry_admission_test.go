@@ -29,6 +29,24 @@ func TestBuyerCheckoutExpiryRuntimeAdmission(t *testing.T) {
 		}
 	}
 	assertReady(t, true)
+	for _, tc := range []struct {
+		name        string
+		ctx         context.Context
+		pool        *pgxpool.Pool
+		concurrency int
+	}{
+		{"nil context", nil, p.worker, 1},
+		{"nil pool", context.Background(), nil, 1},
+		{"zero concurrency", context.Background(), p.worker, 0},
+		{"excess concurrency", context.Background(), p.worker, 17},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			client, err := checkout.NewExpiryClient(tc.ctx, tc.pool, tc.concurrency)
+			if client != nil || err == nil || err.Error() != "expiry_worker_invalid_config" {
+				t.Fatal("invalid constructor input admitted")
+			}
+		})
+	}
 	var triggerDDL string
 	if err := f.owner.QueryRow(context.Background(), `SELECT pg_get_triggerdef(oid) FROM pg_trigger
 	 WHERE tgrelid='river.river_job'::regclass AND tgname='checkout_expiry_queue_route_v1'`).Scan(&triggerDDL); err != nil {

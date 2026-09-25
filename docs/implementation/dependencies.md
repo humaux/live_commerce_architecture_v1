@@ -48,8 +48,26 @@ HttpOnly 会话、CSRF/Origin 和授权店铺列表，不转发浏览器提供�
 
 升级 River/PG/pgx 时须重跑全量真实 PG/race/vet，尤其新库／旧任务升级、失败
 原子回滚、旧通知队列与轮询、混合环境、重复入账及进程退出门禁。固定队列只覆盖
-付款查询和入账，不会启动默认队列的过期／外部操作 worker。部署开关、历史密钥
+付款查询和入账，不会启动到期／默认队列的外部操作 worker。部署开关、历史密钥
 及回退边界见 [付款 worker 运行说明](payment-worker-runtime.md)。
+
+## 独立到期 worker 与共享生命周期
+
+`cmd/expiry-worker` → `platform.OpenWorkerPool` → `checkout.NewExpiryClient` →
+原 `ExpiryWorker` → `checkout.expire_held`。只消费 `jobqueue.CheckoutExpiry`，
+不需要付款 keyring、供应商配置或新的库存 writer。`checkout.Begin` 的现有
+`InsertTx` 显式设置同一队列，仍与订单和预留同事务。
+
+`post_river/0002_checkout_expiry_queue.sql` 复用现有校验和／锁／迁移阶段，
+将合法旧任务归队。NOLOGIN checkout writer 只新增 River `UPDATE(queue)`；
+提交时 AFTER INSERT 触发器核验不可变 `orders.job_id` 和原始 generation=1，
+不与付款后变化的当前版本比较。ready 函数只向 worker 返回布尔值。
+
+`internal/jobqueue.Run` 抽出付款进程已经验收的 10 秒启动看门狗、15 秒正常／
+5 秒取消停止逻辑，供付款和到期两个入口共同调用；各自保留连接池与错误映射。
+没有新增依赖、通用进程框架或动态队列选择。升级 River/PG/pgx 必须复跑两个
+真实进程的启停／强杀恢复、旧生产者轮询、付款与到期锁竞争和完整回归；
+说明与停止线见 [到期 worker 运行说明](expiry-worker-runtime.md)。
 
 ## 商家设置向导复用关系
 
