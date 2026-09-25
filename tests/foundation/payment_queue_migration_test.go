@@ -59,6 +59,9 @@ func TestBuyerPaymentWorkerQueueMigrationRollbackAndBackfill(t *testing.T) {
 	}
 	pwRemoveRouter(t, f.owner)
 	mustExec(t, f.owner, `UPDATE river.river_job SET queue='default' WHERE id=$1`, q.result.JobID)
+	terminal := pwOldQuerySetupOn(t, f, q.keys)
+	mustExec(t, f.owner, `UPDATE river.river_job SET state='completed',finalized_at=clock_timestamp() WHERE id=$1`, terminal.result.JobID)
+	terminalBefore := pwJobExceptQueue(t, f.owner, terminal.result.JobID)
 	if err := q.record(q.claim(t), pcFull(q)); err != nil {
 		t.Fatal(err)
 	}
@@ -119,7 +122,7 @@ func TestBuyerPaymentWorkerQueueMigrationRollbackAndBackfill(t *testing.T) {
 	if got := pwQueue(t, f.owner, q.result.JobID); got != "payment_mock_v1" {
 		t.Fatalf("valid legacy job stayed on %s", got)
 	}
-	if pwJobExceptQueue(t, f.owner, q.result.JobID) != queryBefore || pwJobExceptQueue(t, f.owner, reconcile) != reconcileBefore || pwQueue(t, f.owner, reconcile) != "payment_mock_v1" || pwJobExceptQueue(t, f.owner, unrelated) != unrelatedBefore || pwQueue(t, f.owner, unrelated) != "default" {
+	if pwJobExceptQueue(t, f.owner, q.result.JobID) != queryBefore || pwJobExceptQueue(t, f.owner, reconcile) != reconcileBefore || pwQueue(t, f.owner, reconcile) != "payment_mock_v1" || pwJobExceptQueue(t, f.owner, terminal.result.JobID) != terminalBefore || pwQueue(t, f.owner, terminal.result.JobID) != "default" || pwJobExceptQueue(t, f.owner, unrelated) != unrelatedBefore || pwQueue(t, f.owner, unrelated) != "default" {
 		t.Fatal("backfill changed non-queue fields or unrelated default job")
 	}
 	if err := migrations.Apply(context.Background(), f.owner); err != nil {
