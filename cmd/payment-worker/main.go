@@ -90,11 +90,13 @@ func run(ctx context.Context, getenv func(string) string) error {
 	if err != nil {
 		return err
 	}
-	// Keep the Start context separate from the signal context so SIGTERM takes
-	// River's graceful Stop path instead of cancelling in-flight work at once.
-	if err := client.Start(context.Background()); err != nil {
-		return errWorkerStart
+	// River Start does a synchronous database probe. Cancel a stalled startup
+	// on signal or deadline, then disarm that watchdog for normal operation.
+	cancelWorker, err := startWorker(ctx, 10*time.Second, client.Start)
+	if err != nil {
+		return err
 	}
+	defer cancelWorker()
 	<-ctx.Done()
 	graceful, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	err = client.Stop(graceful)
@@ -108,4 +110,34 @@ func run(ctx context.Context, getenv func(string) string) error {
 		return errWorkerStop
 	}
 	return nil
+}
+
+func startWorker(signalCtx context.Context, timeout time.Duration,
+	start func(context.Context) error) (context.CancelFunc, error) {
+	if signalCtx == nil || start == nil || timeout <= 0 || signalCtx.Err() != nil {
+		return nil, errWorkerStart
+	}
+	workerCtx, cancelWorker := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	watchStopped := make(chan struct{})
+	timer := time.NewTimer(timeout)
+	go func() {
+		defer close(watchStopped)
+		select {
+		case <-signalCtx.Done():
+			cancelWorker()
+		case <-timer.C:
+			cancelWorker()
+		case <-done:
+		}
+	}()
+	err := start(workerCtx)
+	close(done)
+	timer.Stop()
+	<-watchStopped
+	if err != nil || workerCtx.Err() != nil {
+		cancelWorker()
+		return nil, errWorkerStart
+	}
+	return cancelWorker, nil
 }
