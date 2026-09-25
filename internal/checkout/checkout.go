@@ -22,6 +22,7 @@ import (
 	"livecommerce/internal/command"
 	"livecommerce/internal/fulfillment"
 	"livecommerce/internal/inventory"
+	"livecommerce/internal/jobqueue"
 	"livecommerce/internal/platform"
 	"livecommerce/internal/storefront"
 )
@@ -173,7 +174,7 @@ func (s *Service) Begin(ctx context.Context, token, storeID, key string, in Inpu
 			return err
 		}
 		job, err := s.jobs.InsertTx(callCtx, tx, expiryArgs{OrderID: orderID, Generation: 1, Version: 1},
-			&river.InsertOpts{ScheduledAt: now.Add(holdDuration)})
+			&river.InsertOpts{Queue: jobqueue.CheckoutExpiry, ScheduledAt: now.Add(holdDuration)})
 		if err != nil {
 			return err
 		}
