@@ -82,7 +82,12 @@ test("BPT05 unresolved cookie journal blocks handoff; lost response is one fetch
   let calls = 0;
   globalThis.fetch = async () => { calls++; throw new Error("response lost"); };
   try {
-    data.set("commerce-buyer-pending-v1", "invalid pending journal");
+    data.set("commerce-buyer-pending-v1", JSON.stringify({
+      v: 1,
+      id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      baseline: context,
+      phase: "reset",
+    }));
     await rejectsLocal(buyerRequest("POST", suffix, context), "uncertain");
     assert.equal(calls, 0);
     data.delete("commerce-buyer-pending-v1");

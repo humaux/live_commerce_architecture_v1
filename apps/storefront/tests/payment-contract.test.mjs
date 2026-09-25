@@ -95,7 +95,7 @@ test("BPT03 view rejects private fields, inconsistent state and malformed names"
     ["control name", { methods: [{ ...method, name_en: "Mock\n" }] }],
     ["121 Unicode points", { methods: [{ ...method, name_en: "😀".repeat(121) }] }],
   ]) {
-    const candidate = name === "private attempt" ? { ...view, ...mutation } : { ...view, ...mutation };
+    const candidate = { ...view, ...mutation };
     assert.equal(validOrderPayment(candidate, orderID), false, name);
   }
   assert.equal(
