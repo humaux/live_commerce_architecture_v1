@@ -177,10 +177,10 @@ export default function OrderPayment({
             data-testid="payment-status"
             data-state={view.payment_state}
           >
-            {copy[view.payment_state]}
+            {copy.paymentState}: {copy[view.payment_state]}
           </p>
-          <p className="order-note">
-            {orderCopy[locale][view.commercial_state]}
+          <p className="order-note" data-testid="payment-commercial-status">
+            {copy.orderState}: {orderCopy[locale][view.commercial_state]}
           </p>
         </>
       )}

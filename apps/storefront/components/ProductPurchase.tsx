@@ -93,6 +93,8 @@ export default function ProductPurchase({
     const formatter = new Intl.NumberFormat(locale, {
       style: "currency",
       currency,
+      // zh-TW's local "$" is ambiguous when an order is shared across markets.
+      currencyDisplay: locale === "zh-TW" && currency === "TWD" ? "code" : "symbol",
     });
     return formatter.format(
       amount / 10 ** (formatter.resolvedOptions().maximumFractionDigits ?? 2),
