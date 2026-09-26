@@ -142,8 +142,11 @@ and only the fixed `meta_worker_start_failed` marker. The code path narrows this
 to `jobqueue.Run` / `startWorker(client.Start)`, after successful constructor
 preflight; the underlying cause is not available. This is not proof of the
 same cause as the earlier zero-log readiness timeout. No blind rerun, timeout
-increase, or whole-LRC acceptance follows from the passing subset. A separate
-bounded safe-startup-diagnostic task is in progress.
+increase, or whole-LRC acceptance follows from the passing subset. The bounded
+[safe-startup diagnostic](2026-09-27-worker-start-diagnostics.md) at `ba342c3`
+passed unit/source review, then the original scenario failed again with native
+SQLSTATE `53300` (too many connections). Connection ownership/lifetime is under
+investigation; full acceptance remains blocked.
 
 The three restricted native/catalog diagnostic files were copied unchanged
 (0600) into `/Volumes/data/output/local-recovery-evidence-20260927/`; their
