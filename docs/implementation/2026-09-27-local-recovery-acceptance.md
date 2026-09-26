@@ -2,7 +2,7 @@
 
 ## Current verdict
 
-**Final independent sign-off pending.** Amendment 1 author/root recovery subsets
+**ACCEPTED_LOCAL, LRC01–06 only.** Amendment 1 author/root recovery subsets
 and root full regression now pass on source `c7d2703`; the earlier `1fbd997`
 worker-start failure and native `53300` follow-up remain recorded below. The
 test-only seed-pool lifetime correction passed at unchanged capacity.
@@ -151,7 +151,8 @@ increase, or whole-LRC acceptance follows from the passing subset. The bounded
 [safe-startup diagnostic](2026-09-27-worker-start-diagnostics.md) at `ba342c3`
 passed unit/source review, then the original scenario failed again with native
 SQLSTATE `53300` (too many connections). Connection ownership/lifetime is under
-investigation; full acceptance remains blocked.
+investigation at that point; the original stop line remained until the correction
+and full independent acceptance recorded next.
 
 Root `c7d2703` full2 subsequently completed `bash scripts/dev/test-local.sh`
 with actual exit 0: **568 top-level PASS / 0 FAIL / 0 SKIP**, foundation
@@ -164,8 +165,13 @@ two-way maintenance passes 9.24s with all 20 seed-role native connections
 observed 1 → 0 at capacity 30 / reserved 0 / superuser-reserved 3. Legacy
 maintenance siblings pass too; 70 seed-role release observations total.
 Task-owned fixture listing is empty after actual exit. Only documentation
-changed after frozen source `c7d2703` during the run. Final independent
-source/evidence sign-off is pending; no failure history is removed.
+changed after frozen source `c7d2703` during the run. Final independent security
+and PG evidence reviews accepted the bounded LOCAL LRC/WSD/SPL scope with no
+remaining concrete P0/P1/P2. PG review memory:
+`80bd492f-8366-473a-90d7-f9ddcc7e213a`; security review title:
+`LRC WSD SPL c7d2703 final independent bounded LOCAL acceptance`.
+No failure history is removed. Whole T20, T22, SaaS, production, HA/PITR and
+provider qualification remain outside this acceptance.
 
 The three restricted native/catalog diagnostic files were copied unchanged
 (0600) into `/Volumes/data/output/local-recovery-evidence-20260927/`; their
@@ -187,7 +193,7 @@ Final test symbols were indexed and linked to the bootstrap/ACL rationale.
 | LRC03 roles/ACL/RLS/authorization/keys | PASS_LOCAL focused4, independent mutation controls |
 | LRC04 raw restore then idempotent migration/readiness | PASS_LOCAL focused4 |
 | LRC05 default-off and bounded restart | PASS_LOCAL focused4 |
-| LRC06 independent/root regression and cleanup | Root full2 568 PASS; final independent sign-off pending |
+| LRC06 independent/root regression and cleanup | PASS_LOCAL full2 568 PASS, two independent reviews, owned cleanup |
 
 Record actual commands, source SHA, exit code, elapsed observations, log path
 and SHA256. Retain failed attempts and root cause; a file or process starting

@@ -1,8 +1,7 @@
 # Seed-pool lifetime correction evidence
 
-Status: author/root SPL01/02 and independent source PASS; root full regression
-PASS. Final independent SPL04/WSD04/LRC06 sign-off is pending. Main remains
-`519fb16` until that review completes.
+Status: ACCEPTED_LOCAL, SPL01–04. Author/root real-PG, full regression and
+independent source/security/PG-evidence reviews pass on source `c7d2703`.
 
 ## Cause and correction
 
@@ -58,8 +57,10 @@ It does not retroactively measure every connection in the old failure.
   corrected Meta and legacy sites, 70 seed-role release checks pass. Full
   startup-failure, restart, legacy isolation and all five LRC tests pass too.
   `docker ps -a --filter label=livecommerce.fixture` returns no containers.
-  Later commits during this run changed only docs; final independent review
-  remains before merge.
+  Later commits during this run changed only docs. Independent security and
+  PG evidence reviewers verified the source/hash/counts/cleanup and accepted
+  the bounded scope, without remaining concrete P0/P1/P2. Evidence memory
+  `80bd492f-8366-473a-90d7-f9ddcc7e213a` and the linked LRC record retain details.
 
 The failure and successful fix are local test-resource evidence, not production
 capacity sizing, public-provider qualification or whole-SaaS release acceptance.

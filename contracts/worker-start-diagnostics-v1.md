@@ -1,6 +1,7 @@
 # Worker start diagnostic witness (bounded local gate)
 
-Status: FROZEN / NOT_RUN. Parent LRC06 is blocked at root `1fbd997` by one
+Status: ACCEPTED_LOCAL at source `c7d2703`; [evidence](../docs/implementation/2026-09-27-worker-start-diagnostics.md).
+Parent LRC06 was blocked at root `1fbd997` by one
 `TestMetaRuntimeIsolationTwoWayRealMaintenance` native worker-start failure.
 The generic error proves the constructor preflight passed, not why Start failed.
 Keep the full1 failure and original process log; do not conflate it with the

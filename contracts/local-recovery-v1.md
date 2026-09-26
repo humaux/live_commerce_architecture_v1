@@ -1,6 +1,8 @@
 # LOCAL logical restore and cold-start v1
 
-Status: FROZEN amendment 1 / NOT_ACCEPTED (native bootstrap failure retained). Base: `519fb16`. This bounded rehearsal contributes to
+Status: FROZEN amendment 1 / ACCEPTED_LOCAL at source `c7d2703` (failed attempts retained).
+See [actual evidence](../docs/implementation/2026-09-27-local-recovery-acceptance.md).
+Base: `519fb16`. This bounded rehearsal contributes to
 G12/G14; it does **not** complete T20, T22, or production recovery acceptance.
 Approved B product-detail purchase UI and customer production remain unchanged.
 

@@ -1,7 +1,7 @@
 # Local seed-pool lifetime correction
 
-Status: FROZEN candidate contract / NOT_RUN. Base `3e1d37c`.
-Parent LRC06/WSD04 are blocked; the original same-capacity Meta maintenance
+Status: ACCEPTED_LOCAL at source `c7d2703`; [evidence](../docs/implementation/2026-09-27-seed-pool-lifetime.md).
+Base `3e1d37c`. Parent LRC06/WSD04 were blocked; the original same-capacity Meta maintenance
 replay returned PostgreSQL `53300`. No production runtime fix is implied.
 
 ## Minimal cause and scope

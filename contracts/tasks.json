@@ -1019,16 +1019,24 @@
       "tests/chaos/**",
       "evidence/acceptance/**"
     ],
-    "status": "NOT_STARTED",
+    "status": "IN_PROGRESS",
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
-      "implementation": "NOT_STARTED",
-      "unit_mock": "NOT_RUN",
-      "real_pg": "NOT_RUN",
+      "implementation": "PARTIAL_LOCAL_LOGICAL_RESTORE",
+      "unit_mock": "PASS_BOUNDED_WORKER_DIAGNOSTICS",
+      "real_pg": "PASS_BOUNDED_LOCAL_LRC_WSD_SPL",
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
-      "independent_review": "NOT_RUN"
+      "independent_review": "PASS_BOUNDED_LOCAL_ONLY"
+    },
+    "local_logical_restore": {
+      "status": "ACCEPTED_LOCAL",
+      "source": "c7d2703",
+      "contract": "contracts/local-recovery-v1.md",
+      "evidence": "docs/implementation/2026-09-27-local-recovery-acceptance.md",
+      "root_gate": "568PASS/0FAIL/0SKIP; PG18/race/vet; author plus independent root and two reviewers",
+      "boundary": "Quiescent synthetic logical restore and cold start only. Full T20 dependencies, concurrent backup, PITR/HA, real key custody, provider reconciliation and production reopening remain unaccepted. Failure history retained; B UI unchanged."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
