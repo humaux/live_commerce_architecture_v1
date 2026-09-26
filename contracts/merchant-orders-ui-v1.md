@@ -17,6 +17,12 @@ Reuse `WorkspaceFrame`, the existing locale routes, control tokens, currency
 formatter, cookie authentication and exact GET order BFF. No new dependency,
 database, generic proxy, cache, state framework or second transaction model.
 Add an orders navigation item without breaking existing ledger/settings routes.
+Page context uses optional canonical `store` UUID, `state` (the commercial
+filter below), `order` UUID and opaque `cursor` matching the accepted BFF grammar.
+Reject malformed, duplicate or unknown context fields; never silently switch
+store. The list requests limit10. Keeping the current cursor in the URL permits
+locale changes on later pages to retain the selected order; previous-page history
+may remain in component memory. Cursor/IDs are not recipient data or authority.
 Do not add shipping, cancellation, refunds, exports, manual-paid buttons or
 claims that provider onboarding is complete.
 
