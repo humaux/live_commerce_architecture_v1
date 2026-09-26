@@ -131,6 +131,52 @@ Seven overwritten tracked review PNGs were first byte-compared to retained
 run-specific copies, then restored to their previous committed baselines.
 This is responsive/Chromium mobile emulation, not physical iOS/Safari acceptance.
 
+## LRI03 / LRI04 integration review, not yet accepted
+
+Root `88bd408` admission run exited 0: 3 PASS / 0 FAIL / 0 SKIP,
+foundation 17.456s, including the two maintenance cases. Log
+`/Volumes/data/output/legacy-isolation-root-admission1-20260926.log`, SHA256
+`3fff052699d0a7c065dcb827809b2c64742f8788bde6283110e20f3410efd20b`.
+The independent review still requires both destination job-table snapshots
+around wrong-schema failures; expected-lane counts alone are insufficient.
+
+Author upgrade checkpoint `a7f4520` passed seven cases on its older helper base.
+Root integration `1711ce6` did **not** pass: 4 PASS / 4 FAIL / 0 SKIP,
+exit 1, foundation 24.322s. Log
+`/Volumes/data/output/legacy-isolation-root-upgrade1-20260926.log`, SHA256
+`f25fc8b94345ac114d5118abae8b6cb584b908ed24d083a3d97cad8dba6a4e05`.
+The historical fixtures omitted the explicit `river` argument after the shared
+helper default became `river_payment`. The author result cannot transfer across
+that helper change. A test-only repair must retain current-family defaults.
+
+Read-only reviewer also requires discriminating same-ID reconciliation success,
+explicit retained `available` state, independently dominant sequence maxima for
+both families, and consistently admitted historical profile/environment/account
+data. Merely changing a SANDBOX fixture's profile label to LIVE proves routing
+label preservation, not valid historical LIVE admission. These are test-proof
+gaps, not established product defects. No real-provider calls are permitted.
+
+## LRI05 first broad diagnostic, failed
+
+Root `9e67eaa`, `bash scripts/dev/test-local.sh`, exited 1 with 541 top-level
+PASS / 13 FAIL / 0 SKIP; foundation 413.584s. Vet was not reached. Log
+`/Volumes/data/output/legacy-isolation-root-full-candidate1-20260926.log`, SHA256
+`5ea6f6c0f885ecbb6e18fef1389f57d7c2f8cfe8aa95aa64600ae200f63006aa`.
+This diagnostic deliberately preceded the pending Meta fixture integration and
+is not full acceptance. Remaining failures exposed old custom-queue fixtures,
+two missing private-trigger entries in an exact ACL allowlist, the new ledger
+count, and an external-dispatcher assertion reading the payment family table.
+Repairs preserve production guards, original negative assertions, and the
+external dispatcher's actual `river` route; forged-row fixtures remain narrowly
+owner-only and restore admission guards before runtime validation.
+
+The author's first Meta grouped run separately hit an eight-second process
+readiness failure with zero-byte child logs. An exact isolated rerun passed;
+the cause remains unproven. It is not the root diagnostic's earlier wrong-table
+failure and does not justify relaxing the startup deadline. Keep both records.
+Candidate repair commits `b899650` and `667376e` are integrated as `491128c` and
+`77cd52f`; independent source review and root payment/Meta runs are pending.
+
 ## Pending
 
 - Remaining profile/runtime regression, admission/readiness and populated-upgrade
