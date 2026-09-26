@@ -1,6 +1,6 @@
 # LRI04 historical populated upgrade author evidence
 
-Status: **REPAIRED CANDIDATE / LOCAL ONLY / ROOT REPLAY PENDING**. No product,
+Status: **REPAIRED CANDIDATE / LOCAL AND ROOT REPLAY PASS / FINAL REVIEW PENDING**. No product,
 SQL, script, dependency, provider, or production change is part of this author
 checkpoint.
 
