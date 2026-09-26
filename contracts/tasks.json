@@ -426,16 +426,21 @@
       "tests/live/**",
       "internal/mediaassets/**"
     ],
-    "status": "NOT_STARTED",
+    "status": "IN_PROGRESS",
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
-      "implementation": "NOT_STARTED",
-      "unit_mock": "NOT_RUN",
-      "real_pg": "NOT_RUN",
+      "implementation": "PARTIAL_DURABLE_DRAFT_PLANNING",
+      "unit_mock": "NOT_APPLICABLE_DRAFT_USES_REAL_PG",
+      "real_pg": "PASS_LSP01_05_AND_573_FULL_REGRESSION_LOCAL_ONLY",
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
-      "independent_review": "NOT_RUN"
+      "independent_review": "PASS_LSP_SOURCE_TESTS_AND_573_FULL_EVIDENCE_LOCAL_ONLY"
+    },
+    "live_planning_slice": {
+      "contract": "contracts/live-planning-v1.md",
+      "evidence": "docs/implementation/2026-09-27-live-planning-acceptance.md",
+      "boundary": "Durable merchant DRAFT session/program only. No HTTP/studio route, destinations, attempts, provider I/O or broadcast lifecycle. Explicit live grants are not automatically provisioned. Global G06 and full T08 remain incomplete."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
