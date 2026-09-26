@@ -591,6 +591,23 @@ test("MOU03 delayed old success/error cannot repaint store, filter, locale or ne
   await noPII(page);
 });
 
+async function paymentBadgesFit(page: Page) {
+  // Global fixed-table column rules must never hide "authorized, not captured".
+  const badges = await page
+    .locator(".orders-table > tbody > tr:not(.orders-detail-row) > td:last-child .orders-badge")
+    .evaluateAll((elements) => elements.map((element) => {
+      const cell = element.closest("td")!.getBoundingClientRect();
+      const badge = element.getBoundingClientRect();
+      return {
+        withinCell: badge.left >= cell.left - 1 && badge.right <= cell.right + 1,
+        textFits: element.scrollWidth <= element.clientWidth + 1,
+        label: element.textContent,
+      };
+    }));
+  expect(badges.length).toBeGreaterThan(0);
+  expect(badges.filter((badge) => !badge.withinCell || !badge.textFits)).toEqual([]);
+}
+
 test("MOU05 approved inline comp at desktop/mobile in three locales and page-two locale context", async ({
   page,
 }, testInfo) => {
@@ -630,6 +647,7 @@ test("MOU05 approved inline comp at desktop/mobile in three locales and page-two
     expect(cells.productRight).toBeLessThanOrEqual(cells.priceLeft + 1);
     expect(cells.codeRight).toBeLessThanOrEqual(cells.productRight + 1);
     expect(cells.nameRight).toBeLessThanOrEqual(cells.productRight + 1);
+    await paymentBadgesFit(page);
     await screenshot(
       page,
       testInfo.outputPath(`inline-${locale}-1586x992.png`),
@@ -658,6 +676,7 @@ test("MOU05 approved inline comp at desktop/mobile in three locales and page-two
       }));
     expect(mobileDetail.width).toBeGreaterThanOrEqual(320);
     expect(mobileDetail.recipientWidth).toBeGreaterThanOrEqual(120);
+    await paymentBadgesFit(page);
     await page.evaluate(() => window.scrollTo(0, 0));
     await screenshot(page, testInfo.outputPath(`inline-${locale}-390x844.png`));
     await page
