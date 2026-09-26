@@ -355,18 +355,24 @@
       "internal/inbox/**",
       "tests/inbox/**"
     ],
-    "status": "NOT_STARTED",
+    "status": "IN_PROGRESS",
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
-      "implementation": "NOT_STARTED",
+      "implementation": "IN_PROGRESS_WEBHOOK_PROTOCOL",
       "unit_mock": "NOT_RUN",
       "real_pg": "NOT_RUN",
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
       "independent_review": "NOT_RUN"
     },
-    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。",
+    "webhook_protocol": {
+      "status": "FROZEN_IMPLEMENTING_NOT_ACCEPTED",
+      "contract": "contracts/meta-webhook-protocol-v1.md",
+      "research": "docs/discovery/meta/2026-09-26-inbound-reuse.md",
+      "boundary": "No public route before PG receipt/job atomic admission, encrypted retention, trusted asset routing and independent gates. Not complete T07 or live provider qualification."
+    }
   },
   {
     "id": "T08",
