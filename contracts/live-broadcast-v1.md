@@ -13,6 +13,10 @@ intent queue. It introduces no executable operations or provider route. The
 two lifecycle blockers above still require a separate reviewed resolution;
 protocol-client tests cannot close them.
 
+The [media authority lifetime decision](../docs/implementation/2026-09-27-media-authority-lifetime.md)
+records the replacement direction and required controller gates. This old LOCAL
+intent proposal remains non-executable; its API/SQL outline below is not frozen.
+
 Base `8ea20ae`; successor to [live planning](live-planning-v1.md). This proposes a
 LOCAL durable control-intent slice, **not operational start/stop or G06**. It
 registers no provider route, HTTP handler or worker. No secrets or provider calls.
