@@ -61,7 +61,7 @@ export function WorkspaceFrame({
     else onSection?.(id);
   }
   async function signOut() {
-    if (signOutBusy.current) return;
+    if (locked || signOutBusy.current) return;
     signOutBusy.current = true;
     setSigningOut(true);
     setSignOutFailed(false);
@@ -133,7 +133,7 @@ export function WorkspaceFrame({
           type="button"
           className="nav-item"
           data-testid="workspace-sign-out"
-          disabled={signingOut}
+          disabled={locked || signingOut}
           onClick={() => void signOut()}
         >
           {signingOut ? c.signingOut : c.signOut}
