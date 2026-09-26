@@ -4,8 +4,12 @@ Status: **PARTIALLY FROZEN; full controller NOT FROZEN**. The authorization
 registry increment is specified separately in
 [LMA01–05](live-media-authorization-v1.md); durable MOCK start-intent roles,
 attempt identity and native queue linkage are implemented separately in
-[LMP01–07](live-media-plan-v1.md). Execution leases, observation/material
-resolution and full lifecycle below are still a candidate, not enabled by LMP.
+[LMP01–07](live-media-plan-v1.md). The dedicated MOCK Start execution, leased
+material and synchronous recovery slice is now frozen separately in
+[LME01–08](live-media-execution-v1.md), with product gates still NOT_RUN. Its
+exact roles/signatures and closed-lease late-report behavior take precedence
+over the broader candidates below. The rest of the lifecycle remains a candidate;
+neither LMP nor a frozen contract enables live execution by itself.
 The bounded MOCK Stop recovery below
 has independent design review; it is not yet implemented. This supersedes the implementation
 direction of the old non-executable `live-broadcast-v1.md`; it does not activate
@@ -60,9 +64,10 @@ must retain legacy semantics and existing migrations remain unchanged.
   official authenticated asset/eligibility check (or a separately reviewed manual
   Instagram Live Producer intake). An evidence hash is not proof by itself.
   No merchant role may make a binding authorized by inserting this record.
-- `commerce_media_worker`: exact narrow worker authority, distinct from ordinary
-  commerce_worker/runtime/Meta/payment roles; no direct secret-table writes or
-  ciphertext SELECT. It can claim, resolve and report only MEDIA operations.
+- LME splits the earlier worker candidate into `commerce_media_worker` for
+  native River administration only and `commerce_media_executor` for fixed
+  MEDIA claim/material/report functions. Neither can directly read ciphertext
+  tables; ordinary commerce_worker/runtime/Meta/payment roles remain excluded.
 - Private NOLOGIN writer/definer owns the fixed entry points. No public dynamic
   function/action/family names or caller-fed bypass switches. Startup verifies
   real role memberships/privileges and same physical database, following existing
@@ -126,7 +131,9 @@ fact even if the initiating merchant has since lost access.
 - Stop ACK keeps monitoring; only correlated provider terminal status/timestamps
   and durable history may close resource lifetime. Egress failure can terminate
   resource usage without making the broadcast successful. A later contradictory
-  observation is retained/escalated, not allowed to reopen or retarget the resource.
+  asynchronous observation needs a separately authenticated ingress contract to
+  be retained/escalated. LME's synchronous closed-lease reports are rejected with
+  no mutation; neither path may reopen or retarget the resource.
 - Bounded retries/generations/age must retain unresolved state and an operator
   escalation if credentials are externally revoked or provider cannot be reached.
   Do not close liability, delete the attempt or create replacement resources to

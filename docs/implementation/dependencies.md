@@ -104,6 +104,21 @@ scheduled/pending/terminal 初态仍拒绝。升级 River/pgx、改变角色、a
 [验收证据](2026-09-27-live-media-plan-acceptance.md)。未来允许执行状态／维护
 能力时必须新增 worker 契约与 gate，不能直接把初态守卫关掉。
 
+## T08 MOCK 执行 worker 依赖（已冻结，产品验收待运行）
+
+[LME01–08](../../contracts/live-media-execution-v1.md) 复用上述 planner、
+`integration.operations` 租约和原生 `river_media`，不新增库或任务引擎。
+固定 SQL 负责 claim／密文读取／一次 wire reservation／观察／不确定结果；
+Go `NewMediaClient` 使用既有 LKM 解密和 LKP Start／FindByRoom／Query。
+只有 reservation 明确提交成功才允许 Start；之后重启只查询原目标，不重开。
+网络期间不能持有业务事务；撤权阻止新 dispatch，但不阻止已保留目标的恢复。
+
+forward0036 与 post-River0007 分别提供业务状态及原生生命周期权限；新增
+executor 和 River 管理身份分池、同物理 DB 验证。当前属于冻结实现输入，
+不是已交付代码或测试通过记录。验收入口 `test-local.sh --live-media-execution`
+要求非空测试，并覆盖 PG18／TLS／真实进程重启及 COMMIT 回执丢失；之后仍须
+全量 PG/race/vet。Stop、LIVE、部署二进制、资源回收及 G06 不由该增量证明。
+
 ## 依赖版本
 
 版本来自当前 `go.mod`/`go.sum` 和本阶段已记录的锁定证据；license 是上游声明，不等于本项目已完成法务准入。升级流程是确认候选版本、更新锁文件与本表、在候选版本上跑 gate，通过后再合并。
