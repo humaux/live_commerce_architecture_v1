@@ -25,7 +25,7 @@ func OpenMetaIngressPool(ctx context.Context, dsn string) (*pgxpool.Pool, error)
 }
 
 // OpenMetaConsumerPool opens the projection-only authority. River lifecycle
-// operations must use a separate ordinary worker pool.
+// operations must use the separate Meta lifecycle pool, not commerce_worker.
 func OpenMetaConsumerPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	if ctx == nil || len(dsn) > 8192 {
 		return nil, errors.New("meta consumer database unavailable")
@@ -35,6 +35,33 @@ func OpenMetaConsumerPool(ctx context.Context, dsn string) (*pgxpool.Pool, error
 		return nil, errors.New("meta consumer database unavailable")
 	}
 	return pool, nil
+}
+
+// OpenMetaWorkerPool confines River maintenance authority to river_meta. Queue
+// selection alone does not isolate River's scheduler/rescuer/cleaner.
+func OpenMetaWorkerPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
+	if ctx == nil || len(dsn) > 8192 {
+		return nil, errors.New("meta worker database unavailable")
+	}
+	pool, err := openPool(ctx, dsn, "meta_worker")
+	if err != nil {
+		return nil, errors.New("meta worker database unavailable")
+	}
+	return pool, nil
+}
+
+// ValidateMetaWorkerPool borrows, but never closes, the caller's lifecycle
+// pool. The ordinary worker and projection authorities are both inadmissible.
+func ValidateMetaWorkerPool(ctx context.Context, pool *pgxpool.Pool) error {
+	if ctx == nil || pool == nil {
+		return errors.New("meta worker database unavailable")
+	}
+	bounded, cancel := context.WithTimeout(ctx, startupTimeout)
+	defer cancel()
+	if err := validatePoolAuthority(bounded, pool, "meta_worker"); err != nil {
+		return errors.New("meta worker database unavailable")
+	}
+	return nil
 }
 
 // ValidateSameDatabase rejects a split ingress or consumer configuration before
