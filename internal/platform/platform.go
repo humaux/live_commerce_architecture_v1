@@ -195,6 +195,7 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 	var sameLogin, dsnUserMatch, superuser, bypassRLS, roleAdmin, databaseCreator, replication, objectOwner, runtimeMember, authMember, identityMember, buyerRuntimeMember, buyerIssuerMember, workerMember, checkoutMember, hostedMember, hostedUsage, hostedSet, checkoutWriterMember, canReachPrivileged bool
 	var metaIngress, metaRegistrar, metaCurator, metaConsumer, metaWriter, metaUsage, metaSet, consumerUsage, consumerSet, systemAuthority bool
 	var metaWorker, metaWorkerUsage, metaWorkerSet bool
+	var mediaRegistrar, mediaRegistrarUsage, mediaRegistrarSet, mediaWriter, mediaWriterUsage, mediaWriterSet bool
 	err := pool.QueryRow(ctx, `
 		SELECT session_user=current_user, session_user=$1, r.rolsuper, r.rolbypassrls, r.rolcreaterole, r.rolcreatedb, r.rolreplication,
 		       (EXISTS (
@@ -231,6 +232,12 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 		       coalesce(pg_has_role(session_user, to_regrole('commerce_meta_worker'), 'MEMBER'),false),
 		       coalesce(pg_has_role(session_user, to_regrole('commerce_meta_worker'), 'USAGE'),false),
 		       coalesce(pg_has_role(session_user, to_regrole('commerce_meta_worker'), 'SET'),false),
+		       coalesce(pg_has_role(session_user, to_regrole('commerce_media_registrar'), 'MEMBER'),false),
+		       coalesce(pg_has_role(session_user, to_regrole('commerce_media_registrar'), 'USAGE'),false),
+		       coalesce(pg_has_role(session_user, to_regrole('commerce_media_registrar'), 'SET'),false),
+		       coalesce(pg_has_role(session_user, to_regrole('commerce_media_writer'), 'MEMBER'),false),
+		       coalesce(pg_has_role(session_user, to_regrole('commerce_media_writer'), 'USAGE'),false),
+		       coalesce(pg_has_role(session_user, to_regrole('commerce_media_writer'), 'SET'),false),
 		       EXISTS (SELECT 1 FROM pg_roles predefined WHERE predefined.rolname LIKE 'pg\_%' ESCAPE '\'
 			   AND pg_has_role(session_user, predefined.oid, 'MEMBER')),
 		       EXISTS (
@@ -250,7 +257,7 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 			     AND (pg_has_role(session_user, candidate.oid, 'SET') OR pg_has_role(session_user, candidate.oid, 'USAGE'))
 		       )
 		FROM pg_roles r WHERE r.rolname = session_user`, pool.Config().ConnConfig.User).
-		Scan(&sameLogin, &dsnUserMatch, &superuser, &bypassRLS, &roleAdmin, &databaseCreator, &replication, &objectOwner, &runtimeMember, &authMember, &identityMember, &buyerRuntimeMember, &buyerIssuerMember, &workerMember, &checkoutMember, &hostedMember, &hostedUsage, &hostedSet, &checkoutWriterMember, &metaIngress, &metaRegistrar, &metaCurator, &metaConsumer, &metaWriter, &metaUsage, &metaSet, &consumerUsage, &consumerSet, &metaWorker, &metaWorkerUsage, &metaWorkerSet, &systemAuthority, &canReachPrivileged)
+		Scan(&sameLogin, &dsnUserMatch, &superuser, &bypassRLS, &roleAdmin, &databaseCreator, &replication, &objectOwner, &runtimeMember, &authMember, &identityMember, &buyerRuntimeMember, &buyerIssuerMember, &workerMember, &checkoutMember, &hostedMember, &hostedUsage, &hostedSet, &checkoutWriterMember, &metaIngress, &metaRegistrar, &metaCurator, &metaConsumer, &metaWriter, &metaUsage, &metaSet, &consumerUsage, &consumerSet, &metaWorker, &metaWorkerUsage, &metaWorkerSet, &mediaRegistrar, &mediaRegistrarUsage, &mediaRegistrarSet, &mediaWriter, &mediaWriterUsage, &mediaWriterSet, &systemAuthority, &canReachPrivileged)
 	if err != nil {
 		return fmt.Errorf("validate runtime role: %w", err)
 	}
@@ -260,7 +267,7 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 		"buyer_runtime": buyerRuntimeMember, "buyer_issuer": buyerIssuerMember, "worker": workerMember,
 		"checkout_runtime": checkoutMember, "meta_ingress": metaIngress,
 		"meta_registrar": metaRegistrar, "meta_curator": metaCurator, "meta_consumer": metaConsumer,
-		"meta_worker": metaWorker}
+		"meta_worker": metaWorker, "media_registrar": mediaRegistrar}
 	roleCount := 0
 	for _, member := range memberships {
 		if member {
@@ -286,7 +293,26 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 	// RESET ROLE would recover the session_user's capabilities after admission.
 	// Inherited owner authority also permits DDL without SET ROLE; SET FALSE is
 	// not a safe substitute for withholding that membership.
-	if !sameLogin || !dsnUserMatch || superuser || bypassRLS || roleAdmin || databaseCreator || replication || objectOwner || !roleValid || authMember || checkoutWriterMember || metaWriter || canReachPrivileged {
+	if !sameLogin || !dsnUserMatch || superuser || bypassRLS || roleAdmin || databaseCreator || replication || objectOwner || !roleValid || authMember || checkoutWriterMember || metaWriter || mediaRegistrarUsage || mediaRegistrarSet || mediaWriter || mediaWriterUsage || mediaWriterSet || canReachPrivileged {
+		return errors.New("unsafe runtime database role")
+	}
+	// The registrar owns no objects; inspect effective direct, PUBLIC and
+	// reachable-role EXECUTE on its two fixed definer functions as well.
+	var mediaExecute bool
+	err = pool.QueryRow(ctx, `
+		WITH reachable AS (
+			SELECT oid FROM pg_roles WHERE rolname=session_user
+			   OR pg_has_role(session_user, oid, 'USAGE') OR pg_has_role(session_user, oid, 'SET')
+		), fixed AS (
+			SELECT to_regprocedure('live.register_prepared_media(jsonb,bytea,bytea)') AS register_fn,
+			       to_regprocedure('live.revoke_prepared_media(uuid,uuid,uuid,text)') AS revoke_fn
+		)
+		SELECT EXISTS (
+			SELECT 1 FROM reachable r CROSS JOIN fixed f
+			WHERE coalesce(has_function_privilege(r.oid, f.register_fn, 'EXECUTE'),false)
+			   OR coalesce(has_function_privilege(r.oid, f.revoke_fn, 'EXECUTE'),false)
+		)`).Scan(&mediaExecute)
+	if err != nil || mediaExecute {
 		return errors.New("unsafe runtime database role")
 	}
 	if authority == "meta_worker" {
