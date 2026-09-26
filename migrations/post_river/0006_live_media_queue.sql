@@ -13,6 +13,11 @@ END $$;
 CREATE FUNCTION live.guard_media_job_family() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 BEGIN
+ -- River v0.40.0 stamps immediate jobs with the app clock. Normalize an
+ -- available INSERT to the DB clock so it cannot be parked by clock skew.
+ IF TG_OP='INSERT' AND NEW.state='available' THEN
+  NEW.scheduled_at:=clock_timestamp();
+ END IF;
  IF NEW.kind IS DISTINCT FROM 'live_media_operation_v1'
   OR NEW.queue IS DISTINCT FROM 'media_mock_v1' OR NEW.unique_key IS NOT NULL
   OR NEW.state IS DISTINCT FROM 'available' OR NEW.attempt IS DISTINCT FROM 0
