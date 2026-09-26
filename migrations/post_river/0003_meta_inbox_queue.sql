@@ -11,7 +11,11 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 BEGIN
  IF TG_OP='INSERT' THEN
   IF NEW.kind='meta_inbox_v1' OR NEW.queue='meta_inbox'
-   OR pg_has_role(session_user,'commerce_meta_ingress','MEMBER') THEN
+   -- pg_has_role reports true for every role to a superuser. That is not an
+   -- ingress login: unrelated migration-owner jobs retain their old semantics.
+   -- Reserved kind/queue still enter the strict authority gate for everyone.
+   OR (pg_has_role(session_user,'commerce_meta_ingress','MEMBER')
+    AND NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname=session_user AND rolsuper)) THEN
    PERFORM meta_inbox.require_authority('commerce_meta_ingress');
    IF NEW.kind<>'meta_inbox_v1' OR NEW.queue<>'meta_inbox' OR NEW.unique_key IS NOT NULL
     OR NEW.args IS NULL OR jsonb_typeof(NEW.args)<>'object'
