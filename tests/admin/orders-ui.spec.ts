@@ -1,4 +1,5 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { writeFile } from "node:fs/promises";
 import * as http from "node:http";
 
 const required = (name: string) => {
@@ -383,12 +384,19 @@ test("MOU03 controlled delayed detail, pagehide, history and cross-tab logout", 
   );
   const returnEvent = nativeEvents.find((event) => event.path === "/en/orders");
   expect(returnEvent).toBeDefined();
-  await testInfo.attach("native-pageshow.json", {
-    body: JSON.stringify({
+  // The list reporter does not persist body-only attachments for passing tests.
+  // Keep the actual native observation even when this scenario is green.
+  const nativeHistoryPath = testInfo.outputPath("native-pageshow.json");
+  await writeFile(
+    nativeHistoryPath,
+    JSON.stringify({
       observed: Boolean(returnEvent),
       persisted: returnEvent?.persisted ?? false,
       events: nativeEvents,
     }),
+  );
+  await testInfo.attach("native-pageshow.json", {
+    path: nativeHistoryPath,
     contentType: "application/json",
   });
   await expect(page.getByTestId("merchant-orders")).toBeVisible();
