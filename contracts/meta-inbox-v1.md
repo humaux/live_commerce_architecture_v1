@@ -73,9 +73,12 @@ RouteID string; RouteEpoch int64`. Private `sealedPayload` has
 - `event`: EventKey and PayloadHash required, tenant/store/route IDs and positive
   RouteEpoch required; BodyHash empty. `quarantine`: EventKey/PayloadHash required,
   no tenant/store/route context, BodyHash empty. This includes conflicts.
-- AEAD AAD is deterministic JSON of fixed string/int fields with domain prefix
-  `livecommerce/meta-payload/v1`, including every field above and the envelope's
-  KeyID. Never delimiter-concatenate attacker-controlled values. Random 12-byte
+- AEAD AAD is exactly the compact JSON array in this order:
+  `["livecommerce/meta-payload/v1",Class,ID,AppID,Object,BodyHash,EventKey,
+  PayloadHash,TenantID,StoreID,RouteID,RouteEpoch,KeyID]`.
+  Fields are JSON strings except RouteEpoch, a JSON integer; include empty
+  strings and zero fields (no omission), with no whitespace/newline. KeyID is
+  the envelope key ID. Never delimiter-concatenate attacker-controlled values. Random 12-byte
   nonce for each seal, independent of body hashes, IDs and retries. Same plaintext
   must produce different ciphertext. Tag size 16. Seal plaintext bounds 1..4 MiB;
   raw additionally <=1 MiB. Open validates all context/key/nonce/cipher bounds
@@ -223,6 +226,12 @@ runtime/worker cannot insert this new producer kind or queue. Use deferred
 checks to allow normal River InsertTx -> event completion order. Existing jobs
 have no backfill. Producer-only `river.Client` uses explicit queue and no unique
 period (persistent dedupe is in metadata); no processor for this queue starts yet.
+The reserved-family guard must also cover UPDATE: existing generic jobs cannot
+be changed into Meta kind/queue, and existing Meta kind/queue/args/id/unique_key
+are immutable. Allow ordinary River lifecycle state/attempt/schedule updates,
+not cross-family migration or changed event identity. This is required because
+existing runtime roles can UPDATE(kind) and commerce_worker can UPDATE all River
+columns. Gate both ingress INSERT attacks and runtime/worker UPDATE attacks.
 
 Go uses a single max10s admission context with transaction-local statement/lock
 timeouts; rollback gets its own bounded cleanup context. Cancellation/deadlock/
