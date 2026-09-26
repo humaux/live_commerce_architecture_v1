@@ -79,6 +79,46 @@ func TestVerifySignatureStrictJSONAndIdentity(t *testing.T) {
 	}
 }
 
+func TestStrictSurrogateEscapesPreserveJSONIdentity(t *testing.T) {
+	v := verifier(t)
+	invalid := map[string]string{
+		"root member":     `{"\ud800":1,"object":"page"}`,
+		"nested member":   `{"object":"page","entry":[{"id":"9","\udc00":1}]}`,
+		"nested value":    `{"object":"page","entry":[{"id":"9","changes":[{"field":"feed","value":{"item":"comment","verb":"add","comment_id":"a","text":"\ud800"}}]}]}`,
+		"two highs":       `{"object":"page","entry":[],"text":"\ud800\ud801"}`,
+		"lone low":        `{"object":"page","entry":[],"text":"\udc00"}`,
+		"high then plain": `{"object":"page","entry":[],"text":"\ud800x"}`,
+		"malformed hex":   `{"object":"page","entry":[],"text":"\uGGGG"}`,
+	}
+	for name, source := range invalid {
+		t.Run(name, func(t *testing.T) {
+			raw := []byte(source)
+			if _, err := v.Verify(raw, signed(raw)); !errors.Is(err, ErrJSON) {
+				t.Fatalf("accepted malformed escape: %v", err)
+			}
+		})
+	}
+	valid := []string{
+		`{"object":"page","entry":[],"text":"\uD83D\uDE00"}`,
+		`{"object":"page","entry":[],"text":"😀"}`,
+		`{"object":"page","entry":[],"text":"\\uD800"}`,
+		`{"object":"page","entry":[],"text":"\uFFFD"}`,
+		`{"object":"page","entry":[],"text":"�"}`,
+	}
+	var hashes []string
+	for _, source := range valid {
+		raw := []byte(source)
+		b, err := v.Verify(raw, signed(raw))
+		if err != nil || len(b.Events) != 2 {
+			t.Fatalf("rejected valid %q: %v", source, err)
+		}
+		hashes = append(hashes, b.Events[0].PayloadHash)
+	}
+	if hashes[0] != hashes[1] || hashes[3] != hashes[4] || hashes[0] == hashes[2] {
+		t.Fatal("canonical Unicode identity changed")
+	}
+}
+
 func TestQuarantineAccountingAndBounds(t *testing.T) {
 	v := verifier(t)
 	raw := []byte(`{"object":"page","standby":{},"entry":[{"id":"9","extra":true,"changes":[{"field":"feed","value":{"item":"comment","verb":"add","comment_id":"c1","created_time":300}}],"messaging":[{"sender":{"id":"9"},"recipient":{"id":"9"},"message":{"mid":"echo","is_echo":true}}]},{"id":"10"}]}`)
