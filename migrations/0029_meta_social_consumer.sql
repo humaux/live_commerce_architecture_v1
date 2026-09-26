@@ -110,6 +110,7 @@ BEGIN
     OR r.rolname LIKE 'pg\_%' ESCAPE '\')
    OR bool_or((g.can_inherit OR g.can_set) AND
     (r.rolsuper OR r.rolbypassrls OR r.rolcreaterole OR r.rolcreatedb OR r.rolreplication
+     OR EXISTS(SELECT 1 FROM pg_database d WHERE d.datname=current_database() AND d.datdba=r.oid)
      OR EXISTS(SELECT 1 FROM pg_namespace n WHERE n.nspowner=r.oid AND n.nspname NOT IN ('pg_catalog','information_schema'))
      OR EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.relowner=r.oid AND n.nspname NOT IN ('pg_catalog','information_schema'))
      OR EXISTS(SELECT 1 FROM pg_proc f JOIN pg_namespace n ON n.oid=f.pronamespace WHERE f.proowner=r.oid AND n.nspname NOT IN ('pg_catalog','information_schema'))))
