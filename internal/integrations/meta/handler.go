@@ -15,6 +15,19 @@ import (
 // NewHandler only acknowledges after commit returns. A production commit must
 // atomically persist every receipt, job and quarantine record before nil.
 func NewHandler(v *Verifier, commit func(context.Context, Batch) error) (http.Handler, error) {
+	if commit == nil {
+		return nil, ErrConfig
+	}
+	return newRawHandler(v, func(ctx context.Context, batch Batch, _ []byte) error {
+		return commit(ctx, batch)
+	})
+}
+
+// newRawHandler keeps authenticated bytes inside the receiving package. Durable
+// admission must encrypt this exact owned body: canonical events cannot recover
+// original whitespace/escapes or a mixed-asset envelope. The callback is synchronous
+// and receives raw only after every protocol check; it must not log/queue plaintext.
+func newRawHandler(v *Verifier, commit func(context.Context, Batch, []byte) error) (http.Handler, error) {
 	if !v.valid() || commit == nil {
 		return nil, ErrConfig
 	}
@@ -68,7 +81,7 @@ func validChallenge(s string) bool {
 	return true
 }
 
-func receive(w http.ResponseWriter, r *http.Request, v *Verifier, commit func(context.Context, Batch) error) {
+func receive(w http.ResponseWriter, r *http.Request, v *Verifier, commit func(context.Context, Batch, []byte) error) {
 	if r.URL.RawQuery != "" || r.URL.ForceQuery {
 		writeCode(w, http.StatusBadRequest, "BAD_QUERY")
 		return
@@ -107,7 +120,7 @@ func receive(w http.ResponseWriter, r *http.Request, v *Verifier, commit func(co
 		}
 		return
 	}
-	if r.Context().Err() != nil || commit(r.Context(), batch) != nil || r.Context().Err() != nil {
+	if r.Context().Err() != nil || commit(r.Context(), batch, raw) != nil || r.Context().Err() != nil {
 		writeCode(w, http.StatusServiceUnavailable, "COMMIT_UNAVAILABLE")
 		return
 	}
