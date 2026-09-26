@@ -32,10 +32,14 @@
 .orders-expanded > div + div { border-left: 1px solid var(--line); padding-left: 24px; }
 .orders-expanded h2 { font-size: 16px; margin: 0 0 17px; }
 .orders-items-scroll { overflow-x: auto; }
-.orders-items table { width: 100%; border-collapse: collapse; text-align: left; font-variant-numeric: tabular-nums; }
+.orders-items table { width: 100%; table-layout: fixed; border-collapse: collapse; text-align: left; font-variant-numeric: tabular-nums; }
+.orders-items th:nth-child(1) { width: 46%; }
+.orders-items th:nth-child(2) { width: 22%; }
+.orders-items th:nth-child(3) { width: 12%; }
+.orders-items th:nth-child(4) { width: 20%; }
 .orders-items th { background: #f2f5f9; color: var(--orders-muted); font-size: 12px; padding: 10px 12px; }
 .orders-items td { height: auto; padding: 10px 12px; font-size: 13px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-.orders-items td:first-child { white-space: normal; }
+.orders-items td:first-child { white-space: normal; overflow-wrap: anywhere; }
 .orders-items td:last-child, .orders-items th:last-child { text-align: right; }
 .orders-items small { display: block; color: var(--orders-muted); margin-top: 2px; }
 .orders-totals { width: min(260px, 100%); margin: 13px 0 0 auto; font-variant-numeric: tabular-nums; }
