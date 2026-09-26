@@ -45,6 +45,21 @@ Stop ACK 均不证明远端资源已回收。
 验收。凭据生命周期、撤销绑定后的停播、Webhook 历史、单目的地状态、计费
 与 G06 是后续编排责任，不能由本地协议测试代替。测试结果另行落验收记录。
 
+## T08 推流密钥封装依赖
+
+`MaterialKeyring.Seal/Open` → 标准库 AES-256-GCM／随机数／JSON → 现有
+`Client.ready/validStart` 与严格解码器。格式、AAD 顺序与版本绑定见
+[LKM01–05](../../contracts/livekit-material-v1.md)，证据见
+[本地验收](2026-09-27-livekit-material-acceptance.md)。不引入新依赖。
+公开格式化和 JSON 是脱敏展示，存储必须显式使用 KeyID/Nonce/Ciphertext；
+不要把展示 JSON 当作可恢复密文格式。保留旧 key ID 才能解开旧记录；轮换
+不得原地替换旧 key 的字节。改变 AAD 顺序／字段需要新格式与迁移测试。
+
+调用方仍须通过可信数据库范围和租约解析原项目／版本，再在开播前检查
+授权。当前没有 SQL 解析器或生产调用者；加密通过不等于可开播。
+[持久控制器候选](../../contracts/live-media-controller-v1.md) 保留 SQL 权限、
+停播未送达恢复与当前 provider 方法版本等冻结门槛，不得由包测试代替。
+
 ## 依赖版本
 
 版本来自当前 `go.mod`/`go.sum` 和本阶段已记录的锁定证据；license 是上游声明，不等于本项目已完成法务准入。升级流程是确认候选版本、更新锁文件与本表、在候选版本上跑 gate，通过后再合并。

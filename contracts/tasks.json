@@ -430,12 +430,12 @@
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
-      "implementation": "PARTIAL_DURABLE_DRAFT_AND_LIVEKIT_WIRE",
-      "unit_mock": "PASS_LKP01_07_LOCAL_HTTP_TLS_PROVIDER_DOUBLE_ONLY",
+      "implementation": "PARTIAL_DURABLE_DRAFT_LIVEKIT_WIRE_AND_SEALED_MATERIAL",
+      "unit_mock": "PASS_LKP01_07_LKM01_05_LOCAL_ONLY",
       "real_pg": "PASS_LSP01_05_AND_573_FULL_REGRESSION_LOCAL_ONLY",
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
-      "independent_review": "PASS_LSP_AND_LKP_BOUNDED_LOCAL_ONLY"
+      "independent_review": "PASS_LSP_LKP_AND_LKM_BOUNDED_LOCAL_ONLY"
     },
     "live_planning_slice": {
       "contract": "contracts/live-planning-v1.md",
@@ -460,6 +460,18 @@
       "decision": "docs/implementation/2026-09-27-media-authority-lifetime.md",
       "status": "INDEPENDENTLY_REVIEWED_DESIGN_SQL_API_CONTRACT_PENDING",
       "gates": "MLA01_08_NOT_RUN"
+    },
+    "livekit_material_slice": {
+      "contract": "contracts/livekit-material-v1.md",
+      "evidence": "docs/implementation/2026-09-27-livekit-material-acceptance.md",
+      "source_test_commit": "e4b704a",
+      "root_gate": "7_LKM_18_LKP_4_CORE_RACE_PASS_VET_PASS",
+      "boundary": "Encrypted custody only; no authorization, DB resolver, runtime caller, provider calls or MLA/G06 acceptance."
+    },
+    "media_controller_candidate": {
+      "contract": "contracts/live-media-controller-v1.md",
+      "status": "REVIEW_CANDIDATE_NOT_FROZEN",
+      "remaining": "Exact SQL roles/FKs/lease/status contract, trusted intake, Stop lost-before-delivery recovery and provider method/version confirmation. No controller implementation or real-media acceptance."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
