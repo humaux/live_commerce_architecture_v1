@@ -61,11 +61,30 @@ actual exit 0, foundation 2.241s, one test and no skips. Log
 `/Volumes/data/output/legacy-isolation-root-migration-smoke1-20260926.log`, SHA256
 `142501ff17e2e9b70a301995642960b032253b6f01d0894379449da08e6cbe0b`.
 Fresh install and repeated Apply are proven by this small check; populated
-cutover, causal GREEN, full regression and browser acceptance are not yet proven.
+cutover, full regression and browser acceptance are not yet proven.
+
+## LRI01 causal GREEN, independently accepted LOCAL only
+
+Original RED source `d644829` and both failing logs above remain preserved.
+Independent test checkpoint `7d3fdf0`, integrated by root as `e559b10`, rebinds
+the exact linked foreign jobs to their family tables. It retains the same
+expiry CLI, maintenance parameters, timing bounds and positive controls.
+
+| Run | Result | Log and SHA256 |
+| --- | --- | --- |
+| Author | Actual PG18/race, exit 0, 1 PASS / 0 FAIL / 0 SKIP, foundation 7.249s | `/Volumes/data/output/legacy-isolation-author-causal-candidate-20260926.log`; `c397bb20670dc0f89bec94fdd4553c8863d443c41d6fb3742617175f6f8f57ee` |
+| Root independent at `e559b10` | `bash scripts/dev/test-local.sh --legacy-isolation`, actual exit 0, 1 PASS / 0 FAIL / 0 SKIP, foundation 9.871s | `/Volumes/data/output/legacy-isolation-root-causal-green1-20260926.log`; `0ab273b1debe888f6cd1fd85c2090600ebf99e4ac37a950427f05ee2aaa7c0cf` |
+
+Read-only reviewer `meta_consumer_preflight` independently compared RED and GREEN
+source and root evidence. Three foreign rows are nonempty in their correct family
+tables before whole-row comparison; eight business-table snapshots stay unchanged.
+All four expiry maintenance controls advance and the real CLI exits normally.
+No concrete P0/P1/P2 in this bounded LRI01 review. This does not accept LRI02–06
+or establish database-principal containment.
 
 ## Pending
 
-- Independent causal GREEN, populated-upgrade and all LRI01–06 gates.
+- Reciprocal maintenance, admission/readiness and populated-upgrade LRI02–04 gates.
 - Root independent full regression and affected order/payment browser inspection.
 - Independent exact-source final signoff before merging the product increment.
 - Production backup/impact/approval, real-provider qualification and full SaaS
