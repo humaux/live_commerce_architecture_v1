@@ -28,10 +28,10 @@ All formatting/JSON of that value and the worker is redacted.
    canonical bytes. Require exactly one non-quarantined event with exact asset,
    kind, event Key and PayloadHash equality. Do not duplicate the provider parser
    or infer a kind from arbitrary JSON keys. Canonical byte digest must match.
-3. Comment family (`page_comment_add/edit/remove`, `instagram_comment`,
+3. Exact family `comment` (`page_comment_add/edit/remove`, `instagram_comment`,
    `instagram_live_comment`): subjectKey is `tupleHash` of strings
    `["meta-social-comment/v1", AppID, Object, assetID, ExternalID]`.
-4. Message family (`page_message`, `instagram_message`): subjectKey is tupleHash
+4. Exact family `message` (`page_message`, `instagram_message`): subjectKey is tupleHash
    `["meta-social-peer/v1", AppID, Object, assetID, sender.id]`.
    The existing classifier requires inbound recipient=asset, non-asset sender,
    valid MID and no echo. Message identity remains the original event Key.
@@ -60,7 +60,7 @@ New `social` schema, FORCE RLS on all three tables, explicit private-writer
 policies and no merchant/buyer/support read grants yet:
 
 - `conversations`: UUID id, tenant/store composite FK, app_id/object/asset_id,
-  peer_key (64 lowercase hex), next_seq, created_at. Unique exact
+  peer_key (64 lowercase hex), next_seq initially 0, created_at. Unique exact
   `(tenant_id,store_id,app_id,object,asset_id,peer_key)`; no external actor ID.
 - `messages`: event_id primary key and `(event_id,tenant_id,store_id)` FK to
   permanent inbox event; same-scope conversation FK; positive server_seq unique
@@ -81,7 +81,9 @@ this copy must not be publicly mounted before those gates. No SQL plaintext.
 Comment observations do not guess a current platform snapshot from delivery
 order or `created_time`; out-of-order add/edit/remove stay visible as separate
 facts. A future authoritative snapshot reconciler must precede a claimed current
-comment-state projection. Message server_seq is local receipt order only.
+comment-state projection. Message server_seq is successful materialization order,
+starting at 1, not receipt time or platform causal order. `occurred_at` always
+comes from source event.occurred_at; `received_at` from source event.created_at.
 
 ## Fixed SQL interface and transaction
 
@@ -101,6 +103,8 @@ No supplied tenant/store/route/envelope/plaintext/terminal reason is accepted.
 The trusted Go consumer derives subject_key after AEAD+classifier validation;
 SQL validates its shape/family, not a cryptographic proof of that derivation.
 This does not claim to contain a fully compromised consumer with the keyring.
+Family is exactly `message` or `comment`, matched to the kind sets above;
+NULL, unknown and kind-mismatched values are rejected with SQLSTATE 22023.
 
 For each job, in one bounded READ COMMITTED transaction:
 
@@ -148,6 +152,8 @@ source terminal evidence AND terminal/pruned job before source-body deletion.
 `NewConsumerWorker(ctx context.Context, pool *pgxpool.Pool,
 keys *PayloadKeyring) (*ConsumerWorker,error)` validates and borrows the dedicated
 pool/keyring; does not start River or expose arbitrary Batch processing.
+Platform exposes `ValidateMetaConsumerPool(ctx context.Context, pool *pgxpool.Pool)
+error`, following the existing Meta ingress validator's bounded safe-error style.
 `ConsumerWorker` implements `river.Worker[inboxJobArgs]`, reusing the existing
 fixed kind. Work checks nonnil job, ID/attempt, version, EventID and Row kind/queue.
 Five-second operation context covers load, AEAD/classifier, finish and COMMIT;
@@ -171,7 +177,7 @@ work, not a reason to replace this actual consumer with an always-success mock.
 | MC01 | Dedicated and mixed/SET/system/owner role negatives in Go and SQL; no direct social/raw/quarantine read or arbitrary scope write |
 | MC02 | Classifier reuse, exact event/hash/kind/asset agreement; all seven kinds, stable peer/comment identities, Unicode/attachments and redacted errors |
 | MC03 | Actual River+PG Page and IG messages/comments produce separate scoped facts; no webchat/identity/order/payment writes; decrypted domain copy equals source |
-| MC04 | Concurrent same event and different messages/same peer; sequence uniqueness; real rollback at each fact/terminal/audit write; lost response/replay and source purge preserve one fact |
+| MC04 | Concurrent same event and different messages/same peer; first seq=1, reverse consumption retains source timestamps while seq follows materialization; real rollback at each fact/terminal/audit write; rollback/replay never advances seq; lost response/replay and source purge preserve one fact |
 | MC05 | Exact job/attempt and live row-lock tests; rescue/route disable/binding epoch/proof expiry while waiting or before COMMIT prevents materialization |
 | MC06 | Missing key/tampered body/invalid payload and already-reviewed/stale event never becomes processed; pending body survives purge; processed source cleanup preserves social ciphertext/history |
 | MC07 | Fresh/upgraded migration, prior MI gates, full PG/race/vet, independent source and evidence verdict; no fake provider/live/browser acceptance |
