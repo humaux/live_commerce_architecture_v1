@@ -246,6 +246,19 @@ func lrDeriveRoles(raw []byte, bootstrap string) ([]byte, error) {
 	return derived, nil
 }
 
+func lrHasPasswordClause(raw []byte) bool {
+	for _, line := range bytes.Split(raw, []byte{'\n'}) {
+		line = bytes.TrimSpace(line)
+		if len(line) == 0 || bytes.HasPrefix(line, []byte("--")) {
+			continue
+		}
+		if bytes.Contains(bytes.ToUpper(line), []byte("PASSWORD")) {
+			return true
+		}
+	}
+	return false
+}
+
 func TestLocalRecoveryBootstrapRolesTransform(t *testing.T) {
 	role := "lr_boot_123456abcdef"
 	raw := []byte("-- roles\nCREATE ROLE " + role + ";\nALTER ROLE " + role + " WITH SUPERUSER LOGIN;\nGRANT a TO b GRANTED BY " + role + ";\n")
@@ -271,6 +284,9 @@ func TestLocalRecoveryBootstrapRolesTransform(t *testing.T) {
 		if lrRequireBootIdentity(test.source, test.target, test.a, test.b) == nil {
 			t.Fatal("wrong bootstrap name/OID accepted")
 		}
+	}
+	if lrHasPasswordClause(raw) || !lrHasPasswordClause(append(append([]byte(nil), raw...), []byte("ALTER ROLE x PASSWORD 'redacted';\n")...)) {
+		t.Fatal("native password-clause guard drift")
 	}
 }
 
@@ -352,7 +368,18 @@ type lrEvidence struct {
 	tables, sequences, catalog map[string]string
 }
 
-const lrRelationsQuery = `SELECT n.nspname,c.relname,c.relkind,pg_get_userbyid(c.relowner) owner_name,c.relacl::text acl,c.relrowsecurity,c.relforcerowsecurity FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname NOT IN ('pg_catalog','information_schema') AND n.nspname NOT LIKE 'pg_toast%' AND c.relkind IN ('r','p','S','v','m')`
+// NULL ACL means PostgreSQL's object-type default; explicit empty ACL does not.
+// Compare the complete effective grant tuples by names, not array order or OID.
+const lrRelationsQuery = `SELECT n.nspname,c.relname,c.relkind,pg_get_userbyid(c.relowner) owner_name,
+ (c.relacl IS NOT NULL AND cardinality(c.relacl)=0) explicit_empty_acl,
+ (SELECT coalesce(jsonb_agg(jsonb_build_object('grantee',a.grantee_name,'grantor',a.grantor_name,'privilege',a.privilege_type,'grantable',a.is_grantable)
+   ORDER BY a.grantee_name,a.grantor_name,a.privilege_type,a.is_grantable),'[]'::jsonb)
+  FROM (SELECT CASE WHEN g.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(g.grantee) END grantee_name,
+    pg_get_userbyid(g.grantor) grantor_name,g.privilege_type,g.is_grantable
+    FROM aclexplode(coalesce(c.relacl,acldefault(CASE WHEN c.relkind='S' THEN 's'::"char" ELSE 'r'::"char" END,c.relowner))) g) a) effective_acl,
+ c.relrowsecurity,c.relforcerowsecurity
+ FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE n.nspname NOT IN ('pg_catalog','information_schema') AND n.nspname NOT LIKE 'pg_toast%' AND c.relkind IN ('r','p','S','v','m')`
 
 func lrSnapshot(t *testing.T, pool *pgxpool.Pool, excludedRole string) lrEvidence {
 	t.Helper()
@@ -401,6 +428,7 @@ func lrSnapshot(t *testing.T, pool *pgxpool.Pool, excludedRole string) lrEvidenc
 		"policies":    `SELECT n.nspname,c.relname,p.polname,p.polcmd,p.polpermissive,pg_get_expr(p.polqual,p.polrelid) qual,pg_get_expr(p.polwithcheck,p.polrelid) check_expr,(SELECT array_agg(r.rolname ORDER BY r.rolname) FROM pg_roles r WHERE r.oid=ANY(p.polroles)) role_names FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid JOIN pg_namespace n ON n.oid=c.relnamespace`,
 		"triggers":    `SELECT n.nspname,c.relname,t.tgname,t.tgenabled,pg_get_triggerdef(t.oid) definition FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE NOT t.tgisinternal AND n.nspname NOT LIKE 'pg_%'`,
 		"default_acl": `SELECT pg_get_userbyid(d.defaclrole) owner_name,n.nspname,d.defaclobjtype,d.defaclacl::text acl FROM pg_default_acl d LEFT JOIN pg_namespace n ON n.oid=d.defaclnamespace`,
+		"database":    `SELECT datname,pg_get_userbyid(datdba) owner_name,encoding,datcollate,datctype,datlocprovider,datlocale,datacl IS NULL default_acl,(SELECT count(*) FROM pg_db_role_setting s WHERE s.setdatabase=d.oid) settings_count FROM pg_database d WHERE datname='lc_foundation_test'`,
 	}
 	for key, query := range catalog {
 		if key == "roles" || key == "members" {
@@ -686,17 +714,20 @@ func TestLocalRecoveryLogicalRestoreAndColdStart(t *testing.T) {
 		t.Fatal(err)
 	}
 	derivedHash, derivedBytes := lrFileHash(t, derivedPath)
-	var bootstrapAlterSeen, bootstrapPasswordClause bool
+	var bootstrapAlterSeen bool
 	for _, line := range bytes.Split(rawRoles, []byte{'\n'}) {
 		if bytes.HasPrefix(line, []byte("ALTER ROLE "+source.role+" WITH ")) {
 			bootstrapAlterSeen = true
-			bootstrapPasswordClause = bytes.Contains(line, []byte("PASSWORD"))
 		}
 	}
 	if !bootstrapAlterSeen {
 		t.Fatal("native roles dump omitted bootstrap attributes")
 	}
-	t.Logf("native bootstrap ALTER password-clause-present=%t; derived roles bytes=%d sha256=%s", bootstrapPasswordClause, derivedBytes, derivedHash)
+	passwordClauseSeen := lrHasPasswordClause(rawRoles)
+	t.Logf("native roles password-clause-present=%t; derived roles bytes=%d sha256=%s", passwordClauseSeen, derivedBytes, derivedHash)
+	if passwordClauseSeen {
+		t.Fatal("native passwordless roles dump unexpectedly contains a PASSWORD clause")
+	}
 	archiveFile, err := os.Open(archivePath)
 	if err != nil {
 		t.Fatal(err)
@@ -750,19 +781,9 @@ func TestLocalRecoveryLogicalRestoreAndColdStart(t *testing.T) {
 	if err != nil || !bytes.Equal(rederived, derivedRoles) {
 		t.Fatal("derived roles provenance changed before restore", err)
 	}
-	held, err := target.owner.Acquire(ctx)
-	if err != nil {
-		t.Fatal("target bootstrap connection unavailable before globals restore", err)
-	}
-	defer held.Release()
 	rolesRestore := lrRestoreInput(t, target, derivedPath, "psql", "-X", "--set", "ON_ERROR_STOP=1", "-U", target.role, "-d", "lc_foundation_test")
-	if !lrCanConnect(target.dsn) {
-		if _, err := held.Exec(ctx, `ALTER ROLE `+pgx.Identifier{target.role}.Sanitize()+` PASSWORD '`+target.password+`'`); err != nil {
-			t.Fatal("existing authenticated bootstrap connection could not reestablish independent password", err)
-		}
-	}
 	if !lrCanConnect(target.dsn) || lrCanConnect(roleURL(t, target.dsn, target.role, source.password)) {
-		t.Fatal("recovered bootstrap accepted source password or rejected independent target password")
+		t.Fatal("native roles restore drifted independent target password or accepted source password")
 	}
 	archiveRestore := lrRestoreInput(t, target, archivePath, "pg_restore", "--single-transaction", "--exit-on-error", "-U", target.role, "-d", "lc_foundation_test")
 	t.Logf("native restore roles=%s archive=%s", rolesRestore, archiveRestore)
