@@ -101,15 +101,18 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 	if err = tx.Commit(ctx); err != nil {
 		return err
 	}
-	upstream, err := rivermigrate.New(riverpgxv5.New(pool), &rivermigrate.Config{Schema: "river", Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
-	if err != nil {
-		return err
-	}
 	// River 006 adds an enum value needed by later steps. PostgreSQL requires
 	// committing that step before use; the upstream runner owns those boundaries.
-	// Its ledger and the business checksum make an interrupted Apply resumable.
-	if _, err = upstream.Migrate(ctx, rivermigrate.DirectionUp, nil); err != nil {
-		return err
+	// Each schema has an independent ledger. Meta's 0031 readiness fence remains
+	// false after an interruption until the final post-River transaction commits.
+	for _, schema := range []string{"river", "river_meta"} {
+		upstream, err := rivermigrate.New(riverpgxv5.New(pool), &rivermigrate.Config{Schema: schema, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
+		if err != nil {
+			return err
+		}
+		if _, err = upstream.Migrate(ctx, rivermigrate.DirectionUp, nil); err != nil {
+			return err
+		}
 	}
 	// River InsertTx's ON CONFLICT returns the existing job by updating kind only.
 	// Do not grant worker permissions to mutate state, attempts, payload or delete.
@@ -145,6 +148,14 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 		_ = postTx.Rollback(cleanup)
 	}()
 	if err = applyVersions(ctx, postTx, postVersions); err != nil {
+		return err
+	}
+	// Reapply only lifecycle grants after future upstream additions, and only in
+	// the final transaction: no Meta privileges leak from a partial cutover.
+	if _, err = postTx.Exec(ctx, `GRANT USAGE ON SCHEMA river_meta TO commerce_meta_worker;
+		GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river_meta TO commerce_meta_worker;
+		REVOKE ALL ON river_meta.river_migration FROM commerce_meta_worker;
+		GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river_meta TO commerce_meta_worker`); err != nil {
 		return err
 	}
 	return postTx.Commit(ctx)
