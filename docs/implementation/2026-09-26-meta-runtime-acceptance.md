@@ -157,14 +157,42 @@ relation through `pg_trigger`/`pg_class`/`pg_namespace` instead, preserving ever
 guard check and withholding old-schema privileges. Source-only review closed
 this cause without new P0/P1/P2; post-fix MR/MIso evidence remains pending.
 
+## Full-regression failures retained
+
+Root `5259b5f` ran 529 top-level passes without an assertion failure, then hit
+the 360s aggregate foundation deadline (360.497s). This is not a pass; vet did
+not run. `43a83d0` raises only that additive suite budget to 600s; individual
+SQL/process deadlines and production maintenance defaults are unchanged.
+Evidence: `/Volumes/data/output/meta-isolation-root-full-checkpoint-20260926.log`,
+SHA-256 `98e092d88ffd2f419ec3d576ccb6238e6636f66ebdfb0e8e3a8a1475c29c9c22`.
+
+The subsequent frozen `e10c4bb` full run actually exited 1 with **551 top-level
+PASS / 1 FAIL / 0 SKIP**, foundation 412.459s. This time it was a real failure,
+not an aggregate timeout. `TestMetaRuntimeIsolationTwoWayRealMaintenance`
+failed before `expiry_worker_ready`; the actual CLI logged
+`expiry_worker_queue_unready`. Vet was again not executed.
+Evidence: `/Volumes/data/output/meta-isolation-root-full-final-20260926.log`,
+SHA-256 `91e15d8146886c29fdd371f251ba7c719d37eb98fd68ebd7a3aa77fa16d5c78a`;
+preserved CLI log `/Volumes/data/output/meta-runtime-process-old-maintenance-060674974839.log`,
+SHA-256 `852130b8845b96818d1e9f78b16615b2affc88385f7dcf5408f3c7580602f3f1`.
+
+Source diagnosis: this new process test incorrectly uses the shared
+`miSetup`/`fixture` database. Earlier `TestBuyerCheckoutActualRiverExpiry/early`
+intentionally relocates its linked expiry job to a private unit-test queue
+and leaves it scheduled. The real expiry CLI correctly rejects that active
+wrong-queue row. The focused Meta run did not include the earlier test.
+Use the existing `mrFixture`/`mrSetup` fresh-cluster helper for this process
+gate; do not weaken expiry readiness, delete shared test rows, or remove the
+maintenance-eligible positive controls. Directed before/after proof and a new
+complete root regression are required before acceptance.
+
 ## Outstanding acceptance
 
-MR04 remains failed. The early failure means later assertions within that
-process test, including key-restoration/restart, are not accepted by the root
-run even if an earlier author's timing-dependent run reached them. All old
-MI/MC tests, final complete PG/race/vet and independent final review must be
-rerun on the corrected candidate. No new full-regression pass is claimed.
-No UI was redesigned this increment.
+The original MR04 failure remains historical evidence of the pre-isolation
+product defect. The corrected source has focused evidence, but the final
+MIso04 test-isolation fix, complete PG/race/vet and independent final review
+are not yet accepted. No full-regression pass is claimed. No UI was redesigned
+this increment.
 
 Public callback deployment, OAuth route-proof issuance, secret rotation,
 outbound policy, social UI and complete SaaS acceptance remain separate work.
