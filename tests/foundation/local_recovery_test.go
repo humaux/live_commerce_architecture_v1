@@ -51,20 +51,35 @@ func lrCommand(t *testing.T, timeout time.Duration, env []string, input io.Reade
 		var stdout bytes.Buffer
 		cmd.Stdout = &stdout
 		if err := cmd.Run(); err != nil {
-			if name == "docker" && len(args) > 2 && args[0] == "exec" && (args[2] == "pg_dumpall" || args[2] == "pg_dump") {
-				t.Fatalf("native %s failed: %v: %s", args[2], err, strings.TrimSpace(stderr.String()))
-			}
-			t.Fatalf("%s failed: %v (stderr bytes=%d)", name, err, stderr.Len())
+			lrCommandFailure(t, name, args, err, stderr.Bytes())
 		}
 		return stdout.Bytes()
 	}
 	if err := cmd.Run(); err != nil {
-		if name == "docker" && len(args) > 2 && args[0] == "exec" && (args[2] == "pg_dumpall" || args[2] == "pg_dump") {
-			t.Fatalf("native %s failed: %v: %s", args[2], err, strings.TrimSpace(stderr.String()))
-		}
-		t.Fatalf("%s failed: %v (stderr bytes=%d)", name, err, stderr.Len())
+		lrCommandFailure(t, name, args, err, stderr.Bytes())
 	}
 	return nil
+}
+
+func lrCommandFailure(t *testing.T, name string, args []string, err error, stderr []byte) {
+	t.Helper()
+	if name == "docker" && len(args) > 2 && args[0] == "exec" && (args[2] == "pg_dumpall" || args[2] == "pg_dump") {
+		t.Fatalf("native %s failed: %v: %s", args[2], err, strings.TrimSpace(string(stderr)))
+	}
+	if name == "docker" && len(args) > 3 && args[0] == "exec" && args[1] == "-i" && (args[3] == "psql" || args[3] == "pg_restore") {
+		f, saveErr := os.CreateTemp("", "lc-recovery-native-stderr-*.log") // 0600; retained for root's bounded diagnosis.
+		if saveErr == nil {
+			_, saveErr = f.Write(stderr)
+			if closeErr := f.Close(); saveErr == nil {
+				saveErr = closeErr
+			}
+		}
+		if saveErr != nil {
+			t.Fatalf("native %s failed: %v (stderr bytes=%d; evidence write failed: %v)", args[3], err, len(stderr), saveErr)
+		}
+		t.Fatalf("native %s failed: %v (restricted stderr=%s sha256=%s bytes=%d)", args[3], err, f.Name(), lrDigest(string(stderr)), len(stderr))
+	}
+	t.Fatalf("%s failed: %v (stderr bytes=%d)", name, err, len(stderr))
 }
 
 func lrDocker(t *testing.T, args ...string) string {
@@ -236,6 +251,23 @@ func lrScan(pool *pgxpool.Pool, query string, dest []any, args ...any) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	return pool.QueryRow(ctx, query, args...).Scan(dest...)
+}
+
+func lrScanBefore(parent context.Context, deadline time.Time, pool *pgxpool.Pool, query string, dest []any, args ...any) error {
+	ctx, cancel := context.WithDeadline(parent, deadline)
+	defer cancel()
+	probe, stop := context.WithTimeout(ctx, 5*time.Second)
+	defer stop()
+	return pool.QueryRow(probe, query, args...).Scan(dest...)
+}
+
+func lrCount(t *testing.T, pool *pgxpool.Pool, query string, args ...any) int64 {
+	t.Helper()
+	var n int64
+	if err := lrScan(pool, query, []any{&n}, args...); err != nil {
+		t.Fatal(err)
+	}
+	return n
 }
 
 func lrExec(t *testing.T, pool *pgxpool.Pool, query string, args ...any) {
@@ -519,7 +551,7 @@ func TestLocalRecoveryLogicalRestoreAndColdStart(t *testing.T) {
 			t.Fatalf("source %s missing linked job/queue", schema)
 		}
 	}
-	if miCount(t, source.owner, `SELECT count(*) FROM meta_private.event_bodies WHERE event_id=$1`, pending.id) != 1 || miCount(t, source.owner, `SELECT count(*) FROM social.messages WHERE event_id=$1`, pending.id) != 0 || miCount(t, source.owner, `SELECT count(*) FROM identity.sessions WHERE revoked_at IS NOT NULL`) == 0 {
+	if lrCount(t, source.owner, `SELECT count(*) FROM meta_private.event_bodies WHERE event_id=$1`, pending.id) != 1 || lrCount(t, source.owner, `SELECT count(*) FROM social.messages WHERE event_id=$1`, pending.id) != 0 || lrCount(t, source.owner, `SELECT count(*) FROM identity.sessions WHERE revoked_at IS NOT NULL`) == 0 {
 		t.Fatal("source pending ciphertext or revoked authorization missing")
 	}
 	sourceRows := lrSnapshot(t, source.owner, "")
@@ -725,7 +757,7 @@ func TestLocalRecoveryLogicalRestoreAndColdStart(t *testing.T) {
 	var state string
 	var attempt int
 	for time.Now().Before(deadline) {
-		if err := lrScan(target.owner, `SELECT state,attempt FROM river_meta.river_job WHERE id=$1`, []any{&state, &attempt}, pending.job); err != nil {
+		if err := lrScanBefore(ctx, deadline, target.owner, `SELECT state,attempt FROM river_meta.river_job WHERE id=$1`, []any{&state, &attempt}, pending.job); err != nil {
 			t.Fatal(err)
 		}
 		if state == "retryable" && attempt > 0 {
@@ -733,7 +765,7 @@ func TestLocalRecoveryLogicalRestoreAndColdStart(t *testing.T) {
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
-	if state != "retryable" || attempt == 0 || miCount(t, target.owner, `SELECT count(*) FROM meta_private.event_bodies WHERE event_id=$1`, pending.id) != 1 || miCount(t, target.owner, `SELECT count(*) FROM social.messages WHERE event_id=$1`, pending.id) != 0 || miCount(t, target.owner, `SELECT count(*) FROM meta_inbox.events WHERE id=$1 AND terminal_reason IS NOT NULL`, pending.id) != 0 {
+	if state != "retryable" || attempt == 0 || lrCount(t, target.owner, `SELECT count(*) FROM meta_private.event_bodies WHERE event_id=$1`, pending.id) != 1 || lrCount(t, target.owner, `SELECT count(*) FROM social.messages WHERE event_id=$1`, pending.id) != 0 || lrCount(t, target.owner, `SELECT count(*) FROM meta_inbox.events WHERE id=$1 AND terminal_reason IS NOT NULL`, pending.id) != 0 {
 		t.Fatal("same-ID wrong-key attempt did not retain retryable encrypted event")
 	}
 	mrStop(t, wrong, syscall.SIGTERM, true)
@@ -741,17 +773,33 @@ func TestLocalRecoveryLogicalRestoreAndColdStart(t *testing.T) {
 	lrExec(t, target.owner, `UPDATE river_meta.river_job SET scheduled_at=clock_timestamp()-interval '1 second' WHERE id=$1 AND state='retryable'`, pending.job)
 	correct := mrLaunch(t, metaBinary, "local-recovery-correct-key", workerEnv(m.key))
 	mrReadyLog(t, correct, "meta_worker_ready")
-	recovered := m
-	recovered.f = &testFixture{owner: target.owner}
-	mcAwait(t, recovered, pending)
+	deadline = time.Now().Add(10 * time.Second)
+	processed := false
+	for time.Now().Before(deadline) {
+		var reason *string
+		if err := lrScanBefore(ctx, deadline, target.owner, `SELECT j.state,e.terminal_reason FROM river_meta.river_job j JOIN meta_inbox.events e ON e.job_id=j.id WHERE j.id=$1`, []any{&state, &reason}, pending.job); err != nil {
+			t.Fatal(err)
+		}
+		if state == "completed" && reason != nil && *reason == "processed" {
+			processed = true
+			break
+		}
+		if state == "cancelled" || state == "discarded" {
+			t.Fatalf("restored Meta job ended %s without processed fact", state)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if !processed {
+		t.Fatal("correct-key restored Meta job did not complete")
+	}
 	var completedAttempt int
 	if err := lrScan(target.owner, `SELECT attempt FROM river_meta.river_job WHERE id=$1 AND state='completed'`, []any{&completedAttempt}, pending.job); err != nil || completedAttempt <= attempt {
 		t.Fatal("correct-key job did not advance native attempt")
 	}
-	if miCount(t, target.owner, `SELECT count(*) FROM social.messages WHERE event_id=$1`, pending.id) != 1 || miCount(t, target.owner, `SELECT count(*) FROM meta_inbox.audit_events WHERE event_id=$1 AND action='processed'`, pending.id) != 1 {
+	if lrCount(t, target.owner, `SELECT count(*) FROM social.messages WHERE event_id=$1`, pending.id) != 1 || lrCount(t, target.owner, `SELECT count(*) FROM meta_inbox.audit_events WHERE event_id=$1 AND action='processed'`, pending.id) != 1 {
 		t.Fatal("restored event not projected exactly once")
 	}
-	if miCount(t, target.owner, `SELECT count(*) FROM social.messages WHERE event_id=$1 AND tenant_id=$2 AND store_id=$3`, pending.id, sourceFixture.tenantA, sourceFixture.storeA1) != 1 {
+	if lrCount(t, target.owner, `SELECT count(*) FROM social.messages WHERE event_id=$1 AND tenant_id=$2 AND store_id=$3`, pending.id, sourceFixture.tenantA, sourceFixture.storeA1) != 1 {
 		t.Fatal("restored projection lost selected tenant/store context")
 	}
 	mrStop(t, correct, syscall.SIGTERM, true)
@@ -767,7 +815,7 @@ func TestLocalRecoveryLogicalRestoreAndColdStart(t *testing.T) {
 	replayed := false
 	deadline = time.Now().Add(10 * time.Second)
 	for time.Now().Before(deadline) {
-		if err := lrScan(target.owner, `SELECT state,attempt FROM river_meta.river_job WHERE id=$1`, []any{&state, &attempt}, pending.job); err != nil {
+		if err := lrScanBefore(ctx, deadline, target.owner, `SELECT state,attempt FROM river_meta.river_job WHERE id=$1`, []any{&state, &attempt}, pending.job); err != nil {
 			t.Fatal(err)
 		}
 		if state == "completed" && attempt > completedAttempt {
@@ -780,11 +828,11 @@ func TestLocalRecoveryLogicalRestoreAndColdStart(t *testing.T) {
 	if !replayed {
 		t.Fatal("native same-job retry did not complete after restart")
 	}
-	if miCount(t, target.owner, `SELECT count(*) FROM social.messages WHERE event_id=$1`, pending.id) != 1 || miCount(t, target.owner, `SELECT count(*) FROM meta_inbox.audit_events WHERE event_id=$1 AND action='processed'`, pending.id) != 1 {
+	if lrCount(t, target.owner, `SELECT count(*) FROM social.messages WHERE event_id=$1`, pending.id) != 1 || lrCount(t, target.owner, `SELECT count(*) FROM meta_inbox.audit_events WHERE event_id=$1 AND action='processed'`, pending.id) != 1 {
 		t.Fatal("restart replayed restored event")
 	}
 	lrAssertForeignUnchanged(t, foreignBeforeMeta, lrSnapshot(t, target.owner, target.role))
-	if !reflect.DeepEqual(unrelatedBeforeMeta, lrMetaUnrelated(t, target.owner, pending.id, pending.job)) || miCount(t, target.owner, `SELECT count(*) FROM meta_inbox.events WHERE id=$1 AND tenant_id=$2 AND store_id=$3`, other.id, sourceFixture.tenantB, sourceFixture.storeB) != 1 {
+	if !reflect.DeepEqual(unrelatedBeforeMeta, lrMetaUnrelated(t, target.owner, pending.id, pending.job)) || lrCount(t, target.owner, `SELECT count(*) FROM meta_inbox.events WHERE id=$1 AND tenant_id=$2 AND store_id=$3`, other.id, sourceFixture.tenantB, sourceFixture.storeB) != 1 {
 		t.Fatal("unrelated tenant Meta state changed during selected replay")
 	}
 	lrAssertEqual(t, sourceRows, lrSnapshot(t, source.owner, ""), "source after recovery")
