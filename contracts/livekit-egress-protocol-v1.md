@@ -1,6 +1,8 @@
 # LiveKit Egress protocol v1 — LKP01–06
 
-Status: CONTRACT_CANDIDATE pending independent preflight. Base `41d0a6a`.
+Status: FROZEN_FOR_PROTOCOL_IMPLEMENTATION. Base `41d0a6a`; independent bounded
+preflight of `ef052b3` found no open P0/P1 (Humaux
+`a7bd607d-d43e-4910-b7a6-52371be82184`). This is not a test/production approval.
 This is the real provider-wire component for T08, tested against an isolated
 HTTP provider double. It is not a local intent queue, broadcast orchestrator,
 merchant endpoint, provider SANDBOX/LIVE acceptance or global G06 approval.
