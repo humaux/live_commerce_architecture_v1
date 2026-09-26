@@ -1,6 +1,6 @@
 # Meta receive/consume runtime v1
 
-Status: **DRAFT / PREFLIGHT_REQUIRED**. Builds on accepted MI01–07 and MC01–07;
+Status: **FROZEN / IMPLEMENTATION_REQUIRED**. Builds on accepted MI01–07 and MC01–07;
 not authorization to configure customer Meta callbacks or deploy publicly.
 Base `5523826`. This makes the existing components executable, not a new broker
 or social microservice. API and worker remain the same Go modular monolith.
@@ -51,7 +51,7 @@ Reuse the existing strict object parser before typed validation. App/secret
 validation delegates to `NewVerifier`; keys delegate to `NewPayloadKeyring`.
 The worker reads payload keys but **never** app secrets/verify tokens.
 
-## Frozen Go surfaces (pending preflight)
+## Frozen Go surfaces
 
 ```go
 type WebhookEndpoint struct { Path string; Verifier *Verifier }
@@ -96,7 +96,7 @@ Both runtime router and worker constructors require readiness before listening
 or fetching. Ordinary worker pool is validated separately from consumer pool.
 The predicate also verifies both `social_message_commit` and
 `social_comment_commit` on the exact social tables, pointing to
-`meta_private.guard_social_insert()`: AFTER ROW INSERT, enabled O/A, deferrable
+`meta_inbox.guard_social_insert()`: AFTER ROW INSERT, enabled O/A, deferrable
 and initially deferred. All four guards require no WHEN/column/argument filter,
 the expected NOLOGIN writer, SECURITY DEFINER and exact safe search_path; merely
 checking trigger names is insufficient.
@@ -108,13 +108,15 @@ main pool versus ingress, and worker versus consumer, must pass
 random nonzero signed bigint, at most five seconds total: transaction A must
 acquire `pg_try_advisory_xact_lock`, then transaction B must fail to acquire the
 same lock while A is held. Any other outcome/error fails closed. Both pools
-remain caller-owned; both transactions use independent bounded rollback before
+remain caller-owned; each transaction uses an independent background two-second rollback before
 return. No permanent marker, new table, widened grants or connection-string
 comparison. This is configuration-coherence checking against trusted PG
 servers, not attestation against a malicious database administrator/server.
 
 API assembly and CLI pool-open/constructor phase each have one shared 10-second
-startup deadline; constructors themselves are bounded even for direct callers.
+startup deadline. `NewWebhookRouter` and `NewConsumerClient` each have one shared
+five-second preflight covering role checks, same-database checking where
+applicable, and readiness, inheriting any shorter caller deadline.
 Do not pass an expiring constructor context as River's running context.
 Client registers only `ConsumerWorker` on fixed `meta_inbox`, concurrency 1–16,
 no periodic jobs/default queue. River's logger is discarded like existing
@@ -146,3 +148,12 @@ do not create one app/process per merchant. Limits above bound static app/key
 config, not tenant count. Add automated app/secret lifecycle only when a real
 rotation/onboarding workflow is specified; do not replace authenticated route
 proof with environment tenant mappings or a test fixture in production.
+The database probe assumes fixed trusted pool routing, not later dynamic
+retargeting. PostgreSQL advisory locks are database-local and transaction locks
+are released when their transaction ends; see the official
+[pg_locks](https://www.postgresql.org/docs/18/view-pg-locks.html) and
+[explicit locking](https://www.postgresql.org/docs/18/explicit-locking.html#ADVISORY-LOCKS) documentation.
+
+Independent preflight of `020bbd3` closed the two P1 findings; this freeze also
+corrects the social guard schema and makes the constructor/rollback deadlines
+explicit as requested. MR01–05 remain NOT_RUN for this runtime increment.
