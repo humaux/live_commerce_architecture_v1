@@ -91,6 +91,82 @@ func TestMetaRuntimeIsolationWorkerObjectACL(t *testing.T) {
 	}
 }
 
+func TestMetaRuntimeIsolationWorkerRoleMatrix(t *testing.T) {
+	f := mrFixture(t)
+	ctx := context.Background()
+	for _, role := range []string{"postgres", "commerce_worker", "commerce_runtime", "commerce_meta_ingress", "commerce_meta_consumer"} {
+		t.Run("wrong role "+role, func(t *testing.T) {
+			roleDSN := f.databaseURL
+			if role != "postgres" {
+				roleDSN = miRole(t, f, role)
+			}
+			if p, err := platform.OpenMetaWorkerPool(ctx, roleDSN); err == nil {
+				p.Close()
+				t.Fatal("nonexclusive Meta lifecycle role admitted", role)
+			}
+		})
+	}
+	dsn := miRole(t, f, "commerce_meta_worker")
+	if p, err := platform.OpenMetaWorkerPool(ctx, dsn); err != nil {
+		t.Fatal("clean Meta lifecycle role denied", err)
+	} else {
+		p.Close()
+	}
+	u, err := url.Parse(dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	login := pgx.Identifier{u.User.Username()}.Sanitize()
+	for _, other := range []string{"commerce_worker", "commerce_runtime", "commerce_meta_ingress", "commerce_meta_consumer", "pg_read_all_data", "pg_write_all_data"} {
+		t.Run("mixed "+other, func(t *testing.T) {
+			granted := pgx.Identifier{other}.Sanitize()
+			mustExec(t, f.owner, `GRANT `+granted+` TO `+login+` WITH INHERIT TRUE, SET FALSE`)
+			defer mustExec(t, f.owner, `REVOKE `+granted+` FROM `+login)
+			if p, err := platform.OpenMetaWorkerPool(ctx, dsn); err == nil {
+				p.Close()
+				t.Fatal("mixed lifecycle authority admitted", other)
+			}
+			borrowed, err := pgxpool.New(ctx, dsn)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer borrowed.Close()
+			if err := platform.ValidateMetaWorkerPool(ctx, borrowed); err == nil {
+				t.Fatal("borrowed mixed lifecycle authority admitted", other)
+			}
+		})
+	}
+	ownerRole := pgx.Identifier{"mi_owner_" + t04Tag()}.Sanitize()
+	owned := pgx.Identifier{"mi_owned_" + t04Tag()}.Sanitize()
+	mustExec(t, f.owner, `CREATE ROLE `+ownerRole+` NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION`)
+	mustExec(t, f.owner, `CREATE TABLE public.`+owned+`(id integer)`)
+	mustExec(t, f.owner, `ALTER TABLE public.`+owned+` OWNER TO `+ownerRole)
+	defer func() {
+		mustExec(t, f.owner, `REVOKE `+ownerRole+` FROM `+login)
+		mustExec(t, f.owner, `DROP TABLE public.`+owned)
+		mustExec(t, f.owner, `DROP ROLE `+ownerRole)
+	}()
+	mustExec(t, f.owner, `GRANT `+ownerRole+` TO `+login+` WITH INHERIT TRUE, SET FALSE`)
+	if p, err := platform.OpenMetaWorkerPool(ctx, dsn); err == nil {
+		p.Close()
+		t.Fatal("inherited object owner admitted as Meta lifecycle worker")
+	}
+	borrowed, err := pgxpool.New(ctx, dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer borrowed.Close()
+	if err := platform.ValidateMetaWorkerPool(ctx, borrowed); err == nil {
+		t.Fatal("borrowed inherited owner admitted")
+	}
+	if _, err := miPool(t, f, "commerce_worker").Exec(ctx, `UPDATE river_meta.river_job SET state='available' WHERE id=-1`); miSQLState(err) != "42501" {
+		t.Fatalf("ordinary worker crossed Meta schema state=%s", miSQLState(err))
+	}
+	if _, err := borrowed.Exec(ctx, `UPDATE river.river_job SET state='available' WHERE id=-1`); miSQLState(err) != "42501" {
+		t.Fatalf("Meta worker crossed ordinary River schema state=%s", miSQLState(err))
+	}
+}
+
 func miIsoRows(t *testing.T, f *testFixture, table, predicate string) string {
 	t.Helper()
 	var rows string

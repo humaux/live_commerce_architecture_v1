@@ -112,6 +112,20 @@ func TestMetaRuntimeIsolationTwoWayRealMaintenance(t *testing.T) {
 		t.Fatal("Meta worker maintained unrelated scheduled/retryable/stale/terminal old jobs")
 	}
 	mrStop(t, metaWorker, syscall.SIGTERM, true)
+	// Re-arm still-linked jobs while Meta is stopped. A snapshot of only
+	// already-promoted jobs would make the converse maintenance check vacuous.
+	mustExec(t, f.owner, `UPDATE river_meta.river_job SET state='scheduled',scheduled_at=clock_timestamp()-interval '1 second' WHERE id=$1`, meta.scheduled)
+	mustExec(t, f.owner, `UPDATE river_meta.river_job SET state='retryable',attempt=2,attempted_at=clock_timestamp()-interval '2 hours',scheduled_at=clock_timestamp()-interval '1 second' WHERE id=$1`, meta.retryable)
+	mustExec(t, f.owner, `UPDATE river_meta.river_job SET state='running',attempt=2,attempted_at=clock_timestamp()-interval '2 hours' WHERE id=$1`, meta.stale)
+	terminal := mcPost(t, m, asset, miMessage(asset, "m."+randomUUID(), "maintenance-converse-terminal"))
+	mustExec(t, f.owner, `UPDATE river_meta.river_job SET state='completed',finalized_at=clock_timestamp()-interval '3 days' WHERE id=$1`, terminal.job)
+	meta.terminal = terminal.job
+	if miIsoJobState(t, f, "river_meta.river_job", meta.scheduled) != "scheduled" ||
+		miIsoJobState(t, f, "river_meta.river_job", meta.retryable) != "retryable" ||
+		miIsoJobState(t, f, "river_meta.river_job", meta.stale) != "running" ||
+		miIsoJobState(t, f, "river_meta.river_job", meta.terminal) != "completed" {
+		t.Fatal("converse Meta controls were not maintenance-eligible")
+	}
 	metaBefore := miIsoRows(t, f, "river_meta.river_job", "")
 	oldWorkerBinary := mrBuild(t, "../../cmd/expiry-worker", "expiry-worker-maintenance")
 	ordinary := mrLaunch(t, oldWorkerBinary, "old-maintenance", []string{
