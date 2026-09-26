@@ -95,7 +95,7 @@ func mcPre0029Fixture(t *testing.T) *testFixture {
 	// before 0029. Keep the original bytes and checksums, not a hand-written
 	// approximation of the 0028 schema.
 	oldVersions, err := filepath.Glob("../../migrations/[0-9][0-9][0-9][0-9]_*.sql")
-	if err != nil || len(oldVersions) != 29 || filepath.Base(oldVersions[27]) != "0028_meta_inbox.sql" {
+	if err != nil || len(oldVersions) != 30 || filepath.Base(oldVersions[27]) != "0028_meta_inbox.sql" || filepath.Base(oldVersions[29]) != "0030_meta_runtime.sql" {
 		t.Fatalf("unexpected numbered migrations: count=%d err=%v", len(oldVersions), err)
 	}
 	tx, err := owner.Begin(ctx)
@@ -304,8 +304,8 @@ func TestMetaConsumerPopulated0028Upgrade(t *testing.T) {
 	 to_regclass('social.messages') IS NOT NULL`).Scan(&ledger, &hasSocial); err != nil {
 		t.Fatal(err)
 	}
-	if ledger != oldLedger+1 || !hasSocial {
-		t.Fatalf("0029 ledger/schema missing after repeat Apply: ledger=%d social=%v", ledger, hasSocial)
+	if ledger != oldLedger+2 || !hasSocial {
+		t.Fatalf("0029/0030 ledger or social schema missing after repeat Apply: ledger=%d social=%v", ledger, hasSocial)
 	}
 	consumer := mcConsumer(t, m)
 	w, err := meta.NewConsumerWorker(ctx, consumer, keys)
