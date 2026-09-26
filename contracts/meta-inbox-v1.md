@@ -130,6 +130,9 @@ pool validation must reject new mixed authority combinations in either direction
 Functions use fixed qualified names/search_path and reject unsafe session_user.
 Writer has only exact table/column privileges and explicit RLS policies, not
 schema/table ownership or BYPASSRLS. PUBLIC EXECUTE/USAGE revoked.
+Registrar/curator stay NOLOGIN and unassigned outside isolated synthetic test
+fixtures until actual verified OAuth / authorized review workflows exist. A
+curator evidence hash alone is not a production review workflow or body reader.
 
 Ingress may create only `meta_inbox_v1` jobs on fixed `meta_inbox` queue; args
 exactly `{event_id:<internal UUID>,version:1}`. Minimal River insert permissions
@@ -191,7 +194,7 @@ Expected SQL errors use fixed classes (`22023` invalid, `42501` unauthorized,
 | `meta_inbox.complete_event(batch uuid, event uuid, key_id text, nonce bytea, ciphertext bytea, job_id bigint) -> void` | Ingress only; event created in this transaction and linked to this new batch. Require the exact stored class/shape, ciphertext length17..4194320, 12-byte nonce and valid key ID. Routed event must reference existing exact meta_inbox_v1 job/queue/args; quarantine must have NULL job. Insert body and atomically mark completed. No update/re-encrypt of historical rows. |
 | `meta_inbox.complete_batch(batch uuid, key_id text, nonce bytea, ciphertext bytea) -> void` | Ingress only; new receipt in this transaction. Raw length17..1048592, valid key/nonce; insert raw body, verify complete ordinal coverage and all events, then finalize. Commit guard still required. |
 | `meta_inbox.record_terminal(event uuid, reason text, evidence_hash text) -> void` | Separate curator authority only, not route registrar or ingress. Fixed reason reviewed_rejected/retention_discarded requires explicit authorized review, evidence digest and immutable timestamp/actor audit; never called on receipt/ACK or inferred from River state. `processed` is reserved and rejected until a later narrow consumer function proves business completion. |
-| `meta_inbox.purge_expired(limit int) -> int` | Trusted retention authority only; limit1..1000 total body rows, oldest eligible first, SKIP LOCKED. Recheck age and terminal evidence under lock. Raw body eligible only after every member terminal. Preserve all metadata/audit/job references. |
+| `meta_inbox.purge_expired(limit int) -> int` | Trusted retention authority only; limit1..1000 total body rows, oldest eligible first, SKIP LOCKED. Recheck age and terminal evidence under lock. Any linked processing job must also be completed/cancelled/discarded or already pruned; raw body waits for all members. Preserve all metadata/audit/job references. |
 
 Provider labels above are local adapter identifiers, not OAuth eligibility.
 If existing bindings use a different provider spelling, freeze one exact local
@@ -236,6 +239,10 @@ are immutable. Allow ordinary River lifecycle state/attempt/schedule updates,
 not cross-family migration or changed event identity. This is required because
 existing runtime roles can UPDATE(kind) and commerce_worker can UPDATE all River
 columns. Gate both ingress INSERT attacks and runtime/worker UPDATE attacks.
+Future consumers must treat an explicitly terminalized event as no-op/cancel,
+not attempt processing its ciphertext. Curator terminalization is not itself a
+River cancellation; until its job is terminal, ciphertext is not purgeable.
+The consumer/no-op and actual authorized review workflow are public-mount gates.
 
 Go uses a single max10s admission context with transaction-local statement/lock
 timeouts; rollback gets its own bounded cleanup context. Cancellation/deadlock/
