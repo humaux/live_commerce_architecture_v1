@@ -88,22 +88,26 @@ func TestLegacyRuntimeIsolationAdmissionAndReadiness(t *testing.T) {
 	}
 	p := psSetupItemsOn(t, f, 1)
 	before := p.facts(t)
+	beforePaymentJobs := miIsoRows(t, f, "river_payment.river_job", "")
+	beforeExpiryJobs := miIsoRows(t, f, "river_expiry.river_job", "")
 	badPayment := psStarterIn(t, p.pool, "PROVIDER_MOCK", "river_expiry")
 	p.starter = badPayment
 	if _, err := p.start(t04Key("wrong-payment-schema")); err == nil || err.Error() != "checkout database unavailable" {
 		t.Fatalf("wrong payment River schema leaked error or succeeded: %v", err)
 	}
-	if got := p.facts(t); got != before {
-		t.Fatal("wrong payment schema wrote attempt, operation, receipt or job")
+	if got := p.facts(t); got != before || miIsoRows(t, f, "river_payment.river_job", "") != beforePaymentJobs || miIsoRows(t, f, "river_expiry.river_job", "") != beforeExpiryJobs {
+		t.Fatal("wrong payment schema wrote business facts or either family job lane")
 	}
 	badExpiry := bcSetup(t)
 	expiryBefore := badExpiry.facts(t)
+	beforePaymentJobs = miIsoRows(t, f, "river_payment.river_job", "")
+	beforeExpiryJobs = miIsoRows(t, f, "river_expiry.river_job", "")
 	badExpiry.service = bcServiceIn(t, badExpiry.pool, "river_payment")
 	if _, err := badExpiry.begin(t04Key("wrong-expiry-schema")); err == nil || err.Error() != "checkout database unavailable" {
 		t.Fatalf("wrong expiry River schema leaked error or succeeded: %v", err)
 	}
-	if got := badExpiry.facts(t); got != expiryBefore {
-		t.Fatal("wrong expiry schema wrote business facts")
+	if got := badExpiry.facts(t); got != expiryBefore || miIsoRows(t, f, "river_payment.river_job", "") != beforePaymentJobs || miIsoRows(t, f, "river_expiry.river_job", "") != beforeExpiryJobs {
+		t.Fatal("wrong expiry schema wrote business facts or either family job lane")
 	}
 	p.starter = psStarter(t, p.pool, "PROVIDER_MOCK")
 	goodPayment, err := p.start(t04Key("correct-payment-schema"))
