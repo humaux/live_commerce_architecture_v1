@@ -98,7 +98,9 @@ elif [[ "$test_mode" == --browser-payment ]]; then
 elif [[ "$test_mode" == --checkout ]]; then
   # Focused diagnosis uses the same isolated real PG and cleanup guard. It never
   # substitutes for the full foundation/race/vet release gate below.
-  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=120s -run '^TestBuyerCheckout' -v ./tests/foundation
+  # This selector now includes the expiry-worker crash/rescue suites as well as
+  # checkout. Their aggregate exceeded 120s; individual SQL/deadline gates stay.
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=240s -run '^TestBuyerCheckout' -v ./tests/foundation
   printf 'PASS: checkout subset only; full regression still required.\n'
 elif [[ "$test_mode" == --payment ]]; then
   GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^TestBuyerPayment' -v ./tests/foundation

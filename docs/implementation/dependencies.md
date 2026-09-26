@@ -89,6 +89,10 @@ Meta-only worker 把付款任务从 scheduled 改为 available；不能把队列
 [隔离修订](../../contracts/meta-runtime-isolation-v1.md)。原生同 PG 独立 schema
 方案须同时调整客户端、上游迁移、业务 SQL、触发器、权限及历史 jobID；仅改
 Go 的 Schema 字段不够。旧 payment/expiry 共用 schema 的全局 rescuer 风险须另验。
+隔离候选 `856a4b1` 已落实上述接线：API insert-only 和消费端固定 `river_meta`；
+CLI 使用专用 `OpenMetaWorkerPool`，共用分类器验证实际对象 ACL。`Apply` 原生
+迁移两个 schema，0031 的 false fence 直到 post0004 原子搬迁/守卫/授权完成才放行。
+四包 race 通过但独立 MIso/完整回归未完成，不能把实现候选当部署验收。
 
 ## 商家账户接入复用关系
 

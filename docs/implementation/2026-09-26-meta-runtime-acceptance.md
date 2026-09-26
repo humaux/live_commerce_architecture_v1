@@ -1,6 +1,6 @@
 # T07 private Meta runtime — acceptance record
 
-Status: **FAILED_MR04 / NOT_ACCEPTED / REVISION_REQUIRED**. Not a public deployment or a
+Status: **ISOLATION_IMPLEMENTED / NOT_ACCEPTED / PG_GATES_PENDING**. Not a public deployment or a
 customer/Meta configuration change. Contract:
 [Meta runtime v1](../../contracts/meta-runtime-v1.md); maintenance:
 [runtime call map](meta-runtime.md).
@@ -110,8 +110,30 @@ Independent preflight of that revision approved `84cc26f` after two bounded
 rounds, P0/P1/P2 zero. The first round required a preparation-phase non-ready
 fence, precise partial-Apply rollback semantics and a strict new-schema guard;
 the final revision also preserves historical upgrade fixture boundaries.
-**Contract approved, implementation absent, MIso01–05 NOT_RUN.** This does not
-change the failed runtime verdict or the separate legacy-worker maintenance P1.
+Contract frozen `647e517`; implementation commits `b8271fa` (pool/role),
+`cecec81` (fixed clients), `aca3148` (forward schema/cutover), `856a4b1`
+(effective ACL startup check). **MIso01–05 are in progress, not accepted.**
+This does not erase the historical failed runtime verdict or close the separate
+legacy-worker maintenance P1.
+
+The independent reviewer found direct/inherited custom non-owner object grants
+were not rejected by role-name/owner checks. The PG author reproduced both cases
+on the prepatch candidate, with a clean Meta-worker positive control:
+`/Volumes/data/output/meta-isolation-acl-prepatch-20260926.log`, lines 1–8,
+exit 1, SHA-256 `3e438a39283e0cae282e9b002d0e9dc1404c2990a4c8ae6a308c113d3f7a98d7`.
+`856a4b1` adds the shared effective table/column/sequence/CREATE checks.
+Source-only closure has no new P0/P1/P2; actual expanded PG negatives remain
+pending. Native privilege semantics follow the
+[PostgreSQL 18 ACL functions](https://www.postgresql.org/docs/18/functions-info.html#FUNCTIONS-INFO-ACCESS-TABLE).
+
+Root four-package race on that patch exited 0 (platform 1.589s, Meta 1.819s,
+CLI 1.419s, API 1.446s):
+`/Volumes/data/output/meta-isolation-root-acl-unit-20260926.log`, SHA-256
+`788300f1718ef1c98071a582bca677193771bae5ebcc5eb2b7ddcb285cdb4d56`.
+Root `--checkout` on `aca3148` hit its aggregate 120s test-binary limit after
+24 top-level passes and no assertion failures. This is **not a pass**; its log is
+`/Volumes/data/output/meta-isolation-root-migration-checkout-20260926.log`.
+The new-schema test migrations and complete regression are still required.
 
 ## Outstanding acceptance
 
