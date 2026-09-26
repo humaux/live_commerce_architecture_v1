@@ -92,6 +92,28 @@ BEGIN
    OR EXISTS(SELECT 1 FROM pg_proc f JOIN pg_namespace n ON n.oid=f.pronamespace WHERE f.proowner=r.oid AND n.nspname NOT IN ('pg_catalog','information_schema')))) THEN
   RAISE EXCEPTION 'meta authority denied' USING ERRCODE='42501';
  END IF;
+ -- pg_has_role has a backend membership cache. A warmed deferred trigger must
+ -- also consult the actual catalog snapshot after a concurrent GRANT/REVOKE,
+ -- not rely on a preceding caller query to refresh that cache. Keep this a
+ -- separate SQL statement in this VOLATILE, READ COMMITTED call path.
+ IF EXISTS (
+  WITH RECURSIVE grants(roleid,can_inherit,can_set) AS (
+   SELECT oid,true,true FROM pg_roles WHERE rolname=session_user
+   UNION
+   SELECT m.roleid,g.can_inherit AND m.inherit_option,g.can_set AND m.set_option
+    FROM grants g JOIN pg_auth_members m ON m.member=g.roleid
+  )
+  SELECT 1 FROM grants g JOIN pg_roles r ON r.oid=g.roleid
+  HAVING NOT coalesce(bool_or(r.rolname=p_role AND g.can_inherit),false)
+   OR bool_or(r.rolname=p_role AND g.can_set)
+   OR bool_or((r.rolname LIKE 'commerce\_%' ESCAPE '\' AND r.rolname<>p_role)
+    OR r.rolname LIKE 'pg\_%' ESCAPE '\')
+   OR bool_or((g.can_inherit OR g.can_set) AND
+    (r.rolsuper OR r.rolbypassrls OR r.rolcreaterole OR r.rolcreatedb OR r.rolreplication
+     OR EXISTS(SELECT 1 FROM pg_namespace n WHERE n.nspowner=r.oid AND n.nspname NOT IN ('pg_catalog','information_schema'))
+     OR EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.relowner=r.oid AND n.nspname NOT IN ('pg_catalog','information_schema'))
+     OR EXISTS(SELECT 1 FROM pg_proc f JOIN pg_namespace n ON n.oid=f.pronamespace WHERE f.proowner=r.oid AND n.nspname NOT IN ('pg_catalog','information_schema'))))
+ ) THEN RAISE EXCEPTION 'meta authority denied' USING ERRCODE='42501';END IF;
 END $$;
 
 -- Historical idempotency is independent of mutable routes and short-retention
