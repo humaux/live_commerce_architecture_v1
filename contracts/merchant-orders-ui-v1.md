@@ -1,9 +1,10 @@
 # Merchant order workspace v1
 
-2026-09-27. **Behavior contract preflight reviewed; merchant visual selection pending.**
+2026-09-27. **Behavior preflight reviewed; user approved C 表格原位展开.**
 Independent preflight `977f18dd-da68-4cfc-9817-cb412070f2e2` identified two
 concrete gaps; the final verdict scored both resolved. This is not UI approval
-or MOU acceptance. Composition remains gated on the user's merchant-page choice.
+or MOU acceptance. Composition is the user-selected full-width table with details
+expanded immediately below its selected row, not a separate side inspector.
 Baseline `722bde4`. Consumes the accepted [MOR](merchant-orders-v1.md) and
 [MBT](merchant-orders-bff-v1.md) contracts; neither backend acceptance proves
 this page exists. Buyer **B 商品详情直接选购** remains approved and unchanged.
@@ -19,9 +20,9 @@ Add an orders navigation item without breaking existing ledger/settings routes.
 Do not add shipping, cancellation, refunds, exports, manual-paid buttons or
 claims that provider onboarding is complete.
 
-The three existing comps in `.impeccable/merchant-orders-options.json` are
-unapproved. Only the user's explicit merchant-page choice selects composition;
-no inference from buyer B. Retain the existing visual world. Generated sample
+The C comp `.impeccable/mocks/decision/merchant-orders-inline.png` is approved;
+A and B merchant comps remain unapproved. This is independent of buyer B.
+Retain the existing visual world. Generated sample
 labels are illustrative, not new domain states: no unsupported refunded/shipped
 label, global order count, sales-channel field or live-ready claim may ship.
 Show page item count rather than pretending a cursor response supplies a total.

@@ -1,6 +1,13 @@
 # Live broadcast intents v1 — LBI01–06
 
-Base `8ea20ae`; successor to [live planning](live-planning-v1.md). This is a
+Status: **PRELIMINARY / NOT IMPLEMENTATION-READY**. Work deferred when the owner
+selected the merchant orders C layout. Independent preflight found two unresolved
+requirements: future provider routes must permanently reject legacy LOCAL-only
+intents unless separately reviewed/authorized, and disabled/changed media bindings
+prevent planning stop with the frozen version. No source or migration exists yet;
+do not dispatch these proposed actions or treat this draft as an accepted contract.
+
+Base `8ea20ae`; successor to [live planning](live-planning-v1.md). This proposes a
 LOCAL durable control-intent slice, **not operational start/stop or G06**. It
 registers no provider route, HTTP handler or worker. No secrets or provider calls.
 Actual credential custody, verified asset ownership, provider policy, historical
