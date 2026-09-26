@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -71,6 +72,21 @@ func post(h http.Handler, raw string, sig string) *httptest.ResponseRecorder {
 	return w
 }
 
+type writeSpy struct {
+	*httptest.ResponseRecorder
+	writes atomic.Int32
+}
+
+func (s *writeSpy) WriteHeader(status int) {
+	s.writes.Add(1)
+	s.ResponseRecorder.WriteHeader(status)
+}
+
+func (s *writeSpy) Write(body []byte) (int, error) {
+	s.writes.Add(1)
+	return s.ResponseRecorder.Write(body)
+}
+
 func requireDigest(t *testing.T, value string) {
 	t.Helper()
 	if len(value) != 64 || value != strings.ToLower(value) {
@@ -88,6 +104,15 @@ func requireQuarantine(t *testing.T, e meta.Event) {
 	}
 	requireDigest(t, e.Key)
 	requireDigest(t, e.PayloadHash)
+	requirePayloadHash(t, e)
+}
+
+func requirePayloadHash(t *testing.T, e meta.Event) {
+	t.Helper()
+	sum := sha256.Sum256(e.Payload)
+	if e.PayloadHash != hex.EncodeToString(sum[:]) {
+		t.Fatal("payload hash does not match canonical payload bytes")
+	}
 }
 
 func TestMWP01RawSignatureUnicodeAndBodyHash(t *testing.T) {
@@ -195,6 +220,7 @@ func TestMWP02StrictJSONAndPrecision(t *testing.T) {
 		{"escaped root alias", `{"object":"page","\u006fbject":"page","entry":[]}`},
 		{"nested duplicate", `{"object":"page","entry":[{"id":"100","changes":[{"field":"feed","value":{"item":"comment","item":"comment","verb":"add","comment_id":"C-1"}}]}]}`},
 		{"nested escaped alias", `{"object":"page","entry":[{"id":"100","changes":[{"field":"feed","value":{"comment_id":"C-1","\u0063omment_id":"C-2","item":"comment","verb":"add"}}]}]}`},
+		{"message escaped alias", strings.Replace(messageBody, `"mid":"m-1"`, `"mid":"m-1","\u006did":"m-2"`, 1)},
 		{"trailing value", pageBody + `{}`},
 		{"nonobject root", `[]`},
 		{"invalid JSON", `{"object":`},
@@ -210,6 +236,41 @@ func TestMWP02StrictJSONAndPrecision(t *testing.T) {
 	b := verify(t, c, precise)
 	if len(b.Events) != 1 || !strings.Contains(string(b.Events[0].Payload), `9007199254740993`) {
 		t.Fatal("provider number lost precision")
+	}
+	callbackCount := 0
+	h := handler(t, c, func(context.Context, meta.Batch) error { callbackCount++; return nil })
+	for _, tc := range []struct{ name, text string }{
+		{"lone high", `"\ud800"`},
+		{"lone low", `"\udc00"`},
+		{"two highs", `"\ud800\ud800"`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			raw := strings.Replace(messageBody, `"hello"`, tc.text, 1)
+			if _, err := v.Verify([]byte(raw), signature(c.AppSecret, []byte(raw))); err == nil {
+				t.Error("unpaired UTF-16 escape admitted by Verifier")
+			}
+			w := post(h, raw, signature(c.AppSecret, []byte(raw)))
+			if w.Code == 200 || w.Header().Get("Cache-Control") != "no-store" {
+				t.Fatalf("unpaired UTF-16 escape HTTP status=%d", w.Code)
+			}
+		})
+	}
+	if callbackCount != 0 {
+		t.Fatalf("unpaired UTF-16 reached callback %d times", callbackCount)
+	}
+	pair := verify(t, c, strings.Replace(messageBody, `"hello"`, `"\ud83d\ude00"`, 1)).Events[0]
+	literal := verify(t, c, strings.Replace(messageBody, `"hello"`, `"😀"`, 1)).Events[0]
+	if pair.Kind != "page_message" || pair.Key != literal.Key || pair.PayloadHash != literal.PayloadHash || !strings.Contains(string(pair.Payload), "😀") {
+		t.Fatal("valid UTF-16 pair did not canonicalize to literal Unicode")
+	}
+	replacementEscape := verify(t, c, strings.Replace(messageBody, `"hello"`, `"\ufffd"`, 1)).Events[0]
+	replacementLiteral := verify(t, c, strings.Replace(messageBody, `"hello"`, `"�"`, 1)).Events[0]
+	if replacementEscape.PayloadHash != replacementLiteral.PayloadHash || replacementEscape.PayloadHash == pair.PayloadHash {
+		t.Fatal("valid replacement character confused with emoji or its literal encoding")
+	}
+	literalBackslash := verify(t, c, strings.Replace(messageBody, `"hello"`, `"\\ud800"`, 1)).Events[0]
+	if literalBackslash.Kind != "page_message" || literalBackslash.PayloadHash == replacementLiteral.PayloadHash {
+		t.Fatal("literal backslash-u text rejected or collapsed to replacement character")
 	}
 }
 
@@ -246,6 +307,17 @@ func TestMWP02DepthBodyAndEmittedEventBounds(t *testing.T) {
 		} else if err == nil {
 			t.Fatalf("%d units extra=%t admitted", tc.n, tc.extra)
 		}
+	}
+	eventCalls := 0
+	eventHandler := handler(t, c, func(context.Context, meta.Batch) error { eventCalls++; return nil })
+	for _, raw := range []string{makeBatch(1001, false), makeBatch(1000, true)} {
+		w := post(eventHandler, raw, signature(c.AppSecret, []byte(raw)))
+		if w.Code != http.StatusRequestEntityTooLarge || w.Header().Get("Cache-Control") != "no-store" {
+			t.Fatalf("event overflow HTTP status=%d", w.Code)
+		}
+	}
+	if eventCalls != 0 {
+		t.Fatalf("partial oversized batch reached commit %d times", eventCalls)
 	}
 	const max = 1 << 20
 	prefix := `{"object":"page","entry":[],"pad":"`
@@ -298,6 +370,11 @@ func TestMWP03KnownSiblingsAndUnknownFields(t *testing.T) {
 	got := verify(t, c, caseVariant).Events
 	if len(got) != 2 || !(got[0].Kind == "page_comment_add" && got[1].QuarantineReason != "" || got[1].Kind == "page_comment_add" && got[0].QuarantineReason != "") {
 		t.Fatalf("case-variant entry key displaced known event: %d events", len(got))
+	}
+	multi := `{"object":"page","entry":[{"id":"100","changes":[{"field":"feed","value":{"item":"comment","verb":"add","comment_id":"C-1"}}]},{"id":"101","messaging":[{"sender":{"id":"200"},"recipient":{"id":"101"},"message":{"mid":"m-1"}}]}]}`
+	entries := verify(t, c, multi).Events
+	if len(entries) != 2 || entries[0].AssetID == entries[1].AssetID || entries[0].Kind != "page_comment_add" || entries[1].Kind != "page_message" {
+		t.Fatalf("multiple entry[] units not independently accounted: %d events", len(entries))
 	}
 	t.Run("linear quarantine payload near body limit", func(t *testing.T) {
 		unit := `{"field":"unsupported","value":{"blob":"` + strings.Repeat("x", 700) + `"}}`
@@ -397,6 +474,11 @@ func TestMWP04StableMessageMIDAndConflictDigest(t *testing.T) {
 		requireDigest(t, b.Events[0].PayloadHash)
 	}
 	a, b, d, r := base.Events[0], changed.Events[0], otherMID.Events[0], rebatched.Events[0]
+	if string(a.Payload) != `{"message":{"mid":"m-1","text":"hello"},"recipient":{"id":"100"},"sender":{"id":"200"},"timestamp":1710000000123}` {
+		t.Fatalf("message payload omitted fields or was not canonical: %s", a.Payload)
+	}
+	requirePayloadHash(t, a)
+	requirePayloadHash(t, b)
 	if a.Key != b.Key || a.PayloadHash == b.PayloadHash {
 		t.Fatal("same MID changed payload must retain key and change digest")
 	}
@@ -584,9 +666,53 @@ func TestMWP05POSTTransportGates(t *testing.T) {
 
 func TestMWP05CommitBlocksACKAndSanitizesFailure(t *testing.T) {
 	c := config("page")
+	spy := &writeSpy{ResponseRecorder: httptest.NewRecorder()}
+	spyEntered := make(chan int32, 1)
+	spyRelease := make(chan struct{})
+	spyReleased := false
+	defer func() {
+		if !spyReleased {
+			close(spyRelease)
+		}
+	}()
+	spyHandler := handler(t, c, func(context.Context, meta.Batch) error {
+		spyEntered <- spy.writes.Load()
+		<-spyRelease
+		return nil
+	})
+	spyReq := httptest.NewRequest(http.MethodPost, "/webhook", strings.NewReader(pageBody))
+	spyReq.Header.Set("Content-Type", "application/json")
+	spyReq.Header.Set("X-Hub-Signature-256", signature(c.AppSecret, []byte(pageBody)))
+	spyDone := make(chan struct{})
+	go func() {
+		spyHandler.ServeHTTP(spy, spyReq)
+		close(spyDone)
+	}()
+	select {
+	case before := <-spyEntered:
+		if before != 0 || spy.writes.Load() != 0 {
+			t.Fatal("response writer touched before commit completed")
+		}
+	case <-spyDone:
+		t.Fatal("handler returned before blocked callback completed")
+	case <-time.After(3 * time.Second):
+		t.Fatal("writer-spy callback not entered")
+	}
+	close(spyRelease)
+	spyReleased = true
+	select {
+	case <-spyDone:
+		if spy.Code != 200 || spy.Body.String() != "EVENT_RECEIVED" {
+			t.Fatalf("writer-spy success status=%d body=%q", spy.Code, spy.Body.String())
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("writer-spy handler did not return after release")
+	}
 	entered := make(chan meta.Batch, 1)
 	release := make(chan struct{})
+	var calls atomic.Int32
 	h := handler(t, c, func(_ context.Context, b meta.Batch) error {
+		calls.Add(1)
 		entered <- b
 		<-release
 		return nil
@@ -649,6 +775,9 @@ func TestMWP05CommitBlocksACKAndSanitizesFailure(t *testing.T) {
 		}
 		if string(body) != "EVENT_RECEIVED" {
 			t.Fatalf("success body=%q", body)
+		}
+		if calls.Load() != 1 {
+			t.Fatalf("commit invoked %d times", calls.Load())
 		}
 	case err := <-errResult:
 		t.Fatal(err)
