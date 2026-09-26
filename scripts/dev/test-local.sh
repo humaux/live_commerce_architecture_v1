@@ -7,8 +7,8 @@ command -v go >/dev/null
 # public official golden vector; missing Node must fail before starting fixtures.
 command -v node >/dev/null
 test_mode="${1:-foundation}"
-if [[ "$#" -gt 1 ]] || [[ "$test_mode" != foundation && "$test_mode" != --browser-identity && "$test_mode" != --browser-buyer && "$test_mode" != --browser-merchant-buyer && "$test_mode" != --browser-merchant-orders-bff && "$test_mode" != --browser-order && "$test_mode" != --browser-payment && "$test_mode" != --checkout && "$test_mode" != --payment && "$test_mode" != --payment-worker && "$test_mode" != --expiry-worker && "$test_mode" != --storefront-resolver && "$test_mode" != --buyer-http && "$test_mode" != --purchase-entry && "$test_mode" != --merchant-orders && "$test_mode" != --meta-inbox && "$test_mode" != --meta-consumer && "$test_mode" != --meta-runtime && "$test_mode" != --legacy-isolation && "$test_mode" != --local-recovery && "$test_mode" != --live-planning ]]; then
-  printf 'Usage: bash scripts/dev/test-local.sh [--browser-identity|--browser-buyer|--browser-merchant-buyer|--browser-merchant-orders-bff|--browser-order|--browser-payment|--checkout|--payment|--payment-worker|--expiry-worker|--storefront-resolver|--buyer-http|--purchase-entry|--merchant-orders|--meta-inbox|--meta-consumer|--meta-runtime|--legacy-isolation|--local-recovery|--live-planning]\n' >&2
+if [[ "$#" -gt 1 ]] || [[ "$test_mode" != foundation && "$test_mode" != --browser-identity && "$test_mode" != --browser-buyer && "$test_mode" != --browser-merchant-buyer && "$test_mode" != --browser-merchant-orders-bff && "$test_mode" != --browser-merchant-orders-ui && "$test_mode" != --browser-order && "$test_mode" != --browser-payment && "$test_mode" != --checkout && "$test_mode" != --payment && "$test_mode" != --payment-worker && "$test_mode" != --expiry-worker && "$test_mode" != --storefront-resolver && "$test_mode" != --buyer-http && "$test_mode" != --purchase-entry && "$test_mode" != --merchant-orders && "$test_mode" != --meta-inbox && "$test_mode" != --meta-consumer && "$test_mode" != --meta-runtime && "$test_mode" != --legacy-isolation && "$test_mode" != --local-recovery && "$test_mode" != --live-planning ]]; then
+  printf 'Usage: bash scripts/dev/test-local.sh [--browser-identity|--browser-buyer|--browser-merchant-buyer|--browser-merchant-orders-bff|--browser-merchant-orders-ui|--browser-order|--browser-payment|--checkout|--payment|--payment-worker|--expiry-worker|--storefront-resolver|--buyer-http|--purchase-entry|--merchant-orders|--meta-inbox|--meta-consumer|--meta-runtime|--legacy-isolation|--local-recovery|--live-planning]\n' >&2
   exit 2
 fi
 if [[ "$test_mode" == --browser-merchant-buyer ]]; then
@@ -20,6 +20,11 @@ if [[ "$test_mode" == --browser-order ]]; then
 fi
 if [[ "$test_mode" == --browser-payment ]]; then
   test -f tests/foundation/browser_payment_chain_test.go
+fi
+if [[ "$test_mode" == --browser-merchant-orders-ui ]]; then
+  test -f tests/foundation/browser_merchant_orders_ui_test.go
+  test -f tests/admin/orders-ui.spec.ts
+  mkdir -p output/playwright
 fi
 if [[ "$test_mode" == --browser-merchant-orders-bff ]]; then
   test -f tests/foundation/browser_merchant_orders_bff_test.go
@@ -35,7 +40,7 @@ if [[ "$test_mode" == --browser-buyer || "$test_mode" == --browser-merchant-buye
   COMMERCE_BUYER_WEB_ENABLED=0 pnpm run build:storefront
   mkdir -p output/playwright
 fi
-if [[ "$test_mode" == --browser-identity || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-merchant-orders-bff ]]; then
+if [[ "$test_mode" == --browser-identity || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-merchant-orders-bff || "$test_mode" == --browser-merchant-orders-ui ]]; then
   command -v pnpm >/dev/null
   command -v node >/dev/null
   # Production package, but local-only runtime configuration is injected by the
@@ -83,6 +88,9 @@ if [[ "$test_mode" == --browser-identity ]]; then
 elif [[ "$test_mode" == --browser-merchant-orders-bff ]]; then
   LC_BROWSER_MERCHANT_ORDERS_BFF_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=180s -run '^TestBrowserMerchantOrdersBFFRealChain$' -v ./tests/foundation
   printf 'PASS: isolated Next + Go + PG merchant-order read transport; not merchant UI or provider acceptance.\n'
+elif [[ "$test_mode" == --browser-merchant-orders-ui ]]; then
+  LC_BROWSER_MERCHANT_ORDERS_UI_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=300s -run '^TestBrowserMerchantOrdersUIRealChain$' -v ./tests/foundation
+  printf 'PASS: isolated merchant C order UI; signed MOCK IdP and local payment fixtures, not production/provider acceptance.\n'
 elif [[ "$test_mode" == --browser-buyer ]]; then
   LC_BROWSER_BUYER_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=180s -run '^TestBrowserBuyerRealChain$' -v ./tests/foundation
   printf 'PASS: isolated PG + real buyer browser transport; not UI/PSP/deployment acceptance.\n'
