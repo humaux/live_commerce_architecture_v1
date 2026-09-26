@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"livecommerce/internal/platform"
 	"livecommerce/migrations"
 )
@@ -31,6 +32,8 @@ func TestMetaRuntimeIsolationWorkerObjectACL(t *testing.T) {
 		{"set reachable old table", true, true, false, []string{`GRANT USAGE ON SCHEMA river TO $ROLE`, `GRANT UPDATE ON river.river_job TO $ROLE`}, []string{`REVOKE ALL ON river.river_job FROM $ROLE`, `REVOKE ALL ON SCHEMA river FROM $ROLE`}},
 		{"PUBLIC old table", false, false, true, []string{`GRANT USAGE ON SCHEMA river TO $ROLE`, `GRANT UPDATE ON river.river_job TO $ROLE`}, []string{`REVOKE ALL ON river.river_job FROM $ROLE`, `REVOKE ALL ON SCHEMA river FROM $ROLE`}},
 		{"migration ledger", false, false, false, []string{`GRANT UPDATE(version) ON public.lc_schema_migrations TO $ROLE`}, []string{`REVOKE UPDATE(version) ON public.lc_schema_migrations FROM $ROLE`}},
+		{"Meta River ledger table", false, false, false, []string{`GRANT UPDATE ON river_meta.river_migration TO $ROLE`}, []string{`REVOKE ALL ON river_meta.river_migration FROM $ROLE`}},
+		{"Meta River ledger column", false, false, false, []string{`GRANT UPDATE(version) ON river_meta.river_migration TO $ROLE`}, []string{`REVOKE UPDATE(version) ON river_meta.river_migration FROM $ROLE`}},
 		{"schema CREATE", false, false, false, []string{`GRANT CREATE ON SCHEMA social TO $ROLE`}, []string{`REVOKE CREATE ON SCHEMA social FROM $ROLE`}},
 		{"social table", false, false, false, []string{`GRANT USAGE ON SCHEMA social TO $ROLE`, `GRANT UPDATE ON social.messages TO $ROLE`}, []string{`REVOKE ALL ON social.messages FROM $ROLE`, `REVOKE ALL ON SCHEMA social FROM $ROLE`}},
 	} {
@@ -75,6 +78,14 @@ func TestMetaRuntimeIsolationWorkerObjectACL(t *testing.T) {
 			if p, err := platform.OpenMetaWorkerPool(ctx, dsn); err == nil {
 				p.Close()
 				t.Fatal("Meta worker with effective cross-domain privilege admitted")
+			}
+			borrowed, err := pgxpool.New(ctx, dsn)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer borrowed.Close()
+			if err := platform.ValidateMetaWorkerPool(ctx, borrowed); err == nil {
+				t.Fatal("borrowed Meta worker pool with effective cross-domain privilege admitted")
 			}
 		})
 	}
