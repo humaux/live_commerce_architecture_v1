@@ -306,7 +306,7 @@ func TestBuyerPaymentCaptureFaultsAreCausalAndAtomic(t *testing.T) {
 }
 
 func TestBuyerPaymentCaptureRealRiverSignedQueryChain(t *testing.T) {
-	q := pqSetup(t)
+	q := pqSetupWorker(t)
 	ctx := context.Background()
 	opts := payments.DefaultQueryWorkerOptions()
 	body := pqSignedResponse(pcFull(q))
@@ -335,12 +335,11 @@ func TestBuyerPaymentCaptureRealRiverSignedQueryChain(t *testing.T) {
 	}
 	workers := river.NewWorkers()
 	river.AddWorker(workers, w)
-	queue := "pc_" + t04Tag()
+	queue := "payment_mock_v1"
 	client, e := river.NewClient(riverpgxv5.New(q.worker), &river.Config{Schema: "river_payment", Workers: workers, Queues: map[string]river.QueueConfig{queue: {MaxWorkers: 2}}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), JobTimeout: 15 * time.Second, RescueStuckJobsAfter: 30 * time.Second})
 	if e != nil {
 		t.Fatal(e)
 	}
-	mustExec(t, q.f.owner, `UPDATE river_payment.river_job SET queue=$1 WHERE id=$2`, queue, jobID)
 	if e = client.Start(ctx); e != nil {
 		t.Fatal(e)
 	}
@@ -519,6 +518,10 @@ func TestBuyerPaymentCaptureQueryJobBindingAndRollback(t *testing.T) {
 	}
 	for _, mode := range []string{"wrong_hash", "wrong_attempt", "wrong_version", "terminal_job"} {
 		t.Run(mode, func(t *testing.T) {
+			// Isolate the worker-side binding fence from the newer immutable
+			// INSERT guard using only this disposable fixture owner.
+			mustExec(t, q.f.owner, `ALTER TABLE river_payment.river_job DISABLE TRIGGER payment_job_family`)
+			defer mustExec(t, q.f.owner, `ALTER TABLE river_payment.river_job ENABLE TRIGGER payment_job_family`)
 			tx, e := q.worker.Begin(ctx)
 			if e != nil {
 				t.Fatal(e)
@@ -574,7 +577,7 @@ func TestBuyerPaymentCaptureQueryJobBindingAndRollback(t *testing.T) {
 }
 
 func TestBuyerPaymentCaptureForgedRiverJobCancelsWithoutMoney(t *testing.T) {
-	q := pqSetup(t)
+	q := pqSetupWorker(t)
 	ctx := context.Background()
 	w, e := payments.NewCaptureWorker(ctx, q.worker)
 	if e != nil {
@@ -582,7 +585,7 @@ func TestBuyerPaymentCaptureForgedRiverJobCancelsWithoutMoney(t *testing.T) {
 	}
 	workers := river.NewWorkers()
 	river.AddWorker(workers, w)
-	queue := "pc_forged_" + t04Tag()
+	queue := "payment_mock_v1"
 	client, e := river.NewClient(riverpgxv5.New(q.worker), &river.Config{Schema: "river_payment", Workers: workers, Queues: map[string]river.QueueConfig{queue: {MaxWorkers: 2}}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), JobTimeout: 15 * time.Second, RescueStuckJobsAfter: 30 * time.Second})
 	if e != nil {
 		t.Fatal(e)
@@ -592,13 +595,16 @@ func TestBuyerPaymentCaptureForgedRiverJobCancelsWithoutMoney(t *testing.T) {
 	if e = q.record(q.claim(t), pqReport(q)); e != nil {
 		t.Fatal(e)
 	}
+	mustExec(t, q.f.owner, `ALTER TABLE river_payment.river_job DISABLE TRIGGER payment_job_family`)
+	defer mustExec(t, q.f.owner, `ALTER TABLE river_payment.river_job ENABLE TRIGGER payment_job_family`)
 	var jobID int64
-	if e = q.f.owner.QueryRow(ctx, `UPDATE river_payment.river_job SET queue=$2,
-		args=jsonb_set(args,'{report_hash}',to_jsonb($3::text))
+	if e = q.f.owner.QueryRow(ctx, `UPDATE river_payment.river_job SET
+		args=jsonb_set(args,'{report_hash}',to_jsonb($2::text))
 		WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1 RETURNING id`,
-		q.result.OperationID, queue, strings.Repeat("a", 64)).Scan(&jobID); e != nil {
+		q.result.OperationID, strings.Repeat("a", 64)).Scan(&jobID); e != nil {
 		t.Fatal(e)
 	}
+	mustExec(t, q.f.owner, `ALTER TABLE river_payment.river_job ENABLE TRIGGER payment_job_family`)
 	if e = client.Start(ctx); e != nil {
 		t.Fatal(e)
 	}

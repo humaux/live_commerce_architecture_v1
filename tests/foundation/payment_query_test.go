@@ -45,6 +45,11 @@ var pqOldSecret = accounts.Credentials{HashKey: strings.Repeat("K", 32), HashIV:
 func pqSetup(t *testing.T) pqFixture {
 	return pqSetupSession(t, false)
 }
+func pqSetupWorker(t *testing.T) pqFixture {
+	// Real River fetch uses its immutable fixed family queue. Give each worker
+	// scenario its own cluster so other unit fixtures cannot supply due jobs.
+	return pqSetupItemsOn(t, pwIsolatedFixture(t), nil, false, 1)
+}
 func pqSetupSession(t *testing.T, freshSession bool) pqFixture {
 	return pqSetupItems(t, freshSession, 1)
 }
@@ -389,12 +394,12 @@ func pqStartWorker(t *testing.T, q pqFixture, opts payments.QueryWorkerOptions) 
 	}
 	workers := river.NewWorkers()
 	river.AddWorker(workers, w)
-	queue := "pq_" + t04Tag()
+	queue := "payment_mock_v1"
 	client, e := river.NewClient(riverpgxv5.New(q.worker), &river.Config{Schema: "river_payment", Workers: workers, Queues: map[string]river.QueueConfig{queue: {MaxWorkers: 2}}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), JobTimeout: 15 * time.Second, RescueStuckJobsAfter: 30 * time.Second})
 	if e != nil {
 		t.Fatal(e)
 	}
-	mustExec(t, q.f.owner, `UPDATE river_payment.river_job SET queue=$1,scheduled_at=clock_timestamp() WHERE id=$2`, queue, q.result.JobID)
+	mustExec(t, q.f.owner, `UPDATE river_payment.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, q.result.JobID)
 	if e = client.Start(context.Background()); e != nil {
 		t.Fatal(e)
 	}
@@ -426,7 +431,7 @@ func pqAwait(t *testing.T, q pqFixture, jobID int64, wantCode, wantState string)
 	return time.Time{}
 }
 func TestBuyerPaymentQueryRealWorkerSignedHistoricalResponse(t *testing.T) {
-	q := pqSetup(t)
+	q := pqSetupWorker(t)
 	q.rotate(t, 2, accounts.Credentials{HashKey: strings.Repeat("N", 32), HashIV: strings.Repeat("I", 16)})
 	mustExec(t, q.f.owner, `UPDATE integration.bindings SET enabled=false,semantic_version=semantic_version+1 WHERE id=$1`, q.binding)
 	report := pqReport(q)
@@ -461,7 +466,7 @@ func TestBuyerPaymentQueryRealWorkerSignedHistoricalResponse(t *testing.T) {
 func TestBuyerPaymentQueryBudgetDurabilityAndNoSend(t *testing.T) {
 	for _, mode := range []string{"age", "age_missing_key", "generation"} {
 		t.Run(mode, func(t *testing.T) {
-			q := pqSetup(t)
+			q := pqSetupWorker(t)
 			if mode == "generation" {
 				mustExec(t, q.f.owner, `UPDATE integration.operations SET generation=1000 WHERE id=$1`, q.result.OperationID)
 			} else {
@@ -524,7 +529,7 @@ func TestBuyerPaymentQueryProviderReferenceCannotFundTwoAttempts(t *testing.T) {
 func TestBuyerPaymentQueryWireFailuresStayPending(t *testing.T) {
 	for _, kind := range []string{"amount", "merchant", "signature", "timeout", "panic", "missing_key", "aad"} {
 		t.Run(kind, func(t *testing.T) {
-			q := pqSetup(t)
+			q := pqSetupWorker(t)
 			report := pqReport(q)
 			if kind == "amount" {
 				report["AmountTWD"] = 26
@@ -667,7 +672,10 @@ func TestBuyerPaymentQueryCrossAttemptTokenAndMerchantJob(t *testing.T) {
 	opts.MockTransport = pqTransport(func(*http.Request) (*http.Response, error) { calls.Add(1); return nil, errors.New("must_not_query") })
 	// Corrupt an admitted job only through the isolated fixture owner. The
 	// deferred insert fence independently rejects new unlinked merchant jobs.
+	mustExec(t, q.f.owner, `ALTER TABLE river_payment.river_job DISABLE TRIGGER payment_job_family`)
+	defer mustExec(t, q.f.owner, `ALTER TABLE river_payment.river_job ENABLE TRIGGER payment_job_family`)
 	mustExec(t, q.f.owner, `UPDATE river_payment.river_job SET args=jsonb_build_object('operation_id',$2::text,'version',1) WHERE id=$1`, q.result.JobID, op.OperationID)
+	mustExec(t, q.f.owner, `ALTER TABLE river_payment.river_job ENABLE TRIGGER payment_job_family`)
 	pqStartWorker(t, q, opts)
 	var e error
 	deadline := time.Now().Add(5 * time.Second)
@@ -686,7 +694,7 @@ func TestBuyerPaymentQueryCrossAttemptTokenAndMerchantJob(t *testing.T) {
 	var state string
 	var generation int64
 	if e = f.base.owner.QueryRow(context.Background(), `SELECT state,generation FROM integration.operations WHERE id=$1`, op.OperationID).Scan(&state, &generation); e != nil || !cancelled || state != "READY" || generation != 0 || calls.Load() != 0 {
-		t.Fatalf("merchant family affected %v", e)
+		t.Fatalf("merchant family affected err=%v cancelled=%v state=%s generation=%d provider_calls=%d", e, cancelled, state, generation, calls.Load())
 	}
 }
 
@@ -722,7 +730,7 @@ func TestBuyerPaymentQueryConcurrentReportSingleWinner(t *testing.T) {
 }
 
 func TestBuyerPaymentQueryCancelledIOKeepsRecoverableLease(t *testing.T) {
-	q := pqSetup(t)
+	q := pqSetupWorker(t)
 	entered := make(chan struct{}, 1)
 	stopped := make(chan struct{}, 1)
 	opts := payments.DefaultQueryWorkerOptions()
