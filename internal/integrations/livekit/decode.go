@@ -244,7 +244,7 @@ func decodeList(body []byte, target Target) (Observation, error) {
 		return Observation{}, ErrUnavailable
 	}
 	out, err := observation(row)
-	if err != nil || out.RoomName != target.RoomName || out.EgressID != target.EgressID {
+	if err != nil || out.RoomName != target.RoomName || (target.EgressID != "" && out.EgressID != target.EgressID) {
 		return Observation{}, ErrUnavailable
 	}
 	return out, nil
