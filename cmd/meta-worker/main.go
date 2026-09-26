@@ -89,7 +89,7 @@ func run(ctx context.Context, getenv func(string) string) error {
 		return errWorkerConfig
 	}
 	startup, done := context.WithTimeout(ctx, 10*time.Second)
-	workerPool, err := platform.OpenWorkerPool(startup, c.workerDSN)
+	workerPool, err := platform.OpenMetaWorkerPool(startup, c.workerDSN)
 	if err != nil {
 		done()
 		return errWorkerDatabase
