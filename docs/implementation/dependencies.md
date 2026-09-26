@@ -16,8 +16,8 @@ FORCE RLS 和列级权限隔离 `live.sessions/programs`。修改先锁场次再
 
 ## T08 LiveKit Egress 协议依赖
 
-冻结契约见 [LKP01–06](../../contracts/livekit-egress-protocol-v1.md)。独立协议包
-`internal/integrations/livekit` 的调用方向是 `Start/Query/Stop` → 每次请求签发
+冻结契约见 [LKP01–07](../../contracts/livekit-egress-protocol-v1.md)。独立协议包
+`internal/integrations/livekit` 的调用方向是 `Start/Query/FindByRoom/Stop` → 每次请求签发
 短时 HS256 JWT → 固定 Cloud Twirp 路径 → 有界严格 JSON 解码 → `Observation`。
 运行时只依赖 Go 标准库；HTTP/TLS、HMAC、JSON 的安全模式参考现有 PAYUNi
 客户端，不复用 PSP 配置，也不新增 LiveKit SDK、队列或跨平台通用框架。
@@ -32,6 +32,13 @@ MOCK 的 RoundTripper 是可信测试接缝，不是网络沙箱；独立测试�
 本地 HTTP/TLS 服务。LIVE 配置拒绝注入、代理和重定向。请求不会自动重试：
 Start/Stop 的不确定结果保留 UNKNOWN；查询空列表、带续页令牌的结果以及
 Stop ACK 均不证明远端资源已回收。
+
+`FindByRoom` 仅补充 Start 响应丢失、尚无 Egress ID 时的单次查询；调用者必须
+从已持久化的服务端 attempt 取得房间号，候选结果还需要编排层绑定归属并仅
+采纳一次。不能由空结果重发 Start，不能直接拿候选结果停播。证据见
+[LKP07 本地验收](2026-09-27-livekit-room-discovery-acceptance.md)；授权撤销后的
+查询与回收设计见 [媒体授权生命周期](2026-09-27-media-authority-lifetime.md)，
+其数据库／调度器／真实媒体门禁仍为 NOT_RUN。
 
 升级 LiveKit RPC／proto、Go HTTP/JSON、Cloud 主机约束或加入 self-host 时，
 重新执行 LKP 的协议／负例／race／vet 和独立审查，并单独进行真实 provider
