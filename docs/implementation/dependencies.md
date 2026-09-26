@@ -98,6 +98,16 @@ CLI 使用专用 `OpenMetaWorkerPool`，共用分类器验证实际对象 ACL。
 旧 schema 权限。全量曾暴露测试共享 fixture 污染，已复用现有独立 PG helper
 修复并保留前红后绿证据。此结论仅覆盖本地私有 Meta 运行时，不是生产部署验收。
 
+## Worker 启动诊断与测试连接生命周期
+
+`cmd/{meta,payment,expiry}-worker` → `jobqueue.Run` → `startWorker` → River
+`Start`，只使用现有 pgx `PgError` 和标准库 errors/context/net/slog 分类。
+固定 phase/category 与显式 SQLSTATE 白名单可出日志，底层错误字符串、DSN、
+密钥与 SQL 内容不可输出。更换 River/pgx、启动 helper 或日志字段时须重跑
+`internal/jobqueue` race、三项 worker CLI 测试、原 Meta 维护场景及完整 PG/vet；
+不得把日志增强称作故障修复。当前原场景的 `53300` 失败与停止线见
+[启动诊断证据](2026-09-27-worker-start-diagnostics.md)。没有新增依赖。
+
 ## 商家账户接入复用关系
 
 商家凭据HTTP/BFF不新增依赖：`cmd/api/accounts.go` 通过
