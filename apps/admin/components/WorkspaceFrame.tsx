@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   locales,
@@ -9,6 +9,8 @@ import {
   type Locale,
 } from "@live-commerce/i18n";
 import { copy } from "@/lib/copy";
+import { csrfCookie, sessionBoundary } from "@/lib/settings-client";
+import { signalLogout } from "@/lib/session-events";
 import { Icon } from "./Icon";
 
 export function WorkspaceFrame({
@@ -31,6 +33,9 @@ export function WorkspaceFrame({
   const pathname = usePathname();
   const search = useSearchParams();
   const [navOpen, setNavOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const [signOutFailed, setSignOutFailed] = useState(false);
+  const signOutBusy = useRef(false);
   const nav = [
     ["products", "product", c.products],
     ["inventory", "inventory", c.inventory],
@@ -51,13 +56,44 @@ export function WorkspaceFrame({
       router.push(
         `/${locale}/settings${search.get("store") ? `?store=${encodeURIComponent(search.get("store")!)}` : ""}`,
       );
-    else if (active === "settings" || active === "orders") router.push(`/${locale}/`);
+    else if (active === "settings" || active === "orders")
+      router.push(`/${locale}/`);
     else onSection?.(id);
+  }
+  async function signOut() {
+    if (signOutBusy.current) return;
+    signOutBusy.current = true;
+    setSigningOut(true);
+    setSignOutFailed(false);
+    signalLogout();
+    try {
+      const csrf = csrfCookie();
+      if (!csrf || !(await sessionBoundary(csrf)) || csrfCookie() !== csrf)
+        throw new Error("session_changed");
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf },
+        body: "{}",
+      });
+      if (response.status !== 204 && response.status !== 401)
+        throw new Error("logout_failed");
+      signalLogout();
+      window.location.replace(`/${locale}/`);
+    } catch {
+      setSignOutFailed(true);
+      setSigningOut(false);
+      signOutBusy.current = false;
+    }
   }
   return (
     <div className="workspace">
       <a className="skip-link" href="#main">
-        {active === "settings" ? c.settings : active === "orders" ? c.orders : c.heading}
+        {active === "settings"
+          ? c.settings
+          : active === "orders"
+            ? c.orders
+            : c.heading}
       </a>
       <aside className={`rail ${navOpen ? "open" : ""}`}>
         <div className="brand">{c.title}</div>
@@ -88,6 +124,20 @@ export function WorkspaceFrame({
             ),
           )}
         </div>
+        {signOutFailed && (
+          <p role="alert" style={{ padding: "0 20px", color: "#fff" }}>
+            {c.signOutFailed}
+          </p>
+        )}
+        <button
+          type="button"
+          className="nav-item"
+          data-testid="workspace-sign-out"
+          disabled={signingOut}
+          onClick={() => void signOut()}
+        >
+          {signingOut ? c.signingOut : c.signOut}
+        </button>
       </aside>
       <div className="work-area">
         <header className="topbar">

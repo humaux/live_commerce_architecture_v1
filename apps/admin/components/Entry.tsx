@@ -12,20 +12,9 @@ import {
   type EntryPending,
 } from "@/lib/entry-state";
 import { Icon } from "./Icon";
+import { signalLogout } from "@/lib/session-events";
 
 type EntryStatus = "disabled" | "signed-out" | "onboarding" | "unavailable";
-
-function signalLogout() {
-  // This message contains no order data or credential and can only revoke UI.
-  try {
-    const channel = new BroadcastChannel("commerce-session");
-    channel.postMessage({ type: "logout" });
-    channel.close();
-  } catch { /* storage fallback below */ }
-  try {
-    localStorage.setItem("commerce-session-logout", crypto.randomUUID());
-  } catch { /* another tab also checks its cookie on focus */ }
-}
 
 function csrfToken() {
   const values = document.cookie
