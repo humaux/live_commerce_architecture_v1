@@ -45,6 +45,9 @@ func lpSetup(t *testing.T) lpHarness {
 	if err = tx.QueryRow(ctx, `SELECT count(*) FROM identity.store_grants WHERE principal_id=$1 AND permission LIKE 'live:%'`, h.actor).Scan(&autoGrant); err != nil || autoGrant != 0 {
 		t.Fatalf("migration granted live access automatically: count=%d err=%v", autoGrant, err)
 	}
+	if err = tx.QueryRow(ctx, `SELECT count(*) FROM identity.store_grants WHERE principal_id=$1 AND permission LIKE 'live:%'`, f.principalA).Scan(&autoGrant); err != nil || autoGrant != 0 {
+		t.Fatalf("migration backfilled existing merchant live grants: count=%d err=%v", autoGrant, err)
+	}
 	for _, grant := range []struct {
 		tenant, store, principal string
 		permissions              []string
@@ -123,6 +126,23 @@ func lpFacts(t *testing.T, h lpHarness) (got [5]int64) {
 	return
 }
 
+type lpStored struct {
+	Title, AspectRatio, State string
+	Version                   int64
+	UpdatedAt                 time.Time
+}
+
+func lpStoredRow(t *testing.T, h lpHarness, id string) (row lpStored) {
+	t.Helper()
+	err := h.f.owner.QueryRow(context.Background(), `SELECT s.title,p.aspect_ratio,p.state,s.version,s.updated_at
+	FROM live.sessions s JOIN live.programs p ON (p.tenant_id,p.store_id,p.session_id)=(s.tenant_id,s.store_id,s.id)
+	WHERE s.id=$1`, id).Scan(&row.Title, &row.AspectRatio, &row.State, &row.Version, &row.UpdatedAt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return
+}
+
 func lpDelta(t *testing.T, before, after [5]int64, want [5]int64) {
 	t.Helper()
 	var got [5]int64
@@ -180,6 +200,7 @@ func TestLivePlanningLSP01AtomicPairAndSchedule(t *testing.T) {
 		t.Fatalf("identity or timestamps changed: first=%+v second=%+v", first, second)
 	}
 	lpDelta(t, before, lpFacts(t, h), [5]int64{1, 1, 2, 2, 0})
+	storedBeforeRollback := lpStoredRow(t, h, first.ID)
 	// A successful method call is still caller-owned until WithScope commits.
 	rollbackKey := t04Key("live-rollback")
 	err = platform.WithScope(context.Background(), h.f.runtime, h.token, h.f.storeA1, "store:read", func(tx pgx.Tx, s platform.Scope) error {
@@ -192,6 +213,19 @@ func TestLivePlanningLSP01AtomicPairAndSchedule(t *testing.T) {
 		t.Fatalf("rollback error=%v", err)
 	}
 	lpDelta(t, before, lpFacts(t, h), [5]int64{1, 1, 2, 2, 0})
+	err = platform.WithScope(context.Background(), h.f.runtime, h.token, h.f.storeA1, "store:read", func(tx pgx.Tx, s platform.Scope) error {
+		if _, e := live.UpdateDraft(context.Background(), tx, s, h.token, t04Key("live-update-rollback"), first.ID, 2, lpInput("rolled back edit")); e != nil {
+			return e
+		}
+		return errors.New("force update rollback")
+	})
+	if err == nil || err.Error() != "force update rollback" {
+		t.Fatalf("update rollback error=%v", err)
+	}
+	lpDelta(t, before, lpFacts(t, h), [5]int64{1, 1, 2, 2, 0})
+	if got := lpStoredRow(t, h, first.ID); got != storedBeforeRollback {
+		t.Fatalf("update rollback mutated durable pair: %+v -> %+v", storedBeforeRollback, got)
+	}
 }
 
 func TestLivePlanningLSP02ReplayAndCAS(t *testing.T) {
@@ -302,6 +336,33 @@ func TestLivePlanningLSP03AuthorityIsolationAndReadOnly(t *testing.T) {
 			}
 		})
 	}
+	// A read grant does not imply management; a management grant does not imply
+	// read. Both permissions must be provisioned explicitly.
+	mustExec(t, h.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'live:read')`, h.f.tenantA, h.f.storeA1, h.limited)
+	if _, e := lpGet(h, h.limitedToken, h.f.storeA1, first.ID); e != nil {
+		t.Fatalf("read-only positive control: %v", e)
+	}
+	if _, e := lpCreate(h, h.limitedToken, h.f.storeA1, t04Key("live-read-only"), in); !errors.Is(e, platform.ErrForbidden) {
+		t.Fatalf("read-only create: %v", e)
+	}
+	if _, e := lpUpdate(h, h.limitedToken, h.f.storeA1, t04Key("live-read-only-update"), first.ID, 1, in); !errors.Is(e, platform.ErrForbidden) {
+		t.Fatalf("read-only update: %v", e)
+	}
+	mustExec(t, h.f.owner, `DELETE FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission='live:read'`, h.f.tenantA, h.f.storeA1, h.limited)
+	mustExec(t, h.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'live:manage')`, h.f.tenantA, h.f.storeA1, h.limited)
+	if _, e := lpGet(h, h.limitedToken, h.f.storeA1, first.ID); !errors.Is(e, platform.ErrForbidden) {
+		t.Fatalf("manage-only read: %v", e)
+	}
+	rollback := errors.New("management positive control rollback")
+	err := platform.WithScope(context.Background(), h.f.runtime, h.limitedToken, h.f.storeA1, "store:read", func(tx pgx.Tx, s platform.Scope) error {
+		if _, e := live.CreateDraft(context.Background(), tx, s, h.limitedToken, t04Key("live-manage-only"), in); e != nil {
+			return e
+		}
+		return rollback
+	})
+	if !errors.Is(err, rollback) {
+		t.Fatalf("manage-only positive control: %v", err)
+	}
 	for _, tc := range []struct {
 		name   string
 		mutate func(string)
@@ -335,7 +396,7 @@ func TestLivePlanningLSP03AuthorityIsolationAndReadOnly(t *testing.T) {
 		})
 	}
 	// Revision and GUC must still be checked when the outer scope was valid.
-	err := platform.WithScope(context.Background(), h.f.runtime, h.token, h.f.storeA1, "store:read", func(tx pgx.Tx, s platform.Scope) error {
+	err = platform.WithScope(context.Background(), h.f.runtime, h.token, h.f.storeA1, "store:read", func(tx pgx.Tx, s platform.Scope) error {
 		mustExec(t, h.f.owner, `UPDATE identity.memberships SET authz_revision=authz_revision+1 WHERE tenant_id=$1 AND principal_id=$2`, h.f.tenantA, h.actor)
 		_, err := live.UpdateDraft(context.Background(), tx, s, h.token, t04Key("live-stale-revision"), first.ID, 1, in)
 		return err
@@ -358,9 +419,12 @@ func TestLivePlanningLSP03AuthorityIsolationAndReadOnly(t *testing.T) {
 		t.Fatal(e)
 	}
 	defer tx.Rollback(context.Background())
+	if _, e = tx.Exec(context.Background(), `SELECT set_config('app.tenant_id',$1,true),set_config('app.store_id',$2,true),set_config('app.principal_id',$3,true)`, h.f.tenantA, h.f.storeA1, h.actor); e != nil {
+		t.Fatal(e)
+	}
 	_, e = live.CreateDraft(context.Background(), tx, platform.Scope{TenantID: h.f.tenantA, StoreID: h.f.storeA1, PrincipalID: h.actor, Revision: 2}, h.token, t04Key("live-isolation"), in)
-	if e == nil {
-		t.Fatal("repeatable-read transaction accepted")
+	if !errors.Is(e, command.ErrInvalid) {
+		t.Fatalf("repeatable-read transaction accepted with exact scope GUCs: %v", e)
 	}
 	if _, e = lpGet(h, h.token, h.f.storeA1, first.ID); e != nil {
 		t.Fatalf("valid read after revision change: %v", e)
@@ -387,6 +451,7 @@ func TestLivePlanningLSP04ObservedWaitExpiry(t *testing.T) {
 				}
 			}
 			before := lpFacts(t, h)
+			beforeRow := lpStoredRow(t, h, first.ID)
 			var expires time.Time
 			if e = h.f.owner.QueryRow(context.Background(), `UPDATE identity.sessions SET expires_at=clock_timestamp()+interval '2 seconds' WHERE token_hash=$1 RETURNING expires_at`, tokenHash(h.token)).Scan(&expires); e != nil {
 				t.Fatal(e)
@@ -449,6 +514,9 @@ func TestLivePlanningLSP04ObservedWaitExpiry(t *testing.T) {
 			if after := lpFacts(t, h); after != before {
 				t.Fatalf("expired %s changed facts: %v -> %v", mode, before, after)
 			}
+			if afterRow := lpStoredRow(t, h, first.ID); afterRow != beforeRow {
+				t.Fatalf("expired %s mutated row: %+v -> %+v", mode, beforeRow, afterRow)
+			}
 		})
 	}
 }
@@ -462,7 +530,7 @@ func lpWaitLock(t *testing.T, f *testFixture, pid int, advisory bool) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if waitType == "Lock" && (!advisory || waitEvent == "advisory") {
+		if waitType == "Lock" && (advisory && waitEvent == "advisory" || !advisory && waitEvent != "advisory") {
 			return
 		}
 		time.Sleep(10 * time.Millisecond)
