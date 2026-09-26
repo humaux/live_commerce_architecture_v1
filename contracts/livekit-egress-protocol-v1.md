@@ -96,6 +96,20 @@ The later webhook/lifecycle component must supply those separate projections.
   token/container type or simultaneous aliases yields ErrUnavailable BEFORE
   considering empty items. Never silently ignore pagination or follow it.
   Empty/omitted items is `ErrNotObserved`, NOT proof of absence or completion.
+- LKP07 extension (FROZEN_FOR_IMPLEMENTATION; independent preflight of base
+  `3d601e2` plus this extension found no open P0/P1):
+  `(*Client).FindByRoom(ctx context.Context, roomName string) (Observation,error)`
+  issues one ListEgress POST with exactly `room_name` and `active:false`, without
+  `egress_id`. It is needed when a Start response is lost before an Egress ID is
+  known. Require initialized client, nonnil context and the same server-owned
+  room grammar before I/O. Apply all Query error, strict JSON and pagination
+  rules. Return an observation only for exactly one valid EgressInfo whose room
+  equals the requested room; unrelated/duplicate/multiple rows are unavailable,
+  even if one row matches. Empty items remains ErrNotObserved and keeps the
+  enclosing start UNKNOWN; it never permits another Start or implies stopped.
+  This method returns a candidate observation, not authority to adopt it, stop it
+  or mark an operation successful. The later durable attempt controller must
+  bind the same tenant/store/project/room and persist the adopted ID exactly once.
 - `(*Client).Stop(ctx, Target) (Observation,error)`: one StopEgress POST with
   egress_id; require exact room and ID in response. Never infer ended from ACK.
 
@@ -144,6 +158,13 @@ All known fields must have exact scalar types, no coercion or partial DTO.
 - LKP06: dependency/caller notes, upgrade signal, root evidence, graph links and
   Humaux trace. No PG schema changes or new browser UI in this increment; real
   Cloud, duration/billing, credentials, media ingestion and G06 remain NOT_RUN.
+- LKP07: a real local TLS provider accepts Start then drops
+  its response; FindByRoom must send exactly one room-scoped read and discover
+  the single matching ID without a second Start. Independently test malformed
+  input/no I/O, empty/omitted rows, mismatched/multiple/duplicate rows, invalid
+  IDs, pagination-before-empty, strict JSON and HTTP failure classification.
+  Existing Query still requires a valid explicit ID and exact identity match.
+  Passing this extension does not implement durable reconciliation or G06.
 
 ## Integration stop line and upgrades
 
