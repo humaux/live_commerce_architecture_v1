@@ -82,9 +82,30 @@ All four expiry maintenance controls advance and the real CLI exits normally.
 No concrete P0/P1/P2 in this bounded LRI01 review. This does not accept LRI02–06
 or establish database-principal containment.
 
+## LRI02 reciprocal maintenance sub-gate
+
+Independent checkpoint `9fe4dd3`, root `72bd176`, adds the converse payment-leader
+case. It starts the real payment client with default maintenance options and a
+paused native queue: four own maintenance controls advance, while expiry,
+external and Meta job tables plus eight business tables remain whole-row equal.
+The injected MOCK transport records zero calls. Linked IDs are family-qualified.
+
+| Run | Result | Log and SHA256 |
+| --- | --- | --- |
+| Author | Actual PG18/race, exit 0, 2 PASS / 0 FAIL / 0 SKIP, foundation 14.112s | `/Volumes/data/output/legacy-isolation-author-mutual-candidate2-20260926.log`; `80fc94653c7ec7c9f9237dc7230fe3b030ecdc6e840c656a18896741d62fd5e5` |
+| Root independent at `72bd176` | Same focused selector, actual exit 0, 2 PASS / 0 FAIL / 0 SKIP, foundation 22.253s | `/Volumes/data/output/legacy-isolation-root-mutual-green1-20260926.log`; `4e4eb63acf773222f27ed989c841e233ad4a53c59b615768d0b7db18872a73ff` |
+
+Read-only reviewer `meta_consumer_preflight` independently accepted only this
+reciprocal maintenance sub-gate, with no concrete P0/P1/P2. Three-profile
+cross-fetch and existing converse/restart/shutdown gates still need regression.
+The author's earlier `53300` fixture failure exhausted setup connections; only
+unused seed pools were closed before retry. No product limits or assertions were
+weakened, and the failed log remains retained.
+
 ## Pending
 
-- Reciprocal maintenance, admission/readiness and populated-upgrade LRI02–04 gates.
+- Remaining profile/runtime regression, admission/readiness and populated-upgrade
+  portions of LRI02–04.
 - Root independent full regression and affected order/payment browser inspection.
 - Independent exact-source final signoff before merging the product increment.
 - Production backup/impact/approval, real-provider qualification and full SaaS
