@@ -1,6 +1,9 @@
 # T08 durable media controller — implementation contract candidate
 
-Status: **REVIEW CANDIDATE, NOT FROZEN**. This supersedes the implementation
+Status: **PARTIALLY FROZEN; full controller NOT FROZEN**. The authorization
+registry increment is specified separately in
+[LMA01–05](live-media-authorization-v1.md). The bounded MOCK Stop recovery below
+has independent design review; it is not yet implemented. This supersedes the implementation
 direction of the old non-executable `live-broadcast-v1.md`; it does not activate
 that draft. Media credentials/official destination eligibility are not supplied
 by this contract. Existing LKP and LKM components remain separately gated.
@@ -80,7 +83,7 @@ Use existing authenticated command receipt/audit conventions. No detached enqueu
 |Start READY → dispatch|Current merchant membership/scope/live permission; still-enabled exact frozen bindings; unrevoked official authorization, start deadline, budget; exact new attempt/job linkage|Exactly one Start|
 |Start already dispatched, UNKNOWN or expired DISPATCHING → reconcile|Immutable exact attempt/project/room/operation ownership and a fresh fenced lease; may survive merchant/destination binding revoke|FindByRoom while ID unknown, otherwise Query; never Start|
 |Stop dispatch|Durable stop request from currently authorized scoped merchant or scoped system cleanup policy; exact owned attempt with pinned Egress ID|Exactly one Stop|
-|Stop UNKNOWN or expired DISPATCHING → reconcile|Same frozen owned target and fresh fenced lease|Query only; never repeated Stop merely because a response was lost|
+|Stop UNKNOWN or expired DISPATCHING → reconcile|Same frozen owned target and fresh fenced lease|Query by default; only the bounded same-operation reservation below can authorize a second Stop|
 |Terminal operation/resource|Persisted correlated terminal history|No provider effect|
 
 The final material resolver repeats actor/action/mode, tenant/store/session/
@@ -127,8 +130,9 @@ fact even if the initiating merchant has since lost access.
 
 ## Concurrency and SQL constraints still to settle
 
-Freeze a consistent lock order for session/program, sorted destination bindings,
-media binding, authorization/attempt, operations and events before implementation.
+The global media lock order is all referenced bindings (media and destinations)
+in sorted UUID order, then tenant/store, session/program, authorization/attempt,
+operations and events. The registry and later planner/worker must share it.
 Read locators without authority, then validate them under locks. Shared core
 helpers lock binding → operation; media wrappers must not invert this order.
 No external call holds these locks. All lease-dependent writes repeat expiry
@@ -155,37 +159,59 @@ provider observation terminal rules and test fixtures. LKM custody is an executa
 dependency, not closure of any of these controller gates. Real provider/browser
 acceptance and the complete SaaS deployment objective remain open.
 
-### P1 freeze blocker: an uncertain Stop may never have reached the provider
+### Bounded MOCK Stop recovery — design accepted, implementation NOT_RUN
 
-The query-only UNKNOWN Stop rule above is conservative, but is **not a complete
+An unconditional query-only UNKNOWN Stop rule is conservative, but is **not a complete
 reclamation algorithm**: if the request was lost before acceptance, the same
 owned resource can remain ACTIVE. Do not freeze or implement that rule as an
 indefinite successful-cleanup loop. Never convert timeout, empty list or Stop ACK
 into resource termination. One logical Stop operation is not, by itself, proof
 that every additional wire Stop request is either safe or forbidden.
 
-Before freeze, establish a bounded policy for the exact pinned project/Egress ID
-under a fresh fenced lease and fresh authoritative ACTIVE observation, including
-concurrent/late Stop and expiry. Reissuing Stop needs provider-backed semantics
-and a causal fault test (drop before acceptance versus accept then drop reply),
-not an assumed idempotency guarantee. Until then, remain explicitly unresolved
-with operator escalation and usage liability; never re-Start to repair cleanup.
+The local algorithm uses one logical Stop operation and at most two wire Stop
+reservations. Persist `wire_count=1` before the initial call; a crash after this
+reservation consumes the budget conservatively. On uncertainty, Query the exact
+pinned project/room/Egress ID. Never issue a replacement Start.
+
+The one exceptional second Stop requires a synchronous exact-ID Query made under
+the current fenced lease after the first wire reservation. Cached observations,
+webhooks and history do not qualify. In the same transaction that reserves
+`wire_count=2`, recheck the exact observation ID/source/target, current generation,
+token and lease expiry, DB-clock observation age <=5 seconds, >=5 seconds since
+the previous reservation, and absence of newer ENDING or terminal evidence. Repeat
+the final material gate after lock waits. Use the same operation and target; no
+new operation or generic retry flag. STARTING, ENDING, empty, malformed, error and
+terminal observations never authorize a resend. No third wire reservation.
+
+Five seconds is pacing, not proof the first request finished: the client request
+ceiling is ten seconds and delayed ACTIVE observations can race accepted stops.
+Tests must distinguish loss before acceptance, acceptance followed by lost reply,
+delayed ACTIVE, concurrent workers, expired leases and crash after reservation.
+The local fixture must demonstrate <=2 wires and <=1 accepted EOS. Exhaustion
+stays unresolved/escalated with usage liability until correlated terminal proof.
+
+This freezes the MOCK algorithm only. LIVE intake/activation requires a separate
+authorized Cloud same-ID duplicate/fault gate; the open-source handler's
+`eosSent.Once` does not establish a universal Cloud contract. Independent review:
+Humaux `54f9c14a-72eb-4bf8-af27-b45acf5c741e`; fixed-source research
+`fda346dc-4f4d-4712-bb42-31b11635853c`.
 
 Read-only official evidence checked 2026-09-27:
 
 - [Egress API](https://docs.livekit.io/reference/other/egress/api/#stopegress)
   describes stopping an active egress but supplies no general retry guarantee.
-- [Server StopEgress source](https://github.com/livekit/livekit/blob/master/pkg/service/egress.go#L348-L385)
+- [Server StopEgress source](https://github.com/livekit/livekit/blob/93f5b3eb615c792b8749b0532ff9855d9fd88418/pkg/service/egress.go#L371-L409)
   targets an Egress ID, looks up status on an RPC error, and can return an error
-  even for a non-active resource. This mutable upstream snapshot is supporting
+  even for a non-active resource. This fixed upstream snapshot is supporting
   evidence, not proof of a particular Cloud deployment's behavior.
 - [ListEgress documentation](https://docs.livekit.io/reference/other/egress/api/#listegress)
   and [Python API reference](https://docs.livekit.io/reference/python/livekit/api/egress_service.html)
   differ on completed-record retention. The controller cannot treat an empty
   result as terminal evidence or assume indefinite recoverability.
 
-The same API reference now marks StartRoomCompositeEgress deprecated and directs
-new integrations to StartEgress. The existing LKP local wire tests remain valid
-for their frozen method, not a current-provider compatibility claim. Resolve the
-method/version contract before real provider registration; do not silently alter
-or declare the existing Cloud gate passed.
+Source recheck at `3cb9868` confirms that `Client.Start` and the frozen LKP
+contract **already use StartEgress**, with template/preset/outputs and independent
+exact-path/body tests. No API-method migration is needed. The earlier note
+suggesting the implementation still used deprecated StartRoomCompositeEgress
+was incorrect. These local tests still do not prove real Cloud/media behavior;
+provider acceptance remains a separate gate.

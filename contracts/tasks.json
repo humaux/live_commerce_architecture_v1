@@ -470,8 +470,14 @@
     },
     "media_controller_candidate": {
       "contract": "contracts/live-media-controller-v1.md",
-      "status": "REVIEW_CANDIDATE_NOT_FROZEN",
-      "remaining": "Exact SQL roles/FKs/lease/status contract, trusted intake, Stop lost-before-delivery recovery and provider method/version confirmation. No controller implementation or real-media acceptance."
+      "status": "PARTIAL_DESIGN_FREEZE_CONTROLLER_NOT_IMPLEMENTED",
+      "remaining": "Bounded MOCK Stop recovery design reviewed. Implement reviewed authorization registry first; exact MEDIA_ATTEMPT roles/FKs/lease/status/River contract still pending. Current client already uses StartEgress; no method migration needed. No controller implementation or real-media acceptance."
+    },
+    "media_authorization_registry_slice": {
+      "contract": "contracts/live-media-authorization-v1.md",
+      "status": "FROZEN_FOR_IMPLEMENTATION",
+      "root_gate": "LMA01_05_NOT_RUN",
+      "boundary": "MOCK-only prepared authority persistence and revoke. No media operation, worker, provider effect, LIVE intake or G06 acceptance."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
