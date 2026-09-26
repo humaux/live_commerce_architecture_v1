@@ -1,4 +1,6 @@
 -- The fifth native River schema is an inert, MOCK-only producer lane.
+-- The private readiness function resolves these schema-qualified relation names.
+GRANT USAGE ON SCHEMA river,river_meta,river_payment,river_expiry TO commerce_media_writer;
 DO $$ BEGIN
  IF EXISTS (SELECT 1 FROM river.river_job WHERE kind='live_media_operation_v1' OR queue='media_mock_v1')
   OR EXISTS (SELECT 1 FROM river_meta.river_job WHERE kind='live_media_operation_v1' OR queue='media_mock_v1')
@@ -13,6 +15,8 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 BEGIN
  IF NEW.kind IS DISTINCT FROM 'live_media_operation_v1'
   OR NEW.queue IS DISTINCT FROM 'media_mock_v1' OR NEW.unique_key IS NOT NULL
+  OR NEW.state IS DISTINCT FROM 'available' OR NEW.attempt IS DISTINCT FROM 0
+  OR NEW.finalized_at IS NOT NULL OR NEW.scheduled_at>clock_timestamp()
   OR NEW.args IS NULL OR jsonb_typeof(NEW.args)<>'object'
   OR NEW.args->>'operation_id' IS NULL
   OR NEW.args->>'operation_id' !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
@@ -41,6 +45,8 @@ BEGIN
  IF NOT FOUND OR j.kind IS DISTINCT FROM NEW.kind OR j.queue IS DISTINCT FROM NEW.queue
   OR j.args IS DISTINCT FROM NEW.args OR j.unique_key IS DISTINCT FROM NEW.unique_key
   OR j.kind<>'live_media_operation_v1' OR j.queue<>'media_mock_v1'
+  OR j.state<>'available' OR j.attempt<>0 OR j.finalized_at IS NOT NULL
+  OR j.scheduled_at>clock_timestamp()
   OR j.args->>'version' IS DISTINCT FROM '1' OR j.unique_key IS NOT NULL THEN
   RAISE EXCEPTION 'media job mismatch' USING ERRCODE='23514';
  END IF;
@@ -126,6 +132,8 @@ LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
    AND (a.id IS NULL OR a.start_operation_id<>o.id
     OR NOT EXISTS(SELECT 1 FROM river_media.river_job j WHERE j.id=o.job_id
      AND j.kind='live_media_operation_v1' AND j.queue='media_mock_v1'
+     AND j.state='available' AND j.attempt=0 AND j.finalized_at IS NULL
+     AND j.scheduled_at<=clock_timestamp()
      AND j.unique_key IS NULL AND j.args->>'version'='1'
      AND j.args=jsonb_build_object('operation_id',o.id::text,'version',1))))
 $$;
