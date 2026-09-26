@@ -500,7 +500,7 @@ func TestLiveMediaPlanLMP05QueueIntegrityAndRollback(t *testing.T) {
 			var scheduled time.Time
 			err = tx.QueryRow(ctx, `INSERT INTO river_media.river_job(kind,args,max_attempts,queue,state,scheduled_at,finalized_at)
 			 VALUES('live_media_operation_v1',jsonb_build_object('operation_id',$1::text,'version',1),3,'media_mock_v1',
-			 $2::text,clock_timestamp()+interval '1 hour',CASE WHEN $2::text IN ('completed','cancelled') THEN clock_timestamp() END)
+			 $2::river_media.river_job_state,clock_timestamp()+interval '1 hour',CASE WHEN $2::text IN ('completed','cancelled') THEN clock_timestamp() END)
 			 RETURNING id,scheduled_at`, operation, state).Scan(&id, &scheduled)
 			if state == "available" {
 				if err != nil {
