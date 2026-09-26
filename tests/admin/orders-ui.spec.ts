@@ -28,6 +28,9 @@ const pii = ["Synthetic Buyer", "+886900000001", "Synthetic home address"];
 test.use({
   baseURL: origin,
   headless: false,
+  // Playwright disables native bfcache by default. This lifecycle suite must
+  // exercise browser restoration, not force every history return to reload.
+  launchOptions: { ignoreDefaultArgs: ["--disable-back-forward-cache"] },
   trace: "retain-on-failure",
   screenshot: "only-on-failure",
 });
@@ -372,7 +375,21 @@ test("MOU03 controlled delayed detail, pagehide, history and cross-tab logout", 
         .length as number,
   );
   await page.goto("/en/settings");
-  await page.goBack();
+  // A restored document does not emit a new load event.
+  await page.goBack({ waitUntil: "commit" });
+  // Commit precedes pageshow on both cached and freshly loaded returns.
+  await expect
+    .poll(() =>
+      page.evaluate(
+        (before) =>
+          (
+            JSON.parse(sessionStorage.getItem("mou-native-pageshows") ?? "[]") as
+              Array<{ path: string; persisted: boolean }>
+          ).slice(before).some((event) => event.path === "/en/orders"),
+        beforeHistory,
+      ),
+    )
+    .toBe(true);
   const nativeEvents = await page.evaluate(
     (before) =>
       (
@@ -384,6 +401,13 @@ test("MOU03 controlled delayed detail, pagehide, history and cross-tab logout", 
   );
   const returnEvent = nativeEvents.find((event) => event.path === "/en/orders");
   expect(returnEvent).toBeDefined();
+  const notRestoredReasons = await page.evaluate(() => {
+    const navigation = performance.getEntriesByType("navigation")[0] as
+      PerformanceNavigationTiming & {
+        notRestoredReasons?: { toJSON(): unknown } | null;
+      };
+    return navigation?.notRestoredReasons?.toJSON() ?? null;
+  });
   // The list reporter does not persist body-only attachments for passing tests.
   // Keep the actual native observation even when this scenario is green.
   const nativeHistoryPath = testInfo.outputPath("native-pageshow.json");
@@ -392,6 +416,7 @@ test("MOU03 controlled delayed detail, pagehide, history and cross-tab logout", 
     JSON.stringify({
       observed: Boolean(returnEvent),
       persisted: returnEvent?.persisted ?? false,
+      notRestoredReasons,
       events: nativeEvents,
     }),
   );

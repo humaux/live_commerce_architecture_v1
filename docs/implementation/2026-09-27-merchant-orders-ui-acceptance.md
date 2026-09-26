@@ -129,6 +129,50 @@ Docker name-filter readback returned no `lc-foundation-test-*` containers. No
 customer service was stopped, no production data changed, no real payment sent.
 Earlier failed runs and screenshots remain available for audit.
 
-Next: complete native hide/visible restoration and bfcache-capable evidence on
-a suitable host, retaining fresh-authorized-read and no-PII assertions. Then
-replay MOU and update this record. Do not infer whole-SaaS or deployment readiness.
+Next: complete native hide/visible restoration, retaining fresh-authorized-read
+and no-PII assertions. The bfcache observation is refined below; do not remove
+private/no-store responses to force a cache hit. Then replay MOU and update this
+record. Do not infer whole-SaaS or deployment readiness.
+
+## Native history harness diagnosis, 22:40 UTC
+
+Installed Playwright 1.63.0 passes `--disable-back-forward-cache` by default
+(`playwright-core/lib/coreBundle.js`, Chromium switches). This suite now omits
+only that default, waits for history navigation **commit**, then polls the actual
+pageshow record. A restored document need not emit another load event. No product
+code, response header, native-visibility assertion or skip policy was changed.
+
+A separate isolated loopback HTML probe emitted trusted native pageshow events
+`/first:false → /second:false → /first:true` with that flag omitted and
+`goBack({waitUntil:"commit"})`. Thus this host supports native bfcache for an
+eligible document. This is a capability probe, **not** order-page acceptance.
+Removing background-window/timer flags and disabling focus emulation on both
+probe tabs did not produce a native hidden event; that hypothesis was rejected.
+
+Actual order-chain rerun:
+
+- Command: `bash scripts/dev/test-local.sh --browser-merchant-orders-ui`
+- Log: `/Volumes/data/output/merchant-orders-native-bfcache-20260927-diagnostic.log`
+  (SHA-256 `d1be8798aaaa63769e632cd050c88bcea03791c77859c2c750db5dd549a8bc4c`).
+- Artifact root: `/Volumes/data/output/merchant-orders-c-browser-20260927/20260926T224016.147901000/`.
+- Playwright: **6 passed, 1 skipped** (9.3 s). Go foundation **12.458 s**, aggregate
+  **exit 1** because native visibility remains NOT_RUN. Not an aggregate pass.
+- The actual order history return still records `observed=true,persisted=false`.
+  Its browser-provided `notRestoredReasons` includes `masked`,
+  `response-cache-control-no-store` and
+  `response-cache-control-no-store-with-js-network-request`. These are reported
+  reasons, not a claim that every browser will reject caching identically.
+- `native-pageshow.json` SHA-256:
+  `df9b2befc811d6ee27aca3ce31f87c7285ced968ee37ef2d2981eb984985fa98`.
+
+The first changed harness run read the event before pageshow and failed its
+existing defined-event assertion. That red log is retained as
+`/Volumes/data/output/merchant-orders-native-bfcache-20260927-first.log`; bounded
+polling fixed the event-order race, not the product. The second log is
+`/Volumes/data/output/merchant-orders-native-bfcache-20260927-repair1.log`.
+Native hidden/visible is still unresolved; do not retry the same host probes
+without new evidence or relabel synthetic events as native acceptance.
+
+Independent `live_draft_tests` read-only review accepted the bounded test-only
+diff and checked both hashes above; no native-visibility or privacy assertion
+was weakened. This does not close MOU03.
