@@ -173,6 +173,14 @@ job ID. Reject orphan, cross-scope, extra-key, other-schema or rewritten jobs.
 No foreign-key retention trap: future River pruning must not delete history or
 require retaining completed jobs forever. No worker is granted this queue yet;
 future media execution role must be independently admitted and reviewed.
+For this inert immediate-intent increment, native jobs must start `available`,
+with attempt 0 and no finalized timestamp. The BEFORE INSERT guard normalizes
+that job's scheduled_at to DB clock, including an available row submitted with
+a future app timestamp. It cannot remain parked in the future. Explicit
+scheduled/pending/terminal states remain rejected; UPDATE does not normalize.
+This avoids River v0.40.0 driver's app-clock default causing false rejection
+(independent same-row diagnosis observed +143 microseconds), without adding an
+arbitrary clock-skew allowance or weakening Start authorization deadlines.
 Readiness checks exact trigger enablement, owner/security/search_path/signature,
 scope guards and current nonterminal job linkage; missing post phase fails closed.
 PlanStart checks this boolean gate before any attempt/job creation. Existing

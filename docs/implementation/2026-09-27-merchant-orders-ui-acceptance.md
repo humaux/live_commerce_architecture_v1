@@ -176,3 +176,8 @@ without new evidence or relabel synthetic events as native acceptance.
 Independent `live_draft_tests` read-only review accepted the bounded test-only
 diff and checked both hashes above; no native-visibility or privacy assertion
 was weakened. This does not close MOU03.
+
+A separate empty-profile system Chrome channel probe (`153.0.8010.53`, headed,
+focus emulation disabled on both tabs) also returned `visible` with no native
+visibility events after both tab switches. Existing customer tabs/profiles were
+not used. Merely choosing the installed Chrome binary does not close that gap.
