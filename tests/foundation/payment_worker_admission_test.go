@@ -40,43 +40,52 @@ func TestBuyerPaymentWorkerAdmissionFences(t *testing.T) {
 	assertReady(t, true)
 	var triggerDDL string
 	if err := f.owner.QueryRow(context.Background(), `SELECT pg_get_triggerdef(oid)
-		FROM pg_trigger WHERE tgrelid='river.river_job'::regclass AND tgname='payment_queue_route_v1'`).Scan(&triggerDDL); err != nil {
+		FROM pg_trigger WHERE tgrelid='river_payment.river_job'::regclass AND tgname='payment_queue_route_v1'`).Scan(&triggerDDL); err != nil {
 		t.Fatal(err)
 	}
 	t.Run("disabled router", func(t *testing.T) {
-		mustExec(t, f.owner, `ALTER TABLE river.river_job DISABLE TRIGGER payment_queue_route_v1`)
-		defer mustExec(t, f.owner, `ALTER TABLE river.river_job ENABLE TRIGGER payment_queue_route_v1`)
+		mustExec(t, f.owner, `ALTER TABLE river_payment.river_job DISABLE TRIGGER payment_queue_route_v1`)
+		defer mustExec(t, f.owner, `ALTER TABLE river_payment.river_job ENABLE TRIGGER payment_queue_route_v1`)
 		assertReady(t, false)
 	})
 	t.Run("missing router", func(t *testing.T) {
-		mustExec(t, f.owner, `DROP TRIGGER payment_queue_route_v1 ON river.river_job`)
+		mustExec(t, f.owner, `DROP TRIGGER payment_queue_route_v1 ON river_payment.river_job`)
 		defer mustExec(t, f.owner, triggerDDL)
 		assertReady(t, false)
 	})
 	t.Run("immediate timing", func(t *testing.T) {
-		mustExec(t, f.owner, `DROP TRIGGER payment_queue_route_v1 ON river.river_job`)
+		mustExec(t, f.owner, `DROP TRIGGER payment_queue_route_v1 ON river_payment.river_job`)
 		defer func() {
-			mustExec(t, f.owner, `DROP TRIGGER payment_queue_route_v1 ON river.river_job`)
+			mustExec(t, f.owner, `DROP TRIGGER payment_queue_route_v1 ON river_payment.river_job`)
 			mustExec(t, f.owner, triggerDDL)
 		}()
-		mustExec(t, f.owner, `CREATE CONSTRAINT TRIGGER payment_queue_route_v1 AFTER INSERT ON river.river_job
+		mustExec(t, f.owner, `CREATE CONSTRAINT TRIGGER payment_queue_route_v1 AFTER INSERT ON river_payment.river_job
 		 DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION integration.route_payment_queue_v1()`)
 		assertReady(t, false)
 	})
 	for _, tc := range []struct{ name, change, restore string }{
-		{"legacy queue drift", `UPDATE river.river_job SET queue='default' WHERE id=$1`, `UPDATE river.river_job SET queue='payment_mock_v1' WHERE id=$1`},
-		{"wrong profile queue", `UPDATE river.river_job SET queue='payment_live_v1' WHERE id=$1`, `UPDATE river.river_job SET queue='payment_mock_v1' WHERE id=$1`},
-		{"custom queue", `UPDATE river.river_job SET queue='unclaimed_custom' WHERE id=$1`, `UPDATE river.river_job SET queue='payment_mock_v1' WHERE id=$1`},
-		{"foreign kind", `UPDATE river.river_job SET kind='not_a_payment' WHERE id=$1`, `UPDATE river.river_job SET kind='payment_query_v1' WHERE id=$1`},
-		{"unlinked args", `UPDATE river.river_job SET args=jsonb_set(args,'{version}','2') WHERE id=$1`, `UPDATE river.river_job SET args=jsonb_set(args,'{version}','1') WHERE id=$1`},
-		{"unique key drift", `UPDATE river.river_job SET unique_key=decode(repeat('ab',32),'hex') WHERE id=$1`, `UPDATE river.river_job SET unique_key=NULL WHERE id=$1`},
+		{"legacy queue drift", `UPDATE river_payment.river_job SET queue='default' WHERE id=$1`, `UPDATE river_payment.river_job SET queue='payment_mock_v1' WHERE id=$1`},
+		{"wrong profile queue", `UPDATE river_payment.river_job SET queue='payment_live_v1' WHERE id=$1`, `UPDATE river_payment.river_job SET queue='payment_mock_v1' WHERE id=$1`},
+		{"custom queue", `UPDATE river_payment.river_job SET queue='unclaimed_custom' WHERE id=$1`, `UPDATE river_payment.river_job SET queue='payment_mock_v1' WHERE id=$1`},
+		{"foreign kind", `UPDATE river_payment.river_job SET kind='not_a_payment' WHERE id=$1`, `UPDATE river_payment.river_job SET kind='payment_query_v1' WHERE id=$1`},
+		{"unlinked args", `UPDATE river_payment.river_job SET args=jsonb_set(args,'{version}','2') WHERE id=$1`, `UPDATE river_payment.river_job SET args=jsonb_set(args,'{version}','1') WHERE id=$1`},
+		{"unique key drift", `UPDATE river_payment.river_job SET unique_key=decode(repeat('ab',32),'hex') WHERE id=$1`, `UPDATE river_payment.river_job SET unique_key=NULL WHERE id=$1`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			// Model owner-only catalog drift without relaxing the production guard:
+			// ordinary INSERT/UPDATE must still reject these poisoned family rows.
+			mustExec(t, f.owner, `ALTER TABLE river_payment.river_job DISABLE TRIGGER payment_job_family`)
+			defer mustExec(t, f.owner, `ALTER TABLE river_payment.river_job ENABLE TRIGGER payment_job_family`)
 			mustExec(t, f.owner, tc.change, q.result.JobID)
-			defer mustExec(t, f.owner, tc.restore, q.result.JobID)
-			before := pwJobExceptQueue(t, f.owner, q.result.JobID)
+			mustExec(t, f.owner, `ALTER TABLE river_payment.river_job ENABLE TRIGGER payment_job_family`)
+			defer func() {
+				mustExec(t, f.owner, `ALTER TABLE river_payment.river_job DISABLE TRIGGER payment_job_family`)
+				mustExec(t, f.owner, tc.restore, q.result.JobID)
+				mustExec(t, f.owner, `ALTER TABLE river_payment.river_job ENABLE TRIGGER payment_job_family`)
+			}()
+			before := pwJobExceptQueueIn(t, f.owner, "river_payment.river_job", q.result.JobID)
 			assertReady(t, false)
-			if after := pwJobExceptQueue(t, f.owner, q.result.JobID); after != before {
+			if after := pwJobExceptQueueIn(t, f.owner, "river_payment.river_job", q.result.JobID); after != before {
 				t.Fatal("startup audit mutated the invalid job")
 			}
 		})

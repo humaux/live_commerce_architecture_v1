@@ -49,22 +49,22 @@ func TestBuyerCheckoutExpiryRuntimeAdmission(t *testing.T) {
 	}
 	var triggerDDL string
 	if err := f.owner.QueryRow(context.Background(), `SELECT pg_get_triggerdef(oid) FROM pg_trigger
-	 WHERE tgrelid='river.river_job'::regclass AND tgname='checkout_expiry_queue_route_v1'`).Scan(&triggerDDL); err != nil {
+	 WHERE tgrelid='river_expiry.river_job'::regclass AND tgname='checkout_expiry_queue_route_v1'`).Scan(&triggerDDL); err != nil {
 		t.Fatal(err)
 	}
 	for _, mode := range []string{"disabled", "missing", "immediate"} {
 		t.Run(mode, func(t *testing.T) {
 			if mode == "disabled" {
-				mustExec(t, f.owner, `ALTER TABLE river.river_job DISABLE TRIGGER checkout_expiry_queue_route_v1`)
-				defer mustExec(t, f.owner, `ALTER TABLE river.river_job ENABLE TRIGGER checkout_expiry_queue_route_v1`)
+				mustExec(t, f.owner, `ALTER TABLE river_expiry.river_job DISABLE TRIGGER checkout_expiry_queue_route_v1`)
+				defer mustExec(t, f.owner, `ALTER TABLE river_expiry.river_job ENABLE TRIGGER checkout_expiry_queue_route_v1`)
 			} else {
-				mustExec(t, f.owner, `DROP TRIGGER checkout_expiry_queue_route_v1 ON river.river_job`)
+				mustExec(t, f.owner, `DROP TRIGGER checkout_expiry_queue_route_v1 ON river_expiry.river_job`)
 				defer func() {
-					mustExec(t, f.owner, `DROP TRIGGER IF EXISTS checkout_expiry_queue_route_v1 ON river.river_job`)
+					mustExec(t, f.owner, `DROP TRIGGER IF EXISTS checkout_expiry_queue_route_v1 ON river_expiry.river_job`)
 					mustExec(t, f.owner, triggerDDL)
 				}()
 				if mode == "immediate" {
-					mustExec(t, f.owner, `CREATE CONSTRAINT TRIGGER checkout_expiry_queue_route_v1 AFTER INSERT ON river.river_job
+					mustExec(t, f.owner, `CREATE CONSTRAINT TRIGGER checkout_expiry_queue_route_v1 AFTER INSERT ON river_expiry.river_job
 					 DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION checkout.route_expiry_queue_v1()`)
 				}
 			}
@@ -81,11 +81,20 @@ func TestBuyerCheckoutExpiryRuntimeAdmission(t *testing.T) {
 		{"unique key", `unique_key=decode(repeat('ab',32),'hex')`, `unique_key=NULL`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			mustExec(t, f.owner, `UPDATE river.river_job SET `+tc.change+` WHERE id=$1`, p.hold.JobID)
-			defer mustExec(t, f.owner, `UPDATE river.river_job SET `+tc.restore+` WHERE id=$1`, p.hold.JobID)
-			before, queue := pwJobExceptQueue(t, f.owner, p.hold.JobID), pwQueue(t, f.owner, p.hold.JobID)
+			// Owner-only poison bypasses the immutable family trigger; startup must
+			// still reject the row after the trigger is restored.
+			mustExec(t, f.owner, `ALTER TABLE river_expiry.river_job DISABLE TRIGGER expiry_job_family`)
+			defer mustExec(t, f.owner, `ALTER TABLE river_expiry.river_job ENABLE TRIGGER expiry_job_family`)
+			mustExec(t, f.owner, `UPDATE river_expiry.river_job SET `+tc.change+` WHERE id=$1`, p.hold.JobID)
+			mustExec(t, f.owner, `ALTER TABLE river_expiry.river_job ENABLE TRIGGER expiry_job_family`)
+			defer func() {
+				mustExec(t, f.owner, `ALTER TABLE river_expiry.river_job DISABLE TRIGGER expiry_job_family`)
+				mustExec(t, f.owner, `UPDATE river_expiry.river_job SET `+tc.restore+` WHERE id=$1`, p.hold.JobID)
+				mustExec(t, f.owner, `ALTER TABLE river_expiry.river_job ENABLE TRIGGER expiry_job_family`)
+			}()
+			before, queue := pwJobExceptQueueIn(t, f.owner, "river_expiry.river_job", p.hold.JobID), pwQueueIn(t, f.owner, "river_expiry.river_job", p.hold.JobID)
 			assertReady(t, false)
-			if before != pwJobExceptQueue(t, f.owner, p.hold.JobID) || queue != pwQueue(t, f.owner, p.hold.JobID) {
+			if before != pwJobExceptQueueIn(t, f.owner, "river_expiry.river_job", p.hold.JobID) || queue != pwQueueIn(t, f.owner, "river_expiry.river_job", p.hold.JobID) {
 				t.Fatal("startup mutated the job")
 			}
 		})
@@ -146,7 +155,7 @@ func TestBuyerCheckoutExpiryRuntimeAdmission(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer tx.Rollback(context.Background())
-		if _, err = tx.Exec(context.Background(), `LOCK TABLE river.river_job IN ACCESS EXCLUSIVE MODE`); err != nil {
+		if _, err = tx.Exec(context.Background(), `LOCK TABLE river_expiry.river_job IN ACCESS EXCLUSIVE MODE`); err != nil {
 			t.Fatal(err)
 		}
 		start := time.Now()
@@ -162,9 +171,17 @@ func TestBuyerCheckoutExpiryRuntimeAdmission(t *testing.T) {
 func TestBuyerCheckoutExpiryRuntimeDeferredAdmission(t *testing.T) {
 	f := pwIsolatedFixture(t)
 	p := psSetupItemsOn(t, f, 1)
-	original := pwJobExceptQueue(t, f.owner, p.hold.JobID)
+	original := pwJobExceptQueueIn(t, f.owner, "river_expiry.river_job", p.hold.JobID)
 	for _, name := range []string{"orphan", "wrong generation", "decimal generation", "decimal version", "extra args", "custom queue", "unique key", "deleted", "stale NEW args", "stale NEW kind"} {
 		t.Run(name, func(t *testing.T) {
+			staleNEW := name == "stale NEW args" || name == "stale NEW kind"
+			if staleNEW {
+				// DDL cannot run with pending deferred trigger events. Isolate the
+				// captured-NEW regression with the newer BEFORE guard disabled only
+				// for this disposable owner fixture transaction.
+				mustExec(t, f.owner, `ALTER TABLE river_expiry.river_job DISABLE TRIGGER expiry_job_family`)
+				defer mustExec(t, f.owner, `ALTER TABLE river_expiry.river_job ENABLE TRIGGER expiry_job_family`)
+			}
 			ctx := context.Background()
 			tx, err := f.owner.Begin(ctx)
 			if err != nil {
@@ -172,16 +189,23 @@ func TestBuyerCheckoutExpiryRuntimeDeferredAdmission(t *testing.T) {
 			}
 			defer tx.Rollback(ctx)
 			var id int64
-			err = tx.QueryRow(ctx, `INSERT INTO river.river_job(kind,args,max_attempts,queue)
+			err = tx.QueryRow(ctx, `INSERT INTO river_expiry.river_job(kind,args,max_attempts,queue)
 			 SELECT CASE $2 WHEN 'stale NEW kind' THEN 'ew_unrelated' ELSE kind END,
 			 CASE $2 WHEN 'wrong generation' THEN jsonb_set(args,'{generation}','2')
 			 WHEN 'decimal generation' THEN jsonb_set(args,'{generation}','1.0')
 			 WHEN 'decimal version' THEN jsonb_set(args,'{version}','1.0')
 			 WHEN 'extra args' THEN args||'{"extra":true}'::jsonb
 			 WHEN 'stale NEW args' THEN args||'{"extra":true}'::jsonb ELSE args END,
-			 max_attempts,'default' FROM river.river_job WHERE id=$1 RETURNING id`, p.hold.JobID, name).Scan(&id)
+			 max_attempts,'default' FROM river_expiry.river_job WHERE id=$1 RETURNING id`, p.hold.JobID, name).Scan(&id)
+			var pgErr *pgconn.PgError
+			if !staleNEW && (name == "wrong generation" || name == "decimal generation" || name == "decimal version" || name == "extra args") {
+				if !errors.As(err, &pgErr) || pgErr.Code != "22023" {
+					t.Fatalf("family guard must reject INSERT 22023: %v", err)
+				}
+				return
+			}
 			if err != nil {
-				t.Fatal("insert must defer validation to commit", err)
+				t.Fatal("valid INSERT failed before deferred check", err)
 			}
 			if name != "orphan" {
 				if _, err = tx.Exec(ctx, `UPDATE checkout.orders SET job_id=$1 WHERE id=$2`, id, p.hold.OrderID); err != nil {
@@ -189,15 +213,21 @@ func TestBuyerCheckoutExpiryRuntimeDeferredAdmission(t *testing.T) {
 				}
 			}
 			changes := map[string]string{
-				"custom queue":   `UPDATE river.river_job SET queue='ew_custom' WHERE id=$1`,
-				"unique key":     `UPDATE river.river_job SET unique_key=decode(repeat('ab',32),'hex') WHERE id=$1`,
-				"deleted":        `DELETE FROM river.river_job WHERE id=$1`,
-				"stale NEW args": `UPDATE river.river_job SET args=args-'extra' WHERE id=$1`,
-				"stale NEW kind": `UPDATE river.river_job SET kind='checkout_expiry_v1' WHERE id=$1`,
+				"custom queue":   `UPDATE river_expiry.river_job SET queue='ew_custom' WHERE id=$1`,
+				"unique key":     `UPDATE river_expiry.river_job SET unique_key=decode(repeat('ab',32),'hex') WHERE id=$1`,
+				"deleted":        `DELETE FROM river_expiry.river_job WHERE id=$1`,
+				"stale NEW args": `UPDATE river_expiry.river_job SET args=args-'extra' WHERE id=$1`,
+				"stale NEW kind": `UPDATE river_expiry.river_job SET kind='checkout_expiry_v1' WHERE id=$1`,
 			}
 			if sql, ok := changes[name]; ok {
 				if _, err = tx.Exec(ctx, sql, id); err != nil {
-					t.Fatal(err)
+					if (name != "custom queue" && name != "unique key") || !errors.As(err, &pgErr) || pgErr.Code != "22023" {
+						t.Fatalf("unexpected UPDATE rejection: %v", err)
+					}
+					return
+				}
+				if name == "custom queue" || name == "unique key" {
+					t.Fatal("family guard admitted invalid UPDATE")
 				}
 			}
 			if name == "stale NEW args" || name == "stale NEW kind" {
@@ -206,7 +236,6 @@ func TestBuyerCheckoutExpiryRuntimeDeferredAdmission(t *testing.T) {
 					t.Fatal("stale NEW case did not have valid final domain linkage")
 				}
 			}
-			var pgErr *pgconn.PgError
 			if err = tx.Commit(ctx); !errors.As(err, &pgErr) || pgErr.Code != "22023" {
 				t.Fatalf("expected deferred admission 22023, got %v", err)
 			}
@@ -214,12 +243,12 @@ func TestBuyerCheckoutExpiryRuntimeDeferredAdmission(t *testing.T) {
 			if err = f.owner.QueryRow(ctx, `SELECT job_id FROM checkout.orders WHERE id=$1`, p.hold.OrderID).Scan(&linked); err != nil || linked != p.hold.JobID {
 				t.Fatal("failed commit changed durable order linkage")
 			}
-			if countRows(t, f.owner, `SELECT count(*) FROM river.river_job WHERE id=$1`, id) != 0 {
+			if countRows(t, f.owner, `SELECT count(*) FROM river_expiry.river_job WHERE id=$1`, id) != 0 {
 				t.Fatal("failed commit left inserted job")
 			}
 		})
 	}
-	if original != pwJobExceptQueue(t, f.owner, p.hold.JobID) || pwQueue(t, f.owner, p.hold.JobID) != "checkout_expiry_v1" {
+	if original != pwJobExceptQueueIn(t, f.owner, "river_expiry.river_job", p.hold.JobID) || pwQueueIn(t, f.owner, "river_expiry.river_job", p.hold.JobID) != "checkout_expiry_v1" {
 		t.Fatal("invalid inserts changed original job")
 	}
 }

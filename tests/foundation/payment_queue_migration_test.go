@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"livecommerce/migrations"
 )
 
 func pwQueue(t *testing.T, pool *pgxpool.Pool, id int64) string {
@@ -68,7 +67,7 @@ func TestBuyerPaymentWorkerQueueMigrationRollbackAndBackfill(t *testing.T) {
 	}
 	pwRemoveRouter(t, f.owner)
 	mustExec(t, f.owner, `UPDATE river.river_job SET queue='default' WHERE id=$1`, q.result.JobID)
-	terminal := pwOldQuerySetupOn(t, f, q.keys)
+	terminal := pwOldQuerySetupOn(t, f, q.keys, "river")
 	mustExec(t, f.owner, `UPDATE river.river_job SET state='completed',finalized_at=clock_timestamp() WHERE id=$1`, terminal.result.JobID)
 	terminalBefore := pwJobExceptQueue(t, f.owner, terminal.result.JobID)
 	if err := q.record(q.claim(t), pcFull(q)); err != nil {
@@ -97,7 +96,7 @@ func TestBuyerPaymentWorkerQueueMigrationRollbackAndBackfill(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			mustExec(t, f.owner, tc.mutate, tc.id)
 			before := pwJobExceptQueue(t, f.owner, tc.id)
-			if err := migrations.Apply(context.Background(), f.owner); err == nil {
+			if err := lriApplyHistoricalPost(f, "post_river/0001_payment_queue.sql"); err == nil {
 				t.Fatal("invalid legacy job was migrated")
 			}
 			pwPostMigrationAbsent(t, f.owner)
@@ -117,7 +116,7 @@ func TestBuyerPaymentWorkerQueueMigrationRollbackAndBackfill(t *testing.T) {
 	if err := f.owner.QueryRow(context.Background(), `INSERT INTO river.river_job(kind,args,max_attempts,queue) VALUES('pw_unrelated_v1','{}',2,'payment_mock_v1') RETURNING id`).Scan(&foreign); err != nil {
 		t.Fatal(err)
 	}
-	if err := migrations.Apply(context.Background(), f.owner); err == nil {
+	if err := lriApplyHistoricalPost(f, "post_river/0001_payment_queue.sql"); err == nil {
 		t.Fatal("foreign reserved-queue kind passed upgrade")
 	}
 	pwPostMigrationAbsent(t, f.owner)
@@ -125,7 +124,7 @@ func TestBuyerPaymentWorkerQueueMigrationRollbackAndBackfill(t *testing.T) {
 	queryBefore := pwJobExceptQueue(t, f.owner, q.result.JobID)
 	reconcileBefore := pwJobExceptQueue(t, f.owner, reconcile)
 	unrelatedBefore := pwJobExceptQueue(t, f.owner, unrelated)
-	if err := migrations.Apply(context.Background(), f.owner); err != nil {
+	if err := lriApplyHistoricalPost(f, "post_river/0001_payment_queue.sql"); err != nil {
 		t.Fatalf("valid upgrade: %v", err)
 	}
 	if got := pwQueue(t, f.owner, q.result.JobID); got != "payment_mock_v1" {
@@ -134,11 +133,11 @@ func TestBuyerPaymentWorkerQueueMigrationRollbackAndBackfill(t *testing.T) {
 	if pwJobExceptQueue(t, f.owner, q.result.JobID) != queryBefore || pwJobExceptQueue(t, f.owner, reconcile) != reconcileBefore || pwQueue(t, f.owner, reconcile) != "payment_mock_v1" || pwJobExceptQueue(t, f.owner, terminal.result.JobID) != terminalBefore || pwQueue(t, f.owner, terminal.result.JobID) != "default" || pwJobExceptQueue(t, f.owner, unrelated) != unrelatedBefore || pwQueue(t, f.owner, unrelated) != "default" {
 		t.Fatal("backfill changed non-queue fields or unrelated default job")
 	}
-	if err := migrations.Apply(context.Background(), f.owner); err != nil {
+	if err := lriApplyHistoricalPost(f, "post_river/0001_payment_queue.sql"); err != nil {
 		t.Fatalf("repeat post-River migration: %v", err)
 	}
 	mustExec(t, f.owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('post_river/9999_unknown.sql','test-only')`)
-	if err := migrations.Apply(context.Background(), f.owner); err == nil {
+	if err := lriApplyHistoricalPost(f, "post_river/0001_payment_queue.sql"); err == nil {
 		t.Fatal("unknown post-River version was accepted")
 	}
 	mustExec(t, f.owner, `DELETE FROM public.lc_schema_migrations WHERE version='post_river/9999_unknown.sql'`)
@@ -147,7 +146,7 @@ func TestBuyerPaymentWorkerQueueMigrationRollbackAndBackfill(t *testing.T) {
 		t.Fatal(err)
 	}
 	mustExec(t, f.owner, `UPDATE public.lc_schema_migrations SET checksum='test-invalid' WHERE version='post_river/0001_payment_queue.sql'`)
-	if err := migrations.Apply(context.Background(), f.owner); err == nil {
+	if err := lriApplyHistoricalPost(f, "post_river/0001_payment_queue.sql"); err == nil {
 		t.Fatal("changed post-River checksum was accepted")
 	}
 	// Recover the original checksum from the accepted ledger's pre-mutation
@@ -159,7 +158,7 @@ func TestBuyerPaymentWorkerQueueMigrationRollbackAndBackfill(t *testing.T) {
 	}
 	// A pre-upgrade River producer requests default before the attempt exists;
 	// the deferred trigger must see the final linkage at commit.
-	late := pwOldQuerySetupOn(t, f, q.keys)
+	late := pwOldQuerySetupOn(t, f, q.keys, "river")
 	if pwQueue(t, f.owner, late.result.JobID) != "payment_mock_v1" {
 		t.Fatal("old producer was not routed at commit")
 	}
