@@ -175,7 +175,17 @@ readiness failure with zero-byte child logs. An exact isolated rerun passed;
 the cause remains unproven. It is not the root diagnostic's earlier wrong-table
 failure and does not justify relaxing the startup deadline. Keep both records.
 Candidate repair commits `b899650` and `667376e` are integrated as `491128c` and
-`77cd52f`; independent source review and root payment/Meta runs are pending.
+`77cd52f`. Root `--meta-runtime` exited 0 with 11 PASS / 0 FAIL / 0 SKIP,
+foundation 57.494s. Log
+`/Volumes/data/output/legacy-isolation-root-meta-adapt2-20260926.log`, SHA256
+`7fe9cac9eab92d2e29a63d7546bf66b710056c929ec1a1a7aacb39e910513a80`.
+Root `--payment` exited 1 with 68 PASS / 1 FAIL / 0 SKIP, foundation 149.082s.
+Log `/Volumes/data/output/legacy-isolation-root-payment-adapt2-20260926.log`, SHA256
+`f176077b72e75e7564d2e65ea6361b81029aa2695d05435d5c3870524b938712`.
+The remaining CrossAttempt failure agrees with the review's shared-fixture
+isolation finding. Review also identified competing query-only/capture-only
+test clients on the same fixed queue, even though capture passed this run.
+Both require test repairs before acceptance; green timing is not a race proof.
 
 ## Pending
 
