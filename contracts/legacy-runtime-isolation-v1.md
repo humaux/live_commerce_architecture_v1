@@ -1,6 +1,11 @@
 # Payment and expiry runtime maintenance isolation v1
 
-Status: **FROZEN / IMPLEMENTATION AND GATES PENDING / LOCAL ONLY**.
+Status: **FROZEN / LRI01–06 ACCEPTED / LOCAL ONLY**.
+Implementation and independent evidence are recorded in
+[local acceptance](../docs/implementation/2026-09-26-legacy-runtime-isolation-acceptance.md).
+Accepted source `51619b2`: 562 real-PG/race/vet tests, no failures or skips;
+buyer browser evidence covers 23 order and 11 payment cases. This does not
+authorize production migration or establish provider qualification.
 Independent read-only round-one prereview approved draft SHA256
 `86652a6dd379cbcd4570cc2d9257b92051fb2e94617f33c0f4cbd09b371d8cf7`
 with no concrete P0/P1/P2. This approves the contract, not the implementation.

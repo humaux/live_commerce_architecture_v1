@@ -89,7 +89,7 @@ Meta-only worker 把付款任务从 scheduled 改为 available；不能把队列
 [隔离修订](../../contracts/meta-runtime-isolation-v1.md)。原生同 PG 独立 schema
 方案须同时调整客户端、上游迁移、业务 SQL、触发器、权限及历史 jobID；仅改
 Go 的 Schema 字段不够。旧 payment/expiry 共用 schema 的 rescuer 风险已双独立
-复现；候选修复及待验收 LRI 门禁见下方“旧业务家族维护隔离”。
+复现；后续本地修复与独立 LRI 验收见下方“旧业务家族维护隔离”。
 隔离修订 `d702bb1` 已落实上述接线：API insert-only 和消费端固定 `river_meta`；
 CLI 使用专用 `OpenMetaWorkerPool`，共用分类器验证实际对象 ACL。`Apply` 原生
 迁移两个 schema，0031 的 false fence 直到 post0004 原子搬迁/守卫/授权完成才放行。
@@ -141,7 +141,7 @@ PG/race/vet 回归、跨店隔离和等待后权限复验；不含商家 UI 或�
 
 `migrations.Apply` 先应用业务 SQL，再运行 River v0.40.0 自身迁移，最后应用
 带相对路径校验和的 `post_river/*.sql`。延迟约束触发器复用 PG18 提交时检查，
-以冻结尝试／可信 QUERY 观察记录确定队列；当前候选仅在 `river_payment` 内
+以冻结尝试／可信 QUERY 观察记录确定队列；当前实现仅在 `river_payment` 内
 兼容默认入队，旧 schema 写入拒绝，不能沿用旧客户端。
 既有非登录 integration writer 仅增加 River `UPDATE(queue)`，付款进程只取得
 布尔型 `integration.payment_queue_ready()`，不直接读取凭据表。
@@ -169,7 +169,7 @@ PG/race/vet 回归、跨店隔离和等待后权限复验；不含商家 UI 或�
 真实进程的启停／强杀恢复、旧生产者轮询、付款与到期锁竞争和完整回归；
 说明与停止线见 [到期 worker 运行说明](expiry-worker-runtime.md)。
 
-## 旧业务家族维护隔离（候选，LRI 待验收）
+## 旧业务家族维护隔离（LRI01–06 本地验收）
 
 仍使用 River v0.40.0 / pgx / 同一 PostgreSQL，无新依赖。
 五处 Go 接线：`cmd/api/buyer.go` 和 `checkout.NewExpiryClient` → `river_expiry`；
@@ -184,7 +184,8 @@ reconcile producer → `river_payment`。外部操作保留 `river`，Meta 保�
 数据库身份隔离；Meta 专用权限不变。测试引用须按家族区分，不能只凭 job ID。
 
 [合同和升级边界](../../contracts/legacy-runtime-isolation-v1.md)、
-[失败证据与待验收项](2026-09-26-legacy-runtime-isolation-acceptance.md)。
+[失败与独立验收证据](2026-09-26-legacy-runtime-isolation-acceptance.md)。
+冻结源码 `51619b2` 已通过562项真实PG/race/vet及23＋11项订单/付款浏览器检查。
 升级要跑 `--legacy-isolation`、全量 PG/race/vet、`--browser-order` 和
 `--browser-payment`；历史 SQL fixture 与最新 fixture 必须分开，不能靠预先维护
 外家族行、禁用维护、放宽断言或借用其他测试的污染数据获得通过。

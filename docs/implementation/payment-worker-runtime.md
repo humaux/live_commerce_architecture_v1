@@ -6,8 +6,9 @@
 进程存活不代表已经收款；核验结果以 [运行合同](../../contracts/payment-worker-runtime-v1.md)
 和单独验收记录为准。未执行客户生产部署。
 
-当前候选已按[家族隔离合同](../../contracts/legacy-runtime-isolation-v1.md)改用
-`river_payment`，LRI01–06 尚待验收；历史 PW 验收不能代替本轮维护隔离证明。
+当前实现已按[家族隔离合同](../../contracts/legacy-runtime-isolation-v1.md)改用
+`river_payment`，LRI01–06 已通过[独立本地验收](2026-09-26-legacy-runtime-isolation-acceptance.md)；
+历史 PW 记录与本轮维护隔离证明分别保留，均不代表生产部署。
 `cmd/api/buyer_payment.go` 和 query 后的 reconcile 生产者使用同一 schema，
 但不启动额外 worker。普通 `commerce_worker` 仍跨旧业务家族共享 SQL 权限，
 因此这是维护语义隔离，不是数据库身份安全隔离。

@@ -321,11 +321,12 @@
       "not_ready": "Historical HTTP-only baseline; local settings wizard and discovery are accepted in merchant_settings_wizard below. Real provider admission, production key custody/deployment and distributed quota remain unverified. Account saving is CONFIGURED_UNVERIFIED, payment enabling remains rejected."
     },
     "legacy_runtime_isolation": {
-      "status": "CANDIDATE_LRI_GATES_PENDING",
+      "status": "PASS_LOCAL_LRI01_06",
       "contract": "contracts/legacy-runtime-isolation-v1.md",
       "candidate_tree": "57802ee",
+      "validated_tree": "51619b2",
       "evidence": "docs/implementation/2026-09-26-legacy-runtime-isolation-acceptance.md",
-      "boundary": "Root and independent author reproduced real expiry rescuer discarding valid foreign jobs on c45e8a7. Native river_payment/river_expiry candidate preserves ordinary commerce_worker authority; semantic maintenance isolation, not DB-principal containment. Source review and fresh idempotent PG migration smoke pass. LRI01-06, full regression and buyer browser final acceptance pending; main remains contract9772380 and no production changes."
+      "boundary": "LRI01-06 independently accepted LOCAL at51619b2: real causal RED retained; native river_payment/river_expiry preserve transaction and ordinary commerce_worker authority. Root full562PASS0FAIL0SKIP PG18/race/vet, populated upgrade and failure retry, and unchanged-source browser order23/payment11 passed. Semantic maintenance isolation, not DB-principal containment; no provider qualification, customer production, physical-device or whole-SaaS acceptance. Prior intermittent Meta startup-test miss is retained as unproven-cause repeatability risk, not claimed fixed."
     },
     "merchant_settings_wizard": {
       "code_baseline": "1a5c64b",

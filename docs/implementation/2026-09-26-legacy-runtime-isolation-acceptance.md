@@ -1,6 +1,8 @@
 # Legacy runtime maintenance isolation evidence
 
-Status: **ROOT_CAUSE_REPRODUCED / CONTRACT_FROZEN / CANDIDATE_GATES_PENDING**.
+Status: **LRI01–06 INDEPENDENTLY ACCEPTED / LOCAL ONLY** (2026-09-27).
+Accepted code/test source: `51619b2`; the final closure below is authoritative.
+Earlier candidate/failure sections are retained as the chronological audit trail.
 This is a LOCAL unit under T11/T06, not a production or whole-SaaS acceptance.
 Contract: [legacy runtime isolation v1](../../contracts/legacy-runtime-isolation-v1.md).
 
@@ -215,11 +217,46 @@ foundation 27.848s: `/Volumes/data/output/legacy-isolation-root-upgrade2-2026092
 SHA256 `02fd89dbdb73992a611f27d52d9cd54c4661ea8ece7070d6212f92c9bcbbabfe`.
 Exact-source independent upgrade review remains required.
 
-## Pending
+## Final independent local closure
 
-- Remaining profile/runtime regression, admission/readiness and populated-upgrade
-  portions of LRI02–04.
-- Root independent full PG18/race/vet regression (browser gates above are local).
-- Independent exact-source final signoff before merging the product increment.
+Final test repair `910f207`, integrated as `51619b2`, subscribes before calling
+native `QueuePause` and waits for the matching producer `QueuePaused` ACK before
+releasing the transport. Reviewer verified pinned River's acknowledgement occurs
+after the prior fetch completes and local paused state is set. Reconciliation
+therefore remains durable and unfetched until the explicit capture restart.
+Root exact PG/race test exited 0, test 2.57s / package 5.200s, log
+`/Volumes/data/output/legacy-isolation-root-capture-ack1-20260927.log`, SHA256
+`e7e0279cbd2632670827f4264691a9d6955abeee8f8ec254c25cc0bb3a8fb6c1`.
+
+Root **same-source `51619b2`** `bash scripts/dev/test-local.sh` exited **0**:
+**562 top-level PASS / 0 FAIL / 0 SKIP**, foundation **422.082s**, Meta integration
+3.881s. The runner completes `go test -race` and then `go vet` before its final
+PASS marker. Log `/Volumes/data/output/legacy-isolation-root-full-final1-20260927.log`,
+SHA256 `d61848b1b41f11eba8641ca935b741f71d9b5f6835b94baf186b227a72d3dd6a`.
+
+Independent reviewer `meta_consumer_preflight` (`gpt-6-astra/high`) verified final
+source, all directed issue closures, log/hash/counts and runner ordering, and
+accepted **LRI01–06 LOCAL**. LRI06's 23 order and 11 payment cases remain valid:
+the product, dependency manifests and both browser test entrypoints are unchanged
+between browser source `237b880` and final source `51619b2`. This is not a claim
+that those browser commands ran again at the final commit.
+
+Earlier RED, failed broad/upgrade/payment runs and false-pause-barrier green runs
+are retained. The earlier eight-second Meta startup miss remains unexplained;
+the final full pass does not claim its root cause was fixed. On recurrence collect
+phase/process/database wait evidence before another retry; do not relax deadlines.
+
+An interrupted author run left disposable container
+`lc-meta-upgrade-8c6f73d8374f` (created 2026-09-26 15:34:35 UTC).
+The owner confirmed the LRI04 fixture provenance, no KEEP/reference/client,
+exact label/image/loopback binding and immutable container ID before removing
+only that container. Inspect then confirmed it absent. Its synthetic data is
+re-creatable by the tests; this is not a claim that all machine containers are
+absent or authorization to clean other resources.
+
+## Outside this accepted unit
+
 - Production backup/impact/approval, real-provider qualification and full SaaS
   acceptance are outside this unit and remain unproven.
+- Isolated restore/cold-start rehearsal and production recovery SLO measurement
+  remain separate future gates. Do not restore old backups over real payments.

@@ -10,10 +10,10 @@
 构建：`go build -o /受控输出目录/expiry-worker ./cmd/expiry-worker`。
 进程没有 HTTP 端口，不读取商家凭据、付款 keyring 或供应商地址。仅注册一种
 到期任务，消费固定 `checkout_expiry_v1` 队列，不消费 `default` 或付款队列。
-当前候选将 API 生产者和消费者固定到 `river_expiry`。River 维护仍是
+当前实现将 API 生产者和消费者固定到 `river_expiry`。River 维护仍是
 schema 全局，但不再与付款／外部任务共表；共享表旧版本已实测会误 discard。
-[家族隔离合同](../../contracts/legacy-runtime-isolation-v1.md)的 LRI01–06 尚待通过，
-不可用历史 EW 记录宣称这次修复已验收。普通 worker SQL 权限仍共享，
+[家族隔离合同](../../contracts/legacy-runtime-isolation-v1.md)的 LRI01–06 已通过
+[独立本地验收](2026-09-26-legacy-runtime-isolation-acceptance.md)，生产迁移仍须另行批准。普通 worker SQL 权限仍共享，
 不承诺受侵数据库身份无法访问其他旧业务家族。
 
 | 环境变量 | 规则 |
