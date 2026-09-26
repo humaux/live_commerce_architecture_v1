@@ -34,8 +34,12 @@ Explicitly REVOKE function EXECUTE FROM PUBLIC after creation.
 Existing runtime/worker/buyer/Meta pool admission must also reject reachable
 media registrar/writer authority: optional-role MEMBER/USAGE/SET checks plus
 effective EXECUTE on these two fixed functions for session_user and roles it can
-inherit or SET. Use `to_regrole`/`to_regprocedure` so a pre-0034 database keeps its
-existing admission behavior. This closes the non-owner registrar mixed-role gap
+inherit or SET. Use `to_regrole` for optional role names and exact
+`pg_catalog.pg_proc`/`pg_namespace` name-and-argument-type OID lookup for the two
+functions, so a pre-0034 database keeps its existing admission behavior. Do not
+resolve functions through `to_regprocedure('live...')`: that lookup itself needs
+schema USAGE and falsely rejects a correctly unprivileged worker. Do not grant
+schema access merely to inspect privileges. This closes the non-owner registrar mixed-role gap
 in `platform.validatePoolAuthority`; ownership checks alone cannot see it.
 Negative startup tests cover mixed registrar membership, SET-only custom-role
 EXECUTE, direct EXECUTE and PUBLIC EXECUTE grants. No broad new table scanner or
