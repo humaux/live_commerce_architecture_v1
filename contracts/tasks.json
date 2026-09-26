@@ -688,8 +688,18 @@
         "independent_review": "Source/real-chain8481c198-2602-48dc-b854-932baec30443 plus final916c939c-83df-4c3a-9f82-464f8d677016; no open P0/P1/P2 in bounded change. Redirect probes do not certify production DNS/TLS or literal-origin following.",
         "scope": "Cookie-derived authority; original URL query gate before Next normalization; encoded-prefix negatives; actual unprefixed locale redirects; no fixture-based order data; private/no-store and safe errors. Does not accept the pending merchant order UI or realprovider/production."
       },
+      "ui": {
+        "tested_tree": "f70dc42",
+        "status": "IMPLEMENTED_LOCAL_PARTIAL_MOU03_NOT_RUN",
+        "contract": "contracts/merchant-orders-ui-v1.md",
+        "evidence": "docs/implementation/2026-09-27-merchant-orders-ui-acceptance.md",
+        "scope": "User-approved C inline expansion; buyer B unchanged. Three locales, mobile/desktop, separate order/payment/fulfillment/work states, authenticated cookie GETs, no shipping/refund/export commands.",
+        "aggregate": "Production Next-Go-PG replay: 6 functional Playwright PASS in11.8s,1 native visibility skipped/NOT_RUN; Go16.193s, intentional exit1. Business facts unchanged. Native pageshow observed=true,persisted=false: no native bfcache proof. Parser2/2 and strictTS/build exit0. Earlier common-shell identity3/buyer1/BFF1 replay exit0.",
+        "independent_review": "Bounded source review at9f57668 no openP0/P1/P2; independent finish review FIX for clipped payment label, fix-round1 scored original P1 RESOLVED atf70dc42 across three-locale captures. Fix verdict is not fullMOU or production approval.",
+        "not_ready": "Native hidden/visible and bfcache-capable restore evidence remain unaccepted; aggregate MOU stays partial. No production/provider acceptance."
+      },
       "independent_review": "Final3aa55596-f0eb-4bba-bbd3-21d265e6cdae source/test/log no openP0/P1/P2. Frozen contract9ed17103-ff27-43a3-9c4d-d593babd58dc; SQLca89aa52-ffe6-43aa-b8be-b3400aaa929f; Go5a982c61-469d-47d1-8d59-f50752451ea5. Three test P2 findings closed at e5f399f; exact legacy onboarding grant expectation correction25d4303 reviewed without relaxing equality.",
-      "not_ready": "Merchant UI, shipment/labels/refunds/export, provider integration and production rollout are not included. Atomic index/constraint migration needs production lock-budget review and approval."
+      "not_ready": "Merchant UI is implemented with partial local evidence in ui above; native lifecycle gate remains open. Shipment/labels/refunds/export, provider integration and production rollout are not included. Atomic index/constraint migration needs production lock-budget review and approval."
     },
     "checkout_expiry_runtime": {
       "tested_tree": "5cea8b91963e6c519d6a8e4621fe544389e63992",
@@ -705,7 +715,7 @@
       "evidence": "docs/implementation/2026-09-24-merchant-settings-wizard-acceptance.md",
       "scope": "A four-step UI, account registration, market/method/service discovery, explicit pricing and manual delivery; disabled payment drafts only. Full provider acceptance remains NOT_RUN."
     },
-    "remaining": "商家订单UI/履约、订单到期失败巡检、正式门市目录/地图回调、第三方真实准入、通知HTTP/ACK/收件与退款对账、provider sandbox/live及完整G03/G05仍待实现或验收。B商品直购/订单历史/付款页、账户配送支付A向导、独立付款/到期worker及商家订单读取后端已有分层本地验收；当前458后端回归与此前55Node/11付款及23订单浏览器证据不等于真实PSP或部署。商家订单浏览器接线另有MBT01–04真实Next/Go/PG验收，不等于待选布局的订单UI已验收。两类worker消费固定专用队列并支持旧生产者提交时路由，不领取共享default中的外部操作；River全局调度维护不等于跨队列业务消费。过期或丢失交付不能自动新建支付或释放不确定库存。尚未证明真实供应商、实体手机、中央返回域名DNS/TLS及运维恢复SLO；商家启用仍拒绝，查询成功不等于收到资金，内部预留不等于实际运输。",
+    "remaining": "商家订单UI原生生命周期验收/履约、订单到期失败巡检、正式门市目录/地图回调、第三方真实准入、通知HTTP/ACK/收件与退款对账、provider sandbox/live及完整G03/G05仍待实现或验收。B商品直购/订单历史/付款页、账户配送支付A向导、独立付款/到期worker及商家订单读取后端已有分层本地验收；当前458后端回归与此前55Node/11付款及23订单浏览器证据不等于真实PSP或部署。商家订单浏览器接线另有MBT01–04真实Next/Go/PG验收，C原位展开UI已实现并有6项功能浏览器实测，但原生隐藏与缓存恢复仍未验收。两类worker消费固定专用队列并支持旧生产者提交时路由，不领取共享default中的外部操作；River全局调度维护不等于跨队列业务消费。过期或丢失交付不能自动新建支付或释放不确定库存。尚未证明真实供应商、实体手机、中央返回域名DNS/TLS及运维恢复SLO；商家启用仍拒绝，查询成功不等于收到资金，内部预留不等于实际运输。",
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
   {

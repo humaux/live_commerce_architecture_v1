@@ -94,7 +94,12 @@ Show page item count rather than pretending a cursor response supplies a total.
 - Delivery data is the frozen checkout snapshot. Explain that historical store
   selection/merchant attestation does not confirm current carrier eligibility.
 
-## Acceptance gates (MOU01–06, all NOT_RUN)
+## Acceptance gates (MOU01–06)
+
+Current evidence: [2026-09-27 local replay](../docs/implementation/2026-09-27-merchant-orders-ui-acceptance.md).
+The UI is implemented, but aggregate acceptance remains PARTIAL: six functional
+browser cases pass; native hidden/visible is NOT_RUN and native history returned
+`pageshow.persisted=false`. The requirements below are unchanged by that gap.
 
 1. **Actual user flow:** browser login via signed-mock OIDC → production Next
    page → existing BFF → real Go → disposable PG18. Orders are created through

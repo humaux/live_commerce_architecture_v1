@@ -178,7 +178,9 @@ PG/race/vet 回归、跨店隔离和等待后权限复验；不含商家 UI 或�
 `bash scripts/dev/test-local.sh --browser-merchant-orders-ui`，查看原生可见性
 能力是否真正执行；功能子集通过不能覆盖 NOT_RUN，结果见
 [订单 UI 证据](2026-09-27-merchant-orders-ui-acceptance.md)。嵌套表格和手机详情的
-局部列宽必须压过全局商品表格规则，避免恢复已修的窄列问题。
+局部列宽必须压过全局商品表格规则，避免恢复已修的窄列问题。外层五列必须
+全部显式定宽；只覆盖前四列会继承全局第5列9%，截断付款状态。三语桌面／
+手机 `paymentBadgesFit` 断言防止这个回归，不能用省略号隐藏“未扣款”。
 
 ## 独立付款 worker 复用关系
 
