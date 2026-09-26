@@ -192,7 +192,7 @@ func ValidateBuyerIssuerPool(ctx context.Context, pool *pgxpool.Pool) error {
 }
 
 func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority string) error {
-	var sameLogin, dsnUserMatch, superuser, bypassRLS, roleAdmin, databaseCreator, replication, objectOwner, runtimeMember, authMember, identityMember, buyerRuntimeMember, buyerIssuerMember, workerMember, checkoutMember, hostedMember, hostedUsage, hostedSet, checkoutWriterMember, canSetPrivileged bool
+	var sameLogin, dsnUserMatch, superuser, bypassRLS, roleAdmin, databaseCreator, replication, objectOwner, runtimeMember, authMember, identityMember, buyerRuntimeMember, buyerIssuerMember, workerMember, checkoutMember, hostedMember, hostedUsage, hostedSet, checkoutWriterMember, canReachPrivileged bool
 	var metaIngress, metaRegistrar, metaCurator, metaConsumer, metaWriter, metaUsage, metaSet, consumerUsage, consumerSet, systemAuthority bool
 	err := pool.QueryRow(ctx, `
 		SELECT session_user=current_user, session_user=$1, r.rolsuper, r.rolbypassrls, r.rolcreaterole, r.rolcreatedb, r.rolreplication,
@@ -243,10 +243,10 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 				   SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 				   WHERE p.proowner=candidate.oid AND n.nspname NOT IN ('pg_catalog','information_schema')
 			       ))
-			     AND pg_has_role(session_user, candidate.oid, 'SET')
+			     AND (pg_has_role(session_user, candidate.oid, 'SET') OR pg_has_role(session_user, candidate.oid, 'USAGE'))
 		       )
 		FROM pg_roles r WHERE r.rolname = session_user`, pool.Config().ConnConfig.User).
-		Scan(&sameLogin, &dsnUserMatch, &superuser, &bypassRLS, &roleAdmin, &databaseCreator, &replication, &objectOwner, &runtimeMember, &authMember, &identityMember, &buyerRuntimeMember, &buyerIssuerMember, &workerMember, &checkoutMember, &hostedMember, &hostedUsage, &hostedSet, &checkoutWriterMember, &metaIngress, &metaRegistrar, &metaCurator, &metaConsumer, &metaWriter, &metaUsage, &metaSet, &consumerUsage, &consumerSet, &systemAuthority, &canSetPrivileged)
+		Scan(&sameLogin, &dsnUserMatch, &superuser, &bypassRLS, &roleAdmin, &databaseCreator, &replication, &objectOwner, &runtimeMember, &authMember, &identityMember, &buyerRuntimeMember, &buyerIssuerMember, &workerMember, &checkoutMember, &hostedMember, &hostedUsage, &hostedSet, &checkoutWriterMember, &metaIngress, &metaRegistrar, &metaCurator, &metaConsumer, &metaWriter, &metaUsage, &metaSet, &consumerUsage, &consumerSet, &systemAuthority, &canReachPrivileged)
 	if err != nil {
 		return fmt.Errorf("validate runtime role: %w", err)
 	}
@@ -276,7 +276,9 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 	}
 	// A privileged login cannot launder its authority with startup SET ROLE:
 	// RESET ROLE would recover the session_user's capabilities after admission.
-	if !sameLogin || !dsnUserMatch || superuser || bypassRLS || roleAdmin || databaseCreator || replication || objectOwner || !roleValid || authMember || checkoutWriterMember || metaWriter || canSetPrivileged {
+	// Inherited owner authority also permits DDL without SET ROLE; SET FALSE is
+	// not a safe substitute for withholding that membership.
+	if !sameLogin || !dsnUserMatch || superuser || bypassRLS || roleAdmin || databaseCreator || replication || objectOwner || !roleValid || authMember || checkoutWriterMember || metaWriter || canReachPrivileged {
 		return errors.New("unsafe runtime database role")
 	}
 	return nil
