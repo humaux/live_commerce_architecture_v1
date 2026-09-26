@@ -10,8 +10,11 @@ This document records only [LRC01–06](../../contracts/local-recovery-v1.md).
 The preceding [LRI acceptance](2026-09-26-legacy-runtime-isolation-acceptance.md)
 at main `519fb16` is a prerequisite, not evidence that restore has passed.
 
-No production code, migration, provider credential or customer service is in
-this increment's write scope. B product-detail purchase UI is unchanged.
+The restore test itself changes no product code or migration. A separate bounded
+[worker diagnostic](2026-09-27-worker-start-diagnostics.md) changes the shared
+startup helper, and the [seed lifetime correction](2026-09-27-seed-pool-lifetime.md)
+changes only test-resource ownership. Neither touches provider credentials or
+customer services. B product-detail purchase UI is unchanged.
 
 ## Work ownership
 
@@ -152,9 +155,13 @@ The three restricted native/catalog diagnostic files were copied unchanged
 (0600) into `/Volumes/data/output/local-recovery-evidence-20260927/`; their
 hashes are unchanged. Task-owned recovery container listing was empty after
 the focused and full runs; no customer container cleanup was performed.
-Unchanged-source comparison against `519fb16` covered apps, commands, internal
-code, migrations, dependency manifests and buyer order/payment browser tests.
-Prior order 23 / payment 11 browser evidence is retained, not claimed rerun.
+Before the diagnostic change, unchanged-source comparison against `519fb16`
+covered apps, commands, internal code, migrations, dependency manifests and
+buyer order/payment browser tests. The later jobqueue helper is called only by
+Meta/payment/expiry worker commands, not the API/BFF or UI; apps, buyer routes,
+catalog, checkout/payment source and browser tests still have no diff. Prior
+order 23 / payment 11 browser evidence is retained, not claimed rerun. Worker
+behavior requires the current full process/race regression separately.
 Final test symbols were indexed and linked to the bootstrap/ACL rationale.
 
 | Gate | State |

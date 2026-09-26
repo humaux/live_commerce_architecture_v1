@@ -108,6 +108,16 @@ CLI 使用专用 `OpenMetaWorkerPool`，共用分类器验证实际对象 ACL。
 不得把日志增强称作故障修复。当前原场景的 `53300` 失败与停止线见
 [启动诊断证据](2026-09-27-worker-start-diagnostics.md)。没有新增依赖。
 
+本地恢复验收复用 PG18 原生 `pg_dumpall --roles-only --no-role-passwords`、
+`pg_dump -Fc`、严格 `psql`/`pg_restore` 与已有 `migrations.Apply`。源/目标为
+独立临时集群，角色 dump 仅另生成省略一个精确 bootstrap CREATE 的派生输入；
+原始字节/hash不改，权限比较使用原生 `aclexplode/acldefault`，不剥除 ACL。
+`ewCloseSeedPools` 是测试 helper，只关闭 seed 自有五池，复用现有 pgxpool Stat
+及 `pg_stat_activity` 核验释放，不改变产品池大小。PG/River/迁移/权限或 fixture
+生命周期变更要跑 `--local-recovery`、原 Meta/legacy 维护正反例和全仓 gate。
+见[恢复边界](../../contracts/local-recovery-v1.md)与
+[造数池证据](2026-09-27-seed-pool-lifetime.md)；不等于生产恢复方案已验收。
+
 ## 商家账户接入复用关系
 
 商家凭据HTTP/BFF不新增依赖：`cmd/api/accounts.go` 通过
