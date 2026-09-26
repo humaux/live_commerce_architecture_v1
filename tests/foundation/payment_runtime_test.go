@@ -137,14 +137,18 @@ func pwWorkerPool(t *testing.T, f *testFixture) *pgxpool.Pool {
 // Force the pre-upgrade producer's requested default queue before River's
 // actual InsertTx. The starter still inserts the job before its attempt in the
 // same transaction; only the post-River deferred trigger can resolve it.
-func pwOldQuerySetupOn(t *testing.T, f *testFixture, keys *accounts.Keyring) pqFixture {
+func pwOldQuerySetupOn(t *testing.T, f *testFixture, keys *accounts.Keyring, historical ...string) pqFixture {
 	t.Helper()
-	p := psSetupItemsOn(t, f, 1, "river")
+	p := psSetupItemsOn(t, f, 1, historical...)
 	service, err := accounts.New(keys, &integration.Service{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	q := pqFixture{psHarness: p, keys: keys, accountService: service, schema: "river"}
+	schema := "river_payment"
+	if len(historical) == 1 && historical[0] == "river" {
+		schema = "river"
+	}
+	q := pqFixture{psHarness: p, keys: keys, accountService: service, schema: schema}
 	q.rotate(t, 1, pqOldSecret)
 	mustExec(t, p.f.owner, `UPDATE payments.account_qualifications SET credential_version=2 WHERE id=$1`, p.proof)
 	middleware := river.JobInsertMiddlewareFunc(func(ctx context.Context, params []*rivertype.JobInsertParams, next func(context.Context) ([]*rivertype.JobInsertResult, error)) ([]*rivertype.JobInsertResult, error) {
@@ -155,7 +159,7 @@ func pwOldQuerySetupOn(t *testing.T, f *testFixture, keys *accounts.Keyring) pqF
 		}
 		return next(ctx)
 	})
-	jobs, err := river.NewClient(riverpgxv5.New(p.pool), &river.Config{Schema: "river", JobInsertMiddleware: []rivertype.JobInsertMiddleware{middleware}})
+	jobs, err := river.NewClient(riverpgxv5.New(p.pool), &river.Config{Schema: schema, JobInsertMiddleware: []rivertype.JobInsertMiddleware{middleware}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -266,7 +270,7 @@ func TestBuyerPaymentWorkerRealRiverTwoTenantCaptureAndRestart(t *testing.T) {
 	first := pqSetupItemsOn(t, f, keys, false, 1)
 	second := pqSetupItemsOn(t, f, keys, false, 1)
 	expiryID, externalID := pwDefaultDomainJobs(t, first)
-	expiryBefore, externalBefore := pwJobExceptQueue(t, f.owner, expiryID), pwJobExceptQueue(t, f.owner, externalID)
+	expiryBefore, externalBefore := pwJobExceptQueueIn(t, f.owner, "river_expiry.river_job", expiryID), pwJobExceptQueueIn(t, f.owner, "river.river_job", externalID)
 	if first.result.AttemptID == second.result.AttemptID || first.f.tenantA == second.f.tenantA {
 		t.Fatal("two-tenant worker fixture collapsed")
 	}
@@ -365,7 +369,7 @@ func TestBuyerPaymentWorkerRealRiverTwoTenantCaptureAndRestart(t *testing.T) {
 			t.Fatal("restart duplicated money or fulfillment")
 		}
 	}
-	if pwQueue(t, f.owner, expiryID) != "checkout_expiry_v1" || pwQueue(t, f.owner, externalID) != "default" || pwJobExceptQueue(t, f.owner, expiryID) != expiryBefore || pwJobExceptQueue(t, f.owner, externalID) != externalBefore {
+	if pwQueueIn(t, f.owner, "river_expiry.river_job", expiryID) != "checkout_expiry_v1" || pwQueueIn(t, f.owner, "river.river_job", externalID) != "default" || pwJobExceptQueueIn(t, f.owner, "river_expiry.river_job", expiryID) != expiryBefore || pwJobExceptQueueIn(t, f.owner, "river.river_job", externalID) != externalBefore {
 		t.Fatal("payment client changed actual checkout expiry or external operation jobs")
 	}
 }
@@ -374,7 +378,7 @@ func TestBuyerPaymentWorkerLateDefaultInsertPollAndProfileIsolation(t *testing.T
 	f := pwIsolatedFixture(t)
 	keys := pwKeys(t)
 	var unrelated int64
-	if err := f.owner.QueryRow(context.Background(), `INSERT INTO river_payment.river_job(kind,args,max_attempts,queue) VALUES('pw_unrelated_v1','{}',2,'default') RETURNING id`).Scan(&unrelated); err != nil {
+	if err := f.owner.QueryRow(context.Background(), `INSERT INTO river.river_job(kind,args,max_attempts,queue) VALUES('pw_unrelated_v1','{}',2,'default') RETURNING id`).Scan(&unrelated); err != nil {
 		t.Fatal(err)
 	}
 	unrelatedBefore := pwJobExceptQueue(t, f.owner, unrelated)
@@ -401,7 +405,7 @@ func TestBuyerPaymentWorkerLateDefaultInsertPollAndProfileIsolation(t *testing.T
 	// deferred route must commit before this already-running client can claim it.
 	q := pwOldQuerySetupOn(t, f, keys)
 	response <- pqSignedResponse(pcFull(q))
-	if pwQueue(t, f.owner, q.result.JobID) != "payment_mock_v1" {
+	if pwQueueIn(t, f.owner, "river_payment.river_job", q.result.JobID) != "payment_mock_v1" {
 		t.Fatal("deferred late insert not routed")
 	}
 	mustExec(t, f.owner, `UPDATE river_payment.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, q.result.JobID)
@@ -423,7 +427,7 @@ func TestBuyerPaymentWorkerLateDefaultInsertPollAndProfileIsolation(t *testing.T
 	if err := f.owner.QueryRow(context.Background(), `SELECT id FROM river_payment.river_job WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1`, notified.result.OperationID).Scan(&notifiedID); err != nil {
 		t.Fatal(err)
 	}
-	if pwQueue(t, f.owner, notifiedID) != "payment_mock_v1" {
+	if pwQueueIn(t, f.owner, "river_payment.river_job", notifiedID) != "payment_mock_v1" {
 		t.Fatal("old default-notified reconcile was not routed")
 	}
 	mustExec(t, f.owner, `UPDATE river_payment.river_job SET scheduled_at=clock_timestamp()+interval '1 hour' WHERE id=$1`, notified.result.JobID)
@@ -431,9 +435,13 @@ func TestBuyerPaymentWorkerLateDefaultInsertPollAndProfileIsolation(t *testing.T
 	pcAssertStock(t, notified, 0, 2, "CONFIRMED", "COMMITTED")
 	foreign := pqSetupItemsOn(t, f, keys, false, 1)
 	// Owner-only fixture mutation creates a due SANDBOX job without contacting a
-	// provider. The MOCK client must never claim its separate fixed queue.
+	// provider. Bypass then restore the immutable family guard solely for this
+	// fixture poison; the MOCK client must never claim the separate fixed queue.
+	mustExec(t, f.owner, `ALTER TABLE river_payment.river_job DISABLE TRIGGER payment_job_family`)
+	defer mustExec(t, f.owner, `ALTER TABLE river_payment.river_job ENABLE TRIGGER payment_job_family`)
 	mustExec(t, f.owner, `UPDATE checkout.payment_attempts SET execution_profile='SANDBOX' WHERE id=$1`, foreign.result.AttemptID)
 	mustExec(t, f.owner, `UPDATE river_payment.river_job SET queue='payment_sandbox_v1',scheduled_at=clock_timestamp() WHERE id=$1`, foreign.result.JobID)
+	mustExec(t, f.owner, `ALTER TABLE river_payment.river_job ENABLE TRIGGER payment_job_family`)
 	var generationBefore, generationAfter int64
 	if err := f.owner.QueryRow(context.Background(), `SELECT generation FROM integration.operations WHERE id=$1`, foreign.result.OperationID).Scan(&generationBefore); err != nil {
 		t.Fatal(err)
@@ -442,7 +450,7 @@ func TestBuyerPaymentWorkerLateDefaultInsertPollAndProfileIsolation(t *testing.T
 	if err := f.owner.QueryRow(context.Background(), `SELECT generation FROM integration.operations WHERE id=$1`, foreign.result.OperationID).Scan(&generationAfter); err != nil {
 		t.Fatal(err)
 	}
-	if generationAfter != generationBefore || pwQueue(t, f.owner, foreign.result.JobID) != "payment_sandbox_v1" {
+	if generationAfter != generationBefore || pwQueueIn(t, f.owner, "river_payment.river_job", foreign.result.JobID) != "payment_sandbox_v1" {
 		t.Fatal("MOCK consumer claimed a SANDBOX attempt")
 	}
 	var foreignAttempts, foreignObservations, foreignFacts int
@@ -542,7 +550,7 @@ func TestBuyerPaymentWorkerProcessSignalAndPoolCleanup(t *testing.T) {
 		var queueStarted bool
 		if err := f.owner.QueryRow(context.Background(), `SELECT
 		 (SELECT count(*) FROM pg_stat_activity WHERE datname='lc_foundation_test' AND application_name=$1),
-		 EXISTS(SELECT 1 FROM river.river_queue WHERE name='payment_sandbox_v1')`, app).Scan(&count, &queueStarted); err != nil {
+			 EXISTS(SELECT 1 FROM river_payment.river_queue WHERE name='payment_sandbox_v1')`, app).Scan(&count, &queueStarted); err != nil {
 			t.Fatal(err)
 		}
 		if count > 0 && queueStarted {

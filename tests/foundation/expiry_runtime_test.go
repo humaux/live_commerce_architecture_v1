@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/url"
 	"os"
 	"os/exec"
@@ -24,7 +25,6 @@ import (
 	"livecommerce/internal/checkout"
 	"livecommerce/internal/command"
 	"livecommerce/internal/storefront"
-	"livecommerce/migrations"
 )
 
 const ewQueue = "checkout_expiry_v1"
@@ -56,8 +56,12 @@ func ewDue(t *testing.T, p psHarness) {
 }
 
 func ewJob(t *testing.T, pool *pgxpool.Pool, id int64) (state string, attempt int) {
+	return ewJobIn(t, pool, "river_expiry.river_job", id)
+}
+
+func ewJobIn(t *testing.T, pool *pgxpool.Pool, table string, id int64) (state string, attempt int) {
 	t.Helper()
-	if err := pool.QueryRow(context.Background(), `SELECT state,attempt FROM river_expiry.river_job WHERE id=$1`, id).Scan(&state, &attempt); err != nil {
+	if err := pool.QueryRow(context.Background(), `SELECT state,attempt FROM `+table+` WHERE id=$1`, id).Scan(&state, &attempt); err != nil {
 		t.Fatal(err)
 	}
 	return
@@ -87,16 +91,20 @@ func ewBlockedContenders(t *testing.T, owner *pgxpool.Pool, jobID int64, payment
 }
 
 func ewAwait(t *testing.T, pool *pgxpool.Pool, id int64, want string) int {
+	return ewAwaitIn(t, pool, "river_expiry.river_job", id, want)
+}
+
+func ewAwaitIn(t *testing.T, pool *pgxpool.Pool, table string, id int64, want string) int {
 	t.Helper()
 	deadline := time.Now().Add(8 * time.Second)
 	for time.Now().Before(deadline) {
-		state, attempt := ewJob(t, pool, id)
+		state, attempt := ewJobIn(t, pool, table, id)
 		if state == want && attempt > 0 {
 			return attempt
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
-	state, attempt := ewJob(t, pool, id)
+	state, attempt := ewJobIn(t, pool, table, id)
 	t.Fatalf("expiry job %d state=%s attempt=%d, want %s after actual claim", id, state, attempt, want)
 	return 0
 }
@@ -169,7 +177,7 @@ func ewRouterAbsent(t *testing.T, owner *pgxpool.Pool) {
 
 // The real checkout service still inserts its job before begin_hold. Middleware
 // models the older producer's requested queue without reproducing business SQL.
-func ewOldBegin(t *testing.T, p psHarness) checkout.Result {
+func ewOldBegin(t *testing.T, p psHarness, historical ...string) checkout.Result {
 	t.Helper()
 	b := p.bcHarness
 	var currentVersion int64
@@ -205,7 +213,11 @@ func ewOldBegin(t *testing.T, p psHarness) checkout.Result {
 		}
 		return next(ctx)
 	})
-	jobs, err := river.NewClient(riverpgxv5.New(b.pool), &river.Config{Schema: "river", JobInsertMiddleware: []rivertype.JobInsertMiddleware{middleware}})
+	schema := "river_expiry"
+	if len(historical) == 1 {
+		schema = "river"
+	}
+	jobs, err := river.NewClient(riverpgxv5.New(b.pool), &river.Config{Schema: schema, JobInsertMiddleware: []rivertype.JobInsertMiddleware{middleware}})
 	if err != nil {
 		t.Fatalf("old begin river client: %v", err)
 	}
@@ -229,7 +241,7 @@ func TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger(t *testing.
 	}
 	ewRemoveRouter(t, f.owner)
 	mustExec(t, f.owner, `UPDATE river.river_job SET queue='default' WHERE id=$1`, p.hold.JobID)
-	legacy := ewOldBegin(t, p)
+	legacy := ewOldBegin(t, p, "river")
 	if queue := pwQueue(t, f.owner, legacy.JobID); queue != "default" {
 		t.Fatalf("legacy producer queue=%s", queue)
 	}
@@ -243,7 +255,7 @@ func TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger(t *testing.
 	advancedBefore := pwJobExceptQueue(t, f.owner, p.hold.JobID)
 	// The original due time and every other River column must survive the move.
 	before := pwJobExceptQueue(t, f.owner, legacy.JobID)
-	terminal := ewOldBegin(t, p).JobID
+	terminal := ewOldBegin(t, p, "river").JobID
 	mustExec(t, f.owner, `UPDATE river.river_job SET state='completed',queue='default',finalized_at=clock_timestamp() WHERE id=$1`, terminal)
 	terminalBefore := pwJobExceptQueue(t, f.owner, terminal)
 	var unrelated int64
@@ -266,7 +278,7 @@ func TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger(t *testing.
 			rowBefore := pwJobExceptQueue(t, f.owner, legacy.JobID)
 			queueBefore := pwQueue(t, f.owner, legacy.JobID)
 			validBefore := pwJobExceptQueue(t, f.owner, p.hold.JobID)
-			if err := migrations.Apply(context.Background(), f.owner); err == nil {
+			if err := lriApplyHistoricalPost(f, "post_river/0002_checkout_expiry_queue.sql"); err == nil {
 				t.Fatal("invalid active expiry row migrated")
 			}
 			ewRouterAbsent(t, f.owner)
@@ -285,7 +297,7 @@ func TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger(t *testing.
 	if err := f.owner.QueryRow(context.Background(), `INSERT INTO river.river_job(kind,args,max_attempts,queue) VALUES('foreign_v1','{}',2,$1) RETURNING id`, ewQueue).Scan(&foreign); err != nil {
 		t.Fatal(err)
 	}
-	if err := migrations.Apply(context.Background(), f.owner); err == nil {
+	if err := lriApplyHistoricalPost(f, "post_river/0002_checkout_expiry_queue.sql"); err == nil {
 		t.Fatal("foreign reserved kind passed upgrade")
 	}
 	ewRouterAbsent(t, f.owner)
@@ -293,7 +305,7 @@ func TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger(t *testing.
 		t.Fatal("foreign-kind failed migration partially moved valid row")
 	}
 	mustExec(t, f.owner, `DELETE FROM river.river_job WHERE id=$1`, foreign)
-	if err := migrations.Apply(context.Background(), f.owner); err != nil {
+	if err := lriApplyHistoricalPost(f, "post_river/0002_checkout_expiry_queue.sql"); err != nil {
 		t.Fatalf("valid upgrade: %v", err)
 	}
 	if pwQueue(t, f.owner, legacy.JobID) != ewQueue || pwJobExceptQueue(t, f.owner, legacy.JobID) != before ||
@@ -302,11 +314,11 @@ func TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger(t *testing.
 		pwQueue(t, f.owner, unrelated) != "default" || pwJobExceptQueue(t, f.owner, unrelated) != unrelatedBefore || !ewReady(t, worker) {
 		t.Fatal("backfill changed non-queue fields/history/unrelated job or left router unready")
 	}
-	if err := migrations.Apply(context.Background(), f.owner); err != nil {
+	if err := lriApplyHistoricalPost(f, "post_river/0002_checkout_expiry_queue.sql"); err != nil {
 		t.Fatalf("repeat migration: %v", err)
 	}
 	mustExec(t, f.owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('post_river/9999_unknown.sql','test-only')`)
-	if err := migrations.Apply(context.Background(), f.owner); err == nil {
+	if err := lriApplyHistoricalPost(f, "post_river/0002_checkout_expiry_queue.sql"); err == nil {
 		t.Fatal("unknown post-River version accepted")
 	}
 	mustExec(t, f.owner, `DELETE FROM public.lc_schema_migrations WHERE version='post_river/9999_unknown.sql'`)
@@ -315,11 +327,11 @@ func TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger(t *testing.
 		t.Fatal(err)
 	}
 	mustExec(t, f.owner, `UPDATE public.lc_schema_migrations SET checksum='test-invalid' WHERE version='post_river/0002_checkout_expiry_queue.sql'`)
-	if err := migrations.Apply(context.Background(), f.owner); err == nil {
+	if err := lriApplyHistoricalPost(f, "post_river/0002_checkout_expiry_queue.sql"); err == nil {
 		t.Fatal("changed checksum accepted")
 	}
 	mustExec(t, f.owner, `UPDATE public.lc_schema_migrations SET checksum=$1 WHERE version='post_river/0002_checkout_expiry_queue.sql'`, checksum)
-	late := ewOldBegin(t, p)
+	late := ewOldBegin(t, p, "river")
 	if pwQueue(t, f.owner, late.JobID) != ewQueue {
 		t.Fatal("old job-before-order producer was not routed at commit")
 	}
@@ -327,8 +339,21 @@ func TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger(t *testing.
 	// generation-1 task still routes, then the business transition returns STALE.
 	bcDue(t, p.bcHarness, p.hold)
 	mustExec(t, f.owner, `UPDATE river.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, p.hold.JobID)
-	client := ewClient(t, worker, 1)
-	ewAwait(t, f.owner, p.hold.JobID, "completed")
+	oldWorker, err := checkout.NewExpiryWorker(context.Background(), worker)
+	if err != nil {
+		t.Fatal(err)
+	}
+	workers := river.NewWorkers()
+	river.AddWorker(workers, oldWorker)
+	client, err := river.NewClient(riverpgxv5.New(worker), &river.Config{Schema: "river", Workers: workers,
+		Queues: map[string]river.QueueConfig{ewQueue: {MaxWorkers: 1}}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := client.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	ewAwaitIn(t, f.owner, "river.river_job", p.hold.JobID, "completed")
 	pwStopClient(t, client)
 	var order, reservation string
 	if err := f.owner.QueryRow(context.Background(), `SELECT o.commercial_state,r.state FROM checkout.orders o JOIN inventory.reservations r ON r.id=o.id WHERE o.id=$1`, p.hold.OrderID).Scan(&order, &reservation); err != nil || order != "AWAITING_PAYMENT" || reservation != "PAYMENT_PENDING" {
@@ -390,14 +415,14 @@ func TestBuyerCheckoutExpiryRuntimeRiverTwoTenantReplayAndIsolation(t *testing.T
 	if err := f.owner.QueryRow(context.Background(), `SELECT id FROM river_payment.river_job WHERE kind='payment_query_v1' AND args->>'operation_id'=$1`, unrelated.result.OperationID).Scan(&paymentJob); err != nil {
 		t.Fatal(err)
 	}
-	// River's global scheduler promotes any due payment job from scheduled to
-	// available regardless of which queue this client consumes. Start the
-	// unrelated job in available so full-row readback isolates this client.
-	mustExec(t, f.owner, `UPDATE river_payment.river_job SET state='available',scheduled_at=clock_timestamp() WHERE id=$1`, paymentJob)
+	// A due payment task remains eligible for payment maintenance; expiry must
+	// not promote it from a different native schema.
+	mustExec(t, f.owner, `UPDATE river_payment.river_job SET state='scheduled',scheduled_at=clock_timestamp()-interval '1 second' WHERE id=$1`, paymentJob)
 	otherIDs := []int64{unrelatedExpiry, external, paymentJob}
+	otherTables := []string{"river_expiry.river_job", "river.river_job", "river_payment.river_job"}
 	otherBefore := make([]string, len(otherIDs))
 	for i, id := range otherIDs {
-		otherBefore[i] = pwJobExceptQueue(t, f.owner, id)
+		otherBefore[i] = miIsoRows(t, f, otherTables[i], "WHERE id="+fmt.Sprint(id))
 	}
 	ewDue(t, one)
 	ewDue(t, two)
@@ -424,11 +449,11 @@ func TestBuyerCheckoutExpiryRuntimeRiverTwoTenantReplayAndIsolation(t *testing.T
 	}
 	pwStopClient(t, restarted)
 	for i, id := range otherIDs {
-		if after := pwJobExceptQueue(t, f.owner, id); after != otherBefore[i] {
+		if after := miIsoRows(t, f, otherTables[i], "WHERE id="+fmt.Sprint(id)); after != otherBefore[i] {
 			t.Fatalf("expiry client changed unrelated job %d: before=%s after=%s", id, otherBefore[i], after)
 		}
 	}
-	if pwQueue(t, f.owner, external) != "default" || pwQueue(t, f.owner, paymentJob) == ewQueue {
+	if pwQueueIn(t, f.owner, "river.river_job", external) != "default" || pwQueueIn(t, f.owner, "river_payment.river_job", paymentJob) == ewQueue {
 		t.Fatal("expiry client consumed an unrelated queue")
 	}
 }
@@ -588,7 +613,7 @@ func TestBuyerCheckoutExpiryRuntimeLateOldProducerPoll(t *testing.T) {
 	p := ewSetup(t, f, 1)
 	client := ewClient(t, p.worker, 1)
 	late := ewOldBegin(t, p)
-	if queue := pwQueue(t, f.owner, late.JobID); queue != ewQueue {
+	if queue := pwQueueIn(t, f.owner, "river_expiry.river_job", late.JobID); queue != ewQueue {
 		t.Fatalf("late old producer committed to %s", queue)
 	}
 	// The INSERT announced the requested default queue before deferred commit
