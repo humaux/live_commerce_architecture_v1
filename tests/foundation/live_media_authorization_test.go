@@ -183,6 +183,21 @@ func lmaCounts(t *testing.T, f *testFixture, id string) (header, children, revok
 	return
 }
 
+func lmaStartupAdmitted(t *testing.T, pool *pgxpool.Pool, worker bool) {
+	t.Helper()
+	if worker {
+		if err := platform.ValidateWorkerPool(context.Background(), pool); err != nil {
+			t.Fatalf("clean worker login rejected: %v", err)
+		}
+		return
+	}
+	admitted, err := platform.OpenPool(context.Background(), pool.Config().ConnString())
+	if err != nil {
+		t.Fatalf("clean runtime login rejected: %v", err)
+	}
+	admitted.Close()
+}
+
 func TestLiveMediaAuthorizationLMA01PersistenceReplayAndRollback(t *testing.T) {
 	h := lmaSetup(t)
 	ctx := context.Background()
@@ -355,6 +370,7 @@ func TestLiveMediaAuthorizationLMA02ActualRoleBoundary(t *testing.T) {
 	for _, member := range []string{"commerce_runtime", "commerce_worker"} {
 		t.Run("mixed-registrar-"+member, func(t *testing.T) {
 			login, pool := lmaLogin(t, h.lp.f, member)
+			lmaStartupAdmitted(t, pool, member == "commerce_worker")
 			if _, err := h.lp.f.owner.Exec(ctx, "GRANT commerce_media_registrar TO "+pgx.Identifier{login}.Sanitize()); err != nil {
 				t.Fatal(err)
 			}
@@ -371,10 +387,15 @@ func TestLiveMediaAuthorizationLMA02ActualRoleBoundary(t *testing.T) {
 			} else if err := platform.ValidateWorkerPool(ctx, pool); err == nil {
 				t.Fatal("mixed registrar/worker admitted")
 			}
+			if _, err := h.lp.f.owner.Exec(ctx, "REVOKE commerce_media_registrar FROM "+pgx.Identifier{login}.Sanitize()); err != nil {
+				t.Fatal(err)
+			}
+			lmaStartupAdmitted(t, pool, member == "commerce_worker")
 		})
 	}
 	t.Run("set-only-execute", func(t *testing.T) {
 		login, pool := lmaLogin(t, h.lp.f, "commerce_runtime")
+		lmaStartupAdmitted(t, pool, false)
 		role := "lma_reachable_" + strings.ReplaceAll(randomUUID(), "-", "")
 		if _, err := h.lp.f.owner.Exec(ctx, "CREATE ROLE "+pgx.Identifier{role}.Sanitize()+" NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION"); err != nil {
 			t.Fatal(err)
@@ -404,9 +425,14 @@ func TestLiveMediaAuthorizationLMA02ActualRoleBoundary(t *testing.T) {
 			admitted.Close()
 			t.Fatal("SET-reachable media EXECUTE admitted")
 		}
+		if _, err := h.lp.f.owner.Exec(ctx, "REVOKE EXECUTE ON FUNCTION live.register_prepared_media(jsonb,bytea,bytea) FROM "+pgx.Identifier{role}.Sanitize()); err != nil {
+			t.Fatal(err)
+		}
+		lmaStartupAdmitted(t, pool, false)
 	})
 	t.Run("direct-execute", func(t *testing.T) {
 		login, pool := lmaLogin(t, h.lp.f, "commerce_runtime")
+		lmaStartupAdmitted(t, pool, false)
 		if _, err := h.lp.f.owner.Exec(ctx, "GRANT EXECUTE ON FUNCTION live.revoke_prepared_media(uuid,uuid,uuid,text) TO "+pgx.Identifier{login}.Sanitize()); err != nil {
 			t.Fatal(err)
 		}
@@ -419,9 +445,14 @@ func TestLiveMediaAuthorizationLMA02ActualRoleBoundary(t *testing.T) {
 			admitted.Close()
 			t.Fatal("direct media EXECUTE admitted")
 		}
+		if _, err := h.lp.f.owner.Exec(ctx, "REVOKE EXECUTE ON FUNCTION live.revoke_prepared_media(uuid,uuid,uuid,text) FROM "+pgx.Identifier{login}.Sanitize()); err != nil {
+			t.Fatal(err)
+		}
+		lmaStartupAdmitted(t, pool, false)
 	})
 	t.Run("public-execute", func(t *testing.T) {
 		_, pool := lmaLogin(t, h.lp.f, "commerce_worker")
+		lmaStartupAdmitted(t, pool, true)
 		if _, err := h.lp.f.owner.Exec(ctx, "GRANT EXECUTE ON FUNCTION live.register_prepared_media(jsonb,bytea,bytea) TO PUBLIC"); err != nil {
 			t.Fatal(err)
 		}
@@ -433,6 +464,10 @@ func TestLiveMediaAuthorizationLMA02ActualRoleBoundary(t *testing.T) {
 		if err := platform.ValidateWorkerPool(ctx, pool); err == nil {
 			t.Fatal("PUBLIC media EXECUTE admitted")
 		}
+		if _, err := h.lp.f.owner.Exec(ctx, "REVOKE EXECUTE ON FUNCTION live.register_prepared_media(jsonb,bytea,bytea) FROM PUBLIC"); err != nil {
+			t.Fatal(err)
+		}
+		lmaStartupAdmitted(t, pool, true)
 	})
 }
 
@@ -543,13 +578,14 @@ func TestLiveMediaAuthorizationLMA03ClosedValidationAndNoWrites(t *testing.T) {
 	}
 }
 
-func lmaObserveBlock(t *testing.T, owner *pgxpool.Pool, waiterPID, holderPID int) {
+func lmaObserveBlock(t *testing.T, owner *pgxpool.Pool, waiterPID, holderPID int, advisory bool) {
 	t.Helper()
 	deadline := time.Now().Add(2 * time.Second)
 	for time.Now().Before(deadline) {
 		var blocked bool
-		err := owner.QueryRow(context.Background(), `SELECT coalesce(wait_event_type='Lock',false) AND $2::int=ANY(pg_blocking_pids($1))
-			FROM pg_stat_activity WHERE pid=$1`, waiterPID, holderPID).Scan(&blocked)
+		err := owner.QueryRow(context.Background(), `SELECT coalesce(wait_event_type='Lock',false)
+			AND $2::int=ANY(pg_blocking_pids($1)) AND coalesce((wait_event='advisory')=$3,false)
+			FROM pg_stat_activity WHERE pid=$1`, waiterPID, holderPID, advisory).Scan(&blocked)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -637,7 +673,7 @@ func TestLiveMediaAuthorizationLMA04ConcurrencyAndObservedWait(t *testing.T) {
 				var id string
 				result <- waiter.QueryRow(ctx, `SELECT live.register_prepared_media($1::jsonb,$2,$3)::text`, string(data), nonce, ciphertext).Scan(&id)
 			}()
-			lmaObserveBlock(t, h.lp.f.owner, waiterPID, holderPID)
+			lmaObserveBlock(t, h.lp.f.owner, waiterPID, holderPID, false)
 			if mode == "version" {
 				if _, err := tx.Exec(ctx, `UPDATE integration.bindings SET semantic_version=semantic_version+1 WHERE id=$1`, h.media); err != nil {
 					t.Fatal(err)
@@ -666,6 +702,87 @@ func TestLiveMediaAuthorizationLMA04ConcurrencyAndObservedWait(t *testing.T) {
 			}
 		})
 	}
+	t.Run("final-child-write-deadline", func(t *testing.T) {
+		s := h.spec()
+		var deadline time.Time
+		if err := h.lp.f.owner.QueryRow(ctx, `SELECT clock_timestamp()+interval '3 seconds'`).Scan(&deadline); err != nil {
+			t.Fatal(err)
+		}
+		s["start_before"] = deadline.UTC().Format(time.RFC3339Nano)
+		suffix := strings.ReplaceAll(randomUUID(), "-", "")
+		function := pgx.Identifier{"public", "lma_child_wait_" + suffix}.Sanitize()
+		trigger := pgx.Identifier{"lma_child_wait_" + suffix}.Sanitize()
+		key := "lma-child|" + s["id"].(string)
+		ddl := fmt.Sprintf(`CREATE FUNCTION %s() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+			BEGIN IF NEW.authorization_id=%s::uuid THEN
+				PERFORM pg_advisory_xact_lock(hashtextextended(%s,0));
+			END IF; RETURN NEW; END $$`, function, "'"+s["id"].(string)+"'", "'"+key+"'")
+		if _, err := h.lp.f.owner.Exec(ctx, ddl); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() {
+			if _, err := h.lp.f.owner.Exec(context.Background(), "DROP FUNCTION "+function+"()"); err != nil {
+				t.Errorf("child barrier function cleanup: %v", err)
+			}
+		})
+		if _, err := h.lp.f.owner.Exec(ctx, "CREATE TRIGGER "+trigger+
+			" BEFORE INSERT ON live.media_authorization_destinations FOR EACH ROW EXECUTE FUNCTION "+function+"()"); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() {
+			if _, err := h.lp.f.owner.Exec(context.Background(), "DROP TRIGGER "+trigger+" ON live.media_authorization_destinations"); err != nil {
+				t.Errorf("child barrier trigger cleanup: %v", err)
+			}
+		})
+		holder, err := h.lp.f.owner.Acquire(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer holder.Release()
+		tx, err := holder.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer tx.Rollback(context.Background())
+		var holderPID int
+		if err := tx.QueryRow(ctx, `SELECT pg_backend_pid()`).Scan(&holderPID); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,0))`, key); err != nil {
+			t.Fatal(err)
+		}
+		waiter, err := h.registrar.Acquire(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer waiter.Release()
+		var waiterPID int
+		if err := waiter.QueryRow(ctx, `SELECT pg_backend_pid()`).Scan(&waiterPID); err != nil {
+			t.Fatal(err)
+		}
+		result := make(chan error, 1)
+		go func() {
+			data, _ := json.Marshal(s)
+			var id string
+			result <- waiter.QueryRow(ctx, `SELECT live.register_prepared_media($1::jsonb,$2,$3)::text`, string(data), nonce, ciphertext).Scan(&id)
+		}()
+		lmaObserveBlock(t, h.lp.f.owner, waiterPID, holderPID, true)
+		if _, err := tx.Exec(ctx, `SELECT pg_sleep(GREATEST(0,extract(epoch FROM $1::timestamptz-clock_timestamp()))+0.03)`, deadline); err != nil {
+			t.Fatal(err)
+		}
+		if err := tx.Commit(ctx); err != nil {
+			t.Fatal(err)
+		}
+		select {
+		case err := <-result:
+			lmaBad(t, err, "secret-canary-lma")
+		case <-time.After(5 * time.Second):
+			t.Fatal("child-wait registration did not finish")
+		}
+		if a, b, r := lmaCounts(t, h.lp.f, s["id"].(string)); a != 0 || b != 0 || r != 0 {
+			t.Fatal("expired final child write committed partial authority")
+		}
+	})
 }
 
 func TestLiveMediaAuthorizationLMA05RevocationAndNoRevival(t *testing.T) {
