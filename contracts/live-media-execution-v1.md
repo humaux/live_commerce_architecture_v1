@@ -1,6 +1,8 @@
 # T08 dedicated MOCK media execution — LME01–08
 
-Status: **CANDIDATE_FOR_INDEPENDENT_REVIEW**, base `f415556`.
+Status: **FROZEN_FOR_LOCAL_MOCK_IMPLEMENTATION** (2026-09-27), base `6362b90`.
+Independent security and testability preflight confirmed no remaining P0/P1
+freeze blockers; executable LME01–08 gates are still **NOT_RUN**.
 Implements executable Start and observation/recovery after [LMP](live-media-plan-v1.md).
 This is not Stop, LIVE intake, studio UI, resource reclamation or G06 acceptance.
 Reuse the existing operation ledger, River, LKP client and LKM custody. No new
