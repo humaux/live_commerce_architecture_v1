@@ -17,7 +17,7 @@ func decodeObject(body []byte) (map[string]any, error) {
 	}
 	d := json.NewDecoder(bytes.NewReader(body))
 	d.UseNumber()
-	v, err := parseValue(d, 1)
+	v, err := parseValue(d, 0)
 	if err != nil {
 		return nil, errWire
 	}
@@ -33,15 +33,15 @@ func decodeObject(body []byte) (map[string]any, error) {
 
 // Token parsing catches duplicate keys even inside ignored provider fields.
 func parseValue(d *json.Decoder, depth int) (any, error) {
-	if depth > 32 {
-		return nil, errWire
-	}
 	tok, err := d.Token()
 	if err != nil {
 		return nil, err
 	}
 	switch tok {
 	case json.Delim('{'):
+		if depth >= 32 {
+			return nil, errWire
+		}
 		obj := make(map[string]any)
 		for d.More() {
 			keyToken, err := d.Token()
@@ -67,6 +67,9 @@ func parseValue(d *json.Decoder, depth int) (any, error) {
 		}
 		return obj, nil
 	case json.Delim('['):
+		if depth >= 32 {
+			return nil, errWire
+		}
 		values := make([]any, 0)
 		for d.More() {
 			value, err := parseValue(d, depth+1)
@@ -213,9 +216,6 @@ func decodeList(body []byte, target Target) (Observation, error) {
 	if present {
 		pagination, ok := page.(map[string]any)
 		if !ok {
-			return Observation{}, ErrUnavailable
-		}
-		if len(pagination) > 1 {
 			return Observation{}, ErrUnavailable
 		}
 		if token, exists := pagination["token"]; exists {
