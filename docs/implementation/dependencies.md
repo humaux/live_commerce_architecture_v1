@@ -33,6 +33,16 @@
 此包当前未由运行时装配；PG、River、密钥轮换及可信资产归属没有通过此切片验收。
 详见[协议验收与证据](2026-09-26-meta-webhook-protocol-acceptance.md)。
 
+`newRawHandler` 在同一验签路径内把原始 `io.ReadAll` 自有字节同步交给私有回调；
+公开 `NewHandler` 保留原兼容接口。`PayloadKeyring` 独立使用标准库 AES-256-GCM、
+`crypto/rand` 12字节nonce及SHA-256，不复用支付密钥或其AAD。固定13元素JSON数组
+AAD绑定类别、内部ID、app/object、摘要、tenant/store/route/epoch和KeyID；
+`command.ValidID`复用既有规范UUID验证。变更数组编码就是协议迁移，不可随意换序。
+升级Go/密钥配置/上下文/大小上限须重跑`payload_test.go`、独立
+`payload_acceptance_test.go`互操作/轮换/篡改/错误摘要及`raw_handler_test.go`，
+并保留完整MWP套件和race/vet。见[前置组件验收](2026-09-26-meta-inbox-primitives-acceptance.md)。
+当前只有本地加密和交接，没有PG适配器、生产密钥加载器或公开处理器装配。
+
 ## 商家账户接入复用关系
 
 商家凭据HTTP/BFF不新增依赖：`cmd/api/accounts.go` 通过
