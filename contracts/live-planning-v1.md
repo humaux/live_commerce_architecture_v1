@@ -81,3 +81,11 @@ Destinations, media attempts, start/stop and reconciliation must be added as a
 separate frozen contract before wiring provider I/O. Reuse T06 durable operation
 intent and query-only UNKNOWN handling; never infer platform audience LIVE from
 transport success. No start action can bypass this stop line.
+
+Provider precheck (2026-09-27, SOURCE not SANDBOX): the current
+[LiveKit Egress reference](https://docs.livekit.io/reference/other/egress/api/)
+documents `StartEgress` replacing the source-specific start APIs, with self-hosted
+server 1.13.5+ required. `ListEgress` is described as active-only: absence is not
+proof that a previous uncertain start had no effect. Resolve correlation and
+historical reconciliation before registering a dispatcher route; do not expose
+raw `EgressInfo.request` or stream URLs containing keys. This slice adds no SDK.
