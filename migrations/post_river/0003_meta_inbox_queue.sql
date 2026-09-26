@@ -4,6 +4,7 @@ GRANT USAGE ON SCHEMA river TO commerce_meta_ingress;
 GRANT SELECT,INSERT,UPDATE(kind) ON river.river_job TO commerce_meta_ingress;
 GRANT USAGE ON SEQUENCE river.river_job_id_seq TO commerce_meta_ingress;
 GRANT SELECT ON river.river_job TO commerce_meta_writer;
+GRANT UPDATE(id) ON river.river_job TO commerce_meta_writer;
 
 CREATE FUNCTION meta_inbox.guard_job_family() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
