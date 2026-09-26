@@ -117,3 +117,25 @@ func TestMetaInboxPoolAuthorityIsExclusiveBothWays(t *testing.T) {
 		t.Fatalf("SET-capable SQL bypass state=%s", miSQLState(err))
 	}
 }
+
+// Superuser membership checks are implicit, not an actual ingress grant. The
+// guard must preserve old migration fixtures without granting Meta authority.
+func TestMetaInboxOwnerGenericJobsKeepLegacyAdmission(t *testing.T) {
+	m := miSetup(t)
+	ctx := context.Background()
+	var superuser bool
+	if err := m.f.owner.QueryRow(ctx, `SELECT rolsuper FROM pg_roles WHERE rolname=session_user`).Scan(&superuser); err != nil || !superuser {
+		t.Fatal("expected isolated superuser migration fixture", err)
+	}
+	if _, err := m.f.owner.Exec(ctx, `INSERT INTO river.river_job(kind,queue,args,max_attempts) VALUES('migration_generic_probe','default','{}',25)`); err != nil {
+		t.Fatal("generic migration-owner job regressed", err)
+	}
+	for _, tc := range []struct{ kind, queue string }{{"meta_inbox_v1", "default"}, {"generic_probe", "meta_inbox"}, {"meta_inbox_v1", "meta_inbox"}} {
+		t.Run(tc.kind+"/"+tc.queue, func(t *testing.T) {
+			_, err := m.f.owner.Exec(ctx, `INSERT INTO river.river_job(kind,queue,args,max_attempts) VALUES($1,$2,$3::jsonb,25)`, tc.kind, tc.queue, fmt.Sprintf(`{"event_id":%q,"version":1}`, randomUUID()))
+			if miSQLState(err) != "42501" {
+				t.Fatalf("owner bypassed reserved family: %s", miSQLState(err))
+			}
+		})
+	}
+}
