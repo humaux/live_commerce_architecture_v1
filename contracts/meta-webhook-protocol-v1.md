@@ -70,6 +70,10 @@ No getter may share input buffers; the successful batch owns its bytes.
    JSON values and more than 64 nested containers. Preserve number precision
    (`json.Number`); never round provider IDs through float64.
    Duplicate comparison uses decoded member names, including escaped aliases.
+   Reject unpaired UTF-16 surrogate escapes in JSON strings/keys: Go's default
+   replacement with U+FFFD would destroy payload evidence and digest distinction.
+   Valid surrogate pairs, literal U+FFFD and escaped literal backslash-u text
+   remain valid; this is a strict Unicode admission rule, not a text rewrite.
 4. Root must be an object. Max **1,000 event units** per batch. Reject oversized
    batches with 413 rather than slicing, partially committing or acknowledging.
    Every emitted event, including additional quarantine records, counts. JSON
