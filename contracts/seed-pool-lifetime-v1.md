@@ -34,9 +34,10 @@ runtime flag or retry changes. Root owns this contract/evidence; PG work serial.
   controls and exact foreign snapshots intact. Retain prior 53300 RED evidence;
   do not label the old uninstrumented failure's exact occupancy as proven.
 - SPL03: existing startup-failure, cancellation and shutdown pool cleanup gates
-  remain. Independent review decides whether a small native capacity-negative
-  case is needed; genuine exhaustion must stay bounded, emit no readiness and
-  mutate no business facts. Never force an intermittent failure until it occurs.
+  remain. Independent review accepted the retained native 53300 RED plus SPL01/02
+  as the minimum gate; no additional artificial capacity-negative is required
+  for this test-only lifetime change. Do not claim coverage of every exhausted
+  capacity cleanup path. Never force an intermittent failure until it occurs.
 - SPL04: independent source/evidence review and complete root PG/race/vet,
   unchanged per-test deadlines and task-owned fixture cleanup before merge.
 
