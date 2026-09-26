@@ -12,6 +12,7 @@ func TestMetaRuntimePoolInvalidInputs(t *testing.T) {
 	for _, open := range []func(context.Context, string) error{
 		func(ctx context.Context, dsn string) error { _, err := OpenMetaIngressPool(ctx, dsn); return err },
 		func(ctx context.Context, dsn string) error { _, err := OpenMetaConsumerPool(ctx, dsn); return err },
+		func(ctx context.Context, dsn string) error { _, err := OpenMetaWorkerPool(ctx, dsn); return err },
 	} {
 		for _, dsn := range []string{"", "postgres://sentinel-secret@invalid%", strings.Repeat("s", 8193)} {
 			if err := open(context.Background(), dsn); err == nil || strings.Contains(err.Error(), "sentinel-secret") {
@@ -24,5 +25,8 @@ func TestMetaRuntimePoolInvalidInputs(t *testing.T) {
 	}
 	if ValidateSameDatabase(context.Background(), nil, nil) == nil || ValidateSameDatabase(nil, nil, nil) == nil {
 		t.Fatal("nil database identity inputs accepted")
+	}
+	if ValidateMetaWorkerPool(nil, nil) == nil || ValidateMetaWorkerPool(context.Background(), nil) == nil {
+		t.Fatal("nil Meta lifecycle pool inputs accepted")
 	}
 }
