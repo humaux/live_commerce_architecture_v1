@@ -1,6 +1,6 @@
 # T08 media authority and resource lifetime decision
 
-Status: **DESIGN / implementation contract pending independent review**.
+Status: **DESIGN accepted after independent review / concrete implementation contract pending**.
 This decision resolves the direction of the preliminary LBI proposal; it does
 not register a route, provision credentials or authorize a real broadcast.
 Source inventory: main `40335e2`, Humaux `acdaf428-4d35-46cc-b68b-7ab0afd92cf3`.
@@ -55,6 +55,24 @@ boolean, re-enable a merchant binding, use a replacement account, or release a
 generation fence. Freeze the SQL privilege/call graph and lock order before code.
 Use the existing lease/token/generation and River transaction rather than a second
 media queue, scheduler or lease. No provider call holds an open business lock.
+
+Concrete seam follow-up at `3dfebb0`: use the existing payment-query precedent for
+a fixed media River job and typed worker on the **same operation ledger and lease
+semantics**. The generic Dispatcher remains MERCHANT-only and receives no lease
+token in DispatchRequest. The typed worker's private SQL material resolver owns
+its final gate. A separate River schema/role lane may enforce ACL isolation; that
+does not introduce a second scheduler or business ledger. Latest claim logic is
+in `0016_buyer_payment_start.sql`, not only the original `0008` definition.
+
+Before freezing that migration, exclude MEDIA actors from the current permissive
+runtime operation_insert policy; make actor-family checks mutually exclusive and
+tie media operations to immutable attempts with composite FKs. Existing generic
+commerce_worker claim/complete EXECUTE cannot be a media authority: ordinary
+workers must be denied direct SQL media claims/completions/material reads. Use a
+narrow authenticated media role and actor-specific fixed wrapper/private helper
+boundaries rather than trust Go routing or an externally supplied family flag.
+The retained generic helper cannot silently treat all non-MERCHANT actors like
+the existing buyer-query exception. MLA01 must exercise these direct role calls.
 
 Cleanup **initiation** is a separate authorization boundary. A merchant's Stop
 request still requires current authenticated membership, scope and explicit stop
