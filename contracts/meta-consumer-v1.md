@@ -1,6 +1,8 @@
 # Meta social consumer v1
 
-Status: **DRAFT / INDEPENDENT_PREFLIGHT_PENDING**. Builds on the accepted
+Status: **FROZEN / IMPLEMENTATION_PENDING**. Independent design preflight and
+the two ordering/family clarifications at `80e678f` passed with no open P0/P1/P2.
+MC01–07 still require actual implementation evidence. Builds on the accepted
 [durable inbox](meta-inbox-v1.md); not a public/provider or whole-SaaS gate.
 Integrator owns migration `0029`, shared authority changes and this contract.
 
