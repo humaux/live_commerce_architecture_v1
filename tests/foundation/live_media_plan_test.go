@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -395,7 +396,7 @@ func TestLiveMediaPlanLMP04ActualRoleAndFrozenDraft(t *testing.T) {
 		 id,tenant_id,store_id,principal_id,binding_id,binding_version,provider,external_asset_id,
 		 purpose,action,semantic_key,request_hash,request,job_id,actor_kind,media_attempt_id)
 		 VALUES($1,$2,$3,$4,$5,1,'livekit','project_lma','service','livekit.egress.start',$6,
-		 decode(repeat('01',32),'hex'),jsonb_build_object('attempt_id',$7::text,'session_id',$8::text,'version',1),$9,'MEDIA_ATTEMPT',$7)`,
+			 decode(repeat('01',32),'hex'),jsonb_build_object('attempt_id',$7::text,'session_id',$8::text,'version',1),$9,'MEDIA_ATTEMPT',$7::uuid)`,
 			randomUUID(), scope.TenantID, scope.StoreID, scope.PrincipalID, h.media,
 			t04Key("lmp-forgery"), out.AttemptID, h.session, out.JobID)
 		return err
@@ -636,6 +637,42 @@ func lmpWaiter(h *lmpHarness, key string) (<-chan int, <-chan lmpWaitResult) {
 	return pid, done
 }
 
+// Call the fixed SQL entry directly. The native job and SQL request share the
+// real runtime transaction, while no Go planner authorization runs afterward.
+func lmpDirectSQL(h *lmpHarness, key string, entered chan<- int) (out live.MediaStartResult, err error) {
+	ctx := context.Background()
+	jobs, err := river.NewClient(riverpgxv5.New(h.lp.f.runtime), &river.Config{Schema: "river_media"})
+	if err != nil {
+		return out, err
+	}
+	err = platform.WithScope(ctx, h.lp.f.runtime, h.lp.token, h.lp.f.storeA1, "store:read", func(tx pgx.Tx, scope platform.Scope) error {
+		if _, err := tx.Exec(ctx, `SELECT set_config('app.authz_revision',$1,true)`, strconv.FormatInt(scope.Revision, 10)); err != nil {
+			return err
+		}
+		operation := randomUUID()
+		job, err := jobs.InsertTx(ctx, tx, lmpJobArgs{OperationID: operation, Version: 1}, &river.InsertOpts{Queue: "media_mock_v1"})
+		if err != nil {
+			return err
+		}
+		if entered != nil {
+			var pid int
+			if err := tx.QueryRow(ctx, `SELECT pg_backend_pid()`).Scan(&pid); err != nil {
+				return err
+			}
+			entered <- pid
+		}
+		hash := sha256.Sum256([]byte(h.lp.token))
+		var raw []byte
+		if err := tx.QueryRow(ctx, `SELECT live.plan_media_start($1,$2::uuid,$3::uuid,$4::uuid,$5,$6,$7::uuid,$8)`,
+			hash[:], scope.StoreID, h.input.SessionID, h.input.AuthorizationID,
+			h.input.ExpectedSessionVersion, key, operation, job.Job.ID).Scan(&raw); err != nil {
+			return err
+		}
+		return json.Unmarshal(raw, &out)
+	})
+	return out, err
+}
+
 func lmpAwaitWaiter(t *testing.T, ch <-chan lmpWaitResult) lmpWaitResult {
 	t.Helper()
 	select {
@@ -664,6 +701,66 @@ func lmpWaitPastDBClock(t *testing.T, owner *pgxpool.Pool, deadline time.Time) {
 }
 
 func TestLiveMediaPlanLMP06ObservedWaitAndFinalClock(t *testing.T) {
+	t.Run("direct-sql-positive", func(t *testing.T) {
+		h := lmpSetup(t, false)
+		before := lmpFacts(t, h)
+		out, err := lmpDirectSQL(h, t04Key("lmp-direct-positive"), nil)
+		if err != nil || out.AttemptID != h.specification["attempt_id"] || out.State != "READY" {
+			t.Fatalf("real runtime direct SQL control: %+v %v", out, err)
+		}
+		lmpDelta(t, before, lmpFacts(t, h), [6]int64{1, 1, 1, 1, 0, 0})
+	})
+	for _, change := range []string{"grant-revoke", "membership-revision"} {
+		t.Run("direct-sql-wait-"+change, func(t *testing.T) {
+			h := lmpSetup(t, false)
+			ctx := context.Background()
+			before := lmpFacts(t, h)
+			holder, err := h.lp.f.owner.Begin(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer holder.Rollback(ctx)
+			var holderPID int
+			if err = holder.QueryRow(ctx, `SELECT pg_backend_pid()`).Scan(&holderPID); err != nil {
+				t.Fatal(err)
+			}
+			if _, err = holder.Exec(ctx, `SELECT id FROM integration.bindings WHERE id=$1 FOR UPDATE`, h.media); err != nil {
+				t.Fatal(err)
+			}
+			entered := make(chan int, 1)
+			done := make(chan lmpWaitResult, 1)
+			go func() {
+				out, err := lmpDirectSQL(h, t04Key("lmp-direct-wait"), entered)
+				done <- lmpWaitResult{out: out, err: err}
+			}()
+			var waiterPID int
+			select {
+			case waiterPID = <-entered:
+			case result := <-done:
+				t.Fatalf("direct SQL failed before observed wait: %v", result.err)
+			case <-time.After(6 * time.Second):
+				t.Fatal("direct SQL did not reach binding wait")
+			}
+			lmaObserveBlock(t, h.lp.f.owner, waiterPID, holderPID, false)
+			switch change {
+			case "grant-revoke":
+				_, err = holder.Exec(ctx, `DELETE FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission='live:manage'`, h.lp.f.tenantA, h.lp.f.storeA1, h.lp.actor)
+			case "membership-revision":
+				_, err = holder.Exec(ctx, `UPDATE identity.memberships SET authz_revision=authz_revision+1 WHERE tenant_id=$1 AND principal_id=$2`, h.lp.f.tenantA, h.lp.actor)
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err = holder.Commit(ctx); err != nil {
+				t.Fatal(err)
+			}
+			result := lmpAwaitWaiter(t, done)
+			if result.err == nil || result.out != (live.MediaStartResult{}) {
+				t.Fatalf("direct SQL stale access admitted: %+v %v", result.out, result.err)
+			}
+			lmpDelta(t, before, lmpFacts(t, h), [6]int64{})
+		})
+	}
 	for _, change := range []string{"binding-version", "authorization-revoke", "token-revoke"} {
 		t.Run(change, func(t *testing.T) {
 			h := lmpSetup(t, false)
