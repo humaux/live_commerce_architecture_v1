@@ -55,9 +55,10 @@ func NewWorkerClient(ctx context.Context, pool *pgxpool.Pool, keys *accounts.Key
 	river.AddWorker(workers, query)
 	river.AddWorker(workers, capture)
 	// River can include job errors in logs; keep the separate process silent
-	// until diagnostics have an explicit redaction contract.
+	// until diagnostics have an explicit redaction contract. The payment schema
+	// confines leader maintenance; the profile queue still limits fetch.
 	client, err := river.NewClient(riverpgxv5.New(pool), &river.Config{
-		Schema: "river", Workers: workers,
+		Schema: "river_payment", Workers: workers,
 		Queues: map[string]river.QueueConfig{queue: {MaxWorkers: concurrency}},
 		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 	})

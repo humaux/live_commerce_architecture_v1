@@ -85,7 +85,8 @@ func NewQueryWorker(ctx context.Context, pool *pgxpool.Pool, keys *accounts.Keyr
 	if err := platform.ValidateWorkerPool(ctx, pool); err != nil {
 		return nil, errPaymentQueryDatabase
 	}
-	jobs, err := river.NewClient(riverpgxv5.New(pool), &river.Config{Schema: "river"})
+	// Reconciliation jobs enter the same schema that payment consumers maintain.
+	jobs, err := river.NewClient(riverpgxv5.New(pool), &river.Config{Schema: "river_payment"})
 	if err != nil {
 		return nil, errPaymentQueryDatabase
 	}
