@@ -187,6 +187,34 @@ isolation finding. Review also identified competing query-only/capture-only
 test clients on the same fixed queue, even though capture passed this run.
 Both require test repairs before acceptance; green timing is not a race proof.
 
+## Directed test repairs and independent replay
+
+Root `8db7584` integrates `e51e76c` and `b275d78`. Both wrong-schema
+producer negatives now compare complete job rows in both destination schemas
+of the **same database that receives the request**, in addition to business
+facts. Root exact admission run exited 0, one top-level PASS / no skips,
+foundation 4.503s: `/Volumes/data/output/legacy-isolation-root-admission2-20260926.log`,
+SHA256 `381a3a614bd4f5e3664071782ab5d289f3012d1e9bddc05711c490b87cc9dcf9`.
+Root payment replay exited 0, 69 PASS / 0 FAIL / 0 SKIP, foundation 147.212s:
+`/Volumes/data/output/legacy-isolation-root-payment-adapt3-20260926.log`, SHA256
+`9249ca6bc9ca5e33ec21af94d65692d29fd59ff49732a81ddc534703074730e1`.
+This green run still does not close the capture-client race: pinned River's
+fetch query does not read `river_queue.paused_at`. The revised transport barrier
+must wait for the native producer's queue-paused acknowledgement before allowing
+the query to create reconciliation work. A direct SQL pause followed immediately
+by release is insufficient. No product timeout or queue policy is changed.
+
+Upgrade author `dfd41a1` plus note `1ac959e`, integrated as `3762b03` / `0cc4e88`,
+uses explicit historical schema helpers, production old-schema admissions with
+consistent synthetic profile/account/qualification facts, a retained available
+job, discriminating reconciliation collision success and wrong-family-only
+rejection, and mirrored independent sequence maxima. Non-MOCK profile fixtures
+are local synthetic attestations, **not** provider qualification evidence.
+Root `0cc4e88` `--legacy-isolation` exited 0 with 10 PASS / 0 FAIL / 0 SKIP,
+foundation 27.848s: `/Volumes/data/output/legacy-isolation-root-upgrade2-20260926.log`,
+SHA256 `02fd89dbdb73992a611f27d52d9cd54c4661ea8ece7070d6212f92c9bcbbabfe`.
+Exact-source independent upgrade review remains required.
+
 ## Pending
 
 - Remaining profile/runtime regression, admission/readiness and populated-upgrade
