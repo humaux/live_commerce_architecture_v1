@@ -1,5 +1,21 @@
 # 依赖准入与当前清单
 
+## T08 场次／节目草稿调用链
+
+`platform.WithScope` → `internal/live.CreateDraft/UpdateDraft/GetDraft` →
+`platform.RequirePermission`；写入复用 `command.Run` 的事务收据与
+`command.Audit`，由调用者提交／回滚。`0033_live_planning.sql` 用同店铺复合外键、
+FORCE RLS 和列级权限隔离 `live.sessions/programs`。修改先锁场次再锁节目，
+锁等待后及历史回执返回前复核授权；时间先归一为 UTC 微秒再参与幂等摘要。
+标准库负责 UTF-8、Unicode、时间和错误分类，复用现有 pgx，不新增 SDK。
+
+升级鉴权／收据／SQL／时间编码时运行 `bash scripts/dev/test-local.sh --live-planning`
+和全仓 PG/race/vet；独立验收边界见 [LSP 合同](../../contracts/live-planning-v1.md)。
+这里没有 HTTP／工作室入口、LiveKit 调用或开播状态。`live:read/manage` 不随迁移
+或旧开户回放自动授权；后续商家入口需要单独实现显式授权配置。
+
+## 依赖版本
+
 版本来自当前 `go.mod`/`go.sum` 和本阶段已记录的锁定证据；license 是上游声明，不等于本项目已完成法务准入。升级流程是确认候选版本、更新锁文件与本表、在候选版本上跑 gate，通过后再合并。
 
 |依赖|固定版本|许可证|实际调用者|用途|升级测试|
