@@ -36,10 +36,14 @@ func ewFixture(t *testing.T) *testFixture {
 	return pwIsolatedFixture(t)
 }
 
-func ewSetup(t *testing.T, f *testFixture, lines int) psHarness {
+func ewSetup(t *testing.T, f *testFixture, lines int, historical ...string) psHarness {
 	t.Helper()
-	p := psSetupItemsOn(t, f, lines)
-	if queue := pwQueue(t, f.owner, p.hold.JobID); queue != ewQueue {
+	p := psSetupItemsOn(t, f, lines, historical...)
+	table := "river_expiry.river_job"
+	if len(historical) == 1 && historical[0] == "river" {
+		table = "river.river_job"
+	}
+	if queue := pwQueueIn(t, f.owner, table, p.hold.JobID); queue != ewQueue {
 		t.Fatalf("checkout producer queue=%s", queue)
 	}
 	return p
@@ -48,12 +52,12 @@ func ewSetup(t *testing.T, f *testFixture, lines int) psHarness {
 func ewDue(t *testing.T, p psHarness) {
 	t.Helper()
 	bcDue(t, p.bcHarness, p.hold)
-	mustExec(t, p.f.owner, `UPDATE river.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, p.hold.JobID)
+	mustExec(t, p.f.owner, `UPDATE river_expiry.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, p.hold.JobID)
 }
 
 func ewJob(t *testing.T, pool *pgxpool.Pool, id int64) (state string, attempt int) {
 	t.Helper()
-	if err := pool.QueryRow(context.Background(), `SELECT state,attempt FROM river.river_job WHERE id=$1`, id).Scan(&state, &attempt); err != nil {
+	if err := pool.QueryRow(context.Background(), `SELECT state,attempt FROM river_expiry.river_job WHERE id=$1`, id).Scan(&state, &attempt); err != nil {
 		t.Fatal(err)
 	}
 	return
@@ -75,7 +79,7 @@ func ewBlockedContenders(t *testing.T, owner *pgxpool.Pool, jobID int64, payment
 	 SELECT j.state,
 	 coalesce((SELECT bool_or(root_role=$2 AND pid=$4) FROM chain),false),
 	 coalesce((SELECT bool_or(root_role=$3 AND pid=$4) FROM chain),false)
-	 FROM river.river_job j WHERE j.id=$1`, jobID, paymentRole, workerRole, holderPID).Scan(&state, &payment, &expiry)
+	 FROM river_expiry.river_job j WHERE j.id=$1`, jobID, paymentRole, workerRole, holderPID).Scan(&state, &payment, &expiry)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -105,7 +109,7 @@ func ewAwaitSnooze(t *testing.T, pool *pgxpool.Pool, id int64) {
 		var attempt int
 		var attempted, future bool
 		if err := pool.QueryRow(context.Background(), `SELECT state,attempt,attempted_at IS NOT NULL,scheduled_at>clock_timestamp()
-		 FROM river.river_job WHERE id=$1`, id).Scan(&state, &attempt, &attempted, &future); err != nil {
+		 FROM river_expiry.river_job WHERE id=$1`, id).Scan(&state, &attempt, &attempted, &future); err != nil {
 			t.Fatal(err)
 		}
 		// River decrements attempt on JobSnooze. attempted_at proves this
@@ -217,8 +221,8 @@ func ewOldBegin(t *testing.T, p psHarness) checkout.Result {
 }
 
 func TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger(t *testing.T) {
-	f := ewFixture(t)
-	p := ewSetup(t, f, 1)
+	f := lriPre0032Fixture(t)
+	p := ewSetup(t, f, 1, "river")
 	worker := p.worker
 	if !ewReady(t, worker) {
 		t.Fatal("fresh migration not ready")
@@ -383,13 +387,13 @@ func TestBuyerCheckoutExpiryRuntimeRiverTwoTenantReplayAndIsolation(t *testing.T
 	unrelated := pqSetupItemsOn(t, f, nil, false, 1)
 	unrelatedExpiry, external := pwDefaultDomainJobs(t, unrelated)
 	var paymentJob int64
-	if err := f.owner.QueryRow(context.Background(), `SELECT id FROM river.river_job WHERE kind='payment_query_v1' AND args->>'operation_id'=$1`, unrelated.result.OperationID).Scan(&paymentJob); err != nil {
+	if err := f.owner.QueryRow(context.Background(), `SELECT id FROM river_payment.river_job WHERE kind='payment_query_v1' AND args->>'operation_id'=$1`, unrelated.result.OperationID).Scan(&paymentJob); err != nil {
 		t.Fatal(err)
 	}
 	// River's global scheduler promotes any due payment job from scheduled to
 	// available regardless of which queue this client consumes. Start the
 	// unrelated job in available so full-row readback isolates this client.
-	mustExec(t, f.owner, `UPDATE river.river_job SET state='available',scheduled_at=clock_timestamp() WHERE id=$1`, paymentJob)
+	mustExec(t, f.owner, `UPDATE river_payment.river_job SET state='available',scheduled_at=clock_timestamp() WHERE id=$1`, paymentJob)
 	otherIDs := []int64{unrelatedExpiry, external, paymentJob}
 	otherBefore := make([]string, len(otherIDs))
 	for i, id := range otherIDs {
@@ -408,7 +412,7 @@ func TestBuyerCheckoutExpiryRuntimeRiverTwoTenantReplayAndIsolation(t *testing.T
 	beforeAttempts := []int{0, 0}
 	for i, p := range []psHarness{one, two} {
 		_, beforeAttempts[i] = ewJob(t, f.owner, p.hold.JobID)
-		mustExec(t, f.owner, `UPDATE river.river_job SET state='available',finalized_at=NULL,scheduled_at=clock_timestamp() WHERE id=$1`, p.hold.JobID)
+		mustExec(t, f.owner, `UPDATE river_expiry.river_job SET state='available',finalized_at=NULL,scheduled_at=clock_timestamp() WHERE id=$1`, p.hold.JobID)
 	}
 	restarted := ewClient(t, one.worker, 2)
 	for i, p := range []psHarness{one, two} {
@@ -435,7 +439,7 @@ func TestBuyerCheckoutExpiryRuntimeEarlyStalePendingAndConfirmed(t *testing.T) {
 	stale := ewSetup(t, f, 1)
 	pending := ewSetup(t, f, 1)
 	confirmed := pqSetupItemsOn(t, f, nil, false, 1)
-	mustExec(t, f.owner, `UPDATE river.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, early.hold.JobID)
+	mustExec(t, f.owner, `UPDATE river_expiry.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, early.hold.JobID)
 	ewDue(t, stale)
 	mustExec(t, f.owner, `UPDATE checkout.orders SET generation=2 WHERE id=$1`, stale.hold.OrderID)
 	mustExec(t, f.owner, `UPDATE inventory.reservations SET generation=2 WHERE id=$1`, stale.hold.OrderID)
@@ -459,7 +463,7 @@ func TestBuyerCheckoutExpiryRuntimeEarlyStalePendingAndConfirmed(t *testing.T) {
 	ewAssertOrder(t, pending, "AWAITING_PAYMENT", "PAYMENT_PENDING", 0)
 	ewAssertOrder(t, confirmed.psHarness, "CONFIRMED", "COMMITTED", 0)
 	var scheduled time.Time
-	if err := f.owner.QueryRow(context.Background(), `SELECT scheduled_at FROM river.river_job WHERE id=$1`, early.hold.JobID).Scan(&scheduled); err != nil || !scheduled.After(time.Now()) {
+	if err := f.owner.QueryRow(context.Background(), `SELECT scheduled_at FROM river_expiry.river_job WHERE id=$1`, early.hold.JobID).Scan(&scheduled); err != nil || !scheduled.After(time.Now()) {
 		t.Fatalf("early job did not snooze until future DB deadline: %s %v", scheduled, err)
 	}
 	var currentGeneration int64
@@ -489,9 +493,9 @@ func TestBuyerCheckoutExpiryRuntimePaymentStartRace(t *testing.T) {
 			if _, err := lock.Exec(context.Background(), `SELECT 1 FROM checkout.orders WHERE id=$1 FOR UPDATE`, p.hold.OrderID); err != nil {
 				t.Fatal(err)
 			}
-			mustExec(t, f.owner, `UPDATE river.river_job SET state='available',scheduled_at=clock_timestamp() WHERE id=$1`, p.hold.JobID)
+			mustExec(t, f.owner, `UPDATE river_expiry.river_job SET state='available',scheduled_at=clock_timestamp() WHERE id=$1`, p.hold.JobID)
 			client := ewClient(t, p.worker, 1)
-			mustExec(t, f.owner, `UPDATE river.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, p.hold.JobID)
+			mustExec(t, f.owner, `UPDATE river_expiry.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, p.hold.JobID)
 			type paymentOutcome struct {
 				result checkout.PaymentResult
 				err    error
@@ -591,7 +595,7 @@ func TestBuyerCheckoutExpiryRuntimeLateOldProducerPoll(t *testing.T) {
 	// routing; this already-running fixed-queue client must find it by polling.
 	mustExec(t, f.owner, `UPDATE checkout.orders SET expires_at=clock_timestamp()-interval '1 second',created_at=clock_timestamp()-interval '901 seconds' WHERE id=$1`, late.OrderID)
 	mustExec(t, f.owner, `UPDATE inventory.reservations SET expires_at=clock_timestamp()-interval '1 second',created_at=clock_timestamp()-interval '901 seconds' WHERE id=$1`, late.OrderID)
-	mustExec(t, f.owner, `UPDATE river.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, late.JobID)
+	mustExec(t, f.owner, `UPDATE river_expiry.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, late.JobID)
 	ewAwait(t, f.owner, late.JobID, "completed")
 	pwStopClient(t, client)
 	var order, reservation string
@@ -748,7 +752,7 @@ func TestBuyerCheckoutExpiryRuntimeBinaryCrashRiverRescue(t *testing.T) {
 		var blocked bool
 		err := f.owner.QueryRow(context.Background(), `SELECT j.state,
 	 EXISTS(SELECT 1 FROM pg_stat_activity a WHERE a.application_name=$2 AND $3::int=ANY(pg_blocking_pids(a.pid)))
-	 FROM river.river_job j WHERE j.id=$1`, p.hold.JobID, app, holderPID).Scan(&state, &blocked)
+	 FROM river_expiry.river_job j WHERE j.id=$1`, p.hold.JobID, app, holderPID).Scan(&state, &blocked)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -771,7 +775,7 @@ func TestBuyerCheckoutExpiryRuntimeBinaryCrashRiverRescue(t *testing.T) {
 	// Clock-age only the killed process's owned attempted_at. River's default
 	// one-hour lease and 30-second rescue scan are unchanged: this is not an SLA.
 	var aged int64
-	if err := f.owner.QueryRow(context.Background(), `UPDATE river.river_job SET attempted_at=clock_timestamp()-interval '2 hours'
+	if err := f.owner.QueryRow(context.Background(), `UPDATE river_expiry.river_job SET attempted_at=clock_timestamp()-interval '2 hours'
 	 WHERE id=$1 AND state='running' RETURNING id`, p.hold.JobID).Scan(&aged); err != nil || aged != p.hold.JobID {
 		t.Fatalf("age owned running lease: %d %v", aged, err)
 	}
@@ -783,7 +787,7 @@ func TestBuyerCheckoutExpiryRuntimeBinaryCrashRiverRescue(t *testing.T) {
 	for time.Now().Before(rescueDeadline) {
 		if err := f.owner.QueryRow(context.Background(), `SELECT state,attempt,
 	 coalesce(errors::text LIKE '%Stuck job rescued by JobRescuer%',false)
-	 FROM river.river_job WHERE id=$1`, p.hold.JobID).Scan(&state, &attempt, &rescued); err != nil {
+	 FROM river_expiry.river_job WHERE id=$1`, p.hold.JobID).Scan(&state, &attempt, &rescued); err != nil {
 			t.Fatal(err)
 		}
 		if state == "completed" && attempt >= 2 && rescued {

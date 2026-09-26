@@ -139,12 +139,12 @@ func pwWorkerPool(t *testing.T, f *testFixture) *pgxpool.Pool {
 // same transaction; only the post-River deferred trigger can resolve it.
 func pwOldQuerySetupOn(t *testing.T, f *testFixture, keys *accounts.Keyring) pqFixture {
 	t.Helper()
-	p := psSetupItemsOn(t, f, 1)
+	p := psSetupItemsOn(t, f, 1, "river")
 	service, err := accounts.New(keys, &integration.Service{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	q := pqFixture{psHarness: p, keys: keys, accountService: service}
+	q := pqFixture{psHarness: p, keys: keys, accountService: service, schema: "river"}
 	q.rotate(t, 1, pqOldSecret)
 	mustExec(t, p.f.owner, `UPDATE payments.account_qualifications SET credential_version=2 WHERE id=$1`, p.proof)
 	middleware := river.JobInsertMiddlewareFunc(func(ctx context.Context, params []*rivertype.JobInsertParams, next func(context.Context) ([]*rivertype.JobInsertResult, error)) ([]*rivertype.JobInsertResult, error) {
@@ -193,7 +193,7 @@ func pwDefaultDomainJobs(t *testing.T, q pqFixture) (expiryID, externalID int64)
 		}
 		return err
 	})
-	if err != nil || externalID < 1 || pwQueue(t, q.f.owner, expiryID) != "checkout_expiry_v1" || pwQueue(t, q.f.owner, externalID) != "default" {
+	if err != nil || externalID < 1 || pwQueueIn(t, q.f.owner, "river_expiry.river_job", expiryID) != "checkout_expiry_v1" || pwQueueIn(t, q.f.owner, "river.river_job", externalID) != "default" {
 		t.Fatalf("actual non-payment domain jobs unavailable: expiry=%d external=%d err=%v", expiryID, externalID, err)
 	}
 	return expiryID, externalID
@@ -204,7 +204,7 @@ func pwAwaitJob(t *testing.T, q pqFixture, id int64, state string) {
 	deadline := time.Now().Add(8 * time.Second)
 	for time.Now().Before(deadline) {
 		var got string
-		if err := q.f.owner.QueryRow(context.Background(), `SELECT state FROM river.river_job WHERE id=$1`, id).Scan(&got); err != nil {
+		if err := q.f.owner.QueryRow(context.Background(), `SELECT state FROM river_payment.river_job WHERE id=$1`, id).Scan(&got); err != nil {
 			t.Fatal(err)
 		}
 		if got == state {
@@ -297,7 +297,7 @@ func TestBuyerPaymentWorkerRealRiverTwoTenantCaptureAndRestart(t *testing.T) {
 		return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(response)), Header: make(http.Header)}, nil
 	})
 	for _, q := range []pqFixture{first, second} {
-		mustExec(t, q.f.owner, `UPDATE river.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, q.result.JobID)
+		mustExec(t, q.f.owner, `UPDATE river_payment.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, q.result.JobID)
 	}
 	client, err := payments.NewWorkerClient(context.Background(), first.worker, keys, "PROVIDER_MOCK", 2, opts)
 	if err != nil {
@@ -321,7 +321,7 @@ func TestBuyerPaymentWorkerRealRiverTwoTenantCaptureAndRestart(t *testing.T) {
 	// Reconcile jobs become available only after the real query commits.
 	var reconcileIDs [2]int64
 	for i, q := range []pqFixture{first, second} {
-		if err := q.f.owner.QueryRow(context.Background(), `SELECT id FROM river.river_job WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1`, q.result.OperationID).Scan(&reconcileIDs[i]); err != nil {
+		if err := q.f.owner.QueryRow(context.Background(), `SELECT id FROM river_payment.river_job WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1`, q.result.OperationID).Scan(&reconcileIDs[i]); err != nil {
 			t.Fatal(err)
 		}
 		pwAwaitJob(t, q, reconcileIDs[i], "completed")
@@ -340,10 +340,10 @@ func TestBuyerPaymentWorkerRealRiverTwoTenantCaptureAndRestart(t *testing.T) {
 	// restart. The second real worker pass must be observable in River attempts.
 	var beforeAttempts [2]int
 	for i, id := range reconcileIDs {
-		if err := f.owner.QueryRow(context.Background(), `SELECT attempt FROM river.river_job WHERE id=$1`, id).Scan(&beforeAttempts[i]); err != nil {
+		if err := f.owner.QueryRow(context.Background(), `SELECT attempt FROM river_payment.river_job WHERE id=$1`, id).Scan(&beforeAttempts[i]); err != nil {
 			t.Fatal(err)
 		}
-		mustExec(t, f.owner, `UPDATE river.river_job SET state='available',finalized_at=NULL,scheduled_at=clock_timestamp() WHERE id=$1`, id)
+		mustExec(t, f.owner, `UPDATE river_payment.river_job SET state='available',finalized_at=NULL,scheduled_at=clock_timestamp() WHERE id=$1`, id)
 	}
 	restarted, err := payments.NewWorkerClient(context.Background(), first.worker, keys, "PROVIDER_MOCK", 2, opts)
 	if err != nil {
@@ -355,7 +355,7 @@ func TestBuyerPaymentWorkerRealRiverTwoTenantCaptureAndRestart(t *testing.T) {
 	for i, q := range []pqFixture{first, second} {
 		pwAwaitJob(t, q, reconcileIDs[i], "completed")
 		var attempts int
-		if err := f.owner.QueryRow(context.Background(), `SELECT attempt FROM river.river_job WHERE id=$1`, reconcileIDs[i]).Scan(&attempts); err != nil || attempts <= beforeAttempts[i] {
+		if err := f.owner.QueryRow(context.Background(), `SELECT attempt FROM river_payment.river_job WHERE id=$1`, reconcileIDs[i]).Scan(&attempts); err != nil || attempts <= beforeAttempts[i] {
 			t.Fatalf("restarted client did not replay reconcile: before=%d after=%d err=%v", beforeAttempts[i], attempts, err)
 		}
 	}
@@ -374,7 +374,7 @@ func TestBuyerPaymentWorkerLateDefaultInsertPollAndProfileIsolation(t *testing.T
 	f := pwIsolatedFixture(t)
 	keys := pwKeys(t)
 	var unrelated int64
-	if err := f.owner.QueryRow(context.Background(), `INSERT INTO river.river_job(kind,args,max_attempts,queue) VALUES('pw_unrelated_v1','{}',2,'default') RETURNING id`).Scan(&unrelated); err != nil {
+	if err := f.owner.QueryRow(context.Background(), `INSERT INTO river_payment.river_job(kind,args,max_attempts,queue) VALUES('pw_unrelated_v1','{}',2,'default') RETURNING id`).Scan(&unrelated); err != nil {
 		t.Fatal(err)
 	}
 	unrelatedBefore := pwJobExceptQueue(t, f.owner, unrelated)
@@ -404,10 +404,10 @@ func TestBuyerPaymentWorkerLateDefaultInsertPollAndProfileIsolation(t *testing.T
 	if pwQueue(t, f.owner, q.result.JobID) != "payment_mock_v1" {
 		t.Fatal("deferred late insert not routed")
 	}
-	mustExec(t, f.owner, `UPDATE river.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, q.result.JobID)
+	mustExec(t, f.owner, `UPDATE river_payment.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, q.result.JobID)
 	pqAwait(t, q, q.result.JobID, "payment_report_observed", "scheduled")
 	var reconcile int64
-	if err := f.owner.QueryRow(context.Background(), `SELECT id FROM river.river_job WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1`, q.result.OperationID).Scan(&reconcile); err != nil {
+	if err := f.owner.QueryRow(context.Background(), `SELECT id FROM river_payment.river_job WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1`, q.result.OperationID).Scan(&reconcile); err != nil {
 		t.Fatal(err)
 	}
 	pwAwaitJob(t, q, reconcile, "completed")
@@ -420,20 +420,20 @@ func TestBuyerPaymentWorkerLateDefaultInsertPollAndProfileIsolation(t *testing.T
 		t.Fatal(err)
 	}
 	var notifiedID int64
-	if err := f.owner.QueryRow(context.Background(), `SELECT id FROM river.river_job WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1`, notified.result.OperationID).Scan(&notifiedID); err != nil {
+	if err := f.owner.QueryRow(context.Background(), `SELECT id FROM river_payment.river_job WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1`, notified.result.OperationID).Scan(&notifiedID); err != nil {
 		t.Fatal(err)
 	}
 	if pwQueue(t, f.owner, notifiedID) != "payment_mock_v1" {
 		t.Fatal("old default-notified reconcile was not routed")
 	}
-	mustExec(t, f.owner, `UPDATE river.river_job SET scheduled_at=clock_timestamp()+interval '1 hour' WHERE id=$1`, notified.result.JobID)
+	mustExec(t, f.owner, `UPDATE river_payment.river_job SET scheduled_at=clock_timestamp()+interval '1 hour' WHERE id=$1`, notified.result.JobID)
 	pwAwaitJob(t, notified, notifiedID, "completed")
 	pcAssertStock(t, notified, 0, 2, "CONFIRMED", "COMMITTED")
 	foreign := pqSetupItemsOn(t, f, keys, false, 1)
 	// Owner-only fixture mutation creates a due SANDBOX job without contacting a
 	// provider. The MOCK client must never claim its separate fixed queue.
 	mustExec(t, f.owner, `UPDATE checkout.payment_attempts SET execution_profile='SANDBOX' WHERE id=$1`, foreign.result.AttemptID)
-	mustExec(t, f.owner, `UPDATE river.river_job SET queue='payment_sandbox_v1',scheduled_at=clock_timestamp() WHERE id=$1`, foreign.result.JobID)
+	mustExec(t, f.owner, `UPDATE river_payment.river_job SET queue='payment_sandbox_v1',scheduled_at=clock_timestamp() WHERE id=$1`, foreign.result.JobID)
 	var generationBefore, generationAfter int64
 	if err := f.owner.QueryRow(context.Background(), `SELECT generation FROM integration.operations WHERE id=$1`, foreign.result.OperationID).Scan(&generationBefore); err != nil {
 		t.Fatal(err)
@@ -451,7 +451,7 @@ func TestBuyerPaymentWorkerLateDefaultInsertPollAndProfileIsolation(t *testing.T
 	 (SELECT count(*) FROM payments.provider_observations WHERE attempt_id=$1),
 	 (SELECT count(*) FROM payments.facts WHERE attempt_id=$1),
 	 integration.payment_queue_ready()
-	 FROM river.river_job j WHERE j.id=$2`, foreign.result.AttemptID, foreign.result.JobID).Scan(&foreignAttempts, &foreignObservations, &foreignFacts, &multiReady); err != nil || foreignAttempts != 0 || foreignObservations != 0 || foreignFacts != 0 || !multiReady {
+	 FROM river_payment.river_job j WHERE j.id=$2`, foreign.result.AttemptID, foreign.result.JobID).Scan(&foreignAttempts, &foreignObservations, &foreignFacts, &multiReady); err != nil || foreignAttempts != 0 || foreignObservations != 0 || foreignFacts != 0 || !multiReady {
 		t.Fatalf("cross-profile isolation/admission: attempts=%d observations=%d facts=%d ready=%t err=%v", foreignAttempts, foreignObservations, foreignFacts, multiReady, err)
 	}
 	if pwJobExceptQueue(t, f.owner, unrelated) != unrelatedBefore || pwQueue(t, f.owner, unrelated) != "default" {
@@ -649,7 +649,7 @@ func TestBuyerPaymentWorkerRealCrashAndRiverLeaseRescue(t *testing.T) {
 	done := make(chan error, 1)
 	go func() { done <- child.Wait() }()
 	defer func() { _ = child.Process.Kill() }()
-	mustExec(t, f.owner, `UPDATE river.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, q.result.JobID)
+	mustExec(t, f.owner, `UPDATE river_payment.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, q.result.JobID)
 	select {
 	case <-entered:
 	case <-done:
@@ -659,7 +659,7 @@ func TestBuyerPaymentWorkerRealCrashAndRiverLeaseRescue(t *testing.T) {
 	}
 	var state string
 	var generation int64
-	if err := f.owner.QueryRow(context.Background(), `SELECT j.state,o.generation FROM river.river_job j JOIN integration.operations o ON o.id=$2 WHERE j.id=$1`, q.result.JobID, q.result.OperationID).Scan(&state, &generation); err != nil || state != "running" || generation < 1 {
+	if err := f.owner.QueryRow(context.Background(), `SELECT j.state,o.generation FROM river_payment.river_job j JOIN integration.operations o ON o.id=$2 WHERE j.id=$1`, q.result.JobID, q.result.OperationID).Scan(&state, &generation); err != nil || state != "running" || generation < 1 {
 		t.Fatalf("crash boundary was not leased: state=%s generation=%d err=%v", state, generation, err)
 	}
 	if err := child.Process.Kill(); err != nil {
@@ -681,7 +681,7 @@ func TestBuyerPaymentWorkerRealCrashAndRiverLeaseRescue(t *testing.T) {
 	// Age only this owned lease and River running timestamp; River itself must
 	// rescue the same row. No state rewrite or duplicate enqueue is used.
 	mustExec(t, f.owner, `UPDATE integration.operations SET lease_until=clock_timestamp()-interval '1 second' WHERE id=$1`, q.result.OperationID)
-	mustExec(t, f.owner, `UPDATE river.river_job SET attempted_at=clock_timestamp()-interval '2 hours' WHERE id=$1 AND state='running'`, q.result.JobID)
+	mustExec(t, f.owner, `UPDATE river_payment.river_job SET attempted_at=clock_timestamp()-interval '2 hours' WHERE id=$1 AND state='running'`, q.result.JobID)
 	var calls atomic.Int32
 	opts := payments.DefaultQueryWorkerOptions()
 	opts.RetryDelay = time.Second // bounded fixture rescue, using River's own scheduler
@@ -704,7 +704,7 @@ func TestBuyerPaymentWorkerRealCrashAndRiverLeaseRescue(t *testing.T) {
 	rescueDeadline := time.Now().Add(40 * time.Second)
 	rescued := false
 	for time.Now().Before(rescueDeadline) {
-		if err := f.owner.QueryRow(context.Background(), `SELECT coalesce(errors::text LIKE '%Stuck job rescued by JobRescuer%',false) FROM river.river_job WHERE id=$1`, q.result.JobID).Scan(&rescued); err != nil {
+		if err := f.owner.QueryRow(context.Background(), `SELECT coalesce(errors::text LIKE '%Stuck job rescued by JobRescuer%',false) FROM river_payment.river_job WHERE id=$1`, q.result.JobID).Scan(&rescued); err != nil {
 			t.Fatal(err)
 		}
 		if rescued {
@@ -732,7 +732,7 @@ func TestBuyerPaymentWorkerRealCrashAndRiverLeaseRescue(t *testing.T) {
 		var scheduled time.Time
 		var rescued bool
 		var finalGeneration int64
-		if err := f.owner.QueryRow(context.Background(), `SELECT j.state,j.attempt,j.scheduled_at,j.errors::text LIKE '%Stuck job rescued by JobRescuer%',o.generation FROM river.river_job j JOIN integration.operations o ON o.id=$2 WHERE j.id=$1`, q.result.JobID, q.result.OperationID).Scan(&jobState, &jobAttempt, &scheduled, &rescued, &finalGeneration); err != nil {
+		if err := f.owner.QueryRow(context.Background(), `SELECT j.state,j.attempt,j.scheduled_at,j.errors::text LIKE '%Stuck job rescued by JobRescuer%',o.generation FROM river_payment.river_job j JOIN integration.operations o ON o.id=$2 WHERE j.id=$1`, q.result.JobID, q.result.OperationID).Scan(&jobState, &jobAttempt, &scheduled, &rescued, &finalGeneration); err != nil {
 			t.Fatal(err)
 		}
 		t.Fatalf("rescue stopped before capture: job=%s attempt=%d scheduled_in=%s rescued=%t operation_generation=%d calls=%d observations=%d", jobState, jobAttempt, time.Until(scheduled), rescued, finalGeneration, calls.Load(), q.reportCount(t))
@@ -747,7 +747,7 @@ func TestBuyerPaymentWorkerRealCrashAndRiverLeaseRescue(t *testing.T) {
 	}
 	var finalGeneration int64
 	var finalAttempt int
-	if err := f.owner.QueryRow(context.Background(), `SELECT o.generation,j.attempt FROM river.river_job j JOIN integration.operations o ON o.id=$2 WHERE j.id=$1`, q.result.JobID, q.result.OperationID).Scan(&finalGeneration, &finalAttempt); err != nil || finalGeneration <= generation || finalAttempt < 1 {
+	if err := f.owner.QueryRow(context.Background(), `SELECT o.generation,j.attempt FROM river_payment.river_job j JOIN integration.operations o ON o.id=$2 WHERE j.id=$1`, q.result.JobID, q.result.OperationID).Scan(&finalGeneration, &finalAttempt); err != nil || finalGeneration <= generation || finalAttempt < 1 {
 		t.Fatalf("same job was not retried after lease recovery: generation=%d→%d attempt=%d err=%v", generation, finalGeneration, finalAttempt, err)
 	}
 }

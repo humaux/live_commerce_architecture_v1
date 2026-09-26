@@ -52,8 +52,12 @@ func bcRole(t *testing.T, f *testFixture, authority string) string {
 }
 
 func bcService(t *testing.T, pool *pgxpool.Pool) *checkout.Service {
+	return bcServiceIn(t, pool, "river_expiry")
+}
+
+func bcServiceIn(t *testing.T, pool *pgxpool.Pool, schema string) *checkout.Service {
 	t.Helper()
-	jobs, err := river.NewClient(riverpgxv5.New(pool), &river.Config{Schema: "river"})
+	jobs, err := river.NewClient(riverpgxv5.New(pool), &river.Config{Schema: schema})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,7 +123,7 @@ func (b bcHarness) facts(t *testing.T) [6]int {
 	got[3] = countRows(t, b.f.owner, `SELECT count(*) FROM inventory.reservations WHERE buyer_owner_id=$1`, b.cap.Scope.OwnerID)
 	got[4] = countRows(t, b.f.owner, `SELECT count(*) FROM inventory.ledger WHERE buyer_owner_id=$1`, b.cap.Scope.OwnerID)
 	// Serial foundation suite: also catches an orphan job with no order/owner FK.
-	got[5] = countRows(t, b.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='checkout_expiry_v1'`)
+	got[5] = countRows(t, b.f.owner, `SELECT count(*) FROM river_expiry.river_job WHERE kind='checkout_expiry_v1'`)
 	return got
 }
 
@@ -155,7 +159,7 @@ func TestBuyerCheckoutCreatesAtomicHoldAndOwnerReplay(t *testing.T) {
 	}
 	var raw, receipt []byte
 	var kind, jobState, jobQueue string
-	if err = b.f.owner.QueryRow(context.Background(), `SELECT kind,state,queue,args FROM river.river_job WHERE id=$1`, result.JobID).Scan(&kind, &jobState, &jobQueue, &raw); err != nil {
+	if err = b.f.owner.QueryRow(context.Background(), `SELECT kind,state,queue,args FROM river_expiry.river_job WHERE id=$1`, result.JobID).Scan(&kind, &jobState, &jobQueue, &raw); err != nil {
 		t.Fatal(err)
 	}
 	var args map[string]any
@@ -432,7 +436,7 @@ func TestBuyerCheckoutPoolAuthorityMatrix(t *testing.T) {
 	}
 	for name, pool := range map[string]*pgxpool.Pool{"owner": b.f.owner, "buyer": b.a.runtime, "merchant": b.f.runtime, "worker": b.worker} {
 		t.Run("constructor-"+name, func(t *testing.T) {
-			jobs, e := river.NewClient(riverpgxv5.New(pool), &river.Config{Schema: "river"})
+			jobs, e := river.NewClient(riverpgxv5.New(pool), &river.Config{Schema: "river_expiry"})
 			if e != nil {
 				t.Fatal(e)
 			}
@@ -444,7 +448,7 @@ func TestBuyerCheckoutPoolAuthorityMatrix(t *testing.T) {
 }
 
 func TestBuyerCheckoutAtomicFaultRollback(t *testing.T) {
-	for _, table := range []string{"checkout.orders", "inventory.reservations", "inventory.reservation_lines", "inventory.ledger", "checkout.events", "checkout.command_results", "river.river_job"} {
+	for _, table := range []string{"checkout.orders", "inventory.reservations", "inventory.reservation_lines", "inventory.ledger", "checkout.events", "checkout.command_results", "river_expiry.river_job"} {
 		t.Run(table, func(t *testing.T) {
 			b := bcSetup(t)
 			before := b.facts(t)
@@ -641,14 +645,14 @@ func bcActualRiverExpiry(t *testing.T, mode string) {
 	// relocation after commit isolates it from other cases; production startup
 	// and fixed-queue admission are tested on fresh clusters in expiry_runtime.
 	queue := "checkout_" + strings.ReplaceAll(randomUUID(), "-", "")
-	mustExec(t, b.f.owner, `UPDATE river.river_job SET queue=$2,state='available',scheduled_at=clock_timestamp() WHERE id=$1`, r.JobID, queue)
+	mustExec(t, b.f.owner, `UPDATE river_expiry.river_job SET queue=$2,state='available',scheduled_at=clock_timestamp() WHERE id=$1`, r.JobID, queue)
 	w, e := checkout.NewExpiryWorker(context.Background(), b.worker)
 	if e != nil {
 		t.Fatal(e)
 	}
 	workers := river.NewWorkers()
 	river.AddWorker(workers, w)
-	client, e := river.NewClient(riverpgxv5.New(b.worker), &river.Config{Schema: "river", Workers: workers, Queues: map[string]river.QueueConfig{queue: {MaxWorkers: 2}}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
+	client, e := river.NewClient(riverpgxv5.New(b.worker), &river.Config{Schema: "river_expiry", Workers: workers, Queues: map[string]river.QueueConfig{queue: {MaxWorkers: 2}}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -667,7 +671,7 @@ func bcActualRiverExpiry(t *testing.T, mode string) {
 	var attempted bool
 	var attempts, firstAttempts int
 	for time.Now().Before(deadline) {
-		if e = b.f.owner.QueryRow(context.Background(), `SELECT o.commercial_state,j.state,j.attempted_at IS NOT NULL,j.attempt FROM checkout.orders o JOIN river.river_job j ON j.id=o.job_id WHERE o.id=$1`, r.OrderID).Scan(&state, &job, &attempted, &attempts); e != nil {
+		if e = b.f.owner.QueryRow(context.Background(), `SELECT o.commercial_state,j.state,j.attempted_at IS NOT NULL,j.attempt FROM checkout.orders o JOIN river_expiry.river_job j ON j.id=o.job_id WHERE o.id=$1`, r.OrderID).Scan(&state, &job, &attempted, &attempts); e != nil {
 			t.Fatal(e)
 		}
 		wantState, wantJob := "CANCELLED", "completed"
@@ -682,7 +686,7 @@ func bcActualRiverExpiry(t *testing.T, mode string) {
 					// Redeliver the linked job, not a new orphan ID forbidden by
 					// admission. River must actually execute another attempt.
 					firstAttempts = attempts
-					mustExec(t, b.f.owner, `UPDATE river.river_job SET state='available',finalized_at=NULL,scheduled_at=clock_timestamp() WHERE id=$1`, r.JobID)
+					mustExec(t, b.f.owner, `UPDATE river_expiry.river_job SET state='available',finalized_at=NULL,scheduled_at=clock_timestamp() WHERE id=$1`, r.JobID)
 					continue
 				}
 				if attempts <= firstAttempts {

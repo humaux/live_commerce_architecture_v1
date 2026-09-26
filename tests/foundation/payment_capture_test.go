@@ -323,7 +323,7 @@ func TestBuyerPaymentCaptureRealRiverSignedQueryChain(t *testing.T) {
 	q.pending(t)
 	var jobID int64
 	var jobHash string
-	if e := q.f.owner.QueryRow(ctx, `SELECT id,args->>'report_hash' FROM river.river_job WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1`, q.result.OperationID).Scan(&jobID, &jobHash); e != nil {
+	if e := q.f.owner.QueryRow(ctx, `SELECT id,args->>'report_hash' FROM river_payment.river_job WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1`, q.result.OperationID).Scan(&jobID, &jobHash); e != nil {
 		t.Fatal(e)
 	}
 	if jobHash != hex.EncodeToString(pcHash(t, q, pcFull(q))) {
@@ -336,11 +336,11 @@ func TestBuyerPaymentCaptureRealRiverSignedQueryChain(t *testing.T) {
 	workers := river.NewWorkers()
 	river.AddWorker(workers, w)
 	queue := "pc_" + t04Tag()
-	client, e := river.NewClient(riverpgxv5.New(q.worker), &river.Config{Schema: "river", Workers: workers, Queues: map[string]river.QueueConfig{queue: {MaxWorkers: 2}}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), JobTimeout: 15 * time.Second, RescueStuckJobsAfter: 30 * time.Second})
+	client, e := river.NewClient(riverpgxv5.New(q.worker), &river.Config{Schema: "river_payment", Workers: workers, Queues: map[string]river.QueueConfig{queue: {MaxWorkers: 2}}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), JobTimeout: 15 * time.Second, RescueStuckJobsAfter: 30 * time.Second})
 	if e != nil {
 		t.Fatal(e)
 	}
-	mustExec(t, q.f.owner, `UPDATE river.river_job SET queue=$1 WHERE id=$2`, queue, jobID)
+	mustExec(t, q.f.owner, `UPDATE river_payment.river_job SET queue=$1 WHERE id=$2`, queue, jobID)
 	if e = client.Start(ctx); e != nil {
 		t.Fatal(e)
 	}
@@ -354,7 +354,7 @@ func TestBuyerPaymentCaptureRealRiverSignedQueryChain(t *testing.T) {
 	deadline := time.Now().Add(6 * time.Second)
 	for time.Now().Before(deadline) {
 		var state string
-		if e = q.f.owner.QueryRow(ctx, `SELECT state FROM river.river_job WHERE id=$1`, jobID).Scan(&state); e != nil {
+		if e = q.f.owner.QueryRow(ctx, `SELECT state FROM river_payment.river_job WHERE id=$1`, jobID).Scan(&state); e != nil {
 			t.Fatal(e)
 		}
 		if state == "completed" {
@@ -513,7 +513,7 @@ func TestBuyerPaymentCaptureQueryJobBindingAndRollback(t *testing.T) {
 	r := pcFull(q)
 	hash := hex.EncodeToString(pcHash(t, q, r))
 	ctx := context.Background()
-	jobs, e := river.NewClient(riverpgxv5.New(q.worker), &river.Config{Schema: "river"})
+	jobs, e := river.NewClient(riverpgxv5.New(q.worker), &river.Config{Schema: "river_payment"})
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -538,7 +538,7 @@ func TestBuyerPaymentCaptureQueryJobBindingAndRollback(t *testing.T) {
 				t.Fatal(e)
 			}
 			if mode == "terminal_job" {
-				if _, e = tx.Exec(ctx, `UPDATE river.river_job SET state='cancelled',finalized_at=clock_timestamp() WHERE id=$1`, job.Job.ID); e != nil {
+				if _, e = tx.Exec(ctx, `UPDATE river_payment.river_job SET state='cancelled',finalized_at=clock_timestamp() WHERE id=$1`, job.Job.ID); e != nil {
 					t.Fatal(e)
 				}
 			}
@@ -566,7 +566,7 @@ func TestBuyerPaymentCaptureQueryJobBindingAndRollback(t *testing.T) {
 		t.Fatalf("intake fault not reached %v", e)
 	}
 	var count int
-	if e = q.f.owner.QueryRow(ctx, `SELECT count(*) FROM river.river_job WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1`, q.result.OperationID).Scan(&count); e != nil || count != 1 || q.reportCount(t) != 1 {
+	if e = q.f.owner.QueryRow(ctx, `SELECT count(*) FROM river_payment.river_job WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1`, q.result.OperationID).Scan(&count); e != nil || count != 1 || q.reportCount(t) != 1 {
 		t.Fatalf("intake not atomic: jobs%d err%v", count, e)
 	}
 	mustExec(t, q.f.owner, fmt.Sprintf(`DROP TRIGGER %s ON payments.provider_observations`, name))
@@ -583,7 +583,7 @@ func TestBuyerPaymentCaptureForgedRiverJobCancelsWithoutMoney(t *testing.T) {
 	workers := river.NewWorkers()
 	river.AddWorker(workers, w)
 	queue := "pc_forged_" + t04Tag()
-	client, e := river.NewClient(riverpgxv5.New(q.worker), &river.Config{Schema: "river", Workers: workers, Queues: map[string]river.QueueConfig{queue: {MaxWorkers: 2}}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), JobTimeout: 15 * time.Second, RescueStuckJobsAfter: 30 * time.Second})
+	client, e := river.NewClient(riverpgxv5.New(q.worker), &river.Config{Schema: "river_payment", Workers: workers, Queues: map[string]river.QueueConfig{queue: {MaxWorkers: 2}}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), JobTimeout: 15 * time.Second, RescueStuckJobsAfter: 30 * time.Second})
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -593,7 +593,7 @@ func TestBuyerPaymentCaptureForgedRiverJobCancelsWithoutMoney(t *testing.T) {
 		t.Fatal(e)
 	}
 	var jobID int64
-	if e = q.f.owner.QueryRow(ctx, `UPDATE river.river_job SET queue=$2,
+	if e = q.f.owner.QueryRow(ctx, `UPDATE river_payment.river_job SET queue=$2,
 		args=jsonb_set(args,'{report_hash}',to_jsonb($3::text))
 		WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1 RETURNING id`,
 		q.result.OperationID, queue, strings.Repeat("a", 64)).Scan(&jobID); e != nil {
@@ -613,7 +613,7 @@ func TestBuyerPaymentCaptureForgedRiverJobCancelsWithoutMoney(t *testing.T) {
 	for time.Now().Before(deadline) {
 		var state string
 		var attempts int
-		if e = q.f.owner.QueryRow(ctx, `SELECT state,attempt FROM river.river_job WHERE id=$1`, jobID).Scan(&state, &attempts); e != nil {
+		if e = q.f.owner.QueryRow(ctx, `SELECT state,attempt FROM river_payment.river_job WHERE id=$1`, jobID).Scan(&state, &attempts); e != nil {
 			t.Fatal(e)
 		}
 		if state == "cancelled" {

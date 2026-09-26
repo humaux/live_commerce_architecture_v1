@@ -34,8 +34,12 @@ type psHarness struct {
 }
 
 func psStarter(t *testing.T, pool *pgxpool.Pool, profile string) *checkout.PaymentStarter {
+	return psStarterIn(t, pool, profile, "river_payment")
+}
+
+func psStarterIn(t *testing.T, pool *pgxpool.Pool, profile, schema string) *checkout.PaymentStarter {
 	t.Helper()
-	jobs, e := river.NewClient(riverpgxv5.New(pool), &river.Config{Schema: "river"})
+	jobs, e := river.NewClient(riverpgxv5.New(pool), &river.Config{Schema: schema})
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -58,8 +62,14 @@ func psSetupItems(t *testing.T, skuCount int) psHarness {
 
 // Runtime queue audits require an isolated database, not the shared fixture's
 // deliberately corrupted/relocated jobs. Domain setup remains identical.
-func psSetupItemsOn(t *testing.T, base *testFixture, skuCount int) psHarness {
+func psSetupItemsOn(t *testing.T, base *testFixture, skuCount int, historical ...string) psHarness {
 	t.Helper()
+	expirySchema, paymentSchema := "river_expiry", "river_payment"
+	if len(historical) == 1 && historical[0] == "river" {
+		expirySchema, paymentSchema = "river", "river"
+	} else if len(historical) != 0 {
+		t.Fatal("unsupported historical River fixture")
+	}
 	ctx := context.Background()
 	f := *base
 	f.tenantA, f.storeA1, f.principalA = randomUUID(), randomUUID(), randomUUID()
@@ -118,7 +128,7 @@ func psSetupItemsOn(t *testing.T, base *testFixture, skuCount int) psHarness {
 		t.Fatal(e)
 	}
 	t.Cleanup(worker.Close)
-	b := bcHarness{cqHarness: h, pool: pool, worker: worker, service: bcService(t, pool), delivery: delivery, allocation: allocation, poolURL: poolURL}
+	b := bcHarness{cqHarness: h, pool: pool, worker: worker, service: bcServiceIn(t, pool, expirySchema), delivery: delivery, allocation: allocation, poolURL: poolURL}
 	items := make([]storefront.Item, skuCount)
 	for i := range items {
 		items[i] = storefront.Item{SKUID: h.stock.skus[skuCount-1-i].ID, Quantity: 2}
@@ -128,7 +138,7 @@ func psSetupItemsOn(t *testing.T, base *testFixture, skuCount int) psHarness {
 	if e != nil {
 		t.Fatal(e)
 	}
-	p := psHarness{bcHarness: b, starter: psStarter(t, pool, "PROVIDER_MOCK"), hold: hold, account: randomUUID(), binding: randomUUID(), proof: randomUUID(), input: checkout.PaymentInput{OrderID: hold.OrderID, MethodCode: "payuni_credit", MethodVersion: 1}}
+	p := psHarness{bcHarness: b, starter: psStarterIn(t, pool, "PROVIDER_MOCK", paymentSchema), hold: hold, account: randomUUID(), binding: randomUUID(), proof: randomUUID(), input: checkout.PaymentInput{OrderID: hold.OrderID, MethodCode: "payuni_credit", MethodVersion: 1}}
 	tx, e = f.owner.Begin(ctx)
 	if e != nil {
 		t.Fatal(e)
@@ -165,7 +175,7 @@ func (p psHarness) facts(t *testing.T) (out [7]int) {
  (SELECT count(*) FROM integration.operations WHERE buyer_owner_id=$1),
  (SELECT count(*) FROM checkout.command_results WHERE owner_id=$1 AND operation='checkout.payment.start'),
  (SELECT count(*) FROM checkout.events WHERE owner_id=$1 AND action='checkout.payment_started'),
- (SELECT count(*) FROM river.river_job WHERE kind='payment_query_v1'),
+ (SELECT count(*) FROM river_payment.river_job WHERE kind='payment_query_v1'),
  (SELECT count(*) FROM checkout.orders WHERE owner_id=$1 AND commercial_state='AWAITING_PAYMENT'),
  (SELECT count(*) FROM inventory.reservations WHERE buyer_owner_id=$1 AND state='PAYMENT_PENDING')`, p.cap.Scope.OwnerID).Scan(&out[0], &out[1], &out[2], &out[3], &out[4], &out[5], &out[6])
 	if e != nil {
@@ -200,7 +210,7 @@ func TestBuyerPaymentAtomicReplayAndPendingStock(t *testing.T) {
 	}
 	var raw []byte
 	var kind string
-	if e = p.f.owner.QueryRow(context.Background(), `SELECT kind,args FROM river.river_job WHERE id=$1`, out.JobID).Scan(&kind, &raw); e != nil {
+	if e = p.f.owner.QueryRow(context.Background(), `SELECT kind,args FROM river_payment.river_job WHERE id=$1`, out.JobID).Scan(&kind, &raw); e != nil {
 		t.Fatal(e)
 	}
 	var args map[string]any
@@ -343,7 +353,7 @@ func TestBuyerPaymentAdmissionDenials(t *testing.T) {
 }
 
 func TestBuyerPaymentFaultRollback(t *testing.T) {
-	for _, table := range []string{"river.river_job", "checkout.payment_attempts", "integration.operations", "integration.operation_events", "checkout.events", "checkout.command_results"} {
+	for _, table := range []string{"river_payment.river_job", "checkout.payment_attempts", "integration.operations", "integration.operation_events", "checkout.events", "checkout.command_results"} {
 		t.Run(table, func(t *testing.T) {
 			p := psSetup(t)
 			before := p.facts(t)
@@ -488,7 +498,7 @@ func TestBuyerPaymentAuthorityAndDispatcherFence(t *testing.T) {
 	finished := false
 	for time.Now().Before(deadline) {
 		var state string
-		if e = p.f.owner.QueryRow(context.Background(), `SELECT state FROM river.river_job WHERE id=$1`, job.Job.ID).Scan(&state); e != nil {
+		if e = p.f.owner.QueryRow(context.Background(), `SELECT state FROM river_payment.river_job WHERE id=$1`, job.Job.ID).Scan(&state); e != nil {
 			t.Fatal(e)
 		}
 		if state == "discarded" || state == "cancelled" || state == "completed" {
