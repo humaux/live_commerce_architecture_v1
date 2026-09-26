@@ -52,11 +52,11 @@ func TestBrowserMerchantOrdersUIRealChain(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	newDraft := func() (string, pqFixture) {
+	newDraft := func(quantity int64) (string, pqFixture) {
 		t.Helper()
 		clone := q
 		clone.cap = mustIssue(t, q.cqHarness.service, q.f.storeA1)
-		clone.bcHarness.prepare(t, clone.cap, []storefront.Item{{SKUID: q.stock.skus[0].ID, Quantity: 1}})
+		clone.bcHarness.prepare(t, clone.cap, []storefront.Item{{SKUID: q.stock.skus[0].ID, Quantity: quantity}})
 		order, e := clone.bcHarness.begin(t04Key("mou-begin"))
 		if e != nil {
 			t.Fatal(e)
@@ -67,11 +67,11 @@ func TestBrowserMerchantOrdersUIRealChain(t *testing.T) {
 	}
 	ids := map[string]string{"pending": q.hold.OrderID}
 	for i := 0; i < 11; i++ {
-		id, _ := newDraft()
+		id, _ := newDraft(1)
 		ids["draft"+strconv.Itoa(i)] = id
 	}
 	for _, mode := range []string{"authorized", "captured", "review", "allocation_failed"} {
-		id, clone := newDraft()
+		id, clone := newDraft(2)
 		clone.result, err = clone.start(t04Key("mou-start"))
 		if err != nil {
 			t.Fatal(err)
@@ -119,7 +119,7 @@ func TestBrowserMerchantOrdersUIRealChain(t *testing.T) {
 		}
 	}
 	var expiredFixture pqFixture
-	ids["expired"], expiredFixture = newDraft()
+	ids["expired"], expiredFixture = newDraft(1)
 	// Expire the actual checkout hold through the ordinary expiry worker.
 	bcDue(t, expiredFixture.bcHarness, expiredFixture.hold)
 	if disposition := bcExpire(t, expiredFixture.bcHarness, expiredFixture.hold, 1); disposition != "EXPIRED" {
@@ -298,7 +298,7 @@ func TestBrowserMerchantOrdersUIRealChain(t *testing.T) {
 	playwrightLog := browserLog(t, filepath.Join(evidence, "playwright.log"))
 	browser := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/orders-ui.spec.ts", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
 	browser.Dir = root
-	browser.Env = browserEnvironment(map[string]string{"LC_BROWSER_SUITE": "merchant-orders-ui", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_ORDER_STORE": q.f.storeA1, "LC_BROWSER_ORDER_IDS": string(fixtures), "LC_BROWSER_FROZEN_SKU_CODE": q.stock.skus[0].Code, "LC_BROWSER_FOREIGN_STORE": foreignStore, "LC_BROWSER_FOREIGN_ORDER_ID": foreignOrder, "LC_BROWSER_UNLISTED_STORE": q.f.storeB, "LC_BROWSER_SECOND_TOKEN": secondToken, "LC_BROWSER_NO_ORDERS_TOKEN": noOrdersToken, "LC_BROWSER_EXPIRED_TOKEN": expiredToken, "LC_BROWSER_REVOKED_TOKEN": revokedToken, "LC_BROWSER_EVIDENCE": evidence})
+	browser.Env = browserEnvironment(map[string]string{"LC_BROWSER_SUITE": "merchant-orders-ui", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_ORDER_STORE": q.f.storeA1, "LC_BROWSER_ORDER_IDS": string(fixtures), "LC_BROWSER_FROZEN_SKU_CODE": q.stock.skus[0].Code, "LC_BROWSER_FOREIGN_STORE": foreignStore, "LC_BROWSER_FOREIGN_ORDER_ID": foreignOrder, "LC_BROWSER_UNLISTED_STORE": q.f.storeB, "LC_BROWSER_SECOND_TOKEN": secondToken, "LC_BROWSER_NO_ORDERS_TOKEN": noOrdersToken, "LC_BROWSER_EXPIRED_TOKEN": expiredToken, "LC_BROWSER_REVOKED_TOKEN": revokedToken, "LC_BROWSER_NATIVE_VISIBILITY": os.Getenv("LC_BROWSER_NATIVE_VISIBILITY"), "LC_BROWSER_EVIDENCE": evidence})
 	browser.Stdout, browser.Stderr = playwrightLog, playwrightLog
 	if err = browser.Run(); err != nil {
 		t.Fatalf("MOU browser gate failed: %v; evidence=%s", err, evidence)
@@ -315,5 +315,8 @@ func TestBrowserMerchantOrdersUIRealChain(t *testing.T) {
 	if err = q.f.owner.QueryRow(ctx, `SELECT md5(o::text) FROM checkout.orders o WHERE id=$1`, q.hold.OrderID).Scan(&afterHash); err != nil || afterHash != originalHash {
 		t.Fatalf("order changed after reads: match=%t err=%v", afterHash == originalHash, err)
 	}
-	t.Logf("PASS MOU real chain; PG facts stable; evidence=%s", evidence)
+	t.Logf("MOU real-chain browser cases and PG read-only facts checked; evidence=%s", evidence)
+	if os.Getenv("LC_BROWSER_NATIVE_VISIBILITY") != "1" {
+		t.Error("MOU03 native visibility NOT_RUN: headed Chromium on this host remained visible across native tab switches and window minimization; synthetic pagehide and native pageshow evidence do not substitute")
+	}
 }
