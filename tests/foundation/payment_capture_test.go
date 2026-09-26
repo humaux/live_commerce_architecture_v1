@@ -330,17 +330,29 @@ func TestBuyerPaymentCaptureRealRiverSignedQueryChain(t *testing.T) {
 	})
 	// First run only the real query worker. No capture worker is online yet:
 	// the crash/restart gap must have persistent reconciliation work waiting.
-	_, stopQuery := pqStartWorker(t, q, opts)
+	queryClient, stopQuery := pqStartWorker(t, q, opts)
 	t.Cleanup(func() { releaseOnce.Do(func() { close(release) }) })
 	select {
 	case <-entered:
 	case <-time.After(5 * time.Second):
 		t.Fatal("query worker never entered the MOCK transport")
 	}
-	// Pause native fetch while the already-claimed query is held at transport.
-	// Its same-TX observation/reconcile commit is then durable but cannot race
-	// the query-only worker's unknown-kind handling.
-	mustExec(t, q.f.owner, `UPDATE river_payment.river_queue SET paused_at=clock_timestamp() WHERE name='payment_mock_v1'`)
+	// A persisted paused_at alone is not a fetch barrier: the River producer
+	// pauses only after handling its control message. Wait for its own ACK while
+	// the already-claimed query is still held at transport.
+	pausedEvents, unsubscribe := queryClient.Subscribe(river.EventKindQueuePaused)
+	defer unsubscribe()
+	if e := queryClient.QueuePause(ctx, "payment_mock_v1", nil); e != nil {
+		t.Fatal("pause query-only River queue", e)
+	}
+	select {
+	case event := <-pausedEvents:
+		if event == nil || event.Queue == nil || event.Queue.Name != "payment_mock_v1" {
+			t.Fatalf("wrong River queue pause ACK: %+v", event)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("query-only River queue pause ACK missing")
+	}
 	releaseOnce.Do(func() { close(release) })
 	pqAwait(t, q, q.result.JobID, "payment_report_observed", "scheduled")
 	q.pending(t)
