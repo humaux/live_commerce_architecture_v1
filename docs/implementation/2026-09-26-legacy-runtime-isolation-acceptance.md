@@ -1,6 +1,6 @@
 # Legacy runtime maintenance isolation evidence
 
-Status: **ROOT_CAUSE_REPRODUCED / CONTRACT_FROZEN / PRODUCT_FIX_PENDING**.
+Status: **ROOT_CAUSE_REPRODUCED / CONTRACT_FROZEN / CANDIDATE_GATES_PENDING**.
 This is a LOCAL unit under T11/T06, not a production or whole-SaaS acceptance.
 Contract: [legacy runtime isolation v1](../../contracts/legacy-runtime-isolation-v1.md).
 
@@ -47,9 +47,25 @@ verified source and author RED hash, then reviewed contract draft hash
 Round one: no concrete P0/P1/P2; bounded freeze approval only. Keep ordinary
 `commerce_worker` and state the semantic, not DB-principal, boundary explicitly.
 
+## Implementation candidate, not accepted
+
+Root integration branch `commerce/legacy-family-integration-20260926` contains
+SQL `3a03f53`, Go author `69f64d4` integrated as `57802ee`, and focused test selector
+`732b10e`. Main remains contract `9772380`; the product candidate is not merged.
+Independent source review found no concrete P0/P1/P2 at `57802ee`, including
+byte comparisons of the three schema-only static business function copies.
+This is source review, not the LRI runtime acceptance.
+
+Root real PG/race `TestMigrationIsIdempotentAndRuntimeRoleIsOrdinary` passed,
+actual exit 0, foundation 2.241s, one test and no skips. Log
+`/Volumes/data/output/legacy-isolation-root-migration-smoke1-20260926.log`, SHA256
+`142501ff17e2e9b70a301995642960b032253b6f01d0894379449da08e6cbe0b`.
+Fresh install and repeated Apply are proven by this small check; populated
+cutover, causal GREEN, full regression and browser acceptance are not yet proven.
+
 ## Pending
 
-- Forward migration and Go wiring; causal GREEN and all LRI01–06 gates.
+- Independent causal GREEN, populated-upgrade and all LRI01–06 gates.
 - Root independent full regression and affected order/payment browser inspection.
 - Independent exact-source final signoff before merging the product increment.
 - Production backup/impact/approval, real-provider qualification and full SaaS

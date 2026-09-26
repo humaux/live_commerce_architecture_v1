@@ -88,7 +88,8 @@ Meta-only worker 把付款任务从 scheduled 改为 available；不能把队列
 详见[失败证据](2026-09-26-meta-runtime-acceptance.md)和
 [隔离修订](../../contracts/meta-runtime-isolation-v1.md)。原生同 PG 独立 schema
 方案须同时调整客户端、上游迁移、业务 SQL、触发器、权限及历史 jobID；仅改
-Go 的 Schema 字段不够。旧 payment/expiry 共用 schema 的全局 rescuer 风险须另验。
+Go 的 Schema 字段不够。旧 payment/expiry 共用 schema 的 rescuer 风险已双独立
+复现；候选修复及待验收 LRI 门禁见下方“旧业务家族维护隔离”。
 隔离修订 `d702bb1` 已落实上述接线：API insert-only 和消费端固定 `river_meta`；
 CLI 使用专用 `OpenMetaWorkerPool`，共用分类器验证实际对象 ACL。`Apply` 原生
 迁移两个 schema，0031 的 false fence 直到 post0004 原子搬迁/守卫/授权完成才放行。
@@ -140,7 +141,8 @@ PG/race/vet 回归、跨店隔离和等待后权限复验；不含商家 UI 或�
 
 `migrations.Apply` 先应用业务 SQL，再运行 River v0.40.0 自身迁移，最后应用
 带相对路径校验和的 `post_river/*.sql`。延迟约束触发器复用 PG18 提交时检查，
-以冻结尝试／可信 QUERY 观察记录确定队列；旧客户端仍可默认入队。
+以冻结尝试／可信 QUERY 观察记录确定队列；当前候选仅在 `river_payment` 内
+兼容默认入队，旧 schema 写入拒绝，不能沿用旧客户端。
 既有非登录 integration writer 仅增加 River `UPDATE(queue)`，付款进程只取得
 布尔型 `integration.payment_queue_ready()`，不直接读取凭据表。
 
@@ -166,6 +168,26 @@ PG/race/vet 回归、跨店隔离和等待后权限复验；不含商家 UI 或�
 没有新增依赖、通用进程框架或动态队列选择。升级 River/PG/pgx 必须复跑两个
 真实进程的启停／强杀恢复、旧生产者轮询、付款与到期锁竞争和完整回归；
 说明与停止线见 [到期 worker 运行说明](expiry-worker-runtime.md)。
+
+## 旧业务家族维护隔离（候选，LRI 待验收）
+
+仍使用 River v0.40.0 / pgx / 同一 PostgreSQL，无新依赖。
+五处 Go 接线：`cmd/api/buyer.go` 和 `checkout.NewExpiryClient` → `river_expiry`；
+`cmd/api/buyer_payment.go`、`payments.NewWorkerClient`、`NewQueryWorker` 内的
+reconcile producer → `river_payment`。外部操作保留 `river`，Meta 保留 `river_meta`。
+三个付款 profile 共用种类和生产维护默认值，消费队列仍隔离；不改 Go 构造签名。
+
+0032 准备／失败关闭 → `migrations.Apply` 四套原生 ledger → post0005 原子
+校验／全行搬迁／序列推进／函数重绑／旧 lane 拒绝。三份业务函数只改 job 表引用，
+永久订单／付款／对账事实不重建。原 SQL 校验和保持不变；错误绑定 schema 必须
+回滚业务与任务。普通 `commerce_worker` 仍有三类旧家族的 SQL 权限，这不是
+数据库身份隔离；Meta 专用权限不变。测试引用须按家族区分，不能只凭 job ID。
+
+[合同和升级边界](../../contracts/legacy-runtime-isolation-v1.md)、
+[失败证据与待验收项](2026-09-26-legacy-runtime-isolation-acceptance.md)。
+升级要跑 `--legacy-isolation`、全量 PG/race/vet、`--browser-order` 和
+`--browser-payment`；历史 SQL fixture 与最新 fixture 必须分开，不能靠预先维护
+外家族行、禁用维护、放宽断言或借用其他测试的污染数据获得通过。
 
 ## 商家设置向导复用关系
 
