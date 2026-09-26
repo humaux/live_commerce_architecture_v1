@@ -629,11 +629,8 @@ type bcExpiryJob struct {
 func (bcExpiryJob) Kind() string { return "checkout_expiry_v1" }
 
 func bcActualRiverExpiry(t *testing.T, mode string) {
-	b := bcSetup(t)
-	r, e := b.begin(t04Key("bc-river"))
-	if e != nil {
-		t.Fatal(e)
-	}
+	p := psSetupItemsOn(t, pwIsolatedFixture(t), 1)
+	b, r := p.bcHarness, p.hold
 	if mode != "early" {
 		bcDue(t, b, r)
 	}
@@ -641,11 +638,11 @@ func bcActualRiverExpiry(t *testing.T, mode string) {
 		mustExec(t, b.f.owner, `UPDATE checkout.orders SET generation=2 WHERE id=$1`, r.OrderID)
 		mustExec(t, b.f.owner, `UPDATE inventory.reservations SET generation=2 WHERE id=$1`, r.OrderID)
 	}
-	// This legacy worker-unit integration uses the shared suite database. Owner
-	// relocation after commit isolates it from other cases; production startup
-	// and fixed-queue admission are tested on fresh clusters in expiry_runtime.
-	queue := "checkout_" + strings.ReplaceAll(randomUUID(), "-", "")
-	mustExec(t, b.f.owner, `UPDATE river_expiry.river_job SET queue=$2,state='available',scheduled_at=clock_timestamp() WHERE id=$1`, r.JobID, queue)
+	// A fresh cluster isolates this real worker run without changing its fixed
+	// producer queue or weakening family admission.
+	queue := ewQueue
+	mustExec(t, b.f.owner, `UPDATE river_expiry.river_job SET state='available',scheduled_at=clock_timestamp() WHERE id=$1`, r.JobID)
+	var e error
 	w, e := checkout.NewExpiryWorker(context.Background(), b.worker)
 	if e != nil {
 		t.Fatal(e)

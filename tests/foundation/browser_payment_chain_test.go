@@ -117,7 +117,7 @@ func TestBrowserBuyerPaymentUI(t *testing.T) {
 		 (SELECT count(*) FROM checkout.payment_attempts a WHERE a.order_id=$1 AND a.store_id=$2),
 		 (SELECT count(*) FROM checkout.hosted_payment_pages p JOIN checkout.payment_attempts a ON a.id=p.attempt_id WHERE a.order_id=$1 AND a.store_id=$2),
 		 (SELECT count(*) FROM checkout.hosted_payment_pages p JOIN checkout.payment_attempts a ON a.id=p.attempt_id WHERE a.order_id=$1 AND a.store_id=$2 AND p.handed_out_at IS NOT NULL),
-		 (SELECT count(*) FROM river.river_job j JOIN checkout.payment_attempts a ON a.job_id=j.id WHERE a.order_id=$1 AND a.store_id=$2 AND j.kind='payment_query_v1'),
+		 (SELECT count(*) FROM river_payment.river_job j JOIN checkout.payment_attempts a ON a.job_id=j.id WHERE a.order_id=$1 AND a.store_id=$2 AND j.kind='payment_query_v1'),
 		 (SELECT count(*) FROM payments.facts f JOIN checkout.payment_attempts a ON a.id=f.attempt_id WHERE a.order_id=$1 AND a.store_id=$2)`, post.OrderID, h.f.storeA1).Scan(&attempts, &pages, &issued, &queryJobs, &captures)
 		if err != nil || attempts != 1 || pages != 1 || issued != 1 || queryJobs != 1 || captures != 0 {
 			t.Fatal("browser payment did not persist exactly one pending attempt/page/handoff/query and zero financial reports")

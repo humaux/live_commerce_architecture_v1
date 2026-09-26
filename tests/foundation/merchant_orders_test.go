@@ -670,7 +670,7 @@ func TestMerchantOrdersHTTPPaginationPrivacyAndNoEffects(t *testing.T) {
 		return page
 	}
 	before := map[string]int{}
-	for _, table := range []string{"checkout.orders", "checkout.payment_attempts", "payments.facts", "inventory.ledger", "checkout.command_results", "checkout.events", "fulfillment.payment_work_items", "river.river_job"} {
+	for _, table := range []string{"checkout.orders", "checkout.payment_attempts", "payments.facts", "inventory.ledger", "checkout.command_results", "checkout.events", "fulfillment.payment_work_items", "river.river_job", "river_payment.river_job", "river_expiry.river_job"} {
 		before[table] = countRows(t, q.f.owner, "SELECT count(*) FROM "+table)
 	}
 	fingerprint := func() [2]string {
