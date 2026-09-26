@@ -106,7 +106,7 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 	// Independent native ledgers retain the 0031/0032 fail-closed readiness
 	// fences until the final post-River cutovers commit. Queues alone do not
 	// isolate River's schema-wide rescuer/scheduler/cleaner.
-	for _, schema := range []string{"river", "river_meta", "river_payment", "river_expiry"} {
+	for _, schema := range []string{"river", "river_meta", "river_payment", "river_expiry", "river_media"} {
 		upstream, err := rivermigrate.New(riverpgxv5.New(pool), &rivermigrate.Config{Schema: schema, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
 		if err != nil {
 			return err
