@@ -18,7 +18,10 @@ import (
 
 var ErrInboxStorage = errors.New("meta: inbox unavailable")
 
-const inboxQueue = "meta_inbox"
+const (
+	inboxQueue  = "meta_inbox"
+	riverSchema = "river_meta"
+)
 
 // Inbox borrows its pool. Only NewInboxHandler can admit verified webhook bytes.
 type Inbox struct {
@@ -39,7 +42,8 @@ func (i Inbox) GoString() string           { return i.String() }
 func (Inbox) MarshalJSON() ([]byte, error) { return []byte(`"meta.Inbox{redacted}"`), nil }
 
 // NewInbox validates the borrowed dedicated pool and builds an insert-only River
-// client. It does not start a worker or enable a public webhook route.
+// client. The fixed schema keeps Meta jobs outside other workers' schema-wide
+// maintenance. It does not start a worker or enable a public webhook route.
 func NewInbox(ctx context.Context, pool *pgxpool.Pool, keys *PayloadKeyring) (*Inbox, error) {
 	if ctx == nil || pool == nil || keys == nil || !validPayloadKeyID(keys.activeID) ||
 		len(keys.keys) < 1 || len(keys.keys) > 16 {
@@ -51,7 +55,7 @@ func NewInbox(ctx context.Context, pool *pgxpool.Pool, keys *PayloadKeyring) (*I
 	if err := platform.ValidateMetaIngressPool(ctx, pool); err != nil {
 		return nil, ErrConfig
 	}
-	jobs, err := river.NewClient(riverpgxv5.New(pool), &river.Config{Schema: "river"})
+	jobs, err := river.NewClient(riverpgxv5.New(pool), &river.Config{Schema: riverSchema})
 	if err != nil {
 		return nil, ErrConfig
 	}
