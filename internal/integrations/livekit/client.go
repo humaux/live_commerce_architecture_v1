@@ -192,7 +192,7 @@ func (c *Client) validStart(in StartInput) bool {
 }
 
 func (c *Client) Start(ctx context.Context, in StartInput) (Observation, error) {
-	if c == nil || ctx == nil || !c.validStart(in) {
+	if !c.ready() || ctx == nil || !c.validStart(in) {
 		return Observation{}, ErrInvalid
 	}
 	preset := "H264_720P_30"
@@ -233,7 +233,7 @@ func (c *Client) Start(ctx context.Context, in StartInput) (Observation, error) 
 }
 
 func (c *Client) Query(ctx context.Context, target Target) (Observation, error) {
-	if c == nil || ctx == nil || !validTarget(target) {
+	if !c.ready() || ctx == nil || !validTarget(target) {
 		return Observation{}, ErrInvalid
 	}
 	body, ok := c.call(ctx, target.RoomName, "ListEgress", struct {
@@ -248,7 +248,7 @@ func (c *Client) Query(ctx context.Context, target Target) (Observation, error) 
 }
 
 func (c *Client) Stop(ctx context.Context, target Target) (Observation, error) {
-	if c == nil || ctx == nil || !validTarget(target) {
+	if !c.ready() || ctx == nil || !validTarget(target) {
 		return Observation{}, ErrInvalid
 	}
 	body, ok := c.call(ctx, target.RoomName, "StopEgress", struct {
@@ -263,6 +263,8 @@ func (c *Client) Stop(ctx context.Context, target Target) (Observation, error) {
 	}
 	return obs, nil
 }
+
+func (c *Client) ready() bool { return c != nil && c.httpClient != nil }
 
 func (c *Client) call(ctx context.Context, room, method string, payload any) ([]byte, bool) {
 	if ctx.Err() != nil {
