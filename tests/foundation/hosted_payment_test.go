@@ -116,7 +116,7 @@ func hpRole(t *testing.T, f *testFixture) string {
 
 func hpStarter(t *testing.T, pool *pgxpool.Pool, profile string, keys *accounts.Keyring, config checkout.HostedConfig) hpAPI {
 	t.Helper()
-	jobs, err := river.NewClient(riverpgxv5.New(pool), &river.Config{Schema: "river"})
+	jobs, err := river.NewClient(riverpgxv5.New(pool), &river.Config{Schema: "river_payment"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,7 +145,7 @@ func (h hpHarness) counts(t *testing.T) (out [8]int64) {
 	 (SELECT count(*) FROM checkout.hosted_payment_pages p JOIN checkout.payment_attempts a ON a.id=p.attempt_id WHERE a.owner_id=$1),
 	 (SELECT count(*) FROM checkout.orders WHERE owner_id=$1 AND commercial_state='AWAITING_PAYMENT'),
 	 (SELECT count(*) FROM inventory.reservations WHERE buyer_owner_id=$1 AND state='PAYMENT_PENDING'),
-	 (SELECT count(*) FROM river.river_job WHERE kind='payment_query_v1')`, h.cap.Scope.OwnerID).
+	 (SELECT count(*) FROM river_payment.river_job WHERE kind='payment_query_v1')`, h.cap.Scope.OwnerID).
 		Scan(&out[0], &out[1], &out[2], &out[3], &out[4], &out[5], &out[6], &out[7])
 	if err != nil {
 		t.Fatal(err)
@@ -223,7 +223,7 @@ func TestBuyerPaymentHostedAtomicPreparationAndIndependentWire(t *testing.T) {
 	}
 	var kind string
 	var rawArgs []byte
-	if err := h.f.owner.QueryRow(context.Background(), `SELECT kind,args FROM river.river_job WHERE id=$1`, result.JobID).Scan(&kind, &rawArgs); err != nil {
+	if err := h.f.owner.QueryRow(context.Background(), `SELECT kind,args FROM river_payment.river_job WHERE id=$1`, result.JobID).Scan(&kind, &rawArgs); err != nil {
 		t.Fatal("HP01 missing query job")
 	}
 	var jobArgs map[string]any

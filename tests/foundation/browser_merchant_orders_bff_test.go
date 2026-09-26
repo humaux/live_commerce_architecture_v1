@@ -146,7 +146,7 @@ func TestBrowserMerchantOrdersBFFRealChain(t *testing.T) {
 	}))
 	t.Cleanup(api.Close)
 
-	tables := []string{"checkout.orders", "checkout.payment_attempts", "payments.facts", "inventory.ledger", "checkout.command_results", "checkout.events", "fulfillment.payment_work_items", "river.river_job"}
+	tables := []string{"checkout.orders", "checkout.payment_attempts", "payments.facts", "inventory.ledger", "checkout.command_results", "checkout.events", "fulfillment.payment_work_items", "river.river_job", "river_payment.river_job", "river_expiry.river_job"}
 	before := map[string]int{}
 	for _, table := range tables {
 		before[table] = countRows(t, q.f.owner, "SELECT count(*) FROM "+table)

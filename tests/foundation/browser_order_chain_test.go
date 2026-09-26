@@ -53,7 +53,7 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 		rows, err := h.f.owner.Query(ctx, `SELECT o.id::text,o.owner_id::text,o.commercial_state,o.total_minor,o.currency,o.country,
 		 (SELECT count(*) FROM checkout.orders z WHERE z.owner_id=o.owner_id),
 		 (SELECT count(*) FROM inventory.reservations z WHERE z.buyer_owner_id=o.owner_id),
-		 (SELECT count(*) FROM river.river_job z JOIN checkout.orders q ON q.job_id=z.id WHERE q.owner_id=o.owner_id AND z.kind='checkout_expiry_v1'),
+		 (SELECT count(*) FROM river_expiry.river_job z JOIN checkout.orders q ON q.job_id=z.id WHERE q.owner_id=o.owner_id AND z.kind='checkout_expiry_v1'),
 		 (SELECT count(*) FROM checkout.command_results z WHERE z.owner_id=o.owner_id),
 		 (SELECT count(*) FROM inventory.ledger z WHERE z.buyer_owner_id=o.owner_id AND z.kind='RESERVE'),
 		 (SELECT z.state FROM inventory.reservations z WHERE z.id=o.id),
@@ -81,7 +81,7 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 	countQueries := []string{
 		`SELECT count(*) FROM checkout.orders`,
 		`SELECT count(*) FROM inventory.reservations WHERE buyer_owner_id IS NOT NULL`,
-		`SELECT count(*) FROM river.river_job WHERE kind='checkout_expiry_v1'`,
+		`SELECT count(*) FROM river_expiry.river_job WHERE kind='checkout_expiry_v1'`,
 		`SELECT count(*) FROM checkout.command_results`,
 		`SELECT count(*) FROM checkout.payment_attempts`,
 		`SELECT count(*) FROM integration.operations`,
