@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -12,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"syscall"
 	"testing"
@@ -393,6 +395,16 @@ func TestMetaRuntimeRealAPIBinariesPageInstagramRestart(t *testing.T) {
 	}
 	expiry := ewSetup(t, f, 1)
 	payment := pqSetupItemsOn(t, f, nil, false, 1)
+	if pwQueue(t, f.owner, expiry.hold.JobID) != "checkout_expiry_v1" || pwQueue(t, f.owner, payment.result.JobID) != "payment_mock_v1" {
+		t.Fatal("unrelated producer jobs have wrong queues")
+	}
+	// Keep this legitimate payment job scheduled and make it due before the
+	// Meta worker starts. Queue-scoped fetch must not hide cross-queue River
+	// maintenance: a scheduled-to-available promotion is an MR04 violation.
+	result, err := f.owner.Exec(ctx, `UPDATE river.river_job SET scheduled_at=clock_timestamp()-interval '1 second' WHERE id=$1 AND state='scheduled'`, payment.result.JobID)
+	if err != nil || result.RowsAffected() != 1 {
+		t.Fatalf("prepare due payment job: affected=%d err=%v", result.RowsAffected(), err)
+	}
 	var defaultJob int64
 	if err := f.owner.QueryRow(ctx, `INSERT INTO river.river_job(kind,args,queue,max_attempts) VALUES('mr_unrelated_v1','{}','default',2) RETURNING id`).Scan(&defaultJob); err != nil {
 		t.Fatal(err)
@@ -417,10 +429,33 @@ func TestMetaRuntimeRealAPIBinariesPageInstagramRestart(t *testing.T) {
 		miCount(t, f.owner, `SELECT count(*) FROM meta_inbox.audit_events WHERE event_id=ANY($1::uuid[]) AND action='processed'`, []string{events[0].id, events[1].id, events[2].id, events[3].id}) != 4 {
 		t.Fatal("real worker did not materialize Page/IG messages and comments exactly once")
 	}
+	// Observe the actual unrelated row transition (or lack thereof) across
+	// a bounded maintenance window, not a fixed sleep as causal evidence.
+	unrelatedDeadline := time.Now().Add(12 * time.Second)
+	for time.Now().Before(unrelatedDeadline) {
+		var current string
+		if err := f.owner.QueryRow(ctx, `SELECT to_jsonb(j)::text FROM river.river_job j WHERE id=$1`, payment.result.JobID).Scan(&current); err != nil {
+			t.Fatal(err)
+		}
+		if current != unrelated[payment.result.JobID] {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
 	for id, before := range unrelated {
 		var after string
 		if err := f.owner.QueryRow(ctx, `SELECT to_jsonb(j)::text FROM river.river_job j WHERE id=$1`, id).Scan(&after); err != nil || after != before {
-			t.Fatalf("Meta worker changed unrelated payment/expiry/default job id=%d: err=%v equal=%v", id, err, after == before)
+			var oldFields, newFields map[string]json.RawMessage
+			_ = json.Unmarshal([]byte(before), &oldFields)
+			_ = json.Unmarshal([]byte(after), &newFields)
+			changed := make([]string, 0)
+			for key, oldValue := range oldFields {
+				if !bytes.Equal(oldValue, newFields[key]) {
+					changed = append(changed, key)
+				}
+			}
+			sort.Strings(changed)
+			t.Fatalf("Meta worker changed unrelated payment/expiry/default job id=%d: err=%v changed_fields=%v state_before=%s state_after=%s attempt_before=%s attempt_after=%s", id, err, changed, oldFields["state"], newFields["state"], oldFields["attempt"], newFields["attempt"])
 		}
 	}
 	mrStop(t, worker, syscall.SIGTERM, true)
