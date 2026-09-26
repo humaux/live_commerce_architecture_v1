@@ -166,6 +166,70 @@ parallel SQL/service/test implementation. Routes and receipt/event identity surv
 ciphertext cleanup. Historical replay must neither depend on current binding nor
 reanimate bodies/jobs after cleanup. No job backfill for this brand-new producer.
 
+## SQL interface draft (integrator-owned)
+
+All functions are schema-qualified, SECURITY DEFINER with fixed `pg_catalog`
+search_path and PUBLIC EXECUTE revoked. The trusted control-plane functions are
+not granted to ingress or any merchant/buyer/worker login. Ingress functions
+verify session_user's exclusive dedicated authority, never a mutable tenant GUC.
+Expected SQL errors use fixed classes (`22023` invalid, `42501` unauthorized,
+`PT409` conflict), not provider content. Go still returns only a safe storage error.
+
+| Function / result | Admission and mutation |
+| --- | --- |
+| `meta_inbox.activate_route(app text, object text, asset text, tenant uuid, store uuid, binding uuid, binding_version bigint, proof_hash text, proof_expires timestamptz, expected_epoch bigint) -> (route_id uuid, route_epoch bigint)` | Trusted control plane only. Exact existing provider `facebook` for page / `instagram` for instagram, asset, active scope and binding/version. Create uses expected_epoch=0, replacement uses CAS; immutable owner/store/binding ID. Existing different owner always conflicts, including other app. Proof digest lowercase64hex, future expiry; audit each activation. |
+| `meta_inbox.disable_route(route uuid, expected_epoch bigint) -> bigint` | Trusted control plane only; CAS disable increments epoch and appends metadata audit. No old event mutation. |
+| `meta_inbox.begin_batch(app text, object text, body_hash text, unit_count int) -> (batch_id uuid, replay bool)` | Ingress only. Bound count 1..1000. Serialize app/object/raw hash; return finalized historical receipt before route lookup. Otherwise insert new unfinalized receipt owned by current transaction. |
+| `meta_inbox.prepare_event(batch uuid, ordinal int, event_key text, payload_hash text, asset text, kind text, protocol_reason text, occurred_at timestamptz) -> (event_id uuid, needs_body bool, body_class text, tenant_id uuid, store_id uuid, route_id uuid, route_epoch bigint)` | Ingress only; new batch owned by this transaction, ordinal1..unit_count. Global first-key/version check before routing. Serialize Key, preserve one primary hash forever, represent other hashes as conflict versions. Return historical equal-hash identity without remapping. Every call inserts one exact ordinal link, even when event is repeated. New routable event returns class event; all other new units quarantine. |
+| `meta_inbox.complete_event(batch uuid, event uuid, key_id text, nonce bytea, ciphertext bytea, job_id bigint) -> void` | Ingress only; event created in this transaction and linked to this new batch. Require the exact stored class/shape, ciphertext length17..4194320, 12-byte nonce and valid key ID. Routed event must reference existing exact meta_inbox_v1 job/queue/args; quarantine must have NULL job. Insert body and atomically mark completed. No update/re-encrypt of historical rows. |
+| `meta_inbox.complete_batch(batch uuid, key_id text, nonce bytea, ciphertext bytea) -> void` | Ingress only; new receipt in this transaction. Raw length17..1048592, valid key/nonce; insert raw body, verify complete ordinal coverage and all events, then finalize. Commit guard still required. |
+| `meta_inbox.record_terminal(event uuid, reason text, evidence_hash text) -> void` | Trusted control plane only in this increment, never called on receipt/ACK or inferred from River state. Fixed reason processed/reviewed_rejected/retention_discarded, explicit evidence digest, immutable timestamp/actor audit. Later consumer integration needs its own narrow authority and business proof. |
+| `meta_inbox.purge_expired(limit int) -> int` | Trusted retention authority only; limit1..1000 total body rows, oldest eligible first, SKIP LOCKED. Recheck age and terminal evidence under lock. Raw body eligible only after every member terminal. Preserve all metadata/audit/job references. |
+
+Provider labels above are local adapter identifiers, not OAuth eligibility.
+If existing bindings use a different provider spelling, freeze one exact local
+mapping before implementation; do not normalize unknown arbitrary identifiers.
+
+`events` represents versions directly: unique `(app_id,object,event_key,payload_hash)`
+plus a partial unique `(app_id,object,event_key) WHERE is_primary`; the first
+version has `is_primary=true` whether routed or quarantined. Later changed hash
+rows have `is_primary=false`, `disposition=QUARANTINED`, reason payload_conflict,
+and never a job. Key-level transaction lock precedes first-version selection.
+Historical equal-hash duplicates must also match stored kind/asset, otherwise
+reject inconsistent metadata. No delete/update of key/hash/scope/routing columns.
+
+Each receipt/event records its insertion transaction (`xid8`) privately. Only
+that transaction may append/finalize its pending row. All partial-row INSERTs
+have deferred constraint triggers which query their final state at COMMIT:
+receipt finalized, exactly count ordinals1..N, every linked event completed;
+new event has exactly the proper body table and exact required job linkage.
+The guard is at insertion/initial completion, not a permanent foreign key to
+short-retention bodies or prunable River jobs. Legitimate later body/job pruning
+must not break historical receipts or duplicate ACK.
+
+Lock ordering: batch identity, sorted Key/PayloadHash/original ordinal; per new
+routable event scope rows (tenant then store), binding FOR SHARE, route FOR SHARE.
+Route's binding ID/owner is immutable so preliminary identifier lookup cannot
+silently redirect this lock path. Activators follow the same scope/binding/route
+order. Concurrent revoke/version/active changes wait for admitted transaction;
+all clock-based proof checks occur after waiting and again before finalization.
+If a newly routed event becomes ineligible before finalization, fail the batch
+and retry; do not ACK or silently change an already encrypted frozen context.
+
+Post-River migration installs an exact producer admission constraint: only fixed
+kind/queue/args, and job ID must link to exactly one completed routed inbox event
+at COMMIT. An ingress-created orphan/foreign-kind job cannot commit. Existing
+runtime/worker cannot insert this new producer kind or queue. Use deferred
+checks to allow normal River InsertTx -> event completion order. Existing jobs
+have no backfill. Producer-only `river.Client` uses explicit queue and no unique
+period (persistent dedupe is in metadata); no processor for this queue starts yet.
+
+Go uses a single max10s admission context with transaction-local statement/lock
+timeouts; rollback gets its own bounded cleanup context. Cancellation/deadlock/
+ambiguous commit returns safe 503 and relies on provider retry of the same body,
+not internal unbounded retry. Raw buffer and normalized payloads remain scoped
+to the request; none are retained by formatting, errors, logs or River args.
+
 ## Required actual acceptance gates
 
 | Gate | Evidence required, never replaced by mock-only success |
