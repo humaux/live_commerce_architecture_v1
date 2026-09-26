@@ -96,6 +96,26 @@ Root runs both exit 1 at native roles restore, before DB restore:
   explicit ADMIN OPTION in that case. No errors/grants will be ignored or
   rewritten. Amendment 1 addresses the provisioning assumption, not product SQL.
 
+Amendment candidate `ade2fed` author run and root diagnostic `a35b6c3` both
+completed native roles and DB restore, then stopped at strict relation catalog
+comparison. Logs (exit 1):
+
+- `/Volumes/data/output/local-recovery-author-bootstrap-20260927.log`, SHA256
+  `be3d69e4f746ff543188d9a197da0c576ca33d4750ea3da45f5cc973f58d8f9a`.
+- `/Volumes/data/output/local-recovery-root-catalog3-20260927.log`, SHA256
+  `eec1e24cdae487d9d61b5076add21f4966215b06d2a22fe0fa3457ee9cba9d51`.
+
+Root inspected the retained 0600 catalog JSON: exactly four of 103 relations
+differ, all four `river_migration` tables. Source has an explicit owner-only
+default ACL; target has NULL (native default), with identical owner/RLS flags.
+Use PostgreSQL native default expansion and compare every grantee/grantor,
+privilege and grant option; never omit ACLs. Independent mutation tests must
+prove that actual privilege changes still fail. The native bootstrap ALTER
+contains no PASSWORD clause. Independent review additionally requires an
+unexpected clause/password drift to fail rather than be repaired, and DB owner
+to be compared after restore/Apply as well as before restore. These corrections
+and final runtime/full-suite acceptance remain pending.
+
 | Gate | State |
 |---|---|
 | LRC01 target/artifact guards | NOT_RUN |

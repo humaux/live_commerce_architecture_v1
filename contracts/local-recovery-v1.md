@@ -40,6 +40,8 @@ Commands and probes are bounded; cleanup touches only the recorded owned IDs.
    `GRANT` and `GRANTED BY`, must remain identical. Missing/duplicate/mismatched
    bootstrap creation or either bootstrap OID not 10 fails before `psql`.
    Hash and recheck both raw and derived inputs; test these negative cases.
+   Reject unexpected password clauses before execution. Unexpected target
+   bootstrap password drift fails; do not repair it and continue the gate.
    Restore globals with
    `psql -X --set ON_ERROR_STOP=1`, then the database with
    `pg_restore --single-transaction --exit-on-error`. Do not use `--clean`,
@@ -81,6 +83,12 @@ Commands and probes are bounded; cleanup touches only the recorded owned IDs.
 
 Rows are compared without ignoring lifecycle columns. Catalog comparison must
 normalize object names/role names instead of comparing cluster-specific OIDs.
+Relation ACLs compare native `aclexplode` entries (grantee/grantor names,
+privilege and grant option), substituting `acldefault` only for a NULL ACL:
+type `r` for tables and `s` for sequences. Preserve empty-vs-default distinction.
+Prove explicit/default equivalence and detection of owner privilege removal,
+non-owner grants and grant-option changes. Include database owner in snapshots
+after restore and after migration, not only target provisioning checks.
 If an exception is necessary (e.g. independently provisioned bootstrap password), name it explicitly;
 never turn exact equality into row-count-only proof. A positive test without its
 negative control cannot satisfy a security/identity gate.
@@ -106,3 +114,6 @@ an old financial snapshot over newer real provider facts or blindly replay jobs.
   only the real bootstrap grantor is exempt from explicit ADMIN OPTION.
 - [PostgreSQL 18 pg_restore](https://www.postgresql.org/docs/18/app-pgrestore.html):
   strict error handling and single-transaction restore; preserve owners/ACL.
+- [PostgreSQL 18 ACL functions](https://www.postgresql.org/docs/18/functions-info.html)
+  and [privileges](https://www.postgresql.org/docs/18/ddl-priv.html): NULL means
+  the built-in default ACL, not an empty grant set.
