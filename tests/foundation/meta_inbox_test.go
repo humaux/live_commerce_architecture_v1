@@ -619,4 +619,258 @@ func TestMetaInboxRetentionTerminalEvidenceAndPrivateACL(t *testing.T) {
 	if miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`) != beforeJobs || miCount(t, m.f.owner, `SELECT count(*) FROM meta_private.raw_bodies WHERE batch_id=$1`, batchID) != 0 {
 		t.Fatal("historical replay resurrected job or ciphertext")
 	}
+	mustExec(t, m.f.owner, `DELETE FROM river.river_job WHERE id=$1`, jobID)
+	prunedJobs := miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`)
+	status, body = miPost(t, m, raw)
+	miStatus(t, status, body, 200)
+	if miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`) != prunedJobs || miCount(t, m.f.owner, `SELECT count(*) FROM meta_private.raw_bodies WHERE batch_id=$1`, batchID) != 0 {
+		t.Fatal("post-prune replay resurrected body or job")
+	}
+}
+
+// MI04: concurrent identical deliveries serialize on the permanent body hash.
+func TestMetaInboxConcurrentSameBodyHasOneIdentity(t *testing.T) {
+	m := miSetup(t)
+	asset := miAsset()
+	binding := miBinding(t, m, asset, "facebook", m.f.tenantA, m.f.storeA1, m.f.principalA)
+	miRoute(t, m, asset, m.f.tenantA, m.f.storeA1, binding)
+	raw := miMessage(asset, "m."+randomUUID(), "same-body")
+	batch, err := m.verifier.Verify(raw, miSignature(raw))
+	if err != nil || len(batch.Events) != 1 {
+		t.Fatal("concurrent fixture invalid")
+	}
+	before := miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`)
+	type answer struct {
+		status int
+		body   string
+	}
+	start := make(chan struct{})
+	done := make(chan answer, 2)
+	for i := 0; i < 2; i++ {
+		go func() { <-start; s, b := miPost(t, m, raw); done <- answer{s, b} }()
+	}
+	close(start)
+	for i := 0; i < 2; i++ {
+		select {
+		case a := <-done:
+			miStatus(t, a.status, a.body, 200)
+		case <-time.After(12 * time.Second):
+			t.Fatal("concurrent delivery stalled")
+		}
+	}
+	if miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.batches WHERE app_id=$1 AND object='page' AND body_hash=$2`, miApp, batch.BodyHash) != 1 || miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.events WHERE app_id=$1 AND object='page' AND event_key=$2`, miApp, batch.Events[0].Key) != 1 || miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`) != before+1 {
+		t.Fatal("concurrent replay created duplicate receipt, event, or job")
+	}
+}
+
+// MI05: a delivery that waited on a binding lock must use the database clock
+// after the wait, not the proof validity observed before it.
+func TestMetaInboxProofExpiryAfterObservedBindingWait(t *testing.T) {
+	m := miSetup(t)
+	ctx := context.Background()
+	asset := miAsset()
+	binding := miBinding(t, m, asset, "facebook", m.f.tenantA, m.f.storeA1, m.f.principalA)
+	route, _ := miRoute(t, m, asset, m.f.tenantA, m.f.storeA1, binding)
+	var expires time.Time
+	if err := m.f.owner.QueryRow(ctx, `UPDATE meta_inbox.routes SET proof_expires=clock_timestamp()+interval '700 milliseconds' WHERE id=$1 RETURNING proof_expires`, route).Scan(&expires); err != nil {
+		t.Fatal(err)
+	}
+	lock, err := m.f.owner.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer lock.Rollback(context.Background())
+	var locked string
+	if err := lock.QueryRow(ctx, `SELECT id::text FROM integration.bindings WHERE id=$1 FOR UPDATE`, binding).Scan(&locked); err != nil || locked != binding {
+		t.Fatal("test binding lock not held", err)
+	}
+	raw := miMessage(asset, "m."+randomUUID(), "after-proof-expiry")
+	batch, err := m.verifier.Verify(raw, miSignature(raw))
+	if err != nil || len(batch.Events) != 1 {
+		t.Fatal("expiry fixture invalid")
+	}
+	before := miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`)
+	type answer struct {
+		status int
+		body   string
+	}
+	done := make(chan answer, 1)
+	go func() { s, b := miPost(t, m, raw); done <- answer{s, b} }()
+	login := m.ingress.Config().ConnConfig.User
+	observed := false
+	until := time.Now().Add(1500 * time.Millisecond)
+	for time.Now().Before(until) {
+		if miCount(t, m.f.owner, `SELECT count(*) FROM pg_stat_activity WHERE usename=$1 AND wait_event_type='Lock' AND query LIKE '%meta_inbox.prepare_event%'`, login) > 0 {
+			observed = true
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if !observed {
+		t.Fatal("ingress was not observed waiting on binding lock")
+	}
+	var stillValid bool
+	if err := m.f.owner.QueryRow(ctx, `SELECT proof_expires>clock_timestamp() FROM meta_inbox.routes WHERE id=$1`, route).Scan(&stillValid); err != nil || !stillValid {
+		t.Fatal("proof expired before the observed lock wait", err)
+	}
+	for time.Now().Before(expires.Add(100 * time.Millisecond)) {
+		time.Sleep(10 * time.Millisecond)
+	}
+	if err := lock.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case a := <-done:
+		miStatus(t, a.status, a.body, 200)
+	case <-time.After(12 * time.Second):
+		t.Fatal("blocked delivery did not finish")
+	}
+	var disposition, reason string
+	var jobID *int64
+	if err := m.f.owner.QueryRow(ctx, `SELECT disposition,reason,job_id FROM meta_inbox.events WHERE app_id=$1 AND object='page' AND event_key=$2`, miApp, batch.Events[0].Key).Scan(&disposition, &reason, &jobID); err != nil {
+		t.Fatal(err)
+	}
+	if disposition != "QUARANTINED" || reason != "untrusted_route" || jobID != nil || miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`) != before {
+		t.Fatal("expired proof after lock wait produced business job")
+	}
+}
+
+// MI07: an in-flight River lifecycle update must make ciphertext ineligible,
+// even when the last committed job state is terminal. This is the regression
+// counterexample for a plain SELECT of job state inside purgeable().
+func TestMetaInboxPurgeSkipsLockedRiverJob(t *testing.T) {
+	m := miSetup(t)
+	ctx := context.Background()
+	asset := miAsset()
+	binding := miBinding(t, m, asset, "facebook", m.f.tenantA, m.f.storeA1, m.f.principalA)
+	miRoute(t, m, asset, m.f.tenantA, m.f.storeA1, binding)
+	raw := miMessage(asset, "m."+randomUUID(), "locked-retention")
+	batch, err := m.verifier.Verify(raw, miSignature(raw))
+	if err != nil || len(batch.Events) != 1 {
+		t.Fatal("locked retention fixture invalid")
+	}
+	status, body := miPost(t, m, raw)
+	miStatus(t, status, body, 200)
+	var batchID, eventID string
+	var jobID int64
+	if err := m.f.owner.QueryRow(ctx, `SELECT id::text FROM meta_inbox.batches WHERE app_id=$1 AND object='page' AND body_hash=$2`, miApp, batch.BodyHash).Scan(&batchID); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.f.owner.QueryRow(ctx, `SELECT id::text,job_id FROM meta_inbox.events WHERE app_id=$1 AND object='page' AND event_key=$2`, miApp, batch.Events[0].Key).Scan(&eventID, &jobID); err != nil {
+		t.Fatal(err)
+	}
+	mustExec(t, m.f.owner, `UPDATE meta_private.raw_bodies SET expires_at=clock_timestamp()-interval '1 hour' WHERE batch_id=$1`, batchID)
+	mustExec(t, m.f.owner, `UPDATE meta_private.event_bodies SET expires_at=clock_timestamp()-interval '1 hour' WHERE event_id=$1`, eventID)
+	if _, err := m.curator.Exec(ctx, `SELECT meta_inbox.record_terminal($1,'retention_discarded',$2)`, eventID, strings.Repeat("e", 64)); err != nil {
+		t.Fatal(err)
+	}
+	mustExec(t, m.f.owner, `UPDATE river.river_job SET state='completed',finalized_at=clock_timestamp() WHERE id=$1`, jobID)
+	lock, err := m.f.owner.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer lock.Rollback(context.Background())
+	var locked int64
+	if err := lock.QueryRow(ctx, `SELECT id FROM river.river_job WHERE id=$1 FOR UPDATE`, jobID).Scan(&locked); err != nil || locked != jobID {
+		t.Fatal("job lifecycle row not locked", err)
+	}
+	bounded, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	var purged int
+	if err := m.curator.QueryRow(bounded, `SELECT meta_inbox.purge_expired(10)`).Scan(&purged); err != nil {
+		t.Fatal("busy-job purge did not finish promptly", err)
+	}
+	if purged != 0 || miCount(t, m.f.owner, `SELECT count(*) FROM meta_private.raw_bodies WHERE batch_id=$1`, batchID) != 1 || miCount(t, m.f.owner, `SELECT count(*) FROM meta_private.event_bodies WHERE event_id=$1`, eventID) != 1 {
+		t.Fatal("busy River job lost recoverable ciphertext")
+	}
+	if err := lock.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.curator.QueryRow(ctx, `SELECT meta_inbox.purge_expired(10)`).Scan(&purged); err != nil || purged != 2 {
+		t.Fatalf("unlocked eligible bodies purge=%d err=%v", purged, err)
+	}
+}
+
+// MI05: a merchant binding version change invalidates a previously trusted
+// route until registrar re-authorization, without upgrading old quarantines.
+func TestMetaInboxBindingVersionFenceAndReauthorization(t *testing.T) {
+	m := miSetup(t)
+	ctx := context.Background()
+	asset := miAsset()
+	binding := miBinding(t, m, asset, "facebook", m.f.tenantA, m.f.storeA1, m.f.principalA)
+	route, epoch := miRoute(t, m, asset, m.f.tenantA, m.f.storeA1, binding)
+	mustExec(t, m.f.owner, `UPDATE integration.bindings SET semantic_version=semantic_version+1 WHERE id=$1`, binding)
+	stale := miMessage(asset, "m."+randomUUID(), "stale-binding")
+	batch, err := m.verifier.Verify(stale, miSignature(stale))
+	if err != nil || len(batch.Events) != 1 {
+		t.Fatal("binding fixture invalid")
+	}
+	before := miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`)
+	status, body := miPost(t, m, stale)
+	miStatus(t, status, body, 200)
+	if miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`) != before || miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.events WHERE app_id=$1 AND object='page' AND event_key=$2 AND disposition='QUARANTINED' AND reason='untrusted_route'`, miApp, batch.Events[0].Key) != 1 {
+		t.Fatal("stale binding version was trusted")
+	}
+	proof := strings.Repeat("f", 64)
+	_, err = m.registrar.Exec(ctx, `SELECT * FROM meta_inbox.activate_route($1,'page',$2,$3,$4,$5,1,$6,clock_timestamp()+interval '1 hour',$7)`, miApp, asset, m.f.tenantA, m.f.storeA1, binding, proof, epoch)
+	if miSQLState(err) != "PT409" {
+		t.Fatalf("stale version reauthorization SQLSTATE=%s", miSQLState(err))
+	}
+	var nextRoute string
+	var nextEpoch int64
+	if err := m.registrar.QueryRow(ctx, `SELECT * FROM meta_inbox.activate_route($1,'page',$2,$3,$4,$5,2,$6,clock_timestamp()+interval '1 hour',$7)`, miApp, asset, m.f.tenantA, m.f.storeA1, binding, proof, epoch).Scan(&nextRoute, &nextEpoch); err != nil || nextRoute != route || nextEpoch != epoch+1 {
+		t.Fatal("current binding reauthorization failed", err)
+	}
+	status, body = miPost(t, m, stale)
+	miStatus(t, status, body, 200)
+	if miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`) != before {
+		t.Fatal("historical stale event rehomed after reauthorization")
+	}
+	status, body = miPost(t, m, miMessage(asset, "m."+randomUUID(), "fresh-binding"))
+	miStatus(t, status, body, 200)
+	if miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`) != before+1 {
+		t.Fatal("fresh event not admitted after trusted reauthorization")
+	}
+}
+
+// MI04: two distinct raw receipts racing for the same stable MID cannot each
+// acquire a business job; the event-key lock is independent of body hash.
+func TestMetaInboxConcurrentRebatchedMIDHasOneJob(t *testing.T) {
+	m := miSetup(t)
+	asset := miAsset()
+	binding := miBinding(t, m, asset, "facebook", m.f.tenantA, m.f.storeA1, m.f.principalA)
+	miRoute(t, m, asset, m.f.tenantA, m.f.storeA1, binding)
+	rawA := miMessage(asset, "m."+randomUUID(), "same-event")
+	rawB := []byte(strings.Replace(string(rawA), `"time":123`, `"time":124`, 1))
+	first, err := m.verifier.Verify(rawA, miSignature(rawA))
+	if err != nil || len(first.Events) != 1 {
+		t.Fatal("first rebatch invalid")
+	}
+	second, err := m.verifier.Verify(rawB, miSignature(rawB))
+	if err != nil || len(second.Events) != 1 || first.BodyHash == second.BodyHash || first.Events[0].Key != second.Events[0].Key || first.Events[0].PayloadHash != second.Events[0].PayloadHash {
+		t.Fatal("rebatch did not preserve stable event identity")
+	}
+	before := miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`)
+	type answer struct {
+		status int
+		body   string
+	}
+	start := make(chan struct{})
+	done := make(chan answer, 2)
+	for _, raw := range [][]byte{rawA, rawB} {
+		raw := raw
+		go func() { <-start; s, b := miPost(t, m, raw); done <- answer{s, b} }()
+	}
+	close(start)
+	for i := 0; i < 2; i++ {
+		select {
+		case a := <-done:
+			miStatus(t, a.status, a.body, 200)
+		case <-time.After(12 * time.Second):
+			t.Fatal("concurrent rebatch stalled")
+		}
+	}
+	if miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.batches WHERE app_id=$1 AND object='page' AND body_hash IN ($2,$3)`, miApp, first.BodyHash, second.BodyHash) != 2 || miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.events WHERE app_id=$1 AND object='page' AND event_key=$2`, miApp, first.Events[0].Key) != 1 || miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`) != before+1 {
+		t.Fatal("racing rebatches duplicated or dropped receipt/event/job")
+	}
 }

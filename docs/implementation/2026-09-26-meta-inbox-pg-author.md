@@ -1,0 +1,18 @@
+# Meta inbox independent PostgreSQL acceptance author note
+
+Scope: isolated synthetic PG18, Go `meta.NewInboxHandler`, role-specific login pools, and stdlib AES-256-GCM readback. No Meta provider, public mount, OAuth proof issuer, worker processor, merchant UI, or production database was used. The synthetic registrar/curator memberships exist only inside the disposable foundation fixture.
+
+The independent `tests/foundation/meta_inbox_test.go` gates:
+
+- MI01: dedicated ingress constructor, unauthorized SQL and SET ROLE, mixed login, immutable foreign-store/cross-app asset ownership.
+- MI02: exact authenticated raw-body byte recovery, normalized routed and conflict-quarantine ciphertext recovery with independently built 13-field AAD, hash verification, fixed internal-only job args, no provider text in global event metadata/job args, private SELECT denial.
+- MI03/MI06: every ordinal of routed+duplicate+unknown mixed batch, deferred incomplete receipt rejection, injected deferred COMMIT failure returns fixed 503 and leaves no receipt/event/job; HTTP 200 follows committed durable state.
+- MI04: same-body and same-MID rebatch replay, changed-payload conflict without a second business job, two concurrent same-body and two concurrent rebatched deliveries produce the expected permanent identities.
+- MI05: late asset registration cannot rehome a quarantine, disable/version change fences new routing, stale binding version cannot reauthorize, proof expiry is rechecked after an observed binding lock wait.
+- MI07: age alone and curator evidence alone cannot purge pending bodies; unresolved raw batch waits for all members; bounded purge preserves receipts, ciphertext stays inaccessible to ingress/merchant/worker/registrar/curator, replay after purge and River prune does not resurrect data; a locked River lifecycle row makes purge skip rather than delete.
+
+The root-owned `meta_inbox_queue_test.go` adds reserved River family and mixed-pool authority negatives; this author did not edit it. The root-owned fault-stage and cross-tenant tests are separate.
+
+Evidence: `bash scripts/dev/test-local.sh --meta-inbox` starts and removes its own local PostgreSQL container, applies migrations twice, and runs the targeted foundation tests with `-race -count=1`. Initial targeted gate on the first source was green at `/Volumes/data/output/meta-inbox-pg-first-20260926.log`. A subsequent retention draft failed only because the synthetic test update omitted River's required `finalized_at` (SQLSTATE 23514); fixed test and green rerun are in `/Volumes/data/output/meta-inbox-pg-retention-2-20260926.log`. With root-owned queue and fault tests included, `/Volumes/data/output/meta-inbox-pg-combined-20260926.log` records 15 top-level `TestMetaInbox...` tests, PASS, package 3.936s, runner exit 0. `GOTOOLCHAIN=go1.27.1 go vet ./tests/foundation ./internal/integrations/meta` also exited 0. Do not infer full foundation regression or external-provider acceptance from this slice.
+
+The locked-job regression is a causal counterexample to the original plain job-state SELECT: it holds a real `FOR UPDATE` lifecycle lock while the curator purges. The vulnerable pre-lock SQL would see the last committed terminal state and delete; the fixed `FOR SHARE SKIP LOCKED` path must return zero and preserve both ciphertext rows. A separate executable red run against the old migration was not performed; do not claim it.
