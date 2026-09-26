@@ -3,12 +3,17 @@ package foundation_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"reflect"
 	"sort"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"testing"
+
+	"livecommerce/internal/payments"
 )
 
 func legacyChangedColumns(before, after string) []string {
@@ -30,6 +35,90 @@ func legacyChangedColumns(before, after string) []string {
 	}
 	sort.Strings(changed)
 	return changed
+}
+
+// The converse half uses the actual payment client, with native queue pause
+// blocking fetch only. Its schema-wide maintenance must not touch the linked
+// expiry, external or Meta rows even when all are eligible for maintenance.
+func TestLegacyRuntimeIsolationPaymentDoesNotMaintainForeignFamilies(t *testing.T) {
+	f := pwIsolatedFixture(t)
+	ctx := context.Background()
+	keys := pwKeys(t)
+	closeSeedPools := func(p psHarness) {
+		p.pool.Close()
+		p.worker.Close()
+		p.a.runtime.Close()
+		p.a.issuer.Close()
+		p.a.identity.Close()
+	}
+	queries := [4]pqFixture{}
+	for i := range queries {
+		queries[i] = pqSetupItemsOn(t, f, keys, false, 1)
+		if i != 0 {
+			closeSeedPools(queries[i].psHarness)
+		}
+	}
+	firstExpiry, externalID := pwDefaultDomainJobs(t, queries[0])
+	expiry := miIsoMaintenanceIDs{scheduled: firstExpiry}
+	for _, id := range []*int64{&expiry.retryable, &expiry.stale, &expiry.terminal} {
+		p := ewSetup(t, f, 1)
+		*id = p.hold.JobID
+		closeSeedPools(p)
+	}
+	meta := mrSetup(t, f)
+	asset := miAsset()
+	binding := miBinding(t, meta, asset, "facebook", f.tenantA, f.storeA1, f.principalA)
+	miRoute(t, meta, asset, f.tenantA, f.storeA1, binding)
+	metaEvent := mcPost(t, meta, asset, miMessage(asset, "m."+randomUUID(), "payment-leader-foreign"))
+	for _, change := range []struct {
+		id  int64
+		sql string
+	}{
+		{queries[0].result.JobID, `UPDATE river_payment.river_job SET state='scheduled',scheduled_at=clock_timestamp()-interval '1 second' WHERE id=$1`},
+		{queries[1].result.JobID, `UPDATE river_payment.river_job SET state='retryable',attempt=1,attempted_at=clock_timestamp()-interval '2 hours',scheduled_at=clock_timestamp()-interval '1 second' WHERE id=$1`},
+		{queries[2].result.JobID, `UPDATE river_payment.river_job SET state='running',attempt=1,attempted_at=clock_timestamp()-interval '2 hours' WHERE id=$1`},
+		{queries[3].result.JobID, `UPDATE river_payment.river_job SET state='completed',finalized_at=clock_timestamp()-interval '3 days' WHERE id=$1`},
+		{expiry.scheduled, `UPDATE river_expiry.river_job SET state='scheduled',scheduled_at=clock_timestamp()-interval '1 second' WHERE id=$1`},
+		{expiry.retryable, `UPDATE river_expiry.river_job SET state='retryable',attempt=1,attempted_at=clock_timestamp()-interval '2 hours',scheduled_at=clock_timestamp()-interval '1 second' WHERE id=$1`},
+		{expiry.stale, `UPDATE river_expiry.river_job SET state='running',attempt=1,attempted_at=clock_timestamp()-interval '2 hours' WHERE id=$1`},
+		{expiry.terminal, `UPDATE river_expiry.river_job SET state='completed',finalized_at=clock_timestamp()-interval '3 days' WHERE id=$1`},
+		{externalID, `UPDATE river.river_job SET state='running',attempt=1,attempted_at=clock_timestamp()-interval '2 hours' WHERE id=$1`},
+		{metaEvent.job, `UPDATE river_meta.river_job SET state='scheduled',scheduled_at=clock_timestamp()-interval '1 second' WHERE id=$1`},
+	} {
+		mustExec(t, f.owner, change.sql, change.id)
+	}
+	mustExec(t, f.owner, `INSERT INTO river_payment.river_queue(name,paused_at) VALUES('payment_mock_v1',clock_timestamp()) ON CONFLICT(name) DO UPDATE SET paused_at=excluded.paused_at`)
+	foreignTables := []string{"river_expiry.river_job", "river.river_job", "river_meta.river_job"}
+	before := make(map[string]string, len(foreignTables)+8)
+	for _, table := range append(foreignTables, "checkout.orders", "checkout.payment_attempts", "inventory.reservations", "inventory.ledger", "integration.operations", "integration.operation_events", "meta_inbox.events", "social.messages") {
+		before[table] = miIsoRows(t, f, table, "")
+	}
+	var calls atomic.Int32
+	opts := payments.DefaultQueryWorkerOptions()
+	opts.MockTransport = pqTransport(func(*http.Request) (*http.Response, error) {
+		calls.Add(1)
+		return nil, errors.New("paused_queue_fetched")
+	})
+	client, err := payments.NewWorkerClient(ctx, queries[0].worker, keys, "PROVIDER_MOCK", 1, opts)
+	if err != nil || client == nil {
+		t.Fatalf("payment native client preflight: %v", err)
+	}
+	if err := client.Start(ctx); err != nil {
+		t.Fatal(err)
+	}
+	miIsoWaitMaintenance(t, f, "river_payment.river_job", miIsoMaintenanceIDs{
+		scheduled: queries[0].result.JobID, retryable: queries[1].result.JobID,
+		stale: queries[2].result.JobID, terminal: queries[3].result.JobID,
+	})
+	pwStopClient(t, client)
+	if calls.Load() != 0 {
+		t.Fatal("paused payment fetch invoked MOCK transport")
+	}
+	for table, old := range before {
+		if got := miIsoRows(t, f, table, ""); got != old {
+			t.Fatalf("payment leader maintained foreign %s: changed=%v", table, legacyChangedColumns(old, got))
+		}
+	}
 }
 
 // Expiry is the sole running CLI. All jobs are inserted through the ordinary
