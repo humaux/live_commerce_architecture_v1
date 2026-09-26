@@ -168,6 +168,18 @@ PG/race/vet 回归、跨店隔离和等待后权限复验；不含商家 UI 或�
 正规化缺陷及当前验收状态见 [浏览器接线证据](2026-09-25-merchant-orders-bff-acceptance.md)；
 该接线并不代表订单页面、发货或生产发布已验收。
 
+商家 C 订单页另受 [MOU01–06](../../contracts/merchant-orders-ui-v1.md) 约束：
+`orders/page.tsx` → `authenticatedStores` → `MerchantOrders` →
+`orders-client`/`orders-model` → 原 GET BFF；不复用商品仓库查询作为订单权限。
+页面复用 WorkspaceFrame、现有金额格式化和 sessionBoundary，React `flushSync`
+只用于隐藏／退出时同步撤去收货数据。`session-events` 是无凭据的清除信号，
+不是认证来源；WorkspaceFrame 与 Entry 共用它和既有 logout 接口。
+没有新增运行依赖、表格库或缓存。升级 React/Next/浏览器时须运行
+`bash scripts/dev/test-local.sh --browser-merchant-orders-ui`，查看原生可见性
+能力是否真正执行；功能子集通过不能覆盖 NOT_RUN，结果见
+[订单 UI 证据](2026-09-27-merchant-orders-ui-acceptance.md)。嵌套表格和手机详情的
+局部列宽必须压过全局商品表格规则，避免恢复已修的窄列问题。
+
 ## 独立付款 worker 复用关系
 
 `cmd/payment-worker` → `accounts.LoadKeyring` / `platform.OpenWorkerPool` →
