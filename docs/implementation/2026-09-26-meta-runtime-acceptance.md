@@ -106,6 +106,13 @@ green runs. Those hide the root cause. Preserve the deterministic failing test
 until a real boundary passes it. The proposed native same-PG schema revision
 is in [its own contract](../../contracts/meta-runtime-isolation-v1.md).
 
+Independent preflight of that revision approved `84cc26f` after two bounded
+rounds, P0/P1/P2 zero. The first round required a preparation-phase non-ready
+fence, precise partial-Apply rollback semantics and a strict new-schema guard;
+the final revision also preserves historical upgrade fixture boundaries.
+**Contract approved, implementation absent, MIso01–05 NOT_RUN.** This does not
+change the failed runtime verdict or the separate legacy-worker maintenance P1.
+
 ## Outstanding acceptance
 
 MR04 remains failed. The early failure means later assertions within that

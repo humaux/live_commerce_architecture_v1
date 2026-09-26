@@ -395,7 +395,7 @@
       "acceptance": "docs/implementation/2026-09-26-meta-runtime-acceptance.md",
       "revision_contract": "contracts/meta-runtime-isolation-v1.md",
       "root_evidence": "/Volumes/data/output/meta-runtime-root-deterministic-failure-20260926.log",
-      "boundary": "Real Meta-only River worker promoted an unrelated scheduled payment job. Native same-PG schema isolation draft requires independent preflight and implementation; no full regression, runtime or deployment acceptance. Existing payment/expiry shared-schema maintenance risk remains separately open."
+      "boundary": "Real Meta-only River worker promoted an unrelated scheduled payment job. Native same-PG schema and lifecycle-role isolation contract independently approved at84cc26f; implementation and MIso01-05 NOT_RUN. No full regression, runtime or deployment acceptance. Existing payment/expiry shared-schema maintenance risk remains separately open."
     }
   },
   {

@@ -1,12 +1,15 @@
 # Meta runtime isolation revision v1
 
-Status: **DRAFT / INDEPENDENT_PREFLIGHT_REQUIRED / NOT_IMPLEMENTED**.
+Status: **FROZEN / IMPLEMENTATION_REQUIRED / GATES_NOT_RUN**.
 This amends the failed shared-schema portions of [runtime v1](meta-runtime-v1.md),
 not its other parsing, lifecycle, tenant, encryption or MR01–05 requirements.
 Base candidate `8ed76d6`; observed blocker and logs are in the
 [acceptance record](../docs/implementation/2026-09-26-meta-runtime-acceptance.md).
 Only local isolated implementation/tests are authorized. No customer deployment,
 service shutdown, credential change or production data migration is authorized.
+Independent read-only preflight approved reviewed source `84cc26f`: P0/P1/P2
+all zero after two bounded rounds. That freezes this contract only; the current
+runtime still fails MR04 and is not approved for release.
 
 ## Decision and alternatives
 
@@ -18,7 +21,7 @@ kind/args. Do not expose the schema as environment configuration.
 
 | Option | Fit | Decision |
 | --- | --- | --- |
-| Native separate schema and lifecycle role | Isolates maintenance and SQL authority while keeping atomic PG admission | Selected, subject to independent contract review and real upgrade gates |
+| Native separate schema and lifecycle role | Isolates maintenance and SQL authority while keeping atomic PG admission | Selected; contract review closed, implementation and real gates outstanding |
 | Custom driver/SQL maintenance filters or leader suppression | Requires scheduler/rescuer/cleaner/transaction-wrapper upkeep; leader suppression alone breaks retry scheduling or leaves other leaders dangerous | Rejected |
 | One all-kind worker | Broadens registered work, credentials and execution scope; still changes unrelated rows in MR04 | Rejected for this contract |
 | Timing changes / fixture pre-promotion | Hides the measured violation | Rejected |
@@ -169,7 +172,7 @@ with the separate unpaused exactly-once processing gate.
 
 ## Ownership, limits and next signal
 
-Freeze this contract after independent preflight, then at most two isolated
+Following contract freeze, allow at most two isolated
 implementation writers: integrator owns shared SQL/platform/migration runner;
 Go author owns Meta clients/CLI only after shared APIs freeze. Independent test
 author owns new isolation tests and necessary schema-specific existing tests;
