@@ -121,11 +121,17 @@ admission layer must quarantine that conflict, not silently overwrite, ignore
 it as identical or create a second commerce trigger. Do not dedupe the returned
 slice: durable storage owns the unique constraint and conflict policy.
 
-Quarantine identity uses the relevant whole unit/envelope, preserving entry
-context including time if needed. Unknown events MUST NOT become commerce
+Quarantine identity uses the relevant whole unit/envelope. Per-unit quarantine
+context includes only the validated entry ID and valid bounded entry time, not
+sibling event arrays. A present malformed/out-of-range entry time causes one
+whole-entry quarantine preserving the metadata; per-unit contexts omit it.
+Build this bounded context once per entry: copying or hashing a huge malformed
+time once per child would reintroduce quadratic work. Unknown events MUST NOT become commerce
 triggers. OccurredAt uses integral positive message.timestamp in milliseconds,
-Page value.created_time in seconds, otherwise entry.time in seconds; absent or
-invalid/out-of-range timestamps remain unset. It is evidence, not a monotonic
+Page value.created_time in seconds, otherwise entry.time in seconds. A missing
+specific timestamp may fall back to entry.time; a present invalid/out-of-range
+specific timestamp remains unset and must not be repaired with delivery time.
+If no valid timestamp exists it remains unset. It is evidence, not a monotonic
 revision or a new message-window grant. Repeated identical transitions without
 a provider revision cannot be distinguished: retain this limitation for later
 reconciliation; never use arrival order to cancel paid orders.
