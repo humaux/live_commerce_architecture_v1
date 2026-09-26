@@ -72,7 +72,7 @@ func TestMetaInboxInstagramThreeKindsProviderAndCipherScope(t *testing.T) {
 			t.Fatalf("event %d kind=%s want=%s", i, batch.Events[i].Kind, kind)
 		}
 	}
-	beforeJobs := miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`)
+	beforeJobs := miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`)
 	status, body := miPost(t, m, raw)
 	miStatus(t, status, body, 200)
 	var batchID, rawKey string
@@ -83,7 +83,7 @@ func TestMetaInboxInstagramThreeKindsProviderAndCipherScope(t *testing.T) {
 	if got := miDecrypt(t, m.key, "raw", batchID, miApp, "instagram", batch.BodyHash, "", "", "", "", "", 0, rawKey, rawNonce, rawCipher); !bytes.Equal(got, raw) {
 		t.Fatal("Instagram authenticated raw bytes changed")
 	}
-	if miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.batch_events WHERE batch_id=$1`, batchID) != 3 || miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`) != beforeJobs+3 {
+	if miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.batch_events WHERE batch_id=$1`, batchID) != 3 || miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`) != beforeJobs+3 {
 		t.Fatal("Instagram batch dropped a unit or job")
 	}
 	for _, event := range batch.Events {
@@ -119,7 +119,7 @@ func TestMetaInboxInstagramThreeKindsProviderAndCipherScope(t *testing.T) {
 	}
 	status, body = miPost(t, m, raw)
 	miStatus(t, status, body, 200)
-	if miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`) != beforeJobs+3 {
+	if miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`) != beforeJobs+3 {
 		t.Fatal("Instagram replay made more jobs")
 	}
 }
@@ -137,7 +137,7 @@ func TestMetaInboxInstagramCannotBorrowPageRoute(t *testing.T) {
 	if err != nil || len(batch.Events) != 1 || batch.Events[0].Kind != "instagram_comment" {
 		t.Fatal("cross-object fixture invalid")
 	}
-	before := miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`)
+	before := miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`)
 	status, body := miPost(t, m, raw)
 	miStatus(t, status, body, 200)
 	var id, reason, disposition, keyID string
@@ -146,7 +146,7 @@ func TestMetaInboxInstagramCannotBorrowPageRoute(t *testing.T) {
 		Scan(&id, &reason, &disposition, &keyID, &nonce, &ciphertext); err != nil {
 		t.Fatal("cross-object quarantine missing", err)
 	}
-	if reason != "untrusted_route" || disposition != "QUARANTINED" || miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`) != before {
+	if reason != "untrusted_route" || disposition != "QUARANTINED" || miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`) != before {
 		t.Fatal("Page route or untrusted IG binding made an IG job")
 	}
 	if got := miDecrypt(t, m.key, "quarantine", id, miApp, "instagram", "", batch.Events[0].Key, batch.Events[0].PayloadHash, "", "", "", 0, keyID, nonce, ciphertext); !bytes.Equal(got, batch.Events[0].Payload) {

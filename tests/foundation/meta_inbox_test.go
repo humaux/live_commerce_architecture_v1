@@ -300,10 +300,10 @@ func TestMetaInboxSignedHTTPAdmissionReplayAndConflict(t *testing.T) {
 	if len(batch.Events) != 1 {
 		t.Fatal("synthetic message did not normalize to one event")
 	}
-	beforeJobs := miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`)
+	beforeJobs := miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`)
 	status, body := miPost(t, m, raw)
 	miStatus(t, status, body, 200)
-	if n := miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`); n != beforeJobs+1 {
+	if n := miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`); n != beforeJobs+1 {
 		t.Fatal("routed webhook did not create exactly one job")
 	}
 	var eventID, eventKey, payloadHash, tenantID, storeID, routeID, keyID, metadata string
@@ -331,7 +331,7 @@ func TestMetaInboxSignedHTTPAdmissionReplayAndConflict(t *testing.T) {
 		t.Fatal("authenticated raw bytes not exactly recoverable")
 	}
 	var kind, queue, args string
-	if err := m.f.owner.QueryRow(context.Background(), `SELECT kind,queue,args::text FROM river.river_job WHERE id=$1`, jobID).Scan(&kind, &queue, &args); err != nil {
+	if err := m.f.owner.QueryRow(context.Background(), `SELECT kind,queue,args::text FROM river_meta.river_job WHERE id=$1`, jobID).Scan(&kind, &queue, &args); err != nil {
 		t.Fatal("linked job missing", err)
 	}
 	var fields map[string]json.RawMessage
@@ -343,7 +343,7 @@ func TestMetaInboxSignedHTTPAdmissionReplayAndConflict(t *testing.T) {
 	}
 	status, body = miPost(t, m, raw)
 	miStatus(t, status, body, 200)
-	if n := miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`); n != beforeJobs+1 {
+	if n := miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`); n != beforeJobs+1 {
 		t.Fatal("same-body retry created a second job")
 	}
 	// New raw bytes with the same MID and normalized event are a separate receipt,
@@ -354,7 +354,7 @@ func TestMetaInboxSignedHTTPAdmissionReplayAndConflict(t *testing.T) {
 	}
 	status, body = miPost(t, m, rebatched)
 	miStatus(t, status, body, 200)
-	if n := miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`); n != beforeJobs+1 {
+	if n := miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`); n != beforeJobs+1 {
 		t.Fatal("same MID re-batch created another job")
 	}
 	changed := []byte(strings.Replace(string(raw), "private-text-", "changed-text-", 1))
@@ -364,7 +364,7 @@ func TestMetaInboxSignedHTTPAdmissionReplayAndConflict(t *testing.T) {
 	}
 	status, body = miPost(t, m, changed)
 	miStatus(t, status, body, 200)
-	if n := miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`); n != beforeJobs+1 {
+	if n := miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`); n != beforeJobs+1 {
 		t.Fatal("changed MID payload produced commerce job")
 	}
 	if n := miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.events WHERE app_id=$1 AND object='page' AND event_key=$2`, miApp, batch.Events[0].Key); n != 2 {
@@ -410,7 +410,7 @@ func TestMetaInboxDeferredCommitFailureNeverACKs(t *testing.T) {
 	if err != nil || len(batch.Events) != 1 {
 		t.Fatal("test message invalid")
 	}
-	beforeJobs := miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`)
+	beforeJobs := miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`)
 	name := "mi_fail_" + strings.ReplaceAll(randomUUID(), "-", "")
 	fn := pgx.Identifier{name}.Sanitize()
 	if _, err := m.f.owner.Exec(ctx, `CREATE FUNCTION public.`+fn+`() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'test deferred commit failure' USING ERRCODE='P0001'; END $$`); err != nil {
@@ -434,7 +434,7 @@ func TestMetaInboxDeferredCommitFailureNeverACKs(t *testing.T) {
 	if n := miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.events WHERE app_id=$1 AND object='page' AND event_key=$2`, miApp, batch.Events[0].Key); n != 0 {
 		t.Fatal("failed commit left event")
 	}
-	if n := miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`); n != beforeJobs {
+	if n := miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`); n != beforeJobs {
 		t.Fatal("failed commit left job")
 	}
 	mustExec(t, m.f.owner, `DROP TRIGGER `+fn+` ON meta_inbox.batches`)
@@ -464,7 +464,7 @@ func TestMetaInboxMixedBatchAccountingAndRoutingFence(t *testing.T) {
 	if batch.Events[0].Key != batch.Events[1].Key || batch.Events[0].PayloadHash != batch.Events[1].PayloadHash {
 		t.Fatal("test units not duplicate")
 	}
-	beforeJobs := miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`)
+	beforeJobs := miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`)
 	status, body := miPost(t, m, raw)
 	miStatus(t, status, body, 200)
 	var count, distinct int64
@@ -475,7 +475,7 @@ func TestMetaInboxMixedBatchAccountingAndRoutingFence(t *testing.T) {
 	if count != 3 || distinct != 2 || ordinals != "{1,2,3}" {
 		t.Fatalf("batch members lost or reordered: count=%d distinct=%d ordinals=%s", count, distinct, ordinals)
 	}
-	if n := miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`); n != beforeJobs+1 {
+	if n := miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`); n != beforeJobs+1 {
 		t.Fatal("mixed batch emitted wrong job count")
 	}
 	var unknownID, unknownKey, unknownHash, reason, disposition, keyID string
@@ -499,7 +499,7 @@ func TestMetaInboxMixedBatchAccountingAndRoutingFence(t *testing.T) {
 	if n := miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.events WHERE app_id=$1 AND object='page' AND event_key=$2`, miApp, unknownKey); n != 1 {
 		t.Fatal("historical unknown event rehomed or duplicated")
 	}
-	if n := miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`); n != beforeJobs+1 {
+	if n := miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`); n != beforeJobs+1 {
 		t.Fatal("late registration created a job for historical unknown")
 	}
 	var nextEpoch int64
@@ -508,7 +508,7 @@ func TestMetaInboxMixedBatchAccountingAndRoutingFence(t *testing.T) {
 	}
 	status, body = miPost(t, m, miMessage(known, "m."+randomUUID(), "after-disable"))
 	miStatus(t, status, body, 200)
-	if n := miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`); n != beforeJobs+1 {
+	if n := miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`); n != beforeJobs+1 {
 		t.Fatal("disabled route emitted a new job")
 	}
 	var frozenRoute string
@@ -597,7 +597,7 @@ func TestMetaInboxRetentionTerminalEvidenceAndPrivateACL(t *testing.T) {
 	if n := purge(10); n != 0 {
 		t.Fatal("pending River job did not block terminalized body purge")
 	}
-	mustExec(t, m.f.owner, `UPDATE river.river_job SET state='completed',finalized_at=clock_timestamp() WHERE id=$1`, jobID)
+	mustExec(t, m.f.owner, `UPDATE river_meta.river_job SET state='completed',finalized_at=clock_timestamp() WHERE id=$1`, jobID)
 	if n := purge(1); n != 1 {
 		t.Fatalf("bounded first purge=%d", n)
 	}
@@ -613,17 +613,17 @@ func TestMetaInboxRetentionTerminalEvidenceAndPrivateACL(t *testing.T) {
 	if miCount(t, m.f.owner, `SELECT count(*) FROM meta_private.raw_bodies WHERE batch_id=$1`, batchID) != 0 || miCount(t, m.f.owner, `SELECT count(*) FROM meta_private.event_bodies WHERE event_id=$1`, routedID) != 0 {
 		t.Fatal("eligible ciphertext not purged")
 	}
-	beforeJobs := miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`)
+	beforeJobs := miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`)
 	status, body = miPost(t, m, raw)
 	miStatus(t, status, body, 200)
-	if miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`) != beforeJobs || miCount(t, m.f.owner, `SELECT count(*) FROM meta_private.raw_bodies WHERE batch_id=$1`, batchID) != 0 {
+	if miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`) != beforeJobs || miCount(t, m.f.owner, `SELECT count(*) FROM meta_private.raw_bodies WHERE batch_id=$1`, batchID) != 0 {
 		t.Fatal("historical replay resurrected job or ciphertext")
 	}
-	mustExec(t, m.f.owner, `DELETE FROM river.river_job WHERE id=$1`, jobID)
-	prunedJobs := miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`)
+	mustExec(t, m.f.owner, `DELETE FROM river_meta.river_job WHERE id=$1`, jobID)
+	prunedJobs := miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`)
 	status, body = miPost(t, m, raw)
 	miStatus(t, status, body, 200)
-	if miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`) != prunedJobs || miCount(t, m.f.owner, `SELECT count(*) FROM meta_private.raw_bodies WHERE batch_id=$1`, batchID) != 0 {
+	if miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`) != prunedJobs || miCount(t, m.f.owner, `SELECT count(*) FROM meta_private.raw_bodies WHERE batch_id=$1`, batchID) != 0 {
 		t.Fatal("post-prune replay resurrected body or job")
 	}
 }
@@ -639,7 +639,7 @@ func TestMetaInboxConcurrentSameBodyHasOneIdentity(t *testing.T) {
 	if err != nil || len(batch.Events) != 1 {
 		t.Fatal("concurrent fixture invalid")
 	}
-	before := miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`)
+	before := miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`)
 	type answer struct {
 		status int
 		body   string
@@ -658,7 +658,7 @@ func TestMetaInboxConcurrentSameBodyHasOneIdentity(t *testing.T) {
 			t.Fatal("concurrent delivery stalled")
 		}
 	}
-	if miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.batches WHERE app_id=$1 AND object='page' AND body_hash=$2`, miApp, batch.BodyHash) != 1 || miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.events WHERE app_id=$1 AND object='page' AND event_key=$2`, miApp, batch.Events[0].Key) != 1 || miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`) != before+1 {
+	if miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.batches WHERE app_id=$1 AND object='page' AND body_hash=$2`, miApp, batch.BodyHash) != 1 || miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.events WHERE app_id=$1 AND object='page' AND event_key=$2`, miApp, batch.Events[0].Key) != 1 || miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`) != before+1 {
 		t.Fatal("concurrent replay created duplicate receipt, event, or job")
 	}
 }
@@ -689,7 +689,7 @@ func TestMetaInboxProofExpiryAfterObservedBindingWait(t *testing.T) {
 	if err != nil || len(batch.Events) != 1 {
 		t.Fatal("expiry fixture invalid")
 	}
-	before := miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`)
+	before := miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`)
 	type answer struct {
 		status int
 		body   string
@@ -730,7 +730,7 @@ func TestMetaInboxProofExpiryAfterObservedBindingWait(t *testing.T) {
 	if err := m.f.owner.QueryRow(ctx, `SELECT disposition,reason,job_id FROM meta_inbox.events WHERE app_id=$1 AND object='page' AND event_key=$2`, miApp, batch.Events[0].Key).Scan(&disposition, &reason, &jobID); err != nil {
 		t.Fatal(err)
 	}
-	if disposition != "QUARANTINED" || reason != "untrusted_route" || jobID != nil || miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`) != before {
+	if disposition != "QUARANTINED" || reason != "untrusted_route" || jobID != nil || miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`) != before {
 		t.Fatal("expired proof after lock wait produced business job")
 	}
 }
@@ -764,14 +764,14 @@ func TestMetaInboxPurgeSkipsLockedRiverJob(t *testing.T) {
 	if _, err := m.curator.Exec(ctx, `SELECT meta_inbox.record_terminal($1,'retention_discarded',$2)`, eventID, strings.Repeat("e", 64)); err != nil {
 		t.Fatal(err)
 	}
-	mustExec(t, m.f.owner, `UPDATE river.river_job SET state='completed',finalized_at=clock_timestamp() WHERE id=$1`, jobID)
+	mustExec(t, m.f.owner, `UPDATE river_meta.river_job SET state='completed',finalized_at=clock_timestamp() WHERE id=$1`, jobID)
 	lock, err := m.f.owner.Begin(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer lock.Rollback(context.Background())
 	var locked int64
-	if err := lock.QueryRow(ctx, `SELECT id FROM river.river_job WHERE id=$1 FOR UPDATE`, jobID).Scan(&locked); err != nil || locked != jobID {
+	if err := lock.QueryRow(ctx, `SELECT id FROM river_meta.river_job WHERE id=$1 FOR UPDATE`, jobID).Scan(&locked); err != nil || locked != jobID {
 		t.Fatal("job lifecycle row not locked", err)
 	}
 	bounded, cancel := context.WithTimeout(ctx, 2*time.Second)
@@ -805,10 +805,10 @@ func TestMetaInboxBindingVersionFenceAndReauthorization(t *testing.T) {
 	if err != nil || len(batch.Events) != 1 {
 		t.Fatal("binding fixture invalid")
 	}
-	before := miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`)
+	before := miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`)
 	status, body := miPost(t, m, stale)
 	miStatus(t, status, body, 200)
-	if miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`) != before || miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.events WHERE app_id=$1 AND object='page' AND event_key=$2 AND disposition='QUARANTINED' AND reason='untrusted_route'`, miApp, batch.Events[0].Key) != 1 {
+	if miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`) != before || miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.events WHERE app_id=$1 AND object='page' AND event_key=$2 AND disposition='QUARANTINED' AND reason='untrusted_route'`, miApp, batch.Events[0].Key) != 1 {
 		t.Fatal("stale binding version was trusted")
 	}
 	proof := strings.Repeat("f", 64)
@@ -823,12 +823,12 @@ func TestMetaInboxBindingVersionFenceAndReauthorization(t *testing.T) {
 	}
 	status, body = miPost(t, m, stale)
 	miStatus(t, status, body, 200)
-	if miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`) != before {
+	if miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`) != before {
 		t.Fatal("historical stale event rehomed after reauthorization")
 	}
 	status, body = miPost(t, m, miMessage(asset, "m."+randomUUID(), "fresh-binding"))
 	miStatus(t, status, body, 200)
-	if miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`) != before+1 {
+	if miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`) != before+1 {
 		t.Fatal("fresh event not admitted after trusted reauthorization")
 	}
 }
@@ -850,7 +850,7 @@ func TestMetaInboxConcurrentRebatchedMIDHasOneJob(t *testing.T) {
 	if err != nil || len(second.Events) != 1 || first.BodyHash == second.BodyHash || first.Events[0].Key != second.Events[0].Key || first.Events[0].PayloadHash != second.Events[0].PayloadHash {
 		t.Fatal("rebatch did not preserve stable event identity")
 	}
-	before := miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`)
+	before := miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`)
 	type answer struct {
 		status int
 		body   string
@@ -870,7 +870,7 @@ func TestMetaInboxConcurrentRebatchedMIDHasOneJob(t *testing.T) {
 			t.Fatal("concurrent rebatch stalled")
 		}
 	}
-	if miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.batches WHERE app_id=$1 AND object='page' AND body_hash IN ($2,$3)`, miApp, first.BodyHash, second.BodyHash) != 2 || miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.events WHERE app_id=$1 AND object='page' AND event_key=$2`, miApp, first.Events[0].Key) != 1 || miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1'`) != before+1 {
+	if miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.batches WHERE app_id=$1 AND object='page' AND body_hash IN ($2,$3)`, miApp, first.BodyHash, second.BodyHash) != 2 || miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.events WHERE app_id=$1 AND object='page' AND event_key=$2`, miApp, first.Events[0].Key) != 1 || miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`) != before+1 {
 		t.Fatal("racing rebatches duplicated or dropped receipt/event/job")
 	}
 }

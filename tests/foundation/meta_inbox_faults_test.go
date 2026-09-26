@@ -18,7 +18,7 @@ import (
 func miStorageCounts(t *testing.T, m miTest) []int64 {
 	t.Helper()
 	var counts []int64
-	for _, table := range []string{"meta_inbox.batches", "meta_inbox.events", "meta_inbox.batch_events", "meta_private.raw_bodies", "meta_private.event_bodies", "meta_private.quarantine_bodies", "river.river_job"} {
+	for _, table := range []string{"meta_inbox.batches", "meta_inbox.events", "meta_inbox.batch_events", "meta_private.raw_bodies", "meta_private.event_bodies", "meta_private.quarantine_bodies", "river_meta.river_job"} {
 		counts = append(counts, miCount(t, m.f.owner, `SELECT count(*) FROM `+table))
 	}
 	return counts
@@ -40,7 +40,7 @@ func TestMetaInboxEveryPersistenceStageRollsBackMixedTenants(t *testing.T) {
 	miRoute(t, m, b, m.f.tenantB, m.f.storeB, bb)
 	for _, stage := range []struct{ table, event string }{
 		{"meta_inbox.batches", "INSERT"}, {"meta_inbox.events", "INSERT"}, {"meta_inbox.batch_events", "INSERT"},
-		{"river.river_job", "INSERT"}, {"meta_private.event_bodies", "INSERT"}, {"meta_private.quarantine_bodies", "INSERT"},
+		{"river_meta.river_job", "INSERT"}, {"meta_private.event_bodies", "INSERT"}, {"meta_private.quarantine_bodies", "INSERT"},
 		{"meta_private.raw_bodies", "INSERT"}, {"meta_inbox.batches", "UPDATE OF finalized"},
 	} {
 		t.Run(stage.table+" "+stage.event, func(t *testing.T) {
@@ -138,7 +138,7 @@ func TestMetaInboxProofExpiresAfterFinalizeBeforeCommit(t *testing.T) {
 		t.Fatal("initial routed admission", err)
 	}
 	var job int64
-	if err := tx.QueryRow(ctx, `INSERT INTO river.river_job(kind,queue,args,max_attempts) VALUES('meta_inbox_v1','meta_inbox',jsonb_build_object('event_id',$1::text,'version',1),25) RETURNING id`, eventID).Scan(&job); err != nil {
+	if err := tx.QueryRow(ctx, `INSERT INTO river_meta.river_job(kind,queue,args,max_attempts) VALUES('meta_inbox_v1','meta_inbox',jsonb_build_object('event_id',$1::text,'version',1),25) RETURNING id`, eventID).Scan(&job); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := tx.Exec(ctx, `SELECT meta_inbox.complete_event($1,$2,$3,$4,$5,$6)`, batchID, eventID, miKeyID, randomBytes(12), randomBytes(17), job); err != nil {

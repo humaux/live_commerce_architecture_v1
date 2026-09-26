@@ -218,7 +218,7 @@ func TestMetaRuntimeBinaryPreflightFailureClosesPools(t *testing.T) {
 	workerName, consumerName := "mr_bad_worker_"+t04Tag(), "mr_bad_consumer_"+t04Tag()
 	mainDSN := mrNamedDSN(t, f.runtime.Config().ConnString(), mainName)
 	otherIngress := mrNamedDSN(t, miRole(t, clone, "commerce_meta_ingress"), ingressName)
-	workerDSN := mrNamedDSN(t, miRole(t, f, "commerce_worker"), workerName)
+	workerDSN := mrNamedDSN(t, miRole(t, f, "commerce_meta_worker"), workerName)
 	otherConsumer := mrNamedDSN(t, miRole(t, clone, "commerce_meta_consumer"), consumerName)
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -241,7 +241,7 @@ func TestMetaRuntimeBinaryPreflightFailureClosesPools(t *testing.T) {
 	worker := mrLaunch(t, workerBinary, "worker-clone-reject", workerEnv)
 	mrFailsBeforeReady(t, worker, "meta_worker_database_unavailable", workerDSN, otherConsumer, keyJSON)
 	if mrPoolCount(t, f, workerName) != 0 || mrPoolCount(t, clone, consumerName) != 0 ||
-		miCount(t, f.owner, `SELECT count(*) FROM river.river_queue WHERE name='meta_inbox'`) != 0 {
+		miCount(t, f.owner, `SELECT count(*) FROM river_meta.river_queue WHERE name='meta_inbox'`) != 0 {
 		t.Fatal("split-DB worker leaked pools or started queue")
 	}
 	// A wrong-role second pool exercises cleanup after the first pool opened.
@@ -289,7 +289,7 @@ func TestMetaRuntimeRealAPIBinariesPageInstagramRestart(t *testing.T) {
 	workerName, consumerName := "mr_worker_"+t04Tag(), "mr_consumer_"+t04Tag()
 	mainDSN := mrNamedDSN(t, f.runtime.Config().ConnString(), apiMainName)
 	ingressDSN := mrNamedDSN(t, miRole(t, f, "commerce_meta_ingress"), apiIngressName)
-	workerDSN := mrNamedDSN(t, miRole(t, f, "commerce_worker"), workerName)
+	workerDSN := mrNamedDSN(t, miRole(t, f, "commerce_meta_worker"), workerName)
 	consumerDSN := mrNamedDSN(t, miRole(t, f, "commerce_meta_consumer"), consumerName)
 	apiEnv := []string{"LISTEN_ADDR=" + addr, "DATABASE_URL=" + mainDSN, "COMMERCE_META_WEBHOOK_ENABLED=1", "COMMERCE_META_INGRESS_DATABASE_URL=" + ingressDSN, "COMMERCE_META_APPS_JSON=" + appsJSON, "COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID=" + miKeyID, "COMMERCE_META_PAYLOAD_KEYS_JSON=" + keyJSON}
 	workerEnv := []string{"COMMERCE_META_WORKER_ENABLED=1", "COMMERCE_META_WORKER_DATABASE_URL=" + workerDSN, "COMMERCE_META_CONSUMER_DATABASE_URL=" + consumerDSN, "COMMERCE_META_WORKER_CONCURRENCY=1", "COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID=" + miKeyID, "COMMERCE_META_PAYLOAD_KEYS_JSON=" + keyJSON}
@@ -389,7 +389,7 @@ func TestMetaRuntimeRealAPIBinariesPageInstagramRestart(t *testing.T) {
 		t.Fatal("rejected HTTP request admitted a receipt")
 	}
 	if miCount(t, f.owner, `SELECT count(*) FROM social.messages`) != 0 || miCount(t, f.owner, `SELECT count(*) FROM social.comment_events`) != 0 ||
-		miCount(t, f.owner, `SELECT count(*) FROM river.river_job WHERE kind='meta_inbox_v1' AND attempt=0 AND state='available'`) != 4 ||
+		miCount(t, f.owner, `SELECT count(*) FROM river_meta.river_job WHERE kind='meta_inbox_v1' AND attempt=0 AND state='available'`) != 4 ||
 		miCount(t, f.owner, `SELECT count(*) FROM meta_inbox.events WHERE disposition='QUARANTINED' AND job_id IS NULL`) != 1 {
 		t.Fatal("API consumed a job, duplicated a fact, or routed an unknown asset")
 	}
@@ -485,7 +485,7 @@ func TestMetaRuntimeRealAPIBinariesPageInstagramRestart(t *testing.T) {
 	var state string
 	var attempt int
 	for time.Now().Before(deadline) {
-		if err := f.owner.QueryRow(ctx, `SELECT state,attempt FROM river.river_job WHERE id=$1`, pending.job).Scan(&state, &attempt); err != nil {
+		if err := f.owner.QueryRow(ctx, `SELECT state,attempt FROM river_meta.river_job WHERE id=$1`, pending.job).Scan(&state, &attempt); err != nil {
 			t.Fatal(err)
 		}
 		if state == "retryable" && attempt > 0 {
@@ -503,7 +503,7 @@ func TestMetaRuntimeRealAPIBinariesPageInstagramRestart(t *testing.T) {
 	if mrPoolCount(t, f, workerName, consumerName) != 0 {
 		t.Fatal("missing-key worker leaked DB pools")
 	}
-	mustExec(t, f.owner, `UPDATE river.river_job SET scheduled_at=clock_timestamp()-interval '1 second' WHERE id=$1 AND state IN ('retryable','available')`, pending.job)
+	mustExec(t, f.owner, `UPDATE river_meta.river_job SET scheduled_at=clock_timestamp()-interval '1 second' WHERE id=$1 AND state IN ('retryable','available')`, pending.job)
 	restarted := mrLaunch(t, workerBinary, "worker-restarted", workerEnv)
 	mrReadyLog(t, restarted, "meta_worker_ready")
 	mcAwait(t, m, pending)
