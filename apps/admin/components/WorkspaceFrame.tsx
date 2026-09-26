@@ -34,6 +34,7 @@ export function WorkspaceFrame({
   const nav = [
     ["products", "product", c.products],
     ["inventory", "inventory", c.inventory],
+    ["orders", "orders", c.orders],
     ["live", "live", c.live],
     ["siteChat", "chat", c.siteChat],
     ["meta", "meta", c.meta],
@@ -42,17 +43,21 @@ export function WorkspaceFrame({
   ];
   function select(id: string) {
     setNavOpen(false);
-    if (id === "settings")
+    if (id === "orders")
+      router.push(
+        `/${locale}/orders${search.get("store") ? `?store=${encodeURIComponent(search.get("store")!)}` : ""}`,
+      );
+    else if (id === "settings")
       router.push(
         `/${locale}/settings${search.get("store") ? `?store=${encodeURIComponent(search.get("store")!)}` : ""}`,
       );
-    else if (active === "settings") router.push(`/${locale}/`);
+    else if (active === "settings" || active === "orders") router.push(`/${locale}/`);
     else onSection?.(id);
   }
   return (
     <div className="workspace">
       <a className="skip-link" href="#main">
-        {active === "settings" ? c.settings : c.heading}
+        {active === "settings" ? c.settings : active === "orders" ? c.orders : c.heading}
       </a>
       <aside className={`rail ${navOpen ? "open" : ""}`}>
         <div className="brand">{c.title}</div>
@@ -61,6 +66,7 @@ export function WorkspaceFrame({
             <button
               key={id}
               type="button"
+              data-testid={id === "orders" ? "nav-orders" : undefined}
               disabled={locked}
               className={active === id ? "nav-item active" : "nav-item"}
               aria-current={active === id ? "page" : undefined}
@@ -102,6 +108,7 @@ export function WorkspaceFrame({
           <label className="language">
             <span className="sr-only">{c.language}</span>
             <select
+              data-testid="locale-switch"
               aria-label={c.language}
               value={locale}
               disabled={locked}
