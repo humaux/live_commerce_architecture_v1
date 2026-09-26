@@ -19,6 +19,20 @@
 
 间接模块由 Go module 解析，不在业务代码中直接调用；升级仍须保留 `go.sum`、扫描漏洞并跑上述 gate。不得用版本兼容或 CI 绿灯推断生产可用。
 
+## Meta 入站协议复用关系
+
+`internal/integrations/meta.NewHandler` → `Verifier.Verify` → 完整 `Batch` →
+调用方同步提交回调，仅使用 Go 标准库 `net/http`、`crypto/hmac`、`crypto/sha256`、
+`encoding/json`、`unicode/utf8`、`time` 等；没有新 SDK、队列或框架依赖。
+原始字节先验签，再做 JSON token 校验；`pairedSurrogates` 补上标准 JSON decoder
+会替换孤立 UTF-16 代理项的边界，防止不同消息内容的证据摘要合并。
+`quarantineUnit` 仅附带小型 entry 上下文，不能改成每个未知单元复制全批次。
+消息 MID 去重 Key 与 PayloadHash 分离；持久化冲突处理仍由下一层实现。
+升级 Go 或改变归一化、ID、时间、错误响应时，须重跑同包及
+`tests/integrations/meta` 的 raw-signature／Unicode／边界／ACK 阻塞验收和 race/vet。
+此包当前未由运行时装配；PG、River、密钥轮换及可信资产归属没有通过此切片验收。
+详见[协议验收与证据](2026-09-26-meta-webhook-protocol-acceptance.md)。
+
 ## 商家账户接入复用关系
 
 商家凭据HTTP/BFF不新增依赖：`cmd/api/accounts.go` 通过

@@ -56,3 +56,21 @@ deterministic server-owned app/object/asset-to-tenant/store routing, quarantine
 of missing/conflicting bindings, independent role/RLS/rollback/concurrency gates,
 rate limits and operational monitoring. Never merge these events into site chat,
 infer consent from comments, or send from the receiving HTTP request.
+
+### Trust correction for the next database increment
+
+Independent review traced `core.Service.RegisterBinding` at
+`internal/integrations/core/service.go:121`: an authenticated merchant with
+`integration:manage` may submit an arbitrary provider/asset identifier. The
+scoped FKs in `migrations/0008_external_operations.sql` do not prove Meta asset
+ownership or App authorization. Therefore **matching a signed entry.id against
+that table is not sufficient to route customer content**. A malicious merchant
+could pre-register another merchant's public Page ID.
+
+The next contract must put only identifiers in a trusted app/object/asset route
+registry, activated through a server-verified authorization/administrative
+boundary with auditable evidence, never ordinary merchant self-assertion.
+Store content in a separate scoped encrypted inbox or restricted quarantine.
+Mixed-asset batches need atomic receipts/jobs; unknown or ambiguous routes stay
+quarantined. Workers recheck binding semantics before processing. This is an
+identified design requirement, not an implemented route registry or PG gate.
