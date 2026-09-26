@@ -127,9 +127,10 @@ func (v *Verifier) Verify(raw []byte, signature string) (Batch, error) {
 }
 
 // A token walk catches decoded duplicate names, including escaped aliases.
-// json.Decoder alone replaces invalid UTF-8, so validate the bytes first.
+// json.Decoder replaces invalid UTF-8 and unpaired UTF-16 surrogates with
+// U+FFFD, losing payload identity, so validate both before decoding.
 func parseStrict(raw []byte) (map[string]any, error) {
-	if !utf8.Valid(raw) {
+	if !utf8.Valid(raw) || !pairedSurrogates(raw) {
 		return nil, ErrJSON
 	}
 	d := json.NewDecoder(bytes.NewReader(raw))
@@ -146,6 +147,70 @@ func parseStrict(raw []byte) (map[string]any, error) {
 		return nil, ErrJSON
 	}
 	return root, nil
+}
+
+// Scan only JSON strings. A literal escaped backslash (\\u...) is text, while
+// a high surrogate escape must be immediately followed by one low surrogate.
+// Other JSON syntax remains the decoder's responsibility.
+func pairedSurrogates(raw []byte) bool {
+	inString := false
+	for i := 0; i < len(raw); i++ {
+		switch raw[i] {
+		case '"':
+			inString = !inString
+		case '\\':
+			if !inString {
+				continue
+			}
+			if i+1 >= len(raw) {
+				return false
+			}
+			if raw[i+1] != 'u' {
+				i++
+				continue
+			}
+			value, ok := unicodeEscape(raw, i)
+			if !ok {
+				return false
+			}
+			i += 5
+			if value >= 0xd800 && value <= 0xdbff {
+				start := i + 1
+				if start+6 > len(raw) || raw[start] != '\\' || raw[start+1] != 'u' {
+					return false
+				}
+				low, ok := unicodeEscape(raw, start)
+				if !ok || low < 0xdc00 || low > 0xdfff {
+					return false
+				}
+				i += 6
+			} else if value >= 0xdc00 && value <= 0xdfff {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func unicodeEscape(raw []byte, slash int) (uint16, bool) {
+	if slash+6 > len(raw) {
+		return 0, false
+	}
+	var value uint16
+	for _, b := range raw[slash+2 : slash+6] {
+		value <<= 4
+		switch {
+		case b >= '0' && b <= '9':
+			value |= uint16(b - '0')
+		case b >= 'a' && b <= 'f':
+			value |= uint16(b - 'a' + 10)
+		case b >= 'A' && b <= 'F':
+			value |= uint16(b - 'A' + 10)
+		default:
+			return 0, false
+		}
+	}
+	return value, true
 }
 
 func readValue(d *json.Decoder, depth int) (any, error) {
