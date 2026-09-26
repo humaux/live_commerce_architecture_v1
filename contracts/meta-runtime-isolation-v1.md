@@ -138,6 +138,25 @@ acceptance is not approval to interrupt customers.
 | MIso04 real maintenance isolation | Keep deterministic MR04 due scheduled payment unchanged. Also snapshot unrelated retryable, stale-running and retention-eligible terminal jobs. Start the real Meta CLI; observe positive-control Meta scheduler/rescuer/cleaner work, not merely a sleep, then prove unrelated full rows unchanged. For the converse, stop Meta before the snapshot, then start an actual old-schema worker and observe its positive controls without changes to Meta rows. No test-only production flags. |
 | MIso05 regressions | Actual API Page/IG exactly-once, bad paths/signatures, key-loss retention and restoration/restart, signal/pool cleanup; all MI/MC/MR suites, complete PG/race/vet and relevant browser regression; independent source/evidence review. |
 
+Historical fixture compatibility is test-only. `mcPre0029Fixture` must select
+the explicit old numbered/post-River baseline, not require that the entire
+current repository still contains only 30/3 files. The existing populated
+0028→0029 and 0029→0030 tests apply their **exact original next migration(s)**
+and retain their historical old-lane/full-row assertions. They must not call
+latest `Apply` and then pretend no schema move should have happened.
+
+Seed those old databases through a narrow test-only old-lane transaction helper
+using the actual original SQL functions, dedicated ingress authority and River
+`Schema:"river"`, with valid encrypted envelopes independently checked by the
+existing decryption helpers. Reuse existing role/route/receipt fixtures; do not
+insert fabricated owner-only event receipts or bypass old deferred constraints.
+This is old SQL/authority protocol coverage, not execution of an old API binary.
+Do not add a production configurable schema, compatibility fallback/view,
+legacy-source fork or mutable search_path solely for these tests. MIso02 then
+separately exercises latest `migrations.Apply` over a populated exact 0030
+baseline and validates the actual schema move. Preserve both historical and
+current upgrade evidence; do not replace either with a clean install.
+
 Tests may use legitimate isolated fixture-owner setup before the baseline
 snapshot. Do not turn unrelated scheduled rows available or postpone their
 deadlines to evade maintenance. Assertions must exercise the root failure.
