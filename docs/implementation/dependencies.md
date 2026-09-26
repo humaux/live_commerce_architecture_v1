@@ -53,10 +53,27 @@ AAD绑定类别、内部ID、app/object、摘要、tenant/store/route/epoch和Ke
 `purge_expired` 只由 curator 调用；年龄、显式终态证据及 River 终态三项均必要，
 删除前以 FOR SHARE 锁定任务。全批次 raw 等待所有成员，元数据不删除。
 预定义系统角色拒绝属于凭据配置门禁，不会撤销数据库管理员误授的直接 SQL 权限。
-生产密钥加载器、可信 OAuth 签发、消费者、清理调度及公开处理器装配尚未实现。
+生产密钥加载器、可信 OAuth 签发、清理调度及公开处理器装配尚未实现；
+消费者实现及独立验收边界见下段，不把入库验收外推到消费链路。
 更改以上 SQL/角色/队列/AAD 要重跑 `scripts/dev/test-local.sh --meta-inbox`、完整
 PG/race/vet 和独立审查；不能只跑 crypto 单测就宣称持久化可用。
 当前本地门禁和运行范围见[入库验收](2026-09-26-meta-inbox-durability-acceptance.md)。
+
+`NewConsumerWorker` → `platform.ValidateMetaConsumerPool` → 单个5秒
+READ COMMITTED 事务 → `load_social_event` → `PayloadKeyring.open` →
+`projectSocial` → `finish_social_event` → 延迟约束 → COMMIT。River 调度器必须
+另用普通 worker pool，专用 consumer 登录不可修改 River 状态。分类器重用
+`parseStrict`、`Verifier.change/message` 与 `emit`，重新核对原 Event.Key/hash；
+不另写平台 JSON 解析器。`0029_meta_social_consumer.sql` 将结果保存至独立
+`social` 域（会话、消息、评论观察），不写 webchat、identity 或交易域。
+密文复制沿用永久 inbox event 的原 AAD，不重标类别；原入库正文过期后，社交域
+仍保留独立密文。原时间戳不变，server_seq 仅代表成功入库顺序，不代表平台时序。
+每个事实的 consumer_attempt 是延迟约束复核的真实任务代次，不是 caller GUC。
+锁顺序固定为 tenant/store/binding/route/event/River/conversation；权限、授权证明
+及任务状态在事务末尾再次核对。没有新增依赖、队列或服务。
+改动任一调用点须重跑 `--meta-consumer`、`--meta-inbox` 和完整 PG/race/vet，
+并独立审查。当前接口[已冻结](../../contracts/meta-consumer-v1.md)，MC01–07
+独立实际验收进行中；尚无公开读取 UI、发送策略或生产运行时装配。
 
 ## 商家账户接入复用关系
 

@@ -79,6 +79,9 @@ This is a separate durable domain copy so short inbox-body retention cannot
 erase the conversation. No raw-batch or quarantine ciphertext is copied.
 Social retention/deletion policy and authorized reader are later explicit gates;
 this copy must not be publicly mounted before those gates. No SQL plaintext.
+Both fact tables persist `consumer_attempt` solely to verify the exact River
+attempt again in the deferred guard; the job identity remains in the source
+event. It is not a GUC ticket or caller-supplied tenant authority.
 
 Comment observations do not guess a current platform snapshot from delivery
 order or `created_time`; out-of-order add/edit/remove stay visible as separate
