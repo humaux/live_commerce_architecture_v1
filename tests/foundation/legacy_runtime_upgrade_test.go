@@ -344,7 +344,8 @@ func TestLegacyRuntimeIsolationPopulatedUpgrade(t *testing.T) {
 	for _, queue := range []string{"payment_mock_v1", "payment_sandbox_v1", "payment_live_v1", "checkout_expiry_v1", "default"} {
 		oldQueues[queue] = lriRows(t, f, "river.river_queue", `WHERE name='`+queue+`'`)
 	}
-	oldChecksums := lriLedger(t, f, `WHERE version NOT IN ('0032_legacy_river_isolation.sql','post_river/0005_legacy_river_isolation.sql')`)
+	const historicalLedger = `WHERE (version NOT LIKE 'post_river/%' AND version < '0032') OR (version LIKE 'post_river/%' AND version < 'post_river/0005')`
+	oldChecksums := lriLedger(t, f, historicalLedger)
 	business := map[string]string{}
 	for _, table := range []string{"checkout.orders", "checkout.payment_attempts", "payments.provider_observations", "integration.operations", "integration.operation_events", "inventory.reservations", "inventory.ledger"} {
 		business[table] = lriRows(t, f, table, "")
@@ -385,11 +386,14 @@ func TestLegacyRuntimeIsolationPopulatedUpgrade(t *testing.T) {
 			t.Fatalf("%s business rows changed", table)
 		}
 	}
-	if got := lriLedger(t, f, `WHERE version NOT IN ('0032_legacy_river_isolation.sql','post_river/0005_legacy_river_isolation.sql')`); got != oldChecksums {
+	if got := lriLedger(t, f, historicalLedger); got != oldChecksums {
 		t.Fatal("historical migration ledger/checksum changed")
 	}
 	if miCount(t, f.owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version IN ('0032_legacy_river_isolation.sql','post_river/0005_legacy_river_isolation.sql')`) != 2 {
 		t.Fatal("cutover ledger missing")
+	}
+	if miCount(t, f.owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version='0033_live_planning.sql'`) != 1 {
+		t.Fatal("live planning migration missing after populated cutover")
 	}
 	var sourceAfter int64
 	if err := f.owner.QueryRow(ctx, `SELECT last_value FROM river.river_job_id_seq`).Scan(&sourceAfter); err != nil || sourceAfter != sourceHigh {

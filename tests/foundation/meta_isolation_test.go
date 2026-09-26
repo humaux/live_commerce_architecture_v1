@@ -238,11 +238,20 @@ func TestMetaRuntimeIsolationPopulated0030Cutover(t *testing.T) {
 	for _, table := range tables {
 		before[table] = miIsoRows(t, f, table, "")
 	}
+	const historicalLedger = `WHERE (version NOT LIKE 'post_river/%' AND version < '0031') OR (version LIKE 'post_river/%' AND version < 'post_river/0004')`
+	oldChecksums := miIsoRows(t, f, "public.lc_schema_migrations", historicalLedger)
 	if err := migrations.Apply(ctx, f.owner); err != nil {
 		t.Fatal("populated 0030 isolation cutover", err)
 	}
+	firstLedger := miIsoRows(t, f, "public.lc_schema_migrations", "")
 	if err := migrations.Apply(ctx, f.owner); err != nil {
 		t.Fatal("repeat populated isolation cutover", err)
+	}
+	if got := miIsoRows(t, f, "public.lc_schema_migrations", historicalLedger); got != oldChecksums {
+		t.Fatal("historical migration ledger/checksum changed")
+	}
+	if got := miIsoRows(t, f, "public.lc_schema_migrations", ""); got != firstLedger {
+		t.Fatal("repeat Apply mutated full migration ledger")
 	}
 	for _, table := range tables {
 		if got := miIsoRows(t, f, table, ""); got != before[table] {
@@ -263,7 +272,10 @@ func TestMetaRuntimeIsolationPopulated0030Cutover(t *testing.T) {
 	if err := f.owner.QueryRow(ctx, `SELECT nextval('river_meta.river_job_id_seq')`).Scan(&nextID); err != nil || nextID <= oldHighWater || nextID <= pruned.job {
 		t.Fatalf("new job sequence reused source/pruned high-water: next=%d old=%d pruned=%d err=%v", nextID, oldHighWater, pruned.job, err)
 	}
-	if miCount(t, f.owner, `SELECT count(*) FROM public.lc_schema_migrations`) != 37 {
+	if miCount(t, f.owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE
+		(version NOT LIKE 'post_river/%' AND version < '0033') OR
+		(version LIKE 'post_river/%' AND version < 'post_river/0006')`) != 37 ||
+		miCount(t, f.owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version='0033_live_planning.sql'`) != 1 {
 		t.Fatal("0031/post0004 and 0032/post0005 ledger missing or Apply replayed a version")
 	}
 	mrReady(t, miPool(t, f, "commerce_meta_ingress"), true)
