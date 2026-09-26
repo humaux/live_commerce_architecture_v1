@@ -38,6 +38,8 @@ func (Inbox) String() string               { return "meta.Inbox{redacted}" }
 func (i Inbox) GoString() string           { return i.String() }
 func (Inbox) MarshalJSON() ([]byte, error) { return []byte(`"meta.Inbox{redacted}"`), nil }
 
+// NewInbox validates the borrowed dedicated pool and builds an insert-only River
+// client. It does not start a worker or enable a public webhook route.
 func NewInbox(ctx context.Context, pool *pgxpool.Pool, keys *PayloadKeyring) (*Inbox, error) {
 	if ctx == nil || pool == nil || keys == nil || !validPayloadKeyID(keys.activeID) ||
 		len(keys.keys) < 1 || len(keys.keys) > 16 {
@@ -56,6 +58,8 @@ func NewInbox(ctx context.Context, pool *pgxpool.Pool, keys *PayloadKeyring) (*I
 	return &Inbox{pool: pool, keys: keys, jobs: jobs}, nil
 }
 
+// NewInboxHandler preserves the verifier's exact-byte handoff. A successful ACK
+// follows the same transaction's receipt, scoped ciphertext and job COMMIT.
 func NewInboxHandler(v *Verifier, inbox *Inbox) (http.Handler, error) {
 	if !v.valid() || inbox == nil || inbox.pool == nil || inbox.keys == nil || inbox.jobs == nil {
 		return nil, ErrConfig
@@ -77,7 +81,9 @@ func (i *Inbox) commit(ctx context.Context, batch Batch, raw []byte) error {
 	}
 	bounded, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	tx, err := i.pool.BeginTx(bounded, pgx.TxOptions{})
+	// Admission SQL re-reads mutable route state after row/advisory lock waits;
+	// do not inherit a deployment's repeatable-read default snapshot.
+	tx, err := i.pool.BeginTx(bounded, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
 	if err != nil {
 		return ErrInboxStorage
 	}
