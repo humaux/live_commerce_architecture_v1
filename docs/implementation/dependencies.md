@@ -27,7 +27,7 @@
 原始字节先验签，再做 JSON token 校验；`pairedSurrogates` 补上标准 JSON decoder
 会替换孤立 UTF-16 代理项的边界，防止不同消息内容的证据摘要合并。
 `quarantineUnit` 仅附带小型 entry 上下文，不能改成每个未知单元复制全批次。
-消息 MID 去重 Key 与 PayloadHash 分离；持久化冲突处理仍由下一层实现。
+消息 MID 去重 Key 与 PayloadHash 分离；持久化冲突由下述 Inbox 接收层处理。
 升级 Go 或改变归一化、ID、时间、错误响应时，须重跑同包及
 `tests/integrations/meta` 的 raw-signature／Unicode／边界／ACK 阻塞验收和 race/vet。
 此包当前未由运行时装配；PG、River、密钥轮换及可信资产归属没有通过此切片验收。
@@ -41,7 +41,22 @@ AAD绑定类别、内部ID、app/object、摘要、tenant/store/route/epoch和Ke
 升级Go/密钥配置/上下文/大小上限须重跑`payload_test.go`、独立
 `payload_acceptance_test.go`互操作/轮换/篡改/错误摘要及`raw_handler_test.go`，
 并保留完整MWP套件和race/vet。见[前置组件验收](2026-09-26-meta-inbox-primitives-acceptance.md)。
-当前只有本地加密和交接，没有PG适配器、生产密钥加载器或公开处理器装配。
+
+`NewInboxHandler` → 私有 raw 回调 → `Inbox.commit` → `pgx` READ COMMITTED
+事务：`begin_batch` → 按 Key/hash/ordinal 排序的 `prepare_event` → AEAD →
+已有 River `InsertTx` → `complete_event` → 原始批次 AEAD → `complete_batch` → COMMIT。
+复用现有 `riverpgxv5`，不启动 worker，不新增消息代理/SDK。单次10秒预算、LOCAL
+语句/锁超时及独立2秒回滚；历史收据先于可变路由解析，永久去重不随 River 清理。
+`0028_meta_inbox.sql` 拆分可信资产注册、接收、审核清理三种专用权限；禁止共享
+商家/worker/预定义系统角色。`post_river/0003_meta_inbox_queue.sql` 在上游迁移之后
+限制固定 kind/queue/args，插入和更新均检查，延迟约束确保事件与任务同事务。
+`purge_expired` 只由 curator 调用；年龄、显式终态证据及 River 终态三项均必要，
+删除前以 FOR SHARE 锁定任务。全批次 raw 等待所有成员，元数据不删除。
+预定义系统角色拒绝属于凭据配置门禁，不会撤销数据库管理员误授的直接 SQL 权限。
+生产密钥加载器、可信 OAuth 签发、消费者、清理调度及公开处理器装配尚未实现。
+更改以上 SQL/角色/队列/AAD 要重跑 `scripts/dev/test-local.sh --meta-inbox`、完整
+PG/race/vet 和独立审查；不能只跑 crypto 单测就宣称持久化可用。
+当前本地门禁和运行范围见[入库验收](2026-09-26-meta-inbox-durability-acceptance.md)。
 
 ## 商家账户接入复用关系
 

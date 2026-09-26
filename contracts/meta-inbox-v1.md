@@ -1,7 +1,7 @@
 # Meta inbox v1 — trusted routing and durable admission
 
-Status: **CONTRACT_FROZEN / DATABASE_NOT_IMPLEMENTED**. Payload primitives have
-separate implementation gates; this contract is not a PG/provider acceptance. Builds on
+Status: **CONTRACT_FROZEN / DATABASE_LOCAL_GATES_PASSED_NOT_PUBLIC**. Actual local PG gates
+are recorded in [durability acceptance](../docs/implementation/2026-09-26-meta-inbox-durability-acceptance.md), not provider acceptance. Builds on
 [MWP01–05](meta-webhook-protocol-v1.md). No public route or provider activation
 until this contract's real PostgreSQL gates and later operational gates pass.
 

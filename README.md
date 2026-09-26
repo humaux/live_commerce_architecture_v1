@@ -46,8 +46,8 @@
 
 下文保留原设计包的基线说明；`MANIFEST.sha256` 对应原包，不能拿来验证新增实现。商品/结账、四域会话业务、台湾超商/跨境物流、Meta/支付/直播和三端 UI 仍需继续实现与独立验收。全局 G01–G15 未宣称通过。
 
-- Meta 入站协议切片：原始字节验签、严格 JSON／Unicode、完整批次归一化及同步提交回调后 ACK，已通过[52 项本地 race 回归与独立审查](docs/implementation/2026-09-26-meta-webhook-protocol-acceptance.md)。尚未挂载公开路由；PG/River 原子落盘、可信资产归属、加密留存及真实 Meta 资格仍未验收，不等于 T07 完成。
-- Meta 入库前置组件：原始报文私有交接、独立 AES-GCM 密钥域及精确上下文绑定，已通过[64 项本地 race 回归及独立加密互操作验收](docs/implementation/2026-09-26-meta-inbox-primitives-acceptance.md)。[数据库契约](contracts/meta-inbox-v1.md)已独立审查冻结；SQL 接收、落盘／入队、租户路由和留存清理仍未实现，不能启用公开回调。
+- Meta 入站协议切片：原始字节验签、严格 JSON／Unicode、完整批次归一化及同步提交回调后 ACK，已通过[52 项本地 race 回归与独立审查](docs/implementation/2026-09-26-meta-webhook-protocol-acceptance.md)。此早期协议门禁不包含持久化，后续入库验收见下；公开路由与真实 Meta 资格未启用，不等于 T07 完成。
+- Meta 入库：原始报文交接及 AES-GCM 前置组件已有[独立验收](docs/implementation/2026-09-26-meta-inbox-primitives-acceptance.md)。SQL/Go 原子接收、可信租户路由、专用 River 队列和受控密文清理通过[真实 PG 本地验收](docs/implementation/2026-09-26-meta-inbox-durability-acceptance.md)：冻结产品源码全量 507 项通过，再合入 IG 测试后专项 20 项通过，race/vet 均通过。消费者、OAuth 资格和公开回调尚未启用。
 
 ## 原设计包基线
 
