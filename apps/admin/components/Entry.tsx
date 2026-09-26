@@ -15,6 +15,18 @@ import { Icon } from "./Icon";
 
 type EntryStatus = "disabled" | "signed-out" | "onboarding" | "unavailable";
 
+function signalLogout() {
+  // This message contains no order data or credential and can only revoke UI.
+  try {
+    const channel = new BroadcastChannel("commerce-session");
+    channel.postMessage({ type: "logout" });
+    channel.close();
+  } catch { /* storage fallback below */ }
+  try {
+    localStorage.setItem("commerce-session-logout", crypto.randomUUID());
+  } catch { /* another tab also checks its cookie on focus */ }
+}
+
 function csrfToken() {
   const values = document.cookie
     .split(";")
@@ -153,6 +165,7 @@ export function Entry({
 
   async function expireSession(csrf: string) {
     clearJournal();
+    signalLogout();
     try {
       await fetch("/api/auth/logout", {
         method: "POST",
@@ -164,6 +177,7 @@ export function Entry({
         body: "{}",
       });
     } finally {
+      signalLogout();
       window.location.replace(`/${locale}/?auth=expired`);
     }
   }
@@ -276,6 +290,7 @@ export function Entry({
     if (busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
+    signalLogout();
     try {
       const csrf = csrfToken();
       if (
@@ -296,6 +311,7 @@ export function Entry({
         body: "{}",
       });
       if (response.status === 204 || response.status === 401) {
+        signalLogout();
         clearJournal();
         window.location.replace(`/${locale}/`);
         return;
