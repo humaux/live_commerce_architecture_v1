@@ -21,13 +21,24 @@ checkpoint.
 ## Executed proof
 
 `bash scripts/dev/test-local.sh --legacy-isolation` ran actual isolated PG18
-with `go test -race`. On the integrated helper tree, the latest author run was
-**exit 0, 9 top-level PASS / 0 FAIL / 0 SKIP** (plus 26 LRI03 subtests),
-foundation 31.011s. Log
-`/Volumes/data/output/legacy-upgrade-author-integrated1-20260926.log`,
-SHA256 `7e19bfa8f4833e55f5aca2b603402070d2f7478de8bb490136459b65f045587c`.
+with `go test -race`. On the integrated helper tree, exact final HEAD author
+run was **exit 0, 10 top-level PASS / 0 FAIL / 0 SKIP** (plus 26 LRI03
+subtests), foundation 31.498s. Log
+`/Volumes/data/output/legacy-upgrade-author-final-20260926.log`, SHA256
+`777e431858a3b1480d2d442bd7bbfd552a5eb8461edc856452957f2c40098ed7`.
+The immediately preceding integrated-helper run also exited 0 with 10
+top-level PASS, foundation 31.011s; its preserved log is
+`/Volumes/data/output/legacy-upgrade-author-integrated1-20260926.log`, SHA256
+`7e19bfa8f4833e55f5aca2b603402070d2f7478de8bb490136459b65f045587c`.
 `GOTOOLCHAIN=go1.27.1 go vet ./tests/foundation` exited 0;
 `git diff --check` exited 0.
+
+Root separately reran the integrated candidate at `0cc4e88`: actual selector
+**exit 0, 10 top-level PASS / 0 FAIL / 0 SKIP**, foundation 27.848s. The
+root-owned log `/Volumes/data/output/legacy-isolation-root-upgrade2-20260926.log`
+has verified SHA256
+`02fd89dbdb73992a611f27d52d9cd54c4661ea8ece7070d6212f92c9bcbbabfe`.
+This is independent execution, not final source/security signoff.
 
 The populated case admits real old-schema payment and expiry jobs. MOCK,
 SANDBOX and LIVE use actual pre-0032 StartPayment/InsertTx with explicit
@@ -73,7 +84,7 @@ Repair2 exited 0 on the then-current helper tree, before four additional test
 helper commits. Earlier logs remain preserved under
 `/Volumes/data/output/legacy-upgrade-author-candidate{1..7}-20260926.log`.
 
-Root's independent replay of this repaired source, final security review, full
-regression, provider qualifications, and production cutover are **NOT_RUN** by
-this author. Prior affected browser gates are root-owned evidence, not claims
-of this author. This note does not accept the overall LRI unit or SaaS release.
+Final source/security review, full regression, provider qualifications, and
+production cutover are **NOT_RUN** by this author. Prior affected browser gates
+are root-owned evidence, not claims of this author. This note does not accept
+the overall LRI unit or SaaS release.
