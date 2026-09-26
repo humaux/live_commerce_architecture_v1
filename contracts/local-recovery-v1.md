@@ -1,6 +1,6 @@
 # LOCAL logical restore and cold-start v1
 
-Status: DESIGN / NOT_RUN. Base: `519fb16`. This bounded rehearsal contributes to
+Status: FROZEN / NOT_RUN (independent prereview incorporated). Base: `519fb16`. This bounded rehearsal contributes to
 G12/G14; it does **not** complete T20, T22, or production recovery acceptance.
 Approved B product-detail purchase UI and customer production remain unchanged.
 
@@ -36,6 +36,11 @@ Commands and probes are bounded; cleanup touches only the recorded owned IDs.
    `pg_restore --single-transaction --exit-on-error`. Do not use `--clean`,
    `--create`, `--no-owner` or `--no-acl`; no application migration before raw
    restore comparison. Any tool error fails the gate, even if some rows exist.
+   Database provisioning is a named exception: the new bootstrap owns the
+   precreated empty database, not the source bootstrap. Require source default
+   database ACL/settings or stop (do not silently omit custom settings). Compare
+   encoding/locale/provider and runtime CONNECT; runtime must have neither DB
+   ownership/CREATE nor authority to assume the target bootstrap role.
 4. Compare raw restored data and privileges before running `Apply` twice. It
    must be idempotent and must not repair a silently incomplete restore.
    Restored LOGIN passwords are absent. Set new random test passwords only for
@@ -45,6 +50,11 @@ Commands and probes are bounded; cleanup touches only the recorded owned IDs.
    work. Then explicitly enable only one bounded local Meta-consumer workflow,
    verify exactly one social projection, stop/restart and verify no duplicate.
    No real provider, marketing send or money-moving action is permitted.
+   Before the correct-key consume, use the same key ID with different bytes:
+   observe an actual retryable attempt, retained encrypted body and no social
+   projection or terminal marker. Then supply the separately restored correct
+   key and consume that same pre-backup event. These named Meta retry/projection
+   changes are expected; they do not relax foreign-family equality.
 
 ## Acceptance gates
 
