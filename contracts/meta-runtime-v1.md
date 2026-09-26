@@ -62,6 +62,7 @@ func NewConsumerClient(context.Context, *pgxpool.Pool, *pgxpool.Pool, *PayloadKe
 // Pools above: worker first, consumer second; caller retains both.
 func platform.OpenMetaIngressPool(context.Context, string) (*pgxpool.Pool, error)
 func platform.OpenMetaConsumerPool(context.Context, string) (*pgxpool.Pool, error)
+func platform.ValidateSameDatabase(context.Context, *pgxpool.Pool, *pgxpool.Pool) error
 ```
 
 Paths are derived only from validated config:
@@ -93,6 +94,28 @@ No policy check scans/returns plaintext or grants callback callers SQL authority
 
 Both runtime router and worker constructors require readiness before listening
 or fetching. Ordinary worker pool is validated separately from consumer pool.
+The predicate also verifies both `social_message_commit` and
+`social_comment_commit` on the exact social tables, pointing to
+`meta_private.guard_social_insert()`: AFTER ROW INSERT, enabled O/A, deferrable
+and initially deferred. All four guards require no WHEN/column/argument filter,
+the expected NOLOGIN writer, SECURITY DEFINER and exact safe search_path; merely
+checking trigger names is insufficient.
+
+Pool names, host strings, database names and matching event UUIDs are not proof
+of a shared database (restored clones can contain the same IDs). API's existing
+main pool versus ingress, and worker versus consumer, must pass
+`ValidateSameDatabase` before listening/fetching. It uses a cryptographically
+random nonzero signed bigint, at most five seconds total: transaction A must
+acquire `pg_try_advisory_xact_lock`, then transaction B must fail to acquire the
+same lock while A is held. Any other outcome/error fails closed. Both pools
+remain caller-owned; both transactions use independent bounded rollback before
+return. No permanent marker, new table, widened grants or connection-string
+comparison. This is configuration-coherence checking against trusted PG
+servers, not attestation against a malicious database administrator/server.
+
+API assembly and CLI pool-open/constructor phase each have one shared 10-second
+startup deadline; constructors themselves are bounded even for direct callers.
+Do not pass an expiring constructor context as River's running context.
 Client registers only `ConsumerWorker` on fixed `meta_inbox`, concurrency 1–16,
 no periodic jobs/default queue. River's logger is discarded like existing
 workers until an explicit redaction contract exists. `jobqueue.Run` owns start
@@ -104,7 +127,7 @@ startup only, never platform authorization.
 | Gate | Required actual evidence |
 | --- | --- |
 | MR01 | Disabled zero sensitive reads/effects; strict env/app/key/canonical-number bounds; unknown/duplicate/trailing/malformed JSON; redacted formatting and errors; worker never reads app credentials |
-| MR02 | Real PG ingress/worker/consumer exact-role and swapped/mixed/owner negatives; missing/disabled/wrong trigger and poisoned active queue deny startup before claim; no queue fetch by API |
+| MR02 | Real PG ingress/worker/consumer exact-role and swapped/mixed/owner negatives; distinct/clone DBs denied; missing/disabled/replaced/filter-altered River or social guard and poisoned active queue deny startup before claim; no queue fetch by API |
 | MR03 | Real API binary + separate worker binary + isolated PG: signed Page and IG HTTP produce committed scoped social facts; duplicate HTTP remains one fact; wrong signature/path/method does not admit; unknown assets stay quarantined; existing API routes still behave as before |
 | MR04 | Real worker startup/stop/signals, partial assembly closes pools, missing key leaves retryable pending source, worker restart processes retained work; unrelated payment/expiry/default jobs unchanged; bounded startup and no secret-bearing logs |
 | MR05 | Fresh/repeated and populated 0029→0030 migration preserve receipts/routes/jobs/body; old MI/MC gates, full PG/race/vet and independent source/evidence review; fixture/process cleanup |
