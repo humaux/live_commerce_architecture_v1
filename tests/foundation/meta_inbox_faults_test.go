@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -105,5 +106,73 @@ func TestMetaInboxCommittedResponseLossReplaysHistory(t *testing.T) {
 	miStatus(t, status, body, http.StatusOK)
 	if !reflect.DeepEqual(before, miStorageCounts(t, m)) {
 		t.Fatal("retry after lost committed response wrote another admission")
+	}
+}
+
+// Finalize succeeds while the proof is valid; only the deferred COMMIT check
+// can reject this later expiration. Opaque synthetic envelopes isolate the SQL
+// fence; separate HTTP/AEAD tests prove real encryption and ACK behavior.
+func TestMetaInboxProofExpiresAfterFinalizeBeforeCommit(t *testing.T) {
+	m := miSetup(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+	defer cancel()
+	asset := miAsset()
+	binding := miBinding(t, m, asset, "facebook", m.f.tenantA, m.f.storeA1, m.f.principalA)
+	route, _ := miRoute(t, m, asset, m.f.tenantA, m.f.storeA1, binding)
+	var expires time.Time
+	if err := m.f.owner.QueryRow(ctx, `UPDATE meta_inbox.routes SET proof_expires=clock_timestamp()+interval '1 second' WHERE id=$1 RETURNING proof_expires`, route).Scan(&expires); err != nil {
+		t.Fatal(err)
+	}
+	before := miStorageCounts(t, m)
+	tx, err := m.ingress.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback(context.Background())
+	var batchID, eventID, class string
+	var replay, needsBody bool
+	if err := tx.QueryRow(ctx, `SELECT batch_id::text,replay FROM meta_inbox.begin_batch($1,'page',$2,1)`, miApp, miBodyHash([]byte(randomUUID()))).Scan(&batchID, &replay); err != nil || replay {
+		t.Fatal("new batch", err)
+	}
+	if err := tx.QueryRow(ctx, `SELECT event_id::text,needs_body,body_class FROM meta_inbox.prepare_event($1,1,$2,$3,$4,'page_message','',NULL)`, batchID, miBodyHash([]byte(randomUUID())), miBodyHash([]byte(randomUUID())), asset).Scan(&eventID, &needsBody, &class); err != nil || !needsBody || class != "event" {
+		t.Fatal("initial routed admission", err)
+	}
+	var job int64
+	if err := tx.QueryRow(ctx, `INSERT INTO river.river_job(kind,queue,args,max_attempts) VALUES('meta_inbox_v1','meta_inbox',jsonb_build_object('event_id',$1::text,'version',1),25) RETURNING id`, eventID).Scan(&job); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tx.Exec(ctx, `SELECT meta_inbox.complete_event($1,$2,$3,$4,$5,$6)`, batchID, eventID, miKeyID, randomBytes(12), randomBytes(17), job); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tx.Exec(ctx, `SELECT meta_inbox.complete_batch($1,$2,$3,$4)`, batchID, miKeyID, randomBytes(12), randomBytes(17)); err != nil {
+		t.Fatal("proof must remain valid through finalize", err)
+	}
+	if _, err := tx.Exec(ctx, `SELECT pg_sleep(greatest(extract(epoch FROM $1::timestamptz-clock_timestamp())+0.05,0))`, expires); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Commit(ctx); miSQLState(err) != "22023" {
+		t.Fatalf("expired final commit state=%s", miSQLState(err))
+	}
+	if !reflect.DeepEqual(before, miStorageCounts(t, m)) {
+		t.Fatal("expired final commit persisted partial state")
+	}
+}
+
+func TestMetaInboxInactiveScopesCannotRoute(t *testing.T) {
+	m := miSetup(t)
+	asset := miAsset()
+	binding := miBinding(t, m, asset, "facebook", m.f.tenantA, m.f.storeA1, m.f.principalA)
+	miRoute(t, m, asset, m.f.tenantA, m.f.storeA1, binding)
+	for _, scope := range []struct{ table, id string }{{"control.tenants", m.f.tenantA}, {"control.stores", m.f.storeA1}} {
+		t.Run(scope.table, func(t *testing.T) {
+			mustExec(t, m.f.owner, `UPDATE `+scope.table+` SET active=false WHERE id=$1`, scope.id)
+			defer mustExec(t, m.f.owner, `UPDATE `+scope.table+` SET active=true WHERE id=$1`, scope.id)
+			raw := miMessage(asset, randomUUID(), "inactive scope")
+			status, body := miPost(t, m, raw)
+			miStatus(t, status, body, http.StatusOK)
+			if miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.batches b JOIN meta_inbox.batch_events m ON m.batch_id=b.id JOIN meta_inbox.events e ON e.id=m.event_id WHERE b.body_hash=$1 AND e.disposition='QUARANTINED' AND e.tenant_id IS NULL AND e.job_id IS NULL`, miBodyHash(raw)) != 1 {
+				t.Fatal("inactive scope did not quarantine privately")
+			}
+		})
 	}
 }
