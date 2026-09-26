@@ -17,11 +17,13 @@ var (
 	uuidPattern       = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 )
 
+// MaterialScope must come from trusted persisted identity and versions; it is not authorization.
 type MaterialScope struct {
 	TenantID, StoreID, SessionID, AttemptID, ProjectID string
 	CredentialVersion, MaterialVersion                 int64
 }
 
+// SealedMaterial persists through its explicit fields; its JSON representation is redacted.
 type SealedMaterial struct {
 	KeyID             string
 	Nonce, Ciphertext []byte
@@ -44,6 +46,7 @@ func (MaterialKeyring) MarshalJSON() ([]byte, error) {
 	return []byte(`"livekit.MaterialKeyring{redacted}"`), nil
 }
 
+// NewMaterialKeyring owns key copies; retain old IDs during rotation to open older envelopes.
 func NewMaterialKeyring(activeID string, keys map[string][]byte) (*MaterialKeyring, error) {
 	if len(keys) < 1 || len(keys) > 16 || !materialIDPattern.MatchString(activeID) {
 		return nil, ErrMaterial
@@ -61,6 +64,7 @@ func NewMaterialKeyring(activeID string, keys map[string][]byte) (*MaterialKeyri
 	return &MaterialKeyring{activeID: activeID, keys: copied}, nil
 }
 
+// Format 1 authenticates this exact field order; changing it requires a new format and migration.
 type materialAAD struct {
 	Domain            string `json:"domain"`
 	Format            int    `json:"format"`
@@ -97,6 +101,7 @@ func (s MaterialScope) aad(c *Client, keyID string) ([]byte, error) {
 	})
 }
 
+// Seal performs no I/O and grants no authority to dispatch the material.
 func (k *MaterialKeyring) Seal(scope MaterialScope, client *Client, in StartInput) (SealedMaterial, error) {
 	if k == nil || client == nil || !client.ready() || !scope.valid() || in.RoomName != scope.room() || !client.validStart(in) {
 		return SealedMaterial{}, ErrMaterial
@@ -132,6 +137,7 @@ func (k *MaterialKeyring) Seal(scope MaterialScope, client *Client, in StartInpu
 	return SealedMaterial{KeyID: k.activeID, Nonce: nonce, Ciphertext: gcm.Seal(nil, nonce, plain, aad)}, nil
 }
 
+// Open performs no I/O; the caller must separately revalidate authorization and lease.
 func (k *MaterialKeyring) Open(scope MaterialScope, client *Client, sealed SealedMaterial) (StartInput, error) {
 	if k == nil || client == nil || !client.ready() || !scope.valid() || !materialIDPattern.MatchString(sealed.KeyID) ||
 		len(sealed.Nonce) != 12 || len(sealed.Ciphertext) < 16 || len(sealed.Ciphertext) > 16400 {
