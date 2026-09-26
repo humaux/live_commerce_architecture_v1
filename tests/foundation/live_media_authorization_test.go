@@ -571,8 +571,8 @@ func TestLiveMediaAuthorizationLMA03ClosedValidationAndNoWrites(t *testing.T) {
 			}
 		})
 	}
-	// The existing planning schema makes a non-DRAFT program unreachable even
-	// to the fixture owner; verify that prerequisite instead of skipping a case.
+	// ACTIVE remains invalid even though the media planner may now move a
+	// program from DRAFT to READY. Keep this old boundary assertion.
 	if _, err := h.lp.f.owner.Exec(ctx, `UPDATE live.programs SET state='ACTIVE' WHERE session_id=$1`, h.session); sqlState(err) != "23514" {
 		t.Fatalf("non-DRAFT program became representable: %v", err)
 	}
