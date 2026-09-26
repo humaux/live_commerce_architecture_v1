@@ -304,13 +304,23 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 			SELECT oid FROM pg_roles WHERE rolname=session_user
 			   OR pg_has_role(session_user, oid, 'USAGE') OR pg_has_role(session_user, oid, 'SET')
 		), fixed AS (
-			SELECT to_regprocedure('live.register_prepared_media(jsonb,bytea,bytea)') AS register_fn,
-			       to_regprocedure('live.revoke_prepared_media(uuid,uuid,uuid,text)') AS revoke_fn
+			SELECT p.oid FROM pg_catalog.pg_proc p
+			JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace
+			WHERE n.nspname='live' AND (
+				(p.proname='register_prepared_media' AND p.pronargs=3
+				 AND p.proargtypes[0]='pg_catalog.jsonb'::regtype
+				 AND p.proargtypes[1]='pg_catalog.bytea'::regtype
+				 AND p.proargtypes[2]='pg_catalog.bytea'::regtype)
+				OR (p.proname='revoke_prepared_media' AND p.pronargs=4
+				 AND p.proargtypes[0]='pg_catalog.uuid'::regtype
+				 AND p.proargtypes[1]='pg_catalog.uuid'::regtype
+				 AND p.proargtypes[2]='pg_catalog.uuid'::regtype
+				 AND p.proargtypes[3]='pg_catalog.text'::regtype)
+			)
 		)
 		SELECT EXISTS (
 			SELECT 1 FROM reachable r CROSS JOIN fixed f
-			WHERE coalesce(has_function_privilege(r.oid, f.register_fn, 'EXECUTE'),false)
-			   OR coalesce(has_function_privilege(r.oid, f.revoke_fn, 'EXECUTE'),false)
+			WHERE has_function_privilege(r.oid, f.oid, 'EXECUTE')
 		)`).Scan(&mediaExecute)
 	if err != nil || mediaExecute {
 		return errors.New("unsafe runtime database role")
