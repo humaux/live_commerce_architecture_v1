@@ -146,7 +146,10 @@ else
   # Run package binaries serially: independent author and root parallel runs
   # stalled before checkout's test output on this host. This does not disable
   # -race, in-test concurrency or any test; it is not a product root-cause fix.
-  GOTOOLCHAIN=go1.27.1 go test -p 1 -race -count=1 -timeout=360s -v ./...
+  # Isolated Meta cutover/maintenance gates add fresh clusters and real process
+  # windows. The aggregate exceeded 360s without an assertion failure; retain
+  # every individual SQL/process deadline and allow the complete suite to finish.
+  GOTOOLCHAIN=go1.27.1 go test -p 1 -race -count=1 -timeout=600s -v ./...
   GOTOOLCHAIN=go1.27.1 go vet ./...
   printf 'PASS: isolated real PostgreSQL foundation tests; fixture removed at exit.\n'
 fi
