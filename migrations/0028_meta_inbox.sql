@@ -12,14 +12,14 @@ GRANT USAGE ON SCHEMA meta_private,control,integration,river TO commerce_meta_wr
 
 CREATE TABLE meta_inbox.asset_owners (
  object text NOT NULL CHECK(object IN ('page','instagram')),
- asset_id text NOT NULL CHECK(asset_id ~ '^[0-9]{1,64}$'),
+ asset_id text NOT NULL CHECK(asset_id ~ '^[0-9]{1,40}$'),
  tenant_id uuid NOT NULL, store_id uuid NOT NULL,
  PRIMARY KEY(object,asset_id), UNIQUE(object,asset_id,tenant_id,store_id),
  FOREIGN KEY(tenant_id,store_id) REFERENCES control.stores(tenant_id,id)
 );
 CREATE TABLE meta_inbox.routes (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
- app_id text NOT NULL CHECK(app_id ~ '^[0-9]{1,64}$'),
+ app_id text NOT NULL CHECK(app_id ~ '^[0-9]{1,40}$'),
  object text NOT NULL, asset_id text NOT NULL,
  tenant_id uuid NOT NULL,store_id uuid NOT NULL,binding_id uuid NOT NULL,
  binding_version bigint NOT NULL CHECK(binding_version>0),
@@ -32,7 +32,7 @@ CREATE TABLE meta_inbox.routes (
 );
 CREATE TABLE meta_inbox.batches (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
- app_id text NOT NULL CHECK(app_id ~ '^[0-9]{1,64}$'),
+ app_id text NOT NULL CHECK(app_id ~ '^[0-9]{1,40}$'),
  object text NOT NULL CHECK(object IN ('page','instagram')),
  body_hash text NOT NULL CHECK(body_hash ~ '^[0-9a-f]{64}$'),
  unit_count integer NOT NULL CHECK(unit_count BETWEEN 1 AND 1000),
@@ -43,11 +43,11 @@ CREATE TABLE meta_inbox.batches (
 );
 CREATE TABLE meta_inbox.events (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
- app_id text NOT NULL CHECK(app_id ~ '^[0-9]{1,64}$'),
+ app_id text NOT NULL CHECK(app_id ~ '^[0-9]{1,40}$'),
  object text NOT NULL CHECK(object IN ('page','instagram')),
  event_key text NOT NULL CHECK(event_key ~ '^[0-9a-f]{64}$'),
  payload_hash text NOT NULL CHECK(payload_hash ~ '^[0-9a-f]{64}$'),
- asset_id text NOT NULL CHECK(asset_id='' OR asset_id ~ '^[0-9]{1,64}$'),
+ asset_id text NOT NULL CHECK(asset_id='' OR asset_id ~ '^[0-9]{1,40}$'),
  kind text NOT NULL CHECK(kind IN ('page_comment_add','page_comment_edit','page_comment_remove','instagram_comment','instagram_live_comment','page_message','instagram_message','quarantine')),
  is_primary boolean NOT NULL,
  disposition text NOT NULL CHECK(disposition IN ('ROUTED','QUARANTINED')),
@@ -157,7 +157,7 @@ RETURNS TABLE(route_id uuid,route_epoch bigint) LANGUAGE plpgsql SECURITY DEFINE
 DECLARE r meta_inbox.routes%ROWTYPE; o meta_inbox.asset_owners%ROWTYPE;
 BEGIN
  PERFORM meta_inbox.require_authority('commerce_meta_registrar');
- IF p_app IS NULL OR p_app !~ '^[0-9]{1,64}$' OR p_object IS NULL OR p_object NOT IN ('page','instagram') OR p_asset IS NULL OR p_asset !~ '^[0-9]{1,64}$'
+ IF p_app IS NULL OR p_app !~ '^[0-9]{1,40}$' OR p_object IS NULL OR p_object NOT IN ('page','instagram') OR p_asset IS NULL OR p_asset !~ '^[0-9]{1,40}$'
   OR p_tenant IS NULL OR p_store IS NULL OR p_binding IS NULL OR p_version IS NULL OR p_version<=0
   OR p_proof IS NULL OR p_proof !~ '^[0-9a-f]{64}$' OR p_expires IS NULL OR NOT isfinite(p_expires)
   OR p_epoch IS NULL OR p_epoch<0 THEN RAISE EXCEPTION 'invalid meta route' USING ERRCODE='22023'; END IF;
@@ -209,7 +209,7 @@ RETURNS TABLE(batch_id uuid,replay boolean) LANGUAGE plpgsql SECURITY DEFINER SE
 DECLARE b meta_inbox.batches%ROWTYPE;
 BEGIN
  PERFORM meta_inbox.require_authority('commerce_meta_ingress');
- IF p_app IS NULL OR p_app !~ '^[0-9]{1,64}$' OR p_object IS NULL OR p_object NOT IN ('page','instagram')
+ IF p_app IS NULL OR p_app !~ '^[0-9]{1,40}$' OR p_object IS NULL OR p_object NOT IN ('page','instagram')
   OR p_hash IS NULL OR p_hash !~ '^[0-9a-f]{64}$' OR p_count IS NULL OR p_count NOT BETWEEN 1 AND 1000 THEN RAISE EXCEPTION 'invalid meta batch' USING ERRCODE='22023'; END IF;
  PERFORM pg_advisory_xact_lock(hashtextextended(jsonb_build_array('meta-batch',p_app,p_object,p_hash)::text,0));
  SELECT * INTO b FROM meta_inbox.batches WHERE app_id=p_app AND object=p_object AND body_hash=p_hash;
@@ -231,7 +231,7 @@ BEGIN
  SELECT * INTO b FROM meta_inbox.batches WHERE id=p_batch AND NOT finalized AND admission_xid=pg_current_xact_id();
  IF b.id IS NULL OR p_ordinal IS NULL OR p_ordinal NOT BETWEEN 1 AND b.unit_count
   OR p_key IS NULL OR p_key !~ '^[0-9a-f]{64}$' OR p_hash IS NULL OR p_hash !~ '^[0-9a-f]{64}$'
-  OR p_asset IS NULL OR (p_asset<>'' AND p_asset !~ '^[0-9]{1,64}$') OR p_kind IS NULL
+  OR p_asset IS NULL OR (p_asset<>'' AND p_asset !~ '^[0-9]{1,40}$') OR p_kind IS NULL
   OR p_kind NOT IN ('page_comment_add','page_comment_edit','page_comment_remove','instagram_comment','instagram_live_comment','page_message','instagram_message','quarantine')
   OR p_reason IS NULL OR (p_kind='quarantine' AND p_reason NOT IN ('object_mismatch','unknown_root_field','empty_or_invalid_entries','invalid_entry','invalid_asset_id','invalid_entry_time','unknown_entry_field','invalid_changes','invalid_messaging','empty_entry','unsupported_change','unsupported_messaging'))
   OR (p_kind<>'quarantine' AND (p_reason<>'' OR p_asset='' OR (b.object='page' AND p_kind NOT LIKE 'page\_%' ESCAPE '\') OR (b.object='instagram' AND p_kind NOT LIKE 'instagram\_%' ESCAPE '\')))
