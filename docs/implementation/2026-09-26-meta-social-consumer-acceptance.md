@@ -57,7 +57,20 @@ See [dependency map](dependencies.md) for maintenance callers and rerun gates.
 4. A custom object-owner role inherited with `SET FALSE` passed the Go startup
    validator, while SQL correctly denied it. `6f04653` rejects privilege reached
    through either SET or inherited USAGE; ordinary roles retain their previous
-   validation rules. Independent pre/post tests retain this exact boundary.
+   validation rules. Independent pre/post tests exercise this exact boundary.
+
+The author's earliest failing runs were tool output only, not preserved log
+files. A new controlled reproduction was therefore run on old product
+`983eabe` plus test-only `b83affe` (branch head `09e7669`), with the exact same
+test SHA-256 `068ddab35cbb28529145d1764b10e27853fa2422b6ff1fe2ae2280df70964583`.
+It exited 1: 12 top-level PASS / 3 FAIL, foundation 9.239s. Go inherited-owner
+admission, the original finish/GRANT/COMMIT case, and all three warmed role
+mutations failed as expected. The earlier `983eabe` SQL also reached argument
+validation instead of denying the inherited owner; this is a different stage
+from post-`67d4dbf`/pre-`6f04653`, where SQL denied but Go still admitted it.
+Log: `/Volumes/data/output/meta-consumer-prefixed-reproduction-20260926.log`,
+SHA-256 `9c67a3ca28973d6fa742b9f57d7a716c23c6902e1b4d1c9d9c23889926dce28e`.
+This is newly executed comparative evidence, not a recovered original log.
 
 For (3), stale authority is directly reproduced; the detailed cache invalidation
 mechanism is an inference supported by official PG18 sources, not backend
@@ -79,6 +92,17 @@ This does **not** cover the newly found authority failures or final fixed source
 Final full regression and independent MC01–07 evidence must replace the pending
 status before bounded acceptance. Post-`6f04653` old MI subset passed 20 tests,
 5.592s, exit 0: `/Volumes/data/output/meta-consumer-root-old-mi-final.log`.
+
+Root subsequently ran actual full PG/race/vet against `c533856` (the final
+product fixes plus 15 independent consumer tests): exit 0, **529 top-level
+PASS, 0 FAIL, 0 SKIP**, foundation 311.584s. Log:
+`/Volumes/data/output/meta-consumer-root-full-final.log`, SHA-256
+`80975d274cf9dc7891f670b280f3efae2055834bcefc1210cec69b7ab13105ae`.
+Independent evidence review still found MC07's populated `0028` → `0029`
+upgrade missing: fresh installation and a repeated Apply are not that gate.
+The test author is adding this path and tightening complete ALREADY-null and
+negative-commit rollback assertions. This 529-test result does not cover those
+pending test additions and is not yet the final MC01–07 verdict.
 
 ## Still outside this component
 
