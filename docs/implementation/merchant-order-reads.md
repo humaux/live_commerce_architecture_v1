@@ -29,6 +29,29 @@ partial success. Payment state is factual, not inferred from a redirect or order
 status. `READY` is a durable payment work item, **not shipped**. Pickup history
 is the original merchant attestation, **not a carrier eligibility guarantee**.
 
+## Browser ingress
+
+The admin's existing `/api/stores/{store}/orders[/{order}]` BFF reuses its
+HttpOnly session cookie, authorized store listing and server-only bearer. It
+does not enable the dev fixture bearer for order/recipient reads. Go remains
+the `orders:read` authority; a selected store or catalog access is insufficient.
+
+Next 16.3.5 reconstructs URLs before app-route handling, which can discard a bare
+`?` or normalize encoded/empty query segments. Therefore `next.config.ts` retains
+the official `skipProxyUrlNormalize` flag and `proxy.ts` checks the raw order
+query first. `lib/orders-request.ts` is shared with the app route: never replace
+this with two drifting validators or a browser-provided "original URL" header.
+The early check rejects syntax only; it does not grant store or session access.
+
+Reproduce with `bash scripts/dev/test-local.sh --browser-merchant-orders-bff`.
+This includes production Next, signed-mock OIDC, real Go/PostgreSQL, a local dev
+fixture-only negative control and raw Node HTTP requests that preserve malformed
+query syntax. The command uses only task-owned disposable infrastructure. Rerun
+identity/settings and merchant-to-buyer gates after Next or Proxy changes.
+Current evidence and retained failures are in the
+[BFF evidence register](2026-09-25-merchant-orders-bff-acceptance.md). This does not
+add an order page or authorize production access.
+
 ## Permissions and migration 0027
 
 No new SQL role, SDK, service, queue or transaction engine is introduced.

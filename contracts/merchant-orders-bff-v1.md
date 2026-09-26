@@ -5,6 +5,11 @@ raw-query/header clarifications below. Separate from pending visual
 selection. Consumes accepted [merchant read API](merchant-orders-v1.md); no
 changes to Go DTOs, SQL grants, migrations or financial state machines.
 
+Bounded local implementation and actual Next→Go→PG evidence:
+[MBT acceptance register](../docs/implementation/2026-09-25-merchant-orders-bff-acceptance.md).
+The raw-query guard runs before Next URL reconstruction and again in the route,
+using one shared validator. A directly constructed Request alone is not a gate.
+
 ## Minimal extension
 
 Reuse `apps/admin/app/api/stores/[store]/[...resource]/route.ts` plus existing

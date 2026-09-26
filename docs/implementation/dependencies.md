@@ -44,6 +44,15 @@ pgx 显式事务和现有 `commerce_auth`，未增加依赖。`internal/merchant
 [MOR01–06 本地后端验收](2026-09-25-merchant-orders-acceptance.md)：最终 458 项
 PG/race/vet 回归、跨店隔离和等待后权限复验；不含商家 UI 或正式部署。
 
+浏览器接线另受 [MBT01–04 合同](../../contracts/merchant-orders-bff-v1.md) 约束：
+复用现有 admin catch-all、HttpOnly 会话与店铺列表，禁止 fixture bearer 读取
+收货资料；成功响应必须是 `private, no-store`。Next 的 URL 正规化也是调用链
+的一部分，不能用直接构造 `Request` 的单元测试代替原始 HTTP 验证。
+升级 Next 时须跑 `bash scripts/dev/test-local.sh --browser-merchant-orders-bff`，
+并回归 `--browser-identity` 和 `--browser-merchant-buyer`。各轮结果、已发现的
+正规化缺陷及当前验收状态见 [浏览器接线证据](2026-09-25-merchant-orders-bff-acceptance.md)；
+该接线并不代表订单页面、发货或生产发布已验收。
+
 ## 独立付款 worker 复用关系
 
 `cmd/payment-worker` → `accounts.LoadKeyring` / `platform.OpenWorkerPool` →
