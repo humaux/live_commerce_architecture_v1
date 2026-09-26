@@ -50,6 +50,7 @@
 
 - 本地逻辑恢复与冷启动：[LRC01–06 验收](docs/implementation/2026-09-27-local-recovery-acceptance.md)使用两套独立 PG18、原生角色／全库备份恢复，核验数据、权限、序列、密钥和幂等重启。最终568项 PG/race/vet 通过及双独立复核；修复了测试造数连接池延迟释放导致的连接耗尽，并保留前后证据。未调大容量或超时；此结果不是生产备份、PITR/HA、整个T20或SaaS上线验收。
 - 直播场次／节目草稿：[LSP01–05 本地验收](docs/implementation/2026-09-27-live-planning-acceptance.md)覆盖创建、修改、读取、幂等回执、租户隔离及真实锁等待后的授权过期。最终全仓573项 PG/race/vet 通过；保留两处历史迁移测试边界漂移的失败与修正证据。此增量没有公开工作室入口、推流目的地、开播／停播、录像或真实 LiveKit 接入，T08/G06及整套SaaS仍未完成。
+- LiveKit 协议客户端：[LKP01–06 本地验收](docs/implementation/2026-09-27-livekit-protocol-acceptance.md)，12项协议＋4项调度器 race 测试、5项 PG 草稿回归和 vet 通过。实现真实请求格式，但只在本地 TLS 服务验收；未接生产凭据、开播编排或 dispatcher，不能据此宣称真实 Cloud／G06 通过。
 - Meta 入站协议切片：原始字节验签、严格 JSON／Unicode、完整批次归一化及同步提交回调后 ACK，已通过[52 项本地 race 回归与独立审查](docs/implementation/2026-09-26-meta-webhook-protocol-acceptance.md)。此早期协议门禁不包含持久化，后续入库验收见下；公开路由与真实 Meta 资格未启用，不等于 T07 完成。
 - Meta 入库：原始报文交接及 AES-GCM 前置组件已有[独立验收](docs/implementation/2026-09-26-meta-inbox-primitives-acceptance.md)。SQL/Go 原子接收、可信租户路由、专用 River 队列和受控密文清理通过[真实 PG 本地验收](docs/implementation/2026-09-26-meta-inbox-durability-acceptance.md)：冻结产品源码全量 507 项通过，再合入 IG 测试后专项 20 项通过，race/vet 均通过。后续消费者见下；OAuth 资格和公开回调尚未启用。
 - Meta 消费者：将已路由的消息／评论保存到独立 social 域，不混入站内买家聊天、不发送消息。专用权限、真实 River、并发回滚及带数据升级通过[MC01–07 本地独立验收](docs/implementation/2026-09-26-meta-social-consumer-acceptance.md)：全仓 530 项通过（含 16 项消费专项），0 失败／跳过，race/vet 通过。后续私有运行时装配见下；社交读取 UI 和真实平台资格仍待完成，不代表 T07 或 SaaS 已可上线。

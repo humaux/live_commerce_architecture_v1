@@ -14,6 +14,30 @@ FORCE RLS 和列级权限隔离 `live.sessions/programs`。修改先锁场次再
 这里没有 HTTP／工作室入口、LiveKit 调用或开播状态。`live:read/manage` 不随迁移
 或旧开户回放自动授权；后续商家入口需要单独实现显式授权配置。
 
+## T08 LiveKit Egress 协议依赖
+
+冻结契约见 [LKP01–06](../../contracts/livekit-egress-protocol-v1.md)。独立协议包
+`internal/integrations/livekit` 的调用方向是 `Start/Query/Stop` → 每次请求签发
+短时 HS256 JWT → 固定 Cloud Twirp 路径 → 有界严格 JSON 解码 → `Observation`。
+运行时只依赖 Go 标准库；HTTP/TLS、HMAC、JSON 的安全模式参考现有 PAYUNi
+客户端，不复用 PSP 配置，也不新增 LiveKit SDK、队列或跨平台通用框架。
+
+**当前没有生产调用者、dispatcher route 或自动开播任务。** 后续受授权的
+编排层负责确定租户／店铺／attempt 的所有权，并从受保护配置注入凭据和
+推流 URL。协议层不读取环境变量、文件或商家表单；`Target` 的语法及响应
+关联校验不能代替停播前的所有权校验。配置及输入的格式化／JSON 展示必须
+脱敏，私有 wire 结构才允许把必需字段发送给固定 provider。
+
+MOCK 的 RoundTripper 是可信测试接缝，不是网络沙箱；独立测试必须将其绑定
+本地 HTTP/TLS 服务。LIVE 配置拒绝注入、代理和重定向。请求不会自动重试：
+Start/Stop 的不确定结果保留 UNKNOWN；查询空列表、带续页令牌的结果以及
+Stop ACK 均不证明远端资源已回收。
+
+升级 LiveKit RPC／proto、Go HTTP/JSON、Cloud 主机约束或加入 self-host 时，
+重新执行 LKP 的协议／负例／race／vet 和独立审查，并单独进行真实 provider
+验收。凭据生命周期、撤销绑定后的停播、Webhook 历史、单目的地状态、计费
+与 G06 是后续编排责任，不能由本地协议测试代替。测试结果另行落验收记录。
+
 ## 依赖版本
 
 版本来自当前 `go.mod`/`go.sum` 和本阶段已记录的锁定证据；license 是上游声明，不等于本项目已完成法务准入。升级流程是确认候选版本、更新锁文件与本表、在候选版本上跑 gate，通过后再合并。
