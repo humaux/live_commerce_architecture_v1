@@ -12,6 +12,10 @@ import (
 	"io"
 	"log/slog"
 	"net/url"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -20,13 +24,157 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
+	"github.com/riverqueue/river/rivermigrate"
 	"livecommerce/internal/integrations/meta"
+	"livecommerce/migrations"
 )
 
 type mcEvent struct {
 	id, key, hash, app, object, asset, route string
 	epoch, job                               int64
 	plain                                    []byte
+}
+
+// Start at the actual checked migration ledger through 0028. The existing
+// worker fixture installs latest immediately, so it cannot model this upgrade.
+func mcPre0029Fixture(t *testing.T) *testFixture {
+	t.Helper()
+	fixture(t) // the same explicit real-PG permission gate as the other fixtures
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer cancel()
+	name := "lc-meta-upgrade-" + t04Tag()
+	password := hex.EncodeToString(randomBytes(24))
+	_, err := exec.CommandContext(ctx, "docker", "run", "-d", "--pull=never", "--name", name,
+		"--label", "livecommerce.fixture="+name, "--memory=512m", "--cpus=1", "--pids-limit=128",
+		"--tmpfs", "/var/lib/postgresql:rw,size=268435456", "-e", "POSTGRES_PASSWORD="+password,
+		"-e", "POSTGRES_DB=lc_foundation_test", "-p", "127.0.0.1::5432",
+		"postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280",
+		"-c", "shared_buffers=32MB", "-c", "max_connections=30").CombinedOutput()
+	if err != nil {
+		t.Fatalf("start labelled old-schema PG: %v", err)
+	}
+	t.Cleanup(func() {
+		cleanup, stop := context.WithTimeout(context.Background(), 15*time.Second)
+		defer stop()
+		label, err := exec.CommandContext(cleanup, "docker", "inspect", "-f", `{{index .Config.Labels "livecommerce.fixture"}}`, name).Output()
+		if err != nil || strings.TrimSpace(string(label)) != name {
+			t.Errorf("refusing unverified PG cleanup %s: %v", name, err)
+			return
+		}
+		if out, err := exec.CommandContext(cleanup, "docker", "rm", "-f", name).CombinedOutput(); err != nil {
+			t.Errorf("remove test PG %s: %v: %s", name, err, out)
+		}
+	})
+	portOutput, err := exec.CommandContext(ctx, "docker", "port", name, "5432/tcp").Output()
+	if err != nil || !strings.HasPrefix(strings.TrimSpace(string(portOutput)), "127.0.0.1:") {
+		t.Fatal("old-schema PG did not bind loopback")
+	}
+	port := strings.TrimPrefix(strings.TrimSpace(string(portOutput)), "127.0.0.1:")
+	if _, err := strconv.Atoi(port); err != nil {
+		t.Fatal("old-schema PG returned invalid port")
+	}
+	u := &url.URL{Scheme: "postgres", User: url.UserPassword("postgres", password), Host: "127.0.0.1:" + port, Path: "/lc_foundation_test", RawQuery: "sslmode=disable"}
+	owner, err := pgxpool.New(ctx, u.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(owner.Close)
+	for i := 0; i < 50; i++ {
+		probe, stop := context.WithTimeout(ctx, 500*time.Millisecond)
+		err = owner.Ping(probe)
+		stop()
+		if err == nil {
+			break
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+	if err != nil {
+		t.Fatalf("old-schema PG did not become ready: %v", err)
+	}
+	// Mirror Apply's business, upstream River, then post-River phases, stopping
+	// before 0029. Keep the original bytes and checksums, not a hand-written
+	// approximation of the 0028 schema.
+	oldVersions, err := filepath.Glob("../../migrations/[0-9][0-9][0-9][0-9]_*.sql")
+	if err != nil || len(oldVersions) != 29 || filepath.Base(oldVersions[27]) != "0028_meta_inbox.sql" {
+		t.Fatalf("unexpected numbered migrations: count=%d err=%v", len(oldVersions), err)
+	}
+	tx, err := owner.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tx.Exec(ctx, `CREATE TABLE public.lc_schema_migrations(version text PRIMARY KEY,checksum text NOT NULL,applied_at timestamptz NOT NULL DEFAULT now())`); err != nil {
+		_ = tx.Rollback(ctx)
+		t.Fatal(err)
+	}
+	for _, path := range oldVersions[:28] {
+		body, err := os.ReadFile(path)
+		if err != nil {
+			_ = tx.Rollback(ctx)
+			t.Fatal(err)
+		}
+		if _, err := tx.Exec(ctx, string(body)); err != nil {
+			_ = tx.Rollback(ctx)
+			t.Fatalf("historical migration %s: %v", filepath.Base(path), err)
+		}
+		checksum := fmt.Sprintf("%x", sha256.Sum256(body))
+		if _, err := tx.Exec(ctx, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES($1,$2)`, filepath.Base(path), checksum); err != nil {
+			_ = tx.Rollback(ctx)
+			t.Fatal(err)
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	upstream, err := rivermigrate.New(riverpgxv5.New(owner), &rivermigrate.Config{Schema: "river", Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := upstream.Migrate(ctx, rivermigrate.DirectionUp, nil); err != nil {
+		t.Fatal(err)
+	}
+	// Apply installs these River privileges between upstream and post-River SQL.
+	mustExec(t, owner, `GRANT SELECT,INSERT,UPDATE(kind) ON river.river_job TO commerce_runtime;
+	 GRANT USAGE ON SEQUENCE river.river_job_id_seq TO commerce_runtime;
+	 GRANT SELECT,INSERT,UPDATE(kind) ON river.river_job TO commerce_checkout_runtime;
+	 GRANT USAGE ON SEQUENCE river.river_job_id_seq TO commerce_checkout_runtime;
+	 GRANT SELECT ON river.river_job TO commerce_checkout_writer,commerce_integration_writer;
+	 GRANT USAGE ON SCHEMA river TO commerce_worker;
+	 GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river TO commerce_worker;
+	 REVOKE ALL ON river.river_migration FROM commerce_worker;
+	 GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river TO commerce_worker`)
+	postVersions, err := filepath.Glob("../../migrations/post_river/[0-9][0-9][0-9][0-9]_*.sql")
+	if err != nil || len(postVersions) != 3 {
+		t.Fatalf("unexpected post-River migrations: count=%d err=%v", len(postVersions), err)
+	}
+	postTx, err := owner.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range postVersions {
+		body, err := os.ReadFile(path)
+		if err != nil {
+			_ = postTx.Rollback(ctx)
+			t.Fatal(err)
+		}
+		version := "post_river/" + filepath.Base(path)
+		if _, err := postTx.Exec(ctx, string(body)); err != nil {
+			_ = postTx.Rollback(ctx)
+			t.Fatalf("historical migration %s: %v", version, err)
+		}
+		checksum := fmt.Sprintf("%x", sha256.Sum256(body))
+		if _, err := postTx.Exec(ctx, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES($1,$2)`, version, checksum); err != nil {
+			_ = postTx.Rollback(ctx)
+			t.Fatal(err)
+		}
+	}
+	if err := postTx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	f := &testFixture{owner: owner, databaseURL: u.String(), tenantA: randomUUID(), tenantB: randomUUID(), storeA1: randomUUID(), storeA2: randomUUID(), storeB: randomUUID(), principalA: randomUUID(), tokens: map[string]string{"a": randomToken(), "a2": randomToken(), "b": randomToken(), "expired": randomToken(), "revoked": randomToken(), "buyer": randomToken(), "revoked_grant": randomToken()}}
+	if err := f.seed(ctx); err != nil {
+		t.Fatal(err)
+	}
+	return f
 }
 
 func mcPost(t *testing.T, m miTest, asset string, raw []byte) mcEvent {
@@ -87,6 +235,106 @@ func mcAwait(t *testing.T, m miTest, e mcEvent) {
 		time.Sleep(20 * time.Millisecond) // Polls completion only; no race conclusion depends on this delay.
 	}
 	t.Fatal("actual River consumer did not complete")
+}
+
+func TestMetaConsumerPopulated0028Upgrade(t *testing.T) {
+	f := mcPre0029Fixture(t)
+	ctx := context.Background()
+	var oldLedger int
+	var oldSocial bool
+	if err := f.owner.QueryRow(ctx, `SELECT (SELECT count(*) FROM public.lc_schema_migrations),
+	 to_regclass('social.messages') IS NOT NULL`).Scan(&oldLedger, &oldSocial); err != nil {
+		t.Fatal(err)
+	}
+	if oldLedger != 31 || oldSocial {
+		t.Fatalf("fixture is not 0028 plus three post-River migrations: ledger=%d social=%v", oldLedger, oldSocial)
+	}
+	m := miTest{f: f, ingress: miPool(t, f, "commerce_meta_ingress"), registrar: miPool(t, f, "commerce_meta_registrar"), curator: miPool(t, f, "commerce_meta_curator"), key: randomBytes(32)}
+	keys := mcKeys(t, m)
+	var err error
+	m.verifier, err = meta.NewVerifier(meta.Config{AppID: miApp, Object: "page", AppSecret: miSecret, VerifyToken: "meta-inbox-verify-token"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	inbox, err := meta.NewInbox(ctx, m.ingress, keys)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m.handler, err = meta.NewInboxHandler(m.verifier, inbox)
+	if err != nil {
+		t.Fatal(err)
+	}
+	asset := miAsset()
+	binding := miBinding(t, m, asset, "facebook", f.tenantA, f.storeA1, f.principalA)
+	route, _ := miRoute(t, m, asset, f.tenantA, f.storeA1, binding)
+	e := mcPost(t, m, asset, miMessage(asset, "m."+randomUUID(), "legacy-0028-message"))
+	const receipt = `SELECT jsonb_build_object(
+	 'binding',(SELECT to_jsonb(b) FROM integration.bindings b WHERE b.id=$3),
+	 'route',(SELECT to_jsonb(r) FROM meta_inbox.routes r WHERE r.id=$2),
+	 'batch',(SELECT to_jsonb(b) FROM meta_inbox.batches b JOIN meta_inbox.batch_events x ON x.batch_id=b.id WHERE x.event_id=$1),
+	 'batch_event',(SELECT to_jsonb(x) FROM meta_inbox.batch_events x WHERE x.event_id=$1),
+	 'event',(SELECT to_jsonb(e) FROM meta_inbox.events e WHERE e.id=$1),
+	 'raw',(SELECT to_jsonb(rb) FROM meta_private.raw_bodies rb JOIN meta_inbox.batch_events x ON x.batch_id=rb.batch_id WHERE x.event_id=$1),
+	 'body',(SELECT to_jsonb(eb) FROM meta_private.event_bodies eb WHERE eb.event_id=$1),
+	 'job',(SELECT to_jsonb(j) FROM river.river_job j WHERE j.id=$4))::text`
+	var before, after string
+	if err := f.owner.QueryRow(ctx, receipt, e.id, route, binding, e.job).Scan(&before); err != nil {
+		t.Fatal(err)
+	}
+	for _, row := range []string{"binding", "route", "batch", "batch_event", "event", "raw", "body", "job"} {
+		if strings.Contains(before, `"`+row+`": null`) {
+			t.Fatalf("0028 fixture lacks populated %s row", row)
+		}
+	}
+	if err := migrations.Apply(ctx, f.owner); err != nil {
+		t.Fatalf("populated 0028 to 0029 upgrade: %v", err)
+	}
+	if err := migrations.Apply(ctx, f.owner); err != nil {
+		t.Fatalf("repeat migration after upgrade: %v", err)
+	}
+	if err := f.owner.QueryRow(ctx, receipt, e.id, route, binding, e.job).Scan(&after); err != nil {
+		t.Fatal(err)
+	}
+	if after != before {
+		t.Fatal("upgrade or repeat Apply changed the existing binding, route, receipt, body or River job")
+	}
+	var ledger int
+	var hasSocial bool
+	if err := f.owner.QueryRow(ctx, `SELECT (SELECT count(*) FROM public.lc_schema_migrations),
+	 to_regclass('social.messages') IS NOT NULL`).Scan(&ledger, &hasSocial); err != nil {
+		t.Fatal(err)
+	}
+	if ledger != oldLedger+1 || !hasSocial {
+		t.Fatalf("0029 ledger/schema missing after repeat Apply: ledger=%d social=%v", ledger, hasSocial)
+	}
+	consumer := mcConsumer(t, m)
+	w, err := meta.NewConsumerWorker(ctx, consumer, keys)
+	if err != nil {
+		t.Fatal(err)
+	}
+	workers := river.NewWorkers()
+	river.AddWorker(workers, w)
+	workerPool := miPool(t, f, "commerce_worker")
+	client, err := river.NewClient(riverpgxv5.New(workerPool), &river.Config{Schema: "river", Workers: workers, Queues: map[string]river.QueueConfig{"meta_inbox": {MaxWorkers: 1}}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), JobTimeout: 15 * time.Second, RescueStuckJobsAfter: 30 * time.Second})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := client.Start(ctx); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		stop, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := client.StopAndCancel(stop); err != nil {
+			t.Error("River stop", err)
+		}
+	})
+	mcAwait(t, m, e)
+	if miCount(t, f.owner, `SELECT count(*) FROM social.messages WHERE event_id=$1`, e.id) != 1 ||
+		miCount(t, f.owner, `SELECT count(*) FROM meta_inbox.audit_events WHERE event_id=$1 AND action='processed'`, e.id) != 1 ||
+		miCount(t, f.owner, `SELECT count(*) FROM meta_private.event_bodies WHERE event_id=$1`, e.id) != 1 {
+		t.Fatal("upgraded legacy receipt was not consumed exactly once with source body retained")
+	}
 }
 
 func TestMetaConsumerAuthority(t *testing.T) {
@@ -517,9 +765,9 @@ func TestMetaConsumerReverseSequenceReplayAndPurge(t *testing.T) {
 		t.Fatal("processed source body did not purge")
 	}
 	var outcome string
-	var exposed *string
-	if err := p.QueryRow(ctx, `SELECT outcome,app_id FROM meta_inbox.load_social_event($1::uuid,$2::bigint,1)`, first.id, first.job).Scan(&outcome, &exposed); err != nil || outcome != "ALREADY" || exposed != nil {
-		t.Fatalf("post-purge historical outcome=%s exposed=%v err=%v", outcome, exposed, err)
+	var exposed int
+	if err := p.QueryRow(ctx, `SELECT outcome,num_nonnulls(app_id,object,asset_id,kind,event_key,payload_hash,tenant_id,store_id,route_id,route_epoch,key_id,nonce,ciphertext) FROM meta_inbox.load_social_event($1::uuid,$2::bigint,1)`, first.id, first.job).Scan(&outcome, &exposed); err != nil || outcome != "ALREADY" || exposed != 0 {
+		t.Fatalf("post-purge historical outcome=%s exposed fields=%d err=%v", outcome, exposed, err)
 	}
 	if miCount(t, m.f.owner, `SELECT count(*) FROM social.messages WHERE event_id=$1`, first.id) != 1 || miCount(t, m.f.owner, `SELECT next_seq FROM social.conversations WHERE peer_key=$1`, subject) != 2 {
 		t.Fatal("source purge changed social history")
@@ -659,8 +907,12 @@ func TestMetaConsumerSameEventLockAndFinalAuthority(t *testing.T) {
 	if err := tx2.Commit(ctx); miSQLState(err) != "42501" {
 		t.Fatalf("mixed authority at final COMMIT SQLSTATE=%s err=%v", miSQLState(err), err)
 	}
-	if miCount(t, m.f.owner, `SELECT count(*) FROM social.messages WHERE event_id=$1`, e2.id) != 0 || miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.events WHERE id=$1 AND terminal_reason IS NOT NULL`, e2.id) != 0 {
-		t.Fatal("authority change left partial fact")
+	if miCount(t, m.f.owner, `SELECT count(*) FROM social.messages WHERE event_id=$1`, e2.id) != 0 ||
+		miCount(t, m.f.owner, `SELECT count(*) FROM social.comment_events WHERE event_id=$1`, e2.id) != 0 ||
+		miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.events WHERE id=$1 AND terminal_reason IS NOT NULL`, e2.id) != 0 ||
+		miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.audit_events WHERE event_id=$1 AND action='processed'`, e2.id) != 0 ||
+		miCount(t, m.f.owner, `SELECT next_seq FROM social.conversations WHERE peer_key=$1`, subject) != 1 {
+		t.Fatal("authority change left fact, terminal, audit or sequence")
 	}
 }
 
@@ -800,8 +1052,12 @@ func TestMetaConsumerFinalCommitDatabaseOwner(t *testing.T) {
 	if err := tx.Commit(ctx); miSQLState(err) != "42501" {
 		t.Fatalf("database owner at final COMMIT SQLSTATE=%s err=%v", miSQLState(err), err)
 	}
-	if miCount(t, m.f.owner, `SELECT count(*) FROM social.messages WHERE event_id=$1`, e.id) != 0 || miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.events WHERE id=$1 AND terminal_reason IS NOT NULL`, e.id) != 0 || miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.audit_events WHERE event_id=$1 AND action='processed'`, e.id) != 0 {
-		t.Fatal("database ownership change left projection")
+	if miCount(t, m.f.owner, `SELECT count(*) FROM social.messages WHERE event_id=$1`, e.id) != 0 ||
+		miCount(t, m.f.owner, `SELECT count(*) FROM social.comment_events WHERE event_id=$1`, e.id) != 0 ||
+		miCount(t, m.f.owner, `SELECT count(*) FROM social.conversations WHERE peer_key=$1`, strings.Repeat("f", 64)) != 0 ||
+		miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.events WHERE id=$1 AND terminal_reason IS NOT NULL`, e.id) != 0 ||
+		miCount(t, m.f.owner, `SELECT count(*) FROM meta_inbox.audit_events WHERE event_id=$1 AND action='processed'`, e.id) != 0 {
+		t.Fatal("database ownership change left fact, terminal, audit or conversation")
 	}
 }
 
