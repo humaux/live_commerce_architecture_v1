@@ -7,6 +7,12 @@ intents unless separately reviewed/authorized, and disabled/changed media bindin
 prevent planning stop with the frozen version. No source or migration exists yet;
 do not dispatch these proposed actions or treat this draft as an accepted contract.
 
+The next implementation dependency is the actual
+[LiveKit Egress protocol client](livekit-egress-protocol-v1.md), not this LOCAL
+intent queue. It introduces no executable operations or provider route. The
+two lifecycle blockers above still require a separate reviewed resolution;
+protocol-client tests cannot close them.
+
 Base `8ea20ae`; successor to [live planning](live-planning-v1.md). This proposes a
 LOCAL durable control-intent slice, **not operational start/stop or G06**. It
 registers no provider route, HTTP handler or worker. No secrets or provider calls.
