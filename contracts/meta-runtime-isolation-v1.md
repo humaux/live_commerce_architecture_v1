@@ -1,0 +1,143 @@
+# Meta runtime isolation revision v1
+
+Status: **DRAFT / INDEPENDENT_PREFLIGHT_REQUIRED / NOT_IMPLEMENTED**.
+This amends the failed shared-schema portions of [runtime v1](meta-runtime-v1.md),
+not its other parsing, lifecycle, tenant, encryption or MR01–05 requirements.
+Base candidate `8ed76d6`; observed blocker and logs are in the
+[acceptance record](../docs/implementation/2026-09-26-meta-runtime-acceptance.md).
+Only local isolated implementation/tests are authorized. No customer deployment,
+service shutdown, credential change or production data migration is authorized.
+
+## Decision and alternatives
+
+Use pinned River v0.40.0's native **same PostgreSQL database, fixed `river_meta`
+schema** for Meta jobs, with a dedicated `commerce_meta_worker` lifecycle role.
+Both Meta clients specify `Config.Schema` explicitly; the migration runner uses
+`rivermigrate.Config.Schema`. Keep the fixed `meta_inbox` queue and existing job
+kind/args. Do not expose the schema as environment configuration.
+
+| Option | Fit | Decision |
+| --- | --- | --- |
+| Native separate schema and lifecycle role | Isolates maintenance and SQL authority while keeping atomic PG admission | Selected, subject to independent contract review and real upgrade gates |
+| Custom driver/SQL maintenance filters or leader suppression | Requires scheduler/rescuer/cleaner/transaction-wrapper upkeep; leader suppression alone breaks retry scheduling or leaves other leaders dangerous | Rejected |
+| One all-kind worker | Broadens registered work, credentials and execution scope; still changes unrelated rows in MR04 | Rejected for this contract |
+| Timing changes / fixture pre-promotion | Hides the measured violation | Rejected |
+
+Native schema support: [River documentation](https://riverqueue.com/docs/alternate-schema).
+Why queues alone do not isolate maintenance:
+[maintainer explanation](https://github.com/riverqueue/river/discussions/343).
+Source checks use the pinned dependency, not an assumed latest API.
+
+## Authority and Go delta
+
+- New NOLOGIN, non-owner `commerce_meta_worker`, with no superuser, bypass-RLS,
+  role/database creation or replication. A separately provisioned login inherits
+  only this authority. `COMMERCE_META_WORKER_DATABASE_URL` now requires it;
+  ordinary `commerce_worker` is rejected, not silently accepted for compatibility.
+- Add `platform.OpenMetaWorkerPool(ctx, dsn)` and
+  `platform.ValidateMetaWorkerPool(ctx, pool)`, reusing the existing authority
+  machinery, deadlines, redaction and borrowed-pool rules. All role classifiers
+  and SQL mixed-authority gates must recognize the new role, including inherited
+  USAGE/SET-reachable roles and owner reachability. No mixed worker/ingress/
+  consumer/runtime/registrar/curator role is admissible.
+- Lifecycle role: River lifecycle table DML and sequence privileges only in
+  `river_meta`; no migration ledger DML, business/private/social table access or
+  CREATE. Only `meta_inbox.runtime_ready()` execution and required schema USAGE.
+  The separate projection consumer pool remains unchanged in purpose.
+- Ingress: `SELECT,INSERT,UPDATE(kind)` on `river_meta.river_job` and sequence
+  USAGE, not lifecycle mutation. Revoke its corresponding old `river` grants.
+  NOLOGIN Meta writer keeps only the SELECT and row-lock privileges needed by
+  its fixed SQL functions, now on the new job table, not the old one.
+- Ordinary `commerce_worker` gets no `river_meta` privileges. Dedicated Meta
+  roles must fail startup when given cross-domain role authority; verify direct
+  and inherited effective privileges in acceptance. PUBLIC grants may not
+  reopen either lifecycle boundary.
+- Change `NewInbox` and `NewConsumerClient` together to fixed `river_meta`.
+  CLI opens `OpenMetaWorkerPool`; constructor calls `ValidateMetaWorkerPool`.
+  No API shape change, new broker, worker framework, custom River driver or
+  third database pool. API still starts no workers.
+
+## Forward-only migration and cutover
+
+Integrator owns all migrations and shared platform code. Preserve checksums of
+0001–0030 and prior post-River SQL. Add `0031_meta_river_isolation.sql` for role/
+schema preparation and `post_river/0004_meta_river_isolation.sql` for cutover.
+`migrations.Apply` retains its advisory-lock and timeout design: business SQL,
+upstream `river` migration, upstream `river_meta` migration, then application
+post-River transaction. Both upstream ledgers are distinct; no replay/reset.
+Scope grants to each role/schema explicitly; do not grant all schemas or use
+cross-schema default privileges. An interrupted upstream phase is resumable;
+it must not expose a partly migrated Meta runtime as ready.
+
+The cutover is one bounded owner transaction. Acquire locks in a documented
+fixed order on source/destination job and queue tables before inspecting them.
+Recheck under those locks; do not rely on a prior count or runtime flag.
+
+1. Operational prerequisite: stop old Meta ingress/consumer processes after an
+   authorized drain. This document does not grant that production authority.
+   Reject migration if any reserved source job is `running`; do not forcibly
+   cancel, discard, reset attempts or recover unknown effects inside migration.
+   Failure or lock timeout leaves the source and application ledger unchanged.
+2. Validate every source row matching reserved kind **or** queue. It must have
+   exact family/args/key and a matching completed ROUTED event/job link. Poison
+   rows, nonempty destination jobs or conflicting destination queue data fail
+   closed; never delete them as cleanup. Already-pruned terminal jobs remain
+   absent, with permanent event receipts unchanged.
+3. Copy valid Meta jobs with **the same IDs and every persisted field**, casting
+   only the schema-local enum type through text. Preserve state, attempts,
+   timestamps, errors, metadata, tags and uniqueness columns. Do not reinsert
+   with `InsertTx` or regenerate args/IDs. Preserve the `meta_inbox` queue row,
+   including its paused state; do not copy old clients, leaders or unrelated
+   queues. Compare source/destination complete rows before source deletion.
+4. Advance the new ID sequence without lowering it: next ID must exceed copied
+   IDs, retained event `job_id` references (including pruned jobs), source
+   sequence high-water and current destination sequence high-water. Sequence
+   gaps after rollback are acceptable, reused IDs are not. Do not change the
+   old sequence or unrelated jobs.
+5. In the same transaction rebind `complete_event`, `check_event`, `purgeable`,
+   `lock_purgeable`, `social_source`, job-family/link guards and `runtime_ready`
+   to the new table. Audit callers; retain signatures, safe search_path, owner,
+   grants and transaction-bound evidence checks. Install new insert guards
+   after validated historical copying so old admission XIDs are not forged.
+   Keep ciphertext, nonce, AAD, event IDs, provenance and social facts identical.
+6. Remove copied source Meta jobs only after equality checks. Install a guard
+   rejecting any future reserved-kind/queue insert or conversion in old
+   `river.river_job`, while preserving unrelated producers. Revoke old ingress/
+   Meta writer job access and ordinary-worker runtime predicate execution.
+   An old binary may fail closed; it must not create a second writable Meta lane.
+7. Predicate readiness verifies new exact guard metadata, active jobs and old
+   schema exclusion guard; consumers must not infer readiness from empty jobs.
+   Commit the application migration checksum with all cutover effects. A second
+   `Apply` preserves rows and does not repeat deletion/copying. No down migration
+   or production rollback-by-copy is promised.
+
+## Acceptance gates (MIso)
+
+| Gate | Required actual evidence |
+| --- | --- |
+| MIso01 authority | Fresh PG: correct roles succeed; old/mixed/owner/system/USAGE/SET-reachable authorities fail before work. Direct SQL cannot mutate the other lifecycle schema or migration ledgers. Disabled flags still do nothing. |
+| MIso02 populated cutover | Build real 0030 data via old ingress, including Page/IG, duplicate/quarantine, scheduled/retryable/terminal and pruned terminal jobs; paused queue preserved. Full source/destination job equality, event/body/social equality, no unrelated change, sequence above all retained IDs; Apply twice. |
+| MIso03 failure and resume | Running or poisoned reserved jobs, nonempty destination, lock contention and partial-phase interruption fail closed; no partial copy/delete or ready state. Resume on the same isolated fixture without rewriting checksums. Old producer writes are rejected after cutover. |
+| MIso04 real maintenance isolation | Keep deterministic MR04 due scheduled payment unchanged. Also snapshot unrelated retryable, stale-running and retention-eligible terminal jobs. Start the real Meta CLI; observe positive-control Meta scheduler/rescuer/cleaner work, not merely a sleep, then prove unrelated full rows unchanged. Start an actual old-schema worker and prove the converse. No test-only production flags. |
+| MIso05 regressions | Actual API Page/IG exactly-once, bad paths/signatures, key-loss retention and restoration/restart, signal/pool cleanup; all MI/MC/MR suites, complete PG/race/vet and relevant browser regression; independent source/evidence review. |
+
+Tests may use legitimate isolated fixture-owner setup before the baseline
+snapshot. Do not turn unrelated scheduled rows available or postpone their
+deadlines to evade maintenance. Assertions must exercise the root failure.
+
+## Ownership, limits and next signal
+
+Freeze this contract after independent preflight, then at most two isolated
+implementation writers: integrator owns shared SQL/platform/migration runner;
+Go author owns Meta clients/CLI only after shared APIs freeze. Independent test
+author owns new isolation tests and necessary schema-specific existing tests;
+existing upgrade tests must continue asserting their historical baselines.
+
+Moving Meta does **not** resolve old payment/expiry/external workers' partial
+kind maps in shared `river`. That cross-maintenance risk remains a separate P1
+deployment gate and needs the same source-plus-process audit before release.
+Do not imply whole-SaaS safety from Meta isolation. No runtime is enabled here.
+Large historical migrations exceeding the current bounded Apply budget require
+a separate reviewed migration plan, not a silent timeout increase or online
+dual-write path. Production backup, drain, impact approval and rollout remain
+separate from all local gates above.

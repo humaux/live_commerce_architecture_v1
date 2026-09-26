@@ -80,7 +80,15 @@ READ COMMITTED 事务 → `load_social_event` → `PayloadKeyring.open` →
 改动任一调用点须重跑 `--meta-consumer`、`--meta-inbox` 和完整 PG/race/vet，
 并独立审查。当前接口[已冻结](../../contracts/meta-consumer-v1.md)，MC01–07
 通过本地真实 PG/River、带数据升级、全仓 530 项回归和独立复核；详见上述验收
-记录。尚无公开读取 UI、发送策略或生产运行时装配，不等于完整 T07 已完成。
+记录。尚无公开读取 UI、发送策略或已验收生产运行时装配，不等于完整 T07 已完成。
+
+后续私有运行时候选的真实进程 MR04 **失败**：River v0.40.0 的 `Queues`
+只限制取任务，leader 的 scheduler/rescuer/cleaner 仍覆盖整个 `Config.Schema`。
+Meta-only worker 把付款任务从 scheduled 改为 available；不能把队列名当隔离边界。
+详见[失败证据](2026-09-26-meta-runtime-acceptance.md)和
+[隔离修订](../../contracts/meta-runtime-isolation-v1.md)。原生同 PG 独立 schema
+方案须同时调整客户端、上游迁移、业务 SQL、触发器、权限及历史 jobID；仅改
+Go 的 Schema 字段不够。旧 payment/expiry 共用 schema 的全局 rescuer 风险须另验。
 
 ## 商家账户接入复用关系
 

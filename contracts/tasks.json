@@ -389,6 +389,13 @@
       "acceptance": "docs/implementation/2026-09-26-meta-social-consumer-acceptance.md",
       "database_and_real_queue": "PASS_LOCAL_PG_RIVER_POPULATED_UPGRADE_RACE_AND_VET",
       "boundary": "Dedicated consumer stores scoped encrypted social facts separately from webchat/identity/commerce. No public runtime/CLI assembly, social read UI, OAuth proof issuer, sending policy, provider qualification or full T07/SaaS acceptance."
+    },
+    "private_runtime": {
+      "status": "FAILED_MR04_REVISION_REQUIRED",
+      "acceptance": "docs/implementation/2026-09-26-meta-runtime-acceptance.md",
+      "revision_contract": "contracts/meta-runtime-isolation-v1.md",
+      "root_evidence": "/Volumes/data/output/meta-runtime-root-deterministic-failure-20260926.log",
+      "boundary": "Real Meta-only River worker promoted an unrelated scheduled payment job. Native same-PG schema isolation draft requires independent preflight and implementation; no full regression, runtime or deployment acceptance. Existing payment/expiry shared-schema maintenance risk remains separately open."
     }
   },
   {

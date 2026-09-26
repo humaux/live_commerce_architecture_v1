@@ -1,9 +1,12 @@
 # Meta receive/consume runtime
 
-Status: **IMPLEMENTING / MR01–05 NOT_YET_ACCEPTED**. This is a local runtime
+Status: **FAILED_MR04 / REVISION_REQUIRED**. This is a local runtime
 increment over the accepted inbox and social consumer. It does not enable a
 customer callback, authorize sending, or establish production readiness.
-Configuration and gates: [frozen contract](../../contracts/meta-runtime-v1.md).
+Configuration and gates: [original contract](../../contracts/meta-runtime-v1.md).
+This page maps the failed candidate, not a production-safe queue boundary.
+The [isolation revision](../../contracts/meta-runtime-isolation-v1.md) must be
+implemented and independently accepted before enabling this runtime.
 
 ## Call and ownership map
 
@@ -12,7 +15,7 @@ Configuration and gates: [frozen contract](../../contracts/meta-runtime-v1.md).
 | `cmd/api` Meta assembly | `LoadWebhookEndpoints`, `LoadPayloadKeyring`, `platform.OpenMetaIngressPool`, `NewWebhookRouter` | Dedicated ingress login; API owns pool and HTTP shutdown; never starts a worker |
 | `NewWebhookRouter` | `NewInbox` → `NewInboxHandler` → existing strict signature/body verifier and receipt transaction | Exact configured raw path; ACK only after receipt/ciphertext/job COMMIT |
 | `cmd/meta-worker` | `platform.OpenWorkerPool`, `OpenMetaConsumerPool`, `LoadPayloadKeyring`, `NewConsumerClient`, `jobqueue.Run` | Separate lifecycle and projection logins; caller owns both pools; shared signal/start/drain/cancel code |
-| `NewConsumerClient` | existing `ConsumerWorker` | Only fixed `meta_inbox` queue; no payment, expiry, default or periodic jobs |
+| `NewConsumerClient` | existing `ConsumerWorker` | Fetches only `meta_inbox`, but River maintenance still covers the shared `river` schema; MR04 failure |
 | Both startup paths | `platform.ValidateSameDatabase` and `meta_inbox.runtime_ready()` | No permanent probe records or extra table access; fail before listen/fetch |
 
 There are no new modules or services. Existing Go standard-library JSON,
@@ -48,6 +51,17 @@ on fresh installations. Do not move this into an SQL-language creation-time
 reference or rewrite the prior migration ledger.
 
 ## Diagnosis and maintenance
+
+Queue selection is not a maintenance boundary. In pinned River v0.40.0,
+`client.go` constructs the schema-wide leader, scheduler, rescuer and cleaner
+for every work-capable client. A real Meta-only process promoted an unrelated
+payment job `scheduled` → `available`, attempt 0 unchanged. The upstream
+rescuer also discards stale running kinds absent from that client's worker map.
+Do not mask this by moving fixture deadlines, pre-promoting jobs or relying on
+jitter. [Failure record](2026-09-26-meta-runtime-acceptance.md) retains both the
+initial root failure and a deterministic reproduction. Existing payment/expiry
+clients sharing `river` require their own isolation audit; moving Meta alone
+does not certify those workers as safe to run together.
 
 Errors are fixed safe codes. Do not turn on raw driver/River configuration logs
 or print environment values to debug an unsuccessful startup. Inspect which
