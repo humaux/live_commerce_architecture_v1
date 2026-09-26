@@ -52,8 +52,28 @@ this executes no PG acceptance. Before its first PG run, review identified:
   application logins; include column ACLs, not just relation ACLs.
 - DB probes need bounded contexts in addition to command/package deadlines.
 
-These are **open candidate-test findings**, not identified production failures.
-Do not mark them closed until the updated source and actual run are reviewed.
+Independent source review at `d4522f5` closed the exact-ID and catalog P1s;
+bounded direct main-test probes and narrower Meta/social mutation evidence are
+still open P2s. These are candidate-test findings, not production failures.
+
+Two short author real-PG attempts are retained, neither is a passing restore:
+
+- Initial `d4522f5`: `pg_dumpall -d postgres` treated `postgres` as a connection
+  string. The native error was a missing `=`. Corrected to the native `-l`
+  database selector at `542740c`; no gate relaxed. Log
+  `/Volumes/data/output/local-recovery-author-first-20260927.log`, exit 1,
+  SHA256 `aacc070a19264e224c9d5e4362d9fab596e4045f3a89c77770b77b5b2ebd95df`.
+- `542740c`: PostgreSQL 18.6 native roles/full DB dump completed (7,322 / 789,194
+  bytes), then pre-restore metadata query failed: `pg_database` has `encoding`,
+  not `datencoding`. Log
+  `/Volumes/data/output/local-recovery-author-second-20260927.log`, exit 1,
+  SHA256 `1f918c2cb2829e2dd0d1f544aeda099a9f37fe43f046cda1c6130829fbd525c9`.
+
+Author stopped PG reruns for consolidated corrections; root will independently
+run the corrected candidate. Independent test commit `22917fb` adds real-PG
+snapshot mutation counterexamples (built-in role, column ACL, sequence state)
+plus a one-byte artifact mutation test. Only its compile and pure-file hash case
+have run so far; PG negative cases remain NOT_RUN.
 
 | Gate | State |
 |---|---|
