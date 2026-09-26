@@ -395,13 +395,13 @@ func TestMetaRuntimeRealAPIBinariesPageInstagramRestart(t *testing.T) {
 	}
 	expiry := ewSetup(t, f, 1)
 	payment := pqSetupItemsOn(t, f, nil, false, 1)
-	if pwQueue(t, f.owner, expiry.hold.JobID) != "checkout_expiry_v1" || pwQueue(t, f.owner, payment.result.JobID) != "payment_mock_v1" {
+	if pwQueueIn(t, f.owner, "river_expiry.river_job", expiry.hold.JobID) != "checkout_expiry_v1" || pwQueueIn(t, f.owner, "river_payment.river_job", payment.result.JobID) != "payment_mock_v1" {
 		t.Fatal("unrelated producer jobs have wrong queues")
 	}
 	// Keep this legitimate payment job scheduled and make it due before the
 	// Meta worker starts. Queue-scoped fetch must not hide cross-queue River
 	// maintenance: a scheduled-to-available promotion is an MR04 violation.
-	result, err := f.owner.Exec(ctx, `UPDATE river.river_job SET scheduled_at=clock_timestamp()-interval '1 second' WHERE id=$1 AND state='scheduled'`, payment.result.JobID)
+	result, err := f.owner.Exec(ctx, `UPDATE river_payment.river_job SET scheduled_at=clock_timestamp()-interval '1 second' WHERE id=$1 AND state='scheduled'`, payment.result.JobID)
 	if err != nil || result.RowsAffected() != 1 {
 		t.Fatalf("prepare due payment job: affected=%d err=%v", result.RowsAffected(), err)
 	}
@@ -409,13 +409,21 @@ func TestMetaRuntimeRealAPIBinariesPageInstagramRestart(t *testing.T) {
 	if err := f.owner.QueryRow(ctx, `INSERT INTO river.river_job(kind,args,queue,max_attempts) VALUES('mr_unrelated_v1','{}','default',2) RETURNING id`).Scan(&defaultJob); err != nil {
 		t.Fatal(err)
 	}
-	unrelated := map[int64]string{}
-	for _, id := range []int64{expiry.hold.JobID, payment.result.JobID, defaultJob} {
+	unrelated := []struct {
+		table  string
+		id     int64
+		before string
+	}{
+		{table: "river_expiry.river_job", id: expiry.hold.JobID},
+		{table: "river_payment.river_job", id: payment.result.JobID},
+		{table: "river.river_job", id: defaultJob},
+	}
+	for i := range unrelated {
 		var before string
-		if err := f.owner.QueryRow(ctx, `SELECT to_jsonb(j)::text FROM river.river_job j WHERE id=$1`, id).Scan(&before); err != nil {
+		if err := f.owner.QueryRow(ctx, `SELECT to_jsonb(j)::text FROM `+unrelated[i].table+` j WHERE id=$1`, unrelated[i].id).Scan(&before); err != nil {
 			t.Fatal(err)
 		}
-		unrelated[id] = before
+		unrelated[i].before = before
 	}
 	worker := mrLaunch(t, workerBinary, "worker-correct", workerEnv)
 	mrReadyLog(t, worker, "meta_worker_ready")
@@ -434,19 +442,19 @@ func TestMetaRuntimeRealAPIBinariesPageInstagramRestart(t *testing.T) {
 	unrelatedDeadline := time.Now().Add(12 * time.Second)
 	for time.Now().Before(unrelatedDeadline) {
 		var current string
-		if err := f.owner.QueryRow(ctx, `SELECT to_jsonb(j)::text FROM river.river_job j WHERE id=$1`, payment.result.JobID).Scan(&current); err != nil {
+		if err := f.owner.QueryRow(ctx, `SELECT to_jsonb(j)::text FROM river_payment.river_job j WHERE id=$1`, payment.result.JobID).Scan(&current); err != nil {
 			t.Fatal(err)
 		}
-		if current != unrelated[payment.result.JobID] {
+		if current != unrelated[1].before {
 			break
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
-	for id, before := range unrelated {
+	for _, item := range unrelated {
 		var after string
-		if err := f.owner.QueryRow(ctx, `SELECT to_jsonb(j)::text FROM river.river_job j WHERE id=$1`, id).Scan(&after); err != nil || after != before {
+		if err := f.owner.QueryRow(ctx, `SELECT to_jsonb(j)::text FROM `+item.table+` j WHERE id=$1`, item.id).Scan(&after); err != nil || after != item.before {
 			var oldFields, newFields map[string]json.RawMessage
-			_ = json.Unmarshal([]byte(before), &oldFields)
+			_ = json.Unmarshal([]byte(item.before), &oldFields)
 			_ = json.Unmarshal([]byte(after), &newFields)
 			changed := make([]string, 0)
 			for key, oldValue := range oldFields {
@@ -455,7 +463,7 @@ func TestMetaRuntimeRealAPIBinariesPageInstagramRestart(t *testing.T) {
 				}
 			}
 			sort.Strings(changed)
-			t.Fatalf("Meta worker changed unrelated payment/expiry/default job id=%d: err=%v changed_fields=%v state_before=%s state_after=%s attempt_before=%s attempt_after=%s", id, err, changed, oldFields["state"], newFields["state"], oldFields["attempt"], newFields["attempt"])
+			t.Fatalf("Meta worker changed unrelated %s job id=%d: err=%v changed_fields=%v state_before=%s state_after=%s attempt_before=%s attempt_after=%s", item.table, item.id, err, changed, oldFields["state"], newFields["state"], oldFields["attempt"], newFields["attempt"])
 		}
 	}
 	mrStop(t, worker, syscall.SIGTERM, true)
