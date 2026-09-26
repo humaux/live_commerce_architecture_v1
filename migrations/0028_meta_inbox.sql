@@ -143,6 +143,8 @@ BEGIN
   AND pg_has_role(r.oid,p_role,'USAGE') AND NOT pg_has_role(r.oid,p_role,'SET'))
  OR EXISTS(SELECT 1 FROM pg_roles r WHERE r.rolname LIKE 'commerce\_%' ESCAPE '\'
   AND r.rolname<>p_role AND pg_has_role(session_user,r.oid,'MEMBER'))
+ OR EXISTS(SELECT 1 FROM pg_roles r WHERE r.rolname LIKE 'pg\_%' ESCAPE '\'
+  AND pg_has_role(session_user,r.oid,'MEMBER'))
  OR EXISTS(SELECT 1 FROM pg_roles r WHERE pg_has_role(session_user,r.oid,'SET') AND
   (r.rolsuper OR r.rolbypassrls OR r.rolcreaterole OR r.rolcreatedb OR r.rolreplication
    OR EXISTS(SELECT 1 FROM pg_namespace n WHERE n.nspowner=r.oid AND n.nspname NOT IN ('pg_catalog','information_schema'))
