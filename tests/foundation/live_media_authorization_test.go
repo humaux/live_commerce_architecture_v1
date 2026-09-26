@@ -340,7 +340,7 @@ func TestLiveMediaAuthorizationLMA02ActualRoleBoundary(t *testing.T) {
 		t.Fatalf("fixed definer ACL: safe=%t err=%v", safe, err)
 	}
 	err = h.lp.f.owner.QueryRow(ctx, `SELECT NOT EXISTS(SELECT 1 FROM pg_roles r WHERE r.rolname NOT IN
-		('commerce_media_registrar','commerce_media_writer') AND r.rolname NOT LIKE 'pg_%'
+		('commerce_media_registrar','commerce_media_writer') AND r.rolname NOT LIKE 'pg_%' AND NOT r.rolsuper
 		AND pg_has_role(r.oid,to_regrole('commerce_media_writer'),'MEMBER'))
 		AND has_schema_privilege('commerce_media_registrar','live','USAGE')
 		AND has_schema_privilege('commerce_media_writer','live','USAGE')
