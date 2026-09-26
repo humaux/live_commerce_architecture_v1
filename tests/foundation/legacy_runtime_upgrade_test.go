@@ -350,6 +350,17 @@ func TestLegacyRuntimeIsolationPopulatedUpgrade(t *testing.T) {
 	for _, table := range []string{"checkout.orders", "checkout.payment_attempts", "payments.provider_observations", "integration.operations", "integration.operation_events", "inventory.reservations", "inventory.ledger"} {
 		business[table] = lriRows(t, f, table, "")
 	}
+	// Apply includes forward0035, which adds one nullable media identity column.
+	// Preserve exact full-row equality: every historical operation must retain
+	// every old value and acquire precisely media_attempt_id:null, never a link.
+	var expectedOperations string
+	if err := f.owner.QueryRow(ctx, `SELECT coalesce(jsonb_agg(
+	 value || '{"media_attempt_id":null}'::jsonb
+	 ORDER BY (value || '{"media_attempt_id":null}'::jsonb)::text),'[]'::jsonb)::text
+	 FROM jsonb_array_elements($1::jsonb)`, business["integration.operations"]).Scan(&expectedOperations); err != nil {
+		t.Fatal("expected additive media identity", err)
+	}
+	business["integration.operations"] = expectedOperations
 	if oldPayment == "[]" || oldExpiry == "[]" || oldExternal == "[]" || oldMeta == "[]" || oldQueues["payment_mock_v1"] == "[]" || oldQueues["checkout_expiry_v1"] == "[]" {
 		t.Fatal("historical populated source was empty")
 	}
