@@ -1,6 +1,6 @@
 # Meta inbox v1 — trusted routing and durable admission
 
-Status: **DRAFT_REVIEW**, not implemented/accepted. Builds on
+Status: **DB_DRAFT_REVIEW / CRYPTO_CONTRACT_FROZEN**, not implemented/accepted. Builds on
 [MWP01–05](meta-webhook-protocol-v1.md). No public route or provider activation
 until this contract's real PostgreSQL gates and later operational gates pass.
 
@@ -49,6 +49,10 @@ provider content, SQL parameter text or key material. Formatting/JSON of Inbox,
 keyring and payload envelopes is redacted.
 
 ## Encryption sub-contract (independent of SQL interface)
+
+Independently frozen against `183417f`; no open P0/P1/P2 in this subsection.
+UUID validation reuses `command.ValidID` (lowercase 8-4-4-4-12 form, not a new
+version/variant policy). This freeze is not an encryption implementation gate.
 
 `PayloadKeyring` owns copies of 1..16 distinct nonzero 32-byte keys indexed by
 `[A-Za-z0-9_-]{1,64}`; active ID must exist. No reused key under two IDs. Old keys
@@ -157,8 +161,8 @@ consumer must recheck the stored route/binding epoch before reading/decrypting.
    handler may write 200. Any statement/encryption/job/commit error rolls back
    all effects and returns fixed 503; no partial batch slicing or ACK.
 
-SQL function signatures are pending independent review; freeze before parallel
-SQL/service/test implementation. Routes and receipt/event identity survive
+SQL function signatures below are pending independent review; freeze before
+parallel SQL/service/test implementation. Routes and receipt/event identity survive
 ciphertext cleanup. Historical replay must neither depend on current binding nor
 reanimate bodies/jobs after cleanup. No job backfill for this brand-new producer.
 
@@ -185,7 +189,7 @@ customer live broadcast behavior, remaining checkout/logistics/full SaaS gates.
 
 - No binding self-assertion route, timestamp-based asset transfer, hash-only raw
   retention, one tenant's copy of a mixed-tenant batch, plaintext job payload,
-  or cleanup of permanent dedupe with River jobs.
+or cleanup of permanent dedupe with River jobs.
 - No replacement of existing transaction/queue framework; add a separate broker
   only after measured PG admission/queue capacity requires an approved ADR.
 - No automatic asset transfer in v1; design a verified cutover and late-event
