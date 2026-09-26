@@ -2,8 +2,9 @@
 
 ## Current verdict
 
-**NOT_ACCEPTED.** Native restore currently fails; contract amendment 1 is frozen
-after root diagnosis and independent review. Original contract `efd9d02`;
+**NOT_ACCEPTED overall.** Amendment 1 author and independent root recovery
+subsets pass. Full regression at `1fbd997` has one existing Meta worker-start
+failure; retain this stop line until investigated. Original contract `efd9d02`;
 runner selector `5cda889`.
 This document records only [LRC01–06](../../contracts/local-recovery-v1.md).
 The preceding [LRI acceptance](2026-09-26-legacy-runtime-isolation-acceptance.md)
@@ -114,16 +115,53 @@ prove that actual privilege changes still fail. The native bootstrap ALTER
 contains no PASSWORD clause. Independent review additionally requires an
 unexpected clause/password drift to fail rather than be repaired, and DB owner
 to be compared after restore/Apply as well as before restore. These corrections
-and final runtime/full-suite acceptance remain pending.
+were implemented at `5338007` (root `3a945c4`), with independent negative tests
+`6bfd2c7` (root `1fbd997`). Both independent reviews closed the source findings.
+
+## Latest actual acceptance evidence
+
+- Author `5338007`, `bash scripts/dev/test-local.sh --local-recovery`: exit 0,
+  two top-level tests PASS, foundation 19.882s. Log
+  `/Volumes/data/output/local-recovery-author-acl-20260927.log`, SHA256
+  `27497ceec06107f2c205c947b70a62d6ff20de43fc38b965f60ee9bd5764a330`.
+- Root `1fbd997`, same selector: exit 0, five top-level PASS / zero FAIL or SKIP,
+  foundation 19.805s. Log
+  `/Volumes/data/output/local-recovery-root-focused4-20260927.log`, SHA256
+  `afb42b91486b2961beb62db360fcdc7c98b259f58e3a9f649daffe240adc4496`.
+- Root `1fbd997`, `bash scripts/dev/test-local.sh`: exit 1, 566 top-level PASS /
+  one FAIL / zero SKIP. Foundation 456.654s, Meta integration 2.082s. Log
+  `/Volumes/data/output/local-recovery-root-full1-20260927.log`, SHA256
+  `01d60982ed9ed7d3b5e38b9463b6fc7c60fa13588d0e9c40fe80be3de13c8d92`.
+  The subsequent `go vet` command did not run because the script failed closed.
+
+The sole full-suite failure is `TestMetaRuntimeIsolationTwoWayRealMaintenance`
+(6.00s): the worker exits 1 before readiness. Preserved process log
+`/Volumes/data/output/meta-runtime-process-meta-maintenance-f735720689cc.log`
+has SHA256 `a839430c392238aebfc3217e8bd1385a01e633742e26b2d5e49aa4abf2288e9a`
+and only the fixed `meta_worker_start_failed` marker. The code path narrows this
+to `jobqueue.Run` / `startWorker(client.Start)`, after successful constructor
+preflight; the underlying cause is not available. This is not proof of the
+same cause as the earlier zero-log readiness timeout. No blind rerun, timeout
+increase, or whole-LRC acceptance follows from the passing subset. A separate
+bounded safe-startup-diagnostic task is in progress.
+
+The three restricted native/catalog diagnostic files were copied unchanged
+(0600) into `/Volumes/data/output/local-recovery-evidence-20260927/`; their
+hashes are unchanged. Task-owned recovery container listing was empty after
+the focused and full runs; no customer container cleanup was performed.
+Unchanged-source comparison against `519fb16` covered apps, commands, internal
+code, migrations, dependency manifests and buyer order/payment browser tests.
+Prior order 23 / payment 11 browser evidence is retained, not claimed rerun.
+Final test symbols were indexed and linked to the bootstrap/ACL rationale.
 
 | Gate | State |
 |---|---|
-| LRC01 target/artifact guards | NOT_RUN |
-| LRC02 rows, queues, ledgers, sequences | NOT_RUN |
-| LRC03 roles/ACL/RLS/authorization/keys | NOT_RUN |
-| LRC04 raw restore then idempotent migration/readiness | NOT_RUN |
-| LRC05 default-off and bounded restart | NOT_RUN |
-| LRC06 independent/root regression and cleanup | NOT_RUN |
+| LRC01 target/artifact guards | PASS_LOCAL focused4 |
+| LRC02 rows, queues, ledgers, sequences | PASS_LOCAL focused4 |
+| LRC03 roles/ACL/RLS/authorization/keys | PASS_LOCAL focused4, independent mutation controls |
+| LRC04 raw restore then idempotent migration/readiness | PASS_LOCAL focused4 |
+| LRC05 default-off and bounded restart | PASS_LOCAL focused4 |
+| LRC06 independent/root regression and cleanup | BLOCKED: full1 Meta startup failure; no merge acceptance |
 
 Record actual commands, source SHA, exit code, elapsed observations, log path
 and SHA256. Retain failed attempts and root cause; a file or process starting
