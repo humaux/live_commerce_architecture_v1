@@ -70,6 +70,15 @@ func TestMetaRuntimeIsolationFailureAndResume(t *testing.T) {
 			if err == nil {
 				t.Fatal("unsafe source passed cutover", mode)
 			}
+			wantState := "22023"
+			if mode == "running" {
+				wantState = "55000"
+			} else if mode == "lock_contention" {
+				wantState = "55P03"
+			}
+			if state := miSQLState(err); state != wantState {
+				t.Fatalf("failed Apply %s state=%s want=%s: %v", mode, state, wantState, err)
+			}
 			if mode == "lock_contention" {
 				if err := heldTx.Rollback(ctx); err != nil {
 					t.Fatal(err)
