@@ -289,6 +289,43 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 	if !sameLogin || !dsnUserMatch || superuser || bypassRLS || roleAdmin || databaseCreator || replication || objectOwner || !roleValid || authMember || checkoutWriterMember || metaWriter || canReachPrivileged {
 		return errors.New("unsafe runtime database role")
 	}
+	if authority == "meta_worker" {
+		// Membership checks cannot see direct/PUBLIC/column grants or a custom
+		// non-owner role. Check the effective ACLs of this login and every role it
+		// can inherit or SET, in the shared path used by both open and validate.
+		// River maintenance must never reach another lane or alter its ledger.
+		var forbidden bool
+		err := pool.QueryRow(ctx, `
+			WITH reachable AS (
+				SELECT oid FROM pg_roles
+				WHERE pg_has_role(session_user, oid, 'USAGE') OR pg_has_role(session_user, oid, 'SET')
+			)
+			SELECT EXISTS (
+				SELECT 1 FROM reachable r CROSS JOIN pg_class c
+				JOIN pg_namespace n ON n.oid=c.relnamespace
+				WHERE n.nspname <> 'information_schema' AND n.nspname NOT LIKE 'pg\_%' ESCAPE '\'
+				AND CASE
+					WHEN n.nspname <> 'river_meta' AND c.relkind='S'
+						THEN has_sequence_privilege(r.oid,c.oid,'USAGE,SELECT,UPDATE')
+					WHEN n.nspname <> 'river_meta' AND c.relkind IN ('r','p','v','m','f')
+						THEN has_table_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN')
+							OR has_any_column_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,REFERENCES')
+					WHEN n.nspname='river_meta' AND c.relname='river_migration' AND c.relkind='r'
+						THEN has_table_privilege(r.oid,c.oid,'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN')
+							OR has_any_column_privilege(r.oid,c.oid,'INSERT,UPDATE,REFERENCES')
+					ELSE false
+				END
+			) OR EXISTS (
+				SELECT 1 FROM reachable r CROSS JOIN pg_namespace n
+				WHERE n.nspname <> 'information_schema' AND n.nspname NOT LIKE 'pg\_%' ESCAPE '\'
+				AND has_schema_privilege(r.oid,n.oid,'CREATE')
+			) OR EXISTS (
+				SELECT 1 FROM reachable r WHERE has_database_privilege(r.oid,current_database(),'CREATE')
+			)`).Scan(&forbidden)
+		if err != nil || forbidden {
+			return errors.New("unsafe meta worker database privileges")
+		}
+	}
 	return nil
 }
 
