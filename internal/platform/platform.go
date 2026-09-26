@@ -95,6 +95,20 @@ func ValidateMetaIngressPool(ctx context.Context, pool *pgxpool.Pool) error {
 	return nil
 }
 
+// ValidateMetaConsumerPool borrows a dedicated projection-only pool. River's
+// lifecycle pool is separate, so a consumer cannot grant itself a running job.
+func ValidateMetaConsumerPool(ctx context.Context, pool *pgxpool.Pool) error {
+	if ctx == nil || pool == nil {
+		return errors.New("meta consumer database unavailable")
+	}
+	bounded, cancel := context.WithTimeout(ctx, startupTimeout)
+	defer cancel()
+	if err := validatePoolAuthority(bounded, pool, "meta_consumer"); err != nil {
+		return errors.New("meta consumer database unavailable")
+	}
+	return nil
+}
+
 func openPool(ctx context.Context, dsn string, authority string) (*pgxpool.Pool, error) {
 	if strings.TrimSpace(dsn) == "" {
 		return nil, errors.New("database url required")
@@ -179,7 +193,7 @@ func ValidateBuyerIssuerPool(ctx context.Context, pool *pgxpool.Pool) error {
 
 func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority string) error {
 	var sameLogin, dsnUserMatch, superuser, bypassRLS, roleAdmin, databaseCreator, replication, objectOwner, runtimeMember, authMember, identityMember, buyerRuntimeMember, buyerIssuerMember, workerMember, checkoutMember, hostedMember, hostedUsage, hostedSet, checkoutWriterMember, canSetPrivileged bool
-	var metaIngress, metaRegistrar, metaCurator, metaWriter, metaUsage, metaSet, systemAuthority bool
+	var metaIngress, metaRegistrar, metaCurator, metaConsumer, metaWriter, metaUsage, metaSet, consumerUsage, consumerSet, systemAuthority bool
 	err := pool.QueryRow(ctx, `
 		SELECT session_user=current_user, session_user=$1, r.rolsuper, r.rolbypassrls, r.rolcreaterole, r.rolcreatedb, r.rolreplication,
 		       (EXISTS (
@@ -207,9 +221,12 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 		       coalesce(pg_has_role(session_user, to_regrole('commerce_meta_ingress'), 'MEMBER'),false),
 		       coalesce(pg_has_role(session_user, to_regrole('commerce_meta_registrar'), 'MEMBER'),false),
 		       coalesce(pg_has_role(session_user, to_regrole('commerce_meta_curator'), 'MEMBER'),false),
+		       coalesce(pg_has_role(session_user, to_regrole('commerce_meta_consumer'), 'MEMBER'),false),
 		       coalesce(pg_has_role(session_user, to_regrole('commerce_meta_writer'), 'MEMBER'),false),
 		       coalesce(pg_has_role(session_user, to_regrole('commerce_meta_ingress'), 'USAGE'),false),
 		       coalesce(pg_has_role(session_user, to_regrole('commerce_meta_ingress'), 'SET'),false),
+		       coalesce(pg_has_role(session_user, to_regrole('commerce_meta_consumer'), 'USAGE'),false),
+		       coalesce(pg_has_role(session_user, to_regrole('commerce_meta_consumer'), 'SET'),false),
 		       EXISTS (SELECT 1 FROM pg_roles predefined WHERE predefined.rolname LIKE 'pg\_%' ESCAPE '\'
 			   AND pg_has_role(session_user, predefined.oid, 'MEMBER')),
 		       EXISTS (
@@ -229,7 +246,7 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 			     AND pg_has_role(session_user, candidate.oid, 'SET')
 		       )
 		FROM pg_roles r WHERE r.rolname = session_user`, pool.Config().ConnConfig.User).
-		Scan(&sameLogin, &dsnUserMatch, &superuser, &bypassRLS, &roleAdmin, &databaseCreator, &replication, &objectOwner, &runtimeMember, &authMember, &identityMember, &buyerRuntimeMember, &buyerIssuerMember, &workerMember, &checkoutMember, &hostedMember, &hostedUsage, &hostedSet, &checkoutWriterMember, &metaIngress, &metaRegistrar, &metaCurator, &metaWriter, &metaUsage, &metaSet, &systemAuthority, &canSetPrivileged)
+		Scan(&sameLogin, &dsnUserMatch, &superuser, &bypassRLS, &roleAdmin, &databaseCreator, &replication, &objectOwner, &runtimeMember, &authMember, &identityMember, &buyerRuntimeMember, &buyerIssuerMember, &workerMember, &checkoutMember, &hostedMember, &hostedUsage, &hostedSet, &checkoutWriterMember, &metaIngress, &metaRegistrar, &metaCurator, &metaConsumer, &metaWriter, &metaUsage, &metaSet, &consumerUsage, &consumerSet, &systemAuthority, &canSetPrivileged)
 	if err != nil {
 		return fmt.Errorf("validate runtime role: %w", err)
 	}
@@ -238,7 +255,7 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 	memberships := map[string]bool{"runtime": runtimeMember, "identity": identityMember,
 		"buyer_runtime": buyerRuntimeMember, "buyer_issuer": buyerIssuerMember, "worker": workerMember,
 		"checkout_runtime": checkoutMember, "meta_ingress": metaIngress,
-		"meta_registrar": metaRegistrar, "meta_curator": metaCurator}
+		"meta_registrar": metaRegistrar, "meta_curator": metaCurator, "meta_consumer": metaConsumer}
 	roleCount := 0
 	for _, member := range memberships {
 		if member {
@@ -253,6 +270,9 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 		// Predefined data/file/server roles need not own an object or have
 		// BYPASSRLS to exceed this producer's deliberately narrow authority.
 		roleValid = roleValid && metaUsage && !metaSet && !systemAuthority
+	}
+	if authority == "meta_consumer" {
+		roleValid = roleValid && consumerUsage && !consumerSet && !systemAuthority
 	}
 	// A privileged login cannot launder its authority with startup SET ROLE:
 	// RESET ROLE would recover the session_user's capabilities after admission.
