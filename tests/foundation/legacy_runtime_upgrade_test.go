@@ -148,6 +148,67 @@ func lriCloseProducerPools(p psHarness) {
 	p.a.identity.Close()
 }
 
+// Both non-MOCK profiles still use the production old-schema StartPayment
+// transaction. Only the local owner prepares consistent qualification facts;
+// neither branch contacts a provider or purports to prove real qualification.
+func lriOldProfileQuery(t *testing.T, f *testFixture, profile string) pqFixture {
+	t.Helper()
+	p := psSetupItemsOn(t, f, 1, "river")
+	if profile == "SANDBOX" {
+		mustExec(t, f.owner, `UPDATE payments.account_qualifications SET proof_class='REAL_SANDBOX',evidence_ref='local synthetic qualification; no provider call' WHERE id=$1`, p.proof)
+	} else if profile == "LIVE" {
+		binding, account, proof := randomUUID(), randomUUID(), randomUUID()
+		ctx := context.Background()
+		tx, err := f.owner.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer tx.Rollback(ctx)
+		steps := []struct {
+			sql  string
+			args []any
+		}{
+			{`INSERT INTO integration.bindings(id,tenant_id,store_id,principal_id,provider,external_asset_id) VALUES($1,$2,$3,$4,'payuni','LIVE:local-upgrade-account')`, []any{binding, p.f.tenantA, p.f.storeA1, p.f.principalA}},
+			{`INSERT INTO integration.merchant_accounts(id,tenant_id,store_id,principal_id,provider,environment,account_id,binding_id,credential_version) VALUES($1,$2,$3,$4,'payuni','LIVE','local-upgrade-account',$5,1)`, []any{account, p.f.tenantA, p.f.storeA1, p.f.principalA, binding}},
+			{`INSERT INTO integration.account_credentials(tenant_id,store_id,connection_id,version,key_id,nonce,ciphertext,principal_id) VALUES($1,$2,$3,1,'mock_key',decode(repeat('00',12),'hex'),decode(repeat('00',17),'hex'),$4)`, []any{p.f.tenantA, p.f.storeA1, account, p.f.principalA}},
+			{`INSERT INTO payments.account_qualifications(id,tenant_id,store_id,connection_id,credential_version,environment,code,proof_class,evidence_ref,observed_at,expires_at) VALUES($1,$2,$3,$4,1,'LIVE','payuni_credit','REAL_LIVE','local synthetic qualification; no provider call',clock_timestamp()-interval '1 second',clock_timestamp()+interval '1 hour')`, []any{proof, p.f.tenantA, p.f.storeA1, account}},
+			{`UPDATE payments.method_versions SET connection_id=$2,qualification_id=$3,environment='LIVE' WHERE qualification_id=$1`, []any{p.proof, account, proof}},
+		}
+		for _, step := range steps {
+			if _, err := tx.Exec(ctx, step.sql, step.args...); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if err := tx.Commit(ctx); err != nil {
+			t.Fatal(err)
+		}
+		p.binding, p.account, p.proof = binding, account, proof
+	} else {
+		t.Fatal("unsupported historical profile")
+	}
+	p.starter = psStarterIn(t, p.pool, profile, "river")
+	result, err := p.start(t04Key("lri-old-profile"))
+	if err != nil {
+		t.Fatalf("old-schema %s payment admission: %v", profile, err)
+	}
+	return pqFixture{psHarness: p, result: result, schema: "river"}
+}
+
+func lriProfileAdmission(t *testing.T, q pqFixture, profile, environment, proof, queue string) {
+	t.Helper()
+	var gotProfile, gotEnv, gotProof, gotQualEnv, gotMethodEnv, gotAccountEnv, gotQueue string
+	var assetMatches bool
+	err := q.f.owner.QueryRow(context.Background(), `SELECT a.execution_profile,a.environment,qual.proof_class,qual.environment,m.environment,acct.environment,j.queue,b.external_asset_id=acct.binding_asset
+	 FROM checkout.payment_attempts a JOIN payments.account_qualifications qual ON qual.id=a.qualification_id
+	 JOIN payments.method_versions m ON m.tenant_id=a.tenant_id AND m.store_id=a.store_id AND m.market_id=a.market_id AND m.country=a.country AND m.code=a.method_code AND m.version=a.method_version
+	 JOIN integration.merchant_accounts acct ON acct.id=a.connection_id JOIN integration.bindings b ON b.id=a.binding_id
+	 JOIN river.river_job j ON j.id=a.job_id AND j.kind='payment_query_v1'
+	 WHERE a.id=$1`, q.result.AttemptID).Scan(&gotProfile, &gotEnv, &gotProof, &gotQualEnv, &gotMethodEnv, &gotAccountEnv, &gotQueue, &assetMatches)
+	if err != nil || !assetMatches || gotProfile != profile || gotEnv != environment || gotProof != proof || gotQualEnv != environment || gotMethodEnv != environment || gotAccountEnv != environment || gotQueue != queue {
+		t.Fatalf("historical %s qualification/profile/job facts drifted: err=%v profile=%s env=%s proof=%s qual=%s method=%s account=%s queue=%s asset=%t", profile, err, gotProfile, gotEnv, gotProof, gotQualEnv, gotMethodEnv, gotAccountEnv, gotQueue, assetMatches)
+	}
+}
+
 func lriReady(t *testing.T, f *testFixture, want bool) {
 	t.Helper()
 	var payment, expiry bool
@@ -193,19 +254,13 @@ func TestLegacyRuntimeIsolationPopulatedUpgrade(t *testing.T) {
 	ctx := context.Background()
 	keys := pwKeys(t)
 	queries := [3]pqFixture{}
-	for i := range queries {
-		queries[i] = pwOldQuerySetupOn(t, f, keys)
-		if i != 0 {
-			lriCloseProducerPools(queries[i].psHarness)
-		}
-	}
-	for i, profile := range []string{"PROVIDER_MOCK", "SANDBOX", "LIVE"} {
-		queue := []string{"payment_mock_v1", "payment_sandbox_v1", "payment_live_v1"}[i]
-		mustExec(t, f.owner, `UPDATE checkout.payment_attempts SET execution_profile=$2 WHERE id=$1`, queries[i].result.AttemptID, profile)
-		mustExec(t, f.owner, `UPDATE river.river_job SET queue=$2 WHERE id=$1`, queries[i].result.JobID, queue)
-		if got := pwQueueIn(t, f.owner, "river.river_job", queries[i].result.JobID); got != queue {
-			t.Fatalf("old profile queue %d=%s", i, got)
-		}
+	queries[0] = pwOldQuerySetupOn(t, f, keys, "river")
+	queries[1] = lriOldProfileQuery(t, f, "SANDBOX")
+	lriCloseProducerPools(queries[1].psHarness)
+	queries[2] = lriOldProfileQuery(t, f, "LIVE")
+	lriCloseProducerPools(queries[2].psHarness)
+	for i, want := range []struct{ profile, env, proof, queue string }{{"PROVIDER_MOCK", "SANDBOX", "PROVIDER_MOCK", "payment_mock_v1"}, {"SANDBOX", "SANDBOX", "REAL_SANDBOX", "payment_sandbox_v1"}, {"LIVE", "LIVE", "REAL_LIVE", "payment_live_v1"}} {
+		lriProfileAdmission(t, queries[i], want.profile, want.env, want.proof, want.queue)
 	}
 	pcRecord(t, queries[0], pcFull(queries[0]))
 	lriCloseProducerPools(queries[0].psHarness)
@@ -251,6 +306,7 @@ func TestLegacyRuntimeIsolationPopulatedUpgrade(t *testing.T) {
 	mustExec(t, f.owner, `UPDATE river.river_job SET state='scheduled',scheduled_at=clock_timestamp()+interval '1 hour' WHERE id=$1`, queries[1].result.JobID)
 	mustExec(t, f.owner, `UPDATE river.river_job SET state='retryable',attempt=1,attempted_at=clock_timestamp(),scheduled_at=clock_timestamp()+interval '1 hour' WHERE id=$1`, queries[2].result.JobID)
 	mustExec(t, f.owner, `UPDATE river.river_job SET state='completed',attempt=1,attempted_at=clock_timestamp(),finalized_at=clock_timestamp(),queue='default' WHERE id=$1`, reconcile)
+	mustExec(t, f.owner, `UPDATE river.river_job SET state='available',scheduled_at=clock_timestamp() WHERE id=$1`, queries[0].hold.JobID)
 	for i, state := range []string{"pending", "scheduled", "retryable", "completed"} {
 		if state == "completed" {
 			mustExec(t, f.owner, `UPDATE river.river_job SET state='completed',attempt=1,attempted_at=clock_timestamp(),finalized_at=clock_timestamp(),scheduled_at=clock_timestamp()+interval '1 hour',queue='default' WHERE id=$1`, expiry[i].hold.JobID)
@@ -264,10 +320,15 @@ func TestLegacyRuntimeIsolationPopulatedUpgrade(t *testing.T) {
 	lriCloseProducerPools(pruned)
 	mustExec(t, f.owner, `UPDATE river.river_job SET state='discarded',finalized_at=clock_timestamp() WHERE id=$1`, pruned.hold.JobID)
 	mustExec(t, f.owner, `DELETE FROM river.river_job WHERE id=$1`, pruned.hold.JobID)
-	prunedPayment := pwOldQuerySetupOn(t, f, keys)
+	prunedPayment := pwOldQuerySetupOn(t, f, keys, "river")
 	lriCloseProducerPools(prunedPayment.psHarness)
 	mustExec(t, f.owner, `UPDATE river.river_job SET state='discarded',finalized_at=clock_timestamp() WHERE id=$1`, prunedPayment.result.JobID)
 	mustExec(t, f.owner, `DELETE FROM river.river_job WHERE id=$1`, prunedPayment.result.JobID)
+	for _, state := range []string{"available", "pending", "scheduled", "retryable", "completed", "cancelled", "discarded"} {
+		if miCount(t, f.owner, `SELECT count(*) FROM river.river_job WHERE kind IN ('payment_query_v1','payment_reconcile_v1','checkout_expiry_v1') AND state::text=$1`, state) == 0 {
+			t.Fatalf("retained historical state %s absent", state)
+		}
+	}
 	for _, queue := range []string{"payment_mock_v1", "payment_sandbox_v1", "payment_live_v1", "checkout_expiry_v1"} {
 		mustExec(t, f.owner, `INSERT INTO river.river_queue(name,paused_at,metadata) VALUES($1,clock_timestamp(),'{"test":"upgrade"}'::jsonb) ON CONFLICT(name) DO UPDATE SET paused_at=excluded.paused_at,metadata=excluded.metadata`, queue)
 	}
@@ -366,7 +427,7 @@ func TestLegacyRuntimeIsolationPopulatedUpgrade(t *testing.T) {
 
 func TestLegacyRuntimeIsolationUpgradeRejectsTamperedLedger(t *testing.T) {
 	f := lriPre0032Fixture(t)
-	q := pwOldQuerySetupOn(t, f, pwKeys(t))
+	q := pwOldQuerySetupOn(t, f, pwKeys(t), "river")
 	if miCount(t, f.owner, `SELECT count(*) FROM river.river_job WHERE id=$1 AND kind='payment_query_v1'`, q.result.JobID) != 1 {
 		t.Fatal("historical payment producer did not admit a job")
 	}
@@ -402,7 +463,7 @@ func TestLegacyRuntimeIsolationUpgradeRejectsTamperedLedger(t *testing.T) {
 
 func TestLegacyRuntimeIsolationUpgradeFailClosedRetry(t *testing.T) {
 	f := lriPre0032Fixture(t)
-	q := pwOldQuerySetupOn(t, f, pwKeys(t))
+	q := pwOldQuerySetupOn(t, f, pwKeys(t), "river")
 	ctx := context.Background()
 	failure := func(label string) {
 		t.Helper()
@@ -508,31 +569,44 @@ func TestLegacyRuntimeIsolationFamilyCollidingIDs(t *testing.T) {
 	if err := migrations.Apply(context.Background(), f.owner); err != nil {
 		t.Fatal(err)
 	}
-	// A fresh producer creates one expiry and one payment query after the
-	// cutover. Both native sequences start from the same old high-water.
+	// Actual new-family producers make an expiry row at the payment sequence's
+	// next ID before the valid reconciliation transaction commits.
 	q := pqSetupItemsOn(t, f, pwKeys(t), false, 1)
-	if q.hold.JobID != q.result.JobID {
-		t.Fatalf("expected explicit family ID collision, expiry=%d payment=%d", q.hold.JobID, q.result.JobID)
-	}
-	if miCount(t, f.owner, `SELECT count(*) FROM river_expiry.river_job WHERE id=$1 AND kind='checkout_expiry_v1'`, q.result.JobID) != 1 ||
-		miCount(t, f.owner, `SELECT count(*) FROM river_payment.river_job WHERE id=$1 AND kind='payment_query_v1'`, q.result.JobID) != 1 {
-		t.Fatal("colliding ID rows are not distinct valid family jobs")
-	}
+	p := ewSetup(t, f, 1)
+	lriCloseProducerPools(p)
 	claim := q.claim(t)
-	if _, err := q.worker.Exec(context.Background(), `SELECT integration.record_payment_query($1,$2,$3,$4,$5::jsonb,$6)`, q.result.OperationID, claim.Generation, claim.LeaseToken, "PROVIDER_MOCK", pqJSON(pcFull(q)), q.hold.JobID); miSQLState(err) != "PT409" {
-		t.Fatalf("expiry/query collision accepted as reconciliation job: state=%s", miSQLState(err))
+	if err := pqRecordIn(q.worker, "river_payment", q.result.OperationID, claim, "PROVIDER_MOCK", pcFull(q)); err != nil {
+		t.Fatal("valid reconciliation report did not commit", err)
 	}
-	if miCount(t, f.owner, `SELECT count(*) FROM payments.provider_observations WHERE attempt_id=$1`, q.result.AttemptID) != 0 {
+	var reconcile int64
+	if err := f.owner.QueryRow(context.Background(), `SELECT id FROM river_payment.river_job WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1`, q.result.OperationID).Scan(&reconcile); err != nil {
+		t.Fatal(err)
+	}
+	if reconcile != p.hold.JobID || miCount(t, f.owner, `SELECT count(*) FROM river_expiry.river_job WHERE id=$1 AND kind='checkout_expiry_v1'`, reconcile) != 1 ||
+		miCount(t, f.owner, `SELECT count(*) FROM payments.provider_observations WHERE attempt_id=$1 AND source='QUERY'`, q.result.AttemptID) != 1 {
+		t.Fatal("valid report did not commit across equal numeric family IDs")
+	}
+	lriCloseProducerPools(q.psHarness)
+	wrong := pqSetupItemsOn(t, f, pwKeys(t), false, 1)
+	wrongOnly := ewSetup(t, f, 1)
+	lriCloseProducerPools(wrongOnly)
+	if miCount(t, f.owner, `SELECT count(*) FROM river_payment.river_job WHERE id=$1`, wrongOnly.hold.JobID) != 0 ||
+		miCount(t, f.owner, `SELECT count(*) FROM river_expiry.river_job WHERE id=$1 AND kind='checkout_expiry_v1'`, wrongOnly.hold.JobID) != 1 {
+		t.Fatal("wrong-family-only ID precondition absent")
+	}
+	wrongClaim := wrong.claim(t)
+	if _, err := wrong.worker.Exec(context.Background(), `SELECT integration.record_payment_query($1,$2,$3,$4,$5::jsonb,$6)`, wrong.result.OperationID, wrongClaim.Generation, wrongClaim.LeaseToken, "PROVIDER_MOCK", pqJSON(pcFull(wrong)), wrongOnly.hold.JobID); miSQLState(err) != "PT409" {
+		t.Fatalf("expiry-only ID accepted as reconciliation job: state=%s", miSQLState(err))
+	}
+	if miCount(t, f.owner, `SELECT count(*) FROM payments.provider_observations WHERE attempt_id=$1`, wrong.result.AttemptID) != 0 {
 		t.Fatal("wrong-family collision wrote a provider observation")
 	}
 }
 
-// Isolate the two maxima that a source-sequence-only assertion cannot prove:
-// a genuinely admitted but pruned expiry reference above the old sequence,
-// and a destination payment sequence above both old jobs and old sequence.
-func TestLegacyRuntimeIsolationUpgradeSequencesDoNotReuseRefs(t *testing.T) {
+func lriPrunedSequenceFixture(t *testing.T) (*testFixture, pqFixture, psHarness, int64) {
+	t.Helper()
 	f := lriPre0032Fixture(t)
-	q := pwOldQuerySetupOn(t, f, pwKeys(t))
+	q := pwOldQuerySetupOn(t, f, pwKeys(t), "river")
 	lriCloseProducerPools(q.psHarness)
 	p := ewSetup(t, f, 1, "river")
 	lriCloseProducerPools(p)
@@ -546,10 +620,19 @@ func TestLegacyRuntimeIsolationUpgradeSequencesDoNotReuseRefs(t *testing.T) {
 		mustExec(t, f.owner, `UPDATE river.river_job SET state='discarded',finalized_at=clock_timestamp() WHERE id=$1`, id)
 		mustExec(t, f.owner, `DELETE FROM river.river_job WHERE id=$1`, id)
 	}
-	var oldLow, paymentHigh int64
+	var oldLow int64
 	if err := f.owner.QueryRow(ctx, `SELECT setval('river.river_job_id_seq',1,true)`).Scan(&oldLow); err != nil {
 		t.Fatal(err)
 	}
+	return f, q, p, oldLow
+}
+
+// A pruned expiry domain reference, rather than the deliberately low old
+// sequence, is the expiry maximum; payment's own destination sequence wins.
+func TestLegacyRuntimeIsolationUpgradeSequencesDoNotReuseRefs(t *testing.T) {
+	f, q, p, oldLow := lriPrunedSequenceFixture(t)
+	ctx := context.Background()
+	var paymentHigh int64
 	if err := f.owner.QueryRow(ctx, `SELECT setval('river_payment.river_job_id_seq',$1::bigint,true)`, q.result.JobID+500).Scan(&paymentHigh); err != nil {
 		t.Fatal(err)
 	}
@@ -572,5 +655,73 @@ func TestLegacyRuntimeIsolationUpgradeSequencesDoNotReuseRefs(t *testing.T) {
 	}
 	if oldAfter != oldLow || paymentNext <= paymentHigh || expiryNext <= p.hold.JobID {
 		t.Fatalf("sequence nonreuse failed: source=%d/%d payment=%d/%d expiry=%d/%d", oldLow, oldAfter, paymentHigh, paymentNext, p.hold.JobID, expiryNext)
+	}
+}
+
+// Mirror the maxima: payment's pruned permanent reference is above the old
+// sequence, while expiry's own native sequence is independently highest.
+func TestLegacyRuntimeIsolationUpgradeMirroredSequenceHighWater(t *testing.T) {
+	f, q, p, oldLow := lriPrunedSequenceFixture(t)
+	ctx := context.Background()
+	var expiryHigh int64
+	if err := f.owner.QueryRow(ctx, `SELECT setval('river_expiry.river_job_id_seq',$1::bigint,true)`, p.hold.JobID+500).Scan(&expiryHigh); err != nil {
+		t.Fatal(err)
+	}
+	if oldLow >= q.result.JobID || expiryHigh <= p.hold.JobID {
+		t.Fatal("mirrored independent maxima absent")
+	}
+	if err := migrations.Apply(ctx, f.owner); err != nil {
+		t.Fatal("mirrored sequence cutover", err)
+	}
+	lriReady(t, f, true)
+	var oldAfter, paymentNext, expiryNext int64
+	if err := f.owner.QueryRow(ctx, `SELECT last_value FROM river.river_job_id_seq`).Scan(&oldAfter); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.owner.QueryRow(ctx, `SELECT nextval('river_payment.river_job_id_seq')`).Scan(&paymentNext); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.owner.QueryRow(ctx, `SELECT nextval('river_expiry.river_job_id_seq')`).Scan(&expiryNext); err != nil {
+		t.Fatal(err)
+	}
+	if oldAfter != oldLow || paymentNext <= q.result.JobID || expiryNext <= expiryHigh {
+		t.Fatalf("mirrored sequence nonreuse failed: source=%d/%d payment=%d/%d expiry=%d/%d", oldLow, oldAfter, q.result.JobID, paymentNext, expiryHigh, expiryNext)
+	}
+}
+
+func TestLegacyRuntimeIsolationUpgradeCopiedRowsAboveOldSequence(t *testing.T) {
+	f := lriPre0032Fixture(t)
+	q := pwOldQuerySetupOn(t, f, pwKeys(t), "river")
+	lriCloseProducerPools(q.psHarness)
+	p := ewSetup(t, f, 1, "river")
+	lriCloseProducerPools(p)
+	ctx := context.Background()
+	var oldLow int64
+	if err := f.owner.QueryRow(ctx, `SELECT setval('river.river_job_id_seq',1,true)`).Scan(&oldLow); err != nil {
+		t.Fatal(err)
+	}
+	if q.result.JobID <= oldLow || p.hold.JobID <= oldLow {
+		t.Fatal("copied-row-above-source-sequence precondition absent")
+	}
+	oldPayment := lriRows(t, f, "river.river_job", `WHERE kind='payment_query_v1'`)
+	oldExpiry := lriRows(t, f, "river.river_job", `WHERE kind='checkout_expiry_v1'`)
+	if err := migrations.Apply(ctx, f.owner); err != nil {
+		t.Fatal("copied-row sequence cutover", err)
+	}
+	if lriRows(t, f, "river_payment.river_job", "") != oldPayment || lriRows(t, f, "river_expiry.river_job", "") != oldExpiry {
+		t.Fatal("copied rows changed or disappeared")
+	}
+	var oldAfter, paymentNext, expiryNext int64
+	if err := f.owner.QueryRow(ctx, `SELECT last_value FROM river.river_job_id_seq`).Scan(&oldAfter); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.owner.QueryRow(ctx, `SELECT nextval('river_payment.river_job_id_seq')`).Scan(&paymentNext); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.owner.QueryRow(ctx, `SELECT nextval('river_expiry.river_job_id_seq')`).Scan(&expiryNext); err != nil {
+		t.Fatal(err)
+	}
+	if oldAfter != oldLow || paymentNext <= q.result.JobID || expiryNext <= p.hold.JobID {
+		t.Fatalf("copied-row high-water reused: source=%d/%d payment=%d/%d expiry=%d/%d", oldLow, oldAfter, q.result.JobID, paymentNext, p.hold.JobID, expiryNext)
 	}
 }
