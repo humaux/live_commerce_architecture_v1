@@ -56,9 +56,27 @@ Stop ACK 均不证明远端资源已回收。
 不得原地替换旧 key 的字节。改变 AAD 顺序／字段需要新格式与迁移测试。
 
 调用方仍须通过可信数据库范围和租约解析原项目／版本，再在开播前检查
-授权。当前没有 SQL 解析器或生产调用者；加密通过不等于可开播。
-[持久控制器候选](../../contracts/live-media-controller-v1.md) 保留 SQL 权限、
-停播未送达恢复与当前 provider 方法版本等冻结门槛，不得由包测试代替。
+授权。当前没有租约绑定的 SQL 密文解析器或生产调用者；加密通过不等于可开播。
+[持久控制器契约](../../contracts/live-media-controller-v1.md) 仅部分设计冻结：
+MOCK 授权登记已实现，有限同 ID Stop 恢复仅有已复核设计，MEDIA_ATTEMPT、
+租约／观测及 River 事务契约仍待冻结。现有客户端已使用 `StartEgress`，
+不再把 provider 方法迁移列为阻塞；真实 Cloud 资格仍须单独验证。
+
+## T08 MOCK 授权登记依赖
+
+`0034_live_media_authorization.sql` → 现有 `live.sessions/programs` 与
+`integration.bindings` → PostgreSQL 类型约束、FORCE RLS、行锁与固定
+SECURITY DEFINER 函数。独立 registrar 只能调用登记／撤销入口；私有 writer
+持有最小表权限，普通运行时不得混入这两种能力。`platform.validatePoolAuthority`
+沿用公共启动检查，以精确 `pg_catalog` 函数 OID 检查 EXECUTE 权限，不能为了
+权限检测给普通 worker 增加 `live` schema USAGE。无新增依赖。
+
+变更表、函数签名、角色继承或启动检查时，执行
+`bash scripts/dev/test-local.sh --live-authority` 和完整 `test-local.sh`；
+覆盖真实角色正负例、规范化幂等、锁等待后过期、回滚及不可逆撤销。
+[合同](../../contracts/live-media-authorization-v1.md) 与
+[603 项本地后端回归证据](2026-09-27-live-media-authorization-acceptance.md)
+不代替未来密文认证、开停播、浏览器、真实供应商或 G06 验收。
 
 ## 依赖版本
 
