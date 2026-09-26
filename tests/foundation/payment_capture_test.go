@@ -310,15 +310,38 @@ func TestBuyerPaymentCaptureRealRiverSignedQueryChain(t *testing.T) {
 	ctx := context.Background()
 	opts := payments.DefaultQueryWorkerOptions()
 	body := pqSignedResponse(pcFull(q))
+	entered := make(chan struct{}, 1)
+	release := make(chan struct{})
+	var releaseOnce sync.Once
 	opts.MockTransport = pqTransport(func(r *http.Request) (*http.Response, error) {
 		if r.URL.Host != "sandbox-api.payuni.com.tw" || r.URL.Path != "/api/trade/query" {
 			return nil, errors.New("unexpected query target")
+		}
+		select {
+		case entered <- struct{}{}:
+		default:
+		}
+		select {
+		case <-release:
+		case <-r.Context().Done():
+			return nil, r.Context().Err()
 		}
 		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header)}, nil
 	})
 	// First run only the real query worker. No capture worker is online yet:
 	// the crash/restart gap must have persistent reconciliation work waiting.
-	pqStartWorker(t, q, opts)
+	_, stopQuery := pqStartWorker(t, q, opts)
+	t.Cleanup(func() { releaseOnce.Do(func() { close(release) }) })
+	select {
+	case <-entered:
+	case <-time.After(5 * time.Second):
+		t.Fatal("query worker never entered the MOCK transport")
+	}
+	// Pause native fetch while the already-claimed query is held at transport.
+	// Its same-TX observation/reconcile commit is then durable but cannot race
+	// the query-only worker's unknown-kind handling.
+	mustExec(t, q.f.owner, `UPDATE river_payment.river_queue SET paused_at=clock_timestamp() WHERE name='payment_mock_v1'`)
+	releaseOnce.Do(func() { close(release) })
 	pqAwait(t, q, q.result.JobID, "payment_report_observed", "scheduled")
 	q.pending(t)
 	var jobID int64
@@ -329,6 +352,15 @@ func TestBuyerPaymentCaptureRealRiverSignedQueryChain(t *testing.T) {
 	if jobHash != hex.EncodeToString(pcHash(t, q, pcFull(q))) {
 		t.Fatal("durable job not bound to canonical persisted projection")
 	}
+	var durableState string
+	var durableAttempt int
+	if e := q.f.owner.QueryRow(ctx, `SELECT state,attempt FROM river_payment.river_job WHERE id=$1`, jobID).Scan(&durableState, &durableAttempt); e != nil || durableState != "available" || durableAttempt != 0 {
+		t.Fatalf("reconcile was fetched before capture restart: state=%s attempt=%d err=%v", durableState, durableAttempt, e)
+	}
+	if e := stopQuery(); e != nil {
+		t.Fatal("stop query-only worker before capture restart", e)
+	}
+	mustExec(t, q.f.owner, `UPDATE river_payment.river_queue SET paused_at=NULL WHERE name='payment_mock_v1'`)
 	w, e := payments.NewCaptureWorker(ctx, q.worker)
 	if e != nil {
 		t.Fatal(e)
