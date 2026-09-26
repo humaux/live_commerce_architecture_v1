@@ -192,14 +192,17 @@ BEGIN
         RAISE EXCEPTION 'media authorization unavailable' USING ERRCODE='22023';
     END IF;
     v_hash := decode(p_spec->>'evidence_hash','hex');
-    v_session_version := (p_spec->>'session_version')::bigint;
-    v_credential_version := (p_spec->>'credential_version')::bigint;
-    v_media_version := (p_spec->>'media_binding_version')::bigint;
-    v_material_version := (p_spec->>'material_version')::bigint;
-    v_duration := (p_spec->>'max_duration_seconds')::integer;
-    v_budget := (p_spec->>'budget_minor')::bigint;
-    IF v_duration > 14400 OR v_budget > 1000000000
-       OR (p_spec->>'start_before') !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\.[0-9]+)?Z$' THEN
+    IF (p_spec->>'max_duration_seconds')::numeric > 14400
+       OR (p_spec->>'budget_minor')::numeric > 1000000000 THEN
+        RAISE EXCEPTION 'media authorization unavailable' USING ERRCODE='22023';
+    END IF;
+    v_session_version := (p_spec->>'session_version')::numeric::bigint;
+    v_credential_version := (p_spec->>'credential_version')::numeric::bigint;
+    v_media_version := (p_spec->>'media_binding_version')::numeric::bigint;
+    v_material_version := (p_spec->>'material_version')::numeric::bigint;
+    v_duration := (p_spec->>'max_duration_seconds')::numeric::integer;
+    v_budget := (p_spec->>'budget_minor')::numeric::bigint;
+    IF (p_spec->>'start_before') !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\.[0-9]+)?Z$' THEN
         RAISE EXCEPTION 'media authorization unavailable' USING ERRCODE='22023';
     END IF;
     v_deadline := (p_spec->>'start_before')::timestamptz;
@@ -331,6 +334,9 @@ BEGIN
             VALUES(v_id,v_tenant,v_store,v_ordinal,v_dest_ids[v_ordinal],v_dest_versions[v_ordinal],
                 split_part(v_dest_providers[v_ordinal],':',1),v_dest_assets[v_ordinal]);
         END LOOP;
+    END IF;
+    IF v_deadline <= clock_timestamp() THEN
+        RAISE EXCEPTION 'media authorization unavailable' USING ERRCODE='22023';
     END IF;
     RETURN v_id;
 EXCEPTION
