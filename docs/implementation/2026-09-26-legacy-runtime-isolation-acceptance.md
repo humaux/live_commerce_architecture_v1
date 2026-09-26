@@ -102,11 +102,40 @@ The author's earlier `53300` fixture failure exhausted setup connections; only
 unused seed pools were closed before retry. No product limits or assertions were
 weakened, and the failed log remains retained.
 
+## LRI06 real buyer browser regression
+
+Root `237b880` integrates test checkpoint `3757320`: current browser observations
+read payment and expiry facts from their correct family schemas, while no-write
+checks include both new tables and the retained external table. Production code
+is unchanged from the reviewed candidate. Each command rebuilt the storefront.
+
+| Gate | Root result | Log and SHA256 |
+| --- | --- | --- |
+| `bash scripts/dev/test-local.sh --browser-order` | exit 0, 23 cases, test 16.47s / package 18.625s | `/Volumes/data/output/legacy-isolation-root-browser-order1-20260926.log`; `148ddac34642f3be952d758333324fe5b45aefbc8a498459db5c60b366a6635f` |
+| `bash scripts/dev/test-local.sh --browser-payment` | exit 0, 11 cases, test 8.03s / package 9.437s | `/Volumes/data/output/legacy-isolation-root-browser-payment1-20260926.log`; `39d6d30ecb3b69003064249aeae8b7a94543849a5a5d6e8efe351768e95d7637` |
+
+These use actual Next → Go → isolated PG18 → Chromium, with a local MOCK PSP
+only. The payment gate proves two native form posts against persisted digests;
+it does not contact a real payment provider or establish settlement.
+Run-specific logs/results/screenshots are retained under
+`output/playwright/buyer-order-1349535540/` and
+`output/playwright/buyer-payment-4074165545/`.
+
+Root inspected desktop/mobile orders and addresses, mobile history, desktop
+payment-ready, touch-mobile Traditional Chinese history read-only, and neutral
+mobile return. No clipping/overflow was observed in these views; test mode,
+currency, uncertain-outcome and return-page warnings remain visible. The
+order-only fixture intentionally lacks payment setup; the separate payment
+fixture proves ready and post-handoff read-only states. No design change.
+Seven overwritten tracked review PNGs were first byte-compared to retained
+run-specific copies, then restored to their previous committed baselines.
+This is responsive/Chromium mobile emulation, not physical iOS/Safari acceptance.
+
 ## Pending
 
 - Remaining profile/runtime regression, admission/readiness and populated-upgrade
   portions of LRI02–04.
-- Root independent full regression and affected order/payment browser inspection.
+- Root independent full PG18/race/vet regression (browser gates above are local).
 - Independent exact-source final signoff before merging the product increment.
 - Production backup/impact/approval, real-provider qualification and full SaaS
   acceptance are outside this unit and remain unproven.
