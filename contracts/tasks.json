@@ -359,12 +359,12 @@
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
-      "implementation": "IN_PROGRESS_INBOX_ACCEPTED_CONSUMER_PENDING",
-      "unit_mock": "PASS_PROTOCOL_AND_PAYLOAD_SLICES_ONLY",
-      "real_pg": "PASS_LOCAL_INBOX_MI01_07_ONLY",
+      "implementation": "IN_PROGRESS_INBOX_AND_CONSUMER_ACCEPTED",
+      "unit_mock": "PASS_PROTOCOL_PAYLOAD_AND_CONSUMER_SLICES_ONLY",
+      "real_pg": "PASS_LOCAL_MI01_07_AND_MC01_07_ONLY",
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
-      "independent_review": "PASS_PROTOCOL_PAYLOAD_AND_INBOX_SLICES_ONLY"
+      "independent_review": "PASS_PROTOCOL_PAYLOAD_INBOX_AND_CONSUMER_SLICES_ONLY"
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。",
     "webhook_protocol": {
@@ -381,7 +381,14 @@
       "payload_acceptance": "docs/implementation/2026-09-26-meta-inbox-primitives-acceptance.md",
       "acceptance": "docs/implementation/2026-09-26-meta-inbox-durability-acceptance.md",
       "database_and_atomic_jobs": "PASS_LOCAL_REAL_PG_RACE_AND_VET",
-      "boundary": "MI01-07 local PG gates passed: product baseline full suite 507 PASS, test-only Instagram extension 20 targeted PASS. No public route, OAuth proof issuer, event consumer, retention scheduler or provider qualification."
+      "boundary": "MI01-07 local PG gates passed: product baseline full suite 507 PASS, test-only Instagram extension 20 targeted PASS. Later event consumer acceptance is recorded separately below. No public route, OAuth proof issuer, retention scheduler or provider qualification."
+    },
+    "social_consumer": {
+      "status": "PASS_LOCAL_MC01_07_NOT_PUBLIC",
+      "contract": "contracts/meta-consumer-v1.md",
+      "acceptance": "docs/implementation/2026-09-26-meta-social-consumer-acceptance.md",
+      "database_and_real_queue": "PASS_LOCAL_PG_RIVER_POPULATED_UPGRADE_RACE_AND_VET",
+      "boundary": "Dedicated consumer stores scoped encrypted social facts separately from webchat/identity/commerce. No public runtime/CLI assembly, social read UI, OAuth proof issuer, sending policy, provider qualification or full T07/SaaS acceptance."
     }
   },
   {

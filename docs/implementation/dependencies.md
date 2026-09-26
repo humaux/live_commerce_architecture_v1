@@ -71,9 +71,16 @@ READ COMMITTED 事务 → `load_social_event` → `PayloadKeyring.open` →
 每个事实的 consumer_attempt 是延迟约束复核的真实任务代次，不是 caller GUC。
 锁顺序固定为 tenant/store/binding/route/event/River/conversation；权限、授权证明
 及任务状态在事务末尾再次核对。没有新增依赖、队列或服务。
+启动权限检查的 `validatePoolAuthority` 同时检查继承 USAGE 与 SET 可达的对象
+所有者，不能仅拒绝显式 SET。SQL 的 `require_authority` 保留原检查并追加新快照下
+的递归 `pg_auth_members` 查询及当前数据库所有权检查；只重复 `pg_has_role` 不足以
+覆盖已暖缓存、finish 后 COMMIT 前角色改变。原因、旧源失败复现及新源结果见
+[消费验收记录](2026-09-26-meta-social-consumer-acceptance.md)。这段公共角色检查
+影响所有专用连接池，改动必须跑完整回归，不能只跑 Meta 单测。
 改动任一调用点须重跑 `--meta-consumer`、`--meta-inbox` 和完整 PG/race/vet，
 并独立审查。当前接口[已冻结](../../contracts/meta-consumer-v1.md)，MC01–07
-独立实际验收进行中；尚无公开读取 UI、发送策略或生产运行时装配。
+通过本地真实 PG/River、带数据升级、全仓 530 项回归和独立复核；详见上述验收
+记录。尚无公开读取 UI、发送策略或生产运行时装配，不等于完整 T07 已完成。
 
 ## 商家账户接入复用关系
 

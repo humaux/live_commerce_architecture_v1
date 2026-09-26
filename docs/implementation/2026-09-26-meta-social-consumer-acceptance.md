@@ -1,6 +1,6 @@
 # T07 Meta social consumer — bounded implementation evidence
 
-Status: **IMPLEMENTED / FINAL_MC_ACCEPTANCE_PENDING**. Contract:
+Status: **PASS_LOCAL_MC01_07 / IMPLEMENTED_NOT_PUBLIC**. Contract:
 [Meta consumer v1](../../contracts/meta-consumer-v1.md). This is a local,
 read-side component, not a public Meta connection, sending engine or complete
 SaaS deployment gate. No customer production state was changed.
@@ -89,8 +89,8 @@ Root source `983eabe` before the final authority fixes: full actual PG/race/vet,
 `/Volumes/data/output/meta-consumer-root-full-1.log`, SHA-256
 `fae9eee8d07972964881b9fe2d240cf2aea792418a86733eaf1c63b9a6685b55`.
 This does **not** cover the newly found authority failures or final fixed source.
-Final full regression and independent MC01–07 evidence must replace the pending
-status before bounded acceptance. Post-`6f04653` old MI subset passed 20 tests,
+The final full regression and independent MC01–07 evidence below supersede
+that limited baseline. Post-`6f04653` old MI subset passed 20 tests,
 5.592s, exit 0: `/Volumes/data/output/meta-consumer-root-old-mi-final.log`.
 
 Root subsequently ran actual full PG/race/vet against `c533856` (the final
@@ -100,9 +100,48 @@ PASS, 0 FAIL, 0 SKIP**, foundation 311.584s. Log:
 `80975d274cf9dc7891f670b280f3efae2055834bcefc1210cec69b7ab13105ae`.
 Independent evidence review still found MC07's populated `0028` → `0029`
 upgrade missing: fresh installation and a repeated Apply are not that gate.
-The test author is adding this path and tightening complete ALREADY-null and
-negative-commit rollback assertions. This 529-test result does not cover those
-pending test additions and is not yet the final MC01–07 verdict.
+The test author added this path and complete ALREADY-null and negative-commit
+rollback assertions in `0cb5a84`, integrated as `5e850a4`. This 529-test result
+does not cover those later test additions.
+
+The new focused run covers **16 tests**, exit 0, foundation 11.943s, including
+the populated upgrade (1.74s). Log:
+`/Volumes/data/output/meta-consumer-pg-upgrade-final-20260926.log`, SHA-256
+`f54f7900058f44058ec9ea7dd9c3bd2353a8a0da7b6940b9139ef930336801e6`.
+Final consumer test SHA-256:
+`155867c189c1124b28f0fd07395193e424bc152c807c23dd80b389a1efff2601`.
+The independent test author's [record](2026-09-26-meta-consumer-pg-author.md)
+retains intermediate and failed fixture runs.
+
+### Final source replay and independent verdict
+
+Root ran `bash scripts/dev/test-local.sh` on `5e850a4`, including the frozen
+upgrade test: actual exit **0**, **530 top-level PASS / 0 FAIL / 0 SKIP**,
+including all 16 consumer tests; foundation **309.552s**. The runner executed
+`go test -p 1 -race -count=1 -timeout=360s -v ./...` and `go vet ./...`.
+Only documentation changed during this run. Log:
+`/Volumes/data/output/meta-consumer-root-full-upgraded-final.log`, SHA-256
+`453d4efabba1c9eae36b010009dfbe9a9912a5754ab2ccb13a8d13cb0f0f432b`.
+The consumer test SHA above was rechecked after the run. Labelled fixture
+containers were absent after cleanup; no customer service was stopped.
+
+The independent read-only reviewer verified the exact final source, focused
+and full logs, gate mapping and cleanup, then accepted **MC01–07 LOCAL** with
+no open P0/P1/P2. Humaux record:
+`T07 5e850a4 final independent MC01–07 LOCAL acceptance 530 PASS`.
+This accepts this consumer component only, not T07 as a whole or deployment.
+
+## Frozen gate mapping
+
+| Gate | Actual executable coverage | Current adjudication |
+| --- | --- | --- |
+| MC01 | `TestMetaConsumerAuthority`, `SameEventLockAndFinalAuthority`, `WarmedFinalRoleChanges`, `FinalCommitDatabaseOwner`: dedicated/reverse/mixed/SET/predefined/object-owner authority; warmed post-finish role changes roll back facts, terminal marker, audit and sequence. | Focused PASS; source independently reviewed |
+| MC02 | `TestProjectSocialAllSevenKindsAndScopedIdentity`, `RejectsWrongEvidenceAndQuarantine`, `SocialProjectionRedaction`, and consumer error tests: shared classifier, exact source agreement, seven supported kinds, Unicode/attachments, scoped identity and sanitized diagnostics. | Unit/race PASS; source independently reviewed |
+| MC03 | `TestMetaConsumerRiverPageAndInstagramFacts`: actual River client with separate worker/consumer pools, Page/IG messages/comments, tenants/stores/apps/assets, original-AAD decryption and unchanged unrelated domain counts. | Focused PASS |
+| MC04 | Reverse sequence/replay/source purge; observed lock waits for same event and different events/same peer; injected SQL failures at every write plus existing-conversation sequence update; deferred guard rollback. ALREADY now checks all 13 remaining output fields are NULL. | Focused PASS |
+| MC05 | Exact job/attempt validation; observed route/binding/River lock waits; rescued attempt, changed route/binding/proof and proof expiry after finish prevent materialization. | Focused PASS |
+| MC06 | Actual River retryable missing-key/tag/classifier failures; pending ciphertext survives purge; reviewed/stale rows expose no context and cannot process; source cleanup preserves social copy. | Focused PASS |
+| MC07 | Fresh/repeated migrations; populated pre-0029 fixture with checksummed first 28 SQL files, River and three post-River migrations; eight existing row snapshots unchanged after Apply twice; real consumer completes the pre-upgrade job. Prior MI gates, final full PG/race/vet and independent source/evidence verdict all passed. | PASS_LOCAL |
 
 ## Still outside this component
 

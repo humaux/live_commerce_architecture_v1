@@ -1,8 +1,10 @@
 # Meta social consumer v1
 
-Status: **FROZEN / IMPLEMENTATION_PENDING**. Independent design preflight and
+Status: **FROZEN / PASS_LOCAL_MC01_07**. Independent design preflight and
 the two ordering/family clarifications at `80e678f` passed with no open P0/P1/P2.
-MC01–07 still require actual implementation evidence. Builds on the accepted
+Implementation, populated upgrade, 530-test full regression and independent
+MC01–07 verdict are recorded in the [bounded acceptance](../docs/implementation/2026-09-26-meta-social-consumer-acceptance.md).
+Builds on the accepted
 [durable inbox](meta-inbox-v1.md); not a public/provider or whole-SaaS gate.
 Integrator owns migration `0029`, shared authority changes and this contract.
 
