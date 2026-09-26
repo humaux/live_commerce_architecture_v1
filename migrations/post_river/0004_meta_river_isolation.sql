@@ -250,13 +250,16 @@ BEGIN
   ('social.messages','social_message_commit','meta_inbox.guard_social_insert()',5,true),
   ('social.comment_events','social_comment_commit','meta_inbox.guard_social_insert()',5,true)
  ) AS expected(relation_name,trigger_name,function_name,trigger_type,deferred)
- JOIN pg_catalog.pg_trigger t ON t.tgrelid=to_regclass(expected.relation_name)
-  AND t.tgname=expected.trigger_name AND t.tgfoid=to_regprocedure(expected.function_name)
+ -- Resolve the legacy relation through catalogs, not to_regclass: its schema
+ -- USAGE is deliberately revoked from this SECURITY DEFINER's Meta owner.
+ JOIN pg_catalog.pg_trigger t ON t.tgname=expected.trigger_name
+  AND t.tgfoid=to_regprocedure(expected.function_name)
  JOIN pg_catalog.pg_proc p ON p.oid=t.tgfoid
  JOIN pg_catalog.pg_roles r ON r.oid=p.proowner
  JOIN pg_catalog.pg_class c ON c.oid=t.tgrelid
  JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
- WHERE t.tgtype=expected.trigger_type AND t.tgenabled IN ('O','A') AND NOT t.tgisinternal
+ WHERE n.nspname||'.'||c.relname=expected.relation_name
+  AND t.tgtype=expected.trigger_type AND t.tgenabled IN ('O','A') AND NOT t.tgisinternal
   AND t.tgdeferrable=expected.deferred AND t.tginitdeferred=expected.deferred
   AND t.tgqual IS NULL AND t.tgnargs=0 AND t.tgargs='\x'::bytea AND t.tgattr=''::int2vector
   AND p.prosecdef AND p.proconfig=ARRAY['search_path=pg_catalog']::text[]
