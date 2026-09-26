@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"testing"
@@ -47,6 +48,74 @@ func ewSetup(t *testing.T, f *testFixture, lines int, historical ...string) psHa
 		t.Fatalf("checkout producer queue=%s", queue)
 	}
 	return p
+}
+
+// ewCloseSeedPools releases only the five role pools created for one finished
+// producer seed. The fixture owner and runtime pools belong to the caller.
+func ewCloseSeedPools(t *testing.T, p psHarness) {
+	t.Helper()
+	show := func(setting string) int {
+		var raw string
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		if err := p.f.owner.QueryRow(ctx, "SHOW "+setting).Scan(&raw); err != nil {
+			t.Fatal("seed pool capacity SHOW failed")
+		}
+		n, err := strconv.Atoi(raw)
+		if err != nil {
+			t.Fatal("seed pool capacity is not numeric")
+		}
+		return n
+	}
+	max, reserved, super := show("max_connections"), show("reserved_connections"), show("superuser_reserved_connections")
+	if max != 30 || reserved < 0 || super < 0 || reserved+super >= max {
+		t.Fatalf("unexpected isolated PG capacity: max=%d reserved=%d super=%d", max, reserved, super)
+	}
+	seeds := []struct {
+		kind string
+		pool *pgxpool.Pool
+	}{
+		{"checkout", p.pool}, {"worker", p.worker},
+		{"buyer_runtime", p.a.runtime}, {"buyer_issuer", p.a.issuer}, {"identity", p.a.identity},
+	}
+	ownerRole, sharedRole := p.f.owner.Config().ConnConfig.User, p.f.runtime.Config().ConnConfig.User
+	seen := make(map[string]bool, len(seeds))
+	for _, seed := range seeds {
+		role := seed.pool.Config().ConnConfig.User
+		if role == "" || role == ownerRole || role == sharedRole || seen[role] {
+			t.Fatal("seed pool role is not uniquely owned")
+		}
+		seen[role] = true
+		count := func() int {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			var n int
+			if err := p.f.owner.QueryRow(ctx, `SELECT count(*) FROM pg_stat_activity WHERE datname=current_database() AND usename=$1`, role).Scan(&n); err != nil {
+				t.Fatal("seed role activity count failed")
+			}
+			return n
+		}
+		stats, before := seed.pool.Stat(), count()
+		if stats.AcquiredConns() != 0 || before == 0 || stats.TotalConns() != int32(before) {
+			t.Fatalf("seed %s ownership mismatch: total=%d acquired=%d backend=%d", seed.kind, stats.TotalConns(), stats.AcquiredConns(), before)
+		}
+		t.Logf("seed %s capacity=%d reserved=%d super=%d total=%d idle=%d acquired=%d pool_max=%d backend_before=%d", seed.kind, max, reserved, super, stats.TotalConns(), stats.IdleConns(), stats.AcquiredConns(), stats.MaxConns(), before)
+		seed.pool.Close()
+		deadline := time.Now().Add(2 * time.Second)
+		for n := count(); n != 0; n = count() {
+			if time.Now().After(deadline) {
+				t.Fatalf("seed %s retained %d backends after close", seed.kind, n)
+			}
+			time.Sleep(20 * time.Millisecond)
+		}
+		t.Logf("seed %s backend_after=0", seed.kind)
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		ownerErr, runtimeErr := p.f.owner.Ping(ctx), p.f.runtime.Ping(ctx)
+		cancel()
+		if ownerErr != nil || runtimeErr != nil {
+			t.Fatal("shared fixture pool unavailable after seed close")
+		}
+	}
 }
 
 func ewDue(t *testing.T, p psHarness) {

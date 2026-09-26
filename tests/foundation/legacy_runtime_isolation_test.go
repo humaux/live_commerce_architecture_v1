@@ -44,18 +44,11 @@ func TestLegacyRuntimeIsolationPaymentDoesNotMaintainForeignFamilies(t *testing.
 	f := pwIsolatedFixture(t)
 	ctx := context.Background()
 	keys := pwKeys(t)
-	closeSeedPools := func(p psHarness) {
-		p.pool.Close()
-		p.worker.Close()
-		p.a.runtime.Close()
-		p.a.issuer.Close()
-		p.a.identity.Close()
-	}
 	queries := [4]pqFixture{}
 	for i := range queries {
 		queries[i] = pqSetupItemsOn(t, f, keys, false, 1)
 		if i != 0 {
-			closeSeedPools(queries[i].psHarness)
+			ewCloseSeedPools(t, queries[i].psHarness)
 		}
 	}
 	firstExpiry, externalID := pwDefaultDomainJobs(t, queries[0])
@@ -63,7 +56,7 @@ func TestLegacyRuntimeIsolationPaymentDoesNotMaintainForeignFamilies(t *testing.
 	for _, id := range []*int64{&expiry.retryable, &expiry.stale, &expiry.terminal} {
 		p := ewSetup(t, f, 1)
 		*id = p.hold.JobID
-		closeSeedPools(p)
+		ewCloseSeedPools(t, p)
 	}
 	meta := mrSetup(t, f)
 	asset := miAsset()
@@ -134,9 +127,16 @@ func TestLegacyRuntimeIsolationExpiryDoesNotMaintainForeignFamilies(t *testing.T
 		t.Fatal("valid reconcile job missing", err)
 	}
 	staleExpiryID, externalID := pwDefaultDomainJobs(t, q)
-	scheduledExpiryID := ewSetup(t, f, 1).hold.JobID
-	retryableExpiryID := ewSetup(t, f, 1).hold.JobID
-	terminalExpiryID := ewSetup(t, f, 1).hold.JobID
+	ewCloseSeedPools(t, q.psHarness)
+	seed := ewSetup(t, f, 1)
+	scheduledExpiryID := seed.hold.JobID
+	ewCloseSeedPools(t, seed)
+	seed = ewSetup(t, f, 1)
+	retryableExpiryID := seed.hold.JobID
+	ewCloseSeedPools(t, seed)
+	seed = ewSetup(t, f, 1)
+	terminalExpiryID := seed.hold.JobID
+	ewCloseSeedPools(t, seed)
 	for _, linked := range []struct {
 		id        int64
 		operation string
