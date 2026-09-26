@@ -1,6 +1,7 @@
 # Meta inbox v1 — trusted routing and durable admission
 
-Status: **DB_DRAFT_REVIEW / CRYPTO_CONTRACT_FROZEN**, not implemented/accepted. Builds on
+Status: **CONTRACT_FROZEN / DATABASE_NOT_IMPLEMENTED**. Payload primitives have
+separate implementation gates; this contract is not a PG/provider acceptance. Builds on
 [MWP01–05](meta-webhook-protocol-v1.md). No public route or provider activation
 until this contract's real PostgreSQL gates and later operational gates pass.
 
@@ -171,12 +172,13 @@ consumer must recheck the stored route/binding epoch before reading/decrypting.
    handler may write 200. Any statement/encryption/job/commit error rolls back
    all effects and returns fixed 503; no partial batch slicing or ACK.
 
-SQL function signatures below are pending independent review; freeze before
-parallel SQL/service/test implementation. Routes and receipt/event identity survive
+SQL function signatures and trust/lifecycle guards were independently reviewed
+through `1d2d5d0` with no open P0/P1/P2. They are frozen for parallel SQL/service/
+test implementation. Routes and receipt/event identity survive
 ciphertext cleanup. Historical replay must neither depend on current binding nor
 reanimate bodies/jobs after cleanup. No job backfill for this brand-new producer.
 
-## SQL interface draft (integrator-owned)
+## SQL interface (integrator-owned)
 
 All functions are schema-qualified, SECURITY DEFINER with fixed `pg_catalog`
 search_path and PUBLIC EXECUTE revoked. The trusted control-plane functions are
@@ -187,7 +189,7 @@ Expected SQL errors use fixed classes (`22023` invalid, `42501` unauthorized,
 
 | Function / result | Admission and mutation |
 | --- | --- |
-| `meta_inbox.activate_route(app text, object text, asset text, tenant uuid, store uuid, binding uuid, binding_version bigint, proof_hash text, proof_expires timestamptz, expected_epoch bigint) -> (route_id uuid, route_epoch bigint)` | Trusted control plane only. Exact existing provider `facebook` for page / `instagram` for instagram, asset, active scope and binding/version. Create uses expected_epoch=0, replacement uses CAS; immutable owner/store/binding ID. Existing different owner always conflicts, including other app. Proof digest lowercase64hex, future expiry; audit each activation. |
+| `meta_inbox.activate_route(app text, object text, asset text, tenant uuid, store uuid, binding uuid, binding_version bigint, proof_hash text, proof_expires timestamptz, expected_epoch bigint) -> (route_id uuid, route_epoch bigint)` | Trusted control plane only. Exact local provider `facebook` for page / `instagram` for instagram, asset, active scope and binding/version. Create uses expected_epoch=0, replacement uses CAS; immutable owner/store/binding ID. Existing different owner always conflicts, including other app. Proof digest lowercase64hex, future expiry; audit each activation. |
 | `meta_inbox.disable_route(route uuid, expected_epoch bigint) -> bigint` | Trusted control plane only; CAS disable increments epoch and appends metadata audit. No old event mutation. |
 | `meta_inbox.begin_batch(app text, object text, body_hash text, unit_count int) -> (batch_id uuid, replay bool)` | Ingress only. Bound count 1..1000. Serialize app/object/raw hash; return finalized historical receipt before route lookup. Otherwise insert new unfinalized receipt owned by current transaction. |
 | `meta_inbox.prepare_event(batch uuid, ordinal int, event_key text, payload_hash text, asset text, kind text, protocol_reason text, occurred_at timestamptz) -> (event_id uuid, needs_body bool, body_class text, tenant_id uuid, store_id uuid, route_id uuid, route_epoch bigint)` | Ingress only; new batch owned by this transaction, ordinal1..unit_count. Global first-key/version check before routing. Serialize Key, preserve one primary hash forever, represent other hashes as conflict versions. Return historical equal-hash identity without remapping. Every call inserts one exact ordinal link, even when event is repeated. New routable event returns class event; all other new units quarantine. |
@@ -197,8 +199,9 @@ Expected SQL errors use fixed classes (`22023` invalid, `42501` unauthorized,
 | `meta_inbox.purge_expired(limit int) -> int` | Trusted retention authority only; limit1..1000 total body rows, oldest eligible first, SKIP LOCKED. Recheck age and terminal evidence under lock. Any linked processing job must also be completed/cancelled/discarded or already pruned; raw body waits for all members. Preserve all metadata/audit/job references. |
 
 Provider labels above are local adapter identifiers, not OAuth eligibility.
-If existing bindings use a different provider spelling, freeze one exact local
-mapping before implementation; do not normalize unknown arbitrary identifiers.
+Current source/tests have only generic/mock bindings, not an established Meta
+spelling to migrate. This contract chooses exactly `facebook` / `instagram`;
+do not normalize unknown arbitrary identifiers or reinterpret existing mock rows.
 
 `events` represents versions directly: unique `(app_id,object,event_key,payload_hash)`
 plus a partial unique `(app_id,object,event_key) WHERE is_primary`; the first
