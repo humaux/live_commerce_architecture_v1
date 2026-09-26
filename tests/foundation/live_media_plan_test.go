@@ -82,8 +82,8 @@ func lmpSetup(t *testing.T, twoDestinations bool) *lmpHarness {
 			`DELETE FROM integration.operation_events WHERE operation_id IN (SELECT o.id FROM integration.operations o JOIN live.media_attempts a ON a.id=o.media_attempt_id WHERE a.session_id=$1)`,
 			`DELETE FROM integration.operations WHERE media_attempt_id IN (SELECT id FROM live.media_attempts WHERE session_id=$1)`,
 			`DELETE FROM live.media_attempts WHERE session_id=$1`,
-			`DELETE FROM ops.command_results WHERE principal_id=$2 AND operation='live.media.start'`,
-			`DELETE FROM ops.audit_events WHERE principal_id=$2 AND action='live.media.start.planned'`,
+			`DELETE FROM ops.command_results WHERE principal_id=$1 AND operation='live.media.start'`,
+			`DELETE FROM ops.audit_events WHERE principal_id=$1 AND action='live.media.start.planned'`,
 		}
 		for i, query := range queries {
 			arg := h.session
@@ -167,11 +167,11 @@ func TestLiveMediaPlanLMP01AtomicStartAndNativeJob(t *testing.T) {
 				t.Fatalf("invalid frozen start result: %+v", out)
 			}
 			lmpDelta(t, before, lmpFacts(t, h), [6]int64{1, 1, 1, 1, 1, 1})
-			var session, program, authorization, original, room, state, profile, actor, action, purpose string
+			var session, program, authorization, original, operationPrincipal, room, state, profile, actor, action, purpose string
 			var sessionVersion int64
 			var request, args, receipt []byte
 			err = h.lp.f.owner.QueryRow(context.Background(), `SELECT a.session_id::text,a.program_id::text,a.authorization_id::text,
-			 a.original_principal_id::text,a.room_name,p.state,a.execution_profile,o.actor_kind,o.action,o.purpose,
+			 a.original_principal_id::text,coalesce(o.principal_id::text,''),a.room_name,p.state,a.execution_profile,o.actor_kind,o.action,o.purpose,
 			 s.version,o.request::text::bytea,j.args::text::bytea,c.response::text::bytea
 			 FROM live.media_attempts a JOIN live.sessions s ON s.id=a.session_id
 			 JOIN live.programs p ON p.id=a.program_id
@@ -179,15 +179,15 @@ func TestLiveMediaPlanLMP01AtomicStartAndNativeJob(t *testing.T) {
 			 JOIN river_media.river_job j ON j.id=o.job_id
 			 JOIN ops.command_results c ON c.tenant_id=a.tenant_id AND c.store_id=a.store_id
 			  AND c.principal_id=a.original_principal_id AND c.operation='live.media.start'
-			 WHERE a.id=$1`, out.AttemptID).Scan(&session, &program, &authorization, &original, &room,
+			 WHERE a.id=$1`, out.AttemptID).Scan(&session, &program, &authorization, &original, &operationPrincipal, &room,
 				&state, &profile, &actor, &action, &purpose, &sessionVersion, &request, &args, &receipt)
 			if err != nil {
 				t.Fatal(err)
 			}
 			if session != h.session || program != out.ProgramID || authorization != h.input.AuthorizationID ||
-				original != h.lp.actor || room != out.RoomName || state != "READY" || sessionVersion != 1 ||
+				original != h.lp.actor || operationPrincipal != h.lp.actor || room != out.RoomName || state != "READY" || sessionVersion != 1 ||
 				profile != "PROVIDER_MOCK" || actor != "MEDIA_ATTEMPT" || action != "livekit.egress.start" || purpose != "service" {
-				t.Fatalf("frozen DB identity mismatch: session=%s program=%s auth=%s state=%s actor=%s", session, program, authorization, state, actor)
+				t.Fatalf("frozen DB identity mismatch: session=%s program=%s auth=%s original=%s operation-principal=%s state=%s actor=%s", session, program, authorization, original, operationPrincipal, state, actor)
 			}
 			var requestFields, jobFields map[string]any
 			if err = json.Unmarshal(request, &requestFields); err != nil {
@@ -484,6 +484,27 @@ type lmpJobArgs struct {
 func (lmpJobArgs) Kind() string { return "live_media_operation_v1" }
 
 func TestLiveMediaPlanLMP05QueueIntegrityAndRollback(t *testing.T) {
+	for _, terminal := range []string{"completed", "cancelled"} {
+		t.Run("terminal-on-runtime-insert-"+terminal, func(t *testing.T) {
+			h := lmpSetup(t, false)
+			before := lmpFacts(t, h)
+			name := "a_lmp_terminal_" + t04Tag()
+			function := pgx.Identifier{"public", name}.Sanitize()
+			trigger := pgx.Identifier{name}.Sanitize()
+			// The owner fixture alters the row being inserted by the real runtime
+			// planner. Without an initial-state guard the linked READY intent could
+			// otherwise commit with an already-terminal native job.
+			mustExec(t, h.lp.f.owner, fmt.Sprintf(`CREATE FUNCTION %s() RETURNS trigger LANGUAGE plpgsql AS $$
+			 BEGIN NEW.state=%s; NEW.finalized_at=clock_timestamp(); RETURN NEW; END $$`, function, quoteLiteral(terminal)))
+			mustExec(t, h.lp.f.owner, `CREATE TRIGGER `+trigger+` BEFORE INSERT ON river_media.river_job FOR EACH ROW EXECUTE FUNCTION `+function+`() `)
+			t.Cleanup(func() {
+				mustExec(t, h.lp.f.owner, `DROP TRIGGER `+trigger+` ON river_media.river_job`)
+				mustExec(t, h.lp.f.owner, `DROP FUNCTION `+function+`() `)
+			})
+			_, err := h.start(t04Key("lmp-terminal-" + terminal))
+			lmpNoChange(t, h, before, err)
+		})
+	}
 	t.Run("orphan-and-update-kind", func(t *testing.T) {
 		h := lmpSetup(t, false)
 		ctx := context.Background()
@@ -805,7 +826,7 @@ func TestLiveMediaPlanLMP07PopulatedUpgradeAndLegacyControl(t *testing.T) {
 	mustExec(t, f.owner, `INSERT INTO identity.memberships(tenant_id,principal_id) VALUES($1,$2)`, tenant, principal)
 	mustExec(t, f.owner, `INSERT INTO integration.bindings(id,tenant_id,store_id,principal_id,provider,external_asset_id) VALUES($1,$2,$3,$4,'mock','old-asset')`, binding, tenant, store, principal)
 	mustExec(t, f.owner, `INSERT INTO integration.operations(id,tenant_id,store_id,principal_id,binding_id,binding_version,provider,external_asset_id,purpose,action,semantic_key,request_hash,request,job_id)
-	 VALUES($1,$2,$3,$4,$5,1,'mock','old-asset','service','mock.old','lmp:old',decode(repeat('11',32),'hex'),'{}',$6)`, operation, tenant, store, principal, binding, job.Job.ID)
+	 VALUES($1,$2,$3,$4,$5,1,'mock','old-asset','service','mock.old','lmp:old:1',decode(repeat('11',32),'hex'),'{}',$6)`, operation, tenant, store, principal, binding, job.Job.ID)
 	oldJob := lriRows(t, f, "river.river_job", fmt.Sprintf("WHERE id=%d", job.Job.ID))
 	oldLedger := lmpMigrationChecksums(t, f)
 	if len(oldLedger) == 0 {
