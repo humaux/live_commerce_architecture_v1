@@ -40,6 +40,21 @@ The root controls the shared contract and runner. Heavy PG runs are sequenced.
 
 ## Evidence to fill from actual execution
 
+Early compile-only candidate passed `go test -run '^$' ./tests/foundation`;
+this executes no PG acceptance. Before its first PG run, review identified:
+
+- Fixed-name runtime lookup must use the actual restored LOGIN name.
+- Restart proof must observe an actual re-delivery attempt, not a 200 ms sleep.
+- Final foreign equality must cover all untouched tables/queues/sequences,
+  not only a hand-picked subset; authorized reads must execute scoped SQL.
+- Source cleanup must use its recorded immutable container ID, not only name.
+- Role membership evidence must include grants of built-in `pg_*` roles to
+  application logins; include column ACLs, not just relation ACLs.
+- DB probes need bounded contexts in addition to command/package deadlines.
+
+These are **open candidate-test findings**, not identified production failures.
+Do not mark them closed until the updated source and actual run are reviewed.
+
 | Gate | State |
 |---|---|
 | LRC01 target/artifact guards | NOT_RUN |
