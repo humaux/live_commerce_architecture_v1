@@ -391,11 +391,11 @@
       "boundary": "Dedicated consumer stores scoped encrypted social facts separately from webchat/identity/commerce. No public runtime/CLI assembly, social read UI, OAuth proof issuer, sending policy, provider qualification or full T07/SaaS acceptance."
     },
     "private_runtime": {
-      "status": "ISOLATION_IMPLEMENTED_ACCEPTANCE_PENDING",
+      "status": "PASS_LOCAL_PRIVATE_ISOLATED_RUNTIME",
       "acceptance": "docs/implementation/2026-09-26-meta-runtime-acceptance.md",
       "revision_contract": "contracts/meta-runtime-isolation-v1.md",
-      "root_evidence": "/Volumes/data/output/meta-runtime-root-deterministic-failure-20260926.log",
-      "boundary": "Historical MR04 reproduced schema-wide mutation. Contract647e517 implemented through856a4b1 with fixed river_meta clients, dedicated lifecycle role, forward cutover and effective ACL startup guard. Four-package race passed; independent MIso01-05 and full regression pending. No runtime/deployment acceptance. Existing payment/expiry shared-schema maintenance P1 remains open."
+      "root_evidence": "/Volumes/data/output/meta-isolation-root-full-isolated-final-20260926.log",
+      "boundary": "MIso01-05 and original MR locally accepted on frozen source/tests593291e:552 full PG/race/vet PASS plus3 same-source browser PASS and independent review. Fixed river_meta clients, dedicated lifecycle role, populated cutover/resume and effective ACL checks. Historical failures retained. This private receive/consume runtime does not enable provider callbacks/OAuth proof issuance/sending/social UI/deployment or complete T07. Existing payment/expiry/external shared-schema maintenance P1 remains open."
     }
   },
   {

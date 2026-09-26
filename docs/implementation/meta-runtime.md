@@ -1,13 +1,15 @@
 # Meta receive/consume runtime
 
-Status: **ISOLATION_IMPLEMENTED / ACCEPTANCE_PENDING**. This is a local runtime
+Status: **ACCEPTED_LOCAL_PRIVATE_RUNTIME**. This is a local runtime
 increment over the accepted inbox and social consumer. It does not enable a
 customer callback, authorize sending, or establish production readiness.
 Configuration and gates: [original contract](../../contracts/meta-runtime-v1.md).
 The failed shared-schema candidate is retained in the acceptance record.
-The [isolation revision](../../contracts/meta-runtime-isolation-v1.md) is now
-implemented through `856a4b1`, but still needs independent PG acceptance before
-enabling this runtime. A source review or unit pass is not that acceptance.
+The [isolation revision](../../contracts/meta-runtime-isolation-v1.md) is
+implemented through `d702bb1`; frozen source/tests `593291e` passed 552 full
+PG/race/vet tests and three same-source browser gates with independent review.
+See the [exact evidence and retained failures](2026-09-26-meta-runtime-acceptance.md).
+This accepts the local receive/consume boundary, not customer activation.
 
 ## Call and ownership map
 

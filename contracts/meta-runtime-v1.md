@@ -1,6 +1,7 @@
 # Meta receive/consume runtime v1
 
-Status: **REVISION_REQUIRED / FAILED_MR04**. Builds on accepted MI01–07 and MC01–07;
+Status: **HISTORICAL_SHARED_SCHEMA_FAILURE / SUPERSEDED_BY_LOCAL_ISOLATION_REVISION**.
+Builds on accepted MI01–07 and MC01–07;
 not authorization to configure customer Meta callbacks or deploy publicly.
 Base `5523826`. This makes the existing components executable, not a new broker
 or social microservice. API and worker remain the same Go modular monolith.
@@ -10,8 +11,9 @@ changed a valid payment job from `scheduled` to `available`. River v0.40.0
 restricts fetching by queue but runs maintenance across the configured schema.
 The ordinary-worker/shared-`river` design below is therefore historical, not an
 accepted deployment contract. See [failure evidence](../docs/implementation/2026-09-26-meta-runtime-acceptance.md)
-and the [isolation revision](meta-runtime-isolation-v1.md). Keep all original
-MR gates; do not weaken unrelated full-row preservation to accept this candidate.
+and the [isolation revision](meta-runtime-isolation-v1.md), now independently
+accepted locally on frozen source/tests `593291e`. All original MR gates remain;
+the failed shared-schema design below is not restored or authorized for use.
 
 ## Reuse and ownership
 

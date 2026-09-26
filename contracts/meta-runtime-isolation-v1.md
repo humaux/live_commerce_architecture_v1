@@ -1,6 +1,6 @@
 # Meta runtime isolation revision v1
 
-Status: **FROZEN / IMPLEMENTATION_REQUIRED / GATES_NOT_RUN**.
+Status: **FROZEN / IMPLEMENTED / MIso01–05_ACCEPTED_LOCAL**.
 This amends the failed shared-schema portions of [runtime v1](meta-runtime-v1.md),
 not its other parsing, lifecycle, tenant, encryption or MR01–05 requirements.
 Base candidate `8ed76d6`; observed blocker and logs are in the
@@ -8,8 +8,11 @@ Base candidate `8ed76d6`; observed blocker and logs are in the
 Only local isolated implementation/tests are authorized. No customer deployment,
 service shutdown, credential change or production data migration is authorized.
 Independent read-only preflight approved reviewed source `84cc26f`: P0/P1/P2
-all zero after two bounded rounds. That freezes this contract only; the current
-runtime still fails MR04 and is not approved for release.
+all zero after two bounded rounds. Implementation through `d702bb1` and frozen
+source/tests `593291e` subsequently passed all MIso/MR gates: 552 full PG/race/vet
+tests and three same-source browser gates, with independent final signoff.
+The original failed candidate is historical; production release remains outside
+this local acceptance.
 
 ## Decision and alternatives
 
@@ -21,7 +24,7 @@ kind/args. Do not expose the schema as environment configuration.
 
 | Option | Fit | Decision |
 | --- | --- | --- |
-| Native separate schema and lifecycle role | Isolates maintenance and SQL authority while keeping atomic PG admission | Selected; contract review closed, implementation and real gates outstanding |
+| Native separate schema and lifecycle role | Isolates maintenance and SQL authority while keeping atomic PG admission | Selected; implementation and independent local gates accepted at `593291e`; production excluded |
 | Custom driver/SQL maintenance filters or leader suppression | Requires scheduler/rescuer/cleaner/transaction-wrapper upkeep; leader suppression alone breaks retry scheduling or leaves other leaders dangerous | Rejected |
 | One all-kind worker | Broadens registered work, credentials and execution scope; still changes unrelated rows in MR04 | Rejected for this contract |
 | Timing changes / fixture pre-promotion | Hides the measured violation | Rejected |

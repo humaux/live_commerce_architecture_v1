@@ -48,7 +48,9 @@
 
 - Meta 入站协议切片：原始字节验签、严格 JSON／Unicode、完整批次归一化及同步提交回调后 ACK，已通过[52 项本地 race 回归与独立审查](docs/implementation/2026-09-26-meta-webhook-protocol-acceptance.md)。此早期协议门禁不包含持久化，后续入库验收见下；公开路由与真实 Meta 资格未启用，不等于 T07 完成。
 - Meta 入库：原始报文交接及 AES-GCM 前置组件已有[独立验收](docs/implementation/2026-09-26-meta-inbox-primitives-acceptance.md)。SQL/Go 原子接收、可信租户路由、专用 River 队列和受控密文清理通过[真实 PG 本地验收](docs/implementation/2026-09-26-meta-inbox-durability-acceptance.md)：冻结产品源码全量 507 项通过，再合入 IG 测试后专项 20 项通过，race/vet 均通过。后续消费者见下；OAuth 资格和公开回调尚未启用。
-- Meta 消费者：将已路由的消息／评论保存到独立 social 域，不混入站内买家聊天、不发送消息。专用权限、真实 River、并发回滚及带数据升级通过[MC01–07 本地独立验收](docs/implementation/2026-09-26-meta-social-consumer-acceptance.md)：全仓 530 项通过（含 16 项消费专项），0 失败／跳过，race/vet 通过。运行时装配、社交读取 UI 和真实平台资格仍待后续，不代表 T07 或 SaaS 已可上线。
+- Meta 消费者：将已路由的消息／评论保存到独立 social 域，不混入站内买家聊天、不发送消息。专用权限、真实 River、并发回滚及带数据升级通过[MC01–07 本地独立验收](docs/implementation/2026-09-26-meta-social-consumer-acceptance.md)：全仓 530 项通过（含 16 项消费专项），0 失败／跳过，race/vet 通过。后续私有运行时装配见下；社交读取 UI 和真实平台资格仍待完成，不代表 T07 或 SaaS 已可上线。
+
+- Meta 私有运行时：默认关闭的 API 接收装配和独立消费进程已通过[MIso01–05／MR 本地验收](docs/implementation/2026-09-26-meta-runtime-acceptance.md)：同源全仓 552 项 PG/race/vet、3 项浏览器门禁及独立审查。使用原生 `river_meta` schema 隔离后台维护；带数据迁移、失败恢复、权限和真实进程重启均有证据。公开回调、可信 OAuth、发送、社交 UI、旧付款／到期 worker 维护隔离及整套 SaaS 上线仍待完成。
 
 ## 原设计包基线
 

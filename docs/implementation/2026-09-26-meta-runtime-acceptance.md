@@ -1,6 +1,6 @@
 # T07 private Meta runtime — acceptance record
 
-Status: **ISOLATION_IMPLEMENTED / NOT_ACCEPTED / PG_GATES_PENDING**. Not a public deployment or a
+Status: **ACCEPTED_LOCAL_PRIVATE_RUNTIME — MIso01–05 / MR**. Not a public deployment or a
 customer/Meta configuration change. Contract:
 [Meta runtime v1](../../contracts/meta-runtime-v1.md); maintenance:
 [runtime call map](meta-runtime.md).
@@ -122,8 +122,8 @@ on the prepatch candidate, with a clean Meta-worker positive control:
 `/Volumes/data/output/meta-isolation-acl-prepatch-20260926.log`, lines 1–8,
 exit 1, SHA-256 `3e438a39283e0cae282e9b002d0e9dc1404c2990a4c8ae6a308c113d3f7a98d7`.
 `856a4b1` adds the shared effective table/column/sequence/CREATE checks.
-Source-only closure has no new P0/P1/P2; actual expanded PG negatives remain
-pending. Native privilege semantics follow the
+At that checkpoint source-only closure had no new P0/P1/P2, while expanded PG
+negatives were still pending; their final evidence is below. Native privilege semantics follow the
 [PostgreSQL 18 ACL functions](https://www.postgresql.org/docs/18/functions-info.html#FUNCTIONS-INFO-ACCESS-TABLE).
 
 Root four-package race on that patch exited 0 (platform 1.589s, Meta 1.819s,
@@ -155,7 +155,8 @@ function's SECURITY DEFINER owner had correctly lost old-schema USAGE, while
 its `to_regclass` lookup still required it. `d702bb1` resolves the exact legacy
 relation through `pg_trigger`/`pg_class`/`pg_namespace` instead, preserving every
 guard check and withholding old-schema privileges. Source-only review closed
-this cause without new P0/P1/P2; post-fix MR/MIso evidence remains pending.
+this cause without new P0/P1/P2; post-fix MR/MIso evidence was then pending and
+is recorded in the final root gates below.
 
 ## Full-regression failures retained
 
@@ -200,16 +201,50 @@ changed. Postfix result: 2 top-level PASS, 11.390s, exit 0.
 
 Root `593291e` includes this fix and the nine-line causal SQLSTATE addendum
 (`ab63df4` integrated as `a2eada9`); all product sources remain identical to
-`d702bb1`. Its complete PG/race/vet run is in progress at
+`d702bb1`. Its complete PG/race/vet run has finished at
 `/Volumes/data/output/meta-isolation-root-full-isolated-final-20260926.log`.
 
-## Outstanding acceptance
+## Final root gates — source and tests frozen at 593291e
 
-The original MR04 failure remains historical evidence of the pre-isolation
-product defect. The corrected source has focused evidence, but the final
-MIso04 test-isolation fix, complete PG/race/vet and independent final review
-are not yet accepted. No full-regression pass is claimed. No UI was redesigned
-this increment.
+Documentation-only `37ef4be` was committed while the run was active; the diff
+from `593291e` for `internal`, `cmd`, `migrations`, `tests` and `scripts` is empty.
+This is one exact-source full run including the fixture fix and SQLSTATE
+assertions, not a mixture of earlier full and later partial runs.
+
+| Check | Actual result | Evidence |
+| --- | --- | --- |
+| `bash scripts/dev/test-local.sh` | exit 0; **552 top-level PASS, 0 FAIL, 0 SKIP**; foundation 385.304s; all-package race and subsequent `go vet ./...` complete | `/Volumes/data/output/meta-isolation-root-full-isolated-final-20260926.log` |
+| Same-source `--browser-identity` | exit 0; **3 top-level PASS, 0 FAIL, 0 SKIP**; foundation 12.305s | `/Volumes/data/output/meta-isolation-root-browser-current-20260926.log` |
+
+SHA-256 respectively:
+`a9c37c9b2b3df110a109edb833e0bef9c7bfbaad1f5a34ce89871cfc3ff970ab`,
+`d9393871faf0bd80fc5139b7e5d301924675249c437f4139b8d4c5bfcb5f6485`.
+Root inspected desktop/mobile `a-*-account.png` under
+`output/playwright/settings-real-20260926T142343.846531000`; fields, status and
+controls remain legible, with saved credentials explicitly not represented as
+provider qualification. The browser uses real Next/Go/PG and a signed **MOCK IdP**.
+Both runs cleaned their labelled PG fixtures; a post-run listing is empty.
+There were no customer, provider or production writes.
+
+| Contract gate | Root evidence within that full run |
+| --- | --- |
+| MIso01 authority | Dedicated, mixed/owner/system role matrix; eleven effective ACL cases; borrowed-pool validation; direct SQL cross-lane rejection |
+| MIso02 populated upgrade | Real old ingress Page/IG plus duplicate/quarantine and pruned receipts; all persisted job fields, paused queue, private/business snapshots and sequence high-water; Apply twice |
+| MIso03 failure/resume | Running, poison, nonempty destination and lock contention; exact causal SQLSTATE; no post-phase partial changes; preparation remains fenced; same-fixture retry |
+| MIso04 maintenance isolation | Real Meta and expiry CLIs; due scheduled/retryable, stale running and retention-eligible terminal positive controls; converse controls re-armed before full-row snapshot; case passes in 12.13s |
+| MIso05 regressions | All MI/MC/MR, actual API Page/IG restart/key restoration, cleanup and historical upgrades; complete race/vet plus same-source browser gates |
+
+Independent `security_reviewer` read back exact `593291e` sources, both final
+logs/hashes, fixture cleanup and the causal fixture correction. Final verdict:
+**MIso01–05 and MR accepted locally; no open P0/P1/P2 in this bounded increment**.
+Humaux evidence title: `T07 593291e MIso01-05 and MR bounded LOCAL accepted after
+full552 and browser3`. The original MR04 failure remains historical evidence of
+the pre-isolation defect; it is not erased by the corrected candidate. No UI
+was redesigned this increment.
+
+## Remaining boundary
 
 Public callback deployment, OAuth route-proof issuance, secret rotation,
 outbound policy, social UI and complete SaaS acceptance remain separate work.
+The legacy payment/expiry/external clients' shared-`river` maintenance P1 also
+remains open; this Meta boundary does not certify them as mutually isolated.
