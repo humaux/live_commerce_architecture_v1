@@ -105,7 +105,8 @@ Pool names, host strings, database names and matching event UUIDs are not proof
 of a shared database (restored clones can contain the same IDs). API's existing
 main pool versus ingress, and worker versus consumer, must pass
 `ValidateSameDatabase` before listening/fetching. It uses a cryptographically
-random nonzero signed bigint, at most five seconds total: transaction A must
+random nonzero signed bigint, at most five seconds of probe work (independent
+rollback budgets below are additional): transaction A must
 acquire `pg_try_advisory_xact_lock`, then transaction B must fail to acquire the
 same lock while A is held. Any other outcome/error fails closed. Both pools
 remain caller-owned; each transaction uses an independent background two-second rollback before
