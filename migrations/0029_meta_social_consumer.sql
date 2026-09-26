@@ -179,7 +179,7 @@ BEGIN
   RETURN QUERY SELECT status,NULL::text,NULL::text,NULL::text,NULL::text,NULL::text,NULL::text,
    NULL::uuid,NULL::uuid,NULL::uuid,NULL::bigint,NULL::text,NULL::bytea,NULL::bytea;RETURN;
  END IF;
- SELECT * INTO body FROM meta_private.event_bodies WHERE event_id=e.id AND tenant_id=e.tenant_id AND store_id=e.store_id;
+ SELECT b.* INTO body FROM meta_private.event_bodies b WHERE b.event_id=e.id AND b.tenant_id=e.tenant_id AND b.store_id=e.store_id;
  IF body.event_id IS NULL THEN RAISE EXCEPTION 'meta projection body unavailable' USING ERRCODE='XX000';END IF;
  RETURN QUERY SELECT status,e.app_id,e.object,e.asset_id,e.kind,e.event_key,e.payload_hash,
   e.tenant_id,e.store_id,e.route_id,e.route_epoch,body.key_id,body.nonce,body.ciphertext;
@@ -227,6 +227,7 @@ CREATE FUNCTION meta_inbox.guard_social_insert() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE e meta_inbox.events%ROWTYPE;status text;
 BEGIN
+ PERFORM meta_inbox.require_authority('commerce_meta_consumer');
  SELECT * INTO e FROM meta_inbox.events WHERE id=NEW.event_id;
  IF e.terminal_reason IS DISTINCT FROM 'processed' OR e.terminal_evidence IS DISTINCT FROM e.payload_hash
   OR e.terminal_actor IS DISTINCT FROM session_user OR meta_inbox.social_terminal(e) IS DISTINCT FROM 'ALREADY'
