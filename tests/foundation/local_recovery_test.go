@@ -352,6 +352,8 @@ type lrEvidence struct {
 	tables, sequences, catalog map[string]string
 }
 
+const lrRelationsQuery = `SELECT n.nspname,c.relname,c.relkind,pg_get_userbyid(c.relowner) owner_name,c.relacl::text acl,c.relrowsecurity,c.relforcerowsecurity FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname NOT IN ('pg_catalog','information_schema') AND n.nspname NOT LIKE 'pg_toast%' AND c.relkind IN ('r','p','S','v','m')`
+
 func lrSnapshot(t *testing.T, pool *pgxpool.Pool, excludedRole string) lrEvidence {
 	t.Helper()
 	e := lrEvidence{tables: map[string]string{}, sequences: map[string]string{}, catalog: map[string]string{}}
@@ -393,7 +395,7 @@ func lrSnapshot(t *testing.T, pool *pgxpool.Pool, excludedRole string) lrEvidenc
 		"roles":       `SELECT rolname,rolsuper,rolinherit,rolcreaterole,rolcreatedb,rolcanlogin,rolreplication,rolbypassrls,rolconnlimit,rolvaliduntil,rolconfig FROM pg_roles WHERE left(rolname,3)<>'pg_' AND rolname <> $1`,
 		"members":     `SELECT r.rolname role_name,m.rolname member_name,g.rolname grantor_name,a.admin_option,a.inherit_option,a.set_option FROM pg_auth_members a JOIN pg_roles r ON r.oid=a.roleid JOIN pg_roles m ON m.oid=a.member JOIN pg_roles g ON g.oid=a.grantor WHERE m.rolname <> $1 AND r.rolname <> $1 AND NOT (left(r.rolname,3)='pg_' AND left(m.rolname,3)='pg_')`,
 		"schemas":     `SELECT n.nspname,pg_get_userbyid(n.nspowner) owner_name,n.nspacl::text acl FROM pg_namespace n WHERE n.nspname NOT IN ('pg_catalog','information_schema') AND n.nspname NOT LIKE 'pg_toast%'`,
-		"relations":   `SELECT n.nspname,c.relname,c.relkind,pg_get_userbyid(c.relowner) owner_name,c.relacl::text acl,c.relrowsecurity,c.relforcerowsecurity FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname NOT IN ('pg_catalog','information_schema') AND n.nspname NOT LIKE 'pg_toast%' AND c.relkind IN ('r','p','S','v','m')`,
+		"relations":   lrRelationsQuery,
 		"columns":     `SELECT n.nspname,c.relname,a.attname,a.attacl::text acl FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname NOT IN ('pg_catalog','information_schema') AND n.nspname NOT LIKE 'pg_toast%' AND a.attnum>0 AND NOT a.attisdropped`,
 		"functions":   `SELECT n.nspname,p.proname,pg_get_function_identity_arguments(p.oid) args,pg_get_userbyid(p.proowner) owner_name,p.proacl::text acl,p.prosecdef,p.proconfig,p.prosrc FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname NOT IN ('pg_catalog','information_schema') AND n.nspname NOT LIKE 'pg_toast%'`,
 		"policies":    `SELECT n.nspname,c.relname,p.polname,p.polcmd,p.polpermissive,pg_get_expr(p.polqual,p.polrelid) qual,pg_get_expr(p.polwithcheck,p.polrelid) check_expr,(SELECT array_agg(r.rolname ORDER BY r.rolname) FROM pg_roles r WHERE r.oid=ANY(p.polroles)) role_names FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid JOIN pg_namespace n ON n.oid=c.relnamespace`,
@@ -434,6 +436,23 @@ func lrAssertEqual(t *testing.T, left, right lrEvidence, scope string) {
 			}
 		}
 	}
+}
+
+func lrRelationsDiagnostic(t *testing.T, label string, pool *pgxpool.Pool) {
+	t.Helper()
+	canonical := lrRows(t, pool, lrRelationsQuery)
+	f, err := os.CreateTemp("", "lc-recovery-relations-"+label+"-*.json") // 0600; catalog only, no application rows.
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.WriteString(canonical); err != nil {
+		_ = f.Close()
+		t.Fatal(err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("restricted relations catalog %s=%s sha256=%s bytes=%d", label, f.Name(), lrDigest(canonical), len(canonical))
 }
 
 func lrAssertForeignUnchanged(t *testing.T, before, after lrEvidence) {
@@ -755,6 +774,10 @@ func TestLocalRecoveryLogicalRestoreAndColdStart(t *testing.T) {
 	}
 	targetRows := lrSnapshot(t, target.owner, "")
 	lrAssertEqual(t, targetRows, lrSnapshot(t, target.owner, ""), "nonempty target guard")
+	if sourceRows.catalog["relations"] != targetRows.catalog["relations"] {
+		lrRelationsDiagnostic(t, "source", source.owner)
+		lrRelationsDiagnostic(t, "target", target.owner)
+	}
 	lrAssertEqual(t, sourceRows, targetRows, "raw restore")
 	if err := migrations.Apply(ctx, target.owner); err != nil {
 		t.Fatal("first restored Apply", err)
