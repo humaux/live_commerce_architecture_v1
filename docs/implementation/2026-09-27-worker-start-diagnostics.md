@@ -47,6 +47,11 @@ failures. No unchanged retry or deadline/capacity increase is authorized by it.
 The next investigation compares seed-pool lifetime with an existing promptly
 closed-pool pattern in `legacy_runtime_isolation_test.go`.
 
+That comparison led to the [test-only lifetime correction](2026-09-27-seed-pool-lifetime.md)
+at `e60b8f6` / root `c7d2703`: author same-capacity original scenario and
+11-test subset pass with actual five-pool release observations. Full root
+regression is still pending; the safe diagnostic itself is not the cause fix.
+
 ## Limits
 
 The original LRC full1 failure and this negative run are retained. This change
