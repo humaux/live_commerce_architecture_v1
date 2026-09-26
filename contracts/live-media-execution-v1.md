@@ -23,6 +23,17 @@ registrar, writer membership or mixed/SET-reachable combinations at startup.
 The two runtime pools are separately admitted and must prove the same physical
 database via existing `platform.ValidateSameDatabase`, not DSN comparison.
 
+The private writer needs only column SELECT on `identity.principals(id,active)`,
+`identity.memberships(tenant_id,principal_id,active)` and
+`identity.store_grants(tenant_id,store_id,principal_id,permission)`, with schema
+USAGE. Join the original principal to the already-locked active tenant/store;
+use fresh VOLATILE queries after lock waits and after final event writes, never
+an old browser token or token-based `resolve_access`. No identity grants go to
+the executor or native worker. Add a MEDIA-only UPDATE policy on
+`integration.operations` and private-writer column UPDATE grants limited to
+`state,generation,lease_mode,lease_until,lease_token_hash,result_code,
+provider_reference,updated_at`; do not inherit `commerce_integration_writer`.
+
 Add `live.media_execution_state`, one row per immutable attempt, created lazily
 by its first claim, not by rewriting the planner. Composite scope/attempt and
 operation FKs preserve exact origin. Fields:
@@ -71,6 +82,9 @@ Never hold these locks during a provider request.
    projection → `terminal` or `escalated`, no provider action. Otherwise increment
    generation, persist lease/event and return `claimed` with `dispatch` only if
    no Start wire reservation has EVER been committed; else `reconcile`.
+   Every successful call returns exactly one row with no NULL fields. Unclaimed
+   outcomes return the persisted generation and empty mode; claimed returns
+   its newly persisted generation and `dispatch|reconcile`.
    Dispatch requires current original principal/membership/store live:manage,
    current active tenant/store, exact enabled bindings, unrevoked MOCK authority,
    unchanged session/layout, current start deadline and positive frozen caps.
@@ -119,8 +133,11 @@ Never hold these locks during a provider request.
 
 Only executor gets EXECUTE on these five functions; readiness functions expose
 booleans only. Registrar continues to register/revoke but cannot execute work.
-Same principal/binding restrictions apply to claim/load/reserve via a private
-fixed helper if reused; the helper itself must not become a public bypass.
+Any shared private eligibility helper is mode-sensitive: unreserved dispatch
+claim/load/reserve checks all current principal/binding restrictions. Reserved
+reconcile claim/load/record checks immutable scope, fenced lease, exact project
+and owned target; merchant revocation or disabled binding must not block factual
+recovery. Reconcile never permits Start. The helper is not a public bypass.
 
 ## Ordering, resource evidence and bounded recovery
 
@@ -137,16 +154,26 @@ provider timestamps must be coherent: updated >= started where both present,
 ended >= started where both present, updated >= ended where both present.
 A terminal enum without a positive ended timestamp remains an observation,
 not resource termination. An end timestamp on a nonterminal status is invalid.
-Terminal projection never reopens. Conflicting terminal evidence is retained
-and escalated; it cannot replace the pinned ID or erase original terminal facts.
+Terminal projection never reopens. This synchronous-only increment issues no
+new lease once terminal: a report using the closed/stale lease is rejected
+without writes and cannot replace identity or terminal facts. Preserving and
+escalating contradictory asynchronous/webhook terminal evidence needs a later
+authenticated ingress contract; it is not claimed by these five functions.
 Empty/ambiguous/malformed discovery is UNKNOWN, not proof that no resource exists.
 
 Revocation after reservation or observed duration >= frozen maximum sets sticky
 cleanup_required. It does not authorize Stop in this increment. At >=4096 claimed
-generations or age >=24h, persist escalation (`reconcile_exhausted`), clear lease,
+generations or age >=24h measured from operation.created_at, persist escalation
+(`reconcile_exhausted`), clear lease,
 leave unresolved resource/UNKNOWN liability intact, return escalated. No silent
 resource closure, deletion or replacement. Frozen references stay retained.
 These bounds are recovery ceilings, not a promised polling SLA or cost guarantee.
+Durably escalated UNKNOWN rows retain their attempt, operation, projection and
+evidence even after normal native completed-job retention deletes the job.
+Readiness exempts only those rows from mandatory job existence; if the job still
+exists its exact linkage is mandatory. Every other unresolved nonterminal row
+still requires its exact native job. Historical escalation cannot disable all
+future valid planners/workers or silently discharge unresolved liability.
 
 ## Go and native River boundary
 
