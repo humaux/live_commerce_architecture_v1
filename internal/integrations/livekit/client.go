@@ -247,6 +247,22 @@ func (c *Client) Query(ctx context.Context, target Target) (Observation, error) 
 	return decodeList(body, target)
 }
 
+// FindByRoom reports a candidate observation for a trusted persisted attempt
+// room. The caller must verify ownership before adopting its Egress ID.
+func (c *Client) FindByRoom(ctx context.Context, roomName string) (Observation, error) {
+	if !c.ready() || ctx == nil || !roomPattern.MatchString(roomName) {
+		return Observation{}, ErrInvalid
+	}
+	body, ok := c.call(ctx, roomName, "ListEgress", struct {
+		RoomName string `json:"room_name"`
+		Active   bool   `json:"active"`
+	}{roomName, false})
+	if !ok {
+		return Observation{}, ErrUnavailable
+	}
+	return decodeList(body, Target{RoomName: roomName})
+}
+
 func (c *Client) Stop(ctx context.Context, target Target) (Observation, error) {
 	if !c.ready() || ctx == nil || !validTarget(target) {
 		return Observation{}, ErrInvalid
