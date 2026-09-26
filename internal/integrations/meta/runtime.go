@@ -72,8 +72,9 @@ func webhookDispatch(routes map[string]http.Handler) http.Handler {
 	})
 }
 
-// NewConsumerClient creates only the fixed Meta queue and worker. River's
-// lifecycle pool and the consumer's SQL authority remain separate.
+// NewConsumerClient creates only the fixed Meta queue and worker. Its separate
+// River schema isolates schema-wide maintenance; the lifecycle pool and the
+// consumer's SQL authority remain separate.
 func NewConsumerClient(ctx context.Context, workerPool, consumerPool *pgxpool.Pool,
 	keys *PayloadKeyring, concurrency int) (*river.Client[pgx.Tx], error) {
 	if ctx == nil || workerPool == nil || consumerPool == nil || keys == nil ||
@@ -82,7 +83,7 @@ func NewConsumerClient(ctx context.Context, workerPool, consumerPool *pgxpool.Po
 	}
 	preflight, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	if err := platform.ValidateWorkerPool(preflight, workerPool); err != nil {
+	if err := platform.ValidateMetaWorkerPool(preflight, workerPool); err != nil {
 		return nil, ErrRuntimeDatabase
 	}
 	worker, err := NewConsumerWorker(preflight, consumerPool, keys)
@@ -99,7 +100,7 @@ func NewConsumerClient(ctx context.Context, workerPool, consumerPool *pgxpool.Po
 	workers := river.NewWorkers()
 	river.AddWorker(workers, worker)
 	client, err := river.NewClient(riverpgxv5.New(workerPool), &river.Config{
-		Schema: "river", Workers: workers,
+		Schema: riverSchema, Workers: workers,
 		Queues: map[string]river.QueueConfig{inboxQueue: {MaxWorkers: concurrency}},
 		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 	})
