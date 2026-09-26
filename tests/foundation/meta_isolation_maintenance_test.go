@@ -54,7 +54,9 @@ func miIsoWaitMaintenance(t *testing.T, f *testFixture, table string, ids miIsoM
 }
 
 func TestMetaRuntimeIsolationTwoWayRealMaintenance(t *testing.T) {
-	m := miSetup(t)
+	// Real CLI readiness needs a fresh catalog and queue. Shared worker-unit
+	// tests deliberately leave wrong-queue jobs in the suite fixture.
+	m := mrSetup(t, mrFixture(t))
 	f := m.f
 	ctx := context.Background()
 	asset := miAsset()
