@@ -102,7 +102,9 @@ The later webhook/lifecycle component must supply those separate projections.
   issues one ListEgress POST with exactly `room_name` and `active:false`, without
   `egress_id`. It is needed when a Start response is lost before an Egress ID is
   known. Require initialized client, nonnil context and the same server-owned
-  room grammar before I/O. Apply all Query error, strict JSON and pagination
+  room grammar before I/O. The caller must load roomName from a trusted persisted
+  server attempt, never accept merchant input solely because its syntax matches.
+  Apply all Query error, strict JSON and pagination
   rules. Return an observation only for exactly one valid EgressInfo whose room
   equals the requested room; unrelated/duplicate/multiple rows are unavailable,
   even if one row matches. Empty items remains ErrNotObserved and keeps the
