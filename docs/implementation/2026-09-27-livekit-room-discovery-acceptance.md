@@ -53,8 +53,8 @@ standalone log; acceptance below relies on retained independent and root logs.
 
 |Executor and command|Exit and result|Retained log|
 |---|---|---|
-|Independent `go test -race ./internal/integrations/livekit -run '^TestLKP07' -count=1 -timeout=30s`|0|`/Volumes/data/output/livekit-room-independent-20260927-initial.log`|
-|Independent `go test -race ./internal/integrations/livekit -count=1 -timeout=45s`|0; 11.964s|`/Volumes/data/output/livekit-room-independent-20260927-race.log`|
+|Independent `go test ./internal/integrations/livekit -run '^TestLKP07' -count=1 -timeout=15s`|0|`/Volumes/data/output/livekit-room-independent-20260927-initial.log`|
+|Independent `go test -race ./internal/integrations/livekit -count=1 -timeout=40s`|0; 11.964s|`/Volumes/data/output/livekit-room-independent-20260927-race.log`|
 |Independent `go vet ./internal/integrations/livekit`|0|`/Volumes/data/output/livekit-room-independent-20260927-vet.log`|
 |Root `go test -race -count=1 -timeout=45s -v ./internal/integrations/livekit ./internal/integrations/core ./internal/live`|0; **18 LKP + 4 core top-level PASS, 0 FAIL/SKIP**; 12.236s / 1.876s|`/Volumes/data/output/livekit-room-root-race-20260927.log`|
 |Root `go vet ./internal/integrations/livekit ./internal/integrations/core ./internal/live`|0; empty success log|`/Volumes/data/output/livekit-room-root-vet-20260927.log`|
