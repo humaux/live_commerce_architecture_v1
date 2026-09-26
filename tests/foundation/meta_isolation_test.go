@@ -263,8 +263,8 @@ func TestMetaRuntimeIsolationPopulated0030Cutover(t *testing.T) {
 	if err := f.owner.QueryRow(ctx, `SELECT nextval('river_meta.river_job_id_seq')`).Scan(&nextID); err != nil || nextID <= oldHighWater || nextID <= pruned.job {
 		t.Fatalf("new job sequence reused source/pruned high-water: next=%d old=%d pruned=%d err=%v", nextID, oldHighWater, pruned.job, err)
 	}
-	if miCount(t, f.owner, `SELECT count(*) FROM public.lc_schema_migrations`) != 35 {
-		t.Fatal("0031/post0004 ledger missing or Apply replayed a version")
+	if miCount(t, f.owner, `SELECT count(*) FROM public.lc_schema_migrations`) != 37 {
+		t.Fatal("0031/post0004 and 0032/post0005 ledger missing or Apply replayed a version")
 	}
 	mrReady(t, miPool(t, f, "commerce_meta_ingress"), true)
 	mrReady(t, miPool(t, f, "commerce_meta_worker"), true)

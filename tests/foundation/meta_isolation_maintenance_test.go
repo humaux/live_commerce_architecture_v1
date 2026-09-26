@@ -99,6 +99,27 @@ func TestMetaRuntimeIsolationTwoWayRealMaintenance(t *testing.T) {
 	if oldBefore == "[]" {
 		t.Fatal("old maintenance controls absent")
 	}
+	// The actual expiry CLI now maintains a different native schema. Keep the
+	// old River controls as negative rows, and use linked expiry jobs as its
+	// positive scheduler, rescuer and cleaner controls.
+	expiry := miIsoMaintenanceIDs{}
+	for _, target := range []*int64{&expiry.scheduled, &expiry.retryable, &expiry.stale, &expiry.terminal} {
+		*target = ewSetup(t, f, 1).hold.JobID
+	}
+	for _, change := range []struct {
+		id  int64
+		sql string
+	}{
+		{expiry.scheduled, `UPDATE river_expiry.river_job SET state='scheduled',scheduled_at=clock_timestamp()-interval '1 second' WHERE id=$1`},
+		{expiry.retryable, `UPDATE river_expiry.river_job SET state='retryable',attempt=1,attempted_at=clock_timestamp()-interval '2 hours',scheduled_at=clock_timestamp()-interval '1 second' WHERE id=$1`},
+		{expiry.stale, `UPDATE river_expiry.river_job SET state='running',attempt=1,attempted_at=clock_timestamp()-interval '2 hours' WHERE id=$1`},
+		{expiry.terminal, `UPDATE river_expiry.river_job SET state='completed',finalized_at=clock_timestamp()-interval '3 days' WHERE id=$1`},
+	} {
+		mustExec(t, f.owner, change.sql, change.id)
+	}
+	mustExec(t, f.owner, `INSERT INTO river_expiry.river_queue(name,paused_at) VALUES('checkout_expiry_v1',clock_timestamp()) ON CONFLICT(name) DO UPDATE SET paused_at=excluded.paused_at`)
+	expiryBefore := miIsoRows(t, f, "river_expiry.river_job", "")
+	paymentBefore := miIsoRows(t, f, "river_payment.river_job", "")
 	workerBinary := mrBuild(t, "../../cmd/meta-worker", "meta-worker-maintenance")
 	keyJSON := fmt.Sprintf(`{"keys":[{"id":%q,"key_base64":%q}]}`, miKeyID, base64.StdEncoding.EncodeToString(m.key))
 	metaWorker := mrLaunch(t, workerBinary, "meta-maintenance", []string{
@@ -112,6 +133,9 @@ func TestMetaRuntimeIsolationTwoWayRealMaintenance(t *testing.T) {
 	miIsoWaitMaintenance(t, f, "river_meta.river_job", meta)
 	if got := miIsoRows(t, f, "river.river_job", `WHERE kind='mi_iso_old_control'`); got != oldBefore {
 		t.Fatal("Meta worker maintained unrelated scheduled/retryable/stale/terminal old jobs")
+	}
+	if miIsoRows(t, f, "river_expiry.river_job", "") != expiryBefore || miIsoRows(t, f, "river_payment.river_job", "") != paymentBefore {
+		t.Fatal("Meta worker maintained unrelated payment or linked expiry jobs")
 	}
 	mrStop(t, metaWorker, syscall.SIGTERM, true)
 	// Re-arm still-linked jobs while Meta is stopped. A snapshot of only
@@ -136,9 +160,12 @@ func TestMetaRuntimeIsolationTwoWayRealMaintenance(t *testing.T) {
 		"COMMERCE_EXPIRY_WORKER_CONCURRENCY=1",
 	})
 	mrReadyLog(t, ordinary, "expiry_worker_ready")
-	miIsoWaitMaintenance(t, f, "river.river_job", old)
+	miIsoWaitMaintenance(t, f, "river_expiry.river_job", expiry)
 	if got := miIsoRows(t, f, "river_meta.river_job", ""); got != metaBefore {
-		t.Fatal("old worker maintained Meta jobs after Meta worker stopped")
+		t.Fatal("expiry worker maintained Meta jobs after Meta worker stopped")
+	}
+	if got := miIsoRows(t, f, "river.river_job", `WHERE kind='mi_iso_old_control'`); got != oldBefore || miIsoRows(t, f, "river_payment.river_job", "") != paymentBefore {
+		t.Fatal("expiry worker maintained old or payment jobs")
 	}
 	mrStop(t, ordinary, syscall.SIGTERM, true)
 }
