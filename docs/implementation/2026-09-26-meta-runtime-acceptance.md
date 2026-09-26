@@ -186,6 +186,23 @@ gate; do not weaken expiry readiness, delete shared test rows, or remove the
 maintenance-eligible positive controls. Directed before/after proof and a new
 complete root regression are required before acceptance.
 
+That exact two-test causal selector now has retained before/after evidence:
+`TestBuyerCheckoutActualRiverExpiry/early` passes on both runs; the Meta
+maintenance case fails before and passes after `8c457e7` (root `593291e`).
+The fix only changes `miSetup(t)` to `mrSetup(t, mrFixture(t))` and adds two
+intent-comment lines. No product code or readiness/maintenance assertion was
+changed. Postfix result: 2 top-level PASS, 11.390s, exit 0.
+
+- Before: `/Volumes/data/output/meta-isolation-early-only-prepatch-20260926.log`,
+  SHA-256 `170ad63a67f90e7b0cfccf7f3ff88b6c9ffec1aa29ecfe367ebef1084fd78276`.
+- After: `/Volumes/data/output/meta-isolation-early-only-postfix-20260926.log`,
+  SHA-256 `8051287315552ebe51b5226ab9f9fcde8adf90f81c36c49034865118d1680a87`.
+
+Root `593291e` includes this fix and the nine-line causal SQLSTATE addendum
+(`ab63df4` integrated as `a2eada9`); all product sources remain identical to
+`d702bb1`. Its complete PG/race/vet run is in progress at
+`/Volumes/data/output/meta-isolation-root-full-isolated-final-20260926.log`.
+
 ## Outstanding acceptance
 
 The original MR04 failure remains historical evidence of the pre-isolation
