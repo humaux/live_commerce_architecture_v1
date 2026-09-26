@@ -10,18 +10,27 @@ import (
 )
 
 func pwQueue(t *testing.T, pool *pgxpool.Pool, id int64) string {
+	return pwQueueIn(t, pool, "river.river_job", id)
+}
+
+// Job IDs are independent sequences in the payment, expiry and legacy schemas.
+func pwQueueIn(t *testing.T, pool *pgxpool.Pool, table string, id int64) string {
 	t.Helper()
 	var queue string
-	if err := pool.QueryRow(context.Background(), `SELECT queue FROM river.river_job WHERE id=$1`, id).Scan(&queue); err != nil {
+	if err := pool.QueryRow(context.Background(), `SELECT queue FROM `+table+` WHERE id=$1`, id).Scan(&queue); err != nil {
 		t.Fatal(err)
 	}
 	return queue
 }
 
 func pwJobExceptQueue(t *testing.T, pool *pgxpool.Pool, id int64) string {
+	return pwJobExceptQueueIn(t, pool, "river.river_job", id)
+}
+
+func pwJobExceptQueueIn(t *testing.T, pool *pgxpool.Pool, table string, id int64) string {
 	t.Helper()
 	var row string
-	if err := pool.QueryRow(context.Background(), `SELECT (to_jsonb(j)-'queue')::text FROM river.river_job j WHERE id=$1`, id).Scan(&row); err != nil {
+	if err := pool.QueryRow(context.Background(), `SELECT (to_jsonb(j)-'queue')::text FROM `+table+` j WHERE id=$1`, id).Scan(&row); err != nil {
 		t.Fatal(err)
 	}
 	return row
@@ -52,8 +61,8 @@ func pwPostMigrationAbsent(t *testing.T, owner *pgxpool.Pool) {
 }
 
 func TestBuyerPaymentWorkerQueueMigrationRollbackAndBackfill(t *testing.T) {
-	f := pwIsolatedFixture(t)
-	q := pqSetupItemsOn(t, f, nil, false, 1)
+	f := lriPre0032Fixture(t)
+	q := pqSetupItemsOn(t, f, nil, false, 1, "river")
 	if got := pwQueue(t, f.owner, q.result.JobID); got != "payment_mock_v1" {
 		t.Fatalf("fresh migration did not route producer: %s", got)
 	}

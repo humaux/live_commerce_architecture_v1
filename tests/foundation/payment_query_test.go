@@ -37,6 +37,7 @@ type pqFixture struct {
 	keys           *accounts.Keyring
 	accountService *accounts.Service
 	result         checkout.PaymentResult
+	schema         string
 }
 
 var pqOldSecret = accounts.Credentials{HashKey: strings.Repeat("K", 32), HashIV: strings.Repeat("V", 16)}
@@ -53,9 +54,9 @@ func pqSetupItems(t *testing.T, freshSession bool, skuCount int) pqFixture {
 
 // Optional shared keys model the one runtime keyring serving multiple tenants;
 // nil retains the existing single-tenant fixture's independently generated keys.
-func pqSetupItemsOn(t *testing.T, base *testFixture, keys *accounts.Keyring, freshSession bool, skuCount int) pqFixture {
+func pqSetupItemsOn(t *testing.T, base *testFixture, keys *accounts.Keyring, freshSession bool, skuCount int, historical ...string) pqFixture {
 	t.Helper()
-	p := psSetupItemsOn(t, base, skuCount)
+	p := psSetupItemsOn(t, base, skuCount, historical...)
 	var e error
 	if keys == nil {
 		keys, e = accounts.NewKeyring("query_test", map[string][]byte{"query_test": randomBytes(32)}, randomBytes(32))
@@ -67,7 +68,11 @@ func pqSetupItemsOn(t *testing.T, base *testFixture, keys *accounts.Keyring, fre
 	if e != nil {
 		t.Fatal(e)
 	}
-	q := pqFixture{psHarness: p, keys: keys, accountService: service}
+	schema := "river_payment"
+	if len(historical) == 1 {
+		schema = "river"
+	}
+	q := pqFixture{psHarness: p, keys: keys, accountService: service, schema: schema}
 	q.rotate(t, 1, pqOldSecret)
 	// This disposable owner seeds MOCK qualification only; real issuers remain closed.
 	mustExec(t, p.f.owner, `UPDATE payments.account_qualifications SET credential_version=2 WHERE id=$1`, p.proof)
@@ -114,12 +119,16 @@ func pqReport(q pqFixture) map[string]any {
 }
 func pqJSON(v any) []byte { b, _ := json.Marshal(v); return b }
 func (q pqFixture) record(c integration.ClaimResult, report any) error {
-	return pqRecord(q.worker, q.result.OperationID, c, "PROVIDER_MOCK", report)
+	return pqRecordIn(q.worker, q.schema, q.result.OperationID, c, "PROVIDER_MOCK", report)
 }
 
 // Like the real query worker, these protocol probes persist the observation and
 // its reconciliation job in one transaction. A failed SQL fence rolls back both.
 func pqRecord(pool *pgxpool.Pool, operation string, c integration.ClaimResult, profile string, report any) error {
+	return pqRecordIn(pool, "river_payment", operation, c, profile, report)
+}
+
+func pqRecordIn(pool *pgxpool.Pool, schema, operation string, c integration.ClaimResult, profile string, report any) error {
 	ctx := context.Background()
 	tx, e := pool.Begin(ctx)
 	if e != nil {
@@ -130,7 +139,7 @@ func pqRecord(pool *pgxpool.Pool, operation string, c integration.ClaimResult, p
 	if e = tx.QueryRow(ctx, `SELECT encode(sha256(convert_to($1::jsonb::text,'UTF8')),'hex')`, pqJSON(report)).Scan(&hash); e != nil {
 		return e
 	}
-	jobs, e := river.NewClient(riverpgxv5.New(pool), &river.Config{Schema: "river"})
+	jobs, e := river.NewClient(riverpgxv5.New(pool), &river.Config{Schema: schema})
 	if e != nil {
 		return e
 	}
@@ -381,11 +390,11 @@ func pqStartWorker(t *testing.T, q pqFixture, opts payments.QueryWorkerOptions) 
 	workers := river.NewWorkers()
 	river.AddWorker(workers, w)
 	queue := "pq_" + t04Tag()
-	client, e := river.NewClient(riverpgxv5.New(q.worker), &river.Config{Schema: "river", Workers: workers, Queues: map[string]river.QueueConfig{queue: {MaxWorkers: 2}}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), JobTimeout: 15 * time.Second, RescueStuckJobsAfter: 30 * time.Second})
+	client, e := river.NewClient(riverpgxv5.New(q.worker), &river.Config{Schema: "river_payment", Workers: workers, Queues: map[string]river.QueueConfig{queue: {MaxWorkers: 2}}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), JobTimeout: 15 * time.Second, RescueStuckJobsAfter: 30 * time.Second})
 	if e != nil {
 		t.Fatal(e)
 	}
-	mustExec(t, q.f.owner, `UPDATE river.river_job SET queue=$1,scheduled_at=clock_timestamp() WHERE id=$2`, queue, q.result.JobID)
+	mustExec(t, q.f.owner, `UPDATE river_payment.river_job SET queue=$1,scheduled_at=clock_timestamp() WHERE id=$2`, queue, q.result.JobID)
 	if e = client.Start(context.Background()); e != nil {
 		t.Fatal(e)
 	}
@@ -404,7 +413,7 @@ func pqAwait(t *testing.T, q pqFixture, jobID int64, wantCode, wantState string)
 	for time.Now().Before(deadline) {
 		var code, state string
 		var when time.Time
-		e := q.f.owner.QueryRow(context.Background(), `SELECT o.result_code,j.state,j.scheduled_at FROM integration.operations o JOIN river.river_job j ON j.id=$2 WHERE o.id=$1`, q.result.OperationID, jobID).Scan(&code, &state, &when)
+		e := q.f.owner.QueryRow(context.Background(), `SELECT o.result_code,j.state,j.scheduled_at FROM integration.operations o JOIN river_payment.river_job j ON j.id=$2 WHERE o.id=$1`, q.result.OperationID, jobID).Scan(&code, &state, &when)
 		if e != nil {
 			t.Fatal(e)
 		}
@@ -472,7 +481,7 @@ func TestBuyerPaymentQueryBudgetDurabilityAndNoSend(t *testing.T) {
 			pqAwait(t, q, q.result.JobID, "payment_query_budget_exhausted", "cancelled")
 			// Owner-only redelivery of the same linked job: commit-time routing now
 			// rejects a second orphan job ID before the worker could see it.
-			mustExec(t, q.f.owner, `UPDATE river.river_job SET state='available',finalized_at=NULL,scheduled_at=clock_timestamp() WHERE id=$1`, q.result.JobID)
+			mustExec(t, q.f.owner, `UPDATE river_payment.river_job SET state='available',finalized_at=NULL,scheduled_at=clock_timestamp() WHERE id=$1`, q.result.JobID)
 			pqAwait(t, q, q.result.JobID, "payment_query_budget_exhausted", "cancelled")
 			if calls.Load() != 0 || q.reportCount(t) != 0 {
 				t.Fatal("budget retry queried provider")
@@ -577,7 +586,7 @@ func TestBuyerPaymentQueryWireFailuresStayPending(t *testing.T) {
 				t.Fatalf("unverified report or unexpected call %d", calls.Load())
 			}
 			var jobErrors string
-			if e := q.f.owner.QueryRow(context.Background(), `SELECT coalesce(errors::text,'') FROM river.river_job WHERE id=$1`, q.result.JobID).Scan(&jobErrors); e != nil || strings.Contains(jobErrors, "SECRET_provider_sentinel") {
+			if e := q.f.owner.QueryRow(context.Background(), `SELECT coalesce(errors::text,'') FROM river_payment.river_job WHERE id=$1`, q.result.JobID).Scan(&jobErrors); e != nil || strings.Contains(jobErrors, "SECRET_provider_sentinel") {
 				t.Fatalf("unsafe job error %v", e)
 			}
 			q.pending(t)
@@ -658,14 +667,14 @@ func TestBuyerPaymentQueryCrossAttemptTokenAndMerchantJob(t *testing.T) {
 	opts.MockTransport = pqTransport(func(*http.Request) (*http.Response, error) { calls.Add(1); return nil, errors.New("must_not_query") })
 	// Corrupt an admitted job only through the isolated fixture owner. The
 	// deferred insert fence independently rejects new unlinked merchant jobs.
-	mustExec(t, q.f.owner, `UPDATE river.river_job SET args=jsonb_build_object('operation_id',$2::text,'version',1) WHERE id=$1`, q.result.JobID, op.OperationID)
+	mustExec(t, q.f.owner, `UPDATE river_payment.river_job SET args=jsonb_build_object('operation_id',$2::text,'version',1) WHERE id=$1`, q.result.JobID, op.OperationID)
 	pqStartWorker(t, q, opts)
 	var e error
 	deadline := time.Now().Add(5 * time.Second)
 	cancelled := false
 	for time.Now().Before(deadline) {
 		var state string
-		if e = f.base.owner.QueryRow(context.Background(), `SELECT state FROM river.river_job WHERE id=$1`, q.result.JobID).Scan(&state); e != nil {
+		if e = f.base.owner.QueryRow(context.Background(), `SELECT state FROM river_payment.river_job WHERE id=$1`, q.result.JobID).Scan(&state); e != nil {
 			t.Fatal(e)
 		}
 		if state == "cancelled" {
