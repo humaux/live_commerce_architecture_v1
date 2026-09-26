@@ -1,9 +1,12 @@
 # T08 durable media start intent — LMP01–07
 
-Status: **FROZEN_FOR_LMP_IMPLEMENTATION**, base `f344574`.
+Status: **IMPLEMENTED_AND_ACCEPTED_LOCAL_MOCK_START_INTENT_ONLY**.
+Contract base `f344574`, frozen `625a6b6`, DB-clock addendum `b120ec0`;
+accepted source/tests `0d51b9e`: [independent and full regression evidence](../docs/implementation/2026-09-27-live-media-plan-acceptance.md).
 Independent bounded preflight found and closed the producer UPDATE(kind) bypass;
 separate post-wait authorization queries plus a DB-clock expiry check retain
-existing authority helpers. Native wait/revocation gates remain mandatory.
+existing authority helpers. Native wait/revocation gates passed and remain
+mandatory regression checks.
 Implements the next part of [the controller](live-media-controller-v1.md), after
 accepted [LMA](live-media-authorization-v1.md). This is real local PG persistence
 with MOCK authority, not provider I/O or the complete controller. No HTTP route,

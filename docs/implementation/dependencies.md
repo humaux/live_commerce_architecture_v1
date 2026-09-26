@@ -58,8 +58,8 @@ Stop ACK 均不证明远端资源已回收。
 调用方仍须通过可信数据库范围和租约解析原项目／版本，再在开播前检查
 授权。当前没有租约绑定的 SQL 密文解析器或生产调用者；加密通过不等于可开播。
 [持久控制器契约](../../contracts/live-media-controller-v1.md) 仅部分设计冻结：
-MOCK 授权登记已实现，有限同 ID Stop 恢复仅有已复核设计，MEDIA_ATTEMPT、
-租约／观测及 River 事务契约仍待冻结。现有客户端已使用 `StartEgress`，
+MOCK 授权登记及 MEDIA_ATTEMPT/River 开播意图已实现，有限同 ID Stop 恢复仅有
+已复核设计，执行租约／观测／密文解析契约仍待冻结。现有客户端已使用 `StartEgress`，
 不再把 provider 方法迁移列为阻塞；真实 Cloud 资格仍须单独验证。
 
 ## T08 MOCK 授权登记依赖
@@ -77,6 +77,32 @@ SECURITY DEFINER 函数。独立 registrar 只能调用登记／撤销入口；�
 [合同](../../contracts/live-media-authorization-v1.md) 与
 [603 项本地后端回归证据](2026-09-27-live-media-authorization-acceptance.md)
 不代替未来密文认证、开停播、浏览器、真实供应商或 G06 验收。
+
+## T08 durable MOCK 开播意图依赖
+
+`MediaPlanner.PlanStart` → 现有 `live.authorize` / `command.Run` → River
+`InsertTx`（专用 `river_media` schema）→ 固定 `live.plan_media_start` →
+attempt、MEDIA_ATTEMPT operation/event、READY program 和 receipt 同事务。
+Go 收据 hash 与 SQL 规范化语义 hash 各服务其边界，不能互换，也不能把 Go
+收据存在当成固定 SQL planner 的新前置条件。当前调用者仍是内部服务／测试，
+无 HTTP route 或执行 worker。无新增依赖。
+
+迁移顺序：forward0035 的 readiness fail-closed 占位 → 现有 River 原生迁移
+创建第五个 schema → post-River0006 安装 native family/linkage/state guards，
+之后才允许 planner 入库。普通 worker/其余四条 River lane 不获得媒体操作
+或密文能力；producer 的 UPDATE 仅限原生 River 必需的 kind no-op，不可改
+state、args、queue 或 schedule。private writer 对旧 schema 的 USAGE 仅供
+readiness 查找对象，不授予旧 job 表 SELECT。
+
+维护注意：River v0.40.0 的 pgx driver 为省略的 ScheduledAt 填 Go UTC
+时钟。媒体初始任务只允许立即执行，因此 BEFORE INSERT 对 available 显式
+写 DB `clock_timestamp()`；不能改回跨主机微秒比较或放宽任意时间窗。
+scheduled/pending/terminal 初态仍拒绝。升级 River/pgx、改变角色、actor、
+函数或触发器后，跑 `test-local.sh --live-media-plan` 和全量 `test-local.sh`，
+包括 raw SQL 实际角色正控、native row wait 撤权、DB 时钟、错误 schema 和
+带数据升级。[LMP 合同](../../contracts/live-media-plan-v1.md)、
+[验收证据](2026-09-27-live-media-plan-acceptance.md)。未来允许执行状态／维护
+能力时必须新增 worker 契约与 gate，不能直接把初态守卫关掉。
 
 ## 依赖版本
 

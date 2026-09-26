@@ -430,12 +430,12 @@
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
-      "implementation": "PARTIAL_DURABLE_DRAFT_LIVEKIT_WIRE_SEALED_MATERIAL_AND_MOCK_AUTHORITY_REGISTRY",
+      "implementation": "PARTIAL_DURABLE_DRAFT_LIVEKIT_WIRE_SEALED_MATERIAL_MOCK_AUTHORITY_AND_START_INTENT",
       "unit_mock": "PASS_LKP01_07_LKM01_05_LOCAL_ONLY",
-      "real_pg": "PASS_LSP01_05_LMA01_05_AND_603_FULL_REGRESSION_LOCAL_ONLY",
+      "real_pg": "PASS_LSP01_05_LMA01_05_LMP01_07_AND_612_FULL_REGRESSION_LOCAL_ONLY",
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
-      "independent_review": "PASS_LSP_LKP_LKM_AND_LMA_BOUNDED_LOCAL_ONLY"
+      "independent_review": "PASS_LSP_LKP_LKM_LMA_AND_LMP_BOUNDED_LOCAL_ONLY"
     },
     "live_planning_slice": {
       "contract": "contracts/live-planning-v1.md",
@@ -471,7 +471,7 @@
     "media_controller_candidate": {
       "contract": "contracts/live-media-controller-v1.md",
       "status": "PARTIAL_DESIGN_FREEZE_CONTROLLER_NOT_IMPLEMENTED",
-      "remaining": "MOCK authorization registry independently accepted and merged. Bounded MOCK Stop recovery remains reviewed design only; exact MEDIA_ATTEMPT roles/FKs/lease/status/River contract still pending. Current client already uses StartEgress; no method migration needed. No controller implementation or real-media acceptance."
+      "remaining": "MOCK authorization registry and durable MEDIA_ATTEMPT/River start-intent independently accepted, with root full612 PG/race/vet passing. Dedicated execution lease/status/observation/material resolver and bounded same-ID Stop remain unimplemented. Current client already uses StartEgress; no method migration needed. No full controller or real-media acceptance."
     },
     "media_authorization_registry_slice": {
       "contract": "contracts/live-media-authorization-v1.md",
@@ -480,6 +480,14 @@
       "source_test_commit": "6722915",
       "root_gate": "LMA01_05_LSP01_05_INDEPENDENT_10_PASS_AND_FULL_603_PG_RACE_VET_PASS",
       "boundary": "MOCK-only prepared authority persistence and revoke. No media operation, worker, provider effect, LIVE intake or G06 acceptance."
+    },
+    "media_start_intent_slice": {
+      "contract": "contracts/live-media-plan-v1.md",
+      "status": "PASS_LOCAL_MOCK_START_INTENT_ONLY",
+      "evidence": "docs/implementation/2026-09-27-live-media-plan-acceptance.md",
+      "source_test_commit": "0d51b9e",
+      "root_gate": "INDEPENDENT_17_PASS_LEGACY_REPAIR_10_PASS_FULL_612_PG_RACE_VET_PASS",
+      "boundary": "Atomic attempt, typed MEDIA operation/event and immediate native river_media job with MOCK authority only. No worker execution, provider effects, LIVE intake, studio/browser or G06 acceptance."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },

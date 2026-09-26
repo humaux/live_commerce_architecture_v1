@@ -2,7 +2,11 @@
 
 Status: **PARTIALLY FROZEN; full controller NOT FROZEN**. The authorization
 registry increment is specified separately in
-[LMA01–05](live-media-authorization-v1.md). The bounded MOCK Stop recovery below
+[LMA01–05](live-media-authorization-v1.md); durable MOCK start-intent roles,
+attempt identity and native queue linkage are implemented separately in
+[LMP01–07](live-media-plan-v1.md). Execution leases, observation/material
+resolution and full lifecycle below are still a candidate, not enabled by LMP.
+The bounded MOCK Stop recovery below
 has independent design review; it is not yet implemented. This supersedes the implementation
 direction of the old non-executable `live-broadcast-v1.md`; it does not activate
 that draft. Media credentials/official destination eligibility are not supplied
