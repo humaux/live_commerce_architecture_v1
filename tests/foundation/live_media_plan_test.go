@@ -485,6 +485,39 @@ type lmpJobArgs struct {
 func (lmpJobArgs) Kind() string { return "live_media_operation_v1" }
 
 func TestLiveMediaPlanLMP05QueueIntegrityAndRollback(t *testing.T) {
+	t.Run("raw-runtime-job-state", func(t *testing.T) {
+		h := lmpSetup(t, false)
+		ctx := context.Background()
+		before := lmpFacts(t, h)
+		for _, state := range []string{"available", "scheduled", "pending", "completed", "cancelled"} {
+			tx, err := h.lp.f.runtime.Begin(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			operation := randomUUID()
+			var id int64
+			var scheduled time.Time
+			err = tx.QueryRow(ctx, `INSERT INTO river_media.river_job(kind,args,max_attempts,queue,state,scheduled_at,finalized_at)
+			 VALUES('live_media_operation_v1',jsonb_build_object('operation_id',$1::text,'version',1),3,'media_mock_v1',
+			 $2,clock_timestamp()+interval '1 hour',CASE WHEN $2 IN ('completed','cancelled') THEN clock_timestamp() END)
+			 RETURNING id,scheduled_at`, operation, state).Scan(&id, &scheduled)
+			if state == "available" {
+				if err != nil {
+					t.Fatalf("runtime available future job rejected instead of DB-clock normalized: %v", err)
+				}
+				var dbNow time.Time
+				if err = tx.QueryRow(ctx, `SELECT clock_timestamp()`).Scan(&dbNow); err != nil || scheduled.After(dbNow) {
+					t.Fatalf("available job remained parked: scheduled=%s now=%s err=%v", scheduled, dbNow, err)
+				}
+			} else if sqlState(err) != "22023" {
+				t.Fatalf("runtime %s job not rejected by initial family guard: %v", state, err)
+			}
+			if rollbackErr := tx.Rollback(ctx); rollbackErr != nil {
+				t.Fatal(rollbackErr)
+			}
+		}
+		lmpDelta(t, before, lmpFacts(t, h), [6]int64{})
+	})
 	for _, terminal := range []string{"completed", "cancelled"} {
 		t.Run("terminal-on-runtime-insert-"+terminal, func(t *testing.T) {
 			h := lmpSetup(t, false)
