@@ -103,9 +103,10 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 	}
 	// River 006 adds an enum value needed by later steps. PostgreSQL requires
 	// committing that step before use; the upstream runner owns those boundaries.
-	// Each schema has an independent ledger. Meta's 0031 readiness fence remains
-	// false after an interruption until the final post-River transaction commits.
-	for _, schema := range []string{"river", "river_meta"} {
+	// Independent native ledgers retain the 0031/0032 fail-closed readiness
+	// fences until the final post-River cutovers commit. Queues alone do not
+	// isolate River's schema-wide rescuer/scheduler/cleaner.
+	for _, schema := range []string{"river", "river_meta", "river_payment", "river_expiry"} {
 		upstream, err := rivermigrate.New(riverpgxv5.New(pool), &rivermigrate.Config{Schema: schema, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
 		if err != nil {
 			return err
@@ -117,14 +118,6 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 	// River InsertTx's ON CONFLICT returns the existing job by updating kind only.
 	// Do not grant worker permissions to mutate state, attempts, payload or delete.
 	if _, err = lockConn.Exec(ctx, `GRANT SELECT, INSERT, UPDATE(kind) ON river.river_job TO commerce_runtime; GRANT USAGE ON SEQUENCE river.river_job_id_seq TO commerce_runtime`); err != nil {
-		return err
-	}
-	// Checkout and query writers read only fixed-purpose jobs, proving exact args
-	// before holding stock or accepting a report. River tables exist only here,
-	// after its upstream migrations, not during application SQL installation.
-	if _, err = lockConn.Exec(ctx, `GRANT SELECT, INSERT, UPDATE(kind) ON river.river_job TO commerce_checkout_runtime;
-		GRANT USAGE ON SEQUENCE river.river_job_id_seq TO commerce_checkout_runtime;
-		GRANT SELECT ON river.river_job TO commerce_checkout_writer,commerce_integration_writer`); err != nil {
 		return err
 	}
 	// River's ordinary worker login needs queue lifecycle/leader/client tables,
@@ -147,6 +140,14 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 		defer stop()
 		_ = postTx.Rollback(cleanup)
 	}()
+	// Historical post0001/0002 need the original table while first upgrading.
+	// Grant and revoke that compatibility access in this transaction, including
+	// repeated Apply: a later failed post phase cannot leak obsolete grants.
+	if _, err = postTx.Exec(ctx, `GRANT SELECT, INSERT, UPDATE(kind) ON river.river_job TO commerce_checkout_runtime;
+		GRANT USAGE ON SEQUENCE river.river_job_id_seq TO commerce_checkout_runtime;
+		GRANT SELECT ON river.river_job TO commerce_checkout_writer,commerce_integration_writer`); err != nil {
+		return err
+	}
 	if err = applyVersions(ctx, postTx, postVersions); err != nil {
 		return err
 	}
@@ -156,6 +157,19 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 		GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river_meta TO commerce_meta_worker;
 		REVOKE ALL ON river_meta.river_migration FROM commerce_meta_worker;
 		GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river_meta TO commerce_meta_worker`); err != nil {
+		return err
+	}
+	// Ordinary workers deliberately share SQL authority across legacy families;
+	// fixed schemas isolate native maintenance, not a compromised principal.
+	if _, err = postTx.Exec(ctx, `REVOKE ALL ON river.river_job FROM commerce_checkout_runtime,commerce_checkout_writer;
+		REVOKE UPDATE(kind) ON river.river_job FROM commerce_checkout_runtime;
+		REVOKE UPDATE(queue) ON river.river_job FROM commerce_checkout_writer;
+		REVOKE ALL ON river.river_job_id_seq FROM commerce_checkout_runtime;
+		REVOKE ALL ON SCHEMA river FROM commerce_checkout_runtime,commerce_checkout_writer;
+		GRANT USAGE ON SCHEMA river_payment,river_expiry TO commerce_worker;
+		GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river_payment,river_expiry TO commerce_worker;
+		REVOKE ALL ON river_payment.river_migration,river_expiry.river_migration FROM commerce_worker;
+		GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river_payment,river_expiry TO commerce_worker`); err != nil {
 		return err
 	}
 	return postTx.Commit(ctx)
