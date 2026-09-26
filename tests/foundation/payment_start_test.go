@@ -497,9 +497,12 @@ func TestBuyerPaymentAuthorityAndDispatcherFence(t *testing.T) {
 	deadline := time.Now().Add(5 * time.Second)
 	finished := false
 	for time.Now().Before(deadline) {
-		var state string
-		if e = p.f.owner.QueryRow(context.Background(), `SELECT state FROM river_payment.river_job WHERE id=$1`, job.Job.ID).Scan(&state); e != nil {
+		var state, kind, operation string
+		if e = p.f.owner.QueryRow(context.Background(), `SELECT state,kind,args->>'operation_id' FROM river.river_job WHERE id=$1`, job.Job.ID).Scan(&state, &kind, &operation); e != nil {
 			t.Fatal(e)
+		}
+		if kind != "external_operation_v1" || operation != out.OperationID {
+			t.Fatal("generic dispatcher job resolved to wrong family or operation")
 		}
 		if state == "discarded" || state == "cancelled" || state == "completed" {
 			finished = true

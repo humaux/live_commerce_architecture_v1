@@ -172,7 +172,9 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 ('integration.finish_payment_query(uuid,bigint,bytea,text,text,text)'::regprocedure::oid,true),
 	 ('integration.payment_job_queue(bigint)'::regprocedure::oid,false),
 	 ('integration.route_payment_queue_v1()'::regprocedure::oid,false),
-	 ('integration.payment_queue_ready()'::regprocedure::oid,true))
+	 ('integration.payment_queue_ready()'::regprocedure::oid,true),
+	 ('integration.guard_payment_job_family()'::regprocedure::oid,false),
+	 ('integration.reject_legacy_family_job()'::regprocedure::oid,false))
 	 SELECT count(*),bool_and(a.oid IS NOT NULL AND p.prosecdef AND p.proconfig = ARRAY['search_path=pg_catalog']
 	 AND pg_get_userbyid(p.proowner)='commerce_integration_writer'
 	 AND has_function_privilege('commerce_worker',p.oid,'EXECUTE')=a.worker_execute
@@ -185,7 +187,7 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 AND NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'))
 	 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 	 LEFT JOIN approved a ON a.oid=p.oid WHERE n.nspname='integration'`).Scan(&functions, &safe)
-	if err != nil || functions != 9 || !safe {
+	if err != nil || functions != 11 || !safe {
 		t.Fatalf("fixed function ACL: count=%d safe=%v err=%v", functions, safe, err)
 	}
 }
