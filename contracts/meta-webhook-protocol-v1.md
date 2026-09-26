@@ -1,6 +1,8 @@
 # Meta webhook protocol v1
 
-Status: DRAFT for independent preflight. T07 / G06, G07, G14 contribution.
+Status: FROZEN after independent preflight on 2026-09-26 (two P1 contract
+findings resolved: stable message identity and unknown-sibling preservation).
+T07 / G06, G07, G14 contribution; implementation acceptance is separate.
 This is the byte-validation and event-admission boundary, not merchant OAuth,
 durable inbox storage, subscriptions, message eligibility or LIVE qualification.
 The next T07 increment must connect it to PostgreSQL + River atomically before
@@ -19,7 +21,9 @@ mounting a public route. No existing customer receiver is changed.
   and <https://developers.facebook.com/docs/instagram-platform/webhooks/>.
   [Meta's sample](https://github.com/fbsamples/messenger-platform-samples/blob/main/quick-start/app.js)
   confirms the challenge and Page envelope shape, not current permissions or
-  production durability. Synthetic fixture support is not LIVE protocol proof.
+  production durability. Its linked `utils/webhook-signature.js` is a legacy
+  SHA-1 sample: do not copy its signature algorithm or simple string compare.
+  Synthetic fixture support is not LIVE protocol proof.
 
 ## API and ownership
 
@@ -28,6 +32,12 @@ dependency in this protocol increment. API:
 
 ```go
 type Config struct { AppID, Object, AppSecret, VerifyToken string }
+type Batch struct { AppID, Object, BodyHash string; Events []Event }
+type Event struct {
+    AssetID, Kind, ExternalID, Key, PayloadHash, QuarantineReason string
+    OccurredAt *time.Time
+    Payload json.RawMessage
+}
 func NewVerifier(Config) (*Verifier, error)
 func (*Verifier) Verify(raw []byte, signature string) (Batch, error)
 func NewHandler(*Verifier, func(context.Context, Batch) error) (http.Handler, error)
@@ -43,7 +53,7 @@ of unrelated app secrets until one passes.
 
 `Batch` carries configured AppID/Object, SHA-256 of the exact received bytes,
 and all events. `Event` carries AssetID, Kind, ExternalID, OccurredAt (optional),
-Key (lowercase SHA-256 hex), QuarantineReason and canonical JSON Payload. Payload
+Key and PayloadHash (lowercase SHA-256 hex), QuarantineReason and canonical JSON Payload. Payload
 may contain PII; callers must encrypt it before persistence, never serialize
 the whole Batch to a queue. Batch/Event contain no inferred tenant/store.
 No getter may share input buffers; the successful batch owns its bytes.
@@ -59,16 +69,24 @@ No getter may share input buffers; the successful batch owns its bytes.
 3. Reject invalid UTF-8, invalid JSON, duplicate keys at any depth, trailing
    JSON values and more than 64 nested containers. Preserve number precision
    (`json.Number`); never round provider IDs through float64.
+   Duplicate comparison uses decoded member names, including escaped aliases.
 4. Root must be an object. Max **1,000 event units** per batch. Reject oversized
    batches with 413 rather than slicing, partially committing or acknowledging.
+   Every emitted event, including additional quarantine records, counts. JSON
+   member names are case-sensitive; only exact protocol names are recognized.
    Limits are local admission bounds, not Meta's promised delivery maximum.
 5. Unknown but valid JSON shapes become quarantine events, not silent success.
    A configured/payload object mismatch quarantines the whole envelope. A bad
    entry, invalid asset ID or unsupported event is represented with its payload
    and a fixed reason. Empty/missing entries produce one envelope quarantine.
-   Every `entry[]`, `changes[]` and `messaging[]` unit is accounted for. A known
-   entry that also contains an unsupported sibling event-bearing field (for
-   example `standby`) also produces an entry quarantine; no sibling is lost.
+   An entry with no child events also produces one entry quarantine.
+   Every `entry[]`, `changes[]` and `messaging[]` unit is accounted for. Allowed
+   root keys are exactly object/entry; allowed entry keys id/time/changes/messaging.
+   Any other root/entry key additionally produces a whole-root/entry quarantine
+   while known siblings still normalize. This conservative allowlist avoids
+   guessing which unknown fields carry events. Malformed changes/messaging
+   containers also produce entry quarantine; no sibling is lost. Entry asset IDs
+   and every numeric-string identifier below are 1..40 ASCII digits.
 
 ## Normalization and identity
 
@@ -87,14 +105,21 @@ Recognized shapes (classification, not send authorization):
   order mutation, identity merge, consent or messaging-window update occurs.
 
 Canonical JSON means recursively sorted object keys using `encoding/json`
-with `json.Number`, retaining arrays/order and all fields. The event key is
-SHA-256 of JSON tuple `["meta-event-v1", configuredAppID, configuredObject,
-assetID, kind, externalID, canonical-event-payload]`; tuple avoids delimiter
-collisions. For recognized units payload is the full change/messaging object,
-not body text and not entry delivery timestamp. A duplicate wrapped in a new
-batch or key ordering shares a key. Different IDs with identical text, app,
-object, asset, verb or changed payload remain distinct. Do not dedupe the
-returned slice: durable storage owns the unique constraint and conflict policy.
+with `json.Number`, retaining arrays/order and all fields. PayloadHash is SHA-256
+of that canonical payload. Message Key is SHA-256 of the JSON tuple
+`["meta-message-v1", configuredAppID, configuredObject, assetID, kind, mid]`:
+the stable message ID, not its text or changing optional fields, is its identity.
+For comments and quarantine, Key is SHA-256 of JSON tuple
+`["meta-event-v1", configuredAppID, configuredObject, assetID, kind, externalID,
+PayloadHash]`; a comment ID names an entity whose edits/removals remain events.
+Tuples avoid delimiter collisions. For recognized units payload is the full
+change/messaging object, not body text and not entry delivery timestamp.
+A duplicate wrapped in a new batch or key ordering shares a key. Different IDs
+with identical text, app, object, asset or verb remain distinct. A changed
+message with the same mid retains its Key but changes PayloadHash: the durable
+admission layer must quarantine that conflict, not silently overwrite, ignore
+it as identical or create a second commerce trigger. Do not dedupe the returned
+slice: durable storage owns the unique constraint and conflict policy.
 
 Quarantine identity uses the relevant whole unit/envelope, preserving entry
 context including time if needed. Unknown events MUST NOT become commerce
@@ -127,8 +152,9 @@ reconciliation; never use arrival order to cancel paid orders.
 MWP01 raw-byte signature, Unicode escapes, byte change, wrong app/secret, unsafe
 configuration and redaction. MWP02 precise JSON and duplicate/depth/size bounds.
 MWP03 every batch unit, Page/IG separation, echo/recipient/unknown quarantine,
-no truncation. MWP04 same event/reordered JSON/rebatched identity and distinct
-ID/edit/delete/content/asset/app separation. MWP05 HTTP challenge/method/header/
+no truncation. MWP04 same event/reordered JSON/rebatched identity; same-mid
+changed-payload same-key/different-digest and distinct ID/edit/delete/asset/app
+separation. MWP05 HTTP challenge/method/header/
 encoding/query gates; blocked callback proves no early ACK, failure proves 503.
 Independent test design + reviewer, root `go test -race` and `go vet` required.
 
