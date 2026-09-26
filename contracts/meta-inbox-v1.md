@@ -120,7 +120,11 @@ Retention scheduling and worker processing must be implemented before public
 mount; an expiry column alone is not proof of deletion.
 
 Add NOLOGIN `commerce_meta_ingress` and non-inheritable private definer owner
-`commerce_meta_writer`. Dedicated ingress login must have only ingress authority,
+`commerce_meta_writer`. Control-plane route activation uses a separate
+`commerce_meta_registrar` authority; explicit reviewed rejection/discard uses
+`commerce_meta_curator`. Neither inherits the other or ingress, and neither can
+read raw/scoped body ciphertext via general SELECT. These are narrow function
+roles, not additional services. Dedicated ingress login has only ingress authority,
 no generic runtime/worker/control-plane membership or SET privilege. Existing
 pool validation must reject new mixed authority combinations in either direction.
 Functions use fixed qualified names/search_path and reject unsafe session_user.
@@ -186,7 +190,7 @@ Expected SQL errors use fixed classes (`22023` invalid, `42501` unauthorized,
 | `meta_inbox.prepare_event(batch uuid, ordinal int, event_key text, payload_hash text, asset text, kind text, protocol_reason text, occurred_at timestamptz) -> (event_id uuid, needs_body bool, body_class text, tenant_id uuid, store_id uuid, route_id uuid, route_epoch bigint)` | Ingress only; new batch owned by this transaction, ordinal1..unit_count. Global first-key/version check before routing. Serialize Key, preserve one primary hash forever, represent other hashes as conflict versions. Return historical equal-hash identity without remapping. Every call inserts one exact ordinal link, even when event is repeated. New routable event returns class event; all other new units quarantine. |
 | `meta_inbox.complete_event(batch uuid, event uuid, key_id text, nonce bytea, ciphertext bytea, job_id bigint) -> void` | Ingress only; event created in this transaction and linked to this new batch. Require the exact stored class/shape, ciphertext length17..4194320, 12-byte nonce and valid key ID. Routed event must reference existing exact meta_inbox_v1 job/queue/args; quarantine must have NULL job. Insert body and atomically mark completed. No update/re-encrypt of historical rows. |
 | `meta_inbox.complete_batch(batch uuid, key_id text, nonce bytea, ciphertext bytea) -> void` | Ingress only; new receipt in this transaction. Raw length17..1048592, valid key/nonce; insert raw body, verify complete ordinal coverage and all events, then finalize. Commit guard still required. |
-| `meta_inbox.record_terminal(event uuid, reason text, evidence_hash text) -> void` | Trusted control plane only in this increment, never called on receipt/ACK or inferred from River state. Fixed reason processed/reviewed_rejected/retention_discarded, explicit evidence digest, immutable timestamp/actor audit. Later consumer integration needs its own narrow authority and business proof. |
+| `meta_inbox.record_terminal(event uuid, reason text, evidence_hash text) -> void` | Separate curator authority only, not route registrar or ingress. Fixed reason reviewed_rejected/retention_discarded requires explicit authorized review, evidence digest and immutable timestamp/actor audit; never called on receipt/ACK or inferred from River state. `processed` is reserved and rejected until a later narrow consumer function proves business completion. |
 | `meta_inbox.purge_expired(limit int) -> int` | Trusted retention authority only; limit1..1000 total body rows, oldest eligible first, SKIP LOCKED. Recheck age and terminal evidence under lock. Raw body eligible only after every member terminal. Preserve all metadata/audit/job references. |
 
 Provider labels above are local adapter identifiers, not OAuth eligibility.
@@ -249,7 +253,7 @@ to the request; none are retained by formatting, errors, logs or River args.
 | MI04 dedupe | Concurrent same body and rebatched same MID produce one canonical event/job; changed payload quarantines; repeat after revoke/expiry/body purge/job prune returns history without rehome |
 | MI05 routing fence | Revocation/binding version/tenant/store disable/expiry races and lock waits fail closed; immutable ownership; unknown keys durably quarantined |
 | MI06 HTTP durability | Real handler+PG: forced commit failure no 200; committed response lost then retry adds nothing; queue args exact; existing MWP tests retained |
-| MI07 retention | Bounded purge removes only expired AND terminal ciphertext; overdue jobs/unresolved quarantine retain recoverable data; raw batch waits for all members; permanent receipts/retries unchanged; no unauthorized raw/quarantine reader |
+| MI07 retention | Bounded purge removes only expired AND terminal ciphertext; overdue jobs/unresolved quarantine retain recoverable data; raw batch waits for all members; ingress/registrar cannot terminalize, processed cannot be asserted by curator; permanent receipts/retries unchanged; no unauthorized raw/quarantine reader |
 | Regression | Root isolated PG18 + complete Go race/vet; existing queue/role/payment/checkout gates unchanged; source+independent reviewer zero open P0/P1 |
 
 Excluded from this increment, not from full SaaS delivery: actual OAuth/proof
