@@ -10,8 +10,8 @@ import (
 )
 
 // Independent of the service author: exercise SQL privileges, not a Go mock.
-// Queue identity survives ordinary worker lifecycle updates but cannot migrate
-// into/out of this producer family, even with the existing broad worker grants.
+// Queue identity survives dedicated Meta worker lifecycle updates but cannot
+// migrate into/out of this producer family.
 func TestMetaInboxReservedQueueIntegrity(t *testing.T) {
 	m := miSetup(t)
 	ctx := context.Background()
@@ -24,7 +24,7 @@ func TestMetaInboxReservedQueueIntegrity(t *testing.T) {
 	if err := m.f.owner.QueryRow(ctx, `SELECT job_id FROM meta_inbox.events WHERE app_id=$1 AND asset_id=$2 AND disposition='ROUTED'`, miApp, asset).Scan(&job); err != nil {
 		t.Fatal(err)
 	}
-	before := miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job`)
+	before := miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job`)
 	for _, tc := range []struct{ name, kind, queue, args string }{
 		{"orphan exact shape", "meta_inbox_v1", "meta_inbox", fmt.Sprintf(`{"event_id":%q,"version":1}`, randomUUID())},
 		{"foreign kind", "other_v1", "meta_inbox", `{}`},
@@ -39,7 +39,7 @@ func TestMetaInboxReservedQueueIntegrity(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer tx.Rollback(ctx)
-			_, err = tx.Exec(ctx, `INSERT INTO river.river_job(kind,queue,args,max_attempts) VALUES($1,$2,$3::jsonb,25)`, tc.kind, tc.queue, tc.args)
+			_, err = tx.Exec(ctx, `INSERT INTO river_meta.river_job(kind,queue,args,max_attempts) VALUES($1,$2,$3::jsonb,25)`, tc.kind, tc.queue, tc.args)
 			if err == nil {
 				err = tx.Commit(ctx)
 			}
@@ -48,16 +48,16 @@ func TestMetaInboxReservedQueueIntegrity(t *testing.T) {
 			}
 		})
 	}
-	if got := miCount(t, m.f.owner, `SELECT count(*) FROM river.river_job`); got != before {
+	if got := miCount(t, m.f.owner, `SELECT count(*) FROM river_meta.river_job`); got != before {
 		t.Fatal("invalid ingress jobs persisted")
 	}
-	worker := miPool(t, m.f, "commerce_worker")
+	worker := miPool(t, m.f, "commerce_meta_worker")
 	for _, change := range []string{
 		`kind='generic_v1'`, `queue='default'`, `args=args || '{"payload":"forbidden"}'::jsonb`,
 		`args=jsonb_set(args,'{version}','2')`, `id=id+90000000`, `unique_key=decode('abcd','hex')`,
 	} {
 		t.Run(change, func(t *testing.T) {
-			_, err := worker.Exec(ctx, `UPDATE river.river_job SET `+change+` WHERE id=$1`, job)
+			_, err := worker.Exec(ctx, `UPDATE river_meta.river_job SET `+change+` WHERE id=$1`, job)
 			if miSQLState(err) != "22023" {
 				t.Fatalf("identity rewrite state=%s", miSQLState(err))
 			}
@@ -65,7 +65,7 @@ func TestMetaInboxReservedQueueIntegrity(t *testing.T) {
 	}
 	// Direct SQL needs no public API or actual Meta credentials. A generic worker
 	// cannot create a reserved job; a runtime UPDATE(kind) cannot convert one.
-	_, err := worker.Exec(ctx, `INSERT INTO river.river_job(kind,queue,args,max_attempts) VALUES('meta_inbox_v1','meta_inbox',$1::jsonb,25)`, fmt.Sprintf(`{"event_id":%q,"version":1}`, randomUUID()))
+	_, err := worker.Exec(ctx, `INSERT INTO river_meta.river_job(kind,queue,args,max_attempts) VALUES('meta_inbox_v1','meta_inbox',$1::jsonb,25)`, fmt.Sprintf(`{"event_id":%q,"version":1}`, randomUUID()))
 	if miSQLState(err) != "42501" {
 		t.Fatalf("worker impersonated producer state=%s", miSQLState(err))
 	}
@@ -77,12 +77,13 @@ func TestMetaInboxReservedQueueIntegrity(t *testing.T) {
 	if miSQLState(err) != "22023" {
 		t.Fatalf("generic runtime moved into reserved family state=%s", miSQLState(err))
 	}
-	_, err = worker.Exec(ctx, `UPDATE river.river_job SET queue='meta_inbox' WHERE id=$1`, generic)
+	ordinary := miPool(t, m.f, "commerce_worker")
+	_, err = ordinary.Exec(ctx, `UPDATE river.river_job SET queue='meta_inbox' WHERE id=$1`, generic)
 	if miSQLState(err) != "22023" {
 		t.Fatalf("generic worker moved into reserved queue state=%s", miSQLState(err))
 	}
-	if _, err := worker.Exec(ctx, `UPDATE river.river_job SET state='completed',finalized_at=clock_timestamp() WHERE id=$1`, job); err != nil {
-		t.Fatal("ordinary worker completion denied", err)
+	if _, err := worker.Exec(ctx, `UPDATE river_meta.river_job SET state='completed',finalized_at=clock_timestamp() WHERE id=$1`, job); err != nil {
+		t.Fatal("Meta worker completion denied", err)
 	}
 }
 
@@ -90,7 +91,7 @@ func TestMetaInboxPoolAuthorityIsExclusiveBothWays(t *testing.T) {
 	m := miSetup(t)
 	ctx := context.Background()
 	role := pgx.Identifier{m.ingress.Config().ConnConfig.User}.Sanitize()
-	for _, other := range []string{"commerce_runtime", "commerce_worker", "commerce_identity", "commerce_buyer_runtime", "commerce_buyer_issuer", "commerce_checkout_runtime", "commerce_hosted_runtime", "commerce_meta_registrar", "commerce_meta_curator", "commerce_meta_writer", "pg_read_all_data", "pg_write_all_data", "pg_read_server_files", "pg_write_server_files", "pg_execute_server_program", "pg_signal_backend"} {
+	for _, other := range []string{"commerce_runtime", "commerce_worker", "commerce_meta_worker", "commerce_identity", "commerce_buyer_runtime", "commerce_buyer_issuer", "commerce_checkout_runtime", "commerce_hosted_runtime", "commerce_meta_registrar", "commerce_meta_curator", "commerce_meta_writer", "pg_read_all_data", "pg_write_all_data", "pg_read_server_files", "pg_write_server_files", "pg_execute_server_program", "pg_signal_backend"} {
 		t.Run(other, func(t *testing.T) {
 			mustExec(t, m.f.owner, `GRANT `+pgx.Identifier{other}.Sanitize()+` TO `+role+` WITH INHERIT TRUE, SET FALSE`)
 			defer mustExec(t, m.f.owner, `REVOKE `+pgx.Identifier{other}.Sanitize()+` FROM `+role)
@@ -133,7 +134,7 @@ func TestMetaInboxOwnerGenericJobsKeepLegacyAdmission(t *testing.T) {
 	for _, tc := range []struct{ kind, queue string }{{"meta_inbox_v1", "default"}, {"generic_probe", "meta_inbox"}, {"meta_inbox_v1", "meta_inbox"}} {
 		t.Run(tc.kind+"/"+tc.queue, func(t *testing.T) {
 			_, err := m.f.owner.Exec(ctx, `INSERT INTO river.river_job(kind,queue,args,max_attempts) VALUES($1,$2,$3::jsonb,25)`, tc.kind, tc.queue, fmt.Sprintf(`{"event_id":%q,"version":1}`, randomUUID()))
-			if miSQLState(err) != "42501" {
+			if miSQLState(err) != "22023" {
 				t.Fatalf("owner bypassed reserved family: %s", miSQLState(err))
 			}
 		})

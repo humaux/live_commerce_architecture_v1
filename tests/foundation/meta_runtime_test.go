@@ -2,10 +2,7 @@ package foundation_test
 
 import (
 	"context"
-	"crypto/sha256"
-	"fmt"
 	"net/url"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -14,7 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"livecommerce/internal/integrations/meta"
 	"livecommerce/internal/platform"
-	"livecommerce/migrations"
 )
 
 // These tests use the existing labelled, loopback-only worker PG fixture.
@@ -57,7 +53,8 @@ func TestMetaRuntimePoolRolesAndDatabaseIdentity(t *testing.T) {
 	ctx := context.Background()
 	ingressDSN := miRole(t, f, "commerce_meta_ingress")
 	consumerDSN := miRole(t, f, "commerce_meta_consumer")
-	workerDSN := miRole(t, f, "commerce_worker")
+	workerDSN := miRole(t, f, "commerce_meta_worker")
+	ordinaryDSN := miRole(t, f, "commerce_worker")
 	ingress, err := platform.OpenMetaIngressPool(ctx, ingressDSN)
 	if err != nil {
 		t.Fatal("dedicated ingress rejected", err)
@@ -68,9 +65,9 @@ func TestMetaRuntimePoolRolesAndDatabaseIdentity(t *testing.T) {
 		t.Fatal("dedicated consumer rejected", err)
 	}
 	defer consumer.Close()
-	worker, err := platform.OpenWorkerPool(ctx, workerDSN)
+	worker, err := platform.OpenMetaWorkerPool(ctx, workerDSN)
 	if err != nil {
-		t.Fatal("ordinary worker rejected", err)
+		t.Fatal("dedicated Meta worker rejected", err)
 	}
 	defer worker.Close()
 	if err := platform.ValidateSameDatabase(ctx, f.runtime, ingress); err != nil {
@@ -79,7 +76,7 @@ func TestMetaRuntimePoolRolesAndDatabaseIdentity(t *testing.T) {
 	if err := platform.ValidateSameDatabase(ctx, worker, consumer); err != nil {
 		t.Fatal("same database worker/consumer denied", err)
 	}
-	for name, dsn := range map[string]string{"owner": f.databaseURL, "runtime": f.runtime.Config().ConnString(), "consumer": consumerDSN, "worker": workerDSN} {
+	for name, dsn := range map[string]string{"owner": f.databaseURL, "runtime": f.runtime.Config().ConnString(), "consumer": consumerDSN, "worker": workerDSN, "ordinary worker": ordinaryDSN} {
 		t.Run("ingress rejects "+name, func(t *testing.T) {
 			p, err := platform.OpenMetaIngressPool(ctx, dsn)
 			if err == nil {
@@ -88,7 +85,7 @@ func TestMetaRuntimePoolRolesAndDatabaseIdentity(t *testing.T) {
 			}
 		})
 	}
-	for name, dsn := range map[string]string{"owner": f.databaseURL, "runtime": f.runtime.Config().ConnString(), "ingress": ingressDSN, "worker": workerDSN} {
+	for name, dsn := range map[string]string{"owner": f.databaseURL, "runtime": f.runtime.Config().ConnString(), "ingress": ingressDSN, "worker": workerDSN, "ordinary worker": ordinaryDSN} {
 		t.Run("consumer rejects "+name, func(t *testing.T) {
 			p, err := platform.OpenMetaConsumerPool(ctx, dsn)
 			if err == nil {
@@ -100,6 +97,14 @@ func TestMetaRuntimePoolRolesAndDatabaseIdentity(t *testing.T) {
 	if p, err := platform.OpenWorkerPool(ctx, consumerDSN); err == nil {
 		p.Close()
 		t.Fatal("consumer login accepted as ordinary River worker")
+	}
+	if p, err := platform.OpenWorkerPool(ctx, workerDSN); err == nil {
+		p.Close()
+		t.Fatal("Meta worker login accepted as ordinary River worker")
+	}
+	if p, err := platform.OpenMetaWorkerPool(ctx, ordinaryDSN); err == nil {
+		p.Close()
+		t.Fatal("ordinary worker login accepted as Meta River worker")
 	}
 	mixedDSN := miRole(t, f, "commerce_meta_ingress")
 	mixedURL, err := url.Parse(mixedDSN)
@@ -117,21 +122,24 @@ func TestMetaRuntimePoolRolesAndDatabaseIdentity(t *testing.T) {
 		p.Close()
 		t.Fatal("mixed ingress/consumer authority accepted as consumer")
 	}
-	var schemaUse, readinessExec, eventRead, loadExec bool
+	var schemaUse, readinessExec, eventRead, loadExec, oldReadiness, oldSchema, oldWorkerDML bool
 	if err := f.owner.QueryRow(ctx, `SELECT
-	 has_schema_privilege('commerce_worker','meta_inbox','USAGE'),
+	 has_schema_privilege('commerce_meta_worker','meta_inbox','USAGE'),
+	 has_function_privilege('commerce_meta_worker','meta_inbox.runtime_ready()','EXECUTE'),
+	 has_table_privilege('commerce_meta_worker','meta_inbox.events','SELECT'),
+	 has_function_privilege('commerce_meta_worker','meta_inbox.load_social_event(uuid,bigint,integer)','EXECUTE'),
 	 has_function_privilege('commerce_worker','meta_inbox.runtime_ready()','EXECUTE'),
-	 has_table_privilege('commerce_worker','meta_inbox.events','SELECT'),
-	 has_function_privilege('commerce_worker','meta_inbox.load_social_event(uuid,bigint,integer)','EXECUTE')`).Scan(&schemaUse, &readinessExec, &eventRead, &loadExec); err != nil {
+	 has_schema_privilege('commerce_worker','river_meta','USAGE'),
+	 has_table_privilege('commerce_meta_worker','river.river_job','UPDATE')`).Scan(&schemaUse, &readinessExec, &eventRead, &loadExec, &oldReadiness, &oldSchema, &oldWorkerDML); err != nil {
 		t.Fatal(err)
 	}
-	if !schemaUse || !readinessExec || eventRead || loadExec {
-		t.Fatalf("0030 widened authority: schema=%v readiness=%v event_read=%v load=%v", schemaUse, readinessExec, eventRead, loadExec)
+	if !schemaUse || !readinessExec || eventRead || loadExec || oldReadiness || oldSchema || oldWorkerDML {
+		t.Fatalf("isolation authority widened: schema=%v readiness=%v event_read=%v load=%v old_ready=%v old_schema=%v old_job_update=%v", schemaUse, readinessExec, eventRead, loadExec, oldReadiness, oldSchema, oldWorkerDML)
 	}
 	mrReady(t, ingress, true)
 	mrReady(t, worker, true)
 	if _, err := worker.Exec(ctx, `SELECT count(*) FROM meta_inbox.events`); miSQLState(err) != "42501" {
-		t.Fatalf("ordinary worker read inbox events SQLSTATE=%s", miSQLState(err))
+		t.Fatalf("Meta worker read inbox events SQLSTATE=%s", miSQLState(err))
 	}
 	// A new second cluster has the same database name and schema. Copy a
 	// benign fixture ID too: neither name nor IDs prove physical DB identity.
@@ -274,7 +282,7 @@ func TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed(t *testing.T) {
 	f := mrFixture(t)
 	ctx := context.Background()
 	ingress := miPool(t, f, "commerce_meta_ingress")
-	worker := miPool(t, f, "commerce_worker")
+	worker := miPool(t, f, "commerce_meta_worker")
 	consumer := miPool(t, f, "commerce_meta_consumer")
 	keys, err := meta.NewPayloadKeyring(miKeyID, map[string][]byte{miKeyID: randomBytes(32)})
 	if err != nil {
@@ -293,7 +301,7 @@ func TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed(t *testing.T) {
 		if client, err := meta.NewConsumerClient(ctx, worker, consumer, keys, 1); err == nil || client != nil {
 			t.Fatal("tampered readiness admitted River fetch client")
 		}
-		if miCount(t, f.owner, `SELECT coalesce(max(attempt),0) FROM river.river_job WHERE kind='meta_inbox_v1'`) != 0 ||
+		if miCount(t, f.owner, `SELECT coalesce(max(attempt),0) FROM river_meta.river_job WHERE kind='meta_inbox_v1'`) != 0 ||
 			miCount(t, f.owner, `SELECT count(*) FROM social.messages`) != 0 ||
 			miCount(t, f.owner, `SELECT count(*) FROM social.comment_events`) != 0 {
 			t.Fatal("rejected constructor claimed job or wrote social fact")
@@ -307,8 +315,9 @@ func TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed(t *testing.T) {
 		t.Fatal("valid River client rejected", err)
 	}
 	for _, guard := range []struct{ table, name string }{
-		{"river.river_job", "meta_job_family"},
-		{"river.river_job", "meta_job_commit"},
+		{"river_meta.river_job", "meta_job_family"},
+		{"river_meta.river_job", "meta_job_commit"},
+		{"river.river_job", "meta_job_legacy"},
 		{"social.messages", "social_message_commit"},
 		{"social.comment_events", "social_comment_commit"},
 	} {
@@ -373,15 +382,15 @@ func TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed(t *testing.T) {
 	e := mcPost(t, m, asset, miMessage(asset, "m."+randomUUID(), "valid-linked-job"))
 	mrReady(t, ingress, true)
 	mutateJob := func(statement string) {
-		mustExec(t, f.owner, `ALTER TABLE river.river_job DISABLE TRIGGER meta_job_family`)
+		mustExec(t, f.owner, `ALTER TABLE river_meta.river_job DISABLE TRIGGER meta_job_family`)
 		mustExec(t, f.owner, statement, e.job)
-		mustExec(t, f.owner, `ALTER TABLE river.river_job ENABLE TRIGGER meta_job_family`)
+		mustExec(t, f.owner, `ALTER TABLE river_meta.river_job ENABLE TRIGGER meta_job_family`)
 	}
 	for _, poisoned := range []struct{ name, change, restore string }{
-		{"wrong queue", `UPDATE river.river_job SET queue='default' WHERE id=$1`, `UPDATE river.river_job SET queue='meta_inbox' WHERE id=$1`},
-		{"wrong kind", `UPDATE river.river_job SET kind='mr_other_v1' WHERE id=$1`, `UPDATE river.river_job SET kind='meta_inbox_v1' WHERE id=$1`},
-		{"extra args", `UPDATE river.river_job SET args=jsonb_set(args,'{extra}','1'::jsonb) WHERE id=$1`, `UPDATE river.river_job SET args=args-'extra' WHERE id=$1`},
-		{"unique key", `UPDATE river.river_job SET unique_key=decode(repeat('ab',32),'hex') WHERE id=$1`, `UPDATE river.river_job SET unique_key=NULL WHERE id=$1`},
+		{"wrong queue", `UPDATE river_meta.river_job SET queue='default' WHERE id=$1`, `UPDATE river_meta.river_job SET queue='meta_inbox' WHERE id=$1`},
+		{"wrong kind", `UPDATE river_meta.river_job SET kind='mr_other_v1' WHERE id=$1`, `UPDATE river_meta.river_job SET kind='meta_inbox_v1' WHERE id=$1`},
+		{"extra args", `UPDATE river_meta.river_job SET args=jsonb_set(args,'{extra}','1'::jsonb) WHERE id=$1`, `UPDATE river_meta.river_job SET args=args-'extra' WHERE id=$1`},
+		{"unique key", `UPDATE river_meta.river_job SET unique_key=decode(repeat('ab',32),'hex') WHERE id=$1`, `UPDATE river_meta.river_job SET unique_key=NULL WHERE id=$1`},
 	} {
 		t.Run("active job "+poisoned.name, func(t *testing.T) {
 			mutateJob(poisoned.change)
@@ -393,16 +402,16 @@ func TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed(t *testing.T) {
 		mrReady(t, ingress, true)
 	}
 	t.Run("active job without link", func(t *testing.T) {
-		mustExec(t, f.owner, `ALTER TABLE river.river_job DISABLE TRIGGER meta_job_family`)
-		mustExec(t, f.owner, `ALTER TABLE river.river_job DISABLE TRIGGER meta_job_commit`)
+		mustExec(t, f.owner, `ALTER TABLE river_meta.river_job DISABLE TRIGGER meta_job_family`)
+		mustExec(t, f.owner, `ALTER TABLE river_meta.river_job DISABLE TRIGGER meta_job_commit`)
 		var id int64
-		err := f.owner.QueryRow(ctx, `INSERT INTO river.river_job(kind,queue,args,max_attempts) VALUES('meta_inbox_v1','meta_inbox',jsonb_build_object('event_id',$1::text,'version',1),2) RETURNING id`, randomUUID()).Scan(&id)
-		mustExec(t, f.owner, `ALTER TABLE river.river_job ENABLE TRIGGER meta_job_commit`)
-		mustExec(t, f.owner, `ALTER TABLE river.river_job ENABLE TRIGGER meta_job_family`)
+		err := f.owner.QueryRow(ctx, `INSERT INTO river_meta.river_job(kind,queue,args,max_attempts) VALUES('meta_inbox_v1','meta_inbox',jsonb_build_object('event_id',$1::text,'version',1),2) RETURNING id`, randomUUID()).Scan(&id)
+		mustExec(t, f.owner, `ALTER TABLE river_meta.river_job ENABLE TRIGGER meta_job_commit`)
+		mustExec(t, f.owner, `ALTER TABLE river_meta.river_job ENABLE TRIGGER meta_job_family`)
 		if err != nil {
 			t.Fatal("seed test-owned unlinked active job", err)
 		}
-		defer mustExec(t, f.owner, `DELETE FROM river.river_job WHERE id=$1`, id)
+		defer mustExec(t, f.owner, `DELETE FROM river_meta.river_job WHERE id=$1`, id)
 		mrReady(t, ingress, false)
 		mrReady(t, worker, false)
 		denyStartup(t)
@@ -413,36 +422,17 @@ func TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed(t *testing.T) {
 func TestMetaRuntimePopulated0029Upgrade(t *testing.T) {
 	f := mcPre0029Fixture(t)
 	ctx := context.Background()
-	body, err := os.ReadFile("../../migrations/0029_meta_social_consumer.sql")
-	if err != nil {
-		t.Fatal(err)
-	}
-	tx, err := f.owner.Begin(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := tx.Exec(ctx, string(body)); err != nil {
-		_ = tx.Rollback(ctx)
-		t.Fatal("install exact 0029 SQL", err)
-	}
-	checksum := fmt.Sprintf("%x", sha256.Sum256(body))
-	if _, err := tx.Exec(ctx, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0029_meta_social_consumer.sql',$1)`, checksum); err != nil {
-		_ = tx.Rollback(ctx)
-		t.Fatal(err)
-	}
-	if err := tx.Commit(ctx); err != nil {
-		t.Fatal(err)
-	}
+	mcApplyHistorical(t, f, "0029_meta_social_consumer.sql")
 	var oldLedger int
 	var readyExists bool
 	if err := f.owner.QueryRow(ctx, `SELECT (SELECT count(*) FROM public.lc_schema_migrations),to_regprocedure('meta_inbox.runtime_ready()') IS NOT NULL`).Scan(&oldLedger, &readyExists); err != nil || oldLedger != 32 || readyExists {
 		t.Fatalf("fixture is not 0029: ledger=%d ready=%v err=%v", oldLedger, readyExists, err)
 	}
-	m := mrSetup(t, f)
+	m := mcOldSetup(t, f, "page")
 	asset := miAsset()
 	binding := miBinding(t, m, asset, "facebook", f.tenantA, f.storeA1, f.principalA)
 	route, _ := miRoute(t, m, asset, f.tenantA, f.storeA1, binding)
-	e := mcPost(t, m, asset, miMessage(asset, "m."+randomUUID(), "legacy-0029"))
+	e := mcOldPost(t, m, asset, miMessage(asset, "m."+randomUUID(), "legacy-0029"))
 	mcRunning(t, m, e, 1)
 	mcFinish(t, mcConsumer(t, m), e, 1, mcSubject())
 	const snapshot = `SELECT jsonb_build_object(
@@ -466,12 +456,8 @@ func TestMetaRuntimePopulated0029Upgrade(t *testing.T) {
 			t.Fatalf("0029 fixture lacks %s", row)
 		}
 	}
-	if err := migrations.Apply(ctx, f.owner); err != nil {
-		t.Fatal("populated 0029 to 0030 upgrade", err)
-	}
-	if err := migrations.Apply(ctx, f.owner); err != nil {
-		t.Fatal("repeat 0030 migration", err)
-	}
+	mcApplyHistorical(t, f, "0030_meta_runtime.sql")
+	mcApplyHistorical(t, f, "0030_meta_runtime.sql")
 	if err := f.owner.QueryRow(ctx, snapshot, e.id, route, binding, e.job).Scan(&after); err != nil || after != before {
 		t.Fatalf("0030 changed old receipts, ciphertext, job or social fact: err=%v equal=%v", err, after == before)
 	}

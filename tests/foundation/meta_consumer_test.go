@@ -26,7 +26,6 @@ import (
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"github.com/riverqueue/river/rivermigrate"
 	"livecommerce/internal/integrations/meta"
-	"livecommerce/migrations"
 )
 
 type mcEvent struct {
@@ -95,7 +94,7 @@ func mcPre0029Fixture(t *testing.T) *testFixture {
 	// before 0029. Keep the original bytes and checksums, not a hand-written
 	// approximation of the 0028 schema.
 	oldVersions, err := filepath.Glob("../../migrations/[0-9][0-9][0-9][0-9]_*.sql")
-	if err != nil || len(oldVersions) != 30 || filepath.Base(oldVersions[27]) != "0028_meta_inbox.sql" || filepath.Base(oldVersions[29]) != "0030_meta_runtime.sql" {
+	if err != nil || len(oldVersions) < 30 || filepath.Base(oldVersions[27]) != "0028_meta_inbox.sql" || filepath.Base(oldVersions[28]) != "0029_meta_social_consumer.sql" || filepath.Base(oldVersions[29]) != "0030_meta_runtime.sql" {
 		t.Fatalf("unexpected numbered migrations: count=%d err=%v", len(oldVersions), err)
 	}
 	tx, err := owner.Begin(ctx)
@@ -143,14 +142,14 @@ func mcPre0029Fixture(t *testing.T) *testFixture {
 	 REVOKE ALL ON river.river_migration FROM commerce_worker;
 	 GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river TO commerce_worker`)
 	postVersions, err := filepath.Glob("../../migrations/post_river/[0-9][0-9][0-9][0-9]_*.sql")
-	if err != nil || len(postVersions) != 3 {
+	if err != nil || len(postVersions) < 3 || filepath.Base(postVersions[0]) != "0001_payment_queue.sql" || filepath.Base(postVersions[1]) != "0002_checkout_expiry_queue.sql" || filepath.Base(postVersions[2]) != "0003_meta_inbox_queue.sql" {
 		t.Fatalf("unexpected post-River migrations: count=%d err=%v", len(postVersions), err)
 	}
 	postTx, err := owner.Begin(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, path := range postVersions {
+	for _, path := range postVersions[:3] {
 		body, err := os.ReadFile(path)
 		if err != nil {
 			_ = postTx.Rollback(ctx)
@@ -198,7 +197,19 @@ func mcPostApp(t *testing.T, m miTest, asset, app string, raw []byte) mcEvent {
 
 func mcRunning(t *testing.T, m miTest, e mcEvent, attempt int) {
 	t.Helper()
-	mustExec(t, m.f.owner, `UPDATE river.river_job SET state='running',attempt=$2,attempted_at=clock_timestamp() WHERE id=$1`, e.job, attempt)
+	mustExec(t, m.f.owner, `UPDATE `+mcJobTable(t, m.f)+` SET state='running',attempt=$2,attempted_at=clock_timestamp() WHERE id=$1`, e.job, attempt)
+}
+
+func mcJobTable(t *testing.T, f *testFixture) string {
+	t.Helper()
+	var modern bool
+	if err := f.owner.QueryRow(context.Background(), `SELECT to_regclass('river_meta.river_job') IS NOT NULL`).Scan(&modern); err != nil {
+		t.Fatal(err)
+	}
+	if modern {
+		return "river_meta.river_job"
+	}
+	return "river.river_job"
 }
 
 func mcKeys(t *testing.T, m miTest) *meta.PayloadKeyring {
@@ -223,7 +234,7 @@ func mcAwait(t *testing.T, m miTest, e mcEvent) {
 	for time.Now().Before(deadline) {
 		var state string
 		var reason *string
-		if err := m.f.owner.QueryRow(context.Background(), `SELECT j.state,e.terminal_reason FROM river.river_job j JOIN meta_inbox.events e ON e.job_id=j.id WHERE j.id=$1`, e.job).Scan(&state, &reason); err != nil {
+		if err := m.f.owner.QueryRow(context.Background(), `SELECT j.state,e.terminal_reason FROM `+mcJobTable(t, m.f)+` j JOIN meta_inbox.events e ON e.job_id=j.id WHERE j.id=$1`, e.job).Scan(&state, &reason); err != nil {
 			t.Fatal(err)
 		}
 		if state == "completed" && reason != nil && *reason == "processed" {
@@ -249,25 +260,12 @@ func TestMetaConsumerPopulated0028Upgrade(t *testing.T) {
 	if oldLedger != 31 || oldSocial {
 		t.Fatalf("fixture is not 0028 plus three post-River migrations: ledger=%d social=%v", oldLedger, oldSocial)
 	}
-	m := miTest{f: f, ingress: miPool(t, f, "commerce_meta_ingress"), registrar: miPool(t, f, "commerce_meta_registrar"), curator: miPool(t, f, "commerce_meta_curator"), key: randomBytes(32)}
+	m := mcOldSetup(t, f, "page")
 	keys := mcKeys(t, m)
-	var err error
-	m.verifier, err = meta.NewVerifier(meta.Config{AppID: miApp, Object: "page", AppSecret: miSecret, VerifyToken: "meta-inbox-verify-token"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	inbox, err := meta.NewInbox(ctx, m.ingress, keys)
-	if err != nil {
-		t.Fatal(err)
-	}
-	m.handler, err = meta.NewInboxHandler(m.verifier, inbox)
-	if err != nil {
-		t.Fatal(err)
-	}
 	asset := miAsset()
 	binding := miBinding(t, m, asset, "facebook", f.tenantA, f.storeA1, f.principalA)
 	route, _ := miRoute(t, m, asset, f.tenantA, f.storeA1, binding)
-	e := mcPost(t, m, asset, miMessage(asset, "m."+randomUUID(), "legacy-0028-message"))
+	e := mcOldPost(t, m, asset, miMessage(asset, "m."+randomUUID(), "legacy-0028-message"))
 	const receipt = `SELECT jsonb_build_object(
 	 'binding',(SELECT to_jsonb(b) FROM integration.bindings b WHERE b.id=$3),
 	 'route',(SELECT to_jsonb(r) FROM meta_inbox.routes r WHERE r.id=$2),
@@ -286,12 +284,8 @@ func TestMetaConsumerPopulated0028Upgrade(t *testing.T) {
 			t.Fatalf("0028 fixture lacks populated %s row", row)
 		}
 	}
-	if err := migrations.Apply(ctx, f.owner); err != nil {
-		t.Fatalf("populated 0028 to 0029 upgrade: %v", err)
-	}
-	if err := migrations.Apply(ctx, f.owner); err != nil {
-		t.Fatalf("repeat migration after upgrade: %v", err)
-	}
+	mcApplyHistorical(t, f, "0029_meta_social_consumer.sql", "0030_meta_runtime.sql")
+	mcApplyHistorical(t, f, "0029_meta_social_consumer.sql", "0030_meta_runtime.sql")
 	if err := f.owner.QueryRow(ctx, receipt, e.id, route, binding, e.job).Scan(&after); err != nil {
 		t.Fatal(err)
 	}
@@ -480,10 +474,10 @@ func TestMetaConsumerRiverPageAndInstagramFacts(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	workerPool := miPool(t, m.f, "commerce_worker")
+	workerPool := miPool(t, m.f, "commerce_meta_worker")
 	workers := river.NewWorkers()
 	river.AddWorker(workers, w)
-	client, err := river.NewClient(riverpgxv5.New(workerPool), &river.Config{Schema: "river", Workers: workers, Queues: map[string]river.QueueConfig{"meta_inbox": {MaxWorkers: 2}}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), JobTimeout: 15 * time.Second, RescueStuckJobsAfter: 30 * time.Second})
+	client, err := river.NewClient(riverpgxv5.New(workerPool), &river.Config{Schema: "river_meta", Workers: workers, Queues: map[string]river.QueueConfig{"meta_inbox": {MaxWorkers: 2}}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), JobTimeout: 15 * time.Second, RescueStuckJobsAfter: 30 * time.Second})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -755,7 +749,7 @@ func TestMetaConsumerReverseSequenceReplayAndPurge(t *testing.T) {
 	if n := miCount(t, m.f.owner, `SELECT next_seq FROM social.conversations WHERE peer_key=$1`, subject); n != 2 {
 		t.Fatal("replay advanced conversation sequence")
 	}
-	mustExec(t, m.f.owner, `UPDATE river.river_job SET state='completed',finalized_at=clock_timestamp() WHERE id=$1`, first.job)
+	mustExec(t, m.f.owner, `UPDATE river_meta.river_job SET state='completed',finalized_at=clock_timestamp() WHERE id=$1`, first.job)
 	mustExec(t, m.f.owner, `UPDATE meta_private.event_bodies SET expires_at=clock_timestamp()-interval '1 hour' WHERE event_id=$1`, first.id)
 	var purged int
 	if err := m.curator.QueryRow(ctx, `SELECT meta_inbox.purge_expired(10)`).Scan(&purged); err != nil {
@@ -1168,7 +1162,7 @@ func TestMetaConsumerRescuedAttemptAfterJobLockWait(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := ownerTx.Exec(ctx, `UPDATE river.river_job SET attempt=2 WHERE id=$1`, e.job); err != nil {
+	if _, err := ownerTx.Exec(ctx, `UPDATE river_meta.river_job SET attempt=2 WHERE id=$1`, e.job); err != nil {
 		_ = ownerTx.Rollback(ctx)
 		t.Fatal(err)
 	}
@@ -1295,7 +1289,7 @@ func TestMetaConsumerReviewedAndStaleNeverProcess(t *testing.T) {
 func TestMetaConsumerCryptoFailureKeepsPendingBody(t *testing.T) {
 	m := miSetup(t)
 	ctx := context.Background()
-	workerPool := miPool(t, m.f, "commerce_worker")
+	workerPool := miPool(t, m.f, "commerce_meta_worker")
 	consumer := mcConsumer(t, m)
 	for _, mode := range []string{"missing-key", "tampered-tag", "invalid-classifier"} {
 		t.Run(mode, func(t *testing.T) {
@@ -1346,7 +1340,7 @@ func TestMetaConsumerCryptoFailureKeepsPendingBody(t *testing.T) {
 			}
 			workers := river.NewWorkers()
 			river.AddWorker(workers, w)
-			client, err := river.NewClient(riverpgxv5.New(workerPool), &river.Config{Schema: "river", Workers: workers, Queues: map[string]river.QueueConfig{"meta_inbox": {MaxWorkers: 1}}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), JobTimeout: 15 * time.Second, RescueStuckJobsAfter: 30 * time.Second})
+			client, err := river.NewClient(riverpgxv5.New(workerPool), &river.Config{Schema: "river_meta", Workers: workers, Queues: map[string]river.QueueConfig{"meta_inbox": {MaxWorkers: 1}}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), JobTimeout: 15 * time.Second, RescueStuckJobsAfter: 30 * time.Second})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1358,7 +1352,7 @@ func TestMetaConsumerCryptoFailureKeepsPendingBody(t *testing.T) {
 			for time.Now().Before(deadline) {
 				var state string
 				var attempt int
-				if err := m.f.owner.QueryRow(ctx, `SELECT state,attempt FROM river.river_job WHERE id=$1`, e.job).Scan(&state, &attempt); err != nil {
+				if err := m.f.owner.QueryRow(ctx, `SELECT state,attempt FROM river_meta.river_job WHERE id=$1`, e.job).Scan(&state, &attempt); err != nil {
 					t.Fatal(err)
 				}
 				if state == "retryable" && attempt >= 1 {
