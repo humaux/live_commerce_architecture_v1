@@ -54,7 +54,10 @@ localhost or single-label hosts. These are trusted deployment-approved ingest
 hosts, not a claim that a merchant owns/qualifies for a destination.
 
 `New(config Config, transport ...http.RoundTripper) (*Client,error)`.
-MOCK requires exactly one nonnil transport; LIVE forbids injection and uses a
+MOCK requires exactly one nonnil, trusted test transport and never falls back
+to a default transport. Injected Go code can itself access the network: MOCK
+is a test seam, not a sandbox. Test harnesses must bind it to local fixtures.
+LIVE forbids injection and uses a
 new private TLS1.2+ transport with no ambient proxy and keepalives disabled.
 Copy config slices so caller mutation cannot change the allowlist.
 Fixed 10s request ceiling; context cancellation honored; no redirects/retries.
@@ -85,7 +88,11 @@ The later webhook/lifecycle component must supply those separate projections.
   `{protocol:"RTMP",urls:[...]}`. Match returned room to input; validate ID.
 - `(*Client).Query(ctx, Target) (Observation,error)`: one ListEgress POST with
   room_name, egress_id, active=false. Require at most one exact room+ID match;
-  duplicates, unrelated rows or nonempty next_page_token are not authoritative.
+  duplicates or unrelated rows are not authoritative. Parse next_page_token
+  (or nextPageToken) as the proto TokenPagination object: omitted, `{}` or
+  `{"token":""}` means no continuation. Any nonempty token, null, invalid
+  token/container type or simultaneous aliases yields ErrUnavailable BEFORE
+  considering empty items. Never silently ignore pagination or follow it.
   Empty/omitted items is `ErrNotObserved`, NOT proof of absence or completion.
 - `(*Client).Stop(ctx, Target) (Observation,error)`: one StopEgress POST with
   egress_id; require exact room and ID in response. Never infer ended from ACK.
@@ -122,7 +129,7 @@ All known fields must have exact scalar types, no coercion or partial DTO.
   provider; verify JWT independently with stdlib HMAC and wall-clock lifetime,
   no extra grants; horizontal/portrait and both destinations; one call each.
 - LKP02: every validation family rejects before I/O; constructor clones hosts;
-  MOCK cannot silently use real network, LIVE cannot inject transport; trusted
+  MOCK has no implicit default transport, LIVE cannot inject transport; trusted
   target requirement and all secret-bearing structs are documented.
 - LKP03: exact correlation; enum/string-number/camelCase/default-zero parsing;
   malformed/type/duplicate/alias/depth/UTF8/oversize/trailing negatives; attacker
