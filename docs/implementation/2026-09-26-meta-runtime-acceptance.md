@@ -135,6 +135,28 @@ Root `--checkout` on `aca3148` hit its aggregate 120s test-binary limit after
 `/Volumes/data/output/meta-isolation-root-migration-checkout-20260926.log`.
 The new-schema test migrations and complete regression are still required.
 
+Follow-up root checks on `856a4b1` (plus documentation only):
+
+| Check | Actual result | Evidence |
+| --- | --- | --- |
+| Checkout with aggregate 240s budget, unchanged per-operation deadlines/assertions | exit 0, 27 top-level PASS, 76.016s | `/Volumes/data/output/meta-isolation-root-checkout-240s-20260926.log` |
+| Browser identity/settings + actual API account restart | exit 0, 3 top-level PASS, 15.735s | `/Volumes/data/output/meta-isolation-root-browser-identity-20260926.log` |
+
+SHA-256 respectively: `32dff3c579199ed528efb76decfaf80b5c4bc08dafd22b79109f9690f8c97584`,
+`9ecd275aaeebdff4df9695368a00ee1a4935220460414451c941a644c15b0074`.
+Root inspected the desktop/mobile account images under
+`output/playwright/settings-real-20260926T133851.714959000`; labels, controls and
+saved-versus-qualified state remain legible. This is real browser/Next/Go/PG
+with a signed **MOCK IdP**, not provider approval.
+
+The author's next PG run passed nine ACL negatives but exposed a separate
+readiness error: `42501 permission denied for schema river`. The guard metadata
+function's SECURITY DEFINER owner had correctly lost old-schema USAGE, while
+its `to_regclass` lookup still required it. `d702bb1` resolves the exact legacy
+relation through `pg_trigger`/`pg_class`/`pg_namespace` instead, preserving every
+guard check and withholding old-schema privileges. Source-only review closed
+this cause without new P0/P1/P2; post-fix MR/MIso evidence remains pending.
+
 ## Outstanding acceptance
 
 MR04 remains failed. The early failure means later assertions within that
