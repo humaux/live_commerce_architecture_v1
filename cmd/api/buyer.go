@@ -104,8 +104,9 @@ func buildBuyerHandler(ctx context.Context, c buyerConfig) (http.Handler, func()
 		issuer.Close()
 	}
 	// River is used only to insert the expiry task in Begin's transaction. API
-	// startup does not start workers or gain provider dispatch authority.
-	jobs, err := river.NewClient(riverpgxv5.New(checkoutPool), &river.Config{Schema: "river"})
+	// startup does not start workers or gain provider dispatch authority. The
+	// expiry schema keeps River maintenance separate from payment and external jobs.
+	jobs, err := river.NewClient(riverpgxv5.New(checkoutPool), &river.Config{Schema: "river_expiry"})
 	if err != nil {
 		closePools()
 		return nil, nil, errBuyerConfig

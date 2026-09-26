@@ -43,8 +43,9 @@ func NewExpiryClient(ctx context.Context, pool *pgxpool.Pool, concurrency int) (
 	}
 	workers := river.NewWorkers()
 	river.AddWorker(workers, worker)
+	// Queue limits fetch; the schema also confines River leader maintenance.
 	client, err := river.NewClient(riverpgxv5.New(pool), &river.Config{
-		Schema: "river", Workers: workers,
+		Schema: "river_expiry", Workers: workers,
 		Queues: map[string]river.QueueConfig{jobqueue.CheckoutExpiry: {MaxWorkers: concurrency}},
 		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 	})

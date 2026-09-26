@@ -69,7 +69,8 @@ func buildBuyerPayment(ctx context.Context, c buyerPaymentConfig) (*checkout.Hos
 	}
 	// This client inserts an existing query job in the payment transaction. It
 	// does not start a worker or make a provider request in the API process.
-	jobs, err := river.NewClient(riverpgxv5.New(pool), &river.Config{Schema: "river"})
+	// Place it in the family schema maintained only by payment workers.
+	jobs, err := river.NewClient(riverpgxv5.New(pool), &river.Config{Schema: "river_payment"})
 	if err != nil {
 		pool.Close()
 		return nil, nil, errBuyerConfig
