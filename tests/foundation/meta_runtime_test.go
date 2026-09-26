@@ -232,6 +232,42 @@ func TestMetaRuntimeSameDatabaseProbeReleasesBorrowedConnectionsAndLocks(t *test
 		t.Fatal("pools unusable after cancelled probe", err)
 	}
 	checkReleased()
+	// A shorter caller deadline must also unwind a probe that already holds A's
+	// lock while B's single borrowed slot is occupied; do not cancel it early.
+	func() {
+		occupied, err := second.Acquire(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer occupied.Release()
+		deadlineCtx, stop := context.WithTimeout(ctx, time.Second)
+		defer stop()
+		result := make(chan error, 1)
+		go func() { result <- platform.ValidateSameDatabase(deadlineCtx, first, second) }()
+		observed := false
+		for !observed {
+			observed = miCount(t, f.owner, `SELECT count(*) FROM pg_locks l JOIN pg_stat_activity a ON a.pid=l.pid WHERE l.locktype='advisory' AND a.application_name=$1`, firstName) > 0
+			if !observed && deadlineCtx.Err() != nil {
+				t.Fatal("deadline elapsed before first probe acquired its advisory lock")
+			}
+			if !observed {
+				time.Sleep(10 * time.Millisecond) // observe actual lock; timeout itself remains causal
+			}
+		}
+		select {
+		case err := <-result:
+			if err == nil || deadlineCtx.Err() != context.DeadlineExceeded {
+				t.Fatalf("naturally expired probe result=%v context=%v", err, deadlineCtx.Err())
+			}
+		case <-time.After(3 * time.Second):
+			t.Fatal("naturally expired probe exceeded cleanup budget")
+		}
+	}()
+	checkReleased()
+	if err := platform.ValidateSameDatabase(ctx, first, second); err != nil {
+		t.Fatal("pools unusable after natural deadline", err)
+	}
+	checkReleased()
 }
 
 func TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed(t *testing.T) {
