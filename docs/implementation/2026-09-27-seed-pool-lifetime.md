@@ -1,7 +1,8 @@
 # Seed-pool lifetime correction evidence
 
-Status: author SPL01/02 and independent source PASS; root full regression
-SPL04, WSD04 and parent LRC06 are pending. Main remains `519fb16`.
+Status: author/root SPL01/02 and independent source PASS; root full regression
+PASS. Final independent SPL04/WSD04/LRC06 sign-off is pending. Main remains
+`519fb16` until that review completes.
 
 ## Cause and correction
 
@@ -47,7 +48,18 @@ It does not retroactively measure every connection in the old failure.
   pass. No capacity, deadline or queue-control change.
 - Independent source review (gpt-6-astra/high): no concrete P0/P1/P2. Author
   test-owned container listing was empty after the run; no customer resource
-  was removed. Root `c7d2703` full PG/race/vet is running separately, not yet PASS.
+  was removed. Independent PG evidence review also verified the 20 role counts
+  and unchanged maintenance/foreign assertions.
+- Root `c7d2703` `bash scripts/dev/test-local.sh`: actual exit 0, 568 top-level
+  PASS / 0 FAIL / 0 SKIP, full race/vet; foundation 438.466s, Meta 2.489s.
+  Log `/Volumes/data/output/local-recovery-root-full2-20260927.log`, SHA256
+  `1eed047ef2dad34a5fae3af0064a44fdc4721bef058b3ce4a152559dfa552821`.
+  Original TwoWay passes 9.24s with the same 20 role observations. Across the
+  corrected Meta and legacy sites, 70 seed-role release checks pass. Full
+  startup-failure, restart, legacy isolation and all five LRC tests pass too.
+  `docker ps -a --filter label=livecommerce.fixture` returns no containers.
+  Later commits during this run changed only docs; final independent review
+  remains before merge.
 
 The failure and successful fix are local test-resource evidence, not production
 capacity sizing, public-provider qualification or whole-SaaS release acceptance.

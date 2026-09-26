@@ -2,9 +2,11 @@
 
 ## Current verdict
 
-**NOT_ACCEPTED overall.** Amendment 1 author and independent root recovery
-subsets pass. Full regression at `1fbd997` has one existing Meta worker-start
-failure; retain this stop line until investigated. Original contract `efd9d02`;
+**Final independent sign-off pending.** Amendment 1 author/root recovery subsets
+and root full regression now pass on source `c7d2703`; the earlier `1fbd997`
+worker-start failure and native `53300` follow-up remain recorded below. The
+test-only seed-pool lifetime correction passed at unchanged capacity.
+Original contract `efd9d02`;
 runner selector `5cda889`.
 This document records only [LRC01–06](../../contracts/local-recovery-v1.md).
 The preceding [LRI acceptance](2026-09-26-legacy-runtime-isolation-acceptance.md)
@@ -151,6 +153,20 @@ passed unit/source review, then the original scenario failed again with native
 SQLSTATE `53300` (too many connections). Connection ownership/lifetime is under
 investigation; full acceptance remains blocked.
 
+Root `c7d2703` full2 subsequently completed `bash scripts/dev/test-local.sh`
+with actual exit 0: **568 top-level PASS / 0 FAIL / 0 SKIP**, foundation
+438.466s, Meta integration 2.489s. Both full `-race -count=1` and subsequent
+`go vet ./...` completed. Log
+`/Volumes/data/output/local-recovery-root-full2-20260927.log`, SHA256
+`1eed047ef2dad34a5fae3af0064a44fdc4721bef058b3ce4a152559dfa552821`.
+LRC five tests pass again (native restore/cold-start 15.25s). Original Meta
+two-way maintenance passes 9.24s with all 20 seed-role native connections
+observed 1 → 0 at capacity 30 / reserved 0 / superuser-reserved 3. Legacy
+maintenance siblings pass too; 70 seed-role release observations total.
+Task-owned fixture listing is empty after actual exit. Only documentation
+changed after frozen source `c7d2703` during the run. Final independent
+source/evidence sign-off is pending; no failure history is removed.
+
 The three restricted native/catalog diagnostic files were copied unchanged
 (0600) into `/Volumes/data/output/local-recovery-evidence-20260927/`; their
 hashes are unchanged. Task-owned recovery container listing was empty after
@@ -171,7 +187,7 @@ Final test symbols were indexed and linked to the bootstrap/ACL rationale.
 | LRC03 roles/ACL/RLS/authorization/keys | PASS_LOCAL focused4, independent mutation controls |
 | LRC04 raw restore then idempotent migration/readiness | PASS_LOCAL focused4 |
 | LRC05 default-off and bounded restart | PASS_LOCAL focused4 |
-| LRC06 independent/root regression and cleanup | BLOCKED: full1 Meta startup failure; no merge acceptance |
+| LRC06 independent/root regression and cleanup | Root full2 568 PASS; final independent sign-off pending |
 
 Record actual commands, source SHA, exit code, elapsed observations, log path
 and SHA256. Retain failed attempts and root cause; a file or process starting

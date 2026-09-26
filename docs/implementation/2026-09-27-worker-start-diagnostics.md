@@ -1,7 +1,8 @@
 # Bounded worker-start diagnostic evidence
 
 Status: WSD01/02 source and unit acceptance PASS; WSD03 captured a native
-failure; WSD04/full regression and parent LRC06 remain BLOCKED.
+failure. Root full2 passes after the separate seed-pool fix; WSD04 and parent
+LRC06 final independent sign-off are pending.
 
 ## Source and ownership
 
@@ -49,15 +50,20 @@ closed-pool pattern in `legacy_runtime_isolation_test.go`.
 
 That comparison led to the [test-only lifetime correction](2026-09-27-seed-pool-lifetime.md)
 at `e60b8f6` / root `c7d2703`: author same-capacity original scenario and
-11-test subset pass with actual five-pool release observations. Full root
-regression is still pending; the safe diagnostic itself is not the cause fix.
+11-test subset pass with actual five-pool release observations. Root full2 on
+`c7d2703` also passes 568 tests, race and vet, actual exit 0. Log
+`/Volumes/data/output/local-recovery-root-full2-20260927.log`, SHA256
+`1eed047ef2dad34a5fae3af0064a44fdc4721bef058b3ce4a152559dfa552821`.
+Final independent sign-off is pending; the safe diagnostic itself is not the
+cause fix.
 
 ## Limits
 
 The original LRC full1 failure and this negative run are retained. This change
-does not itself fix the capacity failure or grant full acceptance. Fixture
+does not itself fix the capacity failure or grant production acceptance. Fixture
 listing was empty after this run; no customer resource was cleaned up.
 Buyer apps, API/BFF, catalog, checkout/payment source, migrations and browser
 tests remain unchanged versus main `519fb16`; the changed helper is called only
 by the three worker commands. Earlier order/payment browser evidence is reused,
-not called a new browser run. Full worker/process regression is still required.
+not called a new browser run. The full worker/process regression has now passed
+on `c7d2703`, with independent final review still required.
