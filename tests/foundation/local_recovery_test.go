@@ -114,11 +114,14 @@ func lrInspect(t *testing.T, c lrCluster) {
 	}
 }
 
-func lrTarget(t *testing.T, kind string) lrCluster {
+func lrTarget(t *testing.T, kind, bootstrap string) lrCluster {
 	t.Helper()
 	fixture(t) // Existing explicit local-PG permission gate.
 	name := "lc-local-recovery-" + kind + "-" + t04Tag()
-	role := "lr_boot_" + t04Tag()
+	role := bootstrap
+	if role == "" {
+		role = "lr_boot_" + t04Tag()
+	}
 	password := hex.EncodeToString(randomBytes(24))
 	if out := lrDocker(t, "ps", "-aq", "--filter", "name=^/"+name+"$"); out != "" {
 		t.Fatal("target name already exists")
@@ -169,7 +172,7 @@ func lrTarget(t *testing.T, kind string) lrCluster {
 
 func lrSourceFixture(t *testing.T) (lrCluster, *testFixture) {
 	t.Helper()
-	c := lrTarget(t, "source")
+	c := lrTarget(t, "source", "")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	if err := migrations.Apply(ctx, c.owner); err != nil {
@@ -205,6 +208,70 @@ func lrFileHash(t *testing.T, path string) (string, int64) {
 		t.Fatal(err)
 	}
 	return hex.EncodeToString(h.Sum(nil)), n
+}
+
+func lrSafeBootstrap(role string) bool {
+	if len(role) != len("lr_boot_")+12 || !strings.HasPrefix(role, "lr_boot_") {
+		return false
+	}
+	_, err := hex.DecodeString(strings.TrimPrefix(role, "lr_boot_"))
+	return err == nil
+}
+
+func lrRequireBootIdentity(sourceName, targetName string, sourceOID, targetOID int64) error {
+	if !lrSafeBootstrap(sourceName) || sourceName != targetName || sourceOID != 10 || targetOID != 10 {
+		return errors.New("bootstrap name/OID10 mismatch")
+	}
+	return nil
+}
+
+func lrDeriveRoles(raw []byte, bootstrap string) ([]byte, error) {
+	if !lrSafeBootstrap(bootstrap) {
+		return nil, errors.New("unsafe bootstrap role name")
+	}
+	statement := []byte("CREATE ROLE " + bootstrap + ";\n")
+	if bytes.Count(raw, []byte("CREATE ROLE "+bootstrap)) != 1 || bytes.Count(raw, statement) != 1 {
+		return nil, errors.New("bootstrap CREATE ROLE missing, malformed or duplicate")
+	}
+	start := bytes.Index(raw, statement)
+	if start < 0 || (start > 0 && raw[start-1] != '\n') {
+		return nil, errors.New("bootstrap CREATE ROLE is not one full line")
+	}
+	derived := make([]byte, 0, len(raw)-len(statement))
+	derived = append(derived, raw[:start]...)
+	derived = append(derived, raw[start+len(statement):]...)
+	if len(derived)+len(statement) != len(raw) || !bytes.Equal(raw[:start], derived[:start]) || !bytes.Equal(raw[start+len(statement):], derived[start:]) {
+		return nil, errors.New("roles transform changed unrelated bytes")
+	}
+	return derived, nil
+}
+
+func TestLocalRecoveryBootstrapRolesTransform(t *testing.T) {
+	role := "lr_boot_123456abcdef"
+	raw := []byte("-- roles\nCREATE ROLE " + role + ";\nALTER ROLE " + role + " WITH SUPERUSER LOGIN;\nGRANT a TO b GRANTED BY " + role + ";\n")
+	want := []byte("-- roles\nALTER ROLE " + role + " WITH SUPERUSER LOGIN;\nGRANT a TO b GRANTED BY " + role + ";\n")
+	got, err := lrDeriveRoles(raw, role)
+	if err != nil || !bytes.Equal(got, want) {
+		t.Fatal("exact bootstrap CREATE transform failed", err)
+	}
+	for _, invalid := range [][]byte{
+		bytes.Replace(raw, []byte("CREATE ROLE "+role+";\n"), nil, 1),
+		append(append([]byte(nil), raw...), []byte("CREATE ROLE "+role+";\n")...),
+		bytes.Replace(raw, []byte("CREATE ROLE "+role+";\n"), []byte("CREATE ROLE other_boot;\n"), 1),
+		bytes.Replace(raw, []byte("CREATE ROLE "+role+";\n"), []byte("CREATE ROLE "+role+"; -- altered\n"), 1),
+	} {
+		if _, err := lrDeriveRoles(invalid, role); err == nil {
+			t.Fatal("unsafe roles artifact accepted")
+		}
+	}
+	for _, test := range []struct {
+		source, target string
+		a, b           int64
+	}{{role, role, 10, 11}, {role, "lr_boot_000000000000", 10, 10}, {"other_boot", role, 10, 10}} {
+		if lrRequireBootIdentity(test.source, test.target, test.a, test.b) == nil {
+			t.Fatal("wrong bootstrap name/OID accepted")
+		}
+	}
 }
 
 func lrDump(t *testing.T, c lrCluster, path string, args ...string) (string, int64, time.Duration) {
@@ -415,6 +482,16 @@ func lrMetaUnrelated(t *testing.T, pool *pgxpool.Pool, eventID string, jobID int
 
 func lrDatabaseBoundary(t *testing.T, source, target lrCluster) {
 	t.Helper()
+	var sourceOID, targetOID int64
+	if err := lrScan(source.owner, `SELECT oid::bigint FROM pg_roles WHERE rolname=$1`, []any{&sourceOID}, source.role); err != nil {
+		t.Fatal(err)
+	}
+	if err := lrScan(target.owner, `SELECT oid::bigint FROM pg_roles WHERE rolname=$1`, []any{&targetOID}, target.role); err != nil {
+		t.Fatal(err)
+	}
+	if err := lrRequireBootIdentity(source.role, target.role, sourceOID, targetOID); err != nil {
+		t.Fatal(err)
+	}
 	query := `SELECT system_identifier::text FROM pg_control_system()`
 	var sourceID, targetID string
 	if err := lrScan(source.owner, query, []any{&sourceID}); err != nil {
@@ -426,20 +503,21 @@ func lrDatabaseBoundary(t *testing.T, source, target lrCluster) {
 	if source.id == target.id || source.port == target.port || sourceID == targetID {
 		t.Fatal("source and target are not independent PostgreSQL clusters")
 	}
-	metadata := `SELECT encoding,datcollate,datctype,datlocprovider,to_jsonb(d)->>'datlocale',datacl IS NULL,
+	metadata := `SELECT encoding,datcollate,datctype,datlocprovider,to_jsonb(d)->>'datlocale',datacl IS NULL,pg_get_userbyid(datdba),
 		(SELECT count(*) FROM pg_db_role_setting WHERE setdatabase=d.oid) FROM pg_database d WHERE datname='lc_foundation_test'`
 	var sEnc, bEnc int
 	var sColl, bColl, sType, bType, sProvider, bProvider string
 	var sLocale, bLocale *string
 	var sACL, bACL bool
+	var sOwner, bOwner string
 	var sSettings, bSettings int64
-	if err := lrScan(source.owner, metadata, []any{&sEnc, &sColl, &sType, &sProvider, &sLocale, &sACL, &sSettings}); err != nil {
+	if err := lrScan(source.owner, metadata, []any{&sEnc, &sColl, &sType, &sProvider, &sLocale, &sACL, &sOwner, &sSettings}); err != nil {
 		t.Fatal(err)
 	}
-	if err := lrScan(target.owner, metadata, []any{&bEnc, &bColl, &bType, &bProvider, &bLocale, &bACL, &bSettings}); err != nil {
+	if err := lrScan(target.owner, metadata, []any{&bEnc, &bColl, &bType, &bProvider, &bLocale, &bACL, &bOwner, &bSettings}); err != nil {
 		t.Fatal(err)
 	}
-	if !sACL || !bACL || sSettings != 0 || bSettings != 0 || sEnc != bEnc || sColl != bColl || sType != bType || sProvider != bProvider || !reflect.DeepEqual(sLocale, bLocale) {
+	if !sACL || !bACL || sSettings != 0 || bSettings != 0 || sEnc != bEnc || sColl != bColl || sType != bType || sProvider != bProvider || !reflect.DeepEqual(sLocale, bLocale) || sOwner != source.role || bOwner != target.role || sOwner != bOwner {
 		t.Fatal("database provisioning exception exceeded default ACL/settings or locale boundary")
 	}
 }
@@ -452,6 +530,17 @@ func lrEmpty(t *testing.T, c lrCluster) bool {
 		t.Fatal(err)
 	}
 	return n == 0
+}
+
+func lrCanConnect(dsn string) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	pool, err := pgxpool.New(ctx, dsn)
+	if err != nil {
+		return false
+	}
+	defer pool.Close()
+	return pool.Ping(ctx) == nil
 }
 
 func lrPassword(t *testing.T, target lrCluster, sourceDSN string) string {
@@ -565,6 +654,30 @@ func TestLocalRecoveryLogicalRestoreAndColdStart(t *testing.T) {
 	}
 	rolesHash, rolesBytes, rolesElapsed := lrDump(t, source, rolesPath, "pg_dumpall", "--roles-only", "--no-role-passwords", "-U", source.role, "-l", "postgres")
 	archiveHash, archiveBytes, archiveElapsed := lrDump(t, source, archivePath, "pg_dump", "-Fc", "-U", source.role, "-d", "lc_foundation_test")
+	rawRoles, err := os.ReadFile(rolesPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	derivedRoles, err := lrDeriveRoles(rawRoles, source.role)
+	if err != nil {
+		t.Fatal(err)
+	}
+	derivedPath := filepath.Join(artifactDir, "roles-bootstrap-existing.sql")
+	if err := os.WriteFile(derivedPath, derivedRoles, 0600); err != nil {
+		t.Fatal(err)
+	}
+	derivedHash, derivedBytes := lrFileHash(t, derivedPath)
+	var bootstrapAlterSeen, bootstrapPasswordClause bool
+	for _, line := range bytes.Split(rawRoles, []byte{'\n'}) {
+		if bytes.HasPrefix(line, []byte("ALTER ROLE "+source.role+" WITH ")) {
+			bootstrapAlterSeen = true
+			bootstrapPasswordClause = bytes.Contains(line, []byte("PASSWORD"))
+		}
+	}
+	if !bootstrapAlterSeen {
+		t.Fatal("native roles dump omitted bootstrap attributes")
+	}
+	t.Logf("native bootstrap ALTER password-clause-present=%t; derived roles bytes=%d sha256=%s", bootstrapPasswordClause, derivedBytes, derivedHash)
 	archiveFile, err := os.Open(archivePath)
 	if err != nil {
 		t.Fatal(err)
@@ -575,12 +688,12 @@ func TestLocalRecoveryLogicalRestoreAndColdStart(t *testing.T) {
 		t.Fatal("native archive TOC incomplete")
 	}
 	t.Logf("native dump roles bytes=%d sha256=%s elapsed=%s; archive bytes=%d sha256=%s elapsed=%s", rolesBytes, rolesHash, rolesElapsed, archiveBytes, archiveHash, archiveElapsed)
-	target := lrTarget(t, "target")
+	target := lrTarget(t, "target", source.role)
 	lrDatabaseBoundary(t, source, target)
 	if !lrEmpty(t, target) {
 		t.Fatal("target was not fresh before restore")
 	}
-	sourceBeforeGuards, targetBeforeGuards := lrSnapshot(t, source.owner, ""), lrSnapshot(t, target.owner, target.role)
+	sourceBeforeGuards, targetBeforeGuards := lrSnapshot(t, source.owner, ""), lrSnapshot(t, target.owner, "")
 	if err := func() error { wrong := target; wrong.id = source.id; return lrCheckTarget(wrong, target) }(); err == nil {
 		t.Fatal("wrong-target guard accepted source container")
 	}
@@ -594,13 +707,44 @@ func TestLocalRecoveryLogicalRestoreAndColdStart(t *testing.T) {
 	if lrArtifactOK(changed, archiveHash) {
 		t.Fatal("changed archive hash accepted")
 	}
+	changedRoles := filepath.Join(artifactDir, "changed-roles.sql")
+	if err := lrCopyAndChange(derivedPath, changedRoles); err != nil {
+		t.Fatal(err)
+	}
+	if lrArtifactOK(changedRoles, derivedHash) {
+		t.Fatal("changed derived roles hash accepted")
+	}
 	lrAssertEqual(t, sourceBeforeGuards, lrSnapshot(t, source.owner, ""), "negative source guards")
-	lrAssertEqual(t, targetBeforeGuards, lrSnapshot(t, target.owner, target.role), "negative target guards")
+	lrAssertEqual(t, targetBeforeGuards, lrSnapshot(t, target.owner, ""), "negative target guards")
 	lrInspect(t, target)
 	if err := lrCheckTarget(target, target); err != nil {
 		t.Fatal(err)
 	}
-	rolesRestore := lrRestoreInput(t, target, rolesPath, "psql", "-X", "--set", "ON_ERROR_STOP=1", "-U", target.role, "-d", "lc_foundation_test")
+	if !lrArtifactOK(rolesPath, rolesHash) || !lrArtifactOK(derivedPath, derivedHash) || !lrArtifactOK(archivePath, archiveHash) {
+		t.Fatal("native backup artifact changed before restore")
+	}
+	currentRaw, err := os.ReadFile(rolesPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rederived, err := lrDeriveRoles(currentRaw, source.role)
+	if err != nil || !bytes.Equal(rederived, derivedRoles) {
+		t.Fatal("derived roles provenance changed before restore", err)
+	}
+	held, err := target.owner.Acquire(ctx)
+	if err != nil {
+		t.Fatal("target bootstrap connection unavailable before globals restore", err)
+	}
+	defer held.Release()
+	rolesRestore := lrRestoreInput(t, target, derivedPath, "psql", "-X", "--set", "ON_ERROR_STOP=1", "-U", target.role, "-d", "lc_foundation_test")
+	if !lrCanConnect(target.dsn) {
+		if _, err := held.Exec(ctx, `ALTER ROLE `+pgx.Identifier{target.role}.Sanitize()+` PASSWORD '`+target.password+`'`); err != nil {
+			t.Fatal("existing authenticated bootstrap connection could not reestablish independent password", err)
+		}
+	}
+	if !lrCanConnect(target.dsn) || lrCanConnect(roleURL(t, target.dsn, target.role, source.password)) {
+		t.Fatal("recovered bootstrap accepted source password or rejected independent target password")
+	}
 	archiveRestore := lrRestoreInput(t, target, archivePath, "pg_restore", "--single-transaction", "--exit-on-error", "-U", target.role, "-d", "lc_foundation_test")
 	t.Logf("native restore roles=%s archive=%s", rolesRestore, archiveRestore)
 	if lrEmpty(t, target) {
@@ -609,8 +753,8 @@ func TestLocalRecoveryLogicalRestoreAndColdStart(t *testing.T) {
 	if err := lrCheckTarget(target, target); err == nil {
 		t.Fatal("nonempty target accepted for a second restore")
 	}
-	targetRows := lrSnapshot(t, target.owner, target.role)
-	lrAssertEqual(t, targetRows, lrSnapshot(t, target.owner, target.role), "nonempty target guard")
+	targetRows := lrSnapshot(t, target.owner, "")
+	lrAssertEqual(t, targetRows, lrSnapshot(t, target.owner, ""), "nonempty target guard")
 	lrAssertEqual(t, sourceRows, targetRows, "raw restore")
 	if err := migrations.Apply(ctx, target.owner); err != nil {
 		t.Fatal("first restored Apply", err)
@@ -618,7 +762,7 @@ func TestLocalRecoveryLogicalRestoreAndColdStart(t *testing.T) {
 	if err := migrations.Apply(ctx, target.owner); err != nil {
 		t.Fatal("second restored Apply", err)
 	}
-	lrAssertEqual(t, targetRows, lrSnapshot(t, target.owner, target.role), "idempotent Apply")
+	lrAssertEqual(t, targetRows, lrSnapshot(t, target.owner, ""), "idempotent Apply")
 	var tenant, store, keyID string
 	var nonce, ciphertext []byte
 	if err := lrScan(target.owner, `SELECT e.tenant_id::text,e.store_id::text,b.key_id,b.nonce,b.ciphertext FROM meta_inbox.events e JOIN meta_private.event_bodies b ON b.event_id=e.id WHERE e.id=$1`, []any{&tenant, &store, &keyID, &nonce, &ciphertext}, pending.id); err != nil {
@@ -698,7 +842,7 @@ func TestLocalRecoveryLogicalRestoreAndColdStart(t *testing.T) {
 		t.Fatal("tampered restored guard did not fail closed")
 	}
 	lrExec(t, target.owner, `ALTER TABLE river_meta.river_job ENABLE TRIGGER meta_job_family`)
-	lrAssertEqual(t, targetRows, lrSnapshot(t, target.owner, target.role), "guard reenabled")
+	lrAssertEqual(t, targetRows, lrSnapshot(t, target.owner, ""), "guard reenabled")
 	var dbOwner, dbCreate, dbConnect, canAssume bool
 	mainURL, err := url.Parse(mainDSN)
 	if err != nil {
@@ -727,7 +871,7 @@ func TestLocalRecoveryLogicalRestoreAndColdStart(t *testing.T) {
 	_ = listener.Close()
 	api := mrLaunch(t, apiBinary, "local-recovery-api", []string{"LISTEN_ADDR=" + address, "DATABASE_URL=" + mainDSN, "COMMERCE_META_WEBHOOK_ENABLED=0", "COMMERCE_BUYER_ENABLED=0", "COMMERCE_IDENTITY_ENABLED=0"})
 	lrHTTPReady(t, api, address)
-	lrAssertEqual(t, targetRows, lrSnapshot(t, target.owner, target.role), "disabled cold start")
+	lrAssertEqual(t, targetRows, lrSnapshot(t, target.owner, ""), "disabled cold start")
 	mrStop(t, api, syscall.SIGTERM, true)
 	mrLogNoSecrets(t, api, mainDSN, workerDSN, consumerDSN)
 	for _, schema := range []string{"river", "river_meta", "river_payment", "river_expiry"} {
@@ -739,7 +883,7 @@ func TestLocalRecoveryLogicalRestoreAndColdStart(t *testing.T) {
 			t.Fatalf("restored %s sequence reused an admitted job ID", schema)
 		}
 	}
-	foreignBeforeMeta := lrSnapshot(t, target.owner, target.role)
+	foreignBeforeMeta := lrSnapshot(t, target.owner, "")
 	unrelatedBeforeMeta := lrMetaUnrelated(t, target.owner, pending.id, pending.job)
 	// The same restored ciphertext is attempted with the right ID/wrong bytes,
 	// then with the separately retained correct key. No new webhook is posted.
@@ -831,7 +975,7 @@ func TestLocalRecoveryLogicalRestoreAndColdStart(t *testing.T) {
 	if lrCount(t, target.owner, `SELECT count(*) FROM social.messages WHERE event_id=$1`, pending.id) != 1 || lrCount(t, target.owner, `SELECT count(*) FROM meta_inbox.audit_events WHERE event_id=$1 AND action='processed'`, pending.id) != 1 {
 		t.Fatal("restart replayed restored event")
 	}
-	lrAssertForeignUnchanged(t, foreignBeforeMeta, lrSnapshot(t, target.owner, target.role))
+	lrAssertForeignUnchanged(t, foreignBeforeMeta, lrSnapshot(t, target.owner, ""))
 	if !reflect.DeepEqual(unrelatedBeforeMeta, lrMetaUnrelated(t, target.owner, pending.id, pending.job)) || lrCount(t, target.owner, `SELECT count(*) FROM meta_inbox.events WHERE id=$1 AND tenant_id=$2 AND store_id=$3`, other.id, sourceFixture.tenantB, sourceFixture.storeB) != 1 {
 		t.Fatal("unrelated tenant Meta state changed during selected replay")
 	}
