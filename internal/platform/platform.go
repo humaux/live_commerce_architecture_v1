@@ -179,7 +179,7 @@ func ValidateBuyerIssuerPool(ctx context.Context, pool *pgxpool.Pool) error {
 
 func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority string) error {
 	var sameLogin, dsnUserMatch, superuser, bypassRLS, roleAdmin, databaseCreator, replication, objectOwner, runtimeMember, authMember, identityMember, buyerRuntimeMember, buyerIssuerMember, workerMember, checkoutMember, hostedMember, hostedUsage, hostedSet, checkoutWriterMember, canSetPrivileged bool
-	var metaIngress, metaRegistrar, metaCurator, metaWriter, metaUsage bool
+	var metaIngress, metaRegistrar, metaCurator, metaWriter, metaUsage, metaSet bool
 	err := pool.QueryRow(ctx, `
 		SELECT session_user=current_user, session_user=$1, r.rolsuper, r.rolbypassrls, r.rolcreaterole, r.rolcreatedb, r.rolreplication,
 		       (EXISTS (
@@ -209,6 +209,7 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 		       coalesce(pg_has_role(session_user, to_regrole('commerce_meta_curator'), 'MEMBER'),false),
 		       coalesce(pg_has_role(session_user, to_regrole('commerce_meta_writer'), 'MEMBER'),false),
 		       coalesce(pg_has_role(session_user, to_regrole('commerce_meta_ingress'), 'USAGE'),false),
+		       coalesce(pg_has_role(session_user, to_regrole('commerce_meta_ingress'), 'SET'),false),
 		       EXISTS (
 			   SELECT 1 FROM pg_roles candidate
 			   WHERE (candidate.rolsuper OR candidate.rolbypassrls OR candidate.rolcreaterole OR candidate.rolcreatedb OR candidate.rolreplication
@@ -226,7 +227,7 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 			     AND pg_has_role(session_user, candidate.oid, 'SET')
 		       )
 		FROM pg_roles r WHERE r.rolname = session_user`, pool.Config().ConnConfig.User).
-		Scan(&sameLogin, &dsnUserMatch, &superuser, &bypassRLS, &roleAdmin, &databaseCreator, &replication, &objectOwner, &runtimeMember, &authMember, &identityMember, &buyerRuntimeMember, &buyerIssuerMember, &workerMember, &checkoutMember, &hostedMember, &hostedUsage, &hostedSet, &checkoutWriterMember, &metaIngress, &metaRegistrar, &metaCurator, &metaWriter, &metaUsage, &canSetPrivileged)
+		Scan(&sameLogin, &dsnUserMatch, &superuser, &bypassRLS, &roleAdmin, &databaseCreator, &replication, &objectOwner, &runtimeMember, &authMember, &identityMember, &buyerRuntimeMember, &buyerIssuerMember, &workerMember, &checkoutMember, &hostedMember, &hostedUsage, &hostedSet, &checkoutWriterMember, &metaIngress, &metaRegistrar, &metaCurator, &metaWriter, &metaUsage, &metaSet, &canSetPrivileged)
 	if err != nil {
 		return fmt.Errorf("validate runtime role: %w", err)
 	}
@@ -247,7 +248,7 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 		roleValid = checkoutMember && hostedMember && hostedUsage && !hostedSet && roleCount == 1
 	}
 	if authority == "meta_ingress" {
-		roleValid = roleValid && metaUsage
+		roleValid = roleValid && metaUsage && !metaSet
 	}
 	// A privileged login cannot launder its authority with startup SET ROLE:
 	// RESET ROLE would recover the session_user's capabilities after admission.
