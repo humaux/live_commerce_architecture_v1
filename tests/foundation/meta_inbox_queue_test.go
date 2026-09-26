@@ -90,7 +90,7 @@ func TestMetaInboxPoolAuthorityIsExclusiveBothWays(t *testing.T) {
 	m := miSetup(t)
 	ctx := context.Background()
 	role := pgx.Identifier{m.ingress.Config().ConnConfig.User}.Sanitize()
-	for _, other := range []string{"commerce_runtime", "commerce_worker", "commerce_identity", "commerce_buyer_runtime", "commerce_buyer_issuer", "commerce_checkout_runtime", "commerce_hosted_runtime", "commerce_meta_registrar", "commerce_meta_curator", "commerce_meta_writer"} {
+	for _, other := range []string{"commerce_runtime", "commerce_worker", "commerce_identity", "commerce_buyer_runtime", "commerce_buyer_issuer", "commerce_checkout_runtime", "commerce_hosted_runtime", "commerce_meta_registrar", "commerce_meta_curator", "commerce_meta_writer", "pg_read_all_data", "pg_write_all_data", "pg_read_server_files", "pg_write_server_files", "pg_execute_server_program", "pg_signal_backend"} {
 		t.Run(other, func(t *testing.T) {
 			mustExec(t, m.f.owner, `GRANT `+pgx.Identifier{other}.Sanitize()+` TO `+role+` WITH INHERIT TRUE, SET FALSE`)
 			defer mustExec(t, m.f.owner, `REVOKE `+pgx.Identifier{other}.Sanitize()+` FROM `+role)
