@@ -79,13 +79,14 @@
   .orders-table > tbody > tr:not(.orders-detail-row) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 9px 13px; border-top: 1px solid var(--line); }
   .orders-table > tbody > tr:first-child { border-top: 0; }
   .orders-table > tbody > tr > td { display: flex; align-items: center; justify-content: space-between; gap: 7px; width: auto; height: auto; padding: 5px 3px; border: 0; font-size: 12px; min-width: 0; }
+  .orders-table > tbody > tr:not(.orders-detail-row) > td { width: 100%; }
   .orders-table > tbody > tr > td::before { content: attr(data-label); color: var(--orders-muted); font-size: 11px; }
   .orders-table > tbody > tr > td:first-child { grid-column: 1 / -1; }
   .orders-table > tbody > tr > td:first-child::before { display: none; }
   .orders-table > tbody > tr > td:first-child button { min-height: 44px; gap: 10px; }
   .orders-table > tbody > tr > td:nth-child(2), .orders-table > tbody > tr > td:nth-child(3) { grid-column: 1 / -1; }
   .orders-table > tbody > tr > td:nth-child(4), .orders-table > tbody > tr > td:nth-child(5) { display: grid; gap: 5px; justify-content: start; }
-  .orders-table > tbody > .orders-detail-row > td { display: block; width: 100%; }
+  .orders-table > tbody > .orders-detail-row > td:first-child { display: block; width: 100%; }
   .orders-table > tbody > .orders-detail-row > td::before { display: none; }
   .orders-expanded { display: block; padding: 20px 15px; }
   .orders-expanded > div + div { border-left: 0; border-top: 1px solid var(--line); padding: 20px 0 0; margin-top: 20px; }
