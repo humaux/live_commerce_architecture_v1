@@ -7,7 +7,8 @@ until this contract's real PostgreSQL gates and later operational gates pass.
 ## Decisions and trust boundary
 
 - Reuse pgx, PostgreSQL, River `InsertTx`, standard-library AES-256-GCM. No
-  second queue, broker, generic conversation table or provider SDK.
+  second queue system/broker, generic conversation table or provider SDK;
+  the dedicated Meta queue is a name inside the existing River system.
 - `integration.bindings` is merchant self-assertion, not asset ownership.
   Add a trusted route keyed by configured `(app_id, object, asset_id)` plus
   global `(object, asset_id)` ownership. The first accepted tenant/store is
@@ -100,9 +101,14 @@ migration/ACL changes; never edit an applied migration. Proposed schemas:
 
 No external message/comment IDs or payload text in global routing/job metadata;
 use protocol hashes/internal IDs. Raw/event timestamps are evidence only, never
-ownership or consent proof. Retention defaults to 24h raw/quarantine and 7d scoped
-event body; permanent minimal receipts survive body expiry. An explicit bounded
-purge operation removes expired ciphertext, not dedupe or event/job metadata.
+ownership or consent proof. Retention eligibility defaults to 24h raw/quarantine
+and 7d scoped event body; permanent minimal receipts survive body expiry. **Age
+alone never permits purge**: a pending processing job or unresolved quarantine
+retains its recoverable payload until consumed/reviewed, or a specifically
+authorized audited terminal-retention outcome is recorded. Raw batch purge also
+requires every linked event/version to have reached such a terminal state.
+Overdue pending payloads require operations alerts and resolution, not silent
+expiry. A bounded purge removes only eligible ciphertext, not dedupe/job metadata.
 Retention scheduling and worker processing must be implemented before public
 mount; an expiry column alone is not proof of deletion.
 
@@ -166,7 +172,7 @@ reanimate bodies/jobs after cleanup. No job backfill for this brand-new producer
 | MI04 dedupe | Concurrent same body and rebatched same MID produce one canonical event/job; changed payload quarantines; repeat after revoke/expiry/body purge/job prune returns history without rehome |
 | MI05 routing fence | Revocation/binding version/tenant/store disable/expiry races and lock waits fail closed; immutable ownership; unknown keys durably quarantined |
 | MI06 HTTP durability | Real handler+PG: forced commit failure no 200; committed response lost then retry adds nothing; queue args exact; existing MWP tests retained |
-| MI07 retention | Bounded purge removes only expired ciphertext; permanent receipts and future retry behavior unchanged; no unauthorized raw/quarantine reader |
+| MI07 retention | Bounded purge removes only expired AND terminal ciphertext; overdue jobs/unresolved quarantine retain recoverable data; raw batch waits for all members; permanent receipts/retries unchanged; no unauthorized raw/quarantine reader |
 | Regression | Root isolated PG18 + complete Go race/vet; existing queue/role/payment/checkout gates unchanged; source+independent reviewer zero open P0/P1 |
 
 Excluded from this increment, not from full SaaS delivery: actual OAuth/proof
