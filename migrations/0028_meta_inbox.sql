@@ -373,9 +373,23 @@ BEGIN
  RETURN EXISTS(SELECT 1 FROM meta_inbox.events e WHERE e.id=p_event AND e.completed AND e.terminal_at IS NOT NULL
   AND NOT EXISTS(SELECT 1 FROM river.river_job j WHERE j.id=e.job_id AND j.state NOT IN ('completed','cancelled','discarded')));
 END $$;
+-- Hold a terminal job's row through deletion. A concurrent rescue/retry must
+-- not change the eligibility observed by the deleting transaction. SKIP LOCKED
+-- retains ciphertext when a worker owns the row; a pruned job needs no lock.
+CREATE FUNCTION meta_inbox.lock_purgeable(p_event uuid) RETURNS boolean
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE e meta_inbox.events%ROWTYPE; job_state text;
+BEGIN
+ SELECT * INTO e FROM meta_inbox.events WHERE id=p_event AND completed AND terminal_at IS NOT NULL;
+ IF e.id IS NULL THEN RETURN false; END IF;
+ IF e.job_id IS NULL THEN RETURN true; END IF;
+ SELECT state::text INTO job_state FROM river.river_job WHERE id=e.job_id FOR SHARE SKIP LOCKED;
+ IF NOT FOUND THEN RETURN NOT EXISTS(SELECT 1 FROM river.river_job WHERE id=e.job_id); END IF;
+ RETURN job_state IN ('completed','cancelled','discarded');
+END $$;
 CREATE FUNCTION meta_inbox.purge_expired(p_limit integer) RETURNS integer
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE candidate record; removed integer:=0; found_id uuid;
+DECLARE candidate record; removed integer:=0; found_id uuid; member_id uuid; eligible boolean;
 BEGIN
  PERFORM meta_inbox.require_authority('commerce_meta_curator');
  IF p_limit IS NULL OR p_limit NOT BETWEEN 1 AND 1000 THEN RAISE EXCEPTION 'invalid meta purge limit' USING ERRCODE='22023'; END IF;
@@ -394,13 +408,23 @@ BEGIN
   IF candidate.class='raw' THEN
    SELECT batch_id INTO found_id FROM meta_private.raw_bodies r WHERE batch_id=candidate.id AND expires_at<=clock_timestamp()
     AND NOT EXISTS(SELECT 1 FROM meta_inbox.batch_events m WHERE m.batch_id=r.batch_id AND NOT meta_inbox.purgeable(m.event_id)) FOR UPDATE SKIP LOCKED;
-   IF found_id IS NOT NULL THEN DELETE FROM meta_private.raw_bodies WHERE batch_id=found_id; END IF;
+   IF found_id IS NOT NULL THEN
+    eligible:=true;
+    FOR member_id IN SELECT DISTINCT event_id FROM meta_inbox.batch_events WHERE batch_id=found_id ORDER BY event_id LOOP
+     IF NOT meta_inbox.lock_purgeable(member_id) THEN eligible:=false; EXIT; END IF;
+    END LOOP;
+    IF eligible THEN DELETE FROM meta_private.raw_bodies WHERE batch_id=found_id; ELSE found_id:=NULL; END IF;
+   END IF;
   ELSIF candidate.class='event' THEN
    SELECT event_id INTO found_id FROM meta_private.event_bodies WHERE event_id=candidate.id AND expires_at<=clock_timestamp() AND meta_inbox.purgeable(event_id) FOR UPDATE SKIP LOCKED;
-   IF found_id IS NOT NULL THEN DELETE FROM meta_private.event_bodies WHERE event_id=found_id; END IF;
+   IF found_id IS NOT NULL THEN
+    IF meta_inbox.lock_purgeable(found_id) THEN DELETE FROM meta_private.event_bodies WHERE event_id=found_id; ELSE found_id:=NULL; END IF;
+   END IF;
   ELSE
    SELECT event_id INTO found_id FROM meta_private.quarantine_bodies WHERE event_id=candidate.id AND expires_at<=clock_timestamp() AND meta_inbox.purgeable(event_id) FOR UPDATE SKIP LOCKED;
-   IF found_id IS NOT NULL THEN DELETE FROM meta_private.quarantine_bodies WHERE event_id=found_id; END IF;
+   IF found_id IS NOT NULL THEN
+    IF meta_inbox.lock_purgeable(found_id) THEN DELETE FROM meta_private.quarantine_bodies WHERE event_id=found_id; ELSE found_id:=NULL; END IF;
+   END IF;
   END IF;
   IF found_id IS NOT NULL THEN removed:=removed+1; END IF;
  END LOOP;
