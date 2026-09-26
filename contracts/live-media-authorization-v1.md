@@ -31,6 +31,16 @@ Writer policies/grants permit only the operations needed below, not DELETE.
 Fixed search_path `pg_catalog`; all non-catalog relations/functions qualified.
 Explicitly REVOKE function EXECUTE FROM PUBLIC after creation.
 
+Existing runtime/worker/buyer/Meta pool admission must also reject reachable
+media registrar/writer authority: optional-role MEMBER/USAGE/SET checks plus
+effective EXECUTE on these two fixed functions for session_user and roles it can
+inherit or SET. Use `to_regrole`/`to_regprocedure` so a pre-0034 database keeps its
+existing admission behavior. This closes the non-owner registrar mixed-role gap
+in `platform.validatePoolAuthority`; ownership checks alone cannot see it.
+Negative startup tests cover mixed registrar membership, SET-only custom-role
+EXECUTE, direct EXECUTE and PUBLIC EXECUTE grants. No broad new table scanner or
+new media runtime is introduced; table/RLS isolation is tested directly below.
+
 ### Register
 
 `live.register_prepared_media(p_spec jsonb, p_nonce bytea, p_ciphertext bytea)
@@ -148,7 +158,7 @@ write. UUID/number/date parsing failures must not echo the offending value.
 |Gate|Required proof|
 |---|---|
 |LMA01|Valid one- and two-destination registration persists exact typed identity/order/envelope and DB provenance; exact idempotent replay; outer rollback and invalid second child leave no partial rows|
-|LMA02|Real registrar login only fixed functions; PUBLIC/runtime/ordinary worker/Meta/payment/anonymous cannot register, revoke, read ciphertext or mutate the tables; nobody inherits private writer; functions fixed owner/search_path and no public EXECUTE|
+|LMA02|Real registrar login only fixed functions; PUBLIC/runtime/ordinary worker/Meta/payment/anonymous cannot register, revoke, read ciphertext or mutate the tables; nobody inherits private writer; functions fixed owner/search_path and no public EXECUTE; shared startup guard rejects mixed/reachable/direct/PUBLIC media function authority|
 |LMA03|Reject LIVE, fake evidence mode, unknown/missing/null/wrong-type fields, zero IDs, duplicate/mismatched/cross-store/cross-tenant/disabled/stale bindings, wrong draft version/aspect, invalid deadline/caps/envelope; no writes/no secret echo|
 |LMA04|Concurrent exact registrations serialize to one result; changed ID payload cannot overwrite; observed lock wait followed by deadline expiry or binding/version change rejects; no sleeps used as proof the waiter blocked|
 |LMA05|Exact scoped revoke append-only/idempotent; wrong scope denied; changed reason conflicts; subsequent register replay cannot revive; revoked/expired/disabled references still revocable; existing LSP/core/Meta/payment regression stays green|
