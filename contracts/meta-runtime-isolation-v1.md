@@ -62,6 +62,11 @@ Source checks use the pinned dependency, not an assumed latest API.
 Integrator owns all migrations and shared platform code. Preserve checksums of
 0001–0030 and prior post-River SQL. Add `0031_meta_river_isolation.sql` for role/
 schema preparation and `post_river/0004_meta_river_isolation.sql` for cutover.
+The 0031 business transaction must also replace `runtime_ready()` with a
+fail-closed `false` predicate. No grant enabling ingress or lifecycle use of
+the new lane takes effect until the final cutover transaction. An interrupted
+Apply therefore stays non-ready, including when all source jobs are absent;
+never automatically restore old readiness after an error.
 `migrations.Apply` retains its advisory-lock and timeout design: business SQL,
 upstream `river` migration, upstream `river_meta` migration, then application
 post-River transaction. Both upstream ledgers are distinct; no replay/reset.
@@ -69,15 +74,22 @@ Scope grants to each role/schema explicitly; do not grant all schemas or use
 cross-schema default privileges. An interrupted upstream phase is resumable;
 it must not expose a partly migrated Meta runtime as ready.
 
-The cutover is one bounded owner transaction. Acquire locks in a documented
-fixed order on source/destination job and queue tables before inspecting them.
-Recheck under those locks; do not rely on a prior count or runtime flag.
+The cutover is one bounded owner transaction. Before inspecting rows, lock
+`river.river_job`, `river.river_queue`, `river_meta.river_job`, then
+`river_meta.river_queue` in that fixed order with ACCESS EXCLUSIVE, excluding
+concurrent DML/claims/maintenance during cutover. Recheck under those locks;
+do not rely on a prior count or runtime flag. This may briefly block old-schema
+workers, so any production migration needs explicit impact approval; local
+acceptance is not approval to interrupt customers.
 
-1. Operational prerequisite: stop old Meta ingress/consumer processes after an
+1. **Before calling Apply**, stop old Meta ingress/consumer processes after an
    authorized drain. This document does not grant that production authority.
    Reject migration if any reserved source job is `running`; do not forcibly
    cancel, discard, reset attempts or recover unknown effects inside migration.
-   Failure or lock timeout leaves the source and application ledger unchanged.
+   Failure or lock timeout rolls back the entire cutover and its post0004
+   checksum, including job/queue copy or deletion. Earlier 0031 preparation and
+   upstream ledgers may already be committed and remain for retry; readiness
+   stays false. Do not claim whole-Apply atomicity across upstream transactions.
 2. Validate every source row matching reserved kind **or** queue. It must have
    exact family/args/key and a matching completed ROUTED event/job link. Poison
    rows, nonempty destination jobs or conflicting destination queue data fail
@@ -100,6 +112,11 @@ Recheck under those locks; do not rely on a prior count or runtime flag.
    grants and transaction-bound evidence checks. Install new insert guards
    after validated historical copying so old admission XIDs are not forged.
    Keep ciphertext, nonce, AAD, event IDs, provenance and social facts identical.
+   Unlike the old shared-table guard, the new schema guard applies to **every**
+   INSERT: exact Meta family/args and dedicated ingress authority only. No
+   non-Meta family is admissible even from the lifecycle role. UPDATE never
+   changes job identity/family. Readiness rejects any foreign new-schema job,
+   not merely malformed reserved jobs.
 6. Remove copied source Meta jobs only after equality checks. Install a guard
    rejecting any future reserved-kind/queue insert or conversion in old
    `river.river_job`, while preserving unrelated producers. Revoke old ingress/
@@ -118,12 +135,18 @@ Recheck under those locks; do not rely on a prior count or runtime flag.
 | MIso01 authority | Fresh PG: correct roles succeed; old/mixed/owner/system/USAGE/SET-reachable authorities fail before work. Direct SQL cannot mutate the other lifecycle schema or migration ledgers. Disabled flags still do nothing. |
 | MIso02 populated cutover | Build real 0030 data via old ingress, including Page/IG, duplicate/quarantine, scheduled/retryable/terminal and pruned terminal jobs; paused queue preserved. Full source/destination job equality, event/body/social equality, no unrelated change, sequence above all retained IDs; Apply twice. |
 | MIso03 failure and resume | Running or poisoned reserved jobs, nonempty destination, lock contention and partial-phase interruption fail closed; no partial copy/delete or ready state. Resume on the same isolated fixture without rewriting checksums. Old producer writes are rejected after cutover. |
-| MIso04 real maintenance isolation | Keep deterministic MR04 due scheduled payment unchanged. Also snapshot unrelated retryable, stale-running and retention-eligible terminal jobs. Start the real Meta CLI; observe positive-control Meta scheduler/rescuer/cleaner work, not merely a sleep, then prove unrelated full rows unchanged. Start an actual old-schema worker and prove the converse. No test-only production flags. |
+| MIso04 real maintenance isolation | Keep deterministic MR04 due scheduled payment unchanged. Also snapshot unrelated retryable, stale-running and retention-eligible terminal jobs. Start the real Meta CLI; observe positive-control Meta scheduler/rescuer/cleaner work, not merely a sleep, then prove unrelated full rows unchanged. For the converse, stop Meta before the snapshot, then start an actual old-schema worker and observe its positive controls without changes to Meta rows. No test-only production flags. |
 | MIso05 regressions | Actual API Page/IG exactly-once, bad paths/signatures, key-loss retention and restoration/restart, signal/pool cleanup; all MI/MC/MR suites, complete PG/race/vet and relevant browser regression; independent source/evidence review. |
 
 Tests may use legitimate isolated fixture-owner setup before the baseline
 snapshot. Do not turn unrelated scheduled rows available or postpone their
 deadlines to evade maintenance. Assertions must exercise the root failure.
+For separate scheduler/rescuer/cleaner positive controls, legitimate linked
+Meta jobs may be seeded scheduled, stale-running and retention-eligible
+terminal; a paused Meta queue suppresses fetching but not maintenance. Observe
+actual expected transitions/deletion on those controls within bounded defaults,
+not successful process startup alone. Do not mix this paused maintenance gate
+with the separate unpaused exactly-once processing gate.
 
 ## Ownership, limits and next signal
 
