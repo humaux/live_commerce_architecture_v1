@@ -69,7 +69,7 @@ ALTER TABLE integration.operations ADD CONSTRAINT operation_actor_family CHECK (
   AND buyer_owner_id IS NOT NULL AND buyer_session_id IS NOT NULL
   AND provider='payuni' AND action='payuni.query' AND purpose='transactional'
   AND state NOT IN ('READY','DISPATCHING','BLOCKED_POLICY','STALE_BINDING') AND lease_mode<>'dispatch')
- OR (actor_kind='MEDIA_ATTEMPT' AND principal_id IS NULL AND media_attempt_id IS NOT NULL
+ OR (actor_kind='MEDIA_ATTEMPT' AND principal_id IS NOT NULL AND media_attempt_id IS NOT NULL
   AND payment_attempt_id IS NULL AND buyer_owner_id IS NULL AND buyer_session_id IS NULL
   AND provider='livekit' AND purpose='service' AND action='livekit.egress.start')
 );
@@ -174,9 +174,16 @@ BEGIN
   OR o.provider<>'livekit' OR o.purpose<>'service' OR o.action<>'livekit.egress.start'
   OR o.binding_id<>a.media_binding_id OR o.binding_version<>a.media_binding_version
   OR o.external_asset_id<>a.project_id OR o.job_id<1 OR o.request_hash<>NEW.request_hash
+  OR o.principal_id IS DISTINCT FROM NEW.original_principal_id
   OR o.semantic_key<>'livekit.start:'||NEW.id::text
   OR o.request IS DISTINCT FROM jsonb_build_object('attempt_id',NEW.id::text,
-   'session_id',NEW.session_id::text,'version',1) THEN
+   'session_id',NEW.session_id::text,'version',1)
+  OR NOT EXISTS (SELECT 1 FROM river_media.river_job j WHERE j.id=o.job_id
+   AND j.kind='live_media_operation_v1' AND j.queue='media_mock_v1'
+   AND j.state='available' AND j.attempt=0 AND j.finalized_at IS NULL
+   AND j.scheduled_at<=clock_timestamp()
+   AND j.args->>'version'='1'
+   AND j.args=jsonb_build_object('operation_id',NEW.start_operation_id::text,'version',1)) THEN
   RAISE EXCEPTION 'media operation mismatch' USING ERRCODE='23514';
  END IF;
  RETURN NULL;
@@ -289,6 +296,8 @@ BEGIN
   'expected_session_version',p_expected)::text,'UTF8'));
  IF NOT EXISTS(SELECT 1 FROM river_media.river_job j WHERE j.id=p_job
   AND j.kind='live_media_operation_v1' AND j.queue='media_mock_v1'
+  AND j.state='available' AND j.attempt=0 AND j.finalized_at IS NULL
+  AND j.scheduled_at<=clock_timestamp()
   AND j.unique_key IS NULL AND j.args->>'version'='1'
   AND j.args=jsonb_build_object('operation_id',p_operation::text,'version',1)) THEN
   RAISE EXCEPTION 'media job unavailable' USING ERRCODE='MP409';
@@ -301,7 +310,7 @@ BEGIN
  INSERT INTO integration.operations(id,tenant_id,store_id,principal_id,binding_id,binding_version,
   provider,external_asset_id,purpose,action,semantic_key,request_hash,request,job_id,
   state,generation,actor_kind,media_attempt_id)
- VALUES(p_operation,v_tenant,p_store,NULL,v_auth.media_binding_id,v_auth.media_binding_version,
+ VALUES(p_operation,v_tenant,p_store,v_principal,v_auth.media_binding_id,v_auth.media_binding_version,
   'livekit',v_auth.project_id,'service','livekit.egress.start',
   'livekit.start:'||v_auth.attempt_id::text,v_digest,
   jsonb_build_object('attempt_id',v_auth.attempt_id::text,'session_id',p_session::text,'version',1),
