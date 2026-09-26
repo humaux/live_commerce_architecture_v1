@@ -98,10 +98,33 @@ function expectCleared(response: RawResponse) {
   }
 }
 
+function expectLocalRedirect(location: URL) {
+  const configured = new URL(publicOrigin);
+  expect(location.protocol).toBe(configured.protocol);
+  expect(location.port).toBe(configured.port);
+  expect(["127.0.0.1", "localhost"]).toContain(location.hostname);
+}
+
 test("MBT01-04 signed cookie, raw route policy and real Go/PG order reads", async ({
   context,
   page,
 }) => {
+  const beforeLocale = (await observation()).count;
+  for (const [headers, locale] of [
+    [{ "Accept-Language": "zh-TW" }, "zh-TW"],
+    [{ "Accept-Language": "zh-CN" }, "zh-CN"],
+    [{ "Accept-Language": "en" }, "en"],
+    [{ "Accept-Language": "en", Cookie: "commerce_locale=zh-TW" }, "zh-TW"],
+  ] as Array<[Record<string, string>, string]>) {
+    const response = await raw("/?keep=1", "GET", headers);
+    expect(response.status).toBe(307);
+    const location = new URL(response.headers.location ?? "", publicOrigin);
+    expectLocalRedirect(location);
+    expect(location.pathname.replace(/\/$/, "")).toBe(`/${locale}`);
+    expect(location.search).toBe("?keep=1");
+    expect(response.headers["cache-control"]).toBe("private, no-store");
+  }
+  expect((await observation()).count).toBe(beforeLocale);
   await page.goto(`${publicOrigin}/en/`);
   await page
     .getByRole("button", { name: "Sign in with identity service" })
@@ -255,10 +278,25 @@ test("MBT01-04 signed cookie, raw route policy and real Go/PG order reads", asyn
   for (const path of [
     `/api/stores/${store}/%6frders?limit=%31`,
     `/api/stores/${store}/orders%2F${order}?limit=1`,
+    `/api%2Fstores/${store}/orders?limit=%31`,
+    `/%61pi/stores/${store}/orders?limit=%31`,
   ]) {
     const before = (await observation()).count;
     const response = await raw(path, "GET", authorized);
-    if (![400, 404, 422].includes(response.status))
+    if (response.status === 307) {
+      const location = new URL(response.headers.location ?? "", publicOrigin);
+      expectLocalRedirect(location);
+      expect(location.pathname).not.toMatch(/^\/api\//);
+      const followed = await raw(
+        location.pathname + location.search,
+        "GET",
+        authorized,
+      );
+      if (![400, 404, 422].includes(followed.status))
+        invalidFailures.push(
+          `${path.slice(0, 120)} redirect: ${followed.status}`,
+        );
+    } else if (![400, 404, 422].includes(response.status))
       invalidFailures.push(`${path.slice(0, 120)}: ${response.status}`);
     const after = (await observation()).count;
     if (after !== before)
