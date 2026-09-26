@@ -38,9 +38,14 @@ type t06GoFixture struct {
 	missingPermission string
 }
 
-func newT06GoFixture(t *testing.T) *t06GoFixture {
+func newT06GoFixture(t *testing.T, isolated ...*testFixture) *t06GoFixture {
 	t.Helper()
-	base := fixture(t)
+	var base *testFixture
+	if len(isolated) == 1 {
+		base = isolated[0]
+	} else {
+		base = fixture(t)
+	}
 	ctx := context.Background()
 	client, err := river.NewClient(riverpgxv5.New(base.runtime), &river.Config{Schema: "river"})
 	if err != nil {

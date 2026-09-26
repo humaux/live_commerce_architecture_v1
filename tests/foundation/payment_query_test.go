@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -386,7 +387,7 @@ type pqArgs struct {
 }
 
 func (pqArgs) Kind() string { return "payment_query_v1" }
-func pqStartWorker(t *testing.T, q pqFixture, opts payments.QueryWorkerOptions) (*river.Client[pgx.Tx], string) {
+func pqStartWorker(t *testing.T, q pqFixture, opts payments.QueryWorkerOptions) (*river.Client[pgx.Tx], func() error) {
 	t.Helper()
 	w, e := payments.NewQueryWorker(context.Background(), q.worker, q.keys, "PROVIDER_MOCK", opts)
 	if e != nil {
@@ -403,14 +404,22 @@ func pqStartWorker(t *testing.T, q pqFixture, opts payments.QueryWorkerOptions) 
 	if e = client.Start(context.Background()); e != nil {
 		t.Fatal(e)
 	}
+	var stopped sync.Once
+	var stopErr error
+	stop := func() error {
+		stopped.Do(func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			stopErr = client.StopAndCancel(ctx)
+		})
+		return stopErr
+	}
 	t.Cleanup(func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		if e := client.StopAndCancel(ctx); e != nil {
-			t.Error("query worker stop failed")
+		if e := stop(); e != nil {
+			t.Errorf("query worker stop failed: %v", e)
 		}
 	})
-	return client, queue
+	return client, stop
 }
 func pqAwait(t *testing.T, q pqFixture, jobID int64, wantCode, wantState string) time.Time {
 	t.Helper()
@@ -654,8 +663,9 @@ func TestBuyerPaymentQueryFinishClockAndReferenceFence(t *testing.T) {
 }
 
 func TestBuyerPaymentQueryCrossAttemptTokenAndMerchantJob(t *testing.T) {
-	q := pqSetup(t)
-	other := pqSetup(t)
+	base := pwIsolatedFixture(t)
+	q := pqSetupItemsOn(t, base, nil, false, 1)
+	other := pqSetupItemsOn(t, base, nil, false, 1)
 	c := q.claim(t)
 	foreign := other.claim(t)
 	if _, e := q.worker.Exec(context.Background(), `SELECT integration.load_payment_query($1,$2,$3,'PROVIDER_MOCK')`, q.result.OperationID, foreign.Generation, foreign.LeaseToken); e == nil {
@@ -664,7 +674,7 @@ func TestBuyerPaymentQueryCrossAttemptTokenAndMerchantJob(t *testing.T) {
 	if _, e := q.worker.Exec(context.Background(), `SELECT integration.load_payment_query($1,$2,$3,'PROVIDER_MOCK')`, other.result.OperationID, c.Generation, c.LeaseToken); e == nil {
 		t.Fatal("token selected other tenant")
 	}
-	f := newT06GoFixture(t)
+	f := newT06GoFixture(t, base)
 	b := f.register(t, f.store, t04Key("pq-merchant"))
 	op := f.plan(t, t04Key("pq-merchant-plan"), b, `{"amount":100}`)
 	var calls atomic.Int32
@@ -672,6 +682,9 @@ func TestBuyerPaymentQueryCrossAttemptTokenAndMerchantJob(t *testing.T) {
 	opts.MockTransport = pqTransport(func(*http.Request) (*http.Response, error) { calls.Add(1); return nil, errors.New("must_not_query") })
 	// Corrupt an admitted job only through the isolated fixture owner. The
 	// deferred insert fence independently rejects new unlinked merchant jobs.
+	// The second valid query stays future while this fixed-queue worker runs;
+	// otherwise unrelated same-family work could call the MOCK transport.
+	mustExec(t, q.f.owner, `UPDATE river_payment.river_job SET scheduled_at=clock_timestamp()+interval '1 hour' WHERE id=$1`, other.result.JobID)
 	mustExec(t, q.f.owner, `ALTER TABLE river_payment.river_job DISABLE TRIGGER payment_job_family`)
 	defer mustExec(t, q.f.owner, `ALTER TABLE river_payment.river_job ENABLE TRIGGER payment_job_family`)
 	mustExec(t, q.f.owner, `UPDATE river_payment.river_job SET args=jsonb_build_object('operation_id',$2::text,'version',1) WHERE id=$1`, q.result.JobID, op.OperationID)
