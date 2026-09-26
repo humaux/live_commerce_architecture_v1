@@ -51,11 +51,17 @@ func lrCommand(t *testing.T, timeout time.Duration, env []string, input io.Reade
 		var stdout bytes.Buffer
 		cmd.Stdout = &stdout
 		if err := cmd.Run(); err != nil {
+			if name == "docker" && len(args) > 2 && args[0] == "exec" && (args[2] == "pg_dumpall" || args[2] == "pg_dump") {
+				t.Fatalf("native %s failed: %v: %s", args[2], err, strings.TrimSpace(stderr.String()))
+			}
 			t.Fatalf("%s failed: %v (stderr bytes=%d)", name, err, stderr.Len())
 		}
 		return stdout.Bytes()
 	}
 	if err := cmd.Run(); err != nil {
+		if name == "docker" && len(args) > 2 && args[0] == "exec" && (args[2] == "pg_dumpall" || args[2] == "pg_dump") {
+			t.Fatalf("native %s failed: %v: %s", args[2], err, strings.TrimSpace(stderr.String()))
+		}
 		t.Fatalf("%s failed: %v (stderr bytes=%d)", name, err, stderr.Len())
 	}
 	return nil
@@ -487,7 +493,7 @@ func TestLocalRecoveryLogicalRestoreAndColdStart(t *testing.T) {
 	for _, tool := range []string{"pg_dumpall", "pg_dump", "pg_restore", "psql"} {
 		t.Logf("native %s: %s", tool, lrDocker(t, "exec", source.id, tool, "--version"))
 	}
-	rolesHash, rolesBytes, rolesElapsed := lrDump(t, source, rolesPath, "pg_dumpall", "--roles-only", "--no-role-passwords", "-U", source.role, "-d", "postgres")
+	rolesHash, rolesBytes, rolesElapsed := lrDump(t, source, rolesPath, "pg_dumpall", "--roles-only", "--no-role-passwords", "-U", source.role, "-l", "postgres")
 	archiveHash, archiveBytes, archiveElapsed := lrDump(t, source, archivePath, "pg_dump", "-Fc", "-U", source.role, "-d", "lc_foundation_test")
 	archiveFile, err := os.Open(archivePath)
 	if err != nil {
