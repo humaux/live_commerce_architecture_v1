@@ -76,7 +76,11 @@ Show page item count rather than pretending a cursor response supplies a total.
   only after a fresh authorized BFF read, never from a prior user's cached DOM.
   Same-app
   cross-tab logout invalidation carries no PII and only clears data; it cannot
-  grant access. A 403 clears protected data and explains
+  grant access. The common merchant shell must expose the existing authenticated
+  logout operation: merchants with stores render Ledger rather than Entry, so
+  Entry's onboarding-only logout is not an available merchant control. Reuse the
+  same endpoint, CSRF/session fence and clear-only signal; no alternate session
+  mechanism or synthetic logout substitute. A 403 clears protected data and explains
   missing permission; 404 never distinguishes missing from other-store orders.
 - Locale switching preserves store, selected order and commercial filter, but
   never changes currency, monetary values or permissions. Opaque identifiers
