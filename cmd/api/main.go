@@ -43,23 +43,34 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	metaConfig, err := loadMetaConfig(os.Getenv, addr)
+	if err != nil {
+		return err
+	}
+	startup, stopStartup := context.WithTimeout(context.Background(), 10*time.Second)
+	defer stopStartup()
 	dsn := os.Getenv("DATABASE_URL")
-	pool, err := platform.OpenPool(context.Background(), dsn)
+	pool, err := platform.OpenPool(startup, dsn)
 	if err != nil {
 		return err
 	}
 	defer pool.Close()
 
-	identityHandler, closeIdentity, err := buildIdentityHandler(context.Background(), identityConfig)
+	identityHandler, closeIdentity, err := buildIdentityHandler(startup, identityConfig)
 	if err != nil {
 		return err
 	}
 	defer closeIdentity()
-	buyerHandler, closeBuyer, err := buildBuyerHandler(context.Background(), buyerConfig)
+	buyerHandler, closeBuyer, err := buildBuyerHandler(startup, buyerConfig)
 	if err != nil {
 		return err
 	}
 	defer closeBuyer()
+	metaHandler, closeMeta, err := buildMetaHandler(startup, pool, metaConfig)
+	if err != nil {
+		return err
+	}
+	defer closeMeta()
 	accountService, err := buildAccountsService(pool, accountConfig)
 	if err != nil {
 		return err
@@ -72,6 +83,8 @@ func run() error {
 		handler = mux
 	}
 	handler = mountBuyer(handler, buyerHandler)
+	handler = mountMeta(handler, metaHandler)
+	stopStartup()
 	server := &http.Server{
 		Addr:              addr,
 		Handler:           handler,
