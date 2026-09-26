@@ -104,7 +104,9 @@ func TestMetaRuntimeIsolationTwoWayRealMaintenance(t *testing.T) {
 	// positive scheduler, rescuer and cleaner controls.
 	expiry := miIsoMaintenanceIDs{}
 	for _, target := range []*int64{&expiry.scheduled, &expiry.retryable, &expiry.stale, &expiry.terminal} {
-		*target = ewSetup(t, f, 1).hold.JobID
+		seed := ewSetup(t, f, 1)
+		*target = seed.hold.JobID
+		ewCloseSeedPools(t, seed)
 	}
 	for _, change := range []struct {
 		id  int64
