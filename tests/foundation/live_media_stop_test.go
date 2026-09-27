@@ -1176,23 +1176,33 @@ func TestLiveMediaStopLMR05RealCrashAndCommitAckLoss(t *testing.T) {
 	}
 	// Capture native scheduling without changing rescue, retry, or the assertion
 	// deadline. Never log River args/errors: they can carry unrelated payloads.
+	lastPhase := ""
 	snapshot := func(phase string) {
 		t.Helper()
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
-		var state string
+		var state, phaseKey string
 		err := h.lp.f.owner.QueryRow(ctx, `SELECT json_build_object(
-		 'db_clock',clock_timestamp(),'state',state,'attempt',attempt,
-		 'max_attempts',max_attempts,'error_count',cardinality(errors),
-		 'scheduled_at',scheduled_at,'attempted_at',attempted_at,
-		 'finalized_at',finalized_at,
-		 'scheduled_in_seconds',extract(epoch FROM scheduled_at-clock_timestamp()))::text
-		 FROM river_media.river_job WHERE id=$1`, h.plan.JobID).Scan(&state)
+		 'db_clock',clock_timestamp(),'state',j.state,'attempt',j.attempt,
+		 'max_attempts',j.max_attempts,'error_count',cardinality(j.errors),
+		 'scheduled_at',j.scheduled_at,'attempted_at',j.attempted_at,
+		 'finalized_at',j.finalized_at,
+		 'scheduled_in_seconds',extract(epoch FROM j.scheduled_at-clock_timestamp()),
+		 'leader_present',l.leader_id IS NOT NULL,'leader_elected_at',l.elected_at,
+		 'leader_expires_at',l.expires_at,
+		 'leader_expires_in_seconds',extract(epoch FROM l.expires_at-clock_timestamp()))::text,
+		 concat_ws(':',j.state,j.attempt,cardinality(j.errors),j.scheduled_at,
+		 coalesce(l.leader_id,''),l.expires_at>clock_timestamp(),j.scheduled_at<=clock_timestamp())
+		 FROM river_media.river_job j LEFT JOIN river_media.river_leader l ON l.name='default'
+		 WHERE j.id=$1`, h.plan.JobID).Scan(&state, &phaseKey)
 		if err != nil {
 			t.Logf("LMR05 native scheduling %s: snapshot unavailable", phase)
 			return
 		}
-		t.Logf("LMR05 native scheduling %s: %s", phase, state)
+		if phase != "waiting" || phaseKey != lastPhase {
+			t.Logf("LMR05 native scheduling %s: %s", phase, state)
+			lastPhase = phaseKey
+		}
 	}
 	snapshot("before-restart")
 	restartedAt := time.Now()
@@ -1204,7 +1214,15 @@ func TestLiveMediaStopLMR05RealCrashAndCommitAckLoss(t *testing.T) {
 			snapshot("assertion-failure")
 		}
 	})
-	h.await(t, 35*time.Second, func(f lmeFacts) bool { return f.observations >= 4 && !f.leaseOpen })
+	var nextSample time.Time
+	h.await(t, 35*time.Second, func(f lmeFacts) bool {
+		if time.Now().After(nextSample) {
+			snapshot("waiting")
+			nextSample = time.Now().Add(250 * time.Millisecond)
+		}
+		return f.observations >= 4 && !f.leaseOpen
+	})
+	snapshot("assertion-reached")
 	f := lmrRead(t, h)
 	if f.count != 2 || f.operation != "UNKNOWN" || f.resource != "OBSERVED" || f.exhausted == nil || h.stops.Load() != 0 || h.starts.Load() != 0 || h.queries.Load() < 3 {
 		t.Fatalf("crash/restart falsely closed or retried: %+v start/query/stop=%d/%d/%d", f, h.starts.Load(), h.queries.Load(), h.stops.Load())
