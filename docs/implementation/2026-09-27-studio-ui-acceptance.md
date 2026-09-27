@@ -206,6 +206,22 @@ Playwright processes were stopped. Independent visual review is pending;
 neither this partial runtime pass nor a later visual verdict can waive native
 conceal or root integration/full-regression requirements.
 
+## Independent visual review — first bounded batch
+
+Fresh `gpt-6-sol/high` reviewer returned **fix**, memory
+`0f6cd083-17b4-4453-894e-e68f17d1833c`. It inspected all nine required captures
+and the approved comp independently of the build conversation. Shell, split
+proportions, actions, editor and mobile order matched or had grounded product
+adaptations. Required corrections are: distinct truthful current-state panel
+and low-anchored desktop action; vector mark for the actual Facebook destination;
+English or locale-neutral date entry instead of OS-Chinese affordances.
+No fabricated Instagram row or live-output proof may be added. A standalone
+QUALITY BAR card is absent for this incumbent world, explicitly disclosed.
+
+One visual-fix batch is assigned in the existing source worktree. Its static
+checks, independent browser recaptures and same-reviewer verdict are pending.
+This visual disposition does not waive the separate native-conceal gap.
+
 ## Remaining boundary
 
 This slice does not qualify real browser publishing, Cloud Egress, public social

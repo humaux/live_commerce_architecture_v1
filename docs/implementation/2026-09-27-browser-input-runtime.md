@@ -214,6 +214,24 @@ call it a flake, extend the timeout, change production rescue defaults, or count
 this failed full run as BIC05 acceptance. The earlier focused passes stand only
 at their stated scopes.
 
+Diagnostic-only `51f9f3f` adds a bounded native-job snapshot (no args/error
+payload) and `--live-media-crash`, an exact non-empty selector reusing the same
+fixture. Independent review `5ea60a77-d59f-41b2-8739-93a1abf1428b` verified
+cleanup ordering, field types and unchanged 35s/final assertions. The added
+pre-restart SELECT can move scheduling phase by up to two seconds; a pass is
+not evidence that the original failure is resolved.
+
+Its first exact run exited 0, test 53.81s / foundation 58.036s. Log
+`/Volumes/data/output/lmr05-native-diagnostic-20260927.log`, SHA256
+`d8897778957a00cf8df6aeeaaa466c2898ed27ad5f883d100580684d790af60d`.
+Before restart the native row was running, attempt 2, error count 1, no finalized
+timestamp, and artificially aged attempted_at as required by the existing crash
+fixture. This time the fourth Query reached the unchanged deadline; the failure
+snapshot did not run. Native timing remains a hypothesis for the failed full
+run. No production timing, timeout or assertion has changed. Fixtures were
+removed; further work must gather causal scheduling evidence, not count retries
+until green.
+
 Maintenance/caller map: [media-input-custody.md](media-input-custody.md),
 committed in `0eb3d59`.
 
