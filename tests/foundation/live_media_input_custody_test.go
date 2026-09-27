@@ -3,7 +3,6 @@ package foundation_test
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"net"
@@ -53,6 +52,7 @@ func bicSetup(t *testing.T) *bicHarness {
 	t.Cleanup(func() {
 		ctx := context.Background()
 		for _, item := range []struct{ query, arg string }{
+			{`DELETE FROM live.media_observations WHERE attempt_id IN (SELECT id FROM live.media_attempts WHERE session_id=$1)`, h.session},
 			{`DELETE FROM live.media_execution_state WHERE attempt_id IN (SELECT id FROM live.media_attempts WHERE session_id=$1)`, h.session},
 			{`DELETE FROM live.media_input_custody WHERE attempt_id IN (SELECT id FROM live.media_attempts WHERE session_id=$1)`, h.session},
 			{`DELETE FROM live.prepared_media_input_profiles WHERE authorization_id=$1`, h.input.AuthorizationID},
@@ -100,11 +100,6 @@ func bicReserve(ctx context.Context, h *bicHarness, pool *pgxpool.Pool, token, s
 	return out, err
 }
 
-func bicHash(token string) []byte {
-	h := sha256.Sum256([]byte(token))
-	return h[:]
-}
-
 func bicClaim(ctx context.Context, h *bicHarness, plan live.MediaStartResult, key []byte) (string, int64, string, error) {
 	var disposition, mode string
 	var generation int64
@@ -122,7 +117,8 @@ func bicOwnedFacts(t *testing.T, h *bicHarness) [8]int64 {
 	 (SELECT count(*) FROM live.media_login_custody WHERE attempt_id IN (SELECT id FROM live.media_attempts WHERE session_id=$1)),
 	 (SELECT count(*) FROM live.media_input_custody WHERE attempt_id IN (SELECT id FROM live.media_attempts WHERE session_id=$1)),
 	 (SELECT count(*) FROM integration.operations WHERE media_attempt_id IN (SELECT id FROM live.media_attempts WHERE session_id=$1)),
-	 (SELECT count(*) FROM river_media.river_job WHERE queue='media_input_mock_v1'),
+	 (SELECT count(*) FROM river_media.river_job j JOIN integration.operations o ON o.job_id=j.id
+	  WHERE j.queue='media_input_mock_v1' AND o.media_attempt_id IN (SELECT id FROM live.media_attempts WHERE session_id=$1)),
 	 (SELECT count(*) FROM ops.command_results WHERE principal_id=$3 AND operation='live.media.input.start'),
 	 (SELECT count(*) FROM ops.command_results WHERE principal_id=$3 AND operation='live.media.input.reserve')`,
 		h.session, h.input.AuthorizationID, h.lp.actor).Scan(&out[0], &out[1], &out[2], &out[3], &out[4], &out[5], &out[6], &out[7])
@@ -263,11 +259,11 @@ func bicGrantMap(t *testing.T, grant live.MediaInputGrant) map[string]any {
 	}
 	want := []string{"attempt_id", "room_name", "publisher_identity", "project_id", "endpoint_identity", "credential_version", "issued_at", "expires_at"}
 	if len(fields) != len(want) {
-		t.Fatalf("grant had %d fields, want exactly %d: %s", len(fields), len(want), raw)
+		t.Fatalf("grant had %d fields, want exactly %d", len(fields), len(want))
 	}
 	for _, key := range want {
 		if _, ok := fields[key]; !ok {
-			t.Fatalf("grant missing %s: %s", key, raw)
+			t.Fatalf("grant missing %s", key)
 		}
 	}
 	for _, forbidden := range []string{"token", "jwt", "secret", "login_session_id", "authz_revision"} {
@@ -300,19 +296,19 @@ func TestLiveMediaExecutionBIC02GrantReplayAndAuthority(t *testing.T) {
 		fields := bicGrantMap(t, grant)
 		if fields["attempt_id"] != plan.AttemptID || fields["room_name"] != plan.RoomName || fields["project_id"] != "project_lma" ||
 			fields["endpoint_identity"] != "https://unit.livekit.cloud" || fields["credential_version"] != float64(1) {
-			t.Fatalf("grant lost frozen attempt/project binding: %v", fields)
+			t.Fatal("grant lost frozen attempt/project binding")
 		}
 		issued, iOK := fields["issued_at"].(float64)
 		expires, eOK := fields["expires_at"].(float64)
 		identity, idOK := fields["publisher_identity"].(string)
 		if !iOK || !eOK || !idOK || !strings.HasPrefix(identity, "lcp_") || len(identity) != 36 ||
 			expires <= issued || expires-issued > 60 {
-			t.Fatalf("grant lifetime/identity not bounded: %v", fields)
+			t.Fatal("grant lifetime/identity not bounded")
 		}
 		for _, replayKey := range []string{key, t04Key("bic-reserve-other-key")} {
 			replayed, err := bicReserve(context.Background(), h, h.lp.f.runtime, h.logins.a, h.lp.f.storeA1, replayKey, in)
 			if err != nil || !reflect.DeepEqual(bicGrantMap(t, replayed), fields) {
-				t.Fatalf("same grant changed under %s: %+v %v", replayKey, replayed, err)
+				t.Fatalf("same grant changed under %s: %v", replayKey, err)
 			}
 		}
 		if _, err := bicReserve(context.Background(), h, h.lp.f.runtime, h.logins.b, h.lp.f.storeA1, key, in); err == nil {
@@ -337,9 +333,18 @@ func TestLiveMediaExecutionBIC02GrantReplayAndAuthority(t *testing.T) {
 			if err := rows.Scan(&response); err != nil {
 				t.Fatal(err)
 			}
+			var rawFields map[string]json.RawMessage
+			if err := json.Unmarshal(response, &rawFields); err != nil || len(rawFields) != len(fields) {
+				t.Fatalf("durable grant receipt has unexpected shape: fields=%d err=%v", len(rawFields), err)
+			}
+			for key := range fields {
+				if _, ok := rawFields[key]; !ok {
+					t.Fatalf("durable grant receipt missing %s", key)
+				}
+			}
 			var got live.MediaInputGrant
 			if err := json.Unmarshal(response, &got); err != nil || !reflect.DeepEqual(bicGrantMap(t, got), fields) {
-				t.Fatalf("durable receipt differs from nonsecret fixed grant: %s %v", response, err)
+				t.Fatalf("durable receipt differs from nonsecret fixed grant: %v", err)
 			}
 			count++
 		}
@@ -365,7 +370,7 @@ func TestLiveMediaExecutionBIC02GrantReplayAndAuthority(t *testing.T) {
 		}
 		grant, err := bicReserve(context.Background(), h, h.lp.f.runtime, h.logins.a, h.lp.f.storeA1, t04Key("bic-after-claim"), in)
 		if err != nil || bicGrantMap(t, grant)["attempt_id"] != plan.AttemptID {
-			t.Fatalf("claim without wire/Stop consumed input admission: %+v %v", grant, err)
+			t.Fatalf("claim without wire/Stop consumed input admission: %v", err)
 		}
 		if got := bicOwnedFacts(t, h); got != [8]int64{1, 1, 1, 1, 1, 1, 1, 1} {
 			t.Fatalf("prewire claim/reserve duplicated durable artifacts: %v", got)
@@ -394,9 +399,9 @@ func TestLiveMediaExecutionBIC02GrantReplayAndAuthority(t *testing.T) {
 		loss.armed.Store(true)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		out, err := bicReserve(ctx, h, pool, h.logins.a, h.lp.f.storeA1, key, in)
+		_, err = bicReserve(ctx, h, pool, h.logins.a, h.lp.f.storeA1, key, in)
 		if err == nil || !loss.committed.Load() {
-			t.Fatalf("COMMIT ack loss not observed: grant=%+v err=%v committed=%t", out, err, loss.committed.Load())
+			t.Fatalf("COMMIT ack loss not observed: err=%v committed=%t", err, loss.committed.Load())
 		}
 		var issued, expires int64
 		var identity string
@@ -410,7 +415,7 @@ func TestLiveMediaExecutionBIC02GrantReplayAndAuthority(t *testing.T) {
 		}
 		fields := bicGrantMap(t, replayed)
 		if fields["publisher_identity"] != identity || fields["issued_at"] != float64(issued) || fields["expires_at"] != float64(expires) {
-			t.Fatalf("ack-loss replay changed durable grant: %v", fields)
+			t.Fatal("ack-loss replay changed durable grant")
 		}
 		if got := bicOwnedFacts(t, h); got != [8]int64{1, 1, 1, 1, 1, 1, 1, 1} {
 			t.Fatalf("ack-loss duplicated artifacts: %v", got)
@@ -563,7 +568,7 @@ func TestLiveMediaExecutionBIC03OriginalJobOutlivesInputLiability(t *testing.T) 
 		}
 		material, err := bicLoad(context.Background(), h, plan, generation, key)
 		if err != nil || material["attempt_id"] != plan.AttemptID || material["operation_id"] != plan.OperationID || material["execution_profile"] != "LOCAL_SFU_MOCK_EGRESS" {
-			t.Fatalf("fenced original custody load mismatch: %v %v", material, err)
+			t.Fatalf("fenced original custody load mismatch: %v", err)
 		}
 		result, err := bicClose(context.Background(), h, plan, generation, key, "merchant_stop")
 		if err != nil || result != "held" {
@@ -676,11 +681,11 @@ func TestLiveMediaExecutionBIC04FenceACLAndNativeGuard(t *testing.T) {
 	}
 	// The native guard, not a best-effort readiness check, must reject both
 	// finalization and deletion while any reserved input liability remains.
-	if _, err := h.lp.f.owner.Exec(context.Background(), `UPDATE river_media.river_job SET state='completed',finalized_at=clock_timestamp() WHERE id=$1`, plan.JobID); err == nil {
-		t.Fatal("native job finalized with unresolved input")
+	if _, err := h.lp.f.owner.Exec(context.Background(), `UPDATE river_media.river_job SET state='completed',finalized_at=clock_timestamp() WHERE id=$1`, plan.JobID); sqlState(err) != "22023" {
+		t.Fatalf("native lifecycle guard did not reject finalization: %v", err)
 	}
-	if _, err := h.lp.f.owner.Exec(context.Background(), `DELETE FROM river_media.river_job WHERE id=$1`, plan.JobID); err == nil {
-		t.Fatal("native job deleted with unresolved input")
+	if _, err := h.lp.f.owner.Exec(context.Background(), `DELETE FROM river_media.river_job WHERE id=$1`, plan.JobID); sqlState(err) != "22023" {
+		t.Fatalf("native lifecycle guard did not reject deletion: %v", err)
 	}
 	bicAssertOriginalLiability(t, h, plan)
 	// Owner seeds only the generation budget on this disposable fixture. BIC
@@ -698,6 +703,28 @@ func TestLiveMediaExecutionBIC04FenceACLAndNativeGuard(t *testing.T) {
 			if err != nil || direct {
 				t.Fatalf("private input table ACL granted to %s on %s: %v %v", role, table, direct, err)
 			}
+		}
+	}
+	for _, item := range []struct {
+		role, signature string
+		want            bool
+	}{
+		{"commerce_media_registrar", "live.register_media_input_profile(uuid)", true},
+		{"commerce_runtime", "live.register_media_input_profile(uuid)", false},
+		{"commerce_media_executor", "live.register_media_input_profile(uuid)", false},
+		{"commerce_runtime", "live.plan_media_input_start(bytea,uuid,uuid,uuid,bigint,text,uuid,bigint)", true},
+		{"commerce_media_registrar", "live.plan_media_input_start(bytea,uuid,uuid,uuid,bigint,text,uuid,bigint)", false},
+		{"commerce_runtime", "live.reserve_media_input(bytea,uuid,uuid,uuid,bigint)", true},
+		{"commerce_media_executor", "live.reserve_media_input(bytea,uuid,uuid,uuid,bigint)", false},
+		{"commerce_media_executor", "live.claim_media_input_operation(uuid,bigint,integer,bytea)", true},
+		{"commerce_runtime", "live.claim_media_input_operation(uuid,bigint,integer,bytea)", false},
+		{"commerce_media_executor", "live.load_media_input_custody(uuid,bigint,bytea)", true},
+		{"commerce_media_executor", "live.close_media_input_admission(uuid,bigint,bytea,text)", true},
+		{"commerce_media_worker", "live.close_media_input_admission(uuid,bigint,bytea,text)", false},
+	} {
+		var allowed bool
+		if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT has_function_privilege($1,$2::regprocedure,'EXECUTE')`, item.role, item.signature).Scan(&allowed); err != nil || allowed != item.want {
+			t.Fatalf("BIC function ACL drift %s %s: %t %v", item.role, item.signature, allowed, err)
 		}
 	}
 	if _, err := h.lp.f.runtime.Exec(context.Background(), `SELECT * FROM live.media_input_custody WHERE attempt_id=$1`, plan.AttemptID); sqlState(err) != "42501" {
