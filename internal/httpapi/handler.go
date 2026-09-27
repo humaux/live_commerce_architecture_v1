@@ -35,6 +35,7 @@ type Options struct {
 	SessionStoreList bool
 	Accounts         *accounts.Service
 	Live             *live.MediaPlanner
+	BrowserInput     *live.BrowserInputRuntime
 }
 
 func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
@@ -114,7 +115,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerSettingsDiscoveryRoutes(mux, pool)
 	registerAccountRoutes(mux, pool, configured.Accounts)
 	registerOrderRoutes(mux, pool)
-	registerStudioRoutes(mux, pool, configured.Live)
+	registerStudioRoutes(mux, pool, configured.Live, configured.BrowserInput)
 	foundation := platform.NewHandler(pool, platform.HandlerOptions{SessionStoreList: configured.SessionStoreList})
 	if configured.SessionStoreList {
 		mux.Handle("GET /v1/admin/stores", foundation)
