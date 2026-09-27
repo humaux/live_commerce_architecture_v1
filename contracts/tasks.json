@@ -471,7 +471,7 @@
     "media_controller_candidate": {
       "contract": "contracts/live-media-controller-v1.md",
       "status": "PARTIAL_MOCK_EXECUTION_ACCEPTED_FULL_CONTROLLER_NOT_FROZEN",
-      "remaining": "MOCK authorization, start intent, dedicated execution, bounded same-ID Stop and executable runtime accepted locally through 320dad6 with root full645 PG/race/vet. Coherent terminal proof alone closes resource liability. LIVE authority, real Cloud, studio/HTTP route, media-worker deployment and post-escalation operator recovery remain unimplemented or unverified. Current client uses StartEgress. No full controller or real-media/G06 acceptance."
+      "remaining": "MOCK authorization, start intent, dedicated execution, bounded same-ID Stop and executable runtime accepted locally through 320dad6 with root full645 PG/race/vet. Studio backend at 2be9cd2 passes focused local PG/API/TLS; BFF/UI and full regression remain pending. Coherent terminal proof alone closes resource liability. LIVE authority, real Cloud, media-worker deployment and post-escalation operator recovery remain unimplemented or unverified. Current client uses StartEgress. No full controller or real-media/G06 acceptance."
     },
     "media_authorization_registry_slice": {
       "contract": "contracts/live-media-authorization-v1.md",
@@ -517,6 +517,15 @@
       "maintenance": "docs/implementation/media-worker-runtime.md",
       "gates": "LMW01_05_ROOT_FOCUSED_8_AND_FULL_645_PG_RACE_VET_PASS",
       "boundary": "Actual default-off standalone command tested against isolated PG/local TLS, role/readiness/same-DB admission, pinned TLS, signal/restart and missing frozen config recovery. No customer activation, LIVE/Cloud, HTTP/studio, deployment or full G06 acceptance."
+    },
+    "studio_backend_slice": {
+      "contract": "contracts/studio-v1.md",
+      "status": "PARTIAL_LOCAL_MOCK_BACKEND_FULL_REGRESSION_RUNNING",
+      "source_test_commit": "2be9cd2",
+      "evidence": "docs/implementation/2026-09-27-studio-backend-acceptance.md",
+      "maintenance": "docs/implementation/studio-api-runtime.md",
+      "gates": "STU01_03_ROOT_FOCUSED_8_PASS_STU04_NOT_RUN_STU05_PARTIAL",
+      "boundary": "Six scoped domain/HTTP routes and safe projection tested against actual PG/API/local TLS worker, including causal concurrent reads. Full PG/race/vet running. No BFF/UI acceptance, Cloud, LIVE provisioning, production activation or full Studio/G06/G07 acceptance."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },

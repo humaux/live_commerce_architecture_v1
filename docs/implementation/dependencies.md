@@ -166,6 +166,19 @@ PG/TLS、信号恢复和泄漏检查。升级 Go TLS、pgx、River 或媒体权�
 `test-local.sh --live-media-runtime` 及完整 PG/race/vet；645 项本地通过不是
 Cloud、部署、工作室或 G06 通过。
 
+## T08 Studio API 依赖（本地后台专项通过，整体仍未验收）
+
+`cmd/api` 的显式开关 → 既有身份／loopback／readiness → insert-only River
+planner → 六条精确 HTTP 路由 → 既有 live 草稿／PlanStart／RequestStop。
+新增 ListDrafts 复用两字段分页；GetStudio 的窄 SQL 投影复用现有 media writer，
+不扩大私有表权限。投影前固定授权修订号，投影后重新读取草稿；并发变化拒绝
+返回混合状态。上文各切片的“无 HTTP”是其历史验收范围，此增量才提供 API。
+无新增 SDK、认证框架、队列或依赖。网页接线／视觉与真实供应商另行验收。
+
+[维护和诊断](studio-api-runtime.md) 记录调用链、权限边界、开关和升级门禁；
+[当前证据](2026-09-27-studio-backend-acceptance.md) 区分后台八项专项通过与
+全仓回归运行中。不能把 MOCK UNKNOWN／OBSERVED 转述为公开直播成功。
+
 ## 依赖版本
 
 版本来自当前 `go.mod`/`go.sum` 和本阶段已记录的锁定证据；license 是上游声明，不等于本项目已完成法务准入。升级流程是确认候选版本、更新锁文件与本表、在候选版本上跑 gate，通过后再合并。

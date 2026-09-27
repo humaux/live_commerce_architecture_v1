@@ -1,10 +1,13 @@
 # Merchant Studio v1 — one end-to-end product slice
 
-Status: **FROZEN / NOT_IMPLEMENTED** (2026-09-27).
+Status: **FROZEN / PARTIAL_LOCAL_MOCK_BACKEND** (2026-09-27).
 Source baseline `320dad6`; LMW root full regression passed 645 tests, race/vet.
 Independent preflight of draft `0af7e82` (Humaux
 `33de752a-31c9-4697-991c-813bfb6e8910`) found no confirmed P0/P1; this is not
 STU01–05 acceptance or production activation. T08/T09 and G06/G07 remain incomplete.
+Backend source/tests `2be9cd2` passed root focused eight-test PG/API/TLS/race gate;
+full regression is running, and BFF/UI/STU04 are not accepted. See
+[exact evidence](../docs/implementation/2026-09-27-studio-backend-acceptance.md).
 
 ## Product outcome and reuse
 
