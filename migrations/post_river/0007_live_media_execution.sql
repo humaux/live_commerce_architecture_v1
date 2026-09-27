@@ -55,7 +55,10 @@ LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
   AND EXISTS(SELECT 1 FROM pg_catalog.pg_proc p WHERE p.oid=
    'live.plan_media_start(bytea,uuid,uuid,uuid,bigint,text,uuid,bigint)'::regprocedure
    AND p.prosecdef AND p.proowner='commerce_media_writer'::regrole
-   AND p.proconfig @> ARRAY['search_path=pg_catalog']::text[])
+   AND p.proconfig @> ARRAY['search_path=pg_catalog']::text[]
+   AND has_function_privilege('commerce_runtime',p.oid,'EXECUTE')
+   AND NOT has_function_privilege('commerce_media_worker',p.oid,'EXECUTE')
+   AND NOT has_function_privilege('commerce_media_executor',p.oid,'EXECUTE'))
   AND EXISTS(SELECT 1 FROM pg_catalog.pg_proc p WHERE p.oid=
    'live.guard_media_job_family()'::regprocedure AND p.prosecdef
    AND p.proowner='commerce_media_writer'::regrole
@@ -111,13 +114,10 @@ LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
     OR p.prorettype<>required.result_type OR p.proretset<>required.result_set
     OR NOT (p.proconfig @> ARRAY['search_path=pg_catalog']::text[])
     OR NOT has_function_privilege('commerce_media_executor',p.oid,'EXECUTE')
-    OR has_function_privilege('commerce_worker',p.oid,'EXECUTE')
-    OR has_function_privilege('commerce_media_worker',p.oid,'EXECUTE')
-    OR has_function_privilege('commerce_media_registrar',p.oid,'EXECUTE')
-    OR EXISTS(SELECT 1 FROM pg_catalog.pg_roles r WHERE r.rolname IN
-     ('commerce_runtime','commerce_checkout_runtime','commerce_meta_ingress',
-      'commerce_meta_consumer','commerce_meta_worker','commerce_buyer_runtime')
-     AND has_function_privilege(r.oid,p.oid,'EXECUTE')))
+    OR EXISTS(SELECT 1 FROM pg_catalog.aclexplode(
+      coalesce(p.proacl,pg_catalog.acldefault('f',p.proowner))) acl
+     WHERE acl.privilege_type='EXECUTE' AND acl.grantee NOT IN
+      ('commerce_media_writer'::regrole,'commerce_media_executor'::regrole)))
   AND (SELECT count(*)=1 FROM pg_catalog.pg_trigger t
    WHERE t.tgrelid='live.media_execution_state'::regclass AND t.tgname='media_execution_identity'
     AND t.tgenabled='O')
