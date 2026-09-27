@@ -91,11 +91,24 @@ func GetStudioInput(ctx context.Context, tx pgx.Tx, scope platform.Scope, token,
 	if !reflect.DeepEqual(current, draft) {
 		return nil, ErrStudioProjection
 	}
+	return decodeStudioInput(raw)
+}
+
+func decodeStudioInput(raw []byte) (*StudioInput, error) {
 	if bytes.Equal(raw, []byte("null")) {
 		return nil, nil
 	}
 	if len(raw) > 4096 || !studioExactFields(raw, "attempt_id", "state", "admission_closed", "close_reason", "cleanup_held", "can_stop", "updated_at") {
 		return nil, ErrStudioProjection
+	}
+	var fields map[string]json.RawMessage
+	if json.Unmarshal(raw, &fields) != nil {
+		return nil, ErrStudioProjection
+	}
+	for _, name := range []string{"admission_closed", "cleanup_held", "can_stop"} {
+		if string(fields[name]) != "true" && string(fields[name]) != "false" {
+			return nil, ErrStudioProjection
+		}
 	}
 	var out StudioInput
 	if json.Unmarshal(raw, &out) != nil || !command.ValidID(out.AttemptID) || out.UpdatedAt.IsZero() ||
@@ -110,7 +123,7 @@ func GetStudioInput(ctx context.Context, tx pgx.Tx, scope platform.Scope, token,
 	for _, reason := range []string{"", "merchant_stop", "login_lost", "permission_lost", "authorization_lost", "binding_lost", "expired", "egress_terminal", "reconcile_exhausted", "runtime_unavailable"} {
 		validReason = validReason || out.CloseReason == reason
 	}
-	if !validState || !validReason {
+	if !validState || !validReason || out.AdmissionClosed == (out.State == "UNISSUED" || out.State == "RESERVED") {
 		return nil, ErrStudioProjection
 	}
 	return &out, nil
