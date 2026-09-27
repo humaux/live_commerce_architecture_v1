@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 	"sync/atomic"
 	"syscall"
@@ -28,12 +29,21 @@ type recoveryEpisode struct {
 	resolved      bool
 	resolvedAt    time.Time
 	resolvedProof atomic.Bool
+	pendingProof  atomic.Bool
 	alerted       atomic.Bool
 	stopDeadline  context.CancelFunc
 	observed      map[string]bool
 	inflight      map[string]bool
+	pending       map[string]recoveryAttestation
+	witnessed     map[string]bool
+	rejected      map[string]bool
 	cancelObserve context.CancelFunc
 	observeCtx    context.Context
+}
+
+type recoveryAttestation struct {
+	observationID string
+	elapsedMS     int64
 }
 
 func newRecoveryEpisode() (*recoveryEpisode, error) {
@@ -48,6 +58,7 @@ func newRecoveryEpisode() (*recoveryEpisode, error) {
 		id:      encoded[:8] + "-" + encoded[8:12] + "-" + encoded[12:16] + "-" + encoded[16:20] + "-" + encoded[20:],
 		started: time.Now(), coverageKnown: true,
 		observed: map[string]bool{}, inflight: map[string]bool{},
+		pending: map[string]recoveryAttestation{}, witnessed: map[string]bool{}, rejected: map[string]bool{},
 	}, nil
 }
 
@@ -72,6 +83,82 @@ func (e *recoveryEpisode) markResolved() {
 	}
 }
 
+func (e *recoveryEpisode) updateProofState() {
+	if !e.admitted || len(e.members) == 0 || !e.members[0].CoverageKnown ||
+		e.members[0].CandidateCount != len(e.members) || e.members[0].OperationID == "" {
+		e.pendingProof.Store(false)
+		return
+	}
+	allWitnessed, allAccounted := true, true
+	for _, member := range e.members {
+		if e.witnessed[member.OperationID] {
+			continue
+		}
+		allWitnessed = false
+		if _, pending := e.pending[member.OperationID]; !pending {
+			allAccounted = false
+		}
+	}
+	if allWitnessed {
+		e.markResolved()
+	}
+	e.pendingProof.Store(!allWitnessed && allAccounted)
+}
+
+func (e *recoveryEpisode) attemptPending(ctx context.Context, ledger *live.MediaRecoveryObserver) {
+	ids := make([]string, 0, len(e.pending))
+	for id := range e.pending {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	for _, id := range ids {
+		proof := e.pending[id]
+		status, err := ledger.Witness(ctx, e.id, id, proof.observationID, proof.elapsedMS)
+		if err != nil {
+			continue
+		} // Retain exact evidence for a bounded retry.
+		switch status {
+		case "witnessed", "already_witnessed":
+			e.witnessed[id] = true
+			delete(e.pending, id)
+		case "timeout_wins", "unqualified":
+			e.rejected[id] = true
+			delete(e.pending, id)
+		}
+	}
+	e.updateProofState()
+}
+
+func (e *recoveryEpisode) acceptReadback(rows []live.RecoveryReadback, elapsedMS int64) {
+	if len(rows) == 0 {
+		return
+	}
+	for _, row := range rows {
+		if row.Disposition == "witnessed" {
+			e.witnessed[row.OperationID] = true
+			delete(e.pending, row.OperationID)
+			continue
+		}
+		if row.Disposition == "timeout" {
+			delete(e.pending, row.OperationID)
+			continue
+		}
+		if row.OperationID == "" || row.ObservationID == "" ||
+			(row.ObservationSource != "ROOM" && row.ObservationSource != "QUERY") ||
+			row.ObservationGeneration <= row.BaselineGeneration || elapsedMS > 90000 || e.rejected[row.OperationID] {
+			continue
+		}
+		if _, exists := e.pending[row.OperationID]; !exists {
+			e.pending[row.OperationID] = recoveryAttestation{row.ObservationID, elapsedMS}
+		}
+	}
+	if rows[0].ScopeStatus == "finished" || rows[0].ScopeStatus == "empty" && rows[0].CoverageKnown {
+		e.markResolved()
+	} else {
+		e.updateProofState()
+	}
+}
+
 // This local monotonic timer is independent of SQL/provider calls that may be
 // blocking at the deadline. Durable timeout is retried by the main loop.
 func (e *recoveryEpisode) startDeadlineSignal(parent context.Context) {
@@ -88,7 +175,14 @@ func (e *recoveryEpisode) startDeadlineSignal(parent context.Context) {
 		case <-timerCtx.Done():
 			return
 		case <-timer.C:
-			if !e.resolvedProof.Load() && e.alerted.CompareAndSwap(false, true) {
+			if e.resolvedProof.Load() {
+				return
+			}
+			if e.pendingProof.Load() {
+				slog.Warn("media_recovery_witness_pending", "episode_id", e.id)
+				return
+			}
+			if e.alerted.CompareAndSwap(false, true) {
 				slog.Error("media_recovery_deadline_missed", "episode_id", e.id,
 					"scope_status", "unresolved", "affected_count", -1, "persisted", false)
 			}
@@ -352,30 +446,12 @@ func runSupervised(ctx context.Context, getenv func(string) string) error {
 			}
 			readback, readErr := ledger.Read(ctx, episode.id)
 			if readErr == nil {
-				witnessed := 0
-				for _, row := range readback {
-					if row.Disposition == "witnessed" {
-						witnessed++
-						continue
-					}
-					if row.ObservationID == "" || row.Disposition == "timeout" {
-						continue
-					}
-					elapsed := episode.elapsedMS() // sampled after committed readback
-					if elapsed <= 90000 {
-						status, witnessErr := ledger.Witness(ctx, episode.id, row.OperationID, row.ObservationID, elapsed)
-						if witnessErr == nil && (status == "witnessed" || status == "already_witnessed") {
-							witnessed++
-						}
-					}
-				}
-				if readback[0].ScopeStatus == "finished" ||
-					readback[0].ScopeStatus == "empty" && readback[0].CoverageKnown ||
-					readback[0].ScopeStatus == "pending" && readback[0].CoverageKnown &&
-						readback[0].CandidateCount > 0 && witnessed == readback[0].CandidateCount {
-					episode.markResolved()
-				}
+				readbackElapsed := episode.elapsedMS() // one sample after the committed batch
+				episode.acceptReadback(readback, readbackElapsed)
 			}
+		}
+		if episode.admitted && !episode.resolved && len(episode.pending) > 0 {
+			episode.attemptPending(ctx, ledger)
 		}
 		if episode.elapsedMS() >= 90000 && !episode.resolved {
 			if episode.cancelObserve != nil {
