@@ -1,6 +1,6 @@
 # Studio B UI acceptance — 2026-09-27
 
-Status: **SOURCE_CANDIDATE_UNMERGED; SOURCE_STATIC_CLEAR; STU04_HEADED_RERUN**.
+Status: **SOURCE_CANDIDATE_UNMERGED; SOURCE_STATIC_CLEAR; STU04_NATIVE_NOT_RUN**.
 
 User approved **B 场次列表＋双区工作台**, seed `6373bb3f`, in `fb760ff`.
 The approved comp is `.impeccable/mocks/decision/studio-split.png` (1586×992);
@@ -120,9 +120,22 @@ Log `output/studio-ui-second-20260927.log` in the test worktree, SHA256
 `9f871638c09d47a55fbf4ecaa13cebb958b243082fe41a53d896ecf3ca6be575`;
 screenshots/trace in `output/playwright/studio-ui-20260927T073308.409334000/`.
 
-Test-only `3e399b0` switches to headed Chromium without changing assertions or
-deadlines. Its real native-visibility rerun is pending. This does not qualify
-history recovery until its actual route traversal and PG readback pass.
+Test-only `3e399b0` switched to headed Chromium without changing assertions or
+deadlines. Its actual third run also exited 1 at the same visibility assertion:
+the first document stayed visible after the other tab came forward. Log
+`output/studio-ui-third-20260927.log`, SHA256
+`7cb33f66e2ade96a46018f4003cfd4ade4af4033688633741c22ddb6ed8db3d0`;
+evidence `output/playwright/studio-ui-20260927T073424.105278000/`.
+This repeats the existing Orders MOU03 host limitation; no more environment
+retries or synthetic-event substitution are authorized for this pass.
+
+Integrator decision: keep native visibility as an explicit failing/NOT_RUN
+acceptance case and run the remaining real chain independently. The Go gate
+must still execute its PG/counter readbacks and then remain nonzero while the
+native criterion is missing. This prevents an early environment failure from
+masking product defects; it does not waive the native criterion or turn STU04
+green. Actual history recovery, worker controls and visual finish remain pending
+until their separate runtime evidence is captured.
 
 ## Remaining boundary
 
