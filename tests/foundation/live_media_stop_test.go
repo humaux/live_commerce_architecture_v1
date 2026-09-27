@@ -190,9 +190,9 @@ func TestLiveMediaStopLMR01CommandAuthorityCancellationAndACL(t *testing.T) {
 		if owner != "commerce_media_writer" || !secdef || !fixed {
 			t.Fatalf("unsafe Stop function %s: %s %t %t", path, owner, secdef, fixed)
 		}
-		for role, pool := range map[string]*pgxpool.Pool{"native": h.worker, "registrar": h.registrar, "runtime": h.lp.f.runtime, "executor": h.executor} {
+		for role, name := range map[string]string{"native": "commerce_media_worker", "registrar": "commerce_media_registrar", "runtime": "commerce_hosted_runtime", "executor": "commerce_media_executor"} {
 			var allowed bool
-			if err := pool.QueryRow(ctx, `SELECT has_function_privilege(current_user,to_regprocedure($1),'EXECUTE')`, signature).Scan(&allowed); err != nil {
+			if err := h.lp.f.owner.QueryRow(ctx, `SELECT has_function_privilege($1,to_regprocedure($2),'EXECUTE')`, name, signature).Scan(&allowed); err != nil {
 				t.Fatal(err)
 			}
 			want := (path == "request_media_stop" && role == "runtime") || (path == "record_media_cleanup_query" && role == "executor")
@@ -253,6 +253,7 @@ func TestLiveMediaStopLMR01CommandAuthorityCancellationAndACL(t *testing.T) {
 func TestLiveMediaStopLMR01CurrentAuthorityReplayAndObservedRevocation(t *testing.T) {
 	t.Run("current-manager-not-original-and-replay-reauthorizes", func(t *testing.T) {
 		h := lmrSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "SQL only", 500) })
+		h.claim(t, 30) // Materialize execution state without reserving Start.
 		in := live.MediaStopInput{SessionID: h.session, AttemptID: h.plan.AttemptID}
 		before := lmrRead(t, h)
 		for name, tc := range map[string]struct {
@@ -296,6 +297,10 @@ func TestLiveMediaStopLMR01CurrentAuthorityReplayAndObservedRevocation(t *testin
 		if replay, err := lmrRequest(context.Background(), h, h.lp.peerToken, h.lp.f.storeA1, key, in); err != nil || replay != out {
 			t.Fatalf("peer receipt replay: %+v %v", replay, err)
 		}
+		if _, err := lmrRequest(context.Background(), h, h.lp.peerToken, h.lp.f.storeA1, key,
+			live.MediaStopInput{SessionID: h.session, AttemptID: randomUUID()}); !errors.Is(err, command.ErrConflict) {
+			t.Fatalf("same receipt key with different Stop request: %v", err)
+		}
 		if _, err := h.lp.f.owner.Exec(context.Background(), `DELETE FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission='live:manage'`, h.lp.f.tenantA, h.lp.f.storeA1, h.lp.peer); err != nil {
 			t.Fatal(err)
 		}
@@ -312,6 +317,7 @@ func TestLiveMediaStopLMR01CurrentAuthorityReplayAndObservedRevocation(t *testin
 	})
 	t.Run("SQL-final-check-after-observed-grant-wait", func(t *testing.T) {
 		h := lmrSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "SQL only", 500) })
+		h.claim(t, 30) // The SQL final-check waits on this existing operation.
 		ctx := context.Background()
 		holder, err := h.lp.f.owner.Begin(ctx)
 		if err != nil {
@@ -985,7 +991,7 @@ func TestLiveMediaStopLMR05RealCrashAndCommitAckLoss(t *testing.T) {
 		if n == 1 {
 			// A new generation, and not a sleep-based proof: the DB clock must
 			// cross the persisted five-second pacing boundary before retry.
-			lmpWaitPastDBClock(t, h.lp.f.owner, f.first.Add(5*time.Second))
+			lmrWaitDBClock(t, h.lp.f.owner, f.first.Add(5*time.Second))
 		}
 	}
 	h.startWorker(t)
@@ -1099,7 +1105,7 @@ func TestLiveMediaStopLMR06AutomaticCleanupBudgetAndTerminalProof(t *testing.T) 
 			t.Fatalf("first uncertain: %s %v", finish, err)
 		}
 		first := lmrRead(t, h)
-		lmpWaitPastDBClock(t, h.lp.f.owner, first.first.Add(5*time.Second))
+		lmrWaitDBClock(t, h.lp.f.owner, first.first.Add(5*time.Second))
 		two := h.claim(t, 30)
 		if two.generation <= one.generation {
 			t.Fatalf("second generation did not advance: %+v", two)
