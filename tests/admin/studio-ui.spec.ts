@@ -39,7 +39,8 @@ async function storageIsSafe(page: Page) {
     local: { ...localStorage }, session: { ...sessionStorage },
     caches: "caches" in window ? await caches.keys() : [],
   }));
-  for (const forbidden of ["authorization_id", "credential_version", "stream_url", "rtmps://", preparedSession])
+  for (const forbidden of ["authorization_id", "credential_version", "stream_url", "rtmps://", preparedSession,
+    "STU04 browser-created scene", "STU04 lost ACK scene", "STU04 swapped login scene"])
     expect(value).not.toContain(forbidden);
 }
 
@@ -167,6 +168,7 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await page.getByLabel("Scene name").fill("STU04 lost ACK scene");
   await page.getByRole("button", { name: "Create draft" }).click();
   await expect(page.getByText("The result is unknown", { exact: false })).toBeVisible();
+  await storageIsSafe(page);
   const unresolvedURL = page.url();
   await page.goBack({ waitUntil: "domcontentloaded" });
   if (page.url() !== unresolvedURL) await page.goForward({ waitUntil: "domcontentloaded" });
@@ -212,6 +214,7 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await page.getByLabel("Scene name").fill("STU04 swapped login scene");
   await page.getByRole("button", { name: "Create draft" }).click();
   await expect(page.getByRole("button", { name: "Retry same request" })).toBeVisible();
+  await storageIsSafe(page);
   const otherLogin = await browser.newContext({ baseURL: origin });
   const otherPage = await otherLogin.newPage();
   await signedLogin(otherPage);
