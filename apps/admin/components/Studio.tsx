@@ -639,12 +639,24 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
             <div className="studio-fields">
               <label>{c.name}<input value={form.title} maxLength={400} disabled={!canEdit || busy}
                 onChange={(event) => { explicitDeparture.current = false; setForm({ ...form, title: event.target.value }); setFormError(""); }} /></label>
-              <label>{c.schedule}<input type={locale === "en" ? "text" : "datetime-local"}
-                placeholder={locale === "en" ? "YYYY-MM-DDTHH:mm" : undefined}
-                maxLength={locale === "en" ? 16 : undefined}
-                value={form.scheduled} disabled={!canEdit || busy}
+              {locale === "en" ? <div className="studio-schedule-field">
+                <label htmlFor="studio-schedule-entry">{c.schedule}</label>
+                <div className="studio-schedule-control">
+                  <input id="studio-schedule-entry" type="text" placeholder="YYYY-MM-DDTHH:mm" maxLength={16}
+                    value={form.scheduled} disabled={!canEdit || busy}
+                    onChange={(event) => { explicitDeparture.current = false; setForm({ ...form, scheduled: event.target.value }); setFormError(""); }} />
+                  <span className="studio-schedule-picker">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M7 3v4M17 3v4M3 10h18" /></svg>
+                    <input type="datetime-local" aria-label={c.pickSchedule} title={c.pickSchedule}
+                      value={form.scheduled} disabled={!canEdit || busy}
+                      min="2000-01-01T00:00" max="2199-12-31T23:59"
+                      onClick={(event) => event.currentTarget.showPicker?.()}
+                      onChange={(event) => { explicitDeparture.current = false; setForm({ ...form, scheduled: event.target.value }); setFormError(""); }} />
+                  </span>
+                </div>
+              </div> : <label>{c.schedule}<input type="datetime-local" value={form.scheduled} disabled={!canEdit || busy}
                 min="2000-01-01T00:00" max="2199-12-31T23:59"
-                onChange={(event) => { explicitDeparture.current = false; setForm({ ...form, scheduled: event.target.value }); setFormError(""); }} /></label>
+                onChange={(event) => { explicitDeparture.current = false; setForm({ ...form, scheduled: event.target.value }); setFormError(""); }} /></label>}
               <label>{c.aspect}<select value={form.aspect} disabled={!canEdit || busy}
                 onChange={(event) => { explicitDeparture.current = false; setForm({ ...form, aspect: event.target.value as AspectRatio }); }}>
                 <option value="9:16">{c.tall}</option><option value="16:9">{c.wide}</option>
@@ -683,7 +695,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
                   </div><span>{c.unverified}</span>
                 </li>)}</ul></>}
             </section>
-            <section className="studio-fact">
+            <section className="studio-fact studio-observation">
               <h3>{c.observed}</h3>
               <div className="studio-current-state">{attempt ? <dl>
                 <div><dt>{c.operation}</dt><dd>{c.operationState[attempt.operation_state as keyof typeof c.operationState] ?? attempt.operation_state}</dd></div>
