@@ -301,7 +301,7 @@ Root results on `32d74c0`:
   rejected with 422. It also applied the registered Studio private cache rule
   to an intentionally unregistered nil-runtime 404. The direct SQL freshness
   and existing Studio tests pass. Correction belongs in the test fixture;
-  production body checks must not be relaxed. Focused PG rerun remains pending.
+  production body checks must not be relaxed. Focused PG correction is below.
 - Actual `--browser-input-delivery` exits 0: Go 5.37s, foundation 7.113s;
   two signed HTTPS browser phases pass (2.854s/0.883s). Real IDs traverse
   browser → Next → Go → PG for nullable prepared selection, RESERVED status,
@@ -319,3 +319,25 @@ Owned PG/Next fixtures are removed after each runner. No customer, production
 runtime, provider credentials or external streams were changed. These are
 read/transport gates, **not** BRW06 decoded SFU, BRI07 visible input controls,
 BRW07 INPUT recovery, current-source full regression or deployability acceptance.
+
+### Scoped GET fixture correction and accepted PG read gate
+
+`a74be82` fixes only the new independent test helper: an empty GET uses a nil
+body; the nonempty `{}` GET still must receive 422. The nil-runtime 404 retains
+the global `no-store` assertion in `4b45135`, while registered routes must
+return `private, no-store`. No production guard or shared old test helper changed.
+
+On frozen `4b45135`, `bash scripts/dev/test-local.sh --studio-backend` exits **0**:
+**12 top-level PASS, zero FAIL/SKIP**, foundation 18.926s. This includes the four
+new actual-PG input tests and existing Studio regression. Covered: runtime-only
+function ACL/no raw table access, private mapping stripping, current candidate
+eligibility, kernel-only and legacy separation, independent input/Egress Stop
+responsibility, held/revoked input liability, HTTP negatives and real-clock
+session expiry. The source under test is unchanged from the HTTPS pass above.
+
+- Log: `/Volumes/data/output/studio-input-read-pg-root-repair1-20260928.log`.
+- SHA256: `da2bdc19a9e0e841a524ac600dc0e3933160b4678b4fea566bd1da126c729be1`.
+- Fixture cleanup confirmed: only protected `lc-meta-upgrade-9d14f59e966f`,
+  `humaux-thread-qdrant`, `humaux-thread-pg` remain. Their state was not changed.
+- This closes the **read projection** slice, not camera capture/SFU decoded
+  media, input recovery, current full-suite or production rollout gates.
