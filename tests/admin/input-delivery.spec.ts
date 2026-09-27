@@ -285,7 +285,7 @@ test(
       const headers = {
         "Content-Type": "application/json",
         "X-CSRF-Token": csrfCookie.value,
-        "Idempotency-Key": "brw05-origin-denied",
+        "Idempotency-Key": `brw05-origin-${phase}`,
       };
       const control = await context.request.post(probe, {
         headers: { ...headers, Origin: origin },

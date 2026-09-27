@@ -99,6 +99,7 @@ func TestBrowserInputDeliveryBRW05RealChain(t *testing.T) {
 	proxy := httputil.NewSingleHostReverseProxy(upstream)
 	var revoked atomic.Bool
 	var originGood, originBad, originBadDenied atomic.Int64
+	isOriginProbe := func(key string) bool { return key == "brw05-origin-stop" || key == "brw05-origin-revoke" }
 	var edge *httptest.Server
 	edge = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/__test/revoke-input" {
@@ -115,7 +116,7 @@ func TestBrowserInputDeliveryBRW05RealChain(t *testing.T) {
 			return
 		}
 		r.Header.Set("X-Forwarded-Proto", "https")
-		if strings.HasSuffix(r.URL.Path, "/input/token") && r.Header.Get("Idempotency-Key") == "brw05-origin-denied" {
+		if strings.HasSuffix(r.URL.Path, "/input/token") && isOriginProbe(r.Header.Get("Idempotency-Key")) {
 			// Record only the Origin and status, never a cookie or token. The
 			// positive control and forged request use the same live grant/key.
 			origin := r.Header.Get("Origin")
@@ -174,7 +175,7 @@ func TestBrowserInputDeliveryBRW05RealChain(t *testing.T) {
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, "/input/token") {
 			inputCalls.Add(1)
-			if r.Header.Get("Idempotency-Key") == "brw05-origin-denied" {
+			if isOriginProbe(r.Header.Get("Idempotency-Key")) {
 				originProbeCalls.Add(1)
 			}
 			switch r.Header.Get("Idempotency-Key") {
@@ -300,12 +301,19 @@ func TestBrowserInputDeliveryBRW05RealChain(t *testing.T) {
 	for _, item := range []struct {
 		h      *brwHarness
 		expiry int64
-	}{{stopCase, stopExpiry.Load()}, {revokeCase, revokeExpiry.Load()}} {
+		key    string
+	}{{stopCase, stopExpiry.Load(), "brw05-origin-stop"}, {revokeCase, revokeExpiry.Load(), "brw05-origin-revoke"}} {
 		var issued, expiry int64
 		var room, publisher string
 		attempt := item.h.specification["attempt_id"].(string)
 		if err := item.h.lp.f.owner.QueryRow(ctx, `SELECT grant_iat,grant_exp,room_name,publisher_identity FROM live.media_input_custody WHERE attempt_id=$1`, attempt).Scan(&issued, &expiry, &room, &publisher); err != nil || issued < 1 || expiry <= issued || expiry-issued > 60 || expiry != item.expiry || room != "lc_"+strings.ReplaceAll(attempt, "-", "") || !strings.HasPrefix(publisher, "lcp_") {
 			t.Fatalf("committed fixed input grant invalid: err=%v", err)
+		}
+		var receiptAttempt string
+		if err := item.h.lp.f.owner.QueryRow(ctx, `SELECT response->>'attempt_id' FROM ops.command_results
+			WHERE tenant_id=$1 AND store_id=$2 AND operation='live.media.input.reserve' AND idempotency_key=$3`,
+			item.h.lp.f.tenantA, item.h.lp.f.storeA1, item.key).Scan(&receiptAttempt); err != nil || receiptAttempt != attempt {
+			t.Fatalf("committed phase-specific input receipt mismatch: err=%v", err)
 		}
 	}
 	var stopped, stopClosed, stopRevoked bool
