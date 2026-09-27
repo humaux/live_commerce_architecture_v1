@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
@@ -22,7 +23,7 @@ import (
 	"livecommerce/internal/platform"
 )
 
-func registerStudioRoutes(mux *http.ServeMux, pool *pgxpool.Pool, planner *live.MediaPlanner) {
+func registerStudioRoutes(mux *http.ServeMux, pool *pgxpool.Pool, planner *live.MediaPlanner, browserInput *live.BrowserInputRuntime) {
 	if planner == nil {
 		return
 	}
@@ -77,10 +78,74 @@ func registerStudioRoutes(mux *http.ServeMux, pool *pgxpool.Pool, planner *live.
 		}
 		return studioReceipt{SessionID: out.SessionID, AttemptID: out.AttemptID, State: out.State}, nil
 	})))
+	if browserInput != nil {
+		mux.HandleFunc("POST "+base+"/{session_id}/input/start", studioRoute(http.MethodPost, false, studioBodyRoute(pool, "live:manage", []string{"authorization_id", "expected_session_version"}, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in start) (any, error) {
+			out, err := planner.PlanBrowserInputStart(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), live.MediaStartInput{SessionID: r.PathValue("session_id"), AuthorizationID: in.AuthorizationID, ExpectedSessionVersion: in.ExpectedSessionVersion}, browserInput)
+			if err != nil {
+				return nil, err
+			}
+			return studioReceipt{SessionID: out.SessionID, AttemptID: out.AttemptID, State: out.State}, nil
+		})))
+		type reserve struct {
+			AttemptID              string `json:"attempt_id"`
+			ExpectedSessionVersion int64  `json:"expected_session_version"`
+		}
+		mux.HandleFunc("POST "+base+"/{session_id}/input/token", studioRoute(http.MethodPost, false, func(w http.ResponseWriter, r *http.Request) {
+			in, ok := studioDecodeBody[reserve](w, r, []string{"attempt_id", "expected_session_version"})
+			if !ok {
+				return
+			}
+			header := r.Header.Get("Authorization")
+			if !strings.HasPrefix(header, "Bearer ") || strings.ContainsAny(strings.TrimPrefix(header, "Bearer "), " \t\r\n") {
+				respondError(w, http.StatusUnauthorized, "unauthorized")
+				return
+			}
+			var grant live.MediaInputGrant
+			ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+			defer cancel()
+			err := platform.WithScope(ctx, pool, bearerToken(r), r.PathValue("store_id"), "live:manage", func(tx pgx.Tx, s platform.Scope) error {
+				var reserveErr error
+				grant, reserveErr = planner.ReserveBrowserInput(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), live.MediaInputReserveInput{SessionID: r.PathValue("session_id"), AttemptID: in.AttemptID, ExpectedSessionVersion: in.ExpectedSessionVersion}, browserInput)
+				return reserveErr
+			})
+			if err != nil {
+				status, code := classify(err)
+				respondError(w, status, code)
+				return
+			}
+			// WithScope returning nil is the COMMIT acknowledgement; no token exists before it.
+			url, token, err := browserInput.MintPublisher(grant)
+			if err != nil {
+				status, code := classify(err)
+				respondError(w, status, code)
+				return
+			}
+			body, err := json.Marshal(struct {
+				AttemptID         string `json:"attempt_id"`
+				RoomName          string `json:"room_name"`
+				PublisherIdentity string `json:"publisher_identity"`
+				URL               string `json:"url"`
+				Token             string `json:"token"`
+				ExpiresAt         int64  `json:"expires_at"`
+			}{grant.AttemptID, grant.RoomName, grant.PublisherIdentity, url, token.Bearer(), grant.ExpiresAt})
+			if err != nil || len(body) > 8192 {
+				respondError(w, http.StatusInternalServerError, "internal")
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(body)
+		}))
+	}
 	// Methodless fallbacks keep method errors inside the same private response
-	// boundary. The six method-qualified routes above remain the only actions.
+	// boundary. Optional input routes are absent until explicitly configured.
 	for _, path := range []string{base, base + "/{session_id}", base + "/{session_id}/rehearsal/start", base + "/{session_id}/rehearsal/stop"} {
 		mux.HandleFunc(path, studioRoute("", false, nil))
+	}
+	if browserInput != nil {
+		for _, path := range []string{base + "/{session_id}/input/start", base + "/{session_id}/input/token"} {
+			mux.HandleFunc(path, studioRoute("", false, nil))
+		}
 	}
 }
 
@@ -152,34 +217,42 @@ func studioPage(u *url.URL) (pagination.Request, error) {
 // The generic bodyRoute does not reject duplicate JSON keys; Studio does.
 func studioBodyRoute[T any](pool *pgxpool.Pool, permission string, fields []string, fn func(context.Context, pgx.Tx, platform.Scope, *http.Request, T) (any, error)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		media, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
-		if err != nil || media != "application/json" {
-			respondError(w, http.StatusUnsupportedMediaType, "json_required")
-			return
-		}
-		r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
-		defer r.Body.Close()
-		raw, err := io.ReadAll(r.Body)
-		if err != nil || !utf8.Valid(raw) || !studioUniqueJSON(raw, fields) {
-			respondError(w, http.StatusBadRequest, "invalid_json")
-			return
-		}
-		var in T
-		dec := json.NewDecoder(bytes.NewReader(raw))
-		dec.DisallowUnknownFields()
-		if err := dec.Decode(&in); err != nil {
-			respondError(w, http.StatusBadRequest, "invalid_json")
-			return
-		}
-		var extra any
-		if err := dec.Decode(&extra); !errors.Is(err, io.EOF) {
-			respondError(w, http.StatusBadRequest, "invalid_json")
+		in, ok := studioDecodeBody[T](w, r, fields)
+		if !ok {
 			return
 		}
 		scoped(pool, permission, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
 			return fn(ctx, tx, s, r, in)
 		})(w, r)
 	}
+}
+
+func studioDecodeBody[T any](w http.ResponseWriter, r *http.Request, fields []string) (T, bool) {
+	var in T
+	media, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	if err != nil || media != "application/json" {
+		respondError(w, http.StatusUnsupportedMediaType, "json_required")
+		return in, false
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
+	defer r.Body.Close()
+	raw, err := io.ReadAll(r.Body)
+	if err != nil || !utf8.Valid(raw) || !studioUniqueJSON(raw, fields) {
+		respondError(w, http.StatusBadRequest, "invalid_json")
+		return in, false
+	}
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&in); err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_json")
+		return in, false
+	}
+	var extra any
+	if err := dec.Decode(&extra); !errors.Is(err, io.EOF) {
+		respondError(w, http.StatusBadRequest, "invalid_json")
+		return in, false
+	}
+	return in, true
 }
 
 func studioUniqueJSON(raw []byte, fields []string) bool {
