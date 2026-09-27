@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 
+	"livecommerce/internal/command"
 	"livecommerce/internal/live"
 	"livecommerce/internal/platform"
 )
@@ -119,9 +119,21 @@ func TestLiveBrowserInputBRW01PlannerRollbackAndCommitAckLoss(t *testing.T) {
 				marker, unissued, noExecutionProjection, steps, err)
 		}
 		raw, err := json.Marshal(replayed)
-		if err != nil || strings.Contains(strings.ToLower(string(raw)), "token") ||
-			strings.Contains(strings.ToLower(string(raw)), "jwt") || strings.Contains(strings.ToLower(string(raw)), "secret") {
-			t.Fatalf("planner receipt exposed token material or could not be encoded: err=%v", err)
+		if err != nil {
+			t.Fatalf("planner receipt could not be encoded: %v", err)
+		}
+		var fields map[string]json.RawMessage
+		if err := json.Unmarshal(raw, &fields); err != nil {
+			t.Fatalf("planner receipt could not be decoded: %v", err)
+		}
+		allowed := []string{"session_id", "program_id", "attempt_id", "operation_id", "job_id", "room_name", "state"}
+		if len(fields) != len(allowed) {
+			t.Fatalf("planner receipt field count changed: got %d, want %d", len(fields), len(allowed))
+		}
+		for _, field := range allowed {
+			if _, ok := fields[field]; !ok {
+				t.Fatalf("planner receipt missing permitted field %q", field)
+			}
 		}
 		if transport.calls.Load() != 0 {
 			t.Fatal("ACK-loss plan or replay performed provider I/O")
@@ -140,8 +152,8 @@ func TestLiveBrowserInputBRW01PlannerRollbackAndCommitAckLoss(t *testing.T) {
 		}
 		before := bicOwnedFacts(t, h)
 		if _, err := h.registrar.Exec(context.Background(),
-			`SELECT live.register_media_input_runtime_profile($1::uuid)`, h.input.AuthorizationID); err == nil {
-			t.Fatal("registrar upgraded an existing kernel-only attempt")
+			`SELECT live.register_media_input_runtime_profile($1::uuid)`, h.input.AuthorizationID); sqlState(err) != "MP409" {
+			t.Fatalf("registrar rejection must be MP409 for existing kernel-only attempt: err=%v", err)
 		}
 		err = platform.WithScope(context.Background(), h.lp.f.runtime, h.logins.a, h.lp.f.storeA1,
 			"store:read", func(tx pgx.Tx, scope platform.Scope) error {
@@ -149,7 +161,7 @@ func TestLiveBrowserInputBRW01PlannerRollbackAndCommitAckLoss(t *testing.T) {
 					key, h.input, runtime)
 				return planErr
 			})
-		if err == nil || bicOwnedFacts(t, h) != before {
+		if !errors.Is(err, command.ErrConflict) || bicOwnedFacts(t, h) != before {
 			t.Fatalf("browser planner replayed/upgraded marker 0: err=%v facts=%v -> %v", err, before, bicOwnedFacts(t, h))
 		}
 		var marker int
