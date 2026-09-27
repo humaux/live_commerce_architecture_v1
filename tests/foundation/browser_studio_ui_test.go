@@ -105,8 +105,8 @@ func TestBrowserStudioUIRealChain(t *testing.T) {
 			// Task-owned identity fixture only: expire the OIDC-issued login
 			// while its Studio page is open, never a production/provider login.
 			result, err := h.lp.f.owner.Exec(r.Context(), `UPDATE identity.sessions s SET expires_at=clock_timestamp()-interval '1 minute'
-				WHERE s.id IN (SELECT ev.session_id FROM identity.session_events ev JOIN identity.external_identities e ON e.principal_id=s.principal_id
-				WHERE ev.session_id=s.id AND ev.action='session.issued' AND e.issuer=$1 AND e.subject='browser-subject')`, idp.server.URL)
+				WHERE s.id=(SELECT ev.session_id FROM identity.session_events ev JOIN identity.external_identities e ON e.principal_id=ev.principal_id
+				WHERE ev.action='session.issued' AND e.issuer=$1 AND e.subject='browser-subject' ORDER BY ev.created_at DESC,ev.id DESC LIMIT 1)`, idp.server.URL)
 			if err != nil || result.RowsAffected() != 1 {
 				http.Error(w, "fixture_expiry_failed", http.StatusInternalServerError)
 				return
@@ -221,21 +221,24 @@ func TestBrowserStudioUIRealChain(t *testing.T) {
 		t.Fatalf("STU04 browser gate: %v; evidence=%s", err, evidence)
 	}
 	mrStop(t, worker, syscall.SIGTERM, true)
-	if studioCalls.Load() < 12 || badAuthority.Load() != 0 || faultCount.Load() != 1 || h.starts.Load() != 1 || h.stops.Load() != 1 {
+	if studioCalls.Load() < 12 || badAuthority.Load() != 0 || faultCount.Load() != 2 || h.starts.Load() != 1 || h.stops.Load() != 1 {
 		t.Fatalf("real chain counters calls=%d authority=%d lost_ack=%d starts=%d stops=%d evidence=%s", studioCalls.Load(), badAuthority.Load(), faultCount.Load(), h.starts.Load(), h.stops.Load(), evidence)
 	}
 	faultKeysMu.Lock()
 	keys := append([]string(nil), faultKeys...)
 	faultKeysMu.Unlock()
-	if len(keys) < 3 || keys[len(keys)-1] == "" || keys[len(keys)-1] != keys[len(keys)-2] {
+	if len(keys) != 4 || keys[1] == "" || keys[1] != keys[2] || keys[3] == keys[1] {
 		t.Fatalf("lost-ACK retry changed command key: requests=%d evidence=%s", len(keys), evidence)
 	}
 	var duplicateCount int
 	if err := h.lp.f.owner.QueryRow(ctx, `SELECT count(*) FROM live.sessions WHERE tenant_id=$1 AND store_id=$2 AND title='STU04 lost ACK scene'`, h.lp.f.tenantA, h.lp.f.storeA1).Scan(&duplicateCount); err != nil || duplicateCount != 1 {
 		t.Fatalf("lost-ACK effect count=%d err=%v evidence=%s", duplicateCount, err, evidence)
 	}
+	if err := h.lp.f.owner.QueryRow(ctx, `SELECT count(*) FROM live.sessions WHERE tenant_id=$1 AND store_id=$2 AND title='STU04 swapped login scene'`, h.lp.f.tenantA, h.lp.f.storeA1).Scan(&duplicateCount); err != nil || duplicateCount != 1 {
+		t.Fatalf("swapped-login effect count=%d err=%v evidence=%s", duplicateCount, err, evidence)
+	}
 	var issued int
-	if err := h.lp.f.owner.QueryRow(ctx, `SELECT count(*) FROM identity.sessions s JOIN identity.session_events ev ON ev.session_id=s.id AND ev.action='session.issued' JOIN identity.external_identities e ON e.principal_id=s.principal_id WHERE e.issuer=$1 AND e.subject='browser-subject' AND s.token_hash<>$2`, idp.server.URL, tokenHash(h.lp.token)).Scan(&issued); err != nil || issued != 1 {
+	if err := h.lp.f.owner.QueryRow(ctx, `SELECT count(*) FROM identity.sessions s JOIN identity.session_events ev ON ev.session_id=s.id AND ev.action='session.issued' JOIN identity.external_identities e ON e.principal_id=s.principal_id WHERE e.issuer=$1 AND e.subject='browser-subject' AND s.token_hash<>$2`, idp.server.URL, tokenHash(h.lp.token)).Scan(&issued); err != nil || issued != 2 {
 		t.Fatalf("signed browser login count=%d err=%v evidence=%s", issued, err, evidence)
 	}
 	var resource string
