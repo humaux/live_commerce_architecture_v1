@@ -142,10 +142,12 @@ func brwBlockedFinalReserve(t *testing.T, h *brwHarness, lease brwLease) (int, <
 	if err := conn.QueryRow(context.Background(), `SELECT pg_backend_pid()`).Scan(&pid); err != nil {
 		t.Fatal(err)
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	t.Cleanup(cancel)
 	done := make(chan error, 1)
 	go func() {
 		var raw []byte
-		done <- conn.QueryRow(context.Background(), `SELECT live.reserve_media_input_start(
+		done <- conn.QueryRow(ctx, `SELECT live.reserve_media_input_start(
 			$1::uuid,$2::bigint,$3::bytea,$4::text,$5::text,$6::text,$7::text,
 			$8::boolean,$9::boolean,$10::boolean,$11::boolean)`,
 			h.plan.OperationID, lease.generation, lease.key, h.plan.RoomName,
@@ -184,12 +186,17 @@ func TestLiveBrowserInputBRW02ConcurrentStopAndRevokeBeforeFinalReservation(t *t
 		if err := holder.QueryRow(context.Background(), `SELECT pg_backend_pid()`).Scan(&holderPID); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := holder.Exec(context.Background(), `SELECT id FROM integration.operations WHERE id=$1 FOR UPDATE`, f.h.plan.OperationID); err != nil {
+		// The final reservation takes binding SHARE before authorization SHARE.
+		// Holding the binding lets revoke commit before the waiter can take its
+		// authorization SHARE lock; holding operation here would self-deadlock.
+		if _, err := holder.Exec(context.Background(), `SELECT id FROM integration.bindings WHERE id=$1 FOR UPDATE`, f.h.media); err != nil {
 			t.Fatal(err)
 		}
 		waiterPID, done := brwBlockedFinalReserve(t, f.h, lease)
 		lmaObserveBlock(t, f.h.lp.f.owner, waiterPID, holderPID, false)
-		if _, err := f.h.registrar.Exec(context.Background(),
+		revokeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if _, err := f.h.registrar.Exec(revokeCtx,
 			`SELECT live.revoke_prepared_media($1::uuid,$2::uuid,$3::uuid,'operator_revoke')`,
 			f.h.lp.f.tenantA, f.h.lp.f.storeA1, f.h.input.AuthorizationID); err != nil {
 			t.Fatal(err)
@@ -243,11 +250,13 @@ func TestLiveBrowserInputBRW02ConcurrentStopAndRevokeBeforeFinalReservation(t *t
 			t.Fatal(err)
 		}
 		t.Cleanup(stopPool.Close)
+		stopCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		t.Cleanup(cancel)
 		stopDone := make(chan error, 1)
 		go func() {
-			stopDone <- platform.WithScope(context.Background(), stopPool, f.h.logins.b,
+			stopDone <- platform.WithScope(stopCtx, stopPool, f.h.logins.b,
 				f.h.lp.f.storeA1, "store:read", func(tx pgx.Tx, scope platform.Scope) error {
-					_, err := f.h.planner.RequestStop(context.Background(), tx, scope,
+					_, err := f.h.planner.RequestStop(stopCtx, tx, scope,
 						f.h.logins.b, t04Key("brw-fault-stop"), live.MediaStopInput{
 							SessionID: f.h.session, AttemptID: f.h.plan.AttemptID,
 						})
