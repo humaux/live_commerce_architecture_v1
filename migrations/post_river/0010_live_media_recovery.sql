@@ -37,6 +37,10 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
   AND EXISTS(SELECT 1 FROM pg_catalog.pg_class c
    WHERE c.oid='integration.operation_events'::regclass
     AND c.relrowsecurity AND c.relforcerowsecurity)
+  AND EXISTS(SELECT 1 FROM pg_catalog.pg_roles r
+   WHERE r.rolname='commerce_media_writer' AND NOT r.rolcanlogin
+    AND NOT r.rolsuper AND NOT r.rolbypassrls AND NOT r.rolcreatedb
+    AND NOT r.rolcreaterole AND NOT r.rolreplication)
   AND EXISTS(SELECT 1 FROM pg_catalog.pg_policy p
    WHERE p.polrelid='integration.operation_events'::regclass
     AND p.polname='media_writer_event_read' AND p.polcmd='r' AND p.polpermissive
