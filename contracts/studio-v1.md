@@ -23,8 +23,9 @@ transaction engine, credentials store or generic workflow abstraction.
 Add `live.ListDrafts(ctx, tx, scope, token, pagination.Request)` returning
 `pagination.Page[Draft]` and `live.GetStudio(ctx, tx, scope, token, sessionID)`
 returning the fixed projection below. Both require `live:read`, scoped READ
-COMMITTED and a final current-authorization check. Lists use ascending UUID
-keysets, existing bounded pagination, collection `live-sessions`, and an empty
+COMMITTED and a final current-authorization check. Lists use descending
+`(created_at,id)` keysets, the existing bounded two-key pagination pattern,
+collection `live-sessions`, and an empty
 array rather than null. Cursors bind tenant/store/collection; never OFFSET.
 
 `Studio` has exactly `draft`, `prepared`, `attempt`, `can_manage`:
@@ -33,12 +34,18 @@ array rather than null. Cursors bind tenant/store/collection; never OFFSET.
 - `prepared`: null or `{authorization_id, session_version, start_before,
   environment, destinations}`. At most one current, non-revoked, unexpired
   candidate for the exact session version/aspect and current binding versions;
-  deterministic newest `(created_at,id)` wins. `environment` is always `MOCK`.
+  deterministic newest `(created_at,id)` wins. Require active tenant/store,
+  programme DRAFT with no existing attempt, enabled media/destination bindings,
+  matching provider/asset identity and current semantic versions, following
+  the existing PlanStart predicates. It remains a candidate, not Start authority.
+  `environment` is always `MOCK`.
   `destinations` is an ordinal-ordered array of `{ordinal, provider}` (1..2).
   It describes prepared targets, **not successful or publicly visible streams**.
 - `attempt`: null or `{attempt_id, environment, operation_state, resource_state,
   transport_status, cleanup_required, stop_requested, stop_wire_count,
-  escalated, updated_at}`. These are persisted facts, not inferred success.
+  escalated, updated_at, destinations}`. Destinations use the same safe ordinal/
+  provider shape from the attempt's frozen authorization, not a newer candidate.
+  These are persisted facts, not inferred success.
   No execution row yet means UNOBSERVED, empty transport status and no cleanup
   claim. A queued/UNKNOWN operation is never described as a live broadcast.
   Current one-attempt-per-session invariant remains unchanged.
@@ -83,7 +90,8 @@ IDs, noncanonical query and extra query on non-list routes. Reuse bounded input
 helpers where adequate; do not silently call the existing permissive decoder
 "duplicate-safe". All responses, including errors, are private/no-store.
 
-`Options.Live *live.MediaPlanner` is nil by default and omits all these routes.
+`httpapi.Options.Live *live.MediaPlanner` is nil by default and omits all these
+routes. `cmd/api` owns this composition; `platform` must not import `live`.
 `COMMERCE_STUDIO_ENABLED` accepts absent/empty/0 or 1 only. Enabled assembly
 requires the existing enabled identity and literal loopback listener boundary.
 Build one insert-only River client with schema river_media on the existing
