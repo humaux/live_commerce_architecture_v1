@@ -38,7 +38,8 @@ ALTER TABLE live.media_observations
 ALTER TABLE live.media_execution_state
  ADD CONSTRAINT media_stop_observation_fk FOREIGN KEY
  (stop_observation_id,tenant_id,store_id,attempt_id,operation_id)
- REFERENCES live.media_observations(id,tenant_id,store_id,attempt_id,operation_id);
+ REFERENCES live.media_observations(id,tenant_id,store_id,attempt_id,operation_id)
+ DEFERRABLE INITIALLY IMMEDIATE;
 GRANT UPDATE(claim_started_at,stop_requested_at,stop_requested_by,stop_wire_count,
  stop_first_reserved_at,stop_last_reserved_at,stop_first_generation,stop_last_generation,
  stop_observation_id,stop_exhausted_at) ON live.media_execution_state TO commerce_media_writer;
