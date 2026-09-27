@@ -338,15 +338,21 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 				 AND p.proargtypes[2]='pg_catalog.uuid'::regtype
 				 AND p.proargtypes[3]='pg_catalog.text'::regtype)
 				OR p.oid IN (SELECT x.oid FROM pg_catalog.pg_proc x WHERE x.pronamespace=n.oid
-				 AND x.proname IN ('claim_media_operation','load_media_material','reserve_media_start',
-				 'record_media_observation','finish_media_uncertain'))
+					AND x.proname IN ('claim_media_operation','load_media_material','reserve_media_start',
+					'record_media_observation','finish_media_uncertain',
+					'begin_media_recovery_episode','claim_recovery_observation',
+					'record_recovery_observation','finish_recovery_observation',
+					'read_media_recovery_episode','witness_media_recovery_episode',
+					'timeout_media_recovery_episode','media_recovery_ready',
+					'media_recovery_begin_replay','media_recovery_native_eligible',
+					'qualify_media_recovery_observation'))
 			)
 		)
 		SELECT EXISTS (
 			SELECT 1 FROM reachable r CROSS JOIN fixed f
 			WHERE has_function_privilege(r.oid, f.oid, 'EXECUTE')
 		)`).Scan(&mediaExecute)
-	if err != nil || (mediaExecute && authority != "media_executor") {
+	if err != nil || (mediaExecute && authority != "media_executor" && authority != "media_recovery") {
 		return errors.New("unsafe runtime database role")
 	}
 	if authority == "media_executor" || authority == "media_worker" || authority == "media_recovery" {

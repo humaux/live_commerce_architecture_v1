@@ -156,13 +156,13 @@ BEGIN
   RETURN QUERY SELECT * FROM live.media_recovery_begin_replay(p_episode); RETURN;
  END IF;
  SELECT array_agg(id ORDER BY id) INTO v_ids FROM (
-  SELECT o.id FROM integration.operations o
-  JOIN live.media_execution_state x ON x.operation_id=o.id
-  JOIN live.media_attempts a ON a.id=o.media_attempt_id
-  WHERE a.execution_profile='PROVIDER_MOCK' AND x.wire_reserved_at IS NOT NULL
-   AND x.resource_state<>'TERMINAL' AND x.escalated_at IS NULL
-   AND o.state IN ('DISPATCHING','UNKNOWN')
-  ORDER BY o.id LIMIT p_capacity+1
+  SELECT co.id FROM integration.operations co
+  JOIN live.media_execution_state mx ON mx.operation_id=co.id
+  JOIN live.media_attempts ca ON ca.id=co.media_attempt_id
+  WHERE ca.execution_profile='PROVIDER_MOCK' AND mx.wire_reserved_at IS NOT NULL
+   AND mx.resource_state<>'TERMINAL'
+   AND co.state IN ('DISPATCHING','UNKNOWN')
+  ORDER BY co.id LIMIT p_capacity+1
  ) candidates;
  v_count:=coalesce(array_length(v_ids,1),0);
  v_now:=clock_timestamp();
