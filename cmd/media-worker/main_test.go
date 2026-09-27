@@ -2,7 +2,12 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/pem"
 	"errors"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 )
@@ -44,6 +49,14 @@ func TestMediaWorkerLMW01ConfigBeforeDatabase(t *testing.T) {
 	if err := run(context.Background(), get); !errors.Is(err, errWorkerConfig) || strings.Contains(err.Error(), "private") {
 		t.Fatalf("malformed config reached DB or exposed input: %v", err)
 	}
-	// Nil run context is rejected before any DB I/O when configuration is valid;
-	// the loader's full valid case is exercised in livekit's package tests.
+	server := httptest.NewTLSServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { t.Error("nil context made network request") }))
+	defer server.Close()
+	key := base64.StdEncoding.EncodeToString([]byte(strings.Repeat("k", 32)))
+	ca := string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: server.TLS.Certificates[0].Certificate[0]}))
+	vars["COMMERCE_MEDIA_MATERIAL_ACTIVE_KEY_ID"] = "k1"
+	vars["COMMERCE_MEDIA_MATERIAL_KEYS_JSON"] = fmt.Sprintf(`{"keys":[{"id":"k1","key_base64":%q}]}`, key)
+	vars["COMMERCE_MEDIA_PROJECTS_JSON"] = fmt.Sprintf(`{"projects":[{"project_id":"p1","credential_version":1,"endpoint":"https://unit.livekit.cloud","api_key":"test_key","api_secret":%q,"stream_hosts":["ingest.example.com"],"mock_dial_address":%q,"mock_ca_pem":%q}]}`, strings.Repeat("s", 40), server.Listener.Addr().String(), ca)
+	if err := run(nil, get); !errors.Is(err, errWorkerConfig) {
+		t.Fatalf("valid enabled config with nil context: %v", err)
+	}
 }
