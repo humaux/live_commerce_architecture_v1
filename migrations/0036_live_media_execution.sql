@@ -193,6 +193,33 @@ $$;
 ALTER FUNCTION live.media_dispatch_eligible(uuid) OWNER TO commerce_media_writer;
 REVOKE ALL ON FUNCTION live.media_dispatch_eligible(uuid) FROM PUBLIC;
 
+-- Lifetime liability excludes the start deadline; it does not authorize Stop.
+CREATE FUNCTION live.media_lifetime_revoked(p_id uuid) RETURNS boolean
+LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ SELECT NOT EXISTS(
+  SELECT 1 FROM integration.operations o
+  JOIN live.media_attempts a ON a.id=o.media_attempt_id
+  JOIN live.prepared_media_authorizations h ON h.id=a.authorization_id
+  JOIN control.tenants t ON t.id=a.tenant_id AND t.active
+  JOIN control.stores s ON s.tenant_id=a.tenant_id AND s.id=a.store_id AND s.active
+  JOIN identity.principals ip ON ip.id=a.original_principal_id AND ip.active
+  JOIN identity.memberships im ON im.tenant_id=a.tenant_id AND im.principal_id=ip.id AND im.active
+  JOIN identity.store_grants g ON g.tenant_id=a.tenant_id AND g.store_id=a.store_id
+   AND g.principal_id=ip.id AND g.permission='live:manage'
+  JOIN integration.bindings b ON b.id=h.media_binding_id AND b.tenant_id=a.tenant_id AND b.store_id=a.store_id
+  WHERE o.id=p_id AND o.principal_id=ip.id AND h.attempt_id=a.id
+   AND b.enabled AND b.provider='livekit' AND b.external_asset_id=h.project_id
+   AND b.semantic_version=h.media_binding_version
+   AND NOT EXISTS(SELECT 1 FROM live.media_authorization_revocations r WHERE r.authorization_id=h.id)
+   AND NOT EXISTS(SELECT 1 FROM live.media_authorization_destinations d
+    LEFT JOIN integration.bindings db ON db.id=d.binding_id AND db.tenant_id=a.tenant_id AND db.store_id=a.store_id
+    WHERE d.authorization_id=h.id AND (db.id IS NULL OR NOT db.enabled OR db.provider<>d.provider
+     OR db.external_asset_id<>d.external_asset_id OR db.semantic_version<>d.binding_version))
+ )
+$$;
+ALTER FUNCTION live.media_lifetime_revoked(uuid) OWNER TO commerce_media_writer;
+REVOKE ALL ON FUNCTION live.media_lifetime_revoked(uuid) FROM PUBLIC;
+
 CREATE FUNCTION live.claim_media_operation(p_id uuid,p_job bigint,p_lease_seconds integer,p_token bytea)
 RETURNS TABLE(disposition text,generation bigint,mode text)
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -245,7 +272,7 @@ BEGIN
   v_mode:='dispatch';
  ELSE
   v_mode:='reconcile';
-  IF EXISTS(SELECT 1 FROM live.media_authorization_revocations WHERE authorization_id=h.id) THEN
+  IF live.media_lifetime_revoked(o.id) THEN
    UPDATE live.media_execution_state SET cleanup_required=true,updated_at=clock_timestamp() WHERE attempt_id=a.id;
   END IF;
  END IF;
@@ -340,7 +367,8 @@ CREATE FUNCTION live.record_media_observation(p_id uuid,p_generation bigint,p_to
 RETURNS text LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE o integration.operations%ROWTYPE; x live.media_execution_state%ROWTYPE;
  a live.media_attempts%ROWTYPE; h live.prepared_media_authorizations%ROWTYPE;
- v_terminal boolean; v_rank integer; v_old_rank integer; v_new_state text;
+ v_terminal boolean; v_rank integer; v_old_rank integer; v_coherent boolean;
+ v_started bigint; v_updated bigint; v_ended bigint;
  v_hash bytea; v_now timestamptz; v_cleanup boolean;
 BEGIN
  IF p_id IS NULL OR p_generation IS NULL OR p_generation<1 OR p_token IS NULL OR octet_length(p_token)<>32
@@ -351,7 +379,8 @@ BEGIN
    'EGRESS_COMPLETE','EGRESS_FAILED','EGRESS_ABORTED','EGRESS_LIMIT_REACHED')
   OR p_started IS NULL OR p_started<0 OR p_updated IS NULL OR p_updated<0 OR p_ended IS NULL OR p_ended<0
   OR (p_started>0 AND p_updated>0 AND p_updated<p_started)
-  OR (p_ended>0 AND (p_started=0 OR p_updated=0 OR p_ended<p_started OR p_updated<p_ended))
+  OR (p_ended>0 AND ((p_started>0 AND p_ended<p_started)
+   OR (p_updated>0 AND p_updated<p_ended)))
   OR (p_ended>0 AND p_status NOT IN ('EGRESS_COMPLETE','EGRESS_FAILED','EGRESS_ABORTED','EGRESS_LIMIT_REACHED'))
   OR current_setting('transaction_isolation')<>'read committed' THEN
   RAISE EXCEPTION 'invalid media observation' USING ERRCODE='ME400'; END IF;
@@ -371,12 +400,20 @@ BEGIN
   OR (p_source='ROOM' AND (o.lease_mode<>'reconcile' OR x.egress_id IS NOT NULL))
   OR (p_source='QUERY' AND (o.lease_mode<>'reconcile' OR x.egress_id IS NULL OR x.egress_id<>p_egress)) THEN
   RAISE EXCEPTION 'media observation unavailable' USING ERRCODE='ME409'; END IF;
- v_terminal:=p_status IN ('EGRESS_COMPLETE','EGRESS_FAILED','EGRESS_ABORTED','EGRESS_LIMIT_REACHED') AND p_ended>0;
+ v_started:=greatest(x.started_at_ns,p_started);
+ v_updated:=greatest(x.updated_at_ns,p_updated);
+ v_ended:=greatest(x.ended_at_ns,p_ended);
+ v_coherent:=NOT ((v_started>0 AND v_updated>0 AND v_updated<v_started)
+  OR (v_started>0 AND v_ended>0 AND v_ended<v_started)
+  OR (v_updated>0 AND v_ended>0 AND v_updated<v_ended));
+ IF NOT v_coherent THEN
+  v_started:=x.started_at_ns; v_updated:=x.updated_at_ns; v_ended:=x.ended_at_ns;
+ END IF;
+ v_terminal:=v_coherent AND p_status IN ('EGRESS_COMPLETE','EGRESS_FAILED','EGRESS_ABORTED','EGRESS_LIMIT_REACHED') AND v_ended>0;
  v_rank:=CASE p_status WHEN 'EGRESS_STARTING' THEN 1 WHEN 'EGRESS_ACTIVE' THEN 2
   WHEN 'EGRESS_ENDING' THEN 3 ELSE 4 END;
  v_old_rank:=CASE x.transport_status WHEN 'EGRESS_STARTING' THEN 1 WHEN 'EGRESS_ACTIVE' THEN 2
   WHEN 'EGRESS_ENDING' THEN 3 WHEN '' THEN 0 ELSE 4 END;
- v_new_state:=CASE WHEN v_terminal THEN 'TERMINAL' ELSE 'OBSERVED' END;
  v_hash:=sha256(convert_to(jsonb_build_object('attempt_id',a.id::text,'operation_id',o.id::text,
   'generation',p_generation,'source',p_source,'project_id',h.project_id,'room_name',p_room,
   'egress_id',p_egress,'status',p_status,'started_at_ns',p_started,
@@ -385,15 +422,15 @@ BEGIN
   project_id,room_name,egress_id,status,started_at_ns,updated_at_ns,ended_at_ns,report_hash)
  VALUES(a.tenant_id,a.store_id,a.id,o.id,p_generation,p_source,h.project_id,p_room,p_egress,
   p_status,p_started,p_updated,p_ended,v_hash) ON CONFLICT DO NOTHING;
- v_cleanup:=x.cleanup_required OR EXISTS (SELECT 1 FROM live.media_authorization_revocations
-  WHERE authorization_id=h.id) OR (p_started>0 AND p_updated>0 AND
-  p_updated::numeric-p_started::numeric>=h.max_duration_seconds::numeric*1000000000);
+ v_cleanup:=x.cleanup_required OR live.media_lifetime_revoked(o.id)
+  OR (v_started>0 AND v_updated>0 AND
+  v_updated::numeric-v_started::numeric>=h.max_duration_seconds::numeric*1000000000);
  v_now:=clock_timestamp();
  UPDATE live.media_execution_state SET egress_id=coalesce(x.egress_id,p_egress),
   resource_state=CASE WHEN v_terminal THEN 'TERMINAL' ELSE 'OBSERVED' END,
   transport_status=CASE WHEN v_rank>=v_old_rank THEN p_status ELSE x.transport_status END,
-  started_at_ns=greatest(x.started_at_ns,p_started),updated_at_ns=greatest(x.updated_at_ns,p_updated),
-  ended_at_ns=greatest(x.ended_at_ns,p_ended),cleanup_required=v_cleanup,updated_at=v_now
+  started_at_ns=v_started,updated_at_ns=v_updated,
+  ended_at_ns=v_ended,cleanup_required=v_cleanup,updated_at=v_now
  WHERE attempt_id=a.id;
  UPDATE integration.operations SET state=CASE WHEN v_terminal THEN
    CASE WHEN p_status='EGRESS_COMPLETE' THEN 'SUCCEEDED' ELSE 'FAILED_FINAL' END ELSE 'UNKNOWN' END,
