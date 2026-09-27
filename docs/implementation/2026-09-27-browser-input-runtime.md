@@ -267,8 +267,13 @@ native retry: it applies to ordinary errors as well as rescue, and native
 remains. The old plain MOCK guard does not prove never-discard custody; the
 4096-generation/24h business budget is not a native attempt guarantee.
 
-Owner recovery-latency selection is pending. Before changing policy, freeze
-latency, eligible failures, exhaustion retention and independent fault gates.
+Owner subsequently selected **90 seconds**, decision
+`f0b36444-a4ea-4112-926d-596cfb7fd89f`. The outcome is recorded in the
+[recovery-policy draft](../../contracts/live-media-recovery-v1.md); detailed
+policy and implementation remain pending independent preflight. Before
+changing policy, freeze clock boundaries, eligible failures, exhaustion
+retention and independent fault gates. Current River rescue defaults to one
+hour; the old LMR05 two-hour age shortcut does not prove this wall-clock target.
 Neither a timeout increase nor a fast retry chosen to fit this one test is a
 repair. No retry policy, deadline, external service or customer stream changed.
 

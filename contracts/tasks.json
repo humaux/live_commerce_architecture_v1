@@ -615,7 +615,7 @@
       "boundary": "Studio composition only; previous Orders C approval unchanged. No new runtime, production or STU04 acceptance."
     },
     "studio_ui_candidate": {
-      "status": "UNMERGED_CORE_PG_PASS_NATIVE_NOT_RUN_VISUAL_PENDING",
+      "status": "UNMERGED_CORE_PG_PASS_NATIVE_NOT_RUN_VISUAL_FIX_ROUND2",
       "source_commit": "fc3cfef",
       "test_commit": "52a32af",
       "evidence": "docs/implementation/2026-09-27-studio-ui-acceptance.md",

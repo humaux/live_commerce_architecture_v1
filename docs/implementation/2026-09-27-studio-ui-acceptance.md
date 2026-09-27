@@ -1,6 +1,6 @@
 # Studio B UI acceptance — 2026-09-27
 
-Status: **SOURCE_CANDIDATE_UNMERGED; STU04_CORE_PG_PASS; NATIVE_NOT_RUN; VISUAL_REVIEW_PENDING**.
+Status: **SOURCE_CANDIDATE_UNMERGED; STU04_CORE_PG_PASS; NATIVE_NOT_RUN; VISUAL_FIX_ROUND2**.
 
 User approved **B 场次列表＋双区工作台**, seed `6373bb3f`, in `fb760ff`.
 The approved comp is `.impeccable/mocks/decision/studio-split.png` (1586×992);
@@ -257,6 +257,19 @@ Paths above are relative to the independent test worktree in Scope. Receipt
 `34af68a1-f1a5-414f-b0a7-60668bca69e4` records the test result and task-owned
 PG/worker/browser cleanup. Same-reviewer visual verdict is pending. A visual
 pass cannot waive native conceal or the root integration/full-regression gate.
+
+## First fix verdict and final bounded correction
+
+The same independent reviewer returned **fix**, receipt
+`0c2f687a-2f95-4d01-9d45-196c4eac7bea`. Facebook and English-language display
+were resolved. State-panel geometry was partial: the desktop button remained
+about 160px below the panel instead of forming the comp's close group. The
+English text-only date control introduced a usability regression by removing
+the date-picker entry point. The second and final bounded correction targets
+only these two findings; no broader redesign or new defect hunt is authorized.
+Documentation of the built system follows the last correction, not this
+intermediate layout. If findings remain after the second verdict, escalate
+instead of another automatic polishing round.
 
 ## Remaining boundary
 
