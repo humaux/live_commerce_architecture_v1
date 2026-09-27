@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
+import { createSocket } from 'node:dgram';
 import { existsSync } from 'node:fs';
 import { chmod, mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join, resolve, sep } from 'node:path';
 import test from 'node:test';
@@ -72,6 +74,42 @@ function assertCleanup(evidence, file) {
   }
 }
 
+async function canRebindTCP(port) {
+  const listener = createServer();
+  return new Promise((resolve) => {
+    listener.once('error', () => resolve(false));
+    listener.listen(port, '127.0.0.1', () => listener.close(() => resolve(true)));
+  });
+}
+
+async function canRebindUDP(port) {
+  const socket = createSocket('udp4');
+  return new Promise((resolve) => {
+    socket.once('error', () => { socket.close(); resolve(false); });
+    socket.bind(port, '127.0.0.1', () => socket.close(() => resolve(true)));
+  });
+}
+
+async function assertOwnedResourcesGone(evidence, file) {
+  const r = evidence.resources;
+  assert.ok(r, `safe resource ownership receipt missing; ${file}`);
+  assert.ok(Number.isInteger(r.server_pid) && r.server_pid > 0, `owned server PID missing; ${file}`);
+  let pidGone = false;
+  try { process.kill(r.server_pid, 0); }
+  catch (error) { if (error.code === 'ESRCH') pidGone = true; else throw error; }
+  assert.equal(pidGone, true, `owned server PID still exists; ${file}`);
+  for (const key of ['signal_port', 'rtc_tcp_port', 'fixture_port']) {
+    assert.ok(Number.isInteger(r[key]) && r[key] > 0 && r[key] < 65536, `${key} missing; ${file}`);
+    assert.equal(await canRebindTCP(r[key]), true, `${key} TCP listener remains open; ${file}`);
+  }
+  assert.ok(Number.isInteger(r.rtc_udp_port) && r.rtc_udp_port > 0 && r.rtc_udp_port < 65536,
+    `rtc_udp_port missing; ${file}`);
+  assert.equal(await canRebindUDP(r.rtc_udp_port), true, `RTC UDP listener remains open; ${file}`);
+  assert.ok(typeof r.config_dir === 'string' && r.config_dir.startsWith(tmpdir() + sep),
+    `private config directory path missing or outside task temp; ${file}`);
+  assert.equal(existsSync(r.config_dir), false, `private config directory remains; ${file}`);
+}
+
 function assertRemoteMedia(evidence, file) {
   assert.equal(evidence.gates?.RLI02_remote_tracks, true, `remote A/V tracks absent; ${file}`);
   const c = evidence.counters || {};
@@ -132,7 +170,9 @@ require('node:module').syncBuiltinESMExports();
 test('R04 delivers decoded remote audio and video through the actual local server', async () => {
   const { result, evidence, file } = await runWithEvidence('');
   assertCleanup(evidence, file);
+  await assertOwnedResourcesGone(evidence, file);
   assertRemoteMedia(evidence, file);
+  assert.equal(evidence.capture_mode, 'chromium_fake_get_user_media_wav', `capture must use fake getUserMedia; ${file}`);
   assert.equal(result.code, 0, `R04 source exited nonzero; ${file}`);
   assert.equal(evidence.status, 'PASS', `R04 receipt not PASS; ${file}`);
   for (const key of ['RLI01_pins', 'RLI01_loopback_ready', 'RLI03_decoded_media',
@@ -140,6 +180,14 @@ test('R04 delivers decoded remote audio and video through the actual local serve
     'RLI05_subscriber_removal', 'RLI05_room_empty']) {
     assert.equal(evidence.gates?.[key], true, `${key} must pass; ${file}`);
   }
+  for (const key of ['expired', 'tampered']) {
+    assert.deepEqual(evidence.auth?.[key], { reason: 'NotAllowed', status: 401 },
+      `${key} must be server authentication rejection; ${file}`);
+  }
+  assert.deepEqual(evidence.observer_denial, {
+    server_can_publish: false, server_track_count: 0, client_error: 'PublishTrackError',
+    client_status: 403, denial_layer: 'client_permissions',
+  }, `observer publish denial must be classified exactly; ${file}`);
 });
 
 test('R04 injected post-publish failure retains media proof and cleans owned resources', async () => {
@@ -148,5 +196,24 @@ test('R04 injected post-publish failure retains media proof and cleans owned res
   assert.equal(evidence.status, 'FAIL', `injected fault must not be PASS; ${file}`);
   assert.equal(evidence.failure, 'injected_after_publish', `fault must occur after publish; ${file}`);
   assertCleanup(evidence, file);
+  await assertOwnedResourcesGone(evidence, file);
   assertRemoteMedia(evidence, file);
+  assert.equal(evidence.capture_mode, 'chromium_fake_get_user_media_wav', `capture must use fake getUserMedia; ${file}`);
+  assert.notEqual(evidence.gates?.RLI05_room_empty, true,
+    `fault must not claim an authoritative room-empty query it did not perform; ${file}`);
+});
+
+test('R04 injected operation timeout cannot continue acquiring resources after cleanup', async () => {
+  const { result, evidence, file } = await runWithEvidence('timeout-after-publish');
+  assert.notEqual(result.code, 0, `injected timeout must exit nonzero; ${file}`);
+  assert.equal(evidence.status, 'FAIL', `injected timeout must not be PASS; ${file}`);
+  assert.equal(evidence.failure, 'injected_timeout_after_publish', `wrong timeout failure class; ${file}`);
+  assertCleanup(evidence, file);
+  await assertOwnedResourcesGone(evidence, file);
+  await new Promise(resolve => setTimeout(resolve, 500));
+  await assertOwnedResourcesGone(evidence, file);
+  assertRemoteMedia(evidence, file);
+  assert.equal(evidence.capture_mode, 'chromium_fake_get_user_media_wav', `capture must use fake getUserMedia; ${file}`);
+  assert.notEqual(evidence.gates?.RLI05_room_empty, true,
+    `fault must not claim an authoritative room-empty query it did not perform; ${file}`);
 });
