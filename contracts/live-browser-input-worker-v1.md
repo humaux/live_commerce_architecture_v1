@@ -23,6 +23,14 @@ Egress terminal does NOT suppress input cleanup. The original job cannot
 complete, be cancelled, discarded, deleted or replaced while either liability
 is unresolved. No new generation at held idle; snooze the original job 60s.
 
+The native job guard must enforce the joint predicate, not merely input
+`state != CLOSED`: an input-profile attempt remains protected unless input is
+CLOSED AND either Egress is coherently TERMINAL or Start has been permanently
+disabled without any wire reservation. Apply this to all native completion,
+cancel/discard/delete/rescue paths and preserve the existing MRR batch-safe
+pending/hold behavior. Missing or contradictory custody/projection fails closed;
+absence of a child row is not terminal proof. Legacy guards remain unchanged.
+
 ## Deadline correction when activating BIC
 
 The BIC-only claim currently checks `start_before` and dispatch eligibility on
@@ -83,9 +91,20 @@ reservation and never repeats that same wire step.
 
 ### Observation and single Start
 
-Continue `claim_media_input_operation(operation, job, lease_seconds, lease_key)`
-and `load_media_input_custody(operation, generation, lease_key)`. New behavior
-is marker-gated; the exact BIC load DTO remains unchanged. Add:
+Add executor-only
+`claim_browser_input_operation(uuid,bigint,integer,bytea)` with the existing
+`(disposition text,generation bigint,mode text)` result. It checks the original
+input queue/job and immutable marker BEFORE granting any provider-capable lease.
+Marker 0 returns `kernel_only`, current generation, empty mode without changing
+lease/generation; worker snoozes 60s and performs no provider I/O. Marker 1 uses
+the corrected lifetime/independent-work algorithm and normal busy/claimed/
+terminal/held dispositions. Existing `claim_media_input_operation` retains
+marker-0 BIC behavior but rejects marker 1, preventing old semantics from
+dispatching or prematurely closing runtime attempts. This is a distinct ABI,
+not an inferred marker from custody state or the unchanged load DTO.
+
+Continue `load_media_input_custody(operation, generation, lease_key)` for the
+fenced nonsecret BIC target; its exact DTO remains unchanged. Add:
 
 ```sql
 live.reserve_media_input_start(
