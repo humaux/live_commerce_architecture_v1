@@ -18,6 +18,7 @@ import (
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"github.com/riverqueue/river/rivermigrate"
 
+	"livecommerce/internal/integrations/livekit"
 	"livecommerce/internal/live"
 	"livecommerce/migrations"
 )
@@ -733,6 +734,27 @@ func TestLiveMediaExecutionLME08EscalationAndNoFallback(t *testing.T) {
 		var ready bool
 		if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT live.media_plan_ready() AND live.media_worker_ready()`).Scan(&ready); err != nil || !ready {
 			t.Fatalf("durably escalated retention globally blocked future planning: %t %v", ready, err)
+		}
+	})
+	t.Run("material-authentication-failure-no-wire", func(t *testing.T) {
+		h := lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "no provider", 500) })
+		// Keep the envelope/key ID/config valid, but replace only the key bytes.
+		// This reaches GCM authentication failure, not credential selection denial.
+		wrongKeys, err := livekit.NewMaterialKeyring("lma_key_1", map[string][]byte{
+			"lma_key_1": bytes.Repeat([]byte{0x38}, 32),
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		h.keys = wrongKeys
+		h.startWorker(t)
+		f := h.await(t, 15*time.Second, func(f lmeFacts) bool {
+			return f.result == "material_invalid" && f.operation == "UNKNOWN" && !f.leaseOpen && f.events >= 2
+		})
+		if f.reserved || f.resource != "UNOBSERVED" || f.observations != 0 || f.egress != "" ||
+			f.startedNS != 0 || f.updatedNS != 0 || f.endedNS != 0 ||
+			h.starts.Load()+h.lists.Load()+h.queries.Load()+h.stops.Load() != 0 {
+			t.Fatalf("invalid material dispatched or fabricated provider facts: %+v", f)
 		}
 	})
 	t.Run("wrong-credential-no-fallback", func(t *testing.T) {
