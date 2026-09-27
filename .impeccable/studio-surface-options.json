@@ -1,0 +1,67 @@
+{
+  "title": "直播工作室布局",
+  "question": "三版只改变工作室操作结构，沿用现有后台风格。请选择一版；也可以说明要合并或修改哪里。示例中的演练仅为本地模拟，不是公开直播。",
+  "options": [
+    {
+      "id": "tabs",
+      "label": "A 分页式工作台",
+      "kicker": "THE ROLL",
+      "thesis": "节目设置与演练分开，减少误操作。",
+      "palette": [
+        "#193c61",
+        "#247965",
+        "#f5f7fa",
+        "#ffffff"
+      ],
+      "materials": [
+        "现有后台控件",
+        "细分隔线"
+      ],
+      "viewport": "场次切换条、两项页签和宽表单。",
+      "risk": "查看演练状态需要切换页签。",
+      "comp": ".impeccable/mocks/decision/studio-tabs.png"
+    },
+    {
+      "id": "split",
+      "label": "B 场次列表＋双区工作台",
+      "thesis": "左侧切场次，中间编辑，右侧同时看状态。",
+      "palette": [
+        "#193c61",
+        "#247965",
+        "#f5f7fa",
+        "#ffffff"
+      ],
+      "materials": [
+        "现有后台控件",
+        "细分隔线"
+      ],
+      "viewport": "场次列表、节目表单、独立状态栏。",
+      "risk": "小屏需要按列表、表单、状态依次重排。",
+      "comp": ".impeccable/mocks/decision/studio-split.png"
+    },
+    {
+      "id": "inline",
+      "label": "C 场次表格原位展开",
+      "thesis": "点开场次行，原地编辑并查看演练状态。",
+      "palette": [
+        "#193c61",
+        "#247965",
+        "#f5f7fa",
+        "#ffffff"
+      ],
+      "materials": [
+        "现有后台控件",
+        "细分隔线"
+      ],
+      "viewport": "全宽场次表格，选中行下方展开操作区。",
+      "risk": "展开后会占用列表高度。",
+      "comp": ".impeccable/mocks/decision/studio-inline.png"
+    }
+  ],
+  "reroll": true,
+  "steer": true,
+  "buildPath": {
+    "value": "comp",
+    "toggle": true
+  }
+}
