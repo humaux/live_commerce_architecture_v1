@@ -30,6 +30,8 @@ const deadline = async (label, promise, ms = 12_000) => {
   try { return await Promise.race([promise, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`${label}_timeout`)), ms); })]); }
   finally { clearTimeout(timer); }
 };
+const remaining = (ms = 12_000) => Math.max(1, Math.min(ms, MAX_MS - (Date.now() - started)));
+const budgeted = (label, promise, ms) => deadline(label, promise, remaining(ms));
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const assert = (condition, label) => { if (!condition) throw new Error(label); };
 const assertBudget = () => assert(Date.now() - started < MAX_MS, 'runtime_budget_exceeded');
@@ -75,19 +77,20 @@ async function udpPort() {
 }
 async function waitReady(url) {
   for (let n = 0; n < 100; n++) {
+    assertBudget();
     if (server.exitCode !== null) throw new Error('server_exited_before_ready');
-    try { const r = await fetch(`${url}/`, { signal: AbortSignal.timeout(500) }); if (r.status < 500) return; } catch {}
+    try { const r = await fetch(`${url}/`, { signal: AbortSignal.timeout(remaining(500)) }); if (r.status < 500) return; } catch {}
     await pause(100);
   }
   throw new Error('server_not_ready');
 }
 const pageHTML = `<!doctype html><meta charset="utf-8"><title>R04 synthetic media fixture</title><video id="remote" autoplay playsinline muted></video><script src="/sdk.js"></script>`;
 async function pageSetup(page) {
-  await page.goto(page.fixtureURL);
-  await page.waitForFunction(() => !!window.LivekitClient);
+  await page.goto(page.fixtureURL, { timeout: remaining(10_000) });
+  await page.waitForFunction(() => !!window.LivekitClient, null, { timeout: remaining(10_000) });
 }
 async function connect(page, wsURL, jwt, role) {
-  return deadline(`${role}_connect`, page.evaluate(async ({ wsURL, jwt, role }) => {
+  return budgeted(`${role}_connect`, page.evaluate(async ({ wsURL, jwt, role }) => {
     const lk = window.LivekitClient;
     const room = new lk.Room({ adaptiveStream: false, dynacast: false, autoSubscribe: role === 'observer' });
     window.probeRoom = room;
@@ -111,8 +114,8 @@ async function connect(page, wsURL, jwt, role) {
   }, { wsURL, jwt, role }), 15_000);
 }
 async function waitTracks(page, publisherID) {
-  await page.evaluate(id => { window.expectedPublisher = id; }, publisherID);
-  await deadline('remote_tracks', page.waitForFunction(() => !!window.probeTracks?.video && !!window.probeTracks?.audio), 18_000);
+  await budgeted('set_expected_publisher', page.evaluate(id => { window.expectedPublisher = id; }, publisherID));
+  await page.waitForFunction(() => !!window.probeTracks?.video && !!window.probeTracks?.audio, null, { timeout: remaining(18_000) });
 }
 async function startPlayback(page) {
   return page.evaluate(async () => {
@@ -229,9 +232,10 @@ async function rejectedJWT(page, wsURL, jwt) {
   }, { wsURL, jwt });
 }
 async function participants(url, jwt, room) {
+  assertBudget();
   const r = await fetch(`${url}/twirp/livekit.RoomService/ListParticipants`, {
     method: 'POST', headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ room }), signal: AbortSignal.timeout(3000),
+    body: JSON.stringify({ room }), signal: AbortSignal.timeout(remaining(3000)),
   });
   assert(r.ok, 'room_query_failed');
   const body = await r.json();
@@ -256,8 +260,12 @@ async function cleanup() {
     }
     if (server) evidence.cleanup.server = server.exitCode !== null || server.signalCode !== null;
   } catch { evidence.cleanup.server = false; }
-  try { if (configPath) await unlink(configPath); if (wavPath) await unlink(wavPath); if (configDir) await rmdir(configDir); evidence.cleanup.config = true; }
-  catch { evidence.cleanup.config = false; }
+  let configClean = true;
+  for (const file of [configPath, wavPath]) {
+    if (file) try { await unlink(file); } catch (error) { if (error?.code !== 'ENOENT') configClean = false; }
+  }
+  if (configDir) try { await rmdir(configDir); } catch { configClean = false; }
+  evidence.cleanup.config = configClean;
 }
 async function run() {
   assert(fault === '' || fault === 'after-publish' || fault === 'timeout-after-publish', 'invalid_fault_value');
@@ -303,29 +311,31 @@ async function run() {
     else if (req.url === '/sdk.js') { res.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'no-store' }); res.end(sdk); }
     else { res.writeHead(404, { 'cache-control': 'no-store' }); res.end(); }
   });
-  await new Promise((resolve, reject) => httpServer.once('error', reject).listen(fixturePort, '127.0.0.1', resolve));
-  browser = await chromium.launch({ headless: true, args: ['--use-fake-device-for-media-stream', `--use-file-for-fake-audio-capture=${wavPath}`, '--use-fake-ui-for-media-stream', '--autoplay-policy=no-user-gesture-required'] });
-  publisherContext = await browser.newContext({ permissions: ['camera', 'microphone'] });
-  observerContext = await browser.newContext();
+  await budgeted('fixture_listen', new Promise((resolve, reject) => httpServer.once('error', reject).listen(fixturePort, '127.0.0.1', resolve)));
+  browser = await chromium.launch({ headless: true, timeout: remaining(15_000), args: ['--use-fake-device-for-media-stream', `--use-file-for-fake-audio-capture=${wavPath}`, '--use-fake-ui-for-media-stream', '--autoplay-policy=no-user-gesture-required'] });
+  publisherContext = await budgeted('publisher_context_create', browser.newContext({ permissions: ['camera', 'microphone'] }));
+  observerContext = await budgeted('observer_context_create', browser.newContext());
+  publisherContext.setDefaultTimeout(remaining(12_000));
+  observerContext.setDefaultTimeout(remaining(12_000));
   let unexpected = 0;
   for (const context of [publisherContext, observerContext]) {
-    await context.route('**/*', route => {
+    await budgeted('route_install', context.route('**/*', route => {
       const u = new URL(route.request().url());
       if (u.hostname === '127.0.0.1' && (u.port === String(fixturePort) || u.port === String(signalPort))) return route.continue();
       unexpected++;
       return route.abort();
-    });
+    }));
   }
-  const publisher = await publisherContext.newPage();
-  const observer = await observerContext.newPage();
+  const publisher = await budgeted('publisher_page_create', publisherContext.newPage());
+  const observer = await budgeted('observer_page_create', observerContext.newPage());
   publisher.fixtureURL = observer.fixtureURL = `http://127.0.0.1:${fixturePort}/fixture`;
-  await Promise.all([pageSetup(publisher), pageSetup(observer)]);
+  await budgeted('fixture_pages', Promise.all([pageSetup(publisher), pageSetup(observer)]));
   const pubToken = token(apiKey, secret, pubID, grant(room, true, false));
   const obsToken = token(apiKey, secret, obsID, grant(room, false, true));
   await connect(observer, wsURL, obsToken, 'observer');
-  await observer.evaluate(id => { window.expectedPublisher = id; }, pubID);
+  await budgeted('set_observer_expected_publisher', observer.evaluate(id => { window.expectedPublisher = id; }, pubID));
   await connect(publisher, wsURL, pubToken, 'publisher');
-  await deadline('publish_tracks', publisher.evaluate(async () => {
+  await budgeted('publish_tracks', publisher.evaluate(async () => {
     await window.probeRoom.localParticipant.setCameraEnabled(true);
     await window.probeRoom.localParticipant.setMicrophoneEnabled(true, {
       echoCancellation: false, noiseSuppression: false, autoGainControl: false,
@@ -337,8 +347,8 @@ async function run() {
   await waitTracks(observer, pubID);
   assertBudget();
   evidence.gates.RLI02_remote_tracks = true;
-  evidence.playback = await startPlayback(observer);
-  const [receiver, publisherAudio] = await Promise.all([sample(observer), samplePublisher(publisher)]);
+  evidence.playback = await budgeted('start_playback', startPlayback(observer));
+  const [receiver, publisherAudio] = await budgeted('media_sample', Promise.all([sample(observer), samplePublisher(publisher)]), 10_000);
   evidence.counters = { ...receiver, ...publisherAudio };
   const c = evidence.counters;
   assert(c.frames_after > c.frames_before && c.width > 0 && c.height > 0, 'video_frames_not_advancing');
@@ -352,7 +362,7 @@ async function run() {
   }
   const screenshotPath = path.join(evidenceDir, `r04-input-${started}-observer.png`);
   await mkdir(evidenceDir, { recursive: true, mode: 0o700 });
-  await observer.screenshot({ path: screenshotPath });
+  await observer.screenshot({ path: screenshotPath, timeout: remaining(5000) });
   evidence.screenshot_path = screenshotPath;
 
   const expired = token(apiKey, secret, `exp_${randomBytes(6).toString('hex')}`, grant(room, false, true), -60, 120);
@@ -361,8 +371,8 @@ async function run() {
   parts[2] = `${parts[2][0] === 'a' ? 'b' : 'a'}${parts[2].slice(1)}`;
   const tampered = parts.join('.');
   evidence.auth = {
-    expired: await deadline('expired_rejection', rejectedJWT(observer, wsURL, expired), 10_000),
-    tampered: await deadline('tampered_rejection', rejectedJWT(observer, wsURL, tampered), 10_000),
+    expired: await budgeted('expired_rejection', rejectedJWT(observer, wsURL, expired), 10_000),
+    tampered: await budgeted('tampered_rejection', rejectedJWT(observer, wsURL, tampered), 10_000),
   };
   evidence.gates.RLI04_expired_rejected = evidence.auth.expired.reason === 'NotAllowed' && evidence.auth.expired.status === 401;
   evidence.gates.RLI04_tampered_rejected = evidence.auth.tampered.reason === 'NotAllowed' && evidence.auth.tampered.status === 401;
@@ -375,7 +385,7 @@ async function run() {
   evidence.observer_denial = {
     server_can_publish: serverObserver.permission.canPublish ?? false,
     server_track_count: (serverObserver.tracks || []).length,
-    ...(await observer.evaluate(async () => {
+    ...(await budgeted('observer_denial', observer.evaluate(async () => {
       const canvas = document.createElement('canvas');
       canvas.width = canvas.height = 2;
       canvas.getContext('2d').fillRect(0, 0, 2, 2);
@@ -387,7 +397,7 @@ async function run() {
         return { client_error: error instanceof window.LivekitClient.PublishTrackError ? 'PublishTrackError' : 'other',
           client_status: error instanceof window.LivekitClient.PublishTrackError && error.status === 403 ? 403 : 0 };
       } finally { track.stop(); }
-    })),
+    }))),
     denial_layer: 'client_permissions',
   };
   const afterDenial = (await participants(signalURL, adminJWT, room)).find(participant => participant.identity === obsID);
@@ -400,15 +410,15 @@ async function run() {
   assert(unexpected === 0, 'unexpected_browser_external_request');
   evidence.gates.RLI04 = true;
 
-  await publisher.evaluate(async () => {
+  await budgeted('publisher_disconnect', publisher.evaluate(async () => {
     for (const pub of window.probeRoom.localParticipant.trackPublications.values()) pub.track?.stop();
     await window.probeRoom.disconnect();
-  });
-  await deadline('track_removed', observer.waitForFunction(() => window.probeRemoved >= 2), 10_000);
+  }));
+  await observer.waitForFunction(() => window.probeRemoved >= 2, null, { timeout: remaining(10_000) });
   evidence.gates.RLI05_subscriber_removal = true;
-  await observer.evaluate(() => window.probeRoom.disconnect());
+  await budgeted('observer_disconnect', observer.evaluate(() => window.probeRoom.disconnect()));
   let count = -1;
-  for (let n = 0; n < 20; n++) { count = (await participants(signalURL, adminJWT, room)).length; if (count === 0) break; await pause(100); }
+  for (let n = 0; n < 20; n++) { assertBudget(); count = (await participants(signalURL, adminJWT, room)).length; if (count === 0) break; await pause(100); }
   evidence.gates.RLI05_room_empty = count === 0;
   assert(count === 0, 'room_not_empty');
   evidence.status = 'PASS';
