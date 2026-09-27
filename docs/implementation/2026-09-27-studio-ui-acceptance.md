@@ -1,6 +1,6 @@
 # Studio B UI acceptance — 2026-09-27
 
-Status: **SOURCE_CANDIDATE_UNMERGED; REPAIR_2_STATIC_CLEAR; STU04_RUNNING**.
+Status: **SOURCE_CANDIDATE_UNMERGED; HISTORY_STATIC_CLEAR; STU04_DATE_MISMATCH_REPAIR**.
 
 User approved **B 场次列表＋双区工作台**, seed `6373bb3f`, in `fb760ff`.
 The approved comp is `.impeccable/mocks/decision/studio-split.png` (1586×992);
@@ -77,8 +77,32 @@ Complements `43e22f0`, `f7910e5`, `c39b3f2` add persistent-storage inspection,
 native history/session swap, mobile save/reopen and locale overflow checks.
 Static compilation/vet/typecheck/discovery passed. Fixed repair 2 is integrated
 as `4e66c47` in the independent test checkout, where the first actual browser/PG
-run is underway. Add actual logs, exit codes,
+run failed as recorded below. Add subsequent actual logs, exit codes,
 screenshots and hashes here only after execution. Do not replace failures.
+
+## First real browser run — retained failure
+
+Independent fixed source/test `4e66c47` ran the actual gate and exited 1,
+foundation 25.885s. Evidence in the test worktree:
+
+- `output/studio-ui-first-20260927.log`, SHA256
+  `6de4cd570628e0407f89a4d62ebe6904ba1bcc121251d755ee9e9ff809a444ae`.
+- `output/playwright/studio-ui-20260927T072456.942396000/playwright.log`, SHA256
+  `a3ca3c44af6f14402c3a4375d6108c1873363a05ec93253e26c5733e4b2dfd4f`.
+
+The signed list/detail reads returned HTTP 200, exact frozen keys and correct
+no-store headers. Actual Go/PG timestamps serialized RFC3339 `+08:00`; the new
+Studio parser required terminal `Z`, so it rejected valid replies and rendered
+unavailable. This is a product UI/backend time-contract mismatch. A distinct
+targeted repair must accept valid offsets without weakening malformed-value or
+shape validation. It must also fix the raw `scheduled_at.slice(0,16)` consumer
+of the UTC-labelled input, otherwise a title edit could shift the saved instant.
+Do not force the fixture/database timezone to hide the mismatch.
+
+The read-only fixture separately lacked its paired CSRF cookie; the client
+correctly refused its session boundary. Correct the task-owned fixture cookie,
+not the product authorization. Native history/uncertain-write recovery has not
+yet reached its runtime assertions despite the static review clearance.
 
 ## Remaining boundary
 
