@@ -361,6 +361,16 @@ func TestLegacyRuntimeIsolationPopulatedUpgrade(t *testing.T) {
 		t.Fatal("expected additive media identity", err)
 	}
 	business["integration.operations"] = expectedOperations
+	// Apply also includes 0041's five nullable recovery event columns. Keep
+	// comparing every historical event value, with only these new keys NULL.
+	var expectedEvents string
+	if err := f.owner.QueryRow(ctx, `SELECT coalesce(jsonb_agg(
+	 value || '{"episode_id":null,"episode_event_kind":null,"native_job_id":null,"observation_id":null,"elapsed_ms":null}'::jsonb
+	 ORDER BY (value || '{"episode_id":null,"episode_event_kind":null,"native_job_id":null,"observation_id":null,"elapsed_ms":null}'::jsonb)::text),'[]'::jsonb)::text
+	 FROM jsonb_array_elements($1::jsonb)`, business["integration.operation_events"]).Scan(&expectedEvents); err != nil {
+		t.Fatal("expected additive media recovery event fields", err)
+	}
+	business["integration.operation_events"] = expectedEvents
 	if oldPayment == "[]" || oldExpiry == "[]" || oldExternal == "[]" || oldMeta == "[]" || oldQueues["payment_mock_v1"] == "[]" || oldQueues["checkout_expiry_v1"] == "[]" {
 		t.Fatal("historical populated source was empty")
 	}
