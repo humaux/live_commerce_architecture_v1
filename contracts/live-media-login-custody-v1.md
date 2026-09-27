@@ -1,6 +1,9 @@
 # Media initiating-login custody v1
 
-Status: **FROZEN_FOR_IMPLEMENTATION — tests NOT_RUN**. Base `80792e4`.
+Status: **IMPLEMENTED_LOCAL_MOCK — MLC01–06 accepted**. Design base `80792e4`;
+interface frozen at `5db67f5`. [Evidence and maintenance](../docs/implementation/2026-09-27-media-login-custody-acceptance.md)
+records independent47 and Root663 PG/race tests, runtime/Studio/browser regression
+and the remaining product/Cloud gates.
 Independent read-only review of `3cbdaea` found no remaining confirmed P0/P1;
 the replay revision-GUC correction is included. Review is not implementation
 acceptance. Source and test authors must remain separate.
@@ -10,16 +13,17 @@ The existing MOCK planner, attempt, operation, job and response DTO are reused.
 
 ## Why this increment exists
 
-The current attempt freezes a principal but not the login that authorized Start.
-The worker cannot distinguish logout of that login from logout of another login
-belonging to the same person. Current worker eligibility also omits `store:read`
-and the authorization revision. Browser tokens must not be issued on this basis.
+Before0039, an attempt froze a principal but not the login that authorized Start.
+The worker could not distinguish logout of that login from logout of another login
+belonging to the same person. Worker eligibility also omitted `store:read`
+and the authorization revision. This increment closes those gaps; browser tokens
+still must not be issued before the remaining BRI lifetime work passes.
 
 Persist exact login custody before adding token issuance. No second operation,
 queue, token cache or provider SDK is needed. The private child below avoids
 exposing login identifiers through the existing runtime-wide attempt SELECT.
 
-## Frozen interface proposal
+## Frozen interface
 
 Forward migration `0039_live_media_login_custody.sql`; integrator owns final merge.
 
@@ -121,8 +125,9 @@ browser input: input issuance remains absent until that next unit is implemented
 
 ## Independent acceptance gates
 
-All **NOT_RUN** until executable evidence is recorded; use real isolated PG18,
-actual runtime/worker/executor roles, unchanged receipt/operation/job identities.
+These requirements now have **PASS_LOCAL_MOCK_LOGIN_CUSTODY** evidence in the
+linked acceptance record: real isolated PG18, actual runtime/worker/executor
+roles, unchanged receipt/operation/job identities. They do not pass full BRI.
 
 |Gate|Required evidence|
 |---|---|
