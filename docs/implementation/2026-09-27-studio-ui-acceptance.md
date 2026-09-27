@@ -1,6 +1,6 @@
 # Studio B UI acceptance — 2026-09-27
 
-Status: **SOURCE_CANDIDATE_UNMERGED; P1_REPAIR_2_IN_PROGRESS; STU04_NOT_RUN**.
+Status: **SOURCE_CANDIDATE_UNMERGED; REPAIR_2_STATIC_CLEAR; STU04_RUNNING**.
 
 User approved **B 场次列表＋双区工作台**, seed `6373bb3f`, in `fb760ff`.
 The approved comp is `.impeccable/mocks/decision/studio-split.png` (1586×992);
@@ -37,11 +37,19 @@ Repair 1 `e1506e5` retains same-session temporary-conceal state and guards shell
 navigation. It passed typecheck/build, but native Back/Forward still called the
 destructive clear path. Independent review kept the same P1 open. Repair 2 is
 the final targeted attempt before a design escalation, not permission for an
-unbounded patch loop. No candidate may merge with the P1 unresolved.
+unbounded patch loop. Fixed repair 2 `32dfd1e` uses one bounded, volatile per-tab
+recovery slot, exact cookie/session revalidation and fresh reads before showing
+it, no automatic writes, and explicit consent before document exit. Other scene
+routes cannot silently overwrite that slot; logout/session-change invalidates
+it. Independent fixed-source review found the original P1 closed in source and
+no new confirmed P0/P1 in the bounded scope. Actual browser proof remains
+required; static review alone does not close STU04.
 
 Humaux source/review receipts: `21f33470-6f00-4622-b4f1-a6daf7ecdb22`,
 `19ca2e73-7284-4fd5-951c-8156f19d1892`,
-`44005821-c380-440a-b378-f90d6268ccfc`.
+`44005821-c380-440a-b378-f90d6268ccfc`,
+`16595991-144c-424f-a32c-63357043da26`,
+`3b01e53e-2963-4ea2-b377-436ff309f84c`.
 
 ## Required independent acceptance
 
@@ -65,8 +73,11 @@ Test-only setup/fault endpoints are confined to the task-owned fixture.
 - Root repeats the real browser gate and clean full PG/race/vet on fixed source.
 
 Initial test-only series: `a0e2a72`, `f5f3da9`, `489665c`, `0e6242b`, `6244f0e`.
-Static compilation/vet/typecheck/discovery passed; actual browser/PG is NOT_RUN
-until the fixed source passes independent review. Add actual logs, exit codes,
+Complements `43e22f0`, `f7910e5`, `c39b3f2` add persistent-storage inspection,
+native history/session swap, mobile save/reopen and locale overflow checks.
+Static compilation/vet/typecheck/discovery passed. Fixed repair 2 is integrated
+as `4e66c47` in the independent test checkout, where the first actual browser/PG
+run is underway. Add actual logs, exit codes,
 screenshots and hashes here only after execution. Do not replace failures.
 
 ## Remaining boundary
