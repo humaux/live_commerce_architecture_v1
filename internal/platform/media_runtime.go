@@ -34,12 +34,28 @@ func OpenMediaExecutorPool(ctx context.Context, dsn string) (*pgxpool.Pool, erro
 	return pool, nil
 }
 
+// OpenMediaRecoveryPool borrows only the seven observer functions and readiness.
+func OpenMediaRecoveryPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
+	if ctx == nil || len(dsn) > 8192 {
+		return nil, errMediaDatabase
+	}
+	pool, err := openPool(ctx, dsn, "media_recovery")
+	if err != nil {
+		return nil, errMediaDatabase
+	}
+	return pool, nil
+}
+
 func ValidateMediaWorkerPool(ctx context.Context, pool *pgxpool.Pool) error {
 	return validateMediaPool(ctx, pool, "media_worker")
 }
 
 func ValidateMediaExecutorPool(ctx context.Context, pool *pgxpool.Pool) error {
 	return validateMediaPool(ctx, pool, "media_executor")
+}
+
+func ValidateMediaRecoveryPool(ctx context.Context, pool *pgxpool.Pool) error {
+	return validateMediaPool(ctx, pool, "media_recovery")
 }
 
 func validateMediaPool(ctx context.Context, pool *pgxpool.Pool, role string) error {
@@ -67,7 +83,10 @@ func validateMediaAuthority(ctx context.Context, pool *pgxpool.Pool, role string
 	 'reserve_media_start','record_media_observation','record_media_cleanup_query',
 	 'finish_media_uncertain','claim_media_input_operation','load_media_input_custody',
 	 'close_media_input_admission','request_media_stop',
-	 'register_prepared_media','revoke_prepared_media')
+     'register_prepared_media','revoke_prepared_media','begin_media_recovery_episode',
+     'claim_recovery_observation','record_recovery_observation','finish_recovery_observation',
+     'read_media_recovery_episode','witness_media_recovery_episode',
+     'timeout_media_recovery_episode','media_recovery_ready')
 	), allowed AS (
 	 SELECT p.oid FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace
 	 WHERE n.nspname='live' AND (
@@ -97,6 +116,17 @@ func validateMediaAuthority(ctx context.Context, pool *pgxpool.Pool, role string
 	   AND p.proargtypes[0]='uuid'::regtype AND p.proargtypes[1]='bigint'::regtype
 	   AND p.proargtypes[2]='bytea'::regtype AND p.proargtypes[3]='text'::regtype)
 	  OR (p.proname IN ('media_worker_ready','media_input_plan_ready') AND p.pronargs=0))
+	), recovery_allowed AS (
+	 SELECT unnest(ARRAY[
+	  pg_catalog.to_regprocedure('live.begin_media_recovery_episode(uuid,bigint,integer,boolean)'),
+	  pg_catalog.to_regprocedure('live.claim_recovery_observation(uuid,uuid,bigint,bytea)'),
+	  pg_catalog.to_regprocedure('live.record_recovery_observation(uuid,uuid,bigint,bytea,text,text,text,text,bigint,bigint,bigint)'),
+	  pg_catalog.to_regprocedure('live.finish_recovery_observation(uuid,uuid,bigint,bytea,text)'),
+	  pg_catalog.to_regprocedure('live.read_media_recovery_episode(uuid)'),
+	  pg_catalog.to_regprocedure('live.witness_media_recovery_episode(uuid,uuid,uuid,bigint)'),
+	  pg_catalog.to_regprocedure('live.timeout_media_recovery_episode(uuid,bigint)'),
+	  pg_catalog.to_regprocedure('live.media_recovery_ready()')
+	 ])::oid AS oid
 	)
 	SELECT EXISTS (SELECT 1 FROM reachable r CROSS JOIN pg_catalog.pg_class c
 	 JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
@@ -123,6 +153,8 @@ func validateMediaAuthority(ctx context.Context, pool *pgxpool.Pool, role string
 	 'record_media_observation','record_media_cleanup_query','finish_media_uncertain',
 	 'claim_media_input_operation','load_media_input_custody','close_media_input_admission')
 	 AND pg_catalog.has_function_privilege(session_user,f.oid,'EXECUTE'))<>9)
+	 OR ($1='media_recovery' AND (SELECT count(*) FROM recovery_allowed a
+	  WHERE pg_catalog.has_function_privilege(session_user,a.oid,'EXECUTE'))<>8)
 	 OR EXISTS (SELECT 1 FROM reachable r CROSS JOIN pg_catalog.pg_proc p
 	 JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace
 	 WHERE n.nspname<>'information_schema' AND n.nspname NOT LIKE 'pg\_%' ESCAPE '\'
@@ -132,6 +164,7 @@ func validateMediaAuthority(ctx context.Context, pool *pgxpool.Pool, role string
 	   OR (n.nspname='live' AND p.proname IN ('media_worker_ready','media_input_plan_ready')
 	    AND p.pronargs=0)))
 	  AND NOT ($1='media_executor' AND p.oid IN (SELECT oid FROM allowed))
+	  AND NOT ($1='media_recovery' AND p.oid IN (SELECT oid FROM recovery_allowed))
 	  AND pg_catalog.has_function_privilege(r.oid,p.oid,'EXECUTE'))`, role).Scan(&forbidden)
 	if err != nil || forbidden {
 		return errMediaDatabase

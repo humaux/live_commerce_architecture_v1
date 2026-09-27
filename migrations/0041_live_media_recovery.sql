@@ -50,15 +50,14 @@ ALTER TABLE integration.operation_events
  ADD CONSTRAINT media_recovery_event_pair CHECK ((episode_id IS NULL)=(episode_event_kind IS NULL));
 CREATE UNIQUE INDEX media_recovery_one_shot_event ON integration.operation_events
  (operation_id,episode_id,episode_event_kind) WHERE episode_id IS NOT NULL;
-GRANT UPDATE(episode_id,episode_event_kind,native_job_id,observation_id,elapsed_ms)
- ON integration.operation_events TO commerce_media_writer;
 
 -- Fires inside the existing projector transaction, including its public QUERY
 -- cleanup guard. A later wrapper failure rolls this correlation back too.
 CREATE FUNCTION live.qualify_media_recovery_observation() RETURNS trigger
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE x live.media_execution_state%ROWTYPE; a live.media_attempts%ROWTYPE;
- o integration.operations%ROWTYPE;
+ o integration.operations%ROWTYPE; v_started bigint; v_updated bigint; v_ended bigint;
+ v_terminal boolean;
 BEGIN
  IF NEW.source NOT IN ('ROOM','QUERY') THEN RETURN NULL; END IF;
  SELECT * INTO x FROM live.media_execution_state WHERE attempt_id=NEW.attempt_id;
@@ -75,15 +74,22 @@ BEGIN
   OR NOT EXISTS (SELECT 1 FROM integration.operation_events e WHERE e.operation_id=o.id
     AND e.episode_id=x.recovery_episode_id AND e.episode_event_kind='admitted') THEN
   RETURN NULL; END IF;
+ v_started:=greatest(x.started_at_ns,NEW.started_at_ns);
+ v_updated:=greatest(x.updated_at_ns,NEW.updated_at_ns);
+ v_ended:=greatest(x.ended_at_ns,NEW.ended_at_ns);
+ v_terminal:=NEW.status IN ('EGRESS_COMPLETE','EGRESS_FAILED','EGRESS_ABORTED','EGRESS_LIMIT_REACHED')
+  AND v_ended>0 AND NOT ((v_started>0 AND v_updated>0 AND v_updated<v_started)
+   OR (v_started>0 AND v_ended>0 AND v_ended<v_started)
+   OR (v_updated>0 AND v_ended>0 AND v_updated<v_ended));
  UPDATE live.media_execution_state SET recovery_observation_id=NEW.id,
-  recovery_disposition=CASE WHEN NEW.status IN ('EGRESS_COMPLETE','EGRESS_FAILED',
-   'EGRESS_ABORTED','EGRESS_LIMIT_REACHED') AND NEW.ended_at_ns>0 THEN 'terminal' ELSE 'checked' END
+  recovery_disposition=CASE WHEN v_terminal THEN 'terminal' ELSE 'checked' END
   WHERE attempt_id=NEW.attempt_id AND recovery_episode_id=x.recovery_episode_id
    AND recovery_observation_id IS NULL;
  INSERT INTO integration.operation_events(tenant_id,store_id,operation_id,generation,state,mode,
   reason_code,episode_id,episode_event_kind,observation_id)
  VALUES(o.tenant_id,o.store_id,o.id,NEW.generation,o.state,o.lease_mode,
-  'media_recovery_qualified',x.recovery_episode_id,'qualified',NEW.id)
+  CASE WHEN v_terminal THEN 'media_recovery_terminal' ELSE 'media_recovery_checked' END,
+  x.recovery_episode_id,'qualified',NEW.id)
  ON CONFLICT DO NOTHING;
  RETURN NULL;
 END $$;
@@ -107,6 +113,29 @@ END $$;
 ALTER FUNCTION live.media_recovery_native_eligible(bigint,uuid) OWNER TO commerce_media_writer;
 REVOKE ALL ON FUNCTION live.media_recovery_native_eligible(bigint,uuid) FROM PUBLIC;
 
+-- History, not the mutable active projection, owns same-ID replay.
+CREATE FUNCTION live.media_recovery_begin_replay(p_episode uuid)
+RETURNS TABLE(disposition text,episode_id uuid,operation_id uuid,job_id bigint,
+ baseline_generation bigint,deadline_at timestamptz,candidate_count integer,
+ coverage_known boolean,blocked_by_episode_id uuid)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ SELECT CASE WHEN e.operation_id IS NULL THEN s.scope_status
+  WHEN s.scope_status='overdue' THEN 'overdue'
+  WHEN EXISTS(SELECT 1 FROM integration.operation_events q WHERE q.operation_id=e.operation_id
+   AND q.episode_id=p_episode AND q.episode_event_kind='terminal_at_lock') THEN 'terminal_at_lock'
+  WHEN EXISTS(SELECT 1 FROM integration.operation_events q WHERE q.operation_id=e.operation_id
+   AND q.episode_id=p_episode AND q.episode_event_kind='native_ineligible') THEN 'native_ineligible'
+  WHEN EXISTS(SELECT 1 FROM integration.operation_events q WHERE q.operation_id=e.operation_id
+   AND q.episode_id=p_episode AND q.episode_event_kind='ceiling') THEN 'ceiling'
+  ELSE 'pending' END,s.episode_id,e.operation_id,e.native_job_id,e.generation,
+  s.deadline_at,s.candidate_count,s.coverage_known,s.blocked_by_episode_id
+ FROM live.media_recovery_episode_scope s LEFT JOIN integration.operation_events e
+  ON e.episode_id=s.episode_id AND e.episode_event_kind='admitted'
+ WHERE s.episode_id=p_episode ORDER BY e.operation_id
+$$;
+ALTER FUNCTION live.media_recovery_begin_replay(uuid) OWNER TO commerce_media_writer;
+REVOKE ALL ON FUNCTION live.media_recovery_begin_replay(uuid) FROM PUBLIC;
+
 CREATE FUNCTION live.begin_media_recovery_episode(p_episode uuid,p_elapsed_ms bigint,
  p_capacity integer,p_coverage_known boolean)
 RETURNS TABLE(disposition text,episode_id uuid,operation_id uuid,job_id bigint,
@@ -122,22 +151,9 @@ BEGIN
   OR p_capacity NOT BETWEEN 1 AND 32 OR p_coverage_known IS NULL
   OR current_setting('transaction_isolation')<>'read committed' THEN
   RAISE EXCEPTION 'invalid media recovery begin' USING ERRCODE='ME400'; END IF;
- SELECT * INTO s FROM live.media_recovery_episode_scope WHERE episode_id=p_episode;
+ SELECT * INTO s FROM live.media_recovery_episode_scope z WHERE z.episode_id=p_episode;
  IF s.episode_id IS NOT NULL THEN
-  RETURN QUERY SELECT CASE WHEN e.operation_id IS NULL THEN s.scope_status
-   WHEN s.scope_status='overdue' THEN 'overdue'
-   WHEN EXISTS(SELECT 1 FROM integration.operation_events q WHERE q.operation_id=e.operation_id
-    AND q.episode_id=p_episode AND q.episode_event_kind='terminal_at_lock') THEN 'terminal_at_lock'
-   WHEN EXISTS(SELECT 1 FROM integration.operation_events q WHERE q.operation_id=e.operation_id
-    AND q.episode_id=p_episode AND q.episode_event_kind='native_ineligible') THEN 'native_ineligible'
-   WHEN EXISTS(SELECT 1 FROM integration.operation_events q WHERE q.operation_id=e.operation_id
-    AND q.episode_id=p_episode AND q.episode_event_kind='ceiling') THEN 'ceiling'
-   ELSE 'pending' END,s.episode_id,e.operation_id,e.native_job_id,e.generation,
-   s.deadline_at,s.candidate_count,s.coverage_known,s.blocked_by_episode_id
-   FROM live.media_recovery_episode_scope z LEFT JOIN integration.operation_events e
-    ON e.episode_id=z.episode_id AND e.episode_event_kind='admitted'
-   WHERE z.episode_id=p_episode ORDER BY e.operation_id;
-  RETURN;
+  RETURN QUERY SELECT * FROM live.media_recovery_begin_replay(p_episode); RETURN;
  END IF;
  SELECT array_agg(id ORDER BY id) INTO v_ids FROM (
   SELECT o.id FROM integration.operations o
@@ -155,7 +171,10 @@ BEGIN
    capacity,candidate_count,coverage_known,scope_status,capacity_exceeded_at)
   VALUES(p_episode,p_elapsed_ms,v_now+make_interval(secs=>greatest(0,90000-least(p_elapsed_ms,90000))::double precision/1000),
    p_capacity,v_count,p_coverage_known,'capacity_exceeded',v_now) ON CONFLICT DO NOTHING;
-  SELECT * INTO s FROM live.media_recovery_episode_scope WHERE episode_id=p_episode;
+  IF NOT FOUND THEN
+   RETURN QUERY SELECT * FROM live.media_recovery_begin_replay(p_episode); RETURN;
+  END IF;
+  SELECT * INTO s FROM live.media_recovery_episode_scope z WHERE z.episode_id=p_episode;
   RETURN QUERY SELECT s.scope_status,s.episode_id,NULL::uuid,NULL::bigint,NULL::bigint,
    s.deadline_at,s.candidate_count,s.coverage_known,s.blocked_by_episode_id;
   RETURN;
@@ -196,7 +215,10 @@ BEGIN
    capacity,candidate_count,coverage_known,scope_status,blocked_by_episode_id)
   VALUES(p_episode,p_elapsed_ms,v_now+make_interval(secs=>greatest(0,90000-least(p_elapsed_ms,90000))::double precision/1000),
    p_capacity,v_count,p_coverage_known,'prior_unfinished',v_prior) ON CONFLICT DO NOTHING;
-  SELECT * INTO s FROM live.media_recovery_episode_scope WHERE episode_id=p_episode;
+  IF NOT FOUND THEN
+   RETURN QUERY SELECT * FROM live.media_recovery_begin_replay(p_episode); RETURN;
+  END IF;
+  SELECT * INTO s FROM live.media_recovery_episode_scope z WHERE z.episode_id=p_episode;
   RETURN QUERY SELECT s.scope_status,s.episode_id,NULL::uuid,NULL::bigint,NULL::bigint,
    s.deadline_at,s.candidate_count,s.coverage_known,s.blocked_by_episode_id;
   RETURN;
@@ -210,23 +232,9 @@ BEGIN
  ON CONFLICT DO NOTHING;
  IF NOT FOUND THEN
   -- Concurrent same-ID begin won. No active projection was touched by this call.
-  SELECT * INTO s FROM live.media_recovery_episode_scope WHERE episode_id=p_episode;
-  RETURN QUERY SELECT CASE WHEN e.operation_id IS NULL THEN s.scope_status
-   WHEN s.scope_status='overdue' THEN 'overdue'
-   WHEN EXISTS(SELECT 1 FROM integration.operation_events q WHERE q.operation_id=e.operation_id
-    AND q.episode_id=p_episode AND q.episode_event_kind='terminal_at_lock') THEN 'terminal_at_lock'
-   WHEN EXISTS(SELECT 1 FROM integration.operation_events q WHERE q.operation_id=e.operation_id
-    AND q.episode_id=p_episode AND q.episode_event_kind='native_ineligible') THEN 'native_ineligible'
-   WHEN EXISTS(SELECT 1 FROM integration.operation_events q WHERE q.operation_id=e.operation_id
-    AND q.episode_id=p_episode AND q.episode_event_kind='ceiling') THEN 'ceiling'
-   ELSE 'pending' END,s.episode_id,e.operation_id,e.native_job_id,e.generation,
-   s.deadline_at,s.candidate_count,s.coverage_known,s.blocked_by_episode_id
-   FROM live.media_recovery_episode_scope z LEFT JOIN integration.operation_events e
-    ON e.episode_id=z.episode_id AND e.episode_event_kind='admitted'
-   WHERE z.episode_id=p_episode ORDER BY e.operation_id;
-  RETURN;
+  RETURN QUERY SELECT * FROM live.media_recovery_begin_replay(p_episode); RETURN;
  END IF;
- SELECT * INTO s FROM live.media_recovery_episode_scope WHERE episode_id=p_episode;
+ SELECT * INTO s FROM live.media_recovery_episode_scope z WHERE z.episode_id=p_episode;
  FOR v_index IN 1..v_count LOOP
   o:=live.lock_media_operation(v_ids[v_index]);
   SELECT * INTO x FROM live.media_execution_state WHERE attempt_id=o.media_attempt_id FOR UPDATE;
@@ -422,9 +430,8 @@ BEGIN
    WHEN l.id IS NOT NULL THEN 'terminal_at_lock'
    WHEN n.id IS NOT NULL THEN 'native_ineligible'
    WHEN c.id IS NOT NULL THEN 'ceiling'
-   WHEN q.id IS NOT NULL THEN CASE WHEN v.status IN
-    ('EGRESS_COMPLETE','EGRESS_FAILED','EGRESS_ABORTED','EGRESS_LIMIT_REACHED')
-    AND v.ended_at_ns>0 THEN 'terminal' ELSE 'checked' END
+   WHEN q.id IS NOT NULL THEN CASE WHEN q.reason_code='media_recovery_terminal'
+    THEN 'terminal' ELSE 'checked' END
    ELSE 'pending' END,
   e.generation,q.observation_id,v.source,v.generation,w.elapsed_ms,
   CASE WHEN e.operation_id IS NULL THEN s.timeout_at ELSE t.created_at END,x.cleanup_required
@@ -504,12 +511,6 @@ BEGIN
   RETURN QUERY SELECT 'already_finished'::text,0; RETURN; END IF;
  IF s.timeout_at IS NOT NULL THEN
   RETURN QUERY SELECT 'already_timed_out'::text,0; RETURN; END IF;
- IF s.coverage_known AND s.scope_status='pending' AND s.candidate_count>0
-  AND NOT EXISTS(SELECT 1 FROM integration.operation_events e WHERE e.episode_id=p_episode
-   AND e.episode_event_kind='admitted' AND NOT EXISTS
-    (SELECT 1 FROM integration.operation_events w WHERE w.operation_id=e.operation_id
-     AND w.episode_id=p_episode AND w.episode_event_kind='witnessed')) THEN
-  RETURN QUERY SELECT 'already_finished'::text,0; RETURN; END IF;
  FOR v_id IN SELECT e.operation_id FROM integration.operation_events e
   WHERE e.episode_id=p_episode AND e.episode_event_kind='admitted' ORDER BY e.operation_id LOOP
   o:=live.lock_media_operation(v_id);
@@ -530,6 +531,14 @@ BEGIN
    v_count:=v_count+1;
   END IF;
  END LOOP;
+ -- A witness may commit while this call waits for an operation lock. Recheck
+ -- completion only after all member locks, never from the pre-lock snapshot.
+ IF s.coverage_known AND s.scope_status='pending' AND s.candidate_count>0
+  AND NOT EXISTS(SELECT 1 FROM integration.operation_events e WHERE e.episode_id=p_episode
+   AND e.episode_event_kind='admitted' AND NOT EXISTS
+    (SELECT 1 FROM integration.operation_events w WHERE w.operation_id=e.operation_id
+     AND w.episode_id=p_episode AND w.episode_event_kind='witnessed')) THEN
+  RETURN QUERY SELECT 'already_finished'::text,0; RETURN; END IF;
  v_now:=clock_timestamp();
  UPDATE live.media_recovery_episode_scope SET timeout_at=v_now
   WHERE episode_id=p_episode AND timeout_at IS NULL;

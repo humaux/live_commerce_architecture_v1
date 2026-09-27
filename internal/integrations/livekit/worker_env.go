@@ -62,13 +62,10 @@ func LoadWorkerEnvironment(getenv func(string) string) (WorkerEnvironment, error
 	if !workerDSNValid(out.WorkerDSN) || !workerDSNValid(out.ExecutorDSN) {
 		return WorkerEnvironment{}, ErrWorkerEnvironment
 	}
-	out.Concurrency = 4
-	if raw := getenv("COMMERCE_MEDIA_WORKER_CONCURRENCY"); raw != "" {
-		n, err := strconv.Atoi(raw)
-		if err != nil || n < 1 || n > 32 || strconv.Itoa(n) != raw {
-			return WorkerEnvironment{}, ErrWorkerEnvironment
-		}
-		out.Concurrency = n
+	var err error
+	out.Concurrency, err = LoadWorkerConcurrency(getenv)
+	if err != nil {
+		return WorkerEnvironment{}, ErrWorkerEnvironment
 	}
 	active := getenv("COMMERCE_MEDIA_MATERIAL_ACTIVE_KEY_ID")
 	keysJSON := getenv("COMMERCE_MEDIA_MATERIAL_KEYS_JSON")
@@ -107,23 +104,36 @@ func LoadWorkerEnvironment(getenv func(string) string) (WorkerEnvironment, error
 	if err != nil {
 		return WorkerEnvironment{}, ErrWorkerEnvironment
 	}
+	out.Projects, err = LoadWorkerProjects(getenv)
+	if err != nil {
+		return WorkerEnvironment{}, ErrWorkerEnvironment
+	}
+	return out, nil
+}
+
+// LoadWorkerProjects shares the native strict project selector with recovery.
+func LoadWorkerProjects(getenv func(string) string) ([]WorkerProject, error) {
+	if getenv == nil {
+		return nil, ErrWorkerEnvironment
+	}
+	var projects []WorkerProject
 	projectsJSON := getenv("COMMERCE_MEDIA_PROJECTS_JSON")
 	if len(projectsJSON) == 0 || len(projectsJSON) > 65536 {
-		return WorkerEnvironment{}, ErrWorkerEnvironment
+		return nil, ErrWorkerEnvironment
 	}
 	projectsObj, err := decodeObject([]byte(projectsJSON))
 	if err != nil || !exactWorkerFields(projectsObj, "projects") {
-		return WorkerEnvironment{}, ErrWorkerEnvironment
+		return nil, ErrWorkerEnvironment
 	}
 	items, ok := projectsObj["projects"].([]any)
 	if !ok || len(items) < 1 || len(items) > 128 {
-		return WorkerEnvironment{}, ErrWorkerEnvironment
+		return nil, ErrWorkerEnvironment
 	}
 	seen := make(map[string]bool, len(items))
 	for _, item := range items {
 		obj, ok := item.(map[string]any)
 		if !ok || !exactWorkerFields(obj, "project_id", "credential_version", "endpoint", "api_key", "api_secret", "stream_hosts", "mock_dial_address", "mock_ca_pem") {
-			return WorkerEnvironment{}, ErrWorkerEnvironment
+			return nil, ErrWorkerEnvironment
 		}
 		id, okID := obj["project_id"].(string)
 		versionNumber, okVersion := obj["credential_version"].(json.Number)
@@ -134,32 +144,32 @@ func LoadWorkerEnvironment(getenv func(string) string) (WorkerEnvironment, error
 		dialAddress, okDial := obj["mock_dial_address"].(string)
 		caPEM, okCA := obj["mock_ca_pem"].(string)
 		if !okID || !projectIDPattern.MatchString(id) || !okVersion || !okEndpoint || !okAPIKey || !okAPISecret || !okHosts || !okDial || !okCA {
-			return WorkerEnvironment{}, ErrWorkerEnvironment
+			return nil, ErrWorkerEnvironment
 		}
 		version, err := strconv.ParseInt(string(versionNumber), 10, 64)
 		if err != nil || version < 1 || strconv.FormatInt(version, 10) != string(versionNumber) {
-			return WorkerEnvironment{}, ErrWorkerEnvironment
+			return nil, ErrWorkerEnvironment
 		}
 		identity := id + ":" + strconv.FormatInt(version, 10)
 		if seen[identity] {
-			return WorkerEnvironment{}, ErrWorkerEnvironment
+			return nil, ErrWorkerEnvironment
 		}
 		seen[identity] = true
 		hosts := make([]string, 0, len(hostValues))
 		for _, value := range hostValues {
 			host, ok := value.(string)
 			if !ok {
-				return WorkerEnvironment{}, ErrWorkerEnvironment
+				return nil, ErrWorkerEnvironment
 			}
 			hosts = append(hosts, host)
 		}
 		address, ok := canonicalWorkerLoopback(dialAddress)
 		if !ok || len(caPEM) == 0 || len(caPEM) > 16384 {
-			return WorkerEnvironment{}, ErrWorkerEnvironment
+			return nil, ErrWorkerEnvironment
 		}
 		roots := x509.NewCertPool()
 		if !roots.AppendCertsFromPEM([]byte(caPEM)) {
-			return WorkerEnvironment{}, ErrWorkerEnvironment
+			return nil, ErrWorkerEnvironment
 		}
 		config := Config{Environment: "MOCK", Endpoint: endpoint, APIKey: apiKey, APISecret: apiSecret, StreamHosts: hosts}
 		// The transport has no ambient proxy or DNS route. TLS still verifies the original endpoint name.
@@ -170,11 +180,25 @@ func LoadWorkerEnvironment(getenv func(string) string) (WorkerEnvironment, error
 			},
 		}
 		if _, err := New(config, transport); err != nil {
-			return WorkerEnvironment{}, ErrWorkerEnvironment
+			return nil, ErrWorkerEnvironment
 		}
-		out.Projects = append(out.Projects, WorkerProject{ProjectID: id, CredentialVersion: version, Config: config, Transport: transport})
+		projects = append(projects, WorkerProject{ProjectID: id, CredentialVersion: version, Config: config, Transport: transport})
 	}
-	return out, nil
+	return projects, nil
+}
+
+func LoadWorkerConcurrency(getenv func(string) string) (int, error) {
+	if getenv == nil {
+		return 0, ErrWorkerEnvironment
+	}
+	if raw := getenv("COMMERCE_MEDIA_WORKER_CONCURRENCY"); raw != "" {
+		n, err := strconv.Atoi(raw)
+		if err != nil || n < 1 || n > 32 || strconv.Itoa(n) != raw {
+			return 0, ErrWorkerEnvironment
+		}
+		return n, nil
+	}
+	return 4, nil
 }
 
 func workerDSNValid(dsn string) bool {
