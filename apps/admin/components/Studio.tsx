@@ -21,7 +21,8 @@ type DetailView = { key: string; status: Status; data: StudioDetail | null };
 type Form = { id: string; title: string; scheduled: string; aspect: AspectRatio };
 type Action = "create" | "edit" | "start" | "stop";
 type EditInput = DraftInput & { expected_version: number };
-type Pending = { signature: string; key: string; action: Action; body: DraftInput | EditInput | { authorization_id: string; expected_session_version: number } | { attempt_id: string }; sessionID: string };
+type Pending = { signature: string; key: string; action: Action; body: DraftInput | EditInput | { authorization_id: string; expected_session_version: number } | { attempt_id: string }; sessionID: string; storeID: string; boundary: string };
+type Concealed = { scope: string; selectedID: string; boundary: string; cookie: string; form: Form; newMode: boolean; dirty: boolean; actionError: StudioErrorCode | null; formError: string };
 
 const blank: Form = { id: "new", title: "", scheduled: "", aspect: "9:16" };
 
@@ -78,9 +79,11 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
   const [now, setNow] = useState(() => Date.now());
   const [pageReload, setPageReload] = useState(0);
   const [detailReload, setDetailReload] = useState(0);
+  const [pinnedScene, setPinnedScene] = useState({ scope: "", id: "" });
   const pageEpoch = useRef(0);
   const detailEpoch = useRef(0);
   const actionEpoch = useRef(0);
+  const revealEpoch = useRef(0);
   const pageController = useRef<AbortController | null>(null);
   const detailController = useRef<AbortController | null>(null);
   const hidden = useRef(false);
@@ -89,10 +92,12 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
   const boundary = useRef("");
   const dirty = useRef(false);
   const pending = useRef<Pending | null>(null);
+  const concealed = useRef<Concealed | null>(null);
   const previous = useRef<string[]>([]);
   const currentPage = page.scope === scope && (!cookie.current || csrfCookie() === cookie.current)
     ? page : { scope, status: "initial" as Status, data: null };
-  const selectedID = scene || currentPage.data?.items[0]?.session_id || "";
+  const selectedID = scene || (concealed.current?.scope === scope ? concealed.current.selectedID : "") ||
+    (pinnedScene.scope === scope ? pinnedScene.id : "") || currentPage.data?.items[0]?.session_id || "";
   const detailKey = `${storeID}|${selectedID}`;
   const currentDetail = detail.key === detailKey && (!cookie.current || csrfCookie() === cookie.current)
     ? detail : { key: detailKey, status: "initial" as Status, data: null };
@@ -101,8 +106,11 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
     !!shown && (form.id !== shown.draft.session_id || form.title !== shown.draft.title ||
       form.scheduled !== (shown.draft.scheduled_at?.slice(0, 16) ?? "") || form.aspect !== shown.draft.aspect_ratio);
   if (newMode || shown) dirty.current = formDirty;
+  const volatile = useRef({ scope, selectedID, form, newMode, actionError, formError });
+  volatile.current = { scope, selectedID, form, newMode, actionError, formError };
 
   const clear = useCallback((status: Status, block = false) => {
+    revealEpoch.current++;
     pageEpoch.current++;
     detailEpoch.current++;
     actionEpoch.current++;
@@ -111,6 +119,8 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
     cookie.current = "";
     boundary.current = "";
     pending.current = null;
+    concealed.current = null;
+    dirty.current = false;
     if (block) blocked.current = true;
     flushSync(() => {
       setPage({ scope, status, data: null });
@@ -118,6 +128,8 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
       setForm(blank);
       setNewMode(false);
       setActionError(null);
+      setFormError("");
+      setPinnedScene({ scope: "", id: "" });
       setBusy(false);
     });
   }, [scope, detailKey]);
@@ -141,13 +153,22 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
       cookie.current = csrfCookie();
       boundary.current = before;
       setPage({ scope, status: "ready", data });
+      const saved = concealed.current;
+      if (saved?.scope === scope && saved.boundary === before && saved.newMode) {
+        dirty.current = saved.dirty;
+        setForm(saved.form);
+        setNewMode(true);
+        setActionError(saved.actionError);
+        setFormError(saved.formError);
+        concealed.current = null;
+      }
     } catch (error) {
       if (pageEpoch.current !== epoch || controller.signal.aborted) return;
       const code = errorCode(error);
-      if (code === "signed-out") blocked.current = true;
+      if (code === "signed-out") { clear("signed-out", true); return; }
       setPage({ scope, status: code, data: null });
     }
-  }, [scope, storeID, cursor, initialError, pageReload]);
+  }, [scope, storeID, cursor, initialError, pageReload, clear]);
 
   useEffect(() => {
     void loadPage();
@@ -175,22 +196,31 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
       cookie.current = csrfCookie();
       boundary.current = before;
       const unresolved = pending.current;
-      if (unresolved?.sessionID === selectedID &&
+      const resolved = unresolved?.storeID === storeID && unresolved.sessionID === selectedID &&
         ((unresolved.action === "start" && data.attempt) ||
           (unresolved.action === "stop" && data.attempt &&
-            (data.attempt.stop_requested || data.attempt.resource_state === "TERMINAL")))) {
+            (data.attempt.stop_requested || data.attempt.resource_state === "TERMINAL")));
+      if (resolved) {
         pending.current = null;
         setActionError(null);
       }
-      if (!dirty.current || form.id !== selectedID) setForm(formOf(data.draft));
+      const saved = concealed.current;
+      if (saved?.scope === scope && saved.boundary === before && !saved.newMode && saved.selectedID === selectedID) {
+        dirty.current = saved.dirty;
+        setForm(saved.form);
+        setPinnedScene({ scope, id: selectedID });
+        setActionError(resolved ? null : saved.actionError);
+        setFormError(saved.formError);
+        concealed.current = null;
+      } else if (!dirty.current || form.id !== selectedID) setForm(formOf(data.draft));
       setDetail({ key: detailKey, status: "ready", data });
     } catch (error) {
       if (detailEpoch.current !== epoch || controller.signal.aborted) return;
       const code = errorCode(error);
-      if (code === "signed-out") blocked.current = true;
+      if (code === "signed-out") { clear("signed-out", true); return; }
       setDetail({ key: detailKey, status: code, data: null });
     }
-  }, [detailKey, selectedID, storeID, newMode, detailReload]);
+  }, [detailKey, selectedID, storeID, newMode, detailReload, scope, clear]);
 
   useEffect(() => {
     void loadDetail();
@@ -218,8 +248,61 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
   }, [currentDetail.data?.prepared?.start_before]);
 
   useEffect(() => {
-    const conceal = () => { hidden.current = true; clear("hidden"); };
-    const reveal = () => { if (!hidden.current) return; hidden.current = false; if (!blocked.current) { setPageReload((v) => v + 1); setDetailReload((v) => v + 1); } };
+    const conceal = () => {
+      if (hidden.current) return;
+      const state = volatile.current;
+      concealed.current = {
+        scope: state.scope, selectedID: state.selectedID, boundary: boundary.current,
+        cookie: cookie.current || csrfCookie(), form: state.form, newMode: state.newMode,
+        dirty: dirty.current, actionError: pending.current ? "uncertain" : state.actionError,
+        formError: state.formError,
+      };
+      hidden.current = true;
+      revealEpoch.current++;
+      pageEpoch.current++;
+      detailEpoch.current++;
+      actionEpoch.current++;
+      pageController.current?.abort();
+      detailController.current?.abort();
+      cookie.current = "";
+      // Only rendered data is removed here. The volatile draft and request key
+      // survive a temporary tab switch or bfcache round trip.
+      flushSync(() => {
+        setPage({ scope: state.scope, status: "hidden", data: null });
+        setDetail({ key: detailKey, status: "hidden", data: null });
+        setForm(blank);
+        setNewMode(false);
+        setActionError(null);
+        setFormError("");
+        setBusy(false);
+      });
+    };
+    const reveal = () => {
+      if (!hidden.current) return;
+      const saved = concealed.current;
+      const epoch = ++revealEpoch.current;
+      if (!saved || saved.scope !== volatile.current.scope || !saved.cookie) {
+        hidden.current = false;
+        clear("signed-out", true);
+        return;
+      }
+      void sessionBoundary(saved.cookie).then((current) => {
+        if (epoch !== revealEpoch.current || !hidden.current) return;
+        if ((saved.boundary && current !== saved.boundary) || csrfCookie() !== saved.cookie) {
+          hidden.current = false;
+          clear("signed-out", true);
+          return;
+        }
+        hidden.current = false;
+        boundary.current = current;
+        setPageReload((v) => v + 1);
+        setDetailReload((v) => v + 1);
+      }).catch(() => {
+        if (epoch !== revealEpoch.current || !hidden.current) return;
+        hidden.current = false;
+        clear("signed-out", true);
+      });
+    };
     const visibility = () => document.visibilityState === "hidden" ? conceal() : reveal();
     const onMessage = (event: MessageEvent) => { if (event.data?.type === "logout") clear("signed-out", true); };
     const onStorage = (event: StorageEvent) => { if (event.key === "commerce-session-logout") clear("signed-out", true); };
@@ -256,7 +339,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
   }, [clear]);
 
   function mayLeave() {
-    if (actionError === "uncertain") return false;
+    if (pending.current || actionError === "uncertain") return false;
     return !dirty.current || window.confirm(c.dirty);
   }
   function navigate(nextStore: string, nextCursor: string, nextScene: string) {
@@ -295,14 +378,16 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
     const signature = JSON.stringify({ storeID, action, sessionID, body });
     if (pending.current && pending.current.signature !== signature && actionError === "uncertain") return;
     const request = reuse ?? (pending.current?.signature === signature ? pending.current :
-      { signature, key: crypto.randomUUID(), action, body, sessionID });
+      { signature, key: crypto.randomUUID(), action, body, sessionID, storeID, boundary: boundary.current });
     pending.current = request;
     const epoch = ++actionEpoch.current;
     setBusy(true);
     setActionError(null);
     try {
       const current = await sessionBoundary().catch(() => { throw new StudioError("signed-out"); });
-      if (boundary.current && current !== boundary.current) throw new StudioError("signed-out");
+      if (!request.boundary || request.storeID !== storeID || current !== request.boundary ||
+        boundary.current !== request.boundary) throw new StudioError("signed-out");
+      if (epoch !== actionEpoch.current || hidden.current) return;
       if (action === "create") {
         const draft = await createStudioDraft(storeID, body as DraftInput, request.key, current);
         if (epoch !== actionEpoch.current) return;
@@ -372,7 +457,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
   const canStop = !!shown?.can_manage && !!attempt && !attempt.stop_requested && !attempt.escalated && attempt.resource_state !== "TERMINAL" && !actionBlocked;
   const canEdit = newMode || (!!shown?.can_manage && shown.draft.state === "DRAFT");
 
-  return <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="live">
+  return <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="live" onBeforeNavigate={mayLeave}>
     <div className="studio-page" data-testid="merchant-studio">
       <header className="studio-heading">
         <div><h1>{c.title}</h1><p>{c.subtitle}</p></div>
