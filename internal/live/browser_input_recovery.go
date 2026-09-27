@@ -10,19 +10,21 @@ import (
 	"livecommerce/internal/integrations/livekit"
 )
 
-func (r *MediaRecoveryObserver) recoveryEndpoints(key mediaProjectKey, identity string, inputRequired bool) (mediaEndpoint, browserInputEndpoint, bool) {
+func (r *MediaRecoveryObserver) recoveryEndpoints(key mediaProjectKey, identity string) (mediaEndpoint, browserInputEndpoint, bool, bool) {
 	media, ok := r.projects[key]
 	if !ok || media.client == nil || media.identity != identity {
-		return mediaEndpoint{}, browserInputEndpoint{}, false
-	}
-	if !inputRequired {
-		return media, browserInputEndpoint{}, true
+		return mediaEndpoint{}, browserInputEndpoint{}, false, false
 	}
 	if r.input == nil {
-		return mediaEndpoint{}, browserInputEndpoint{}, false
+		return media, browserInputEndpoint{}, true, false
 	}
 	input, ok := r.input.projects[key]
-	return media, input, ok && input.client != nil && input.identity == identity
+	return media, input, true, ok && input.client != nil && input.identity == identity
+}
+
+func recoveryMissingSides(inputRequired, egressRequired bool, inputID, egressID sql.NullString, inputConfigured bool) (bool, bool, bool) {
+	missingInput := inputRequired && !inputID.Valid
+	return missingInput && inputConfigured, egressRequired && !egressID.Valid, missingInput && !inputConfigured
 }
 
 func observeRecoveryEgress(ctx context.Context, client *livekit.Client, room, egressID string) (string, livekit.Observation, error) {
@@ -125,15 +127,16 @@ func (r *MediaRecoveryObserver) observeWithInput(ctx context.Context, episode st
 		 $1::uuid,$2::uuid,$3::bigint,$4::bytea,$5::text)`, episode, member.OperationID,
 			generation.Int64, token[:], code).Scan(&released)
 	}
-	media, input, configured := r.recoveryEndpoints(mediaProjectKey{projectID.String, version.Int64}, endpoint.String, inputRequired)
-	if !configured {
+	media, input, mediaConfigured, inputConfigured := r.recoveryEndpoints(mediaProjectKey{projectID.String, version.Int64}, endpoint.String)
+	if !mediaConfigured {
 		finish("credential_unavailable")
 		return "credential_unavailable", nil
 	}
+	observeInput, observeEgress, inputFailed := recoveryMissingSides(inputRequired, egressRequired,
+		inputID, egressID, inputConfigured)
 	provider, done := context.WithTimeout(turn, 10*time.Second)
 	defer done()
-	inputFailed := false
-	if inputRequired && !inputID.Valid {
+	if observeInput {
 		observed, observeErr := input.client.ObserveInput(provider,
 			livekit.InputTarget{RoomName: room.String, Identity: publisher.String})
 		var source, result string
@@ -165,7 +168,7 @@ func (r *MediaRecoveryObserver) observeWithInput(ctx context.Context, episode st
 			inputFailed = true
 		}
 	}
-	if egressRequired && !egressID.Valid {
+	if observeEgress {
 		source, observation, observeErr := observeRecoveryEgress(provider, media.client, room.String, egress.String)
 		if observeErr == nil {
 			short, end := context.WithTimeout(turn, 5*time.Second)
@@ -188,8 +191,8 @@ func (r *MediaRecoveryObserver) observeWithInput(ctx context.Context, episode st
 		return "remote_unknown", nil
 	}
 	if inputFailed {
-		finish("remote_unknown")
-		return "remote_unknown", nil
+		finish("credential_unavailable")
+		return "credential_unavailable", nil
 	}
 	// Input-only proof leaves the reconcile lease to be released explicitly.
 	finish("not_observed")

@@ -2,6 +2,7 @@ package live
 
 import (
 	"context"
+	"database/sql"
 	"io"
 	"net/http"
 	"strings"
@@ -40,16 +41,24 @@ func TestRecoveryEgressOnlyDoesNotRequireInputProject(t *testing.T) {
 	r := &MediaRecoveryObserver{projects: map[mediaProjectKey]mediaEndpoint{
 		key: {identity: "https://tenant.livekit.cloud", client: client},
 	}, input: &BrowserInputRuntime{projects: map[mediaProjectKey]browserInputEndpoint{}}, withInput: true}
-	_, _, ok := r.recoveryEndpoints(key, "https://tenant.livekit.cloud", false)
-	if !ok {
+	_, _, mediaOK, inputOK := r.recoveryEndpoints(key, "https://tenant.livekit.cloud")
+	if !mediaOK || inputOK {
 		t.Fatal("Egress-only member incorrectly required browser input project")
 	}
-	_, _, ok = r.recoveryEndpoints(key, "https://tenant.livekit.cloud", true)
-	if ok {
-		t.Fatal("input-required member accepted absent browser input project")
+	observeInput, observeEgress, missingInputConfig := recoveryMissingSides(true, true,
+		sql.NullString{}, sql.NullString{}, inputOK)
+	if observeInput || !observeEgress || !missingInputConfig {
+		t.Fatal("missing input map suppressed safe Egress observation or cleared input liability")
 	}
-	_, _, ok = r.recoveryEndpoints(key, "https://other.livekit.cloud", false)
-	if ok {
+	// The first input proof may already be durable. A later generation only
+	// needs Egress and must not require an input client at all.
+	observeInput, observeEgress, missingInputConfig = recoveryMissingSides(true, true,
+		sql.NullString{String: "input-proof", Valid: true}, sql.NullString{}, inputOK)
+	if observeInput || !observeEgress || missingInputConfig {
+		t.Fatal("durable input proof did not allow Egress-only retry")
+	}
+	_, _, mediaOK, inputOK = r.recoveryEndpoints(key, "https://other.livekit.cloud")
+	if mediaOK || inputOK {
 		t.Fatal("mismatched endpoint accepted")
 	}
 }
