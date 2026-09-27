@@ -1215,7 +1215,10 @@ func TestLiveMediaStopLMR05RealCrashAndCommitAckLoss(t *testing.T) {
 		}
 	})
 	var nextSample time.Time
-	h.await(t, 35*time.Second, func(f lmeFacts) bool {
+	// Owner approved 90s on 2026-09-27 for this legacy safety gate's native
+	// rescue wait only. Keep every safety assertion below; MRR separately
+	// proves the real process-start 90s recovery deadline without aged leases.
+	h.await(t, 90*time.Second, func(f lmeFacts) bool {
 		if time.Now().After(nextSample) {
 			snapshot("waiting")
 			nextSample = time.Now().Add(250 * time.Millisecond)
