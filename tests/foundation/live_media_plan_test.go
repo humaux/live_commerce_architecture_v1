@@ -79,9 +79,12 @@ func lmpSetup(t *testing.T, twoDestinations bool) *lmpHarness {
 			return
 		}
 		queries := []string{
-			`DELETE FROM river_media.river_job WHERE id IN (SELECT o.job_id FROM integration.operations o JOIN live.media_attempts a ON a.id=o.media_attempt_id WHERE a.session_id=$1)`,
 			`DELETE FROM integration.operation_events WHERE operation_id IN (SELECT o.id FROM integration.operations o JOIN live.media_attempts a ON a.id=o.media_attempt_id WHERE a.session_id=$1)`,
 			`DELETE FROM integration.operations WHERE media_attempt_id IN (SELECT id FROM live.media_attempts WHERE session_id=$1)`,
+			// Owner-only teardown, with deferred FKs: remove business ownership before
+			// its native job. Missing custody now correctly fails closed while the
+			// operation exists; never disable that production guard for a fixture.
+			`DELETE FROM river_media.river_job WHERE args->>'operation_id' IN (SELECT start_operation_id::text FROM live.media_attempts WHERE session_id=$1)`,
 			`DELETE FROM live.media_attempts WHERE session_id=$1`,
 			`DELETE FROM ops.command_results WHERE principal_id=$1 AND operation='live.media.start'`,
 			`DELETE FROM ops.audit_events WHERE principal_id=$1 AND action='live.media.start.planned'`,

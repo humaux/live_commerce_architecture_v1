@@ -82,6 +82,8 @@ func validateMediaAuthority(ctx context.Context, pool *pgxpool.Pool, role string
 	 WHERE n.nspname='live' AND p.proname IN ('claim_media_operation','load_media_material',
 	 'reserve_media_start','record_media_observation','record_media_cleanup_query',
 	 'finish_media_uncertain','claim_media_input_operation','load_media_input_custody',
+	 'claim_browser_input_operation','next_media_input_turn','finish_media_input_turn',
+	 'reserve_media_input_start','load_media_input_material','reserve_media_input_cleanup','record_media_input_cleanup',
 	 'close_media_input_admission','request_media_stop',
      'register_prepared_media','revoke_prepared_media','begin_media_recovery_episode',
      'claim_recovery_observation','record_recovery_observation','finish_recovery_observation',
@@ -115,7 +117,19 @@ func validateMediaAuthority(ctx context.Context, pool *pgxpool.Pool, role string
 	  OR (p.proname='finish_media_uncertain' AND p.pronargs=4
 	   AND p.proargtypes[0]='uuid'::regtype AND p.proargtypes[1]='bigint'::regtype
 	   AND p.proargtypes[2]='bytea'::regtype AND p.proargtypes[3]='text'::regtype)
-	  OR (p.proname IN ('media_worker_ready','media_input_plan_ready') AND p.pronargs=0))
+	  OR (p.proname IN ('media_worker_ready','media_input_plan_ready','media_browser_input_worker_ready') AND p.pronargs=0))
+	 UNION
+	 -- BRW adds only these exact executor ABIs. Names alone must not permit an
+	 -- overload, registrar authority, private helper, or table access.
+	 SELECT unnest(ARRAY[
+	  pg_catalog.to_regprocedure('live.claim_browser_input_operation(uuid,bigint,integer,bytea)'),
+	  pg_catalog.to_regprocedure('live.next_media_input_turn(uuid,bigint,bytea)'),
+	  pg_catalog.to_regprocedure('live.finish_media_input_turn(uuid,bigint,bytea,text)'),
+	  pg_catalog.to_regprocedure('live.reserve_media_input_start(uuid,bigint,bytea,text,text,text,text,boolean,boolean,boolean,boolean)'),
+	  pg_catalog.to_regprocedure('live.load_media_input_material(uuid,bigint,bytea)'),
+	  pg_catalog.to_regprocedure('live.reserve_media_input_cleanup(uuid,bigint,bytea)'),
+	  pg_catalog.to_regprocedure('live.record_media_input_cleanup(uuid,bigint,bytea,integer,text,text)')
+	 ])::oid
 	), recovery_allowed AS (
 	 SELECT unnest(ARRAY[
 	  pg_catalog.to_regprocedure('live.begin_media_recovery_episode(uuid,bigint,integer,boolean)'),
@@ -161,10 +175,12 @@ func validateMediaAuthority(ctx context.Context, pool *pgxpool.Pool, role string
 	  AND pg_catalog.has_schema_privilege(r.oid,n.oid,'USAGE')
 	  AND p.prorettype<>'trigger'::regtype
 	  AND NOT ($1='media_worker' AND (n.nspname='river_media'
-	   OR (n.nspname='live' AND p.proname IN ('media_worker_ready','media_input_plan_ready')
+	   OR (n.nspname='live' AND p.proname IN ('media_worker_ready','media_input_plan_ready','media_browser_input_worker_ready')
 	    AND p.pronargs=0)))
-	  AND NOT ($1='media_executor' AND p.oid IN (SELECT oid FROM allowed))
-	  AND NOT ($1='media_recovery' AND p.oid IN (SELECT oid FROM recovery_allowed))
+	  -- A missing optional ABI resolves to NULL. Exclude it so SQL's three-valued
+	  -- IN/NOT logic cannot hide an unrelated executable function from this guard.
+	  AND NOT ($1='media_executor' AND p.oid IN (SELECT oid FROM allowed WHERE oid IS NOT NULL))
+	  AND NOT ($1='media_recovery' AND p.oid IN (SELECT oid FROM recovery_allowed WHERE oid IS NOT NULL))
 	  AND pg_catalog.has_function_privilege(r.oid,p.oid,'EXECUTE'))`, role).Scan(&forbidden)
 	if err != nil || forbidden {
 		return errMediaDatabase
