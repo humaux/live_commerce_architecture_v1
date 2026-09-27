@@ -186,7 +186,7 @@ func TestLiveMediaRecoveryMRR02ScopeClockAndWitness(t *testing.T) {
 		t.Fatalf("unknown coverage miss lost: %+v", got)
 	}
 
-	mrrReserveUnansweredStart(t, h)
+	old := mrrReserveUnansweredStart(t, h)
 	episode := randomUUID()
 	first := mrrBegin(t, recovery, episode, 1000, 1, true)
 	if len(first) != 1 || first[0].disposition != "pending" || first[0].operation == nil || *first[0].operation != h.plan.OperationID ||
@@ -199,9 +199,20 @@ func TestLiveMediaRecoveryMRR02ScopeClockAndWitness(t *testing.T) {
 	if disposition, _, _ := mrrClaim(t, recovery, episode, h, randomBytes(32)); disposition != "busy" {
 		t.Fatalf("active old lease stolen: %s", disposition)
 	}
-	// This SQL-only gate expires an otherwise intact lease; it never changes
-	// River attempted_at, native job state, or the parent's wall clock.
-	mustExec(t, h.lp.f.owner, `UPDATE integration.operations SET lease_until=clock_timestamp()-interval '1 second' WHERE id=$1`, h.plan.OperationID)
+	// Native finalization legally clears the complete lease tuple. This is the
+	// NULL-lease branch; the other SQL counterexamples use intact expired leases.
+	var finished string
+	if err := h.executor.QueryRow(context.Background(), `SELECT live.finish_media_uncertain($1::uuid,$2::bigint,$3::bytea,'remote_unknown')`,
+		h.plan.OperationID, old.generation, old.token).Scan(&finished); err != nil || finished != "observe" {
+		t.Fatalf("native uncertain finish: %s %v", finished, err)
+	}
+	var state, mode string
+	var until *time.Time
+	var tokenHash []byte
+	if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT state,lease_mode,lease_until,lease_token_hash FROM integration.operations WHERE id=$1::uuid`,
+		h.plan.OperationID).Scan(&state, &mode, &until, &tokenHash); err != nil || state != "UNKNOWN" || mode != "" || until != nil || tokenHash != nil {
+		t.Fatalf("native finish did not clear lease tuple: state=%s mode=%s until=%v token=%v err=%v", state, mode, until, tokenHash != nil, err)
+	}
 	token := randomBytes(32)
 	if disposition, generation, egress := mrrClaim(t, recovery, episode, h, token); disposition != "claimed" || generation <= *first[0].baseline || egress != nil {
 		t.Fatalf("ROOM recovery claim: %s gen=%d egress=%v", disposition, generation, egress)
@@ -347,6 +358,72 @@ func TestLiveMediaRecoveryMRR03NegativeAuthorityAndFences(t *testing.T) {
 	}
 	if !strings.HasPrefix(h.plan.RoomName, "lc_") {
 		t.Fatal("fixture target not frozen room")
+	}
+}
+
+func TestLiveMediaRecoveryMRR03OldPoolsRejectDirectObserverGrant(t *testing.T) {
+	h := lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "no provider", 500) })
+	ctx := context.Background()
+	const observerFunction = "live.read_media_recovery_episode(uuid)"
+	for _, role := range []struct {
+		name     string
+		member   string
+		validate func(*pgxpool.Pool) error
+	}{
+		{"runtime", "commerce_runtime", func(p *pgxpool.Pool) error {
+			admitted, err := platform.OpenPool(ctx, p.Config().ConnString())
+			if admitted != nil {
+				admitted.Close()
+			}
+			return err
+		}},
+		{"buyer", "commerce_buyer_runtime", func(p *pgxpool.Pool) error { return platform.ValidateBuyerPool(ctx, p) }},
+		{"meta", "commerce_meta_worker", func(p *pgxpool.Pool) error { return platform.ValidateMetaWorkerPool(ctx, p) }},
+	} {
+		t.Run(role.name, func(t *testing.T) {
+			login, pool := lmaLogin(t, h.lp.f, role.member)
+			if err := role.validate(pool); err != nil {
+				t.Fatalf("clean old pool rejected: %v", err)
+			}
+			grant := "GRANT EXECUTE ON FUNCTION " + observerFunction + " TO " + pgx.Identifier{login}.Sanitize()
+			revoke := "REVOKE EXECUTE ON FUNCTION " + observerFunction + " FROM " + pgx.Identifier{login}.Sanitize()
+			mustExec(t, h.lp.f.owner, grant)
+			t.Cleanup(func() { _, _ = h.lp.f.owner.Exec(context.Background(), revoke) })
+			var granted bool
+			if err := pool.QueryRow(ctx, `SELECT has_function_privilege(current_user,$1,'EXECUTE')`, observerFunction).Scan(&granted); err != nil || !granted {
+				t.Fatalf("direct observer grant not installed: %v %v", granted, err)
+			}
+			if err := role.validate(pool); err == nil {
+				t.Fatal("old pool admitted direct observer EXECUTE")
+			}
+			mustExec(t, h.lp.f.owner, revoke)
+			if err := role.validate(pool); err != nil {
+				t.Fatalf("old pool not restored after revoke: %v", err)
+			}
+		})
+	}
+}
+
+func TestLiveMediaRecoveryMRR03WrongPhysicalDatabase(t *testing.T) {
+	h := lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "no provider", 500) })
+	recovery, _ := mrrRecoveryPool(t, h)
+	ctx := context.Background()
+	config, err := pgxpool.ParseConfig(recovery.Config().ConnString())
+	if err != nil {
+		t.Fatal(err)
+	}
+	config.ConnConfig.Database = "postgres" // The other DB in this task-owned PG18 container.
+	wrong, err := pgxpool.NewWithConfig(ctx, config)
+	if err != nil {
+		t.Fatalf("open wrong physical DB: %v", err)
+	}
+	defer wrong.Close()
+	var name string
+	if err := wrong.QueryRow(ctx, `SELECT current_database()`).Scan(&name); err != nil || name != "postgres" {
+		t.Fatalf("wrong physical DB fixture not connected: %s %v", name, err)
+	}
+	if err := platform.ValidateMediaRecoveryPool(ctx, wrong); err == nil {
+		t.Fatal("observer admitted wrong physical DB")
 	}
 }
 
@@ -641,6 +718,36 @@ func TestLiveMediaRecoveryMRR03PrewireAndNativeIneligible(t *testing.T) {
 		}
 		if h.starts.Load()+h.lists.Load()+h.queries.Load()+h.stops.Load() != 0 {
 			t.Fatal("ineligible observer called provider")
+		}
+	})
+	t.Run("escalated-still-in-scope", func(t *testing.T) {
+		h := lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "no provider", 500) })
+		recovery, _ := mrrRecoveryPool(t, h)
+		mrrReserveUnansweredStart(t, h)
+		mustExec(t, h.lp.f.owner, `UPDATE live.media_execution_state
+		 SET escalated_at=clock_timestamp(),escalation_code='reconcile_exhausted'
+		 WHERE attempt_id=$1::uuid`, h.plan.AttemptID)
+		var attempt, maxAttempts int
+		if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT attempt,max_attempts FROM river_media.river_job WHERE id=$1`, h.plan.JobID).
+			Scan(&attempt, &maxAttempts); err != nil || attempt >= maxAttempts {
+			t.Fatalf("ceiling counterexample lost eligible original job: %d/%d %v", attempt, maxAttempts, err)
+		}
+		episode := randomUUID()
+		if rows := mrrBegin(t, recovery, episode, 0, 1, true); len(rows) != 1 || rows[0].disposition != "ceiling" ||
+			rows[0].operation == nil || *rows[0].operation != h.plan.OperationID || rows[0].job == nil || *rows[0].job != h.plan.JobID {
+			t.Fatalf("escalated original silently vanished from scope: %+v", rows)
+		}
+		if disposition, _, _ := mrrClaim(t, recovery, episode, h, randomBytes(32)); disposition != "ceiling" {
+			t.Fatalf("ceiling obtained observer target: %s", disposition)
+		}
+		if disposition, _ := mrrTimeout(t, recovery, episode, 90000); disposition != "timed_out" {
+			t.Fatalf("ceiling liability did not scope-miss: %s", disposition)
+		}
+		if rows := mrrRead(t, recovery, episode); len(rows) != 1 || rows[0].timeoutAt == nil || rows[0].operation == nil || *rows[0].operation != h.plan.OperationID {
+			t.Fatalf("ceiling liability lost from durable readback: %+v", rows)
+		}
+		if h.starts.Load()+h.lists.Load()+h.queries.Load()+h.stops.Load() != 0 {
+			t.Fatal("ceiling gate made provider call")
 		}
 	})
 }
