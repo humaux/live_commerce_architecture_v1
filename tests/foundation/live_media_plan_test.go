@@ -707,6 +707,64 @@ func lmpDirectSQL(h *lmpHarness, key string, entered chan<- int) (out live.Media
 	return out, err
 }
 
+// lmpHistoricalStart0035 seeds an explicitly pre-0039 database through its
+// frozen 0035 SQL and the original command/receipt/River transaction shape.
+// It is test-only migration data, not proof that an old executable binary ran.
+func lmpHistoricalStart0035(h *lmpHarness, key string) (out live.MediaStartResult, err error) {
+	ctx := context.Background()
+	jobs, err := river.NewClient(riverpgxv5.New(h.lp.f.runtime), &river.Config{Schema: "river_media"})
+	if err != nil {
+		return out, err
+	}
+	err = platform.WithScope(ctx, h.lp.f.runtime, h.lp.token, h.lp.f.storeA1, "store:read", func(tx pgx.Tx, scope platform.Scope) error {
+		if err := platform.RequirePermission(ctx, tx, scope, h.lp.token, "live:manage"); err != nil {
+			return err
+		}
+		request := struct {
+			PrincipalID string `json:"principal_id"`
+			live.MediaStartInput
+		}{scope.PrincipalID, h.input}
+		if err := command.Run(ctx, tx, scope, "live.media.start", key, request, &out, func() error {
+			if err := platform.RequirePermission(ctx, tx, scope, h.lp.token, "live:manage"); err != nil {
+				return err
+			}
+			var ready bool
+			if err := tx.QueryRow(ctx, `SELECT live.media_plan_ready()`).Scan(&ready); err != nil {
+				return err
+			}
+			if !ready {
+				return command.ErrConflict
+			}
+			var operation string
+			if err := tx.QueryRow(ctx, `SELECT gen_random_uuid()::text`).Scan(&operation); err != nil {
+				return err
+			}
+			job, err := jobs.InsertTx(ctx, tx, lmpJobArgs{OperationID: operation, Version: 1}, &river.InsertOpts{Queue: "media_mock_v1"})
+			if err != nil {
+				return err
+			}
+			if _, err := tx.Exec(ctx, `SELECT set_config('app.authz_revision',$1,true)`, strconv.FormatInt(scope.Revision, 10)); err != nil {
+				return err
+			}
+			hash := sha256.Sum256([]byte(h.lp.token))
+			var raw []byte
+			if err := tx.QueryRow(ctx, `SELECT live.plan_media_start($1,$2::uuid,$3::uuid,$4::uuid,$5,$6,$7::uuid,$8)`,
+				hash[:], scope.StoreID, h.input.SessionID, h.input.AuthorizationID, h.input.ExpectedSessionVersion,
+				key, operation, job.Job.ID).Scan(&raw); err != nil {
+				return err
+			}
+			if err := json.Unmarshal(raw, &out); err != nil {
+				return err
+			}
+			return command.Audit(ctx, tx, scope, "live.media.start.planned")
+		}); err != nil {
+			return err
+		}
+		return platform.RequirePermission(ctx, tx, scope, h.lp.token, "live:manage")
+	})
+	return out, err
+}
+
 func lmpAwaitWaiter(t *testing.T, ch <-chan lmpWaitResult) lmpWaitResult {
 	t.Helper()
 	select {

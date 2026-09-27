@@ -594,7 +594,10 @@ func TestLiveMediaExecutionLME07NativeLifecycleReadinessAndUpgrade(t *testing.T)
 		prior := &lmpHarness{lmaHarness: auth, specification: spec,
 			input:   live.MediaStartInput{SessionID: draft.ID, AuthorizationID: spec["id"].(string), ExpectedSessionVersion: 1},
 			planner: lmpPlanner(t, old.runtime, "river_media")}
-		planned, err := prior.start(t04Key("lme-old-plan"))
+		if _, err := prior.start(t04Key("lme-current-go-pre0039")); sqlState(err) != "42883" || lmpFacts(t, prior) != [6]int64{} {
+			t.Fatalf("current Go did not fail closed on pre-0039 schema: %v facts=%v", err, lmpFacts(t, prior))
+		}
+		planned, err := lmpHistoricalStart0035(prior, t04Key("lme-old-plan"))
 		if err != nil {
 			t.Fatal(err)
 		}

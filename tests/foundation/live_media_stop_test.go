@@ -443,7 +443,7 @@ func TestLiveMediaStopLMR01Populated0036Upgrade(t *testing.T) {
 	prior := &lmpHarness{lmaHarness: auth, specification: spec,
 		input:   live.MediaStartInput{SessionID: draft.ID, AuthorizationID: spec["id"].(string), ExpectedSessionVersion: 1},
 		planner: lmpPlanner(t, old.runtime, "river_media")}
-	planned, err := prior.start(t04Key("lmr-old-plan"))
+	planned, err := lmpHistoricalStart0035(prior, t04Key("lmr-old-plan"))
 	if err != nil || planned.State != "READY" {
 		t.Fatalf("historical Start plan: %+v %v", planned, err)
 	}

@@ -3,7 +3,6 @@ package foundation_test
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"net/http"
 	"strconv"
@@ -85,16 +84,9 @@ func TestLiveMediaExecutionMLC01AtomicCustody(t *testing.T) {
 		login := mlcTwoLogins(t, h)
 		rollback := errors.New("rollback after verified custody")
 		err := platform.WithScope(context.Background(), h.lp.f.runtime, login.a, h.lp.f.storeA1, "store:read", func(tx pgx.Tx, scope platform.Scope) error {
-			out, err := h.planner.PlanStart(context.Background(), tx, scope, login.a, t04Key("mlc-rollback"), h.input)
+			_, err := h.planner.PlanStart(context.Background(), tx, scope, login.a, t04Key("mlc-rollback"), h.input)
 			if err != nil {
 				return err
-			}
-			var bound string
-			if err := tx.QueryRow(context.Background(), `SELECT login_session_id::text FROM live.media_login_custody WHERE attempt_id=$1`, out.AttemptID).Scan(&bound); err != nil {
-				return err
-			}
-			if bound != login.aID {
-				return fmt.Errorf("uncommitted custody bound %s, want initiating login", bound)
 			}
 			return rollback
 		})
@@ -167,7 +159,7 @@ func TestLiveMediaExecutionMLC01AtomicCustody(t *testing.T) {
 		loss.armed.Store(true)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		if out, err := lmpStart(ctx, h, lmpPlanner(t, pool, "river_media"), login.a, h.lp.f.storeA1, key, h.input); err == nil || out.AttemptID != "" || !loss.committed.Load() {
+		if out, err := mlcStartOnPool(ctx, h, pool, lmpPlanner(t, pool, "river_media"), login.a, key); err == nil || out.AttemptID != "" || !loss.committed.Load() {
 			t.Fatalf("lost real COMMIT ACK was not ambiguous: %+v %v committed=%t", out, err, loss.committed.Load())
 		}
 		if facts := lmpFacts(t, h); facts != [6]int64{1, 1, 1, 1, 1, 1} {
@@ -182,6 +174,42 @@ func TestLiveMediaExecutionMLC01AtomicCustody(t *testing.T) {
 			t.Fatal("ACK-loss recovery rebound login, extended expiry or duplicated artifacts")
 		}
 	})
+
+	t.Run("nonfinite-session-and-custody", func(t *testing.T) {
+		h := lmpSetup(t, false)
+		login := mlcTwoLogins(t, h)
+		if _, err := h.lp.f.owner.Exec(context.Background(), `UPDATE identity.sessions SET expires_at='infinity'::timestamptz WHERE id=$1`, login.aID); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := lmpStart(context.Background(), h, h.planner, login.a, h.lp.f.storeA1, t04Key("mlc-infinite-login"), h.input); err == nil || lmpFacts(t, h) != [6]int64{} {
+			t.Fatalf("nonfinite login admitted Start: %v facts=%v", err, lmpFacts(t, h))
+		}
+		if _, err := h.lp.f.owner.Exec(context.Background(), `UPDATE identity.sessions SET expires_at=clock_timestamp()+interval '1 hour' WHERE id=$1`, login.aID); err != nil {
+			t.Fatal(err)
+		}
+		out, err := lmpStart(context.Background(), h, h.planner, login.a, h.lp.f.storeA1, t04Key("mlc-finite-control"), h.input)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := h.lp.f.owner.Exec(context.Background(), `DELETE FROM live.media_login_custody WHERE attempt_id=$1`, out.AttemptID); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := h.lp.f.owner.Exec(context.Background(), `INSERT INTO live.media_login_custody
+			(attempt_id,tenant_id,store_id,login_session_id,authz_revision,login_expires_at)
+			VALUES($1,$2,$3,$4,$5,'infinity'::timestamptz)`, out.AttemptID, h.lp.f.tenantA, h.lp.f.storeA1, login.aID, login.revision); sqlState(err) != "23514" {
+			t.Fatalf("nonfinite custody insert was not constrained: %v", err)
+		}
+	})
+}
+
+func mlcStartOnPool(ctx context.Context, h *lmpHarness, pool *pgxpool.Pool, planner *live.MediaPlanner, token, key string) (live.MediaStartResult, error) {
+	var out live.MediaStartResult
+	err := platform.WithScope(ctx, pool, token, h.lp.f.storeA1, "store:read", func(tx pgx.Tx, scope platform.Scope) error {
+		var err error
+		out, err = planner.PlanStart(ctx, tx, scope, token, key, h.input)
+		return err
+	})
+	return out, err
 }
 
 func TestLiveMediaExecutionMLC02ReplayCurrentLoginAndStopAuthority(t *testing.T) {
@@ -202,7 +230,21 @@ func TestLiveMediaExecutionMLC02ReplayCurrentLoginAndStopAuthority(t *testing.T)
 			case "initiator-expiry":
 				_, err = h.lp.f.owner.Exec(context.Background(), `UPDATE identity.sessions SET expires_at=clock_timestamp()-interval '1 second' WHERE id=$1`, login.aID)
 			case "revision":
-				_, err = h.lp.f.owner.Exec(context.Background(), `UPDATE identity.memberships SET authz_revision=authz_revision+1 WHERE tenant_id=$1 AND principal_id=$2`, h.lp.f.tenantA, h.lp.actor)
+				tx, beginErr := h.lp.f.owner.Begin(context.Background())
+				if beginErr != nil {
+					t.Fatal(beginErr)
+				}
+				defer tx.Rollback(context.Background())
+				_, err = tx.Exec(context.Background(), `DELETE FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission='store:read'`, h.lp.f.tenantA, h.lp.f.storeA1, h.lp.actor)
+				if err == nil {
+					_, err = tx.Exec(context.Background(), `UPDATE identity.memberships SET authz_revision=authz_revision+1 WHERE tenant_id=$1 AND principal_id=$2`, h.lp.f.tenantA, h.lp.actor)
+				}
+				if err == nil {
+					_, err = tx.Exec(context.Background(), `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'store:read')`, h.lp.f.tenantA, h.lp.f.storeA1, h.lp.actor)
+				}
+				if err == nil {
+					err = tx.Commit(context.Background())
+				}
 			case "store-read", "live-manage":
 				permission := "store:read"
 				if change == "live-manage" {
@@ -311,50 +353,85 @@ func TestLiveMediaExecutionMLC03ObservedWaitAndFinalDispatch(t *testing.T) {
 			t.Fatalf("revoked login passed final dispatch: %+v facts=%+v", lease, h.facts(t))
 		}
 	})
+	t.Run("final-reservation-revocation", func(t *testing.T) {
+		h := lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) {
+			t.Error("revoked login caused provider Start")
+			http.Error(w, "unexpected", 500)
+		})
+		lease := h.claim(t, 30)
+		if lease.disposition != "claimed" || lease.mode != "dispatch" {
+			t.Fatalf("not a dispatch claim: %+v", lease)
+		}
+		h.load(t, lease)
+		if _, err := h.lp.f.owner.Exec(context.Background(), `UPDATE identity.sessions SET revoked_at=clock_timestamp() WHERE token_hash=$1`, tokenHash(h.lp.token)); err != nil {
+			t.Fatal(err)
+		}
+		if err := h.reserve(t, lease); err == nil || h.starts.Load() != 0 || h.facts(t).reserved {
+			t.Fatalf("post-claim revocation passed final reservation: %v facts=%+v", err, h.facts(t))
+		}
+	})
 }
 
 func TestLiveMediaExecutionMLC04PostReservationLifetime(t *testing.T) {
-	var h *lmeHarness
-	h = lmrSetup(t, func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/twirp/livekit.Egress/ListEgress":
-			lmeReply(w, `{"items":[`+h.observation("EG_mlc04", "EGRESS_ACTIVE", 100, 120, 0)+`]}`)
-		case "/twirp/livekit.Egress/StopEgress":
-			lmeReply(w, h.observation("EG_mlc04", "EGRESS_ENDING", 100, 130, 0))
-		default:
-			http.Error(w, "unexpected wire", 500)
-		}
-	})
-	lease := h.claim(t, 30)
-	if lease.disposition != "claimed" || lease.mode != "dispatch" || h.reserve(t, lease) != nil {
-		t.Fatalf("not a reserved Start: %+v", lease)
-	}
-	if _, err := h.lp.f.owner.Exec(context.Background(), `UPDATE identity.sessions SET revoked_at=clock_timestamp() WHERE token_hash=$1`, tokenHash(h.lp.token)); err != nil {
-		t.Fatal(err)
-	}
-	if disposition, err := h.record(t, lease, "START", "EG_mlc04", "EGRESS_ACTIVE", 100, 110, 0); err != nil || disposition != "observe" {
-		t.Fatalf("post-reservation exact fact discarded: %s %v", disposition, err)
-	}
-	before := h.facts(t)
-	if !before.cleanup || before.operation != "UNKNOWN" || !before.reserved || before.egress != "EG_mlc04" {
-		t.Fatalf("revoked login lost original wire custody: %+v", before)
-	}
-	if _, err := h.lp.f.owner.Exec(context.Background(), `UPDATE integration.operations SET lease_until=clock_timestamp()-interval '1 second' WHERE id=$1`, h.plan.OperationID); err != nil {
-		t.Fatal(err)
-	}
-	h.startWorker(t)
-	h.await(t, 25*time.Second, func(f lmeFacts) bool { return f.observations >= 2 && !f.leaseOpen })
-	var operation, attempt string
-	var job int64
-	if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT o.id::text,a.id::text,o.job_id FROM integration.operations o
-		JOIN live.media_attempts a ON a.id=o.media_attempt_id WHERE o.id=$1`, h.plan.OperationID).Scan(&operation, &attempt, &job); err != nil {
-		t.Fatal(err)
-	}
-	if operation != h.plan.OperationID || attempt != h.plan.AttemptID || job != h.plan.JobID || h.starts.Load() != 0 || h.stops.Load() == 0 {
-		t.Fatal("post-revocation worker changed identity or repeated Start")
-	}
-	if f := h.facts(t); f.operation != "UNKNOWN" || !f.cleanup || f.resource == "TERMINAL" {
-		t.Fatalf("ambiguous cleanup falsely closed: %+v", f)
+	for _, change := range []string{"logout", "expiry", "store-read", "revision", "historical-unbound"} {
+		t.Run(change, func(t *testing.T) {
+			var h *lmeHarness
+			h = lmrSetup(t, func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case "/twirp/livekit.Egress/ListEgress":
+					lmeReply(w, `{"items":[`+h.observation("EG_mlc04", "EGRESS_ACTIVE", 100, 120, 0)+`]}`)
+				case "/twirp/livekit.Egress/StopEgress":
+					lmeReply(w, h.observation("EG_mlc04", "EGRESS_ENDING", 100, 130, 0))
+				default:
+					http.Error(w, "unexpected wire", 500)
+				}
+			})
+			lease := h.claim(t, 30)
+			if lease.disposition != "claimed" || lease.mode != "dispatch" {
+				t.Fatalf("not a dispatch claim: %+v", lease)
+			}
+			if err := h.reserve(t, lease); err != nil {
+				t.Fatal(err)
+			}
+			var err error
+			switch change {
+			case "logout":
+				_, err = h.lp.f.owner.Exec(context.Background(), `UPDATE identity.sessions SET revoked_at=clock_timestamp() WHERE token_hash=$1`, tokenHash(h.lp.token))
+			case "expiry":
+				_, err = h.lp.f.owner.Exec(context.Background(), `UPDATE identity.sessions SET expires_at=clock_timestamp()-interval '1 second' WHERE token_hash=$1`, tokenHash(h.lp.token))
+			case "store-read":
+				_, err = h.lp.f.owner.Exec(context.Background(), `DELETE FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission='store:read'`, h.lp.f.tenantA, h.lp.f.storeA1, h.lp.actor)
+			case "revision":
+				_, err = h.lp.f.owner.Exec(context.Background(), `UPDATE identity.memberships SET authz_revision=authz_revision+1 WHERE tenant_id=$1 AND principal_id=$2`, h.lp.f.tenantA, h.lp.actor)
+			case "historical-unbound":
+				// Owner-only simulation of a pre-0039 already-reserved row.
+				_, err = h.lp.f.owner.Exec(context.Background(), `DELETE FROM live.media_login_custody WHERE attempt_id=$1`, h.plan.AttemptID)
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if disposition, err := h.record(t, lease, "START", "EG_mlc04", "EGRESS_ACTIVE", 100, 110, 0); err != nil || disposition != "observe" {
+				t.Fatalf("post-reservation exact fact discarded: %s %v", disposition, err)
+			}
+			before := h.facts(t)
+			if !before.cleanup || before.operation != "UNKNOWN" || !before.reserved || before.egress != "EG_mlc04" {
+				t.Fatalf("access loss discarded reserved resource: %+v", before)
+			}
+			h.startWorker(t)
+			h.await(t, 25*time.Second, func(f lmeFacts) bool { return f.observations >= 2 && !f.leaseOpen })
+			var operation, attempt string
+			var job int64
+			if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT o.id::text,a.id::text,o.job_id FROM integration.operations o
+				JOIN live.media_attempts a ON a.id=o.media_attempt_id WHERE o.id=$1`, h.plan.OperationID).Scan(&operation, &attempt, &job); err != nil {
+				t.Fatal(err)
+			}
+			if operation != h.plan.OperationID || attempt != h.plan.AttemptID || job != h.plan.JobID || h.starts.Load() != 0 || h.stops.Load() == 0 {
+				t.Fatal("post-loss worker changed identity or repeated Start/failed Stop")
+			}
+			if f := h.facts(t); f.operation != "UNKNOWN" || !f.cleanup || f.resource == "TERMINAL" {
+				t.Fatalf("ambiguous cleanup falsely closed: %+v", f)
+			}
+		})
 	}
 }
 
@@ -373,9 +450,8 @@ func TestLiveMediaExecutionMLC05PrivateACLAndLegacyUnbound(t *testing.T) {
 		t.Fatalf("unsafe login guard: %t/%t/%t/%t %v", definer, path, owner, runtimeOnly, err)
 	}
 	for label, pool := range map[string]*pgxpool.Pool{"runtime": h.lp.f.runtime, "worker": h.worker, "executor": h.executor, "registrar": h.registrar} {
-		rows, err := pool.Query(ctx, `SELECT * FROM live.media_login_custody LIMIT 1`)
-		if err == nil {
-			rows.Close()
+		var count int
+		if err := pool.QueryRow(ctx, `SELECT count(*) FROM live.media_login_custody`).Scan(&count); err == nil {
 			t.Fatalf("%s has direct private custody SELECT", label)
 		}
 		for _, signature := range []string{"identity.lock_media_login(bytea,uuid)", "live.media_login_eligible(uuid)"} {
