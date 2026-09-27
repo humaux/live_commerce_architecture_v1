@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -167,6 +169,10 @@ func mrrTimeout(t *testing.T, pool *pgxpool.Pool, episode string, elapsed int64)
 func TestLiveMediaRecoveryMRR02ScopeClockAndWitness(t *testing.T) {
 	h := lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "SQL only", 500) })
 	recovery, _ := mrrRecoveryPool(t, h)
+	var ready bool
+	if err := recovery.QueryRow(context.Background(), `SELECT live.media_recovery_ready()`).Scan(&ready); err != nil || !ready {
+		t.Fatalf("fixed PG18 observer readiness failed before process gates: %v %v", ready, err)
+	}
 	knownEmpty := randomUUID()
 	empty := mrrBegin(t, recovery, knownEmpty, 0, 1, true)
 	if len(empty) != 1 || empty[0].disposition != "empty" || empty[0].candidates != 0 || !empty[0].known {
@@ -365,6 +371,10 @@ func TestLiveMediaRecoveryMRR03OldPoolsRejectDirectObserverGrant(t *testing.T) {
 	h := lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "no provider", 500) })
 	ctx := context.Background()
 	const observerFunction = "live.read_media_recovery_episode(uuid)"
+	var observerOID uint32
+	if err := h.lp.f.owner.QueryRow(ctx, `SELECT pg_catalog.to_regprocedure($1)::oid`, observerFunction).Scan(&observerOID); err != nil || observerOID == 0 {
+		t.Fatalf("resolve observer function OID as owner: %d %v", observerOID, err)
+	}
 	for _, role := range []struct {
 		name     string
 		member   string
@@ -390,7 +400,7 @@ func TestLiveMediaRecoveryMRR03OldPoolsRejectDirectObserverGrant(t *testing.T) {
 			mustExec(t, h.lp.f.owner, grant)
 			t.Cleanup(func() { _, _ = h.lp.f.owner.Exec(context.Background(), revoke) })
 			var granted bool
-			if err := pool.QueryRow(ctx, `SELECT has_function_privilege(current_user,$1,'EXECUTE')`, observerFunction).Scan(&granted); err != nil || !granted {
+			if err := pool.QueryRow(ctx, `SELECT has_function_privilege(current_user,$1::oid,'EXECUTE')`, observerOID).Scan(&granted); err != nil || !granted {
 				t.Fatalf("direct observer grant not installed: %v %v", granted, err)
 			}
 			if err := role.validate(pool); err == nil {
@@ -424,6 +434,145 @@ func TestLiveMediaRecoveryMRR03WrongPhysicalDatabase(t *testing.T) {
 	}
 	if err := platform.ValidateMediaRecoveryPool(ctx, wrong); err == nil {
 		t.Fatal("observer admitted wrong physical DB")
+	}
+}
+
+func TestLiveMediaRecoveryMRR02PoolConfigFailures(t *testing.T) {
+	ctx := context.Background()
+	if pool, err := platform.OpenMediaRecoveryPool(ctx, "postgres://%zz"); err == nil {
+		pool.Close()
+		t.Fatal("malformed recovery DSN admitted")
+	}
+	f := fixture(t)
+	_, worker := lmaLogin(t, f, "commerce_media_worker")
+	if pool, err := platform.OpenMediaRecoveryPool(ctx, worker.Config().ConnString()); err == nil {
+		pool.Close()
+		t.Fatal("native worker role admitted as recovery pool")
+	}
+}
+
+func TestLiveMediaRecoveryMRR02AdmittedEventRLSAndPartialVisibility(t *testing.T) {
+	ctx := context.Background()
+	h1 := lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "SQL only", 500) })
+	h2 := lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "SQL only", 500) })
+	recovery, _ := mrrRecoveryPool(t, h1)
+	_, writer := lmaLogin(t, h1.lp.f, "commerce_media_writer")
+	mrrReserveUnansweredStart(t, h1)
+	mrrReserveUnansweredStart(t, h2)
+	episode := randomUUID()
+	rows := mrrBegin(t, recovery, episode, 0, 2, true)
+	if len(rows) != 2 || rows[0].candidates != 2 || rows[1].candidates != 2 {
+		t.Fatalf("two original members were not captured: %+v", rows)
+	}
+	count := func(pool *pgxpool.Pool) int {
+		t.Helper()
+		var n int
+		if err := pool.QueryRow(ctx, `SELECT count(*) FROM integration.operation_events WHERE episode_id=$1::uuid AND episode_event_kind='admitted'`, episode).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	if owner, mediaWriter := count(h1.lp.f.owner), count(writer); owner != 2 || mediaWriter != owner {
+		t.Fatalf("admitted events hidden from SECURITY DEFINER writer: owner=%d media_writer=%d", owner, mediaWriter)
+	}
+	var predicate string
+	if err := h1.lp.f.owner.QueryRow(ctx, `SELECT pg_catalog.pg_get_expr(p.polqual,p.polrelid)
+	 FROM pg_catalog.pg_policy p WHERE p.polrelid='integration.operation_events'::regclass
+	 AND p.polname='media_writer_event_read'`).Scan(&predicate); err != nil || predicate == "" {
+		t.Fatalf("missing media-writer admitted-event SELECT policy: %v", err)
+	}
+	const drop = `DROP POLICY IF EXISTS media_writer_event_read ON integration.operation_events`
+	create := `CREATE POLICY media_writer_event_read ON integration.operation_events FOR SELECT TO commerce_media_writer USING (` + predicate + `)`
+	restore := func() {
+		t.Helper()
+		mustExec(t, h1.lp.f.owner, drop)
+		mustExec(t, h1.lp.f.owner, create)
+	}
+	t.Cleanup(restore)
+	assertHiddenFailsClosed := func(label string) {
+		t.Helper()
+		for _, query := range []string{
+			`SELECT disposition FROM live.begin_media_recovery_episode($1::uuid,0,2,true) LIMIT 1`,
+			`SELECT scope_status FROM live.read_media_recovery_episode($1::uuid) LIMIT 1`,
+			`SELECT disposition FROM live.timeout_media_recovery_episode($1::uuid,90000)`,
+		} {
+			var result string
+			if err := recovery.QueryRow(ctx, query, episode).Scan(&result); sqlState(err) != "ME409" {
+				t.Fatalf("%s: incomplete admitted set was treated as %s, err=%v", label, result, err)
+			}
+		}
+		var timeoutAt *time.Time
+		if err := h1.lp.f.owner.QueryRow(ctx, `SELECT timeout_at FROM live.media_recovery_episode_scope WHERE episode_id=$1::uuid`, episode).Scan(&timeoutAt); err != nil || timeoutAt != nil {
+			t.Fatalf("%s: false completion/timeout persisted: %v %v", label, timeoutAt, err)
+		}
+	}
+	mustExec(t, h1.lp.f.owner, drop)
+	if n := count(writer); n != 0 {
+		t.Fatalf("dropped policy still exposed %d admitted events", n)
+	}
+	assertHiddenFailsClosed("dropped-policy")
+	restore()
+	if n := count(writer); n != 2 {
+		t.Fatalf("restored policy failed readback: %d", n)
+	}
+	if !regexp.MustCompile(`^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$`).MatchString(h1.plan.OperationID) {
+		t.Fatalf("invalid fixture UUID: %q", h1.plan.OperationID)
+	}
+	partial := fmt.Sprintf(`ALTER POLICY media_writer_event_read ON integration.operation_events USING (operation_id <> '%s'::uuid AND (%s))`, h1.plan.OperationID, predicate)
+	mustExec(t, h1.lp.f.owner, partial)
+	if n := count(writer); n != 1 {
+		t.Fatalf("partial policy did not hide exactly one member: %d", n)
+	}
+	assertHiddenFailsClosed("partial-policy")
+	var oldDeadline time.Time
+	if err := h1.lp.f.owner.QueryRow(ctx, `SELECT deadline_at FROM live.media_recovery_episode_scope WHERE episode_id=$1::uuid`, episode).Scan(&oldDeadline); err != nil {
+		t.Fatal(err)
+	}
+	blockedEpisode := randomUUID()
+	if got := mrrBegin(t, recovery, blockedEpisode, 1000, 2, true); len(got) != 1 || got[0].disposition != "prior_unfinished" || got[0].blocked == nil || *got[0].blocked != episode {
+		t.Fatalf("partially hidden previous episode was displaced: %+v", got)
+	}
+	var afterDeadline time.Time
+	if err := h1.lp.f.owner.QueryRow(ctx, `SELECT deadline_at FROM live.media_recovery_episode_scope WHERE episode_id=$1::uuid`, episode).Scan(&afterDeadline); err != nil || !afterDeadline.Equal(oldDeadline) {
+		t.Fatalf("prior scope deadline was changed: %v -> %v %v", oldDeadline, afterDeadline, err)
+	}
+	restore()
+	if got := mrrRead(t, recovery, episode); len(got) != 2 {
+		t.Fatalf("restored policy lost full committed member set: %+v", got)
+	}
+	const extra = `DROP POLICY IF EXISTS mrr_test_permissive_event_read ON integration.operation_events`
+	t.Cleanup(func() { _, _ = h1.lp.f.owner.Exec(context.Background(), extra) })
+	mustExec(t, h1.lp.f.owner, `CREATE POLICY mrr_test_permissive_event_read ON integration.operation_events FOR SELECT TO PUBLIC USING (true)`)
+	var ready bool
+	if err := recovery.QueryRow(ctx, `SELECT live.media_recovery_ready()`).Scan(&ready); err != nil || ready {
+		t.Fatalf("extra PUBLIC SELECT policy was admitted: ready=%v err=%v", ready, err)
+	}
+	mustExec(t, h1.lp.f.owner, extra)
+	if err := recovery.QueryRow(ctx, `SELECT live.media_recovery_ready()`).Scan(&ready); err != nil || !ready {
+		t.Fatalf("exact policy readiness not restored: ready=%v err=%v", ready, err)
+	}
+	mustExec(t, h1.lp.f.owner, `CREATE POLICY mrr_test_permissive_event_read ON integration.operation_events FOR SELECT TO commerce_media_writer USING (true)`)
+	if err := recovery.QueryRow(ctx, `SELECT live.media_recovery_ready()`).Scan(&ready); err != nil || ready {
+		t.Fatalf("extra writer SELECT policy was admitted: ready=%v err=%v", ready, err)
+	}
+	mustExec(t, h1.lp.f.owner, extra)
+	if err := recovery.QueryRow(ctx, `SELECT live.media_recovery_ready()`).Scan(&ready); err != nil || !ready {
+		t.Fatalf("readiness not restored after writer policy: ready=%v err=%v", ready, err)
+	}
+	t.Cleanup(func() {
+		_, _ = h1.lp.f.owner.Exec(context.Background(), `ALTER ROLE commerce_media_writer NOBYPASSRLS`)
+	})
+	mustExec(t, h1.lp.f.owner, `ALTER ROLE commerce_media_writer BYPASSRLS`)
+	if err := recovery.QueryRow(ctx, `SELECT live.media_recovery_ready()`).Scan(&ready); err != nil || ready {
+		t.Fatalf("BYPASSRLS definer writer was admitted: ready=%v err=%v", ready, err)
+	}
+	mustExec(t, h1.lp.f.owner, `ALTER ROLE commerce_media_writer NOBYPASSRLS`)
+	if err := recovery.QueryRow(ctx, `SELECT live.media_recovery_ready()`).Scan(&ready); err != nil || !ready {
+		t.Fatalf("readiness not restored after writer role reset: ready=%v err=%v", ready, err)
+	}
+	if h1.starts.Load()+h1.lists.Load()+h1.queries.Load()+h1.stops.Load()+
+		h2.starts.Load()+h2.lists.Load()+h2.queries.Load()+h2.stops.Load() != 0 {
+		t.Fatal("SQL-only RLS counterexample made provider call")
 	}
 }
 
@@ -750,6 +899,127 @@ func TestLiveMediaRecoveryMRR03PrewireAndNativeIneligible(t *testing.T) {
 			t.Fatal("ceiling gate made provider call")
 		}
 	})
+}
+
+func TestLiveMediaRecoveryMRR03InputProfileAndWrongOriginalJob(t *testing.T) {
+	ctx := context.Background()
+	t.Run("input-profile-even-with-synthetic-wire-flag", func(t *testing.T) {
+		h, plan, _ := bicStarted(t)
+		login, recovery := lmaLogin(t, h.lp.f, "commerce_media_recovery")
+		name := pgx.Identifier{login}.Sanitize()
+		mustExec(t, h.lp.f.owner, "REVOKE commerce_media_recovery FROM "+name)
+		mustExec(t, h.lp.f.owner, "GRANT commerce_media_recovery TO "+name+" WITH INHERIT TRUE, SET FALSE")
+		var profile, queue string
+		if err := h.lp.f.owner.QueryRow(ctx, `SELECT a.execution_profile,j.queue FROM live.media_attempts a
+		 JOIN integration.operations o ON o.media_attempt_id=a.id JOIN river_media.river_job j ON j.id=o.job_id
+		 WHERE a.id=$1::uuid`, plan.AttemptID).Scan(&profile, &queue); err != nil || profile != "LOCAL_SFU_MOCK_EGRESS" || queue != "media_input_mock_v1" {
+			t.Fatalf("not an original INPUT job: %s %s %v", profile, queue, err)
+		}
+		if disposition, _, _, err := bicClaim(ctx, h, plan, randomBytes(32)); err != nil || disposition != "await_admission" {
+			t.Fatalf("INPUT projection not initialized: %s %v", disposition, err)
+		}
+		// Owner-only SQL counterexample: even misleading nonterminal/wire flags
+		// cannot turn immutable INPUT work into observer/provider authority.
+		mustExec(t, h.lp.f.owner, `UPDATE live.media_execution_state SET wire_reserved_at=clock_timestamp(),wire_generation=1 WHERE attempt_id=$1::uuid`, plan.AttemptID)
+		mustExec(t, h.lp.f.owner, `UPDATE integration.operations SET state='UNKNOWN',generation=greatest(generation,1),result_code='remote_unknown' WHERE id=$1::uuid`, plan.OperationID)
+		episode := randomUUID()
+		if rows := mrrBegin(t, recovery, episode, 0, 1, true); len(rows) != 1 || rows[0].disposition != "empty" || rows[0].operation != nil {
+			t.Fatalf("INPUT job entered provider observer set: %+v", rows)
+		}
+		var disposition string
+		if err := recovery.QueryRow(ctx, `SELECT disposition FROM live.claim_recovery_observation($1::uuid,$2::uuid,$3::bigint,$4::bytea)`,
+			episode, plan.OperationID, plan.JobID, randomBytes(32)).Scan(&disposition); sqlState(err) != "ME409" {
+			t.Fatalf("INPUT obtained observer claim: %s %v", disposition, err)
+		}
+	})
+	t.Run("wrong-original-job", func(t *testing.T) {
+		h := lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "SQL only", 500) })
+		recovery, _ := mrrRecoveryPool(t, h)
+		mrrReserveUnansweredStart(t, h)
+		episode := randomUUID()
+		if rows := mrrBegin(t, recovery, episode, 0, 1, true); len(rows) != 1 || rows[0].job == nil || *rows[0].job != h.plan.JobID {
+			t.Fatalf("original job not captured: %+v", rows)
+		}
+		var disposition string
+		if err := recovery.QueryRow(ctx, `SELECT disposition FROM live.claim_recovery_observation($1::uuid,$2::uuid,$3::bigint,$4::bytea)`,
+			episode, h.plan.OperationID, h.plan.JobID+1, randomBytes(32)).Scan(&disposition); sqlState(err) != "ME409" {
+			t.Fatalf("substituted job obtained observer claim: %s %v", disposition, err)
+		}
+	})
+}
+
+func TestLiveMediaRecoveryMRR04InternalChildEOF(t *testing.T) {
+	h := lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "no provider", 500) })
+	tlsServer, ca := lmwTLS(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "no provider", 500) }))
+	binary := mrBuild(t, "../../cmd/media-worker", "mrr-internal-child")
+	env := append(lmwEnvironment(h, tlsServer.Listener.Addr().String(), ca),
+		"COMMERCE_MEDIA_RECOVERY_SUPERVISED=1", "COMMERCE_MEDIA_RECOVERY_INTERNAL_CHILD=1",
+		"HTTPS_PROXY=http://127.0.0.1:1", "HTTP_PROXY=http://127.0.0.1:1")
+	readEnd, writeEnd, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer readEnd.Close()
+	defer writeEnd.Close()
+	logFile, err := os.CreateTemp(t.TempDir(), "mrr-internal-child-*.log")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer logFile.Close()
+	cmd := exec.Command(binary)
+	cmd.Env = append([]string{"PATH=" + os.Getenv("PATH")}, env...)
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = readEnd, logFile, logFile
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+	_ = readEnd.Close()
+	done := make(chan error, 1)
+	go func() { done <- cmd.Wait() }()
+	reaped := false
+	t.Cleanup(func() {
+		if !reaped {
+			_ = cmd.Process.Kill()
+			select {
+			case <-done:
+			case <-time.After(5 * time.Second):
+				t.Errorf("internal child PID %d not reaped", cmd.Process.Pid)
+			}
+		}
+	})
+	if _, err := writeEnd.Write([]byte{1}); err != nil {
+		t.Fatal(err)
+	}
+	ready := false
+	for deadline := time.Now().Add(8 * time.Second); time.Now().Before(deadline); {
+		log, err := os.ReadFile(logFile.Name())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if bytes.Contains(log, []byte("media_worker_ready")) {
+			ready = true
+			break
+		}
+		select {
+		case err := <-done:
+			reaped = true
+			t.Fatalf("internal child exited before release-backed readiness: %v", err)
+		default:
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if !ready {
+		t.Fatal("internal child never became ready after release byte")
+	}
+	_ = writeEnd.Close() // EOF after release cancels the native child context.
+	select {
+	case <-done:
+		reaped = true
+	case <-time.After(8 * time.Second):
+		t.Fatal("internal child ignored post-release EOF")
+	}
+	if h.starts.Load()+h.lists.Load()+h.queries.Load()+h.stops.Load() != 0 {
+		t.Fatal("EOF-only child issued provider I/O")
+	}
 }
 
 func mrrChildPID(parent, exclude int) (int, error) {

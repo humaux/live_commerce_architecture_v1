@@ -215,7 +215,7 @@ elif [[ "$test_mode" == --live-media-stop ]]; then
   GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=300s -run '^Test(LivePlanning|LiveMediaAuthorization|LiveMediaPlan|LiveMediaExecution|LiveMediaStop)' -v ./internal/live ./tests/foundation
   printf 'PASS: isolated bounded MOCK media Stop; no Cloud, LIVE intake, operator escalation recovery or G06 acceptance.\n'
 elif [[ "$test_mode" == --live-media-recovery ]]; then
-  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=240s -run '^TestLiveMediaRecoveryMRR' -v ./tests/foundation
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -failfast -timeout=360s -run '^TestLiveMediaRecoveryMRR' -v ./tests/foundation
   printf 'PASS: isolated MRR observer SQL/process gates only; no Cloud, human alert delivery, LIVE intake or G06 acceptance.\n'
 elif [[ "$test_mode" == --live-media-runtime ]]; then
   GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=360s -run '^Test(MediaWorkerLMW|WorkerEnvironmentLMW|LiveMediaRuntimeLMW)' -v ./cmd/media-worker ./internal/integrations/livekit ./tests/foundation
