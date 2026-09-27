@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -135,6 +136,16 @@ func GetStudio(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, sess
 	// READ COMMITTED permits a draft edit between the two reads. Never attach a
 	// newer prepared candidate to an older draft snapshot.
 	if prepared != nil && prepared.SessionVersion != draft.Version {
+		return Studio{}, ErrStudioProjection
+	}
+	// Recheck the whole draft after the private read: an intervening PlanStart
+	// can create an attempt without a prepared candidate or bumping the session
+	// version, while UpdateDraft can change the planning fields.
+	current, err := GetDraft(ctx, tx, scope, token, sessionID)
+	if err != nil {
+		return Studio{}, err
+	}
+	if !reflect.DeepEqual(current, draft) {
 		return Studio{}, ErrStudioProjection
 	}
 	out := Studio{Draft: draft, Prepared: prepared, Attempt: attempt}
