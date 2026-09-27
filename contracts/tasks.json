@@ -614,6 +614,14 @@
       "memory_id": "9fff3151-e030-4f0b-90bf-7e6b262eacd4",
       "boundary": "Studio composition only; previous Orders C approval unchanged. No new runtime, production or STU04 acceptance."
     },
+    "studio_ui_candidate": {
+      "status": "UNMERGED_CORE_PG_PASS_NATIVE_NOT_RUN_VISUAL_PENDING",
+      "source_commit": "aa2bc39738e4c0209ac8bb90f5d3b7576d05f95c",
+      "test_commit": "7e34fbb",
+      "evidence": "docs/implementation/2026-09-27-studio-ui-acceptance.md",
+      "memory_id": "7ba64840-bd28-448f-8195-20df966f35e4",
+      "boundary": "Fifth independent real signed-OIDC/Next/Go/PG/local-MOCK chain, original-key retry, session swap and PG counters PASS. Actual browser result3PASS2FAIL and exit1 because native conceal remained visible. Nine valid three-locale desktop/mobile captures await independent visual review. No source merge, full STU04, comment desk, Cloud, LIVE or deployment acceptance."
+    },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
   {
