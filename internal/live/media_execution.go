@@ -184,6 +184,27 @@ func (w *mediaExecutionWorker) record(ctx context.Context, operation string, gen
 	}
 }
 
+// A Query and the Stop permission it may earn are committed atomically. A
+// missing COMMIT acknowledgement never authorizes a network Stop call.
+func (w *mediaExecutionWorker) recordCleanupQuery(ctx context.Context, operation string, generation int64,
+	token []byte, obs livekit.Observation) (string, error) {
+	bounded, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	var result string
+	if w.pool.QueryRow(bounded, `SELECT live.record_media_cleanup_query($1::uuid,$2::bigint,$3::bytea,
+		$4::text,$5::text,$6::text,$7::bigint,$8::bigint,$9::bigint)`,
+		operation, generation, token, obs.EgressID, obs.RoomName, obs.Status,
+		obs.StartedAtNS, obs.UpdatedAtNS, obs.EndedAtNS).Scan(&result) != nil {
+		return "", ErrMediaDatabase
+	}
+	switch result {
+	case "observe", "terminal", "escalated", "stop_reserved":
+		return result, nil
+	default:
+		return "", ErrMediaDatabase
+	}
+}
+
 func (w *mediaExecutionWorker) Work(ctx context.Context, job *river.Job[mediaOperationArgs]) error {
 	if job == nil || job.JobRow == nil || job.ID < 1 || job.Args.Version != 1 ||
 		!command.ValidID(job.Args.OperationID) || job.Kind != (mediaOperationArgs{}).Kind() ||
@@ -287,6 +308,32 @@ func (w *mediaExecutionWorker) Work(ctx context.Context, job *river.Job[mediaOpe
 			code = "invalid_observation"
 		}
 		return w.finish(ctx, job.Args.OperationID, generation, token[:], code)
+	}
+	if source == "QUERY" {
+		result, err := w.recordCleanupQuery(ctx, job.Args.OperationID, generation, token[:], obs)
+		if err != nil {
+			return err
+		}
+		switch result {
+		case "terminal", "escalated":
+			return nil
+		case "observe":
+			return river.JobSnooze(mediaObservationDelay)
+		case "stop_reserved":
+			// The reservation was committed with this exact lease and target.
+			// A cancelled context consumes budget but never sends detached I/O.
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			stopObservation, stopErr := project.client.Stop(ctx, livekit.Target{
+				RoomName: m.RoomName, EgressID: m.EgressID,
+			})
+			if stopErr != nil {
+				return w.finish(ctx, job.Args.OperationID, generation, token[:], "remote_unknown")
+			}
+			return w.record(ctx, job.Args.OperationID, generation, token[:], "STOP", stopObservation)
+		}
+		return ErrMediaDatabase
 	}
 	return w.record(ctx, job.Args.OperationID, generation, token[:], source, obs)
 }
