@@ -118,7 +118,7 @@ func brwSelectObserve(t *testing.T, h *brwHarness, lease brwLease) {
 	}
 }
 
-func brwAssertNativePending(t *testing.T, h *brwHarness) {
+func brwAssertNativePending(t *testing.T, h *brwHarness, wantOperation string) {
 	t.Helper()
 	if _, err := h.lp.f.owner.Exec(context.Background(),
 		`UPDATE river_media.river_job SET state='completed',finalized_at=clock_timestamp() WHERE id=$1`,
@@ -136,7 +136,7 @@ func brwAssertNativePending(t *testing.T, h *brwHarness) {
 	if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT o.state,c.state
 		FROM integration.operations o JOIN live.media_input_custody c ON c.operation_id=o.id
 		WHERE o.id=$1`, h.plan.OperationID).Scan(&operation, &child); err != nil ||
-		operation != "UNKNOWN" || child == "CLOSED" {
+		operation != wantOperation || child == "CLOSED" {
 		t.Fatalf("native pending rewrite lost original liability: operation=%s child=%s err=%v",
 			operation, child, err)
 	}
@@ -237,6 +237,29 @@ func TestLiveBrowserInputBRW01MarkerRoleAndOldClaimIsolation(t *testing.T) {
 		var ready bool
 		if err := h.worker.QueryRow(context.Background(), `SELECT live.media_browser_input_worker_ready()`).Scan(&ready); err != nil || !ready {
 			t.Fatalf("actual worker role not ready: ready=%t err=%v", ready, err)
+		}
+		for _, item := range []struct{ name, grant, revoke string }{
+			{"private-helper-public",
+				`GRANT EXECUTE ON FUNCTION live.browser_input_next_action(uuid) TO PUBLIC`,
+				`REVOKE EXECUTE ON FUNCTION live.browser_input_next_action(uuid) FROM PUBLIC`},
+			{"executor-step-to-runtime",
+				`GRANT EXECUTE ON FUNCTION live.reserve_media_input_cleanup(uuid,bigint,bytea) TO commerce_runtime`,
+				`REVOKE EXECUTE ON FUNCTION live.reserve_media_input_cleanup(uuid,bigint,bytea) FROM commerce_runtime`},
+			{"private-child-column-read",
+				`GRANT SELECT(ordinal) ON live.media_input_wire_steps TO commerce_runtime`,
+				`REVOKE SELECT(ordinal) ON live.media_input_wire_steps FROM commerce_runtime`},
+		} {
+			t.Run(item.name, func(t *testing.T) {
+				mustExec(t, h.lp.f.owner, item.grant)
+				t.Cleanup(func() { _, _ = h.lp.f.owner.Exec(context.Background(), item.revoke) })
+				if err := h.worker.QueryRow(context.Background(), `SELECT live.media_browser_input_worker_ready()`).Scan(&ready); err != nil || ready {
+					t.Fatalf("readiness accepted %s authority poison: ready=%t err=%v", item.name, ready, err)
+				}
+				mustExec(t, h.lp.f.owner, item.revoke)
+				if err := h.worker.QueryRow(context.Background(), `SELECT live.media_browser_input_worker_ready()`).Scan(&ready); err != nil || !ready {
+					t.Fatalf("readiness failed restoration after %s: ready=%t err=%v", item.name, ready, err)
+				}
+			})
 		}
 	})
 }
@@ -352,8 +375,21 @@ func TestLiveBrowserInputBRW02DualTrackSingleStartAndStop(t *testing.T) {
 			t04Key("brw-stop-after-wire"), h.plan); err != nil {
 			t.Fatal(err)
 		}
-		bicAssertOriginalLiability(t, h.bicHarness, h.plan)
-		brwAssertNativePending(t, h)
+		var operation, jobState, child string
+		var jobID int64
+		var leaseUntil, finalized, stopRequested *time.Time
+		if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT o.state,o.job_id,j.state,
+			j.finalized_at,o.lease_until,x.stop_requested_at,c.state
+			FROM integration.operations o JOIN river_media.river_job j ON j.id=o.job_id
+			JOIN live.media_execution_state x ON x.operation_id=o.id
+			JOIN live.media_input_custody c ON c.operation_id=o.id WHERE o.id=$1`, h.plan.OperationID).
+			Scan(&operation, &jobID, &jobState, &finalized, &leaseUntil, &stopRequested, &child); err != nil ||
+			operation != "DISPATCHING" || jobID != h.plan.JobID || jobState == "completed" ||
+			finalized != nil || leaseUntil == nil || stopRequested == nil || child == "CLOSED" {
+			t.Fatalf("post-reservation Stop lost sticky dual liability: op=%s job=%d/%s finalized=%v lease=%v stop=%v child=%s err=%v",
+				operation, jobID, jobState, finalized, leaseUntil, stopRequested, child, err)
+		}
+		brwAssertNativePending(t, h, "DISPATCHING")
 		if _, err := h.lp.f.owner.Exec(context.Background(),
 			`DELETE FROM river_media.river_job WHERE id=$1`, h.plan.JobID); sqlState(err) != "22023" {
 			t.Fatalf("native guard deleted unresolved original job: %v", err)
@@ -577,7 +613,7 @@ func TestLiveBrowserInputBRW04EgressTerminalDoesNotDiscardInput(t *testing.T) {
 		t.Fatalf("terminal Egress suppressed input: operation=%s resource=%s child=%s err=%v",
 			operation, resource, child, err)
 	}
-	brwAssertNativePending(t, h)
+	brwAssertNativePending(t, h, "UNKNOWN")
 	if _, err := bicStop(context.Background(), h.bicHarness, h.logins.b,
 		t04Key("brw-stop-after-egress-terminal"), h.plan); err != nil {
 		t.Fatalf("input Stop disabled by terminal Egress: %v", err)
@@ -602,12 +638,16 @@ func (r *brwRejectTransport) RoundTrip(*http.Request) (*http.Response, error) {
 }
 
 type brwWireFixture struct {
-	h       *brwHarness
-	keys    *livekit.MaterialKeyring
-	egress  live.MediaProject
-	inputs  atomic.Int32
-	starts  atomic.Int32
-	ordered atomic.Bool
+	h             *brwHarness
+	keys          *livekit.MaterialKeyring
+	egress        live.MediaProject
+	inputs        atomic.Int32
+	starts        atomic.Int32
+	removes       atomic.Int32
+	ordered       atomic.Bool
+	completeQuery atomic.Bool
+	cameraMode    atomic.Int32 // 0=ready, 1=missing, 2=muted
+	micMode       atomic.Int32
 }
 
 func brwWireStarted(t *testing.T) *brwWireFixture {
@@ -620,18 +660,43 @@ func brwWireStarted(t *testing.T) *brwWireFixture {
 		t.Fatal(err)
 	}
 	sfu := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/twirp/livekit.RoomService/GetParticipant" {
+		switch r.URL.Path {
+		case "/twirp/livekit.RoomService/RemoveParticipant":
+			f.removes.Add(1)
+			lmeReply(w, `{}`)
+			return
+		case "/twirp/livekit.RoomService/DeleteRoom":
+			lmeReply(w, `{}`)
+			return
+		case "/twirp/livekit.RoomService/ListRooms":
+			lmeReply(w, fmt.Sprintf(`{"rooms":[{"name":%q,"sid":"RM_brw"}]}`, h.plan.RoomName))
+			return
+		case "/twirp/livekit.RoomService/GetParticipant":
+			f.inputs.Add(1)
+		default:
 			http.Error(w, "unexpected SFU call", http.StatusBadRequest)
 			return
 		}
-		f.inputs.Add(1)
 		var target struct{ Room, Identity string }
 		if err := json.NewDecoder(io.LimitReader(r.Body, 2048)).Decode(&target); err != nil ||
 			target.Room != h.plan.RoomName || target.Identity != h.grant.PublisherIdentity {
 			http.Error(w, "wrong input target", http.StatusBadRequest)
 			return
 		}
-		lmeReply(w, fmt.Sprintf(`{"identity":%q,"sid":"PA_brw","state":"ACTIVE","tracks":[{"sid":"TR_cam","source":"CAMERA","type":"VIDEO","muted":false},{"sid":"TR_mic","source":"MICROPHONE","type":"AUDIO","muted":false}]}`, target.Identity))
+		tracks := make([]map[string]any, 0, 2)
+		if mode := f.cameraMode.Load(); mode != 1 {
+			tracks = append(tracks, map[string]any{"sid": "TR_cam", "source": "CAMERA", "type": "VIDEO", "muted": mode == 2})
+		}
+		if mode := f.micMode.Load(); mode != 1 {
+			tracks = append(tracks, map[string]any{"sid": "TR_mic", "source": "MICROPHONE", "type": "AUDIO", "muted": mode == 2})
+		}
+		body, err := json.Marshal(map[string]any{"identity": target.Identity, "sid": "PA_brw", "state": "ACTIVE", "tracks": tracks})
+		if err != nil {
+			t.Error(err)
+			http.Error(w, "fixture", 500)
+			return
+		}
+		lmeReply(w, string(body))
 	}))
 	t.Cleanup(sfu.Close)
 	egressServer := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -646,7 +711,12 @@ func brwWireStarted(t *testing.T) *brwWireFixture {
 			http.Error(w, "unexpected Egress call", http.StatusBadRequest)
 			return
 		}
-		observation := fmt.Sprintf(`{"egress_id":"EG_brw","room_name":%q,"status":"EGRESS_ACTIVE","started_at":"100","updated_at":"110","ended_at":"0"}`, h.plan.RoomName)
+		status, updated, ended := "EGRESS_ACTIVE", "110", "0"
+		if r.URL.Path == "/twirp/livekit.Egress/ListEgress" && f.completeQuery.Load() {
+			status, updated, ended = "EGRESS_COMPLETE", "140", "130"
+		}
+		observation := fmt.Sprintf(`{"egress_id":"EG_brw","room_name":%q,"status":%q,"started_at":"100","updated_at":%q,"ended_at":%q}`,
+			h.plan.RoomName, status, updated, ended)
 		if r.URL.Path == "/twirp/livekit.Egress/ListEgress" {
 			lmeReply(w, `{"items":[`+observation+`]}`)
 		} else {
@@ -818,4 +888,81 @@ func TestLiveBrowserInputBRW02OriginalJobWorkerBeforeSingleStart(t *testing.T) {
 			t.Fatal("provider Start lacked committed wire reservation")
 		}
 	})
+	for _, item := range []struct {
+		name        string
+		camera, mic int32
+	}{
+		{"camera-missing", 1, 0}, {"microphone-muted", 0, 2},
+	} {
+		t.Run(item.name+"-has-no-Start", func(t *testing.T) {
+			f := brwWireStarted(t)
+			f.cameraMode.Store(item.camera)
+			f.micMode.Store(item.mic)
+			brwReserveGrant(t, f.h)
+			brwStartWorker(t, f.h.bicHarness, f.keys, f.egress, f.h.runtime)
+			deadline := time.Now().Add(12 * time.Second)
+			var jobState string
+			for time.Now().Before(deadline) {
+				if err := f.h.lp.f.owner.QueryRow(context.Background(),
+					`SELECT state FROM river_media.river_job WHERE id=$1`, f.h.plan.JobID).Scan(&jobState); err != nil {
+					t.Fatal(err)
+				}
+				if f.inputs.Load() > 0 && jobState == "scheduled" {
+					break
+				}
+				time.Sleep(25 * time.Millisecond)
+			}
+			_, _, reserved := brwWireFacts(t, f.h)
+			if f.inputs.Load() == 0 || jobState != "scheduled" || f.starts.Load() != 0 || reserved != nil {
+				t.Fatalf("invalid actual tracks reached Start: input=%d job=%s start=%d reserved=%v",
+					f.inputs.Load(), jobState, f.starts.Load(), reserved)
+			}
+		})
+	}
+}
+
+func TestLiveBrowserInputBRW04ActualWorkerKeepsJobAfterEgressTerminal(t *testing.T) {
+	f := brwWireStarted(t)
+	f.completeQuery.Store(true)
+	brwReserveGrant(t, f.h)
+	brwStartWorker(t, f.h.bicHarness, f.keys, f.egress, f.h.runtime)
+	deadline := time.Now().Add(25 * time.Second)
+	var resource, operation, jobState, child string
+	var finalized *time.Time
+	for time.Now().Before(deadline) {
+		if err := f.h.lp.f.owner.QueryRow(context.Background(), `SELECT x.resource_state,o.state,j.state,j.finalized_at,c.state
+			FROM live.media_execution_state x JOIN integration.operations o ON o.id=x.operation_id
+			JOIN river_media.river_job j ON j.id=o.job_id
+			JOIN live.media_input_custody c ON c.attempt_id=x.attempt_id WHERE o.id=$1`, f.h.plan.OperationID).
+			Scan(&resource, &operation, &jobState, &finalized, &child); err != nil {
+			t.Fatal(err)
+		}
+		if resource == "TERMINAL" {
+			break
+		}
+		time.Sleep(25 * time.Millisecond)
+	}
+	if f.starts.Load() != 1 || resource != "TERMINAL" || operation != "UNKNOWN" ||
+		jobState == "completed" || jobState == "cancelled" || jobState == "discarded" ||
+		finalized != nil || child == "CLOSED" {
+		t.Fatalf("terminal Egress completed original input job: start=%d resource=%s op=%s job=%s finalized=%v child=%s",
+			f.starts.Load(), resource, operation, jobState, finalized, child)
+	}
+	if _, err := bicStop(context.Background(), f.h.bicHarness, f.h.logins.b,
+		t04Key("brw-actual-terminal-stop"), f.h.plan); err != nil {
+		t.Fatal(err)
+	}
+	deadline = time.Now().Add(20 * time.Second)
+	for time.Now().Before(deadline) && f.removes.Load() == 0 {
+		time.Sleep(25 * time.Millisecond)
+	}
+	if f.removes.Load() == 0 {
+		t.Fatal("Egress terminal starved original worker input cleanup")
+	}
+	if err := f.h.lp.f.owner.QueryRow(context.Background(),
+		`SELECT state,finalized_at FROM river_media.river_job WHERE id=$1`, f.h.plan.JobID).
+		Scan(&jobState, &finalized); err != nil || finalized != nil ||
+		(jobState == "completed" || jobState == "cancelled" || jobState == "discarded") {
+		t.Fatalf("post-Egress input cleanup lost native original job: %s %v %v", jobState, finalized, err)
+	}
 }
