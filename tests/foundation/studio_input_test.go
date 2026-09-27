@@ -102,6 +102,9 @@ func TestStudioInputPreparedAndACL(t *testing.T) {
 	disabled := httpapi.NewHandler(h.lp.f.runtime, httpapi.Options{Live: h.planner})
 	for _, path := range []string{input, preparedPath} {
 		w := studioInputRequest(t, disabled, http.MethodGet, path, h.logins.a, "", "", 404, false)
+		if w.Header().Get("Cache-Control") != "no-store" {
+			t.Fatal("disabled input route lost global no-store")
+		}
 		if w.Header().Get("Location") != "" || w.Header().Get("Set-Cookie") != "" {
 			t.Fatal("disabled input route redirected or set a cookie")
 		}

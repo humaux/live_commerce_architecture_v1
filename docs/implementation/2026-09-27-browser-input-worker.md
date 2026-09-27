@@ -273,3 +273,49 @@ responsibility all pass. Earlier failed evidence remains above.
 - Browser evidence: `output/playwright/input-delivery-20260927T165827.706359000/`.
 - Scope: signed browser/HTTPS BFF/Go/actual PG token transport and WSS handshake,
   not decoded SFU media, merchant input controls, INPUT recovery or production.
+
+## Merchant input read integration (2026-09-28)
+
+Frozen source `32d74c0` adds exact GET `/input` and `/input/prepared` under the
+existing merchant session route. Migration 0043 grants only runtime EXECUTE;
+the prepared SQL envelope carries fixed deployment pins for Go verification,
+which are stripped from the public five-field DTO. Input status has seven
+nonsecret fields. Both reads use current authority, HTTPS BFF, private no-store,
+bounded response parsing and no fixture authentication. The old Studio detail
+accepts marked input attempts but never offers input authorizations as legacy
+rehearsal candidates. Input `can_stop` preserves joint input/Egress liability.
+
+Independent review found a strict-decoding P1: Go zero values accepted null
+booleans and an open/closed contradiction. Repairs `39d46cd` and `b5a960f` add
+raw boolean/string checks, state/admission consistency and null/contradiction
+negative tests; valid CLOSED input with Egress cleanup still permits Stop.
+Independent reviewer approved the final source, not runtime acceptance.
+
+Root results on `32d74c0`:
+
+- Six Node boundary tests, Admin typecheck and packaged production build pass.
+- `go test -race ./internal/live ./internal/httpapi` and matching `go vet` exit
+  0 (1.411s/1.744s for the packages).
+- First `--studio-backend` exits 1 (foundation 17.237s): the new test reused a
+  POST-oriented helper that supplied a non-nil empty body for GET, correctly
+  rejected with 422. It also applied the registered Studio private cache rule
+  to an intentionally unregistered nil-runtime 404. The direct SQL freshness
+  and existing Studio tests pass. Correction belongs in the test fixture;
+  production body checks must not be relaxed. Focused PG rerun remains pending.
+- Actual `--browser-input-delivery` exits 0: Go 5.37s, foundation 7.113s;
+  two signed HTTPS browser phases pass (2.854s/0.883s). Real IDs traverse
+  browser → Next → Go → PG for nullable prepared selection, RESERVED status,
+  consumed candidate, legacy detail forwarding and Stop/revoke liability.
+  Wrong query/key/method/store fail; synthetic upstream IDs separately test
+  malformed/oversized BFF sanitation. Existing token/replay/Origin gates pass.
+
+|Run|Log under `/Volumes/data/output/`|SHA256|
+|---|---|---|
+|PG first, exit 1|`studio-input-read-pg-root-first-20260928.log`|`10c0a3344f0aefb8c02212538baeeaad8c0cee142d8803bcd21eb694127b51fc`|
+|HTTPS, exit 0|`studio-input-read-https-root-first-20260928.log`|`299763fdce68d128adb79d1cfc181fda610d1b5e5de65478f52548a23ee68aed`|
+
+Browser evidence: `output/playwright/input-delivery-20260927T173109.531042000/`.
+Owned PG/Next fixtures are removed after each runner. No customer, production
+runtime, provider credentials or external streams were changed. These are
+read/transport gates, **not** BRW06 decoded SFU, BRI07 visible input controls,
+BRW07 INPUT recovery, current-source full regression or deployability acceptance.
