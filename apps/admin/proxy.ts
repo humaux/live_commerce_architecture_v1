@@ -5,9 +5,12 @@ import {
   resolveLocale,
 } from "@live-commerce/i18n";
 import { validOrdersQuery } from "./lib/orders-request";
+import { validStudioQuery } from "./lib/studio-request";
 
 const uuid = "[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}";
 const orderPath = new RegExp(`^/api/stores/${uuid}/orders(?:/${uuid})?$`);
+const studioPath = new RegExp(`^/api/stores/${uuid}/live-sessions(?:/${uuid}(?:/rehearsal/(?:start|stop))?)?$`);
+const studioPrefix = new RegExp(`^/api/stores/${uuid}/live-sessions(?:/|$)`);
 
 // Guard raw order query syntax before Next normalizes it; auth stays in the route/Go.
 // Other requests still receive only the existing locale routing preference.
@@ -37,6 +40,20 @@ export function proxy(request: NextRequest) {
           },
         );
       }
+    }
+    if (studioPrefix.test(decoded) && (path !== decoded || !studioPath.test(decoded))) {
+      const requestID = crypto.randomUUID().replaceAll("-", "");
+      return NextResponse.json(
+        { code: "not_found", message: "Resource not found.", request_id: requestID, retryable: false, details: {} },
+        { status: 404, headers: { "Cache-Control": "private, no-store", "X-Request-ID": requestID } },
+      );
+    }
+    if (studioPath.test(decoded) && !validStudioQuery(request.url, request.method === "GET" && decoded.endsWith("/live-sessions"))) {
+      const requestID = crypto.randomUUID().replaceAll("-", "");
+      return NextResponse.json(
+        { code: "invalid_request", message: "Invalid request.", request_id: requestID, retryable: false, details: {} },
+        { status: 422, headers: { "Cache-Control": "private, no-store", "X-Request-ID": requestID } },
+      );
     }
     return NextResponse.next();
   }
