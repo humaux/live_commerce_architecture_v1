@@ -223,3 +223,28 @@ repair are pending; the required 403 is unchanged. The revoke phase did not run.
 - Browser evidence: `output/playwright/input-delivery-20260927T163548.588591000/`.
 - Disposable test resources were removed; the three preexisting containers were
   not touched. No test failure is counted as HTTPS acceptance.
+
+### Bounded HTTPS repairs (overall gate still failed)
+
+Repair 1 (`39f398d`) moved the Origin probe before closure, used the genuine
+browser-context cookie jar, and counted actual edge Origin/status plus upstream
+calls. The Stop phase passed. Revoke's positive control returned 409: both
+harnesses use package-singleton `fixture(t)`, hence the same tenant/store, and
+the reused command key collided with the other attempt's request digest.
+This was a correct product conflict, not a reason to relax the expected 200.
+
+Repair 2 (`9cb5283`) scopes probe keys by phase and verifies their persisted
+attempt IDs. Both Node browser phases pass (Stop 2.082s; revoke 0.483s), including
+exact Origin 200/403 and post-close 409. The enclosing Go test still exits 1
+(4.20s; foundation 5.192s): its final revoke-state query requires a row in
+`media_execution_state`, which is absent before any worker claim/Stop. The
+registrar revoke function itself only writes the revocation record. Independent
+adjudication of this oracle is pending; there is no third unreviewed repair/run.
+
+|Run|Log under `/Volumes/data/output/`|SHA256|
+|---|---|---|
+|Repair 1, exit 1|`brw05-https-browser-root-repair1-20260928.log`|`d1ac1f40b175efbcc494242cba9926be7a366d21d10130cb16ad7b0813e80fd1`|
+|Repair 2, exit 1|`brw05-https-browser-root-repair2-20260928.log`|`581d18e60d518c81f8546fce4cde3985ebcacf09ece11203f5368edcb87bbeaa`|
+
+Final browser evidence: `output/playwright/input-delivery-20260927T164756.521055000/`.
+Passing browser subchecks do not override the failed enclosing gate.
