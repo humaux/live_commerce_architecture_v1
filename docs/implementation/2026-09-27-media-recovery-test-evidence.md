@@ -1,6 +1,6 @@
 # MRR01–04 independent recovery test evidence
 
-Status: **TWO FOCUSED RUNS FAILED / REPAIR PENDING** (2026-09-27). Frozen contract:
+Status: **THREE FOCUSED RUNS; THIRD EARLY-STOPPED ON TEST FIXTURE** (2026-09-27). Frozen contract:
 `contracts/live-media-recovery-observer-v1.md` at root `598eea4978e8f32f9ee2b998031c2996b762370b`.
 Independent test worktree `commerce/media-recovery-tests-20260927` started from that SHA.
 The test author commits are `82379c6`, `5166976`, `53a2be0`, `42f95d9`,
@@ -18,7 +18,7 @@ visibility failures under forced RLS.
 | --- | --- | --- |
 | MRR01 | Real local TLS Start accepted before old native worker SIGKILL and lost ACK; supervised parent starts at t0, two child SIGKILL/reaps/restarts retain the same episode/capture/deadline; committed fresh ROOM witness within 90s, original operation/job/max attempts, no duplicate Start or Stop. Separate known-ID QUERY process path. | Second run FAIL: positive episode persisted but ROOM request absent at 43.41s; known-ID QUERY readback absent at 92.61s. Source admitted-event visibility repair pending. Original attempt delta still NOT_RUN. |
 | MRR02 | SQL: known-empty NO_WORK, late unknown-empty overdue, old active lease busy, immutable same-episode replay, prior unfinished fail-whole, capacity+1 fail-whole, all members witnessed yet unknown coverage scope miss, timeout-first sticky, delayed witness attestation, true PG operation-lock interleaving where witness commits before waiting timeout. Added two-member owner/media-writer event visibility and DROP/partial-policy failclosed replay/read/timeout, prior-unfinished non-overwrite, malformed DSN/wrong-role pool. Process: actual parent-alive 90s provider-fault miss, durable timeout, redacted local alert, no new provider request after deadline. | Second run SQL member gates FAIL with source `ME409`; real negative ran 1m35s but outer Go harness hit 240s across the suite, so actual 90-second verdict NOT_COMPLETED. Focused harness 360s authorized; frozen 90s unchanged. New short cases NOT_RUN. Native capacity coexistence, DB startup delay and late real readback remain holes. Human alert delivery external NOT_RUN. |
-| MRR03 | Exact seven signature/result/owner/security-definer/ACL checks; old roles denied entry points; mixed recovery/executor role rejection; direct observer EXECUTE grants make old runtime/buyer/meta worker pools inadmissible; same recovery login connected to the task-owned PG18 container's distinct `postgres` database is refused; wrong generation/token/room; future, legally cleared NULL, and structurally intact expired lease; old public QUERY cleanup guard; observer-only QUERY keeps cleanup_required with zero Stop reservation; stale terminal QUERY cannot override newer active projection; prewire and exhausted native job denied; escalated nonterminal original with still-eligible River job remains captured as ceiling and times out without observer target/provider call. Added synthetic owner-only INPUT wire-flag exclusion and wrong original job ID denial. | Second run wrong physical DB PASS and prewire subtest PASS; runtime direct-grant subtest PASS, buyer/meta fixture erred `42501` resolving text signature without schema USAGE. Owner-resolved OID repair, INPUT and wrong-job cases authored but NOT_RUN. Remaining member gates failed `ME409`. |
+| MRR03 | Exact seven signature/result/owner/security-definer/ACL checks; old roles denied entry points; mixed recovery/executor role rejection; direct observer EXECUTE grants make old runtime/buyer/meta worker pools inadmissible; same recovery login connected to the task-owned PG18 container's distinct `postgres` database is refused; wrong generation/token/room; future, legally cleared NULL, and structurally intact expired lease; old public QUERY cleanup guard; observer-only QUERY keeps cleanup_required with zero Stop reservation; stale terminal QUERY cannot override newer active projection; prewire and exhausted native job denied; escalated nonterminal original with still-eligible River job remains captured as ceiling and times out without observer target/provider call. Added synthetic owner-only INPUT wire-flag exclusion and wrong original job ID denial. | Second run wrong physical DB PASS and prewire subtest PASS; runtime direct-grant subtest PASS. Buyer fixture had `42501` text-signature lookup without schema USAGE; meta fixture's clean pool was rejected due SET-capable membership. Owner-resolved OID and meta SET-false fixture repairs authored but NOT_RUN. INPUT/wrong-job NOT_RUN. Remaining member gates failed `ME409`. |
 | MRR04 | Idempotent migration reapply, exact readiness including extra PUBLIC/direct-writer SELECT policy and BYPASSRLS definer rejection, local process SIGTERM cleanup, internal-child release then EOF/reap, bounded lock race, narrow `--live-media-recovery` selector. Core new tests are included in default full foundation selector without a skip marker. | Second focused run FAIL; new policy/EOF cases authored but NOT_RUN. Enabled/disabled modes and full regression still NOT_RUN. Original LMR05 35-second gate remains unchanged and separately open. |
 
 The SQL calls with `p_elapsed_ms` values are **counterexamples for the frozen
@@ -59,9 +59,12 @@ by Go harness `-timeout=240s` after 1m35s. Raw log
 (213 lines). SQL `42702` disappeared, but repeated `ME409` membership failure
 blocked member gates. The media writer could insert admitted events but could
 not SELECT them under forced RLS; source repair is pending. A test-only
-direct-grant check looked up a function by text signature from buyer/meta
-roles without `live` schema USAGE and got `42501`; the fixture now resolves
-the function OID with the owner first, NOT_RUN. The 240s was an outer suite
+direct-grant check looked up a function by text signature from the buyer
+role without `live` schema USAGE and got `42501`; the meta role's clean pool
+was rejected before its grant because the synthetic login had SET-capable
+membership. The fixture now resolves the function OID with the owner first
+and configures meta membership SET-false; both repairs remain NOT_RUN. The
+240s was an outer suite
 budget, not the 90-second supervisor deadline; only this focused selector was
 authorized to increase to 360s. Runner cleanup removed the task-owned PG18
 fixture; only the unrelated protected container remained. No full run.
@@ -77,6 +80,23 @@ internal-child EOF/reap. `gofmt`, `bash -n`, `git diff --check`, and
 `go test -c` exited 0 after the final BYPASSRLS addition. All new runtime
 assertions are **NOT_RUN** until the next
 fixed source snapshot and isolated PG18 window.
+
+Third run receipt: fixed source `86b641a909277223fa630022cd4d0df6f7d22ad8`
+merged with test `596ab4f` at `952e57a02ac2800e06ace3771bd23bde4c63dfb4`.
+The same focused command with `-failfast -timeout=360s` exited **1** after
+**3.857s** package time. Two top-level tests passed: SQL scope/clock/witness
+with positive readiness, and authority/fence checks. One failed:
+`OldPoolsRejectDirectObserverGrant/meta` rejected its *clean* meta worker pool
+before the direct grant was installed. The synthetic login inherited a
+SET-capable membership from `lmaLogin`; meta-worker admission requires an
+INHERIT-only, SET-false membership. Runtime and buyer subcases passed. This
+is a test fixture baseline error, not evidence of an observer-role product
+regression. All later tests, including the real 90-second process gate, are
+**NOT_RUN** due to failfast. Raw log `output/mrr-focused-952e57a.log`, 16
+lines, SHA-256 `37364c9028898ddd1b921179e6134ec30648f1b5f0e721d124a89bcf365cc94d`.
+The runner cleaned its own PG18 fixture; only unrelated protected
+`lc-meta-upgrade-9d14f59e966f` remained. No source change followed this
+result; the meta synthetic-login membership repair was authorized separately.
 
 Pending repaired-source receipt fields: source SHA; exact command and exit;
 top-level PASS/FAIL/SKIP; actual 90-second elapsed; process parent/child

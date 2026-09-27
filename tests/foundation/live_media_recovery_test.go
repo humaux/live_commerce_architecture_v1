@@ -392,6 +392,11 @@ func TestLiveMediaRecoveryMRR03OldPoolsRejectDirectObserverGrant(t *testing.T) {
 	} {
 		t.Run(role.name, func(t *testing.T) {
 			login, pool := lmaLogin(t, h.lp.f, role.member)
+			if role.name == "meta" {
+				name := pgx.Identifier{login}.Sanitize()
+				mustExec(t, h.lp.f.owner, "REVOKE commerce_meta_worker FROM "+name)
+				mustExec(t, h.lp.f.owner, "GRANT commerce_meta_worker TO "+name+" WITH INHERIT TRUE, SET FALSE")
+			}
 			if err := role.validate(pool); err != nil {
 				t.Fatalf("clean old pool rejected: %v", err)
 			}
