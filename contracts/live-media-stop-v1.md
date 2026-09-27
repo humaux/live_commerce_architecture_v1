@@ -196,6 +196,17 @@ strict exact-function admission when connected to the expanded executor; mixed
 old/new workers must not silently turn new cleanup intents into observation-only
 loops. Fresh install and upgrade use the same schema, without blanket grants.
 
+Already-running old processes do not repeat startup admission. Therefore the old
+public `record_media_observation` QUERY path must also fail closed: after the
+private projector evaluates the report, if it is nonterminal and cleanup is now
+required, raise static ME409 and roll back that call. It must not return observe
+and silently consume the Stop workflow. Correlated terminal Query remains
+accepted; START/ROOM/STOP behavior is unchanged. The new cleanup-Query entry
+point calls the private projector directly and performs the atomic reservation.
+This is explicit old-client failure, not a promise of automatic worker upgrade
+or takeover; deployment still must drain obsolete processes. Test both existing
+cleanup and cleanup newly discovered from the current observation.
+
 ## Independent acceptance gates
 
 Use the existing actual-role PG18, TLS provider double, process crash and
