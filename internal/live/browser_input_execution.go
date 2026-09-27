@@ -200,7 +200,7 @@ func (w *browserInputExecutionWorker) Work(ctx context.Context, job *river.Job[m
 		if err != nil {
 			return err
 		}
-		return w.egress.runLoaded(ctx, job.Args.OperationID, generation, token[:], "reconcile", raw, false)
+		return keepBrowserInputJob(w.egress.runLoaded(ctx, job.Args.OperationID, generation, token[:], "reconcile", raw, false))
 	case "HELD":
 		return w.finish(ctx, job.Args.OperationID, generation, token[:], "cleanup_unknown")
 	default:
@@ -246,7 +246,9 @@ func (w *browserInputExecutionWorker) observeAndStart(ctx context.Context, opera
 	if custody.State != "RESERVED" || custody.AdmissionClosed || custody.WireReserved || custody.Held {
 		return w.finish(ctx, operation, generation, token, "input_unknown")
 	}
-	obs, err := client.ObserveInput(ctx, livekit.InputTarget{RoomName: custody.RoomName, Identity: custody.PublisherIdentity})
+	observeCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	obs, err := client.ObserveInput(observeCtx, livekit.InputTarget{RoomName: custody.RoomName, Identity: custody.PublisherIdentity})
+	cancel()
 	if err != nil {
 		return w.finish(ctx, operation, generation, token, "input_unknown")
 	}
@@ -264,7 +266,16 @@ func (w *browserInputExecutionWorker) observeAndStart(ctx context.Context, opera
 	if err != nil {
 		return err
 	}
-	return w.egress.runLoaded(ctx, operation, generation, token, "dispatch", raw, false)
+	return keepBrowserInputJob(w.egress.runLoaded(ctx, operation, generation, token, "dispatch", raw, false))
+}
+
+// Egress can finish or escalate while the same original job still owns input
+// cleanup. Its recorder has already released the lease, so only snooze here.
+func keepBrowserInputJob(err error) error {
+	if err != nil {
+		return err
+	}
+	return river.JobSnooze(mediaObservationDelay)
 }
 
 func (w *browserInputExecutionWorker) cleanup(ctx context.Context, operation string, generation int64,
