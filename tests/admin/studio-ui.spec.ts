@@ -66,8 +66,14 @@ async function screenshot(page: Page, name: string, width: number, height: numbe
   await expect(page.getByTestId("merchant-studio")).toBeVisible();
   await expect(page.locator(".studio-scene-list .studio-scene").first()).toBeVisible();
   await expect(page.getByLabel(/Scene name|场次名称|場次名稱/)).toBeVisible();
+  if (width <= 680) {
+    // A desktop-to-phone resize animates the fixed rail off-screen; capture
+    // only its settled position, never a partially obscured first viewport.
+    await expect.poll(() => page.locator(".rail").evaluate((rail) =>
+      Math.ceil(rail.getBoundingClientRect().right))).toBeLessThanOrEqual(0);
+  }
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
-  await page.screenshot({ path: `${evidence}/${name}.png`, fullPage: false });
+  await page.screenshot({ path: `${evidence}/${name}.png`, fullPage: false, animations: "disabled" });
 }
 
 async function displayedVersion(page: Page) {
@@ -302,8 +308,12 @@ test("STU04 read-only and expired sessions cannot mutate", async ({ browser }) =
   await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
   await expect(page.getByTestId("merchant-studio")).toBeVisible();
   await expect(page.getByText("Read-only access", { exact: false }).first()).toBeVisible();
-  await expect(page.getByRole("button", { name: "Start MOCK rehearsal" })).toBeDisabled();
+  // The shared prepared scene is READY after the real-chain Start, so Start is
+  // absent; the remaining Stop control must still deny a read-only principal.
+  await expect(page.getByRole("button", { name: "Start MOCK rehearsal" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Request stop" })).toBeDisabled();
   await expect(page.getByLabel("Scene name")).toBeDisabled();
+  await expect(page.getByRole("button", { name: /New scene/ })).toBeDisabled();
   await context.close();
   const expired = await browser.newContext({ baseURL: origin });
   await setSession(expired, expiredToken);
@@ -317,7 +327,10 @@ test("STU04 read-only and expired sessions cannot mutate", async ({ browser }) =
 test("STU04 native visibility conceal and revalidation remains required", async ({ page }) => {
   await signedLogin(page);
   await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
-  await expect(page.getByLabel("Scene name")).toBeVisible();
+  // This case must own an editable DRAFT form: the shared prepared scene may
+  // already be READY after the preceding real worker Start.
+  await page.getByRole("button", { name: /New scene/ }).click();
+  await expect(page.getByLabel("Scene name")).toBeEnabled();
   await page.getByLabel("Scene name").fill("STU04 native dirty draft");
   await expect(page.getByText("Unsaved changes")).toBeVisible();
   // No synthetic visibilitychange dispatch: this host must actually report a
