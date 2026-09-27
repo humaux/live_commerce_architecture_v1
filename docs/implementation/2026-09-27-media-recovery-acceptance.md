@@ -1,6 +1,6 @@
 # MRR90 restart state-check acceptance
 
-Status at 2026-09-27 12:02 UTC: **FOCUSED_ACCEPTED / FULL_REGRESSION_FAILED_TWO_GATES**.
+Status at 2026-09-27 12:18 UTC: **FOCUSED_ACCEPTED / FULL_REGRESSION_NOT_ACCEPTED / LRI_FOCUSED_REPAIR_PASS**.
 The independently frozen design is on `598eea4`. Source `86b641a` and independent
 tests `f3b731b` with evidence `2e00b00a` are integrated as `74459ae`.
 The initial independent and root focused runs each passed 17 tests. Independent
@@ -306,3 +306,22 @@ log `/Volumes/data/output/mrr-full-dfe844a-vet-root-20260927.log` is empty.
 The owned temporary PG was removed; the owner-protected upgrade container was
 untouched. Full regression, BIC05, Studio native acceptance and deployment are
 not accepted by this run. Both failures and their earlier history remain retained.
+
+## LRI exact additive snapshot repair — independent root verification
+
+Test-only `ec5c25c`, merged into main `da37adc`, projects exactly the five nullable
+0041 event columns (`episode_id`, `episode_event_kind`, `native_job_id`,
+`observation_id`, `elapsed_ms`) as JSON NULL into the expected historical rows.
+Every old field and the complete row comparison remain checked. No runtime,
+migration, data, shared comparison helper or assertion threshold was changed.
+
+The test author's existing `--legacy-isolation` gate exited **0**, **10 PASS**,
+foundation **33.639s**. Root independently read the test diff and migration, then
+reran `bash scripts/dev/test-local.sh --legacy-isolation` on frozen `da37adc`:
+actual **exit 0**, **10 PASS / 0 FAIL / 0 SKIP**, foundation **31.288s**.
+Root log `/Volumes/data/output/lri-additive-root-20260927.log`, SHA-256
+`99b19acc3e0fec526d38ac5627cb522ececa41b74baae3a94ded5f1444cb29fe`.
+The task-owned PG was cleaned and shared fixture lock released; protected
+containers were not modified. This closes the focused LRI defect, not the
+historical failed full run. LMR05's old 35s wait still awaits owner adjudication;
+no implicit 90s threshold change or new full-suite PASS is claimed.

@@ -563,6 +563,7 @@
       "restart_recovery_source_commit": "86b641a",
       "restart_recovery_root_tested_commit": "dfe844a",
       "restart_recovery_full_failures": ["TestLegacyRuntimeIsolationPopulatedUpgrade", "TestLiveMediaStopLMR05RealCrashAndCommitAckLoss"],
+      "restart_recovery_lri_followup": "ec5c25c merged da37adc: root --legacy-isolation exit0,10PASS,31.288s; historical full result unchanged; LMR05 old35s awaits owner adjudication",
       "restart_recovery_rejected_candidate": "contracts/live-media-recovery-v1.md",
       "restart_recovery_scope_research": "fbbcf3ef-dfef-4b57-9278-902386101ff9",
       "restart_recovery_decision": "f0b36444-a4ea-4112-926d-596cfb7fd89f",

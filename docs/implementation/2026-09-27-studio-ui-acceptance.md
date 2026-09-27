@@ -2,10 +2,12 @@
 
 Status: **SOURCE_CANDIDATE_UNMERGED; CORE_READBACK_PASS; NATIVE_NOT_RUN; VISUAL_SCORED_FIXES_SHIP**.
 
-Latest no-account native preflight (12:05 UTC): actual exit 1. The native picker
-changed its value through trusted click/keyboard input, but genuine conceal is
-still unproven after disabling Playwright's default focus emulation. This is
-partial diagnostic evidence only; it does not change the status above.
+Latest no-account native preflight (12:14 UTC): actual exit 1. The native picker
+changed its value through trusted click/keyboard input in the first probe, but
+genuine conceal is still unproven. Sending focus-emulation=false on a separate
+CDP session did not establish that Playwright's original session stopped its
+override. The second probe confirmed actual window minimization while the
+document still reported visible. These are partial diagnostic results only.
 
 User approved **B 场次列表＋双区工作台**, seed `6373bb3f`, in `fb760ff`.
 The approved comp is `.impeccable/mocks/decision/studio-split.png` (1586×992);
@@ -352,6 +354,27 @@ claim that main or production ships this surface.
 STU04 overall is still **NOT_PASS**. Missing native lifecycle proof, a valid
 native-date selection observation method and root fixed-tree full acceptance
 remain release gates. Visual ship cannot waive any of them.
+
+## Bounded native-device preflight evidence
+
+Both probes used the same headed Playwright **1.63.0** / Chromium
+**153.0.8010.12**, with no user account, network target, database or product
+change. The first actual tab-switch probe exited **1**: trusted click/keyboard
+input changed the datetime-local value, but no hidden visibility event occurred.
+Evidence `/Volumes/data/output/playwright/studio-native-preflight-20260927.json`,
+SHA-256 `0a7f073440d630a996ef5086849d3be17638cd3eca3214e4c06337c94c9ab15e`.
+
+The second probe exited **1**. Browser window bounds independently confirmed
+normal → minimized → normal, while document visibility remained visible and
+the visibilitychange event list stayed empty. It restored the window and closed
+the task-owned browser in finally. Evidence
+`/Volumes/data/output/playwright/studio-native-minimize-20260927.json`, SHA-256
+`039c941ed233e5f2021bb4dd6676a11bb98293815307f7231ad8f18aa9680011`;
+script SHA-256 `22a6cdd3eb1c1269758775f75c618890929fa600a979f9025eeff24af451485f`.
+No fake visibility values/events, product workaround or ninth full run was used.
+Independent causal review of per-CDP-session focus capture and the public
+`connectOverCDP({noDefaults:true})` default-context option is pending; it is not
+yet a verified remedy. Product native save/reopen and conceal gates remain open.
 
 ## Remaining boundary
 
