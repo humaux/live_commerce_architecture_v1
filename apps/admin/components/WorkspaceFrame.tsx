@@ -56,7 +56,11 @@ export function WorkspaceFrame({
       router.push(
         `/${locale}/settings${search.get("store") ? `?store=${encodeURIComponent(search.get("store")!)}` : ""}`,
       );
-    else if (active === "settings" || active === "orders")
+    else if (id === "live")
+      router.push(
+        `/${locale}/studio${search.get("store") ? `?store=${encodeURIComponent(search.get("store")!)}` : ""}`,
+      );
+    else if (active === "settings" || active === "orders" || active === "live")
       router.push(`/${locale}/`);
     else onSection?.(id);
   }
@@ -93,6 +97,8 @@ export function WorkspaceFrame({
           ? c.settings
           : active === "orders"
             ? c.orders
+            : active === "live"
+              ? c.live
             : c.heading}
       </a>
       <aside className={`rail ${navOpen ? "open" : ""}`}>
