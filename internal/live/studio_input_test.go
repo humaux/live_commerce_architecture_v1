@@ -19,6 +19,7 @@ func TestDecodeStudioInputStrictStatus(t *testing.T) {
 		{"null_admission", strings.Replace(closed, `"admission_closed":true`, `"admission_closed":null`, 1), true},
 		{"null_cleanup", strings.Replace(closed, `"cleanup_held":false`, `"cleanup_held":null`, 1), true},
 		{"null_can_stop", strings.Replace(closed, `"can_stop":true`, `"can_stop":null`, 1), true},
+		{"null_close_reason", strings.Replace(open, `"close_reason":""`, `"close_reason":null`, 1), true},
 		{"closed_without_admission", strings.Replace(closed, `"admission_closed":true,"close_reason":"merchant_stop"`, `"admission_closed":false,"close_reason":""`, 1), true},
 		{"open_with_admission", strings.Replace(closed, `"state":"CLOSED"`, `"state":"RESERVED"`, 1), true},
 	}
