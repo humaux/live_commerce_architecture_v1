@@ -218,9 +218,16 @@ English or locale-neutral date entry instead of OS-Chinese affordances.
 No fabricated Instagram row or live-output proof may be added. A standalone
 QUALITY BAR card is absent for this incumbent world, explicitly disclosed.
 
-One visual-fix batch is assigned in the existing source worktree. Its static
-checks, independent browser recaptures and same-reviewer verdict are pending.
-This visual disposition does not waive the separate native-conceal gap.
+One visual-fix batch `fc3cfef` in the existing source worktree restores the
+status panel, anchors the desktop action without changing mobile order, and
+adds only the returned Facebook destination's vector mark. English uses a
+locale-neutral `YYYY-MM-DDTHH:mm` text input with the existing strict UTC
+validator; other locales retain their native control. Original unchanged
+schedule preservation and all recovery/security logic are untouched. Author
+typecheck/build/diff checks passed; root read the complete three-file diff.
+Humaux `8ba7d708-9a1c-44d9-9692-30bf4ec56f05` records the source batch.
+Independent browser recaptures, an English invalid-calendar/no-write check and
+same-reviewer verdict remain pending. This does not waive native conceal.
 
 ## Remaining boundary
 

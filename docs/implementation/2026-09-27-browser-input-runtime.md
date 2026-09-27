@@ -232,6 +232,33 @@ run. No production timing, timeout or assertion has changed. Fixtures were
 removed; further work must gather causal scheduling evidence, not count retries
 until green.
 
+Phase-only diagnostic `4f721d3` then captured native leader/job transitions at
+most four samples/second inside the same 35s predicate. Leader IDs remain only
+in the in-memory change key; logs contain safe phase/timing fields. Independent
+review `bed4c99d-c335-4450-8a46-eda075b8deac` found no blocking issue, noting
+sampling can perturb timing and miss short-lived states. Its single exact run
+exited 0, test 55.71s / foundation 57.475s:
+`/Volumes/data/output/lmr05-native-phase-20260927.log`, SHA256
+`bb1a61fe343acb3654eaedaea45690a677df2f099129353527c6a455e3b4ba1a`.
+
+|UTC phase|Observed native fact|
+|---|---|
+|08:28:42.061, before restart|Running attempt 2, error count 1; killed leader lease still valid until 08:28:54.208|
+|08:28:58.289|New leader elected|
+|08:29:00.585|Rescued as retryable, error count 2, due at 08:29:16.088|
+|08:29:11.372|Available, but still scheduled in the future|
+|08:29:16.267|Available and due|
+|08:29:16.724|Attempt 3; fourth-observation/closed-lease predicate reached|
+
+About 34.66s elapsed from restart to the required observation. Pinned River
+v0.40 source explains leader expiry/election plus default second-rescue retry
+(16s ±10%) and fetch scheduling. This is measured support for a scheduling
+budget mismatch, not a captured explanation of the prior failed full run.
+Do not erase that failure or change the 35s assertion. A source-policy correction
+needs its own safety review, including native attempt exhaustion and retained
+resource liability; none has been implemented here. No more random diagnostic
+reruns are authorized by this receipt.
+
 Maintenance/caller map: [media-input-custody.md](media-input-custody.md),
 committed in `0eb3d59`.
 
