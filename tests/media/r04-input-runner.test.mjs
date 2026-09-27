@@ -207,7 +207,7 @@ test('R04 injected operation timeout cannot continue acquiring resources after c
   const { result, evidence, file } = await runWithEvidence('timeout-after-publish');
   assert.notEqual(result.code, 0, `injected timeout must exit nonzero; ${file}`);
   assert.equal(evidence.status, 'FAIL', `injected timeout must not be PASS; ${file}`);
-  assert.equal(evidence.failure, 'injected_timeout_after_publish', `wrong timeout failure class; ${file}`);
+  assert.equal(evidence.failure, 'injected_operation_timeout', `wrong timeout failure class; ${file}`);
   assertCleanup(evidence, file);
   await assertOwnedResourcesGone(evidence, file);
   await new Promise(resolve => setTimeout(resolve, 500));
