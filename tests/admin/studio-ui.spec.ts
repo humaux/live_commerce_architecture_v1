@@ -129,11 +129,8 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await page.reload();
   await expect(page.getByLabel("Scene name")).toHaveValue("STU04 competing edit");
 
-  // Dirty data is blanked while hidden but must reappear after session recheck.
+  // Dirty data must survive real browser history and explicit navigation guards.
   await page.getByLabel("Scene name").fill("STU04 dirty retained scene");
-  await expect(page.getByText("Unsaved changes")).toBeVisible();
-  await hideAndReveal(page);
-  await expect(page.getByLabel("Scene name")).toHaveValue("STU04 dirty retained scene");
   await expect(page.getByText("Unsaved changes")).toBeVisible();
   // Exercise Chromium's actual history traversal. Either a denied back or a
   // same-login recovery on forward must preserve the original dirty form.
@@ -205,8 +202,6 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   if (page.url() !== unresolvedURL) await page.goForward({ waitUntil: "domcontentloaded" });
   await expect(page).toHaveURL(unresolvedURL);
   await expect(page.getByRole("button", { name: "Retry same request" })).toBeVisible();
-  await hideAndReveal(page);
-  await expect(page.getByRole("button", { name: "Retry same request" })).toBeVisible();
   await page.getByRole("button", { name: "Retry same request" }).click();
   await expect(page.getByLabel("Scene name")).toHaveValue("STU04 lost ACK scene");
 
@@ -257,7 +252,8 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   expect(replacements.find((cookie) => cookie.name === cookieName)?.value).not.toBe(oldSession);
   await page.bringToFront();
   await context.addCookies(replacements);
-  await hideAndReveal(page);
+  await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
+  await expect(page.getByTestId("merchant-studio")).toBeVisible();
   await expect(page.getByRole("button", { name: "Retry same request" })).toHaveCount(0);
   const retained = page.getByLabel("Scene name");
   if (await retained.count()) await expect(retained).not.toHaveValue("STU04 swapped login scene");
@@ -305,4 +301,16 @@ test("STU04 read-only and expired sessions cannot mutate", async ({ browser }) =
   await expect(expiredPage.getByText("Sign in again to open Studio.").first()).toBeVisible();
   await expect(expiredPage.getByRole("button", { name: "Start MOCK rehearsal" })).toHaveCount(0);
   await expired.close();
+});
+
+test("STU04 native visibility conceal and revalidation remains required", async ({ page }) => {
+  await signedLogin(page);
+  await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
+  await expect(page.getByLabel("Scene name")).toBeVisible();
+  await page.getByLabel("Scene name").fill("STU04 native dirty draft");
+  await expect(page.getByText("Unsaved changes")).toBeVisible();
+  // No synthetic visibilitychange dispatch: this host must actually report a
+  // hidden tab before we can claim the conceal/revalidation lifecycle.
+  await hideAndReveal(page);
+  await expect(page.getByLabel("Scene name")).toHaveValue("STU04 native dirty draft");
 });
