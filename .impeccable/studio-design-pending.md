@@ -27,8 +27,10 @@ comps in order, under the existing comp-led preference:
 
 Generated with built-in imagegen, synthetic demonstration only; prompts embedded
 and exact sidecars saved. All `approved` flags remain false. No UI implementation
-or finish-review verdict is implied. Design page `http://127.0.0.1:65182/`,
-question key `ca8b79bc`; served by the skill for user input, still referenced.
+or finish-review verdict is implied. The first question server exited without
+an answer (confirmed by the skill's wait command; this is not a choice).
+It was restored with the same payload at `http://127.0.0.1:56331/`, question key
+`dde8f984`, on 2026-09-27. The page is still awaiting user input.
 
 ## Functional details not to literalize from generated art
 
