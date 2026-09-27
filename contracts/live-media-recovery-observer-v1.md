@@ -57,12 +57,35 @@ when DB returns. A parent/host crash cannot reconstruct a lost monotonic clock:
 retain existing overdue/unfinished DB episodes, and require host supervision
 and external alert collection as an explicit deployment gate.
 
+The local positive capacity bound is **at most 32** unresolved reserved-wire
+PROVIDER_MOCK operations. Before child release, one deterministic `LIMIT 33`
+admission scan at first DB availability establishes this bound. If it returns
+33, admit **no partial observation set**: report `CAPACITY_EXCEEDED`, a count
+lower bound of 33 and incomplete coverage. Retain every original responsibility,
+persist a bounded capacity event on the existing operation/event surface and
+emit a redacted supervisor health signal. Do not block the native child or
+existing cleanup merely because this observer's runtime capacity is exceeded;
+release the normally admitted child with explicitly degraded supervision and
+zero observer claims. This is not full-scope recovery success.
+
+At most 32 returned identities form an immutable per-restart candidate set.
+Lock-time terminalization becomes an explicit recorded disposition, never a
+silently dropped row. Repeated child crashes reuse this set and unfinished
+deadlines. A DB outage before membership capture makes coverage degraded even
+if a later scan is empty; absence from that later scan cannot prove the t0 set
+was empty. This bound is not a production sizing claim.
+
 Success is the parent's authoritative **committed readback** of a newly
 qualified ROOM/QUERY observation by t0+90s, not `observed_at` before COMMIT,
-process readiness, an old observation or a provider ACK. Parent readback creates
-a durable witness for that observation/episode. No witness by the deadline
-irrevocably means a miss; later evidence cannot erase the timeout event. A
-supervisor crash before persisting a success witness remains unproven, not PASS.
+process readiness, an old observation or a provider ACK. Sample elapsed time
+only **after** the successful read response. The private witness is the trusted
+parent's attestation of that prior readback, not a DB timestamp used to guess
+commit visibility. It may persist later without moving the readback deadline.
+No qualifying readback by the deadline means a miss; a timeout that has already
+committed is sticky and wins over any later witness, even if the claimed readback
+was timely. That race may conservatively report a miss, never a false PASS.
+A supervisor crash before witness persistence is unproven unless the witness
+actually committed. A late observation/readback may not be backdated into PASS.
 
 ## Private SQL surface to review
 
@@ -74,14 +97,22 @@ worker readiness and verifies exact signatures/ACLs plus the same physical DB.
 All mutations use the existing business lock order, fresh post-wait validation
 and the same operation/projection, never a River-row-first trigger.
 
+The recovery membership must be included in the exactly-one-authority check
+for **all existing pool types**, not just the new pool. Admission rejects mixed
+memberships, owner/SET reachability, direct or PUBLIC excess EXECUTE and raw
+table/sequence privileges. All old roles are denied every new private function;
+the recovery role is denied the existing executor/registrar functions. Exactly
+the seven entry points below (plus a separately frozen read-only readiness probe,
+if needed) constitute its application authority.
+
 | Private function | Bounded result and authority |
 | --- | --- |
-| `begin_media_recovery_episode(uuid,bigint,integer)` | Episode ID, monotonic elapsed ms and limit 1..32; returns JSON with exact operation/job identities, baseline generation, deadline and `has_more`; unfinished episodes remain unchanged. Excess capacity is explicit, never reported as a complete scan. |
+| `begin_media_recovery_episode(uuid,bigint,integer)` | Episode ID, monotonic elapsed ms and capacity 1..32; atomic capacity+1 admission as above. Returns admitted exact identities/baselines/deadlines or fail-whole capacity/coverage disposition, never a partially successful `has_more` page; unfinished episodes remain unchanged. |
 | `claim_recovery_observation(uuid,uuid,bigint,bytea)` | Episode, operation, original job and 32-byte token; returns disposition, generation and nonsecret frozen project/version/endpoint/room/egress target only. Requires reserved wire, eligible profile/state, no escalation, remaining existing recovery ceiling, expired old business lease and no prior qualifying observation; grants only a fixed 30s reconcile lease. |
 | `record_recovery_observation(uuid,uuid,bigint,bytea,text,text,text,text,bigint,bigint,bigint)` | Episode, operation, generation, token, ROOM/QUERY source, egress, room, status and three provider times; returns checked/terminal plus observation ID. Internally reuses the private projector and records episode correlation atomically; no Stop reservation. |
 | `finish_recovery_observation(uuid,uuid,bigint,bytea,text)` | Fenced failure only, using bounded existing uncertainty reason codes; releases only its own lease and retains UNKNOWN/resource liability. No native retry action or escalation. |
 | `read_media_recovery_episode(uuid)` | Minimal committed per-operation episode/correlation status, no credentials or caller-selected target. |
-| `witness_media_recovery_episode(uuid,uuid,uuid,bigint)` | Episode, operation, qualifying observation ID and parent elapsed ms 0..90000; durable parent success witness, exact correlation required. It cannot remove an existing timeout. |
+| `witness_media_recovery_episode(uuid,uuid,uuid,bigint)` | Episode, operation, qualifying observation ID and post-readback parent elapsed ms 0..90000; trusted parent attestation, exact correlation required. A prior sticky timeout returns a non-PASS disposition and cannot be removed. |
 | `timeout_media_recovery_episode(uuid,bigint)` | Parent elapsed ms >=90000; under each original operation lock records one sticky episode timeout/event for unwitnessed work, including late qualifying observations. Does not clear active leases, fabricate UNKNOWN over a proven terminal state or issue provider calls. |
 
 Reuse the execution projection for active episode ID, generation high-water,
@@ -95,6 +126,11 @@ escalate at its ceiling. The new claim may advance the same generation once per
 actual observation attempt but cannot reset counters or spend a Start/Stop
 budget. An active lease is waited for, never stolen. New generation/token fences
 reject delayed results from the former child.
+
+`media_native_job` proves identity only, not retry eligibility. Admission and
+claim additionally classify original native job state and attempt budget;
+completed, cancelled, discarded or otherwise exhausted work cannot obtain a
+recovery observation lease merely because its native row still exists.
 
 The old public QUERY wrapper rejects nonterminal cleanup-required observations;
 the cleanup-query wrapper may reserve a Stop. Neither is repurposed. Only the
@@ -125,7 +161,7 @@ until their real collection/delivery path is configured and tested.
 | Gate | Required evidence |
 | --- | --- |
 | MRR01 | Real supervisor/child SIGKILL/restart, no timestamp aging, monotonic committed fresh ROOM/QUERY readback <=90s with original attempt/operation/job, unchanged River parameters/attempts and zero observer Start/Stop. Include escaped Start with no Egress ID and ordinary known-ID Query. |
-| MRR02 | DB/config/readiness/provider failure, child exits/repeated restarts, active old lease, capacity overflow and post-deadline commit retain one deadline and sticky timeout; late recovery does not erase it. Parent survives the failed child. |
+| MRR02 | DB/config/readiness/provider failure, child exits/repeated restarts, active old lease, fail-whole capacity overflow and delayed initial membership capture retain truthful coverage and one deadline. Exercise timely committed readback with delayed witness persistence, late observation/readback, and timeout-first ordering separately; late recovery never erases sticky timeout. Parent survives the failed child; capacity degradation alone does not block existing native cleanup. |
 | MRR03 | Old generation/target/token and foreign-role negative controls; cleanup-required remains true with zero Stop reservation; old executor QUERY guard remains intact; missing/escalated original jobs and pre-wire/INPUT work cannot gain observation or dispatch authority. |
 | MRR04 | Additive migration, exact ACL/role/physical-DB admission, enabled/disabled/child modes, bounded cleanup and independent focused plus fixed-tree full regression. Original LMR05 deadline and failure evidence retained. |
 
