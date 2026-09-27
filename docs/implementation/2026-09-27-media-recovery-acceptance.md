@@ -1,9 +1,9 @@
 # MRR90 restart state-check acceptance
 
-Status at 2026-09-27 11:11 UTC: **LOCAL_INTEGRATED / ACCEPTANCE_INCOMPLETE**.
+Status at 2026-09-27 11:15 UTC: **LOCAL_INTEGRATED / ACCEPTANCE_INCOMPLETE**.
 The independently frozen design is on `598eea4`. Source `86b641a` and independent
 tests `f3b731b` with evidence `2e00b00a` are integrated as `74459ae`.
-The independent focused run passed 17 tests; root PG rerun, remaining contract
+The independent and root focused runs each passed 17 tests; remaining contract
 cases and fixed-tree full regression are still required. No production configuration,
 customer broadcast, provider account or River policy was changed.
 
@@ -207,3 +207,27 @@ Root integrated the reviewed source and independent tests locally at `74459ae`;
 this is not deployment or complete MRR acceptance. Original LMR05 red evidence
 and Studio native NOT_RUN gates remain separate obligations. External human
 alert delivery, real provider operation and customer deployment remain NOT_RUN.
+
+## Root fixed-tree focused readback
+
+Root independently ran `bash scripts/dev/test-local.sh --live-media-recovery`
+on clean fixed main `048eca1e7b427edb7cb503c490f87575be69458e`: actual **exit 0**,
+foundation **153.078s**, **17 top-level PASS / 0 FAIL / 0 SKIP**.
+Positive ROOM took **35.85s**, known-ID QUERY **4.28s**, actual deadline miss
+**91.74s**; original River attempt remained **1 to 1**.
+Log: `/Volumes/data/output/mrr-focused-048eca1-root-20260927.log`, SHA-256
+`07b9583bb8fb205b3d06dc2dd940381430c13892274e93203d948fb66f9f5bce`.
+Tracked tree stayed clean throughout. Root verified no owned foundation
+fixture remained; the protected upgrade fixture was untouched. Fixture window
+lock was released after process exit and cleanup readback.
+
+Contract audit still requires the explicit mode matrix, real DB delay/recovery,
+capacity-degraded native cleanup, crossing-deadline witness/readback paths,
+missing-original-job control, and fixed-tree full regression. These are not
+replaced by this focused pass. Correction to the independent evidence table:
+`integration.operations.job_id` has **no retention FK** (`0008`, lines 43–44);
+its claim that a physically absent River job cannot be constructed is wrong.
+A wrong job argument is distinct from an absent original row. An isolated
+exact-job deletion negative is authorized; no schema constraint weakening is
+needed or allowed. The test author will correct that evidence table with the
+new fixed test batch. Production remains unchanged.
