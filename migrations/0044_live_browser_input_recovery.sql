@@ -212,7 +212,7 @@ BEGIN
   OR current_setting('transaction_isolation')<>'read committed' THEN
   RAISE EXCEPTION 'invalid mixed media recovery begin' USING ERRCODE='ME400'; END IF;
  PERFORM pg_catalog.pg_advisory_xact_lock(44,pg_catalog.hashtext(p_episode::text));
- SELECT * INTO s FROM live.media_recovery_episode_scope WHERE episode_id=p_episode;
+ SELECT * INTO s FROM live.media_recovery_episode_scope AS scope_row WHERE scope_row.episode_id=p_episode;
  IF s.episode_id IS NOT NULL THEN
   IF NOT s.include_browser_input THEN
    RAISE EXCEPTION 'mixed media recovery scope unavailable' USING ERRCODE='ME409'; END IF;
@@ -261,8 +261,8 @@ BEGIN
  -- The snapshot bits never shrink while acquiring these business locks.
  FOR v_n IN 1..v_count LOOP
   o:=live.lock_media_operation(v_ids[v_n]);
-  SELECT * INTO a FROM live.media_attempts WHERE id=o.media_attempt_id;
-  SELECT * INTO h FROM live.prepared_media_authorizations WHERE id=a.authorization_id;
+  SELECT * INTO a FROM live.media_attempts AS attempt_row WHERE attempt_row.id=o.media_attempt_id;
+  SELECT * INTO h FROM live.prepared_media_authorizations AS auth_row WHERE auth_row.id=a.authorization_id;
   IF o.job_id IS DISTINCT FROM v_jobs[v_n] OR a.execution_profile IS DISTINCT FROM v_profiles[v_n]
    OR a.start_operation_id<>o.id OR h.id IS NULL THEN
    RAISE EXCEPTION 'mixed media recovery identity changed' USING ERRCODE='ME409'; END IF;
@@ -272,11 +272,11 @@ BEGIN
    VALUES(a.id,a.tenant_id,a.store_id,a.session_id,h.id,o.id,h.project_id)
    ON CONFLICT DO NOTHING;
   END IF;
-  SELECT * INTO x FROM live.media_execution_state WHERE attempt_id=a.id FOR UPDATE;
+  SELECT * INTO x FROM live.media_execution_state AS execution_row WHERE execution_row.attempt_id=a.id FOR UPDATE;
   IF x.attempt_id IS NULL OR x.operation_id<>o.id OR x.project_id<>h.project_id THEN
    RAISE EXCEPTION 'mixed media recovery projection changed' USING ERRCODE='ME409'; END IF;
   IF a.execution_profile='LOCAL_SFU_MOCK_EGRESS' THEN
-   SELECT * INTO i FROM live.media_input_custody WHERE attempt_id=a.id FOR UPDATE;
+   SELECT * INTO i FROM live.media_input_custody AS custody_row WHERE custody_row.attempt_id=a.id FOR UPDATE;
    IF i.attempt_id IS NULL OR i.operation_id<>o.id OR i.runtime_version<>1
     OR i.authorization_id<>h.id OR
     (i.project_id,i.credential_version,i.endpoint_identity,i.room_name)
@@ -335,10 +335,10 @@ BEGIN
    THEN 'overdue' ELSE 'pending' END,
   CASE WHEN (p_elapsed_ms>=90000 OR v_now>=v_entry+make_interval(secs=>greatest(0,90000-least(p_elapsed_ms,90000))::double precision/1000))
    AND (v_count>0 OR NOT p_coverage_known) THEN v_now ELSE NULL END,true);
- SELECT * INTO s FROM live.media_recovery_episode_scope WHERE episode_id=p_episode;
+ SELECT * INTO s FROM live.media_recovery_episode_scope AS scope_row WHERE scope_row.episode_id=p_episode;
  FOR v_n IN 1..v_count LOOP
   o:=live.lock_media_operation(v_ids[v_n]);
-  SELECT * INTO x FROM live.media_execution_state WHERE attempt_id=o.media_attempt_id FOR UPDATE;
+  SELECT * INTO x FROM live.media_execution_state AS execution_row WHERE execution_row.attempt_id=o.media_attempt_id FOR UPDATE;
   v_mode:=CASE WHEN s.scope_status='overdue' THEN 'overdue' ELSE v_modes[v_n] END;
   UPDATE live.media_execution_state SET recovery_episode_id=p_episode,
    recovery_baseline_generation=v_gens[v_n],recovery_disposition=v_mode,
@@ -395,13 +395,13 @@ BEGIN
   OR current_setting('transaction_isolation')<>'read committed' THEN
   RAISE EXCEPTION 'invalid mixed media recovery claim' USING ERRCODE='ME400'; END IF;
  o:=live.lock_media_operation(p_operation);
- SELECT * INTO x FROM live.media_execution_state WHERE attempt_id=o.media_attempt_id FOR UPDATE;
- SELECT * INTO a FROM live.media_attempts WHERE id=o.media_attempt_id;
- SELECT * INTO h FROM live.prepared_media_authorizations WHERE id=a.authorization_id;
- SELECT * INTO i FROM live.media_input_custody WHERE attempt_id=a.id FOR UPDATE;
- SELECT * INTO s FROM live.media_recovery_episode_scope WHERE episode_id=p_episode;
- SELECT * INTO e FROM integration.operation_events WHERE operation_id=o.id
-  AND episode_id=p_episode AND episode_event_kind='admitted';
+ SELECT * INTO x FROM live.media_execution_state AS execution_row WHERE execution_row.attempt_id=o.media_attempt_id FOR UPDATE;
+ SELECT * INTO a FROM live.media_attempts AS attempt_row WHERE attempt_row.id=o.media_attempt_id;
+ SELECT * INTO h FROM live.prepared_media_authorizations AS auth_row WHERE auth_row.id=a.authorization_id;
+ SELECT * INTO i FROM live.media_input_custody AS custody_row WHERE custody_row.attempt_id=a.id FOR UPDATE;
+ SELECT * INTO s FROM live.media_recovery_episode_scope AS scope_row WHERE scope_row.episode_id=p_episode;
+ SELECT * INTO e FROM integration.operation_events AS admitted_event WHERE admitted_event.operation_id=o.id
+  AND admitted_event.episode_id=p_episode AND admitted_event.episode_event_kind='admitted';
  IF s.episode_id IS NULL OR NOT s.include_browser_input OR s.scope_status<>'pending'
   OR e.id IS NULL OR e.native_job_id<>p_job OR o.job_id<>p_job
   OR e.recovery_execution_profile IS DISTINCT FROM a.execution_profile
@@ -482,12 +482,12 @@ BEGIN
   OR current_setting('transaction_isolation')<>'read committed' THEN
   RAISE EXCEPTION 'invalid input recovery observation' USING ERRCODE='ME400'; END IF;
  o:=live.lock_media_operation(p_operation);
- SELECT * INTO x FROM live.media_execution_state WHERE attempt_id=o.media_attempt_id FOR UPDATE;
- SELECT * INTO a FROM live.media_attempts WHERE id=o.media_attempt_id;
- SELECT * INTO i FROM live.media_input_custody WHERE attempt_id=a.id FOR UPDATE;
- SELECT * INTO s FROM live.media_recovery_episode_scope WHERE episode_id=p_episode;
- SELECT * INTO e FROM integration.operation_events WHERE operation_id=o.id
-  AND episode_id=p_episode AND episode_event_kind='admitted';
+ SELECT * INTO x FROM live.media_execution_state AS execution_row WHERE execution_row.attempt_id=o.media_attempt_id FOR UPDATE;
+ SELECT * INTO a FROM live.media_attempts AS attempt_row WHERE attempt_row.id=o.media_attempt_id;
+ SELECT * INTO i FROM live.media_input_custody AS custody_row WHERE custody_row.attempt_id=a.id FOR UPDATE;
+ SELECT * INTO s FROM live.media_recovery_episode_scope AS scope_row WHERE scope_row.episode_id=p_episode;
+ SELECT * INTO e FROM integration.operation_events AS admitted_event WHERE admitted_event.operation_id=o.id
+  AND admitted_event.episode_id=p_episode AND admitted_event.episode_event_kind='admitted';
  v_now:=clock_timestamp();
  IF s.episode_id IS NULL OR NOT s.include_browser_input OR s.scope_status<>'pending'
   OR s.timeout_at IS NOT NULL OR v_now>s.deadline_at OR e.id IS NULL
@@ -651,13 +651,13 @@ BEGIN
   OR current_setting('transaction_isolation')<>'read committed' THEN
   RAISE EXCEPTION 'invalid mixed media recovery observation' USING ERRCODE='ME400'; END IF;
  o:=live.lock_media_operation(p_operation);
- SELECT * INTO x FROM live.media_execution_state WHERE attempt_id=o.media_attempt_id FOR UPDATE;
- SELECT * INTO a FROM live.media_attempts WHERE id=o.media_attempt_id;
- SELECT * INTO h FROM live.prepared_media_authorizations WHERE id=a.authorization_id;
- SELECT * INTO i FROM live.media_input_custody WHERE attempt_id=a.id FOR UPDATE;
- SELECT * INTO s FROM live.media_recovery_episode_scope WHERE episode_id=p_episode;
- SELECT * INTO e FROM integration.operation_events WHERE operation_id=o.id
-  AND episode_id=p_episode AND episode_event_kind='admitted';
+ SELECT * INTO x FROM live.media_execution_state AS execution_row WHERE execution_row.attempt_id=o.media_attempt_id FOR UPDATE;
+ SELECT * INTO a FROM live.media_attempts AS attempt_row WHERE attempt_row.id=o.media_attempt_id;
+ SELECT * INTO h FROM live.prepared_media_authorizations AS auth_row WHERE auth_row.id=a.authorization_id;
+ SELECT * INTO i FROM live.media_input_custody AS custody_row WHERE custody_row.attempt_id=a.id FOR UPDATE;
+ SELECT * INTO s FROM live.media_recovery_episode_scope AS scope_row WHERE scope_row.episode_id=p_episode;
+ SELECT * INTO e FROM integration.operation_events AS admitted_event WHERE admitted_event.operation_id=o.id
+  AND admitted_event.episode_id=p_episode AND admitted_event.episode_event_kind='admitted';
  IF s.episode_id IS NULL OR NOT s.include_browser_input OR s.scope_status<>'pending'
   OR s.timeout_at IS NOT NULL OR clock_timestamp()>s.deadline_at
   OR e.id IS NULL OR e.recovery_egress_required IS DISTINCT FROM true
@@ -714,12 +714,12 @@ BEGIN
   OR current_setting('transaction_isolation')<>'read committed' THEN
   RAISE EXCEPTION 'invalid mixed media recovery finish' USING ERRCODE='ME400'; END IF;
  o:=live.lock_media_operation(p_operation);
- SELECT * INTO x FROM live.media_execution_state WHERE attempt_id=o.media_attempt_id FOR UPDATE;
- SELECT * INTO a FROM live.media_attempts WHERE id=o.media_attempt_id;
- SELECT * INTO i FROM live.media_input_custody WHERE attempt_id=o.media_attempt_id FOR UPDATE;
- SELECT * INTO s FROM live.media_recovery_episode_scope WHERE episode_id=p_episode;
- SELECT * INTO e FROM integration.operation_events WHERE operation_id=o.id
-  AND episode_id=p_episode AND episode_event_kind='admitted';
+ SELECT * INTO x FROM live.media_execution_state AS execution_row WHERE execution_row.attempt_id=o.media_attempt_id FOR UPDATE;
+ SELECT * INTO a FROM live.media_attempts AS attempt_row WHERE attempt_row.id=o.media_attempt_id;
+ SELECT * INTO i FROM live.media_input_custody AS custody_row WHERE custody_row.attempt_id=o.media_attempt_id FOR UPDATE;
+ SELECT * INTO s FROM live.media_recovery_episode_scope AS scope_row WHERE scope_row.episode_id=p_episode;
+ SELECT * INTO e FROM integration.operation_events AS admitted_event WHERE admitted_event.operation_id=o.id
+  AND admitted_event.episode_id=p_episode AND admitted_event.episode_event_kind='admitted';
  v_now:=clock_timestamp();
  IF s.episode_id IS NULL OR NOT s.include_browser_input OR e.id IS NULL
   OR e.native_job_id<>o.job_id OR x.recovery_episode_id IS DISTINCT FROM p_episode
@@ -759,7 +759,7 @@ DECLARE s live.media_recovery_episode_scope%ROWTYPE; v_members integer;
 BEGIN
  IF p_episode IS NULL OR current_setting('transaction_isolation')<>'read committed' THEN
   RAISE EXCEPTION 'invalid mixed media recovery read' USING ERRCODE='ME400'; END IF;
- SELECT * INTO s FROM live.media_recovery_episode_scope WHERE episode_id=p_episode;
+ SELECT * INTO s FROM live.media_recovery_episode_scope AS scope_row WHERE scope_row.episode_id=p_episode;
  IF s.episode_id IS NULL OR NOT s.include_browser_input THEN
   RAISE EXCEPTION 'mixed media recovery scope unavailable' USING ERRCODE='ME409'; END IF;
  SELECT count(*),count(*) FILTER (WHERE EXISTS(SELECT 1 FROM integration.operation_events w
@@ -839,15 +839,15 @@ BEGIN
   OR current_setting('transaction_isolation')<>'read committed' THEN
   RAISE EXCEPTION 'invalid mixed media recovery witness' USING ERRCODE='ME400'; END IF;
  o:=live.lock_media_operation(p_operation);
- SELECT * INTO x FROM live.media_execution_state WHERE attempt_id=o.media_attempt_id FOR UPDATE;
- SELECT * INTO i FROM live.media_input_custody WHERE attempt_id=o.media_attempt_id FOR UPDATE;
- SELECT * INTO s FROM live.media_recovery_episode_scope WHERE episode_id=p_episode;
+ SELECT * INTO x FROM live.media_execution_state AS execution_row WHERE execution_row.attempt_id=o.media_attempt_id FOR UPDATE;
+ SELECT * INTO i FROM live.media_input_custody AS custody_row WHERE custody_row.attempt_id=o.media_attempt_id FOR UPDATE;
+ SELECT * INTO s FROM live.media_recovery_episode_scope AS scope_row WHERE scope_row.episode_id=p_episode;
  IF s.episode_id IS NULL OR NOT s.include_browser_input THEN
   RAISE EXCEPTION 'mixed media recovery scope unavailable' USING ERRCODE='ME409'; END IF;
- SELECT * INTO e FROM integration.operation_events WHERE operation_id=o.id
-  AND episode_id=p_episode AND episode_event_kind='admitted';
- SELECT * INTO w FROM integration.operation_events WHERE operation_id=o.id
-  AND episode_id=p_episode AND episode_event_kind='witnessed';
+ SELECT * INTO e FROM integration.operation_events AS admitted_event WHERE admitted_event.operation_id=o.id
+  AND admitted_event.episode_id=p_episode AND admitted_event.episode_event_kind='admitted';
+ SELECT * INTO w FROM integration.operation_events AS witness_event WHERE witness_event.operation_id=o.id
+  AND witness_event.episode_id=p_episode AND witness_event.episode_event_kind='witnessed';
  IF w.id IS NOT NULL THEN
   IF w.input_observation_id IS NOT DISTINCT FROM p_input
    AND w.observation_id IS NOT DISTINCT FROM p_egress AND w.elapsed_ms=p_elapsed THEN
@@ -856,14 +856,14 @@ BEGIN
  IF s.timeout_at IS NOT NULL OR EXISTS(SELECT 1 FROM integration.operation_events t
   WHERE t.operation_id=o.id AND t.episode_id=p_episode AND t.episode_event_kind='timeout') THEN
   RETURN 'timeout_wins'; END IF;
- SELECT * INTO a FROM live.media_attempts WHERE id=o.media_attempt_id;
- SELECT * INTO h FROM live.prepared_media_authorizations WHERE id=a.authorization_id;
- SELECT * INTO iq FROM integration.operation_events WHERE operation_id=o.id
-  AND episode_id=p_episode AND episode_event_kind='input_qualified';
- SELECT * INTO q FROM integration.operation_events WHERE operation_id=o.id
-  AND episode_id=p_episode AND episode_event_kind='qualified';
- SELECT * INTO r FROM live.media_input_recovery_observations WHERE id=iq.input_observation_id;
- SELECT * INTO v FROM live.media_observations WHERE id=q.observation_id;
+ SELECT * INTO a FROM live.media_attempts AS attempt_row WHERE attempt_row.id=o.media_attempt_id;
+ SELECT * INTO h FROM live.prepared_media_authorizations AS auth_row WHERE auth_row.id=a.authorization_id;
+ SELECT * INTO iq FROM integration.operation_events AS input_event WHERE input_event.operation_id=o.id
+  AND input_event.episode_id=p_episode AND input_event.episode_event_kind='input_qualified';
+ SELECT * INTO q FROM integration.operation_events AS qualified_event WHERE qualified_event.operation_id=o.id
+  AND qualified_event.episode_id=p_episode AND qualified_event.episode_event_kind='qualified';
+ SELECT * INTO r FROM live.media_input_recovery_observations AS input_row WHERE input_row.id=iq.input_observation_id;
+ SELECT * INTO v FROM live.media_observations AS observation_row WHERE observation_row.id=q.observation_id;
  IF e.id IS NULL OR e.native_job_id<>o.job_id OR e.recovery_execution_profile IS DISTINCT FROM a.execution_profile
   OR NOT (e.recovery_input_required OR e.recovery_egress_required)
   OR (e.recovery_input_required AND p_input IS NULL)
