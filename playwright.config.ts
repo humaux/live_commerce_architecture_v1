@@ -11,6 +11,7 @@ const suites: Record<string, string[]> = {
   "settings-real": ["settings-real.spec.ts"],
   "merchant-orders-bff": ["orders-bff.spec.ts"],
   "merchant-orders-ui": ["orders-ui.spec.ts"],
+  "studio-ui": ["studio-ui.spec.ts"],
 };
 if (!Object.hasOwn(suites, suite)) throw new Error("Invalid LC_BROWSER_SUITE");
 
