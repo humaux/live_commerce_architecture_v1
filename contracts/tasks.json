@@ -471,7 +471,7 @@
     "media_controller_candidate": {
       "contract": "contracts/live-media-controller-v1.md",
       "status": "PARTIAL_MOCK_EXECUTION_ACCEPTED_FULL_CONTROLLER_NOT_FROZEN",
-      "remaining": "MOCK authorization, start intent and dedicated execution/lease/material/observation recovery accepted at main4345732 with root full623 PG/race/vet. Bounded same-ID Stop, resource reclamation, LIVE authority, studio/start route and media-worker deployment remain unimplemented. Current client already uses StartEgress. No full controller or real-media/G06 acceptance."
+      "remaining": "MOCK authorization, start intent, dedicated execution and bounded same-ID Stop accepted locally through ff57e32 with root full637 PG/race/vet. Coherent terminal proof alone closes resource liability. LIVE authority, real Cloud, studio/HTTP route, media-worker deployment and post-escalation operator recovery remain unimplemented or unverified. Current client uses StartEgress. No full controller or real-media/G06 acceptance."
     },
     "media_authorization_registry_slice": {
       "contract": "contracts/live-media-authorization-v1.md",
@@ -500,10 +500,12 @@
     },
     "media_stop_slice": {
       "contract": "contracts/live-media-stop-v1.md",
-      "status": "FROZEN_FOR_MOCK_IMPLEMENTATION_NOT_IMPLEMENTED",
+      "status": "PASS_LOCAL_MOCK_STOP_ONLY",
       "reviewed_draft_commit": "45c4ac8",
-      "gates": "LMR01_06_NOT_RUN",
-      "boundary": "Independently preflighted bounded same-attempt cleanup contract on existing operation/job. No Stop implementation, LIVE/Cloud, post-escalation operator recovery, studio or G06 acceptance."
+      "evidence": "docs/implementation/2026-09-27-live-media-stop-acceptance.md",
+      "source_test_commit": "ff57e32",
+      "gates": "LMR01_06_INDEPENDENT_41_PASS_LEGACY_EXECUTABLE_1_PASS_ROOT_FULL_637_PG_RACE_VET_PASS",
+      "boundary": "Local PG/TLS bounded same-attempt cleanup on existing operation/job, max two reservations, fresh Query fencing, process/COMMIT-ack loss and exact old admission executable tested. No LIVE/Cloud, post-escalation operator recovery, studio/browser, media-worker deployment or global G06 acceptance."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },

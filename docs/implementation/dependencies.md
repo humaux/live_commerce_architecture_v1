@@ -118,7 +118,8 @@ Go `NewMediaClient` 使用既有 LKM 解密和 LKP Start／FindByRoom／Query。
 forward0036 与 post-River0007 分别提供业务状态及原生生命周期权限；新增
 executor 和 River 管理身份分池、同物理 DB 验证。`platform.ValidateMedia*Pool`
 拒绝混合角色、SET 通路、直接表授权和跨业务函数 EXEC；SQL readiness 另核
-精确五函数签名与 ACL、RLS 和触发器。不能用新增身份写权限换取启动通过。
+LME 基线的精确五函数签名与 ACL、RLS 和触发器；LMR 在此基础上增加下述
+第六函数。不能用新增身份写权限换取启动通过。
 
 升级 PostgreSQL／pgx／River／LKM／LKP 或改变角色／函数／原生任务守卫后，跑
 `test-local.sh --live-media-execution` 和全量 `test-local.sh`。专项包含真实
@@ -126,6 +127,29 @@ PG18／本地 TLS／进程死亡恢复、隐式事务 COMMIT 回执丢失及原�
 rescuer／cleaner 隔离；[验收记录](2026-09-27-live-media-execution-acceptance.md)
 列出各轮证据和主线全量状态。Stop、LIVE、部署二进制、资源回收及 G06 不由
 该增量证明。当前没有外部媒体服务配置或收费资源。
+
+## T08 有界 MOCK Stop 依赖（本地验收通过）
+
+`MediaPlanner.RequestStop` 复用 `authorize`、`command.Run`、当前权限版本及
+`command.Audit`，仅写当前场次/attempt 的清理意图；不另入队、不调用供应商。
+forward0037 增加既有执行投影上的清理字段及至多两次预留预算，沿用同一个
+`integration.operations` 租约。`NewMediaClient` 的 reconcile 路径复用 LKP
+精确 Query → 新 `record_media_cleanup_query` → 已提交 Stop 预留 → LKP Stop。
+Stop 回执和普通观察使用同一私有 projector；网络期间不持有数据库事务。
+
+post-River0008 将 executor 白名单扩为六个精确函数，商家 Stop 请求函数
+仍只授予商家 runtime，私有 helper 只归 owner。旧进程不能靠旧 Query 路径
+悄悄消耗清理请求；升级须排空旧 worker，再启动通过新 admission 的实例。
+`media_stop_observation_fk` 默认即时校验，仅在明确延期的维护事务中容许
+投影/观察循环外键清理。五个 PG18 约束定义摘要用于漂移检测，不是安全加密；
+升级 PG 或合法改动 DDL 时先比对定义、目标列和引用语义，不能只刷新摘要。
+
+改动角色、约束、claim/lease、pgx COMMIT、River 或 LKP 后，先跑
+`bash scripts/dev/test-local.sh --live-media-stop`，再跑全量 `test-local.sh`。
+两次预留包括 wire 前进程死亡；5 秒证据窗口是数据库最终决策时点，不保证
+COMMIT 后实际发包时刻。只有关联终态证明才能结束资源责任。
+[本轮验收记录](2026-09-27-live-media-stop-acceptance.md) 单列实际结果；不含
+Cloud 资格、部署入口、工作室或完整 G06，也不增加依赖版本。
 
 ## 依赖版本
 

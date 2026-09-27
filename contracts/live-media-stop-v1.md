@@ -1,14 +1,18 @@
 # T08 bounded MOCK media Stop — LMR01–06
 
-Status: **FROZEN_FOR_MOCK_IMPLEMENTATION / NOT_IMPLEMENTED** (2026-09-27).
-Base `8f43c2f`. This specifies the next increment after
+Status: **PASS_LOCAL_MOCK_ONLY** (2026-09-27).
+Contract base `8f43c2f`, frozen `395b10d` with clarification `de621f6`.
+This specifies the bounded increment after
 [LME](live-media-execution-v1.md), not a Cloud or production approval.
 Independent preflight of draft `45c4ac8` found no confirmed P0/P1; the final
 narrow clarifications specify error mapping, nonnegative claim age, latest
 reservation observation pointer, receipt states and the post-COMMIT time limit.
 Security evidence: Humaux `8149a5ee-cebd-44e5-9358-8f3ccc505337`; independent
 testability closeout: `045b84e4-4b62-413b-b296-8bae14e42c67`.
-LMR01–06 remain NOT_RUN. Source and independent tests must use this same revision.
+LMR01–06 passed independent local PG/TLS tests and root full PG/race/vet at
+`ff57e32` (637 PASS, 0 FAIL / 0 SKIP). The frozen old admission executable also
+passed before/after upgrade checks. [Acceptance and exact boundaries](../docs/implementation/2026-09-27-live-media-stop-acceptance.md).
+Real Cloud, studio/browser, runtime deployment and global G06 remain NOT_RUN.
 
 ## Decision and limits
 

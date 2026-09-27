@@ -11,9 +11,10 @@ Real provider and broader controller gates remain NOT_RUN. Its
 exact roles/signatures and closed-lease late-report behavior take precedence
 over the broader candidates below. The rest of the lifecycle remains a candidate;
 neither LMP nor the MOCK worker enables production live execution by itself.
-The bounded MOCK Stop recovery below
-has independent design review; it is not yet implemented. Its concrete
-[LMR interface contract](live-media-stop-v1.md) is frozen for MOCK implementation:
+The bounded MOCK Stop recovery below has independent implementation review and
+[local PG/TLS acceptance](../docs/implementation/2026-09-27-live-media-stop-acceptance.md)
+at `ff57e32` (root full 637 PASS, race/vet). Its concrete
+[LMR interface contract](live-media-stop-v1.md) governs this MOCK implementation:
 it specifies a cleanup subphase on the existing operation/job, superseding the
 separate Stop operation/job candidates below for this bounded increment.
 Escalated rows whose jobs were retained away require separate operator recovery.
@@ -176,7 +177,7 @@ provider observation terminal rules and test fixtures. LKM custody is an executa
 dependency, not closure of any of these controller gates. Real provider/browser
 acceptance and the complete SaaS deployment objective remain open.
 
-### Bounded MOCK Stop recovery — design accepted, implementation NOT_RUN
+### Bounded MOCK Stop recovery — local implementation accepted; Cloud NOT_RUN
 
 An unconditional query-only UNKNOWN Stop rule is conservative, but is **not a complete
 reclamation algorithm**: if the request was lost before acceptance, the same
