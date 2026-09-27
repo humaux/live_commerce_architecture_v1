@@ -78,3 +78,19 @@ Next: one coordinated source/test repair, fixed-source independent review,
 isolated focused run, root rerun, then fixed-tree full regression. Do not edit
 an executing runner, discard the red run, or infer real-provider/human-alert
 delivery from local MOCK tests.
+
+## Second source candidate: root unit check only
+
+Root independently ran source `7987f5055af745c65273e9b8fb37bb31b7245285`
+with a clean, author-frozen worktree before and after the command:
+`GOTOOLCHAIN=go1.27.1 go test -race -count=1 ./cmd/media-worker ./internal/live ./internal/platform ./internal/integrations/livekit`.
+Actual exit **0**; all four packages passed (2.231 / 1.402 / 1.643 / 12.709s).
+Log: `/Volumes/data/output/mrr-unit-7987f50-root-20260927.log`, SHA-256
+`076f74a3701f408714586ab1c61de176096a36b58e5155a5ec3fe69a6637345d`.
+
+This does not close PG or real-clock gates. Independent review still blocks on
+timely readback attestation: sample once immediately after a committed batch
+read, preserve that time for every member, and distinguish pending Witness
+persistence from an actual missed readback deadline. A later synchronous
+Witness call must not make an already-read member appear late. Tests remain
+fixed separately at `2754509`; the next PG run awaits that source repair.
