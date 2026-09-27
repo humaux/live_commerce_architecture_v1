@@ -25,13 +25,40 @@ var (
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	if err := run(ctx, os.Getenv); err != nil {
+	if err := runEntrypoint(ctx, os.Getenv); err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
 	}
 }
 
 func run(ctx context.Context, getenv func(string) string) error {
+	return runNative(ctx, getenv, nil)
+}
+
+func runEntrypoint(ctx context.Context, getenv func(string) string) error {
+	if getenv == nil {
+		return errWorkerConfig
+	}
+	switch getenv("COMMERCE_MEDIA_RECOVERY_SUPERVISED") {
+	case "", "0":
+		if getenv("COMMERCE_MEDIA_RECOVERY_INTERNAL_CHILD") != "" {
+			return errWorkerConfig
+		}
+		return runNative(ctx, getenv, nil)
+	case "1":
+		if getenv("COMMERCE_MEDIA_RECOVERY_INTERNAL_CHILD") == "1" {
+			return runInternalChild(ctx, getenv)
+		}
+		if getenv("COMMERCE_MEDIA_RECOVERY_INTERNAL_CHILD") != "" {
+			return errWorkerConfig
+		}
+		return runSupervised(ctx, getenv)
+	default:
+		return errWorkerConfig
+	}
+}
+
+func runNative(ctx context.Context, getenv func(string) string, ready func() error) error {
 	env, err := livekit.LoadWorkerEnvironment(getenv)
 	if err != nil {
 		return errWorkerConfig
@@ -66,6 +93,9 @@ func run(ctx context.Context, getenv func(string) string) error {
 	done()
 	if err != nil {
 		return errWorkerDatabase
+	}
+	if ready != nil && ready() != nil {
+		return errWorkerStart
 	}
 	// Job shutdown only releases this process; durable media cleanup remains lease-fenced in the queue.
 	switch err := jobqueue.Run(ctx, client, "media_worker_ready"); {
