@@ -1,5 +1,6 @@
 import { expect, test, type Page, type BrowserContext } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
+import { randomBytes } from "node:crypto";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -30,8 +31,12 @@ async function signedLogin(page: Page) {
 }
 
 async function setSession(context: BrowserContext, token: string) {
-  await context.addCookies([{ name: cookieName, value: token,
-    url: origin.replace(/^http:/, "https:"), secure: true, httpOnly: true, sameSite: "Lax" }]);
+  const url = origin.replace(/^http:/, "https:");
+  await context.addCookies([
+    { name: cookieName, value: token, url, secure: true, httpOnly: true, sameSite: "Lax" },
+    { name: "__Host-commerce_csrf", value: randomBytes(32).toString("base64url"),
+      url, secure: true, httpOnly: false, sameSite: "Lax" },
+  ]);
 }
 
 async function storageIsSafe(page: Page) {
