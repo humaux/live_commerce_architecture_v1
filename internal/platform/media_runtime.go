@@ -87,8 +87,12 @@ func validateMediaAuthority(ctx context.Context, pool *pgxpool.Pool, role string
 	 'close_media_input_admission','request_media_stop',
      'register_prepared_media','revoke_prepared_media','begin_media_recovery_episode',
      'claim_recovery_observation','record_recovery_observation','finish_recovery_observation',
-     'read_media_recovery_episode','witness_media_recovery_episode',
-     'timeout_media_recovery_episode','media_recovery_ready')
+	 'read_media_recovery_episode','witness_media_recovery_episode',
+	 'timeout_media_recovery_episode','media_recovery_ready',
+	 'begin_media_recovery_episode_with_input','claim_media_recovery_observation_with_input',
+	 'record_browser_input_recovery_observation','record_media_recovery_observation_with_input',
+	 'finish_media_recovery_observation_with_input','read_media_recovery_episode_with_input',
+	 'witness_media_recovery_episode_with_input','media_browser_input_recovery_ready')
 	), allowed AS (
 	 SELECT p.oid FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace
 	 WHERE n.nspname='live' AND (
@@ -139,7 +143,15 @@ func validateMediaAuthority(ctx context.Context, pool *pgxpool.Pool, role string
 	  pg_catalog.to_regprocedure('live.read_media_recovery_episode(uuid)'),
 	  pg_catalog.to_regprocedure('live.witness_media_recovery_episode(uuid,uuid,uuid,bigint)'),
 	  pg_catalog.to_regprocedure('live.timeout_media_recovery_episode(uuid,bigint)'),
-	  pg_catalog.to_regprocedure('live.media_recovery_ready()')
+	  pg_catalog.to_regprocedure('live.media_recovery_ready()'),
+	  pg_catalog.to_regprocedure('live.begin_media_recovery_episode_with_input(uuid,bigint,integer,boolean)'),
+	  pg_catalog.to_regprocedure('live.claim_media_recovery_observation_with_input(uuid,uuid,bigint,bytea)'),
+	  pg_catalog.to_regprocedure('live.record_browser_input_recovery_observation(uuid,uuid,bigint,bytea,text,text,text,text)'),
+	  pg_catalog.to_regprocedure('live.record_media_recovery_observation_with_input(uuid,uuid,bigint,bytea,text,text,text,text,bigint,bigint,bigint)'),
+	  pg_catalog.to_regprocedure('live.finish_media_recovery_observation_with_input(uuid,uuid,bigint,bytea,text)'),
+	  pg_catalog.to_regprocedure('live.read_media_recovery_episode_with_input(uuid)'),
+	  pg_catalog.to_regprocedure('live.witness_media_recovery_episode_with_input(uuid,uuid,uuid,uuid,bigint)'),
+	  pg_catalog.to_regprocedure('live.media_browser_input_recovery_ready()')
 	 ])::oid AS oid
 	)
 	SELECT EXISTS (SELECT 1 FROM reachable r CROSS JOIN pg_catalog.pg_class c
@@ -168,7 +180,7 @@ func validateMediaAuthority(ctx context.Context, pool *pgxpool.Pool, role string
 	 'claim_media_input_operation','load_media_input_custody','close_media_input_admission')
 	 AND pg_catalog.has_function_privilege(session_user,f.oid,'EXECUTE'))<>9)
 	 OR ($1='media_recovery' AND (SELECT count(*) FROM recovery_allowed a
-	  WHERE pg_catalog.has_function_privilege(session_user,a.oid,'EXECUTE'))<>8)
+	  WHERE pg_catalog.has_function_privilege(session_user,a.oid,'EXECUTE'))<>16)
 	 OR EXISTS (SELECT 1 FROM reachable r CROSS JOIN pg_catalog.pg_proc p
 	 JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace
 	 WHERE n.nspname<>'information_schema' AND n.nspname NOT LIKE 'pg\_%' ESCAPE '\'

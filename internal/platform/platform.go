@@ -345,7 +345,16 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 					'read_media_recovery_episode','witness_media_recovery_episode',
 					'timeout_media_recovery_episode','media_recovery_ready',
 					'media_recovery_begin_replay','media_recovery_native_eligible',
-					'qualify_media_recovery_observation'))
+					'qualify_media_recovery_observation',
+					'begin_media_recovery_episode_with_input','claim_media_recovery_observation_with_input',
+					'record_browser_input_recovery_observation','record_media_recovery_observation_with_input',
+					'finish_media_recovery_observation_with_input','read_media_recovery_episode_with_input',
+					'witness_media_recovery_episode_with_input','media_browser_input_recovery_ready',
+					'qualify_mixed_media_recovery_egress','guard_media_input_recovery_receipt',
+					'assert_legacy_media_recovery_scope',
+					'begin_media_recovery_episode_kernel','claim_recovery_observation_kernel',
+					'record_recovery_observation_kernel','finish_recovery_observation_kernel',
+					'read_media_recovery_episode_kernel','witness_media_recovery_episode_kernel'))
 			)
 		)
 		SELECT EXISTS (
