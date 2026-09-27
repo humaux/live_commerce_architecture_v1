@@ -1,6 +1,7 @@
-import { expect, test, type Page, type BrowserContext } from "@playwright/test";
-import { writeFile } from "node:fs/promises";
+import { chromium, expect, test, type Browser, type Page, type BrowserContext } from "@playwright/test";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
+import { spawn } from "node:child_process";
 import { parseDraft } from "../../apps/admin/lib/studio-model";
 
 const required = (name: string) => {
@@ -23,7 +24,7 @@ test.use({ baseURL: origin, headless: false, trace: "retain-on-failure", screens
 test.setTimeout(240_000);
 
 async function signedLogin(page: Page) {
-  await page.goto("/en/");
+  await page.goto(new URL("/en/", origin).toString());
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
   await expect(page.getByRole("button", { name: "Live workspace" })).toBeVisible();
   await page.getByRole("button", { name: "Live workspace" }).click();
@@ -51,14 +52,82 @@ async function storageIsSafe(page: Page) {
 }
 
 async function hideAndReveal(page: Page) {
-  const other = await page.context().newPage();
-  await other.goto("about:blank");
-  await other.bringToFront();
-  await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("hidden");
-  await expect(page.getByLabel("Scene name")).toHaveCount(0);
   await page.bringToFront();
   await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("visible");
-  await other.close();
+  await page.evaluate(() => {
+    const observed = window as typeof window & { studioVisibility?: { state: string; trusted: boolean }[] };
+    observed.studioVisibility = [];
+    document.addEventListener("visibilitychange", (event) =>
+      observed.studioVisibility?.push({ state: document.visibilityState, trusted: event.isTrusted }));
+  });
+  const other = await page.context().newPage();
+  try {
+    await other.goto("about:blank");
+    await other.bringToFront();
+    await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("hidden");
+    await expect(page.getByLabel("Scene name")).toHaveCount(0);
+    await page.bringToFront();
+    await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("visible");
+    const events = await page.evaluate(() =>
+      (window as typeof window & { studioVisibility?: { state: string; trusted: boolean }[] }).studioVisibility);
+    expect(events).toEqual([{ state: "hidden", trusted: true }, { state: "visible", trusted: true }]);
+  } finally {
+    await page.bringToFront();
+    await other.close();
+  }
+}
+
+// Only the two native-visibility cases use this device. Playwright's usual
+// browser fixture captures focus, so a second CDP session cannot undo it.
+async function nativePage() {
+  const profile = await mkdtemp(`${evidence}/studio-native-profile-`);
+  const child = spawn(chromium.executablePath(), [
+    `--user-data-dir=${profile}`, "--remote-debugging-address=127.0.0.1",
+    "--remote-debugging-port=0", "--no-first-run", "--no-default-browser-check", "about:blank",
+  ], { stdio: "ignore" });
+  let browser: Browser | undefined;
+  let launchError: Error | undefined;
+  child.once("error", (error) => { launchError = error; });
+  const exited = () => child.exitCode !== null || child.signalCode !== null;
+  const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+  const waitExit = (ms: number) => new Promise<boolean>((resolve) => {
+    if (exited()) return resolve(true);
+    const onExit = () => { clearTimeout(timer); resolve(true); };
+    const timer = setTimeout(() => { child.off("exit", onExit); resolve(exited()); }, ms);
+    child.once("exit", onExit);
+  });
+  const close = async () => {
+    if (browser?.isConnected()) {
+      await Promise.race([browser.newBrowserCDPSession().then((session) =>
+        session.send("Browser.close")).catch(() => {}), delay(1_500)]);
+      await Promise.race([browser.close().catch(() => {}), delay(1_500)]);
+    }
+    if (!(await waitExit(1_500))) child.kill("SIGTERM");
+    if (!(await waitExit(1_500))) child.kill("SIGKILL");
+    if (!(await waitExit(3_000))) throw new Error(`owned Chromium pid ${child.pid} did not exit`);
+    await rm(profile, { recursive: true, force: true });
+  };
+  try {
+    let port = 0;
+    const deadline = performance.now() + 10_000;
+    while (performance.now() < deadline && !exited()) {
+      if (launchError) throw launchError;
+      try { port = Number((await readFile(`${profile}/DevToolsActivePort`, "utf8")).split("\n")[0]); } catch { /* Chromium has not opened CDP yet. */ }
+      if (Number.isInteger(port) && port > 0 && port < 65_536) break;
+      await delay(100);
+    }
+    if (!port) throw new Error("owned Chromium did not expose loopback CDP");
+    browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`, { noDefaults: true });
+    if (browser.contexts().length !== 1) throw new Error("native device needs the existing default context");
+    const context = browser.contexts()[0];
+    const page = context.pages()[0] || await context.newPage();
+    await page.bringToFront();
+    await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("visible");
+    return { page, close };
+  } catch (error) {
+    await close();
+    throw error;
+  }
 }
 
 async function screenshot(page: Page, name: string, width: number, height: number) {
@@ -141,37 +210,28 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await expect(page.getByLabel("Scene name")).toHaveValue("STU04 browser-edited scene");
   await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue("2030-01-01T00:00");
 
-  // Exercise the native control only on a saved, editable draft with no
-  // uncertain request. Keep a host-unobservable popup explicit without
-  // stopping the separate signed/worker chain.
-  await expect.soft(picker).toBeEnabled({ timeout: 3_000 });
-  if (await picker.isEnabled()) {
-    await picker.click({ timeout: 3_000 });
-    await page.screenshot({ path: `${evidence}/en-native-calendar-open.png`, fullPage: false });
-    const popupVisible = await page.getByRole("dialog").waitFor({ state: "visible", timeout: 1_000 }).then(() => true, () => false);
-    expect.soft(popupVisible, "native calendar popup NOT_RUN: no observable browser dialog after a trusted click").toBe(true);
-    if (popupVisible) {
-      await picker.press("ArrowDown");
-      await picker.press("Enter");
-      const picked = await picker.inputValue();
-      const pickedChanged = /^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(picked) && picked !== "2030-01-01T00:00";
-      expect.soft(pickedChanged, "native calendar value NOT_RUN: trusted keyboard selection did not change the date").toBe(true);
-      if (pickedChanged) {
-        await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue(picked);
-        const beforePickerVersion = await displayedVersion(page);
-        await page.getByRole("button", { name: "Save draft" }).click();
-        await expect.poll(() => displayedVersion(page)).toBe(beforePickerVersion + 1);
-        await page.reload();
-        await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue(picked);
-        await page.getByLabel("Scheduled time (UTC, optional)").fill("2030-01-01T00:00");
-        const beforeRestoreVersion = await displayedVersion(page);
-        await page.getByRole("button", { name: "Save draft" }).click();
-        await expect.poll(() => displayedVersion(page)).toBe(beforeRestoreVersion + 1);
-        await page.reload();
-        await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue("2030-01-01T00:00");
-      }
-    } else await picker.press("Escape");
-  }
+  // Native Chromium popups are not page DOM dialogs. Trusted click and
+  // page-level keyboard selection must change the value, then persist.
+  await expect(picker).toBeEnabled({ timeout: 3_000 });
+  await picker.click({ timeout: 3_000 });
+  await page.screenshot({ path: `${evidence}/en-native-calendar-open.png`, fullPage: false });
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("Enter");
+  const picked = await picker.inputValue();
+  expect(picked).toMatch(/^\d{4}-\d\d-\d\dT\d\d:\d\d$/);
+  expect(picked).not.toBe("2030-01-01T00:00");
+  await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue(picked);
+  const beforePickerVersion = await displayedVersion(page);
+  await page.getByRole("button", { name: "Save draft" }).click();
+  await expect.poll(() => displayedVersion(page)).toBe(beforePickerVersion + 1);
+  await page.reload();
+  await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue(picked);
+  await page.getByLabel("Scheduled time (UTC, optional)").fill("2030-01-01T00:00");
+  const beforeRestoreVersion = await displayedVersion(page);
+  await page.getByRole("button", { name: "Save draft" }).click();
+  await expect.poll(() => displayedVersion(page)).toBe(beforeRestoreVersion + 1);
+  await page.reload();
+  await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue("2030-01-01T00:00");
 
   // Two real signed UI views race on the same version. The stale tab must
   // report a conflict, not overwrite the newer persisted edit.
@@ -376,30 +436,39 @@ test("STU04 read-only and expired sessions cannot mutate", async ({ browser }) =
   await expired.close();
 });
 
-test("STU04 native visibility conceal and revalidation remains required", async ({ page }) => {
-  await signedLogin(page);
-  await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
-  // This case must own an editable DRAFT form: the shared prepared scene may
-  // already be READY after the preceding real worker Start.
-  await page.getByRole("button", { name: /New scene/ }).click();
-  await expect(page.getByLabel("Scene name")).toBeEnabled();
-  await page.getByLabel("Scene name").fill("STU04 native dirty draft");
-  await expect(page.getByText("Unsaved changes")).toBeVisible();
-  // No synthetic visibilitychange dispatch: this host must actually report a
-  // hidden tab before we can claim the conceal/revalidation lifecycle.
-  await hideAndReveal(page);
-  await expect(page.getByLabel("Scene name")).toHaveValue("STU04 native dirty draft");
+test("STU04 native visibility conceal and revalidation remains required", async () => {
+  const { page, close } = await nativePage();
+  try {
+    await signedLogin(page);
+    await page.goto(new URL(`/en/studio?store=${store}&scene=${preparedSession}`, origin).toString());
+    // This case must own an editable DRAFT form: the shared prepared scene may
+    // already be READY after the preceding real worker Start.
+    await page.getByRole("button", { name: /New scene/ }).click();
+    await expect(page.getByLabel("Scene name")).toBeEnabled();
+    await page.getByLabel("Scene name").fill("STU04 native dirty draft");
+    await expect(page.getByText("Unsaved changes")).toBeVisible();
+    // No synthetic visibilitychange dispatch: observe the real hidden tab.
+    await hideAndReveal(page);
+    await expect(page.getByLabel("Scene name")).toHaveValue("STU04 native dirty draft");
+  } finally {
+    await close();
+  }
 });
 
-test("STU04 native conceal retains an uncertain committed request", async ({ page }) => {
-  await signedLogin(page);
-  await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
-  const armed = await fetch(`${api}/__test/studio-ui-arm-fault`, { method: "POST" });
-  expect(armed.status).toBe(204);
-  await page.getByRole("button", { name: /New scene/ }).click();
-  await page.getByLabel("Scene name").fill("STU04 native uncertain scene");
-  await page.getByRole("button", { name: "Create draft" }).click();
-  await expect(page.getByRole("button", { name: "Retry same request" })).toBeVisible();
-  await hideAndReveal(page);
-  await expect(page.getByRole("button", { name: "Retry same request" })).toBeVisible();
+test("STU04 native conceal retains an uncertain committed request", async () => {
+  const { page, close } = await nativePage();
+  try {
+    await signedLogin(page);
+    await page.goto(new URL(`/en/studio?store=${store}&scene=${preparedSession}`, origin).toString());
+    const armed = await fetch(`${api}/__test/studio-ui-arm-fault`, { method: "POST" });
+    expect(armed.status).toBe(204);
+    await page.getByRole("button", { name: /New scene/ }).click();
+    await page.getByLabel("Scene name").fill("STU04 native uncertain scene");
+    await page.getByRole("button", { name: "Create draft" }).click();
+    await expect(page.getByRole("button", { name: "Retry same request" })).toBeVisible();
+    await hideAndReveal(page);
+    await expect(page.getByRole("button", { name: "Retry same request" })).toBeVisible();
+  } finally {
+    await close();
+  }
 });
