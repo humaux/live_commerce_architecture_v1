@@ -70,6 +70,13 @@ async function screenshot(page: Page, name: string, width: number, height: numbe
   await page.screenshot({ path: `${evidence}/${name}.png`, fullPage: false });
 }
 
+async function displayedVersion(page: Page) {
+  const value = await page.locator(".studio-version strong").innerText();
+  const match = value.match(/(\d+)$/);
+  if (!match) throw new Error(`missing Studio version in ${value}`);
+  return Number(match[1]);
+}
+
 test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker", async ({ page, context, browser }) => {
   const authHeaders: string[] = [];
   page.on("request", (request) => {
@@ -88,15 +95,19 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await page.getByLabel("Scene name").fill("STU04 browser-created scene");
   await page.getByLabel("Scheduled time (UTC, optional)").fill("2030-01-01T00:00");
   await page.getByLabel("Canvas ratio").selectOption("16:9");
+  const beforeCreateURL = page.url();
   await page.getByRole("button", { name: "Create draft" }).click();
+  await expect.poll(() => page.url()).not.toBe(beforeCreateURL);
   await expect(page.getByLabel("Scene name")).toHaveValue("STU04 browser-created scene");
   await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue("2030-01-01T00:00");
   const createdURL = page.url();
   expect(createdURL).toMatch(/scene=[0-9a-f-]{36}/);
   await expect(page.getByText("No current prepared authority", { exact: false })).toBeVisible();
   await expect(page.getByRole("button", { name: "Start MOCK rehearsal" })).toBeDisabled();
+  const firstVersion = await displayedVersion(page);
   await page.getByLabel("Scene name").fill("STU04 browser-edited scene");
   await page.getByRole("button", { name: "Save draft" }).click();
+  await expect.poll(() => displayedVersion(page)).toBe(firstVersion + 1);
   await expect(page.getByText("STU04 browser-edited scene").first()).toBeVisible();
   await page.reload();
   await expect(page.getByLabel("Scene name")).toHaveValue("STU04 browser-edited scene");
@@ -163,8 +174,10 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await screenshot(page, "en-phone-first-390x844", 390, 844);
   await page.goto(createdURL);
   await expect(page.getByLabel("Scene name")).toHaveValue("STU04 competing edit");
+  const mobileVersion = await displayedVersion(page);
   await page.getByLabel("Scene name").fill("STU04 phone-edited scene");
   await page.getByRole("button", { name: "Save draft" }).click();
+  await expect.poll(() => displayedVersion(page)).toBe(mobileVersion + 1);
   await expect(page.getByText("STU04 phone-edited scene").first()).toBeVisible();
   await page.reload();
   await expect(page.getByLabel("Scene name")).toHaveValue("STU04 phone-edited scene");
