@@ -264,6 +264,53 @@ func TestLiveBrowserInputBRW01MarkerRoleAndOldClaimIsolation(t *testing.T) {
 	})
 }
 
+func TestLiveBrowserInputBRW01MissingAllowedSignatureDeniesLegacyExecutor(t *testing.T) {
+	h := lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "unexpected provider I/O", http.StatusInternalServerError)
+	})
+	ctx := context.Background()
+	if err := platform.ValidateMediaExecutorPool(ctx, h.executor); err != nil {
+		t.Fatalf("clean legacy executor rejected: %v", err)
+	}
+	if _, err := live.NewMediaClient(ctx, h.worker, h.executor, h.keys,
+		[]live.MediaProject{h.project}, 1); err != nil {
+		t.Fatalf("clean legacy constructor rejected: %v", err)
+	}
+
+	const original = "live.next_media_input_turn(uuid,bigint,bytea)"
+	alias := "next_media_input_turn_brw_acl_" + t04Tag()
+	aliasSignature := "live." + alias + "(uuid,bigint,bytea)"
+	mustExec(t, h.lp.f.owner, "ALTER FUNCTION "+original+" RENAME TO "+pgx.Identifier{alias}.Sanitize())
+	renamed := true
+	t.Cleanup(func() {
+		if renamed {
+			mustExec(t, h.lp.f.owner, "ALTER FUNCTION "+aliasSignature+" RENAME TO next_media_input_turn")
+		}
+	})
+	var missing bool
+	if err := h.lp.f.owner.QueryRow(ctx, `SELECT to_regprocedure($1) IS NULL`, original).Scan(&missing); err != nil || !missing {
+		t.Fatalf("expected BRW whitelist signature did not become NULL: missing=%t err=%v", missing, err)
+	}
+	var retainedGrant bool
+	if err := h.executor.QueryRow(ctx,
+		`SELECT has_function_privilege(session_user,to_regprocedure($1),'EXECUTE')`, aliasSignature).
+		Scan(&retainedGrant); err != nil || !retainedGrant {
+		t.Fatalf("renamed BRW function lost unexpected executor grant: granted=%t err=%v", retainedGrant, err)
+	}
+	validatorErr := platform.ValidateMediaExecutorPool(ctx, h.executor)
+	_, constructorErr := live.NewMediaClient(ctx, h.worker, h.executor, h.keys,
+		[]live.MediaProject{h.project}, 1)
+	if validatorErr == nil || constructorErr == nil {
+		t.Fatalf("missing BRW ABI hid unexpected grant from legacy path: validator=%v constructor=%v",
+			validatorErr, constructorErr)
+	}
+	mustExec(t, h.lp.f.owner, "ALTER FUNCTION "+aliasSignature+" RENAME TO next_media_input_turn")
+	renamed = false
+	if err := platform.ValidateMediaExecutorPool(ctx, h.executor); err != nil {
+		t.Fatalf("legacy executor not restored after BRW ABI fixture: %v", err)
+	}
+}
+
 func TestLiveBrowserInputBRW01MappingAndReplayRemainCurrent(t *testing.T) {
 	t.Run("mapping-is-required-before-plan", func(t *testing.T) {
 		h := brwRegistered(t)
