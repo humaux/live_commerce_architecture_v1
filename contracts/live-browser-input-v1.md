@@ -187,6 +187,11 @@ delivery. [Webhooks are not guaranteed](https://docs.livekit.io/intro/basics/roo
 
 ## Acceptance gates (all product gates NOT_RUN at this revision)
 
+BRI04 proves product admission, local transport and Start sequencing only. An
+Egress call to a provider double does not prove encoded output. Real managed
+Cloud Egress output, per-destination/audience confirmation and end-to-end Stop
+remain separate G06 requirements; even all BRI gates passing cannot replace them.
+
 |Gate|Required executable evidence|
 |---|---|
 |BRI01 authority|Real isolated PG/actual roles: positive exact owner; wrong tenant/store/attempt/session/profile, missing grants, revoked/expired login and old revision rejected; command replay does not bypass current auth.|
