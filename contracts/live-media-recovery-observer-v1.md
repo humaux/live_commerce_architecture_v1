@@ -187,7 +187,7 @@ all elapsed values are the trusted parent's monotonic milliseconds since t0.
 | `finish_recovery_observation(p_episode uuid,p_operation uuid,p_generation bigint,p_token bytea,p_code text) RETURNS text` | `released`; stale fence raises. Codes are only `remote_unknown`, `not_observed`, `invalid_observation`, `credential_unavailable`, `material_invalid`. |
 | `read_media_recovery_episode(p_episode uuid) RETURNS TABLE(episode_id uuid,scope_status text,coverage_known boolean,candidate_count integer,blocked_by_episode_id uuid,operation_id uuid,disposition text,baseline_generation bigint,observation_id uuid,observation_source text,observation_generation bigint,witness_elapsed_ms bigint,timeout_at timestamptz,cleanup_required boolean)` | One scope row when there are no members; one row per member otherwise. `scope_status` is `pending`, `empty`, `capacity_exceeded`, `prior_unfinished`, `overdue` or derived `finished`; per-member `disposition` is `pending`, `checked`, `terminal`, `terminal_at_lock`, `native_ineligible`, `ceiling`, `timeout` or `witnessed`. Historic membership is read from admitted events. |
 | `witness_media_recovery_episode(p_episode uuid,p_operation uuid,p_observation uuid,p_readback_elapsed_ms bigint) RETURNS text` | `witnessed`, `already_witnessed`, `timeout_wins` or `unqualified`; only first two prove that member. |
-| `timeout_media_recovery_episode(p_episode uuid,p_elapsed_ms bigint) RETURNS TABLE(disposition text,affected_count integer)` | `timed_out`, `already_timed_out` or `already_finished`; `affected_count` is newly timed-out members, not all historic members. |
+| `timeout_media_recovery_episode(p_episode uuid,p_elapsed_ms bigint) RETURNS TABLE(disposition text,affected_count integer)` | `timed_out`, `already_timed_out` or `already_finished`; known `empty` returns `already_finished` with zero and no write. `affected_count` is newly timed-out members, not all historic members. |
 
 `begin` accepts `0<=p_elapsed_ms`, `1<=p_capacity<=32` and nonnull
 `p_coverage_known`; the parent passes false if DB was unavailable at any point
@@ -207,6 +207,7 @@ liability remains open. DB deadline is set once as
 `clock_timestamp()+max(0,90000-p_elapsed_ms) ms`; it is not a success clock.
 An admission after 90s still records bounded membership and immediate overdue
 dispositions, without scheduling provider I/O. `empty` with
+`coverage_known=true` is resolved NO_WORK, not a fresh-observation PASS;
 `coverage_known=false` is degraded even when the late scan returned zero.
 `p_capacity` equals configured bounded observer concurrency (reuse validated
 worker concurrency where safe), so all admitted candidates fit one wave.
@@ -237,8 +238,10 @@ Per-member transition is `pending -> checked/terminal -> witnessed`, or
 `pending/checked/terminal -> timeout`; `terminal_at_lock`, `native_ineligible`
 and `ceiling` remain explicit unwitnessed dispositions until timeout. A later
 resource observation never changes `timeout` to `witnessed`. Scope `empty`
-means no captured at-risk members, not a fresh observation; `coverage_known=false`
-or `capacity_exceeded` can never produce full-scope PASS. `finished` is derived
+with known coverage means no captured at-risk members and clean NO_WORK, not a
+fresh observation. Unknown coverage, including an empty late scan or all
+captured members individually witnessed, cannot produce `already_finished` or
+full-scope PASS. `capacity_exceeded` cannot produce full-scope PASS. `finished` is derived
 by `read` from a known-complete scope and all admitted members witnessed; the
 private projector never updates or locks the scope row. No eighth write function.
 
@@ -301,9 +304,15 @@ If timeout commits first, a later witness returns `timeout_wins`. If DB is
 unavailable at deadline the parent emits the redacted signal and retries only
 timeout persistence; it never calls the provider after deadline. A later
 observation can improve resource knowledge but not the missed deadline.
-For `empty`, `capacity_exceeded` and `prior_unfinished`, timeout records the
-scope `timeout_at` and returns `affected_count=0`; these remain degraded scope
-outcomes, never a fabricated per-operation timeout.
+For known `empty`, timeout returns `already_finished`, `affected_count=0`, and
+writes no scope timeout/event; the parent emits no 90s resource alert. A later
+distinct abnormal restart may start a new t0/episode. Separate config/readiness
+faults still report their own diagnostic. For unknown coverage, timeout persists
+one sticky scope coverage miss and emits the redacted alert even if every
+captured member was witnessed; `affected_count=0` in that case and all member
+witnesses stay intact. Unknown empty, `capacity_exceeded` and
+`prior_unfinished` also record only the scope timeout with count zero, never
+fabricated per-operation timeouts.
 Each observer SQL call is bounded to 5s and each provider Query/FindByRoom to
 10s; provider I/O is outside locks and both fit the fixed 30s lease. Waiting
 for an old 30s business lease counts inside the same 90s parent clock.
