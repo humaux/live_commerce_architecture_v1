@@ -1,6 +1,6 @@
 # Browser input worker — scoped validation, 2026-09-27
 
-Status: **SQL_EXECUTOR_SUBSET11_PASS; SOURCE_FULL709_PASS; PRODUCT_GATES_PENDING**.
+Status: **SQL_EXECUTOR_SUBSET15_PASS; SOURCE_FULL709_PASS; PRODUCT_GATES_PENDING**.
 Source is fixed at `c5160de`. This is not complete BRW/BRI, T08, G06 or SaaS
 acceptance. HTTP token delivery and production command wiring remain disabled.
 
@@ -16,6 +16,9 @@ acceptance. HTTP token delivery and production command wiring remain disabled.
   `9fed698`, integrated at `c25e7d0`. Preexisting `output/` was preserved.
 - Later fault-test cohort: `1224d05` / `f814976` / `0bef336`, integrated as
   `361e3ef` / `ea494b6` / `3b7fb56`, test-only and separate from full709.
+- Planner fault tests finish at `6815e13`; cleanup result ACK loss and exact
+  persisted cutoff at `c4c1354`; independent liability holds at `5611e30`.
+  Root's bounded, exact-FK fixture cleanup correction is `b446e49`.
 - Root owns forward migrations `0042` / post-River `0011`, exact platform
   authority allowlist, the bounded runner and owner-fixture teardown ordering.
 - Independent bounded SQL review: `44fd4cf1-4f2f-409b-9d15-363ae1f6f0e1`.
@@ -36,7 +39,8 @@ do not construct this consumer or expose input tokens.
 
 All paths below are under `/Volumes/data/output/`. Each listed process exited.
 The full run covers source `c5160de` and tests through `c25e7d0`; it does not
-include the two later test-only additions at `361e3ef`.
+include the six later top-level test additions. The final 15-test cohort and
+old BIC rerun below cover test tree `b446e49`, with product source unchanged.
 
 |Check|Actual result|Log|
 |---|---|---|
@@ -49,6 +53,11 @@ include the two later test-only additions at `361e3ef`.
 |New fault tests `361e3ef`, unchanged product source|Exit 1; final-reservation ACK loss PASS 36.05s; concurrent revoke case blocked until the 240s suite limit; not accepted|`brw-fault-root-first-20260927.log`|
 |Repaired fault fixture `ea494b6`, same product source|Exit 0; 11 top-level PASS, 0 FAIL/SKIP; foundation 64.602s|`brw-fault-root-repair1-20260927.log`|
 |Final fault assertions `3b7fb56`, exact causal SQLSTATE|Exit 0; 11 top-level PASS, 0 FAIL/SKIP; foundation 62.405s; race and vet|`brw-fault-root-exact-rejection-20260927.log`|
+|Planner rollback/commit ACK loss, exact pre-ACK receipt and denial|Exit 0; 12 top-level PASS, 0 FAIL/SKIP; foundation 63.266s; race and vet|`brw-plan-fault-root-final-20260927.log`|
+|Cleanup result ACK loss, before exact-cutoff strengthening|Exit 0; 13 top-level PASS, 0 FAIL/SKIP; foundation 77.939s; race and vet|`brw-cleanup-fault-root-20260927.log`|
+|First dual-hold cohort, faulty shared fixture teardown|Exit 1; foundation 93.858s; FK failure contaminated later cases; not accepted|`brw-cleanup-holds-root-final-20260927.log`|
+|Final exact-cutoff/dual-hold cohort, corrected shared teardown|Exit 0; 15 top-level PASS, 0 FAIL/SKIP; foundation 90.968s; race and vet|`brw-cleanup-holds-root-repair1-20260927.log`|
+|Old BIC after shared teardown correction|Exit 0; 6 top-level PASS, 0 FAIL/SKIP; foundation 20.030s; race and vet|`brw-bic-teardown-regression-20260927.log`|
 
 Final GREEN SHA-256:
 `eb529135b24ed333f3513674dd2febed853199397f2c1917ecc2f6e06d985e80`.
@@ -62,6 +71,16 @@ New fault first-run SHA-256:
 `aef40f5c71aa57651c0e907589ac98c1025cf613747852d41bb371d0611bb76e`.
 Final fault 11 SHA-256:
 `7b0d6f863b098a1f37b784035268ecae84092de04164c13243a84ab0159511f4`.
+Final planner 12 SHA-256:
+`46e605d5f5643fde9f9a7ce7a7d2542900c1a71733b335c57336c481969591d6`.
+Initial cleanup 13 SHA-256:
+`319143fcec152b9a0e27d6f23e9180e1a601f53eaa69dbe90ea20047d942939c`.
+Failed dual-hold cohort SHA-256:
+`6a52fc35c0eecade735d385ba238dbb07f353c6b5c7b9d3f67ec95a6d48ef99b`.
+Final 15 SHA-256:
+`709cf3c95efe3fa1a63d6d669c6d418d4b58823414973ce0048543e712cd0004`.
+Old BIC rerun SHA-256:
+`7028dbbd977dd7853295f1c210341c56082eb987d822335b51af75c1b16f7399`.
 
 The complete run includes `TestLiveMediaStopLMR05RealCrashAndCommitAckLoss`
 PASS in 56.46s with the owner-approved 90s upper bound and unchanged safety
@@ -98,6 +117,14 @@ PG fixture on exit. No customer resource was stopped or changed.
    Stop also has a real observed lock interleaving. Bounded call contexts prevent
    indefinite fixture hangs; deadline/EOF cannot satisfy the causal assertion.
    No product code or original safety/wait threshold changed in this repair.
+7. The new dual-hold fixture reached a Stop observation/projection FK cycle.
+   Separate autocommit teardown deletes failed, leaving an `EG_brw` fixture
+   row that contaminated later cases. `bicSetup` now uses one owner-only,
+   10-second transaction, defers only `live.media_stop_observation_fk`, performs
+   the same scoped deletes and revalidates at commit. It neither disables
+   constraints nor changes product facts. Independent exact-diff review
+   `6c858eee-0d72-448e-8912-7d41e91515a0` found no P0/P1; final 15 plus old BIC6
+   pass. First-run failure evidence is retained.
 
 Earlier failing logs (`brw-runtime-root-first`, `brw-runtime-root-repair1`,
 `brw-runtime-root-repair2`, all suffixed `-20260927.log`) remain available.
@@ -105,7 +132,7 @@ No failing assertion or evidence was deleted to obtain a pass.
 
 ## Stop lines and next gates
 
-The eleven top-level tests cover a **subset** of BRW01–04: real-role isolation,
+The fifteen top-level tests cover a **subset** of BRW01–04: real-role isolation,
 marker/replay mapping, dual-track final admission, exactly one Start, eight
 bounded cleanup slots, pending-reservation loss and original-job continuation.
 They are not blanket acceptance of all concurrency, process-crash or ACK-loss
@@ -115,14 +142,29 @@ run passed ACK loss but timed out in the revoke case. The failure is preserved;
 the corrected final `3b7fb56` cohort passes, including exact causal denials and
 committed-ACK-loss recovery on the original job without another Start. These
 later tests are not silently included in the historical full709 result.
-Plan transaction faults, per-cleanup-step ACK/process loss and other missing
-BRW01–04 permutations remain separate work. BRW05 HTTPS BFF/post-commit token delivery, BRW06
+Planner tests now prove full transaction rollback and committed-ACK-loss replay
+with exact pre-ACK receipt identity and marker-zero denial. Cleanup tests use
+actual local TLS Remove/Delete/GetParticipant/ListRooms endpoints, compare
+Remove cutoff to the persisted reservation, and drop a committed cleanup-result
+ACK after server completion. The two hold tests explicitly seed legal owner-only
+hold states, then prove real worker selection and execution in both directions;
+they do **not** prove production transitions naturally enter those holds.
+Per-step reservation/process loss, actual 180-second deadline, remaining
+logout/access/lifetime permutations and other BRW01–04 cases remain separate
+work. BRW05 HTTPS BFF/post-commit token delivery, BRW06
 actual product browser/SFU decoded A/V, BRW07 new-input-queue 90-second recovery,
 and BRW08 final integrated regression/Studio evidence remain pending. The
 source-level full709 regression passed, but that alone does not close BRW08.
 Existing MRR
 90-second proof does not automatically cover this queue. The old LMR05 wait is
 the separately owner-approved 90 seconds; its safety conditions were not changed.
+
+Recovery research found River's default one-hour orphan-job rescue and shared
+schema-wide maintenance; changing only this consumer's rescue setting would not
+prove a 90-second bound. A reuse of the existing fenced read-only recovery
+observer is under design review. State checked is not cleanup completed or
+native job resumed. No rescue policy, clock, or recovery acceptance gate has
+been changed to manufacture a pass.
 
 All external calls above use disposable local TLS fixtures. No customer
 stream, payment, provider credential, Cloud or production configuration changed.
