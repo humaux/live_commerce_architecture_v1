@@ -218,9 +218,9 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   const otherLogin = await browser.newContext({ baseURL: origin });
   const otherPage = await otherLogin.newPage();
   await signedLogin(otherPage);
-  const oldSession = (await context.cookies(origin)).find((cookie) => cookie.name === cookieName)?.value;
+  const oldSession = (await context.cookies()).find((cookie) => cookie.name === cookieName)?.value;
   expect(oldSession).toBeTruthy();
-  const replacements = (await otherLogin.cookies(origin)).filter((cookie) =>
+  const replacements = (await otherLogin.cookies()).filter((cookie) =>
     cookie.name === cookieName || cookie.name === "__Host-commerce_csrf");
   expect(replacements).toHaveLength(2);
   expect(replacements.find((cookie) => cookie.name === cookieName)?.value).not.toBe(oldSession);
