@@ -294,7 +294,15 @@ func (c *Client) call(ctx context.Context, room, method string, payload any) ([]
 	if err != nil {
 		return nil, false
 	}
-	endpoint := strings.TrimSuffix(c.config.Endpoint, "/") + "/twirp/livekit.Egress/" + method
+	return c.callAuthorized(ctx, "Egress", method, token, body)
+}
+
+// callAuthorized is private so callers cannot choose an endpoint or grant.
+func (c *Client) callAuthorized(ctx context.Context, service, method, token string, body []byte) ([]byte, bool) {
+	if ctx.Err() != nil {
+		return nil, false
+	}
+	endpoint := strings.TrimSuffix(c.config.Endpoint, "/") + "/twirp/livekit." + service + "/" + method
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
 	if err != nil {
 		return nil, false
@@ -328,7 +336,6 @@ func (c *Client) call(ctx context.Context, room, method string, payload any) ([]
 
 func (c *Client) token(room string) (string, error) {
 	now := time.Now().Unix()
-	header := []byte(`{"alg":"HS256","typ":"JWT"}`)
 	claims := struct {
 		Issuer    string `json:"iss"`
 		IssuedAt  int64  `json:"iat"`
@@ -344,8 +351,13 @@ func (c *Client) token(room string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	return c.signClaims(data), nil
+}
+
+func (c *Client) signClaims(data []byte) string {
+	header := []byte(`{"alg":"HS256","typ":"JWT"}`)
 	unsigned := base64.RawURLEncoding.EncodeToString(header) + "." + base64.RawURLEncoding.EncodeToString(data)
 	mac := hmac.New(sha256.New, []byte(c.config.APISecret))
 	_, _ = mac.Write([]byte(unsigned))
-	return unsigned + "." + base64.RawURLEncoding.EncodeToString(mac.Sum(nil)), nil
+	return unsigned + "." + base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
 }
