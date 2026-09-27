@@ -47,9 +47,32 @@ Two author audio repairs did not produce energy; the author stopped and handed
 off. Root authorized **one diagnostic run only**, adding publisher PCM RMS,
 audio context state/clock, track state and outbound stats, plus receiver context
 state/clock. No threshold reduction or speculative third repair was authorized.
-Until those measurements identify the boundary, the root cause is unproven.
+The diagnostic commit `01a1f99` ran once and exited 1. Receipt:
+`/Volumes/data/worktrees/commerce-meta-inbox-go-20260926/output/playwright/r04-input-1790480564004-fcbb4e4a.json`.
+Publisher local PCM energy was 0.5041885, its running audio clock advanced
+1.035 seconds, and outbound audio increased 52 packets / 12880 bytes.
+The observer's running clock advanced 2.613 seconds and received 131 packets /
+32393 bytes, but PCM energy remained zero. Both tracks were live, enabled and
+unmuted. Missing outbound `totalAudioEnergy` must not be interpreted as encoded
+silence. The failure is at/after publication; its precise cause is unproven.
 An unconnected AnalyserNode is not itself an established defect; its documented
 operation permits that wiring.
+
+Independent tests `70e2007` against source `7db1416` (test-worktree cherry-pick
+`00cf8fb`) exited 1: **2 PASS / 2 FAIL**, log
+`/Volumes/data/output/r04-independent-tests-source7db1416.log`.
+Invalid executable and invalid-fault preflights passed without child startup.
+Normal media failed the audio energy assertion; deliberate failure lacked media
+counters. This corroborates the defects without lowering acceptance thresholds.
+
+After reviewing the new measurements, root authorized exactly one controlled
+receiver-playback variant and normal run: attach/play the remote audio using the
+SDK, holding publisher generation, analyser and thresholds fixed. The current
+source attaches only video; the official JavaScript
+[subscription example](https://docs.livekit.io/transport/media/subscribe/)
+attaches audio/video to their media elements. This is a testable hypothesis,
+not a root-cause declaration. No simultaneous WAV substitution or further blind
+audio retries are authorized; freeze the result for adjudication.
 
 Before source acceptance, independently verify:
 
@@ -61,6 +84,10 @@ Before source acceptance, independently verify:
 4. JWT denial distinguishes an actual server authentication rejection from a
    generic SDK/network failure; observer denial is labeled at its true layer.
 5. Server query confirms empty room, and only task-owned resources are removed.
+6. Overall timeout must stop/settle the running operation before cleanup and
+   receipt. A `Promise.race` alone does not cancel `run()` and can race cleanup.
+7. Failure classifications are fixed safe codes, not arbitrary SDK error text
+   with punctuation removed; secrets may be alphanumeric.
 
 ## Separate root regression evidence
 

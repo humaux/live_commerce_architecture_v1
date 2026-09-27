@@ -1,8 +1,10 @@
 # R04 real local media input probe
 
-Status: **FROZEN_FOR_LOCAL_PROBE / NOT_RUN**. Main base `05472bd`, 2026-09-27.
+Status: **FROZEN_FOR_LOCAL_PROBE / EXECUTED_NOT_ACCEPTED**. Main base `05472bd`, 2026-09-27.
 Independent bounded preflight of `d46da36` found no material P0/P1. This freezes
-the probe only; no execution or product acceptance is implied.
+the probe only; execution and failures are recorded in the
+[acceptance log](../docs/implementation/2026-09-27-r04-local-input-acceptance.md),
+not implied to be product acceptance.
 This is a bounded dependency probe, not a merchant feature or G06 acceptance.
 
 ## Decision and scope

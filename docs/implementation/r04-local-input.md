@@ -1,8 +1,9 @@
 # R04 local real-media probe: operation and limits
 
 Contract: [R04 probe](../../contracts/r04-local-input-probe-v1.md).
-Implementation/independent/root execution: **NOT_RUN** until an acceptance
-receipt links the exact source revision and result artifacts.
+Implementation and independent execution: **FAILED / NOT_ACCEPTED**;
+root media rerun: **NOT_RUN**. See the exact revisions and retained artifacts in
+the [acceptance log](2026-09-27-r04-local-input-acceptance.md).
 
 ## What this measures
 
@@ -50,7 +51,8 @@ contract checksum/lock and rerun the probe. No `latest` fallback is permitted.
 
 ## Intended invocation and operational boundary
 
-After the runner exists, set `COMMERCE_R04_LIVEKIT_BINARY` to the checked
+The unaccepted runner is retained in its isolated source worktree, not main.
+Set `COMMERCE_R04_LIVEKIT_BINARY` to the checked
 executable and run `node scripts/dev/r04-local-input.mjs` from the repo root.
 `COMMERCE_R04_FAULT=after-publish` is a deliberate **nonzero** cleanup test, not
 a production option. Invalid configuration must fail before child startup.
