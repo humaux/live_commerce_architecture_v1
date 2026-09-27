@@ -2,6 +2,11 @@
 
 Status: **SOURCE_CANDIDATE_UNMERGED; CORE_READBACK_PASS; NATIVE_NOT_RUN; VISUAL_SCORED_FIXES_SHIP**.
 
+Latest no-account native preflight (12:05 UTC): actual exit 1. The native picker
+changed its value through trusted click/keyboard input, but genuine conceal is
+still unproven after disabling Playwright's default focus emulation. This is
+partial diagnostic evidence only; it does not change the status above.
+
 User approved **B 场次列表＋双区工作台**, seed `6373bb3f`, in `fb760ff`.
 The approved comp is `.impeccable/mocks/decision/studio-split.png` (1586×992);
 the authoritative surface brief is
