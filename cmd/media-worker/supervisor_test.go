@@ -122,3 +122,26 @@ func TestRecoveryIncompleteBatchStillSignalsDeadlineMiss(t *testing.T) {
 		t.Fatal("missing member had no independent deadline signal")
 	}
 }
+
+func TestRecoveryFirstLateReadbackCannotCreateProof(t *testing.T) {
+	for _, source := range []string{"ROOM", "QUERY"} {
+		t.Run(source, func(t *testing.T) {
+			e, err := newRecoveryEpisode()
+			if err != nil {
+				t.Fatal(err)
+			}
+			e.admitted = true
+			e.members = []live.RecoveryMember{{OperationID: "op-late", Disposition: "pending", CandidateCount: 1, CoverageKnown: true}}
+			// This is the readback-classifier boundary, not a real-clock SLO test.
+			// Unlike a timely proof retained across a later read, no prior proof exists.
+			e.acceptReadback([]live.RecoveryReadback{{
+				OperationID: "op-late", ScopeStatus: "pending", CoverageKnown: true, CandidateCount: 1,
+				Disposition: "checked", ObservationID: "obs-late", ObservationSource: source,
+				BaselineGeneration: 1, ObservationGeneration: 2,
+			}}, 90001)
+			if len(e.pending) != 0 || e.pendingProof.Load() || e.resolvedProof.Load() {
+				t.Fatal("first post-deadline readback invented timely or resolved proof")
+			}
+		})
+	}
+}
