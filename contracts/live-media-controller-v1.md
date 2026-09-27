@@ -5,11 +5,12 @@ registry increment is specified separately in
 [LMA01–05](live-media-authorization-v1.md); durable MOCK start-intent roles,
 attempt identity and native queue linkage are implemented separately in
 [LMP01–07](live-media-plan-v1.md). The dedicated MOCK Start execution, leased
-material and synchronous recovery slice is now frozen separately in
-[LME01–08](live-media-execution-v1.md), with product gates still NOT_RUN. Its
+material and synchronous recovery slice is separately accepted in local MOCK
+[LME01–08](live-media-execution-v1.md), with root PG18/race/vet at `4345732`.
+Real provider and broader controller gates remain NOT_RUN. Its
 exact roles/signatures and closed-lease late-report behavior take precedence
 over the broader candidates below. The rest of the lifecycle remains a candidate;
-neither LMP nor a frozen contract enables live execution by itself.
+neither LMP nor the MOCK worker enables production live execution by itself.
 The bounded MOCK Stop recovery below
 has independent design review; it is not yet implemented. This supersedes the implementation
 direction of the old non-executable `live-broadcast-v1.md`; it does not activate

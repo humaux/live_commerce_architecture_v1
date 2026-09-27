@@ -22,9 +22,10 @@ FORCE RLS 和列级权限隔离 `live.sessions/programs`。修改先锁场次再
 运行时只依赖 Go 标准库；HTTP/TLS、HMAC、JSON 的安全模式参考现有 PAYUNi
 客户端，不复用 PSP 配置，也不新增 LiveKit SDK、队列或跨平台通用框架。
 
-**当前没有生产调用者、dispatcher route 或自动开播任务。** 后续受授权的
-编排层负责确定租户／店铺／attempt 的所有权，并从受保护配置注入凭据和
-推流 URL。协议层不读取环境变量、文件或商家表单；`Target` 的语法及响应
+**当前没有生产调用者或 HTTP 开播入口。** 本地 LME worker 是 Start／Query／
+FindByRoom 的 MOCK 调用者；Stop 尚无执行编排。编排层负责确定租户／店铺／
+attempt 的所有权，并从受保护配置注入凭据和推流 URL。
+协议层不读取环境变量、文件或商家表单；`Target` 的语法及响应
 关联校验不能代替停播前的所有权校验。配置及输入的格式化／JSON 展示必须
 脱敏，私有 wire 结构才允许把必需字段发送给固定 provider。
 
@@ -37,8 +38,9 @@ Stop ACK 均不证明远端资源已回收。
 从已持久化的服务端 attempt 取得房间号，候选结果还需要编排层绑定归属并仅
 采纳一次。不能由空结果重发 Start，不能直接拿候选结果停播。证据见
 [LKP07 本地验收](2026-09-27-livekit-room-discovery-acceptance.md)；授权撤销后的
-查询与回收设计见 [媒体授权生命周期](2026-09-27-media-authority-lifetime.md)，
-其数据库／调度器／真实媒体门禁仍为 NOT_RUN。
+查询与回收设计见 [媒体授权生命周期](2026-09-27-media-authority-lifetime.md)。
+LME 已实现有租约的候选采纳／固定 ID 查询；Stop／资源回收／真实媒体门禁
+仍为 NOT_RUN，不能把查询采纳当成停播完成。
 
 升级 LiveKit RPC／proto、Go HTTP/JSON、Cloud 主机约束或加入 self-host 时，
 重新执行 LKP 的协议／负例／race／vet 和独立审查，并单独进行真实 provider
@@ -85,7 +87,7 @@ SECURITY DEFINER 函数。独立 registrar 只能调用登记／撤销入口；�
 attempt、MEDIA_ATTEMPT operation/event、READY program 和 receipt 同事务。
 Go 收据 hash 与 SQL 规范化语义 hash 各服务其边界，不能互换，也不能把 Go
 收据存在当成固定 SQL planner 的新前置条件。当前调用者仍是内部服务／测试，
-无 HTTP route 或执行 worker。无新增依赖。
+无 HTTP route；该 planner 增量本身不执行任务，后续 LME worker 见下节。无新增依赖。
 
 迁移顺序：forward0035 的 readiness fail-closed 占位 → 现有 River 原生迁移
 创建第五个 schema → post-River0006 安装 native family/linkage/state guards，
@@ -101,10 +103,10 @@ scheduled/pending/terminal 初态仍拒绝。升级 River/pgx、改变角色、a
 函数或触发器后，跑 `test-local.sh --live-media-plan` 和全量 `test-local.sh`，
 包括 raw SQL 实际角色正控、native row wait 撤权、DB 时钟、错误 schema 和
 带数据升级。[LMP 合同](../../contracts/live-media-plan-v1.md)、
-[验收证据](2026-09-27-live-media-plan-acceptance.md)。未来允许执行状态／维护
-能力时必须新增 worker 契约与 gate，不能直接把初态守卫关掉。
+[验收证据](2026-09-27-live-media-plan-acceptance.md)。LME 的 post0007 只扩展
+专用 worker 对已关联任务的原生生命周期，不关闭初态 INSERT 或商家更新守卫。
 
-## T08 MOCK 执行 worker 依赖（已冻结，产品验收待运行）
+## T08 MOCK 执行 worker 依赖（本地专项及主线全量通过）
 
 [LME01–08](../../contracts/live-media-execution-v1.md) 复用上述 planner、
 `integration.operations` 租约和原生 `river_media`，不新增库或任务引擎。
@@ -114,10 +116,16 @@ Go `NewMediaClient` 使用既有 LKM 解密和 LKP Start／FindByRoom／Query。
 网络期间不能持有业务事务；撤权阻止新 dispatch，但不阻止已保留目标的恢复。
 
 forward0036 与 post-River0007 分别提供业务状态及原生生命周期权限；新增
-executor 和 River 管理身份分池、同物理 DB 验证。当前属于冻结实现输入，
-不是已交付代码或测试通过记录。验收入口 `test-local.sh --live-media-execution`
-要求非空测试，并覆盖 PG18／TLS／真实进程重启及 COMMIT 回执丢失；之后仍须
-全量 PG/race/vet。Stop、LIVE、部署二进制、资源回收及 G06 不由该增量证明。
+executor 和 River 管理身份分池、同物理 DB 验证。`platform.ValidateMedia*Pool`
+拒绝混合角色、SET 通路、直接表授权和跨业务函数 EXEC；SQL readiness 另核
+精确五函数签名与 ACL、RLS 和触发器。不能用新增身份写权限换取启动通过。
+
+升级 PostgreSQL／pgx／River／LKM／LKP 或改变角色／函数／原生任务守卫后，跑
+`test-local.sh --live-media-execution` 和全量 `test-local.sh`。专项包含真实
+PG18／本地 TLS／进程死亡恢复、隐式事务 COMMIT 回执丢失及原生 scheduler／
+rescuer／cleaner 隔离；[验收记录](2026-09-27-live-media-execution-acceptance.md)
+列出各轮证据和主线全量状态。Stop、LIVE、部署二进制、资源回收及 G06 不由
+该增量证明。当前没有外部媒体服务配置或收费资源。
 
 ## 依赖版本
 
@@ -363,7 +371,7 @@ Go 发现接口还须保留真实 PG 锁等待撤权负例。验收与外部资�
 |依赖|状态与边界|准入条件|
 |---|---|---|
 |sqlc|NOT_INSTALLED；当前 SQL 为显式参数化，尚无生成物|冻结 queries/schema 后由 integrator 锁版本，审生成 diff，跑真实 PG/RLS/事务 gate|
-|LiveKit|NOT_INSTALLED；媒体与 API 尚未接入|先完成托管/自托管能力与授权探针、mock→sandbox gate；媒体失败不得改变订单真源|
+|LiveKit SDK|NOT_INSTALLED；已有标准库协议客户端和本地 MOCK 执行／查询，未连接真实媒体服务|SDK 并非前置依赖；Cloud 凭据／授权／真实媒体质量与 G06 另验，媒体失败不得改变订单真源|
 |PSP SDK|NOT_INSTALLED；PAYUNi 有标准库 wire adapter，PROTOCOL_MOCK；无真实收款/退款调用|先确认商家 MoR、sandbox 账户与 webhook 幂等/对账；live 需明确授权、金额、回执和回滚边界|
 
 任何新依赖须说明为何标准库/现有包不能满足、调用者、license、版本来源、移除/升级测试和生产影响；未满足前标 `NOT_INSTALLED` 或 `BLOCKED_EXTERNAL`，不伪造可用性。
