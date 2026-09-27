@@ -115,6 +115,12 @@ request/response bounds, idempotency and private/no-store behaviour. No generic
 path passthrough or fixture fallback. Route `/{locale}/studio` supports zh-CN,
 zh-TW and en and the incumbent workspace shell. Visual composition must be
 approved before UI authoring; the order page's C approval is not Studio approval.
+On 2026-09-27 the user separately approved Studio B, `场次列表＋双区工作台`
+(option `split`, seed `6373bb3f`). The binding comp is
+`.impeccable/mocks/decision/studio-split.png`; the route brief is
+`apps/admin/.impeccable/surfaces/app-locale-studio.md`. This satisfies the
+composition-choice prerequisite only; STU04 implementation and acceptance remain
+pending.
 
 Expose planning, prepared rehearsal and actual media observation as distinct
 states. There is no per-destination success evidence in the current storage;
@@ -135,6 +141,6 @@ controls. Those capabilities remain real downstream requirements, not removed.
 This interface is frozen after independent preflight. Integrator owns migration
 number, contracts, API assembly and final merges; domain/HTTP author, BFF/UI
 author and independent tests use separate worktrees and non-overlapping paths.
-UI work waits for approved composition; backend and test preparation may proceed
+UI work follows approved composition B; backend and test preparation may proceed
 after interface freeze. No unresolved P0/P1 is mergeable. Do not mark Studio,
 T08/T09 or the SaaS complete until its entire required scope is proved.
