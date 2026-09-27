@@ -170,7 +170,9 @@ arguments are episode,operation,input_ID,Egress_ID,parent_elapsed_ms;
 returns witnessed/already_witnessed/timeout_wins/unqualified. Require exact IDs
 for required bits and NULL for non-required bits, nonempty mask, immutable
 profile/job/target, each generation > baseline, no sticky timeout, and both
-qualified receipts committed within the episode deadline. Required generations
+qualified receipt timestamps within the episode deadline. SQL observed_at is
+not a commit timestamp: only the parent's successful postcommit readback sampled
+within 90 seconds attests timely visibility. Required generations
 need not be equal. Same IDs plus same elapsed is the only idempotent replay.
 Check scope kind BEFORE replay. Timeout-first cannot later become witnessed.
 
