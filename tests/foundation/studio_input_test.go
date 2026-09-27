@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
@@ -51,7 +52,7 @@ func studioInputPublic(t *testing.T, raw []byte, fields ...string) map[string]an
 
 func studioInputRead(t *testing.T, h *brwHarness, handler http.Handler, path, bearer string, want int) []byte {
 	t.Helper()
-	w := brwHTTPCall(t, handler, http.MethodGet, path, bearer, "", "", want)
+	w := studioInputRequest(t, handler, http.MethodGet, path, bearer, "", "", want, true)
 	if w.Header().Get("Cache-Control") != "private, no-store" || w.Header().Get("Location") != "" || w.Header().Get("Set-Cookie") != "" {
 		t.Fatal("input read response lost private no-store or redirected")
 	}
@@ -59,6 +60,31 @@ func studioInputRead(t *testing.T, h *brwHarness, handler http.Handler, path, be
 		studioInputSafeError(t, w.Body.Bytes())
 	}
 	return w.Body.Bytes()
+}
+
+func studioInputRequest(t *testing.T, handler http.Handler, method, path, bearer, key, body string, want int, private bool) *httptest.ResponseRecorder {
+	t.Helper()
+	// A nil Body is materially different from an empty Reader for strict GET.
+	r := httptest.NewRequest(method, path, nil)
+	if body != "" {
+		r = httptest.NewRequest(method, path, strings.NewReader(body))
+		r.Header.Set("Content-Type", "application/json")
+	}
+	if bearer != "" {
+		r.Header.Set("Authorization", "Bearer "+bearer)
+	}
+	if key != "" {
+		r.Header.Set("Idempotency-Key", key)
+	}
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, r)
+	if w.Code != want {
+		t.Fatalf("%s %s status=%d want=%d", method, path, w.Code, want)
+	}
+	if private && w.Header().Get("Cache-Control") != "private, no-store" {
+		t.Fatalf("enabled input route lost private no-store: %q", w.Header().Get("Cache-Control"))
+	}
+	return w
 }
 
 func studioInputSafeError(t *testing.T, body []byte) {
@@ -75,7 +101,11 @@ func TestStudioInputPreparedAndACL(t *testing.T) {
 	input, preparedPath := studioInputPaths(h)
 	disabled := httpapi.NewHandler(h.lp.f.runtime, httpapi.Options{Live: h.planner})
 	for _, path := range []string{input, preparedPath} {
-		studioInputRead(t, h, disabled, path, h.logins.a, 404)
+		w := studioInputRequest(t, disabled, http.MethodGet, path, h.logins.a, "", "", 404, false)
+		if w.Header().Get("Location") != "" || w.Header().Get("Set-Cookie") != "" {
+			t.Fatal("disabled input route redirected or set a cookie")
+		}
+		studioInputSafeError(t, w.Body.Bytes())
 	}
 	active := httpapi.NewHandler(h.lp.f.runtime, httpapi.Options{Live: h.planner, BrowserInput: h.runtime})
 	studioInputNull(t, studioInputRead(t, h, active, input, h.logins.a, 200))
@@ -277,7 +307,7 @@ func TestStudioInputCandidateFencesAndStrictRoutes(t *testing.T) {
 		runtime, _ := brwPlanNoIOMap(t)
 		handler := httpapi.NewHandler(h.lp.f.runtime, httpapi.Options{Live: h.planner, BrowserInput: runtime})
 		path := "/v1/admin/stores/" + h.lp.f.storeA1 + "/live-sessions/" + h.session + "/input"
-		studioInputNull(t, brwHTTPCall(t, handler, http.MethodGet, path, h.lp.token, "", "", 200).Body.Bytes())
+		studioInputNull(t, studioInputRequest(t, handler, http.MethodGet, path, h.lp.token, "", "", 200, true).Body.Bytes())
 	})
 	t.Run("marker-zero-and-private-routing", func(t *testing.T) {
 		h, _, _ := bicStarted(t)
@@ -306,7 +336,7 @@ func TestStudioInputCandidateFencesAndStrictRoutes(t *testing.T) {
 				{"GET", strings.Replace(path, h.lp.f.storeA1, h.lp.f.storeA2, 1), h.logins.a, "", "", 404},
 				{"GET", path, h.lp.limitedToken, "", "", 403},
 			} {
-				w := brwHTTPCall(t, handler, bad.method, bad.path, bad.bearer, bad.key, bad.body, bad.status)
+				w := studioInputRequest(t, handler, bad.method, bad.path, bad.bearer, bad.key, bad.body, bad.status, true)
 				studioInputSafeError(t, w.Body.Bytes())
 			}
 		}
