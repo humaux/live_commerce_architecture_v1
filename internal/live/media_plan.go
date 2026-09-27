@@ -17,6 +17,7 @@ import (
 )
 
 const mediaMockQueue = "media_mock_v1"
+const mediaInputMockQueue = "media_input_mock_v1"
 
 var mediaKeyPattern = regexp.MustCompile(`^[A-Za-z0-9_.:-]{8,128}$`)
 
@@ -43,7 +44,7 @@ type mediaOperationArgs struct {
 
 func (mediaOperationArgs) Kind() string { return "live_media_operation_v1" }
 
-// MediaPlanner persists only an inert MOCK Start intent in a caller-owned transaction.
+// MediaPlanner persists only MOCK Start intents in a caller-owned transaction.
 type MediaPlanner struct{ jobs *river.Client[pgx.Tx] }
 
 func NewMediaPlanner(jobs *river.Client[pgx.Tx]) (*MediaPlanner, error) {
@@ -107,6 +108,76 @@ func (p *MediaPlanner) PlanStart(ctx context.Context, tx pgx.Tx, scope platform.
 			return command.ErrInvalid
 		}
 		return command.Audit(ctx, tx, scope, "live.media.start.planned")
+	})
+	if err != nil {
+		return MediaStartResult{}, mediaPlanError(err)
+	}
+	if err := authorize(ctx, tx, scope, token, managePermission); err != nil {
+		return MediaStartResult{}, err
+	}
+	hash := sha256.Sum256([]byte(token))
+	if _, err := tx.Exec(ctx, `SELECT live.assert_media_start_login($1::bytea,$2::uuid,$3::uuid)`,
+		hash[:], scope.StoreID, out.AttemptID); err != nil {
+		return MediaStartResult{}, mediaPlanError(err)
+	}
+	return out, nil
+}
+
+// PlanInputStart persists the input custody and its original River job atomically.
+// It does not enable a consumer or issue a publisher credential.
+func (p *MediaPlanner) PlanInputStart(ctx context.Context, tx pgx.Tx, scope platform.Scope,
+	token, key string, in MediaStartInput) (out MediaStartResult, err error) {
+	if ctx == nil || p == nil || p.jobs == nil || tx == nil ||
+		!command.ValidID(in.SessionID) || !command.ValidID(in.AuthorizationID) ||
+		in.SessionID == "00000000-0000-0000-0000-000000000000" ||
+		in.AuthorizationID == "00000000-0000-0000-0000-000000000000" ||
+		in.ExpectedSessionVersion < 1 || !mediaKeyPattern.MatchString(key) {
+		return MediaStartResult{}, command.ErrInvalid
+	}
+	if err := authorize(ctx, tx, scope, token, managePermission); err != nil {
+		return MediaStartResult{}, err
+	}
+	if _, err := tx.Exec(ctx, `SELECT set_config('app.authz_revision',$1,true)`, strconv.FormatInt(scope.Revision, 10)); err != nil {
+		return MediaStartResult{}, err
+	}
+	request := struct {
+		PrincipalID string `json:"principal_id"`
+		MediaStartInput
+	}{scope.PrincipalID, in}
+	err = command.Run(ctx, tx, scope, "live.media.input.start", key, request, &out, func() error {
+		if err := authorize(ctx, tx, scope, token, managePermission); err != nil {
+			return err
+		}
+		var ready bool
+		if err := tx.QueryRow(ctx, `SELECT live.media_input_plan_ready()`).Scan(&ready); err != nil {
+			return err
+		}
+		if !ready {
+			return command.ErrConflict
+		}
+		var operationID string
+		if err := tx.QueryRow(ctx, `SELECT gen_random_uuid()::text`).Scan(&operationID); err != nil {
+			return err
+		}
+		if !command.ValidID(operationID) || operationID == "00000000-0000-0000-0000-000000000000" {
+			return command.ErrInvalid
+		}
+		job, err := p.jobs.InsertTx(ctx, tx, mediaOperationArgs{OperationID: operationID, Version: 1},
+			&river.InsertOpts{Queue: mediaInputMockQueue})
+		if err != nil {
+			return err
+		}
+		hash := sha256.Sum256([]byte(token))
+		var raw []byte
+		if err := tx.QueryRow(ctx, `SELECT live.plan_media_input_start($1,$2::uuid,$3::uuid,$4::uuid,$5,$6,$7::uuid,$8)`,
+			hash[:], scope.StoreID, in.SessionID, in.AuthorizationID, in.ExpectedSessionVersion,
+			key, operationID, job.Job.ID).Scan(&raw); err != nil {
+			return mediaPlanError(err)
+		}
+		if err := json.Unmarshal(raw, &out); err != nil {
+			return command.ErrInvalid
+		}
+		return command.Audit(ctx, tx, scope, "live.media.input.start.planned")
 	})
 	if err != nil {
 		return MediaStartResult{}, mediaPlanError(err)
