@@ -190,7 +190,7 @@ func TestLiveMediaStopLMR01CommandAuthorityCancellationAndACL(t *testing.T) {
 		if owner != "commerce_media_writer" || !secdef || !fixed {
 			t.Fatalf("unsafe Stop function %s: %s %t %t", path, owner, secdef, fixed)
 		}
-		for role, name := range map[string]string{"native": "commerce_media_worker", "registrar": "commerce_media_registrar", "runtime": "commerce_hosted_runtime", "executor": "commerce_media_executor"} {
+		for role, name := range map[string]string{"native": "commerce_media_worker", "registrar": "commerce_media_registrar", "runtime": "commerce_runtime", "executor": "commerce_media_executor"} {
 			var allowed bool
 			if err := h.lp.f.owner.QueryRow(ctx, `SELECT has_function_privilege($1,to_regprocedure($2),'EXECUTE')`, name, signature).Scan(&allowed); err != nil {
 				t.Fatal(err)
@@ -375,6 +375,29 @@ func TestLiveMediaStopLMR01CurrentAuthorityReplayAndObservedRevocation(t *testin
 			t.Fatalf("waiter wrote after revocation: %+v", f)
 		}
 	})
+}
+
+func TestLiveMediaStopLMR01RenamedCheckCannotFakeReadiness(t *testing.T) {
+	h := lmrSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "SQL only", 500) })
+	ctx := context.Background()
+	var ready bool
+	if err := h.executor.QueryRow(ctx, `SELECT live.media_worker_ready()`).Scan(&ready); err != nil || !ready {
+		t.Fatalf("clean readiness: %t %v", ready, err)
+	}
+	tx, err := h.lp.f.owner.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback(ctx)
+	if _, err := tx.Exec(ctx, `ALTER TABLE live.media_execution_state DROP CONSTRAINT media_stop_budget`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tx.Exec(ctx, `ALTER TABLE live.media_execution_state ADD CONSTRAINT media_stop_budget CHECK (true)`); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.QueryRow(ctx, `SELECT live.media_worker_ready()`).Scan(&ready); err != nil || ready {
+		t.Fatalf("same-name CHECK(true) admitted: %t %v", ready, err)
+	}
 }
 
 func TestLiveMediaStopLMR04FencedQueryAndPacing(t *testing.T) {
@@ -1136,6 +1159,41 @@ func TestLiveMediaStopLMR06AutomaticCleanupBudgetAndTerminalProof(t *testing.T) 
 		f = lmrRead(t, h)
 		if f.count != 2 || f.operation != "SUCCEEDED" || f.resource != "TERMINAL" || h.stops.Load() != 0 {
 			t.Fatalf("terminal proof ignored/third Stop: %+v", f)
+		}
+	})
+	t.Run("exhausted-budget-still-hits-original-generation-ceiling", func(t *testing.T) {
+		h := lmrSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "SQL only", 500) })
+		id := "EG_lmr06ceiling"
+		lmrStarted(t, h, id)
+		lmrStop(t, h, t04Key("lmr06-ceiling"))
+		for n := int64(1); n <= 2; n++ {
+			if n == 2 {
+				first := lmrRead(t, h)
+				lmrWaitDBClock(t, h.lp.f.owner, first.first.Add(5*time.Second))
+			}
+			lease := h.claim(t, 30)
+			if out, err := lmrQuery(t, h, lease, id, "EGRESS_ACTIVE", 100, 110+n, 0); err != nil || out != "stop_reserved" {
+				t.Fatalf("reservation %d: %s %v", n, out, err)
+			}
+			var finish string
+			if err := h.executor.QueryRow(context.Background(), `SELECT live.finish_media_uncertain($1::uuid,$2::bigint,$3::bytea,'remote_unknown')`, h.plan.OperationID, lease.generation, lease.token).Scan(&finish); err != nil || finish != "observe" {
+				t.Fatalf("reservation %d uncertain: %s %v", n, finish, err)
+			}
+		}
+		before := lmrRead(t, h)
+		if before.count != 2 || before.operation != "UNKNOWN" {
+			t.Fatalf("budget liability before ceiling: %+v", before)
+		}
+		if _, err := h.lp.f.owner.Exec(context.Background(), `UPDATE integration.operations SET generation=4096 WHERE id=$1`, h.plan.OperationID); err != nil {
+			t.Fatal(err)
+		}
+		claim := h.claim(t, 30)
+		if claim.disposition != "escalated" || claim.mode != "" {
+			t.Fatalf("exhaustion bypassed original ceiling: %+v", claim)
+		}
+		after := lmrRead(t, h)
+		if after.count != 2 || after.operation != "UNKNOWN" || after.resource == "TERMINAL" || h.stops.Load() != 0 {
+			t.Fatalf("ceiling falsely settled exhausted Stop: %+v", after)
 		}
 	})
 	t.Run("credential-unavailable-retains-liability", func(t *testing.T) {
