@@ -26,6 +26,7 @@ import (
 	"livecommerce/internal/integrations/livekit"
 	"livecommerce/internal/live"
 	"livecommerce/internal/platform"
+	"livecommerce/migrations"
 )
 
 // Every endpoint below is a task-owned loopback TLS server. The Cloud-shaped
@@ -51,17 +52,18 @@ func lmeConfig() livekit.Config {
 
 type lmeHarness struct {
 	*lmpHarness
-	plan      live.MediaStartResult
-	worker    *pgxpool.Pool
-	executor  *pgxpool.Pool
-	keys      *livekit.MaterialKeyring
-	project   live.MediaProject
-	server    *httptest.Server
-	starts    atomic.Int32
-	lists     atomic.Int32
-	queries   atomic.Int32
-	stops     atomic.Int32
-	streamURL string
+	plan                       live.MediaStartResult
+	worker                     *pgxpool.Pool
+	executor                   *pgxpool.Pool
+	workerLogin, executorLogin string
+	keys                       *livekit.MaterialKeyring
+	project                    live.MediaProject
+	server                     *httptest.Server
+	starts                     atomic.Int32
+	lists                      atomic.Int32
+	queries                    atomic.Int32
+	stops                      atomic.Int32
+	streamURL                  string
 }
 
 func lmeSetup(t *testing.T, handler http.HandlerFunc) *lmeHarness {
@@ -73,9 +75,26 @@ func lmeSetup(t *testing.T, handler http.HandlerFunc) *lmeHarness {
 		case "/twirp/livekit.Egress/StartEgress":
 			h.starts.Add(1)
 		case "/twirp/livekit.Egress/ListEgress":
-			h.lists.Add(1)
-		case "/twirp/livekit.Egress/GetEgress":
-			h.queries.Add(1)
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				t.Error(err)
+				http.Error(w, "fixture body", 500)
+				return
+			}
+			r.Body = io.NopCloser(bytes.NewReader(body))
+			var target struct {
+				EgressID string `json:"egress_id"`
+			}
+			if err := json.Unmarshal(body, &target); err != nil {
+				t.Error(err)
+				http.Error(w, "fixture body", 500)
+				return
+			}
+			if target.EgressID == "" {
+				h.lists.Add(1)
+			} else {
+				h.queries.Add(1)
+			}
 		case "/twirp/livekit.Egress/StopEgress":
 			h.stops.Add(1)
 		default:
@@ -165,8 +184,8 @@ func lmeSetup(t *testing.T, handler http.HandlerFunc) *lmeHarness {
 		t.Fatalf("bad frozen plan: %+v", h.plan)
 	}
 	h.project = live.MediaProject{ProjectID: "project_lma", CredentialVersion: 1, Config: config, Transport: transport}
-	_, h.worker = lmaLogin(t, h.lp.f, "commerce_media_worker")
-	_, h.executor = lmaLogin(t, h.lp.f, "commerce_media_executor")
+	h.workerLogin, h.worker = lmaLogin(t, h.lp.f, "commerce_media_worker")
+	h.executorLogin, h.executor = lmaLogin(t, h.lp.f, "commerce_media_executor")
 	return h
 }
 
@@ -190,9 +209,9 @@ func (h *lmeHarness) startWorker(t *testing.T) *river.Client[pgx.Tx] {
 }
 
 type lmeFacts struct {
-	operation, result, resource, status, egress string
-	generation, observations, events            int64
-	reserved, cleanup, escalated                bool
+	operation, result, resource, status, egress                     string
+	generation, observations, events, startedNS, updatedNS, endedNS int64
+	reserved, cleanup, escalated, leaseOpen                         bool
 }
 
 func (h *lmeHarness) facts(t *testing.T) lmeFacts {
@@ -201,11 +220,14 @@ func (h *lmeHarness) facts(t *testing.T) lmeFacts {
 	err := h.lp.f.owner.QueryRow(context.Background(), `SELECT o.state,coalesce(o.result_code,''),o.generation,
 		coalesce(e.resource_state,''),coalesce(e.transport_status,''),coalesce(e.egress_id,''),
 		coalesce(e.wire_reserved_at IS NOT NULL,false),coalesce(e.cleanup_required,false),coalesce(e.escalated_at IS NOT NULL,false),
+		coalesce(o.lease_until>clock_timestamp(),false),
+		coalesce(e.started_at_ns,0),coalesce(e.updated_at_ns,0),coalesce(e.ended_at_ns,0),
 		(SELECT count(*) FROM live.media_observations WHERE attempt_id=$1),
 		(SELECT count(*) FROM integration.operation_events WHERE operation_id=$2)
 		FROM integration.operations o LEFT JOIN live.media_execution_state e ON e.operation_id=o.id WHERE o.id=$2`,
 		h.plan.AttemptID, h.plan.OperationID).Scan(&f.operation, &f.result, &f.generation,
-		&f.resource, &f.status, &f.egress, &f.reserved, &f.cleanup, &f.escalated, &f.observations, &f.events)
+		&f.resource, &f.status, &f.egress, &f.reserved, &f.cleanup, &f.escalated, &f.leaseOpen,
+		&f.startedNS, &f.updatedNS, &f.endedNS, &f.observations, &f.events)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -325,6 +347,16 @@ func TestLiveMediaExecutionLME01RolesSignaturesAndSecretBoundary(t *testing.T) {
 	if _, err := live.NewMediaClient(ctx, h.worker, h.executor, h.keys, []live.MediaProject{h.project}, 1); err != nil {
 		t.Fatalf("clean constructor rejected: %v", err)
 	}
+	canary := h.project.Config.APISecret
+	for _, rendering := range []string{fmt.Sprint(h.project), fmt.Sprintf("%#v", h.project)} {
+		if strings.Contains(rendering, canary) {
+			t.Fatal("project debug formatting leaked API secret")
+		}
+	}
+	encoded, err := json.Marshal(h.project)
+	if err != nil || bytes.Contains(encoded, []byte(canary)) {
+		t.Fatal("project JSON leaked API secret")
+	}
 	for _, signature := range []string{
 		"live.claim_media_operation(uuid,bigint,integer,bytea)", "live.load_media_material(uuid,bigint,bytea)",
 		"live.reserve_media_start(uuid,bigint,bytea)", "live.record_media_observation(uuid,bigint,bytea,text,text,text,text,bigint,bigint,bigint)",
@@ -354,9 +386,82 @@ func TestLiveMediaExecutionLME01RolesSignaturesAndSecretBoundary(t *testing.T) {
 			}
 		}
 	}
+	// A clean pool is the positive control; contamination of that exact LOGIN
+	// with the other role must fail startup, not merely a direct SQL call.
+	name := pgx.Identifier{h.workerLogin}.Sanitize()
+	if _, err := h.lp.f.owner.Exec(ctx, "GRANT commerce_media_executor TO "+name); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _, _ = h.lp.f.owner.Exec(context.Background(), "REVOKE commerce_media_executor FROM "+name) })
+	if err := platform.ValidateMediaWorkerPool(ctx, h.worker); err == nil {
+		t.Fatal("mixed native/executor login admitted")
+	}
+	if _, err := h.lp.f.owner.Exec(ctx, "REVOKE commerce_media_executor FROM "+name); err != nil {
+		t.Fatal(err)
+	}
+	if err := platform.ValidateMediaWorkerPool(ctx, h.worker); err != nil {
+		t.Fatalf("clean login not restored: %v", err)
+	}
+	function := "live.claim_media_operation(uuid,bigint,integer,bytea)"
+	if _, err := h.lp.f.owner.Exec(ctx, "GRANT EXECUTE ON FUNCTION "+function+" TO "+name); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_, _ = h.lp.f.owner.Exec(context.Background(), "REVOKE EXECUTE ON FUNCTION "+function+" FROM "+name)
+	})
+	if err := platform.ValidateMediaWorkerPool(ctx, h.worker); err == nil {
+		t.Fatal("direct business-function EXECUTE admitted to native worker")
+	}
+	if _, err := h.lp.f.owner.Exec(ctx, "REVOKE EXECUTE ON FUNCTION "+function+" FROM "+name); err != nil {
+		t.Fatal(err)
+	}
+	if err := platform.ValidateMediaWorkerPool(ctx, h.worker); err != nil {
+		t.Fatalf("clean native role not restored after direct grant: %v", err)
+	}
+	setRole := pgx.Identifier{"lme_set_" + t04Tag()}.Sanitize()
+	if _, err := h.lp.f.owner.Exec(ctx, "CREATE ROLE "+setRole+" NOLOGIN NOSUPERUSER NOBYPASSRLS"); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_, _ = h.lp.f.owner.Exec(context.Background(), "REVOKE "+setRole+" FROM "+name)
+		_, _ = h.lp.f.owner.Exec(context.Background(), "REVOKE commerce_media_executor FROM "+setRole)
+		_, _ = h.lp.f.owner.Exec(context.Background(), "DROP ROLE "+setRole)
+	})
+	if _, err := h.lp.f.owner.Exec(ctx, "GRANT commerce_media_executor TO "+setRole+" WITH INHERIT FALSE, SET TRUE"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := h.lp.f.owner.Exec(ctx, "GRANT "+setRole+" TO "+name+" WITH INHERIT FALSE, SET TRUE"); err != nil {
+		t.Fatal(err)
+	}
+	if err := platform.ValidateMediaWorkerPool(ctx, h.worker); err == nil {
+		t.Fatal("SET-only path to executor admitted")
+	}
+	if _, err := h.lp.f.owner.Exec(ctx, "REVOKE "+setRole+" FROM "+name); err != nil {
+		t.Fatal(err)
+	}
+	if err := platform.ValidateMediaWorkerPool(ctx, h.worker); err != nil {
+		t.Fatalf("clean native role not restored after SET grant: %v", err)
+	}
+	_, ordinary := lmaLogin(t, h.lp.f, "commerce_worker")
+	if err := platform.ValidateWorkerPool(ctx, ordinary); err != nil {
+		t.Fatalf("old ordinary worker regressed: %v", err)
+	}
 	if h.starts.Load()+h.lists.Load()+h.queries.Load()+h.stops.Load() != 0 {
 		t.Fatal("role test made provider call")
 	}
+	t.Run("different-physical-database", func(t *testing.T) {
+		other := mcPre0029Fixture(t)
+		if err := migrations.Apply(ctx, other.owner); err != nil {
+			t.Fatalf("prepare separate PG18 fixture: %v", err)
+		}
+		_, otherExecutor := lmaLogin(t, other, "commerce_media_executor")
+		if err := platform.ValidateMediaExecutorPool(ctx, otherExecutor); err != nil {
+			t.Fatalf("separate clean executor failed admission: %v", err)
+		}
+		if _, err := live.NewMediaClient(ctx, h.worker, otherExecutor, h.keys, []live.MediaProject{h.project}, 1); err == nil {
+			t.Fatal("worker/executor on distinct physical PG18 databases admitted")
+		}
+	})
 }
 
 func TestLiveMediaExecutionLME02NativeRiverTLSAndNoOpenTransaction(t *testing.T) {
@@ -407,6 +512,11 @@ func TestLiveMediaExecutionLME02NativeRiverTLSAndNoOpenTransaction(t *testing.T)
 	case <-time.After(15 * time.Second):
 		t.Fatal("native River never made Start")
 	}
+	var openExecutorTransactions int
+	if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT count(*) FROM pg_stat_activity
+		WHERE usename=$1 AND xact_start IS NOT NULL AND pid<>pg_backend_pid()`, h.executorLogin).Scan(&openExecutorTransactions); err != nil || openExecutorTransactions != 0 {
+		t.Fatalf("executor held a transaction during provider I/O: count=%d err=%v", openExecutorTransactions, err)
+	}
 	// A distinct owner session must acquire the operation row while the TLS
 	// provider handler remains blocked; otherwise a DB transaction crossed I/O.
 	tx, err := h.lp.f.owner.Begin(context.Background())
@@ -442,6 +552,21 @@ func TestLiveMediaExecutionLME03ObservedWaitAndFencedReservation(t *testing.T) {
 		t.Fatal("load reserved a wire call")
 	}
 	ctx := context.Background()
+	beforeInvalid := h.facts(t)
+	for _, bad := range []struct {
+		name  string
+		gen   int64
+		token []byte
+	}{
+		{"wrong-token", lease.generation, randomBytes(32)}, {"stale-generation", lease.generation - 1, lease.token},
+	} {
+		if _, err := h.executor.Exec(ctx, `SELECT live.reserve_media_start($1::uuid,$2::bigint,$3::bytea)`, h.plan.OperationID, bad.gen, bad.token); err == nil {
+			t.Fatalf("%s reserved with clean grant", bad.name)
+		}
+		if after := h.facts(t); after != beforeInvalid {
+			t.Fatalf("%s changed facts: %+v -> %+v", bad.name, beforeInvalid, after)
+		}
+	}
 	holder, err := h.lp.f.owner.Begin(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -458,7 +583,7 @@ func TestLiveMediaExecutionLME03ObservedWaitAndFencedReservation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer conn.Release()
+	defer func() { _ = holder.Rollback(ctx); conn.Release() }()
 	var waiterPID int
 	if err = conn.QueryRow(ctx, `SELECT pg_backend_pid()`).Scan(&waiterPID); err != nil {
 		t.Fatal(err)
@@ -488,19 +613,93 @@ func TestLiveMediaExecutionLME03ObservedWaitAndFencedReservation(t *testing.T) {
 	if f := h.facts(t); f.reserved || f.observations != 0 || h.starts.Load() != 0 {
 		t.Fatalf("denied reserve wrote facts or wire: %+v", f)
 	}
-	for _, bad := range []struct {
-		name  string
-		gen   int64
-		token []byte
-	}{
-		{"wrong-token", lease.generation, randomBytes(32)}, {"stale-generation", lease.generation - 1, lease.token},
-	} {
-		if _, err := h.executor.Exec(ctx, `SELECT live.reserve_media_start($1::uuid,$2::bigint,$3::bytea)`, h.plan.OperationID, bad.gen, bad.token); err == nil {
-			t.Fatalf("%s reserved", bad.name)
-		}
-	}
 	if h.starts.Load()+h.lists.Load()+h.queries.Load()+h.stops.Load() != 0 {
 		t.Fatal("provider called after denied reservation")
+	}
+	t.Run("repeat-and-expired-lease", func(t *testing.T) {
+		h := lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "direct SQL only", 500) })
+		lease := h.claim(t, 30)
+		if err := h.reserve(t, lease); err != nil {
+			t.Fatal(err)
+		}
+		before := h.facts(t)
+		if err := h.reserve(t, lease); err == nil {
+			t.Fatal("second reservation admitted")
+		}
+		if after := h.facts(t); after != before {
+			t.Fatalf("repeat reservation changed facts: %+v -> %+v", before, after)
+		}
+		if _, err := h.lp.f.owner.Exec(ctx, `UPDATE integration.operations SET lease_until=clock_timestamp()-interval '1 second' WHERE id=$1`, h.plan.OperationID); err != nil {
+			t.Fatal(err)
+		}
+		before = h.facts(t)
+		if _, err := h.record(t, lease, "START", "EG_expired", "EGRESS_ACTIVE", 100, 110, 0); err == nil {
+			t.Fatal("expired lease recorded observation")
+		}
+		if _, err := h.executor.QueryRow(ctx, `SELECT live.finish_media_uncertain($1::uuid,$2::bigint,$3::bytea,'remote_unknown')`, h.plan.OperationID, lease.generation, lease.token).Scan(new(string)); err == nil {
+			t.Fatal("expired lease finished")
+		}
+		if after := h.facts(t); after != before {
+			t.Fatalf("expired lease changed facts: %+v -> %+v", before, after)
+		}
+	})
+	for _, change := range []string{"binding", "revoke", "deadline"} {
+		t.Run("wait-then-"+change, func(t *testing.T) {
+			h := lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "no wire", 500) })
+			lease := h.claim(t, 30)
+			holder, err := h.lp.f.owner.Begin(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer holder.Rollback(ctx)
+			var holderPID int
+			if err = holder.QueryRow(ctx, `SELECT pg_backend_pid()`).Scan(&holderPID); err != nil {
+				t.Fatal(err)
+			}
+			if _, err = holder.Exec(ctx, `SELECT 1 FROM integration.bindings WHERE id=$1 FOR UPDATE`, h.media); err != nil {
+				t.Fatal(err)
+			}
+			conn, err := h.executor.Acquire(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer func() { _ = holder.Rollback(ctx); conn.Release() }()
+			var waiterPID int
+			if err = conn.QueryRow(ctx, `SELECT pg_backend_pid()`).Scan(&waiterPID); err != nil {
+				t.Fatal(err)
+			}
+			done := make(chan error, 1)
+			go func() {
+				_, e := conn.Exec(ctx, `SELECT live.reserve_media_start($1::uuid,$2::bigint,$3::bytea)`, h.plan.OperationID, lease.generation, lease.token)
+				done <- e
+			}()
+			lmaObserveBlock(t, h.lp.f.owner, waiterPID, holderPID, false)
+			switch change {
+			case "binding":
+				_, err = holder.Exec(ctx, `UPDATE integration.bindings SET enabled=false WHERE id=$1`, h.media)
+			case "revoke":
+				_, err = h.registrar.Exec(ctx, `SELECT live.revoke_prepared_media($1::uuid,$2::uuid,$3::uuid,$4::text)`, h.lp.f.tenantA, h.lp.f.storeA1, h.input.AuthorizationID, "operator_revoke")
+			case "deadline":
+				_, err = h.lp.f.owner.Exec(ctx, `UPDATE live.prepared_media_authorizations SET start_before=clock_timestamp()-interval '1 second' WHERE id=$1`, h.input.AuthorizationID)
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err = holder.Commit(ctx); err != nil {
+				t.Fatal(err)
+			}
+			select {
+			case err = <-done:
+				if err == nil {
+					t.Fatalf("%s change after observed wait did not deny reserve", change)
+				}
+			case <-time.After(6 * time.Second):
+				t.Fatal("waiter not joined")
+			}
+			if f := h.facts(t); f.reserved || f.observations != 0 || h.starts.Load() != 0 {
+				t.Fatalf("%s denial partially wrote: %+v", change, f)
+			}
+		})
 	}
 }
 
@@ -562,17 +761,26 @@ func TestLiveMediaExecutionLME04LostReplyProcessDeathAndRoomRecovery(t *testing.
 				_ = conn.Close()
 			}
 		case "/twirp/livekit.Egress/ListEgress":
-			body, _ := io.ReadAll(r.Body)
-			if !bytes.Contains(body, []byte(h.plan.RoomName)) {
-				t.Error("room discovery was not exact")
+			var target struct {
+				RoomName string `json:"room_name"`
+				EgressID string `json:"egress_id"`
+				Active   bool   `json:"active"`
 			}
-			lmeReply(w, `{"items":[`+h.observation("EG_lme04", "EGRESS_ACTIVE", 100, 120, 0)+`]}`)
-		case "/twirp/livekit.Egress/GetEgress":
-			body, _ := io.ReadAll(r.Body)
-			if !bytes.Contains(body, []byte("EG_lme04")) {
+			if err := json.NewDecoder(r.Body).Decode(&target); err != nil || target.RoomName != h.plan.RoomName || target.Active {
+				t.Error("recovery List target mismatch")
+				http.Error(w, "target", 400)
+				return
+			}
+			if target.EgressID == "" {
+				lmeReply(w, `{"items":[`+h.observation("EG_lme04", "EGRESS_ACTIVE", 100, 120, 0)+`]}`)
+				return
+			}
+			if target.EgressID != "EG_lme04" {
 				t.Error("Query did not use pinned ID")
+				http.Error(w, "target", 400)
+				return
 			}
-			lmeReply(w, h.observation("EG_lme04", "EGRESS_COMPLETE", 100, 150, 140))
+			lmeReply(w, `{"items":[`+h.observation("EG_lme04", "EGRESS_COMPLETE", 100, 150, 140)+`]}`)
 		default:
 			http.Error(w, "no Stop", 500)
 		}

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"sync/atomic"
@@ -13,6 +14,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/riverqueue/river/riverdriver/riverpgxv5"
+	"github.com/riverqueue/river/rivermigrate"
 
 	"livecommerce/internal/live"
 	"livecommerce/migrations"
@@ -178,9 +181,86 @@ func TestLiveMediaExecutionLME05ReserveCommitLossAndAtomicFailures(t *testing.T)
 			t.Fatalf("failed observation partially committed: before=%+v after=%+v", before, got)
 		}
 	})
+	t.Run("finish-event-rollback", func(t *testing.T) {
+		h := lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "no provider", 500) })
+		lease := h.claim(t, 30)
+		if err := h.reserve(t, lease); err != nil {
+			t.Fatal(err)
+		}
+		before := h.facts(t)
+		name := "lme_finish_" + t04Tag()
+		function := pgx.Identifier{"public", name}.Sanitize()
+		trigger := pgx.Identifier{name}.Sanitize()
+		mustExec(t, h.lp.f.owner, fmt.Sprintf(`CREATE FUNCTION %s() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.operation_id=%s::uuid THEN RAISE EXCEPTION 'lme fixture fault'; END IF; RETURN NEW; END $$`, function, quoteLiteral(h.plan.OperationID)))
+		mustExec(t, h.lp.f.owner, `CREATE TRIGGER `+trigger+` BEFORE INSERT ON integration.operation_events FOR EACH ROW EXECUTE FUNCTION `+function+`() `)
+		t.Cleanup(func() {
+			mustExec(t, h.lp.f.owner, `DROP TRIGGER `+trigger+` ON integration.operation_events`)
+			mustExec(t, h.lp.f.owner, `DROP FUNCTION `+function+`() `)
+		})
+		if err := h.executor.QueryRow(context.Background(), `SELECT live.finish_media_uncertain($1::uuid,$2::bigint,$3::bytea,'remote_unknown')`, h.plan.OperationID, lease.generation, lease.token).Scan(new(string)); err == nil {
+			t.Fatal("finish fault committed")
+		}
+		if got := h.facts(t); got != before {
+			t.Fatalf("failed finish partially committed: before=%+v after=%+v", before, got)
+		}
+	})
 }
 
 func TestLiveMediaExecutionLME06ClosedObservationAndMonotonicProjection(t *testing.T) {
+	t.Run("terminal-positive-end-with-absent-start-update", func(t *testing.T) {
+		h := lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "direct SQL only", 500) })
+		lease := h.claim(t, 30)
+		if err := h.reserve(t, lease); err != nil {
+			t.Fatal(err)
+		}
+		out, err := h.record(t, lease, "START", "EG_zero_time", "EGRESS_COMPLETE", 0, 0, 120)
+		if err != nil || out != "terminal" {
+			t.Fatalf("positive ended with absent starts denied: %s %v", out, err)
+		}
+		if f := h.facts(t); f.resource != "TERMINAL" || f.operation != "SUCCEEDED" || f.startedNS != 0 || f.updatedNS != 0 || f.endedNS != 120 {
+			t.Fatalf("terminal proof/times wrong: %+v", f)
+		}
+	})
+	t.Run("contradictory-partial-merge-retains-history", func(t *testing.T) {
+		h := lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "direct SQL only", 500) })
+		a := h.claim(t, 30)
+		if err := h.reserve(t, a); err != nil {
+			t.Fatal(err)
+		}
+		if out, err := h.record(t, a, "START", "EG_partial", "EGRESS_ACTIVE", 200, 0, 0); err != nil || out != "observe" {
+			t.Fatalf("first partial report: %s %v", out, err)
+		}
+		before := h.facts(t)
+		b := h.claim(t, 30)
+		if b.mode != "reconcile" {
+			t.Fatalf("reconcile lease missing: %+v", b)
+		}
+		if out, err := h.record(t, b, "QUERY", "EG_partial", "EGRESS_COMPLETE", 0, 150, 140); err != nil || out != "observe" {
+			t.Fatalf("valid but merge-incoherent report: %s %v", out, err)
+		}
+		f := h.facts(t)
+		if f.observations != 2 || f.resource == "TERMINAL" || f.operation != "UNKNOWN" || f.startedNS != before.startedNS || f.updatedNS != before.updatedNS || f.endedNS != before.endedNS {
+			t.Fatalf("incoherent merged partial fabricated terminal: before=%+v after=%+v", before, f)
+		}
+	})
+	t.Run("coherent-cross-report-duration", func(t *testing.T) {
+		h := lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "direct SQL only", 500) })
+		a := h.claim(t, 30)
+		if err := h.reserve(t, a); err != nil {
+			t.Fatal(err)
+		}
+		if out, err := h.record(t, a, "START", "EG_duration", "EGRESS_ACTIVE", 100, 0, 0); err != nil || out != "observe" {
+			t.Fatalf("duration A: %s %v", out, err)
+		}
+		b := h.claim(t, 30)
+		if out, err := h.record(t, b, "QUERY", "EG_duration", "EGRESS_ACTIVE", 0, 901_000_000_100, 0); err != nil || out != "observe" {
+			t.Fatalf("duration B: %s %v", out, err)
+		}
+		f := h.facts(t)
+		if !f.cleanup || f.resource != "OBSERVED" || f.operation != "UNKNOWN" || f.startedNS != 100 || f.updatedNS != 901_000_000_100 || f.observations != 2 {
+			t.Fatalf("cross-report duration did not set sticky cleanup: %+v", f)
+		}
+	})
 	for _, rows := range []int{0, 2} {
 		t.Run(fmt.Sprintf("room-discovery-%d", rows), func(t *testing.T) {
 			var h *lmeHarness
@@ -223,6 +303,7 @@ func TestLiveMediaExecutionLME06ClosedObservationAndMonotonicProjection(t *testi
 		want   string
 	}{
 		{"EGRESS_STARTING", 0, "observe"}, {"EGRESS_ACTIVE", 0, "observe"}, {"EGRESS_ENDING", 0, "observe"},
+		{"EGRESS_COMPLETE", 0, "observe"},
 		{"EGRESS_COMPLETE", 120, "terminal"}, {"EGRESS_FAILED", 120, "terminal"},
 		{"EGRESS_ABORTED", 120, "terminal"}, {"EGRESS_LIMIT_REACHED", 120, "terminal"},
 	} {
@@ -385,6 +466,74 @@ func TestLiveMediaExecutionLME07NativeLifecycleReadinessAndUpgrade(t *testing.T)
 			t.Fatalf("historical checksum changed: %s", version)
 		}
 	}
+	t.Run("populated-0035-forward-upgrade", func(t *testing.T) {
+		old := lriPre0032Fixture(t)
+		mcApplyHistorical(t, old, "0032_legacy_river_isolation.sql", "0033_live_planning.sql", "0034_live_media_authorization.sql", "0035_live_media_plan.sql")
+		upstream, err := rivermigrate.New(riverpgxv5.New(old.owner), &rivermigrate.Config{Schema: "river_media", Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err = upstream.Migrate(ctx, rivermigrate.DirectionUp, nil); err != nil {
+			t.Fatal(err)
+		}
+		mcApplyHistorical(t, old, "post_river/0005_legacy_river_isolation.sql", "post_river/0006_live_media_queue.sql")
+		lp := lpHarness{f: old, actor: old.principalA, token: old.tokens["a"]}
+		mustExec(t, old.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'live:read'),($1,$2,$3,'live:manage')`, old.tenantA, old.storeA1, old.principalA)
+		draft, err := lpCreate(lp, lp.token, old.storeA1, t04Key("lme-old-draft"), lpInput("historical media draft"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		auth := &lmaHarness{lp: lp, session: draft.ID}
+		auth.media = auth.binding(t, old.tenantA, old.storeA1, old.principalA, "livekit", "project_lma")
+		auth.facebook = auth.binding(t, old.tenantA, old.storeA1, old.principalA, "facebook", "page_lma")
+		spec := auth.spec()
+		_, registrar := lmaLogin(t, old, "commerce_media_registrar")
+		nonce, ciphertext := lmaEnvelope()
+		if _, err = lmaRegister(ctx, registrar, spec, nonce, ciphertext); err != nil {
+			t.Fatal(err)
+		}
+		prior := &lmpHarness{lmaHarness: auth, specification: spec,
+			input:   live.MediaStartInput{SessionID: draft.ID, AuthorizationID: spec["id"].(string), ExpectedSessionVersion: 1},
+			planner: lmpPlanner(t, old.runtime, "river_media")}
+		planned, err := prior.start(t04Key("lme-old-plan"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if planned.State != "READY" || planned.JobID <= 0 {
+			t.Fatalf("historical 0035 producer not populated: %+v", planned)
+		}
+		jobBefore := lriRows(t, old, "river_media.river_job", fmt.Sprintf("WHERE id=%d", planned.JobID))
+		ledgerBefore := lmpMigrationChecksums(t, old)
+		if _, ok := ledgerBefore["0035_live_media_plan.sql"]; !ok {
+			t.Fatal("historical 0035 ledger absent")
+		}
+		if _, ok := ledgerBefore["0036_live_media_execution.sql"]; ok {
+			t.Fatal("historical fixture already had execution migration")
+		}
+		if err = migrations.Apply(ctx, old.owner); err != nil {
+			t.Fatalf("populated0035 upgrade: %v", err)
+		}
+		for version, checksum := range ledgerBefore {
+			if lmpMigrationChecksums(t, old)[version] != checksum {
+				t.Fatalf("upgrade changed historical checksum %s", version)
+			}
+		}
+		if after := lriRows(t, old, "river_media.river_job", fmt.Sprintf("WHERE id=%d", planned.JobID)); after != jobBefore {
+			t.Fatal("upgrade rewrote existing media job")
+		}
+		if err = old.owner.QueryRow(ctx, `SELECT live.media_plan_ready() AND live.media_worker_ready()`).Scan(&ready); err != nil || !ready {
+			t.Fatalf("upgraded populated lane not ready: %t %v", ready, err)
+		}
+		afterFirst := lmpMigrationChecksums(t, old)
+		if err = migrations.Apply(ctx, old.owner); err != nil {
+			t.Fatalf("repeat upgraded Apply: %v", err)
+		}
+		for version, checksum := range afterFirst {
+			if lmpMigrationChecksums(t, old)[version] != checksum {
+				t.Fatalf("repeat Apply changed %s", version)
+			}
+		}
+	})
 }
 
 func TestLiveMediaExecutionLME08EscalationAndNoFallback(t *testing.T) {
@@ -450,7 +599,9 @@ func TestLiveMediaExecutionLME08EscalationAndNoFallback(t *testing.T) {
 			defer cancel()
 			_ = client.StopAndCancel(ctx)
 		})
-		h.await(t, 15*time.Second, func(f lmeFacts) bool { return f.generation > 0 })
+		h.await(t, 15*time.Second, func(f lmeFacts) bool {
+			return f.generation > 0 && f.operation == "UNKNOWN" && !f.leaseOpen && f.events >= 2
+		})
 		if f := h.facts(t); f.reserved || f.resource == "TERMINAL" || h.starts.Load()+h.lists.Load()+h.queries.Load()+h.stops.Load() != 0 {
 			t.Fatalf("credential fallback or false terminal: %+v", f)
 		}
