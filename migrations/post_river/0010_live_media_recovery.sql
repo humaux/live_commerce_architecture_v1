@@ -34,6 +34,29 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
   AND EXISTS(SELECT 1 FROM pg_catalog.pg_class c
    WHERE c.oid='live.media_observations'::regclass
     AND c.relrowsecurity AND c.relforcerowsecurity)
+  AND EXISTS(SELECT 1 FROM pg_catalog.pg_class c
+   WHERE c.oid='integration.operation_events'::regclass
+    AND c.relrowsecurity AND c.relforcerowsecurity)
+  AND EXISTS(SELECT 1 FROM pg_catalog.pg_roles r
+   WHERE r.rolname='commerce_media_writer' AND NOT r.rolcanlogin
+    AND NOT r.rolsuper AND NOT r.rolbypassrls AND NOT r.rolcreatedb
+    AND NOT r.rolcreaterole AND NOT r.rolreplication)
+  AND EXISTS(SELECT 1 FROM pg_catalog.pg_policy p
+   WHERE p.polrelid='integration.operation_events'::regclass
+    AND p.polname='media_writer_event_read' AND p.polcmd='r' AND p.polpermissive
+    AND p.polroles=ARRAY['commerce_media_writer'::regrole::oid]
+    AND pg_catalog.regexp_replace(pg_catalog.pg_get_expr(p.polqual,p.polrelid),
+     '[[:space:]]+','','g') IN (
+     'EXISTS(SELECT1FROMintegration.operationsoWHERE((o.id=operation_events.operation_id)AND(o.tenant_id=operation_events.tenant_id)AND(o.store_id=operation_events.store_id)AND(o.actor_kind=''MEDIA_ATTEMPT''::text)))',
+     '(EXISTS(SELECT1FROMintegration.operationsoWHERE((o.id=operation_events.operation_id)AND(o.tenant_id=operation_events.tenant_id)AND(o.store_id=operation_events.store_id)AND(o.actor_kind=''MEDIA_ATTEMPT''::text))))'))
+  AND NOT EXISTS(SELECT 1 FROM pg_catalog.pg_policy extra
+   WHERE extra.polrelid='integration.operation_events'::regclass
+    AND extra.polname<>'media_writer_event_read' AND extra.polcmd IN ('r','*')
+    AND EXISTS(SELECT 1 FROM pg_catalog.unnest(extra.polroles) policy_role(role_oid)
+     WHERE CASE WHEN policy_role.role_oid=0 THEN true
+      WHEN policy_role.role_oid='commerce_media_writer'::regrole::oid THEN true
+      ELSE pg_catalog.pg_has_role('commerce_media_writer'::regrole::oid,
+       policy_role.role_oid,'USAGE') END))
   AND EXISTS(SELECT 1 FROM pg_catalog.pg_trigger t
    WHERE t.tgrelid='live.media_execution_state'::regclass
     AND t.tgname='media_execution_identity' AND t.tgenabled='O'
