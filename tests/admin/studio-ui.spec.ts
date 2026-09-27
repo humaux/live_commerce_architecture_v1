@@ -141,6 +141,38 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await expect(page.getByLabel("Scene name")).toHaveValue("STU04 browser-edited scene");
   await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue("2030-01-01T00:00");
 
+  // Exercise the native control only on a saved, editable draft with no
+  // uncertain request. Keep a host-unobservable popup explicit without
+  // stopping the separate signed/worker chain.
+  await expect.soft(picker).toBeEnabled({ timeout: 3_000 });
+  if (await picker.isEnabled()) {
+    await picker.click({ timeout: 3_000 });
+    await page.screenshot({ path: `${evidence}/en-native-calendar-open.png`, fullPage: false });
+    const popupVisible = await page.getByRole("dialog").waitFor({ state: "visible", timeout: 1_000 }).then(() => true, () => false);
+    expect.soft(popupVisible, "native calendar popup NOT_RUN: no observable browser dialog after a trusted click").toBe(true);
+    if (popupVisible) {
+      await picker.press("ArrowDown");
+      await picker.press("Enter");
+      const picked = await picker.inputValue();
+      const pickedChanged = /^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(picked) && picked !== "2030-01-01T00:00";
+      expect.soft(pickedChanged, "native calendar value NOT_RUN: trusted keyboard selection did not change the date").toBe(true);
+      if (pickedChanged) {
+        await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue(picked);
+        const beforePickerVersion = await displayedVersion(page);
+        await page.getByRole("button", { name: "Save draft" }).click();
+        await expect.poll(() => displayedVersion(page)).toBe(beforePickerVersion + 1);
+        await page.reload();
+        await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue(picked);
+        await page.getByLabel("Scheduled time (UTC, optional)").fill("2030-01-01T00:00");
+        const beforeRestoreVersion = await displayedVersion(page);
+        await page.getByRole("button", { name: "Save draft" }).click();
+        await expect.poll(() => displayedVersion(page)).toBe(beforeRestoreVersion + 1);
+        await page.reload();
+        await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue("2030-01-01T00:00");
+      }
+    } else await picker.press("Escape");
+  }
+
   // Two real signed UI views race on the same version. The stale tab must
   // report a conflict, not overwrite the newer persisted edit.
   await page.getByLabel("Scene name").fill("STU04 stale edit");
@@ -234,28 +266,6 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await expect(page.getByRole("button", { name: "Retry same request" })).toBeVisible();
   await page.getByRole("button", { name: "Retry same request" }).click();
   await expect(page.getByLabel("Scene name")).toHaveValue("STU04 lost ACK scene");
-
-  // Only a real browser click/keyboard path can establish native picker
-  // acceptance. If its popup is not observable on this host, keep the rest of
-  // the signed chain running but leave this requirement explicitly NOT_RUN.
-  await picker.click();
-  await page.screenshot({ path: `${evidence}/en-native-calendar-open.png`, fullPage: false });
-  const popupVisible = await page.getByRole("dialog").isVisible().catch(() => false);
-  expect.soft(popupVisible, "native calendar popup NOT_RUN: no observable browser dialog after a trusted click").toBe(true);
-  if (popupVisible) {
-    await picker.press("ArrowDown");
-    await picker.press("Enter");
-    const picked = await picker.inputValue();
-    expect.soft(picked, "native calendar value NOT_RUN: trusted keyboard selection produced no date").toMatch(/^\d{4}-\d\d-\d\dT\d\d:\d\d$/);
-    if (/^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(picked)) {
-      await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue(picked);
-      const beforePickerVersion = await displayedVersion(page);
-      await page.getByRole("button", { name: "Save draft" }).click();
-      await expect.poll(() => displayedVersion(page)).toBe(beforePickerVersion + 1);
-      await page.reload();
-      await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue(picked);
-    }
-  } else await picker.press("Escape");
 
   // Prepared session has the only rehearsable authority. The actual worker
   // must consume it; the UI must show persisted observation, then terminal.
