@@ -291,6 +291,15 @@ BEGIN
   UPDATE live.media_execution_state SET cleanup_required=true,updated_at=clock_timestamp()
    WHERE attempt_id=a.id;
  END IF;
+ -- A nonterminal reply to the second committed Stop consumes the final
+ -- budget now; do not wait for another Query that may never arrive.
+ IF p_source='STOP' AND x.stop_wire_count=2 AND x.stop_exhausted_at IS NULL
+  AND NOT v_terminal THEN
+  v_now:=clock_timestamp();
+  UPDATE live.media_execution_state SET stop_exhausted_at=v_now,updated_at=v_now WHERE attempt_id=a.id;
+  INSERT INTO integration.operation_events(tenant_id,store_id,operation_id,generation,state,mode,reason_code)
+   VALUES(o.tenant_id,o.store_id,o.id,p_generation,'UNKNOWN','','media_stop_budget_exhausted');
+ END IF;
  IF o.lease_until<=clock_timestamp() THEN RAISE EXCEPTION 'media lease unavailable' USING ERRCODE='ME409'; END IF;
  RETURN CASE WHEN v_terminal THEN 'terminal' ELSE 'observe' END;
 END $$;
