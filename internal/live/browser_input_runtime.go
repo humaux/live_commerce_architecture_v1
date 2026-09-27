@@ -1,6 +1,7 @@
 package live
 
 import (
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -94,10 +95,7 @@ func canonicalBrowserInputURL(raw string) bool {
 	if err != nil || port < 1 || port > 65535 || strconv.Itoa(port) != portText {
 		return false
 	}
-	host := hostname + ":" + portText
-	if hostname == "::1" {
-		host = "[" + host + "]"
-	}
+	host := net.JoinHostPort(hostname, portText)
 	if u.Host != host {
 		return false
 	}
