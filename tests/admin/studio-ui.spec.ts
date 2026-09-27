@@ -174,6 +174,13 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await expect(page.getByText("This scene is unavailable", { exact: false })).toBeVisible();
   await page.goto(`/en/studio?store=${unlistedStore}`);
   await expect(page.getByTestId("merchant-studio")).toHaveCount(0);
+  await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
+  await expect(page.getByTestId("merchant-studio")).toBeVisible();
+  const expired = await fetch(`${api}/__test/studio-ui-expire-login`, { method: "POST" });
+  expect(expired.status).toBe(204);
+  await page.getByRole("button", { name: "Refresh facts" }).click();
+  await expect(page.getByText("Sign in again to open Studio.").first()).toBeVisible();
+  await expect(page.getByLabel("Scene name")).toHaveCount(0);
   expect(authHeaders.length).toBeGreaterThan(12);
   expect(authHeaders.every((header) => header === "")).toBe(true);
   await writeFile(`${evidence}/browser-summary.json`, JSON.stringify({

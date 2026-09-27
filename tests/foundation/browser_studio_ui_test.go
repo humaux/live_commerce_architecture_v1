@@ -97,6 +97,23 @@ func TestBrowserStudioUIRealChain(t *testing.T) {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
+		if r.URL.Path == "/__test/studio-ui-expire-login" {
+			if r.Method != http.MethodPost {
+				http.Error(w, "method", http.StatusMethodNotAllowed)
+				return
+			}
+			// Task-owned identity fixture only: expire the OIDC-issued login
+			// while its Studio page is open, never a production/provider login.
+			result, err := h.lp.f.owner.Exec(r.Context(), `UPDATE identity.sessions s SET expires_at=clock_timestamp()-interval '1 minute'
+				WHERE s.id IN (SELECT ev.session_id FROM identity.session_events ev JOIN identity.external_identities e ON e.principal_id=s.principal_id
+				WHERE ev.session_id=s.id AND ev.action='session.issued' AND e.issuer=$1 AND e.subject='browser-subject')`, idp.server.URL)
+			if err != nil || result.RowsAffected() != 1 {
+				http.Error(w, "fixture_expiry_failed", http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
 		if strings.HasPrefix(r.URL.Path, "/v1/admin/stores/") && strings.Contains(r.URL.Path, "/live-sessions") {
 			studioCalls.Add(1)
 			if r.Header.Get("Cookie") != "" || r.Header.Get("X-Tenant-ID") != "" || r.Header.Get("X-Forwarded-Host") != "" ||
