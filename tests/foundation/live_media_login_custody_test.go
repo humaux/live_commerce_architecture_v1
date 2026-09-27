@@ -159,7 +159,8 @@ func TestLiveMediaExecutionMLC01AtomicCustody(t *testing.T) {
 		loss.armed.Store(true)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		if out, err := mlcStartOnPool(ctx, h, pool, lmpPlanner(t, pool, "river_media"), login.a, key); err == nil || out.AttemptID != "" || !loss.committed.Load() {
+		out, err := mlcStartOnPool(ctx, h, pool, lmpPlanner(t, pool, "river_media"), login.a, key)
+		if err == nil || !loss.committed.Load() {
 			t.Fatalf("lost real COMMIT ACK was not ambiguous: %+v %v committed=%t", out, err, loss.committed.Load())
 		}
 		if facts := lmpFacts(t, h); facts != [6]int64{1, 1, 1, 1, 1, 1} {
@@ -168,6 +169,9 @@ func TestLiveMediaExecutionMLC01AtomicCustody(t *testing.T) {
 		result, err := lmpStart(context.Background(), h, h.planner, login.a, h.lp.f.storeA1, key, h.input)
 		if err != nil {
 			t.Fatalf("same initiating login cannot recover committed result: %v", err)
+		}
+		if out.AttemptID != "" && out != result {
+			t.Fatal("local pre-ACK result differed from durable replay identity")
 		}
 		bound, revision, expiry := mlcCustody(t, h, result.AttemptID)
 		if bound != login.aID || revision != login.revision || !expiry.Equal(login.aExpiry) || lmpFacts(t, h) != [6]int64{1, 1, 1, 1, 1, 1} {
@@ -304,6 +308,43 @@ func mlcWaiter(h *lmpHarness, token, key string) (<-chan int, <-chan lmpWaitResu
 }
 
 func TestLiveMediaExecutionMLC03ObservedWaitAndFinalDispatch(t *testing.T) {
+	for _, change := range []string{"logout", "expiry"} {
+		t.Run("exact-login-row-wait-"+change, func(t *testing.T) {
+			h := lmpSetup(t, false)
+			login := mlcTwoLogins(t, h)
+			ctx := context.Background()
+			holder, err := h.lp.f.owner.Begin(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer holder.Rollback(ctx)
+			var holderPID int
+			if err := holder.QueryRow(ctx, `SELECT pg_backend_pid()`).Scan(&holderPID); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := holder.Exec(ctx, `SELECT id FROM identity.sessions WHERE id=$1 FOR UPDATE`, login.aID); err != nil {
+				t.Fatal(err)
+			}
+			waiterPID, done := mlcWaiter(h, login.a, t04Key("mlc-login-row-"+change))
+			lmaObserveBlock(t, h.lp.f.owner, <-waiterPID, holderPID, false)
+			switch change {
+			case "logout":
+				_, err = holder.Exec(ctx, `UPDATE identity.sessions SET revoked_at=clock_timestamp() WHERE id=$1`, login.aID)
+			case "expiry":
+				_, err = holder.Exec(ctx, `UPDATE identity.sessions SET expires_at=clock_timestamp()-interval '1 second' WHERE id=$1`, login.aID)
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := holder.Commit(ctx); err != nil {
+				t.Fatal(err)
+			}
+			result := lmpAwaitWaiter(t, done)
+			if result.err == nil || result.out != (live.MediaStartResult{}) || lmpFacts(t, h) != [6]int64{} {
+				t.Fatalf("exact login wait admitted revoked/expired Start: %+v %v facts=%v", result.out, result.err, lmpFacts(t, h))
+			}
+		})
+	}
 	for _, change := range []string{"logout", "expiry", "revision"} {
 		t.Run(change, func(t *testing.T) {
 			h := lmpSetup(t, false)
@@ -451,12 +492,16 @@ func TestLiveMediaExecutionMLC05PrivateACLAndLegacyUnbound(t *testing.T) {
 	}
 	for label, pool := range map[string]*pgxpool.Pool{"runtime": h.lp.f.runtime, "worker": h.worker, "executor": h.executor, "registrar": h.registrar} {
 		var count int
-		if err := pool.QueryRow(ctx, `SELECT count(*) FROM live.media_login_custody`).Scan(&count); err == nil {
-			t.Fatalf("%s has direct private custody SELECT", label)
+		if err := pool.QueryRow(ctx, `SELECT count(*) FROM live.media_login_custody`).Scan(&count); sqlState(err) != "42501" {
+			t.Fatalf("%s did not get table permission denial: %v", label, err)
 		}
 		for _, signature := range []string{"identity.lock_media_login(bytea,uuid)", "live.media_login_eligible(uuid)"} {
+			var oid uint32
+			if err := h.lp.f.owner.QueryRow(ctx, `SELECT to_regprocedure($1)::oid`, signature).Scan(&oid); err != nil || oid == 0 {
+				t.Fatalf("private function missing %s: %v", signature, err)
+			}
 			var allowed bool
-			if err := pool.QueryRow(ctx, `SELECT has_function_privilege(current_user,to_regprocedure($1),'EXECUTE')`, signature).Scan(&allowed); err != nil || allowed {
+			if err := pool.QueryRow(ctx, `SELECT has_function_privilege(current_user,$1::oid,'EXECUTE')`, oid).Scan(&allowed); err != nil || allowed {
 				t.Fatalf("%s can execute private %s: %t %v", label, signature, allowed, err)
 			}
 		}
