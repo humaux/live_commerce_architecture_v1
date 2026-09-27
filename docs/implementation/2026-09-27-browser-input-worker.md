@@ -1,8 +1,10 @@
 # Browser input worker — scoped validation, 2026-09-27
 
-Status: **SQL_EXECUTOR_SUBSET15_PASS; SOURCE_FULL709_PASS; PRODUCT_GATES_PENDING**.
-Source is fixed at `c5160de`. This is not complete BRW/BRI, T08, G06 or SaaS
-acceptance. HTTP token delivery and production command wiring remain disabled.
+Status: **SQL_EXECUTOR_HTTP_SUBSET18_PASS; HISTORICAL_FULL709_PASS; PRODUCT_GATES_PENDING**.
+The latest bounded HTTP test tree is `53436b6`; the historical full709 source is
+`c5160de`, not the new HTTP source. This is not complete BRW/BRI, T08, G06 or SaaS
+acceptance. Input routes require an explicitly supplied runtime; production
+command wiring remains disabled.
 
 ## Implementation and ownership
 
@@ -151,7 +153,8 @@ hold states, then prove real worker selection and execution in both directions;
 they do **not** prove production transitions naturally enter those holds.
 Per-step reservation/process loss, actual 180-second deadline, remaining
 logout/access/lifetime permutations and other BRW01–04 cases remain separate
-work. BRW05 HTTPS BFF/post-commit token delivery, BRW06
+work. BRW05 post-commit Go HTTP delivery has the bounded evidence below; its
+new-input HTTPS browser acceptance remains pending. BRW06
 actual product browser/SFU decoded A/V, BRW07 new-input-queue 90-second recovery,
 and BRW08 final integrated regression/Studio evidence remain pending. The
 source-level full709 regression passed, but that alone does not close BRW08.
@@ -168,3 +171,41 @@ been changed to manufacture a pass.
 
 All external calls above use disposable local TLS fixtures. No customer
 stream, payment, provider credential, Cloud or production configuration changed.
+
+## BRW05 post-commit token delivery increment
+
+Go source `690fe34` and BFF source `7050635` reuse the existing scoped transaction,
+strict decoder, signed session and store authorization. The token signer runs
+only after `WithScope` returns a successful COMMIT acknowledgement. The response
+is an exact six-field DTO bounded to 8192 bytes, with private no-store caching;
+errors do not echo credentials. `cmd/api` still supplies no browser-input runtime.
+No SQL migration, new dependency or general callback framework was added.
+
+Independent HTTP tests `8607063` were integrated as `53436b6`. The author's four
+Go files and root's four BFF files received a bounded independent review with no
+confirmed P0/P1; this is not a claim of whole-product review.
+
+|Check|Actual result|Log under `/Volumes/data/output/`|
+|---|---|---|
+|BRW SQL/executor + Go HTTP on `53436b6`|18 top-level PASS, 0 FAIL/SKIP; exit 0; 81.114s|`brw05-go-http-root-first-20260928.log`|
+|Existing Studio backend after shared-parser extraction|8 top-level PASS, 0 FAIL/SKIP; exit 0; 13.073s|`brw05-studio-regression-root-20260928.log`|
+|Existing signed-login browser BFF on `7050635`, before Go increment|`TestBrowserStudioBFFRealChain` PASS; exit 0; foundation 6.793s|`brw05-bff-legacy-root-20260928.log`|
+
+SHA256 values in table order:
+
+```text
+8d295a485a90a8d3fea99893a155800b735368a5b7b1b9aa00121071bd24e41d
+e3b06bf9e71ee6fecc782c27c8aa4b3008d160510b8b0043b75a19c82e746ad0
+34ba5ad255e4d43262be7f1581c4e1ce7cc83fbd69128a67ba9016a931ee16e6
+```
+
+The three new Go HTTP cases cover token commit/replay, strict input and authority,
+and actual committed-but-lost-ACK behavior: no token is returned on the failed
+acknowledgement, while healthy replay retains the original grant expiry. They
+also check exact claims/signature and absence of JWTs from durable receipts.
+Root Go unit race tests and vet passed for `internal/httpapi`, `internal/live`
+and `internal/integrations/livekit`.
+
+The old browser regression does **not** exercise the new HTTPS input routes.
+New HTTPS signed-login/token delivery, actual SFU decoded media, INPUT recovery
+and the new-source full regression remain separate unclosed gates.
