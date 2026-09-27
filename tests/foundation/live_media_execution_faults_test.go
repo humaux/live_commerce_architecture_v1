@@ -467,6 +467,23 @@ func TestLiveMediaExecutionLME07NativeLifecycleReadinessAndUpgrade(t *testing.T)
 	if err := h.lp.f.owner.QueryRow(ctx, `SELECT live.media_worker_ready()`).Scan(&ready); err != nil || !ready {
 		t.Fatalf("clean readiness not restored after hosted poison: %t %v", ready, err)
 	}
+	guardTx, err := h.lp.f.owner.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer guardTx.Rollback(ctx)
+	if _, err := guardTx.Exec(ctx, `ALTER TABLE live.media_execution_state DISABLE TRIGGER media_execution_identity`); err != nil {
+		t.Fatal(err)
+	}
+	if err := guardTx.QueryRow(ctx, `SELECT live.media_worker_ready()`).Scan(&ready); err != nil || ready {
+		t.Fatalf("disabled custody identity guard passed readiness: %t %v", ready, err)
+	}
+	if err := guardTx.Rollback(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := h.lp.f.owner.QueryRow(ctx, `SELECT live.media_worker_ready()`).Scan(&ready); err != nil || !ready {
+		t.Fatalf("guard rollback did not restore readiness: %t %v", ready, err)
+	}
 	// Preserve LMP's initial INSERT guard; post0007 only admits the dedicated
 	// native worker's lifecycle UPDATE of an already-linked job.
 	for _, state := range []string{"scheduled", "pending", "completed", "cancelled"} {
@@ -490,6 +507,37 @@ func TestLiveMediaExecutionLME07NativeLifecycleReadinessAndUpgrade(t *testing.T)
 	}
 	if _, err := h.executor.Exec(ctx, `UPDATE river_media.river_job SET state='running' WHERE id=$1`, h.plan.JobID); err == nil {
 		t.Fatal("executor changed native lifecycle")
+	}
+	fetchTx, err := h.worker.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer fetchTx.Rollback(ctx)
+	var fetched int64
+	if err := fetchTx.QueryRow(ctx, `SELECT id FROM river_media.river_job WHERE id=$1 AND state='available' FOR UPDATE SKIP LOCKED`, h.plan.JobID).Scan(&fetched); err != nil || fetched != h.plan.JobID {
+		t.Fatalf("native worker could not fetch linked job: %d %v", fetched, err)
+	}
+	if err := fetchTx.Rollback(ctx); err != nil {
+		t.Fatal(err)
+	}
+	queueTx, err := h.worker.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer queueTx.Rollback(ctx)
+	if _, err := queueTx.Exec(ctx, `INSERT INTO river_media.river_queue(name) VALUES('media_mock_v1') ON CONFLICT (name) DO UPDATE SET metadata=excluded.metadata`); err != nil {
+		t.Fatalf("dedicated native queue maintenance denied: %v", err)
+	}
+	if err := queueTx.Rollback(ctx); err != nil {
+		t.Fatal(err)
+	}
+	for _, schema := range []string{"river_payment", "river_expiry", "river_meta", "river"} {
+		if _, err := h.worker.Exec(ctx, `SELECT count(*) FROM `+schema+`.river_job`); err == nil {
+			t.Fatalf("media native worker read other River lane %s", schema)
+		}
+		if _, err := h.worker.Exec(ctx, `UPDATE `+schema+`.river_queue SET metadata=metadata WHERE name='media_mock_v1'`); err == nil {
+			t.Fatalf("media native worker maintained other River queue %s", schema)
+		}
 	}
 	// A valid native state transition cannot globally close the producer gate.
 	if _, err := h.worker.Exec(ctx, `UPDATE river_media.river_job SET state='running',attempt=1,attempted_at=clock_timestamp() WHERE id=$1`, h.plan.JobID); err != nil {
@@ -577,6 +625,67 @@ func TestLiveMediaExecutionLME07NativeLifecycleReadinessAndUpgrade(t *testing.T)
 			}
 		}
 	})
+}
+
+func TestLiveMediaExecutionLME07NativeMaintenanceIsolation(t *testing.T) {
+	ctx := context.Background()
+	jobs := make([]*lmeHarness, 4)
+	for i := range jobs {
+		jobs[i] = lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "paused queue fetched provider", 500) })
+	}
+	f := jobs[0].lp.f
+	ids := miIsoMaintenanceIDs{scheduled: jobs[0].plan.JobID, retryable: jobs[1].plan.JobID,
+		stale: jobs[2].plan.JobID, terminal: jobs[3].plan.JobID}
+	for _, change := range []struct {
+		id  int64
+		sql string
+	}{
+		{ids.scheduled, `UPDATE river_media.river_job SET state='scheduled',scheduled_at=clock_timestamp()-interval '1 second' WHERE id=$1`},
+		{ids.retryable, `UPDATE river_media.river_job SET state='retryable',attempt=1,attempted_at=clock_timestamp()-interval '2 hours',scheduled_at=clock_timestamp()-interval '1 second' WHERE id=$1`},
+		{ids.stale, `UPDATE river_media.river_job SET state='running',attempt=1,attempted_at=clock_timestamp()-interval '2 hours' WHERE id=$1`},
+		{ids.terminal, `UPDATE river_media.river_job SET state='completed',finalized_at=clock_timestamp()-interval '3 days' WHERE id=$1`},
+	} {
+		mustExec(t, f.owner, change.sql, change.id)
+	}
+	var priorPausedAt *time.Time
+	queueErr := f.owner.QueryRow(ctx, `SELECT paused_at FROM river_media.river_queue WHERE name='media_mock_v1'`).Scan(&priorPausedAt)
+	if queueErr != nil && queueErr != pgx.ErrNoRows {
+		t.Fatal(queueErr)
+	}
+	t.Cleanup(func() {
+		var err error
+		if queueErr == pgx.ErrNoRows {
+			_, err = f.owner.Exec(context.Background(), `DELETE FROM river_media.river_queue WHERE name='media_mock_v1'`)
+		} else {
+			_, err = f.owner.Exec(context.Background(), `UPDATE river_media.river_queue SET paused_at=$1 WHERE name='media_mock_v1'`, priorPausedAt)
+		}
+		if err != nil {
+			t.Errorf("restore native queue pause: %v", err)
+		}
+	})
+	mustExec(t, f.owner, `INSERT INTO river_media.river_queue(name,paused_at) VALUES('media_mock_v1',clock_timestamp()) ON CONFLICT(name) DO UPDATE SET paused_at=excluded.paused_at`)
+	var foreignID int64
+	if err := f.owner.QueryRow(ctx, `INSERT INTO river.river_job(kind,queue,args,max_attempts,state,attempt,attempted_at,scheduled_at)
+	 VALUES('lme_foreign_maintenance','default','{}',3,'retryable',1,clock_timestamp()-interval '2 hours',clock_timestamp()-interval '1 second') RETURNING id`).Scan(&foreignID); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_, _ = f.owner.Exec(context.Background(), `DELETE FROM river.river_job WHERE id=$1`, foreignID)
+	})
+	foreignBefore := miIsoRows(t, f, "river.river_job", fmt.Sprintf("WHERE id=%d", foreignID))
+	if foreignBefore == "[]" || miIsoMaintained(t, f, "river_media.river_job", ids) {
+		t.Fatal("maintenance controls were empty or pre-satisfied")
+	}
+	jobs[0].startWorker(t)
+	miIsoWaitMaintenance(t, f, "river_media.river_job", ids)
+	if got := miIsoRows(t, f, "river.river_job", fmt.Sprintf("WHERE id=%d", foreignID)); got != foreignBefore {
+		t.Fatalf("media native maintenance crossed old River family: %v", legacyChangedColumns(foreignBefore, got))
+	}
+	for _, job := range jobs {
+		if job.starts.Load()+job.lists.Load()+job.queries.Load()+job.stops.Load() != 0 {
+			t.Fatal("paused maintenance made provider call")
+		}
+	}
 }
 
 func TestLiveMediaExecutionLME08EscalationAndNoFallback(t *testing.T) {

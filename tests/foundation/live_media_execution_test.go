@@ -478,6 +478,12 @@ func TestLiveMediaExecutionLME01RolesSignaturesAndSecretBoundary(t *testing.T) {
 	if err := platform.ValidateWorkerPool(ctx, ordinary); err != nil {
 		t.Fatalf("old ordinary worker regressed: %v", err)
 	}
+	metaLogin, metaWorker := lmaLogin(t, h.lp.f, "commerce_meta_worker")
+	mustExec(t, h.lp.f.owner, "REVOKE commerce_meta_worker FROM "+pgx.Identifier{metaLogin}.Sanitize())
+	mustExec(t, h.lp.f.owner, "GRANT commerce_meta_worker TO "+pgx.Identifier{metaLogin}.Sanitize()+" WITH INHERIT TRUE, SET FALSE")
+	if err := platform.ValidateMetaWorkerPool(ctx, metaWorker); err != nil {
+		t.Fatalf("old Meta River worker regressed: %v", err)
+	}
 	if h.starts.Load()+h.lists.Load()+h.queries.Load()+h.stops.Load() != 0 {
 		t.Fatal("role test made provider call")
 	}
