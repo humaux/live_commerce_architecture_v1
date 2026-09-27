@@ -1,6 +1,6 @@
 # Browser input custody implementation record — 2026-09-27
 
-Status: **BIC_INDEPENDENT_PG_PASS; integrated root acceptance running**.
+Status: **BIC_INDEPENDENT_AND_ROOT_FOCUSED_PASS; root full acceptance running**.
 Source base `2b52e7d`; frozen contract:
 [BIC/BRW](../../contracts/live-browser-input-runtime-v1.md).
 Contract freeze `4809128`, cleanup-authority clarification `234f44a` (reviewed,
@@ -140,12 +140,40 @@ Log `/Volumes/data/output/bic-root-stop-20260927.log`, SHA256
 The original LMR05 passed unchanged again. Its first-run variance remains
 unclassified, not erased from the record.
 
-Coverage review still found required BIC03 direct issued-input terminal projection
-and finish-uncertain paths missing from the new tests. An independent test-only
-complement is assigned before full BIC acceptance. It must exercise actual fenced
-functions after explicitly labelled isolated future-state fixtures, not claim real
-provider wire. Runtime/Studio/BFF/full root gates are also pending. This record does
-not upgrade Cloud, browser input, Studio UI or deployment gates.
+Coverage review found required BIC03 direct issued-input terminal projection
+and finish-uncertain paths missing. Independent test-only complement
+`8d77d6c` + `4c14717`, integrated as `acdbd4e` + `b6cfa4e`, now exercises both
+executor observation wrappers plus remote-unknown/policy-denied uncertain finish.
+Each proves the original operation/event/job retains issued input liability.
+Future-wire state is explicitly owner-seeded in a disposable fixture: this is
+actual fenced SQL evidence, never real provider wire.
+
+The first complement run failed on its incoherent test report (100/130/140
+start/update/end timestamps), correctly rejected as ME400. It was corrected to
+100/140/130 without relaxing product validation; the failure log remains
+`output/bic-postwire-pg-20260927.log` in the independent test worktree, SHA256
+`df866893942fdfe0d907318cf6912197216ef724f0c3edddfddb8ddeb5d66ad5`.
+Final independent full media-stop run passed 53 top-level tests, exit 0,
+foundation 260.489s, `output/bic-postwire-final-pg-20260927.log`, SHA256
+`40d7f5b20ececdff688cdb3f31e83f5c1ede657897b6344e2980355cfc79d901`.
+Receipt: Humaux `35b7b9d2-c679-4d87-86e6-9308e10be964`.
+
+Root fixed Go source/tests `b6cfa4e` passed these serial gates; evidence lives in
+`/Volumes/data/output/`:
+
+|Gate|Exit / result|Log / SHA256|
+|---|---|---|
+|`--live-media-input`|0; 6 PASS; foundation 19.058s|`bic-root-input-final-20260927.log`; `cd1f13f4c123d39b78e0f6363924c31f5f2f8bff01fe993336fe47f061d4a672`|
+|`--live-media-runtime`|0; 8 PASS; foundation 30.660s|`bic-root-runtime-20260927.log`; `f3d19002021898fca8c20fe93026e797e117c8bb9c349c85e8f017fdb570f840`|
+|`--studio-backend`|0; 8 PASS; foundation 13.648s|`bic-root-studio-20260927.log`; `6ff8af8a77bb5efb4dc6f76dde4a722218316d604bbc861453db046fb0fc5730`|
+|`--browser-studio-bff`|0; signed chain 1 + Node query 2, admin build; foundation 6.069s|`bic-root-bff-20260927.log`; `6c85c43af6b761a7ca803f0cb0db67f53cd320727a1eee1b984444c2dd95a2b6`|
+
+The new input-only selector in `50b1007` reuses the same isolated PG18/race runner
+and rejects missing tests. It shortens repair feedback, not final coverage: the
+prior stop group took 249.973s, its six BIC tests totalled 14.08s, and the actual
+focused group above took 19.058s including package/setup overhead. The full
+PG/race/vet root run is still running. Cloud, browser input, Studio UI and
+deployment gates remain unchanged.
 
 ## Future deployment stop line
 
