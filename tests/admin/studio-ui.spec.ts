@@ -210,17 +210,17 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await expect(page.getByLabel("Scene name")).toHaveValue("STU04 browser-edited scene");
   await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue("2030-01-01T00:00");
 
-  // Native Chromium popups are not page DOM dialogs. Trusted click and
-  // page-level keyboard selection must change the value, then persist.
+  // Native Chromium popups are not page DOM dialogs. A screenshot between
+  // click and keys redirects them to the input, so capture after selection.
   await expect(picker).toBeEnabled({ timeout: 3_000 });
   await picker.click({ timeout: 3_000 });
-  await page.screenshot({ path: `${evidence}/en-native-calendar-open.png`, fullPage: false });
   await page.keyboard.press("ArrowRight");
   await page.keyboard.press("Enter");
   const picked = await picker.inputValue();
   expect(picked).toMatch(/^\d{4}-\d\d-\d\dT\d\d:\d\d$/);
   expect(picked).not.toBe("2030-01-01T00:00");
   await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue(picked);
+  await page.screenshot({ path: `${evidence}/en-native-calendar-selected.png`, fullPage: false });
   const beforePickerVersion = await displayedVersion(page);
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect.poll(() => displayedVersion(page)).toBe(beforePickerVersion + 1);
