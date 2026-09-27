@@ -83,6 +83,10 @@ async function connect(page, wsURL, jwt, role) {
       if (role === 'observer' && participant.identity !== window.expectedPublisher) return;
       window.probeTracks[track.kind] = track;
       if (track.kind === 'video') track.attach(document.querySelector('#remote'));
+      if (track.kind === 'audio') {
+        window.probeAudioElement = track.attach();
+        document.body.appendChild(window.probeAudioElement);
+      }
     });
     room.on(lk.RoomEvent.TrackUnsubscribed, track => {
       if (window.probeTracks[track.kind]) delete window.probeTracks[track.kind];
@@ -95,6 +99,17 @@ async function connect(page, wsURL, jwt, role) {
 async function waitTracks(page, publisherID) {
   await page.evaluate(id => { window.expectedPublisher = id; }, publisherID);
   await deadline('remote_tracks', page.waitForFunction(() => !!window.probeTracks?.video && !!window.probeTracks?.audio), 18_000);
+}
+async function startPlayback(page) {
+  return page.evaluate(async () => {
+    const element = window.probeAudioElement;
+    let startAudio = 'resolved', play = 'resolved';
+    try { await window.probeRoom.startAudio(); } catch { startAudio = 'rejected'; }
+    try { await element.play(); } catch { play = 'rejected'; }
+    return { attached: !!element, start_audio: startAudio, play,
+      paused: element.paused, muted: element.muted, ready_state: element.readyState,
+      can_playback_audio: window.probeRoom.canPlaybackAudio };
+  });
 }
 async function sample(page) {
   return page.evaluate(async () => {
@@ -298,6 +313,7 @@ async function run() {
   }), 18_000);
   await waitTracks(observer, pubID);
   evidence.gates.RLI02_remote_tracks = true;
+  evidence.playback = await startPlayback(observer);
   if (fault === 'after-publish') throw new Error('injected_after_publish');
   const [receiver, publisherAudio] = await Promise.all([sample(observer), samplePublisher(publisher)]);
   evidence.counters = { ...receiver, ...publisherAudio };
