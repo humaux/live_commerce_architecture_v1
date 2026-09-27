@@ -537,6 +537,14 @@
       "gates": "RLI01_06_INDEPENDENT_5_AND_ROOT_5_PASS_FIXED_SOURCE_REVIEW_NO_BLOCKING_P0_P1",
       "boundary": "Task-local pinned native SFU and Chromium fake getUserMedia only. Actual remote decoded A/V and auth counterexamples, plus independent normal/fault/timeout PID, TCP/UDP and config teardown checks. No product credential admission or lifetime, customer hardware, Cloud, Meta, Egress, Studio UI or full R04/T08/G06 acceptance."
     },
+    "browser_input_admission_design": {
+      "contract": "contracts/live-browser-input-v1.md",
+      "status": "DESIGN_REVIEWED_BOUNDARY_ONLY",
+      "reviewed_commit": "3d72d58",
+      "wire_contract": "contracts/livekit-input-protocol-v1.md",
+      "wire_status": "CANDIDATE_FOR_PROTOCOL_REVIEW",
+      "boundary": "Local capture before Start; same durable media attempt/operation owns publisher admission and cleanup through Egress terminal. SQL/API/LIVE intake not frozen or enabled. BRI01-07 NOT_RUN; Cloud cached-token revocation and real Egress/output remain separate gates. No change to full T08/G06 status."
+    },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
   {

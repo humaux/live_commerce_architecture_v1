@@ -1,6 +1,9 @@
 # R04 browser input authority and lifetime v1
 
-Status: **DESIGN_CANDIDATE**. Base `dd9af5a`; no product admission route, LIVE
+Status: **DESIGN_REVIEWED_BOUNDARY_ONLY**. Base `dd9af5a`; independent bounded
+review of `3d72d58` found no remaining P0/P1 contract contradictions (Humaux
+`c74c83b8-72be-4405-9e54-016869df3a30`). This is not implementation acceptance.
+There is no product admission route, LIVE
 registrar, Cloud call, migration or Studio UI is enabled by this document.
 The accepted [local transport probe](../docs/implementation/2026-09-27-r04-local-input-acceptance.md)
 does not satisfy these product gates. T08 remains IN_PROGRESS; G06 remains
@@ -204,8 +207,8 @@ remain separate G06 requirements; even all BRI gates passing cannot replace them
 
 ## Implementation order and handoff
 
-1. Independently review this lifecycle/authority decision and Cloud limits. Freeze
-   the smallest input JWT/RoomService wire profile; reuse standard-library
+1. The lifecycle/authority decision and Cloud limits have bounded design review.
+   Freeze the [input JWT/RoomService wire profile](livekit-input-protocol-v1.md); reuse standard-library
    transport/crypto and add independent protocol tests.
 2. Freeze exact LIVE intake, SQL functions/role separation, one-operation lifetime
    extension and HTTP DTO, including budget/SLO constants. Schema is integrator
