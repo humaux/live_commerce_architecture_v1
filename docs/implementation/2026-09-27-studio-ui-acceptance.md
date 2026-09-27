@@ -1,6 +1,6 @@
 # Studio B UI acceptance — 2026-09-27
 
-Status: **SOURCE_CANDIDATE_UNMERGED; HISTORY_STATIC_CLEAR; STU04_DATE_MISMATCH_REPAIR**.
+Status: **SOURCE_CANDIDATE_UNMERGED; SOURCE_STATIC_CLEAR; STU04_HEADED_RERUN**.
 
 User approved **B 场次列表＋双区工作台**, seed `6373bb3f`, in `fb760ff`.
 The approved comp is `.impeccable/mocks/decision/studio-split.png` (1586×992);
@@ -103,6 +103,26 @@ The read-only fixture separately lacked its paired CSRF cookie; the client
 correctly refused its session boundary. Correct the task-owned fixture cookie,
 not the product authorization. Native history/uncertain-write recovery has not
 yet reached its runtime assertions despite the static review clearance.
+
+## Date repair and native browser environment
+
+Source `fd27c87` accepts valid RFC3339 offsets with finite/calendar checks,
+uses a single UTC-minute display conversion and preserves the validated original
+offset/seconds/microseconds for a title-only edit. Independent fixed review
+`58db348a-537a-4dde-9c34-4509d1098608` found no confirmed P0/P1 in that change.
+
+Test/source `7ebf141` reran STU04 and exited 1, foundation 17.197s.
+Parser and read-only/expired cases passed; the main chain passed signed login,
+prepared authority, real create/edit/reopen and two-tab version conflict. It
+then failed the genuine visibility assertion: headless Chromium kept the first
+tab visible after another tab was brought forward. No synthetic event was used.
+Log `output/studio-ui-second-20260927.log` in the test worktree, SHA256
+`9f871638c09d47a55fbf4ecaa13cebb958b243082fe41a53d896ecf3ca6be575`;
+screenshots/trace in `output/playwright/studio-ui-20260927T073308.409334000/`.
+
+Test-only `3e399b0` switches to headed Chromium without changing assertions or
+deadlines. Its real native-visibility rerun is pending. This does not qualify
+history recovery until its actual route traversal and PG readback pass.
 
 ## Remaining boundary
 
