@@ -219,10 +219,21 @@ func TestLiveMediaRecoveryMRR02ScopeClockAndWitness(t *testing.T) {
 			read[0].generation == nil || *read[0].generation != generation {
 			t.Fatalf("committed correlation missing: %+v", read)
 		}
+		var readDBClock time.Time
+		if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT clock_timestamp()`).Scan(&readDBClock); err != nil {
+			t.Fatal(err)
+		}
+		time.Sleep(25 * time.Millisecond) // Delayed persistence relative to committed readback, not a virtual 90s clock.
 		var witnessed string
 		if err := recovery.QueryRow(context.Background(), `SELECT live.witness_media_recovery_episode($1::uuid,$2::uuid,$3::uuid,89999)`,
 			episode, h.plan.OperationID, obs).Scan(&witnessed); err != nil || witnessed != "witnessed" {
 			t.Fatalf("delayed witness for timely readback: %s %v", witnessed, err)
+		}
+		var witnessDBClock time.Time
+		if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT created_at FROM integration.operation_events
+		 WHERE operation_id=$1::uuid AND episode_id=$2::uuid AND episode_event_kind='witnessed'`,
+			h.plan.OperationID, episode).Scan(&witnessDBClock); err != nil || !witnessDBClock.After(readDBClock) {
+			t.Fatalf("witness was not persisted after committed readback: read=%v witness=%v err=%v", readDBClock, witnessDBClock, err)
 		}
 		if disposition, count := mrrTimeout(t, recovery, episode, 90000); disposition != "already_finished" || count != 0 {
 			t.Fatalf("witnessed member timed out: %s %d", disposition, count)
