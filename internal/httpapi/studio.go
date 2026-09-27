@@ -37,7 +37,7 @@ func registerStudioRoutes(mux *http.ServeMux, pool *pgxpool.Pool, planner *live.
 			return live.ListDrafts(ctx, tx, s, bearerToken(r), page)
 		})(w, r)
 	}))
-	mux.HandleFunc("POST "+base, studioRoute(http.MethodPost, false, studioBodyRoute(pool, "live:manage", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in live.DraftInput) (any, error) {
+	mux.HandleFunc("POST "+base, studioRoute(http.MethodPost, false, studioBodyRoute(pool, "live:manage", []string{"title", "scheduled_at", "aspect_ratio"}, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in live.DraftInput) (any, error) {
 		return live.CreateDraft(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), in)
 	})))
 	mux.HandleFunc("GET "+base+"/{session_id}", studioRoute(http.MethodGet, false, func(w http.ResponseWriter, r *http.Request) {
@@ -53,14 +53,14 @@ func registerStudioRoutes(mux *http.ServeMux, pool *pgxpool.Pool, planner *live.
 		live.DraftInput
 		ExpectedVersion int64 `json:"expected_version"`
 	}
-	mux.HandleFunc("PATCH "+base+"/{session_id}", studioRoute(http.MethodPatch, false, studioBodyRoute(pool, "live:manage", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in edit) (any, error) {
+	mux.HandleFunc("PATCH "+base+"/{session_id}", studioRoute(http.MethodPatch, false, studioBodyRoute(pool, "live:manage", []string{"title", "scheduled_at", "aspect_ratio", "expected_version"}, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in edit) (any, error) {
 		return live.UpdateDraft(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), r.PathValue("session_id"), in.ExpectedVersion, in.DraftInput)
 	})))
 	type start struct {
 		AuthorizationID        string `json:"authorization_id"`
 		ExpectedSessionVersion int64  `json:"expected_session_version"`
 	}
-	mux.HandleFunc("POST "+base+"/{session_id}/rehearsal/start", studioRoute(http.MethodPost, false, studioBodyRoute(pool, "live:manage", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in start) (any, error) {
+	mux.HandleFunc("POST "+base+"/{session_id}/rehearsal/start", studioRoute(http.MethodPost, false, studioBodyRoute(pool, "live:manage", []string{"authorization_id", "expected_session_version"}, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in start) (any, error) {
 		out, err := planner.PlanStart(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), live.MediaStartInput{SessionID: r.PathValue("session_id"), AuthorizationID: in.AuthorizationID, ExpectedSessionVersion: in.ExpectedSessionVersion})
 		if err != nil {
 			return nil, err
@@ -70,13 +70,18 @@ func registerStudioRoutes(mux *http.ServeMux, pool *pgxpool.Pool, planner *live.
 	type stop struct {
 		AttemptID string `json:"attempt_id"`
 	}
-	mux.HandleFunc("POST "+base+"/{session_id}/rehearsal/stop", studioRoute(http.MethodPost, false, studioBodyRoute(pool, "live:manage", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in stop) (any, error) {
+	mux.HandleFunc("POST "+base+"/{session_id}/rehearsal/stop", studioRoute(http.MethodPost, false, studioBodyRoute(pool, "live:manage", []string{"attempt_id"}, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in stop) (any, error) {
 		out, err := planner.RequestStop(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), live.MediaStopInput{SessionID: r.PathValue("session_id"), AttemptID: in.AttemptID})
 		if err != nil {
 			return nil, err
 		}
 		return studioReceipt{SessionID: out.SessionID, AttemptID: out.AttemptID, State: out.State}, nil
 	})))
+	// Methodless fallbacks keep method errors inside the same private response
+	// boundary. The six method-qualified routes above remain the only actions.
+	for _, path := range []string{base, base + "/{session_id}", base + "/{session_id}/rehearsal/start", base + "/{session_id}/rehearsal/stop"} {
+		mux.HandleFunc(path, studioRoute("", false, nil))
+	}
 }
 
 type studioReceipt struct {
@@ -111,7 +116,8 @@ func studioPage(u *url.URL) (pagination.Request, error) {
 	}
 	if u.RawQuery != "" {
 		for _, field := range strings.Split(u.RawQuery, "&") {
-			if field == "" || !strings.Contains(field, "=") {
+			name, value, ok := strings.Cut(field, "=")
+			if !ok || value == "" || (name != "limit" && name != "cursor") || strings.ContainsAny(value, "%+=") {
 				return out, command.ErrInvalid
 			}
 		}
@@ -144,7 +150,7 @@ func studioPage(u *url.URL) (pagination.Request, error) {
 }
 
 // The generic bodyRoute does not reject duplicate JSON keys; Studio does.
-func studioBodyRoute[T any](pool *pgxpool.Pool, permission string, fn func(context.Context, pgx.Tx, platform.Scope, *http.Request, T) (any, error)) http.HandlerFunc {
+func studioBodyRoute[T any](pool *pgxpool.Pool, permission string, fields []string, fn func(context.Context, pgx.Tx, platform.Scope, *http.Request, T) (any, error)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		media, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 		if err != nil || media != "application/json" {
@@ -154,7 +160,7 @@ func studioBodyRoute[T any](pool *pgxpool.Pool, permission string, fn func(conte
 		r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
 		defer r.Body.Close()
 		raw, err := io.ReadAll(r.Body)
-		if err != nil || !utf8.Valid(raw) || !studioUniqueJSON(raw) {
+		if err != nil || !utf8.Valid(raw) || !studioUniqueJSON(raw, fields) {
 			respondError(w, http.StatusBadRequest, "invalid_json")
 			return
 		}
@@ -176,16 +182,20 @@ func studioBodyRoute[T any](pool *pgxpool.Pool, permission string, fn func(conte
 	}
 }
 
-func studioUniqueJSON(raw []byte) bool {
+func studioUniqueJSON(raw []byte, fields []string) bool {
 	d := json.NewDecoder(bytes.NewReader(raw))
-	if !studioValue(d, 0) {
+	allowed := make(map[string]bool, len(fields))
+	for _, field := range fields {
+		allowed[field] = true
+	}
+	if !studioValue(d, 0, allowed) {
 		return false
 	}
 	_, err := d.Token()
 	return errors.Is(err, io.EOF)
 }
 
-func studioValue(d *json.Decoder, depth int) bool {
+func studioValue(d *json.Decoder, depth int, allowed map[string]bool) bool {
 	if depth > 16 {
 		return false
 	}
@@ -202,11 +212,11 @@ func studioValue(d *json.Decoder, depth int) bool {
 				return false
 			}
 			key, ok := keyToken.(string)
-			if !ok || seen[key] {
+			if !ok || seen[key] || (depth == 0 && !allowed[key]) {
 				return false
 			}
 			seen[key] = true
-			if !studioValue(d, depth+1) {
+			if !studioValue(d, depth+1, nil) {
 				return false
 			}
 		}
@@ -214,7 +224,7 @@ func studioValue(d *json.Decoder, depth int) bool {
 		return err == nil && end == json.Delim('}')
 	case json.Delim('['):
 		for d.More() {
-			if !studioValue(d, depth+1) {
+			if !studioValue(d, depth+1, nil) {
 				return false
 			}
 		}
