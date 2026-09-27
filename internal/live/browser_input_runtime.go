@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strconv"
 
+	"livecommerce/internal/command"
 	"livecommerce/internal/integrations/livekit"
 )
 
@@ -69,6 +70,26 @@ func NewBrowserInputRuntime(projects []BrowserInputProject) (*BrowserInputRuntim
 		}
 	}
 	return &BrowserInputRuntime{projects: selected}, nil
+}
+
+// MintPublisher deliberately has no transaction access. Call only after the
+// scoped reservation transaction has committed; never put its token in a receipt.
+func (r *BrowserInputRuntime) MintPublisher(grant MediaInputGrant) (string, livekit.PublisherToken, error) {
+	if r == nil {
+		return "", livekit.PublisherToken{}, command.ErrConflict
+	}
+	endpoint, ok := r.projects[mediaProjectKey{grant.ProjectID, grant.CredentialVersion}]
+	if !ok || endpoint.identity != grant.EndpointIdentity || endpoint.client == nil || endpoint.browserURL == "" {
+		return "", livekit.PublisherToken{}, command.ErrConflict
+	}
+	token, err := endpoint.client.MintPublisher(livekit.PublisherGrant{
+		RoomName: grant.RoomName, Identity: grant.PublisherIdentity,
+		IssuedAt: grant.IssuedAt, ExpiresAt: grant.ExpiresAt,
+	})
+	if err != nil {
+		return "", livekit.PublisherToken{}, command.ErrConflict
+	}
+	return endpoint.browserURL, token, nil
 }
 
 func canonicalBrowserInputURL(raw string) bool {
