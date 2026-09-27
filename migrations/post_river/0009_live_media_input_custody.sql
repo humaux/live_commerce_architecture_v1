@@ -1,4 +1,6 @@
 -- The new queue is paired only with LOCAL_SFU_MOCK_EGRESS; legacy remains exact.
+-- Worker reads only readiness; function EXECUTE is useless without schema USAGE.
+GRANT USAGE ON SCHEMA live TO commerce_media_worker;
 CREATE FUNCTION live.media_input_job_open(p_job bigint) RETURNS boolean
 LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
  SELECT EXISTS(SELECT 1 FROM integration.operations o
@@ -145,14 +147,53 @@ LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
    'live.media_input_custody'::regclass AND c.relrowsecurity AND c.relforcerowsecurity)
   AND EXISTS(SELECT 1 FROM pg_catalog.pg_trigger t WHERE t.tgrelid=
    'live.media_input_custody'::regclass AND t.tgname='media_input_custody_identity'
-   AND t.tgenabled='O' AND t.tgfoid='live.guard_media_input_custody()'::regprocedure)
+   AND t.tgenabled='O' AND t.tgtype=23 AND NOT t.tgisinternal
+   AND t.tgfoid='live.guard_media_input_custody()'::regprocedure)
   AND EXISTS(SELECT 1 FROM pg_catalog.pg_trigger t WHERE t.tgrelid=
    'river_media.river_job'::regclass AND t.tgname='media_job_family'
-   AND t.tgenabled='O' AND t.tgfoid='live.guard_media_job_family()'::regprocedure)
-  AND NOT has_table_privilege('commerce_runtime','live.media_input_custody','SELECT')
-  AND NOT has_table_privilege('commerce_media_executor','live.media_input_custody','SELECT')
-  AND NOT has_table_privilege('commerce_media_worker','live.media_input_custody','SELECT')
-  AND NOT has_table_privilege('commerce_media_registrar','live.media_input_custody','SELECT')
+   AND t.tgenabled='O' AND t.tgtype=31 AND NOT t.tgisinternal
+   AND t.tgfoid='live.guard_media_job_family()'::regprocedure)
+  AND NOT EXISTS(SELECT 1 FROM (VALUES
+   ('commerce_runtime'::regrole),('commerce_media_executor'::regrole),
+   ('commerce_media_worker'::regrole),('commerce_media_registrar'::regrole)) AS denied(role_id)
+   WHERE has_table_privilege(denied.role_id,'live.media_input_custody',
+    'SELECT,INSERT,UPDATE,DELETE')
+    OR has_table_privilege(denied.role_id,'live.prepared_media_input_profiles',
+     'SELECT,INSERT,UPDATE,DELETE'))
+  AND NOT EXISTS(SELECT 1 FROM (VALUES
+   ('live.plan_media_input_start(bytea,uuid,uuid,uuid,bigint,text,uuid,bigint)'::regprocedure,
+    'jsonb'::regtype,false,ARRAY['commerce_media_writer'::regrole,'commerce_runtime'::regrole]),
+   ('live.reserve_media_input(bytea,uuid,uuid,uuid,bigint)'::regprocedure,
+    'jsonb'::regtype,false,ARRAY['commerce_media_writer'::regrole,'commerce_runtime'::regrole]),
+   ('live.claim_media_input_operation(uuid,bigint,integer,bytea)'::regprocedure,
+    'record'::regtype,true,ARRAY['commerce_media_writer'::regrole,'commerce_media_executor'::regrole]),
+   ('live.close_media_input_admission(uuid,bigint,bytea,text)'::regprocedure,
+    'text'::regtype,false,ARRAY['commerce_media_writer'::regrole,'commerce_media_executor'::regrole]),
+   ('live.load_media_input_custody(uuid,bigint,bytea)'::regprocedure,
+    'jsonb'::regtype,false,ARRAY['commerce_media_writer'::regrole,'commerce_media_executor'::regrole]),
+   ('live.register_media_input_profile(uuid)'::regprocedure,
+    'void'::regtype,false,ARRAY['commerce_media_writer'::regrole,'commerce_media_registrar'::regrole]),
+   ('live.close_media_input_custody(uuid,text)'::regprocedure,
+    'boolean'::regtype,false,ARRAY['commerce_media_writer'::regrole]),
+   ('live.guard_media_input_custody()'::regprocedure,
+    'trigger'::regtype,false,ARRAY['commerce_media_writer'::regrole]),
+   ('live.media_input_job_open(bigint)'::regprocedure,
+    'boolean'::regtype,false,ARRAY['commerce_media_writer'::regrole]),
+   ('live.media_input_plan_ready()'::regprocedure,
+    'boolean'::regtype,false,ARRAY['commerce_media_writer'::regrole,
+     'commerce_runtime'::regrole,'commerce_media_executor'::regrole,
+     'commerce_media_worker'::regrole])) AS required(oid,result_type,result_set,allowed)
+   JOIN pg_catalog.pg_proc p ON p.oid=required.oid
+   WHERE NOT p.prosecdef OR p.proowner<>'commerce_media_writer'::regrole
+    OR p.provolatile<>'v' OR p.prorettype<>required.result_type
+    OR p.proretset<>required.result_set
+    OR NOT (p.proconfig @> ARRAY['search_path=pg_catalog']::text[])
+    OR NOT EXISTS(SELECT 1 FROM pg_catalog.aclexplode(
+      coalesce(p.proacl,pg_catalog.acldefault('f',p.proowner))) acl
+     WHERE acl.privilege_type='EXECUTE' AND acl.grantee=ANY(required.allowed))
+    OR EXISTS(SELECT 1 FROM pg_catalog.aclexplode(
+      coalesce(p.proacl,pg_catalog.acldefault('f',p.proowner))) acl
+     WHERE acl.privilege_type='EXECUTE' AND acl.grantee<>ALL(required.allowed)))
   AND NOT EXISTS(SELECT 1 FROM (VALUES
    ('live.plan_media_input_start(bytea,uuid,uuid,uuid,bigint,text,uuid,bigint)'::regprocedure,
     'commerce_runtime'::regrole),
@@ -163,14 +204,13 @@ LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
    ('live.close_media_input_admission(uuid,bigint,bytea,text)'::regprocedure,
     'commerce_media_executor'::regrole),
    ('live.load_media_input_custody(uuid,bigint,bytea)'::regprocedure,
-    'commerce_media_executor'::regrole)) AS required(oid,caller)
-   JOIN pg_catalog.pg_proc p ON p.oid=required.oid
-   WHERE NOT p.prosecdef OR p.proowner<>'commerce_media_writer'::regrole
-    OR NOT (p.proconfig @> ARRAY['search_path=pg_catalog']::text[])
-    OR NOT has_function_privilege(required.caller,p.oid,'EXECUTE')
-    OR EXISTS(SELECT 1 FROM pg_catalog.aclexplode(
-      coalesce(p.proacl,pg_catalog.acldefault('f',p.proowner))) acl
-     WHERE acl.privilege_type='EXECUTE' AND acl.grantee=0))
+    'commerce_media_executor'::regrole),
+   ('live.register_media_input_profile(uuid)'::regprocedure,
+    'commerce_media_registrar'::regrole),
+   ('live.media_input_plan_ready()'::regprocedure,'commerce_runtime'::regrole),
+   ('live.media_input_plan_ready()'::regprocedure,'commerce_media_executor'::regrole),
+   ('live.media_input_plan_ready()'::regprocedure,'commerce_media_worker'::regrole))
+   AS required(oid,caller) WHERE NOT has_function_privilege(required.caller,required.oid,'EXECUTE'))
   AND NOT EXISTS(SELECT 1 FROM live.prepared_media_input_profiles p
    LEFT JOIN live.prepared_media_authorizations h ON h.id=p.authorization_id
     AND h.tenant_id=p.tenant_id AND h.store_id=p.store_id
