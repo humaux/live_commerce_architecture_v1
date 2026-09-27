@@ -1,6 +1,6 @@
 # MRR01–04 independent recovery test evidence
 
-Status: **THREE FOCUSED RUNS; THIRD EARLY-STOPPED ON TEST FIXTURE** (2026-09-27). Frozen contract:
+Status: **FOUR FOCUSED RUNS; FOURTH EARLY-STOPPED ON TEST ASSERTION** (2026-09-27). Frozen contract:
 `contracts/live-media-recovery-observer-v1.md` at root `598eea4978e8f32f9ee2b998031c2996b762370b`.
 Independent test worktree `commerce/media-recovery-tests-20260927` started from that SHA.
 The test author commits are `82379c6`, `5166976`, `53a2be0`, `42f95d9`,
@@ -97,6 +97,27 @@ lines, SHA-256 `37364c9028898ddd1b921179e6134ec30648f1b5f0e721d124a89bcf365cc94d
 The runner cleaned its own PG18 fixture; only unrelated protected
 `lc-meta-upgrade-9d14f59e966f` remained. No source change followed this
 result; the meta synthetic-login membership repair was authorized separately.
+
+Fourth run receipt: source remained `86b641a`, with the meta fixture repair
+at test HEAD `419feb817f6082114dae23bc56fba06ae1034564`. Focused command
+exited **1**; package **18.563s**. Thirteen top-level tests passed, including
+SQL scope/readiness, exact ABI/ACL and old-role grants, wrong physical DB,
+config rejection, two-member RLS DROP/partial/overgrant/BYPASSRLS, timeout
+ordering/capacity/concurrency, QUERY cleanup/Stop budget, escalated ceiling,
+INPUT exclusion, and wrong original job. The next test,
+`MRR04InternalChildEOF`, received a release byte, reached native readiness,
+then exited and was reaped after post-release EOF, but its final assertion
+incorrectly required zero requests to the configured provider TLS endpoint.
+One request came from the original READY job run by the **native child**;
+that is not an observer side effect. Later three process tests, including
+real 90 seconds, remain **NOT_RUN** under failfast. Raw log
+`output/mrr-focused-419feb8.log`, 48 lines, SHA-256
+`824cd185bd75f1ff88a155a0e76bbbdcd1e1ba3d9a638421eea8150e94d893a5`.
+Task-owned PG18 fixture cleaned; unrelated protected container retained.
+No source change followed this result. The root-approved test-only correction
+retains the configured TLS request count as a diagnostic but removes the
+invalid zero-I/O assertion from this **native-child** EOF gate. Observer-only
+zero Start/Stop remains asserted by the MRR01 supervisor process gates.
 
 Pending repaired-source receipt fields: source SHA; exact command and exit;
 top-level PASS/FAIL/SKIP; actual 90-second elapsed; process parent/child
