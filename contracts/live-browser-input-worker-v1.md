@@ -1,6 +1,6 @@
 # Browser input worker and delivery v1 (BRW)
 
-Status: **DESIGN_ABI_FROZEN — CONFIG_ONLY_LOCAL_UNIT_ACCEPTED; product runtime NOT_IMPLEMENTED**.
+Status: **DESIGN_ABI_FROZEN — SQL_EXECUTOR_SUBSET_PASS; full product gates pending**.
 Design base `5a543e7`, independently closed at `f518c77` on 2026-09-27
 (Humaux review `7ca5ab59-6fc3-4d40-ab06-31bf01c9dfed`).
 Refines [BIC](live-browser-input-runtime-v1.md), [BRI](live-browser-input-v1.md)
@@ -12,7 +12,10 @@ The isolated `NewBrowserInputRuntime` constructor is implemented at `a389f9b`,
 independently tested and accepted CONFIG_ONLY_LOCAL_UNIT. Root's five-package
 race/vet gate: 79 PASS / 0 FAIL / 0 SKIP; no route/job/provider activation.
 See [configuration receipt](../docs/implementation/2026-09-27-browser-input-config.md).
-The rest of this contract is not runtime acceptance.
+The local original-job executor is implemented at `c5160de`; nine scoped
+PG/worker tests pass. [Worker validation](../docs/implementation/2026-09-27-browser-input-worker.md)
+records failures, the NULL-allowlist correction and the still-pending full run.
+This is not acceptance of the remaining HTTP/browser/recovery product gates.
 
 ## One execution owner, two independent liabilities
 
@@ -268,6 +271,15 @@ type BrowserInputProject struct {
 type BrowserInputRuntime struct { /* private immutable keyed map */ }
 func NewBrowserInputRuntime([]BrowserInputProject) (*BrowserInputRuntime, error)
 ```
+
+The worker consumes only `media_input_mock_v1`. Its explicit factory is
+`NewBrowserInputMediaClient(context.Context, *pgxpool.Pool, *pgxpool.Pool,
+*livekit.MaterialKeyring, []MediaProject, *BrowserInputRuntime, int)` returning
+`(*river.Client[pgx.Tx], error)`; worker pool precedes executor pool.
+`MediaPlanner.PlanBrowserInputStart` retains `PlanInputStart` arguments plus a
+final `*BrowserInputRuntime`. Construction checks
+`live.media_browser_input_worker_ready() RETURNS boolean`; it does not itself
+start consumption or activate any HTTP route.
 
 Require 1..128 projects, existing project-ID grammar, positive version, unique
 project/version key, Config.Environment exactly MOCK and `livekit.New`'s strict

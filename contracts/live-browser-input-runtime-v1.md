@@ -1,6 +1,6 @@
 # Browser input custody runtime v1
 
-Status: **BIC_KERNEL_FOCUSED_AND_FULL696_PASS — BRW NOT_IMPLEMENTED**. BIC source base
+Status: **BIC_KERNEL_FOCUSED_AND_FULL696_PASS — BRW SQL/EXECUTOR SUBSET PASS**. BIC source base
 `2b52e7d`; root full regression at `b99a2d1` exited 0 with 696 PASS, 0 FAIL,
 0 SKIP, race/vet. The owner-approved LMR05 wait change retains the safety
 assertions; historical failures remain in the receipt. Independent bounded
@@ -9,7 +9,9 @@ P0/P1 after queue/profile, replay and lifetime clarifications. This refines
 [BRI](live-browser-input-v1.md), not LIVE admission. Root owns migration numbers
 and merge. This accepts BIC01–05 locally, not the BRW product chain. See the
 [implementation receipt](../docs/implementation/2026-09-27-browser-input-runtime.md).
-BRW token delivery and new-queue consumption remain unimplemented.
+BRW token delivery remains unimplemented. Its explicitly constructed local
+input consumer has [scoped PG/worker validation](../docs/implementation/2026-09-27-browser-input-worker.md)
+at `c5160de`; full regression and product browser/recovery gates remain pending.
 Their candidate wire contract is [BRW](live-browser-input-worker-v1.md);
 only an explicitly reviewed revision may be implemented.
 
