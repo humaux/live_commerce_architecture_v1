@@ -51,6 +51,16 @@ ALTER TABLE integration.operation_events
 CREATE UNIQUE INDEX media_recovery_one_shot_event ON integration.operation_events
  (operation_id,episode_id,episode_event_kind) WHERE episode_id IS NOT NULL;
 
+-- The SECURITY DEFINER functions below run as commerce_media_writer. They
+-- must see their own admitted/qualified/witnessed events under FORCE RLS.
+CREATE POLICY media_writer_event_read ON integration.operation_events
+ FOR SELECT TO commerce_media_writer USING
+ (EXISTS (SELECT 1 FROM integration.operations o
+  WHERE o.id=operation_events.operation_id
+   AND o.tenant_id=operation_events.tenant_id
+   AND o.store_id=operation_events.store_id
+   AND o.actor_kind='MEDIA_ATTEMPT'));
+
 -- Fires inside the existing projector transaction, including its public QUERY
 -- cleanup guard. A later wrapper failure rolls this correlation back too.
 CREATE FUNCTION live.qualify_media_recovery_observation() RETURNS trigger
@@ -118,20 +128,31 @@ CREATE FUNCTION live.media_recovery_begin_replay(p_episode uuid)
 RETURNS TABLE(disposition text,episode_id uuid,operation_id uuid,job_id bigint,
  baseline_generation bigint,deadline_at timestamptz,candidate_count integer,
  coverage_known boolean,blocked_by_episode_id uuid)
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
- SELECT CASE WHEN e.operation_id IS NULL THEN s.scope_status
-  WHEN s.scope_status='overdue' THEN 'overdue'
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE s live.media_recovery_episode_scope%ROWTYPE; v_members integer;
+BEGIN
+ SELECT * INTO s FROM live.media_recovery_episode_scope z WHERE z.episode_id=p_episode;
+ IF s.episode_id IS NOT NULL AND s.scope_status IN ('pending','overdue')
+  AND s.candidate_count>0 THEN
+  SELECT count(*) INTO v_members FROM integration.operation_events e
+   WHERE e.episode_id=p_episode AND e.episode_event_kind='admitted';
+  IF v_members<>s.candidate_count THEN
+   RAISE EXCEPTION 'media recovery membership unavailable' USING ERRCODE='ME409'; END IF;
+ END IF;
+ RETURN QUERY SELECT CASE WHEN e.operation_id IS NULL THEN z.scope_status
+  WHEN z.scope_status='overdue' THEN 'overdue'
   WHEN EXISTS(SELECT 1 FROM integration.operation_events q WHERE q.operation_id=e.operation_id
    AND q.episode_id=p_episode AND q.episode_event_kind='terminal_at_lock') THEN 'terminal_at_lock'
   WHEN EXISTS(SELECT 1 FROM integration.operation_events q WHERE q.operation_id=e.operation_id
    AND q.episode_id=p_episode AND q.episode_event_kind='native_ineligible') THEN 'native_ineligible'
   WHEN EXISTS(SELECT 1 FROM integration.operation_events q WHERE q.operation_id=e.operation_id
    AND q.episode_id=p_episode AND q.episode_event_kind='ceiling') THEN 'ceiling'
-  ELSE 'pending' END,s.episode_id,e.operation_id,e.native_job_id,e.generation,
-  s.deadline_at,s.candidate_count,s.coverage_known,s.blocked_by_episode_id
- FROM live.media_recovery_episode_scope s LEFT JOIN integration.operation_events e
-  ON e.episode_id=s.episode_id AND e.episode_event_kind='admitted'
- WHERE s.episode_id=p_episode ORDER BY e.operation_id
+  ELSE 'pending' END,z.episode_id,e.operation_id,e.native_job_id,e.generation,
+  z.deadline_at,z.candidate_count,z.coverage_known,z.blocked_by_episode_id
+ FROM live.media_recovery_episode_scope z LEFT JOIN integration.operation_events e
+  ON e.episode_id=z.episode_id AND e.episode_event_kind='admitted'
+ WHERE z.episode_id=p_episode ORDER BY e.operation_id;
+END
 $$;
 ALTER FUNCTION live.media_recovery_begin_replay(uuid) OWNER TO commerce_media_writer;
 REVOKE ALL ON FUNCTION live.media_recovery_begin_replay(uuid) FROM PUBLIC;
@@ -187,7 +208,12 @@ BEGIN
   IF x.recovery_episode_id IS NOT NULL AND x.recovery_episode_id<>p_episode
    AND EXISTS(SELECT 1 FROM live.media_recovery_episode_scope old_scope
     WHERE old_scope.episode_id=x.recovery_episode_id AND old_scope.timeout_at IS NULL
-     AND (NOT old_scope.coverage_known OR EXISTS
+     AND (NOT old_scope.coverage_known
+      OR (old_scope.candidate_count>0 AND
+       (SELECT count(*) FROM integration.operation_events old_member
+        WHERE old_member.episode_id=old_scope.episode_id
+         AND old_member.episode_event_kind='admitted')<>old_scope.candidate_count)
+      OR EXISTS
       (SELECT 1 FROM integration.operation_events prior_member
        WHERE prior_member.episode_id=old_scope.episode_id
         AND prior_member.episode_event_kind='admitted'
@@ -416,6 +442,9 @@ BEGIN
   WHERE w.operation_id=e.operation_id AND w.episode_id=p_episode AND w.episode_event_kind='witnessed'))
  INTO v_members,v_witnesses FROM integration.operation_events e
  WHERE e.episode_id=p_episode AND e.episode_event_kind='admitted';
+ IF s.scope_status IN ('pending','overdue') AND s.candidate_count>0
+  AND v_members<>s.candidate_count THEN
+  RAISE EXCEPTION 'media recovery membership unavailable' USING ERRCODE='ME409'; END IF;
  v_status:=CASE WHEN s.scope_status='empty' AND s.coverage_known THEN 'empty'
   WHEN s.scope_status IN ('capacity_exceeded','prior_unfinished') THEN s.scope_status
   WHEN s.timeout_at IS NOT NULL THEN 'overdue'
@@ -500,13 +529,20 @@ CREATE FUNCTION live.timeout_media_recovery_episode(p_episode uuid,p_elapsed_ms 
 RETURNS TABLE(disposition text,affected_count integer)
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE s live.media_recovery_episode_scope%ROWTYPE; o integration.operations%ROWTYPE;
- x live.media_execution_state%ROWTYPE; v_id uuid; v_count integer:=0; v_now timestamptz;
+ x live.media_execution_state%ROWTYPE; v_id uuid; v_count integer:=0; v_members integer;
+ v_now timestamptz;
 BEGIN
  IF p_episode IS NULL OR p_elapsed_ms IS NULL OR p_elapsed_ms<90000
   OR current_setting('transaction_isolation')<>'read committed' THEN
   RAISE EXCEPTION 'invalid media recovery timeout' USING ERRCODE='ME400'; END IF;
  SELECT * INTO s FROM live.media_recovery_episode_scope WHERE episode_id=p_episode;
  IF s.episode_id IS NULL THEN RAISE EXCEPTION 'media recovery episode unavailable' USING ERRCODE='ME409'; END IF;
+ IF s.scope_status IN ('pending','overdue') AND s.candidate_count>0 THEN
+  SELECT count(*) INTO v_members FROM integration.operation_events e
+   WHERE e.episode_id=p_episode AND e.episode_event_kind='admitted';
+  IF v_members<>s.candidate_count THEN
+   RAISE EXCEPTION 'media recovery membership unavailable' USING ERRCODE='ME409'; END IF;
+ END IF;
  IF s.scope_status='empty' AND s.coverage_known THEN
   RETURN QUERY SELECT 'already_finished'::text,0; RETURN; END IF;
  IF s.timeout_at IS NOT NULL THEN
