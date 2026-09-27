@@ -1,8 +1,8 @@
-import { chromium, expect, test, type Browser, type Page, type BrowserContext } from "@playwright/test";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { expect, test, type Page, type BrowserContext } from "@playwright/test";
+import { writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
-import { spawn } from "node:child_process";
 import { parseDraft } from "../../apps/admin/lib/studio-model";
+import { nativePage } from "./fixtures/native-device";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -74,59 +74,6 @@ async function hideAndReveal(page: Page) {
   } finally {
     await page.bringToFront();
     await other.close();
-  }
-}
-
-// Only the two native-visibility cases use this device. Playwright's usual
-// browser fixture captures focus, so a second CDP session cannot undo it.
-async function nativePage() {
-  const profile = await mkdtemp(`${evidence}/studio-native-profile-`);
-  const child = spawn(chromium.executablePath(), [
-    `--user-data-dir=${profile}`, "--remote-debugging-address=127.0.0.1",
-    "--remote-debugging-port=0", "--no-first-run", "--no-default-browser-check", "about:blank",
-  ], { stdio: "ignore" });
-  let browser: Browser | undefined;
-  let launchError: Error | undefined;
-  child.once("error", (error) => { launchError = error; });
-  const exited = () => child.exitCode !== null || child.signalCode !== null;
-  const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-  const waitExit = (ms: number) => new Promise<boolean>((resolve) => {
-    if (exited()) return resolve(true);
-    const onExit = () => { clearTimeout(timer); resolve(true); };
-    const timer = setTimeout(() => { child.off("exit", onExit); resolve(exited()); }, ms);
-    child.once("exit", onExit);
-  });
-  const close = async () => {
-    if (browser?.isConnected()) {
-      await Promise.race([browser.newBrowserCDPSession().then((session) =>
-        session.send("Browser.close")).catch(() => {}), delay(1_500)]);
-      await Promise.race([browser.close().catch(() => {}), delay(1_500)]);
-    }
-    if (!(await waitExit(1_500))) child.kill("SIGTERM");
-    if (!(await waitExit(1_500))) child.kill("SIGKILL");
-    if (!(await waitExit(3_000))) throw new Error(`owned Chromium pid ${child.pid} did not exit`);
-    await rm(profile, { recursive: true, force: true });
-  };
-  try {
-    let port = 0;
-    const deadline = performance.now() + 10_000;
-    while (performance.now() < deadline && !exited()) {
-      if (launchError) throw launchError;
-      try { port = Number((await readFile(`${profile}/DevToolsActivePort`, "utf8")).split("\n")[0]); } catch { /* Chromium has not opened CDP yet. */ }
-      if (Number.isInteger(port) && port > 0 && port < 65_536) break;
-      await delay(100);
-    }
-    if (!port) throw new Error("owned Chromium did not expose loopback CDP");
-    browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`, { noDefaults: true });
-    if (browser.contexts().length !== 1) throw new Error("native device needs the existing default context");
-    const context = browser.contexts()[0];
-    const page = context.pages()[0] || await context.newPage();
-    await page.bringToFront();
-    await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("visible");
-    return { page, close };
-  } catch (error) {
-    await close();
-    throw error;
   }
 }
 
@@ -437,7 +384,7 @@ test("STU04 read-only and expired sessions cannot mutate", async ({ browser }) =
 });
 
 test("STU04 native visibility conceal and revalidation remains required", async () => {
-  const { page, close } = await nativePage();
+  const { page, close } = await nativePage(evidence, "studio-native-profile-");
   try {
     await signedLogin(page);
     await page.goto(new URL(`/en/studio?store=${store}&scene=${preparedSession}`, origin).toString());
@@ -456,7 +403,7 @@ test("STU04 native visibility conceal and revalidation remains required", async 
 });
 
 test("STU04 native conceal retains an uncertain committed request", async () => {
-  const { page, close } = await nativePage();
+  const { page, close } = await nativePage(evidence, "studio-native-profile-");
   try {
     await signedLogin(page);
     await page.goto(new URL(`/en/studio?store=${store}&scene=${preparedSession}`, origin).toString());

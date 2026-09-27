@@ -298,7 +298,7 @@ func TestBrowserMerchantOrdersUIRealChain(t *testing.T) {
 	playwrightLog := browserLog(t, filepath.Join(evidence, "playwright.log"))
 	browser := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/orders-ui.spec.ts", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
 	browser.Dir = root
-	browser.Env = browserEnvironment(map[string]string{"LC_BROWSER_SUITE": "merchant-orders-ui", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_ORDER_STORE": q.f.storeA1, "LC_BROWSER_ORDER_IDS": string(fixtures), "LC_BROWSER_FROZEN_SKU_CODE": q.stock.skus[0].Code, "LC_BROWSER_FOREIGN_STORE": foreignStore, "LC_BROWSER_FOREIGN_ORDER_ID": foreignOrder, "LC_BROWSER_UNLISTED_STORE": q.f.storeB, "LC_BROWSER_SECOND_TOKEN": secondToken, "LC_BROWSER_NO_ORDERS_TOKEN": noOrdersToken, "LC_BROWSER_EXPIRED_TOKEN": expiredToken, "LC_BROWSER_REVOKED_TOKEN": revokedToken, "LC_BROWSER_NATIVE_VISIBILITY": os.Getenv("LC_BROWSER_NATIVE_VISIBILITY"), "LC_BROWSER_EVIDENCE": evidence})
+	browser.Env = browserEnvironment(map[string]string{"LC_BROWSER_SUITE": "merchant-orders-ui", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_ORDER_STORE": q.f.storeA1, "LC_BROWSER_ORDER_IDS": string(fixtures), "LC_BROWSER_FROZEN_SKU_CODE": q.stock.skus[0].Code, "LC_BROWSER_FOREIGN_STORE": foreignStore, "LC_BROWSER_FOREIGN_ORDER_ID": foreignOrder, "LC_BROWSER_UNLISTED_STORE": q.f.storeB, "LC_BROWSER_SECOND_TOKEN": secondToken, "LC_BROWSER_NO_ORDERS_TOKEN": noOrdersToken, "LC_BROWSER_EXPIRED_TOKEN": expiredToken, "LC_BROWSER_REVOKED_TOKEN": revokedToken, "LC_BROWSER_EVIDENCE": evidence})
 	browser.Stdout, browser.Stderr = playwrightLog, playwrightLog
 	if err = browser.Run(); err != nil {
 		t.Fatalf("MOU browser gate failed: %v; evidence=%s", err, evidence)
@@ -315,8 +315,26 @@ func TestBrowserMerchantOrdersUIRealChain(t *testing.T) {
 	if err = q.f.owner.QueryRow(ctx, `SELECT md5(o::text) FROM checkout.orders o WHERE id=$1`, q.hold.OrderID).Scan(&afterHash); err != nil || afterHash != originalHash {
 		t.Fatalf("order changed after reads: match=%t err=%v", afterHash == originalHash, err)
 	}
-	t.Logf("MOU real-chain browser cases and PG read-only facts checked; evidence=%s", evidence)
-	if os.Getenv("LC_BROWSER_NATIVE_VISIBILITY") != "1" {
-		t.Error("MOU03 native visibility NOT_RUN: headed Chromium on this host remained visible across native tab switches and window minimization; synthetic pagehide and native pageshow evidence do not substitute")
+	var native struct {
+		Events []struct {
+			State   string `json:"state"`
+			Trusted bool   `json:"trusted"`
+		} `json:"events"`
+		BeforeHide  int  `json:"beforeHide"`
+		WhileHidden int  `json:"whileHidden"`
+		AfterReturn int  `json:"afterReturn"`
+		PiiCleared  bool `json:"piiCleared"`
+		Revalidated bool `json:"revalidated"`
 	}
+	nativeProof, err := os.ReadFile(filepath.Join(evidence, "native-visibility.json"))
+	if err != nil {
+		t.Fatalf("MOU03 native visibility proof missing: %v; evidence=%s", err, evidence)
+	}
+	if err := json.Unmarshal(nativeProof, &native); err != nil {
+		t.Fatalf("MOU03 native visibility proof invalid: %v; evidence=%s", err, evidence)
+	}
+	if len(native.Events) != 2 || native.Events[0].State != "hidden" || !native.Events[0].Trusted || native.Events[1].State != "visible" || !native.Events[1].Trusted || native.BeforeHide != native.WhileHidden || native.AfterReturn <= native.WhileHidden || !native.PiiCleared || !native.Revalidated {
+		t.Fatalf("MOU03 native visibility proof violated: events=%v before=%d hidden=%d return=%d piiCleared=%t revalidated=%t; evidence=%s", native.Events, native.BeforeHide, native.WhileHidden, native.AfterReturn, native.PiiCleared, native.Revalidated, evidence)
+	}
+	t.Logf("MOU real-chain browser cases, trusted native visibility, and PG read-only facts checked; evidence=%s", evidence)
 }

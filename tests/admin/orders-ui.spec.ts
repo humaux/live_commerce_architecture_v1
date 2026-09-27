@@ -1,6 +1,7 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 import * as http from "node:http";
+import { nativePage } from "./fixtures/native-device";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -9,6 +10,7 @@ const required = (name: string) => {
 };
 const origin = required("LC_BROWSER_PUBLIC_ORIGIN");
 const apiOrigin = required("LC_BROWSER_API_ORIGIN");
+const evidence = required("LC_BROWSER_EVIDENCE");
 const store = required("LC_BROWSER_ORDER_STORE");
 const ids = JSON.parse(required("LC_BROWSER_ORDER_IDS")) as Record<
   string,
@@ -36,7 +38,7 @@ test.use({
 });
 
 async function signedLogin(page: Page) {
-  await page.goto("/en/");
+  await page.goto(new URL("/en/", origin).toString());
   await page
     .getByRole("button", { name: "Sign in with identity service" })
     .click();
@@ -440,56 +442,58 @@ test("MOU03 controlled delayed detail, pagehide, history and cross-tab logout", 
   await otherTab.close();
 });
 
-test("MOU03 actual visibility hide clears PII and visible return needs fresh authorized detail", async ({
-  page,
-  context,
-}) => {
-  test.skip(
-    process.env.LC_BROWSER_NATIVE_VISIBILITY !== "1",
-    "NOT_RUN: this host's Chromium keeps document.visibilityState visible across headed tab switches and minimized windows",
-  );
-  await signedLogin(page);
-  await expand(page, ids.captured);
-  await expect(page.getByTestId("order-detail")).toContainText(
-    "Synthetic Buyer",
-  );
-  const devtools = await context.newCDPSession(page);
-  // Playwright forces focus in every tab; release that test-only emulation so
-  // the headed browser emits an actual visibilitychange on tab switch.
-  await devtools.send("Emulation.setFocusEmulationEnabled", { enabled: false });
-  const cover = await context.newPage();
-  await cover.goto("/en/settings");
-  await cover.bringToFront();
-  await expect
-    .poll(() => page.evaluate(() => document.visibilityState))
-    .toBe("hidden");
-  await noPII(page);
-  let release!: () => void;
-  let seen!: () => void;
-  const gate = new Promise<void>((resolve) => {
-    release = resolve;
-  });
-  const intercepted = new Promise<void>((resolve) => {
-    seen = resolve;
-  });
-  await page.route(
-    `**/api/stores/${store}/orders/${ids.captured}`,
-    async (route) => {
+test("MOU03 actual visibility hide clears PII and visible return needs fresh authorized detail", async () => {
+  const { page, close } = await nativePage(evidence, "orders-native-profile-");
+  let cover: Page | undefined;
+  let release = () => {};
+  try {
+    await signedLogin(page);
+    await expand(page, ids.captured);
+    await expect(page.getByTestId("order-detail")).toContainText("Synthetic Buyer");
+    const beforeHide = await detailCalls(page);
+    await page.bringToFront();
+    await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("visible");
+    await page.evaluate(() => {
+      const observed = window as typeof window & { mouVisibility?: { state: string; trusted: boolean }[] };
+      observed.mouVisibility = [];
+      document.addEventListener("visibilitychange", (event) =>
+        observed.mouVisibility?.push({ state: document.visibilityState, trusted: event.isTrusted }));
+    });
+    cover = await page.context().newPage();
+    await cover.goto(new URL("/en/settings", origin).toString());
+    await cover.bringToFront();
+    await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("hidden");
+    await noPII(page);
+    const whileHidden = await detailCalls(page);
+    expect(whileHidden).toBe(beforeHide);
+    let seen!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const intercepted = new Promise<void>((resolve) => { seen = resolve; });
+    await page.route(`**/api/stores/${store}/orders/${ids.captured}`, async (route) => {
       const real = await route.fetch();
       seen();
       await gate;
       await route.fulfill({ response: real });
-    },
-  );
-  await page.bringToFront();
-  await intercepted;
-  await noPII(page);
-  release();
-  await expect(page.getByTestId("order-detail")).toContainText(
-    "Synthetic Buyer",
-  );
-  await cover.close();
-  await devtools.detach();
+    });
+    await page.bringToFront();
+    await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("visible");
+    await intercepted;
+    await noPII(page);
+    release();
+    await expect(page.getByTestId("order-detail")).toContainText("Synthetic Buyer");
+    const afterReturn = await detailCalls(page);
+    expect(afterReturn).toBeGreaterThan(whileHidden);
+    const events = await page.evaluate(() =>
+      (window as typeof window & { mouVisibility?: { state: string; trusted: boolean }[] }).mouVisibility);
+    expect(events).toEqual([{ state: "hidden", trusted: true }, { state: "visible", trusted: true }]);
+    await writeFile(`${evidence}/native-visibility.json`, JSON.stringify({
+      events, beforeHide, whileHidden, afterReturn, piiCleared: true, revalidated: true,
+    }), { mode: 0o600 });
+  } finally {
+    release();
+    await cover?.close().catch(() => {});
+    await close();
+  }
 });
 
 test("MOU03 labeled fault injection: invalid DTO, non-JSON and network failure recover via real retry", async ({
