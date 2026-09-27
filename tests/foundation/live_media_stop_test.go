@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -22,11 +23,14 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/riverqueue/river/riverdriver/riverpgxv5"
+	"github.com/riverqueue/river/rivermigrate"
 
 	"livecommerce/internal/command"
 	"livecommerce/internal/integrations/livekit"
 	"livecommerce/internal/live"
 	"livecommerce/internal/platform"
+	"livecommerce/migrations"
 )
 
 func lmrKeys() (*livekit.MaterialKeyring, error) {
@@ -202,8 +206,15 @@ func TestLiveMediaStopLMR01CommandAuthorityCancellationAndACL(t *testing.T) {
 		}
 	}
 	for _, count := range []int{1, 2} {
+		if _, err := h.lp.f.owner.Exec(ctx, `UPDATE live.media_execution_state SET stop_wire_count=$1 WHERE operation_id=$2`, count, h.plan.OperationID); sqlState(err) != "ME409" {
+			t.Fatalf("ordinary role-less evidence mutation count=%d passed projection guard: %v", count, err)
+		}
 		tx, err := h.lp.f.owner.Begin(ctx)
 		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := tx.Exec(ctx, `ALTER TABLE live.media_execution_state DISABLE TRIGGER media_stop_projection`); err != nil {
+			_ = tx.Rollback(ctx)
 			t.Fatal(err)
 		}
 		_, err = tx.Exec(ctx, `UPDATE live.media_execution_state SET stop_wire_count=$1 WHERE operation_id=$2`, count, h.plan.OperationID)
@@ -400,6 +411,94 @@ func TestLiveMediaStopLMR01RenamedCheckCannotFakeReadiness(t *testing.T) {
 	}
 }
 
+func TestLiveMediaStopLMR01Populated0036Upgrade(t *testing.T) {
+	ctx := context.Background()
+	old := lriPre0032Fixture(t)
+	mcApplyHistorical(t, old, "0032_legacy_river_isolation.sql", "0033_live_planning.sql", "0034_live_media_authorization.sql", "0035_live_media_plan.sql")
+	for _, schema := range []string{"river_payment", "river_expiry", "river_media"} {
+		upstream, err := rivermigrate.New(riverpgxv5.New(old.owner), &rivermigrate.Config{Schema: schema, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := upstream.Migrate(ctx, rivermigrate.DirectionUp, nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	mcApplyHistorical(t, old, "post_river/0005_legacy_river_isolation.sql", "post_river/0006_live_media_queue.sql")
+	lp := lpHarness{f: old, actor: old.principalA, token: old.tokens["a"]}
+	mustExec(t, old.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'live:read'),($1,$2,$3,'live:manage')`, old.tenantA, old.storeA1, old.principalA)
+	draft, err := lpCreate(lp, lp.token, old.storeA1, t04Key("lmr-old-draft"), lpInput("historical active media"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth := &lmaHarness{lp: lp, session: draft.ID}
+	auth.media = auth.binding(t, old.tenantA, old.storeA1, old.principalA, "livekit", "project_lma")
+	auth.facebook = auth.binding(t, old.tenantA, old.storeA1, old.principalA, "facebook", "page_lma")
+	spec := auth.spec()
+	_, registrar := lmaLogin(t, old, "commerce_media_registrar")
+	nonce, ciphertext := lmaEnvelope()
+	if _, err := lmaRegister(ctx, registrar, spec, nonce, ciphertext); err != nil {
+		t.Fatal(err)
+	}
+	prior := &lmpHarness{lmaHarness: auth, specification: spec,
+		input:   live.MediaStartInput{SessionID: draft.ID, AuthorizationID: spec["id"].(string), ExpectedSessionVersion: 1},
+		planner: lmpPlanner(t, old.runtime, "river_media")}
+	planned, err := prior.start(t04Key("lmr-old-plan"))
+	if err != nil || planned.State != "READY" {
+		t.Fatalf("historical Start plan: %+v %v", planned, err)
+	}
+	mcApplyHistorical(t, old, "0036_live_media_execution.sql", "post_river/0007_live_media_execution.sql")
+	_, executor := lmaLogin(t, old, "commerce_media_executor")
+	var disposition, mode string
+	var generation int64
+	if err := executor.QueryRow(ctx, `SELECT disposition,generation,mode FROM live.claim_media_operation($1::uuid,$2::bigint,30,$3::bytea)`,
+		planned.OperationID, planned.JobID, randomBytes(32)).Scan(&disposition, &generation, &mode); err != nil || disposition != "claimed" || mode != "dispatch" {
+		t.Fatalf("populated pre-Stop execution: %s/%d/%s %v", disposition, generation, mode, err)
+	}
+	var operation string
+	if err := old.owner.QueryRow(ctx, `SELECT state FROM integration.operations WHERE id=$1`, planned.OperationID).Scan(&operation); err != nil {
+		t.Fatal(err)
+	}
+	beforeJob := lriRows(t, old, "river_media.river_job", fmt.Sprintf("WHERE id=%d", planned.JobID))
+	beforeLedger := lmpMigrationChecksums(t, old)
+	if _, ok := beforeLedger["0037_live_media_stop.sql"]; ok {
+		t.Fatal("historical fixture already installed Stop")
+	}
+	if err := migrations.Apply(ctx, old.owner); err != nil {
+		t.Fatalf("populated0036 upgrade: %v", err)
+	}
+	for version, checksum := range beforeLedger {
+		if lmpMigrationChecksums(t, old)[version] != checksum {
+			t.Fatalf("upgrade changed historical checksum %s", version)
+		}
+	}
+	var count int
+	var first, request *time.Time
+	var afterGeneration int64
+	var afterOperation string
+	if err := old.owner.QueryRow(ctx, `SELECT x.stop_wire_count,x.stop_first_reserved_at,x.stop_requested_at,o.generation,o.state
+	 FROM live.media_execution_state x JOIN integration.operations o ON o.id=x.operation_id WHERE o.id=$1`, planned.OperationID).
+		Scan(&count, &first, &request, &afterGeneration, &afterOperation); err != nil || count != 0 || first != nil || request != nil || afterGeneration != generation || afterOperation != operation {
+		t.Fatalf("upgrade rewrote live execution: count=%d first=%v request=%v generation=%d state=%s err=%v", count, first, request, afterGeneration, afterOperation, err)
+	}
+	if afterJob := lriRows(t, old, "river_media.river_job", fmt.Sprintf("WHERE id=%d", planned.JobID)); afterJob != beforeJob {
+		t.Fatal("upgrade rewrote native media job")
+	}
+	var ready bool
+	if err := old.owner.QueryRow(ctx, `SELECT live.media_plan_ready() AND live.media_worker_ready()`).Scan(&ready); err != nil || !ready {
+		t.Fatalf("populated Stop upgrade not ready: %t %v", ready, err)
+	}
+	afterFirst := lmpMigrationChecksums(t, old)
+	if err := migrations.Apply(ctx, old.owner); err != nil {
+		t.Fatalf("repeat Stop upgrade: %v", err)
+	}
+	for version, checksum := range afterFirst {
+		if lmpMigrationChecksums(t, old)[version] != checksum {
+			t.Fatalf("repeat Apply changed %s", version)
+		}
+	}
+}
+
 func TestLiveMediaStopLMR04FencedQueryAndPacing(t *testing.T) {
 	h := lmrSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "SQL gate only", 500) })
 	id := "EG_lmr04"
@@ -449,6 +548,35 @@ func TestLiveMediaStopLMR04FencedQueryAndPacing(t *testing.T) {
 	}
 	if f := lmrRead(t, h); f.count != 1 || f.operation != "UNKNOWN" {
 		t.Fatalf("false second reservation: %+v", f)
+	}
+}
+
+func TestLiveMediaStopLMR04ActiveBeforeFiveSecondsCannotReserve(t *testing.T) {
+	h := lmrSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "SQL only", 500) })
+	id := "EG_lmr04early"
+	lmrStarted(t, h, id)
+	lmrStop(t, h, t04Key("lmr04-early"))
+	firstLease := h.claim(t, 30)
+	if out, err := lmrQuery(t, h, firstLease, id, "EGRESS_ACTIVE", 100, 120, 0); err != nil || out != "stop_reserved" {
+		t.Fatalf("first Stop reservation: %s %v", out, err)
+	}
+	if out, err := h.record(t, firstLease, "STOP", id, "EGRESS_ACTIVE", 100, 130, 0); err != nil || out != "observe" {
+		t.Fatalf("nonterminal first Stop reply: %s %v", out, err)
+	}
+	first := lmrRead(t, h)
+	next := h.claim(t, 30)
+	if next.generation <= firstLease.generation || next.mode != "reconcile" {
+		t.Fatalf("second generation: %+v", next)
+	}
+	var stillEarly bool
+	if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT clock_timestamp()<$1`, first.first.Add(5*time.Second)).Scan(&stillEarly); err != nil || !stillEarly {
+		t.Fatalf("pacing negative no longer inside five-second window: %t %v", stillEarly, err)
+	}
+	if out, err := lmrQuery(t, h, next, id, "EGRESS_ACTIVE", 100, 140, 0); err != nil || out != "observe" {
+		t.Fatalf("fresh ACTIVE illegally reserved second Stop: %s %v", out, err)
+	}
+	if after := lmrRead(t, h); after.count != 1 || after.operation != "UNKNOWN" || h.stops.Load() != 0 {
+		t.Fatalf("early ACTIVE consumed budget or sent wire: %+v", after)
 	}
 }
 
