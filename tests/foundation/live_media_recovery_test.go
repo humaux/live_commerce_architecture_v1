@@ -950,7 +950,11 @@ func TestLiveMediaRecoveryMRR03InputProfileAndWrongOriginalJob(t *testing.T) {
 
 func TestLiveMediaRecoveryMRR04InternalChildEOF(t *testing.T) {
 	h := lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "no provider", 500) })
-	tlsServer, ca := lmwTLS(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "no provider", 500) }))
+	var configuredRequests atomic.Int32
+	tlsServer, ca := lmwTLS(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		configuredRequests.Add(1)
+		http.Error(w, "no provider", 500)
+	}))
 	binary := mrBuild(t, "../../cmd/media-worker", "mrr-internal-child")
 	env := append(lmwEnvironment(h, tlsServer.Listener.Addr().String(), ca),
 		"COMMERCE_MEDIA_RECOVERY_SUPERVISED=1", "COMMERCE_MEDIA_RECOVERY_INTERNAL_CHILD=1",
@@ -1017,8 +1021,9 @@ func TestLiveMediaRecoveryMRR04InternalChildEOF(t *testing.T) {
 	case <-time.After(8 * time.Second):
 		t.Fatal("internal child ignored post-release EOF")
 	}
-	if h.starts.Load()+h.lists.Load()+h.queries.Load()+h.stops.Load() != 0 {
-		t.Fatal("EOF-only child issued provider I/O")
+	if configuredRequests.Load() != 0 || h.starts.Load()+h.lists.Load()+h.queries.Load()+h.stops.Load() != 0 {
+		t.Fatalf("EOF-only child issued provider I/O: configured=%d fixture=%d", configuredRequests.Load(),
+			h.starts.Load()+h.lists.Load()+h.queries.Load()+h.stops.Load())
 	}
 }
 
