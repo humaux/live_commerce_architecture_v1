@@ -1,8 +1,14 @@
 # T08 bounded MOCK media Stop — LMR01–06
 
-Status: **DRAFT / INDEPENDENT_PREFLIGHT_PENDING / NOT_IMPLEMENTED** (2026-09-27).
+Status: **FROZEN_FOR_MOCK_IMPLEMENTATION / NOT_IMPLEMENTED** (2026-09-27).
 Base `8f43c2f`. This specifies the next increment after
 [LME](live-media-execution-v1.md), not a Cloud or production approval.
+Independent preflight of draft `45c4ac8` found no confirmed P0/P1; the final
+narrow clarifications specify error mapping, nonnegative claim age, latest
+reservation observation pointer, receipt states and the post-COMMIT time limit.
+Security evidence: Humaux `8149a5ee-cebd-44e5-9358-8f3ccc505337`; independent
+testability closeout: `045b84e4-4b62-413b-b296-8bae14e42c67`.
+LMR01–06 remain NOT_RUN. Source and independent tests must use this same revision.
 
 ## Decision and limits
 
@@ -45,6 +51,9 @@ Extend `live.media_execution_state` with:
   target evidence. Count only increases by one. At count=1 first=last; at count=2
   first reservation remains unchanged, second time is >=first+5s and second
   generation >first generation. Once count=2 all reservation fields are frozen.
+  `stop_observation_id` always points to the Query authorizing the MOST RECENT
+  reservation (and therefore `stop_last_generation`); the first Query remains
+  in immutable observation history when the second replaces this pointer.
 - `stop_exhausted_at timestamptz`: sticky, nullable; set once on a subsequent
   nonterminal observation after the second wire, with a static exhaustion event.
   It reports exhausted Stop budget, not a closed resource or resettable budget.
@@ -87,6 +96,9 @@ escalated operation is not reopened. The original native job remains unchanged.
 Exact result keys: `session_id,attempt_id,operation_id,state`, all strings;
 state `requested|cancelled_before_start|terminal|escalated`. An idempotency
 receipt describes the accepted command, not a fresh resource-status read.
+For new receipt keys, preserve `cancelled_before_start` for that prior explicit
+pre-reserve cancellation; return `terminal` for other already-terminal/blocked
+operations, `escalated` for unresolved durable escalation, else `requested`.
 
 Add `MediaStopInput{SessionID,AttemptID string}` and matching `MediaStopResult`
 in package live. `(*MediaPlanner).RequestStop(ctx context.Context,tx pgx.Tx,
@@ -94,6 +106,9 @@ scope platform.Scope,token,key string,in MediaStopInput) (MediaStopResult,error)
 reuses `authorize`, `command.Run` (`live.media.stop`), token hashing, revision
 GUC and `command.Audit` (`live.media.stop.requested`). Validate IDs/key before
 SQL; reauthorize on replay and after execution. No job enqueue or provider I/O.
+Reuse static `MP400/401/403/404/409` errors and `mediaPlanError` for this merchant
+entry point. Worker functions retain the existing static `ME400/404/409` family;
+no provider/database error text is exposed in command results.
 
 ## Worker query, reservation and completion
 
@@ -125,7 +140,8 @@ merge coherent facts, refresh cleanup reasons, then decide. A reservation needs:
 2. This same transaction's observation is correlated and nonterminal; no
    higher projected ENDING/terminal evidence. Initial Stop permits STARTING or
    ACTIVE; exceptional second Stop permits ACTIVE only.
-3. DB clock is no later than `claim_started_at + 5 seconds`, rechecked AFTER
+3. `claim_started_at` is present and DB clock is between it and
+   `claim_started_at + 5 seconds` inclusive, rechecked AFTER
    all lock waits and event writes. This deliberately bounds the WHOLE
    claim→load→Query→record/reserve interval, so it conservatively bounds Query
    age without trusting a caller clock. Slow successful Query still records
@@ -143,6 +159,9 @@ open. Unknown commit acknowledgement means NO wire call. A crash after reserve
 consumes its budget. Go immediately calls existing LKP `Client.Stop` once using
 the already validated frozen project credential and loaded exact target; no
 material decryption, URL mutation, automatic HTTP retry or fallback credential.
+Check context cancellation before I/O; do not enqueue a detached wire permission
+or retain it for a later Work call. The 5s bound applies at the final database
+decision, not a guarantee of elapsed time at the remote wire after COMMIT.
 No network request runs while database locks are held.
 
 Stop reply uses `record_media_observation(...,'STOP',...)`: permitted only for

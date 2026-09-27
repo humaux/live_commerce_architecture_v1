@@ -498,6 +498,13 @@
       "root_gate": "INDEPENDENT_28_PASS_ROOT_POST_COVERAGE_28_PASS_FULL_623_AT_4345732_PG_RACE_VET_PASS",
       "boundary": "10 functional LME tests plus crash-child helper and17 prior tests in final independent run. Once-only Start and leased room/pinned-ID observation using local TLS doubles, actual process/COMMIT-loss and native maintenance isolation. No Stop, reclaimed-resource proof, LIVE intake, Cloud quality, studio/browser, media-worker deployment or global G06 acceptance."
     },
+    "media_stop_slice": {
+      "contract": "contracts/live-media-stop-v1.md",
+      "status": "FROZEN_FOR_MOCK_IMPLEMENTATION_NOT_IMPLEMENTED",
+      "reviewed_draft_commit": "45c4ac8",
+      "gates": "LMR01_06_NOT_RUN",
+      "boundary": "Independently preflighted bounded same-attempt cleanup contract on existing operation/job. No Stop implementation, LIVE/Cloud, post-escalation operator recovery, studio or G06 acceptance."
+    },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
   {

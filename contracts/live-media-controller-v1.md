@@ -12,7 +12,12 @@ exact roles/signatures and closed-lease late-report behavior take precedence
 over the broader candidates below. The rest of the lifecycle remains a candidate;
 neither LMP nor the MOCK worker enables production live execution by itself.
 The bounded MOCK Stop recovery below
-has independent design review; it is not yet implemented. This supersedes the implementation
+has independent design review; it is not yet implemented. Its concrete
+[LMR interface contract](live-media-stop-v1.md) is frozen for MOCK implementation:
+it specifies a cleanup subphase on the existing operation/job, superseding the
+separate Stop operation/job candidates below for this bounded increment.
+Escalated rows whose jobs were retained away require separate operator recovery.
+This supersedes the implementation
 direction of the old non-executable `live-broadcast-v1.md`; it does not activate
 that draft. Media credentials/official destination eligibility are not supplied
 by this contract. Existing LKP and LKM components remain separately gated.
