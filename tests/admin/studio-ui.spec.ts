@@ -103,7 +103,14 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   const schedule = page.getByLabel("Scheduled time (UTC, optional)");
   await expect(schedule).toHaveAttribute("type", "text");
   await expect(schedule).toHaveAttribute("placeholder", "YYYY-MM-DDTHH:mm");
+  const picker = page.getByLabel("Choose scheduled date and time (UTC)");
+  await expect(page.locator(".studio-schedule-picker")).toBeVisible();
+  await expect(picker).toHaveAttribute("type", "datetime-local");
+  await expect(picker).toBeEnabled();
   await screenshot(page, "en-desktop-first-1586x992", 1586, 992);
+  await schedule.focus();
+  await schedule.press("Tab");
+  await expect(picker).toBeFocused();
   await storageIsSafe(page);
 
   // A new draft is genuinely created by the UI, then edited and reopened.
@@ -228,6 +235,28 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await page.getByRole("button", { name: "Retry same request" }).click();
   await expect(page.getByLabel("Scene name")).toHaveValue("STU04 lost ACK scene");
 
+  // Only a real browser click/keyboard path can establish native picker
+  // acceptance. If its popup is not observable on this host, keep the rest of
+  // the signed chain running but leave this requirement explicitly NOT_RUN.
+  await picker.click();
+  await page.screenshot({ path: `${evidence}/en-native-calendar-open.png`, fullPage: false });
+  const popupVisible = await page.getByRole("dialog").isVisible().catch(() => false);
+  expect.soft(popupVisible, "native calendar popup NOT_RUN: no observable browser dialog after a trusted click").toBe(true);
+  if (popupVisible) {
+    await picker.press("ArrowDown");
+    await picker.press("Enter");
+    const picked = await picker.inputValue();
+    expect.soft(picked, "native calendar value NOT_RUN: trusted keyboard selection produced no date").toMatch(/^\d{4}-\d\d-\d\dT\d\d:\d\d$/);
+    if (/^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(picked)) {
+      await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue(picked);
+      const beforePickerVersion = await displayedVersion(page);
+      await page.getByRole("button", { name: "Save draft" }).click();
+      await expect.poll(() => displayedVersion(page)).toBe(beforePickerVersion + 1);
+      await page.reload();
+      await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue(picked);
+    }
+  } else await picker.press("Escape");
+
   // Prepared session has the only rehearsable authority. The actual worker
   // must consume it; the UI must show persisted observation, then terminal.
   await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
@@ -325,6 +354,7 @@ test("STU04 read-only and expired sessions cannot mutate", async ({ browser }) =
   await expect(page.getByRole("button", { name: "Start MOCK rehearsal" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Request stop" })).toBeDisabled();
   await expect(page.getByLabel("Scene name")).toBeDisabled();
+  await expect(page.getByLabel("Choose scheduled date and time (UTC)")).toBeDisabled();
   await expect(page.getByRole("button", { name: /New scene/ })).toBeDisabled();
   await context.close();
   const expired = await browser.newContext({ baseURL: origin });
