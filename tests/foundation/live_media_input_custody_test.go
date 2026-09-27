@@ -940,42 +940,50 @@ func TestLiveMediaExecutionBIC03OriginalJobOutlivesInputLiability(t *testing.T) 
 		bicAssertOriginalLiability(t, h, plan)
 	})
 
-	t.Run("future-egress-terminal-query-projects-without-completing-input", func(t *testing.T) {
-		h, plan, in := bicStarted(t)
-		if _, err := bicReserve(context.Background(), h, h.lp.f.runtime, h.logins.a, h.lp.f.storeA1, t04Key("bic-future-terminal"), in); err != nil {
-			t.Fatal(err)
-		}
-		lease := bytes.Repeat([]byte{0x73}, 32)
-		disposition, generation, mode, err := bicClaim(context.Background(), h, plan, lease)
-		if err != nil || disposition != "claimed" || mode != "reconcile" {
-			t.Fatalf("issued input did not provide fenced reconcile: %s/%d/%s %v", disposition, generation, mode, err)
-		}
-		const egress = "EG_bic_future_terminal"
-		bicSeedFutureWire(t, h, plan, generation, egress)
-		var projected string
-		err = h.executor.QueryRow(context.Background(), `SELECT live.record_media_cleanup_query(
-		 $1::uuid,$2::bigint,$3::bytea,$4::text,$5::text,'EGRESS_COMPLETE',100,130,140)`,
-			plan.OperationID, generation, lease, egress, plan.RoomName).Scan(&projected)
-		if err != nil || projected != "observe" {
-			t.Fatalf("terminal Egress report falsely completed issued input: %s %v", projected, err)
-		}
-		var resource string
-		if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT resource_state FROM live.media_execution_state WHERE attempt_id=$1`,
-			plan.AttemptID).Scan(&resource); err != nil || resource != "TERMINAL" {
-			t.Fatalf("future terminal report was not actually projected: %s %v", resource, err)
-		}
-		bicAssertOriginalLiability(t, h, plan)
-		nextLease := bytes.Repeat([]byte{0x74}, 32)
-		disposition, nextGeneration, mode, err := bicClaim(context.Background(), h, plan, nextLease)
-		if err != nil || disposition != "claimed" || mode != "reconcile" || nextGeneration <= generation {
-			t.Fatalf("terminal Egress lost input cleanup lease: %s/%d/%s %v", disposition, nextGeneration, mode, err)
-		}
-		closeResult, err := bicClose(context.Background(), h, plan, nextGeneration, nextLease, "egress_terminal")
-		if err != nil || closeResult != "held" {
-			t.Fatalf("terminal Egress falsely closed issued local input: %s %v", closeResult, err)
-		}
-		bicAssertOriginalLiability(t, h, plan)
-	})
+	for _, route := range []string{"cleanup-query", "observation"} {
+		t.Run("future-egress-terminal-"+route+"-keeps-input", func(t *testing.T) {
+			h, plan, in := bicStarted(t)
+			if _, err := bicReserve(context.Background(), h, h.lp.f.runtime, h.logins.a, h.lp.f.storeA1, t04Key("bic-future-terminal-"+route), in); err != nil {
+				t.Fatal(err)
+			}
+			lease := bytes.Repeat([]byte{0x73}, 32)
+			disposition, generation, mode, err := bicClaim(context.Background(), h, plan, lease)
+			if err != nil || disposition != "claimed" || mode != "reconcile" {
+				t.Fatalf("issued input did not provide fenced reconcile: %s/%d/%s %v", disposition, generation, mode, err)
+			}
+			egress := "EG_bic_future_" + route
+			bicSeedFutureWire(t, h, plan, generation, egress)
+			var projected string
+			if route == "cleanup-query" {
+				err = h.executor.QueryRow(context.Background(), `SELECT live.record_media_cleanup_query(
+			 $1::uuid,$2::bigint,$3::bytea,$4::text,$5::text,'EGRESS_COMPLETE',100,140,130)`,
+					plan.OperationID, generation, lease, egress, plan.RoomName).Scan(&projected)
+			} else {
+				err = h.executor.QueryRow(context.Background(), `SELECT live.record_media_observation(
+			 $1::uuid,$2::bigint,$3::bytea,'QUERY',$4::text,$5::text,'EGRESS_COMPLETE',100,140,130)`,
+					plan.OperationID, generation, lease, egress, plan.RoomName).Scan(&projected)
+			}
+			if err != nil || projected != "observe" {
+				t.Fatalf("terminal Egress report falsely completed issued input: %s %v", projected, err)
+			}
+			var resource string
+			if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT resource_state FROM live.media_execution_state WHERE attempt_id=$1`,
+				plan.AttemptID).Scan(&resource); err != nil || resource != "TERMINAL" {
+				t.Fatalf("future terminal report was not actually projected: %s %v", resource, err)
+			}
+			bicAssertOriginalLiability(t, h, plan)
+			nextLease := bytes.Repeat([]byte{0x74}, 32)
+			disposition, nextGeneration, mode, err := bicClaim(context.Background(), h, plan, nextLease)
+			if err != nil || disposition != "claimed" || mode != "reconcile" || nextGeneration <= generation {
+				t.Fatalf("terminal Egress lost input cleanup lease: %s/%d/%s %v", disposition, nextGeneration, mode, err)
+			}
+			closeResult, err := bicClose(context.Background(), h, plan, nextGeneration, nextLease, "egress_terminal")
+			if err != nil || closeResult != "held" {
+				t.Fatalf("terminal Egress falsely closed issued local input: %s %v", closeResult, err)
+			}
+			bicAssertOriginalLiability(t, h, plan)
+		})
+	}
 
 	for _, item := range []struct {
 		name, reason    string
