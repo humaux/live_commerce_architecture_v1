@@ -554,6 +554,9 @@
       "login_custody_evidence": "docs/implementation/2026-09-27-media-login-custody-acceptance.md",
       "login_custody_root_tested_commit": "9e30686",
       "login_custody_gates": "MLC01_06_INDEPENDENT_PG_47_ROOT_PG_RACE_663_VET_RUNTIME_8_STUDIO_8_BROWSER_BFF_PASS",
+      "input_runtime_contract": "contracts/live-browser-input-runtime-v1.md",
+      "input_runtime_status": "BIC_CONTRACT_FROZEN_IMPLEMENTATION_NOT_RUN",
+      "input_runtime_evidence": "docs/implementation/2026-09-27-browser-input-runtime.md",
       "boundary": "MLC binds the existing MOCK attempt to its exact initiating login; no browser token is issued. Full publisher admission and original-operation input cleanup through Egress terminal, SQL/API/LIVE intake remain unimplemented. BRI01-07 NOT_RUN; Cloud cached-token revocation and real Egress/output remain separate gates. No change to full T08/G06 status."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
