@@ -21,8 +21,9 @@ const evidenceDir = process.env.COMMERCE_R04_EVIDENCE_DIR || path.join(ROOT, 'ou
 const evidence = {
   probe: 'R04_LOCAL_REAL_WEBRTC', server_version: '1.13.7', sdk_version: SDK_VERSION,
   status: 'FAIL', gates: {}, counters: {}, cleanup: {}, failure: null,
+  resources: { server_pid: null, signal_port: null, rtc_tcp_port: null, rtc_udp_port: null, fixture_port: null, config_dir: null },
 };
-let server, httpServer, browser, publisherContext, observerContext, configDir, configPath;
+let server, httpServer, browser, publisherContext, observerContext, configDir, configPath, wavPath;
 const started = Date.now();
 const deadline = async (label, promise, ms = 12_000) => {
   let timer;
@@ -31,6 +32,7 @@ const deadline = async (label, promise, ms = 12_000) => {
 };
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const assert = (condition, label) => { if (!condition) throw new Error(label); };
+const assertBudget = () => assert(Date.now() - started < MAX_MS, 'runtime_budget_exceeded');
 const b64 = value => Buffer.from(JSON.stringify(value)).toString('base64url');
 const sign = (key, secret, payload) => {
   const body = `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64(payload)}`;
@@ -41,10 +43,22 @@ function grant(room, publish, subscribe) {
     canSubscribe: subscribe, canPublishData: false, canUpdateOwnMetadata: false,
     roomAdmin: false, roomCreate: false, roomList: false, roomRecord: false, ingressAdmin: false };
 }
-const token = (key, secret, identity, video, expiry = 90) => {
+const token = (key, secret, identity, video, expiry = 90, issuedAgo = 0) => {
   const now = Math.floor(Date.now() / 1000);
-  return sign(key, secret, { iss: key, sub: identity, iat: now, nbf: now - 1, exp: now + expiry, video });
+  return sign(key, secret, { iss: key, sub: identity, iat: now - issuedAgo,
+    nbf: now - issuedAgo - 1, exp: now + expiry, video });
 };
+function fakeMicrophoneWAV() {
+  const samples = 48_000;
+  const wav = Buffer.alloc(44 + samples * 2);
+  wav.write('RIFF', 0); wav.writeUInt32LE(wav.length - 8, 4); wav.write('WAVEfmt ', 8);
+  wav.writeUInt32LE(16, 16); wav.writeUInt16LE(1, 20); wav.writeUInt16LE(1, 22);
+  wav.writeUInt32LE(samples, 24); wav.writeUInt32LE(samples * 2, 28);
+  wav.writeUInt16LE(2, 32); wav.writeUInt16LE(16, 34);
+  wav.write('data', 36); wav.writeUInt32LE(samples * 2, 40);
+  for (let i = 0; i < samples; i++) wav.writeInt16LE(Math.round(Math.sin(i * 2 * Math.PI * 440 / samples) * 16_000), 44 + i * 2);
+  return wav;
+}
 async function tcpPort() {
   const listener = createTCPServer();
   await new Promise((resolve, reject) => listener.once('error', reject).listen(0, '127.0.0.1', resolve));
@@ -161,8 +175,9 @@ async function sample(page) {
 }
 async function samplePublisher(page) {
   return page.evaluate(async () => {
-    const context = window.probeAudio;
-    const track = window.probeDestination.stream.getAudioTracks()[0];
+    const context = new AudioContext();
+    await context.resume();
+    const track = window.probeMicTrack;
     const source = context.createMediaStreamSource(new MediaStream([track]));
     const analyser = context.createAnalyser();
     source.connect(analyser);
@@ -192,6 +207,7 @@ async function samplePublisher(page) {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
     const after = await outbound();
+    await context.close();
     return { publisher_audio_context_state: contextState,
       publisher_audio_context_time_delta: context.currentTime - timeBefore,
       destination_track: trackState, destination_pcm_rms_energy: peakEnergy,
@@ -203,8 +219,12 @@ async function samplePublisher(page) {
 async function rejectedJWT(page, wsURL, jwt) {
   return page.evaluate(async ({ wsURL, jwt }) => {
     const room = new window.LivekitClient.Room();
-    try { await room.connect(wsURL, jwt); return false; }
-    catch { return true; }
+    try { await room.connect(wsURL, jwt); return { reason: 'accepted', status: 0 }; }
+    catch (error) {
+      const lk = window.LivekitClient;
+      return { reason: error instanceof lk.ConnectionError && error.reason === lk.ConnectionErrorReason.NotAllowed ? 'NotAllowed' : 'other',
+        status: error instanceof lk.ConnectionError && error.status === 401 ? 401 : 0 };
+    }
     finally { await room.disconnect(); }
   }, { wsURL, jwt });
 }
@@ -213,9 +233,10 @@ async function participants(url, jwt, room) {
     method: 'POST', headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ room }), signal: AbortSignal.timeout(3000),
   });
-  assert(r.ok, `room_query_http_${r.status}`);
+  assert(r.ok, 'room_query_failed');
   const body = await r.json();
-  return Array.isArray(body.participants) ? body.participants.length : 0;
+  assert(body.participants === undefined || Array.isArray(body.participants), 'room_query_malformed');
+  return body.participants || [];
 }
 async function cleanup() {
   for (const [name, resource] of [['publisher_context', publisherContext], ['observer_context', observerContext], ['browser', browser]]) {
@@ -235,11 +256,11 @@ async function cleanup() {
     }
     if (server) evidence.cleanup.server = server.exitCode !== null || server.signalCode !== null;
   } catch { evidence.cleanup.server = false; }
-  try { if (configPath) await unlink(configPath); if (configDir) await rmdir(configDir); evidence.cleanup.config = true; }
+  try { if (configPath) await unlink(configPath); if (wavPath) await unlink(wavPath); if (configDir) await rmdir(configDir); evidence.cleanup.config = true; }
   catch { evidence.cleanup.config = false; }
 }
 async function run() {
-  assert(fault === '' || fault === 'after-publish', 'invalid_fault_value');
+  assert(fault === '' || fault === 'after-publish' || fault === 'timeout-after-publish', 'invalid_fault_value');
   assert(platform() === 'darwin' && arch() === 'arm64', 'unsupported_platform_darwin_arm64_required');
   assert(binary && path.isAbsolute(binary), 'set_COMMERCE_R04_LIVEKIT_BINARY_to_pinned_binary');
   const bytes = await readFile(binary).catch(() => { throw new Error('pinned_binary_missing'); });
@@ -254,6 +275,7 @@ async function run() {
 
   const signalPort = await tcpPort(), rtcTCPPort = await tcpPort(), rtcUDPPort = await udpPort(), fixturePort = await tcpPort();
   assert(new Set([signalPort, rtcTCPPort, rtcUDPPort, fixturePort]).size === 4, 'port_collision');
+  Object.assign(evidence.resources, { signal_port: signalPort, rtc_tcp_port: rtcTCPPort, rtc_udp_port: rtcUDPPort, fixture_port: fixturePort });
   const apiKey = `r04${randomBytes(8).toString('hex')}`;
   const secret = randomBytes(32).toString('base64url');
   const room = `r04_probe_${randomBytes(8).toString('hex')}`;
@@ -261,9 +283,15 @@ async function run() {
   const obsID = `obs_${randomBytes(8).toString('hex')}`;
   const config = `port: ${signalPort}\nbind_addresses:\n  - 127.0.0.1\nrtc:\n  tcp_port: ${rtcTCPPort}\n  udp_port: ${rtcUDPPort}\n  use_external_ip: false\n  node_ip: 127.0.0.1\nkeys:\n  ${apiKey}: ${secret}\n`;
   configDir = await mkdtemp(path.join(tmpdir(), 'r04-input-'));
+  evidence.resources.config_dir = configDir;
   configPath = path.join(configDir, 'server.yaml');
+  wavPath = path.join(configDir, 'fake-mic.wav');
   await writeFile(configPath, config, { mode: 0o600, flag: 'wx' });
+  await writeFile(wavPath, fakeMicrophoneWAV(), { mode: 0o600, flag: 'wx' });
+  evidence.capture_mode = 'chromium_fake_get_user_media_wav';
+  evidence.capture_path = 'getUserMedia_audio';
   server = spawn(binary, ['--config', configPath], { stdio: 'ignore', env: { ...process.env, LIVEKIT_CONFIG: '' } });
+  evidence.resources.server_pid = server.pid;
   const signalURL = `http://127.0.0.1:${signalPort}`;
   const wsURL = `ws://127.0.0.1:${signalPort}`;
   await waitReady(signalURL);
@@ -276,7 +304,7 @@ async function run() {
     else { res.writeHead(404, { 'cache-control': 'no-store' }); res.end(); }
   });
   await new Promise((resolve, reject) => httpServer.once('error', reject).listen(fixturePort, '127.0.0.1', resolve));
-  browser = await chromium.launch({ headless: true, args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream', '--autoplay-policy=no-user-gesture-required'] });
+  browser = await chromium.launch({ headless: true, args: ['--use-fake-device-for-media-stream', `--use-file-for-fake-audio-capture=${wavPath}`, '--use-fake-ui-for-media-stream', '--autoplay-policy=no-user-gesture-required'] });
   publisherContext = await browser.newContext({ permissions: ['camera', 'microphone'] });
   observerContext = await browser.newContext();
   let unexpected = 0;
@@ -299,66 +327,105 @@ async function run() {
   await connect(publisher, wsURL, pubToken, 'publisher');
   await deadline('publish_tracks', publisher.evaluate(async () => {
     await window.probeRoom.localParticipant.setCameraEnabled(true);
-    // Chromium's fake microphone may emit silence. A local oscillator is a deterministic synthetic mic.
-    window.probeAudio = new AudioContext();
-    await window.probeAudio.resume();
-    const oscillator = window.probeAudio.createOscillator();
-    const destination = window.probeAudio.createMediaStreamDestination();
-    window.probeDestination = destination;
-    oscillator.frequency.value = 440;
-    oscillator.connect(destination);
-    oscillator.start();
-    window.probeOscillator = oscillator;
-    await window.probeRoom.localParticipant.publishTrack(destination.stream.getAudioTracks()[0], { source: window.LivekitClient.Track.Source.Microphone });
+    await window.probeRoom.localParticipant.setMicrophoneEnabled(true, {
+      echoCancellation: false, noiseSuppression: false, autoGainControl: false,
+    });
+    window.probeMicTrack = [...window.probeRoom.localParticipant.trackPublications.values()]
+      .find(publication => publication.kind === 'audio')?.track?.mediaStreamTrack;
+    if (!window.probeMicTrack) throw new Error('fake_mic_track_missing');
   }), 18_000);
   await waitTracks(observer, pubID);
+  assertBudget();
   evidence.gates.RLI02_remote_tracks = true;
   evidence.playback = await startPlayback(observer);
-  if (fault === 'after-publish') throw new Error('injected_after_publish');
   const [receiver, publisherAudio] = await Promise.all([sample(observer), samplePublisher(publisher)]);
   evidence.counters = { ...receiver, ...publisherAudio };
   const c = evidence.counters;
   assert(c.frames_after > c.frames_before && c.width > 0 && c.height > 0, 'video_frames_not_advancing');
   assert(c.audio_packets_delta > 0 && c.audio_bytes_delta > 0 && (c.audio_energy_delta > 0 || c.audio_rms_energy > 0), 'audio_media_not_advancing');
   evidence.gates.RLI03_decoded_media = true;
+  assertBudget();
+  if (fault === 'after-publish') throw new Error('injected_after_publish');
+  if (fault === 'timeout-after-publish') {
+    await deadline('injected_operation', new Promise(() => {}), 100);
+    throw new Error('injected_timeout_not_triggered');
+  }
   const screenshotPath = path.join(evidenceDir, `r04-input-${started}-observer.png`);
   await mkdir(evidenceDir, { recursive: true, mode: 0o700 });
   await observer.screenshot({ path: screenshotPath });
   evidence.screenshot_path = screenshotPath;
 
-  const expired = token(apiKey, secret, `exp_${randomBytes(6).toString('hex')}`, grant(room, false, true), -60);
+  const expired = token(apiKey, secret, `exp_${randomBytes(6).toString('hex')}`, grant(room, false, true), -60, 120);
   const valid = token(apiKey, secret, `bad_${randomBytes(6).toString('hex')}`, grant(room, false, true));
-  const tampered = `${valid.slice(0, -1)}${valid.endsWith('a') ? 'b' : 'a'}`;
-  evidence.gates.RLI04_expired_rejected = await deadline('expired_rejection', rejectedJWT(observer, wsURL, expired), 10_000);
-  evidence.gates.RLI04_tampered_rejected = await deadline('tampered_rejection', rejectedJWT(observer, wsURL, tampered), 10_000);
+  const parts = valid.split('.');
+  parts[2] = `${parts[2][0] === 'a' ? 'b' : 'a'}${parts[2].slice(1)}`;
+  const tampered = parts.join('.');
+  evidence.auth = {
+    expired: await deadline('expired_rejection', rejectedJWT(observer, wsURL, expired), 10_000),
+    tampered: await deadline('tampered_rejection', rejectedJWT(observer, wsURL, tampered), 10_000),
+  };
+  evidence.gates.RLI04_expired_rejected = evidence.auth.expired.reason === 'NotAllowed' && evidence.auth.expired.status === 401;
+  evidence.gates.RLI04_tampered_rejected = evidence.auth.tampered.reason === 'NotAllowed' && evidence.auth.tampered.status === 401;
   assert(evidence.gates.RLI04_expired_rejected && evidence.gates.RLI04_tampered_rejected, 'server_accepted_invalid_jwt');
-  evidence.gates.RLI04_observer_publish_denied = await observer.evaluate(async () => {
-    try { await window.probeRoom.localParticipant.setCameraEnabled(true); return false; }
-    catch { return true; }
-  });
-  evidence.gates.RLI04_observer_denial_source = 'client_or_server_not_proven';
+  const adminJWT = token(apiKey, secret, `admin_${randomBytes(6).toString('hex')}`, { room, roomAdmin: true });
+  const serverObserver = (await participants(signalURL, adminJWT, room)).find(participant => participant.identity === obsID);
+  assert(serverObserver && serverObserver.permission &&
+    (serverObserver.permission.canPublish === undefined || serverObserver.permission.canPublish === false) &&
+    (serverObserver.tracks === undefined || Array.isArray(serverObserver.tracks)), 'observer_server_grant_invalid');
+  evidence.observer_denial = {
+    server_can_publish: serverObserver.permission.canPublish ?? false,
+    server_track_count: (serverObserver.tracks || []).length,
+    ...(await observer.evaluate(async () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = 2;
+      canvas.getContext('2d').fillRect(0, 0, 2, 2);
+      const track = canvas.captureStream(5).getVideoTracks()[0];
+      try {
+        await window.probeRoom.localParticipant.publishTrack(track, { source: window.LivekitClient.Track.Source.Camera });
+        return { client_error: 'none', client_status: 0 };
+      } catch (error) {
+        return { client_error: error instanceof window.LivekitClient.PublishTrackError ? 'PublishTrackError' : 'other',
+          client_status: error instanceof window.LivekitClient.PublishTrackError && error.status === 403 ? 403 : 0 };
+      } finally { track.stop(); }
+    })),
+    denial_layer: 'client_permissions',
+  };
+  const afterDenial = (await participants(signalURL, adminJWT, room)).find(participant => participant.identity === obsID);
+  assert(afterDenial && (afterDenial.tracks || []).length === 0, 'observer_server_track_present');
+  evidence.gates.RLI04_observer_publish_denied = evidence.observer_denial.server_can_publish === false &&
+    evidence.observer_denial.server_track_count === 0 && evidence.observer_denial.client_error === 'PublishTrackError' &&
+    evidence.observer_denial.client_status === 403;
+  evidence.gates.RLI04_observer_denial_source = 'client_permissions';
   assert(evidence.gates.RLI04_observer_publish_denied, 'observer_publish_not_denied');
   assert(unexpected === 0, 'unexpected_browser_external_request');
   evidence.gates.RLI04 = true;
 
   await publisher.evaluate(async () => {
     for (const pub of window.probeRoom.localParticipant.trackPublications.values()) pub.track?.stop();
-    window.probeOscillator?.stop();
-    await window.probeAudio?.close();
     await window.probeRoom.disconnect();
   });
   await deadline('track_removed', observer.waitForFunction(() => window.probeRemoved >= 2), 10_000);
   evidence.gates.RLI05_subscriber_removal = true;
   await observer.evaluate(() => window.probeRoom.disconnect());
-  const adminJWT = token(apiKey, secret, `admin_${randomBytes(6).toString('hex')}`, { room, roomAdmin: true });
   let count = -1;
-  for (let n = 0; n < 20; n++) { count = await participants(signalURL, adminJWT, room); if (count === 0) break; await pause(100); }
+  for (let n = 0; n < 20; n++) { count = (await participants(signalURL, adminJWT, room)).length; if (count === 0) break; await pause(100); }
   evidence.gates.RLI05_room_empty = count === 0;
   assert(count === 0, 'room_not_empty');
   evidence.status = 'PASS';
 }
-try { await deadline('probe', run(), MAX_MS); }
-catch (error) { evidence.failure = error instanceof Error ? error.message.replace(/[^a-zA-Z0-9_ -]/g, '_').slice(0, 100) : 'unknown_failure'; }
+try { await run(); }
+catch (error) {
+  const known = new Set(['invalid_fault_value', 'unsupported_platform_darwin_arm64_required',
+    'set_COMMERCE_R04_LIVEKIT_BINARY_to_pinned_binary', 'pinned_binary_missing',
+    'binary_checksum_mismatch', 'binary_version_mismatch', 'sdk_version_mismatch',
+    'sdk_lock_integrity_missing', 'port_collision', 'server_exited_before_ready',
+    'server_not_ready', 'fake_mic_track_missing', 'video_frames_not_advancing',
+    'audio_media_not_advancing', 'injected_after_publish', 'injected_operation_timeout',
+    'injected_timeout_not_triggered', 'runtime_budget_exceeded', 'server_accepted_invalid_jwt',
+    'observer_server_grant_invalid', 'observer_server_track_present', 'observer_publish_not_denied',
+    'unexpected_browser_external_request', 'room_not_empty', 'room_query_failed', 'room_query_malformed']);
+  evidence.failure = error instanceof Error && known.has(error.message) ? error.message : 'operation_failed';
+}
 finally {
   await cleanup();
   evidence.duration_ms = Date.now() - started;
