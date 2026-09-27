@@ -22,6 +22,7 @@ import (
 
 type recoveryEpisode struct {
 	id            string
+	withInput     bool
 	started       time.Time
 	coverageKnown bool
 	members       []live.RecoveryMember
@@ -43,6 +44,8 @@ type recoveryEpisode struct {
 
 type recoveryAttestation struct {
 	observationID string
+	inputID       string
+	egressID      string
 	elapsedMS     int64
 }
 
@@ -113,7 +116,13 @@ func (e *recoveryEpisode) attemptPending(ctx context.Context, ledger *live.Media
 	sort.Strings(ids)
 	for _, id := range ids {
 		proof := e.pending[id]
-		status, err := ledger.Witness(ctx, e.id, id, proof.observationID, proof.elapsedMS)
+		var status string
+		var err error
+		if e.withInput {
+			status, err = ledger.WitnessWithInput(ctx, e.id, id, proof.inputID, proof.egressID, proof.elapsedMS)
+		} else {
+			status, err = ledger.Witness(ctx, e.id, id, proof.observationID, proof.elapsedMS)
+		}
 		if err != nil {
 			continue
 		} // Retain exact evidence for a bounded retry.
@@ -130,6 +139,10 @@ func (e *recoveryEpisode) attemptPending(ctx context.Context, ledger *live.Media
 }
 
 func (e *recoveryEpisode) acceptReadback(rows []live.RecoveryReadback, elapsedMS int64) {
+	if e.withInput {
+		e.acceptCompositeReadback(rows, elapsedMS)
+		return
+	}
 	if len(rows) == 0 {
 		return
 	}
@@ -149,7 +162,7 @@ func (e *recoveryEpisode) acceptReadback(rows []live.RecoveryReadback, elapsedMS
 			continue
 		}
 		if _, exists := e.pending[row.OperationID]; !exists {
-			e.pending[row.OperationID] = recoveryAttestation{row.ObservationID, elapsedMS}
+			e.pending[row.OperationID] = recoveryAttestation{observationID: row.ObservationID, elapsedMS: elapsedMS}
 		}
 	}
 	if rows[0].ScopeStatus == "finished" || rows[0].ScopeStatus == "empty" && rows[0].CoverageKnown {
@@ -157,6 +170,133 @@ func (e *recoveryEpisode) acceptReadback(rows []live.RecoveryReadback, elapsedMS
 	} else {
 		e.updateProofState()
 	}
+}
+
+// A mixed readback is one atomic classification unit. No member or scope
+// disposition is honored until the entire batch matches immutable admission.
+func (e *recoveryEpisode) acceptCompositeReadback(rows []live.RecoveryReadback, elapsedMS int64) {
+	if !e.admitted || elapsedMS < 0 || len(rows) == 0 || len(e.members) == 0 {
+		return
+	}
+	if len(e.members) == 1 && e.members[0].OperationID == "" {
+		row := rows[0]
+		if len(rows) == 1 && e.members[0].Disposition == "empty" &&
+			e.members[0].EpisodeID == e.id && e.members[0].CoverageKnown &&
+			e.members[0].CandidateCount == 0 &&
+			row.EpisodeID == e.id && row.ScopeStatus == "empty" && row.CoverageKnown &&
+			row.CandidateCount == 0 && row.OperationID == "" && row.JobID == 0 &&
+			row.ExecutionProfile == "" && !row.InputRequired && !row.EgressRequired &&
+			row.InputObservationID == "" && row.ObservationID == "" {
+			e.markResolved()
+		}
+		return
+	}
+	if len(rows) != len(e.members) || !e.members[0].CoverageKnown ||
+		e.members[0].CandidateCount != len(e.members) {
+		return
+	}
+	members := make(map[string]live.RecoveryMember, len(e.members))
+	for _, member := range e.members {
+		if member.EpisodeID != e.id || member.OperationID == "" || member.JobID < 1 ||
+			!member.CoverageKnown || member.CandidateCount != len(e.members) || member.BlockedByEpisodeID != "" ||
+			(!member.InputRequired && !member.EgressRequired) ||
+			(member.ExecutionProfile == "PROVIDER_MOCK" && (member.InputRequired || !member.EgressRequired)) ||
+			(member.ExecutionProfile != "PROVIDER_MOCK" && member.ExecutionProfile != "LOCAL_SFU_MOCK_EGRESS") ||
+			members[member.OperationID].OperationID != "" {
+			return
+		}
+		members[member.OperationID] = member
+	}
+	seen := make(map[string]bool, len(rows))
+	status := rows[0].ScopeStatus
+	if status != "pending" && status != "finished" {
+		return
+	}
+	allWitnessed := true
+	for _, row := range rows {
+		member, ok := members[row.OperationID]
+		if !ok || seen[row.OperationID] || row.EpisodeID != e.id || row.ScopeStatus != status ||
+			!row.CoverageKnown || row.CandidateCount != len(e.members) || row.BlockedByEpisodeID != "" ||
+			row.JobID != member.JobID || row.BaselineGeneration != member.BaselineGeneration ||
+			row.ExecutionProfile != member.ExecutionProfile || row.InputRequired != member.InputRequired ||
+			row.EgressRequired != member.EgressRequired ||
+			(row.InputRequired && row.ExecutionProfile != "LOCAL_SFU_MOCK_EGRESS") ||
+			(row.ExecutionProfile != "PROVIDER_MOCK" && row.ExecutionProfile != "LOCAL_SFU_MOCK_EGRESS") ||
+			!validCompositeProofShape(row) {
+			return
+		}
+		seen[row.OperationID] = true
+		allWitnessed = allWitnessed && row.Disposition == "witnessed"
+	}
+	if (status == "finished") != allWitnessed {
+		return
+	}
+	if status == "finished" {
+		for _, row := range rows {
+			if row.Disposition != "witnessed" || !qualifiedComposite(row) {
+				return
+			}
+		}
+	}
+	for _, row := range rows {
+		if row.Disposition == "witnessed" && qualifiedComposite(row) {
+			e.witnessed[row.OperationID] = true
+			delete(e.pending, row.OperationID)
+			continue
+		}
+		if row.Disposition == "timeout" {
+			delete(e.pending, row.OperationID)
+			continue
+		}
+		if elapsedMS > 90000 || e.rejected[row.OperationID] || !qualifiedComposite(row) {
+			continue
+		}
+		if _, exists := e.pending[row.OperationID]; !exists {
+			e.pending[row.OperationID] = recoveryAttestation{
+				inputID: row.InputObservationID, egressID: row.ObservationID, elapsedMS: elapsedMS,
+			}
+		}
+	}
+	if status == "finished" {
+		e.markResolved()
+	} else {
+		e.updateProofState()
+	}
+}
+
+func qualifiedComposite(row live.RecoveryReadback) bool {
+	return validCompositeProofShape(row) && (!row.InputRequired || row.InputObservationID != "") &&
+		(!row.EgressRequired || row.ObservationID != "") && (row.InputRequired || row.EgressRequired)
+}
+
+func validCompositeProofShape(row live.RecoveryReadback) bool {
+	if row.InputRequired {
+		if row.InputObservationID == "" {
+			if row.InputObservationSource != "" || row.InputObservationResult != "" || row.InputObservationGeneration != 0 {
+				return false
+			}
+		} else if row.InputObservationGeneration <= row.BaselineGeneration ||
+			!((row.InputObservationSource == "PARTICIPANT" && row.InputObservationResult == "PRESENT") ||
+				(row.InputObservationSource == "ROOM" && row.InputObservationResult == "ABSENT")) {
+			return false
+		}
+	} else if row.InputObservationID != "" || row.InputObservationSource != "" ||
+		row.InputObservationResult != "" || row.InputObservationGeneration != 0 {
+		return false
+	}
+	if row.EgressRequired {
+		if row.ObservationID == "" {
+			if row.ObservationSource != "" || row.ObservationGeneration != 0 {
+				return false
+			}
+		} else if row.ObservationGeneration <= row.BaselineGeneration ||
+			(row.ObservationSource != "QUERY" && row.ObservationSource != "ROOM") {
+			return false
+		}
+	} else if row.ObservationID != "" || row.ObservationSource != "" || row.ObservationGeneration != 0 {
+		return false
+	}
+	return true
 }
 
 // This local monotonic timer is independent of SQL/provider calls that may be
@@ -313,6 +453,29 @@ func superviseNativeChild(ctx context.Context, events chan<- time.Time, releases
 
 type observeResult struct{ episodeID, operationID, disposition string }
 
+func (e *recoveryEpisode) shouldObserve(member live.RecoveryMember) bool {
+	if member.Disposition != "pending" || e.inflight[member.OperationID] {
+		return false
+	}
+	if e.withInput {
+		_, pending := e.pending[member.OperationID]
+		return !pending && !e.witnessed[member.OperationID]
+	}
+	return !e.observed[member.OperationID]
+}
+
+func (e *recoveryEpisode) noteObserveResult(result observeResult) {
+	if result.episodeID != e.id {
+		return
+	}
+	delete(e.inflight, result.operationID)
+	// Mixed status is not durable proof: one side can commit while the other
+	// fails, and either record acknowledgement can disappear after commit.
+	if !e.withInput && result.disposition != "busy" {
+		e.observed[result.operationID] = true
+	}
+}
+
 func runSupervised(ctx context.Context, getenv func(string) string) error {
 	if ctx == nil || getenv == nil {
 		return errWorkerConfig
@@ -428,7 +591,7 @@ func runSupervised(ctx context.Context, getenv func(string) string) error {
 		if episode.admitted && !episode.resolved && episode.elapsedMS() < 90000 {
 			if observer != nil {
 				for _, member := range episode.members {
-					if member.Disposition != "pending" || episode.observed[member.OperationID] || episode.inflight[member.OperationID] {
+					if !episode.shouldObserve(member) {
 						continue
 					}
 					episode.inflight[member.OperationID] = true
@@ -486,12 +649,7 @@ func runSupervised(ctx context.Context, getenv func(string) string) error {
 		case <-ctx.Done():
 			return nil
 		case result := <-results:
-			if result.episodeID == episode.id {
-				delete(episode.inflight, result.operationID)
-				if result.disposition != "busy" {
-					episode.observed[result.operationID] = true
-				}
-			}
+			episode.noteObserveResult(result)
 		case permit := <-childReleases:
 			// Each restart waits for this episode's committed admission result,
 			// or an explicit degraded DB/config path, before native work.

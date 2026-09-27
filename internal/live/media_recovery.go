@@ -17,6 +17,8 @@ var ErrMediaRecovery = errors.New("media_recovery_unavailable")
 type RecoveryMember struct {
 	Disposition, EpisodeID, OperationID string
 	JobID, BaselineGeneration           int64
+	ExecutionProfile                    string
+	InputRequired, EgressRequired       bool
 	DeadlineAt                          time.Time
 	CandidateCount                      int
 	CoverageKnown                       bool
@@ -33,17 +35,28 @@ type RecoveryReadback struct {
 	WitnessElapsedMS                                 int64
 	TimeoutAt                                        time.Time
 	CleanupRequired                                  bool
+	ExecutionProfile                                 string
+	InputRequired, EgressRequired                    bool
+	InputObservationID, InputObservationSource       string
+	InputObservationResult                           string
+	InputObservationGeneration, JobID                int64
 }
 
 type MediaRecoveryObserver struct {
-	pool     *pgxpool.Pool
-	projects map[mediaProjectKey]mediaEndpoint
+	pool      *pgxpool.Pool
+	projects  map[mediaProjectKey]mediaEndpoint
+	input     *BrowserInputRuntime
+	withInput bool
 }
 
 // The diagnostic ledger remains usable when native/project configuration is
 // invalid; it never enables provider I/O by itself.
 func NewMediaRecoveryLedger(pool *pgxpool.Pool) *MediaRecoveryObserver {
 	return &MediaRecoveryObserver{pool: pool}
+}
+
+func NewMediaRecoveryLedgerWithBrowserInput(pool *pgxpool.Pool) *MediaRecoveryObserver {
+	return &MediaRecoveryObserver{pool: pool, withInput: true}
 }
 
 // The observer has no River client, material keyring, Start or Stop method.
@@ -79,16 +92,48 @@ func NewMediaRecoveryObserver(ctx context.Context, pool *pgxpool.Pool, projects 
 	return &MediaRecoveryObserver{pool: pool, projects: selected}, nil
 }
 
+func NewMediaRecoveryObserverWithBrowserInput(ctx context.Context, pool *pgxpool.Pool,
+	projects []MediaProject, runtime *BrowserInputRuntime) (*MediaRecoveryObserver, error) {
+	if runtime == nil || len(runtime.projects) > len(projects) {
+		return nil, ErrMediaRecovery
+	}
+	observer, err := NewMediaRecoveryObserver(ctx, pool, projects)
+	if err != nil {
+		return nil, err
+	}
+	for key, input := range runtime.projects {
+		endpoint, ok := observer.projects[key]
+		if !ok || input.client == nil || input.identity != endpoint.identity {
+			return nil, ErrMediaRecovery
+		}
+	}
+	bounded, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	var ready bool
+	if pool.QueryRow(bounded, `SELECT live.media_browser_input_recovery_ready()`).Scan(&ready) != nil || !ready {
+		return nil, ErrMediaRecovery
+	}
+	observer.input = runtime
+	observer.withInput = true
+	return observer, nil
+}
+
 func (r *MediaRecoveryObserver) Begin(ctx context.Context, episode string, elapsedMS int64, capacity int, coverageKnown bool) ([]RecoveryMember, error) {
 	if r == nil || r.pool == nil || ctx == nil || capacity < 1 || capacity > 32 || elapsedMS < 0 {
 		return nil, ErrMediaRecovery
 	}
 	bounded, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	rows, err := r.pool.Query(bounded, `SELECT disposition,episode_id::text,operation_id::text,job_id,
+	query := `SELECT disposition,episode_id::text,operation_id::text,job_id,
 	 baseline_generation,deadline_at,candidate_count,coverage_known,blocked_by_episode_id::text
-	 FROM live.begin_media_recovery_episode($1::uuid,$2::bigint,$3::integer,$4::boolean)`,
-		episode, elapsedMS, capacity, coverageKnown)
+	 FROM live.begin_media_recovery_episode($1::uuid,$2::bigint,$3::integer,$4::boolean)`
+	if r.withInput {
+		query = `SELECT disposition,episode_id::text,operation_id::text,job_id,
+	 baseline_generation,deadline_at,candidate_count,coverage_known,blocked_by_episode_id::text,
+	 execution_profile,input_required,egress_required
+	 FROM live.begin_media_recovery_episode_with_input($1::uuid,$2::bigint,$3::integer,$4::boolean)`
+	}
+	rows, err := r.pool.Query(bounded, query, episode, elapsedMS, capacity, coverageKnown)
 	if err != nil {
 		return nil, ErrMediaRecovery
 	}
@@ -98,12 +143,18 @@ func (r *MediaRecoveryObserver) Begin(ctx context.Context, episode string, elaps
 		var m RecoveryMember
 		var operation, blocked sql.NullString
 		var job, generation sql.NullInt64
-		if rows.Scan(&m.Disposition, &m.EpisodeID, &operation, &job, &generation,
-			&m.DeadlineAt, &m.CandidateCount, &m.CoverageKnown, &blocked) != nil {
+		dest := []any{&m.Disposition, &m.EpisodeID, &operation, &job, &generation,
+			&m.DeadlineAt, &m.CandidateCount, &m.CoverageKnown, &blocked}
+		var profile sql.NullString
+		if r.withInput {
+			dest = append(dest, &profile, &m.InputRequired, &m.EgressRequired)
+		}
+		if rows.Scan(dest...) != nil {
 			return nil, ErrMediaRecovery
 		}
 		m.OperationID, m.BlockedByEpisodeID = operation.String, blocked.String
 		m.JobID, m.BaselineGeneration = job.Int64, generation.Int64
+		m.ExecutionProfile = profile.String
 		result = append(result, m)
 	}
 	if rows.Err() != nil || len(result) == 0 || len(result) > 32 && result[0].Disposition == "pending" {
@@ -118,10 +169,19 @@ func (r *MediaRecoveryObserver) Read(ctx context.Context, episode string) ([]Rec
 	}
 	bounded, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	rows, err := r.pool.Query(bounded, `SELECT episode_id::text,scope_status,coverage_known,candidate_count,
+	query := `SELECT episode_id::text,scope_status,coverage_known,candidate_count,
 	 blocked_by_episode_id::text,operation_id::text,disposition,baseline_generation,
 	 observation_id::text,observation_source,observation_generation,witness_elapsed_ms,timeout_at,cleanup_required
-	 FROM live.read_media_recovery_episode($1::uuid)`, episode)
+	 FROM live.read_media_recovery_episode($1::uuid)`
+	if r.withInput {
+		query = `SELECT episode_id::text,scope_status,coverage_known,candidate_count,
+	 blocked_by_episode_id::text,operation_id::text,disposition,baseline_generation,
+	 observation_id::text,observation_source,observation_generation,witness_elapsed_ms,timeout_at,cleanup_required,
+	 execution_profile,input_required,egress_required,input_observation_id::text,input_observation_source,
+	 input_observation_result,input_observation_generation,job_id
+	 FROM live.read_media_recovery_episode_with_input($1::uuid)`
+	}
+	rows, err := r.pool.Query(bounded, query, episode)
 	if err != nil {
 		return nil, ErrMediaRecovery
 	}
@@ -133,15 +193,25 @@ func (r *MediaRecoveryObserver) Read(ctx context.Context, episode string) ([]Rec
 		var baseline, generation, witness sql.NullInt64
 		var timeout sql.NullTime
 		var cleanup sql.NullBool
-		if rows.Scan(&x.EpisodeID, &x.ScopeStatus, &x.CoverageKnown, &x.CandidateCount,
+		dest := []any{&x.EpisodeID, &x.ScopeStatus, &x.CoverageKnown, &x.CandidateCount,
 			&blocked, &operation, &disposition, &baseline, &observation, &source,
-			&generation, &witness, &timeout, &cleanup) != nil {
+			&generation, &witness, &timeout, &cleanup}
+		var profile, inputID, inputSource, inputResult sql.NullString
+		var inputGeneration, job sql.NullInt64
+		if r.withInput {
+			dest = append(dest, &profile, &x.InputRequired, &x.EgressRequired,
+				&inputID, &inputSource, &inputResult, &inputGeneration, &job)
+		}
+		if rows.Scan(dest...) != nil {
 			return nil, ErrMediaRecovery
 		}
 		x.BlockedByEpisodeID, x.OperationID, x.Disposition = blocked.String, operation.String, disposition.String
 		x.BaselineGeneration, x.ObservationGeneration = baseline.Int64, generation.Int64
 		x.ObservationID, x.ObservationSource = observation.String, source.String
 		x.WitnessElapsedMS, x.TimeoutAt, x.CleanupRequired = witness.Int64, timeout.Time, cleanup.Bool
+		x.ExecutionProfile, x.InputObservationID = profile.String, inputID.String
+		x.InputObservationSource, x.InputObservationResult = inputSource.String, inputResult.String
+		x.InputObservationGeneration, x.JobID = inputGeneration.Int64, job.Int64
 		result = append(result, x)
 	}
 	if rows.Err() != nil || len(result) == 0 {
@@ -151,7 +221,7 @@ func (r *MediaRecoveryObserver) Read(ctx context.Context, episode string) ([]Rec
 }
 
 func (r *MediaRecoveryObserver) Witness(ctx context.Context, episode, operation, observation string, elapsedMS int64) (string, error) {
-	if r == nil || r.pool == nil || ctx == nil || elapsedMS < 0 || elapsedMS > 90000 {
+	if r == nil || r.withInput || r.pool == nil || ctx == nil || elapsedMS < 0 || elapsedMS > 90000 {
 		return "", ErrMediaRecovery
 	}
 	bounded, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -182,6 +252,9 @@ func (r *MediaRecoveryObserver) Timeout(ctx context.Context, episode string, ela
 // Observe performs at most one fenced Query/FindByRoom; the parent owns retries
 // and samples the post-commit readback before it may attest a witness.
 func (r *MediaRecoveryObserver) Observe(ctx context.Context, episode string, member RecoveryMember) (string, error) {
+	if r != nil && r.withInput {
+		return r.observeWithInput(ctx, episode, member)
+	}
 	if r == nil || r.pool == nil || ctx == nil || member.Disposition != "pending" || member.OperationID == "" || member.JobID < 1 {
 		return "", ErrMediaRecovery
 	}
