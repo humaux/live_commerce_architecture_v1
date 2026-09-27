@@ -107,6 +107,10 @@ async function sample(page) {
     source.connect(analyser);
     const waveform = new Float32Array(analyser.fftSize);
     let peakEnergy = 0;
+    const audioContextState = audioContext.state;
+    const audioContextTimeBefore = audioContext.currentTime;
+    const remoteTrackState = { ready_state: audio.mediaStreamTrack.readyState,
+      muted: audio.mediaStreamTrack.muted, enabled: audio.mediaStreamTrack.enabled };
     const stats = async () => {
       const report = await audio.getRTCStatsReport();
       let packets = 0, bytes = 0, energy = 0;
@@ -129,12 +133,56 @@ async function sample(page) {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
     const after = await stats();
+    const audioContextTimeDelta = audioContext.currentTime - audioContextTimeBefore;
     await audioContext.close();
     return { frames_before: framesBefore, frames_after: video.getVideoPlaybackQuality().totalVideoFrames,
       width: video.videoWidth, height: video.videoHeight,
       audio_packets_delta: after.packets - before.packets,
       audio_bytes_delta: after.bytes - before.bytes,
-      audio_energy_delta: after.energy - before.energy, audio_rms_energy: peakEnergy };
+      audio_energy_delta: after.energy - before.energy, audio_rms_energy: peakEnergy,
+      observer_audio_context_state: audioContextState, observer_audio_context_time_delta: audioContextTimeDelta,
+      remote_track: remoteTrackState };
+  });
+}
+async function samplePublisher(page) {
+  return page.evaluate(async () => {
+    const context = window.probeAudio;
+    const track = window.probeDestination.stream.getAudioTracks()[0];
+    const source = context.createMediaStreamSource(new MediaStream([track]));
+    const analyser = context.createAnalyser();
+    source.connect(analyser);
+    const waveform = new Float32Array(analyser.fftSize);
+    const outbound = async () => {
+      const report = await window.probeRoom.engine.pcManager?.publisher.getStats();
+      let packets = 0, bytes = 0, energy = 0, rows = 0;
+      report?.forEach(row => {
+        if (row.type === 'outbound-rtp' && row.kind === 'audio') {
+          rows++;
+          packets += row.packetsSent || 0;
+          bytes += row.bytesSent || 0;
+          energy += row.totalAudioEnergy || 0;
+        }
+      });
+      return { packets, bytes, energy, rows };
+    };
+    const before = await outbound();
+    const contextState = context.state, timeBefore = context.currentTime;
+    const trackState = { ready_state: track.readyState, muted: track.muted, enabled: track.enabled };
+    let peakEnergy = 0;
+    for (let i = 0; i < 10; i++) {
+      analyser.getFloatTimeDomainData(waveform);
+      let energy = 0;
+      for (const value of waveform) energy += value * value;
+      peakEnergy = Math.max(peakEnergy, energy / waveform.length);
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    const after = await outbound();
+    return { publisher_audio_context_state: contextState,
+      publisher_audio_context_time_delta: context.currentTime - timeBefore,
+      destination_track: trackState, destination_pcm_rms_energy: peakEnergy,
+      outbound_audio_rows: after.rows, outbound_audio_packets_delta: after.packets - before.packets,
+      outbound_audio_bytes_delta: after.bytes - before.bytes,
+      outbound_audio_energy_delta: after.energy - before.energy };
   });
 }
 async function rejectedJWT(page, wsURL, jwt) {
@@ -241,6 +289,7 @@ async function run() {
     await window.probeAudio.resume();
     const oscillator = window.probeAudio.createOscillator();
     const destination = window.probeAudio.createMediaStreamDestination();
+    window.probeDestination = destination;
     oscillator.frequency.value = 440;
     oscillator.connect(destination);
     oscillator.start();
@@ -250,7 +299,8 @@ async function run() {
   await waitTracks(observer, pubID);
   evidence.gates.RLI02_remote_tracks = true;
   if (fault === 'after-publish') throw new Error('injected_after_publish');
-  evidence.counters = await sample(observer);
+  const [receiver, publisherAudio] = await Promise.all([sample(observer), samplePublisher(publisher)]);
+  evidence.counters = { ...receiver, ...publisherAudio };
   const c = evidence.counters;
   assert(c.frames_after > c.frames_before && c.width > 0 && c.height > 0, 'video_frames_not_advancing');
   assert(c.audio_packets_delta > 0 && c.audio_bytes_delta > 0 && (c.audio_energy_delta > 0 || c.audio_rms_energy > 0), 'audio_media_not_advancing');
