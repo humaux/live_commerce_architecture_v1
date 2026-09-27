@@ -54,15 +54,27 @@ LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
    LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid='live.media_execution_state'::regclass
     AND a.attname=required.name WHERE a.attnum IS NULL OR a.attisdropped
     OR a.atttypid<>required.kind OR a.attnotnull<>required.mandatory)
-  AND (SELECT count(*)=3 FROM pg_catalog.pg_constraint c
-   WHERE c.conrelid='live.media_execution_state'::regclass AND c.convalidated
-    AND c.conname IN ('media_stop_request_pair','media_stop_request_member','media_stop_budget'))
-  AND EXISTS(SELECT 1 FROM pg_catalog.pg_constraint c
-   WHERE c.conrelid='live.media_execution_state'::regclass AND c.conname='media_stop_observation_fk'
-    AND c.convalidated AND c.condeferrable AND NOT c.condeferred)
-  AND EXISTS(SELECT 1 FROM pg_catalog.pg_constraint c
-   WHERE c.conrelid='live.media_observations'::regclass AND c.conname='media_observations_source_check'
-    AND c.convalidated)
+  -- Exact PG18 canonical definitions, including FK source/target columns and
+  -- deferrability. A renamed CHECK(true) cannot masquerade as the frozen gate.
+  AND NOT EXISTS(SELECT 1 FROM (VALUES
+   ('media_stop_request_pair','live.media_execution_state'::regclass,'c',
+    '85b8ffceba2f011df3a9a05e692ff8e2'),
+   ('media_stop_request_member','live.media_execution_state'::regclass,'f',
+    '6ba19d0c67e4903541580d362b5593b6'),
+   ('media_stop_budget','live.media_execution_state'::regclass,'c',
+    '4feeaa06bcf883ae2b56f35a066b422e'),
+   ('media_stop_observation_fk','live.media_execution_state'::regclass,'f',
+    '4ad62e9ba53ef7a8078b910f8dfdcdf4'),
+   ('media_observations_source_check','live.media_observations'::regclass,'c',
+    '6f56f7a11a1641d6490ace8d8ef07c00'))
+   AS required(name,relation,kind,digest)
+   LEFT JOIN pg_catalog.pg_constraint c ON c.conrelid=required.relation
+    AND c.conname=required.name
+   WHERE c.oid IS NULL OR NOT c.convalidated OR c.contype::text<>required.kind
+    OR pg_catalog.md5(pg_catalog.pg_get_constraintdef(c.oid))<>required.digest
+    OR (required.name='media_stop_observation_fk'
+     AND (NOT c.condeferrable OR c.condeferred
+      OR c.confrelid<>'live.media_observations'::regclass)))
   AND EXISTS(SELECT 1 FROM pg_catalog.pg_trigger t
    WHERE t.tgrelid='live.media_execution_state'::regclass AND t.tgname='media_stop_projection'
     AND t.tgenabled='O' AND t.tgtype=23
