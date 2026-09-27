@@ -451,7 +451,7 @@ Go 发现接口还须保留真实 PG 锁等待撤权负例。验收与外部资�
 |依赖|状态与边界|准入条件|
 |---|---|---|
 |sqlc|NOT_INSTALLED；当前 SQL 为显式参数化，尚无生成物|冻结 queries/schema 后由 integrator 锁版本，审生成 diff，跑真实 PG/RLS/事务 gate|
-|LiveKit SDK|NOT_INSTALLED；已有标准库协议客户端和本地 MOCK 执行／查询，未连接真实媒体服务|SDK 并非前置依赖；Cloud 凭据／授权／真实媒体质量与 G06 另验，媒体失败不得改变订单真源|
+|LiveKit 服务端 SDK|NOT_INSTALLED；Go 使用标准库协议客户端。测试专用 `livekit-client@2.22.3` 已用于真实本地 SFU 探针；生产应用未接入 Cloud|服务端 SDK 并非前置依赖；Cloud 凭据／授权／真实输出质量与 G06 另验，媒体失败不得改变订单真源|
 |PSP SDK|NOT_INSTALLED；PAYUNi 有标准库 wire adapter，PROTOCOL_MOCK；无真实收款/退款调用|先确认商家 MoR、sandbox 账户与 webhook 幂等/对账；live 需明确授权、金额、回执和回滚边界|
 
 任何新依赖须说明为何标准库/现有包不能满足、调用者、license、版本来源、移除/升级测试和生产影响；未满足前标 `NOT_INSTALLED` 或 `BLOCKED_EXTERNAL`，不伪造可用性。
