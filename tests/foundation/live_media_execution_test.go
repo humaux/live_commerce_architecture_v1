@@ -143,6 +143,10 @@ func lmeSetup(t *testing.T, handler http.HandlerFunc) *lmeHarness {
 			return
 		}
 		defer tx.Rollback(ctx)
+		if _, err = tx.Exec(ctx, `SET CONSTRAINTS ALL DEFERRED`); err != nil {
+			t.Errorf("media execution cleanup constraints: %v", err)
+			return
+		}
 		queries := []string{
 			`DELETE FROM live.media_observations WHERE attempt_id=$1`,
 			`DELETE FROM live.media_execution_state WHERE attempt_id=$1`,
