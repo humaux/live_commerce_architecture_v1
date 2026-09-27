@@ -558,7 +558,7 @@
       "input_runtime_status": "BIC_KERNEL_FOCUSED_AND_FULL696_PASS_PRODUCT_BROWSER_ADMISSION_PENDING",
       "input_runtime_evidence": "docs/implementation/2026-09-27-browser-input-runtime.md",
       "input_worker_contract": "contracts/live-browser-input-worker-v1.md",
-      "input_worker_status": "SQL_EXECUTOR_SUBSET9_PASS_FULL_REGRESSION_IN_PROGRESS_PRODUCT_GATES_PENDING",
+      "input_worker_status": "SQL_EXECUTOR_SUBSET11_AND_SOURCE_FULL709_PASS_MORE_FAULT_AND_PRODUCT_GATES_PENDING",
       "input_worker_design_review": "7ca5ab59-6fc3-4d40-ab06-31bf01c9dfed",
       "input_worker_config_source": "a389f9b",
       "input_worker_config_evidence": "docs/implementation/2026-09-27-browser-input-config.md",
@@ -583,7 +583,7 @@
       "restart_recovery_concept_review": "2fbb104f-7bdd-413a-92e3-e8568fdabce6",
       "restart_recovery_concept_commit": "a2833ac",
       "restart_recovery_rejected_review": "94dc1dde-ab94-47a6-b42e-aff73cc972dc",
-      "boundary": "MLC/BIC bind the exact initiating login and retain input liability in its original operation/job. Historical b99a2d1 full696 remains baseline evidence. BRW c5160de has an explicit local input consumer and nine scoped actual-PG/worker tests passing, including independent RED-to-GREEN NULL-allowlist P1 correction. Fixed-source full regression is in progress, not PASS. No production consumer or browser token route is activated. Remaining BRW/BRI, new-queue90s, HTTPS browser/SFU, Cloud cached-token revocation and real Egress/output gates remain pending. Full T08/G06 remains IN_PROGRESS."
+      "boundary": "MLC/BIC bind the exact initiating login and retain input liability in its original operation/job. Historical b99a2d1 full696 remains baseline evidence. Product c5160de full709 PG/race/vet PASS, with independent RED-to-GREEN NULL-allowlist P1 closure. Later test-only3b7fb56 separately passes eleven actual-PG/worker tests, including final reservation COMMIT-ACK loss and exact ME409 after causal concurrent Stop/revoke; first failed fixture evidence retained. No production consumer or browser token route is activated. Remaining fault permutations, BRW/BRI, new-queue90s, HTTPS browser/SFU, Cloud cached-token revocation and real Egress/output gates remain pending. Full T08/G06 remains IN_PROGRESS."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },

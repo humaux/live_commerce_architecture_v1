@@ -11,7 +11,9 @@ and merge. This accepts BIC01–05 locally, not the BRW product chain. See the
 [implementation receipt](../docs/implementation/2026-09-27-browser-input-runtime.md).
 BRW token delivery remains unimplemented. Its explicitly constructed local
 input consumer has [scoped PG/worker validation](../docs/implementation/2026-09-27-browser-input-worker.md)
-at `c5160de`; full regression and product browser/recovery gates remain pending.
+at `c5160de`, including source-level full709 PG/race/vet PASS. Later fault
+tests pass in the separate eleven-test cohort at `3b7fb56`; remaining fault
+permutations and product browser/recovery gates remain pending.
 Their candidate wire contract is [BRW](live-browser-input-worker-v1.md);
 only an explicitly reviewed revision may be implemented.
 

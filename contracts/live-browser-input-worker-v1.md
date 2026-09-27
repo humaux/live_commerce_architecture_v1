@@ -12,9 +12,10 @@ The isolated `NewBrowserInputRuntime` constructor is implemented at `a389f9b`,
 independently tested and accepted CONFIG_ONLY_LOCAL_UNIT. Root's five-package
 race/vet gate: 79 PASS / 0 FAIL / 0 SKIP; no route/job/provider activation.
 See [configuration receipt](../docs/implementation/2026-09-27-browser-input-config.md).
-The local original-job executor is implemented at `c5160de`; nine scoped
+The local original-job executor is implemented at `c5160de`; eleven scoped
 PG/worker tests pass. [Worker validation](../docs/implementation/2026-09-27-browser-input-worker.md)
-records failures, the NULL-allowlist correction and the still-pending full run.
+records failures, the NULL-allowlist correction and source-level full709 PASS.
+Later test-only fault cases pass separately at `3b7fb56`; they are not part of full709.
 This is not acceptance of the remaining HTTP/browser/recovery product gates.
 
 ## One execution owner, two independent liabilities
