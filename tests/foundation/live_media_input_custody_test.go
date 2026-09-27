@@ -245,6 +245,34 @@ func TestLiveMediaExecutionBIC01ProfilePlanAndIsolation(t *testing.T) {
 			t.Fatalf("registered authorization unusable by input planner: %v", err)
 		}
 	})
+
+	t.Run("start-commit-ack-loss-recovers-one-original-job", func(t *testing.T) {
+		h := bicSetup(t)
+		bicRegister(t, h)
+		pool, loss := bicCommitAckPool(t, h.lp.f.runtime)
+		planner := lmpPlanner(t, pool, "river_media")
+		key := t04Key("bic-start-ack")
+		loss.armed.Store(true)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		preAck, err := bicPlan(ctx, h, pool, planner, h.logins.a, h.lp.f.storeA1, key, h.input)
+		if err == nil || !loss.committed.Load() {
+			t.Fatalf("input Start COMMIT ack loss not observed: err=%v committed=%t", err, loss.committed.Load())
+		}
+		if got := bicOwnedFacts(t, h); got != [8]int64{1, 1, 1, 1, 1, 1, 1, 0} {
+			t.Fatalf("ack-loss Start did not commit exact original artifacts: %v", got)
+		}
+		replayed, err := bicPlan(context.Background(), h, h.lp.f.runtime, h.planner, h.logins.a, h.lp.f.storeA1, key, h.input)
+		if err != nil || replayed.AttemptID != h.specification["attempt_id"] || replayed.JobID < 1 {
+			t.Fatalf("same login could not recover committed input Start: %v", err)
+		}
+		if preAck.AttemptID != "" && preAck != replayed {
+			t.Fatal("pre-ACK local result differed from durable input Start identity")
+		}
+		if got := bicOwnedFacts(t, h); got != [8]int64{1, 1, 1, 1, 1, 1, 1, 0} {
+			t.Fatalf("Start replay duplicated original operation/job: %v", got)
+		}
+	})
 }
 
 func bicGrantMap(t *testing.T, grant live.MediaInputGrant) map[string]any {
@@ -283,6 +311,27 @@ func bicStarted(t *testing.T) (*bicHarness, live.MediaStartResult, live.MediaInp
 		t.Fatal(err)
 	}
 	return h, plan, live.MediaInputReserveInput{SessionID: h.session, AttemptID: plan.AttemptID, ExpectedSessionVersion: 1}
+}
+
+func bicCommitAckPool(t *testing.T, base *pgxpool.Pool) (*pgxpool.Pool, *hpCommitLoss) {
+	t.Helper()
+	config := base.Config()
+	config.MaxConns = 1
+	loss := &hpCommitLoss{}
+	dial := config.ConnConfig.DialFunc
+	config.ConnConfig.DialFunc = func(ctx context.Context, network, address string) (net.Conn, error) {
+		conn, err := dial(ctx, network, address)
+		if err != nil {
+			return nil, err
+		}
+		return &hpCommitLossConn{Conn: conn, loss: loss}, nil
+	}
+	pool, err := pgxpool.NewWithConfig(context.Background(), config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(pool.Close)
+	return pool, loss
 }
 
 func TestLiveMediaExecutionBIC02GrantReplayAndAuthority(t *testing.T) {
@@ -365,8 +414,8 @@ func TestLiveMediaExecutionBIC02GrantReplayAndAuthority(t *testing.T) {
 		h, plan, in := bicStarted(t)
 		lease := bytes.Repeat([]byte{0x68}, 32)
 		disposition, generation, mode, err := bicClaim(context.Background(), h, plan, lease)
-		if err != nil || disposition != "claimed" || mode != "reconcile" || generation < 1 {
-			t.Fatalf("BIC-only unissued claim not reconcilable: %s/%d/%s %v", disposition, generation, mode, err)
+		if err != nil || disposition != "await_admission" || mode != "" || generation != 0 {
+			t.Fatalf("unissued claim consumed a lease or lost admission: %s/%d/%s %v", disposition, generation, mode, err)
 		}
 		grant, err := bicReserve(context.Background(), h, h.lp.f.runtime, h.logins.a, h.lp.f.storeA1, t04Key("bic-after-claim"), in)
 		if err != nil || bicGrantMap(t, grant)["attempt_id"] != plan.AttemptID {
@@ -377,29 +426,64 @@ func TestLiveMediaExecutionBIC02GrantReplayAndAuthority(t *testing.T) {
 		}
 	})
 
-	t.Run("lost-commit-ack-does-not-create-second-grant", func(t *testing.T) {
-		h, _, in := bicStarted(t)
-		config := h.lp.f.runtime.Config()
-		config.MaxConns = 1
-		loss := &hpCommitLoss{}
-		dial := config.ConnConfig.DialFunc
-		config.ConnConfig.DialFunc = func(ctx context.Context, network, address string) (net.Conn, error) {
-			conn, err := dial(ctx, network, address)
-			if err != nil {
-				return nil, err
-			}
-			return &hpCommitLossConn{Conn: conn, loss: loss}, nil
-		}
-		pool, err := pgxpool.NewWithConfig(context.Background(), config)
+	t.Run("reserved-reconcile-claim-does-not-forfeit-fixed-replay", func(t *testing.T) {
+		h, plan, in := bicStarted(t)
+		key := t04Key("bic-reconcile-replay")
+		first, err := bicReserve(context.Background(), h, h.lp.f.runtime, h.logins.a, h.lp.f.storeA1, key, in)
 		if err != nil {
 			t.Fatal(err)
 		}
-		t.Cleanup(pool.Close)
+		fixed := bicGrantMap(t, first)
+		lease := bytes.Repeat([]byte{0x70}, 32)
+		disposition, generation, mode, err := bicClaim(context.Background(), h, plan, lease)
+		if err != nil || disposition != "claimed" || mode != "reconcile" || generation < 1 {
+			t.Fatalf("reserved input claim did not use original reconcile lease: %s/%d/%s %v", disposition, generation, mode, err)
+		}
+		for _, replayKey := range []string{key, t04Key("bic-reconcile-other-key")} {
+			replayed, err := bicReserve(context.Background(), h, h.lp.f.runtime, h.logins.a, h.lp.f.storeA1, replayKey, in)
+			if err != nil || !reflect.DeepEqual(bicGrantMap(t, replayed), fixed) {
+				t.Fatalf("prewire reconcile claim killed fixed grant replay under %s: %v", replayKey, err)
+			}
+		}
+		if got := bicOwnedFacts(t, h); got != [8]int64{1, 1, 1, 1, 1, 1, 1, 2} {
+			t.Fatalf("reconcile replay created new grant/job/receipt: %v", got)
+		}
+	})
+
+	t.Run("revision-change-denies-original-receipt", func(t *testing.T) {
+		h, _, in := bicStarted(t)
+		key := t04Key("bic-revision-grant")
+		grant, err := bicReserve(context.Background(), h, h.lp.f.runtime, h.logins.a, h.lp.f.storeA1, key, in)
+		if err != nil {
+			t.Fatal(err)
+		}
+		original := bicGrantMap(t, grant)
+		// No automatic revision bump exists: this is an explicit owner test
+		// mutation while both store permissions remain granted.
+		if _, err := h.lp.f.owner.Exec(context.Background(), `UPDATE identity.memberships SET authz_revision=authz_revision+1 WHERE tenant_id=$1 AND principal_id=$2`,
+			h.lp.f.tenantA, h.lp.actor); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := bicReserve(context.Background(), h, h.lp.f.runtime, h.logins.a, h.lp.f.storeA1, key, in); err == nil {
+			t.Fatal("old revision reused a successful grant receipt")
+		}
+		var identity string
+		if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT publisher_identity FROM live.media_input_custody WHERE attempt_id=$1`, in.AttemptID).Scan(&identity); err != nil || identity != original["publisher_identity"] {
+			t.Fatalf("revision denial mutated original custody: %v", err)
+		}
+		if got := bicOwnedFacts(t, h); got != [8]int64{1, 1, 1, 1, 1, 1, 1, 1} {
+			t.Fatalf("revision denial mutated original artifacts: %v", got)
+		}
+	})
+
+	t.Run("lost-commit-ack-does-not-create-second-grant", func(t *testing.T) {
+		h, _, in := bicStarted(t)
+		pool, loss := bicCommitAckPool(t, h.lp.f.runtime)
 		key := t04Key("bic-reserve-ack")
 		loss.armed.Store(true)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		_, err = bicReserve(ctx, h, pool, h.logins.a, h.lp.f.storeA1, key, in)
+		_, err := bicReserve(ctx, h, pool, h.logins.a, h.lp.f.storeA1, key, in)
 		if err == nil || !loss.committed.Load() {
 			t.Fatalf("COMMIT ack loss not observed: err=%v committed=%t", err, loss.committed.Load())
 		}
@@ -595,6 +679,32 @@ func bicLoad(ctx context.Context, h *bicHarness, plan live.MediaStartResult, gen
 	return out, nil
 }
 
+func bicAssertLoadShape(t *testing.T, material map[string]any) {
+	t.Helper()
+	want := []string{"attempt_id", "operation_id", "session_id", "execution_profile", "state", "room_name",
+		"publisher_identity", "project_id", "endpoint_identity", "credential_version", "session_version",
+		"issued_at", "expires_at", "start_before", "lifetime_deadline", "admission_closed", "close_reason",
+		"egress_state", "wire_reserved", "held"}
+	if len(material) != len(want) {
+		t.Fatalf("fenced custody material has %d fields, want %d", len(material), len(want))
+	}
+	for _, key := range want {
+		if _, ok := material[key]; !ok {
+			t.Fatalf("fenced custody material missing %s", key)
+		}
+	}
+	for _, key := range []string{"issued_at", "expires_at", "start_before", "lifetime_deadline"} {
+		if _, ok := material[key].(float64); !ok {
+			t.Fatalf("fenced custody %s is not Unix seconds", key)
+		}
+	}
+	for _, key := range []string{"admission_closed", "wire_reserved", "held"} {
+		if _, ok := material[key].(bool); !ok {
+			t.Fatalf("fenced custody %s is not boolean", key)
+		}
+	}
+}
+
 func bicOperationAndJob(t *testing.T, h *bicHarness, plan live.MediaStartResult) (string, string, *time.Time) {
 	t.Helper()
 	var operation, jobState string
@@ -631,24 +741,31 @@ func bicAssertOriginalLiability(t *testing.T, h *bicHarness, plan live.MediaStar
 func TestLiveMediaExecutionBIC03OriginalJobOutlivesInputLiability(t *testing.T) {
 	t.Run("unissued-stop-joint-terminal", func(t *testing.T) {
 		h, plan, _ := bicStarted(t)
-		if _, err := bicStop(context.Background(), h, h.logins.b, t04Key("bic-stop-unissued"), plan); err != nil {
-			t.Fatal(err)
+		stop, err := bicStop(context.Background(), h, h.logins.b, t04Key("bic-stop-unissued"), plan)
+		if err != nil || stop.OperationID != plan.OperationID || stop.State != "cancelled_before_start" {
+			t.Fatalf("unissued Stop receipt mismatch: state=%s operation=%s err=%v", stop.State, stop.OperationID, err)
 		}
-		var operation, input string
-		err := h.lp.f.owner.QueryRow(context.Background(), `SELECT o.state,c.state FROM integration.operations o
-		 JOIN live.media_input_custody c ON c.operation_id=o.id WHERE o.id=$1`, plan.OperationID).Scan(&operation, &input)
-		if err != nil || input != "CLOSED" || operation != "CANCELLED" {
-			t.Fatalf("unissued Stop not jointly terminal: operation=%s input=%s err=%v", operation, input, err)
+		var operation, input, latestEvent string
+		err = h.lp.f.owner.QueryRow(context.Background(), `SELECT o.state,c.state,
+		 (SELECT e.state FROM integration.operation_events e WHERE e.operation_id=o.id ORDER BY e.id DESC LIMIT 1)
+		 FROM integration.operations o JOIN live.media_input_custody c ON c.operation_id=o.id WHERE o.id=$1`, plan.OperationID).
+			Scan(&operation, &input, &latestEvent)
+		if err != nil || input != "CLOSED" || operation != "CANCELLED" || latestEvent != "CANCELLED" {
+			t.Fatalf("unissued Stop not jointly terminal: operation=%s input=%s event=%s err=%v", operation, input, latestEvent, err)
 		}
 	})
 
 	t.Run("reserved-stop-keeps-original-job", func(t *testing.T) {
 		h, plan, in := bicStarted(t)
-		if _, err := bicReserve(context.Background(), h, h.lp.f.runtime, h.logins.a, h.lp.f.storeA1, t04Key("bic-issued"), in); err != nil {
+		reserveKey := t04Key("bic-issued")
+		if _, err := bicReserve(context.Background(), h, h.lp.f.runtime, h.logins.a, h.lp.f.storeA1, reserveKey, in); err != nil {
 			t.Fatal(err)
 		}
 		if _, err := bicStop(context.Background(), h, h.logins.b, t04Key("bic-stop-issued"), plan); err != nil {
 			t.Fatal(err)
+		}
+		if _, err := bicReserve(context.Background(), h, h.lp.f.runtime, h.logins.a, h.lp.f.storeA1, reserveKey, in); err == nil {
+			t.Fatal("Stop left previous successful reservation replay deliverable")
 		}
 		key := bytes.Repeat([]byte{0x61}, 32)
 		disposition, generation, mode, err := bicClaim(context.Background(), h, plan, key)
@@ -659,6 +776,7 @@ func TestLiveMediaExecutionBIC03OriginalJobOutlivesInputLiability(t *testing.T) 
 		if err != nil || material["attempt_id"] != plan.AttemptID || material["operation_id"] != plan.OperationID || material["execution_profile"] != "LOCAL_SFU_MOCK_EGRESS" {
 			t.Fatalf("fenced original custody load mismatch: %v", err)
 		}
+		bicAssertLoadShape(t, material)
 		result, err := bicClose(context.Background(), h, plan, generation, key, "merchant_stop")
 		if err != nil || result != "held" {
 			t.Fatalf("local issued grant should hold unresolved: %q %v", result, err)
@@ -903,7 +1021,7 @@ func TestLiveMediaExecutionBIC04FenceACLAndNativeGuard(t *testing.T) {
 }
 
 func TestLiveMediaExecutionBIC05LegacyQueueUnaffected(t *testing.T) {
-	h := lmpSetup(t, false)
+	h := bicSetup(t)
 	plan, err := h.start(t04Key("bic-legacy-control"))
 	if err != nil {
 		t.Fatal(err)
@@ -920,5 +1038,8 @@ func TestLiveMediaExecutionBIC05LegacyQueueUnaffected(t *testing.T) {
 	}
 	if _, err := h.registrar.Exec(context.Background(), `SELECT live.register_media_input_profile($1::uuid)`, h.input.AuthorizationID); err == nil {
 		t.Fatal("registrar attached input profile to already planned legacy authorization")
+	}
+	if disposition, generation, mode, err := bicClaim(context.Background(), h, plan, bytes.Repeat([]byte{0x69}, 32)); err == nil {
+		t.Fatalf("input executor claimed legacy queue: %s/%d/%s", disposition, generation, mode)
 	}
 }
