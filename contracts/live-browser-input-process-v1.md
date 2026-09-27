@@ -1,7 +1,9 @@
 # Browser input process binding — BRW07 runtime amendment
 
-Status: DESIGN_CANDIDATE; no runtime activation or real-process acceptance.
+Status: FROZEN_DESIGN; no runtime activation or real-process acceptance.
 Base `73261e3`; prerequisite `live-browser-input-recovery-v1.md`.
+Independent review at `4e6220b`: Humaux
+`bffee3b8-2ad9-4b53-a2a0-babaeefd6313`, no confirmed P0/P1.
 
 ## Existing seams and smallest change
 

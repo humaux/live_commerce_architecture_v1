@@ -4,7 +4,8 @@ Status: FROZEN_SQL_READBACK_DESIGN; implementation and real-process gates NOT_RU
 Baseline: `9a5636e`. Owner: integrator, task `e8665b18-b402-4c67-b976-281bc85582e4`.
 Independent review: `c7e25c7`, Humaux `974ccc81-0ed5-4eec-b9e9-8008e68f7682`;
 no remaining confirmed P0/P1 in this bounded ABI. Process capability binding
-still requires its own frozen amendment and actual execution gates below.
+is specified in `live-browser-input-process-v1.md`; its implementation and
+actual execution gates remain separate requirements.
 Extends `live-media-recovery-observer-v1.md` and
 `live-browser-input-worker-v1.md`; does not replace either cleanup contract.
 
@@ -229,8 +230,9 @@ BrowserInputRuntime is a validated typed map, not a transport-safety proof.
 Use ONE reviewed loader/config mapping in BOTH supervisor and exec child;
 independently reconstruct identical project/version/endpoint/local-SFU mapping.
 Do not invent a second permissive parser beside LoadWorkerProjects. Its exact
-configuration format and process wiring require a follow-on frozen amendment
-before activating the mixed entrypoint. Legacy wrappers stay disabled by default.
+configuration format and process wiring are frozen separately in
+`live-browser-input-process-v1.md`, required before activating the mixed
+entrypoint. Legacy wrappers stay disabled by default.
 This dependency blocks real-process gate acceptance, not SQL/readback coding.
 
 Requested input capability with absent/invalid loader must use mixed diagnostic
