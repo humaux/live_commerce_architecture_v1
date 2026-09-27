@@ -199,7 +199,10 @@ else
   # Isolated Meta cutover/maintenance gates add fresh clusters and real process
   # windows. The aggregate exceeded 360s without an assertion failure; retain
   # every individual SQL/process deadline and allow the complete suite to finish.
-  GOTOOLCHAIN=go1.27.1 go test -p 1 -race -count=1 -timeout=600s -v ./...
+  # Root measured 483.549s before LMR; the Stop-inclusive focused suite took
+  # 180.126s, adding roughly 113s to the full package. This 900s envelope
+  # covers aggregate tests only; no SQL, lease, 5s pacing or fault gate changes.
+  GOTOOLCHAIN=go1.27.1 go test -p 1 -race -count=1 -timeout=900s -v ./...
   GOTOOLCHAIN=go1.27.1 go vet ./...
   printf 'PASS: isolated real PostgreSQL foundation tests; fixture removed at exit.\n'
 fi

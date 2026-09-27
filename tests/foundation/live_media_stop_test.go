@@ -449,6 +449,32 @@ func TestLiveMediaStopLMR01Populated0036Upgrade(t *testing.T) {
 	}
 	mcApplyHistorical(t, old, "0036_live_media_execution.sql", "post_river/0007_live_media_execution.sql")
 	_, executor := lmaLogin(t, old, "commerce_media_executor")
+	// This executes the frozen old five-function admission predicate on a real
+	// LOGIN. It is not an old executable binary, which is reported separately.
+	oldFiveAdmits := func() bool {
+		t.Helper()
+		var admits bool
+		err := executor.QueryRow(ctx, `SELECT
+		 (SELECT count(DISTINCT p.proname) FROM pg_catalog.pg_proc p
+		  JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace
+		  WHERE n.nspname='live' AND p.proname IN ('claim_media_operation','load_media_material',
+		   'reserve_media_start','record_media_observation','finish_media_uncertain')
+		  AND pg_catalog.has_function_privilege(current_user,p.oid,'EXECUTE'))=5
+		 AND NOT EXISTS(SELECT 1 FROM pg_catalog.pg_proc p
+		  JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace
+		  WHERE n.nspname='live' AND pg_catalog.has_schema_privilege(current_user,n.oid,'USAGE')
+		  AND p.prorettype<>'trigger'::regtype
+		  AND pg_catalog.has_function_privilege(current_user,p.oid,'EXECUTE')
+		  AND p.proname NOT IN ('claim_media_operation','load_media_material','reserve_media_start',
+		   'record_media_observation','finish_media_uncertain','media_worker_ready'))`).Scan(&admits)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return admits
+	}
+	if !oldFiveAdmits() {
+		t.Fatal("pre-0037 old five-function admission predicate rejected clean executor")
+	}
 	var disposition, mode string
 	var generation int64
 	if err := executor.QueryRow(ctx, `SELECT disposition,generation,mode FROM live.claim_media_operation($1::uuid,$2::bigint,30,$3::bytea)`,
@@ -466,6 +492,9 @@ func TestLiveMediaStopLMR01Populated0036Upgrade(t *testing.T) {
 	}
 	if err := migrations.Apply(ctx, old.owner); err != nil {
 		t.Fatalf("populated0036 upgrade: %v", err)
+	}
+	if oldFiveAdmits() {
+		t.Fatal("pre-0037 five-function admission predicate accepted new cleanup function")
 	}
 	for version, checksum := range beforeLedger {
 		if lmpMigrationChecksums(t, old)[version] != checksum {
@@ -1264,8 +1293,16 @@ func TestLiveMediaStopLMR06AutomaticCleanupBudgetAndTerminalProof(t *testing.T) 
 		if out, err := lmrQuery(t, h, two, id, "EGRESS_ACTIVE", 100, 130, 0); err != nil || out != "stop_reserved" {
 			t.Fatalf("second: %s %v", out, err)
 		}
-		if err := h.executor.QueryRow(context.Background(), `SELECT live.finish_media_uncertain($1::uuid,$2::bigint,$3::bytea,'remote_unknown')`, h.plan.OperationID, two.generation, two.token).Scan(&finish); err != nil || finish != "observe" {
-			t.Fatalf("second uncertain: %s %v", finish, err)
+		if out, err := h.record(t, two, "STOP", id, "EGRESS_ACTIVE", 100, 135, 0); err != nil || out != "observe" {
+			t.Fatalf("second nonterminal Stop reply: %s %v", out, err)
+		}
+		immediate := lmrRead(t, h)
+		if immediate.count != 2 || immediate.exhausted == nil || immediate.operation != "UNKNOWN" || immediate.resource == "TERMINAL" {
+			t.Fatalf("second Stop reply did not immediately exhaust budget: %+v", immediate)
+		}
+		var immediateEvents int
+		if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT count(*) FROM integration.operation_events WHERE operation_id=$1 AND reason_code='media_stop_budget_exhausted'`, h.plan.OperationID).Scan(&immediateEvents); err != nil || immediateEvents != 1 {
+			t.Fatalf("second Stop reply exhaustion event=%d %v", immediateEvents, err)
 		}
 		three := h.claim(t, 30)
 		if out, err := lmrQuery(t, h, three, id, "EGRESS_ACTIVE", 100, 140, 0); err != nil || out != "observe" {
@@ -1289,41 +1326,47 @@ func TestLiveMediaStopLMR06AutomaticCleanupBudgetAndTerminalProof(t *testing.T) 
 			t.Fatalf("terminal proof ignored/third Stop: %+v", f)
 		}
 	})
-	t.Run("exhausted-budget-still-hits-original-generation-ceiling", func(t *testing.T) {
-		h := lmrSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "SQL only", 500) })
-		id := "EG_lmr06ceiling"
-		lmrStarted(t, h, id)
-		lmrStop(t, h, t04Key("lmr06-ceiling"))
-		for n := int64(1); n <= 2; n++ {
-			if n == 2 {
-				first := lmrRead(t, h)
-				lmrWaitDBClock(t, h.lp.f.owner, first.first.Add(5*time.Second))
+	for _, ceiling := range []string{"generation", "age"} {
+		t.Run("exhausted-budget-still-hits-original-"+ceiling+"-ceiling", func(t *testing.T) {
+			h := lmrSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "SQL only", 500) })
+			id := "EG_lmr06ceiling"
+			lmrStarted(t, h, id)
+			lmrStop(t, h, t04Key("lmr06-ceiling"))
+			for n := int64(1); n <= 2; n++ {
+				if n == 2 {
+					first := lmrRead(t, h)
+					lmrWaitDBClock(t, h.lp.f.owner, first.first.Add(5*time.Second))
+				}
+				lease := h.claim(t, 30)
+				if out, err := lmrQuery(t, h, lease, id, "EGRESS_ACTIVE", 100, 110+n, 0); err != nil || out != "stop_reserved" {
+					t.Fatalf("reservation %d: %s %v", n, out, err)
+				}
+				var finish string
+				if err := h.executor.QueryRow(context.Background(), `SELECT live.finish_media_uncertain($1::uuid,$2::bigint,$3::bytea,'remote_unknown')`, h.plan.OperationID, lease.generation, lease.token).Scan(&finish); err != nil || finish != "observe" {
+					t.Fatalf("reservation %d uncertain: %s %v", n, finish, err)
+				}
 			}
-			lease := h.claim(t, 30)
-			if out, err := lmrQuery(t, h, lease, id, "EGRESS_ACTIVE", 100, 110+n, 0); err != nil || out != "stop_reserved" {
-				t.Fatalf("reservation %d: %s %v", n, out, err)
+			before := lmrRead(t, h)
+			if before.count != 2 || before.operation != "UNKNOWN" {
+				t.Fatalf("budget liability before ceiling: %+v", before)
 			}
-			var finish string
-			if err := h.executor.QueryRow(context.Background(), `SELECT live.finish_media_uncertain($1::uuid,$2::bigint,$3::bytea,'remote_unknown')`, h.plan.OperationID, lease.generation, lease.token).Scan(&finish); err != nil || finish != "observe" {
-				t.Fatalf("reservation %d uncertain: %s %v", n, finish, err)
+			query := `UPDATE integration.operations SET generation=4096 WHERE id=$1`
+			if ceiling == "age" {
+				query = `UPDATE integration.operations SET created_at=clock_timestamp()-interval '25 hours' WHERE id=$1`
 			}
-		}
-		before := lmrRead(t, h)
-		if before.count != 2 || before.operation != "UNKNOWN" {
-			t.Fatalf("budget liability before ceiling: %+v", before)
-		}
-		if _, err := h.lp.f.owner.Exec(context.Background(), `UPDATE integration.operations SET generation=4096 WHERE id=$1`, h.plan.OperationID); err != nil {
-			t.Fatal(err)
-		}
-		claim := h.claim(t, 30)
-		if claim.disposition != "escalated" || claim.mode != "" {
-			t.Fatalf("exhaustion bypassed original ceiling: %+v", claim)
-		}
-		after := lmrRead(t, h)
-		if after.count != 2 || after.operation != "UNKNOWN" || after.resource == "TERMINAL" || h.stops.Load() != 0 {
-			t.Fatalf("ceiling falsely settled exhausted Stop: %+v", after)
-		}
-	})
+			if _, err := h.lp.f.owner.Exec(context.Background(), query, h.plan.OperationID); err != nil {
+				t.Fatal(err)
+			}
+			claim := h.claim(t, 30)
+			if claim.disposition != "escalated" || claim.mode != "" {
+				t.Fatalf("exhaustion bypassed original ceiling: %+v", claim)
+			}
+			after := lmrRead(t, h)
+			if after.count != 2 || after.operation != "UNKNOWN" || after.resource == "TERMINAL" || h.stops.Load() != 0 {
+				t.Fatalf("ceiling falsely settled exhausted Stop: %+v", after)
+			}
+		})
+	}
 	t.Run("credential-unavailable-retains-liability", func(t *testing.T) {
 		var h *lmeHarness
 		id := "EG_lmr06credential"
