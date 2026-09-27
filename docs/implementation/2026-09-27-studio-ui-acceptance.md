@@ -431,6 +431,32 @@ second run or softened assertion is authorized by this result. The test worker
 reported exact owned-profile/descendant and PG cleanup, retaining traces and
 failed screenshots; the protected upgrade container was untouched.
 
+## Calendar differential and scoped test correction
+
+The independently adjudicated single 2×2 no-account comparison used the same
+Playwright/Chromium versions: wide plain versus faithful compact transparent
+input, each with or without a screenshot between click and ArrowRight/Enter.
+Both no-screenshot cells changed January 1 to January 2 with a trusted input
+event. Both screenshot cells retained January 1 and received the keys on the
+underlying input. All four showPicker calls returned. This demonstrates a
+same-host screenshot-interposition effect; it does not directly observe popup
+open/close, establish a React defect, or accept the product flow.
+
+Comparison JSON `/Volumes/data/output/playwright/studio-picker-matrix-20260927.json`,
+SHA-256 `e509e68e8ae80627046f22ca8ff0e2181c6da35dfe4f8aecb4178aefb9d93b3f`;
+script SHA-256 `a19a2a5789b7c1556389dfa477b3b61e0570f75be038435f8b4e6b82f15b144b`.
+The isolated comparison completed with exit 0 and closed its browser; that is
+not a Studio gate result. Code indexing accepts the probe file but extracts
+zero entities from `.mjs`; no probe-symbol link is claimed.
+
+Independent causal review `1ab47944-ac3d-4bc1-a6b2-7863e8ab91da` approved only
+moving screenshot capture after native value selection/readback. Test author
+`7b24381` makes that exact 3-add/3-delete diff, renames the image to
+`en-native-calendar-selected.png`, and retains all hard checks and save/version/
+reload/restore steps. Root independently read the complete diff, passed
+`git show --check`, and verified admin source still byte-identical to `03928d5`.
+One real gate rerun is authorized on this frozen test; its result is pending.
+
 ## Remaining boundary
 
 This slice does not qualify real browser publishing, Cloud Egress, public social
