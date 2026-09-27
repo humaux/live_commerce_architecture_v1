@@ -22,7 +22,7 @@ func OpenMediaWorkerPool(ctx context.Context, dsn string) (*pgxpool.Pool, error)
 	return pool, nil
 }
 
-// OpenMediaExecutorPool borrows only six fixed lease-fenced business functions.
+// OpenMediaExecutorPool borrows only the fixed lease-fenced business functions.
 func OpenMediaExecutorPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	if ctx == nil || len(dsn) > 8192 {
 		return nil, errMediaDatabase
@@ -65,17 +65,21 @@ func validateMediaAuthority(ctx context.Context, pool *pgxpool.Pool, role string
 	 SELECT p.oid,p.proname FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace
 	 WHERE n.nspname='live' AND p.proname IN ('claim_media_operation','load_media_material',
 	 'reserve_media_start','record_media_observation','record_media_cleanup_query',
-	 'finish_media_uncertain','request_media_stop',
+	 'finish_media_uncertain','claim_media_input_operation','load_media_input_custody',
+	 'close_media_input_admission','request_media_stop',
 	 'register_prepared_media','revoke_prepared_media')
 	), allowed AS (
 	 SELECT p.oid FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace
 	 WHERE n.nspname='live' AND (
-	  (p.proname='claim_media_operation' AND p.pronargs=4
+	  (p.proname IN ('claim_media_operation','claim_media_input_operation') AND p.pronargs=4
 	   AND p.proargtypes[0]='uuid'::regtype AND p.proargtypes[1]='bigint'::regtype
 	   AND p.proargtypes[2]='integer'::regtype AND p.proargtypes[3]='bytea'::regtype)
-	  OR (p.proname IN ('load_media_material','reserve_media_start') AND p.pronargs=3
+	  OR (p.proname IN ('load_media_material','reserve_media_start','load_media_input_custody') AND p.pronargs=3
 	   AND p.proargtypes[0]='uuid'::regtype AND p.proargtypes[1]='bigint'::regtype
 	   AND p.proargtypes[2]='bytea'::regtype)
+	  OR (p.proname='close_media_input_admission' AND p.pronargs=4
+	   AND p.proargtypes[0]='uuid'::regtype AND p.proargtypes[1]='bigint'::regtype
+	   AND p.proargtypes[2]='bytea'::regtype AND p.proargtypes[3]='text'::regtype)
 	  OR (p.proname='record_media_observation' AND p.pronargs=10
 	   AND p.proargtypes[0]='uuid'::regtype AND p.proargtypes[1]='bigint'::regtype
 	   AND p.proargtypes[2]='bytea'::regtype
@@ -92,7 +96,7 @@ func validateMediaAuthority(ctx context.Context, pool *pgxpool.Pool, role string
 	  OR (p.proname='finish_media_uncertain' AND p.pronargs=4
 	   AND p.proargtypes[0]='uuid'::regtype AND p.proargtypes[1]='bigint'::regtype
 	   AND p.proargtypes[2]='bytea'::regtype AND p.proargtypes[3]='text'::regtype)
-	  OR (p.proname='media_worker_ready' AND p.pronargs=0))
+	  OR (p.proname IN ('media_worker_ready','media_input_plan_ready') AND p.pronargs=0))
 	)
 	SELECT EXISTS (SELECT 1 FROM reachable r CROSS JOIN pg_catalog.pg_class c
 	 JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
@@ -116,14 +120,17 @@ func validateMediaAuthority(ctx context.Context, pool *pgxpool.Pool, role string
 	  ('register_prepared_media','revoke_prepared_media','request_media_stop')))
 	 OR ($1='media_executor' AND (SELECT count(DISTINCT f.proname) FROM fixed f
 	 WHERE f.proname IN ('claim_media_operation','load_media_material','reserve_media_start',
-	 'record_media_observation','record_media_cleanup_query','finish_media_uncertain')
-	 AND pg_catalog.has_function_privilege(session_user,f.oid,'EXECUTE'))<>6)
+	 'record_media_observation','record_media_cleanup_query','finish_media_uncertain',
+	 'claim_media_input_operation','load_media_input_custody','close_media_input_admission')
+	 AND pg_catalog.has_function_privilege(session_user,f.oid,'EXECUTE'))<>9)
 	 OR EXISTS (SELECT 1 FROM reachable r CROSS JOIN pg_catalog.pg_proc p
 	 JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace
 	 WHERE n.nspname<>'information_schema' AND n.nspname NOT LIKE 'pg\_%' ESCAPE '\'
 	  AND pg_catalog.has_schema_privilege(r.oid,n.oid,'USAGE')
 	  AND p.prorettype<>'trigger'::regtype
-	  AND NOT ($1='media_worker' AND n.nspname='river_media')
+	  AND NOT ($1='media_worker' AND (n.nspname='river_media'
+	   OR (n.nspname='live' AND p.proname IN ('media_worker_ready','media_input_plan_ready')
+	    AND p.pronargs=0)))
 	  AND NOT ($1='media_executor' AND p.oid IN (SELECT oid FROM allowed))
 	  AND pg_catalog.has_function_privilege(r.oid,p.oid,'EXECUTE'))`, role).Scan(&forbidden)
 	if err != nil || forbidden {
