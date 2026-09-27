@@ -1,12 +1,31 @@
 # MRR90 restart state-check acceptance
 
-Status at 2026-09-27 12:34 UTC: **FOCUSED_ACCEPTED / LRI_AND_STOP_FOLLOWUPS_PASS / FULL_REGRESSION_NOT_ACCEPTED**.
+Status at 2026-09-27 13:22 UTC: **LOCAL_MRR_ACCEPTED / ROOT_FULL_696_PASS / PRODUCTION_NOT_RUN**.
 The independently frozen design is on `598eea4`. Source `86b641a` and independent
 tests `f3b731b` with evidence `2e00b00a` are integrated as `74459ae`.
 The initial independent and root focused runs each passed 17 tests. Independent
 supplement `cf4720e` passed 21 tests; root full `dfe844a` also passed all 21 MRR
 tests, but two other foundation gates failed. No production configuration,
 customer broadcast, provider account or River policy was changed.
+
+## Current full regression after owner adjudication
+
+Root froze clean `b99a2d1cffe02675b9a5ec484ab358b0ac4bd51d` and ran
+`bash scripts/dev/test-local.sh`: actual **exit 0**, **696 top-level PASS /
+0 FAIL / 0 SKIP**, foundation **1132.853 s**, including all 21 MRR cases.
+The script completed both serial `go test -race` and `go vet`.
+`TestLegacyRuntimeIsolationPopulatedUpgrade` passed in 3.74 s; the explicitly
+owner-approved LMR05 wait-only change passed in 58.82 s with its original
+safety assertions. The old failed run below remains historical evidence.
+
+Log: `/Volumes/data/output/full-integrated-b99a2d1-root-20260927.log`;
+SHA-256 `30a36b7e9277653205ca270a171f7705a40d9dcfdfaf4f1ac2474f86bf11a2c6`.
+No tracked source changed during the run. The owned PG fixture was removed;
+the three protected containers were untouched. This is local opt-in recovery
+acceptance, not Cloud operation, customer deployment or human alert delivery.
+Subsequent `05cb8ee` changes only browser-tagged/TypeScript tests; ordinary full
+and vet inputs are unchanged, as independently reviewed in Humaux
+`b9e0654f-3650-47f8-bf4a-3691d070b508`.
 
 ## Meaning of the owner's 90-second target
 

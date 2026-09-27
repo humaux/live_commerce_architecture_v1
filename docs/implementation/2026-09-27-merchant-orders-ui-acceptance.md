@@ -4,6 +4,42 @@ Scope: local read-only `/{locale}/orders`, user-approved **C 表格原位展开*
 Buyer B is unchanged. This is not whole-SaaS, production, provider-payment,
 shipping, refunds or live-broadcast acceptance.
 
+## Current local acceptance — 13:22 UTC
+
+**MOU01–06 ACCEPTED_LOCAL_READ_ONLY**, combining the existing implementation,
+visual/correction and dependency receipts below with the final native lifecycle
+and regression evidence. This does not claim all historical independent gates
+were re-executed in the seven-case browser run.
+
+Root fixed `05cb8ee` ran `bash scripts/dev/test-local.sh --browser-merchant-orders-ui`:
+actual **exit 0**, **7 Playwright PASS / 0 skip**, Go 16.35 s, foundation
+18.567 s, admin strict typecheck/build passed. The product source is unchanged;
+the test-only fix reuses Studio's task-owned native `noDefaults` device.
+Missing or inconsistent native evidence is now a hard Go failure, not a skip.
+
+- Log `/Volumes/data/output/orders-ui-native-05cb8ee-root-20260927.log`, SHA-256
+  `54356fbfb9db8f46a5d07d215aee9955135368a93f41fd7957bbe74f380aecb7`.
+- Evidence root `/Volumes/data/output/merchant-orders-c-browser-20260927/20260927T131937.668523000/`.
+- `native-visibility.json`: trusted hidden → visible; detail request counts
+  **18 → 18 → 19**; PII absent while hidden and while the fresh return response
+  was delayed, then restored after authorized read. SHA-256
+  `8f91aeabe0f90786cfc151b4ede8dbab0484cd342b3245468bc32d0ea15c0780`.
+- PG business rows/queues remained unchanged. Owned PG/browser processes and
+  profiles were cleaned; customer services and protected containers untouched.
+- Root full `b99a2d1`: 696 PASS / 0 FAIL / 0 SKIP, race/vet, actual exit 0.
+  The four-file browser-test-only `05cb8ee` diff leaves all ordinary full/vet
+  inputs unchanged. Root also reran Studio's five cases after helper extraction.
+
+Actual history return still records `observed=true,persisted=false`, with
+browser-reported no-store reasons. **Native BFCache restoration is not proved.**
+Do not relax privacy headers to force it. Independent final decision
+`f393fffb-1154-46c5-85b3-6a4f93bafd39` confirms MOU03 requires actual history
+and recording whether `persisted` occurred, not `persisted=true`. The old native
+visibility blocker is closed; this BFCache limit remains explicit. Fixed-diff
+review: `6431ae72-4bd9-40b9-84a0-a22e1064816b`; full evidence-reuse decision:
+`b9e0654f-3650-47f8-bf4a-3691d070b508`. All earlier failed receipts below remain
+historical, not the current acceptance state.
+
 ## Implementation and authority
 
 - Contract: [MOU01–06](../../contracts/merchant-orders-ui-v1.md); existing
@@ -18,9 +54,9 @@ shipping, refunds or live-broadcast acceptance.
   old responses and cached recipient data from resurfacing. No persistent
   order-body cache, browser bearer or additional transaction engine.
 
-## Evidence and current gate disposition
+## Historical evidence before the native device repair
 
-Current source/test tree: `f70dc42` (original source `e4189ee`, source fixes
+Historical source/test tree: `f70dc42` (original source `e4189ee`, source fixes
 through `6df6a03`, independent tests `13db0d2` integrated at `a891991`, native
 history artifact persistence `4dad02a`, payment-column regression `f70dc42`).
 **PARTIAL — full MOU acceptance remains blocked by native lifecycle evidence.**

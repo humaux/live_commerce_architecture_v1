@@ -1,14 +1,14 @@
 # Studio B UI acceptance — 2026-09-27
 
-Status: **SOURCE_CANDIDATE_UNMERGED; LATEST_CORE_CALENDAR_FAILED; NATIVE_CONCEAL_TWO_PASS; VISUAL_SCORED_FIXES_SHIP**.
+Status: **MERGED_LOCAL_MOCK_BROWSER_PASS; ROOT_FULL_696_PASS; VISUAL_SCORED_FIXES_SHIP; CLOUD_AND_PRODUCTION_NOT_RUN**.
 
-Latest no-account native preflight (12:21 UTC): actual exit 0 using a separately
-launched task-owned browser with public `noDefaults:true` and its existing
-default context. Both real tab switching and window minimization produced
-trusted hidden → visible events. This establishes a usable device, not a
-product PASS. The two prior failed preflights remain below. The subsequent
-actual product run passed both native-conceal cases but failed the calendar
-value check; see the retained ninth-run result below.
+Current root source is the integrated `03928d5` UI, byte-identical throughout
+`b99a2d1` and `05cb8ee`. Final root `05cb8ee` browser gate exited 0 with all five
+cases passing, including trusted native conceal and native calendar selection,
+save/version/reopen. The orders regression passed seven cases without a skip.
+Root full PG/race/vet passed 696 tests on `b99a2d1`; its ordinary compilation
+inputs are unchanged by the later browser-test-only extraction. See the final
+receipts below. Failed probes and failed actual runs remain historical evidence.
 
 User approved **B 场次列表＋双区工作台**, seed `6373bb3f`, in `fb760ff`.
 The approved comp is `.impeccable/mocks/decision/studio-split.png` (1586×992);
@@ -456,6 +456,50 @@ moving screenshot capture after native value selection/readback. Test author
 reload/restore steps. Root independently read the complete diff, passed
 `git show --check`, and verified admin source still byte-identical to `03928d5`.
 One real gate rerun is authorized on this frozen test; its result is pending.
+
+## Final independent and root receipts
+
+Independent tester `7b24381` passed all five Studio browser cases (actual exit
+0), log under its worktree `output/studio-native-7b24381-20260927.log`, SHA-256
+`ef4848f76361b7453858e05199c3104bf3a146e0e8f0b317fe07db6abff857b0`.
+Root integrated it at `b99a2d1`, preserving the complete main runner, MRR,
+LRI and owner-approved Stop assertions. Independent integration review
+`d77b9a1d-6c0c-4125-8c3c-3da5abdc42aa` found no P0/P1. Root repeated Studio:
+exit 0, five browser cases, Go 27.97 s, log
+`/Volumes/data/output/studio-integrated-b99a2d1-root-20260927.log`, SHA-256
+`1db3d6354542f1b3b22d242260d699435289363e4be4ffb5f25466e28ccbc44e`.
+
+The old orders regression then failed truthfully (six PASS / one native skip).
+`05cb8ee` extracts the already proven native device to a shared test helper and
+requires actual Orders hidden/visible proof instead of an opt-in skip. It does
+not change product code. Independent review
+`6431ae72-4bd9-40b9-84a0-a22e1064816b` approved the exact test-only diff.
+Root final commands on clean `05cb8ee` both exited 0:
+
+| Command | Actual result | Raw log under `/Volumes/data/output` |
+|---|---|---|
+| `--browser-merchant-orders-ui` | 7 PASS / 0 skip; Go 16.35 s | `orders-ui-native-05cb8ee-root-20260927.log` |
+| `--browser-studio-ui` | 5 PASS / 0 skip; Go 26.67 s | `studio-shared-native-05cb8ee-root-20260927.log` |
+
+Final Studio log SHA-256:
+`044d5098e2a28c3fbcf8b8e64f7a5129e9d0970a335ec27a0804339726df8dbe`.
+Evidence: `output/playwright/studio-ui-20260927T132030.900591000/` in main;
+Playwright log SHA-256:
+`769c918dcfcf4e6b722911138df3c981f1c7e666728b9c7536bff14dfb79911f`.
+Both commands include strict admin typecheck and production build. All existing
+Go postflight assertions remain: one Start/Stop, three lost-ACK faults, stable
+retry keys and unique effects, UTC readback, four signed sessions, terminal
+resource and no secret-bearing worker output. Owned PG/native profiles and
+processes were cleaned; protected containers and customer services were not used.
+
+The new [full regression receipt](2026-09-27-media-recovery-acceptance.md#current-full-regression-after-owner-adjudication)
+records actual exit 0, 696 PASS / 0 FAIL / 0 SKIP. `05cb8ee` differs from that
+frozen tree only in three TS test/helper files and one `//go:build browser` Go
+test: apps, runtime, migrations, runner and ordinary full/vet inputs are
+byte-identical. Independent evidence-reuse decision:
+`b9e0654f-3650-47f8-bf4a-3691d070b508`. This is not a claim to have rerun the full
+suite on a different hash. Native history still reports `persisted=false`;
+neither the Orders nor Studio receipt claims native BFCache restoration.
 
 ## Remaining boundary
 

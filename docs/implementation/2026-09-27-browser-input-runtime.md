@@ -1,11 +1,22 @@
 # Browser input custody implementation record — 2026-09-27
 
-Status: **BIC_INDEPENDENT_AND_ROOT_FOCUSED_PASS; frozen full regression failed LMR05**.
+Status: **BIC_KERNEL_FOCUSED_AND_ROOT_FULL_PASS; product browser admission remains downstream**.
 Source base `2b52e7d`; frozen contract:
 [BIC/BRW](../../contracts/live-browser-input-runtime-v1.md).
 Contract freeze `4809128`, cleanup-authority clarification `234f44a` (reviewed,
 no ABI change): merchant revocation denies new grants but cannot strand the
 original executor's cleanup responsibility.
+
+## Current regression disposition
+
+The historical LMR05 full-run failure below was not erased. After the owner's
+explicit wait-only adjudication, root fixed tree `b99a2d1` passed the full
+PG18/race/vet suite: **696 PASS / 0 FAIL / 0 SKIP**, actual exit 0, foundation
+1132.853 s. All BIC kernel tests ran in that suite. See the
+[MRR full receipt](2026-09-27-media-recovery-acceptance.md#current-full-regression-after-owner-adjudication)
+for the raw log and hash. This closes the kernel integration regression, not
+the disabled token-delivery/new-queue worker, product browser input or Cloud
+qualification described below.
 
 ## Root cause and boundary
 

@@ -97,9 +97,13 @@ Show page item count rather than pretending a cursor response supplies a total.
 ## Acceptance gates (MOU01–06)
 
 Current evidence: [2026-09-27 local replay](../docs/implementation/2026-09-27-merchant-orders-ui-acceptance.md).
-The UI is implemented, but aggregate acceptance remains PARTIAL: six functional
-browser cases pass; native hidden/visible is NOT_RUN and native history returned
-`pageshow.persisted=false`. The requirements below are unchanged by that gap.
+Local read-only MOU01–06 acceptance combines the existing source/visual and
+dependency receipts with root `05cb8ee` seven-case browser PASS, including real
+trusted hidden/visible and fresh authorized restoration. Root full PG/race/vet
+on unchanged ordinary inputs passed 696 tests. Actual history returned
+`pageshow.persisted=false`: native BFCache restoration is not proved, and
+privacy headers remain unchanged. Independent scope adjudication:
+`f393fffb-1154-46c5-85b3-6a4f93bafd39`. No Cloud or production acceptance.
 
 1. **Actual user flow:** browser login via signed-mock OIDC → production Next
    page → existing BFF → real Go → disposable PG18. Orders are created through

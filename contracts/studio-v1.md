@@ -1,15 +1,24 @@
 # Merchant Studio v1 — one end-to-end product slice
 
-Status: **FROZEN / PARTIAL_LOCAL_MOCK_BACKEND_AND_BFF** (2026-09-27).
+Status: **FROZEN / ACCEPTED_LOCAL_MOCK_STU01_05** (2026-09-27).
 Source baseline `320dad6`; LMW root full regression passed 645 tests, race/vet.
 Independent preflight of draft `0af7e82` (Humaux
-`33de752a-31c9-4697-991c-813bfb6e8910`) found no confirmed P0/P1; this is not
-STU01–05 acceptance or production activation. T08/T09 and G06/G07 remain incomplete.
+`33de752a-31c9-4697-991c-813bfb6e8910`) found no confirmed P0/P1; that preflight
+alone did not establish STU01–05 acceptance. T08/T09 and G06/G07 remain incomplete.
 Backend source/tests `2be9cd2` passed root focused eight-test PG/API/TLS/race gate
 and full 652-test PG/race/vet regression. BFF `b18f977` passed real signed-login
-transport, typecheck/build and existing order BFF regression. UI/STU04 remains
-NOT_RUN. See [backend evidence](../docs/implementation/2026-09-27-studio-backend-acceptance.md)
-and [BFF evidence](../docs/implementation/2026-09-27-studio-bff-acceptance.md).
+transport, typecheck/build and existing order BFF regression. Integrated UI
+`03928d5` passed root `05cb8ee` five-case actual browser gate, including native
+calendar save/reopen and trusted native conceal. The orders regression passed
+seven cases; root `b99a2d1` full PG/race/vet passed 696 tests. The later four-file
+test-only diff leaves ordinary full/vet inputs unchanged; both affected browser
+suites were rerun at `05cb8ee`. Independent final scope decision:
+`f393fffb-1154-46c5-85b3-6a4f93bafd39`. Native BFCache restoration remains
+unobserved, not a claimed success. See [backend evidence](../docs/implementation/2026-09-27-studio-backend-acceptance.md),
+[BFF evidence](../docs/implementation/2026-09-27-studio-bff-acceptance.md) and
+[UI/current regression evidence](../docs/implementation/2026-09-27-studio-ui-acceptance.md).
+This is one local MOCK product slice; T08/T09, real input, Cloud and production
+readiness remain incomplete.
 
 ## Product outcome and reuse
 

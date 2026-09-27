@@ -555,16 +555,18 @@
       "login_custody_root_tested_commit": "9e30686",
       "login_custody_gates": "MLC01_06_INDEPENDENT_PG_47_ROOT_PG_RACE_663_VET_RUNTIME_8_STUDIO_8_BROWSER_BFF_PASS",
       "input_runtime_contract": "contracts/live-browser-input-runtime-v1.md",
-      "input_runtime_status": "BIC_KERNEL_FOCUSED_AND_TERMINAL_COMPLEMENT_PASS_FULL_LMR05_FAILED",
+      "input_runtime_status": "BIC_KERNEL_FOCUSED_AND_FULL696_PASS_PRODUCT_BROWSER_ADMISSION_PENDING",
       "input_runtime_evidence": "docs/implementation/2026-09-27-browser-input-runtime.md",
       "restart_recovery_contract": "contracts/live-media-recovery-observer-v1.md",
-      "restart_recovery_status": "MRR01_04_ROOT21_PASS_LRI10_STOP53_FOLLOWUPS_PASS_NEW_FULL_PENDING",
+      "restart_recovery_status": "MRR01_04_LOCAL_ROOT21_AND_FULL696_PASS_PRODUCTION_NOT_RUN",
       "restart_recovery_evidence": "docs/implementation/2026-09-27-media-recovery-acceptance.md",
       "restart_recovery_source_commit": "86b641a",
-      "restart_recovery_root_tested_commit": "dfe844a",
-      "restart_recovery_full_failures": ["TestLegacyRuntimeIsolationPopulatedUpgrade", "TestLiveMediaStopLMR05RealCrashAndCommitAckLoss"],
+      "restart_recovery_root_tested_commit": "b99a2d1",
+      "restart_recovery_historical_failed_commit": "dfe844a",
+      "restart_recovery_historical_full_failures": ["TestLegacyRuntimeIsolationPopulatedUpgrade", "TestLiveMediaStopLMR05RealCrashAndCommitAckLoss"],
+      "restart_recovery_current_full": "Root b99a2d1 actual exit0,696PASS0FAIL0SKIP,foundation1132.853s,race/vet; log /Volumes/data/output/full-integrated-b99a2d1-root-20260927.log SHA25630a36b7e9277653205ca270a171f7705a40d9dcfdfaf4f1ac2474f86bf11a2c6",
       "restart_recovery_lri_followup": "ec5c25c merged da37adc: root --legacy-isolation exit0,10PASS,31.288s; historical full result unchanged",
-      "restart_recovery_lmr_followup": "Owner approved old LMR05 wait35s to90s, safety unchanged; test3eb66c2 independently reviewed; root7b7da24 --live-media-stop exit0,53PASS,245.464s; MRR90 separate, new full pending",
+      "restart_recovery_lmr_followup": "Owner approved old LMR05 wait35s to90s, safety unchanged; test3eb66c2 independently reviewed; root7b7da24 --live-media-stop exit0,53PASS,245.464s; new full b99a2d1 also PASS, named case58.82s. MRR90 remains separate proof.",
       "restart_recovery_rejected_candidate": "contracts/live-media-recovery-v1.md",
       "restart_recovery_scope_research": "fbbcf3ef-dfef-4b57-9278-902386101ff9",
       "restart_recovery_decision": "f0b36444-a4ea-4112-926d-596cfb7fd89f",
@@ -603,12 +605,12 @@
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
-      "implementation": "PARTIAL_STUDIO_BFF_TRANSPORT_ONLY",
-      "unit_mock": "STUDIO_QUERY_2_PASS",
-      "real_pg": "STUDIO_SIGNED_NEXT_GO_PG_TRANSPORT_PASS",
+      "implementation": "PARTIAL_TASK_ACCEPTED_STUDIO_LOCAL_MOCK_SLICE",
+      "unit_mock": "STUDIO_QUERY_2_AND_BROWSER_5_PASS",
+      "real_pg": "FULL696_AND_STUDIO_SIGNED_NEXT_GO_PG_BROWSER_PASS",
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
-      "independent_review": "BFF_FIXED_DIFF_NO_CONFIRMED_P0_P1_UI_NOT_RUN"
+      "independent_review": "STUDIO_SOURCE_TEST_INTEGRATION_AND_FINAL_LOCAL_SCOPE_ACCEPTED_NO_P0_P1"
     },
     "studio_bff_slice": {
       "contract": "contracts/studio-v1.md",
@@ -616,10 +618,10 @@
       "source_test_commit": "b18f977",
       "evidence": "docs/implementation/2026-09-27-studio-bff-acceptance.md",
       "gates": "ROOT_QUERY_2_SIGNED_CHAIN_1_BUILD_TYPECHECK_AND_ORDER_BFF_REGRESSION_PASS",
-      "boundary": "Six exact routes reuse current OIDC cookie/store/CSRF authority with no fixture fallback. Not Studio UI, desktop/mobile three-locale STU04, comment desk, manual takeover, Cloud or production acceptance. Studio B composition approved separately on 2026-09-27; UI implementation and acceptance remain pending."
+      "boundary": "Six exact routes reuse current OIDC cookie/store/CSRF authority with no fixture fallback. This receipt is BFF-only; subsequent Studio UI acceptance is recorded separately below. Comment desk, manual takeover, Cloud and production remain outside the accepted local MOCK slice."
     },
     "studio_visual_decision": {
-      "status": "APPROVED_COMPOSITION_UI_NOT_RUN",
+      "status": "APPROVED_COMPOSITION",
       "option": "split",
       "label": "B 场次列表＋双区工作台",
       "seed": "6373bb3f",
@@ -631,14 +633,17 @@
       "boundary": "Studio composition only; previous Orders C approval unchanged. No new runtime, production or STU04 acceptance."
     },
     "studio_ui_candidate": {
-      "status": "UNMERGED_CORE_READBACK_PASS_NATIVE_NOT_RUN_VISUAL_SCORED_FIXES_SHIP",
+      "status": "MERGED_ACCEPTED_LOCAL_MOCK_STU01_05_FULL696_PASS",
       "source_commit": "4ff7972",
       "design_documentation_commit": "03928d5",
-      "test_commit": "c275c45",
+      "test_commit": "05cb8ee",
+      "root_browser_tested_commit": "05cb8ee",
+      "root_full_tested_commit": "b99a2d1",
       "evidence": "docs/implementation/2026-09-27-studio-ui-acceptance.md",
-      "memory_id": "d04bca71-1b59-4c75-87e1-eaa3bdd58234",
+      "memory_id": "0c06a522-ef85-4889-9642-1e62044694eb",
       "visual_review_memory": "f3c813b9-9b31-47e2-a69a-803dd5a7bf09",
-      "boundary": "Eighth independent signed-OIDC/Next/Go/PG/local-MOCK core checks and Start/Stop readbacks PASS, but actual Playwright2PASS3FAIL and outer exit1. Native conceal stays NOT_RUN. Native calendar enabled/click/focus observed; page DOM dialog probe cannot establish browser-owned popup behavior, so selection/save/reopen stays TEST_OBSERVATION_LIMITATION/NOT_RUN, not a product-defect conclusion. Replacement independent visual reviewer scored final fixes ship using nine root-validated seventh-run captures at unchanged UI4ff7972. Seventh tester-order failure retained. No source merge, full STU04, comment desk, Cloud, LIVE or deployment acceptance."
+      "final_scope_review": "f393fffb-1154-46c5-85b3-6a4f93bafd39",
+      "boundary": "Root05cb8ee Studio5 and Orders7 actual browser PASS with no skips, strict admin typecheck/build and unchanged PG business facts; trusted native conceal and native date selection/save/reopen proved. Root b99a2d1 full696/race/vet exit0 reused only after independent ordinary-input equivalence review for the four browser-test-only files. Existing visual review remains scoped to unchanged UI4ff7972. Historical failed probes/runs retained. Native BFCache restoration unobserved (persisted=false), not claimed. Local MOCK rehearsal only; real browser publishing, comment desk/manual takeover, Cloud/LIVE and production deployment remain pending."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
@@ -852,17 +857,18 @@
         "scope": "Cookie-derived authority; original URL query gate before Next normalization; encoded-prefix negatives; actual unprefixed locale redirects; no fixture-based order data; private/no-store and safe errors. Does not accept the pending merchant order UI or realprovider/production."
       },
       "ui": {
-        "tested_tree": "f70dc42",
-        "status": "IMPLEMENTED_LOCAL_PARTIAL_MOU03_NOT_RUN",
+        "tested_tree": "05cb8ee",
+        "status": "ACCEPTED_LOCAL_READ_ONLY_MOU01_06_BFCACHE_NOT_OBSERVED",
         "contract": "contracts/merchant-orders-ui-v1.md",
         "evidence": "docs/implementation/2026-09-27-merchant-orders-ui-acceptance.md",
         "scope": "User-approved C inline expansion; buyer B unchanged. Three locales, mobile/desktop, separate order/payment/fulfillment/work states, authenticated cookie GETs, no shipping/refund/export commands.",
-        "aggregate": "Production Next-Go-PG replay: 6 functional Playwright PASS in11.8s,1 native visibility skipped/NOT_RUN; Go16.193s, intentional exit1. Business facts unchanged. Native pageshow observed=true,persisted=false: no native bfcache proof. Parser2/2 and strictTS/build exit0. Earlier common-shell identity3/buyer1/BFF1 replay exit0.",
+        "aggregate": "Root05cb8ee production-built Next-Go-PG replay actualexit0:7PlaywrightPASS0skip,Go16.35s,foundation18.567s; strictTS/build pass. Trusted native hidden/visible and PIIclear/revalidation proof18/18/19; PG facts unchanged. Root b99 full696/race/vet PASS with same untagged inputs. Combined with previously accepted visual/parser/identity/buyer/BFF receipts, not a claim those independent gates were all rerun. Native history observed=true,persisted=false: native BFCache restoration not proved. Historical exit1 receipts retained.",
         "independent_review": "Bounded source review at9f57668 no openP0/P1/P2; independent finish review FIX for clipped payment label, fix-round1 scored original P1 RESOLVED atf70dc42 across three-locale captures. Fix verdict is not fullMOU or production approval.",
-        "not_ready": "Native hidden/visible and bfcache-capable restore evidence remain unaccepted; aggregate MOU stays partial. No production/provider acceptance."
+        "final_scope_review": "f393fffb-1154-46c5-85b3-6a4f93bafd39",
+        "not_ready": "Native BFCache restoration remains unobserved; MOU03 requires recording whether persisted occurs, not persisted=true. Privacy no-store headers unchanged. No production/provider acceptance."
       },
       "independent_review": "Final3aa55596-f0eb-4bba-bbd3-21d265e6cdae source/test/log no openP0/P1/P2. Frozen contract9ed17103-ff27-43a3-9c4d-d593babd58dc; SQLca89aa52-ffe6-43aa-b8be-b3400aaa929f; Go5a982c61-469d-47d1-8d59-f50752451ea5. Three test P2 findings closed at e5f399f; exact legacy onboarding grant expectation correction25d4303 reviewed without relaxing equality.",
-      "not_ready": "Merchant UI is implemented with partial local evidence in ui above; native lifecycle gate remains open. Shipment/labels/refunds/export, provider integration and production rollout are not included. Atomic index/constraint migration needs production lock-budget review and approval."
+      "not_ready": "Merchant read-only UI local MOU scope accepted as recorded above; native BFCache restoration not claimed. Shipment/labels/refunds/export, provider integration and production rollout are not included. Atomic index/constraint migration needs production lock-budget review and approval."
     },
     "checkout_expiry_runtime": {
       "tested_tree": "5cea8b91963e6c519d6a8e4621fe544389e63992",
