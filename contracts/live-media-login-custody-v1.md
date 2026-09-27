@@ -66,6 +66,10 @@ Use existing `MP400/401/403/404/409` error classes, no identifiers in errors.
 `MediaPlanner.PlanStart` calls this guard **after command.Run**, including replay,
 and after its final existing authorize check. Replay never reruns the writer,
 inserts another custody row, extends expiry, or rebinds to another login.
+Move the existing transaction-local `app.authz_revision=scope.Revision` assignment
+before `command.Run`, after initial authorization, so fresh and replay paths set
+it identically. `WithScope` sets the three identity GUCs but not this revision;
+do not relax SQL equality checks to compensate for an unset replay value.
 
 Private `live.media_login_eligible(p_operation uuid)` returns boolean and has no
 runtime/executor/public grant. Join the exact operation/attempt/custody/login;
