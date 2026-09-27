@@ -210,7 +210,10 @@ remain separate G06 requirements; even all BRI gates passing cannot replace them
 1. The lifecycle/authority decision and Cloud limits have bounded design review.
    Freeze the [input JWT/RoomService wire profile](livekit-input-protocol-v1.md); reuse standard-library
    transport/crypto and add independent protocol tests.
-2. Freeze exact LIVE intake, SQL functions/role separation, one-operation lifetime
+2. Implement the independently frozen [initiating-login prerequisite](live-media-login-custody-v1.md)
+   first. It binds the existing Start to one login without issuing input tokens;
+   its MLC gates cannot replace BRI or Cloud qualification.
+   Freeze exact LIVE intake, remaining SQL functions/role separation, one-operation lifetime
    extension and HTTP DTO, including budget/SLO constants. Schema is integrator
    owned. Source/test writers then work in separate worktrees against that freeze.
 3. Pass BRI01–05 locally with the real product chain. Keep BRI06 pending until
