@@ -130,10 +130,20 @@ func bicOwnedFacts(t *testing.T, h *bicHarness) [8]int64 {
 
 func bicPlanReady(t *testing.T, h *bicHarness) {
 	t.Helper()
-	for _, pool := range []*pgxpool.Pool{h.lp.f.runtime, h.executor, h.worker} {
+	bicAssertPlanReady(t, h, true)
+}
+
+func bicAssertPlanReady(t *testing.T, h *bicHarness, want bool) {
+	t.Helper()
+	for _, item := range []struct {
+		name string
+		pool *pgxpool.Pool
+	}{
+		{"runtime", h.lp.f.runtime}, {"executor", h.executor}, {"worker", h.worker},
+	} {
 		var ready bool
-		if err := pool.QueryRow(context.Background(), `SELECT live.media_input_plan_ready()`).Scan(&ready); err != nil || !ready {
-			t.Fatalf("input readiness from actual role: ready=%v err=%v", ready, err)
+		if err := item.pool.QueryRow(context.Background(), `SELECT live.media_input_plan_ready()`).Scan(&ready); err != nil || ready != want {
+			t.Fatalf("input readiness from actual %s role: ready=%v want=%v err=%v", item.name, ready, want, err)
 		}
 	}
 }
@@ -740,6 +750,53 @@ func bicAssertOriginalLiability(t *testing.T, h *bicHarness, plan live.MediaStar
 
 func TestLiveMediaExecutionBIC03OriginalJobOutlivesInputLiability(t *testing.T) {
 	for _, item := range []struct{ name, seed string }{
+		{"unissued-direct-generation-budget", `UPDATE integration.operations SET generation=4096 WHERE id=$1`},
+		{"unissued-direct-age-budget", `UPDATE integration.operations SET created_at=clock_timestamp()-interval '25 hours' WHERE id=$1`},
+	} {
+		t.Run(item.name, func(t *testing.T) {
+			h, plan, _ := bicStarted(t)
+			// Owner-only SQL-state fixture: no Stop, token, or provider wire.
+			// Direct claim must close the no-liability child before deciding
+			// whether the automation budget requires an unresolved hold.
+			if tag, err := h.lp.f.owner.Exec(context.Background(), item.seed, plan.OperationID); err != nil || tag.RowsAffected() != 1 {
+				t.Fatalf("budget fixture did not update original operation: %v %v", tag, err)
+			}
+			lease := bytes.Repeat([]byte{0x71}, 32)
+			disposition, _, mode, err := bicClaim(context.Background(), h, plan, lease)
+			if err != nil || disposition != "terminal" || mode != "" {
+				t.Fatalf("unissued direct budget claim did not jointly complete: %s/%s %v", disposition, mode, err)
+			}
+			var operation, event, child, reason, queue, jobState string
+			var closed *time.Time
+			var leaseUntil, finalized *time.Time
+			err = h.lp.f.owner.QueryRow(context.Background(), `SELECT o.state,
+			 (SELECT e.state FROM integration.operation_events e WHERE e.operation_id=o.id ORDER BY e.id DESC LIMIT 1),
+			 c.state,c.close_reason,c.admission_closed_at,o.lease_until,j.queue,j.state,j.finalized_at
+			 FROM integration.operations o JOIN live.media_input_custody c ON c.operation_id=o.id
+			 JOIN river_media.river_job j ON j.id=o.job_id WHERE o.id=$1 AND j.id=$2`, plan.OperationID, plan.JobID).
+				Scan(&operation, &event, &child, &reason, &closed, &leaseUntil, &queue, &jobState, &finalized)
+			if err != nil || operation != "BLOCKED_POLICY" || event != operation || child != "CLOSED" ||
+				reason != "reconcile_exhausted" || closed == nil || leaseUntil != nil || queue != "media_input_mock_v1" ||
+				jobState == "" || finalized != nil {
+				t.Fatalf("unissued direct budget has incoherent ledger/job: operation=%s event=%s child=%s reason=%s closed=%v lease=%v queue=%s job=%s finalized=%v err=%v",
+					operation, event, child, reason, closed, leaseUntil, queue, jobState, finalized, err)
+			}
+			disposition, _, mode, err = bicClaim(context.Background(), h, plan, bytes.Repeat([]byte{0x72}, 32))
+			if err != nil || disposition != "terminal" || mode != "" {
+				t.Fatalf("second claim reopened a combined terminal: %s/%s %v", disposition, mode, err)
+			}
+			var secondOperation, secondEvent, secondChild string
+			err = h.lp.f.owner.QueryRow(context.Background(), `SELECT o.state,
+			 (SELECT e.state FROM integration.operation_events e WHERE e.operation_id=o.id ORDER BY e.id DESC LIMIT 1),c.state
+			 FROM integration.operations o JOIN live.media_input_custody c ON c.operation_id=o.id WHERE o.id=$1`, plan.OperationID).
+				Scan(&secondOperation, &secondEvent, &secondChild)
+			if err != nil || secondOperation != operation || secondEvent != event || secondChild != child {
+				t.Fatalf("second claim changed combined terminal: %s/%s/%s err=%v", secondOperation, secondEvent, secondChild, err)
+			}
+		})
+	}
+
+	for _, item := range []struct{ name, seed string }{
 		{"unissued-stop-after-generation-budget", `UPDATE integration.operations SET generation=4096 WHERE id=$1`},
 		{"unissued-stop-after-age-budget", `UPDATE integration.operations SET created_at=clock_timestamp()-interval '25 hours' WHERE id=$1`},
 	} {
@@ -944,12 +1001,34 @@ func TestLiveMediaExecutionBIC04FenceACLAndNativeGuard(t *testing.T) {
 		{"grant-over-sixty-seconds", `UPDATE live.media_input_custody SET grant_exp=grant_iat+61 WHERE attempt_id=$1`},
 		{"closed-admission-cannot-return-reserved", `UPDATE live.media_input_custody SET state='RESERVED' WHERE attempt_id=$1`},
 		{"closed-admission-cannot-return-unissued", `UPDATE live.media_input_custody SET state='UNISSUED' WHERE attempt_id=$1`},
-		{"nonfinite-attempt-creation", `UPDATE live.media_attempts SET created_at='infinity'::timestamptz WHERE id=$1`},
+		{"nonfinite-input-creation", `UPDATE live.media_input_custody SET created_at='infinity'::timestamptz WHERE attempt_id=$1`},
+		{"frozen-input-creation", `UPDATE live.media_input_custody SET created_at=clock_timestamp()+interval '1 second' WHERE attempt_id=$1`},
 	} {
 		if _, err := h.lp.f.owner.Exec(context.Background(), item.query, plan.AttemptID); err == nil {
 			t.Fatalf("owner bypassed frozen input invariant %s", item.name)
 		}
 	}
+	// The old parent attempt has no BIC-specific owner CHECK on created_at.
+	// Deliberately corrupt it only in this disposable fixture, then prove the
+	// input readiness comparison detects the mismatch and restoration recovers.
+	bicPlanReady(t, h)
+	var originalCreated time.Time
+	if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT created_at FROM live.media_attempts WHERE id=$1`, plan.AttemptID).Scan(&originalCreated); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := h.lp.f.owner.Exec(context.Background(), `UPDATE live.media_attempts SET created_at='infinity'::timestamptz WHERE id=$1`, plan.AttemptID); err != nil {
+		t.Fatalf("owner-only parent corruption fixture: %v", err)
+	}
+	t.Cleanup(func() {
+		if _, err := h.lp.f.owner.Exec(context.Background(), `UPDATE live.media_attempts SET created_at=$2 WHERE id=$1`, plan.AttemptID, originalCreated); err != nil {
+			t.Errorf("restore parent creation timestamp: %v", err)
+		}
+	})
+	bicAssertPlanReady(t, h, false)
+	if _, err := h.lp.f.owner.Exec(context.Background(), `UPDATE live.media_attempts SET created_at=$2 WHERE id=$1`, plan.AttemptID, originalCreated); err != nil {
+		t.Fatal(err)
+	}
+	bicPlanReady(t, h)
 	// The native guard, not a best-effort readiness check, must reject both
 	// finalization and deletion while any reserved input liability remains.
 	if _, err := h.lp.f.owner.Exec(context.Background(), `UPDATE river_media.river_job SET state='completed',finalized_at=clock_timestamp() WHERE id=$1`, plan.JobID); sqlState(err) != "22023" {
@@ -1048,6 +1127,81 @@ func TestLiveMediaExecutionBIC04FenceACLAndNativeGuard(t *testing.T) {
 	if err := h.lp.f.runtime.QueryRow(context.Background(), `SELECT live.media_input_plan_ready()`).Scan(&ready); err != nil || ready {
 		t.Fatalf("readiness accepted deliberately missing original job: %v %v", ready, err)
 	}
+}
+
+func TestLiveMediaExecutionBIC04ReadinessCatalogPoison(t *testing.T) {
+	h := bicSetup(t)
+	bicPlanReady(t, h)
+	for _, item := range []struct{ name, grant, revoke string }{
+		{
+			"private-close-public-execute",
+			`GRANT EXECUTE ON FUNCTION live.close_media_input_custody(uuid,text) TO PUBLIC`,
+			`REVOKE EXECUTE ON FUNCTION live.close_media_input_custody(uuid,text) FROM PUBLIC`,
+		},
+		{
+			"registrar-public-execute",
+			`GRANT EXECUTE ON FUNCTION live.register_media_input_profile(uuid) TO PUBLIC`,
+			`REVOKE EXECUTE ON FUNCTION live.register_media_input_profile(uuid) FROM PUBLIC`,
+		},
+		{
+			"registrar-runtime-execute",
+			`GRANT EXECUTE ON FUNCTION live.register_media_input_profile(uuid) TO commerce_runtime`,
+			`REVOKE EXECUTE ON FUNCTION live.register_media_input_profile(uuid) FROM commerce_runtime`,
+		},
+	} {
+		t.Run(item.name, func(t *testing.T) {
+			if _, err := h.lp.f.owner.Exec(context.Background(), item.grant); err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() {
+				if _, err := h.lp.f.owner.Exec(context.Background(), item.revoke); err != nil {
+					t.Errorf("restore input function ACL: %v", err)
+				}
+			})
+			bicAssertPlanReady(t, h, false)
+			if _, err := h.lp.f.owner.Exec(context.Background(), item.revoke); err != nil {
+				t.Fatal(err)
+			}
+			bicPlanReady(t, h)
+		})
+	}
+	t.Run("wrong-input-guard-tgtype", func(t *testing.T) {
+		var original string
+		if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT pg_catalog.pg_get_triggerdef(t.oid)
+		 FROM pg_catalog.pg_trigger t WHERE t.tgrelid='live.media_input_custody'::regclass
+		 AND t.tgname='media_input_custody_identity'`).Scan(&original); err != nil {
+			t.Fatal(err)
+		}
+		swap := func(definition string) error {
+			ctx := context.Background()
+			tx, err := h.lp.f.owner.Begin(ctx)
+			if err != nil {
+				return err
+			}
+			defer tx.Rollback(ctx)
+			if _, err := tx.Exec(ctx, `DROP TRIGGER media_input_custody_identity ON live.media_input_custody`); err != nil {
+				return err
+			}
+			if _, err := tx.Exec(ctx, definition); err != nil {
+				return err
+			}
+			return tx.Commit(ctx)
+		}
+		if err := swap(`CREATE TRIGGER media_input_custody_identity AFTER INSERT OR UPDATE ON live.media_input_custody
+		 FOR EACH ROW EXECUTE FUNCTION live.guard_media_input_custody()`); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() {
+			if err := swap(original); err != nil {
+				t.Errorf("restore input identity trigger: %v", err)
+			}
+		})
+		bicAssertPlanReady(t, h, false)
+		if err := swap(original); err != nil {
+			t.Fatal(err)
+		}
+		bicPlanReady(t, h)
+	})
 }
 
 func TestLiveMediaExecutionBIC05LegacyQueueUnaffected(t *testing.T) {
