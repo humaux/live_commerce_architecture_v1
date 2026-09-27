@@ -1,6 +1,6 @@
 # Browser input custody implementation record — 2026-09-27
 
-Status: **BIC_SOURCE_CANDIDATE_UNDER_REPAIR; independent acceptance pending**.
+Status: **BIC_INDEPENDENT_PG_PASS; integrated root acceptance running**.
 Source base `2b52e7d`; frozen contract:
 [BIC/BRW](../../contracts/live-browser-input-runtime-v1.md).
 Contract freeze `4809128`, cleanup-authority clarification `234f44a` (reviewed,
@@ -80,7 +80,7 @@ commands, exit codes, evidence hashes and cleanup only after actual execution.
 
 ## Fixed candidate and repair gate
 
-Source candidate `ac4782d` (not merged) changes only the five assigned source
+Source candidate `ac4782d` changes only the five assigned source
 files. Author unit tests and vet pass; existing isolated media-plan and media-stop
 regressions pass. The latter does not contain the independent BIC tests and is
 not BIC acceptance. Root inspected both successful logs:
@@ -108,8 +108,34 @@ explicit in the contract, not a new consumer implementation.
 Review receipt: Humaux `d065745c-019b-425c-9b8f-bf606c79bf76`.
 Independent tests run in their own worktree; tests must exercise direct budget
 claim, not only Stop-then-claim, and fixed replay after RESERVED reconcile claim.
-No source merge until independent repair review and actual PG evidence resolve
-the findings. This record does not upgrade Cloud, browser input or Studio gates.
+These findings were repaired in `3401101`. Independent fixed-diff review found
+both P1s closed and no new confirmed P0/P1. Runtime worker schema USAGE was added
+without child-table privileges so its intended readiness function can execute.
+The initial source and repair are integrated as `8cb91bd` and `cadeff0`; independent
+test-only commits are integrated through `e0a30f8`. Root verified the six source/
+test files are byte-identical to the independently tested branch.
+
+Independent PG18 `--live-media-stop` passed 53 top-level tests, including six BIC
+tests, exit 0, foundation 241.986s:
+`/Volumes/data/worktrees/commerce-meta-inbox-tests-20260926/output/bic-second-pg-20260927.log`,
+SHA256 `f89963dd6717049307c2783e711b0c0d0b9d3e1cd9e18ef3cb65ef5c8d05467a`.
+Direct UNISSUED 4096-generation/25-hour claims, native-job retention and readiness
+PUBLIC/unauthorized EXECUTE/trigger-shape poisoning are included.
+
+The first independent run is retained at the same directory's
+`bic-first-pg-20260927.log`, SHA256
+`796c1ee4a76376da38b83e04d029301160c069bc6d511169c9bbda398307230e`.
+Its worker schema error is fixed. Its parent `media_attempts.created_at` owner
+mutation assertion was mapped to the wrong contract: the input child's timestamp
+is immutable; parent-owner corruption must instead make readiness false. The test
+now proves child immutability and parent-corruption detection with exact restore,
+without widening historical parent-schema rules. Existing LMR05 also failed in
+the first run and passed the second unchanged; no timeout/assertion was relaxed,
+and the timing variance remains unclassified pending root regression.
+
+Root `--live-media-stop` is running at fixed `e0a30f8`; its result and subsequent
+runtime/Studio/BFF/full gates are not yet accepted. This record does not upgrade
+Cloud, browser input, Studio UI or deployment gates.
 
 ## Future deployment stop line
 
