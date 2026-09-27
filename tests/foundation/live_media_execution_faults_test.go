@@ -3,6 +3,7 @@ package foundation_test
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"log/slog"
@@ -21,21 +22,61 @@ import (
 	"livecommerce/migrations"
 )
 
-// The exact PostgreSQL COMMIT acknowledgement-loss fixture is shared with
-// hosted payment. Arm it only after the reserve SQL frame, not at worker start:
-// a claim/load COMMIT loss would not test the one-wire reservation boundary.
+// Reserve runs as an implicit transaction. Consume its successful PostgreSQL
+// CommandComplete and idle ReadyForQuery, then discard only that acknowledgement.
+// A sent SQL frame alone does not establish that the reservation committed.
 type lmeReserveLossConn struct {
-	*hpCommitLossConn
+	net.Conn
 	loss       *hpCommitLoss
+	seen       *atomic.Bool
 	sawReserve atomic.Bool
+	pending    atomic.Bool
 }
 
 func (c *lmeReserveLossConn) Write(p []byte) (int, error) {
-	if bytes.Contains(p, []byte("live.reserve_media_start")) {
+	n, err := c.Conn.Write(p)
+	if err == nil && n == len(p) && len(p) >= 6 && p[0] == 'Q' &&
+		int(binary.BigEndian.Uint32(p[1:5])) == len(p)-1 && p[len(p)-1] == 0 &&
+		bytes.HasPrefix(bytes.ToLower(bytes.TrimSpace(p[5:len(p)-1])), []byte("select live.reserve_media_start(")) {
 		c.sawReserve.Store(true)
 		c.loss.armed.Store(true)
+		c.seen.Store(true)
+		c.pending.Store(true)
 	}
-	return c.hpCommitLossConn.Write(p)
+	return n, err
+}
+
+func (c *lmeReserveLossConn) Read(p []byte) (int, error) {
+	if !c.pending.CompareAndSwap(true, false) {
+		return c.Conn.Read(p)
+	}
+	_ = c.Conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+	defer c.Conn.Close()
+	completed := false
+	for {
+		var head [5]byte
+		if _, err := io.ReadFull(c.Conn, head[:]); err != nil {
+			return 0, err
+		}
+		length := int(binary.BigEndian.Uint32(head[1:]))
+		if length < 4 || length > 1<<20 {
+			return 0, io.ErrUnexpectedEOF
+		}
+		body := make([]byte, length-4)
+		if _, err := io.ReadFull(c.Conn, body); err != nil {
+			return 0, err
+		}
+		if head[0] == 'C' && bytes.HasPrefix(body, []byte("SELECT ")) {
+			completed = true
+		}
+		if head[0] == 'Z' && len(body) == 1 && body[0] == 'I' && completed {
+			c.loss.committed.Store(true)
+			return 0, io.ErrUnexpectedEOF
+		}
+		if head[0] == 'E' || head[0] == 'Z' {
+			return 0, io.ErrUnexpectedEOF
+		}
+	}
 }
 
 func lmeLossPool(t *testing.T, base *pgxpool.Pool, loss *hpCommitLoss, seen *atomic.Bool) *pgxpool.Pool {
@@ -49,9 +90,7 @@ func lmeLossPool(t *testing.T, base *pgxpool.Pool, loss *hpCommitLoss, seen *ato
 		if err != nil {
 			return nil, err
 		}
-		w := &lmeReserveLossConn{hpCommitLossConn: &hpCommitLossConn{Conn: conn, loss: loss}, loss: loss}
-		// Reporting the reserve match is independent of the lost ACK flag.
-		return &lmeLossWitness{lmeReserveLossConn: w, seen: seen}, nil
+		return &lmeReserveLossConn{Conn: conn, loss: loss, seen: seen}, nil
 	}
 	pool, err := pgxpool.NewWithConfig(context.Background(), cfg)
 	if err != nil {
@@ -59,19 +98,6 @@ func lmeLossPool(t *testing.T, base *pgxpool.Pool, loss *hpCommitLoss, seen *ato
 	}
 	t.Cleanup(pool.Close)
 	return pool
-}
-
-type lmeLossWitness struct {
-	*lmeReserveLossConn
-	seen *atomic.Bool
-}
-
-func (c *lmeLossWitness) Write(p []byte) (int, error) {
-	n, err := c.lmeReserveLossConn.Write(p)
-	if c.sawReserve.Load() {
-		c.seen.Store(true)
-	}
-	return n, err
 }
 
 func TestLiveMediaExecutionLME05ReserveCommitLossAndAtomicFailures(t *testing.T) {
@@ -426,6 +452,21 @@ func TestLiveMediaExecutionLME07NativeLifecycleReadinessAndUpgrade(t *testing.T)
 	if err := h.lp.f.owner.QueryRow(ctx, `SELECT live.media_worker_ready()`).Scan(&ready); err != nil || !ready {
 		t.Fatalf("clean media worker readiness: %t %v", ready, err)
 	}
+	const readinessFunction = "live.claim_media_operation(uuid,bigint,integer,bytea)"
+	mustExec(t, h.lp.f.owner, `GRANT USAGE ON SCHEMA live TO commerce_hosted_runtime`)
+	mustExec(t, h.lp.f.owner, `GRANT EXECUTE ON FUNCTION `+readinessFunction+` TO commerce_hosted_runtime`)
+	t.Cleanup(func() {
+		_, _ = h.lp.f.owner.Exec(context.Background(), `REVOKE EXECUTE ON FUNCTION `+readinessFunction+` FROM commerce_hosted_runtime`)
+		_, _ = h.lp.f.owner.Exec(context.Background(), `REVOKE USAGE ON SCHEMA live FROM commerce_hosted_runtime`)
+	})
+	if err := h.lp.f.owner.QueryRow(ctx, `SELECT live.media_worker_ready()`).Scan(&ready); err != nil || ready {
+		t.Fatalf("hosted direct EXECUTE contamination passed readiness: %t %v", ready, err)
+	}
+	mustExec(t, h.lp.f.owner, `REVOKE EXECUTE ON FUNCTION `+readinessFunction+` FROM commerce_hosted_runtime`)
+	mustExec(t, h.lp.f.owner, `REVOKE USAGE ON SCHEMA live FROM commerce_hosted_runtime`)
+	if err := h.lp.f.owner.QueryRow(ctx, `SELECT live.media_worker_ready()`).Scan(&ready); err != nil || !ready {
+		t.Fatalf("clean readiness not restored after hosted poison: %t %v", ready, err)
+	}
 	// Preserve LMP's initial INSERT guard; post0007 only admits the dedicated
 	// native worker's lifecycle UPDATE of an already-linked job.
 	for _, state := range []string{"scheduled", "pending", "completed", "cancelled"} {
@@ -469,12 +510,14 @@ func TestLiveMediaExecutionLME07NativeLifecycleReadinessAndUpgrade(t *testing.T)
 	t.Run("populated-0035-forward-upgrade", func(t *testing.T) {
 		old := lriPre0032Fixture(t)
 		mcApplyHistorical(t, old, "0032_legacy_river_isolation.sql", "0033_live_planning.sql", "0034_live_media_authorization.sql", "0035_live_media_plan.sql")
-		upstream, err := rivermigrate.New(riverpgxv5.New(old.owner), &rivermigrate.Config{Schema: "river_media", Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if _, err = upstream.Migrate(ctx, rivermigrate.DirectionUp, nil); err != nil {
-			t.Fatal(err)
+		for _, schema := range []string{"river_payment", "river_expiry", "river_media"} {
+			upstream, err := rivermigrate.New(riverpgxv5.New(old.owner), &rivermigrate.Config{Schema: schema, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err = upstream.Migrate(ctx, rivermigrate.DirectionUp, nil); err != nil {
+				t.Fatal(err)
+			}
 		}
 		mcApplyHistorical(t, old, "post_river/0005_legacy_river_isolation.sql", "post_river/0006_live_media_queue.sql")
 		lp := lpHarness{f: old, actor: old.principalA, token: old.tokens["a"]}

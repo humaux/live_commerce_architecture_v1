@@ -186,6 +186,14 @@ func lmeSetup(t *testing.T, handler http.HandlerFunc) *lmeHarness {
 	h.project = live.MediaProject{ProjectID: "project_lma", CredentialVersion: 1, Config: config, Transport: transport}
 	h.workerLogin, h.worker = lmaLogin(t, h.lp.f, "commerce_media_worker")
 	h.executorLogin, h.executor = lmaLogin(t, h.lp.f, "commerce_media_executor")
+	// The shared registrar helper's IN ROLE syntax defaults SET TRUE. Native
+	// worker/executor logins must inherit their one authority without SET ROLE.
+	for _, item := range []struct{ role, login string }{
+		{"commerce_media_worker", h.workerLogin}, {"commerce_media_executor", h.executorLogin},
+	} {
+		mustExec(t, h.lp.f.owner, "REVOKE "+item.role+" FROM "+pgx.Identifier{item.login}.Sanitize())
+		mustExec(t, h.lp.f.owner, "GRANT "+item.role+" TO "+pgx.Identifier{item.login}.Sanitize()+" WITH INHERIT TRUE, SET FALSE")
+	}
 	return h
 }
 
@@ -347,6 +355,30 @@ func TestLiveMediaExecutionLME01RolesSignaturesAndSecretBoundary(t *testing.T) {
 	if _, err := live.NewMediaClient(ctx, h.worker, h.executor, h.keys, []live.MediaProject{h.project}, 1); err != nil {
 		t.Fatalf("clean constructor rejected: %v", err)
 	}
+	executorName := pgx.Identifier{h.executorLogin}.Sanitize()
+	const foreignFunction = "identity.issue_merchant_session(text,text,bytea,bigint)"
+	if _, err := h.lp.f.owner.Exec(ctx, "GRANT USAGE ON SCHEMA identity TO "+executorName); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := h.lp.f.owner.Exec(ctx, "GRANT EXECUTE ON FUNCTION "+foreignFunction+" TO "+executorName); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_, _ = h.lp.f.owner.Exec(context.Background(), "REVOKE EXECUTE ON FUNCTION "+foreignFunction+" FROM "+executorName)
+		_, _ = h.lp.f.owner.Exec(context.Background(), "REVOKE USAGE ON SCHEMA identity FROM "+executorName)
+	})
+	if _, err := live.NewMediaClient(ctx, h.worker, h.executor, h.keys, []live.MediaProject{h.project}, 1); err == nil {
+		t.Fatal("executor with cross-domain issuer function admitted")
+	}
+	if _, err := h.lp.f.owner.Exec(ctx, "REVOKE EXECUTE ON FUNCTION "+foreignFunction+" FROM "+executorName); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := h.lp.f.owner.Exec(ctx, "REVOKE USAGE ON SCHEMA identity FROM "+executorName); err != nil {
+		t.Fatal(err)
+	}
+	if err := platform.ValidateMediaExecutorPool(ctx, h.executor); err != nil {
+		t.Fatalf("clean executor not restored after issuer poison: %v", err)
+	}
 	canary := h.project.Config.APISecret
 	for _, rendering := range []string{fmt.Sprint(h.project), fmt.Sprintf("%#v", h.project)} {
 		if strings.Contains(rendering, canary) {
@@ -454,7 +486,9 @@ func TestLiveMediaExecutionLME01RolesSignaturesAndSecretBoundary(t *testing.T) {
 		if err := migrations.Apply(ctx, other.owner); err != nil {
 			t.Fatalf("prepare separate PG18 fixture: %v", err)
 		}
-		_, otherExecutor := lmaLogin(t, other, "commerce_media_executor")
+		otherLogin, otherExecutor := lmaLogin(t, other, "commerce_media_executor")
+		mustExec(t, other.owner, "REVOKE commerce_media_executor FROM "+pgx.Identifier{otherLogin}.Sanitize())
+		mustExec(t, other.owner, "GRANT commerce_media_executor TO "+pgx.Identifier{otherLogin}.Sanitize()+" WITH INHERIT TRUE, SET FALSE")
 		if err := platform.ValidateMediaExecutorPool(ctx, otherExecutor); err != nil {
 			t.Fatalf("separate clean executor failed admission: %v", err)
 		}
@@ -636,7 +670,7 @@ func TestLiveMediaExecutionLME03ObservedWaitAndFencedReservation(t *testing.T) {
 		if _, err := h.record(t, lease, "START", "EG_expired", "EGRESS_ACTIVE", 100, 110, 0); err == nil {
 			t.Fatal("expired lease recorded observation")
 		}
-		if _, err := h.executor.QueryRow(ctx, `SELECT live.finish_media_uncertain($1::uuid,$2::bigint,$3::bytea,'remote_unknown')`, h.plan.OperationID, lease.generation, lease.token).Scan(new(string)); err == nil {
+		if err := h.executor.QueryRow(ctx, `SELECT live.finish_media_uncertain($1::uuid,$2::bigint,$3::bytea,'remote_unknown')`, h.plan.OperationID, lease.generation, lease.token).Scan(new(string)); err == nil {
 			t.Fatal("expired lease finished")
 		}
 		if after := h.facts(t); after != before {
