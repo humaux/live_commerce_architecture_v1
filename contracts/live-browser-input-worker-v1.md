@@ -330,6 +330,10 @@ URL, telemetry, storage, trace or screenshot. Do not return API keys/secrets or
 redirect responses. Body <=8192 bytes; BFF enforces the same ceiling. Replays
 recheck current admission and fixed grant; a later revoke races into existing
 liability, not an atomic-delivery guarantee. Commit ACK loss returns no token.
+BRW05/06 fixtures must use an HTTPS authenticated BFF origin and a browser-
+accepted SFU WebSocket transport. A convenient HTTP localhost fixture does not
+satisfy BRI's HTTPS token-delivery gate; record it as NOT_RUN for that gate,
+not an implicit exception or a production transport relaxation.
 
 ## Independent acceptance before activation
 
