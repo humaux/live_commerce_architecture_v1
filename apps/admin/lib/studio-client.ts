@@ -2,6 +2,8 @@ import { csrfCookie, sessionBoundary } from "./settings-client";
 import {
   parseDraft,
   parseStudioDetail,
+  parseStudioInput,
+  parseStudioInputPrepared,
   parseStudioPage,
   parseStudioReceipt,
   type AspectRatio,
@@ -43,6 +45,14 @@ export async function readStudioPage(store: string, cursor: string, signal: Abor
 }
 export async function readStudioDetail(store: string, sessionID: string, signal: AbortSignal) {
   try { return parseStudioDetail(await read(`/api/stores/${store}/live-sessions/${sessionID}`, signal), sessionID); }
+  catch (error) { throw error instanceof StudioError ? error : new StudioError("unavailable"); }
+}
+export async function readStudioInput(store: string, sessionID: string, signal: AbortSignal) {
+  try { return parseStudioInput(await read(`/api/stores/${store}/live-sessions/${sessionID}/input`, signal)); }
+  catch (error) { throw error instanceof StudioError ? error : new StudioError("unavailable"); }
+}
+export async function readStudioInputPrepared(store: string, sessionID: string, signal: AbortSignal) {
+  try { return parseStudioInputPrepared(await read(`/api/stores/${store}/live-sessions/${sessionID}/input/prepared`, signal)); }
   catch (error) { throw error instanceof StudioError ? error : new StudioError("unavailable"); }
 }
 

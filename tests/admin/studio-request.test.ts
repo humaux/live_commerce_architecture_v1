@@ -20,7 +20,7 @@ test("Studio collection accepts only canonical raw pagination syntax", () => {
 
 test("Studio detail and rehearsal actions reject every query", () => {
   const detail = base + "/22222222-2222-4222-8222-222222222222";
-  for (const path of [detail, detail + "/rehearsal/start", detail + "/rehearsal/stop", detail + "/input/start", detail + "/input/token"]) {
+  for (const path of [detail, detail + "/rehearsal/start", detail + "/rehearsal/stop", detail + "/input/start", detail + "/input/token", detail + "/input", detail + "/input/prepared"]) {
     assert.equal(validStudioQuery(path, false), true, path);
     assert.equal(validStudioQuery(path + "?", false), false, path);
     assert.equal(validStudioQuery(path + "?limit=1", false), false, path);

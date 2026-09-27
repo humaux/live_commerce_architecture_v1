@@ -335,10 +335,27 @@ otherwise exactly `attempt_id`, `state`, `admission_closed`, `close_reason`,
 not Egress nonterminal alone. Forward `read_studio_media` to recognize marked
 input attempts while preserving its existing strict output DTO. Kernel-only
 attempts remain rejected there. Legacy prepared-candidate selection excludes
-runtime-marked authorizations, which the future input controls select explicitly.
+all input-profile authorizations (including kernel-only marker 0), which the
+input controls select explicitly through the separate reader below.
 UI must use input `can_stop` when a marked input exists; Egress terminal must not
 disable needed Stop. This read projection is operator-readable evidence, not
 proof a human alert was delivered; its visible controls are still a BRI07 gate.
+
+GET `live-sessions/{session_id}/input/prepared` has the same exact-route,
+HTTPS, signed-session, no-query/body/key and private no-store boundary. Return
+null or the existing five-field StudioPrepared DTO: `authorization_id`,
+`session_version`, `start_before`, `environment`, `destinations`. Runtime-only
+`live.read_studio_input_prepared(bytea,uuid,uuid)` selects an unused runtime-1
+input authorization for the current DRAFT/program/version/aspect, before its
+deadline, without revocation and with current destination bindings. Its private
+SQL envelope is exactly `prepared`, `project_id`, `credential_version`,
+`endpoint_identity`. Go verifies the immutable runtime project mapping and
+endpoint, strips those three mapping fields, and rechecks the draft snapshot.
+Missing mapping fails closed; this advisory selection never replaces Start's
+locked checks. Both input GET responses are capped at 8192 bytes in Go/BFF.
+Initial and final read authority/revision/session-expiry checks apply. INPUT
+`cleanup_held` is independent from Egress escalation; a held input or revoked
+authorization does not remove a current manager's cleanup Stop permission.
 
 Response is an explicit private no-store bounded DTO with exactly `attempt_id`,
 `room_name`, `publisher_identity`, `url`, `token`, `expires_at`. Token is the

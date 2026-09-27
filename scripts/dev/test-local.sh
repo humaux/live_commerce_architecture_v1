@@ -94,7 +94,7 @@ if [[ "$test_mode" == --browser-input-delivery ]]; then
   test -f tests/foundation/browser_input_delivery_test.go
   test -f tests/admin/input-delivery.spec.ts
   grep -q '^func TestBrowserInputDeliveryBRW05RealChain' tests/foundation/browser_input_delivery_test.go
-  node --test --experimental-strip-types tests/admin/studio-request.test.ts
+  node --test --experimental-strip-types tests/admin/studio-request.test.ts tests/admin/studio-input.test.ts
   mkdir -p output/playwright
 fi
 if [[ "$test_mode" == --browser-studio-bff ]]; then
@@ -102,7 +102,7 @@ if [[ "$test_mode" == --browser-studio-bff ]]; then
   test -f tests/admin/studio-bff.spec.ts
   test -f tests/foundation/browser_studio_bff_test.go
   grep -q '^func TestBrowserStudioBFFRealChain' tests/foundation/browser_studio_bff_test.go
-  node --test --experimental-strip-types tests/admin/studio-request.test.ts
+  node --test --experimental-strip-types tests/admin/studio-request.test.ts tests/admin/studio-input.test.ts
   mkdir -p output/playwright
 fi
 if [[ "$test_mode" == --browser-buyer || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-order || "$test_mode" == --browser-payment ]]; then

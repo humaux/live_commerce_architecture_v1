@@ -173,6 +173,23 @@ func TestBrowserInputDeliveryBRW05RealChain(t *testing.T) {
 	mux.Handle("/", httpapi.NewHandler(stopCase.lp.f.runtime, httpapi.Options{SessionStoreList: true, Live: stopCase.planner, BrowserInput: runtime}))
 	var signed, badSignature, inputCalls, originProbeCalls, stopExpiry, revokeExpiry atomic.Int64
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Synthetic upstream faults exercise the BFF public DTO/size boundary;
+		// real session IDs below still reach the actual Go/PG read implementation.
+		if r.Method == http.MethodGet && (strings.HasSuffix(r.URL.Path, "/input") || strings.HasSuffix(r.URL.Path, "/input/prepared")) {
+			malformed := strings.Contains(r.URL.Path, "/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/")
+			oversized := strings.Contains(r.URL.Path, "/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb/")
+			if malformed || oversized {
+				w.Header().Set("Content-Type", "application/json")
+				w.Header().Set("X-Backend-Secret", "upstream-secret-sentinel")
+				w.Header().Set("Set-Cookie", "upstream=upstream-secret-sentinel")
+				if malformed {
+					_, _ = io.WriteString(w, `{"project_id":"upstream-secret-sentinel"}`)
+				} else {
+					_, _ = io.WriteString(w, `{"project_id":"`+strings.Repeat("x", 8193)+`"}`)
+				}
+				return
+			}
+		}
 		if strings.HasSuffix(r.URL.Path, "/input/token") {
 			inputCalls.Add(1)
 			if isOriginProbe(r.Header.Get("Idempotency-Key")) {

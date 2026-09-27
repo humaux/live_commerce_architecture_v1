@@ -119,6 +119,28 @@ test(
           };
           const startPath = `${base}/input/start`;
           const tokenPath = `${base}/input/token`;
+          const inputPath = `${base}/input`;
+          const beforeInput = await request(inputPath, "GET");
+          const beforePrepared = await request(`${inputPath}/prepared`, "GET");
+          const candidate = beforePrepared.parsed;
+          const readPreparedOK = beforeInput.status === 200 && beforeInput.parsed === null &&
+            beforeInput.cache === "private, no-store" && beforePrepared.status === 200 &&
+            beforePrepared.cache === "private, no-store" && !!candidate &&
+            Object.keys(candidate).sort().join(",") === "authorization_id,destinations,environment,session_version,start_before" &&
+            candidate.authorization_id === authorization && candidate.session_version === 1 && candidate.environment === "MOCK";
+          const invalidReads: number[] = [];
+          const sanitation: boolean[] = [];
+          for (const suffix of ["/input", "/input/prepared"]) {
+            invalidReads.push((await request(`${base}${suffix}?x=1`, "GET")).status);
+            invalidReads.push((await request(`${base}${suffix}`, "GET", undefined, "invalid-read-key")).status);
+            invalidReads.push((await request(`${base}${suffix}`, "POST", "{}", "invalid-read-method")).status);
+            invalidReads.push((await request(`/api/stores/${unlistedStore}/live-sessions/${session}${suffix}`, "GET")).status);
+            for (const invalidID of ["aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"]) {
+              const bad = await request(`/api/stores/${store}/live-sessions/${invalidID}${suffix}`, "GET");
+              sanitation.push(bad.status === 503 && bad.cache === "private, no-store" &&
+                !bad.raw.includes("upstream-secret-sentinel") && !bad.leakedHeaders);
+            }
+          }
           const startBody = JSON.stringify({
             authorization_id: authorization,
             expected_session_version: 1,
@@ -151,6 +173,18 @@ test(
             started.cache === "private, no-store";
           const first = await request(tokenPath, "POST", tokenBody, tokenKey);
           const replay = await request(tokenPath, "POST", tokenBody, tokenKey);
+          const statusRead = await request(inputPath, "GET");
+          const afterPrepared = await request(`${inputPath}/prepared`, "GET");
+          const inputState = statusRead.parsed;
+          const readInputOK = statusRead.status === 200 && statusRead.cache === "private, no-store" && !!inputState &&
+            Object.keys(inputState).sort().join(",") === "admission_closed,attempt_id,can_stop,cleanup_held,close_reason,state,updated_at" &&
+            inputState.attempt_id === attempt && inputState.state === "RESERVED" && inputState.can_stop === true &&
+            inputState.admission_closed === false && inputState.close_reason === "" && inputState.cleanup_held === false &&
+            afterPrepared.status === 200 && afterPrepared.parsed === null && afterPrepared.cache === "private, no-store";
+          const detail = await request(base, "GET");
+          const legacyForwardOK = detail.status === 200 && detail.cache === "private, no-store" &&
+            detail.parsed?.prepared === null &&
+            (detail.parsed?.attempt as Record<string, unknown> | undefined)?.attempt_id === attempt;
           const grant = first.parsed;
           const replayGrant = replay.parsed;
           const token = typeof grant?.token === "string" ? grant.token : "";
@@ -235,6 +269,11 @@ test(
           return {
             csrfVisible: /^[A-Za-z0-9_-]{43}$/.test(csrf),
             receiptOK,
+            readPreparedOK,
+            readInputOK,
+            legacyForwardOK,
+            invalidReads,
+            sanitation,
             tokenOK,
             storageClean,
             wssOpened,
@@ -259,6 +298,11 @@ test(
       );
       assert.equal(result.csrfVisible, true);
       assert.equal(result.receiptOK, true);
+      assert.equal(result.readPreparedOK, true);
+      assert.equal(result.readInputOK, true);
+      assert.equal(result.legacyForwardOK, true);
+      assert.deepEqual(result.invalidReads, [422, 422, 405, 404, 422, 422, 405, 404]);
+      assert.deepEqual(result.sanitation, [true, true, true, true]);
       assert.equal(result.tokenOK, true);
       assert.equal(result.storageClean, true);
       assert.equal(result.wssOpened, true);
@@ -348,13 +392,20 @@ test(
               expected_session_version: 1,
             }),
           );
-          return { status, denied };
+          const response = await fetch(`${base}/input`, { credentials: "same-origin" });
+          const input = await response.json();
+          const readAfterClosureOK = response.status === 200 && response.headers.get("cache-control") === "private, no-store" &&
+            input.attempt_id === attempt && (phase === "stop"
+              ? input.admission_closed === true && input.close_reason === "merchant_stop" && input.can_stop === false
+              : input.state === "RESERVED" && input.admission_closed === false && input.can_stop === true);
+          return { status, denied, readAfterClosureOK };
         },
         { base, attempt, phase },
       );
       assert.equal(closed.status, phase === "stop" ? 200 : 204);
       assert.equal(closed.denied.status, 409);
       assert.equal(closed.denied.safe, true);
+      assert.equal(closed.readAfterClosureOK, true);
     } finally {
       await browser.close();
     }

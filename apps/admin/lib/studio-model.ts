@@ -41,6 +41,15 @@ export type StudioDetail = {
 };
 export type StudioPage = { items: Draft[]; next_cursor: string };
 export type StudioReceipt = { session_id: string; attempt_id: string; state: string };
+export type StudioInput = {
+  attempt_id: string;
+  state: "UNISSUED" | "RESERVED" | "CLOSING" | "UNKNOWN" | "CLOSED";
+  admission_closed: boolean;
+  close_reason: "" | "merchant_stop" | "login_lost" | "permission_lost" | "authorization_lost" | "binding_lost" | "expired" | "egress_terminal" | "reconcile_exhausted" | "runtime_unavailable";
+  cleanup_held: boolean;
+  can_stop: boolean;
+  updated_at: string;
+};
 
 function exact(value: unknown, fields: string[]): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("invalid_studio_response");
@@ -87,18 +96,37 @@ export function parseStudioPage(value: unknown): StudioPage {
   if (new Set(items.map((item) => item.session_id)).size !== items.length) throw new Error("invalid_studio_response");
   return { items, next_cursor: row.next_cursor };
 }
+// Both the BFF and browser use this public allowlist. Deployment mappings must
+// never escape the private SQL/Go prepared selector, even in a valid JSON body.
+export function parseStudioInputPrepared(value: unknown): Prepared | null {
+  if (value === null) return null;
+  const row = exact(value, ["authorization_id", "session_version", "start_before", "environment", "destinations"]);
+  if (!id(row.authorization_id) || row.authorization_id === "00000000-0000-0000-0000-000000000000" ||
+    !Number.isSafeInteger(row.session_version) || (row.session_version as number) < 1 ||
+    !date(row.start_before) || row.environment !== "MOCK") throw new Error("invalid_studio_response");
+  return { ...row, destinations: destinations(row.destinations) } as Prepared;
+}
+export function parseStudioInput(value: unknown): StudioInput | null {
+  if (value === null) return null;
+  const row = exact(value, ["attempt_id", "state", "admission_closed", "close_reason", "cleanup_held", "can_stop", "updated_at"]);
+  if (!id(row.attempt_id) || row.attempt_id === "00000000-0000-0000-0000-000000000000" ||
+    !["UNISSUED", "RESERVED", "CLOSING", "UNKNOWN", "CLOSED"].includes(row.state as string) ||
+    !["", "merchant_stop", "login_lost", "permission_lost", "authorization_lost", "binding_lost", "expired", "egress_terminal", "reconcile_exhausted", "runtime_unavailable"].includes(row.close_reason as string) ||
+    typeof row.admission_closed !== "boolean" || typeof row.cleanup_held !== "boolean" ||
+    typeof row.can_stop !== "boolean" || !date(row.updated_at) ||
+    row.admission_closed !== (row.close_reason !== "") ||
+    row.admission_closed === ["UNISSUED", "RESERVED"].includes(row.state as string))
+    throw new Error("invalid_studio_response");
+  // CLOSED input may still need Stop for Egress; do not infer can_stop locally.
+  return row as StudioInput;
+}
 export function parseStudioDetail(value: unknown, requestedID: string): StudioDetail {
   const row = exact(value, ["draft", "prepared", "attempt", "can_manage"]);
   const draft = parseDraft(row.draft);
   if (draft.session_id !== requestedID || typeof row.can_manage !== "boolean" ||
     (row.prepared !== null && row.attempt !== null)) throw new Error("invalid_studio_response");
-  let prepared: Prepared | null = null;
-  if (row.prepared !== null) {
-    const item = exact(row.prepared, ["authorization_id", "session_version", "start_before", "environment", "destinations"]);
-    if (!id(item.authorization_id) || item.session_version !== draft.version || !date(item.start_before) || item.environment !== "MOCK")
-      throw new Error("invalid_studio_response");
-    prepared = { ...item, destinations: destinations(item.destinations) } as Prepared;
-  }
+  const prepared = parseStudioInputPrepared(row.prepared);
+  if (prepared && prepared.session_version !== draft.version) throw new Error("invalid_studio_response");
   let attempt: Attempt | null = null;
   if (row.attempt !== null) {
     const item = exact(row.attempt, ["attempt_id", "environment", "operation_state", "resource_state", "transport_status", "cleanup_required", "stop_requested", "stop_wire_count", "escalated", "updated_at", "destinations"]);

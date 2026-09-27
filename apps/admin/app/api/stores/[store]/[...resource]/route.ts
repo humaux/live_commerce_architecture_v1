@@ -1,6 +1,7 @@
 import { callBackend, fixtureSession } from "@/lib/backend";
 import { validOrdersQuery } from "@/lib/orders-request";
 import { validStudioInputToken, validStudioQuery } from "@/lib/studio-request";
+import { parseStudioInput, parseStudioInputPrepared } from "@/lib/studio-model";
 import {
   authConfig,
   authenticatedStores,
@@ -23,13 +24,15 @@ const policy = `${deliveryCollection}/[a-z][a-z0-9_-]{0,39}/policy`;
 const purchaseEntry = `products/${uuid}/purchase-entry`;
 const orders = `orders(?:/${uuid})?`;
 const studioDetail = `live-sessions/${uuid}`;
-const studioInput = `${studioDetail}/input/(?:start|token)`;
+const studioInput = `${studioDetail}/input(?:/(?:start|token|prepared))?`;
+const studioInputRead = `${studioDetail}/input(?:/prepared)?`;
+const studioInputReadRoute = new RegExp(`^${studioInputRead}$`);
 const studioInputRoute = new RegExp(`^${studioInput}$`);
 const studioAction = `${studioDetail}/(?:rehearsal/(?:start|stop)|input/(?:start|token))`;
-const studioAny = new RegExp(`^(?:live-sessions|${studioDetail}|${studioAction})$`);
+const studioAny = new RegExp(`^(?:live-sessions|${studioDetail}|${studioAction}|${studioInputRead})$`);
 const routes: Record<string, RegExp> = {
   GET: new RegExp(
-    `^(catalog-ledger|products|warehouses|inventory|products/${uuid}/skus|${purchaseEntry}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy}|${orders}|live-sessions|${studioDetail})$`,
+    `^(catalog-ledger|products|warehouses|inventory|products/${uuid}/skus|${purchaseEntry}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy}|${orders}|live-sessions|${studioDetail}|${studioInputRead})$`,
   ),
   POST: new RegExp(
     `^(products|skus|warehouses|inventory/adjustments|products/${uuid}/archive|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets|live-sessions|${studioAction})$`,
@@ -195,9 +198,14 @@ async function route(request: Request, context: Context) {
     let body: string;
     try {
       const tokenResponse = input && path.endsWith("/token");
-      body = await readBody(response, "application/json", tokenResponse ? 8192 : 256 << 10);
+      const inputRead = studioInputReadRoute.test(path);
+      body = await readBody(response, "application/json", tokenResponse || inputRead ? 8192 : 256 << 10);
       const parsed: unknown = JSON.parse(body);
       if (tokenResponse && response.ok && !validStudioInputToken(parsed)) return error(503, "retry_later");
+      if (inputRead && response.ok) {
+        if (path.endsWith("/prepared")) parseStudioInputPrepared(parsed);
+        else parseStudioInput(parsed);
+      }
     } catch {
       return error(503, "retry_later");
     }
