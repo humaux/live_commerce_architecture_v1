@@ -1,7 +1,10 @@
 # Browser input restart observation — BRW07
 
-Status: DESIGN_CANDIDATE; implementation and real-process gates NOT_RUN.
+Status: FROZEN_SQL_READBACK_DESIGN; implementation and real-process gates NOT_RUN.
 Baseline: `9a5636e`. Owner: integrator, task `e8665b18-b402-4c67-b976-281bc85582e4`.
+Independent review: `c7e25c7`, Humaux `974ccc81-0ed5-4eec-b9e9-8008e68f7682`;
+no remaining confirmed P0/P1 in this bounded ABI. Process capability binding
+still requires its own frozen amendment and actual execution gates below.
 Extends `live-media-recovery-observer-v1.md` and
 `live-browser-input-worker-v1.md`; does not replace either cleanup contract.
 
