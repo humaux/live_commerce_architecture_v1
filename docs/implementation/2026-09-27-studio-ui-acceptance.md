@@ -1,6 +1,6 @@
 # Studio B UI acceptance — 2026-09-27
 
-Status: **SOURCE_CANDIDATE_UNMERGED; SOURCE_STATIC_CLEAR; STU04_NATIVE_NOT_RUN**.
+Status: **SOURCE_CANDIDATE_UNMERGED; STU04_CORE_PG_PASS; NATIVE_NOT_RUN; VISUAL_REVIEW_PENDING**.
 
 User approved **B 场次列表＋双区工作台**, seed `6373bb3f`, in `fb760ff`.
 The approved comp is `.impeccable/mocks/decision/studio-split.png` (1586×992);
@@ -173,6 +173,38 @@ as status-update time instead of observation time in all three locales. Root
 reviewed its two-file diff; no permission, polling or history logic changed.
 Source/test memory: `325df2c9-bb5a-4781-b2a8-a56f571b0e1f`,
 `6c09b8f8-b939-4d7d-a794-0909aecdc327`. Candidate remains unmerged.
+
+## Fifth run: core and database pass, native conceal still missing
+
+Fixed test `7e34fbb` (UI source `aa2bc39`, cherry `24302df`) exited 1,
+test 43.24s / foundation 44.239s. Playwright reported 3 PASS / 2 FAIL;
+the two failures were native conceal because actual `visibilityState` stayed
+`visible`. No synthetic event was substituted and the aggregate remains red.
+
+The main signed OIDC → production Next → Go/PG → local TLS MOCK worker chain
+passed create/edit/reopen, competing version edits, native Back/Forward and
+shell/locale guards, mobile saves in three locales, actual committed/lost ACK
+and original-key retry after unmount, and persisted Start/Stop to TERMINAL.
+A fresh signed login for the same principal/store invalidated the old pending
+request in place without reload: retry sent zero new POSTs. Expiry, read-only,
+CSRF and foreign/unlisted-store checks also passed. Every independent PG and
+worker counter readback passed before the final native-NOT_RUN error.
+
+Evidence in `/Volumes/data/worktrees/commerce-meta-inbox-tests-20260926`:
+
+- `output/studio-ui-fifth-20260927.log`, SHA256
+  `2e3c562629c5d426e1b55d300ef1d043e3593f260a8a075c50d8926fa11eb888`.
+- `output/playwright/studio-ui-20260927T080641.578556000/playwright.log`, SHA256
+  `29e52bd98317404d4131a93de30f2215b8c4a9fedd27b0e58c5ccaed57a73189`.
+- In that capture directory, all nine locale desktop/phone/phone-full images
+  were viewed by root and show settled navigation and loaded content. These,
+  not the fourth-run partial-rail captures, are the finish-review input.
+
+Humaux acceptance receipt `7ba64840-bd28-448f-8195-20df966f35e4`; test-only
+repair receipt `414e553d-bfc3-48ee-ad92-c2fc8777bf06`. Task-owned PG, worker and
+Playwright processes were stopped. Independent visual review is pending;
+neither this partial runtime pass nor a later visual verdict can waive native
+conceal or root integration/full-regression requirements.
 
 ## Remaining boundary
 
