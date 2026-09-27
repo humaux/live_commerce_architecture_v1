@@ -1,6 +1,6 @@
 import { callBackend, fixtureSession } from "@/lib/backend";
 import { validOrdersQuery } from "@/lib/orders-request";
-import { validStudioQuery } from "@/lib/studio-request";
+import { validStudioInputToken, validStudioQuery } from "@/lib/studio-request";
 import {
   authConfig,
   authenticatedStores,
@@ -23,7 +23,9 @@ const policy = `${deliveryCollection}/[a-z][a-z0-9_-]{0,39}/policy`;
 const purchaseEntry = `products/${uuid}/purchase-entry`;
 const orders = `orders(?:/${uuid})?`;
 const studioDetail = `live-sessions/${uuid}`;
-const studioAction = `${studioDetail}/rehearsal/(?:start|stop)`;
+const studioInput = `${studioDetail}/input/(?:start|token)`;
+const studioInputRoute = new RegExp(`^${studioInput}$`);
+const studioAction = `${studioDetail}/(?:rehearsal/(?:start|stop)|input/(?:start|token))`;
 const studioAny = new RegExp(`^(?:live-sessions|${studioDetail}|${studioAction})$`);
 const routes: Record<string, RegExp> = {
   GET: new RegExp(
@@ -51,6 +53,10 @@ async function route(request: Request, context: Context) {
   const path = resource.join("/");
   const studio = path.startsWith("live-sessions");
   if (studio && !authConfig) return error(404, "not_found");
+  const input = studioInputRoute.test(path);
+  // Trusted deployment origin, not forwarded headers or fixture auth, controls
+  // the browser secret boundary. The Go runtime stays explicitly injected/off.
+  if (input && !authConfig?.publicOrigin.startsWith("https://")) return error(404, "not_found");
   if (exactStore.test(store) && studio && studioAny.test(path) && !routes[request.method]?.test(path))
     return error(405, "method_not_allowed", "GET, POST, PATCH");
   if (!exactStore.test(store) || !routes[request.method]?.test(path))
@@ -188,8 +194,10 @@ async function route(request: Request, context: Context) {
   if (studio) {
     let body: string;
     try {
-      body = await readBody(response, "application/json", 256 << 10);
-      JSON.parse(body);
+      const tokenResponse = input && path.endsWith("/token");
+      body = await readBody(response, "application/json", tokenResponse ? 8192 : 256 << 10);
+      const parsed: unknown = JSON.parse(body);
+      if (tokenResponse && response.ok && !validStudioInputToken(parsed)) return error(503, "retry_later");
     } catch {
       return error(503, "retry_later");
     }
@@ -233,7 +241,8 @@ export const PATCH = proxy;
 export const PUT = proxy;
 const unsupported = async (_request: Request, context: Context) => {
   const path = (await context.params).resource.join("/");
-  const response = path.startsWith("live-sessions") && !authConfig
+  const response = (path.startsWith("live-sessions") && !authConfig) ||
+    (studioInputRoute.test(path) && !authConfig?.publicOrigin.startsWith("https://"))
     ? localError(404, "not_found")
     : path.startsWith("live-sessions") && !studioAny.test(path)
     ? localError(404, "not_found")

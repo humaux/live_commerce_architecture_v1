@@ -9,7 +9,7 @@ import { validStudioQuery } from "./lib/studio-request";
 
 const uuid = "[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}";
 const orderPath = new RegExp(`^/api/stores/${uuid}/orders(?:/${uuid})?$`);
-const studioPath = new RegExp(`^/api/stores/${uuid}/live-sessions(?:/${uuid}(?:/rehearsal/(?:start|stop))?)?$`);
+const studioPath = new RegExp(`^/api/stores/${uuid}/live-sessions(?:/${uuid}(?:/(?:rehearsal/(?:start|stop)|input/(?:start|token)))?)?$`);
 const studioPrefix = new RegExp(`^/api/stores/${uuid}/live-sessions(?:/|$)`);
 
 // Guard raw order query syntax before Next normalizes it; auth stays in the route/Go.
