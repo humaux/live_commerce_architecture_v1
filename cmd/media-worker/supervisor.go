@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -25,7 +26,10 @@ type recoveryEpisode struct {
 	members       []live.RecoveryMember
 	admitted      bool
 	resolved      bool
-	alerted       bool
+	resolvedAt    time.Time
+	resolvedProof atomic.Bool
+	alerted       atomic.Bool
+	stopDeadline  context.CancelFunc
 	observed      map[string]bool
 	inflight      map[string]bool
 	cancelObserve context.CancelFunc
@@ -47,22 +51,72 @@ func newRecoveryEpisode() (*recoveryEpisode, error) {
 	}, nil
 }
 
+func newRecoveryEpisodeAt(started time.Time) (*recoveryEpisode, error) {
+	episode, err := newRecoveryEpisode()
+	if err == nil {
+		episode.started = started
+	}
+	return episode, err
+}
+
 func (e *recoveryEpisode) elapsedMS() int64 { return time.Since(e.started).Milliseconds() }
 
-func runInternalChild(ctx context.Context, getenv func(string) string) error {
-	ack := os.NewFile(3, "media-recovery-parent-ack")
-	if ack == nil {
-		return errWorkerConfig
+func (e *recoveryEpisode) markResolved() {
+	e.resolved = true
+	if e.resolvedAt.IsZero() {
+		e.resolvedAt = time.Now()
 	}
-	defer ack.Close()
-	info, err := ack.Stat()
+	e.resolvedProof.Store(true)
+	if e.stopDeadline != nil {
+		e.stopDeadline()
+	}
+}
+
+// This local monotonic timer is independent of SQL/provider calls that may be
+// blocking at the deadline. Durable timeout is retried by the main loop.
+func (e *recoveryEpisode) startDeadlineSignal(parent context.Context) {
+	timerCtx, stop := context.WithCancel(parent)
+	e.stopDeadline = stop
+	go func() {
+		wait := time.Until(e.started.Add(90 * time.Second))
+		if wait < 0 {
+			wait = 0
+		}
+		timer := time.NewTimer(wait)
+		defer timer.Stop()
+		select {
+		case <-timerCtx.Done():
+			return
+		case <-timer.C:
+			if !e.resolvedProof.Load() && e.alerted.CompareAndSwap(false, true) {
+				slog.Error("media_recovery_deadline_missed", "episode_id", e.id,
+					"scope_status", "unresolved", "affected_count", -1, "persisted", false)
+			}
+		}
+	}()
+}
+
+func runInternalChild(ctx context.Context, getenv func(string) string) error {
+	info, err := os.Stdin.Stat()
 	if err != nil || info.Mode()&os.ModeNamedPipe == 0 {
 		return errWorkerConfig
 	}
-	return runNative(ctx, getenv, func() error {
-		_, err := ack.Write([]byte("ready\n"))
-		return err
-	})
+	if !awaitRecoveryRelease(os.Stdin) {
+		return errWorkerConfig
+	}
+	childCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	go func() {
+		_, _ = io.Copy(io.Discard, os.Stdin)
+		cancel() // Parent closed the control pipe after release.
+	}()
+	return runNative(childCtx, getenv, nil)
+}
+
+func awaitRecoveryRelease(input io.Reader) bool {
+	var release [1]byte
+	_, err := io.ReadFull(input, release[:])
+	return err == nil && release[0] == 1
 }
 
 func sanitizedNativeEnvironment() []string {
@@ -79,7 +133,7 @@ func sanitizedNativeEnvironment() []string {
 
 // Each child owns its original River queue lifecycle. The supervisor never
 // admits a second authority into the child and reaps every abnormal exit.
-func superviseNativeChild(ctx context.Context, events chan<- struct{}) {
+func superviseNativeChild(ctx context.Context, events chan<- time.Time, releases chan<- chan bool) {
 	executable, err := os.Executable()
 	if err != nil {
 		slog.Error("media_native_child_executable_unavailable")
@@ -93,32 +147,43 @@ func superviseNativeChild(ctx context.Context, events chan<- struct{}) {
 		} else {
 			cmd := exec.Command(executable)
 			cmd.Env = sanitizedNativeEnvironment()
-			cmd.ExtraFiles = []*os.File{writeEnd}
+			cmd.Stdin = readEnd
 			cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 			if err = cmd.Start(); err == nil {
-				_ = writeEnd.Close()
-				ack := make(chan bool, 1)
-				go func() {
-					var message [6]byte
-					_, readErr := io.ReadFull(readEnd, message[:])
-					ack <- readErr == nil && string(message[:]) == "ready\n"
-					_ = readEnd.Close()
-				}()
+				_ = readEnd.Close()
+				permit := make(chan bool, 1)
+				select {
+				case releases <- permit:
+				case <-ctx.Done():
+					_ = writeEnd.Close()
+					_ = cmd.Process.Kill()
+					_ = cmd.Wait()
+					return
+				}
+				var approved bool
+				select {
+				case approved = <-permit:
+				case <-ctx.Done():
+				}
+				if !approved {
+					_ = writeEnd.Close()
+					_ = cmd.Process.Kill()
+					_ = cmd.Wait()
+					return
+				}
+				if _, err := writeEnd.Write([]byte{1}); err != nil {
+					slog.Warn("media_native_child_release_failed")
+					_ = writeEnd.Close()
+					_ = cmd.Process.Signal(syscall.SIGTERM)
+				} else {
+					slog.Info("media_native_child_released")
+				}
 				done := make(chan struct{})
 				go func() { _ = cmd.Wait(); close(done) }()
 				select {
-				case ready := <-ack:
-					if ready {
-						slog.Info("media_native_child_ready")
-					} else {
-						slog.Warn("media_native_child_ack_lost")
-					}
 				case <-done:
 				case <-ctx.Done():
-				}
-				select {
-				case <-done:
-				case <-ctx.Done():
+					_ = writeEnd.Close()
 					_ = cmd.Process.Signal(syscall.SIGTERM)
 					select {
 					case <-done:
@@ -127,13 +192,15 @@ func superviseNativeChild(ctx context.Context, events chan<- struct{}) {
 						<-done
 					}
 				}
+				_ = writeEnd.Close()
 				if ctx.Err() != nil {
 					return
 				}
 				slog.Warn("media_native_child_exited")
 				select {
-				case events <- struct{}{}:
-				default:
+				case events <- time.Now():
+				case <-ctx.Done():
+					return
 				}
 				backoff = min(backoff+time.Second, 5*time.Second)
 			} else {
@@ -160,8 +227,22 @@ func runSupervised(ctx context.Context, getenv func(string) string) error {
 	if err != nil {
 		return err
 	}
+	episode.startDeadlineSignal(ctx)
+	defer func() {
+		if episode.stopDeadline != nil {
+			episode.stopDeadline()
+		}
+	}()
 	// Recovery DSN is parsed/opened before material keys or native child config.
 	recoveryDSN := getenv("COMMERCE_MEDIA_RECOVERY_DATABASE_URL")
+	if len(recoveryDSN) == 0 || len(recoveryDSN) > 8192 || strings.TrimSpace(recoveryDSN) == "" {
+		slog.Error("media_recovery_dsn_invalid")
+		return errWorkerConfig
+	}
+	if _, parseErr := pgxpool.ParseConfig(recoveryDSN); parseErr != nil {
+		slog.Error("media_recovery_dsn_invalid")
+		return errWorkerConfig
+	}
 	capacity, capacityErr := livekit.LoadWorkerConcurrency(getenv)
 	projects, projectsErr := livekit.LoadWorkerProjects(getenv)
 	workerEnabled := getenv("COMMERCE_MEDIA_WORKER_ENABLED") == "1"
@@ -200,9 +281,11 @@ func runSupervised(ctx context.Context, getenv func(string) string) error {
 	}
 	providerChecked := false
 	childCtx, stopChild := context.WithCancel(ctx)
-	childEvents := make(chan struct{}, 1)
+	childEvents := make(chan time.Time)
+	childReleases := make(chan chan bool)
 	childDone := make(chan struct{})
 	childStarted := false
+	nativeReleased := false
 	defer func() { stopChild(); <-childDone }()
 	results := make(chan observeResult, 32)
 	ticker := time.NewTicker(time.Second)
@@ -225,7 +308,7 @@ func runSupervised(ctx context.Context, getenv func(string) string) error {
 			if beginErr == nil {
 				episode.members, episode.admitted = members, true
 				if len(members) == 1 && members[0].Disposition == "empty" && members[0].CoverageKnown {
-					episode.resolved = true
+					episode.markResolved()
 					slog.Info("media_recovery_no_work", "episode_id", episode.id)
 				}
 			} else {
@@ -235,12 +318,12 @@ func runSupervised(ctx context.Context, getenv func(string) string) error {
 		if !childStarted {
 			childStarted = true
 			if workerEnabled && nativeErr == nil {
-				go func() { superviseNativeChild(childCtx, childEvents); close(childDone) }()
+				go func() { superviseNativeChild(childCtx, childEvents, childReleases); close(childDone) }()
 			} else {
 				close(childDone)
 			}
 		}
-		if episode.admitted && !providerChecked && workerEnabled && nativeErr == nil &&
+		if nativeReleased && episode.admitted && !providerChecked && workerEnabled && nativeErr == nil &&
 			capacityErr == nil && projectsErr == nil && episode.elapsedMS() < 90000 {
 			providerChecked = true
 			observer = readyRecoveryObserver(ctx, pool, nativeEnv, projects)
@@ -269,17 +352,28 @@ func runSupervised(ctx context.Context, getenv func(string) string) error {
 			}
 			readback, readErr := ledger.Read(ctx, episode.id)
 			if readErr == nil {
+				witnessed := 0
 				for _, row := range readback {
-					if row.ObservationID == "" || row.Disposition == "witnessed" || row.Disposition == "timeout" {
+					if row.Disposition == "witnessed" {
+						witnessed++
+						continue
+					}
+					if row.ObservationID == "" || row.Disposition == "timeout" {
 						continue
 					}
 					elapsed := episode.elapsedMS() // sampled after committed readback
 					if elapsed <= 90000 {
-						_, _ = ledger.Witness(ctx, episode.id, row.OperationID, row.ObservationID, elapsed)
+						status, witnessErr := ledger.Witness(ctx, episode.id, row.OperationID, row.ObservationID, elapsed)
+						if witnessErr == nil && (status == "witnessed" || status == "already_witnessed") {
+							witnessed++
+						}
 					}
 				}
-				if readback[0].ScopeStatus == "finished" || readback[0].ScopeStatus == "empty" && readback[0].CoverageKnown {
-					episode.resolved = true
+				if readback[0].ScopeStatus == "finished" ||
+					readback[0].ScopeStatus == "empty" && readback[0].CoverageKnown ||
+					readback[0].ScopeStatus == "pending" && readback[0].CoverageKnown &&
+						readback[0].CandidateCount > 0 && witnessed == readback[0].CandidateCount {
+					episode.markResolved()
 				}
 			}
 		}
@@ -294,16 +388,18 @@ func runSupervised(ctx context.Context, getenv func(string) string) error {
 				status, count, err = ledger.Timeout(ctx, episode.id, episode.elapsedMS())
 				persisted = err == nil
 				if persisted && status == "already_finished" {
-					episode.resolved = true
+					episode.markResolved()
 				}
 				if persisted && status != "already_finished" {
-					episode.resolved = true
+					episode.markResolved()
 				}
 			}
-			if !episode.alerted && status != "already_finished" {
+			if status != "already_finished" && episode.alerted.CompareAndSwap(false, true) {
 				slog.Error("media_recovery_deadline_missed", "episode_id", episode.id,
 					"scope_status", status, "affected_count", count, "persisted", persisted)
-				episode.alerted = true
+			} else if persisted && status != "already_finished" {
+				slog.Info("media_recovery_timeout_persisted", "episode_id", episode.id,
+					"scope_status", status, "affected_count", count)
 			}
 			if !episode.admitted && ledger == nil {
 				// A late DB recovery may still create an overdue, unknown-coverage scope.
@@ -320,15 +416,23 @@ func runSupervised(ctx context.Context, getenv func(string) string) error {
 					episode.observed[result.operationID] = true
 				}
 			}
-		case <-childEvents:
-			if episode.resolved {
+		case permit := <-childReleases:
+			// Each restart waits for this episode's committed admission result,
+			// or an explicit degraded DB/config path, before native work.
+			allowed := episode.admitted || !episode.coverageKnown || capacityErr != nil
+			permit <- allowed
+			nativeReleased = allowed
+		case exitAt := <-childEvents:
+			nativeReleased = false
+			if !episode.resolvedAt.IsZero() && !episode.resolvedAt.After(exitAt) {
 				if episode.cancelObserve != nil {
 					episode.cancelObserve()
 				}
-				episode, err = newRecoveryEpisode()
+				episode, err = newRecoveryEpisodeAt(exitAt)
 				if err != nil {
 					return errWorkerStart
 				}
+				episode.startDeadlineSignal(ctx)
 				observer, providerChecked = nil, false
 			}
 		case <-ticker.C:
