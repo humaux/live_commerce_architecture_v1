@@ -98,8 +98,8 @@ func TestLiveBrowserInputBRW01PlannerRollbackAndCommitAckLoss(t *testing.T) {
 		}
 		replayed, err := brwPlan(context.Background(), h, h.lp.f.runtime, h.logins.a,
 			h.lp.f.storeA1, key, h.input)
-		if err != nil || replayed.AttemptID == "" || replayed.OperationID == "" || replayed.JobID < 1 ||
-			(preAck.AttemptID != "" && preAck != replayed) {
+		if err != nil || preAck.AttemptID == "" || preAck.OperationID == "" || preAck.JobID < 1 ||
+			replayed.AttemptID == "" || replayed.OperationID == "" || replayed.JobID < 1 || preAck != replayed {
 			t.Fatalf("marked receipt replay changed committed identities: pre=%+v replay=%+v err=%v", preAck, replayed, err)
 		}
 		if got := bicOwnedFacts(t, h.bicHarness); got != [8]int64{1, 1, 1, 1, 1, 1, 1, 0} {
