@@ -59,7 +59,7 @@ LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
     AND c.conname IN ('media_stop_request_pair','media_stop_request_member','media_stop_budget'))
   AND EXISTS(SELECT 1 FROM pg_catalog.pg_constraint c
    WHERE c.conrelid='live.media_execution_state'::regclass AND c.conname='media_stop_observation_fk'
-    AND c.convalidated)
+    AND c.convalidated AND c.condeferrable AND NOT c.condeferred)
   AND EXISTS(SELECT 1 FROM pg_catalog.pg_constraint c
    WHERE c.conrelid='live.media_observations'::regclass AND c.conname='media_observations_source_check'
     AND c.convalidated)
