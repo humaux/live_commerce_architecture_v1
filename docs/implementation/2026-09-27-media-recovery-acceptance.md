@@ -1,10 +1,11 @@
 # MRR90 restart state-check acceptance
 
-Status at 2026-09-27 11:15 UTC: **LOCAL_INTEGRATED / ACCEPTANCE_INCOMPLETE**.
+Status at 2026-09-27 11:41 UTC: **FOCUSED_ACCEPTED / FULL_REGRESSION_PENDING**.
 The independently frozen design is on `598eea4`. Source `86b641a` and independent
 tests `f3b731b` with evidence `2e00b00a` are integrated as `74459ae`.
-The independent and root focused runs each passed 17 tests; remaining contract
-cases and fixed-tree full regression are still required. No production configuration,
+The initial independent and root focused runs each passed 17 tests. Independent
+supplement `cf4720e` passed 21 tests; root fixed-tree full regression remains
+required. No production configuration,
 customer broadcast, provider account or River policy was changed.
 
 ## Meaning of the owner's 90-second target
@@ -231,3 +232,43 @@ A wrong job argument is distinct from an absent original row. An isolated
 exact-job deletion negative is authorized; no schema constraint weakening is
 needed or allowed. The test author will correct that evidence table with the
 new fixed test batch. Production remains unchanged.
+
+## Supplemented focused gate and full-run freeze
+
+Fixed independent `cf4720ece7b6688400bde61bb6c15d1a272b7817` against unchanged
+source `86b641a` ran the focused selector with **exit 0**, foundation **344.101s**,
+**21 top-level PASS / 0 FAIL / 0 SKIP**. Root verified all result lines and hash.
+Log: `/Volumes/data/worktrees/commerce-meta-inbox-tests-20260926/output/mrr-focused-cf4720e.log`;
+SHA-256: `1a52ca252a554bfd35f42c3d60723d095bf2b0836cabec32b6e299fe4db7a711`.
+
+The new checks cover mode/configuration branches, physically missing original
+job, capacity overflow with continued native cleanup, timely readback with
+post-90s Witness persistence (**92.50s**), and first recovery-role DB access
+returning after the deadline (**94.60s**). The last case changes only the owned
+fixture login's LOGIN flag; it does **not** claim a complete PG-server outage.
+The existing real miss (**91.59s**) and ROOM/QUERY positives also passed. Static
+test review `5bf6bf06-d0e4-4fc7-930e-2d17e73f65c2` found no blocking P0/P1.
+
+Root additionally committed `9b44275`: a narrow ROOM/QUERY first-late-readback
+classifier test at 90001ms, without prior proof. Targeted Go race **exit 0**,
+**1.683s**; log `/Volumes/data/output/mrr-first-late-classifier-root-20260927.log`,
+SHA-256 `3f53a7b79400985e365db5c8c4fc04c98ef3fb39b8ff8747b935e099d484a705`.
+Independent review `a83c0d0d-1bab-43f1-b488-3d2437f89783` accepted this limited
+classification evidence, not a real-clock process test.
+
+Coverage adjudication `9085f413-6f4f-42d0-8d78-1cada625a31a` maps MRR02 to
+combined evidence: actual timely-readback/late-Witness process; SQL late record
+rejection and timeout-first stickiness; first-late classifier rejection; and
+the parent sampling elapsed only after its committed read returns. A separate
+known-member fresh-read response deliberately delayed across 90s remains an
+**unexecuted stress variant**, not a new literal contract requirement. Do not
+describe it as tested, or replace any of the existing required checks with it.
+
+The measured pre-MRR full foundation baseline was **715.044s**, and the new
+MRR focused suite alone takes **344.101s**. Root therefore permits the full Go
+suite's outer execution envelope to increase **900s to 1500s** before freezing
+the run. The focused envelope is 540s. No 90s recovery, 35s LMR05, lease,
+process-exit or assertion deadline is changed; no River policy is changed.
+One fixed-tree full run will also independently rerun the supplemented MRR
+checks, avoiding an unnecessary extra 344s focused run. Root full acceptance,
+original LMR05 and Studio native acceptance remain pending until evidenced.

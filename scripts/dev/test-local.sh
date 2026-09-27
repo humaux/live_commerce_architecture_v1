@@ -267,7 +267,9 @@ else
   # Root measured 483.549s before LMR; the Stop-inclusive focused suite took
   # 180.126s, adding roughly 113s to the full package. This 900s envelope
   # covers aggregate tests only; no SQL, lease, 5s pacing or fault gate changes.
-  GOTOOLCHAIN=go1.27.1 go test -p 1 -race -count=1 -timeout=900s -v ./...
+  # Serial real-clock MRR cases add ~344s to the measured ~715s baseline.
+  # This suite envelope does not change the 90s recovery or 35s LMR05 predicates.
+  GOTOOLCHAIN=go1.27.1 go test -p 1 -race -count=1 -timeout=1500s -v ./...
   GOTOOLCHAIN=go1.27.1 go vet ./...
   printf 'PASS: isolated real PostgreSQL foundation tests; fixture removed at exit.\n'
 fi
