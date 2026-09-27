@@ -621,6 +621,7 @@
     "studio_ui_candidate": {
       "status": "UNMERGED_CORE_READBACK_PASS_NATIVE_NOT_RUN_VISUAL_SCORED_FIXES_SHIP",
       "source_commit": "4ff7972",
+      "design_documentation_commit": "03928d5",
       "test_commit": "c275c45",
       "evidence": "docs/implementation/2026-09-27-studio-ui-acceptance.md",
       "memory_id": "d04bca71-1b59-4c75-87e1-eaa3bdd58234",

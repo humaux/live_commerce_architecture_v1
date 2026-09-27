@@ -33,6 +33,24 @@ readiness amendment, and a mixed-batch liveness proof. Open INPUT may never be
 silently finalized or marked CLOSED. No reset, replacement job or unbounded
 fast-retry escape is permitted. No alternative in this paragraph is frozen.
 
+Follow-up feasibility receipt `535060cb-6296-40a5-a08b-c21b24313213` adds a
+further blocker: rewriting ordinary executor completion to `pending` can panic
+River v0.40's completion subscriber. Native rescue has a different completion
+path; a job-row shape is not, by itself, authenticated proof of that caller.
+The interface proposal `75725ace-b4c6-4616-9a18-45da0d058c73` and lease/lock
+addendum `f72d51a8-d9b9-444a-802b-5afe985a64c3` remain design candidates.
+They describe a same-binary supervisor/child model, immutable restart episodes,
+monotonic readback witnesses and sticky timeout evidence. Early exhaustion
+escalation and rescue-only parking are **not approved implementation seams**.
+
+Before expanding native retry semantics, a bounded scope check must determine
+whether the owner's fresh-state-check target can instead reuse the original
+operation's lease-fenced observation path without changing River scheduling.
+It may not silently bypass the existing cleanup-required QUERY guard or consume
+a Stop reservation without executing its frozen protocol. Fresh state evidence
+must remain distinct from resumed cleanup automation. This comparison is still
+pending; it is not permission for a second unfenced worker or new business queue.
+
 ## Approved outcome
 
 After abnormal media-service restart, resume state reconciliation within

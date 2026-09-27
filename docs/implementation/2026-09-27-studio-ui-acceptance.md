@@ -334,6 +334,16 @@ English date display and calendar affordance are resolved, with no new visible
 batch regression. Native popup behavior is explicitly outside this verdict.
 Built-design documentation follows as an additive incumbent-world merge.
 
+That documentation is now recorded in candidate-branch commit `03928d5`,
+receipt `d9215ba9-ada0-4f1a-a57d-7a4f5ecf042d`, by a separate scoped
+`gpt-6-luna/medium` documenter. Only `DESIGN.md` and `.impeccable/design.json`
+changed: incumbent tokens and five existing examples remain, with one Studio
+state/action example and the built desktop/mobile ordering added. Root read the
+complete diff, verified clean candidate status, JSON schemaVersion 2 with six
+examples and `git diff --check`. Native calendar behavior is expressly not
+canonized as tested. These files remain with the unmerged UI candidate, not a
+claim that main or production ships this surface.
+
 STU04 overall is still **NOT_PASS**. Missing native lifecycle proof, a valid
 native-date selection observation method and root fixed-tree full acceptance
 remain release gates. Visual ship cannot waive any of them.
