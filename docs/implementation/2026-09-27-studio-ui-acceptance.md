@@ -2,12 +2,12 @@
 
 Status: **SOURCE_CANDIDATE_UNMERGED; CORE_READBACK_PASS; NATIVE_NOT_RUN; VISUAL_SCORED_FIXES_SHIP**.
 
-Latest no-account native preflight (12:14 UTC): actual exit 1. The native picker
-changed its value through trusted click/keyboard input in the first probe, but
-genuine conceal is still unproven. Sending focus-emulation=false on a separate
-CDP session did not establish that Playwright's original session stopped its
-override. The second probe confirmed actual window minimization while the
-document still reported visible. These are partial diagnostic results only.
+Latest no-account native preflight (12:21 UTC): actual exit 0 using a separately
+launched task-owned browser with public `noDefaults:true` and its existing
+default context. Both real tab switching and window minimization produced
+trusted hidden → visible events. This establishes a usable device, not a
+product PASS. The two prior failed preflights remain below; real STU04 must run
+again using the corrected device and native picker observation.
 
 User approved **B 场次列表＋双区工作台**, seed `6373bb3f`, in `fb760ff`.
 The approved comp is `.impeccable/mocks/decision/studio-split.png` (1586×992);
@@ -372,9 +372,31 @@ the task-owned browser in finally. Evidence
 `039c941ed233e5f2021bb4dd6676a11bb98293815307f7231ad8f18aa9680011`;
 script SHA-256 `22a6cdd3eb1c1269758775f75c618890929fa600a979f9025eeff24af451485f`.
 No fake visibility values/events, product workaround or ninth full run was used.
-Independent causal review of per-CDP-session focus capture and the public
-`connectOverCDP({noDefaults:true})` default-context option is pending; it is not
-yet a verified remedy. Product native save/reopen and conceal gates remain open.
+Independent causal review `df8ad7c3-1319-4ea3-a372-8afd9a34d06e` then identified
+the session mismatch. [Chromium's EmulationHandler](https://chromium.googlesource.com/chromium/src/+/main/content/browser/devtools/protocol/emulation_handler.cc)
+owns the focus-emulation capture handle per protocol handler. Sending false on
+a fresh handler does not release the original Playwright handler's capture.
+Installed Playwright source agrees with its
+[public noDefaults documentation](https://playwright.dev/docs/api/class-browsertype#browser-type-connect-over-cdp-option-no-defaults):
+this option skips default focus emulation on the existing default context only;
+new browser contexts are not covered.
+
+Root's single reviewed causal preflight used the same browser executable and
+version, an empty task-owned profile and loopback CDP, never a user's browser.
+Real tab switching produced trusted hidden → visible, and actual window bounds
+normal → minimized → normal produced a second trusted pair. Actual exit **0**;
+`/Volumes/data/output/playwright/studio-native-nodefaults-20260927.json`, SHA-256
+`63f1c9cff4778b1a55a5424424f4a75d5f25a1af45aa3ae6303ca81530f342ca`;
+script SHA-256 `1b300ed6f59e46a01f3e696c3b95ff8156f16cff24d550401aea92f59dc8875a`.
+The window was restored, but raw Chromium lingered after Browser.close/SIGTERM.
+Root verified the exact task profile and PID 79040 before killing only that
+process; subsequent PID/profile checks found no remaining process. The JSON's
+null childExit is a pre-cleanup snapshot, not a successful shutdown assertion.
+The unique profile remains retained with evidence. CDP attachment has lower
+fidelity than Playwright's normal connection and raw launch arguments differ;
+do not claim exact environment equivalence. The test-only fixture must include
+bounded task-specific cleanup. Native device proof does not close product
+native save/reopen or conceal gates; source remains unmerged.
 
 ## Remaining boundary
 
