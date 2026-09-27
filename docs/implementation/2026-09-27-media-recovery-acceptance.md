@@ -1,6 +1,6 @@
 # MRR90 restart state-check acceptance
 
-Status at 2026-09-27 12:29 UTC: **FOCUSED_ACCEPTED / FULL_REGRESSION_NOT_ACCEPTED / LRI_FOCUSED_REPAIR_PASS / LMR_WAIT_ADJUDICATED**.
+Status at 2026-09-27 12:34 UTC: **FOCUSED_ACCEPTED / LRI_AND_STOP_FOLLOWUPS_PASS / FULL_REGRESSION_NOT_ACCEPTED**.
 The independently frozen design is on `598eea4`. Source `86b641a` and independent
 tests `f3b731b` with evidence `2e00b00a` are integrated as `74459ae`.
 The initial independent and root focused runs each passed 17 tests. Independent
@@ -341,3 +341,19 @@ retroactive PASS for any retained failed run. Native River scheduling, cleanup
 responsibility and all real-clock MRR90 process gates are untouched. Independent
 diff review and the existing `--live-media-stop` group are pending; full
 regression will require a new frozen-tree execution.
+
+## Root Stop group after adjudication
+
+Independent static review `4fc47298-7df3-49cb-9c43-b6c2a0a1cd55` approved the
+bounded diff with no P0/P1. Root ran the existing
+`bash scripts/dev/test-local.sh --live-media-stop` on frozen clean
+`7b7da2482434378cd43328cbb2a3daebbdd2ad8e`: actual **exit 0**,
+**53 top-level PASS / 0 FAIL / 0 SKIP**, foundation **245.464s**.
+The named LMR05 case passed in **54.20s**, including all subsequent safety
+assertions. Log `/Volumes/data/output/lmr-stop-owner90-root-20260927.log`, SHA-256
+`958c108b19cdef11bce62dc1900ef9a7dd185f3e9de6b6a17f4fddf02b2cef6d`.
+The source and HEAD stayed fixed. Owned `lc-foundation-test-80686` was removed,
+the protected upgrade container stayed untouched, and the shared fixture lock
+was released. Combined with the independent LRI followup, both historical full
+failures now have passing focused followups. A new full-suite execution is
+still required; historical failures are not rewritten or counted as PASS.
