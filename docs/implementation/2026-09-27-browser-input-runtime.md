@@ -3,6 +3,9 @@
 Status: **DESIGN_REVIEWED_BIC_FROZEN; implementation and acceptance NOT_RUN**.
 Source base `2b52e7d`; frozen contract:
 [BIC/BRW](../../contracts/live-browser-input-runtime-v1.md).
+Contract freeze `4809128`, cleanup-authority clarification `234f44a` (reviewed,
+no ABI change): merchant revocation denies new grants but cannot strand the
+original executor's cleanup responsibility.
 
 ## Root cause and boundary
 
@@ -39,6 +42,31 @@ Root owns final migration merge (`0040` and post-River `0009`), contract and
 task metadata. Independent tests use existing actual PG18/race runner and
 `TestLiveMediaExecutionBIC` prefix, not another harness. Acceptance covers BIC01–05
 and preserves old assertions. Root reruns accepted source independently.
+
+|Role|Branch/worktree|Write ownership|
+|---|---|---|
+|Source|`commerce/media-input-source-20260927`; `/Volumes/data/worktrees/commerce-meta-inbox-go-20260926`|0040, post0009; `internal/live/media_plan.go`, new `media_input.go`; `internal/platform/media_runtime.go`|
+|Independent tests|`commerce/media-input-tests-20260927`; `/Volumes/data/worktrees/commerce-meta-inbox-tests-20260926`|New `tests/foundation/live_media_input_custody_test.go` only unless an exact setup correction is approved|
+|Integrator|main checkout|Contract, task metadata, this record; final source/test merge and root acceptance|
+
+Source/test started at `4809128`; clarification cherry-picked as `90dd1c7` /
+`12ea7c3` respectively. Prior untracked test `output/` evidence is preserved.
+No other worktree is reset, deleted or archived for this increment.
+
+Required commands, not yet executed for BIC:
+
+```sh
+bash scripts/dev/test-local.sh --live-media-stop
+bash scripts/dev/test-local.sh --live-media-runtime
+bash scripts/dev/test-local.sh --studio-backend
+bash scripts/dev/test-local.sh --browser-studio-bff
+bash scripts/dev/test-local.sh
+```
+
+The BIC kernel has no consumer or provider wire path. Tests for post-wire joint
+completion may seed that future state as an isolated privileged fixture, then
+exercise real fenced executor functions. Such tests are database invariant
+evidence, never real Start/Stop or browser-to-provider evidence.
 
 Preflight receipts: `1288c97f-bfcd-496d-8f06-c6c6f3548bb4`,
 `44467d60-d774-4a8f-bb67-cebc15a00453`,
