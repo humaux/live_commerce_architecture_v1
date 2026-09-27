@@ -441,6 +441,10 @@ BEGIN
  VALUES(o.tenant_id,o.store_id,o.id,p_generation,
   CASE WHEN v_terminal THEN CASE WHEN p_status='EGRESS_COMPLETE' THEN 'SUCCEEDED' ELSE 'FAILED_FINAL' END
    ELSE 'UNKNOWN' END,'',CASE WHEN v_terminal THEN 'media_terminal' ELSE 'media_observed' END);
+ IF NOT v_cleanup AND live.media_lifetime_revoked(o.id) THEN
+  UPDATE live.media_execution_state SET cleanup_required=true,updated_at=clock_timestamp()
+   WHERE attempt_id=a.id;
+ END IF;
  IF o.lease_until<=clock_timestamp() THEN RAISE EXCEPTION 'media lease unavailable' USING ERRCODE='ME409'; END IF;
  RETURN CASE WHEN v_terminal THEN 'terminal' ELSE 'observe' END;
 END $$;
