@@ -274,7 +274,7 @@ func TestBrowserStudioUIRealChain(t *testing.T) {
 				nativeFailed++
 			}
 		}
-		if err == nil && ((nativeFailed == 2 && bytes.Contains(log, []byte("3 passed")) && bytes.Contains(log, []byte("2 failed"))) ||
+		if err == nil && !t.Failed() && ((nativeFailed == 2 && bytes.Contains(log, []byte("3 passed")) && bytes.Contains(log, []byte("2 failed"))) ||
 			(nativeFailed == 1 && bytes.Contains(log, []byte("4 passed")) && bytes.Contains(log, []byte("1 failed")))) {
 			t.Errorf("STU04 native visibility lifecycle NOT_RUN: see exact browser failure(s); other browser cases and PG/worker readbacks passed; evidence=%s", evidence)
 		} else {
