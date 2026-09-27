@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"github.com/riverqueue/river/rivermigrate"
 
@@ -93,7 +94,11 @@ func TestLiveMediaStopLMR01FrozenLegacyAdmissionBinary(t *testing.T) {
 	}
 	mcApplyHistorical(t, f, "post_river/0005_legacy_river_isolation.sql", "post_river/0006_live_media_queue.sql",
 		"0036_live_media_execution.sql", "post_river/0007_live_media_execution.sql")
-	dsn, _ := lmaLogin(t, f, "commerce_media_executor")
+	login, loginPool := lmaLogin(t, f, "commerce_media_executor")
+	// Match the accepted LME login: inherited authority, never SET ROLE.
+	mustExec(t, f.owner, "REVOKE commerce_media_executor FROM "+pgx.Identifier{login}.Sanitize())
+	mustExec(t, f.owner, "GRANT commerce_media_executor TO "+pgx.Identifier{login}.Sanitize()+" WITH INHERIT TRUE, SET FALSE")
+	dsn := loginPool.Config().ConnString()
 	probe := func(want string) {
 		t.Helper()
 		bounded, cancel := context.WithTimeout(ctx, 15*time.Second)
