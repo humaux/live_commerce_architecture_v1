@@ -1,6 +1,9 @@
 # LiveKit browser input wire profile v1 — LKI01–05
 
-Status: **CANDIDATE_FOR_PROTOCOL_REVIEW**. Base `3d72d58`. This implements only
+Status: **FROZEN_FOR_PROTOCOL_IMPLEMENTATION**. Base `3d72d58`; independent
+preflight of `84280e9` found no confirmed P0/P1 (Humaux title: LiveKit input wire
+LKI01–05 independent preflight). No implementation or test pass is claimed.
+This defines only
 the provider boundary needed by [browser input lifetime](live-browser-input-v1.md),
 not merchant authorization, PG custody, HTTP routes, runtime configuration, Cloud
 qualification or Studio. No production call or new dependency is part of this slice.
@@ -22,7 +25,7 @@ Primary sources, checked 2026-09-27:
 RoomService POST paths are `/twirp/livekit.RoomService/<fixed method>`. No endpoint
 is supplied by a merchant. Requests below contain only the listed fields.
 
-## Frozen candidate Go surface
+## Frozen Go surface
 
 ```go
 type PublisherGrant struct {
