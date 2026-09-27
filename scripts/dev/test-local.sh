@@ -7,8 +7,8 @@ command -v go >/dev/null
 # public official golden vector; missing Node must fail before starting fixtures.
 command -v node >/dev/null
 test_mode="${1:-foundation}"
-if [[ "$#" -gt 1 ]] || [[ "$test_mode" != foundation && "$test_mode" != --browser-identity && "$test_mode" != --browser-buyer && "$test_mode" != --browser-merchant-buyer && "$test_mode" != --browser-merchant-orders-bff && "$test_mode" != --browser-merchant-orders-ui && "$test_mode" != --browser-order && "$test_mode" != --browser-payment && "$test_mode" != --checkout && "$test_mode" != --payment && "$test_mode" != --payment-worker && "$test_mode" != --expiry-worker && "$test_mode" != --storefront-resolver && "$test_mode" != --buyer-http && "$test_mode" != --purchase-entry && "$test_mode" != --merchant-orders && "$test_mode" != --meta-inbox && "$test_mode" != --meta-consumer && "$test_mode" != --meta-runtime && "$test_mode" != --legacy-isolation && "$test_mode" != --local-recovery && "$test_mode" != --live-planning && "$test_mode" != --live-authority && "$test_mode" != --live-media-plan && "$test_mode" != --live-media-execution && "$test_mode" != --live-media-stop && "$test_mode" != --live-media-runtime ]]; then
-  printf 'Usage: bash scripts/dev/test-local.sh [--browser-identity|--browser-buyer|--browser-merchant-buyer|--browser-merchant-orders-bff|--browser-merchant-orders-ui|--browser-order|--browser-payment|--checkout|--payment|--payment-worker|--expiry-worker|--storefront-resolver|--buyer-http|--purchase-entry|--merchant-orders|--meta-inbox|--meta-consumer|--meta-runtime|--legacy-isolation|--local-recovery|--live-planning|--live-authority|--live-media-plan|--live-media-execution|--live-media-stop|--live-media-runtime]\n' >&2
+if [[ "$#" -gt 1 ]] || [[ "$test_mode" != foundation && "$test_mode" != --browser-identity && "$test_mode" != --browser-buyer && "$test_mode" != --browser-merchant-buyer && "$test_mode" != --browser-merchant-orders-bff && "$test_mode" != --browser-merchant-orders-ui && "$test_mode" != --browser-order && "$test_mode" != --browser-payment && "$test_mode" != --checkout && "$test_mode" != --payment && "$test_mode" != --payment-worker && "$test_mode" != --expiry-worker && "$test_mode" != --storefront-resolver && "$test_mode" != --buyer-http && "$test_mode" != --purchase-entry && "$test_mode" != --merchant-orders && "$test_mode" != --meta-inbox && "$test_mode" != --meta-consumer && "$test_mode" != --meta-runtime && "$test_mode" != --legacy-isolation && "$test_mode" != --local-recovery && "$test_mode" != --live-planning && "$test_mode" != --live-authority && "$test_mode" != --live-media-plan && "$test_mode" != --live-media-execution && "$test_mode" != --live-media-stop && "$test_mode" != --live-media-runtime && "$test_mode" != --studio-backend ]]; then
+  printf 'Usage: bash scripts/dev/test-local.sh [--browser-identity|--browser-buyer|--browser-merchant-buyer|--browser-merchant-orders-bff|--browser-merchant-orders-ui|--browser-order|--browser-payment|--checkout|--payment|--payment-worker|--expiry-worker|--storefront-resolver|--buyer-http|--purchase-entry|--merchant-orders|--meta-inbox|--meta-consumer|--meta-runtime|--legacy-isolation|--local-recovery|--live-planning|--live-authority|--live-media-plan|--live-media-execution|--live-media-stop|--live-media-runtime|--studio-backend]\n' >&2
   exit 2
 fi
 if [[ "$test_mode" == --browser-merchant-buyer ]]; then
@@ -38,6 +38,15 @@ if [[ "$test_mode" == --live-media-runtime ]]; then
   grep -q '^func TestLiveMediaRuntimeLMW' tests/foundation/live_media_runtime_test.go
   grep -q '^func TestMediaWorkerLMW' cmd/media-worker/main_test.go
   grep -q '^func TestWorkerEnvironmentLMW' internal/integrations/livekit/worker_env_test.go
+fi
+if [[ "$test_mode" == --studio-backend ]]; then
+  test -f tests/foundation/studio_backend_test.go
+  test -f tests/foundation/studio_http_test.go
+  test -f tests/foundation/studio_process_test.go
+  test -f internal/pagination/studio_test.go
+  grep -q '^func TestStudioBackend' tests/foundation/studio_backend_test.go
+  grep -q '^func TestStudioBackendSTU03' tests/foundation/studio_process_test.go
+  grep -q '^func TestStudioCursor' internal/pagination/studio_test.go
 fi
 if [[ "$test_mode" == --browser-order ]]; then
   test -f tests/foundation/browser_order_chain_test.go
@@ -169,6 +178,9 @@ elif [[ "$test_mode" == --live-media-stop ]]; then
 elif [[ "$test_mode" == --live-media-runtime ]]; then
   GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=360s -run '^Test(MediaWorkerLMW|WorkerEnvironmentLMW|LiveMediaRuntimeLMW)' -v ./cmd/media-worker ./internal/integrations/livekit ./tests/foundation
   printf 'PASS: isolated actual media command, PG18 and local TLS runtime; no Cloud, LIVE intake or G06 acceptance.\n'
+elif [[ "$test_mode" == --studio-backend ]]; then
+  GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=360s -run '^Test(StudioBackend|StudioCursor)' -v ./internal/pagination ./internal/live ./internal/httpapi ./cmd/api ./tests/foundation
+  printf 'PASS: isolated Studio backend/API and local MOCK media gate; not BFF/browser, Cloud, LIVE intake or full Studio acceptance.\n'
 elif [[ "$test_mode" == --meta-inbox ]]; then
   test -f tests/foundation/meta_inbox_test.go
   GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^TestMetaInbox' -v ./tests/foundation
