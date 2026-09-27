@@ -5,11 +5,11 @@ See [configuration and gates](../../contracts/live-media-runtime-v1.md).
 The [existing Stop acceptance](2026-09-27-live-media-stop-acceptance.md) proves
 the internal local MOCK engine, not this command or a deployed streaming service.
 
-## Planned call and ownership map
+## Call and ownership map (source candidate `6bbe24c`)
 
 | Caller | Existing dependency | Ownership / boundary |
 | --- | --- | --- |
-| `cmd/media-worker.loadConfig` | `livekit.LoadWorkerEnvironment` | Read only media settings; disabled reads enable flag only; explicit synthetic/local transport config |
+| `cmd/media-worker.run` configuration | `livekit.LoadWorkerEnvironment` | Read only media settings; disabled reads enable flag only; explicit synthetic/local transport config |
 | Environment loader | LKP strict `decodeObject`, `livekit.New`, LKM `NewMaterialKeyring`; Go x509/TLS/net/http | Reject ambiguous input; independent keyring and transport per project/version; no global transport mutation |
 | `run` assembly | `platform.OpenMediaWorkerPool`, `OpenMediaExecutorPool`, `live.NewMediaClient` | Command owns and closes both pools; one bounded construction deadline; existing ACL/readiness/same-DB checks run before start |
 | `jobqueue.Run` | Native River client in `river_media` | Existing bounded start, signal/drain/cancel; only this process shuts down, no provider Stop on signal |
