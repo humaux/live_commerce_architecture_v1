@@ -219,13 +219,13 @@ func TestBrowserStudioUIRealChain(t *testing.T) {
 	browser.Stdout, browser.Stderr = playwrightLog, playwrightLog
 	browserErr := browser.Run()
 	mrStop(t, worker, syscall.SIGTERM, true)
-	if studioCalls.Load() < 12 || badAuthority.Load() != 0 || faultCount.Load() != 2 || h.starts.Load() != 1 || h.stops.Load() != 1 {
+	if studioCalls.Load() < 12 || badAuthority.Load() != 0 || faultCount.Load() != 3 || h.starts.Load() != 1 || h.stops.Load() != 1 {
 		t.Fatalf("real chain counters calls=%d authority=%d lost_ack=%d starts=%d stops=%d evidence=%s", studioCalls.Load(), badAuthority.Load(), faultCount.Load(), h.starts.Load(), h.stops.Load(), evidence)
 	}
 	faultKeysMu.Lock()
 	keys := append([]string(nil), faultKeys...)
 	faultKeysMu.Unlock()
-	if len(keys) != 4 || keys[1] == "" || keys[1] != keys[2] || keys[3] == keys[1] {
+	if len(keys) != 5 || keys[1] == "" || keys[1] != keys[2] || keys[3] == keys[1] || keys[4] == keys[1] || keys[4] == keys[3] {
 		t.Fatalf("lost-ACK retry changed command key: requests=%d evidence=%s", len(keys), evidence)
 	}
 	var duplicateCount int
@@ -235,12 +235,15 @@ func TestBrowserStudioUIRealChain(t *testing.T) {
 	if err := h.lp.f.owner.QueryRow(ctx, `SELECT count(*) FROM live.sessions WHERE tenant_id=$1 AND store_id=$2 AND title='STU04 swapped login scene'`, h.lp.f.tenantA, h.lp.f.storeA1).Scan(&duplicateCount); err != nil || duplicateCount != 1 {
 		t.Fatalf("swapped-login effect count=%d err=%v evidence=%s", duplicateCount, err, evidence)
 	}
+	if err := h.lp.f.owner.QueryRow(ctx, `SELECT count(*) FROM live.sessions WHERE tenant_id=$1 AND store_id=$2 AND title='STU04 native uncertain scene'`, h.lp.f.tenantA, h.lp.f.storeA1).Scan(&duplicateCount); err != nil || duplicateCount != 1 {
+		t.Fatalf("native uncertain committed effect count=%d err=%v evidence=%s", duplicateCount, err, evidence)
+	}
 	var scheduled time.Time
 	if err := h.lp.f.owner.QueryRow(ctx, `SELECT scheduled_at FROM live.sessions WHERE tenant_id=$1 AND store_id=$2 AND title='STU04 phone-edited scene'`, h.lp.f.tenantA, h.lp.f.storeA1).Scan(&scheduled); err != nil || scheduled.UTC().Format(time.RFC3339) != "2030-01-01T00:00:00Z" {
 		t.Fatalf("UTC schedule shifted on title edit: instant=%s err=%v evidence=%s", scheduled.UTC().Format(time.RFC3339), err, evidence)
 	}
 	var issued int
-	if err := h.lp.f.owner.QueryRow(ctx, `SELECT count(*) FROM identity.sessions s JOIN identity.session_events ev ON ev.session_id=s.id AND ev.action='session.issued' JOIN identity.external_identities e ON e.principal_id=s.principal_id WHERE e.issuer=$1 AND e.subject='browser-subject' AND s.token_hash<>$2`, idp.server.URL, tokenHash(h.lp.token)).Scan(&issued); err != nil || issued != 3 {
+	if err := h.lp.f.owner.QueryRow(ctx, `SELECT count(*) FROM identity.sessions s JOIN identity.session_events ev ON ev.session_id=s.id AND ev.action='session.issued' JOIN identity.external_identities e ON e.principal_id=s.principal_id WHERE e.issuer=$1 AND e.subject='browser-subject' AND s.token_hash<>$2`, idp.server.URL, tokenHash(h.lp.token)).Scan(&issued); err != nil || issued != 4 {
 		t.Fatalf("signed browser login count=%d err=%v evidence=%s", issued, err, evidence)
 	}
 	var resource string
@@ -253,14 +256,16 @@ func TestBrowserStudioUIRealChain(t *testing.T) {
 	t.Logf("STU04 signed UI, BFF, Go/PG and MOCK worker facts verified; evidence=%s", evidence)
 	if browserErr != nil {
 		log, err := os.ReadFile(playwrightLog.Name())
-		nativeFailed := false
+		nativeFailed := 0
 		for _, line := range strings.Split(string(log), "\n") {
-			if strings.Contains(line, "✘") && strings.Contains(line, "STU04 native visibility conceal and revalidation remains required") {
-				nativeFailed = true
+			if strings.Contains(line, "✘") && (strings.Contains(line, "STU04 native visibility conceal and revalidation remains required") ||
+				strings.Contains(line, "STU04 native conceal retains an uncertain committed request")) {
+				nativeFailed++
 			}
 		}
-		if err == nil && nativeFailed && bytes.Contains(log, []byte("3 passed")) && bytes.Contains(log, []byte("1 failed")) {
-			t.Errorf("STU04 native visibility NOT_RUN: headed Chromium never reported hidden after task-owned tab switch; other three browser cases and PG/worker readbacks passed; evidence=%s", evidence)
+		if err == nil && ((nativeFailed == 2 && bytes.Contains(log, []byte("3 passed")) && bytes.Contains(log, []byte("2 failed"))) ||
+			(nativeFailed == 1 && bytes.Contains(log, []byte("4 passed")) && bytes.Contains(log, []byte("1 failed")))) {
+			t.Errorf("STU04 native visibility lifecycle NOT_RUN: see exact browser failure(s); other browser cases and PG/worker readbacks passed; evidence=%s", evidence)
 		} else {
 			t.Errorf("STU04 browser chain failed: %v; evidence=%s", browserErr, evidence)
 		}

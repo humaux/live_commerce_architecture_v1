@@ -79,9 +79,12 @@ async function displayedVersion(page: Page) {
 
 test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker", async ({ page, context, browser }) => {
   const authHeaders: string[] = [];
+  const createRequests: string[] = [];
   page.on("request", (request) => {
     if (request.url().startsWith(`${origin}/api/stores/`) && request.url().includes("live-sessions"))
       authHeaders.push(request.headers()["authorization"] ?? "");
+    if (request.method() === "POST" && /\/api\/stores\/[^/]+\/live-sessions$/.test(request.url()))
+      createRequests.push(request.headers()["idempotency-key"] ?? "");
   });
   await signedLogin(page);
   await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
@@ -161,6 +164,8 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await page.getByTestId("locale-switch").selectOption("zh-CN");
   await expect(page).toHaveURL(/\/zh-CN\/studio/);
   await expect(page.getByRole("heading", { name: "直播工作室" })).toBeVisible();
+  await page.goto(`/zh-CN/studio?store=${store}&scene=${preparedSession}`);
+  await expect(page.getByText("已准备模拟授权")).toBeVisible();
   await screenshot(page, "zh-CN-desktop-first-1586x992", 1586, 992);
   await screenshot(page, "zh-CN-phone-first-390x844", 390, 844);
   await page.goto(`/zh-TW/studio?store=${store}&scene=${preparedSession}`);
@@ -252,6 +257,12 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   expect(replacements.find((cookie) => cookie.name === cookieName)?.value).not.toBe(oldSession);
   await page.bringToFront();
   await context.addCookies(replacements);
+  const beforeSwapRetry = createRequests.length;
+  await page.getByRole("button", { name: "Retry same request" }).click();
+  await expect(page.getByText("Sign in again to open Studio.").first()).toBeVisible();
+  expect(createRequests).toHaveLength(beforeSwapRetry);
+  await expect(page.getByRole("button", { name: "Retry same request" })).toHaveCount(0);
+  // Fresh read under the new signed login must not resurrect the old key/form.
   await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
   await expect(page.getByTestId("merchant-studio")).toBeVisible();
   await expect(page.getByRole("button", { name: "Retry same request" })).toHaveCount(0);
@@ -313,4 +324,17 @@ test("STU04 native visibility conceal and revalidation remains required", async 
   // hidden tab before we can claim the conceal/revalidation lifecycle.
   await hideAndReveal(page);
   await expect(page.getByLabel("Scene name")).toHaveValue("STU04 native dirty draft");
+});
+
+test("STU04 native conceal retains an uncertain committed request", async ({ page }) => {
+  await signedLogin(page);
+  await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
+  const armed = await fetch(`${api}/__test/studio-ui-arm-fault`, { method: "POST" });
+  expect(armed.status).toBe(204);
+  await page.getByRole("button", { name: /New scene/ }).click();
+  await page.getByLabel("Scene name").fill("STU04 native uncertain scene");
+  await page.getByRole("button", { name: "Create draft" }).click();
+  await expect(page.getByRole("button", { name: "Retry same request" })).toBeVisible();
+  await hideAndReveal(page);
+  await expect(page.getByRole("button", { name: "Retry same request" })).toBeVisible();
 });
