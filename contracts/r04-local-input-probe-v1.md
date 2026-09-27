@@ -44,6 +44,10 @@ The runner checks the binary checksum/version, creates private ephemeral config,
 starts only its child server, serves a loopback fixture page and SDK, and launches
 two isolated Chromium contexts using the existing installation. Runtime ceilings,
 bounded output, and `finally` cleanup are mandatory on both success and failure.
+Test-only `COMMERCE_R04_FAULT=after-publish` deliberately fails after tracks
+arrive so independent tests can prove the failure cleanup path. Empty/unset is
+normal; any other value is rejected before child startup. This is not a product
+configuration flag. Injected failure must exit nonzero and preserve safe evidence.
 
 Fixture-only JWT signing uses Node's standard crypto, with one exact room and
 separate identities. Publisher grants: join, publish camera/microphone only;
