@@ -1,8 +1,10 @@
 # Studio backend: independent and root evidence
 
-Status: **PARTIAL_LOCAL_MOCK_BACKEND — FULL REGRESSION RUNNING** (2026-09-27).
-Main source/tests `2be9cd2`. No Studio UI/BFF, Cloud, LIVE destination or production
-acceptance is implied. STU04 remains NOT_RUN; T08/T09 and the SaaS are incomplete.
+Status: **PASS_LOCAL_MOCK_BACKEND_ONLY** (2026-09-27).
+Main source/tests `2be9cd2`: focused 8 and full 652 passed. No Studio UI, Cloud,
+LIVE destination or production acceptance is implied. Later BFF transport evidence
+is [separate](2026-09-27-studio-bff-acceptance.md). STU04 page workflow remains
+NOT_RUN; T08/T09 and the SaaS are incomplete.
 
 ## Ownership and fixed source
 
@@ -51,7 +53,7 @@ unsupported methods was corrected in review: global middleware already sent
 | STU02 | Raw SQL exact safe projection, runtime-only ACL, no raw private SELECT, foreign token/revocation/expiry/association negatives; strict HTTP fields/query; two causal concurrent read tests |
 | STU03 | Built API default-off/enabled, exact prepared authority → one Start/replay → UNKNOWN/observation → API/worker restart → authorized Stop → persisted TERMINAL; no duplicate Start or budget reset |
 | STU04 | NOT_RUN: approved UI and real Next browser workflow still required |
-| STU05 | Static review and root focused race pass; full PG/race/vet RUNNING; BFF build/browser and deploy gates separate |
+| STU05 | Static review, focused and full PG/race/vet pass; BFF build/browser recorded separately; full UI/deploy acceptance not implied |
 
 - Independent `bash scripts/dev/test-local.sh --studio-backend`: exit 0, eight
   named tests, log `/Volumes/data/output/studio-backend-raw-sql-first-20260927.log`,
@@ -60,11 +62,21 @@ unsupported methods was corrected in review: global middleware already sent
 - Root same command at `2be9cd2`: actual exit 0, **8 PASS / 0 FAIL / 0 SKIP**;
   foundation 12.539s. Log `/Volumes/data/output/studio-root-focused-20260927.log`,
   SHA256 `b42369dd3bca2bb6584939be970bdea6fd07fefa835894d038786bbfcd3a3159`.
-- Root `bash scripts/dev/test-local.sh`: running on unchanged source/tests
-  `2be9cd2`; `/Volumes/data/output/studio-root-full-20260927.log` is not yet a PASS.
+- Root `bash scripts/dev/test-local.sh`: actual exit 0 on unchanged executable
+  source/tests `2be9cd2`, **652 PASS / 0 FAIL / 0 SKIP**, 33 packages; foundation
+  658.512s, followed by successful `go vet ./...`. Log
+  `/Volumes/data/output/studio-root-full-20260927.log`, SHA256
+  `e93da509e0ae7b4996121469cf624592a9c78a487efa4d4110354df50859d1bc`.
+  During this run only documentation commit `2c7769d` was added; no executable
+  source, tests or runner changed. The later BFF integration does not alter Go
+  product code; it has separate focused browser/TypeScript evidence.
 
 These are local PG18/OIDC/TLS fixtures, not customer data or provider requests.
 The race-enabled harness builds separate API/worker executables without `-race`.
 Tagged STU03 runs in the focused selector, not the untagged full suite. See
-[assembly and diagnosis](studio-api-runtime.md). Full-run fixture postflight is
-pending actual command exit; do not delete other tasks' containers or evidence.
+[assembly and diagnosis](studio-api-runtime.md). After actual exit the root
+full-run container `lc-foundation-test-54670` and shell PID 54670 were absent.
+The process test also asserts named API/worker pool cleanup. Other tasks' resources
+were not removed. Invalid flag/identity/listener cases are unit-level evidence;
+actual API process default-off and enabled positive admission are covered. Do not
+upgrade that statement to an exhaustive process-fault matrix.

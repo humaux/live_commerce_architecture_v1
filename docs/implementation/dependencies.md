@@ -173,11 +173,14 @@ planner → 六条精确 HTTP 路由 → 既有 live 草稿／PlanStart／Reques
 新增 ListDrafts 复用两字段分页；GetStudio 的窄 SQL 投影复用现有 media writer，
 不扩大私有表权限。投影前固定授权修订号，投影后重新读取草稿；并发变化拒绝
 返回混合状态。上文各切片的“无 HTTP”是其历史验收范围，此增量才提供 API。
-无新增 SDK、认证框架、队列或依赖。网页接线／视觉与真实供应商另行验收。
+无新增 SDK、认证框架、队列或依赖。Next BFF 复用既有会话／店铺权限／CSRF／
+严格 UTF-8 readBody，代理层在框架规范化前拒绝非法原始查询；64 KiB 请求与
+256 KiB 返回正文边界、脱敏错误均有实测。视觉与真实供应商另行验收。
 
 [维护和诊断](studio-api-runtime.md) 记录调用链、权限边界、开关和升级门禁；
-[当前证据](2026-09-27-studio-backend-acceptance.md) 区分后台八项专项通过与
-全仓回归运行中。不能把 MOCK UNKNOWN／OBSERVED 转述为公开直播成功。
+[后台证据](2026-09-27-studio-backend-acceptance.md) 记录八项专项及652项全仓
+PG/race/vet 通过；[BFF证据](2026-09-27-studio-bff-acceptance.md) 单列真实签名登录
+运输层验收，不冒充 Studio UI。不能把 MOCK UNKNOWN／OBSERVED 转述为公开直播成功。
 
 ## 依赖版本
 

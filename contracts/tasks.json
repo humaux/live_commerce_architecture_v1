@@ -430,12 +430,12 @@
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
-      "implementation": "PARTIAL_DURABLE_DRAFT_LIVEKIT_WIRE_SEALED_MATERIAL_MOCK_AUTHORITY_START_EXECUTION_BOUNDED_STOP_AND_LOCAL_PROCESS",
+      "implementation": "PARTIAL_DURABLE_DRAFT_LIVEKIT_WIRE_SEALED_MATERIAL_MOCK_AUTHORITY_START_EXECUTION_BOUNDED_STOP_LOCAL_PROCESS_AND_STUDIO_API",
       "unit_mock": "PASS_LKP01_07_LKM01_05_LOCAL_ONLY",
-      "real_pg": "PASS_LSP01_05_LMA01_05_LMP01_07_LME01_08_LMR01_06_LMW01_05_AND_645_FULL_REGRESSION_LOCAL_ONLY",
+      "real_pg": "PASS_LSP01_05_LMA01_05_LMP01_07_LME01_08_LMR01_06_LMW01_05_STUDIO_BACKEND_AND_652_FULL_REGRESSION_LOCAL_ONLY",
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
-      "independent_review": "PASS_LSP_LKP_LKM_LMA_LMP_LME_LMR_AND_LMW_BOUNDED_LOCAL_ONLY"
+      "independent_review": "PASS_LSP_LKP_LKM_LMA_LMP_LME_LMR_LMW_AND_STUDIO_BACKEND_BOUNDED_LOCAL_ONLY"
     },
     "live_planning_slice": {
       "contract": "contracts/live-planning-v1.md",
@@ -471,7 +471,7 @@
     "media_controller_candidate": {
       "contract": "contracts/live-media-controller-v1.md",
       "status": "PARTIAL_MOCK_EXECUTION_ACCEPTED_FULL_CONTROLLER_NOT_FROZEN",
-      "remaining": "MOCK authorization, start intent, dedicated execution, bounded same-ID Stop and executable runtime accepted locally through 320dad6 with root full645 PG/race/vet. Studio backend at 2be9cd2 passes focused local PG/API/TLS; BFF/UI and full regression remain pending. Coherent terminal proof alone closes resource liability. LIVE authority, real Cloud, media-worker deployment and post-escalation operator recovery remain unimplemented or unverified. Current client uses StartEgress. No full controller or real-media/G06 acceptance."
+      "remaining": "MOCK authorization, start intent, dedicated execution, bounded same-ID Stop and executable runtime accepted locally through 320dad6. Studio backend at 2be9cd2 passes focused8 and full652 PG/race/vet; BFF b18f977 passes signed Next/Go/PG transport. UI STU04 remains pending. Coherent terminal proof alone closes resource liability. LIVE authority, real Cloud, media-worker deployment and post-escalation operator recovery remain unimplemented or unverified. Current client uses StartEgress. No full controller or real-media/G06 acceptance."
     },
     "media_authorization_registry_slice": {
       "contract": "contracts/live-media-authorization-v1.md",
@@ -520,12 +520,12 @@
     },
     "studio_backend_slice": {
       "contract": "contracts/studio-v1.md",
-      "status": "PARTIAL_LOCAL_MOCK_BACKEND_FULL_REGRESSION_RUNNING",
+      "status": "PASS_LOCAL_MOCK_BACKEND_ONLY",
       "source_test_commit": "2be9cd2",
       "evidence": "docs/implementation/2026-09-27-studio-backend-acceptance.md",
       "maintenance": "docs/implementation/studio-api-runtime.md",
-      "gates": "STU01_03_ROOT_FOCUSED_8_PASS_STU04_NOT_RUN_STU05_PARTIAL",
-      "boundary": "Six scoped domain/HTTP routes and safe projection tested against actual PG/API/local TLS worker, including causal concurrent reads. Full PG/race/vet running. No BFF/UI acceptance, Cloud, LIVE provisioning, production activation or full Studio/G06/G07 acceptance."
+      "gates": "STU01_03_ROOT_FOCUSED_8_AND_FULL_652_PG_RACE_VET_PASS_STU04_NOT_RUN",
+      "boundary": "Six scoped domain/HTTP routes and safe projection tested against actual PG/API/local TLS worker, including causal concurrent reads. No UI, Cloud, LIVE provisioning, production activation or full Studio/G06/G07 acceptance. BFF transport separately recorded in T09."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
@@ -551,16 +551,24 @@
       "apps/admin/inbox/**",
       "tests/studio/**"
     ],
-    "status": "NOT_STARTED",
+    "status": "IN_PROGRESS",
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
-      "implementation": "NOT_STARTED",
-      "unit_mock": "NOT_RUN",
-      "real_pg": "NOT_RUN",
+      "implementation": "PARTIAL_STUDIO_BFF_TRANSPORT_ONLY",
+      "unit_mock": "STUDIO_QUERY_2_PASS",
+      "real_pg": "STUDIO_SIGNED_NEXT_GO_PG_TRANSPORT_PASS",
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
-      "independent_review": "NOT_RUN"
+      "independent_review": "BFF_FIXED_DIFF_NO_CONFIRMED_P0_P1_UI_NOT_RUN"
+    },
+    "studio_bff_slice": {
+      "contract": "contracts/studio-v1.md",
+      "status": "PASS_LOCAL_BFF_TRANSPORT_ONLY",
+      "source_test_commit": "b18f977",
+      "evidence": "docs/implementation/2026-09-27-studio-bff-acceptance.md",
+      "gates": "ROOT_QUERY_2_SIGNED_CHAIN_1_BUILD_TYPECHECK_AND_ORDER_BFF_REGRESSION_PASS",
+      "boundary": "Six exact routes reuse current OIDC cookie/store/CSRF authority with no fixture fallback. Not Studio UI, desktop/mobile three-locale STU04, comment desk, manual takeover, Cloud or production acceptance. Studio composition approval still pending."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },

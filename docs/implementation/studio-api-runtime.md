@@ -1,6 +1,6 @@
 # Merchant Studio API: assembly and diagnosis
 
-Scope: local MOCK planning/rehearsal API only. The six routes are defined in
+Scope: local MOCK planning/rehearsal API and merchant BFF. The six routes are defined in
 [studio-v1](../../contracts/studio-v1.md); UI, real destination provisioning,
 Cloud and production activation are separate gates. No new dependencies.
 
@@ -40,6 +40,21 @@ UNOBSERVED or OBSERVED states are not evidence of a public broadcast. Destinatio
 names are frozen targets only; there is no per-destination success projection.
 
 ## Diagnosis and upgrade gates
+
+The existing Next proxy rejects noncanonical Studio query/path before framework
+normalization. The catch-all route allows six exact shapes, requires real
+authConfig (never fixture fallback), and reuses current cookie/store authority,
+Origin/CSRF, idempotency and callBackend. Shared readBody now accepts headers/body
+from Request or Response, rejects invalid UTF-8 and preserves BOM for strict JSON
+rejection. It bounds requests at 64 KiB and Studio responses at 256 KiB. Other
+legacy proxy body handling is unchanged. safeError sanitizes bounded upstream
+errors; every Studio response is private/no-store. No browser bearer is forwarded.
+
+Changes here require `pnpm run typecheck:admin`,
+`bash scripts/dev/test-local.sh --browser-studio-bff` and the existing
+`--browser-merchant-orders-bff` regression. The selectors build the production
+Next package and own local signed IdP/HTTP/PG fixtures. This is transport evidence,
+not visual/Studio interaction acceptance. No new client/state/auth framework.
 
 | Observation | Inspect without weakening the boundary |
 | --- | --- |
