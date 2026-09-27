@@ -12,7 +12,7 @@ BEGIN
  IF NEW.kind IS DISTINCT FROM 'live_media_operation_v1' OR NEW.queue IS DISTINCT FROM 'media_mock_v1'
   OR NEW.unique_key IS NOT NULL OR NEW.args IS NULL OR jsonb_typeof(NEW.args)<>'object'
   OR NEW.args->>'operation_id' IS NULL
-  OR NEW.args->>'operation_id' !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+  OR NEW.args->>'operation_id' !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
   OR NEW.args->>'version' IS DISTINCT FROM '1'
   OR NEW.args IS DISTINCT FROM jsonb_build_object('operation_id',NEW.args->>'operation_id','version',1) THEN
   RAISE EXCEPTION 'invalid media job family' USING ERRCODE='22023'; END IF;
@@ -53,7 +53,19 @@ LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
     AND t.tgname='reject_media_job' AND t.tgenabled='O'
     AND t.tgfoid='live.reject_legacy_media_job()'::regprocedure)
   AND EXISTS(SELECT 1 FROM pg_catalog.pg_proc p WHERE p.oid=
+   'live.plan_media_start(bytea,uuid,uuid,uuid,bigint,text,uuid,bigint)'::regprocedure
+   AND p.prosecdef AND p.proowner='commerce_media_writer'::regrole
+   AND p.proconfig @> ARRAY['search_path=pg_catalog']::text[])
+  AND EXISTS(SELECT 1 FROM pg_catalog.pg_proc p WHERE p.oid=
    'live.guard_media_job_family()'::regprocedure AND p.prosecdef
+   AND p.proowner='commerce_media_writer'::regrole
+   AND p.proconfig @> ARRAY['search_path=pg_catalog']::text[])
+  AND EXISTS(SELECT 1 FROM pg_catalog.pg_proc p WHERE p.oid=
+   'live.check_media_job_link()'::regprocedure AND p.prosecdef
+   AND p.proowner='commerce_media_writer'::regrole
+   AND p.proconfig @> ARRAY['search_path=pg_catalog']::text[])
+  AND EXISTS(SELECT 1 FROM pg_catalog.pg_proc p WHERE p.oid=
+   'live.reject_legacy_media_job()'::regprocedure AND p.prosecdef
    AND p.proowner='commerce_media_writer'::regrole
    AND p.proconfig @> ARRAY['search_path=pg_catalog']::text[])
   AND EXISTS(SELECT 1 FROM pg_catalog.pg_class c WHERE c.oid='live.media_attempts'::regclass
@@ -83,24 +95,39 @@ GRANT EXECUTE ON FUNCTION live.media_plan_ready() TO commerce_runtime;
 CREATE FUNCTION live.media_worker_ready() RETURNS boolean
 LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
  SELECT live.media_plan_ready()
-  AND (SELECT count(*)=5 FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace
-   WHERE n.nspname='live' AND p.proname IN ('claim_media_operation','load_media_material',
-    'reserve_media_start','record_media_observation','finish_media_uncertain')
-    AND p.prosecdef AND p.proowner='commerce_media_writer'::regrole
-    AND p.proconfig @> ARRAY['search_path=pg_catalog']::text[])
+  AND NOT EXISTS(SELECT 1 FROM (VALUES
+    ('live.claim_media_operation(uuid,bigint,integer,bytea)'::regprocedure,
+     'pg_catalog.record'::regtype,true),
+    ('live.load_media_material(uuid,bigint,bytea)'::regprocedure,
+     'pg_catalog.jsonb'::regtype,false),
+    ('live.reserve_media_start(uuid,bigint,bytea)'::regprocedure,
+     'pg_catalog.void'::regtype,false),
+    ('live.record_media_observation(uuid,bigint,bytea,text,text,text,text,bigint,bigint,bigint)'::regprocedure,
+     'pg_catalog.text'::regtype,false),
+    ('live.finish_media_uncertain(uuid,bigint,bytea,text)'::regprocedure,
+     'pg_catalog.text'::regtype,false)) AS required(oid,result_type,result_set)
+   LEFT JOIN pg_catalog.pg_proc p ON p.oid=required.oid
+   WHERE p.oid IS NULL OR NOT p.prosecdef OR p.proowner<>'commerce_media_writer'::regrole
+    OR p.prorettype<>required.result_type OR p.proretset<>required.result_set
+    OR NOT (p.proconfig @> ARRAY['search_path=pg_catalog']::text[])
+    OR NOT has_function_privilege('commerce_media_executor',p.oid,'EXECUTE')
+    OR has_function_privilege('commerce_worker',p.oid,'EXECUTE')
+    OR has_function_privilege('commerce_media_worker',p.oid,'EXECUTE')
+    OR has_function_privilege('commerce_media_registrar',p.oid,'EXECUTE')
+    OR EXISTS(SELECT 1 FROM pg_catalog.pg_roles r WHERE r.rolname IN
+     ('commerce_runtime','commerce_checkout_runtime','commerce_meta_ingress',
+      'commerce_meta_consumer','commerce_meta_worker','commerce_buyer_runtime')
+     AND has_function_privilege(r.oid,p.oid,'EXECUTE')))
   AND (SELECT count(*)=1 FROM pg_catalog.pg_trigger t
    WHERE t.tgrelid='live.media_execution_state'::regclass AND t.tgname='media_execution_identity'
     AND t.tgenabled='O')
   AND EXISTS(SELECT 1 FROM pg_catalog.pg_trigger t WHERE t.tgrelid='live.media_execution_state'::regclass
     AND t.tgname='media_execution_identity' AND t.tgenabled='O'
     AND t.tgfoid='live.guard_media_execution_identity()'::regprocedure)
-  AND has_function_privilege('commerce_media_executor',
-   'live.claim_media_operation(uuid,bigint,integer,bytea)','EXECUTE')
-  AND NOT has_function_privilege('commerce_worker',
-   'live.claim_media_operation(uuid,bigint,integer,bytea)','EXECUTE')
   AND NOT has_table_privilege('commerce_media_executor','live.prepared_media_authorizations','SELECT')
   AND NOT has_table_privilege('commerce_media_worker','live.prepared_media_authorizations','SELECT')
   AND NOT has_table_privilege('commerce_media_worker','integration.operations','SELECT')
+  AND NOT has_table_privilege('commerce_media_worker','river_media.river_migration','SELECT')
 $$;
 ALTER FUNCTION live.media_worker_ready() OWNER TO commerce_media_writer;
 REVOKE ALL ON FUNCTION live.media_worker_ready() FROM PUBLIC;
