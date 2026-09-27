@@ -110,6 +110,9 @@ func decodeStudioInput(raw []byte) (*StudioInput, error) {
 			return nil, ErrStudioProjection
 		}
 	}
+	if len(fields["close_reason"]) < 2 || fields["close_reason"][0] != '"' {
+		return nil, ErrStudioProjection
+	}
 	var out StudioInput
 	if json.Unmarshal(raw, &out) != nil || !command.ValidID(out.AttemptID) || out.UpdatedAt.IsZero() ||
 		(out.AdmissionClosed != (out.CloseReason != "")) {
