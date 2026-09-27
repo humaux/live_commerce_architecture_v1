@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"strconv"
@@ -806,11 +807,15 @@ func TestLiveMediaRecoveryMRR01SupervisorCrashAndRealClock(t *testing.T) {
 	if err != nil {
 		t.Fatalf("supervisor child absent: %v", err)
 	}
-	if err := syscall.Kill(child, syscall.SIGKILL); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := mrrChildPID(parent.cmd.Process.Pid, child); err != nil {
-		t.Fatalf("killed child not reaped/restarted: %v", err)
+	for i := 0; i < 2; i++ {
+		if err := syscall.Kill(child, syscall.SIGKILL); err != nil {
+			t.Fatal(err)
+		}
+		next, err := mrrChildPID(parent.cmd.Process.Pid, child)
+		if err != nil {
+			t.Fatalf("killed child %d not reaped/restarted: %v", i+1, err)
+		}
+		child = next
 	}
 	close(release)
 	read := mrrWaitReadback(t, recovery, episode, launched.Add(90*time.Second), func(r mrrReadback) bool { return r.disposition == "witnessed" })
@@ -837,10 +842,12 @@ func TestLiveMediaRecoveryMRR01SupervisorCrashAndRealClock(t *testing.T) {
 		t.Fatalf("child restart changed original episode/t0/deadline: count=%d capture=%d/%d deadline=%v/%v", episodeCount, firstCapture, afterCapture, firstDeadline, afterDeadline)
 	}
 	var jobID int64
-	var finalMax int
-	if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT id,max_attempts FROM river_media.river_job WHERE id=$1`, h.plan.JobID).Scan(&jobID, &finalMax); err != nil || jobID != h.plan.JobID || finalMax != maxAttempts {
-		t.Fatalf("observer replaced or retuned original River job: %d %d %v (initial attempt %d)", jobID, finalMax, err, initialAttempt)
+	var finalAttempt, finalMax int
+	if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT id,attempt,max_attempts FROM river_media.river_job WHERE id=$1`, h.plan.JobID).
+		Scan(&jobID, &finalAttempt, &finalMax); err != nil || jobID != h.plan.JobID || finalMax != maxAttempts || finalAttempt < initialAttempt {
+		t.Fatalf("observer replaced or retuned original River job: id=%d attempt=%d max=%d err=%v initial_attempt=%d", jobID, finalAttempt, finalMax, err, initialAttempt)
 	}
+	t.Logf("MRR01 original River attempt: before=%d after=%d; native scheduling may advance it", initialAttempt, finalAttempt)
 	if h.starts.Load() != 1 || h.stops.Load() != 0 {
 		t.Fatal("recovery duplicated escaped Start or called Stop")
 	}
@@ -925,7 +932,12 @@ func TestLiveMediaRecoveryMRR02RealNinetySecondMiss(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, forbidden := range []string{recovery.Config().ConnString(), h.project.Config.APISecret, lmwEnvValue(env, "COMMERCE_MEDIA_MATERIAL_KEYS_JSON")} {
+	parsedDSN, err := url.Parse(recovery.Config().ConnString())
+	if err != nil {
+		t.Fatal(err)
+	}
+	password, _ := parsedDSN.User.Password()
+	for _, forbidden := range []string{recovery.Config().ConnString(), password, h.project.Config.APISecret, lmwEnvValue(env, "COMMERCE_MEDIA_MATERIAL_KEYS_JSON")} {
 		if forbidden != "" && bytes.Contains(log, []byte(forbidden)) {
 			t.Fatal("supervisor deadline log exposed material")
 		}
