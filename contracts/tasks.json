@@ -430,12 +430,12 @@
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
-      "implementation": "PARTIAL_DURABLE_DRAFT_LIVEKIT_WIRE_SEALED_MATERIAL_MOCK_AUTHORITY_START_INTENT_AND_EXECUTION",
+      "implementation": "PARTIAL_DURABLE_DRAFT_LIVEKIT_WIRE_SEALED_MATERIAL_MOCK_AUTHORITY_START_EXECUTION_AND_BOUNDED_STOP",
       "unit_mock": "PASS_LKP01_07_LKM01_05_LOCAL_ONLY",
-      "real_pg": "PASS_LSP01_05_LMA01_05_LMP01_07_LME01_08_AND_623_FULL_REGRESSION_LOCAL_ONLY",
+      "real_pg": "PASS_LSP01_05_LMA01_05_LMP01_07_LME01_08_LMR01_06_AND_637_FULL_REGRESSION_LOCAL_ONLY",
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
-      "independent_review": "PASS_LSP_LKP_LKM_LMA_LMP_AND_LME_BOUNDED_LOCAL_ONLY"
+      "independent_review": "PASS_LSP_LKP_LKM_LMA_LMP_LME_AND_LMR_BOUNDED_LOCAL_ONLY"
     },
     "live_planning_slice": {
       "contract": "contracts/live-planning-v1.md",
@@ -506,6 +506,13 @@
       "source_test_commit": "ff57e32",
       "gates": "LMR01_06_INDEPENDENT_41_PASS_LEGACY_EXECUTABLE_1_PASS_ROOT_FULL_637_PG_RACE_VET_PASS",
       "boundary": "Local PG/TLS bounded same-attempt cleanup on existing operation/job, max two reservations, fresh Query fencing, process/COMMIT-ack loss and exact old admission executable tested. No LIVE/Cloud, post-escalation operator recovery, studio/browser, media-worker deployment or global G06 acceptance."
+    },
+    "media_process_runtime_slice": {
+      "contract": "contracts/live-media-runtime-v1.md",
+      "status": "DRAFT_PREFLIGHT_REQUIRED",
+      "draft_commit": "ed0fe57",
+      "gates": "LMW01_05_NOT_RUN",
+      "boundary": "Default-off standalone process assembly of accepted MOCK runtime is planned, not implemented or accepted. No customer activation, LIVE/Cloud, HTTP/studio or full G06 acceptance."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
