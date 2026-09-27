@@ -2,7 +2,9 @@
 
 Status: **FROZEN_FOR_PROTOCOL_IMPLEMENTATION**. Base `3d72d58`; independent
 preflight of `84280e9` found no confirmed P0/P1 (Humaux title: LiveKit input wire
-LKI01–05 independent preflight). No implementation or test pass is claimed.
+LKI01–05 independent preflight). The subsequent bounded implementation has
+[local protocol acceptance](../docs/implementation/2026-09-27-livekit-input-acceptance.md)
+at main `1db26fe`; this is not product/Cloud acceptance.
 This defines only
 the provider boundary needed by [browser input lifetime](live-browser-input-v1.md),
 not merchant authorization, PG custody, HTTP routes, runtime configuration, Cloud

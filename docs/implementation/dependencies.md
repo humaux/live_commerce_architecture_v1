@@ -1,16 +1,20 @@
 # 依赖准入与当前清单
 
-## R04 产品浏览器输入（设计复核通过，未启用）
+## R04 产品浏览器输入（协议已本地验收，产品未启用）
 
 [输入生命周期契约](../../contracts/live-browser-input-v1.md) 复用现有 merchant
 auth、`integration.operations`、`river_media` 和媒体 attempt。预览先本地采集；
 原媒体任务必须在 Egress 终态后继续承担已发放输入凭证的回收责任。当前 SQL
 与 worker 仍为 MOCK，不得改配置将旧数据升级为 LIVE。
 
-[已冻结协议](../../contracts/livekit-input-protocol-v1.md) 计划复用 Go 标准库 HTTP、
-HMAC、严格 JSON 解析器，无新 SDK/队列。后续调用方向为授权后取冻结范围 →
-签发最小入房凭证；原 worker → 固定 RoomService 观察/撤销/删房。现在尚未接线，
-不得将协议测试当作产品授权、Cloud 撤权或真实目的地输出验收。
+[已冻结协议](../../contracts/livekit-input-protocol-v1.md) 已由
+`internal/integrations/livekit/input.go` 实现，复用 `client.go` 的私有 HTTP/HMAC
+及 `decode.go` 的严格 JSON 解析器，无新 SDK/队列。调用方向为未来授权后的
+冻结范围 → `MintPublisher`；原 worker → `ObserveInput/RemoveInput/DeleteInputRoom/ObserveInputRoom`。
+现在只有测试调用，产品尚未接线；`Bearer()` 是明确的凭证输出口，日志/JSON
+默认脱敏，Remove/Delete 成功只代表 ACK。升级 provider grant/枚举/字段时重跑
+[LKI 验收](2026-09-27-livekit-input-acceptance.md)及原 Egress 回归；不得据此声称
+产品授权、Cloud 撤权或真实目的地输出已通过。
 
 ## R04 本地真实媒体输入探针（仅测试）
 

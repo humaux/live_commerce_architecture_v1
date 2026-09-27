@@ -542,8 +542,12 @@
       "status": "DESIGN_REVIEWED_BOUNDARY_ONLY",
       "reviewed_commit": "3d72d58",
       "wire_contract": "contracts/livekit-input-protocol-v1.md",
-      "wire_status": "FROZEN_FOR_PROTOCOL_IMPLEMENTATION",
+      "wire_status": "PASS_LOCAL_PROTOCOL_ONLY",
       "wire_evidence": "docs/implementation/2026-09-27-livekit-input-acceptance.md",
+      "wire_source_commit": "223d4bf",
+      "wire_independent_tests_commit": "16357fb",
+      "wire_root_tested_commit": "1db26fe",
+      "wire_gates": "INDEPENDENT_6_ROOT_RACE_41_RUNTIME_PG_8_AND_FULL_VET_PASS",
       "boundary": "Local capture before Start; same durable media attempt/operation owns publisher admission and cleanup through Egress terminal. SQL/API/LIVE intake not frozen or enabled. BRI01-07 NOT_RUN; Cloud cached-token revocation and real Egress/output remain separate gates. No change to full T08/G06 status."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
