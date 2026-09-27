@@ -30,7 +30,9 @@ and exact sidecars saved. All `approved` flags remain false. No UI implementatio
 or finish-review verdict is implied. The first question server exited without
 an answer (confirmed by the skill's wait command; this is not a choice).
 It was restored with the same payload at `http://127.0.0.1:56331/`, question key
-`dde8f984`, on 2026-09-27. The page is still awaiting user input.
+`dde8f984`, on 2026-09-27. That restored service later exited without an answer
+(wait exited 2); the same payload was restored at `http://127.0.0.1:58942/`, key
+`9dd036df`, with a two-hour task-local lifetime. The page is still awaiting input.
 
 ## Functional details not to literalize from generated art
 
