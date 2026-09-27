@@ -46,10 +46,18 @@ The runner checks the binary checksum/version, creates private ephemeral config,
 starts only its child server, serves a loopback fixture page and SDK, and launches
 two isolated Chromium contexts using the existing installation. Runtime ceilings,
 bounded output, and `finally` cleanup are mandatory on both success and failure.
-Test-only `COMMERCE_R04_FAULT=after-publish` deliberately fails after tracks
-arrive so independent tests can prove the failure cleanup path. Empty/unset is
-normal; any other value is rejected before child startup. This is not a product
-configuration flag. Injected failure must exit nonzero and preserve safe evidence.
+Test-only `COMMERCE_R04_FAULT=after-publish` deliberately fails after remote
+video/audio have been measured, not just after track events. A second value,
+`timeout-after-publish`, reaches the same measured state then exercises the
+operation-timeout path. Empty/unset is normal; any other value is rejected before
+child startup. These are not product flags. Both faults exit nonzero, retain the
+prior measured counters, and unwind through cleanup. A detached `Promise.race`
+must not leave `run()` continuing to acquire resources after cleanup.
+
+Chromium fake getUserMedia audio may use a task-generated deterministic PCM WAV
+via its supported fake-capture switch; record the capture mode, and remove only
+that task-owned file during cleanup. Do not substitute a directly published
+WebAudio oscillator and claim the getUserMedia capture gate passed.
 
 Fixture-only JWT signing uses Node's standard crypto, with one exact room and
 separate identities. Publisher grants: join, publish camera/microphone only;
@@ -60,6 +68,10 @@ No PII in identity/room. This signer is not shared with product authentication.
 No JWT, secret, config, token-bearing URL, session, console/network dump or
 trace is written to the evidence. Evidence contains only bounded classifications,
 versions, aggregate frame/audio counters, timing, success/failure and cleanup.
+Safe ownership evidence is `resources: {server_pid, signal_port, rtc_tcp_port,
+rtc_udp_port, fixture_port, config_dir}` so a separate process can verify exit,
+closed listeners and removed private config. Failure labels come from fixed
+codes, never arbitrary provider/SDK error strings.
 No persistent browser context or user profile is used. SDK requests are local;
 unexpected external browser requests fail the probe. The test pages are harness
 fixtures, not Studio UI and not screenshots of delivered merchant functionality.
@@ -71,8 +83,8 @@ fixtures, not Studio UI and not screenshots of delivered merchant functionality.
 | RLI01 | Verified pinned official server and SDK; isolated loopback startup with ready check; no other service stopped/reconfigured |
 | RLI02 | Publisher uses Chromium fake camera/microphone and observer receives two real remote tracks from that publisher, not locally reattached tracks |
 | RLI03 | Observer video frames are decoded and advance across samples, with nonzero dimensions; inbound audio packets/bytes and nonzero energy advance. A connected socket or track event alone is insufficient |
-| RLI04 | Actual server rejects expired and tampered JWTs; observer cannot publish; fixture claims are exact least privilege. Do not label client-side rejection alone a server enforcement test |
-| RLI05 | Publisher stops tracks/disconnects; observer sees removal, then disconnects. Authoritative room query confirms no participants; owned browser/server/HTTP listener/config are cleaned even on injected failure |
+| RLI04 | Actual server authentication rejects otherwise-valid expired and significantly tampered JWTs (specific NotAllowed/401, not arbitrary network failure); observer's no-publish grant is confirmed by server participant state and SDK denial of synthetic canvas-track publish (specific 403, not missing camera permission). Label that publish denial **client permissions**, not a server publish-bypass attack test. Fixture claims are exact least privilege |
+| RLI05 | Normal run: publisher stops tracks/disconnects; observer sees removal, then disconnects; authoritative room query confirms no participants. All three runtime paths: independent post-exit PID, TCP/UDP and config checks confirm owned resources gone. Fault teardown does not assert room-query evidence it did not obtain |
 | RLI06 | Independent fixed-source review and rerun; root rerun; retained sanitized evidence, dependency and troubleshooting notes. Nonzero or missing gate is failure, not PASS |
 
 Freeze the implementation boundary after independent review. Integrator owns
