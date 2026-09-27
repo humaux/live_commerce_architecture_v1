@@ -24,6 +24,7 @@ test("input readers accept null and exact public DTOs only", () => {
     { ...input, attempt_id: "00000000-0000-0000-0000-000000000000" },
     { ...input, state: "ACTIVE" }, { ...input, close_reason: "private-secret" },
     { ...input, can_stop: 1 }, { ...input, cleanup_held: "false" },
+    ...["admission_closed", "cleanup_held", "can_stop", "close_reason"].map((field) => ({ ...input, [field]: null })),
     { ...input, updated_at: "2026-02-30T00:00:00Z" },
     { ...input, admission_closed: true }, { ...input, state: "CLOSED" },
     { ...input, close_reason: "expired" }]) assert.throws(() => parseStudioInput(row));

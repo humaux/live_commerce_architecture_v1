@@ -64,6 +64,8 @@ if [[ "$test_mode" == --studio-backend ]]; then
   grep -q '^func TestStudioBackend' tests/foundation/studio_backend_test.go
   grep -q '^func TestStudioBackendSTU03' tests/foundation/studio_process_test.go
   grep -q '^func TestStudioCursor' internal/pagination/studio_test.go
+  test -f tests/foundation/studio_input_test.go
+  grep -q '^func TestStudioInput' tests/foundation/studio_input_test.go
 fi
 if [[ "$test_mode" == --browser-order ]]; then
   test -f tests/foundation/browser_order_chain_test.go
@@ -239,7 +241,7 @@ elif [[ "$test_mode" == --live-media-runtime ]]; then
   GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=360s -run '^Test(MediaWorkerLMW|WorkerEnvironmentLMW|LiveMediaRuntimeLMW)' -v ./cmd/media-worker ./internal/integrations/livekit ./tests/foundation
   printf 'PASS: isolated actual media command, PG18 and local TLS runtime; no Cloud, LIVE intake or G06 acceptance.\n'
 elif [[ "$test_mode" == --studio-backend ]]; then
-  GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=360s -run '^Test(StudioBackend|StudioCursor)' -v ./internal/pagination ./internal/live ./internal/httpapi ./cmd/api ./tests/foundation
+  GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=360s -run '^Test(StudioBackend|StudioCursor|StudioInput)' -v ./internal/pagination ./internal/live ./internal/httpapi ./cmd/api ./tests/foundation
   printf 'PASS: isolated Studio backend/API and local MOCK media gate; not BFF/browser, Cloud, LIVE intake or full Studio acceptance.\n'
 elif [[ "$test_mode" == --meta-inbox ]]; then
   test -f tests/foundation/meta_inbox_test.go
