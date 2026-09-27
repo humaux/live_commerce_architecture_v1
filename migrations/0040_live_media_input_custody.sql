@@ -677,6 +677,7 @@ LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE o integration.operations%ROWTYPE; x live.media_execution_state%ROWTYPE;
  a live.media_attempts%ROWTYPE; h live.prepared_media_authorizations%ROWTYPE;
  i live.media_input_custody%ROWTYPE; v_now timestamptz; v_closed boolean;
+ v_terminal_state text;
 BEGIN
  IF p_id IS NULL OR p_job IS NULL OR p_job<1 OR p_lease_seconds IS NULL
   OR p_lease_seconds NOT BETWEEN 1 AND 30 OR p_token IS NULL OR octet_length(p_token)<>32
@@ -701,13 +702,38 @@ BEGIN
  IF i.state='CLOSED' AND (x.resource_state='TERMINAL'
   OR (x.wire_reserved_at IS NULL AND (x.stop_requested_at IS NOT NULL
    OR i.admission_closed_at IS NOT NULL))) THEN
-  RETURN QUERY SELECT 'terminal'::text,o.generation,''::text; RETURN; END IF;
+  IF o.state NOT IN ('SUCCEEDED','FAILED_FINAL','CANCELLED','BLOCKED_POLICY','STALE_BINDING') THEN
+   v_terminal_state:=CASE WHEN x.resource_state='TERMINAL' AND
+    x.transport_status='EGRESS_COMPLETE' THEN 'SUCCEEDED'
+    WHEN x.resource_state='TERMINAL' THEN 'FAILED_FINAL'
+    WHEN x.stop_requested_at IS NOT NULL THEN 'CANCELLED' ELSE 'BLOCKED_POLICY' END;
+   UPDATE integration.operations SET state=v_terminal_state,
+    generation=greatest(o.generation,1),lease_mode='',lease_until=NULL,
+    lease_token_hash=NULL,result_code='media_input_terminal',updated_at=v_now WHERE id=o.id;
+   INSERT INTO integration.operation_events(tenant_id,store_id,operation_id,generation,state,mode,reason_code)
+    VALUES(o.tenant_id,o.store_id,o.id,greatest(o.generation,1),v_terminal_state,'',
+     'media_input_terminal');
+  END IF;
+  RETURN QUERY SELECT 'terminal'::text,greatest(o.generation,1),''::text; RETURN; END IF;
  IF o.state IN ('SUCCEEDED','FAILED_FINAL','CANCELLED','BLOCKED_POLICY','STALE_BINDING') THEN
   RAISE EXCEPTION 'media input terminal mismatch' USING ERRCODE='ME409'; END IF;
  IF o.lease_until>v_now THEN
   RETURN QUERY SELECT 'busy'::text,o.generation,''::text; RETURN; END IF;
  IF o.generation>=4096 OR v_now>=o.created_at+interval '24 hours' THEN
   v_closed:=live.close_media_input_custody(a.id,'reconcile_exhausted');
+  IF v_closed AND (x.resource_state='TERMINAL' OR x.wire_reserved_at IS NULL) THEN
+   v_terminal_state:=CASE WHEN x.resource_state='TERMINAL' AND
+    x.transport_status='EGRESS_COMPLETE' THEN 'SUCCEEDED'
+    WHEN x.resource_state='TERMINAL' THEN 'FAILED_FINAL'
+    WHEN x.stop_requested_at IS NOT NULL THEN 'CANCELLED' ELSE 'BLOCKED_POLICY' END;
+   UPDATE integration.operations SET state=v_terminal_state,
+    generation=greatest(o.generation,1),lease_mode='',lease_until=NULL,
+    lease_token_hash=NULL,result_code='media_input_terminal',updated_at=v_now WHERE id=o.id;
+   INSERT INTO integration.operation_events(tenant_id,store_id,operation_id,generation,state,mode,reason_code)
+    VALUES(o.tenant_id,o.store_id,o.id,greatest(o.generation,1),v_terminal_state,'',
+     'media_input_terminal');
+   RETURN QUERY SELECT 'terminal'::text,greatest(o.generation,1),''::text; RETURN;
+  END IF;
   UPDATE live.media_execution_state SET escalated_at=coalesce(escalated_at,v_now),
    escalation_code='reconcile_exhausted',updated_at=v_now WHERE attempt_id=a.id;
   UPDATE integration.operations SET state='UNKNOWN',generation=greatest(o.generation,1),
