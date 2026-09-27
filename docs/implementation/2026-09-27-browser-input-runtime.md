@@ -1,6 +1,6 @@
 # Browser input custody implementation record — 2026-09-27
 
-Status: **BIC_INDEPENDENT_AND_ROOT_FOCUSED_PASS; clean full runner exit pending**.
+Status: **BIC_INDEPENDENT_AND_ROOT_FOCUSED_PASS; frozen full regression failed LMR05**.
 Source base `2b52e7d`; frozen contract:
 [BIC/BRW](../../contracts/live-browser-input-runtime-v1.md).
 Contract freeze `4809128`, cleanup-authority clarification `234f44a` (reviewed,
@@ -182,9 +182,37 @@ acceptance, not a clean full pass. Preserve
 `/Volumes/data/output/bic-root-full-20260927.log`, SHA256
 `e7e8a37ac100fe160367166c11e6a958450ab4ba27f0b2219d40457d7187cfce`.
 Separate root `go vet ./...` passed again. Freeze both code and runner throughout
-the next full run after Studio integration; never edit an executing runner.
+the next full run; never edit an executing runner. Studio remains a separate,
+unmerged candidate and must not delay this kernel's independent regression.
 No test assertion, production lease or fault deadline was relaxed. Cloud,
 browser input, Studio UI and deployment gates remain unchanged.
+
+## Frozen full rerun — retained LMR05 failure
+
+Main `549fc07` (Go source/tests still `b6cfa4e`) ran the entire unchanged runner
+and exited 1: **668 top-level PASS, 1 FAIL, 0 SKIP**; foundation 715.044s.
+The runner SHA256 remained
+`3767bc9b924e186fca9397a3c0e295e26ef7054393c0ee0af5c309aa14d00bfb`
+before and after. Log `/Volumes/data/output/bic-root-full-frozen-20260927.log`,
+SHA256 `cc439c0337a9c7382692811acb6f9865df5ba1bec9940fd1998795eb88849995`.
+The runner did not reach its post-test vet command. Its task-owned fixtures
+were removed; unrelated containers were left untouched.
+
+The only failed case was `TestLiveMediaStopLMR05RealCrashAndCommitAckLoss` at
+`live_media_stop_test.go:1178`, after 57.86s. Its exact wait requires a fourth
+observation and a closed lease, **not terminal resource closure**. Actual facts
+were generation 3, observations 3, `UNKNOWN / media_stop_reserved / OBSERVED /
+EGRESS_ACTIVE`, cleanup required, no open lease. The intended final assertion
+also keeps liability UNKNOWN and forbids another external Start/Stop.
+
+Independent read-only diagnosis `9b7a41a4-fdab-4c3d-8229-4790f8b35fd2`
+identifies a test/native scheduling hypothesis: `lmrRescue` ages a running job,
+but native River rescue scanning and retry backoff still precede the next Query.
+The current log lacks native job state/timestamps at the failure and cannot
+prove that hypothesis. Capture those facts before choosing a repair; do not
+call it a flake, extend the timeout, change production rescue defaults, or count
+this failed full run as BIC05 acceptance. The earlier focused passes stand only
+at their stated scopes.
 
 Maintenance/caller map: [media-input-custody.md](media-input-custody.md),
 committed in `0eb3d59`.

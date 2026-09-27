@@ -137,6 +137,43 @@ masking product defects; it does not waive the native criterion or turn STU04
 green. Actual history recovery, worker controls and visual finish remain pending
 until their separate runtime evidence is captured.
 
+## Fourth run: independent fixture defects and evidence validity
+
+Fixed `ffafbc9` exited 1 (test 301.72s; foundation 303.120s), log
+`output/studio-ui-fourth-20260927.log` in the test worktree, SHA256
+`c10d9fe57cace1952cb429fc311a57abb364f0db2efe9b537c220047b0eba617`.
+Real create/edit/reopen, version conflict, history recovery, mobile edits and
+same-key lost-ACK retry reached their assertions before Start observation failed.
+Counters were 147 calls, 0 wrong authority, 2 lost ACKs, 1 Start, 0 Stops; the
+counter Fatal masked later PG readbacks, so no PG acceptance is claimed.
+
+The TLS fake provider built its reply from `h.plan.RoomName`, which this test
+left empty until post-run cleanup. The real worker correctly rejected the
+mismatched room. The UI trace independently showed successful detail GETs at
+five-second intervals, not a missing poll. A read-only assertion also expected
+a Start button on an already READY scene, and the dirty native case reused its
+disabled input. The uncertain native case reached the actual visibility check
+and reproduced the known host limitation. These failures remain retained.
+
+Root viewed all six first-viewport captures under
+`output/playwright/studio-ui-20260927T074704.654385000/`. Both Chinese phone
+captures caught a partially translated navigation rail over the content; they
+are not valid finish-review evidence. Settled viewport and full mobile-flow
+captures are required, not CSS that hides the symptom for the screenshot.
+
+Test-only fixes `4ae0bff`, `eebe437`, `7e34fbb` bind the room before worker startup,
+keep read-only assertions tied to actual controls, use an independent dirty
+New-scene form, aggregate every PG/counter check, and settle the rail before
+capture. A native-only report requires all non-native/readback checks to pass;
+the aggregate gate remains nonzero. Root reviewed this fixed diff before run 5.
+
+Source `aa2bc39` separately fixes two confirmed P2 text errors: distinguish a
+non-DRAFT edit lock from missing management permission, and label `updated_at`
+as status-update time instead of observation time in all three locales. Root
+reviewed its two-file diff; no permission, polling or history logic changed.
+Source/test memory: `325df2c9-bb5a-4781-b2a8-a56f571b0e1f`,
+`6c09b8f8-b939-4d7d-a794-0909aecdc327`. Candidate remains unmerged.
+
 ## Remaining boundary
 
 This slice does not qualify real browser publishing, Cloud Egress, public social

@@ -555,9 +555,9 @@
       "login_custody_root_tested_commit": "9e30686",
       "login_custody_gates": "MLC01_06_INDEPENDENT_PG_47_ROOT_PG_RACE_663_VET_RUNTIME_8_STUDIO_8_BROWSER_BFF_PASS",
       "input_runtime_contract": "contracts/live-browser-input-runtime-v1.md",
-      "input_runtime_status": "BIC_KERNEL_FOCUSED_AND_TERMINAL_COMPLEMENT_PASS_CLEAN_FULL_RUN_PENDING",
+      "input_runtime_status": "BIC_KERNEL_FOCUSED_AND_TERMINAL_COMPLEMENT_PASS_FULL_LMR05_FAILED",
       "input_runtime_evidence": "docs/implementation/2026-09-27-browser-input-runtime.md",
-      "boundary": "MLC and BIC private kernel bind the existing MOCK attempt to its exact initiating login and retain input liability in its original operation/job. Root stop group53 PASS; b6cfa4e terminal complement, focused input6/runtime8/Studio8/BFF1 PASS. Full669 tests passed but executing Bash runner mutation caused wrapper exit127 after vet; clean frozen-run acceptance remains pending. No browser token, new consumer or provider activation. BRW/BRI04-07, Cloud cached-token revocation and real Egress/output remain separate unimplemented gates. No change to full T08/G06 status."
+      "boundary": "MLC and BIC private kernel bind the existing MOCK attempt to its exact initiating login and retain input liability in its original operation/job. Root stop group53 PASS; b6cfa4e terminal complement, focused input6/runtime8/Studio8/BFF1 PASS. First full669 tests passed but executing Bash mutation caused wrapper127. Frozen main549fc07 rerun exited1:668PASS/1FAIL/0SKIP; LMR05 lacked its fourth observation, native rescue timing hypothesis unproven. No clean full/BIC05 acceptance. No browser token, new consumer or provider activation. BRW/BRI04-07, Cloud cached-token revocation and real Egress/output remain separate unimplemented gates. No change to full T08/G06 status."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
