@@ -10,6 +10,9 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"livecommerce/internal/integrations/livekit"
+	"livecommerce/internal/live"
 )
 
 func TestMediaWorkerLMW01DisabledReadsOnlyFlag(t *testing.T) {
@@ -32,6 +35,46 @@ func TestMediaWorkerLMW01DisabledReadsOnlyFlag(t *testing.T) {
 		if !errors.Is(err, errWorkerConfig) || len(reads) != 1 {
 			t.Fatalf("noncanonical flag %q read=%v err=%v", flag, reads, err)
 		}
+	}
+}
+
+func TestBrowserInputEntrypointRequiresSupervision(t *testing.T) {
+	for _, flag := range []string{"1", "bad"} {
+		vars := map[string]string{
+			"COMMERCE_MEDIA_BROWSER_INPUT_ENABLED": flag,
+			"COMMERCE_MEDIA_WORKER_ENABLED":        "1",
+		}
+		get := func(key string) string { return vars[key] }
+		if err := runEntrypoint(context.Background(), get); !errors.Is(err, errWorkerConfig) {
+			t.Fatalf("unsupervised flag %q: %v", flag, err)
+		}
+		vars["COMMERCE_MEDIA_RECOVERY_SUPERVISED"] = "1"
+		vars["COMMERCE_MEDIA_RECOVERY_INTERNAL_CHILD"] = "1"
+		if err := runEntrypoint(context.Background(), get); !errors.Is(err, errWorkerConfig) {
+			t.Fatalf("unreleased child flag %q: %v", flag, err)
+		}
+	}
+}
+
+func TestBrowserInputProjectMappingAndCanonicalURLBeforeDatabase(t *testing.T) {
+	base := livekit.Config{Environment: "MOCK", Endpoint: "https://unit.livekit.cloud",
+		APIKey: "egress_key", APISecret: strings.Repeat("e", 40), StreamHosts: []string{"ingest.example.com"}}
+	input := base
+	input.APIKey, input.APISecret = "input_key", strings.Repeat("i", 40)
+	configured := []livekit.WorkerProject{
+		{ProjectID: "p1", CredentialVersion: 1, Config: base,
+			BrowserInput: &livekit.WorkerBrowserInputProject{Config: input, BrowserURL: "wss://127.0.0.1:9000"}},
+		{ProjectID: "p2", CredentialVersion: 2, Config: base},
+	}
+	egress, inputs := workerProjectConfigs(configured)
+	if len(egress) != 2 || len(inputs) != 1 || inputs[0].ProjectID != "p1" ||
+		inputs[0].CredentialVersion != 1 || inputs[0].Config.APIKey != "input_key" ||
+		egress[0].Config.APIKey != "egress_key" || egress[1].ProjectID != "p2" {
+		t.Fatalf("wrong independently compiled project maps: egress=%d input=%d", len(egress), len(inputs))
+	}
+	inputs[0].BrowserURL = "wss://localhost:9000"
+	if _, err := live.NewBrowserInputRuntime(inputs); !errors.Is(err, live.ErrMediaConfig) {
+		t.Fatalf("nonliteral browser URL reached database path: %v", err)
 	}
 }
 

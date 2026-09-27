@@ -36,6 +36,147 @@ func workerLoad(v map[string]string) (WorkerEnvironment, error) {
 	return LoadWorkerEnvironment(func(k string) string { return v[k] })
 }
 
+func workerWithInput(t *testing.T, vars map[string]string, ca, dial, browserURL string) {
+	t.Helper()
+	var doc map[string]any
+	if err := json.Unmarshal([]byte(vars["COMMERCE_MEDIA_PROJECTS_JSON"]), &doc); err != nil {
+		t.Fatal(err)
+	}
+	project := doc["projects"].([]any)[0].(map[string]any)
+	project["browser_input"] = map[string]any{
+		"api_key": "separate_input_key", "api_secret": strings.Repeat("i", 40),
+		"mock_dial_address": dial, "mock_ca_pem": ca, "browser_url": browserURL,
+	}
+	data, err := json.Marshal(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	vars["COMMERCE_MEDIA_PROJECTS_JSON"] = string(data)
+	vars["COMMERCE_MEDIA_BROWSER_INPUT_ENABLED"] = "1"
+	vars["COMMERCE_MEDIA_RECOVERY_SUPERVISED"] = "1"
+}
+
+func TestWorkerBrowserInputCompiledLoaderStrictBoundary(t *testing.T) {
+	server, ca := workerTLSServer(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	vars := workerTestVars(ca, server.Listener.Addr().String())
+	workerWithInput(t, vars, ca, server.Listener.Addr().String(), "wss://127.0.0.1:9000")
+	good, err := workerLoad(vars)
+	if err != nil || !good.BrowserInputEnabled || len(good.Projects) != 1 || good.Projects[0].BrowserInput == nil ||
+		good.Projects[0].BrowserInput.Config.APIKey == good.Projects[0].Config.APIKey ||
+		good.Projects[0].BrowserInput.Transport == good.Projects[0].Transport {
+		t.Fatalf("compiled input mapping unavailable: %v", err)
+	}
+	for _, value := range []any{good, good.Projects[0], *good.Projects[0].BrowserInput} {
+		for _, rendered := range []string{fmt.Sprint(value), fmt.Sprintf("%#v", value), func() string { b, _ := json.Marshal(value); return string(b) }()} {
+			if strings.Contains(rendered, "separate_input_key") || strings.Contains(rendered, "wss://") {
+				t.Fatalf("input configuration rendered raw: %s", rendered)
+			}
+		}
+	}
+	for _, tc := range []struct{ name, flag, supervised string }{
+		{"disabled nested", "0", "1"}, {"invalid flag", "yes", "1"}, {"unsupervised", "1", "0"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			v := make(map[string]string, len(vars))
+			for key, value := range vars {
+				v[key] = value
+			}
+			v["COMMERCE_MEDIA_BROWSER_INPUT_ENABLED"] = tc.flag
+			v["COMMERCE_MEDIA_RECOVERY_SUPERVISED"] = tc.supervised
+			if _, err := workerLoad(v); err == nil {
+				t.Fatal("invalid input mode accepted")
+			}
+		})
+	}
+	missing := workerTestVars(ca, server.Listener.Addr().String())
+	missing["COMMERCE_MEDIA_BROWSER_INPUT_ENABLED"] = "1"
+	missing["COMMERCE_MEDIA_RECOVERY_SUPERVISED"] = "1"
+	if _, err := workerLoad(missing); err == nil {
+		t.Fatal("enabled mode accepted no input project")
+	}
+	base := vars["COMMERCE_MEDIA_PROJECTS_JSON"]
+	for name, mutate := range map[string]func(map[string]any){
+		"null":        func(p map[string]any) { p["browser_input"] = nil },
+		"unknown":     func(p map[string]any) { p["browser_input"].(map[string]any)["extra"] = true },
+		"missing":     func(p map[string]any) { delete(p["browser_input"].(map[string]any), "api_secret") },
+		"remote dial": func(p map[string]any) { p["browser_input"].(map[string]any)["mock_dial_address"] = "192.0.2.1:443" },
+		"bad CA":      func(p map[string]any) { p["browser_input"].(map[string]any)["mock_ca_pem"] = "bad" },
+		"bad key":     func(p map[string]any) { p["browser_input"].(map[string]any)["api_secret"] = "short" },
+	} {
+		t.Run(name, func(t *testing.T) {
+			var doc map[string]any
+			if err := json.Unmarshal([]byte(base), &doc); err != nil {
+				t.Fatal(err)
+			}
+			mutate(doc["projects"].([]any)[0].(map[string]any))
+			data, _ := json.Marshal(doc)
+			v := make(map[string]string, len(vars))
+			for key, value := range vars {
+				v[key] = value
+			}
+			v["COMMERCE_MEDIA_PROJECTS_JSON"] = string(data)
+			if _, err := workerLoad(v); err == nil {
+				t.Fatal("malformed nested input accepted")
+			}
+		})
+	}
+	duplicate := strings.Replace(base, `"browser_input":{`, `"browser_input":{},"browser_input":{`, 1)
+	vars["COMMERCE_MEDIA_PROJECTS_JSON"] = duplicate
+	if _, err := workerLoad(vars); err == nil {
+		t.Fatal("duplicate nested key accepted")
+	}
+}
+
+func TestWorkerBrowserInputDistinctPinnedTransport(t *testing.T) {
+	const room = "lc_0123456789abcdef0123456789abcdef"
+	const publisher = "lcp_0123456789abcdef0123456789abcdef"
+	var egressHits, inputHits atomic.Int32
+	egressServer, egressCA := workerTLSServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		egressHits.Add(1)
+		if r.URL.Path != "/twirp/livekit.Egress/ListEgress" {
+			t.Errorf("wrong Egress route: %s", r.URL.Path)
+		}
+		_, _ = w.Write([]byte(`{"items":[{"egress_id":"EG_test","room_name":"` + room + `","status":"EGRESS_ACTIVE","started_at":"1","updated_at":"2","ended_at":"0"}]}`))
+	}))
+	inputServer, inputCA := workerTLSServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		inputHits.Add(1)
+		if r.URL.Path != "/twirp/livekit.RoomService/GetParticipant" {
+			t.Errorf("wrong input route: %s", r.URL.Path)
+		}
+		_, _ = w.Write([]byte(`{"identity":"` + publisher + `","sid":"PA_one","state":"JOINED"}`))
+	}))
+	vars := workerTestVars(egressCA, egressServer.Listener.Addr().String())
+	workerWithInput(t, vars, inputCA, inputServer.Listener.Addr().String(), "wss://127.0.0.1:9000")
+	env, err := workerLoad(vars)
+	if err != nil {
+		t.Fatal(err)
+	}
+	project := env.Projects[0]
+	for _, transport := range []http.RoundTripper{project.Transport, project.BrowserInput.Transport} {
+		tr := transport.(*http.Transport)
+		if tr.Proxy != nil || tr.TLSClientConfig.InsecureSkipVerify || tr.TLSClientConfig.MinVersion < tls.VersionTLS12 {
+			t.Fatal("input or Egress transport relaxed TLS/proxy policy")
+		}
+	}
+	egress, err := New(project.Config, project.Transport)
+	if err != nil {
+		t.Fatal(err)
+	}
+	input, err := New(project.BrowserInput.Config, project.BrowserInput.Transport)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := egress.Query(t.Context(), Target{RoomName: room, EgressID: "EG_test"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := input.ObserveInput(t.Context(), InputTarget{RoomName: room, Identity: publisher}); err != nil {
+		t.Fatal(err)
+	}
+	if egressHits.Load() != 1 || inputHits.Load() != 1 {
+		t.Fatalf("transport mapping leaked across SFUs: egress=%d input=%d", egressHits.Load(), inputHits.Load())
+	}
+}
+
 func TestWorkerEnvironmentLMW01StrictBoundaryAndRedaction(t *testing.T) {
 	server := httptest.NewTLSServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	defer server.Close()

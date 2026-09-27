@@ -58,6 +58,26 @@ func TestRecoveryChildEnvironmentDropsRecoveryDSN(t *testing.T) {
 	}
 }
 
+func TestRecoveryChildPreservesBrowserInputConfiguration(t *testing.T) {
+	t.Setenv("COMMERCE_MEDIA_BROWSER_INPUT_ENABLED", "1")
+	t.Setenv("COMMERCE_MEDIA_PROJECTS_JSON", `{"projects":[]}`)
+	t.Setenv("COMMERCE_MEDIA_RECOVERY_DATABASE_URL", "must-not-reach-child")
+	got := map[string]string{}
+	for _, entry := range sanitizedNativeEnvironment() {
+		parts := strings.SplitN(entry, "=", 2)
+		got[parts[0]] = parts[1]
+	}
+	if got["COMMERCE_MEDIA_BROWSER_INPUT_ENABLED"] != "1" ||
+		got["COMMERCE_MEDIA_PROJECTS_JSON"] != `{"projects":[]}` ||
+		got["COMMERCE_MEDIA_RECOVERY_SUPERVISED"] != "1" ||
+		got["COMMERCE_MEDIA_RECOVERY_INTERNAL_CHILD"] != "1" {
+		t.Fatal("input scope or project mapping lost across exec boundary")
+	}
+	if _, ok := got["COMMERCE_MEDIA_RECOVERY_DATABASE_URL"]; ok {
+		t.Fatal("recovery DSN survived exec sanitization")
+	}
+}
+
 func TestRecoveryTimelyReadbackKeepsOriginalAttestation(t *testing.T) {
 	e, err := newRecoveryEpisode()
 	if err != nil {

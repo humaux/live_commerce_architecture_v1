@@ -484,6 +484,12 @@ func runSupervised(ctx context.Context, getenv func(string) string) error {
 	if err != nil {
 		return err
 	}
+	inputFlag := getenv("COMMERCE_MEDIA_BROWSER_INPUT_ENABLED")
+	requestedInput := inputFlag != "" && inputFlag != "0"
+	episode.withInput = requestedInput
+	if requestedInput && inputFlag != "1" {
+		episode.coverageKnown = false
+	}
 	episode.startDeadlineSignal(ctx)
 	defer func() {
 		if episode.stopDeadline != nil {
@@ -503,6 +509,12 @@ func runSupervised(ctx context.Context, getenv func(string) string) error {
 	capacity, capacityErr := livekit.LoadWorkerConcurrency(getenv)
 	projects, projectsErr := livekit.LoadWorkerProjects(getenv)
 	workerEnabled := getenv("COMMERCE_MEDIA_WORKER_ENABLED") == "1"
+	if requestedInput && (projectsErr != nil || capacityErr != nil || !workerEnabled) {
+		episode.coverageKnown = false
+	}
+	if requestedInput && capacityErr != nil {
+		capacity = 1 // Diagnostic only; unknown coverage cannot become a pass.
+	}
 	if !workerEnabled {
 		slog.Error("media_recovery_native_worker_disabled")
 	}
@@ -521,7 +533,11 @@ func runSupervised(ctx context.Context, getenv func(string) string) error {
 		pool, err = platform.OpenMediaRecoveryPool(openCtx, recoveryDSN)
 		cancel()
 		if err == nil {
-			ledger = live.NewMediaRecoveryLedger(pool)
+			if requestedInput {
+				ledger = live.NewMediaRecoveryLedgerWithBrowserInput(pool)
+			} else {
+				ledger = live.NewMediaRecoveryLedger(pool)
+			}
 		} else {
 			episode.coverageKnown = false
 		}
@@ -534,6 +550,14 @@ func runSupervised(ctx context.Context, getenv func(string) string) error {
 		nativeEnv, nativeErr = livekit.LoadWorkerEnvironment(getenv)
 		if nativeErr != nil {
 			slog.Error("media_recovery_native_config_invalid")
+		}
+	}
+	if requestedInput && nativeErr == nil && projectsErr == nil {
+		_, inputProjects := workerProjectConfigs(projects)
+		if _, runtimeErr := live.NewBrowserInputRuntime(inputProjects); runtimeErr != nil {
+			nativeErr = runtimeErr
+			episode.coverageKnown = false
+			slog.Error("media_recovery_browser_input_config_invalid")
 		}
 	}
 	providerChecked := false
@@ -553,14 +577,18 @@ func runSupervised(ctx context.Context, getenv func(string) string) error {
 			pool, err = platform.OpenMediaRecoveryPool(openCtx, recoveryDSN)
 			cancel()
 			if err == nil {
-				ledger = live.NewMediaRecoveryLedger(pool)
+				if requestedInput {
+					ledger = live.NewMediaRecoveryLedgerWithBrowserInput(pool)
+				} else {
+					ledger = live.NewMediaRecoveryLedger(pool)
+				}
 			} else {
 				episode.coverageKnown = false
 			}
 		} else if pool == nil {
 			episode.coverageKnown = false
 		}
-		if ledger != nil && !episode.admitted && capacityErr == nil {
+		if ledger != nil && !episode.admitted && (capacityErr == nil || requestedInput) {
 			members, beginErr := ledger.Begin(ctx, episode.id, episode.elapsedMS(), capacity, episode.coverageKnown)
 			if beginErr == nil {
 				episode.members, episode.admitted = members, true
@@ -583,7 +611,7 @@ func runSupervised(ctx context.Context, getenv func(string) string) error {
 		if nativeReleased && episode.admitted && !providerChecked && workerEnabled && nativeErr == nil &&
 			capacityErr == nil && projectsErr == nil && episode.elapsedMS() < 90000 {
 			providerChecked = true
-			observer = readyRecoveryObserver(ctx, pool, nativeEnv, projects)
+			observer = readyRecoveryObserver(ctx, pool, nativeEnv, projects, requestedInput)
 			if observer == nil {
 				slog.Warn("media_recovery_provider_admission_degraded")
 			}
@@ -666,6 +694,10 @@ func runSupervised(ctx context.Context, getenv func(string) string) error {
 				if err != nil {
 					return errWorkerStart
 				}
+				episode.withInput = requestedInput
+				if requestedInput && (inputFlag != "1" || projectsErr != nil || nativeErr != nil || capacityErr != nil || !workerEnabled) {
+					episode.coverageKnown = false
+				}
 				episode.startDeadlineSignal(ctx)
 				observer, providerChecked = nil, false
 			}
@@ -675,7 +707,7 @@ func runSupervised(ctx context.Context, getenv func(string) string) error {
 }
 
 func readyRecoveryObserver(ctx context.Context, recoveryPool *pgxpool.Pool,
-	env livekit.WorkerEnvironment, projects []livekit.WorkerProject) *live.MediaRecoveryObserver {
+	env livekit.WorkerEnvironment, projects []livekit.WorkerProject, withInput bool) *live.MediaRecoveryObserver {
 	startup, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	worker, err := platform.OpenMediaWorkerPool(startup, env.WorkerDSN)
@@ -692,12 +724,17 @@ func readyRecoveryObserver(ctx context.Context, recoveryPool *pgxpool.Pool,
 		platform.ValidateSameDatabase(startup, recoveryPool, executor) != nil {
 		return nil
 	}
-	configured := make([]live.MediaProject, 0, len(projects))
-	for _, p := range projects {
-		configured = append(configured, live.MediaProject{ProjectID: p.ProjectID,
-			CredentialVersion: p.CredentialVersion, Config: p.Config, Transport: p.Transport})
+	configured, inputProjects := workerProjectConfigs(projects)
+	var observer *live.MediaRecoveryObserver
+	if withInput {
+		runtime, runtimeErr := live.NewBrowserInputRuntime(inputProjects)
+		if runtimeErr != nil {
+			return nil
+		}
+		observer, err = live.NewMediaRecoveryObserverWithBrowserInput(startup, recoveryPool, configured, runtime)
+	} else {
+		observer, err = live.NewMediaRecoveryObserver(startup, recoveryPool, configured)
 	}
-	observer, err := live.NewMediaRecoveryObserver(startup, recoveryPool, configured)
 	if err != nil {
 		return nil
 	}

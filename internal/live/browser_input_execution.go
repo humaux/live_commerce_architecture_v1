@@ -26,6 +26,88 @@ type browserInputExecutionWorker struct {
 	runtime *BrowserInputRuntime
 }
 
+// River registers one worker per job kind. These two original queues share
+// mediaOperationArgs, so one dispatcher preserves both jobs and their SQL guards.
+type combinedMediaExecutionWorker struct {
+	river.WorkerDefaults[mediaOperationArgs]
+	egress *mediaExecutionWorker
+	input  *browserInputExecutionWorker
+}
+
+func (*combinedMediaExecutionWorker) Timeout(*river.Job[mediaOperationArgs]) time.Duration {
+	return 30 * time.Second
+}
+
+func (w *combinedMediaExecutionWorker) Work(ctx context.Context, job *river.Job[mediaOperationArgs]) error {
+	if job == nil || job.JobRow == nil || job.ID < 1 || job.Kind != (mediaOperationArgs{}).Kind() ||
+		job.Args.Version != 1 || !command.ValidID(job.Args.OperationID) || w == nil {
+		return river.JobCancel(ErrMediaJob)
+	}
+	switch job.Queue {
+	case mediaMockQueue:
+		if w.egress == nil {
+			return river.JobCancel(ErrMediaJob)
+		}
+		return w.egress.Work(ctx, job)
+	case mediaInputMockQueue:
+		if w.input == nil {
+			return river.JobCancel(ErrMediaJob)
+		}
+		return w.input.Work(ctx, job)
+	default:
+		return river.JobCancel(ErrMediaJob)
+	}
+}
+
+// NewMediaClientWithBrowserInput is the compiled opt-in process client. N is
+// per queue, so two configured queues can run up to 2N jobs; recovery admission
+// remains one total N-sized wave in its independent parent.
+func NewMediaClientWithBrowserInput(ctx context.Context, workerPool, executorPool *pgxpool.Pool,
+	keys *livekit.MaterialKeyring, projects []MediaProject, runtime *BrowserInputRuntime, concurrency int,
+) (*river.Client[pgx.Tx], error) {
+	if ctx == nil || workerPool == nil || executorPool == nil || keys == nil || runtime == nil ||
+		len(runtime.projects) == 0 || concurrency < 1 || concurrency > 32 {
+		return nil, ErrMediaConfig
+	}
+	selected, err := selectMediaProjects(projects)
+	if err != nil {
+		return nil, err
+	}
+	for key, input := range runtime.projects {
+		egress, ok := selected[key]
+		if !ok || input.client == nil || egress.identity != input.identity {
+			return nil, ErrMediaConfig
+		}
+	}
+	preflight, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	if platform.ValidateMediaWorkerPool(preflight, workerPool) != nil ||
+		platform.ValidateMediaExecutorPool(preflight, executorPool) != nil ||
+		platform.ValidateSameDatabase(preflight, workerPool, executorPool) != nil {
+		return nil, ErrMediaDatabase
+	}
+	var legacyReady, inputReady bool
+	if executorPool.QueryRow(preflight, `SELECT live.media_worker_ready()`).Scan(&legacyReady) != nil || !legacyReady ||
+		executorPool.QueryRow(preflight, `SELECT live.media_browser_input_worker_ready()`).Scan(&inputReady) != nil || !inputReady {
+		return nil, ErrMediaDatabase
+	}
+	egress := &mediaExecutionWorker{pool: executorPool, keys: keys, projects: selected}
+	workers := river.NewWorkers()
+	river.AddWorker(workers, &combinedMediaExecutionWorker{egress: egress,
+		input: &browserInputExecutionWorker{egress: egress, runtime: runtime}})
+	client, err := river.NewClient(riverpgxv5.New(workerPool), &river.Config{
+		Schema: mediaSchema, Workers: workers,
+		Queues: map[string]river.QueueConfig{
+			mediaMockQueue: {MaxWorkers: concurrency}, mediaInputMockQueue: {MaxWorkers: concurrency},
+		},
+		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+	})
+	if err != nil {
+		return nil, ErrMediaDatabase
+	}
+	return client, nil
+}
+
 func (*browserInputExecutionWorker) Timeout(*river.Job[mediaOperationArgs]) time.Duration {
 	return 30 * time.Second
 }

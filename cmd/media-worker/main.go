@@ -9,6 +9,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/riverqueue/river"
+
 	"livecommerce/internal/integrations/livekit"
 	"livecommerce/internal/jobqueue"
 	"livecommerce/internal/live"
@@ -39,14 +42,19 @@ func runEntrypoint(ctx context.Context, getenv func(string) string) error {
 	if getenv == nil {
 		return errWorkerConfig
 	}
+	inputFlag := getenv("COMMERCE_MEDIA_BROWSER_INPUT_ENABLED")
 	switch getenv("COMMERCE_MEDIA_RECOVERY_SUPERVISED") {
 	case "", "0":
-		if getenv("COMMERCE_MEDIA_RECOVERY_INTERNAL_CHILD") != "" {
+		if getenv("COMMERCE_MEDIA_RECOVERY_INTERNAL_CHILD") != "" ||
+			(inputFlag != "" && inputFlag != "0") {
 			return errWorkerConfig
 		}
 		return runNative(ctx, getenv, nil)
 	case "1":
 		if getenv("COMMERCE_MEDIA_RECOVERY_INTERNAL_CHILD") == "1" {
+			if inputFlag != "" && inputFlag != "0" && inputFlag != "1" {
+				return errWorkerConfig
+			}
 			return runInternalChild(ctx, getenv)
 		}
 		if getenv("COMMERCE_MEDIA_RECOVERY_INTERNAL_CHILD") != "" {
@@ -69,12 +77,13 @@ func runNative(ctx context.Context, getenv func(string) string, ready func() err
 	if ctx == nil {
 		return errWorkerConfig
 	}
-	projects := make([]live.MediaProject, 0, len(env.Projects))
-	for _, project := range env.Projects {
-		projects = append(projects, live.MediaProject{
-			ProjectID: project.ProjectID, CredentialVersion: project.CredentialVersion,
-			Config: project.Config, Transport: project.Transport,
-		})
+	projects, inputProjects := workerProjectConfigs(env.Projects)
+	var inputRuntime *live.BrowserInputRuntime
+	if env.BrowserInputEnabled {
+		inputRuntime, err = live.NewBrowserInputRuntime(inputProjects)
+		if err != nil {
+			return errWorkerConfig
+		}
 	}
 	startup, done := context.WithTimeout(ctx, 10*time.Second)
 	workerPool, err := platform.OpenMediaWorkerPool(startup, env.WorkerDSN)
@@ -89,7 +98,13 @@ func runNative(ctx context.Context, getenv func(string) string, ready func() err
 		return errWorkerDatabase
 	}
 	defer executorPool.Close()
-	client, err := live.NewMediaClient(startup, workerPool, executorPool, env.Keys, projects, env.Concurrency)
+	var client *river.Client[pgx.Tx]
+	if env.BrowserInputEnabled {
+		client, err = live.NewMediaClientWithBrowserInput(startup, workerPool, executorPool,
+			env.Keys, projects, inputRuntime, env.Concurrency)
+	} else {
+		client, err = live.NewMediaClient(startup, workerPool, executorPool, env.Keys, projects, env.Concurrency)
+	}
 	done()
 	if err != nil {
 		return errWorkerDatabase
@@ -106,4 +121,19 @@ func runNative(ctx context.Context, getenv func(string) string, ready func() err
 	default:
 		return err
 	}
+}
+
+func workerProjectConfigs(projects []livekit.WorkerProject) ([]live.MediaProject, []live.BrowserInputProject) {
+	egress := make([]live.MediaProject, 0, len(projects))
+	input := make([]live.BrowserInputProject, 0, len(projects))
+	for _, project := range projects {
+		egress = append(egress, live.MediaProject{ProjectID: project.ProjectID,
+			CredentialVersion: project.CredentialVersion, Config: project.Config, Transport: project.Transport})
+		if project.BrowserInput != nil {
+			input = append(input, live.BrowserInputProject{ProjectID: project.ProjectID,
+				CredentialVersion: project.CredentialVersion, Config: project.BrowserInput.Config,
+				Transport: project.BrowserInput.Transport, BrowserURL: project.BrowserInput.BrowserURL})
+		}
+	}
+	return egress, input
 }

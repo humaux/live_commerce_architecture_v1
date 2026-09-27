@@ -19,6 +19,7 @@ var ErrWorkerEnvironment = errors.New("media_worker_invalid_config")
 // WorkerEnvironment owns platform configuration; its formatted forms never expose DSNs or keys.
 type WorkerEnvironment struct {
 	Enabled                bool
+	BrowserInputEnabled    bool
 	WorkerDSN, ExecutorDSN string
 	Concurrency            int
 	Keys                   *MaterialKeyring
@@ -36,6 +37,22 @@ type WorkerProject struct {
 	CredentialVersion int64
 	Config            Config
 	Transport         http.RoundTripper
+	BrowserInput      *WorkerBrowserInputProject
+}
+
+// Browser input keeps a separate local SFU credential and pinned transport.
+type WorkerBrowserInputProject struct {
+	Config     Config
+	Transport  http.RoundTripper
+	BrowserURL string
+}
+
+func (WorkerBrowserInputProject) String() string {
+	return "livekit.WorkerBrowserInputProject{redacted}"
+}
+func (p WorkerBrowserInputProject) GoString() string { return p.String() }
+func (WorkerBrowserInputProject) MarshalJSON() ([]byte, error) {
+	return []byte(`"livekit.WorkerBrowserInputProject{redacted}"`), nil
 }
 
 func (WorkerProject) String() string     { return "livekit.WorkerProject{redacted}" }
@@ -54,6 +71,16 @@ func LoadWorkerEnvironment(getenv func(string) string) (WorkerEnvironment, error
 		return out, nil
 	case "1":
 		out.Enabled = true
+	default:
+		return WorkerEnvironment{}, ErrWorkerEnvironment
+	}
+	switch getenv("COMMERCE_MEDIA_BROWSER_INPUT_ENABLED") {
+	case "", "0":
+	case "1":
+		if getenv("COMMERCE_MEDIA_RECOVERY_SUPERVISED") != "1" {
+			return WorkerEnvironment{}, ErrWorkerEnvironment
+		}
+		out.BrowserInputEnabled = true
 	default:
 		return WorkerEnvironment{}, ErrWorkerEnvironment
 	}
@@ -116,6 +143,14 @@ func LoadWorkerProjects(getenv func(string) string) ([]WorkerProject, error) {
 	if getenv == nil {
 		return nil, ErrWorkerEnvironment
 	}
+	inputEnabled := false
+	switch getenv("COMMERCE_MEDIA_BROWSER_INPUT_ENABLED") {
+	case "", "0":
+	case "1":
+		inputEnabled = true
+	default:
+		return nil, ErrWorkerEnvironment
+	}
 	var projects []WorkerProject
 	projectsJSON := getenv("COMMERCE_MEDIA_PROJECTS_JSON")
 	if len(projectsJSON) == 0 || len(projectsJSON) > 65536 {
@@ -130,9 +165,18 @@ func LoadWorkerProjects(getenv func(string) string) ([]WorkerProject, error) {
 		return nil, ErrWorkerEnvironment
 	}
 	seen := make(map[string]bool, len(items))
+	inputCount := 0
 	for _, item := range items {
 		obj, ok := item.(map[string]any)
-		if !ok || !exactWorkerFields(obj, "project_id", "credential_version", "endpoint", "api_key", "api_secret", "stream_hosts", "mock_dial_address", "mock_ca_pem") {
+		fields := []string{"project_id", "credential_version", "endpoint", "api_key", "api_secret", "stream_hosts", "mock_dial_address", "mock_ca_pem"}
+		inputRaw, hasInput := obj["browser_input"]
+		if hasInput {
+			if !inputEnabled {
+				return nil, ErrWorkerEnvironment
+			}
+			fields = append(fields, "browser_input")
+		}
+		if !ok || !exactWorkerFields(obj, fields...) {
 			return nil, ErrWorkerEnvironment
 		}
 		id, okID := obj["project_id"].(string)
@@ -163,28 +207,65 @@ func LoadWorkerProjects(getenv func(string) string) ([]WorkerProject, error) {
 			}
 			hosts = append(hosts, host)
 		}
-		address, ok := canonicalWorkerLoopback(dialAddress)
-		if !ok || len(caPEM) == 0 || len(caPEM) > 16384 {
-			return nil, ErrWorkerEnvironment
-		}
-		roots := x509.NewCertPool()
-		if !roots.AppendCertsFromPEM([]byte(caPEM)) {
-			return nil, ErrWorkerEnvironment
-		}
 		config := Config{Environment: "MOCK", Endpoint: endpoint, APIKey: apiKey, APISecret: apiSecret, StreamHosts: hosts}
-		// The transport has no ambient proxy or DNS route. TLS still verifies the original endpoint name.
-		transport := &http.Transport{Proxy: nil, DisableKeepAlives: true,
-			TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12, RootCAs: roots},
-			DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
-				return (&net.Dialer{Timeout: 5 * time.Second}).DialContext(ctx, "tcp", address)
-			},
+		transport, err := workerTransport(dialAddress, caPEM)
+		if err != nil {
+			return nil, ErrWorkerEnvironment
 		}
 		if _, err := New(config, transport); err != nil {
 			return nil, ErrWorkerEnvironment
 		}
-		projects = append(projects, WorkerProject{ProjectID: id, CredentialVersion: version, Config: config, Transport: transport})
+		project := WorkerProject{ProjectID: id, CredentialVersion: version, Config: config, Transport: transport}
+		if hasInput {
+			input, ok := inputRaw.(map[string]any)
+			if !ok || !exactWorkerFields(input, "api_key", "api_secret", "mock_dial_address", "mock_ca_pem", "browser_url") {
+				return nil, ErrWorkerEnvironment
+			}
+			inputKey, keyOK := input["api_key"].(string)
+			inputSecret, secretOK := input["api_secret"].(string)
+			inputDial, dialOK := input["mock_dial_address"].(string)
+			inputCA, caOK := input["mock_ca_pem"].(string)
+			browserURL, browserOK := input["browser_url"].(string)
+			if !keyOK || !secretOK || !dialOK || !caOK || !browserOK {
+				return nil, ErrWorkerEnvironment
+			}
+			inputTransport, err := workerTransport(inputDial, inputCA)
+			if err != nil {
+				return nil, ErrWorkerEnvironment
+			}
+			inputConfig := Config{Environment: "MOCK", Endpoint: endpoint, APIKey: inputKey,
+				APISecret: inputSecret, StreamHosts: hosts}
+			if _, err := New(inputConfig, inputTransport); err != nil {
+				return nil, ErrWorkerEnvironment
+			}
+			project.BrowserInput = &WorkerBrowserInputProject{Config: inputConfig,
+				Transport: inputTransport, BrowserURL: browserURL}
+			inputCount++
+		}
+		projects = append(projects, project)
+	}
+	if inputEnabled && inputCount == 0 {
+		return nil, ErrWorkerEnvironment
 	}
 	return projects, nil
+}
+
+func workerTransport(rawAddress, caPEM string) (http.RoundTripper, error) {
+	address, ok := canonicalWorkerLoopback(rawAddress)
+	if !ok || len(caPEM) == 0 || len(caPEM) > 16384 {
+		return nil, ErrWorkerEnvironment
+	}
+	roots := x509.NewCertPool()
+	if !roots.AppendCertsFromPEM([]byte(caPEM)) {
+		return nil, ErrWorkerEnvironment
+	}
+	// Both transports pin a literal loopback dial and verify the logical endpoint TLS name.
+	return &http.Transport{Proxy: nil, DisableKeepAlives: true,
+		TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12, RootCAs: roots},
+		DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+			return (&net.Dialer{Timeout: 5 * time.Second}).DialContext(ctx, "tcp", address)
+		},
+	}, nil
 }
 
 func LoadWorkerConcurrency(getenv func(string) string) (int, error) {
