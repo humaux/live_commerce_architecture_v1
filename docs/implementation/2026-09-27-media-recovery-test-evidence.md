@@ -28,7 +28,7 @@ second-run status; the current verdict follows it.
 | --- | --- | --- |
 | MRR01 | Real escaped Start before old worker SIGKILL/lost ACK, two supervised child restarts, committed fresh ROOM ≤90s (35.87s), known-ID QUERY (4.42s), original River attempt 1→1 and unchanged job/max, zero observer Start/Stop: PASS. | Cloud/provider acceptance and external deployment. |
 | MRR02 | SQL coverage/lease/capacity/timeout/order/PG lock race and RLS cardinality fail-closed: PASS. Actual parent-alive provider-fault timeout 91.59s with redacted log and no post-deadline provider I/O: PASS. | Native capacity overflow coexisting with active cleanup, DB startup delay/recovery, real late-readback ordering; human alert delivery. |
-| MRR03 | Exact ABI/ACL/role, wrong physical DB, old role direct grants, generation/token/target, future/NULL/expired lease, QUERY guard/Stop budget, stale terminal, prewire, exhausted/escalated job, INPUT-profile and wrong-job-ID denial: PASS. | Physically absent original River job (cannot be made without breaking its FK). |
+| MRR03 | Exact ABI/ACL/role, wrong physical DB, old role direct grants, generation/token/target, future/NULL/expired lease, QUERY guard/Stop budget, stale terminal, prewire, exhausted/escalated job, INPUT-profile and wrong-job-ID denial: PASS. | Physically absent original River job was not exercised in the 17-item run. The earlier FK explanation was incorrect: the River job can be deleted in the task-owned fixture while the operation retains its job ID. |
 | MRR04 | Idempotent migration and readiness (including extra policy and BYPASSRLS rejection), internal-child release/EOF/reap, supervisor SIGTERM, focused runner: PASS. | Enabled/disabled mode matrix and fixed-tree full regression. Original LMR05 35-second gate separately open. |
 
 The SQL calls with `p_elapsed_ms` values are **counterexamples for the frozen
@@ -141,6 +141,26 @@ request count was 1 (diagnostic, not observer egress). Raw log
 The runner cleaned its task-owned PG18 fixture; only unrelated protected
 `lc-meta-upgrade-9d14f59e966f` remained. The focused gate alone does not
 close the explicit MRR02/03/04 holes or the full regression.
+
+Supplemental independent test batch (authored after the fifth PASS, **NOT_RUN**
+at this document revision; source remains `86b641a`):
+
+| Contract gap | New check | Current status |
+| --- | --- | --- |
+| MRR02 capacity must not stall native cleanup | `MRR02CapacityOverflowReleasesNativeCleanup` creates two original reserved-wire jobs with capacity 1, requires fail-whole/zero admitted observer claims, then requires the released native child to reach readiness and a real local-TLS terminal ROOM result to advance an original job. | Authored; PG/process NOT_RUN. |
+| MRR02 first DB delay counts against original t0 | `MRR02LateDatabaseRecoveryKeepsOriginalDeadline` temporarily disables only the fixture recovery login, starts an enabled parent with bad native material, requires the local redacted miss at real t0+90 while parent lives, then restores login and requires the same episode, unknown coverage, overdue member and no provider I/O. No lease/attempt/deadline is aged. | Authored; real 90s NOT_RUN. This is late *membership capture*, not a fresh known-member late observation/readback test. |
+| MRR02 timely committed readback, Witness persistence crossing t0+90 | `MRR02TimelyReadbackWitnessCommitsAfterNinety` uses the configured local-TLS ROOM response to commit a fresh post-admission observation. A task-scoped event trigger makes early Witness attempts retry and, within three seconds of the deadline, blocks its insert on an advisory lock after it holds the original operation lock. The test requires `pg_stat_activity` evidence of the parent Witness waiter before t0+90, releases it just after 90, then checks committed original elapsed, no sticky timeout and no false miss. The existing timeout-first test separately requires sticky miss if Timeout commits first. | Authored; real 90s/PG NOT_RUN. If the bounded waiter condition is not observed, this is a fixture failure, not a source PASS/FAIL inference. |
+| MRR03 physically missing original job | `MRR03InputProfileAndWrongOriginalJob/missing-original-job` deletes only the exact task-owned River row after wire reservation, proves the operation still retains its original job ID, and requires `native_ineligible`, no claim target and no provider call. The earlier statement that an FK prevented this fixture was false; migration `0008` labels the job link historical, with no retention FK. | Authored; PG NOT_RUN. |
+| MRR04 mode and degraded config | `MRR04ModeAndConfigurationMatrix` exercises unset/0 legacy-disabled exit, invalid mode and absent/malformed recovery DSN fail-closed, enabled worker-disabled and bad-native-config parent-alive diagnostics with zero configured TLS requests. Existing internal child EOF gate is reused, not duplicated. | Authored; process NOT_RUN. |
+
+The focused selector's **outer Go test envelope only** is raised from 360s
+to 540s for two additional real-90s cases plus short checks, with root's
+separate authorization. The 90s product deadline, original LMR05 35s
+assertion, default full-suite 900s envelope, source code and River scheduling
+remain unchanged. Static `gofmt`, `go test -c`, `bash -n` and `git diff --check`
+exited 0; they are not PG or real-clock verdicts. A separate known-member
+*late* observation/readback process path, human alert delivery, and fixed-tree
+full regression remain **NOT_RUN** pending explicit adjudication.
 
 Pending acceptance receipts: explicit remaining MRR02/03/04 cases, original
 LMR05 35-second failure/success provenance, and fixed-tree full regression.

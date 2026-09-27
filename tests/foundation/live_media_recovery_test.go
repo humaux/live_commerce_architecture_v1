@@ -761,6 +761,85 @@ func TestLiveMediaRecoveryMRR02WitnessCommitBeatsWaitingTimeout(t *testing.T) {
 	}
 }
 
+func TestLiveMediaRecoveryMRR02CapacityOverflowReleasesNativeCleanup(t *testing.T) {
+	h := lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "unused", 500) })
+	h2 := lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "unused", 500) })
+	recovery, _ := mrrRecoveryPool(t, h)
+	for _, item := range []*lmeHarness{h, h2} {
+		lease := mrrReserveUnansweredStart(t, item)
+		var finished string
+		if err := item.executor.QueryRow(context.Background(), `SELECT live.finish_media_uncertain($1::uuid,$2::bigint,$3::bytea,'remote_unknown')`,
+			item.plan.OperationID, lease.generation, lease.token).Scan(&finished); err != nil || finished != "observe" {
+			t.Fatalf("original native lease did not release: %s %v", finished, err)
+		}
+	}
+	var nativeRequests atomic.Int32
+	tlsServer, ca := lmwTLS(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/twirp/livekit.Egress/ListEgress" {
+			t.Errorf("capacity path issued unexpected method %s", r.URL.Path)
+			http.Error(w, "unexpected method", 500)
+			return
+		}
+		var target struct {
+			RoomName string `json:"room_name"`
+			EgressID string `json:"egress_id"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&target); err != nil || target.EgressID != "" {
+			t.Errorf("capacity path changed native ROOM target: %+v %v", target, err)
+			http.Error(w, "wrong target", 400)
+			return
+		}
+		var original *lmeHarness
+		for _, item := range []*lmeHarness{h, h2} {
+			if target.RoomName == item.plan.RoomName {
+				original = item
+			}
+		}
+		if original == nil {
+			t.Errorf("capacity path queried foreign room %q", target.RoomName)
+			http.Error(w, "foreign room", 400)
+			return
+		}
+		nativeRequests.Add(1)
+		lmeReply(w, `{"items":[`+original.observation("EG_mrr_native_overflow", "EGRESS_COMPLETE", 100, 150, 140)+`]}`)
+	}))
+	binary := mrBuild(t, "../../cmd/media-worker", "mrr-capacity-native")
+	env := append(lmwEnvironment(h, tlsServer.Listener.Addr().String(), ca),
+		"COMMERCE_MEDIA_RECOVERY_SUPERVISED=1", "COMMERCE_MEDIA_RECOVERY_DATABASE_URL="+recovery.Config().ConnString())
+	launched := time.Now()
+	parent := lmwProcess(t, binary, "mrr-capacity-native", env)
+	episode := mrrWaitEpisode(t, h.lp.f.owner, launched)
+	rows := mrrRead(t, recovery, episode)
+	if len(rows) != 1 || rows[0].scope != "capacity_exceeded" || rows[0].known != true || rows[0].candidates < 2 || rows[0].operation != nil {
+		t.Fatalf("capacity admission was not fail-whole: %+v", rows)
+	}
+	mrReadyLog(t, parent, "media_native_child_released")
+	mrReadyLog(t, parent, "media_worker_ready")
+	deadline := time.Now().Add(40 * time.Second)
+	progress := false
+	for time.Now().Before(deadline) {
+		for _, item := range []*lmeHarness{h, h2} {
+			facts := item.facts(t)
+			if facts.observations > 0 && facts.resource == "TERMINAL" {
+				progress = true
+			}
+		}
+		if progress {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if !progress || nativeRequests.Load() == 0 {
+		t.Fatalf("overflow blocked original native cleanup: progress=%v requests=%d", progress, nativeRequests.Load())
+	}
+	var claims int
+	if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT count(*) FROM integration.operation_events WHERE episode_id=$1::uuid AND episode_event_kind IN ('admitted','qualified','witnessed')`, episode).
+		Scan(&claims); err != nil || claims != 0 {
+		t.Fatalf("overflow admitted observer member: claims=%d err=%v", claims, err)
+	}
+	mrStop(t, parent, syscall.SIGTERM, true)
+}
+
 func TestLiveMediaRecoveryMRR03CleanupGuardAndStopBudget(t *testing.T) {
 	h := lmrSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "SQL only", 500) })
 	id := "EG_mrr_cleanup"
@@ -951,6 +1030,95 @@ func TestLiveMediaRecoveryMRR03InputProfileAndWrongOriginalJob(t *testing.T) {
 			t.Fatalf("substituted job obtained observer claim: %s %v", disposition, err)
 		}
 	})
+	t.Run("missing-original-job", func(t *testing.T) {
+		h := lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "SQL only", 500) })
+		recovery, _ := mrrRecoveryPool(t, h)
+		mrrReserveUnansweredStart(t, h)
+		deleted, err := h.lp.f.owner.Exec(ctx, `DELETE FROM river_media.river_job WHERE id=$1`, h.plan.JobID)
+		if err != nil || deleted.RowsAffected() != 1 {
+			t.Fatalf("task-owned original River job was not deleted: rows=%d err=%v", deleted.RowsAffected(), err)
+		}
+		var operationJob int64
+		if err := h.lp.f.owner.QueryRow(ctx, `SELECT job_id FROM integration.operations WHERE id=$1::uuid`, h.plan.OperationID).Scan(&operationJob); err != nil || operationJob != h.plan.JobID {
+			t.Fatalf("missing job erased original operation responsibility: job=%d err=%v", operationJob, err)
+		}
+		episode := randomUUID()
+		rows := mrrBegin(t, recovery, episode, 0, 1, true)
+		if len(rows) != 1 || rows[0].disposition != "native_ineligible" || rows[0].operation == nil ||
+			*rows[0].operation != h.plan.OperationID || rows[0].job == nil || *rows[0].job != h.plan.JobID {
+			t.Fatalf("missing original job escaped native-ineligible liability: %+v", rows)
+		}
+		if disposition, _, _ := mrrClaim(t, recovery, episode, h, randomBytes(32)); disposition != "native_ineligible" {
+			t.Fatalf("missing original job disclosed observer target: %s", disposition)
+		}
+		if h.starts.Load()+h.lists.Load()+h.queries.Load()+h.stops.Load() != 0 {
+			t.Fatal("missing original job made provider call")
+		}
+	})
+}
+
+func TestLiveMediaRecoveryMRR04ModeAndConfigurationMatrix(t *testing.T) {
+	h := lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "unused", 500) })
+	recovery, _ := mrrRecoveryPool(t, h)
+	var requests atomic.Int32
+	tlsServer, ca := lmwTLS(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests.Add(1)
+		http.Error(w, "unexpected provider request", 500)
+	}))
+	binary := mrBuild(t, "../../cmd/media-worker", "mrr-mode-matrix")
+	base := lmwEnvironment(h, tlsServer.Listener.Addr().String(), ca)
+	disabled := lmwReplace(base, "COMMERCE_MEDIA_WORKER_ENABLED", "0")
+	for _, mode := range []struct{ name, flag string }{{"unset", ""}, {"zero", "0"}} {
+		t.Run("legacy-"+mode.name, func(t *testing.T) {
+			env := append([]string(nil), disabled...)
+			if mode.flag != "" {
+				env = append(env, "COMMERCE_MEDIA_RECOVERY_SUPERVISED="+mode.flag)
+			}
+			p := lmwProcess(t, binary, "mrr-legacy-"+mode.name, env)
+			select {
+			case err := <-p.done:
+				p.exited = true
+				if err != nil {
+					t.Fatalf("legacy disabled worker changed behavior: %v", err)
+				}
+			case <-time.After(8 * time.Second):
+				t.Fatal("legacy disabled worker did not exit")
+			}
+		})
+	}
+	for _, item := range []struct {
+		name   string
+		env    []string
+		marker string
+	}{
+		{"invalid-mode", append(append([]string(nil), disabled...), "COMMERCE_MEDIA_RECOVERY_SUPERVISED=bogus"), "media_worker_invalid_config"},
+		{"missing-recovery-dsn", append(append([]string(nil), disabled...), "COMMERCE_MEDIA_RECOVERY_SUPERVISED=1"), "media_recovery_dsn_invalid"},
+		{"malformed-recovery-dsn", append(append([]string(nil), disabled...), "COMMERCE_MEDIA_RECOVERY_SUPERVISED=1", "COMMERCE_MEDIA_RECOVERY_DATABASE_URL=postgres://%"), "media_recovery_dsn_invalid"},
+	} {
+		t.Run(item.name, func(t *testing.T) {
+			lmwFail(t, lmwProcess(t, binary, "mrr-"+item.name, item.env), item.marker)
+		})
+	}
+	for _, item := range []struct {
+		name   string
+		env    []string
+		marker string
+	}{
+		{"worker-disabled", append(append([]string(nil), disabled...), "COMMERCE_MEDIA_RECOVERY_SUPERVISED=1", "COMMERCE_MEDIA_RECOVERY_DATABASE_URL="+recovery.Config().ConnString()), "media_recovery_native_worker_disabled"},
+		{"native-config-invalid", append(lmwReplace(base, "COMMERCE_MEDIA_MATERIAL_KEYS_JSON", "not-json"), "COMMERCE_MEDIA_RECOVERY_SUPERVISED=1", "COMMERCE_MEDIA_RECOVERY_DATABASE_URL="+recovery.Config().ConnString()), "media_recovery_native_config_invalid"},
+	} {
+		t.Run(item.name, func(t *testing.T) {
+			p := lmwProcess(t, binary, "mrr-"+item.name, item.env)
+			mrReadyLog(t, p, item.marker)
+			if err := syscall.Kill(p.cmd.Process.Pid, 0); err != nil {
+				t.Fatalf("degraded supervisor exited: %v", err)
+			}
+			mrStop(t, p, syscall.SIGTERM, true)
+		})
+	}
+	if requests.Load() != 0 {
+		t.Fatalf("mode/config failure reached provider: requests=%d", requests.Load())
+	}
 }
 
 func TestLiveMediaRecoveryMRR04InternalChildEOF(t *testing.T) {
@@ -1342,6 +1510,194 @@ func TestLiveMediaRecoveryMRR02RealNinetySecondMiss(t *testing.T) {
 	}
 	if h.starts.Load()+h.stops.Load() != 0 {
 		t.Fatal("fault path called Start or Stop")
+	}
+	mrStop(t, parent, syscall.SIGTERM, true)
+}
+
+func TestLiveMediaRecoveryMRR02TimelyReadbackWitnessCommitsAfterNinety(t *testing.T) {
+	h := lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "unused", 500) })
+	recovery, _ := mrrRecoveryPool(t, h)
+	old := mrrReserveUnansweredStart(t, h)
+	var finished string
+	if err := h.executor.QueryRow(context.Background(), `SELECT live.finish_media_uncertain($1::uuid,$2::bigint,$3::bytea,'remote_unknown')`,
+		h.plan.OperationID, old.generation, old.token).Scan(&finished); err != nil || finished != "observe" {
+		t.Fatalf("old native lease did not release: %s %v", finished, err)
+	}
+	tlsServer, ca := lmwTLS(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/twirp/livekit.Egress/ListEgress" {
+			t.Errorf("readback path issued %s", r.URL.Path)
+			http.Error(w, "wrong method", 500)
+			return
+		}
+		lmeReply(w, `{"items":[`+h.observation("EG_mrr_witness_delay", "EGRESS_ACTIVE", 100, 120, 0)+`]}`)
+	}))
+	// Fixture-only trigger rejects early attestations, then waits after taking
+	// the original operation lock. Its advisory wait is released just after t0+90;
+	// Timeout cannot commit first while this bounded Witness call holds that lock.
+	function := fmt.Sprintf(`CREATE FUNCTION live.mrr_test_block_witness() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE gate_at timestamptz;
+BEGIN
+ IF NEW.operation_id='%s'::uuid AND NEW.episode_event_kind='witnessed' THEN
+  SELECT deadline_at-interval '3 seconds' INTO gate_at FROM live.media_recovery_episode_scope WHERE episode_id=NEW.episode_id;
+  IF clock_timestamp()<gate_at THEN
+   RAISE EXCEPTION 'fixture attestation not yet released' USING ERRCODE='P0001';
+  END IF;
+  PERFORM pg_advisory_xact_lock(824,501234);
+ END IF;
+ RETURN NEW;
+END $$`, h.plan.OperationID)
+	mustExec(t, h.lp.f.owner, function)
+	mustExec(t, h.lp.f.owner, `CREATE TRIGGER mrr_test_witness_lock BEFORE INSERT ON integration.operation_events
+ FOR EACH ROW WHEN (NEW.episode_event_kind='witnessed') EXECUTE FUNCTION live.mrr_test_block_witness()`)
+	t.Cleanup(func() {
+		mustExec(t, h.lp.f.owner, `DROP TRIGGER IF EXISTS mrr_test_witness_lock ON integration.operation_events`)
+		mustExec(t, h.lp.f.owner, `DROP FUNCTION IF EXISTS live.mrr_test_block_witness()`)
+	})
+	ctx := context.Background()
+	holder, err := h.lp.f.owner.Acquire(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer holder.Release()
+	var holderPID int
+	if err := holder.QueryRow(ctx, `SELECT pg_backend_pid()`).Scan(&holderPID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := holder.Exec(ctx, `SELECT pg_advisory_lock(824,501234)`); err != nil {
+		t.Fatal(err)
+	}
+	locked := true
+	defer func() {
+		if locked {
+			_, _ = holder.Exec(ctx, `SELECT pg_advisory_unlock(824,501234)`)
+		}
+	}()
+	binary := mrBuild(t, "../../cmd/media-worker", "mrr-witness-after-ninety")
+	env := append(lmwEnvironment(h, tlsServer.Listener.Addr().String(), ca),
+		"COMMERCE_MEDIA_RECOVERY_SUPERVISED=1", "COMMERCE_MEDIA_RECOVERY_DATABASE_URL="+recovery.Config().ConnString())
+	launched := time.Now()
+	parent := lmwProcess(t, binary, "mrr-witness-after-ninety", env)
+	episode := mrrWaitEpisode(t, h.lp.f.owner, launched)
+	qualified := mrrWaitReadback(t, recovery, episode, launched.Add(60*time.Second), func(r mrrReadback) bool { return r.obs != nil })
+	if qualified.operation == nil || *qualified.operation != h.plan.OperationID || qualified.source == nil || *qualified.source != "ROOM" ||
+		qualified.generation == nil || qualified.obs == nil || qualified.timeoutAt != nil {
+		t.Fatalf("no committed fresh ROOM readback before deadline: %+v", qualified)
+	}
+	var baseline int64
+	if err := h.lp.f.owner.QueryRow(ctx, `SELECT recovery_baseline_generation FROM live.media_execution_state WHERE operation_id=$1::uuid`,
+		h.plan.OperationID).Scan(&baseline); err != nil || *qualified.generation <= baseline {
+		t.Fatalf("pre-admission or stale observation accepted: generation=%v baseline=%d err=%v", qualified.generation, baseline, err)
+	}
+	var blocked bool
+	for time.Now().Before(launched.Add(89 * time.Second)) {
+		if time.Since(launched) < 87*time.Second {
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+		if err := h.lp.f.owner.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM pg_stat_activity a
+          WHERE a.state='active' AND a.query LIKE '%witness_media_recovery_episode%'
+           AND a.query_start>=$2 AND $1=ANY(pg_blocking_pids(a.pid)))`, holderPID, launched.Add(86*time.Second)).Scan(&blocked); err != nil {
+			t.Fatal(err)
+		}
+		if blocked {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if !blocked || time.Since(launched) >= 90*time.Second {
+		t.Fatalf("fixture did not place a timely parent Witness behind original-operation lock: blocked=%v elapsed=%s", blocked, time.Since(launched))
+	}
+	if wait := time.Until(launched.Add(90*time.Second + 200*time.Millisecond)); wait > 0 {
+		time.Sleep(wait)
+	}
+	if _, err := holder.Exec(ctx, `SELECT pg_advisory_unlock(824,501234)`); err != nil {
+		t.Fatal(err)
+	}
+	locked = false
+	read := mrrWaitReadback(t, recovery, episode, launched.Add(98*time.Second), func(r mrrReadback) bool { return r.disposition == "witnessed" })
+	if time.Since(launched) < 90*time.Second || read.scope != "finished" || read.timeoutAt != nil ||
+		read.obs == nil || *read.obs != *qualified.obs || read.witnessElapsed == nil || *read.witnessElapsed >= 90000 {
+		t.Fatalf("timely parent readback did not retain post90 Witness: %+v elapsed=%s", read, time.Since(launched))
+	}
+	log, err := os.ReadFile(parent.logPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(log, []byte("media_recovery_deadline_missed")) {
+		t.Fatalf("Witness-first completion emitted false miss: %s", parent.logPath)
+	}
+	mrStop(t, parent, syscall.SIGTERM, true)
+}
+
+func TestLiveMediaRecoveryMRR02LateDatabaseRecoveryKeepsOriginalDeadline(t *testing.T) {
+	h := lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "unused provider", 500) })
+	recovery, login := mrrRecoveryPool(t, h)
+	mrrReserveUnansweredStart(t, h)
+	var requests atomic.Int32
+	tlsServer, ca := lmwTLS(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests.Add(1)
+		http.Error(w, "unexpected provider request", 500)
+	}))
+	binary := mrBuild(t, "../../cmd/media-worker", "mrr-late-db")
+	env := lmwEnvironment(h, tlsServer.Listener.Addr().String(), ca)
+	env = lmwReplace(env, "COMMERCE_MEDIA_MATERIAL_KEYS_JSON", "not-json")
+	env = append(env, "COMMERCE_MEDIA_RECOVERY_SUPERVISED=1", "COMMERCE_MEDIA_RECOVERY_DATABASE_URL="+recovery.Config().ConnString())
+	quotedLogin := pgx.Identifier{login}.Sanitize()
+	mustExec(t, h.lp.f.owner, "ALTER ROLE "+quotedLogin+" NOLOGIN")
+	restored := false
+	t.Cleanup(func() {
+		if !restored {
+			mustExec(t, h.lp.f.owner, "ALTER ROLE "+quotedLogin+" LOGIN")
+		}
+	})
+	launched := time.Now()
+	parent := lmwProcess(t, binary, "mrr-late-db", env)
+	mrReadyLog(t, parent, "media_recovery_native_config_invalid")
+	if wait := time.Until(launched.Add(90 * time.Second)); wait > 0 {
+		time.Sleep(wait)
+	}
+	var alert []byte
+	for time.Now().Before(launched.Add(97 * time.Second)) {
+		var err error
+		alert, err = os.ReadFile(parent.logPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if bytes.Contains(alert, []byte("media_recovery_deadline_missed")) {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if elapsed := time.Since(launched); elapsed < 90*time.Second || elapsed >= 97*time.Second ||
+		!bytes.Contains(alert, []byte("media_recovery_deadline_missed")) {
+		t.Fatalf("missing prompt local deadline signal with DB unavailable: elapsed=%s log=%s", elapsed, parent.logPath)
+	}
+	match := regexp.MustCompile(`media_recovery_deadline_missed[^\n]*episode_id=([0-9a-f-]{36})`).FindSubmatch(alert)
+	if len(match) != 2 {
+		t.Fatalf("deadline alert lacked original episode identity: %s", parent.logPath)
+	}
+	if err := syscall.Kill(parent.cmd.Process.Pid, 0); err != nil {
+		t.Fatalf("parent died during initial DB outage: %v", err)
+	}
+	mustExec(t, h.lp.f.owner, "ALTER ROLE "+quotedLogin+" LOGIN")
+	restored = true
+	episode := mrrWaitEpisode(t, h.lp.f.owner, launched)
+	if episode != string(match[1]) {
+		t.Fatalf("late DB access started a new clock/episode: signal=%s durable=%s", match[1], episode)
+	}
+	read := mrrRead(t, recovery, episode)
+	if len(read) != 1 || read[0].scope != "overdue" || read[0].known || read[0].candidates != 1 ||
+		read[0].disposition != "timeout" || read[0].timeoutAt == nil || read[0].operation == nil || *read[0].operation != h.plan.OperationID {
+		t.Fatalf("late DB recovery invented coverage or PASS: %+v", read)
+	}
+	var captureElapsed int64
+	if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT capture_elapsed_ms FROM live.media_recovery_episode_scope WHERE episode_id=$1::uuid`, episode).
+		Scan(&captureElapsed); err != nil || captureElapsed < 90000 {
+		t.Fatalf("late capture reset original monotonic deadline: elapsed=%d err=%v", captureElapsed, err)
+	}
+	time.Sleep(time.Second)
+	if requests.Load() != 0 {
+		t.Fatalf("DB outage/recovery reached provider after deadline: requests=%d", requests.Load())
 	}
 	mrStop(t, parent, syscall.SIGTERM, true)
 }
