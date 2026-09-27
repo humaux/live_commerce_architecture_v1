@@ -50,24 +50,43 @@ func bicSetup(t *testing.T) *bicHarness {
 	}
 	// This owner-only teardown precedes lmpSetup's attempt/operation deletion.
 	t.Cleanup(func() {
-		ctx := context.Background()
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		tx, err := h.lp.f.owner.Begin(ctx)
+		if err != nil {
+			t.Errorf("BIC owner fixture cleanup begin: %v", err)
+			return
+		}
+		defer tx.Rollback(context.Background())
+		// Match the existing media fixture teardown: Stop's observation pointer
+		// forms a cycle with its projection. Defer that FK inside this owner-only
+		// transaction, not by disabling constraints or changing product facts.
+		if _, err := tx.Exec(ctx, `SET CONSTRAINTS live.media_stop_observation_fk DEFERRED`); err != nil {
+			t.Errorf("BIC owner fixture cleanup constraints: %v", err)
+			return
+		}
 		for _, item := range []struct{ query, arg string }{
 			{`DELETE FROM live.media_observations WHERE attempt_id IN (SELECT id FROM live.media_attempts WHERE session_id=$1)`, h.session},
 			{`DELETE FROM live.media_execution_state WHERE attempt_id IN (SELECT id FROM live.media_attempts WHERE session_id=$1)`, h.session},
 			{`DELETE FROM live.media_input_custody WHERE attempt_id IN (SELECT id FROM live.media_attempts WHERE session_id=$1)`, h.session},
 			{`DELETE FROM live.prepared_media_input_profiles WHERE authorization_id=$1`, h.input.AuthorizationID},
 		} {
-			if _, err := h.lp.f.owner.Exec(ctx, item.query, item.arg); err != nil {
+			if _, err := tx.Exec(ctx, item.query, item.arg); err != nil {
 				t.Errorf("BIC owner fixture cleanup: %v", err)
+				return
 			}
 		}
 		for _, q := range []string{
 			`DELETE FROM ops.command_results WHERE principal_id=$1 AND operation IN ('live.media.input.start','live.media.input.reserve','live.media.stop')`,
 			`DELETE FROM ops.audit_events WHERE principal_id=$1 AND (action LIKE 'live.media.input.%' OR action='live.media.stop.requested')`,
 		} {
-			if _, err := h.lp.f.owner.Exec(ctx, q, h.lp.actor); err != nil {
+			if _, err := tx.Exec(ctx, q, h.lp.actor); err != nil {
 				t.Errorf("BIC command fixture cleanup: %v", err)
+				return
 			}
+		}
+		if err := tx.Commit(ctx); err != nil {
+			t.Errorf("BIC owner fixture cleanup commit: %v", err)
 		}
 	})
 	return h
