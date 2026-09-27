@@ -52,8 +52,11 @@ function id(value: unknown): value is string {
   return typeof value === "string" && studioUUID.test(value);
 }
 function date(value: unknown): value is string {
-  return typeof value === "string" && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z$/.test(value) &&
-    Number.isFinite(Date.parse(value));
+  if (typeof value !== "string") return false;
+  const match = /^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)(?:\.\d{1,9})?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/.exec(value);
+  if (!match || !Number.isFinite(Date.parse(value))) return false;
+  const wall = new Date(`${match[1]}Z`);
+  return Number.isFinite(wall.getTime()) && wall.toISOString().slice(0, 19) === match[1];
 }
 function destinations(value: unknown): Destination[] {
   if (!Array.isArray(value) || value.length < 1 || value.length > 2) throw new Error("invalid_studio_response");
