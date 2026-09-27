@@ -1,6 +1,6 @@
 # MRR01–04 independent recovery test evidence
 
-Status: **FOUR FOCUSED RUNS; FOURTH EARLY-STOPPED ON TEST ASSERTION** (2026-09-27). Frozen contract:
+Status: **FOCUSED PASS (17/17); FULL MRR01–04 ACCEPTANCE INCOMPLETE** (2026-09-27). Frozen contract:
 `contracts/live-media-recovery-observer-v1.md` at root `598eea4978e8f32f9ee2b998031c2996b762370b`.
 Independent test worktree `commerce/media-recovery-tests-20260927` started from that SHA.
 The test author commits are `82379c6`, `5166976`, `53a2be0`, `42f95d9`,
@@ -14,12 +14,22 @@ repairing both in a new fixed SHA. That repair `b90d191` was merged at
 `804065e` for the second run; it removed `42702` but exposed admitted-event
 visibility failures under forced RLS.
 
-| Gate | Authored independent checks | Remaining before PASS |
+The following historical matrix records the authored checks and their
+second-run status; the current verdict follows it.
+
+| Gate | Authored independent checks | Second-run status |
 | --- | --- | --- |
 | MRR01 | Real local TLS Start accepted before old native worker SIGKILL and lost ACK; supervised parent starts at t0, two child SIGKILL/reaps/restarts retain the same episode/capture/deadline; committed fresh ROOM witness within 90s, original operation/job/max attempts, no duplicate Start or Stop. Separate known-ID QUERY process path. | Second run FAIL: positive episode persisted but ROOM request absent at 43.41s; known-ID QUERY readback absent at 92.61s. Source admitted-event visibility repair pending. Original attempt delta still NOT_RUN. |
 | MRR02 | SQL: known-empty NO_WORK, late unknown-empty overdue, old active lease busy, immutable same-episode replay, prior unfinished fail-whole, capacity+1 fail-whole, all members witnessed yet unknown coverage scope miss, timeout-first sticky, delayed witness attestation, true PG operation-lock interleaving where witness commits before waiting timeout. Added two-member owner/media-writer event visibility and DROP/partial-policy failclosed replay/read/timeout, prior-unfinished non-overwrite, malformed DSN/wrong-role pool. Process: actual parent-alive 90s provider-fault miss, durable timeout, redacted local alert, no new provider request after deadline. | Second run SQL member gates FAIL with source `ME409`; real negative ran 1m35s but outer Go harness hit 240s across the suite, so actual 90-second verdict NOT_COMPLETED. Focused harness 360s authorized; frozen 90s unchanged. New short cases NOT_RUN. Native capacity coexistence, DB startup delay and late real readback remain holes. Human alert delivery external NOT_RUN. |
 | MRR03 | Exact seven signature/result/owner/security-definer/ACL checks; old roles denied entry points; mixed recovery/executor role rejection; direct observer EXECUTE grants make old runtime/buyer/meta worker pools inadmissible; same recovery login connected to the task-owned PG18 container's distinct `postgres` database is refused; wrong generation/token/room; future, legally cleared NULL, and structurally intact expired lease; old public QUERY cleanup guard; observer-only QUERY keeps cleanup_required with zero Stop reservation; stale terminal QUERY cannot override newer active projection; prewire and exhausted native job denied; escalated nonterminal original with still-eligible River job remains captured as ceiling and times out without observer target/provider call. Added synthetic owner-only INPUT wire-flag exclusion and wrong original job ID denial. | Second run wrong physical DB PASS and prewire subtest PASS; runtime direct-grant subtest PASS. Buyer fixture had `42501` text-signature lookup without schema USAGE; meta fixture's clean pool was rejected due SET-capable membership. Owner-resolved OID and meta SET-false fixture repairs authored but NOT_RUN. INPUT/wrong-job NOT_RUN. Remaining member gates failed `ME409`. |
 | MRR04 | Idempotent migration reapply, exact readiness including extra PUBLIC/direct-writer SELECT policy and BYPASSRLS definer rejection, local process SIGTERM cleanup, internal-child release then EOF/reap, bounded lock race, narrow `--live-media-recovery` selector. Core new tests are included in default full foundation selector without a skip marker. | Second focused run FAIL; new policy/EOF cases authored but NOT_RUN. Enabled/disabled modes and full regression still NOT_RUN. Original LMR05 35-second gate remains unchanged and separately open. |
+
+| Gate | Current focused evidence | Still NOT_RUN / not proven |
+| --- | --- | --- |
+| MRR01 | Real escaped Start before old worker SIGKILL/lost ACK, two supervised child restarts, committed fresh ROOM ≤90s (35.87s), known-ID QUERY (4.42s), original River attempt 1→1 and unchanged job/max, zero observer Start/Stop: PASS. | Cloud/provider acceptance and external deployment. |
+| MRR02 | SQL coverage/lease/capacity/timeout/order/PG lock race and RLS cardinality fail-closed: PASS. Actual parent-alive provider-fault timeout 91.59s with redacted log and no post-deadline provider I/O: PASS. | Native capacity overflow coexisting with active cleanup, DB startup delay/recovery, real late-readback ordering; human alert delivery. |
+| MRR03 | Exact ABI/ACL/role, wrong physical DB, old role direct grants, generation/token/target, future/NULL/expired lease, QUERY guard/Stop budget, stale terminal, prewire, exhausted/escalated job, INPUT-profile and wrong-job-ID denial: PASS. | Physically absent original River job (cannot be made without breaking its FK). |
+| MRR04 | Idempotent migration and readiness (including extra policy and BYPASSRLS rejection), internal-child release/EOF/reap, supervisor SIGTERM, focused runner: PASS. | Enabled/disabled mode matrix and fixed-tree full regression. Original LMR05 35-second gate separately open. |
 
 The SQL calls with `p_elapsed_ms` values are **counterexamples for the frozen
 SQL boundary**. They are not called a virtual-clock proof of 90 seconds. Only
@@ -119,8 +129,20 @@ retains the configured TLS request count as a diagnostic but removes the
 invalid zero-I/O assertion from this **native-child** EOF gate. Observer-only
 zero Start/Stop remains asserted by the MRR01 supervisor process gates.
 
-Pending repaired-source receipt fields: source SHA; exact command and exit;
-top-level PASS/FAIL/SKIP; actual 90-second elapsed; process parent/child
-exit and reap; cleanup; original LMR05 and full runner separate results.
+Fifth run receipt: source `86b641a` remained fixed; test HEAD
+`f3b731bcfba4d91ae373a9f0af2ac4b550529aa9`. Focused command exited
+**0**, package **151.064s**; **17 top-level PASS, 0 FAIL, 0 SKIP**. Real
+supervisor positive was 35.87s; known-ID QUERY was 4.42s; parent-alive
+deadline miss was 91.59s. The original River job attempt stayed 1→1 and its
+job/max parameters were unchanged. Internal native child configured TLS
+request count was 1 (diagnostic, not observer egress). Raw log
+`output/mrr-focused-f3b731b.log`, 55 lines, SHA-256
+`3d40495d8dd80d90f1dc8ba27fae3b98cb342c7fb1574b0c7679e1956abedf9c`.
+The runner cleaned its task-owned PG18 fixture; only unrelated protected
+`lc-meta-upgrade-9d14f59e966f` remained. The focused gate alone does not
+close the explicit MRR02/03/04 holes or the full regression.
+
+Pending acceptance receipts: explicit remaining MRR02/03/04 cases, original
+LMR05 35-second failure/success provenance, and fixed-tree full regression.
 Existing untracked `output/` contains earlier immutable Studio failure
 evidence and is preserved.
