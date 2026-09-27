@@ -1,6 +1,10 @@
-# Media restart state check — narrow observer candidate
+# Media restart state check — narrow observer v1
 
-Status: **ABI_CANDIDATE_REVIEW_REQUIRED / IMPLEMENTATION_NOT_RUN**.
+Status: **FROZEN_DESIGN / IMPLEMENTATION_NOT_RUN**.
+Independent ABI review of `5a52e65`: `DESIGN_READY_TO_FREEZE`, Humaux
+`50f8e16c-88cb-4d18-99d1-856c2bc9eeb0`. Root verified the reviewed diffs and
+integrated the docs-only branch. This freezes implementation/test interfaces,
+not runtime acceptance; MRR01–04 remain NOT_RUN.
 Owner target: fresh state reconciliation within **90 seconds**, or retained
 unresolved responsibility plus an alert; decision
 `f0b36444-a4ea-4112-926d-596cfb7fd89f`. This does not promise stopped resources,
@@ -165,14 +169,14 @@ until their real collection/delivery path is configured and tested.
 | MRR03 | Old generation/target/token and foreign-role negative controls; cleanup-required remains true with zero Stop reservation; old executor QUERY guard remains intact; missing/escalated original jobs and pre-wire/INPUT work cannot gain observation or dispatch authority. |
 | MRR04 | Additive migration, exact ACL/role/physical-DB admission, enabled/disabled/child modes, bounded cleanup and independent focused plus fixed-tree full regression. Original LMR05 deadline and failure evidence retained. |
 
-All gates **NOT_RUN**. The supervisor admission/child handoff, role matrix,
-episode state transitions, capacity behavior and exact return-key schema require
-independent review before implementation; this candidate is not yet frozen.
+All gates **NOT_RUN**. The reviewed appendix below is the authoritative
+supervisor handoff, role, episode, capacity and return-key interface for this
+bounded implementation. Runtime acceptance requires independent MRR evidence.
 
-## ABI/runtime appendix — candidate for independent review
+## Frozen ABI/runtime appendix
 
-This appendix fixes implementer-facing names and outcomes; it does not freeze
-the design. All SQL calls are `READ COMMITTED`, fixed `search_path=pg_catalog`,
+This appendix fixes implementer-facing names and outcomes. All SQL calls are
+`READ COMMITTED`, fixed `search_path=pg_catalog`,
 owner `commerce_media_writer`; only the seven private entry points below are
 granted to `commerce_media_recovery`. Bad shape, caller or stale fence raises
 `ME400`/`ME409`; a returned disposition is a business result, never an implicit
