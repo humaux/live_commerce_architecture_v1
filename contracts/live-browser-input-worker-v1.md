@@ -1,10 +1,15 @@
 # Browser input worker and delivery v1 (BRW)
 
-Status: **DESIGN_CANDIDATE revision 2 — NOT_IMPLEMENTED / NOT_ACCEPTED**. Base `5a543e7`.
+Status: **DESIGN_CANDIDATE revision 3 — NOT_IMPLEMENTED / NOT_ACCEPTED**. Base `5a543e7`.
 Refines [BIC](live-browser-input-runtime-v1.md), [BRI](live-browser-input-v1.md)
 and [LKI](livekit-input-protocol-v1.md). Independent review must freeze this
 wire ABI before implementation. No token route or new consumer is enabled by
 this document. All Cloud, customer hardware and production gates remain NOT_RUN.
+
+The isolated `NewBrowserInputRuntime` constructor subsection below is
+**ABI_FROZEN_CONFIG_ONLY**, independently reviewed at `d7a30f3` on 2026-09-27.
+It can be implemented/tested without enabling any route, job or provider call.
+The rest of this contract is not runtime acceptance.
 
 ## One execution owner, two independent liabilities
 
@@ -98,7 +103,9 @@ input queue/job and immutable marker BEFORE granting any provider-capable lease.
 Marker 0 returns `kernel_only`, current generation, empty mode without changing
 lease/generation; worker snoozes 60s and performs no provider I/O. Marker 1 uses
 the corrected lifetime/independent-work algorithm and normal busy/claimed/
-terminal/held dispositions. Existing `claim_media_input_operation` retains
+terminal/held dispositions. An eligible runtime-1 UNISSUED attempt returns
+`await_admission`, current generation, empty mode without granting a lease,
+incrementing generation or performing provider I/O. Existing `claim_media_input_operation` retains
 marker-0 BIC behavior but rejects marker 1, preventing old semantics from
 dispatching or prematurely closing runtime attempts. This is a distinct ABI,
 not an inferred marker from custody state or the unchanged load DTO.
@@ -245,6 +252,35 @@ and Transport and BrowserURL, and redacts all formatted/JSON output. Existing
 Egress MediaProject and credentials are not repurposed as input credentials.
 Runtime construction alone does not register a route or consume a queue.
 
+Frozen configuration-only Go ABI, in package `live`:
+
+```go
+type BrowserInputProject struct {
+    ProjectID string
+    CredentialVersion int64
+    Config livekit.Config
+    Transport http.RoundTripper
+    BrowserURL string
+}
+type BrowserInputRuntime struct { /* private immutable keyed map */ }
+func NewBrowserInputRuntime([]BrowserInputProject) (*BrowserInputRuntime, error)
+```
+
+Require 1..128 projects, existing project-ID grammar, positive version, unique
+project/version key, Config.Environment exactly MOCK and `livekit.New`'s strict
+config/non-nil transport validation. BrowserURL must exactly match the canonical
+loopback URL grammar above (maximum 256 bytes). No environment loading, default
+transport, DNS lookup, signing, HTTP call or runtime side effect in constructor.
+Use existing `ErrMediaConfig` only; failure returns nil, never a partial map.
+Copy map/string configuration; reuse LKI's defensive stream-host copy. Both
+new types implement constant redacted String, GoString and MarshalJSON. Store
+only private exact endpoint/client/browser URL bindings, reuse mediaProjectKey.
+Do not add speculative exported lookup/mint/lifecycle methods in this unit.
+Injected RoundTripper is trusted fixture configuration: its route cannot be
+proven by inspecting an interface. This factory does NOT attest transport
+loopback or production safety. Real fixture must use the pinned TLS parser,
+and the production command wiring remains nil as required below.
+
 For this local unit `cmd/api` and production startup keep the input runtime nil;
 no environment flag silently enables it. The isolated authenticated browser
 fixture injects it through explicit typed options. Generic runtime mode strings
@@ -258,7 +294,8 @@ requires BRI06 and a separate profile; local mapping is never a Cloud fallback.
 Two new exact same-origin POST actions, authenticated cookie BFF -> Go:
 
 - `live-sessions/{session_id}/input/start`: body exactly `authorization_id` and
-  `expected_session_version`; uses `PlanInputStart` and existing safe receipt.
+  `expected_session_version`; uses `PlanBrowserInputStart` (including replay's
+  marker/mapping checks) and existing safe receipt, never raw `PlanInputStart`.
 - `live-sessions/{session_id}/input/token`: body exactly `attempt_id` and
   `expected_session_version`; uses `ReserveInput`, then signs **after** successful
   `platform.WithScope` COMMIT. Never sign inside its transaction callback.
