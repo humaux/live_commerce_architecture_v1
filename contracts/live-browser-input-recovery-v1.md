@@ -45,6 +45,10 @@ scope. A terminalized/unclaimable required side may time out; it cannot vanish.
 Persist profile, original job, baseline generation and nonempty mask on the
 existing admitted operation event. Add explicit checked columns rather than
 reason-code JSON. Scope, membership and active projection commit atomically.
+At SQL function entry capture one clock_timestamp BEFORE any lock wait; derive
+the diagnostic deadline from that entry timestamp plus max(0,90000-elapsed)ms.
+Never derive it from a later post-lock timestamp. Replays keep the original
+deadline. Parent postcommit monotonic readback remains the final success clock.
 Do not add new candidates after the initial snapshot. Coverage describes that
 snapshot, not resources created later. Prior unfinished episodes, deadlines,
 capacity, generation ceiling and native-job eligibility retain MRR semantics.
@@ -196,7 +200,12 @@ legacy Witness remains legacy and must never bypass mixed SQL validation.
 
 Supervisor stores one pending composite attestation of both IDs and elapsed,
 created ONLY after committed readback with every required proof and full
-membership. Reuse original parent t0 before config/DB/child release. Elapsed is
+membership. Reject an entire malformed batch: wrong cardinality, duplicate or
+foreign operation, or row episode/job/profile/mask/baseline not equal to the
+admitted member. Validate coverage/count and scope fields consistently across
+all rows before honoring `finished`; a row status alone never resolves a mixed
+episode. Scope-only empty is exactly one row with no member and known coverage.
+Negative elapsed is invalid. Reuse original parent t0 before config/DB/child release. Elapsed is
 sampled after Read returns; a first read after 90000ms cannot create proof.
 A timely cached attestation may be retried after deadline, as in MRR, but loses
 to an already committed timeout. No new provider I/O after deadline.
