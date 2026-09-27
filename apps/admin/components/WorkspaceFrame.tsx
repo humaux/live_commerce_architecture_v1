@@ -19,6 +19,7 @@ export function WorkspaceFrame({
   active,
   locked = false,
   onSection,
+  onBeforeNavigate,
   children,
 }: {
   locale: Locale;
@@ -26,6 +27,7 @@ export function WorkspaceFrame({
   active: string;
   locked?: boolean;
   onSection?: (section: string) => void;
+  onBeforeNavigate?: () => boolean;
   children: ReactNode;
 }) {
   const c = copy[locale];
@@ -47,6 +49,7 @@ export function WorkspaceFrame({
     ["settings", "settings", c.settings],
   ];
   function select(id: string) {
+    if (onBeforeNavigate && !onBeforeNavigate()) return;
     setNavOpen(false);
     if (id === "orders")
       router.push(
@@ -56,7 +59,11 @@ export function WorkspaceFrame({
       router.push(
         `/${locale}/settings${search.get("store") ? `?store=${encodeURIComponent(search.get("store")!)}` : ""}`,
       );
-    else if (active === "settings" || active === "orders")
+    else if (id === "live")
+      router.push(
+        `/${locale}/studio${search.get("store") ? `?store=${encodeURIComponent(search.get("store")!)}` : ""}`,
+      );
+    else if (active === "settings" || active === "orders" || active === "live")
       router.push(`/${locale}/`);
     else onSection?.(id);
   }
@@ -93,6 +100,8 @@ export function WorkspaceFrame({
           ? c.settings
           : active === "orders"
             ? c.orders
+            : active === "live"
+              ? c.live
             : c.heading}
       </a>
       <aside className={`rail ${navOpen ? "open" : ""}`}>
@@ -162,14 +171,15 @@ export function WorkspaceFrame({
               aria-label={c.language}
               value={locale}
               disabled={locked}
-              onChange={(event) =>
+              onChange={(event) => {
+                if (onBeforeNavigate && !onBeforeNavigate()) return;
                 router.push(
                   localizedPath(
                     event.target.value as Locale,
                     `${pathname}?${search}`,
                   ),
-                )
-              }
+                );
+              }}
             >
               {locales.map((lang) => (
                 <option key={lang} value={lang}>
