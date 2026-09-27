@@ -66,7 +66,7 @@ func Decode(request Request, binding Binding, keyCount int) (int, []string, erro
 	if err != nil || len(raw) == 0 {
 		return 0, nil, invalid("cursor")
 	}
-	if binding.Collection == "merchant-orders" && base64.RawURLEncoding.EncodeToString(raw) != request.Cursor {
+	if (binding.Collection == "merchant-orders" || binding.Collection == "live-sessions") && base64.RawURLEncoding.EncodeToString(raw) != request.Cursor {
 		return 0, nil, invalid("cursor")
 	}
 	decoder := json.NewDecoder(bytes.NewReader(raw))
@@ -78,7 +78,7 @@ func Decode(request Request, binding Binding, keyCount int) (int, []string, erro
 	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
 		return 0, nil, invalid("cursor")
 	}
-	if binding.Collection == "merchant-orders" {
+	if binding.Collection == "merchant-orders" || binding.Collection == "live-sessions" {
 		canonical, err := json.Marshal(value)
 		if err != nil || !bytes.Equal(raw, canonical) {
 			return 0, nil, invalid("cursor")
@@ -124,6 +124,8 @@ func validBinding(b Binding) bool {
 		return b.ParentID == "" && b.Filter == ""
 	case "merchant-orders":
 		return b.ParentID == "" && (b.Filter == "all" || b.Filter == "DRAFT" || b.Filter == "AWAITING_PAYMENT" || b.Filter == "CONFIRMED" || b.Filter == "CANCELLED")
+	case "live-sessions":
+		return b.ParentID == "" && b.Filter == ""
 	case "delivery-services":
 		return command.ValidID(b.ParentID) && len(b.Filter) == 2 &&
 			b.Filter[0] >= 'A' && b.Filter[0] <= 'Z' && b.Filter[1] >= 'A' && b.Filter[1] <= 'Z'
@@ -137,7 +139,7 @@ func validBinding(b Binding) bool {
 }
 
 func validPositionKey(collection string, position int, key string) bool {
-	if collection == "merchant-orders" {
+	if collection == "merchant-orders" || collection == "live-sessions" {
 		if position == 0 {
 			parsed, err := time.Parse(merchantOrderTime, key)
 			return err == nil && parsed.Format(merchantOrderTime) == key
@@ -151,7 +153,7 @@ func validPositionKey(collection string, position int, key string) bool {
 }
 
 func validKeyCount(collection string, count int) bool {
-	if collection == "merchant-orders" {
+	if collection == "merchant-orders" || collection == "live-sessions" {
 		return count == 2
 	}
 	if collection == "delivery-services" || collection == "markets" {
