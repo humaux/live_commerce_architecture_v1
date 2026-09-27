@@ -18,7 +18,15 @@ export function validStudioQuery(rawURL: string, collection: boolean) {
 
 // Only the deliberate token response may contain a publisher credential. Keep
 // its transport contract closed; never forward an arbitrary upstream object.
-export function validStudioInputToken(value: unknown): boolean {
+export type StudioInputToken = {
+  attempt_id: string;
+  room_name: string;
+  publisher_identity: string;
+  url: string;
+  token: string;
+  expires_at: number;
+};
+export function validStudioInputToken(value: unknown): value is StudioInputToken {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const item = value as Record<string, unknown>;
   const fields = ["attempt_id", "room_name", "publisher_identity", "url", "token", "expires_at"];

@@ -1,4 +1,5 @@
 import { csrfCookie, sessionBoundary } from "./settings-client";
+import { validStudioInputToken } from "./studio-request";
 import {
   parseDraft,
   parseStudioDetail,
@@ -92,6 +93,23 @@ export async function startStudioRehearsal(store: string, sessionID: string, aut
   try {
     return parseStudioReceipt(await write(`/api/stores/${store}/live-sessions/${sessionID}/rehearsal/start`, "POST",
       { authorization_id: authorizationID, expected_session_version: version }, key, boundary), sessionID);
+  } catch (error) { throw error instanceof StudioError ? error : new StudioError("uncertain"); }
+}
+export async function startStudioInput(store: string, sessionID: string, authorizationID: string, version: number, key: string, boundary: string) {
+  try {
+    return parseStudioReceipt(await write(`/api/stores/${store}/live-sessions/${sessionID}/input/start`, "POST",
+      { authorization_id: authorizationID, expected_session_version: version }, key, boundary), sessionID);
+  } catch (error) { throw error instanceof StudioError ? error : new StudioError("uncertain"); }
+}
+export async function requestStudioInputToken(store: string, sessionID: string, attemptID: string, version: number, key: string, boundary: string) {
+  // Reuse the authenticated write boundary, but never journal its secret result.
+  // A failed/ambiguous delivery must not mint a new command key or auto-retry.
+  try {
+    const result = await write(`/api/stores/${store}/live-sessions/${sessionID}/input/token`, "POST",
+      { attempt_id: attemptID, expected_session_version: version }, key, boundary);
+    if (!validStudioInputToken(result) || result.attempt_id !== attemptID ||
+        result.expires_at <= Math.floor(Date.now() / 1000)) throw new StudioError("uncertain");
+    return result;
   } catch (error) { throw error instanceof StudioError ? error : new StudioError("uncertain"); }
 }
 export async function stopStudioRehearsal(store: string, sessionID: string, attemptID: string, key: string, boundary: string) {

@@ -97,6 +97,9 @@ if [[ "$test_mode" == --browser-input-delivery ]]; then
   test -f tests/admin/input-delivery.spec.ts
   grep -q '^func TestBrowserInputDeliveryBRW05RealChain' tests/foundation/browser_input_delivery_test.go
   node --test --experimental-strip-types tests/admin/studio-request.test.ts tests/admin/studio-input.test.ts
+  # Runs the actual browser client (including parameter-property syntax) under
+  # pinned Node 24, before the separate signed HTTPS/PG transport fixture.
+  node --test --experimental-transform-types tests/admin/studio-input-client.test.ts
   mkdir -p output/playwright
 fi
 if [[ "$test_mode" == --browser-studio-bff ]]; then
