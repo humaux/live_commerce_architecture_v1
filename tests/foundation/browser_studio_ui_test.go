@@ -217,6 +217,10 @@ func TestBrowserStudioUIRealChain(t *testing.T) {
 	if err := h.lp.f.owner.QueryRow(ctx, `SELECT count(*) FROM live.sessions WHERE tenant_id=$1 AND store_id=$2 AND title='STU04 lost ACK scene'`, h.lp.f.tenantA, h.lp.f.storeA1).Scan(&duplicateCount); err != nil || duplicateCount != 1 {
 		t.Fatalf("lost-ACK effect count=%d err=%v evidence=%s", duplicateCount, err, evidence)
 	}
+	var issued int
+	if err := h.lp.f.owner.QueryRow(ctx, `SELECT count(*) FROM identity.sessions s JOIN identity.session_events ev ON ev.session_id=s.id AND ev.action='session.issued' JOIN identity.external_identities e ON e.principal_id=s.principal_id WHERE e.issuer=$1 AND e.subject='browser-subject' AND s.token_hash<>$2`, idp.server.URL, tokenHash(h.lp.token)).Scan(&issued); err != nil || issued != 1 {
+		t.Fatalf("signed browser login count=%d err=%v evidence=%s", issued, err, evidence)
+	}
 	var resource string
 	if err := h.lp.f.owner.QueryRow(ctx, `SELECT resource_state FROM live.media_execution_state WHERE attempt_id=(SELECT id FROM live.media_attempts WHERE session_id=$1 ORDER BY created_at DESC LIMIT 1)`, h.session).Scan(&resource); err != nil || resource != "TERMINAL" {
 		t.Fatalf("worker terminal readback=%q err=%v evidence=%s", resource, err, evidence)
