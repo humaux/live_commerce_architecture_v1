@@ -76,3 +76,13 @@ No customer, production database, provider project, token or broadcast changed.
 Orders C native visibility MOU03, Studio UI, real Cloud/Egress, BRI04–07 and
 full T08/G06 remain separate unfinished acceptance. Fill source/test commit,
 commands, exit codes, evidence hashes and cleanup only after actual execution.
+
+## Future deployment stop line
+
+0040/post0009 add exact executor capabilities. Older binaries intentionally
+reject that expanded allowlist; this is not a transparent rolling migration.
+Before any production rollout, prove a compatible build/migration procedure in
+an isolated staging database, inventory active original jobs, and obtain owner
+approval for the concrete backup and maintenance scope. Do not stop or interrupt
+customer broadcasts to make migration convenient. This local increment does not
+authorize that rollout, a backward migration or deletion of held input liability.
