@@ -1,6 +1,6 @@
 # Browser input worker and delivery v1 (BRW)
 
-Status: **DESIGN_CANDIDATE — NOT_IMPLEMENTED / NOT_ACCEPTED**. Base `5a543e7`.
+Status: **DESIGN_CANDIDATE revision 2 — NOT_IMPLEMENTED / NOT_ACCEPTED**. Base `5a543e7`.
 Refines [BIC](live-browser-input-runtime-v1.md), [BRI](live-browser-input-v1.md)
 and [LKI](livekit-input-protocol-v1.md). Independent review must freeze this
 wire ABI before implementation. No token route or new consumer is enabled by
@@ -45,6 +45,26 @@ authorization lock. BIC rows without this marker retain kernel-only behavior
 and cannot emit tokens or reach provider calls. Marker selection is deployment
 controlled, never a merchant request field. No adoption of old held attempts.
 
+Concrete marker ABI: registrar-only
+`live.register_media_input_runtime_profile(uuid authorization_id) RETURNS void`
+registers a private immutable child `live.prepared_media_input_runtime_profiles`
+(authorization_id primary key, scoped FK to BIC prepared input profile,
+runtime_version fixed 1). It uses the same authorization lock as BIC planning,
+requires unused/unrevoked/unexpired MOCK authority and rejects registration
+after any attempt. `plan_media_input_start` snapshots runtime_version into a
+new immutable input-custody column (default 0 for all old rows). Existing BIC
+callers may still plan a marker-0 kernel attempt; only version 1 enters BRW.
+
+`live.load_media_input_runtime_profile(bytea,uuid,uuid,uuid,bigint) RETURNS jsonb`
+is runtime-only (login hash, store, session, authorization, expected version).
+It repeats exact scoped access/current revision/eligibility checks and returns
+only `project_id`, `endpoint_identity`, `credential_version`, `runtime_version`.
+Go `MediaPlanner.PlanBrowserInputStart` takes the same arguments/result as
+`PlanInputStart` plus a nonnil `*BrowserInputRuntime`; inside the caller's
+transaction it checks that profile against the runtime mapping and reuses
+`PlanInputStart`. No second planner job or receipt. Token delivery repeats this
+marked-attempt check, including replay; kernel-only receipts are never upgraded.
+
 ## SQL authority and wire ABI
 
 All listed functions are SECURITY DEFINER, VOLATILE, fixed `pg_catalog` search
@@ -74,6 +94,7 @@ live.reserve_media_input_start(
   boolean, boolean, boolean, boolean -- camera present/muted, mic present/muted
 ) RETURNS jsonb;
 live.load_media_input_material(uuid,bigint,bytea) RETURNS jsonb;
+live.next_media_input_turn(uuid,bigint,bytea) RETURNS text;
 live.finish_media_input_turn(uuid,bigint,bytea,text) RETURNS text;
 ```
 
@@ -147,6 +168,11 @@ The first round always permits exact reads after uncertain mutations. The
 second round requires freshly correlated PRESENT results for both reads 3/4;
 unknown/not-found does not authorize a destructive retry. Non-200 participant
 not-found remains UNKNOWN under LKI. Room ABSENT is a snapshot, not revocation.
+This deliberately conservative first version may hold even when the room is
+still present but its publisher is not observable; it does not claim a second
+Delete will always be attempted. Independent per-resource retry is deferred
+until evidence shows that the extra state machine is needed. Remaining room
+liability must be visible in the same operator projection, never cleared.
 Before mutation retry, required reads must be at most 30s old; otherwise hold,
 not silently add queries or new budget. All unfinished PENDING rows at expired
 lease count as consumed UNKNOWN; old replies cannot mutate newer state.
@@ -160,12 +186,23 @@ operator-visible UNKNOWN/held input responsibility. This is a bounded effort,
 NOT a promise that all eight calls happen or a hard remote kill cap.
 
 Worker alternates eligible input-cleanup and outstanding Egress reconcile
-turns using persisted progress, not process memory. Each side gets a turn
-before the other repeats; a terminal/held side is skipped. Input hold does not
+turns using input-custody `last_runtime_generation` and `last_runtime_turn`,
+not process memory. `next_media_input_turn` selects `INPUT_OBSERVE`, `EGRESS`,
+`INPUT_CLEANUP` or `HELD` under the same lease and persists its choice before
+wire I/O. Repeated selection in that generation returns that exact choice.
+Each eligible side gets a reserved opportunity before the other repeats;
+a terminal/held side is skipped. Input hold does not
 cancel outstanding Egress; Egress hold does not cancel remaining input cleanup.
 When both have no automatic work, snooze 60s without new generations/provider
 calls. No automatic reset of budgets; operator recovery requires a later
 separately reviewed exact-resource protocol. No force-close endpoint.
+Persist input hold separately (`input_cleanup_held_at`, bounded reason) from
+the existing Egress escalation fields. This independence applies within the
+original operation's global 4096-generation/24h budget; that global limit
+holds BOTH liabilities, retains the original job and emits an operator item.
+Do not promise continued automatic cleanup past that cap. Claim checks shared
+hold before incrementing generation; new code cannot translate BIC's generic
+`state=UNKNOWN` into an unconditional per-input hold.
 
 ## Deployment binding and HTTP seam
 
@@ -177,8 +214,24 @@ double. Never treat the frozen endpoint identity as a browser URL or relax
 `livekit.New` production URL checks. Separate SFU and Egress credentials/clients
 are required when their test services use different keys.
 
-Local binding accepts only loopback test URLs and explicit local-run mode;
-production startup rejects that mode/configuration. Merchant payload cannot
+Local binding accepts only loopback test URLs and explicit local-run mode.
+Reuse `LoadWorkerProjects`' existing loopback TLS transport/CA parser for the
+SFU management client, via a disposable fixture TLS proxy to native SFU. Do not
+add URL-rewriting HTTP transport or change `Client.New`. Browser connects to a
+separately validated `ws`/`wss` URL with canonical 127.0.0.1 or [::1], explicit
+1..65535 port, no path other than empty or `/`, no credentials/query/fragment.
+The selected factory is `live.NewBrowserInputRuntime([]BrowserInputProject)`;
+each project contains exact ProjectID/CredentialVersion, independent SFU Config
+and Transport and BrowserURL, and redacts all formatted/JSON output. Existing
+Egress MediaProject and credentials are not repurposed as input credentials.
+Runtime construction alone does not register a route or consume a queue.
+
+For this local unit `cmd/api` and production startup keep the input runtime nil;
+no environment flag silently enables it. The isolated authenticated browser
+fixture injects it through explicit typed options. Generic runtime mode strings
+are not proof of a nonproduction environment. Production wiring is a separate
+reviewed change after qualifications; default/nil constructors preserve the old
+runtime and expose no token endpoint. Merchant payload cannot
 select either transport. A readiness check must reject missing/duplicate/
 mismatched mappings before input planning or token delivery. Cloud support
 requires BRI06 and a separate profile; local mapping is never a Cloud fallback.
@@ -199,6 +252,20 @@ The existing rehearsal/stop action remains the sole merchant Stop, including
 input attempts; input disconnect UI invokes it rather than adding a second
 server Stop API. No token endpoint enabled before the original-job worker,
 readiness and lifetime gates pass.
+
+Add exact GET `live-sessions/{session_id}/input` (no query/body/key), backed by
+runtime-only `live.read_studio_input(bytea,uuid,uuid) RETURNS jsonb` under the
+existing scoped `live:read`/revision checks. Return null for no input attempt,
+otherwise exactly `attempt_id`, `state`, `admission_closed`, `close_reason`,
+`cleanup_held`, `can_stop`, `updated_at`; no credential mapping or publisher JWT.
+`can_stop` additionally requires current `live:manage` and open joint liability,
+not Egress nonterminal alone. Forward `read_studio_media` to recognize marked
+input attempts while preserving its existing strict output DTO. Kernel-only
+attempts remain rejected there. Legacy prepared-candidate selection excludes
+runtime-marked authorizations, which the future input controls select explicitly.
+UI must use input `can_stop` when a marked input exists; Egress terminal must not
+disable needed Stop. This read projection is operator-readable evidence, not
+proof a human alert was delivered; its visible controls are still a BRI07 gate.
 
 Response is an explicit private no-store bounded DTO with exactly `attempt_id`,
 `room_name`, `publisher_identity`, `url`, `token`, `expires_at`. Token is the
