@@ -1,13 +1,14 @@
 # Studio B UI acceptance — 2026-09-27
 
-Status: **SOURCE_CANDIDATE_UNMERGED; CORE_READBACK_PASS; NATIVE_NOT_RUN; VISUAL_SCORED_FIXES_SHIP**.
+Status: **SOURCE_CANDIDATE_UNMERGED; LATEST_CORE_CALENDAR_FAILED; NATIVE_CONCEAL_TWO_PASS; VISUAL_SCORED_FIXES_SHIP**.
 
 Latest no-account native preflight (12:21 UTC): actual exit 0 using a separately
 launched task-owned browser with public `noDefaults:true` and its existing
 default context. Both real tab switching and window minimization produced
 trusted hidden → visible events. This establishes a usable device, not a
-product PASS. The two prior failed preflights remain below; real STU04 must run
-again using the corrected device and native picker observation.
+product PASS. The two prior failed preflights remain below. The subsequent
+actual product run passed both native-conceal cases but failed the calendar
+value check; see the retained ninth-run result below.
 
 User approved **B 场次列表＋双区工作台**, seed `6373bb3f`, in `fb760ff`.
 The approved comp is `.impeccable/mocks/decision/studio-split.png` (1586×992);
@@ -397,6 +398,38 @@ fidelity than Playwright's normal connection and raw launch arguments differ;
 do not claim exact environment equivalence. The test-only fixture must include
 bounded task-specific cleanup. Native device proof does not close product
 native save/reopen or conceal gates; source remains unmerged.
+
+## Ninth actual run — native conceal passed, calendar primary failure
+
+Independent review `0ac93821-e946-4911-9f2c-ea33c505747b` approved test-only
+`07e2fdc` for one actual run. Its admin source is byte-identical to `03928d5`.
+The existing `--browser-studio-ui` command exited **1**, with browser **3 PASS /
+2 FAIL**. Both native-conceal tests passed, including trusted hidden/visible
+events, concealed form, returned dirty draft and retained uncertain request.
+
+The primary failure is at `studio-ui.spec.ts:222`: after a trusted click,
+screenshot and ArrowRight/Enter, the native picker value remained
+`2030-01-01T00:00`. The core test stopped there. The read-only test's expected
+absence of Start then failed because the earlier core chain never started the
+rehearsal. Go postflight truthfully reported Start=0 / Stop=0 and incomplete
+lost-ACK effects. This is not an accepted core or complete Studio chain. The
+past core successes remain historical; they cannot replace this failed run.
+
+- Raw log `output/studio-native-07e2fdc-20260927.log`, SHA-256
+  `678e7555ff1b81dc1a9436b289922154c4537effddedaa6bc208e477343bf08d`.
+- Evidence directory
+  `output/playwright/studio-ui-20260927T123516.533039000/`; Playwright log SHA-256
+  `fd3faa57320c0414192862390118ab0f507549257b44ad2eded671948d9baade`.
+- Paths above are under the independent test worktree
+  `/Volumes/data/worktrees/commerce-meta-inbox-tests-20260926`.
+
+Root read the targeted JSX/CSS, failure log and native-click screenshot.
+The screenshot shows focus but cannot establish a native popup. Intervening
+screenshot focus effects versus the compact transparent input/default click
+action remain causal hypotheses, not established product diagnoses. No blind
+second run or softened assertion is authorized by this result. The test worker
+reported exact owned-profile/descendant and PG cleanup, retaining traces and
+failed screenshots; the protected upgrade container was untouched.
 
 ## Remaining boundary
 
