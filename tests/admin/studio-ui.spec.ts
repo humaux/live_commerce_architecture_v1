@@ -40,7 +40,7 @@ async function storageIsSafe(page: Page) {
     caches: "caches" in window ? await caches.keys() : [],
   }));
   for (const forbidden of ["authorization_id", "credential_version", "stream_url", "rtmps://", preparedSession,
-    "STU04 browser-created scene", "STU04 lost ACK scene", "STU04 swapped login scene"])
+    "STU04 browser-created scene", "STU04 phone-edited scene", "STU04 lost ACK scene", "STU04 swapped login scene"])
     expect(value).not.toContain(forbidden);
 }
 
@@ -60,6 +60,7 @@ async function screenshot(page: Page, name: string, width: number, height: numbe
   await expect(page.getByTestId("merchant-studio")).toBeVisible();
   await expect(page.locator(".studio-scene-list .studio-scene").first()).toBeVisible();
   await expect(page.getByLabel(/Scene name|场次名称|場次名稱/)).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
   await page.screenshot({ path: `${evidence}/${name}.png`, fullPage: false });
 }
 
@@ -151,6 +152,13 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await screenshot(page, "zh-TW-phone-first-390x844", 390, 844);
   await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
   await screenshot(page, "en-phone-first-390x844", 390, 844);
+  await page.goto(createdURL);
+  await expect(page.getByLabel("Scene name")).toHaveValue("STU04 competing edit");
+  await page.getByLabel("Scene name").fill("STU04 phone-edited scene");
+  await page.getByRole("button", { name: "Save draft" }).click();
+  await expect(page.getByText("STU04 phone-edited scene").first()).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel("Scene name")).toHaveValue("STU04 phone-edited scene");
   await page.setViewportSize({ width: 1586, height: 992 });
 
   // Establish a real Orders→Studio route boundary before the uncertain write.
