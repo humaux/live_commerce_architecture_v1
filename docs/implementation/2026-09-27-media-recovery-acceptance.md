@@ -1,6 +1,6 @@
 # MRR90 restart state-check acceptance
 
-Status at 2026-09-27 10:27 UTC: **CANDIDATE_BLOCKED / NOT_ACCEPTED**.
+Status at 2026-09-27 10:47 UTC: **CANDIDATE_BLOCKED / NOT_ACCEPTED**.
 The independently frozen design is on `598eea4`. Candidate implementation and
 independent tests are not merged into main. No production configuration,
 customer broadcast, provider account or River policy was changed.
@@ -94,3 +94,46 @@ read, preserve that time for every member, and distinguish pending Witness
 persistence from an actual missed readback deadline. A later synchronous
 Witness call must not make an already-read member appear late. Tests remain
 fixed separately at `2754509`; the next PG run awaits that source repair.
+
+## Second focused run: RLS visibility defect, not acceptance
+
+The targeted timing review of source `b90d1914602d09e5dbca21ec6b2082e9ce784dd5`
+closed that specific static P1 (receipt `8dfcde71-3b68-42e5-97fd-9f8dd676d438`).
+It did not approve the whole runtime. Independent tests `2754509` and that source
+were merged only in the isolated test branch as
+`804065e302a1f53de08920d7c91a27d8b5e3a5bb`.
+
+- Command: `bash scripts/dev/test-local.sh --live-media-recovery`.
+- Actual exit **1**; package duration **241.417s**. Completed top-level results:
+  **1 PASS / 11 FAIL**, plus the final real-90-second test interrupted by the
+  outer Go test runner's **240s** timeout. No complete real-90-second verdict.
+- Log: `/Volumes/data/worktrees/commerce-meta-inbox-tests-20260926/output/mrr-focused-804065e.log`.
+- SHA-256: `2e32c15b280371987388ee22252774aa345288f646019eed76e2137348c530d7`.
+- Root independently read the failures and verified the log hash. Test worker
+  reported task fixture cleanup; protected upgrade fixture remained untouched.
+
+The earlier `42702` is absent. The newly reached claim stage fails with
+`ME409: media recovery membership unavailable`. Root and source author found
+that `commerce_media_writer` has a table SELECT grant on operation events but
+no SELECT RLS policy. Its SECURITY DEFINER functions cannot see admitted events
+written by the same role. This affects admission replay, qualification,
+readback, witness and timeout, not just the first failed claim.
+
+The independent reviewer also identified an unsafe empty-set inference:
+timeout can return `already_finished` for nonzero captured membership when
+RLS hides all admitted events; read can infer completion from a visible subset.
+Repair must add only the matched media-event read policy, pin it in readiness,
+and fail closed when a member-bearing scope's visible membership differs from
+its recorded count. Prior-episode checks must not overwrite hidden unresolved
+members. Known-empty and fail-whole capacity/prior scopes remain distinct.
+
+A separate negative-test setup fails with `42501` because resolving a function
+by name requires schema USAGE absent from the old buyer/meta roles. Resolve its
+OID as fixture owner and test privilege by OID; do not grant those roles USAGE.
+
+The measured serial process cases can exceed the outer 240s budget. Root
+authorized **360s only for the focused selector's execution timeout**. The
+owner's 90s deadline, original LMR05 35s predicate and default full-run 900s
+timeout are unchanged. Fixed-source repair, independent review, focused/root
+reruns and full regression remain required. Neither candidate is merged into
+main, and no production/customer state was changed.
