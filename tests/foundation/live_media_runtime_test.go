@@ -206,14 +206,21 @@ func TestLiveMediaRuntimeLMW04And05ProcessStartStopRestart(t *testing.T) {
 			if !stopAfterRestart.Load() {
 				t.Error("Stop during process shutdown")
 			}
-			lmeReply(w, h.observation("EG_lmw", "EGRESS_COMPLETE", 100, 130, 140))
+			lmeReply(w, h.observation("EG_lmw", "EGRESS_COMPLETE", 100, 150, 140))
 		default:
 			http.Error(w, "unknown", 500)
 		}
 	}))
 	h = lmrSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "unused", 500) })
-	var foreignBefore int64
-	if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT count(*) FROM river_meta.river_job`).Scan(&foreignBefore); err != nil {
+	var foreignID int64
+	if err := h.lp.f.runtime.QueryRow(context.Background(), `INSERT INTO river.river_job(kind,queue,args,max_attempts) VALUES('foreign_lmw_probe','default','{}',1) RETURNING id`).Scan(&foreignID); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_, _ = h.lp.f.owner.Exec(context.Background(), `DELETE FROM river.river_job WHERE id=$1`, foreignID)
+	})
+	var foreignBefore []byte
+	if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT to_jsonb(j) FROM river.river_job j WHERE id=$1`, foreignID).Scan(&foreignBefore); err != nil {
 		t.Fatal(err)
 	}
 	binary := mrBuild(t, "../../cmd/media-worker", "media-worker-lifecycle")
@@ -255,12 +262,12 @@ func TestLiveMediaRuntimeLMW04And05ProcessStartStopRestart(t *testing.T) {
 	if mrPoolCount(t, h.lp.f, workerName, executorName) != 0 {
 		t.Fatal("restart shutdown leaked pools")
 	}
-	var foreignAfter int64
-	if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT count(*) FROM river_meta.river_job`).Scan(&foreignAfter); err != nil {
+	var foreignAfter []byte
+	if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT to_jsonb(j) FROM river.river_job j WHERE id=$1`, foreignID).Scan(&foreignAfter); err != nil {
 		t.Fatal(err)
 	}
-	if foreignAfter != foreignBefore {
-		t.Fatalf("media worker changed foreign queue rows: before=%d after=%d", foreignBefore, foreignAfter)
+	if !bytes.Equal(foreignAfter, foreignBefore) {
+		t.Fatal("media worker changed nonempty foreign job row")
 	}
 	if got := h.facts(t); got.egress != "EG_lmw" {
 		t.Fatalf("restart changed attempt: %+v", got)
@@ -269,12 +276,15 @@ func TestLiveMediaRuntimeLMW04And05ProcessStartStopRestart(t *testing.T) {
 
 func TestLiveMediaRuntimeLMW05MissingFrozenProjectRetainsLiability(t *testing.T) {
 	var h *lmeHarness
+	var starts, stops atomic.Int32
 	server, ca := lmwTLS(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/twirp/livekit.Egress/StartEgress" {
+			starts.Add(1)
 			t.Error("replacement Start after missing project")
 		}
 		if r.URL.Path == "/twirp/livekit.Egress/StopEgress" {
-			lmeReply(w, h.observation("EG_lmw_missing", "EGRESS_COMPLETE", 100, 130, 140))
+			stops.Add(1)
+			lmeReply(w, h.observation("EG_lmw_missing", "EGRESS_COMPLETE", 100, 150, 140))
 			return
 		}
 		lmeReply(w, `{"items":[`+h.observation("EG_lmw_missing", "EGRESS_ACTIVE", 100, 120, 0)+`]}`)
@@ -296,7 +306,7 @@ func TestLiveMediaRuntimeLMW05MissingFrozenProjectRetainsLiability(t *testing.T)
 	h.await(t, 15*time.Second, func(f lmeFacts) bool { return f.result == "credential_unavailable" })
 	mrStop(t, p, syscall.SIGTERM, true)
 	before := lmrRead(t, h)
-	if before.count != 0 || before.resource == "TERMINAL" {
+	if before.count != 0 || before.resource == "TERMINAL" || starts.Load() != 0 || stops.Load() != 0 {
 		t.Fatalf("missing project consumed stop budget or closed liability: %+v", before)
 	}
 	good := lmwProcess(t, binary, "restored-project", env)
@@ -309,8 +319,47 @@ func TestLiveMediaRuntimeLMW05MissingFrozenProjectRetainsLiability(t *testing.T)
 		time.Sleep(25 * time.Millisecond)
 	}
 	after := lmrRead(t, h)
-	if after.resource != "TERMINAL" || after.count != 1 {
+	if after.resource != "TERMINAL" || after.count != 1 || starts.Load() != 0 || stops.Load() != 1 {
 		t.Fatalf("restored original project did not resume: %+v", after)
+	}
+	mrStop(t, good, syscall.SIGTERM, true)
+}
+
+func TestLiveMediaRuntimeLMW05MissingOldKeyThenResume(t *testing.T) {
+	var h *lmeHarness
+	var starts, stops atomic.Int32
+	server, ca := lmwTLS(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/twirp/livekit.Egress/StartEgress":
+			starts.Add(1)
+			lmeReply(w, h.observation("EG_lmw_key", "EGRESS_ACTIVE", 100, 110, 0))
+		case "/twirp/livekit.Egress/ListEgress":
+			lmeReply(w, `{"items":[`+h.observation("EG_lmw_key", "EGRESS_ACTIVE", 100, 120, 0)+`]}`)
+		case "/twirp/livekit.Egress/StopEgress":
+			stops.Add(1)
+			http.Error(w, "unexpected Stop", 500)
+		default:
+			http.Error(w, "unexpected", 500)
+		}
+	}))
+	h = lmrSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "unused", 500) })
+	binary := mrBuild(t, "../../cmd/media-worker", "media-worker-old-key")
+	env := lmwEnvironment(h, server.Listener.Addr().String(), ca)
+	other := base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{0x48}, 32))
+	missing := lmwReplace(env, "COMMERCE_MEDIA_MATERIAL_ACTIVE_KEY_ID", "new_only")
+	missing = lmwReplace(missing, "COMMERCE_MEDIA_MATERIAL_KEYS_JSON", `{"keys":[{"id":"new_only","key_base64":"`+other+`"}]}`)
+	bad := lmwProcess(t, binary, "missing-old-key", missing)
+	mrReadyLog(t, bad, "media_worker_ready")
+	h.await(t, 15*time.Second, func(f lmeFacts) bool { return f.result == "material_invalid" })
+	mrStop(t, bad, syscall.SIGTERM, true)
+	if f := h.facts(t); f.reserved || f.observations != 0 || starts.Load() != 0 || stops.Load() != 0 {
+		t.Fatalf("missing key made provider side effect: %+v", f)
+	}
+	good := lmwProcess(t, binary, "restored-old-key", env)
+	mrReadyLog(t, good, "media_worker_ready")
+	f := h.await(t, 20*time.Second, func(f lmeFacts) bool { return f.observations >= 1 && f.egress == "EG_lmw_key" })
+	if f.resource != "OBSERVED" || starts.Load() != 1 || stops.Load() != 0 {
+		t.Fatalf("original attempt not resumed exactly once: %+v start=%d stop=%d", f, starts.Load(), stops.Load())
 	}
 	mrStop(t, good, syscall.SIGTERM, true)
 }
