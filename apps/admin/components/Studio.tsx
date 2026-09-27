@@ -67,7 +67,10 @@ function studioURL(locale: Locale, store: string, cursor = "", scene = "") {
 }
 function formOf(draft: Draft): Form {
   return { id: draft.session_id, title: draft.title,
-    scheduled: draft.scheduled_at ? draft.scheduled_at.slice(0, 16) : "", aspect: draft.aspect_ratio };
+    scheduled: utcMinute(draft.scheduled_at), aspect: draft.aspect_ratio };
+}
+function utcMinute(value: string | null) {
+  return value ? new Date(value).toISOString().slice(0, 16) : "";
 }
 function time(locale: Locale, value: string) {
   return new Intl.DateTimeFormat(locale, { timeZone: "UTC", year: "numeric", month: "2-digit",
@@ -139,7 +142,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
   const shown = newMode ? null : currentDetail.data;
   const formDirty = newMode ? (form.title !== "" || form.scheduled !== "" || form.aspect !== blank.aspect) :
     !!shown && (form.id !== shown.draft.session_id || form.title !== shown.draft.title ||
-      form.scheduled !== (shown.draft.scheduled_at?.slice(0, 16) ?? "") || form.aspect !== shown.draft.aspect_ratio);
+      form.scheduled !== utcMinute(shown.draft.scheduled_at) || form.aspect !== shown.draft.aspect_ratio);
   if (newMode || shown) dirty.current = formDirty;
   const volatile = useRef({ scope, scene, route, selectedID, form, newMode, actionError, formError });
   volatile.current = { scope, scene, route, selectedID, form, newMode, actionError, formError };
@@ -565,7 +568,10 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
     setFormError("");
     if (newMode) void perform("create", input, "");
     else if (shown?.can_manage && shown.draft.state === "DRAFT")
-      void perform("edit", { ...input, expected_version: shown.draft.version }, shown.draft.session_id);
+      void perform("edit", { ...input,
+        scheduled_at: form.scheduled === utcMinute(shown.draft.scheduled_at)
+          ? shown.draft.scheduled_at : input.scheduled_at,
+        expected_version: shown.draft.version }, shown.draft.session_id);
   }
   const statusText = (status: Status) => status === "signed-out" ? c.signedOut : status === "forbidden" ? c.forbidden :
     status === "not-found" ? c.notFound : status === "loading" ? c.loading : c.unavailable;
