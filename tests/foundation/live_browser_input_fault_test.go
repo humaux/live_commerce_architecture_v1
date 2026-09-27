@@ -160,8 +160,8 @@ func brwAwaitDeniedReserve(t *testing.T, done <-chan error) {
 	t.Helper()
 	select {
 	case err := <-done:
-		if err == nil {
-			t.Fatal("concurrent authority mutation allowed final Start reservation")
+		if sqlState(err) != "ME409" {
+			t.Fatalf("final Start reservation did not reject changed authority with ME409: %v", err)
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("blocked final reservation did not resolve")
