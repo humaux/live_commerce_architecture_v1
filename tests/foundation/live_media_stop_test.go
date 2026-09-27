@@ -1174,7 +1174,36 @@ func TestLiveMediaStopLMR05RealCrashAndCommitAckLoss(t *testing.T) {
 			lmrWaitDBClock(t, h.lp.f.owner, f.first.Add(5*time.Second))
 		}
 	}
+	// Capture native scheduling without changing rescue, retry, or the assertion
+	// deadline. Never log River args/errors: they can carry unrelated payloads.
+	snapshot := func(phase string) {
+		t.Helper()
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		var state string
+		err := h.lp.f.owner.QueryRow(ctx, `SELECT json_build_object(
+		 'db_clock',clock_timestamp(),'state',state,'attempt',attempt,
+		 'max_attempts',max_attempts,'error_count',cardinality(errors),
+		 'scheduled_at',scheduled_at,'attempted_at',attempted_at,
+		 'finalized_at',finalized_at,
+		 'scheduled_in_seconds',extract(epoch FROM scheduled_at-clock_timestamp()))::text
+		 FROM river_media.river_job WHERE id=$1`, h.plan.JobID).Scan(&state)
+		if err != nil {
+			t.Logf("LMR05 native scheduling %s: snapshot unavailable", phase)
+			return
+		}
+		t.Logf("LMR05 native scheduling %s: %s", phase, state)
+	}
+	snapshot("before-restart")
+	restartedAt := time.Now()
 	h.startWorker(t)
+	// Registered after startWorker so this runs before its cleanup or PG teardown.
+	t.Cleanup(func() {
+		if t.Failed() {
+			t.Logf("LMR05 worker restart elapsed: %s", time.Since(restartedAt))
+			snapshot("assertion-failure")
+		}
+	})
 	h.await(t, 35*time.Second, func(f lmeFacts) bool { return f.observations >= 4 && !f.leaseOpen })
 	f := lmrRead(t, h)
 	if f.count != 2 || f.operation != "UNKNOWN" || f.resource != "OBSERVED" || f.exhausted == nil || h.stops.Load() != 0 || h.starts.Load() != 0 || h.queries.Load() < 3 {

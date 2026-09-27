@@ -7,8 +7,8 @@ command -v go >/dev/null
 # public official golden vector; missing Node must fail before starting fixtures.
 command -v node >/dev/null
 test_mode="${1:-foundation}"
-if [[ "$#" -gt 1 ]] || [[ "$test_mode" != foundation && "$test_mode" != --browser-identity && "$test_mode" != --browser-buyer && "$test_mode" != --browser-merchant-buyer && "$test_mode" != --browser-merchant-orders-bff && "$test_mode" != --browser-merchant-orders-ui && "$test_mode" != --browser-studio-bff && "$test_mode" != --browser-studio-ui && "$test_mode" != --browser-order && "$test_mode" != --browser-payment && "$test_mode" != --checkout && "$test_mode" != --payment && "$test_mode" != --payment-worker && "$test_mode" != --expiry-worker && "$test_mode" != --storefront-resolver && "$test_mode" != --buyer-http && "$test_mode" != --purchase-entry && "$test_mode" != --merchant-orders && "$test_mode" != --meta-inbox && "$test_mode" != --meta-consumer && "$test_mode" != --meta-runtime && "$test_mode" != --legacy-isolation && "$test_mode" != --local-recovery && "$test_mode" != --live-planning && "$test_mode" != --live-authority && "$test_mode" != --live-media-plan && "$test_mode" != --live-media-execution && "$test_mode" != --live-media-input && "$test_mode" != --live-media-stop && "$test_mode" != --live-media-runtime && "$test_mode" != --studio-backend ]]; then
-  printf 'Usage: bash scripts/dev/test-local.sh [--browser-identity|--browser-buyer|--browser-merchant-buyer|--browser-merchant-orders-bff|--browser-merchant-orders-ui|--browser-studio-bff|--browser-studio-ui|--browser-order|--browser-payment|--checkout|--payment|--payment-worker|--expiry-worker|--storefront-resolver|--buyer-http|--purchase-entry|--merchant-orders|--meta-inbox|--meta-consumer|--meta-runtime|--legacy-isolation|--local-recovery|--live-planning|--live-authority|--live-media-plan|--live-media-execution|--live-media-input|--live-media-stop|--live-media-runtime|--studio-backend]\n' >&2
+if [[ "$#" -gt 1 ]] || [[ "$test_mode" != foundation && "$test_mode" != --browser-identity && "$test_mode" != --browser-buyer && "$test_mode" != --browser-merchant-buyer && "$test_mode" != --browser-merchant-orders-bff && "$test_mode" != --browser-merchant-orders-ui && "$test_mode" != --browser-studio-bff && "$test_mode" != --browser-studio-ui && "$test_mode" != --browser-order && "$test_mode" != --browser-payment && "$test_mode" != --checkout && "$test_mode" != --payment && "$test_mode" != --payment-worker && "$test_mode" != --expiry-worker && "$test_mode" != --storefront-resolver && "$test_mode" != --buyer-http && "$test_mode" != --purchase-entry && "$test_mode" != --merchant-orders && "$test_mode" != --meta-inbox && "$test_mode" != --meta-consumer && "$test_mode" != --meta-runtime && "$test_mode" != --legacy-isolation && "$test_mode" != --local-recovery && "$test_mode" != --live-planning && "$test_mode" != --live-authority && "$test_mode" != --live-media-plan && "$test_mode" != --live-media-execution && "$test_mode" != --live-media-input && "$test_mode" != --live-media-crash && "$test_mode" != --live-media-stop && "$test_mode" != --live-media-runtime && "$test_mode" != --studio-backend ]]; then
+  printf 'Usage: bash scripts/dev/test-local.sh [--browser-identity|--browser-buyer|--browser-merchant-buyer|--browser-merchant-orders-bff|--browser-merchant-orders-ui|--browser-studio-bff|--browser-studio-ui|--browser-order|--browser-payment|--checkout|--payment|--payment-worker|--expiry-worker|--storefront-resolver|--buyer-http|--purchase-entry|--merchant-orders|--meta-inbox|--meta-consumer|--meta-runtime|--legacy-isolation|--local-recovery|--live-planning|--live-authority|--live-media-plan|--live-media-execution|--live-media-input|--live-media-crash|--live-media-stop|--live-media-runtime|--studio-backend]\n' >&2
   exit 2
 fi
 if [[ "$test_mode" == --browser-merchant-buyer ]]; then
@@ -31,6 +31,10 @@ if [[ "$test_mode" == --live-media-input ]]; then
   # A focused feedback loop, never a substitute for BIC05/full regression.
   test -f tests/foundation/live_media_input_custody_test.go
   grep -q '^func TestLiveMediaExecutionBIC' tests/foundation/live_media_input_custody_test.go
+fi
+if [[ "$test_mode" == --live-media-crash ]]; then
+  # Exact LMR05 diagnostic only, not acceptance of the Stop or full suite.
+  grep -q '^func TestLiveMediaStopLMR05RealCrashAndCommitAckLoss(t \*testing.T)' tests/foundation/live_media_stop_test.go
 fi
 if [[ "$test_mode" == --live-media-stop ]]; then
   test -f tests/foundation/live_media_stop_test.go
@@ -200,6 +204,9 @@ elif [[ "$test_mode" == --live-media-execution ]]; then
 elif [[ "$test_mode" == --live-media-input ]]; then
   GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^TestLiveMediaExecutionBIC' -v ./tests/foundation
   printf 'PASS: isolated BIC custody subset only; full media and BIC05 regression still required.\n'
+elif [[ "$test_mode" == --live-media-crash ]]; then
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^TestLiveMediaStopLMR05RealCrashAndCommitAckLoss$' -v ./tests/foundation
+  printf 'PASS: isolated LMR05 crash diagnostic only; Stop and full regression still required.\n'
 elif [[ "$test_mode" == --live-media-stop ]]; then
   GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=300s -run '^Test(LivePlanning|LiveMediaAuthorization|LiveMediaPlan|LiveMediaExecution|LiveMediaStop)' -v ./internal/live ./tests/foundation
   printf 'PASS: isolated bounded MOCK media Stop; no Cloud, LIVE intake, operator escalation recovery or G06 acceptance.\n'
