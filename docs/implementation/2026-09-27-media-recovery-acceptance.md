@@ -1,11 +1,11 @@
 # MRR90 restart state-check acceptance
 
-Status at 2026-09-27 11:41 UTC: **FOCUSED_ACCEPTED / FULL_REGRESSION_PENDING**.
+Status at 2026-09-27 12:02 UTC: **FOCUSED_ACCEPTED / FULL_REGRESSION_FAILED_TWO_GATES**.
 The independently frozen design is on `598eea4`. Source `86b641a` and independent
 tests `f3b731b` with evidence `2e00b00a` are integrated as `74459ae`.
 The initial independent and root focused runs each passed 17 tests. Independent
-supplement `cf4720e` passed 21 tests; root fixed-tree full regression remains
-required. No production configuration,
+supplement `cf4720e` passed 21 tests; root full `dfe844a` also passed all 21 MRR
+tests, but two other foundation gates failed. No production configuration,
 customer broadcast, provider account or River policy was changed.
 
 ## Meaning of the owner's 90-second target
@@ -272,3 +272,37 @@ process-exit or assertion deadline is changed; no River policy is changed.
 One fixed-tree full run will also independently rerun the supplemented MRR
 checks, avoiding an unnecessary extra 344s focused run. Root full acceptance,
 original LMR05 and Studio native acceptance remain pending until evidenced.
+
+## Root frozen full run — two retained failures
+
+Main `dfe844ad2878d6456411c389c4a8920a57bca6a7` ran
+`bash scripts/dev/test-local.sh` with actual **exit 1**, foundation **1074.969s**:
+**694 top-level PASS / 2 FAIL / 0 SKIP**. HEAD and tracked source stayed unchanged
+through the run. Log `/Volumes/data/output/mrr-full-dfe844a-root-20260927.log`,
+SHA-256 `fed615c62cc3e422b8aa26e16bec5867f7a4d84daa528b0dc033edf7fd006714`.
+All **21 MRR tests passed**, including the real-clock cases. This is independent
+root execution of the supplemental cases, not a full-suite PASS.
+
+1. `TestLegacyRuntimeIsolationPopulatedUpgrade`: the whole-row comparison of
+   `integration.operation_events` failed at line 397. Migration 0041 adds five
+   nullable evidence columns; the historical snapshot currently does not project
+   those additive NULL keys. This is a static diagnosis pending narrow actual
+   verification, not permission to ignore old fields or rows.
+2. `TestLiveMediaStopLMR05RealCrashAndCommitAckLoss`: the unchanged 35s wait
+   failed at line 1218. Relative to the pre-restart sample, old leadership expired
+   at +11.729s, replacement leadership appeared at +16.440s, native rescue at
+   +17.964s scheduled the retry for +34.370s, and attempt 3 began at +34.799s.
+   The failure-path read at roughly +35.046s showed observations=4 and no open
+   lease, but the exact fourth-observation commit relative to the deadline was
+   not recorded. It is **not proven on time**, and subsequent budget/no-wire
+   assertions did not execute. No test-threshold or River-policy change is
+   authorized by this failure record. Independent corrected adjudications:
+   `5ad3be2c-c82c-44a6-bc46-2df8796e9153` and
+   `c025da0e-b88c-4e52-960e-1f7ce94af07f`.
+
+The runner's `go vet` was not reached after test failure. Root separately ran
+`GOTOOLCHAIN=go1.27.1 go vet ./...` on the same fixed source with **exit 0**;
+log `/Volumes/data/output/mrr-full-dfe844a-vet-root-20260927.log` is empty.
+The owned temporary PG was removed; the owner-protected upgrade container was
+untouched. Full regression, BIC05, Studio native acceptance and deployment are
+not accepted by this run. Both failures and their earlier history remain retained.
