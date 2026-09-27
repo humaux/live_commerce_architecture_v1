@@ -74,6 +74,21 @@ attaches audio/video to their media elements. This is a testable hypothesis,
 not a root-cause declaration. No simultaneous WAV substitution or further blind
 audio retries are authorized; freeze the result for adjudication.
 
+The playback-only commit `e47f2e0` (16 added lines) ran exactly once and exited
+0; receipt:
+`/Volumes/data/worktrees/commerce-meta-inbox-go-20260926/output/playwright/r04-input-1790480955243-80c37684.json`.
+It retained the same publisher source and energy assertions. Audio attachment,
+`startAudio()` and `play()` succeeded; the receiver decoded 53 video frames and
+130 audio packets / 32146 bytes, with energy delta 2.53 and PCM RMS energy 0.50095.
+This controlled contrast supports the missing receiver playback attachment as
+the cause in this test harness. Root inspected the synthetic camera screenshot;
+it is not a merchant UI screenshot. The old script's `PASS` still does **not**
+close the outstanding gates below or independent/root acceptance.
+
+Root freeze `280ac66` authorizes the next bounded batch to restore actual fake
+getUserMedia capture and close the listed proof gaps, including both post-media
+fault paths. Independent tests must use the exact resulting source revision.
+
 Before source acceptance, independently verify:
 
 1. Nonzero remote audio and actual fake microphone path, not packets alone.
