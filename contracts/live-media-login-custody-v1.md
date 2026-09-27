@@ -1,6 +1,9 @@
 # Media initiating-login custody v1
 
-Status: **CANDIDATE — independent review required**. Base `80792e4`.
+Status: **FROZEN_FOR_IMPLEMENTATION — tests NOT_RUN**. Base `80792e4`.
+Independent read-only review of `3cbdaea` found no remaining confirmed P0/P1;
+the replay revision-GUC correction is included. Review is not implementation
+acceptance. Source and test authors must remain separate.
 This is the first persistence prerequisite of [BRI](live-browser-input-v1.md),
 not browser admission, input cleanup, LIVE qualification or G06 acceptance.
 The existing MOCK planner, attempt, operation, job and response DTO are reused.
