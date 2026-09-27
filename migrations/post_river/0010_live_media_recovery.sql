@@ -45,6 +45,14 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
      '[[:space:]]+','','g') IN (
      'EXISTS(SELECT1FROMintegration.operationsoWHERE((o.id=operation_events.operation_id)AND(o.tenant_id=operation_events.tenant_id)AND(o.store_id=operation_events.store_id)AND(o.actor_kind=''MEDIA_ATTEMPT''::text)))',
      '(EXISTS(SELECT1FROMintegration.operationsoWHERE((o.id=operation_events.operation_id)AND(o.tenant_id=operation_events.tenant_id)AND(o.store_id=operation_events.store_id)AND(o.actor_kind=''MEDIA_ATTEMPT''::text))))'))
+  AND NOT EXISTS(SELECT 1 FROM pg_catalog.pg_policy extra
+   WHERE extra.polrelid='integration.operation_events'::regclass
+    AND extra.polname<>'media_writer_event_read' AND extra.polcmd IN ('r','*')
+    AND EXISTS(SELECT 1 FROM pg_catalog.unnest(extra.polroles) policy_role(role_oid)
+     WHERE CASE WHEN policy_role.role_oid=0 THEN true
+      WHEN policy_role.role_oid='commerce_media_writer'::regrole::oid THEN true
+      ELSE pg_catalog.pg_has_role('commerce_media_writer'::regrole::oid,
+       policy_role.role_oid,'USAGE') END))
   AND EXISTS(SELECT 1 FROM pg_catalog.pg_trigger t
    WHERE t.tgrelid='live.media_execution_state'::regclass
     AND t.tgname='media_execution_identity' AND t.tgenabled='O'
