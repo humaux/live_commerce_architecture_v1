@@ -739,6 +739,36 @@ func bicAssertOriginalLiability(t *testing.T, h *bicHarness, plan live.MediaStar
 }
 
 func TestLiveMediaExecutionBIC03OriginalJobOutlivesInputLiability(t *testing.T) {
+	for _, item := range []struct{ name, seed string }{
+		{"unissued-stop-after-generation-budget", `UPDATE integration.operations SET generation=4096 WHERE id=$1`},
+		{"unissued-stop-after-age-budget", `UPDATE integration.operations SET created_at=clock_timestamp()-interval '25 hours' WHERE id=$1`},
+	} {
+		t.Run(item.name, func(t *testing.T) {
+			h, plan, _ := bicStarted(t)
+			// Owner-only SQL-state fixture: no input grant was issued. A completed
+			// Stop must win over automation exhaustion, unlike RESERVED liability.
+			if tag, err := h.lp.f.owner.Exec(context.Background(), item.seed, plan.OperationID); err != nil || tag.RowsAffected() != 1 {
+				t.Fatalf("budget fixture did not update original operation: %v %v", tag, err)
+			}
+			stop, err := bicStop(context.Background(), h, h.logins.b, t04Key("bic-budget-stop-"+item.name), plan)
+			if err != nil || stop.State != "cancelled_before_start" || stop.OperationID != plan.OperationID {
+				t.Fatalf("unissued budget Stop did not complete: state=%s operation=%s err=%v", stop.State, stop.OperationID, err)
+			}
+			var operation, input, latestEvent string
+			err = h.lp.f.owner.QueryRow(context.Background(), `SELECT o.state,c.state,
+			 (SELECT e.state FROM integration.operation_events e WHERE e.operation_id=o.id ORDER BY e.id DESC LIMIT 1)
+			 FROM integration.operations o JOIN live.media_input_custody c ON c.operation_id=o.id WHERE o.id=$1`, plan.OperationID).
+				Scan(&operation, &input, &latestEvent)
+			if err != nil || input != "CLOSED" || operation != "CANCELLED" || latestEvent != "CANCELLED" {
+				t.Fatalf("unissued budget path held a proven terminal: operation=%s input=%s event=%s err=%v", operation, input, latestEvent, err)
+			}
+			disposition, _, _, err := bicClaim(context.Background(), h, plan, bytes.Repeat([]byte{0x70}, 32))
+			if err != nil || disposition != "terminal" {
+				t.Fatalf("combined terminal was superseded by budget hold: %s %v", disposition, err)
+			}
+		})
+	}
+
 	t.Run("unissued-stop-joint-terminal", func(t *testing.T) {
 		h, plan, _ := bicStarted(t)
 		stop, err := bicStop(context.Background(), h, h.logins.b, t04Key("bic-stop-unissued"), plan)
