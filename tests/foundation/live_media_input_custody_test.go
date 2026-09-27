@@ -729,6 +729,10 @@ func bicOperationAndJob(t *testing.T, h *bicHarness, plan live.MediaStartResult)
 }
 
 func bicAssertOriginalLiability(t *testing.T, h *bicHarness, plan live.MediaStartResult) {
+	bicAssertInputLiability(t, h, plan, true)
+}
+
+func bicAssertInputLiability(t *testing.T, h *bicHarness, plan live.MediaStartResult, admissionClosed bool) {
 	t.Helper()
 	operation, jobState, finalized := bicOperationAndJob(t, h, plan)
 	if operation != "UNKNOWN" || finalized != nil ||
@@ -743,8 +747,21 @@ func bicAssertOriginalLiability(t *testing.T, h *bicHarness, plan live.MediaStar
 	var state string
 	var closed *time.Time
 	if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT state,admission_closed_at FROM live.media_input_custody WHERE attempt_id=$1`,
-		plan.AttemptID).Scan(&state, &closed); err != nil || state == "CLOSED" || closed == nil {
-		t.Fatalf("issued local custody falsely closed/open admission: state=%s close=%v err=%v", state, closed, err)
+		plan.AttemptID).Scan(&state, &closed); err != nil || state == "CLOSED" || (closed != nil) != admissionClosed {
+		t.Fatalf("issued local custody falsely closed/admission mismatch: state=%s close=%v wantClosed=%v err=%v", state, closed, admissionClosed, err)
+	}
+}
+
+// No BIC consumer/wire exists yet. This owner-only disposable SQL-state seed
+// represents a possible future post-wire observation, not provider proof.
+func bicSeedFutureWire(t *testing.T, h *bicHarness, plan live.MediaStartResult, generation int64, egress string) {
+	t.Helper()
+	tag, err := h.lp.f.owner.Exec(context.Background(), `UPDATE live.media_execution_state SET
+	 wire_reserved_at=clock_timestamp(),wire_generation=$2,egress_id=$3,
+	 resource_state='OBSERVED',transport_status='EGRESS_ACTIVE',started_at_ns=100,updated_at_ns=120
+	 WHERE attempt_id=$1 AND wire_reserved_at IS NULL`, plan.AttemptID, generation, egress)
+	if err != nil || tag.RowsAffected() != 1 {
+		t.Fatalf("future post-wire owner fixture did not seed exact attempt: %v %v", tag, err)
 	}
 }
 
@@ -922,6 +939,83 @@ func TestLiveMediaExecutionBIC03OriginalJobOutlivesInputLiability(t *testing.T) 
 		}
 		bicAssertOriginalLiability(t, h, plan)
 	})
+
+	t.Run("future-egress-terminal-query-projects-without-completing-input", func(t *testing.T) {
+		h, plan, in := bicStarted(t)
+		if _, err := bicReserve(context.Background(), h, h.lp.f.runtime, h.logins.a, h.lp.f.storeA1, t04Key("bic-future-terminal"), in); err != nil {
+			t.Fatal(err)
+		}
+		lease := bytes.Repeat([]byte{0x73}, 32)
+		disposition, generation, mode, err := bicClaim(context.Background(), h, plan, lease)
+		if err != nil || disposition != "claimed" || mode != "reconcile" {
+			t.Fatalf("issued input did not provide fenced reconcile: %s/%d/%s %v", disposition, generation, mode, err)
+		}
+		const egress = "EG_bic_future_terminal"
+		bicSeedFutureWire(t, h, plan, generation, egress)
+		var projected string
+		err = h.executor.QueryRow(context.Background(), `SELECT live.record_media_cleanup_query(
+		 $1::uuid,$2::bigint,$3::bytea,$4::text,$5::text,'EGRESS_COMPLETE',100,130,140)`,
+			plan.OperationID, generation, lease, egress, plan.RoomName).Scan(&projected)
+		if err != nil || projected != "observe" {
+			t.Fatalf("terminal Egress report falsely completed issued input: %s %v", projected, err)
+		}
+		var resource string
+		if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT resource_state FROM live.media_execution_state WHERE attempt_id=$1`,
+			plan.AttemptID).Scan(&resource); err != nil || resource != "TERMINAL" {
+			t.Fatalf("future terminal report was not actually projected: %s %v", resource, err)
+		}
+		bicAssertOriginalLiability(t, h, plan)
+		nextLease := bytes.Repeat([]byte{0x74}, 32)
+		disposition, nextGeneration, mode, err := bicClaim(context.Background(), h, plan, nextLease)
+		if err != nil || disposition != "claimed" || mode != "reconcile" || nextGeneration <= generation {
+			t.Fatalf("terminal Egress lost input cleanup lease: %s/%d/%s %v", disposition, nextGeneration, mode, err)
+		}
+		closeResult, err := bicClose(context.Background(), h, plan, nextGeneration, nextLease, "egress_terminal")
+		if err != nil || closeResult != "held" {
+			t.Fatalf("terminal Egress falsely closed issued local input: %s %v", closeResult, err)
+		}
+		bicAssertOriginalLiability(t, h, plan)
+	})
+
+	for _, item := range []struct {
+		name, reason    string
+		admissionClosed bool
+	}{
+		{"future-wire-uncertain-finish", "remote_unknown", false},
+		{"future-wire-policy-denial", "policy_denied", true},
+	} {
+		t.Run(item.name, func(t *testing.T) {
+			h, plan, in := bicStarted(t)
+			if _, err := bicReserve(context.Background(), h, h.lp.f.runtime, h.logins.a, h.lp.f.storeA1, t04Key("bic-"+item.name), in); err != nil {
+				t.Fatal(err)
+			}
+			lease := bytes.Repeat([]byte{0x75}, 32)
+			disposition, generation, mode, err := bicClaim(context.Background(), h, plan, lease)
+			if err != nil || disposition != "claimed" || mode != "reconcile" {
+				t.Fatalf("issued input did not provide fenced reconcile: %s/%d/%s %v", disposition, generation, mode, err)
+			}
+			bicSeedFutureWire(t, h, plan, generation, "EG_bic_"+item.name)
+			var finished string
+			err = h.executor.QueryRow(context.Background(), `SELECT live.finish_media_uncertain(
+			 $1::uuid,$2::bigint,$3::bytea,$4::text)`, plan.OperationID, generation, lease, item.reason).Scan(&finished)
+			if err != nil || finished != "observe" {
+				t.Fatalf("issued post-wire finish falsely terminal: %s %v", finished, err)
+			}
+			bicAssertInputLiability(t, h, plan, item.admissionClosed)
+			if item.admissionClosed {
+				nextLease := bytes.Repeat([]byte{0x76}, 32)
+				disposition, nextGeneration, mode, err := bicClaim(context.Background(), h, plan, nextLease)
+				if err != nil || disposition != "claimed" || mode != "reconcile" || nextGeneration <= generation {
+					t.Fatalf("policy denial discarded issued cleanup lease: %s/%d/%s %v", disposition, nextGeneration, mode, err)
+				}
+				closeResult, err := bicClose(context.Background(), h, plan, nextGeneration, nextLease, "permission_lost")
+				if err != nil || closeResult != "held" {
+					t.Fatalf("policy denial falsely closed issued input: %s %v", closeResult, err)
+				}
+				bicAssertOriginalLiability(t, h, plan)
+			}
+		})
+	}
 }
 
 // Corruption injection only: one owner connection changes one disposable
