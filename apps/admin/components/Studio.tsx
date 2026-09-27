@@ -639,7 +639,10 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
             <div className="studio-fields">
               <label>{c.name}<input value={form.title} maxLength={400} disabled={!canEdit || busy}
                 onChange={(event) => { explicitDeparture.current = false; setForm({ ...form, title: event.target.value }); setFormError(""); }} /></label>
-              <label>{c.schedule}<input type="datetime-local" value={form.scheduled} disabled={!canEdit || busy}
+              <label>{c.schedule}<input type={locale === "en" ? "text" : "datetime-local"}
+                placeholder={locale === "en" ? "YYYY-MM-DDTHH:mm" : undefined}
+                maxLength={locale === "en" ? 16 : undefined}
+                value={form.scheduled} disabled={!canEdit || busy}
                 min="2000-01-01T00:00" max="2199-12-31T23:59"
                 onChange={(event) => { explicitDeparture.current = false; setForm({ ...form, scheduled: event.target.value }); setFormError(""); }} /></label>
               <label>{c.aspect}<select value={form.aspect} disabled={!canEdit || busy}
@@ -672,12 +675,17 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
               </> : !attempt ? <p className="studio-muted">{c.noPrepared}</p> : null}
               {(prepared || attempt) && <><p className="studio-destination-label">{c.destinations}</p>
                 <ul>{(prepared?.destinations ?? attempt!.destinations).map((item) => <li key={item.ordinal}>
-                  <strong>{c.provider[item.provider]}</strong><span>{c.unverified}</span>
+                  <div className="studio-provider-name">
+                    {item.provider === "facebook" && <svg className="studio-facebook-mark" viewBox="0 0 24 24" aria-hidden="true">
+                      <path fill="currentColor" d="M22 12a10 10 0 1 0-11.56 9.87v-6.98H7.9V12h2.54V9.8c0-2.51 1.49-3.89 3.78-3.89 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.25 0-1.63.77-1.63 1.56V12h2.77l-.44 2.89h-2.33v6.98A10 10 0 0 0 22 12Z" />
+                    </svg>}
+                    <strong>{c.provider[item.provider]}</strong>
+                  </div><span>{c.unverified}</span>
                 </li>)}</ul></>}
             </section>
             <section className="studio-fact">
               <h3>{c.observed}</h3>
-              {attempt ? <dl>
+              <div className="studio-current-state">{attempt ? <dl>
                 <div><dt>{c.operation}</dt><dd>{c.operationState[attempt.operation_state as keyof typeof c.operationState] ?? attempt.operation_state}</dd></div>
                 <div><dt>{c.resource}</dt><dd>{c.resourceState[attempt.resource_state]}</dd></div>
                 <div><dt>{c.transport}</dt><dd>{attempt.transport_status || c.noTransport}</dd></div>
@@ -685,7 +693,10 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
                 {attempt.cleanup_required && <div><dt>{c.cleanup}</dt><dd>{c.yes}</dd></div>}
                 {attempt.stop_requested && <div><dt>{c.stopRequested}</dt><dd>{c.yes}</dd></div>}
                 {attempt.escalated && <div className="studio-escalated"><dt>{c.escalated}</dt><dd>{c.yes}</dd></div>}
-              </dl> : <p className="studio-muted">{c.noAttempt}</p>}
+              </dl> : <div className="studio-current-empty">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+                <div><strong>{c.noAttemptTitle}</strong><p>{c.noAttempt}</p></div>
+              </div>}</div>
             </section>
             <button type="button" className="primary studio-rehearsal-action" disabled={busy || actionError === "uncertain" || !(attempt ? canStop : canStart)}
               onClick={() => {
