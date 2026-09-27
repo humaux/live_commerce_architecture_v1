@@ -18,8 +18,12 @@ NOT_RUN_PRODUCT. Review this boundary before freezing SQL/API signatures.
 3. The same typed media controller must wait for the admitted publisher's
    observed camera AND microphone tracks before its once-only Egress Start.
    This wait consumes the existing start deadline and does not reserve a Start
-   wire call. Stop, expiry or access loss before Start must prevent that call and
-   still reclaim issued input capabilities/room.
+   wire call. Stop, expiry or access loss committed before the final dispatch gate
+   must prevent Start and still reclaim issued input capabilities/room. A revoke
+   racing after that gate cannot be made atomic with provider I/O: retain the
+   reserved attempt as possibly dispatched and perform exact query/cleanup,
+   never claim zero provider calls merely because revoke committed first on a
+   different connection.
 4. Reuse merchant `WithScope`/`RequirePermission`, command receipts, actual-role
    PG tests, the existing attempt generation/lease and owned cleanup authority.
    Extend these deliberately; do not bypass generic dispatch admission or create
@@ -188,7 +192,7 @@ delivery. [Webhooks are not guaranteed](https://docs.livekit.io/intro/basics/roo
 |BRI01 authority|Real isolated PG/actual roles: positive exact owner; wrong tenant/store/attempt/session/profile, missing grants, revoked/expired login and old revision rejected; command replay does not bypass current auth.|
 |BRI02 reservation and concurrency|Concurrent same-key requests yield one identity/fixed expiry; key/body conflict; rollback and COMMIT-ack loss; grant vs Stop/logout contention; stale worker generation; no raw JWT/secret in DB/log/receipt.|
 |BRI03 wire and grant|Independently decoded/verified JWT has exact least grants and bounded times; malformed scopes never sign/call; target response mismatch, oversized/malformed body, redirect, network and provider errors do not claim observation/revoke.|
-|BRI04 product media|Actual browser → authenticated BFF → Go/PG → disposable local SFU with camera+mic to independent receiver. Server observes the exact admitted publisher, camera+mic; Egress Start cannot precede this or occur twice. Local preview alone makes no provider call.|
+|BRI04 product media|Actual browser → authenticated BFF → Go/PG → disposable local SFU with camera+mic to independent receiver. Server observes the exact admitted publisher, camera+mic; Egress Start cannot precede this or occur twice. Causal revoke before the final gate prevents Start; revoke after reservation remains possibly dispatched and is reconciled/cleaned. Local preview alone makes no provider call.|
 |BRI05 lifetime and crash|Logout/access loss/expiry/Stop before and after join; publisher tab crash; API/worker crash at reservation, before wire, after reply and completion-ack loss. The original operation survives Egress terminal until input closure; uncertain cleanup stays UNKNOWN. Local nonrevoking rejoin is recorded as a limitation, never a strict PASS.|
 |BRI06 Cloud revocation|Separately approved disposable Cloud project: initial and SDK-refreshed tokens; immediate/same-second removal, already-left and room-already-missing, delete/recreate attempts, clock skew, lost replies, exhausted budget and credential-version loss. Require strict rejection without replacement room/identity. No customer resources.|
 |BRI07 UI and operations|Approved Studio comp; desktop/390px and zh-CN/zh-TW/en; explicit device permissions, local/server/output status distinction, camera denied/no mic, replay/error/reconnect, visible UNKNOWN and operator escalation. Cloud outage drill and maintained dependency/runbook evidence.|
