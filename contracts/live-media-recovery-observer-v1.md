@@ -1,6 +1,6 @@
 # Media restart state check — narrow observer candidate
 
-Status: **DESIGN_REVIEW_REQUIRED / IMPLEMENTATION_NOT_RUN**.
+Status: **ABI_CANDIDATE_REVIEW_REQUIRED / IMPLEMENTATION_NOT_RUN**.
 Owner target: fresh state reconciliation within **90 seconds**, or retained
 unresolved responsibility plus an alert; decision
 `f0b36444-a4ea-4112-926d-596cfb7fd89f`. This does not promise stopped resources,
@@ -62,7 +62,7 @@ PROVIDER_MOCK operations. Before child release, one deterministic `LIMIT 33`
 admission scan at first DB availability establishes this bound. If it returns
 33, admit **no partial observation set**: report `CAPACITY_EXCEEDED`, a count
 lower bound of 33 and incomplete coverage. Retain every original responsibility,
-persist a bounded capacity event on the existing operation/event surface and
+persist a bounded capacity event on the episode scope metadata surface and
 emit a redacted supervisor health signal. Do not block the native child or
 existing cleanup merely because this observer's runtime capacity is exceeded;
 release the normally admitted child with explicitly degraded supervision and
@@ -107,7 +107,7 @@ if needed) constitute its application authority.
 
 | Private function | Bounded result and authority |
 | --- | --- |
-| `begin_media_recovery_episode(uuid,bigint,integer)` | Episode ID, monotonic elapsed ms and capacity 1..32; atomic capacity+1 admission as above. Returns admitted exact identities/baselines/deadlines or fail-whole capacity/coverage disposition, never a partially successful `has_more` page; unfinished episodes remain unchanged. |
+| `begin_media_recovery_episode(uuid,bigint,integer,boolean)` | Episode ID, monotonic elapsed ms, capacity 1..32 and explicit `coverage_known`; atomic capacity+1 admission as above. Returns admitted exact identities/baselines/deadlines or fail-whole capacity/coverage disposition, never a partially successful `has_more` page; unfinished episodes remain unchanged. |
 | `claim_recovery_observation(uuid,uuid,bigint,bytea)` | Episode, operation, original job and 32-byte token; returns disposition, generation and nonsecret frozen project/version/endpoint/room/egress target only. Requires reserved wire, eligible profile/state, no escalation, remaining existing recovery ceiling, expired old business lease and no prior qualifying observation; grants only a fixed 30s reconcile lease. |
 | `record_recovery_observation(uuid,uuid,bigint,bytea,text,text,text,text,bigint,bigint,bigint)` | Episode, operation, generation, token, ROOM/QUERY source, egress, room, status and three provider times; returns checked/terminal plus observation ID. Internally reuses the private projector and records episode correlation atomically; no Stop reservation. |
 | `finish_recovery_observation(uuid,uuid,bigint,bytea,text)` | Fenced failure only, using bounded existing uncertainty reason codes; releases only its own lease and retains UNKNOWN/resource liability. No native retry action or escalation. |
@@ -168,3 +168,198 @@ until their real collection/delivery path is configured and tested.
 All gates **NOT_RUN**. The supervisor admission/child handoff, role matrix,
 episode state transitions, capacity behavior and exact return-key schema require
 independent review before implementation; this candidate is not yet frozen.
+
+## ABI/runtime appendix — candidate for independent review
+
+This appendix fixes implementer-facing names and outcomes; it does not freeze
+the design. All SQL calls are `READ COMMITTED`, fixed `search_path=pg_catalog`,
+owner `commerce_media_writer`; only the seven private entry points below are
+granted to `commerce_media_recovery`. Bad shape, caller or stale fence raises
+`ME400`/`ME409`; a returned disposition is a business result, never an implicit
+permission to issue Start/Stop. UUIDs are server-generated or validated UUIDs;
+all elapsed values are the trusted parent's monotonic milliseconds since t0.
+
+| SQL signature and exact return columns | Dispositions |
+| --- | --- |
+| `begin_media_recovery_episode(p_episode uuid,p_elapsed_ms bigint,p_capacity integer,p_coverage_known boolean) RETURNS TABLE(disposition text,episode_id uuid,operation_id uuid,job_id bigint,baseline_generation bigint,deadline_at timestamptz,candidate_count integer,coverage_known boolean,blocked_by_episode_id uuid)` | One row per captured member (`pending`, `terminal_at_lock`, `native_ineligible`, `ceiling` or `overdue`), or one row with null operation/job/baseline for `empty`, `capacity_exceeded` or `prior_unfinished`. `blocked_by_episode_id` is nonnull only for `prior_unfinished`; `candidate_count=capacity+1` is a lower bound on overflow. `deadline_at` is DB diagnostic only. |
+| `claim_recovery_observation(p_episode uuid,p_operation uuid,p_job bigint,p_token bytea) RETURNS TABLE(disposition text,generation bigint,project_id text,credential_version bigint,endpoint_identity text,room_name text,egress_id text)` | `claimed`, `busy`, `already_observed`, `terminal_at_lock`, `native_ineligible`, `ceiling`, `overdue`; target columns are nonnull only for `claimed`, `egress_id` nullable for ROOM. No secret material. |
+| `record_recovery_observation(p_episode uuid,p_operation uuid,p_generation bigint,p_token bytea,p_source text,p_egress text,p_room text,p_status text,p_started bigint,p_updated bigint,p_ended bigint) RETURNS TABLE(disposition text,observation_id uuid)` | `checked` or `terminal`, with nonnull exact persisted observation ID; rejected/stale inputs raise. |
+| `finish_recovery_observation(p_episode uuid,p_operation uuid,p_generation bigint,p_token bytea,p_code text) RETURNS text` | `released`; stale fence raises. Codes are only `remote_unknown`, `not_observed`, `invalid_observation`, `credential_unavailable`, `material_invalid`. |
+| `read_media_recovery_episode(p_episode uuid) RETURNS TABLE(episode_id uuid,scope_status text,coverage_known boolean,candidate_count integer,blocked_by_episode_id uuid,operation_id uuid,disposition text,baseline_generation bigint,observation_id uuid,observation_source text,observation_generation bigint,witness_elapsed_ms bigint,timeout_at timestamptz,cleanup_required boolean)` | One scope row when there are no members; one row per member otherwise. `scope_status` is `pending`, `empty`, `capacity_exceeded`, `prior_unfinished`, `overdue` or derived `finished`; per-member `disposition` is `pending`, `checked`, `terminal`, `terminal_at_lock`, `native_ineligible`, `ceiling`, `timeout` or `witnessed`. Historic membership is read from admitted events. |
+| `witness_media_recovery_episode(p_episode uuid,p_operation uuid,p_observation uuid,p_readback_elapsed_ms bigint) RETURNS text` | `witnessed`, `already_witnessed`, `timeout_wins` or `unqualified`; only first two prove that member. |
+| `timeout_media_recovery_episode(p_episode uuid,p_elapsed_ms bigint) RETURNS TABLE(disposition text,affected_count integer)` | `timed_out`, `already_timed_out` or `already_finished`; known `empty` returns `already_finished` with zero and no write. `affected_count` is newly timed-out members, not all historic members. |
+
+`begin` accepts `0<=p_elapsed_ms`, `1<=p_capacity<=32` and nonnull
+`p_coverage_known`; the parent passes false if DB was unavailable at any point
+before the first membership capture. A repeated begin for the same episode
+returns its immutable original result from scope plus admitted events; it never
+rescans, extends deadlines or upgrades false coverage. For a scan within
+capacity, if any member belongs to an unfinished prior episode, the new
+episode commits only a
+`prior_unfinished` scope diagnostic, returns its blocking episode ID, admits
+zero observer claims, and releases the native child degraded. The old active
+episode, deadline and membership remain untouched. Child restarts under the
+same parent always reuse the original episode ID. Only a later abnormal restart
+after that episode is resolved takes a new t0 and episode ID. A resolved prior
+episode may leave the active projection only after its immutable history has
+committed. Here resolved means witnessed or sticky timed out, even when resource
+liability remains open. DB deadline is set once as
+`clock_timestamp()+max(0,90000-p_elapsed_ms) ms`; it is not a success clock.
+An admission after 90s still records bounded membership and immediate overdue
+dispositions, without scheduling provider I/O. `empty` with
+`coverage_known=true` is resolved NO_WORK, not a fresh-observation PASS;
+`coverage_known=false` is degraded even when the late scan returned zero.
+`p_capacity` equals configured bounded observer concurrency (reuse validated
+worker concurrency where safe), so all admitted candidates fit one wave.
+
+One additive `live.media_recovery_episode_scope` row is necessary per restart:
+`episode_id` PK, `capture_elapsed_ms`, `deadline_at`, `capacity`,
+`candidate_count` (at least capacity+1 on overflow), `coverage_known`,
+`scope_status`,
+`capacity_exceeded_at`, `blocked_by_episode_id`, `timeout_at` and `created_at`.
+It has no resource state,
+provider target, job, lease or retry authority. `operation_events` requires an
+operation ID, so it cannot truthfully represent an empty delayed capture or
+fail-whole overflow without attributing the event to an arbitrary operation.
+The scope row is the bounded durable event for those cases; it cannot establish
+resource recovery. Existing `media_execution_state` adds only active episode
+ID, generation high-water, member disposition, qualifying observation ID,
+witness elapsed/at and sticky timeout; existing `operation_events` adds nullable
+`episode_id`, `episode_event_kind`, `native_job_id`, `observation_id`,
+`elapsed_ms`, with unique
+`(operation_id,episode_id,episode_event_kind)` for one-shot `admitted`,
+`terminal_at_lock`, `qualified`, `witnessed`, `timeout`, `native_ineligible`,
+`ceiling`. Do not encode correlation in `reason_code` JSON or overwrite old
+history. Each `admitted` event stores the original job ID and baseline in its
+existing generation column; these events reconstruct membership and replay
+after active projection fields move to a later resolved episode. Event insertion,
+active projection and scope changes share a transaction.
+Per-member transition is `pending -> checked/terminal -> witnessed`, or
+`pending/checked/terminal -> timeout`; `terminal_at_lock`, `native_ineligible`
+and `ceiling` remain explicit unwitnessed dispositions until timeout. A later
+resource observation never changes `timeout` to `witnessed`. Scope `empty`
+with known coverage means no captured at-risk members and clean NO_WORK, not a
+fresh observation. Unknown coverage, including an empty late scan or all
+captured members individually witnessed, cannot produce `already_finished` or
+full-scope PASS. `capacity_exceeded` cannot produce full-scope PASS. `finished` is derived
+by `read` from a known-complete scope and all admitted members witnessed; the
+private projector never updates or locks the scope row. No eighth write function.
+
+Admission uses a deterministic `(operation_id)` ordered `LIMIT p_capacity+1`
+scan of unresolved reserved-wire PROVIDER_MOCK originals, then the established
+binding/tenant/store/session/operation lock order and post-wait revalidation. The
+`capacity+1` row commits `capacity_exceeded` scope metadata and zero members
+(overflow takes precedence over prior-episode classification); it never admits
+the first `capacity` members. For <=capacity, persist all exact IDs, original
+job IDs, generation high-water and dispositions before child release. An item
+that becomes terminal
+while acquiring its business lock is retained as `terminal_at_lock`, never
+silently removed or claimed. A missing/final/exhausted native job is retained
+as `native_ineligible`; `media_native_job` checks identity only, so inspect
+`river_media.river_job` state, `finalized_at`, `attempt`, `max_attempts` under
+the locked operation. `attempt>=max_attempts` or completed/cancelled/discarded
+cannot acquire an observer lease. The room is the frozen attempt room; known
+egress ID chooses QUERY, missing ID chooses FindByRoom. No pre-wire candidate.
+`begin` first reads a consistent candidate/scope snapshot without taking a
+scope row lock, then takes business operation locks in deterministic order and
+revalidates after each wait; only after all business locks does it insert/update
+the scope row, active projections and events in one transaction. Same-episode
+concurrent begin loses/replays on the unique episode ID without changing the
+winner's membership. Different-episode contention rechecks prior unfinished
+membership under those locks and fails whole. Empty/overflow needs no operation
+lock and writes only its own scope row. No path holds a scope lock while waiting
+for an operation lock.
+
+Claim additionally requires membership in the immutable episode, no prior
+qualifying observation, no escalation/terminal resource, current original job,
+`wire_reserved_at`, generation below the existing 4096/24h ceiling, and
+`(lease_until IS NULL OR lease_until<=clock_timestamp())`; a future lease is
+`busy`, never stolen. Successful
+claim increments the same operation generation once, sets existing
+`lease_mode='reconcile'`, `state='UNKNOWN'`, a 30s lease and token hash; it does
+not touch River, dispatch eligibility, attempt counters or Stop budgets.
+`record` calls the latest private projector under that same fence, obtains the
+exact inserted ROOM/QUERY observation ID, and marks `qualified` in the same
+transaction only if generation exceeds the member high-water. The normal
+worker's private projector can mark a qualifying fresh ROOM/QUERY too; old
+public QUERY cleanup guard and cleanup-query Stop reservation stay intact.
+`finish` only releases its own lease and retains unresolved liability.
+`record` and the normal projector take only the existing business
+operation/projection/event locks, never the scope row; `read` derives scope
+completion from committed member events. `witness` locks its operation first,
+then writes its event/projection; `timeout` reads immutable membership, locks
+operations in sorted order, writes sticky member events/projections, and only
+then updates the scope diagnostic. `begin`, `record`, `witness` and `timeout`
+therefore cannot form a scope-to-operation lock inversion.
+
+Parent obtains a committed `read_media_recovery_episode` response containing
+the exact observation correlation, then samples monotonic elapsed. Witness
+accepts that parent-only elapsed (`0..90000`) even if its SQL commit is later;
+it checks episode, operation, observation ID/source/generation and absence of
+sticky timeout under the original operation lock. Identical witness retries
+are idempotent; conflicting observation/elapsed fails closed. `timeout` requires
+parent elapsed >=90000, checks each member under the original lock, records
+sticky misses for unwitnessed members and cannot reverse a witnessed member.
+If timeout commits first, a later witness returns `timeout_wins`. If DB is
+unavailable at deadline the parent emits the redacted signal and retries only
+timeout persistence; it never calls the provider after deadline. A later
+observation can improve resource knowledge but not the missed deadline.
+For known `empty`, timeout returns `already_finished`, `affected_count=0`, and
+writes no scope timeout/event; the parent emits no 90s resource alert. A later
+distinct abnormal restart may start a new t0/episode. Separate config/readiness
+faults still report their own diagnostic. For unknown coverage, timeout persists
+one sticky scope coverage miss and emits the redacted alert even if every
+captured member was witnessed; `affected_count=0` in that case and all member
+witnesses stay intact. Unknown empty, `capacity_exceeded` and
+`prior_unfinished` also record only the scope timeout with count zero, never
+fabricated per-operation timeouts.
+Each observer SQL call is bounded to 5s and each provider Query/FindByRoom to
+10s; provider I/O is outside locks and both fit the fixed 30s lease. Waiting
+for an old 30s business lease counts inside the same 90s parent clock.
+
+Runtime knobs: `COMMERCE_MEDIA_RECOVERY_SUPERVISED=1` enables the same-binary
+parent; unset/`0` runs legacy, and an invalid value fails closed. The enabled
+parent independently parses `COMMERCE_MEDIA_RECOVERY_DATABASE_URL`,
+`COMMERCE_MEDIA_PROJECTS_JSON` and bounded
+`COMMERCE_MEDIA_WORKER_CONCURRENCY` before loading native material keys or
+child configuration. The project-only parser is extracted from and shared with
+the existing strict worker parser, including the fixed project/endpoint
+selector; no second permissive JSON parser. The recovery DSN is validated and
+opened independently of `COMMERCE_MEDIA_WORKER_DATABASE_URL` and
+`COMMERCE_MEDIA_EXECUTOR_DATABASE_URL`, so a bad native config can still produce
+the 90s diagnostic through the recovery role. Parse/open the recovery role and
+retain its deadline path even if project JSON, native material keys or child
+readiness is invalid; those failures preclude provider I/O. Provider I/O requires
+all three pools to prove same physical DB and exact readiness/role admission; no query
+is attempted if that proof fails. Supervision with
+`COMMERCE_MEDIA_WORKER_ENABLED=0` or missing worker enablement is a failed
+configuration with an explicit disabled/degraded diagnostic, never a 90s
+capability claim. Parent captures t0 at entry before env/pools, owns bounded
+recovery-role pool and episode IDs, and launches an internal child with
+`COMMERCE_MEDIA_RECOVERY_INTERNAL_CHILD=1` plus a private
+inherited stdin control pipe. Child runs the existing native worker only after
+reading one release byte; EOF before release means exit, and EOF afterward
+cancels the child context. Parent holds the write end open while child runs and
+writes release after admission commit/readback; on DB outage or capacity overflow
+it releases the native child with degraded observation coverage. Parent
+constructs a sanitized child env;
+child never receives recovery-role DSN or observer token. Parent reaps every
+exit, retries child with capped 1..5s
+backoff, keeps unfinished episode/deadline across crashes, and never schedules
+observer provider I/O after t0+90s. Invalid native configuration does not exit
+the parent before the deadline signal/persistence attempt; its child may fail
+or never launch, but the parent survives and retains the unresolved episode.
+SIGTERM forwards to child, waits a bounded
+5s then kills/reaps; parent/host death loses monotonic proof and requires
+external supervisor plus alert collection. Local durable evidence and redacted
+stderr are testable; actual human alert delivery remains NOT_RUN.
+
+Add one read-only `live.media_recovery_ready() RETURNS boolean` probe granted
+only to the recovery role. It checks the seven exact signatures, return shapes,
+owners, ACLs, fixed search path and RLS/guards; startup separately proves the
+same physical DB across recovery, worker and executor pools. Migration order:
+additive metadata/function/role first,
+upgrade admission's exactly-one-role matrix in every pool, qualify old and new
+binaries while supervision remains disabled, then enable supervisor. A mixed
+binary or role matrix mismatch prevents the 90s claim. MRR01-04, original LMR05,
+provider and alert delivery remain NOT_RUN until independently executed.
