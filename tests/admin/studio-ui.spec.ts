@@ -1,6 +1,7 @@
 import { expect, test, type Page, type BrowserContext } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
+import { parseDraft } from "../../apps/admin/lib/studio-model";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -85,9 +86,11 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   // A new draft is genuinely created by the UI, then edited and reopened.
   await page.getByRole("button", { name: /New scene/ }).click();
   await page.getByLabel("Scene name").fill("STU04 browser-created scene");
+  await page.getByLabel("Scheduled time (UTC, optional)").fill("2030-01-01T00:00");
   await page.getByLabel("Canvas ratio").selectOption("16:9");
   await page.getByRole("button", { name: "Create draft" }).click();
   await expect(page.getByLabel("Scene name")).toHaveValue("STU04 browser-created scene");
+  await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue("2030-01-01T00:00");
   const createdURL = page.url();
   expect(createdURL).toMatch(/scene=[0-9a-f-]{36}/);
   await expect(page.getByText("No current prepared authority", { exact: false })).toBeVisible();
@@ -97,6 +100,7 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await expect(page.getByText("STU04 browser-edited scene").first()).toBeVisible();
   await page.reload();
   await expect(page.getByLabel("Scene name")).toHaveValue("STU04 browser-edited scene");
+  await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue("2030-01-01T00:00");
 
   // Two real signed UI views race on the same version. The stale tab must
   // report a conflict, not overwrite the newer persisted edit.
@@ -164,6 +168,7 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await expect(page.getByText("STU04 phone-edited scene").first()).toBeVisible();
   await page.reload();
   await expect(page.getByLabel("Scene name")).toHaveValue("STU04 phone-edited scene");
+  await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue("2030-01-01T00:00");
   await page.setViewportSize({ width: 1586, height: 992 });
 
   // Establish a real Orders→Studio route boundary before the uncertain write.
@@ -255,6 +260,19 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
     bffRequests: authHeaders.length, locales: ["en", "zh-CN", "zh-TW"],
     viewports: ["1586x992", "390x844"], createdURL, csrfStatus: csrfDenied.status,
   }), { mode: 0o600 });
+});
+
+test("STU04 exact draft timestamp parser accepts offsets without admitting malformed dates", () => {
+  const base = {
+    session_id: "11111111-1111-4111-8111-111111111111",
+    program_id: "22222222-2222-4222-8222-222222222222",
+    title: "timestamp fixture", scheduled_at: null, aspect_ratio: "16:9", state: "DRAFT", version: 1,
+    created_at: "2030-01-01T00:00:00Z", updated_at: "2030-01-01T00:00:00Z",
+  };
+  for (const value of ["2030-01-01T00:00:00Z", "2030-01-01T08:00:00.123456+08:00", "2029-12-31T18:30:00-05:30"])
+    expect(parseDraft({ ...base, created_at: value, updated_at: value, scheduled_at: value }).scheduled_at).toBe(value);
+  for (const value of ["2030-01-01T00:00:00", "2030-01-01T00:00:00+25:00", "2030-02-30T00:00:00Z", "2030-01-01T00:00:00+08:99", "2030-01-01T00:00Z"])
+    expect(() => parseDraft({ ...base, created_at: value })).toThrow();
 });
 
 test("STU04 read-only and expired sessions cannot mutate", async ({ browser }) => {

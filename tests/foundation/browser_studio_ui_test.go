@@ -237,6 +237,10 @@ func TestBrowserStudioUIRealChain(t *testing.T) {
 	if err := h.lp.f.owner.QueryRow(ctx, `SELECT count(*) FROM live.sessions WHERE tenant_id=$1 AND store_id=$2 AND title='STU04 swapped login scene'`, h.lp.f.tenantA, h.lp.f.storeA1).Scan(&duplicateCount); err != nil || duplicateCount != 1 {
 		t.Fatalf("swapped-login effect count=%d err=%v evidence=%s", duplicateCount, err, evidence)
 	}
+	var scheduled time.Time
+	if err := h.lp.f.owner.QueryRow(ctx, `SELECT scheduled_at FROM live.sessions WHERE tenant_id=$1 AND store_id=$2 AND title='STU04 phone-edited scene'`, h.lp.f.tenantA, h.lp.f.storeA1).Scan(&scheduled); err != nil || scheduled.UTC().Format(time.RFC3339) != "2030-01-01T00:00:00Z" {
+		t.Fatalf("UTC schedule shifted on title edit: instant=%s err=%v evidence=%s", scheduled.UTC().Format(time.RFC3339), err, evidence)
+	}
 	var issued int
 	if err := h.lp.f.owner.QueryRow(ctx, `SELECT count(*) FROM identity.sessions s JOIN identity.session_events ev ON ev.session_id=s.id AND ev.action='session.issued' JOIN identity.external_identities e ON e.principal_id=s.principal_id WHERE e.issuer=$1 AND e.subject='browser-subject' AND s.token_hash<>$2`, idp.server.URL, tokenHash(h.lp.token)).Scan(&issued); err != nil || issued != 2 {
 		t.Fatalf("signed browser login count=%d err=%v evidence=%s", issued, err, evidence)
