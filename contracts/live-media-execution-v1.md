@@ -156,6 +156,13 @@ provider timestamps must be coherent: updated >= started where both present,
 ended >= started where both present, updated >= ended where both present.
 A terminal enum without a positive ended timestamp remains an observation,
 not resource termination. An end timestamp on a nonterminal status is invalid.
+Zero started/updated timestamps mean absent, not an extra reason to reject a
+positive terminal end. Keep each valid original report. Merge nonzero timestamp
+facts only when the candidate projection remains coherent under the same pair
+rules; otherwise retain the previous coherent timestamps and unresolved resource
+state, return observe and continue exact-target Query. A contradictory partial
+merge must not fabricate terminal proof. Evaluate duration on the coherent merged
+projection, including start and update facts received in different reports.
 Terminal projection never reopens. This synchronous-only increment issues no
 new lease once terminal: a report using the closed/stale lease is rejected
 without writes and cannot replace identity or terminal facts. Preserving and
@@ -164,7 +171,12 @@ authenticated ingress contract; it is not claimed by these five functions.
 Empty/ambiguous/malformed discovery is UNKNOWN, not proof that no resource exists.
 
 Revocation after reservation or observed duration >= frozen maximum sets sticky
-cleanup_required. It does not authorize Stop in this increment. At >=4096 claimed
+cleanup_required. Revocation includes loss of original principal/membership/
+live:manage, inactive tenant/store, disabled or changed frozen bindings, and
+prepared-authorization revocation. Recheck these lifetime conditions on recovery
+without rejecting the observation. `start_before` is only a Start admission
+deadline: its passage alone is not a lifetime revocation or duration limit.
+It does not authorize Stop in this increment. At >=4096 claimed
 generations or age >=24h measured from operation.created_at, persist escalation
 (`reconcile_exhausted`), clear lease,
 leave unresolved resource/UNKNOWN liability intact, return escalated. No silent
