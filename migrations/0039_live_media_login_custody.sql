@@ -7,7 +7,7 @@ CREATE TABLE live.media_login_custody (
  authz_revision bigint NOT NULL CHECK (authz_revision>0),
  login_expires_at timestamptz NOT NULL,
  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
- CHECK (login_expires_at>created_at),
+ CHECK (isfinite(login_expires_at) AND login_expires_at>created_at),
  FOREIGN KEY (tenant_id,store_id,attempt_id)
   REFERENCES live.media_attempts(tenant_id,store_id,id) ON DELETE CASCADE
 );
@@ -36,7 +36,8 @@ BEGIN
  SELECT s.id,s.expires_at,s.revoked_at INTO v_id,v_expiry,v_revoked
  FROM identity.sessions s WHERE s.token_hash=p_hash AND s.principal_id=p_principal
   AND s.audience='merchant' FOR SHARE;
- IF v_id IS NULL OR v_revoked IS NOT NULL OR v_expiry<=clock_timestamp() THEN
+ IF v_id IS NULL OR v_revoked IS NOT NULL OR NOT isfinite(v_expiry)
+  OR v_expiry<=clock_timestamp() THEN
   RAISE EXCEPTION 'media login unavailable' USING ERRCODE='MP401'; END IF;
  RETURN QUERY SELECT v_id,v_expiry;
 END $$;
@@ -54,7 +55,8 @@ LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
    AND c.tenant_id=a.tenant_id AND c.store_id=a.store_id
   JOIN identity.sessions login ON login.id=c.login_session_id
    AND login.principal_id=a.original_principal_id AND login.audience='merchant'
-   AND login.revoked_at IS NULL AND login.expires_at>clock_timestamp()
+   AND login.revoked_at IS NULL AND isfinite(login.expires_at)
+   AND login.expires_at>clock_timestamp()
   JOIN control.tenants t ON t.id=a.tenant_id AND t.active
   JOIN control.stores s ON s.tenant_id=a.tenant_id AND s.id=a.store_id AND s.active
   JOIN identity.principals ip ON ip.id=a.original_principal_id AND ip.active
@@ -63,7 +65,7 @@ LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
   WHERE o.id=p_operation AND o.actor_kind='MEDIA_ATTEMPT'
    AND o.tenant_id=a.tenant_id AND o.store_id=a.store_id
    AND o.principal_id=a.original_principal_id
-   AND c.login_expires_at>clock_timestamp()
+   AND isfinite(c.login_expires_at) AND c.login_expires_at>clock_timestamp()
    AND EXISTS (SELECT 1 FROM identity.store_grants g WHERE g.tenant_id=a.tenant_id
     AND g.store_id=a.store_id AND g.principal_id=ip.id AND g.permission='store:read')
    AND EXISTS (SELECT 1 FROM identity.store_grants g WHERE g.tenant_id=a.tenant_id
@@ -100,7 +102,8 @@ BEGIN
  SELECT * INTO c FROM live.media_login_custody WHERE attempt_id=a.id;
  IF c.attempt_id IS NULL OR c.tenant_id<>a.tenant_id OR c.store_id<>a.store_id
   OR a.original_principal_id<>v_access.principal_id
-  OR c.authz_revision<>v_access.authz_revision THEN
+  OR c.authz_revision<>v_access.authz_revision
+  OR NOT isfinite(c.login_expires_at) THEN
   RAISE EXCEPTION 'media login custody unavailable' USING ERRCODE='MP409'; END IF;
  SELECT login_session_id,login_expires_at INTO v_login,v_expiry
   FROM identity.lock_media_login(p_hash,v_access.principal_id);
@@ -208,11 +211,13 @@ BEGIN
   AND session_id=p_session FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'media program unavailable' USING ERRCODE='MP404'; END IF;
  SELECT * INTO v_auth FROM live.prepared_media_authorizations WHERE id=p_authorization FOR SHARE;
+ IF NOT FOUND THEN
+  RAISE EXCEPTION 'media authorization unavailable' USING ERRCODE='MP409'; END IF;
  -- The identity-owned helper waits after the established media lock order.
  SELECT login_session_id,login_expires_at INTO v_login_id,v_login_expiry
   FROM identity.lock_media_login(p_hash,v_principal);
  v_now:=clock_timestamp();
- IF NOT FOUND OR v_auth.tenant_id<>v_tenant OR v_auth.store_id<>p_store
+ IF v_auth.tenant_id<>v_tenant OR v_auth.store_id<>p_store
   OR v_auth.session_id<>p_session OR v_auth.environment<>'MOCK'
   OR v_auth.evidence_type<>'MOCK_FIXTURE' OR v_auth.start_before<=v_now
   OR v_login_expiry<=v_now
