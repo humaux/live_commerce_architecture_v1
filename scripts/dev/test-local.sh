@@ -225,7 +225,7 @@ elif [[ "$test_mode" == --live-media-input ]]; then
 elif [[ "$test_mode" == --live-browser-input ]]; then
   GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=240s -run '^TestLiveBrowserInputBRW' -v ./tests/foundation
   GOTOOLCHAIN=go1.27.1 go vet ./internal/live ./tests/foundation
-  printf 'PASS: isolated BRW SQL/executor subset; HTTP, browser/SFU and recovery gates remain separate.\n'
+  printf 'PASS: isolated BRW SQL/executor and Go HTTP subset; HTTPS browser/SFU and recovery gates remain separate.\n'
 elif [[ "$test_mode" == --live-media-crash ]]; then
   GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^TestLiveMediaStopLMR05RealCrashAndCommitAckLoss$' -v ./tests/foundation
   printf 'PASS: isolated LMR05 crash diagnostic only; Stop and full regression still required.\n'

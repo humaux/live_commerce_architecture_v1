@@ -209,3 +209,17 @@ and `internal/integrations/livekit`.
 The old browser regression does **not** exercise the new HTTPS input routes.
 New HTTPS signed-login/token delivery, actual SFU decoded media, INPUT recovery
 and the new-source full regression remain separate unclosed gates.
+
+### First HTTPS browser attempt (not accepted)
+
+The local `--browser-input-delivery` run on `93ce8a2` exited 1 after 3.41s
+(foundation 5.839s). The Stop phase passed preceding login/token/replay/WSS and
+denial assertions, then failed the forged-Origin assertion: expected 403,
+received 409. Because that negative ran after Stop, its response alone does not
+prove the hostile Origin reached the BFF. Root-cause review and a causal test
+repair are pending; the required 403 is unchanged. The revoke phase did not run.
+
+- Log: `/Volumes/data/output/brw05-https-browser-root-first-20260928.log`.
+- Browser evidence: `output/playwright/input-delivery-20260927T163548.588591000/`.
+- Disposable test resources were removed; the three preexisting containers were
+  not touched. No test failure is counted as HTTPS acceptance.
