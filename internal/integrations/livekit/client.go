@@ -1,4 +1,4 @@
-// Package livekit implements the bounded LiveKit Cloud Egress wire profile.
+// Package livekit implements bounded LiveKit Cloud Egress and browser-input wire profiles.
 // It reports provider observations, not audience, billing, or resource closure.
 package livekit
 

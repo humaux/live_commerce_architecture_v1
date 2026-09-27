@@ -15,11 +15,15 @@ var (
 	inputRoomSID     = regexp.MustCompile(`^RM_[A-Za-z0-9_-]{1,100}$`)
 )
 
+// PublisherGrant must come from persisted server authority, not browser input.
+// Syntax and time validation here do not establish merchant access or ownership.
 type PublisherGrant struct {
 	RoomName, Identity  string
 	IssuedAt, ExpiresAt int64
 }
 
+// PublisherToken redacts diagnostics; Bearer is the deliberate secret exit for
+// the future authenticated, no-store HTTPS response. Never put it in receipts.
 type PublisherToken struct{ value string }
 
 func (t PublisherToken) Bearer() string   { return t.value }
@@ -29,8 +33,10 @@ func (PublisherToken) MarshalJSON() ([]byte, error) {
 	return []byte(`"livekit.PublisherToken{redacted}"`), nil
 }
 
+// InputTarget must identify the exact room/publisher owned by the stored attempt.
 type InputTarget struct{ RoomName, Identity string }
 
+// InputObservation reports provider track metadata, not decoded media quality.
 type InputObservation struct {
 	RoomName, Identity, ParticipantID, State string
 	CameraPublished, CameraMuted             bool
@@ -43,6 +49,8 @@ func validInputTarget(t InputTarget) bool {
 	return roomPattern.MatchString(t.RoomName) && publisherPattern.MatchString(t.Identity)
 }
 
+// MintPublisher signs fixed claims without I/O or replay deadline extension.
+// Admission persistence, revocation and the connected lifetime belong upstream.
 func (c *Client) MintPublisher(g PublisherGrant) (PublisherToken, error) {
 	now := time.Now().Unix()
 	if !c.ready() || !validInputTarget(InputTarget{g.RoomName, g.Identity}) ||
@@ -114,6 +122,8 @@ func (c *Client) ObserveInput(ctx context.Context, target InputTarget) (InputObs
 	return decodeInput(body, target)
 }
 
+// RemoveInput returns only an RPC acknowledgement; strict cached-token revocation
+// requires the qualified Cloud profile and controller described in the contract.
 func (c *Client) RemoveInput(ctx context.Context, target InputTarget, cutoff int64) error {
 	now := time.Now().Unix()
 	if !c.ready() || ctx == nil || !validInputTarget(target) || cutoff <= 0 || cutoff > now || now-cutoff > 30 {
@@ -130,6 +140,7 @@ func (c *Client) RemoveInput(ctx context.Context, target InputTarget, cutoff int
 	return nil
 }
 
+// DeleteInputRoom does not establish token revocation or Egress termination.
 func (c *Client) DeleteInputRoom(ctx context.Context, room string) error {
 	if !c.ready() || ctx == nil || !roomPattern.MatchString(room) {
 		return ErrInvalid
@@ -143,6 +154,8 @@ func (c *Client) DeleteInputRoom(ctx context.Context, room string) error {
 	return nil
 }
 
+// ObserveInputRoom reports a momentary observation; ErrNotObserved is not proof
+// that a cached token cannot recreate this room. See livekit-input-protocol-v1.md.
 func (c *Client) ObserveInputRoom(ctx context.Context, room string) (InputRoomObservation, error) {
 	if !c.ready() || ctx == nil || !roomPattern.MatchString(room) {
 		return InputRoomObservation{}, ErrInvalid
