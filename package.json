@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
+    "livekit-client": "2.22.3",
     "prettier": "3.9.8",
     "typescript": "7.0.2"
   }

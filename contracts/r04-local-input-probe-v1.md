@@ -1,6 +1,8 @@
 # R04 real local media input probe
 
-Status: **CANDIDATE / NOT_RUN**. Main base `05472bd`, 2026-09-27.
+Status: **FROZEN_FOR_LOCAL_PROBE / NOT_RUN**. Main base `05472bd`, 2026-09-27.
+Independent bounded preflight of `d46da36` found no material P0/P1. This freezes
+the probe only; no execution or product acceptance is implied.
 This is a bounded dependency probe, not a merchant feature or G06 acceptance.
 
 ## Decision and scope
@@ -18,6 +20,9 @@ Darwin asset; use the pinned Homebrew/core ARM64 bottle (the official docs route
 macOS users through Homebrew), not an invented upstream macOS release. Bottle
 SHA256: `23ce9068dae09785cbb8da9f4378f27f7e178cb7a8e427f4fb1708968f0b6d8d`.
 Record its source/OS compatibility and extracted binary checksum before running.
+Verified on this host (macOS 27.0 ARM64): `livekit-server --version` returned
+1.13.7; extracted binary SHA256
+`2b06c267be38bae34e2314ea648826c39220f93bd9ed25286d6fc17585e28f91`.
 Pin test-only `livekit-client@2.22.3` with registry integrity in the lockfile.
 Dependency download
 is setup only; the media run must need no external network. Runtime must bind to
