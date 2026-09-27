@@ -1,0 +1,75 @@
+-- Read-only pin for the opt-in recovery surface, installed after native River.
+CREATE FUNCTION live.media_recovery_ready() RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ SELECT
+  (SELECT count(*)=7 FROM (VALUES
+   ('live.begin_media_recovery_episode(uuid,bigint,integer,boolean)',
+    'TABLE(disposition text, episode_id uuid, operation_id uuid, job_id bigint, baseline_generation bigint, deadline_at timestamp with time zone, candidate_count integer, coverage_known boolean, blocked_by_episode_id uuid)'),
+   ('live.claim_recovery_observation(uuid,uuid,bigint,bytea)',
+    'TABLE(disposition text, generation bigint, project_id text, credential_version bigint, endpoint_identity text, room_name text, egress_id text)'),
+   ('live.record_recovery_observation(uuid,uuid,bigint,bytea,text,text,text,text,bigint,bigint,bigint)',
+    'TABLE(disposition text, observation_id uuid)'),
+   ('live.finish_recovery_observation(uuid,uuid,bigint,bytea,text)', 'text'),
+   ('live.read_media_recovery_episode(uuid)',
+    'TABLE(episode_id uuid, scope_status text, coverage_known boolean, candidate_count integer, blocked_by_episode_id uuid, operation_id uuid, disposition text, baseline_generation bigint, observation_id uuid, observation_source text, observation_generation bigint, witness_elapsed_ms bigint, timeout_at timestamp with time zone, cleanup_required boolean)'),
+   ('live.witness_media_recovery_episode(uuid,uuid,uuid,bigint)', 'text'),
+   ('live.timeout_media_recovery_episode(uuid,bigint)',
+    'TABLE(disposition text, affected_count integer)')
+  ) AS expected(signature,result_shape)
+  JOIN pg_catalog.pg_proc p ON p.oid=pg_catalog.to_regprocedure(expected.signature)
+  WHERE pg_catalog.pg_get_function_result(p.oid)=expected.result_shape
+   AND p.proowner='commerce_media_writer'::regrole AND p.prosecdef
+   AND 'search_path=pg_catalog'=ANY(p.proconfig)
+   AND pg_catalog.has_function_privilege('commerce_media_recovery',p.oid,'EXECUTE')
+   AND NOT EXISTS(SELECT 1 FROM pg_catalog.aclexplode(
+    coalesce(p.proacl,pg_catalog.acldefault('f',p.proowner))) acl
+    WHERE acl.privilege_type='EXECUTE'
+     AND acl.grantee NOT IN (p.proowner,'commerce_media_recovery'::regrole)))
+  AND EXISTS(SELECT 1 FROM pg_catalog.pg_class c
+   WHERE c.oid='live.media_recovery_episode_scope'::regclass
+    AND c.relrowsecurity AND c.relforcerowsecurity)
+  AND EXISTS(SELECT 1 FROM pg_catalog.pg_class c
+   WHERE c.oid='live.media_execution_state'::regclass
+    AND c.relrowsecurity AND c.relforcerowsecurity)
+  AND EXISTS(SELECT 1 FROM pg_catalog.pg_class c
+   WHERE c.oid='live.media_observations'::regclass
+    AND c.relrowsecurity AND c.relforcerowsecurity)
+  AND EXISTS(SELECT 1 FROM pg_catalog.pg_class c
+   WHERE c.oid='integration.operation_events'::regclass
+    AND c.relrowsecurity AND c.relforcerowsecurity)
+  AND EXISTS(SELECT 1 FROM pg_catalog.pg_roles r
+   WHERE r.rolname='commerce_media_writer' AND NOT r.rolcanlogin
+    AND NOT r.rolsuper AND NOT r.rolbypassrls AND NOT r.rolcreatedb
+    AND NOT r.rolcreaterole AND NOT r.rolreplication)
+  AND EXISTS(SELECT 1 FROM pg_catalog.pg_policy p
+   WHERE p.polrelid='integration.operation_events'::regclass
+    AND p.polname='media_writer_event_read' AND p.polcmd='r' AND p.polpermissive
+    AND p.polroles=ARRAY['commerce_media_writer'::regrole::oid]
+    AND pg_catalog.regexp_replace(pg_catalog.pg_get_expr(p.polqual,p.polrelid),
+     '[[:space:]]+','','g') IN (
+     'EXISTS(SELECT1FROMintegration.operationsoWHERE((o.id=operation_events.operation_id)AND(o.tenant_id=operation_events.tenant_id)AND(o.store_id=operation_events.store_id)AND(o.actor_kind=''MEDIA_ATTEMPT''::text)))',
+     '(EXISTS(SELECT1FROMintegration.operationsoWHERE((o.id=operation_events.operation_id)AND(o.tenant_id=operation_events.tenant_id)AND(o.store_id=operation_events.store_id)AND(o.actor_kind=''MEDIA_ATTEMPT''::text))))'))
+  AND NOT EXISTS(SELECT 1 FROM pg_catalog.pg_policy extra
+   WHERE extra.polrelid='integration.operation_events'::regclass
+    AND extra.polname<>'media_writer_event_read' AND extra.polcmd IN ('r','*')
+    AND EXISTS(SELECT 1 FROM pg_catalog.unnest(extra.polroles) policy_role(role_oid)
+     WHERE CASE WHEN policy_role.role_oid=0 THEN true
+      WHEN policy_role.role_oid='commerce_media_writer'::regrole::oid THEN true
+      ELSE pg_catalog.pg_has_role('commerce_media_writer'::regrole::oid,
+       policy_role.role_oid,'USAGE') END))
+  AND EXISTS(SELECT 1 FROM pg_catalog.pg_trigger t
+   WHERE t.tgrelid='live.media_execution_state'::regclass
+    AND t.tgname='media_execution_identity' AND t.tgenabled='O'
+    AND t.tgfoid='live.guard_media_execution_identity()'::regprocedure)
+  AND EXISTS(SELECT 1 FROM pg_catalog.pg_trigger t
+   WHERE t.tgrelid='live.media_observations'::regclass
+    AND t.tgname='media_recovery_observation' AND t.tgenabled='O'
+    AND t.tgfoid='live.qualify_media_recovery_observation()'::regprocedure)
+  AND EXISTS(SELECT 1 FROM pg_catalog.pg_proc p WHERE p.oid='live.media_native_job(bigint,uuid)'::regprocedure
+   AND p.proowner='commerce_media_writer'::regrole AND p.prosecdef
+   AND pg_catalog.pg_get_functiondef(p.oid) LIKE '%river_media.river_job%')
+  AND pg_catalog.to_regclass('river_media.river_job') IS NOT NULL
+$$;
+ALTER FUNCTION live.media_recovery_ready() OWNER TO commerce_media_writer;
+REVOKE ALL ON FUNCTION live.media_recovery_ready() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION live.media_recovery_ready() TO commerce_media_recovery;

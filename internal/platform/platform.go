@@ -197,6 +197,7 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 	var metaWorker, metaWorkerUsage, metaWorkerSet bool
 	var mediaRegistrar, mediaRegistrarUsage, mediaRegistrarSet, mediaWriter, mediaWriterUsage, mediaWriterSet bool
 	var mediaWorker, mediaWorkerUsage, mediaWorkerSet, mediaExecutor, mediaExecutorUsage, mediaExecutorSet bool
+	var mediaRecovery, mediaRecoveryUsage, mediaRecoverySet bool
 	err := pool.QueryRow(ctx, `
 		SELECT session_user=current_user, session_user=$1, r.rolsuper, r.rolbypassrls, r.rolcreaterole, r.rolcreatedb, r.rolreplication,
 		       (EXISTS (
@@ -245,6 +246,9 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 		       coalesce(pg_has_role(session_user, to_regrole('commerce_media_executor'), 'MEMBER'),false),
 		       coalesce(pg_has_role(session_user, to_regrole('commerce_media_executor'), 'USAGE'),false),
 		       coalesce(pg_has_role(session_user, to_regrole('commerce_media_executor'), 'SET'),false),
+		       coalesce(pg_has_role(session_user, to_regrole('commerce_media_recovery'), 'MEMBER'),false),
+		       coalesce(pg_has_role(session_user, to_regrole('commerce_media_recovery'), 'USAGE'),false),
+		       coalesce(pg_has_role(session_user, to_regrole('commerce_media_recovery'), 'SET'),false),
 		       EXISTS (SELECT 1 FROM pg_roles predefined WHERE predefined.rolname LIKE 'pg\_%' ESCAPE '\'
 			   AND pg_has_role(session_user, predefined.oid, 'MEMBER')),
 		       EXISTS (
@@ -264,7 +268,7 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 			     AND (pg_has_role(session_user, candidate.oid, 'SET') OR pg_has_role(session_user, candidate.oid, 'USAGE'))
 		       )
 		FROM pg_roles r WHERE r.rolname = session_user`, pool.Config().ConnConfig.User).
-		Scan(&sameLogin, &dsnUserMatch, &superuser, &bypassRLS, &roleAdmin, &databaseCreator, &replication, &objectOwner, &runtimeMember, &authMember, &identityMember, &buyerRuntimeMember, &buyerIssuerMember, &workerMember, &checkoutMember, &hostedMember, &hostedUsage, &hostedSet, &checkoutWriterMember, &metaIngress, &metaRegistrar, &metaCurator, &metaConsumer, &metaWriter, &metaUsage, &metaSet, &consumerUsage, &consumerSet, &metaWorker, &metaWorkerUsage, &metaWorkerSet, &mediaRegistrar, &mediaRegistrarUsage, &mediaRegistrarSet, &mediaWriter, &mediaWriterUsage, &mediaWriterSet, &mediaWorker, &mediaWorkerUsage, &mediaWorkerSet, &mediaExecutor, &mediaExecutorUsage, &mediaExecutorSet, &systemAuthority, &canReachPrivileged)
+		Scan(&sameLogin, &dsnUserMatch, &superuser, &bypassRLS, &roleAdmin, &databaseCreator, &replication, &objectOwner, &runtimeMember, &authMember, &identityMember, &buyerRuntimeMember, &buyerIssuerMember, &workerMember, &checkoutMember, &hostedMember, &hostedUsage, &hostedSet, &checkoutWriterMember, &metaIngress, &metaRegistrar, &metaCurator, &metaConsumer, &metaWriter, &metaUsage, &metaSet, &consumerUsage, &consumerSet, &metaWorker, &metaWorkerUsage, &metaWorkerSet, &mediaRegistrar, &mediaRegistrarUsage, &mediaRegistrarSet, &mediaWriter, &mediaWriterUsage, &mediaWriterSet, &mediaWorker, &mediaWorkerUsage, &mediaWorkerSet, &mediaExecutor, &mediaExecutorUsage, &mediaExecutorSet, &mediaRecovery, &mediaRecoveryUsage, &mediaRecoverySet, &systemAuthority, &canReachPrivileged)
 	if err != nil {
 		return fmt.Errorf("validate runtime role: %w", err)
 	}
@@ -275,7 +279,7 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 		"checkout_runtime": checkoutMember, "meta_ingress": metaIngress,
 		"meta_registrar": metaRegistrar, "meta_curator": metaCurator, "meta_consumer": metaConsumer,
 		"meta_worker": metaWorker, "media_registrar": mediaRegistrar,
-		"media_worker": mediaWorker, "media_executor": mediaExecutor}
+		"media_worker": mediaWorker, "media_executor": mediaExecutor, "media_recovery": mediaRecovery}
 	roleCount := 0
 	for _, member := range memberships {
 		if member {
@@ -302,6 +306,9 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 	}
 	if authority == "media_executor" {
 		roleValid = roleValid && mediaExecutorUsage && !mediaExecutorSet && !systemAuthority
+	}
+	if authority == "media_recovery" {
+		roleValid = roleValid && mediaRecoveryUsage && !mediaRecoverySet && !systemAuthority
 	}
 	// A privileged login cannot launder its authority with startup SET ROLE:
 	// RESET ROLE would recover the session_user's capabilities after admission.
@@ -331,18 +338,24 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 				 AND p.proargtypes[2]='pg_catalog.uuid'::regtype
 				 AND p.proargtypes[3]='pg_catalog.text'::regtype)
 				OR p.oid IN (SELECT x.oid FROM pg_catalog.pg_proc x WHERE x.pronamespace=n.oid
-				 AND x.proname IN ('claim_media_operation','load_media_material','reserve_media_start',
-				 'record_media_observation','finish_media_uncertain'))
+					AND x.proname IN ('claim_media_operation','load_media_material','reserve_media_start',
+					'record_media_observation','finish_media_uncertain',
+					'begin_media_recovery_episode','claim_recovery_observation',
+					'record_recovery_observation','finish_recovery_observation',
+					'read_media_recovery_episode','witness_media_recovery_episode',
+					'timeout_media_recovery_episode','media_recovery_ready',
+					'media_recovery_begin_replay','media_recovery_native_eligible',
+					'qualify_media_recovery_observation'))
 			)
 		)
 		SELECT EXISTS (
 			SELECT 1 FROM reachable r CROSS JOIN fixed f
 			WHERE has_function_privilege(r.oid, f.oid, 'EXECUTE')
 		)`).Scan(&mediaExecute)
-	if err != nil || (mediaExecute && authority != "media_executor") {
+	if err != nil || (mediaExecute && authority != "media_executor" && authority != "media_recovery") {
 		return errors.New("unsafe runtime database role")
 	}
-	if authority == "media_executor" || authority == "media_worker" {
+	if authority == "media_executor" || authority == "media_worker" || authority == "media_recovery" {
 		if err := validateMediaAuthority(ctx, pool, authority); err != nil {
 			return err
 		}
