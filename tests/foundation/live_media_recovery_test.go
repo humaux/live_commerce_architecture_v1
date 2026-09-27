@@ -199,9 +199,9 @@ func TestLiveMediaRecoveryMRR02ScopeClockAndWitness(t *testing.T) {
 	if disposition, _, _ := mrrClaim(t, recovery, episode, h, randomBytes(32)); disposition != "busy" {
 		t.Fatalf("active old lease stolen: %s", disposition)
 	}
-	// This SQL gate changes only the business lease, never River attempted_at,
-	// native job state or the parent wall clock.
-	mustExec(t, h.lp.f.owner, `UPDATE integration.operations SET lease_until=NULL WHERE id=$1`, h.plan.OperationID)
+	// This SQL-only gate expires an otherwise intact lease; it never changes
+	// River attempted_at, native job state, or the parent's wall clock.
+	mustExec(t, h.lp.f.owner, `UPDATE integration.operations SET lease_until=clock_timestamp()-interval '1 second' WHERE id=$1`, h.plan.OperationID)
 	token := randomBytes(32)
 	if disposition, generation, egress := mrrClaim(t, recovery, episode, h, token); disposition != "claimed" || generation <= *first[0].baseline || egress != nil {
 		t.Fatalf("ROOM recovery claim: %s gen=%d egress=%v", disposition, generation, egress)
@@ -309,7 +309,7 @@ func TestLiveMediaRecoveryMRR03NegativeAuthorityAndFences(t *testing.T) {
 	if got := mrrBegin(t, recovery, episode, 0, 1, true); len(got) != 1 || got[0].operation == nil {
 		t.Fatalf("missing member: %+v", got)
 	}
-	mustExec(t, h.lp.f.owner, `UPDATE integration.operations SET lease_until=NULL WHERE id=$1`, h.plan.OperationID)
+	mustExec(t, h.lp.f.owner, `UPDATE integration.operations SET lease_until=clock_timestamp()-interval '1 second' WHERE id=$1`, h.plan.OperationID)
 	token := randomBytes(32)
 	disposition, generation, _ := mrrClaim(t, recovery, episode, h, token)
 	if disposition != "claimed" {
@@ -365,7 +365,7 @@ func TestLiveMediaRecoveryMRR02TimeoutWinsAndCoverage(t *testing.T) {
 	if disposition, count := mrrTimeout(t, recovery, blocked, 90000); disposition != "timed_out" || count != 0 {
 		t.Fatalf("prior-unfinished scope miss: %s %d", disposition, count)
 	}
-	mustExec(t, h.lp.f.owner, `UPDATE integration.operations SET lease_until=NULL WHERE id=$1`, h.plan.OperationID)
+	mustExec(t, h.lp.f.owner, `UPDATE integration.operations SET lease_until=clock_timestamp()-interval '1 second' WHERE id=$1`, h.plan.OperationID)
 	token := randomBytes(32)
 	if disposition, generation, _ := mrrClaim(t, recovery, episode, h, token); disposition != "claimed" {
 		t.Fatalf("unknown-coverage claim: %s", disposition)
@@ -405,7 +405,7 @@ func TestLiveMediaRecoveryMRR02TimeoutFirstAndCapacity(t *testing.T) {
 	if rows := mrrBegin(t, recovery, episode, 0, 1, true); len(rows) != 1 || rows[0].operation == nil {
 		t.Fatalf("member absent: %+v", rows)
 	}
-	mustExec(t, h.lp.f.owner, `UPDATE integration.operations SET lease_until=NULL WHERE id=$1`, h.plan.OperationID)
+	mustExec(t, h.lp.f.owner, `UPDATE integration.operations SET lease_until=clock_timestamp()-interval '1 second' WHERE id=$1`, h.plan.OperationID)
 	token := randomBytes(32)
 	disposition, generation, _ := mrrClaim(t, recovery, episode, h, token)
 	if disposition != "claimed" {
@@ -461,7 +461,7 @@ func TestLiveMediaRecoveryMRR02WitnessCommitBeatsWaitingTimeout(t *testing.T) {
 	mrrReserveUnansweredStart(t, h)
 	episode := randomUUID()
 	mrrBegin(t, recovery, episode, 0, 1, true)
-	mustExec(t, h.lp.f.owner, `UPDATE integration.operations SET lease_until=NULL WHERE id=$1`, h.plan.OperationID)
+	mustExec(t, h.lp.f.owner, `UPDATE integration.operations SET lease_until=clock_timestamp()-interval '1 second' WHERE id=$1`, h.plan.OperationID)
 	token := randomBytes(32)
 	disposition, generation, _ := mrrClaim(t, recovery, episode, h, token)
 	if disposition != "claimed" {
@@ -543,9 +543,9 @@ func TestLiveMediaRecoveryMRR03CleanupGuardAndStopBudget(t *testing.T) {
 	if after := h.facts(t); after != before {
 		t.Fatalf("old QUERY wrote despite rejection: %+v -> %+v", before, after)
 	}
-	// Isolated SQL counterexample: release the old lease only. The real-clock
-	// process gate never rewrites a lease or River scheduling timestamp.
-	mustExec(t, h.lp.f.owner, `UPDATE integration.operations SET lease_until=NULL WHERE id=$1`, h.plan.OperationID)
+	// Isolated SQL counterexample: expire the intact old lease only. The
+	// real-clock process gate never rewrites a lease or River timestamp.
+	mustExec(t, h.lp.f.owner, `UPDATE integration.operations SET lease_until=clock_timestamp()-interval '1 second' WHERE id=$1`, h.plan.OperationID)
 	recovery, _ := mrrRecoveryPool(t, h)
 	episode := randomUUID()
 	if rows := mrrBegin(t, recovery, episode, 0, 1, true); len(rows) != 1 || rows[0].operation == nil {
