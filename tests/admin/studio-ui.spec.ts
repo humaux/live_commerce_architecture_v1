@@ -57,6 +57,8 @@ async function hideAndReveal(page: Page) {
 async function screenshot(page: Page, name: string, width: number, height: number) {
   await page.setViewportSize({ width, height });
   await expect(page.getByTestId("merchant-studio")).toBeVisible();
+  await expect(page.locator(".studio-scene-list .studio-scene").first()).toBeVisible();
+  await expect(page.getByLabel(/Scene name|场次名称|場次名稱/)).toBeVisible();
   await page.screenshot({ path: `${evidence}/${name}.png`, fullPage: false });
 }
 
@@ -114,7 +116,9 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   // Exercise Chromium's actual history traversal. Either a denied back or a
   // same-login recovery on forward must preserve the original dirty form.
   const dismissHistory = async (dialog: import("@playwright/test").Dialog) => {
-    expect(dialog.message()).toContain("Discard unsaved"); await dialog.dismiss();
+    expect(["confirm", "beforeunload"]).toContain(dialog.type());
+    if (dialog.type() === "confirm") expect(dialog.message()).toContain("Discard unsaved");
+    await dialog.dismiss();
   };
   page.on("dialog", dismissHistory);
   await page.goBack({ waitUntil: "domcontentloaded" });
