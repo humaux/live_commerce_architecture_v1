@@ -1,6 +1,6 @@
 # MRR90 restart state-check acceptance
 
-Status at 2026-09-27 10:47 UTC: **CANDIDATE_BLOCKED / NOT_ACCEPTED**.
+Status at 2026-09-27 11:02 UTC: **CANDIDATE_BLOCKED / NOT_ACCEPTED**.
 The independently frozen design is on `598eea4`. Candidate implementation and
 independent tests are not merged into main. No production configuration,
 customer broadcast, provider account or River policy was changed.
@@ -137,3 +137,35 @@ owner's 90s deadline, original LMR05 35s predicate and default full-run 900s
 timeout are unchanged. Fixed-source repair, independent review, focused/root
 reruns and full regression remain required. Neither candidate is merged into
 main, and no production/customer state was changed.
+
+## Final RLS candidate and third focused receipt
+
+Source `86b641a909277223fa630022cd4d0df6f7d22ad8` closes the narrow RLS,
+membership-count and readiness checks. After two targeted repairs, root
+adjudicated the remaining definer-role baseline check rather than continuing
+an automatic repair loop. Readiness now also rejects extra applicable policies
+and elevated definer role flags. Independent static receipt:
+`e54b77ce-3b22-42b6-90ee-25c6ca0189fd`; **STATIC_CONDITIONAL_GREEN**, not runtime acceptance.
+
+Root independently reran the four Go race packages at that clean fixed source:
+**exit 0**, package times 2.102 / 2.361 / 1.411 / 14.177s. Log
+`/Volumes/data/output/mrr-unit-86b641a-root-20260927.log`, SHA-256
+`f997eea1848bee12683f4edd4d9fa0da5ccee789296a0e02ff74d241a66434a9`.
+
+Independent integration `952e57a02ac2800e06ace3771bd23bde4c63dfb4`
+(source `86b641a`, tests `596ab4f`) ran the focused selector with outer 360s
+budget and fail-fast. Actual **exit 1**, package **3.857s**:
+**2 top-level PASS / 1 FAIL**; all subsequent tests **NOT_RUN**.
+Normal PG18 readiness, scope/clock/witness, and initial authority/fence tests
+passed. The old-role test stopped at its clean Meta worker baseline, before
+its synthetic observer grant: the generic fixture login permits `SET ROLE`,
+but Meta admission requires `INHERIT TRUE, SET FALSE`. Root verified the
+fixture and validator; only that fixture membership may be corrected.
+
+Log: `/Volumes/data/worktrees/commerce-meta-inbox-tests-20260926/output/mrr-focused-952e57a.log`.
+SHA-256: `37364c9028898ddd1b921179e6134ec30648f1b5f0e721d124a89bcf365cc94d`.
+Correction to the previous setup summary: in `804065e`, the buyer subcase had
+`42501`, while Meta already failed this clean-baseline check; they were not
+both schema-name-resolution failures. Raw failed logs remain unchanged.
+The third run's isolated fixture was cleaned. Real 90s, the added RLS
+counterexamples, root PG acceptance and full regression are still unaccepted.
