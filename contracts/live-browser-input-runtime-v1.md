@@ -1,10 +1,12 @@
 # Browser input custody runtime v1
 
-Status: **DESIGN_REVIEWED_BIC_FROZEN — implementation NOT_RUN**. Source base
+Status: **BIC_KERNEL_IMPLEMENTED_FOCUSED_PASS — clean full acceptance pending**. Source base
 `2b52e7d`. Independent bounded review on 2026-09-27 found no remaining confirmed
 P0/P1 after queue/profile, replay and lifetime clarifications. This refines
 [BRI](live-browser-input-v1.md), not LIVE admission. Root owns migration numbers
-and merge; BIC01–05 acceptance is still required.
+and merge; BIC01–05 clean full acceptance is still required. See the
+[implementation receipt](../docs/implementation/2026-09-27-browser-input-runtime.md).
+BRW token delivery and new-queue consumption remain unimplemented.
 
 ## Scope and smallest implementation
 

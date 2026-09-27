@@ -1,6 +1,6 @@
 # Browser input custody implementation record — 2026-09-27
 
-Status: **BIC_INDEPENDENT_AND_ROOT_FOCUSED_PASS; root full acceptance running**.
+Status: **BIC_INDEPENDENT_AND_ROOT_FOCUSED_PASS; clean full runner exit pending**.
 Source base `2b52e7d`; frozen contract:
 [BIC/BRW](../../contracts/live-browser-input-runtime-v1.md).
 Contract freeze `4809128`, cleanup-authority clarification `234f44a` (reviewed,
@@ -172,8 +172,22 @@ The new input-only selector in `50b1007` reuses the same isolated PG18/race runn
 and rejects missing tests. It shortens repair feedback, not final coverage: the
 prior stop group took 249.973s, its six BIC tests totalled 14.08s, and the actual
 focused group above took 19.058s including package/setup overhead. The full
-PG/race/vet root run is still running. Cloud, browser input, Studio UI and
-deployment gates remain unchanged.
+PG/race/vet root run produced 669 top-level PASS, 0 FAIL, 0 SKIP across 33 test
+packages (foundation 752.728s), then reached the post-vet PASS marker. However,
+the wrapper exited 127 afterward with `line 251: is: command not found`.
+The integrator had changed the executing Bash script to register STU04; the
+current script passes `bash -n` and has no such command. This is consistent with
+the shell resuming at a changed byte offset. The wrapper result is a failed
+acceptance, not a clean full pass. Preserve
+`/Volumes/data/output/bic-root-full-20260927.log`, SHA256
+`e7e8a37ac100fe160367166c11e6a958450ab4ba27f0b2219d40457d7187cfce`.
+Separate root `go vet ./...` passed again. Freeze both code and runner throughout
+the next full run after Studio integration; never edit an executing runner.
+No test assertion, production lease or fault deadline was relaxed. Cloud,
+browser input, Studio UI and deployment gates remain unchanged.
+
+Maintenance/caller map: [media-input-custody.md](media-input-custody.md),
+committed in `0eb3d59`.
 
 ## Future deployment stop line
 
