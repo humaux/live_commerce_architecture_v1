@@ -509,10 +509,10 @@
     },
     "media_process_runtime_slice": {
       "contract": "contracts/live-media-runtime-v1.md",
-      "status": "DRAFT_PREFLIGHT_REQUIRED",
+      "status": "FROZEN_FOR_LOCAL_IMPLEMENTATION_NOT_IMPLEMENTED",
       "draft_commit": "ed0fe57",
       "gates": "LMW01_05_NOT_RUN",
-      "boundary": "Default-off standalone process assembly of accepted MOCK runtime is planned, not implemented or accepted. No customer activation, LIVE/Cloud, HTTP/studio or full G06 acceptance."
+      "boundary": "Default-off standalone process assembly of accepted MOCK runtime is frozen after independent static preflight, not implemented or accepted. No customer activation, LIVE/Cloud, HTTP/studio or full G06 acceptance."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },

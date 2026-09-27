@@ -1,6 +1,9 @@
 # T08 independent media process runtime — LMW01–05
 
-Status: **DRAFT / PREFLIGHT_REQUIRED** (2026-09-27), base `595ca7c`.
+Status: **FROZEN_FOR_LOCAL_IMPLEMENTATION / NOT_IMPLEMENTED** (2026-09-27),
+base `595ca7c`, draft `ed0fe57`. Independent static security/testability preflight
+task `1983ed1e-2369-41ef-a821-4b205548015b` found no confirmed blocking P0/P1.
+Implementation and all LMW01–05 runtime gates remain NOT_RUN.
 This wires the accepted [LME](live-media-execution-v1.md) and
 [LMR](live-media-stop-v1.md) into a runnable command. It does not grant LIVE
 authority, add a public control route or count as real Cloud/G06 acceptance.
@@ -103,7 +106,7 @@ changes here; browser gates become mandatory with the subsequent HTTP/studio.
 
 ## Stop line and upgrade signal
 
-Independent review before implementation; unresolved P0/P1 blocks integration.
+Independent implementation review remains required; unresolved P0/P1 blocks integration.
 No hidden relaxing of DB admission or TLS verification to make the process run.
 LIVE requires trusted credential/destination provisioning and real provider
 tests; HTTP/BFF needs current merchant authorization and stable read DTOs;
