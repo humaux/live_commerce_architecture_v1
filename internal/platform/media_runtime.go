@@ -22,7 +22,7 @@ func OpenMediaWorkerPool(ctx context.Context, dsn string) (*pgxpool.Pool, error)
 	return pool, nil
 }
 
-// OpenMediaExecutorPool borrows only five fixed lease-fenced business functions.
+// OpenMediaExecutorPool borrows only six fixed lease-fenced business functions.
 func OpenMediaExecutorPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	if ctx == nil || len(dsn) > 8192 {
 		return nil, errMediaDatabase
@@ -64,7 +64,8 @@ func validateMediaAuthority(ctx context.Context, pool *pgxpool.Pool, role string
 	), fixed AS (
 	 SELECT p.oid,p.proname FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace
 	 WHERE n.nspname='live' AND p.proname IN ('claim_media_operation','load_media_material',
-	 'reserve_media_start','record_media_observation','finish_media_uncertain',
+	 'reserve_media_start','record_media_observation','record_media_cleanup_query',
+	 'finish_media_uncertain','request_media_stop',
 	 'register_prepared_media','revoke_prepared_media')
 	), allowed AS (
 	 SELECT p.oid FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace
@@ -82,6 +83,12 @@ func validateMediaAuthority(ctx context.Context, pool *pgxpool.Pool, role string
 	   AND p.proargtypes[5]='text'::regtype AND p.proargtypes[6]='text'::regtype
 	   AND p.proargtypes[7]='bigint'::regtype AND p.proargtypes[8]='bigint'::regtype
 	   AND p.proargtypes[9]='bigint'::regtype)
+	  OR (p.proname='record_media_cleanup_query' AND p.pronargs=9
+	   AND p.proargtypes[0]='uuid'::regtype AND p.proargtypes[1]='bigint'::regtype
+	   AND p.proargtypes[2]='bytea'::regtype
+	   AND p.proargtypes[3]='text'::regtype AND p.proargtypes[4]='text'::regtype
+	   AND p.proargtypes[5]='text'::regtype AND p.proargtypes[6]='bigint'::regtype
+	   AND p.proargtypes[7]='bigint'::regtype AND p.proargtypes[8]='bigint'::regtype)
 	  OR (p.proname='finish_media_uncertain' AND p.pronargs=4
 	   AND p.proargtypes[0]='uuid'::regtype AND p.proargtypes[1]='bigint'::regtype
 	   AND p.proargtypes[2]='bytea'::regtype AND p.proargtypes[3]='text'::regtype)
@@ -105,11 +112,12 @@ func validateMediaAuthority(ctx context.Context, pool *pgxpool.Pool, role string
 	 OR EXISTS (SELECT 1 FROM reachable r WHERE pg_catalog.has_database_privilege(r.oid,current_database(),'CREATE'))
 	 OR EXISTS (SELECT 1 FROM reachable r CROSS JOIN fixed f
 	 WHERE pg_catalog.has_function_privilege(r.oid,f.oid,'EXECUTE')
-	 AND ($1='media_worker' OR f.proname IN ('register_prepared_media','revoke_prepared_media')))
+	 AND ($1='media_worker' OR f.proname IN
+	  ('register_prepared_media','revoke_prepared_media','request_media_stop')))
 	 OR ($1='media_executor' AND (SELECT count(DISTINCT f.proname) FROM fixed f
 	 WHERE f.proname IN ('claim_media_operation','load_media_material','reserve_media_start',
-	 'record_media_observation','finish_media_uncertain')
-	 AND pg_catalog.has_function_privilege(session_user,f.oid,'EXECUTE'))<>5)
+	 'record_media_observation','record_media_cleanup_query','finish_media_uncertain')
+	 AND pg_catalog.has_function_privilege(session_user,f.oid,'EXECUTE'))<>6)
 	 OR EXISTS (SELECT 1 FROM reachable r CROSS JOIN pg_catalog.pg_proc p
 	 JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace
 	 WHERE n.nspname<>'information_schema' AND n.nspname NOT LIKE 'pg\_%' ESCAPE '\'
