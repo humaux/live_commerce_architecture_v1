@@ -72,8 +72,12 @@ async function screenshot(page: Page, name: string, width: number, height: numbe
     await expect.poll(() => page.locator(".rail").evaluate((rail) =>
       Math.ceil(rail.getBoundingClientRect().right))).toBeLessThanOrEqual(0);
   }
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
   await page.screenshot({ path: `${evidence}/${name}.png`, fullPage: false, animations: "disabled" });
+  if (width <= 680)
+    await page.screenshot({ path: `${evidence}/${name}-full.png`, fullPage: true, animations: "disabled" });
 }
 
 async function displayedVersion(page: Page) {
