@@ -98,6 +98,7 @@ func TestBrowserInputDeliveryBRW05RealChain(t *testing.T) {
 	upstream, _ := url.Parse("http://" + address)
 	proxy := httputil.NewSingleHostReverseProxy(upstream)
 	var revoked atomic.Bool
+	var originGood, originBad, originBadDenied atomic.Int64
 	var edge *httptest.Server
 	edge = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/__test/revoke-input" {
@@ -114,6 +115,30 @@ func TestBrowserInputDeliveryBRW05RealChain(t *testing.T) {
 			return
 		}
 		r.Header.Set("X-Forwarded-Proto", "https")
+		if strings.HasSuffix(r.URL.Path, "/input/token") && r.Header.Get("Idempotency-Key") == "brw05-origin-denied" {
+			// Record only the Origin and status, never a cookie or token. The
+			// positive control and forged request use the same live grant/key.
+			origin := r.Header.Get("Origin")
+			recorder := httptest.NewRecorder()
+			proxy.ServeHTTP(recorder, r)
+			if origin == edge.URL && recorder.Code == http.StatusOK {
+				originGood.Add(1)
+			}
+			if origin == "https://attacker.invalid" {
+				originBad.Add(1)
+				if recorder.Code == http.StatusForbidden {
+					originBadDenied.Add(1)
+				}
+			}
+			for name, values := range recorder.Header() {
+				for _, value := range values {
+					w.Header().Add(name, value)
+				}
+			}
+			w.WriteHeader(recorder.Code)
+			_, _ = w.Write(recorder.Body.Bytes())
+			return
+		}
 		proxy.ServeHTTP(w, r)
 	}))
 	t.Cleanup(edge.Close)
@@ -145,10 +170,13 @@ func TestBrowserInputDeliveryBRW05RealChain(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.Handle("/v1/identity/", private)
 	mux.Handle("/", httpapi.NewHandler(stopCase.lp.f.runtime, httpapi.Options{SessionStoreList: true, Live: stopCase.planner, BrowserInput: runtime}))
-	var signed, badSignature, inputCalls, stopExpiry, revokeExpiry atomic.Int64
+	var signed, badSignature, inputCalls, originProbeCalls, stopExpiry, revokeExpiry atomic.Int64
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, "/input/token") {
 			inputCalls.Add(1)
+			if r.Header.Get("Idempotency-Key") == "brw05-origin-denied" {
+				originProbeCalls.Add(1)
+			}
 			switch r.Header.Get("Idempotency-Key") {
 			case "brw05-malformed":
 				w.Header().Set("Content-Type", "application/json")
@@ -264,8 +292,10 @@ func TestBrowserInputDeliveryBRW05RealChain(t *testing.T) {
 		t.Fatalf("second signed-login owner fixture remap affected %d rows", result.RowsAffected())
 	}
 	runBrowser("revoke", revokeCase)
-	if signed.Load() < 3 || badSignature.Load() != 0 || socketOpens.Load() < 2 || !revoked.Load() || inputCalls.Load() < 7 {
-		t.Fatalf("token-delivery evidence incomplete: signed=%d bad_signature=%d wss=%d revoked=%v input_calls=%d evidence=%s", signed.Load(), badSignature.Load(), socketOpens.Load(), revoked.Load(), inputCalls.Load(), evidence)
+	if signed.Load() < 5 || badSignature.Load() != 0 || socketOpens.Load() < 2 || !revoked.Load() || inputCalls.Load() < 9 ||
+		originGood.Load() != 2 || originBad.Load() != 2 || originBadDenied.Load() != 2 || originProbeCalls.Load() != 2 {
+		t.Fatalf("token-delivery evidence incomplete: signed=%d bad_signature=%d wss=%d revoked=%v input_calls=%d origin_good=%d origin_bad=%d origin_denied=%d origin_upstream=%d evidence=%s",
+			signed.Load(), badSignature.Load(), socketOpens.Load(), revoked.Load(), inputCalls.Load(), originGood.Load(), originBad.Load(), originBadDenied.Load(), originProbeCalls.Load(), evidence)
 	}
 	for _, item := range []struct {
 		h      *brwHarness
@@ -277,6 +307,21 @@ func TestBrowserInputDeliveryBRW05RealChain(t *testing.T) {
 		if err := item.h.lp.f.owner.QueryRow(ctx, `SELECT grant_iat,grant_exp,room_name,publisher_identity FROM live.media_input_custody WHERE attempt_id=$1`, attempt).Scan(&issued, &expiry, &room, &publisher); err != nil || issued < 1 || expiry <= issued || expiry-issued > 60 || expiry != item.expiry || room != "lc_"+strings.ReplaceAll(attempt, "-", "") || !strings.HasPrefix(publisher, "lcp_") {
 			t.Fatalf("committed fixed input grant invalid: err=%v", err)
 		}
+	}
+	var stopped, stopClosed, stopRevoked bool
+	var stopReason string
+	if err := stopCase.lp.f.owner.QueryRow(ctx, `SELECT x.stop_requested_at IS NOT NULL,
+		i.admission_closed_at IS NOT NULL,i.close_reason,
+		EXISTS(SELECT 1 FROM live.media_authorization_revocations r WHERE r.authorization_id=i.authorization_id)
+		FROM live.media_execution_state x JOIN live.media_input_custody i ON i.attempt_id=x.attempt_id
+		WHERE x.attempt_id=$1`, stopCase.specification["attempt_id"]).Scan(&stopped, &stopClosed, &stopReason, &stopRevoked); err != nil || !stopped || !stopClosed || stopReason != "merchant_stop" || stopRevoked {
+		t.Fatalf("Stop did not persist distinct input closure: err=%v stopped=%v closed=%v reason=%q revoked=%v", err, stopped, stopClosed, stopReason, stopRevoked)
+	}
+	var revokeStopped, revokeRecorded bool
+	if err := revokeCase.lp.f.owner.QueryRow(ctx, `SELECT x.stop_requested_at IS NOT NULL,
+		EXISTS(SELECT 1 FROM live.media_authorization_revocations r WHERE r.authorization_id=x.authorization_id)
+		FROM live.media_execution_state x WHERE x.attempt_id=$1`, revokeCase.specification["attempt_id"]).Scan(&revokeStopped, &revokeRecorded); err != nil || revokeStopped || !revokeRecorded {
+		t.Fatalf("registrar revoke did not persist independently of Stop: err=%v stopped=%v revoked=%v", err, revokeStopped, revokeRecorded)
 	}
 	idp.mu.Lock()
 	exchanges := idp.exchanges

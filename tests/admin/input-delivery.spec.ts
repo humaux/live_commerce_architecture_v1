@@ -232,24 +232,6 @@ test(
             tokenBody,
             "brw05-oversized",
           );
-          let closed = 0;
-          if (phase === "stop") {
-            closed = (
-              await request(
-                `${base}/rehearsal/stop`,
-                "POST",
-                JSON.stringify({ attempt_id: attempt }),
-                "brw05-stop-request",
-              )
-            ).status;
-          } else {
-            const response = await fetch("/__test/revoke-input", {
-              method: "POST",
-              credentials: "same-origin",
-            });
-            closed = response.status;
-          }
-          const denied = await request(tokenPath, "POST", tokenBody, tokenKey);
           return {
             csrfVisible: /^[A-Za-z0-9_-]{43}$/.test(csrf),
             receiptOK,
@@ -271,11 +253,6 @@ test(
               !oversized.raw.includes("token") &&
               !oversized.leakedHeaders &&
               oversized.cache === "private, no-store",
-            closed,
-            deniedStatus: denied.status,
-            deniedSafe:
-              !denied.raw.includes("token") &&
-              denied.cache === "private, no-store",
           };
         },
         { base, store, unlistedStore, session, authorization, attempt, phase },
@@ -297,50 +274,87 @@ test(
         (await context.cookies()).some((item) => item.name === "upstream"),
         false,
       );
-      assert.equal(result.closed, phase === "stop" ? 200 : 204);
-      assert.notEqual(result.deniedStatus, 200);
-      assert.equal(result.deniedSafe, true);
 
-      // Route interception changes Origin only; Chromium still owns cookies and
-      // never receives an injected bearer or synthetic login session.
-      await page.route(
-        "**/input/token",
-        async (route) => {
-          await route.continue({
-            headers: {
-              ...route.request().headers(),
-              origin: "https://attacker.invalid",
-            },
-          });
-        },
-        { times: 1 },
-      );
-      const originStatus = await page.evaluate(
-        async ({ base, attempt }) => {
+      // BrowserContext.request shares Chromium's issued cookie jar. No Cookie
+      // or bearer header is injected; vary only Origin with a live grant/key.
+      const probe = `${origin}${base}/input/token`;
+      const probeBody = JSON.stringify({
+        attempt_id: attempt,
+        expected_session_version: 1,
+      });
+      const headers = {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": csrfCookie.value,
+        "Idempotency-Key": "brw05-origin-denied",
+      };
+      const control = await context.request.post(probe, {
+        headers: { ...headers, Origin: origin },
+        data: probeBody,
+      });
+      assert.equal(control.status(), 200);
+      const badOrigin = await context.request.post(probe, {
+        headers: { ...headers, Origin: "https://attacker.invalid" },
+        data: probeBody,
+      });
+      assert.equal(badOrigin.status(), 403);
+
+      const closed = await page.evaluate(
+        async ({ base, attempt, phase }) => {
           const csrf =
             document.cookie
               .split(";")
               .map((part) => part.trim())
               .find((part) => part.startsWith("__Host-commerce_csrf="))
               ?.split("=")[1] ?? "";
-          const response = await fetch(`${base}/input/token`, {
-            method: "POST",
-            credentials: "same-origin",
-            headers: {
-              "Content-Type": "application/json",
-              "Idempotency-Key": "brw05-origin-denied",
-              "X-CSRF-Token": csrf,
-            },
-            body: JSON.stringify({
+          const request = async (path: string, key: string, body: string) => {
+            const response = await fetch(path, {
+              method: "POST",
+              credentials: "same-origin",
+              headers: {
+                "Content-Type": "application/json",
+                "Idempotency-Key": key,
+                "X-CSRF-Token": csrf,
+              },
+              body,
+            });
+            const raw = await response.text();
+            return {
+              status: response.status,
+              safe:
+                !raw.includes("token") &&
+                response.headers.get("cache-control") === "private, no-store",
+            };
+          };
+          const status =
+            phase === "stop"
+              ? (
+                  await request(
+                    `${base}/rehearsal/stop`,
+                    "brw05-stop-request",
+                    JSON.stringify({ attempt_id: attempt }),
+                  )
+                ).status
+              : (
+                  await fetch("/__test/revoke-input", {
+                    method: "POST",
+                    credentials: "same-origin",
+                  })
+                ).status;
+          const denied = await request(
+            `${base}/input/token`,
+            `brw05-${phase}-token`,
+            JSON.stringify({
               attempt_id: attempt,
               expected_session_version: 1,
             }),
-          });
-          return response.status;
+          );
+          return { status, denied };
         },
-        { base, attempt },
+        { base, attempt, phase },
       );
-      assert.equal(originStatus, 403);
+      assert.equal(closed.status, phase === "stop" ? 200 : 204);
+      assert.equal(closed.denied.status, 409);
+      assert.equal(closed.denied.safe, true);
     } finally {
       await browser.close();
     }
