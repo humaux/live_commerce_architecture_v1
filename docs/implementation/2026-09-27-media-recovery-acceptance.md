@@ -1,6 +1,6 @@
 # MRR90 restart state-check acceptance
 
-Status at 2026-09-27 12:18 UTC: **FOCUSED_ACCEPTED / FULL_REGRESSION_NOT_ACCEPTED / LRI_FOCUSED_REPAIR_PASS**.
+Status at 2026-09-27 12:29 UTC: **FOCUSED_ACCEPTED / FULL_REGRESSION_NOT_ACCEPTED / LRI_FOCUSED_REPAIR_PASS / LMR_WAIT_ADJUDICATED**.
 The independently frozen design is on `598eea4`. Source `86b641a` and independent
 tests `f3b731b` with evidence `2e00b00a` are integrated as `74459ae`.
 The initial independent and root focused runs each passed 17 tests. Independent
@@ -325,3 +325,19 @@ The task-owned PG was cleaned and shared fixture lock released; protected
 containers were not modified. This closes the focused LRI defect, not the
 historical failed full run. LMR05's old 35s wait still awaits owner adjudication;
 no implicit 90s threshold change or new full-suite PASS is claimed.
+
+## Subsequent owner adjudication — LMR05 wait only
+
+The owner subsequently answered **对齐 90 秒，安全断言不变** to the explicit
+question about this old safety test. Decision receipt
+`08545d0c-83b3-4bc3-ad23-6325aaf671ea` records the exact scope. Root `3eb66c2`
+changes only the one post-restart `h.await` upper bound from 35s to 90s and adds
+three explanatory comment lines. The predicate and all later reservation-count,
+UNKNOWN/OBSERVED, budget-exhausted, no-new-Start/no-third-Stop and Query checks
+remain byte-for-byte unchanged. The separate 35s child-wire wait is unchanged.
+
+This is a disclosed owner-approved test-budget change, not a runtime fix or a
+retroactive PASS for any retained failed run. Native River scheduling, cleanup
+responsibility and all real-clock MRR90 process gates are untouched. Independent
+diff review and the existing `--live-media-stop` group are pending; full
+regression will require a new frozen-tree execution.
