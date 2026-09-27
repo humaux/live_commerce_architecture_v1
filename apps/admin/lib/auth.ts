@@ -180,7 +180,7 @@ export function hasNoQuery(request: Request) {
   return new URL(request.url).search === "";
 }
 
-export async function readBody(request: Request, mime: string, limit = 65536) {
+export async function readBody(request: Pick<Request, "headers" | "body">, mime: string, limit = 65536) {
   if (
     request.headers
       .get("content-type")
@@ -212,7 +212,7 @@ export async function readBody(request: Request, mime: string, limit = 65536) {
     bytes.set(chunk, offset);
     offset += chunk.byteLength;
   }
-  return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
 }
 
 export async function exactJSON(
