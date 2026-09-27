@@ -1,11 +1,13 @@
 # T08 independent media process runtime — LMW01–05
 
-Status: **IMPLEMENTED_PENDING_LOCAL_ACCEPTANCE** (2026-09-27),
+Status: **PASS_LOCAL_MOCK_PROCESS_ONLY** (2026-09-27),
 base `595ca7c`, draft `ed0fe57`. Independent static security/testability preflight
 task `1983ed1e-2369-41ef-a821-4b205548015b` found no confirmed blocking P0/P1.
 Interface frozen at `6b69a25`; source `6bbe24c` is integrated as `fda7082`.
 Independent fixed-source static review `66b16a27-340a-4692-bc3d-7e764cacd81d`
-found no confirmed scoped P0/P1. LMW01–05 process acceptance remains NOT_RUN.
+found no confirmed scoped P0/P1. LMW01–05 passed independent process tests and
+root focused 8 / full 645 top-level tests with PG18, race and vet at `320dad6`.
+See [exact acceptance evidence](../docs/implementation/2026-09-27-live-media-runtime-acceptance.md).
 This wires the accepted [LME](live-media-execution-v1.md) and
 [LMR](live-media-stop-v1.md) into a runnable command. It does not grant LIVE
 authority, add a public control route or count as real Cloud/G06 acceptance.

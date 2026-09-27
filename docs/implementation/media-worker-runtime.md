@@ -1,11 +1,12 @@
 # Media worker runtime and maintenance
 
-Status: **IMPLEMENTING / LMW01–05 NOT_RUN**, contract frozen at `6b69a25`.
+Status: **PASS_LOCAL_MOCK_PROCESS_ONLY / LMW01–05 PASS**, contract frozen at `6b69a25`.
 See [configuration and gates](../../contracts/live-media-runtime-v1.md).
-The [existing Stop acceptance](2026-09-27-live-media-stop-acceptance.md) proves
-the internal local MOCK engine, not this command or a deployed streaming service.
+The [runtime acceptance](2026-09-27-live-media-runtime-acceptance.md) proves this
+command against local PG/TLS fixtures; it builds on the
+[Stop acceptance](2026-09-27-live-media-stop-acceptance.md), not a deployed service.
 
-## Call and ownership map (source candidate `6bbe24c`)
+## Call and ownership map (source `6bbe24c`, integrated `fda7082`)
 
 | Caller | Existing dependency | Ownership / boundary |
 | --- | --- | --- |

@@ -151,6 +151,21 @@ COMMIT 后实际发包时刻。只有关联终态证明才能结束资源责任�
 [本轮验收记录](2026-09-27-live-media-stop-acceptance.md) 单列实际结果；不含
 Cloud 资格、部署入口、工作室或完整 G06，也不增加依赖版本。
 
+## T08 独立媒体进程依赖（LMW 本地验收通过）
+
+`cmd/media-worker.run` → `livekit.LoadWorkerEnvironment` → 两个受限媒体池 →
+`live.NewMediaClient` → `jobqueue.Run`。配置解析复用现有严格 JSON/keyring，
+TLS 复用 Go 标准库；每个冻结 project/version 只连接显式本地地址，校验证书
+和主机名，不使用环境代理或全局 Transport。没有新增依赖、迁移或业务队列。
+API 不装配此 worker；进程信号仅退出，不代表商家 Stop。旧 key/project 版本
+仍被持久 attempt 引用时必须保留；重启不能替代 Start 或重置 Stop 预算。
+
+[调用、诊断和升级说明](media-worker-runtime.md) 与
+[LMW01–05 证据](2026-09-27-live-media-runtime-acceptance.md) 记录实际二进制、
+PG/TLS、信号恢复和泄漏检查。升级 Go TLS、pgx、River 或媒体权限后重跑
+`test-local.sh --live-media-runtime` 及完整 PG/race/vet；645 项本地通过不是
+Cloud、部署、工作室或 G06 通过。
+
 ## 依赖版本
 
 版本来自当前 `go.mod`/`go.sum` 和本阶段已记录的锁定证据；license 是上游声明，不等于本项目已完成法务准入。升级流程是确认候选版本、更新锁文件与本表、在候选版本上跑 gate，通过后再合并。

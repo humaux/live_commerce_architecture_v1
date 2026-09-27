@@ -1,8 +1,10 @@
 # Merchant Studio v1 — one end-to-end product slice
 
-Status: **DRAFT / NOT_IMPLEMENTED / REVIEW_REQUIRED** (2026-09-27).
-Source baseline `320dad6`; LMW full regression is still running. This contract
-does not authorize production activation. T08/T09 and G06/G07 remain incomplete.
+Status: **FROZEN / NOT_IMPLEMENTED** (2026-09-27).
+Source baseline `320dad6`; LMW root full regression passed 645 tests, race/vet.
+Independent preflight of draft `0af7e82` (Humaux
+`33de752a-31c9-4697-991c-813bfb6e8910`) found no confirmed P0/P1; this is not
+STU01–05 acceptance or production activation. T08/T09 and G06/G07 remain incomplete.
 
 ## Product outcome and reuse
 
@@ -125,7 +127,7 @@ controls. Those capabilities remain real downstream requirements, not removed.
 | STU04 | Real OIDC → production Next BFF → Go/PG browser workflow, desktop/mobile and three locales; save/reopen, read-only/no-prepared states, start/stop, CSRF and cross-store denial, no browser bearer or persistent media payload cache |
 | STU05 | Default-off process, enabled startup admission, independent fixed-diff review, typecheck/build, existing regression suites and root full PG/race/vet; dependency/diagnosis docs plus fixture cleanup |
 
-Freeze this interface after independent preflight. Integrator owns migration
+This interface is frozen after independent preflight. Integrator owns migration
 number, contracts, API assembly and final merges; domain/HTTP author, BFF/UI
 author and independent tests use separate worktrees and non-overlapping paths.
 UI work waits for approved composition; backend and test preparation may proceed
