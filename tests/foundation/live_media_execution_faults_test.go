@@ -280,8 +280,15 @@ func TestLiveMediaExecutionLME06ClosedObservationAndMonotonicProjection(t *testi
 			t.Fatalf("duration A: %s %v", out, err)
 		}
 		b := h.claim(t, 30)
-		if out, err := h.record(t, b, "QUERY", "EG_duration", "EGRESS_ACTIVE", 0, 901_000_000_100, 0); err != nil || out != "observe" {
-			t.Fatalf("duration B: %s %v", out, err)
+		before := h.facts(t)
+		if _, err := h.record(t, b, "QUERY", "EG_duration", "EGRESS_ACTIVE", 0, 901_000_000_100, 0); sqlState(err) != "ME409" {
+			t.Fatalf("old in-flight QUERY silently swallowed new cleanup: %v", err)
+		}
+		if got := h.facts(t); got != before {
+			t.Fatalf("rejected old QUERY partially wrote: %+v -> %+v", before, got)
+		}
+		if out, err := lmrQuery(t, h, b, "EG_duration", "EGRESS_ACTIVE", 0, 901_000_000_100, 0); err != nil || out != "stop_reserved" {
+			t.Fatalf("new cleanup Query did not preserve coherent duration: %s %v", out, err)
 		}
 		f := h.facts(t)
 		if !f.cleanup || f.resource != "OBSERVED" || f.operation != "UNKNOWN" || f.startedNS != 100 || f.updatedNS != 901_000_000_100 || f.observations != 2 {
