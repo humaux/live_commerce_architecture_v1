@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-24T16:04:32Z",
+  "generatedAt": "2026-09-27T09:11:51Z",
   "title": "Design System: 商品对账簿",
   "extensions": {
     "colorMeta": {
@@ -77,12 +77,19 @@
       "description": "Selected SKU, three stock buckets, and one auditable adjustment action.",
       "html": "<section class=\"ds-tray\"><div><strong>便携收纳盒</strong><small>SKU: AC-002-BK</small></div><dl><div><dt>现有</dt><dd>300</dd></div><div><dt>预留</dt><dd>12</dd></div><div><dt>可售</dt><dd>288</dd></div></dl><button>确认调整</button></section>",
       "css": ".ds-tray{display:flex;align-items:center;gap:26px;min-height:180px;padding:24px 16px;border:1px solid #dde5ee;border-radius:7px;background:#fff;color:#142942;font-family:Arial,'PingFang SC','Microsoft YaHei',sans-serif}.ds-tray small{display:block;margin-top:7px;color:#64758a}.ds-tray dl{display:flex;gap:25px;margin:0;padding:0 20px;border-left:1px solid #dde5ee}.ds-tray dt{color:#64758a;font-size:12px}.ds-tray dd{margin:5px 0 0;font-size:25px;font-weight:700;font-variant-numeric:tabular-nums}.ds-tray button{margin-left:auto;min-height:38px;padding:8px 16px;border:1px solid #247965;border-radius:5px;background:#247965;color:#fff;font-weight:600}.ds-tray button:focus-visible{outline:3px solid #1264ba;outline-offset:3px}"
+    },
+    {
+      "name": "Studio Persisted State and Action",
+      "kind": "custom",
+      "description": "A truthful local rehearsal observation in an inset state block, followed by its separate eligibility-controlled action; this sample is disabled because no authority is shown. The native date picker is not represented as functionally verified.",
+      "html": "<section class=\"ds-studio-status\"><h3>Persisted media observation</h3><div class=\"ds-studio-state\"><strong>Not started</strong><p>No rehearsal attempt has been started.</p></div><button class=\"ds-studio-action\" type=\"button\" disabled>Start MOCK rehearsal</button></section>",
+      "css": ".ds-studio-status{font-family:Arial,'PingFang SC','Microsoft YaHei',sans-serif;color:#142942}.ds-studio-status h3{margin:0 0 15px;font-size:17px;line-height:1.4}.ds-studio-state{padding:18px;border:1px solid #dde5ee;border-radius:5px;background:#f4f7fa}.ds-studio-state p{margin:8px 0 0;color:#64758a;line-height:1.5}.ds-studio-action{width:100%;min-height:47px;margin-top:18px;padding:10px 16px;border:1px solid #247965;border-radius:5px;background:#247965;color:#fff;font:600 15px Arial,'PingFang SC','Microsoft YaHei',sans-serif}.ds-studio-action:hover:not(:disabled){background:#1c6554}.ds-studio-action:focus-visible{outline:3px solid #1264ba;outline-offset:3px}.ds-studio-action:disabled{cursor:not-allowed;opacity:.55}"
     }
   ],
   "narrative": {
     "northStar": "The Auditable Ledger",
-    "overview": "商品对账簿是一套 Operate-first 的商家工作台系统：像一张经过整理的数字账页，优先让人定位 SKU、核对现有/预留/可售关系，再留下可追溯的库存调整。它不追求展示型视觉声量；可信度来自对齐、密度、真实状态和稳定的任务顺序。\n\n该世界由用户在 decision `6ecd43a2` 选择，FORM seed 为 `3046f272`，并以 decision `a30e0e29` 批准 wide-ledger 组合。桌面以全宽账簿和下方上下文托盘为签名关系；移动端保留同一任务顺序而不是压缩全部列。已实现的登录与首店入口复用此世界的控件和状态语言；其获准的 C 三步构图、尺寸与行为单独记录在 `docs/implementation/2026-09-20-entry-visual-brief.md`。已实现的 Merchant Settings A 表面也复用此世界；其四步设置流程、状态列和表面局部样式记录在 `.impeccable/merchant-settings-brief.md`。这里不代表其他产品模块已经完成。",
-    "keyCharacteristics": ["冷静的深海军蓝框架与克制的青绿色操作色。", "细冷色规则、紧凑行高、右对齐且等宽的数字列。", "单行选择持续保留列表上下文，下方托盘完成调整。", "演示、未连接、错误、等待与成功状态均用文字说明，不靠颜色暗示。", "zh-CN、zh-TW、en 是平等选择；语言不改变店铺、币种或权限。"],
+    "overview": "商品对账簿是一套 Operate-first 的商家工作台系统：像一张经过整理的数字账页，优先让人定位 SKU、核对现有/预留/可售关系，再留下可追溯的库存调整。它不追求展示型视觉声量；可信度来自对齐、密度、真实状态和稳定的任务顺序。\n\n该世界由用户在 decision `6ecd43a2` 选择，FORM seed 为 `3046f272`，并以 decision `a30e0e29` 批准 wide-ledger 组合。桌面以全宽账簿和下方上下文托盘为签名关系；移动端保留同一任务顺序而不是压缩全部列。已实现的登录与首店入口复用此世界的控件和状态语言；其获准的 C 三步构图、尺寸与行为单独记录在 `docs/implementation/2026-09-20-entry-visual-brief.md`。已实现的 Merchant Settings A 表面也复用此世界；其四步设置流程、状态列和表面局部样式记录在 `.impeccable/merchant-settings-brief.md`。Studio B 复用同一色彩、字体与控件语言，并以场次列表、编辑器和事实状态栏组成工作面；其表面局部构图与路由约束记录在 `apps/admin/.impeccable/surfaces/app-locale-studio.md`。这里不代表其他产品模块已经完成。",
+    "keyCharacteristics": ["冷静的深海军蓝框架与克制的青绿色操作色。", "细冷色规则、紧凑行高、右对齐且等宽的数字列。", "单行选择持续保留列表上下文，下方托盘完成调整。", "新工作面保留可扫描列表、正在编辑的对象和事实状态的顺序；状态与可执行动作分开呈现。", "演示、未连接、错误、等待与成功状态均用文字说明，不靠颜色暗示。", "zh-CN、zh-TW、en 是平等选择；语言不改变店铺、币种或权限。"],
     "rules": [
       {"name": "The Earned Accent Rule", "body": "青绿色用于已实现的提交与推进动作、输入光标，以及关联任务的当前和已完成进度状态；选择、焦点与链接使用蓝色语义，不把所有可点击元素染成同一种强调色。", "section": "colors"},
       {"name": "The State Has Words Rule", "body": "在售、归档、未连接、错误、等待与成功必须保留可读文字；颜色永远不是唯一状态载体。", "section": "colors"},
@@ -92,7 +99,7 @@
       {"name": "The Rules Over Shadows Rule", "body": "账簿与托盘使用边框、分隔线和色面表达层级；不要为普通容器添加阴影来补偿结构不清。", "section": "elevation"},
       {"name": "The Small Radius Rule", "body": "大容器保持 7px、控件保持 5px；除短状态标签外，不把操作面做成药丸。", "section": "shapes"}
     ],
-    "dos": ["Do 保持网站客服、Meta 消息和平台支持为独立导航与授权域。", "Do 在每个数据密集表面使用稳定列对齐、tabular numerals 和文字状态。", "Do 让 zh-CN、zh-TW、en 切换保留当前路径与查询，同时保持店铺和币种不变。", "Do 为真实加载、空、错误、等待、成功、disabled 和键盘焦点提供明确状态。", "Do 在 680px 以下按任务优先级重排，而不是缩小桌面构图。"],
-    "donts": ["Don't 把演示 fixture、合成商品 atlas 或示例价格当作客户目录资产或商业事实。", "Don't 为未实现模块制造看似可用的 tab、通知、渠道同步或安全库存控制。", "Don't 合并聊天域、从语言推导市场/币种，或用乐观界面覆盖交易与权限真相。", "Don't 引入 KPI 卡片墙、装饰性 hero、重阴影、玻璃效果、渐变文字或无语义动画。"]
+    "dos": ["Do 保持网站客服、Meta 消息和平台支持为独立导航与授权域。", "Do 在每个数据密集表面使用稳定列对齐、tabular numerals 和文字状态。", "Do 让 zh-CN、zh-TW、en 切换保留当前路径与查询，同时保持店铺和币种不变。", "Do 为真实加载、空、错误、等待、成功、disabled 和键盘焦点提供明确状态。", "Do 将持久化观察与可执行动作分开呈现，并让状态文字说明真实来源。", "Do 在 680px 以下按任务优先级重排，而不是缩小桌面构图。"],
+    "donts": ["Don't 把演示 fixture、合成商品 atlas 或示例价格当作客户目录资产或商业事实。", "Don't 为未实现模块制造看似可用的 tab、通知、渠道同步或安全库存控制。", "Don't 合并聊天域、从语言推导市场/币种，或用乐观界面覆盖交易与权限真相。", "Don't 引入 KPI 卡片墙、装饰性 hero、重阴影、玻璃效果、渐变文字或无语义动画。", "Don't 把获批稿的单个场次数量、渠道清单或示例状态提升为所有工作面的固定内容。"]
   }
 }
