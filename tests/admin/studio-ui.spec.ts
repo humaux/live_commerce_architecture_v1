@@ -100,13 +100,21 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
   await expect(page.getByText("Prepared rehearsal authority")).toBeVisible();
   await expect(page.getByRole("button", { name: "Start MOCK rehearsal" })).toBeEnabled();
+  const schedule = page.getByLabel("Scheduled time (UTC, optional)");
+  await expect(schedule).toHaveAttribute("type", "text");
+  await expect(schedule).toHaveAttribute("placeholder", "YYYY-MM-DDTHH:mm");
   await screenshot(page, "en-desktop-first-1586x992", 1586, 992);
   await storageIsSafe(page);
 
   // A new draft is genuinely created by the UI, then edited and reopened.
   await page.getByRole("button", { name: /New scene/ }).click();
   await page.getByLabel("Scene name").fill("STU04 browser-created scene");
-  await page.getByLabel("Scheduled time (UTC, optional)").fill("2030-01-01T00:00");
+  await schedule.fill("2030-02-30T00:00");
+  const beforeInvalid = createRequests.length;
+  await page.getByRole("button", { name: "Create draft" }).click();
+  await expect(page.getByText("Enter a valid UTC time from year 2000 through 2199, or leave it blank.")).toBeVisible();
+  expect(createRequests).toHaveLength(beforeInvalid);
+  await schedule.fill("2030-01-01T00:00");
   await page.getByLabel("Canvas ratio").selectOption("16:9");
   const beforeCreateURL = page.url();
   await page.getByRole("button", { name: "Create draft" }).click();
