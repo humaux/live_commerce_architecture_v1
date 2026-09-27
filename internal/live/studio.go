@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -118,6 +119,11 @@ func GetStudio(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, sess
 		return Studio{}, err
 	}
 	hash := sha256.Sum256([]byte(token))
+	// The scoped transaction exposes identity, while private projections also pin
+	// the access revision (as PlanStart and RequestStop do) against a fresh lookup.
+	if _, err := tx.Exec(ctx, `SELECT set_config('app.authz_revision',$1,true)`, strconv.FormatInt(scope.Revision, 10)); err != nil {
+		return Studio{}, err
+	}
 	var raw []byte
 	if err := tx.QueryRow(ctx, `SELECT live.read_studio_media($1::bytea,$2::uuid,$3::uuid)`, hash[:], scope.StoreID, sessionID).Scan(&raw); err != nil {
 		return Studio{}, mediaPlanError(err)
@@ -125,6 +131,11 @@ func GetStudio(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, sess
 	prepared, attempt, err := decodeStudioMedia(raw)
 	if err != nil {
 		return Studio{}, err
+	}
+	// READ COMMITTED permits a draft edit between the two reads. Never attach a
+	// newer prepared candidate to an older draft snapshot.
+	if prepared != nil && prepared.SessionVersion != draft.Version {
+		return Studio{}, ErrStudioProjection
 	}
 	out := Studio{Draft: draft, Prepared: prepared, Attempt: attempt}
 	err = platform.RequirePermission(ctx, tx, scope, token, managePermission)
