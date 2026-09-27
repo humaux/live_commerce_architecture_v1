@@ -802,6 +802,23 @@ func brwStartWorker(t *testing.T, h *bicHarness, keys *livekit.MaterialKeyring,
 	})
 }
 
+func brwSnoozedOriginalJob(t *testing.T, h *bicHarness, jobID int64) bool {
+	t.Helper()
+	var state string
+	var snoozes int64
+	var attempted, finalized *time.Time
+	if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT state,
+		coalesce((metadata->>'snoozes')::bigint,0),attempted_at,finalized_at
+		FROM river_media.river_job WHERE id=$1`, jobID).
+		Scan(&state, &snoozes, &attempted, &finalized); err != nil {
+		t.Fatal(err)
+	}
+	if finalized != nil || state == "completed" || state == "cancelled" || state == "discarded" {
+		t.Fatalf("original input job finalized while snoozing: state=%s finalized=%v", state, finalized)
+	}
+	return snoozes > 0 && attempted != nil && (state == "available" || state == "scheduled")
+}
+
 func TestLiveBrowserInputBRW01MarkerZeroWorkerNeverTouchesProvider(t *testing.T) {
 	h, plan, _ := bicStarted(t)
 	keys, err := lmrKeys()
@@ -820,20 +837,16 @@ func TestLiveBrowserInputBRW01MarkerZeroWorkerNeverTouchesProvider(t *testing.T)
 		ProjectID: "project_lma", CredentialVersion: 1, Config: lmeConfig(), Transport: egressTransport,
 	}, runtime)
 	deadline := time.Now().Add(12 * time.Second)
-	var state string
+	var snoozed bool
 	for time.Now().Before(deadline) {
-		if err := h.lp.f.owner.QueryRow(context.Background(),
-			`SELECT state FROM river_media.river_job WHERE id=$1`, plan.JobID).Scan(&state); err != nil {
-			t.Fatal(err)
-		}
-		if state == "scheduled" {
+		if snoozed = brwSnoozedOriginalJob(t, h, plan.JobID); snoozed {
 			break
 		}
 		time.Sleep(25 * time.Millisecond)
 	}
-	if state != "scheduled" || inputTransport.calls.Load() != 0 || egressTransport.calls.Load() != 0 {
-		t.Fatalf("marker-0 worker dispatched provider: state=%s input=%d egress=%d",
-			state, inputTransport.calls.Load(), egressTransport.calls.Load())
+	if !snoozed || inputTransport.calls.Load() != 0 || egressTransport.calls.Load() != 0 {
+		t.Fatalf("marker-0 worker dispatched provider or never snoozed: snoozed=%t input=%d egress=%d",
+			snoozed, inputTransport.calls.Load(), egressTransport.calls.Load())
 	}
 	var generation int64
 	var leaseUntil *time.Time
@@ -849,19 +862,15 @@ func TestLiveBrowserInputBRW02OriginalJobWorkerBeforeSingleStart(t *testing.T) {
 		f := brwWireStarted(t)
 		brwStartWorker(t, f.h.bicHarness, f.keys, f.egress, f.h.runtime)
 		deadline := time.Now().Add(12 * time.Second)
-		var state string
+		var snoozed bool
 		for time.Now().Before(deadline) {
-			if err := f.h.lp.f.owner.QueryRow(context.Background(),
-				`SELECT state FROM river_media.river_job WHERE id=$1`, f.h.plan.JobID).Scan(&state); err != nil {
-				t.Fatal(err)
-			}
-			if state == "scheduled" {
+			if snoozed = brwSnoozedOriginalJob(t, f.h.bicHarness, f.h.plan.JobID); snoozed {
 				break
 			}
 			time.Sleep(25 * time.Millisecond)
 		}
-		if state != "scheduled" {
-			t.Fatalf("original unissued job not snoozed: %s", state)
+		if !snoozed {
+			t.Fatal("original unissued job did not execute and snooze")
 		}
 		if f.inputs.Load() != 0 || f.starts.Load() != 0 {
 			t.Fatalf("unissued runtime made provider calls: input=%d start=%d", f.inputs.Load(), f.starts.Load())
@@ -901,21 +910,17 @@ func TestLiveBrowserInputBRW02OriginalJobWorkerBeforeSingleStart(t *testing.T) {
 			brwReserveGrant(t, f.h)
 			brwStartWorker(t, f.h.bicHarness, f.keys, f.egress, f.h.runtime)
 			deadline := time.Now().Add(12 * time.Second)
-			var jobState string
+			var snoozed bool
 			for time.Now().Before(deadline) {
-				if err := f.h.lp.f.owner.QueryRow(context.Background(),
-					`SELECT state FROM river_media.river_job WHERE id=$1`, f.h.plan.JobID).Scan(&jobState); err != nil {
-					t.Fatal(err)
-				}
-				if f.inputs.Load() > 0 && jobState == "scheduled" {
+				if snoozed = brwSnoozedOriginalJob(t, f.h.bicHarness, f.h.plan.JobID); f.inputs.Load() > 0 && snoozed {
 					break
 				}
 				time.Sleep(25 * time.Millisecond)
 			}
 			_, _, reserved := brwWireFacts(t, f.h)
-			if f.inputs.Load() == 0 || jobState != "scheduled" || f.starts.Load() != 0 || reserved != nil {
-				t.Fatalf("invalid actual tracks reached Start: input=%d job=%s start=%d reserved=%v",
-					f.inputs.Load(), jobState, f.starts.Load(), reserved)
+			if f.inputs.Load() == 0 || !snoozed || f.starts.Load() != 0 || reserved != nil {
+				t.Fatalf("invalid actual tracks reached Start or worker did not snooze: input=%d snoozed=%t start=%d reserved=%v",
+					f.inputs.Load(), snoozed, f.starts.Load(), reserved)
 			}
 		})
 	}
@@ -930,10 +935,10 @@ func TestLiveBrowserInputBRW04ActualWorkerKeepsJobAfterEgressTerminal(t *testing
 	var resource, operation, jobState, child string
 	var finalized *time.Time
 	for time.Now().Before(deadline) {
-		if err := f.h.lp.f.owner.QueryRow(context.Background(), `SELECT x.resource_state,o.state,j.state,j.finalized_at,c.state
-			FROM live.media_execution_state x JOIN integration.operations o ON o.id=x.operation_id
-			JOIN river_media.river_job j ON j.id=o.job_id
-			JOIN live.media_input_custody c ON c.attempt_id=x.attempt_id WHERE o.id=$1`, f.h.plan.OperationID).
+		if err := f.h.lp.f.owner.QueryRow(context.Background(), `SELECT coalesce(x.resource_state,'UNOBSERVED'),o.state,j.state,j.finalized_at,c.state
+			FROM integration.operations o JOIN river_media.river_job j ON j.id=o.job_id
+			JOIN live.media_input_custody c ON c.operation_id=o.id
+			LEFT JOIN live.media_execution_state x ON x.operation_id=o.id WHERE o.id=$1`, f.h.plan.OperationID).
 			Scan(&resource, &operation, &jobState, &finalized, &child); err != nil {
 			t.Fatal(err)
 		}
