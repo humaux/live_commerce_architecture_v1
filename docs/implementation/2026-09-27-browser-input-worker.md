@@ -1,6 +1,6 @@
 # Browser input worker — scoped validation, 2026-09-27
 
-Status: **SQL_EXECUTOR_HTTP_SUBSET18_PASS; HISTORICAL_FULL709_PASS; PRODUCT_GATES_PENDING**.
+Status: **SQL_EXECUTOR_HTTP_SUBSET18_PASS; BRW05_HTTPS_DELIVERY_PASS; HISTORICAL_FULL709_PASS; PRODUCT_GATES_PENDING**.
 The latest bounded HTTP test tree is `53436b6`; the historical full709 source is
 `c5160de`, not the new HTTP source. This is not complete BRW/BRI, T08, G06 or SaaS
 acceptance. Input routes require an explicitly supplied runtime; production
@@ -153,8 +153,8 @@ hold states, then prove real worker selection and execution in both directions;
 they do **not** prove production transitions naturally enter those holds.
 Per-step reservation/process loss, actual 180-second deadline, remaining
 logout/access/lifetime permutations and other BRW01–04 cases remain separate
-work. BRW05 post-commit Go HTTP delivery has the bounded evidence below; its
-new-input HTTPS browser acceptance remains pending. BRW06
+work. BRW05 post-commit Go HTTP and HTTPS browser token delivery have the bounded
+evidence below. BRW06
 actual product browser/SFU decoded A/V, BRW07 new-input-queue 90-second recovery,
 and BRW08 final integrated regression/Studio evidence remain pending. The
 source-level full709 regression passed, but that alone does not close BRW08.
@@ -207,8 +207,8 @@ Root Go unit race tests and vet passed for `internal/httpapi`, `internal/live`
 and `internal/integrations/livekit`.
 
 The old browser regression does **not** exercise the new HTTPS input routes.
-New HTTPS signed-login/token delivery, actual SFU decoded media, INPUT recovery
-and the new-source full regression remain separate unclosed gates.
+The separate new HTTPS token-delivery result is recorded below. Actual SFU
+decoded media, INPUT recovery and the new-source full regression remain unclosed.
 
 ### First HTTPS browser attempt (not accepted)
 
@@ -248,3 +248,28 @@ adjudication of this oracle is pending; there is no third unreviewed repair/run.
 
 Final browser evidence: `output/playwright/input-delivery-20260927T164756.521055000/`.
 Passing browser subchecks do not override the failed enclosing gate.
+
+### Escalated adjudication and accepted scoped follow-up
+
+Independent review confirmed the prewire revoke execution row is absent by
+design: planning/reservation creates custody, registrar revoke writes only a
+revocation, and claim/Stop creates the execution projection. After the two-repair
+stop, root explicitly authorized one exact-oracle correction, independently
+reviewed before running. `6bc61d5` changes only the final test query; it requires
+the exact scoped revocation, **no** execution row, issued RESERVED/open-admission
+liability, and the original READY/generation-zero operation and available,
+unfinalized native River job. It does not fabricate a projection, mark input
+closed, relax any browser assertion or change product code.
+
+`--browser-input-delivery` then exited **0**: Go test 4.07s, foundation 5.837s;
+the two genuinely signed HTTPS browser phases pass (Stop 2.010s, revoke 0.466s).
+Packaged Next build and three Node boundary tests also pass. Edge counters prove
+two real hostile-Origin requests receive 403 and neither reaches Go; positive
+controls receive 200. Fixed grants/receipts, post-close 409, and retained original
+responsibility all pass. Earlier failed evidence remains above.
+
+- Log: `/Volumes/data/output/brw05-https-browser-root-adjudicated-20260928.log`.
+- SHA256: `404f87d19943269928098c783c0307b80d5ef4a054d046b14a522437c06ce924`.
+- Browser evidence: `output/playwright/input-delivery-20260927T165827.706359000/`.
+- Scope: signed browser/HTTPS BFF/Go/actual PG token transport and WSS handshake,
+  not decoded SFU media, merchant input controls, INPUT recovery or production.

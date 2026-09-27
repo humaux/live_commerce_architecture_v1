@@ -558,7 +558,7 @@
       "input_runtime_status": "BIC_KERNEL_FOCUSED_AND_FULL696_PASS_PRODUCT_BROWSER_ADMISSION_PENDING",
       "input_runtime_evidence": "docs/implementation/2026-09-27-browser-input-runtime.md",
       "input_worker_contract": "contracts/live-browser-input-worker-v1.md",
-      "input_worker_status": "SQL_EXECUTOR_HTTP_SUBSET18_PASS_HISTORICAL_FULL709_PASS_HTTPS_AND_PRODUCT_GATES_PENDING",
+      "input_worker_status": "SQL_EXECUTOR_HTTP_SUBSET18_AND_BRW05_HTTPS_PASS_HISTORICAL_FULL709_PASS_PRODUCT_GATES_PENDING",
       "input_worker_design_review": "7ca5ab59-6fc3-4d40-ab06-31bf01c9dfed",
       "input_worker_config_source": "a389f9b",
       "input_worker_config_evidence": "docs/implementation/2026-09-27-browser-input-config.md",
