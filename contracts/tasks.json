@@ -558,7 +558,10 @@
       "input_runtime_status": "BIC_KERNEL_FOCUSED_AND_FULL696_PASS_PRODUCT_BROWSER_ADMISSION_PENDING",
       "input_runtime_evidence": "docs/implementation/2026-09-27-browser-input-runtime.md",
       "input_worker_contract": "contracts/live-browser-input-worker-v1.md",
-      "input_worker_status": "DESIGN_CANDIDATE_NOT_IMPLEMENTED_NOT_ACCEPTED",
+      "input_worker_status": "DESIGN_ABI_FROZEN_CONFIG_ONLY_LOCAL_UNIT_ACCEPTED_RUNTIME_PENDING",
+      "input_worker_design_review": "7ca5ab59-6fc3-4d40-ab06-31bf01c9dfed",
+      "input_worker_config_source": "a389f9b",
+      "input_worker_config_evidence": "docs/implementation/2026-09-27-browser-input-config.md",
       "restart_recovery_contract": "contracts/live-media-recovery-observer-v1.md",
       "restart_recovery_status": "MRR01_04_LOCAL_ROOT21_AND_FULL696_PASS_PRODUCTION_NOT_RUN",
       "restart_recovery_evidence": "docs/implementation/2026-09-27-media-recovery-acceptance.md",
@@ -577,7 +580,7 @@
       "restart_recovery_concept_review": "2fbb104f-7bdd-413a-92e3-e8568fdabce6",
       "restart_recovery_concept_commit": "a2833ac",
       "restart_recovery_rejected_review": "94dc1dde-ab94-47a6-b42e-aff73cc972dc",
-      "boundary": "MLC and BIC private kernel bind the existing MOCK attempt to its exact initiating login and retain input liability in its original operation/job. Root b99a2d1 full exit0/696PASS0FAIL0SKIP/race/vet accepts the local BIC kernel; historical failing runs remain in dated receipts. BRW wire contract is a design candidate only: no browser token, new consumer or provider activation. BRW/BRI04-07, Cloud cached-token revocation and real Egress/output remain separate pending gates. Full T08/G06 remains IN_PROGRESS."
+      "boundary": "MLC and BIC private kernel bind the existing MOCK attempt to its exact initiating login and retain input liability in its original operation/job. Root b99a2d1 full exit0/696PASS0FAIL0SKIP/race/vet accepts the local BIC kernel; historical failing runs remain in dated receipts. BRW design ABI independently frozen at f518c77. Root a389f9b configuration-only constructor accepted after independent4 + five-package race/vet79PASS; no browser token, new consumer or provider activation. Product BRW/BRI04-07, Cloud cached-token revocation and real Egress/output remain separate pending gates. Full T08/G06 remains IN_PROGRESS."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },

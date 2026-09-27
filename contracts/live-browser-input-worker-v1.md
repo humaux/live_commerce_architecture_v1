@@ -1,14 +1,17 @@
 # Browser input worker and delivery v1 (BRW)
 
-Status: **DESIGN_CANDIDATE revision 3 — NOT_IMPLEMENTED / NOT_ACCEPTED**. Base `5a543e7`.
+Status: **DESIGN_ABI_FROZEN — CONFIG_ONLY_LOCAL_UNIT_ACCEPTED; product runtime NOT_IMPLEMENTED**.
+Design base `5a543e7`, independently closed at `f518c77` on 2026-09-27
+(Humaux review `7ca5ab59-6fc3-4d40-ab06-31bf01c9dfed`).
 Refines [BIC](live-browser-input-runtime-v1.md), [BRI](live-browser-input-v1.md)
-and [LKI](livekit-input-protocol-v1.md). Independent review must freeze this
-wire ABI before implementation. No token route or new consumer is enabled by
+and [LKI](livekit-input-protocol-v1.md). The wire ABI is frozen for implementation,
+not accepted as running SQL/HTTP/worker behavior. No token route or new consumer is enabled by
 this document. All Cloud, customer hardware and production gates remain NOT_RUN.
 
-The isolated `NewBrowserInputRuntime` constructor subsection below is
-**ABI_FROZEN_CONFIG_ONLY**, independently reviewed at `d7a30f3` on 2026-09-27.
-It can be implemented/tested without enabling any route, job or provider call.
+The isolated `NewBrowserInputRuntime` constructor is implemented at `a389f9b`,
+independently tested and accepted CONFIG_ONLY_LOCAL_UNIT. Root's five-package
+race/vet gate: 79 PASS / 0 FAIL / 0 SKIP; no route/job/provider activation.
+See [configuration receipt](../docs/implementation/2026-09-27-browser-input-config.md).
 The rest of this contract is not runtime acceptance.
 
 ## One execution owner, two independent liabilities
