@@ -472,6 +472,95 @@ func TestLiveMediaExecutionBIC02GrantReplayAndAuthority(t *testing.T) {
 			t.Fatalf("failed post-wait reservation added receipt/job: %v", got)
 		}
 	})
+
+	t.Run("existing-grant-expiry-after-observed-wait", func(t *testing.T) {
+		h := bicSetup(t)
+		short := h.spec()
+		short["start_before"] = time.Now().UTC().Add(7 * time.Second).Truncate(time.Second).Format(time.RFC3339)
+		nonce, ciphertext := lmaEnvelope()
+		if _, err := lmaRegister(context.Background(), h.registrar, short, nonce, ciphertext); err != nil {
+			t.Fatalf("actual registrar short-start fixture: %v", err)
+		}
+		h.specification = short
+		h.input.AuthorizationID = short["id"].(string)
+		bicRegister(t, h)
+		plan, err := bicPlan(context.Background(), h, h.lp.f.runtime, h.planner, h.logins.a, h.lp.f.storeA1, t04Key("bic-short-start"), h.input)
+		if err != nil {
+			t.Fatal(err)
+		}
+		in := live.MediaInputReserveInput{SessionID: h.session, AttemptID: plan.AttemptID, ExpectedSessionVersion: 1}
+		key := t04Key("bic-short-grant")
+		grant, err := bicReserve(context.Background(), h, h.lp.f.runtime, h.logins.a, h.lp.f.storeA1, key, in)
+		if err != nil {
+			t.Fatal(err)
+		}
+		fields := bicGrantMap(t, grant)
+		expiry := time.Unix(int64(fields["expires_at"].(float64)), 0)
+		if expiry.After(time.Now().Add(8 * time.Second)) {
+			t.Fatal("short prepared start did not clip grant expiry")
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+		proceed := make(chan struct{})
+		pidCh := make(chan int, 1)
+		done := make(chan error, 1)
+		go func() {
+			done <- platform.WithScope(ctx, h.lp.f.runtime, h.logins.a, h.lp.f.storeA1, "store:read", func(tx pgx.Tx, scope platform.Scope) error {
+				var pid int
+				if err := tx.QueryRow(ctx, `SELECT pg_backend_pid()`).Scan(&pid); err != nil {
+					return err
+				}
+				pidCh <- pid
+				<-proceed
+				_, err := h.planner.ReserveInput(ctx, tx, scope, h.logins.a, key, in)
+				return err
+			})
+		}()
+		var waiterPID int
+		select {
+		case waiterPID = <-pidCh:
+		case err := <-done:
+			t.Fatalf("replay did not enter transaction before expiry: %v", err)
+		case <-ctx.Done():
+			t.Fatal("short-grant replay never entered transaction")
+		}
+		holder, err := h.lp.f.owner.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer holder.Rollback(context.Background())
+		var holderPID int
+		if err := holder.QueryRow(ctx, `SELECT pg_backend_pid()`).Scan(&holderPID); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := holder.Exec(ctx, `SELECT attempt_id FROM live.media_input_custody WHERE attempt_id=$1 FOR UPDATE`, plan.AttemptID); err != nil {
+			t.Fatal(err)
+		}
+		close(proceed)
+		lmaObserveBlock(t, h.lp.f.owner, waiterPID, holderPID, false)
+		for {
+			var passed bool
+			if err := h.lp.f.owner.QueryRow(ctx, `SELECT clock_timestamp()>=$1`, expiry.Add(100*time.Millisecond)).Scan(&passed); err != nil {
+				t.Fatal(err)
+			}
+			if passed {
+				break
+			}
+			if ctx.Err() != nil {
+				t.Fatal("database clock did not cross the bounded grant expiry")
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+		if err := holder.Commit(ctx); err != nil {
+			t.Fatal(err)
+		}
+		if err := <-done; err == nil {
+			t.Fatal("expired grant replay returned after blocked custody read")
+		}
+		if got := bicOwnedFacts(t, h); got != [8]int64{1, 1, 1, 1, 1, 1, 1, 1} {
+			t.Fatalf("expired replay duplicated grant/receipt/job: %v", got)
+		}
+	})
 }
 
 func bicStop(ctx context.Context, h *bicHarness, token, key string, plan live.MediaStartResult) (live.MediaStopResult, error) {
@@ -630,6 +719,40 @@ func TestLiveMediaExecutionBIC03OriginalJobOutlivesInputLiability(t *testing.T) 
 	})
 }
 
+// Corruption injection only: one owner connection changes one disposable
+// native row with triggers suppressed for that transaction. Normal guard
+// rejection is asserted separately; this does not prove a runtime write path.
+func bicCorruptNativeJob(owner *pgxpool.Pool, sql string, args ...any) error {
+	ctx := context.Background()
+	conn, err := owner.Acquire(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Release()
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+	if _, err := tx.Exec(ctx, `SET LOCAL session_replication_role=replica`); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(ctx, sql, args...); err != nil {
+		return err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return err
+	}
+	var role string
+	if err := conn.QueryRow(ctx, `SHOW session_replication_role`).Scan(&role); err != nil {
+		return err
+	}
+	if role != "origin" {
+		return errors.New("corruption fixture replication role did not reset at COMMIT")
+	}
+	return nil
+}
+
 func TestLiveMediaExecutionBIC04FenceACLAndNativeGuard(t *testing.T) {
 	h, plan, in := bicStarted(t)
 	if _, err := bicReserve(context.Background(), h, h.lp.f.runtime, h.logins.a, h.lp.f.storeA1, t04Key("bic-fence-reserve"), in); err != nil {
@@ -744,6 +867,39 @@ func TestLiveMediaExecutionBIC04FenceACLAndNativeGuard(t *testing.T) {
 		t.Fatal(err)
 	}
 	bicPlanReady(t, h)
+	var nativeState string
+	var nativeFinalized *time.Time
+	if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT state,finalized_at FROM river_media.river_job WHERE id=$1`, plan.JobID).
+		Scan(&nativeState, &nativeFinalized); err != nil {
+		t.Fatal(err)
+	}
+	restoreNative := true
+	t.Cleanup(func() {
+		if restoreNative {
+			if err := bicCorruptNativeJob(h.lp.f.owner, `UPDATE river_media.river_job SET state=$2,finalized_at=$3 WHERE id=$1`,
+				plan.JobID, nativeState, nativeFinalized); err != nil {
+				t.Errorf("restore native corruption fixture: %v", err)
+			}
+		}
+	})
+	if err := bicCorruptNativeJob(h.lp.f.owner, `UPDATE river_media.river_job SET state='completed',finalized_at=clock_timestamp() WHERE id=$1`, plan.JobID); err != nil {
+		t.Fatal(err)
+	}
+	if err := h.lp.f.runtime.QueryRow(context.Background(), `SELECT live.media_input_plan_ready()`).Scan(&ready); err != nil || ready {
+		t.Fatalf("readiness accepted deliberately finalized original job: %v %v", ready, err)
+	}
+	if err := bicCorruptNativeJob(h.lp.f.owner, `UPDATE river_media.river_job SET state=$2,finalized_at=$3 WHERE id=$1`,
+		plan.JobID, nativeState, nativeFinalized); err != nil {
+		t.Fatal(err)
+	}
+	restoreNative = false
+	bicPlanReady(t, h)
+	if err := bicCorruptNativeJob(h.lp.f.owner, `DELETE FROM river_media.river_job WHERE id=$1`, plan.JobID); err != nil {
+		t.Fatal(err)
+	}
+	if err := h.lp.f.runtime.QueryRow(context.Background(), `SELECT live.media_input_plan_ready()`).Scan(&ready); err != nil || ready {
+		t.Fatalf("readiness accepted deliberately missing original job: %v %v", ready, err)
+	}
 }
 
 func TestLiveMediaExecutionBIC05LegacyQueueUnaffected(t *testing.T) {
