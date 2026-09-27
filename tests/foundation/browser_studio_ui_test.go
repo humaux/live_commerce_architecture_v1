@@ -253,8 +253,13 @@ func TestBrowserStudioUIRealChain(t *testing.T) {
 	t.Logf("STU04 signed UI, BFF, Go/PG and MOCK worker facts verified; evidence=%s", evidence)
 	if browserErr != nil {
 		log, err := os.ReadFile(playwrightLog.Name())
-		if err == nil && bytes.Contains(log, []byte("3 passed")) && bytes.Contains(log, []byte("1 failed")) &&
-			bytes.Contains(log, []byte("STU04 native visibility conceal and revalidation remains required")) {
+		nativeFailed := false
+		for _, line := range strings.Split(string(log), "\n") {
+			if strings.Contains(line, "✘") && strings.Contains(line, "STU04 native visibility conceal and revalidation remains required") {
+				nativeFailed = true
+			}
+		}
+		if err == nil && nativeFailed && bytes.Contains(log, []byte("3 passed")) && bytes.Contains(log, []byte("1 failed")) {
 			t.Errorf("STU04 native visibility NOT_RUN: headed Chromium never reported hidden after task-owned tab switch; other three browser cases and PG/worker readbacks passed; evidence=%s", evidence)
 		} else {
 			t.Errorf("STU04 browser chain failed: %v; evidence=%s", browserErr, evidence)
