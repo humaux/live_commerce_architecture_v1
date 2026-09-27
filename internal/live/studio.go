@@ -57,6 +57,120 @@ type Studio struct {
 	CanManage bool            `json:"can_manage"`
 }
 
+// StudioInput is a nonsecret, advisory view of the original input attempt.
+type StudioInput struct {
+	AttemptID       string    `json:"attempt_id"`
+	State           string    `json:"state"`
+	AdmissionClosed bool      `json:"admission_closed"`
+	CloseReason     string    `json:"close_reason"`
+	CleanupHeld     bool      `json:"cleanup_held"`
+	CanStop         bool      `json:"can_stop"`
+	UpdatedAt       time.Time `json:"updated_at"`
+}
+
+func GetStudioInput(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, sessionID string) (*StudioInput, error) {
+	if ctx == nil || tx == nil || !command.ValidID(sessionID) {
+		return nil, command.ErrInvalid
+	}
+	draft, err := GetDraft(ctx, tx, scope, token, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := tx.Exec(ctx, `SELECT set_config('app.authz_revision',$1,true)`, strconv.FormatInt(scope.Revision, 10)); err != nil {
+		return nil, err
+	}
+	hash := sha256.Sum256([]byte(token))
+	var raw []byte
+	if err := tx.QueryRow(ctx, `SELECT live.read_studio_input($1::bytea,$2::uuid,$3::uuid)`, hash[:], scope.StoreID, sessionID).Scan(&raw); err != nil {
+		return nil, mediaPlanError(err)
+	}
+	current, err := GetDraft(ctx, tx, scope, token, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	if !reflect.DeepEqual(current, draft) {
+		return nil, ErrStudioProjection
+	}
+	if bytes.Equal(raw, []byte("null")) {
+		return nil, nil
+	}
+	if len(raw) > 4096 || !studioExactFields(raw, "attempt_id", "state", "admission_closed", "close_reason", "cleanup_held", "can_stop", "updated_at") {
+		return nil, ErrStudioProjection
+	}
+	var out StudioInput
+	if json.Unmarshal(raw, &out) != nil || !command.ValidID(out.AttemptID) || out.UpdatedAt.IsZero() ||
+		(out.AdmissionClosed != (out.CloseReason != "")) {
+		return nil, ErrStudioProjection
+	}
+	validState := false
+	for _, state := range []string{"UNISSUED", "RESERVED", "CLOSING", "UNKNOWN", "CLOSED"} {
+		validState = validState || out.State == state
+	}
+	validReason := false
+	for _, reason := range []string{"", "merchant_stop", "login_lost", "permission_lost", "authorization_lost", "binding_lost", "expired", "egress_terminal", "reconcile_exhausted", "runtime_unavailable"} {
+		validReason = validReason || out.CloseReason == reason
+	}
+	if !validState || !validReason {
+		return nil, ErrStudioProjection
+	}
+	return &out, nil
+}
+
+// The private SQL envelope carries mapping pins only for this check. Never
+// expose them in the public Prepared DTO; Start repeats authority under locks.
+func GetStudioInputPrepared(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, sessionID string, runtime *BrowserInputRuntime) (*StudioPrepared, error) {
+	if ctx == nil || tx == nil || runtime == nil || !command.ValidID(sessionID) {
+		return nil, command.ErrInvalid
+	}
+	draft, err := GetDraft(ctx, tx, scope, token, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := tx.Exec(ctx, `SELECT set_config('app.authz_revision',$1,true)`, strconv.FormatInt(scope.Revision, 10)); err != nil {
+		return nil, err
+	}
+	hash := sha256.Sum256([]byte(token))
+	var raw []byte
+	if err := tx.QueryRow(ctx, `SELECT live.read_studio_input_prepared($1::bytea,$2::uuid,$3::uuid)`, hash[:], scope.StoreID, sessionID).Scan(&raw); err != nil {
+		return nil, mediaPlanError(err)
+	}
+	current, err := GetDraft(ctx, tx, scope, token, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	if !reflect.DeepEqual(current, draft) {
+		return nil, ErrStudioProjection
+	}
+	if bytes.Equal(raw, []byte("null")) {
+		return nil, nil
+	}
+	if len(raw) > 4096 || !studioExactFields(raw, "prepared", "project_id", "credential_version", "endpoint_identity") {
+		return nil, ErrStudioProjection
+	}
+	var envelope struct {
+		Prepared          json.RawMessage `json:"prepared"`
+		ProjectID         string          `json:"project_id"`
+		CredentialVersion int64           `json:"credential_version"`
+		EndpointIdentity  string          `json:"endpoint_identity"`
+	}
+	if json.Unmarshal(raw, &envelope) != nil || string(envelope.Prepared) == "null" ||
+		!mediaProjectPattern.MatchString(envelope.ProjectID) || envelope.CredentialVersion < 1 {
+		return nil, ErrStudioProjection
+	}
+	endpoint, ok := runtime.projects[mediaProjectKey{envelope.ProjectID, envelope.CredentialVersion}]
+	if !ok || endpoint.identity != envelope.EndpointIdentity || endpoint.client == nil {
+		return nil, command.ErrConflict
+	}
+	wrapped := append([]byte(`{"prepared":`), envelope.Prepared...)
+	wrapped = append(wrapped, []byte(`,"attempt":null}`)...)
+	prepared, attempt, err := decodeStudioMedia(wrapped)
+	if err != nil || attempt != nil || prepared == nil || prepared.SessionVersion != draft.Version ||
+		draft.State != "DRAFT" {
+		return nil, ErrStudioProjection
+	}
+	return prepared, nil
+}
+
 func ListDrafts(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, page pagination.Request) (pagination.Page[Draft], error) {
 	out := pagination.Page[Draft]{Items: []Draft{}}
 	if ctx == nil || tx == nil {

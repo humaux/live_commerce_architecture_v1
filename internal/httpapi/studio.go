@@ -79,6 +79,24 @@ func registerStudioRoutes(mux *http.ServeMux, pool *pgxpool.Pool, planner *live.
 		return studioReceipt{SessionID: out.SessionID, AttemptID: out.AttemptID, State: out.State}, nil
 	})))
 	if browserInput != nil {
+		mux.HandleFunc("GET "+base+"/{session_id}/input", studioRoute(http.MethodGet, false, func(w http.ResponseWriter, r *http.Request) {
+			if !command.ValidID(r.PathValue("session_id")) {
+				respondError(w, http.StatusUnprocessableEntity, "invalid_request")
+				return
+			}
+			scoped(pool, "live:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
+				return live.GetStudioInput(ctx, tx, s, bearerToken(r), r.PathValue("session_id"))
+			})(w, r)
+		}))
+		mux.HandleFunc("GET "+base+"/{session_id}/input/prepared", studioRoute(http.MethodGet, false, func(w http.ResponseWriter, r *http.Request) {
+			if !command.ValidID(r.PathValue("session_id")) {
+				respondError(w, http.StatusUnprocessableEntity, "invalid_request")
+				return
+			}
+			scoped(pool, "live:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
+				return live.GetStudioInputPrepared(ctx, tx, s, bearerToken(r), r.PathValue("session_id"), browserInput)
+			})(w, r)
+		}))
 		mux.HandleFunc("POST "+base+"/{session_id}/input/start", studioRoute(http.MethodPost, false, studioBodyRoute(pool, "live:manage", []string{"authorization_id", "expected_session_version"}, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in start) (any, error) {
 			out, err := planner.PlanBrowserInputStart(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), live.MediaStartInput{SessionID: r.PathValue("session_id"), AuthorizationID: in.AuthorizationID, ExpectedSessionVersion: in.ExpectedSessionVersion}, browserInput)
 			if err != nil {
@@ -143,7 +161,7 @@ func registerStudioRoutes(mux *http.ServeMux, pool *pgxpool.Pool, planner *live.
 		mux.HandleFunc(path, studioRoute("", false, nil))
 	}
 	if browserInput != nil {
-		for _, path := range []string{base + "/{session_id}/input/start", base + "/{session_id}/input/token"} {
+		for _, path := range []string{base + "/{session_id}/input", base + "/{session_id}/input/prepared", base + "/{session_id}/input/start", base + "/{session_id}/input/token"} {
 			mux.HandleFunc(path, studioRoute("", false, nil))
 		}
 	}
