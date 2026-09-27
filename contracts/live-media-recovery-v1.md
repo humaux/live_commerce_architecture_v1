@@ -43,13 +43,14 @@ They describe a same-binary supervisor/child model, immutable restart episodes,
 monotonic readback witnesses and sticky timeout evidence. Early exhaustion
 escalation and rescue-only parking are **not approved implementation seams**.
 
-Before expanding native retry semantics, a bounded scope check must determine
-whether the owner's fresh-state-check target can instead reuse the original
-operation's lease-fenced observation path without changing River scheduling.
-It may not silently bypass the existing cleanup-required QUERY guard or consume
-a Stop reservation without executing its frozen protocol. Fresh state evidence
-must remain distinct from resumed cleanup automation. This comparison is still
-pending; it is not permission for a second unfenced worker or new business queue.
+The bounded scope check is recorded in
+`fbbcf3ef-dfef-4b57-9278-902386101ff9`. Its narrower candidate is now
+`live-media-recovery-observer-v1.md`: reuse the original operation's fenced
+observation primitives without changing River scheduling. The ordinary claim
+can dispatch/escalate, and the public QUERY wrapper intentionally rejects
+cleanup-required nonterminal observations; neither can be reused unchanged.
+Fresh state evidence remains distinct from resumed cleanup automation. The
+narrow candidate is under independent review, not frozen implementation authority.
 
 ## Approved outcome
 
