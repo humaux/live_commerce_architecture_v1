@@ -2,14 +2,14 @@
 
 ## R04 本地真实媒体输入探针（仅测试）
 
-`scripts/dev/r04-local-input.mjs` 候选工作树 → 现有 Playwright/Chromium →
+`scripts/dev/r04-local-input.mjs` → 现有 Playwright/Chromium →
 固定 `livekit-client@2.22.3` → 本机临时 LiveKit 1.13.7。SDK 仅为根目录
 devDependency，不加入商家应用、生产 Go 服务或部署镜像。Node 标准库负责
 测试凭证、临时文件、监听与进程管理，不新增服务端 SDK、Redis 或媒体转码器。
 测试不调用现有商家开播控制器，不准复用 MOCK 业务记录充当真实 LIVE 证据。
 
 来源、可执行文件／bottle 校验值、保留工具路径、升级要求与故障边界见
-[维护说明](r04-local-input.md)；源仍待验收，详见
+[维护说明](r04-local-input.md)；真实本地探针五例独立及 Root 均通过，详见
 [实际失败与对照记录](2026-09-27-r04-local-input-acceptance.md)。升级 SDK、服务端
 或浏览器必须重跑真实远端音视频、权限反例和独立清理检查；不能只重跑 TS 类型。
 

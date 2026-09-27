@@ -1,6 +1,7 @@
-# R04 real local input — acceptance in progress
+# R04 real local input — bounded probe acceptance
 
-Status: **NOT_ACCEPTED**. This record must not promote R04/T08/T09/G06.
+Status: **ACCEPTED_LOCAL_REAL_WEBRTC_PROBE_ONLY** at tested main `8884d59`.
+This record must not promote product R04/T08/T09/G06 or production readiness.
 Contract/dependency freeze: `70780cc`. Setup notes:
 [r04-local-input.md](r04-local-input.md).
 
@@ -41,7 +42,7 @@ The failed source replaced Chromium fake microphone capture with a WebAudio
 oscillator. This is synthetic, not a real customer's mic, but it does not prove
 the contract's fake getUserMedia microphone path. Do not relabel the substitution.
 
-## Bounded adjudication and open findings
+## Bounded adjudication and prior open findings
 
 Two author audio repairs did not produce energy; the author stopped and handed
 off. Root authorized **one diagnostic run only**, adding publisher PCM RMS,
@@ -89,7 +90,7 @@ Root freeze `280ac66` authorizes the next bounded batch to restore actual fake
 getUserMedia capture and close the listed proof gaps, including both post-media
 fault paths. Independent tests must use the exact resulting source revision.
 
-Before source acceptance, independently verify:
+The pre-acceptance findings were:
 
 1. Nonzero remote audio and actual fake microphone path, not packets alone.
 2. Fault occurs after measured media and leaves safe counters; final evidence
@@ -104,6 +105,72 @@ Before source acceptance, independently verify:
 7. Failure classifications are fixed safe codes, not arbitrary SDK error text
    with punctuation removed; secrets may be alphanumeric.
 
+## Final fixed-source acceptance
+
+Author lineage: `7db1416` → `01a1f99` → `e47f2e0` → `b770e6a` → `85972f8`.
+The last two restore actual fake getUserMedia WAV, exact auth failures, owned
+resource receipts, measured-media fault injection, safe errors and bounded
+browser/network waits. Whole-run detached timeout was removed. Independent
+tests: `70e2007` → `bab201d` → `e1bf43d`; final integration **`8884d59`**.
+
+The first five-case independent run was 4 PASS / 1 FAIL solely because its
+timeout expected-label disagreed with the fixed deadline class. That log remains
+`/Volumes/data/output/r04-independent-final-five-20260927.log`.
+`e1bf43d` corrects exactly one expected string to `injected_operation_timeout`;
+no media, auth or cleanup assertion was weakened.
+
+Final fixed-source static review of **`85972f8`**, including its full lineage,
+found no confirmed blocking P0/P1. The reviewer did not execute the probe.
+The broad lockfile-integrity pattern was noted as a future robustness limit;
+the current exact SDK entry/hash and setup chain were verified, not inferred
+from that regex alone. Updating dependencies requires pin review and reruns.
+
+| Gate | Final observation |
+| --- | --- |
+| RLI01 | Exact binary/SDK pins, local server readiness; invalid executable/fault rejected before child execution |
+| RLI02–03 | Real fake getUserMedia capture → local SFU → separate receiver; advancing decoded video and nonzero audio energy, not only events/packets |
+| RLI04 | Expired and tampered JWT: specific NotAllowed/401; observer server no-publish grant and zero tracks, with **client-permission** PublishTrackError/403 on canvas publish |
+| RLI05 | Normal room query empty; normal and both measured-media faults have independently absent PID, rebound TCP/UDP ports and removed config/WAV directory; timeout rechecked after 500 ms |
+| RLI06 | Separate fixed-source review, independent five-case execution, root five-case rerun and retained documentation |
+
+Independent final run: **exit 0, 5 PASS / 0 FAIL / 0 SKIP**.
+Log `/Volumes/data/output/r04-independent-final-five-e1bf43d-20260927.log`, SHA256
+`eee9203455f330a9d8b231f262d1d5d043013a12cf4c7c7ce86c6fcb9be26e84`.
+Its normal receipt:
+`/Volumes/data/worktrees/commerce-meta-inbox-tests-20260926/output/playwright/r04-independent-2MsSGI/r04-input-1790481630258-9df5118c.json`.
+Fault receipts are under the same `output/playwright` directory:
+`r04-independent-OvBeuW/r04-input-1790481634438-42170c3f.json` and
+`r04-independent-kcVds3/r04-input-1790481641180-1e84b915.json`.
+
+Root actual command at **`8884d59`**:
+
+```sh
+COMMERCE_R04_LIVEKIT_BINARY=/Volumes/data/output/commerce-r04-tools-20260927.OdpS5m/livekit/1.13.7/bin/livekit-server node --test tests/media/r04-input-runner.test.mjs
+```
+
+Result: **exit 0, 5 PASS / 0 FAIL / 0 SKIP**, 18072.165708 ms.
+Log `/Volumes/data/output/r04-root-fivecase-20260927.log`, SHA256
+`b85546ee5904b5fcd1eaea29595744517b4eec349e8d06c8a2fe17b8ea770879`.
+Root receipts under the main repo's `output/playwright`:
+
+- Normal `r04-independent-Q9x067/r04-input-1790481649777-e6f972d9.json`:
+  54 decoded frames, 1280×720, 130 audio packets / 32110 bytes, energy +0.633835,
+  PCM RMS energy 0.123987; actual server auth and normal room-empty checks passed.
+- Fault `r04-independent-IqUvDC/r04-input-1790481653516-8c5a3446.json`:
+  intentional exit 1 after measured media, `injected_after_publish`.
+- Timeout `r04-independent-yAbspl/r04-input-1790481660141-69fc6bbc.json`:
+  intentional exit 1 after measured media, `injected_operation_timeout`.
+
+Root inspected the final normal-run synthetic-camera screenshot. It proves only
+fixture rendering, not merchant UI or a real hardware capture. Independent tests
+verified owned resources after each runtime, without killing unrelated processes.
+The pinned server archive/binary and evidence remain because these docs reference
+them; temporary configs/WAVs/listeners/browsers from the runs were removed.
+
+No product, Go/PG, Cloud, Meta, Egress or customer environment was changed. No
+production resource or live broadcast was stopped. Merchant authorization/lifetime,
+approved Studio UI, managed Cloud/media-output and global deployment remain gates.
+
 ## Separate root regression evidence
 
 At main `7e82b6f` after the test-only SDK/lock update, root ran
@@ -112,3 +179,15 @@ exit **0**, both TypeScript checks passed; locale/routing **4 PASS, 0 FAIL/SKIP*
 This is dependency/regression evidence, not RLI acceptance. Go/PG source and
 production routes were not changed; previous 652-test evidence is historical,
 not represented as a rerun of this slice.
+
+After integration at `8884d59`, root repeated the same TypeScript/i18n command:
+exit 0, both TS checks and **4/4 i18n** passed. No full Go/PG rerun was claimed.
+
+## Traceability tool limitation
+
+Root submitted both changed `.mjs` files to Humaux `code_index`. The indexer
+finished with zero files/entities; a qualified `startPlayback` memory-link
+attempt returned entity-not-found. The independent tester observed the same
+parser limitation. No unrelated same-name entity was linked. Fix rationale,
+test receipts and progress are retained in Humaux memories/canvas and this log;
+the JavaScript code-graph edge remains unavailable rather than falsely complete.

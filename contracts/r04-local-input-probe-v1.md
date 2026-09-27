@@ -1,8 +1,9 @@
 # R04 real local media input probe
 
-Status: **FROZEN_FOR_LOCAL_PROBE / EXECUTED_NOT_ACCEPTED**. Main base `05472bd`, 2026-09-27.
+Status: **ACCEPTED_LOCAL_REAL_WEBRTC_PROBE_ONLY**. Tested main `8884d59`, 2026-09-27.
 Independent bounded preflight of `d46da36` found no material P0/P1. This freezes
-the probe only; execution and failures are recorded in the
+the probe only; final fixed-source review and independent/root five-case runs
+passed. Execution and retained failures are recorded in the
 [acceptance log](../docs/implementation/2026-09-27-r04-local-input-acceptance.md),
 not implied to be product acceptance.
 This is a bounded dependency probe, not a merchant feature or G06 acceptance.

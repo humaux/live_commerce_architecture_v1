@@ -1,8 +1,9 @@
 # R04 local real-media probe: operation and limits
 
 Contract: [R04 probe](../../contracts/r04-local-input-probe-v1.md).
-Implementation and independent execution: **FAILED / NOT_ACCEPTED**;
-root media rerun: **NOT_RUN**. See the exact revisions and retained artifacts in
+Bounded probe: **ACCEPTED_LOCAL_REAL_WEBRTC** after independent and root five-case
+runs at tested main `8884d59`. Product R04/G06 remains unaccepted. Exact revisions,
+the original failures and final artifacts are in
 the [acceptance log](2026-09-27-r04-local-input-acceptance.md).
 
 ## What this measures
@@ -49,21 +50,43 @@ These retained tools are referenced by the repeatable gate; do not age-clean
 them while this reference is live. An upgrade must deliberately update the
 contract checksum/lock and rerun the probe. No `latest` fallback is permitted.
 
-## Intended invocation and operational boundary
+## Invocation and operational boundary
 
-The unaccepted runner is retained in its isolated source worktree, not main.
-Set `COMMERCE_R04_LIVEKIT_BINARY` to the checked
-executable and run `node scripts/dev/r04-local-input.mjs` from the repo root.
-`COMMERCE_R04_FAULT=after-publish` is a deliberate **nonzero** cleanup test, not
-a production option. Invalid configuration must fail before child startup.
+Set `COMMERCE_R04_LIVEKIT_BINARY` to the checked executable. From the repo root:
+
+```sh
+node scripts/dev/r04-local-input.mjs
+node --test tests/media/r04-input-runner.test.mjs
+```
+
+The first command is one normal probe; the second runs all five causal cases.
+`COMMERCE_R04_FAULT=after-publish` and `timeout-after-publish` are deliberate
+**nonzero** cleanup tests, not production options. Unknown configuration fails
+before child startup. The normal test exits zero; both intentional runtime
+failures are expected by the suite, not hidden or converted into probe PASS.
+
+The runner creates a one-second synthetic PCM WAV, loops it through Chromium's
+fake getUserMedia capture, and removes it with its private config directory.
+Receiver audio must be attached/played via the SDK before measuring remote PCM;
+the initial packet-only/zero-energy failure and single-variable fix are retained.
+Browser/network waits use a remaining 75-second operation budget; finalization
+has separate bounded closes. `run()` is awaited directly. Per-call timeouts for
+context/page creation are contained by closing the owned browser; the independent
+suite has a 120-second per-process guard and tests the injected timeout path.
 
 The runner owns its temporary credentials/config, free loopback ports, server,
 HTTP fixture and browser processes. It must release only these resources in
 `finally`; it must never kill a service by common port/name or touch a user's
 profile. Evidence is sanitized counters/classifications and cleanup results;
+safe PID/port/config-directory fields let the independent suite verify teardown
+after process exit (and again after 500 ms for the timeout case).
 JWTs, secret-bearing URLs/config and raw traces/console dumps are forbidden.
 No actual microphone/camera permission, customer identity, external destination,
 database, registry network or Cloud account is needed during the media run.
+
+Publication denial is deliberately layered: invalid JWTs receive actual server
+401; the no-publish observer is confirmed by server participant state plus SDK
+403 on canvas-track publishing. It is not a malicious client bypass test.
 
 The local Docker engine was observed at about 1.92 GiB memory; this is not a
 benchmark or capacity promise. Native local SFU plus browser observer avoids
