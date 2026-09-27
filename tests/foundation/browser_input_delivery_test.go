@@ -325,11 +325,24 @@ func TestBrowserInputDeliveryBRW05RealChain(t *testing.T) {
 		WHERE x.attempt_id=$1`, stopCase.specification["attempt_id"]).Scan(&stopped, &stopClosed, &stopReason, &stopRevoked); err != nil || !stopped || !stopClosed || stopReason != "merchant_stop" || stopRevoked {
 		t.Fatalf("Stop did not persist distinct input closure: err=%v stopped=%v closed=%v reason=%q revoked=%v", err, stopped, stopClosed, stopReason, stopRevoked)
 	}
-	var revokeStopped, revokeRecorded bool
-	if err := revokeCase.lp.f.owner.QueryRow(ctx, `SELECT x.stop_requested_at IS NOT NULL,
-		EXISTS(SELECT 1 FROM live.media_authorization_revocations r WHERE r.authorization_id=x.authorization_id)
-		FROM live.media_execution_state x WHERE x.attempt_id=$1`, revokeCase.specification["attempt_id"]).Scan(&revokeStopped, &revokeRecorded); err != nil || revokeStopped || !revokeRecorded {
-		t.Fatalf("registrar revoke did not persist independently of Stop: err=%v stopped=%v revoked=%v", err, revokeStopped, revokeRecorded)
+	// No worker or Stop ran for this attempt. Revocation records authority loss;
+	// it does not create an execution projection or discharge the issued grant.
+	var revokeRecorded, executionAbsent, liabilityRetained, originalJobRetained bool
+	if err := revokeCase.lp.f.owner.QueryRow(ctx, `SELECT
+		EXISTS(SELECT 1 FROM live.media_authorization_revocations r
+		 WHERE r.authorization_id=i.authorization_id AND r.tenant_id=i.tenant_id
+		 AND r.store_id=i.store_id AND r.reason_code='operator_revoke'),
+		NOT EXISTS(SELECT 1 FROM live.media_execution_state x WHERE x.attempt_id=i.attempt_id),
+		i.state='RESERVED' AND i.grant_iat IS NOT NULL AND i.admission_closed_at IS NULL,
+		o.id=i.operation_id AND o.state='READY' AND o.generation=0
+		 AND live.media_native_job(j.id,o.id) AND j.state='available'
+		 AND j.attempt=0 AND j.finalized_at IS NULL
+		FROM live.media_input_custody i JOIN live.media_attempts a ON a.id=i.attempt_id
+		JOIN integration.operations o ON o.id=a.start_operation_id
+		JOIN river_media.river_job j ON j.id=o.job_id
+		WHERE i.attempt_id=$1 AND i.authorization_id=$2`, revokeCase.specification["attempt_id"], revokeCase.input.AuthorizationID).
+		Scan(&revokeRecorded, &executionAbsent, &liabilityRetained, &originalJobRetained); err != nil || !revokeRecorded || !executionAbsent || !liabilityRetained || !originalJobRetained {
+		t.Fatalf("prewire revoke durable facts invalid: err=%v revoked=%v execution_absent=%v liability_retained=%v original_job_retained=%v", err, revokeRecorded, executionAbsent, liabilityRetained, originalJobRetained)
 	}
 	idp.mu.Lock()
 	exchanges := idp.exchanges
