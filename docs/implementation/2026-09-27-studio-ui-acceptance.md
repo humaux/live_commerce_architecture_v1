@@ -229,6 +229,35 @@ Humaux `8ba7d708-9a1c-44d9-9692-30bf4ec56f05` records the source batch.
 Independent browser recaptures, an English invalid-calendar/no-write check and
 same-reviewer verdict remain pending. This does not waive native conceal.
 
+## Sixth run: visual-batch regression and valid recaptures
+
+Source `fc3cfef` integrates into the independent test tree as `3766bf4`;
+test-only `52a32af` asserts locale-neutral English entry and rejects
+`2030-02-30T00:00` with the exact error and zero POSTs. Valid UTC entry still
+passes create/edit/reopen and mobile save. No production behavior or existing
+security, history, session-swap, lost-ACK or native requirement was weakened.
+
+At fixed test HEAD `52a32af`, `--browser-studio-ui` exited **1**, test 45.67s /
+foundation 46.709s. Browser **3 PASS / 2 FAIL**; every actual OIDC/Next/Go/PG/
+local MOCK worker counter and persistence check passed. The same two real
+native-conceal prerequisites failed because `visibilityState` remained
+`visible`; native lifecycle stays **NOT_RUN**, overall STU04 **NOT_PASS**.
+
+Root independently verified the logs and opened all nine new locale captures:
+
+- `output/studio-ui-sixth-20260927.log`, SHA256
+  `68753f17de1b46fb6e8d316c8b216f849e4e1ce874906c0fb4119fc179da9baf`.
+- `output/playwright/studio-ui-20260927T083110.972823000/playwright.log`, SHA256
+  `7037b18a583f61cc955109c72fb7c5851091f364a25f021c3d4d1eaaa67305d2`.
+- That directory contains each locale's 1586×992 desktop, 390×844 phone and
+  full-height phone capture. These exact new paths are authoritative for the
+  fix-verdict pass; fifth-run captures remain immutable historical evidence.
+
+Paths above are relative to the independent test worktree in Scope. Receipt
+`34af68a1-f1a5-414f-b0a7-60668bca69e4` records the test result and task-owned
+PG/worker/browser cleanup. Same-reviewer visual verdict is pending. A visual
+pass cannot waive native conceal or the root integration/full-regression gate.
+
 ## Remaining boundary
 
 This slice does not qualify real browser publishing, Cloud Egress, public social

@@ -259,6 +259,19 @@ needs its own safety review, including native attempt exhaustion and retained
 resource liability; none has been implemented here. No more random diagnostic
 reruns are authorized by this receipt.
 
+Independent retry-policy review `bb58f909-eb14-4539-bc4a-e240243e801f`
+found no product contract establishing a 35s recovery SLA. Rejection receipt
+`a7cabd53-ad9c-40ce-a5e8-3ba27b5c8ef2` rules out unconditional five-second
+native retry: it applies to ordinary errors as well as rescue, and native
+`MaxAttempts=25` can discard the original job while UNKNOWN resource liability
+remains. The old plain MOCK guard does not prove never-discard custody; the
+4096-generation/24h business budget is not a native attempt guarantee.
+
+Owner recovery-latency selection is pending. Before changing policy, freeze
+latency, eligible failures, exhaustion retention and independent fault gates.
+Neither a timeout increase nor a fast retry chosen to fit this one test is a
+repair. No retry policy, deadline, external service or customer stream changed.
+
 Maintenance/caller map: [media-input-custody.md](media-input-custody.md),
 committed in `0eb3d59`.
 
