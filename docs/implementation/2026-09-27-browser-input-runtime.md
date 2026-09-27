@@ -1,6 +1,6 @@
 # Browser input custody implementation record — 2026-09-27
 
-Status: **DESIGN_REVIEWED_BIC_FROZEN; implementation and acceptance NOT_RUN**.
+Status: **BIC_SOURCE_CANDIDATE_UNDER_REPAIR; independent acceptance pending**.
 Source base `2b52e7d`; frozen contract:
 [BIC/BRW](../../contracts/live-browser-input-runtime-v1.md).
 Contract freeze `4809128`, cleanup-authority clarification `234f44a` (reviewed,
@@ -53,7 +53,8 @@ Source/test started at `4809128`; clarification cherry-picked as `90dd1c7` /
 `12ea7c3` respectively. Prior untracked test `output/` evidence is preserved.
 No other worktree is reset, deleted or archived for this increment.
 
-Required commands, not yet executed for BIC:
+Required independent/root commands; no BIC pass is claimed before their recorded
+results and the two findings below are resolved:
 
 ```sh
 bash scripts/dev/test-local.sh --live-media-stop
@@ -76,6 +77,39 @@ No customer, production database, provider project, token or broadcast changed.
 Orders C native visibility MOU03, Studio UI, real Cloud/Egress, BRI04–07 and
 full T08/G06 remain separate unfinished acceptance. Fill source/test commit,
 commands, exit codes, evidence hashes and cleanup only after actual execution.
+
+## Fixed candidate and repair gate
+
+Source candidate `ac4782d` (not merged) changes only the five assigned source
+files. Author unit tests and vet pass; existing isolated media-plan and media-stop
+regressions pass. The latter does not contain the independent BIC tests and is
+not BIC acceptance. Root inspected both successful logs:
+
+- `/Volumes/data/output/bic-source-plan-second-20260927.log`, exit 0,
+  foundation 20.685s, SHA256 `f43c53df6814de756f982926b67631270e4ab631ab904b3411152b3950e64782`.
+- `/Volumes/data/output/bic-source-stop-first-20260927.log`, exit 0,
+  foundation 232.847s, SHA256 `cd4e56a762e19059f83991939d744b740815ee50742137ef0486ca3b8309f242`.
+- Initial parser failure is preserved in
+  `/Volumes/data/output/bic-source-plan-first-20260927.log`.
+
+Independent fixed-source review confirmed two P1s, assigned as targeted repair 1:
+
+1. Direct UNISSUED budget exhaustion closes the child but incorrectly leaves the
+   operation/event UNKNOWN and returns held. The next claim can then return
+   terminal without a matching terminal row. Repair must decide combined
+   completion first and keep child, operation, event and return consistent.
+2. Input readiness omits some new private SECURITY DEFINER/register ACL and guard
+   shape checks. PUBLIC/unauthorized EXECUTE poisoning and wrong trigger type
+   must fail readiness, not leave a writable internal helper advertised as ready.
+
+The earlier closed-admission state-regression candidate is excluded by the
+source CHECK. `await_admission` is an accepted no-lease ABI clarification, now
+explicit in the contract, not a new consumer implementation.
+Review receipt: Humaux `d065745c-019b-425c-9b8f-bf606c79bf76`.
+Independent tests run in their own worktree; tests must exercise direct budget
+claim, not only Stop-then-claim, and fixed replay after RESERVED reconcile claim.
+No source merge until independent repair review and actual PG evidence resolve
+the findings. This record does not upgrade Cloud, browser input or Studio gates.
 
 ## Future deployment stop line
 

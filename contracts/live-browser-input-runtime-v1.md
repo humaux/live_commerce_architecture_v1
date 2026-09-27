@@ -207,6 +207,13 @@ pre-Egress and post-Egress. Before BRW exists, claim cannot grant dispatch and
 existing `reserve_media_start` must reject this profile. Every cleanup/load/close
 entry verifies the exact native job and profile as well as the live fence.
 
+Before any grant is reserved, an eligible UNISSUED input claim returns
+`await_admission` with the existing generation (initially 0), empty mode and no
+lease. It does not consume a generation or dispatch Egress. A future consumer
+must snooze that same native job, not acknowledge completion. After reservation,
+a reconcile claim alone does not close admission: a still-authorized prewire
+replay returns the identical, unexpired grant until a real closure condition.
+
 At 4096 generations or 24h since operation creation, stop issuing active leases;
 close admission and return `held` without finalizing the operation or deleting
 the job. No new provider retry is authorized. The future worker MUST snooze held
