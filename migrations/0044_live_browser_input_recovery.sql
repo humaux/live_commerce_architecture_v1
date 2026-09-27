@@ -89,6 +89,11 @@ CREATE TRIGGER media_input_recovery_receipt_guard
 CREATE FUNCTION live.assert_legacy_media_recovery_scope(p_episode uuid) RETURNS void
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 BEGIN
+ -- Serialize with both Begin paths before checking kind: an uncommitted mixed
+ -- scope must not become visible only after a legacy kernel waits on its member.
+ IF p_episode IS NOT NULL THEN
+  PERFORM pg_catalog.pg_advisory_xact_lock(44,pg_catalog.hashtext(p_episode::text));
+ END IF;
  IF EXISTS(SELECT 1 FROM live.media_recovery_episode_scope
   WHERE episode_id=p_episode AND include_browser_input) THEN
   RAISE EXCEPTION 'mixed media recovery scope' USING ERRCODE='ME409'; END IF;
