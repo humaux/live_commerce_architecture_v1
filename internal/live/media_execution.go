@@ -78,21 +78,9 @@ func NewMediaClient(ctx context.Context, workerPool, executorPool *pgxpool.Pool,
 		concurrency < 1 || concurrency > 32 || len(projects) < 1 || len(projects) > 128 {
 		return nil, ErrMediaConfig
 	}
-	selected := make(map[mediaProjectKey]mediaEndpoint, len(projects))
-	for _, p := range projects {
-		if !mediaProjectPattern.MatchString(p.ProjectID) || p.CredentialVersion < 1 ||
-			p.Config.Environment != "MOCK" || p.Transport == nil {
-			return nil, ErrMediaConfig
-		}
-		k := mediaProjectKey{p.ProjectID, p.CredentialVersion}
-		if _, exists := selected[k]; exists {
-			return nil, ErrMediaConfig
-		}
-		client, err := livekit.New(p.Config, p.Transport)
-		if err != nil {
-			return nil, ErrMediaConfig
-		}
-		selected[k] = mediaEndpoint{identity: p.Config.Endpoint, client: client}
+	selected, err := selectMediaProjects(projects)
+	if err != nil {
+		return nil, err
 	}
 	preflight, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -116,6 +104,29 @@ func NewMediaClient(ctx context.Context, workerPool, executorPool *pgxpool.Pool,
 		return nil, ErrMediaDatabase
 	}
 	return client, nil
+}
+
+func selectMediaProjects(projects []MediaProject) (map[mediaProjectKey]mediaEndpoint, error) {
+	if len(projects) < 1 || len(projects) > 128 {
+		return nil, ErrMediaConfig
+	}
+	selected := make(map[mediaProjectKey]mediaEndpoint, len(projects))
+	for _, p := range projects {
+		if !mediaProjectPattern.MatchString(p.ProjectID) || p.CredentialVersion < 1 ||
+			p.Config.Environment != "MOCK" || p.Transport == nil {
+			return nil, ErrMediaConfig
+		}
+		k := mediaProjectKey{p.ProjectID, p.CredentialVersion}
+		if _, exists := selected[k]; exists {
+			return nil, ErrMediaConfig
+		}
+		client, err := livekit.New(p.Config, p.Transport)
+		if err != nil {
+			return nil, ErrMediaConfig
+		}
+		selected[k] = mediaEndpoint{identity: p.Config.Endpoint, client: client}
+	}
+	return selected, nil
 }
 
 type mediaLoaded struct {
@@ -248,6 +259,14 @@ func (w *mediaExecutionWorker) Work(ctx context.Context, job *river.Job[mediaOpe
 	if err != nil {
 		return ErrMediaDatabase
 	}
+	return w.runLoaded(ctx, job.Args.OperationID, generation, token[:], mode, raw, true)
+}
+
+// runLoaded keeps the legacy Egress material validation and provider path in
+// one place. Browser input reserves Start in its own final SQL gate, so it
+// passes reserveStart=false only after that transaction has committed.
+func (w *mediaExecutionWorker) runLoaded(ctx context.Context, operation string, generation int64,
+	token []byte, mode string, raw []byte, reserveStart bool) error {
 	var fields map[string]json.RawMessage
 	var m mediaLoaded
 	if len(raw) > 32768 || json.Unmarshal(raw, &fields) != nil || len(fields) != 15 || json.Unmarshal(raw, &m) != nil ||
@@ -255,40 +274,45 @@ func (w *mediaExecutionWorker) Work(ctx context.Context, job *river.Job[mediaOpe
 		m.CredentialVersion < 1 || m.MaterialVersion < 1 || m.EndpointIdentity == "" ||
 		!command.ValidID(m.AttemptID) || !command.ValidID(m.SessionID) ||
 		!command.ValidID(m.TenantID) || !command.ValidID(m.StoreID) {
-		return w.finish(ctx, job.Args.OperationID, generation, token[:], "material_invalid")
+		return w.finish(ctx, operation, generation, token, "material_invalid")
 	}
 	project, ok := w.projects[mediaProjectKey{m.ProjectID, m.CredentialVersion}]
 	if !ok || project.identity != m.EndpointIdentity {
-		return w.finish(ctx, job.Args.OperationID, generation, token[:], "credential_unavailable")
+		return w.finish(ctx, operation, generation, token, "credential_unavailable")
 	}
 	if mode == "dispatch" {
 		if m.EgressID != "" || m.KeyID == "" || m.NonceHex == "" || m.CiphertextHex == "" {
-			return w.finish(ctx, job.Args.OperationID, generation, token[:], "material_invalid")
+			return w.finish(ctx, operation, generation, token, "material_invalid")
 		}
 		nonce, nErr := hex.DecodeString(m.NonceHex)
 		cipher, cErr := hex.DecodeString(m.CiphertextHex)
 		if nErr != nil || cErr != nil {
-			return w.finish(ctx, job.Args.OperationID, generation, token[:], "material_invalid")
+			return w.finish(ctx, operation, generation, token, "material_invalid")
 		}
 		input, openErr := w.keys.Open(livekit.MaterialScope{TenantID: m.TenantID, StoreID: m.StoreID,
 			SessionID: m.SessionID, AttemptID: m.AttemptID, ProjectID: m.ProjectID,
 			CredentialVersion: m.CredentialVersion, MaterialVersion: m.MaterialVersion}, project.client,
 			livekit.SealedMaterial{KeyID: m.KeyID, Nonce: nonce, Ciphertext: cipher})
 		if openErr != nil || input.RoomName != m.RoomName || input.AspectRatio != m.AspectRatio {
-			return w.finish(ctx, job.Args.OperationID, generation, token[:], "material_invalid")
+			return w.finish(ctx, operation, generation, token, "material_invalid")
 		}
-		if err := w.call(ctx, `SELECT live.reserve_media_start($1::uuid,$2::bigint,$3::bytea)`,
-			job.Args.OperationID, generation, token[:]); err != nil {
+		if reserveStart {
+			if err := w.call(ctx, `SELECT live.reserve_media_start($1::uuid,$2::bigint,$3::bytea)`,
+				operation, generation, token); err != nil {
+				return err
+			}
+		}
+		if err := ctx.Err(); err != nil {
 			return err
 		}
 		obs, startErr := project.client.Start(ctx, input)
 		if startErr != nil {
-			return w.finish(ctx, job.Args.OperationID, generation, token[:], "remote_unknown")
+			return w.finish(ctx, operation, generation, token, "remote_unknown")
 		}
-		return w.record(ctx, job.Args.OperationID, generation, token[:], "START", obs)
+		return w.record(ctx, operation, generation, token, "START", obs)
 	}
 	if m.KeyID != "" || m.NonceHex != "" || m.CiphertextHex != "" {
-		return w.finish(ctx, job.Args.OperationID, generation, token[:], "material_invalid")
+		return w.finish(ctx, operation, generation, token, "material_invalid")
 	}
 	var obs livekit.Observation
 	var observeErr error
@@ -307,10 +331,10 @@ func (w *mediaExecutionWorker) Work(ctx context.Context, job *river.Job[mediaOpe
 		if errors.Is(observeErr, livekit.ErrInvalid) {
 			code = "invalid_observation"
 		}
-		return w.finish(ctx, job.Args.OperationID, generation, token[:], code)
+		return w.finish(ctx, operation, generation, token, code)
 	}
 	if source == "QUERY" {
-		result, err := w.recordCleanupQuery(ctx, job.Args.OperationID, generation, token[:], obs)
+		result, err := w.recordCleanupQuery(ctx, operation, generation, token, obs)
 		if err != nil {
 			return err
 		}
@@ -329,11 +353,11 @@ func (w *mediaExecutionWorker) Work(ctx context.Context, job *river.Job[mediaOpe
 				RoomName: m.RoomName, EgressID: m.EgressID,
 			})
 			if stopErr != nil {
-				return w.finish(ctx, job.Args.OperationID, generation, token[:], "remote_unknown")
+				return w.finish(ctx, operation, generation, token, "remote_unknown")
 			}
-			return w.record(ctx, job.Args.OperationID, generation, token[:], "STOP", stopObservation)
+			return w.record(ctx, operation, generation, token, "STOP", stopObservation)
 		}
 		return ErrMediaDatabase
 	}
-	return w.record(ctx, job.Args.OperationID, generation, token[:], source, obs)
+	return w.record(ctx, operation, generation, token, source, obs)
 }
