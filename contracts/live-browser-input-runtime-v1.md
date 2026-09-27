@@ -139,9 +139,13 @@ permission for the browser to dial the grant's endpoint_identity.
 
 Planning creates the input child **before the original transaction commits**.
 There is no interval where a worker can dispatch Egress unaware of input gating.
-All entries validate READ COMMITTED, IDs, exact scope, current authz revision,
-store:read/live:manage, current and frozen initiating-login expiry, authorization,
-bindings, session/program and original job. Reservation is permitted only while
+Merchant planning/reservation entries validate READ COMMITTED, IDs, exact scope,
+current authz revision, store:read/live:manage, current and frozen initiating-login
+expiry, authorization, bindings, session/program and original job. Executor
+claim/load/close instead use the original immutable custody and lease fence;
+revoked login/permissions/bindings close admission but MUST NOT remove cleanup
+authority. No merchant GUC or renewed merchant login is needed for cleanup.
+Reservation is permitted only while
 Start is still possible, not after Stop, close, dispatch, escalation or expiry.
 
 Follow the existing binding -> tenant/store -> session/program -> authorization
