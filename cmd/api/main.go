@@ -47,6 +47,10 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	studioConfig, err := loadStudioConfig(os.Getenv, identityConfig.enabled, addr)
+	if err != nil {
+		return err
+	}
 	startup, stopStartup := context.WithTimeout(context.Background(), 10*time.Second)
 	defer stopStartup()
 	dsn := os.Getenv("DATABASE_URL")
@@ -75,7 +79,11 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	handler := httpapi.NewHandler(pool, httpapi.Options{SessionStoreList: identityConfig.enabled, Accounts: accountService})
+	studioPlanner, err := buildStudioPlanner(startup, pool, studioConfig)
+	if err != nil {
+		return err
+	}
+	handler := httpapi.NewHandler(pool, httpapi.Options{SessionStoreList: identityConfig.enabled, Accounts: accountService, Live: studioPlanner})
 	if identityHandler != nil {
 		mux := http.NewServeMux()
 		mux.Handle("/v1/identity/", identityHandler)
