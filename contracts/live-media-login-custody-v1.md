@@ -37,6 +37,15 @@ and grants; no UPDATE/DELETE grant. Runtime, executor, worker and registrar have
 no direct table access. Additional identity SELECT columns are limited to login
 ID and membership revision. No new schema owner or runtime configuration.
 
+Private `identity.lock_media_login(p_hash bytea,p_principal uuid)` returns
+`TABLE(login_session_id uuid,login_expires_at timestamptz)`. SECURITY DEFINER,
+VOLATILE, fixed pg_catalog path; owner `commerce_identity_writer`, EXECUTE only
+to `commerce_media_writer`. Reuse the identity writer's existing session UPDATE
+privilege for `FOR SHARE`; do not give the media role a new session mutation
+grant. Validate hash/ID/READ COMMITTED; select exact merchant login and principal,
+lock the session, then check revocation and `clock_timestamp()` expiry after
+the wait. Return no hash/secret. No match raises MP401, malformed input MP400.
+
 `live.plan_media_start(bytea,uuid,uuid,uuid,bigint,text,uuid,bigint)` keeps its
 signature, result and MOCK restrictions. In its original transaction, obtain
 the exact active merchant login by the passed bearer hash and resolved principal;
@@ -68,8 +77,12 @@ Existing `media_dispatch_eligible` additionally requires this helper;
 every existing binding, destination, start-deadline and duration rule.
 
 This is deliberately conservative: any authorization revision change closes the
-old attempt, even if permissions were later restored. Current checks without a
-revision would miss revoke-and-regrant between worker polls. A different login's
+old attempt, even if permissions were later restored. This only detects transient
+revoke-and-regrant if the authority mutation increments the revision. The current
+schema has no automatic grant-mutation revision trigger; do not claim detection
+of owner SQL delete/reinsert that leaves the revision unchanged. A production
+permission-management path must atomically advance revision before LIVE admission.
+A different login's
 logout must not affect this binding. Another authorized merchant may still Stop;
 Stop authority does not transfer publishing custody.
 
@@ -77,8 +90,13 @@ Stop authority does not transfer publishing custody.
 
 Do not add an inverted media/login lock order. Existing ordered binding locks,
 tenant/store, live session/program, authorization/attempt and operation/events
-remain. Exact login selection and any row lock placement must be independently
-reviewed before implementation; no provider request holds any database lock.
+remain. Planning takes the exact login FOR SHARE after the ordered binding,
+tenant/store/session/program/authorization locks, before inserting the new
+attempt. The post-command assertion also takes that login lock; fresh planning
+already owns it and replay has no media mutation. Logout only locks the login
+then writes its session event, not media rows. Worker eligibility remains a
+fresh read, without a new login lock or identity-mutation permission. No provider
+request holds any database lock.
 New SQL is VOLATILE so final nested reads get a fresh READ COMMITTED snapshot.
 
 A logout committed before the final eligibility snapshot is rejected. A revoke
