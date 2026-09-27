@@ -190,6 +190,12 @@ func brwAssertCleanupFault(t *testing.T, f *brwWireFixture, p *brwCleanupProvide
 	wantFirst string) {
 	t.Helper()
 	steps, custody, held, jobState, finalized, jobID := brwCleanupFaultFacts(t, f)
+	var reservedCutoff int64
+	if err := f.h.lp.f.owner.QueryRow(context.Background(), `SELECT floor(extract(epoch FROM reserved_at))::bigint
+		FROM live.media_input_wire_steps WHERE attempt_id=$1 AND ordinal=1`, f.h.plan.AttemptID).
+		Scan(&reservedCutoff); err != nil {
+		t.Fatal(err)
+	}
 	wantActions := []string{"REMOVE", "DELETE_ROOM", "READ_PARTICIPANT", "READ_ROOM"}
 	wantResults := []string{wantFirst, "ACK", "UNKNOWN", "PRESENT"}
 	if len(steps) != 4 {
@@ -203,10 +209,10 @@ func brwAssertCleanupFault(t *testing.T, f *brwWireFixture, p *brwCleanupProvide
 	if custody == "CLOSED" || held == nil || jobID != f.h.plan.JobID || finalized != nil ||
 		jobState == "completed" || jobState == "cancelled" || jobState == "discarded" ||
 		p.remove.Load() != 1 || p.deleteRoom.Load() != 1 || p.participant.Load() != 1 ||
-		p.listRooms.Load() != 1 || p.bad.Load() != 0 || p.cutoff.Load() <= 0 || f.starts.Load() != 0 {
-		t.Fatalf("unsafe cleanup: custody=%s held=%v job=%d/%s finalized=%v calls=%d/%d/%d/%d bad=%d cutoff=%d start=%d",
+		p.listRooms.Load() != 1 || p.bad.Load() != 0 || p.cutoff.Load() != reservedCutoff || f.starts.Load() != 0 {
+		t.Fatalf("unsafe cleanup: custody=%s held=%v job=%d/%s finalized=%v calls=%d/%d/%d/%d bad=%d cutoff=%d/%d start=%d",
 			custody, held, jobID, jobState, finalized, p.remove.Load(), p.deleteRoom.Load(),
-			p.participant.Load(), p.listRooms.Load(), p.bad.Load(), p.cutoff.Load(), f.starts.Load())
+			p.participant.Load(), p.listRooms.Load(), p.bad.Load(), p.cutoff.Load(), reservedCutoff, f.starts.Load())
 	}
 }
 
