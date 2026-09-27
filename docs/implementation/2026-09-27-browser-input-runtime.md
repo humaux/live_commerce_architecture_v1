@@ -133,9 +133,19 @@ without widening historical parent-schema rules. Existing LMR05 also failed in
 the first run and passed the second unchanged; no timeout/assertion was relaxed,
 and the timing variance remains unclassified pending root regression.
 
-Root `--live-media-stop` is running at fixed `e0a30f8`; its result and subsequent
-runtime/Studio/BFF/full gates are not yet accepted. This record does not upgrade
-Cloud, browser input, Studio UI or deployment gates.
+Root `--live-media-stop` passed at fixed `e0a30f8` (documentation-only HEAD
+`7918e46`): exit 0, 53 top-level PASS, 0 FAIL, 0 SKIP, foundation 249.973s.
+Log `/Volumes/data/output/bic-root-stop-20260927.log`, SHA256
+`76f61d4a2946e46135650e6acb8d3e160d9962692fc5b09afca875cded7fe40c`.
+The original LMR05 passed unchanged again. Its first-run variance remains
+unclassified, not erased from the record.
+
+Coverage review still found required BIC03 direct issued-input terminal projection
+and finish-uncertain paths missing from the new tests. An independent test-only
+complement is assigned before full BIC acceptance. It must exercise actual fenced
+functions after explicitly labelled isolated future-state fixtures, not claim real
+provider wire. Runtime/Studio/BFF/full root gates are also pending. This record does
+not upgrade Cloud, browser input, Studio UI or deployment gates.
 
 ## Future deployment stop line
 
