@@ -652,7 +652,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
               {shown ? <div><strong>{c.state[shown.draft.state as keyof typeof c.state] ?? shown.draft.state} / {c.version} {shown.draft.version}</strong>
                 <span>{c.savedAt}: {time(locale, shown.draft.updated_at)}</span></div> : <p>{c.newDraft}</p>}
             </div>
-            {!canEdit && shown && !recoveryElsewhere && !recoveryGuard && <p className="studio-note">{c.readOnly}</p>}
+            {!canEdit && shown && !recoveryElsewhere && !recoveryGuard && <p className="studio-note">{shown.can_manage ? c.notDraftEditable : c.readOnly}</p>}
             {formDirty && <p className="studio-dirty">{c.unsaved}</p>}
             {formError && <p role="alert" className="studio-error">{formError}</p>}
             <button type="button" className="primary studio-save" disabled={!canEdit || busy || (!newMode && !formDirty) || actionError === "uncertain" || actionError === "conflict"}
