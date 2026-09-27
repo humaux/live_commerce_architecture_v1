@@ -1,8 +1,37 @@
 # Media restart reconciliation — owner target, policy preflight
 
-Status: **OWNER_TARGET_APPROVED / DESIGN_REVIEW_REQUIRED / IMPLEMENTATION_NOT_RUN**.
+Status: **OWNER_TARGET_APPROVED / CANDIDATE_REJECTED_REDESIGN_REQUIRED / IMPLEMENTATION_NOT_RUN**.
 Owner selected **90 seconds** on 2026-09-27; Humaux decision
 `f0b36444-a4ea-4112-926d-596cfb7fd89f`. This is not deployment approval.
+
+Independent review of candidate `7ac5844`, receipt
+`94dc1dde-ab94-47a6-b42e-aff73cc972dc`, found the blocking issues below.
+The proposed policy sections are retained as a rejected candidate for provenance,
+not an instruction to implement them. No native timing or custody change may
+be enabled until a corrected interface and its independent review are frozen.
+
+## Blocking review findings
+
+1. Native `JobRescueMany` is a multirow UPDATE. A finalization guard that raises
+   for one exhausted unresolved job rolls back unrelated healthy rescues. A
+   no-op guard leaves that row eligible for the next running-job scan and can
+   starve later rows. Maintenance scans the entire `river_media` schema,
+   including open INPUT jobs; consumer queue selection does not isolate it.
+2. An observer behind `media_worker_ready()` cannot report failure when the
+   readiness check or initial DB connection itself fails and the process exits.
+   The deadline needs an independently admitted supervisor/observer, including
+   its process-death and DB-unavailable boundaries, before worker admission.
+3. A late observation must not erase a missed deadline. Freeze an immutable
+   episode ID, pre-worker observation/generation high-water, and deduplication
+   under the original operation lock. A row's `observed_at` inside a transaction
+   is not proof of commit visibility before the supervisor's monotonic deadline.
+
+The next design comparison is native same-ID `pending` parking versus an
+explicit earlier durable UNKNOWN escalation followed by ordinary finalization.
+Either option needs exact identity/role/lease guards, a documented custody and
+readiness amendment, and a mixed-batch liveness proof. Open INPUT may never be
+silently finalized or marked CLOSED. No reset, replacement job or unbounded
+fast-retry escape is permitted. No alternative in this paragraph is frozen.
 
 ## Approved outcome
 
@@ -70,14 +99,14 @@ share this policy and must both be tested. The positive gate is a measured
 target under its stated conditions, not an unproved deterministic upper bound
 for arbitrary scheduling, infrastructure or prior error history.
 
-Before enabling that policy, extend the native finalization/deletion guard
+**Rejected guard-only candidate:** before enabling that policy, extend the native finalization/deletion guard
 to ordinary unresolved MEDIA resource responsibility. Exact original identity
 must remain present and nonfinalized until coherent terminal closure or the
 existing durable 4096-generation/24h escalation. Native attempt exhaustion
 alone cannot remove it or manufacture that escalation. Preserve all existing
 INPUT custody restrictions, which may outlive MEDIA escalation. Do not reset
 attempt counts, create a replacement job or retry provider side effects from
-an exhaustion handler. A exhausted native job may require operator review;
+an exhaustion handler. An exhausted native job may require operator review;
 the timeout monitor must surface that stall, not quietly claim recovery.
 
 ## Proposed timeout record and observable signal
@@ -116,10 +145,13 @@ and exact SQL/Go interface freeze; they are not implemented or tested.
 
 | Gate | Required evidence before acceptance |
 | --- | --- |
-| LRC01 | Actual process SIGKILL and restart with original unaged job/lease timestamps; monotonic elapsed time to fresh, persisted reconciliation at most 90s; original identifiers and Stop budget retained |
-| LRC02 | Controlled unavailable/slow dependency prevents timely reconciliation; original UNKNOWN liability and one durable alert remain; no false terminal state or replacement side effect |
-| LRC03 | Native retry/attempt exhaustion and repeated failures retain or explicitly escalate original responsibility; no silent native-job disappearance or unlimited wire retry |
-| LRC04 | Readiness/roles/old-runtime upgrade safety and independent focused plus fixed-tree full regression; original failure evidence remains available |
+| MRR01 | Actual process SIGKILL and restart with original unaged job/lease timestamps; monotonic elapsed time to fresh, persisted reconciliation at most 90s; original identifiers and Stop budget retained |
+| MRR02 | Controlled unavailable/slow dependency, readiness failure or child exit prevents timely reconciliation; original UNKNOWN liability and deduplicated episode alert remain; late recovery preserves the miss; no false terminal state or replacement side effect |
+| MRR03 | Native retry/attempt exhaustion and repeated failures retain or explicitly escalate original responsibility; mixed MEDIA/INPUT batches larger than the rescuer limit do not starve; no silent native-job disappearance or unlimited wire retry |
+| MRR04 | Readiness/roles/old-runtime upgrade safety and independent focused plus fixed-tree full regression; original failure evidence remains available |
+
+`MRR` is reserved for media restart reconciliation; `LRC` already names the
+accepted local logical restore gates and must not be reused here.
 
 All four gates are **NOT_RUN**. Exact SQL/Go seams and independent review are
 pending; this draft is not a frozen implementation

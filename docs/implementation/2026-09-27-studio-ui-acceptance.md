@@ -1,6 +1,6 @@
 # Studio B UI acceptance — 2026-09-27
 
-Status: **SOURCE_CANDIDATE_UNMERGED; STU04_CORE_PG_PASS; NATIVE_NOT_RUN; VISUAL_FIX_ROUND2**.
+Status: **SOURCE_CANDIDATE_UNMERGED; CORE_READBACK_PASS; NATIVE_NOT_RUN; VISUAL_SCORED_FIXES_SHIP**.
 
 User approved **B 场次列表＋双区工作台**, seed `6373bb3f`, in `fb760ff`.
 The approved comp is `.impeccable/mocks/decision/studio-split.png` (1586×992);
@@ -270,6 +270,73 @@ only these two findings; no broader redesign or new defect hunt is authorized.
 Documentation of the built system follows the last correction, not this
 intermediate layout. If findings remain after the second verdict, escalate
 instead of another automatic polishing round.
+
+## Final visual correction and seventh-run tester failure
+
+Source `4ff7972` groups the observed-state inset and rehearsal action at the
+bottom of the desktop status rail, with 18px between the card and action;
+mobile remains in normal document order. English retains its explicit-format
+text alternative and adds a labelled native `datetime-local` calendar entry
+with focus and disabled treatment. No API, UTC conversion, custody, provider
+or security behavior changed. Root read the entire three-file source diff.
+
+The independent tree integrated it as `1a7a978`; test `bb47512` incorrectly
+clicked the disabled calendar during a pending lost-ACK write. The seventh
+run exited **1**, browser **1 PASS / 4 FAIL**: that click consumed the main
+test's 240s deadline, so worker/read-only follow-on expectations could not pass.
+This is a confirmed tester placement defect, not evidence of a product defect.
+Its earlier nine captures were valid, opened by root and retained for the final
+visual verdict. Historical evidence remains immutable:
+
+- `output/studio-ui-seventh-20260927.log`, SHA256
+  `f91063f8dcfce4050a23bf7250fb2780474891edaceac65a04c0552e1b60c3e1`.
+- `output/playwright/studio-ui-20260927T085335.127525000/playwright.log`, SHA256
+  `9bda885a7de4f7508d48192440783dcba9e040824cb6bf263ecb88b05ba1502e`.
+
+## Eighth run and final bounded visual verdict
+
+Test-only `c275c45` moves the trusted calendar interaction before fault
+injection, on a saved, enabled DRAFT; UI source is unchanged. Typecheck and
+five-case discovery passed. One actual eighth run exited **1**, test 47.20s /
+foundation 48.590s, browser **2 PASS / 3 FAIL**. All non-calendar core checks
+continued, and every actual Go/PG/MOCK readback passed, including exactly one
+Start and Stop, terminal proof, original-key replay, fresh signed login
+isolation, UTC schedule preservation and secret checks.
+
+Two failures remain the native-conceal prerequisite: the actual document stayed
+visible. The third is **TEST_OBSERVATION_LIMITATION**: an enabled native
+calendar input received a trusted click and visible focus, but the test searched
+for a page-DOM `dialog`. A browser-owned native popup is not guaranteed to be
+exposed there. Neither that result nor the page screenshot proves that the
+calendar failed to open. Native date selection followed by save/reopen remains
+**NOT_RUN**, not a product-defect verdict. No ninth run was performed.
+
+- `output/studio-ui-eighth-20260927.log`, SHA256
+  `bec871743f5b0725e92936d5246eec833bd4cce7c733e0dedb610cefb6430b38`.
+- `output/playwright/studio-ui-20260927T090538.982490000/playwright.log`, SHA256
+  `576fb5849c5128ea6dc8d32406eff5169999b0b8d6443eb5c4b30c5ef4d9dcda`.
+- That directory retains all nine locale captures and
+  `en-native-calendar-open.png`, SHA256
+  `7ab06ae6d5b17991818fb29cdd57f16f9f85d7c4b1ef2b83880a8de619cf0a42`.
+
+Root independently read the test-only diff, complete failure signatures and
+Go postflight checks, verified both run-log hashes, and viewed the native-click
+capture. Agent receipts `d04bca71-1b59-4c75-87e1-eaa3bdd58234` and
+`0a6dde17-2512-49e4-8506-507df594836d` record result, corrected observation
+boundary and task-owned PG/browser cleanup. Source/test remain unmerged.
+
+The previous reviewer handle was unavailable, so a fresh replacement independent
+`gpt-6-sol/high` reviewer used the full prior findings and verdict, not a new
+defect hunt. It opened all nine seventh-run captures of the unchanged final UI
+and returned **ship for the scored visual fixes only**, receipt
+`f3c813b9-9b31-47e2-a69a-803dd5a7bf09`. Panel/action grouping, Facebook mark,
+English date display and calendar affordance are resolved, with no new visible
+batch regression. Native popup behavior is explicitly outside this verdict.
+Built-design documentation follows as an additive incumbent-world merge.
+
+STU04 overall is still **NOT_PASS**. Missing native lifecycle proof, a valid
+native-date selection observation method and root fixed-tree full acceptance
+remain release gates. Visual ship cannot waive any of them.
 
 ## Remaining boundary
 

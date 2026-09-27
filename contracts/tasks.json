@@ -558,8 +558,9 @@
       "input_runtime_status": "BIC_KERNEL_FOCUSED_AND_TERMINAL_COMPLEMENT_PASS_FULL_LMR05_FAILED",
       "input_runtime_evidence": "docs/implementation/2026-09-27-browser-input-runtime.md",
       "restart_recovery_contract": "contracts/live-media-recovery-v1.md",
-      "restart_recovery_status": "OWNER_90S_APPROVED_DESIGN_REVIEW_REQUIRED_ALL_LRC_NOT_RUN",
+      "restart_recovery_status": "OWNER_90S_APPROVED_CANDIDATE_REJECTED_REDESIGN_REQUIRED_ALL_MRR_NOT_RUN",
       "restart_recovery_decision": "f0b36444-a4ea-4112-926d-596cfb7fd89f",
+      "restart_recovery_review": "94dc1dde-ab94-47a6-b42e-aff73cc972dc",
       "boundary": "MLC and BIC private kernel bind the existing MOCK attempt to its exact initiating login and retain input liability in its original operation/job. Root stop group53 PASS; b6cfa4e terminal complement, focused input6/runtime8/Studio8/BFF1 PASS. First full669 tests passed but executing Bash mutation caused wrapper127. Frozen main549fc07 rerun exited1:668PASS/1FAIL/0SKIP; LMR05 lacked its fourth observation, native rescue timing hypothesis unproven. No clean full/BIC05 acceptance. No browser token, new consumer or provider activation. BRW/BRI04-07, Cloud cached-token revocation and real Egress/output remain separate unimplemented gates. No change to full T08/G06 status."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
@@ -618,12 +619,13 @@
       "boundary": "Studio composition only; previous Orders C approval unchanged. No new runtime, production or STU04 acceptance."
     },
     "studio_ui_candidate": {
-      "status": "UNMERGED_CORE_PG_PASS_NATIVE_NOT_RUN_VISUAL_FIX_ROUND2",
-      "source_commit": "fc3cfef",
-      "test_commit": "52a32af",
+      "status": "UNMERGED_CORE_READBACK_PASS_NATIVE_NOT_RUN_VISUAL_SCORED_FIXES_SHIP",
+      "source_commit": "4ff7972",
+      "test_commit": "c275c45",
       "evidence": "docs/implementation/2026-09-27-studio-ui-acceptance.md",
-      "memory_id": "34af68a1-f1a5-414f-b0a7-60668bca69e4",
-      "boundary": "Sixth independent real signed-OIDC/Next/Go/PG/local-MOCK chain, original-key retry, session swap, English invalid-calendar zero-write and PG counters PASS. Actual browser result3PASS2FAIL and exit1 because native conceal remained visible. Nine root-validated three-locale desktop/mobile captures await the same independent reviewer's fix verdict; old evidence retained. No source merge, full STU04, comment desk, Cloud, LIVE or deployment acceptance."
+      "memory_id": "d04bca71-1b59-4c75-87e1-eaa3bdd58234",
+      "visual_review_memory": "f3c813b9-9b31-47e2-a69a-803dd5a7bf09",
+      "boundary": "Eighth independent signed-OIDC/Next/Go/PG/local-MOCK core checks and Start/Stop readbacks PASS, but actual Playwright2PASS3FAIL and outer exit1. Native conceal stays NOT_RUN. Native calendar enabled/click/focus observed; page DOM dialog probe cannot establish browser-owned popup behavior, so selection/save/reopen stays TEST_OBSERVATION_LIMITATION/NOT_RUN, not a product-defect conclusion. Replacement independent visual reviewer scored final fixes ship using nine root-validated seventh-run captures at unchanged UI4ff7972. Seventh tester-order failure retained. No source merge, full STU04, comment desk, Cloud, LIVE or deployment acceptance."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
