@@ -65,6 +65,10 @@ func (p *MediaPlanner) PlanStart(ctx context.Context, tx pgx.Tx, scope platform.
 	if err := authorize(ctx, tx, scope, token, managePermission); err != nil {
 		return MediaStartResult{}, err
 	}
+	// Replay skips the command callback, but SQL still requires this revision GUC.
+	if _, err := tx.Exec(ctx, `SELECT set_config('app.authz_revision',$1,true)`, strconv.FormatInt(scope.Revision, 10)); err != nil {
+		return MediaStartResult{}, err
+	}
 	request := struct {
 		PrincipalID string `json:"principal_id"`
 		MediaStartInput
@@ -93,9 +97,6 @@ func (p *MediaPlanner) PlanStart(ctx context.Context, tx pgx.Tx, scope platform.
 			return err
 		}
 		hash := sha256.Sum256([]byte(token))
-		if _, err := tx.Exec(ctx, `SELECT set_config('app.authz_revision',$1,true)`, strconv.FormatInt(scope.Revision, 10)); err != nil {
-			return err
-		}
 		var raw []byte
 		if err := tx.QueryRow(ctx, `SELECT live.plan_media_start($1,$2::uuid,$3::uuid,$4::uuid,$5,$6,$7::uuid,$8)`,
 			hash[:], scope.StoreID, in.SessionID, in.AuthorizationID, in.ExpectedSessionVersion,
@@ -112,6 +113,11 @@ func (p *MediaPlanner) PlanStart(ctx context.Context, tx pgx.Tx, scope platform.
 	}
 	if err := authorize(ctx, tx, scope, token, managePermission); err != nil {
 		return MediaStartResult{}, err
+	}
+	hash := sha256.Sum256([]byte(token))
+	if _, err := tx.Exec(ctx, `SELECT live.assert_media_start_login($1::bytea,$2::uuid,$3::uuid)`,
+		hash[:], scope.StoreID, out.AttemptID); err != nil {
+		return MediaStartResult{}, mediaPlanError(err)
 	}
 	return out, nil
 }
