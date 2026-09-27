@@ -1,8 +1,10 @@
 # MRR90 restart state-check acceptance
 
-Status at 2026-09-27 11:02 UTC: **CANDIDATE_BLOCKED / NOT_ACCEPTED**.
-The independently frozen design is on `598eea4`. Candidate implementation and
-independent tests are not merged into main. No production configuration,
+Status at 2026-09-27 11:11 UTC: **LOCAL_INTEGRATED / ACCEPTANCE_INCOMPLETE**.
+The independently frozen design is on `598eea4`. Source `86b641a` and independent
+tests `f3b731b` with evidence `2e00b00a` are integrated as `74459ae`.
+The independent focused run passed 17 tests; root PG rerun, remaining contract
+cases and fixed-tree full regression are still required. No production configuration,
 customer broadcast, provider account or River policy was changed.
 
 ## Meaning of the owner's 90-second target
@@ -169,3 +171,39 @@ Correction to the previous setup summary: in `804065e`, the buyer subcase had
 both schema-name-resolution failures. Raw failed logs remain unchanged.
 The third run's isolated fixture was cleaned. Real 90s, the added RLS
 counterexamples, root PG acceptance and full regression are still unaccepted.
+
+## Fourth and fifth focused receipts; local integration only
+
+Fourth fixed test `419feb817f6082114dae23bc56fba06ae1034564` ran against
+unchanged source `86b641a`: actual **exit 1**, **18.563s**, **13 top-level PASS /
+1 FAIL**. The internal-child release, readiness, EOF and bounded reap completed,
+but an extra assertion incorrectly attributed one legal native-worker provider
+request to the recovery observer. Root authorized removal only of that invalid
+aggregate zero-I/O assertion. The configured endpoint counter remains diagnostic;
+observer zero Start/Stop and the EOF timing/reap assertions remain enforced.
+Log in the test worktree: `output/mrr-focused-419feb8.log`, SHA-256
+`824cd185bd75f1ff88a155a0e76bbbdcd1e1ba3d9a638421eea8150e94d893a5`.
+
+Fifth fixed test `f3b731bcfba4d91ae373a9f0af2ac4b550529aa9` against the same
+source ran `bash scripts/dev/test-local.sh --live-media-recovery`: actual
+**exit 0**, foundation **151.064s**, **17 top-level PASS / 0 FAIL / 0 SKIP**.
+Root read the complete 55-line log and independently verified its SHA-256:
+`3d40495d8dd80d90f1dc8ba27fae3b98cb342c7fb1574b0c7679e1956abedf9c` at
+`/Volumes/data/worktrees/commerce-meta-inbox-tests-20260926/output/mrr-focused-f3b731b.log`.
+Real escaped-Start/restart ROOM test took **35.87s**, known-ID QUERY **4.42s**,
+and actual parent-alive 90-second miss **91.59s**. Original River attempt was
+**1 to 1**; no retry-policy or original LMR05 threshold was changed.
+The test worker reported fixture cleanup; root verified the fourth-run cleanup
+directly. Failed-run logs are retained, not superseded by the pass.
+
+| Gate | Latest limited evidence | Remaining acceptance |
+| --- | --- | --- |
+| MRR01 | Independent real-crash ROOM and known-ID QUERY passed, plus root four-package race | Root integrated PG rerun |
+| MRR02 | Scope/RLS/capacity/order SQL gates and actual 90s provider-fault miss passed | Native capacity coexistence, transient DB/delayed capture and complete timing-path coverage audit |
+| MRR03 | Authority, fences, old-role, physical-DB, cleanup, INPUT and wrong-job checks passed | Explicit missing-original-job case and root rerun |
+| MRR04 | Migration/readiness, EOF/reap and independent focused passed | Complete enabled/disabled startup modes, root rerun and fixed-tree full regression |
+
+Root integrated the reviewed source and independent tests locally at `74459ae`;
+this is not deployment or complete MRR acceptance. Original LMR05 red evidence
+and Studio native NOT_RUN gates remain separate obligations. External human
+alert delivery, real provider operation and customer deployment remain NOT_RUN.
