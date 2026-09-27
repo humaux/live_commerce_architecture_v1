@@ -107,6 +107,16 @@ func pemCert(der []byte) []byte {
 	return []byte("-----BEGIN CERTIFICATE-----\n" + base64.StdEncoding.EncodeToString(der) + "\n-----END CERTIFICATE-----\n")
 }
 
+type workerRoundTripCount struct {
+	base  http.RoundTripper
+	count atomic.Int32
+}
+
+func (c *workerRoundTripCount) RoundTrip(r *http.Request) (*http.Response, error) {
+	c.count.Add(1)
+	return c.base.RoundTrip(r)
+}
+
 func workerTLSServer(t *testing.T, handler http.Handler) (*httptest.Server, string) {
 	t.Helper()
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -159,13 +169,14 @@ func TestWorkerEnvironmentLMW02PinnedTLSAndNoProxy(t *testing.T) {
 	if tr.Proxy != nil || !tr.DisableKeepAlives || tr.TLSClientConfig.InsecureSkipVerify || tr.TLSClientConfig.MinVersion < tls.VersionTLS12 {
 		t.Fatal("transport bypassed frozen security profile")
 	}
-	client, err := New(env.Projects[0].Config, env.Projects[0].Transport)
+	counted := &workerRoundTripCount{base: env.Projects[0].Transport}
+	client, err := New(env.Projects[0].Config, counted)
 	if err != nil {
 		t.Fatal(err)
 	}
 	_, err = client.Query(t.Context(), Target{RoomName: "lc_0123456789abcdef0123456789abcdef", EgressID: "EG_test"})
-	if err != ErrUnavailable || hits.Load() != 1 || proxyHits.Load() != 0 || http.DefaultTransport != defaultTransport {
-		t.Fatalf("pinned TLS/redirect/proxy result: err=%v hits=%d proxy=%d", err, hits.Load(), proxyHits.Load())
+	if err != ErrUnavailable || counted.count.Load() != 1 || hits.Load() != 1 || proxyHits.Load() != 0 || http.DefaultTransport != defaultTransport {
+		t.Fatalf("pinned TLS/redirect/proxy result: err=%v roundtrips=%d hits=%d proxy=%d", err, counted.count.Load(), hits.Load(), proxyHits.Load())
 	}
 	// A well-formed but unrelated root cannot authenticate the same server.
 	_, otherCA := workerTLSServer(t, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
