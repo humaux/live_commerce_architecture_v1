@@ -40,8 +40,8 @@ func lmrSetup(t *testing.T, handler http.HandlerFunc) *lmeHarness {
 	h := lmeSetup(t, handler)
 	t.Cleanup(func() {
 		ctx := context.Background()
-		_, _ = h.lp.f.owner.Exec(ctx, `DELETE FROM ops.command_results WHERE principal_id=$1 AND operation='live.media.stop'`, h.lp.actor)
-		_, _ = h.lp.f.owner.Exec(ctx, `DELETE FROM ops.audit_events WHERE principal_id=$1 AND action='live.media.stop.requested'`, h.lp.actor)
+		_, _ = h.lp.f.owner.Exec(ctx, `DELETE FROM ops.command_results WHERE principal_id IN ($1,$2,$3,$4) AND operation='live.media.stop'`, h.lp.actor, h.lp.peer, h.lp.other, h.lp.limited)
+		_, _ = h.lp.f.owner.Exec(ctx, `DELETE FROM ops.audit_events WHERE principal_id IN ($1,$2,$3,$4) AND action='live.media.stop.requested'`, h.lp.actor, h.lp.peer, h.lp.other, h.lp.limited)
 	})
 	return h
 }
@@ -232,6 +232,22 @@ func TestLiveMediaStopLMR01CommandAuthorityCancellationAndACL(t *testing.T) {
 	if err := h.executor.QueryRow(ctx, `SELECT live.media_worker_ready()`).Scan(&ready); err != nil || !ready {
 		t.Fatalf("readiness not restored: %t %v", ready, err)
 	}
+	const privateProjector = "live.project_media_observation(uuid,bigint,bytea,text,text,text,text,bigint,bigint,bigint)"
+	if _, err := h.lp.f.owner.Exec(ctx, `GRANT EXECUTE ON FUNCTION `+privateProjector+` TO commerce_hosted_runtime`); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_, _ = h.lp.f.owner.Exec(context.Background(), `REVOKE EXECUTE ON FUNCTION `+privateProjector+` FROM commerce_hosted_runtime`)
+	})
+	if err := h.executor.QueryRow(ctx, `SELECT live.media_worker_ready()`).Scan(&ready); err != nil || ready {
+		t.Fatalf("hosted grant on private projector admitted: %t %v", ready, err)
+	}
+	if _, err := h.lp.f.owner.Exec(ctx, `REVOKE EXECUTE ON FUNCTION `+privateProjector+` FROM commerce_hosted_runtime`); err != nil {
+		t.Fatal(err)
+	}
+	if err := h.executor.QueryRow(ctx, `SELECT live.media_worker_ready()`).Scan(&ready); err != nil || !ready {
+		t.Fatalf("readiness not restored after private grant: %t %v", ready, err)
+	}
 }
 
 func TestLiveMediaStopLMR01CurrentAuthorityReplayAndObservedRevocation(t *testing.T) {
@@ -306,7 +322,7 @@ func TestLiveMediaStopLMR01CurrentAuthorityReplayAndObservedRevocation(t *testin
 		if err := holder.QueryRow(ctx, `SELECT pg_backend_pid()`).Scan(&holderPID); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := holder.Exec(ctx, `SELECT 1 FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission='live:manage' FOR UPDATE`, h.lp.f.tenantA, h.lp.f.storeA1, h.lp.actor); err != nil {
+		if _, err := holder.Exec(ctx, `SELECT 1 FROM integration.operations WHERE id=$1 FOR UPDATE`, h.plan.OperationID); err != nil {
 			t.Fatal(err)
 		}
 		pid := make(chan int, 1)
@@ -1060,11 +1076,8 @@ func TestLiveMediaStopLMR06AutomaticCleanupBudgetAndTerminalProof(t *testing.T) 
 		h := lmrSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "SQL only", 500) })
 		id := "EG_lmr06duration"
 		lmrStarted(t, h, id)
-		if _, err := h.lp.f.owner.Exec(context.Background(), `UPDATE live.prepared_media_authorizations SET max_duration_seconds=1 WHERE id=$1`, h.input.AuthorizationID); err != nil {
-			t.Fatal(err)
-		}
 		lease := h.claim(t, 30)
-		out, err := lmrQuery(t, h, lease, id, "EGRESS_ACTIVE", 100, 1000000200, 0)
+		out, err := lmrQuery(t, h, lease, id, "EGRESS_ACTIVE", 100, 901000000100, 0)
 		if err != nil || out != "stop_reserved" {
 			t.Fatalf("duration cleanup: %s %v", out, err)
 		}
