@@ -23,7 +23,7 @@ No P0 in D1–D9. Where the literal reading would be P1, this refinement is bind
 | R1 | D6 set targets on sync | Re-adds lines the buyer removed; overwrites buyer edits | **Delta apply**: a claim line is written only when `version > applied_version` (§4.4) | KC11 |
 | R2 | D6 GetCart→SetCart | GetCart `FOR SHARE` then SetCart `FOR UPDATE`: two same-owner txs deadlock; nested `cart.set` receipt lock unordered | `storefront.LockCartOwner` first; derived `cart.set` key prefix `clm:` reserved at buyerhttp (§5.6) | KC07, KC14 |
 | R3 | D7 IssueLink | Token persisted in receipt JSON; admin BFF always sends Idempotency-Key | `command.Run` with a **token-free receipt**; token only in the first execution's response, written after COMMIT (§6) | KC09, KC13 |
-| R4 | D7 first owner binds | In-app browser vs Safari, leaked or mis-sent link → permanent 404 | Merchant `release_binding`, always with rotation; resets applied state (§6) | KC09, KC11 |
+| R4 | D7 first owner binds | In-app browser vs Safari, leaked or mis-sent link → permanent 404 | Release only inside the `claims.issue_link` definer, which re-resolves `live:manage` in the DB and swaps the token hash in the same call; resets applied state (§3.3, §6) | KC03, KC09, KC11 |
 | R5 | D5 persist parse result | Keyword-shaped chat (`0912345678`) stored in plaintext on rejection | Persist `offer_id` only when the head resolves to an offer; never an unresolved keyword (§3.1) | KC06, KC08 |
 | R6 | D5 duplicate no-op | Dedup over mutable offer resolution turns a redelivery into 409 | Dedup compares immutable delivery/parse facts only (§4.3) | KC06 |
 | R7 | D8 ingest scope | Store-wide OPEN lookup races "close S1, open S2" → wrong keyword map | `IngestInput.SessionID`; lock that session's OPEN window (§4.3) | KC07 |
@@ -42,8 +42,11 @@ classes without fixed days; UI BLOCKED pending composition approval (T10b).
 
 - An **offer** binds one normalized keyword to one SKU inside one live session.
   Keyword and SKU are immutable; `max_quantity_per_claim` 1..999 and `active` change
-  with version CAS. Keyword unique per session (active or not); SKU unique per session
-  (a cart merge never sums two claim lines). ≤200 offers per session.
+  with version CAS. Keyword unique per session (active or not); at most one **active**
+  offer per SKU per session, so a redeem has at most one applicable line per SKU (a cart
+  merge never sums two claim lines; lines on inactive offers are skipped, §4.4). A keyword
+  typo is fixed by deactivating the offer and creating the right keyword for the same SKU.
+  ≤200 offers per session.
 - A **claim window** per session is `CLOSED`/`OPEN` with `match_mode` `EXACT`
   (default) or `KEYWORD_QTY_ONLY`. At most one OPEN window per store. Mode changes only
   while CLOSED. Each opening increments `generation`.
@@ -61,7 +64,8 @@ classes without fixed days; UI BLOCKED pending composition approval (T10b).
   first buyer owner that redeems binds the bundle; other owners get the uniform
   not-found. A forwarded link binds the forwardee (arch §14.2). It never unlocks orders,
   addresses, payment methods or the commenter's identity. Only a merchant can release
-  a binding, and releasing always kills the old token.
+  a binding, and releasing always kills the old token (enforced inside the
+  `claims.issue_link` definer, not only in Go; §3.3).
 - Social actor ≠ verified customer. No identity edge, consent, message window or
   audience fact is created (arch §14.1/§14.4).
 
@@ -178,12 +182,12 @@ CREATE TABLE live.offers (
  updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
  PRIMARY KEY (tenant_id,store_id,id),
  UNIQUE (tenant_id,store_id,session_id,keyword),
- UNIQUE (tenant_id,store_id,session_id,sku_id),
  UNIQUE (tenant_id,store_id,session_id,id),
  UNIQUE (tenant_id,store_id,session_id,id,sku_id),
  FOREIGN KEY (tenant_id,store_id,session_id) REFERENCES live.sessions(tenant_id,store_id,id),
  FOREIGN KEY (tenant_id,store_id,sku_id) REFERENCES catalog.skus(tenant_id,store_id,id),
  FOREIGN KEY (tenant_id,principal_id) REFERENCES identity.memberships(tenant_id,principal_id));
+CREATE UNIQUE INDEX live_offer_active_sku ON live.offers(tenant_id,store_id,session_id,sku_id) WHERE active;
 
 CREATE TABLE live.claim_windows (                                -- one row per session; FK anchor for claims
  tenant_id uuid NOT NULL, store_id uuid NOT NULL, session_id uuid NOT NULL,
@@ -283,7 +287,7 @@ CREATE TABLE claims.links (    -- credential table: no runtime role can SELECT t
  tenant_id uuid NOT NULL, store_id uuid NOT NULL, bundle_id uuid NOT NULL,
  token_hash bytea NOT NULL UNIQUE CHECK (octet_length(token_hash)=32),
  generation bigint NOT NULL CHECK (generation>0),
- issued_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+ issued_at timestamptz NOT NULL,     -- no DEFAULT: issue_link sets both from one clock read
  expires_at timestamptz NOT NULL,
  principal_id uuid NOT NULL,
  PRIMARY KEY (tenant_id,store_id,bundle_id),
@@ -321,10 +325,11 @@ No column anywhere stores the comment, its unresolved head, a label outside
 | commerce_runtime | claims.bundles | SELECT(all except owner_id); INSERT(tenant_id,store_id,session_id,platform,actor_key,label); UPDATE(line_count,version,updated_at) | read/update `S`; insert `S AND platform='manual'` |
 | commerce_runtime | claims.lines | SELECT; INSERT(all except applied_version); UPDATE(quantity,version,updated_at) | read/update/insert `S` |
 | commerce_runtime | claims.events | SELECT, INSERT | read `S`; insert `S AND source_kind='manual' AND principal_id=app.principal_id` |
-| commerce_runtime | claims.links | SELECT(tenant_id,store_id,bundle_id,generation,issued_at,expires_at); INSERT; UPDATE(token_hash,generation,issued_at,expires_at,principal_id) | read/update `S`; insert/update WITH CHECK `S AND principal_id=app.principal_id` |
-| commerce_runtime | functions | EXECUTE `claims.release_binding(uuid)` only | — |
+| commerce_runtime | claims.links | SELECT(tenant_id,store_id,bundle_id,generation,issued_at,expires_at) only (link state for ListBundles; **no INSERT/UPDATE**) | read `S` |
+| commerce_runtime | functions | EXECUTE `claims.issue_link(bytea,uuid,uuid,uuid,bigint,bytea,boolean)` only | — |
 | commerce_buyer_runtime | claims schema | USAGE; EXECUTE `preview_link`, `redeem_link`, `mark_applied` only | **no table privilege on `claims.*` or `live.*`** |
-| commerce_claims_writer | claims.links | SELECT(tenant_id,store_id,bundle_id,token_hash,expires_at) | read `S` |
+| commerce_claims_writer | claims.links | SELECT(tenant_id,store_id,bundle_id,token_hash,generation,expires_at); INSERT(tenant_id,store_id,bundle_id,token_hash,generation,issued_at,expires_at,principal_id); UPDATE(token_hash,generation,issued_at,expires_at,principal_id) | read `S`; `issue`: insert WITH CHECK `S AND MERCHANT AND principal_id=app.principal_id`; `rotate`: USING `S AND MERCHANT` WITH CHECK `S AND MERCHANT AND principal_id=app.principal_id` |
+| commerce_claims_writer | identity | USAGE; SELECT(token_hash,principal_id,audience,revoked_at,expires_at) on `identity.sessions`; EXECUTE `identity.resolve_access(bytea,uuid,text)` (same as `commerce_media_writer`, 0035) | sessions keep ACL isolation; no new policy |
 | commerce_claims_writer | claims.bundles | SELECT(tenant_id,store_id,id,session_id,owner_id,bound_at,version); UPDATE(owner_id,bound_at) | read `S`; `bind`: USING `S AND BUYER AND (owner_id IS NULL OR owner_id=app.buyer_id)` WITH CHECK `S AND owner_id=app.buyer_id`; `release`: USING `S AND MERCHANT` WITH CHECK `S AND owner_id IS NULL AND bound_at IS NULL` |
 | commerce_claims_writer | claims.lines | SELECT(tenant_id,store_id,bundle_id,offer_id,sku_id,quantity,version,applied_version); UPDATE(applied_version) | read/update `S` |
 | commerce_claims_writer | live.offers | SELECT(tenant_id,store_id,id,session_id,keyword,active) | read `S` |
@@ -332,7 +337,7 @@ No column anywhere stores the comment, its unresolved head, a label outside
 Shorthand: `app.x` = `nullif(current_setting('app.x',true),'')::uuid`; `BUYER` =
 `app.principal_id IS NULL AND app.buyer_id IS NOT NULL`; `MERCHANT` = `app.principal_id
 IS NOT NULL AND app.buyer_id IS NULL`, so `bind` can never match in a merchant
-transaction and `release` never in a buyer one. `commerce_runtime` may read
+transaction and `release`/`issue`/`rotate` never in a buyer one. `commerce_runtime` may read
 `claims.lines.applied_version` (the merchant list shows "applied") but never write it.
 No policy references another claims table (no subquery), so RLS recursion (42P17) is
 impossible. No privilege for
@@ -372,15 +377,31 @@ for unknown, expired, rotated, other-store, other-tenant and bound-to-another-ow
   must equal `app.buyer_id`; sets `applied_version=version` only where `version=p_versions[i]`;
   updated count ≠ array length → `PT409`.
 
-Merchant guard (release; EXECUTE to `commerce_runtime` only): READ COMMITTED;
-`app.tenant_id/app.store_id/app.principal_id` canonical non-empty; `app.buyer_id`
-unset/empty; else `22023`.
+Merchant guard (issue_link; EXECUTE to `commerce_runtime` only): READ COMMITTED;
+`app.tenant_id/app.store_id/app.principal_id` canonical non-empty, `app.authz_revision`
+≥1, `app.buyer_id` unset/empty; both hashes exactly 32 bytes; non-zero UUIDs;
+`p_expected_generation>=0`; `p_release` not NULL; else `22023`. Authority is decided in
+the DB, not by the caller (house `live.request_media_stop` pattern, 0037):
+`identity.resolve_access(p_auth_hash,p_store,'live:manage')` before any lock
+(`unauthorized`→`PT401`, `not_found`→`PT404`, other non-ok→`PT403`); resolved
+tenant/principal/revision and `p_store` must equal the GUCs (`PT403`); after the last
+write a fresh `resolve_access` plus an `identity.sessions` expiry read at
+`clock_timestamp()` must return the same tenant/principal/revision (`PT401`/`PT403`).
 
-- `claims.release_binding(p_bundle uuid) RETURNS boolean` — `VOLATILE`. Lock bundle
-  `FOR NO KEY UPDATE` (zero rows → returns NULL = not found); if bound set
-  `owner_id=NULL, bound_at=NULL` and every line's `applied_version=NULL`; returns whether
-  a binding was released. Permission (`live:manage`) is enforced by the only Go caller
-  (`IssueLink`), exactly as for the merchant table grants.
+- `claims.issue_link(p_auth_hash bytea, p_store uuid, p_session uuid, p_bundle uuid,
+  p_expected_generation bigint, p_new_hash bytea, p_release boolean) RETURNS
+  TABLE(generation bigint, expires_at timestamptz, released boolean)` — `VOLATILE`.
+  Authorize → lock the bundle of `p_session` `FOR NO KEY UPDATE` (zero rows → zero rows
+  = not found) → current link generation (0 when none) ≠ `p_expected_generation` →
+  `PT409` → `v_now := clock_timestamp()` **once** → if `p_release` and bound:
+  `owner_id=NULL, bound_at=NULL`, every line's `applied_version=NULL` → upsert
+  `claims.links` with `token_hash=p_new_hash, generation=p_expected_generation+1,
+  issued_at=v_now, expires_at=v_now+interval '72 hours', principal_id=app.principal_id`;
+  the `ON CONFLICT DO UPDATE` branch sets the same five columns, so every rotation resets
+  `issued_at` and the §3 CHECK holds with equality → final authorize → return
+  (`released` = a binding was cleared). Release and hash replacement happen only here and
+  together; no other function or grant can clear `owner_id`, so a release without
+  rotation is impossible (KC03).
 
 ## 4. Frozen Go interfaces
 
@@ -520,6 +541,8 @@ type LinkInput struct {
 	ExpectedGeneration int64 `json:"expected_generation"` // 0 = no link yet
 	ReleaseBinding     bool  `json:"release_binding"`
 }
+type LabelKey struct{ /* 32 bytes */ } // server-held HMAC key for label_mac; redacted; never in the DB
+func NewLabelKey(raw []byte) (LabelKey, error) // exactly 32 bytes; command.ErrInvalid
 type LinkToken string // 43-char base64url of 32 bytes; redacted String/GoString/MarshalJSON
 func ParseLinkToken(raw string) (LinkToken, error) // strict canonical base64url; command.ErrInvalid
 type IssuedLink struct {
@@ -534,7 +557,7 @@ func GetBoard(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, sessi
 func SetWindow(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key, sessionID string, in WindowInput) (Window, error)          // live:manage
 func CreateOffer(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key, sessionID string, in OfferInput) (Offer, error)          // live:manage
 func UpdateOffer(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key, sessionID, offerID string, in OfferUpdate) (Offer, error) // live:manage
-func RecordManualClaim(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key, sessionID string, in ManualClaimInput) (ManualClaimResult, error) // live:manage
+func RecordManualClaim(ctx context.Context, tx pgx.Tx, scope platform.Scope, labels LabelKey, token, key, sessionID string, in ManualClaimInput) (ManualClaimResult, error) // live:manage
 func ListBundles(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, sessionID string, page pagination.Request) (pagination.Page[Bundle], error) // live:read
 func IssueLink(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key, sessionID, bundleID string, in LinkInput) (IssuedLink, error) // live:manage
 ```
@@ -544,7 +567,7 @@ func IssueLink(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key,
 | SetWindow | `live.claim.window.set` | `live.claim.window.opened` / `.closed` / `.mode_set` | `session_id, expected_version, state, match_mode` |
 | CreateOffer | `live.claim.offer.create` | `live.claim.offer.created` | `session_id, keyword` (canonical), `sku_id, max_quantity_per_claim` |
 | UpdateOffer | `live.claim.offer.update` | `live.claim.offer.updated` | `session_id, offer_id, expected_version, max_quantity_per_claim, active` |
-| RecordManualClaim | `live.claim.manual` | `live.claim.manual.recorded` | `session_id, bundle_id\|"", new_actor, grammar_version, kind, offer_id\|"", quantity, explicit` |
+| RecordManualClaim | `live.claim.manual` | `live.claim.manual.recorded` | `session_id, bundle_id\|"", label_mac\|"", grammar_version, kind, offer_id\|"", quantity, explicit` |
 | IssueLink | `live.claim.link.issue` | `live.claim.link.issued` (+ `live.claim.binding.released`) | `session_id, bundle_id, expected_generation, release_binding` |
 
 Rules:
@@ -559,29 +582,40 @@ Rules:
 - **CreateOffer**: after the receipt lock, `pg_advisory_xact_lock('claims-offers|t|s|session')`
   then count <200 (201st → `ErrConflict`); **no `live.sessions` row lock** (the FK
   `KEY SHARE` proves existence). SKU must be in scope (`ErrNotFound`) with active SKU +
-  product and SKU currency = store currency (`ErrConflict`). Duplicate keyword or SKU in
-  the session → `ErrConflict`.
+  product and SKU currency = store currency (`ErrConflict`). Duplicate keyword in the
+  session, or another **active** offer on the SKU (`live_offer_active_sku`) → `ErrConflict`.
 - **UpdateOffer**: offer `FOR NO KEY UPDATE` (waits for in-flight ingests holding it
-  `FOR SHARE`), CAS; reactivation sets `activated_at=clock_timestamp()`; lowering max does
-  not rewrite accepted lines.
+  `FOR SHARE`), CAS; reactivation sets `activated_at=clock_timestamp()` and, while another
+  active offer holds the SKU, fails 23505 → `ErrConflict`; lowering max does not rewrite
+  accepted lines.
 - **ListBundles**: `pagination` collection `claim-bundles` (ParentID = session; keys
   `created_at,id` with the `live-sessions` time-key validation), `ORDER BY created_at DESC,
   id DESC`, default 50/max 100, **one SQL statement** (bundles + aggregated lines + link
   state) so a page cannot tear. No label/handle filter exists.
-- **RecordManualClaim**: validate input and text; `p := grammar.Parse(text)`; resolve
-  `offer_id` by `(session, p.Keyword)` (read, immutable keyword) for the canonical request
-  only; then `command.Run`. Inside: `BundleID` → load that manual bundle of this session
-  (`ErrNotFound` otherwise) and reuse its `platform/actor_key`; `ActorLabel` →
-  `NormalizeLabel` (`ErrInvalid`), label already used in this session → `ErrConflict`
-  (pick the existing bundle), else a fresh 32-byte `crypto/rand` hex `actor_key`. Then
-  `IngestParsed` with a fresh random `SourceEventID`, `OccurredAt=clock_timestamp()` and
-  this session. **Text, label and any hash of either are never in the canonical request,
-  receipt, audit or logs**; the label is stored only in `claims.bundles.label` and only on
-  ACCEPTED (a rejected first comment of a new actor leaves no label anywhere).
-- **IssueLink**: bundle of this session `FOR NO KEY UPDATE` (`ErrNotFound`) → link
-  generation CAS (`ErrConflict`) → if `release_binding`, `claims.release_binding` →
-  generate the token inside the command closure → upsert `claims.links` (hash, generation+1,
-  `expires_at=clock_timestamp()+72h`). The receipt result is the token-free struct
+- **RecordManualClaim**: validate input and text; `ActorLabel` → `NormalizeLabel`
+  (`ErrInvalid`) and `label_mac = hex(HMAC-SHA256(labels, "claims.manual-label.v1|" +
+  tenant + "|" + store + "|" + session + "|" + normalized label))` ("" for `BundleID`),
+  so the same key with another actor is a different canonical request → `ErrConflict`
+  (I02); `p := grammar.Parse(text)`; resolve `offer_id` by `(session, p.Keyword)` (read,
+  immutable keyword) for the canonical request only; then `command.Run`. Inside:
+  `BundleID` → load that manual bundle of this session (`ErrNotFound` otherwise) and
+  reuse its `platform/actor_key`; `ActorLabel` → label already used in this session →
+  `ErrConflict` (pick the existing bundle), else a fresh 32-byte `crypto/rand` hex
+  `actor_key`. Then `IngestParsed` with a fresh random `SourceEventID`,
+  `OccurredAt=clock_timestamp()` and this session. **Text, label and any unkeyed hash of
+  either are never in the canonical request, receipt, audit or logs**; `label_mac` reaches
+  storage only inside the SHA-256 request digest and cannot be dictionary-tested without
+  the key. `labels` comes from `COMMERCE_CLAIMS_LABEL_KEY` (base64 32 bytes, distinct from
+  every other configured key, loaded by `cmd/api`; never in the DB). The label is stored
+  only in `claims.bundles.label` and only on ACCEPTED (a rejected first comment of a new
+  actor leaves no label anywhere).
+- **IssueLink**: inside `command.Run`: generate the link token (32 bytes `crypto/rand`)
+  in the closure, set `app.authz_revision` (media_stop pattern), then one call
+  `claims.issue_link(sha256(merchant token), store, session, bundle, expected_generation,
+  sha256(link token), release_binding)` (§3.3): zero rows → `ErrNotFound`; `PT409` →
+  `ErrConflict`; `PT401/PT403/PT404` → `platform.ErrUnauthorized/ErrForbidden/
+  ErrScopeNotFound`. Go takes no bundle/link lock itself and has no link or binding
+  write grant. The receipt result is the token-free struct
   `{bundle_id, generation, expires_at, released}`; replay returns it with `Token=""`,
   `Replayed=true`.
 
@@ -699,7 +733,8 @@ expected_bundle_version}, &out, fn)`, where fn:
    `ErrConflict` (the whole command, including the bind, rolls back).
 2. Pending lines whose offer is inactive or SKU/product unavailable are `skipped` and
    **stay pending**; the rest override the cart quantity for that SKU (absolute).
-   Non-claim and non-pending lines are untouched.
+   Non-claim and non-pending lines are untouched. `live_offer_active_sku` leaves at most
+   one applicable line per SKU in the `redeem_link` snapshot; Go asserts it (`ErrConflict`).
 3. Nothing to apply → `out.Cart = storefront.GetCart` (no cart write).
 4. Otherwise `storefront.LockCartOwner` → `storefront.GetCart` → merged set (>50 SKUs →
    `ErrInvalid`, bind rolled back) → `storefront.SetCart(ctx, tx, s, "clm:" +
@@ -725,9 +760,9 @@ locks are re-entrant in a transaction).
 | Condition | Go error |
 | --- | --- |
 | malformed UUID/keyword/label/text/mode/state/quantity/token; both or neither of bundle_id/actor_label; merged cart >50; SQLSTATE 22023/23514/22P02; v1 non-manual source | `command.ErrInvalid` |
-| version/generation CAS; 23505 (keyword, SKU, label, second OPEN window); forbidden window transition; 201st offer; inactive/foreign SKU at offer create; duplicate source with different facts; PT409; cart post-condition; pre-existing unavailable cart item | `command.ErrConflict` |
+| version/generation CAS; 23505 (keyword, second active offer on a SKU, label, second OPEN window); forbidden window transition; 201st offer; inactive/foreign SKU at offer create; duplicate source with different facts; PT409; cart post-condition; pre-existing unavailable cart item | `command.ErrConflict` |
 | session/offer/bundle/SKU outside scope; 23503; unknown/expired/rotated/other-owner/other-store link | `command.ErrNotFound` |
-| authority | unchanged `platform.*` / `buyer.*` errors |
+| authority | unchanged `platform.*` / `buyer.*` errors; `issue_link` `PT401`/`PT403`/`PT404` → `platform.ErrUnauthorized`/`ErrForbidden`/`ErrScopeNotFound` |
 | 40P01, 55P03, statement timeout, other DB errors | returned unchanged (HTTP 503) |
 
 Grammar/offer/window rejections are **data** (`Outcome=REJECTED`), never errors.
@@ -770,7 +805,9 @@ Grammar/offer/window rejections are **data** (`Outcome=REJECTED`), never errors.
 | ROTATED (old token) | IssueLink `expected_generation=g` | 404 | 404 |
 
 - Token: 32 bytes `crypto/rand`, base64url raw (43 chars); DB stores only
-  `sha256(token)`; TTL exactly `clock_timestamp()+72h`; generation CAS. Rotation keeps the
+  `sha256(token)`; `issued_at` and `expires_at=issued_at+72h` come from one
+  `clock_timestamp()` read in `claims.issue_link` (every rotation resets both); generation
+  CAS. Rotation keeps the
   binding unless `release_binding=true`; release always rotates, resets every line's
   applied state (the new owner receives all lines) and leaves the released owner's cart
   untouched.
@@ -836,8 +873,9 @@ changed or cart conflict → 409. `PUT /v1/buyer/cart` with an `Idempotency-Key`
 - `actor_key` is pseudonymous personal data (arch §14.4); manual keys are random, T10c keys are
   decided in T10c. Never returned by any API; never in events.
 - `bundles.label` is merchant-entered personal data (typically a display name): merchant
-  only (live:read), never in receipts, audit, logs, URLs or buyer projections; the future
-  UI warns against phone numbers and addresses.
+  only (live:read), never in receipts, audit, logs, URLs or buyer projections (the receipt
+  request digest covers only the keyed `label_mac`, §4.2); the future UI warns against
+  phone numbers and addresses.
 - Tokens: SHA-256 only; never in logs, audit, receipts, URL path/query, browser storage or
   BFF caches. All input/credential types are redacted (§4).
 - **Retention classes** (days are not fixed here, arch §21.4; U08 sets them): claim events;
@@ -856,18 +894,18 @@ amendment, §10), one top-level `TestLiveClaimsKCnn…` per gate. Pure tests liv
 | Gate | Test | Evidence | Required |
 | --- | --- | --- | --- |
 | KC01 | `TestGrammarKC01Vectors`, `FuzzParse` | UNIT | Every §2.4 parse vector from the JSON file; fuzz ≥60 s: no panic, bounded time, MATCH ⇒ `^[A-Z0-9]{1,16}$` and 1..999, deterministic, idempotent on normalized input, ASCII-only case mapping |
-| KC02 | `TestClaimsKC02Units` | UNIT | NormalizeKeyword/NormalizeLabel vectors (`@Amy ` ≡ `amy`); ParseLinkToken strictness; `%v/%+v/%#v/json` of Result, IngestInput, ManualClaimInput, LinkToken, IssuedLink emit no sentinel |
-| KC03 | `TestLiveClaimsKC03Schema` | REAL_PG | Fresh and populated-0043 upgrade; migrate twice; FORCE RLS on six tables; §3.2 matrix equality from `information_schema.column_privileges`/`table_privileges`; definer owner, `prosecdef`, `proconfig`, EXECUTE ACLs; CHECK/FK negatives incl. every §3.1 row and the NO_MATCH iff; 42501 for buyer/meta/checkout/worker/issuer/identity on every table; pool validator rejects a login reaching `commerce_claims_writer` |
-| KC04 | `TestLiveClaimsKC04Offers` | REAL_PG | Create/update replay; changed body 409; CAS race one winner; dup keyword/SKU 409; same keyword other session OK; 201st 409 under concurrency; SKU missing 404 / archived or foreign currency 409 / cross-store 404; canonical keyword before hashing; keyword/SKU immutable (42501); reactivation moves `activated_at`; create while another tx holds the session `FOR SHARE` succeeds within lock_timeout; missing live:manage; revoked token after lock wait and on replay; audit failure rolls back |
+| KC02 | `TestClaimsKC02Units` | UNIT | NormalizeKeyword/NormalizeLabel vectors (`@Amy ` ≡ `amy`); ParseLinkToken strictness; NewLabelKey rejects ≠32 bytes; `label_mac` differs per label and per tenant/store/session, equal for `@Amy `/`amy`; `%v/%+v/%#v/json` of Result, IngestInput, ManualClaimInput, LabelKey, LinkToken, IssuedLink emit no sentinel |
+| KC03 | `TestLiveClaimsKC03Schema` | REAL_PG | Fresh and populated-0043 upgrade; migrate twice; FORCE RLS on six tables; §3.2 matrix equality from `information_schema.column_privileges`/`table_privileges`; definer owner, `prosecdef`, `proconfig`, EXECUTE ACLs; CHECK/FK negatives incl. every §3.1 row and the NO_MATCH iff; 42501 for buyer/meta/checkout/worker/issuer/identity on every table; `live_offer_active_sku` partial (inactive duplicates allowed); no function EXECUTE-able by `commerce_runtime` or `commerce_buyer_runtime` can clear `owner_id` without replacing `token_hash` (catalog enumeration + direct call of each); `claims.links` has no DEFAULT on `issued_at`; pool validator rejects a login reaching `commerce_claims_writer` |
+| KC04 | `TestLiveClaimsKC04Offers` | REAL_PG | Create/update replay; changed body 409; CAS race one winner; dup keyword 409; second active offer on one SKU 409 on create and on reactivation; typo recovery: `A11→X` deactivated → create `A1→X` 200 → `A1` ACCEPTED in the same session and redeem applies only the active offer's line; same keyword other session OK; 201st 409 under concurrency; SKU missing 404 / archived or foreign currency 409 / cross-store 404; canonical keyword before hashing; keyword/SKU immutable (42501); reactivation moves `activated_at`; create while another tx holds the session `FOR SHARE` succeeds within lock_timeout; missing live:manage; revoked token after lock wait and on replay; audit failure rolls back |
 | KC05 | `TestLiveClaimsKC05Window` | REAL_PG | Transition table; two sessions open concurrently → one 409; OPEN→OPEN and mode-while-OPEN 409; generation increments; close blocks on an in-flight ingest (`pg_stat_activity`, not sleeps); ingest after close → WINDOW_CLOSED with zero rows |
 | KC06 | `TestLiveClaimsKC06Ingest` | REAL_PG | Every §2.4 ingest vector incl. S01–S04; §3.1 shape per reason; I03 rows carry no keyword/quantity/offer; S03 unknown→create offer→redeliver = duplicate; changed immutable fact under same source → 409; `occurred_at` before `opened_at` / beyond +120 s; committed bundles ≥1 line; row-count and version snapshot of inventory, storefront, checkout, buyer, social, meta_inbox unchanged |
 | KC07 | `TestLiveClaimsKC07Concurrency` | REAL_PG | Same source ×20 concurrently → one event; same line, different commands → final = last committed, `line_version` = accepted count; lock-hook interleave "close S1, open S2" between manual request start and ingest → WINDOW_CLOSED, zero S2 rows; deactivate vs ingest; release vs redeem; mixed ingest/redeem/issue/offer-update/window-close/`UpdateDraft`/`PUT cart`/Quote workload → zero 40P01 |
-| KC08 | `TestLiveClaimsKC08ManualPrivacy` | REAL_PG | Replay identical receipt after later commands; changed body 409; new actor with a used label 409; two labels → two bundles; rejected first comment leaves no bundle/label; **sentinel scan** of every column of claims/live/ops/buyer receipts, audit, storefront events and captured logs finds no `0912345678`, `A1是不是红色` or text sentinel; label sentinel found only in `claims.bundles.label` |
-| KC09 | `TestLiveClaimsKC09Link` | REAL_PG | 43-char token; DB-wide scan finds only its SHA-256; token absent from receipts/audit/logs; replay → `token:""`, `replayed:true`; concurrent issue → one CAS winner; rotation kills old token; `expires_at = issued_at+72h` by DB clock; release+rotate: old token 404, new owner binds, previous owner's preview 404; other-session/store/tenant bundle 404 |
+| KC08 | `TestLiveClaimsKC08ManualPrivacy` | REAL_PG | Replay identical receipt after later commands; changed body 409; same key with a different `actor_label` 409 (I02), same key with `@Amy ` vs `amy` replays; new actor with a used label 409; two labels → two bundles; rejected first comment leaves no bundle/label; **sentinel scan** of every column of claims/live/ops/buyer receipts, audit, storefront events and captured logs finds no `0912345678`, `A1是不是红色` or text sentinel; label sentinel found only in `claims.bundles.label`, its unkeyed SHA-256 nowhere |
+| KC09 | `TestLiveClaimsKC09Link` | REAL_PG | 43-char token; DB-wide scan finds only its SHA-256; token absent from receipts/audit/logs; replay → `token:""`, `replayed:true`; concurrent issue → one CAS winner; rotation kills old token; first issue, then 3 rotations and 3 release+rotations: each resets `issued_at` and `expires_at = issued_at+72h` exactly (DB, no 23514); release+rotate: old token 404, new owner binds, previous owner's preview 404; direct `claims.issue_link` by a `live:read`-only principal → PT403, and `live:manage` revoked while it waits on the bundle lock → PT403 (`pg_stat_activity`, not sleeps), nothing changed in either case; other-session/store/tenant bundle 404 |
 | KC10 | `TestLiveClaimsKC10Preview` | REAL_PG | Read-only (row counts, versions, receipts, events identical after repeated previews by several owners); unknown/expired/rotated/other-owner/other-store/other-tenant → identical not-found; bound flag; pending/available flags; exact projection keys (no title/label/actor/platform/owner/principal) |
 | KC11 | `TestLiveClaimsKC11Redeem` | REAL_PG | Bind + set targets keeping unrelated lines; replay identical, no new cart version; stale `expected_bundle_version` → 409 and **no binding**; second owner 404, no write; later `A1+3` then new-key redeem sets 3; buyer-removed line not re-added unless its claim changed; inactive offer/archived SKU skipped and still pending, applied after reactivation; pre-existing archived non-claim cart item → 409, bind rolled back; >50 → 422 rolled back; release → new owner receives all lines; two bundles same SKU → last apply wins; no inventory/reservation/order rows |
-| KC12 | `TestLiveClaimsKC12Isolation` | REAL_PG | 2 tenants × 2 stores: forged buyer GUCs + foreign token hash → zero rows / 22023; merchant with another store's GUC sees nothing; merchant cannot read `token_hash`/`owner_id` or write `owner_id`/`applied_version` (42501); every policy executed as every role raises no 42P17 |
-| KC13 | `TestLiveClaimsKC13MerchantHTTP` | HTTP_PG | M1–M7 exact routes/methods/keys/status codes; live:read vs live:manage 403; cross-store 404; no-store/no-referrer; query rejection; token only in first M7 body and only after COMMIT (fault-injected commit failure → no token); replay body byte-identical except `token`/`replayed` |
+| KC12 | `TestLiveClaimsKC12Isolation` | REAL_PG | 2 tenants × 2 stores: forged buyer GUCs + foreign token hash → zero rows / 22023; merchant with another store's GUC sees nothing; merchant cannot read `token_hash`/`owner_id` or write `owner_id`/`applied_version`/`claims.links` (42501); `claims.issue_link` with a `live:read`-only principal, a foreign `p_store`, or GUCs not matching the resolved session → PT403/PT404, no write; every policy executed as every role raises no 42P17 |
+| KC13 | `TestLiveClaimsKC13MerchantHTTP` | HTTP_PG | M1–M7 exact routes/methods/keys/status codes; api refuses to start without a valid, distinct `COMMERCE_CLAIMS_LABEL_KEY`; live:read vs live:manage 403; cross-store 404; no-store/no-referrer; query rejection; token only in first M7 body and only after COMMIT (fault-injected commit failure → no token); replay body byte-identical except `token`/`replayed` |
 | KC14 | `TestLiveClaimsKC14BuyerHTTP` | HTTP_PG | B1–B2 exact routes; token header only there (path/query/body/other route rejected); strict JSON; identical 404; first and replay B2 bodies byte-identical; `PUT cart` with `clm:` key → 422; log capture has no token/text/actor key |
 | KC15 | `TestLiveClaimsKC15Guards` + root | REVIEW + regression | Source guards: only `RecordManualClaim` calls `Ingest`/`IngestParsed`; `internal/integrations/meta` unchanged; no River kind; `internal/claims` imports per §4; package headers and D9 comments present; full `go test -race ./...`, `go vet ./...`, `python3 scripts/check_packet.py`, prior CQ/buyer/LSP/STU/MC01–07 gates unchanged; independent test_worker + security_reviewer verdict; author is not sole acceptor |
 
@@ -888,6 +926,7 @@ printing a PASS line that states "MOCK manual ingress; no provider"); full
 | `migrations/0044_live_claims.sql` | integrator |
 | `storefront.LockCartOwner`; pagination collection `claim-bundles` | integrator |
 | `internal/httpapi/claims.go` + mount; `internal/buyerhttp` B1–B2, `forbiddenInput`, `clm:` rejection; `core-openapi.json` | integrator |
+| `cmd/api` loading/validating `COMMERCE_CLAIMS_LABEL_KEY` into `claims.LabelKey` | integrator |
 | `scripts/dev/test-local.sh --live-claims`; `contracts/tasks.json` T10 amendment | integrator |
 
 `internal/cart/**` stays unused (no second cart). Every Go file starts with one ownership
@@ -972,7 +1011,10 @@ delta and gates.
 - No inventory hold at claim or redeem (arch §11.2); a claimed item may be sold out at
   BeginCheckout (T11). Prices shown are informational; Quote decides.
 - No claim void/adjust by the merchant (T10d); buyer edits the cart. Keyword and SKU are
-  immutable per offer (typo → deactivate, new keyword).
+  immutable per offer; a typo is fixed by deactivating it and creating the right keyword
+  for the same SKU (SKU uniqueness covers active offers only; KC04). Lines already
+  accepted on the deactivated offer stay pending and are skipped; they apply only if that
+  offer is reactivated, which first requires deactivating its replacement.
 - Strict grammar rejects `A1 +2`, `A1+02`, emoji, interior spaces, Chinese numerals;
   merchants should avoid keywords shaped `<keyword>X<digits>` (`a1x2` hazard).
 - One OPEN window per store; window close drops in-flight commands (fail-closed). A
@@ -980,8 +1022,9 @@ delta and gates.
   interval history (T10c H5).
 - Actor ≠ person: `max_quantity_per_claim` is per actor per offer. Manual labels are
   operator-chosen; two commenters with the same display name need distinct labels.
-- Same key with a different new-actor label replays the first result (label excluded from
-  the request hash by design). A same-key retry after the merchant created the offer for
+- Same key with a different new-actor label → 409 (keyed `label_mac`, §4.2). Rotating
+  `COMMERCE_CLAIMS_LABEL_KEY` turns an in-flight same-key retry of a new-actor command
+  into 409 (fail-closed; no key-ring in v1). A same-key retry after the merchant created the offer for
   a previously unknown keyword returns 409 (the canonical request carries `offer_id|""`).
 - Several bundles of one owner claiming one SKU: last apply wins. A released owner keeps
   whatever is already in their cart.
