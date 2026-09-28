@@ -1,3 +1,5 @@
+// Buyer payment copy. Consumed by components/OrderPayment.tsx (no BFF route of its own).
+// Stripe keys (CLOSED_UNPAID, cancel*, creating, cutoff): contracts/stripe-buyer-ui-v1.md §7.
 import type { Locale } from "@live-commerce/i18n";
 
 const en = {
@@ -27,6 +29,16 @@ const en = {
   AUTHORIZED: "Authorized — capture not yet confirmed",
   CAPTURED: "Payment capture recorded",
   REVIEW_REQUIRED: "Payment needs review — do not pay again",
+  CLOSED_UNPAID: "Payment closed without charge",
+  cancel: "Cancel payment",
+  cancelConfirm:
+    "Cancel this payment? The order is cancelled once the payment provider confirms. If you already paid, the payment stands.",
+  cancelling:
+    "Cancellation requested. Waiting for the payment provider to confirm; refresh this order to check.",
+  creating:
+    "The secure payment page is still being prepared. Try Continue original payment again shortly.",
+  cutoff:
+    "This payment page can no longer be opened. Refresh this order for the result.",
 };
 type Copy = { [K in keyof typeof en]: string };
 export const paymentCopy: Record<Locale, Copy> = {
@@ -55,6 +67,13 @@ export const paymentCopy: Record<Locale, Copy> = {
     AUTHORIZED: "已授权，尚未确认请款",
     CAPTURED: "已记录付款请款结果",
     REVIEW_REQUIRED: "付款需要核查，请勿重复付款",
+    CLOSED_UNPAID: "付款已关闭，未扣款",
+    cancel: "取消付款",
+    cancelConfirm:
+      "确定取消付款？支付服务商确认后订单会取消。如已付款，以付款为准。",
+    cancelling: "已请求取消，正在等待支付服务商确认，请刷新此订单查询。",
+    creating: "安全付款页仍在准备中，请稍后再点击“继续原付款请求”。",
+    cutoff: "此付款页已无法再打开，请刷新此订单查询结果。",
   },
   "zh-TW": {
     title: "付款",
@@ -80,5 +99,12 @@ export const paymentCopy: Record<Locale, Copy> = {
     AUTHORIZED: "已授權，尚未確認請款",
     CAPTURED: "已記錄付款請款結果",
     REVIEW_REQUIRED: "付款需要核查，請勿重複付款",
+    CLOSED_UNPAID: "付款已關閉，未扣款",
+    cancel: "取消付款",
+    cancelConfirm:
+      "確定取消付款？支付服務商確認後訂單會取消。如已付款，以付款為準。",
+    cancelling: "已請求取消，正在等待支付服務商確認，請重新整理此訂單查詢。",
+    creating: "安全付款頁仍在準備中，請稍後再點選「繼續原付款請求」。",
+    cutoff: "此付款頁已無法再開啟，請重新整理此訂單查詢結果。",
   },
 };

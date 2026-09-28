@@ -8,10 +8,11 @@ const CONTEXT = /^[A-Za-z0-9_-]{43}$/;
 const KEY = /^[A-Za-z0-9_.:-]{8,128}$/;
 const OPERATION =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-// The only no-key mutation: a committed one-shot form release, never a replay.
-// Keep this exception exact; payment UI owns GET-only recovery after uncertainty.
+// The only no-key mutations: handoff (a committed one-shot form release, never a replay) and
+// the Stripe refresh/cancel signals (stripe-buyer-ui-v1 §2; Go dedupes them by attempt).
+// Keep this set exact; payment UI owns GET-only recovery after uncertainty.
 const HANDOFF =
-  /^orders\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/payment\/handoff$/;
+  /^orders\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/payment\/(?:handoff|refresh|cancel)$/;
 
 export type SessionStatus = {
   state: "absent" | "expired" | "inactive" | "active";

@@ -3,6 +3,8 @@
 // Local extension of approved B: native address form after the real quotation;
 // no new wizard, payment claim or persistent address cache. Transport/CAS and
 // receipt recovery live in purchase.ts, not in this rendering component.
+// OrderDetails hosts <OrderPayment> (BFF orders/{id}/payment[/prepare|handoff|refresh|cancel]);
+// its Refresh order button also fires the Stripe payment/refresh signal via paymentSignalRef.
 import { useEffect, useRef, useState } from "react";
 import OrderPayment from "./OrderPayment";
 import type { Locale } from "@live-commerce/i18n";
@@ -399,6 +401,8 @@ export function OrderDetails({
   isSelected: () => boolean;
 }) {
   const [paymentRefresh, setPaymentRefresh] = useState(0);
+  // OrderPayment registers here only while a Stripe attempt is live (payment/refresh signal).
+  const paymentSignalRef = useRef<(() => Promise<void>) | null>(null);
   const copy = orderCopy[locale],
     common = purchaseCopy[locale],
     destination = order.snapshot.destination;
@@ -506,11 +510,15 @@ export function OrderDetails({
         refreshToken={paymentRefresh}
         onBusy={onPaymentBusy}
         isSelected={isSelected}
+        paymentSignalRef={paymentSignalRef}
       />
       <button
         data-testid="refresh-order"
         disabled={busy}
-        onClick={() => {
+        onClick={async () => {
+          // Errors are swallowed inside the handler (shown in the payment section).
+          const signal = paymentSignalRef.current;
+          if (signal) await signal();
           setPaymentRefresh((v) => v + 1);
           refresh();
         }}
