@@ -275,6 +275,10 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 				   WHERE p.proowner=candidate.oid AND n.nspname NOT IN ('pg_catalog','information_schema')
 			       ))
 			     AND (pg_has_role(session_user, candidate.oid, 'SET') OR pg_has_role(session_user, candidate.oid, 'USAGE'))
+		       ) OR EXISTS (
+			   -- ADMIN OPTION lets the login GRANT any authority it is a member of
+			   -- to itself or others; no runtime pool, old or new, may hold it.
+			   SELECT 1 FROM pg_auth_members am WHERE am.member=r.oid AND am.admin_option
 		       )
 		FROM pg_roles r WHERE r.rolname = session_user`, pool.Config().ConnConfig.User).
 		Scan(&stripeIngress, &stripeIngressUsage, &stripeIngressSet, &stripeRegistrar, &stripeRegistrarUsage, &stripeRegistrarSet, &stripeRegistryWriter, &integrationWriter, &sameLogin, &dsnUserMatch, &superuser, &bypassRLS, &roleAdmin, &databaseCreator, &replication, &objectOwner, &runtimeMember, &authMember, &identityMember, &buyerRuntimeMember, &buyerIssuerMember, &workerMember, &checkoutMember, &hostedMember, &hostedUsage, &hostedSet, &checkoutWriterMember, &metaIngress, &metaRegistrar, &metaCurator, &metaConsumer, &metaWriter, &metaUsage, &metaSet, &consumerUsage, &consumerSet, &metaWorker, &metaWorkerUsage, &metaWorkerSet, &mediaRegistrar, &mediaRegistrarUsage, &mediaRegistrarSet, &mediaWriter, &mediaWriterUsage, &mediaWriterSet, &mediaWorker, &mediaWorkerUsage, &mediaWorkerSet, &mediaExecutor, &mediaExecutorUsage, &mediaExecutorSet, &mediaRecovery, &mediaRecoveryUsage, &mediaRecoverySet, &systemAuthority, &canReachPrivileged)

@@ -151,6 +151,16 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 	if err = applyVersions(ctx, postTx, postVersions); err != nil {
 		return err
 	}
+	// Stripe webhook ingress inserts payment signal jobs through River
+	// JobInsertFastMany: ON CONFLICT (unique_key) DO UPDATE SET kind=EXCLUDED.kind
+	// needs column UPDATE(kind) at executor start (same reason as commerce_runtime
+	// above). Column-level only: integration.guard_payment_job_family rejects any
+	// kind/args/queue/identity change, and no other column, DELETE or TRUNCATE is
+	// granted. Kept here (not in post_river/0012) so it is checksum-safe for
+	// databases that already applied 0012 and is re-asserted on every Apply.
+	if _, err = postTx.Exec(ctx, `GRANT UPDATE(kind) ON river_payment.river_job TO commerce_stripe_ingress`); err != nil {
+		return err
+	}
 	// Reapply only lifecycle grants after future upstream additions, and only in
 	// the final transaction: no Meta privileges leak from a partial cutover.
 	if _, err = postTx.Exec(ctx, `GRANT USAGE ON SCHEMA river_meta TO commerce_meta_worker;
