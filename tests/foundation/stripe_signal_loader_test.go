@@ -67,13 +67,15 @@ func TestStripeSP11SQLSignalLoader(t *testing.T) {
 	if _, err := h.p.worker.Exec(ctx, `SELECT source FROM payments.stripe_signals LIMIT 1`); !stripeSQLState(err, "42501") {
 		t.Fatalf("worker directly read signal table: %v", err)
 	}
+	var loaderOID uint32
+	if err := h.p.f.owner.QueryRow(ctx, `SELECT 'integration.load_stripe_signal(uuid,bigint,bytea,text,bigint,uuid)'::regprocedure::oid`).Scan(&loaderOID); err != nil {
+		t.Fatalf("resolve loader OID as fixture owner: %v", err)
+	}
 	var canExecute bool
-	if err := h.p.worker.QueryRow(ctx, `SELECT has_function_privilege(current_user,
-	 'integration.load_stripe_signal(uuid,bigint,bytea,text,bigint,uuid)'::regprocedure,'EXECUTE')`).Scan(&canExecute); err != nil || !canExecute {
+	if err := h.p.worker.QueryRow(ctx, `SELECT has_function_privilege(current_user,$1::oid,'EXECUTE')`, loaderOID).Scan(&canExecute); err != nil || !canExecute {
 		t.Fatalf("worker loader EXECUTE missing: %v", err)
 	}
-	if err := h.hosted.QueryRow(ctx, `SELECT has_function_privilege(current_user,
-	 'integration.load_stripe_signal(uuid,bigint,bytea,text,bigint,uuid)'::regprocedure,'EXECUTE')`).Scan(&canExecute); err != nil || canExecute {
+	if err := h.hosted.QueryRow(ctx, `SELECT has_function_privilege(current_user,$1::oid,'EXECUTE')`, loaderOID).Scan(&canExecute); err != nil || canExecute {
 		t.Fatalf("hosted role unexpectedly allowed loader EXECUTE: %v", err)
 	}
 

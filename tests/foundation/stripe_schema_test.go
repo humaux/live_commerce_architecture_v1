@@ -480,14 +480,27 @@ func TestStripeSP13EndpointPrepareLocksRotation(t *testing.T) {
 	if disposition == "ACCEPT_PENDING" {
 		t.Fatal("unknown session admitted as accepted")
 	}
-	blocked, stop := context.WithTimeout(ctx, 250*time.Millisecond)
+	rotationTx, err := h.registrar.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rotationTx.Rollback(ctx)
+	if _, err := rotationTx.Exec(ctx, `SET LOCAL lock_timeout='250ms'`); err != nil {
+		t.Fatal(err)
+	}
 	var version int64
-	err = h.registrar.QueryRow(blocked, `SELECT payments.set_stripe_webhook_endpoint(
+	err = rotationTx.QueryRow(ctx, `SELECT payments.set_stripe_webhook_endpoint(
 	 $1::uuid,$2::uuid,$3::uuid,$4::uuid,$5::uuid,'PROVIDER_MOCK',1,false,
 	 'fixture_signing_key_v2',$6::bytea,$7::bytea)`, a.tenant, a.store, a.principal, h.accountA, h.endpointA, randomBytes(12), randomBytes(48)).Scan(&version)
-	stop()
-	if err == nil {
-		t.Fatal("endpoint rotation committed before prepare transaction released lock")
+	if !stripeSQLState(err, "55P03") {
+		t.Fatalf("endpoint rotation did not hit server lock timeout: %v", err)
+	}
+	if err := rotationTx.Rollback(ctx); err != nil {
+		t.Fatal(err)
+	}
+	var current int64
+	if err := a.base.owner.QueryRow(ctx, `SELECT key_version FROM payments.stripe_webhook_endpoints WHERE endpoint_id=$1::uuid`, h.endpointA).Scan(&current); err != nil || current != 1 {
+		t.Fatalf("timed-out rotation changed endpoint version=%d err=%v", current, err)
 	}
 	if err := tx.Rollback(ctx); err != nil {
 		t.Fatal(err)

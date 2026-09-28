@@ -80,3 +80,19 @@ The new test's REAL_PG behavior is **NOT_RUN** in this worktree (SQL is on the
 integrator branch, root holds the PG slot). The multi-statement
 consume-plus-record atomic rollback case is **NOT_RUN** here; it belongs with
 the runtime worker/reconcile test after its transaction interface exists.
+
+## SP11/SP13 test-only repair after root combined PG (2026-09-29)
+
+Root's combined log `/Volumes/data/output/stripe-b1-root-signal-loader-bundle.log`
+records 7 top-level PASS, 2 FAIL, 0 SKIP, exit 1. Both failures were in
+test mechanics: hosted-role `::regprocedure` resolution failed with 42501 on
+the integration schema before the ACL predicate ran, and client cancellation
+of a blocked endpoint rotation could race a successful server-side commit.
+The test now resolves the loader OID through the owner fixture and asks both
+roles `has_function_privilege(current_user, oid, 'EXECUTE')`. The endpoint
+rotation test uses an explicit registrar transaction with server-side
+`SET LOCAL lock_timeout='250ms'`, requires SQLSTATE 55P03, rolls back that
+transaction before releasing ingress's lock, and verifies version 1 persisted
+before asserting the subsequent 1→2 rotation. No security expectation or
+timeout threshold was relaxed. The repaired candidate's REAL_PG result remains
+**NOT_RUN** here; root owns the PG slot.
