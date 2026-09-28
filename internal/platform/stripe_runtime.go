@@ -82,12 +82,22 @@ func validateStripeAuthority(ctx context.Context, pool *pgxpool.Pool, authority 
 	err := pool.QueryRow(ctx, `WITH reachable AS (
 	 SELECT oid FROM pg_roles WHERE rolname=session_user
 	  OR pg_has_role(session_user,oid,'USAGE') OR pg_has_role(session_user,oid,'SET')
-	), catalog AS (
-	 SELECT p.oid,n.nspname||'.'||p.proname||'('||replace(oidvectortypes(p.proargtypes),' ','')||')' AS signature
-	 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 	), fixed AS (
-	 SELECT c.oid,w.signature FROM unnest($1::text[]) w(signature)
-	 LEFT JOIN catalog c ON c.signature=replace(w.signature,' ','')
+	 -- ABI match by namespace name, proname and pg_catalog type OIDs (oidvector
+	 -- has no cast from oid[] and its array bounds start at 0, so compare text). Never by
+	 -- format_type/oidvectortypes text: those qualify or hide names by the
+	 -- caller's search_path, so a shadowing type could hide a fixed function
+	 -- from the forbidden-EXECUTE scan below (fail-open).
+	 SELECT p.oid,w.signature FROM unnest($1::text[]) w(signature)
+	 LEFT JOIN pg_catalog.pg_namespace n ON n.nspname=split_part(w.signature,'.',1)
+	 LEFT JOIN pg_catalog.pg_proc p ON p.pronamespace=n.oid
+	  AND p.proname=split_part(split_part(w.signature,'(',1),'.',2)
+	  AND p.proargtypes::pg_catalog.text=pg_catalog.array_to_string(ARRAY(
+	   SELECT t.oid FROM unnest(string_to_array(substring(w.signature from '\((.*)\)$'),',')) WITH ORDINALITY a(name,ord)
+	   JOIN pg_catalog.pg_type t ON t.typnamespace='pg_catalog'::regnamespace
+	    AND t.typname=CASE a.name WHEN 'bigint' THEN 'int8' WHEN 'integer' THEN 'int4'
+	     WHEN 'boolean' THEN 'bool' WHEN 'timestamp with time zone' THEN 'timestamptz' ELSE a.name END
+	   ORDER BY a.ord),' ')
 	)
 	SELECT EXISTS(SELECT 1 FROM reachable r CROSS JOIN fixed f
 	 WHERE f.oid IS NOT NULL AND NOT(f.signature=ANY($2::text[]))
@@ -103,8 +113,12 @@ func validateStripeAuthority(ctx context.Context, pool *pgxpool.Pool, authority 
 	if len(allowed) == 0 {
 		return nil
 	}
-	// New Stripe roles cannot read any application table. The ingress exception
-	// is exactly River InsertTx's job and ID sequence, never lifecycle mutations.
+	// New Stripe roles cannot read any application table. The only exception is
+	// the ingress role's river_payment.river_job INSERT/SELECT plus column-level
+	// UPDATE(kind), which River's JobInsertFastMany needs for its
+	// ON CONFLICT (unique_key) DO UPDATE SET kind=EXCLUDED.kind privilege check
+	// (a kind no-op: integration.guard_payment_job_family rejects any kind/args/
+	// identity rewrite), plus river_job_id_seq. Never any other lifecycle mutation.
 	err = pool.QueryRow(ctx, `WITH reachable AS (
 	 SELECT oid FROM pg_roles WHERE rolname=session_user
 	  OR pg_has_role(session_user,oid,'USAGE') OR pg_has_role(session_user,oid,'SET')
@@ -120,7 +134,9 @@ func validateStripeAuthority(ctx context.Context, pool *pgxpool.Pool, authority 
 	  WHEN c.relkind='S' THEN has_sequence_privilege(r.oid,c.oid,'USAGE,SELECT,UPDATE')
 	  WHEN c.relkind IN ('r','p','v','m','f') AND $1='stripe_ingress' AND n.nspname='river_payment' AND c.relname='river_job'
 	   THEN has_table_privilege(r.oid,c.oid,'UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN')
-	    OR has_any_column_privilege(r.oid,c.oid,'UPDATE,REFERENCES')
+	    OR has_any_column_privilege(r.oid,c.oid,'REFERENCES')
+	    OR EXISTS(SELECT 1 FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped
+	     AND a.attname<>'kind' AND has_column_privilege(r.oid,c.oid,a.attnum,'UPDATE'))
 	  WHEN c.relkind IN ('r','p','v','m','f') THEN
 	   has_table_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN')
 	    OR has_any_column_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,REFERENCES')
@@ -128,6 +144,21 @@ func validateStripeAuthority(ctx context.Context, pool *pgxpool.Pool, authority 
 	 OR EXISTS(SELECT 1 FROM reachable r CROSS JOIN pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 	  WHERE n.nspname<>'information_schema' AND n.nspname NOT LIKE 'pg\_%' ESCAPE '\'
 	   AND NOT EXISTS(SELECT 1 FROM allowed a WHERE a.oid=p.oid)
+	   -- River v0.40 creates river_job_state_in_bitmask(bit,river_job_state) in each
+	   -- River schema with PUBLIC EXECUTE, and every River insert statement
+	   -- (JobInsertFastMany's ON CONFLICT predicate) calls it, so it cannot be
+	   -- revoked from PUBLIC without breaking every River producer, nor withheld
+	   -- from stripe_ingress. Exempt exactly that inert function: fixed schema
+	   -- names, IMMUTABLE, not SECURITY DEFINER, signature (bit, same-schema
+	   -- river_job_state), owned by the schema's river_job owner. Nothing else.
+	   AND NOT (p.proname='river_job_state_in_bitmask'
+	    AND n.nspname IN ('river','river_meta','river_payment','river_expiry','river_media')
+	    AND p.provolatile='i' AND NOT p.prosecdef AND p.pronargs=2
+	    AND p.proargtypes[0]='pg_catalog.bit'::regtype
+	    AND p.proargtypes[1]=(SELECT t.oid FROM pg_catalog.pg_type t
+	     WHERE t.typnamespace=n.oid AND t.typname='river_job_state')
+	    AND EXISTS(SELECT 1 FROM pg_catalog.pg_class j WHERE j.relnamespace=n.oid
+	     AND j.relname='river_job' AND j.relowner=p.proowner))
 	   AND has_function_privilege(r.oid,p.oid,'EXECUTE'))
 	 OR EXISTS(SELECT 1 FROM reachable r CROSS JOIN pg_namespace n
 	  WHERE n.nspname<>'information_schema' AND n.nspname NOT LIKE 'pg\_%' ESCAPE '\'
