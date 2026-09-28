@@ -173,7 +173,9 @@ new payment engine, new queue system or production permission is introduced.
 - Add `payments.stripe_webhook_endpoints` in 0061: `endpoint_id uuid PRIMARY KEY`, tenant/store/
   connection, environment/account, execution_profile, `enabled boolean`, `key_version bigint>0`,
   `key_id`, 12-byte nonce, bounded ciphertext (17..8192 bytes), and created/updated timestamps.
-  Add a composite FK to the exact account's tenant/store/id/environment/account tuple and UNIQUE
+  Add a generated constant `provider='stripe'` and a composite FK to the exact account's
+  tenant/store/id/provider/environment/account tuple (add that referenced UNIQUE key on
+  `integration.merchant_accounts`), and UNIQUE
   `(tenant_id,store_id,connection_id,execution_profile)`. Profile compatibility is MOCK→SANDBOX
   or SANDBOX→SANDBOX; LIVE is rejected. No endpoint may be rebound to another account or scope.
 - Signing ciphertext uses a separate `stripe-webhook-v1` payload/AAD binding endpoint, scope,
@@ -184,10 +186,13 @@ new payment engine, new queue system or production permission is introduced.
 - `payments.stripe_webhook_material(uuid) RETURNS TABLE(tenant_id uuid,store_id uuid,
   connection_id uuid,environment text,account_id text,execution_profile text,key_version bigint,
   key_id text,nonce bytea,ciphertext bytea)` is integration_writer-owned, EXECUTE ingress only.
-  It returns only an enabled endpoint on an active registered account/binding. Missing/disabled
+  It returns only an enabled endpoint with matching immutable account/binding identity. It must
+  not depend on current `binding.enabled` or the current API credential head: historical payment
+  reconciliation survives a merchant disabling new sales or rotating credentials. Missing/disabled
   endpoints return no row and a fixed HTTP 404. Decrypt/verifier failure has a fixed code and logs
   no key, signature or body. API has a separately configured signing-material keyring; its process
-  need not load the payment API-key decryption keyring.
+  need not load the payment API-key decryption keyring. Explicitly disabling the webhook endpoint
+  fails closed; historical recovery then remains a poller/manual responsibility, never unpaid proof.
 - `payments.stripe_webhook_prepare` arguments become `(endpoint uuid,key_version bigint,
   event_id text,event_type text,event_created bigint,api_version text,object_type text,
   session_id text,client_reference text,metadata_attempt text,account_present boolean,
@@ -224,6 +229,8 @@ new payment engine, new queue system or production permission is introduced.
   scope set by the validated definer; no new BYPASSRLS or schema-owner function is permitted.
   Registrar receives schema USAGE and EXECUTE on registrar functions only. Ingress gets only
   material/prepare/commit execution; worker gets only lease-fenced API-material execution.
+  `commerce_integration_writer` receives SELECT and an explicit RLS SELECT policy on endpoints
+  for material/prepare; it gets no endpoint UPDATE. The registry writer alone owns endpoint writes.
 - `CLOSURE_CONTRADICTED` + `REVIEW_REQUIRED` is the B1 manual-refund obligation identity.
   No READY fulfillment consumer may select it. Late capture sets PAID_ALLOCATION_FAILED, records
   the obligation once, does not reopen an order or move stock, and does not call any refund API.
@@ -247,6 +254,8 @@ SQL NULL (not an exception); accepted input returns the unchanged minor-unit int
 - SP12: late paid replay creates exactly one explicit manual-refund obligation, zero allocation.
 - SP13: endpoint/signature mismatch, key-version rotation during admission, missing linkage and
   commit failure cannot ACK; no plaintext/body/signature in logs or persisted rows.
+  Binding disable/API-key rotation do not suppress valid historical endpoint admission; endpoint
+  disable does. A PAYUNi account cannot satisfy the endpoint's Stripe-specific composite FK.
 - SP15: API/worker ignore global Stripe credentials; worker scoped key admission and account
   mismatch fail closed before checkout I/O; exact-version rotation behavior; per-role secret
   separation; disabled startup reads no unrelated Stripe secrets. Same existing timeout budgets.
