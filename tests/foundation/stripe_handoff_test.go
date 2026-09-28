@@ -10,16 +10,26 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"livecommerce/internal/buyer"
 	"livecommerce/internal/platform"
 )
 
-// TestStripeSP21PinnedHandoffAfterKeyRotation exercises the historical attempt,
-// not a new-start eligibility check. All account keys and the Checkout URL are
-// synthetic; the disposable PG fixture makes no provider request.
-func TestStripeSP21PinnedHandoffAfterKeyRotation(t *testing.T) {
+type sslStripeAttempt struct {
+	p                          psHarness
+	registrar, hosted          *pgxpool.Pool
+	connection, binding, proof string
+	attempt                    string
+	tokenHash, requestHash     [32]byte
+	configDigest               [32]byte
+}
+
+// sslStartStripe uses the existing buyer/order fixture and the frozen SQL
+// registrar/start interfaces. The synthetic credential is never decrypted.
+func sslStartStripe(t *testing.T) sslStripeAttempt {
+	t.Helper()
 	p := psSetup(t)
 	ctx := context.Background()
 	_, registrar := lmaLogin(t, p.f, "commerce_payment_registrar")
@@ -58,7 +68,7 @@ func TestStripeSP21PinnedHandoffAfterKeyRotation(t *testing.T) {
 	requestHash := sha256.Sum256([]byte("synthetic stripe start request"))
 	configDigest := sha256.Sum256([]byte("synthetic stripe-hosted-v1 config"))
 	attempt := randomUUID()
-	key := t04Key("stripe-handoff-rotation")
+	key := t04Key("stripe-sql-fixture")
 	err = buyer.WithScope(ctx, hosted, p.cap.Token, p.f.storeA1, func(callCtx context.Context, tx pgx.Tx, scope buyer.Scope) error {
 		if scope.OwnerID != p.cap.Scope.OwnerID {
 			return fmt.Errorf("buyer scope changed during Stripe start")
@@ -89,6 +99,20 @@ func TestStripeSP21PinnedHandoffAfterKeyRotation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("start synthetic Stripe attempt: %v", err)
 	}
+	return sslStripeAttempt{p: p, registrar: registrar, hosted: hosted, connection: connection,
+		binding: binding, proof: proof, attempt: attempt, tokenHash: tokenHash,
+		requestHash: requestHash, configDigest: configDigest}
+}
+
+// TestStripeSP21PinnedHandoffAfterKeyRotation exercises the historical attempt,
+// not a new-start eligibility check. All account keys and the Checkout URL are
+// synthetic; the disposable PG fixture makes no provider request.
+func TestStripeSP21PinnedHandoffAfterKeyRotation(t *testing.T) {
+	h := sslStartStripe(t)
+	p, registrar, hosted := h.p, h.registrar, h.hosted
+	connection, binding, proof, attempt := h.connection, h.binding, h.proof, h.attempt
+	tokenHash, requestHash, configDigest := h.tokenHash, h.requestHash, h.configDigest
+	ctx := context.Background()
 
 	// Owner fixture pinning replaces only the worker observation path. The
 	// handoff itself runs through the real hosted role and frozen SQL function.

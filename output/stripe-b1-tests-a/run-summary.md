@@ -62,3 +62,21 @@ targeted regression; the fixture cannot safely advance the DB clock.
 and `git diff --check` exited 0. This new test's REAL_PG result is **NOT_RUN**
 in the independent worktree, which has no SQL implementation; root owns the PG
 slot and will run the combined candidate.
+
+## SP11 exact signal-loader candidate (2026-09-29)
+
+`TestStripeSP11SQLSignalLoader` now reuses the synthetic registrar/start fixture,
+inserts two distinct `payment_signal_v1` jobs and BUYER signals in their own
+transactions, then claims the Stripe operation before any worker signal read.
+It asserts exact target rather than newest hint; mismatched job, signal,
+operation, profile, NULL profile, token and generation are refused. Worker
+direct-table SELECT and hosted-role function execution are denied. It also
+checks River args/queue tampering is either blocked by its table guard or
+refused by the loader, a consumed row remains readable for retry completion,
+and a DB-expired lease cannot read material. Synthetic owner writes are
+fixture setup only; no provider I/O occurs.
+
+The new test's REAL_PG behavior is **NOT_RUN** in this worktree (SQL is on the
+integrator branch, root holds the PG slot). The multi-statement
+consume-plus-record atomic rollback case is **NOT_RUN** here; it belongs with
+the runtime worker/reconcile test after its transaction interface exists.
