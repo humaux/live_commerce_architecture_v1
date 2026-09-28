@@ -200,6 +200,12 @@ new payment engine, new queue system or production permission is introduced.
   It resolves scope/account/profile from the locked endpoint and rejects a stale key_version
   (fixed retryable HTTP 503; no receipt/ACK). It must explicitly compare the verified `livemode`.
   Mapping and dedupe are scoped to that endpoint's account; unsigned fields cannot override it.
+- Receipts add immutable `endpoint_id uuid NOT NULL REFERENCES payments.stripe_webhook_endpoints`.
+  Replace the old account-wide event uniqueness with `(endpoint_id,event_id)` and the malformed
+  partial unique index with `(endpoint_id,body_sha256) WHERE event_id IS NULL`. Advisory dedupe
+  locks use the same endpoint/event or endpoint/body identity. A wrong-profile endpoint's ignored
+  receipt must not consume delivery to the correct endpoint. Account/scope/profile still derive
+  from the immutable endpoint; no alternate endpoint can create a cross-profile signal.
 - Registrar endpoint function (registry_writer, EXECUTE registrar only):
   `payments.set_stripe_webhook_endpoint(tenant uuid,store uuid,principal uuid,connection uuid,
   endpoint uuid,profile text,expected_version bigint,enabled boolean,key_id text,nonce bytea,
@@ -217,7 +223,8 @@ new payment engine, new queue system or production permission is introduced.
   rejects COMMIT of ACCEPTED without its exact reciprocal signal and linked River job. Follow
   `meta_event_commit`'s pattern. This closes prepare-without-commit, wrong signal/scope/job and
   independent-transaction holes. There is no ACK until the whole transaction commits.
-  Malformed dedupe locks `(environment,account,body_sha256)`, not a NULL event-id lock.
+  Malformed dedupe locks `(endpoint_id,body_sha256)`, not a NULL event-id lock. These endpoint-based
+  keys also replace the stale §11 webhook key, without changing attempt/fact/stock idempotency.
 - Receipt append-only and narrow redelivery UPDATE grants remain unchanged. There is no new
   `UPDATE(disposition,signal_id)` permission. Signal/receipt scope is reciprocal, not merely a
   UUID FK. Permanent dedupe and max signal count still apply under concurrent transactions.
@@ -256,6 +263,8 @@ SQL NULL (not an exception); accepted input returns the unchanged minor-unit int
   commit failure cannot ACK; no plaintext/body/signature in logs or persisted rows.
   Binding disable/API-key rotation do not suppress valid historical endpoint admission; endpoint
   disable does. A PAYUNi account cannot satisfy the endpoint's Stripe-specific composite FK.
+  Wrong-profile delivery followed by correct-profile delivery admits exactly one correct signal;
+  redelivery to the same endpoint is deduplicated even when its body metadata changes.
 - SP15: API/worker ignore global Stripe credentials; worker scoped key admission and account
   mismatch fail closed before checkout I/O; exact-version rotation behavior; per-role secret
   separation; disabled startup reads no unrelated Stripe secrets. Same existing timeout budgets.
