@@ -346,3 +346,42 @@ func TestFakeStripePatchAndInject(t *testing.T) {
 		t.Fatalf("inject: %q", dup)
 	}
 }
+
+func TestFakeStripeCached500NoSessionAndAgeSession(t *testing.T) {
+	s := New("acct_FakeAge1")
+	defer s.Close()
+	c := s.http.Client()
+	s.SetNextFault(Fault{Cached500NoSession: true})
+	status, _, _, err := postCreate(t, c, s.URL(), "nosession", testParams())
+	if err != nil || status != 500 || len(s.SessionIDs()) != 0 {
+		t.Fatalf("500 without session: %d %v %d", status, err, len(s.SessionIDs()))
+	}
+	status, h, _, err := postCreate(t, c, s.URL(), "nosession", testParams())
+	if err != nil || status != 500 || h.Get("Idempotent-Replayed") != "true" || len(s.SessionIDs()) != 0 {
+		t.Fatalf("cached 500 replay: %d %v", status, err)
+	}
+	status, _, out, err := postCreate(t, c, s.URL(), "real", testParams())
+	var created struct {
+		ID      string
+		Created int64
+		Expires int64 `json:"expires_at"`
+	}
+	if err != nil || status != 200 || json.Unmarshal(out, &created) != nil {
+		t.Fatalf("create: %d %v", status, err)
+	}
+	if !s.AgeSession(created.ID, time.Hour) || s.AgeSession("cs_missing", time.Hour) {
+		t.Fatal("age admission")
+	}
+	resp, err := c.Get(s.URL() + "/v1/checkout/sessions/" + created.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	var aged struct {
+		Created int64
+		Expires int64 `json:"expires_at"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&aged); err != nil || aged.Expires != created.Expires-3600 || aged.Created != created.Created-3600 {
+		t.Fatalf("aged session: %+v vs %+v", aged, created)
+	}
+}

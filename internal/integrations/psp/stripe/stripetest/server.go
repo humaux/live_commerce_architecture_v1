@@ -26,7 +26,10 @@ import (
 // (https://docs.stripe.com/error-low-level#idempotency, retrieved 2026-09-29).
 type Fault struct {
 	RateLimit, Conflict, Validation, IdempotencyError, Cached500, DropAfterExecute bool
-	Delay                                                                          time.Duration
+	// Cached500NoSession caches a 500 for the key but leaves no session behind: an
+	// execution that failed before creating anything (list must then find no match).
+	Cached500NoSession bool
+	Delay              time.Duration
 }
 
 type cached struct {
@@ -432,9 +435,12 @@ func (s *Server) create(w http.ResponseWriter, r *http.Request, account string) 
 	id := fmt.Sprintf("cs_test_fake_%d", s.next)
 	v := &session{ID: id, Object: "checkout.session", Status: "open", PaymentStatus: "unpaid", Currency: vals.Get("line_items[0][price_data][currency]"), AmountTotal: amount, AmountSubtotal: amount, TotalDetails: map[string]int64{"amount_discount": 0, "amount_tax": 0, "amount_shipping": 0}, ClientReferenceID: vals.Get("client_reference_id"), Metadata: metadataOf(vals), owner: account, ExpiresAt: expires, Created: time.Now().Unix(), Mode: "payment", PaymentMethodTypes: []string{"card"}, URL: "https://checkout.stripe.com/c/pay/" + id}
 	s.sessions[id] = v
+	if f.Cached500NoSession {
+		delete(s.sessions, id)
+	}
 	status := 200
 	var reply []byte
-	if f.Cached500 {
+	if f.Cached500 || f.Cached500NoSession {
 		status = 500
 		reply = []byte(`{"error":{"type":"api_error","code":"api_error"}}`)
 	} else {
@@ -475,6 +481,21 @@ func (s *Server) Patch(id string, fields map[string]any) bool {
 	for k, x := range fields {
 		v.overlay[k] = x
 	}
+	return true
+}
+
+// AgeSession moves one session's created/expires_at back by d, in step with a
+// test that aged the same attempt's stored deadlines (sstAge); otherwise the
+// worker's identity check (expires_at must match the frozen value) would fail.
+func (s *Server) AgeSession(id string, d time.Duration) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	v := s.sessions[id]
+	if v == nil {
+		return false
+	}
+	v.Created -= int64(d.Seconds())
+	v.ExpiresAt -= int64(d.Seconds())
 	return true
 }
 
