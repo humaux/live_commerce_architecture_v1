@@ -14,7 +14,10 @@ concurrency:
 jobs:
   foundation:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    # The full PG suite includes several real 90 s clock gates (MRR/LMR) and ran
+    # past 15 min on a 4-vCPU runner (2026-09-28, run 36409672752: cancelled
+    # at MRR02 with 0 FAIL). 60 min bounds a hung run without cutting a green one.
+    timeout-minutes: 60
     env:
       GOTOOLCHAIN: go1.27.1
       GOFLAGS: -mod=readonly
