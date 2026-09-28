@@ -87,7 +87,11 @@ func lcStrings(t *testing.T, pool *pgxpool.Pool, query string, args ...any) []st
 	return out
 }
 
-func lcSet(values ...string) []string { out := append([]string(nil), values...); sort.Strings(out); return out }
+func lcSet(values ...string) []string {
+	out := append([]string(nil), values...)
+	sort.Strings(out)
+	return out
+}
 
 func lcSameSet(t *testing.T, label string, got, want []string) {
 	t.Helper()
@@ -486,20 +490,22 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			}
 			return e
 		}
-		withOffer := func(q any, explicit any) ev { return ev{"offer_id": offerA, "quantity": q, "explicit_quantity": explicit} }
+		withOffer := func(q any, explicit any) ev {
+			return ev{"offer_id": offerA, "quantity": q, "explicit_quantity": explicit}
+		}
 		for label, e := range map[string]ev{
-			"NO_MATCH":                   rej("NO_MATCH", "NO_MATCH", nil),
-			"UNKNOWN_KEYWORD/MATCH":      rej("MATCH", "UNKNOWN_KEYWORD", nil),
-			"UNKNOWN_KEYWORD/INVALID":    rej("INVALID_QUANTITY", "UNKNOWN_KEYWORD", nil),
-			"OFFER_INACTIVE/MATCH":       rej("MATCH", "OFFER_INACTIVE", withOffer(1, false)),
-			"OFFER_INACTIVE/INVALID":     rej("INVALID_QUANTITY", "OFFER_INACTIVE", ev{"offer_id": offerA}),
-			"INVALID_QUANTITY":           rej("INVALID_QUANTITY", "INVALID_QUANTITY", ev{"offer_id": offerA}),
-			"QUANTITY_REQUIRED":          rej("MATCH", "QUANTITY_REQUIRED", ev{"offer_id": offerA, "quantity": 1, "explicit_quantity": false, "match_mode": "KEYWORD_QTY_ONLY"}),
-			"QUANTITY_OVER_MAX":          rej("MATCH", "QUANTITY_OVER_MAX", withOffer(5, true)),
-			"BUNDLE_LIMIT":               rej("MATCH", "BUNDLE_LIMIT", withOffer(2, true)),
-			"ACCEPTED new line":          acc(nil),
-			"ACCEPTED update":            acc(ev{"quantity": 3, "explicit_quantity": true, "line_version": 2, "previous_quantity": 1}),
-			"ACCEPTED KEYWORD_QTY_ONLY":  acc(ev{"quantity": 999, "explicit_quantity": true, "match_mode": "KEYWORD_QTY_ONLY"}),
+			"NO_MATCH":                    rej("NO_MATCH", "NO_MATCH", nil),
+			"UNKNOWN_KEYWORD/MATCH":       rej("MATCH", "UNKNOWN_KEYWORD", nil),
+			"UNKNOWN_KEYWORD/INVALID":     rej("INVALID_QUANTITY", "UNKNOWN_KEYWORD", nil),
+			"OFFER_INACTIVE/MATCH":        rej("MATCH", "OFFER_INACTIVE", withOffer(1, false)),
+			"OFFER_INACTIVE/INVALID":      rej("INVALID_QUANTITY", "OFFER_INACTIVE", ev{"offer_id": offerA}),
+			"INVALID_QUANTITY":            rej("INVALID_QUANTITY", "INVALID_QUANTITY", ev{"offer_id": offerA}),
+			"QUANTITY_REQUIRED":           rej("MATCH", "QUANTITY_REQUIRED", ev{"offer_id": offerA, "quantity": 1, "explicit_quantity": false, "match_mode": "KEYWORD_QTY_ONLY"}),
+			"QUANTITY_OVER_MAX":           rej("MATCH", "QUANTITY_OVER_MAX", withOffer(5, true)),
+			"BUNDLE_LIMIT":                rej("MATCH", "BUNDLE_LIMIT", withOffer(2, true)),
+			"ACCEPTED new line":           acc(nil),
+			"ACCEPTED update":             acc(ev{"quantity": 3, "explicit_quantity": true, "line_version": 2, "previous_quantity": 1}),
+			"ACCEPTED KEYWORD_QTY_ONLY":   acc(ev{"quantity": 999, "explicit_quantity": true, "match_mode": "KEYWORD_QTY_ONLY"}),
 			"occurred 119s in the future": rej("NO_MATCH", "NO_MATCH", ev{"occurred_at": time.Now().Add(110 * time.Second)}),
 		} {
 			probeEvent("", label, e)

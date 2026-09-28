@@ -42,6 +42,7 @@ import (
 	"livecommerce/internal/claims/grammar"
 	"livecommerce/internal/command"
 	"livecommerce/internal/live"
+	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
 	"livecommerce/internal/storefront"
 )
@@ -82,8 +83,8 @@ func (h *lcHarness) ingestParsed(in claims.IngestInput, p grammar.Result) (out c
 // lcEventRow is one persisted claims.events row with NULLs mapped to zero values.
 type lcEventRow struct {
 	session, source, sourceKind, platform, grammarVersion, kind, mode, outcome, reason, offer, bundle, principal string
-	generation, quantity, lineVersion, previous                                                              int64
-	explicit                                                                                                 *bool
+	generation, quantity, lineVersion, previous                                                                  int64
+	explicit                                                                                                     *bool
 }
 
 func lcEvent(t *testing.T, f *testFixture, id string) (e lcEventRow) {
@@ -305,7 +306,12 @@ func TestLiveClaimsKC06Ingest(t *testing.T) {
 	// Validation -> ErrInvalid (§4.3 step 1), before any write.
 	n = eventCount()
 	base := h.ingestIn(s, lcActor(), "valid", "A1", h.dbNow(t))
-	mut := func(fn func(*claims.IngestInput)) claims.IngestInput { x := base; x.SourceEventID = randomUUID(); fn(&x); return x }
+	mut := func(fn func(*claims.IngestInput)) claims.IngestInput {
+		x := base
+		x.SourceEventID = randomUUID()
+		fn(&x)
+		return x
+	}
 	for label, in := range map[string]claims.IngestInput{
 		"meta source": mut(func(x *claims.IngestInput) { x.SourceKind = "meta" }), "empty source": mut(func(x *claims.IngestInput) { x.SourceKind = "" }),
 		"platform": mut(func(x *claims.IngestInput) { x.Platform = "facebook" }), "actor upper": mut(func(x *claims.IngestInput) { x.ActorKey = strings.ToUpper(x.ActorKey) }),
@@ -654,7 +660,11 @@ func TestLiveClaimsKC07Concurrency(t *testing.T) {
 		start := make(chan struct{})
 		for i := range owners {
 			wg.Add(1)
-			go func(i int) { defer wg.Done(); <-start; _, errs[i] = h.redeem(owners[i], t04Key("lc-redeem"), l2.Token, r2.BundleVersion) }(i)
+			go func(i int) {
+				defer wg.Done()
+				<-start
+				_, errs[i] = h.redeem(owners[i], t04Key("lc-redeem"), l2.Token, r2.BundleVersion)
+			}(i)
 		}
 		close(start)
 		wg.Wait()
@@ -722,7 +732,9 @@ func TestLiveClaimsKC07Concurrency(t *testing.T) {
 		r := h.accepted(t, s, "", "cart-order", "B2+2")
 		l := h.link(t, s, r.BundleID, 0, false)
 		owner := mustIssue(t, h.service, f.storeA1)
-		hold := h.holdBuyer(t, owner, func(ctx context.Context, tx pgx.Tx, sc buyer.Scope) error { return storefront.LockCartOwner(ctx, tx, sc) })
+		hold := h.holdBuyer(t, owner, func(ctx context.Context, tx pgx.Tx, sc buyer.Scope) error {
+			return storefront.LockCartOwner(ctx, tx, sc)
+		})
 		pid, done := h.bgBuyer(t, owner, func(ctx context.Context, tx pgx.Tx, sc buyer.Scope) error {
 			_, err := claims.RedeemLink(ctx, tx, sc, t04Key("lc-redeem"), l.Token, claims.RedeemInput{ExpectedBundleVersion: r.BundleVersion})
 			return err
@@ -881,7 +893,7 @@ func TestLiveClaimsKC07Concurrency(t *testing.T) {
 	})
 }
 
-var pageAll = struct{ Limit int }{100}.toRequest()
+var pageAll = pagination.Request{Limit: 100}
 
 // lcServerLog locates the labelled PostgreSQL fixture container that serves this test
 // database (pgfocus / test-local.sh start it with a livecommerce.fixture label) and
