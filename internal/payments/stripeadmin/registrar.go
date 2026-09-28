@@ -46,6 +46,8 @@ var (
 // Scope is the operator-chosen owner scope; the SQL validates the owner membership of Principal.
 type Scope struct{ TenantID, StoreID, PrincipalID string }
 
+// EndpointInput.AccountID is optional: the account is derived from the registered connection
+// (§0.2); a non-empty AccountID is only an operator cross-check and must equal it.
 type EndpointInput struct {
 	ConnectionID, EndpointID, AccountID, Profile string
 	ExpectedVersion                              int64 // EndpointID "" iff ExpectedVersion==0
@@ -263,11 +265,12 @@ func (r *Registrar) Rotate(ctx context.Context, s Scope, connectionID string, ex
 
 // SetWebhookEndpoint seals the signing secrets under key_version expected+1 and calls
 // payments.set_stripe_webhook_endpoint. Disabling re-seals too, so a caller must supply secrets.
-// Documented limit (ruling 8): the account id is not cross-checked against the account row here;
-// ingress fails closed at runtime if the AAD does not match.
+// The AAD account comes from payments.stripe_endpoint_account (the registered connection, §0.2),
+// the same value set_stripe_webhook_endpoint stores, so the envelope always opens at ingress; no
+// process env account is trusted here (least privilege: the CLI webhook reads no STRIPE_ACCOUNT_ID).
 func (r *Registrar) SetWebhookEndpoint(ctx context.Context, s Scope, in EndpointInput) (string, int64, error) {
 	if r == nil || r.db == nil || ctx == nil || r.signingKeys == nil || !validScope(s) ||
-		!command.ValidID(in.ConnectionID) || !accountPattern.MatchString(in.AccountID) ||
+		!command.ValidID(in.ConnectionID) || (in.AccountID != "" && !accountPattern.MatchString(in.AccountID)) ||
 		(in.Profile != "PROVIDER_MOCK" && in.Profile != "SANDBOX") || in.ExpectedVersion < 0 ||
 		(in.ExpectedVersion == 0) != (in.EndpointID == "") || (in.EndpointID != "" && !command.ValidID(in.EndpointID)) {
 		return "", 0, ErrConfig
@@ -279,10 +282,23 @@ func (r *Registrar) SetWebhookEndpoint(ctx context.Context, s Scope, in Endpoint
 			return "", 0, err
 		}
 	}
+	// payments.stripe_endpoint_account (registry_writer definer, EXECUTE registrar): the in-scope
+	// connection's registered account; the connection's account is immutable (no rebind).
+	var account string
+	if err := r.scan(ctx, &account, `SELECT payments.stripe_endpoint_account($1::uuid,$2::uuid,$3::uuid,$4::uuid)`,
+		s.TenantID, s.StoreID, s.PrincipalID, in.ConnectionID); err != nil {
+		return "", 0, err
+	}
+	if !accountPattern.MatchString(account) {
+		return "", 0, ErrDatabase
+	}
+	if in.AccountID != "" && in.AccountID != account {
+		return "", 0, ErrRejected
+	}
 	next := in.ExpectedVersion + 1
 	keyID, nonce, ciphertext, err := r.signingKeys.SealStripeWebhook(accounts.StripeWebhookScope{TenantID: s.TenantID,
 		StoreID: s.StoreID, ConnectionID: in.ConnectionID, EndpointID: endpoint, Environment: environment,
-		AccountID: in.AccountID, Profile: in.Profile, KeyVersion: next}, in.Secrets)
+		AccountID: account, Profile: in.Profile, KeyVersion: next}, in.Secrets)
 	if err != nil {
 		return "", 0, ErrConfig
 	}
@@ -358,9 +374,14 @@ func (r *Registrar) Qualify(ctx context.Context, s Scope, in QualifyInput) (stri
 func (r *Registrar) SetMethod(ctx context.Context, s Scope, in MethodInput) (int64, error) {
 	if r == nil || r.db == nil || ctx == nil || !validScope(s) || !command.ValidID(in.MarketID) ||
 		!command.ValidID(in.ConnectionID) || !command.ValidID(in.QualificationID) ||
-		!countryPattern.MatchString(in.Country) || in.ExpectedVersion < 0 || in.Sort < 0 || in.Sort > 1000 ||
-		in.MinMinor < 1 || in.MaxMinor < in.MinMinor {
+		!countryPattern.MatchString(in.Country) || in.ExpectedVersion < 0 || in.Sort < 0 || in.Sort > 1000 {
 		return 0, ErrConfig
+	}
+	// Amount bounds are operator input, not config: the definer raises 22023 (max<min) / PT409
+	// (outside the currency range) for these, which sqlError maps to ErrRejected. Refusing early
+	// must keep that class so the CLI reports the same outcome with or without the round trip.
+	if in.MinMinor < 1 || in.MaxMinor < in.MinMinor {
+		return 0, ErrRejected
 	}
 	var version int64
 	if err := r.scan(ctx, &version, `SELECT payments.set_stripe_method($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5::text,

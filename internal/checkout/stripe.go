@@ -62,8 +62,9 @@ func (c StripeHostedConfig) CanonicalDigest() (StripeHostedConfig, [32]byte, err
 }
 
 // validStripeReturnURL mirrors the unexported psp/stripe validReturnURL (absolute https, no
-// userinfo/fragment/braces/controls, <=2048) and the start_stripe_payment SQL check, so a
+// userinfo/query/fragment/braces/controls, <=2048) and the start_stripe_payment SQL check, so a
 // URL admitted here can never be rejected later by the adapter or SQL.
+// §9.3: success_url/cancel_url carry "no query" — not even a bare '?' (ForceQuery).
 func validStripeReturnURL(raw string) bool {
 	if len(raw) == 0 || len(raw) > 2048 || strings.ContainsAny(raw, "{} \t\r\n") {
 		return false
@@ -75,7 +76,7 @@ func validStripeReturnURL(raw string) bool {
 	}
 	u, err := url.Parse(raw)
 	return err == nil && u.Scheme == "https" && u.Host != "" && u.User == nil &&
-		u.Fragment == "" && u.Opaque == ""
+		u.RawQuery == "" && !u.ForceQuery && u.Fragment == "" && u.Opaque == ""
 }
 
 // PaymentSignal is the buyer-safe result of a refresh or cancel request.

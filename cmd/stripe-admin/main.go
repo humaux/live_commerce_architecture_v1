@@ -6,8 +6,9 @@
 // Depends on: internal/payments/stripeadmin (registrar), internal/integrations/accounts (keyrings:
 // COMMERCE_ACCOUNT_* seals API keys, COMMERCE_STRIPE_WEBHOOK_* seals signing secrets).
 // Environment: COMMERCE_STRIPE_REGISTRAR_DATABASE_URL; STRIPE_SECRET_KEY and STRIPE_ACCOUNT_ID for
-// register/rotate/SANDBOX qualify (which also needs STRIPE_SANDBOX=1); STRIPE_ACCOUNT_ID and
-// STRIPE_WEBHOOK_SECRET[_NEXT] for webhook (account id is not secret but is bound into the AAD).
+// register/rotate/SANDBOX qualify (which also needs STRIPE_SANDBOX=1); STRIPE_WEBHOOK_SECRET[_NEXT]
+// for webhook, whose AAD account is derived from the registered connection in SQL (§0.2), never
+// from STRIPE_ACCOUNT_ID (least privilege; SP15 env sentinel).
 // Used by: operators and the SP21 tests; no service starts it.
 package main
 
@@ -157,7 +158,6 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout 
 		if signingKeys, err = signingKeyring(getenv); err != nil {
 			return err
 		}
-		accountID = getenv("STRIPE_ACCOUNT_ID")
 		secrets = accounts.StripeWebhookSecrets{CurrentSecret: getenv("STRIPE_WEBHOOK_SECRET"),
 			NextSecret: getenv("STRIPE_WEBHOOK_SECRET_NEXT")}
 	case "qualify":
@@ -191,7 +191,7 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout 
 		return emit(stdout, map[string]any{"connection_id": connection, "credential_version": v})
 	case "webhook":
 		id, v, err := reg.SetWebhookEndpoint(ctx, c.scope, stripeadmin.EndpointInput{ConnectionID: connection,
-			EndpointID: endpoint, AccountID: accountID, Profile: profile, ExpectedVersion: expected,
+			EndpointID: endpoint, Profile: profile, ExpectedVersion: expected,
 			Enabled: enabled, Secrets: secrets})
 		if err != nil {
 			return err

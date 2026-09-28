@@ -60,6 +60,8 @@ var stripeRegistrarFunctions = []string{
 	"integration.register_stripe_account(uuid,uuid,uuid,uuid,uuid,text,text,text,bytea,bytea)",
 	"integration.rotate_stripe_key(uuid,uuid,uuid,uuid,bigint,text,bytea,bytea)",
 	"payments.set_stripe_webhook_endpoint(uuid,uuid,uuid,uuid,uuid,text,bigint,boolean,text,bytea,bytea)",
+	// Read-only: the registered account of an in-scope connection, sealed into the webhook AAD (§0.2).
+	"payments.stripe_endpoint_account(uuid,uuid,uuid,uuid)",
 	"payments.qualify_stripe_method(uuid,uuid,uuid,uuid,uuid,bigint,text,text,timestamp with time zone,timestamp with time zone)",
 	"payments.set_stripe_method(uuid,uuid,uuid,uuid,text,uuid,uuid,bigint,boolean,boolean,integer,bigint,bigint,text,text,text)",
 }

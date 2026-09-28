@@ -137,10 +137,12 @@ func (s *pgStore) admit(ctx context.Context, endpointID string, m material, ev s
 			_ = tx.Rollback(cleanup)
 		}
 	}()
-	// A registrar rotation holds the endpoint row lock; give up quickly and 503 so Stripe retries
-	// against the new key_version rather than hanging the admission slot.
+	// §9.1: the DB transaction budget is 2 s (dbTimeout). A registrar rotation holding the endpoint
+	// row lock is waited out within that budget, then 503 so Stripe retries against the new
+	// key_version. No shorter lock_timeout: a sub-budget would 503 deliveries the contract admits.
+	// statement_timeout is only the server-side backstop inside the same 2 s.
 	if _, err = tx.Exec(bounded, `SELECT set_config('statement_timeout','1800ms',true),
-		set_config('lock_timeout','1s',true),set_config('idle_in_transaction_session_timeout','3s',true)`); err != nil {
+		set_config('idle_in_transaction_session_timeout','3s',true)`); err != nil {
 		return ErrDatabase
 	}
 	var disposition string

@@ -1456,6 +1456,28 @@ GRANT EXECUTE ON FUNCTION payments.set_stripe_webhook_endpoint(uuid,uuid,uuid,uu
  TO commerce_payment_registrar;
 COMMENT ON FUNCTION payments.set_stripe_webhook_endpoint(uuid,uuid,uuid,uuid,uuid,text,bigint,boolean,text,bytea,bytea) IS 'payments owner; operator registrar creates or rotates one endpoint signing envelope by CAS; no API key, rebind or LIVE ingress';
 
+-- §0.2: an endpoint's account derives from its registered connection, never from operator env.
+-- The registrar must seal the stripe-webhook-v1 AAD with that same account before calling
+-- set_stripe_webhook_endpoint, so it reads it here (scoped, read-only; account ids are not secret).
+CREATE FUNCTION payments.stripe_endpoint_account(p_tenant uuid,p_store uuid,p_principal uuid,
+ p_connection uuid) RETURNS text
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE v_account text;
+BEGIN
+ PERFORM integration.require_stripe_registrar_scope(p_tenant,p_store,p_principal);
+ SELECT x.account_id INTO v_account FROM integration.merchant_accounts x WHERE x.tenant_id=p_tenant
+  AND x.store_id=p_store AND x.id=p_connection AND x.provider='stripe' AND x.environment='SANDBOX';
+ IF v_account IS NULL THEN
+  RAISE EXCEPTION 'Stripe endpoint account unavailable' USING ERRCODE='PT409'; END IF;
+ RETURN v_account;
+END $$;
+ALTER FUNCTION payments.stripe_endpoint_account(uuid,uuid,uuid,uuid)
+ OWNER TO commerce_payment_registry_writer;
+REVOKE ALL ON FUNCTION payments.stripe_endpoint_account(uuid,uuid,uuid,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION payments.stripe_endpoint_account(uuid,uuid,uuid,uuid)
+ TO commerce_payment_registrar;
+COMMENT ON FUNCTION payments.stripe_endpoint_account(uuid,uuid,uuid,uuid) IS 'payments owner; operator registrar reads the registered SANDBOX account id of one in-scope Stripe connection to seal webhook AAD; no key material, no writes';
+
 CREATE FUNCTION payments.qualify_stripe_method(p_tenant uuid,p_store uuid,p_principal uuid,
  p_qualification uuid,p_connection uuid,p_expected_version bigint,p_profile text,p_evidence_ref text,
  p_observed_at timestamptz,p_expires_at timestamptz) RETURNS uuid

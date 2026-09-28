@@ -158,14 +158,24 @@ func TestRotateSealsNextVersionAndChecksReturn(t *testing.T) {
 
 func TestSetWebhookEndpointVersionsAndSeparateCustody(t *testing.T) {
 	r, db, api, sign, _ := fixture(t, acct)
-	db.reply = int64(1)
-	in := EndpointInput{ConnectionID: conn, AccountID: acct, Profile: "SANDBOX", Enabled: true,
+	// stripe_endpoint_account (4 args) answers the registered account; the endpoint write answers version.
+	endpointReply := func(version int64) func([]any) any {
+		return func(args []any) any {
+			if len(args) == 4 {
+				return acct
+			}
+			return version
+		}
+	}
+	db.reply = endpointReply(1)
+	// AccountID omitted: the account is derived from the registered connection (§0.2).
+	in := EndpointInput{ConnectionID: conn, Profile: "SANDBOX", Enabled: true,
 		Secrets: accounts.StripeWebhookSecrets{CurrentSecret: whsecA}}
 	endpoint, v, err := r.SetWebhookEndpoint(context.Background(), scope, in)
-	if err != nil || v != 1 || endpoint == "" {
+	if err != nil || v != 1 || endpoint == "" || len(db.calls) != 2 || !strings.Contains(db.calls[0].sql, "payments.stripe_endpoint_account(") {
 		t.Fatalf("create: %v", err)
 	}
-	a := db.calls[0].args
+	a := db.calls[1].args
 	ws := accounts.StripeWebhookScope{TenantID: tenant, StoreID: store, ConnectionID: conn, EndpointID: endpoint,
 		Environment: "SANDBOX", AccountID: acct, Profile: "SANDBOX", KeyVersion: 1}
 	if s, err := sign.OpenStripeWebhook(ws, a[8].(string), a[9].([]byte), a[10].([]byte)); err != nil || s.CurrentSecret != whsecA {
@@ -175,10 +185,17 @@ func TestSetWebhookEndpointVersionsAndSeparateCustody(t *testing.T) {
 		t.Fatal("payment API keyring can open webhook signing custody")
 	}
 	// Update: EndpointID required, version arithmetic, disabled still re-seals.
-	db.reply = int64(3)
+	db.reply = endpointReply(3)
 	in.EndpointID, in.ExpectedVersion, in.Enabled = endpoint, 2, false
 	if _, v, err = r.SetWebhookEndpoint(context.Background(), scope, in); err != nil || v != 3 {
 		t.Fatalf("update: %d %v", v, err)
+	}
+	// An operator-supplied account that differs from the registered one is refused before any write.
+	n := len(db.calls)
+	wrong := in
+	wrong.AccountID = "acct_1SomeoneElse000"
+	if _, _, err := r.SetWebhookEndpoint(context.Background(), scope, wrong); !errors.Is(err, ErrRejected) || len(db.calls) != n+1 {
+		t.Fatalf("mismatched account: %v calls=%d", err, len(db.calls)-n)
 	}
 	for _, bad := range []EndpointInput{
 		{ConnectionID: conn, AccountID: acct, Profile: "SANDBOX", ExpectedVersion: 2, Secrets: in.Secrets},                    // update without id
@@ -186,9 +203,15 @@ func TestSetWebhookEndpointVersionsAndSeparateCustody(t *testing.T) {
 		{ConnectionID: conn, AccountID: acct, Profile: "LIVE", Secrets: in.Secrets},                                           // LIVE
 		{ConnectionID: conn, AccountID: acct, Profile: "SANDBOX", Secrets: accounts.StripeWebhookSecrets{CurrentSecret: "x"}}, // bad secret
 	} {
+		// Nothing is written: at most the read-only account lookup precedes secret validation.
 		n := len(db.calls)
-		if _, _, err := r.SetWebhookEndpoint(context.Background(), scope, bad); err == nil || len(db.calls) != n {
+		if _, _, err := r.SetWebhookEndpoint(context.Background(), scope, bad); err == nil {
 			t.Fatalf("bad endpoint input accepted: %+v", bad)
+		}
+		for _, c := range db.calls[n:] {
+			if strings.Contains(c.sql, "set_stripe_webhook_endpoint") {
+				t.Fatalf("bad endpoint input reached the write: %+v", bad)
+			}
 		}
 	}
 }
@@ -243,13 +266,22 @@ func TestSetMethodPassesEveryField(t *testing.T) {
 		t.Fatalf("set method: %v", err)
 	}
 	for _, mutate := range []func(*MethodInput){
-		func(m *MethodInput) { m.Country = "hk" }, func(m *MethodInput) { m.MaxMinor = 1 },
+		func(m *MethodInput) { m.Country = "hk" },
 		func(m *MethodInput) { m.Sort = 1001 }, func(m *MethodInput) { m.QualificationID = "x" },
 	} {
 		bad := in
 		mutate(&bad)
 		if _, err := r.SetMethod(context.Background(), scope, bad); !errors.Is(err, ErrConfig) {
 			t.Fatal("bad method input accepted")
+		}
+	}
+	// Amount bounds are operator input: same class as the definer's 22023/PT409 (ErrRejected), no SQL.
+	for _, mutate := range []func(*MethodInput){func(m *MethodInput) { m.MaxMinor = 1 }, func(m *MethodInput) { m.MinMinor = 0 }} {
+		bad := in
+		mutate(&bad)
+		n := len(db.calls)
+		if _, err := r.SetMethod(context.Background(), scope, bad); !errors.Is(err, ErrRejected) || len(db.calls) != n {
+			t.Fatalf("bad method bounds: %v", err)
 		}
 	}
 }

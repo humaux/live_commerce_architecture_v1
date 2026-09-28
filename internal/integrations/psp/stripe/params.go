@@ -129,8 +129,9 @@ func validateCreate(p CreateParams) error {
 	return nil
 }
 
-// validReturnURL admits an absolute https URL without userinfo, fragment,
-// template braces ({CHECKOUT_SESSION_ID} is never sent) or control characters.
+// validReturnURL admits an absolute https URL without userinfo, query (§9.3: "There is
+// no query"), fragment, template braces ({CHECKOUT_SESSION_ID} is never sent) or control
+// characters.
 func validReturnURL(raw string) bool {
 	if len(raw) == 0 || len(raw) > 2048 || strings.ContainsAny(raw, "{} \t\r\n") {
 		return false
@@ -142,7 +143,7 @@ func validReturnURL(raw string) bool {
 	}
 	u, err := url.Parse(raw)
 	return err == nil && u.Scheme == "https" && u.Host != "" && u.User == nil &&
-		u.Fragment == "" && u.Opaque == ""
+		u.RawQuery == "" && !u.ForceQuery && u.Fragment == "" && u.Opaque == ""
 }
 
 // EncodeCreateBody validates p against §5.4 and returns the
