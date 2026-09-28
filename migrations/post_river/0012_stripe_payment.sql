@@ -149,7 +149,8 @@ BEGIN
  OR p_version IS NULL OR p_version<1 OR p_profile NOT IN ('PROVIDER_MOCK','SANDBOX')
  OR p_locale NOT IN ('zh-CN','zh-TW','en')
  OR p_config_digest IS NULL OR octet_length(p_config_digest)<>32
- OR p_return_url IS NULL OR p_return_url !~ '^https://[^[:space:]]{1,2048}$' THEN
+ OR p_return_url IS NULL OR octet_length(p_return_url)>2048
+ OR p_return_url !~ '^https://[^[:space:]]+$' THEN
   RAISE EXCEPTION 'invalid Stripe payment input' USING ERRCODE='PT400'; END IF;
  SELECT * INTO s FROM buyer.resolve_scope(p_hash,p_store);
  IF NOT FOUND THEN RAISE EXCEPTION 'invalid buyer capability' USING ERRCODE='PT401'; END IF;
@@ -529,3 +530,34 @@ REVOKE ALL ON FUNCTION integration.record_stripe_observation(uuid,bigint,bytea,t
 GRANT EXECUTE ON FUNCTION integration.record_stripe_observation(uuid,bigint,bytea,text,jsonb,bigint,text)
  TO commerce_worker;
 COMMENT ON FUNCTION integration.record_stripe_observation(uuid,bigint,bytea,text,jsonb,bigint,text) IS 'integration owner; worker validates exact Stripe projection and pins one session under lease, then records immutable observation and same-tx reconcile; no direct money authority';
+
+-- A signal job may not use load_stripe_session's latest-candidate poller hint:
+-- another signal can arrive while this job waits. Resolve this job's exact row
+-- using the same operation lease, without exposing the private signal table.
+CREATE FUNCTION integration.load_stripe_signal(p_operation uuid,p_generation bigint,
+ p_token bytea,p_profile text,p_job bigint,p_signal uuid)
+RETURNS TABLE(source text,session_id text,created_at timestamptz,consumed_at timestamptz,db_now timestamptz)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE a checkout.payment_attempts%ROWTYPE; s payments.stripe_signals%ROWTYPE;
+BEGIN
+ IF p_job IS NULL OR p_job<1 OR p_signal IS NULL THEN
+  RAISE EXCEPTION 'invalid Stripe signal identity' USING ERRCODE='22023'; END IF;
+ a:=integration.require_stripe_query(p_operation,p_generation,p_token,p_profile);
+ SELECT x.* INTO s FROM payments.stripe_signals x
+  WHERE x.id=p_signal AND x.job_id=p_job AND x.attempt_id=a.id
+   AND x.tenant_id=a.tenant_id AND x.store_id=a.store_id;
+ IF NOT FOUND OR NOT EXISTS(SELECT 1 FROM river_payment.river_job j
+  WHERE j.id=p_job AND j.kind='payment_signal_v1' AND j.unique_key IS NULL
+   AND j.args=jsonb_build_object('operation_id',a.id::text,'signal_id',s.id::text,'version',1)
+   AND j.queue=CASE a.execution_profile WHEN 'PROVIDER_MOCK' THEN 'payment_mock_v1'
+    WHEN 'SANDBOX' THEN 'payment_sandbox_v1' WHEN 'LIVE' THEN 'payment_live_v1' END) THEN
+  RAISE EXCEPTION 'Stripe signal unavailable' USING ERRCODE='PT409'; END IF;
+ -- A repeated job may see consumed_at and finish without a second observation.
+ -- Read/consume/record are serialized by require_stripe_query's operation lock.
+ PERFORM integration.require_stripe_query(p_operation,p_generation,p_token,p_profile);
+ RETURN QUERY SELECT s.source,s.session_id,s.created_at,s.consumed_at,clock_timestamp();
+END $$;
+ALTER FUNCTION integration.load_stripe_signal(uuid,bigint,bytea,text,bigint,uuid) OWNER TO commerce_integration_writer;
+REVOKE ALL ON FUNCTION integration.load_stripe_signal(uuid,bigint,bytea,text,bigint,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION integration.load_stripe_signal(uuid,bigint,bytea,text,bigint,uuid) TO commerce_worker;
+COMMENT ON FUNCTION integration.load_stripe_signal(uuid,bigint,bytea,text,bigint,uuid) IS 'integration owner; exact River signal metadata under matching operation lease and profile; no table access, secrets or financial authority';

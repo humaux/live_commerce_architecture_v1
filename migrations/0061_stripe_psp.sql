@@ -907,7 +907,7 @@ DECLARE o integration.operations%ROWTYPE; b integration.bindings%ROWTYPE;
  a checkout.payment_attempts%ROWTYPE; v_binding uuid;
 BEGIN
  IF p_id IS NULL OR p_generation IS NULL OR p_generation<2 OR p_token IS NULL OR octet_length(p_token)<>32
-  OR p_profile NOT IN ('PROVIDER_MOCK','SANDBOX','LIVE') THEN
+  OR p_profile IS NULL OR p_profile NOT IN ('PROVIDER_MOCK','SANDBOX','LIVE') THEN
   RAISE EXCEPTION 'invalid Stripe query' USING ERRCODE='22023'; END IF;
  SELECT x.binding_id INTO v_binding FROM integration.operations x
   WHERE x.id=p_id AND x.actor_kind='BUYER_PAYMENT_QUERY' AND x.provider='stripe';
