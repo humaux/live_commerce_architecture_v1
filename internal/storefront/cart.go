@@ -46,7 +46,7 @@ func SetCart(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string, in CartI
 	err = buyer.RunCommand(ctx, tx, s, "cart.set", key, in, &out, func() error {
 		// A missing row cannot be locked. Serialize only this owner's creation,
 		// not the store; existing row locks protect readers and future checkout.
-		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,0))`, "cart|"+s.TenantID+"|"+s.StoreID+"|"+s.OwnerID); err != nil {
+		if err := LockCartOwner(ctx, tx, s); err != nil {
 			return err
 		}
 		current, err := readCart(ctx, tx, s, true)
@@ -83,6 +83,22 @@ func SetCart(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string, in CartI
 		return event(ctx, tx, s, current.ID, "", "cart.updated")
 	})
 	return out, err
+}
+
+// LockCartOwner takes the scoped owner's cart-writer advisory lock
+// ("cart|tenant|store|owner", transaction-scoped, released at COMMIT/ROLLBACK) after
+// buyer.CheckScope, in a buyer.WithScope transaction. SetCart takes it inside its receipt;
+// claims.RedeemLink takes it before GetCart->SetCart so two same-owner writers serialize
+// here instead of deadlocking on GetCart's FOR SHARE followed by SetCart's FOR UPDATE
+// (contracts/live-keyword-claims-v1.md R2, §5.6). Advisory locks are re-entrant within a
+// transaction, so SetCart re-taking it during a redeem never waits. Integrator-owned
+// helper; it reads and writes no table.
+func LockCartOwner(ctx context.Context, tx pgx.Tx, s buyer.Scope) error {
+	if err := buyer.CheckScope(ctx, tx, s); err != nil {
+		return err
+	}
+	_, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,0))`, "cart|"+s.TenantID+"|"+s.StoreID+"|"+s.OwnerID)
+	return err
 }
 
 // A read lock prevents a READ COMMITTED header/line tear across two statements.
