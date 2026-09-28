@@ -1,6 +1,6 @@
 # Stripe PSP v1 — Checkout Session lifecycle, webhook intake and deadline closure
 
-Status: CANDIDATE (DESIGN only), 2026-09-28, base `ce147fa`. Not frozen. It needs owner confirmation
+Status: FROZEN for stage A (wire adapter) by integrator 2026-09-28 after owner answers (§0.1); stage B frozen on stage-A acceptance. Base `ce147fa`. It needs owner confirmation
 of D1/D4/D6/D13 (§17) and an independent read-only preflight (security_reviewer + test_worker)
 before any write task starts. Evidence label for this file: DESIGN. Every gate in §14 is NOT_RUN.
 MOCK, SANDBOX, BROWSER and LIVE are separate evidence classes (架构 §28.1). A MOCK pass never
@@ -74,6 +74,35 @@ Rejected alternatives:
 The Stripe MCP connection is operator tooling for docs lookup and read-only sandbox inspection. It
 is not an application credential and not a gate executor. It MUST NOT create payments, refunds or
 gate evidence. Only documentation search was used for this file.
+
+### 0.1 Owner answers and integrator rulings (2026-09-28, binding)
+
+Owner answers (AskUserQuestion, 2026-09-28):
+- Q2: fixed 40-minute session and stock hold after payment start.
+- Q3: card only at launch.
+- Q5: payment after closure goes to manual refund work only (D13); never reopen the order.
+- Q1/Q4: "merchants may choose platform collection or their own account; markets are mainly Taiwan
+  and Singapore; TWD, HKD, SGD, MYR and USD are all needed; the integrator decides".
+
+Integrator rulings:
+- **Account model v1 = one Stripe account per store, direct charges, no Connect.** The store's
+  account is registered by the operator registrar (§13). It may be the platform's own account (when
+  the platform is the merchant of record for that store) or the merchant's own Stripe account (the
+  merchant supplies a restricted key; stored encrypted like other merchant PSP credentials).
+  "Platform collects on behalf of many merchants and pays them out" requires Stripe Connect,
+  a money-flow and licensing review, and an ADR. It is **out of v1** (listed in §16).
+- **Currency allowlist v1: TWD, HKD, SGD, MYR, USD.** Store currency equals Checkout currency.
+  Settlement conversion to the account's default currency (HKD for the sandbox) is Stripe's.
+  Reconciliation compares `amount_total`/`currency` in the store currency only. §4 minimums and
+  steps apply per currency (TWD whole-dollar rule).
+- The Q1 "exactly one store" blocker is lifted by the per-store account rule. SANDBOX tests bind
+  `acct_1UJDb0RusP6Wwj7e` to one fixture store only.
+- **Staging:** stage A = §5 wire adapter `internal/integrations/psp/stripe` (SP01–SP05 UNIT, SP16
+  SANDBOX read/create/expire against the real sandbox). Stage B = §6–§13 persistence, workers,
+  HTTP, registrar and SP06–SP15/SP17–SP21. Stage B starts only after stage A is accepted.
+- Q6: Adaptive Pricing and Managed Payments are disabled per session (as drafted). Q7: the Stripe
+  CLI is not admitted in v1, so SP17 stays NOT_RUN. Q8/Q9 are deploy-time owner inputs (listed in
+  §16).
 
 ## 1. Stripe facts relied on (retrieved 2026-09-28 via Stripe docs MCP + WebFetch of docs.stripe.com)
 
