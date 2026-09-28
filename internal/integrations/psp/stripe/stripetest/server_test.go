@@ -322,6 +322,18 @@ func TestFakeStripePatchAndInject(t *testing.T) {
 	if err != nil || status != 200 || json.Unmarshal(out, &created) != nil {
 		t.Fatalf("create: %d %v", status, err)
 	}
+	s.SetNextFault(Fault{RateLimit: true})
+	if !s.FaultPending() {
+		t.Fatal("fault not pending")
+	}
+	if status, _, _, err := postCreate(t, c, s.URL(), "consume", testParams()); err != nil || status != 429 || s.FaultPending() {
+		t.Fatalf("fault consumption: %d %v", status, err)
+	}
+	s.FailNext("list", 500)
+	s.ClearFailures()
+	if s.failed("list") != 0 {
+		t.Fatal("ClearFailures")
+	}
 	if !s.Patch(created.ID, map[string]any{"amount_total": 1, "presentment_details": map[string]any{"presentment_currency": "eur", "presentment_amount": 9}, "url": nil}) || s.Patch("cs_missing", nil) {
 		t.Fatal("patch admission")
 	}
@@ -341,8 +353,11 @@ func TestFakeStripePatchAndInject(t *testing.T) {
 	if m["amount_total"].(float64) != 1 || m["amount_subtotal"].(float64) != 500 || m["url"] != nil || m["presentment_details"] == nil {
 		t.Fatalf("overlay not applied: %v", m)
 	}
+	if s.SessionByReference("0b5e3c1a-7d2f-4e8a-9c61-2f4d8e7a1b30") != created.ID || s.SessionByReference("nobody") != "" {
+		t.Fatal("SessionByReference")
+	}
 	dup := s.Inject("acct_FakePatch1", testParams())
-	if dup == "" || dup == created.ID || len(s.SessionIDs()) != 2 || len(s.CreateKeys()) != 1 {
+	if dup == "" || dup == created.ID || len(s.SessionIDs()) != 2 || len(s.CreateKeys()) != 2 { // the 429 attempt logged its key but created nothing
 		t.Fatalf("inject: %q", dup)
 	}
 }

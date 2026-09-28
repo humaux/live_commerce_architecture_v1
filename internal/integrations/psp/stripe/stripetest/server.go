@@ -128,6 +128,17 @@ func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 func (s *Server) SetNextFault(f Fault) { s.mu.Lock(); s.fault = f; s.mu.Unlock() }
 
+// FaultPending reports whether a SetNextFault fault has not been consumed yet, so a
+// test never overwrites the one-shot slot before the request it was meant for.
+func (s *Server) FaultPending() bool { s.mu.Lock(); defer s.mu.Unlock(); return s.fault != (Fault{}) }
+
+// ClearFailures drops every queued FailNext status (scenario hygiene).
+func (s *Server) ClearFailures() {
+	s.mu.Lock()
+	s.failures = make(map[string][]int)
+	s.mu.Unlock()
+}
+
 // RequireAPIKey enables exact Bearer admission for all fake endpoints for the
 // constructor's account. Only a digest is retained; neither request counts nor
 // failures expose the key. https://docs.stripe.com/api/authentication
@@ -497,6 +508,21 @@ func (s *Server) AgeSession(id string, d time.Duration) bool {
 	v.Created -= int64(d.Seconds())
 	v.ExpiresAt -= int64(d.Seconds())
 	return true
+}
+
+// SessionByReference returns the first session whose client_reference_id is ref
+// ("" if none): tests use it to find the session an attempt executed at the
+// provider even when the worker never pinned it (cached 500, dropped response).
+func (s *Server) SessionByReference(ref string) string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	best := ""
+	for id, v := range s.sessions {
+		if v.ClientReferenceID == ref && (best == "" || id < best) {
+			best = id
+		}
+	}
+	return best
 }
 
 // Inject creates a second session for account without an idempotency key,
