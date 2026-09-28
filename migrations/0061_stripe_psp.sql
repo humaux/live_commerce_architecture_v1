@@ -18,9 +18,6 @@ $$;
 REVOKE ALL ON FUNCTION payments.stripe_amount_ok(text,bigint),payments.stripe_unit_amount(text,bigint) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION payments.stripe_amount_ok(text,bigint),payments.stripe_unit_amount(text,bigint)
  TO commerce_checkout_writer,commerce_integration_writer;
--- set_stripe_method runs as the registry writer. Grant only the pure amount
--- predicate it needs, not new table rights or access to merchant runtimes.
-GRANT EXECUTE ON FUNCTION payments.stripe_amount_ok(text,bigint) TO commerce_payment_registry_writer;
 COMMENT ON FUNCTION payments.stripe_amount_ok(text,bigint) IS 'payments owner; checkout and integration writers validate the closed Stripe currency/minor-unit table; no conversion or provider guarantee';
 COMMENT ON FUNCTION payments.stripe_unit_amount(text,bigint) IS 'payments owner; checkout and integration writers use exact ISO minor units; no rounding or repricing';
 
@@ -1474,6 +1471,9 @@ GRANT EXECUTE ON FUNCTION payments.qualify_stripe_method(uuid,uuid,uuid,uuid,uui
  TO commerce_payment_registrar;
 COMMENT ON FUNCTION payments.qualify_stripe_method(uuid,uuid,uuid,uuid,uuid,bigint,text,text,timestamptz,timestamptz) IS 'payments owner; operator registrar records bounded SANDBOX or mock probe evidence for expected Stripe credential version; no LIVE qualification';
 
+-- The registry role is created above. Grant only the pure amount predicate
+-- needed by set_stripe_method, not new table rights or merchant runtime access.
+GRANT EXECUTE ON FUNCTION payments.stripe_amount_ok(text,bigint) TO commerce_payment_registry_writer;
 CREATE FUNCTION payments.set_stripe_method(p_tenant uuid,p_store uuid,p_principal uuid,
  p_market uuid,p_country text,p_connection uuid,p_qualification uuid,p_expected_version bigint,
  p_enabled boolean,p_visible boolean,p_sort integer,p_min bigint,p_max bigint,
