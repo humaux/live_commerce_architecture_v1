@@ -7,7 +7,7 @@
 //
 // Isolation: its own merchant principal (live:read/live:manage granted explicitly; no
 // backfill exists) and its own session; the store-wide "one OPEN window" rule means the
-// window is closed at the end, with an owner-side fallback in t.Cleanup.
+// window is closed at the end; t.Cleanup purges the session (lcPurgeSessions).
 
 package foundation_test
 
@@ -67,9 +67,7 @@ func TestLiveClaimsCoreSmoke(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() {
-		mustExec(t, f.owner, `UPDATE live.claim_windows SET state='CLOSED',closed_at=clock_timestamp() WHERE session_id=$1 AND state='OPEN'`, draft.ID)
-	})
+	t.Cleanup(func() { lcPurgeSessions(t, f, actor) })
 
 	var window claims.Window
 	var offer claims.Offer

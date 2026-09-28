@@ -63,8 +63,8 @@ type lcHarness struct {
 	labels       claims.LabelKey
 }
 
-// lcSetup builds the harness. Cleanup closes every OPEN window of sessions this actor
-// created (owner SQL; the store-wide OPEN index would otherwise leak into later tests).
+// lcSetup builds the harness. Cleanup (via lcPrincipal) purges every session this actor
+// created, so neither drafts nor OPEN windows leak into later tests on store A1.
 func lcSetup(t *testing.T) *lcHarness {
 	t.Helper()
 	h := &lcHarness{cqHarness: cqSetup(t), ctx: context.Background()}
@@ -73,10 +73,6 @@ func lcSetup(t *testing.T) *lcHarness {
 	if h.labels, err = claims.NewLabelKey(randomBytes(32)); err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() {
-		mustExec(t, h.f.owner, `UPDATE live.claim_windows w SET state='CLOSED',closed_at=clock_timestamp(),version=w.version+1
-			WHERE w.state='OPEN' AND w.session_id IN (SELECT id FROM live.sessions WHERE principal_id=$1)`, h.actor)
-	})
 	return h
 }
 
@@ -91,7 +87,28 @@ func lcPrincipal(t *testing.T, f *testFixture, tenant string, stores []string, p
 		mustExec(t, f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission)
 			SELECT $1,$2,$3,p FROM unnest($4::text[]) p`, tenant, store, principal, permissions)
 	}
+	t.Cleanup(func() { lcPurgeSessions(t, f, principal) })
 	return principal, lcToken(t, f, principal)
+}
+
+// lcPurgeSessions deletes every live session principal created, with its claims rows
+// (owner SQL). Store A1 is the package's shared fixture: leftover drafts leak into later
+// store-wide reads (STU01 lists all drafts), leftover OPEN windows into the OPEN index.
+func lcPurgeSessions(t *testing.T, f *testFixture, principal string) {
+	t.Helper()
+	const sessions = `SELECT id FROM live.sessions WHERE principal_id=$1`
+	for _, q := range []string{
+		`DELETE FROM claims.links WHERE bundle_id IN (SELECT id FROM claims.bundles WHERE session_id IN (` + sessions + `))`,
+		`DELETE FROM claims.events WHERE session_id IN (` + sessions + `)`,
+		`DELETE FROM claims.lines WHERE session_id IN (` + sessions + `)`,
+		`DELETE FROM claims.bundles WHERE session_id IN (` + sessions + `)`,
+		`DELETE FROM live.claim_windows WHERE session_id IN (` + sessions + `)`,
+		`DELETE FROM live.offers WHERE session_id IN (` + sessions + `)`,
+		`DELETE FROM live.programs WHERE session_id IN (` + sessions + `)`,
+		`DELETE FROM live.sessions WHERE principal_id=$1`,
+	} {
+		mustExec(t, f.owner, q, principal)
+	}
 }
 
 // lcToken issues one more merchant session for principal (so a test may revoke it).
