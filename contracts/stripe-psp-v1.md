@@ -114,11 +114,14 @@ Integrator rulings:
   CLI is not admitted in v1, so SP17 stays NOT_RUN. Q8/Q9 are deploy-time owner inputs (listed in
   §16).
 
-### 0.2 Stage-B consistency amendment (2026-09-29; draft)
+### 0.2 Stage-B consistency amendment (2026-09-29; frozen interfaces)
 
-This section implements §0.1, rather than choosing a different account model. On acceptance,
-it replaces the conflicting D1/D15, custody/registrar/worker/webhook clauses and test expectations
+This section implements §0.1, rather than choosing a different account model.
+It replaces the conflicting D1/D15, custody/registrar/worker/webhook clauses and test expectations
 listed below. The historical ENV-only descriptions are **not a second supported runtime mode**.
+In particular, the old §6.4 platform registrar names, §8 preconstructed-client constructor,
+§9.1 global webhook route and §13 fingerprint-only storage are superseded, not worker APIs.
+The per-unit delivery brief must freeze any Go constructor signatures before implementation.
 PAYUNi behavior and already-applied migrations remain unchanged. No Connect, pooled funds,
 new payment engine, new queue system or production permission is introduced.
 
