@@ -155,6 +155,20 @@ new payment engine, new queue system or production permission is introduced.
   Only the worker may decrypt API material. Historical attempts keep their frozen credentials
   after rotation; if those credentials cease to work, retain UNKNOWN/stock, never substitute
   another merchant's key or a new create identity.
+- Signal processing claims the operation **before** reading signal metadata. The post-River,
+  integration_writer-owned, worker-EXECUTE-only loader is
+  `integration.load_stripe_signal(operation uuid,generation bigint,token bytea,profile text,
+  job_id bigint,signal_id uuid) RETURNS TABLE(source text,session_id text,
+  created_at timestamptz,consumed_at timestamptz,db_now timestamptz)`.
+  It reuses `require_stripe_query`, matches exact signal/job/attempt/tenant/store, River kind,
+  immutable args and profile queue, then rechecks the lease against the DB clock. No direct
+  worker table grant or unleased signal lookup is added. `signal_candidate` is a poller hint,
+  never the authority for a signal job. A consumed row is returned for idempotent job completion.
+  Stale/no-op/consumed jobs release their claim in the same transaction as any consume marker.
+  After provider I/O, one transaction reloads the exact signal, inserts the reconcile job,
+  consumes the signal, then calls `record_stripe_observation` **last** because that function
+  completes the operation and clears its lease. Failure rolls all these changes back. This
+  ordering supersedes the original pre-claim-read/post-record-consume wording in §8.
 - `StripeRuntime` owns the scoped loader and shared keyring, not one process-global client/account.
   Build the Stage-A client from the leased material and verify `GET /v1/account` against that
   account before any checkout call. Verify plus checkout I/O share the existing claim deadline.
@@ -1019,13 +1033,15 @@ snooze: open ∧ now<expires_at → min(60 s, expires_at−now+1 s); open ∧ pa
 
 **SignalWorker** (new, same options):
 - read op; if it is not a Stripe family op → cancel;
-- load the signal; if it is older than 10 min → consume `STALE_DROPPED`, because the poller remains
-  the guaranteed path;
 - Claim; if `busy`, snooze 2 s;
+- load the exact job's signal under that lease using §0.2; if already consumed, release the
+  claim and finish without I/O. If older than 10 min by the returned DB clock, consume
+  `STALE_DROPPED` and complete UNKNOWN in one transaction; the poller remains the guaranteed path;
 - retrieve the pinned session, or the signal's candidate session when none is pinned or when the
   candidate differs (duplicate evidence);
 - for `BUYER_CANCEL` with an `open` session: `note_expire`, expire, retrieve;
-- record, then consume `OBSERVED` or `EXPIRE_REQUESTED`;
+- in one transaction reload the exact signal, insert the reconcile job, consume `OBSERVED` or
+  `EXPIRE_REQUESTED`, and record last (which closes the lease); roll back all if any step fails;
 - if there is a terminal fact and no candidate → `NOOP_TERMINAL`.
 
 **CaptureWorker** is unchanged. Its dispatch happens in SQL.
