@@ -44,3 +44,21 @@ and `git diff --check` exited 0. REAL_PG for this repair is **NOT_RUN** by the
 test worker; root owns the machinewide PG slot. Pinned historical-session URL
 handoff after API-key rotation is **NOT_RUN** here: the current fixture has no
 session handoff setup, and that regression belongs to the later SP21 path.
+
+## SP21 pinned historical handoff candidate (2026-09-29)
+
+Root reports the preceding focused REAL_PG gate passed 7/7, with no failures or
+skips. This candidate adds `TestStripeSP21PinnedHandoffAfterKeyRotation`:
+registrar-created account/qualification/method, real scoped Stripe start and
+River job, then an explicitly labeled owner-fixture pin of a synthetic open
+Checkout Session. The hosted-role handoff must return the same URL before and
+after registrar key rotation; attempt credential version stays 1, account head
+becomes 2, and binding plus first-handoff timestamp remain unchanged. Profile,
+config, forged-owner and revoked-qualification refusals are also asserted.
+There is no provider call. Cutoff-time behavior remains **NOT_RUN** in this
+targeted regression; the fixture cannot safely advance the DB clock.
+
+`go test ./tests/foundation -run '^$' -count=1`, `go vet ./tests/foundation`,
+and `git diff --check` exited 0. This new test's REAL_PG result is **NOT_RUN**
+in the independent worktree, which has no SQL implementation; root owns the PG
+slot and will run the combined candidate.
