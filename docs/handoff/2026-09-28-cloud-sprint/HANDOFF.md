@@ -89,3 +89,15 @@ The CI result for 7561bcc was not awaited, to save budget. Check it first.
 2. Independent security + correctness review of T10. The §0.1 P2 tests (a)–(g) exist in the gate tests (`TestLiveClaimsP2*`); the review should confirm the tests are not vacuous.
 3. Stripe: freeze `contracts/stripe-psp-v1.md` (the adversarial review was interrupted), then implement MOCK + SANDBOX + browser 4242.
 4. T10c Meta comment intake (amendment `meta-claims-intake-v1`), T12 E2E, fulfilment/refund record, T20, T21, T22, I8 media restore gate.
+
+## Final state at pause (credits exhausted)
+
+- Stripe stage A merged and independently verified (27c2f5b): adapter `internal/integrations/psp/stripe`,
+  unit SP01–SP05/SP19 PASS, Node webhook vectors 43/43, real sandbox SP16 PASS (no charge).
+  Owner answers + rulings in `contracts/stripe-psp-v1.md` §0.1 (per-store account, TWD/HKD/SGD/MYR/USD,
+  40-min hold, card only, manual refund work after closure, Connect deferred).
+- Stripe stage B1 (migration 0061, workers, webhook, MOCK SP06–SP15) was started and **stopped
+  immediately — nothing usable**; restart it from the §0.1 staging rule.
+- CI on the head was not awaited; check it first.
+- Next order: CI green → Stripe B1 → B2 (buyer routes/UI + SP18 browser 4242) → T10c Meta intake →
+  T12 E2E → fulfilment/refund record → T20/T21/T22 → I8 media restore gate.
