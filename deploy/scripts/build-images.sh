@@ -60,6 +60,15 @@ for img in "${only[@]}"; do
 done
 
 proxy_args=() loopback_proxy=""
+# Optional base-image overrides (GO_IMAGE / NODE_IMAGE / RUNTIME_IMAGE build args). Leave unset in
+# production so the digest pins in deploy/docker/*.Dockerfile apply. Only for build hosts behind a
+# TLS-intercepting proxy, where a locally derived base image adds that proxy's CA (the cloud dev
+# container; see docs/runbooks/deploy.md). The value is an image reference, never a secret.
+for v in GO_IMAGE NODE_IMAGE RUNTIME_IMAGE; do
+  [[ -n "${!v:-}" ]] || continue
+  lc_warn "base image override: $v=${!v} (not the pinned digest)"
+  proxy_args+=(--build-arg "$v=${!v}")
+done
 for v in HTTP_PROXY HTTPS_PROXY NO_PROXY http_proxy https_proxy no_proxy; do
   [[ -n "${!v:-}" ]] || continue
   proxy_args+=(--build-arg "$v")
