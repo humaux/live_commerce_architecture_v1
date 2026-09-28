@@ -1274,6 +1274,33 @@ GRANT EXECUTE ON FUNCTION checkout.hosted_payment_view_v2(bytea,uuid,uuid,text,b
  TO commerce_hosted_runtime;
 COMMENT ON FUNCTION checkout.hosted_payment_view_v2(bytea,uuid,uuid,text,bytea,bytea) IS 'checkout owner; hosted runtime projects PAYUNi and Stripe methods and frozen payment facts; never authorizes capture or stock release';
 
+-- Integrator ruling 2 (docs/delivery/units/stripe-b1-rulings.md): the Go hosted service asks which
+-- provider owns the order's payment attempt before choosing take_stripe_handoff or take_hosted_page,
+-- so it never has to match an error message. Read-only, takes no row lock, same scope resolution as
+-- the sibling hosted definer functions. Caller: internal/checkout (HostedPaymentStarter.TakeHosted).
+CREATE FUNCTION checkout.hosted_payment_provider(p_hash bytea,p_store uuid,p_order uuid) RETURNS text
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE scope record; v_code text;
+BEGIN
+ IF current_setting('transaction_isolation')<>'read committed'
+  OR p_hash IS NULL OR octet_length(p_hash)<>32 OR p_store IS NULL OR p_order IS NULL THEN
+  RAISE EXCEPTION 'invalid provider lookup' USING ERRCODE='PT400'; END IF;
+ SELECT * INTO scope FROM buyer.resolve_scope(p_hash,p_store);
+ IF NOT FOUND THEN RAISE EXCEPTION 'invalid buyer capability' USING ERRCODE='PT401'; END IF;
+ PERFORM set_config('app.tenant_id',scope.tenant_id::text,true);
+ PERFORM set_config('app.store_id',p_store::text,true);
+ PERFORM set_config('app.buyer_id',scope.owner_id::text,true);
+ PERFORM set_config('app.buyer_session_id',scope.session_id::text,true);
+ PERFORM set_config('app.principal_id','',true);
+ SELECT x.method_code INTO v_code FROM checkout.payment_attempts x WHERE x.tenant_id=scope.tenant_id
+  AND x.store_id=p_store AND x.owner_id=scope.owner_id AND x.order_id=p_order;
+ RETURN CASE v_code WHEN 'stripe_checkout' THEN 'stripe' WHEN 'payuni_credit' THEN 'payuni' ELSE NULL END;
+END $$;
+ALTER FUNCTION checkout.hosted_payment_provider(bytea,uuid,uuid) OWNER TO commerce_checkout_writer;
+REVOKE ALL ON FUNCTION checkout.hosted_payment_provider(bytea,uuid,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION checkout.hosted_payment_provider(bytea,uuid,uuid) TO commerce_hosted_runtime;
+COMMENT ON FUNCTION checkout.hosted_payment_provider(bytea,uuid,uuid) IS 'checkout owner; hosted runtime reads the provider (stripe|payuni|NULL) of the caller-scoped order attempt to route handoff; read-only, no lock, never returns provider material';
+
 GRANT SELECT,INSERT ON payments.stripe_webhook_endpoints TO commerce_payment_registry_writer;
 GRANT UPDATE(enabled,key_version,key_id,nonce,ciphertext,updated_at)
  ON payments.stripe_webhook_endpoints TO commerce_payment_registry_writer;
