@@ -72,8 +72,13 @@ func mrLaunch(t *testing.T, binary, name string, env []string) *mrProcess {
 				t.Errorf("preserve %s log: %v", name, err)
 				return
 			}
-			preserved := filepath.Join("/Volumes/data/output", "meta-runtime-process-"+name+"-"+t04Tag()+".log")
-			if err := os.WriteFile(preserved, log, 0600); err != nil {
+			// Keep failure logs under the gitignored repo output/playwright (the
+			// package runs from tests/foundation); no workstation-only path.
+			dir, _ := filepath.Abs("../../output/playwright")
+			preserved := filepath.Join(dir, "meta-runtime-process-"+name+"-"+t04Tag()+".log")
+			if err := os.MkdirAll(dir, 0700); err != nil {
+				t.Errorf("preserve %s log: %v", name, err)
+			} else if err := os.WriteFile(preserved, log, 0600); err != nil {
 				t.Errorf("preserve %s log: %v", name, err)
 			} else {
 				t.Logf("preserved process log: %s", preserved)
