@@ -47,6 +47,10 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	stripeConfig, err := loadStripeWebhookConfig(os.Getenv, addr)
+	if err != nil {
+		return err
+	}
 	studioConfig, err := loadStudioConfig(os.Getenv, identityConfig.enabled, addr)
 	if err != nil {
 		return err
@@ -79,6 +83,11 @@ func run() error {
 		return err
 	}
 	defer closeMeta()
+	stripeHandler, closeStripe, err := buildStripeWebhookHandler(startup, pool, stripeConfig)
+	if err != nil {
+		return err
+	}
+	defer closeStripe()
 	accountService, err := buildAccountsService(pool, accountConfig)
 	if err != nil {
 		return err
@@ -97,6 +106,7 @@ func run() error {
 	}
 	handler = mountBuyer(handler, buyerHandler)
 	handler = mountMeta(handler, metaHandler)
+	handler = mountStripe(handler, stripeHandler)
 	stopStartup()
 	server := &http.Server{
 		Addr:              addr,

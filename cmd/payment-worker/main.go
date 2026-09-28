@@ -21,6 +21,7 @@ var (
 	errWorkerDatabase = errors.New("payment_worker_database")
 	errWorkerStart    = errors.New("payment_worker_start_failed")
 	errWorkerStop     = errors.New("payment_worker_stop_failed")
+	errWorkerStripe   = errors.New("payment_worker_stripe_unavailable")
 )
 
 type workerConfig struct {
@@ -29,6 +30,9 @@ type workerConfig struct {
 	profile     string
 	concurrency int
 	keys        *accounts.Keyring
+	// stripe adds Stripe dispatch to this profile's queue (COMMERCE_STRIPE_ENABLED=1). The worker
+	// never reads STRIPE_* or whsec variables: API keys come per attempt from PG, sealed under keys.
+	stripe bool
 }
 
 func main() {
@@ -58,6 +62,18 @@ func loadConfig(getenv func(string) string) (workerConfig, error) {
 	if config.dsn == "" || (config.profile != "SANDBOX" && config.profile != "LIVE") {
 		return workerConfig{}, errWorkerConfig
 	}
+	// Read only here, i.e. only when the worker itself is enabled (contracts/stripe-psp-v1.md §12).
+	switch getenv("COMMERCE_STRIPE_ENABLED") {
+	case "", "0":
+	case "1":
+		// LIVE Stripe is refused in B1: no live activation without owner approval (§5.2, §16).
+		if config.profile != "SANDBOX" {
+			return workerConfig{}, errWorkerConfig
+		}
+		config.stripe = true
+	default:
+		return workerConfig{}, errWorkerConfig
+	}
 	rawConcurrency := getenv("COMMERCE_PAYMENT_WORKER_CONCURRENCY")
 	config.concurrency = 4
 	if rawConcurrency != "" {
@@ -85,8 +101,16 @@ func run(ctx context.Context, getenv func(string) string) error {
 		return errWorkerDatabase
 	}
 	defer pool.Close()
-	client, err := payments.NewWorkerClient(ctx, pool, config.keys, config.profile,
-		config.concurrency, payments.DefaultQueryWorkerOptions())
+	var runtime *payments.StripeRuntime
+	if config.stripe {
+		// Checks the worker role, queue and scoped SQL capabilities; no provider call at startup.
+		if runtime, err = payments.NewStripeRuntime(ctx, pool, config.keys, config.profile); err != nil {
+			return errWorkerStripe
+		}
+	}
+	client, err := payments.NewPaymentWorkerClient(ctx, pool, payments.WorkerConfig{
+		Profile: config.profile, Concurrency: config.concurrency,
+		Query: payments.DefaultQueryWorkerOptions(), Keys: config.keys, Stripe: runtime})
 	if err != nil {
 		return err
 	}
