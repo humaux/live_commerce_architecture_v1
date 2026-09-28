@@ -56,7 +56,7 @@ func stripeSQLState(err error, code string) bool {
 	return errors.As(err, &e) && e.Code == code
 }
 
-func stripeExpectCheck(t *testing.T, p *pgxpool.Pool, table, columns, values string) {
+func stripeExpectCheck(t *testing.T, p *pgxpool.Pool, table, columns, validValues, invalidValues string) {
 	t.Helper()
 	ctx := context.Background()
 	tx, err := p.Begin(ctx)
@@ -64,12 +64,15 @@ func stripeExpectCheck(t *testing.T, p *pgxpool.Pool, table, columns, values str
 		t.Fatal(err)
 	}
 	defer tx.Rollback(ctx)
-	// LIKE copies NOT NULL and CHECK, but not foreign keys or row triggers. This
-	// isolates a negative CHECK example from unrelated fixture dependencies.
-	if _, err = tx.Exec(ctx, `CREATE TEMP TABLE stripe_check_case (LIKE `+table+` INCLUDING CONSTRAINTS)`); err != nil {
+	// LIKE copies NOT NULL, DEFAULT and CHECK, but not foreign keys or row triggers.
+	// The valid row proves the fixture can reach the intended negative CHECK.
+	if _, err = tx.Exec(ctx, `CREATE TEMP TABLE stripe_check_case (LIKE `+table+` INCLUDING DEFAULTS INCLUDING CONSTRAINTS)`); err != nil {
 		t.Fatal(err)
 	}
-	_, err = tx.Exec(ctx, `INSERT INTO stripe_check_case (`+columns+`) VALUES (`+values+`)`)
+	if _, err = tx.Exec(ctx, `INSERT INTO stripe_check_case (`+columns+`) VALUES (`+validValues+`)`); err != nil {
+		t.Fatalf("SP06 %s positive CHECK baseline failed: %v", table, err)
+	}
+	_, err = tx.Exec(ctx, `INSERT INTO stripe_check_case (`+columns+`) VALUES (`+invalidValues+`)`)
 	if !stripeSQLState(err, "23514") {
 		t.Fatalf("SP06 %s negative CHECK accepted or failed for wrong reason: %v", table, err)
 	}
@@ -146,18 +149,38 @@ func TestStripeSP06Schema(t *testing.T) {
 	stripeCheckDef(t, p, "payments.review_cases", "PROVIDER_AMOUNT_MISMATCH", "CLOSURE_CONTRADICTED")
 	stripeCheckDef(t, p, "inventory.ledger", "CLOSED_UNPAID", "SYSTEM_PAYMENT", "RELEASE")
 	stripeCheckDef(t, p, "checkout.events", "checkout.payment_closed")
-	stripeCheckDef(t, p, "payments.stripe_sessions", "40 minutes", "7 minutes", "5 minutes", "session_id", "create_body_sha256")
+	stripeCheckDef(t, p, "payments.stripe_sessions", "session_id", "create_body_sha256")
 	stripeCheckDef(t, p, "payments.stripe_webhook_receipts", "MALFORMED", "ACCEPTED", "signal_id")
 	stripeCheckDef(t, p, "payments.stripe_signals", "STRIPE_WEBHOOK", "BUYER_REFRESH", "BUYER_CANCEL", "consumed_at")
 	stripeCheckDef(t, p, "payments.stripe_webhook_endpoints", "key_version", "nonce", "ciphertext")
-	for _, v := range []struct{ table, cols, vals string }{
-		{"integration.merchant_accounts", "id,tenant_id,store_id,principal_id,provider,environment,account_id,binding_id,credential_version", "gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),'stripe','SANDBOX','bad',gen_random_uuid(),1"},
-		{"integration.account_credentials", "tenant_id,store_id,connection_id,version,key_id,principal_id,nonce,ciphertext", "gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),1,'test',gen_random_uuid(),decode('aa','hex'),decode(repeat('aa',17),'hex')"},
-		{"payments.account_qualifications", "id,tenant_id,store_id,connection_id,credential_version,environment,code,proof_class,evidence_ref,observed_at,expires_at", "gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),1,'LIVE','stripe_checkout','REAL_LIVE','test',now(),now()+interval '1 hour'"},
-		{"payments.facts", "tenant_id,store_id,attempt_id,kind,amount_minor,currency,provider_reference,connection_id,execution_profile,environment,source_report_hash", "gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),'CLOSED_UNPAID',1,'USD','cs_test_fake',gen_random_uuid(),'PROVIDER_MOCK','SANDBOX',decode(repeat('aa',32),'hex')"},
-		{"payments.review_cases", "tenant_id,store_id,attempt_id,reason,source_report_hash", "gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),'UNLISTED',decode(repeat('aa',32),'hex')"},
+	for _, v := range []struct{ table, cols, valid, invalid string }{
+		{"integration.merchant_accounts", "id,tenant_id,store_id,principal_id,provider,environment,account_id,binding_id,credential_version", "gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),'stripe','SANDBOX','acct_TestStoreA1',gen_random_uuid(),1", "gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),'stripe','SANDBOX','bad',gen_random_uuid(),1"},
+		{"integration.account_credentials", "tenant_id,store_id,connection_id,version,key_id,principal_id,nonce,ciphertext", "gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),1,'test',gen_random_uuid(),decode(repeat('aa',12),'hex'),decode(repeat('aa',48),'hex')", "gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),1,'test',gen_random_uuid(),decode('aa','hex'),decode(repeat('aa',48),'hex')"},
+		{"payments.account_qualifications", "id,tenant_id,store_id,connection_id,credential_version,environment,code,proof_class,evidence_ref,observed_at,expires_at", "gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),1,'SANDBOX','stripe_checkout','PROVIDER_MOCK','test',now()-interval '1 second',now()+interval '1 hour'", "gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),1,'SANDBOX','stripe_checkout','REAL_LIVE','test',now()-interval '1 second',now()+interval '1 hour'"},
+		{"payments.facts", "tenant_id,store_id,attempt_id,kind,amount_minor,currency,provider_reference,connection_id,execution_profile,environment,source_report_hash", "gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),'CLOSED_UNPAID',0,'USD','cs_test_fake',gen_random_uuid(),'PROVIDER_MOCK','SANDBOX',decode(repeat('aa',32),'hex')", "gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),'CLOSED_UNPAID',1,'USD','cs_test_fake',gen_random_uuid(),'PROVIDER_MOCK','SANDBOX',decode(repeat('aa',32),'hex')"},
+		{"payments.review_cases", "tenant_id,store_id,attempt_id,reason,source_report_hash", "gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),'PROVIDER_AMOUNT_MISMATCH',decode(repeat('aa',32),'hex')", "gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),'UNLISTED',decode(repeat('aa',32),'hex')"},
 	} {
-		t.Run("negative/"+v.table, func(t *testing.T) { stripeExpectCheck(t, p, v.table, v.cols, v.vals) })
+		t.Run("negative/"+v.table, func(t *testing.T) { stripeExpectCheck(t, p, v.table, v.cols, v.valid, v.invalid) })
+	}
+	// PostgreSQL normalizes interval literals in pg_get_constraintdef. Exercise
+	// the three frozen deadline equations rather than matching their SQL spelling.
+	at := "'2026-01-01 00:00:00.456+00'::timestamptz"
+	expires := "date_trunc('second'," + at + ")+interval '40 minutes'"
+	send := at + "+interval '7 minutes'"
+	cutoff := "(" + expires + ")-interval '5 minutes'"
+	deadlineColumns := "tenant_id,store_id,owner_id,attempt_id,environment,account_id,locale,config_digest,unit_amount,create_params,attempt_created_at,expires_at,send_deadline,handoff_cutoff"
+	deadlineValues := func(expireValue, sendValue, cutoffValue string) string {
+		return "gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),'SANDBOX','acct_TestStoreA1','en',decode(repeat('aa',32),'hex'),50,'{}'::jsonb," + at + "," + expireValue + "," + sendValue + "," + cutoffValue
+	}
+	for _, v := range []struct{ name, expire, send, cutoff string }{
+		{"expires_at 40 minutes", "(" + expires + ")+interval '1 second'", send, cutoff},
+		{"send_deadline 7 minutes", expires, "(" + send + ")+interval '1 second'", cutoff},
+		{"handoff_cutoff 5 minutes", expires, send, "(" + cutoff + ")+interval '1 second'"},
+	} {
+		t.Run("deadline/"+v.name, func(t *testing.T) {
+			stripeExpectCheck(t, p, "payments.stripe_sessions", deadlineColumns,
+				deadlineValues(expires, send, cutoff), deadlineValues(v.expire, v.send, v.cutoff))
+		})
 	}
 	// The revised §0.1 index must allow separate accounts in one environment,
 	// while prohibiting one account being bound to two stores.
@@ -216,6 +239,7 @@ func TestStripeSP19LiveRefusal(t *testing.T) {
 	// SQL tier only: configuration and CLI refusal are separate UNIT gates.
 	stripeExpectCheck(t, f.owner, "payments.account_qualifications",
 		"id,tenant_id,store_id,connection_id,credential_version,environment,code,proof_class,evidence_ref,observed_at,expires_at",
+		"gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),1,'SANDBOX','stripe_checkout','PROVIDER_MOCK','test',now()-interval '1 second',now()+interval '1 hour'",
 		"gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),1,'LIVE','stripe_checkout','REAL_LIVE','test',now(),now()+interval '1 hour'")
 }
 

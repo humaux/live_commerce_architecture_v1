@@ -27,3 +27,20 @@ REAL_PG execution of these new tests is **NOT_RUN** while the SQL writer owns th
 PG slot. The accepted-receipt test exercises the deferred final-row invariant using an owner
 fixture; the full prepare → River InsertTx → commit positive path is NOT_RUN. Historical
 attempt processing, every §6.1 CHECK negative, and full queue guard routing remain NOT_RUN.
+
+## SP06 test repair after root PG run (2026-09-29)
+
+Root's independent second REAL_PG run is recorded at
+`/Volumes/data/output/stripe-b1-root-schema-second.log`: 6 top-level PASS, 1 FAIL,
+0 SKIP, exit 1. The remaining failure exposed test-fixture errors: PostgreSQL
+normalizes interval literals in constraint text, and `LIKE INCLUDING CONSTRAINTS`
+does not copy defaults. This candidate now copies DEFAULTS, proves a valid row
+before each expected 23514 negative, and tests valid plus perturbed 40-minute
+expiry, 7-minute send deadline, and 5-minute handoff cutoff behavior. It keeps
+the no-PUBLIC-privilege assertions from commit `066d37e`.
+
+`go test ./tests/foundation -run '^$' -count=1`, `go vet ./tests/foundation`,
+and `git diff --check` exited 0. REAL_PG for this repair is **NOT_RUN** by the
+test worker; root owns the machinewide PG slot. Pinned historical-session URL
+handoff after API-key rotation is **NOT_RUN** here: the current fixture has no
+session handoff setup, and that regression belongs to the later SP21 path.
