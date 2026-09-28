@@ -1,7 +1,10 @@
 name: Foundation checks
 
 on:
+  # Branch pushes are covered by their pull_request run; running both doubled
+  # Actions minutes per push (~27 min each, 2026-09-28). main still runs on push.
   push:
+    branches: [main]
   pull_request:
 
 permissions:
