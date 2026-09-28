@@ -4,10 +4,14 @@
 #   static  S01-S06: script syntax (+shellcheck when installed), digest pins, compose config for
 #           all profile sets (+ two-host override), lcentry vet/tests/coverage, Caddyfile
 #           validate/fmt, ignore files. Needs no running containers.
-#   full    static + S07-S39 on an ISOLATED project "lc-smoke-<run>" with temp config, temp
+#   full    static + S07-S43 on an ISOLATED project "lc-smoke-<run>" with temp config, temp
 #           secrets and temp backup dir, *.localhost hosts on 127.0.0.1, identity=0 (no IdP),
 #           buyer=1, buyer_payment=0, meta_webhook=0, studio=0. It touches ONLY its own
 #           project and removes its containers/volumes/networks/temp dirs at the end.
+#           Review-P1 regression cases (2026-09-28): S40 access-log redaction of credential query
+#           parameters (Caddy), S41 superuser rotation without the password reaching the postgres
+#           log, S42 PITR promote + cut-over (new timeline, rows == target, archiver healthy),
+#           S43 compose.env IMAGE_TAG follows deploy.sh (plain `up -d` keeps the tag; watchdog W10).
 # Usage: smoke.sh static | full
 # Exit: 0 PASS, 1 FAIL, 3 BLOCKED (e.g. cmd/migrate missing, ports busy, docker missing, or a
 #   REQUIRES_INTEGRATOR item observed at runtime: S29m = I8). result.json "not_run" names each one.
@@ -174,7 +178,7 @@ EOF
 }
 
 # ================================ full ============================================================
-ALL_FULL=(S07 S08 S09 S10 S11 S12 S13 S14 S15 S16 S17 S18 S19 S20 S21 S22 S23 S24 S25 S26 S27 S28 S29 S29m S30 S31 S32 S33 S34 S35 S36 S37 S38 S39)
+ALL_FULL=(S07 S08 S09 S10 S11 S12 S13 S14 S15 S16 S17 S18 S19 S20 S21 S22 S23 S24 S25 S26 S27 S28 S29 S29m S30 S31 S32 S33 S34 S35 S36 S37 S38 S39 S40 S41 S42 S43)
 block_rest() { # reason — mark every full case not yet recorded as BLOCKED
   local id
   for id in "${ALL_FULL[@]}"; do
@@ -385,6 +389,28 @@ full_cases() {
   if [[ "$r1" == "308 https://shop.localhost"* && "${r2#*|}" == 0 && -z "$(hdr x-frame-options)" ]]; then
     rec S22 PASS "http->https 308; unknown Host not proxied (${r2%%|*}, empty)"
   else rec S22 FAIL "redirect=[$r1] unknown=[$r2]"; fi
+  # S40 (review P1) access-log redaction: Caddy logs the full request URI, so a Meta
+  # hub.verify_token (owner secret commerce_meta_apps_json) or an OIDC code/state on the admin
+  # callback would sit in the json-file logs and diagnostics bundles. Random canaries go through
+  # the hooks and admin hosts (query string, Referer, and the http->https redirect whose Location
+  # echoes the query); none may appear in ANY container log, and the REDACTED forms must be there
+  # (proves the lines were written, so 0 hits is meaningful).
+  local canary hits
+  canary="lcCanary$(od -An -N8 -tx1 /dev/urandom | tr -d ' \n')"
+  edge hooks.localhost "/v1/meta/webhooks/1/page?hub.mode=subscribe&hub.challenge=42&hub.verify_token=${canary}v" >/dev/null
+  edge admin.localhost "/api/auth/callback?code=${canary}c&state=${canary}s" \
+    -H "Referer: https://admin.localhost/api/auth/callback?code=${canary}r&state=${canary}q" >/dev/null
+  "${CURL[@]}" -o /dev/null --resolve "admin.localhost:$HTTP_PORT:127.0.0.1" \
+    "http://admin.localhost:$HTTP_PORT/api/auth/callback?code=${canary}l&state=${canary}m" >/dev/null 2>&1 || true
+  sleep 2
+  lc_compose logs --no-color >"$EV/logs/S40-compose.log" 2>&1 || true
+  hits=$({ grep -c -- "$canary" "$EV/logs/S40-compose.log" || true; } | tail -n1)
+  if [[ "$hits" == 0 ]] && grep -q 'hub.challenge=42&hub.mode=subscribe&hub.verify_token=REDACTED' "$EV/logs/S40-compose.log" &&
+    grep -q '/api/auth/callback?code=REDACTED&state=REDACTED' "$EV/logs/S40-compose.log" &&
+    grep -q '"Referer":\["https://admin.localhost/api/auth/callback?code=REDACTED&state=REDACTED"\]' "$EV/logs/S40-compose.log" &&
+    grep -q '"Location":\["https://admin.localhost[^"]*/api/auth/callback?code=REDACTED&state=REDACTED"\]' "$EV/logs/S40-compose.log"; then
+    rec S40 PASS "canary verify_token/code/state absent from all logs; uri, Referer and redirect Location logged as REDACTED"
+  else rec S40 FAIL "canary hits=$hits or REDACTED form missing (logs/S40-compose.log)"; fi
   runc S24 lc_compose stop api || true
   r=$(edge api.localhost /healthz)
   local retry
@@ -471,6 +497,45 @@ full_cases() {
     rec S31 PASS "PITR drill paused at target, verify PASS, $out (RTO sample; physical restore keeps the media gate)"
   else rec S31 FAIL "restore-pitr drill (logs/S31.log)"; fi
 
+  # S41 (review P1) superuser rotation: the live server runs log_statement='ddl', so a bare
+  # ALTER ROLE ... PASSWORD would be logged in cleartext. pg-ops.sh rotate-superuser must change
+  # the value (in place, same inode), keep the file mode, reject the old password, leave NO old or
+  # new value in the postgres log, and everything that uses the superuser must keep working:
+  # lc_psql (running container's mount), migrate (re-derived dsn_migrate_owner). A DDL canary
+  # proves statement logging is live, so a clean scan is meaningful. Later cases (S35 watchdog,
+  # S36 diagnostics scan, S38 backup/migrate/provision, S42 PITR) all run on the rotated password.
+  local old_pw old_sum old_ino ddl_canary pglog="$EV/logs/S41-postgres.log" why41=""
+  old_pw=$(<"$LC_SECRETS_DIR/pg_superuser_password")
+  old_sum=$(sha256sum <"$LC_SECRETS_DIR/pg_superuser_password")
+  old_ino=$(stat -c '%i %a' "$LC_SECRETS_DIR/pg_superuser_password")
+  ddl_canary="lc_smoke_ddl_canary_$(od -An -N4 -tx1 /dev/urandom | tr -d ' \n')"
+  if ! runc S41 "$LC_SCRIPTS_DIR/pg-ops.sh" rotate-superuser; then
+    why41="rotate-superuser failed"
+  elif [[ "$(sha256sum <"$LC_SECRETS_DIR/pg_superuser_password")" == "$old_sum" ]]; then
+    why41="secret file unchanged"
+  elif [[ "$(stat -c '%i %a' "$LC_SECRETS_DIR/pg_superuser_password")" != "$old_ino" ]]; then
+    why41="secret file inode/mode changed (running container would keep the old value)"
+  elif ! grep -q 'old_password=rejected result=ok' "$EV/logs/S41.log"; then
+    why41="old password not proven rejected"
+  elif [[ "$(lc_psql <<<"CREATE TEMP TABLE $ddl_canary (x int); SELECT 1;" 2>>"$EV/logs/S41.log")" != 1 ]]; then
+    why41="lc_psql fails after rotation"
+  elif ! runc S41 lc_compose run --rm -T migrate; then
+    why41="migrate fails after rotation (dsn_migrate_owner not re-derived?)"
+  else
+    lc_compose logs --no-color postgres >"$pglog" 2>&1 || true
+    if ! grep -q "$ddl_canary" "$pglog"; then
+      why41="DDL canary not in the postgres log: statement logging not live, scan would be vacuous"
+    elif ! lc_secret_scan "$pglog" 2>>"$EV/logs/S41.log"; then
+      why41="a secret value (new superuser password?) is in the postgres log"
+    elif grep -qFf <(printf '%s\n' "$old_pw") "$pglog"; then
+      why41="the old superuser password is in the postgres log"
+    fi
+  fi
+  unset old_pw
+  if [[ -z "$why41" ]]; then
+    rec S41 PASS "rotated in place (inode/mode kept), old rejected, lc_psql + migrate ok, DDL logging live, no old/new value in postgres log"
+  else rec S41 FAIL "$why41 (logs/S41.log)"; fi
+
   # S34 browser (optional)
   if has node && (cd "$LC_REPO_ROOT" && node -e "import('@playwright/test')" >/dev/null 2>&1); then
     rc=0
@@ -525,27 +590,116 @@ full_cases() {
   #   c) back to SMOKE_TAG (recreate again);
   #   d) to a tag recorded with a different ledger count: REFUSED ("forward-fix only").
   # The -rb tags are removed afterwards (they only name existing images; nothing is rebuilt).
-  local rb_tag="${SMOKE_TAG}-rb" why=""
+  # S43 (review P1) rides on b) and c): deploy.sh must write the tag it brings up into compose.env,
+  # because every other Compose entry point (runbook `dc up`/`dc run migrate`, §8 domain change, a
+  # re-run of `first`) takes IMAGE_TAG from that file. While the stack runs the -rb tag:
+  #   compose.env says -rb; a PLAIN `up -d` with no IMAGE_TAG in the environment (what an operator's
+  #   `dc up -d` does) keeps every lc-* service on -rb; watchdog W10 PASSes, and FAILs against a
+  #   copy of compose.env naming another tag. After c) compose.env is back on SMOKE_TAG, and the
+  #   refused d) leaves it untouched.
+  local rb_tag="${SMOKE_TAG}-rb" why="" why43=""
+  env_tag() { lc_env_file_get "$LC_COMPOSE_ENV" IMAGE_TAG || true; }
+  s43_on_rb() {
+    local s img w10copy
+    [[ "$(env_tag)" == "$rb_tag" ]] || { why43="b) compose.env IMAGE_TAG=$(env_tag) after app-rollback $rb_tag" && return; }
+    (unset IMAGE_TAG && runc S43 lc_compose up -d) || { why43="plain up -d failed" && return; }
+    for s in api admin storefront caddy expiry-worker payment-worker-sandbox meta-worker; do
+      img=$(docker inspect -f '{{.Config.Image}}' "$(lc_compose ps -q "$s")" 2>/dev/null || echo "<no container>")
+      [[ "$img" == *":$rb_tag" ]] || { why43="plain up -d moved $s to $img" && return; }
+    done
+    (unset IMAGE_TAG && LC_TLS_MIN_DAYS=0 runc S43 "$LC_SCRIPTS_DIR/watchdog.sh") || true
+    grep -q "^W10 PASS .*IMAGE_TAG=$rb_tag" "$EV/logs/S43.log" || { why43="watchdog W10 did not PASS on $rb_tag" && return; }
+    w10copy=$(mktemp "$SMOKE_ROOT/w10.XXXXXX")
+    cp -p "$LC_COMPOSE_ENV" "$w10copy"
+    lc_env_file_set "$w10copy" IMAGE_TAG "$SMOKE_TAG"
+    if (unset IMAGE_TAG && LC_COMPOSE_ENV=$w10copy LC_TLS_MIN_DAYS=0 runc S43 "$LC_SCRIPTS_DIR/watchdog.sh"); then
+      why43="watchdog passed although compose.env names $SMOKE_TAG and containers run $rb_tag"
+    elif ! grep -q "^W10 FAIL api runs tag $rb_tag but compose.env IMAGE_TAG=$SMOKE_TAG" "$EV/logs/S43.log"; then
+      why43="W10 drift message missing"
+    fi
+    rm -f "$w10copy"
+  }
+  # s39_steps — a) .. d) in order; the first failing step sets `why` and stops the sequence.
+  s39_steps() {
+    runc S39 "$LC_SCRIPTS_DIR/deploy.sh" --smoke app-rollback "$SMOKE_TAG" ||
+      { why="a) no-op rollback to the running tag failed" && return; }
+    runc S39 "$LC_SCRIPTS_DIR/deploy.sh" --smoke app-rollback "$rb_tag" ||
+      { why="b) rollback to a different tag failed" && return; }
+    [[ "$(docker inspect -f '{{.Config.Image}}' "$(lc_compose ps -q api)" 2>/dev/null || true)" == "$p-go:$rb_tag" ]] ||
+      { why="b) api was not recreated on $rb_tag" && return; }
+    s43_on_rb # verdict in why43; S39 continues either way
+    runc S39 "$LC_SCRIPTS_DIR/deploy.sh" --smoke app-rollback "$SMOKE_TAG" ||
+      { why="c) rollback back to $SMOKE_TAG failed" && return; }
+    if runc S39 "$LC_SCRIPTS_DIR/deploy.sh" --smoke app-rollback smoke-fabricated; then
+      why="d) rollback with a changed ledger was allowed"
+      return
+    fi
+    grep -q REFUSED "$EV/logs/S39.log" || why="d) refusal message missing"
+  }
   for i in go admin storefront caddy; do docker tag "$p-$i:$SMOKE_TAG" "$p-$i:$rb_tag"; done
   printf '%s\tupgrade\t%s\t%s\t%s\n' "$(lc_ts)" "$rb_tag" "$(lc_ledger_count)" smoke >>"$LC_STATE_DIR/deployments.log"
   printf '%s\tupgrade\t%s\t%s\t%s\n' "$(lc_ts)" smoke-fabricated 1 smoke >>"$LC_STATE_DIR/deployments.log"
-  if ! runc S39 "$LC_SCRIPTS_DIR/deploy.sh" --smoke app-rollback "$SMOKE_TAG"; then
-    why="a) no-op rollback to the running tag failed"
-  elif ! runc S39 "$LC_SCRIPTS_DIR/deploy.sh" --smoke app-rollback "$rb_tag"; then
-    why="b) rollback to a different tag failed"
-  elif [[ "$(docker inspect -f '{{.Config.Image}}' "$(lc_compose ps -q api)")" != "$p-go:$rb_tag" ]]; then
-    why="b) api was not recreated on $rb_tag"
-  elif ! runc S39 "$LC_SCRIPTS_DIR/deploy.sh" --smoke app-rollback "$SMOKE_TAG"; then
-    why="c) rollback back to $SMOKE_TAG failed"
-  elif runc S39 "$LC_SCRIPTS_DIR/deploy.sh" --smoke app-rollback smoke-fabricated; then
-    why="d) rollback with a changed ledger was allowed"
-  elif ! grep -q REFUSED "$EV/logs/S39.log"; then
-    why="d) refusal message missing"
+  s39_steps
+  if [[ -z "$why" && -z "$why43" && "$(env_tag)" != "$SMOKE_TAG" ]]; then
+    why43="c)/d) compose.env IMAGE_TAG=$(env_tag), expected $SMOKE_TAG"
   fi
   for i in go admin storefront caddy; do docker image rm "$p-$i:$rb_tag" >/dev/null 2>&1 || true; done
   if [[ -z "$why" ]]; then
     rec S39 PASS "rollback: no-op to running tag, to a different tag (recreated), back, refused on changed ledger"
   else rec S39 FAIL "$why (logs/S39.log)"; fi
+  if [[ -n "$why" ]]; then
+    rec S43 FAIL "not evaluated: S39 $why"
+  elif [[ -z "$why43" ]]; then
+    rec S43 PASS "compose.env follows app-rollback (-rb, back); plain up -d kept -rb; W10 PASS, and FAIL on drift"
+  else rec S43 FAIL "$why43 (logs/S43.log)"; fi
+
+  # S42 (review P1) PITR promotion + cut-over, backup-restore.md §6, on this smoke stack: marker
+  # row 1 before the target, row 2 after it. `restore-pitr --promote` ends recovery AT the target
+  # (new timeline), `pitr-cutover` installs it as the live cluster. Must hold: only row 1, not in
+  # recovery, timeline > 1, WAL archiving healthy (the old §6 procedure crash-recovered past the
+  # target on timeline 1 and then failed archiving forever), the timeline history archived, and
+  # the whole stack back through `deploy.sh first` (post-checks) with a green watchdog.
+  local why42="" tli42 rows42
+  lc_psql <<<"CREATE SCHEMA lc_smoke_pitr; CREATE TABLE lc_smoke_pitr.marker (id int PRIMARY KEY); INSERT INTO lc_smoke_pitr.marker VALUES (1);" >/dev/null
+  sleep 2
+  target=$(lc_psql <<<"SELECT now();")
+  sleep 2
+  lc_psql <<<"INSERT INTO lc_smoke_pitr.marker VALUES (2);" >/dev/null
+  a0=$(lc_psql <<<"SELECT archived_count FROM pg_stat_archiver;")
+  lc_psql <<<"SELECT pg_switch_wal();" >/dev/null
+  for ((i = 0; i < 30; i++)); do
+    a1=$(lc_psql <<<"SELECT archived_count FROM pg_stat_archiver;")
+    ((a1 > a0)) && break
+    sleep 1
+  done
+  if ! runc S42 "$LC_SCRIPTS_DIR/pg-ops.sh" restore-pitr --target-time "$target" --promote; then
+    why42="restore-pitr --promote failed"
+  elif ! grep -q '^pitr_promoted_timeline=[2-9]' "$EV/logs/S42.log"; then
+    why42="no promoted timeline reported"
+  elif runc S42 "$LC_SCRIPTS_DIR/pg-ops.sh" pitr-cutover; then
+    why42="pitr-cutover ran without LC_CONFIRM_REPLACE_LIVE"
+  elif ! LC_CONFIRM_REPLACE_LIVE=I_UNDERSTAND_FORWARD_ONLY runc S42 "$LC_SCRIPTS_DIR/pg-ops.sh" pitr-cutover; then
+    why42="pitr-cutover failed"
+  else
+    rows42=$(lc_psql <<<"SELECT count(*) || ':' || max(id) FROM lc_smoke_pitr.marker;" 2>>"$EV/logs/S42.log" || true)
+    tli42=$(lc_psql <<<"SELECT timeline_id FROM pg_control_checkpoint();" 2>>"$EV/logs/S42.log" || true)
+    if [[ "$rows42" != "1:1" ]]; then
+      why42="marker rows=$rows42, expected 1:1 (data after the target came back)"
+    elif ! [[ "$tli42" =~ ^[0-9]+$ ]] || ((tli42 < 2)); then
+      why42="timeline=$tli42 after cut-over"
+    elif [[ ! -f "$LC_BACKUP_DIR/wal/$(printf '%08X.history' "$tli42")" ]]; then
+      why42="timeline history not archived"
+    elif ! runc S42 "$LC_SCRIPTS_DIR/deploy.sh" --smoke first; then
+      why42="deploy.sh first after the cut-over failed"
+    elif ! LC_TLS_MIN_DAYS=0 runc S42 "$LC_SCRIPTS_DIR/watchdog.sh"; then
+      why42="watchdog not green after the cut-over"
+    elif ! grep -q '^W4 PASS archived=[0-9]* failed=0' "$EV/logs/S42.log"; then
+      why42="W4 archiver not clean after the cut-over"
+    fi
+  fi
+  if [[ -z "$why42" ]]; then
+    rec S42 PASS "promote + cut-over: rows=$rows42 timeline=$tli42, history archived, archiver failed=0, stack back via deploy.sh first, watchdog green"
+  else rec S42 FAIL "$why42 (logs/S42.log)"; fi
 
   # S32 graceful stop
   runc S32 lc_compose stop || true
@@ -590,7 +744,7 @@ def ver(cmd):
     except Exception:
         return "unavailable"
 static_ids = ["S01", "S02", "S03", "S04", "S05", "S06"]
-full_ids = static_ids + ["S%02d" % i for i in range(7, 40)] + ["S10a", "S10b", "S10c", "S10d", "S10e", "S29m"]
+full_ids = static_ids + ["S%02d" % i for i in range(7, 44)] + ["S10a", "S10b", "S10c", "S10d", "S10e", "S29m"]
 result = {
     "run_id": os.path.basename(ev), "task_id": "T22", "commit": commit,
     "environment": {"mode": mode, "host": platform.node(), "kernel": platform.release(),

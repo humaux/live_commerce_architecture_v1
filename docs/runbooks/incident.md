@@ -14,12 +14,14 @@ Change rules: 新增服务或新日志标记时同步 §1 表格。
 ```sh
 dc() { docker compose --project-directory /opt/live-commerce/deploy --env-file /etc/live-commerce/compose.env -f /opt/live-commerce/deploy/compose.yml "$@"; }
 ```
+`dc` 从 compose.env 读取 `IMAGE_TAG`。deploy.sh 在每次 `up -d` 之前把要运行的 tag 写进去，所以 `dc up`/`dc run migrate` 使用的就是当前部署的镜像。
+**不要在 shell 里 `export IMAGE_TAG=…`**（环境变量优先于文件），也不要手工改这一行；看门狗 W10 会报告容器 tag 与文件不一致。
 
 ## 1. 日志在哪里
 
 | 服务 | 命令 | 内容 | 就绪/错误标记 |
 |---|---|---|---|
-| caddy | `dc logs --since 30m caddy` | JSON 访问日志和运行日志（含客户端 IP） | ACME 错误、`dial tcp 127.0.0.1:...` 表示上游挂掉 |
+| caddy | `dc logs --since 30m caddy` | JSON 访问日志和运行日志（含客户端 IP）。URI、Referer、Location 中的 `hub.verify_token`、`code`、`state`、`token`、`access_token`、`id_token` 记为 `REDACTED`（smoke S40） | ACME 错误、`dial tcp 127.0.0.1:...` 表示上游挂掉 |
 | api | `dc logs --since 30m api` | slog 文本 | 启动失败**只会**打印 `api stopped`（设计如此，见 §3 api） |
 | admin / storefront | `dc logs admin` / `dc logs storefront` | Next 服务日志 | 模块加载阶段的配置错误，例如 `missing COMMERCE_BFF_KEY`、`invalid keys` |
 | expiry-worker | `dc logs expiry-worker` | slog | 正常：`expiry_worker_ready`；异常：`*_invalid_config`、`*_database*`、`*_start_failed` |
@@ -34,7 +36,10 @@ dc() { docker compose --project-directory /opt/live-commerce/deploy --env-file /
 
 ## 2. 分诊流程
 
-1. 看看门狗：`deploy/scripts/watchdog.sh`。它会输出 W1–W9 的 PASS/FAIL，可以快速定位问题类别。
+1. 看看门狗：`deploy/scripts/watchdog.sh`。它会输出 W1–W10 的 PASS/FAIL，可以快速定位问题类别。
+   - W10（镜像 tag 漂移）：某个 `lc-*` 容器运行的 tag 与 compose.env 的 `IMAGE_TAG` 不同，说明有人绕过 deploy.sh 起了容器，
+     或者部署中途失败。**不要**直接 `dc up -d`（它会按文件里的 tag 重建容器）：先看 `deployments.log` 最后一行和 `dc ps`，
+     再按 deploy.md §5 用 `deploy.sh upgrade|app-rollback <tag>` 收敛。
 2. `dc ps`：查看状态、健康状况和重启次数。
 3. 健康检查：`curl -fsS https://<api>/healthz`；`docker inspect -f '{{.State.Health.Status}}' <容器>`。
 4. 查看对应服务的日志（§1）。
@@ -83,6 +88,8 @@ dc() { docker compose --project-directory /opt/live-commerce/deploy --env-file /
 - 磁盘满（W2）：先清理 Docker 镜像和日志。**不要删除 `wal/`**，它由 basebackup 负责清理。
 - 归档失败（W4）：检查 `${LC_BACKUP_DIR}/wal` 的权限（`0700 999:999`）和剩余空间；`dc logs postgres | grep archive`。
   已存在的同名同内容段会被视为成功；**不同内容的同名段**会持续失败，需要人工比对。
+  PITR 切换后出现这种情况，说明数据目录不是用 `restore-pitr --promote` + `pitr-cutover` 放进来的（backup-restore.md §6）：
+  `SELECT timeline_id FROM pg_control_checkpoint()` 应大于 1。
 - 连接数过高（W9）：执行 `SELECT application_name, state, count(*) FROM pg_stat_activity GROUP BY 1,2`，看是哪个服务的连接池过大。
 - 长事务（W7）：找到对应的 `application_name`。只能在确认影响后，经批准再执行 `pg_terminate_backend`。
 
@@ -112,7 +119,7 @@ dc() { docker compose --project-directory /opt/live-commerce/deploy --env-file /
 |---|---|
 | `commerce_account_keys_json` 或 replay key 泄露（涉及真实资金） | 立即 `dc stop payment-worker-live`，通知 owner，按 deploy.md §7 轮换（追加新 key），评估商户 PSP 凭据是否需要在 PAYUNi 侧重置 |
 | BFF key 泄露 | 轮换这一对 key（api + admin 或 api + storefront），同时重启 |
-| 数据库口令泄露 | 轮换对应的 `pw_<login>`，执行 `--rederive`，重跑 provision 并重启相关服务 |
+| 数据库口令泄露 | 轮换对应的 `pw_<login>`，执行 `--rederive`，重跑 provision 并重启相关服务；超级用户口令用 `deploy/scripts/pg-ops.sh rotate-superuser`（deploy.md §7，**禁止**手工 `ALTER ROLE`：`log_statement='ddl'` 会把新口令写进日志） |
 | 诊断包、日志或备份外泄 | 视为 PII 事件，通知 owner（O8） |
 
 ## 6. 升级规则与禁止事项

@@ -27,15 +27,19 @@ Runbooks (Chinese): [deploy](../docs/runbooks/deploy.md) ·
 ```sh
 deploy/scripts/host-setup.sh                      # group 10500, dirs/modes, templates -> /etc/live-commerce
 vi /etc/live-commerce/compose.env /etc/live-commerce/env/*.env   # hosts, flags, OIDC client id
-deploy/scripts/build-images.sh                    # prints IMAGE_TAG (git sha12); put it in compose.env
+deploy/scripts/build-images.sh                    # prints IMAGE_TAG (git sha12)
 deploy/scripts/secrets-init.sh                    # creates missing secrets only, never prints values
 # owner secrets: replace __UNSET__ in secrets/commerce_oidc_client_secret (and meta apps if used)
 deploy/scripts/preflight.sh --online              # P01-P16, names only
-deploy/scripts/deploy.sh first                    # postgres -> migrate -> provision -> up -> checks
+deploy/scripts/deploy.sh first <sha12>            # postgres -> migrate -> provision -> tag into compose.env -> up -> checks
 cp deploy/host/crontab.example /etc/cron.d/live-commerce   # backups + watchdog (edit paths)
 ```
 Upgrade: `deploy.sh upgrade <tag>`. It takes a backup, opens a 503 window, runs migrate and provision, then starts the stack.
 Rollback: `deploy.sh app-rollback <tag>` works only when the migration ledger is unchanged. Otherwise the answer is forward-fix.
+All three write the tag they bring up into `compose.env` (`IMAGE_TAG`) right before `up -d`, so plain `docker compose`
+commands (runbook `dc`) always resolve the running tag; never edit that line by hand (watchdog W10 reports drift).
+Superuser password rotation: `pg-ops.sh rotate-superuser` only. PITR restore to live: `pg-ops.sh restore-pitr --promote`
+then `pg-ops.sh pitr-cutover` (backup-restore.md §6).
 
 ## Topology
 
@@ -58,19 +62,19 @@ The media worker is **not deployed**, because it is MOCK-only (`worker_env.go:17
 | `compose.yml` / `compose.two-host-db.yml` | Whole stack; 2-host override (NOT_RUN) |
 | `docker/{go,admin,storefront,caddy}.Dockerfile` | `lc-go` (all Go binaries + migrate + lcentry), `lc-admin`, `lc-storefront`, `lc-caddy` |
 | `tools/lcentry/` | Stdlib-only launcher: `*_FILE` secret files → env, then `execve`; loopback HTTP probe |
-| `caddy/Caddyfile` | Edge routing/TLS: admin, shop, api (default-deny, `/healthz` only), hooks (`/v1/meta/webhooks/*`) |
+| `caddy/Caddyfile` | Edge routing/TLS: admin, shop, api (default-deny, `/healthz` only), hooks (`/v1/meta/webhooks/*`); access log with credential query parameters redacted |
 | `postgres/postgresql.conf`, `pg_hba.conf` | Server settings + WAL archiving; superuser socket-only, services via scram |
 | `postgres/logins.tsv` | Service LOGIN → one authority → grant shape → consumer (single source) |
 | `postgres/provision-logins.sh` | Idempotent logins + verification matrix + TCP auth + readiness gates |
-| `postgres/ops/*` | backup, basebackup, restore-dump, restore-pitr, verify.sql (run inside `pg-ops`) |
+| `postgres/ops/*` | backup, basebackup, restore-dump, restore-pitr (`--drill`/`--promote`), pitr-install (cut-over), rotate-superuser, verify.sql (run inside `pg-ops`) |
 | `secrets.manifest.tsv` | Every secret file: kind, generator, consumers, rotation |
 | `env/*.env.example` | `compose.env` (cross-service values) + per-service knob templates |
 | `scripts/lib.sh` | Shared helpers (`lc_compose`, `lc_psql`, `lc_secret_scan`, env loader) |
 | `scripts/host-setup.sh`, `secrets-init.sh`, `preflight.sh` | Host prep, secret generation, config validation |
 | `scripts/build-images.sh`, `check-pins.sh` | Image build (sha12 tags, OCI labels); digest-pin guard |
-| `scripts/deploy.sh`, `pg-ops.sh` | first / upgrade / app-rollback; DB operations wrapper |
-| `scripts/watchdog.sh`, `collect-diagnostics.sh` | Cron health checks W1–W9; incident bundle (secret-scanned) |
-| `scripts/smoke.sh`, `smoke-browser.mjs` | Acceptance `static` (S01–S06) / `full` (S07–S39) with evidence |
+| `scripts/deploy.sh`, `pg-ops.sh` | first / upgrade / app-rollback (keeps compose.env `IMAGE_TAG` = deployed tag); DB operations wrapper incl. `rotate-superuser`, `pitr-cutover` |
+| `scripts/watchdog.sh`, `collect-diagnostics.sh` | Cron health checks W1–W10; incident bundle (secret-scanned) |
+| `scripts/smoke.sh`, `smoke-browser.mjs` | Acceptance `static` (S01–S06) / `full` (S07–S43) with evidence |
 | `host/crontab.example` | Backup + watchdog schedule |
 
 ## Status matrix (2026-09-28)
@@ -82,6 +86,7 @@ The media worker is **not deployed**, because it is MOCK-only (`worker_env.go:17
 | DB layer + edge with **scratch** images: postgres (non-root, read-only, checksums, archiving), migrate ×2 over the socket, provision-logins ×2 (12 logins, matrix, TCP auth, readiness), superuser-over-TCP rejected, api/caddy healthy, worker ready tokens, Caddy internal-CA TLS, default-deny, webhook routing, 308 redirect, unknown Host not proxied, 503 + Retry-After window, hardening of 7 containers, no secret in inspect/logs, backup + restore into a new DB, WAL archiving, basebackup + `pg_verifybackup`, PITR drill (2 s), watchdog W2–W9, diagnostics bundle, graceful stop, clean teardown | **VERIFIED_LOCAL (scratch)** | Scratch `lc-go` built on the host from this tree plus the §7 `cmd/migrate` proposal (outside the worktree, not committed); real `lc-caddy` from `docker/caddy.Dockerfile`. This is not product acceptance |
 | All 4 image builds + `smoke.sh full` with the I1 proposal: independent test_worker run on 22d5d3f | **FAIL** | 41 PASS / 3 FAIL (S08, S34, S39). S21 was a false PASS. Root causes F1–F3 are in deviations 10–12 |
 | Same, author re-run after the fixes (f318632, scratch clone + `cmd/migrate` proposal, sandbox-CA base images via `GO_IMAGE`/`NODE_IMAGE`) | **VERIFIED_LOCAL: 45 PASS / 0 FAIL / 1 BLOCKED**, exit 3 | S07 built through `--network host` (loopback proxy); S08 7 names; S21 `307 -> /zh-CN -> 200`; S34 Chromium PASS; S37–S39 PASS (S39 covers all 4 rollback paths); S33 clean; secret scan hits=0. An independent re-run is still owed, because the author cannot be the only acceptor |
+| Review P1 fixes (2026-09-28): S40 Caddy access-log redaction, S41 superuser rotation without log leak, S42 PITR promote + cut-over, S43 compose.env tag persistence + W10 | see `smoke.sh full` evidence of the fix commit | Author run on a scratch clone + I1 proposal; results recorded in the task's deploy-verify-final.md. An independent re-run is still owed |
 | Logical-restore media gate (S29m) | **BLOCKED (I8)** | Live `media_plan_ready=t`, restored `f`, PITR `t`. It used to be hidden inside the S29 PASS |
 | Real ACME/DNS, OIDC login, PAYUNi sandbox/live, Meta webhooks, media, 2-host TLS, K8s, load, CVE scan | **NOT_RUN** | Need owner inputs (O2, O3, O11, B3–B6) |
 
@@ -141,6 +146,23 @@ No new Go modules and no new npm packages. `lcentry` uses only the Go standard l
     (default), the script builds with `--network host` only when a forwarded proxy variable points at
     loopback. `default` keeps isolation and warns.
 14. `go.Dockerfile` checks every `cmd/<name>` before compiling, so I1 fails in seconds instead of after 5 builds.
+15. **Caddy access log redacts credential query parameters** (review P1). Caddy logs the full URI; a Meta
+    `hub.verify_token` (owner secret) or an OIDC `code`/`state` would have landed in the json-file logs and the
+    diagnostics bundle. `format filter` rewrites `hub.verify_token`, `code`, `state`, `token`, `access_token`,
+    `id_token` to `REDACTED` in `request>uri`, the `Referer` header and the `Location` response header (S40).
+16. **Superuser rotation is a script** (review P1). With `log_statement='ddl'`, a bare `ALTER ROLE postgres
+    PASSWORD` is logged in cleartext (reproduced on the pinned image). `pg-ops.sh rotate-superuser` disables
+    statement logging for its session, writes the file in place (same inode, so the running postgres
+    container's bind-mounted secret follows; a rename would leave `lc_psql` on the old value) and scans the log (S41).
+17. **PITR cut-over = `restore-pitr --promote` + `pitr-cutover`** (review P1). The old manual §6 copied a
+    cluster stopped while paused (`shut down in recovery`); the live server then replayed past the target on
+    timeline 1 and archiving failed forever. `--promote` ends recovery at the target (new timeline; scratch
+    runs `archive_mode=on` with an empty command so the history file is queued, not archived from pg-ops);
+    `pitr-cutover` installs it with checks (timeline > 1, archiver failed unchanged, history archived) (S42).
+    The scratch socket now uses peer auth, so PITR works with base backups older than a password rotation.
+18. **compose.env `IMAGE_TAG` follows deploy.sh** (review P1). The tag used to live only in deploy.sh's
+    environment, so any later plain `docker compose up/run` recreated services on the previous release.
+    deploy.sh now rewrites the line atomically just before `up -d`; watchdog W10 flags drift (S43).
 
 ## Blockers and hand-offs
 

@@ -1,26 +1,39 @@
 #!/usr/bin/env bash
 # File: deploy/scripts/deploy.sh
 # Purpose: the three supported release operations (deploy-design §16.1, D11, D12):
-#   first               preflight -> images present -> postgres healthy -> migrate ->
-#                       provision-logins -> up -d (active profiles) -> post checks -> log
+#   first [<tag>]       preflight -> images present -> postgres healthy -> migrate ->
+#                       provision-logins -> record tag -> up -d (active profiles) -> post checks
+#                       -> log. <tag> defaults to compose.env IMAGE_TAG.
 #   upgrade <tag>       preflight(new tag) -> MANDATORY backup -> stop app+workers (Caddy keeps
-#                       answering 503 + Retry-After) -> migrate(new tag) -> provision -> up -d
-#                       -> post checks -> log. Never auto-rolls back or restores.
+#                       answering 503 + Retry-After) -> migrate(new tag) -> provision -> record
+#                       tag -> up -d -> post checks -> log. Never auto-rolls back or restores.
 #   app-rollback <tag>  allowed ONLY if the migration ledger count equals the one recorded when
 #                       <tag> was last deployed; otherwise refuses ("forward-fix only"). Then
-#                       up -d (recreates only containers whose image/config changed) -> post
-#                       checks -> log. Rolling back to the tag that is already running is a
-#                       valid no-op and must pass (post_checks judges the current lifetime).
-# Usage: deploy.sh [--smoke] first | upgrade <tag> | app-rollback <tag>
+#                       record tag -> up -d (recreates only containers whose image/config
+#                       changed) -> post checks -> log. Rolling back to the tag that is already
+#                       running is a valid no-op and must pass (post_checks judges the current
+#                       lifetime).
+#   "record tag" (review P1): compose.env IMAGE_TAG is rewritten atomically to the tag being
+#   brought up, immediately BEFORE `up -d`. compose.env is the only tag source for every other
+#   Compose entry point (runbook `dc up`/`dc run migrate`, a re-run of `first`, §8 domain change),
+#   so a tag that lived only in this process's environment let those silently recreate api/admin/
+#   caddy on the previous images (and re-run the previous migrate). Written before `up -d`, not
+#   after post_checks: from that moment containers run the new tag, and a failed post-check must
+#   not leave compose.env pointing at the old images (a later plain `up -d` would then downgrade
+#   over the migrated schema). deployments.log still records only VERIFIED deploys (post_checks
+#   passed) and remains the rollback evidence. watchdog.sh W10 alarms on any drift.
+# Usage: deploy.sh [--smoke] first [<tag>] | upgrade <tag> | app-rollback <tag>
 #   --smoke: used by smoke.sh S37-S39 — public checks use --resolve to 127.0.0.1 and Caddy's
 #   local CA instead of real DNS/ACME.
 # Runs as/in: deploy host (root), through lib.sh lc_compose. NO production deploy may be run
 #   without owner approval (AGENTS.md); this script only automates the approved procedure.
 # Reads env: compose.env (IMAGE_TAG, hosts, LC_STATE_DIR, profiles), LC_SMOKE_CACERT (smoke).
 # Reads secrets: none directly (postgres/migrate/provision read their own mounted files).
-# Writes: ${LC_STATE_DIR:-/var/lib/live-commerce}/deployments.log
+# Writes: $LC_COMPOSE_ENV IMAGE_TAG line (lib.sh lc_env_file_set: temp file + rename, owner/mode
+#   kept); ${LC_STATE_DIR:-/var/lib/live-commerce}/deployments.log
 #   (UTC ts <TAB> action <TAB> tag <TAB> ledger_count <TAB> operator).
-# Used by: operators (docs/runbooks/deploy.md), smoke.sh S37-S39.
+# Used by: operators (docs/runbooks/deploy.md), smoke.sh S37-S39, S42 (stack back after the PITR
+#   cut-over), S43 (compose.env follows the deployed tag).
 # Depends on: preflight.sh, pg-ops.sh (backup), lib.sh; images from build-images.sh.
 # Exit: 0 ok; 1 failed (prints the rollback decision tree); 75 migration lock busy (retry
 #   later by hand, never in a loop); 2 usage.
@@ -55,6 +68,8 @@ Deploy step failed. Decide (docs/runbooks/deploy.md §回滚决策树):
     orders after traffic reopened)?  -> owner decides a DB restore (backup-restore.md), then
     app-rollback. Never restore over real payments.
  3. Otherwise -> forward fix + reconciliation (架构.md §22.1). Never edit applied SQL/checksums.
+ compose.env IMAGE_TAG is rewritten just before `up -d`; if the failure came after that point it
+ already names the new tag (= what the containers run). app-rollback rewrites it again.
  Diagnostics: deploy/scripts/collect-diagnostics.sh --since 1h
 ------------------------------------------------------------------------------------------------
 EOF
@@ -178,6 +193,18 @@ log_deploy() {
   lc_info "recorded $1 tag=$IMAGE_TAG ledger_count=$ledger in deployments.log"
 }
 
+# record_tag — compose.env IMAGE_TAG := $IMAGE_TAG (see header "record tag"). Idempotent.
+record_tag() {
+  local old
+  old=$(lc_env_file_get "$LC_COMPOSE_ENV" IMAGE_TAG || true)
+  if [[ "$old" == "$IMAGE_TAG" ]]; then
+    lc_info "compose.env IMAGE_TAG already $IMAGE_TAG"
+    return 0
+  fi
+  lc_env_file_set "$LC_COMPOSE_ENV" IMAGE_TAG "$IMAGE_TAG"
+  lc_info "compose.env IMAGE_TAG ${old:-<unset>} -> $IMAGE_TAG (plain docker compose commands now resolve this tag)"
+}
+
 images_present() {
   local img
   for img in go admin storefront caddy; do
@@ -188,11 +215,16 @@ images_present() {
 
 case "$action" in
 first)
+  if [[ -n "$arg" ]]; then
+    [[ "$arg" =~ ^[A-Za-z0-9._-]{1,64}$ ]] || lc_die "usage: deploy.sh first [<tag>]" 2
+    export IMAGE_TAG=$arg
+  fi
   if ((smoke)); then "$LC_SCRIPTS_DIR/preflight.sh"; else "$LC_SCRIPTS_DIR/preflight.sh" --online; fi
   images_present
   wait_postgres
   run_migrate
   run_provision
+  record_tag
   lc_compose up -d
   post_checks
   log_deploy first
@@ -209,6 +241,7 @@ upgrade)
   ((${#svcs[@]} == 0)) || lc_compose stop "${svcs[@]}"
   run_migrate
   run_provision
+  record_tag
   lc_compose up -d
   post_checks
   lc_info "ledger_count before=$before after=$(lc_ledger_count)"
@@ -227,12 +260,13 @@ app-rollback)
   fi
   export IMAGE_TAG=$arg
   images_present
+  record_tag
   lc_compose up -d
   post_checks
   log_deploy app-rollback
   ;;
 *)
-  lc_die "usage: deploy.sh [--smoke] first | upgrade <tag> | app-rollback <tag>" 2
+  lc_die "usage: deploy.sh [--smoke] first [<tag>] | upgrade <tag> | app-rollback <tag>" 2
   ;;
 esac
 trap - EXIT

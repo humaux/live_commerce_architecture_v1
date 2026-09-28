@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 # File: deploy/scripts/watchdog.sh
-# Purpose: periodic health checks W1-W9 (deploy-design §16.3). Exit != 0 when any check fails,
+# Purpose: periodic health checks W1-W10 (deploy-design §16.3). Exit != 0 when any check fails,
 #   so cron mails it / systemd marks it; optionally POSTs ONLY the failing check ids to
 #   LC_ALERT_WEBHOOK_URL and writes one syslog line via `logger`.
 #   W1 services running/healthy + restart counts unchanged   W2 disk > 80 %
 #   W3 newest dump > 26 h / newest base > 8 d                  W4 WAL archiving failing
 #   W5 TLS certificate expiry < LC_TLS_MIN_DAYS (14)          W6 River backlog per schema
 #   W7 transactions / idle-in-transaction older than 5 min     W8 readiness gates false
-#   W9 connections > 80 % of max_connections
+#   W9 connections > 80 % of max_connections                 W10 image tag drift: a running
+#   ${LC_IMAGE_PREFIX}-* container whose tag differs from the IMAGE_TAG line IN compose.env (the
+#   file, not the environment: deploy.sh keeps it = deployed tag, review P1; drift means a plain
+#   `docker compose up` would change images)
 # Usage: watchdog.sh        (cron: */5 * * * *, deploy/host/crontab.example)
 # Runs as/in: deploy host (root); DB checks (W3, W4, W6-W9) only where postgres is an active
 #   service (single host / DB host). SQL runs via lc_psql inside the postgres container over
@@ -18,7 +21,8 @@
 # State: ${LC_STATE_DIR}/watchdog.state (restart counts, last run time for W6 discarded jobs).
 # Used by: cron; smoke.sh S35; collect-diagnostics.sh; docs/runbooks/incident.md §分诊.
 # Depends on: lib.sh, docker, openssl (W5), df, curl (webhook), logger (optional).
-# Status: DESIGN; verified by smoke S35 (healthy -> 0; stopped worker -> W1 failure).
+# Status: DESIGN; verified by smoke S35 (healthy -> 0; stopped worker -> W1 failure) and S43
+#   (W10 PASS on the deployed tag, FAIL against a compose.env naming another tag).
 # Change rules: every new long-running service is covered by W1 automatically; new River
 #   schemas must be added to W6.
 set -Eeuo pipefail
@@ -71,6 +75,21 @@ while IFS= read -r s; do
   fi
 done < <(lc_long_running_services)
 ((w1)) || report W1 PASS "services running/healthy"
+
+# ---- W10 image tag drift -------------------------------------------------------------------------------
+want_tag=$(lc_env_file_get "$LC_COMPOSE_ENV" IMAGE_TAG || true)
+prefix="${LC_IMAGE_PREFIX:-lc}-"
+w10=0
+while IFS= read -r s; do
+  cid=$(lc_compose ps -q "$s" 2>/dev/null || true)
+  [[ -n "$cid" ]] || continue # absence is W1's finding
+  image=$(docker inspect -f '{{.Config.Image}}' "$cid" 2>/dev/null || true)
+  if [[ "$image" == "$prefix"* && "$image" != *":$want_tag" ]]; then
+    report W10 FAIL "$s runs tag ${image##*:} but compose.env IMAGE_TAG=${want_tag:-<unset>}"
+    w10=1
+  fi
+done < <(lc_long_running_services)
+((w10)) || report W10 PASS "all ${prefix}* containers run compose.env IMAGE_TAG=${want_tag:-<unset>}"
 
 # ---- W2 disk ------------------------------------------------------------------------------------------
 docker_root=$(docker info --format '{{.DockerRootDir}}' 2>/dev/null || echo /var/lib/docker)

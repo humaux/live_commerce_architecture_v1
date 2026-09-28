@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # File: deploy/scripts/lib.sh
 # Purpose: shared helpers for every deploy/scripts/*.sh (sourced, never executed):
-#   logging that names things but never prints values, a safe KEY=VALUE env-file loader,
+#   logging that names things but never prints values, a safe KEY=VALUE env-file loader plus a
+#   file-only getter/atomic setter (deploy.sh keeps compose.env IMAGE_TAG = deployed tag),
 #   the lc_compose wrapper (fixed project dir + env file), a superuser psql helper that runs
 #   inside the postgres container over the unix socket, and lc_secret_scan.
 # Runs as/in: the deploy host (root for real deployments; any user with docker access for
@@ -62,6 +63,53 @@ lc_load_env() {
     if [[ "$val" =~ ^\"(.*)\"$ || "$val" =~ ^\'(.*)\'$ ]]; then val=${BASH_REMATCH[1]}; fi
     if [[ -z "${!key+x}" ]]; then export "$key=$val"; fi
   done <"$file"
+}
+
+# lc_env_file_get FILE KEY — print the value of the first KEY= line of FILE (quotes stripped like
+# lc_load_env); exit 1 when absent. Reads ONLY the file, never the process environment: used to
+# compare what compose.env says with what runs (deploy.sh, watchdog W10, smoke S43).
+lc_env_file_get() {
+  local file=$1 key=$2 line val
+  [[ -r "$file" ]] || return 1
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%$'\r'}"
+    [[ "$line" == "$key="* ]] || continue
+    val=${line#*=}
+    if [[ "$val" =~ ^\"(.*)\"$ || "$val" =~ ^\'(.*)\'$ ]]; then val=${BASH_REMATCH[1]}; fi
+    printf '%s\n' "$val"
+    return 0
+  done <"$file"
+  return 1
+}
+
+# lc_env_file_set FILE KEY VALUE — atomically make FILE contain exactly one KEY=VALUE line: the
+# first KEY= line is rewritten in place, later duplicates are dropped, and the line is appended
+# when absent. Temp file in the same directory (same filesystem), owner and mode copied from
+# FILE, fsync, rename; a symlinked FILE is resolved first. VALUE must be a plain token (no
+# newline); never use it for secrets. Used by deploy.sh (IMAGE_TAG), smoke.sh S43.
+lc_env_file_set() {
+  local file key=$2 value=$3 tmp line found=0
+  file=$(readlink -f -- "$1") || lc_die "lc_env_file_set: cannot resolve $1"
+  [[ -f "$file" ]] || lc_die "lc_env_file_set: $file is not a regular file"
+  [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || lc_die "lc_env_file_set: invalid key"
+  [[ "$value" =~ ^[A-Za-z0-9._:/@+-]*$ ]] || lc_die "lc_env_file_set: $key value must be a plain token"
+  tmp=$(mktemp "$(dirname -- "$file")/.${file##*/}.XXXXXX")
+  {
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      if [[ "${line%$'\r'}" == "$key="* ]]; then
+        ((found)) && continue
+        printf '%s=%s\n' "$key" "$value"
+        found=1
+      else
+        printf '%s\n' "$line"
+      fi
+    done <"$file"
+    ((found)) || printf '%s=%s\n' "$key" "$value"
+  } >"$tmp"
+  chown --reference="$file" -- "$tmp" 2>/dev/null || lc_warn "could not copy the owner of ${file##*/} (not root?)"
+  chmod --reference="$file" -- "$tmp"
+  sync -- "$tmp"
+  mv -f -- "$tmp" "$file"
 }
 
 # lc_require_vars NAME... — fail naming the first unset/empty variable.

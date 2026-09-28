@@ -7,6 +7,8 @@ Used by: 运维/owner/集成者；deploy/README.md 链接到此。
 Depends on: deploy/scripts/*.sh, deploy/compose.yml, deploy/env/*.env.example。
 Status: DESIGN。未在生产执行过；smoke full 目前 BLOCKED（缺 cmd/migrate，I1）。
   本地（scratch 克隆，加入 I1 提案）：45 PASS / 1 BLOCKED（S29m，I8），包括 first/upgrade/app-rollback 全部路径。
+  2026-09-28 评审 P1 修复：deploy.sh 把部署的 tag 写回 compose.env（§3–§5，smoke S43、看门狗 W10）；
+  超级用户口令轮换改为 `pg-ops.sh rotate-superuser`（§7，smoke S41）。
 Change rules: 命令必须与脚本保持一致；改脚本行为时同步本文。
 -->
 # 部署运行手册（live-commerce）
@@ -45,7 +47,9 @@ Change rules: 命令必须与脚本保持一致；改脚本行为时同步本文
 
 1. 编辑 `/etc/live-commerce/compose.env`：
    - 四个域名：`LC_ADMIN_HOST`、`LC_STORE_HOST`、`LC_API_HOST`、`LC_HOOKS_HOST`。
-   - `IMAGE_TAG`、`COMPOSE_PROFILES`。
+   - `COMPOSE_PROFILES`。
+   - `IMAGE_TAG` **不要手工改**：`deploy.sh first|upgrade|app-rollback` 在 `up -d` 之前把要启动的 tag 原子写入这里（临时文件 + 改名，保留属主和权限）。
+     所有其他 Compose 入口（`dc up`、`dc run migrate`、重跑 `first`、§8 换域名）都从这个文件取 tag，所以它必须始终等于正在运行的 tag。
    - 共享开关：`LC_IDENTITY_ENABLED`、`LC_OIDC_ISSUER`、`LC_BUYER_*`。
    跨服务的值**只能**写在这里。
 2. 编辑 `/etc/live-commerce/env/*.env`。这些文件只放各服务自己的旋钮；compose.yml 里 `environment:` 已接好的变量不得重复定义（preflight P06 会拦截）：
@@ -67,9 +71,10 @@ Change rules: 命令必须与脚本保持一致；改脚本行为时同步本文
 ## 3. 首次部署
 
 ```sh
-deploy/scripts/build-images.sh           # 输出 IMAGE_TAG=<sha12>，写入 compose.env（-dirty 标签禁止用于生产）
-deploy/scripts/deploy.sh first           # preflight → 镜像检查 → postgres 健康 → migrate → provision-logins → up -d → 部署后检查 → 记录
+deploy/scripts/build-images.sh           # 输出 IMAGE_TAG=<sha12>（-dirty 标签禁止用于生产）
+deploy/scripts/deploy.sh first <sha12>   # preflight → 镜像检查 → postgres 健康 → migrate → provision-logins → 写 compose.env IMAGE_TAG → up -d → 部署后检查 → 记录
 ```
+- 不带 `<tag>` 时使用 compose.env 里已有的 `IMAGE_TAG`。
 - 首次签发 ACME 证书：DNS 必须先指向本机（P14）。演练时在 `caddy.env` 中打开 staging CA，正式签发前再注释掉。
 - OIDC 回调地址：`https://<LC_ADMIN_HOST>/api/auth/callback`（`cmd/api/identity.go:59`），需要在 IdP 注册。
 - 部署后检查（脚本会自动执行）：
@@ -94,8 +99,11 @@ deploy/scripts/deploy.sh upgrade <tag>
 3. 停止 api/admin/storefront/workers。这段时间 Caddy 返回 503 + `Retry-After: 60`，即维护窗口。
 4. 用新镜像运行 migrate。先执行业务 SQL，再执行 River，最后执行 post_river，全部在同一个 advisory lock 下完成。
 5. 运行 provision-logins。
-6. `up -d`。
-7. 部署后检查并写入日志。
+6. 把新 tag 写入 compose.env 的 `IMAGE_TAG`（日志：`compose.env IMAGE_TAG <旧> -> <新>`）。
+   时机是 `up -d` 之前、迁移成功之后：从这一刻起容器运行新 tag，所以即使部署后检查失败，compose.env 也和实际运行的镜像一致，
+   之后任何普通的 `dc up -d` 都不会悄悄换回旧镜像（旧镜像跑在已迁移的 schema 上，旧 migrate 还会报 `database migration unknown to this binary`）。
+7. `up -d`。
+8. 部署后检查；通过后才写入 `deployments.log`（它只记录验证通过的部署，是回滚判断的依据）。
 
 要点：
 - 迁移失败时修复代码后重新执行。**绝不修改已经应用的 SQL 或 checksum**。
@@ -105,8 +113,10 @@ deploy/scripts/deploy.sh upgrade <tag>
 ## 5. 回滚决策树
 
 1. **与该 tag 上次部署时相比，ledger 行数没有变化** → `deploy/scripts/deploy.sh app-rollback <旧tag>`。
-   如果 ledger 有变化，脚本会拒绝，并提示 "forward-fix only"。
-   回滚到正在运行的 tag 是空操作，会通过部署后检查。smoke S39 覆盖四条路径：空操作、换 tag（容器重建）、换回原 tag、ledger 变化时拒绝。
+   如果 ledger 有变化，脚本会拒绝，并提示 "forward-fix only"（此时 compose.env 不会被改动）。
+   允许回滚时，脚本同样在 `up -d` 之前把 `<旧tag>` 写入 compose.env，否则之后的 `dc up` 会把坏版本装回来。
+   回滚到正在运行的 tag 是空操作，会通过部署后检查。smoke S39 覆盖四条路径：空操作、换 tag（容器重建）、换回原 tag、ledger 变化时拒绝；
+   S43 验证 compose.env 跟随回滚、普通 `up -d` 不改变 tag、看门狗 W10 能发现漂移。
 2. ledger 已变化，**且**备份之后**没有任何外部业务事实**（恢复流量后没有新订单或支付）→ 由 owner 决定是否按 backup-restore.md 恢复数据库，再做 app-rollback。
 3. 其他情况 → **前向修复 + 对账**（架构.md §22.1）。**禁止在真实支付之上恢复数据库**。
 - 应用回滚不等于数据库回滚。脚本永远不会自动回滚或自动恢复。
@@ -124,7 +134,7 @@ deploy/scripts/deploy.sh upgrade <tag>
 | 密钥 | 做法 |
 |---|---|
 | `pw_<login>` | 写入新值（`openssl rand -hex 32`，不带换行）→ `secrets-init.sh --rederive` → `docker compose run --rm -T --no-deps provision-logins` → 重启该服务 |
-| `pg_superuser_password` | 在 pg-ops 中执行 `ALTER ROLE postgres PASSWORD ...`（先写临时文件，禁止放进 argv）→ 替换文件 → `--rederive` 更新 `dsn_migrate_owner` |
+| `pg_superuser_password` | **只用** `deploy/scripts/pg-ops.sh rotate-superuser`（见下文）。**禁止**手工执行 `ALTER ROLE postgres PASSWORD ...`：服务器 `log_statement='ddl'`，新口令会以明文进入 postgres 日志（Docker json-file）和诊断包 |
 | `commerce_bff_key` | 替换后 api 和 admin **同时**重启 |
 | `commerce_buyer_bff_key` | 替换后 api 和 storefront 同时重启（值必须不同于商家 BFF key） |
 | `commerce_buyer_cookie_key` | 替换后所有买家会话失效 |
@@ -133,11 +143,24 @@ deploy/scripts/deploy.sh upgrade <tag>
 
 所有密钥文件权限保持 `0440 root:10500`。改完后执行 `preflight.sh`。
 
+`pg-ops.sh rotate-superuser`（在 DB 主机上以 root 执行，postgres 必须在运行；smoke S41 验证）：
+1. 生成新值（`openssl rand -hex 32`），先持久化到 `secrets/.pg_superuser_password.rotating`（0400），再改数据库。
+2. 在 pg-ops 中用**同一个 psql 会话**：`SET log_statement='none'; SET log_min_error_statement='panic'; SET log_min_duration_statement=-1;`，
+   psql 自己读取新值（`` \set pw `cat …` ``，新值经 stdin 进入 pg-ops 的 /tmp tmpfs），`SELECT format('ALTER ROLE postgres PASSWORD %L', :'pw') \gexec`。
+   然后验证新口令能登录、旧口令被拒绝。做法与 provision-logins.sh 相同（`deploy/postgres/ops/rotate-superuser.sh`）。
+3. **原地**写入 `pg_superuser_password`（同一个 inode，属主和权限不变）：Compose 把文件密钥按单文件 bind mount 挂载，
+   原地写入后正在运行的 postgres 容器立即看到新值（`lc_psql`、看门狗、deploy.sh 都依赖它）；改名替换会让容器一直看到旧值，直到重启。
+4. `secrets-init.sh --rederive` 更新 `dsn_migrate_owner`。
+5. 验证 `lc_psql` 可用，并对 `docker compose logs postgres` 做 `lc_secret_scan`，命中即失败。
+- 中途失败：`.pg_superuser_password.rotating` 会保留，**重新执行同一命令即可继续**（若新值已生效则跳过 ALTER）。不要删除这个文件。
+- 完成后更新离线加密的密钥副本（backup-restore.md §7）。PITR 不受影响：临时集群用 peer 认证，`--promote` 会把超级用户口令设为当前值。
+
 ## 8. 证书与域名
 
 - Caddy 自动申请和续期证书，数据在 `caddy-data` 卷（/data），需要随主机备份。
 - 看门狗 W5 在证书剩余不足 14 天时告警。
-- 更换域名的步骤：改 compose.env → preflight --online → `docker compose up -d caddy api admin`。origin 由域名推导。
+- 更换域名的步骤：改 compose.env → preflight --online → `dc up -d caddy api admin`（`dc` 见 incident.md 开头）。origin 由域名推导。
+  compose.env 的 `IMAGE_TAG` 由 deploy.sh 维护，等于正在运行的 tag，所以这一步不会换镜像；执行前可用 `watchdog.sh` 的 W10 确认没有漂移。
 
 ## 9. 迁移到两台主机 / Kubernetes
 

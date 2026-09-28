@@ -6,6 +6,8 @@ Reads env / secrets: 无（本文不含任何密钥值）。
 Used by: 运维/owner；deploy/README.md 与 deploy.md 链接到此。
 Depends on: deploy/scripts/pg-ops.sh, deploy/postgres/ops/*, deploy/postgres/postgresql.conf（WAL 归档）。
 Status: DESIGN；备份/恢复/PITR 已用 scratch 镜像本地验证（VERIFIED_LOCAL），未在真实数据上执行。
+  2026-09-28 评审 P1 修复：§6 旧流程（复制"暂停中被快速停止"的集群并删除 recovery.signal）会让在线库越过目标时间做崩溃恢复、
+  停留在时间线 1，并让归档永久失败。现改为 `restore-pitr --promote` + `pitr-cutover` 两个脚本（smoke S42）。
 Change rules: 恢复顺序遵循 架构.md §22.3；修改脚本默认行为（新库/临时集群）必须经过评审。
 -->
 # 备份与恢复运行手册
@@ -53,6 +55,7 @@ cd ${LC_BACKUP_DIR}/dumps/<目录> && sha256sum -c SHA256SUMS
   ```
   `verify.sql` 检查三项：ledger 行数与 manifest 一致；支付、过期、Meta 三个就绪门禁为真；各 schema 的表数量。
 - **每季度**：PITR 演练。在 pg-ops 内的临时集群执行，完全不接触生产 PGDATA，并且关闭归档。
+  临时集群的 socket 使用 peer 认证，所以超级用户口令轮换（deploy.md §7）之后，用更早的 base backup 也能演练。
   ```sh
   deploy/scripts/pg-ops.sh restore-pitr --target-time '2026-09-28 03:00:00+00' --drill
   ```
@@ -77,7 +80,7 @@ cd ${LC_BACKUP_DIR}/dumps/<目录> && sha256sum -c SHA256SUMS
      LC_CONFIRM_REPLACE_LIVE=I_UNDERSTAND_FORWARD_ONLY deploy/scripts/pg-ops.sh restore-dump <目录> --replace-live
      ```
      如果目标是全新集群，加 `--fresh-cluster`（先导入角色），再执行 `docker compose run --rm -T --no-deps provision-logins` 为登录角色设置密码。
-   - 方案 B：PITR，见 §6。
+   - 方案 B：PITR，见 §6（`pitr-cutover` 已包含 provision-logins 和新的 base backup）。
 4. **先开放身份和只读订单**，验证数据正确。
 5. **处理删除/撤回的墓碑记录**（K23），然后对账 PSP：对照 PAYUNi 商户后台逐笔核对 `river_payment` 中的 job 和支付状态。
    **历史外部副作用绝不自动重放**，UNKNOWN 状态不能盲目重试。
@@ -89,17 +92,48 @@ cd ${LC_BACKUP_DIR}/dumps/<目录> && sha256sum -c SHA256SUMS
 - 自动重放外部副作用。
 - 删除失败证据。
 
-## 6. 提升 PITR 集群（人工，需在所有服务停止后执行）
+## 6. PITR 切换（需要 owner 批准；两个命令，不需要手工改数据目录）
 
-1. 执行 `restore-pitr --target-time <T>`，**不带 `--drill`**，校验通过。已停止的集群保留在 `pitr-scratch` 卷的 `pitr/pgdata`。
-2. 停止全部服务，包括 postgres：`docker compose stop`。
-3. 用一个 root 的一次性容器，把 `pitr-scratch` 卷中的 `pitr/pgdata` 复制到 `pgdata` 卷的 `18/docker`：
-   - 复制前先把原 `pgdata` 卷整体改名备份，例如 `docker volume create` 一个新卷后复制。
-   - 删除 `recovery.signal`，保持属主为 999:999。
-4. 启动 postgres，检查日志中出现新时间线；执行 `SELECT pg_is_in_recovery()`，结果应为 `f`。
-   如果服务器仍停在 pause 状态，执行 `SELECT pg_wal_replay_resume()` 或在配置中 promote。
-5. 按照 §5 的第 4–7 步逐步开放。
-6. 立刻执行一次新的 base backup，因为时间线已经改变。
+为什么不能再用旧流程：`restore-pitr`（不带参数）在**暂停状态**下快速停止集群，pg_control 状态是 `shut down in recovery`。
+删除 `recovery.signal` 后把它当在线库启动，PostgreSQL 只做普通崩溃恢复：重放 pg_wal 里剩下的全部 WAL（越过目标时间，
+把目标之后的事务带回来），并停留在时间线 1；接着同名段已在 `/backup/wal` 中且内容不同，`archive_command` 的 `cmp` 分支永久拒绝，
+W4 一直失败，pg_wal 持续增长直到磁盘写满（评审用固定镜像复现：目标时 200 行，切换后 400 行，timeline_id=1，failed=3）。
+
+1. **在临时集群里恢复并提升**（在线库不受影响，可以提前做）：
+   ```sh
+   deploy/scripts/pg-ops.sh restore-pitr --target-time '<T>' --promote
+   ```
+   - 暂停在目标 → `verify.sql` → `pg_wal_replay_resume()`，恢复**恰好在目标处结束**并提升到新时间线（写出 `0000000N.history`）
+     → `CHECKPOINT` → 把超级用户口令设为**当前**密钥文件的值（语句日志已在会话内关闭）→ 干净停止（状态 `shut down`）。
+   - 临时服务器此时用 `archive_mode=on` + **空的** `archive_command`：不向归档写任何东西，但 history 文件和新段的 `.ready` 标记会保留，
+     切换后由在线库归档。
+   - 输出 `pitr_promoted_timeline=N`（N ≥ 2）。失败时不会留下 `PROMOTED` 标记，第 2 步会拒绝。
+2. **切换**（停机窗口；Caddy 在此期间返回 503 + `Retry-After`）：
+   ```sh
+   LC_CONFIRM_REPLACE_LIVE=I_UNDERSTAND_FORWARD_ONLY deploy/scripts/pg-ops.sh pitr-cutover
+   ```
+   脚本依次执行：
+   - 检查临时集群：有 `PROMOTED` 标记、状态 `shut down`（不是 `shut down in recovery`）、时间线 > 1、没有 `recovery.signal`/`standby.signal`；
+   - 停止写入方（api、admin、storefront、各 worker），再停止 postgres；
+   - 只在这一次 pg-ops 运行中挂载在线 pgdata 卷：确认在线库已干净停止、空间足够，把 `18/docker` 改名为 `18/docker.pre-pitr-<UTC>`（回退副本），
+     再把提升后的集群复制为 `18/docker`；
+   - 启动 postgres，并验证：`pg_is_in_recovery()` = `f`；`SELECT timeline_id FROM pg_control_checkpoint()` > 1；
+     强制一次 WAL 切换后 `pg_stat_archiver` 的 archived 增加、failed **不变**；`${LC_BACKUP_DIR}/wal/0000000N.history` 已归档；
+   - `provision-logins`（登录角色口令恢复为当前密钥值，并检查就绪门禁）；
+   - 立即做新的 base backup（新时间线的起点）。
+   - **写入方保持停止**。
+3. 按 §5 第 4–7 步逐步开放；`deploy/scripts/deploy.sh first` 会拉起全部服务并执行部署后检查。之后 `watchdog.sh` 应全部 PASS（W4 failed=0）。
+4. 清理回退副本（owner 签字、新 base backup 已完成后）：
+   ```sh
+   dc --profile ops run --rm --no-deps -T -v <项目>_pgdata:/live pg-ops -c 'rm -rf -- /live/18/docker.pre-pitr-<UTC>'
+   ```
+   `<项目>_pgdata` 是 postgres 容器实际使用的卷名（`docker inspect -f '{{range .Mounts}}{{.Name}} {{end}}' <postgres 容器>`）。
+   注意：`-v pgdata:/live` **不会**解析成项目卷，Docker 会新建一个名为 `pgdata` 的空卷。
+
+回退（仅限切换后还没有新的业务写入，owner 决定）：停止 postgres，用同样的 pg-ops 挂载执行
+`mv /live/18/docker /live/18/docker.rejected-pitr-<UTC> && mv /live/18/docker.pre-pitr-<UTC> /live/18/docker`，再启动 postgres。
+回退后必须把 `${LC_BACKUP_DIR}/wal/0000000N.history` 移出归档目录（例如移到 `${LC_BACKUP_DIR}/wal-rejected/`），
+否则以后的 PITR 会跟随这个被放弃的时间线（`requested timeline N is not a child of this server's history`）；然后立即做新的 base backup。
 
 ## 7. 密钥备份与恢复
 

@@ -15,7 +15,8 @@
 #   says so; otherwise the default isolated build network is kept. The network choice affects only
 #   the build, never the image.
 # Reads secrets: none — images never contain secrets or env files.
-# Used by: operators before deploy.sh (IMAGE_TAG in compose.env = printed tag), smoke.sh S07.
+# Used by: operators before deploy.sh (printed tag -> deploy.sh first|upgrade <tag>, which records it
+#   in compose.env), smoke.sh S07.
 # Depends on: deploy/docker/*.Dockerfile, git (commit id), docker.
 # Exit: 0 built, 1 build failed, 3 BLOCKED (cmd/migrate missing = REQUIRES_INTEGRATOR I1;
 #   the Go image would be undeployable without it, so nothing is faked).
@@ -106,4 +107,4 @@ if [[ -n "$evidence" ]]; then
   mkdir -p "$evidence"
   printf '%s\n' "$report" >"$evidence/images.jsonl"
 fi
-lc_info "IMAGE_TAG=$tag (set it in compose.env or pass to deploy.sh upgrade)"
+lc_info "IMAGE_TAG=$tag (deploy with: deploy.sh first $tag | deploy.sh upgrade $tag; deploy.sh writes it into compose.env)"

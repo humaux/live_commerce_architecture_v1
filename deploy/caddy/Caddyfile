@@ -42,11 +42,53 @@
 		Strict-Transport-Security "max-age=31536000"
 		-Server
 	}
-	# Access log: JSON to stdout -> json-file driver. Caddy redacts Cookie/Authorization by default.
+	# Access log: JSON to stdout -> json-file driver (kept ~100 MB per container, bundled by
+	# collect-diagnostics.sh). Caddy redacts Cookie/Set-Cookie/Authorization by default, but it logs
+	# the full request URI including the query string, so credential-bearing query parameters are
+	# rewritten to REDACTED before the line is written (review P1; AGENTS.md: no secrets in logs):
+	#   hub.verify_token  Meta webhook verification (production value from the owner secret
+	#                     commerce_meta_apps_json; read from the query by
+	#                     internal/integrations/meta/handler.go challenge()).
+	#   code, state       OIDC authorization response on admin /api/auth/callback
+	#                     (apps/admin/app/api/auth/callback/route.ts); `state` also appears in the
+	#                     Location of /api/auth/login's redirect to the IdP.
+	#   token, access_token, id_token  defensive: bearer-style parameters must never be logged.
+	# The same rules apply to the Referer request header and the Location response header, which
+	# can carry those URLs as well. Other parameters stay visible (e.g. hub.challenge) for triage.
+	# Verified by smoke S40 (canary values through the hooks and admin hosts; none may reach any
+	# container log). Add a parameter here whenever a route starts taking a secret in its query.
 	# Contains client IPs: retention is owner decision O8.
 	log {
 		output stdout
-		format json
+		format filter {
+			wrap json
+			fields {
+				request>uri query {
+					replace hub.verify_token REDACTED
+					replace code REDACTED
+					replace state REDACTED
+					replace token REDACTED
+					replace access_token REDACTED
+					replace id_token REDACTED
+				}
+				request>headers>Referer query {
+					replace hub.verify_token REDACTED
+					replace code REDACTED
+					replace state REDACTED
+					replace token REDACTED
+					replace access_token REDACTED
+					replace id_token REDACTED
+				}
+				resp_headers>Location query {
+					replace hub.verify_token REDACTED
+					replace code REDACTED
+					replace state REDACTED
+					replace token REDACTED
+					replace access_token REDACTED
+					replace id_token REDACTED
+				}
+			}
+		}
 	}
 	# Upstream down (deploy.sh maintenance window, crash) -> explicit maintenance 503.
 	handle_errors 502 503 504 {

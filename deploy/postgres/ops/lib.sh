@@ -9,7 +9,8 @@
 #   /var/lib/postgresql (pitr-scratch volume, NOT pgdata), /ops (these scripts, read-only).
 # Reads secrets: /run/secrets/pg_superuser_password -> written once to a 0600 pgpass file on
 #   the /tmp tmpfs so no password sits in the environment or argv of pg_dump/psql.
-# Used by: backup.sh, basebackup.sh, restore-dump.sh, restore-pitr.sh.
+# Used by: backup.sh, basebackup.sh, restore-dump.sh, restore-pitr.sh, rotate-superuser.sh,
+#   pitr-install.sh.
 # Depends on: PostgreSQL 18 client tools in the same image as the server (versions match).
 # Status: DESIGN; exercised by smoke S28-S31.
 # Change rules: keep output free of row values and secrets; only names, counts, sizes, hashes.
@@ -50,3 +51,27 @@ ops_psql() { psql -X -q -At -v ON_ERROR_STOP=1 "$@"; }
 
 # ops_sha256 FILE — hex digest only.
 ops_sha256() { sha256sum "$1" | cut -d' ' -f1; }
+
+# ops_alter_superuser_password FILE [PSQL ARGS...] — ALTER ROLE postgres PASSWORD <contents of FILE>
+#   in ONE psql session that first disables every server-side statement-logging path
+#   (log_statement — the live server runs 'ddl', so an ALTER ROLE would otherwise be logged in
+#   cleartext —, log_min_error_statement, log_min_duration_statement), exactly like
+#   deploy/postgres/provision-logins.sh. psql reads the value itself (\set pw `cat FILE`), so it is
+#   never in argv or the environment; VERBOSITY terse keeps psql from echoing statement text on an
+#   error. Connection = current libpq environment (PGHOST/PGUSER/PGPASSFILE) plus PSQL ARGS.
+#   Used by: rotate-superuser.sh (live server), restore-pitr.sh --promote (scratch cluster).
+ops_alter_superuser_password() {
+  local file=$1
+  shift
+  [[ "$file" =~ ^/[A-Za-z0-9._/-]+$ && -r "$file" ]] || ops_die "password file not readable"
+  {
+    echo "\\set VERBOSITY terse"
+    echo "SET log_statement = 'none';"
+    echo "SET log_min_error_statement = 'panic';"
+    echo "SET log_min_duration_statement = -1;"
+    echo "SET client_min_messages = 'warning';"
+    printf '\\set pw `cat %s`\n' "$file"
+    echo "SELECT format('ALTER ROLE postgres PASSWORD %L', :'pw') \\gexec"
+    echo "\\unset pw"
+  } | ops_psql -d postgres "$@" >/dev/null
+}
