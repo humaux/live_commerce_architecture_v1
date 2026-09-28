@@ -21,7 +21,7 @@ import (
 	"testing"
 )
 
-func stripeWebhookTestEnv() map[string]string {
+func sp15WebhookEnv() map[string]string {
 	key := base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{5}, 32))
 	replay := base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{6}, 32))
 	return map[string]string{
@@ -34,15 +34,15 @@ func stripeWebhookTestEnv() map[string]string {
 	}
 }
 
-// recorder returns a getenv over values that records every name asked for.
-func recorder(values map[string]string, read *[]string) func(string) string {
+// sp15Recorder returns a getenv over values that records every name asked for.
+func sp15Recorder(values map[string]string, read *[]string) func(string) string {
 	return func(name string) string {
 		*read = append(*read, name)
 		return values[name]
 	}
 }
 
-func assertNoName(t *testing.T, read []string, what string, forbidden func(string) bool) {
+func sp15AssertNoName(t *testing.T, read []string, what string, forbidden func(string) bool) {
 	t.Helper()
 	for _, name := range read {
 		if forbidden(name) {
@@ -61,9 +61,9 @@ func TestStripeSP15Process(t *testing.T) {
 	t.Run("disabled_webhook_reads_only_its_flag_and_opens_nothing", func(t *testing.T) {
 		for _, flagValue := range []string{"", "0"} {
 			var read []string
-			values := stripeWebhookTestEnv()
+			values := sp15WebhookEnv()
 			values["COMMERCE_STRIPE_WEBHOOK_ENABLED"] = flagValue
-			c, err := loadStripeWebhookConfig(recorder(values, &read), "0.0.0.0:8080") // public address is irrelevant when disabled
+			c, err := loadStripeWebhookConfig(sp15Recorder(values, &read), "0.0.0.0:8080") // public address is irrelevant when disabled
 			if err != nil || len(read) != 1 || read[0] != "COMMERCE_STRIPE_WEBHOOK_ENABLED" {
 				t.Fatalf("flag %q: err=%v read=%v", flagValue, err, read)
 			}
@@ -80,8 +80,8 @@ func TestStripeSP15Process(t *testing.T) {
 	t.Run("enabled_webhook_needs_a_private_listener_before_reading_secrets", func(t *testing.T) {
 		for _, addr := range []string{"0.0.0.0:8080", "localhost:8080", ":8080", "127.0.0.1:0", "10.0.0.5:8080", "[::]:8080", "example.com:8080"} {
 			var read []string
-			values := stripeWebhookTestEnv()
-			if _, err := loadStripeWebhookConfig(recorder(values, &read), addr); !errors.Is(err, errStripeConfig) {
+			values := sp15WebhookEnv()
+			if _, err := loadStripeWebhookConfig(sp15Recorder(values, &read), addr); !errors.Is(err, errStripeConfig) {
 				t.Fatalf("%s accepted: %v", addr, err)
 			}
 			if len(read) != 1 {
@@ -89,7 +89,7 @@ func TestStripeSP15Process(t *testing.T) {
 			}
 		}
 		for _, enabled := range []string{"true", "2", " 1", "1 ", "yes"} {
-			values := stripeWebhookTestEnv()
+			values := sp15WebhookEnv()
 			values["COMMERCE_STRIPE_WEBHOOK_ENABLED"] = enabled
 			if _, err := loadStripeWebhookConfig(func(n string) string { return values[n] }, "127.0.0.1:8080"); !errors.Is(err, errStripeConfig) {
 				t.Fatalf("noncanonical flag %q accepted", enabled)
@@ -100,7 +100,7 @@ func TestStripeSP15Process(t *testing.T) {
 	t.Run("webhook_config_every_negative_and_no_leak", func(t *testing.T) {
 		get := func(v map[string]string) func(string) string { return func(n string) string { return v[n] } }
 		for _, addr := range []string{"127.0.0.1:8080", "[::1]:8080"} {
-			if _, err := loadStripeWebhookConfig(get(stripeWebhookTestEnv()), addr); err != nil {
+			if _, err := loadStripeWebhookConfig(get(sp15WebhookEnv()), addr); err != nil {
 				t.Fatalf("valid private config rejected on %s: %v", addr, err)
 			}
 		}
@@ -125,7 +125,7 @@ func TestStripeSP15Process(t *testing.T) {
 				v["COMMERCE_ACCOUNT_ACTIVE_KEY_ID"], v["COMMERCE_ACCOUNT_KEYS_JSON"], v["COMMERCE_ACCOUNT_REPLAY_KEY"] = a["COMMERCE_ACCOUNT_ACTIVE_KEY_ID"], a["COMMERCE_ACCOUNT_KEYS_JSON"], a["COMMERCE_ACCOUNT_REPLAY_KEY"]
 			},
 		} {
-			values := stripeWebhookTestEnv()
+			values := sp15WebhookEnv()
 			mutate(values)
 			_, err := loadStripeWebhookConfig(get(values), "127.0.0.1:8080")
 			if !errors.Is(err, errStripeConfig) {
@@ -141,11 +141,11 @@ func TestStripeSP15Process(t *testing.T) {
 
 	t.Run("api_never_reads_stripe_secrets_and_webhook_reads_only_its_own_names", func(t *testing.T) {
 		var read []string
-		values := stripeWebhookTestEnv()
+		values := sp15WebhookEnv()
 		// Global Stripe credentials that must never be consulted (contract §0.2, ruling 5).
 		values["STRIPE_SECRET_KEY"], values["STRIPE_ACCOUNT_ID"] = "sk_test_sentinel0123456789abcdef", "acct_SentinelAcct1"
 		values["STRIPE_WEBHOOK_SECRET"], values["STRIPE_WEBHOOK_SECRET_NEXT"] = "whsec_sentinel0123456789abcdef", "whsec_sentinel_next_0123456789"
-		c, err := loadStripeWebhookConfig(recorder(values, &read), "127.0.0.1:8080")
+		c, err := loadStripeWebhookConfig(sp15Recorder(values, &read), "127.0.0.1:8080")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -157,7 +157,7 @@ func TestStripeSP15Process(t *testing.T) {
 				t.Fatalf("webhook config read %q (allowed: %v)", name, allowed)
 			}
 		}
-		assertNoName(t, read, "webhook config", func(n string) bool {
+		sp15AssertNoName(t, read, "webhook config", func(n string) bool {
 			return strings.HasPrefix(n, "STRIPE_") || strings.HasPrefix(n, "COMMERCE_ACCOUNT_")
 		})
 		// Redaction under every formatting path and JSON.
@@ -188,16 +188,16 @@ func TestStripeSP15Process(t *testing.T) {
 		values["COMMERCE_BUYER_PAYMENT_ENABLED"] = "0"
 		values["COMMERCE_STRIPE_CHECKOUT_ENABLED"] = "1"
 		var read []string
-		if _, err := loadBuyerConfig(recorder(values, &read), "127.0.0.1:8080"); err != nil {
+		if _, err := loadBuyerConfig(sp15Recorder(values, &read), "127.0.0.1:8080"); err != nil {
 			t.Fatal(err)
 		}
-		assertNoName(t, read, "disabled buyer payment", func(n string) bool { return strings.Contains(n, "STRIPE") })
+		sp15AssertNoName(t, read, "disabled buyer payment", func(n string) bool { return strings.Contains(n, "STRIPE") })
 
 		for _, flagValue := range []string{"", "0"} {
 			values = buyerPaymentTestEnv()
 			values["COMMERCE_STRIPE_CHECKOUT_ENABLED"] = flagValue
 			read = nil
-			if _, err := loadBuyerConfig(recorder(values, &read), "127.0.0.1:8080"); err != nil {
+			if _, err := loadBuyerConfig(sp15Recorder(values, &read), "127.0.0.1:8080"); err != nil {
 				t.Fatalf("stripe flag %q: %v", flagValue, err)
 			}
 			for _, n := range read {
@@ -211,10 +211,10 @@ func TestStripeSP15Process(t *testing.T) {
 			values["COMMERCE_STRIPE_CHECKOUT_ENABLED"], values["COMMERCE_PAYMENT_PROFILE"] = "1", profile
 			values["STRIPE_SECRET_KEY"], values["STRIPE_WEBHOOK_SECRET"] = "sk_test_sentinel0123456789abcdef", "whsec_sentinel0123456789abcdef"
 			read = nil
-			if _, err := loadBuyerConfig(recorder(values, &read), "127.0.0.1:8080"); err != nil {
+			if _, err := loadBuyerConfig(sp15Recorder(values, &read), "127.0.0.1:8080"); err != nil {
 				t.Fatalf("stripe checkout on %s: %v", profile, err)
 			}
-			assertNoName(t, read, "stripe checkout config", func(n string) bool {
+			sp15AssertNoName(t, read, "stripe checkout config", func(n string) bool {
 				return strings.HasPrefix(n, "STRIPE_") || strings.HasPrefix(n, "COMMERCE_STRIPE_WEBHOOK_") || strings.HasPrefix(n, "COMMERCE_STRIPE_INGRESS_")
 			})
 		}

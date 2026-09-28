@@ -244,8 +244,8 @@ func sflWorkerBinary(t *testing.T, e *sflEnv) {
 		"stripe_with_live_profile": base("LIVE", "1"),
 		"stripe_flag_noncanonical": base("SANDBOX", "true"),
 	} {
-		out, err := runWorkerOnce(binary, env)
-		if err == nil || !strings.Contains(out, "payment_worker_invalid_config") || strings.Contains(out, "postgres://") || anyContains(out, secrets) {
+		out, err := sprRunWorkerOnce(binary, env)
+		if err == nil || !strings.Contains(out, "payment_worker_invalid_config") || strings.Contains(out, "postgres://") || sprAnyContains(out, secrets) {
 			t.Fatalf("%s: err=%v out=%q", name, err, out)
 		}
 	}
@@ -319,20 +319,20 @@ func sflWorkerBinary(t *testing.T, e *sflEnv) {
 	case <-time.After(10 * time.Second):
 		t.Fatal("worker did not exit on SIGTERM")
 	}
-	if anyContains(captured.String(), secrets) || strings.Contains(captured.String(), "postgres://") {
+	if sprAnyContains(captured.String(), secrets) || strings.Contains(captured.String(), "postgres://") {
 		t.Fatal("worker output contains an environment secret")
 	}
 	waitPoolsGone(t, e.f, "worker binary leaked pool connections", app)
 }
 
-func runWorkerOnce(binary string, env []string) (string, error) {
+func sprRunWorkerOnce(binary string, env []string) (string, error) {
 	cmd := exec.Command(binary)
 	cmd.Env = env
 	out, err := cmd.CombinedOutput()
 	return string(out), err
 }
 
-func anyContains(s string, needles []string) bool {
+func sprAnyContains(s string, needles []string) bool {
 	for _, n := range needles {
 		if n != "" && strings.Contains(s, n) {
 			return true

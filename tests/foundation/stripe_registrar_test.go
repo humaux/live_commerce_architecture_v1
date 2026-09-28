@@ -426,7 +426,7 @@ func TestStripeSP21Registrar(t *testing.T) {
 // sflFakeSession reads one session from the fake through the API key of its account.
 func sflFakeSession(t *testing.T, f *stripetest.Server, key, id string, status, currency *string, amount *int64, meta *map[string]string) {
 	t.Helper()
-	req, err := newRequest(f.URL()+"/v1/checkout/sessions/"+id, key)
+	req, err := srgNewRequest(f.URL()+"/v1/checkout/sessions/"+id, key)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -436,13 +436,13 @@ func sflFakeSession(t *testing.T, f *stripetest.Server, key, id string, status, 
 		AmountTotal int64             `json:"amount_total"`
 		Metadata    map[string]string `json:"metadata"`
 	}
-	if err := doJSON(req, &out); err != nil {
+	if err := srgDoJSON(req, &out); err != nil {
 		t.Fatal(err)
 	}
 	*status, *currency, *amount, *meta = out.Status, out.Currency, out.AmountTotal, out.Metadata
 }
 
-func newRequest(url, key string) (*http.Request, error) {
+func srgNewRequest(url, key string) (*http.Request, error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err == nil {
 		req.Header.Set("Authorization", "Bearer "+key)
@@ -450,7 +450,7 @@ func newRequest(url, key string) (*http.Request, error) {
 	return req, err
 }
 
-func doJSON(req *http.Request, out any) error {
+func srgDoJSON(req *http.Request, out any) error {
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err

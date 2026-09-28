@@ -22,6 +22,8 @@ package foundation_test
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
@@ -36,6 +38,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
+	"livecommerce/internal/buyerhttp"
 	"livecommerce/internal/checkout"
 	"livecommerce/internal/integrations/accounts"
 	integration "livecommerce/internal/integrations/core"
@@ -1005,6 +1008,44 @@ func TestStripeSP11BuyerSignals(t *testing.T) {
 		}
 	})
 
+	t.Run("http_refresh_and_cancel_over_real_workers", func(t *testing.T) {
+		// SP11 over HTTP: the same throttle / set-once rules through /v1/buyer/.../payment/{refresh,cancel}.
+		s := e.stripeStore(t)
+		res, session := e.pinned(t, s)
+		srv := e.serveHTTP(t, s)
+		path := "/v1/buyer/orders/" + s.p.hold.OrderID + "/payment"
+		signal := func(suffix string) bool {
+			raw := bphRaw(t, srv.request(t, "POST", path+suffix, s.p.cap.Token, "", nil, nil), 200, []string{"order_id", "scheduled"})
+			var v bool
+			if err := json.Unmarshal(raw["scheduled"], &v); err != nil {
+				t.Fatal(err)
+			}
+			return v
+		}
+		if !signal("/refresh") || signal("/refresh") {
+			t.Fatal("refresh must schedule once and then be throttled by the DB (scheduled=false, no job)")
+		}
+		e.await(t, "refresh observed", res.AttemptID, 30*time.Second, `SELECT EXISTS(SELECT 1 FROM payments.stripe_signals WHERE attempt_id=$1 AND source='BUYER_REFRESH' AND outcome='OBSERVED')`)
+		if n := e.count(t, `SELECT count(*) FROM payments.stripe_signals WHERE attempt_id=$1`, res.AttemptID); n != 1 {
+			t.Fatalf("signals=%d after a throttled refresh", n)
+		}
+		if !signal("/cancel") || signal("/cancel") {
+			t.Fatal("cancel must be scheduled exactly once (set-once)")
+		}
+		e.awaitFact(t, res.AttemptID, "CLOSED_UNPAID")
+		e.closedCleanly(t, s, res)
+		view := bphRaw(t, srv.request(t, "GET", path, s.p.cap.Token, "", nil, nil), 200, sbhViewKeys)
+		bpState(t, view, "payment_state", "CLOSED_UNPAID")
+		bpState(t, view, "handoff_state", "CLOSED")
+		var cancelled bool
+		if err := json.Unmarshal(view["cancel_requested"], &cancelled); err != nil || !cancelled {
+			t.Fatalf("cancel_requested=%s", view["cancel_requested"])
+		}
+		if len(sflExpires(e, session)) < 1 {
+			t.Fatal("no provider-confirmed expire before closure")
+		}
+	})
+
 	t.Run("stale_signal_is_dropped_without_provider_io", func(t *testing.T) {
 		s := e.stripeStore(t)
 		res, _ := e.pinned(t, s)
@@ -1298,4 +1339,19 @@ func TestStripeSP12MoneyChecks(t *testing.T) {
 			}
 		}
 	})
+}
+
+// serveHTTP mounts the private buyer routes (the same buyerhttp.New the API binary
+// builds) for one store of the isolated database.
+func (e *sflEnv) serveHTTP(t *testing.T, s sstStore) bhHarness {
+	t.Helper()
+	b := bhHarness{bcHarness: s.p.bcHarness, key: base64.RawURLEncoding.EncodeToString(randomBytes(32)), origin: "https://buyer-payment.example"}
+	bhPublish(t, s.p.bcHarness, b.origin, s.p.f.tenantA, s.p.f.storeA1)
+	handler, err := buyerhttp.New(context.Background(), s.p.a.issuer, s.p.a.runtime, s.p.bcHarness.service, b.key, time.Hour, e.svc)
+	if err != nil {
+		t.Fatalf("buyer HTTP constructor: %v", err)
+	}
+	b.server = httptest.NewServer(handler)
+	t.Cleanup(b.server.Close)
+	return b
 }
