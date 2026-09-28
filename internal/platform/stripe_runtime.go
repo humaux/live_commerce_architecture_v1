@@ -76,21 +76,27 @@ func validateStripeAuthority(ctx context.Context, pool *pgxpool.Pool, authority 
 		allowed = []string{}
 	}
 	var forbidden, missing bool
+	var allowedOIDs []uint32
 	// pg_proc OIDs avoid schema USAGE checks on catalog lookup. has_*_privilege
 	// includes PUBLIC; reachable covers inherited and SET-only custom roles.
 	err := pool.QueryRow(ctx, `WITH reachable AS (
 	 SELECT oid FROM pg_roles WHERE rolname=session_user
 	  OR pg_has_role(session_user,oid,'USAGE') OR pg_has_role(session_user,oid,'SET')
+	), catalog AS (
+	 SELECT p.oid,n.nspname||'.'||p.proname||'('||replace(oidvectortypes(p.proargtypes),' ','')||')' AS signature
+	 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 	), fixed AS (
-	 SELECT to_regprocedure(signature)::oid AS oid,signature FROM unnest($1::text[]) signature
+	 SELECT c.oid,w.signature FROM unnest($1::text[]) w(signature)
+	 LEFT JOIN catalog c ON c.signature=replace(w.signature,' ','')
 	)
 	SELECT EXISTS(SELECT 1 FROM reachable r CROSS JOIN fixed f
 	 WHERE f.oid IS NOT NULL AND NOT(f.signature=ANY($2::text[]))
 	  AND has_function_privilege(r.oid,f.oid,'EXECUTE')),
-	 EXISTS(SELECT 1 FROM unnest($2::text[]) signature
-	  WHERE to_regprocedure(signature) IS NULL
-	   OR NOT coalesce(has_function_privilege(session_user,to_regprocedure(signature),'EXECUTE'),false))`,
-		all, allowed).Scan(&forbidden, &missing)
+	 EXISTS(SELECT 1 FROM fixed f WHERE f.signature=ANY($2::text[])
+	  AND (f.oid IS NULL OR NOT coalesce(has_function_privilege(session_user,f.oid,'EXECUTE'),false))),
+	 (SELECT coalesce(array_agg(f.oid),'{}'::oid[]) FROM fixed f
+	  WHERE f.signature=ANY($2::text[]) AND f.oid IS NOT NULL)`,
+		all, allowed).Scan(&forbidden, &missing, &allowedOIDs)
 	if err != nil || forbidden || missing {
 		return errors.New("unsafe stripe database privileges")
 	}
@@ -103,7 +109,7 @@ func validateStripeAuthority(ctx context.Context, pool *pgxpool.Pool, authority 
 	 SELECT oid FROM pg_roles WHERE rolname=session_user
 	  OR pg_has_role(session_user,oid,'USAGE') OR pg_has_role(session_user,oid,'SET')
 	), allowed AS (
-	 SELECT to_regprocedure(signature)::oid AS oid FROM unnest($2::text[]) signature
+	 SELECT unnest($2::oid[]) AS oid
 	)
 	SELECT EXISTS(SELECT 1 FROM reachable r CROSS JOIN pg_class c
 	 JOIN pg_namespace n ON n.oid=c.relnamespace
@@ -127,7 +133,7 @@ func validateStripeAuthority(ctx context.Context, pool *pgxpool.Pool, authority 
 	  WHERE n.nspname<>'information_schema' AND n.nspname NOT LIKE 'pg\_%' ESCAPE '\'
 	   AND has_schema_privilege(r.oid,n.oid,'CREATE'))
 	 OR EXISTS(SELECT 1 FROM reachable r WHERE has_database_privilege(r.oid,current_database(),'CREATE'))`,
-		authority, allowed).Scan(&forbidden)
+		authority, allowedOIDs).Scan(&forbidden)
 	if err != nil || forbidden {
 		return errors.New("unsafe stripe database privileges")
 	}
