@@ -729,7 +729,10 @@ func TestStripeSP13WebhookHTTP(t *testing.T) {
 		}
 	})
 
-	t.Run("concurrency_cap_33rd_is_503_busy", func(t *testing.T) {
+	t.Run("concurrency_cap_is_exactly_32_and_the_rest_are_503_busy", func(t *testing.T) {
+		// 40 signed requests hold an in-flight slot while the owner keeps the endpoint row locked
+		// (prepare blocks). A cap of 32 means >=8 immediate 503 busy and >=32 admitted requests.
+		const total = 40
 		holder, err := h.e.f.owner.Begin(context.Background())
 		if err != nil {
 			t.Fatal(err)
@@ -738,38 +741,44 @@ func TestStripeSP13WebhookHTTP(t *testing.T) {
 		if _, err := holder.Exec(context.Background(), `SELECT 1 FROM payments.stripe_webhook_endpoints WHERE endpoint_id=$1::uuid FOR UPDATE`, h.endpoint); err != nil {
 			t.Fatal(err)
 		}
-		results := make(chan swhResult, 32)
-		for i := 0; i < 32; i++ {
+		results := make(chan swhResult, total)
+		for i := 0; i < total; i++ {
 			_, body := ev("cap", func(o *stripetest.EventOpts) {
 				o.SessionID, o.ClientRef, o.Attempt = "cs_test_cap_"+t04Tag(), randomUUID(), randomUUID()
 			})
 			go func() { results <- h.post(t, h.endpoint, body, h.secret) }()
 		}
-		var busy swhResult
-		deadline := time.Now().Add(1500 * time.Millisecond)
-		for time.Now().Before(deadline) {
-			// content type is checked before the semaphore; the body is never read for a busy reply.
-			busy = h.do(t, h.server, http.MethodPost, base, []byte("{}"), contentJSON)
-			if busy.status == 503 {
-				break
-			}
-			time.Sleep(10 * time.Millisecond)
-		}
-		if busy.status != 503 || busy.body != swhErr("busy") || busy.header.Get("Retry-After") != "5" || busy.header.Get("Cache-Control") != "no-store" {
-			t.Fatalf("33rd concurrent admission: %d %q retry-after=%q", busy.status, busy.body, busy.header.Get("Retry-After"))
-		}
-		if err := holder.Rollback(context.Background()); err != nil {
-			t.Fatal(err)
-		}
-		for i := 0; i < 32; i++ {
+		var busy, admitted int
+		var first swhResult
+		release := time.After(500 * time.Millisecond) // busy replies are immediate; then let the admitted ones finish
+		collected := 0
+		for collected < total {
 			select {
 			case r := <-results:
-				if r.status != 200 && r.status != 503 {
-					t.Fatalf("in-flight admission answered %d %q", r.status, r.body)
+				collected++
+				if r.status == 503 && r.body == swhErr("busy") {
+					busy++
+					first = r
+				} else {
+					admitted++
+					if r.status != 200 && r.status != 503 {
+						t.Fatalf("admitted request answered %d %q", r.status, r.body)
+					}
 				}
-			case <-time.After(10 * time.Second):
+			case <-release:
+				release = nil
+				if err := holder.Rollback(context.Background()); err != nil {
+					t.Fatal(err)
+				}
+			case <-time.After(15 * time.Second):
 				t.Fatal("in-flight admissions did not finish")
 			}
+		}
+		if busy < total-32 || admitted < 32 {
+			t.Fatalf("cap is not exactly 32: busy=%d admitted=%d of %d", busy, admitted, total)
+		}
+		if first.header.Get("Retry-After") != "5" || first.header.Get("Cache-Control") != "no-store" {
+			t.Fatalf("busy reply headers: retry-after=%q cache=%q", first.header.Get("Retry-After"), first.header.Get("Cache-Control"))
 		}
 	})
 

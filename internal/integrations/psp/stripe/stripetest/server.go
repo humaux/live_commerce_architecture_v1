@@ -463,7 +463,7 @@ func (s *Server) create(w http.ResponseWriter, r *http.Request, account string) 
 	s.mu.Lock()
 	s.next++
 	id := fmt.Sprintf("cs_test_fake_%d", s.next)
-	v := &session{ID: id, Object: "checkout.session", Status: "open", PaymentStatus: "unpaid", Currency: vals.Get("line_items[0][price_data][currency]"), AmountTotal: amount, AmountSubtotal: amount, TotalDetails: map[string]int64{"amount_discount": 0, "amount_tax": 0, "amount_shipping": 0}, ClientReferenceID: vals.Get("client_reference_id"), Metadata: metadataOf(vals), owner: account, ExpiresAt: expires, Created: time.Now().Unix(), Mode: "payment", PaymentMethodTypes: []string{"card"}, URL: "https://checkout.stripe.com/c/pay/" + id}
+	v := &session{ID: id, Object: "checkout.session", Status: "open", PaymentStatus: "unpaid", Currency: strings.ToLower(vals.Get("line_items[0][price_data][currency]")), AmountTotal: amount, AmountSubtotal: amount, TotalDetails: map[string]int64{"amount_discount": 0, "amount_tax": 0, "amount_shipping": 0}, ClientReferenceID: vals.Get("client_reference_id"), Metadata: metadataOf(vals), owner: account, ExpiresAt: expires, Created: time.Now().Unix(), Mode: "payment", PaymentMethodTypes: []string{"card"}, URL: "https://checkout.stripe.com/c/pay/" + id}
 	s.sessions[id] = v
 	if f.Cached500NoSession {
 		delete(s.sessions, id)
@@ -554,7 +554,7 @@ func (s *Server) Inject(account string, vals url.Values) string {
 	id := fmt.Sprintf("cs_test_fake_%d", s.next)
 	amount, _ := strconv.ParseInt(vals.Get("line_items[0][price_data][unit_amount]"), 10, 64)
 	expires, _ := strconv.ParseInt(vals.Get("expires_at"), 10, 64)
-	s.sessions[id] = &session{ID: id, Object: "checkout.session", Status: "open", PaymentStatus: "unpaid", Currency: vals.Get("line_items[0][price_data][currency]"),
+	s.sessions[id] = &session{ID: id, Object: "checkout.session", Status: "open", PaymentStatus: "unpaid", Currency: strings.ToLower(vals.Get("line_items[0][price_data][currency]")),
 		AmountTotal: amount, AmountSubtotal: amount, TotalDetails: map[string]int64{"amount_discount": 0, "amount_tax": 0, "amount_shipping": 0},
 		ClientReferenceID: vals.Get("client_reference_id"), Metadata: metadataOf(vals), owner: account, ExpiresAt: expires, Created: time.Now().Unix(),
 		Mode: "payment", PaymentMethodTypes: []string{"card"}, URL: "https://checkout.stripe.com/c/pay/" + id}

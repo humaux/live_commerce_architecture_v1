@@ -492,7 +492,7 @@ func TestStripeSP08HappyMock(t *testing.T) {
 	}
 	// The poller ends with stripe_terminal_observed, the hosted URL is purged and the handoff is CLOSED.
 	e.await(t, "terminal observation", ra.AttemptID, 30*time.Second, `SELECT EXISTS(SELECT 1 FROM integration.operation_events WHERE operation_id=$1 AND reason_code='stripe_terminal_observed')`)
-	e.await(t, "query job completed", ra.AttemptID, 30*time.Second, `SELECT EXISTS(SELECT 1 FROM river_payment.river_job WHERE id=$2 AND state='completed')`, ra.JobID)
+	e.await(t, "query job completed", ra.AttemptID, 30*time.Second, `SELECT $1::text IS NOT NULL AND EXISTS(SELECT 1 FROM river_payment.river_job WHERE id=$2 AND state='completed')`, ra.JobID)
 	var purged *time.Time
 	var stored *string
 	var handedOut time.Time
@@ -574,13 +574,14 @@ func TestStripeSP09CreateUnknown(t *testing.T) {
 	})
 	// (worker down past send_deadline, never sent): no worker exists until after the deadline.
 	down := e.stripeStore(t)
+	seeded := len(e.fake.Requests()) // registrar verification is the only traffic so far
 	dres := e.attempt(t, down)
 	sstAge(t, e.f, dres.AttemptID, 8*time.Minute) // send_deadline = created+7m is now past
 	e.start(t, true)
 	e.awaitFact(t, dres.AttemptID, "CLOSED_UNPAID")
 	e.wantStock(t, down, sflReleased)
-	if c := e.fake.Counts(); c.Accepted+c.Denied != 0 || len(e.fake.CreateKeys()) != 0 {
-		t.Fatalf("a request was sent for a never-sent attempt after LOCAL unsent closure: %+v", c)
+	if got := len(e.fake.Requests()); got != seeded || len(e.fake.CreateKeys()) != 0 {
+		t.Fatalf("a request was sent for a never-sent attempt after LOCAL unsent closure: %d -> %d", seeded, got)
 	}
 	var reference string
 	if err := e.f.owner.QueryRow(context.Background(), `SELECT provider_reference FROM payments.facts WHERE attempt_id=$1 AND kind='CLOSED_UNPAID'`, dres.AttemptID).Scan(&reference); err != nil || reference == "" {
@@ -596,17 +597,19 @@ func TestStripeSP09CreateUnknown(t *testing.T) {
 		t.Fatal("POST sent after LOCAL unsent")
 	}
 
-	begin := func(fault stripetest.Fault) (checkout.PaymentResult, sstStore) {
+	// Stores are created with the subtest's own t so their pools close with the subtest
+	// (the isolated PG allows 30 connections; every psSetup opens several).
+	begin := func(t *testing.T, fault stripetest.Fault) (checkout.PaymentResult, sstStore) {
 		s := e.stripeStore(t)
 		e.fake.SetNextFault(fault)
 		return e.attempt(t, s), s
 	}
-	sentAtLeast := func(res checkout.PaymentResult, n int) {
+	sentAtLeast := func(t *testing.T, res checkout.PaymentResult, n int) {
 		e.await(t, fmt.Sprintf("create sent x%d", n), res.AttemptID, 45*time.Second, `SELECT create_send_count>=$2 FROM payments.stripe_sessions WHERE attempt_id=$1`, n)
 	}
 
 	t.Run("drop_after_execute_replays_same_key_and_pins_same_session", func(t *testing.T) {
-		res, _ := begin(stripetest.Fault{DropAfterExecute: true})
+		res, _ := begin(t, stripetest.Fault{DropAfterExecute: true})
 		e.await(t, "session pinned", res.AttemptID, 45*time.Second, `SELECT session_id IS NOT NULL FROM payments.stripe_sessions WHERE attempt_id=$1`)
 		if e.sends(res.AttemptID) < 2 || len(sflCreateKeysPerAttempt(e)[res.AttemptID]) != 1 {
 			t.Fatalf("expected a same-key resend: sends=%d keys=%v", e.sends(res.AttemptID), sflCreateKeysPerAttempt(e)[res.AttemptID])
@@ -617,8 +620,8 @@ func TestStripeSP09CreateUnknown(t *testing.T) {
 	})
 
 	t.Run("cached_500_wait_then_list_match_pins", func(t *testing.T) {
-		res, s := begin(stripetest.Fault{Cached500: true})
-		sentAtLeast(res, 1)
+		res, s := begin(t, stripetest.Fault{Cached500: true})
+		sentAtLeast(t, res, 1)
 		time.Sleep(1500 * time.Millisecond)
 		if e.count(t, `SELECT count(*) FROM payments.stripe_sessions WHERE attempt_id=$1 AND session_id IS NOT NULL`, res.AttemptID) != 0 || e.has(t, res.AttemptID, "CLOSED_UNPAID") {
 			t.Fatal("a cached 500 pinned or closed before expires_at+15 min")
@@ -641,8 +644,8 @@ func TestStripeSP09CreateUnknown(t *testing.T) {
 	})
 
 	t.Run("cached_500_without_session_closes_only_after_expires_plus_15m", func(t *testing.T) {
-		res, s := begin(stripetest.Fault{Cached500NoSession: true})
-		sentAtLeast(res, 1)
+		res, s := begin(t, stripetest.Fault{Cached500NoSession: true})
+		sentAtLeast(t, res, 1)
 		sstAge(t, e.f, res.AttemptID, 30*time.Minute) // still inside the resend window
 		sstWake(t, e.f, res.AttemptID)
 		time.Sleep(2500 * time.Millisecond)
@@ -659,7 +662,7 @@ func TestStripeSP09CreateUnknown(t *testing.T) {
 	})
 
 	t.Run("first_send_400_closes_immediately", func(t *testing.T) {
-		res, s := begin(stripetest.Fault{Validation: true})
+		res, s := begin(t, stripetest.Fault{Validation: true})
 		e.awaitFact(t, res.AttemptID, "CLOSED_UNPAID")
 		e.wantStock(t, s, sflReleased)
 		if n := e.sends(res.AttemptID); n != 1 {
@@ -670,13 +673,13 @@ func TestStripeSP09CreateUnknown(t *testing.T) {
 	t.Run("400_after_uncertain_send_does_not_close_until_list", func(t *testing.T) {
 		// Send 1 times out at the worker (the fake drops it uncached); send 2 gets a 400. Validation
 		// and auth can run before the idempotency lookup (F4), so it is not a definitive rejection.
-		res, s := begin(stripetest.Fault{Delay: 8 * time.Second})
-		sentAtLeast(res, 1)
+		res, s := begin(t, stripetest.Fault{Delay: 8 * time.Second})
+		sentAtLeast(t, res, 1)
 		for i := 0; i < 100 && e.fake.FaultPending(); i++ { // the delay fault must reach the fake first
 			time.Sleep(50 * time.Millisecond)
 		}
 		e.fake.SetNextFault(stripetest.Fault{Validation: true})
-		sentAtLeast(res, 2)
+		sentAtLeast(t, res, 2)
 		time.Sleep(1500 * time.Millisecond)
 		if e.has(t, res.AttemptID, "CLOSED_UNPAID") {
 			t.Fatal("a 400 after an uncertain send closed the attempt")
@@ -688,7 +691,7 @@ func TestStripeSP09CreateUnknown(t *testing.T) {
 
 	t.Run("conflict_and_rate_limit_back_off_then_succeed", func(t *testing.T) {
 		for name, fault := range map[string]stripetest.Fault{"409": {Conflict: true}, "429": {RateLimit: true}} {
-			res, s := begin(fault)
+			res, s := begin(t, fault)
 			e.await(t, "session pinned after "+name, res.AttemptID, 90*time.Second, `SELECT session_id IS NOT NULL FROM payments.stripe_sessions WHERE attempt_id=$1`)
 			if e.has(t, res.AttemptID, "CLOSED_UNPAID") || len(sflCreateKeysPerAttempt(e)[res.AttemptID]) != 1 {
 				t.Fatalf("%s: closure or a second create key", name)
@@ -698,7 +701,7 @@ func TestStripeSP09CreateUnknown(t *testing.T) {
 	})
 
 	t.Run("idempotency_error_alarms_without_closure", func(t *testing.T) {
-		res, s := begin(stripetest.Fault{IdempotencyError: true})
+		res, s := begin(t, stripetest.Fault{IdempotencyError: true})
 		e.await(t, "idempotency alarm", res.AttemptID, 45*time.Second, `SELECT EXISTS(SELECT 1 FROM integration.operation_events WHERE operation_id=$1 AND reason_code='stripe_idempotency_alarm')`)
 		if e.has(t, res.AttemptID, "CLOSED_UNPAID") {
 			t.Fatal("idempotency_error closed the attempt")
@@ -882,7 +885,7 @@ func (e *sflEnv) sflSignal(t *testing.T, s sstStore, attempt, source string, age
 
 func (e *sflEnv) awaitOutcome(t *testing.T, attempt, signal, outcome string) {
 	t.Helper()
-	e.await(t, "signal outcome "+outcome, attempt, 40*time.Second, `SELECT EXISTS(SELECT 1 FROM payments.stripe_signals WHERE id=$2::uuid AND outcome=$3 AND consumed_at IS NOT NULL)`, signal, outcome)
+	e.await(t, "signal outcome "+outcome, attempt, 40*time.Second, `SELECT $1::text IS NOT NULL AND EXISTS(SELECT 1 FROM payments.stripe_signals WHERE id=$2::uuid AND outcome=$3 AND consumed_at IS NOT NULL)`, signal, outcome)
 }
 
 // TestStripeSP11BuyerSignals: cancel/refresh through the real service with real
@@ -907,6 +910,7 @@ func TestStripeSP11BuyerSignals(t *testing.T) {
 
 	// Cancel before any send: the worker is not running yet, so the create was never sent.
 	early := e.stripeStore(t)
+	seeded := len(e.fake.Requests())
 	eres := e.attempt(t, early)
 	if out := cancel(early); !out.Scheduled || out.OrderID != early.p.hold.OrderID {
 		t.Fatalf("cancel before send: %+v", out)
@@ -917,8 +921,8 @@ func TestStripeSP11BuyerSignals(t *testing.T) {
 	e.start(t, true)
 	e.awaitFact(t, eres.AttemptID, "CLOSED_UNPAID")
 	e.wantStock(t, early, sflReleased)
-	if c := e.fake.Counts(); c.Accepted+c.Denied != 0 || len(e.fake.CreateKeys()) != 0 {
-		t.Fatalf("cancel before send still reached Stripe: %+v", c)
+	if got := len(e.fake.Requests()); got != seeded || len(e.fake.CreateKeys()) != 0 {
+		t.Fatalf("cancel before send still reached Stripe: %d -> %d", seeded, got)
 	}
 	e.await(t, "signal consumed", eres.AttemptID, 30*time.Second, `SELECT bool_and(consumed_at IS NOT NULL) FROM payments.stripe_signals WHERE attempt_id=$1`)
 	if out := refresh(early); out.Scheduled {
@@ -1253,22 +1257,29 @@ func TestStripeSP12MoneyChecks(t *testing.T) {
 		if n := e.count(t, `SELECT count(*) FROM fulfillment.payment_work_items WHERE attempt_id=$1 AND state='READY'`, res.AttemptID); n != 0 {
 			t.Fatal("a READY fulfilment consumer can select the contradicted payment")
 		}
-		// Replay every stored observation in shuffled orders: the state converges to the same rows.
-		rows, err := e.f.owner.Query(ctx, `SELECT report_hash FROM payments.provider_observations WHERE attempt_id=$1 ORDER BY received_at`, res.AttemptID)
+		// Replay the observations recorded AFTER the deadline aging in shuffled orders (older reports
+		// carry the pre-aging expires_at, which the SQL identity guard rightly refuses on aged rows).
+		rows, err := e.f.owner.Query(ctx, `SELECT o.report_hash,o.report->>'Status',o.report->>'PaymentStatus' FROM payments.provider_observations o
+		 JOIN payments.stripe_sessions ss ON ss.attempt_id=o.attempt_id
+		 WHERE o.attempt_id=$1 AND o.report->>'ExpiresAt'=extract(epoch FROM ss.expires_at)::bigint::text ORDER BY o.received_at`, res.AttemptID)
 		if err != nil {
 			t.Fatal(err)
 		}
 		var hashes [][]byte
+		sawExpired, sawPaid := false, false
 		for rows.Next() {
 			var h []byte
-			if err := rows.Scan(&h); err != nil {
+			var status, paid string
+			if err := rows.Scan(&h, &status, &paid); err != nil {
 				t.Fatal(err)
 			}
 			hashes = append(hashes, h)
+			sawExpired = sawExpired || status == "expired" && paid == "unpaid"
+			sawPaid = sawPaid || status == "complete" && paid == "paid"
 		}
 		rows.Close()
-		if len(hashes) < 3 {
-			t.Fatalf("expected >=3 stored observations, got %d", len(hashes))
+		if len(hashes) < 2 || !sawExpired || !sawPaid {
+			t.Fatalf("need the closing and the late-paid observations to replay: %d expired=%t paid=%t", len(hashes), sawExpired, sawPaid)
 		}
 		orders := [][]int{{}, {}, {}}
 		for i := range hashes {

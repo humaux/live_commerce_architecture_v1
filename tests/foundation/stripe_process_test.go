@@ -48,6 +48,7 @@ func TestStripeSP15Process(t *testing.T) {
 
 	t.Run("disabled_assembly_serves_payuni_and_retains_the_stripe_job", func(t *testing.T) {
 		s := e.stripeStore(t)
+		seeded := len(e.fake.Requests())
 		res := e.attempt(t, s)
 		payuni.pcAwaitCapture(t) // the PAYUNi provider path is untouched by Stripe support
 		time.Sleep(4 * time.Second)
@@ -62,8 +63,8 @@ func TestStripeSP15Process(t *testing.T) {
 		if e.count(t, `SELECT count(*) FROM payments.stripe_sessions WHERE attempt_id=$1 AND (create_first_sent_at IS NOT NULL OR session_id IS NOT NULL)`, res.AttemptID) != 0 {
 			t.Fatal("disabled assembly touched the Stripe session")
 		}
-		if c := e.fake.Counts(); c.Accepted+c.Denied != 0 {
-			t.Fatalf("disabled assembly called Stripe: %+v", c)
+		if got := len(e.fake.Requests()); got != seeded {
+			t.Fatalf("disabled assembly called Stripe: %d -> %d requests", seeded, got)
 		}
 		e.wantStock(t, s, sflPending)
 
@@ -71,8 +72,8 @@ func TestStripeSP15Process(t *testing.T) {
 		// opened, so the job fails closed before any provider request.
 		wrong := e.startWith(t, true, pwKeys(t))
 		e.await(t, "unavailable code", res.AttemptID, 40*time.Second, `SELECT EXISTS(SELECT 1 FROM integration.operation_events WHERE operation_id=$1 AND reason_code='stripe_unavailable')`)
-		if c := e.fake.Counts(); c.Accepted+c.Denied != 0 {
-			t.Fatalf("worker with unopenable material contacted Stripe: %+v", c)
+		if got := len(e.fake.Requests()); got != seeded {
+			t.Fatalf("worker with unopenable material contacted Stripe: %d -> %d requests", seeded, got)
 		}
 		e.wantStock(t, s, sflPending)
 		wrong()

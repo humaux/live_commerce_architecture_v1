@@ -233,7 +233,7 @@ func sstAdmissionDrift(t *testing.T, name string, mutate func(*testing.T, *sstEn
 		p := psSetup(t)
 		e := sstNewEnv(t, p.f, sstKeyring(t, "sst_api", randomBytes(32)))
 		s := e.seed(t, p)
-		before := sstFacts(t, p)
+		before, seeded := sstFacts(t, p), len(e.fake.Requests()) // registrar verification is the only provider traffic
 		mutate(t, e, &s)
 		if _, err := begin(t, e, s); !errors.Is(err, command.ErrConflict) {
 			t.Fatalf("admission drift %q was not a 409 conflict: %v", name, err)
@@ -241,8 +241,8 @@ func sstAdmissionDrift(t *testing.T, name string, mutate func(*testing.T, *sstEn
 		if after := sstFacts(t, p); after != before {
 			t.Fatalf("admission drift %q left partial facts: %v -> %v", name, before, after)
 		}
-		if got := e.fake.Counts(); got.Accepted+got.Denied != 0 {
-			t.Fatalf("API process made provider requests: %+v", got)
+		if got := len(e.fake.Requests()); got != seeded {
+			t.Fatalf("API process made provider requests: %d -> %d", seeded, got)
 		}
 	})
 }
@@ -255,7 +255,7 @@ func TestStripeSP07Start(t *testing.T) {
 		p := psSetup(t)
 		e := sstNewEnv(t, p.f, sstKeyring(t, "sst_api", randomBytes(32)))
 		s := e.seed(t, p)
-		before := sstFacts(t, p)
+		before, seeded := sstFacts(t, p), len(e.fake.Requests()) // registrar verification is the only provider traffic
 		res, err := s.begin(e.svc, t04Key("sst-start"), s.input("zh-TW"))
 		if err != nil || res.AttemptID == "" || res.OperationID != res.AttemptID || res.JobID < 1 ||
 			res.State != "PAYMENT_PENDING" || res.Currency != "TWD" || res.AmountMinor != 2500 || res.OrderID != p.hold.OrderID {
@@ -271,7 +271,7 @@ func TestStripeSP07Start(t *testing.T) {
 			method, provider, state, profile, account, action, semantic, actor string
 			connection                                                         string
 			credentialVersion                                                  int64
-			providerRef                                                        *string
+			providerRef                                                        string
 			locale, digest                                                     string
 			unit                                                               int64
 			params                                                             []byte
@@ -280,7 +280,7 @@ func TestStripeSP07Start(t *testing.T) {
 			sends                                                              int
 		)
 		if err := p.f.owner.QueryRow(ctx, `SELECT a.method_code,o.provider,a.state,a.execution_profile,ss.account_id,o.action,
-		  o.semantic_key,o.actor_kind,a.connection_id::text,a.credential_version,o.provider_reference,ss.locale,
+		  o.semantic_key,o.actor_kind,a.connection_id::text,a.credential_version,coalesce(o.provider_reference,''),ss.locale,
 		  encode(ss.config_digest,'hex'),ss.unit_amount,ss.create_params,ss.attempt_created_at,ss.expires_at,
 		  ss.send_deadline,ss.handoff_cutoff,ss.session_id,ss.session_url,ss.create_send_count
 		  FROM checkout.payment_attempts a JOIN integration.operations o ON o.id=a.id
@@ -296,10 +296,12 @@ func TestStripeSP07Start(t *testing.T) {
 		}
 		if method != "stripe_checkout" || provider != "stripe" || state != "PAYMENT_PENDING" || profile != "PROVIDER_MOCK" ||
 			account != s.account || action != "stripe.checkout_session" || semantic != "payment.stripe:"+res.AttemptID ||
-			actor != "BUYER_PAYMENT_QUERY" || connection != s.connection || credentialVersion != 1 || providerRef != nil ||
+			actor != "BUYER_PAYMENT_QUERY" || connection != s.connection || credentialVersion != 1 || providerRef != "" ||
 			locale != "zh-TW" || digest != hex.EncodeToString(wantDigest[:]) || unit != 2500 ||
 			sessionID != nil || sessionURL != nil || sends != 0 {
-			t.Fatalf("frozen attempt/op/session identity mismatch")
+			t.Fatalf("frozen attempt/op/session identity mismatch: method=%s provider=%s state=%s profile=%s account_ok=%t action=%s semantic_ok=%t actor=%s connection_ok=%t credential=%d provider_ref_nil=%t locale=%s digest_ok=%t unit=%d session_nil=%t url_nil=%t sends=%d",
+				method, provider, state, profile, account == s.account, action, semantic == "payment.stripe:"+res.AttemptID, actor, connection == s.connection,
+				credentialVersion, providerRef == "", locale, digest == hex.EncodeToString(wantDigest[:]), unit, sessionID == nil, sessionURL == nil, sends)
 		}
 		// §0.1/D4: expires = date_trunc(second, created)+40 min, send window 7 min, handoff stops 5 min early.
 		if !expires.Equal(created.Truncate(time.Second).Add(40*time.Minute)) || !send.Equal(created.Add(7*time.Minute)) ||
@@ -357,8 +359,8 @@ func TestStripeSP07Start(t *testing.T) {
 		if n := countRows(t, p.f.owner, `SELECT count(*) FROM integration.operation_events WHERE operation_id=$1 AND reason_code='buyer_payment_started'`, res.AttemptID); n != 1 {
 			t.Fatalf("operation event count %d", n)
 		}
-		if c := e.fake.Counts(); c.Accepted+c.Denied != 0 || len(e.fake.Requests()) != 0 {
-			t.Fatalf("SP07 zero calls: fake saw %+v", c)
+		if got := len(e.fake.Requests()); got != seeded || e.fake.Counts().Denied != 0 || len(e.fake.CreateKeys()) != 0 {
+			t.Fatalf("SP07 zero calls: fake requests %d -> %d, create keys %d", seeded, got, len(e.fake.CreateKeys()))
 		}
 	})
 
@@ -551,8 +553,22 @@ func TestStripeSP07Start(t *testing.T) {
 			mustExec(t, e.f.owner, `UPDATE integration.bindings SET enabled=false WHERE id=(SELECT binding_id FROM integration.merchant_accounts WHERE id=$1)`, s.connection)
 		}, rebegin)
 		sstAdmissionDrift(t, "wrong_environment_on_method", func(t *testing.T, e *sstEnv, s *sstStore) {
-			// owner fixture: method row claims LIVE while the account and profile are SANDBOX/MOCK.
-			mustExec(t, e.f.owner, `UPDATE payments.method_versions SET environment='LIVE' WHERE connection_id=$1`, s.connection)
+			// owner fixture (replica role: bypasses method_account_target_fk, which pins the
+			// environment): the method row claims LIVE while the account and profile are SANDBOX/MOCK.
+			tx, err := e.f.owner.Begin(context.Background())
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer tx.Rollback(context.Background())
+			if _, err := tx.Exec(context.Background(), `SET LOCAL session_replication_role=replica`); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := tx.Exec(context.Background(), `UPDATE payments.method_versions SET environment='LIVE' WHERE connection_id=$1`, s.connection); err != nil {
+				t.Fatal(err)
+			}
+			if err := tx.Commit(context.Background()); err != nil {
+				t.Fatal(err)
+			}
 		}, rebegin)
 		sstAdmissionDrift(t, "mock_evidence_on_sandbox_profile", func(t *testing.T, e *sstEnv, s *sstStore) {}, func(t *testing.T, e *sstEnv, s sstStore) (checkout.PaymentResult, error) {
 			return s.begin(e.service(t, "SANDBOX", e.scfg), t04Key("sst-sandbox"), s.input("zh-TW"))
@@ -563,21 +579,38 @@ func TestStripeSP07Start(t *testing.T) {
 	})
 
 	t.Run("currency_not_admitted_JPY", func(t *testing.T) {
-		// §0.2: JPY and every currency outside HKD/USD/SGD/MYR/TWD is rejected. A JPY market
-		// cannot obtain a Stripe method, so no JPY order can ever reach start_stripe_payment.
+		// §0.2: JPY and every currency outside HKD/USD/SGD/MYR/TWD is rejected. A JPY store cannot
+		// obtain a Stripe method, so no JPY order can ever reach start_stripe_payment.
 		p := psSetup(t)
 		e := sstNewEnv(t, p.f, sstKeyring(t, "sst_api", randomBytes(32)))
-		s := e.seed(t, p)
 		ctx := context.Background()
-		jp, err := pricingScoped(ctx, p.f, p.f.tokens["a"], p.f.storeA1, "pricing:write", func(tx pgx.Tx, sc platform.Scope) (pricing.Market, error) {
+		jpStore := randomUUID()
+		mustExec(t, p.f.owner, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,'SP07 JPY store','JPY')`, p.f.tenantA, jpStore)
+		mustExec(t, p.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission)
+		 SELECT $1,$2,$3,x FROM unnest(ARRAY['store:read','pricing:read','pricing:write','integration:manage','integration:read']) x`, p.f.tenantA, jpStore, p.f.principalA)
+		jp, err := pricingScoped(ctx, p.f, p.f.tokens["a"], jpStore, "pricing:write", func(tx pgx.Tx, sc platform.Scope) (pricing.Market, error) {
 			return pricing.CreateMarket(ctx, tx, sc, t04Key("sst-jp"), pricing.MarketInput{Code: "jp", Name: "Synthetic JP", Currency: "JPY"})
 		})
 		if err != nil {
-			t.Skipf("NOT_RUN: fixture cannot create a JPY market: %v", err)
+			t.Fatalf("JPY market fixture: %v", err)
 		}
-		in := s.methodInput(0, true, true, 50, 99999999)
-		in.MarketID, in.Country = jp.ID, "JP"
-		if _, err := e.reg.SetMethod(ctx, s.scope, in); !errors.Is(err, stripeadmin.ErrRejected) {
+		scope := stripeadmin.Scope{TenantID: p.f.tenantA, StoreID: jpStore, PrincipalID: p.f.principalA}
+		account, secret := "acct_T"+t04Tag(), "sk_test_"+hex.EncodeToString(randomBytes(12))
+		if err := e.fake.AddAccount(account, secret); err != nil {
+			t.Fatal(err)
+		}
+		conn, err := e.reg.Register(ctx, scope, account, secret)
+		if err != nil {
+			t.Fatalf("register JPY-store account: %v", err)
+		}
+		qual, err := e.reg.Qualify(ctx, scope, stripeadmin.QualifyInput{ConnectionID: conn, AccountID: account, SecretKey: secret, Profile: "PROVIDER_MOCK",
+			Currency: "JPY", ReturnURL: sstReturnURL, ExpectedVersion: 1, AmountMinor: 50})
+		if err != nil {
+			t.Fatalf("qualify: %v", err)
+		}
+		_, err = e.reg.SetMethod(ctx, scope, stripeadmin.MethodInput{MarketID: jp.ID, Country: "JP", ConnectionID: conn, QualificationID: qual, ExpectedVersion: 0,
+			Enabled: true, Visible: true, Sort: 1, MinMinor: 50, MaxMinor: 99999999, NameHans: "Stripe", NameHant: "Stripe", NameEN: "Stripe"})
+		if !errors.Is(err, stripeadmin.ErrRejected) {
 			t.Fatalf("JPY Stripe method accepted: %v", err)
 		}
 		if n := countRows(t, p.f.owner, `SELECT count(*) FROM payments.method_versions WHERE market_id=$1`, jp.ID); n != 0 {
@@ -743,7 +776,8 @@ func sstPin(t *testing.T, f *testFixture, attempt string) (sessionID, sessionURL
 // migration owner in session_replication_role=replica. Disclosed evidence: this
 // bypasses payments.guard_stripe_session (set-once/frozen columns) on purpose;
 // all CHECK-linked deadlines (expires_at = created + 40 min, send_deadline,
-// handoff_cutoff) move together so the row stays internally valid. Nothing in
+// handoff_cutoff) and the frozen create_params expires_at move together, because the
+// worker refuses a snapshot whose body disagrees with its deadlines. Nothing in
 // checkout.payment_attempts or integration.operations is touched.
 func sstAge(t *testing.T, f *testFixture, attempt string, d time.Duration) {
 	t.Helper()
@@ -762,8 +796,9 @@ func sstAge(t *testing.T, f *testFixture, attempt string, d time.Duration) {
 	 create_first_sent_at=create_first_sent_at-$2::interval, create_last_sent_at=create_last_sent_at-$2::interval,
 	 pinned_at=pinned_at-$2::interval, first_handed_out_at=first_handed_out_at-$2::interval,
 	 cancel_requested_at=cancel_requested_at-$2::interval, last_refresh_at=last_refresh_at-$2::interval,
-	 last_expire_at=last_expire_at-$2::interval, url_purged_at=url_purged_at-$2::interval
-	 WHERE attempt_id=$1`, attempt, fmt.Sprintf("%d seconds", int64(d.Seconds()))); err != nil {
+	 last_expire_at=last_expire_at-$2::interval, url_purged_at=url_purged_at-$2::interval,
+	 create_params=jsonb_set(create_params,'{expires_at}',to_jsonb(((create_params->>'expires_at')::bigint-$3::bigint)::text))
+	 WHERE attempt_id=$1`, attempt, fmt.Sprintf("%d seconds", int64(d.Seconds())), int64(d.Seconds())); err != nil {
 		t.Fatalf("age session: %v", err)
 	}
 	if err := tx.Commit(ctx); err != nil {

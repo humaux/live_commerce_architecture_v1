@@ -36,9 +36,16 @@ var (
 	sbhUUID = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
 	sbhTime = regexp.MustCompile(`"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?Z"`)
 	sbhHex  = regexp.MustCompile(`[0-9A-Fa-f]{32,}`)
-	// stripeRedirect is the exact public validator pattern of contract §9.2.
-	sbhRedirect = regexp.MustCompile(`^https://checkout\.stripe\.com/[!-~]{1,4000}$`)
+	// The public validator pattern of contract §9.2 is ^https://checkout\.stripe\.com/[!-~]{1,4000}$.
+	// Go's RE2 refuses repeat counts above 1000, so the bound is a separate length check
+	// (sbhRedirectOK); the character class and host are identical.
+	sbhRedirect = regexp.MustCompile(`^https://checkout\.stripe\.com/[!-~]+$`)
 )
+
+func sbhRedirectOK(u string) bool {
+	const prefix = "https://checkout.stripe.com/"
+	return sbhRedirect.MatchString(u) && len(u)-len(prefix) >= 1 && len(u)-len(prefix) <= 4000
+}
 
 // sbhNormalize masks exactly what varies per run (order UUID, quoted timestamps,
 // ciphertext/hash hex) and nothing else; it must match the normalizer that
@@ -168,8 +175,8 @@ func (x *sbhStripe) view(t *testing.T) map[string]json.RawMessage {
 func (x *sbhStripe) signals(t *testing.T) (n int, jobs int) {
 	t.Helper()
 	if err := x.h.f.owner.QueryRow(context.Background(), `SELECT
-	 (SELECT count(*) FROM payments.stripe_signals WHERE attempt_id=$1),
-	 (SELECT count(*) FROM river_payment.river_job WHERE kind='payment_signal_v1' AND args->>'operation_id'=$1)`, x.attempt).Scan(&n, &jobs); err != nil {
+	 (SELECT count(*) FROM payments.stripe_signals WHERE attempt_id=$1::uuid),
+	 (SELECT count(*) FROM river_payment.river_job WHERE kind='payment_signal_v1' AND args->>'operation_id'=$1::text)`, x.attempt).Scan(&n, &jobs); err != nil {
 		t.Fatal(err)
 	}
 	return
@@ -250,7 +257,7 @@ func TestStripeSP14BuyerHTTP(t *testing.T) {
 		for i := 0; i < 3; i++ {
 			out := bphRaw(t, x.post(t, "/handoff"), 200, []string{"disposition", "expires_at", "order_id", "redirect_url"})
 			bpState(t, out, "disposition", "REDIRECT")
-			if got := x.str(t, out, "redirect_url"); got != url || !sbhRedirect.MatchString(got) {
+			if got := x.str(t, out, "redirect_url"); got != url || !sbhRedirectOK(got) {
 				t.Fatalf("redirect url %q", got)
 			}
 			x.sameTime(t, out["expires_at"], x.cutoff(t))
