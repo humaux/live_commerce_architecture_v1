@@ -97,6 +97,10 @@ Integrator rulings:
   steps apply per currency (TWD whole-dollar rule).
 - The Q1 "exactly one store" blocker is lifted by the per-store account rule. SANDBOX tests bind
   `acct_1UJDb0RusP6Wwj7e` to one fixture store only.
+- **Stage-A finding (SANDBOX, 2026-09-28):** Stripe accepted a 29-minute `expires_at`, so the
+  "Stripe rejects < 30 min" fact in §1/§14 is not relied on. The 30-minute floor is **our local rule**
+  (the adapter refuses < 30 min before any request); v1 always uses 40 minutes (Q2). The 29-minute
+  probe runs only with `STRIPE_SANDBOX_EXPIRY_PROBE=1`.
 - **Staging:** stage A = §5 wire adapter `internal/integrations/psp/stripe` (SP01–SP05 UNIT, SP16
   SANDBOX read/create/expire against the real sandbox). Stage B = §6–§13 persistence, workers,
   HTTP, registrar and SP06–SP15/SP17–SP21. Stage B starts only after stage A is accepted.
