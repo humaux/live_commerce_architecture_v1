@@ -64,3 +64,28 @@ appeared in chat.
 - `migrations.Apply` releases its lock only by closing the connection. A back-to-back Apply could, in theory, return busy. We could not reproduce this, so there is no product change.
 - The pinned pre-LMR source 395b10d is reachable only through `origin/commerce/*` branches. Keep those branches.
 - Migration numbers 0044–0059 are left for the local Codex lanes. This lane uses 0060 (T10) and 0061 (Stripe).
+
+## Update — continued session (2026-09-28, later)
+
+All WIP patches below are now **merged on the branch**. The patch files are kept only for history.
+
+| Commit | Result |
+| --- | --- |
+| 3b206d9 / 92d7f76 / 14e7e4e + 4ce041a | T10 core, HTTP/UI and PG gate tests merged; test compile fix |
+| 09587d8 | T10 real-PG gates **15 PASS / 0 FAIL** (`go test -run '^TestLiveClaims'`). Product bug fixed: the claim-window CHECK had a NULL hole; migration 0060 and the contract are updated. Three test bugs fixed |
+| (same tree) | **KC16 browser gate PASS**: `bash scripts/dev/test-local.sh --browser-live-claims`, admin + storefront Next, Go, PG, Chromium, MOCK ingress |
+| ea0bf59 | deploy/packaging-v1 merged |
+| dc9086c | `cmd/migrate` added (deploy I1). Real PG: 2 runs, both exit 0, 55 migrations |
+| d87a672 | `build-images.sh` optional `GO_IMAGE/NODE_IMAGE/RUNTIME_IMAGE`. Needed only behind a TLS-intercepting proxy: in the cloud container use `GO_IMAGE=lc-verify-golang:ca NODE_IMAGE=lc-verify-node:ca` (local images that add the proxy CA) |
+| (independent integrator run) | `deploy/scripts/smoke.sh static` PASS. `smoke.sh full` **44 PASS / 0 FAIL / 1 BLOCKED**; the block is S29m = I8 (after a logical restore, `live.media_plan_ready()` changes t->f because constraint md5 fingerprints are re-parsed; this needs a media-migration fix owned by the media lane). Evidence: `deploy/.evidence/20260928T135453Z-13b6/` (gitignored, not pushed) |
+| 7561bcc | KC03 upgrade PG memory raised to 1g |
+
+GitGuardian flags `tests/foundation/live_claims_schema_test.go` (`url.UserPassword("postgres", password)`) in commits 14e7e4e and 8a3c27a. It is a **false positive**: the value is `hex(randomBytes(24))`, generated per run. The line is now `ggignore`. The owner must mark incidents 37686711 as false positive in the GitGuardian dashboard, because history still contains the older commits.
+
+The CI result for 7561bcc was not awaited, to save budget. Check it first.
+
+### Remaining next steps (updated)
+1. Check CI on the branch head; fix anything red.
+2. Independent security + correctness review of T10. The §0.1 P2 tests (a)–(g) exist in the gate tests (`TestLiveClaimsP2*`); the review should confirm the tests are not vacuous.
+3. Stripe: freeze `contracts/stripe-psp-v1.md` (the adversarial review was interrupted), then implement MOCK + SANDBOX + browser 4242.
+4. T10c Meta comment intake (amendment `meta-claims-intake-v1`), T12 E2E, fulfilment/refund record, T20, T21, T22, I8 media restore gate.
