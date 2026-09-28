@@ -195,6 +195,7 @@ func (s *Service) Begin(ctx context.Context, token, storeID, key string, in Inpu
 		if err = json.Unmarshal(response, &out); err != nil {
 			return command.ErrConflict
 		}
+		command.InLocalTime(&out) // same location as row-scanned reads/replays
 		if out.OrderID != orderID || out.ReservationID != orderID || out.Generation != 1 ||
 			out.JobID != job.Job.ID || !out.ExpiresAt.After(now) || out.ExpiresAt.After(now.Add(holdDuration+5*time.Second)) {
 			return command.ErrConflict
@@ -230,6 +231,8 @@ func (s *Service) Get(ctx context.Context, token, storeID, orderID string) (Orde
 		if err = json.Unmarshal(snapshotJSON, &out.Snapshot); err != nil {
 			return command.ErrConflict
 		}
+		// The snapshot is SQL-built JSON; align it with pgx-scanned quote reads.
+		command.InLocalTime(&out.Snapshot)
 		if out.OrderID != orderID || out.Generation < 1 || out.JobID < 1 ||
 			out.Snapshot.Quote.ID == "" || out.Snapshot.Destination.ID == "" {
 			return command.ErrConflict
@@ -266,6 +269,7 @@ func readReceipt(ctx context.Context, tx pgx.Tx, scope buyer.Scope, key string, 
 		out.ReservationID != out.OrderID || out.Generation < 1 || out.JobID < 1 || out.ExpiresAt.IsZero() {
 		return Result{}, false, command.ErrConflict
 	}
+	command.InLocalTime(&out) // replay equals the first result on any host TZ
 	return out, true, nil
 }
 

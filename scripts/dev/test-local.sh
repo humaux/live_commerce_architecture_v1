@@ -134,8 +134,12 @@ cleanup() {
 trap cleanup EXIT INT TERM
 export POSTGRES_PASSWORD
 POSTGRES_PASSWORD="$(openssl rand -hex 24)"
+# Memory: on Linux cgroup v2 the 256 MiB tmpfs data directory is charged to the
+# same memcg as the server processes, so 512m OOM-killed postgres mid-suite on
+# Linux hosts/CI (observed 2026-09-28: memcg OOM -> "database system is in
+# recovery mode"). 1g keeps the same tmpfs/shared_buffers/max_connections gate.
 docker run -d --pull=never --name "$test_container" \
-  --label "livecommerce.fixture=$test_container" --memory=512m --cpus=1 --pids-limit=128 \
+  --label "livecommerce.fixture=$test_container" --memory=1g --cpus=1 --pids-limit=128 \
   --tmpfs /var/lib/postgresql:rw,size=268435456 \
   -e POSTGRES_PASSWORD -e POSTGRES_DB=lc_foundation_test \
   -p 127.0.0.1::5432 \
