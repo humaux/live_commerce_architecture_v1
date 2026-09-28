@@ -1,8 +1,11 @@
 # Stripe PSP v1 — Checkout Session lifecycle, webhook intake and deadline closure
 
 Status: Stage A accepted separately; stage B consistency amendment §0.2 is
-**DRAFT / PREFLIGHT_REQUIRED** on base `529cb0f` (2026-09-29). Only unaffected work may
-continue until §0.2 passes independent review. §0.1 records the owner answers;
+**FROZEN / IMPLEMENTATION_GATES_REQUIRED** on base `529cb0f` (2026-09-29).
+Independent review of `80dea8e` closed the scope/dedupe/atomicity concerns; its remaining
+row-lock-authority P1 was adjudicated by the integrator using the existing `0008` lock-only
+column-grant/RLS pattern below. This is an interface decision, not a PostgreSQL test PASS.
+§0.1 records the owner answers;
 §0.2 reconciles their incomplete propagation into the original draft below.
 Evidence label for this file: DESIGN; implementation/gate results live in delivery evidence,
 not in this contract. No gate is proved merely by this file being frozen.
@@ -236,8 +239,14 @@ new payment engine, new queue system or production permission is introduced.
   scope set by the validated definer; no new BYPASSRLS or schema-owner function is permitted.
   Registrar receives schema USAGE and EXECUTE on registrar functions only. Ingress gets only
   material/prepare/commit execution; worker gets only lease-fenced API-material execution.
-  `commerce_integration_writer` receives SELECT and an explicit RLS SELECT policy on endpoints
-  for material/prepare; it gets no endpoint UPDATE. The registry writer alone owns endpoint writes.
+  `commerce_integration_writer` receives SELECT with an explicit RLS SELECT policy and only
+  `UPDATE(endpoint_id)` with an explicit FOR UPDATE policy `USING (true) WITH CHECK (false)`.
+  This follows `0008_external_operations.sql`: PostgreSQL needs the column privilege for
+  `SELECT ... FOR SHARE`, while the RLS check forbids even a no-op UPDATE. Prepare holds that
+  row lock through receipt/signal/job commit; registrar rotation/disable takes the conflicting
+  row lock before checking/incrementing key_version. No separate advisory endpoint-lock protocol
+  is introduced. The registry writer alone may actually mutate endpoints. Existing immutable
+  identity guards remain mandatory even for its narrow grants.
 - `CLOSURE_CONTRADICTED` + `REVIEW_REQUIRED` is the B1 manual-refund obligation identity.
   No READY fulfillment consumer may select it. Late capture sets PAID_ALLOCATION_FAILED, records
   the obligation once, does not reopen an order or move stock, and does not call any refund API.
@@ -261,6 +270,9 @@ SQL NULL (not an exception); accepted input returns the unchanged minor-unit int
 - SP12: late paid replay creates exactly one explicit manual-refund obligation, zero allocation.
 - SP13: endpoint/signature mismatch, key-version rotation during admission, missing linkage and
   commit failure cannot ACK; no plaintext/body/signature in logs or persisted rows.
+  Test effective-role FOR SHARE success and direct no-op/identity UPDATE rejection. With two
+  real PG transactions, rotation/disable must wait for an admitted prepare transaction, and a
+  prepare after a committed rotation must reject its old key_version without a receipt or ACK.
   Binding disable/API-key rotation do not suppress valid historical endpoint admission; endpoint
   disable does. A PAYUNi account cannot satisfy the endpoint's Stripe-specific composite FK.
   Wrong-profile delivery followed by correct-profile delivery admits exactly one correct signal;
