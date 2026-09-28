@@ -18,6 +18,9 @@ $$;
 REVOKE ALL ON FUNCTION payments.stripe_amount_ok(text,bigint),payments.stripe_unit_amount(text,bigint) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION payments.stripe_amount_ok(text,bigint),payments.stripe_unit_amount(text,bigint)
  TO commerce_checkout_writer,commerce_integration_writer;
+-- set_stripe_method runs as the registry writer. Grant only the pure amount
+-- predicate it needs, not new table rights or access to merchant runtimes.
+GRANT EXECUTE ON FUNCTION payments.stripe_amount_ok(text,bigint) TO commerce_payment_registry_writer;
 COMMENT ON FUNCTION payments.stripe_amount_ok(text,bigint) IS 'payments owner; checkout and integration writers validate the closed Stripe currency/minor-unit table; no conversion or provider guarantee';
 COMMENT ON FUNCTION payments.stripe_unit_amount(text,bigint) IS 'payments owner; checkout and integration writers use exact ISO minor units; no rounding or repricing';
 
