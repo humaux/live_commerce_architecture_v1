@@ -575,10 +575,7 @@ func TestBuyerPaymentWorkerProcessSignalAndPoolCleanup(t *testing.T) {
 	case <-time.After(8 * time.Second):
 		t.Fatal("payment-worker did not stop after SIGTERM with no due jobs")
 	}
-	var remaining int
-	if err := f.owner.QueryRow(context.Background(), `SELECT count(*) FROM pg_stat_activity WHERE datname='lc_foundation_test' AND application_name=$1`, app).Scan(&remaining); err != nil || remaining != 0 {
-		t.Fatalf("worker pool leaked connections: %d %v", remaining, err)
-	}
+	waitPoolsGone(t, f, "worker pool leaked connections", app)
 }
 
 func TestBuyerPaymentWorkerCrashChild(t *testing.T) {

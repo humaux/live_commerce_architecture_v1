@@ -25,6 +25,11 @@ jobs:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           persist-credentials: false
+          # tests/foundation/live_media_stop_legacy_test.go builds a pinned
+          # pre-LMR admission binary from git history; the default depth-1
+          # checkout lacks that commit ("pinned pre-LMR Git source unavailable
+          # exit status 128"), so fetch full history.
+          fetch-depth: 0
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version-file: go.mod

@@ -578,6 +578,13 @@ func TestLegacyRuntimeIsolationUpgradeFailClosedRetry(t *testing.T) {
 	if rollbackErr != nil {
 		t.Fatal(rollbackErr)
 	}
+	// Cancellation closed the attempt's hijacked lock connection client-side,
+	// but its backend was still queued on the table lock; it only finishes its
+	// statement, aborts and releases session advisory lock 718020260920
+	// (migrations/migrate.go) when it exits after the rollback above. Observe
+	// that exit instead of retrying Apply, so the no-post check and the retry
+	// both run after the cancelled attempt has fully ended.
+	waitAdvisoryLockReleased(t, f.owner, "cancelled migration attempt still holds the migration advisory lock", 718020260920)
 	lriNoPost(t, f, sourceBeforeLock, queuesBeforeLock, "[]", "[]", paymentQueuesBeforeLock, expiryQueuesBeforeLock)
 	if err := migrations.Apply(ctx, f.owner); err != nil {
 		t.Fatal("corrected partial-native retry", err)
