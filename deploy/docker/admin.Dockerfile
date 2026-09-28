@@ -4,8 +4,9 @@
 # Runs as/in: build host; runtime user 1000 ("node" in the base image), read-only rootfs.
 # Reads env (build): COMMERCE_IDENTITY_ENABLED=0 COMMERCE_FIXTURE_ENABLED=0 are forced for the
 #   build exactly like scripts/dev/test-local.sh (the tested build never needs an IdP or DB).
-# Reads env (runtime, wired in deploy/compose.yml): HOSTNAME=127.0.0.1 and PORT=3100 (listener;
-#   Docker would otherwise set HOSTNAME to the container id), COMMERCE_IDENTITY_ENABLED,
+# Reads env (runtime, wired in deploy/compose.yml): HOSTNAME=localhost and PORT=3100 (listener;
+#   Docker would otherwise set HOSTNAME to the container id; "localhost" rather than 127.0.0.1 so
+#   Next relativises same-origin redirects, see compose.yml admin), COMMERCE_IDENTITY_ENABLED,
 #   COMMERCE_PUBLIC_ORIGIN, COMMERCE_API_ORIGIN, COMMERCE_OIDC_ISSUER, COMMERCE_ONBOARDING_*,
 #   COMMERCE_FIXTURE_ENABLED=0 (apps/admin/lib/auth.ts, lib/backend.ts).
 # Reads secrets: /run/secrets/commerce_bff_key via COMMERCE_BFF_KEY_FILE, expanded by lcentry.
@@ -62,7 +63,11 @@ USER 1000:1000
 WORKDIR /app/apps/admin
 ENTRYPOINT ["/usr/local/bin/lcentry","run","--"]
 # Run server.js directly: scripts/dev/start-admin.mjs is local-only by its own comment.
-CMD ["/usr/local/bin/node","server.js"]
+# --dns-result-order=ipv4first: HOSTNAME=localhost (compose.yml) must bind 127.0.0.1, the address
+#   Caddy and the healthcheck dial. Node's default "verbatim" order could pick ::1 on hosts with
+#   IPv6 loopback, and the edge would then get "connection refused". The flag is here and not in
+#   NODE_OPTIONS because admin.env owns NODE_OPTIONS (operator knob, preflight P06).
+CMD ["/usr/local/bin/node","--dns-result-order=ipv4first","server.js"]
 ARG GIT_SHA=unknown
 LABEL org.opencontainers.image.title="lc-admin" \
       org.opencontainers.image.revision=$GIT_SHA \

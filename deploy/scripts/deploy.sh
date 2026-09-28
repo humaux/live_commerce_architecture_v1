@@ -7,7 +7,10 @@
 #                       answering 503 + Retry-After) -> migrate(new tag) -> provision -> up -d
 #                       -> post checks -> log. Never auto-rolls back or restores.
 #   app-rollback <tag>  allowed ONLY if the migration ledger count equals the one recorded when
-#                       <tag> was last deployed; otherwise refuses ("forward-fix only").
+#                       <tag> was last deployed; otherwise refuses ("forward-fix only"). Then
+#                       up -d (recreates only containers whose image/config changed) -> post
+#                       checks -> log. Rolling back to the tag that is already running is a
+#                       valid no-op and must pass (post_checks judges the current lifetime).
 # Usage: deploy.sh [--smoke] first | upgrade <tag> | app-rollback <tag>
 #   --smoke: used by smoke.sh S37-S39 — public checks use --resolve to 127.0.0.1 and Caddy's
 #   local CA instead of real DNS/ACME.
@@ -21,7 +24,9 @@
 # Depends on: preflight.sh, pg-ops.sh (backup), lib.sh; images from build-images.sh.
 # Exit: 0 ok; 1 failed (prints the rollback decision tree); 75 migration lock busy (retry
 #   later by hand, never in a loop); 2 usage.
-# Status: DESIGN; S37-S39 BLOCKED until cmd/migrate exists.
+# Status: DESIGN; S37-S39 BLOCKED until cmd/migrate exists (I1). With the I1 proposal applied
+#   (VERIFIED_LOCAL 2026-09-28) S37/S38 passed and S39 failed on the no-op rollback (F3, fixed in
+#   post_checks); S39 now also rolls back to a genuinely different tag and back.
 # Change rules: keep the order migrate -> provision -> start (架构.md §22.1 line 731); never add
 #   automatic DB restore; edge-netns must never be targeted alone.
 set -Eeuo pipefail
@@ -91,31 +96,59 @@ wait_postgres() {
   lc_die "postgres not healthy after 180 s"
 }
 
-# post_checks — health of long-running services, worker ready tokens, public HTTPS.
+# post_checks — proves that the stack running NOW is the one IMAGE_TAG describes, and is ready:
+#   1. every long-running service is running (and healthy where it has a healthcheck);
+#   2. every container built from our images (${LC_IMAGE_PREFIX:-lc}-*) runs exactly :$IMAGE_TAG,
+#      so a stale container can never pass for the target release;
+#   3. every active worker logged its ready token during its CURRENT lifetime, i.e. since that
+#      container's own .State.StartedAt (floored to the second: the daemon may stamp the first log
+#      line a hair before it records StartedAt). NOT "since this script started": `up -d` leaves
+#      unchanged containers running (no-op app-rollback to the running tag, a re-run of `first`),
+#      and those printed their token when they started (VERIFIED_LOCAL F3: smoke S39 waited 60 s
+#      for a fresh token that a no-op `up -d` never produces). A recreated/restarted container
+#      has a new StartedAt, so its token must be new as well.
+#   4. the public HTTPS edge answers /healthz (below).
 post_checks() {
-  local since=$1 s cid status i ok token curl_args=()
+  local s cid status i ok bad token image started prefix="${LC_IMAGE_PREFIX:-lc}-" curl_args=()
   for ((i = 0; i < 40; i++)); do
-    ok=1
+    ok=1 bad=""
     while IFS= read -r s; do
       cid=$(lc_compose ps -q "$s" 2>/dev/null)
-      [[ -n "$cid" ]] || { ok=0 && continue; }
+      if [[ -z "$cid" ]]; then
+        ok=0 bad+=" $s=absent"
+        continue
+      fi
       status=$(docker inspect -f '{{.State.Status}}/{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$cid")
-      [[ "$status" == running/healthy || "$status" == running/none ]] || ok=0
+      [[ "$status" == running/healthy || "$status" == running/none ]] || { ok=0 bad+=" $s=$status"; }
     done < <(lc_long_running_services)
     ((ok)) && break
     sleep 3
   done
-  ((ok)) || lc_die "post-check: not all services running/healthy (docker compose ps)"
+  ((ok)) || lc_die "post-check: not all services running/healthy:$bad (docker compose ps)"
+  while IFS= read -r s; do
+    image=$(docker inspect -f '{{.Config.Image}}' "$(lc_compose ps -q "$s")")
+    if [[ "$image" == "$prefix"* && "$image" != *":$IMAGE_TAG" ]]; then
+      lc_die "post-check: $s runs $image, expected tag $IMAGE_TAG (stale container)"
+    fi
+  done < <(lc_long_running_services)
+  lc_info "post-check all ${prefix}* containers run tag $IMAGE_TAG"
   for s in expiry-worker:expiry_worker_ready payment-worker-sandbox:payment_worker_ready \
     payment-worker-live:payment_worker_ready meta-worker:meta_worker_ready; do
     token=${s#*:} s=${s%%:*}
     lc_service_active "$s" || continue
     for ((i = 0; i < 30; i++)); do
-      grep -q "$token" < <(lc_compose logs --no-log-prefix --since "$since" "$s" 2>&1) && break
+      cid=$(lc_compose ps -q "$s" 2>/dev/null)
+      if [[ -n "$cid" ]]; then
+        # Re-read every round: a crash-looping worker gets a new StartedAt on each restart.
+        started=$(docker inspect -f '{{.State.StartedAt}}' "$cid")
+        started=${started%%.*}
+        started=${started%Z}Z
+        grep -q "$token" < <(docker logs --since "$started" "$cid" 2>&1) && break
+      fi
       sleep 2
     done
-    ((i < 30)) || lc_die "post-check: $s did not log $token within 60 s"
-    lc_info "post-check $s ready"
+    ((i < 30)) || lc_die "post-check: $s did not log $token in its current lifetime within 60 s"
+    lc_info "post-check $s ready (token since container start $started)"
   done
   if lc_service_active caddy; then
     if ((smoke)); then
@@ -155,20 +188,18 @@ images_present() {
 
 case "$action" in
 first)
-  since=$(date -u +%Y-%m-%dT%H:%M:%SZ)
   if ((smoke)); then "$LC_SCRIPTS_DIR/preflight.sh"; else "$LC_SCRIPTS_DIR/preflight.sh" --online; fi
   images_present
   wait_postgres
   run_migrate
   run_provision
   lc_compose up -d
-  post_checks "$since"
+  post_checks
   log_deploy first
   ;;
 upgrade)
   [[ "$arg" =~ ^[A-Za-z0-9._-]{1,64}$ ]] || lc_die "usage: deploy.sh upgrade <tag>" 2
   export IMAGE_TAG=$arg
-  since=$(date -u +%Y-%m-%dT%H:%M:%SZ)
   "$LC_SCRIPTS_DIR/preflight.sh"
   images_present
   "$LC_SCRIPTS_DIR/pg-ops.sh" backup --tag "pre-upgrade-$IMAGE_TAG" || lc_die "mandatory pre-upgrade backup failed; nothing was changed"
@@ -179,7 +210,7 @@ upgrade)
   run_migrate
   run_provision
   lc_compose up -d
-  post_checks "$since"
+  post_checks
   lc_info "ledger_count before=$before after=$(lc_ledger_count)"
   log_deploy upgrade
   ;;
@@ -195,10 +226,9 @@ app-rollback)
     exit 1
   fi
   export IMAGE_TAG=$arg
-  since=$(date -u +%Y-%m-%dT%H:%M:%SZ)
   images_present
   lc_compose up -d
-  post_checks "$since"
+  post_checks
   log_deploy app-rollback
   ;;
 *)

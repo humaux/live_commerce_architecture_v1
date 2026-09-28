@@ -9,7 +9,8 @@
 #           buyer=1, buyer_payment=0, meta_webhook=0, studio=0. It touches ONLY its own
 #           project and removes its containers/volumes/networks/temp dirs at the end.
 # Usage: smoke.sh static | full
-# Exit: 0 PASS, 1 FAIL, 3 BLOCKED (e.g. cmd/migrate missing, ports busy, docker missing).
+# Exit: 0 PASS, 1 FAIL, 3 BLOCKED (e.g. cmd/migrate missing, ports busy, docker missing, or a
+#   REQUIRES_INTEGRATOR item observed at runtime: S29m = I8). result.json "not_run" names each one.
 # Evidence: deploy/.evidence/<run_id>/result.json (fields per 架构.md line 992) + logs/ +
 #   cases.tsv + commands.tsv. Logs are secret-scanned before the temp secrets are deleted.
 # Runs as/in: developer/deploy host. `full` needs root (chown 999 for the backup dir) and free
@@ -19,7 +20,11 @@
 # Used by: operators, test_worker/security_reviewer acceptance, CI (static).
 # Depends on: bash, docker + compose, go (S04), python3, curl, openssl, node + repo Playwright
 #   (S34 optional), every other deploy/scripts/*.sh.
-# Status: DESIGN. static = runnable now; full = BLOCKED at S07 until cmd/migrate exists (I1).
+# Status: DESIGN. static = runnable now; full = BLOCKED at S07 until cmd/migrate exists (I1), and
+#   BLOCKED at S29m until the restore-stable media gate lands (I8). VERIFIED_LOCAL 2026-09-28 with
+#   the I1 proposal: S08 (count regex), S21 (never checked Location), S34 (admin redirect leaked
+#   the internal listener) and S39 (no-op rollback post-check) failed; all four are fixed here or
+#   in compose.yml/admin.Dockerfile/deploy.sh.
 # Change rules: never delete/relax a case to get green; a new deploy file needs a case here.
 set -Eeuo pipefail
 # shellcheck source-path=SCRIPTDIR source=lib.sh
@@ -169,7 +174,7 @@ EOF
 }
 
 # ================================ full ============================================================
-ALL_FULL=(S07 S08 S09 S10 S11 S12 S13 S14 S15 S16 S17 S18 S19 S20 S21 S22 S23 S24 S25 S26 S27 S28 S29 S30 S31 S32 S33 S34 S35 S36 S37 S38 S39)
+ALL_FULL=(S07 S08 S09 S10 S11 S12 S13 S14 S15 S16 S17 S18 S19 S20 S21 S22 S23 S24 S25 S26 S27 S28 S29 S29m S30 S31 S32 S33 S34 S35 S36 S37 S38 S39)
 block_rest() { # reason — mark every full case not yet recorded as BLOCKED
   local id
   for id in "${ALL_FULL[@]}"; do
@@ -218,13 +223,22 @@ full_cases() {
   rec S07 PASS "4 images tag=$SMOKE_TAG"
 
   # S08 image posture
-  local p="${LC_IMAGE_PREFIX:-lc}" users bins caps
+  # lc-go must hold EXACTLY the binaries go.Dockerfile builds (ARG GO_CMDS) + lcentry. Compare
+  # names, not a count: the tar listing also has the directory entry "app/bin/", which a `*`
+  # regex counted as an 8th binary (VERIFIED_LOCAL F1); `\+` needs at least one name character.
+  local p="${LC_IMAGE_PREFIX:-lc}" users bins want_bins caps cid
   users="$(for i in go admin storefront caddy; do docker image inspect -f '{{.Config.User}}' "$p-$i:$SMOKE_TAG"; done | tr '\n' ' ')"
-  bins=$(cid=$(docker create "$p-go:$SMOKE_TAG") && docker export "$cid" | tar -t | grep -c '^app/bin/[a-z-]*$'; docker rm "$cid" >/dev/null)
+  want_bins=$({
+    sed -n 's/^ARG GO_CMDS="\(.*\)"$/\1/p' "$LC_DEPLOY_DIR/docker/go.Dockerfile" | tr ' ' '\n'
+    echo lcentry
+  } | sort | tr '\n' ' ')
+  cid=$(docker create "$p-go:$SMOKE_TAG")
+  bins=$(docker export "$cid" | tar -t | sed -n 's#^app/bin/\([a-z-]\+\)$#\1#p' | sort | tr '\n' ' ')
+  docker rm "$cid" >/dev/null
   caps=$(docker run --rm --entrypoint getcap "$p-caddy:$SMOKE_TAG" /usr/bin/caddy 2>&1 || true)
-  if [[ "$users" == "65532:65532 1000:1000 1000:1000 10001:10001 " && "$bins" == 7 && -z "$caps" ]]; then
-    rec S08 PASS "users ok, lc-go binaries=7, caddy file caps removed"
-  else rec S08 FAIL "users=[$users] bins=$bins caps=[$caps]"; fi
+  if [[ "$users" == "65532:65532 1000:1000 1000:1000 10001:10001 " && "$bins" == "$want_bins" && "$want_bins" == *migrate* && -z "$caps" ]]; then
+    rec S08 PASS "users ok, lc-go binaries=[${bins% }], caddy file caps removed"
+  else rec S08 FAIL "users=[$users] bins=[$bins] want=[$want_bins] caps=[$caps]"; fi
 
   # temp config
   SMOKE_ROOT=$(mktemp -d /tmp/lc-smoke.XXXXXX)
@@ -345,8 +359,27 @@ full_cases() {
     rec S20 FAIL "got $r"
     rec S23 FAIL "not evaluated (S20 failed)"
   fi
+  # S21 admin "/": a locale redirect must stay on the PUBLIC origin (relative Location, or absolute
+  # on https://admin.localhost[:port]/), and its target must render 200 with X-Frame-Options DENY.
+  # "Any status < 500" was not enough: the redirect leaked https://localhost:3100/ (the internal
+  # listener) and the browser failed (VERIFIED_LOCAL F2; fixed by HOSTNAME=localhost in compose.yml).
+  local code loc xfo target="" admin_origin="https://admin.localhost"
+  ((HTTPS_PORT == 443)) || admin_origin+=":$HTTPS_PORT"
   r=$(edge admin.localhost /)
-  if ((${r%%|*} > 0 && ${r%%|*} < 500)) && [[ "$(hdr x-frame-options)" == DENY ]]; then rec S21 PASS "admin / ${r%%|*} + X-Frame-Options DENY"; else rec S21 FAIL "got $r xfo=$(hdr x-frame-options)"; fi
+  code=${r%%|*} loc=$(hdr location) xfo=$(hdr x-frame-options)
+  case "$code" in
+  200) target=/ ;;
+  301 | 302 | 303 | 307 | 308)
+    if [[ "$loc" == /* && "$loc" != //* ]]; then
+      target=$loc
+    elif [[ "$loc" == "$admin_origin"/* ]]; then target=${loc#"$admin_origin"}; fi
+    ;;
+  esac
+  r1="not-fetched"
+  [[ -z "$target" ]] || r1=$(edge admin.localhost "$target")
+  if [[ -n "$target" && "$xfo" == DENY && "${r1%%|*}" == 200 && "$(hdr x-frame-options)" == DENY ]]; then
+    rec S21 PASS "admin / $code -> ${loc:-/} -> 200, X-Frame-Options DENY"
+  else rec S21 FAIL "admin / $code location=[$loc] (must be relative or $admin_origin/...) xfo=[$xfo] target=[$r1]"; fi
   r1=$("${CURL[@]}" -o /dev/null -w '%{http_code} %{redirect_url}' --resolve "shop.localhost:$HTTP_PORT:127.0.0.1" "http://shop.localhost:$HTTP_PORT/" || true)
   r2=$("${CURL[@]}" -o "$EV/logs/body" -D "$EV/logs/headers" -w '%{http_code}|%{size_download}' -H 'Host: unknown.example' "http://127.0.0.1:$HTTP_PORT/" || true)
   if [[ "$r1" == "308 https://shop.localhost"* && "${r2#*|}" == 0 && -z "$(hdr x-frame-options)" ]]; then
@@ -395,6 +428,19 @@ full_cases() {
     grep -q 'verify.result=PASS' "$EV/logs/S29.log"; then
     rec S29 PASS "restore into new DB, verify.sql PASS, dropped"
   else rec S29 FAIL "restore-dump (logs/S29.log)"; fi
+  # S29m (I8 made visible): verify.sql only REQUIRES the media gate with LC_REQUIRE_MEDIA_GATE=1
+  # (default 0: studio/media are not deployable in this release), so S29 passes although a logical
+  # restore turns live.media_plan_ready() t -> f. Record that separately and honestly instead of
+  # hiding it inside S29: BLOCKED (REQUIRES_INTEGRATOR I8) until migrations/ ship a restore-stable
+  # gate; PASS once the restored value matches the live one.
+  local live_media restored_media
+  live_media=$(lc_psql <<<"SELECT live.media_plan_ready();" 2>>"$EV/logs/S29.log" || true)
+  restored_media=$({ grep -o 'media_plan=[tf]' "$EV/logs/S29.log" || true; } | tail -n1 | cut -d= -f2)
+  if [[ "$live_media" == t && "$restored_media" == t ]]; then
+    rec S29m PASS "media gate live=t restored=t (I8 fixed: make LC_REQUIRE_MEDIA_GATE=1 the default)"
+  elif [[ "$live_media" == t && "$restored_media" == f ]]; then
+    rec S29m BLOCKED "REQUIRES_INTEGRATOR I8: logical restore turns live.media_plan_ready() t->f (not required while LC_REQUIRE_MEDIA_GATE=0)"
+  else rec S29m FAIL "media gate live=[${live_media}] restored=[${restored_media}] (logs/S29.log)"; fi
   local a0 a1 f1
   a0=$(lc_psql <<<"SELECT archived_count FROM pg_stat_archiver;")
   lc_psql <<<"SELECT pg_logical_emit_message(false, 'lc-smoke', 'wal'); SELECT pg_switch_wal();" >/dev/null
@@ -421,7 +467,8 @@ full_cases() {
   done
   if runc S31 "$LC_SCRIPTS_DIR/pg-ops.sh" restore-pitr --target-time "$target" --drill && grep -q 'verify.result=PASS' "$EV/logs/S31.log"; then
     out=$(grep -o 'pitr_duration_seconds=[0-9]*' "$EV/logs/S31.log" | tail -n1)
-    rec S31 PASS "PITR drill paused at target, verify PASS, $out (RTO sample)"
+    out+=" $({ grep -o 'media_plan=[tf]' "$EV/logs/S31.log" || true; } | tail -n1)"
+    rec S31 PASS "PITR drill paused at target, verify PASS, $out (RTO sample; physical restore keeps the media gate)"
   else rec S31 FAIL "restore-pitr drill (logs/S31.log)"; fi
 
   # S34 browser (optional)
@@ -470,13 +517,35 @@ full_cases() {
     rec S38 FAIL "deploy.sh upgrade (logs/S38.log)"
   fi
 
-  # S39 app-rollback allowed / refused
+  # S39 app-rollback, all four branches:
+  #   a) to the tag that is already running: `up -d` is a no-op, post-checks must accept the ready
+  #      tokens of the current container lifetimes (VERIFIED_LOCAL F3 hung here for 60 s);
+  #   b) to a genuinely different tag ("<SMOKE_TAG>-rb", a retag of the same images recorded with
+  #      the current ledger): every lc-* container is recreated and must run the -rb tag;
+  #   c) back to SMOKE_TAG (recreate again);
+  #   d) to a tag recorded with a different ledger count: REFUSED ("forward-fix only").
+  # The -rb tags are removed afterwards (they only name existing images; nothing is rebuilt).
+  local rb_tag="${SMOKE_TAG}-rb" why=""
+  for i in go admin storefront caddy; do docker tag "$p-$i:$SMOKE_TAG" "$p-$i:$rb_tag"; done
+  printf '%s\tupgrade\t%s\t%s\t%s\n' "$(lc_ts)" "$rb_tag" "$(lc_ledger_count)" smoke >>"$LC_STATE_DIR/deployments.log"
   printf '%s\tupgrade\t%s\t%s\t%s\n' "$(lc_ts)" smoke-fabricated 1 smoke >>"$LC_STATE_DIR/deployments.log"
-  if runc S39 "$LC_SCRIPTS_DIR/deploy.sh" --smoke app-rollback "$SMOKE_TAG"; then
-    if runc S39 "$LC_SCRIPTS_DIR/deploy.sh" --smoke app-rollback smoke-fabricated; then rec S39 FAIL "rollback with changed ledger was allowed"; elif grep -q REFUSED "$EV/logs/S39.log"; then
-      rec S39 PASS "rollback allowed when ledger unchanged, refused otherwise"
-    else rec S39 FAIL "refusal message missing (logs/S39.log)"; fi
-  else rec S39 FAIL "rollback with unchanged ledger failed (logs/S39.log)"; fi
+  if ! runc S39 "$LC_SCRIPTS_DIR/deploy.sh" --smoke app-rollback "$SMOKE_TAG"; then
+    why="a) no-op rollback to the running tag failed"
+  elif ! runc S39 "$LC_SCRIPTS_DIR/deploy.sh" --smoke app-rollback "$rb_tag"; then
+    why="b) rollback to a different tag failed"
+  elif [[ "$(docker inspect -f '{{.Config.Image}}' "$(lc_compose ps -q api)")" != "$p-go:$rb_tag" ]]; then
+    why="b) api was not recreated on $rb_tag"
+  elif ! runc S39 "$LC_SCRIPTS_DIR/deploy.sh" --smoke app-rollback "$SMOKE_TAG"; then
+    why="c) rollback back to $SMOKE_TAG failed"
+  elif runc S39 "$LC_SCRIPTS_DIR/deploy.sh" --smoke app-rollback smoke-fabricated; then
+    why="d) rollback with a changed ledger was allowed"
+  elif ! grep -q REFUSED "$EV/logs/S39.log"; then
+    why="d) refusal message missing"
+  fi
+  for i in go admin storefront caddy; do docker image rm "$p-$i:$rb_tag" >/dev/null 2>&1 || true; done
+  if [[ -z "$why" ]]; then
+    rec S39 PASS "rollback: no-op to running tag, to a different tag (recreated), back, refused on changed ledger"
+  else rec S39 FAIL "$why (logs/S39.log)"; fi
 
   # S32 graceful stop
   runc S32 lc_compose stop || true
@@ -521,7 +590,7 @@ def ver(cmd):
     except Exception:
         return "unavailable"
 static_ids = ["S01", "S02", "S03", "S04", "S05", "S06"]
-full_ids = static_ids + ["S%02d" % i for i in range(7, 40)] + ["S10a", "S10b", "S10c", "S10d", "S10e"]
+full_ids = static_ids + ["S%02d" % i for i in range(7, 40)] + ["S10a", "S10b", "S10c", "S10d", "S10e", "S29m"]
 result = {
     "run_id": os.path.basename(ev), "task_id": "T22", "commit": commit,
     "environment": {"mode": mode, "host": platform.node(), "kernel": platform.release(),

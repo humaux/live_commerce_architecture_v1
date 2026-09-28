@@ -73,8 +73,12 @@ deploy/scripts/deploy.sh first           # preflight → 镜像检查 → postgr
 - OIDC 回调地址：`https://<LC_ADMIN_HOST>/api/auth/callback`（`cmd/api/identity.go:59`），需要在 IdP 注册。
 - 部署后检查（脚本会自动执行）：
   - 所有常驻服务 running/healthy。
-  - worker 就绪标记在 60 s 内出现：`expiry_worker_ready`、`payment_worker_ready`、`meta_worker_ready`。
+  - 所有 `lc-*` 镜像的容器都运行 `:$IMAGE_TAG`。发现旧容器时直接失败。
+  - worker 就绪标记要出现在**该容器本次启动之后**的日志里，也就是 `docker logs --since <.State.StartedAt>`，最多等 60 s。标记包括 `expiry_worker_ready`、`payment_worker_ready`、`meta_worker_ready`。
+    `up -d` 不会重建配置没变的容器，所以重复执行 `first`，或回滚到正在运行的 tag，都是合法的空操作，检查会通过。
   - `https://<api>/healthz` 返回 200。
+- 构建主机的代理在本机回环地址（`127.0.0.1`/`localhost`/`[::1]`）时，BuildKit 的 RUN 步骤访问不到它。
+  `build-images.sh` 默认（`LC_BUILD_NETWORK=auto`）会自动改用 `--network host` 并给出 WARN。只影响构建，不影响镜像。
 - `deployments.log`（`/var/lib/live-commerce/`）会追加一行：时间、动作、tag、ledger 行数、操作人。回滚判断依赖这一行。
 
 ## 4. 升级（只能前向）
@@ -101,6 +105,7 @@ deploy/scripts/deploy.sh upgrade <tag>
 
 1. **与该 tag 上次部署时相比，ledger 行数没有变化** → `deploy/scripts/deploy.sh app-rollback <旧tag>`。
    如果 ledger 有变化，脚本会拒绝，并提示 "forward-fix only"。
+   回滚到正在运行的 tag 是空操作，会通过部署后检查。smoke S39 覆盖四条路径：空操作、换 tag（容器重建）、换回原 tag、ledger 变化时拒绝。
 2. ledger 已变化，**且**备份之后**没有任何外部业务事实**（恢复流量后没有新订单或支付）→ 由 owner 决定是否按 backup-restore.md 恢复数据库，再做 app-rollback。
 3. 其他情况 → **前向修复 + 对账**（架构.md §22.1）。**禁止在真实支付之上恢复数据库**。
 - 应用回滚不等于数据库回滚。脚本永远不会自动回滚或自动恢复。

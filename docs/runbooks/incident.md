@@ -67,6 +67,9 @@ dc() { docker compose --project-directory /opt/live-commerce/deploy --env-file /
 - 配置错误会在模块加载时抛出，日志中能看到。
 - `__Host-` cookie 只能在 HTTPS 下工作。确认访问经过 Caddy，并且 `COMMERCE_PUBLIC_ORIGIN` 使用 https。
 - storefront 会校验 Host，所以只能通过 `LC_STORE_HOST` 访问。
+- 打开 `https://<admin>/` 后浏览器被跳到 `https://localhost:3100/...`（连接被拒绝）：检查 admin 容器的 `HOSTNAME`，它必须是 `localhost`，不能是 `127.0.0.1`。
+  原因见 compose.yml admin 的注释和 deploy/README.md 偏差第 10 条。
+  自检命令：`curl -sI --resolve <admin>:443:127.0.0.1 https://<admin>/ | grep -i location`，应该返回 `location: /zh-CN`（相对路径）。
 
 ### workers
 - 没有出现就绪标记：先查 `*_invalid_config`（例如并发数不是 1–16 的规范十进制数），再查 `*_database*`（DSN、角色、网络）。

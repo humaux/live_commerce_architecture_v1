@@ -17,6 +17,8 @@
 # Change rules: digest bump -> re-resolve with `docker buildx imagetools inspect`, update the
 #   ledger in deploy/README.md, re-run `deploy/scripts/smoke.sh full`. Never add `-s -w`
 #   (keep symbols for diagnosable stacks). Never add a HEALTHCHECK here (workers have none).
+#   smoke S08 reads the expected binary list from the one-line `ARG GO_CMDS="..."` below (+ lcentry):
+#   keep that line format, or S08 fails.
 
 # golang 1.27.1 (matches go.mod `go 1.27.1`), Debian 13; resolved 2026-09-28.
 ARG GO_IMAGE=golang:1.27.1-trixie@sha256:433790e515d27dc6003e847e644cc0af956985cf315c1c58a3b73ee2dd305183
@@ -39,10 +41,14 @@ COPY deploy/tools ./deploy/tools
 ARG GO_CMDS="api payment-worker expiry-worker meta-worker media-worker migrate"
 # -buildvcs=false: .git is excluded by .dockerignore; the revision goes into the OCI label.
 # -ldflags=-buildid= : reproducible output for identical inputs.
+# Every cmd/<name> is checked BEFORE anything compiles, so a missing one (I1: cmd/migrate) fails
+# in seconds with exit 3 instead of after five full builds (VERIFIED_LOCAL 2026-09-28).
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
     set -eu; \
     for c in $GO_CMDS; do \
       test -d "cmd/$c" || { echo "BLOCKED: cmd/$c missing (REQUIRES_INTEGRATOR)"; exit 3; }; \
+    done; \
+    for c in $GO_CMDS; do \
       go build -buildvcs=false -ldflags=-buildid= -o "/out/$c" "./cmd/$c"; \
     done; \
     go build -buildvcs=false -ldflags=-buildid= -o /out/lcentry ./deploy/tools/lcentry

@@ -204,7 +204,16 @@ services:
       <<: *after-db
     env_file: ["${LC_ENV_DIR:?set LC_ENV_DIR}/admin.env"]    # NODE_OPTIONS only
     environment:
-      HOSTNAME: "127.0.0.1"      # Docker sets HOSTNAME=<container id>; Next standalone binds to it
+      # Listener of the Next standalone server (server.js reads HOSTNAME/PORT; Docker would set
+      # HOSTNAME=<container id>). MUST be the literal name "localhost", not "127.0.0.1": Next builds
+      # its request origin from this value, while NextURL (request.nextUrl, used by
+      # apps/admin/proxy.ts for the locale redirect) canonicalises 127.x/[::1] to "localhost".
+      # With 127.0.0.1 the two origins differ, Next cannot relativise the redirect and "/" answered
+      # "307 Location: https://localhost:3100/zh-CN" through Caddy (VERIFIED_LOCAL F2, smoke
+      # S21/S34). With "localhost" Next sends "Location: /zh-CN". It still binds loopback only:
+      # admin.Dockerfile starts node with --dns-result-order=ipv4first, so "localhost" resolves to
+      # 127.0.0.1, which Caddy (reverse_proxy 127.0.0.1:3100) and the healthcheck below dial.
+      HOSTNAME: "localhost"
       PORT: "3100"
       COMMERCE_FIXTURE_ENABLED: "0"
       COMMERCE_IDENTITY_ENABLED: ${LC_IDENTITY_ENABLED:-0}

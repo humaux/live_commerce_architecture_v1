@@ -60,6 +60,10 @@ cd ${LC_BACKUP_DIR}/dumps/<目录> && sha256sum -c SHA256SUMS
 - **已知现象（I8）**：逻辑恢复后的库中 `live.media_plan_ready()` 一定为 false。
   原因是该函数固定了约束定义的 md5，而 PostgreSQL 在重新解析时会展开 BETWEEN 产生的嵌套 AND。
   物理备份/PITR 不受影响。Studio/媒体当前未部署，所以默认只作提示；设置 `LC_REQUIRE_MEDIA_GATE=1` 会把它变成硬性要求。
+  独立验证（2026-09-28）确认：在线库 `t`，逻辑恢复库 `f`。为了不让这个问题藏在 S29 PASS 里，smoke 新增 **S29m**：
+  - 在线 `t`、恢复 `f` → BLOCKED（REQUIRES_INTEGRATOR I8），`smoke.sh full` 整体结果为 BLOCKED；
+  - 两边都是 `t` → PASS，表示 I8 已修复，此时应把 `LC_REQUIRE_MEDIA_GATE` 默认改为 1。
+  S31（PITR）的说明里会记录 `media_plan=` 的值，作为物理恢复不受影响的证据。
 
 ## 5. 生产恢复流程（架构.md §22.3 顺序；需要 owner 批准）
 

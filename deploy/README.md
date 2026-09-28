@@ -80,8 +80,9 @@ The media worker is **not deployed**, because it is MOCK-only (`worker_env.go:17
 | Static package: syntax, shellcheck, pins, compose config (4 profile sets × 2 files), lcentry tests (96.7 %), Caddyfile validate/fmt, ignore files | **PASS** | `smoke.sh static` (S01–S06) |
 | `smoke.sh full` | **BLOCKED** at S07: `cmd/migrate` missing (I1) | exits 3, evidence under `.evidence/` |
 | DB layer + edge with **scratch** images: postgres (non-root, read-only, checksums, archiving), migrate ×2 over the socket, provision-logins ×2 (12 logins, matrix, TCP auth, readiness), superuser-over-TCP rejected, api/caddy healthy, worker ready tokens, Caddy internal-CA TLS, default-deny, webhook routing, 308 redirect, unknown Host not proxied, 503 + Retry-After window, hardening of 7 containers, no secret in inspect/logs, backup + restore into a new DB, WAL archiving, basebackup + `pg_verifybackup`, PITR drill (2 s), watchdog W2–W9, diagnostics bundle, graceful stop, clean teardown | **VERIFIED_LOCAL (scratch)** | Scratch `lc-go` built on the host from this tree plus the §7 `cmd/migrate` proposal (outside the worktree, not committed); real `lc-caddy` from `docker/caddy.Dockerfile`. This is not product acceptance |
-| `lc-admin` / `lc-storefront` image builds, S20/S21/S34 | **NOT_RUN** | Build containers have no egress in the verification sandbox (pnpm/corepack need the registry) |
-| `deploy.sh` first/upgrade/app-rollback end-to-end (S37–S39) | **NOT_RUN** | Needs all 4 images (blocked by I1 + Node builds) |
+| All 4 image builds + `smoke.sh full` with the I1 proposal (independent test_worker, 2026-09-28, scratch clone) | **FAIL → fixed, re-run NOT_RUN** | 41 PASS / 3 FAIL (S08, S34, S39). Root causes F1–F3 below are fixed in this package; S21 was a false PASS and is tightened. A full re-run needs I1 and is owed by the independent verifier |
+| `deploy.sh` first/upgrade (S37, S38) | **VERIFIED_LOCAL (scratch, I1 proposal)** | Same run; app-rollback (S39) failed on F3, fixed, re-run NOT_RUN |
+| Logical-restore media gate (S29m) | **BLOCKED (I8)** | Live `media_plan_ready=t`, restored `f`; was hidden inside S29 PASS, now its own case |
 | Real ACME/DNS, OIDC login, PAYUNi sandbox/live, Meta webhooks, media, 2-host TLS, K8s, load, CVE scan | **NOT_RUN** | Need owner inputs (O2, O3, O11, B3–B6) |
 
 ## Deploy-only dependency ledger (integrator: copy into docs/implementation/dependencies.md, I5)
@@ -122,6 +123,24 @@ No new Go modules and no new npm packages. `lcentry` uses only the Go standard l
 7. `producer | grep -q` is banned under `pipefail`, because SIGPIPE caused false negatives.
 8. `lcentry` also rejects a secret that is empty after newline stripping.
 9. `host-setup.sh` installs the env templates when they are missing and never overwrites them.
+10. **Admin listener is `HOSTNAME=localhost`, not `127.0.0.1`** (F2). Next builds its request origin
+    from HOSTNAME, but `request.nextUrl` rewrites `127.x`/`[::1]` to `localhost`. With `127.0.0.1` the two
+    origins differ, so Next cannot relativise the locale redirect in `apps/admin/proxy.ts`. `/` then answered
+    `307 Location: https://localhost:3100/zh-CN` through Caddy, and browsers got connection refused.
+    `admin.Dockerfile` starts node with `--dns-result-order=ipv4first`, so `localhost` still binds 127.0.0.1
+    (the address Caddy and the healthcheck dial). Checked locally with the built image: `Location: /zh-CN`.
+    App-side hardening remains recommended: send a path-only Location. That fix is outside `deploy/**`.
+11. **Post-checks judge each container's current lifetime** (F3). A worker's ready token must appear in
+    `docker logs --since <.State.StartedAt>`, not since the script started. Every `lc-*` container must run
+    `:$IMAGE_TAG`. A no-op `up -d` (rollback to the running tag, re-running `first`) keeps containers
+    running, so no new token was printed, and the rollback died after 60 s.
+12. **S08 compares binary names, not a count** (F1). `grep -c '^app/bin/[a-z-]*$'` also counted the `app/bin/`
+    directory entry. The expected set is read from `go.Dockerfile` `ARG GO_CMDS` + `lcentry`.
+13. **Loopback build proxy** (build-images.sh). BuildKit RUN steps get their own network namespace, where a
+    proxy on the host's `127.0.0.1` refuses connections (checked locally). With `LC_BUILD_NETWORK=auto`
+    (default), the script builds with `--network host` only when a forwarded proxy variable points at
+    loopback. `default` keeps isolation and warns.
+14. `go.Dockerfile` checks every `cmd/<name>` before compiling, so I1 fails in seconds instead of after 5 builds.
 
 ## Blockers and hand-offs
 
@@ -133,7 +152,10 @@ No new Go modules and no new npm packages. `lcentry` uses only the Go standard l
   - I5 dependency ledger.
   - I6 evidence copy.
   - I7 postgres digest refresh.
-  - I8 restore-stable `live.media_plan_ready()`.
+  - I8 restore-stable `live.media_plan_ready()`. It keeps `smoke.sh full` at BLOCKED (S29m) even once I1
+    lands. It is not a failure of this release's services, because media is not deployed. The owner decides
+    whether a media-less release may ship with S29m BLOCKED.
+  - App hardening (not blocking once F2 is deployed): make the `apps/admin/proxy.ts` locale redirect path-only.
 - **Owner decisions:**
   - O1 Compose/non-HA ADR.
   - O2 IdP.

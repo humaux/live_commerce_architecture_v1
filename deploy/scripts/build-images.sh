@@ -7,12 +7,20 @@
 #   (.dockerignore filters it); caddy uses deploy/docker as context.
 # Reads env: LC_IMAGE_PREFIX (default lc); HTTP_PROXY/HTTPS_PROXY/NO_PROXY are passed as build
 #   args only when set (Docker predefined args; not persisted in image config).
+#   LC_BUILD_NETWORK = auto (default) | default | host: network of the RUN steps. BuildKit runs
+#   them in their own network namespace, where a proxy on the build host's LOOPBACK
+#   (http://127.0.0.1:PORT, localhost, [::1]) is unreachable (VERIFIED_LOCAL 2026-09-28:
+#   ECONNREFUSED; builds only worked because the needed hosts were in NO_PROXY). "auto" therefore
+#   builds with `--network host` exactly when a forwarded proxy variable points at loopback, and
+#   says so; otherwise the default isolated build network is kept. The network choice affects only
+#   the build, never the image.
 # Reads secrets: none — images never contain secrets or env files.
 # Used by: operators before deploy.sh (IMAGE_TAG in compose.env = printed tag), smoke.sh S07.
 # Depends on: deploy/docker/*.Dockerfile, git (commit id), docker.
 # Exit: 0 built, 1 build failed, 3 BLOCKED (cmd/migrate missing = REQUIRES_INTEGRATOR I1;
 #   the Go image would be undeployable without it, so nothing is faked).
-# Status: DESIGN; S07 is BLOCKED until cmd/migrate lands.
+# Status: DESIGN; S07 is BLOCKED until cmd/migrate lands. With the I1 proposal applied, all four
+#   images built (VERIFIED_LOCAL 2026-09-28, sandbox CA base images passed via GO_IMAGE/NODE_IMAGE).
 # Change rules: keep tags immutable (never reuse a tag for different content; "-dirty" tags are
 #   for rehearsal only and must not be deployed to production).
 set -Eeuo pipefail
@@ -50,14 +58,34 @@ for img in "${only[@]}"; do
   fi
 done
 
-proxy_args=()
+proxy_args=() loopback_proxy=""
 for v in HTTP_PROXY HTTPS_PROXY NO_PROXY http_proxy https_proxy no_proxy; do
-  [[ -n "${!v:-}" ]] && proxy_args+=(--build-arg "$v")
+  [[ -n "${!v:-}" ]] || continue
+  proxy_args+=(--build-arg "$v")
+  # Proxy URL host = text after "scheme://" and optional "user:pass@", up to ":port" or "/".
+  # Only the variable NAME is logged, never the value (it may carry credentials).
+  if [[ "$v" != [Nn][Oo]_* && "${!v}" =~ ^[A-Za-z0-9+.-]+://([^/@]*@)?(\[::1\]|localhost|127\.[0-9.]+)(:|/|$) ]]; then
+    loopback_proxy+=" $v"
+  fi
 done
+net_args=()
+case "${LC_BUILD_NETWORK:-auto}" in
+auto)
+  if [[ -n "$loopback_proxy" ]]; then
+    net_args=(--network host)
+    lc_warn "proxy variable(s)${loopback_proxy} point at host loopback, unreachable from the isolated build network: building with --network host (set LC_BUILD_NETWORK=default to refuse)"
+  fi
+  ;;
+host) net_args=(--network host) ;;
+default)
+  [[ -z "$loopback_proxy" ]] || lc_warn "proxy variable(s)${loopback_proxy} point at host loopback and LC_BUILD_NETWORK=default: RUN steps cannot reach that proxy"
+  ;;
+*) lc_die "LC_BUILD_NETWORK must be auto, default or host" 2 ;;
+esac
 
 build() { # name dockerfile context
-  lc_info "building $prefix-$1:$tag"
-  docker build --pull=false -f "$2" -t "$prefix-$1:$tag" --build-arg "GIT_SHA=$sha" "${proxy_args[@]}" "$3"
+  lc_info "building $prefix-$1:$tag${net_args[*]:+ (${net_args[*]})}"
+  docker build --pull=false "${net_args[@]}" -f "$2" -t "$prefix-$1:$tag" --build-arg "GIT_SHA=$sha" "${proxy_args[@]}" "$3"
 }
 for img in "${only[@]}"; do
   case "$img" in
