@@ -1161,7 +1161,9 @@ BEGIN
    AND x.tenant_id=a.tenant_id AND x.store_id=a.store_id;
   IF m.code IS NULL OR NOT m.enabled OR NOT m.visible OR m.qualification_id<>a.qualification_id
    OR acct.id IS NULL OR acct.provider<>'stripe' OR acct.environment<>a.environment
-   OR acct.credential_version<>a.credential_version OR b.id IS NULL OR NOT b.enabled
+   -- API-key rotation fences new starts, not this already-pinned Checkout URL.
+   -- The attempt and qualification retain the exact historical credential below.
+   OR b.id IS NULL OR NOT b.enabled
    OR b.semantic_version<>a.binding_version OR b.external_asset_id<>acct.binding_asset
    OR q.id IS NULL OR q.revoked_at IS NOT NULL OR q.expires_at<=v_now
    OR q.credential_version<>a.credential_version THEN
