@@ -1,0 +1,529 @@
+# File: deploy/compose.yml
+# Purpose: the whole single-host production-shaped stack (deploy-design §3, §8): services,
+#   profiles, networks, volumes and file secrets. NON-HA: 架构.md §4.2 says Compose is for
+#   dev/repeatable acceptance; running production on it needs owner ADR O1 (blocker B8).
+# Runs as/in: `docker compose` on the deploy host, ALWAYS through deploy/scripts/lib.sh
+#   lc_compose (adds --project-directory deploy/ and --env-file /etc/live-commerce/compose.env).
+# Reads env (interpolation, from compose.env — the only home for cross-service values):
+#   COMPOSE_PROJECT_NAME, COMPOSE_PROFILES, IMAGE_TAG (git sha12 of the images),
+#   LC_IMAGE_PREFIX, LC_BIND_ADDR/LC_HTTP_PORT/LC_HTTPS_PORT (published edge ports),
+#   LC_ADMIN_HOST/LC_STORE_HOST/LC_API_HOST/LC_HOOKS_HOST (public names -> Caddy sites and
+#   derived origins), LC_ENV_DIR (per-service knob files), LC_SECRETS_DIR + LC_SECRETS_GID
+#   (secret files and the group that may read them), LC_BACKUP_DIR (dumps/base/wal),
+#   LC_IDENTITY_ENABLED, LC_OIDC_ISSUER, LC_ONBOARDING_ENABLED, LC_ONBOARDING_CURRENCIES,
+#   LC_BUYER_ENABLED, LC_BUYER_SESSION_TTL_SECONDS (one value -> api "<N>s", storefront "<N>").
+# Reads secrets: every row of deploy/secrets.manifest.tsv, mounted at /run/secrets/<name>
+#   (Compose non-swarm file secrets = read-only bind mounts that keep host modes 0440
+#   root:${LC_SECRETS_GID}); apps receive them only as NAME_FILE paths expanded by lcentry.
+# Used by: deploy/scripts/{deploy,pg-ops,smoke,watchdog,collect-diagnostics}.sh, runbooks.
+# Depends on: images lc-go/lc-admin/lc-storefront/lc-caddy:${IMAGE_TAG} (build-images.sh),
+#   pinned postgres + pause images, deploy/caddy/Caddyfile, deploy/postgres/*.
+# Status: DESIGN. Static `config` validated by smoke S03; runtime S11-S39 are BLOCKED until
+#   cmd/migrate exists (REQUIRES_INTEGRATOR I1).
+# Change rules:
+#   * `environment:` = fixed WIRING (listeners, derived origins, *_FILE paths, ENABLED=1 of
+#     profile-gated workers). env/<svc>.env = per-service KNOBS only; preflight P06 fails if a
+#     knob file redefines a wired variable (Compose would silently prefer `environment:`).
+#   * Profiles decide what runs: db, app, payments-sandbox, payments-live, meta, ops.
+#   * Never `docker compose down -v` outside smoke (smoke owns its own project + volumes).
+#   * edge-netns is recreated only together with its dependents (full `up -d`); recreating it
+#     alone strands caddy/api/admin/storefront in a dead network namespace.
+#   * Any new external image must be digest-pinned (deploy/scripts/check-pins.sh, smoke S02).
+
+name: ${COMPOSE_PROJECT_NAME:-live-commerce}
+
+# ---------------------------------------------------------------------------------------------
+# Shared fragments
+# ---------------------------------------------------------------------------------------------
+x-logging: &logging
+  # ~100 MB cap per container; read with `docker compose logs --since 30m <svc>`.
+  driver: json-file
+  options: { max-size: "20m", max-file: "5", compress: "true" }
+
+x-hardened: &hardened
+  # D9 hardening baseline for every long-running container (smoke S25 asserts it).
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  init: true                     # tini as PID 1: signal forwarding + zombie reaping
+  logging: *logging
+  restart: unless-stopped
+
+x-go: &go
+  <<: *hardened
+  image: ${LC_IMAGE_PREFIX:-lc}-go:${IMAGE_TAG:?set IMAGE_TAG}
+  user: "65532:65532"            # distroless nonroot
+  group_add: ["${LC_SECRETS_GID:?set LC_SECRETS_GID}"]   # may read 0440 root:GID secret files
+  tmpfs: ["/tmp:rw,noexec,nosuid,nodev,size=16m"]
+  pids_limit: 128
+  stop_grace_period: 30s         # workers: 15 s in-flight drain + 5 s cancel (payment-worker-runtime.md)
+
+x-after-db: &after-db
+  # Single host: wait for the one-shot jobs. Two-host app host: `db` is inactive there, so
+  # `required: false` makes Compose ignore these and the runbook orders the steps instead.
+  migrate: { condition: service_completed_successfully, required: false }
+  provision-logins: { condition: service_completed_successfully, required: false }
+
+services:
+  # -------------------------------------------------------------------------------------------
+  # Edge pod: one network namespace shared by caddy, api, admin, storefront (Kubernetes Pod
+  # pattern, D2). Needed because cmd/api refuses a non-loopback LISTEN_ADDR once identity/
+  # buyer/meta/studio are on (cmd/api/main.go:35-37) and both Next apps bind 127.0.0.1.
+  # -------------------------------------------------------------------------------------------
+  edge-netns:
+    profiles: [app]
+    # pause 3.10.1 (registry.k8s.io, multi-arch index digest resolved 2026-09-28): owns the
+    # netns so a caddy restart never tears it down for api/admin/storefront.
+    image: registry.k8s.io/pause:3.10.1@sha256:278fb9dbcca9518083ad1e11276933a2e96f23de604a3a08cc3c80002767d24c
+    user: "65535:65535"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    logging: *logging
+    restart: unless-stopped
+    networks: [edge, backend]    # edge = internet egress/ingress; backend = reach postgres
+    ports:
+      - "${LC_BIND_ADDR:-0.0.0.0}:${LC_HTTP_PORT:-80}:80/tcp"
+      - "${LC_BIND_ADDR:-0.0.0.0}:${LC_HTTPS_PORT:-443}:443/tcp"
+      - "${LC_BIND_ADDR:-0.0.0.0}:${LC_HTTPS_PORT:-443}:443/udp"   # HTTP/3
+    sysctls:
+      # Lets non-root Caddy (UID 10001, no capabilities) bind :80/:443. Docker's default is 0
+      # already; stated explicitly so a daemon change cannot silently break the edge.
+      net.ipv4.ip_unprivileged_port_start: "0"
+    cpus: 0.05
+    mem_limit: 16m
+    pids_limit: 16
+    stop_grace_period: 5s
+
+  caddy:
+    <<: *hardened
+    profiles: [app]
+    image: ${LC_IMAGE_PREFIX:-lc}-caddy:${IMAGE_TAG:?set IMAGE_TAG}
+    user: "10001:10001"
+    network_mode: "service:edge-netns"
+    depends_on: [edge-netns]
+    env_file: ["${LC_ENV_DIR:?set LC_ENV_DIR}/caddy.env"]    # ACME_EMAIL, optional LC_ACME_CA
+    environment:
+      LC_ADMIN_HOST: ${LC_ADMIN_HOST:?set LC_ADMIN_HOST}
+      LC_STORE_HOST: ${LC_STORE_HOST:?set LC_STORE_HOST}
+      LC_API_HOST: ${LC_API_HOST:?set LC_API_HOST}
+      LC_HOOKS_HOST: ${LC_HOOKS_HOST:?set LC_HOOKS_HOST}
+    volumes:
+      - caddy-data:/data          # certificates + ACME account key: back this up with the host
+      - caddy-config:/config
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+    tmpfs:
+      - "/run/caddy:uid=10001,gid=10001,mode=0700,size=1m"   # admin unix socket
+      - "/tmp:rw,noexec,nosuid,nodev,size=16m"
+    # Health: image HEALTHCHECK (wget http://127.0.0.1:2080/healthz).
+    cpus: 0.5
+    mem_limit: 256m
+    pids_limit: 256
+    stop_grace_period: 15s
+
+  api:
+    <<: *go
+    profiles: [app]
+    command: ["/app/bin/api"]
+    network_mode: "service:edge-netns"
+    depends_on:
+      edge-netns: { condition: service_started }
+      <<: *after-db
+    env_file: ["${LC_ENV_DIR:?set LC_ENV_DIR}/api.env"]
+    environment:
+      LISTEN_ADDR: "127.0.0.1:8080"                     # must be literal loopback (C1)
+      GOMEMLIMIT: 410MiB                                # ~80 % of mem_limit
+      COMMERCE_FIXTURE_ENABLED: "0"                     # fixture mode is test-only
+      COMMERCE_IDENTITY_ENABLED: ${LC_IDENTITY_ENABLED:-0}
+      COMMERCE_OIDC_ISSUER: ${LC_OIDC_ISSUER:-}
+      COMMERCE_ONBOARDING_ENABLED: ${LC_ONBOARDING_ENABLED:-0}
+      COMMERCE_ONBOARDING_CURRENCIES: ${LC_ONBOARDING_CURRENCIES:-}
+      COMMERCE_BUYER_ENABLED: ${LC_BUYER_ENABLED:-0}
+      COMMERCE_BUYER_SESSION_TTL: ${LC_BUYER_SESSION_TTL_SECONDS:-2592000}s   # Go duration
+      # OIDC redirect = <origin>/api/auth/callback (cmd/api/identity.go:59).
+      COMMERCE_PUBLIC_ORIGIN: https://${LC_ADMIN_HOST:?set LC_ADMIN_HOST}
+      # PAYUNi callbacks must be https, dotted, port 443 (payuni/client.go:174-186).
+      COMMERCE_PAYMENT_RETURN_URL: https://${LC_STORE_HOST:?set LC_STORE_HOST}/payment/return
+      # Reserved: no notify receiver exists yet; Caddy answers 404 there (blocker B4).
+      COMMERCE_PAYMENT_NOTIFY_URL: https://${LC_HOOKS_HOST:?set LC_HOOKS_HOST}/payuni/notify
+      # DSNs (one LOGIN per authority, deploy/postgres/logins.tsv) and keys, as file paths.
+      DATABASE_URL_FILE: /run/secrets/dsn_lc_api_runtime
+      COMMERCE_IDENTITY_DATABASE_URL_FILE: /run/secrets/dsn_lc_api_identity
+      COMMERCE_BUYER_ISSUER_DATABASE_URL_FILE: /run/secrets/dsn_lc_api_buyer_issuer
+      COMMERCE_BUYER_DATABASE_URL_FILE: /run/secrets/dsn_lc_api_buyer
+      COMMERCE_CHECKOUT_DATABASE_URL_FILE: /run/secrets/dsn_lc_api_checkout
+      COMMERCE_HOSTED_DATABASE_URL_FILE: /run/secrets/dsn_lc_api_hosted
+      COMMERCE_META_INGRESS_DATABASE_URL_FILE: /run/secrets/dsn_lc_api_meta_ingress
+      COMMERCE_BFF_KEY_FILE: /run/secrets/commerce_bff_key
+      COMMERCE_BUYER_BFF_KEY_FILE: /run/secrets/commerce_buyer_bff_key
+      COMMERCE_OIDC_CLIENT_SECRET_FILE: /run/secrets/commerce_oidc_client_secret
+      COMMERCE_ACCOUNT_KEYS_JSON_FILE: /run/secrets/commerce_account_keys_json
+      COMMERCE_ACCOUNT_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_account_active_key_id
+      COMMERCE_ACCOUNT_REPLAY_KEY_FILE: /run/secrets/commerce_account_replay_key
+      COMMERCE_META_PAYLOAD_KEYS_JSON_FILE: /run/secrets/commerce_meta_payload_keys_json
+      COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_meta_payload_active_key_id
+      COMMERCE_META_APPS_JSON_FILE: /run/secrets/commerce_meta_apps_json
+    secrets:
+      - dsn_lc_api_runtime
+      - dsn_lc_api_identity
+      - dsn_lc_api_buyer_issuer
+      - dsn_lc_api_buyer
+      - dsn_lc_api_checkout
+      - dsn_lc_api_hosted
+      - dsn_lc_api_meta_ingress
+      - commerce_bff_key
+      - commerce_buyer_bff_key
+      - commerce_oidc_client_secret
+      - commerce_account_keys_json
+      - commerce_account_active_key_id
+      - commerce_account_replay_key
+      - commerce_meta_payload_keys_json
+      - commerce_meta_payload_active_key_id
+      - commerce_meta_apps_json
+    healthcheck:
+      # /readyz pings the runtime pool (platform.go:543-555); lcentry is the only HTTP client in distroless.
+      test: ["CMD", "/app/bin/lcentry", "probe", "http://127.0.0.1:8080/readyz"]
+      interval: 10s
+      timeout: 4s
+      retries: 6
+      start_period: 30s
+    cpus: 1.0
+    mem_limit: 512m
+    pids_limit: 256
+    stop_grace_period: 20s       # API drains for 10 s on SIGTERM (cmd/api/main.go)
+
+  admin:
+    <<: *hardened
+    profiles: [app]
+    image: ${LC_IMAGE_PREFIX:-lc}-admin:${IMAGE_TAG:?set IMAGE_TAG}
+    user: "1000:1000"
+    group_add: ["${LC_SECRETS_GID:?set LC_SECRETS_GID}"]
+    network_mode: "service:edge-netns"
+    depends_on:
+      edge-netns: { condition: service_started }
+      <<: *after-db
+    env_file: ["${LC_ENV_DIR:?set LC_ENV_DIR}/admin.env"]    # NODE_OPTIONS only
+    environment:
+      # Listener of the Next standalone server (server.js reads HOSTNAME/PORT; Docker would set
+      # HOSTNAME=<container id>). MUST be the literal name "localhost", not "127.0.0.1": Next builds
+      # its request origin from this value, while NextURL (request.nextUrl, used by
+      # apps/admin/proxy.ts for the locale redirect) canonicalises 127.x/[::1] to "localhost".
+      # With 127.0.0.1 the two origins differ, Next cannot relativise the redirect and "/" answered
+      # "307 Location: https://localhost:3100/zh-CN" through Caddy (VERIFIED_LOCAL F2, smoke
+      # S21/S34). With "localhost" Next sends "Location: /zh-CN". It still binds loopback only:
+      # admin.Dockerfile starts node with --dns-result-order=ipv4first, so "localhost" resolves to
+      # 127.0.0.1, which Caddy (reverse_proxy 127.0.0.1:3100) and the healthcheck below dial.
+      HOSTNAME: "localhost"
+      PORT: "3100"
+      COMMERCE_FIXTURE_ENABLED: "0"
+      COMMERCE_IDENTITY_ENABLED: ${LC_IDENTITY_ENABLED:-0}
+      COMMERCE_OIDC_ISSUER: ${LC_OIDC_ISSUER:-}
+      COMMERCE_ONBOARDING_ENABLED: ${LC_ONBOARDING_ENABLED:-0}
+      COMMERCE_ONBOARDING_CURRENCIES: ${LC_ONBOARDING_CURRENCIES:-}
+      COMMERCE_PUBLIC_ORIGIN: https://${LC_ADMIN_HOST:?set LC_ADMIN_HOST}   # __Host- cookies need HTTPS
+      COMMERCE_API_ORIGIN: "http://127.0.0.1:8080"                          # server-to-server, loopback
+      COMMERCE_BFF_KEY_FILE: /run/secrets/commerce_bff_key                  # same file as api's
+    secrets: [commerce_bff_key]
+    tmpfs:
+      - "/app/apps/admin/.next/cache:uid=1000,gid=1000,mode=0700,size=64m"   # Next runtime cache
+      - "/tmp:rw,noexec,nosuid,nodev,size=32m"
+    healthcheck:
+      # No /healthz route yet (REQUIRES_INTEGRATOR I2); any status < 500 means the server is up.
+      test: ["CMD", "/usr/local/bin/lcentry", "probe", "-max-status", "499", "http://127.0.0.1:3100/"]
+      interval: 15s
+      timeout: 4s
+      retries: 4
+      start_period: 30s
+    cpus: 0.5
+    mem_limit: 384m
+    pids_limit: 256
+    stop_grace_period: 15s
+
+  storefront:
+    <<: *hardened
+    profiles: [app]
+    image: ${LC_IMAGE_PREFIX:-lc}-storefront:${IMAGE_TAG:?set IMAGE_TAG}
+    user: "1000:1000"
+    group_add: ["${LC_SECRETS_GID:?set LC_SECRETS_GID}"]
+    network_mode: "service:edge-netns"
+    depends_on:
+      edge-netns: { condition: service_started }
+      <<: *after-db
+    env_file: ["${LC_ENV_DIR:?set LC_ENV_DIR}/storefront.env"]   # NODE_OPTIONS only
+    environment:
+      COMMERCE_BUYER_WEB_ENABLED: ${LC_BUYER_ENABLED:-0}
+      COMMERCE_BUYER_API_ORIGIN: "http://127.0.0.1:8080"
+      COMMERCE_BUYER_SESSION_TTL: ${LC_BUYER_SESSION_TTL_SECONDS:-2592000}   # integer seconds
+      COMMERCE_BUYER_BFF_KEY_FILE: /run/secrets/commerce_buyer_bff_key       # same file as api's
+      COMMERCE_BUYER_COOKIE_KEY_FILE: /run/secrets/commerce_buyer_cookie_key
+    secrets: [commerce_buyer_bff_key, commerce_buyer_cookie_key]
+    tmpfs:
+      - "/app/apps/storefront/.next/cache:uid=1000,gid=1000,mode=0700,size=64m"
+      - "/tmp:rw,noexec,nosuid,nodev,size=32m"
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/lcentry", "probe", "-max-status", "499", "http://127.0.0.1:3200/"]
+      interval: 15s
+      timeout: 4s
+      retries: 4
+      start_period: 30s
+    cpus: 1.0
+    mem_limit: 512m
+    pids_limit: 256
+    stop_grace_period: 15s
+
+  # -------------------------------------------------------------------------------------------
+  # Workers: no HTTP port, no healthcheck (C4). They log fixed ready/error tokens
+  # (*_worker_ready, *_invalid_config, *_database*, *_start_failed) watched by smoke/watchdog.
+  # -------------------------------------------------------------------------------------------
+  expiry-worker:
+    <<: *go
+    profiles: [app]
+    command: ["/app/bin/expiry-worker"]
+    networks: [backend]          # DB only, no internet
+    depends_on: *after-db
+    env_file: ["${LC_ENV_DIR:?set LC_ENV_DIR}/expiry-worker.env"]   # concurrency
+    environment:
+      COMMERCE_EXPIRY_WORKER_ENABLED: "1"
+      COMMERCE_EXPIRY_WORKER_DATABASE_URL_FILE: /run/secrets/dsn_lc_expiry_worker
+      GOMEMLIMIT: 200MiB
+    secrets: [dsn_lc_expiry_worker]
+    cpus: 0.5
+    mem_limit: 256m
+
+  payment-worker-sandbox:
+    <<: *go
+    profiles: [payments-sandbox]
+    command: ["/app/bin/payment-worker"]
+    networks: [backend, egress]  # egress: PAYUNi sandbox HTTPS (endpoints are code constants)
+    depends_on: *after-db
+    env_file: ["${LC_ENV_DIR:?set LC_ENV_DIR}/payment-worker.env"]
+    environment:
+      COMMERCE_PAYMENT_WORKER_ENABLED: "1"
+      COMMERCE_PAYMENT_WORKER_PROFILE: SANDBOX   # one process per profile (disjoint River queues)
+      COMMERCE_PAYMENT_WORKER_DATABASE_URL_FILE: /run/secrets/dsn_lc_payment_sandbox
+      COMMERCE_ACCOUNT_KEYS_JSON_FILE: /run/secrets/commerce_account_keys_json
+      COMMERCE_ACCOUNT_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_account_active_key_id
+      COMMERCE_ACCOUNT_REPLAY_KEY_FILE: /run/secrets/commerce_account_replay_key
+      GOMEMLIMIT: 200MiB
+    secrets: [dsn_lc_payment_sandbox, commerce_account_keys_json, commerce_account_active_key_id, commerce_account_replay_key]
+    cpus: 0.5
+    mem_limit: 256m
+
+  payment-worker-live:
+    # REAL MONEY. Enable profile payments-live only with owner approval + PAYUNi qualification (B3).
+    <<: *go
+    profiles: [payments-live]
+    command: ["/app/bin/payment-worker"]
+    networks: [backend, egress]
+    depends_on: *after-db
+    env_file: ["${LC_ENV_DIR:?set LC_ENV_DIR}/payment-worker.env"]
+    environment:
+      COMMERCE_PAYMENT_WORKER_ENABLED: "1"
+      COMMERCE_PAYMENT_WORKER_PROFILE: LIVE
+      COMMERCE_PAYMENT_WORKER_DATABASE_URL_FILE: /run/secrets/dsn_lc_payment_live
+      COMMERCE_ACCOUNT_KEYS_JSON_FILE: /run/secrets/commerce_account_keys_json
+      COMMERCE_ACCOUNT_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_account_active_key_id
+      COMMERCE_ACCOUNT_REPLAY_KEY_FILE: /run/secrets/commerce_account_replay_key
+      GOMEMLIMIT: 200MiB
+    secrets: [dsn_lc_payment_live, commerce_account_keys_json, commerce_account_active_key_id, commerce_account_replay_key]
+    cpus: 0.5
+    mem_limit: 256m
+
+  meta-worker:
+    # Accepted local runtime only; not customer-activated (meta-runtime gate, blocker B6).
+    <<: *go
+    profiles: [meta]
+    command: ["/app/bin/meta-worker"]
+    networks: [backend]
+    depends_on: *after-db
+    env_file: ["${LC_ENV_DIR:?set LC_ENV_DIR}/meta-worker.env"]
+    environment:
+      COMMERCE_META_WORKER_ENABLED: "1"
+      COMMERCE_META_WORKER_DATABASE_URL_FILE: /run/secrets/dsn_lc_meta_worker
+      COMMERCE_META_CONSUMER_DATABASE_URL_FILE: /run/secrets/dsn_lc_meta_consumer
+      COMMERCE_META_PAYLOAD_KEYS_JSON_FILE: /run/secrets/commerce_meta_payload_keys_json
+      COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_meta_payload_active_key_id
+      GOMEMLIMIT: 200MiB
+    secrets: [dsn_lc_meta_worker, dsn_lc_meta_consumer, commerce_meta_payload_keys_json, commerce_meta_payload_active_key_id]
+    cpus: 0.5
+    mem_limit: 256m
+
+  # media-worker is intentionally absent: every LiveKit project is hard-wired to MOCK with a
+  # loopback dial address (internal/integrations/livekit/worker_env.go:174). See
+  # deploy/env/media-worker.env.example for its (reference-only) contract. Blocker B5.
+
+  # -------------------------------------------------------------------------------------------
+  # Database: postgres + one-shot migrate/provision jobs + on-demand pg-ops.
+  # -------------------------------------------------------------------------------------------
+  postgres:
+    <<: *hardened
+    profiles: [db]
+    # Same pin as scripts/dev/test-local.sh (PG 18.6, Debian 13): tests and prod on one digest.
+    image: postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+    user: "999:999"              # non-root from the start: the entrypoint skips chown/gosu
+    group_add: ["${LC_SECRETS_GID:?set LC_SECRETS_GID}"]
+    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf", "-c", "hba_file=/etc/postgresql/pg_hba.conf"]
+    networks: [backend]          # port never published on a single host
+    env_file: ["${LC_ENV_DIR:?set LC_ENV_DIR}/postgres.env"]   # TZ only
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: live_commerce                        # fixed: pg_hba.conf names it literally
+      POSTGRES_PASSWORD_FILE: /run/secrets/pg_superuser_password
+      PGDATA: /var/lib/postgresql/18/docker
+      POSTGRES_INITDB_ARGS: "--data-checksums"          # PG 18 default; explicit for S11
+    secrets: [pg_superuser_password]
+    volumes:
+      - pgdata:/var/lib/postgresql
+      - pgsocket:/var/run/postgresql                    # shared with migrate/provision/pg-ops
+      - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ./postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - ${LC_BACKUP_DIR:?set LC_BACKUP_DIR}/wal:/backup/wal   # archive_command target
+    tmpfs: ["/tmp:rw,noexec,nosuid,nodev,size=64m"]
+    shm_size: 512m
+    healthcheck:
+      # Socket ping AND postmaster.pid line 6 (listen address) non-empty: the image's init-time
+      # server listens on the socket only, so a bare socket ping would pass before initdb/
+      # CREATE DATABASE finish (the race noted in scripts/dev/test-local.sh).
+      test: ["CMD-SHELL", "pg_isready -q -h /var/run/postgresql -U postgres -d live_commerce && [ -n \"$$(sed -n 6p \"$$PGDATA/postmaster.pid\" 2>/dev/null)\" ]"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 60s
+    cpus: 2.0
+    mem_limit: 3g
+    pids_limit: 512
+    stop_grace_period: 60s
+
+  migrate:
+    # One-shot: applies embedded, checksummed, forward-only migrations (cmd/migrate, I1).
+    <<: *go
+    profiles: [db]
+    command: ["/app/bin/migrate"]
+    restart: "no"
+    network_mode: none           # superuser over the unix socket only; no network at all
+    depends_on:
+      postgres: { condition: service_healthy }
+    environment:
+      COMMERCE_MIGRATE_DATABASE_URL_FILE: /run/secrets/dsn_migrate_owner
+    secrets: [dsn_migrate_owner]
+    volumes: ["pgsocket:/var/run/postgresql"]
+    cpus: 1.0
+    mem_limit: 512m
+
+  provision-logins:
+    # One-shot: idempotent LOGIN create/alter/grant + verification + readiness gate.
+    <<: *hardened
+    profiles: [db]
+    image: postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+    user: "999:999"
+    group_add: ["${LC_SECRETS_GID:?set LC_SECRETS_GID}"]
+    entrypoint: ["bash", "/provision/provision-logins.sh"]
+    restart: "no"
+    networks: [backend]          # TCP auth check of every login, exactly like the services
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    environment:
+      LC_PG_HOST: postgres
+      PGAPPNAME: lc-provision-logins
+      # 1 = also require live.media_plan_ready() (only once Studio/media become deployable).
+      LC_REQUIRE_MEDIA_GATE: ${LC_REQUIRE_MEDIA_GATE:-0}
+    secrets:
+      - pg_superuser_password
+      - pw_lc_api_runtime
+      - pw_lc_api_identity
+      - pw_lc_api_buyer_issuer
+      - pw_lc_api_buyer
+      - pw_lc_api_checkout
+      - pw_lc_api_hosted
+      - pw_lc_api_meta_ingress
+      - pw_lc_expiry_worker
+      - pw_lc_payment_sandbox
+      - pw_lc_payment_live
+      - pw_lc_meta_worker
+      - pw_lc_meta_consumer
+    volumes:
+      - pgsocket:/var/run/postgresql
+      - ./postgres/provision-logins.sh:/provision/provision-logins.sh:ro
+      - ./postgres/logins.tsv:/provision/logins.tsv:ro
+    tmpfs: ["/tmp:rw,noexec,nosuid,nodev,size=16m"]
+    cpus: 0.5
+    mem_limit: 256m
+    pids_limit: 128
+    stop_grace_period: 10s
+
+  pg-ops:
+    # On demand via deploy/scripts/pg-ops.sh: backup / basebackup / restore-dump / restore-pitr.
+    <<: *hardened
+    profiles: [ops]
+    image: postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+    user: "999:999"
+    group_add: ["${LC_SECRETS_GID:?set LC_SECRETS_GID}"]
+    entrypoint: ["bash"]
+    restart: "no"
+    network_mode: none           # socket only; never reaches the network
+    secrets: [pg_superuser_password]
+    volumes:
+      - pgsocket:/var/run/postgresql
+      - ${LC_BACKUP_DIR:?set LC_BACKUP_DIR}:/backup     # dumps/ base/ wal/ (0700 999:999)
+      - ./postgres/ops:/ops:ro
+      # PITR scratch cluster. Mounted at the image's postgres-owned /var/lib/postgresql so the
+      # fresh volume inherits UID 999 ownership. This is NOT pgdata: pg-ops never mounts pgdata.
+      - pitr-scratch:/var/lib/postgresql
+    tmpfs: ["/tmp:rw,noexec,nosuid,nodev,size=256m"]
+    shm_size: 256m
+    cpus: 1.0
+    mem_limit: 1g
+    pids_limit: 256
+    stop_grace_period: 60s
+
+networks:
+  edge: {}                        # internet in/out for the edge pod (Caddy, OIDC discovery/JWKS)
+  egress: {}                      # payment workers only (PAYUNi)
+  backend:
+    internal: true                # postgres + DB clients; no internet
+
+volumes:
+  pgdata: {}
+  pgsocket: {}
+  caddy-data: {}
+  caddy-config: {}
+  pitr-scratch: {}
+
+# One entry per deploy/secrets.manifest.tsv row. Files live OUTSIDE the repo checkout.
+secrets:
+  pg_superuser_password: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pg_superuser_password" }
+  dsn_migrate_owner: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_migrate_owner" }
+  pw_lc_api_runtime: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_api_runtime" }
+  pw_lc_api_identity: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_api_identity" }
+  pw_lc_api_buyer_issuer: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_api_buyer_issuer" }
+  pw_lc_api_buyer: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_api_buyer" }
+  pw_lc_api_checkout: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_api_checkout" }
+  pw_lc_api_hosted: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_api_hosted" }
+  pw_lc_api_meta_ingress: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_api_meta_ingress" }
+  pw_lc_expiry_worker: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_expiry_worker" }
+  pw_lc_payment_sandbox: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_payment_sandbox" }
+  pw_lc_payment_live: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_payment_live" }
+  pw_lc_meta_worker: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_meta_worker" }
+  pw_lc_meta_consumer: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_meta_consumer" }
+  dsn_lc_api_runtime: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_api_runtime" }
+  dsn_lc_api_identity: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_api_identity" }
+  dsn_lc_api_buyer_issuer: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_api_buyer_issuer" }
+  dsn_lc_api_buyer: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_api_buyer" }
+  dsn_lc_api_checkout: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_api_checkout" }
+  dsn_lc_api_hosted: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_api_hosted" }
+  dsn_lc_api_meta_ingress: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_api_meta_ingress" }
+  dsn_lc_expiry_worker: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_expiry_worker" }
+  dsn_lc_payment_sandbox: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_payment_sandbox" }
+  dsn_lc_payment_live: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_payment_live" }
+  dsn_lc_meta_worker: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_meta_worker" }
+  dsn_lc_meta_consumer: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_meta_consumer" }
+  commerce_bff_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_bff_key" }
+  commerce_buyer_bff_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_buyer_bff_key" }
+  commerce_buyer_cookie_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_buyer_cookie_key" }
+  commerce_oidc_client_secret: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_oidc_client_secret" }
+  commerce_account_keys_json: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_account_keys_json" }
+  commerce_account_active_key_id: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_account_active_key_id" }
+  commerce_account_replay_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_account_replay_key" }
+  commerce_meta_payload_keys_json: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_meta_payload_keys_json" }
+  commerce_meta_payload_active_key_id: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_meta_payload_active_key_id" }
+  commerce_meta_apps_json: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_meta_apps_json" }
