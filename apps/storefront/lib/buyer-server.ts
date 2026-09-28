@@ -5,6 +5,11 @@ import {
   validOrderPayment,
   validPaymentPrepared,
 } from "./payment-contract.ts";
+import {
+  CLAIM_TOKEN,
+  validClaimPreview,
+  validClaimRedeemed,
+} from "./claim-contract.ts";
 
 const COOKIE = "__Host-commerce_buyer";
 const MAX_JSON = 64 * 1024;
@@ -30,11 +35,21 @@ type Session = {
 type Route = {
   method: string;
   privatePath: string;
-  body?: "empty" | "cart" | "quote" | "destination" | "checkout" | "payment";
+  body?:
+    | "empty"
+    | "cart"
+    | "quote"
+    | "destination"
+    | "checkout"
+    | "payment"
+    | "claim";
   query?: "catalog" | "options" | "orders";
   session?: string;
   payment?: "view" | "prepare" | "handoff";
   orderID?: string;
+  // Claim-link preview/redeem (live-keyword-claims-v1 B1/B2): the only routes that take
+  // and forward the X-Commerce-Claim-Token header.
+  claim?: "preview" | "redeem";
 };
 
 const messages: Record<string, string> = {
@@ -297,6 +312,10 @@ function route(
     },
     checkout: { POST: { privatePath: "checkout", body: "checkout" } },
     orders: { GET: { privatePath: "orders", query: "orders" } },
+    "claim-link": { GET: { privatePath: "claim-link", claim: "preview" } },
+    "claim-link/redeem": {
+      POST: { privatePath: "claim-link/redeem", body: "claim", claim: "redeem" },
+    },
   };
   if (Object.hasOwn(exact, suffix)) {
     const selected = exact[suffix][method];
@@ -561,6 +580,7 @@ const shapes: Record<Exclude<Route["body"], undefined>, Shape> = {
     method_version: "integer",
     locale: "string",
   },
+  claim: { expected_bundle_version: "integer" },
 };
 
 function matchesShape(value: unknown, shape: Shape): boolean {
@@ -654,6 +674,7 @@ async function upstream(
   method: string,
   body?: string,
   key?: string,
+  claimToken?: string,
 ): Promise<Response> {
   const outbound = new Headers({
     Accept: "application/json",
@@ -663,6 +684,7 @@ async function upstream(
   });
   if (body !== undefined) outbound.set("Content-Type", "application/json");
   if (key) outbound.set("Idempotency-Key", key);
+  if (claimToken) outbound.set("X-Commerce-Claim-Token", claimToken);
   try {
     return await fetch(`${config.api}/v1/buyer/${path}`, {
       method,
@@ -791,6 +813,12 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
   if (selected.invalidID) return fail(422, "invalid_request");
   if (!selected.route) return fail(405, "method_not_allowed");
   const target = selected.route;
+  // The claim token travels only in its header and only on the two claim routes; it is
+  // never read from a path, query or body and never echoed (live-keyword-claims-v1 §7.2).
+  const claimToken = request.headers.get("x-commerce-claim-token");
+  if (!target.claim && claimToken !== null) return fail(403, "forbidden");
+  if (target.claim && (claimToken === null || !CLAIM_TOKEN.test(claimToken)))
+    return fail(422, "invalid_request");
   const query = validQuery(request.url, target.query);
   if (query === null || url.hash) return fail(422, "invalid_request");
   const isMutation = request.method !== "GET";
@@ -938,11 +966,19 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
     request.method,
     body,
     key ?? undefined,
+    claimToken ?? undefined,
   );
   if (request.signal.aborted) return fail(503, "unavailable");
   if (!response.ok) return upstreamError(response, handoff);
   const data = await upstreamJSON(response, !!target.payment);
   if (request.signal.aborted || data === null || typeof data !== "object")
+    return fail(503, "unavailable");
+  if (
+    target.claim &&
+    (response.status !== 200 ||
+      (target.claim === "preview" && !validClaimPreview(data)) ||
+      (target.claim === "redeem" && !validClaimRedeemed(data)))
+  )
     return fail(503, "unavailable");
   if (
     target.payment &&

@@ -7,8 +7,8 @@ command -v go >/dev/null
 # public official golden vector; missing Node must fail before starting fixtures.
 command -v node >/dev/null
 test_mode="${1:-foundation}"
-if [[ "$#" -gt 1 ]] || [[ "$test_mode" != foundation && "$test_mode" != --browser-identity && "$test_mode" != --browser-buyer && "$test_mode" != --browser-merchant-buyer && "$test_mode" != --browser-merchant-orders-bff && "$test_mode" != --browser-merchant-orders-ui && "$test_mode" != --browser-input-delivery && "$test_mode" != --browser-studio-bff && "$test_mode" != --browser-studio-ui && "$test_mode" != --browser-order && "$test_mode" != --browser-payment && "$test_mode" != --checkout && "$test_mode" != --payment && "$test_mode" != --payment-worker && "$test_mode" != --expiry-worker && "$test_mode" != --storefront-resolver && "$test_mode" != --buyer-http && "$test_mode" != --purchase-entry && "$test_mode" != --merchant-orders && "$test_mode" != --meta-inbox && "$test_mode" != --meta-consumer && "$test_mode" != --meta-runtime && "$test_mode" != --legacy-isolation && "$test_mode" != --local-recovery && "$test_mode" != --live-planning && "$test_mode" != --live-authority && "$test_mode" != --live-media-plan && "$test_mode" != --live-media-execution && "$test_mode" != --live-browser-input && "$test_mode" != --live-media-input && "$test_mode" != --live-media-crash && "$test_mode" != --live-media-stop && "$test_mode" != --live-media-recovery && "$test_mode" != --live-media-runtime && "$test_mode" != --studio-backend ]]; then
-  printf 'Usage: bash scripts/dev/test-local.sh [--browser-identity|--browser-buyer|--browser-merchant-buyer|--browser-merchant-orders-bff|--browser-merchant-orders-ui|--browser-input-delivery|--browser-studio-bff|--browser-studio-ui|--browser-order|--browser-payment|--checkout|--payment|--payment-worker|--expiry-worker|--storefront-resolver|--buyer-http|--purchase-entry|--merchant-orders|--meta-inbox|--meta-consumer|--meta-runtime|--legacy-isolation|--local-recovery|--live-planning|--live-authority|--live-media-plan|--live-media-execution|--live-browser-input|--live-media-input|--live-media-crash|--live-media-stop|--live-media-recovery|--live-media-runtime|--studio-backend]\n' >&2
+if [[ "$#" -gt 1 ]] || [[ "$test_mode" != foundation && "$test_mode" != --browser-identity && "$test_mode" != --browser-buyer && "$test_mode" != --browser-merchant-buyer && "$test_mode" != --browser-merchant-orders-bff && "$test_mode" != --browser-merchant-orders-ui && "$test_mode" != --browser-input-delivery && "$test_mode" != --browser-studio-bff && "$test_mode" != --browser-studio-ui && "$test_mode" != --browser-live-claims && "$test_mode" != --browser-order && "$test_mode" != --browser-payment && "$test_mode" != --checkout && "$test_mode" != --payment && "$test_mode" != --payment-worker && "$test_mode" != --expiry-worker && "$test_mode" != --storefront-resolver && "$test_mode" != --buyer-http && "$test_mode" != --purchase-entry && "$test_mode" != --merchant-orders && "$test_mode" != --meta-inbox && "$test_mode" != --meta-consumer && "$test_mode" != --meta-runtime && "$test_mode" != --legacy-isolation && "$test_mode" != --local-recovery && "$test_mode" != --live-planning && "$test_mode" != --live-authority && "$test_mode" != --live-media-plan && "$test_mode" != --live-media-execution && "$test_mode" != --live-browser-input && "$test_mode" != --live-media-input && "$test_mode" != --live-media-crash && "$test_mode" != --live-media-stop && "$test_mode" != --live-media-recovery && "$test_mode" != --live-media-runtime && "$test_mode" != --studio-backend ]]; then
+  printf 'Usage: bash scripts/dev/test-local.sh [--browser-identity|--browser-buyer|--browser-merchant-buyer|--browser-merchant-orders-bff|--browser-merchant-orders-ui|--browser-input-delivery|--browser-studio-bff|--browser-studio-ui|--browser-live-claims|--browser-order|--browser-payment|--checkout|--payment|--payment-worker|--expiry-worker|--storefront-resolver|--buyer-http|--purchase-entry|--merchant-orders|--meta-inbox|--meta-consumer|--meta-runtime|--legacy-isolation|--local-recovery|--live-planning|--live-authority|--live-media-plan|--live-media-execution|--live-browser-input|--live-media-input|--live-media-crash|--live-media-stop|--live-media-recovery|--live-media-runtime|--studio-backend]\n' >&2
   exit 2
 fi
 if [[ "$test_mode" == --browser-merchant-buyer ]]; then
@@ -92,6 +92,14 @@ if [[ "$test_mode" == --browser-studio-ui ]]; then
   grep -q '^func TestBrowserStudioUIRealChain' tests/foundation/browser_studio_ui_test.go
   mkdir -p output/playwright
 fi
+if [[ "$test_mode" == --browser-live-claims ]]; then
+  # KC16: refuse a no-test success, and run the pure claims BFF/copy contracts first.
+  test -f tests/admin/claims-ui.spec.ts
+  test -f tests/foundation/browser_live_claims_test.go
+  grep -q '^func TestBrowserLiveClaimsRealChain' tests/foundation/browser_live_claims_test.go
+  node --test --experimental-strip-types tests/admin/claims-request.test.ts apps/storefront/tests/claim.test.mjs
+  mkdir -p output/playwright
+fi
 if [[ "$test_mode" == --browser-input-delivery ]]; then
   test -f tests/foundation/browser_input_delivery_test.go
   test -f tests/admin/input-delivery.spec.ts
@@ -110,13 +118,13 @@ if [[ "$test_mode" == --browser-studio-bff ]]; then
   node --test --experimental-strip-types tests/admin/studio-request.test.ts tests/admin/studio-input.test.ts
   mkdir -p output/playwright
 fi
-if [[ "$test_mode" == --browser-buyer || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-order || "$test_mode" == --browser-payment ]]; then
+if [[ "$test_mode" == --browser-buyer || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-order || "$test_mode" == --browser-payment || "$test_mode" == --browser-live-claims ]]; then
   command -v pnpm >/dev/null
   command -v openssl >/dev/null
   COMMERCE_BUYER_WEB_ENABLED=0 pnpm run build:storefront
   mkdir -p output/playwright
 fi
-if [[ "$test_mode" == --browser-identity || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-merchant-orders-bff || "$test_mode" == --browser-merchant-orders-ui || "$test_mode" == --browser-input-delivery || "$test_mode" == --browser-studio-bff || "$test_mode" == --browser-studio-ui ]]; then
+if [[ "$test_mode" == --browser-identity || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-merchant-orders-bff || "$test_mode" == --browser-merchant-orders-ui || "$test_mode" == --browser-input-delivery || "$test_mode" == --browser-studio-bff || "$test_mode" == --browser-studio-ui || "$test_mode" == --browser-live-claims ]]; then
   command -v pnpm >/dev/null
   command -v node >/dev/null
   # Production package, but local-only runtime configuration is injected by the
@@ -171,6 +179,9 @@ elif [[ "$test_mode" == --browser-merchant-orders-bff ]]; then
 elif [[ "$test_mode" == --browser-studio-ui ]]; then
   LC_BROWSER_STUDIO_UI_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=360s -run '^TestBrowserStudioUIRealChain$' -v ./tests/foundation
   printf 'PASS: isolated Studio B UI with signed MOCK IdP and local MOCK Egress; not Cloud or production acceptance.\n'
+elif [[ "$test_mode" == --browser-live-claims ]]; then
+  LC_BROWSER_LIVE_CLAIMS_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=360s -run '^TestBrowserLiveClaimsRealChain$' -v ./tests/foundation
+  printf 'PASS: KC16 isolated admin + storefront Next, Go and PG claims chain; signed MOCK IdP, MOCK manual ingress; no provider or deployment acceptance.\n'
 elif [[ "$test_mode" == --browser-input-delivery ]]; then
   LC_BROWSER_INPUT_DELIVERY_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=240s -run '^TestBrowserInputDeliveryBRW05RealChain$' -v ./tests/foundation
   printf 'PASS: isolated HTTPS signed browser + Next + Go + PG input token transport; not decoded SFU media, recovery or production acceptance.\n'

@@ -593,6 +593,9 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
           {stores.length > 1 && <label>{c.store}<select value={storeID} onChange={(event) => {
             previous.current = []; navigate(event.target.value, "", "");
           }}>{stores.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}
+          {shown && <button type="button" className="studio-refresh" data-testid="studio-open-claims"
+            onClick={() => { if (mayLeave(true)) router.push(`/${locale}/studio/claims?store=${encodeURIComponent(storeID)}&scene=${encodeURIComponent(shown.draft.session_id)}`); }}>
+            {c.claims}</button>}
           <button type="button" className="studio-refresh" onClick={refresh}>{c.refresh}</button>
         </div>
       </header>
