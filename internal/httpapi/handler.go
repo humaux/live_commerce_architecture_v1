@@ -18,6 +18,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"livecommerce/internal/catalog"
+	"livecommerce/internal/claims"
 	"livecommerce/internal/command"
 	"livecommerce/internal/httperror"
 	"livecommerce/internal/integrations/accounts"
@@ -36,6 +37,9 @@ type Options struct {
 	Accounts         *accounts.Service
 	Live             *live.MediaPlanner
 	BrowserInput     *live.BrowserInputRuntime
+	// ClaimLabels is the server-held manual-label HMAC key (cmd/api loads
+	// COMMERCE_CLAIMS_LABEL_KEY). nil leaves the keyword-claims routes unmounted.
+	ClaimLabels *claims.LabelKey
 }
 
 func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
@@ -116,6 +120,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerAccountRoutes(mux, pool, configured.Accounts)
 	registerOrderRoutes(mux, pool)
 	registerStudioRoutes(mux, pool, configured.Live, configured.BrowserInput)
+	registerClaimRoutes(mux, pool, configured.ClaimLabels)
 	foundation := platform.NewHandler(pool, platform.HandlerOptions{SessionStoreList: configured.SessionStoreList})
 	if configured.SessionStoreList {
 		mux.Handle("GET /v1/admin/stores", foundation)
@@ -245,6 +250,12 @@ func bodyRoute[T any](pool *pgxpool.Pool, permission string, fn func(context.Con
 }
 
 func scoped(pool *pgxpool.Pool, permission string, fn action) http.HandlerFunc {
+	return scopedAs(pool, permission, classify, fn)
+}
+
+// scopedAs is scoped with a route family's own error classifier (claims.go maps
+// deadlocks and unknown database errors to 503 per its frozen contract).
+func scopedAs(pool *pgxpool.Pool, permission string, classifier func(error) (int, string), fn action) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		header := r.Header.Get("Authorization")
 		if !strings.HasPrefix(header, "Bearer ") || strings.ContainsAny(strings.TrimPrefix(header, "Bearer "), " \t\r\n") {
@@ -263,7 +274,7 @@ func scoped(pool *pgxpool.Pool, permission string, fn action) http.HandlerFunc {
 			if errors.Is(err, errAccountRateLimited) {
 				w.Header().Set("Retry-After", "60")
 			}
-			status, code := classify(err)
+			status, code := classifier(err)
 			respondError(w, status, code)
 			return
 		}

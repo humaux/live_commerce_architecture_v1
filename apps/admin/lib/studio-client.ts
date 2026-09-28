@@ -31,7 +31,8 @@ async function json(response: Response, uncertain: boolean): Promise<unknown> {
   try { return await response.json(); }
   catch { throw new StudioError(uncertain ? "uncertain" : "unavailable"); }
 }
-async function read(path: string, signal: AbortSignal): Promise<unknown> {
+// Studio › Claims (claims-client.ts) reuses this private read/write boundary unchanged.
+export async function read(path: string, signal: AbortSignal): Promise<unknown> {
   let response: Response;
   try {
     response = await fetch(path, { method: "GET", cache: "no-store", credentials: "same-origin", signal });
@@ -57,7 +58,7 @@ export async function readStudioInputPrepared(store: string, sessionID: string, 
   catch (error) { throw error instanceof StudioError ? error : new StudioError("unavailable"); }
 }
 
-async function write(path: string, method: "POST" | "PATCH", body: unknown, key: string, boundary: string): Promise<unknown> {
+export async function write(path: string, method: "POST" | "PATCH", body: unknown, key: string, boundary: string): Promise<unknown> {
   const csrf = csrfCookie();
   if (!csrf) throw new StudioError("signed-out");
   try {

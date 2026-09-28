@@ -1,5 +1,7 @@
 // Browser-only buyer session coordination. The bearer stays in the HttpOnly
 // cookie; neither this module nor its journal ever reads it.
+import { CLAIM_TOKEN } from "./claim-contract.ts";
+
 const LOCK = "commerce-buyer-session-v1";
 const PENDING = "commerce-buyer-pending-v1";
 const CONTEXT = /^[A-Za-z0-9_-]{43}$/;
@@ -126,12 +128,14 @@ async function request(
   context?: string,
   body?: unknown,
   idempotencyKey?: string,
+  claimToken?: string,
 ): Promise<Response> {
   const headers = new Headers();
   if (context !== undefined) headers.set("X-Buyer-Context", context);
   if (body !== undefined) headers.set("Content-Type", "application/json");
   if (idempotencyKey !== undefined)
     headers.set("Idempotency-Key", idempotencyKey);
+  if (claimToken !== undefined) headers.set("X-Commerce-Claim-Token", claimToken);
   try {
     return await fetch(`/api/buyer/${suffix}`, {
       method,
@@ -354,14 +358,23 @@ export function logoutBuyerSession(expectedContext: string): Promise<void> {
   });
 }
 
+// claimToken is the in-memory claim-link bearer: required on exactly the two claim
+// routes (GET claim-link, POST claim-link/redeem) and refused everywhere else, so it can
+// only ever leave the page in its own header (live-keyword-claims-v1 §7.2, §11.1).
 export async function buyerRequest(
   method: string,
   suffix: string,
   context: string,
   body?: unknown,
   idempotencyKey?: string,
+  claimToken?: string,
 ): Promise<Response> {
   if (!CONTEXT.test(context)) throw new BuyerClientError("context_changed");
+  const claimRoute =
+    (method === "GET" && suffix === "claim-link") ||
+    (method === "POST" && suffix === "claim-link/redeem");
+  if (claimRoute !== (claimToken !== undefined) || (claimToken !== undefined && !CLAIM_TOKEN.test(claimToken)))
+    throw new BuyerClientError("request_failed");
   if (
     !/^(?:GET|PUT|POST)$/.test(method) ||
     !/^[A-Za-z0-9_/?=&.%-]+$/.test(suffix) ||
@@ -380,7 +393,14 @@ export async function buyerRequest(
       throw new BuyerClientError("request_failed");
   } else if (body !== undefined || idempotencyKey !== undefined)
     throw new BuyerClientError("request_failed");
-  const response = await request(method, suffix, context, body, idempotencyKey);
+  const response = await request(
+    method,
+    suffix,
+    context,
+    body,
+    idempotencyKey,
+    claimToken,
+  );
   if (response.status === 409) {
     try {
       const clone = response.clone();

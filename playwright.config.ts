@@ -12,6 +12,8 @@ const suites: Record<string, string[]> = {
   "merchant-orders-bff": ["orders-bff.spec.ts"],
   "merchant-orders-ui": ["orders-ui.spec.ts"],
   "studio-ui": ["studio-ui.spec.ts"],
+  // KC16: admin + storefront Next, Go and PG are started by browser_live_claims_test.go.
+  "live-claims": ["claims-ui.spec.ts"],
 };
 if (!Object.hasOwn(suites, suite)) throw new Error("Invalid LC_BROWSER_SUITE");
 

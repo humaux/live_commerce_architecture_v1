@@ -1,6 +1,9 @@
 import { callBackend, fixtureSession } from "@/lib/backend";
 import { validOrdersQuery } from "@/lib/orders-request";
 import { validStudioInputToken, validStudioQuery } from "@/lib/studio-request";
+import {
+  claimLinkRoute, claimsCollection, claimsRoutes, claimsSubpath, validClaimLink,
+} from "@/lib/claims-request";
 import { parseStudioInput, parseStudioInputPrepared } from "@/lib/studio-model";
 import {
   authConfig,
@@ -29,15 +32,15 @@ const studioInputRead = `${studioDetail}/input(?:/prepared)?`;
 const studioInputReadRoute = new RegExp(`^${studioInputRead}$`);
 const studioInputRoute = new RegExp(`^${studioInput}$`);
 const studioAction = `${studioDetail}/(?:rehearsal/(?:start|stop)|input/(?:start|token))`;
-const studioAny = new RegExp(`^(?:live-sessions|${studioDetail}|${studioAction}|${studioInputRead})$`);
+const studioAny = new RegExp(`^(?:live-sessions|${studioDetail}|${studioAction}|${studioInputRead}|${studioDetail}/${claimsSubpath})$`);
 const routes: Record<string, RegExp> = {
   GET: new RegExp(
-    `^(catalog-ledger|products|warehouses|inventory|products/${uuid}/skus|${purchaseEntry}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy}|${orders}|live-sessions|${studioDetail}|${studioInputRead})$`,
+    `^(catalog-ledger|products|warehouses|inventory|products/${uuid}/skus|${purchaseEntry}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy}|${orders}|live-sessions|${studioDetail}|${studioInputRead}|${claimsRoutes.GET})$`,
   ),
   POST: new RegExp(
-    `^(products|skus|warehouses|inventory/adjustments|products/${uuid}/archive|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets|live-sessions|${studioAction})$`,
+    `^(products|skus|warehouses|inventory/adjustments|products/${uuid}/archive|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets|live-sessions|${studioAction}|${claimsRoutes.POST})$`,
   ),
-  PATCH: new RegExp(`^(products/${uuid}|skus/${uuid}|${studioDetail})$`),
+  PATCH: new RegExp(`^(products/${uuid}|skus/${uuid}|${studioDetail}|${claimsRoutes.PATCH})$`),
   PUT: new RegExp(`^(${setting}|${policy})$`),
 };
 const exactStore = new RegExp(`^${uuid}$`);
@@ -81,7 +84,7 @@ async function route(request: Request, context: Context) {
     return error(422, "invalid_request");
   const url = new URL(request.url);
   if (studio) {
-    if (!validStudioQuery(request.url, request.method === "GET" && path === "live-sessions"))
+    if (!validStudioQuery(request.url, request.method === "GET" && (path === "live-sessions" || claimsCollection(path))))
       return error(422, "invalid_request");
     if (
       request.method === "GET" &&
@@ -199,9 +202,12 @@ async function route(request: Request, context: Context) {
     try {
       const tokenResponse = input && path.endsWith("/token");
       const inputRead = studioInputReadRoute.test(path);
-      body = await readBody(response, "application/json", tokenResponse || inputRead ? 8192 : 256 << 10);
+      const claimLink = claimLinkRoute(path);
+      body = await readBody(response, "application/json", tokenResponse || inputRead || claimLink ? 8192 : 256 << 10);
       const parsed: unknown = JSON.parse(body);
       if (tokenResponse && response.ok && !validStudioInputToken(parsed)) return error(503, "retry_later");
+      // The claim link token leaves the BFF only in this closed shape (§7.1 M7).
+      if (claimLink && response.ok && !validClaimLink(parsed)) return error(503, "retry_later");
       if (inputRead && response.ok) {
         if (path.endsWith("/prepared")) parseStudioInputPrepared(parsed);
         else parseStudioInput(parsed);
@@ -238,9 +244,11 @@ async function route(request: Request, context: Context) {
   });
 }
 async function proxy(request: Request, context: Context) {
-  const studio = (await context.params).resource.join("/").startsWith("live-sessions");
+  const path = (await context.params).resource.join("/");
   const response = await route(request, context);
-  if (studio) response.headers.set("Cache-Control", "private, no-store");
+  if (path.startsWith("live-sessions")) response.headers.set("Cache-Control", "private, no-store");
+  // Every M7 answer (success or not) forbids a Referer, like the Go route (§7.1).
+  if (claimLinkRoute(path)) response.headers.set("Referrer-Policy", "no-referrer");
   return response;
 }
 export const GET = proxy;
@@ -257,6 +265,7 @@ const unsupported = async (_request: Request, context: Context) => {
     : localError(405, "method_not_allowed", path.startsWith("live-sessions") ? "GET, POST, PATCH" : "GET, POST, PATCH, PUT");
   if (path.startsWith("live-sessions"))
     response.headers.set("Cache-Control", "private, no-store");
+  if (claimLinkRoute(path)) response.headers.set("Referrer-Policy", "no-referrer");
   return response;
 };
 export const DELETE = unsupported;

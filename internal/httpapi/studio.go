@@ -246,31 +246,39 @@ func studioBodyRoute[T any](pool *pgxpool.Pool, permission string, fields []stri
 }
 
 func studioDecodeBody[T any](w http.ResponseWriter, r *http.Request, fields []string) (T, bool) {
+	in, _, ok := studioDecodeRaw[T](w, r, fields)
+	return in, ok
+}
+
+// studioDecodeRaw is studioDecodeBody that also returns the validated body bytes, so
+// claims.go can add key-presence rules without reading the request twice. It has
+// already written the 415/400 response whenever it returns false.
+func studioDecodeRaw[T any](w http.ResponseWriter, r *http.Request, fields []string) (T, []byte, bool) {
 	var in T
 	media, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	if err != nil || media != "application/json" {
 		respondError(w, http.StatusUnsupportedMediaType, "json_required")
-		return in, false
+		return in, nil, false
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
 	defer r.Body.Close()
 	raw, err := io.ReadAll(r.Body)
 	if err != nil || !utf8.Valid(raw) || !studioUniqueJSON(raw, fields) {
 		respondError(w, http.StatusBadRequest, "invalid_json")
-		return in, false
+		return in, nil, false
 	}
 	dec := json.NewDecoder(bytes.NewReader(raw))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&in); err != nil {
 		respondError(w, http.StatusBadRequest, "invalid_json")
-		return in, false
+		return in, nil, false
 	}
 	var extra any
 	if err := dec.Decode(&extra); !errors.Is(err, io.EOF) {
 		respondError(w, http.StatusBadRequest, "invalid_json")
-		return in, false
+		return in, nil, false
 	}
-	return in, true
+	return in, raw, true
 }
 
 func studioUniqueJSON(raw []byte, fields []string) bool {

@@ -90,6 +90,8 @@ const (
 	paymentRoute
 	paymentPrepareRoute
 	paymentHandoffRoute
+	claimLinkRoute
+	claimRedeemRoute
 )
 
 type route struct {
@@ -119,6 +121,10 @@ func matchRoute(path string) route {
 		return route{kind: checkoutRoute}
 	case "/v1/buyer/orders":
 		return route{kind: ordersRoute}
+	case claimLinkPath:
+		return route{kind: claimLinkRoute}
+	case claimRedeemPath:
+		return route{kind: claimRedeemRoute}
 	}
 	if rest, ok := strings.CutPrefix(path, "/v1/buyer/orders/"); ok {
 		for _, entry := range []struct {
@@ -159,6 +165,10 @@ func allowed(kind routeKind, method string) bool {
 		return method == http.MethodGet || method == http.MethodPut
 	case quoteRoute, destinationItemRoute, orderRoute:
 		return method == http.MethodGet
+	case claimLinkRoute:
+		return method == http.MethodGet
+	case claimRedeemRoute:
+		return method == http.MethodPost
 	}
 	return false
 }
@@ -191,7 +201,10 @@ func forbiddenInput(r *http.Request) bool {
 			return true
 		}
 	}
-	return false
+	// The claim-link bearer is accepted only on B1/B2 (claims.go); anywhere else it is a
+	// forbidden input, even when empty, so it can never ride along to another route.
+	claimRoute := r.URL.EscapedPath() == r.URL.Path && (r.URL.Path == claimLinkPath || r.URL.Path == claimRedeemPath)
+	return !claimRoute && len(r.Header.Values(claimTokenHeader)) != 0
 }
 
 func catalogRequest(raw string) (storefront.CatalogRequest, error) {
@@ -319,6 +332,10 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			httperror.Write(w, status, code)
 		}
 	}
+	if r.URL != nil && (r.URL.Path == claimLinkPath || r.URL.Path == claimRedeemPath) {
+		// Claim responses describe one bearer link; keep them out of every shared cache (§7).
+		w.Header().Set("Cache-Control", "private, no-store")
+	}
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
 	deadline, _ := ctx.Deadline()
@@ -359,7 +376,9 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	noReplayKey := issue || selected.kind == bootstrapRoute || selected.kind == retireRoute || selected.kind == paymentHandoffRoute
 	write := r.Method == http.MethodPut || (r.Method == http.MethodPost && !noReplayKey)
 	key, valid := keyFor(r, noReplayKey, write)
-	if !valid {
+	// "clm:" cart.set keys are derived by claims.RedeemLink under the opposite lock order
+	// (contract live-keyword-claims-v1 §5.6); a direct cart write may never use one.
+	if !valid || (selected.kind == cartRoute && strings.HasPrefix(key, claimDerivedKeyPrefix)) {
 		fail(http.StatusUnprocessableEntity, "invalid_request")
 		return
 	}
@@ -480,6 +499,8 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 	switch selected.kind {
 	case paymentRoute, paymentPrepareRoute, paymentHandoffRoute:
 		out, err = h.paymentRequest(ctx, r, selected, storeID, token, key)
+	case claimLinkRoute, claimRedeemRoute:
+		out, err = h.claimRequest(ctx, r, selected.kind, storeID, token, key)
 	case ordersRoute:
 		var request pagination.Request
 		request, err = ordersRequest(r.URL.RawQuery)
