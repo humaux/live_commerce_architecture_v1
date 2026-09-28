@@ -1285,10 +1285,11 @@ CREATE POLICY stripe_endpoint_registry ON payments.stripe_webhook_endpoints
 CREATE FUNCTION payments.guard_stripe_endpoint() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 BEGIN
- IF (OLD.endpoint_id,OLD.tenant_id,OLD.store_id,OLD.connection_id,OLD.provider,
+ -- provider is GENERATED ALWAYS; its NEW value is computed after BEFORE triggers.
+ IF (OLD.endpoint_id,OLD.tenant_id,OLD.store_id,OLD.connection_id,
   OLD.environment,OLD.account_id,OLD.execution_profile,OLD.created_at)
   IS DISTINCT FROM
-  (NEW.endpoint_id,NEW.tenant_id,NEW.store_id,NEW.connection_id,NEW.provider,
+  (NEW.endpoint_id,NEW.tenant_id,NEW.store_id,NEW.connection_id,
   NEW.environment,NEW.account_id,NEW.execution_profile,NEW.created_at)
   OR NEW.key_version<>OLD.key_version+1 THEN
   RAISE EXCEPTION 'Stripe endpoint identity or version changed' USING ERRCODE='42501'; END IF;
