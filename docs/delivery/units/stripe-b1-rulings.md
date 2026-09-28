@@ -43,3 +43,17 @@ differs, this file wins.
 11. **Order** — stripe-b1-pool-fix merges before any PG gate of these units can be green. Units may
     start coding now; their PG runs happen after the integrator merges pool-fix into the release
     branch and they rebase.
+
+## Rulings from integration of wave 2 (2026-09-29, after bbc90e1)
+
+12. All four post-merge gate disputes were implementation misreadings; the independent tests
+    stood (return URL has no query per §9.3; no `lock_timeout` below the §9.1 2 s DB budget;
+    `set_stripe_method` 22023 → `ErrRejected`; `webhook` never reads `STRIPE_ACCOUNT_ID`).
+13. `payments.stripe_endpoint_account` (registrar-only, read-only, scoped) is added to 0061 in
+    place (same precedent as ruling 2). `SetWebhookEndpoint` derives the account from the
+    registered connection; a caller-supplied id is only compared. This closes ruling 8's limit
+    for webhook endpoints (Register/Rotate still verify via `VerifyAccount`).
+14. `STRIPE_SANDBOX` is an allowed, non-secret opt-in variable for `stripe-admin qualify`.
+15. Contract §12 env table row "`STRIPE_ACCOUNT_ID` | worker, API (webhook), stripe-admin" is
+    superseded by §0.2: `STRIPE_ACCOUNT_ID` is read only by `stripe-admin register`, `rotate` and
+    SANDBOX `qualify`. The worker and API never read `STRIPE_*`.
