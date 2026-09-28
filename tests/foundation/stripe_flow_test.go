@@ -118,11 +118,18 @@ func (e *sflEnv) startWith(t *testing.T, stripeEnabled bool, keys *accounts.Keyr
 	}
 	stopped := false
 	stop = func() {
-		if !stopped {
-			stopped = true
-			stopCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			_ = client.StopAndCancel(stopCtx)
+		if stopped {
+			return
+		}
+		stopped = true
+		// Graceful first: cancelling a running job orphans it in state 'running' (River rescues it
+		// only after an hour), which would starve every later assertion about that attempt.
+		graceful, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+		defer cancel()
+		if client.Stop(graceful) != nil {
+			hard, stop := context.WithTimeout(context.Background(), 5*time.Second)
+			defer stop()
+			_ = client.StopAndCancel(hard)
 		}
 	}
 	e.stops = append(e.stops, stop)
@@ -301,18 +308,26 @@ func (e *sflEnv) deliver(t *testing.T, endpoint, secret string, o stripetest.Eve
 		o.ID = swhEventID("flow")
 	}
 	body := stripetest.EventBody(o)
-	req, err := http.NewRequest(http.MethodPost, e.hook.URL+"/v1/stripe/webhook/"+endpoint, strings.NewReader(string(body)))
-	if err != nil {
-		t.Fatal(err)
+	// 503 is the contract's "retry me" answer (Stripe redelivers the same event id): retry like Stripe.
+	status := 0
+	for try := 0; try < 6; try++ {
+		req, err := http.NewRequest(http.MethodPost, e.hook.URL+"/v1/stripe/webhook/"+endpoint, strings.NewReader(string(body)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Stripe-Signature", stripetest.SignWebhook(secret, body, time.Now()))
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		res.Body.Close()
+		if status = res.StatusCode; status != 503 {
+			return status
+		}
+		time.Sleep(500 * time.Millisecond)
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Stripe-Signature", stripetest.SignWebhook(secret, body, time.Now()))
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		t.Fatal(err)
-	}
-	res.Body.Close()
-	return res.StatusCode
+	return status
 }
 
 func sflEvent(attempt, session string) stripetest.EventOpts {

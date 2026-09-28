@@ -67,6 +67,9 @@ func TestStripeSP15Process(t *testing.T) {
 			t.Fatalf("disabled assembly called Stripe: %d -> %d requests", seeded, got)
 		}
 		e.wantStock(t, s, sflPending)
+		// Retire the disabled assembly before the enabled ones start: while both compete, it fails
+		// the job on every wake-up and burns River attempts (the job would be discarded after 25).
+		stopDisabled()
 
 		// (2) wrong custody keyring: same queue, Stripe enabled, but the scoped credential cannot be
 		// opened, so the job fails closed before any provider request.
@@ -84,7 +87,6 @@ func TestStripeSP15Process(t *testing.T) {
 		if len(sflCreateKeysPerAttempt(e)[res.AttemptID]) != 1 || e.sends(res.AttemptID) != 1 {
 			t.Fatalf("one create, one key expected: %v", sflCreateKeysPerAttempt(e)[res.AttemptID])
 		}
-		stopDisabled()
 	})
 
 	t.Run("account_mismatch_fails_before_any_checkout_request", func(t *testing.T) {
