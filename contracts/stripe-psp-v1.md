@@ -166,6 +166,22 @@ new payment engine, new queue system or production permission is introduced.
   Both validate owner membership/store, set scoped GUCs, and audit; registration atomically inserts
   binding/account/version 1, rotation locks the account and appends exactly expected_version+1.
   Rotation invalidates eligibility for new starts until requalification; it never rewrites attempts.
+- The existing §13 qualification/method registrar operations use these typed SQL interfaces:
+  `payments.qualify_stripe_method(tenant uuid,store uuid,principal uuid,qualification uuid,
+  connection uuid,expected_credential_version bigint,profile text,evidence_ref text,
+  observed_at timestamptz,expires_at timestamptz) RETURNS uuid` and
+  `payments.set_stripe_method(tenant uuid,store uuid,principal uuid,market uuid,country text,
+  connection uuid,qualification uuid,expected_version bigint,enabled boolean,visible boolean,
+  sort integer,min bigint,max bigint,name_hans text,name_hant text,name_en text) RETURNS bigint`.
+  Both are registry_writer-owned and EXECUTE registrar only, with owner/scope validation.
+  Qualify captures the expected API credential version **before** the network probe and rejects
+  a changed head after locking account/binding; an old-key probe cannot qualify a new key.
+  It derives proof_class from PROVIDER_MOCK/SANDBOX (never LIVE), validates finite observation
+  times not in the future and expiry in `(now, observed_at + 30 days]`, and records bounded
+  evidence. It never silently substitutes the current version. Method updates use the existing
+  method-head CAS/lock order, derive currency from the locked market and recheck the exact
+  qualification/account/current credential/profile before enabling. No caller-supplied currency
+  or separate method registry is introduced. Probe-vs-rotation rejection is part of SP21.
 
 #### Per-account webhook routing and separate signing custody
 
