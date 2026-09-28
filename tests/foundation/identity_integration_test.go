@@ -217,8 +217,7 @@ func TestIdentityInitialStoreAtomicIdempotentAndScoped(t *testing.T) {
 	if err := f.owner.QueryRow(ctx, `SELECT ARRAY(SELECT permission FROM identity.store_grants WHERE tenant_id=$1::uuid ORDER BY permission),(SELECT count(*) FROM inventory.warehouses WHERE tenant_id=$1::uuid),(SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1::uuid AND action='merchant.store_created')`, a.TenantID).Scan(&grants, &warehouses, &audits); err != nil {
 		t.Fatal(err)
 	}
-	wantGrants := "audit:read,audit:write,catalog:read,catalog:write,integration:manage,integration:read,inventory:read,inventory:reserve,inventory:write,orders:read,pricing:read,pricing:write,store:read"
-	if strings.Join(grants, ",") != wantGrants || warehouses != 1 || audits != 1 {
+	if strings.Join(grants, ",") != initialStoreGrants || warehouses != 1 || audits != 1 {
 		t.Fatalf("bootstrap grants=%v warehouses=%d audits=%d", grants, warehouses, audits)
 	}
 	if err := platform.WithScope(ctx, f.runtime, session.Token, a.StoreID, "catalog:write", func(tx pgx.Tx, scope platform.Scope) error {
@@ -394,3 +393,10 @@ func TestIdentityPoolRejectsPrivilegeAndObjectOwnership(t *testing.T) {
 		})
 	}
 }
+
+// initialStoreGrants is the exact, sorted permission set that
+// identity.create_initial_store (latest definition: migrations/0027_merchant_orders.sql)
+// grants the creating principal. Every test asserting the initial owner's
+// grants compares against this one list so a migration that changes the set
+// fails loudly in one place instead of leaving stale per-test counts.
+const initialStoreGrants = "audit:read,audit:write,catalog:read,catalog:write,integration:manage,integration:read,inventory:read,inventory:reserve,inventory:write,orders:read,pricing:read,pricing:write,store:read"
