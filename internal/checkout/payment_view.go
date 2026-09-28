@@ -32,8 +32,8 @@ type OrderPayment struct {
 	HandoffState     string                `json:"handoff_state"`
 	HandoffExpiresAt *time.Time            `json:"handoff_expires_at"`
 	Methods          []PaymentMethodOption `json:"methods"`
-	// CancelRequested is emitted only by the Stripe-enabled projection (view_v2); nil is
-	// omitted so PAYUNi-only responses stay byte-identical (rulings §4).
+	// CancelRequested is emitted only for Stripe-attempt orders (view_v2, then cleared by
+	// PaymentView otherwise); nil is omitted so PAYUNi responses stay byte-identical (rulings §4).
 	CancelRequested *bool `json:"cancel_requested,omitempty"`
 }
 
@@ -72,6 +72,14 @@ func (s *HostedPaymentStarter) PaymentView(ctx context.Context, token, storeID, 
 		if err := decoder.Decode(&out); err != nil || !validPaymentViewFor(out, orderID, s.stripe != nil) {
 			return command.ErrConflict
 		}
+		if s.stripe != nil {
+			// Same tx, so the provider cannot change between projection and check.
+			isStripe, err := s.isStripeOrder(callCtx, tx, tokenHash[:], storeID, orderID)
+			if err != nil {
+				return err
+			}
+			dropCancelUnlessStripe(&out, isStripe)
+		}
 		if out.HandoffExpiresAt != nil {
 			utc := out.HandoffExpiresAt.UTC()
 			out.HandoffExpiresAt = &utc
@@ -82,6 +90,15 @@ func (s *HostedPaymentStarter) PaymentView(ctx context.Context, token, storeID, 
 		return OrderPayment{}, safeError(ctx, err)
 	}
 	return out, nil
+}
+
+// dropCancelUnlessStripe enforces rulings §4: v2 always emits cancel_requested (the validator
+// requires it), but only Stripe-attempt orders may expose it, so PAYUNi and not-started orders
+// serialize byte-identically whether or not Stripe is enabled.
+func dropCancelUnlessStripe(out *OrderPayment, isStripe bool) {
+	if !isStripe {
+		out.CancelRequested = nil
+	}
 }
 
 func validPaymentView(out OrderPayment, orderID string) bool {

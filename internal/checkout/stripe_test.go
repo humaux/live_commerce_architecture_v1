@@ -1,6 +1,7 @@
 package checkout
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/json"
@@ -225,6 +226,34 @@ func TestPaymentViewV2Validator(t *testing.T) {
 	body, _ := json.Marshal(v1)
 	if strings.Contains(string(body), "cancel_requested") {
 		t.Fatalf("nil cancel_requested leaked into PAYUNi bytes: %s", body)
+	}
+}
+
+// Rulings §4 / SP14: a PAYUNi order projected by v2 must marshal to the same bytes as v1.
+func TestPaymentViewV2PAYUNiBytesMatchV1(t *testing.T) {
+	const v1JSON = `{"order_id":"` + testID + `","currency":"TWD","total_minor":500,"commercial_state":"AWAITING_PAYMENT","test_mode":true,` +
+		`"payment_state":"PENDING","handoff_state":"NONE","handoff_expires_at":null,"methods":[]}`
+	var v1, v2 OrderPayment
+	if err := json.Unmarshal([]byte(v1JSON), &v1); err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal([]byte(strings.Replace(v1JSON, `"methods":[]`, `"methods":[],"cancel_requested":false`, 1)), &v2); err != nil {
+		t.Fatal(err)
+	}
+	if !validPaymentViewFor(v2, testID, true) {
+		t.Fatal("v2 projection with cancel_requested rejected")
+	}
+	dropCancelUnlessStripe(&v2, false)
+	want, _ := json.Marshal(v1)
+	got, _ := json.Marshal(v2)
+	if !bytes.Equal(want, got) {
+		t.Fatalf("PAYUNi bytes differ under Stripe: %s vs %s", got, want)
+	}
+	no := false
+	stripeView := OrderPayment{CancelRequested: &no}
+	dropCancelUnlessStripe(&stripeView, true)
+	if stripeView.CancelRequested == nil {
+		t.Fatal("Stripe order lost cancel_requested")
 	}
 }
 
