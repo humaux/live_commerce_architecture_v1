@@ -73,8 +73,10 @@ Token rules for every agent:
 ## 4. Evidence labels (`AGENTS.md`)
 
 Every claim is one of DESIGN, MODEL_ONLY, MOCK, SANDBOX, LIVE, NOT_RUN. Zero tests matched, a
-SKIP, a cancelled run or a missing log is never PASS. Evidence file = log under `output/<unit>/`
-with command, commit SHA, exit code and top-level PASS/FAIL/SKIP counts.
+SKIP, a cancelled run or a missing log is never PASS. Evidence file = log under
+`/Volumes/data/live_commerce_architecture_v1/output/<unit>/` — the **main checkout's** absolute
+path, never the worktree's own `output/` (worktrees are deleted after merge; untracked files in
+them are lost) — with command, commit SHA, exit code and top-level PASS/FAIL/SKIP counts.
 
 ## 5. Code comments and dependency annotations (anti-rot standard)
 
