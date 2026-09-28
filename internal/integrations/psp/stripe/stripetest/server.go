@@ -7,6 +7,7 @@ package stripetest
 import (
 	"crypto/hmac"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -64,15 +65,18 @@ type paymentIntent struct {
 // Server serves only local HTTP and rewrites api.stripe.com requests to itself.
 // Each instance has an independent idempotency cache and session collection.
 type Server struct {
-	mu         sync.Mutex
-	http       *httptest.Server
-	account    string
-	next       int
-	sessions   map[string]*session
-	cache      map[string]cached
-	inflight   map[string]bool
-	createKeys []string
-	fault      Fault
+	mu               sync.Mutex
+	http             *httptest.Server
+	account          string
+	next             int
+	sessions         map[string]*session
+	cache            map[string]cached
+	inflight         map[string]bool
+	createKeys       []string
+	fault            Fault
+	requireKey       bool
+	keyDigest        [32]byte
+	accepted, denied int
 }
 
 // New starts a local-only Stripe fake. The account ID is deliberately synthetic.
@@ -109,6 +113,28 @@ func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 func (s *Server) SetNextFault(f Fault) { s.mu.Lock(); s.fault = f; s.mu.Unlock() }
+
+// RequireAPIKey enables exact Bearer admission for all fake endpoints. Only a
+// digest is retained; neither request counts nor failures expose the key.
+// https://docs.stripe.com/api/authentication (retrieved 2026-09-28).
+func (s *Server) RequireAPIKey(key string) error {
+	if key == "" || strings.ContainsAny(key, " \t\r\n") {
+		return fmt.Errorf("stripetest: invalid API key fixture")
+	}
+	s.mu.Lock()
+	s.keyDigest = sha256.Sum256([]byte(key))
+	s.requireKey = true
+	s.mu.Unlock()
+	return nil
+}
+
+type RequestCounts struct{ Accepted, Denied int }
+
+func (s *Server) Counts() RequestCounts {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return RequestCounts{Accepted: s.accepted, Denied: s.denied}
+}
 func (s *Server) CreateKeys() []string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -160,6 +186,10 @@ func SignWebhook(secret string, body []byte, at time.Time) string {
 }
 
 func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
+	if !s.authorized(r) {
+		errorJSON(w, http.StatusUnauthorized, "authentication_error", "invalid_api_key")
+		return
+	}
 	if r.URL.Path == "/v1/account" && r.Method == http.MethodGet {
 		writeJSON(w, 200, map[string]any{"id": s.account, "object": "account", "livemode": false})
 		return
@@ -185,6 +215,32 @@ func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	errorJSON(w, 404, "invalid_request_error", "resource_missing")
+}
+
+func (s *Server) authorized(r *http.Request) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if !s.requireKey {
+		s.accepted++
+		return true
+	}
+	values := r.Header.Values("Authorization")
+	if len(values) != 1 {
+		s.denied++
+		return false
+	}
+	token, ok := strings.CutPrefix(values[0], "Bearer ")
+	if !ok || token == "" || strings.ContainsAny(token, " \t\r\n") {
+		s.denied++
+		return false
+	}
+	got := sha256.Sum256([]byte(token))
+	if subtle.ConstantTimeCompare(got[:], s.keyDigest[:]) != 1 {
+		s.denied++
+		return false
+	}
+	s.accepted++
+	return true
 }
 
 func (s *Server) create(w http.ResponseWriter, r *http.Request) {

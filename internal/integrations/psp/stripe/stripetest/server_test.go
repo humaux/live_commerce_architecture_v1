@@ -6,10 +6,12 @@ package stripetest
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -113,5 +115,101 @@ func TestFakeStripeCacheAndPreExecutionFaults(t *testing.T) {
 	status, h, _, err = postCreate(t, c, s.URL(), "drop-key", p)
 	if err != nil || status != 200 || h.Get("Idempotent-Replayed") != "true" || len(s.SessionIDs()) != 3 {
 		t.Fatalf("drop replay: %d %v", status, err)
+	}
+}
+
+func TestFakeStripeAPIKeyIsolation(t *testing.T) {
+	a, b := New("acct_FakeStoreA1"), New("acct_FakeStoreB1")
+	defer a.Close()
+	defer b.Close()
+	keyA, keyB := "sk_test_"+strings.Repeat("A", 24), "sk_test_"+strings.Repeat("B", 24)
+	if err := a.RequireAPIKey(keyA); err != nil {
+		t.Fatal(err)
+	}
+	if err := b.RequireAPIKey(keyB); err != nil {
+		t.Fatal(err)
+	}
+	call := func(s *Server, method, path, key string, body url.Values) (int, []byte) {
+		t.Helper()
+		var encoded string
+		if body != nil {
+			encoded = body.Encode()
+		}
+		req, err := http.NewRequest(method, s.URL()+path, strings.NewReader(encoded))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if key != "" {
+			req.Header.Set("Authorization", "Bearer "+key)
+		}
+		if method == http.MethodPost && path == "/v1/checkout/sessions" {
+			req.Header.Set("Idempotency-Key", "isolated-create")
+		}
+		resp, err := s.http.Client().Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+		out, err := io.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if bytes.Contains(out, []byte(keyA)) || bytes.Contains(out, []byte(keyB)) {
+			t.Fatal("fake response exposed API key")
+		}
+		return resp.StatusCode, out
+	}
+	for _, v := range []struct {
+		method, path, key string
+		body              url.Values
+	}{
+		{http.MethodGet, "/v1/account", "", nil},
+		{http.MethodGet, "/v1/account", keyB, nil},
+		{http.MethodPost, "/v1/checkout/sessions", "", testParams()},
+		{http.MethodPost, "/v1/checkout/sessions", keyB, testParams()},
+	} {
+		if code, _ := call(a, v.method, v.path, v.key, v.body); code != http.StatusUnauthorized {
+			t.Fatalf("unauthorized %s %s status=%d", v.method, v.path, code)
+		}
+	}
+	if ids := a.SessionIDs(); len(ids) != 0 || len(a.CreateKeys()) != 0 {
+		t.Fatal("denied create touched session or idempotency state")
+	}
+	if code, _ := call(a, http.MethodGet, "/v1/account", keyA, nil); code != 200 {
+		t.Fatalf("correct key account status=%d", code)
+	}
+	code, raw := call(a, http.MethodPost, "/v1/checkout/sessions", keyA, testParams())
+	if code != 200 {
+		t.Fatalf("correct key create status=%d", code)
+	}
+	var made struct {
+		ID string `json:"id"`
+	}
+	if err := json.Unmarshal(raw, &made); err != nil || made.ID == "" {
+		t.Fatalf("created session shape: %v", err)
+	}
+	if len(a.SessionIDs()) != 1 || len(a.CreateKeys()) != 1 {
+		t.Fatal("correct create was not recorded exactly once")
+	}
+	for _, v := range []struct{ method, path string }{
+		{http.MethodGet, "/v1/checkout/sessions/" + made.ID},
+		{http.MethodPost, "/v1/checkout/sessions/" + made.ID + "/expire"},
+	} {
+		if code, _ := call(a, v.method, v.path, keyB, nil); code != http.StatusUnauthorized {
+			t.Fatalf("wrong key %s status=%d", v.method, code)
+		}
+	}
+	code, raw = call(a, http.MethodGet, "/v1/checkout/sessions/"+made.ID, keyA, nil)
+	if code != 200 || !bytes.Contains(raw, []byte(`"status":"open"`)) {
+		t.Fatal("wrong-key expire mutated session state")
+	}
+	if got := a.Counts(); got.Accepted != 3 || got.Denied != 6 {
+		t.Fatalf("auth count accepted=%d denied=%d", got.Accepted, got.Denied)
+	}
+	if code, _ := call(b, http.MethodGet, "/v1/account", keyA, nil); code != http.StatusUnauthorized {
+		t.Fatalf("store A key admitted at B: %d", code)
+	}
+	if code, _ := call(b, http.MethodGet, "/v1/account", keyB, nil); code != 200 {
+		t.Fatalf("store B key refused at B: %d", code)
 	}
 }
