@@ -1418,3 +1418,11 @@ At most two targeted fixes per blocker, then escalate.
 - **Q8.** Public webhook exposure: the edge TLS path, optional Stripe IP allowlist, and who creates
   the webhook endpoint (pinned API version, four events).
 - **Q9.** Retention period for webhook receipts and signals (U08).
+
+## Amendment pointer (2026-09-29)
+
+`contracts/stripe-refund-v1.md` (FROZEN 2026-09-29) re-creates, in `0062` / post-River `0013`,
+these stage-B functions: `stripe_webhook_prepare`, `stripe_webhook_commit`,
+`guard_stripe_receipt_link`, `load_stripe_signal`, `consume_stripe_signal`, `payment_job_queue`,
+`apply_stripe_observation`. The refund contract's §4.4/§4.6 text governs their new bodies; this
+file's SP gates remain required and must stay green.
