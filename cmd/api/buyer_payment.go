@@ -1,3 +1,10 @@
+// buyer_payment.go owns the API-side configuration and assembly of the hosted buyer payment
+// service (PAYUNi always, Stripe Checkout when COMMERCE_STRIPE_CHECKOUT_ENABLED=1). It never
+// reads STRIPE_* secrets, starts a worker, or contacts a provider from the API process.
+//
+// Depends on: internal/checkout (hosted service), internal/platform (hosted pool),
+// river_payment via an insert-only River client (payment query/signal jobs).
+// Used by: buyer.go (loadBuyerConfig / buildBuyerHandler).
 package main
 
 import (
@@ -18,6 +25,7 @@ type buyerPaymentConfig struct {
 	hostedDSN string
 	profile   string
 	endpoints checkout.HostedConfig
+	stripe    *checkout.StripeHostedConfig // nil unless COMMERCE_STRIPE_CHECKOUT_ENABLED=1
 	keys      *accounts.Keyring
 }
 
@@ -52,6 +60,21 @@ func loadBuyerPaymentConfig(getenv func(string) string, addr string) (buyerPayme
 	if err != nil {
 		return buyerPaymentConfig{}, errBuyerConfig
 	}
+	// Nested flag, read only once buyer payment itself is admitted. Stripe rides on the PAYUNi
+	// hosted service in B1 (no Stripe-only deployment) and never reads STRIPE_* variables:
+	// API keys live in PG under the operator registrar. The return URL is the same neutral
+	// COMMERCE_PAYMENT_RETURN_URL, already canonicalised above.
+	stripeEnabled, err := flag(getenv("COMMERCE_STRIPE_CHECKOUT_ENABLED"))
+	if err != nil || (stripeEnabled && c.profile != "PROVIDER_MOCK" && c.profile != "SANDBOX") {
+		return buyerPaymentConfig{}, errBuyerConfig
+	}
+	if stripeEnabled {
+		stripeConfig := checkout.StripeHostedConfig{ReturnURL: c.endpoints.ReturnURL}
+		if _, _, err := stripeConfig.CanonicalDigest(); err != nil {
+			return buyerPaymentConfig{}, errBuyerConfig
+		}
+		c.stripe = &stripeConfig
+	}
 	c.enabled = true
 	return c, nil
 }
@@ -67,7 +90,7 @@ func buildBuyerPayment(ctx context.Context, c buyerPaymentConfig) (*checkout.Hos
 	if err != nil {
 		return nil, nil, errBuyerConfig
 	}
-	// This client inserts an existing query job in the payment transaction. It
+	// This client inserts payment query/signal jobs in the payment transaction. It
 	// does not start a worker or make a provider request in the API process.
 	// Place it in the family schema maintained only by payment workers.
 	jobs, err := river.NewClient(riverpgxv5.New(pool), &river.Config{Schema: "river_payment"})
@@ -75,7 +98,8 @@ func buildBuyerPayment(ctx context.Context, c buyerPaymentConfig) (*checkout.Hos
 		pool.Close()
 		return nil, nil, errBuyerConfig
 	}
-	service, err := checkout.NewHostedPaymentStarter(ctx, pool, jobs, c.profile, c.keys, c.endpoints)
+	service, err := checkout.NewHostedPaymentService(ctx, pool, jobs, c.profile, c.keys,
+		checkout.HostedProviders{PAYUNi: &c.endpoints, Stripe: c.stripe})
 	if err != nil {
 		pool.Close()
 		return nil, nil, errBuyerConfig

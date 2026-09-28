@@ -90,6 +90,8 @@ const (
 	paymentRoute
 	paymentPrepareRoute
 	paymentHandoffRoute
+	paymentRefreshRoute
+	paymentCancelRoute
 	claimLinkRoute
 	claimRedeemRoute
 )
@@ -130,7 +132,8 @@ func matchRoute(path string) route {
 		for _, entry := range []struct {
 			suffix string
 			kind   routeKind
-		}{{"/payment/prepare", paymentPrepareRoute}, {"/payment/handoff", paymentHandoffRoute}, {"/payment", paymentRoute}} {
+		}{{"/payment/prepare", paymentPrepareRoute}, {"/payment/handoff", paymentHandoffRoute},
+			{"/payment/refresh", paymentRefreshRoute}, {"/payment/cancel", paymentCancelRoute}, {"/payment", paymentRoute}} {
 			if id, matched := strings.CutSuffix(rest, entry.suffix); matched && id != "" && !strings.Contains(id, "/") {
 				return route{kind: entry.kind, id: id}
 			}
@@ -159,7 +162,7 @@ func allowed(kind routeKind, method string) bool {
 		return method == http.MethodGet || method == http.MethodPut
 	case quotesRoute, checkoutRoute:
 		return method == http.MethodPost
-	case paymentPrepareRoute, paymentHandoffRoute:
+	case paymentPrepareRoute, paymentHandoffRoute, paymentRefreshRoute, paymentCancelRoute:
 		return method == http.MethodPost
 	case destinationRoute:
 		return method == http.MethodGet || method == http.MethodPut
@@ -321,10 +324,23 @@ func keyFor(r *http.Request, noReplayKey bool, write bool) (string, bool) {
 	return returnValue, one && idempotencyKey.MatchString(returnValue)
 }
 
+// keylessPaymentPath is true for handoff/refresh/cancel, whose failures must never be auto-retried.
+func keylessPaymentPath(path string) bool {
+	if !strings.HasPrefix(path, "/v1/buyer/orders/") {
+		return false
+	}
+	for _, suffix := range []string{"/payment/handoff", "/payment/refresh", "/payment/cancel"} {
+		if strings.HasSuffix(path, suffix) {
+			return true
+		}
+	}
+	return false
+}
+
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	issue := r.Method == http.MethodPost && r.URL != nil && r.URL.Path == "/v1/buyer/session"
-	handoff := r.URL != nil && strings.HasPrefix(r.URL.Path, "/v1/buyer/orders/") &&
-		strings.HasSuffix(r.URL.Path, "/payment/handoff")
+	// Handoff, refresh and cancel are keyless buyer clicks whose errors are never auto-retried.
+	handoff := r.URL != nil && keylessPaymentPath(r.URL.Path)
 	fail := func(status int, code string) {
 		if issue || handoff {
 			httperror.WriteNonRetryable(w, status, code)
@@ -373,7 +389,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		fail(http.StatusUnprocessableEntity, "invalid_request")
 		return
 	}
-	noReplayKey := issue || selected.kind == bootstrapRoute || selected.kind == retireRoute || selected.kind == paymentHandoffRoute
+	noReplayKey := issue || selected.kind == bootstrapRoute || selected.kind == retireRoute || isKeylessPaymentRoute(selected.kind)
 	write := r.Method == http.MethodPut || (r.Method == http.MethodPost && !noReplayKey)
 	key, valid := keyFor(r, noReplayKey, write)
 	// "clm:" cart.set keys are derived by claims.RedeemLink under the opposite lock order
@@ -466,7 +482,7 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 		w.WriteHeader(http.StatusNoContent)
 		return nil
 	}
-	if r.Method == http.MethodGet || r.Method == http.MethodDelete || selected.kind == paymentHandoffRoute {
+	if r.Method == http.MethodGet || r.Method == http.MethodDelete || isKeylessPaymentRoute(selected.kind) {
 		if err := noBody(r); err != nil {
 			return err
 		}
@@ -497,7 +513,7 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 	var out any
 	var err error
 	switch selected.kind {
-	case paymentRoute, paymentPrepareRoute, paymentHandoffRoute:
+	case paymentRoute, paymentPrepareRoute, paymentHandoffRoute, paymentRefreshRoute, paymentCancelRoute:
 		out, err = h.paymentRequest(ctx, r, selected, storeID, token, key)
 	case claimLinkRoute, claimRedeemRoute:
 		out, err = h.claimRequest(ctx, r, selected.kind, storeID, token, key)
