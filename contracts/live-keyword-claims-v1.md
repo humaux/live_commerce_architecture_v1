@@ -1,6 +1,6 @@
 # Live keyword claims v1 — T10 comment → claim → prefilled cart
 
-Status: CANDIDATE frozen for T10 implementation at base 6bb5092; NOT_PUBLIC; MOCK social ingress only until Meta hookup gate passes.
+Status: FROZEN for T10 implementation (integrator 2026-09-28, cloud lane `claude/gallant-bohr-9rs3yo`, base 6bb5092 + c3878a4); NOT_PUBLIC; MOCK social ingress only until the Meta hookup gate (T10c) passes. See §0.1 for binding integrator rulings.
 
 Synthesized from candidates A (base) and B and three lens reviews; every P1 is closed
 below (§0). Contributes the T10 slice of R06 and the G03 case "重复评论和修改数量语义固定".
@@ -37,6 +37,38 @@ immutable `(created_at,id)`; advisory offer cap (no `live.sessions` row lock);
 occurred-at skew 120 s; authorize again after `command.Run`; json tags on every result;
 redacted formatting on every input/credential type; token only in a header; retention
 classes without fixed days; UI BLOCKED pending composition approval (T10b).
+
+### 0.1 Integrator rulings (2026-09-28, binding for implementation)
+
+- **Migration number 0060**, not 0044: 0044–0059 are left to parallel local lanes (BRW07 etc.).
+  The integrator renumbers at merge if needed. Every "0044" in this file means 0060.
+- Open questions resolved: Meta ingestion deferred to T10c (manual MOCK ingress only, R10);
+  integrator-owned helpers in §10 approved (`storefront.LockCartOwner`, pagination collection
+  `claim-bundles`, `internal/httpapi` + `internal/buyerhttp` routes, tests in
+  `tests/foundation/live_claims*_test.go` + pure vectors under `tests/claims/`); delta apply
+  (R1) adopted; retention classes as §8 with the purge job in T14 (production-mount blocker
+  stays listed in §12); final quantity follows server acceptance order (§11.1 of 架构.md);
+  link TTL fixed 72 h; kw-v1 strictness confirmed (`A1 +2`, `A1+02`, `A1+` never match);
+  claim windows may open on a DRAFT session until T08 defines LIVE; keywords immutable;
+  claims reuse `live:read`/`live:manage` in this slice.
+- **T10b UI is UNBLOCKED** for this lane: the owner instructed on 2026-09-28 to build every
+  page to a deployable state with browser tests. UI must reuse the approved Studio/admin and
+  storefront design systems (DESIGN.md, `.impeccable/`); the composition is still recorded
+  for owner visual review at delivery.
+- Open adversarial P2s that implementation MUST close (each with a test):
+  (a) permissive RLS UPDATE policies are OR-ed by PostgreSQL — do not rely on policy
+  "pairing"; enforce buyer-vs-merchant writes by column grants + definer functions and test
+  that a buyer tx cannot release/rotate and a merchant tx cannot bind;
+  (b) manual actor labels are personal data — never let them reach PG server logs via
+  constraint-violation DETAIL (validate in Go before SQL; map 23505/23514 without echo);
+  (c) duplicate ingest must return a fully reconstructible result (persist or re-read
+  `bundle_version`; no unstable fields);
+  (d) `NormalizeLabel` strips `@` before trimming and is idempotent;
+  (e) define `match_mode` behaviour on OPEN→CLOSED/CLOSED→OPEN (mode may change only while
+  CLOSED; mismatching mode on transition = `ErrConflict`);
+  (f) pending lines on unavailable SKUs: SetCart receives only applicable lines merged into
+  the current cart; unavailable claim lines stay pending and are reported in the result;
+  (g) link TTL/expiry enforced in the database (CHECK / definer), not only in Go.
 
 ## 1. Business boundary
 
@@ -152,8 +184,9 @@ Ingest (offers `A1` max 3 active, `B2` max 999 active; EXACT unless marked):
 | S02 | redeliver the `A1+3` source after S01 | prior ACCEPTED×3, `duplicate=true`, line stays 1, no write |
 | S03 | `Z9` → CreateOffer `Z9` → redeliver same source | `duplicate=true`, UNKNOWN_KEYWORD, no new row |
 | S04 | 51st distinct offer for one bundle | BUNDLE_LIMIT |
+| S05 | new manual actor `A1` via `actor_label`, then `B2` via `bundle_id` with `actor_label` empty | both ACCEPTED on one bundle; label unchanged; no 23514 |
 
-## 3. Data model — migration `0044_live_claims.sql` (integrator-owned)
+## 3. Data model — migration `0060_live_claims.sql` (integrator-owned)
 
 Six tables, one new NOLOGIN role, four definer functions. Every table ENABLE + FORCE
 RLS; `REVOKE ALL ... FROM PUBLIC`; no DELETE grant; no object owned by a login; no River
@@ -630,7 +663,7 @@ type IngestInput struct {
 	SourceEventID string    // canonical UUID, unique per store across kinds
 	Platform      string    // v1: "manual" only
 	ActorKey      string    // 64 lowercase hex, opaque, derived by the caller
-	ActorLabel    string    // manual only; required only when the bundle does not exist yet
+	ActorLabel    string    // manual only; required only when the bundle does not exist yet, ignored otherwise
 	PrincipalID   string    // manual: must equal app.principal_id
 	Text          string    // Ingest only; parsed then discarded; must be "" for IngestParsed
 	OccurredAt    time.Time // UTC µs; <= clock_timestamp()+120s
@@ -674,10 +707,14 @@ caller (`RecordManualClaim`); KC15 source guard enforces it. In the caller's tra
 5. Offer by `(session, p.Keyword)` `FOR SHARE`. Missing → persist `UNKNOWN_KEYWORD`
    (nothing but the reason). Otherwise decide OFFER_INACTIVE → INVALID_QUANTITY →
    QUANTITY_REQUIRED → QUANTITY_OVER_MAX on the locked offer; persist with `offer_id`.
-6. Bundle `INSERT … ON CONFLICT (t,s,session,platform,actor_key) DO NOTHING` (label for a
-   new manual actor; a duplicate label → 23505 → `ErrConflict`), then `SELECT … FOR NO KEY
-   UPDATE`; line `FOR NO KEY UPDATE`. New line with `line_count=50` → persist
-   `BUNDLE_LIMIT` (the bundle pre-existed).
+6. Bundle `SELECT … WHERE (t,s,session,platform,actor_key)=… FOR NO KEY UPDATE`; found →
+   use it and **ignore `ActorLabel`**. None → `ActorLabel` required (else `ErrInvalid`),
+   `INSERT … ON CONFLICT (t,s,session,platform,actor_key) DO NOTHING` with that label (a
+   duplicate label → 23505 → `ErrConflict`), then the same `SELECT … FOR NO KEY UPDATE`.
+   Never INSERT for an existing bundle: CHECK/RLS `WITH CHECK` run on the proposed row
+   before conflict arbitration, so a NULL-label manual INSERT would raise 23514 (S05).
+   Line `FOR NO KEY UPDATE`. New line with `line_count=50` → persist `BUNDLE_LIMIT` (the
+   bundle pre-existed).
 7. Upsert line `quantity=N, version=version+1`; bundle `version+1, line_count(+1 if new),
    updated_at`; insert the ACCEPTED event with `line_version`, `previous_quantity`.
    Every accepted command bumps versions even if N is unchanged (a repeated buyer
@@ -898,7 +935,7 @@ amendment, §10), one top-level `TestLiveClaimsKCnn…` per gate. Pure tests liv
 | KC03 | `TestLiveClaimsKC03Schema` | REAL_PG | Fresh and populated-0043 upgrade; migrate twice; FORCE RLS on six tables; §3.2 matrix equality from `information_schema.column_privileges`/`table_privileges`; definer owner, `prosecdef`, `proconfig`, EXECUTE ACLs; CHECK/FK negatives incl. every §3.1 row and the NO_MATCH iff; 42501 for buyer/meta/checkout/worker/issuer/identity on every table; `live_offer_active_sku` partial (inactive duplicates allowed); no function EXECUTE-able by `commerce_runtime` or `commerce_buyer_runtime` can clear `owner_id` without replacing `token_hash` (catalog enumeration + direct call of each); `claims.links` has no DEFAULT on `issued_at`; pool validator rejects a login reaching `commerce_claims_writer` |
 | KC04 | `TestLiveClaimsKC04Offers` | REAL_PG | Create/update replay; changed body 409; CAS race one winner; dup keyword 409; second active offer on one SKU 409 on create and on reactivation; typo recovery: `A11→X` deactivated → create `A1→X` 200 → `A1` ACCEPTED in the same session and redeem applies only the active offer's line; same keyword other session OK; 201st 409 under concurrency; SKU missing 404 / archived or foreign currency 409 / cross-store 404; canonical keyword before hashing; keyword/SKU immutable (42501); reactivation moves `activated_at`; create while another tx holds the session `FOR SHARE` succeeds within lock_timeout; missing live:manage; revoked token after lock wait and on replay; audit failure rolls back |
 | KC05 | `TestLiveClaimsKC05Window` | REAL_PG | Transition table; two sessions open concurrently → one 409; OPEN→OPEN and mode-while-OPEN 409; generation increments; close blocks on an in-flight ingest (`pg_stat_activity`, not sleeps); ingest after close → WINDOW_CLOSED with zero rows |
-| KC06 | `TestLiveClaimsKC06Ingest` | REAL_PG | Every §2.4 ingest vector incl. S01–S04; §3.1 shape per reason; I03 rows carry no keyword/quantity/offer; S03 unknown→create offer→redeliver = duplicate; changed immutable fact under same source → 409; `occurred_at` before `opened_at` / beyond +120 s; committed bundles ≥1 line; row-count and version snapshot of inventory, storefront, checkout, buyer, social, meta_inbox unchanged |
+| KC06 | `TestLiveClaimsKC06Ingest` | REAL_PG | Every §2.4 ingest vector incl. S01–S05; §3.1 shape per reason; I03 rows carry no keyword/quantity/offer; S03 unknown→create offer→redeliver = duplicate; changed immutable fact under same source → 409; `occurred_at` before `opened_at` / beyond +120 s; committed bundles ≥1 line; row-count and version snapshot of inventory, storefront, checkout, buyer, social, meta_inbox unchanged |
 | KC07 | `TestLiveClaimsKC07Concurrency` | REAL_PG | Same source ×20 concurrently → one event; same line, different commands → final = last committed, `line_version` = accepted count; lock-hook interleave "close S1, open S2" between manual request start and ingest → WINDOW_CLOSED, zero S2 rows; deactivate vs ingest; release vs redeem; mixed ingest/redeem/issue/offer-update/window-close/`UpdateDraft`/`PUT cart`/Quote workload → zero 40P01 |
 | KC08 | `TestLiveClaimsKC08ManualPrivacy` | REAL_PG | Replay identical receipt after later commands; changed body 409; same key with a different `actor_label` 409 (I02), same key with `@Amy ` vs `amy` replays; new actor with a used label 409; two labels → two bundles; rejected first comment leaves no bundle/label; **sentinel scan** of every column of claims/live/ops/buyer receipts, audit, storefront events and captured logs finds no `0912345678`, `A1是不是红色` or text sentinel; label sentinel found only in `claims.bundles.label`, its unkeyed SHA-256 nowhere |
 | KC09 | `TestLiveClaimsKC09Link` | REAL_PG | 43-char token; DB-wide scan finds only its SHA-256; token absent from receipts/audit/logs; replay → `token:""`, `replayed:true`; concurrent issue → one CAS winner; rotation kills old token; first issue, then 3 rotations and 3 release+rotations: each resets `issued_at` and `expires_at = issued_at+72h` exactly (DB, no 23514); release+rotate: old token 404, new owner binds, previous owner's preview 404; direct `claims.issue_link` by a `live:read`-only principal → PT403, and `live:manage` revoked while it waits on the bundle lock → PT403 (`pg_stat_activity`, not sleeps), nothing changed in either case; other-session/store/tenant bundle 404 |
@@ -923,7 +960,7 @@ printing a PASS line that states "MOCK manual ingress; no provider"); full
 | --- | --- |
 | `internal/claims/**` incl. `grammar/` (+ unit/fuzz tests) | T10 commerce_worker |
 | `tests/claims/kw-v1-vectors.json`; `tests/foundation/live_claims*_test.go` | independent test_worker (T10 write_paths amendment adds the foundation glob) |
-| `migrations/0044_live_claims.sql` | integrator |
+| `migrations/0060_live_claims.sql` | integrator |
 | `storefront.LockCartOwner`; pagination collection `claim-bundles` | integrator |
 | `internal/httpapi/claims.go` + mount; `internal/buyerhttp` B1–B2, `forbiddenInput`, `clm:` rejection; `core-openapi.json` | integrator |
 | `cmd/api` loading/validating `COMMERCE_CLAIMS_LABEL_KEY` into `claims.LabelKey` | integrator |
@@ -938,7 +975,7 @@ and why (e.g. `storefront.SetCart // only cart writer; claims never writes store
 tables`). Every table and function gets `COMMENT ON` naming its owning package and the
 roles that may use it. Order: freeze → migration + helpers ∥ grammar + KC01 → domain +
 KC02–KC12 → HTTP + KC13–14 → KC15. Initial writers ≤2 (commerce_worker, integrator);
-test_worker starts KC01 immediately and PG gates once 0044 lands.
+test_worker starts KC01 immediately and PG gates once 0060 lands.
 
 ## 11. Follow-up (not in this slice)
 
