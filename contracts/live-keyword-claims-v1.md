@@ -236,7 +236,7 @@ CREATE TABLE live.claim_windows (                                -- one row per 
  FOREIGN KEY (tenant_id,principal_id) REFERENCES identity.memberships(tenant_id,principal_id),
  CHECK ((state='OPEN' AND generation>0 AND opened_at IS NOT NULL AND closed_at IS NULL)
      OR (state='CLOSED' AND ((generation=0 AND opened_at IS NULL AND closed_at IS NULL)
-        OR (generation>0 AND opened_at IS NOT NULL AND closed_at>=opened_at)))));
+        OR (generation>0 AND opened_at IS NOT NULL AND closed_at IS NOT NULL AND closed_at>=opened_at)))));
 CREATE UNIQUE INDEX live_claim_window_one_open ON live.claim_windows(tenant_id,store_id) WHERE state='OPEN';
 
 CREATE TABLE claims.bundles (

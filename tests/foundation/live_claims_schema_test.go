@@ -969,11 +969,13 @@ func TestLiveClaimsKC12Isolation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, q := range []string{`SELECT set_config('app.tenant_id',$1,true)`, `SELECT set_config('app.store_id',$2,true)`, `SELECT set_config('app.buyer_id',$3,true)`,
-		`SELECT set_config('app.buyer_session_id',$4,true)`, `SELECT set_config('app.principal_id','',true)`} {
-		if _, err := rr.Exec(ctx, q, f.tenantA, f.storeA1, h.cap.Scope.OwnerID, h.cap.Scope.SessionID); err != nil {
-			t.Fatal(err)
-		}
+	// Always end the transaction: a t.Fatal with it open leaks the shared owner
+	// pool connection and TestMain's pool Close then waits forever.
+	defer func() { _ = rr.Rollback(context.Background()) }()
+	if _, err := rr.Exec(ctx, `SELECT set_config('app.tenant_id',$1,true), set_config('app.store_id',$2,true),
+		set_config('app.buyer_id',$3,true), set_config('app.buyer_session_id',$4,true), set_config('app.principal_id','',true)`,
+		f.tenantA, f.storeA1, h.cap.Scope.OwnerID, h.cap.Scope.SessionID); err != nil {
+		t.Fatal(err)
 	}
 	_, err = rr.Exec(ctx, `SET LOCAL ROLE commerce_buyer_runtime`)
 	if err == nil {

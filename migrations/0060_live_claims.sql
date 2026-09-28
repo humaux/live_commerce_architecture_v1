@@ -84,7 +84,9 @@ CREATE TABLE live.claim_windows (
  FOREIGN KEY (tenant_id,principal_id) REFERENCES identity.memberships(tenant_id,principal_id),
  CHECK ((state='OPEN' AND generation>0 AND opened_at IS NOT NULL AND closed_at IS NULL)
      OR (state='CLOSED' AND ((generation=0 AND opened_at IS NULL AND closed_at IS NULL)
-        OR (generation>0 AND opened_at IS NOT NULL AND closed_at>=opened_at)))));
+        OR (generation>0 AND opened_at IS NOT NULL AND closed_at IS NOT NULL AND closed_at>=opened_at)))));
+ -- closed_at IS NOT NULL is explicit: `closed_at>=opened_at` alone is NULL for a NULL
+ -- closed_at and a CHECK treats NULL as satisfied (KC03 caught CLOSED gen>0 without closed_at).
 -- One OPEN window per store: a manual operator cannot attribute to two sessions at once.
 CREATE UNIQUE INDEX live_claim_window_one_open ON live.claim_windows(tenant_id,store_id) WHERE state='OPEN';
 

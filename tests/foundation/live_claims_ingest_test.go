@@ -102,16 +102,19 @@ func lcEvent(t *testing.T, f *testFixture, id string) (e lcEventRow) {
 
 // lcWant is the expected §3.1 shape of one ingest outcome.
 type lcWant struct {
-	outcome        string
-	reason         claims.Reason
-	kind           string
-	offer          *claims.Offer
-	qty            int64 // 0 = NULL
-	explicit       *bool // nil = NULL
-	prev, line     int64 // ACCEPTED only
-	mode           string
-	generation     int64
-	bundleExpected string // ACCEPTED on an existing bundle
+	outcome    string
+	reason     claims.Reason
+	kind       string
+	offer      *claims.Offer
+	qty        int64 // 0 = NULL
+	explicit   *bool // nil = NULL
+	prev, line int64 // ACCEPTED only
+	mode       string
+	generation int64
+	// ACCEPTED: the existing bundle id the result must name. REJECTED: any non-empty
+	// value only states that the actor legitimately already owns a bundle; the result
+	// BundleID stays "" (contract §4.3 IngestResult: "" unless ACCEPTED).
+	bundleExpected string
 }
 
 func lcBool(b bool) *bool { return &b }
@@ -132,7 +135,7 @@ func (h *lcHarness) checkIngest(t *testing.T, label string, in claims.IngestInpu
 		t.Fatalf("%s: result %+v, want %+v", label, r, w)
 	}
 	if accepted != command.ValidID(r.BundleID) || (accepted && (r.LineVersion != w.line || r.PreviousQuantity != w.prev || r.BundleVersion < 1)) ||
-		(!accepted && (r.LineVersion != 0 || r.PreviousQuantity != 0)) || (w.bundleExpected != "" && r.BundleID != w.bundleExpected) {
+		(!accepted && (r.LineVersion != 0 || r.PreviousQuantity != 0)) || (accepted && w.bundleExpected != "" && r.BundleID != w.bundleExpected) {
 		t.Fatalf("%s: bundle/line fields %+v, want %+v", label, r, w)
 	}
 	e := lcEvent(t, h.f, r.EventID)
@@ -344,7 +347,9 @@ func TestLiveClaimsKC06Ingest(t *testing.T) {
 	if r, err := h.ingestParsed(mut(func(x *claims.IngestInput) { x.Text = "" }), parsed); err != nil || r.Outcome != claims.OutcomeAccepted || r.Quantity != 2 {
 		t.Fatalf("IngestParsed positive control %+v %v", r, err)
 	}
-	lcIs(t, lcErr(h.ingest(mut(func(x *claims.IngestInput) { x.ActorLabel = "" }))), command.ErrInvalid, "new bundle without ActorLabel")
+	// A fresh actor key: `base` already owns a bundle (positive control above), and an
+	// existing bundle legitimately ignores ActorLabel (§4.3 step 6).
+	lcIs(t, lcErr(h.ingest(mut(func(x *claims.IngestInput) { x.ActorKey = lcActor(); x.ActorLabel = "" }))), command.ErrInvalid, "new bundle without ActorLabel")
 	rr, err := h.f.runtime.BeginTx(h.ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead})
 	if err != nil {
 		t.Fatal(err)
