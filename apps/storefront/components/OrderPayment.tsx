@@ -113,6 +113,10 @@ export default function OrderPayment({
   const epoch = useRef(0);
   const working = useRef(false);
   const readVersion = useRef(0);
+  // Non-quiet reads own `reading`; a quiet poll read bumps readVersion but must never
+  // strand the flag, so the flag is fenced by its own counter (latest non-quiet read).
+  const loudVersion = useRef(0);
+  const loudActive = useRef(false);
   const busyCallback = useRef(onBusy);
   busyCallback.current = onBusy;
   const selection = useRef(isSelected);
@@ -126,7 +130,11 @@ export default function OrderPayment({
   // quiet = background poll: no loading flicker, and a failed GET keeps the last view.
   async function read(version: number, quiet = false) {
     const request = ++readVersion.current;
-    if (!quiet) setReading(true);
+    const loud = quiet ? loudVersion.current : ++loudVersion.current;
+    if (!quiet) {
+      loudActive.current = true;
+      setReading(true);
+    }
     try {
       const value = await readOrderPayment(context, order.order_id);
       if (version !== epoch.current || request !== readVersion.current) return;
@@ -151,12 +159,12 @@ export default function OrderPayment({
         setMessage("failed");
       }
     } finally {
-      if (
-        !quiet &&
-        version === epoch.current &&
-        request === readVersion.current
-      )
+      // Clear when this is the latest non-quiet read, even if a quiet read superseded
+      // its result (else reading stays true and Continue/Cancel/Pay stay blocked).
+      if (!quiet && version === epoch.current && loud === loudVersion.current) {
+        loudActive.current = false;
         setReading(false);
+      }
     }
   }
 
@@ -193,7 +201,13 @@ export default function OrderPayment({
         async () => {
           timer = undefined;
           if (version !== epoch.current) return;
-          if (!working.current && document.visibilityState !== "hidden")
+          // Skip while a non-quiet read is in flight: a quiet read would supersede it and
+          // discard its result (or its failure message) on the first load.
+          if (
+            !working.current &&
+            !loudActive.current &&
+            document.visibilityState !== "hidden"
+          )
             await read(version, true);
           step++;
           schedule();
