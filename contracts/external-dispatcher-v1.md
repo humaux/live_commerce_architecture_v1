@@ -134,3 +134,18 @@ is bounded/non-negative; registry and caller-owned pool are immutable/retained.
   query-only reconciliation, same immutable UUID/key, final local persisted fact.
 - Full real-PG/race/vet regression plus independent review; production adapters,
   exact-once remote effects, global quotas and full T06 not implied by these gates.
+
+## Amendment proposal (meta-claims-intake-v1 round 1, 2026-09-29; APPROVED by integrator 2026-09-29 for meta-claims-intake-v1)
+
+Proposed by the `meta-claims-intake-v1` contract author; approved by the integrator (IR-12
+there, 2026-09-29). Nothing above changes until the meta-claims-intake unit implements it. Full text: `meta-claims-intake-v1.md` §6.4.
+Summary: `DispatchRoute` gains an optional pair `LoadSecret(ctx, pgx.Tx, SecretClaim)
+(Secret, error)` + `DispatchWithSecret(ctx, DispatchRequest, Secret)`. In `dispatch` mode only,
+after the final gate, the dispatcher runs `LoadSecret` in one bounded transaction that ends
+before the call; `SecretClaim` (operation, generation, lease token) reaches only `LoadSecret`,
+whose sole body is a lease-fenced SQL loader. `Secret` is redacted in every formatter, zeroed
+after use, and never passed to Check or Reconcile. `ErrPolicyDenied` from `LoadSecret` →
+BLOCKED_POLICY `credential_unavailable`; any other error → UNKNOWN `secret_load_failed` with
+zero calls. Lease inequality becomes `CallTimeout + 3*DBTimeout + 1s < lease`. Existing routes
+are unaffected. Added gate: a secret is never observable by Check/Reconcile, and a loader
+failure makes zero provider calls.

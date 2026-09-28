@@ -1083,3 +1083,18 @@ delta and gates.
 | Auto-lock stock on comment | Rejected for v1 (arch §11.2) |
 | Auto Messenger reply with cart link | Deferred to T10c/T07 (G07); manual copy now |
 | Live-only price, claim export, buyer tags | Deferred |
+
+## Amendment by meta-claims-intake-v1 (integrator, 2026-09-29)
+
+Append-only note; nothing above is edited. `meta-claims-intake-v1.md` §4.4 changes this
+contract by clauses 1–10 (1 §1 window rule for `source_kind='meta'`; 2 §3 River wording; 3 §3.1
+`RATE_LIMITED` row; 4 §3.2 KC03 matrix gains the §4.3 rows; 5 §3.3 `issue_system_link`
+INSERT-only; 6 §4.3 `IngestInput`/`IngestResult`; 7 §4.3 `IngestMetaIntake` and KC15; 8 §6
+system link row; 9 §3.3 filter wording for the no-GUC definers; 10 §3.2 closing paragraph
+replaced). Clause 10 replaces the closing "No policy references another claims table … No
+privilege for … role" sentences of §3.2 with the wording in meta-claims-intake-v1 §4.4 clause
+10. KC03 change: subtest `foreign-roles-denied` drops `commerce_integration_writer` for
+`SELECT` on `claims.events` only (its column SELECT from meta-claims-intake-v1 §4.3 makes the
+query succeed). The implementing unit applies this amendment; the gate change is
+integrator-approved at freeze of meta-claims-intake-v1 and is not an implementer rewrite of a
+gate.
