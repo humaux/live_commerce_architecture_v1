@@ -1,8 +1,11 @@
 # Stripe PSP v1 — Checkout Session lifecycle, webhook intake and deadline closure
 
-Status: FROZEN for stage A (wire adapter) by integrator 2026-09-28 after owner answers (§0.1); stage B frozen on stage-A acceptance. Base `ce147fa`. It needs owner confirmation
-of D1/D4/D6/D13 (§17) and an independent read-only preflight (security_reviewer + test_worker)
-before any write task starts. Evidence label for this file: DESIGN. Every gate in §14 is NOT_RUN.
+Status: Stage A accepted separately; stage B consistency amendment §0.2 is
+**DRAFT / PREFLIGHT_REQUIRED** on base `529cb0f` (2026-09-29). Only unaffected work may
+continue until §0.2 passes independent review. §0.1 records the owner answers;
+§0.2 reconciles their incomplete propagation into the original draft below.
+Evidence label for this file: DESIGN; implementation/gate results live in delivery evidence,
+not in this contract. No gate is proved merely by this file being frozen.
 MOCK, SANDBOX, BROWSER and LIVE are separate evidence classes (架构 §28.1). A MOCK pass never
 becomes SANDBOX evidence, and a SANDBOX pass never becomes LIVE evidence.
 
@@ -107,6 +110,155 @@ Integrator rulings:
 - Q6: Adaptive Pricing and Managed Payments are disabled per session (as drafted). Q7: the Stripe
   CLI is not admitted in v1, so SP17 stays NOT_RUN. Q8/Q9 are deploy-time owner inputs (listed in
   §16).
+
+### 0.2 Stage-B consistency amendment (2026-09-29; draft)
+
+This section implements §0.1, rather than choosing a different account model. On acceptance,
+it replaces the conflicting D1/D15, custody/registrar/worker/webhook clauses and test expectations
+listed below. The historical ENV-only descriptions are **not a second supported runtime mode**.
+PAYUNi behavior and already-applied migrations remain unchanged. No Connect, pooled funds,
+new payment engine, new queue system or production permission is introduced.
+
+#### Account identity and API-key custody
+
+- Replace the environment-global Stripe account index with partial unique indexes on
+  `(tenant_id,store_id,environment)` and `(environment,account_id)`, both WHERE provider='stripe'.
+  Different stores may register different accounts in the same environment. One provider account
+  cannot silently become the common collection account of unrelated stores.
+- Retain `integration.account_credentials`' existing non-null `key_id`, `nonce`, `ciphertext`,
+  immutable version rows and deferred current-version FK. **Do not add `ENV_PLATFORM`, nullable
+  ciphertext or an env-key fingerprint column.** Ordinary merchant runtime INSERT into a Stripe
+  account/credential remains forbidden; only the operator registrar may provision it in B1.
+- Stripe API credential plaintext is a separately validated `stripe-api-v1` payload containing
+  only `secret_key`. Reuse AES-256-GCM and the keyring, with a distinct payload/AAD format binding
+  tenant, store, connection, provider, environment, account and credential version. Never shoehorn
+  a Stripe key into PAYUNi `HashKey`/`HashIV`, or loosen PAYUNi's existing validator.
+- `STRIPE_SECRET_KEY` and `STRIPE_ACCOUNT_ID` are registrar/probe inputs only. The registrar
+  verifies the account using Stage A, encrypts before SQL, and records the exact frozen version.
+  API and payment-worker do not read those global variables. No plaintext secret enters PG.
+- Replace `stripe_worker_ready(environment,account,fingerprint)` with capability/role/queue
+  validation at startup and this operation-scoped loader (0061, integration_writer, EXECUTE worker):
+
+  `integration.load_stripe_credential(uuid,bigint,bytea,text) RETURNS TABLE
+  (tenant_id uuid,store_id uuid,connection_id uuid,credential_version bigint,environment text,
+  account_id text,key_id text,nonce bytea,ciphertext bytea)`.
+
+  Arguments are attempt, lease generation, lease token, profile. It joins the account and exact
+  `attempt.credential_version`, checks provider/binding/environment, and repeats the DB-clock
+  lease fence after waits, as `load_payment_query` does. No current-head or process-env fallback.
+  Only the worker may decrypt API material. Historical attempts keep their frozen credentials
+  after rotation; if those credentials cease to work, retain UNKNOWN/stock, never substitute
+  another merchant's key or a new create identity.
+- `StripeRuntime` owns the scoped loader and shared keyring, not one process-global client/account.
+  Build the Stage-A client from the leased material and verify `GET /v1/account` against that
+  account before any checkout call. Verify plus checkout I/O share the existing claim deadline.
+  Initial implementation need not cache verification; any later cache must be bounded and keyed
+  by the entire scope/credential version. Observations record the credential version actually used.
+- Registrar SQL names are `integration.register_stripe_account` and
+  `integration.rotate_stripe_key` (not the obsolete `*_platform_*` names). Registration input:
+  `(tenant uuid,store uuid,principal uuid,connection uuid,binding uuid,environment text,
+  account text,key_id text,nonce bytea,ciphertext bytea) RETURNS uuid`.
+  Rotation input: `(tenant uuid,store uuid,principal uuid,connection uuid,expected_version bigint,
+  key_id text,nonce bytea,ciphertext bytea) RETURNS bigint`.
+  Both validate owner membership/store, set scoped GUCs, and audit; registration atomically inserts
+  binding/account/version 1, rotation locks the account and appends exactly expected_version+1.
+  Rotation invalidates eligibility for new starts until requalification; it never rewrites attempts.
+
+#### Per-account webhook routing and separate signing custody
+
+- Public route is **`POST /v1/stripe/webhook/{endpoint_id}`**, where `endpoint_id` is a canonical
+  UUID created by the registrar, not a secret or tenant authority. There is no global fallback route.
+  Deploy routing must expose this exact route family. Existing §9.1 method/body/timeout/commit rules
+  still apply. Never select a key using unsigned event fields or a supplied account/tenant header.
+- Add `payments.stripe_webhook_endpoints` in 0061: `endpoint_id uuid PRIMARY KEY`, tenant/store/
+  connection, environment/account, execution_profile, `enabled boolean`, `key_version bigint>0`,
+  `key_id`, 12-byte nonce, bounded ciphertext (17..8192 bytes), and created/updated timestamps.
+  Add a composite FK to the exact account's tenant/store/id/environment/account tuple and UNIQUE
+  `(tenant_id,store_id,connection_id,execution_profile)`. Profile compatibility is MOCK→SANDBOX
+  or SANDBOX→SANDBOX; LIVE is rejected. No endpoint may be rebound to another account or scope.
+- Signing ciphertext uses a separate `stripe-webhook-v1` payload/AAD binding endpoint, scope,
+  account/profile and key_version. Payload contains `current_secret` and optional distinct
+  `next_secret`; Stage-A webhook validation admits at most two. It never contains an API key.
+  Updates increment key_version exactly once and are audited. This reuses AEAD machinery without
+  letting the ingress role decrypt payment API credentials or the worker read signing credentials.
+- `payments.stripe_webhook_material(uuid) RETURNS TABLE(tenant_id uuid,store_id uuid,
+  connection_id uuid,environment text,account_id text,execution_profile text,key_version bigint,
+  key_id text,nonce bytea,ciphertext bytea)` is integration_writer-owned, EXECUTE ingress only.
+  It returns only an enabled endpoint on an active registered account/binding. Missing/disabled
+  endpoints return no row and a fixed HTTP 404. Decrypt/verifier failure has a fixed code and logs
+  no key, signature or body. API has a separately configured signing-material keyring; its process
+  need not load the payment API-key decryption keyring.
+- `payments.stripe_webhook_prepare` arguments become `(endpoint uuid,key_version bigint,
+  event_id text,event_type text,event_created bigint,api_version text,object_type text,
+  session_id text,client_reference text,metadata_attempt text,account_present boolean,
+  livemode boolean,probe boolean,malformed boolean,body_sha256 bytea,signed_at bigint)`.
+  It resolves scope/account/profile from the locked endpoint and rejects a stale key_version
+  (fixed retryable HTTP 503; no receipt/ACK). It must explicitly compare the verified `livemode`.
+  Mapping and dedupe are scoped to that endpoint's account; unsigned fields cannot override it.
+- Registrar endpoint function (registry_writer, EXECUTE registrar only):
+  `payments.set_stripe_webhook_endpoint(tenant uuid,store uuid,principal uuid,connection uuid,
+  endpoint uuid,profile text,expected_version bigint,enabled boolean,key_id text,nonce bytea,
+  ciphertext bytea) RETURNS bigint`. expected_version=0 creates version 1; updates require the
+  exact previous version. Disabled endpoints retain identity/audit and do not accept new ingress.
+
+#### Receipt atomicity, effective SQL authority and late money
+
+- `ACCEPT_PENDING` exists **only as a prepare return value**, never a stored disposition.
+  Prepare preallocates `signal_id`, inserts an ACCEPTED receipt with scope/attempt/signal identity,
+  and returns `(disposition,receipt_id,attempt_id,session_id,signal_id)`. All work is in one tx.
+  The caller uses that signal_id for River InsertTx; `stripe_webhook_commit` inserts the reciprocal
+  signal and validates job kind/args/queue/scope. It does not mutate receipt identity/disposition.
+- A deferred receipt INSERT constraint trigger (post-River phase) re-reads the final row and
+  rejects COMMIT of ACCEPTED without its exact reciprocal signal and linked River job. Follow
+  `meta_event_commit`'s pattern. This closes prepare-without-commit, wrong signal/scope/job and
+  independent-transaction holes. There is no ACK until the whole transaction commits.
+  Malformed dedupe locks `(environment,account,body_sha256)`, not a NULL event-id lock.
+- Receipt append-only and narrow redelivery UPDATE grants remain unchanged. There is no new
+  `UPDATE(disposition,signal_id)` permission. Signal/receipt scope is reciprocal, not merely a
+  UUID FK. Permanent dedupe and max signal count still apply under concurrent transactions.
+- All new tables, including webhook endpoints, have FORCE RLS and no direct runtime login grants.
+  Registry writer receives only the SELECT/INSERT and narrow UPDATEs needed for account, credential,
+  endpoint, qualification/method, binding, owner-membership/store checks and audit. Add explicit
+  policies for that definer role on each FORCE-RLS table; schema privileges alone are insufficient.
+  Validation SELECT grants do not imply mutating membership/store permissions. Policies use the
+  scope set by the validated definer; no new BYPASSRLS or schema-owner function is permitted.
+  Registrar receives schema USAGE and EXECUTE on registrar functions only. Ingress gets only
+  material/prepare/commit execution; worker gets only lease-fenced API-material execution.
+- `CLOSURE_CONTRADICTED` + `REVIEW_REQUIRED` is the B1 manual-refund obligation identity.
+  No READY fulfillment consumer may select it. Late capture sets PAID_ALLOCATION_FAILED, records
+  the obligation once, does not reopen an order or move stock, and does not call any refund API.
+  The later refund contract consumes this explicit obligation; B1 does not claim refund execution.
+
+#### Corrected amount table and acceptance deltas
+
+SQL copies the accepted Stage-A `amount.go` table exactly: HKD 400..99999999 step1; USD and SGD
+50..99999999 step1; MYR 200..99999999 step1; TWD 100..99999900 step100. JPY and all other currencies
+are rejected. These minimums are local prefilters, not guarantees for settlement conversion.
+This replaces the old JPY row, D15 and every stale currency list/test vector below.
+For rejected or NULL input, `stripe_amount_ok` returns false and `stripe_unit_amount` returns
+SQL NULL (not an exception); accepted input returns the unchanged minor-unit integer.
+
+- SP02: five-currency boundaries and SQL/Go parity; JPY is a negative, not a formatting gate.
+- SP06: two stores/different accounts in one environment succeed; second account per store or
+  same account across stores fails; unchanged PAYUNi crypto/CHECKs; DB_AEAD version immutability;
+  effective registrar ACL/RLS, endpoint binding and deferred receipt/job reciprocity negatives.
+- SP08: at least two Stripe stores/accounts plus PAYUNi share the profile queue without key/scope
+  leakage; forged cross-account sessions, signals and receipts fail.
+- SP12: late paid replay creates exactly one explicit manual-refund obligation, zero allocation.
+- SP13: endpoint/signature mismatch, key-version rotation during admission, missing linkage and
+  commit failure cannot ACK; no plaintext/body/signature in logs or persisted rows.
+- SP15: API/worker ignore global Stripe credentials; worker scoped key admission and account
+  mismatch fail closed before checkout I/O; exact-version rotation behavior; per-role secret
+  separation; disabled startup reads no unrelated Stripe secrets. Same existing timeout budgets.
+- SP21: operator provisions two distinct accounts/stores, rejects cross-store rebinding and
+  secret-purpose/AAD swaps, rotates/requalifies without rewriting historical attempt credentials.
+  ENV-only fingerprint/startup and global-account rejection assertions are superseded.
+- SP16's 29-minute remote probe is observational only (§0.1); local adapter rejects it. CLI/SP17
+  remain NOT_RUN unless explicitly admitted later. No SANDBOX gate becomes LIVE authorization.
+
+Upgrade signals: add Connect only if platform collection for unrelated merchants is approved;
+add a bounded credential-client cache only after measured verification overhead. Merchant
+self-service Stripe UI, refund execution and live activation remain separate gated units.
 
 ## 1. Stripe facts relied on (retrieved 2026-09-28 via Stripe docs MCP + WebFetch of docs.stripe.com)
 
