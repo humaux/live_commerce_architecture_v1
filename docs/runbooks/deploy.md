@@ -6,6 +6,7 @@ Reads env / secrets: 无（命令读取 /etc/live-commerce/compose.env 与 secre
 Used by: 运维/owner/集成者；deploy/README.md 链接到此。
 Depends on: deploy/scripts/*.sh, deploy/compose.yml, deploy/env/*.env.example。
 Status: DESIGN。未在生产执行过；smoke full 目前 BLOCKED（缺 cmd/migrate，I1）。
+  本地（scratch 克隆，加入 I1 提案）：45 PASS / 1 BLOCKED（S29m，I8），包括 first/upgrade/app-rollback 全部路径。
 Change rules: 命令必须与脚本保持一致；改脚本行为时同步本文。
 -->
 # 部署运行手册（live-commerce）

@@ -73,7 +73,7 @@ case "${LC_BUILD_NETWORK:-auto}" in
 auto)
   if [[ -n "$loopback_proxy" ]]; then
     net_args=(--network host)
-    lc_warn "proxy variable(s)${loopback_proxy} point at host loopback, unreachable from the isolated build network: building with --network host (set LC_BUILD_NETWORK=default to refuse)"
+    lc_warn "proxy variable(s)${loopback_proxy} point at host loopback, unreachable from the isolated build network: building with --network host (LC_BUILD_NETWORK=default keeps the isolated network)"
   fi
   ;;
 host) net_args=(--network host) ;;
