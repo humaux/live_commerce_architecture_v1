@@ -90,7 +90,22 @@ type Server struct {
 // Request is one audited call. It deliberately carries no body, key or header
 // other than the Idempotency-Key, so tests can prove key/scope behavior without
 // the fake becoming a secret sink.
-type Request struct{ Method, Path, Account, IdempotencyKey string }
+// KeyFingerprint (first 4 bytes of SHA-256, hex) identifies which credential made a
+// call without the fake ever logging the key; tests compute it with KeyFingerprint.
+type Request struct{ Method, Path, Account, IdempotencyKey, KeyFingerprint string }
+
+// KeyFingerprint is the non-secret label recorded in Request.KeyFingerprint.
+func KeyFingerprint(key string) string {
+	d := sha256.Sum256([]byte(key))
+	return hex.EncodeToString(d[:4])
+}
+
+// RevokeKey makes one API key fail with 401 from now on (a rotated-out credential).
+func (s *Server) RevokeKey(key string) {
+	s.mu.Lock()
+	delete(s.keys, sha256.Sum256([]byte(key)))
+	s.mu.Unlock()
+}
 
 // New starts a local-only Stripe fake. The account ID is deliberately synthetic.
 func New(accountID string) *Server {
@@ -290,7 +305,11 @@ func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.mu.Lock()
-	s.requests = append(s.requests, Request{Method: r.Method, Path: r.URL.Path, Account: account, IdempotencyKey: r.Header.Get("Idempotency-Key")})
+	fp := ""
+	if token, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer "); ok {
+		fp = KeyFingerprint(token)
+	}
+	s.requests = append(s.requests, Request{Method: r.Method, Path: r.URL.Path, Account: account, IdempotencyKey: r.Header.Get("Idempotency-Key"), KeyFingerprint: fp})
 	s.mu.Unlock()
 	if r.URL.Path == "/v1/account" && r.Method == http.MethodGet {
 		if st := s.failed("account"); st != 0 {

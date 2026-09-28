@@ -295,8 +295,15 @@ func TestFakeStripeMultiAccountScopeAuditAndFaults(t *testing.T) {
 		t.Fatalf("probe create: %d %s", code, out)
 	}
 	log := s.Requests()
-	if len(log) == 0 || log[0].Account == "" {
-		t.Fatal("request log empty")
+	if len(log) == 0 || log[0].Account == "" || log[0].KeyFingerprint != KeyFingerprint(keyA) && log[0].KeyFingerprint != KeyFingerprint(keyB) {
+		t.Fatal("request log empty or key fingerprint missing")
+	}
+	s.RevokeKey(keyA)
+	if code, _, _ := call(http.MethodGet, "/v1/account", keyA, nil, ""); code != 401 {
+		t.Fatalf("revoked key admitted: %d", code)
+	}
+	if code, _, _ := call(http.MethodGet, "/v1/account", keyB, nil, ""); code != 200 {
+		t.Fatalf("other key affected by revocation: %d", code)
 	}
 	var creates int
 	for _, r := range log {

@@ -90,12 +90,17 @@ func sflNew(t *testing.T, tune func(*payments.QueryWorkerOptions)) *sflEnv {
 }
 
 // start assembles exactly what cmd/payment-worker does for a PROVIDER_MOCK queue.
-func (e *sflEnv) start(t *testing.T, stripeEnabled bool) {
+func (e *sflEnv) start(t *testing.T, stripeEnabled bool) (stop func()) {
+	return e.startWith(t, stripeEnabled, e.keys)
+}
+
+// startWith is start with an explicit custody keyring (SP15 wrong-keyring case).
+func (e *sflEnv) startWith(t *testing.T, stripeEnabled bool, keys *accounts.Keyring) (stop func()) {
 	t.Helper()
 	ctx := context.Background()
-	cfg := payments.WorkerConfig{Profile: "PROVIDER_MOCK", Concurrency: 4, Query: e.opts, Keys: e.keys}
+	cfg := payments.WorkerConfig{Profile: "PROVIDER_MOCK", Concurrency: 4, Query: e.opts, Keys: keys}
 	if stripeEnabled {
-		rt, err := payments.NewStripeRuntime(ctx, e.pool, e.keys, "PROVIDER_MOCK", e.fake.Transport())
+		rt, err := payments.NewStripeRuntime(ctx, e.pool, keys, "PROVIDER_MOCK", e.fake.Transport())
 		if err != nil {
 			t.Fatalf("stripe runtime: %v", err)
 		}
@@ -109,7 +114,7 @@ func (e *sflEnv) start(t *testing.T, stripeEnabled bool) {
 		t.Fatal(err)
 	}
 	stopped := false
-	stop := func() {
+	stop = func() {
 		if !stopped {
 			stopped = true
 			stopCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -118,6 +123,34 @@ func (e *sflEnv) start(t *testing.T, stripeEnabled bool) {
 		}
 	}
 	e.stops = append(e.stops, stop)
+	return stop
+}
+
+// addPAYUNi creates a PAYUNi store whose query job is due now and installs the
+// signed-mock PAYUNi transport (the existing PW chain) for the next worker start.
+func (e *sflEnv) addPAYUNi(t *testing.T) pqFixture {
+	t.Helper()
+	c := pqSetupItemsOn(t, e.f, e.keys, false, 1)
+	mustExec(t, e.f.owner, `UPDATE river_payment.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, c.result.JobID)
+	signed := pqSignedResponse(pcFull(c))
+	e.opts.MockTransport = pqTransport(func(r *http.Request) (*http.Response, error) {
+		if r.URL.String() != "https://sandbox-api.payuni.com.tw/api/trade/query" || r.Method != http.MethodPost {
+			return nil, fmt.Errorf("unexpected PAYUNi destination")
+		}
+		raw, err := io.ReadAll(r.Body)
+		if err != nil {
+			return nil, err
+		}
+		values, err := url.ParseQuery(string(raw))
+		if err != nil {
+			return nil, err
+		}
+		if trade, err := pwQueryTrade(values); err != nil || trade != c.result.MerchantTradeNo {
+			return nil, fmt.Errorf("unexpected PAYUNi trade")
+		}
+		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(signed)), Header: make(http.Header)}, nil
+	})
+	return c
 }
 
 // stripeStore creates a fresh tenant/store/hold with an enabled Stripe method.
@@ -344,27 +377,7 @@ func TestStripeSP08HappyMock(t *testing.T) {
 		t.Fatal("fixture collapsed two Stripe stores into one")
 	}
 	// The PAYUNi store: existing signed-mock query/capture chain, one profile queue, one worker.
-	c := pqSetupItemsOn(t, f, e.keys, false, 1)
-	mustExec(t, f.owner, `UPDATE river_payment.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, c.result.JobID)
-	signed := pqSignedResponse(pcFull(c))
-	e.opts.MockTransport = pqTransport(func(r *http.Request) (*http.Response, error) {
-		if r.URL.String() != "https://sandbox-api.payuni.com.tw/api/trade/query" || r.Method != http.MethodPost {
-			return nil, fmt.Errorf("unexpected PAYUNi destination")
-		}
-		raw, err := io.ReadAll(r.Body)
-		if err != nil {
-			return nil, err
-		}
-		values, err := url.ParseQuery(string(raw))
-		if err != nil {
-			return nil, err
-		}
-		trade, err := pwQueryTrade(values)
-		if err != nil || trade != c.result.MerchantTradeNo {
-			return nil, fmt.Errorf("unexpected PAYUNi trade")
-		}
-		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(signed)), Header: make(http.Header)}, nil
-	})
+	c := e.addPAYUNi(t)
 	endpointA, secretA := e.endpoint(t, a)
 	endpointB, secretB := e.endpoint(t, b)
 	e.start(t, true)
