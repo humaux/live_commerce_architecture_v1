@@ -213,3 +213,136 @@ func TestFakeStripeAPIKeyIsolation(t *testing.T) {
 		t.Fatalf("store B key refused at B: %d", code)
 	}
 }
+
+func TestFakeStripeMultiAccountScopeAuditAndFaults(t *testing.T) {
+	s := New("acct_FakeDefault1")
+	defer s.Close()
+	keyA, keyB := "sk_test_"+strings.Repeat("A", 24), "sk_test_"+strings.Repeat("B", 24)
+	if err := s.AddAccount("acct_FakeStoreA1", keyA); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.AddAccount("acct_FakeStoreB1", keyB); err != nil {
+		t.Fatal(err)
+	}
+	call := func(method, path, key string, body url.Values, idem string) (int, http.Header, []byte) {
+		t.Helper()
+		req, err := http.NewRequest(method, s.URL()+path, strings.NewReader(body.Encode()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header.Set("Authorization", "Bearer "+key)
+		if idem != "" {
+			req.Header.Set("Idempotency-Key", idem)
+		}
+		resp, err := s.http.Client().Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+		out, _ := io.ReadAll(resp.Body)
+		return resp.StatusCode, resp.Header, out
+	}
+	var acct struct{ ID string }
+	for key, want := range map[string]string{keyA: "acct_FakeStoreA1", keyB: "acct_FakeStoreB1"} {
+		code, _, out := call(http.MethodGet, "/v1/account", key, nil, "")
+		if code != 200 || json.Unmarshal(out, &acct) != nil || acct.ID != want {
+			t.Fatalf("account for key: %d %s", code, out)
+		}
+	}
+	// One Idempotency-Key value used by two accounts must create two sessions.
+	var idA, idB struct{ ID string }
+	code, _, out := call(http.MethodPost, "/v1/checkout/sessions", keyA, testParams(), "shared-key")
+	if code != 200 || json.Unmarshal(out, &idA) != nil {
+		t.Fatalf("create A: %d", code)
+	}
+	code, h, out := call(http.MethodPost, "/v1/checkout/sessions", keyB, testParams(), "shared-key")
+	if code != 200 || h.Get("Idempotent-Replayed") != "" || json.Unmarshal(out, &idB) != nil || idA.ID == idB.ID {
+		t.Fatalf("idempotency cache leaked across accounts: %d", code)
+	}
+	if code, _, _ := call(http.MethodGet, "/v1/checkout/sessions/"+idA.ID, keyB, nil, ""); code != 404 {
+		t.Fatalf("foreign session visible: %d", code)
+	}
+	if code, _, _ := call(http.MethodPost, "/v1/checkout/sessions/"+idA.ID+"/expire", keyB, nil, "x"); code != 404 {
+		t.Fatalf("foreign session expirable: %d", code)
+	}
+	if code, _, _ := call(http.MethodGet, "/v1/checkout/sessions/"+idA.ID, keyA, nil, ""); code != 200 {
+		t.Fatalf("own session hidden: %d", code)
+	}
+	if code, _, _ := call(http.MethodGet, "/v1/account", "sk_test_"+strings.Repeat("C", 24), nil, ""); code != 401 {
+		t.Fatalf("unknown key admitted: %d", code)
+	}
+	// FailNext is consumed once, per operation, without executing the call.
+	s.FailNext("retrieve", 500)
+	if code, _, _ := call(http.MethodGet, "/v1/checkout/sessions/"+idA.ID, keyA, nil, ""); code != 500 {
+		t.Fatalf("queued retrieve failure: %d", code)
+	}
+	if code, _, _ := call(http.MethodGet, "/v1/checkout/sessions/"+idA.ID, keyA, nil, ""); code != 200 {
+		t.Fatalf("failure not consumed: %d", code)
+	}
+	s.SetNextFault(Fault{IdempotencyError: true})
+	if code, _, out := call(http.MethodPost, "/v1/checkout/sessions", keyA, testParams(), "fresh"); code != 400 || !bytes.Contains(out, []byte("idempotency_error")) {
+		t.Fatalf("idempotency fault: %d %s", code, out)
+	}
+	// Probe sessions need no attempt reference and echo metadata.
+	probe := testParams()
+	probe.Del("client_reference_id")
+	if code, _, _ := call(http.MethodPost, "/v1/checkout/sessions", keyA, probe, "probe-1"); code != 400 {
+		t.Fatalf("non-probe without reference accepted: %d", code)
+	}
+	probe.Set("metadata[lc_probe]", "1")
+	code, _, out = call(http.MethodPost, "/v1/checkout/sessions", keyA, probe, "probe-2")
+	if code != 200 || !bytes.Contains(out, []byte(`"lc_probe":"1"`)) {
+		t.Fatalf("probe create: %d %s", code, out)
+	}
+	log := s.Requests()
+	if len(log) == 0 || log[0].Account == "" {
+		t.Fatal("request log empty")
+	}
+	var creates int
+	for _, r := range log {
+		if r.Method == http.MethodPost && r.Path == "/v1/checkout/sessions" && r.IdempotencyKey == "shared-key" {
+			creates++
+		}
+	}
+	if creates != 2 {
+		t.Fatalf("request log lost keyed creates: %d", creates)
+	}
+	body := EventBody(EventOpts{ID: "evt_fake_body1", SessionID: "cs_test_x1", ClientRef: "r", Attempt: "a", Created: 1790000000, Probe: true, Connect: true})
+	if !bytes.Contains(body, []byte(`"lc_probe":"1"`)) || !bytes.Contains(body, []byte(`"account":"acct_ConnectedElsewhere1"`)) || bytes.Contains(body, []byte(`sk_`)) {
+		t.Fatalf("event body: %s", body)
+	}
+}
+
+func TestFakeStripePatchAndInject(t *testing.T) {
+	s := New("acct_FakePatch1")
+	defer s.Close()
+	c := s.http.Client()
+	status, _, out, err := postCreate(t, c, s.URL(), "patch-key", testParams())
+	var created struct{ ID string }
+	if err != nil || status != 200 || json.Unmarshal(out, &created) != nil {
+		t.Fatalf("create: %d %v", status, err)
+	}
+	if !s.Patch(created.ID, map[string]any{"amount_total": 1, "presentment_details": map[string]any{"presentment_currency": "eur", "presentment_amount": 9}, "url": nil}) || s.Patch("cs_missing", nil) {
+		t.Fatal("patch admission")
+	}
+	get := func() map[string]any {
+		resp, err := c.Get(s.URL() + "/v1/checkout/sessions/" + created.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+		var m map[string]any
+		if err := json.NewDecoder(resp.Body).Decode(&m); err != nil {
+			t.Fatal(err)
+		}
+		return m
+	}
+	m := get()
+	if m["amount_total"].(float64) != 1 || m["amount_subtotal"].(float64) != 500 || m["url"] != nil || m["presentment_details"] == nil {
+		t.Fatalf("overlay not applied: %v", m)
+	}
+	dup := s.Inject("acct_FakePatch1", testParams())
+	if dup == "" || dup == created.ID || len(s.SessionIDs()) != 2 || len(s.CreateKeys()) != 1 {
+		t.Fatalf("inject: %q", dup)
+	}
+}
