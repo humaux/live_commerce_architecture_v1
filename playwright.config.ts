@@ -8,6 +8,8 @@ const suites: Record<string, string[]> = {
   "identity-mock": ["auth.spec.ts"],
   "entry-mock": ["entry.spec.ts"],
   "identity-real": ["auth-real.spec.ts"],
+  // PA11 (merchant-password-auth-v1): started by tests/foundation/browser_password_auth_test.go.
+  "password-auth": ["password-auth.spec.ts"],
   "settings-real": ["settings-real.spec.ts"],
   "merchant-orders-bff": ["orders-bff.spec.ts"],
   "merchant-orders-ui": ["orders-ui.spec.ts"],
