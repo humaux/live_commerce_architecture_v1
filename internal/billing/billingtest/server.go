@@ -11,6 +11,7 @@
 package billingtest
 
 import (
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -88,6 +89,7 @@ type Server struct {
 	account   string
 	key       string
 	seq       int
+	tag       string                       // unique per Server: ids of two fakes never collide in one shared database
 	customers map[string]map[string]string // id -> metadata
 	sessions  map[string]*Session
 	subs      map[string]Sub
@@ -103,7 +105,9 @@ type Server struct {
 
 // New starts the fake for one platform account id.
 func New(accountID string) *Server {
-	s := &Server{account: accountID, customers: map[string]map[string]string{}, sessions: map[string]*Session{},
+	tag := make([]byte, 4)
+	_, _ = rand.Read(tag)
+	s := &Server{tag: hex.EncodeToString(tag), account: accountID, customers: map[string]map[string]string{}, sessions: map[string]*Session{},
 		subs: map[string]Sub{}, prices: map[string]map[string]any{}, idem: map[string]cachedResponse{},
 		failures: map[string][]int{}, hangs: map[string]int{}, lose: map[string]int{}, delay: map[string]time.Duration{}}
 	s.http = httptest.NewServer(http.HandlerFunc(s.serve))
@@ -206,7 +210,7 @@ func (s *Server) AddCustomer(metadata map[string]string) string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.seq++
-	id := "cus_Fake" + strconv.Itoa(s.seq)
+	id := "cus_Fake" + s.tag + strconv.Itoa(s.seq)
 	s.customers[id] = metadata
 	return id
 }
@@ -228,7 +232,7 @@ func (s *Server) AddSubscription(v Sub) Sub {
 	defer s.mu.Unlock()
 	s.seq++
 	if v.ID == "" {
-		v.ID = "sub_Fake" + strconv.Itoa(s.seq)
+		v.ID = "sub_Fake" + s.tag + strconv.Itoa(s.seq)
 	}
 	if v.Status == "" {
 		v.Status = "active"
@@ -487,7 +491,7 @@ func (s *Server) createCheckout(w http.ResponseWriter, r *http.Request, form url
 	}
 	s.mu.Lock()
 	s.seq++
-	id := "cs_test_Fake" + strconv.Itoa(s.seq)
+	id := "cs_test_Fake" + s.tag + strconv.Itoa(s.seq)
 	sess := &Session{ID: id, Customer: cust, Status: "open", ClientReferenceID: form.Get("client_reference_id"), ExpiresAt: exp,
 		URL: "https://checkout.stripe.com/c/pay/" + id + "#fakebearer", Params: form}
 	s.sessions[id] = sess
@@ -528,7 +532,7 @@ func (s *Server) portal(w http.ResponseWriter, form url.Values) {
 	s.mu.Lock()
 	_, known := s.customers[cust]
 	s.seq++
-	id := "bps_Fake" + strconv.Itoa(s.seq)
+	id := "bps_Fake" + s.tag + strconv.Itoa(s.seq)
 	s.mu.Unlock()
 	if !known || form.Get("return_url") == "" {
 		errorJSON(w, 400, "invalid_request_error", "customer and return_url required")
@@ -647,7 +651,7 @@ func (s *Server) event(typ string, o EventOpts, obj map[string]any) []byte {
 	n := s.events
 	s.mu.Unlock()
 	if o.ID == "" {
-		o.ID = "evt_Fake" + strconv.Itoa(n)
+		o.ID = "evt_Fake" + s.tag + strconv.Itoa(n)
 	}
 	if o.Created == 0 {
 		o.Created = time.Now().Unix()

@@ -115,3 +115,32 @@ func cbxRestrict(t *testing.T, f *testFixture, ingress *pgxpool.Pool, tenant, st
 	}
 	return customer, s.ID
 }
+
+// cbxRegisterPSP registers a Stripe merchant account row (the registrar is not run; disclosed fixture) in ONE
+// transaction, as psSetup does for its mock account: binding, merchant account, credential row (the current-credential
+// FK is deferred). It is what platform_account_conflict reads (BD1).
+func cbxRegisterPSP(t *testing.T, f *testFixture, tenant, store, principal, environment, account string) {
+	t.Helper()
+	ctx := context.Background()
+	tx, err := f.owner.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback(ctx)
+	binding, connection := randomUUID(), randomUUID()
+	for _, st := range []struct {
+		q    string
+		args []any
+	}{
+		{`INSERT INTO integration.bindings(id,tenant_id,store_id,principal_id,provider,external_asset_id) VALUES($1,$2,$3,$4,'stripe',$5)`, []any{binding, tenant, store, principal, environment + ":" + account}},
+		{`INSERT INTO integration.merchant_accounts(id,tenant_id,store_id,principal_id,provider,environment,account_id,binding_id,credential_version) VALUES($1,$2,$3,$4,'stripe',$5,$6,$7,1)`, []any{connection, tenant, store, principal, environment, account, binding}},
+		{`INSERT INTO integration.account_credentials(tenant_id,store_id,connection_id,version,key_id,nonce,ciphertext,principal_id) VALUES($1,$2,$3,1,'mock_key',decode(repeat('00',12),'hex'),decode(repeat('00',17),'hex'),$4)`, []any{tenant, store, connection, principal}},
+	} {
+		if _, err := tx.Exec(ctx, st.q, st.args...); err != nil {
+			t.Fatalf("register PSP account %s: %v", account, err)
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatalf("register PSP account %s: %v", account, err)
+	}
+}

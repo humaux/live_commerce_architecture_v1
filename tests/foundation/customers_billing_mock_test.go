@@ -114,9 +114,7 @@ func cbmSetup(t *testing.T, registerPSP string, failAccount bool) *cbmEnv {
 	m.fake.AddPrice("price_Cb08Live", 30000, "twd", "month", "Live mode price", true, true)
 	m.fake.AddPriceRaw("price_Cb08One", map[string]any{"active": true, "livemode": false, "currency": "twd", "unit_amount": 500, "product": map[string]any{"id": "prod_x", "name": "One time"}})
 	if registerPSP != "" {
-		binding, account := randomUUID(), randomUUID()
-		mustExec(t, f.owner, `INSERT INTO integration.bindings(id,tenant_id,store_id,principal_id,provider,external_asset_id) VALUES($1,$2,$3,$4,'stripe',$5)`, binding, f.tenantA, f.storeA1, f.principalA, "SANDBOX:"+registerPSP)
-		mustExec(t, f.owner, `INSERT INTO integration.merchant_accounts(id,tenant_id,store_id,principal_id,provider,environment,account_id,binding_id,credential_version) VALUES($1,$2,$3,$4,'stripe','SANDBOX',$5,$6,1)`, account, f.tenantA, f.storeA1, f.principalA, registerPSP, binding)
+		cbxRegisterPSP(t, f, f.tenantA, f.storeA1, f.principalA, "SANDBOX", registerPSP)
 	}
 	if failAccount {
 		m.fake.FailNext("account", 503)
@@ -378,9 +376,7 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 		}
 		// BD1 re-check at pin time: the platform account becomes a registered PSP account after startup
 		s2, tok2, sc2 := m.extraStore()
-		binding, account := randomUUID(), randomUUID()
-		mustExec(t, m.f.owner, `INSERT INTO integration.bindings(id,tenant_id,store_id,principal_id,provider,external_asset_id) VALUES($1,$2,$3,$4,'stripe',$5)`, binding, m.tenant, s2, m.f.principalA, "SANDBOX:"+m.fake.Account())
-		mustExec(t, m.f.owner, `INSERT INTO integration.merchant_accounts(id,tenant_id,store_id,principal_id,provider,environment,account_id,binding_id,credential_version) VALUES($1,$2,$3,$4,'stripe','SANDBOX',$5,$6,1)`, account, m.tenant, s2, m.f.principalA, m.fake.Account(), binding)
+		cbxRegisterPSP(t, m.f, m.tenant, s2, m.f.principalA, "SANDBOX", m.fake.Account())
 		if _, err := m.svc.StartCheckout(m.ctx, m.f.runtime, sc2, tok2, "price_Cb08Month"); err == nil {
 			t.Error("checkout pinned a customer although the platform account is now a registered PSP account")
 		}

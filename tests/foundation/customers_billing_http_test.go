@@ -234,7 +234,9 @@ func TestCustomersBillingCB09HTTP(t *testing.T) {
 		r := c.do(c.on, "GET", base+"/customers/"+owner, full, nil, nil)
 		c.want("detail", r, 200, "")
 		c.noStore("detail", r)
-		want := listItemKeys + ",claims,consent_history,orders,privacy_actions"
+		wantKeys := strings.Split(listItemKeys+",claims,consent_history,orders,privacy_actions", ",")
+		sort.Strings(wantKeys)
+		want := strings.Join(wantKeys, ",")
 		if got := cbhKeys(r.json); got != want {
 			t.Errorf("detail keys\n got  %s\n want %s", got, want)
 		}
@@ -675,9 +677,24 @@ func TestCustomersBillingCB09HTTP(t *testing.T) {
 		tok2, _ := issue()
 		ke := t04Key("cbh-be2")
 		er := bh.request(t, "POST", "/v1/buyer/privacy/erasure", tok2, ke, map[string]string{"confirm": "ERASE"}, nil)
-		var sum map[string]any
-		if er.status != 200 || json.Unmarshal(er.body, &sum) != nil || cbhKeys(sum) != "bundles_relabelled,consents_withdrawn,sessions_revoked,snapshots_redacted" || !(cbhNum(sum["sessions_revoked"]) >= 1) {
+		var body map[string]any
+		if er.status != 200 || json.Unmarshal(er.body, &body) != nil {
 			t.Fatalf("buyer erasure: %d %s", er.status, er.body)
+		}
+		// the response carries the four counts (wherever the handler nests them) and tells the buyer that order records are kept
+		sum := body
+		if nested := cbhMap(body["summary"]); nested != nil {
+			sum = nested
+		}
+		if cbhKeys(sum) != "bundles_relabelled,consents_withdrawn,sessions_revoked,snapshots_redacted" || !(cbhNum(sum["sessions_revoked"]) >= 1) {
+			t.Fatalf("buyer erasure summary: %s", er.body)
+		}
+		kept := false
+		for k, v := range body {
+			kept = kept || (strings.Contains(k, "retain") && v == true)
+		}
+		if !kept {
+			t.Errorf("the erasure response must tell the buyer that order records are retained (contract §5 Buyer): %s", er.body)
 		}
 		bhError(t, bh.request(t, "POST", "/v1/buyer/privacy/erasure", tok2, ke, map[string]string{"confirm": "ERASE"}, nil), 410, "erased")
 		bhError(t, bh.request(t, "POST", "/v1/buyer/privacy/erasure", tok2, t04Key("cbh-be3"), map[string]string{"confirm": "ERASE"}, nil), 410, "erased")
