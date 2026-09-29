@@ -12,10 +12,10 @@ import (
 	"testing"
 )
 
-// Synthetic DSN passwords live in their own constants so no source line looks like a
+// Synthetic DSN sentinels live in their own constants so no source line looks like a
 // credential to secret scanners (GitGuardian false positives 2026-09-29); they are test sentinels.
 const (
-	fakeDSNPassword1 = "private-pass"
+	dsnSentinel1 = "private-pass"
 )
 
 func TestMediaWorkerLMW01DisabledReadsOnlyFlag(t *testing.T) {
@@ -44,8 +44,8 @@ func TestMediaWorkerLMW01DisabledReadsOnlyFlag(t *testing.T) {
 func TestMediaWorkerLMW01ConfigBeforeDatabase(t *testing.T) {
 	vars := map[string]string{
 		"COMMERCE_MEDIA_WORKER_ENABLED":         "1",
-		"COMMERCE_MEDIA_WORKER_DATABASE_URL":    "postgres://private-user:" + fakeDSNPassword1 + "@127.0.0.1:1/test",
-		"COMMERCE_MEDIA_EXECUTOR_DATABASE_URL":  "postgres://private-user:" + fakeDSNPassword1 + "@127.0.0.1:1/test",
+		"COMMERCE_MEDIA_WORKER_DATABASE_URL":    "postgres://private-user:" + dsnSentinel1 + "@127.0.0.1:1/test",
+		"COMMERCE_MEDIA_EXECUTOR_DATABASE_URL":  "postgres://private-user:" + dsnSentinel1 + "@127.0.0.1:1/test",
 		"COMMERCE_MEDIA_WORKER_CONCURRENCY":     "1",
 		"COMMERCE_MEDIA_MATERIAL_ACTIVE_KEY_ID": "bad",
 		"COMMERCE_MEDIA_MATERIAL_KEYS_JSON":     "private-malformed-key",

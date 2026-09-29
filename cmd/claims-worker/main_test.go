@@ -14,11 +14,11 @@ import (
 	"testing"
 )
 
-// Synthetic DSN passwords live in their own constants so no source line looks like a
+// Synthetic DSN sentinels live in their own constants so no source line looks like a
 // credential to secret scanners (GitGuardian false positives 2026-09-29); they are test sentinels.
 const (
-	fakeDSNPassword1 = "pw-secret-1"
-	fakeDSNPassword2 = "pw-secret-2"
+	dsnSentinel1 = "sentinel-intake-7c1"
+	dsnSentinel2 = "sentinel-worker-7c2"
 )
 
 func b64(b byte) string { return base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{b}, 32)) }
@@ -26,8 +26,8 @@ func b64(b byte) string { return base64.StdEncoding.EncodeToString(bytes.Repeat(
 func testEnv() map[string]string {
 	return map[string]string{
 		"COMMERCE_CLAIMS_WORKER_ENABLED":         "1",
-		"COMMERCE_CLAIMS_INTAKE_DATABASE_URL":    "postgres://intake:" + fakeDSNPassword1 + "@synthetic.invalid/db",
-		"COMMERCE_WORKER_DATABASE_URL":           "postgres://worker:" + fakeDSNPassword2 + "@synthetic.invalid/db",
+		"COMMERCE_CLAIMS_INTAKE_DATABASE_URL":    "postgres://intake:" + dsnSentinel1 + "@synthetic.invalid/db",
+		"COMMERCE_WORKER_DATABASE_URL":           "postgres://worker:" + dsnSentinel2 + "@synthetic.invalid/db",
 		"COMMERCE_CLAIMS_REPLY_LINK_KEY":         b64(7),
 		"COMMERCE_META_PAGE_TOKEN_ACTIVE_KEY_ID": "pt-1",
 		"COMMERCE_META_PAGE_TOKEN_KEYS_JSON":     `{"keys":[{"id":"pt-1","key_base64":"` + b64(8) + `"}]}`,
@@ -122,7 +122,7 @@ func TestConfigNeverRendersSecrets(t *testing.T) {
 	}
 	blob, _ := json.Marshal(c)
 	for _, rendered := range []string{fmt.Sprint(c), fmt.Sprintf("%+v", c), fmt.Sprintf("%#v", c), string(blob)} {
-		for _, secret := range []string{"pw-secret-1", "pw-secret-2", v["COMMERCE_CLAIMS_REPLY_LINK_KEY"], b64(8)} {
+		for _, secret := range []string{"sentinel-intake-7c1", "sentinel-worker-7c2", v["COMMERCE_CLAIMS_REPLY_LINK_KEY"], b64(8)} {
 			if strings.Contains(rendered, secret) {
 				t.Fatalf("config rendering leaked a secret: %s", rendered)
 			}
@@ -140,7 +140,7 @@ func TestValidEnvironmentFailsClosedWithoutLeaking(t *testing.T) {
 	if !errors.Is(err, errWorkerDatabase) {
 		t.Fatalf("got %v", err)
 	}
-	for _, banned := range []string{"pw-secret", "synthetic.invalid", "intake", "postgres://"} {
+	for _, banned := range []string{dsnSentinel1, dsnSentinel2, "synthetic.invalid", "intake", "postgres://"} {
 		if strings.Contains(err.Error(), banned) {
 			t.Fatalf("error leaked %q", banned)
 		}

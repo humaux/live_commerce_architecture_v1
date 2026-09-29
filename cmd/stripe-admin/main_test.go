@@ -13,16 +13,16 @@ import (
 	"livecommerce/internal/payments/stripeadmin"
 )
 
-// Synthetic DSN passwords live in their own constants so no source line looks like a
+// Synthetic DSN sentinels live in their own constants so no source line looks like a
 // credential to secret scanners (GitGuardian false positives 2026-09-29); they are test sentinels.
 const (
-	fakeDSNPassword1 = "pw-secret"
+	dsnSentinel1 = "sentinel-operator-9f"
 )
 
 func env() map[string]string {
 	k := func(b byte) string { return base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{b}, 32)) }
 	return map[string]string{
-		"COMMERCE_STRIPE_REGISTRAR_DATABASE_URL": "postgres://operator:" + fakeDSNPassword1 + "@127.0.0.1:1/lc",
+		"COMMERCE_STRIPE_REGISTRAR_DATABASE_URL": "postgres://operator:" + dsnSentinel1 + "@127.0.0.1:1/lc",
 		"COMMERCE_ACCOUNT_ACTIVE_KEY_ID":         "api-1",
 		"COMMERCE_ACCOUNT_KEYS_JSON":             `[{"id":"api-1","key_base64":"` + k(1) + `"}]`,
 		"COMMERCE_ACCOUNT_REPLAY_KEY":            k(2),
@@ -90,7 +90,7 @@ func TestValidEnvironmentReachesMaskedDatabaseError(t *testing.T) {
 		if !errors.Is(err, stripeadmin.ErrDatabase) || out != "" {
 			t.Fatalf("%q: %q %v", line, out, err)
 		}
-		for _, banned := range []string{"pw-secret", "127.0.0.1", "sk_", "whsec"} {
+		for _, banned := range []string{dsnSentinel1, "127.0.0.1", "sk_", "whsec"} {
 			if strings.Contains(err.Error(), banned) {
 				t.Fatalf("error leaked %s", banned)
 			}

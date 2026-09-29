@@ -15,10 +15,10 @@ import (
 	"testing"
 )
 
-// Synthetic DSN passwords live in their own constants so no source line looks like a
+// Synthetic DSN sentinels live in their own constants so no source line looks like a
 // credential to secret scanners (GitGuardian false positives 2026-09-29); they are test sentinels.
 const (
-	fakeDSNPassword1 = "pw-sentinel"
+	dsnSentinel1 = "pw-sentinel"
 )
 
 func TestStripeSP15Process(t *testing.T) {
@@ -109,7 +109,7 @@ func TestStripeSP15Process(t *testing.T) {
 	t.Run("unreachable_database_reports_only_the_fixed_code", func(t *testing.T) {
 		m := testEnvironment()
 		m["COMMERCE_STRIPE_ENABLED"] = "1"
-		m["COMMERCE_PAYMENT_WORKER_DATABASE_URL"] = "postgres://worker-sentinel:" + fakeDSNPassword1 + "@127.0.0.1:1/x"
+		m["COMMERCE_PAYMENT_WORKER_DATABASE_URL"] = "postgres://worker-sentinel:" + dsnSentinel1 + "@127.0.0.1:1/x"
 		err := run(context.Background(), func(n string) string { return m[n] })
 		if err == nil || strings.Contains(err.Error(), "sentinel") || strings.Contains(err.Error(), "postgres://") {
 			t.Fatalf("run with an unreachable database: %v", err)
