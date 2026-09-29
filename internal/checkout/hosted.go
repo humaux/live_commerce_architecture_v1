@@ -80,8 +80,10 @@ func NewHostedPaymentService(ctx context.Context, hostedPool *pgxpool.Pool, jobs
 	}
 	if p.Stripe != nil {
 		canonical, digest, err := p.Stripe.CanonicalDigest()
-		// contracts/stripe-psp-v1.md §0.2: B1 Stripe is MOCK/SANDBOX only, never LIVE.
-		if err != nil || (profile != "PROVIDER_MOCK" && profile != "SANDBOX") {
+		// stripe-live-enable-v1 §5.2: the Stripe branch admits every valid profile (validPaymentProfile above), LIVE
+		// included. The owner's flag+reference pair is enforced by the caller (cmd/api loadBuyerPaymentConfig), and the
+		// per-store gate is SQL: hosted_payment_view_v2 / start_stripe_payment need a REAL_LIVE, unrevoked qualification.
+		if err != nil {
 			return nil, command.ErrInvalid
 		}
 		out.stripe, out.stripeDigest = &canonical, digest

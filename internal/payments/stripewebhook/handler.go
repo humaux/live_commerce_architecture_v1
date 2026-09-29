@@ -18,6 +18,7 @@ import (
 
 	"livecommerce/internal/integrations/accounts"
 	"livecommerce/internal/integrations/psp/stripe"
+	"livecommerce/internal/jobqueue"
 )
 
 const (
@@ -42,8 +43,9 @@ type handler struct {
 // NewHandler is the only way to obtain a webhook entry point; no exported method accepts an
 // event that has not passed the endpoint's signature check.
 func NewHandler(inbox *Inbox) (http.Handler, error) {
+	// jobqueue.ForProfile is the closed profile list (PROVIDER_MOCK|SANDBOX|LIVE); LIVE is admitted (§5.2).
 	if inbox == nil || inbox.store == nil || inbox.keys == nil || inbox.now == nil ||
-		(inbox.profile != "PROVIDER_MOCK" && inbox.profile != "SANDBOX") {
+		jobqueue.ForProfile(inbox.profile) == "" {
 		return nil, ErrConfig
 	}
 	return &handler{in: inbox, sem: make(chan struct{}, maxInFlight), budget: requestBudget}, nil

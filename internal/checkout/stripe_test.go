@@ -58,7 +58,6 @@ func TestHostedProvidersConstructorBoundary(t *testing.T) {
 		"nil ctx":             build(nil, jobs, "SANDBOX", HostedProviders{Stripe: &stripeConfig}), //nolint:staticcheck // nil ctx is the case under test
 		"nil jobs":            build(ctx, nil, "SANDBOX", HostedProviders{Stripe: &stripeConfig}),
 		"payuni without keys": build(ctx, jobs, "SANDBOX", HostedProviders{PAYUNi: &payuni}),
-		"stripe on LIVE":      build(ctx, jobs, "LIVE", HostedProviders{Stripe: &stripeConfig}),
 		"bad stripe url":      build(ctx, jobs, "SANDBOX", HostedProviders{Stripe: &StripeHostedConfig{ReturnURL: "http://x.example.com/r"}}),
 		"bad profile":         build(ctx, jobs, "PROD", HostedProviders{Stripe: &stripeConfig}),
 	} {

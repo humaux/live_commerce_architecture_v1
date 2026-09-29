@@ -57,11 +57,12 @@ func (Inbox) MarshalJSON() ([]byte, error) { return []byte(`"stripewebhook.Inbox
 
 // NewInbox validates the borrowed ingress pool (platform.ValidateStripeIngressPool: no merchant or
 // worker pool may be substituted) and builds an insert-only River client on schema river_payment.
-// profile is the only profile this process admits (PROVIDER_MOCK|SANDBOX); LIVE is refused.
+// profile is the only profile this process admits (PROVIDER_MOCK|SANDBOX|LIVE). LIVE (stripe-live-enable-v1
+// §5.2) is admitted here because the deployment gate is the caller's: cmd/api builds a LIVE inbox only with the
+// owner's flag+reference pair, and an endpoint of another profile is invisible (404) in the handler.
 func NewInbox(ctx context.Context, ingressPool *pgxpool.Pool, signingKeys *accounts.Keyring,
 	profile string) (*Inbox, error) {
-	if ctx == nil || ingressPool == nil || signingKeys == nil || jobqueue.ForProfile(profile) == "" ||
-		(profile != "PROVIDER_MOCK" && profile != "SANDBOX") {
+	if ctx == nil || ingressPool == nil || signingKeys == nil || jobqueue.ForProfile(profile) == "" {
 		return nil, ErrConfig
 	}
 	if err := platform.ValidateStripeIngressPool(ctx, ingressPool); err != nil {
