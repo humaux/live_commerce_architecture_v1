@@ -163,8 +163,22 @@ func startBrowserNode(t *testing.T, ctx context.Context, evidence, name, dir str
 				_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
 				<-done
 			}
+			stopProcessGroup(t, cmd.Process.Pid)
 		})
 	})
+}
+
+// stopProcessGroup (F6) returns only when no process of the group is left: the parent's exit does not
+// mean its next-server child has released the fixed port, so the next gate's port check would race it.
+func stopProcessGroup(t *testing.T, pgid int) {
+	t.Helper()
+	_ = syscall.Kill(-pgid, syscall.SIGKILL)
+	for deadline := time.Now().Add(5 * time.Second); syscall.Kill(-pgid, 0) == nil; time.Sleep(20 * time.Millisecond) {
+		if time.Now().After(deadline) {
+			t.Errorf("process group %d still alive 5 s after SIGKILL", pgid)
+			return
+		}
+	}
 }
 
 // waitHTTP polls url (optionally with a forced Host) until it answers want.

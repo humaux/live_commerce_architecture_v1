@@ -207,11 +207,11 @@ func TestBrowserStudioBFFRealChain(t *testing.T) {
 			_ = syscall.Kill(-fixture.Process.Pid, syscall.SIGINT)
 			select {
 			case <-fixtureDone:
-				_ = syscall.Kill(-fixture.Process.Pid, syscall.SIGKILL) // leaked next-server children
 			case <-time.After(5 * time.Second):
 				_ = syscall.Kill(-fixture.Process.Pid, syscall.SIGKILL)
 				<-fixtureDone
 			}
+			stopProcessGroup(t, fixture.Process.Pid) // leaked next-server children hold the port
 		})
 	}
 	t.Cleanup(stopFixture)
