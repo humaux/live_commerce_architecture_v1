@@ -58,6 +58,21 @@ func write(w http.ResponseWriter, status int, code string, retryable bool) {
 		"insufficient_inventory": "Insufficient available inventory.",
 		"retry_later":            "Temporarily unavailable.", "unavailable": "Temporarily unavailable.",
 		"internal": "Request could not be completed.",
+		// stripe-refund-v1 §7.1 (ruling 15: unknown codes were rewritten to "internal").
+		"refundable_changed":    "Refundable amount changed since it was loaded.",
+		"exceeds_refundable":    "Amount exceeds the refundable amount.",
+		"amount_step":           "Amount is not a valid step for this currency.",
+		"not_refundable":        "Order cannot be refunded.",
+		"refund_blocked_review": "Refund is blocked by an open payment review.",
+		"refund_limit":          "Refund limit reached for this payment.",
+		// manual-fulfilment-v1 §5.1.
+		"version_changed":       "Shipment changed since it was loaded.",
+		"not_shippable":         "Order cannot be shipped in its current state.",
+		"invalid_carrier":       "Carrier is not valid.",
+		"invalid_tracking":      "Tracking number is not valid.",
+		"invalid_url":           "Tracking URL is not valid.",
+		"void_requires_shipped": "Only a shipped record can be voided.",
+		"invalid_void":          "Void request is not valid.",
 	}
 	message, ok := messages[code]
 	if !ok {

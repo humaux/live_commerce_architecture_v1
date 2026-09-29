@@ -12,8 +12,7 @@
 // Studio strict JSON decoder (studioDecodeRaw). Route → Go endpoint: this file's handlers ARE the Go
 // endpoints; the admin BFF mirrors them under /api/admin/.
 //
-// The error codes of §5.1 (version_changed, not_shippable, ...) are not in internal/httperror's message
-// table, so this file writes its own httperror.Envelope for them instead of respondError.
+// The §5.1 error codes (version_changed, not_shippable, ...) live in internal/httperror's table (ruling 15).
 
 package httpapi
 
@@ -28,24 +27,12 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"livecommerce/internal/command"
-	"livecommerce/internal/httperror"
 	"livecommerce/internal/merchantorders"
 	"livecommerce/internal/platform"
 )
 
 // shipmentBodyFields are the eight keys the PUT body must carry (nullable ones as explicit null).
 var shipmentBodyFields = []string{"expected_version", "status", "carrier_code", "carrier_name", "tracking_number", "tracking_url", "note", "void_reason"}
-
-// shipmentMessages holds the §5.1 codes httperror.Write would turn into "internal".
-var shipmentMessages = map[string]string{
-	"version_changed":       "Shipment changed since it was loaded.",
-	"not_shippable":         "Order cannot be shipped in its current state.",
-	"invalid_carrier":       "Carrier is not valid.",
-	"invalid_tracking":      "Tracking number is not valid.",
-	"invalid_url":           "Tracking URL is not valid.",
-	"void_requires_shipped": "Only a shipped record can be voided.",
-	"invalid_void":          "Void request is not valid.",
-}
 
 // registerShipmentRoutes mounts the four routes; NewHandler calls it unconditionally (integrator).
 // PUT needs an Idempotency-Key; HEAD is rejected everywhere (mux 405 on the PUT-only path, the
@@ -169,7 +156,7 @@ func shipmentScope(w http.ResponseWriter, r *http.Request, pool *pgxpool.Pool, p
 	})
 	if err != nil {
 		status, code := shipmentClassify(err)
-		writeShipmentError(w, status, code)
+		respondError(w, status, code)
 		return nil, false
 	}
 	return result, true
@@ -195,16 +182,4 @@ func shipmentClassify(err error) (int, string) {
 		return http.StatusUnprocessableEntity, "invalid_void"
 	}
 	return claimsClassify(err)
-}
-
-func writeShipmentError(w http.ResponseWriter, status int, code string) {
-	message, own := shipmentMessages[code]
-	if !own {
-		respondError(w, status, code)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(httperror.Envelope{Code: code, Message: message,
-		RequestID: w.Header().Get("X-Request-ID"), Retryable: false, Details: map[string]any{}})
 }

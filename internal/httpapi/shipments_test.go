@@ -173,12 +173,12 @@ func TestShipmentClassifyMapping(t *testing.T) {
 	}
 }
 
-// The §5.1 codes are absent from httperror's message table, so they must be written by this file.
+// The §5.1 codes live in httperror's message table (ruling 15); the envelope keeps request id and details.
 func TestShipmentErrorEnvelopeKeepsContractCodes(t *testing.T) {
-	for code := range shipmentMessages {
+	for _, code := range []string{"version_changed", "not_shippable", "invalid_carrier", "invalid_tracking", "invalid_url", "void_requires_shipped", "invalid_void"} {
 		w := httptest.NewRecorder()
 		w.Header().Set("X-Request-ID", "rid-1")
-		writeShipmentError(w, 422, code)
+		respondError(w, 422, code)
 		var envelope httperror.Envelope
 		if err := json.Unmarshal(w.Body.Bytes(), &envelope); err != nil || envelope.Code != code || envelope.Message == "" ||
 			envelope.RequestID != "rid-1" || envelope.Retryable || envelope.Details == nil {
@@ -186,12 +186,12 @@ func TestShipmentErrorEnvelopeKeepsContractCodes(t *testing.T) {
 		}
 	}
 	w := httptest.NewRecorder()
-	writeShipmentError(w, 409, "conflict")
+	respondError(w, 409, "conflict")
 	if !strings.Contains(w.Body.String(), `"code":"conflict"`) {
 		t.Fatalf("shared code lost: %s", w.Body.String())
 	}
 	w = httptest.NewRecorder()
-	writeShipmentError(w, 503, "retry_later")
+	respondError(w, 503, "retry_later")
 	if !strings.Contains(w.Body.String(), `"retryable":true`) {
 		t.Fatalf("503 must stay retryable: %s", w.Body.String())
 	}
