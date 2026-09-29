@@ -3,7 +3,9 @@
 // Merchant orders page (approved C inline row). BFF: GET /api/stores/{store}/orders[/{id}] and order-actions
 // -> Go internal/httpapi/orders.go + shipments.go. The refund and shipment sections live in OrderRefunds /
 // OrderShipment (their BFF routes are listed there); the export button is a plain GET download of
-// orders/unshipped.csv streamed by the BFF from Go, never fetched into JS memory.
+// orders/unshipped.csv streamed by the BFF from Go, never fetched into JS memory. The CVS section (OrderCvsShipment:
+// BFF orders/{id}/cvs-shipment*, collection, pay-at-pickup-release -> Go internal/httpapi/cvs.go) sits next to the
+// 0063 section in the same inline row; the list filter `cvs_pending` is one more state in the existing filter.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
@@ -33,6 +35,7 @@ import { WorkspaceFrame } from "./WorkspaceFrame";
 import { Icon } from "./Icon";
 import { OrderRefunds } from "./OrderRefunds";
 import { OrderShipment } from "./OrderShipment";
+import { OrderCvsShipment } from "./OrderCvsShipment";
 import "./orders.css";
 import "./order-actions.css";
 
@@ -182,6 +185,14 @@ function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy, section
                 <dt>{c.pickupCode}</dt>
                 <dd>{dest.pickup.code}</dd>
               </div>
+              {detail.pickup_source && (
+                <div>
+                  <dt>{c.sourceLabel}</dt>
+                  <dd data-testid="pickup-source" data-source={detail.pickup_source}>
+                    {c.pickupSources[detail.pickup_source]}
+                  </dd>
+                </div>
+              )}
             </>
           )}
           <div>
@@ -210,6 +221,18 @@ function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy, section
             <dt>{c.work}</dt>
             <dd>{badge(detail.work_state, c)}</dd>
           </div>
+          <div>
+            <dt>{c.payMode}</dt>
+            <dd data-testid="order-pay-mode">{c.payModes[detail.payment_mode]}</dd>
+          </div>
+          {detail.collection_state && (
+            <div>
+              <dt>{c.collectionLabel}</dt>
+              <dd data-testid="order-collection-state" data-state={detail.collection_state}>
+                {c.collectionStates[detail.collection_state]}
+              </dd>
+            </div>
+          )}
         </dl>
         {detail.test_mode && (
           <p className="orders-test" data-testid="order-test-mode">
@@ -230,10 +253,28 @@ function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy, section
               onChanged={sections.onChanged}
             />
           )}
+          {dest.pickup && (detail.commercial_state === "CONFIRMED" || detail.payment_mode === "pay_at_pickup") && (
+            <OrderCvsShipment
+              store={sections.store}
+              detail={detail}
+              locale={locale}
+              c={c}
+              canWrite={sections.actions.fulfillment_write}
+              boundary={sections.boundary}
+              onChanged={sections.onChanged}
+            />
+          )}
           {detail.commercial_state === "CONFIRMED" && (
             <OrderShipment
               store={sections.store}
-              detail={detail}
+              // A pay-at-pickup order never has a payment work item, so its list-side work_state is NONE. The
+              // 0063 form's MD6 eligibility hint reads READY as "nothing blocks shipping"; for this mode that
+              // hint is collection PENDING instead (hint only: record_manual_shipment re-checks in SQL).
+              detail={
+                detail.payment_mode === "pay_at_pickup" && detail.collection_state === "PENDING"
+                  ? { ...detail, work_state: "READY" }
+                  : detail
+              }
               locale={locale}
               c={c}
               canWrite={sections.actions.fulfillment_write}
