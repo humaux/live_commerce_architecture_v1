@@ -250,7 +250,11 @@ test("CB11 finance: native date inputs, the 91-day rule, one summary table, the 
   // the range rule (D13): start after end, and more than 91 days, are refused before any request
   const summaries: string[] = [];
   page.on("request", (r) => {
-    if (new URL(r.url()).pathname.endsWith("/finance/summary")) summaries.push(r.url());
+    const u = new URL(r.url());
+    if (!u.pathname.endsWith("/finance/summary")) return;
+    // only a request for an INVALID range counts (a late refresh of the already-valid range is not the subject)
+    const span = (Date.parse(u.searchParams.get("to") ?? "") - Date.parse(u.searchParams.get("from") ?? "")) / 86_400_000;
+    if (!(span >= 0 && span <= 91)) summaries.push(r.url());
   });
   await from.fill(financeDay(0));
   await to.fill(financeDay(-5));
