@@ -404,7 +404,28 @@ svc = json.load(sys.stdin)["services"][sys.argv[1]]
 names = set(svc.get("secrets") and [x["source"] if isinstance(x, dict) else x for x in svc["secrets"]] or [])
 sys.exit(1 if names & {"dsn_lc_stripe_registrar", "dsn_lc_meta_registrar"} else 0)' "$s"; then :; else why44+=" $s mounts a registrar DSN"; fi
   done
-  if [[ -z "$why44" ]]; then rec S44 PASS "stripe-admin/meta-admin one-shots run isolated, registrar logins admitted, no long-running service mounts them"; else rec S44 FAIL "$why44 (logs/S44-*.log)"; fi
+  # S44b: the sanctioned wrapper itself. A syntactically valid dummy token must be forwarded by NAME and
+  # reach the CLI (fixed meta_admin_* code, exit 1, audit line without values); a live-shaped Stripe key
+  # and `--profile LIVE` must be refused BEFORE any container starts. The fake live key is built at runtime
+  # so no key-shaped literal exists in the repo (CI secret grep).
+  local live_key="sk_""live_0000000000000000" ops_log="$LC_STATE_DIR/ops-admin.log" before_lines after_lines
+  before_lines=$(awk 'END { print NR }' "$ops_log" 2>/dev/null || echo 0)
+  out44=$(META_PAGE_ACCESS_TOKEN=smoke-dummy-token-0000 "$LC_SCRIPTS_DIR/ops-admin.sh" meta-admin page-token \
+    --tenant 00000000-0000-4000-8000-000000000001 --store 00000000-0000-4000-8000-000000000002 \
+    --principal 00000000-0000-4000-8000-000000000003 --binding 00000000-0000-4000-8000-000000000004 \
+    --provider facebook --asset 1234567890 --expected-version 0 --scopes pages_messaging 2>&1 </dev/null) && why44+=" ops-admin accepted a nonexistent registration"
+  printf '%s\n' "$out44" >"$EV/logs/S44b.log"
+  [[ "$out44" == *meta_admin_* && "$out44" != *meta_admin_config* ]] || why44+=" ops-admin meta-admin: [${out44:0:80}]"
+  after_lines=$(awk 'END { print NR }' "$ops_log" 2>/dev/null || echo 0)
+  ((after_lines == before_lines + 1)) && grep -q 'tool=meta-admin sub=page-token exit=1' "$ops_log" && ! grep -q 'smoke-dummy-token' "$ops_log" ||
+    why44+=" ops-admin audit line missing or leaked a value"
+  out44=$(STRIPE_SECRET_KEY=$live_key STRIPE_ACCOUNT_ID=acct_0000000000 "$LC_SCRIPTS_DIR/ops-admin.sh" stripe-admin register \
+    --tenant t --store s --principal p 2>&1 </dev/null) && why44+=" ops-admin accepted a live-shaped key"
+  [[ "$out44" == *"unexpected format"* && "$out44" != *"$live_key"* ]] || why44+=" live key not refused by name"
+  out44=$("$LC_SCRIPTS_DIR/ops-admin.sh" stripe-admin qualify --profile LIVE 2>&1 </dev/null) && why44+=" ops-admin accepted --profile LIVE"
+  [[ "$out44" == *"LIVE is refused"* ]] || why44+=" --profile LIVE not refused by name"
+  unset live_key
+  if [[ -z "$why44" ]]; then rec S44 PASS "stripe-admin/meta-admin one-shots run isolated, registrar logins admitted, no long-running service mounts them; ops-admin.sh forwards by name, audits without values, refuses live keys and --profile LIVE"; else rec S44 FAIL "$why44 (logs/S44-*.log)"; fi
 
   # S17-S24 edge
   local r
