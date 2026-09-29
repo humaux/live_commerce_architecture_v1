@@ -231,7 +231,7 @@ try {
   await expect(p4.getByTestId("privacy-message")).toHaveText(en.downloaded);
   assert.equal(posts4.filter((x) => x.path.endsWith("/export")).length, 1);
   assert.match(posts4[0].key, keyPattern);
-  assert.equal(posts4[0].body ?? "", "");
+  assert.ok(["", "{}"].includes(posts4[0].body ?? ""), "the browser-to-BFF export body is empty or the BFF `empty` shape {}; the Go hop takes none (internal/buyerhttp noBody)");
   pass("U8 privacy page: state from the server, toggles use context settings with their own keys, download is a keyed body-less POST");
 
   // erase: typed confirmation, one keyed request, the erased state; the reload starts a new anonymous session
