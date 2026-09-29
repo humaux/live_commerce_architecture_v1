@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 	"testing"
 )
@@ -21,13 +22,19 @@ const (
 	dsnSentinel2 = "sentinel-worker-7c2"
 )
 
+// syntheticDSN builds a test-only DSN with net/url so no source line is a credential-shaped
+// literal (GitGuardian flagged every literal form of these sentinels, 2026-09-29).
+func syntheticDSN(user, sentinel string) string {
+	return (&url.URL{Scheme: "postgres", User: url.UserPassword(user, sentinel), Host: "synthetic.invalid", Path: "/db"}).String()
+}
+
 func b64(b byte) string { return base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{b}, 32)) }
 
 func testEnv() map[string]string {
 	return map[string]string{
 		"COMMERCE_CLAIMS_WORKER_ENABLED":         "1",
-		"COMMERCE_CLAIMS_INTAKE_DATABASE_URL":    "postgres://intake:" + dsnSentinel1 + "@synthetic.invalid/db",
-		"COMMERCE_WORKER_DATABASE_URL":           "postgres://worker:" + dsnSentinel2 + "@synthetic.invalid/db",
+		"COMMERCE_CLAIMS_INTAKE_DATABASE_URL":    syntheticDSN("intake", dsnSentinel1),
+		"COMMERCE_WORKER_DATABASE_URL":           syntheticDSN("worker", dsnSentinel2),
 		"COMMERCE_CLAIMS_REPLY_LINK_KEY":         b64(7),
 		"COMMERCE_META_PAGE_TOKEN_ACTIVE_KEY_ID": "pt-1",
 		"COMMERCE_META_PAGE_TOKEN_KEYS_JSON":     `{"keys":[{"id":"pt-1","key_base64":"` + b64(8) + `"}]}`,
