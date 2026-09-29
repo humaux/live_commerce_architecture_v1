@@ -57,7 +57,17 @@ var stripeIngressFunctions = []string{
 	// stripe-refund-v1 D2: 0062 replaces the 16-argument prepare with 16 + payment_intent + lc_refund.
 	"payments.stripe_webhook_prepare(uuid,bigint,text,text,bigint,text,text,text,text,text,boolean,boolean,boolean,boolean,bytea,bigint,text,text)",
 	"payments.stripe_webhook_commit(uuid,uuid,bigint)",
+	// customers-billing-v1 C-4 (0079): the platform webhook shares this login and executes exactly this ABI.
+	// billing.platform_account_conflict(text) is granted to BOTH this login and commerce_runtime (startup
+	// check), so it is not in this list (a runtime pool would fail the fixed-function scan); see
+	// stripeIngressExtraFunctions below.
+	"billing.apply_subscription(text,text,text,text,text,timestamp with time zone,timestamp with time zone,boolean,timestamp with time zone,timestamp with time zone,uuid,boolean)",
 }
+
+// stripeIngressExtraFunctions are functions the ingress login may execute in addition to
+// stripeIngressFunctions but that other pools legitimately hold too, so they cannot join the fixed list
+// (which every non-ingress pool must NOT hold). Resolved by regprocedure, ingress only.
+var stripeIngressExtraFunctions = []string{"billing.platform_account_conflict(text)"}
 var stripeRegistrarFunctions = []string{
 	"integration.register_stripe_account(uuid,uuid,uuid,uuid,uuid,text,text,text,bytea,bytea)",
 	"integration.rotate_stripe_key(uuid,uuid,uuid,uuid,bigint,text,bytea,bytea)",
@@ -123,6 +133,17 @@ func validateStripeAuthority(ctx context.Context, pool *pgxpool.Pool, authority 
 	}
 	if len(allowed) == 0 {
 		return nil
+	}
+	if authority == "stripe_ingress" {
+		for _, signature := range stripeIngressExtraFunctions {
+			var oid uint32
+			if err := pool.QueryRow(ctx, `SELECT coalesce(to_regprocedure($1)::oid::bigint,0)::oid`, signature).Scan(&oid); err != nil {
+				return errors.New("unsafe stripe database privileges")
+			}
+			if oid != 0 {
+				allowedOIDs = append(allowedOIDs, oid)
+			}
+		}
 	}
 	// New Stripe roles cannot read any application table. The only exception is
 	// the ingress role's river_payment.river_job INSERT/SELECT plus column-level

@@ -853,8 +853,9 @@ func lcPopulatedUpgrade(t *testing.T) {
 	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0060_live_claims.sql',$1)`, fmt.Sprintf("%x", sha256.Sum256(body)))
 	// 0064 and post-River 0014 (meta-claims-intake-v1) build on 0060's tables and roles, so they are
 	// held back with it and applied on top of the populated data in the second phase below.
-	// 0078 (customers-billing-v1) reads claims.bundles too, so it is held back with 0060 as well.
-	dependents := []string{"0064_meta_claims_intake.sql", "post_river/0014_meta_claims_intake_river.sql", "0078_customers_privacy.sql"}
+	// 0078 (customers-billing-v1) reads claims.bundles and 0079 reads live.claim_windows / claim_window_intervals,
+	// so both are held back with 0060 as well (0079 after 0078: it needs 0078's permission values).
+	dependents := []string{"0064_meta_claims_intake.sql", "post_river/0014_meta_claims_intake_river.sql", "0078_customers_privacy.sql", "0079_platform_billing.sql"}
 	for _, version := range dependents {
 		dependent, err := os.ReadFile(filepath.Join("../../migrations", version))
 		if err != nil {

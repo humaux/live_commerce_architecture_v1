@@ -88,6 +88,12 @@ func run() error {
 		return err
 	}
 	defer closeStripe()
+	// billing-core (customers-billing-v1 T17): nil service + nil webhook while LC_BILLING_ENABLED is unset.
+	billingService, billingWebhook, closeBilling, err := buildPlatformBilling(startup, pool, os.Getenv)
+	if err != nil {
+		return err
+	}
+	defer closeBilling()
 	accountService, err := buildAccountsService(pool, accountConfig)
 	if err != nil {
 		return err
@@ -101,7 +107,7 @@ func run() error {
 		return err
 	}
 	handler := httpapi.NewHandler(pool, httpapi.Options{SessionStoreList: identityConfig.enabled, Accounts: accountService, Studio: studioConfig.enabled, Live: studioPlanner,
-		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs})
+		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs, Billing: billingService})
 	if identityHandler != nil {
 		mux := http.NewServeMux()
 		mux.Handle("/v1/identity/", identityHandler)
@@ -111,6 +117,7 @@ func run() error {
 	handler = mountBuyer(handler, buyerHandler)
 	handler = mountMeta(handler, metaHandler)
 	handler = mountStripe(handler, stripeHandler)
+	handler = mountPlatformBilling(handler, billingWebhook)
 	stopStartup()
 	server := &http.Server{
 		Addr:              addr,

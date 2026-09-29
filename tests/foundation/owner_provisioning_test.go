@@ -24,7 +24,7 @@ import (
 )
 
 var op01Base = []string{"store:read", "audit:read", "audit:write", "catalog:read", "catalog:write", "inventory:read", "inventory:write", "inventory:reserve", "pricing:read", "pricing:write", "integration:read", "integration:manage", "orders:read"}
-var op01New = []string{"live:read", "live:manage", "payments:refund", "fulfillment:write", "orders:export", "integration:execute"}
+var op01New = []string{"live:read", "live:manage", "payments:refund", "fulfillment:write", "orders:export", "integration:execute", "customers:read", "customers:privacy", "billing:manage"} // 0079 sixth version (customers-billing-v1 C-5)
 
 func op01Sorted(lists ...[]string) []string {
 	var all []string

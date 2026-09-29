@@ -276,7 +276,8 @@ func TestStripeRF12Guards(t *testing.T) {
 				if err != nil || d.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
 					return err
 				}
-				if strings.Contains(filepath.ToSlash(path), "/internal/integrations/psp/stripe/") {
+				if strings.Contains(filepath.ToSlash(path), "/internal/integrations/psp/stripe/") ||
+					strings.Contains(filepath.ToSlash(path), "/internal/billing/") { // customers-billing-v1: platform billing client
 					return nil
 				}
 				raw, _ := os.ReadFile(path)

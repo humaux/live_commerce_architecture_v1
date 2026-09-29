@@ -222,6 +222,24 @@ deploy/scripts/deploy.sh upgrade <tag>
    compose 已接入 `COMMERCE_CLAIMS_LABEL_KEY_FILE`（secret `commerce_claims_label_key`）。证据：`TestStudioG2FlagMatrix`、`TestStudioPlanningOnlyG2APIProcess`（真实二进制 + PG）、
    KC16/T12 浏览器门禁（仅规划模式）、smoke S45（部署后 claims/claim-source 未带令牌返回 401/403，媒体路由 404）。
 
+### 6.4 平台服务费（Stripe Billing，SANDBOX）与 R2 权限补发
+
+1. 前提（owner 事项）：平台自己的 Stripe **测试**账户（与商家 PSP 账户不同，BD1）、计划 price id（Billing Q1/Q2）。
+   owner 以文件提供两个密钥（O-D，绝不经聊天）：`commerce_platform_stripe_secret_key`（只接受 `sk_test_`/`rk_test_`，BD8）、
+   `commerce_platform_stripe_webhook_secret`（`whsec_`，Stripe 后台为端点 `https://<LC_HOOKS_HOST>/v1/platform/stripe/webhook` 生成；
+   这是与商家 PSP webhook 不同的端点）。
+2. 启用：`compose.env` 设 `LC_BILLING_ENABLED=1`、`LC_BILLING_PRICE_IDS=price_...`（逗号分隔，1–10 个），`deploy.sh upgrade`。
+   未设 = 关闭（`0` 会让 api 启动失败，preflight P06 拦截）；preflight P08 校验 price id，P09 校验两个密钥文件格式。
+   webhook 复用 `commerce_stripe_ingress` 登录（`COMMERCE_STRIPE_INGRESS_DATABASE_URL`）。
+3. **R2 权限补发**（0079 只给新建店铺的创建者 `customers:read`、`customers:privacy`、`billing:manage`；0079 之前建的店铺需手动补发，
+   **需 owner 在聊天中批准**）：
+   ```sh
+   # 以迁移 owner（数据库 owner）连接执行，见脚本头部 HOW；部署包暂无该脚本的 ops 包装（DESIGN）：
+   psql "$MIGRATION_DATABASE_URL" -v ON_ERROR_STOP=1 -v store_id=<store uuid> -v principal_id=<创建者 principal uuid> \
+     -f scripts/ops/grant-r2-permissions.sql   # 输出 granted=<0..3>，幂等，只作用于该店铺的创建者
+   ```
+4. 标准（standing）为 RESTRICTED 时只拒绝新开认领窗口（HTTP 402 `billing_restricted`）；退款、履约、结账不受影响（Q6）。
+
 ## 7. 密钥轮换（按 deploy/secrets.manifest.tsv 的 rotation 列）
 
 | 密钥 | 做法 |

@@ -316,6 +316,9 @@ studio_media = flag("COMMERCE_STUDIO_MEDIA_ENABLED", api.get("COMMERCE_STUDIO_ME
 claims_on = flag("COMMERCE_CLAIMS_ENABLED", api.get("COMMERCE_CLAIMS_ENABLED", ""))
 profiles = {p.strip() for p in E.get("COMPOSE_PROFILES", "").split(",") if p.strip()}
 stripe_on = flag("LC_STRIPE_ENABLED", E.get("LC_STRIPE_ENABLED", ""))
+# customers-billing-v1 T17: platform-fee billing; unset = off (billing.LoadConfig rejects "0", so only "" or "1").
+billing_on = flag("LC_BILLING_ENABLED", E.get("LC_BILLING_ENABLED", ""))
+rec("P06", E.get("LC_BILLING_ENABLED", "") != "0", "LC_BILLING_ENABLED unset or 1 (0 stops the api)")
 rec("P06", profiles <= {"db", "app", "payments-sandbox", "payments-live", "meta", "claims", "ops"}, "COMPOSE_PROFILES known")
 rec("P06", "ops" not in profiles, "COMPOSE_PROFILES must not list ops (one-shots run through ops-admin.sh / pg-ops.sh)")
 rec("P06", not accounts or identity, "COMMERCE_ACCOUNTS_ENABLED requires LC_IDENTITY_ENABLED")
@@ -382,7 +385,19 @@ rec("P08", E.get("LC_PG_SSLMODE") in ("disable", "require", "verify-ca", "verify
 rec("P08", E.get("LC_SECRETS_GID", "").isdigit(), "LC_SECRETS_GID")
 rec("P08", E.get("LC_REQUIRE_MEDIA_GATE", "0") in ("0", "1"), "LC_REQUIRE_MEDIA_GATE")
 
+if billing_on:
+    # Same grammar as internal/billing.LoadConfig (1..10 distinct price ids); ids are not secrets.
+    ids = [i.strip() for i in E.get("LC_BILLING_PRICE_IDS", "").split(",")]
+    rec("P08", 1 <= len(ids) <= 10 and len(set(ids)) == len(ids)
+        and all(re.fullmatch(r"price_[A-Za-z0-9]{1,64}", i) for i in ids), "LC_BILLING_PRICE_IDS")
 # ---- P09 owner-supplied secrets ------------------------------------------------------------------------------
+if billing_on and "app" in profiles:
+    # customers-billing-v1 BD8: SANDBOX platform keys only; owner-supplied files (O-D). Same patterns as
+    # internal/billing.LoadConfig, so a bad file fails here instead of stopping the api at start.
+    rec("P09", re.fullmatch(r"(sk|rk)_test_[A-Za-z0-9]{16,240}", values.get("commerce_platform_stripe_secret_key", "")) is not None,
+        "commerce_platform_stripe_secret_key (sk_test_/rk_test_ only; LC_BILLING_ENABLED=1)")
+    rec("P09", re.fullmatch(r"whsec_[!-~]{16,249}", values.get("commerce_platform_stripe_webhook_secret", "")) is not None,
+        "commerce_platform_stripe_webhook_secret (whsec_; LC_BILLING_ENABLED=1)")
 if meta and "app" in profiles:
     rec("P09", values.get("commerce_meta_apps_json", "__UNSET__") != "__UNSET__", "commerce_meta_apps_json")
 if identity:

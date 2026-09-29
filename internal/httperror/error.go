@@ -85,6 +85,11 @@ func write(w http.ResponseWriter, status int, code string, retryable bool) {
 		"erasure_blocked":      "Erasure is blocked while a hold, payment or refund is in progress.",
 		"erased":               "This data has been erased.",
 		"export_too_large":     "The export is too large to generate.",
+		// customers-billing-v1 §5 / billing-core B2, B12: platform billing.
+		"billing_unavailable": "Billing is temporarily unavailable.",
+		"billing_restricted":  "New claim windows are paused until billing is up to date.",
+		"subscription_exists": "This store already has a subscription.",
+		"no_billing_customer": "No billing account exists for this store yet.",
 	}
 	message, ok := messages[code]
 	if !ok {
