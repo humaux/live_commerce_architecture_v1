@@ -51,3 +51,12 @@ All defaults proposed with the briefs are ACCEPTED:
     `REFUND_AMOUNT_MISMATCH` review for a human; refundable capacity stays reserved. RF07 asserts
     all three. (Stripe refunds are always in the charge currency, so a mismatch means a wrong match
     or corrupted data — a human must look.)
+
+## Wave-5 rulings (2026-09-29)
+
+24. Owner provisioning grants SIX permissions to the store creator: live:read, live:manage,
+    payments:refund, fulfillment:write, orders:export, integration:execute. Reason: the claim-source
+    definer requires live:manage + integration:execute, without which the owner cannot bind their own
+    posts. Contract stripe-refund-v1 §12 / OP01 / account_onboarding expectations amended (spec change).
+25. Buyer tracking link: `rel="noopener noreferrer nofollow"` per manual-fulfilment-v1 §3.2 (ruling 14
+    was incomplete; the contract text governs).

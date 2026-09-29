@@ -39,3 +39,20 @@ m. Reply origin: `plan_claim_reply` writes the stored `control.storefront_domain
 n. metareply keyring env loader may not reuse the unexported `meta.parseStrict`; duplicate JSON member
    names collapsing is accepted for R1 (operator-controlled env; `ponytail:` marked). Upgrade path:
    export a strict parser from `internal/integrations/meta` in the maintainability unit.
+
+## Wave-5 rulings (2026-09-29)
+
+o. claim-source route spelling: canonical `/v1/admin/stores/{store_id}/live-sessions/{session_id}/claim-source`
+   (matches existing Studio/claims routes); the `/live/sessions/` alias is removed; brief amended.
+p. PUT body gains optional `"platform":"facebook"|"instagram"` (frozen-interface amendment by the
+   integrator). Required when the store has both an enabled Facebook and Instagram binding and the
+   input is a bare numeric id; otherwise optional and must agree with the parsed input. The UI shows a
+   platform select only when both bindings exist; re-saving uses the saved source's platform.
+q. `ensureWindow` default CLOSED/EXACT generation-0 `live.claim_windows` row: ratified.
+r. Facebook `/videos/<id>` and bare ids stored as `<page_asset>_<id>`, `verified=false` until probe U1.
+s. New error `page_token_missing` when `private_reply=true` and no Page token is registered for the
+   binding (distinct from `binding_missing`); copy in three locales.
+t. UI defaults `private_reply=false`, `active=true`; `intake_capped` copy "Skipped: intake limit reached".
+   The stale "MOCK capture — comments are not read automatically yet" banner becomes: no source →
+   "Bind a Facebook or Instagram post to read comments automatically"; bound → "Reading comments from
+   the bound post" (+ "unverified" for facebook); three locales.
