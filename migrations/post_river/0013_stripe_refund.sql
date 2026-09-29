@@ -419,9 +419,12 @@ BEGIN
  IF p_report->>'RefundID'<>'' THEN
   -- RD8/§3.1: the refund's identity is proved by our own metadata, the PaymentIntent, the account and
   -- test mode; any mismatch raises and the worker finishes UNKNOWN stripe_refund_mismatch.
+  -- Ruling 23: a non-empty Currency that differs from the request is the one exception: it is recorded
+  -- (apply_stripe_refund step 4 opens REFUND_AMOUNT_MISMATCH, no fact, capacity stays held) and the op
+  -- completes stripe_refund_mismatch below instead of stripe_refund_observed.
   IF v_source<>'QUERY' OR p_report->>'MetadataRefund'<>r.id::text
    OR p_report->>'MetadataAttempt'<>r.attempt_id::text OR p_report->>'PaymentIntentID'<>r.payment_intent_id
-   OR p_report->'Livemode'<>'false'::jsonb OR p_report->>'Currency'<>r.currency
+   OR p_report->'Livemode'<>'false'::jsonb OR p_report->>'Currency'=''
    OR p_report->>'Status'='' OR p_report->'Amount'='null'::jsonb THEN
    RAISE EXCEPTION 'Stripe refund identity mismatch' USING ERRCODE='PT409'; END IF;
   IF r.stripe_refund_id IS NULL THEN
@@ -468,7 +471,9 @@ BEGIN
  ON CONFLICT(tenant_id,store_id,attempt_id,report_hash) DO NOTHING;
  IF v_via='escalate' THEN RETURN; END IF;
  SELECT x.lease_until INTO v_lease FROM integration.operations x WHERE x.id=r.id;
- PERFORM integration.complete_operation(p_id,p_generation,p_token,'UNKNOWN','stripe_refund_observed',
+ PERFORM integration.complete_operation(p_id,p_generation,p_token,'UNKNOWN',
+  CASE WHEN p_report->>'Currency'<>'' AND p_report->>'Currency'<>r.currency
+   THEN 'stripe_refund_mismatch' ELSE 'stripe_refund_observed' END,
   coalesce((SELECT x.provider_reference FROM integration.operations x WHERE x.id=r.id),''));
  IF clock_timestamp()>=v_lease THEN
   RAISE EXCEPTION 'Stripe refund lease conflict' USING ERRCODE='40001'; END IF;

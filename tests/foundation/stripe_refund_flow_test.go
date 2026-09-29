@@ -681,6 +681,17 @@ func TestStripeRF07Lifecycle(t *testing.T) {
 				t.Fatalf("%s drift produced %d facts (I05)", name, n)
 			}
 			e.wantMoney(t, o, "REVIEW_REQUIRED", 0, 1000)
+			if name == "currency" {
+				// Ruling 23: BOTH effects. The job ENDS as stripe_refund_mismatch (op result_code + River job
+				// cancelled, so no poll and no resend) AND the review above is open; capacity stays reserved
+				// (wantMoney: pending 1000, nothing refunded).
+				e.awaitRefund(t, "op ended stripe_refund_mismatch", id, o.attempt, 45*time.Second, `SELECT EXISTS(SELECT 1 FROM integration.operations WHERE id=$1 AND state='UNKNOWN' AND result_code='stripe_refund_mismatch')`)
+				e.awaitRefund(t, "refund job cancelled", id, o.attempt, 45*time.Second, `SELECT EXISTS(SELECT 1 FROM river_payment.river_job WHERE kind='payment_refund_v1' AND args->>'operation_id'=$1 AND state='cancelled')
+				  AND NOT EXISTS(SELECT 1 FROM river_payment.river_job WHERE kind='payment_refund_v1' AND args->>'operation_id'=$1 AND state IN ('available','scheduled','retryable','running'))`)
+				if n := e.count(t, `SELECT send_count FROM payments.stripe_refunds WHERE id=$1`, id); n != 1 {
+					t.Fatalf("currency drift resent the create key: send_count %d", n)
+				}
+			}
 		}
 	})
 
