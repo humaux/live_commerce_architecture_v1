@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { Readable } from "node:stream";
 import { test } from "node:test";
-import { orderActionRoute, validCSVHeaders, validKeylessRequest, validOrdersQuery } from "../../apps/admin/lib/orders-request.ts";
+import {
+  orderActionRoute, validCSVHeaders, validKeylessCommandRequest, validKeylessRequest, validOrdersQuery,
+} from "../../apps/admin/lib/orders-request.ts";
 
 const collection =
   "http://127.0.0.1:3100/api/stores/11111111-1111-4111-8111-111111111111/orders";
@@ -109,4 +111,42 @@ test("keyless requests still reject payload, chunking and keys", () => {
   assert.equal(validKeylessRequest("get", nextShaped("GET", { "idempotency-key": "k-12345678" })), false);
   // Only refresh may carry the adapter's stream; a GET-kind request with a body stream stays rejected.
   assert.equal(validKeylessRequest("get", nextShaped("POST", { "content-length": "0" })), false);
+});
+
+// --- cvs-ui: taiwan-cvs-logistics-v1 §8 order-level CVS resources -------------------------------------------------
+test("CVSR01 BFF grammar adds exactly the CVS shipment, collection and release resources", () => {
+  const accepted: [string, string, string][] = [
+    ["GET", `orders/${O}/cvs-shipment`, "get"],
+    ["POST", `orders/${O}/cvs-shipment`, "command"],
+    ["POST", `orders/${O}/cvs-shipment/print-form`, "keyless-command"], // no state change, no key (§8)
+    ["POST", `orders/${O}/cvs-shipment/abandon`, "command"],
+    ["POST", `orders/${O}/collection`, "command"],
+    ["POST", `orders/${O}/pay-at-pickup-release`, "command"],
+  ];
+  for (const [method, path, kind] of accepted) assert.equal(orderActionRoute(method, path), kind, `${method} ${path}`);
+  for (const [method, path] of [
+    ["PUT", `orders/${O}/cvs-shipment`], ["DELETE", `orders/${O}/cvs-shipment`], ["GET", `orders/${O}/cvs-shipment/print-form`],
+    ["GET", `orders/${O}/cvs-shipment/abandon`], ["PUT", `orders/${O}/cvs-shipment/abandon`], ["POST", `orders/${O}/cvs-shipment/print`],
+    ["POST", `orders/${O}/cvs-shipment/print-form/x`], ["POST", `orders/${O}/cvs-shipment/`], ["POST", `orders/${O}/cvs-shipment/x/abandon`],
+    ["GET", `orders/${O}/collection`], ["PUT", `orders/${O}/collection`], ["POST", `orders/${O}/collection/x`],
+    ["GET", `orders/${O}/pay-at-pickup-release`], ["PATCH", `orders/${O}/pay-at-pickup-release`], ["POST", `orders/${O}/pay-at-pickup-release/`],
+    ["POST", `orders/not-a-uuid/collection`], ["POST", `orders/${O.toUpperCase()}/cvs-shipment`], ["POST", "orders/collection"],
+    ["POST", `orders/${O}/Collection`], ["GET", `orders/${O}/cvs-shipments`], ["POST", `orders/${O}/cvs-shipment/abandon?x=1`],
+    ["POST", `orders/${O}/release`], ["POST", `orders/${O}/cvs_shipment`],
+  ])
+    assert.equal(orderActionRoute(method, path), null, `${method} ${path}`);
+});
+
+test("CVSR02 cvs_pending is an accepted list filter; unknown filters stay rejected", () => {
+  assert.equal(validOrdersQuery(collection + "?state=cvs_pending", false), true);
+  assert.equal(validOrdersQuery(collection + "?limit=10&state=cvs_pending&cursor=abc", false), true);
+  for (const query of ["?state=cvs_pending2", "?state=CVS_PENDING", "?state=cvs-pending", "?state=pending"])
+    assert.equal(validOrdersQuery(collection + query, false), false, query);
+});
+
+test("CVSR03 keyless-command carries a JSON body but never a key or chunked framing", () => {
+  const post = (headers: Record<string, string>) => new Request(target, { method: "POST", headers, body: "{}" });
+  assert.equal(validKeylessCommandRequest(post({ "content-type": "application/json" })), true);
+  assert.equal(validKeylessCommandRequest(post({ "content-type": "application/json", "idempotency-key": "k-12345678" })), false);
+  assert.equal(validKeylessCommandRequest(post({ "content-type": "application/json", "transfer-encoding": "chunked" })), false);
 });

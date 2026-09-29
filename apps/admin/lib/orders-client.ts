@@ -18,7 +18,8 @@ export class OrderReadError extends Error {
   }
 }
 
-async function read(path: string, signal: AbortSignal): Promise<unknown> {
+// Shared by logistics-client.ts (same BFF envelope: private/no-store JSON, 401/403/404 mapped to a read code).
+export async function read(path: string, signal: AbortSignal): Promise<unknown> {
   let response: Response;
   try {
     response = await fetch(path, {
