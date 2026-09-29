@@ -993,7 +993,8 @@
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
       "independent_review": "NOT_RUN",
-      "r1_2026_09_29": "Manual fulfilment (0063): merchant carrier+tracking incl. 7-ELEVEN/FamilyMart/Hi-Life/OK CVS codes, versions/void, CSV export, buyer view: REAL_PG MF + BROWSER MF07 PASS. Carrier APIs, labels, CVS store selection at checkout, RMA: NOT_STARTED (R2)."
+      "r1_2026_09_29": "Manual fulfilment (0063): merchant carrier+tracking incl. 7-ELEVEN/FamilyMart/Hi-Life/OK CVS codes, versions/void, CSV export, buyer view: REAL_PG MF + BROWSER MF07 PASS. Carrier APIs, labels, CVS store selection at checkout, RMA: NOT_STARTED (R2).",
+      "r2_cvs_2026_09_30": "Lane r2/cvs merged cvs-core+cvs-ecpay+cvs-ui (0072/0073, post_river/0017, internal/integrations/shipping/ecpay, storefront picker/buyer-entered/pay-at-pickup, admin ECPay+CVS cards) and mounted them (cmd/api, buyerhttp, claims-worker ecpay.cvs_create, Caddy hooks routes, compose LC_CVS_ECPAY_ENABLED SANDBOX-only, preflight P06/P09). Integrator evidence output/r2-cvs-merge/: focused REAL_PG PASS=192 FAIL=0, route SQL REAL_PG red+green, MOU + buyer-order BROWSER PASS (regression, MOCK IdP). TCV01-TCV17 independent gates (cvs-tests), SANDBOX/LIVE ECPay and smoke: NOT_RUN."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },

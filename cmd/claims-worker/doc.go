@@ -13,4 +13,8 @@
 // COMMERCE_META_PAGE_TOKEN_ACTIVE_KEY_ID + COMMERCE_META_PAGE_TOKEN_KEYS_JSON, COMMERCE_META_GRAPH_VERSION
 // (required, no default: probe U5), optional COMMERCE_META_GRAPH_BASE_URL (default https://graph.facebook.com;
 // loopback http://127.0.0.1:<port> for MOCK) and COMMERCE_META_GRAPH_AUTH_HEADER (""/0 token in JSON body, 1 Bearer).
+// ECPay CVS route (taiwan-cvs-logistics-v1 §12, registered only when CVS_ECPAY_ENABLED=1): CVS_ECPAY_ENABLED,
+// CVS_ECPAY_LIVE_CREATE, COMMERCE_CVS_HOOKS_ORIGIN, and, only when enabled, COMMERCE_PAYMENT_PROFILE (one ECPay
+// environment per deployment) and ECPAY_LOGISTICS_KEYRING. The worker calls logistics(-stage).ecpay.com.tw through
+// internal/integrations/shipping/ecpay.
 package main

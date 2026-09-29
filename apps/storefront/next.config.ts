@@ -26,7 +26,7 @@ const config: NextConfig = {
           {
             key: "Content-Security-Policy",
             value:
-              "frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self' https://sandbox-api.payuni.com.tw/api/upp https://api.payuni.com.tw/api/upp",
+              "frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self' https://sandbox-api.payuni.com.tw/api/upp https://api.payuni.com.tw/api/upp https://logistics-stage.ecpay.com.tw/Express/map https://logistics.ecpay.com.tw/Express/map",
           },
         ],
       },

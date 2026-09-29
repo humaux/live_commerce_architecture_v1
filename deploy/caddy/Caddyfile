@@ -148,6 +148,15 @@
 	handle /v1/stripe/webhook/* {
 		reverse_proxy 127.0.0.1:8080
 	}
+	# Taiwan CVS (taiwan-cvs-logistics-v1 §12): ECPay's store-map return (a buyer's browser POST) and its logistics status
+	# notification. Only these two routes reach Go here; any other /v1/cvs/* path on this host, or on LC_API_HOST, falls to 404.
+	# The map return carries no MAC (the app checks the selection nonce); the status body is MAC-verified in Go over the RAW body.
+	handle /v1/cvs/ecpay/map-return/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	handle /v1/cvs/ecpay/status/* {
+		reverse_proxy 127.0.0.1:8080
+	}
 	# Reserved PAYUNi NotifyURL. No receiver exists yet (contracts/buyer-payment-http-v1.md:18); B4.
 	handle /payuni/notify {
 		respond 404

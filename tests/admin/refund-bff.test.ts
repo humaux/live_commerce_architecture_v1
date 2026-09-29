@@ -30,8 +30,12 @@ const base = {
   work_state: "READY",
   refunded_minor: 0,
   refund_pending_minor: 0,
+  // taiwan-cvs-logistics-v1 C4: every summary/detail now carries these three keys (a card, home-delivery order here).
+  pickup_source: null,
+  payment_mode: "card",
+  collection_state: null,
 };
-const row = (change: Record<string, unknown>) => ({ ...base, ...change });
+const row =(change: Record<string, unknown>) => ({ ...base, ...change });
 const detailBase = {
   ...base,
   country: "TW",

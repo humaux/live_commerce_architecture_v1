@@ -129,8 +129,10 @@ func (a *adapter) check(_ context.Context, req core.DispatchRequest) error {
 // the recipient snapshot and the frozen credential version's ciphertext.
 // COLUMN CONTRACT (owned by cvs-core; the §4.3 row lists them in prose only): tenant_id, store_id,
 // connection_id, environment, credential_version, merchant_id, key_id, nonce, ciphertext, endpoint_id,
-// logistics_subtype, receiver_store_id, merchant_trade_no, merchant_trade_date (timestamptz),
-// goods_amount, collection_amount (NULL for a card order), recipient_name, recipient_phone.
+// logistics_subtype, receiver_store_id, merchant_trade_no, trade_created_at (timestamptz = MerchantTradeDate),
+// goods_amount, collection_amount (NULL for a card order), recipient_name, recipient_phone (NULL in reconcile
+// mode, TD8: coalesced to the empty string because pgx cannot scan NULL into string). route_pg_test.go prepares loadSQL
+// and finishSQL against the migrated schema so a renamed column fails a test, not the first label.
 type loadedShipment struct {
 	tenant, store, connection, environment string
 	version                                int64
@@ -146,7 +148,7 @@ type loadedShipment struct {
 
 const loadSQL = `SELECT tenant_id::text, store_id::text, connection_id::text, environment, credential_version, merchant_id,
 	key_id, nonce, ciphertext, endpoint_id::text, logistics_subtype, receiver_store_id, merchant_trade_no,
-	merchant_trade_date, goods_amount, collection_amount, recipient_name, recipient_phone
+	trade_created_at, goods_amount, collection_amount, coalesce(recipient_name, ''), coalesce(recipient_phone, '')
 	FROM integration.load_cvs_create($1::uuid,$2::bigint,$3::bytea,$4::text)`
 
 // secretDoc is what travels from LoadSecret to the callbacks inside core.Secret: the decrypted

@@ -222,6 +222,20 @@ deploy/scripts/deploy.sh upgrade <tag>
    compose 已接入 `COMMERCE_CLAIMS_LABEL_KEY_FILE`（secret `commerce_claims_label_key`）。证据：`TestStudioG2FlagMatrix`、`TestStudioPlanningOnlyG2APIProcess`（真实二进制 + PG）、
    KC16/T12 浏览器门禁（仅规划模式）、smoke S45（部署后 claims/claim-source 未带令牌返回 401/403，媒体路由 404）。
 
+### 6.4 台湾超商取货（taiwan-cvs-logistics-v1 §12/§16）
+
+- **默认（试点，裁决 X11）**：无需部署步骤。`LC_CVS_ECPAY_ENABLED=0`：买家手填门市（`buyer_entered`，附各连锁官方门市查询链接）、
+  超商取货付款（pay-at-pickup）、商家在后台设置连锁/取货付款上限、标记已收款/取消/回库均可用；ECPay 路由返回 404。
+- **ECPay 物流（可选，台湾主体商家，仅 SANDBOX）**：
+  1. owner 在服务器上提供 `ecpay_logistics_keyring` 文件（单行 JSON `{"active":"<id>","keys":[{"id":"<id>","key_base64":"<32 字节>"}]}`，
+     只经文件、不经聊天，裁决 O-D）。它密封各商家的 HashKey/HashIV，与其他 keyring 不共用密钥；轮换只追加新 key 并切换 `active`。
+  2. `compose.env` 设 `LC_CVS_ECPAY_ENABLED=1`；前提（preflight P06/P09）：api.env `COMMERCE_PAYMENT_PROFILE=SANDBOX`、`COMPOSE_PROFILES` 含 `claims`
+     （面单创建路由 `ecpay.cvs_create` 跑在 claims-worker）、keyring 不是 `__UNSET__`。`deploy.sh upgrade`。
+  3. Caddy 只在 hooks 域名放行 `/v1/cvs/ecpay/map-return/*` 与 `/v1/cvs/ecpay/status/*`；ECPay 从 `postgate.ecpay.com.tw` 回调，
+     若 hooks 域名走 Cloudflare 代理，需确认该来源不被拦截（§0.3 P1）。
+  4. 商家在后台「物流设置」连接 ECPay（API 先探测密钥，再密封入库）。**LIVE ECPay 与真实面单购买**需要 owner 批准并同时改 compose
+     中 claims-worker 的 `COMMERCE_PAYMENT_PROFILE`/`CVS_ECPAY_LIVE_CREATE` 两行和 api 的 profile（§0.3 P4）；本版本不启用。
+
 ## 7. 密钥轮换（按 deploy/secrets.manifest.tsv 的 rotation 列）
 
 | 密钥 | 做法 |

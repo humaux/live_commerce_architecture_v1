@@ -73,11 +73,18 @@ func run() error {
 		return err
 	}
 	defer closeIdentity()
-	buyerHandler, closeBuyer, err := buildBuyerHandler(startup, buyerConfig)
+	buyerHandler, cvs, closeBuyer, err := buildBuyerWithCVS(startup, buyerConfig, pool, os.Getenv)
 	if err != nil {
 		return err
 	}
 	defer closeBuyer()
+	if !buyerConfig.enabled {
+		// Merchant-side CVS (settings, collection, release, MANUAL stores) does not need the buyer surface; ECPay itself needs the
+		// payment profile, so with buyer payment off CVS_ECPAY_ENABLED=1 is a startup error (unit default C9).
+		if cvs, err = buildCVS(startup, os.Getenv, pool, nil, ""); err != nil {
+			return err
+		}
+	}
 	metaHandler, closeMeta, err := buildMetaHandler(startup, pool, metaConfig)
 	if err != nil {
 		return err
@@ -101,10 +108,17 @@ func run() error {
 		return err
 	}
 	handler := httpapi.NewHandler(pool, httpapi.Options{SessionStoreList: identityConfig.enabled, Accounts: accountService, Studio: studioConfig.enabled, Live: studioPlanner,
-		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs})
+		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs, CVS: cvs.Merchant})
 	if identityHandler != nil {
 		mux := http.NewServeMux()
 		mux.Handle("/v1/identity/", identityHandler)
+		mux.Handle("/", handler)
+		handler = mux
+	}
+	if cvs.Hooks != nil {
+		// Public ECPay callbacks (map return, status): reachable only through Caddy's two hooks-host routes (deploy/caddy/Caddyfile).
+		mux := http.NewServeMux()
+		mux.Handle("/v1/cvs/ecpay/", cvs.Hooks)
 		mux.Handle("/", handler)
 		handler = mux
 	}
