@@ -50,6 +50,19 @@ jobs:
         # docs/engineering/dependency-map.md is generated from `go list`; a stale map
         # means a package/import changed without regenerating it (PROCESS.md §5).
         run: bash scripts/dev/depmap.sh --check
+      - name: Package docs and gate map are current
+        # Every Go package needs a comment with "owns" and "never" (PROCESS.md §5), and every
+        # test-local.sh mode/admin spec must be documented and run by a gate (docs/delivery/GATES.md).
+        run: |
+          bash scripts/dev/check-pkgdocs.sh
+          bash scripts/dev/check-gates.sh
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24" # package.json engines: >=24 <25 (--experimental-strip-types)
+      - name: Node unit suites (storefront, i18n)
+        # No Docker/PG needed. tests/media/r04-input-runner.test.mjs needs a pinned LiveKit binary and is
+        # reported NOT_RUN here (never PASS); see docs/delivery/GATES.md "Node unit suites".
+        run: bash scripts/dev/test-node.sh
       - name: Download pinned test image
         run: docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
       - name: Real PostgreSQL, race detector and vet

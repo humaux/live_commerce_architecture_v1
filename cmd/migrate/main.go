@@ -1,4 +1,4 @@
-// Command migrate applies livecommerce/migrations (embedded, checksummed,
+// Command migrate owns applying livecommerce/migrations (embedded, checksummed,
 // forward-only) once and exits. It is the only production caller of
 // migrations.Apply.
 //

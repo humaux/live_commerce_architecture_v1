@@ -1,5 +1,6 @@
-// Package platform owns Stripe database-role admission, reusing the shared gate.
+// stripe_runtime.go owns Stripe database-role admission, reusing the shared gate.
 // It never reads payment credentials, verifies webhooks or moves payment state.
+
 package platform
 
 import (

@@ -7,7 +7,7 @@
 // username, and no Graph or private-reply code (internal/integrations/metareply).
 //
 // Depends on: claims/grammar (Parse, a pure function; the only claims import, never
-// internal/claims itself) and the parsing helpers of protocol.go (parseStrict, canonical).
+// internal/claims itself) and the parsing helpers of protocol.go (ParseStrict, canonical).
 // Used by: ConsumerWorker.Work (consumer.go) in the meta-worker process; cmd/meta-worker loads
 // the key.
 //
@@ -122,7 +122,7 @@ func (claimCandidate) MarshalJSON() ([]byte, error) {
 // short-circuit). Pure; the text is parsed and dropped here.
 func qualifyClaim(objectName, assetID, kind string, unit []byte) (claimCandidate, bool) {
 	var none claimCandidate
-	root, err := parseStrict(unit)
+	root, err := ParseStrict(unit)
 	if err != nil || !digits(assetID) {
 		return none, false
 	}

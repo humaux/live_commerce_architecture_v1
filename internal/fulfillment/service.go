@@ -1,5 +1,8 @@
-// Package fulfillment owns merchant delivery-service configuration revisions.
-// It does not commit caller-owned transactions or call carrier providers.
+// Package fulfillment owns merchant delivery-service configuration revisions, per-market delivery
+// allocation (which warehouses serve a country) and pickup attestation (buyer-scoped read and lock).
+//
+// It never commits caller-owned transactions, never calls carrier providers or buys labels (manual
+// shipment recording lives in internal/merchantorders, carriers are R2), and never moves stock.
 package fulfillment
 
 import (

@@ -9,6 +9,7 @@
 // commerce_worker EXECUTE), river_payment (InsertTx of payment_reconcile_v1 in the record tx).
 // Used by: NewPaymentWorkerClient (registered on the profile queue) and SignalWorker (refund/charge
 // branches share loadRefund/clientForRefund/recordRefund below).
+
 package payments
 
 import (

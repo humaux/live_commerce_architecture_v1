@@ -2,6 +2,7 @@
 // §13, integrator rulings 7, 8 and 10 of docs/delivery/units/stripe-b1-rulings.md).
 // Ordering rule for every operation: validate input, then provider verification, then seal, then
 // exactly one SQL call. Nothing is written when verification fails.
+
 package stripeadmin
 
 import (

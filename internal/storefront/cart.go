@@ -1,5 +1,7 @@
-// Package storefront owns buyer purchase intent and immutable price snapshots.
-// It does not reserve stock, accept payment, resolve identity or call providers.
+// Package storefront owns buyer purchase intent and immutable price snapshots: the buyer catalog
+// read, cart, delivery destination and quote/revalidation.
+//
+// It never reserves stock, accepts payment, resolves identity or calls providers.
 package storefront
 
 import (

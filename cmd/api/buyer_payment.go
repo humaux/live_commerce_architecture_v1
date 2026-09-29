@@ -5,6 +5,7 @@
 // Depends on: internal/checkout (hosted service), internal/platform (hosted pool),
 // river_payment via an insert-only River client (payment query/signal jobs).
 // Used by: buyer.go (loadBuyerConfig / buildBuyerHandler).
+
 package main
 
 import (

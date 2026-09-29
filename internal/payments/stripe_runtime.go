@@ -1,5 +1,6 @@
 // stripe_runtime.go owns lease-bound Stripe client material for payment workers.
 // It never reads environment credentials, stores a process-global Stripe key, or calls Stripe at startup.
+
 package payments
 
 import (

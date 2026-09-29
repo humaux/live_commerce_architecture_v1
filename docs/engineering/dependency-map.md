@@ -7,7 +7,7 @@ third-party module was admitted.
 
 ## `cmd/admin-fixture`
 
-admin-fixture serves a disposable local database, never an existing shop.
+Command admin-fixture owns a disposable local fixture for the admin ledger UI: it migrates an empty lc_admin_fixture database on 127.0.0.1, seeds one store with nine sample SKUs and a dev session, writes a private 0600 env file for the dev Next adapter and serves the Go admin API on 127.0.0.1:18081.
 
 - Depends on (internal): `internal/catalog`, `internal/httpapi`, `internal/inventory`, `internal/platform`, `migrations`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`
@@ -15,7 +15,7 @@ admin-fixture serves a disposable local database, never an existing shop.
 
 ## `cmd/api`
 
-buyer_payment.go owns the API-side configuration and assembly of the hosted buyer payment service (PAYUNi always, Stripe Checkout when COMMERCE_STRIPE_CHECKOUT_ENABLED=1).
+Command api owns the API process assembly: it loads each feature's configuration (identity, accounts, buyer and hosted payment, Meta webhooks, Stripe webhooks, Studio, claims, merchant refunds), opens the scoped DB pools, builds the handlers and mounts them on one listener.
 
 - Depends on (internal): `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/httpapi`, `internal/identity`, `internal/identityhttp`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/live`, `internal/oidclogin`, `internal/payments/stripewebhook`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
@@ -23,7 +23,7 @@ buyer_payment.go owns the API-side configuration and assembly of the hosted buye
 
 ## `cmd/claims-worker`
 
-Command claims-worker is the T10c claims host (meta-claims-intake-v1 §5.3, IR-13): it runs the claims intake poller (internal/claimsintake) and the main-schema external_operation_v1 River worker whose only routes are the Meta private replies (internal/integrations/metareply).
+Command claims-worker owns the T10c claims host (meta-claims-intake-v1 §5.3, IR-13): it runs the claims intake poller (internal/claimsintake) and the main-schema external_operation_v1 River worker whose only routes are the Meta private replies (internal/integrations/metareply).
 
 - Depends on (internal): `internal/claims`, `internal/claimsintake`, `internal/integrations/core`, `internal/integrations/metareply`, `internal/jobqueue`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
@@ -31,7 +31,7 @@ Command claims-worker is the T10c claims host (meta-claims-intake-v1 §5.3, IR-1
 
 ## `cmd/expiry-worker`
 
-(no package doc — add one: PROCESS.md §5)
+Command expiry-worker owns the process that runs the checkout-expiry River queue (jobqueue.CheckoutExpiry): it turns due unpaid checkout holds into released stock through internal/checkout.ExpiryWorker, using its own worker DB login.
 
 - Depends on (internal): `internal/checkout`, `internal/jobqueue`, `internal/platform`
 - Depends on (third-party): —
@@ -39,7 +39,7 @@ Command claims-worker is the T10c claims host (meta-claims-intake-v1 §5.3, IR-1
 
 ## `cmd/media-worker`
 
-(no package doc — add one: PROCESS.md §5)
+Command media-worker owns the process that runs the live-media River queue: LiveKit Cloud Egress start/stop, recovery and browser-input plan execution through internal/live.NewMediaClient, on the media worker and executor DB logins.
 
 - Depends on (internal): `internal/integrations/livekit`, `internal/jobqueue`, `internal/live`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5/pgxpool`
@@ -47,7 +47,7 @@ Command claims-worker is the T10c claims host (meta-claims-intake-v1 §5.3, IR-1
 
 ## `cmd/meta-admin`
 
-Command meta-admin is the operator-only Meta registrar CLI (meta-claims-intake-v1 §7).
+Command meta-admin owns the operator-only Meta registrar CLI (meta-claims-intake-v1 §7).
 
 - Depends on (internal): `internal/command`, `internal/integrations/metareply`
 - Depends on (third-party): `github.com/jackc/pgx/v5/pgxpool`
@@ -55,7 +55,7 @@ Command meta-admin is the operator-only Meta registrar CLI (meta-claims-intake-v
 
 ## `cmd/meta-worker`
 
-(no package doc — add one: PROCESS.md §5)
+Command meta-worker owns the process that runs the Meta webhook consumer queue: it decrypts stored inbox payloads with the payload keyring (internal/integrations/meta) and, when the claims actor key is configured, stages claim-intake rows (meta-claims-intake-v1 §3).
 
 - Depends on (internal): `internal/integrations/meta`, `internal/jobqueue`, `internal/platform`
 - Depends on (third-party): —
@@ -63,7 +63,7 @@ Command meta-admin is the operator-only Meta registrar CLI (meta-claims-intake-v
 
 ## `cmd/migrate`
 
-Command migrate applies livecommerce/migrations (embedded, checksummed, forward-only) once and exits.
+Command migrate owns applying livecommerce/migrations (embedded, checksummed, forward-only) once and exits.
 
 - Depends on (internal): `migrations`
 - Depends on (third-party): `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
@@ -71,7 +71,7 @@ Command migrate applies livecommerce/migrations (embedded, checksummed, forward-
 
 ## `cmd/payment-worker`
 
-(no package doc — add one: PROCESS.md §5)
+Command payment-worker owns the process that runs one payment River queue, chosen by profile (SANDBOX or LIVE, jobqueue.ForProfile): PAYUNi query and capture reconciliation and, with COMMERCE_STRIPE_ENABLED=1 on SANDBOX only, the Stripe query, signal and refund workers of internal/payments.
 
 - Depends on (internal): `internal/integrations/accounts`, `internal/jobqueue`, `internal/payments`, `internal/platform`
 - Depends on (third-party): —
@@ -87,7 +87,7 @@ Command stripe-admin is the operator-only Stripe registrar CLI (contracts/stripe
 
 ## `deploy/tools/lcentry`
 
-File: deploy/tools/lcentry/main.go Purpose: Command lcentry is the tiny, stdlib-only launcher baked into every deploy image (lc-go, lc-admin, lc-storefront).
+Command lcentry owns the tiny, stdlib-only launcher baked into every deploy image (lc-go, lc-admin, lc-storefront).
 
 - Depends on (internal): —
 - Depends on (third-party): —
@@ -95,7 +95,7 @@ File: deploy/tools/lcentry/main.go Purpose: Command lcentry is the tiny, stdlib-
 
 ## `internal/buyer`
 
-Package buyer implements the internal anonymous buyer capability boundary.
+Package buyer owns the anonymous buyer capability boundary: issuing short-lived opaque capability tokens on the issuer pool and scoping every buyer transaction to one (tenant, store, owner, session) with a replay-safe command record.
 
 - Depends on (internal): `internal/command`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
@@ -103,7 +103,7 @@ Package buyer implements the internal anonymous buyer capability boundary.
 
 ## `internal/buyerhttp`
 
-Package buyerhttp is the private, BFF-only buyer transport.
+Package buyerhttp owns the private, BFF-only buyer transport (catalog, cart, quote, checkout, payment and claim routes).
 
 - Depends on (internal): `internal/buyer`, `internal/checkout`, `internal/claims`, `internal/command`, `internal/domains`, `internal/httperror`, `internal/pagination`, `internal/platform`, `internal/storefront`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`
@@ -111,7 +111,7 @@ Package buyerhttp is the private, BFF-only buyer transport.
 
 ## `internal/catalog`
 
-Package catalog implements the merchant-scoped catalog transaction slice.
+Package catalog owns the merchant-scoped catalog transaction slice: products, SKUs, price history, the wide product/SKU ledger read projection (contracts/admin-ledger-v1.md) and the purchase-entry read.
 
 - Depends on (internal): `internal/command`, `internal/domains`, `internal/pagination`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
@@ -119,7 +119,7 @@ Package catalog implements the merchant-scoped catalog transaction slice.
 
 ## `internal/checkout`
 
-Package checkout owns the trusted buyer checkout transaction.
+Package checkout owns the trusted buyer checkout transaction: Begin turns a priced cart snapshot into an order plus a stock hold, then hosted payment start (PAYUNi always, Stripe Checkout when enabled), the buyer's order and payment views, and the checkout-expiry worker that releases due holds.
 
 - Depends on (internal): `internal/buyer`, `internal/command`, `internal/fulfillment`, `internal/integrations/accounts`, `internal/integrations/psp/payuni`, `internal/integrations/psp/stripe`, `internal/inventory`, `internal/jobqueue`, `internal/pagination`, `internal/platform`, `internal/pricing`, `internal/storefront`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgtype`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
@@ -159,7 +159,7 @@ Package command owns scoped replay records and small transaction primitives.
 
 ## `internal/domains`
 
-Package domains resolves a published storefront from an exact trusted origin.
+Package domains owns resolving a published storefront from an exact, trusted origin to its published store route (domain, store, domain and publication versions), on the issuer pool.
 
 - Depends on (internal): `internal/command`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
@@ -167,7 +167,7 @@ Package domains resolves a published storefront from an exact trusted origin.
 
 ## `internal/fulfillment`
 
-Package fulfillment owns merchant delivery-service configuration revisions.
+Package fulfillment owns merchant delivery-service configuration revisions, per-market delivery allocation (which warehouses serve a country) and pickup attestation (buyer-scoped read and lock).
 
 - Depends on (internal): `internal/buyer`, `internal/command`, `internal/pagination`, `internal/platform`, `internal/pricing`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
@@ -175,7 +175,7 @@ Package fulfillment owns merchant delivery-service configuration revisions.
 
 ## `internal/httpapi`
 
-Package httpapi is the composition layer for authenticated admin routes.
+Package httpapi owns the composition layer for authenticated merchant/admin routes: routing, bearer resolution, request bounds and error mapping.
 
 - Depends on (internal): `internal/catalog`, `internal/claims`, `internal/command`, `internal/fulfillment`, `internal/httperror`, `internal/integrations/accounts`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/pagination`, `internal/payments`, `internal/platform`, `internal/pricing`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`
@@ -199,7 +199,7 @@ Package identity owns merchant login and first-store bootstrap.
 
 ## `internal/identityhttp`
 
-Package identityhttp exposes the trusted identity service only to the local BFF.
+Package identityhttp owns the trusted identity HTTP surface (/v1/identity/*) that only the local BFF may call, authenticated by a fixed BFF key: login start and complete, first store bootstrap and logout.
 
 - Depends on (internal): `internal/httperror`, `internal/identity`
 - Depends on (third-party): —
@@ -207,7 +207,7 @@ Package identityhttp exposes the trusted identity service only to the local BFF.
 
 ## `internal/integrations/accounts`
 
-Package accounts records merchant-owned provider credentials.
+Package accounts owns the custody of merchant-owned provider credentials: sealed key material, account records and the hosted-payment configuration read.
 
 - Depends on (internal): `internal/command`, `internal/integrations/core`, `internal/integrations/psp/payuni`, `internal/integrations/psp/stripe`, `internal/pagination`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
@@ -215,7 +215,7 @@ Package accounts records merchant-owned provider credentials.
 
 ## `internal/integrations/core`
 
-Package core owns the provider-neutral external-operation ledger boundary.
+Package core owns the provider-neutral external-operation ledger boundary: the external_operation records, their River dispatcher and the sealed-secret handle that provider routes receive.
 
 - Depends on (internal): `internal/command`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`
@@ -223,7 +223,7 @@ Package core owns the provider-neutral external-operation ledger boundary.
 
 ## `internal/integrations/livekit`
 
-Package livekit implements bounded LiveKit Cloud Egress and browser-input wire profiles.
+Package livekit owns the bounded LiveKit Cloud Egress and browser-input wire profiles: the HTTP client, response decoding, sealed project material and the media worker environment loader.
 
 - Depends on (internal): —
 - Depends on (third-party): —
@@ -231,23 +231,23 @@ Package livekit implements bounded LiveKit Cloud Egress and browser-input wire p
 
 ## `internal/integrations/meta`
 
-Package meta admits signed Meta webhook events.
+Package meta owns admission of signed Meta webhook events: HMAC verification, strict payload parsing (ParseStrict, the repo's duplicate-member-rejecting JSON entry point), normalization, the encrypted inbox, the River consumer and claim-intake staging.
 
 - Depends on (internal): `internal/claims/grammar`, `internal/command`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
-- Used by: `cmd/api`, `cmd/meta-worker`
+- Used by: `cmd/api`, `cmd/meta-worker`, `internal/integrations/metareply`
 
 ## `internal/integrations/metareply`
 
 Package metareply owns the first Meta private reply of a keyword-claim bundle (meta-claims-intake-v1 §6.3, §7): the dispatcher routes (facebook|instagram, meta.private_reply, service), the per-store Page-token custody (AES-256-GCM seal/open and the registrar call), and the fixed reply text.
 
-- Depends on (internal): `internal/claims`, `internal/command`, `internal/integrations/core`, `internal/platform`
+- Depends on (internal): `internal/claims`, `internal/command`, `internal/integrations/core`, `internal/integrations/meta`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
 - Used by: `cmd/claims-worker`, `cmd/meta-admin`
 
 ## `internal/integrations/psp/payuni`
 
-Package payuni implements the narrow PAYUNi UPP v2.0 wire profile.
+Package payuni owns the narrow PAYUNi UPP v2.0 wire profile: hosted-form signing, notification verification, trade query and the TWD amount rule.
 
 - Depends on (internal): —
 - Depends on (third-party): —
@@ -271,7 +271,7 @@ Package stripetest owns the independent MOCK Stripe HTTP service: Checkout sessi
 
 ## `internal/inventory`
 
-Package inventory implements ledger-backed physical inventory commands.
+Package inventory owns ledger-backed physical inventory commands: warehouses, on-hand adjustment, reserve and release, and the pure allocation planner.
 
 - Depends on (internal): `internal/command`, `internal/pagination`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
@@ -279,7 +279,7 @@ Package inventory implements ledger-backed physical inventory commands.
 
 ## `internal/jobqueue`
 
-(no package doc — add one: PROCESS.md §5)
+Package jobqueue owns the server-chosen River queue names (checkout expiry and the per-profile payment queues) and the shared worker Run loop that starts a client, announces readiness and stops it cleanly.
 
 - Depends on (internal): —
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/riverqueue/river`
@@ -287,7 +287,7 @@ Package inventory implements ledger-backed physical inventory commands.
 
 ## `internal/live`
 
-Package live owns the merchant-scoped planning draft aggregate.
+Package live owns the merchant-scoped live-planning aggregate: drafts, the Studio projection, rehearsal and media plans, the LiveKit Egress execution, stop and recovery workers, and browser- input preparation.
 
 - Depends on (internal): `internal/command`, `internal/integrations/livekit`, `internal/pagination`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgtype`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
@@ -303,7 +303,7 @@ Package merchantorders owns the private merchant order projection (identity.read
 
 ## `internal/oidclogin`
 
-Package oidclogin verifies an external OIDC login without exposing provider tokens or deriving application authorization from identity claims.
+Package oidclogin owns verification of an external OIDC login (discovery, PKCE S256, one-use code, ID-token signature and nonce) without exposing provider tokens.
 
 - Depends on (internal): —
 - Depends on (third-party): `github.com/coreos/go-oidc/v3/oidc`, `golang.org/x/oauth2`
@@ -311,7 +311,7 @@ Package oidclogin verifies an external OIDC login without exposing provider toke
 
 ## `internal/pagination`
 
-Package pagination provides bounded, opaque positions for scoped keyset lists.
+Package pagination owns bounded, opaque keyset positions for scoped lists: Encode and Decode bind a cursor to a tenant, store, collection, parent and filter.
 
 - Depends on (internal): `internal/command`
 - Depends on (third-party): —
@@ -319,7 +319,7 @@ Package pagination provides bounded, opaque positions for scoped keyset lists.
 
 ## `internal/payments`
 
-Package payments owns merchant payment-method configuration, not payment attempts.
+Package payments owns merchant payment-method configuration (methods.go) and the payment runtime on the profile queues: PAYUNi capture reconciliation and query workers, the Stripe Checkout query, signal and refund workers (stripe_*.go; contracts/stripe-psp-v1.md, stripe-refund-v1) and the lease-bound provider client material they use.
 
 - Depends on (internal): `internal/command`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/psp/payuni`, `internal/integrations/psp/stripe`, `internal/jobqueue`, `internal/pagination`, `internal/platform`, `internal/pricing`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
@@ -343,7 +343,7 @@ Package stripewebhook owns admission of signed Stripe webhook deliveries for one
 
 ## `internal/platform`
 
-Package platform provides the narrow HTTP and database foundation shared by the API process.
+Package platform owns the narrow HTTP and database foundation shared by the API process: pool opening per DB role, WithScope (token to tenant/store scope inside one transaction) and permission checks.
 
 - Depends on (internal): `internal/httperror`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
@@ -351,7 +351,7 @@ Package platform provides the narrow HTTP and database foundation shared by the 
 
 ## `internal/pricing`
 
-Package pricing owns merchant market policy writes and the pure quote money calculation.
+Package pricing owns merchant market policy writes (markets and their currency) and the pure quote money calculation.
 
 - Depends on (internal): `internal/command`, `internal/pagination`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
@@ -359,7 +359,7 @@ Package pricing owns merchant market policy writes and the pure quote money calc
 
 ## `internal/storefront`
 
-Package storefront owns buyer purchase intent and immutable price snapshots.
+Package storefront owns buyer purchase intent and immutable price snapshots: the buyer catalog read, cart, delivery destination and quote/revalidation.
 
 - Depends on (internal): `internal/buyer`, `internal/command`, `internal/fulfillment`, `internal/pagination`, `internal/pricing`
 - Depends on (third-party): `github.com/jackc/pgx/v5`
@@ -367,7 +367,7 @@ Package storefront owns buyer purchase intent and immutable price snapshots.
 
 ## `migrations`
 
-Package migrations applies forward-only, checksummed business migrations.
+Package migrations owns applying the embedded, forward-only, checksummed business SQL migrations (0001-) and the River schema, under one advisory lock, then exiting.
 
 - Depends on (internal): —
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river/riverdriver/riverpgxv5`, `github.com/riverqueue/river/rivermigrate`
@@ -375,7 +375,7 @@ Package migrations applies forward-only, checksummed business migrations.
 
 ## `tests/foundation`
 
-(no package doc — add one: PROCESS.md §5)
+Package foundation holds the real-PostgreSQL foundation and browser acceptance tests (files *_test.go, package foundation_test; browser gates need -tags browser).
 
 - Depends on (internal): —
 - Depends on (third-party): —
@@ -383,7 +383,7 @@ Package migrations applies forward-only, checksummed business migrations.
 
 ## `tests/integrations/meta`
 
-(no package doc — add one: PROCESS.md §5)
+Package meta holds the black-box Meta webhook protocol tests for internal/integrations/meta (files *_test.go, package meta_test).
 
 - Depends on (internal): —
 - Depends on (third-party): —

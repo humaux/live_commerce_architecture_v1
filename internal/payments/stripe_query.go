@@ -1,5 +1,6 @@
 // stripe_query.go owns the lease-fenced Stripe Checkout query lifecycle.
 // It never infers unpaid from timeout, retries create with a new key, or updates stock directly.
+
 package payments
 
 import (

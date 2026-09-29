@@ -1,4 +1,8 @@
-// Package pagination provides bounded, opaque positions for scoped keyset lists.
+// Package pagination owns bounded, opaque keyset positions for scoped lists: Encode and Decode bind
+// a cursor to a tenant, store, collection, parent and filter.
+//
+// It never authenticates (a cursor is untrusted input, re-checked with the caller's scope on every
+// read), never offers offset paging, and never returns an unbounded page.
 package pagination
 
 import (

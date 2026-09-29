@@ -1,5 +1,8 @@
-// Package buyerhttp is the private, BFF-only buyer transport. It borrows its
-// database pools; publication and buyer authority are resolved per request.
+// Package buyerhttp owns the private, BFF-only buyer transport (catalog, cart, quote, checkout,
+// payment and claim routes). It borrows its database pools; publication and buyer authority are
+// resolved per request. It never serves the public internet directly, never trusts Host or a tenant
+// id from the client, and holds no pricing or stock rule: it maps HTTP onto the storefront, checkout
+// and claims packages.
 package buyerhttp
 
 import (

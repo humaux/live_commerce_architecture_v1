@@ -1,6 +1,7 @@
 // inbox.go: the PG side of Stripe webhook admission (contracts/stripe-psp-v1.md §0.2, §9.1).
 // It never sees an unverified event: admit takes only a stripe.Event that the handler already
 // authenticated with the endpoint's own signing secrets.
+
 package stripewebhook
 
 import (

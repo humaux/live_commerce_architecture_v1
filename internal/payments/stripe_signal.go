@@ -2,6 +2,7 @@
 // It never treats an unauthenticated job argument as a payment or stock decision. A signal is a wake-up:
 // checkout signals retrieve the Checkout Session, refund signals (refund_id set) retrieve that refund,
 // and charge signals (receipt object_type charge, stripe-refund-v1 §6) record a charge snapshot.
+
 package payments
 
 import (

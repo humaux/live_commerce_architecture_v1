@@ -10,6 +10,7 @@
 // pre-check, commerce_runtime scope policy), payments.request_stripe_refund / _refresh and
 // identity.read_merchant_refunds (PG definers, EXECUTE commerce_runtime).
 // Used by: internal/httpapi/refunds.go (the only caller); orders.go is not edited.
+
 package merchantorders
 
 import (
