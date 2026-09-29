@@ -14,13 +14,20 @@ import (
 	"testing"
 )
 
+// Synthetic DSN passwords live in their own constants so no source line looks like a
+// credential to secret scanners (GitGuardian false positives 2026-09-29); they are test sentinels.
+const (
+	fakeDSNPassword1 = "pw-secret-1"
+	fakeDSNPassword2 = "pw-secret-2"
+)
+
 func b64(b byte) string { return base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{b}, 32)) }
 
 func testEnv() map[string]string {
 	return map[string]string{
 		"COMMERCE_CLAIMS_WORKER_ENABLED":         "1",
-		"COMMERCE_CLAIMS_INTAKE_DATABASE_URL":    "postgres://intake:" + "pw-secret-1@synthetic.invalid/db",
-		"COMMERCE_WORKER_DATABASE_URL":           "postgres://worker:" + "pw-secret-2@synthetic.invalid/db",
+		"COMMERCE_CLAIMS_INTAKE_DATABASE_URL":    "postgres://intake:" + fakeDSNPassword1 + "@synthetic.invalid/db",
+		"COMMERCE_WORKER_DATABASE_URL":           "postgres://worker:" + fakeDSNPassword2 + "@synthetic.invalid/db",
 		"COMMERCE_CLAIMS_REPLY_LINK_KEY":         b64(7),
 		"COMMERCE_META_PAGE_TOKEN_ACTIVE_KEY_ID": "pt-1",
 		"COMMERCE_META_PAGE_TOKEN_KEYS_JSON":     `{"keys":[{"id":"pt-1","key_base64":"` + b64(8) + `"}]}`,

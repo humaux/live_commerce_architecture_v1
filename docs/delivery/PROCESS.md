@@ -124,6 +124,9 @@ Comments explain *why* and *what it touches*, not what the next line does.
   tests, logs, commits or agent replies. Stripe keys must be `sk_test_`/`rk_test_`.
   Fake keys in tests are written split (`"sk_" + "test_..."`) so no key-shaped literal exists;
   CI step "No key-shaped secret literals" enforces it.
+  Synthetic DSN passwords go in their own constant (`const fakeDSNPassword1 = "..."`) and DSNs
+  reference it (`"postgres://u:" + fakeDSNPassword1 + "@h/db"`): splitting the literal alone was
+  still flagged by GitGuardian (2026-09-29).
 - Tenant/store scope comes from server-side auth only.
 - Migration numbers: this release branch owns 0060–0079. Only the integrator merges migrations,
   OpenAPI, shared JSON schema, go.mod/go.sum and pnpm-lock.
