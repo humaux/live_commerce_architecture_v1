@@ -7,8 +7,8 @@ command -v go >/dev/null
 # public official golden vector; missing Node must fail before starting fixtures.
 command -v node >/dev/null
 test_mode="${1:-foundation}"
-if [[ "$#" -gt 1 ]] || [[ "$test_mode" != foundation && "$test_mode" != --browser-identity && "$test_mode" != --browser-buyer && "$test_mode" != --browser-merchant-buyer && "$test_mode" != --browser-merchant-orders-bff && "$test_mode" != --browser-merchant-orders-ui && "$test_mode" != --browser-input-delivery && "$test_mode" != --browser-studio-bff && "$test_mode" != --browser-studio-ui && "$test_mode" != --browser-live-claims && "$test_mode" != --browser-order && "$test_mode" != --browser-payment && "$test_mode" != --checkout && "$test_mode" != --payment && "$test_mode" != --payment-worker && "$test_mode" != --expiry-worker && "$test_mode" != --storefront-resolver && "$test_mode" != --buyer-http && "$test_mode" != --purchase-entry && "$test_mode" != --merchant-orders && "$test_mode" != --meta-inbox && "$test_mode" != --meta-consumer && "$test_mode" != --meta-runtime && "$test_mode" != --legacy-isolation && "$test_mode" != --local-recovery && "$test_mode" != --live-planning && "$test_mode" != --live-authority && "$test_mode" != --live-media-plan && "$test_mode" != --live-media-execution && "$test_mode" != --live-browser-input && "$test_mode" != --live-media-input && "$test_mode" != --live-media-crash && "$test_mode" != --live-media-stop && "$test_mode" != --live-media-recovery && "$test_mode" != --live-media-runtime && "$test_mode" != --studio-backend ]]; then
-  printf 'Usage: bash scripts/dev/test-local.sh [--browser-identity|--browser-buyer|--browser-merchant-buyer|--browser-merchant-orders-bff|--browser-merchant-orders-ui|--browser-input-delivery|--browser-studio-bff|--browser-studio-ui|--browser-live-claims|--browser-order|--browser-payment|--checkout|--payment|--payment-worker|--expiry-worker|--storefront-resolver|--buyer-http|--purchase-entry|--merchant-orders|--meta-inbox|--meta-consumer|--meta-runtime|--legacy-isolation|--local-recovery|--live-planning|--live-authority|--live-media-plan|--live-media-execution|--live-browser-input|--live-media-input|--live-media-crash|--live-media-stop|--live-media-recovery|--live-media-runtime|--studio-backend]\n' >&2
+if [[ "$#" -gt 1 ]] || [[ "$test_mode" != foundation && "$test_mode" != --browser-identity && "$test_mode" != --browser-buyer && "$test_mode" != --browser-merchant-buyer && "$test_mode" != --browser-merchant-orders-bff && "$test_mode" != --browser-merchant-orders-ui && "$test_mode" != --browser-input-delivery && "$test_mode" != --browser-studio-bff && "$test_mode" != --browser-studio-ui && "$test_mode" != --browser-live-claims && "$test_mode" != --browser-order && "$test_mode" != --browser-payment && "$test_mode" != --stripe-browser && "$test_mode" != --checkout && "$test_mode" != --payment && "$test_mode" != --payment-worker && "$test_mode" != --expiry-worker && "$test_mode" != --storefront-resolver && "$test_mode" != --buyer-http && "$test_mode" != --purchase-entry && "$test_mode" != --merchant-orders && "$test_mode" != --meta-inbox && "$test_mode" != --meta-consumer && "$test_mode" != --meta-runtime && "$test_mode" != --legacy-isolation && "$test_mode" != --local-recovery && "$test_mode" != --live-planning && "$test_mode" != --live-authority && "$test_mode" != --live-media-plan && "$test_mode" != --live-media-execution && "$test_mode" != --live-browser-input && "$test_mode" != --live-media-input && "$test_mode" != --live-media-crash && "$test_mode" != --live-media-stop && "$test_mode" != --live-media-recovery && "$test_mode" != --live-media-runtime && "$test_mode" != --studio-backend ]]; then
+  printf 'Usage: bash scripts/dev/test-local.sh [--browser-identity|--browser-buyer|--browser-merchant-buyer|--browser-merchant-orders-bff|--browser-merchant-orders-ui|--browser-input-delivery|--browser-studio-bff|--browser-studio-ui|--browser-live-claims|--browser-order|--browser-payment|--stripe-browser|--checkout|--payment|--payment-worker|--expiry-worker|--storefront-resolver|--buyer-http|--purchase-entry|--merchant-orders|--meta-inbox|--meta-consumer|--meta-runtime|--legacy-isolation|--local-recovery|--live-planning|--live-authority|--live-media-plan|--live-media-execution|--live-browser-input|--live-media-input|--live-media-crash|--live-media-stop|--live-media-recovery|--live-media-runtime|--studio-backend]\n' >&2
   exit 2
 fi
 if [[ "$test_mode" == --browser-merchant-buyer ]]; then
@@ -73,6 +73,34 @@ fi
 if [[ "$test_mode" == --browser-payment ]]; then
   test -f tests/foundation/browser_payment_chain_test.go
 fi
+if [[ "$test_mode" == --stripe-browser ]]; then
+  # SP18 / SU05-SU09 (contracts/stripe-buyer-ui-v1.md §9). Steps can be narrowed with
+  # LC_STRIPE_BROWSER_STEPS (default: all); only sp18/su07/su09 need the SANDBOX variables.
+  test -f tests/foundation/browser_stripe_test.go
+  test -f tests/storefront/stripe-browser.mjs
+  test -f tests/storefront/payuni-ui-baseline.mjs
+  stripe_steps=",${LC_STRIPE_BROWSER_STEPS:-node-env,payuni-baseline,sp18,su07,su09},"
+  stripe_key=""
+  if [[ "$stripe_steps" == *,sp18,* || "$stripe_steps" == *,su07,* || "$stripe_steps" == *,su09,* || "$stripe_steps" == *,obs,* ]]; then
+    if [[ "${STRIPE_BROWSER:-}" != 1 || "${STRIPE_SANDBOX:-}" != 1 ]]; then
+      printf 'NOT_RUN: SP18 requires STRIPE_BROWSER=1 and STRIPE_SANDBOX=1 (Stripe test-mode key from secrets.env, account acct_1UJDb0RusP6Wwj7e); nothing was started.\n' >&2
+      exit 2
+    fi
+    # Only STRIPE_SECRET_KEY is read, in a subshell (never `set -a` the file, never echoed).
+    stripe_secrets="${LC_SECRETS_FILE:-$HOME/.config/livecommerce/secrets.env}"
+    stripe_key="$(set +x; . "$stripe_secrets" 2>/dev/null; printf %s "${STRIPE_SECRET_KEY:-}")"
+    if [[ ! "$stripe_key" =~ ^(sk|rk)_test_ ]]; then
+      printf 'NOT_RUN: STRIPE_SECRET_KEY in secrets.env is missing or not a Stripe test key (^(sk|rk)_test_); nothing was started.\n' >&2
+      exit 2
+    fi
+    stripe_account="${STRIPE_ACCOUNT_ID:-acct_1UJDb0RusP6Wwj7e}"
+    if [[ "$stripe_account" != acct_1UJDb0RusP6Wwj7e ]]; then
+      printf 'NOT_RUN: STRIPE_ACCOUNT_ID must be the SANDBOX fixture account (matches SP16).\n' >&2
+      exit 2
+    fi
+    printf 'SANDBOX checkout.stripe.com test mode; no live charge; SP17 webhook NOT_RUN\n'
+  fi
+fi
 if [[ "$test_mode" == --browser-merchant-orders-ui ]]; then
   test -f tests/foundation/browser_merchant_orders_ui_test.go
   test -f tests/admin/orders-ui.spec.ts
@@ -118,7 +146,7 @@ if [[ "$test_mode" == --browser-studio-bff ]]; then
   node --test --experimental-strip-types tests/admin/studio-request.test.ts tests/admin/studio-input.test.ts
   mkdir -p output/playwright
 fi
-if [[ "$test_mode" == --browser-buyer || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-order || "$test_mode" == --browser-payment || "$test_mode" == --browser-live-claims ]]; then
+if [[ "$test_mode" == --browser-buyer || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-order || "$test_mode" == --browser-payment || "$test_mode" == --stripe-browser || "$test_mode" == --browser-live-claims ]]; then
   command -v pnpm >/dev/null
   command -v openssl >/dev/null
   COMMERCE_BUYER_WEB_ENABLED=0 pnpm run build:storefront
@@ -134,12 +162,31 @@ fi
 # A task-owned, temporary PG only. Never use a developer's existing DATABASE_URL.
 test_container="lc-foundation-test-$$"
 test_owned=0
+stripe_lock=""
 cleanup() {
+  if [[ -n "$stripe_lock" ]]; then rm -rf "$stripe_lock"; fi
   if [[ "$test_owned" == 1 ]] && [[ "$(docker inspect -f '{{index .Config.Labels "livecommerce.fixture"}}' "$test_container" 2>/dev/null || true)" == "$test_container" ]]; then
     docker rm -f "$test_container" >/dev/null
   fi
 }
 trap cleanup EXIT INT TERM
+if [[ "$test_mode" == --stripe-browser ]]; then
+  # One PG-holding run at a time machine-wide (Docker Desktop memory); same lock as test-focused.sh.
+  # Bounded wait (LC_TEST_LOCK_WAIT, default 300 s): a foreign holder must not deadlock this gate. On
+  # timeout the run proceeds WITHOUT exclusivity and says so; it never removes or edits a live lock.
+  lock_dir="${LC_TEST_LOCK_DIR:-${TMPDIR:-/tmp}/lc-test-pg.lock}"
+  lock_deadline=$(( $(date +%s) + ${LC_TEST_LOCK_WAIT:-300} ))
+  until mkdir "$lock_dir" 2>/dev/null; do
+    holder="$(cat "$lock_dir/pid" 2>/dev/null || true)"
+    if [[ -n "$holder" ]] && ! kill -0 "$holder" 2>/dev/null; then rm -rf "$lock_dir"; continue; fi
+    if (( $(date +%s) >= lock_deadline )); then
+      printf 'WARNING: PG lock %s still held by pid %s after %ss; continuing without exclusivity.\n' "$lock_dir" "${holder:-?}" "${LC_TEST_LOCK_WAIT:-300}" >&2
+      lock_dir=""; break
+    fi
+    sleep 2
+  done
+  if [[ -n "$lock_dir" ]]; then echo $$ > "$lock_dir/pid"; stripe_lock="$lock_dir"; fi
+fi
 export POSTGRES_PASSWORD
 POSTGRES_PASSWORD="$(openssl rand -hex 24)"
 # Memory: on Linux cgroup v2 the 256 MiB tmpfs data directory is charged to the
@@ -203,6 +250,94 @@ elif [[ "$test_mode" == --browser-order ]]; then
 elif [[ "$test_mode" == --browser-payment ]]; then
   LC_BROWSER_PAYMENT_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=180s -run '^TestBrowserBuyerPaymentUI$' -v ./tests/foundation
   printf 'PASS: isolated buyer payment UI/native POST gate with a local mock PSP; not provider payment or deployment acceptance.\n'
+elif [[ "$test_mode" == --stripe-browser ]]; then
+  # Evidence goes to the MAIN checkout (worktrees are deleted after merge; PROCESS.md §4).
+  stripe_main="$(cd "$(git rev-parse --git-common-dir)/.." && pwd)"
+  stripe_out="$stripe_main/output/stripe-b2-browser-tests"
+  mkdir -p "$stripe_out"
+  stripe_sha="$(git rev-parse --short=12 HEAD)"
+  stripe_status=0
+  # Every go test process needs a FRESH cluster: the foundation fixture creates cluster-scoped roles
+  # (foundation_api, ...) and refuses a cluster that already has them. Recreate the task-owned container
+  # (same pinned image, limits and loopback binding as above) before each step.
+  stripe_fresh_pg() {
+    if [[ "$(docker inspect -f '{{index .Config.Labels "livecommerce.fixture"}}' "$test_container" 2>/dev/null || true)" == "$test_container" ]]; then
+      docker rm -f "$test_container" >/dev/null
+    fi
+    docker run -d --pull=never --name "$test_container" \
+      --label "livecommerce.fixture=$test_container" --memory=1g --cpus=1 --pids-limit=128 \
+      --tmpfs /var/lib/postgresql:rw,size=268435456 \
+      -e POSTGRES_PASSWORD -e POSTGRES_DB=lc_foundation_test \
+      -p 127.0.0.1::5432 \
+      postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 \
+      -c shared_buffers=32MB -c max_connections=30 >/dev/null
+    for ((attempt=0; attempt<40; attempt++)); do
+      if docker exec "$test_container" pg_isready -h 127.0.0.1 -U postgres -d lc_foundation_test >/dev/null 2>&1; then break; fi
+      sleep 0.5
+    done
+    docker exec "$test_container" pg_isready -h 127.0.0.1 -U postgres -d lc_foundation_test >/dev/null
+    docker exec "$test_container" createdb -U postgres lc_admin_fixture
+    test_port="$(docker port "$test_container" 5432/tcp)"
+    [[ "$test_port" == 127.0.0.1:* ]]
+    export LC_TEST_DATABASE_URL="postgres://postgres:${POSTGRES_PASSWORD}@${test_port}/lc_foundation_test?sslmode=disable"
+    export LC_ADMIN_GUARD_DSN="postgres://postgres:${POSTGRES_PASSWORD}@${test_port}/lc_admin_fixture?sslmode=disable"
+  }
+  # run_stripe_step <label> <go -run regex> <timeout> <min leaf cases> [env assignments...]
+  # Parses `go test -json` (contract §14 parsing rule): any SKIP, any FAIL, fewer leaf cases than
+  # expected, zero passing tests, a missing log or a non-zero exit is FAIL, never PASS.
+  run_stripe_step() {
+    local label="$1" regex="$2" tmo="$3" min="$4"; shift 4
+    local log="$stripe_out/$stripe_sha-$label.jsonl" started rc=0 verdict=0 counts
+    stripe_fresh_pg
+    started="$(date +%s)"
+    # Only this go test process (never Node) receives the Stripe key; the Go test strips it again.
+    env "$@" LC_STRIPE_BROWSER_ACCEPTANCE=1 LC_STRIPE_EVIDENCE_ROOT="$stripe_out" LC_BASELINE_OUT_DIR="$stripe_out" \
+      GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout="$tmo" -json -run "$regex" ./tests/foundation >"$log" 2>"$log.stderr" || rc=$?
+    counts="$(python3 - "$log" "$min" <<'PY'
+import json,sys
+t={"pass":0,"fail":0,"skip":0};leaf=dict(t)
+try:
+    lines=open(sys.argv[1]).read().splitlines()
+except OSError:
+    print("missing-log VERDICT=1");sys.exit(0)
+for line in lines:
+    try: e=json.loads(line)
+    except ValueError: continue
+    a=e.get("Action");n=e.get("Test")
+    if n and a in t:
+        t[a]+=1
+        if "/" in n: leaf[a]+=1
+ok=t["fail"]==0 and t["skip"]==0 and t["pass"]>0 and leaf["pass"]>=int(sys.argv[2])
+print("pass=%d fail=%d skip=%d leaf_pass=%d leaf_fail=%d leaf_skip=%d VERDICT=%d"%(t["pass"],t["fail"],t["skip"],leaf["pass"],leaf["fail"],leaf["skip"],0 if ok else 1))
+PY
+)"
+    verdict="${counts##*VERDICT=}"; counts="${counts%% VERDICT=*}"
+    printf '%s: %s exit=%d verdict=%d duration=%ds log=%s\n' "$label" "$counts" "$rc" "$verdict" "$(( $(date +%s) - started ))" "$log"
+    if [[ "$rc" != 0 || "$verdict" != 0 ]]; then stripe_status=1; printf 'FAIL: %s (go test exit=%d, parse verdict=%d)\n' "$label" "$rc" "$verdict" >&2; fi
+  }
+  sandbox_env=(STRIPE_BROWSER=1 STRIPE_SANDBOX=1 STRIPE_ACCOUNT_ID="${stripe_account:-}" STRIPE_SECRET_KEY="$stripe_key")
+  if [[ "$stripe_steps" == *,node-env,* ]]; then
+    run_stripe_step node-env '^TestBrowserStripeNodeEnv$' 120s 0
+  fi
+  if [[ "$stripe_steps" == *,payuni-baseline,* ]]; then
+    run_stripe_step payuni-baseline '^TestBrowserPayuniBaseline$' 300s 0 LC_BASELINE_SHA="$stripe_sha" LC_BASELINE_MUTATE="${LC_BASELINE_MUTATE:-}"
+  fi
+  if [[ "$stripe_steps" == *,sp18,* ]]; then
+    if [[ "${STRIPE_BROWSER_SPLIT:-}" == 1 ]]; then
+      for scenario in A B C; do run_stripe_step "sp18-$scenario" "^TestBrowserStripeCheckout\$/^SP18$scenario" 900s 2 "${sandbox_env[@]}"; done
+    else
+      run_stripe_step sp18 '^TestBrowserStripeCheckout$/^SP18' 900s 6 "${sandbox_env[@]}"
+    fi
+  fi
+  if [[ "$stripe_steps" == *,obs,* ]]; then
+    # Developer-only (not in the default steps): real hosted page observed without the B2 buyer UI.
+    run_stripe_step obs "^TestBrowserStripeCheckout\$/^${LC_STRIPE_OBS:-OBS}" 900s 1 "${sandbox_env[@]}" STRIPE_BROWSER_OBSERVE=1
+  fi
+  if [[ "$stripe_steps" == *,su07,* ]]; then run_stripe_step su07 '^TestBrowserStripeCheckout$/^SU07' 900s 1 "${sandbox_env[@]}"; fi
+  if [[ "$stripe_steps" == *,su09,* ]]; then run_stripe_step su09 '^TestBrowserStripeCheckout$/^SU09' 900s 2 "${sandbox_env[@]}"; fi
+  if [[ "$stripe_status" != 0 ]]; then printf 'FAIL: --stripe-browser (see logs in %s)\n' "$stripe_out" >&2; exit 1; fi
+  printf 'PASS: stripe-browser steps [%s] (SP18 = SANDBOX, SU07/SU09 = MOCK, SU05 baseline capture).\n' "${stripe_steps//,/ }"
+  if [[ -n "$stripe_key" ]]; then printf 'SANDBOX checkout.stripe.com test mode; no live charge; SP17 webhook NOT_RUN\n'; fi
 elif [[ "$test_mode" == --checkout ]]; then
   # Focused diagnosis uses the same isolated real PG and cleanup guard. It never
   # substitutes for the full foundation/race/vet release gate below.
