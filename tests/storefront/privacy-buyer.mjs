@@ -218,7 +218,12 @@ try {
   await expect(p4.getByTestId("privacy-marketing_messages")).toContainText(en.granted); // state is server-side, not local storage
   assert.equal(await p4.evaluate(() => JSON.stringify({ ...localStorage, ...sessionStorage }).includes("marketing_messages")), false, "no privacy data in browser storage");
   // download: a JSON file, buyer envelope, no customer id
-  const [download] = await Promise.all([p4.waitForEvent("download"), p4.getByTestId("privacy-download").click()]);
+  const exportResponses = [];
+  p4.on("response", (r) => { if (/\/api\/buyer\/privacy\/export$/.test(new URL(r.url()).pathname)) exportResponses.push(r); });
+  const [download] = await Promise.all([p4.waitForEvent("download", { timeout: 15000 }), p4.getByTestId("privacy-download").click()]).catch(async (error) => {
+    const seen = await Promise.all(exportResponses.map(async (r) => `${r.status()} ${(await r.text()).slice(0, 300)}`));
+    throw new Error(`no download: message=${JSON.stringify(await p4.getByTestId("privacy-message").textContent().catch(() => null))} export responses=${JSON.stringify(seen)} cause=${error.message.split("\n")[0]}`);
+  });
   const doc = JSON.parse(await readFile(await download.path(), "utf8"));
   assert.equal(doc.format, "lc.customer-export.v1");
   assert.equal("customer_id" in doc, false, "the buyer export has no customer id");
