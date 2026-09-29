@@ -200,9 +200,9 @@ try {
   await expect(ui.getByRole("radio").first()).toBeEnabled();
   await expect(ui.getByText("示意資料 · 測試環境",{exact:true})).toBeVisible();
   assert.equal(await ui.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
-  await mkdir(path.join(root,".impeccable/review"),{recursive:true});
-  await mkdir(path.join(root,".impeccable/review/buyer-inline"),{recursive:true});
-  await ui.screenshot({path:path.join(root,".impeccable/review/buyer-inline/hero-repro.png")});
+  // F7: run output never rewrites the tracked .impeccable/review baselines.
+  await mkdir(path.join(root,"output/playwright/review/buyer-inline"),{recursive:true});
+  await ui.screenshot({path:path.join(root,"output/playwright/review/buyer-inline/hero-repro.png")});
   await ui.screenshot({path:path.join(evidence,"buyer-mobile.png"),fullPage:true});
   await ui.getByRole("button",{name:"增加數量",exact:true}).click();
   await expect(ui.getByRole("spinbutton")).toHaveValue("2");

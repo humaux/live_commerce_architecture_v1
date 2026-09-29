@@ -11,7 +11,8 @@
 #   (scripts/dev/test-node.sh, ruling F9), G07 the whole foundation
 #   package (real PG, race, vet: test-local.sh), then EVERY browser mode listed in test-local.sh's
 #   usage line (names containing "browser", plus --browser-e2e), SANDBOX modes only with the Stripe
-#   TEST key present, then G90 deploy smoke static and G91 deploy smoke full.
+#   TEST key present, then G90 deploy smoke static, G91 deploy smoke full and G99 (no gate rewrote a
+#   tracked .impeccable file, ruling F7; full runs only).
 # Usage: bash scripts/dev/release-gate.sh [--strict] [--list] [--only ID[,ID...]]
 #   --strict  exit 3 when there is no FAIL but at least one NOT_RUN (use for release acceptance)
 #   --list    print the step ids and exit
@@ -75,7 +76,7 @@ browser_modes=$(printf '%s\n' "$modes" | grep -E -- '^--(.*browser.*|e2e)$' || t
 all_modes=$(printf '%s\n' "$modes" | grep -c . | tr -d ' ')
 ids="G01 G02 G03 G04 G05 G06 G06n G07"
 for m in $browser_modes; do ids="$ids B-${m#--}"; done
-ids="$ids G90 G91"
+ids="$ids G90 G91 G99"
 
 if ((list)); then
   for id in $ids; do echo "$id"; done
@@ -87,6 +88,7 @@ if [[ -z "$browser_modes" ]]; then
 fi
 
 mkdir -p "$OUT" || exit 2
+impeccable_before=$(git status --porcelain --untracked-files=no -- .impeccable 2>/dev/null)
 : >"$OUT/results.tsv"
 rows=""
 n_pass=0 n_fail=0 n_notrun=0
@@ -440,6 +442,19 @@ if selected G91; then
     run_cmd G91 bash deploy/scripts/smoke.sh full
     v=$(smoke_verdict "$LOG")
     record G91 DEPLOY "${v%%|*}" "smoke full: ${v#*|}" "$rc" "$LOG"
+  fi
+fi
+
+# ---- G99 no gate rewrote a tracked file (ruling F7: run output belongs under output/) --------------------
+if [[ -z "$only" ]]; then
+  changed=$(git status --porcelain --untracked-files=no -- .impeccable 2>/dev/null)
+  if [[ "$changed" != "$impeccable_before" ]]; then
+    printf '%s\n' "$changed" >"$OUT/G99.log"
+    # Restore only when the run started clean, so an owner's uncommitted edit is never discarded.
+    [[ -z "$impeccable_before" ]] && git checkout -- .impeccable 2>/dev/null
+    record G99 STATIC FAIL "a gate rewrote tracked .impeccable files (restored if the run started clean; see log)" 1 "$OUT/G99.log"
+  else
+    record G99 STATIC PASS "no tracked .impeccable file rewritten by the run" 0 -
   fi
 fi
 

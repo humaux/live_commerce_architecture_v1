@@ -23,8 +23,8 @@ const pause=ms=>new Promise(r=>setTimeout(r,ms));
 const listen=async s=>{s.listen(0,"127.0.0.1");await once(s,"listening");return s.address().port;};
 const pass=name=>{observations.push(name);console.log(`PASS ${name}`);};
 const certDir=await mkdtemp(path.join(tmpdir(),"lc-order-edge-"));
-const review=path.join(root,".impeccable/review/buyer-order");
-const historyReview=path.join(root,".impeccable/review/buyer-history");
+const review=path.join(root,"output/playwright/review/buyer-order");
+const historyReview=path.join(root,"output/playwright/review/buyer-history");
 let browser,edge,proxy,hook,sessionResets=0;
 const calls=[];
 async function control(resource,method="GET") {
@@ -130,7 +130,6 @@ async function rememberCookie(c) {
 }
 async function capture(p,name,fullPage=true,directory=review) {
   await mkdir(directory,{recursive:true});
-  if(directory===historyReview)await writeFile(path.join(directory,".gitignore"),"*\n");
   await p.screenshot({path:path.join(evidence,name),fullPage});await copyFile(path.join(evidence,name),path.join(directory,name));
 }
 try {
