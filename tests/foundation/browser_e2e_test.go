@@ -31,7 +31,7 @@ package foundation_test
 // MCI gates), the storefront publication/domain rows, the Stripe account registration (cmd/stripe-admin equivalent),
 // and the clock nudges of the worker's sleeping refund jobs (wakeAllRefunds, as RF11).
 //
-// Red runs (PROCESS §2.4): LC_E2E_MUTATE=replay (a NEW comment instead of a replay), isolation (the creator's token stands
+// Red runs (PROCESS §2.4): LC_E2E_MUTATE=replay (a NEW comment instead of a replay), negatives (the keyword itself instead of the negation), isolation (the creator's token stands
 // in for the foreign tenant) and leak (a claim token lands in a log) each make the corresponding gate fail; the browser
 // gates were first red on the real product defect MDEF-1 (defects.json), a Go-side gate never turns a known defect green.
 // The PG budget (max_connections=30) is part of the harness: sampleConnections logs the peak.
@@ -843,24 +843,47 @@ func (x *e2eRun) replay(t *testing.T) map[string]any {
 	return map[string]any{"replay_status": status, "facts": fmt.Sprintf("%+v", after)}
 }
 
-// negatives: a refusal and a question containing the keyword must not claim anything or send anything.
+// negatives: a refusal and a question containing the keyword must not claim anything or send anything, AND must have
+// actually reached the grammar: each comment's intake row is APPLIED with grammar NO_MATCH, and the claims ledger grew
+// by exactly those two REJECTED/NO_MATCH events (contract R01/I07). Without that, a dropped or FAILED comment would
+// pass this gate untested.
 func (x *e2eRun) negatives(t *testing.T) map[string]any {
 	t.Helper()
 	x.intakeQuiet(t, "before negatives")
 	before := x.claimFacts()
+	noMatchBefore := x.count(`SELECT count(*) FROM claims.events WHERE tenant_id=$1 AND store_id=$2 AND outcome='REJECTED' AND reason='NO_MATCH'`, x.tenant, x.store)
 	lines := x.count(`SELECT coalesce(sum(quantity),0)::int FROM claims.lines WHERE tenant_id=$1 AND store_id=$2`, x.tenant, x.store)
-	for _, text := range []string{"不要A1", "A1是不是红色"} {
-		x.comment(t, text, "")
+	texts := []string{"不要A1", "A1是不是红色"}
+	if os.Getenv("LC_E2E_MUTATE") == "negatives" { // red-run mutation (PROCESS §2.4): a real claim keyword instead of the negation must trip the gates below
+		texts = []string{"A1", "A1"}
+	}
+	var refs []string
+	for _, text := range texts {
+		refs = append(refs, x.comment(t, text, "")["comment_id"].(string))
 	}
 	x.intakeQuiet(t, "after negatives")
+	for i, ref := range refs {
+		var state, kind, outcome, reason string
+		if err := x.e.f.owner.QueryRow(x.ctx, `SELECT i.state,i.grammar_kind,coalesce(e.outcome,''),coalesce(e.reason,'')
+			FROM claims.meta_intake i LEFT JOIN claims.events e ON e.tenant_id=i.tenant_id AND e.store_id=i.store_id AND e.id=i.applied_event_id
+			WHERE i.tenant_id=$1 AND i.store_id=$2 AND i.comment_ref=$3`, x.tenant, x.store, ref).Scan(&state, &kind, &outcome, &reason); err != nil {
+			t.Fatalf("negative comment %d (%q) has no intake row: %v", i, texts[i], err)
+		}
+		if state != "APPLIED" || kind != "NO_MATCH" || outcome != "REJECTED" || reason != "NO_MATCH" {
+			t.Fatalf("negative comment %d (%q) did not reach the grammar as NO_MATCH: intake=%s grammar=%s event=%s/%s", i, texts[i], state, kind, outcome, reason)
+		}
+	}
 	after := x.claimFacts()
+	if got := x.count(`SELECT count(*) FROM claims.events WHERE tenant_id=$1 AND store_id=$2 AND outcome='REJECTED' AND reason='NO_MATCH'`, x.tenant, x.store); got != noMatchBefore+len(texts) || after.events != before.events+len(texts) {
+		t.Fatalf("claims.events must grow by exactly %d REJECTED/NO_MATCH rows: total %d->%d, NO_MATCH %d->%d", len(texts), before.events, after.events, noMatchBefore, got)
+	}
 	if after.accepted != before.accepted || after.bundles != before.bundles || after.ops != before.ops || after.sends != before.sends {
 		t.Fatalf("a refusal/question comment created a claim or a send: before=%+v after=%+v", before, after)
 	}
 	if got := x.count(`SELECT coalesce(sum(quantity),0)::int FROM claims.lines WHERE tenant_id=$1 AND store_id=$2`, x.tenant, x.store); got != lines {
 		t.Fatalf("claimed quantity moved %d -> %d", lines, got)
 	}
-	return map[string]any{"events_before": before.events, "events_after": after.events, "accepted": after.accepted}
+	return map[string]any{"events_before": before.events, "events_after": after.events, "no_match_events": noMatchBefore + len(texts), "accepted": after.accepted}
 }
 
 // ---------------------------------------------------------------------------------------------------------------
