@@ -273,7 +273,7 @@ func sbNew(t *testing.T, mode string) *sbEnv {
 	// TWD, not HKD: psSetupItemsOn fixes store/market/price currency to TWD (2500 = NT$25.00 for the
 	// buyer's quantity 2). Real Stripe accepted the TWD probe at 2500 but rejected 100 and 1200
 	// (SANDBOX finding, 2026-09-29), so the qualification probe uses the order amount; the method
-	// bounds stay the contract's local prefilter (TWD 100..99999900).
+	// bounds stay the contract's local prefilter (TWD 2500..99999900).
 	if e.qual, err = e.reg.Qualify(ctx, e.scope, stripeadmin.QualifyInput{ConnectionID: e.conn, AccountID: e.account, SecretKey: e.secret,
 		Profile: e.profile, Currency: "TWD", ReturnURL: sbReturnURL, ExpectedVersion: 1, AmountMinor: 2500}); err != nil {
 		t.Fatalf("qualify Stripe method: %v", err)
@@ -317,7 +317,7 @@ func (e *sbEnv) setMethod(t *testing.T, enabled bool) {
 	t.Helper()
 	expected := e.method
 	v, err := e.reg.SetMethod(context.Background(), e.scope, stripeadmin.MethodInput{MarketID: e.p.market.ID, Country: "TW", ConnectionID: e.conn,
-		QualificationID: e.qual, ExpectedVersion: expected, Enabled: enabled, Visible: true, Sort: 1, MinMinor: 100, MaxMinor: 99999900,
+		QualificationID: e.qual, ExpectedVersion: expected, Enabled: enabled, Visible: true, Sort: 1, MinMinor: 2500, MaxMinor: 99999900,
 		NameHans: "Stripe 测试卡付款", NameHant: "Stripe 測試卡付款", NameEN: "Stripe test card payment"})
 	if err != nil {
 		t.Fatalf("set Stripe method (enabled=%v): %v", enabled, err)

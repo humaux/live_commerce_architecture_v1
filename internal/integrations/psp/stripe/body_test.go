@@ -25,7 +25,8 @@ func TestStripeSP02Currency(t *testing.T) {
 		{"USD", 50}, {"USD", 99_999_999},
 		{"SGD", 50}, {"SGD", 12_345},
 		{"MYR", 200}, {"MYR", 99_999_999},
-		{"TWD", 100}, {"TWD", 12_300}, {"TWD", 99_999_900},
+		// TWD min 2500: Stripe SANDBOX rejected 100/1200, accepted 2500 (2026-09-29)
+		{"TWD", 2500}, {"TWD", 12_300}, {"TWD", 99_999_900},
 	}
 	for _, v := range ok {
 		got, err := UnitAmount(v.cur, v.amt)
@@ -39,7 +40,7 @@ func TestStripeSP02Currency(t *testing.T) {
 	}{
 		{"HKD", 399}, {"HKD", 100_000_000}, {"HKD", 0}, {"HKD", -400},
 		{"USD", 49}, {"SGD", 49}, {"MYR", 199}, {"MYR", 100_000_000},
-		{"TWD", 99}, {"TWD", 150}, {"TWD", 12_345}, {"TWD", 99_999_901}, {"TWD", 100_000_000},
+		{"TWD", 99}, {"TWD", 100}, {"TWD", 1200}, {"TWD", 2400}, {"TWD", 2499}, {"TWD", 150}, {"TWD", 12_345}, {"TWD", 99_999_901}, {"TWD", 100_000_000},
 		// Rejected currencies: JPY (superseded by §0.1), ×100 and payout-special cases,
 		// 3-decimal currencies, lowercase, empty and unknown codes.
 		{"JPY", 500}, {"ISK", 500}, {"UGX", 500}, {"HUF", 500}, {"BHD", 500}, {"KWD", 500},

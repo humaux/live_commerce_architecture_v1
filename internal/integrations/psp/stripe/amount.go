@@ -32,7 +32,8 @@ var currencyRules = map[string]currencyRule{
 	"SGD": {min: 50, max: 99_999_999, step: 1},
 	"MYR": {min: 200, max: 99_999_999, step: 1},
 	// TWD: whole NT$ only (step 100) because Stripe pays TWD out as zero-decimal.
-	"TWD": {min: 100, max: 99_999_900, step: 100},
+	// TWD min 2500: Stripe SANDBOX rejected 100/1200, accepted 2500 (2026-09-29)
+	"TWD": {min: 2500, max: 99_999_900, step: 100},
 }
 
 // UnitAmount maps an ISO 4217 amount in minor units to Stripe's unit_amount for an

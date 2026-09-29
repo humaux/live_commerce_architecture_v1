@@ -8,7 +8,8 @@ RETURNS boolean LANGUAGE sql IMMUTABLE SET search_path=pg_catalog AS $$
   WHEN 'USD' THEN p_minor BETWEEN 50 AND 99999999
   WHEN 'SGD' THEN p_minor BETWEEN 50 AND 99999999
   WHEN 'MYR' THEN p_minor BETWEEN 200 AND 99999999
-  WHEN 'TWD' THEN p_minor BETWEEN 100 AND 99999900 AND p_minor%100=0
+  -- TWD min 2500: Stripe SANDBOX rejected 100/1200, accepted 2500 (2026-09-29)
+  WHEN 'TWD' THEN p_minor BETWEEN 2500 AND 99999900 AND p_minor%100=0
   ELSE false END,false)
 $$;
 CREATE FUNCTION payments.stripe_unit_amount(p_currency text,p_minor bigint)

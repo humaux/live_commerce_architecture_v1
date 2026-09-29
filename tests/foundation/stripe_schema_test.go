@@ -91,7 +91,8 @@ func TestStripeSP02Currency(t *testing.T) {
 		{"USD minimum", "USD", 50, true}, {"USD below", "USD", 49, false},
 		{"SGD minimum", "SGD", 50, true}, {"SGD below", "SGD", 49, false},
 		{"MYR minimum", "MYR", 200, true}, {"MYR below", "MYR", 199, false},
-		{"TWD minimum", "TWD", 100, true}, {"TWD step", "TWD", 101, false},
+		// TWD min 2500: Stripe SANDBOX rejected 100/1200, accepted 2500 (2026-09-29)
+		{"TWD minimum", "TWD", 2500, true}, {"TWD below", "TWD", 2499, false}, {"TWD old min", "TWD", 100, false}, {"TWD step", "TWD", 2501, false},
 		{"TWD maximum", "TWD", 99999900, true}, {"TWD overflow", "TWD", 100000000, false},
 		{"USD maximum", "USD", 99999999, true}, {"USD overflow", "USD", 100000000, false},
 		{"JPY denied", "JPY", 500, false}, {"ISK denied", "ISK", 500, false},

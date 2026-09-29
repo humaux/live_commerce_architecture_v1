@@ -59,7 +59,7 @@ func sp15AdminCases() map[string][]string {
 		"rotate":   sp15AdminArgs("rotate", "--connection", sp15UUIDA, "--expected-version", "1"),
 		"webhook":  sp15AdminArgs("webhook", "--connection", sp15UUIDA, "--profile", "PROVIDER_MOCK", "--expected-version", "0", "--enabled=true"),
 		"qualify": sp15AdminArgs("qualify", "--connection", sp15UUIDA, "--expected-version", "1", "--profile", "SANDBOX", "--currency", "TWD",
-			"--amount-minor", "100", "--return-url", "https://checkout.example.test/payment/return"),
+			"--amount-minor", "2500", "--return-url", "https://checkout.example.test/payment/return"),
 		"method": sp15AdminArgs("method", "--market", sp15UUIDA, "--country", "TW", "--connection", sp15UUIDB, "--qualification", sp15UUIDC, "--expected-version", "0",
 			"--enabled=true", "--visible=true", "--sort", "1", "--min-minor", "100", "--max-minor", "99999900", "--name-hans", "Stripe", "--name-hant", "Stripe", "--name-en", "Stripe"),
 	}

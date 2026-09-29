@@ -121,9 +121,9 @@ func TestStripeSP21Registrar(t *testing.T) {
 		_, _, err = e.reg.SetWebhookEndpoint(ctx, scope2, stripeadmin.EndpointInput{ConnectionID: s1.connection, AccountID: s1.account, Profile: "PROVIDER_MOCK", Enabled: true, Secrets: secrets})
 		srgRejected(t, "endpoint bound to another tenant's connection", err)
 		_, err = e.reg.Qualify(ctx, scope2, stripeadmin.QualifyInput{ConnectionID: s1.connection, AccountID: s1.account, SecretKey: s1.secret, Profile: "PROVIDER_MOCK",
-			Currency: "TWD", ReturnURL: sstReturnURL, ExpectedVersion: 2, AmountMinor: 100})
+			Currency: "TWD", ReturnURL: sstReturnURL, ExpectedVersion: 2, AmountMinor: 2500})
 		srgRejected(t, "qualification of another tenant's connection", err)
-		in := s1.methodInput(1, true, true, 100, 99999900)
+		in := s1.methodInput(1, true, true, 2500, 99999900)
 		in.MarketID = p2.market.ID
 		_, err = e.reg.SetMethod(ctx, scope2, in)
 		srgRejected(t, "method pointing at another tenant's connection", err)
@@ -276,7 +276,7 @@ func TestStripeSP21Registrar(t *testing.T) {
 		// The old qualification is bound to version 1; a stale expected version cannot requalify version 2.
 		st.secret = next
 		_, err = e.reg.Qualify(ctx, st.scope, stripeadmin.QualifyInput{ConnectionID: st.connection, AccountID: st.account, SecretKey: next, Profile: "PROVIDER_MOCK",
-			Currency: "TWD", ReturnURL: sstReturnURL, ExpectedVersion: 1, AmountMinor: 100})
+			Currency: "TWD", ReturnURL: sstReturnURL, ExpectedVersion: 1, AmountMinor: 2500})
 		srgRejected(t, "qualify with a stale expected version after rotation", err)
 		q := sstMoreHold(t, p)
 		st.p = q
@@ -284,7 +284,7 @@ func TestStripeSP21Registrar(t *testing.T) {
 			t.Fatal("a new start under an unqualified rotated head succeeded")
 		}
 		st.requalify(t, e, 2)
-		v, err := e.reg.SetMethod(ctx, st.scope, st.methodInput(1, true, true, 100, 99999900))
+		v, err := e.reg.SetMethod(ctx, st.scope, st.methodInput(1, true, true, 2500, 99999900))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -296,16 +296,19 @@ func TestStripeSP21Registrar(t *testing.T) {
 
 	t.Run("method_bounds_currency_and_cas", func(t *testing.T) {
 		for name, in := range map[string]stripeadmin.MethodInput{
-			"min_below_currency_floor":  s1.methodInput(1, true, true, 1, 99999900),
-			"max_above_currency_cap":    s1.methodInput(1, true, true, 100, 100000000),
-			"twd_step_not_whole_dollar": s1.methodInput(1, true, true, 150, 99999900),
+			"min_below_currency_floor": s1.methodInput(1, true, true, 1, 99999900),
+			// TWD min 2500: Stripe SANDBOX rejected 100/1200, accepted 2500 (2026-09-29)
+			"twd_min_below_2500":        s1.methodInput(1, true, true, 2400, 99999900),
+			"twd_old_min_100":           s1.methodInput(1, true, true, 100, 99999900),
+			"max_above_currency_cap":    s1.methodInput(1, true, true, 2500, 100000000),
+			"twd_step_not_whole_dollar": s1.methodInput(1, true, true, 2501, 99999900),
 			"min_above_max":             s1.methodInput(1, true, true, 5000, 100),
 		} {
 			if _, err := e.reg.SetMethod(ctx, scope1, in); !errors.Is(err, stripeadmin.ErrRejected) {
 				t.Fatalf("%s: %v", name, err)
 			}
 		}
-		if _, err := e.reg.SetMethod(ctx, scope1, s1.methodInput(42, true, true, 100, 99999900)); !errors.Is(err, stripeadmin.ErrRejected) {
+		if _, err := e.reg.SetMethod(ctx, scope1, s1.methodInput(42, true, true, 2500, 99999900)); !errors.Is(err, stripeadmin.ErrRejected) {
 			t.Fatalf("stale method version accepted: %v", err)
 		}
 	})
@@ -314,7 +317,7 @@ func TestStripeSP21Registrar(t *testing.T) {
 		// PROVIDER_MOCK: no network, evidence provider-mock:<qualification>.
 		requestsBefore := len(e.fake.Requests())
 		mockID, err := e.reg.Qualify(ctx, scope1, stripeadmin.QualifyInput{ConnectionID: s1.connection, AccountID: s1.account, SecretKey: s1.secret, Profile: "PROVIDER_MOCK",
-			Currency: "TWD", ReturnURL: sstReturnURL, ExpectedVersion: 2, AmountMinor: 100})
+			Currency: "TWD", ReturnURL: sstReturnURL, ExpectedVersion: 2, AmountMinor: 2500})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -332,7 +335,7 @@ func TestStripeSP21Registrar(t *testing.T) {
 		// SANDBOX through the fake transport: the probe creates one lc_probe session at the
 		// requested minimum, expires it and requires expired+unpaid+!livemode; evidence is stripe-probe:<id>.
 		sbID, err := e.reg.Qualify(ctx, scope1, stripeadmin.QualifyInput{ConnectionID: s1.connection, AccountID: s1.account, SecretKey: s1.secret, Profile: "SANDBOX",
-			Currency: "TWD", ReturnURL: sstReturnURL, ExpectedVersion: 2, AmountMinor: 300})
+			Currency: "TWD", ReturnURL: sstReturnURL, ExpectedVersion: 2, AmountMinor: 2500})
 		if err != nil {
 			t.Fatalf("SANDBOX probe against the fake: %v", err)
 		}
@@ -345,12 +348,12 @@ func TestStripeSP21Registrar(t *testing.T) {
 		var amount int64
 		var meta map[string]string
 		sflFakeSession(t, e.fake, s1.secret, m[1], &status, &currency, &amount, &meta)
-		if status != "expired" || currency != "twd" || amount != 300 || meta["lc_probe"] == "" {
+		if status != "expired" || currency != "twd" || amount != 2500 || meta["lc_probe"] == "" {
 			t.Fatalf("probe session %s status=%s currency=%s amount=%d probe=%q", m[1], status, currency, amount, meta["lc_probe"])
 		}
 		// Probe and rotation: a probe started under the old head cannot qualify the new one.
 		if _, err := e.reg.Qualify(ctx, scope1, stripeadmin.QualifyInput{ConnectionID: s1.connection, AccountID: s1.account, SecretKey: s1.secret, Profile: "SANDBOX",
-			Currency: "TWD", ReturnURL: sstReturnURL, ExpectedVersion: 1, AmountMinor: 300}); !errors.Is(err, stripeadmin.ErrRejected) {
+			Currency: "TWD", ReturnURL: sstReturnURL, ExpectedVersion: 1, AmountMinor: 2500}); !errors.Is(err, stripeadmin.ErrRejected) {
 			t.Fatalf("stale-version probe qualified: %v", err)
 		}
 	})
@@ -363,7 +366,7 @@ func TestStripeSP21Registrar(t *testing.T) {
 			t.Fatal("a live key registered")
 		}
 		if _, err := e.reg.Qualify(ctx, scope1, stripeadmin.QualifyInput{ConnectionID: s1.connection, AccountID: s1.account, SecretKey: s1.secret, Profile: "LIVE",
-			Currency: "TWD", ReturnURL: sstReturnURL, ExpectedVersion: 2, AmountMinor: 100}); err == nil {
+			Currency: "TWD", ReturnURL: sstReturnURL, ExpectedVersion: 2, AmountMinor: 2500}); err == nil {
 			t.Fatal("LIVE qualification accepted")
 		}
 		if _, _, err := e.reg.SetWebhookEndpoint(ctx, scope1, stripeadmin.EndpointInput{ConnectionID: s1.connection, AccountID: s1.account, Profile: "LIVE", Enabled: true,
