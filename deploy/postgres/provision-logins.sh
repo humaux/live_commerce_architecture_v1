@@ -104,7 +104,10 @@ authorities(name) AS (VALUES
   ('commerce_worker'),('commerce_checkout_runtime'),('commerce_meta_ingress'),('commerce_meta_registrar'),
   ('commerce_meta_curator'),('commerce_meta_consumer'),('commerce_meta_worker'),('commerce_media_registrar'),
   ('commerce_media_worker'),('commerce_media_executor'),('commerce_media_recovery'),
-  ('commerce_stripe_ingress'),('commerce_payment_registrar'),('commerce_claims_intake')),
+  ('commerce_stripe_ingress'),('commerce_payment_registrar'),('commerce_claims_intake'),
+  -- claims-retention-purge-v1 §4: the job authority (lc_retention_job) and the operator authority, which no
+  -- provisioned login may reach (lc_retention_operator is created only by docs/runbooks/claims-data-deletion.md).
+  ('commerce_retention_job'),('commerce_retention_operator')),
 checked AS (
   SELECT s.login, s.authority, s.grant_shape, r.oid AS login_oid,
          r.rolcanlogin, r.rolsuper, r.rolbypassrls, r.rolcreaterole, r.rolcreatedb, r.rolreplication, r.rolinherit,
@@ -200,6 +203,16 @@ SQL
 { read -r meta_reg; read -r stripe_reg; } <<<"$regs"
 [[ "$meta_reg" == 4 && "$stripe_reg" == 5 ]] || die "DRIFT registrar EXECUTE meta=$meta_reg stripe=$stripe_reg (want 4 and 5)"
 log "registrars execute=ok meta=$meta_reg stripe=$stripe_reg"
+
+# claims-retention-purge-v1 §4/§10(5): the retention-job login runs exactly run_retention + retention_status
+# (the hourly purge and the smoke status check), never erase/policy/replay (operator authority).
+ret="$(su_psql <<'SQL'
+SELECT string_agg(p.proname, ',' ORDER BY p.proname) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname = 'claims' AND p.prosecdef AND has_function_privilege('lc_retention_job', p.oid, 'EXECUTE');
+SQL
+)" || die "retention-job privilege query failed"
+[[ "$ret" == "retention_status,run_retention" ]] || die "DRIFT login=lc_retention_job execute=[$ret] (want retention_status,run_retention)"
+log "login=lc_retention_job execute=ok"
 
 # ---- 5. every login authenticates over TCP, exactly like its service -------------------------
 for login in "${logins[@]}"; do

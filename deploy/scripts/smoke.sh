@@ -17,6 +17,9 @@
 #           R1 additions (deploy-release unit): S13 also checks the ruling-19 River privileges and the
 #           registrar EXECUTE grants (S13n injects two drifts: both must fail provisioning by name), S16 the claims-worker + Stripe-enabled sandbox worker, S19 the
 #           Stripe webhook route, S44 the operator one-shots stripe-admin / meta-admin.
+#           R2 U08: S46 retention-admin on the claims-worker's retention-job login: `status` works and
+#           shows a run (RunOnStart), every other subcommand refuses the job login (exit 2), no service
+#           mounts an operator DSN (claims-retention-purge-v1 §10(5), CRP09).
 #           G2 (R1 ruling): S45 planning-only Studio + claims + claim-source answer 401/403 (mounted) on the
 #           deployed api and the LiveKit media route is 404; S10e/S10h preflight P06 refuses media on and
 #           claims without Studio.
@@ -186,13 +189,14 @@ LC_BUYER_ENABLED=1
 LC_BUYER_SESSION_TTL_SECONDS=3600
 LC_STRIPE_ENABLED=1
 LC_REQUIRE_MEDIA_GATE=0
+LC_REQUIRE_RETENTION_ENFORCED=0
 LC_ALERT_WEBHOOK_URL=
 EOF
   : "$kind"
 }
 
 # ================================ full ============================================================
-ALL_FULL=(S07 S08 S09 S10 S11 S12 S13 S13n S14 S15 S16 S44 S17 S18 S19 S45 S20 S21 S22 S23 S24 S25 S26 S27 S28 S29 S29m S30 S31 S32 S33 S34 S35 S36 S37 S38 S39 S40 S41 S42 S43)
+ALL_FULL=(S07 S08 S09 S10 S11 S12 S13 S13n S14 S15 S16 S44 S46 S17 S18 S19 S45 S20 S21 S22 S23 S24 S25 S26 S27 S28 S29 S29m S30 S31 S32 S33 S34 S35 S36 S37 S38 S39 S40 S41 S42 S43)
 block_rest() { # reason — mark every full case not yet recorded as BLOCKED
   local id
   for id in "${ALL_FULL[@]}"; do
@@ -441,6 +445,26 @@ sys.exit(1 if names & {"dsn_lc_stripe_registrar", "dsn_lc_meta_registrar"} else 
   [[ "$out44" == *"LIVE is refused"* ]] || why44+=" --profile LIVE not refused by name"
   unset live_key
   if [[ -z "$why44" ]]; then rec S44 PASS "stripe-admin/meta-admin one-shots run isolated, registrar logins admitted, no long-running service mounts them; ops-admin.sh forwards by name, audits without values, refuses live keys and --profile LIVE"; else rec S44 FAIL "$why44 (logs/S44-*.log)"; fi
+
+  # S46 U08 retention job login (claims-retention-purge-v1 §5, §10(5)). Smoke has no operator login by design,
+  # so the policy stays report-only (enforced=0, LC_REQUIRE_RETENTION_ENFORCED=0 in the smoke compose.env).
+  local why46="" out46 rc46 last46
+  out46=$(lc_compose run --rm --no-deps -T claims-worker /app/bin/retention-admin status 2>&1) && rc46=0 || rc46=$?
+  printf '%s\n' "$out46" >"$EV/logs/S46-status.log"
+  last46=$(sed -n 's/^last_run_unix=\([0-9][0-9]*\)$/\1/p' <<<"$out46")
+  if [[ $rc46 != 0 ]] || ! grep -qx 'enforced=0' <<<"$out46"; then why46+=" status: rc=$rc46 [${out46:0:60}] want 0 with enforced=0"; fi
+  [[ -n "$last46" && "$last46" -gt 0 ]] || why46+=" no retention run recorded (RunOnStart)"
+  out46=$(lc_compose run --rm --no-deps -T claims-worker /app/bin/retention-admin run --limit 1 2>&1) && rc46=0 || rc46=$?
+  printf '%s\n' "$out46" >"$EV/logs/S46-run.log"
+  [[ $rc46 == 2 && "$out46" == *retention_admin_usage* ]] || why46+=" run on the job login: rc=$rc46 [${out46:0:60}] want 2 retention_admin_usage"
+  if lc_compose_all config --format json 2>/dev/null | python3 -c '
+import json, sys
+doc = json.load(sys.stdin)
+bad = [n for n in doc.get("secrets", {}) if "retention_operator" in n]
+for name, svc in doc["services"].items():
+    bad += [name for k in (svc.get("environment") or {}) if "RETENTION_OPERATOR" in k]
+sys.exit(1 if bad else 0)'; then :; else why46+=" an operator retention DSN is configured"; fi
+  if [[ -z "$why46" ]]; then rec S46 PASS "retention-admin status on the job login (enforced=0 report-only, last run recorded), job login refused for run, no operator DSN in compose"; else rec S46 FAIL "$why46 (logs/S46-*.log)"; fi
 
   # S17-S24 edge
   local r

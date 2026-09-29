@@ -348,12 +348,13 @@ func exprText(e ast.Expr) string {
 
 // TestMetaClaimsMCI10SecretEnvOwnership: each secret is read by the process the contract names and
 // no other. K_actor belongs to the meta-worker consumer, K_link and the Page-token keyring to the
-// claims-worker (and the registrar CLI for the keyring); the claims-worker never reads the Meta
+// claims-worker (and the registrar CLI for the keyring; K_actor also the retention-admin operator CLI); the claims-worker never reads the Meta
 // payload keyring, K_actor or Stripe keys.
 func TestMetaClaimsMCI10SecretEnvOwnership(t *testing.T) {
 	srcs := mciSources(t, "internal", "cmd")
 	allow := map[string][]string{
-		"COMMERCE_CLAIMS_ACTOR_KEY":      {"cmd/meta-worker/", "internal/integrations/meta/"},
+		// claims-retention-purge-v1 §6 clause 4 (IR-2): plus the operator CLI cmd/retention-admin (never a service).
+		"COMMERCE_CLAIMS_ACTOR_KEY":      {"cmd/meta-worker/", "internal/integrations/meta/", "cmd/retention-admin/"},
 		"COMMERCE_CLAIMS_REPLY_LINK_KEY": {"cmd/claims-worker/", "internal/claims/", "internal/claimsintake/"},
 		"COMMERCE_META_PAGE_TOKEN_":      {"cmd/claims-worker/", "cmd/meta-admin/", "internal/integrations/metareply/"},
 	}

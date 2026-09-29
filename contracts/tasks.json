@@ -1027,7 +1027,8 @@
       "real_pg": "NOT_RUN",
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
-      "independent_review": "NOT_RUN"
+      "independent_review": "NOT_RUN",
+      "r2_u08_2026_09_30": "U08 claims retention purge + actor erasure (contracts/claims-retention-purge-v1.md) merged on r2/retention from unit/retention-core 220e43a: 0071 + internal/retention + cmd/retention-admin + claims-worker hourly job; exact-set gates KC03/MCI02/MCI10 updated to §6 clauses 1/2/4/5 (REAL_PG PASS, evidence output/r2-retention-merge/). CRP01-CRP10 NOT_RUN (retention-tests unit), security review NOT_RUN, CRP11 LIVE NOT_RUN; production-mount blocker not lifted (§10 (2)(3) pending; waiver W1 governs)."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },

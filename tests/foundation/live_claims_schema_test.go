@@ -181,9 +181,10 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		if issuedDefault != nil || expiresDefault != nil {
 			t.Fatalf("claims.links issued_at/expires_at must have no DEFAULT (§3): %v %v", issuedDefault, expiresDefault)
 		}
-		// meta-claims-intake-v1 §4: claims.meta_intake joins the four T10 tables.
-		if n := countRows(t, f.owner, `SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='claims' AND c.relkind IN ('r','p') `); n != 5 {
-			t.Fatalf("schema claims has %d tables, want bundles/lines/events/links/meta_intake", n)
+		// meta-claims-intake-v1 §4: claims.meta_intake joins the four T10 tables; claims-retention-purge-v1 §2
+		// (§6 clause 1) adds retention_policy and retention_log.
+		if n := countRows(t, f.owner, `SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='claims' AND c.relkind IN ('r','p') `); n != 7 {
+			t.Fatalf("schema claims has %d tables, want bundles/lines/events/links/meta_intake/retention_policy/retention_log", n)
 		}
 	})
 
@@ -216,7 +217,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		add(rt, "live.claim_windows", "SELECT", cols("live.claim_windows")...)
 		add(rt, "live.claim_windows", "INSERT", cols("live.claim_windows")...)
 		add(rt, "live.claim_windows", "UPDATE", "state", "match_mode", "generation", "opened_at", "closed_at", "version", "principal_id", "updated_at")
-		add(rt, "claims.bundles", "SELECT", cols("claims.bundles", "owner_id")...)
+		// claims-retention-purge-v1 §4 (§6 clause 1): purged_at is readable by commerce_retention_writer only.
+		add(rt, "claims.bundles", "SELECT", cols("claims.bundles", "owner_id", "purged_at")...)
 		add(rt, "claims.bundles", "INSERT", "tenant_id", "store_id", "session_id", "platform", "actor_key", "label")
 		add(rt, "claims.bundles", "UPDATE", "line_count", "version", "updated_at")
 		add(rt, "claims.lines", "SELECT", cols("claims.lines")...)
@@ -240,7 +242,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		add(ci, "live.offers", "UPDATE", "updated_at")
 		add(ci, "live.claim_windows", "SELECT", cols("live.claim_windows")...)
 		add(ci, "live.claim_windows", "UPDATE", "updated_at")
-		add(ci, "claims.bundles", "SELECT", cols("claims.bundles", "owner_id")...)
+		add(ci, "claims.bundles", "SELECT", cols("claims.bundles", "owner_id", "purged_at")...)
 		add(ci, "claims.bundles", "INSERT", "tenant_id", "store_id", "session_id", "platform", "actor_key", "label")
 		add(ci, "claims.bundles", "UPDATE", "line_count", "version", "updated_at")
 		add(ci, "claims.lines", "SELECT", cols("claims.lines")...)
@@ -265,6 +267,16 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		add(wr, "meta_inbox.routes", "SELECT", "tenant_id", "store_id", "object", "asset_id", "binding_id", "enabled")
 		add(wr, "integration.bindings", "SELECT", "id", "tenant_id", "store_id", "provider", "external_asset_id", "semantic_version", "enabled")
 		add(wr, "integration.meta_page_heads", "SELECT", "tenant_id", "store_id", "binding_id", "current_version")
+		// claims-retention-purge-v1 §4 rows on the six tables (§6 clause 1; the contract is the source, CRP02 owns the rest).
+		const rw = "commerce_retention_writer"
+		add(rw, "claims.bundles", "SELECT", "tenant_id", "store_id", "id", "session_id", "platform", "actor_key", "label", "owner_id", "purged_at")
+		add(rw, "claims.bundles", "UPDATE", "actor_key", "label", "owner_id", "bound_at", "purged_at", "updated_at")
+		add(rw, "claims.lines", "SELECT", "tenant_id", "store_id", "bundle_id")
+		add(rw, "claims.lines", "UPDATE", "applied_version")
+		add(rw, "claims.links", "SELECT", "tenant_id", "store_id", "bundle_id", "expires_at")
+		add(rw, "claims.links", "UPDATE", "expires_at")
+		add(rw, "live.claim_windows", "SELECT", "tenant_id", "store_id", "session_id", "state", "closed_at")
+		add(rw, "live.claim_windows", "UPDATE", "updated_at")
 		got := lcStrings(t, f.owner, `SELECT DISTINCT p.grantee::text||' '||p.table_schema||'.'||p.table_name||'.'||p.column_name||' '||p.privilege_type
 			FROM information_schema.column_privileges p
 			JOIN pg_class c ON c.oid=format('%I.%I',p.table_schema,p.table_name)::regclass
@@ -276,7 +288,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			// meta-claims-intake-v1 §4.3 table-level rows
 			ci + " live.offers SELECT", ci + " live.claim_windows SELECT", ci + " claims.lines SELECT", ci + " claims.events SELECT", ci + " claims.events INSERT",
 			wr + " claims.meta_intake SELECT", wr + " claims.meta_intake INSERT", wr + " live.claim_sources SELECT",
-			wr + " live.claim_window_intervals SELECT", wr + " live.claim_window_intervals INSERT"}
+			wr + " live.claim_window_intervals SELECT", wr + " live.claim_window_intervals INSERT",
+			// claims-retention-purge-v1 §4 (§6 clause 1): the only DELETE on the six tables
+			rw + " claims.links DELETE"}
 		tableGot := lcStrings(t, f.owner, `SELECT p.grantee::text||' '||p.table_schema||'.'||p.table_name||' '||p.privilege_type
 			FROM information_schema.table_privileges p JOIN pg_class c ON c.oid=format('%I.%I',p.table_schema,p.table_name)::regclass
 			WHERE p.grantee::text<>pg_get_userbyid(c.relowner)
@@ -291,7 +305,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			FROM pg_namespace n CROSS JOIN LATERAL aclexplode(n.nspacl) a WHERE n.nspname='claims' AND a.grantee<>n.nspowner`),
 			[]string{"commerce_buyer_runtime USAGE", "commerce_claims_writer USAGE", "commerce_runtime USAGE",
 				// meta-claims-intake-v1 §4.3 schema USAGE rows
-				"commerce_claims_intake USAGE", "commerce_integration_writer USAGE", "commerce_meta_writer USAGE", "commerce_worker USAGE"})
+				"commerce_claims_intake USAGE", "commerce_integration_writer USAGE", "commerce_meta_writer USAGE", "commerce_worker USAGE",
+				// claims-retention-purge-v1 §4 schema USAGE rows
+				"commerce_retention_writer USAGE", "commerce_retention_job USAGE", "commerce_retention_operator USAGE"})
 		var usage []bool
 		if err := f.owner.QueryRow(ctx, `SELECT ARRAY[has_schema_privilege('commerce_claims_writer','live','USAGE'),has_schema_privilege('commerce_claims_writer','identity','USAGE'),
 			has_schema_privilege('commerce_claims_writer','claims','USAGE')]`).Scan(&usage); err != nil || !usage[0] || !usage[1] || !usage[2] {
@@ -303,7 +319,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		// No other commerce_* role (nor PUBLIC) holds any privilege on the six tables; the
 		// buyer runtime has none on any claims.* or live.* table (§3.2).
 		denied := lcStrings(t, f.owner, `SELECT r.rolname||' '||c.oid::regclass::text FROM pg_roles r CROSS JOIN pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
-			WHERE r.rolname LIKE 'commerce\_%' AND r.rolname NOT IN ('commerce_runtime','commerce_claims_writer','commerce_claims_intake')
+			WHERE r.rolname LIKE 'commerce\_%' AND r.rolname NOT IN ('commerce_runtime','commerce_claims_writer','commerce_claims_intake','commerce_retention_writer') -- retention_writer: §4 rows asserted above
 			  AND NOT (r.rolname='commerce_integration_writer' AND c.oid::regclass::text='claims.events') -- §4.3 column SELECT, asserted above
 			  AND c.relkind IN ('r','p','v','m') AND (c.oid::regclass::text=ANY($1) OR (r.rolname='commerce_buyer_runtime' AND n.nspname IN ('claims','live')))
 			  AND (has_table_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') OR has_any_column_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,REFERENCES'))`, lcTables)
@@ -350,12 +366,20 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer rows.Close()
+		// claims-retention-purge-v1 §3 (§6 clause 1): the U08 functions are owned by commerce_retention_writer;
+		// their shape and ACL are CRP02's, here only the exact name set and owner.
+		retention := map[string]bool{"run_retention": false, "erase_actor": false, "apply_actor_erasure": false, "set_retention_policy": false,
+			"retention_status": false, "replay_actor_erasures": false, "links_not_purged": false}
 		seen := 0
 		for rows.Next() {
 			var r fnRow
 			var definer bool
 			if err := rows.Scan(&r.name, &r.args, &r.result, &definer, &r.owner, &r.config, &r.volatility, &r.comment, &r.acl); err != nil {
 				t.Fatal(err)
+			}
+			if done, ok := retention[r.name]; ok && !done && r.owner == "commerce_retention_writer" {
+				retention[r.name] = true
+				continue
 			}
 			w, ok := want[r.name]
 			if !ok {
@@ -370,6 +394,11 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		if rows.Err() != nil || seen != len(want) {
 			t.Fatalf("claims functions seen=%d want %d err=%v", seen, len(want), rows.Err())
 		}
+		for fn, ok := range retention {
+			if !ok {
+				t.Fatalf("claims.%s missing or not owned by commerce_retention_writer (claims-retention-purge-v1 §3)", fn)
+			}
+		}
 		// Four T10 definers + six meta-claims-intake-v1 claims definers + live.put_claim_source and the
 		// live.claim_windows interval trigger function (§2, §4).
 		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 12 {
@@ -382,7 +411,11 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			       OR (r.rolname='commerce_claims_intake' AND p.proname IN ('intake_scope','lease_meta_intake','fail_meta_intake'))
 			       OR (r.rolname='commerce_integration_writer' AND p.proname IN ('intake_scope','issue_system_link'))
 			       OR (r.rolname='commerce_meta_writer' AND p.proname='insert_meta_intake')
-			       OR (r.rolname='commerce_worker' AND p.proname='check_meta_reply'))`)
+			       OR (r.rolname='commerce_worker' AND p.proname='check_meta_reply')
+			       -- claims-retention-purge-v1 §4: owner, job and operator rows (§6 clause 1)
+			       OR (r.rolname='commerce_retention_writer' AND p.proname IN ('run_retention','erase_actor','apply_actor_erasure','set_retention_policy','retention_status','replay_actor_erasures','links_not_purged'))
+			       OR (r.rolname='commerce_retention_job' AND p.proname IN ('run_retention','retention_status'))
+			       OR (r.rolname='commerce_retention_operator' AND p.proname IN ('run_retention','retention_status','erase_actor','set_retention_policy','replay_actor_erasures')))`)
 		if len(denied) != 0 {
 			t.Fatalf("unexpected EXECUTE on claims definers: %v", denied)
 		}
@@ -685,7 +718,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			[]string{"claims.issue_link(bytea,uuid,uuid,uuid,bigint,bytea,boolean)", "claims.mark_applied(uuid,uuid[],bigint[])", "claims.preview_link(bytea)", "claims.redeem_link(bytea,bigint)"})
 		lcSameSet(t, "roles able to write owner_id", lcStrings(t, f.owner, `SELECT DISTINCT p.grantee::text FROM information_schema.column_privileges p
 			WHERE p.table_schema='claims' AND p.table_name='bundles' AND p.column_name IN ('owner_id','bound_at') AND p.privilege_type='UPDATE'
-			  AND p.grantee::text<>(SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='claims.bundles'::regclass)`), []string{"commerce_claims_writer"})
+			  AND p.grantee::text<>(SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='claims.bundles'::regclass)`),
+			// claims-retention-purge-v1 §6 clause 2: U08 clears owner_id only with the link delete + purged_at (RD8).
+			[]string{"commerce_claims_writer", "commerce_retention_writer"})
 		// Direct call of each definer on a bound bundle.
 		s, o, r, l := h.claimSetup(t, "rotation-proof")
 		owner1, owner2 := h.cap, mustIssue(t, h.service, f.storeA1)
@@ -837,7 +872,8 @@ func lcPopulatedUpgrade(t *testing.T) {
 	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0060_live_claims.sql',$1)`, fmt.Sprintf("%x", sha256.Sum256(body)))
 	// 0064 and post-River 0014 (meta-claims-intake-v1) build on 0060's tables and roles, so they are
 	// held back with it and applied on top of the populated data in the second phase below.
-	dependents := []string{"0064_meta_claims_intake.sql", "post_river/0014_meta_claims_intake_river.sql"}
+	// 0071 (claims-retention-purge-v1) requires 0060+0064 (55000 precondition), so it is held back as well.
+	dependents := []string{"0064_meta_claims_intake.sql", "post_river/0014_meta_claims_intake_river.sql", "0071_claims_retention.sql"}
 	for _, version := range dependents {
 		dependent, err := os.ReadFile(filepath.Join("../../migrations", version))
 		if err != nil {

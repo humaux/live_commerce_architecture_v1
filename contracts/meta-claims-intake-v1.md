@@ -814,3 +814,15 @@ reuses the enabled binding, audit `meta.binding_registered`) followed in the sam
 claim source. Gate `TestMetaRouteRegistrarF2` (REAL_PG).
 
 - 2026-09-30 (ruling B27): claims-retention-purge-v1 grants EXECUTE on `meta_inbox.lock_purgeable` to commerce_retention_writer.
+
+## Amendment by claims-retention-purge-v1 (integrator, 2026-09-30, U08 merge)
+
+Recorded from `contracts/claims-retention-purge-v1.md` §6 (FROZEN 2026-09-30); that file is the source of the rows.
+
+- Clause 3: §1/§8/§14 "production mount blocked by T14/U08" is replaced by "lifted per claims-retention-purge-v1 §10".
+- Clause 4 (IR-2): §3 "`K_actor` … loaded only by the meta-worker consumer" gains "and by the operator CLI
+  `cmd/retention-admin` (never a service)"; the MCI10 source guard allows exactly that pair.
+- Clause 5: §4.3 (MCI02 equality) gains the §4 `commerce_retention_writer` rows on `claims.meta_intake`
+  (column SELECT, DELETE, lock-only UPDATE(updated_at)), `integration.operations` (column SELECT,
+  UPDATE(request,semantic_key,updated_at)) and `live.claim_windows` (column SELECT, lock-only UPDATE(updated_at)).
+  MCI02 holds back the dependent 0071 with 0064 (ledger +3) and leaves every other 0071 privilege to CRP02.

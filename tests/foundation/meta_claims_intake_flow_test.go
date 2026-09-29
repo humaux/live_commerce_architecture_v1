@@ -988,6 +988,8 @@ func (e *mciEnv) workerEnv(t *testing.T, graphURL string) []string {
 		"COMMERCE_CLAIMS_WORKER_ENABLED=1",
 		"COMMERCE_CLAIMS_INTAKE_DATABASE_URL=" + e.intakePool.Config().ConnString(),
 		"COMMERCE_WORKER_DATABASE_URL=" + workerLogin,
+		// claims-retention-purge-v1 §5 (U08): required whenever the worker is enabled; the job runs report-only here.
+		"COMMERCE_RETENTION_JOB_DATABASE_URL=" + miRole(t, f, "commerce_retention_job"),
 		"COMMERCE_CLAIMS_REPLY_LINK_KEY=" + base64.StdEncoding.EncodeToString(e.linkRaw),
 		"COMMERCE_META_PAGE_TOKEN_ACTIVE_KEY_ID=pt_key_1",
 		`COMMERCE_META_PAGE_TOKEN_KEYS_JSON={"keys":[{"id":"pt_key_1","key_base64":"` + base64.StdEncoding.EncodeToString(e.pageKeyRaw) + `"}]}`,

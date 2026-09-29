@@ -492,3 +492,12 @@ Accepted defaults (owner may revise before go-live):
 Open owner inputs: Q1 (platform billing entity/account), Q2 (plan price/currency) — §10. Integrator rulings still
 needed from the integrator (not the owner): C-1, C-2, C-3, C-4, C-6, C-7, C-8 (§0.1; C-7/C-8 default = R3 grants in meta-ads
 `0080_meta_capi.sql`); C-5 is a correction, not a choice.
+
+## Amendment by claims-retention-purge-v1 (integrator, 2026-09-30, U08 merge)
+
+Recorded from `contracts/claims-retention-purge-v1.md` §6 (FROZEN 2026-09-30); that file is the source of the rows.
+
+- Clause 7: the §9 U08 bullets point to claims-retention-purge-v1; CD7 unchanged (owner erasure still never touches
+  actor data). Note: C2 clears bindings after `claims_days`, so the CB03 projection loses old claims.
+- IR-U1 (ruling B23): 0071 `bundle_label_reserved` admits `label = 'erased-'||replace(id::text,'-','')` (a bundle's
+  own id only), so CD7's `customers.apply_erasure` relabel does not hit 23514.

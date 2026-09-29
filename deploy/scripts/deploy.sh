@@ -122,7 +122,8 @@ wait_postgres() {
 #      and those printed their token when they started (VERIFIED_LOCAL F3: smoke S39 waited 60 s
 #      for a fresh token that a no-op `up -d` never produces). A recreated/restarted container
 #      has a new StartedAt, so its token must be new as well.
-#   4. the public HTTPS edge answers /healthz (below).
+#   4. with claims mounted, the U08 retention purge has run on its own login (retention_check);
+#   5. the public HTTPS edge answers /healthz (below).
 post_checks() {
   local s cid status i ok bad token image started prefix="${LC_IMAGE_PREFIX:-lc}-" curl_args=()
   for ((i = 0; i < 40; i++)); do
@@ -166,6 +167,7 @@ post_checks() {
     ((i < 30)) || lc_die "post-check: $s did not log $token in its current lifetime within 60 s"
     lc_info "post-check $s ready (token since container start $started)"
   done
+  if lc_service_active claims-worker; then retention_check; fi
   if lc_service_active caddy; then
     if ((smoke)); then
       # *.localhost sites use Caddy's internal CA; its root appears once Caddy has started.
@@ -184,6 +186,29 @@ post_checks() {
     ((i < 20)) || lc_die "post-check: https://$LC_API_HOST/healthz not reachable through the edge"
     lc_info "post-check edge https ok"
   fi
+}
+
+# retention_check — claims-retention-purge-v1 §10(5): `retention-admin status` with the claims-worker's own
+# retention-job login (lcentry expands its *_FILE; the operator login never exists on this host) must show a
+# purge run in the last 26 h and, unless LC_REQUIRE_RETENTION_ENFORCED=0 (waiver W1 only), enforced=1.
+# RunOnStart queues the first run at worker start, so a fresh stack is polled for up to 60 s.
+retention_check() {
+  local out enforced="" last=0 now i
+  for ((i = 0; i < 20; i++)); do
+    out=$(lc_compose run --rm --no-deps -T claims-worker /app/bin/retention-admin status 2>&1) ||
+      lc_die "post-check: retention-admin status failed (${out:0:60})"
+    enforced=$(sed -n 's/^enforced=\([01]\)$/\1/p' <<<"$out")
+    last=$(sed -n 's/^last_run_unix=\([0-9][0-9]*\)$/\1/p' <<<"$out")
+    [[ -n "$enforced" && -n "$last" ]] || lc_die "post-check: retention-admin status output not parsable"
+    now=$(date +%s)
+    ((last > 0 && now - last < 26 * 3600)) && break
+    sleep 3
+  done
+  ((i < 20)) || lc_die "post-check: no claims retention run in the last 26 h (last_run_unix=$last)"
+  if [[ "$enforced" != 1 && "${LC_REQUIRE_RETENTION_ENFORCED:-1}" != 0 ]]; then
+    lc_die "post-check: claims retention policy not enforced (claims-retention-purge-v1 §10; docs/runbooks/claims-data-deletion.md)"
+  fi
+  lc_info "post-check claims retention ok (enforced=$enforced, last run $((now - last)) s ago)"
 }
 
 log_deploy() {

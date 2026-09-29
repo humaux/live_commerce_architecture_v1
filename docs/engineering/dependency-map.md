@@ -25,7 +25,7 @@ Command api owns the API process assembly: it loads each feature's configuration
 
 Command claims-worker owns the T10c claims host (meta-claims-intake-v1 §5.3, IR-13): it runs the claims intake poller (internal/claimsintake) and the main-schema external_operation_v1 River worker whose only routes are the Meta private replies (internal/integrations/metareply).
 
-- Depends on (internal): `internal/claims`, `internal/claimsintake`, `internal/integrations/core`, `internal/integrations/metareply`, `internal/jobqueue`, `internal/platform`
+- Depends on (internal): `internal/claims`, `internal/claimsintake`, `internal/integrations/core`, `internal/integrations/metareply`, `internal/jobqueue`, `internal/platform`, `internal/retention`
 - Depends on (third-party): `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
 - Used by: — (entry point or unused)
 
@@ -75,6 +75,14 @@ Command payment-worker owns the process that runs one payment River queue, chose
 
 - Depends on (internal): `internal/integrations/accounts`, `internal/jobqueue`, `internal/payments`, `internal/platform`
 - Depends on (third-party): —
+- Used by: — (entry point or unused)
+
+## `cmd/retention-admin`
+
+Command retention-admin is the operator-only CLI of the claims retention purge and actor-level deletion (contracts/claims-retention-purge-v1.md §5, U08).
+
+- Depends on (internal): `internal/integrations/meta`, `internal/platform`, `internal/retention`
+- Depends on (third-party): `github.com/jackc/pgx/v5/pgxpool`
 - Used by: — (entry point or unused)
 
 ## `cmd/stripe-admin`
@@ -235,7 +243,7 @@ Package meta owns admission of signed Meta webhook events: HMAC verification, st
 
 - Depends on (internal): `internal/claims/grammar`, `internal/command`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
-- Used by: `cmd/api`, `cmd/meta-worker`, `internal/integrations/metareply`
+- Used by: `cmd/api`, `cmd/meta-worker`, `cmd/retention-admin`, `internal/integrations/metareply`
 
 ## `internal/integrations/metareply`
 
@@ -347,7 +355,7 @@ Package platform owns the narrow HTTP and database foundation shared by the API 
 
 - Depends on (internal): `internal/httperror`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
-- Used by: `cmd/admin-fixture`, `cmd/api`, `cmd/claims-worker`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/command`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/metareply`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/payments`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`, `internal/pricing`
+- Used by: `cmd/admin-fixture`, `cmd/api`, `cmd/claims-worker`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `cmd/retention-admin`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/command`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/metareply`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/payments`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`, `internal/pricing`
 
 ## `internal/pricing`
 
@@ -356,6 +364,14 @@ Package pricing owns merchant market policy writes (markets and their currency) 
 - Depends on (internal): `internal/command`, `internal/pagination`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
 - Used by: `internal/checkout`, `internal/fulfillment`, `internal/httpapi`, `internal/merchantorders`, `internal/payments`, `internal/storefront`
+
+## `internal/retention`
+
+Package retention owns the claims retention job and the actor-erasure calls of contracts/claims-retention-purge-v1.md (U08): the River job claims_retention_v1 that runs claims.run_retention in batches on the retention-job login, and the operator calls (Erase, SetPolicy, GetStatus, Replay, RunOnce) that cmd/retention-admin makes on the operator login.
+
+- Depends on (internal): —
+- Depends on (third-party): `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`
+- Used by: `cmd/claims-worker`, `cmd/retention-admin`
 
 ## `internal/storefront`
 
