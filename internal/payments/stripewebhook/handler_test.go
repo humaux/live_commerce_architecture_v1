@@ -5,10 +5,13 @@
 package stripewebhook
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -231,5 +234,49 @@ func TestNewHandlerRejectsIncompleteInbox(t *testing.T) {
 	}
 	if _, err := NewInbox(context.Background(), nil, keyring(t), "SANDBOX"); !errors.Is(err, ErrConfig) {
 		t.Fatal("nil pool accepted")
+	}
+}
+
+// S2: a stalled body must not hold an admission slot or outlive the per-request read deadline.
+func TestStalledBodiesDoNotExhaustAdmission(t *testing.T) {
+	h, _, now := fixture(t, "")
+	h.budget = 400 * time.Millisecond
+	srv := httptest.NewServer(h)
+	defer srv.Close()
+	stalled := func() net.Conn {
+		c, err := net.Dial("tcp", srv.Listener.Addr().String())
+		if err != nil {
+			t.Fatal(err)
+		}
+		// Valid headers for an unauthenticated request, declared body never sent.
+		fmt.Fprintf(c, "POST %s%s HTTP/1.1\r\nHost: x\r\nContent-Type: application/json\r\nContent-Length: 4096\r\n\r\n", routePrefix, endpointID)
+		return c
+	}
+	var conns []net.Conn
+	for i := 0; i < maxInFlight+8; i++ {
+		conns = append(conns, stalled())
+	}
+	defer func() {
+		for _, c := range conns {
+			_ = c.Close()
+		}
+	}()
+	time.Sleep(100 * time.Millisecond) // let the handlers reach the body read
+	req, _ := http.NewRequest(http.MethodPost, srv.URL+routePrefix+endpointID, strings.NewReader(eventBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Stripe-Signature", stripetest.SignWebhook(secretA, []byte(eventBody), now))
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != 200 {
+		t.Fatalf("a fully sent signed delivery got %d while %d bodies were stalled", resp.StatusCode, len(conns))
+	}
+	// The read deadline releases each stalled request (400 invalid_request) well before ReadTimeout.
+	_ = conns[0].SetReadDeadline(time.Now().Add(3 * time.Second))
+	st, err := bufio.NewReader(conns[0]).ReadString('\n')
+	if err != nil || !strings.Contains(st, "400") {
+		t.Fatalf("stalled body not cut by the read deadline: %q %v", st, err)
 	}
 }

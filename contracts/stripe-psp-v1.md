@@ -1091,7 +1091,10 @@ deployment work, not a control this file relies on.
 | No or invalid signature (§5.8), including a timestamp outside tolerance | 400 |
 | More than 32 in-flight admissions (non-blocking semaphore) | 503, `Retry-After: 5` |
 
-The whole request has a 5 s deadline and the DB transaction 2 s. All responses are
+The whole request has a 5 s deadline and the DB transaction 2 s. The 5 s applies to the body read as
+well (per-request read deadline), and the admission slot is taken only after the bounded body has been
+read, so a client that stalls a body can never hold a slot (amended 2026-09-29, r1-final-rulings S2).
+All responses are
 `Cache-Control: no-store`, with fixed bodies `{"received":true}` or `{"error":"<code>"}`.
 
 **Admission.** One transaction, fed only by the verified `Event`:
