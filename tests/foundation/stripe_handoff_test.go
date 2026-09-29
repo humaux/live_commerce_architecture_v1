@@ -50,7 +50,7 @@ func sslStartStripe(t *testing.T) sslStripeAttempt {
 	}
 	var methodVersion int64
 	if err := registrar.QueryRow(ctx, `SELECT payments.set_stripe_method(
-	 $1::uuid,$2::uuid,$3::uuid,$4::uuid,'TW',$5::uuid,$6::uuid,0,true,true,1,100,99999900,'Stripe','Stripe','Stripe')`,
+	 $1::uuid,$2::uuid,$3::uuid,$4::uuid,'TW',$5::uuid,$6::uuid,0,true,true,1,2500,99999900,'Stripe','Stripe','Stripe')`,
 		p.f.tenantA, p.f.storeA1, p.f.principalA, p.market.ID, connection, proof).Scan(&methodVersion); err != nil || methodVersion != 1 {
 		t.Fatalf("enable synthetic Stripe method: version=%d err=%v", methodVersion, err)
 	}

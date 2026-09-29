@@ -532,7 +532,7 @@ func TestStripeAuthorityRegistrarPositive(t *testing.T) {
 	}
 	var methodVersion int64
 	if err := pool.QueryRow(ctx, `SELECT payments.set_stripe_method(
-	 $1::uuid,$2::uuid,$3::uuid,$4::uuid,'TW',$5::uuid,$6::uuid,0,true,true,1,100,99999900,'Stripe','Stripe','Stripe')`,
+	 $1::uuid,$2::uuid,$3::uuid,$4::uuid,'TW',$5::uuid,$6::uuid,0,true,true,1,2500,99999900,'Stripe','Stripe','Stripe')`,
 		f.tenantA, f.storeA1, f.principalA, p.market.ID, connection, proof).Scan(&methodVersion); err != nil || methodVersion != 1 {
 		t.Fatalf("set_stripe_method through registrar pool: version=%d err=%v", methodVersion, err)
 	}
