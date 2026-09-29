@@ -110,15 +110,30 @@ func srsColPriv(t *testing.T, e *rfxEnv, role, object, col, priv string, want bo
 // asserts every mutation of one or more columns is refused with a CHECK violation (23514).
 func srsCheck(t *testing.T, e *rfxEnv, table string, base map[string]string, cases map[string]map[string]string) {
 	t.Helper()
-	cols := make([]string, 0, len(base))
+	// Columns are base ∪ every case's keys: a case column absent from base (e.g. stripe_refund_id,
+	// refresh_count) must still reach the INSERT, or the "negative" silently equals the valid baseline.
+	// The baseline row uses DEFAULT for such columns.
+	colSet := map[string]bool{}
 	for c := range base {
+		colSet[c] = true
+	}
+	for _, over := range cases {
+		for c := range over {
+			colSet[c] = true
+		}
+	}
+	cols := make([]string, 0, len(colSet))
+	for c := range colSet {
 		cols = append(cols, c)
 	}
 	sort.Strings(cols)
 	values := func(over map[string]string) string {
 		parts := make([]string, len(cols))
 		for i, c := range cols {
-			v := base[c]
+			v, ok := base[c]
+			if !ok {
+				v = "DEFAULT"
+			}
 			if o, ok := over[c]; ok {
 				v = o
 			}
@@ -209,7 +224,29 @@ func TestStripeRF03Schema(t *testing.T) {
 			"PAID_ALLOCATION_FAILED", "PROVIDER_AMOUNT_MISMATCH", "PROVIDER_PRESENTMENT_DRIFT", "PROVIDER_SESSION_DUPLICATE", "PROVIDER_IDENTITY_MISMATCH", "PROVIDER_EXPIRY_UNCONFIRMED",
 			"PROVIDER_ASYNC_PENDING", "CLOSURE_CONTRADICTED")
 		srsDef(t, e, "payments.stripe_signals", "MERCHANT_REFRESH", "STRIPE_WEBHOOK", "BUYER_REFRESH", "BUYER_CANCEL")
-		srsDef(t, e, "payments.stripe_webhook_receipts", "refund", "charge", "unknown_refund", "unknown_charge", "unknown_session", "signal_cap", "checkout.session")
+		srsDef(t, e, "payments.stripe_webhook_receipts", "unknown_refund", "unknown_charge", "unknown_session", "signal_cap")
+		// §4.1 "object_type admits refund, charge": 0061 constrains object_type by a shape regex, not an
+		// enumeration, so admission is proved by behaviour on a LIKE copy (NOT NULLs dropped so only the
+		// CHECKs decide), not by searching the constraint text for the literal names.
+		func() {
+			ctx := context.Background()
+			tx, err := e.f.owner.Begin(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer tx.Rollback(ctx)
+			for _, q := range []string{
+				`CREATE TEMP TABLE srs_rcpt (LIKE payments.stripe_webhook_receipts INCLUDING CONSTRAINTS) ON COMMIT DROP`,
+				`DO $$ DECLARE c text; BEGIN FOR c IN SELECT attname FROM pg_attribute WHERE attrelid='srs_rcpt'::regclass AND attnum>0 AND attnotnull AND NOT attisdropped
+				 LOOP EXECUTE format('ALTER TABLE srs_rcpt ALTER COLUMN %I DROP NOT NULL', c); END LOOP; END $$`,
+				`INSERT INTO srs_rcpt(object_type) VALUES('refund'),('charge'),('checkout.session')`,
+			} {
+				if _, err := tx.Exec(ctx, q); err != nil {
+					t.Errorf("RF03 stripe_webhook_receipts.object_type must admit refund, charge, checkout.session: %v", err)
+					return
+				}
+			}
+		}()
 		srsMust(t, e, "stripe_signals.refund_id uuid NULL", `SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='payments' AND table_name='stripe_signals' AND column_name='refund_id' AND data_type='uuid' AND is_nullable='YES')`)
 		srsMust(t, e, "receipts.refund_id uuid NULL", `SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='payments' AND table_name='stripe_webhook_receipts' AND column_name='refund_id' AND data_type='uuid' AND is_nullable='YES')`)
 		srsMust(t, e, "stripe_sessions.charge_signal_count", `SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='payments' AND table_name='stripe_sessions' AND column_name='charge_signal_count' AND is_nullable='NO')`)
@@ -438,7 +475,9 @@ func TestStripeRF03Schema(t *testing.T) {
 		srsPolicy(t, e, "integration", "operations", "checkout_refund_operation", "commerce_checkout_writer", "ALL", true, "PAYMENT_REFUND", "app.principal_id")
 		srsPolicy(t, e, "integration", "operation_events", "checkout_refund_event", "commerce_checkout_writer", "INSERT", true, "PAYMENT_REFUND")
 		srsPolicy(t, e, "ops", "command_results", "checkout_command_result_insert", "commerce_checkout_writer", "INSERT", true, "app.principal_id")
-		srsPolicy(t, e, "ops", "command_results", "checkout_command_result_select", "commerce_checkout_writer", "SELECT", true, "app.principal_id")
+		// SELECT is tenant/store scoped: the principal term is the 0002 command_actor shape, which is
+		// INSERT-only, and the definers must read another principal's row to answer 409 key conflict (§7.1).
+		srsPolicy(t, e, "ops", "command_results", "checkout_command_result_select", "commerce_checkout_writer", "SELECT", true, g...)
 		srsPolicy(t, e, "ops", "audit_events", "checkout_audit_insert", "commerce_checkout_writer", "INSERT", true, "app.principal_id")
 		srsMust(t, e, "RESTRICTIVE guards on ops.command_results and ops.audit_events for commerce_checkout_writer", `SELECT
 		 EXISTS(SELECT 1 FROM pg_policies WHERE schemaname='ops' AND tablename='command_results' AND permissive='RESTRICTIVE' AND 'commerce_checkout_writer'::name=ANY(roles))
@@ -456,7 +495,9 @@ func TestStripeRF03Schema(t *testing.T) {
 		for _, c := range []string{"state", "args", "attempt", "errors", "finalized_at", "scheduled_at", "queue", "priority", "max_attempts"} {
 			srsColPriv(t, e, "commerce_runtime", "river_payment.river_job", c, "UPDATE", false)
 		}
-		for _, other := range []string{"river_media", "river_expiry", "river_meta"} {
+		// Ruling 19: the runtime login keeps river_media (post_river 0006, live media planner); only
+		// river_expiry and river_meta are foreign to it.
+		for _, other := range []string{"river_expiry", "river_meta"} {
 			if srsBool(t, e, "other river", `SELECT has_schema_privilege('commerce_runtime',$1,'USAGE')`, other) && srsBool(t, e, "other river", `SELECT has_table_privilege('commerce_runtime',$1||'.river_job','INSERT')`, other) {
 				t.Errorf("RF03 commerce_runtime gained INSERT on %s.river_job", other)
 			}
@@ -472,7 +513,8 @@ func TestStripeRF03Schema(t *testing.T) {
 			{"UPDATE(state) on river_payment.river_job", `GRANT UPDATE(state) ON river_payment.river_job TO commerce_runtime`, `REVOKE UPDATE(state) ON river_payment.river_job FROM commerce_runtime`},
 			{"UPDATE(args) on river_payment.river_job", `GRANT UPDATE(args) ON river_payment.river_job TO commerce_runtime`, `REVOKE UPDATE(args) ON river_payment.river_job FROM commerce_runtime`},
 			{"TRUNCATE on river_payment.river_job", `GRANT TRUNCATE ON river_payment.river_job TO commerce_runtime`, `REVOKE TRUNCATE ON river_payment.river_job FROM commerce_runtime`},
-			{"USAGE on river_media", `GRANT USAGE ON SCHEMA river_media TO commerce_runtime`, `REVOKE USAGE ON SCHEMA river_media FROM commerce_runtime`},
+			// Ruling 19 admits river_media for the runtime; river_meta stays foreign.
+			{"INSERT on river_meta.river_job", `GRANT INSERT ON river_meta.river_job TO commerce_runtime`, `REVOKE INSERT ON river_meta.river_job FROM commerce_runtime`},
 		} {
 			mustExec(t, e.f.owner, bad.grant)
 			_, err := platform.OpenPool(ctx, bcRole(t, e.f, "commerce_runtime"))
@@ -518,8 +560,7 @@ func TestStripeRF03Schema(t *testing.T) {
 	e.startWorker(t)
 	o1 := e.pay(t, a, endpoint, secret)
 	o2 := e.payMore(t, o1)
-	o3 := e.payMore(t, o1)
-	for _, o := range []rfxOrder{o1, o2, o3} {
+	for _, o := range []rfxOrder{o1, o2} {
 		e.grant(t, o, "orders:read", "payments:refund")
 	}
 
@@ -559,6 +600,33 @@ func TestStripeRF03Schema(t *testing.T) {
 	}
 	insertFact := `INSERT INTO payments.refund_facts(tenant_id,store_id,refund_id,attempt_id,kind,amount_minor,currency,stripe_refund_id,failure_reason,source_report_hash)
 	 SELECT r.tenant_id,r.store_id,r.id,$2::uuid,$3,$4::bigint,'TWD',$5,$6,$7::bytea FROM payments.stripe_refunds r WHERE r.id=$1`
+	// guard_refund_fact runs as commerce_checkout_writer under FORCE RLS; the product's definers set the
+	// app.tenant_id/app.store_id GUCs before touching stripe_refunds/refund_facts (§4.5), so the fixture
+	// does the same, or every insert is refused as "not found" for the wrong reason.
+	factTx := func(commit bool, args ...any) error {
+		tx, err := e.f.owner.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer tx.Rollback(ctx)
+		if _, err := tx.Exec(ctx, `SELECT set_config('app.tenant_id',tenant_id::text,true),set_config('app.store_id',store_id::text,true)
+		 FROM payments.stripe_refunds WHERE id=$1`, args[0]); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, insertFact, args...); err != nil {
+			return err
+		}
+		if commit {
+			return tx.Commit(ctx)
+		}
+		return nil
+	}
+	refuseFact := func(name string, args ...any) {
+		t.Helper()
+		if err := factTx(false, args...); err == nil {
+			t.Errorf("RF03 %s was accepted", name)
+		}
+	}
 
 	t.Run("set-once trigger", func(t *testing.T) {
 		for name, col := range map[string]string{
@@ -590,20 +658,22 @@ func TestStripeRF03Schema(t *testing.T) {
 		okHash := hashOf(r1, "SUCCEEDED")
 		pin1 := e.fake.RefundByRef(r1)
 		// SUCCEEDED amount must equal the refund amount (I05): r2 is pinned and pending.
-		refuse("SUCCEEDED with the wrong amount", insertFact, r2, o1.attempt, "SUCCEEDED", 400, e.fake.RefundByRef(r2), nil, okHash)
+		refuseFact("SUCCEEDED with the wrong amount", r2, o1.attempt, "SUCCEEDED", 400, e.fake.RefundByRef(r2), nil, okHash)
 		// REJECTED requires no pin and excludes every other kind.
-		refuse("REJECTED for a pinned refund", insertFact, r2, o1.attempt, "REJECTED", 500, nil, "first_send_rejected", okHash)
-		refuse("REJECTED next to a FAILED fact", insertFact, r5, o1.attempt, "REJECTED", 200, nil, "first_send_rejected", okHash)
-		refuse("FAILED next to a REJECTED fact", insertFact, r3, o1.attempt, "FAILED", 300, "re_srs_x", "declined", okHash)
+		refuseFact("REJECTED for a pinned refund", r2, o1.attempt, "REJECTED", 500, nil, "first_send_rejected", okHash)
+		refuseFact("REJECTED next to a FAILED fact", r5, o1.attempt, "REJECTED", 200, nil, "first_send_rejected", okHash)
+		refuseFact("FAILED next to a REJECTED fact", r3, o1.attempt, "FAILED", 300, "re_srs_x", "declined", okHash)
 		// SUCCEEDED after FAILED is refused (the product would raise REFUND_CONFLICTING instead).
-		refuse("SUCCEEDED after FAILED", insertFact, r5, o1.attempt, "SUCCEEDED", 200, e.fake.RefundByRef(r5), nil, okHash)
+		refuseFact("SUCCEEDED after FAILED", r5, o1.attempt, "SUCCEEDED", 200, e.fake.RefundByRef(r5), nil, okHash)
 		// FAILED may follow SUCCEEDED (late failure).
-		if _, err := e.f.owner.Exec(ctx, insertFact, r1, o1.attempt, "FAILED", 1000, pin1, "declined", okHash); err != nil {
+		if err := factTx(true, r1, o1.attempt, "FAILED", 1000, pin1, "declined", okHash); err != nil {
 			t.Fatalf("FAILED after SUCCEEDED (late failure, F-R3) refused: %v", err)
 		}
 		// Composite FK: a fact of attempt X referencing a refund of attempt Y is refused.
-		if _, err := e.f.owner.Exec(ctx, insertFact, r4, o1.attempt, "FAILED", 1000, e.fake.RefundByRef(r4), "declined", okHash); sqlState(err) != "23503" {
-			t.Errorf("fact of attempt X for a refund of attempt Y: want 23503, got %v", err)
+		// The BEFORE INSERT guard (refund looked up by tenant, store, attempt AND id) refuses first with 23514;
+		// the composite FK itself is proved by catalog (srsFK). Either refusal is the contract behaviour.
+		if err := factTx(false, r4, o1.attempt, "FAILED", 1000, e.fake.RefundByRef(r4), "declined", okHash); sqlState(err) != "23503" && sqlState(err) != "23514" {
+			t.Errorf("fact of attempt X for a refund of attempt Y: want 23503/23514, got %v", err)
 		}
 		// Append-only for the writer roles (checked as those roles, not superuser).
 		for role, sql := range map[string]string{
@@ -643,7 +713,14 @@ func TestStripeRF03Schema(t *testing.T) {
 	})
 
 	t.Run("mark_stripe_refund_sent returns CLOSED, not SEND, while REFUND_HISTORY or CONFLICTING_REPORT exists", func(t *testing.T) {
+		// §4.4 (mark_stripe_refund_sent row): only a never-sent refund CLOSED "because the send window passed"
+		// becomes REJECTED; a review-caused CLOSED keeps the refund REQUESTED with its capacity held (the
+		// worker records stripe_refund_uncertain and retries). So each round waits for that processed
+		// claim, not for job completion, and uses a fresh order whose review stays in place (an unreviewed
+		// leftover would be sent during the next round).
 		for _, reason := range []string{"REFUND_HISTORY", "CONFLICTING_REPORT"} {
+			o := e.payMore(t, o1) // needs the running worker (capture), so before the stop
+			e.grant(t, o, "orders:read", "payments:refund")
 			e.stopAllWorkers()
 			restarted := false
 			id := func() string {
@@ -652,22 +729,23 @@ func TestStripeRF03Schema(t *testing.T) {
 						e.startWorker(t) // keep later subtests runnable after an early failure
 					}
 				}()
-				id := e.mustRefund(t, o3, 300, "requested_by_customer")
-				srqReview(t, e, o3.attempt, reason)
+				id := e.mustRefund(t, o, 300, "requested_by_customer")
+				srqReview(t, e, o.attempt, reason)
 				return id
 			}()
 			posts := e.fake.RefundPosts()
 			restarted = true
 			e.startWorker(t)
-			e.awaitRefund(t, "refund job finished", id, o3.attempt, 45*time.Second, `SELECT EXISTS(SELECT 1 FROM river_payment.river_job WHERE kind='payment_refund_v1' AND args->>'operation_id'=$1 AND state='completed')`)
+			e.awaitRefund(t, "a claim that met CLOSED", id, o.attempt, 45*time.Second, `SELECT EXISTS(SELECT 1 FROM integration.operation_events WHERE operation_id=$1 AND reason_code='stripe_refund_uncertain')`)
 			if e.fake.RefundPosts() != posts {
 				t.Fatalf("%s on the attempt: the worker sent the refund (fail-open review policy, A2)", reason)
 			}
 			if n := e.count(t, `SELECT count(*) FROM payments.stripe_refunds WHERE id=$1 AND first_sent_at IS NULL`, id); n != 1 {
 				t.Fatalf("%s: refund was marked sent", reason)
 			}
-			srqUnreview(t, e, o3.attempt)
-			// release the row for the next round: the refund was REJECTED (never sent), capacity is free again
+			if n := e.count(t, `SELECT count(*) FROM payments.refund_facts WHERE refund_id=$1`, id); n != 0 {
+				t.Fatalf("%s: a review-caused CLOSED released capacity (%d facts)", reason, n)
+			}
 		}
 	})
 

@@ -231,9 +231,12 @@ func TestStripeRF01Wire(t *testing.T) {
 		if _, _, err := e.client.CreateRefund(ctx, missing); !errors.Is(err, stripe.ErrRejected) {
 			t.Fatalf("create 404: want ErrRejected, got %v", err)
 		}
-		over := fresh(201)
-		over.AmountMinor = 1_000_000_000 // > charge: Stripe 400 amount_too_large is a definitive first-send reject
-		if _, _, err := e.client.CreateRefund(ctx, over); !errors.Is(err, stripe.ErrRejected) {
+		// > charge but inside the §4.2 step table (max 99_999_900 TWD, the §0.2 table without its minimum), so
+		// the POST happens: Stripe 400 amount_too_large is a definitive first-send reject. It needs a small
+		// capture (this env captured 999_999_900, above the table max); 1e9 would be refused locally as
+		// ErrInvalid by the same table, with zero POSTs.
+		small := srwNew(t, 2500)
+		if _, _, err := small.client.CreateRefund(ctx, srwParams(99_999_900, "requested_by_customer")); !errors.Is(err, stripe.ErrRejected) {
 			t.Fatalf("create over-refund: want ErrRejected, got %v", err)
 		}
 		// A wrong API key is 401 before idempotency: ErrAuthentication on every call type.
@@ -306,7 +309,9 @@ func TestStripeRF01Wire(t *testing.T) {
 		}
 		// The read must ask for the expanded latest_charge and nothing else (contract §3).
 		last := e.fake.Requests()[len(e.fake.Requests())-1]
-		if last.Method != http.MethodGet || last.Path != "/v1/payment_intents/"+srwPI || last.RawQuery != "expand[]=latest_charge" || last.IdempotencyKey != "" {
+		// Compare the decoded query: expand%5B%5D is the same parameter as expand[] (B1 encodes it that way too).
+		q, qerr := url.ParseQuery(last.RawQuery)
+		if last.Method != http.MethodGet || last.Path != "/v1/payment_intents/"+srwPI || qerr != nil || len(q) != 1 || len(q["expand[]"]) != 1 || q.Get("expand[]") != "latest_charge" || last.IdempotencyKey != "" {
 			t.Fatalf("charge read request: %+v", last)
 		}
 		e.fake.PatchCharge(srwPI, map[string]any{"disputed": true})
@@ -388,8 +393,10 @@ func TestStripeRF01Wire(t *testing.T) {
 			want     bool
 		}{
 			{"TWD", 100, true}, {"TWD", 200, true}, {"TWD", 99_999_900, true}, {"TWD", 150, false}, {"TWD", 199, false}, {"TWD", 1, false}, {"TWD", 0, false}, {"TWD", -100, false},
-			{"TWD", 999_999_999_900, true}, {"TWD", 1_000_000_000_000, false}, {"TWD", 1_000_000_000_100, false},
-			{"USD", 1, true}, {"USD", 49, true}, {"HKD", 1, true}, {"SGD", 199, true}, {"MYR", 1, true}, {"USD", 999_999_999_999, true},
+			// §4.2: the §0.2 currency table without its minimum, so the table max (TWD 99_999_900, others
+			// 99_999_999) applies, not the column CHECK's 999_999_999_999.
+			{"TWD", 100_000_000, false}, {"TWD", 999_999_999_900, false}, {"TWD", 1_000_000_000_000, false}, {"TWD", 1_000_000_000_100, false},
+			{"USD", 1, true}, {"USD", 49, true}, {"HKD", 1, true}, {"SGD", 199, true}, {"MYR", 1, true}, {"USD", 99_999_999, true}, {"USD", 100_000_000, false}, {"USD", 999_999_999_999, false},
 			{"USD", 0, false}, {"USD", -1, false}, {"USD", 1_000_000_000_000, false},
 			{"JPY", 100, false}, {"EUR", 100, false}, {"", 100, false}, {"XXX", 100, false},
 		} {

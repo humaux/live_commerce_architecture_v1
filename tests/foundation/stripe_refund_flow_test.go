@@ -486,7 +486,9 @@ func TestStripeRF06Unknown(t *testing.T) {
 		t0 := time.Now()
 		id := e.mustRefund(t, o, 500, "requested_by_customer")
 		refunds = append(refunds, id)
-		e.pollRefund(t, "first send", id, 20*time.Second, `SELECT true`)
+		// pollRefund always binds the refund id as $1, so the condition must consume it ("SELECT true" with
+		// one argument is a pgx error and never becomes true). mark_sent SEND commits first_sent_at pre-POST.
+		e.pollRefund(t, "first send", id, 20*time.Second, `SELECT first_sent_at IS NOT NULL FROM payments.stripe_refunds WHERE id=$1`)
 		e.pollRefund(t, "operation event stripe_rate_limited", id, 30*time.Second, `SELECT EXISTS(SELECT 1 FROM integration.operation_events WHERE operation_id=$1 AND reason_code='stripe_rate_limited')`)
 		first := e.keysOf(id)
 		// No wake here: the natural backoff (5 s first step) is the assertion.
@@ -547,10 +549,12 @@ func srfSetTimes(t *testing.T, e *rfxEnv, refund, requestedAgo, lastSentBeforeRe
 	if _, err := tx.Exec(ctx, `SET LOCAL session_replication_role = replica`); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := tx.Exec(ctx, `UPDATE payments.stripe_refunds SET requested_at=clock_timestamp()-$2::interval,
-	 resend_until=clock_timestamp()-$2::interval+interval '20 hours',
-	 first_sent_at=clock_timestamp()-$2::interval+interval '1 minute',
-	 last_sent_at=clock_timestamp()-$2::interval+interval '20 hours'-$3::interval WHERE id=$1`, refund, requestedAgo, lastSentBeforeResendUntil); err != nil {
+	// One instant for every column: clock_timestamp() differs per call, which breaks the §4.2 CHECK
+	// resend_until = requested_at + 20 hours by microseconds.
+	if _, err := tx.Exec(ctx, `UPDATE payments.stripe_refunds SET requested_at=statement_timestamp()-$2::interval,
+	 resend_until=statement_timestamp()-$2::interval+interval '20 hours',
+	 first_sent_at=statement_timestamp()-$2::interval+interval '1 minute',
+	 last_sent_at=statement_timestamp()-$2::interval+interval '20 hours'-$3::interval WHERE id=$1`, refund, requestedAgo, lastSentBeforeResendUntil); err != nil {
 		t.Fatalf("set times: %v", err)
 	}
 	if err := tx.Commit(ctx); err != nil {

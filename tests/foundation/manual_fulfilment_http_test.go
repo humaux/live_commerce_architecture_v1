@@ -181,11 +181,12 @@ func TestManualFulfilmentMF04Authority(t *testing.T) {
 			}},
 		} {
 			token, principal := e.member(t, a2, "fulfillment:write")
+			auditBefore := e.mfxAudit(t, a2, "fulfillment.shipment_recorded") // store-scoped count: compare, not 0
 			status, out := mfhBlockedRevocation(t, e, a2, token, func() { c.change(token, principal) })
 			if status != c.want {
 				t.Fatalf("%s: %d %v, want %d", c.name, status, out, c.want)
 			}
-			if e.mfxVersions(t, a2) != 0 || e.mfxAudit(t, a2, "fulfillment.shipment_recorded") != 0 || e.mfxFulfilmentState(t, a2) == "MERCHANT_SHIPPED" {
+			if e.mfxVersions(t, a2) != 0 || e.mfxAudit(t, a2, "fulfillment.shipment_recorded") != auditBefore || e.mfxFulfilmentState(t, a2) == "MERCHANT_SHIPPED" {
 				t.Fatalf("%s: a command rejected by the final auth left rows behind", c.name)
 			}
 		}

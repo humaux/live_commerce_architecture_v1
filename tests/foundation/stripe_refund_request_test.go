@@ -253,17 +253,14 @@ func TestStripeRF04Request(t *testing.T) {
 		}
 		deadline := time.Now().Add(20 * time.Second)
 		for {
-			var blocked int
-			if err := e.f.owner.QueryRow(ctx, `SELECT count(*) FROM pg_stat_activity WHERE $1::int = ANY(pg_blocking_pids(pid))`, pid).Scan(&blocked); err != nil {
-				t.Fatal(err)
-			}
+			blocked := e.queuedBehind(t, pid)
 			if blocked >= 2 {
 				break
 			}
 			if time.Now().After(deadline) {
 				t.Fatalf("only %d of 2 requests queued behind the order lock: the request does not lock the order first", blocked)
 			}
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(20 * time.Millisecond) // lock_timeout is 1 s: release promptly
 		}
 		if err := holder.Commit(ctx); err != nil {
 			t.Fatal(err)

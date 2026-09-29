@@ -348,7 +348,9 @@ func TestStripeRF09AdminHTTP(t *testing.T) {
 		}
 		// D8: an order without any refund activity carries no `refund` key at all (absent, not null).
 		none := e.payMore(t, o)
-		plain := bphRaw(t, e.serveHTTP(t, none.s).request(t, "GET", "/v1/buyer/orders/"+none.order+"/payment", none.s.p.cap.Token, "", nil, nil), 200, nil)
+		// Same store as o (one store per gate): reuse srv; a second serveHTTP would re-insert the store's
+		// storefront publication (duplicate storefront_publications_pkey).
+		plain := bphRaw(t, srv.request(t, "GET", "/v1/buyer/orders/"+none.order+"/payment", none.s.p.cap.Token, "", nil, nil), 200, nil)
 		if _, has := plain["refund"]; has {
 			t.Fatalf("refund key present without refund activity: %s", plain["refund"])
 		}

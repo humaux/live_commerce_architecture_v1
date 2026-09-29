@@ -137,14 +137,16 @@ func (e *rfxEnv) grant(t *testing.T, o rfxOrder, perms ...string) {
 }
 
 // member creates one more merchant principal of the same tenant with exactly perms on the
-// store and a live merchant session; it returns the bearer token and the principal id.
+// store (plus store:read) and a live merchant session; it returns the bearer token and the principal id.
 func (e *rfxEnv) member(t *testing.T, o rfxOrder, perms ...string) (token, principal string) {
 	t.Helper()
 	ctx := context.Background()
 	token, principal = randomToken(), randomUUID()
 	mustExec(t, e.f.owner, `INSERT INTO identity.principals(id) VALUES($1)`, principal)
 	mustExec(t, e.f.owner, `INSERT INTO identity.memberships(tenant_id,principal_id) VALUES($1,$2)`, o.s.p.f.tenantA, principal)
-	for _, p := range perms {
+	// Every store member holds store:read: admin-transport-v1 answers 404 without it (no readable
+	// store) and 403 only for a readable store missing the route's permission.
+	for _, p := range append([]string{"store:read"}, perms...) {
 		mustExec(t, e.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,$4)`, o.s.p.f.tenantA, o.store(), principal, p)
 	}
 	tx, err := e.f.owner.Begin(ctx)
@@ -502,4 +504,21 @@ func (e *rfxEnv) assertUnchanged(t *testing.T, o rfxOrder, before map[string]str
 			t.Fatalf("%s changed %s (RD6: a refund never writes ledger, reservations, order state, facts or work items)", what, k)
 		}
 	}
+}
+
+// queuedBehind counts backends whose lock wait chain reaches holder. PostgreSQL queues the second
+// waiter on a row on the TUPLE lock held by the first waiter (pg_blocking_pids = the first waiter), so
+// a direct "holder = ANY(pg_blocking_pids(pid))" count never exceeds 1 for one row (observed in
+// output/r1-integration/wave3/debug-race.log). The platform lock_timeout is 1 s, so callers must
+// release the holder promptly once the count is reached.
+func (e *rfxEnv) queuedBehind(t *testing.T, holder int) int {
+	t.Helper()
+	var n int
+	if err := e.f.owner.QueryRow(context.Background(), `WITH RECURSIVE w(pid) AS (
+	  SELECT a.pid FROM pg_stat_activity a WHERE $1::int = ANY(pg_blocking_pids(a.pid))
+	  UNION SELECT a.pid FROM pg_stat_activity a JOIN w ON w.pid = ANY(pg_blocking_pids(a.pid)))
+	 SELECT count(*) FROM w`, holder).Scan(&n); err != nil {
+		t.Fatal(err)
+	}
+	return n
 }

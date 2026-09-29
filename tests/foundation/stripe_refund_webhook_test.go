@@ -85,8 +85,10 @@ func (e *rfxEnv) srhSignalLink(t *testing.T, eventID string) (refund *string, jo
 
 func (e *rfxEnv) srhAwaitOutcome(t *testing.T, o rfxOrder, refund, eventID string, want string) {
 	t.Helper()
+	// awaitRefund binds the refund id as $1; the condition must reference it (an unreferenced $1 has no
+	// type and the query errors on every poll). Charge signals carry no refund id, so it is only typed.
 	e.awaitRefund(t, "signal "+eventID+" consumed", refund, o.attempt, 45*time.Second, `SELECT EXISTS(SELECT 1 FROM payments.stripe_webhook_receipts r JOIN payments.stripe_signals s ON s.id=r.signal_id
-	 WHERE r.event_id=$2 AND s.outcome=$3)`, eventID, want)
+	 WHERE $1::text IS NOT NULL AND r.event_id=$2 AND s.outcome=$3)`, eventID, want)
 }
 
 func TestStripeRF08Webhook(t *testing.T) {

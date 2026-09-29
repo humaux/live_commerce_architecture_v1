@@ -233,8 +233,15 @@ func TestStripeRF12Guards(t *testing.T) {
 			switch x.name {
 			case "apply_stripe_observation":
 				// §4.4: ONE change, the post-capture review branch runs only when v_new_capture OR v_closed_before.
-				if len(removed) != 1 || removed[0] != "IF v_review THEN" || len(added) != 1 ||
-					!strings.Contains(added[0], "v_review") || !strings.Contains(added[0], "v_new_capture") || !strings.Contains(added[0], "v_closed_before") {
+				// SQL comment lines are documentation (PROCESS §5), not behaviour: the delta is judged on code lines.
+				var code []string
+				for _, l := range added {
+					if !strings.HasPrefix(strings.TrimSpace(l), "--") {
+						code = append(code, l)
+					}
+				}
+				if len(removed) != 1 || removed[0] != "IF v_review THEN" || len(code) != 1 ||
+					!strings.Contains(code[0], "v_review") || !strings.Contains(code[0], "v_new_capture") || !strings.Contains(code[0], "v_closed_before") {
 					t.Errorf("apply_stripe_observation delta is not the single stated guard:\n%s", unified)
 				}
 			case "apply_capture":
@@ -333,7 +340,9 @@ func TestStripeRF12Guards(t *testing.T) {
 				t.Errorf("RF12/PROCESS §5: new column %s.%s has no COMMENT ON COLUMN (%v)", c.table, c.col, err)
 			}
 		}
-		rows, err := f.owner.Query(ctx, `SELECT p.oid::regprocedure::text FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE p.prosrc ~* 'refund' AND n.nspname IN ('payments','integration','identity')
+		// Case-sensitive, not after a letter: the Stripe refund identifiers (stripe_refunds, refund_facts,
+		// p_refund ...), not PAYUNi's CardRefundType fields in the pre-0062 record_payment_query.
+		rows, err := f.owner.Query(ctx, `SELECT p.oid::regprocedure::text FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE p.prosrc ~ '(^|[^A-Za-z])refund' AND n.nspname IN ('payments','integration','identity')
 		 AND obj_description(p.oid,'pg_proc') IS NULL AND p.prokind='f'`)
 		if err != nil {
 			t.Fatal(err)

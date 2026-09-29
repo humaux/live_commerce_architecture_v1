@@ -159,11 +159,14 @@ func TestManualFulfilmentMF03Transitions(t *testing.T) {
 		for name, o := range st.all() {
 			effects := e.mfxSideEffects(t)
 			fp := mffFingerprint(t, e, o)
+			// Audit rows are counted per store and every refused order shares the gate's one store
+			// (connection budget), so the invariant is "no new row", not "zero rows in the store".
+			auditBefore := e.mfxAudit(t, o, "fulfillment.shipment_recorded")
 			status, out, raw := e.mfxPut(o, o.token(), t04Key("mff-refused"), mfxShip(0, "sf_express", "SF0001"))
 			if status != 422 || srqCode(out) != "not_shippable" {
 				t.Fatalf("%s: %d %s (want 422 not_shippable)", name, status, raw)
 			}
-			if e.mfxVersions(t, o) != 0 || e.count(t, `SELECT count(*) FROM fulfillment.manual_shipment_heads WHERE order_id=$1`, o.order) != 0 || e.mfxAudit(t, o, "fulfillment.shipment_recorded") != 0 {
+			if e.mfxVersions(t, o) != 0 || e.count(t, `SELECT count(*) FROM fulfillment.manual_shipment_heads WHERE order_id=$1`, o.order) != 0 || e.mfxAudit(t, o, "fulfillment.shipment_recorded") != auditBefore {
 				t.Fatalf("%s: a refused command left a version, head or audit row", name)
 			}
 			if got := e.mfxFulfilmentState(t, o); got == "MERCHANT_SHIPPED" {
@@ -201,6 +204,7 @@ func TestManualFulfilmentMF03Transitions(t *testing.T) {
 
 	t.Run("two concurrent records: exactly one version 1 (real two-transaction witness)", func(t *testing.T) {
 		o := e.payMore(t, base)
+		auditBefore := e.mfxAudit(t, o, "fulfillment.shipment_recorded") // store-scoped: compare the delta
 		ctx := context.Background()
 		holder, err := e.f.owner.Begin(ctx)
 		if err != nil {
@@ -230,17 +234,14 @@ func TestManualFulfilmentMF03Transitions(t *testing.T) {
 		}
 		deadline := time.Now().Add(20 * time.Second)
 		for {
-			var blocked int
-			if err := e.f.owner.QueryRow(ctx, `SELECT count(*) FROM pg_stat_activity WHERE $1::int = ANY(pg_blocking_pids(pid))`, pid).Scan(&blocked); err != nil {
-				t.Fatal(err)
-			}
+			blocked := e.queuedBehind(t, pid)
 			if blocked >= 2 {
 				break
 			}
 			if time.Now().After(deadline) {
 				t.Fatalf("only %d of 2 records queued behind the order lock", blocked)
 			}
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(20 * time.Millisecond) // lock_timeout is 1 s: release promptly
 		}
 		if err := holder.Commit(ctx); err != nil {
 			t.Fatal(err)
@@ -258,7 +259,7 @@ func TestManualFulfilmentMF03Transitions(t *testing.T) {
 				t.Fatalf("race outcome %d %v", r.status, r.out)
 			}
 		}
-		if won != 1 || lost != 1 || e.mfxVersions(t, o) != 1 || e.mfxAudit(t, o, "fulfillment.shipment_recorded") != 1 {
+		if won != 1 || lost != 1 || e.mfxVersions(t, o) != 1 || e.mfxAudit(t, o, "fulfillment.shipment_recorded") != auditBefore+1 {
 			t.Fatalf("won=%d lost=%d versions=%d", won, lost, e.mfxVersions(t, o))
 		}
 	})
