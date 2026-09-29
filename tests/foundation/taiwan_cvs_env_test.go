@@ -743,3 +743,38 @@ func (b *tcvBuyer) recart() {
 	}
 	b.h.input.CartVersion = c.Version
 }
+
+// tcvOrderSpec describes one CVS order placed through the real buyer path.
+type tcvOrderSpec struct {
+	kind, code  string // delivery kind and service code
+	paymentMode string // "" (card, paid through the rfx capture path) or "pay_at_pickup"
+	items       []storefront.Item
+}
+
+// cvsOrder places an order to an ECPay-verified pickup (selection flow against the fake). A card order is paid through the real capture path
+// (needs tcvOpts.stripe and a running rfx worker). It returns the order id and the buyer.
+func (e *tcvEnv) cvsOrder(s tcvOrderSpec) (string, *tcvBuyer) {
+	e.t.Helper()
+	b := e.newBuyer(s.items...)
+	_, pickup := e.verifiedPickup(b, s.code)
+	res, err := e.tcbTry(b, s.kind, s.code, pickup, "王小明", "0912345678", s.paymentMode)
+	if err != nil {
+		e.t.Fatalf("place %s order: %v", s.kind, err)
+	}
+	if s.paymentMode == "" {
+		e.payHold(res, b)
+	}
+	return res.OrderID, b
+}
+
+// payHold pays a DRAFT hold through the real Stripe capture path of the rfx store (e.r.startWorker must be running).
+func (e *tcvEnv) payHold(hold checkout.Result, b *tcvBuyer) rfxOrder {
+	e.t.Helper()
+	if e.r == nil {
+		e.t.Fatal("payHold needs tcvOpts.stripe")
+	}
+	s := e.ro.s
+	s.p.hold = hold
+	s.p.cap = b.cap // the hosted payment start authenticates as the order's own buyer
+	return e.r.pay(e.t, s, e.ro.endpoint, e.ro.secret)
+}

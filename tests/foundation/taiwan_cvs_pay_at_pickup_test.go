@@ -15,6 +15,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/jackc/pgx/v5"
+
 	"livecommerce/internal/checkout"
 	"livecommerce/internal/storefront"
 )
@@ -425,4 +427,607 @@ func TestCvsPayAtPickupBegin(t *testing.T) {
 			t.Errorf("unknown payment_mode left rows: %d/%d/%d -> %d/%d/%d", h0, a0, o0, h, a, o)
 		}
 	})
+}
+
+// tppStatuses posts a sequence of signed status notifications for an order's trade and requires 1|OK for each.
+func (e *tcvEnv) tppStatuses(endpoint, order string, codes ...string) {
+	e.t.Helper()
+	for _, c := range codes {
+		w := e.postStatus(endpoint, e.statusFor(order, c))
+		if w.Code != 200 || w.Body.String() != "1|OK" {
+			e.t.Fatalf("status %s for %s: %d %q (want 200 1|OK)", c, order, w.Code, w.Body.String())
+		}
+	}
+}
+
+func (e *tcvEnv) collectionState(order string) string {
+	var s *string
+	if err := e.p.f.owner.QueryRow(context.Background(), `SELECT collection_state FROM checkout.orders WHERE id=$1`, order).Scan(&s); err != nil {
+		e.t.Fatal(err)
+	}
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
+func (e *tcvEnv) collectionPath(order string) string {
+	return "/v1/admin/stores/" + e.store() + "/orders/" + order + "/collection"
+}
+
+func (e *tcvEnv) record(token, order, key, expected, state string) (int, map[string]any, []byte) {
+	return e.mcall(token, "POST", e.collectionPath(order), key, fmt.Sprintf(`{"expected_state":%q,"state":%q}`, expected, state))
+}
+
+func (e *tcvEnv) audit(action string) int {
+	return e.count(`SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action=$3`, e.tenant(), e.store(), action)
+}
+
+func (e *tcvEnv) events(order, whereExtra string, args ...any) int {
+	return e.count(`SELECT count(*) FROM fulfillment.cvs_shipment_events WHERE order_id=$1 `+whereExtra, append([]any{order}, args...)...)
+}
+
+func TestCvsCollectionStatus(t *testing.T) {
+	e := tcvNew(t, tcvOpts{stripe: true})
+	f := e.p.f
+	ctx := context.Background()
+	e.r.startWorker(t)
+	e.startDispatcher()
+	e.grantCreator("orders:read", "fulfillment:write", "integration:manage", "integration:read")
+	e.connect("C2C")
+	mustExec(t, f.owner, `UPDATE integration.ecpay_logistics_profiles SET hilife_verified=true WHERE tenant_id=$1 AND store_id=$2 AND enabled`, f.tenantA, f.storeA1) // registrar-only in production (disclosed fixture)
+	e.cvsSettings(tcvAllChains, true, "20000", 500)
+	api711, _, _ := e.service("cvs_711", "API", 0)
+	apiFami, _, _ := e.service("cvs_familymart", "API", 0)
+	apiHilife, _, _ := e.service("cvs_hilife", "API", 0)
+	endpoint := e.endpointID()
+	pap := func(kind, code string) (string, *tcvBuyer) {
+		return e.cvsOrder(tcvOrderSpec{kind: kind, code: code, paymentMode: "pay_at_pickup"})
+	}
+	shipCreated := func(order string) {
+		st, _, raw := e.ship(e.token(), order, 0, "", true)
+		if st != 202 {
+			t.Fatalf("request shipment: %d %s", st, raw)
+		}
+		e.awaitShip(order, "CREATED")
+	}
+
+	t.Run("frozen collection_amount = goods_amount = total/100; Create carries IsCollection=Y + CollectionAmount (card: N)", func(t *testing.T) {
+		order, _ := pap("cvs_711", api711)
+		st, out, raw := e.ship(e.token(), order, 0, "", true)
+		if st != 202 || tcvStr(out, "state") != "REQUESTED" {
+			t.Fatalf("request for a CONFIRMED pay-at-pickup order with an ecpay_map pickup: %d %s (want 202 REQUESTED)", st, raw)
+		}
+		e.awaitShip(order, "CREATED")
+		var goods, collection int
+		if err := f.owner.QueryRow(ctx, `SELECT goods_amount,collection_amount FROM fulfillment.cvs_shipments WHERE order_id=$1`, order).Scan(&goods, &collection); err != nil || goods != 25 || collection != 25 {
+			t.Errorf("frozen amounts goods=%d collection=%d err=%v (order total 2500 minor = NT$25)", goods, collection, err)
+		}
+		tr, _ := e.fake.Trade(e.tradeNo(order))
+		if tr.IsCollection != "Y" || tr.CollectionAmount != "25" || tr.GoodsAmount != "25" {
+			t.Errorf("the fake's Create received IsCollection=%q CollectionAmount=%q GoodsAmount=%q, want Y/25/25", tr.IsCollection, tr.CollectionAmount, tr.GoodsAmount)
+		}
+		if n := e.count(`SELECT count(*) FROM fulfillment.cvs_shipments WHERE order_id=$1 AND collection_amount IS NOT DISTINCT FROM goods_amount`, order); n != 1 {
+			t.Error("collection_amount must equal goods_amount (F20)")
+		}
+		// a card order: IsCollection=N, no CollectionAmount, NULL collection_amount
+		card, _ := e.cvsOrder(tcvOrderSpec{kind: "cvs_711", code: api711})
+		shipCreated(card)
+		tr, _ = e.fake.Trade(e.tradeNo(card))
+		var cardCollection *int
+		if err := f.owner.QueryRow(ctx, `SELECT collection_amount FROM fulfillment.cvs_shipments WHERE order_id=$1`, card).Scan(&cardCollection); err != nil || cardCollection != nil {
+			t.Errorf("card order collection_amount %v err %v, want NULL", cardCollection, err)
+		}
+		if tr.IsCollection != "N" || tr.CollectionAmount != "" {
+			t.Errorf("card order Create carried IsCollection=%q CollectionAmount=%q, want N and none", tr.IsCollection, tr.CollectionAmount)
+		}
+	})
+
+	t.Run("signed pickup and return codes per subtype: state, collection_state, audit, no money rows", func(t *testing.T) {
+		type sub struct {
+			kind, code, atDC, atStore, picked, returned string
+		}
+		for _, c := range []sub{{"cvs_711", api711, "2030", "2073", "2067", "2074"}, {"cvs_familymart", apiFami, "3024", "3018", "3022", "3020"}, {"cvs_hilife", apiHilife, "3024", "3018", "3022", "3020"}} {
+			// picked up
+			order, _ := pap(c.kind, c.code)
+			shipCreated(order)
+			ledger0 := e.count(`SELECT count(*) FROM inventory.ledger WHERE reservation_id=$1`, order)
+			e.tppStatuses(endpoint, order, c.atDC)
+			if st, _, _ := e.shipState(order); st != "AT_DC" {
+				t.Errorf("%s %s: state %s want AT_DC", c.kind, c.atDC, st)
+			}
+			e.tppStatuses(endpoint, order, c.atStore)
+			if st, _, _ := e.shipState(order); st != "AT_STORE" || e.collectionState(order) != "PENDING" {
+				t.Errorf("%s %s: state %s collection %s", c.kind, c.atStore, st, e.collectionState(order))
+			}
+			auditBefore := e.audit("fulfillment.collection_reported")
+			e.tppStatuses(endpoint, order, c.picked)
+			if st, _, _ := e.shipState(order); st != "PICKED_UP" || e.collectionState(order) != "COLLECTED" {
+				t.Errorf("%s %s: state %s collection %s, want PICKED_UP/COLLECTED", c.kind, c.picked, st, e.collectionState(order))
+			}
+			if got := e.audit("fulfillment.collection_reported"); got != auditBefore+1 {
+				t.Errorf("%s: audit fulfillment.collection_reported %d -> %d", c.kind, auditBefore, got)
+			}
+			// a duplicate report is one transition (one event, still 1|OK)
+			events := e.events(order, "AND provider_code=$2", c.picked)
+			e.tppStatuses(endpoint, order, c.picked)
+			if got := e.events(order, "AND provider_code=$2", c.picked); got != events || e.audit("fulfillment.collection_reported") != auditBefore+1 {
+				t.Errorf("%s: a duplicate report wrote a second event/audit (%d -> %d)", c.kind, events, got)
+			}
+			if got := e.count(`SELECT count(*) FROM inventory.ledger WHERE reservation_id=$1`, order); got != ledger0 {
+				t.Errorf("%s: a collection wrote %d ledger row(s)", c.kind, got-ledger0)
+			}
+			// unclaimed / returned
+			order2, _ := pap(c.kind, c.code)
+			shipCreated(order2)
+			e.tppStatuses(endpoint, order2, c.atDC, c.atStore)
+			ledger2 := e.count(`SELECT count(*) FROM inventory.ledger WHERE reservation_id=$1`, order2)
+			pay0, refunds0 := e.count(`SELECT count(*) FROM checkout.payment_attempts WHERE order_id=$1`, order2), e.count(`SELECT count(*) FROM payments.stripe_refunds`)
+			e.tppStatuses(endpoint, order2, c.returned)
+			if st, _, _ := e.shipState(order2); st != "UNCLAIMED" || e.collectionState(order2) != "RETURNED" {
+				t.Errorf("%s %s: state %s collection %s, want UNCLAIMED/RETURNED", c.kind, c.returned, st, e.collectionState(order2))
+			}
+			if got := e.count(`SELECT count(*) FROM inventory.ledger WHERE reservation_id=$1`, order2); got != ledger2 {
+				t.Errorf("%s: the return report wrote %d ledger row(s) (restock is the merchant's explicit action)", c.kind, got-ledger2)
+			}
+			if e.count(`SELECT count(*) FROM checkout.payment_attempts WHERE order_id=$1`, order2) != pay0 || e.count(`SELECT count(*) FROM payments.stripe_refunds`) != refunds0 {
+				t.Errorf("%s: a return report created a payment attempt or refund row", c.kind)
+			}
+		}
+		// recipient PII of the notifications is never stored (TD8)
+		if n := e.count(`SELECT count(*) FROM fulfillment.cvs_shipment_events WHERE tenant_id=$1 AND (provider_message ILIKE '%SENTINELRECIPIENT%' OR event_code ILIKE '%SENTINELRECIPIENT%')`, e.tenant()); n != 0 {
+			t.Errorf("%d event rows carry the recipient sentinel", n)
+		}
+	})
+
+	t.Run("merchant collection action: permissions, states, replay, conflicts", func(t *testing.T) {
+		readOnly, _ := e.member("orders:read")
+		writer, _ := e.member("fulfillment:write", "orders:read")
+		// a manually shipped pay-at-pickup order (0063 record) — buyer_entered-style order from the same store is fine: use an ECPay-verified one
+		order, _ := pap("cvs_711", api711)
+		if st, _, raw := e.record(e.token(), order, t04Key("tpp-early"), "PENDING", "collected"); st != 422 || tcvStr(tcvJSON(t, raw), "code") != "not_shipped" {
+			t.Errorf("collected before shipping: want 422 not_shipped, got %d %s", st, raw)
+		}
+		st, _, raw := e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/orders/"+order+"/shipment", t04Key("tpp-ms"), mfxShip(0, "seven_eleven_cvs", "0012345678"))
+		if st != 200 {
+			t.Fatalf("manual shipment: %d %s", st, raw)
+		}
+		if st, _, _ := e.record(readOnly, order, t04Key("tpp-ro"), "PENDING", "collected"); st != 403 {
+			t.Errorf("orders:read only: want 403, got %d", st)
+		}
+		key := t04Key("tpp-collect")
+		st, first, raw := e.record(writer, order, key, "PENDING", "collected")
+		if st != 200 || e.collectionState(order) != "COLLECTED" || e.audit("fulfillment.collection_recorded") < 1 {
+			t.Fatalf("collected: %d %s state=%s", st, raw, e.collectionState(order))
+		}
+		auditN := e.audit("fulfillment.collection_recorded")
+		if st, again, _ := e.record(writer, order, key, "PENDING", "collected"); st != 200 || fmt.Sprint(again) != fmt.Sprint(first) || e.audit("fulfillment.collection_recorded") != auditN {
+			t.Errorf("replay of the same key+body: %d %v (want the saved answer, no second audit)", st, again)
+		}
+		if st, _, raw := e.record(writer, order, key, "PENDING", "returned"); st != 409 || tcvStr(tcvJSON(t, raw), "code") != "idempotency_conflict" {
+			t.Errorf("same key, other body: want 409 idempotency_conflict, got %d %s", st, raw)
+		}
+		if st, _, raw := e.record(writer, order, t04Key("tpp-stale"), "PENDING", "collected"); st != 409 || tcvStr(tcvJSON(t, raw), "code") != "collection_state_changed" {
+			t.Errorf("stale expected_state: want 409 collection_state_changed, got %d %s", st, raw)
+		}
+		if st, _, raw := e.record(writer, order, t04Key("tpp-refoff"), "COLLECTED", "refunded_offline"); st != 200 || e.collectionState(order) != "REFUNDED_OFFLINE" {
+			t.Errorf("refunded_offline from COLLECTED: %d %s state=%s", st, raw, e.collectionState(order))
+		}
+		// refunded_offline only from COLLECTED
+		other, _ := pap("cvs_711", api711)
+		if st, _, raw := e.record(writer, other, t04Key("tpp-refoff2"), "PENDING", "refunded_offline"); st == 200 {
+			t.Errorf("refunded_offline from PENDING must be refused: %d %s", st, raw)
+		}
+		// card orders refuse the action
+		card, _ := e.cvsOrder(tcvOrderSpec{kind: "cvs_711", code: api711})
+		if st, _, raw := e.record(writer, card, t04Key("tpp-card"), "PENDING", "collected"); st != 422 || tcvStr(tcvJSON(t, raw), "code") != "not_pay_at_pickup" {
+			t.Errorf("card order: want 422 not_pay_at_pickup, got %d %s", st, raw)
+		}
+		// a later ECPay report that conflicts with the merchant's record: event only + alert, the record stays
+		conflict, _ := pap("cvs_711", api711)
+		shipCreated(conflict)
+		e.tppStatuses(endpoint, conflict, "2030", "2073")
+		if st, _, raw := e.record(writer, conflict, t04Key("tpp-conf"), "PENDING", "collected"); st != 200 {
+			t.Fatalf("merchant collected on an AT_STORE ECPay order: %d %s", st, raw)
+		}
+		e.tppStatuses(endpoint, conflict, "2074") // ECPay says unclaimed/returned
+		if got := e.collectionState(conflict); got != "COLLECTED" {
+			t.Errorf("a conflicting ECPay report changed the merchant's record: %s", got)
+		}
+		if n := e.events(conflict, "AND event_code LIKE '%collection_conflict'"); n < 1 {
+			t.Error("a conflicting report must raise the collection_conflict alert (event)")
+		}
+	})
+
+	t.Run("request with another environment's pickup namespace: cvs_environment_mismatch", func(t *testing.T) {
+		order, _ := pap("cvs_711", api711)
+		// disclosed plant: the order's pickup version moves to the LIVE namespace (a state Begin can no longer produce because it pins the
+		// environment); FK triggers are off for this one statement so only the namespace column changes
+		tx, err := f.owner.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := tx.Exec(ctx, `SET LOCAL session_replication_role=replica`); err != nil {
+			t.Fatal(err)
+		}
+		tag, err := tx.Exec(ctx, `UPDATE fulfillment.pickup_versions v SET namespace='ecpay.live.unimartc2c' FROM checkout.orders o WHERE o.id=$1 AND v.id=(o.snapshot#>>'{destination,pickup,id}')::uuid`, order)
+		if err != nil || tag.RowsAffected() != 1 {
+			tx.Rollback(ctx)
+			t.Skipf("NOT_RUN: cannot plant a LIVE-namespace pickup for the frozen order (rows=%d err=%v)", tag.RowsAffected(), err)
+		}
+		if err := tx.Commit(ctx); err != nil {
+			t.Fatal(err)
+		}
+		st, _, raw := e.ship(e.token(), order, 0, "", false)
+		if st != 422 || tcvStr(tcvJSON(t, raw), "code") != "cvs_environment_mismatch" {
+			t.Errorf("a pickup namespace of another environment: want 422 cvs_environment_mismatch, got %d %s", st, raw)
+		}
+		if n := e.count(`SELECT count(*) FROM fulfillment.cvs_shipments WHERE order_id=$1`, order); n != 0 {
+			t.Errorf("%d shipment rows for a refused request", n)
+		}
+	})
+}
+
+// ---- TCV17 ---------------------------------------------------------------------------------------------------------------
+
+func (e *tcvEnv) release(token, order, key, action, expected string) (int, map[string]any, []byte) {
+	return e.mcall(token, "POST", "/v1/admin/stores/"+e.store()+"/orders/"+order+"/pay-at-pickup-release", key, fmt.Sprintf(`{"action":%q,"expected_state":%q}`, action, expected))
+}
+
+type tppDealloc struct {
+	allocated, onHand, reserved, unavailable      int64
+	actor, op, key, reason, checkout, reservation string
+	principal, owner, session                     string
+}
+
+func (e *tcvEnv) deallocRows(order string) []tppDealloc {
+	e.t.Helper()
+	rows, err := e.p.f.owner.Query(context.Background(), `SELECT delta_allocated,delta_on_hand,delta_reserved,delta_unavailable,actor_kind,operation,command_key,reason,checkout_id::text,reservation_id::text,
+	  coalesce(principal_id::text,''),coalesce(buyer_owner_id::text,''),coalesce(buyer_session_id::text,'') FROM inventory.ledger WHERE reservation_id=$1 AND kind='DEALLOCATE' ORDER BY sku_id`, order)
+	if err != nil {
+		e.t.Fatal(err)
+	}
+	defer rows.Close()
+	var out []tppDealloc
+	for rows.Next() {
+		var d tppDealloc
+		if err := rows.Scan(&d.allocated, &d.onHand, &d.reserved, &d.unavailable, &d.actor, &d.op, &d.key, &d.reason, &d.checkout, &d.reservation, &d.principal, &d.owner, &d.session); err != nil {
+			e.t.Fatal(err)
+		}
+		out = append(out, d)
+	}
+	return out
+}
+
+func (e *tcvEnv) providerRows() [4]int {
+	return [4]int{e.count(`SELECT count(*) FROM integration.operations`), e.count(`SELECT count(*) FROM river.river_job`),
+		e.count(`SELECT count(*) FROM payments.stripe_refunds`), e.count(`SELECT count(*) FROM checkout.payment_attempts`)}
+}
+
+func TestCvsPayAtPickupRelease(t *testing.T) {
+	e := tcvNew(t, tcvOpts{stripe: true})
+	f := e.p.f
+	ctx := context.Background()
+	e.r.startWorker(t)
+	e.startDispatcher()
+	e.grantCreator("orders:read", "fulfillment:write", "integration:manage", "integration:read")
+	man, _, _ := e.service("cvs_711", "MANUAL", 0)
+	e.cvsSettings(tcvAllChains, true, "20000", 500)
+	sku := e.p.stock.skus[0].ID
+	writer, writerPrincipal := e.member("fulfillment:write", "orders:read")
+	readOnly, _ := e.member("orders:read")
+	entered := func() (string, *tcvBuyer, checkout.Result) {
+		b := e.newBuyer()
+		res, err := e.tppPlace(b, man, e.tppEntered(b, man), tppName, tppPhone)
+		if err != nil {
+			t.Fatalf("place a pay-at-pickup order: %v", err)
+		}
+		return res.OrderID, b, res
+	}
+	orderMoney := func(order string) (commercial, fulfilment, collection, reservation string) {
+		if err := f.owner.QueryRow(ctx, `SELECT o.commercial_state,o.fulfillment_state,coalesce(o.collection_state,''),r.state FROM checkout.orders o JOIN inventory.reservations r ON r.tenant_id=o.tenant_id AND r.store_id=o.store_id AND r.id=o.id WHERE o.id=$1`, order).Scan(&commercial, &fulfilment, &collection, &reservation); err != nil {
+			t.Fatal(err)
+		}
+		return
+	}
+
+	t.Run("cancel a PENDING unshipped order: states, DEALLOCATE rows, balance, audit, no provider rows; replay and conflicts", func(t *testing.T) {
+		balBefore := e.tppBalance(sku)
+		order, b, _ := entered()
+		balPlaced := e.tppBalance(sku)
+		if balPlaced.allocated != balBefore.allocated+2 {
+			t.Fatalf("placement should allocate 2: %+v -> %+v", balBefore, balPlaced)
+		}
+		rowsBefore := e.providerRows()
+		key := t04Key("tpp-cancel")
+		st, out, raw := e.release(writer, order, key, "cancel", "PENDING")
+		if st != 200 || tcvStr(out, "order_id") != order || tcvStr(out, "collection_state") != "CANCELLED" || tcvStr(out, "commercial_state") != "CANCELLED" || out["released_lines"] != float64(1) {
+			t.Fatalf("cancel: %d %s", st, raw)
+		}
+		c, fu, col, res := orderMoney(order)
+		if c != "CANCELLED" || fu != "CANCELLED" || col != "CANCELLED" || res != "RELEASED" {
+			t.Errorf("states commercial=%s fulfillment=%s collection=%s reservation=%s", c, fu, col, res)
+		}
+		rows := e.deallocRows(order)
+		if len(rows) != 1 {
+			t.Fatalf("DEALLOCATE rows: %d, want one per line", len(rows))
+		}
+		d := rows[0]
+		if d.allocated != -2 || d.onHand != 0 || d.reserved != 0 || d.unavailable != 0 || d.actor != "MERCHANT" || d.principal != writerPrincipal || d.checkout != order || d.reservation != order ||
+			d.owner != b.cap.Scope.OwnerID || d.session != b.cap.Scope.SessionID || d.op != "fulfillment.pay_at_pickup.cancel" || d.key != order || d.reason != "PENDING" {
+			t.Errorf("DEALLOCATE row: %+v", d)
+		}
+		// on_hand differs from balBefore only by the fixture's own top-up inside newBuyer; allocated and reserved must be back to pre-Begin
+		if after := e.tppBalance(sku); after.allocated != balBefore.allocated || after.reserved != balBefore.reserved || after.onHand != balPlaced.onHand {
+			t.Errorf("balance after cancel %+v, want allocated/reserved of the pre-Begin value %+v (on_hand %d)", after, balBefore, balPlaced.onHand)
+		}
+		if e.audit("fulfillment.pay_at_pickup_cancelled") < 1 {
+			t.Error("audit fulfillment.pay_at_pickup_cancelled missing")
+		}
+		if got := e.providerRows(); got != rowsBefore {
+			t.Errorf("payment/refund/operation/River rows %v -> %v: a cancel writes none", rowsBefore, got)
+		}
+		// replay: same key + same body -> the saved answer, zero extra ledger rows
+		ledger := e.count(`SELECT count(*) FROM inventory.ledger WHERE reservation_id=$1`, order)
+		if st2, again, _ := e.release(writer, order, key, "cancel", "PENDING"); st2 != 200 || fmt.Sprint(again) != fmt.Sprint(out) || e.count(`SELECT count(*) FROM inventory.ledger WHERE reservation_id=$1`, order) != ledger {
+			t.Errorf("replay: %d %v", st2, again)
+		}
+		if st2, _, raw2 := e.release(writer, order, key, "restock", "RETURNED"); st2 != 409 || tcvStr(tcvJSON(t, raw2), "code") != "idempotency_conflict" {
+			t.Errorf("same key, other body: want 409 idempotency_conflict, got %d %s", st2, raw2)
+		}
+		if st2, _, raw2 := e.release(writer, order, t04Key("tpp-cancel2"), "cancel", "PENDING"); st2 != 409 || tcvStr(tcvJSON(t, raw2), "code") != "collection_state_changed" {
+			t.Errorf("a new key on a released order: want 409 collection_state_changed, got %d %s", st2, raw2)
+		}
+	})
+
+	t.Run("the freed slot lets a Begin at max_open succeed", func(t *testing.T) {
+		open := e.count(`SELECT count(*) FROM checkout.orders WHERE store_id=$1 AND payment_mode='pay_at_pickup' AND collection_state='PENDING' AND fulfillment_state='MANUAL_UNASSIGNED'`, e.store())
+		e.cvsSettings(tcvAllChains, true, "20000", open+1)
+		victim, _, _ := entered() // fills the store to max_open
+		b := e.newBuyer()
+		pickup := e.tppEntered(b, man)
+		if _, err := e.tppPlace(b, man, pickup, tppName, tppPhone); err == nil {
+			t.Fatal("the store is at pay_at_pickup_max_open: a further order must be refused")
+		} else {
+			tcvExpectRefusal(t, "at max_open", err, 429, "pay_at_pickup_limit")
+		}
+		if st, _, raw := e.release(writer, victim, t04Key("tpp-free"), "cancel", "PENDING"); st != 200 {
+			t.Fatalf("cancel: %d %s", st, raw)
+		}
+		if _, err := e.tppPlace(b, man, pickup, tppName, tppPhone); err != nil {
+			t.Errorf("after the cancel the slot is free: %v", err)
+		}
+		e.cvsSettings(tcvAllChains, true, "20000", 500)
+	})
+
+	t.Run("refusals: card order, orders:read only, revoked member replay, stale state, manual shipment", func(t *testing.T) {
+		// card order (RD6: card orders keep the no-cancel rule)
+		card := e.payHoldFor(t, e.newBuyer())
+		ledger := e.count(`SELECT count(*) FROM inventory.ledger WHERE reservation_id=$1 AND kind='DEALLOCATE'`, card)
+		if st, _, raw := e.release(writer, card, t04Key("tpp-card"), "cancel", "PENDING"); st != 422 || tcvStr(tcvJSON(t, raw), "code") != "not_pay_at_pickup" {
+			t.Errorf("card order: want 422 not_pay_at_pickup, got %d %s", st, raw)
+		}
+		if got := e.count(`SELECT count(*) FROM inventory.ledger WHERE reservation_id=$1 AND kind='DEALLOCATE'`, card); got != ledger {
+			t.Errorf("a refused card cancel wrote %d ledger rows", got-ledger)
+		}
+		order, _, _ := entered()
+		if st, _, _ := e.release(readOnly, order, t04Key("tpp-ro"), "cancel", "PENDING"); st != 403 {
+			t.Errorf("orders:read only: want 403, got %d", st)
+		}
+		// section 16.8: expected_state must equal the current state, else 409 collection_state_changed. A cancel carrying RETURNED is both a
+		// stale state and not the value a cancel takes; the contract text is silent on which wins (recorded in NOT_RUN.md), so 409 and 422 are
+		// both accepted, and nothing may be written.
+		if st, _, raw := e.release(writer, order, t04Key("tpp-stale"), "cancel", "RETURNED"); st != 409 && st != 422 {
+			t.Errorf("expected_state RETURNED on a PENDING order: want 409 collection_state_changed (or 422), got %d %s", st, raw)
+		}
+		if e.collectionState(order) != "PENDING" {
+			t.Error("a refused cancel changed the order")
+		}
+		if st, _, raw := e.release(writer, order, t04Key("tpp-bad-action"), "refund", "PENDING"); st < 400 {
+			t.Errorf("an unknown action must be refused: %d %s", st, raw)
+		}
+		// a revoked member replaying a valid key gets 403, not the saved answer
+		tmp, tmpPrincipal := e.member("fulfillment:write", "orders:read")
+		key := t04Key("tpp-revoked")
+		if st, _, raw := e.release(tmp, order, key, "cancel", "PENDING"); st != 200 {
+			t.Fatalf("cancel by the temporary member: %d %s", st, raw)
+		}
+		mustExec(t, f.owner, `DELETE FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission='fulfillment:write'`, f.tenantA, f.storeA1, tmpPrincipal)
+		if st, _, raw := e.release(tmp, order, key, "cancel", "PENDING"); st != 403 {
+			t.Errorf("a revoked member replaying a valid key: want 403, got %d %s", st, raw)
+		}
+		// 0063 manual shipment: not cancellable (the parcel left the merchant)
+		shipped, _, _ := entered()
+		if st, _, raw := e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/orders/"+shipped+"/shipment", t04Key("tpp-ms"), mfxShip(0, "seven_eleven_cvs", "0012345678")); st != 200 {
+			t.Fatalf("manual shipment: %d %s", st, raw)
+		}
+		if st, _, raw := e.release(writer, shipped, t04Key("tpp-shipped"), "cancel", "PENDING"); st != 422 || tcvStr(tcvJSON(t, raw), "code") != "not_cancellable" {
+			t.Errorf("manually shipped order: want 422 not_cancellable, got %d %s", st, raw)
+		}
+		if n := len(e.deallocRows(shipped)); n != 0 {
+			t.Errorf("a refused cancel wrote %d DEALLOCATE rows", n)
+		}
+	})
+
+	t.Run("restock: merchant returned -> RESTOCKED; PENDING/COLLECTED refused; replay", func(t *testing.T) {
+		order, b, _ := entered()
+		if st, _, raw := e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/orders/"+order+"/shipment", t04Key("tpp-ms2"), mfxShip(0, "seven_eleven_cvs", "0012345679")); st != 200 {
+			t.Fatalf("manual shipment: %d %s", st, raw)
+		}
+		if st, _, raw := e.release(writer, order, t04Key("tpp-rs-pending"), "restock", "RETURNED"); st != 409 || tcvStr(tcvJSON(t, raw), "code") != "collection_state_changed" {
+			t.Errorf("restock of a PENDING order: want 409 collection_state_changed, got %d %s", st, raw)
+		}
+		if st, _, raw := e.record(writer, order, t04Key("tpp-ret"), "PENDING", "returned"); st != 200 {
+			t.Fatalf("merchant returned: %d %s", st, raw)
+		}
+		balBefore := e.tppBalance(sku)
+		key := t04Key("tpp-restock")
+		st, out, raw := e.release(writer, order, key, "restock", "RETURNED")
+		if st != 200 || tcvStr(out, "collection_state") != "RESTOCKED" || e.collectionState(order) != "RESTOCKED" {
+			t.Fatalf("restock: %d %s", st, raw)
+		}
+		rows := e.deallocRows(order)
+		if len(rows) != 1 || rows[0].op != "fulfillment.pay_at_pickup.restock" || rows[0].reason != "RETURNED" || rows[0].allocated != -2 || rows[0].principal != writerPrincipal || rows[0].owner != b.cap.Scope.OwnerID {
+			t.Errorf("restock ledger rows: %+v", rows)
+		}
+		if after := e.tppBalance(sku); after.allocated != balBefore.allocated-2 {
+			t.Errorf("balance %+v -> %+v: restock releases the order's allocation", balBefore, after)
+		}
+		if c, fu, _, _ := orderMoney(order); c != "CONFIRMED" || fu != "MERCHANT_SHIPPED" {
+			t.Errorf("restock keeps commercial/fulfillment states (0063 guards): %s/%s", c, fu)
+		}
+		if e.audit("fulfillment.pay_at_pickup_restocked") < 1 {
+			t.Error("audit fulfillment.pay_at_pickup_restocked missing")
+		}
+		if st2, again, _ := e.release(writer, order, key, "restock", "RETURNED"); st2 != 200 || fmt.Sprint(again) != fmt.Sprint(out) || len(e.deallocRows(order)) != 1 {
+			t.Errorf("restock replay: %d %v", st2, again)
+		}
+		// COLLECTED cannot be restocked
+		collected, _, _ := entered()
+		e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/orders/"+collected+"/shipment", t04Key("tpp-ms3"), mfxShip(0, "seven_eleven_cvs", "0012345680"))
+		if st, _, _ := e.record(writer, collected, t04Key("tpp-col"), "PENDING", "collected"); st != 200 {
+			t.Fatal("collected")
+		}
+		if st, _, _ := e.release(writer, collected, t04Key("tpp-rs-col"), "restock", "COLLECTED"); st == 200 {
+			t.Error("restock of a COLLECTED order must be refused")
+		}
+	})
+
+	t.Run("two concurrent releases of one order: exactly one", func(t *testing.T) {
+		order, _, _ := entered()
+		var wg sync.WaitGroup
+		codes := make([]int, 2)
+		start := make(chan struct{})
+		for i := range codes {
+			wg.Add(1)
+			go func(i int) {
+				defer wg.Done()
+				<-start
+				codes[i], _, _ = e.release(writer, order, t04Key(fmt.Sprintf("tpp-race-%d", i)), "cancel", "PENDING")
+			}(i)
+		}
+		close(start)
+		wg.Wait()
+		ok := 0
+		for _, c := range codes {
+			if c == 200 {
+				ok++
+			} else if c != 409 {
+				t.Errorf("unexpected status %d", c)
+			}
+		}
+		if ok != 1 || len(e.deallocRows(order)) != 1 {
+			t.Errorf("concurrent cancels: statuses %v, %d DEALLOCATE rows (want one 200 and one row set)", codes, len(e.deallocRows(order)))
+		}
+	})
+
+	t.Run("direct ledger writes are refused; guards hold", func(t *testing.T) {
+		order, _, res := entered()
+		var owner, session, wh string
+		var qty int64
+		if err := f.owner.QueryRow(ctx, `SELECT o.owner_id::text,o.creator_session_id::text,l.warehouse_id::text,l.quantity FROM checkout.orders o JOIN inventory.reservation_lines l ON l.tenant_id=o.tenant_id AND l.store_id=o.store_id AND l.reservation_id=o.id WHERE o.id=$1`, order).Scan(&owner, &session, &wh, &qty); err != nil {
+			t.Fatal(err)
+		}
+		insert := func(qtyDelta int64, op string) string {
+			return fmt.Sprintf(`INSERT INTO inventory.ledger(tenant_id,store_id,warehouse_id,sku_id,kind,delta_allocated,operation,command_key,reservation_id,actor_kind,checkout_id,buyer_owner_id,buyer_session_id,principal_id,reason)
+			  VALUES('%s','%s','%s','%s','DEALLOCATE',%d,'%s','%s','%s','MERCHANT','%s','%s','%s','%s','PENDING')`, f.tenantA, f.storeA1, wh, sku, qtyDelta, op, order, res.ReservationID, order, owner, session, writerPrincipal)
+		}
+		gucs := map[string]string{"app.tenant_id": f.tenantA, "app.store_id": f.storeA1, "app.principal_id": writerPrincipal, "app.buyer_id": owner, "app.buyer_session_id": session}
+		asWriter := func(stmt string, g map[string]string) string {
+			var st string
+			tx, err := f.owner.Begin(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer tx.Rollback(ctx)
+			if _, err := tx.Exec(ctx, `SET LOCAL ROLE commerce_checkout_writer`); err != nil {
+				t.Fatalf("set role: %v", err)
+			}
+			for k, v := range g {
+				if _, err := tx.Exec(ctx, `SELECT set_config($1,$2,true)`, k, v); err != nil {
+					t.Fatal(err)
+				}
+			}
+			st, _ = tcsSub(ctx, tx, stmt)
+			return st
+		}
+		// commerce_runtime cannot write DEALLOCATE rows at all
+		tcsAs(t, f, "commerce_runtime", map[string]string{"app.tenant_id": f.tenantA, "app.store_id": f.storeA1, "app.principal_id": writerPrincipal}, func(ctx context.Context, tx pgx.Tx) {
+			if st, _ := tcsSub(ctx, tx, insert(-int64(qty), "fulfillment.pay_at_pickup.cancel")); st == "" {
+				t.Error("commerce_runtime inserted a DEALLOCATE row directly")
+			}
+			if st, _ := tcsSub(ctx, tx, fmt.Sprintf(`INSERT INTO inventory.ledger(tenant_id,store_id,warehouse_id,sku_id,kind,delta_on_hand,operation,command_key,actor_kind,principal_id,checkout_id,reason)
+			  VALUES('%s','%s','%s','%s','ADJUST',1,'x','k','MERCHANT','%s','%s','r')`, f.tenantA, f.storeA1, wh, sku, writerPrincipal, order)); st == "" {
+				t.Error("a MERCHANT non-DEALLOCATE row carrying checkout_id must stay refused (0013)")
+			}
+		})
+		// the checkout writer without the order state (PENDING): refused by inventory.guard_pay_at_pickup_ledger
+		if st := asWriter(insert(-int64(qty), "fulfillment.pay_at_pickup.cancel"), gucs); st != "42501" {
+			t.Errorf("DEALLOCATE while the order is PENDING: want 42501, got %q", st)
+		}
+		// plant CANCELLED without ledger rows (disclosed owner-pool fixture; triggers off for these two statements) to isolate the other guards
+		ptx, err := f.owner.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		mustExecTx := func(q string) {
+			if _, err := ptx.Exec(ctx, q, order); err != nil {
+				ptx.Rollback(ctx)
+				t.Fatalf("plant: %v", err)
+			}
+		}
+		if _, err := ptx.Exec(ctx, `SET LOCAL session_replication_role=replica`); err != nil {
+			t.Fatal(err)
+		}
+		mustExecTx(`UPDATE checkout.orders SET collection_state='CANCELLED' WHERE id=$1`)
+		mustExecTx(`UPDATE inventory.reservations SET state='RELEASED' WHERE id=$1`)
+		defer ptx.Rollback(ctx)
+		// (the planted state lives only in ptx; run the guard checks inside it through the same connection)
+		set := func(g map[string]string) {
+			for k, v := range g {
+				if _, err := ptx.Exec(ctx, `SELECT set_config($1,$2,true)`, k, v); err != nil {
+					t.Fatal(err)
+				}
+			}
+		}
+		try := func(stmt string, g map[string]string) string {
+			sp, _ := ptx.Begin(ctx)
+			if _, err := sp.Exec(ctx, `SET LOCAL session_replication_role=origin`); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := sp.Exec(ctx, `SET LOCAL ROLE commerce_checkout_writer`); err != nil {
+				sp.Rollback(ctx)
+				t.Fatalf("set role: %v", err)
+			}
+			for k, v := range g {
+				_, _ = sp.Exec(ctx, `SELECT set_config($1,$2,true)`, k, v)
+			}
+			_, err := sp.Exec(ctx, stmt)
+			sp.Rollback(ctx)
+			return sqlState(err)
+		}
+		_ = set
+		other := randomUUID()
+		bad := map[string]string{"app.tenant_id": f.tenantA, "app.store_id": f.storeA1, "app.principal_id": other, "app.buyer_id": owner, "app.buyer_session_id": session}
+		if st := try(insert(-int64(qty), "fulfillment.pay_at_pickup.cancel"), bad); st != "42501" {
+			t.Errorf("MERCHANT DEALLOCATE whose principal differs from app.principal_id: want 42501, got %q", st)
+		}
+		badBuyer := map[string]string{"app.tenant_id": f.tenantA, "app.store_id": f.storeA1, "app.principal_id": writerPrincipal, "app.buyer_id": other, "app.buyer_session_id": session}
+		if st := try(insert(-int64(qty), "fulfillment.pay_at_pickup.cancel"), badBuyer); st != "42501" {
+			t.Errorf("MERCHANT DEALLOCATE whose buyer GUC differs: want 42501, got %q", st)
+		}
+		if st := try(insert(-int64(qty)+1, "fulfillment.pay_at_pickup.cancel"), gucs); st != "42501" {
+			t.Errorf("DEALLOCATE with a wrong quantity: want 42501, got %q", st)
+		}
+	})
+}
+
+// payHoldFor places a card order for the buyer on the harness home service (paid through the real capture path) and returns its id.
+func (e *tcvEnv) payHoldFor(t *testing.T, b *tcvBuyer) string {
+	t.Helper()
+	res, err := e.svc.Begin(context.Background(), b.cap.Token, e.store(), t04Key("tpp-card"), b.h.input)
+	if err != nil {
+		t.Fatalf("card Begin: %v", err)
+	}
+	return e.payHold(res, b).order
 }
