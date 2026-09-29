@@ -288,7 +288,7 @@ new payment engine, new queue system or production permission is introduced.
 #### Corrected amount table and acceptance deltas
 
 SQL copies the accepted Stage-A `amount.go` table exactly: HKD 400..99999999 step1; USD and SGD
-50..99999999 step1; MYR 200..99999999 step1; TWD 100..99999900 step100. JPY and all other currencies
+50..99999999 step1; MYR 200..99999999 step1; TWD 2500..99999900 step100 (TWD min 2500: Stripe SANDBOX rejected 100/1200, accepted 2500 (2026-09-29)). JPY and all other currencies
 are rejected. These minimums are local prefilters, not guarantees for settlement conversion.
 This replaces the old JPY row, D15 and every stale currency list/test vector below.
 For rejected or NULL input, `stripe_amount_ok` returns false and `stripe_unit_amount` returns
@@ -403,7 +403,7 @@ and verified:
 | --- | --- | --- | --- | --- | --- | --- |
 | HKD | 2 | yes | 1 | 400 (HK$4.00, F7) | 99,999,999 | admitted |
 | USD | 2 | yes | 1 | 50 | 99,999,999 | admitted |
-| TWD | 2 | yes (two-decimal charges) | **100** (whole NT$; payouts are zero-decimal, F7) | 100 | 99,999,900 | admitted |
+| TWD | 2 | yes (two-decimal charges) | **100** (whole NT$; payouts are zero-decimal, F7) | **2500** (NT$25; TWD min 2500: Stripe SANDBOX rejected 100/1200, accepted 2500 (2026-09-29)) | 99,999,900 | admitted |
 | JPY | 0 | yes | 1 | 50 | 99,999,999 | admitted. SP02 must also pass the JPY storefront-formatting vector. |
 | ISK, UGX | 0 | no (×100) | — | — | — | rejected |
 | HUF | 2 | yes, but payouts differ | — | — | — | rejected |

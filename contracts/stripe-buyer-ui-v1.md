@@ -39,7 +39,7 @@ attempts). Enums add `CLOSED_UNPAID` and handoff `CREATING|READY|CLOSED`. Reject
 **PaymentPrepared** gains a method parameter (the BFF knows it from the validated request, the client
 from its marker). `payuni_credit`: unchanged (TWD 100..19999900, %100). `stripe_checkout`: currency and
 bounds exactly the stripe-psp §0.2 corrected table — HKD 400..99999999; USD, SGD 50..99999999; MYR
-200..99999999; TWD 100..99999900 step 100. Anything else rejects.
+200..99999999; TWD 2500..99999900 step 100 (TWD min 2500: Stripe SANDBOX rejected 100/1200, accepted 2500 (2026-09-29)). Anything else rejects.
 
 **HostedHandoff** is a union keyed by disjoint dispositions. PAYUNi `ISSUED`/`ALREADY_ISSUED` unchanged.
 Stripe: exact keys `order_id, disposition, expires_at` for `CREATING|CLOSED|UNAVAILABLE`; plus

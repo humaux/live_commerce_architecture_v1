@@ -244,7 +244,8 @@ const STRIPE_AMOUNTS: Record<string, [number, number]> = {
   USD: [50, 99999999],
   SGD: [50, 99999999],
   MYR: [200, 99999999],
-  TWD: [100, 99999900],
+  // TWD min 2500: Stripe SANDBOX rejected 100/1200, accepted 2500 (2026-09-29)
+  TWD: [2500, 99999900],
 };
 
 export function validPaymentPrepared(

@@ -168,7 +168,7 @@ func TestStripeSP15Process(t *testing.T) {
 		// A NEW attempt after requalification freezes v2 and its create uses the new key.
 		s.secret = newKey
 		s.requalify(t, e.sstEnv, 2)
-		v, err := e.reg.SetMethod(ctx, s.scope, s.methodInput(1, true, true, 100, 99999900))
+		v, err := e.reg.SetMethod(ctx, s.scope, s.methodInput(1, true, true, 2500, 99999900))
 		if err != nil {
 			t.Fatal(err)
 		}

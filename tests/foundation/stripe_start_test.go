@@ -146,7 +146,7 @@ func (e *sstEnv) seed(t *testing.T, p psHarness) sstStore {
 		t.Fatalf("register Stripe account: %v", err)
 	}
 	s.requalify(t, e, 1)
-	if s.method, err = e.reg.SetMethod(ctx, s.scope, s.methodInput(0, true, true, 100, 99999900)); err != nil || s.method != 1 {
+	if s.method, err = e.reg.SetMethod(ctx, s.scope, s.methodInput(0, true, true, 2500, 99999900)); err != nil || s.method != 1 {
 		t.Fatalf("enable Stripe method: version=%d err=%v", s.method, err)
 	}
 	return s
@@ -157,7 +157,7 @@ func (s *sstStore) requalify(t *testing.T, e *sstEnv, credentialVersion int64) {
 	var err error
 	if s.qualification, err = e.reg.Qualify(context.Background(), s.scope, stripeadmin.QualifyInput{
 		ConnectionID: s.connection, AccountID: s.account, SecretKey: s.secret, Profile: "PROVIDER_MOCK",
-		Currency: "TWD", ReturnURL: sstReturnURL, ExpectedVersion: credentialVersion, AmountMinor: 100}); err != nil {
+		Currency: "TWD", ReturnURL: sstReturnURL, ExpectedVersion: credentialVersion, AmountMinor: 2500}); err != nil {
 		t.Fatalf("qualify Stripe method: %v", err)
 	}
 }
@@ -510,19 +510,19 @@ func TestStripeSP07Start(t *testing.T) {
 			return s.begin(e.svc, t04Key("sst-drift"), s.input("zh-TW"))
 		}
 		sstAdmissionDrift(t, "method_stale_version", func(t *testing.T, e *sstEnv, s *sstStore) {
-			if v, err := e.reg.SetMethod(context.Background(), s.scope, s.methodInput(1, true, true, 100, 99999900)); err != nil || v != 2 {
+			if v, err := e.reg.SetMethod(context.Background(), s.scope, s.methodInput(1, true, true, 2500, 99999900)); err != nil || v != 2 {
 				t.Fatalf("new method version: %d %v", v, err)
 			}
 		}, rebegin)
 		sstAdmissionDrift(t, "method_disabled", func(t *testing.T, e *sstEnv, s *sstStore) {
-			v, err := e.reg.SetMethod(context.Background(), s.scope, s.methodInput(1, false, true, 100, 99999900))
+			v, err := e.reg.SetMethod(context.Background(), s.scope, s.methodInput(1, false, true, 2500, 99999900))
 			if err != nil {
 				t.Fatal(err)
 			}
 			s.method = v
 		}, rebegin)
 		sstAdmissionDrift(t, "method_hidden", func(t *testing.T, e *sstEnv, s *sstStore) {
-			v, err := e.reg.SetMethod(context.Background(), s.scope, s.methodInput(1, true, false, 100, 99999900))
+			v, err := e.reg.SetMethod(context.Background(), s.scope, s.methodInput(1, true, false, 2500, 99999900))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -536,10 +536,13 @@ func TestStripeSP07Start(t *testing.T) {
 			s.method = v
 		}, rebegin)
 		sstAdmissionDrift(t, "amount_above_method_maximum", func(t *testing.T, e *sstEnv, s *sstStore) {
-			v, err := e.reg.SetMethod(context.Background(), s.scope, s.methodInput(1, true, true, 100, 1000))
+			// TWD min 2500: Stripe SANDBOX rejected 100/1200, accepted 2500 (2026-09-29). The registrar can no
+			// longer admit a TWD max below the 2500 order, so the drift is applied to the new head as an owner fixture.
+			v, err := e.reg.SetMethod(context.Background(), s.scope, s.methodInput(1, true, true, 2500, 99999900))
 			if err != nil {
 				t.Fatal(err)
 			}
+			mustExec(t, e.f.owner, `UPDATE payments.method_versions SET min_amount_minor=100,max_amount_minor=1000 WHERE tenant_id=$1 AND store_id=$2 AND code='stripe_checkout' AND version=$3`, s.scope.TenantID, s.scope.StoreID, v)
 			s.method = v
 		}, rebegin)
 		sstAdmissionDrift(t, "qualification_revoked", func(t *testing.T, e *sstEnv, s *sstStore) {
@@ -685,12 +688,12 @@ func TestStripeSP07Start(t *testing.T) {
 		}
 		// A qualification captured under the OLD head cannot qualify the new one (registrar CAS)...
 		if _, err := e.reg.Qualify(context.Background(), s.scope, stripeadmin.QualifyInput{ConnectionID: s.connection, AccountID: s.account,
-			SecretKey: s.secret, Profile: "PROVIDER_MOCK", Currency: "TWD", ReturnURL: sstReturnURL, ExpectedVersion: 1, AmountMinor: 100}); !errors.Is(err, stripeadmin.ErrRejected) {
+			SecretKey: s.secret, Profile: "PROVIDER_MOCK", Currency: "TWD", ReturnURL: sstReturnURL, ExpectedVersion: 1, AmountMinor: 2500}); !errors.Is(err, stripeadmin.ErrRejected) {
 			t.Fatalf("stale expected version qualified the rotated head: %v", err)
 		}
 		// ...requalify at version 2, re-point the method (CAS 1 -> 2), and new starts work again.
 		s.requalify(t, e, 2)
-		v, err := e.reg.SetMethod(context.Background(), s.scope, s.methodInput(1, true, true, 100, 99999900))
+		v, err := e.reg.SetMethod(context.Background(), s.scope, s.methodInput(1, true, true, 2500, 99999900))
 		if err != nil || v != 2 {
 			t.Fatalf("re-point method: %d %v", v, err)
 		}

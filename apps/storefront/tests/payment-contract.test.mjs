@@ -201,7 +201,10 @@ test("SU01 prepared amounts follow the corrected per-currency table", () => {
     assert.equal(ok(currency, low - 1), false, currency);
     assert.equal(ok(currency, high + 1), false, currency);
   }
-  assert.equal(ok("TWD", 100), true);
+  // TWD min 2500: Stripe SANDBOX rejected 100/1200, accepted 2500 (2026-09-29)
+  assert.equal(ok("TWD", 2500), true);
+  assert.equal(ok("TWD", 2499), false);
+  assert.equal(ok("TWD", 100), false, "old TWD min");
   assert.equal(ok("TWD", 99999900), true);
   assert.equal(ok("TWD", 99), false);
   assert.equal(ok("TWD", 150), false, "TWD must be whole dollars");
