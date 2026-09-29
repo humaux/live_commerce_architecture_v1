@@ -32,6 +32,8 @@ type ExportRow struct {
 	PickupAddress, Items string
 	TotalMinor int64
 	Currency   string
+	// PickupSource is the LAST CSV column (ruling B19): ecpay_directory | buyer_entered | merchant_attested, empty for home.
+	PickupSource string
 }
 
 // Export is the finished file. Truncated is true when more than 1000 orders were eligible.
@@ -43,7 +45,7 @@ type Export struct {
 
 var exportHeader = []string{"order_id", "created_at_utc", "service_code", "destination_kind", "recipient_name", "phone",
 	"country", "region", "city", "postal_code", "line1", "line2", "pickup_namespace", "pickup_code", "pickup_name",
-	"pickup_address", "items", "total_minor", "currency"}
+	"pickup_address", "items", "total_minor", "currency", "pickup_source"}
 
 // WriteUnshippedCSV writes UTF-8 with BOM, CRLF line ends and RFC 4180 quoting. Not encoding/csv:
 // with UseCRLF it drops a bare CR inside a field, which would silently rewrite recipient text.
@@ -54,7 +56,7 @@ func WriteUnshippedCSV(w io.Writer, rows []ExportRow) error {
 	for _, r := range rows {
 		writeCSVLine(&b, []string{r.OrderID, r.CreatedAtUTC, r.ServiceCode, r.DestinationKind, r.RecipientName,
 			exportPhone(r.Phone), r.Country, r.Region, r.City, r.PostalCode, r.Line1, r.Line2, r.PickupNamespace,
-			r.PickupCode, r.PickupName, r.PickupAddress, r.Items, strconv.FormatInt(r.TotalMinor, 10), r.Currency})
+			r.PickupCode, r.PickupName, r.PickupAddress, r.Items, strconv.FormatInt(r.TotalMinor, 10), r.Currency, r.PickupSource})
 	}
 	_, err := w.Write(b.Bytes())
 	return err
@@ -174,6 +176,7 @@ type exportJSON struct {
 	Items           []exportItem `json:"items"`
 	TotalMinor      int64        `json:"total_minor"`
 	Currency        string       `json:"currency"`
+	PickupSource    string       `json:"pickup_source"`
 }
 
 func decodeExportRows(raw []byte) ([]ExportRow, error) {
@@ -189,7 +192,8 @@ func decodeExportRows(raw []byte) ([]ExportRow, error) {
 		}
 		var v exportJSON
 		if json.Unmarshal(object, &v) != nil || !command.ValidID(v.OrderID) || !money(v.TotalMinor) || !currency(v.Currency) ||
-			len(v.Items) == 0 || len(v.Items) > 50 {
+			len(v.Items) == 0 || len(v.Items) > 50 ||
+			(v.PickupSource != "" && v.PickupSource != "ecpay_directory" && v.PickupSource != "buyer_entered" && v.PickupSource != "merchant_attested") {
 			return nil, ErrUnavailable
 		}
 		parts := make([]string, len(v.Items))
@@ -203,7 +207,8 @@ func decodeExportRows(raw []byte) ([]ExportRow, error) {
 			DestinationKind: v.DestinationKind, RecipientName: v.RecipientName, Phone: v.Phone, Country: v.Country,
 			Region: v.Region, City: v.City, PostalCode: v.PostalCode, Line1: v.Line1, Line2: v.Line2,
 			PickupNamespace: v.PickupNamespace, PickupCode: v.PickupCode, PickupName: v.PickupName,
-			PickupAddress: v.PickupAddress, Items: strings.Join(parts, "; "), TotalMinor: v.TotalMinor, Currency: v.Currency})
+			PickupAddress: v.PickupAddress, Items: strings.Join(parts, "; "), TotalMinor: v.TotalMinor, Currency: v.Currency,
+			PickupSource: v.PickupSource})
 	}
 	return rows, nil
 }
