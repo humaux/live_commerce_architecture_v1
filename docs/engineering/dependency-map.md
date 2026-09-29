@@ -15,9 +15,9 @@ admin-fixture serves a disposable local database, never an existing shop.
 
 ## `cmd/api`
 
-(no package doc — add one: PROCESS.md §5)
+buyer_payment.go owns the API-side configuration and assembly of the hosted buyer payment service (PAYUNi always, Stripe Checkout when COMMERCE_STRIPE_CHECKOUT_ENABLED=1).
 
-- Depends on (internal): `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/httpapi`, `internal/identity`, `internal/identityhttp`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/live`, `internal/oidclogin`, `internal/platform`
+- Depends on (internal): `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/httpapi`, `internal/identity`, `internal/identityhttp`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/live`, `internal/oidclogin`, `internal/payments/stripewebhook`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
 - Used by: — (entry point or unused)
 
@@ -61,6 +61,14 @@ Command migrate applies livecommerce/migrations (embedded, checksummed, forward-
 - Depends on (third-party): —
 - Used by: — (entry point or unused)
 
+## `cmd/stripe-admin`
+
+Command stripe-admin is the operator-only Stripe registrar CLI (contracts/stripe-psp-v1.md §13).
+
+- Depends on (internal): `internal/integrations/accounts`, `internal/payments/stripeadmin`
+- Depends on (third-party): —
+- Used by: — (entry point or unused)
+
 ## `deploy/tools/lcentry`
 
 File: deploy/tools/lcentry/main.go Purpose: Command lcentry is the tiny, stdlib-only launcher baked into every deploy image (lc-go, lc-admin, lc-storefront).
@@ -97,7 +105,7 @@ Package catalog implements the merchant-scoped catalog transaction slice.
 
 Package checkout owns the trusted buyer checkout transaction.
 
-- Depends on (internal): `internal/buyer`, `internal/command`, `internal/fulfillment`, `internal/integrations/accounts`, `internal/integrations/psp/payuni`, `internal/inventory`, `internal/jobqueue`, `internal/pagination`, `internal/platform`, `internal/pricing`, `internal/storefront`
+- Depends on (internal): `internal/buyer`, `internal/command`, `internal/fulfillment`, `internal/integrations/accounts`, `internal/integrations/psp/payuni`, `internal/integrations/psp/stripe`, `internal/inventory`, `internal/jobqueue`, `internal/pagination`, `internal/platform`, `internal/pricing`, `internal/storefront`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgtype`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
 - Used by: `cmd/api`, `cmd/expiry-worker`, `internal/buyerhttp`
 
@@ -123,7 +131,7 @@ Package command owns scoped replay records and small transaction primitives.
 
 - Depends on (internal): `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`
-- Used by: `internal/buyer`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/pagination`, `internal/payments`, `internal/pricing`, `internal/storefront`
+- Used by: `internal/buyer`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/pagination`, `internal/payments`, `internal/payments/stripeadmin`, `internal/pricing`, `internal/storefront`
 
 ## `internal/domains`
 
@@ -179,7 +187,7 @@ Package accounts records merchant-owned provider credentials.
 
 - Depends on (internal): `internal/command`, `internal/integrations/core`, `internal/integrations/psp/payuni`, `internal/integrations/psp/stripe`, `internal/pagination`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
-- Used by: `cmd/api`, `cmd/payment-worker`, `internal/checkout`, `internal/httpapi`, `internal/payments`
+- Used by: `cmd/api`, `cmd/payment-worker`, `cmd/stripe-admin`, `internal/checkout`, `internal/httpapi`, `internal/payments`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`
 
 ## `internal/integrations/core`
 
@@ -219,7 +227,7 @@ Package stripe owns Stripe Checkout Session wire calls and webhook signature ver
 
 - Depends on (internal): —
 - Depends on (third-party): —
-- Used by: `internal/integrations/accounts`, `internal/payments`
+- Used by: `internal/checkout`, `internal/integrations/accounts`, `internal/payments`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`
 
 ## `internal/integrations/psp/stripe/stripetest`
 
@@ -243,7 +251,7 @@ Package inventory implements ledger-backed physical inventory commands.
 
 - Depends on (internal): —
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/riverqueue/river`
-- Used by: `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `internal/checkout`, `internal/payments`
+- Used by: `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `internal/checkout`, `internal/payments`, `internal/payments/stripewebhook`
 
 ## `internal/live`
 
@@ -285,13 +293,29 @@ Package payments owns merchant payment-method configuration, not payment attempt
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
 - Used by: `cmd/payment-worker`, `internal/httpapi`
 
+## `internal/payments/stripeadmin`
+
+Package stripeadmin owns the operator-only Stripe registrar: provisioning a store's Stripe account and encrypted API key, webhook endpoint signing secrets, method qualification and method rows, each as one call to a scoped registry SQL definer.
+
+- Depends on (internal): `internal/command`, `internal/integrations/accounts`, `internal/integrations/psp/stripe`, `internal/platform`
+- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
+- Used by: `cmd/stripe-admin`
+
+## `internal/payments/stripewebhook`
+
+Package stripewebhook owns admission of signed Stripe webhook deliveries for one registered endpoint: it verifies the signature with that endpoint's decrypted signing secrets and then commits receipt, River signal job and reciprocal signal row in one PG transaction before any ACK.
+
+- Depends on (internal): `internal/integrations/accounts`, `internal/integrations/psp/stripe`, `internal/jobqueue`, `internal/platform`
+- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
+- Used by: `cmd/api`
+
 ## `internal/platform`
 
 Package platform provides the narrow HTTP and database foundation shared by the API process.
 
 - Depends on (internal): `internal/httperror`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
-- Used by: `cmd/admin-fixture`, `cmd/api`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/command`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/payments`, `internal/pricing`
+- Used by: `cmd/admin-fixture`, `cmd/api`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/command`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/payments`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`, `internal/pricing`
 
 ## `internal/pricing`
 
