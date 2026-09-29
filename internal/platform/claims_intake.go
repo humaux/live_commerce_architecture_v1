@@ -13,7 +13,6 @@ import (
 // authority: a login that is also a merchant, worker, Meta or payment role, that owns objects or
 // that can SET ROLE to one is rejected, and every other pool validator rejects a login that can
 // reach commerce_claims_intake. Parse/connection errors (which may include a DSN) stay private.
-// Used by: cmd/claims-worker. Depends on: openPool/validatePoolAuthority (platform.go).
 func OpenClaimsIntakePool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	if ctx == nil || len(dsn) > 8192 {
 		return nil, errors.New("claims intake database unavailable")

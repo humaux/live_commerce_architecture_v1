@@ -18,11 +18,6 @@ package foundation_test
 // defined in secrets.env and every value shaped like sk_test_/rk_test_ (TestBrowserStripeNodeEnv
 // is the unit proof; runNode re-asserts before every spawn). Node receives counts through the
 // /facts control server, never a URL, session id, key or email.
-//
-// Depends on: stripeadmin (registrar, real api.stripe.com in SANDBOX), payments.NewStripeRuntime
-// (worker), checkout.NewHostedPaymentService + buyerhttp.New (API), stripetest (MOCK), psp/stripe
-// (drain expire only), the hpSetup/psSetupItemsOn/pwIsolatedFixture fixtures.
-// Used by: scripts/dev/test-local.sh --stripe-browser.
 
 import (
 	"bufio"

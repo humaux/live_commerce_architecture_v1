@@ -5,13 +5,6 @@
 // by a later BeginCheckout); no session title, label, actor key, platform, owner or
 // principal in any buyer projection; no cart write except through storefront.SetCart.
 //
-// Depends on: buyer (Scope, CheckScope, RunCommand receipts), storefront (LockCartOwner,
-// GetCart, SetCart — the only cart writer; claims never writes storefront tables),
-// command (sentinels); SQL functions claims.preview_link, claims.redeem_link and
-// claims.mark_applied (SECURITY DEFINER, owner commerce_claims_writer, EXECUTE
-// commerce_buyer_runtime); catalog.skus/products and control.stores read with the
-// buyer's existing column grants for display and availability.
-//
 // Lock order on redeem (§5.6): buyer-command receipt advisory → claims.bundles →
 // claims.lines (inside redeem_link) → cart advisory (LockCartOwner) → nested cart.set
 // receipt advisory (derived "clm:" key) → storefront.carts → catalog products → SKUs.

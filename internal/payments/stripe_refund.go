@@ -3,12 +3,8 @@
 // timeout, 404 or 5xx, and never writes stock, order or fulfilment state (RD6): it only records
 // authenticated observations, and payments.apply_stripe_refund decides facts in SQL.
 //
-// Depends on: internal/integrations/psp/stripe (api.stripe.com: POST/GET /v1/refunds, GET
-// /v1/payment_intents), internal/integrations/core (claim/complete of integration.operations),
-// integration.load_/mark_/record_/finish_stripe_refund* and record_stripe_charge_observation (PG,
-// commerce_worker EXECUTE), river_payment (InsertTx of payment_reconcile_v1 in the record tx).
-// Used by: NewPaymentWorkerClient (registered on the profile queue) and SignalWorker (refund/charge
-// branches share loadRefund/clientForRefund/recordRefund below).
+// External: api.stripe.com POST/GET /v1/refunds and GET /v1/payment_intents, only through
+// internal/integrations/psp/stripe (docs URLs in that package's refund.go).
 
 package payments
 

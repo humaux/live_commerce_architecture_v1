@@ -1,9 +1,6 @@
 // actions.go answers the admin UI's "which write buttons may I show" question (ruling E2): three
 // permission probes inside the caller's already-scoped transaction. It is a display hint only; every
 // write and the export still re-authorize in the database.
-//
-// Depends on: platform.RequirePermission (identity.resolve_access, same snapshot as the request).
-// Used by: internal/httpapi/shipments.go (GET /v1/admin/stores/{store_id}/order-actions).
 
 package merchantorders
 

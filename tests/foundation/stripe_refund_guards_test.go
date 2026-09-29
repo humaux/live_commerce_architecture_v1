@@ -280,7 +280,7 @@ func TestStripeRF12Guards(t *testing.T) {
 					return nil
 				}
 				raw, _ := os.ReadFile(path)
-				// Comments name hosts on purpose (PROCESS §5 "Depends on: api.stripe.com"); only code counts.
+				// Comments name hosts on purpose (PROCESS §5 external hosts, e.g. api.stripe.com); only code counts.
 				var code strings.Builder
 				for _, line := range strings.Split(string(raw), "\n") {
 					if i := strings.Index(line, "//"); i >= 0 && !strings.Contains(line[:i], `"`) {
@@ -377,14 +377,14 @@ func TestStripeRF12Guards(t *testing.T) {
 			}
 			text := doc.String()
 			missing := []string{}
-			for marker, want := range map[string]string{"owns": "Package ", "never": "It never", "depends": "Depends on:", "used": "Used by:"} {
+			for marker, want := range map[string]string{"owns": "Package ", "never": "It never"} {
 				if !strings.Contains(text, want) {
 					missing = append(missing, marker)
 				}
 			}
 			sort.Strings(missing)
 			if len(missing) > 0 && mustConform[dir] {
-				t.Errorf("%s: package comment lacks %v (PROCESS §5: owns / It never / Depends on: / Used by:)", dir, missing)
+				t.Errorf("%s: package comment lacks %v (PROCESS §5: owns / It never; internal depends/used-by is generated, R1 ruling F10)", dir, missing)
 			} else if len(missing) > 0 {
 				t.Logf("DATA %s: package comment lacks %v (pre-existing; reviewer decision)", dir, missing)
 			}

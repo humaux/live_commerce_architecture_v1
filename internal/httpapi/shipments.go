@@ -6,10 +6,8 @@
 // CAS and permission), no buyer route (the buyer sees shipments through GET /v1/buyer/orders/{id}),
 // no bulk tracking import (M-7), no logging of bodies, tracking numbers, recipients or bearer tokens.
 //
-// Depends on: internal/merchantorders (RecordShipment, ShipmentHistory, ExportUnshipped, Actions;
-// each re-authorizes in SQL and again in Go), platform.WithScope (one commerce_runtime READ COMMITTED
-// transaction per request; its nil return is the COMMIT acknowledgement every 2xx waits for) and the
-// Studio strict JSON decoder (studioDecodeRaw). Route → Go endpoint: this file's handlers ARE the Go
+// Each route runs in one commerce_runtime READ COMMITTED transaction (platform.WithScope) whose nil return is
+// the COMMIT acknowledgement every 2xx waits for. Route → Go endpoint: this file's handlers ARE the Go
 // endpoints; the admin BFF mirrors them under /api/admin/.
 //
 // The §5.1 error codes (version_changed, not_shippable, ...) live in internal/httperror's table (ruling 15).

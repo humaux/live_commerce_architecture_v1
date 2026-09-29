@@ -6,10 +6,6 @@
 // ring or rotation (§12: rotating the key turns an in-flight same-key new-actor retry into
 // 409), no database access, and no logging of the key. Buyer claim-link routes (B1–B2)
 // need no key and are mounted with the buyer transport.
-//
-// Depends on: internal/claims (NewLabelKey) and identityhttp.ValidSecret (the repository's
-// canonical 43-character raw base64url 32-byte secret grammar, shared with COMMERCE_BFF_KEY
-// and COMMERCE_BUYER_BFF_KEY).
 
 package main
 

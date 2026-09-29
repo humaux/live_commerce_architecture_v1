@@ -4,11 +4,6 @@
 // Non-goals: no link delivery (the operator copies it; T10c/T07 own messaging), no HTTP
 // response (the adapter writes the token only after platform.WithScope commits), no Go
 // lock or write on claims.bundles/claims.links: commerce_runtime has no such grant.
-//
-// Depends on: command (Run, Audit), platform (Scope); SQL function claims.issue_link
-// (SECURITY DEFINER, owner commerce_claims_writer, EXECUTE commerce_runtime only), which
-// re-resolves live:manage in the database, CASes the link generation and is the only code
-// path that can clear a binding — always together with a new token hash.
 
 package claims
 

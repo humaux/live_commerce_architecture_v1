@@ -1,10 +1,6 @@
 // payment.go owns the private /v1/buyer/orders/{id}/payment* routes: view, prepare, handoff and
 // the Stripe refresh/cancel signals. It never authenticates buyers itself (handler.go does),
 // never sees a provider key or performs provider I/O, and never logs a handoff redirect URL.
-//
-// Depends on: internal/checkout.HostedPaymentStarter (checkout SQL definers + river_payment insert).
-// Used by: handler.go dispatch; cmd/api wires the service in buyer_payment.go. The public BFF
-// (apps/storefront /api/buyer/) mirrors these routes in a separate unit.
 
 package buyerhttp
 

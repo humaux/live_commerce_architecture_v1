@@ -12,12 +12,6 @@
 // no HTTP, and no reading of internal/claims bodies. Probes that bypass Go run as the
 // superuser owner, sometimes after SET LOCAL ROLE commerce_claims_writer or a role under
 // test, always inside transactions that roll back, so no synthetic row survives.
-//
-// Depends on: lcHarness (live_claims_test.go); information_schema column/table/routine
-// privileges and pg_catalog (pg_proc, pg_class, aclexplode) for the matrix;
-// platform.OpenPool/OpenBuyerPool for the pool-authority validator; docker (the pinned PG
-// image, --pull=never) for the separate populated-upgrade cluster, exactly like the
-// existing historical-migration gates; migrations.Apply as the only migration runner.
 package foundation_test
 
 import (

@@ -4,11 +4,6 @@
 //
 // Non-goals: no carrier-specific import formats (ruling M-6), no paging beyond the 1000-row cap
 // (ruling M-5: the result flags truncation instead), no bulk tracking import (ruling M-7, R2).
-//
-// Depends on: identity.export_unshipped_orders (migrations/0063; owner commerce_auth, EXECUTE
-// commerce_runtime; re-authorizes orders:export AND orders:read and writes the
-// orders.export_unshipped audit row) and platform.RequirePermission as the second Go-side fence.
-// Used by: internal/httpapi/shipments.go (GET orders/unshipped.csv).
 
 package merchantorders
 

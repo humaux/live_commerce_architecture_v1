@@ -5,12 +5,6 @@
 // Non-goals: no manual ingest (manual.go), no link issue (link.go), no HTTP decoding, no
 // session lifecycle (package live owns live.sessions/programs; claims only reads a
 // session's existence and never locks it).
-//
-// Depends on: command (Run, Audit, sentinels), platform (Scope), pagination
-// (claim-bundles cursors), claims/grammar (keyword normalization and bounds);
-// tables live.offers, live.claim_windows, claims.bundles/lines/events/links as
-// commerce_runtime; catalog.skus/products and control.stores read-only for offer SKU
-// checks and display names (merchant RLS, no lock).
 
 package claims
 

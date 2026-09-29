@@ -1,7 +1,5 @@
 // Package stripetest owns fake Stripe wire self-tests.
 // It never calls api.stripe.com or admits production credentials.
-// Depends on: Go httptest client and the frozen Stripe verifier.
-// Used by: the MOCK gate before integration tests.
 package stripetest
 
 import (

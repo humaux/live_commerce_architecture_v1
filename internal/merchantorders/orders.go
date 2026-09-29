@@ -6,12 +6,6 @@
 // It never writes ledger, stock, reservation, payment-fact or refund state, never creates a provider
 // operation or River job, never calls a carrier or fetches a tracking URL, and never stores or logs an
 // export file or recipient data.
-//
-// Depends on: identity.read_merchant_orders, fulfillment.record_manual_shipment,
-// fulfillment.read_manual_shipment_history and identity.export_unshipped_orders (migrations/0063; each a
-// SECURITY DEFINER that re-authorizes the merchant in the database), platform.RequirePermission (second
-// Go-side authority fence), internal/pagination (cursor binding "merchant-orders").
-// Used by: internal/httpapi (orders.go, shipments.go, refunds.go).
 package merchantorders
 
 import (

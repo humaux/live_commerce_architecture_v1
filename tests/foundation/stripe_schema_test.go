@@ -1,7 +1,5 @@
 // stripe_schema_test.go owns independent REAL_PG checks for the frozen Stripe schema.
 // It never substitutes catalog text for a provider or browser acceptance result.
-// Depends on: foundation's isolated PG fixture, migrations, and Stripe's UNIT amount rule.
-// Used by: SP02, SP06 and SP19 focused gates.
 package foundation_test
 
 import (

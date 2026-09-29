@@ -17,10 +17,6 @@
 // Reads env: every NAME_FILE whose NAME matches ^(DATABASE_URL|COMMERCE_[A-Z0-9_]+)$
 // (wired in deploy/compose.yml). Reads secrets: the files those variables
 // point at, only under /run/secrets/ (Compose file secrets).
-// Used by: deploy/docker/{go,admin,storefront}.Dockerfile ENTRYPOINT and the
-// api/admin/storefront healthchecks in deploy/compose.yml.
-// Depends on: Go standard library only (no go.mod change; builds inside the
-// root module "livecommerce" so the repo toolchain pin applies).
 // Status: MODEL_ONLY until smoke S04 (unit tests) and S15/S26 (runtime) pass.
 // Change rules: keep stdlib-only; any rule change must update lcentry_test.go
 // and deploy-design §6; never print a secret value, only variable names.

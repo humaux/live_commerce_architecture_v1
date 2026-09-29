@@ -411,7 +411,9 @@ func TestMetaClaimsMCI10NoNewThirdPartyModule(t *testing.T) {
 }
 
 // TestMetaClaimsMCI10PackageComments: PROCESS.md §5 for the new packages: a package comment with the
-// single responsibility, non-goals ("never"), "Depends on:" and "Used by:".
+// single responsibility ("owns") and non-goals ("never"). Internal depends-on / used-by lists are no
+// longer hand-written: PROCESS.md §5 was amended 2026-09-29 (docs/engineering/dependency-map.md is generated
+// from go list), R1 ruling F10.
 func TestMetaClaimsMCI10PackageComments(t *testing.T) {
 	srcs := mciSources(t, "internal/claimsintake", "internal/integrations/metareply", "cmd/claims-worker", "cmd/meta-admin")
 	docs := map[string]string{}
@@ -427,9 +429,9 @@ func TestMetaClaimsMCI10PackageComments(t *testing.T) {
 			continue
 		}
 		if strings.HasPrefix(dir, "internal/") {
-			for _, want := range []string{" owns ", "never", "Depends on:", "Used by:"} {
+			for _, want := range []string{" owns ", "never"} {
 				if !strings.Contains(doc, want) {
-					t.Errorf("%s package comment lacks %q (PROCESS.md §5 items 1-4)", dir, strings.TrimSpace(want))
+					t.Errorf("%s package comment lacks %q (PROCESS.md §5 items 1-2)", dir, strings.TrimSpace(want))
 				}
 			}
 		}

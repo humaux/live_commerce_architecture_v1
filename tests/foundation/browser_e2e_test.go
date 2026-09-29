@@ -35,10 +35,6 @@ package foundation_test
 // in for the foreign tenant) and leak (a claim token lands in a log) each make the corresponding gate fail; the browser
 // gates were first red on the real product defect MDEF-1 (defects.json), a Go-side gate never turns a known defect green.
 // The PG budget (max_connections=60) is part of the harness: sampleConnections logs the peak.
-//
-// Depends on: rfxNew (isolated PG, fake Stripe, registrar, payment worker), miPool/miBinding/miRoute/mciEnv.startConsumer
-// /registerToken/newDispatcher (MCI harness), brf/browser helpers (IdP, environment, logs), connectProxy, waitReady.
-// Used by: scripts/dev/test-local.sh --browser-e2e.
 
 import (
 	"bytes"

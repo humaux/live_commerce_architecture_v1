@@ -1,10 +1,8 @@
 // Package stripetest owns the independent MOCK Stripe HTTP service: Checkout sessions
 // (server.go) and refunds / PaymentIntent+charge reads (refunds.go).
 // It never contacts Stripe, decides payment state in PG, or stores real card data.
-// Depends on: Go net/http and httptest for isolated wire behavior; no external service.
 // Written from https://docs.stripe.com/api/refunds and /api/payment_intents/retrieve
 // (retrieved 2026-09-29) plus contracts/stripe-refund-v1.md §1/§3, never from the adapter.
-// Used by: Stripe payment worker and HTTP integration tests (tests/foundation/stripe_*).
 package stripetest
 
 import (

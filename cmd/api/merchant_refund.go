@@ -1,9 +1,5 @@
 // merchant_refund.go builds the insert-only River client the merchant refund routes use. It never
 // starts a worker, never reads a Stripe secret and never contacts a provider from the API process.
-//
-// Depends on: river_payment (payment_refund_v1 and refresh payment_signal_v1 InsertTx through the
-// platform.OpenPool runtime pool; grants and guards are post_river/0013). Used by: the integrator's
-// main.go, which passes the client to httpapi.Options.RefundJobs.
 
 package main
 

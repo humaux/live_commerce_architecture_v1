@@ -7,13 +7,9 @@
 // B1–B2), no key loading (cmd/api decodes COMMERCE_CLAIMS_LABEL_KEY), and no logging of
 // bodies, labels, comment text, bearer or link tokens.
 //
-// Depends on: internal/claims (GetBoard, SetWindow, CreateOffer, UpdateOffer,
-// RecordManualClaim, ListBundles, IssueLink; each re-authorizes live:read or live:manage
-// before work, after lock waits and after command.Run), platform.WithScope (one
-// commerce_runtime READ COMMITTED transaction per request, opened with the route's
-// permission; its nil return is the COMMIT acknowledgement M7 waits for), and the Studio
-// transport helpers in studio.go (studioRoute, studioDecodeRaw, studioPage) so claims keep
-// the Studio private-response boundary: Cache-Control private, no-store, strict JSON,
+// Each route runs in one commerce_runtime READ COMMITTED transaction (platform.WithScope, opened with
+// the route's permission) whose nil return is the COMMIT acknowledgement M7 waits for, and keeps the
+// Studio private-response boundary (studio.go helpers): Cache-Control private, no-store, strict JSON,
 // query rejection and methodless 405 fallbacks.
 
 package httpapi

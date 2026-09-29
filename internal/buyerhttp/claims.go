@@ -6,12 +6,10 @@
 // cart merge), no merchant route (internal/httpapi M1–M7), no Quote, checkout, inventory
 // or message effect, and no logging or echo of the link token.
 //
-// Depends on: internal/claims (ParseLinkToken, PreviewLink, RedeemLink), buyer.WithScope
-// through scoped() (one commerce_buyer_runtime READ COMMITTED transaction per request with
-// the store already resolved from the published origin, never from input), and the cart
-// projection in projections.go. The link token arrives only in the X-Commerce-Claim-Token
-// header, exactly once; forbiddenInput (handler.go) rejects that header on every other
-// route, and query strings are already rejected for both routes.
+// Each request runs in one commerce_buyer_runtime READ COMMITTED transaction (buyer.WithScope through
+// scoped()) with the store already resolved from the published origin, never from input. The link token
+// arrives only in the X-Commerce-Claim-Token header, exactly once; forbiddenInput (handler.go) rejects
+// that header on every other route, and query strings are already rejected for both routes.
 
 package buyerhttp
 

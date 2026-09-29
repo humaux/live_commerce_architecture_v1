@@ -7,12 +7,10 @@
 // live.put_claim_source definer decide every rule and permission), no Graph call, no logging of the
 // pasted input, bodies or bearer tokens.
 //
-// Depends on: internal/claims (GetClaimSource, PutClaimSource), platform.WithScope through scopedAs (one
-// commerce_runtime READ COMMITTED transaction per request; its nil return is the COMMIT
-// acknowledgement the 200 waits for) and the claims transport helpers in claims.go (claimsRoute,
-// claimsBody: private no-store, strict JSON, no query, Idempotency-Key only on PUT).
+// Each route runs in one commerce_runtime READ COMMITTED transaction (platform.WithScope through scopedAs)
+// whose nil return is the COMMIT acknowledgement the 200 waits for; responses are private no-store, strict
+// JSON, no query, Idempotency-Key only on PUT (helpers in claims.go).
 // Route -> Go endpoint: these handlers ARE the Go endpoints; the admin BFF forwards them unchanged.
-// Mounted by registerClaimRoutes (same COMMERCE_CLAIMS_ENABLED gate as the other claims routes).
 
 package httpapi
 

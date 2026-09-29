@@ -6,9 +6,6 @@
 //
 // Non-goals: no key loading or rotation (cmd/claims-worker reads COMMERCE_CLAIMS_REPLY_LINK_KEY;
 // a key change makes ID() differ, which Check turns into a policy denial), no storage.
-//
-// Depends on: crypto/hmac, crypto/sha256, encoding/{base64,hex,json} and command only.
-// Used by: internal/claimsintake (plan), internal/integrations/metareply (Check, Dispatch).
 
 package claims
 
