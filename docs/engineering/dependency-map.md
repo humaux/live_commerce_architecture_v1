@@ -21,6 +21,14 @@ buyer_payment.go owns the API-side configuration and assembly of the hosted buye
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
 - Used by: — (entry point or unused)
 
+## `cmd/claims-worker`
+
+Command claims-worker is the T10c claims host (meta-claims-intake-v1 §5.3, IR-13): it runs the claims intake poller (internal/claimsintake) and the main-schema external_operation_v1 River worker whose only routes are the Meta private replies (internal/integrations/metareply).
+
+- Depends on (internal): `internal/claims`, `internal/claimsintake`, `internal/integrations/core`, `internal/integrations/metareply`, `internal/jobqueue`, `internal/platform`
+- Depends on (third-party): `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
+- Used by: — (entry point or unused)
+
 ## `cmd/expiry-worker`
 
 (no package doc — add one: PROCESS.md §5)
@@ -34,6 +42,14 @@ buyer_payment.go owns the API-side configuration and assembly of the hosted buye
 (no package doc — add one: PROCESS.md §5)
 
 - Depends on (internal): `internal/integrations/livekit`, `internal/jobqueue`, `internal/live`, `internal/platform`
+- Depends on (third-party): `github.com/jackc/pgx/v5/pgxpool`
+- Used by: — (entry point or unused)
+
+## `cmd/meta-admin`
+
+Command meta-admin is the operator-only Meta registrar CLI (meta-claims-intake-v1 §7).
+
+- Depends on (internal): `internal/command`, `internal/integrations/metareply`
 - Depends on (third-party): `github.com/jackc/pgx/v5/pgxpool`
 - Used by: — (entry point or unused)
 
@@ -115,7 +131,7 @@ Package claims owns live keyword offers, claim windows, claim bundles and claim-
 
 - Depends on (internal): `internal/buyer`, `internal/claims/grammar`, `internal/command`, `internal/pagination`, `internal/platform`, `internal/storefront`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
-- Used by: `cmd/api`, `internal/buyerhttp`, `internal/httpapi`, `internal/integrations/metareply`
+- Used by: `cmd/api`, `cmd/claims-worker`, `internal/buyerhttp`, `internal/claimsintake`, `internal/httpapi`, `internal/integrations/metareply`
 
 ## `internal/claims/grammar`
 
@@ -125,13 +141,21 @@ Package grammar owns the pure kw-v1 live-comment grammar (width map, trim, keywo
 - Depends on (third-party): —
 - Used by: `internal/claims`, `internal/integrations/meta`
 
+## `internal/claimsintake`
+
+Package claimsintake owns the claims intake poll loop (meta-claims-intake-v1 §5.3): it leases one claims.meta_intake row per transaction, applies it as a claim (claims.IngestMetaIntake) and, when that created a bundle on a private_reply source, plans the first private reply in the same transaction (integration.claim_reply_plannable, the River job, integration.plan_claim_reply).
+
+- Depends on (internal): `internal/claims`, `internal/command`, `internal/integrations/core`, `internal/platform`
+- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
+- Used by: `cmd/claims-worker`
+
 ## `internal/command`
 
 Package command owns scoped replay records and small transaction primitives.
 
 - Depends on (internal): `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`
-- Used by: `internal/buyer`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/metareply`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/pagination`, `internal/payments`, `internal/payments/stripeadmin`, `internal/pricing`, `internal/storefront`
+- Used by: `cmd/meta-admin`, `internal/buyer`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/metareply`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/pagination`, `internal/payments`, `internal/payments/stripeadmin`, `internal/pricing`, `internal/storefront`
 
 ## `internal/domains`
 
@@ -195,7 +219,7 @@ Package core owns the provider-neutral external-operation ledger boundary.
 
 - Depends on (internal): `internal/command`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`
-- Used by: `cmd/api`, `internal/integrations/accounts`, `internal/integrations/metareply`, `internal/payments`
+- Used by: `cmd/api`, `cmd/claims-worker`, `internal/claimsintake`, `internal/integrations/accounts`, `internal/integrations/metareply`, `internal/payments`
 
 ## `internal/integrations/livekit`
 
@@ -219,7 +243,7 @@ Package metareply owns the first Meta private reply of a keyword-claim bundle (m
 
 - Depends on (internal): `internal/claims`, `internal/command`, `internal/integrations/core`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
-- Used by: — (entry point or unused)
+- Used by: `cmd/claims-worker`, `cmd/meta-admin`
 
 ## `internal/integrations/psp/payuni`
 
@@ -259,7 +283,7 @@ Package inventory implements ledger-backed physical inventory commands.
 
 - Depends on (internal): —
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/riverqueue/river`
-- Used by: `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `internal/checkout`, `internal/payments`, `internal/payments/stripewebhook`
+- Used by: `cmd/claims-worker`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `internal/checkout`, `internal/payments`, `internal/payments/stripewebhook`
 
 ## `internal/live`
 
@@ -323,7 +347,7 @@ Package platform provides the narrow HTTP and database foundation shared by the 
 
 - Depends on (internal): `internal/httperror`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
-- Used by: `cmd/admin-fixture`, `cmd/api`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/command`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/metareply`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/payments`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`, `internal/pricing`
+- Used by: `cmd/admin-fixture`, `cmd/api`, `cmd/claims-worker`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/command`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/metareply`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/payments`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`, `internal/pricing`
 
 ## `internal/pricing`
 
