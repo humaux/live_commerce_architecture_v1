@@ -45,6 +45,18 @@ func identityFixture(t *testing.T) (*identity.Service, *identityProvider, *pgxpo
 	if err != nil {
 		t.Fatal(err)
 	}
+	// The shared fixture outlives this test. Tests hand this login objects
+	// (TestIdentityPoolRejectsPrivilegeAndObjectOwnership creates identity.<role>()
+	// with default PUBLIC EXECUTE); leaving them makes every later strict pool
+	// gate (e.g. platform.OpenStripeIngressPool) correctly reject correct logins.
+	// Registered before pool.Close, so it runs after the pool is closed.
+	t.Cleanup(func() {
+		for _, q := range []string{`DROP OWNED BY `, `DROP ROLE `} {
+			if _, err := f.owner.Exec(context.Background(), q+pgx.Identifier{role}.Sanitize()); err != nil {
+				t.Errorf("identity fixture cleanup %s%s: %v", q, role, err)
+			}
+		}
+	})
 	u, err := url.Parse(f.databaseURL)
 	if err != nil {
 		t.Fatal(err)
