@@ -126,6 +126,7 @@ export default function OrderPayment({
   const keepFailure = useRef(false);
   const statusLine = useRef<HTMLParagraphElement>(null);
   const hadAction = useRef(false);
+  const viewKey = useRef("");
 
   // quiet = background poll: no loading flicker, and a failed GET keeps the last view.
   async function read(version: number, quiet = false) {
@@ -170,9 +171,15 @@ export default function OrderPayment({
 
   useEffect(() => {
     const version = ++epoch.current;
-    latest.current = null;
-    setView(null);
-    setMarker(null);
+    // §8: a Refresh (refreshToken only) keeps the last view so an unchanged state is not
+    // unmounted and re-announced; a different order/context must never show the old one.
+    const key = `${context}:${order.order_id}`;
+    if (viewKey.current !== key) {
+      viewKey.current = key;
+      latest.current = null;
+      setView(null);
+      setMarker(null);
+    }
     // A failed Refresh-order signal must survive the remount that click causes.
     const keep = keepFailure.current;
     keepFailure.current = false;
@@ -439,7 +446,10 @@ export default function OrderPayment({
       {sending ? (
         <p role="status">{copy.sending}</p>
       ) : reading ? (
-        <p role="status">{copy.loading}</p>
+        // §8: reads are silent (aria-busy on the section covers them). One user action (Cancel,
+        // Refresh) legitimately runs several GETs (focus after the native confirm + the remount
+        // read); a role=status here re-announced the same loading text for each of them.
+        <p>{copy.loading}</p>
       ) : plan ? (
         <>
           {plan.pay && view && (

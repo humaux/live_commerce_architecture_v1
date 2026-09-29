@@ -156,6 +156,9 @@ async function context(mobile=false){
 // ---- store-tab helpers ----
 const requestIs=(response,suffix,method)=>new URL(response.url()).pathname===`/api/buyer/${suffix}`&&response.request().method()===method;
 async function newOrder(page,{pay=true}={}){
+  // After a reload the restored order mounts asynchronously: wait for whichever of the two entry points
+  // exists rather than counting once (count() is 0 while the page is still hydrating).
+  await ex(page.getByTestId("continue-shopping").or(page.locator("#quantity")).first()).toBeVisible({timeout:20000});
   if(await page.getByTestId("continue-shopping").count())await page.getByTestId("continue-shopping").click();
   await ex(page.locator("#quantity")).toBeEnabled();
   await page.locator("#quantity").fill("2");
@@ -462,7 +465,7 @@ async function su09(){
   await page.goto(product);await scanSelfTest(page,[c]);
   const three=async(row)=>{for(const loc of ["zh-CN","zh-TW","en"]){await setLocale(page,loc);await shot(page.getByTestId("order-payment"),`su09-${vp}-${row}-${loc}`,"MOCK");}await setLocale(page,"en");};
   const liveLen=()=>page.evaluate(()=>window.__live.length);
-  const noDupes=async(from)=>{const live=(await page.evaluate(i=>window.__live.slice(i),from));for(let i=1;i<live.length;i++)assert(!(live[i].text===live[i-1].text&&live[i].role===live[i-1].role&&live[i].t-live[i-1].t<1500),`announcement repeated: ${live[i].role}`);return live.length;};
+  const noDupes=async(from)=>{const live=(await page.evaluate(i=>window.__live.slice(i),from));for(let i=1;i<live.length;i++)assert(!(live[i].text===live[i-1].text&&live[i].role===live[i-1].role&&live[i].t-live[i-1].t<1500),`announcement repeated: ${live[i].role} ${JSON.stringify(live.map(x=>[x.role,x.text.slice(0,30)]))}`);return live.length;};
   // roles and names, three locales
   let id=await newOrder(page);
   for(const loc of ["zh-CN","zh-TW","en"]){await setLocale(page,loc);await ex(payBtn(page,loc)).toBeVisible();}
@@ -480,8 +483,10 @@ async function su09(){
   await child.close();await keyboardTo(page,LOC.en.recover);pop=page.waitForEvent("popup");await page.keyboard.press("Enter");child=await pop;
   await until(()=>stripeVisits>=2,60000,"hosted navigation (keyboard Continue)");await child.close();
   mark=await liveLen();await cancelViaUI(page,"en",{keyboard:true});
+  // §8: focus moves to the status line at the moment Cancel/Continue disappear (`cancelling`). Assert it
+  // before refreshUntil, whose own Refresh click legitimately moves focus onto the Refresh button.
+  await ex(page.getByTestId("payment-status")).toBeFocused({timeout:15000});
   await refreshUntil(page,["CLOSED_UNPAID"],90000,"keyboard cancel");
-  await ex(page.getByTestId("payment-status")).toBeFocused({timeout:15000}); // §8: focus moves to the status line when Cancel/Continue disappear
   await expectStatusText(page,"en","CLOSED_UNPAID","CANCELLED");await noDupes(mark);await three("03-closed-unpaid-cancelled");
   let f=await control(id);assert.equal(f.order.closed_unpaid,1);assert.equal(f.order.reservation,"RELEASED");
   passed(`SU09 ${vp}: keyboard-only Pay/Continue/Cancel, roles+names in 3 locales, one announcement per change, focus to status`);
