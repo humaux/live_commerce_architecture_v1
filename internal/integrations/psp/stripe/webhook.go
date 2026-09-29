@@ -4,7 +4,7 @@
 // logs or returns event bytes.
 //
 // Ownership: integration_worker. Dependencies: crypto/hmac, crypto/sha256 and
-// strictjson.go. Callers: internal/payments/stripewebhook (the API handler) only.
+// strictjson.go. The refund and charge event types are projected by the same code path (stripe-refund-v1 §3). Callers: internal/payments/stripewebhook (the API handler) only.
 // Signature scheme: https://docs.stripe.com/webhooks/signature and
 // https://docs.stripe.com/webhooks (retrieved 2026-09-28, F5).
 
@@ -66,9 +66,12 @@ func (WebhookVerifier) MarshalJSON() ([]byte, error) {
 // caller can quarantine it by body hash (§9.1); it is never dropped.
 type Event struct {
 	ID, Type, APIVersion, ObjectType, SessionID, ClientReferenceID, MetadataAttempt string
-	Livemode, AccountPresent, ProbeSession, Malformed                               bool
-	Created, SignedAt                                                               int64
-	BodySHA256                                                                      [32]byte
+	// PaymentIntentID and MetadataRefund are projected only from refund and charge objects
+	// (stripe-refund-v1 §3): the PaymentIntent maps a charge, lc_refund maps an unpinned refund.
+	PaymentIntentID, MetadataRefund                   string
+	Livemode, AccountPresent, ProbeSession, Malformed bool
+	Created, SignedAt                                 int64
+	BodySHA256                                        [32]byte
 }
 
 func (Event) String() string               { return "stripe.Event{redacted}" }
@@ -243,6 +246,21 @@ func projectEvent(raw []byte) (Event, bool) {
 		}
 		ev.MetadataAttempt = boundedRef(attempt)
 		ev.ProbeSession = probePresent && probe != ""
+		if objType == "refund" {
+			refund, _, okF := md.str("lc_refund")
+			if !okF {
+				return Event{}, false
+			}
+			ev.MetadataRefund = boundedRef(refund)
+		}
+	}
+	if objType == "refund" || objType == "charge" {
+		// payment_intent is an id string on these objects; another type is an unusable payload.
+		pi, _, okPI := obj.str("payment_intent")
+		if !okPI || (pi != "" && !stripeIDPattern.MatchString(pi)) {
+			return Event{}, false
+		}
+		ev.PaymentIntentID = pi
 	}
 	return ev, true
 }

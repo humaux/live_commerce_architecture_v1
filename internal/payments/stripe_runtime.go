@@ -66,7 +66,12 @@ func NewStripeRuntime(ctx context.Context, pool *pgxpool.Pool, keys *accounts.Ke
 		('integration.finish_stripe_query(uuid,bigint,bytea,text,text)'),
 		('integration.record_stripe_observation(uuid,bigint,bytea,text,jsonb,bigint,text)'),
 		('integration.load_stripe_signal(uuid,bigint,bytea,text,bigint,uuid)'),
-		('integration.consume_stripe_signal(uuid,uuid,bigint,bytea,text,text)')
+		('integration.consume_stripe_signal(uuid,uuid,bigint,bytea,text,text)'),
+		('integration.load_stripe_refund(uuid,bigint,bytea,text)'),
+		('integration.mark_stripe_refund_sent(uuid,bigint,bytea,text,bytea)'),
+		('integration.finish_stripe_refund(uuid,bigint,bytea,text,text)'),
+		('integration.record_stripe_refund_observation(uuid,bigint,bytea,text,jsonb,bigint)'),
+		('integration.record_stripe_charge_observation(uuid,bigint,bytea,text,jsonb,bigint)')
 		) AS v(signature))`).Scan(&ready, &capabilities); err != nil || !ready || !capabilities {
 		return nil, errStripeRuntimeDatabase
 	}
