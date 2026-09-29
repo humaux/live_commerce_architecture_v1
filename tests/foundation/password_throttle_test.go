@@ -15,6 +15,7 @@ package foundation_test
 //     Retry-After, which either bucket satisfies.
 
 import (
+	"encoding/base64"
 	"errors"
 	"net/netip"
 	"strconv"
@@ -82,8 +83,10 @@ func (e *pwaEnv) wrongCompleteFrom(ip netip.Addr) error {
 	return err
 }
 
+// identityRandomBinding is a well-formed (32 random bytes, base64url) binding that has no challenge row.
+// A malformed string is refused as invalid_code before any bucket is hit, so it cannot exercise `binding:`.
 func identityRandomBinding() string {
-	return "b" + pwaLetters(42) // 43 URL-safe characters, never a real binding
+	return base64.RawURLEncoding.EncodeToString(randomBytes(32))
 }
 
 func TestPasswordPA07Throttle(t *testing.T) {
@@ -542,10 +545,18 @@ func TestPasswordPA07Throttle(t *testing.T) {
 		victim, password := pwaEmail(), pwaSecret()
 		e.register(victim, password)
 		A := pwaIP()
-		for i := 1; i <= 10; i++ { // unknown-email resets count against every bucket, incl. global-mail-unauth
+		for i := 1; i <= 5; i++ { // 5 sign-ups of free addresses: the ip-signup limit, and each one is an unauth mail
+			if _, err := e.pw.Signup(pwaBG, A, pwaEmail(), pwaSecret(), "en"); err != nil {
+				t.Fatalf("A's sign-up %d: %v", i, err)
+			}
+		}
+		for i := 6; i <= 10; i++ { // unknown-email resets count against every bucket, incl. global-mail-unauth
 			if _, err := e.pw.Reset(pwaBG, A, pwaEmail(), "en"); err != nil {
 				t.Fatalf("A's unauth mail %d: %v", i, err)
 			}
+		}
+		if _, err := e.pw.Signup(pwaBG, A, pwaEmail(), pwaSecret(), "en"); err == nil {
+			t.Fatal("A's 6th sign-up in an hour was accepted (ip-signup is 5 / hour)")
 		}
 		_, err := e.pw.Reset(pwaBG, A, pwaEmail(), "en")
 		if _, ok := pwaThrottled(err); !ok {
