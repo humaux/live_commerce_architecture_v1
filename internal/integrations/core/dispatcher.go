@@ -42,13 +42,19 @@ type DispatchRequest struct {
 	IdempotencyKey    string          `json:"idempotency_key"`
 }
 
+// DispatchRoute sets either Dispatch, or the LoadSecret + DispatchWithSecret pair (both or
+// neither; meta-claims-intake-v1 §6.4). LoadSecret runs in dispatch mode only, after the final
+// gate, in one DBTimeout-bounded dispatcher transaction that ends before DispatchWithSecret; its
+// only allowed body is one lease-fenced SQL loader. Check and Reconcile never see a Secret.
 type DispatchRoute struct {
-	Provider  string
-	Action    string
-	Purpose   string
-	Check     func(context.Context, DispatchRequest) error
-	Dispatch  func(context.Context, DispatchRequest) (Outcome, error)
-	Reconcile func(context.Context, DispatchRequest) (Outcome, error)
+	Provider           string
+	Action             string
+	Purpose            string
+	Check              func(context.Context, DispatchRequest) error
+	Dispatch           func(context.Context, DispatchRequest) (Outcome, error)
+	LoadSecret         func(context.Context, pgx.Tx, SecretClaim) (Secret, error)
+	DispatchWithSecret func(context.Context, DispatchRequest, Secret) (Outcome, error)
+	Reconcile          func(context.Context, DispatchRequest) (Outcome, error)
 }
 
 type DispatcherOptions struct {
@@ -95,6 +101,13 @@ func NewDispatcher(ctx context.Context, pool *pgxpool.Pool, routes []DispatchRou
 	if err != nil {
 		return nil, err
 	}
+	lease := time.Duration(options.LeaseSeconds) * time.Second
+	for _, route := range compiled {
+		// The secret load adds one more DB-bounded step before the provider call.
+		if route.LoadSecret != nil && options.CallTimeout+3*options.DBTimeout+time.Second >= lease {
+			return nil, errInvalidJob
+		}
+	}
 	if err := platform.ValidateWorkerPool(ctx, pool); err != nil {
 		return nil, err
 	}
@@ -119,8 +132,10 @@ func compileDispatchRoutes(routes []DispatchRoute) (map[dispatchRouteKey]Dispatc
 	}
 	compiled := make(map[dispatchRouteKey]DispatchRoute, len(routes))
 	for _, route := range routes {
+		plain := route.Dispatch != nil && route.LoadSecret == nil && route.DispatchWithSecret == nil
+		secret := route.Dispatch == nil && route.LoadSecret != nil && route.DispatchWithSecret != nil
 		if !validProvider(route.Provider) || !actionPattern.MatchString(route.Action) || !validPurpose(route.Purpose) ||
-			route.Check == nil || route.Dispatch == nil || route.Reconcile == nil {
+			route.Check == nil || !(plain || secret) || route.Reconcile == nil {
 			return nil, errInvalidJob
 		}
 		key := dispatchRouteKey{provider: route.Provider, action: route.Action, purpose: route.Purpose}
@@ -249,7 +264,27 @@ func (d *Dispatcher) runOperation(ctx context.Context, operationID string) error
 	var outcome Outcome
 	var callbackErr error
 	var callbackPanicked bool
-	if claim.Mode == "dispatch" {
+	if claim.Mode == "dispatch" && route.LoadSecret != nil {
+		secret, loadErr, loadPanicked := d.loadSecret(callCtx, route, operation, claim)
+		if ctx.Err() != nil {
+			secret.zero()
+			return river.JobSnooze(d.options.RetryDelay)
+		}
+		if callCtx.Err() != nil {
+			secret.zero()
+			return d.completeAmbiguous(ctx, operation, claim, "callback_timeout")
+		}
+		if loadErr != nil && !loadPanicked && errors.Is(loadErr, ErrPolicyDenied) {
+			// Pre-dispatch denial: no credential means zero provider calls, so BLOCKED_POLICY is truthful.
+			return d.completeAndFinish(ctx, operation, claim, Outcome{State: "BLOCKED_POLICY", Code: "credential_unavailable"}, false)
+		}
+		if loadErr != nil || loadPanicked {
+			// Zero calls were made, but the loader ran in the lease: only Reconcile follows, never a re-POST.
+			return d.completeAmbiguous(ctx, operation, claim, "secret_load_failed")
+		}
+		outcome, callbackErr, callbackPanicked = invokeSecretOutcome(callCtx, route.DispatchWithSecret, request, secret)
+		secret.zero()
+	} else if claim.Mode == "dispatch" {
 		outcome, callbackErr, callbackPanicked = invokeOutcome(callCtx, route.Dispatch, request)
 	} else {
 		outcome, callbackErr, callbackPanicked = invokeOutcome(callCtx, route.Reconcile, request)
@@ -278,6 +313,32 @@ func (d *Dispatcher) runOperation(ctx context.Context, operationID string) error
 		outcome.Code = "reconcile_budget_exhausted"
 	}
 	return d.completeAndFinish(ctx, operation, claim, outcome, exhausted)
+}
+
+// loadSecret runs route.LoadSecret inside one DBTimeout-bounded transaction that has ended when it
+// returns. Any error leaves an empty Secret; a loader that panics or fails to end its
+// transaction never yields a usable credential.
+func (d *Dispatcher) loadSecret(ctx context.Context, route DispatchRoute, operation Operation, claim ClaimResult) (secret Secret, err error, panicked bool) {
+	bounded, cancel := context.WithTimeout(ctx, d.options.DBTimeout)
+	defer cancel()
+	tx, err := d.pool.BeginTx(bounded, pgx.TxOptions{})
+	if err != nil {
+		return Secret{}, err, false
+	}
+	defer d.rollback(tx)
+	secret, err, panicked = invokeLoad(bounded, route.LoadSecret, tx, SecretClaim{
+		OperationID: operation.ID, Generation: claim.Generation, LeaseToken: append([]byte(nil), claim.LeaseToken...),
+	})
+	if err == nil && !panicked {
+		if err = tx.Commit(bounded); err != nil {
+			secret.zero()
+		}
+	}
+	if err != nil || panicked {
+		secret.zero()
+		return Secret{}, err, panicked
+	}
+	return secret, nil, false
 }
 
 func (d *Dispatcher) safeDatabaseError(ctx context.Context, err error) error {
@@ -433,6 +494,26 @@ func invokeOutcome(ctx context.Context, callback func(context.Context, DispatchR
 		}
 	}()
 	outcome, err = callback(ctx, request)
+	return outcome, err, false
+}
+
+func invokeLoad(ctx context.Context, callback func(context.Context, pgx.Tx, SecretClaim) (Secret, error), tx pgx.Tx, claim SecretClaim) (secret Secret, err error, panicked bool) {
+	defer func() {
+		if recover() != nil {
+			secret, err, panicked = Secret{}, nil, true
+		}
+	}()
+	secret, err = callback(ctx, tx, claim)
+	return secret, err, false
+}
+
+func invokeSecretOutcome(ctx context.Context, callback func(context.Context, DispatchRequest, Secret) (Outcome, error), request DispatchRequest, secret Secret) (outcome Outcome, err error, panicked bool) {
+	defer func() {
+		if recover() != nil {
+			outcome, err, panicked = Outcome{}, nil, true
+		}
+	}()
+	outcome, err = callback(ctx, request, secret)
 	return outcome, err, false
 }
 
