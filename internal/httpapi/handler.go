@@ -17,6 +17,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/riverqueue/river"
 	"livecommerce/internal/catalog"
 	"livecommerce/internal/claims"
 	"livecommerce/internal/command"
@@ -40,6 +41,9 @@ type Options struct {
 	// ClaimLabels is the server-held manual-label HMAC key (cmd/api loads
 	// COMMERCE_CLAIMS_LABEL_KEY). nil leaves the keyword-claims routes unmounted.
 	ClaimLabels *claims.LabelKey
+	// RefundJobs is the insert-only river_payment client (cmd/api newMerchantRefundJobs). nil leaves the
+	// stripe-refund-v1 §7.1 refund routes unmounted.
+	RefundJobs *river.Client[pgx.Tx]
 }
 
 func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
@@ -121,6 +125,8 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerOrderRoutes(mux, pool)
 	registerStudioRoutes(mux, pool, configured.Live, configured.BrowserInput)
 	registerClaimRoutes(mux, pool, configured.ClaimLabels)
+	registerRefundRoutes(mux, pool, configured.RefundJobs)
+	registerShipmentRoutes(mux, pool)
 	foundation := platform.NewHandler(pool, platform.HandlerOptions{SessionStoreList: configured.SessionStoreList})
 	if configured.SessionStoreList {
 		mux.Handle("GET /v1/admin/stores", foundation)

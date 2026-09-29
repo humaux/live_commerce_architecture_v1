@@ -96,8 +96,12 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	refundJobs, err := newMerchantRefundJobs(pool)
+	if err != nil {
+		return err
+	}
 	handler := httpapi.NewHandler(pool, httpapi.Options{SessionStoreList: identityConfig.enabled, Accounts: accountService, Live: studioPlanner,
-		ClaimLabels: claimsConfig.labels})
+		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs})
 	if identityHandler != nil {
 		mux := http.NewServeMux()
 		mux.Handle("/v1/identity/", identityHandler)
