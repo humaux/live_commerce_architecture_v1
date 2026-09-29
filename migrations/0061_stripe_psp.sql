@@ -819,7 +819,9 @@ BEGIN
    (r->>'Status'='expired' AND r->>'PaymentStatus'='unpaid'
     AND r->>'PaymentIntentStatus' IN ('','canceled','requires_payment_method'))
    OR (r->>'Via'='create' AND r->>'ErrorClass'='rejected'
-    AND (r->>'SendCount')::integer=1 AND sess.session_id IS NULL)
+    AND (r->>'SendCount')::integer=1 AND sess.session_id IS NULL
+    -- RD4: only the very first send proves non-existence; after any resend the key may have executed.
+    AND sess.create_send_count=1 AND sess.create_last_sent_at=sess.create_first_sent_at)
    OR (r->>'Via'='list' AND (r->>'ListMatchCount')::integer=0 AND sess.session_id IS NULL
     AND sess.create_first_sent_at IS NOT NULL AND v_now>=sess.expires_at+interval '15 minutes')
    OR (obs.source='LOCAL' AND r->>'Via'='unsent' AND sess.create_suppressed_at IS NOT NULL
@@ -1023,7 +1025,14 @@ BEGIN
  SELECT x.* INTO s FROM payments.stripe_sessions x WHERE x.attempt_id=a.id FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'Stripe session unavailable' USING ERRCODE='PT409'; END IF;
  v_now:=clock_timestamp();
- IF s.session_id IS NOT NULL OR s.create_suppressed_at IS NOT NULL OR s.cancel_requested_at IS NOT NULL THEN
+ IF s.session_id IS NOT NULL OR s.create_suppressed_at IS NOT NULL OR s.cancel_requested_at IS NOT NULL
+  -- RD4 / §10: a recorded first-send rejection is final even before payment_reconcile_v1 applies its
+  -- CLOSED_UNPAID. Stripe does not cache a 400 / pre-idempotency 401, so a resend could create a
+  -- session after the attempt closes and its stock is released.
+  OR EXISTS(SELECT 1 FROM payments.provider_observations o WHERE o.tenant_id=a.tenant_id
+   AND o.store_id=a.store_id AND o.attempt_id=a.id AND o.source='QUERY'
+   AND o.report->>'Via'='create' AND o.report->>'ErrorClass'='rejected'
+   AND o.report->>'SendCount'='1' AND o.report->>'SessionID'='') THEN
   RETURN 'CLOSED';
  END IF;
  IF s.create_first_sent_at IS NULL THEN
@@ -1043,7 +1052,7 @@ END $$;
 ALTER FUNCTION integration.mark_stripe_create_sent(uuid,bigint,bytea,text,bytea) OWNER TO commerce_integration_writer;
 REVOKE ALL ON FUNCTION integration.mark_stripe_create_sent(uuid,bigint,bytea,text,bytea) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION integration.mark_stripe_create_sent(uuid,bigint,bytea,text,bytea) TO commerce_worker;
-COMMENT ON FUNCTION integration.mark_stripe_create_sent(uuid,bigint,bytea,text,bytea) IS 'integration owner; worker records exact create body before network send and permits same-key retries only within bound';
+COMMENT ON FUNCTION integration.mark_stripe_create_sent(uuid,bigint,bytea,text,bytea) IS 'integration owner; worker records exact create body before network send and permits same-key retries only within bound; CLOSED once a first-send rejection is recorded (never resend after it)';
 
 CREATE FUNCTION integration.note_stripe_expire(p_id uuid,p_generation bigint,p_token bytea,p_profile text)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
