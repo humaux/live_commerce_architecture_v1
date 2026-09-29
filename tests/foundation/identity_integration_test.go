@@ -407,8 +407,8 @@ func TestIdentityPoolRejectsPrivilegeAndObjectOwnership(t *testing.T) {
 }
 
 // initialStoreGrants is the exact, sorted permission set that
-// identity.create_initial_store (latest definition: migrations/0027_merchant_orders.sql)
+// identity.create_initial_store (latest definition: migrations/0065_owner_provisioning.sql)
 // grants the creating principal. Every test asserting the initial owner's
 // grants compares against this one list so a migration that changes the set
 // fails loudly in one place instead of leaving stale per-test counts.
-const initialStoreGrants = "audit:read,audit:write,catalog:read,catalog:write,integration:manage,integration:read,inventory:read,inventory:reserve,inventory:write,orders:read,pricing:read,pricing:write,store:read"
+const initialStoreGrants = "audit:read,audit:write,catalog:read,catalog:write,fulfillment:write,integration:manage,integration:read,inventory:read,inventory:reserve,inventory:write,live:manage,live:read,orders:export,orders:read,payments:refund,pricing:read,pricing:write,store:read"
