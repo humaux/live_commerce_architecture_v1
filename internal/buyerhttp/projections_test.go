@@ -197,7 +197,7 @@ func TestProjectOrderExactDisplayAndDraftOnlyExpiry(t *testing.T) {
 	}
 	got := projectOrder(order)
 	want := map[string][]string{
-		"$":                                   {"order_id", "cart_id", "cart_version", "commercial_state", "fulfillment_state", "hold_expires_at", "snapshot"},
+		"$":                                   {"order_id", "cart_id", "cart_version", "commercial_state", "fulfillment_state", "hold_expires_at", "snapshot", "shipment"},
 		"$.snapshot":                          {"quote", "destination", "service"},
 		"$.snapshot.quote":                    {"currency", "lines", "amount"},
 		"$.snapshot.quote.lines[0]":           {"sku_id", "code", "name", "description", "quantity", "unit_price_minor", "amount"},
@@ -226,7 +226,7 @@ func TestProjectOrderExactDisplayAndDraftOnlyExpiry(t *testing.T) {
 		t.Fatal("non-DRAFT order retained a hold expiry")
 	}
 	if raw := assertExactKeys(t, paid, map[string][]string{
-		"$":                                   {"order_id", "cart_id", "cart_version", "commercial_state", "fulfillment_state", "snapshot"},
+		"$":                                   {"order_id", "cart_id", "cart_version", "commercial_state", "fulfillment_state", "snapshot", "shipment"},
 		"$.snapshot":                          {"quote", "destination", "service"},
 		"$.snapshot.quote":                    {"currency", "lines", "amount"},
 		"$.snapshot.quote.lines[0]":           {"sku_id", "code", "name", "description", "quantity", "unit_price_minor", "amount"},
@@ -246,7 +246,7 @@ func TestProjectOrderExactDisplayAndDraftOnlyExpiry(t *testing.T) {
 		t.Fatal("empty order quote lines must be [] and absent pickup must remain omitted")
 	}
 	if raw := assertExactKeys(t, withoutOptionals, map[string][]string{
-		"$":                                   {"order_id", "cart_id", "cart_version", "commercial_state", "fulfillment_state", "snapshot"},
+		"$":                                   {"order_id", "cart_id", "cart_version", "commercial_state", "fulfillment_state", "snapshot", "shipment"},
 		"$.snapshot":                          {"quote", "destination", "service"},
 		"$.snapshot.quote":                    {"currency", "lines", "amount"},
 		"$.snapshot.quote.amount":             {"subtotal_minor", "discount_minor", "shipping_minor", "shipping_tax_minor", "tax_minor", "total_minor"},

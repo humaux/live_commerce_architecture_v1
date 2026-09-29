@@ -169,7 +169,7 @@ func TestMerchantOrdersAuthorityAndOnboarding(t *testing.T) {
 		"checkout.orders":                {"commercial_state", "country", "created_at", "currency", "fulfillment_state", "id", "owner_id", "service_code", "snapshot", "store_id", "tenant_id", "total_minor", "updated_at"},
 		"checkout.payment_attempts":      {"amount_minor", "connection_id", "currency", "environment", "execution_profile", "id", "order_id", "owner_id", "store_id", "tenant_id"},
 		"payments.facts":                 {"amount_minor", "attempt_id", "connection_id", "currency", "environment", "execution_profile", "kind", "store_id", "tenant_id"},
-		"payments.review_cases":          {"attempt_id", "store_id", "tenant_id"},
+		"payments.review_cases":          {"attempt_id", "reason", "store_id", "tenant_id"}, // 0063 adds reason (MD6 review predicate)
 		"fulfillment.payment_work_items": {"attempt_id", "order_id", "owner_id", "state", "store_id", "tenant_id"},
 	} {
 		var got []string
@@ -334,7 +334,7 @@ func TestMerchantOrdersSQLProjectionAndIsolation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantKeys := []string{"commercial_state", "created_at", "currency", "fulfillment_state", "order_id", "payment_state", "test_mode", "total_minor", "updated_at", "work_state"}
+	wantKeys := []string{"commercial_state", "created_at", "currency", "fulfillment_state", "order_id", "payment_state", "refund_pending_minor", "refunded_minor", "test_mode", "total_minor", "updated_at", "work_state"} // 0063: stripe-refund-v1 §7.1 amounts
 	ids := map[string]bool{first.OrderID: false, second.OrderID: false}
 	for _, row := range rows {
 		id, _ := row["order_id"].(string)
@@ -361,7 +361,7 @@ func TestMerchantOrdersSQLProjectionAndIsolation(t *testing.T) {
 	if err != nil || len(detail) != 1 {
 		t.Fatalf("owned detail: %v rows=%d", err, len(detail))
 	}
-	for _, key := range []string{"country", "service_code", "items", "totals", "destination"} {
+	for _, key := range []string{"country", "service_code", "items", "totals", "destination", "shipment"} { // 0063: manual-fulfilment-v1 §4.1
 		if _, ok := detail[0][key]; !ok {
 			t.Fatalf("detail missing %s", key)
 		}
@@ -689,7 +689,7 @@ func TestMerchantOrdersHTTPPaginationPrivacyAndNoEffects(t *testing.T) {
 		t.Fatalf("all-buyers store page=%+v", full)
 	}
 	for _, item := range full.Items {
-		if len(item) != 10 {
+		if len(item) != 12 { // 10 + refunded_minor, refund_pending_minor (0063, stripe-refund-v1 §7.1)
 			t.Fatalf("summary has extra keys: %+v", item)
 		}
 	}
@@ -725,7 +725,7 @@ func TestMerchantOrdersHTTPPaginationPrivacyAndNoEffects(t *testing.T) {
 	for _, orderID := range []string{q.hold.OrderID, second.OrderID} {
 		status, raw := request("GET", base+"/"+orderID, q.f.tokens["a"], nil, nil)
 		var detail map[string]any
-		if status != 200 || json.Unmarshal(raw, &detail) != nil || len(detail) != 15 {
+		if status != 200 || json.Unmarshal(raw, &detail) != nil || len(detail) != 18 { // 15 + refunded_minor, refund_pending_minor, shipment (0063)
 			t.Fatalf("detail %s status=%d body=%s", orderID, status, raw)
 		}
 		if _, leaked := detail["owner_id"]; leaked {

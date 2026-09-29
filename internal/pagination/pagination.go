@@ -123,7 +123,7 @@ func validBinding(b Binding) bool {
 	case "products", "warehouses", "inventory", "provider-accounts", "markets":
 		return b.ParentID == "" && b.Filter == ""
 	case "merchant-orders":
-		return b.ParentID == "" && (b.Filter == "all" || b.Filter == "DRAFT" || b.Filter == "AWAITING_PAYMENT" || b.Filter == "CONFIRMED" || b.Filter == "CANCELLED")
+		return b.ParentID == "" && (b.Filter == "all" || b.Filter == "DRAFT" || b.Filter == "AWAITING_PAYMENT" || b.Filter == "CONFIRMED" || b.Filter == "CANCELLED" || b.Filter == "shipped" || b.Filter == "unshipped")
 	case "live-sessions":
 		return b.ParentID == "" && b.Filter == ""
 	case "delivery-services":
