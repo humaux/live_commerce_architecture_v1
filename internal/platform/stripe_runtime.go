@@ -53,7 +53,8 @@ func OpenStripeRegistrarPool(ctx context.Context, dsn string) (*pgxpool.Pool, er
 // cannot smuggle registrar/ingress authority into an otherwise ordinary login.
 var stripeIngressFunctions = []string{
 	"payments.stripe_webhook_material(uuid)",
-	"payments.stripe_webhook_prepare(uuid,bigint,text,text,bigint,text,text,text,text,text,boolean,boolean,boolean,boolean,bytea,bigint)",
+	// stripe-refund-v1 D2: 0062 replaces the 16-argument prepare with 16 + payment_intent + lc_refund.
+	"payments.stripe_webhook_prepare(uuid,bigint,text,text,bigint,text,text,text,text,text,boolean,boolean,boolean,boolean,bytea,bigint,text,text)",
 	"payments.stripe_webhook_commit(uuid,uuid,bigint)",
 }
 var stripeRegistrarFunctions = []string{
@@ -67,6 +68,11 @@ var stripeRegistrarFunctions = []string{
 }
 
 func validateStripeAuthority(ctx context.Context, pool *pgxpool.Pool, authority string) error {
+	if authority == "runtime" {
+		if err := validateRuntimeRiverPrivileges(ctx, pool); err != nil {
+			return err
+		}
+	}
 	var allowed []string
 	all := append(append([]string{}, stripeIngressFunctions...), stripeRegistrarFunctions...)
 	if authority == "stripe_ingress" {
@@ -169,6 +175,41 @@ func validateStripeAuthority(ctx context.Context, pool *pgxpool.Pool, authority 
 		authority, allowedOIDs).Scan(&forbidden)
 	if err != nil || forbidden {
 		return errors.New("unsafe stripe database privileges")
+	}
+	return nil
+}
+
+// validateRuntimeRiverPrivileges bounds what the merchant API login (commerce_runtime) may do to any River
+// schema (stripe-refund-v1 §4.5, ruling on the river_payment grants). The runtime pool inserts jobs through
+// River's InsertTx, which needs exactly SELECT, INSERT and column UPDATE(kind) on river_job plus USAGE on
+// river_job_id_seq, in the three schemas whose families the merchant API may produce (river, river_media and
+// river_payment). It must never hold DELETE, TRUNCATE, TRIGGER, any other column UPDATE, any privilege on
+// another River table, or any privilege at all in river_meta and river_expiry: guard_payment_job_family and
+// the deferred queue router only protect job identity, not job lifecycle.
+func validateRuntimeRiverPrivileges(ctx context.Context, pool *pgxpool.Pool) error {
+	var forbidden bool
+	err := pool.QueryRow(ctx, `WITH reachable AS (
+	 SELECT oid FROM pg_roles WHERE rolname=session_user
+	  OR pg_has_role(session_user,oid,'USAGE') OR pg_has_role(session_user,oid,'SET')
+	)
+	SELECT EXISTS(SELECT 1 FROM reachable r CROSS JOIN pg_class c
+	 JOIN pg_namespace n ON n.oid=c.relnamespace
+	 WHERE n.nspname IN ('river','river_meta','river_payment','river_expiry','river_media')
+	 AND CASE
+	  WHEN c.relkind='S' AND n.nspname IN ('river','river_media','river_payment') AND c.relname='river_job_id_seq'
+	   THEN has_sequence_privilege(r.oid,c.oid,'SELECT,UPDATE')
+	  WHEN c.relkind='S' THEN has_sequence_privilege(r.oid,c.oid,'USAGE,SELECT,UPDATE')
+	  WHEN c.relkind IN ('r','p','v','m','f') AND n.nspname IN ('river','river_media','river_payment') AND c.relname='river_job'
+	   THEN has_table_privilege(r.oid,c.oid,'UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN')
+	    OR has_any_column_privilege(r.oid,c.oid,'REFERENCES')
+	    OR EXISTS(SELECT 1 FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped
+	     AND a.attname<>'kind' AND has_column_privilege(r.oid,c.oid,a.attnum,'UPDATE'))
+	  WHEN c.relkind IN ('r','p','v','m','f') THEN
+	   has_table_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN')
+	    OR has_any_column_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,REFERENCES')
+	  ELSE false END)`).Scan(&forbidden)
+	if err != nil || forbidden {
+		return errors.New("unsafe runtime river privileges")
 	}
 	return nil
 }

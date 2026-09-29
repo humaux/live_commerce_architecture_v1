@@ -186,7 +186,13 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 ('integration.finish_stripe_query(uuid,bigint,bytea,text,text)'::regprocedure::oid,true,'commerce_integration_writer',false),
 	 ('integration.require_stripe_registrar_scope(uuid,uuid,uuid)'::regprocedure::oid,false,'commerce_payment_registry_writer',false),
 	 ('integration.register_stripe_account(uuid,uuid,uuid,uuid,uuid,text,text,text,bytea,bytea)'::regprocedure::oid,false,'commerce_payment_registry_writer',true),
-	 ('integration.rotate_stripe_key(uuid,uuid,uuid,uuid,bigint,text,bytea,bytea)'::regprocedure::oid,false,'commerce_payment_registry_writer',true))
+	 ('integration.rotate_stripe_key(uuid,uuid,uuid,uuid,bigint,text,bytea,bytea)'::regprocedure::oid,false,'commerce_payment_registry_writer',true),
+	 ('integration.require_stripe_refund(uuid,bigint,bytea,text)'::regprocedure::oid,false,'commerce_integration_writer',false),
+	 ('integration.load_stripe_refund(uuid,bigint,bytea,text)'::regprocedure::oid,true,'commerce_integration_writer',false),
+	 ('integration.mark_stripe_refund_sent(uuid,bigint,bytea,text,bytea)'::regprocedure::oid,true,'commerce_integration_writer',false),
+	 ('integration.record_stripe_refund_observation(uuid,bigint,bytea,text,jsonb,bigint)'::regprocedure::oid,true,'commerce_integration_writer',false),
+	 ('integration.record_stripe_charge_observation(uuid,bigint,bytea,text,jsonb,bigint)'::regprocedure::oid,true,'commerce_integration_writer',false),
+	 ('integration.finish_stripe_refund(uuid,bigint,bytea,text,text)'::regprocedure::oid,true,'commerce_integration_writer',false))
 	 SELECT count(*),bool_and(a.oid IS NOT NULL AND p.prosecdef AND p.proconfig = ARRAY['search_path=pg_catalog']
 	 AND pg_get_userbyid(p.proowner)=a.owner
 	 AND has_function_privilege('commerce_worker',p.oid,'EXECUTE')=a.worker_execute
@@ -201,7 +207,7 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 AND NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'))
 	 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 	 LEFT JOIN approved a ON a.oid=p.oid WHERE n.nspname='integration'`).Scan(&functions, &safe)
-	if err != nil || functions != 23 || !safe {
+	if err != nil || functions != 29 || !safe {
 		t.Fatalf("fixed function ACL: count=%d safe=%v err=%v", functions, safe, err)
 	}
 }
