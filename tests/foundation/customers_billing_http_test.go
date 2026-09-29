@@ -231,7 +231,7 @@ func TestCustomersBillingCB09HTTP(t *testing.T) {
 	})
 
 	t.Run("GET customers/{id}: shape, permissions, cross-store", func(t *testing.T) {
-		r := c.do(c.on, "GET", base+"/customers/"+owner, c.tokens["read"], nil, nil)
+		r := c.do(c.on, "GET", base+"/customers/"+owner, full, nil, nil)
 		c.want("detail", r, 200, "")
 		c.noStore("detail", r)
 		want := listItemKeys + ",claims,consent_history,orders,privacy_actions"
@@ -261,6 +261,22 @@ func TestCustomersBillingCB09HTTP(t *testing.T) {
 		}
 		c.reject("malformed id", c.do(c.on, "GET", base+"/customers/not-a-uuid", full, nil, nil))
 		c.reject("query on detail", c.do(c.on, "GET", base+"/customers/"+owner+"?x=1", full, nil, nil))
+	})
+
+	t.Run("permission sets are exactly the §5 rows: customers:read alone reads a detail; customers:privacy alone exports, withdraws and erases", func(t *testing.T) {
+		if r := c.do(c.on, "GET", base+"/customers/"+owner, c.tokens["read"], nil, nil); r.status != 200 {
+			t.Errorf("GET customers/{id} with customers:read alone: HTTP %d code=%q, want 200 (§5 lists customers:read only)", r.status, cbhCode(r))
+		}
+		if r := c.do(c.on, "POST", base+"/customers/"+owner+"/exports", c.tokens["privacy"], c.key(), nil); r.status != 200 {
+			t.Errorf("POST exports with customers:privacy alone: HTTP %d code=%q, want 200 (§5 lists customers:privacy only)", r.status, cbhCode(r))
+		}
+		if r := c.do(c.on, "POST", base+"/customers/"+owner+"/consent-withdrawals", c.tokens["privacy"], c.key(), map[string]any{"purpose": "ads_personalization", "channel": "meta_ads"}); r.status != 201 {
+			t.Errorf("POST consent-withdrawals with customers:privacy alone: HTTP %d code=%q, want 201", r.status, cbhCode(r))
+		}
+		victim := c.bundleOwner(t, h, m)
+		if r := c.do(c.on, "POST", base+"/customers/"+victim+"/erasure", c.tokens["privacy"], c.key(), map[string]string{"confirm": "ERASE"}); r.status != 200 {
+			t.Errorf("POST erasure with customers:privacy alone: HTTP %d code=%q, want 200", r.status, cbhCode(r))
+		}
 	})
 
 	t.Run("POST consent-withdrawals: key, strict body, permission, replay, conflict", func(t *testing.T) {
@@ -339,6 +355,24 @@ func TestCustomersBillingCB09HTTP(t *testing.T) {
 		c.want("another tenant", c.do(c.on, "POST", "/v1/admin/stores/"+p2.f.storeA1+"/customers/"+owner+"/exports", foreign, c.key(), nil), 404, "")
 		c.want("unknown customer", c.do(c.on, "POST", base+"/customers/"+randomUUID()+"/exports", full, c.key(), nil), 404, "")
 		// bound: 200 orders export, 201 do not (409 export_too_large, the transaction rolls back: no EXPORT row)
+		dropClones := func() {
+			tx, err := f.owner.Begin(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer tx.Rollback(ctx)
+			if _, err := tx.Exec(ctx, `SET LOCAL session_replication_role = replica`); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := tx.Exec(ctx, `DELETE FROM checkout.orders WHERE owner_id=$1 AND id<>$2`, owner, m.p.hold.OrderID); err != nil {
+				t.Fatalf("drop cloned orders: %v", err)
+			}
+			if err := tx.Commit(ctx); err != nil {
+				t.Fatal(err)
+			}
+		}
+		// the shared fixture audits queue/order consistency (psStarter): the clones must not outlive this subtest
+		defer dropClones()
 		clone := func(n int, first int) {
 			tx, err := f.owner.Begin(ctx)
 			if err != nil {

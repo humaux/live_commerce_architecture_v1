@@ -147,10 +147,17 @@ func TestCustomersBillingCB07Restricted(t *testing.T) {
 	})
 
 	t.Run("catalog: the only billing effect outside billing.* is the claim-window trigger", func(t *testing.T) {
+		total := 0
 		for _, schema := range []string{"checkout", "payments", "fulfillment", "buyer", "storefront"} {
-			if n := e.count(t, `SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname=$1`, schema); n < 3 {
+			n := e.count(t, `SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname=$1`, schema)
+			total += n
+			t.Logf("schema %s: %d functions scanned", schema, n) // storefront holds none today; its rule is the same
+			if schema != "storefront" && n < 3 {
 				t.Fatalf("schema %s lists %d functions: the scan would be vacuous", schema, n)
 			}
+		}
+		if total < 40 {
+			t.Fatalf("only %d functions scanned in total: the scan would be vacuous", total)
 		}
 		rows, err := e.f.owner.Query(ctx, `SELECT n.nspname||'.'||p.proname FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 		 WHERE n.nspname IN ('checkout','payments','fulfillment','buyer','storefront') AND p.prosrc ~* '\mbilling\s*\.'`)
