@@ -10,7 +10,8 @@
 #   LC_ADMIN_HOST/LC_STORE_HOST/LC_API_HOST/LC_HOOKS_HOST (public names -> Caddy sites and
 #   derived origins), LC_ENV_DIR (per-service knob files), LC_SECRETS_DIR + LC_SECRETS_GID
 #   (secret files and the group that may read them), LC_BACKUP_DIR (dumps/base/wal),
-#   LC_IDENTITY_ENABLED, LC_OIDC_ISSUER, LC_ONBOARDING_ENABLED, LC_ONBOARDING_CURRENCIES,
+#   LC_IDENTITY_ENABLED, LC_OIDC_ISSUER, LC_PASSWORD_LOGIN_ENABLED (+ LC_SMTP_HOST, LC_SMTP_USERNAME, LC_MAIL_FROM,
+#   LC_MAIL_DAILY_CAP, LC_BREACH_CHECK), LC_ONBOARDING_ENABLED, LC_ONBOARDING_CURRENCIES,
 #   LC_BUYER_ENABLED, LC_BUYER_SESSION_TTL_SECONDS (one value -> api "<N>s", storefront "<N>"),
 #   LC_STRIPE_ENABLED (one switch -> api COMMERCE_STRIPE_{WEBHOOK,CHECKOUT}_ENABLED and
 #   payment-worker-sandbox COMMERCE_STRIPE_ENABLED; SANDBOX only, stripe-psp-v1 §0.2/§12).
@@ -144,6 +145,13 @@ services:
       COMMERCE_FIXTURE_ENABLED: "0"                     # fixture mode is test-only
       COMMERCE_IDENTITY_ENABLED: ${LC_IDENTITY_ENABLED:-0}
       COMMERCE_OIDC_ISSUER: ${LC_OIDC_ISSUER:-}
+      # Merchant password login (merchant-password-auth-v1 §5). Default off; OIDC stays required while it is off.
+      COMMERCE_PASSWORD_LOGIN_ENABLED: ${LC_PASSWORD_LOGIN_ENABLED:-0}
+      COMMERCE_SMTP_HOST: ${LC_SMTP_HOST:-}
+      COMMERCE_SMTP_USERNAME: ${LC_SMTP_USERNAME:-}
+      COMMERCE_MAIL_FROM: ${LC_MAIL_FROM:-}
+      COMMERCE_MAIL_DAILY_CAP: ${LC_MAIL_DAILY_CAP:-200}
+      COMMERCE_BREACH_CHECK: ${LC_BREACH_CHECK:-hibp}
       COMMERCE_ONBOARDING_ENABLED: ${LC_ONBOARDING_ENABLED:-0}
       COMMERCE_ONBOARDING_CURRENCIES: ${LC_ONBOARDING_CURRENCIES:-}
       COMMERCE_BUYER_ENABLED: ${LC_BUYER_ENABLED:-0}
@@ -167,6 +175,9 @@ services:
       # Manual-label HMAC key of keyword claims (cmd/api/claims.go; read only with COMMERCE_CLAIMS_ENABLED=1).
       COMMERCE_CLAIMS_LABEL_KEY_FILE: /run/secrets/commerce_claims_label_key
       COMMERCE_OIDC_CLIENT_SECRET_FILE: /run/secrets/commerce_oidc_client_secret
+      # lcentry expands these to COMMERCE_AUTH_PEPPER / COMMERCE_SMTP_PASSWORD (cmd/api/identity.go secretEnv).
+      COMMERCE_AUTH_PEPPER_FILE: /run/secrets/commerce_auth_pepper
+      COMMERCE_SMTP_PASSWORD_FILE: /run/secrets/commerce_smtp_password
       COMMERCE_ACCOUNT_KEYS_JSON_FILE: /run/secrets/commerce_account_keys_json
       COMMERCE_ACCOUNT_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_account_active_key_id
       COMMERCE_ACCOUNT_REPLAY_KEY_FILE: /run/secrets/commerce_account_replay_key
@@ -198,6 +209,8 @@ services:
       - commerce_buyer_bff_key
       - commerce_claims_label_key
       - commerce_oidc_client_secret
+      - commerce_auth_pepper
+      - commerce_smtp_password
       - commerce_account_keys_json
       - commerce_account_active_key_id
       - commerce_account_replay_key
@@ -214,7 +227,7 @@ services:
     cpus: 1.0
     mem_limit: 512m
     pids_limit: 256
-    stop_grace_period: 20s       # API drains for 10 s on SIGTERM (cmd/api/main.go)
+    stop_grace_period: 40s       # API drains for 10 s on SIGTERM (cmd/api/main.go) + up to 25 s for in-flight auth mail (Passwords.Close, A12)
 
   admin:
     <<: *hardened
@@ -242,6 +255,7 @@ services:
       COMMERCE_FIXTURE_ENABLED: "0"
       COMMERCE_IDENTITY_ENABLED: ${LC_IDENTITY_ENABLED:-0}
       COMMERCE_OIDC_ISSUER: ${LC_OIDC_ISSUER:-}
+      COMMERCE_PASSWORD_LOGIN_ENABLED: ${LC_PASSWORD_LOGIN_ENABLED:-0}   # mirrors api (auth-ui BFF config)
       COMMERCE_ONBOARDING_ENABLED: ${LC_ONBOARDING_ENABLED:-0}
       COMMERCE_ONBOARDING_CURRENCIES: ${LC_ONBOARDING_CURRENCIES:-}
       COMMERCE_PUBLIC_ORIGIN: https://${LC_ADMIN_HOST:?set LC_ADMIN_HOST}   # __Host- cookies need HTTPS
@@ -637,6 +651,8 @@ secrets:
   commerce_buyer_bff_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_buyer_bff_key" }
   commerce_buyer_cookie_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_buyer_cookie_key" }
   commerce_oidc_client_secret: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_oidc_client_secret" }
+  commerce_auth_pepper: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_auth_pepper" }
+  commerce_smtp_password: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_smtp_password" }
   commerce_account_keys_json: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_account_keys_json" }
   commerce_account_active_key_id: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_account_active_key_id" }
   commerce_account_replay_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_account_replay_key" }

@@ -11,6 +11,7 @@
 #   profiles, knob-file allowlists  P07 forbidden test/fixture vars  P08 grammars/ranges
 #   P09 owner secrets  P10 images present  P11 ACME (production)  P12 DB TLS  P13 disk space
 #   --online: P14 DNS -> this host  P15 OIDC discovery from the edge  P16 clock sync
+#     P17 admin host resolves only to this host while password login is on (merchant-password-auth-v1 PA15)
 # Runs as/in: deploy host (root for real deployments; smoke uses its temp config).
 # Reads env: compose.env (via lib.sh, shell env wins), ${LC_ENV_DIR}/*.env,
 #   LC_ENVIRONMENT (smoke relaxes host-name and file-owner rules).
@@ -307,6 +308,8 @@ def flag(name, value):
     return value == "1"
 identity = flag("LC_IDENTITY_ENABLED", E.get("LC_IDENTITY_ENABLED", ""))
 onboarding = flag("LC_ONBOARDING_ENABLED", E.get("LC_ONBOARDING_ENABLED", ""))
+password_login = flag("LC_PASSWORD_LOGIN_ENABLED", E.get("LC_PASSWORD_LOGIN_ENABLED", ""))
+rec("P06", not password_login or identity, "LC_PASSWORD_LOGIN_ENABLED requires LC_IDENTITY_ENABLED")
 buyer_on = flag("LC_BUYER_ENABLED", E.get("LC_BUYER_ENABLED", ""))
 accounts = flag("COMMERCE_ACCOUNTS_ENABLED", api.get("COMMERCE_ACCOUNTS_ENABLED", ""))
 payment = flag("COMMERCE_BUYER_PAYMENT_ENABLED", api.get("COMMERCE_BUYER_PAYMENT_ENABLED", ""))
@@ -365,13 +368,26 @@ def go_duration(v):
 if identity:
     d = go_duration(api.get("COMMERCE_SESSION_TTL", ""))
     rec("P08", d is not None and 300 <= d <= 86400, "COMMERCE_SESSION_TTL")
-    pk = api.get("COMMERCE_IDENTITY_PROVIDER_KEY", "")
-    rec("P08", 1 <= len(pk.encode()) <= 128, "COMMERCE_IDENTITY_PROVIDER_KEY")
-    cid = api.get("COMMERCE_OIDC_CLIENT_ID", "")
-    rec("P08", bool(cid) and not (prod and cid.startswith("CHANGE_ME")), "COMMERCE_OIDC_CLIENT_ID")
-    iss = urlsplit(E.get("LC_OIDC_ISSUER", ""))
-    rec("P08", iss.scheme == "https" and bool(iss.hostname) and not iss.query and not iss.fragment
-        and not (prod and (iss.hostname or "").endswith("example.com")), "LC_OIDC_ISSUER")
+    # merchant-password-auth-v1 R-4: OIDC rules apply only when OIDC is in use (issuer set) or password
+    # login is off (OIDC is then the only login and stays fully required).
+    if not password_login or E.get("LC_OIDC_ISSUER", ""):
+        pk = api.get("COMMERCE_IDENTITY_PROVIDER_KEY", "")
+        rec("P08", 1 <= len(pk.encode()) <= 128, "COMMERCE_IDENTITY_PROVIDER_KEY")
+        cid = api.get("COMMERCE_OIDC_CLIENT_ID", "")
+        rec("P08", bool(cid) and not (prod and cid.startswith("CHANGE_ME")), "COMMERCE_OIDC_CLIENT_ID")
+        iss = urlsplit(E.get("LC_OIDC_ISSUER", ""))
+        rec("P08", iss.scheme == "https" and bool(iss.hostname) and not iss.query and not iss.fragment
+            and not (prod and (iss.hostname or "").endswith("example.com")), "LC_OIDC_ISSUER")
+    if password_login:
+        # cmd/api/identity.go loadPasswordConfig grammar: DNS name host, From carries exactly the username.
+        smtp_host, smtp_user, mail_from = E.get("LC_SMTP_HOST", ""), E.get("LC_SMTP_USERNAME", ""), E.get("LC_MAIL_FROM", "")
+        rec("P08", re.fullmatch(r"[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+", smtp_host) is not None, "LC_SMTP_HOST (DNS name)")
+        rec("P08", re.fullmatch(r"[^@\s<>]+@[^@\s<>]+\.[^@\s<>]+", smtp_user) is not None and not (prod and "CHANGE_ME" in smtp_user), "LC_SMTP_USERNAME")
+        rec("P08", bool(smtp_user) and (mail_from.lower().endswith("<" + smtp_user.lower() + ">") or mail_from.lower() == smtp_user.lower()),
+            "LC_MAIL_FROM carries exactly LC_SMTP_USERNAME")
+        cap = E.get("LC_MAIL_DAILY_CAP", "200")
+        rec("P08", cap.isdigit() and 20 <= int(cap) <= 100000, "LC_MAIL_DAILY_CAP")
+        rec("P08", E.get("LC_BREACH_CHECK", "hibp") == "hibp", "LC_BREACH_CHECK must be hibp outside loopback tests")
     rec("P08", not onboarding or bool(cur), "LC_ONBOARDING_CURRENCIES required by onboarding")
 if payment or accounts:
     rec("P08", profile_name in ("SANDBOX", "LIVE"), "COMMERCE_PAYMENT_PROFILE")
@@ -385,9 +401,12 @@ rec("P08", E.get("LC_REQUIRE_MEDIA_GATE", "0") in ("0", "1"), "LC_REQUIRE_MEDIA_
 # ---- P09 owner-supplied secrets ------------------------------------------------------------------------------
 if meta and "app" in profiles:
     rec("P09", values.get("commerce_meta_apps_json", "__UNSET__") != "__UNSET__", "commerce_meta_apps_json")
-if identity:
+if identity and (not password_login or E.get("LC_OIDC_ISSUER", "")):
     rec("P09", values.get("commerce_oidc_client_secret", "__UNSET__") != "__UNSET__",
         "commerce_oidc_client_secret (__UNSET__ = public PKCE client)", warn=True)
+if identity and password_login:
+    rec("P09", values.get("commerce_smtp_password", "__UNSET__") != "__UNSET__",
+        "commerce_smtp_password (owner-supplied SMTP authorization code of a dedicated sending mailbox)")
 
 # ---- P11 ACME (production) ------------------------------------------------------------------------------------
 caddy = knobs.get("caddy.env", {})
@@ -466,7 +485,7 @@ if ((online)); then
       fi
     done
   fi
-  if [[ "${LC_IDENTITY_ENABLED:-0}" == 1 ]]; then
+  if [[ "${LC_IDENTITY_ENABLED:-0}" == 1 && -n "${LC_OIDC_ISSUER:-}" ]]; then
     url="${LC_OIDC_ISSUER%/}/.well-known/openid-configuration"
     if grep -qx caddy < <(lc_compose ps --status running --services 2>/dev/null); then
       if lc_compose exec -T caddy wget -q -T 10 -O /dev/null "$url" >/dev/null 2>&1; then echo "P15 PASS LC_OIDC_ISSUER discovery (edge netns)"; else
@@ -480,7 +499,24 @@ if ((online)); then
       fail=1
     fi
   else
-    echo "P15 SKIP identity disabled"
+    echo "P15 SKIP identity disabled or no OIDC issuer (password-only login)"
+  fi
+  # merchant-password-auth-v1 ruling Q6 (contract gate PA15; rule P17, number assigned by the R2 auth integrator per ruling B4):
+  # per-IP limits trust the edge's X-Forwarded-For, so with password login on the admin host must resolve
+  # ONLY to this host. A Cloudflare-proxied name resolves to Cloudflare anycast addresses, none of which
+  # are this host's, so "every address is ours" also proves "no Cloudflare range" without a hard-coded list.
+  if [[ "${LC_PASSWORD_LOGIN_ENABLED:-0}" == 1 && "${LC_ENVIRONMENT:-}" != smoke ]]; then
+    mine=" $(hostname -I 2>/dev/null) ${LC_PUBLIC_IP:-} "
+    addrs=$(getent ahosts "$LC_ADMIN_HOST" 2>/dev/null | awk '{print $1}' | sort -u | tr '\n' ' ')
+    foreign=0
+    [[ -n "$addrs" ]] || foreign=1
+    for a in $addrs; do [[ "$mine" == *" $a "* ]] || foreign=1; done
+    if ((foreign)); then
+      echo "P17 FAIL LC_ADMIN_HOST must resolve only to this host (DNS-only, no Cloudflare proxy) while LC_PASSWORD_LOGIN_ENABLED=1"
+      fail=1
+    else
+      echo "P17 PASS LC_ADMIN_HOST resolves only to this host"
+    fi
   fi
   if command -v timedatectl >/dev/null 2>&1 && [[ "$(timedatectl show -p NTPSynchronized --value 2>/dev/null)" == yes ]]; then
     echo "P16 PASS clock synchronized"

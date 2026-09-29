@@ -19,7 +19,7 @@ Change rules: 命令必须与 deploy/scripts/ops-admin.sh 和 cmd/*-admin 的子
 | # | 前置条件 | 谁 | 缺失时的后果 |
 |---|---|---|---|
 | O1 | 接受 Compose 作为生产形态的 ADR（架构.md §4.2，B8） | owner | 不得宣称“可生产” |
-| O2 | OIDC IdP 选型并注册 client（回调 `https://<LC_ADMIN_HOST>/api/auth/callback`，B2） | owner | 商家无法登录 |
+| O2 | 登录方式：邮箱 + 密码 + 邮件验证码（`LC_PASSWORD_LOGIN_ENABLED=1`，需要专用发信邮箱及其 SMTP 授权码，见 `docs/runbooks/mail.md`）；OIDC IdP 在启用密码登录时是**可选**的（`LC_OIDC_ISSUER` 留空即纯密码登录）。仅在不启用密码登录时才必须选型并注册 OIDC client（回调 `https://<LC_ADMIN_HOST>/api/auth/callback`，B2） | owner | 商家无法登录 |
 | O3 | 域名与 DNS：`LC_ADMIN_HOST`、`LC_STORE_HOST`、`LC_API_HOST`、`LC_HOOKS_HOST` 四个互不相同的名字指向部署主机 | owner | preflight P14 失败，无法签发证书 |
 | O4 | Stripe：**测试**账户的 `sk_test_`/`rk_test_` key 和 `acct_...`（SANDBOX）；LIVE 激活是单独的 owner 决定，代码目前拒绝 LIVE | owner | Stripe 支付方式无法登记 |
 | O5 | PAYUNi 商户资质与 LIVE 批准（B3）；NotifyURL 无接收端（B4） | owner | PAYUNi 只能 SANDBOX |
@@ -34,7 +34,7 @@ Change rules: 命令必须与 deploy/scripts/ops-admin.sh 和 cmd/*-admin 的子
 
 ## 2. 店铺
 
-1. 商家用 OIDC 登录后台，走 onboarding 创建租户和店铺。创建者自动获得 owner 权限和六个店铺权限：`live:read`、`live:manage`、`payments:refund`、`fulfillment:write`、`orders:export`、`integration:execute`（裁决 24，`0065`）。
+1. 商家登录后台（邮箱 + 密码 + 邮件验证码，或已配置时的 OIDC），走 onboarding 创建租户和店铺。创建者自动获得 owner 权限和六个店铺权限：`live:read`、`live:manage`、`payments:refund`、`fulfillment:write`、`orders:export`、`integration:execute`（裁决 24，`0065`）。
    其他成员不会自动获得退款权限。
 2. 运维记录 ID（只读查询，通过 `lc_psql`，见 lib.sh）：
    ```sh
@@ -72,3 +72,51 @@ Change rules: 命令必须与 deploy/scripts/ops-admin.sh 和 cmd/*-admin 的子
 - `deploy/scripts/watchdog.sh` 全部 PASS；`docker compose logs --since 10m claims-worker` 出现 `claims_worker_ready`（若启用）。
 - 后台：店铺可见、Stripe 支付方式在结账页出现（沙箱）、订单/退款/发货页面可用。
 - `deployments.log` 与 `ops-admin.log`（`$LC_STATE_DIR`）记录了本次操作者和子命令（不含参数值）。
+
+## 7. 密码登录的运维处置（每一项都要先在聊天里得到 owner 对**这一次具体事件**的批准）
+
+契约：`contracts/merchant-password-auth-v1.md` §11、§12 Q2。下面的 SQL 由迁移 owner 角色执行；邮箱只在提示符里输入，不写入任何文件或日志。
+
+<a id="unlock-password"></a>
+### 7.1 解锁被硬禁用的密码凭据（100 次连续失败后 `disabled_at` 被置位）
+
+1. 只读定位（`lc_psql`，见 lib.sh；邮箱在提示符输入）：
+   ```sh
+   source deploy/scripts/lib.sh; lc_load_env "$LC_COMPOSE_ENV"
+   read -r -p 'email: ' EMAIL
+   lc_psql -v email="$EMAIL" <<< "SELECT principal_id, failed_count, disabled_at FROM identity.password_credentials WHERE email = lower(:'email');"
+   ```
+2. 一个事务（迁移 owner），必须恰好更新 1 行，否则 `ROLLBACK`：
+   ```sql
+   BEGIN;
+   UPDATE identity.password_credentials SET disabled_at = NULL, failed_count = 0
+    WHERE principal_id = '<上一步的 principal_id>' AND disabled_at IS NOT NULL;   -- 期望 UPDATE 1
+   INSERT INTO identity.auth_events(principal_id, action) VALUES ('<同一个 principal_id>', 'operator.unlocked');
+   COMMIT;
+   ```
+3. 验证：再次运行第 1 步，`disabled_at` 为空、`failed_count` 为 0。
+4. 解锁**不授予任何访问权**，用户仍需密码 + 邮件验证码。如果禁用反复发生（分布式锁定攻击），不要反复解锁：第一次事件即升级为“CAPTCHA 契约”（§12 Q2）。
+
+<a id="deactivate-principal"></a>
+### 7.2 停用滥用商店登录邮件额度的账号
+
+触发条件：审计/日志里出现 `password_auth_throttled bucket=global-mail-login`（有店铺成员的登录邮件额度被耗尽）。
+1. 列出嫌疑主体（持有店铺且近期注册；只读）：
+   ```sql
+   SELECT p.id, c.created_at FROM identity.principals p
+     JOIN identity.password_credentials c ON c.principal_id = p.id
+     JOIN identity.memberships m ON m.principal_id = p.id AND m.active
+    WHERE c.created_at > now() - interval '7 days' ORDER BY c.created_at DESC;
+   ```
+2. 一个事务（迁移 owner）：停用并吊销其商家会话，并写 `session.revoked` 事件（模式同 0004）：
+   ```sql
+   BEGIN;
+   UPDATE identity.principals SET active = false WHERE id = ANY('{<uuid>,...}'::uuid[]);
+   WITH revoked AS (UPDATE identity.sessions SET revoked_at = clock_timestamp()
+                     WHERE principal_id = ANY('{<uuid>,...}'::uuid[]) AND audience = 'merchant' AND revoked_at IS NULL
+                     RETURNING id, principal_id)
+   INSERT INTO identity.session_events(principal_id, session_id, action) SELECT principal_id, id, 'session.revoked' FROM revoked;
+   COMMIT;
+   ```
+3. 审计：0070 的 `auth_events.action` CHECK 没有“停用”动作（裁决 B1），审计凭据是 `$LC_STATE_DIR/ops-admin.log` 里本次操作的条目 + 上面的 `session.revoked` 事件。
+4. 重新启用 = 同一 SQL 把 `active` 改回 `true`，需 owner 批准。
