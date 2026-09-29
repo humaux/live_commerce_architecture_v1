@@ -87,7 +87,7 @@ The `--browser-admin-legacy` gate replaced a manual five-step procedure (`docs/i
 after the identity work. Its specs write screenshots under `output/playwright/ledger-review/`
 (gitignored), no longer into tracked `.impeccable/review/`.
 
-## Node unit suites (no Docker; `bash scripts/dev/test-node.sh`, run by CI)
+## Node unit suites (no Docker; `bash scripts/dev/test-node.sh`, run by CI and release-gate G06n)
 
 | Suite | Covers | Note |
 | --- | --- | --- |

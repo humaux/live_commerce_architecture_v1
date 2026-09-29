@@ -3,10 +3,12 @@
 # Purpose: the R1 acceptance command (docs/delivery/PROCESS.md §1, R1-8). Runs every automated tier
 #   in order and prints ONE table of PASS / FAIL / NOT_RUN. A tier whose prerequisites are missing is
 #   NOT_RUN, never PASS; a test that skips with a `NOT_RUN:` message is listed as NOT_RUN, any other
-#   skip is FAIL; zero tests, a missing log or a non-zero exit is FAIL. The overall line says PASS
-#   only when every row is PASS.
+#   skip is FAIL; zero tests, a missing log or a non-zero exit is FAIL (R1 ruling F5). Go results are
+#   read as `go test -json` events (G06 natively, the `-v` logs of test-local.sh via `go tool test2json`).
+#   The overall line says PASS only when every row is PASS.
 # Order: G01 check_packet, G02 build/vet/gofmt, G03 TypeScript typecheck, G04 secret grep,
-#   G05 dependency map, G06 unit tests (all packages but tests/foundation), G07 the whole foundation
+#   G05 dependency map, G06 unit tests (all packages but tests/foundation), G06n Node unit suites
+#   (scripts/dev/test-node.sh, ruling F9), G07 the whole foundation
 #   package (real PG, race, vet: test-local.sh), then EVERY browser mode listed in test-local.sh's
 #   usage line (names containing "browser", plus --browser-e2e), SANDBOX modes only with the Stripe
 #   TEST key present, then G90 deploy smoke static and G91 deploy smoke full.
@@ -71,7 +73,7 @@ selected() { [[ -z "$only" || "$only" == *",$1,"* ]]; }
 modes=$(sed -n "s/.*Usage: bash scripts\/dev\/test-local.sh \[\(.*\)\]\\\\n'.*/\1/p" scripts/dev/test-local.sh | tr '|' '\n')
 browser_modes=$(printf '%s\n' "$modes" | grep -E -- '^--(.*browser.*|e2e)$' || true)
 all_modes=$(printf '%s\n' "$modes" | grep -c . | tr -d ' ')
-ids="G01 G02 G03 G04 G05 G06 G07"
+ids="G01 G02 G03 G04 G05 G06 G06n G07"
 for m in $browser_modes; do ids="$ids B-${m#--}"; done
 ids="$ids G90 G91"
 
@@ -237,35 +239,62 @@ if selected G06; then
   fi
 fi
 
-# ---- skip classifier for `go test -v` text logs ----------------------------------------------------
-# A skip is NOT_RUN only when its t.Skip message starts with "NOT_RUN:" (the tests' own statement that a
-# prerequisite is absent: Stripe test key, Meta Page token, migrator hook). Any other skip (fixture
-# missing, permission not granted) stays a FAIL. The message is the log line(s) printed between the
-# test's `=== RUN` line and the next `===`/`---` line; a skip with no such line is "other" (fail-safe).
-# Prints "notrun other"; names go to $2 (NOT_RUN) and $3 (other), one per line.
-classify_skips() { # $1 = go test -v log
+# ---- Node unit suites (ruling F9: GATES.md "Node unit suites"; run by CI too) ------------------------
+if selected G06n; then
+  if ! have node || [[ ! -d node_modules ]]; then
+    record G06n UNIT NOT_RUN "node or node_modules missing"
+  else
+    run_cmd G06n bash scripts/dev/test-node.sh
+    np=$(sed -n 's/^ℹ pass \([0-9]*\)$/\1/p' "$LOG" | awk '{s+=$1} END {print s+0}')
+    nf=$(sed -n 's/^ℹ fail \([0-9]*\)$/\1/p' "$LOG" | awk '{s+=$1} END {print s+0}')
+    if ((rc != 0 || nf > 0)); then
+      record G06n UNIT FAIL "test-node.sh exit $rc, pass=$np fail=$nf" "$rc" "$LOG"
+    elif ((np == 0)); then
+      record G06n UNIT FAIL "no Node test ran (pass=0): an empty run is never PASS" "$rc" "$LOG"
+    else
+      record G06n UNIT PASS "$np Node tests pass (storefront, i18n)" "$rc" "$LOG"
+      if grep -q '^NOT_RUN:' "$LOG"; then record G06n+ UNIT NOT_RUN "$(grep -m1 '^NOT_RUN:' "$LOG" | cut -c10-120)" - "$LOG"; fi
+    fi
+  fi
+fi
+
+# ---- judge a `go test -v` log as go test -json events (ruling F5) ----------------------------------
+# `go tool test2json` turns the -v text of test-local.sh into the -json event stream. Counts every test
+# and subtest. A skip is NOT_RUN only when the skipped test's own output has a `<file>.go:<n>: NOT_RUN:`
+# line (the tests' statement that a SANDBOX/LIVE/migrator prerequisite is absent); any other skip is
+# "other" and fails the row. Prints "pass fail notrun other"; names go to $2 (NOT_RUN) and $3 (other).
+judge_gotest() { # $1 = go test -v log
   python3 - "$1" "$2" "$3" <<'PY'
-import re, sys
-lines = open(sys.argv[1], errors="replace").read().splitlines()
-nr, other = [], []
-for i, line in enumerate(lines):
-    m = re.match(r"\s*--- SKIP: (\S+)", line)
-    if not m:
+import json, re, subprocess, sys
+try:
+    raw = open(sys.argv[1], "rb").read()
+    out = subprocess.run(["go", "tool", "test2json"], input=raw, capture_output=True, check=True).stdout
+except Exception:
+    print(0, 1, 0, 0)  # unreadable log or no converter: never PASS
+    sys.exit(0)
+p = f = 0
+msgs, skipped = {}, []
+for line in out.decode(errors="replace").splitlines():
+    try:
+        e = json.loads(line)
+    except ValueError:
         continue
-    name = m.group(1)
-    msg = ""
-    for j in range(i - 1, -1, -1):
-        if re.match(r"\s*=== RUN\s+" + re.escape(name) + r"\s*$", lines[j]):
-            for k in range(j + 1, i):
-                if re.match(r"\s*(===|---) ", lines[k]):
-                    break
-                msg += lines[k] + "\n"
-            break
-    ok = re.search(r"^\s*\S+\.go:\d+: NOT_RUN:", msg, re.M)
-    (nr if ok else other).append(name)
+    a, t = e.get("Action"), e.get("Test")
+    if not t:
+        continue
+    if a == "output":
+        msgs[t] = msgs.get(t, "") + e.get("Output", "")
+    elif a == "pass":
+        p += 1
+    elif a == "fail":
+        f += 1
+    elif a == "skip":
+        skipped.append(t)
+nr = [t for t in skipped if re.search(r"^\s*\S+\.go:\d+: NOT_RUN:", msgs.get(t, ""), re.M)]
+other = [t for t in skipped if t not in nr]
 open(sys.argv[2], "w").write("\n".join(nr))
 open(sys.argv[3], "w").write("\n".join(other))
-print(len(nr), len(other))
+print(p, f, len(nr), len(other))
 PY
 }
 
@@ -278,11 +307,13 @@ if selected G07; then
     if ((rc != 0)); then
       record G07 REAL_PG FAIL "test-local.sh exit $rc" "$rc" "$LOG"
     else
-      read -r sn so <<<"$(classify_skips "$LOG" "$OUT/G07.skipped" "$OUT/G07.skipped-other")"
-      if ((so > 0)); then
+      read -r gp gf sn so <<<"$(judge_gotest "$LOG" "$OUT/G07.skipped" "$OUT/G07.skipped-other")"
+      if ((gf > 0 || gp == 0)); then
+        record G07 REAL_PG FAIL "exit 0 but go test events pass=$gp fail=$gf: zero tests or a failure is never PASS" "$rc" "$LOG"
+      elif ((so > 0)); then
         record G07 REAL_PG FAIL "$so test(s) skipped without a NOT_RUN: message (SKIP is never PASS): $(tr '\n' ' ' <"$OUT/G07.skipped-other" | cut -c1-140)" "$rc" "$LOG"
       else
-        record G07 REAL_PG PASS "test-local.sh foundation exit 0 (go test -race ./... + go vet)" "$rc" "$LOG"
+        record G07 REAL_PG PASS "$gp tests/subtests pass, 0 fail (go test -race ./... + go vet)" "$rc" "$LOG"
         if ((sn > 0)); then
           record G07+ REAL_PG NOT_RUN "$sn skipped with NOT_RUN: (SANDBOX/LIVE/migrator prerequisites): $(tr '\n' ' ' <"$OUT/G07.skipped" | cut -c1-140)" - "$OUT/G07.skipped"
         fi
@@ -333,18 +364,27 @@ for m in $browser_modes; do
     record "$id" "$tier" NOT_RUN "$(grep -m1 '^NOT_RUN' "$LOG" | cut -c1-110)" "$rc" "$LOG"
   elif ((rc != 0)); then
     record "$id" "$tier" FAIL "test-local.sh $m exit $rc" "$rc" "$LOG"
-  elif grep -E -- '--- SKIP' "$LOG" | grep -qv 'SANDBOX'; then
-    # Only a subtest that names SANDBOX may be skipped (its prerequisite is the Stripe test key).
-    record "$id" "$tier" FAIL "a non-SANDBOX test was skipped (SKIP is never PASS)" "$rc" "$LOG"
-  elif ! grep -qE -- '^PASS:' "$LOG"; then
-    record "$id" "$tier" FAIL "exit 0 but no PASS line: an empty run is never PASS" "$rc" "$LOG"
+  elif [[ "$m" == --stripe-browser ]]; then
+    # test-local.sh parses its own go test -json per step (min leaf cases, no SKIP); require >=1 passing step.
+    if grep -qE 'pass=[1-9][0-9]* fail=0 skip=0 .*verdict=0' "$LOG" && ! grep -qE 'verdict=[^0]' "$LOG"; then
+      record "$id" "$tier" PASS "$(grep -m1 '^PASS:' "$LOG" | cut -c7-110)" "$rc" "$LOG"
+      if grep -q 'NOT_RUN' "$LOG"; then record "${id}+" SANDBOX NOT_RUN "$(grep -m1 'NOT_RUN' "$LOG" | cut -c1-110)" - "$LOG"; fi
+    else
+      record "$id" "$tier" FAIL "stripe-browser exit 0 without a passing -json step: never PASS" "$rc" "$LOG"
+    fi
   else
-    record "$id" "$tier" PASS "$(grep -m1 '^PASS:' "$LOG" | cut -c7-110)" "$rc" "$LOG"
-    # A mode may pass its MOCK part and say a SANDBOX part was not run: list that separately.
-    if grep -q 'NOT_RUN' "$LOG"; then
-      record "${id}+" SANDBOX NOT_RUN "$(grep -m1 'NOT_RUN' "$LOG" | cut -c1-110)" - "$LOG"
-    elif grep -qE -- '--- SKIP' "$LOG"; then
-      record "${id}+" SANDBOX NOT_RUN "skipped: $(grep -E -- '--- SKIP' "$LOG" | sed 's/^ *--- SKIP: //; s/ (.*//' | tr '\n' ';' | cut -c1-100)" - "$LOG"
+    read -r gp gf sn so <<<"$(judge_gotest "$LOG" "$OUT/$id.skipped" "$OUT/$id.skipped-other")"
+    if ((gf > 0 || gp == 0)); then
+      record "$id" "$tier" FAIL "exit 0 but go test events pass=$gp fail=$gf: zero tests or a failure is never PASS" "$rc" "$LOG"
+    elif ((so > 0)); then
+      record "$id" "$tier" FAIL "$so test(s) skipped without a NOT_RUN: message: $(tr '\n' ' ' <"$OUT/$id.skipped-other" | cut -c1-100)" "$rc" "$LOG"
+    elif ! grep -qE -- '^PASS:' "$LOG"; then
+      record "$id" "$tier" FAIL "exit 0 but test-local.sh printed no PASS line" "$rc" "$LOG"
+    else
+      record "$id" "$tier" PASS "$gp passed; $(grep -m1 '^PASS:' "$LOG" | cut -c7-100)" "$rc" "$LOG"
+      if ((sn > 0)); then
+        record "${id}+" SANDBOX NOT_RUN "skipped with NOT_RUN: $(tr '\n' ' ' <"$OUT/$id.skipped" | cut -c1-100)" - "$OUT/$id.skipped"
+      fi
     fi
   fi
 done
