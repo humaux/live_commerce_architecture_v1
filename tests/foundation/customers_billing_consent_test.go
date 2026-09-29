@@ -626,13 +626,18 @@ func TestCustomersBillingCB04Consent(t *testing.T) {
 			}()
 		}
 		wg.Wait()
+		failed := 0
 		for i := range results {
 			if errs[i] != nil || results[i] != results[0] {
-				t.Fatalf("concurrent same-key call %d: %+v %v (want every call to return the one stored row)", i, results[i], errs[i])
+				failed++
+				t.Errorf("concurrent same-key call %d: %+v %v (want every call to return the one stored row)", i, results[i], errs[i])
 			}
 		}
-		if _, _, _, _, n := c.row(owner, same); n != 1 {
-			t.Fatalf("same-key concurrency produced %d rows", n)
+		if failed > 0 {
+			t.Errorf("%d of %d concurrent same-key requests of ONE buyer failed instead of serializing behind the owner lock (CD4)", failed, len(results))
+		}
+		if _, _, _, _, n := c.row(owner, same); n > 1 {
+			t.Errorf("same-key concurrency produced %d rows (I02: one key, one row)", n)
 		}
 		errs = make([]error, 24)
 		for i := range errs {
@@ -648,7 +653,7 @@ func TestCustomersBillingCB04Consent(t *testing.T) {
 				t.Errorf("alternating writer %d: %v", i, err)
 			}
 		}
-		if n := c.rowCount(owner); n != 25 {
+		if n := c.rowCount(owner); n != 25 && failed == 0 {
 			t.Errorf("rows=%d, want 1+24", n)
 		}
 		var latest bool
