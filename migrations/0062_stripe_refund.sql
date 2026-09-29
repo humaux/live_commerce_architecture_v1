@@ -436,7 +436,14 @@ BEGIN
  v_now:=clock_timestamp();
  IF r.stripe_refund_id IS NOT NULL OR r.suppressed_at IS NOT NULL OR EXISTS(
   SELECT 1 FROM payments.refund_facts f WHERE f.tenant_id=r.tenant_id AND f.store_id=r.store_id
-   AND f.refund_id=r.id AND f.kind IN ('REJECTED','FAILED','CANCELED')) THEN
+   AND f.refund_id=r.id AND f.kind IN ('REJECTED','FAILED','CANCELED'))
+  -- RD4: a recorded first-send rejection is final even before payment_reconcile_v1 applies its
+  -- REJECTED fact. A resend would reuse a key Stripe may not have cached (400 / pre-idempotency 401)
+  -- and could create the refund after capacity is released.
+  OR EXISTS(SELECT 1 FROM payments.provider_observations o WHERE o.tenant_id=r.tenant_id
+   AND o.store_id=r.store_id AND o.attempt_id=r.attempt_id AND o.source='QUERY'
+   AND o.report->>'Object'='refund' AND o.report->>'RefundRef'=r.id::text AND o.report->>'Via'='create'
+   AND o.report->>'ErrorClass'='rejected' AND o.report->>'SendCount'='1' AND o.report->>'RefundID'='') THEN
   RETURN 'CLOSED'; END IF;
  IF r.first_sent_at IS NULL THEN
   -- §11.5 / RD9: the first send needs a fresh same-generation charge read that did not suppress,
@@ -462,7 +469,7 @@ END $$;
 ALTER FUNCTION integration.mark_stripe_refund_sent(uuid,bigint,bytea,text,bytea) OWNER TO commerce_integration_writer;
 REVOKE ALL ON FUNCTION integration.mark_stripe_refund_sent(uuid,bigint,bytea,text,bytea) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION integration.mark_stripe_refund_sent(uuid,bigint,bytea,text,bytea) TO commerce_worker;
-COMMENT ON FUNCTION integration.mark_stripe_refund_sent(uuid,bigint,bytea,text,bytea) IS 'integration owner; worker commits SEND/RESEND for the exact create body before any POST; SEND needs a fresh presend charge read and no sticky review; same key only until resend_until';
+COMMENT ON FUNCTION integration.mark_stripe_refund_sent(uuid,bigint,bytea,text,bytea) IS 'integration owner; worker commits SEND/RESEND for the exact create body before any POST; SEND needs a fresh presend charge read and no sticky review; same key only until resend_until; CLOSED once a first-send rejection is recorded (never resend after it)';
 
 CREATE FUNCTION integration.finish_stripe_refund(p_id uuid,p_generation bigint,p_token bytea,
  p_profile text,p_code text) RETURNS void
@@ -975,8 +982,11 @@ BEGIN
   RETURN;
  END IF;
  -- 2. local and definitive closures; capacity is released only by these or by provider proof (RD4)
+ -- RD4: only the very first send may prove non-existence. Any resend (send_count>1, or a last send
+ -- after the first) means the key may have executed, so a stale rejection report releases nothing.
  IF v_via='create' AND r->>'ErrorClass'='rejected' AND (r->>'SendCount')::integer=1
-  AND rf.stripe_refund_id IS NULL AND r->>'RefundID'='' THEN
+  AND rf.stripe_refund_id IS NULL AND r->>'RefundID'='' AND rf.send_count=1
+  AND rf.last_sent_at=rf.first_sent_at THEN
   INSERT INTO payments.refund_facts(tenant_id,store_id,refund_id,attempt_id,kind,amount_minor,currency,
    stripe_refund_id,failure_reason,source_report_hash)
    VALUES(a.tenant_id,a.store_id,rf.id,a.id,'REJECTED',rf.amount_minor,rf.currency,NULL,

@@ -363,7 +363,8 @@ func (w *refundWorker) send(ctx, callCtx context.Context, client *stripe.Client,
 	if mark == "CLOSED" {
 		// A closed send window is handled by step() from the DB clock before any call. Anything else
 		// (a stale presend proof, a sticky review, the resend cap) means: never send without the
-		// proof and never release capacity; the job retries and the window closes at 19 h.
+		// proof and never release capacity; the job retries and the window closes at 19 h. A recorded
+		// first-send rejection also lands here until its REJECTED fact is applied (no resend, ever).
 		return w.finish(ctx, id, claim, "stripe_refund_uncertain", time.Minute)
 	}
 	if mark != "SEND" && mark != "RESEND" {
@@ -387,6 +388,8 @@ func (w *refundWorker) send(ctx, callCtx context.Context, client *stripe.Client,
 		case mark == "SEND" && (errors.Is(err, stripe.ErrRejected) || errors.Is(err, stripe.ErrAuthentication)):
 			// Definitive only on the FIRST send: a 400/401/403 before any byte could have executed proves the
 			// refund does not exist. Auth failures are classified before Stripe's idempotency layer (F4).
+			// Once recorded the rejection is final: mark_stripe_refund_sent answers CLOSED for every later
+			// claim (RD4), so a delayed payment_reconcile_v1 can never lead to a second POST of this key.
 			o := (stripe.Refund{}).Observation("create", meta, s.AccountID, s.CredentialVersion, 1, id, s.AttemptID)
 			o.ErrorClass = "rejected"
 			return w.recordAndSnooze(ctx, id, claim, o, 5*time.Second)
