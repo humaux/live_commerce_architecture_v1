@@ -105,6 +105,8 @@ const en = {
     page_token_missing: "Private replies need a registered Page token for this connection. Register the Page token first, or turn private replies off.",
     version_changed: "The comment source changed since you loaded it. Refresh first.",
   },
+  billingRestricted: "New claim windows can't be opened while billing is restricted. Orders, refunds and shipping are not affected.",
+  billingLink: "Fix billing",
   conflict: {
     window: "The window changed, or another scene in this store already has an open window. Refresh first.",
     offer: "This keyword is already used in this scene, the SKU already has an active offer, or the SKU can't be sold now.",
@@ -213,6 +215,8 @@ export const claimsCopy: Record<Locale, ClaimsCopy> = {
       page_token_missing: "私信回复需要为此连接登记主页令牌。请先登记主页令牌，或关闭私信回复。",
       version_changed: "载入后评论来源已变化。请先刷新。",
     },
+    billingRestricted: "账单受限期间无法开启新的登记窗口。订单、退款与出货不受影响。",
+    billingLink: "处理账单",
     conflict: {
       window: "窗口已变化，或本店另一场次已有开放中的窗口。请先刷新。",
       offer: "此口令已在本场次使用、此 SKU 已有启用中的口令，或此 SKU 目前不可售。",
@@ -317,6 +321,8 @@ export const claimsCopy: Record<Locale, ClaimsCopy> = {
       page_token_missing: "私訊回覆需要為此連線登錄粉絲專頁權杖。請先登錄粉絲專頁權杖，或關閉私訊回覆。",
       version_changed: "載入後留言來源已變更。請先重新整理。",
     },
+    billingRestricted: "帳單受限期間無法開啟新的登記窗口。訂單、退款與出貨不受影響。",
+    billingLink: "處理帳單",
     conflict: {
       window: "窗口已變更，或本店另一個場次已有開放中的窗口。請先重新整理。",
       offer: "此關鍵字已在本場次使用、此 SKU 已有啟用中的關鍵字，或此 SKU 目前不可售。",
