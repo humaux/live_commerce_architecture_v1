@@ -51,6 +51,17 @@ func (r fakeRow) Scan(dest ...any) error {
 	if f, ok := reply.(func([]any) any); ok {
 		reply = f(r.db.calls[len(r.db.calls)-1].args)
 	}
+	if row, ok := reply.([]any); ok { // multi-column reply: string and []byte columns
+		for i, d := range dest {
+			switch d := d.(type) {
+			case *string:
+				*d = row[i].(string)
+			case *[]byte:
+				*d = row[i].([]byte)
+			}
+		}
+		return nil
+	}
 	switch d := dest[0].(type) {
 	case *string:
 		*d = reply.(string)
@@ -134,12 +145,20 @@ func TestRegisterRejectsBeforeAnySQL(t *testing.T) {
 
 func TestRotateSealsNextVersionAndChecksReturn(t *testing.T) {
 	r, db, api, _, _ := fixture(t, acct)
-	db.reply = int64(5)
+	rotateReply := func(version int64) func([]any) any { // 4 args = registered-account read (S5)
+		return func(args []any) any {
+			if len(args) == 4 {
+				return acct
+			}
+			return version
+		}
+	}
+	db.reply = rotateReply(5)
 	v, err := r.Rotate(context.Background(), scope, conn, 4, acct, testKey)
 	if err != nil || v != 5 {
 		t.Fatalf("rotate: %d %v", v, err)
 	}
-	a := db.calls[0].args
+	a := db.calls[len(db.calls)-1].args
 	if a[4] != int64(4) {
 		t.Fatal("expected version not passed")
 	}
@@ -147,7 +166,7 @@ func TestRotateSealsNextVersionAndChecksReturn(t *testing.T) {
 		Environment: "SANDBOX", AccountID: acct, CredentialVersion: 5}, a[5].(string), a[6].([]byte), a[7].([]byte)); err != nil {
 		t.Fatal("rotation ciphertext not bound to expected+1")
 	}
-	db.reply = int64(9)
+	db.reply = rotateReply(9)
 	if _, err := r.Rotate(context.Background(), scope, conn, 4, acct, testKey); !errors.Is(err, ErrDatabase) {
 		t.Fatalf("unexpected version accepted: %v", err)
 	}
@@ -217,19 +236,25 @@ func TestSetWebhookEndpointVersionsAndSeparateCustody(t *testing.T) {
 }
 
 func TestQualifySandboxProbeAndMock(t *testing.T) {
-	r, db, _, _, srv := fixture(t, acct)
-	db.reply = func(args []any) any { return args[3].(string) } // echo qualification
+	r, db, api, _, srv := fixture(t, acct)
+	stored := storedCredential(t, api, acct, 2, testKey)
+	db.reply = func(args []any) any { // 5 args = registrar credential read (S4); else echo qualification
+		if len(args) == 5 {
+			return stored
+		}
+		return args[3].(string)
+	}
 	in := QualifyInput{ConnectionID: conn, AccountID: acct, SecretKey: testKey, Profile: "SANDBOX",
 		Currency: "HKD", ReturnURL: returnURL, ExpectedVersion: 2, AmountMinor: 400}
 	q, err := r.Qualify(context.Background(), scope, in)
 	if err != nil || q == "" {
 		t.Fatalf("sandbox qualify: %v", err)
 	}
-	a := db.calls[0].args
+	a := db.calls[len(db.calls)-1].args
 	if a[5] != int64(2) || a[6] != "SANDBOX" || !strings.HasPrefix(a[7].(string), "stripe-probe:cs_test_fake_") {
 		t.Fatalf("unexpected qualify args: %v", a[5:])
 	}
-	if !strings.Contains(db.calls[0].sql, "now(),now()+interval '30 days'") {
+	if !strings.Contains(db.calls[len(db.calls)-1].sql, "now(),now()+interval '30 days'") {
 		t.Fatal("qualify must use the DB transaction clock")
 	}
 	keys := srv.CreateKeys()
@@ -246,13 +271,14 @@ func TestQualifySandboxProbeAndMock(t *testing.T) {
 	if srv.Counts() != before {
 		t.Fatal("PROVIDER_MOCK qualification touched the network transport")
 	}
-	if got := db.calls[1].args[7].(string); !strings.HasPrefix(got, "provider-mock:") {
+	if got := db.calls[len(db.calls)-1].args[7].(string); !strings.HasPrefix(got, "provider-mock:") {
 		t.Fatalf("mock evidence %q", got)
 	}
 	// Probe input error is a rejection and writes nothing.
 	n := len(db.calls)
 	in.AmountMinor = 399
-	if _, err := r.Qualify(context.Background(), scope, in); !errors.Is(err, ErrRejected) || len(db.calls) != n {
+	// Only the read-only credential lookup may precede the probe; nothing is written.
+	if _, err := r.Qualify(context.Background(), scope, in); !errors.Is(err, ErrRejected) || wrote(&fakeDB{calls: db.calls[n:]}, "qualify_stripe_method") {
 		t.Fatalf("invalid probe amount: %v", err)
 	}
 }
@@ -322,4 +348,114 @@ func TestOpenValidatesTransportsAndNeedsKeys(t *testing.T) {
 		t.Fatal("endpoint without signing keyring")
 	}
 	r.Close()
+}
+
+// storedCredential is what payments.stripe_registrar_credential returns for one connection version.
+func storedCredential(t *testing.T, api *accounts.Keyring, account string, version int64, key string) []any {
+	t.Helper()
+	keyID, nonce, ciphertext, err := api.SealStripeAPI(accounts.StripeAPIScope{TenantID: tenant, StoreID: store,
+		ConnectionID: conn, Environment: "SANDBOX", AccountID: account, CredentialVersion: version},
+		accounts.StripeAPICredentials{SecretKey: key})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return []any{account, keyID, nonce, ciphertext}
+}
+
+func wrote(db *fakeDB, fn string) bool {
+	for _, c := range db.calls {
+		if strings.Contains(c.sql, fn) {
+			return true
+		}
+	}
+	return false
+}
+
+// S4: the SANDBOX probe runs with the STORED credential at expected_version against the connection's
+// registered account. The env key/account are only an operator assertion that must match it.
+func TestQualifyUsesStoredCredentialAndRegisteredAccount(t *testing.T) {
+	const (
+		acctB = "acct_1ForeignAccount0"
+		oldK  = "sk_" + "test_REGISTRAROLDKEY0000000"
+		foreK = "sk_" + "test_REGISTRARFOREIGNKEY0000"
+	)
+	r, db, api, _, srv := fixture(t, acct)
+	for account, key := range map[string]string{acct: testKey, acctB: foreK} {
+		if err := srv.AddAccount(account, key); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := srv.AddAccount(acct, oldK); err != nil { // the pre-rotation key still verifies for acct
+		t.Fatal(err)
+	}
+	stored := storedCredential(t, api, acct, 2, testKey)
+	db.reply = func(args []any) any {
+		if len(args) == 5 {
+			return stored
+		}
+		return args[3].(string)
+	}
+	base := QualifyInput{ConnectionID: conn, Profile: "SANDBOX", Currency: "HKD", ReturnURL: returnURL,
+		ExpectedVersion: 2, AmountMinor: 400}
+	for name, in := range map[string]QualifyInput{
+		"foreign account and key": {AccountID: acctB, SecretKey: foreK},
+		"old key of the account":  {AccountID: acct, SecretKey: oldK},
+	} {
+		in.ConnectionID, in.Profile, in.Currency, in.ReturnURL = base.ConnectionID, base.Profile, base.Currency, base.ReturnURL
+		in.ExpectedVersion, in.AmountMinor = base.ExpectedVersion, base.AmountMinor
+		if _, err := r.Qualify(context.Background(), scope, in); !errors.Is(err, ErrRejected) {
+			t.Fatalf("%s qualified version 2: %v", name, err)
+		}
+		if wrote(db, "qualify_stripe_method") || len(srv.CreateKeys()) != 0 {
+			t.Fatalf("%s: evidence written or a probe was created", name)
+		}
+	}
+	// Env credentials omitted: the stored credential alone drives the probe.
+	q, err := r.Qualify(context.Background(), scope, base)
+	if err != nil || q == "" {
+		t.Fatalf("stored-credential qualify: %v", err)
+	}
+	want := stripetest.KeyFingerprint(testKey)
+	for _, req := range srv.Requests() {
+		if req.Path != "" && req.KeyFingerprint != want && req.KeyFingerprint != "" {
+			t.Fatalf("a probe request used a key other than the stored one: %s", req.Path)
+		}
+	}
+	if len(srv.CreateKeys()) != 1 {
+		t.Fatalf("probe creates: %v", srv.CreateKeys())
+	}
+	// No keyring for the API custody: SANDBOX qualification cannot open the stored key.
+	nokeys := newRegistrar(db, nil, nil, srv.Transport())
+	if _, err := nokeys.Qualify(context.Background(), scope, base); !errors.Is(err, ErrConfig) {
+		t.Fatalf("qualify without an API keyring: %v", err)
+	}
+}
+
+// S5: rotation seals the AAD with the REGISTERED account; a foreign account's key is refused.
+func TestRotateBindsRegisteredAccountNotEnv(t *testing.T) {
+	const acctB = "acct_1ForeignAccount0"
+	r, db, api, _, _ := fixture(t, acctB) // the supplied key genuinely belongs to account B
+	db.reply = func(args []any) any {
+		if len(args) == 4 {
+			return acct // registered account of the connection
+		}
+		return int64(5)
+	}
+	if _, err := r.Rotate(context.Background(), scope, conn, 4, acctB, testKey); !errors.Is(err, ErrRejected) {
+		t.Fatalf("rotation with another account's key: %v", err)
+	}
+	if wrote(db, "rotate_stripe_key") {
+		t.Fatal("a foreign-account envelope reached rotate_stripe_key")
+	}
+	// A matching account seals under the database value.
+	r2, db2, _, _, _ := fixture(t, acct)
+	db2.reply = db.reply
+	if v, err := r2.Rotate(context.Background(), scope, conn, 4, acct, testKey); err != nil || v != 5 {
+		t.Fatalf("matching rotation: %d %v", v, err)
+	}
+	a := db2.calls[len(db2.calls)-1].args
+	if _, err := api.OpenStripeAPI(accounts.StripeAPIScope{TenantID: tenant, StoreID: store, ConnectionID: conn,
+		Environment: "SANDBOX", AccountID: acct, CredentialVersion: 5}, a[5].(string), a[6].([]byte), a[7].([]byte)); err != nil {
+		t.Fatal("rotation envelope is not bound to the registered account")
+	}
 }

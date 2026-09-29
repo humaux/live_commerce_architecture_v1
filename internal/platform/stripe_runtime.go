@@ -63,6 +63,8 @@ var stripeRegistrarFunctions = []string{
 	"payments.set_stripe_webhook_endpoint(uuid,uuid,uuid,uuid,uuid,text,bigint,boolean,text,bytea,bytea)",
 	// Read-only: the registered account of an in-scope connection, sealed into the webhook AAD (§0.2).
 	"payments.stripe_endpoint_account(uuid,uuid,uuid,uuid)",
+	// Read-only: the sealed API credential envelope at the head version, for the SANDBOX qualify probe (S4).
+	"payments.stripe_registrar_credential(uuid,uuid,uuid,uuid,bigint)",
 	"payments.qualify_stripe_method(uuid,uuid,uuid,uuid,uuid,bigint,text,text,timestamp with time zone,timestamp with time zone)",
 	"payments.set_stripe_method(uuid,uuid,uuid,uuid,text,uuid,uuid,bigint,boolean,boolean,integer,bigint,bigint,text,text,text)",
 }

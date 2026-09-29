@@ -215,6 +215,8 @@ GRANT SELECT,INSERT ON integration.bindings,integration.merchant_accounts,
  payments.account_qualifications,payments.method_versions,payments.method_heads
  TO commerce_payment_registry_writer;
 GRANT INSERT ON integration.account_credentials,ops.audit_events TO commerce_payment_registry_writer;
+-- S4: payments.stripe_registrar_credential is the only reader; SELECT stays scope-pinned by RLS below.
+GRANT SELECT ON integration.account_credentials TO commerce_payment_registry_writer;
 GRANT UPDATE(credential_version,updated_at) ON integration.merchant_accounts
  TO commerce_payment_registry_writer;
 GRANT UPDATE(current_version) ON payments.method_heads TO commerce_payment_registry_writer;
@@ -248,6 +250,10 @@ CREATE POLICY stripe_registry_credential ON integration.account_credentials FOR 
  WITH CHECK(tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid
   AND store_id=nullif(current_setting('app.store_id',true),'')::uuid
   AND principal_id=nullif(current_setting('app.principal_id',true),'')::uuid);
+CREATE POLICY stripe_registry_credential_read ON integration.account_credentials FOR SELECT
+ TO commerce_payment_registry_writer
+ USING(tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid
+  AND store_id=nullif(current_setting('app.store_id',true),'')::uuid);
 CREATE POLICY stripe_registry_qualification_read ON payments.account_qualifications
  FOR SELECT TO commerce_payment_registry_writer
  USING(tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid
@@ -1487,6 +1493,34 @@ REVOKE ALL ON FUNCTION payments.stripe_endpoint_account(uuid,uuid,uuid,uuid) FRO
 GRANT EXECUTE ON FUNCTION payments.stripe_endpoint_account(uuid,uuid,uuid,uuid)
  TO commerce_payment_registrar;
 COMMENT ON FUNCTION payments.stripe_endpoint_account(uuid,uuid,uuid,uuid) IS 'payments owner; operator registrar reads the registered SANDBOX account id of one in-scope Stripe connection to seal webhook AAD; no key material, no writes';
+
+-- S4: qualify probes with the credential the connection actually stores at the expected version,
+-- against its registered account, so an old key or another account's key cannot qualify a head.
+-- Only the head version is returned (a stale expected version is PT409, before any network call).
+CREATE FUNCTION payments.stripe_registrar_credential(p_tenant uuid,p_store uuid,p_principal uuid,
+ p_connection uuid,p_expected_version bigint)
+RETURNS TABLE(account_id text,key_id text,nonce bytea,ciphertext bytea)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE acct integration.merchant_accounts%ROWTYPE; c integration.account_credentials%ROWTYPE;
+BEGIN
+ PERFORM integration.require_stripe_registrar_scope(p_tenant,p_store,p_principal);
+ IF p_connection IS NULL OR p_expected_version IS NULL OR p_expected_version<1 THEN
+  RAISE EXCEPTION 'invalid Stripe credential read' USING ERRCODE='22023'; END IF;
+ SELECT x.* INTO acct FROM integration.merchant_accounts x WHERE x.tenant_id=p_tenant
+  AND x.store_id=p_store AND x.id=p_connection AND x.provider='stripe' AND x.environment='SANDBOX';
+ IF NOT FOUND OR acct.credential_version<>p_expected_version THEN
+  RAISE EXCEPTION 'Stripe credential version changed' USING ERRCODE='PT409'; END IF;
+ SELECT x.* INTO c FROM integration.account_credentials x WHERE x.tenant_id=p_tenant
+  AND x.store_id=p_store AND x.connection_id=p_connection AND x.version=p_expected_version;
+ IF NOT FOUND THEN RAISE EXCEPTION 'Stripe credential unavailable' USING ERRCODE='PT409'; END IF;
+ RETURN QUERY SELECT acct.account_id,c.key_id,c.nonce,c.ciphertext;
+END $$;
+ALTER FUNCTION payments.stripe_registrar_credential(uuid,uuid,uuid,uuid,bigint)
+ OWNER TO commerce_payment_registry_writer;
+REVOKE ALL ON FUNCTION payments.stripe_registrar_credential(uuid,uuid,uuid,uuid,bigint) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION payments.stripe_registrar_credential(uuid,uuid,uuid,uuid,bigint)
+ TO commerce_payment_registrar;
+COMMENT ON FUNCTION payments.stripe_registrar_credential(uuid,uuid,uuid,uuid,bigint) IS 'payments owner; operator registrar reads the sealed API credential envelope at the connection head version plus its registered account so SANDBOX qualify probes with the stored key; ciphertext only, no writes, no worker or runtime access';
 
 CREATE FUNCTION payments.qualify_stripe_method(p_tenant uuid,p_store uuid,p_principal uuid,
  p_qualification uuid,p_connection uuid,p_expected_version bigint,p_profile text,p_evidence_ref text,
