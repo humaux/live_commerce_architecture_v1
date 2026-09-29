@@ -41,6 +41,8 @@ COMMENT ON ROLE commerce_claims_intake IS
 GRANT USAGE ON SCHEMA claims TO commerce_worker, commerce_meta_writer, commerce_integration_writer, commerce_claims_intake;
 GRANT USAGE ON SCHEMA live, integration, river TO commerce_claims_intake;
 GRANT USAGE ON SCHEMA live, control, ops TO commerce_integration_writer;
+-- identity USAGE: register_meta_page_token (owner commerce_integration_writer) calls identity.principal_holds (§7 owner validation).
+GRANT USAGE ON SCHEMA identity TO commerce_integration_writer;
 GRANT USAGE ON SCHEMA integration, meta_inbox TO commerce_claims_writer;
 GRANT USAGE ON SCHEMA integration TO commerce_meta_registrar;
 
@@ -72,9 +74,9 @@ BEGIN
 END $$;
 ALTER FUNCTION identity.principal_holds(uuid,uuid,uuid,text[]) OWNER TO commerce_auth;
 REVOKE ALL ON FUNCTION identity.principal_holds(uuid,uuid,uuid,text[]) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION identity.principal_holds(uuid,uuid,uuid,text[]) TO commerce_claims_writer;
+GRANT EXECUTE ON FUNCTION identity.principal_holds(uuid,uuid,uuid,text[]) TO commerce_claims_writer, commerce_integration_writer;
 COMMENT ON FUNCTION identity.principal_holds(uuid,uuid,uuid,text[]) IS
- 'identity owner (commerce_auth); only caller commerce_claims_writer definers (live.put_claim_source, claims.check_meta_reply). True iff the principal, membership, tenant, store and store:read plus every listed permission are active/held; no session, no side effect.';
+ 'identity owner (commerce_auth); only callers commerce_claims_writer definers (live.put_claim_source, claims.check_meta_reply) and commerce_integration_writer definer integration.register_meta_page_token (integration:manage). True iff the principal, membership, tenant, store and store:read plus every listed permission are active/held; no session, no side effect.';
 
 -- ---------------------------------------------------------------------------------------
 -- CHECK widening (contract §4). Existing (platform='manual')=(label IS NOT NULL) and
@@ -942,13 +944,18 @@ BEGIN
   OR current_setting('transaction_isolation')<>'read committed' THEN
   RAISE EXCEPTION 'invalid Meta page token input' USING ERRCODE='22023';
  END IF;
+ -- Contract §7 "owner membership + store validated": active principal, tenant, store, membership and an
+ -- integration:manage store grant (the require_stripe_registrar_scope rule) before anything is pinned or written.
+ IF NOT identity.principal_holds(p_tenant,p_store,p_principal,ARRAY['integration:manage']) THEN
+  RAISE EXCEPTION 'Meta registrar scope unavailable' USING ERRCODE='42501';
+ END IF;
  -- Provider and asset must be exactly the binding's (an asset change is a new binding).
  SELECT x.id,x.provider,x.external_asset_id INTO b FROM integration.bindings x
   WHERE x.tenant_id=p_tenant AND x.store_id=p_store AND x.id=p_binding;
  IF NOT FOUND OR b.provider<>p_provider OR b.external_asset_id<>p_asset_id THEN
   RAISE EXCEPTION 'invalid Meta page token input' USING ERRCODE='22023';
  END IF;
- -- Pin the audit scope (as register_stripe_account); the principal FK proves membership of the tenant.
+ -- Pin the audit scope (as register_stripe_account); the principal was validated above.
  PERFORM set_config('app.tenant_id',p_tenant::text,true);
  PERFORM set_config('app.store_id',p_store::text,true);
  PERFORM set_config('app.principal_id',p_principal::text,true);
@@ -979,7 +986,7 @@ ALTER FUNCTION integration.register_meta_page_token(uuid,uuid,uuid,uuid,text,tex
 REVOKE ALL ON FUNCTION integration.register_meta_page_token(uuid,uuid,uuid,uuid,text,text,bigint,text,bytea,bytea,text[]) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION integration.register_meta_page_token(uuid,uuid,uuid,uuid,text,text,bigint,text,bytea,bytea,text[]) TO commerce_meta_registrar;
 COMMENT ON FUNCTION integration.register_meta_page_token(uuid,uuid,uuid,uuid,text,text,bigint,text,bytea,bytea,text[]) IS
- 'integration owner; only caller cmd/meta-admin page-token (commerce_meta_registrar). Appends the encrypted Page token version (CAS on expected version, 0 creates the head) for one binding; provider/asset must equal the binding; audited. Token plaintext never reaches SQL; scopes_attested is the operator attestation.';
+ 'integration owner; only caller cmd/meta-admin page-token (commerce_meta_registrar). Appends the encrypted Page token version (CAS on expected version, 0 creates the head) for one binding; provider/asset must equal the binding; requires an active principal holding integration:manage on the store (42501 otherwise); audited. Token plaintext never reaches SQL; scopes_attested is the operator attestation.';
 
 -- ---------------------------------------------------------------------------------------
 -- Documentation.

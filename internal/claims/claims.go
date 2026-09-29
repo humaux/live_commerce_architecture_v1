@@ -82,9 +82,15 @@ const (
 	ReasonWindowClosed     Reason = "WINDOW_CLOSED"
 )
 
-// persistedReasons lists every reason claims.events can store (Stats reports all of them).
+// persistedReasons lists every reason claims.events can store (boardReasons is the reported subset).
 var persistedReasons = []Reason{ReasonNoMatch, ReasonUnknownKeyword, ReasonOfferInactive,
 	ReasonInvalidQuantity, ReasonQuantityRequired, ReasonQuantityOverMax, ReasonBundleLimit, ReasonRateLimited}
+
+// boardReasons is the closed 7-key set the merchant board's Stats.Rejected reports (the Studio
+// parser apps/admin/lib/claims-model.ts requires exactly these keys). RATE_LIMITED is persisted
+// but not reported until the claims-board UI unit adds it in all locales; readStats skips it.
+var boardReasons = []Reason{ReasonNoMatch, ReasonUnknownKeyword, ReasonOfferInactive,
+	ReasonInvalidQuantity, ReasonQuantityRequired, ReasonQuantityOverMax, ReasonBundleLimit}
 
 // Outcomes and window states as stored in the database.
 const (

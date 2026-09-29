@@ -26,7 +26,15 @@ func TestMetaIntakeFrozenConstants(t *testing.T) {
 		found = found || r == ReasonRateLimited
 	}
 	if !found {
-		t.Fatal("RATE_LIMITED must be persisted (claims.events) and reported by Stats")
+		t.Fatal("RATE_LIMITED must be persisted (claims.events)")
+	}
+	if len(boardReasons) != 7 {
+		t.Fatalf("merchant board Stats.Rejected must stay the closed 7-key set until the UI unit lands: %d", len(boardReasons))
+	}
+	for _, r := range boardReasons {
+		if r == ReasonRateLimited {
+			t.Fatal("RATE_LIMITED leaked into the board key set")
+		}
 	}
 	if metaActorLimit != 10 || metaActorWindow != 60 || metaSessionBundleCap != 5000 {
 		t.Fatalf("§4.2 bounds changed: %d/%ds/%d (IR-6: 10 per 60 s per actor, 5000 bundles)", metaActorLimit, metaActorWindow, metaSessionBundleCap)
