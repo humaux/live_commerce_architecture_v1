@@ -1,5 +1,6 @@
--- 0065 owner provisioning (stripe-refund-v1 §12, rulings R-1/M-1): the store creator receives the
--- live/refund/fulfilment/export permissions on the store it creates. Function body = 0027 byte for byte
+-- 0065 owner provisioning (stripe-refund-v1 §12, rulings R-1/M-1 and 24): the store creator receives the
+-- live/refund/fulfilment/export permissions and integration:execute (needed by the claim-source definer
+-- live.put_claim_source together with live:manage) on the store it creates. Function body = 0027 byte for byte
 -- except the fresh-store grant array. No INSERT/UPDATE of identity.store_grants: no backfill, replay
 -- never restores a removed grant, other members and pre-0065 principals gain nothing.
 DO $$
@@ -8,7 +9,7 @@ BEGIN
   SELECT pg_get_constraintdef(c.oid) INTO v_def FROM pg_constraint c
   WHERE c.conrelid='identity.store_grants'::regclass AND c.conname='store_grants_permission_check';
   IF v_def IS NULL THEN RAISE EXCEPTION 'store_grants_permission_check missing'; END IF;
-  FOREACH p IN ARRAY ARRAY['live:read','live:manage','payments:refund','fulfillment:write','orders:export'] LOOP
+  FOREACH p IN ARRAY ARRAY['live:read','live:manage','payments:refund','fulfillment:write','orders:export','integration:execute'] LOOP
     IF position(quote_literal(p) IN v_def)=0 THEN
       RAISE EXCEPTION '0065 applied out of order: store_grants_permission_check lacks % (needs 0062-0064)',p;
     END IF;
@@ -46,7 +47,7 @@ BEGIN
     INSERT INTO control.stores(tenant_id,id,name,currency) VALUES(v_tenant,gen_random_uuid(),p_store_name,p_currency) RETURNING id INTO v_store;
     INSERT INTO identity.memberships(tenant_id,principal_id) VALUES(v_tenant,v_principal);
     INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission)
-      SELECT v_tenant,v_store,v_principal,p FROM unnest(ARRAY['store:read','audit:read','audit:write','catalog:read','catalog:write','inventory:read','inventory:write','inventory:reserve','pricing:read','pricing:write','integration:read','integration:manage','orders:read','live:read','live:manage','payments:refund','fulfillment:write','orders:export']) p;
+      SELECT v_tenant,v_store,v_principal,p FROM unnest(ARRAY['store:read','audit:read','audit:write','catalog:read','catalog:write','inventory:read','inventory:write','inventory:reserve','pricing:read','pricing:write','integration:read','integration:manage','orders:read','live:read','live:manage','payments:refund','fulfillment:write','orders:export','integration:execute']) p;
     INSERT INTO inventory.warehouses(tenant_id,store_id,name) VALUES(v_tenant,v_store,p_warehouse_name) RETURNING id INTO v_warehouse;
     INSERT INTO identity.initial_stores(principal_id,idempotency_key,request_hash,tenant_id,store_id,warehouse_id)
       VALUES(v_principal,p_key,p_hash,v_tenant,v_store,v_warehouse);
@@ -57,4 +58,4 @@ ALTER FUNCTION identity.create_initial_store(bytea,text,bytea,text,text,text,tex
 REVOKE ALL ON FUNCTION identity.create_initial_store(bytea,text,bytea,text,text,text,text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION identity.create_initial_store(bytea,text,bytea,text,text,text,text) TO commerce_identity;
 COMMENT ON FUNCTION identity.create_initial_store(bytea,text,bytea,text,text,text,text) IS
- 'internal/identity onboarding only; EXECUTE commerce_identity. Since 0065 the creator receives the 0027 set plus live:read, live:manage, payments:refund, fulfillment:write, orders:export on the new store; no backfill of existing principals, replay never restores removed grants; integration:execute is deliberately not granted.';
+ 'internal/identity onboarding only; EXECUTE commerce_identity. Since 0065 the creator receives the 0027 set plus live:read, live:manage, payments:refund, fulfillment:write, orders:export, integration:execute (ruling 24: claim-source needs it) on the new store; no backfill of existing principals, replay never restores removed grants.';

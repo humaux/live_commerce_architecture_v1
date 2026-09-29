@@ -3,9 +3,10 @@ package foundation_test
 // OP01 (contracts/stripe-refund-v1.md §12 and rulings): 0065_owner_provisioning.sql, REAL_PG in an isolated
 // database. Written from the contract text only. What it proves:
 //   - a store creator onboarded through identity.create_initial_store receives exactly the 0027 set plus
-//     live:read, live:manage, payments:refund, fulfillment:write, orders:export on the new store;
+//     live:read, live:manage, payments:refund, fulfillment:write, orders:export, integration:execute on the new
+//     store (ruling 24: six, spec change of §12);
 //   - an onboarding replay (same key) adds nothing and does not restore a removed grant;
-//   - other members of the tenant, principals created before 0065 and other stores get none of the five;
+//   - other members of the tenant, principals created before 0065 and other stores get none of the six;
 //   - the function body differs from its last pre-0065 definition ONLY by the permission array.
 
 import (
@@ -23,7 +24,7 @@ import (
 )
 
 var op01Base = []string{"store:read", "audit:read", "audit:write", "catalog:read", "catalog:write", "inventory:read", "inventory:write", "inventory:reserve", "pricing:read", "pricing:write", "integration:read", "integration:manage", "orders:read"}
-var op01New = []string{"live:read", "live:manage", "payments:refund", "fulfillment:write", "orders:export"}
+var op01New = []string{"live:read", "live:manage", "payments:refund", "fulfillment:write", "orders:export", "integration:execute"}
 
 func op01Sorted(lists ...[]string) []string {
 	var all []string
@@ -125,7 +126,7 @@ func TestOwnerProvisioningOP01(t *testing.T) {
 		if got := grantsOf(first.TenantID, first.StoreID, other); strings.Join(got, ",") != "store:read" {
 			t.Fatalf("another member of the tenant has %v", got)
 		}
-		// (2) principals that existed before (the fixture principals) hold none of the five newer permissions
+		// (2) principals that existed before (the fixture principals) hold none of the six newer permissions
 		var leaked int
 		if err := f.owner.QueryRow(ctx, `SELECT count(*) FROM identity.store_grants WHERE principal_id<>$1 AND permission IN ('`+newSet+`')`, session.PrincipalID).Scan(&leaked); err != nil || leaked != 0 {
 			t.Fatalf("%d grants of the new permissions exist for principals other than the creator (backfill): %v", leaked, err)
@@ -140,7 +141,7 @@ func TestOwnerProvisioningOP01(t *testing.T) {
 		}
 	})
 
-	t.Run("the permission CHECK admits all five (0065 needs 0062-0064 first)", func(t *testing.T) {
+	t.Run("the permission CHECK admits all six (0065 needs 0062-0064 first)", func(t *testing.T) {
 		var def string
 		if err := f.owner.QueryRow(ctx, `SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid='identity.store_grants'::regclass AND conname='store_grants_permission_check'`).Scan(&def); err != nil {
 			t.Fatal(err)

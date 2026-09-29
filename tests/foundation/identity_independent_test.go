@@ -245,7 +245,7 @@ func TestIdentityLogoutAndInitialStoreSerialize(t *testing.T) {
 	}
 	if created {
 		// The exact owner permission set, not a count: the old literal 8 went stale
-		// when later migrations widened create_initial_store (now 13 grants).
+		// when later migrations widened create_initial_store (see initialStoreGrants; 0065: 19 grants).
 		if receipts != 1 || memberships != 1 || grantList != initialStoreGrants || warehouses != 1 || audits != 1 {
 			t.Fatalf("partial committed store: receipts=%d memberships=%d grants=%d [%s] warehouses=%d audits=%d", receipts, memberships, grants, grantList, warehouses, audits)
 		}

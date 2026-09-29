@@ -384,8 +384,8 @@ export default function OrderFlow({
 }
 
 // The seller's attestation of dispatch (manual-fulfilment-v1 §5.2): never "in transit"/"delivered".
-// Link: plain external anchor, host shown so the buyer sees where it goes (ruling 14, Q6). rel keeps
-// nofollow from manual-fulfilment-v1 §3.2 on top of ruling 14's noopener noreferrer.
+// Link: plain external anchor, host shown so the buyer sees where it goes (ruling 14, Q6);
+// rel="noopener noreferrer nofollow": ruling 25 (manual-fulfilment-v1 §3.2 governs; ruling 14 was incomplete).
 function ShipmentBlock({
   shipment,
   locale,

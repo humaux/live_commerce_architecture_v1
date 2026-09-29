@@ -411,4 +411,4 @@ func TestIdentityPoolRejectsPrivilegeAndObjectOwnership(t *testing.T) {
 // grants the creating principal. Every test asserting the initial owner's
 // grants compares against this one list so a migration that changes the set
 // fails loudly in one place instead of leaving stale per-test counts.
-const initialStoreGrants = "audit:read,audit:write,catalog:read,catalog:write,fulfillment:write,integration:manage,integration:read,inventory:read,inventory:reserve,inventory:write,live:manage,live:read,orders:export,orders:read,payments:refund,pricing:read,pricing:write,store:read"
+const initialStoreGrants = "audit:read,audit:write,catalog:read,catalog:write,fulfillment:write,integration:execute,integration:manage,integration:read,inventory:read,inventory:reserve,inventory:write,live:manage,live:read,orders:export,orders:read,payments:refund,pricing:read,pricing:write,store:read"
