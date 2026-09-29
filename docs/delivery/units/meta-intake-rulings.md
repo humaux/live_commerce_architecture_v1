@@ -20,3 +20,17 @@ h. Gap closed: merchant binding of a live session to a Meta post (`live.put_clai
    (admin HTTP under the existing Studio/claims merchant routes); the Studio panel field is unit
    `claim-source-ui` (reuses the approved Studio claims panel; one text field + status line).
    No Graph listing of posts in R1 (needs a Page token read path; R2).
+
+## Wave-3 rulings (2026-09-29)
+
+i. §4.3 privilege table AMENDED (ratifies meta-intake-core round-2): `commerce_integration_writer`
+   gets EXECUTE `identity.principal_holds` + USAGE on schema `identity` (needed so
+   `register_meta_page_token` enforces §7 "owner membership + store validated");
+   `commerce_meta_registrar` gets USAGE on schema `integration`; `meta_page_heads` UPDATE grant is
+   `(current_version, updated_at)`. MCI02 compares against this amended table.
+j. RATE_LIMITED stays out of the merchant claims-board `Stats.Rejected` (7 keys) until the
+   claims-board UI adds it in three locales; the `internal/claims/merchant.go` edit is ratified.
+k. §5.4 exact job link applies only to jobs inserted by the intake login (keeps T06's deliberate
+   duplicate-job gate valid): ratified. The CHECK `events_source_platform` addition: ratified.
+l. Facebook top-level comment rule `parent_id == post_id` treated as top-level (docs-based, LIVE
+   unverified → probe U-list); late webhooks use the window's current match mode: ratified.

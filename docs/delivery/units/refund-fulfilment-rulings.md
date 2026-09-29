@@ -21,3 +21,23 @@ All defaults proposed with the briefs are ACCEPTED:
 14. UI Q1–Q6: the UI brief's defaults (no new comp; native `<dialog>` for refund; three-language
     carrier names; existing badge palette; export button in the list toolbar; tracking link as a
     plain external link with `rel="noopener noreferrer"`). Owner may revise before go-live.
+
+## Wave-3 rulings (2026-09-29)
+
+15. Refund/fulfilment error codes (refundable_changed, exceeds_refundable, amount_step,
+    not_refundable, refund_blocked_review, refund_limit, version_changed, not_shippable,
+    invalid_carrier, invalid_tracking, invalid_url, void_requires_shipped, invalid_void) are added to
+    `internal/httperror`'s code table centrally (root cause: unknown codes were rewritten to
+    `internal`), with an httptest asserting each code reaches the JSON body.
+16. Extra grant `SELECT(tenant_id,store_id,attempt_id)` on `payments.stripe_sessions` + policy
+    `auth_refund_session_read` for `commerce_auth` (Stripe/PAYUNi discriminator): ratified.
+17. Partial refund on a full-remaining-only attempt → 422 `refund_blocked_review`: ratified.
+18. Extra export `stripe.EncodeRefundBody` (pins body_sha256 before POST, like EncodeCreateBody):
+    ratified; add to the frozen interface list.
+19. `validateRuntimeRiverPrivileges` (runtime login: exactly SELECT/INSERT/UPDATE(kind) on
+    river_job + sequence USAGE in river, river_media, river_payment): ratified; the deploy
+    provisioning script must match it (checked in the deploy unit).
+20. Carrier name: NFC-normalize (not refuse) via golang.org/x/text/unicode/norm; go.mod tidied to a
+    direct dependency and a row added to docs/engineering/dependencies.md.
+21. RF04 (over-refund concurrency witness) may never be waived as "baseline"; every red RF/MF gate
+    is triaged into product / test / dependency with evidence before merge.
