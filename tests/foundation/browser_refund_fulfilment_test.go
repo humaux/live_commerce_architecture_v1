@@ -156,7 +156,12 @@ export default defineConfig({
 	if err := os.WriteFile(config, []byte(body), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	log := browserLog(t, filepath.Join(s.evidence, "playwright.log"))
+	// browserLog is O_EXCL: a gate that runs Playwright once per phase (RF11 partial, full) needs one log per phase.
+	logName := "playwright.log"
+	if phase := env["LC_BROWSER_PHASE"]; phase != "" {
+		logName = "playwright-" + phase + ".log"
+	}
+	log := browserLog(t, filepath.Join(s.evidence, logName))
 	cmd := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "--config", config)
 	cmd.Dir = s.root
 	base := map[string]string{"LC_BROWSER_PUBLIC_ORIGIN": s.origin, "LC_BROWSER_API_ORIGIN": s.api.URL, "LC_BROWSER_EVIDENCE": s.evidence}
@@ -210,7 +215,11 @@ func brfBuyerNode(t *testing.T, ctx context.Context, e *rfxEnv, o rfxOrder, scri
 	}()
 	cmd.Dir = root
 	cmd.Env = browserEnvironment(values)
-	log := browserLog(t, filepath.Join(evidence, filepath.Base(script)+".log"))
+	logName := filepath.Base(script) + ".log"
+	if phase := env["LC_RF_PHASE"]; phase != "" { // the RF11 buyer script runs twice (processing, final)
+		logName = filepath.Base(script) + "-" + phase + ".log"
+	}
+	log := browserLog(t, filepath.Join(evidence, logName))
 	cmd.Stdout, cmd.Stderr = log, log
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("storefront browser gate %s failed: %v; evidence=%s", script, err, evidence)

@@ -7,7 +7,7 @@
 // Everything that depends on UI wording lives in `ui` below so the UI unit can align it in one place. Until that unit
 // merges the spec is NOT_RUN by construction (the sections do not exist yet).
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -68,7 +68,11 @@ async function openOrders(page: Page, locale: string) {
   await page.goto(new URL(`/${locale}/orders?store=${store}`, origin).toString());
   await expect(page.getByTestId("merchant-orders")).toBeVisible();
   const selector = page.getByTestId("store-selector");
-  if ((await selector.inputValue()) !== store) await selector.selectOption(store);
+  // The selector only renders for members of more than one store (MerchantOrders.tsx); with a single
+  // store the ?store= query above is what scopes the page, and the BFF rejects a foreign store.
+  if (await selector.count()) {
+    if ((await selector.inputValue()) !== store) await selector.selectOption(store);
+  }
   await expect(page.getByTestId("orders-table")).toBeVisible();
 }
 
@@ -90,7 +94,14 @@ async function expand(page: Page, id: string): Promise<Locator> {
 
 async function asToken(context: import("@playwright/test").BrowserContext, token: string) {
   await context.clearCookies();
-  await context.addCookies([{ name: cookieName, value: token, url: origin.replace(/^http:/, "https:"), secure: true, httpOnly: true, sameSite: "Lax" }]);
+  // The admin UI's session fence hashes the readable companion cookie (settings-client.sessionBoundary), so a
+  // swapped-in session needs its own __Host-commerce_csrf value exactly as the real callback would set it.
+  const csrf = randomBytes(32).toString("base64url");
+  const url = origin.replace(/^http:/, "https:");
+  await context.addCookies([
+    { name: cookieName, value: token, url, secure: true, httpOnly: true, sameSite: "Lax" },
+    { name: "__Host-commerce_csrf", value: csrf, url, secure: true, httpOnly: false, sameSite: "Lax" },
+  ]);
 }
 
 const manifestPath = path.join(evidence, "screenshots.json");
@@ -188,7 +199,7 @@ test("MF07 merchant marks a paid order shipped, corrects, voids and re-ships; bu
 
 test("MF07 export downloads a CSV that opens with the expected header and lists only unshipped paid orders", async ({ page }) => {
   await signedLogin(page);
-  const button = page.getByRole("button", { name: ui.exportButton });
+  const button = page.getByRole("link", { name: ui.exportButton }); // a plain download <a>, streamed by the BFF
   await expect(button).toBeVisible();
   // the text-column import hint sits next to the button (§5.3)
   await expect(button.locator("xpath=..")).toContainText(ui.exportHint);
@@ -219,10 +230,11 @@ test("MF07 a member without fulfillment:write / orders:export sees no shipment a
   await expect(detail.getByLabel(ui.trackingNumber)).toHaveCount(0);
   await expect(detail.getByRole("button", { name: ui.correct })).toHaveCount(0);
   await expect(detail.getByRole("button", { name: ui.void })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: ui.exportButton })).toHaveCount(0);
   await expect(page.getByRole("button", { name: ui.exportButton })).toHaveCount(0);
   // the BFF still refuses writes and export for that session (server is the authority)
   const put = await page.evaluate(async ({ store, order }) => {
-    const r = await fetch(`/api/stores/${store}/orders/${order}/shipment`, { method: "PUT", headers: { "content-type": "application/json", "Idempotency-Key": "mf07-restricted-key" }, body: "{}" });
+    const r = await fetch(`/api/stores/${store}/orders/${order}/shipment`, { method: "PUT", headers: { "content-type": "application/json", "Idempotency-Key": "mf07-restricted-key", "X-CSRF-Token": document.cookie.split("; ").find((c) => c.startsWith("__Host-commerce_csrf="))?.slice(21) ?? "" }, body: "{}" });
     return r.status;
   }, { store, order: reshipOrder });
   expect([403, 422, 401]).toContain(put);

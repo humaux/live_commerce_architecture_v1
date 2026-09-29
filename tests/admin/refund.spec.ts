@@ -9,7 +9,7 @@
 // (native <dialog>, two-step confirmation restating amount + currency, one Idempotency-Key per dialog open, state
 // badges "處理中/处理中/Processing"). UI wording lives in `ui`; until that unit merges this spec is NOT_RUN.
 import { expect, test, type BrowserContext, type Locator, type Page } from "@playwright/test";
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -34,6 +34,7 @@ const ui = {
   refundAction: /^(refund|退款|發起退款|发起退款|issue refund)/i,
   amount: /amount|金額|金额/i,
   reason: /reason|原因/i,
+  review: /review|核對|核对/i, // step one of the two-step dialog ("Review refund")
   confirm: /confirm|確認|确认/i,
   refresh: /refresh|重新整理|刷新/i,
   processing: /processing|處理中|处理中/i,
@@ -52,7 +53,11 @@ async function openOrders(page: Page, locale: string) {
   await page.goto(new URL(`/${locale}/orders?store=${store}`, origin).toString());
   await expect(page.getByTestId("merchant-orders")).toBeVisible();
   const selector = page.getByTestId("store-selector");
-  if ((await selector.inputValue()) !== store) await selector.selectOption(store);
+  // The selector only renders for members of more than one store (MerchantOrders.tsx); with a single
+  // store the ?store= query above is what scopes the page, and the BFF rejects a foreign store.
+  if (await selector.count()) {
+    if ((await selector.inputValue()) !== store) await selector.selectOption(store);
+  }
   await expect(page.getByTestId("orders-table")).toBeVisible();
 }
 async function expand(page: Page): Promise<Locator> {
@@ -72,7 +77,14 @@ async function expand(page: Page): Promise<Locator> {
 }
 async function asToken(context: BrowserContext, token: string) {
   await context.clearCookies();
-  await context.addCookies([{ name: cookieName, value: token, url: origin.replace(/^http:/, "https:"), secure: true, httpOnly: true, sameSite: "Lax" }]);
+  // The admin UI's session fence hashes the readable companion cookie (settings-client.sessionBoundary), so a
+  // swapped-in session needs its own __Host-commerce_csrf value exactly as the real callback would set it.
+  const csrf = randomBytes(32).toString("base64url");
+  const url = origin.replace(/^http:/, "https:");
+  await context.addCookies([
+    { name: cookieName, value: token, url, secure: true, httpOnly: true, sameSite: "Lax" },
+    { name: "__Host-commerce_csrf", value: csrf, url, secure: true, httpOnly: false, sameSite: "Lax" },
+  ]);
 }
 const manifestPath = path.join(evidence, "screenshots.json");
 async function shot(page: Page, name: string, locale: string, viewport: "desktop" | "mobile") {
@@ -113,7 +125,7 @@ async function refundThroughDialog(page: Page, detail: Locator, minor: number, r
   await expect(amount).toHaveValue(new RegExp(`^${money(refundableBefore).replace(".", "\\.")}$|^${refundableBefore / 100}$`));
   await amount.fill(String(minor / 100));
   await dialog.getByLabel(ui.reason).selectOption("requested_by_customer");
-  await dialog.getByRole("button", { name: ui.confirm }).click();
+  await dialog.getByRole("button", { name: ui.review }).click();
   // step two restates amount + currency before anything is sent
   await expect(dialog).toContainText(String(minor / 100));
   await expect(dialog).toContainText(/TWD|NT\$|\$/);
@@ -141,13 +153,18 @@ test.describe(() => {
     await expect(inProgress(detail)).toBeVisible();
     await expect(detail).toContainText(money(captured - partial));
     await expect(settled(detail)).toHaveCount(0);
-    // R-9: the merchant sees the Stripe refund id for Dashboard tracing once it is pinned
-    await expect(detail).toContainText(/re_[A-Za-z0-9_]+/, { timeout: 30_000 });
-    // refresh on a non-terminal refund is offered and answers without an error banner (throttle => retry later)
+    // Refresh on a non-terminal refund is offered and answers without an error banner (throttle => retry later).
+    // The page never polls (refund-fulfilment-ui brief: "Refresh button per non-terminal refund"); a refresh re-GETs the
+    // list from the server, so that is the merchant action that surfaces the worker's pin.
     const refresh = detail.getByRole("button", { name: ui.refresh }).first();
     await expect(refresh).toBeVisible();
-    await refresh.click();
-    await expect(page.getByRole("alert")).toHaveCount(0);
+    // R-9: the merchant sees the Stripe refund id for Dashboard tracing once the worker has pinned it
+    await expect(async () => {
+      await refresh.click();
+      // scoped to the order detail: Next's route announcer is a page-level role=alert ("Orders") and is not an error banner
+      await expect(detail.getByRole("alert")).toHaveCount(0);
+      await expect(detail).toContainText(/re_[A-Za-z0-9_]+/, { timeout: 3_000 });
+    }).toPass({ timeout: 45_000, intervals: [1_000, 3_000, 5_000] });
     await expect(page.locator("body")).not.toContainText(/fraudulent/i);
   });
 }
@@ -160,12 +177,23 @@ test.describe(() => {
     const posts = watchRefundPosts(page);
     const detail = await expand(page);
     // the earlier partial refund settled at the provider while the buyer half ran
-    await expect(settled(detail)).toBeVisible({ timeout: 60_000 });
+    // (the page never polls, so Refresh until the worker's SUCCEEDED fact is read back)
+    await expect(async () => {
+      const refresh = detail.getByRole("button", { name: ui.refresh });
+      if (await refresh.count()) await refresh.first().click();
+      await expect(settled(detail)).toBeVisible({ timeout: 3_000 });
+    }).toPass({ timeout: 60_000, intervals: [1_000, 3_000, 5_000] });
     await expect(detail).toContainText(money(captured - partial));
     await refundThroughDialog(page, detail, captured - partial, captured - partial);
     const body = JSON.parse(posts[posts.length - 1].body ?? "{}") as Record<string, unknown>;
     expect(body).toMatchObject({ amount_minor: captured - partial, expected_refundable_minor: captured - partial });
-    await expect(detail.locator('[data-state="REFUNDED"]').first()).toBeVisible({ timeout: 60_000 });
+    // The page never polls: the merchant's Refresh re-GETs the refund list and the order, so drive that until the worker's
+    // SUCCEEDED fact has made the payment state REFUNDED (the button disappears once no refund is non-terminal).
+    await expect(async () => {
+      const refresh = detail.getByRole("button", { name: ui.refresh });
+      if (await refresh.count()) await refresh.first().click();
+      await expect(detail.locator('[data-state="REFUNDED"]').first()).toBeVisible({ timeout: 3_000 });
+    }).toPass({ timeout: 60_000, intervals: [1_000, 3_000, 5_000] });
     await expect(detail.getByRole("button", { name: ui.refundAction })).toHaveCount(0); // nothing refundable left
     await expect(detail).toContainText(money(captured));
     // stock and order state are untouched by a refund: still a confirmed order awaiting the merchant's fulfilment
@@ -183,7 +211,7 @@ test.describe(() => {
     await expect(detail.getByRole("button", { name: ui.refundAction })).toHaveCount(0);
     await expect(detail.getByRole("button", { name: ui.refresh })).toHaveCount(0);
     const status = await page.evaluate(async ({ store: s, order: o }) => {
-      const r = await fetch(`/api/stores/${s}/orders/${o}/refunds`, { method: "POST", headers: { "content-type": "application/json", "Idempotency-Key": "rf11-restricted-key" }, body: JSON.stringify({ amount_minor: 100, reason: "duplicate", expected_refundable_minor: 0 }) });
+      const r = await fetch(`/api/stores/${s}/orders/${o}/refunds`, { method: "POST", headers: { "content-type": "application/json", "Idempotency-Key": "rf11-restricted-key", "X-CSRF-Token": document.cookie.split("; ").find((c) => c.startsWith("__Host-commerce_csrf="))?.slice(21) ?? "" }, body: JSON.stringify({ amount_minor: 100, reason: "duplicate", expected_refundable_minor: 0 }) });
       return r.status;
     }, { store, order });
     expect([401, 403]).toContain(status); // the server, not the hidden button, is the authority
