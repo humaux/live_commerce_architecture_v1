@@ -47,7 +47,7 @@ func TestCustomersBillingCB07Restricted(t *testing.T) {
 	fresh := mustIssue(t, first.s.p.cqHarness.service, store)
 	// the buyer consents so the merchant has something to withdraw
 	if err := buyer.WithScope(ctx, first.s.p.a.runtime, first.s.p.cap.Token, store, func(c context.Context, tx pgx.Tx, s buyer.Scope) error {
-		_, err := customers.BuyerSetConsent(c, tx, s, first.s.p.cap.Token, t04Key("cbr-consent"), customers.ConsentInput{Purpose: "marketing_messages", Channel: "meta_dm", Granted: true, Context: "settings"})
+		_, err := customers.BuyerSetConsent(c, tx, s.StoreID, first.s.p.cap.Token, t04Key("cbr-consent"), customers.ConsentInput{Purpose: "marketing_messages", Channel: "meta_dm", Granted: true, Context: "settings"})
 		return err
 	}); err != nil {
 		t.Fatal(err)
@@ -139,7 +139,7 @@ func TestCustomersBillingCB07Restricted(t *testing.T) {
 		}
 		var doc []byte
 		if err := buyer.WithScope(ctx, first.s.p.a.runtime, first.s.p.cap.Token, store, func(c context.Context, tx pgx.Tx, s buyer.Scope) (err error) {
-			doc, err = customers.BuyerExport(c, tx, s, first.s.p.cap.Token, t04Key("cbr-buyer-export"))
+			doc, err = customers.BuyerExport(c, tx, s.StoreID, first.s.p.cap.Token, t04Key("cbr-buyer-export"))
 			return err
 		}); err != nil || !strings.Contains(string(doc), customers.ExportFormat) {
 			t.Fatalf("buyer export under RESTRICTED: %v", err)

@@ -297,7 +297,10 @@ REVOKE ALL ON FUNCTION customers.apply_erasure(uuid,uuid,uuid) FROM PUBLIC;
 
 -- ---------------------------------------------------------------------------------------
 -- buyer_set_consent: only the buyer grants (CD4). The owner row is locked FOR UPDATE BEFORE resolve_scope: the
--- latter takes FOR SHARE on the same row, so locking after it would deadlock two concurrent requests of one buyer.
+-- latter takes FOR SHARE on the same row, so locking after it would deadlock two concurrent requests of one buyer
+-- (both hold SHARE and wait for the other's UPDATE). That holds only when this definer is the FIRST buyer-scope step of
+-- its transaction: callers must NOT wrap it in buyer.WithScope (which resolves the capability, i.e. FOR SHARE, first).
+-- internal/buyerhttp consentPut and privacyExport therefore use buyerTransaction (D11), as erasure does.
 -- Every new key inserts a row (also when the state is unchanged) so a stale retry can never re-grant.
 -- ---------------------------------------------------------------------------------------
 CREATE FUNCTION customers.buyer_set_consent(p_hash bytea,p_store uuid,p_purpose text,p_channel text,
@@ -569,10 +572,19 @@ REVOKE ALL ON FUNCTION customers.replay_erasures(uuid[]) FROM PUBLIC;
 -- ---------------------------------------------------------------------------------------
 CREATE FUNCTION customers.buyer_read_privacy(p_hash bytea,p_store uuid,p_detail boolean)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE v_scope record; v_result jsonb;
+DECLARE v_scope record; v_sess record; v_result jsonb;
 BEGIN
  IF p_hash IS NULL OR octet_length(p_hash)<>32 OR p_store IS NULL OR p_detail IS NULL THEN
   RAISE EXCEPTION 'invalid privacy read' USING ERRCODE='PT400'; END IF;
+ IF p_detail THEN
+  -- Export: the first definer of the export transaction, followed by record_export (owner FOR UPDATE). Same prologue as
+  -- buyer_set_consent, so resolve_scope's FOR SHARE below re-locks a row this transaction already holds exclusively
+  -- and two concurrent exports of one buyer serialize instead of deadlocking on a SHARE->UPDATE upgrade.
+  SELECT c.tenant_id,c.owner_id INTO v_sess FROM buyer.capability_sessions c WHERE c.token_hash=p_hash AND c.store_id=p_store;
+  IF NOT FOUND THEN RAISE EXCEPTION 'invalid buyer capability' USING ERRCODE='PT401'; END IF;
+  PERFORM set_config('app.tenant_id',v_sess.tenant_id::text,true),set_config('app.store_id',p_store::text,true);
+  PERFORM 1 FROM buyer.owners o WHERE o.tenant_id=v_sess.tenant_id AND o.store_id=p_store AND o.id=v_sess.owner_id FOR UPDATE;
+ END IF;
  SELECT * INTO v_scope FROM buyer.resolve_scope(p_hash,p_store);
  IF NOT FOUND THEN RAISE EXCEPTION 'invalid buyer capability' USING ERRCODE='PT401'; END IF;
  PERFORM set_config('app.tenant_id',v_scope.tenant_id::text,true),set_config('app.store_id',p_store::text,true),
@@ -919,7 +931,7 @@ COMMENT ON FUNCTION customers.consent_allows(uuid,uuid,uuid,text,text) IS
 COMMENT ON FUNCTION customers.apply_erasure(uuid,uuid,uuid) IS
  'internal/customers CD7 steps, idempotent; internal (EXECUTE nobody). Caller holds the owner row lock and GUC scope. Withdraws consents, revokes capability sessions, deactivates the owner, redacts destination snapshots no order references, relabels bound manual bundles erased-<32 hex>. Never writes actor_key, claims.meta_intake, live.claim_sources or social.*. Returns counts.';
 COMMENT ON FUNCTION customers.buyer_set_consent(bytea,uuid,text,text,boolean,text,text,uuid) IS
- 'internal/customers.BuyerSetConsent only; EXECUTE commerce_buyer_runtime. resolve_scope, owner FOR UPDATE, always inserts a row per new key; same key + different body = PT409 idempotency_conflict; source/policy passed by Go from server context (CD4). A-3 (R3 ads.put_capi_context) is added by meta-ads, not here.';
+ 'internal/customers.BuyerSetConsent only; EXECUTE commerce_buyer_runtime. Must be the first buyer-scope step of its transaction (no buyer.WithScope: FOR SHARE then FOR UPDATE deadlocks concurrent requests); owner FOR UPDATE then resolve_scope, always inserts a row per new key; same key + different body = PT409 idempotency_conflict; source/policy passed by Go from server context (CD4). A-3 (R3 ads.put_capi_context) is added by meta-ads, not here.';
 COMMENT ON FUNCTION customers.merchant_withdraw_consent(bytea,uuid,uuid,text,text,uuid) IS
  'internal/customers.WithdrawConsent only; EXECUTE commerce_runtime. customers:privacy, GUCs verified (not set), always inserts granted=false merchant_recorded, audit customers.consent_withdrawn. No merchant grant exists (CHECK + no function).';
 COMMENT ON FUNCTION customers.record_export(bytea,uuid,uuid,text,uuid,jsonb) IS
@@ -927,9 +939,9 @@ COMMENT ON FUNCTION customers.record_export(bytea,uuid,uuid,text,uuid,jsonb) IS
 COMMENT ON FUNCTION customers.erase_owner(bytea,uuid,uuid,text,uuid) IS
  'internal/customers.Erase/BuyerErase only; EXECUTE commerce_runtime, commerce_buyer_runtime. CD7 erasure: PT410 erased (buyer retry after success), PT409 erasure_blocked (unexpired DRAFT/AWAITING_PAYMENT order, live payments.stripe_sessions row, refund without terminal fact) or idempotency_conflict; one-way per owner; audit customers.erased. Orders, facts, shipments and order-referenced snapshots are retained (U08).';
 COMMENT ON FUNCTION customers.replay_erasures(uuid[]) IS
- 'Restore procedure (CD8/§9); EXECUTE nobody (migration owner/ops only). With ids: re-applies erasure for the externally kept owner ids and inserts the missing ERASURE tombstone (via restore, request_key = owner id). Without ids it replays only rows present in this database.';
+ 'internal/customers restore procedure (CD8/§9); EXECUTE nobody (migration owner/ops only). With ids: re-applies erasure for the externally kept owner ids and inserts the missing ERASURE tombstone (via restore, request_key = owner id). Without ids it replays only rows present in this database.';
 COMMENT ON FUNCTION customers.buyer_read_privacy(bytea,uuid,boolean) IS
- 'internal/customers.ReadBuyerPrivacy/BuyerExport only; EXECUTE commerce_buyer_runtime. Consents + erased flag; p_detail adds consent history, bound-bundle summaries (never actor_key) and privacy actions for the export document. Not in the frozen §3.1 table: no login role may read customers.* directly, so the buyer needs this reader.';
+ 'internal/customers.ReadBuyerPrivacy/BuyerExport only; EXECUTE commerce_buyer_runtime. Consents + erased flag; p_detail adds consent history, bound-bundle summaries (never actor_key) and privacy actions for the export document. p_detail=true takes the owner FOR UPDATE before resolve_scope (export transaction prologue, same reason as buyer_set_consent); it must be the first buyer-scope step of the transaction. Not in the frozen §3.1 table: no login role may read customers.* directly, so the buyer needs this reader.';
 COMMENT ON FUNCTION customers.buyer_export_orders(bytea,uuid) IS
  'internal/customers.BuyerExport only; owner commerce_checkout_writer, EXECUTE commerce_buyer_runtime. The caller''s own orders newest first (<= 201, Go refuses > 200): snapshot without allocation plus the SHIPPED head. Not in the frozen §3.1 table: the buyer pool cannot read checkout tables.';
 COMMENT ON FUNCTION identity.read_merchant_customers(bytea,uuid,uuid,integer,timestamptz,uuid,text) IS

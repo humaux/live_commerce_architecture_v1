@@ -133,9 +133,13 @@ func ReadBuyerPrivacy(ctx context.Context, tx pgx.Tx, s buyer.Scope, token strin
 
 // BuyerSetConsent records the buyer's own grant or withdrawal. Source and policy version come from the server
 // (context maps to a source, PrivacyPolicyVersion is the deployed notice), never from the body (CD4, D12).
-func BuyerSetConsent(ctx context.Context, tx pgx.Tx, s buyer.Scope, token, key string, in ConsentInput) (ConsentResult, error) {
+//
+// The caller opens a buyer-pool transaction WITHOUT buyer.WithScope and passes the store its origin resolved: the
+// definer takes the owner FOR UPDATE before it resolves the capability, and a prior resolve_scope (FOR SHARE) would
+// make two concurrent requests of one buyer deadlock on the upgrade.
+func BuyerSetConsent(ctx context.Context, tx pgx.Tx, storeID, token, key string, in ConsentInput) (ConsentResult, error) {
 	keyID, err := KeyUUID(key)
-	if err != nil || tx == nil || !validBuyerInput(s, token) || !ValidPair(in.Purpose, in.Channel) {
+	if err != nil || tx == nil || !command.ValidID(storeID) || !validBuyerToken(token) || !ValidPair(in.Purpose, in.Channel) {
 		return ConsentResult{}, command.ErrInvalid
 	}
 	source, err := consentSourceFor(in.Context)
@@ -146,7 +150,7 @@ func BuyerSetConsent(ctx context.Context, tx pgx.Tx, s buyer.Scope, token, key s
 	var raw []byte
 	// customers.buyer_set_consent: owner lock, always-insert per key, PT409 on a different body under the same key.
 	err = tx.QueryRow(ctx, `SELECT customers.buyer_set_consent($1,$2::uuid,$3,$4,$5,$6,$7,$8::uuid)`,
-		hash[:], s.StoreID, in.Purpose, in.Channel, in.Granted, source, PrivacyPolicyVersion, keyID).Scan(&raw)
+		hash[:], storeID, in.Purpose, in.Channel, in.Granted, source, PrivacyPolicyVersion, keyID).Scan(&raw)
 	if err != nil {
 		return ConsentResult{}, mapBuyerError(err)
 	}
@@ -155,19 +159,22 @@ func BuyerSetConsent(ctx context.Context, tx pgx.Tx, s buyer.Scope, token, key s
 
 // BuyerExport builds the buyer's own export (same envelope as the merchant's, no customer_id or principal ids)
 // and records the EXPORT row in the same transaction; > 200 orders or > 1 MiB is ErrExportTooLarge (rollback).
-func BuyerExport(ctx context.Context, tx pgx.Tx, s buyer.Scope, token, key string) ([]byte, error) {
+//
+// Like BuyerSetConsent it must be the first buyer-scope work of its transaction (no buyer.WithScope): the first
+// definer, buyer_read_privacy(detail), takes the owner FOR UPDATE that record_export needs later.
+func BuyerExport(ctx context.Context, tx pgx.Tx, storeID, token, key string) ([]byte, error) {
 	keyID, err := KeyUUID(key)
-	if err != nil || tx == nil || !validBuyerInput(s, token) {
+	if err != nil || tx == nil || !command.ValidID(storeID) || !validBuyerToken(token) {
 		return nil, command.ErrInvalid
 	}
 	hash := sha256.Sum256([]byte(token))
 	var rawPrivacy, rawOrders []byte
 	// customers.buyer_read_privacy(detail): consent history, bound-bundle summaries, privacy actions, store name.
-	if err = tx.QueryRow(ctx, `SELECT customers.buyer_read_privacy($1,$2::uuid,true)`, hash[:], s.StoreID).Scan(&rawPrivacy); err != nil {
+	if err = tx.QueryRow(ctx, `SELECT customers.buyer_read_privacy($1,$2::uuid,true)`, hash[:], storeID).Scan(&rawPrivacy); err != nil {
 		return nil, mapBuyerError(err)
 	}
 	// customers.buyer_export_orders: the buyer pool cannot read checkout tables, so a definer returns the caller's orders.
-	if err = tx.QueryRow(ctx, `SELECT customers.buyer_export_orders($1,$2::uuid)`, hash[:], s.StoreID).Scan(&rawOrders); err != nil {
+	if err = tx.QueryRow(ctx, `SELECT customers.buyer_export_orders($1,$2::uuid)`, hash[:], storeID).Scan(&rawOrders); err != nil {
 		return nil, mapBuyerError(err)
 	}
 	var priv struct {
@@ -211,7 +218,7 @@ func BuyerExport(ctx context.Context, tx pgx.Tx, s buyer.Scope, token, key strin
 	var stored []byte
 	// customers.record_export: buyer via; EXPORT row in this transaction, replayed key returns the stored row.
 	err = tx.QueryRow(ctx, `SELECT customers.record_export($1,$2::uuid,NULL,'buyer',$3::uuid,$4::jsonb)`,
-		hash[:], s.StoreID, keyID,
+		hash[:], storeID, keyID,
 		exportSummary(len(orders), len(doc.Consents), len(doc.Claims), len(doc.PrivacyActions))).Scan(&stored)
 	if err != nil {
 		return nil, mapBuyerError(err)

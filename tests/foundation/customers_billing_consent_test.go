@@ -71,12 +71,24 @@ func (c *cbcEnv) buyerTx(cp buyer.Capability, store string, fn func(context.Cont
 	return buyer.WithScope(context.Background(), c.h.a.runtime, cp.Token, store, fn)
 }
 
+// put mirrors internal/buyerhttp.consentPut: one buyer-pool transaction WITHOUT buyer.WithScope (resolve_scope's
+// FOR SHARE followed by the definer's FOR UPDATE would deadlock two concurrent requests of one buyer), same
+// lock_timeout as buyerTransaction so a real deadlock still fails here.
 func (c *cbcEnv) put(cp buyer.Capability, key string, in customers.ConsentInput) (res customers.ConsentResult, err error) {
-	err = c.buyerTx(cp, c.f.storeA1, func(ctx context.Context, tx pgx.Tx, s buyer.Scope) (e error) {
-		res, e = customers.BuyerSetConsent(ctx, tx, s, cp.Token, key, in)
-		return e
-	})
-	return res, err
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	tx, err := c.h.a.runtime.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
+	if err != nil {
+		return res, err
+	}
+	defer tx.Rollback(context.Background())
+	if _, err = tx.Exec(ctx, `SELECT set_config('lock_timeout','1s',true)`); err != nil {
+		return res, err
+	}
+	if res, err = customers.BuyerSetConsent(ctx, tx, c.f.storeA1, cp.Token, key, in); err != nil {
+		return res, err
+	}
+	return res, tx.Commit(ctx)
 }
 
 func (c *cbcEnv) withdraw(token, store, customer, key string, in customers.WithdrawInput) (res customers.ConsentResult, err error) {
@@ -559,7 +571,7 @@ func TestCustomersBillingCB04Consent(t *testing.T) {
 			{"buyer_set_consent", func(cp buyer.Capability, owner string, report func(pgx.Tx)) error {
 				return c.buyerTx(cp, f.storeA1, func(ctx context.Context, tx pgx.Tx, s buyer.Scope) error {
 					report(tx)
-					_, e := customers.BuyerSetConsent(ctx, tx, s, cp.Token, t04Key("cbc-lock-b"), in(cbcMM, cbcDM, true, "settings"))
+					_, e := customers.BuyerSetConsent(ctx, tx, s.StoreID, cp.Token, t04Key("cbc-lock-b"), in(cbcMM, cbcDM, true, "settings"))
 					return e
 				})
 			}},

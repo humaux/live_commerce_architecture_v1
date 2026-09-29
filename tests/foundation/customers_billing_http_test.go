@@ -735,10 +735,12 @@ func (c *cbhEnv) bundleOwner(t *testing.T, h *lcHarness, m *cbmEnv) string {
 	return cp.Scope.OwnerID
 }
 
-// TestCustomersBillingCB09Permissions is the permission-set half of CB09: §5 lists exactly one permission per merchant
-// row (customers:read for the reads, customers:privacy for withdraw/export/erase). It is a separate top-level test so a
-// deviation between the frozen table and an implementation that asks for more (e.g. orders:read for the order summaries
-// inside a customer) cannot hide the other CB09 assertions.
+// TestCustomersBillingCB09Permissions is the permission-set half of CB09. §5 (amended, R1 review P1-2) lists one
+// permission per merchant row except the two rows that return order PII through merchantorders.Get: detail needs
+// customers:read + orders:read and export customers:privacy + customers:read + orders:read. The list, withdraw and erase
+// rows return no order PII and need exactly customers:read / customers:privacy. It is a separate top-level test so a
+// deviation between the frozen table and an implementation cannot hide the other CB09 assertions. The fail-closed
+// halves (the row permission alone is 403) prove no order PII leaks to a principal without orders:read.
 func TestCustomersBillingCB09Permissions(t *testing.T) {
 	m := cbmSetup(t, false, false)
 	f, ctx := m.f, m.ctx
@@ -751,14 +753,27 @@ func TestCustomersBillingCB09Permissions(t *testing.T) {
 	c := &cbhEnv{cbmEnv: m}
 	c.on = httpapi.NewHandler(f.runtime, httpapi.Options{Billing: m.svc, ClaimLabels: &h.labels, Studio: true})
 	mk := func(perms ...string) string { return lcTokenFor(t, f, m.tenant, m.store, perms...) }
-	c.tokens = map[string]string{"read": mk("customers:read"), "privacy": mk("customers:privacy")}
+	c.tokens = map[string]string{"read": mk("customers:read"), "privacy": mk("customers:privacy"),
+		"read+orders": mk("customers:read", "orders:read"), "privacy+read": mk("customers:privacy", "customers:read"),
+		"privacy+read+orders": mk("customers:privacy", "customers:read", "orders:read")}
 	base := "/v1/admin/stores/" + m.store
 	owner := m.p.cap.Scope.OwnerID
-	if r := c.do(c.on, "GET", base+"/customers/"+owner, c.tokens["read"], nil, nil); r.status != 200 {
-		t.Errorf("GET customers/{id} with customers:read alone: HTTP %d code=%q, want 200 (§5 lists customers:read only)", r.status, cbhCode(r))
+	if r := c.do(c.on, "GET", base+"/customers", c.tokens["read"], nil, nil); r.status != 200 {
+		t.Errorf("GET customers (list, no order PII) with customers:read alone: HTTP %d code=%q, want 200", r.status, cbhCode(r))
 	}
-	if r := c.do(c.on, "POST", base+"/customers/"+owner+"/exports", c.tokens["privacy"], c.key(), nil); r.status != 200 {
-		t.Errorf("POST exports with customers:privacy alone: HTTP %d code=%q, want 200 (§5 lists customers:privacy only)", r.status, cbhCode(r))
+	if r := c.do(c.on, "GET", base+"/customers/"+owner, c.tokens["read"], nil, nil); r.status != 403 {
+		t.Errorf("GET customers/{id} with customers:read alone: HTTP %d code=%q, want 403 (order PII needs orders:read)", r.status, cbhCode(r))
+	}
+	if r := c.do(c.on, "GET", base+"/customers/"+owner, c.tokens["read+orders"], nil, nil); r.status != 200 {
+		t.Errorf("GET customers/{id} with customers:read + orders:read: HTTP %d code=%q, want 200 (§5 amended)", r.status, cbhCode(r))
+	}
+	for _, name := range []string{"privacy", "privacy+read"} {
+		if r := c.do(c.on, "POST", base+"/customers/"+owner+"/exports", c.tokens[name], c.key(), nil); r.status != 403 {
+			t.Errorf("POST exports with %s: HTTP %d code=%q, want 403 (order PII needs orders:read)", name, r.status, cbhCode(r))
+		}
+	}
+	if r := c.do(c.on, "POST", base+"/customers/"+owner+"/exports", c.tokens["privacy+read+orders"], c.key(), nil); r.status != 200 {
+		t.Errorf("POST exports with customers:privacy + customers:read + orders:read: HTTP %d code=%q, want 200 (§5 amended)", r.status, cbhCode(r))
 	}
 	if r := c.do(c.on, "POST", base+"/customers/"+owner+"/consent-withdrawals", c.tokens["privacy"], c.key(), map[string]any{"purpose": "ads_personalization", "channel": "meta_ads"}); r.status != 201 {
 		t.Errorf("POST consent-withdrawals with customers:privacy alone: HTTP %d code=%q, want 201", r.status, cbhCode(r))

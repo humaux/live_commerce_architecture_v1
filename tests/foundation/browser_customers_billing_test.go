@@ -192,7 +192,7 @@ func TestBrowserCustomersBilling(t *testing.T) {
 	consent := func(cp buyer.Capability, purpose, channel string) {
 		t.Helper()
 		if err := buyer.WithScope(ctx, main.s.p.a.runtime, cp.Token, store, func(c context.Context, tx pgx.Tx, s buyer.Scope) error {
-			_, err := customers.BuyerSetConsent(c, tx, s, cp.Token, t04Key("cbbr-consent"), customers.ConsentInput{Purpose: purpose, Channel: channel, Granted: true, Context: "settings"})
+			_, err := customers.BuyerSetConsent(c, tx, s.StoreID, cp.Token, t04Key("cbbr-consent"), customers.ConsentInput{Purpose: purpose, Channel: channel, Granted: true, Context: "settings"})
 			return err
 		}); err != nil {
 			t.Fatalf("consent: %v", err)

@@ -8,9 +8,12 @@
 // privacy errors map through responseError{status,code} here.
 //
 // Store, tenant and owner come from the origin the request resolved and the capability the database checks,
-// never from input. GET/PUT/export run in one commerce_buyer_runtime READ COMMITTED transaction through
-// buyer.WithScope. Erasure does NOT use buyer.WithScope (D11): a revoked capability must still reach
-// customers.erase_owner to answer 410 erased on a retry after success; it opens its own buyer-pool transaction.
+// never from input. Every route runs in one commerce_buyer_runtime READ COMMITTED transaction. GET uses
+// buyer.WithScope. Consent, export and erasure do NOT use buyer.WithScope: consent and export
+// because WithScope's resolve_scope takes FOR SHARE on the owner row and their definers then take FOR UPDATE on it,
+// so two concurrent requests of one buyer would deadlock on the upgrade (they lock first, inside the definer);
+// erasure (D11) because a revoked capability must still reach customers.erase_owner to answer 410 erased on a
+// retry after success. All three use buyerTransaction.
 
 package buyerhttp
 
@@ -58,8 +61,8 @@ func (h *handler) consentPut(ctx context.Context, w http.ResponseWriter, r *http
 	if err := decodeExact(r, &in, "purpose", "channel", "granted", "context"); err != nil {
 		return err
 	}
-	out, err := scoped(ctx, h.pool, token, storeID, func(c context.Context, tx pgx.Tx, s buyer.Scope) (customers.ConsentResult, error) {
-		result, err := customers.BuyerSetConsent(c, tx, s, token, key, in)
+	out, err := buyerTransaction(ctx, h.pool, func(c context.Context, tx pgx.Tx) (customers.ConsentResult, error) {
+		result, err := customers.BuyerSetConsent(c, tx, storeID, token, key, in)
 		// A-3 (meta-ads-v1, R3): ads.put_capi_context(hash, store, User-Agent) goes here, same tx, iff in.Purpose==PurposeAdsPersonalization && in.Granted.
 		return result, err
 	})
@@ -79,8 +82,8 @@ func (h *handler) privacyExport(ctx context.Context, w http.ResponseWriter, r *h
 	if err := noBody(r); err != nil {
 		return err
 	}
-	body, err := scoped(ctx, h.pool, token, storeID, func(c context.Context, tx pgx.Tx, s buyer.Scope) ([]byte, error) {
-		return customers.BuyerExport(c, tx, s, token, key)
+	body, err := buyerTransaction(ctx, h.pool, func(c context.Context, tx pgx.Tx) ([]byte, error) {
+		return customers.BuyerExport(c, tx, storeID, token, key)
 	})
 	if err != nil {
 		return privacyError(err)

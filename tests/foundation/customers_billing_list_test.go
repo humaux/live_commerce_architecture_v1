@@ -671,7 +671,7 @@ func (c *cblEnv) grant(o rfxOrder, purpose, channel string) {
 	c.t.Helper()
 	cp := o.s.p.cap
 	err := buyer.WithScope(c.ctx, o.s.p.a.runtime, cp.Token, o.store(), func(ctx context.Context, tx pgx.Tx, s buyer.Scope) error {
-		_, e := customers.BuyerSetConsent(ctx, tx, s, cp.Token, t04Key("cbl-consent"), customers.ConsentInput{Purpose: purpose, Channel: channel, Granted: true, Context: "settings"})
+		_, e := customers.BuyerSetConsent(ctx, tx, s.StoreID, cp.Token, t04Key("cbl-consent"), customers.ConsentInput{Purpose: purpose, Channel: channel, Granted: true, Context: "settings"})
 		return e
 	})
 	if err != nil {
