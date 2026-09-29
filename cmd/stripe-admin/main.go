@@ -4,7 +4,9 @@
 // only, stderr one fixed code), never runs in the API or worker, and refuses LIVE.
 //
 // Environment: COMMERCE_STRIPE_REGISTRAR_DATABASE_URL; STRIPE_SECRET_KEY and STRIPE_ACCOUNT_ID for
-// register/rotate/SANDBOX qualify (which also needs STRIPE_SANDBOX=1); STRIPE_WEBHOOK_SECRET[_NEXT]
+// register/rotate (rotate must match the registered account); SANDBOX qualify needs STRIPE_SANDBOX=1
+// and the API keyring, probes with the stored credential and treats STRIPE_SECRET_KEY /
+// STRIPE_ACCOUNT_ID as optional assertions (S4); STRIPE_WEBHOOK_SECRET[_NEXT]
 // for webhook, whose AAD account is derived from the registered connection in SQL (§0.2), never
 // from STRIPE_ACCOUNT_ID (least privilege; SP15 env sentinel).
 package main
@@ -162,6 +164,12 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout 
 			// The probe creates and expires a real sandbox Checkout Session: explicit opt-in only.
 			if getenv("STRIPE_SANDBOX") != "1" {
 				return errConfig
+			}
+			// S4: the probe uses the credential stored at --expected-version, opened with the API
+			// keyring; STRIPE_SECRET_KEY / STRIPE_ACCOUNT_ID are optional assertions that must
+			// match the stored key and the registered account.
+			if apiKeys, err = apiKeyring(getenv); err != nil {
+				return err
 			}
 			accountID, secretKey = getenv("STRIPE_ACCOUNT_ID"), getenv("STRIPE_SECRET_KEY")
 		}

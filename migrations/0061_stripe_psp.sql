@@ -215,6 +215,8 @@ GRANT SELECT,INSERT ON integration.bindings,integration.merchant_accounts,
  payments.account_qualifications,payments.method_versions,payments.method_heads
  TO commerce_payment_registry_writer;
 GRANT INSERT ON integration.account_credentials,ops.audit_events TO commerce_payment_registry_writer;
+-- S4: payments.stripe_registrar_credential is the only reader; SELECT stays scope-pinned by RLS below.
+GRANT SELECT ON integration.account_credentials TO commerce_payment_registry_writer;
 GRANT UPDATE(credential_version,updated_at) ON integration.merchant_accounts
  TO commerce_payment_registry_writer;
 GRANT UPDATE(current_version) ON payments.method_heads TO commerce_payment_registry_writer;
@@ -248,6 +250,10 @@ CREATE POLICY stripe_registry_credential ON integration.account_credentials FOR 
  WITH CHECK(tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid
   AND store_id=nullif(current_setting('app.store_id',true),'')::uuid
   AND principal_id=nullif(current_setting('app.principal_id',true),'')::uuid);
+CREATE POLICY stripe_registry_credential_read ON integration.account_credentials FOR SELECT
+ TO commerce_payment_registry_writer
+ USING(tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid
+  AND store_id=nullif(current_setting('app.store_id',true),'')::uuid);
 CREATE POLICY stripe_registry_qualification_read ON payments.account_qualifications
  FOR SELECT TO commerce_payment_registry_writer
  USING(tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid
@@ -819,7 +825,9 @@ BEGIN
    (r->>'Status'='expired' AND r->>'PaymentStatus'='unpaid'
     AND r->>'PaymentIntentStatus' IN ('','canceled','requires_payment_method'))
    OR (r->>'Via'='create' AND r->>'ErrorClass'='rejected'
-    AND (r->>'SendCount')::integer=1 AND sess.session_id IS NULL)
+    AND (r->>'SendCount')::integer=1 AND sess.session_id IS NULL
+    -- RD4: only the very first send proves non-existence; after any resend the key may have executed.
+    AND sess.create_send_count=1 AND sess.create_last_sent_at=sess.create_first_sent_at)
    OR (r->>'Via'='list' AND (r->>'ListMatchCount')::integer=0 AND sess.session_id IS NULL
     AND sess.create_first_sent_at IS NOT NULL AND v_now>=sess.expires_at+interval '15 minutes')
    OR (obs.source='LOCAL' AND r->>'Via'='unsent' AND sess.create_suppressed_at IS NOT NULL
@@ -1023,7 +1031,14 @@ BEGIN
  SELECT x.* INTO s FROM payments.stripe_sessions x WHERE x.attempt_id=a.id FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'Stripe session unavailable' USING ERRCODE='PT409'; END IF;
  v_now:=clock_timestamp();
- IF s.session_id IS NOT NULL OR s.create_suppressed_at IS NOT NULL OR s.cancel_requested_at IS NOT NULL THEN
+ IF s.session_id IS NOT NULL OR s.create_suppressed_at IS NOT NULL OR s.cancel_requested_at IS NOT NULL
+  -- RD4 / §10: a recorded first-send rejection is final even before payment_reconcile_v1 applies its
+  -- CLOSED_UNPAID. Stripe does not cache a 400 / pre-idempotency 401, so a resend could create a
+  -- session after the attempt closes and its stock is released.
+  OR EXISTS(SELECT 1 FROM payments.provider_observations o WHERE o.tenant_id=a.tenant_id
+   AND o.store_id=a.store_id AND o.attempt_id=a.id AND o.source='QUERY'
+   AND o.report->>'Via'='create' AND o.report->>'ErrorClass'='rejected'
+   AND o.report->>'SendCount'='1' AND o.report->>'SessionID'='') THEN
   RETURN 'CLOSED';
  END IF;
  IF s.create_first_sent_at IS NULL THEN
@@ -1043,7 +1058,7 @@ END $$;
 ALTER FUNCTION integration.mark_stripe_create_sent(uuid,bigint,bytea,text,bytea) OWNER TO commerce_integration_writer;
 REVOKE ALL ON FUNCTION integration.mark_stripe_create_sent(uuid,bigint,bytea,text,bytea) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION integration.mark_stripe_create_sent(uuid,bigint,bytea,text,bytea) TO commerce_worker;
-COMMENT ON FUNCTION integration.mark_stripe_create_sent(uuid,bigint,bytea,text,bytea) IS 'integration owner; worker records exact create body before network send and permits same-key retries only within bound';
+COMMENT ON FUNCTION integration.mark_stripe_create_sent(uuid,bigint,bytea,text,bytea) IS 'integration owner; worker records exact create body before network send and permits same-key retries only within bound; CLOSED once a first-send rejection is recorded (never resend after it)';
 
 CREATE FUNCTION integration.note_stripe_expire(p_id uuid,p_generation bigint,p_token bytea,p_profile text)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -1478,6 +1493,34 @@ REVOKE ALL ON FUNCTION payments.stripe_endpoint_account(uuid,uuid,uuid,uuid) FRO
 GRANT EXECUTE ON FUNCTION payments.stripe_endpoint_account(uuid,uuid,uuid,uuid)
  TO commerce_payment_registrar;
 COMMENT ON FUNCTION payments.stripe_endpoint_account(uuid,uuid,uuid,uuid) IS 'payments owner; operator registrar reads the registered SANDBOX account id of one in-scope Stripe connection to seal webhook AAD; no key material, no writes';
+
+-- S4: qualify probes with the credential the connection actually stores at the expected version,
+-- against its registered account, so an old key or another account's key cannot qualify a head.
+-- Only the head version is returned (a stale expected version is PT409, before any network call).
+CREATE FUNCTION payments.stripe_registrar_credential(p_tenant uuid,p_store uuid,p_principal uuid,
+ p_connection uuid,p_expected_version bigint)
+RETURNS TABLE(account_id text,key_id text,nonce bytea,ciphertext bytea)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE acct integration.merchant_accounts%ROWTYPE; c integration.account_credentials%ROWTYPE;
+BEGIN
+ PERFORM integration.require_stripe_registrar_scope(p_tenant,p_store,p_principal);
+ IF p_connection IS NULL OR p_expected_version IS NULL OR p_expected_version<1 THEN
+  RAISE EXCEPTION 'invalid Stripe credential read' USING ERRCODE='22023'; END IF;
+ SELECT x.* INTO acct FROM integration.merchant_accounts x WHERE x.tenant_id=p_tenant
+  AND x.store_id=p_store AND x.id=p_connection AND x.provider='stripe' AND x.environment='SANDBOX';
+ IF NOT FOUND OR acct.credential_version<>p_expected_version THEN
+  RAISE EXCEPTION 'Stripe credential version changed' USING ERRCODE='PT409'; END IF;
+ SELECT x.* INTO c FROM integration.account_credentials x WHERE x.tenant_id=p_tenant
+  AND x.store_id=p_store AND x.connection_id=p_connection AND x.version=p_expected_version;
+ IF NOT FOUND THEN RAISE EXCEPTION 'Stripe credential unavailable' USING ERRCODE='PT409'; END IF;
+ RETURN QUERY SELECT acct.account_id,c.key_id,c.nonce,c.ciphertext;
+END $$;
+ALTER FUNCTION payments.stripe_registrar_credential(uuid,uuid,uuid,uuid,bigint)
+ OWNER TO commerce_payment_registry_writer;
+REVOKE ALL ON FUNCTION payments.stripe_registrar_credential(uuid,uuid,uuid,uuid,bigint) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION payments.stripe_registrar_credential(uuid,uuid,uuid,uuid,bigint)
+ TO commerce_payment_registrar;
+COMMENT ON FUNCTION payments.stripe_registrar_credential(uuid,uuid,uuid,uuid,bigint) IS 'payments owner; operator registrar reads the sealed API credential envelope at the connection head version plus its registered account so SANDBOX qualify probes with the stored key; ciphertext only, no writes, no worker or runtime access';
 
 CREATE FUNCTION payments.qualify_stripe_method(p_tenant uuid,p_store uuid,p_principal uuid,
  p_qualification uuid,p_connection uuid,p_expected_version bigint,p_profile text,p_evidence_ref text,

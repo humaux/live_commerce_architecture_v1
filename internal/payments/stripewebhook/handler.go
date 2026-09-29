@@ -1,6 +1,7 @@
 // handler.go: POST /v1/stripe/webhook/{endpoint_id} (contracts/stripe-psp-v1.md §0.2, §9.1, brief
 // stripe-b1-ingress-assembly). The order of checks below is part of the contract: cheap
-// request-shape refusals first, then bounded body, then per-endpoint material, then signature,
+// request-shape refusals first, then bounded body under a read deadline, then the admission slot
+// (S2: never held while a body is read), then per-endpoint material, then signature,
 // then one admission transaction. Nothing is ACKed before COMMIT.
 
 package stripewebhook
@@ -33,8 +34,9 @@ const (
 var endpointPattern = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 
 type handler struct {
-	in  *Inbox
-	sem chan struct{}
+	in     *Inbox
+	sem    chan struct{}
+	budget time.Duration // per-request deadline for body read plus lookup/verify/admit (requestBudget)
 }
 
 // NewHandler is the only way to obtain a webhook entry point; no exported method accepts an
@@ -44,7 +46,7 @@ func NewHandler(inbox *Inbox) (http.Handler, error) {
 		(inbox.profile != "PROVIDER_MOCK" && inbox.profile != "SANDBOX") {
 		return nil, ErrConfig
 	}
-	return &handler{in: inbox, sem: make(chan struct{}, maxInFlight)}, nil
+	return &handler{in: inbox, sem: make(chan struct{}, maxInFlight), budget: requestBudget}, nil
 }
 
 func reply(w http.ResponseWriter, status int, body string) {
@@ -84,20 +86,15 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusUnsupportedMediaType, "unsupported_media_type")
 		return
 	}
-	select {
-	case h.sem <- struct{}{}:
-		defer func() { <-h.sem }()
-	default:
-		w.Header().Set("Retry-After", "5")
-		fail(w, http.StatusServiceUnavailable, "busy")
-		return
-	}
-	ctx, cancel := context.WithTimeout(r.Context(), requestBudget)
-	defer cancel()
 	if r.Body == nil {
 		fail(w, http.StatusBadRequest, "invalid_request")
 		return
 	}
+	// S2: the body is read BEFORE an admission slot is taken and under its own read deadline, so an
+	// unauthenticated client trickling a body (any UUID-shaped path passes the checks above) cannot
+	// hold slots: the slot only covers material lookup, verification and admit. The deadline also
+	// bounds the read itself (io.ReadAll ignores ctx); ErrNotSupported (test recorders) is ignored.
+	_ = http.NewResponseController(w).SetReadDeadline(time.Now().Add(h.budget))
 	raw, err := io.ReadAll(io.LimitReader(r.Body, maxBody+1))
 	if err != nil {
 		fail(w, http.StatusBadRequest, "invalid_request")
@@ -107,6 +104,16 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusRequestEntityTooLarge, "payload_too_large")
 		return
 	}
+	select {
+	case h.sem <- struct{}{}:
+		defer func() { <-h.sem }()
+	default:
+		w.Header().Set("Retry-After", "5")
+		fail(w, http.StatusServiceUnavailable, "busy")
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), h.budget)
+	defer cancel()
 
 	m, found, err := h.in.store.material(ctx, endpoint)
 	if err != nil {

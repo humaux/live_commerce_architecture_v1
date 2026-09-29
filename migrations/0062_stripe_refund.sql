@@ -882,7 +882,9 @@ BEGIN
    (r->>'Status'='expired' AND r->>'PaymentStatus'='unpaid'
     AND r->>'PaymentIntentStatus' IN ('','canceled','requires_payment_method'))
    OR (r->>'Via'='create' AND r->>'ErrorClass'='rejected'
-    AND (r->>'SendCount')::integer=1 AND sess.session_id IS NULL)
+    AND (r->>'SendCount')::integer=1 AND sess.session_id IS NULL
+    -- RD4: only the very first send proves non-existence; after any resend the key may have executed.
+    AND sess.create_send_count=1 AND sess.create_last_sent_at=sess.create_first_sent_at)
    OR (r->>'Via'='list' AND (r->>'ListMatchCount')::integer=0 AND sess.session_id IS NULL
     AND sess.create_first_sent_at IS NOT NULL AND v_now>=sess.expires_at+interval '15 minutes')
    OR (obs.source='LOCAL' AND r->>'Via'='unsent' AND sess.create_suppressed_at IS NOT NULL

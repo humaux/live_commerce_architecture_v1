@@ -8,6 +8,7 @@ package stripeadmin
 import (
 	"context"
 	"crypto/rand"
+	"crypto/subtle"
 	"errors"
 	"fmt"
 	"net/http"
@@ -150,12 +151,32 @@ func sqlError(err error) error {
 }
 
 func (r *Registrar) scan(ctx context.Context, dest any, sql string, args ...any) error {
+	return r.scanRow(ctx, []any{dest}, sql, args...)
+}
+
+func (r *Registrar) scanRow(ctx context.Context, dest []any, sql string, args ...any) error {
 	bounded, cancel := context.WithTimeout(ctx, sqlBudget)
 	defer cancel()
-	if err := r.db.QueryRow(bounded, sql, args...).Scan(dest); err != nil {
+	if err := r.db.QueryRow(bounded, sql, args...).Scan(dest...); err != nil {
 		return sqlError(err)
 	}
 	return nil
+}
+
+// registeredAccount reads the connection's registered account (payments.stripe_endpoint_account:
+// registry_writer definer, EXECUTE registrar, read-only). The registered account is immutable (no
+// rebind), so it is the only value an envelope AAD or a probe may be bound to; operator env is just
+// an assertion that must equal it (S5).
+func (r *Registrar) registeredAccount(ctx context.Context, s Scope, connectionID string) (string, error) {
+	var account string
+	if err := r.scan(ctx, &account, `SELECT payments.stripe_endpoint_account($1::uuid,$2::uuid,$3::uuid,$4::uuid)`,
+		s.TenantID, s.StoreID, s.PrincipalID, connectionID); err != nil {
+		return "", err
+	}
+	if !accountPattern.MatchString(account) {
+		return "", ErrDatabase
+	}
+	return account, nil
 }
 
 // providerClient builds the Stage-A client for the operator's key. LIVE keys are refused by the
@@ -231,10 +252,34 @@ func (r *Registrar) Register(ctx context.Context, s Scope, accountID, secretKey 
 	return connection, nil
 }
 
+// storedCredential opens the connection's head credential (version must equal expectedVersion; the
+// SQL answers PT409 otherwise) with the registrar's API keyring; the AAD binds the registered account.
+func (r *Registrar) storedCredential(ctx context.Context, s Scope, connectionID string,
+	expectedVersion int64) (account, secretKey string, err error) {
+	var keyID string
+	var nonce, ciphertext []byte
+	if err := r.scanRow(ctx, []any{&account, &keyID, &nonce, &ciphertext},
+		`SELECT account_id,key_id,nonce,ciphertext FROM payments.stripe_registrar_credential(
+		 $1::uuid,$2::uuid,$3::uuid,$4::uuid,$5::bigint)`,
+		s.TenantID, s.StoreID, s.PrincipalID, connectionID, expectedVersion); err != nil {
+		return "", "", err
+	}
+	if !accountPattern.MatchString(account) {
+		return "", "", ErrDatabase
+	}
+	creds, err := r.apiKeys.OpenStripeAPI(accounts.StripeAPIScope{TenantID: s.TenantID, StoreID: s.StoreID,
+		ConnectionID: connectionID, Environment: environment, AccountID: account,
+		CredentialVersion: expectedVersion}, keyID, nonce, ciphertext)
+	if err != nil {
+		return "", "", ErrConfig // custody cannot open it: wrong keyring or a mismatching envelope
+	}
+	return account, creds.SecretKey, nil
+}
+
 // Rotate appends credential version expectedVersion+1 (integration.rotate_stripe_key locks the
-// account and requires the exact previous version). The registrar cannot read the registered
-// account id, so accountID is only proven to own the key; a mismatched id yields an envelope the
-// worker later refuses (AAD binds the registered account), never a wrong-merchant charge.
+// account and requires the exact previous version). The AAD account is the REGISTERED account read
+// from the database (S5); accountID is only the operator's assertion and must equal it, and the key
+// is verified against the registered account, so a foreign account's key never becomes the head.
 func (r *Registrar) Rotate(ctx context.Context, s Scope, connectionID string, expectedVersion int64,
 	accountID, secretKey string) (int64, error) {
 	if r == nil || r.db == nil || ctx == nil || r.apiKeys == nil || !validScope(s) || !command.ValidID(connectionID) ||
@@ -243,11 +288,18 @@ func (r *Registrar) Rotate(ctx context.Context, s Scope, connectionID string, ex
 	}
 	bounded, cancel := context.WithTimeout(ctx, qualifyBudget)
 	defer cancel()
-	if err := r.verify(bounded, secretKey, accountID); err != nil {
+	account, err := r.registeredAccount(bounded, s, connectionID)
+	if err != nil {
+		return 0, err
+	}
+	if accountID != account {
+		return 0, ErrRejected
+	}
+	if err := r.verify(bounded, secretKey, account); err != nil {
 		return 0, err
 	}
 	keyID, nonce, ciphertext, err := r.apiKeys.SealStripeAPI(accounts.StripeAPIScope{TenantID: s.TenantID,
-		StoreID: s.StoreID, ConnectionID: connectionID, Environment: environment, AccountID: accountID,
+		StoreID: s.StoreID, ConnectionID: connectionID, Environment: environment, AccountID: account,
 		CredentialVersion: expectedVersion + 1}, accounts.StripeAPICredentials{SecretKey: secretKey})
 	if err != nil {
 		return 0, ErrConfig
@@ -283,15 +335,9 @@ func (r *Registrar) SetWebhookEndpoint(ctx context.Context, s Scope, in Endpoint
 			return "", 0, err
 		}
 	}
-	// payments.stripe_endpoint_account (registry_writer definer, EXECUTE registrar): the in-scope
-	// connection's registered account; the connection's account is immutable (no rebind).
-	var account string
-	if err := r.scan(ctx, &account, `SELECT payments.stripe_endpoint_account($1::uuid,$2::uuid,$3::uuid,$4::uuid)`,
-		s.TenantID, s.StoreID, s.PrincipalID, in.ConnectionID); err != nil {
+	account, err := r.registeredAccount(ctx, s, in.ConnectionID)
+	if err != nil {
 		return "", 0, err
-	}
-	if !accountPattern.MatchString(account) {
-		return "", 0, ErrDatabase
 	}
 	if in.AccountID != "" && in.AccountID != account {
 		return "", 0, ErrRejected
@@ -317,12 +363,15 @@ func (r *Registrar) SetWebhookEndpoint(ctx context.Context, s Scope, in Endpoint
 }
 
 // Qualify records method-qualification evidence for the credential version the operator expects.
-// SANDBOX: verify the account, run stripe.ProbeCheckout (create at now+31m, expire, retrieve
-// expired+unpaid+!livemode) and store evidence "stripe-probe:<session id>". PROVIDER_MOCK: no
-// network, evidence "provider-mock:<qualification>". The SQL rechecks the head version after the
-// probe, so an old-key probe cannot qualify a rotated key. observed_at/expires_at come from the DB
-// transaction clock (now(), now()+30 days) so operator-host clock skew cannot violate the SQL's
-// "not in the future" and "≤ observed+30 days" checks.
+// SANDBOX: open the STORED credential at expected_version (payments.stripe_registrar_credential,
+// head only) and probe the connection's REGISTERED account with it (S4): verify the account, run
+// stripe.ProbeCheckout (create at now+31m, expire, retrieve expired+unpaid+!livemode) and store
+// evidence "stripe-probe:<session id>". in.AccountID / in.SecretKey are optional operator
+// assertions that must equal the stored values, so an old key or another account's key cannot
+// qualify version N. PROVIDER_MOCK: no network, evidence "provider-mock:<qualification>". The SQL
+// rechecks the head version after the probe. observed_at/expires_at come from the DB transaction
+// clock (now(), now()+30 days) so operator-host clock skew cannot violate the SQL's "not in the
+// future" and "<= observed+30 days" checks.
 func (r *Registrar) Qualify(ctx context.Context, s Scope, in QualifyInput) (string, error) {
 	if r == nil || r.db == nil || ctx == nil || !validScope(s) || !command.ValidID(in.ConnectionID) ||
 		in.ExpectedVersion < 1 || (in.Profile != "PROVIDER_MOCK" && in.Profile != "SANDBOX") {
@@ -336,10 +385,18 @@ func (r *Registrar) Qualify(ctx context.Context, s Scope, in QualifyInput) (stri
 	defer cancel()
 	evidence := "provider-mock:" + qualification
 	if in.Profile == "SANDBOX" {
-		if !accountPattern.MatchString(in.AccountID) {
+		if r.apiKeys == nil || (in.AccountID != "" && !accountPattern.MatchString(in.AccountID)) {
 			return "", ErrConfig
 		}
-		client, err := r.providerClient(in.SecretKey, in.AccountID)
+		account, secret, err := r.storedCredential(bounded, s, in.ConnectionID, in.ExpectedVersion)
+		if err != nil {
+			return "", err
+		}
+		if (in.AccountID != "" && in.AccountID != account) ||
+			(in.SecretKey != "" && subtle.ConstantTimeCompare([]byte(in.SecretKey), []byte(secret)) != 1) {
+			return "", ErrRejected
+		}
+		client, err := r.providerClient(secret, account)
 		if err != nil {
 			return "", err
 		}

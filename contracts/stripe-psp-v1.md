@@ -193,6 +193,14 @@ new payment engine, new queue system or production permission is introduced.
   Both are registry_writer-owned and EXECUTE registrar only, with owner/scope validation.
   Qualify captures the expected API credential version **before** the network probe and rejects
   a changed head after locking account/binding; an old-key probe cannot qualify a new key.
+  **Amended 2026-09-29 (r1-final-rulings S4/S5):** the SANDBOX probe runs with the credential *stored*
+  at `expected_version` (opened with the registrar's API keyring) against the connection's *registered*
+  account, read through the registrar-only `payments.stripe_registrar_credential(tenant, store,
+  principal, connection, expected_version)` (head version only; ciphertext envelope, no writes).
+  `STRIPE_SECRET_KEY` / `STRIPE_ACCOUNT_ID` are optional operator assertions that must equal the
+  stored key and registered account, else `rejected`. `rotate` binds the new envelope's AAD to the
+  registered account from `payments.stripe_endpoint_account` and refuses an operator account or key
+  that differs from it.
   It derives proof_class from PROVIDER_MOCK/SANDBOX (never LIVE), validates finite observation
   times not in the future and expiry in `(now, observed_at + 30 days]`, and records bounded
   evidence. It never silently substitutes the current version. Method updates use the existing
@@ -822,7 +830,9 @@ CREATE TABLE payments.stripe_signals (
     `payments.method_versions` and `payments.method_heads`;
   - `UPDATE(current_version)` on `payments.method_heads`;
   - `UPDATE(credential_version, updated_at)` on `integration.merchant_accounts`;
-  - INSERT on the audit table.
+  - INSERT on the audit table;
+  - SELECT on `integration.account_credentials`, RLS-pinned to the registrar scope, used only by
+    `payments.stripe_registrar_credential` (S4).
   Migrations provision no logins or passwords.
 - **The three new tables** have FORCE RLS and PUBLIC revoked. No runtime login role gets any direct
   privilege.
@@ -1091,7 +1101,10 @@ deployment work, not a control this file relies on.
 | No or invalid signature (§5.8), including a timestamp outside tolerance | 400 |
 | More than 32 in-flight admissions (non-blocking semaphore) | 503, `Retry-After: 5` |
 
-The whole request has a 5 s deadline and the DB transaction 2 s. All responses are
+The whole request has a 5 s deadline and the DB transaction 2 s. The 5 s applies to the body read as
+well (per-request read deadline), and the admission slot is taken only after the bounded body has been
+read, so a client that stalls a body can never hold a slot (amended 2026-09-29, r1-final-rulings S2).
+All responses are
 `Cache-Control: no-store`, with fixed bodies `{"received":true}` or `{"error":"<code>"}`.
 
 **Admission.** One transaction, fed only by the verified `Event`:
