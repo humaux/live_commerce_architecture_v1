@@ -519,6 +519,8 @@ sys.exit(1 if names & {"dsn_lc_stripe_registrar", "dsn_lc_meta_registrar"} else 
   local canary hits
   canary="lcCanary$(od -An -N8 -tx1 /dev/urandom | tr -d ' \n')"
   edge hooks.localhost "/v1/meta/webhooks/1/page?hub.mode=subscribe&hub.challenge=42&hub.verify_token=${canary}v" >/dev/null
+  # Meta also sends underscore twins (hub_verify_token, observed 2026-09-30); both must be redacted.
+  edge hooks.localhost "/v1/meta/webhooks/1/page?hub.mode=subscribe&hub.challenge=43&hub.verify_token=${canary}w&hub_verify_token=${canary}u" >/dev/null
   edge admin.localhost "/api/auth/callback?code=${canary}c&state=${canary}s" \
     -H "Referer: https://admin.localhost/api/auth/callback?code=${canary}r&state=${canary}q" >/dev/null
   "${CURL[@]}" -o /dev/null --resolve "admin.localhost:$HTTP_PORT:127.0.0.1" \
@@ -527,6 +529,7 @@ sys.exit(1 if names & {"dsn_lc_stripe_registrar", "dsn_lc_meta_registrar"} else 
   lc_compose logs --no-color >"$EV/logs/S40-compose.log" 2>&1 || true
   hits=$({ grep -c -- "$canary" "$EV/logs/S40-compose.log" || true; } | tail -n1)
   if [[ "$hits" == 0 ]] && grep -q 'hub.challenge=42&hub.mode=subscribe&hub.verify_token=REDACTED' "$EV/logs/S40-compose.log" &&
+    grep -q 'hub_verify_token=REDACTED' "$EV/logs/S40-compose.log" &&
     grep -q '/api/auth/callback?code=REDACTED&state=REDACTED' "$EV/logs/S40-compose.log" &&
     grep -q '"Referer":\["https://admin.localhost/api/auth/callback?code=REDACTED&state=REDACTED"\]' "$EV/logs/S40-compose.log" &&
     grep -q '"Location":\["https://admin.localhost[^"]*/api/auth/callback?code=REDACTED&state=REDACTED"\]' "$EV/logs/S40-compose.log"; then

@@ -46,7 +46,8 @@
 	# collect-diagnostics.sh). Caddy redacts Cookie/Set-Cookie/Authorization by default, but it logs
 	# the full request URI including the query string, so credential-bearing query parameters are
 	# rewritten to REDACTED before the line is written (review P1; AGENTS.md: no secrets in logs):
-	#   hub.verify_token  Meta webhook verification (production value from the owner secret
+	#   hub.verify_token, hub_verify_token  Meta webhook verification (Meta sends both spellings,
+	#                     observed 2026-09-30) (production value from the owner secret
 	#                     commerce_meta_apps_json; read from the query by
 	#                     internal/integrations/meta/handler.go challenge()).
 	#   code, state       OIDC authorization response on admin /api/auth/callback
@@ -65,6 +66,7 @@
 			fields {
 				request>uri query {
 					replace hub.verify_token REDACTED
+					replace hub_verify_token REDACTED
 					replace code REDACTED
 					replace state REDACTED
 					replace token REDACTED
@@ -73,6 +75,7 @@
 				}
 				request>headers>Referer query {
 					replace hub.verify_token REDACTED
+					replace hub_verify_token REDACTED
 					replace code REDACTED
 					replace state REDACTED
 					replace token REDACTED
@@ -81,6 +84,7 @@
 				}
 				resp_headers>Location query {
 					replace hub.verify_token REDACTED
+					replace hub_verify_token REDACTED
 					replace code REDACTED
 					replace state REDACTED
 					replace token REDACTED

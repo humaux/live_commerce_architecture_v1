@@ -69,7 +69,7 @@ func writeCode(w http.ResponseWriter, status int, code string) {
 
 func challenge(w http.ResponseWriter, r *http.Request, v *Verifier) {
 	q, err := url.ParseQuery(r.URL.RawQuery)
-	if err != nil || len(q) != 3 || len(q["hub.mode"]) != 1 || len(q["hub.verify_token"]) != 1 || len(q["hub.challenge"]) != 1 || q.Get("hub.mode") != "subscribe" || !validChallenge(q.Get("hub.challenge")) {
+	if err != nil || len(q) != challengeParams(q) || len(q["hub.mode"]) != 1 || len(q["hub.verify_token"]) != 1 || len(q["hub.challenge"]) != 1 || q.Get("hub.mode") != "subscribe" || !validChallenge(q.Get("hub.challenge")) {
 		writeCode(w, http.StatusBadRequest, "BAD_CHALLENGE")
 		return
 	}
@@ -81,6 +81,25 @@ func challenge(w http.ResponseWriter, r *http.Request, v *Verifier) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = io.WriteString(w, q.Get("hub.challenge"))
+}
+
+// challengeParams returns how many query keys a verification GET may carry: the three dotted
+// hub.* keys, plus each underscore twin (hub_mode, hub_verify_token, hub_challenge) that Meta also
+// sends (observed from facebookplatform/1.0 on 2026-09-30). A twin is accepted only once and only
+// when it equals its dotted key; otherwise -1, so the length check fails and the request is 400.
+func challengeParams(q url.Values) int {
+	n := 3
+	for _, k := range [...]string{"mode", "verify_token", "challenge"} {
+		twin, ok := q["hub_"+k]
+		if !ok {
+			continue
+		}
+		if len(twin) != 1 || len(q["hub."+k]) != 1 || twin[0] != q["hub."+k][0] {
+			return -1
+		}
+		n++
+	}
+	return n
 }
 
 func validChallenge(s string) bool {
