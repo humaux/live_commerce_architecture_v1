@@ -144,7 +144,7 @@ func (c *cbhEnv) noStore(name string, r cbhResp) {
 }
 
 func TestCustomersBillingCB09HTTP(t *testing.T) {
-	m := cbmSetup(t, "", false)
+	m := cbmSetup(t, false, false)
 	f, ctx := m.f, m.ctx
 	h := &lcHarness{cqHarness: m.p.cqHarness, ctx: ctx}
 	h.actor, h.token = lcPrincipal(t, f, m.tenant, []string{m.store}, "store:read", "live:read", "live:manage")

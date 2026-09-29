@@ -97,8 +97,9 @@ func cbmConfig() billing.Config {
 }
 
 // cbmSetup builds the fake, the service and the webhook handler over a fresh store of the shared fixture.
-// registerPSP names a PSP account id registered before startup; failAccount makes GET /v1/account fail.
-func cbmSetup(t *testing.T, registerPSP string, failAccount bool) *cbmEnv {
+// registerPSP registers the fake platform account id as a merchant PSP account before startup (BD1 conflict); failAccount
+// makes GET /v1/account fail. Every call gets its own account id: the shared database keeps registered accounts.
+func cbmSetup(t *testing.T, registerPSP bool, failAccount bool) *cbmEnv {
 	t.Helper()
 	p := psSetup(t)
 	f := p.f
@@ -106,15 +107,15 @@ func cbmSetup(t *testing.T, registerPSP string, failAccount bool) *cbmEnv {
 	prev := slog.Default()
 	slog.SetDefault(slog.New(slog.NewTextHandler(m.logs, &slog.HandlerOptions{Level: slog.LevelDebug})))
 	t.Cleanup(func() { slog.SetDefault(prev) })
-	m.fake = billingtest.New("acct_CbPlatform0001")
+	m.fake = billingtest.New("acct_Cb" + t04Tag())
 	t.Cleanup(m.fake.Close)
 	m.fake.RequireKey(m.cfg.SecretKey)
 	m.fake.AddPrice("price_Cb08Month", 30000, "twd", "month", "Pro Monthly", true, false)
 	m.fake.AddPrice("price_Cb08Year", 300000, "twd", "year", "Pro Yearly", false, false) // inactive
 	m.fake.AddPrice("price_Cb08Live", 30000, "twd", "month", "Live mode price", true, true)
 	m.fake.AddPriceRaw("price_Cb08One", map[string]any{"active": true, "livemode": false, "currency": "twd", "unit_amount": 500, "product": map[string]any{"id": "prod_x", "name": "One time"}})
-	if registerPSP != "" {
-		cbxRegisterPSP(t, f, f.tenantA, f.storeA1, f.principalA, "SANDBOX", registerPSP)
+	if registerPSP {
+		cbxRegisterPSP(t, f, f.tenantA, f.storeA1, f.principalA, "SANDBOX", m.fake.Account())
 	}
 	if failAccount {
 		m.fake.FailNext("account", 503)
@@ -281,7 +282,7 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 	})
 
 	t.Run("billing off: standing and the read still work, the POSTs are 503 unavailable, no Stripe traffic", func(t *testing.T) {
-		m := cbmSetup(t, "", false)
+		m := cbmSetup(t, false, false)
 		var off *billing.Service
 		if off.Enabled() {
 			t.Fatal("a nil service must not be enabled")
@@ -305,9 +306,9 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 
 	t.Run("startup: a registered PSP account id or an unreadable account disables billing once (BD1, B4)", func(t *testing.T) {
 		for name, tc := range map[string]struct {
-			psp  string
+			psp  bool
 			fail bool
-		}{"account equals a registered PSP account": {"acct_CbPlatform0001", false}, "account unreadable": {"", true}} {
+		}{"account equals a registered PSP account": {true, false}, "account unreadable": {false, true}} {
 			m := cbmSetup(t, tc.psp, tc.fail)
 			if m.svc.Enabled() {
 				t.Errorf("%s: billing stayed enabled", name)
@@ -340,7 +341,7 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 	})
 
 	t.Run("customer create: key, body, retry and lost response; pin re-checks the conflict", func(t *testing.T) {
-		m := cbmSetup(t, "", false)
+		m := cbmSetup(t, false, false)
 		m.fake.FailNext("customer", 500)
 		if _, err := m.checkout("price_Cb08Month"); err == nil || errors.Is(err, billing.ErrSubscriptionExists) {
 			t.Fatalf("customer create failing: %v, want a retryable error", err)
@@ -389,7 +390,7 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 	})
 
 	t.Run("checkout: exact body, no Idempotency-Key, trial once, subscription_exists, one open session", func(t *testing.T) {
-		m := cbmSetup(t, "", false)
+		m := cbmSetup(t, false, false)
 		before := time.Now()
 		url1, err := m.checkout("price_Cb08Month")
 		if err != nil || !strings.HasPrefix(url1, "https://checkout.stripe.com/") {
@@ -477,7 +478,7 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 	})
 
 	t.Run("checkout trial only once (BD2) and subscription_exists (409) mirrors before refusing", func(t *testing.T) {
-		m := cbmSetup(t, "", false)
+		m := cbmSetup(t, false, false)
 		store, token, scope := m.extraStore()
 		cus := m.pinned(store, token)
 		// a canceled prior subscription at Stripe: mirrored by step 1, so no trial on the new checkout
@@ -519,7 +520,7 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 	})
 
 	t.Run("parallel checkouts leave one open session known to the database", func(t *testing.T) {
-		m := cbmSetup(t, "", false)
+		m := cbmSetup(t, false, false)
 		m.pinned(m.store, m.token)
 		const n = 6
 		m.fake.DelayNext("checkout", 300*time.Millisecond)
@@ -567,7 +568,7 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 	})
 
 	t.Run("portal: no customer is 409, the body, no key", func(t *testing.T) {
-		m := cbmSetup(t, "", false)
+		m := cbmSetup(t, false, false)
 		if _, err := m.svc.OpenPortal(m.ctx, m.f.runtime, m.scope, m.token); !errors.Is(err, billing.ErrNoCustomer) {
 			t.Fatalf("portal without a customer: %v, want ErrNoCustomer (409 no_billing_customer)", err)
 		}
@@ -591,7 +592,7 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 	})
 
 	t.Run("webhook: rejected inputs cause no Stripe call and no write", func(t *testing.T) {
-		m := cbmSetup(t, "", false)
+		m := cbmSetup(t, false, false)
 		cus := m.pinned(m.store, m.token)
 		sub := m.fake.AddSubscription(billingtest.Sub{Customer: cus, Status: "active", StoreMeta: m.store})
 		body := m.fake.SubscriptionEvent("customer.subscription.updated", sub.ID, billingtest.EventOpts{})
@@ -630,7 +631,7 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 	})
 
 	t.Run("webhook: the event is a wake-up; state comes from the retrieved subscription (D8, F-B10)", func(t *testing.T) {
-		m := cbmSetup(t, "", false)
+		m := cbmSetup(t, false, false)
 		cus := m.pinned(m.store, m.token)
 		start, end := time.Now().Add(-48*time.Hour).Truncate(time.Second), time.Now().Add(27*24*time.Hour).Truncate(time.Second)
 		sub := m.fake.AddSubscription(billingtest.Sub{Customer: cus, Status: "active", StoreMeta: m.store, PriceID: "price_Cb08Month",
@@ -700,7 +701,7 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 	})
 
 	t.Run("webhook: retrieve failure and timeout are 503 so Stripe retries (F-B9); redelivery applies", func(t *testing.T) {
-		m := cbmSetup(t, "", false)
+		m := cbmSetup(t, false, false)
 		cus := m.pinned(m.store, m.token)
 		sub := m.fake.AddSubscription(billingtest.Sub{Customer: cus, Status: "active", StoreMeta: m.store})
 		body := m.fake.SubscriptionEvent("customer.subscription.created", sub.ID, billingtest.EventOpts{})
@@ -731,7 +732,7 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 	})
 
 	t.Run("webhook: mismatch, duplicate, unknown customer -> 200 + one billing_ops_alert without extra ids; multi-item not applied", func(t *testing.T) {
-		m := cbmSetup(t, "", false)
+		m := cbmSetup(t, false, false)
 		cus := m.pinned(m.store, m.token)
 		other, otherTok, _ := m.extraStore()
 		m.pinned(other, otherTok)
@@ -790,7 +791,7 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 	})
 
 	t.Run("status: refresh-on-read after 10 min, stale flag on a Stripe error, plan cache and filtering", func(t *testing.T) {
-		m := cbmSetup(t, "", false)
+		m := cbmSetup(t, false, false)
 		cus := m.pinned(m.store, m.token)
 		sub := m.fake.AddSubscription(billingtest.Sub{Customer: cus, Status: "active", StoreMeta: m.store})
 		// B10: refresh-on-read applies only when a stored row is older than 10 min, so the first row arrives by webhook
@@ -843,7 +844,7 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 	})
 
 	t.Run("bearer URLs never reach logs, the database or errors (I11)", func(t *testing.T) {
-		m := cbmSetup(t, "", false)
+		m := cbmSetup(t, false, false)
 		url1, err := m.checkout("price_Cb08Month")
 		if err != nil {
 			t.Fatal(err)
