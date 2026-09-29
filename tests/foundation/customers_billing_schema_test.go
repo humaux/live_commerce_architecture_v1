@@ -921,7 +921,7 @@ func cbsTableRules(t *testing.T, e cbsEnv) {
 			"price id shape":            {map[string]string{"price_id": "'p'"}, "23514"},
 			"start without end":         {map[string]string{"current_period_end": "NULL"}, "23514"},
 			"end without start":         {map[string]string{"current_period_start": "NULL"}, "23514"},
-			"end not after start":       {map[string]string{"current_period_end": "current_period_start"}, "23514"},
+			"end not after start":       {map[string]string{"current_period_start": "timestamptz '2026-01-01'", "current_period_end": "timestamptz '2026-01-01'"}, "23514"},
 			"cancel flag null":          {map[string]string{"cancel_at_period_end": "NULL"}, "23502"},
 			"customer of another store": {map[string]string{"stripe_customer_id": "'cus_NoSuchOne1'"}, "23503"},
 		} {

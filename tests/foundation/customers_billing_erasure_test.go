@@ -174,6 +174,11 @@ func TestCustomersBillingCB05Erasure(t *testing.T) {
 	mustExec(t, e.f.owner, `INSERT INTO claims.bundles(id,tenant_id,store_id,session_id,platform,actor_key,label,owner_id,bound_at) VALUES($1,$2,$3,$4,'facebook',$5,NULL,$6,now())`, fbBy, tenant, store, s2, actor, byID)
 	mustExec(t, e.f.owner, `INSERT INTO claims.meta_intake(tenant_id,store_id,inbox_event_id,source_id,session_id,platform,app_id,object,asset_id,comment_ref,live_media,actor_key,occurred_at,received_at,grammar_version,grammar_kind,not_before)
 	 VALUES($1,$2,$3,$4,$5,'facebook','4291253377792879','page','100000000000001','2000000001_3000000001',false,$6,now(),now(),'kw-v1','NO_MATCH',now())`, tenant, store, randomUUID(), sourceID, s1, actor)
+	t.Cleanup(func() { // lcPrincipal's purge deletes the sessions; the fixture rows that reference them go first
+		mustExec(t, e.f.owner, `DELETE FROM claims.meta_intake WHERE source_id=$1`, sourceID)
+		mustExec(t, e.f.owner, `DELETE FROM claims.bundles WHERE id=ANY($1::uuid[])`, []string{fbMain, fbBy})
+		mustExec(t, e.f.owner, `DELETE FROM live.claim_sources WHERE id=$1`, sourceID)
+	})
 	bystanderBundleDigest := c.bundleDigest(`b.owner_id=$1`, byID)
 	if bystanderBundleDigest == "0:" {
 		t.Fatal("no bystander bundle")
@@ -443,10 +448,15 @@ func TestCustomersBillingCB05Erasure(t *testing.T) {
 		frID := fresh.Scope.OwnerID
 		c.put(main, fresh, "marketing_messages", "meta_dm")
 		port := e.f.owner.Config().ConnConfig.Port
-		containers, err := exec.Command("docker", "ps", "--format", "{{.Names}}", "--filter", fmt.Sprintf("publish=%d", port)).Output()
-		name := strings.TrimSpace(string(containers))
-		if err != nil || name == "" || strings.Contains(name, "\n") {
-			t.Fatalf("cannot identify the test PG container for port %d: %q %v", port, name, err)
+		ps, err := exec.Command("docker", "ps", "--format", "{{.Names}}|{{.Ports}}").Output()
+		var name string
+		for _, line := range strings.Split(strings.TrimSpace(string(ps)), "\n") {
+			if n, ports, ok := strings.Cut(line, "|"); ok && strings.Contains(ports, fmt.Sprintf("127.0.0.1:%d->5432/tcp", port)) {
+				name = n
+			}
+		}
+		if err != nil || name == "" {
+			t.Fatalf("cannot identify the test PG container for port %d: %v", port, err)
 		}
 		label, err := exec.Command("docker", "inspect", "-f", `{{index .Config.Labels "livecommerce.fixture"}}`, name).Output()
 		if err != nil || strings.TrimSpace(string(label)) != name {

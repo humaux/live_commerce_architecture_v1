@@ -17,7 +17,7 @@ package foundation_test
 //   - q: phone-digit suffix (separators ignored) and case-insensitive name prefix, bounds 1..40;
 //   - finance (BD7): daily rows in Asia/Taipei, later-failed refunds excluded, totals, range bound 0..91,
 //     CSV header/columns; the UTC+8 midnight boundary with aged facts.
-// Disclosed owner-pool fixtures: destination snapshot names/phones (distinct search keys), grants of the
+// Disclosed owner-pool fixtures: order-snapshot destination names/phones (distinct search keys), grants of the
 // merchant principals, claims.bundles.bound_at made equal (equal-timestamp keyset), and payments.facts /
 // payments.refund_facts received_at aged with triggers off (session_replication_role=replica) for the
 // midnight-boundary case only. Orders, payments and refunds come from the real paths.
@@ -130,9 +130,9 @@ func TestCustomersBillingCB03List(t *testing.T) {
 	aliceID, bobID, carolID, daveID := ownerOf(alice), ownerOf(bob), carolP.cap.Scope.OwnerID, ownerOf(dave)
 	s1, s2 := alice.store(), dave.store()
 	tok1, tok2 := alice.token(), dave.token()
-	// distinct search keys (disclosed fixture: destination snapshots are frozen order data, the gate needs names)
+	// distinct search keys (disclosed fixture: the list reads the frozen destination inside checkout.orders.snapshot)
 	for id, kv := range map[string][2]string{aliceID: {"Alice Test", "0911000111"}, bobID: {"Bob Test", "0922000222"}, carolID: {"Carol Test", "0933000333"}, daveID: {"Dave Other", "0944000444"}} {
-		mustExec(t, e.f.owner, `UPDATE storefront.destination_snapshots SET recipient_name=$2,phone=$3 WHERE owner_id=$1`, id, kv[0], kv[1])
+		mustExec(t, e.f.owner, `UPDATE checkout.orders SET snapshot=jsonb_set(jsonb_set(snapshot,'{destination,recipient_name}',to_jsonb($2::text)),'{destination,phone}',to_jsonb($3::text)) WHERE owner_id=$1`, id, kv[0], kv[1])
 	}
 	// Bob: one refund that succeeded and then failed (excluded), one that succeeded (counted)
 	failed := e.mustRefund(t, bob, 1000, "requested_by_customer")
@@ -177,11 +177,11 @@ func TestCustomersBillingCB03List(t *testing.T) {
 		if !ids2[daveID] || len(l2) != 1 {
 			t.Fatalf("store 2 customers %v, want exactly dave", ids2)
 		}
-		if _, err := c.get(tok2, s2, aliceID); !errors.Is(err, command.ErrNotFound) {
-			t.Errorf("another tenant's customer id: %v, want ErrNotFound", err)
+		if _, err := c.get(tok2, s2, aliceID); !cbxNotFound(err) {
+			t.Errorf("another tenant's customer id: %v, want the not-found class", err)
 		}
-		if _, err := c.get(tok1, s1, randomUUID()); !errors.Is(err, command.ErrNotFound) {
-			t.Errorf("unknown customer id: %v, want ErrNotFound", err)
+		if _, err := c.get(tok1, s1, randomUUID()); !cbxNotFound(err) {
+			t.Errorf("unknown customer id: %v, want the not-found class", err)
 		}
 		_, e1 := c.get(tok2, s2, aliceID)
 		_, e2 := c.get(tok1, s1, randomUUID())
@@ -266,7 +266,7 @@ func TestCustomersBillingCB03List(t *testing.T) {
 			t.Errorf("bob currency/active: %v %v", bo.Currency, bo.Active)
 		}
 		if ca := cblByID(l, carolID); ca.Currency == nil || ca.DisplayName == nil || *ca.DisplayName != "Carol Test" || ca.PhoneLast3 == nil || *ca.PhoneLast3 != "333" {
-			t.Errorf("carol display/phone: %+v", ca)
+			t.Errorf("carol display/phone: name=%v last3=%v currency=%v", ca.DisplayName, ca.PhoneLast3, ca.Currency)
 		}
 		if al := cblByID(l, aliceID); !al.Consents.MarketingMessages || al.Consents.AdsPersonalization {
 			t.Errorf("alice consents: %+v", al.Consents)

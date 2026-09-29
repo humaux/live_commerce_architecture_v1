@@ -5,6 +5,7 @@ package foundation_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -58,4 +59,59 @@ func cbxAllows(t *testing.T, f *testFixture, tenant, store, owner, purpose, chan
 		t.Fatalf("consent_allows: %v", err)
 	}
 	return ok
+}
+
+// cbxSub is one apply_subscription call (12 arguments, contracts/customers-billing-v1.md §3.2).
+type cbxSub struct {
+	Env, Customer, ID, Status, Price string
+	PS, PE                           *time.Time
+	CancelEnd, Livemode              bool
+	Created, Retrieved               time.Time
+	MetaStore                        *string
+}
+
+// cbxSubFor is a well-formed subscription of customer/store with the given status.
+func cbxSubFor(customer, store, status string) cbxSub {
+	now := time.Now().UTC()
+	metaStore := store
+	start, end := now.Add(-24*time.Hour), now.Add(29*24*time.Hour)
+	return cbxSub{Env: "SANDBOX", Customer: customer, ID: "sub_" + t04Tag(), Status: status, Price: "price_Test0001", PS: &start, PE: &end,
+		Created: now.Add(-time.Hour), Retrieved: now, MetaStore: &metaStore}
+}
+
+// cbxApply calls billing.apply_subscription; only the commerce_stripe_ingress role may (C-4).
+func cbxApply(pool *pgxpool.Pool, s cbxSub) (string, error) {
+	var out string
+	err := pool.QueryRow(context.Background(), `SELECT billing.apply_subscription($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::uuid,$12)`,
+		s.Env, s.Customer, s.ID, s.Status, s.Price, s.PS, s.PE, s.CancelEnd, s.Created, s.Retrieved, s.MetaStore, s.Livemode).Scan(&out)
+	return out, err
+}
+
+// cbxStore creates an extra store of tenant (owner pool fixture).
+func cbxStore(t *testing.T, f *testFixture, tenant string) string {
+	t.Helper()
+	id := randomUUID()
+	mustExec(t, f.owner, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,'cbx store','TWD')`, tenant, id)
+	return id
+}
+
+// cbxPin inserts the store's Stripe customer row directly (disclosed fixture: stores that do not go through the
+// merchant pin_customer path) and returns the customer id.
+func cbxPin(t *testing.T, f *testFixture, tenant, store string) string {
+	t.Helper()
+	customer := "cus_" + t04Tag()
+	mustExec(t, f.owner, `INSERT INTO billing.store_customers(tenant_id,store_id,environment,stripe_customer_id,platform_account_id) VALUES($1,$2,'SANDBOX',$3,'acct_Platform0001')`, tenant, store, customer)
+	return customer
+}
+
+// cbxRestrict makes the store RESTRICTED through the real ingress definer: a pinned customer with a canceled
+// subscription. It returns the customer and the subscription id.
+func cbxRestrict(t *testing.T, f *testFixture, ingress *pgxpool.Pool, tenant, store string) (customer, sub string) {
+	t.Helper()
+	customer = cbxPin(t, f, tenant, store)
+	s := cbxSubFor(customer, store, "canceled")
+	if res, err := cbxApply(ingress, s); err != nil || res != "applied" {
+		t.Fatalf("restrict: %q %v", res, err)
+	}
+	return customer, s.ID
 }

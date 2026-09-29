@@ -96,6 +96,7 @@ type Server struct {
 	calls     []Call
 	failures  map[string][]int
 	hangs     map[string]int
+	lose      map[string]int
 	delay     map[string]time.Duration
 	events    int
 }
@@ -104,7 +105,7 @@ type Server struct {
 func New(accountID string) *Server {
 	s := &Server{account: accountID, customers: map[string]map[string]string{}, sessions: map[string]*Session{},
 		subs: map[string]Sub{}, prices: map[string]map[string]any{}, idem: map[string]cachedResponse{},
-		failures: map[string][]int{}, hangs: map[string]int{}, delay: map[string]time.Duration{}}
+		failures: map[string][]int{}, hangs: map[string]int{}, lose: map[string]int{}, delay: map[string]time.Duration{}}
 	s.http = httptest.NewServer(http.HandlerFunc(s.serve))
 	return s
 }
@@ -151,6 +152,10 @@ func (s *Server) FailNext(op string, status int) {
 
 // HangNext makes the next call of op never answer until the client gives up (a timeout).
 func (s *Server) HangNext(op string) { s.mu.Lock(); s.hangs[op]++; s.mu.Unlock() }
+
+// LoseNext makes the next call of op execute normally but never deliver its response (the connection is
+// dropped after the effect): the "response lost" case of a create call.
+func (s *Server) LoseNext(op string) { s.mu.Lock(); s.lose[op]++; s.mu.Unlock() }
 
 // DelayNext delays the next call of op by d before it executes (parallel-request races).
 func (s *Server) DelayNext(op string, d time.Duration) { s.mu.Lock(); s.delay[op] = d; s.mu.Unlock() }
@@ -242,6 +247,13 @@ func (s *Server) AddSubscription(v Sub) Sub {
 	return v
 }
 
+// ClearSubscriptions forgets every stored Subscription (a store back to "never subscribed" at Stripe).
+func (s *Server) ClearSubscriptions() {
+	s.mu.Lock()
+	s.subs = map[string]Sub{}
+	s.mu.Unlock()
+}
+
 // SetSubStatus changes the status of a stored Subscription.
 func (s *Server) SetSubStatus(id, status string) {
 	s.mu.Lock()
@@ -257,6 +269,14 @@ func (s *Server) AddPrice(id string, amount int64, currency, interval, product s
 	s.prices[id] = map[string]any{"id": id, "object": "price", "active": active, "livemode": livemode, "currency": currency,
 		"unit_amount": amount, "recurring": map[string]any{"interval": interval, "interval_count": 1},
 		"product": map[string]any{"id": "prod_Fake1", "object": "product", "name": product}}
+	s.mu.Unlock()
+}
+
+// AddPriceRaw registers a Price object as given (one-time prices, inactive prices, odd shapes).
+func (s *Server) AddPriceRaw(id string, obj map[string]any) {
+	s.mu.Lock()
+	obj["id"], obj["object"] = id, "price"
+	s.prices[id] = obj
 	s.mu.Unlock()
 }
 
@@ -311,6 +331,25 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 		errorJSON(w, status, "api_error", "api_error")
 		return
 	}
+	s.mu.Lock()
+	lose := s.lose[op] > 0
+	if lose {
+		s.lose[op]--
+	}
+	s.mu.Unlock()
+	if !lose {
+		s.dispatch(w, r, op, id, form)
+		return
+	}
+	s.dispatch(httptest.NewRecorder(), r, op, id, form) // the effect happens, the answer is thrown away
+	if hj, ok := w.(http.Hijacker); ok {
+		if conn, _, err := hj.Hijack(); err == nil {
+			_ = conn.Close()
+		}
+	}
+}
+
+func (s *Server) dispatch(w http.ResponseWriter, r *http.Request, op, id string, form url.Values) {
 	switch op {
 	case "account":
 		writeJSON(w, 200, map[string]any{"id": s.Account(), "object": "account", "livemode": false})

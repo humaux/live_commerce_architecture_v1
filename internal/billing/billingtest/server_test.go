@@ -177,6 +177,10 @@ func TestFakePortalSubscriptionsPrices(t *testing.T) {
 	if _, got, _ = f.do("GET", "/v1/subscriptions/"+live.ID, nil, nil); got["status"] != "past_due" {
 		t.Fatal("SetSubStatus")
 	}
+	f.s.ClearSubscriptions()
+	if _, all, _ = f.do("GET", "/v1/subscriptions?customer="+cus+"&status=all", nil, nil); len(all["data"].([]any)) != 0 {
+		t.Fatal("ClearSubscriptions")
+	}
 	f.s.AddPrice("price_Fake1", 30000, "twd", "month", "Plan", true, false)
 	_, p, _ := f.do("GET", "/v1/prices/price_Fake1?expand[]=product", nil, nil)
 	_, q, _ := f.do("GET", "/v1/prices/price_Fake1", nil, nil)
@@ -239,5 +243,27 @@ func TestFakeEvents(t *testing.T) {
 	}
 	if a, b := f.s.RawEvent("x.y", EventOpts{}, nil), f.s.RawEvent("x.y", EventOpts{}, nil); string(a) == string(b) {
 		t.Fatal("event ids must be unique")
+	}
+}
+
+func TestFakeLostResponseAndRawPrice(t *testing.T) {
+	f := newFx(t)
+	f.s.LoseNext("customer")
+	form := url.Values{"metadata[lc_store]": {"s1"}}
+	req, _ := http.NewRequest("POST", "https://api.stripe.com/v1/customers", strings.NewReader(form.Encode()))
+	req.Header.Set("Idempotency-Key", "lost1")
+	if _, err := f.c.Do(req); err == nil {
+		t.Fatal("LoseNext must drop the response")
+	}
+	if n := len(f.s.Customers()); n != 1 {
+		t.Fatalf("the effect must have happened: %d customers", n)
+	}
+	st, out, h := f.do("POST", "/v1/customers", form, map[string]string{"Idempotency-Key": "lost1"})
+	if st != 200 || h.Get("Idempotent-Replayed") != "true" || out["id"] != f.s.Customers()[0] || len(f.s.Customers()) != 1 {
+		t.Fatalf("a retry with the same key must replay the lost effect: %d %v %v", st, out, f.s.Customers())
+	}
+	f.s.AddPriceRaw("price_OneTime1", map[string]any{"active": true, "livemode": false, "currency": "twd", "unit_amount": 100, "product": "prod_x"})
+	if _, p, _ := f.do("GET", "/v1/prices/price_OneTime1", nil, nil); p["recurring"] != nil || p["id"] != "price_OneTime1" {
+		t.Fatalf("raw price: %v", p)
 	}
 }

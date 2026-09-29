@@ -32,6 +32,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"livecommerce/internal/buyer"
+	"livecommerce/internal/claims"
 	"livecommerce/internal/command"
 	"livecommerce/internal/customers"
 	"livecommerce/internal/platform"
@@ -121,6 +122,12 @@ func (c *cbcEnv) row(owner, key string) (source, policy string, granted bool, pr
 	return
 }
 
+// cbxNotFound: an unknown customer, another store's customer and another tenant's token all surface as one
+// "not found" class (the HTTP layer renders it 404, CB09), never as forbidden.
+func cbxNotFound(err error) bool {
+	return errors.Is(err, platform.ErrScopeNotFound) || errors.Is(err, command.ErrNotFound)
+}
+
 func cbcCode(err error) string {
 	var pg *pgconn.PgError
 	if errors.As(err, &pg) {
@@ -141,7 +148,7 @@ func (c *cbcEnv) cbcHold(owner string) (pid int, release func()) {
 		c.t.Fatal(err)
 	}
 	var id string
-	if err := tx.QueryRow(ctx, `SELECT id::text FROM buyer.owners WHERE id=$1 FOR UPDATE`, owner).Scan(&id); err != nil {
+	if err := tx.QueryRow(ctx, `SELECT id::text FROM buyer.owners WHERE id=$1 FOR SHARE`, owner).Scan(&id); err != nil {
 		c.t.Fatal(err)
 	}
 	released := false
@@ -155,31 +162,48 @@ func (c *cbcEnv) cbcHold(owner string) (pid int, release func()) {
 	return pid, release
 }
 
-// blockedBy reports whether some backend running the named function is blocked by holder.
-func (c *cbcEnv) blockedBy(holder int, fn string) bool {
-	c.t.Helper()
-	var n int
-	if err := c.f.owner.QueryRow(context.Background(), `SELECT count(*) FROM pg_stat_activity a WHERE $1=ANY(pg_blocking_pids(a.pid)) AND a.query LIKE '%'||$2||'%'`, holder, fn).Scan(&n); err != nil {
-		c.t.Fatal(err)
-	}
-	return n > 0
-}
-
-func (c *cbcEnv) awaitBlocked(holder int, fn string, done <-chan error) {
+// awaitBlocked waits until backend pid is blocked by holder; a call that finishes first did not take the lock.
+func (c *cbcEnv) awaitBlocked(holder, pid int, fn string, done <-chan error) {
 	c.t.Helper()
 	deadline := time.Now().Add(15 * time.Second)
 	for time.Now().Before(deadline) {
 		select {
 		case err := <-done:
-			c.t.Fatalf("%s finished (%v) while another transaction held the owner row FOR UPDATE: it does not take the owner lock (CD4)", fn, err)
+			c.t.Fatalf("%s finished (%v) while another transaction held FOR SHARE on the owner row: it does not take the owner lock (CD4)", fn, err)
 		default:
 		}
-		if c.blockedBy(holder, fn) {
+		var blocked bool
+		if err := c.f.owner.QueryRow(context.Background(), `SELECT $1=ANY(pg_blocking_pids($2))`, holder, pid).Scan(&blocked); err != nil {
+			c.t.Fatal(err)
+		}
+		if blocked {
 			return
 		}
 		time.Sleep(25 * time.Millisecond)
 	}
 	c.t.Fatalf("%s never blocked on the held owner row within 15 s", fn)
+}
+
+// bundleCustomer makes a customer out of a fresh owner without an order: a manual claim bundle redeemed by it.
+func (c *cbcEnv) bundleCustomer() buyer.Capability {
+	c.t.Helper()
+	f := c.f
+	h := &lcHarness{cqHarness: c.h.cqHarness, ctx: context.Background()}
+	h.actor, h.token = lcPrincipal(c.t, f, f.tenantA, []string{f.storeA1}, "store:read", "live:read", "live:manage")
+	var err error
+	if h.labels, err = claims.NewLabelKey(randomBytes(32)); err != nil {
+		c.t.Fatal(err)
+	}
+	s := h.draft(c.t, f.storeA1)
+	h.offer(c.t, s, "A1", c.h.stock.skus[0].ID, 5)
+	h.open(c.t, s, claims.MatchExact)
+	r := h.accepted(c.t, s, "", "cbc-"+t04Tag(), "A1+1")
+	cp := c.newOwner()
+	if _, err := h.redeem(cp, t04Key("cbc-bundle"), h.link(c.t, s, r.BundleID, 0, false).Token, r.BundleVersion); err != nil {
+		c.t.Fatalf("redeem: %v", err)
+	}
+	h.closeWindow(c.t, s)
+	return cp
 }
 
 func TestCustomersBillingCB04Consent(t *testing.T) {
@@ -318,7 +342,7 @@ func TestCustomersBillingCB04Consent(t *testing.T) {
 				return e
 			})
 		}
-		a, b := c.newOwner(), c.newOwner()
+		a, b := c.bundleCustomer(), c.bundleCustomer() // customers = owners with an order or a bound bundle (§3.1 read)
 		k := t04Key("cbc-exp-then-erase")
 		if err := export(c.mtoken, f.storeA1, a.Scope.OwnerID, k); err != nil {
 			t.Fatalf("export: %v", err)
@@ -396,8 +420,8 @@ func TestCustomersBillingCB04Consent(t *testing.T) {
 		// another store/tenant sees an unknown customer, not a forbidden one
 		for name, tok := range map[string][2]string{"same tenant other store": {c.mtoken, f.storeA2}, "other tenant": {c.otoken, f.storeB}} {
 			_, err := c.withdraw(tok[0], tok[1], owner, t04Key("cbc-m-cross"), customers.WithdrawInput{Purpose: cbcMM, Channel: cbcDM})
-			if !errors.Is(err, command.ErrNotFound) {
-				t.Errorf("%s: %v, want ErrNotFound (indistinguishable from a missing customer)", name, err)
+			if !cbxNotFound(err) {
+				t.Errorf("%s: %v, want the not-found class (indistinguishable from a missing customer)", name, err)
 			}
 		}
 		if c.rowCount(owner) != before {
@@ -525,23 +549,30 @@ func TestCustomersBillingCB04Consent(t *testing.T) {
 	})
 
 	t.Run("owner lock: a held owner row blocks the three writers (pg_blocking_pids witness)", func(t *testing.T) {
+		// The holder takes FOR SHARE on the owner row: buyer.resolve_scope (FOR SHARE) passes, so the blocked
+		// backend is waiting inside the customers definer, whose FOR UPDATE conflicts with it (CD4).
 		type call struct {
 			fn  string
-			run func(cp buyer.Capability, owner string) error
+			run func(cp buyer.Capability, owner string, report func(pgx.Tx)) error
 		}
 		calls := []call{
-			{"buyer_set_consent", func(cp buyer.Capability, owner string) error {
+			{"buyer_set_consent", func(cp buyer.Capability, owner string, report func(pgx.Tx)) error {
 				return c.buyerTx(cp, f.storeA1, func(ctx context.Context, tx pgx.Tx, s buyer.Scope) error {
+					report(tx)
 					_, e := customers.BuyerSetConsent(ctx, tx, s, cp.Token, t04Key("cbc-lock-b"), in(cbcMM, cbcDM, true, "settings"))
 					return e
 				})
 			}},
-			{"merchant_withdraw_consent", func(cp buyer.Capability, owner string) error {
-				_, e := c.withdraw(c.mtoken, f.storeA1, owner, t04Key("cbc-lock-m"), customers.WithdrawInput{Purpose: cbcMM, Channel: cbcDM})
-				return e
-			}},
-			{"erase_owner", func(cp buyer.Capability, owner string) error {
+			{"merchant_withdraw_consent", func(cp buyer.Capability, owner string, report func(pgx.Tx)) error {
 				return platform.WithScope(ctx, f.runtime, c.mtoken, f.storeA1, "store:read", func(tx pgx.Tx, s platform.Scope) error {
+					report(tx)
+					_, e := customers.WithdrawConsent(ctx, tx, s, c.mtoken, t04Key("cbc-lock-m"), owner, customers.WithdrawInput{Purpose: cbcMM, Channel: cbcDM})
+					return e
+				})
+			}},
+			{"erase_owner", func(cp buyer.Capability, owner string, report func(pgx.Tx)) error {
+				return platform.WithScope(ctx, f.runtime, c.mtoken, f.storeA1, "store:read", func(tx pgx.Tx, s platform.Scope) error {
+					report(tx)
 					_, e := customers.Erase(ctx, tx, s, c.mtoken, t04Key("cbc-lock-e"), owner)
 					return e
 				})
@@ -550,9 +581,24 @@ func TestCustomersBillingCB04Consent(t *testing.T) {
 		for _, cl := range calls {
 			cp := c.newOwner()
 			holder, release := c.cbcHold(cp.Scope.OwnerID)
-			done := make(chan error, 1)
-			go func() { done <- cl.run(cp, cp.Scope.OwnerID) }()
-			c.awaitBlocked(holder, cl.fn, done)
+			pids, done := make(chan int, 1), make(chan error, 1)
+			report := func(tx pgx.Tx) {
+				var pid int
+				if err := tx.QueryRow(ctx, `SELECT pg_backend_pid()`).Scan(&pid); err != nil {
+					pid = -1
+				}
+				pids <- pid
+			}
+			go func() { done <- cl.run(cp, cp.Scope.OwnerID, report) }()
+			var pid int
+			select {
+			case pid = <-pids:
+			case err := <-done:
+				t.Fatalf("%s ended before reaching the database: %v", cl.fn, err)
+			case <-time.After(15 * time.Second):
+				t.Fatalf("%s never started", cl.fn)
+			}
+			c.awaitBlocked(holder, pid, cl.fn, done)
 			release()
 			select {
 			case err := <-done:
