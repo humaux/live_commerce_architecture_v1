@@ -5,6 +5,7 @@
 //   POST .../payment/prepare | handoff           -> BeginHosted / TakeHosted (PAYUNi) or Stripe start/take_stripe_handoff
 //   POST .../payment/refresh | cancel (Stripe)   -> HostedPaymentStarter.RefreshPayment / CancelPayment
 // Stripe states and polling: contracts/stripe-buyer-ui-v1.md §5-§6. PAYUNi rendering is unchanged.
+// Refund summary (stripe-refund-v1 §7.2) is read from the same payment view; no refund route is called.
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import type { Order } from "../lib/purchase";
@@ -34,6 +35,8 @@ type Plan = {
 // stripe-buyer-ui-v1 §5 terminal set; also the polling/refresh stop condition (§6).
 const terminalPayment = (view: PaymentView) =>
   view.payment_state === "CAPTURED" ||
+  view.payment_state === "PARTIALLY_REFUNDED" ||
+  view.payment_state === "REFUNDED" ||
   view.payment_state === "CLOSED_UNPAID" ||
   view.payment_state === "REVIEW_REQUIRED";
 // A prepared Stripe attempt that may still change: the only thing worth polling or refreshing.
@@ -86,6 +89,7 @@ export default function OrderPayment({
   context,
   order,
   locale,
+  money,
   busy,
   refreshToken,
   onBusy,
@@ -95,6 +99,7 @@ export default function OrderPayment({
   context: string;
   order: Order;
   locale: Locale;
+  money: (amount: number, currency: string) => string;
   busy: boolean;
   refreshToken: number;
   onBusy: (busy: boolean) => void;
@@ -422,6 +427,19 @@ export default function OrderPayment({
           <p className="order-note" data-testid="payment-commercial-status">
             {copy.orderState}: {orderCopy[locale][view.commercial_state]}
           </p>
+          {view.refund && view.refund.pending_minor > 0 && (
+            <p role="status" data-testid="refund-processing">
+              {copy.refundProcessing}
+            </p>
+          )}
+          {view.refund && view.refund.refunded_minor > 0 && (
+            <p data-testid="refund-succeeded">
+              {copy.refunded.replace(
+                "{amount}",
+                money(view.refund.refunded_minor, view.currency),
+              )}
+            </p>
+          )}
         </>
       )}
       {message &&

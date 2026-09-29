@@ -129,13 +129,39 @@ export type CheckoutWrite = {
   service_version: number;
   allocation_version: number;
 };
+// manual-fulfilment-v1 §3.1 carrier codes; a label, never an integration binding.
+export const CARRIER_CODES = [
+  "seven_eleven_cvs",
+  "familymart_cvs",
+  "hilife_cvs",
+  "okmart_cvs",
+  "sf_express",
+  "chunghwa_post",
+  "other",
+] as const;
+export type CarrierCode = (typeof CARRIER_CODES)[number];
+// Buyer shipment (manual-fulfilment-v1 §5.2): the seller's attestation of dispatch, never
+// in-transit or delivered evidence. Mirrors internal/checkout.BuyerShipment.
+export type Shipment = {
+  status: "SHIPPED";
+  carrier_code: CarrierCode;
+  carrier_name: string | null;
+  tracking_number: string;
+  tracking_url: string | null;
+  recorded_at: string;
+};
 export type Order = {
   order_id: string;
   cart_id: string;
   cart_version: number;
   commercial_state: "DRAFT" | "AWAITING_PAYMENT" | "CONFIRMED" | "CANCELLED";
   fulfillment_state:
-    "MANUAL_UNASSIGNED" | "CANCELLED" | "PAID_ALLOCATION_FAILED";
+    | "MANUAL_UNASSIGNED"
+    | "CANCELLED"
+    | "PAID_ALLOCATION_FAILED"
+    | "MERCHANT_SHIPPED";
+  // Go always emits it (null unless the head is SHIPPED); absent is read as null.
+  shipment?: Shipment | null;
   hold_expires_at?: string;
   snapshot: {
     quote: Pick<Quote, "currency" | "lines" | "amount">;
@@ -283,6 +309,72 @@ export const validDestination = (v: unknown): v is Destination =>
   timestamp(v.selected_at) &&
   timestamp(v.expires_at) &&
   validDestinationDetails(v);
+const FULFILLMENT_STATES = [
+  "MANUAL_UNASSIGNED",
+  "CANCELLED",
+  "PAID_ALLOCATION_FAILED",
+  "MERCHANT_SHIPPED",
+];
+// The link is rendered as an href, so it is checked at this trust boundary exactly like Go's
+// canonical rule (§3.2): https, dotted host, no userinfo/port/fragment/whitespace, <=512 bytes.
+export function validTrackingURL(v: unknown): v is string {
+  if (
+    typeof v !== "string" ||
+    !v.startsWith("https://") ||
+    new TextEncoder().encode(v).length > 512 ||
+    /[\s\u0000-\u001f\u007f-\u009f#]/u.test(v)
+  )
+    return false;
+  try {
+    const u = new URL(v);
+    return (
+      u.protocol === "https:" &&
+      u.username === "" &&
+      u.password === "" &&
+      u.port === "" &&
+      u.hash === "" &&
+      u.hostname.includes(".")
+    );
+  } catch {
+    return false;
+  }
+}
+// MERCHANT_SHIPPED <=> a SHIPPED head (Go rejects any disagreement as drift).
+const validShipment = (v: unknown, state: unknown): boolean => {
+  if (v === undefined || v === null) return state !== "MERCHANT_SHIPPED";
+  if (state !== "MERCHANT_SHIPPED") return false;
+  if (
+    !record(v) ||
+    !exact(v, [
+      "status",
+      "carrier_code",
+      "carrier_name",
+      "tracking_number",
+      "tracking_url",
+      "recorded_at",
+    ]) ||
+    v.status !== "SHIPPED" ||
+    !(CARRIER_CODES as readonly string[]).includes(String(v.carrier_code)) ||
+    !timestamp(v.recorded_at)
+  )
+    return false;
+  const name = v.carrier_name;
+  if (
+    name === null
+      ? v.carrier_code === "other"
+      : typeof name !== "string" ||
+        [...name].length < 1 ||
+        [...name].length > 80 ||
+        /\p{Cc}/u.test(name)
+  )
+    return false;
+  return (
+    typeof v.tracking_number === "string" &&
+    /^[A-Za-z0-9][A-Za-z0-9 -]{0,63}$/.test(v.tracking_number) &&
+    !v.tracking_number.endsWith(" ") &&
+    (v.tracking_url === null || validTrackingURL(v.tracking_url))
+  );
+};
 export const validOrder = (v: unknown): v is Order =>
   record(v) &&
   id(v.order_id) &&
@@ -291,9 +383,8 @@ export const validOrder = (v: unknown): v is Order =>
   ["DRAFT", "AWAITING_PAYMENT", "CONFIRMED", "CANCELLED"].includes(
     String(v.commercial_state),
   ) &&
-  ["MANUAL_UNASSIGNED", "CANCELLED", "PAID_ALLOCATION_FAILED"].includes(
-    String(v.fulfillment_state),
-  ) &&
+  FULFILLMENT_STATES.includes(String(v.fulfillment_state)) &&
+  validShipment(v.shipment, v.fulfillment_state) &&
   (v.commercial_state === "DRAFT"
     ? timestamp(v.hold_expires_at)
     : v.hold_expires_at === undefined) &&
@@ -325,9 +416,7 @@ export const validOrderSummary = (v: unknown): v is OrderSummary =>
   ["DRAFT", "AWAITING_PAYMENT", "CONFIRMED", "CANCELLED"].includes(
     String(v.commercial_state),
   ) &&
-  ["MANUAL_UNASSIGNED", "CANCELLED", "PAID_ALLOCATION_FAILED"].includes(
-    String(v.fulfillment_state),
-  ) &&
+  FULFILLMENT_STATES.includes(String(v.fulfillment_state)) &&
   timestamp(v.created_at) &&
   typeof v.currency === "string" &&
   /^[A-Z]{3}$/.test(v.currency) &&
