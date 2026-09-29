@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# stripe-live-enable-v1 §11 harness guard: tests never run with a live Stripe key in the environment
+# (value never printed).
+if env | grep -qE '=(sk|rk)_live_'; then echo 'refused: live key in test environment' >&2; exit 2; fi
 cd "$(dirname "$0")/../.."
 command -v docker >/dev/null
 command -v go >/dev/null

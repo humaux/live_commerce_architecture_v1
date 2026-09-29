@@ -148,10 +148,13 @@ SELECT 'W9', CASE WHEN count(*) > 0.8 * current_setting('max_connections')::int 
        'connections=' || count(*) || '/' || current_setting('max_connections') FROM pg_stat_activity;
 
 -- W11 (stripe-live-enable-v1 §8): LIVE only; counts only, no ids/rows leave the database. Superuser session, so RLS
--- does not hide rows. a: LIVE Stripe operations (session create or refund) stuck UNKNOWN.
+-- does not hide rows. a: LIVE Stripe operations (session create or refund) stuck UNKNOWN. A settled operation also ends
+-- UNKNOWN, with result_code stripe_terminal_observed / stripe_refund_terminal, which integration.finish_stripe_query
+-- (0061) / finish_stripe_refund (0062) only accept once the terminal payments.facts / refund_facts row exists: not trouble.
 SELECT 'W11a', CASE WHEN c > ${w11_op_max} THEN 'FAIL' ELSE 'PASS' END, 'unknown_ops_over_${w11_op_min}m=' || c || ' max=${w11_op_max}'
   FROM (SELECT count(*) AS c FROM integration.operations o
          WHERE o.provider = 'stripe' AND o.state = 'UNKNOWN' AND o.created_at < now() - interval '${w11_op_min} minutes'
+           AND o.result_code NOT IN ('stripe_terminal_observed', 'stripe_refund_terminal')
            AND (EXISTS (SELECT 1 FROM payments.stripe_sessions s WHERE s.attempt_id = o.id AND s.environment = 'LIVE')
              OR EXISTS (SELECT 1 FROM payments.stripe_refunds r WHERE r.id = o.id AND r.environment = 'LIVE'))) x;
 -- b: review cases (incl. CLOSURE_CONTRADICTED) opened on LIVE Stripe attempts inside the window.

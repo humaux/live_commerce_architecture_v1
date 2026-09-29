@@ -17,6 +17,9 @@
 # Env:    LC_FOCUSED_TIMEOUT (default 900s), LC_FOCUSED_TAGS (e.g. browser)
 # Exit:   go test's exit code. Never reports PASS when zero tests ran (checked below).
 set -euo pipefail
+# stripe-live-enable-v1 §11 harness guard: tests never run with a live Stripe key in the environment
+# (value never printed).
+if env | grep -qE '=(sk|rk)_live_'; then echo 'refused: live key in test environment' >&2; exit 2; fi
 
 run_regex="${1:?usage: test-focused.sh '<-run regex>' [packages...]}"
 shift || true
