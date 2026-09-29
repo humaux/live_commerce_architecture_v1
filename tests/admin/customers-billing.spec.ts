@@ -272,12 +272,16 @@ test("CB11 finance: native date inputs, the 91-day rule, one summary table, the 
   expect(new URL(href, origin).pathname).toBe(`/api/stores/${store}/finance/summary.csv`);
   expect(new URL(href, origin).searchParams.get("from")).toBe(financeDay(-2));
   expect(new URL(href, origin).searchParams.get("to")).toBe(financeDay(0));
-  const response = await page.request.get(new URL(href, origin).toString());
-  expect(response.status()).toBe(200);
-  expect(response.headers()["content-type"]).toContain("text/csv");
-  expect(response.headers()["content-disposition"]).toMatch(/^attachment; filename="finance-\d{4}-\d{2}-\d{2}-\d{4}-\d{2}-\d{2}\.csv"$/);
-  expect(response.headers()["cache-control"]).toContain("no-store");
-  const csv = (await response.text()).trim().split("\n");
+  // in-page fetch: the Secure __Host- session cookie is sent by the browser, not by the APIRequestContext jar over http
+  const response = await page.evaluate(async (u) => {
+    const r = await fetch(u, { credentials: "same-origin" });
+    return { status: r.status, headers: Object.fromEntries(r.headers.entries()), text: await r.text() };
+  }, new URL(href, origin).toString());
+  expect(response.status).toBe(200);
+  expect(response.headers["content-type"]).toContain("text/csv");
+  expect(response.headers["content-disposition"]).toMatch(/^attachment; filename="finance-\d{4}-\d{2}-\d{2}-\d{4}-\d{2}-\d{2}\.csv"$/);
+  expect(response.headers["cache-control"]).toContain("no-store");
+  const csv = response.text.trim().split("\n");
   expect(csv[0]).toBe("day,currency,environment,captured_count,captured_minor,refunded_minor,net_minor");
   expect(csv.length).toBeGreaterThanOrEqual(2);
   for (const line of csv.slice(1)) expect(line).toMatch(/^\d{4}-\d{2}-\d{2},[A-Z]{3},[A-Z_]+,\d+,\d+,\d+,-?\d+$/);
