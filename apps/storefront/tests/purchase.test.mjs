@@ -151,3 +151,65 @@ test("lost response replays exact key/body, then clears only after parsed receip
     delete globalThis.sessionStorage;
   }
 });
+
+// ---- Buyer shipment (manual-fulfilment-v1 §5.2/§3.2): mirrors internal/checkout.Get's drift rule.
+import { validOrder, validOrderSummary, validTrackingURL } from "../lib/purchase.ts";
+const shipOrder = (extra = {}) => ({
+  order_id: key, cart_id: other, cart_version: 1, commercial_state: "CONFIRMED", fulfillment_state: "MERCHANT_SHIPPED",
+  snapshot: {
+    quote: { currency: "TWD", lines: [{ sku_id: sku, name: "Item", code: "S", quantity: 1, unit_price_minor: 2500 }],
+      amount: { subtotal_minor: 2500, discount_minor: 0, shipping_minor: 0, shipping_tax_minor: 0, tax_minor: 0, total_minor: 2500 } },
+    destination: { kind: "home", country: "TW", recipient_name: "R", phone: "1", home_address: { region: "", city: "C", postal_code: "", line1: "L", line2: "" } },
+    service: { code: "home", name_hans: "a", name_hant: "b", name_en: "c", delivery_kind: "home", mode: "MANUAL" },
+  },
+  shipment: { status: "SHIPPED", carrier_code: "seven_eleven_cvs", carrier_name: null, tracking_number: "0012345678", tracking_url: "https://t.cat.com.tw/q?no=1", recorded_at: "2026-09-29T01:02:03Z" },
+  ...extra,
+});
+const ship = (patch) => ({ ...shipOrder().shipment, ...patch });
+
+test("RUI02 buyer order admits MERCHANT_SHIPPED only with a SHIPPED head; absent shipment ≡ null", () => {
+  assert.equal(validOrder(shipOrder()), true);
+  assert.equal(validOrder(shipOrder({ shipment: ship({ carrier_code: "other", carrier_name: "Local Courier", tracking_url: null }) })), true);
+  assert.equal(validOrder(shipOrder({ fulfillment_state: "MANUAL_UNASSIGNED", shipment: null })), true);
+  const { shipment, ...absent } = shipOrder({ fulfillment_state: "MANUAL_UNASSIGNED" });
+  assert.equal(validOrder(absent), true);
+  assert.equal(validOrder(shipOrder({ shipment: null })), false, "MERCHANT_SHIPPED without head");
+  assert.equal(validOrder(shipOrder({ fulfillment_state: "MANUAL_UNASSIGNED" })), false, "head without MERCHANT_SHIPPED");
+  assert.equal(validOrder({ ...absent, fulfillment_state: "MERCHANT_SHIPPED" }), false);
+});
+
+test("RUI02 shipment shape negatives (incl. unsafe links)", () => {
+  for (const [name, patch] of [
+    ["status VOIDED", { status: "VOIDED" }],
+    ["unknown carrier", { carrier_code: "dhl" }],
+    ["other without name", { carrier_code: "other", carrier_name: null }],
+    ["control char in name", { carrier_name: "A\nB" }],
+    ["name too long", { carrier_name: "x".repeat(81) }],
+    ["empty tracking", { tracking_number: "" }],
+    ["tracking with symbol", { tracking_number: "12;34" }],
+    ["tracking trailing space", { tracking_number: "1234 " }],
+    ["tracking 65 chars", { tracking_number: "1".repeat(65) }],
+    ["javascript url", { tracking_url: "javascript:alert(1)" }],
+    ["http url", { tracking_url: "http://t.cat.com.tw/q" }],
+    ["userinfo", { tracking_url: "https://u:p@t.cat.com.tw/q" }],
+    ["port", { tracking_url: "https://t.cat.com.tw:8443/q" }],
+    ["fragment", { tracking_url: "https://t.cat.com.tw/q#x" }],
+    ["dotless host", { tracking_url: "https://localhost/q" }],
+    ["whitespace", { tracking_url: "https://t.cat.com.tw/a b" }],
+    ["url over 512 bytes", { tracking_url: "https://t.cat.com.tw/" + "a".repeat(500) }],
+    ["bad recorded_at", { recorded_at: "yesterday" }],
+    ["extra merchant field (note)", { note: "internal" }],
+    ["missing recorded_at", { recorded_at: undefined }],
+  ]) {
+    const s = ship(patch);
+    if (patch.recorded_at === undefined && "recorded_at" in patch) delete s.recorded_at;
+    assert.equal(validOrder(shipOrder({ shipment: s })), false, name);
+  }
+  assert.equal(validTrackingURL("https://t.cat.com.tw/q?no=1"), true);
+});
+
+test("RUI02 history summary admits MERCHANT_SHIPPED (a shipped order must not break the list)", () => {
+  const summary = { order_id: key, cart_id: other, cart_version: 1, commercial_state: "CONFIRMED", fulfillment_state: "MERCHANT_SHIPPED", created_at: "2026-09-29T01:02:03Z", currency: "TWD", total_minor: 2500 };
+  assert.equal(validOrderSummary(summary), true);
+  assert.equal(validOrderSummary({ ...summary, fulfillment_state: "DELIVERED" }), false);
+});

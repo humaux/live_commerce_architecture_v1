@@ -15,6 +15,8 @@ export type OrderPayment = {
     | "PENDING"
     | "AUTHORIZED"
     | "CAPTURED"
+    | "PARTIALLY_REFUNDED"
+    | "REFUNDED"
     | "REVIEW_REQUIRED"
     | "CLOSED_UNPAID";
   handoff_state:
@@ -29,6 +31,8 @@ export type OrderPayment = {
   handoff_expires_at: string | null;
   // Go emits this only for Stripe attempts; its presence marks the view as Stripe.
   cancel_requested?: boolean;
+  // stripe-refund-v1 §7.2: buyer-safe totals, Stripe orders with refund activity only; absent ≡ null.
+  refund?: { refunded_minor: number; pending_minor: number } | null;
   methods: {
     code: PaymentMethodCode;
     version: number;
@@ -115,6 +119,31 @@ function name(value: unknown): value is string {
   );
 }
 
+// Mirrors validPaymentViewFor (internal/checkout/payment_view.go): refund totals exist only on the
+// Stripe projection, stay inside the order total, and agree with the refunded states.
+function validRefund(
+  value: Record<string, unknown>,
+  stripe: boolean,
+): boolean {
+  const refund = value.refund;
+  const state = value.payment_state;
+  const refunded = state === "PARTIALLY_REFUNDED" || state === "REFUNDED";
+  if (refund === undefined || refund === null) return !refunded;
+  if (
+    !stripe ||
+    !exact(refund, ["refunded_minor", "pending_minor"]) ||
+    !Number.isSafeInteger(refund.refunded_minor) ||
+    !Number.isSafeInteger(refund.pending_minor)
+  )
+    return false;
+  const done = refund.refunded_minor as number;
+  const pending = refund.pending_minor as number;
+  const total = value.total_minor as number;
+  if (done < 0 || pending < 0 || done > total || pending > total - done)
+    return false;
+  return !refunded || (done >= 1 && (state === "REFUNDED") === (done >= total));
+}
+
 export function validOrderPayment(
   value: unknown,
   orderID: string,
@@ -136,7 +165,17 @@ export function validOrderPayment(
     value !== null &&
     typeof value === "object" &&
     Object.hasOwn(value, "cancel_requested");
-  if (!exact(value, hasCancel ? [...keys, "cancel_requested"] : keys))
+  const hasRefund =
+    value !== null &&
+    typeof value === "object" &&
+    Object.hasOwn(value, "refund");
+  if (
+    !exact(value, [
+      ...keys,
+      ...(hasCancel ? ["cancel_requested"] : []),
+      ...(hasRefund ? ["refund"] : []),
+    ])
+  )
     return false;
   if (
     value.order_id !== orderID ||
@@ -156,6 +195,8 @@ export function validOrderPayment(
       "PENDING",
       "AUTHORIZED",
       "CAPTURED",
+      "PARTIALLY_REFUNDED",
+      "REFUNDED",
       "REVIEW_REQUIRED",
       "CLOSED_UNPAID",
     ].includes(value.payment_state) ||
@@ -187,6 +228,7 @@ export function validOrderPayment(
     !hasCancel
   )
     return false;
+  if (!validRefund(value, hasCancel)) return false;
   if (hasCancel) {
     if (
       typeof value.cancel_requested !== "boolean" ||

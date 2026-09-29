@@ -276,3 +276,42 @@ test("SU01 payment signal is exactly {order_id, scheduled:boolean}", () => {
   ]) assert.equal(validPaymentSignal(candidate, orderID), false, JSON.stringify(candidate));
   assert.equal(validPaymentSignal({ order_id: orderID, scheduled: true }, "not-a-uuid"), false);
 });
+
+// ---- Refund view (stripe-refund-v1 §7.2): mirrors validPaymentViewFor in internal/checkout/payment_view.go.
+const captured = (extra) => attempt({
+  commercial_state: "CONFIRMED", payment_state: "CAPTURED", handoff_state: "CLOSED", cancel_requested: false, ...extra,
+});
+const refundJSON = (refunded_minor, pending_minor) => ({ refunded_minor, pending_minor });
+
+test("RUI01 refund summary: refunded states, pending money, absent ≡ null", () => {
+  for (const [name, candidate] of [
+    ["CAPTURED without refund key", captured({})],
+    ["CAPTURED refund null", captured({ refund: null })],
+    ["CAPTURED pending only", captured({ refund: refundJSON(0, 2500) })],
+    ["CAPTURED zero totals", captured({ refund: refundJSON(0, 0) })],
+    ["PARTIALLY_REFUNDED", captured({ payment_state: "PARTIALLY_REFUNDED", refund: refundJSON(1000, 0) })],
+    ["PARTIALLY_REFUNDED with pending remainder", captured({ payment_state: "PARTIALLY_REFUNDED", refund: refundJSON(1000, 1500) })],
+    ["REFUNDED", captured({ payment_state: "REFUNDED", refund: refundJSON(2500, 0) })],
+  ]) assert.equal(validOrderPayment(candidate, orderID), true, name);
+  assert.equal(isStripeView(captured({ payment_state: "REFUNDED", refund: refundJSON(2500, 0) })), true);
+});
+
+test("RUI01 refund summary negatives", () => {
+  for (const [name, candidate] of [
+    ["PARTIALLY_REFUNDED without refund", captured({ payment_state: "PARTIALLY_REFUNDED" })],
+    ["REFUNDED refund null", captured({ payment_state: "REFUNDED", refund: null })],
+    ["PARTIALLY_REFUNDED zero refunded", captured({ payment_state: "PARTIALLY_REFUNDED", refund: refundJSON(0, 100) })],
+    ["PARTIALLY_REFUNDED covering the total", captured({ payment_state: "PARTIALLY_REFUNDED", refund: refundJSON(2500, 0) })],
+    ["REFUNDED below the total", captured({ payment_state: "REFUNDED", refund: refundJSON(2499, 0) })],
+    ["refunded above total", captured({ refund: refundJSON(2501, 0) })],
+    ["pending above remainder", captured({ refund: refundJSON(1000, 1501) })],
+    ["negative refunded", captured({ refund: refundJSON(-1, 0) })],
+    ["negative pending", captured({ refund: refundJSON(0, -1) })],
+    ["fractional", captured({ refund: refundJSON(0.5, 0) })],
+    ["string amount", captured({ refund: refundJSON("1", 0) })],
+    ["extra refund key (reason leak)", captured({ refund: { ...refundJSON(1, 0), reason: "duplicate" } })],
+    ["missing pending", captured({ refund: { refunded_minor: 1 } })],
+    ["refund on PAYUNi view (no cancel_requested)", { ...view, payment_state: "CAPTURED", handoff_state: "ISSUED", handoff_expires_at: expiry, methods: [], refund: refundJSON(0, 1) }],
+    ["REFUNDED on PAYUNi view", { ...view, payment_state: "REFUNDED", methods: [], refund: refundJSON(2500, 0) }],
+  ]) assert.equal(validOrderPayment(candidate, orderID), false, name);
+});
