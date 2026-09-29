@@ -131,8 +131,26 @@ func TestBrowserLiveClaimsRealChain(t *testing.T) {
 	mustExec(t, h.f.owner, `INSERT INTO identity.memberships(tenant_id,principal_id) VALUES($1,$2)`, h.f.tenantA, principal)
 	mustExec(t, h.f.owner, `INSERT INTO identity.external_identities(issuer,subject,principal_id) VALUES($1,'browser-subject',$2)`, idp.server.URL, principal)
 	// live:read/live:manage are not provisioned for existing memberships (§12); grant explicitly.
+	// integration:execute: the claim-source definer requires it with live:manage (ruling 24).
 	mustExec(t, h.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission)
-		SELECT $1,$2,$3,p FROM unnest(ARRAY['store:read','catalog:read','inventory:read','live:read','live:manage']) p`, h.f.tenantA, h.f.storeA1, principal)
+		SELECT $1,$2,$3,p FROM unnest(ARRAY['store:read','catalog:read','inventory:read','live:read','live:manage','integration:execute']) p`, h.f.tenantA, h.f.storeA1, principal)
+	// Comment source (claim-source, rulings o/p/s/t) runs against Go + PG: the store gets exactly one
+	// enabled, routed Facebook Page and Instagram account binding (synthetic ids, no Page token), so the
+	// UI shows its platform select, a bare id needs the hint and private_reply is refused page_token_missing.
+	if n := countRows(t, h.f.owner, `SELECT count(*) FROM integration.bindings WHERE tenant_id=$1 AND store_id=$2 AND enabled
+		AND provider IN ('facebook','instagram')`, h.f.tenantA, h.f.storeA1); n != 0 {
+		t.Fatalf("store A1 already has %d enabled Meta bindings; the claim-source phase needs a clean store", n)
+	}
+	m := miSetup(t)
+	fbAsset, igAsset := miAsset(), miAsset()
+	miRoute(t, m, fbAsset, h.f.tenantA, h.f.storeA1, miBinding(t, m, fbAsset, "facebook", h.f.tenantA, h.f.storeA1, principal))
+	igBinding := miBinding(t, m, igAsset, "instagram", h.f.tenantA, h.f.storeA1, principal)
+	var igRoute string
+	var igEpoch int64
+	if err := m.registrar.QueryRow(ctx, `SELECT * FROM meta_inbox.activate_route($1,'instagram',$2,$3,$4,$5,1,$6,$7,0)`,
+		miApp, igAsset, h.f.tenantA, h.f.storeA1, igBinding, strings.Repeat("c", 64), time.Now().Add(time.Hour)).Scan(&igRoute, &igEpoch); err != nil {
+		t.Fatal("instagram route", err)
+	}
 	fixtureToken := randomToken()
 	tx, err := h.f.owner.Begin(ctx)
 	if err != nil {
@@ -268,6 +286,7 @@ func TestBrowserLiveClaimsRealChain(t *testing.T) {
 		"LC_CLAIMS_PRODUCT": h.stock.product.Name, "LC_CLAIMS_SKU_A": sku0.Code, "LC_CLAIMS_SKU_B": sku1.Code,
 		"LC_CLAIMS_SKU_A_ID": sku0.ID, "LC_CLAIMS_SKU_B_ID": sku1.ID,
 		"LC_CLAIMS_CONTROL": control.URL, "LC_CLAIMS_CONTROL_KEY": controlKey,
+		"LC_CLAIMS_FB_ASSET": fbAsset, "LC_CLAIMS_IG_ASSET": igAsset,
 	})
 	browser.Stdout, browser.Stderr = playwrightLog, playwrightLog
 	if err := browser.Run(); err != nil {
@@ -311,6 +330,15 @@ func TestBrowserLiveClaimsRealChain(t *testing.T) {
 		FROM claims.events WHERE session_id=$1`, draft.ID).Scan(&accepted, &notUnderstood); err != nil || accepted != 4 || notUnderstood != 1 {
 		t.Fatalf("events accepted=%d no_match=%d err=%v", accepted, notUnderstood, err)
 	}
+	// Comment source readback: the browser's last save re-bound the scene to the Instagram media (platform
+	// hint), the Facebook post row stays inactive, and no scene ever held two active sources.
+	var igActive, fbInactive, active int
+	if err := h.f.owner.QueryRow(ctx, `SELECT count(*) FILTER (WHERE active AND platform='instagram' AND asset_id=$2 AND source_object_id='17900000000000001'),
+		count(*) FILTER (WHERE NOT active AND platform='facebook' AND source_object_id=$3), count(*) FILTER (WHERE active)
+		FROM live.claim_sources WHERE session_id=$1`, draft.ID, igAsset, fbAsset+"_123456789012345").Scan(&igActive, &fbInactive, &active); err != nil ||
+		igActive != 1 || fbInactive != 1 || active != 1 {
+		t.Fatalf("claim-source readback ig_active=%d fb_inactive=%d active=%d err=%v", igActive, fbInactive, active, err)
+	}
 	after := facts()
 	for _, table := range tables {
 		if before[table] != after[table] {
@@ -323,7 +351,7 @@ func TestBrowserLiveClaimsRealChain(t *testing.T) {
 	if exchanges != 1 {
 		t.Fatalf("expected one signed MOCK IdP exchange, got %d", exchanges)
 	}
-	t.Logf("PASS KC16: admin Next + storefront Next + Go + PG, signed MOCK IdP, MOCK manual ingress; cases=%d locales=%v; evidence=%s", result.Cases, result.Locales, evidence)
+	t.Logf("PASS KC16: admin Next + storefront Next + Go + PG (incl. claim-source), signed MOCK IdP, MOCK manual ingress; cases=%d locales=%v; evidence=%s", result.Cases, result.Locales, evidence)
 }
 
 // freeLoopbackPort reserves and releases one loopback port for a child server.

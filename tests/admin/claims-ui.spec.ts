@@ -58,55 +58,56 @@ async function merchantShot(page: Page, name: string) {
 }
 
 
-// Comment source (claim-source HTTP interface). The Go route is built in parallel, so this
-// phase is MOCK: the claim-source BFF path is answered in the browser from the frozen wire
-// shapes; every other claims call in this file still runs through the real chain. Remove the
-// route once the Go route is merged so the same steps run against Go + PostgreSQL.
+// Comment source (claim-source HTTP interface, rulings o/p/s/t) through the real BFF, Go
+// route and PostgreSQL: the harness gives store A1 exactly one enabled, routed Facebook Page
+// and Instagram account binding (LC_CLAIMS_FB_ASSET / LC_CLAIMS_IG_ASSET) and no Page token.
+// Requests pass through (route.continue / route.fetch); only fault injection is MOCK: the
+// refusal-wording sweep (every code × three locales, answered in the browser), the lost answer
+// after a committed write (the real response is replaced by 503) and a failing read.
 type Wire = Record<string, unknown>;
-const sourceCodes = ["input_invalid", "input_unresolvable", "binding_missing", "binding_ambiguous", "source_conflict", "version_changed"] as const;
+const sourceCodes = ["input_invalid", "input_unresolvable", "binding_missing", "binding_ambiguous", "page_token_missing", "source_conflict", "version_changed"] as const;
+const fbAsset = required("LC_CLAIMS_FB_ASSET"), igAsset = required("LC_CLAIMS_IG_ASSET");
 async function claimSourcePhase(merchant: Page, pass: (name: string) => void) {
-  let source: Wire | null = null;
   let readStatus = 200;
   let failAfterApply = false;
   const refusals: { status: number; code: string }[] = [];
-  const puts: { key: string; body: string }[] = [];
-  const applied = new Map<string, Wire>();
+  const puts: { key: string; body: string; status: number; answer: Wire }[] = [];
   const headers = { "content-type": "application/json", "cache-control": "private, no-store" };
-  await merchant.route(/\/api\/stores\/[^/]+\/live-sessions\/[^/]+\/claim-source$/, async (route) => {
+  const sourcePath = /\/api\/stores\/[^/]+\/live-sessions\/[^/]+\/claim-source$/;
+  await merchant.route(sourcePath, async (route) => {
     const request = route.request();
     if (request.method() === "GET") {
       if (readStatus !== 200) return route.fulfill({ status: readStatus, headers, body: JSON.stringify({ code: "retry_later" }) });
-      return route.fulfill({ status: 200, headers, body: JSON.stringify({ source }) });
+      return route.continue();
     }
     expect(request.method()).toBe("PUT");
     const key = request.headers()["idempotency-key"] ?? "";
     const raw = request.postData() ?? "";
-    puts.push({ key, body: raw });
     const refusal = refusals.shift();
     if (refusal) return route.fulfill({ status: refusal.status, headers, body: JSON.stringify({ code: refusal.code, message: "x", request_id: "", retryable: false, details: {} }) });
-    if (applied.has(key)) return route.fulfill({ status: 200, headers, body: JSON.stringify(applied.get(key)) });
-    const body = JSON.parse(raw) as Wire;
-    expect(Object.keys(body).sort()).toEqual(["active", "expected_version", "input", "private_reply", "reply_locale"]);
-    if (body.expected_version !== ((source?.version as number | undefined) ?? 0))
-      return route.fulfill({ status: 409, headers, body: JSON.stringify({ code: "version_changed" }) });
-    const post = /^https:\/\/www\.facebook\.com\/[^/]+\/posts\/([0-9]+)$/.exec(String(body.input));
-    source = { id: "33333333-3333-4333-8333-333333333333", platform: "facebook", object: "page", asset_id: "page-asset-1",
-      source_object_id: post ? post[1] : String(body.input), private_reply: body.private_reply, reply_locale: body.reply_locale,
-      active: body.active, version: ((source?.version as number | undefined) ?? 0) + 1, verified: false,
-      intake_count: 4, intake_capped: 1, updated_at: "2026-09-29T08:30:00Z" };
-    applied.set(key, source);
-    if (failAfterApply) { failAfterApply = false; return route.fulfill({ status: 503, headers, body: JSON.stringify({ code: "retry_later" }) }); }
-    return route.fulfill({ status: 200, headers, body: JSON.stringify(source) });
+    const response = await route.fetch();
+    const answer = await response.json() as Wire;
+    puts.push({ key, body: raw, status: response.status(), answer });
+    if (failAfterApply && response.status() === 200) { failAfterApply = false; return route.fulfill({ status: 503, headers, body: JSON.stringify({ code: "retry_later" }) }); }
+    return route.fulfill({ response });
   });
 
   const section = merchant.getByTestId("claims-source");
   const input = section.getByLabel("Post or media link or ID", { exact: true });
+  const platform = section.getByLabel("Platform", { exact: true });
   const save = section.getByRole("button", { name: "Save comment source" });
   const alert = section.getByRole("alert");
   const active = section.locator("#claims-source-active");
+  const reply = section.getByLabel("Send a private reply with the cart link");
+  const fbObject = `${fbAsset}_123456789012345`;
   await merchant.getByRole("button", { name: "Refresh facts" }).click();
   await expect(section.getByTestId("claims-source-none")).toBeVisible();
+  await expect(merchant.getByTestId("claims-feed")).toHaveText(claimsCopy.en.feedNone);
   await expect(input).toHaveAccessibleDescription(claimsCopy.en.sourceInputHint);
+  // Ruling t defaults; ruling p: the store has both bindings, so the platform select is shown.
+  await expect(reply).not.toBeChecked();
+  await expect(active).toBeChecked();
+  await expect(platform).toHaveValue("");
   // Empty input is refused in the browser: no request, an alert, and the field flagged.
   await save.click();
   await expect(alert).toHaveText(claimsCopy.en.sourceInputInvalid);
@@ -116,39 +117,57 @@ async function claimSourcePhase(merchant: Page, pass: (name: string) => void) {
   await save.click();
   await expect(alert).toHaveText(claimsCopy.en.sourceInputInvalid);
   expect(puts).toHaveLength(0);
+  pass("comment source: defaults reply off / collecting on, platform select shown for a Facebook + Instagram store, empty/space input refused in the browser");
 
-  // First bind: byte-exact body, fresh key, re-read shows the server's facts.
+  // Ruling s, real Go: a private reply without a registered Page token is page_token_missing.
   await input.fill("  https://www.facebook.com/somepage/posts/123456789012345 ");
   await section.getByLabel("Reply language", { exact: true }).selectOption("zh-TW");
-  await section.getByLabel("Send a private reply with the cart link").check();
+  await reply.check();
   await expect(input).not.toHaveAttribute("aria-invalid", "true");
   await save.click();
-  await expect(section.getByTestId("claims-source-object")).toHaveText("123456789012345");
+  await expect(alert).toHaveText(claimsCopy.en.sourceErrors.page_token_missing);
   expect(puts).toHaveLength(1);
-  expect(puts[0].key).toMatch(/^[0-9a-f-]{36}$/);
-  expect(puts[0].body).toBe(JSON.stringify({ input: "https://www.facebook.com/somepage/posts/123456789012345", private_reply: true,
+  expect(puts[0]).toMatchObject({ status: 409, answer: { code: "page_token_missing" } });
+
+  // First bind (reply off): byte-exact five-key body (no platform chosen), then the re-read shows Go's facts.
+  await reply.uncheck();
+  await save.click();
+  await expect(section.getByTestId("claims-source-object")).toHaveText(fbObject);
+  expect(puts).toHaveLength(2);
+  expect(puts[1].key).toMatch(/^[0-9a-f-]{36}$/);
+  expect(puts[1].key).not.toBe(puts[0].key);
+  expect(puts[1].body).toBe(JSON.stringify({ input: "https://www.facebook.com/somepage/posts/123456789012345", private_reply: false,
     reply_locale: "zh-TW", active: true, expected_version: 0 }));
+  expect(puts[1].status).toBe(200);
+  expect(puts[1].answer).toMatchObject({ platform: "facebook", object: "page", asset_id: fbAsset, source_object_id: fbObject, version: 1, verified: false });
   await expect(section.getByTestId("claims-source-verified")).toHaveText("Unverified");
-  await expect(section.getByTestId("claims-source-count")).toHaveText("4");
-  await expect(section.getByTestId("claims-source-capped")).toHaveText("1");
+  await expect(section.getByTestId("claims-source-count")).toHaveText("0");
+  await expect(section.getByTestId("claims-source-capped")).toHaveText("0");
   await expect(section.getByTestId("claims-source-status")).toContainText("Facebook post or live video");
-  await expect(input).toHaveValue("123456789012345");
+  await expect(merchant.getByTestId("claims-feed")).toHaveText(`${claimsCopy.en.feedBound} · ${claimsCopy.en.sourceUnverified}`);
+  await expect(input).toHaveValue(fbObject);
+  await expect(platform).toHaveValue("facebook");
   await expect(save).toBeDisabled();
   await merchantShot(merchant, "merchant-claims-source-bound-en");
-  pass("comment source: empty/space input refused in the browser; first bind sends the exact five-key body, then re-reads and shows platform, unverified label and intake counts");
+  pass("comment source (Go + PG): page_token_missing for a private reply without a Page token; first bind sends the exact five-key body; banner, platform, unverified label and intake counts come from Go");
 
-  // Rebind with the version CAS: deactivate (a new key), then every refusal in every locale.
+  // Deactivate with the version CAS: re-saving the stored "<page>_<post>" id carries the saved platform (ruling p).
   await active.uncheck();
   await save.click();
   await expect(section.getByTestId("claims-source-status")).toContainText("Paused");
-  expect(puts).toHaveLength(2);
-  expect(JSON.parse(puts[1].body)).toMatchObject({ active: false, expected_version: 1, input: "123456789012345" });
-  expect(puts[1].key).not.toBe(puts[0].key);
+  expect(puts).toHaveLength(3);
+  expect(JSON.parse(puts[2].body)).toEqual({ input: fbObject, private_reply: false, reply_locale: "zh-TW", active: false, expected_version: 1, platform: "facebook" });
+  expect(puts[2]).toMatchObject({ status: 200, answer: { version: 2, active: false } });
+  await expect(merchant.getByTestId("claims-feed")).toHaveText(claimsCopy.en.feedNone);
+  pass("comment source (Go + PG): deactivating re-saves the stored Facebook id with its platform and the version CAS; the banner falls back to the bind prompt");
+
+  // Wording sweep (MOCK answers): every refusal code, forbidden and an unknown 409 in all three locales.
   for (const locale of ["en", "zh-CN", "zh-TW"] as const) {
     if (locale !== "en") await merchant.goto(`${origin}/${locale}/studio/claims?store=${store}&scene=${session}`);
     const words = claimsCopy[locale];
     const box = merchant.getByTestId("claims-source");
     await expect(box.getByTestId("claims-source-status")).toBeVisible();
+    await expect(merchant.getByTestId("claims-feed")).toHaveText(words.feedNone);
     await box.locator("#claims-source-active").check();
     for (const [index, code] of sourceCodes.entries()) {
       // Statuses differ on purpose: the wording keys on the backend code, not the HTTP status.
@@ -164,13 +183,13 @@ async function claimSourcePhase(merchant: Page, pass: (name: string) => void) {
     await expect(box.getByRole("alert")).toHaveText(words.conflict.source);
     if (locale === "zh-TW") await merchantShot(merchant, "merchant-claims-source-refused-zh-TW");
   }
-  pass("comment source: all six refusal codes plus forbidden and an unknown 409 are worded in en, zh-CN and zh-TW");
+  expect(puts).toHaveLength(3);
+  pass("comment source: all seven refusal codes plus forbidden and an unknown 409 are worded in en, zh-CN and zh-TW (MOCK answers)");
 
-  // Unknown result: the write committed but the answer was lost. Fields lock, retry reuses
-  // the identical key and body, and the server-side replay leaves exactly one new version.
+  // Unknown result: Go committed but the answer was lost. Fields lock, retry reuses the identical
+  // key and body, and Go's receipt replays the same answer: exactly one new version.
   await merchant.goto(`${origin}/en/studio/claims?store=${store}&scene=${session}`);
   await expect(section.getByTestId("claims-source-status")).toBeVisible();
-  const before = puts.length, version = source!.version as number;
   await active.check();
   failAfterApply = true;
   await save.click();
@@ -178,22 +197,40 @@ async function claimSourcePhase(merchant: Page, pass: (name: string) => void) {
   await expect(input).toBeDisabled();
   await section.getByRole("button", { name: "Retry same request" }).click();
   await expect(section.getByTestId("claims-source-status")).toContainText("On");
-  expect(puts).toHaveLength(before + 2);
-  expect(puts[before + 1]).toEqual(puts[before]);
-  expect(source!.version).toBe(version + 1);
-  pass("comment source: unknown result locks the form; retry reuses the same Idempotency-Key and bytes and the replay applies once");
+  expect(puts).toHaveLength(5);
+  expect({ key: puts[4].key, body: puts[4].body }).toEqual({ key: puts[3].key, body: puts[3].body });
+  expect(puts[4].answer).toEqual(puts[3].answer);
+  expect(puts[4].answer).toMatchObject({ version: 3, active: true });
+  pass("comment source (Go + PG): unknown result locks the form; retry reuses the same Idempotency-Key and bytes and Go's replay applies once");
+
+  // Ruling p, real Go: a bare numeric id on a Facebook + Instagram store is ambiguous until the platform is chosen.
+  await input.fill("17900000000000001");
+  await platform.selectOption("");
+  await save.click();
+  await expect(alert).toHaveText(claimsCopy.en.sourceErrors.binding_ambiguous);
+  expect(puts[5]).toMatchObject({ status: 409, answer: { code: "binding_ambiguous" } });
+  expect(JSON.parse(puts[5].body)).not.toHaveProperty("platform");
+  await platform.selectOption("instagram");
+  await save.click();
+  await expect(section.getByTestId("claims-source-status")).toContainText("Instagram post or reel");
+  expect(JSON.parse(puts[6].body)).toEqual({ input: "17900000000000001", private_reply: false, reply_locale: "zh-TW", active: true, expected_version: 3, platform: "instagram" });
+  expect(puts[6]).toMatchObject({ status: 200, answer: { platform: "instagram", object: "instagram", asset_id: igAsset, source_object_id: "17900000000000001", version: 1, verified: true } });
+  await expect(section.getByTestId("claims-source-verified")).toHaveText("Verified");
+  await expect(merchant.getByTestId("claims-feed")).toHaveText(claimsCopy.en.feedBound);
+  pass("comment source (Go + PG): a bare id is binding_ambiguous without the platform and re-binds to the Instagram media with it");
 
   // A failing source read must not take the rest of the claims panel down.
   readStatus = 503;
   await merchant.getByRole("button", { name: "Refresh facts" }).click();
   await expect(section.getByText(claimsCopy.en.sourceUnavailable)).toBeVisible();
   await expect(section.getByLabel("Post or media link or ID", { exact: true })).toHaveCount(0);
+  await expect(merchant.getByTestId("claims-feed")).toHaveCount(0);
   await expect(merchant.getByRole("heading", { level: 2, name: "Offers" })).toBeVisible();
   readStatus = 200;
   await merchant.getByRole("button", { name: "Refresh facts" }).click();
   await expect(section.getByTestId("claims-source-status")).toBeVisible();
-  pass("comment source: an unavailable source read is isolated to its own section");
-  await merchant.unroute(/\/api\/stores\/[^/]+\/live-sessions\/[^/]+\/claim-source$/);
+  pass("comment source: an unavailable source read is isolated to its own section (MOCK 503)");
+  await merchant.unroute(sourcePath);
 }
 
 test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MOCK ingress", async ({ browser }) => {
@@ -216,9 +253,11 @@ test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MO
   await expect(merchant.getByTestId("merchant-claims")).toBeVisible();
   await expect(merchant.getByRole("heading", { level: 1, name: "Keyword claims" })).toBeVisible();
   await expect(merchant.getByText(`Scene: ${scene}`)).toBeVisible();
-  await expect(merchant.getByText("MOCK capture — comments are not read automatically yet", { exact: true })).toBeVisible();
+  // Ruling t: the stale MOCK capture banner is gone; with no source bound it asks for one.
+  await expect(merchant.getByTestId("claims-feed")).toHaveText(claimsCopy.en.feedNone);
+  await expect(merchant.getByText("MOCK capture — comments are not read automatically yet")).toHaveCount(0);
   await expect(merchant.getByTestId("claims-window-state")).toHaveText("Closed");
-  pass("signed MOCK IdP merchant opens Studio › Claims for the scene with the MOCK label");
+  pass("signed MOCK IdP merchant opens Studio › Claims for the scene with the bind-a-post banner");
 
   await merchant.getByRole("button", { name: "Open claim window" }).click();
   await expect(merchant.getByTestId("claims-window-state")).toHaveText("Open");

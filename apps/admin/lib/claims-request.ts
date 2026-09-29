@@ -64,9 +64,17 @@ export function validClaimSourceInput(value: string): boolean {
   return text.length >= 1 && text.length <= claimSourceInputMax && !/[\s\p{Cc}]/u.test(text);
 }
 
-export type ClaimSourceForm = { input: string; private_reply: boolean; reply_locale: "zh-TW" | "zh-CN" | "en"; active: boolean };
-/** The exact PUT body: five keys, input trimmed, CAS version 0 for the first bind. */
+export type ClaimSourceForm = {
+  input: string; private_reply: boolean; reply_locale: "zh-TW" | "zh-CN" | "en"; active: boolean;
+  /** Ruling p: optional hint; "" = let Go take the platform from the pasted link. */
+  platform: "" | "facebook" | "instagram";
+};
+/**
+ * The exact PUT body: five keys, input trimmed, CAS version 0 for the first bind, plus the
+ * optional `platform` key (ruling p) only when a platform is chosen — never null or "".
+ */
 export function claimSourceBody(form: ClaimSourceForm, expectedVersion: number) {
-  return { input: form.input.trim(), private_reply: form.private_reply, reply_locale: form.reply_locale,
+  const body = { input: form.input.trim(), private_reply: form.private_reply, reply_locale: form.reply_locale,
     active: form.active, expected_version: expectedVersion };
+  return form.platform ? { ...body, platform: form.platform } : body;
 }

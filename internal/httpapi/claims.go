@@ -200,10 +200,10 @@ func claimsBodyRoute[T any](pool *pgxpool.Pool, required, oneOf []string, fn fun
 // claimsBody is the Studio strict decoder (JSON media type, ≤64 KiB, UTF-8, allowed keys
 // only, no duplicate keys, no unknown fields, no trailing data) plus: no top-level null
 // (400 invalid_json, so null never becomes a zero-value false/0/""), every required key
-// present and exactly one oneOf key present (422 invalid_request). It has written the error
-// response whenever it returns false.
-func claimsBody[T any](w http.ResponseWriter, r *http.Request, required, oneOf []string) (T, bool) {
-	fields := append(append([]string{}, required...), oneOf...)
+// present and exactly one oneOf key present (422 invalid_request); optional keys are allowed but
+// may be absent. It has written the error response whenever it returns false.
+func claimsBody[T any](w http.ResponseWriter, r *http.Request, required, oneOf []string, optional ...string) (T, bool) {
+	fields := append(append(append([]string{}, required...), oneOf...), optional...)
 	in, raw, ok := studioDecodeRaw[T](w, r, fields)
 	if !ok {
 		return in, false

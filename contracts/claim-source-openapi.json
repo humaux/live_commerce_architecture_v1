@@ -2,14 +2,14 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Live Commerce claim-source admin API",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Meta claims intake, merchant comment source (docs/delivery/units/claim-source.md, contracts/meta-claims-intake-v1.md section 2). Tenant and store come from the merchant session, never the request. DESIGN plus MOCK/REAL_PG gates; no LIVE Meta call exists in R1."
   },
   "paths": {
     "/v1/admin/stores/{store_id}/live-sessions/{session_id}/claim-source": {
       "get": {
         "operationId": "getClaimSource",
-        "description": "Requires live:read. The session's current comment source (active first, else most recently changed), or source null. Also served under /live/sessions/ instead of /live-sessions/.",
+        "description": "Requires live:read. The session's current comment source (active first, else most recently changed), or source null. platforms lists the store's enabled Meta binding providers.",
         "security": [
           {
             "merchantBearer": []
@@ -44,7 +44,8 @@
                   "type": "object",
                   "additionalProperties": false,
                   "required": [
-                    "source"
+                    "source",
+                    "platforms"
                   ],
                   "properties": {
                     "source": {
@@ -56,6 +57,19 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "platforms": {
+                      "type": "array",
+                      "uniqueItems": true,
+                      "maxItems": 2,
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "facebook",
+                          "instagram"
+                        ]
+                      },
+                      "description": "Providers with at least one enabled Meta binding in the store, sorted (ruling p: the UI shows its platform select only when both are present)."
                     }
                   }
                 }
@@ -164,7 +178,7 @@
       },
       "put": {
         "operationId": "putClaimSource",
-        "description": "Requires live:manage and integration:execute. Binds, re-binds (the current source is deactivated first, one active source per session), edits or deactivates the session's Meta comment source. The Page/Instagram asset is the store's single enabled Meta binding for the pasted platform. Errors: input_invalid, input_unresolvable (422); binding_missing, binding_ambiguous, source_conflict, version_changed, conflict (409). Also served under /live/sessions/.",
+        "description": "Requires live:manage and integration:execute. Binds, re-binds (the current source is deactivated first, one active source per session), edits or deactivates the session's Meta comment source. The Page/Instagram asset is the store's single enabled Meta binding for the pasted (or hinted) platform. Errors: input_invalid, input_unresolvable, invalid_request (422); binding_missing, binding_ambiguous, page_token_missing, source_conflict, version_changed, conflict (409). Canonical path only (ruling o: no /live/sessions/ alias).",
         "security": [
           {
             "merchantBearer": []
@@ -238,6 +252,14 @@
                     "type": "integer",
                     "minimum": 0,
                     "description": "Version of the source GET returned; 0 when none"
+                  },
+                  "platform": {
+                    "type": "string",
+                    "enum": [
+                      "facebook",
+                      "instagram"
+                    ],
+                    "description": "Optional (ruling p). Required when the store has both an enabled Facebook and an enabled Instagram binding and input is a bare numeric id (otherwise binding_ambiguous); when given it must agree with the parsed input (else input_invalid). Re-saving sends the saved source's platform."
                   }
                 }
               }
@@ -300,7 +322,7 @@
             }
           },
           "409": {
-            "description": "binding_missing | binding_ambiguous | source_conflict | version_changed | conflict",
+            "description": "binding_missing | binding_ambiguous | page_token_missing (private_reply=true without a registered Page token, ruling s) | source_conflict | version_changed | conflict",
             "content": {
               "application/json": {
                 "schema": {

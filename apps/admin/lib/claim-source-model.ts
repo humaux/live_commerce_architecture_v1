@@ -37,8 +37,18 @@ export function parseClaimSource(value: unknown): ClaimSource {
   return row as ClaimSource;
 }
 
-/** GET envelope: `{"source": null}` (nothing bound yet) or `{"source": {...}}`. */
-export function parseClaimSourceEnvelope(value: unknown): ClaimSource | null {
-  const row = record(value, ["source"]);
-  return row.source === null ? null : parseClaimSource(row.source);
+export type SourcePlatform = ClaimSource["platform"];
+export type ClaimSourceEnvelope = { source: ClaimSource | null; platforms: SourcePlatform[] };
+
+/**
+ * GET envelope: `source` null (nothing bound yet) or the bound source, plus `platforms`: the
+ * store's enabled Meta binding providers, sorted and distinct (ruling p: the platform select
+ * shows only when both are present).
+ */
+export function parseClaimSourceEnvelope(value: unknown): ClaimSourceEnvelope {
+  const row = record(value, ["source", "platforms"]);
+  const platforms = row.platforms;
+  if (!Array.isArray(platforms) || platforms.length > 2 ||
+    platforms.some((item, index) => (item !== "facebook" && item !== "instagram") || (index > 0 && platforms[index - 1] >= item))) invalid();
+  return { source: row.source === null ? null : parseClaimSource(row.source), platforms: platforms as SourcePlatform[] };
 }

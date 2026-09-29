@@ -1,5 +1,5 @@
 // Comment source pure contracts (claim-source HTTP interface): BFF grammar for exactly
-// GET/PUT claim-source, the pasted-input validator, the five-key PUT body, the closed
+// GET/PUT claim-source, the pasted-input validator, the five-key PUT body (+ optional platform), the closed
 // response parser, and three-locale copy completeness for every refusal code.
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -37,15 +37,18 @@ test("pasted input: one link or id, trimmed, no whitespace or controls, bounded"
   assert.equal(validClaimSourceInput("x".repeat(claimSourceInputMax)), true);
 });
 
-test("PUT body is exactly five keys with the trimmed input", () => {
-  const body = claimSourceBody({ input: " 123 ", private_reply: false, reply_locale: "en", active: true }, 0);
+test("PUT body is exactly five keys with the trimmed input, plus platform only when chosen (ruling p)", () => {
+  const body = claimSourceBody({ input: " 123 ", private_reply: false, reply_locale: "en", active: true, platform: "" }, 0);
   assert.equal(JSON.stringify(body), '{"input":"123","private_reply":false,"reply_locale":"en","active":true,"expected_version":0}');
+  const hinted = claimSourceBody({ input: "123", private_reply: false, reply_locale: "en", active: false, platform: "instagram" }, 3);
+  assert.equal(JSON.stringify(hinted), '{"input":"123","private_reply":false,"reply_locale":"en","active":false,"expected_version":3,"platform":"instagram"}');
 });
 
 test("source response parser is closed", () => {
   assert.deepEqual(parseClaimSource(wire), wire);
-  assert.equal(parseClaimSourceEnvelope({ source: null }), null);
-  assert.deepEqual(parseClaimSourceEnvelope({ source: wire }), wire);
+  assert.deepEqual(parseClaimSourceEnvelope({ source: null, platforms: [] }), { source: null, platforms: [] });
+  assert.deepEqual(parseClaimSourceEnvelope({ source: wire, platforms: ["facebook", "instagram"] }), { source: wire, platforms: ["facebook", "instagram"] });
+  assert.deepEqual(parseClaimSourceEnvelope({ source: null, platforms: ["instagram"] }).platforms, ["instagram"]);
   assert.deepEqual(parseClaimSource({ ...wire, platform: "instagram", object: "instagram", verified: true }).platform, "instagram");
   const { id: _id, ...missing } = wire;
   for (const bad of [
@@ -55,18 +58,21 @@ test("source response parser is closed", () => {
     { ...wire, reply_locale: "fr" }, { ...wire, source_object_id: "" }, { ...wire, source_object_id: "a b" },
     { ...wire, asset_id: "" }, { ...wire, updated_at: "soon" }, { ...wire, verified: null },
   ]) assert.throws(() => parseClaimSource(bad), /invalid_claim_source_response/, JSON.stringify(bad));
-  for (const bad of [null, [], {}, { source: undefined }, { source: null, extra: 1 }, { source: [] }])
+  for (const bad of [null, [], {}, { source: undefined }, { source: null }, { source: null, platforms: [], extra: 1 }, { source: [], platforms: [] },
+    { source: null, platforms: null }, { source: null, platforms: ["tiktok"] }, { source: null, platforms: ["instagram", "facebook"] },
+    { source: null, platforms: ["facebook", "facebook"] }, { source: null, platforms: "facebook" }])
     assert.throws(() => parseClaimSourceEnvelope(bad), /invalid_claim_source_response/, JSON.stringify(bad));
 });
 
 test("every refusal code and source label is worded in all three locales", () => {
-  const codes = ["input_invalid", "input_unresolvable", "binding_missing", "binding_ambiguous", "source_conflict", "version_changed"];
+  const codes = ["input_invalid", "input_unresolvable", "binding_missing", "binding_ambiguous", "page_token_missing", "source_conflict", "version_changed"];
   const seen = new Set<string>();
   for (const locale of ["en", "zh-CN", "zh-TW"] as const) {
     const c = claimsCopy[locale];
     assert.deepEqual(Object.keys(c.sourceErrors).sort(), [...codes].sort());
     for (const text of [...Object.values(c.sourceErrors), c.sourceForbidden, c.sourceUnavailable, c.conflict.source,
-      c.source, c.sourceIntro, c.sourceInput, c.sourceSave, c.sourceNone, c.sourceUnverified, c.sourcePlatform.facebook, c.sourcePlatform.instagram]) {
+      c.source, c.sourceIntro, c.sourceInput, c.sourceSave, c.sourceNone, c.sourceUnverified, c.sourcePlatform.facebook, c.sourcePlatform.instagram,
+      c.sourcePlatformLabel, c.sourcePlatformAuto, c.sourcePlatformHint, c.feedNone, c.feedBound, c.sourceCapped]) {
       assert.ok(text.length >= 2, text);
       seen.add(`${locale}:${text}`);
     }
@@ -76,4 +82,17 @@ test("every refusal code and source label is worded in all three locales", () =>
   for (const locale of ["zh-CN", "zh-TW"] as const)
     for (const code of codes) assert.notEqual((claimsCopy[locale].sourceErrors as Record<string, string>)[code], (claimsCopy.en.sourceErrors as Record<string, string>)[code]);
   assert.notEqual(claimsCopy["zh-CN"].sourceErrors.input_invalid, claimsCopy["zh-TW"].sourceErrors.input_invalid);
+});
+
+test("ruling t: defaults and replaced MOCK banner copy", () => {
+  assert.equal(claimsCopy.en.feedNone, "Bind a Facebook or Instagram post to read comments automatically");
+  assert.equal(claimsCopy.en.feedBound, "Reading comments from the bound post");
+  assert.equal(claimsCopy.en.sourceCapped, "Skipped: intake limit reached");
+  for (const locale of ["en", "zh-CN", "zh-TW"] as const) {
+    const c = claimsCopy[locale] as Record<string, unknown>;
+    assert.equal("mock" in c, false, `${locale} still carries the stale MOCK banner`);
+    for (const text of [c.feedNone, c.feedBound, c.sourceCapped]) assert.doesNotMatch(String(text), /MOCK/);
+  }
+  for (const locale of ["zh-CN", "zh-TW"] as const)
+    for (const key of ["feedNone", "feedBound", "sourceCapped"] as const) assert.notEqual(claimsCopy[locale][key], claimsCopy.en[key]);
 });

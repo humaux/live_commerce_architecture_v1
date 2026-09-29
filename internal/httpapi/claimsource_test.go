@@ -23,7 +23,7 @@ const claimSourceBody = `{"input":"https://www.facebook.com/somepage/posts/123",
 
 func TestClaimSourceTransportRulesBeforeDatabase(t *testing.T) {
 	h := claimsHandler(t)
-	for _, spelling := range []string{"live-sessions", "live/sessions"} {
+	for _, spelling := range []string{"live-sessions"} { // ruling o: the only spelling
 		path := "/v1/admin/stores/" + claimsStore + "/" + spelling + "/" + claimsSession + "/claim-source"
 		noKey := func(r *http.Request) { r.Header.Del("Idempotency-Key") }
 		for _, tc := range []struct {
@@ -53,6 +53,9 @@ func TestClaimSourceTransportRulesBeforeDatabase(t *testing.T) {
 			{"missing active", "PUT", path, `{"input":"1","private_reply":true,"reply_locale":"en","expected_version":0}`, nil, 422, "invalid_request"},
 			{"missing version", "PUT", path, `{"input":"1","private_reply":true,"reply_locale":"en","active":true}`, nil, 422, "invalid_request"},
 			{"no bearer", "PUT", path, claimSourceBody, func(r *http.Request) { r.Header.Del("Authorization") }, 401, "unauthorized"},
+			{"platform admitted (ruling p)", "PUT", path, `{"input":"1","private_reply":false,"reply_locale":"en","active":true,"expected_version":0,"platform":"instagram"}`, nil, 401, "unauthorized"},
+			{"null platform", "PUT", path, `{"input":"1","private_reply":false,"reply_locale":"en","active":true,"expected_version":0,"platform":null}`, nil, 400, "invalid_json"},
+			{"platform not a string", "PUT", path, `{"input":"1","private_reply":false,"reply_locale":"en","active":true,"expected_version":0,"platform":1}`, nil, 400, "invalid_json"},
 		} {
 			t.Run(spelling+"/"+tc.name, func(t *testing.T) {
 				w := claimsCall(h, tc.method, tc.path, tc.body, tc.edit)
@@ -73,6 +76,17 @@ func TestClaimSourceTransportRulesBeforeDatabase(t *testing.T) {
 	}
 }
 
+// Ruling o: the /live/sessions/ alias is gone; only live-sessions serves the resource.
+func TestClaimSourceAliasRemoved(t *testing.T) {
+	h := claimsHandler(t)
+	for _, method := range []string{"GET", "PUT"} {
+		w := claimsCall(h, method, "/v1/admin/stores/"+claimsStore+"/live/sessions/"+claimsSession+"/claim-source", claimSourceBody, nil)
+		if w.Code != http.StatusNotFound {
+			t.Fatalf("%s alias: status=%d body=%s", method, w.Code, w.Body.String())
+		}
+	}
+}
+
 // Every claim-source error must reach the JSON body under its own code and message (the httperror table
 // rewrites unknown codes to "internal": ruling 15 pattern).
 func TestClaimSourceErrorCodesReachJSONBody(t *testing.T) {
@@ -86,6 +100,7 @@ func TestClaimSourceErrorCodesReachJSONBody(t *testing.T) {
 		claims.ErrBindingAmbiguous:  {409, "binding_ambiguous"},
 		claims.ErrSourceConflict:    {409, "source_conflict"},
 		claims.ErrVersionChanged:    {409, "version_changed"},
+		claims.ErrPageTokenMissing:  {409, "page_token_missing"},
 		platform.ErrForbidden:       {403, "forbidden"},
 		command.ErrNotFound:         {404, "not_found"},
 		errors.New("driver text"):   {503, "unavailable"},

@@ -1,8 +1,7 @@
 // claimsource.go owns the merchant comment-source HTTP adapter (meta-claims-intake-v1 §2, ruling h;
 // docs/delivery/units/claim-source.md, frozen interface): GET and PUT
-// /v1/admin/stores/{store_id}/live-sessions/{session_id}/claim-source, also served under the
-// spelling /live/sessions/ of the unit brief. Both bind a live session to a pasted Facebook
-// post / live video or Instagram media.
+// /v1/admin/stores/{store_id}/live-sessions/{session_id}/claim-source (ruling o: the only spelling, matching
+// the Studio/claims routes). Both bind a live session to a pasted Facebook post / live video or Instagram media.
 //
 // Non-goals: no parsing or binding rule (internal/claims.ParseClaimSourceInput, PutClaimSource and the
 // live.put_claim_source definer decide every rule and permission), no Graph call, no logging of the
@@ -29,31 +28,28 @@ import (
 	"livecommerce/internal/platform"
 )
 
-// claimSourceBodyFields is the exact PUT body; every key is required and none may be null.
+// claimSourceBodyFields is the exact PUT body; every key is required and none may be null. "platform"
+// is the only optional key (ruling p), also never null.
 var claimSourceBodyFields = []string{"input", "private_reply", "reply_locale", "active", "expected_version"}
 
 func registerClaimSourceRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
-	for _, path := range []string{
-		"/v1/admin/stores/{store_id}/live-sessions/{session_id}/claim-source",
-		"/v1/admin/stores/{store_id}/live/sessions/{session_id}/claim-source",
-	} {
-		// GET: the session's current source or {"source": null} (live:read).
-		mux.HandleFunc("GET "+path, claimsRoute(http.MethodGet, false,
-			scopedAs(pool, "live:read", claimSourceClassify, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
-				return claims.GetClaimSource(ctx, tx, s, bearerToken(r), r.PathValue("session_id"))
-			})))
-		// PUT: bind, re-bind, edit or deactivate (live:manage, integration:execute; version CAS).
-		mux.HandleFunc("PUT "+path, claimsRoute(http.MethodPut, false, func(w http.ResponseWriter, r *http.Request) {
-			in, ok := claimsBody[claims.ClaimSourceInput](w, r, claimSourceBodyFields, nil)
-			if !ok {
-				return
-			}
-			scopedAs(pool, "live:manage", claimSourceClassify, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
-				return claims.PutClaimSource(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), r.PathValue("session_id"), in)
-			})(w, r)
-		}))
-		mux.HandleFunc(path, studioRoute("", false, nil)) // methodless fallback keeps 405 inside the private boundary
-	}
+	const path = "/v1/admin/stores/{store_id}/live-sessions/{session_id}/claim-source"
+	// GET: the session's current source or {"source": null} (live:read).
+	mux.HandleFunc("GET "+path, claimsRoute(http.MethodGet, false,
+		scopedAs(pool, "live:read", claimSourceClassify, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
+			return claims.GetClaimSource(ctx, tx, s, bearerToken(r), r.PathValue("session_id"))
+		})))
+	// PUT: bind, re-bind, edit or deactivate (live:manage, integration:execute; version CAS).
+	mux.HandleFunc("PUT "+path, claimsRoute(http.MethodPut, false, func(w http.ResponseWriter, r *http.Request) {
+		in, ok := claimsBody[claims.ClaimSourceInput](w, r, claimSourceBodyFields, nil, "platform")
+		if !ok {
+			return
+		}
+		scopedAs(pool, "live:manage", claimSourceClassify, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
+			return claims.PutClaimSource(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), r.PathValue("session_id"), in)
+		})(w, r)
+	}))
+	mux.HandleFunc(path, studioRoute("", false, nil)) // methodless fallback keeps 405 inside the private boundary
 }
 
 // claimSourceClassify maps the claim-source errors to their frozen codes, then the claims table
@@ -72,6 +68,8 @@ func claimSourceClassify(err error) (int, string) {
 		return http.StatusConflict, "source_conflict"
 	case errors.Is(err, claims.ErrVersionChanged):
 		return http.StatusConflict, "version_changed"
+	case errors.Is(err, claims.ErrPageTokenMissing):
+		return http.StatusConflict, "page_token_missing"
 	}
 	return claimsClassify(err)
 }

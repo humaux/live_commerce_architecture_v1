@@ -66,7 +66,7 @@ func write(w http.ResponseWriter, status int, code string, retryable bool) {
 		"refund_blocked_review": "Refund is blocked by an open payment review.",
 		"refund_limit":          "Refund limit reached for this payment.",
 		// manual-fulfilment-v1 §5.1.
-		"version_changed":       "Shipment changed since it was loaded.",
+		"version_changed":       "This item changed since it was loaded.",
 		"not_shippable":         "Order cannot be shipped in its current state.",
 		"invalid_carrier":       "Carrier is not valid.",
 		"invalid_tracking":      "Tracking number is not valid.",
@@ -79,6 +79,7 @@ func write(w http.ResponseWriter, status int, code string, retryable bool) {
 		"binding_missing":    "No enabled Meta connection is ready for this post.",
 		"binding_ambiguous":  "Several Meta connections are enabled; the post cannot be assigned to one.",
 		"source_conflict":    "This post already feeds another live session.",
+		"page_token_missing": "Private replies need a registered Page token for this connection.",
 	}
 	message, ok := messages[code]
 	if !ok {

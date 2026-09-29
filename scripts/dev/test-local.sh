@@ -125,7 +125,7 @@ if [[ "$test_mode" == --browser-live-claims ]]; then
   test -f tests/admin/claims-ui.spec.ts
   test -f tests/foundation/browser_live_claims_test.go
   grep -q '^func TestBrowserLiveClaimsRealChain' tests/foundation/browser_live_claims_test.go
-  node --test --experimental-strip-types tests/admin/claims-request.test.ts apps/storefront/tests/claim.test.mjs
+  node --test --experimental-strip-types tests/admin/claims-request.test.ts tests/admin/claim-source.test.ts apps/storefront/tests/claim.test.mjs
   mkdir -p output/playwright
 fi
 if [[ "$test_mode" == --browser-input-delivery ]]; then

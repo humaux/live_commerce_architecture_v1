@@ -10,7 +10,7 @@
 //
 // Depends on: command (Run, Audit, sentinels), platform (Scope), tables as commerce_runtime under
 // store-scoped RLS: live.claim_sources (read), integration.bindings (read the store's enabled Meta
-// bindings to pick the asset), live.claim_windows (insert the CLOSED default row when the session has
+// bindings to pick the asset, and list their platforms for GET), live.claim_windows (insert the CLOSED default row when the session has
 // none, because live.claim_sources references it), live.sessions (existence); a per-session advisory
 // lock (claim-source-put|tenant|store|session) serializing PUTs so expected_version is a real CAS; SQL function
 // live.put_claim_source (definer commerce_claims_writer: principal_holds live:manage +
@@ -44,6 +44,7 @@ var (
 	ErrBindingAmbiguous  = errors.New("claim source binding ambiguous")
 	ErrSourceConflict    = errors.New("claim source bound to another session")
 	ErrVersionChanged    = errors.New("claim source version changed")
+	ErrPageTokenMissing  = errors.New("claim source private reply without page token") // ruling s
 )
 
 // ClaimSource is the wire shape of one binding (frozen HTTP interface).
@@ -63,18 +64,24 @@ type ClaimSource struct {
 	UpdatedAt      time.Time `json:"updated_at"`
 }
 
-// ClaimSourceView is the GET envelope.
+// ClaimSourceView is the GET envelope. Platforms lists the providers ("facebook", "instagram", sorted,
+// never null) with at least one enabled Meta binding in the store, so the UI shows its platform select
+// only when both exist (ruling p).
 type ClaimSourceView struct {
-	Source *ClaimSource `json:"source"`
+	Source    *ClaimSource `json:"source"`
+	Platforms []string     `json:"platforms"`
 }
 
-// ClaimSourceInput is the exact PUT body.
+// ClaimSourceInput is the exact PUT body. Platform is the optional hint of ruling p ("" | "facebook" |
+// "instagram"): needed only for a bare numeric id on a store with both an enabled Facebook and an
+// enabled Instagram binding; when given it must agree with the parsed input.
 type ClaimSourceInput struct {
 	Input           string `json:"input"`
 	PrivateReply    bool   `json:"private_reply"`
 	ReplyLocale     string `json:"reply_locale"`
 	Active          bool   `json:"active"`
 	ExpectedVersion int64  `json:"expected_version"`
+	Platform        string `json:"platform,omitempty"`
 }
 
 // ClaimSourceRef is a parsed paste. Platform is "" for a bare numeric id (either Meta binding may
@@ -94,6 +101,22 @@ var (
 	pageNameRe  = regexp.MustCompile(`^[A-Za-z0-9.\-]{1,80}$`)
 )
 
+// withPlatform applies the optional PUT platform hint (ruling p) to a parsed paste: an unknown value is
+// invalid, a hint that contradicts the parsed platform is input_invalid, otherwise it fills a bare id.
+func withPlatform(ref ClaimSourceRef, platform string) (ClaimSourceRef, error) {
+	switch platform {
+	case "":
+		return ref, nil
+	case "facebook", "instagram":
+		if ref.Platform != "" && ref.Platform != platform {
+			return ClaimSourceRef{}, ErrInputInvalid
+		}
+		ref.Platform = platform
+		return ref, nil
+	}
+	return ClaimSourceRef{}, command.ErrInvalid
+}
+
 // ParseClaimSourceInput is pure and never resolves anything over the network. Accepted: a numeric id
 // ("123" or a delivered post id "<page>_<post>"), facebook.com/<page>/posts/<id>, facebook.com/<page>/videos/<id>
 // (hosts facebook.com, www., m., web.); rejected as ErrInputUnresolvable (would need a Graph call or a redirect):
@@ -108,7 +131,7 @@ func ParseClaimSourceInput(input string) (ClaimSourceRef, error) {
 		return ClaimSourceRef{Item: s}, nil
 	}
 	if m := postIDRe.FindStringSubmatch(s); m != nil {
-		return ClaimSourceRef{Page: m[1], Item: m[2]}, nil
+		return ClaimSourceRef{Platform: "facebook", Page: m[1], Item: m[2]}, nil // "<page>_<post>" exists only on Facebook
 	}
 	raw := s
 	if !strings.Contains(raw, "://") {
@@ -178,7 +201,7 @@ func objectFor(ref ClaimSourceRef, provider, asset string) (object, id string, e
 }
 
 // GetClaimSource returns the session's current source (live:read): the active one, else the most
-// recently changed, else nil. Read-only, no locks. Called by GET claim-source.
+// recently changed, else nil, plus the store's enabled Meta binding platforms. Read-only, no locks. Called by GET claim-source.
 func GetClaimSource(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, sessionID string) (ClaimSourceView, error) {
 	if !command.ValidID(sessionID) {
 		return ClaimSourceView{}, command.ErrInvalid
@@ -193,10 +216,21 @@ func GetClaimSource(ctx context.Context, tx pgx.Tx, scope platform.Scope, token,
 	if err != nil {
 		return ClaimSourceView{}, err
 	}
+	platforms := []string{}
+	rows, err := tx.Query(ctx, `SELECT DISTINCT provider FROM integration.bindings
+		WHERE tenant_id=$1 AND store_id=$2 AND enabled AND provider IN ('facebook','instagram') ORDER BY provider`,
+		scope.TenantID, scope.StoreID)
+	if err != nil {
+		return ClaimSourceView{}, mapError(err)
+	}
+	platforms, err = pgx.AppendRows(platforms, rows, pgx.RowTo[string])
+	if err != nil {
+		return ClaimSourceView{}, mapError(err)
+	}
 	if err := authorize(ctx, tx, scope, token, readPermission); err != nil {
 		return ClaimSourceView{}, err
 	}
-	return ClaimSourceView{Source: current}, nil
+	return ClaimSourceView{Source: current, Platforms: platforms}, nil
 }
 
 // sourceColumns: verified is derived (facebook stays unverified until probe U1).
@@ -269,6 +303,9 @@ func PutClaimSource(ctx context.Context, tx pgx.Tx, scope platform.Scope, token,
 	if err != nil {
 		return ClaimSource{}, err
 	}
+	if ref, err = withPlatform(ref, in.Platform); err != nil {
+		return ClaimSource{}, err
+	}
 	if !command.ValidID(sessionID) || in.ExpectedVersion < 0 || in.ExpectedVersion == math.MaxInt64 ||
 		(in.ReplyLocale != "zh-TW" && in.ReplyLocale != "zh-CN" && in.ReplyLocale != "en") {
 		return ClaimSource{}, command.ErrInvalid
@@ -284,7 +321,8 @@ func PutClaimSource(ctx context.Context, tx pgx.Tx, scope platform.Scope, token,
 		ReplyLocale     string `json:"reply_locale"`
 		Active          bool   `json:"active"`
 		ExpectedVersion int64  `json:"expected_version"`
-	}{scope.PrincipalID, sessionID, strings.TrimSpace(in.Input), in.PrivateReply, in.ReplyLocale, in.Active, in.ExpectedVersion}
+		Platform        string `json:"platform"`
+	}{scope.PrincipalID, sessionID, strings.TrimSpace(in.Input), in.PrivateReply, in.ReplyLocale, in.Active, in.ExpectedVersion, in.Platform}
 	var out ClaimSource
 	err = command.Run(ctx, tx, scope, "live.claim_source.put", key, request, &out, func() error {
 		// One writer per session: without it two PUTs with the same expected_version both see "no
@@ -417,8 +455,10 @@ func mapSourceError(err error) error {
 			switch pg.Message {
 			case "claim source version changed":
 				return ErrVersionChanged
-			case "claim source route mismatch", "claim source binding mismatch", "claim source has no page credential":
+			case "claim source route mismatch", "claim source binding mismatch":
 				return ErrBindingMissing
+			case "claim source has no page credential": // ruling s: distinct from binding_missing
+				return ErrPageTokenMissing
 			}
 			return command.ErrConflict
 		}

@@ -14,6 +14,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -128,6 +129,13 @@ func csBody(input string, private bool, locale string, active bool, expected int
 	return string(raw)
 }
 
+// csBodyP is csBody plus the optional platform hint of ruling p.
+func csBodyP(input string, private bool, locale string, active bool, expected int64, platform string) string {
+	raw, _ := json.Marshal(map[string]any{"input": input, "private_reply": private, "reply_locale": locale, "active": active,
+		"expected_version": expected, "platform": platform})
+	return string(raw)
+}
+
 func csWant(t *testing.T, what string, status int, out map[string]any, raw []byte, wantStatus int, wantCode string) {
 	t.Helper()
 	if status != wantStatus || (wantCode != "" && out["code"] != wantCode) {
@@ -145,9 +153,16 @@ func TestClaimSourceCS01(t *testing.T) {
 	key := func() string { return t04Key("cs-key") }
 
 	// GET before any bind.
+	// Ruling p: platforms lists the store's enabled Meta binding providers (both here, so the UI shows its select).
 	status, out, raw := e.call(t, "GET", e.store, s1, e.token, "", "")
-	if status != 200 || len(out) != 1 || out["source"] != nil {
+	if status != 200 || len(out) != 2 || out["source"] != nil || fmt.Sprint(out["platforms"]) != "[facebook instagram]" {
 		t.Fatalf("empty GET: %d %s", status, raw)
+	}
+	if status, out, raw := e.call(t, "GET", e.igOnly, e.session(t, e.igOnly), e.token, "", ""); status != 200 || fmt.Sprint(out["platforms"]) != "[instagram]" {
+		t.Fatalf("instagram-only GET: %d %s", status, raw)
+	}
+	if status, out, raw := e.call(t, "GET", e.bare, e.session(t, e.bare), e.token, "", ""); status != 200 || !bytes.Contains(raw, []byte(`"platforms":[]`)) || len(out) != 2 {
+		t.Fatalf("no-binding GET: %d %s", status, raw)
 	}
 
 	// Bind (the session has no claim window row yet: the default CLOSED row is created).
@@ -170,8 +185,8 @@ func TestClaimSourceCS01(t *testing.T) {
 	if status != 200 || src == nil || src["id"] != firstID || src["version"] != float64(1) {
 		t.Fatalf("GET after bind: %d %s", status, raw2)
 	}
-	// The alternate route spelling of the brief serves the same resource.
-	if status, _, raw3 := e.call(t, "GET", e.store, s1, e.token, "", "", "live/sessions"); status != 200 || !bytes.Contains(raw3, []byte(firstID)) {
+	// Ruling o: live-sessions is the only spelling; the /live/sessions/ alias is gone.
+	if status, _, raw3 := e.call(t, "GET", e.store, s1, e.token, "", "", "live/sessions"); status != 404 {
 		t.Fatalf("alias GET: %d %s", status, raw3)
 	}
 
@@ -189,9 +204,10 @@ func TestClaimSourceCS01(t *testing.T) {
 		t.Fatalf("audit rows=%d, want 1 (the replay writes none)", n)
 	}
 
-	// private_reply needs a current Page token: binding_missing until the registrar stores one.
+	// private_reply needs a current Page token: page_token_missing (ruling s, distinct from binding_missing)
+	// until the registrar stores one.
 	status, out, raw = e.call(t, "PUT", e.store, s1, e.token, key(), csBody(post, true, "zh-TW", true, 1))
-	csWant(t, "private reply without token", status, out, raw, 409, "binding_missing")
+	csWant(t, "private reply without token", status, out, raw, 409, "page_token_missing")
 	regP, _ := lcPrincipal(t, f, f.tenantA, []string{e.store}, "store:read", "integration:manage")
 	if err := e.m.registrar.QueryRow(ctx, `SELECT integration.register_meta_page_token($1,$2,$3,$4,'facebook',$5,0,'k1',$6,$7,ARRAY['pages_messaging'])`,
 		f.tenantA, e.store, regP, e.binding, e.asset, randomBytes(12), randomBytes(48)).Scan(new(int64)); err != nil {
@@ -266,6 +282,23 @@ func TestClaimSourceCS01(t *testing.T) {
 	csWant(t, "facebook url selects binding", status, out, raw, 200, "")
 	if out["platform"] != "facebook" {
 		t.Fatalf("%s", raw)
+	}
+	// Ruling p: re-saving the stored Facebook source_object_id ("<page>_<post>") with its platform edits the same row.
+	status, out, raw = e.call(t, "PUT", e.store, s3, e.token, key(), csBodyP(e.asset+"_999", false, "en", false, 1, "facebook"))
+	csWant(t, "re-save stored facebook id", status, out, raw, 200, "")
+	if out["source_object_id"] != e.asset+"_999" || out["version"] != float64(2) || out["active"] != false {
+		t.Fatalf("re-saved source: %s", raw)
+	}
+	// Ruling p: the platform hint resolves a bare id on a two-platform store; a contradicting hint is input_invalid.
+	s5 := e.session(t, e.store)
+	status, out, raw = e.call(t, "PUT", e.store, s5, e.token, key(), csBodyP("https://facebook.com/x/posts/5", false, "en", true, 0, "instagram"))
+	csWant(t, "contradicting platform", status, out, raw, 422, "input_invalid")
+	status, out, raw = e.call(t, "PUT", e.store, s5, e.token, key(), csBodyP("17900000000000005", false, "en", true, 0, "tiktok"))
+	csWant(t, "unknown platform", status, out, raw, 422, "invalid_request")
+	status, out, raw = e.call(t, "PUT", e.store, s5, e.token, key(), csBodyP("17900000000000005", false, "en", true, 0, "instagram"))
+	csWant(t, "bare id with instagram hint", status, out, raw, 200, "")
+	if out["platform"] != "instagram" || out["object"] != "instagram" || out["asset_id"] != e.igAsset || out["source_object_id"] != "17900000000000005" {
+		t.Fatalf("instagram source on a two-platform store: %s", raw)
 	}
 	// A store whose only Meta binding is Instagram takes the bare numeric media id as delivered (media.id).
 	sIG := e.session(t, e.igOnly)

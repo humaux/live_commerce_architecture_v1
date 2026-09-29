@@ -4,6 +4,8 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"livecommerce/internal/command"
 )
 
 // TestParseClaimSourceInput is the frozen parser table of docs/delivery/units/claim-source.md.
@@ -14,7 +16,7 @@ func TestParseClaimSourceInput(t *testing.T) {
 	}{
 		{"1234567890", ClaimSourceRef{Item: "1234567890"}},
 		{"  1234567890 \n", ClaimSourceRef{Item: "1234567890"}},
-		{"111_222", ClaimSourceRef{Page: "111", Item: "222"}},
+		{"111_222", ClaimSourceRef{Platform: "facebook", Page: "111", Item: "222"}}, // only Facebook delivers <page>_<post>
 		{"https://www.facebook.com/somepage/posts/987654321", ClaimSourceRef{Platform: "facebook", Item: "987654321"}},
 		{"https://facebook.com/111222333/posts/987654321?comment_id=5&fbclid=x#frag", ClaimSourceRef{Platform: "facebook", Page: "111222333", Item: "987654321"}},
 		{"facebook.com/some.page-1/videos/555444333", ClaimSourceRef{Platform: "facebook", Item: "555444333"}},
@@ -90,6 +92,34 @@ func TestObjectFor(t *testing.T) {
 		object, id, err := objectFor(c.ref, c.provider, c.asset)
 		if object != c.object || id != c.id || !errors.Is(err, c.err) && err != c.err {
 			t.Errorf("%s: got (%q,%q,%v) want (%q,%q,%v)", c.name, object, id, err, c.object, c.id, c.err)
+		}
+	}
+}
+
+// Ruling p: the optional platform hint fills a bare id, must agree with a parsed platform, and has a closed set.
+func TestWithPlatform(t *testing.T) {
+	bare := ClaimSourceRef{Item: "17900000000000001"}
+	fbURL := ClaimSourceRef{Platform: "facebook", Item: "2"}
+	postID, _ := ParseClaimSourceInput("111_222") // a re-saved Facebook source_object_id
+	cases := []struct {
+		name, platform string
+		ref, want      ClaimSourceRef
+		err            error
+	}{
+		{"no hint keeps a bare id open", "", bare, bare, nil},
+		{"instagram hint on a bare id", "instagram", bare, ClaimSourceRef{Platform: "instagram", Item: bare.Item}, nil},
+		{"facebook hint on a bare id", "facebook", bare, ClaimSourceRef{Platform: "facebook", Item: bare.Item}, nil},
+		{"agreeing hint", "facebook", fbURL, fbURL, nil},
+		{"re-saved facebook post id with its platform", "facebook", postID, postID, nil},
+		{"contradicting hint", "instagram", fbURL, ClaimSourceRef{}, ErrInputInvalid},
+		{"instagram hint on a facebook post id", "instagram", postID, ClaimSourceRef{}, ErrInputInvalid},
+		{"unknown platform", "tiktok", bare, ClaimSourceRef{}, command.ErrInvalid},
+		{"case matters", "Facebook", bare, ClaimSourceRef{}, command.ErrInvalid},
+	}
+	for _, c := range cases {
+		got, err := withPlatform(c.ref, c.platform)
+		if got != c.want || !errors.Is(err, c.err) && err != c.err {
+			t.Errorf("%s: got (%+v,%v) want (%+v,%v)", c.name, got, err, c.want, c.err)
 		}
 	}
 }
