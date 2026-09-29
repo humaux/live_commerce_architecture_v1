@@ -36,6 +36,8 @@ import (
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/integrations/psp/stripe/stripetest"
+	"livecommerce/internal/inventory"
+	"livecommerce/internal/platform"
 )
 
 type rfxEnv struct {
@@ -94,9 +96,32 @@ func (e *rfxEnv) pay(t *testing.T, s sstStore, endpoint, secret string) rfxOrder
 	return rfxOrder{s: s, attempt: res.AttemptID, session: session, pi: e.fake.PaymentIntentForSession(session), order: s.p.hold.OrderID, endpoint: endpoint, secret: secret, captured: captured}
 }
 
+// ensureStock tops up the store's single SKU through the real inventory adjustment API (merchant
+// scope, ledger row) when fewer than 4 units are available: every order holds 2 of the 10 units
+// psSetup provisions, so a gate with many orders in one store needs more stock.
+func (e *rfxEnv) ensureStock(t *testing.T, o rfxOrder) {
+	t.Helper()
+	p := o.s.p
+	var available, version int64
+	if err := e.f.owner.QueryRow(context.Background(), `SELECT on_hand-reserved-allocated-unavailable,version FROM inventory.balances WHERE tenant_id=$1 AND store_id=$2 AND sku_id=$3`,
+		p.f.tenantA, p.f.storeA1, p.stock.skus[0].ID).Scan(&available, &version); err != nil {
+		t.Fatalf("read balance: %v", err)
+	}
+	if available >= 4 {
+		return
+	}
+	_, err := t04Scoped(context.Background(), p.f, p.f.tokens["a"], p.f.storeA1, "inventory:write", func(tx pgx.Tx, scope platform.Scope) (inventory.Balance, error) {
+		return inventory.AdjustOnHand(context.Background(), tx, scope, t04Key("rfx-restock"), inventory.Adjustment{WarehouseID: p.stock.warehouse.ID, SKUID: p.stock.skus[0].ID, Delta: 200, ExpectedVersion: version, Reason: "rfx fixture restock"})
+	})
+	if err != nil {
+		t.Fatalf("restock: %v", err)
+	}
+}
+
 // payMore adds another buyer/order to the same store and pays it (same account, same endpoint).
 func (e *rfxEnv) payMore(t *testing.T, o rfxOrder) rfxOrder {
 	t.Helper()
+	e.ensureStock(t, o)
 	s := o.s
 	s.p = sstMoreHold(t, o.s.p)
 	return e.pay(t, s, o.endpoint, o.secret)
@@ -366,6 +391,14 @@ func (e *rfxEnv) distinctCreateKeys() map[string]int {
 }
 
 func (e *rfxEnv) startWorker(t *testing.T) func() { return e.start(t, true) }
+
+// wakeAllRefunds makes every sleeping refund/signal/reconcile job of the order's refunds due now (no *testing.T:
+// used from HTTP control handlers of the browser gates).
+func (e *rfxEnv) wakeAllRefunds(o rfxOrder) {
+	_, _ = e.f.owner.Exec(context.Background(), `UPDATE river_payment.river_job SET state='available',scheduled_at=clock_timestamp()
+	 WHERE kind IN ('payment_refund_v1','payment_signal_v1','payment_reconcile_v1') AND state IN ('scheduled','retryable')
+	 AND (args->>'operation_id'=$1 OR args->>'operation_id' IN (SELECT id::text FROM payments.stripe_refunds WHERE attempt_id=$1::uuid))`, o.attempt)
+}
 
 // stopAllWorkers stops every payment worker this env started (each stop func is idempotent).
 func (e *rfxEnv) stopAllWorkers() {

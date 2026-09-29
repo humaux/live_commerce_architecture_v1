@@ -216,8 +216,8 @@ func TestStripeRF05HappyMock(t *testing.T) {
 	t.Run("full refund: REQUESTED -> SUCCEEDED -> REFUNDED, one key, pre-send read, no side effects", func(t *testing.T) {
 		o := e.base
 		before := e.fingerprint(t, o)
-		stockBefore := e.stock(t, o.s)
-		if stockBefore != sflAllocd {
+		stockBefore := e.stock(t, o.s) // store-wide balance + this order's state: relative, other orders share the SKU
+		if stockBefore.order != "CONFIRMED" || stockBefore.reservation != "COMMITTED" {
 			t.Fatalf("fixture: %+v", stockBefore)
 		}
 		id := e.mustRefund(t, o, o.captured, "requested_by_customer")
@@ -251,7 +251,7 @@ func TestStripeRF05HappyMock(t *testing.T) {
 		// Stock and order state are untouched (RD6); the fingerprint covers ledger, balances,
 		// reservations, order rows, work items and capture facts.
 		e.assertUnchanged(t, o, before, "a full refund")
-		e.wantStock(t, o.s, sflAllocd)
+		e.wantStock(t, o.s, stockBefore)
 		var commercial, fulfillment string
 		if err := e.f.owner.QueryRow(context.Background(), `SELECT commercial_state,fulfillment_state FROM checkout.orders WHERE id=$1`, o.order).Scan(&commercial, &fulfillment); err != nil || commercial != "CONFIRMED" || fulfillment != "MANUAL_UNASSIGNED" {
 			t.Fatalf("order state after refund: %s/%s %v", commercial, fulfillment, err)
@@ -310,6 +310,7 @@ func TestStripeRF05HappyMock(t *testing.T) {
 		o := e.fresh(t)
 		e.grant(t, o, "orders:read", "payments:refund")
 		before := e.fingerprint(t, o)
+		stockBefore := e.stock(t, o.s)
 		first := e.mustRefund(t, o, 1000, "requested_by_customer")
 		e.awaitRefundFact(t, first, o.attempt, "SUCCEEDED")
 		e.wantMoney(t, o, "PARTIALLY_REFUNDED", 1000, 0)
@@ -336,7 +337,7 @@ func TestStripeRF05HappyMock(t *testing.T) {
 		e.assertSingleKeyPerRefund(t)
 		e.assertPreSendReads(t)
 		e.assertUnchanged(t, o, before, "two partial refunds")
-		e.wantStock(t, o.s, sflAllocd)
+		e.wantStock(t, o.s, stockBefore)
 	})
 }
 

@@ -84,10 +84,14 @@ func TestManualFulfilmentMF01Validation(t *testing.T) {
 		if _, err := merchantorders.NormalizeShipment(mfuShip(func(in *merchantorders.ShipmentInput) { in.CarrierName = mfuPtr(long + "郵") })); !errors.Is(err, merchantorders.ErrInvalidCarrier) {
 			t.Fatalf("81 CJK characters accepted: %v", err)
 		}
-		// NFC: e + combining acute is stored as the precomposed character.
-		out, err = merchantorders.NormalizeShipment(mfuShip(func(in *merchantorders.ShipmentInput) { in.CarrierName = mfuPtr("Café Express") }))
-		if err != nil || out.CarrierName == nil || *out.CarrierName != "Café Express" {
-			t.Fatalf("carrier_name not NFC-normalized: %v %v", out.CarrierName, err)
+		// NFC (§3.1 "free text, NFC"): e + combining acute must never be stored decomposed. The contract does not say
+		// whether non-NFC input is normalized or refused; either is acceptable, storing it as given is not.
+		out, err = merchantorders.NormalizeShipment(mfuShip(func(in *merchantorders.ShipmentInput) { in.CarrierName = mfuPtr("Cafe\u0301 Express") }))
+		if err == nil && (out.CarrierName == nil || *out.CarrierName != "Caf\u00e9 Express") {
+			t.Fatalf("carrier_name stored non-NFC: %v", out.CarrierName)
+		}
+		if err != nil && !errors.Is(err, merchantorders.ErrInvalidCarrier) {
+			t.Fatalf("non-NFC carrier_name refused with %v, want ErrInvalidCarrier", err)
 		}
 	})
 
@@ -282,6 +286,12 @@ func mfuCSVCases(t *testing.T) {
 		r.Line2 = `say ""hi"" , twice`
 		if !bytes.Contains(mfuCSV(t, []merchantorders.ExportRow{r}), []byte("\"line one\r\nline two\"")) {
 			t.Fatal("embedded CRLF cell not quoted with its CRLF intact")
+		}
+		// a lone CR (no LF) inside a cell must be quoted too, or a spreadsheet reads a phantom record break
+		lone := base
+		lone.Line1 = "a\rb"
+		if !bytes.Contains(mfuCSV(t, []merchantorders.ExportRow{lone}), []byte("\"a\rb\"")) {
+			t.Fatal("a cell with a lone CR is not quoted")
 		}
 		got := mfuRecords(t, mfuCSV(t, []merchantorders.ExportRow{r}))
 		// encoding/csv reports CRLF inside a quoted field as LF; the bytes are checked below.
