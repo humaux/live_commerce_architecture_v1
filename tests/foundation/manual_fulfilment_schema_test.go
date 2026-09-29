@@ -79,6 +79,12 @@ func TestManualFulfilmentMF02Schema(t *testing.T) {
 			"tracking url http":            {"tracking_url": "'http://x.example.com/t'"},
 			"tracking url over 512 bytes":  {"tracking_url": "'https://a.example.com/'||repeat('a',500)"},
 			"tracking url with space":      {"tracking_url": "'https://a.example.com/a b'"},
+			"tracking url host with <":     {"tracking_url": "'https://a<b.example.com/x'"}, // S6
+			"tracking url host with >":     {"tracking_url": "'https://a>b.example.com/x'"},
+			"tracking url host with quote": {"tracking_url": "'https://a\"b.example.com/x'"},
+			"tracking url host is IPv4":    {"tracking_url": "'https://1.2.3.4/x'"},
+			"tracking url with userinfo":   {"tracking_url": "'https://u@a.example.com/x'"},
+			"tracking url with port":       {"tracking_url": "'https://a.example.com:8443/x'"},
 			"note over 200 chars":          {"note": "repeat('n',201)"},
 			"note with control":            {"note": "'a'||chr(7)"},
 			"void_reason outside the enum": {"status": "'VOIDED'", "void_reason": "'bogus'"},

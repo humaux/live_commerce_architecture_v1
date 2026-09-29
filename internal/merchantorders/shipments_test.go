@@ -137,6 +137,8 @@ func TestTrackingURLPolicy(t *testing.T) {
 		"https://Track.Example.com/a?id=1&x=2": "https://track.example.com/a?id=1&x=2",
 		"https://track.example.com":            "https://track.example.com",
 		"HTTPS://track.example.com/%E4%B8%80":  "https://track.example.com/%E4%B8%80",
+		"https://xn--fiq228c.example.com/x":    "https://xn--fiq228c.example.com/x",
+		"https://a-b.c-d.example.co.uk/x":      "https://a-b.c-d.example.co.uk/x",
 	} {
 		got, err := canonicalTrackingURL(in)
 		if err != nil || got != want {
@@ -151,6 +153,11 @@ func TestTrackingURLPolicy(t *testing.T) {
 		"https://track.example.com/ x", "https://track.example.com/\tx", "https://track.example.com/x\n", "https://track.example.com/\x7f",
 		"https://例え.example.com/x", "https://track.example.com/例", "https://[::1]/x", "javascript:alert(1)",
 		"https://track.example.com/" + strings.Repeat("a", 500), "https:///x", "https://?x", "mailto:a@example.com",
+		// S6: hosts WHATWG new URL() rejects (or reads as an IPv4 literal) must not be stored, or the
+		// admin/storefront parsers fail the whole order view. Go's url.Parse accepts all of these.
+		"https://a<b.example.com/x", "https://a>b.example.com/x", "https://a\"b.example.com/x", "https://a^b.example.com/x",
+		"https://300.300.300.300/x", "https://1.2.3.4/x", "https://a.example.1/x", "https://a.0xab/x", "https://-a.example.com/x",
+		"https://a-.example.com/x", "https://a_b.example.com/x", "https://a|b.example.com/x", "https://a%2eb.example.com/x",
 	} {
 		if got, err := canonicalTrackingURL(in); !errors.Is(err, ErrInvalidURL) {
 			t.Errorf("%q accepted as %q (%v)", in, got, err)

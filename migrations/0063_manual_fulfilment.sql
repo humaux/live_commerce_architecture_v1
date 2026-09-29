@@ -60,7 +60,7 @@ CREATE TABLE fulfillment.manual_shipment_versions (
   'sf_express','chunghwa_post','other')),
  carrier_name text CHECK(carrier_name IS NULL OR (length(carrier_name) BETWEEN 1 AND 80 AND carrier_name !~ '[[:cntrl:]]')),
  tracking_number text NOT NULL CHECK(tracking_number ~ '^[A-Za-z0-9][A-Za-z0-9 -]{0,63}$' AND tracking_number !~ ' $'),
- tracking_url text CHECK(tracking_url IS NULL OR (octet_length(tracking_url)<=512 AND tracking_url ~ '^https://[!-~]+$')),
+ tracking_url text CHECK(tracking_url IS NULL OR (octet_length(tracking_url)<=512 AND tracking_url ~ '^https://([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]([a-zA-Z0-9-]*[a-zA-Z0-9])?([/?][!-~]*)?$')),
  note text CHECK(note IS NULL OR (length(note)<=200 AND note !~ '[[:cntrl:]]')),
  void_reason text CHECK(void_reason IN ('wrong_order','wrong_tracking','not_dispatched','other')),
  principal_id uuid NOT NULL, recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),
@@ -316,7 +316,7 @@ BEGIN
    RAISE EXCEPTION 'invalid_carrier' USING ERRCODE='PT422'; END IF;
   IF p_tracking_number IS NULL OR p_tracking_number !~ '^[A-Za-z0-9][A-Za-z0-9 -]{0,63}$' OR p_tracking_number ~ ' $' THEN
    RAISE EXCEPTION 'invalid_tracking' USING ERRCODE='PT422'; END IF;
-  IF p_tracking_url IS NOT NULL AND (octet_length(p_tracking_url)>512 OR p_tracking_url !~ '^https://[!-~]+$') THEN
+  IF p_tracking_url IS NOT NULL AND (octet_length(p_tracking_url)>512 OR p_tracking_url !~ '^https://([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]([a-zA-Z0-9-]*[a-zA-Z0-9])?([/?][!-~]*)?$') THEN
    RAISE EXCEPTION 'invalid_url' USING ERRCODE='PT422'; END IF;
  END IF;
 

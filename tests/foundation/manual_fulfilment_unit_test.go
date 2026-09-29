@@ -161,6 +161,10 @@ func TestManualFulfilmentMF01Validation(t *testing.T) {
 			"newline":         "https://track.example.com/a\nb",
 			"513 bytes":       "https://track.example.com/" + strings.Repeat("a", 513-len("https://track.example.com/")),
 			"non-ASCII":       "https://track.example.com/追蹤",
+			"host with <":     "https://a<b.example.com/x", // S6: WHATWG rejects it; the admin/storefront parse would fail
+			"host with >":     "https://a>b.example.com/x",
+			"host with quote": "https://a\"b.example.com/x",
+			"host is IPv4":    "https://1.2.3.4/x",
 		} {
 			if _, err := merchantorders.NormalizeShipment(mfuShip(func(s *merchantorders.ShipmentInput) { s.TrackingURL = mfuPtr(in) })); !errors.Is(err, merchantorders.ErrInvalidURL) {
 				t.Fatalf("url %s (%q): want ErrInvalidURL, got %v", name, in, err)

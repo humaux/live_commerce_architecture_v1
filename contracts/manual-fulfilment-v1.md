@@ -111,7 +111,9 @@ The buyer pickup destination (frozen at checkout) is not revalidated or rewritte
 
 - `tracking_number`: required for `SHIPPED`, trimmed, 1..64 characters, `^[A-Za-z0-9][A-Za-z0-9 -]{0,63}$`
   with no trailing space; stored exactly (no case folding; leading zeroes kept).
-- `tracking_url` (optional, M-2): absolute `https://` URL ≤512 bytes, host with at least one dot, no
+- `tracking_url` (optional, M-2): absolute `https://` URL ≤512 bytes, host made only of letter/digit/
+  hyphen labels (no leading or trailing hyphen) with at least one dot and a last label that starts with a
+  letter (so no IPv4-shaped host and nothing WHATWG `new URL()` would reject; amended 2026-09-29, S6), no
   userinfo, no explicit port, no fragment, no control/whitespace characters, parsed and re-serialized
   canonically by Go; SQL re-checks prefix and length. The buyer UI renders it as a link with
   `rel="noopener noreferrer nofollow"`, `target="_blank"`, showing the host text next to it. Never
@@ -139,7 +141,7 @@ CREATE TABLE fulfillment.manual_shipment_versions (
   'sf_express','chunghwa_post','other')),                                        -- A1: M-3
  carrier_name text CHECK(carrier_name IS NULL OR (length(carrier_name) BETWEEN 1 AND 80 AND carrier_name !~ '[[:cntrl:]]')),
  tracking_number text NOT NULL CHECK(tracking_number ~ '^[A-Za-z0-9][A-Za-z0-9 -]{0,63}$' AND tracking_number !~ ' $'),
- tracking_url text CHECK(tracking_url IS NULL OR (octet_length(tracking_url)<=512 AND tracking_url ~ '^https://[!-~]+$')),
+ tracking_url text CHECK(tracking_url IS NULL OR (octet_length(tracking_url)<=512 AND tracking_url ~ '^https://([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]([a-zA-Z0-9-]*[a-zA-Z0-9])?([/?][!-~]*)?$')),
  note text CHECK(note IS NULL OR (length(note)<=200 AND note !~ '[[:cntrl:]]')),
  void_reason text CHECK(void_reason IN ('wrong_order','wrong_tracking','not_dispatched','other')),
  principal_id uuid NOT NULL, recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),

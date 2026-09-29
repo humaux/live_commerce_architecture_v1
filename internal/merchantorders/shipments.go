@@ -53,7 +53,13 @@ var carrierTrackingTemplates = map[string]string{}
 var carrierCodes = []string{"seven_eleven_cvs", "familymart_cvs", "hilife_cvs", "okmart_cvs", "sf_express", "chunghwa_post", "other"}
 var voidReasons = []string{"wrong_order", "wrong_tracking", "not_dispatched", "other"}
 var trackingNumber = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9 -]{0,63}$`)
-var trackingURLBytes = regexp.MustCompile(`^https://[!-~]+$`) // SQL twin: manual_shipment_versions.tracking_url CHECK
+
+// trackingURLBytes: printable ASCII after an LDH dotted host whose last label starts with a letter.
+// S6: this is the subset every parser agrees on. Go's url.Parse admits hosts such as a<b.example.com or
+// 300.300.300.300 that WHATWG new URL() (admin and storefront parsers) rejects or reads as IPv4, and a
+// stored row like that would take down the whole order view. SQL twin: manual_shipment_versions.
+// tracking_url CHECK and record_manual_shipment (same pattern, POSIX group syntax).
+var trackingURLBytes = regexp.MustCompile(`^https://(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(?:[/?][!-~]*)?$`)
 var shipmentKey = regexp.MustCompile(`^[A-Za-z0-9_.:-]{8,128}$`)
 
 // Shipment is the buyer-visible projection of a SHIPPED head, also embedded in the merchant detail.

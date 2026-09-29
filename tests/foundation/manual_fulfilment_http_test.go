@@ -240,6 +240,7 @@ func TestManualFulfilmentMF05HTTP(t *testing.T) {
 			"missing tracking number":     {mfxShipBody(0, "SHIPPED", "sf_express", "", "", "", "", ""), 422, "invalid_tracking"},
 			"http tracking url":           {mfxShipBody(0, "SHIPPED", "sf_express", "", "SF1", "http://track.example.com/x", "", ""), 422, "invalid_url"},
 			"tracking url with userinfo":  {mfxShipBody(0, "SHIPPED", "sf_express", "", "SF1", "https://u:p@track.example.com/x", "", ""), 422, "invalid_url"},
+			"tracking url host with <":    {mfxShipBody(0, "SHIPPED", "sf_express", "", "SF1", "https://a<b.example.com/x", "", ""), 422, "invalid_url"},
 			"void of an unshipped order":  {mfxVoid(0, "wrong_order"), 422, "void_requires_shipped"},
 			"void with a carrier":         {mfxShipBody(0, "VOIDED", "sf_express", "", "", "", "", "wrong_order"), 422, "invalid_void"},
 			"void with a tracking number": {mfxShipBody(0, "VOIDED", "", "", "SF1", "", "", "wrong_order"), 422, "invalid_void"},
