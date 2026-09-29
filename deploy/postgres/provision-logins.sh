@@ -103,7 +103,8 @@ authorities(name) AS (VALUES
   ('commerce_runtime'),('commerce_identity'),('commerce_buyer_runtime'),('commerce_buyer_issuer'),
   ('commerce_worker'),('commerce_checkout_runtime'),('commerce_meta_ingress'),('commerce_meta_registrar'),
   ('commerce_meta_curator'),('commerce_meta_consumer'),('commerce_meta_worker'),('commerce_media_registrar'),
-  ('commerce_media_worker'),('commerce_media_executor'),('commerce_media_recovery')),
+  ('commerce_media_worker'),('commerce_media_executor'),('commerce_media_recovery'),
+  ('commerce_stripe_ingress'),('commerce_payment_registrar'),('commerce_claims_intake')),
 checked AS (
   SELECT s.login, s.authority, s.grant_shape, r.oid AS login_oid,
          r.rolcanlogin, r.rolsuper, r.rolbypassrls, r.rolcreaterole, r.rolcreatedb, r.rolreplication, r.rolinherit,
@@ -149,6 +150,55 @@ while IFS='|' read -r login authority grant result; do
   fi
 done <<<"$report"
 ((drift == 0)) || die "role drift detected; fix manually (docs/runbooks/incident.md §DB 角色), never auto-repaired"
+
+# ---- 4b. ruling 19: the merchant API login's River privileges (refund-fulfilment-rulings.md) -----
+# Mirrors internal/platform validateRuntimeRiverPrivileges (stripe_runtime.go): the runtime login may
+# hold exactly SELECT/INSERT/UPDATE(kind) on river_job plus the id sequence in river, river_media and
+# river_payment, and nothing at all in river_meta/river_expiry or on any other River table. The API
+# re-checks this at every start; failing here names the drift before a deploy restarts anything.
+# Keep this query and the Go one in step (a change to either needs the other, and a smoke S13 run).
+river="$(su_psql <<'SQL'
+WITH login AS (SELECT oid FROM pg_roles WHERE rolname = 'lc_api_runtime'),
+reachable AS (
+  SELECT r.oid FROM pg_roles r, login l
+  WHERE r.oid = l.oid OR pg_has_role(l.oid, r.oid, 'USAGE') OR pg_has_role(l.oid, r.oid, 'SET'))
+SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM login) THEN 'missing_login'
+  WHEN EXISTS (SELECT 1 FROM reachable r CROSS JOIN pg_class c
+   JOIN pg_namespace n ON n.oid = c.relnamespace
+   WHERE n.nspname IN ('river','river_meta','river_payment','river_expiry','river_media')
+   AND CASE
+    WHEN c.relkind = 'S' AND n.nspname IN ('river','river_media','river_payment') AND c.relname = 'river_job_id_seq'
+     THEN has_sequence_privilege(r.oid, c.oid, 'SELECT,UPDATE')
+    WHEN c.relkind = 'S' THEN has_sequence_privilege(r.oid, c.oid, 'USAGE,SELECT,UPDATE')
+    WHEN c.relkind IN ('r','p','v','m','f') AND n.nspname IN ('river','river_media','river_payment') AND c.relname = 'river_job'
+     THEN has_table_privilege(r.oid, c.oid, 'UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN')
+      OR has_any_column_privilege(r.oid, c.oid, 'REFERENCES')
+      OR EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid = c.oid AND a.attnum > 0 AND NOT a.attisdropped
+       AND a.attname <> 'kind' AND has_column_privilege(r.oid, c.oid, a.attnum, 'UPDATE'))
+    WHEN c.relkind IN ('r','p','v','m','f') THEN
+     has_table_privilege(r.oid, c.oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN')
+      OR has_any_column_privilege(r.oid, c.oid, 'SELECT,INSERT,UPDATE,REFERENCES')
+    ELSE false END)
+  THEN 'runtime_river_privileges_exceed_ruling_19' ELSE 'ok' END;
+SQL
+)" || die "runtime river privilege query failed"
+[[ "$river" == ok ]] || die "DRIFT login=lc_api_runtime problem=$river (fix manually, docs/runbooks/incident.md §DB 角色)"
+log "login=lc_api_runtime river_privileges=ok (ruling 19)"
+
+# The two registrar logins must be able to run their definers (the CLIs report only a fixed code).
+regs="$(su_psql <<'SQL'
+SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname = 'integration' AND p.proname = 'register_meta_page_token'
+  AND has_function_privilege('lc_meta_registrar', p.oid, 'EXECUTE');
+SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE ((n.nspname = 'integration' AND p.proname IN ('register_stripe_account','rotate_stripe_key'))
+    OR (n.nspname = 'payments' AND p.proname IN ('set_stripe_webhook_endpoint','qualify_stripe_method','set_stripe_method')))
+  AND has_function_privilege('lc_stripe_registrar', p.oid, 'EXECUTE');
+SQL
+)" || die "registrar privilege query failed"
+{ read -r meta_reg; read -r stripe_reg; } <<<"$regs"
+[[ "$meta_reg" == 1 && "$stripe_reg" == 5 ]] || die "DRIFT registrar EXECUTE meta_page_token=$meta_reg stripe=$stripe_reg (want 1 and 5)"
+log "registrars execute=ok meta=$meta_reg stripe=$stripe_reg"
 
 # ---- 5. every login authenticates over TCP, exactly like its service -------------------------
 for login in "${logins[@]}"; do

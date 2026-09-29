@@ -11,20 +11,28 @@
 #   derived origins), LC_ENV_DIR (per-service knob files), LC_SECRETS_DIR + LC_SECRETS_GID
 #   (secret files and the group that may read them), LC_BACKUP_DIR (dumps/base/wal),
 #   LC_IDENTITY_ENABLED, LC_OIDC_ISSUER, LC_ONBOARDING_ENABLED, LC_ONBOARDING_CURRENCIES,
-#   LC_BUYER_ENABLED, LC_BUYER_SESSION_TTL_SECONDS (one value -> api "<N>s", storefront "<N>").
+#   LC_BUYER_ENABLED, LC_BUYER_SESSION_TTL_SECONDS (one value -> api "<N>s", storefront "<N>"),
+#   LC_STRIPE_ENABLED (one switch -> api COMMERCE_STRIPE_{WEBHOOK,CHECKOUT}_ENABLED and
+#   payment-worker-sandbox COMMERCE_STRIPE_ENABLED; SANDBOX only, stripe-psp-v1 §0.2/§12).
 # Reads secrets: every row of deploy/secrets.manifest.tsv, mounted at /run/secrets/<name>
 #   (Compose non-swarm file secrets = read-only bind mounts that keep host modes 0440
 #   root:${LC_SECRETS_GID}); apps receive them only as NAME_FILE paths expanded by lcentry.
 # Used by: deploy/scripts/{deploy,pg-ops,smoke,watchdog,collect-diagnostics}.sh, runbooks.
 # Depends on: images lc-go/lc-admin/lc-storefront/lc-caddy:${IMAGE_TAG} (build-images.sh),
 #   pinned postgres + pause images, deploy/caddy/Caddyfile, deploy/postgres/*.
-# Status: DESIGN. Static `config` validated by smoke S03; runtime S11-S39 are BLOCKED until
-#   cmd/migrate exists (REQUIRES_INTEGRATOR I1).
+# Status: DESIGN. Static `config` validated by smoke S03; runtime S07-S43 by `smoke.sh full`.
+#   R1 additions (unit deploy-release): claims-worker, Stripe ingress/keyring wiring, K_actor on
+#   meta-worker, and the operator one-shots stripe-admin / meta-admin (profile ops).
 # Change rules:
 #   * `environment:` = fixed WIRING (listeners, derived origins, *_FILE paths, ENABLED=1 of
 #     profile-gated workers). env/<svc>.env = per-service KNOBS only; preflight P06 fails if a
 #     knob file redefines a wired variable (Compose would silently prefer `environment:`).
-#   * Profiles decide what runs: db, app, payments-sandbox, payments-live, meta, ops.
+#   * Profiles decide what runs: db, app, payments-sandbox, payments-live, meta, claims, ops.
+#     `claims` (claims-worker) is the only service that can SEND to Meta users (first private
+#     reply of a claim); it stays off until the owner approves real sends (docs/runbooks/deploy.md).
+#   * stripe-admin / meta-admin are OPERATOR one-shots (profile ops, `restart: no`): they run only
+#     through deploy/scripts/ops-admin.sh, hold the registrar logins that no long-running service
+#     mounts, and never share a container with api/admin/storefront/workers.
 #   * Never `docker compose down -v` outside smoke (smoke owns its own project + volumes).
 #   * edge-netns is recreated only together with its dependents (full `up -d`); recreating it
 #     alone strands caddy/api/admin/storefront in a dead network namespace.
@@ -163,6 +171,15 @@ services:
       COMMERCE_META_PAYLOAD_KEYS_JSON_FILE: /run/secrets/commerce_meta_payload_keys_json
       COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_meta_payload_active_key_id
       COMMERCE_META_APPS_JSON_FILE: /run/secrets/commerce_meta_apps_json
+      # Stripe (stripe-psp-v1 §0.2/§12): one switch for the checkout flag and the webhook route. The
+      # API never reads STRIPE_* (API keys live sealed in PG); webhook signing keys use the SEPARATE
+      # COMMERCE_STRIPE_WEBHOOK_* keyring (cmd/api/stripe_webhook.go remapSigningNames).
+      COMMERCE_STRIPE_WEBHOOK_ENABLED: ${LC_STRIPE_ENABLED:-0}
+      COMMERCE_STRIPE_CHECKOUT_ENABLED: ${LC_STRIPE_ENABLED:-0}
+      COMMERCE_STRIPE_INGRESS_DATABASE_URL_FILE: /run/secrets/dsn_lc_api_stripe_ingress
+      COMMERCE_STRIPE_WEBHOOK_KEYS_JSON_FILE: /run/secrets/commerce_stripe_webhook_keys_json
+      COMMERCE_STRIPE_WEBHOOK_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_stripe_webhook_active_key_id
+      COMMERCE_STRIPE_WEBHOOK_REPLAY_KEY_FILE: /run/secrets/commerce_stripe_webhook_replay_key
     secrets:
       - dsn_lc_api_runtime
       - dsn_lc_api_identity
@@ -171,6 +188,10 @@ services:
       - dsn_lc_api_checkout
       - dsn_lc_api_hosted
       - dsn_lc_api_meta_ingress
+      - dsn_lc_api_stripe_ingress
+      - commerce_stripe_webhook_keys_json
+      - commerce_stripe_webhook_active_key_id
+      - commerce_stripe_webhook_replay_key
       - commerce_bff_key
       - commerce_buyer_bff_key
       - commerce_oidc_client_secret
@@ -294,12 +315,15 @@ services:
     <<: *go
     profiles: [payments-sandbox]
     command: ["/app/bin/payment-worker"]
-    networks: [backend, egress]  # egress: PAYUNi sandbox HTTPS (endpoints are code constants)
+    networks: [backend, egress]  # egress: PAYUNi sandbox + api.stripe.com HTTPS (endpoints are code constants)
     depends_on: *after-db
     env_file: ["${LC_ENV_DIR:?set LC_ENV_DIR}/payment-worker.env"]
     environment:
       COMMERCE_PAYMENT_WORKER_ENABLED: "1"
       COMMERCE_PAYMENT_WORKER_PROFILE: SANDBOX   # one process per profile (disjoint River queues)
+      # Stripe dispatch + refund worker on the SANDBOX queue. payment-worker-live never gets this
+      # (cmd/payment-worker refuses Stripe on LIVE: no live activation without owner approval).
+      COMMERCE_STRIPE_ENABLED: ${LC_STRIPE_ENABLED:-0}
       COMMERCE_PAYMENT_WORKER_DATABASE_URL_FILE: /run/secrets/dsn_lc_payment_sandbox
       COMMERCE_ACCOUNT_KEYS_JSON_FILE: /run/secrets/commerce_account_keys_json
       COMMERCE_ACCOUNT_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_account_active_key_id
@@ -343,14 +367,87 @@ services:
       COMMERCE_META_CONSUMER_DATABASE_URL_FILE: /run/secrets/dsn_lc_meta_consumer
       COMMERCE_META_PAYLOAD_KEYS_JSON_FILE: /run/secrets/commerce_meta_payload_keys_json
       COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_meta_payload_active_key_id
+      # K_actor (meta-claims-intake-v1 §3): turns comment senders into keyed claim actors. Only this
+      # process loads it; without it claim staging is off and comments never become claims.
+      COMMERCE_CLAIMS_ACTOR_KEY_FILE: /run/secrets/commerce_claims_actor_key
       GOMEMLIMIT: 200MiB
-    secrets: [dsn_lc_meta_worker, dsn_lc_meta_consumer, commerce_meta_payload_keys_json, commerce_meta_payload_active_key_id]
+    secrets: [dsn_lc_meta_worker, dsn_lc_meta_consumer, commerce_meta_payload_keys_json, commerce_meta_payload_active_key_id, commerce_claims_actor_key]
+    cpus: 0.5
+    mem_limit: 256m
+
+  claims-worker:
+    # T10c (meta-claims-intake-v1 §5.3): claims intake poller + the ONLY sender of Meta private replies
+    # (metareply routes -> graph.facebook.com). Off until the owner approves real sends (profile claims).
+    <<: *go
+    profiles: [claims]
+    command: ["/app/bin/claims-worker"]
+    networks: [backend, egress]  # egress: graph.facebook.com (the Graph host is a code constant)
+    depends_on: *after-db
+    env_file: ["${LC_ENV_DIR:?set LC_ENV_DIR}/claims-worker.env"]   # Graph version (U5), auth-header mode
+    environment:
+      COMMERCE_CLAIMS_WORKER_ENABLED: "1"
+      # Two logins, two authorities, one database: intake (claims apply + reply planning) and the
+      # main-schema external_operation_v1 dispatcher (commerce_worker).
+      COMMERCE_CLAIMS_INTAKE_DATABASE_URL_FILE: /run/secrets/dsn_lc_claims_intake
+      COMMERCE_WORKER_DATABASE_URL_FILE: /run/secrets/dsn_lc_claims_worker
+      COMMERCE_CLAIMS_REPLY_LINK_KEY_FILE: /run/secrets/commerce_claims_reply_link_key
+      COMMERCE_META_PAGE_TOKEN_KEYS_JSON_FILE: /run/secrets/commerce_meta_page_token_keys_json
+      COMMERCE_META_PAGE_TOKEN_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_meta_page_token_active_key_id
+      GOMEMLIMIT: 200MiB
+    secrets: [dsn_lc_claims_intake, dsn_lc_claims_worker, commerce_claims_reply_link_key, commerce_meta_page_token_keys_json, commerce_meta_page_token_active_key_id]
     cpus: 0.5
     mem_limit: 256m
 
   # media-worker is intentionally absent: every LiveKit project is hard-wired to MOCK with a
   # loopback dial address (internal/integrations/livekit/worker_env.go:174). See
   # deploy/env/media-worker.env.example for its (reference-only) contract. Blocker B5.
+
+  # -------------------------------------------------------------------------------------------
+  # Operator one-shots (profile ops). Run ONLY via deploy/scripts/ops-admin.sh, which forwards the
+  # operator's own inputs (STRIPE_SECRET_KEY, META_PAGE_ACCESS_TOKEN, ...) from a no-echo prompt or
+  # the caller's environment and never writes them to a file, argv or this repo. Never started by
+  # `up -d`; never inside api/admin/storefront/worker containers (they hold neither the registrar
+  # logins nor these inputs).
+  # -------------------------------------------------------------------------------------------
+  stripe-admin:
+    # stripe-psp-v1 §13: register/rotate/webhook/qualify/method. Dials api.stripe.com (register,
+    # rotate, SANDBOX qualify) and refuses LIVE in code.
+    <<: *go
+    profiles: [ops]
+    command: ["/app/bin/stripe-admin"]
+    restart: "no"
+    networks: [backend, egress]
+    environment:
+      COMMERCE_STRIPE_REGISTRAR_DATABASE_URL_FILE: /run/secrets/dsn_lc_stripe_registrar
+      # API-key keyring seals register/rotate; the SEPARATE signing keyring seals `webhook`.
+      COMMERCE_ACCOUNT_KEYS_JSON_FILE: /run/secrets/commerce_account_keys_json
+      COMMERCE_ACCOUNT_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_account_active_key_id
+      COMMERCE_ACCOUNT_REPLAY_KEY_FILE: /run/secrets/commerce_account_replay_key
+      COMMERCE_STRIPE_WEBHOOK_KEYS_JSON_FILE: /run/secrets/commerce_stripe_webhook_keys_json
+      COMMERCE_STRIPE_WEBHOOK_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_stripe_webhook_active_key_id
+      COMMERCE_STRIPE_WEBHOOK_REPLAY_KEY_FILE: /run/secrets/commerce_stripe_webhook_replay_key
+    secrets: [dsn_lc_stripe_registrar, commerce_account_keys_json, commerce_account_active_key_id, commerce_account_replay_key,
+      commerce_stripe_webhook_keys_json, commerce_stripe_webhook_active_key_id, commerce_stripe_webhook_replay_key]
+    cpus: 0.5
+    mem_limit: 128m
+    stop_grace_period: 10s
+
+  meta-admin:
+    # meta-claims-intake-v1 §7: `page-token` seals a Meta Page access token under the Page-token
+    # keyring and registers it through integration.register_meta_page_token. Database only.
+    <<: *go
+    profiles: [ops]
+    command: ["/app/bin/meta-admin"]
+    restart: "no"
+    networks: [backend]
+    environment:
+      COMMERCE_META_REGISTRAR_DATABASE_URL_FILE: /run/secrets/dsn_lc_meta_registrar
+      COMMERCE_META_PAGE_TOKEN_KEYS_JSON_FILE: /run/secrets/commerce_meta_page_token_keys_json
+      COMMERCE_META_PAGE_TOKEN_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_meta_page_token_active_key_id
+    secrets: [dsn_lc_meta_registrar, commerce_meta_page_token_keys_json, commerce_meta_page_token_active_key_id]
+    cpus: 0.5
+    mem_limit: 128m
+    stop_grace_period: 10s
 
   # -------------------------------------------------------------------------------------------
   # Database: postgres + one-shot migrate/provision jobs + on-demand pg-ops.
@@ -441,6 +538,11 @@ services:
       - pw_lc_payment_live
       - pw_lc_meta_worker
       - pw_lc_meta_consumer
+      - pw_lc_api_stripe_ingress
+      - pw_lc_claims_intake
+      - pw_lc_claims_worker
+      - pw_lc_stripe_registrar
+      - pw_lc_meta_registrar
     volumes:
       - pgsocket:/var/run/postgresql
       - ./postgres/provision-logins.sh:/provision/provision-logins.sh:ro
@@ -505,6 +607,11 @@ secrets:
   pw_lc_payment_live: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_payment_live" }
   pw_lc_meta_worker: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_meta_worker" }
   pw_lc_meta_consumer: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_meta_consumer" }
+  pw_lc_api_stripe_ingress: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_api_stripe_ingress" }
+  pw_lc_claims_intake: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_claims_intake" }
+  pw_lc_claims_worker: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_claims_worker" }
+  pw_lc_stripe_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_stripe_registrar" }
+  pw_lc_meta_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_meta_registrar" }
   dsn_lc_api_runtime: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_api_runtime" }
   dsn_lc_api_identity: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_api_identity" }
   dsn_lc_api_buyer_issuer: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_api_buyer_issuer" }
@@ -517,6 +624,11 @@ secrets:
   dsn_lc_payment_live: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_payment_live" }
   dsn_lc_meta_worker: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_meta_worker" }
   dsn_lc_meta_consumer: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_meta_consumer" }
+  dsn_lc_api_stripe_ingress: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_api_stripe_ingress" }
+  dsn_lc_claims_intake: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_claims_intake" }
+  dsn_lc_claims_worker: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_claims_worker" }
+  dsn_lc_stripe_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_stripe_registrar" }
+  dsn_lc_meta_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_meta_registrar" }
   commerce_bff_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_bff_key" }
   commerce_buyer_bff_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_buyer_bff_key" }
   commerce_buyer_cookie_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_buyer_cookie_key" }
@@ -527,3 +639,10 @@ secrets:
   commerce_meta_payload_keys_json: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_meta_payload_keys_json" }
   commerce_meta_payload_active_key_id: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_meta_payload_active_key_id" }
   commerce_meta_apps_json: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_meta_apps_json" }
+  commerce_stripe_webhook_keys_json: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_stripe_webhook_keys_json" }
+  commerce_stripe_webhook_active_key_id: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_stripe_webhook_active_key_id" }
+  commerce_stripe_webhook_replay_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_stripe_webhook_replay_key" }
+  commerce_meta_page_token_keys_json: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_meta_page_token_keys_json" }
+  commerce_meta_page_token_active_key_id: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_meta_page_token_active_key_id" }
+  commerce_claims_actor_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_claims_actor_key" }
+  commerce_claims_reply_link_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_claims_reply_link_key" }

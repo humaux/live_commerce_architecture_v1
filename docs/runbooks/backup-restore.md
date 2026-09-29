@@ -71,7 +71,7 @@ cd ${LC_BACKUP_DIR}/dumps/<目录> && sha256sum -c SHA256SUMS
 ## 5. 生产恢复流程（架构.md §22.3 顺序；需要 owner 批准）
 
 1. **确定干净的版本和恢复点**：选择代码 tag 和恢复时间点，确认目标之后没有**不可重放的外部事实**。
-2. **停止所有写入方**：`docker compose stop api admin storefront expiry-worker payment-worker-sandbox payment-worker-live meta-worker`。
+2. **停止所有写入方**：`docker compose stop api admin storefront expiry-worker payment-worker-sandbox payment-worker-live meta-worker claims-worker`（没启用的服务会被忽略）。
    **支付 worker 必须保持停止**，直到 §5 第 5 步完成。
 3. **数据库 + 密钥**：
    - 先恢复密钥（§7）。

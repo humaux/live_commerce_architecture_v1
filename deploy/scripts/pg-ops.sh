@@ -43,7 +43,7 @@ done
 # Active profiles + ops (a bare --profile ops would hide the rest of the project from Compose).
 run_ops() { lc_compose_with_ops run --rm --no-deps -T "${forward[@]}" pg-ops "$@"; }
 # Writers stopped for a cut-over (Caddy and edge-netns keep answering 503 + Retry-After).
-WRITER_SERVICES=(api admin storefront expiry-worker payment-worker-sandbox payment-worker-live meta-worker media-worker)
+WRITER_SERVICES=(api admin storefront expiry-worker payment-worker-sandbox payment-worker-live meta-worker claims-worker media-worker)
 
 # wait_postgres_healthy — the container healthcheck (socket ping + listen address) within 180 s.
 wait_postgres_healthy() {

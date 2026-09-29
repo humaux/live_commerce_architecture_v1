@@ -57,7 +57,7 @@ lc_load_env "$LC_COMPOSE_ENV"
 state_dir=${LC_STATE_DIR:-/var/lib/live-commerce}
 deploy_log="$state_dir/deployments.log"
 operator=${SUDO_USER:-${USER:-unknown}}
-APP_SERVICES=(api admin storefront expiry-worker payment-worker-sandbox payment-worker-live meta-worker)
+APP_SERVICES=(api admin storefront expiry-worker payment-worker-sandbox payment-worker-live meta-worker claims-worker)
 
 decision_tree() {
   cat >&2 <<'EOF'
@@ -148,7 +148,8 @@ post_checks() {
   done < <(lc_long_running_services)
   lc_info "post-check all ${prefix}* containers run tag $IMAGE_TAG"
   for s in expiry-worker:expiry_worker_ready payment-worker-sandbox:payment_worker_ready \
-    payment-worker-live:payment_worker_ready meta-worker:meta_worker_ready; do
+    payment-worker-live:payment_worker_ready meta-worker:meta_worker_ready \
+    claims-worker:claims_worker_ready; do
     token=${s#*:} s=${s%%:*}
     lc_service_active "$s" || continue
     for ((i = 0; i < 30; i++)); do
