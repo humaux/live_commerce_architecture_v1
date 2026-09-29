@@ -298,6 +298,20 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 		Scan(&claimsIntake, &claimsIntakeUsage, &claimsIntakeSet); err != nil {
 		return fmt.Errorf("validate runtime role: %w", err)
 	}
+	// U08 retention logins (claims-retention-purge-v1 §4): same shape as the claims intake probe. The two roles
+	// join the exactly-one rule below, so every other authority rejects a login that can reach either of them,
+	// and both reject any other authority. Their definer owner commerce_retention_writer owns functions and is
+	// therefore already caught by the canReachPrivileged owner scan.
+	var retentionJob, retentionJobUsage, retentionJobSet, retentionOperator, retentionOperatorUsage, retentionOperatorSet bool
+	if err := pool.QueryRow(ctx, `SELECT coalesce(pg_has_role(session_user, to_regrole('commerce_retention_job'), 'MEMBER'),false),
+		coalesce(pg_has_role(session_user, to_regrole('commerce_retention_job'), 'USAGE'),false),
+		coalesce(pg_has_role(session_user, to_regrole('commerce_retention_job'), 'SET'),false),
+		coalesce(pg_has_role(session_user, to_regrole('commerce_retention_operator'), 'MEMBER'),false),
+		coalesce(pg_has_role(session_user, to_regrole('commerce_retention_operator'), 'USAGE'),false),
+		coalesce(pg_has_role(session_user, to_regrole('commerce_retention_operator'), 'SET'),false)`).
+		Scan(&retentionJob, &retentionJobUsage, &retentionJobSet, &retentionOperator, &retentionOperatorUsage, &retentionOperatorSet); err != nil {
+		return fmt.Errorf("validate runtime role: %w", err)
+	}
 	// Exactly one authority, including indirect grants. Checking only the desired
 	// role would let a mixed login smuggle merchant privileges into buyer code.
 	memberships := map[string]bool{"runtime": runtimeMember, "identity": identityMember,
@@ -306,7 +320,8 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 		"meta_registrar": metaRegistrar, "meta_curator": metaCurator, "meta_consumer": metaConsumer,
 		"meta_worker": metaWorker, "media_registrar": mediaRegistrar,
 		"media_worker": mediaWorker, "media_executor": mediaExecutor, "media_recovery": mediaRecovery,
-		"stripe_ingress": stripeIngress, "stripe_registrar": stripeRegistrar, "claims_intake": claimsIntake}
+		"stripe_ingress": stripeIngress, "stripe_registrar": stripeRegistrar, "claims_intake": claimsIntake,
+		"retention_job": retentionJob, "retention_operator": retentionOperator}
 	roleCount := 0
 	for _, member := range memberships {
 		if member {
@@ -330,6 +345,12 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 	}
 	if authority == "claims_intake" {
 		roleValid = roleValid && claimsIntakeUsage && !claimsIntakeSet && !systemAuthority
+	}
+	if authority == "retention_job" {
+		roleValid = roleValid && retentionJobUsage && !retentionJobSet && !systemAuthority
+	}
+	if authority == "retention_operator" {
+		roleValid = roleValid && retentionOperatorUsage && !retentionOperatorSet && !systemAuthority
 	}
 	if authority == "media_worker" {
 		roleValid = roleValid && mediaWorkerUsage && !mediaWorkerSet && !systemAuthority
