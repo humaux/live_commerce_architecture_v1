@@ -177,7 +177,7 @@ func (e *rfxEnv) storeFor(t *testing.T) rfxOrder {
 }
 
 // moreOrder adds a buyer/order to the store of base (unpaid: a DRAFT hold) and tops the stock up when needed. One store
-// per gate keeps the number of connection pools under the focused PG's max_connections=30: every store the harness
+// per gate keeps the number of connection pools under the focused PG's max_connections=60: every store the harness
 // seeds opens several pools that live until the test ends.
 func (e *rfxEnv) moreOrder(t *testing.T, base rfxOrder) rfxOrder {
 	t.Helper()

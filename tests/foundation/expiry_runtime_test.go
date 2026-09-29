@@ -68,7 +68,7 @@ func ewCloseSeedPools(t *testing.T, p psHarness) {
 		return n
 	}
 	max, reserved, super := show("max_connections"), show("reserved_connections"), show("superuser_reserved_connections")
-	if max != 30 || reserved < 0 || super < 0 || reserved+super >= max {
+	if max != 60 || reserved < 0 || super < 0 || reserved+super >= max {
 		t.Fatalf("unexpected isolated PG capacity: max=%d reserved=%d super=%d", max, reserved, super)
 	}
 	seeds := []struct {

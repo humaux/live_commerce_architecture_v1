@@ -796,7 +796,7 @@ func lcPopulatedUpgrade(t *testing.T) {
 	if out, err := exec.CommandContext(ctx, "docker", "run", "-d", "--pull=never", "--name", name, "--label", "livecommerce.fixture="+name,
 		"--memory=1g", "--cpus=1", "--pids-limit=128", "--tmpfs", "/var/lib/postgresql:rw,size=268435456", "-e", "POSTGRES_PASSWORD="+password,
 		"-e", "POSTGRES_DB=lc_foundation_test", "-p", "127.0.0.1::5432", "postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280",
-		"-c", "shared_buffers=32MB", "-c", "max_connections=30").CombinedOutput(); err != nil {
+		"-c", "shared_buffers=32MB", "-c", "max_connections=60").CombinedOutput(); err != nil {
 		t.Fatalf("start labelled upgrade PG: %v %s", err, out)
 	}
 	t.Cleanup(func() {

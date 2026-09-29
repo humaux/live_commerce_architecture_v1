@@ -264,7 +264,7 @@ func (e *mciEnv) startConsumer(_ *testing.T) {
 				t.Errorf("consumer River stop: %v", err)
 			}
 			// A restart opens fresh pools; closing these now keeps a test that restarts the consumer
-			// inside the harness's max_connections=30 (idle connections otherwise live until the parent
+			// inside the harness's max_connections=60 (idle connections otherwise live until the parent
 			// test ends). pgxpool.Close is idempotent, so the t.Cleanup close stays harmless.
 			riverPool.Close()
 			consumerPool.Close()
@@ -1231,7 +1231,7 @@ func TestMetaClaimsMCI05OneIntakePerComment(t *testing.T) {
 			}
 		}
 		// Everything is staged: stop the consumer (and close its pools) so the 20 pollers fit the harness's
-		// max_connections=30 next to the fixture pools.
+		// max_connections=60 next to the fixture pools.
 		e.stopConsumer()
 		e.stopConsumer = mciNoop
 		before := e.countEvents(t)

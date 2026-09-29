@@ -58,7 +58,7 @@ docker run -d --pull=never --name "$container" \
   -e POSTGRES_PASSWORD -e POSTGRES_DB=lc_foundation_test \
   -p 127.0.0.1::5432 \
   postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 \
-  -c shared_buffers=32MB -c max_connections=30 >/dev/null
+  -c shared_buffers=32MB -c max_connections=60 >/dev/null
 for ((i = 0; i < 40; i++)); do
   docker exec "$container" pg_isready -h 127.0.0.1 -U postgres -d lc_foundation_test >/dev/null 2>&1 && break
   sleep 0.5

@@ -34,7 +34,7 @@ package foundation_test
 // Red runs (PROCESS §2.4): LC_E2E_MUTATE=replay (a NEW comment instead of a replay), negatives (the keyword itself instead of the negation), isolation (the creator's token stands
 // in for the foreign tenant) and leak (a claim token lands in a log) each make the corresponding gate fail; the browser
 // gates were first red on the real product defect MDEF-1 (defects.json), a Go-side gate never turns a known defect green.
-// The PG budget (max_connections=30) is part of the harness: sampleConnections logs the peak.
+// The PG budget (max_connections=60) is part of the harness: sampleConnections logs the peak.
 //
 // Depends on: rfxNew (isolated PG, fake Stripe, registrar, payment worker), miPool/miBinding/miRoute/mciEnv.startConsumer
 // /registerToken/newDispatcher (MCI harness), brf/browser helpers (IdP, environment, logs), connectProxy, waitReady.
@@ -208,7 +208,7 @@ func TestBrowserE2EDealLoop(t *testing.T) {
 // processes
 // ---------------------------------------------------------------------------------------------------------------
 
-// The fixture PG has max_connections=30 (pwIsolatedFixture, test-focused.sh): one process here holds every pool that
+// The fixture PG has max_connections=60 (pwIsolatedFixture, test-focused.sh): one process here holds every pool that
 // production spreads over separate processes. Every platform.Open* pool caps itself at 8 (openPool), so the budget is
 // kept by (a) one worker pool shared by the payment worker and the Meta dispatcher, (b) low River concurrency, (c) closing
 // the setup-only pools right after provisioning, (d) never opening the unused buyer-identity authority. sampleConnections
@@ -322,7 +322,7 @@ func (x *e2eRun) startAPIs(t *testing.T) {
 
 	// Buyer API: the same assembly as browser_stripe_test.go's sbNew, with the buyer.example return URL.
 	a := openBuyerTestPools(t, e.f)
-	a.identity.Close() // unused here (the merchant identity pool is the admin one); frees a connection of the 30
+	a.identity.Close() // unused here (the merchant identity pool is the admin one); frees a connection of the 60
 	x.a = a
 	checkoutPool, err := platform.OpenCheckoutPool(ctx, bcRole(t, e.f, "commerce_checkout_runtime"))
 	if err != nil {
@@ -477,14 +477,14 @@ func (x *e2eRun) dispatch(t *testing.T, a e2eAction) (int, any) {
 	return http.StatusOK, out
 }
 
-// connections is the number of server connections on the isolated PG (max_connections=30 is a hard limit of the fixture).
+// connections is the number of server connections on the isolated PG (max_connections=60 is a hard limit of the fixture).
 func (x *e2eRun) connections() int {
 	var n int
 	_ = x.e.f.owner.QueryRow(context.Background(), `SELECT count(*) FROM pg_stat_activity WHERE datname=current_database()`).Scan(&n)
 	return n
 }
 
-// connectionMap groups the connections by role membership (diagnosis of the max_connections=30 budget).
+// connectionMap groups the connections by role membership (diagnosis of the max_connections=60 budget).
 func (x *e2eRun) connectionMap() string {
 	rows, err := x.e.f.owner.Query(context.Background(), `SELECT coalesce((SELECT string_agg(g.rolname,'+') FROM pg_auth_members m JOIN pg_roles g ON g.oid=m.roleid WHERE m.member=r.oid),a.usename) AS grp,count(*)
 		FROM pg_stat_activity a LEFT JOIN pg_roles r ON r.rolname=a.usename WHERE a.datname=current_database() GROUP BY 1 ORDER BY 2 DESC`)
@@ -594,7 +594,7 @@ func (x *e2eRun) provision(t *testing.T) map[string]any {
 	mustExec(t, e.f.owner, `INSERT INTO control.storefront_publications(tenant_id,store_id,published) VALUES($1,$2,true)`, x.tenant, x.store)
 	mustExec(t, e.f.owner, `INSERT INTO control.storefront_domains(tenant_id,store_id,origin,state,ownership_verified_at,tls_verified_at,valid_until,evidence_ref)
 		VALUES($1,$2,$3,'ACTIVE',clock_timestamp()-interval '1 hour',clock_timestamp()-interval '1 hour',clock_timestamp()+interval '4 hours','SYNTHETIC e2e gate only')`, x.tenant, x.store, sbOrigin)
-	t.Logf("T12 provisioned; PG connections=%d of 30: %s", x.connections(), x.connectionMap())
+	t.Logf("T12 provisioned; PG connections=%d of 60: %s", x.connections(), x.connectionMap())
 	return map[string]any{"store": x.store, "product_id": product.ID, "product_name": e2eProductName, "sku_id": sku.ID, "sku_code": sku.Code,
 		"page_asset": x.pageAsset, "post_url": "https://www.facebook.com/" + x.pageAsset + "/posts/" + x.post, "carrier": e2eCarrier, "tracking": e2eTracking}
 }
@@ -1142,7 +1142,7 @@ func (x *e2eRun) finish(t *testing.T) {
 		found = found || strings.Contains(string(r.body), x.mci.pageToken) || r.bodyToken == x.mci.pageToken || strings.Contains(r.rawQuery, x.mci.pageToken) || r.header.Get("Authorization") != ""
 	}
 	x.need(t, found, "the leak scan's positive control (Page token in the Graph request) did not fire")
-	t.Logf("T12 PG connection peak: %d of 30 (max_connections)", x.peakConnections.Load())
+	t.Logf("T12 PG connection peak: %d of 60 (max_connections)", x.peakConnections.Load())
 	t.Logf("T12 evidence logs scanned clean")
 }
 

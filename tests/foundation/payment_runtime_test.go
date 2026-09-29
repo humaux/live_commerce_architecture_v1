@@ -51,7 +51,7 @@ func pwIsolatedFixture(t *testing.T) *testFixture {
 		"--tmpfs", "/var/lib/postgresql:rw,size=268435456", "-e", "POSTGRES_PASSWORD="+password,
 		"-e", "POSTGRES_DB=lc_foundation_test", "-p", "127.0.0.1::5432",
 		"postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280",
-		"-c", "shared_buffers=32MB", "-c", "max_connections=30").CombinedOutput()
+		"-c", "shared_buffers=32MB", "-c", "max_connections=60").CombinedOutput()
 	if err != nil {
 		t.Fatalf("start labelled local PG container: %v", err)
 	}
