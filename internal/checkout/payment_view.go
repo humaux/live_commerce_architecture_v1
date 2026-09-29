@@ -20,6 +20,14 @@ type PaymentMethodOption struct {
 	NameEN   string `json:"name_en"`
 }
 
+// OrderRefund is the buyer-safe refund total of a Stripe order (stripe-refund-v1 §7.2, D8): no refund
+// id, reason, provider string or failure detail. Pending covers REQUESTED..UNKNOWN refunds that still
+// hold the money; Refunded counts only succeeded, not-failed ones.
+type OrderRefund struct {
+	RefundedMinor int64 `json:"refunded_minor"`
+	PendingMinor  int64 `json:"pending_minor"`
+}
+
 // OrderPayment is already buyer-safe. The SQL projection deliberately excludes
 // attempt/account IDs, credentials, stored form bytes and provider references.
 type OrderPayment struct {
@@ -35,6 +43,9 @@ type OrderPayment struct {
 	// CancelRequested is emitted only for Stripe-attempt orders (view_v2, then cleared by
 	// PaymentView otherwise); nil is omitted so PAYUNi responses stay byte-identical (rulings §4).
 	CancelRequested *bool `json:"cancel_requested,omitempty"`
+	// Refund is emitted only for Stripe-attempt orders with refund activity (view_v2, D8); an absent
+	// field is the same as null, so PAYUNi and refund-free responses keep byte-identical output.
+	Refund *OrderRefund `json:"refund,omitempty"`
 }
 
 // PaymentView is an informational snapshot. BeginHosted and TakeHosted retain
@@ -94,10 +105,12 @@ func (s *HostedPaymentStarter) PaymentView(ctx context.Context, token, storeID, 
 
 // dropCancelUnlessStripe enforces rulings §4: v2 always emits cancel_requested (the validator
 // requires it), but only Stripe-attempt orders may expose it, so PAYUNi and not-started orders
-// serialize byte-identically whether or not Stripe is enabled.
+// serialize byte-identically whether or not Stripe is enabled. The refund totals follow the same rule
+// (D8): only Stripe-attempt orders can carry them.
 func dropCancelUnlessStripe(out *OrderPayment, isStripe bool) {
 	if !isStripe {
 		out.CancelRequested = nil
+		out.Refund = nil
 	}
 }
 
@@ -136,7 +149,18 @@ func validPaymentViewFor(out OrderPayment, orderID string, v2 bool) bool {
 		if !v2 {
 			return false
 		}
+	case "PARTIALLY_REFUNDED", "REFUNDED":
+		// Derived from succeeded refund facts (RD7): only the Stripe projection can say so, and the totals
+		// must agree with the state.
+		if !v2 || out.Refund == nil || out.Refund.RefundedMinor < 1 ||
+			(out.PaymentState == "REFUNDED") != (out.Refund.RefundedMinor >= out.TotalMinor) {
+			return false
+		}
 	default:
+		return false
+	}
+	if out.Refund != nil && (!v2 || out.Refund.RefundedMinor < 0 || out.Refund.PendingMinor < 0 ||
+		out.Refund.RefundedMinor > out.TotalMinor || out.Refund.PendingMinor > out.TotalMinor-out.Refund.RefundedMinor) {
 		return false
 	}
 	switch out.HandoffState {

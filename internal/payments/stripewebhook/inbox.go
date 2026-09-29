@@ -146,18 +146,22 @@ func (s *pgStore) admit(ctx context.Context, endpointID string, m material, ev s
 		return ErrDatabase
 	}
 	var disposition string
-	var receipt, attempt, signal *string
-	var session *string
+	var receipt, attempt, signal, refund *string
+	var session, objectType *string
 	// payments.stripe_webhook_prepare (integration_writer definer): locks the endpoint FOR SHARE,
 	// rejects a stale key_version with 40001 (no receipt, no ACK), dedupes per endpoint and
-	// preallocates the signal id for ACCEPT_PENDING.
-	if err = tx.QueryRow(bounded, `SELECT disposition,receipt_id::text,attempt_id::text,session_id,signal_id::text
+	// preallocates the signal id for ACCEPT_PENDING. The last two arguments (payment_intent and
+	// metadata.lc_refund) exist for refund/charge objects (stripe-refund-v1 §4.6, D2); refund_id is the
+	// refund a refund object mapped to, NULL for checkout and charge receipts.
+	if err = tx.QueryRow(bounded, `SELECT disposition,receipt_id::text,attempt_id::text,session_id,signal_id::text,
+		refund_id::text,object_type
 		FROM payments.stripe_webhook_prepare($1::uuid,$2::bigint,$3::text,$4::text,$5::bigint,$6::text,$7::text,
-		$8::text,$9::text,$10::text,$11::boolean,$12::boolean,$13::boolean,$14::boolean,$15::bytea,$16::bigint)`,
+		$8::text,$9::text,$10::text,$11::boolean,$12::boolean,$13::boolean,$14::boolean,$15::bytea,$16::bigint,
+		$17::text,$18::text)`,
 		endpointID, m.KeyVersion, ev.ID, ev.Type, ev.Created, ev.APIVersion, ev.ObjectType, ev.SessionID,
 		ev.ClientReferenceID, ev.MetadataAttempt, ev.AccountPresent, ev.Livemode, ev.ProbeSession,
-		ev.Malformed, ev.BodySHA256[:], ev.SignedAt).
-		Scan(&disposition, &receipt, &attempt, &session, &signal); err != nil {
+		ev.Malformed, ev.BodySHA256[:], ev.SignedAt, ev.PaymentIntentID, ev.MetadataRefund).
+		Scan(&disposition, &receipt, &attempt, &session, &signal, &refund, &objectType); err != nil {
 		return ErrDatabase
 	}
 	switch disposition {
@@ -166,8 +170,14 @@ func (s *pgStore) admit(ctx context.Context, endpointID string, m material, ev s
 		if receipt == nil || attempt == nil || signal == nil {
 			return ErrDatabase
 		}
-		// InsertTx shares the admission transaction: the job exists iff the receipt commits.
-		job, insertErr := s.jobs.InsertTx(bounded, tx, signalArgs{OperationID: *attempt, SignalID: *signal, Version: 1},
+		// InsertTx shares the admission transaction: the job exists iff the receipt commits. A refund
+		// object's signal job carries the REFUND operation id; every other receipt keeps the attempt id
+		// (post_river/0013 guard_stripe_receipt_link: operation_id = coalesce(refund_id, attempt_id)).
+		operation := *attempt
+		if refund != nil {
+			operation = *refund
+		}
+		job, insertErr := s.jobs.InsertTx(bounded, tx, signalArgs{OperationID: operation, SignalID: *signal, Version: 1},
 			&river.InsertOpts{Queue: s.queue})
 		if insertErr != nil || job == nil || job.Job == nil {
 			return ErrDatabase

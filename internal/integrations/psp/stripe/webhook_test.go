@@ -160,3 +160,55 @@ func TestStripeSP05Webhook(t *testing.T) {
 		t.Logf("%s", strings.TrimSpace(string(out)))
 	})
 }
+
+// TestWebhookProjectsRefundAndChargeObjects covers the stripe-refund-v1 §3 delta: refund and charge
+// objects add payment_intent and metadata.lc_refund to the projection, every other object is unchanged.
+func TestWebhookProjectsRefundAndChargeObjects(t *testing.T) {
+	v, err := NewWebhookVerifier(WebhookConfig{Secrets: []string{fakeWhsecA}, AccountID: fakeAccount, Environment: "SANDBOX"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Unix(1_800_000_000, 0)
+	ts := now.Unix()
+	verify := func(body string) (Event, error) {
+		return v.Verify([]byte(body), "t="+strconv.FormatInt(ts, 10)+",v1="+sign(fakeWhsecA, ts, []byte(body)), now)
+	}
+	envelope := func(typ, object string) string {
+		return `{"id":"evt_r1","object":"event","type":"` + typ + `","livemode":false,"created":5,"api_version":"` + APIVersion +
+			`","data":{"object":` + object + `}}`
+	}
+	refund := `{"id":"re_test_1","object":"refund","payment_intent":"pi_test_1","status":"failed",` +
+		`"metadata":{"lc_refund":"` + rfRefund + `","lc_attempt":"` + fxAttempt + `"},"destination_details":{"card":{"reference":"ARN_SENTINEL"}}}`
+	ev, err := verify(envelope("refund.failed", refund))
+	if err != nil || ev.Malformed || ev.ObjectType != "refund" || ev.SessionID != "re_test_1" || ev.PaymentIntentID != "pi_test_1" ||
+		ev.MetadataRefund != rfRefund || ev.MetadataAttempt != fxAttempt || ev.ClientReferenceID != "" {
+		t.Fatalf("refund projection: %+v err=%v", ev, err)
+	}
+	if s, _ := json.Marshal(ev); strings.Contains(string(s), "re_test_1") || strings.Contains(string(s), "ARN_SENTINEL") {
+		t.Fatal("event marshals content")
+	}
+	charge := `{"id":"ch_test_1","object":"charge","payment_intent":"pi_test_1","amount_refunded":100,"metadata":{}}`
+	ev, err = verify(envelope("charge.refunded", charge))
+	if err != nil || ev.ObjectType != "charge" || ev.SessionID != "ch_test_1" || ev.PaymentIntentID != "pi_test_1" || ev.MetadataRefund != "" {
+		t.Fatalf("charge projection: %+v err=%v", ev, err)
+	}
+	// A Dashboard refund carries no lc_refund; a null payment_intent is empty, not an error.
+	ev, err = verify(envelope("refund.created", `{"id":"re_test_2","object":"refund","payment_intent":null,"metadata":{}}`))
+	if err != nil || ev.Malformed || ev.MetadataRefund != "" || ev.PaymentIntentID != "" {
+		t.Fatalf("dashboard refund: %+v err=%v", ev, err)
+	}
+	// Unbounded metadata never passes through, and a non-string payment_intent is an unusable payload.
+	long := strings.Replace(refund, `"lc_refund":"`+rfRefund+`"`, `"lc_refund":"`+strings.Repeat("x", 300)+`"`, 1)
+	if ev, err = verify(envelope("refund.updated", long)); err != nil || ev.MetadataRefund != invalidRef {
+		t.Fatalf("long lc_refund: %+v err=%v", ev, err)
+	}
+	if ev, err = verify(envelope("charge.refunded", `{"id":"ch_test_1","object":"charge","payment_intent":{"id":"pi_test_1"}}`)); err != nil || !ev.Malformed {
+		t.Fatalf("object payment_intent must be malformed: %+v err=%v", ev, err)
+	}
+	// Checkout sessions are unchanged: payment_intent and lc_refund are not projected from them.
+	session := `{"id":"cs_test_9","object":"checkout.session","payment_intent":"pi_test_1","client_reference_id":"` + fxAttempt +
+		`","metadata":{"lc_attempt":"` + fxAttempt + `","lc_refund":"` + rfRefund + `"}}`
+	if ev, err = verify(envelope("checkout.session.completed", session)); err != nil || ev.PaymentIntentID != "" || ev.MetadataRefund != "" {
+		t.Fatalf("checkout projection changed: %+v err=%v", ev, err)
+	}
+}

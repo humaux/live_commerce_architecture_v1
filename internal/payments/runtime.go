@@ -39,7 +39,7 @@ func NewWorkerClient(ctx context.Context, pool *pgxpool.Pool, keys *accounts.Key
 }
 
 // NewPaymentWorkerClient adds Stripe dispatch to the existing profile queue.
-// It registers a non-claiming signal worker even when Stripe is disabled.
+// It registers non-claiming signal and refund workers even when Stripe is disabled.
 func NewPaymentWorkerClient(ctx context.Context, pool *pgxpool.Pool,
 	c WorkerConfig) (*river.Client[pgx.Tx], error) {
 	queue := jobqueue.ForProfile(c.Profile)
@@ -72,10 +72,17 @@ func NewPaymentWorkerClient(ctx context.Context, pool *pgxpool.Pool,
 	if err != nil {
 		return nil, errPaymentWorkerDatabase
 	}
+	// payment_refund_v1 (stripe-refund-v1 §6): like the signal worker it is registered even when Stripe
+	// is disabled and then only snoozes, never claiming an operation.
+	refund, err := newRefundWorker(ctx, pool, c.Stripe, c.Profile, c.Query)
+	if err != nil {
+		return nil, errPaymentWorkerDatabase
+	}
 	workers := river.NewWorkers()
 	river.AddWorker(workers, query)
 	river.AddWorker(workers, capture)
 	river.AddWorker(workers, signal)
+	river.AddWorker(workers, refund)
 	// River can include job errors in logs; keep the separate process silent
 	// until diagnostics have an explicit redaction contract. The payment schema
 	// confines leader maintenance; the profile queue still limits fetch.
