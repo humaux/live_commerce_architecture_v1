@@ -396,14 +396,14 @@ func (w *refundWorker) send(ctx, callCtx context.Context, client *stripe.Client,
 			// claim (RD4), so a delayed payment_reconcile_v1 can never lead to a second POST of this key.
 			o := (stripe.Refund{}).Observation("create", meta, s.AccountID, s.CredentialVersion, 1, id, s.AttemptID)
 			o.ErrorClass = "rejected"
-			return w.recordAndSnooze(ctx, id, claim, o, 5*time.Second)
+			return w.recordAndSnooze(ctx, id, claim, s.Currency, o, 5*time.Second)
 		}
 		// Uncertain, 409 or a rejection after an earlier send: the SAME key is retried (a replay returns the
 		// saved result); nothing here releases capacity.
 		return w.finish(ctx, id, claim, "stripe_refund_uncertain", refundBackoff(claim.Generation))
 	}
 	o := refund.Observation("create", meta, s.AccountID, s.CredentialVersion, sendCount, id, s.AttemptID)
-	return w.recordAndSnooze(ctx, id, claim, o, refundPollDelay(refund.Status, s.DBNow, s.RequestedAt))
+	return w.recordAndSnooze(ctx, id, claim, s.Currency, o, refundPollDelay(refund.Status, s.DBNow, s.RequestedAt))
 }
 
 // list resolves a refund whose create key can no longer be replayed (>= resend_until): match
@@ -443,7 +443,7 @@ func (w *refundWorker) list(ctx, callCtx context.Context, client *stripe.Client,
 			}
 		}
 	}
-	return w.recordAndSnooze(ctx, id, claim, o, delay)
+	return w.recordAndSnooze(ctx, id, claim, s.Currency, o, delay)
 }
 
 func (w *refundWorker) retrieve(ctx, callCtx context.Context, client *stripe.Client, id string,
@@ -459,7 +459,7 @@ func (w *refundWorker) retrieve(ctx, callCtx context.Context, client *stripe.Cli
 		return w.finishForError(ctx, id, claim, err, "stripe_retrieve_failed", claim.Generation)
 	}
 	o := refund.Observation("retrieve", meta, s.AccountID, s.CredentialVersion, 0, id, s.AttemptID)
-	return w.recordAndSnooze(ctx, id, claim, o, refundPollDelay(refund.Status, s.DBNow, s.RequestedAt))
+	return w.recordAndSnooze(ctx, id, claim, s.Currency, o, refundPollDelay(refund.Status, s.DBNow, s.RequestedAt))
 }
 
 // refundPollDelay: pending (or requires_action) polls every 60 s for the first hour, then every 15 min
@@ -503,7 +503,7 @@ func (w *refundWorker) recordUnsent(ctx context.Context, id string, claim core.C
 	s stripeRefundSnapshot, reason string) error {
 	o := (stripe.Refund{}).Observation("unsent", stripe.CallMeta{}, s.AccountID, 0, 0, id, s.AttemptID)
 	o.LocalReason = reason
-	return w.recordAndSnooze(ctx, id, claim, o, 5*time.Second)
+	return w.recordAndSnooze(ctx, id, claim, s.Currency, o, 5*time.Second)
 }
 
 // escalateBinding records the lease-less LOCAL escalate report of a changed binding. The account and
@@ -533,7 +533,11 @@ func (w *refundWorker) escalateBinding(ctx context.Context, id string, claim cor
 	return river.JobCancel(errRefundBinding)
 }
 
-func (w *refundWorker) recordAndSnooze(ctx context.Context, id string, claim core.ClaimResult,
+// recordAndSnooze records the report and snoozes. Ruling 23: a report whose Currency differs from the
+// request (wantCurrency) is still recorded (SQL opens REFUND_AMOUNT_MISMATCH and completes the op
+// stripe_refund_mismatch; capacity stays held, no fact) but the job ENDS here: no poll, no resend.
+// A merchant refresh or webhook opens a new job if a human resolves the review.
+func (w *refundWorker) recordAndSnooze(ctx context.Context, id string, claim core.ClaimResult, wantCurrency string,
 	report stripe.RefundObservation, delay time.Duration) error {
 	if err := w.record(ctx, id, claim, report, report.AttemptRef); err != nil {
 		if ctx.Err() != nil {
@@ -546,6 +550,9 @@ func (w *refundWorker) recordAndSnooze(ctx context.Context, id string, claim cor
 		}
 		// Anything else is a record failure; it also ends UNKNOWN.
 		return w.finish(ctx, id, claim, "stripe_record_failed", 5*time.Second)
+	}
+	if report.Currency != "" && report.Currency != wantCurrency {
+		return river.JobCancel(errRefundMismatch)
 	}
 	return river.JobSnooze(delay)
 }
