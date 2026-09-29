@@ -885,6 +885,14 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 		if len(m.logs.String()) == 0 {
 			t.Error("no log output captured: the absence checks above would be vacuous")
 		}
+		// every call of the client pins the API version (F-B10) and uses the configured key (fingerprint only), and a GET never carries a key
+		sum := sha256.Sum256([]byte(m.cfg.SecretKey))
+		wantFP := hex.EncodeToString(sum[:4])
+		for _, call := range m.fake.Calls() {
+			if call.StripeVersion != billingtest.APIVersion || call.KeyFingerprint != wantFP || (call.Method == "GET" && call.IdempotencyKey != "") {
+				t.Errorf("call %s %s: Stripe-Version=%q keyFP=%q idempotency=%q", call.Method, call.Path, call.StripeVersion, call.KeyFingerprint, call.IdempotencyKey)
+			}
+		}
 		body, _ := io.ReadAll(io.LimitReader(strings.NewReader(m.logs.String()), 1<<20))
 		if !regexp.MustCompile(`billing_stripe_error`).Match(body) {
 			t.Error("the failure paths produced no billing_stripe_error line: the error branches were not exercised")
