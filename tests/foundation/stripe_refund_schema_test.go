@@ -645,9 +645,19 @@ func TestStripeRF03Schema(t *testing.T) {
 	t.Run("mark_stripe_refund_sent returns CLOSED, not SEND, while REFUND_HISTORY or CONFLICTING_REPORT exists", func(t *testing.T) {
 		for _, reason := range []string{"REFUND_HISTORY", "CONFLICTING_REPORT"} {
 			e.stopAllWorkers()
-			id := e.mustRefund(t, o3, 300, "requested_by_customer")
-			srqReview(t, e, o3.attempt, reason)
+			restarted := false
+			id := func() string {
+				defer func() {
+					if !restarted && t.Failed() {
+						e.startWorker(t) // keep later subtests runnable after an early failure
+					}
+				}()
+				id := e.mustRefund(t, o3, 300, "requested_by_customer")
+				srqReview(t, e, o3.attempt, reason)
+				return id
+			}()
 			posts := e.fake.RefundPosts()
+			restarted = true
 			e.startWorker(t)
 			e.awaitRefund(t, "refund job finished", id, o3.attempt, 45*time.Second, `SELECT EXISTS(SELECT 1 FROM river_payment.river_job WHERE kind='payment_refund_v1' AND args->>'operation_id'=$1 AND state='completed')`)
 			if e.fake.RefundPosts() != posts {

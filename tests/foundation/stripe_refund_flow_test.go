@@ -797,9 +797,16 @@ func TestStripeRF07Lifecycle(t *testing.T) {
 		e.grant(t, o, "orders:read", "payments:refund")
 		// Hold the refund unsent: stop the worker, request, age past 19 h, restart the worker.
 		e.stopAllWorkers()
+		restarted := false
+		defer func() {
+			if !restarted {
+				e.startWorker(t) // later subtests need a worker even when this one failed early
+			}
+		}()
 		id := e.mustRefund(t, o, 1000, "requested_by_customer")
 		e.ageRefund(t, id, 19*time.Hour+30*time.Minute)
 		posts := e.fake.RefundPosts()
+		restarted = true
 		e.startWorker(t)
 		e.awaitRefundFact(t, id, o.attempt, "REJECTED")
 		if r := e.failureReason(t, id, "REJECTED"); r != "send_window_closed" {

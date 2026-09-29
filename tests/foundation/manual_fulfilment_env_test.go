@@ -176,47 +176,58 @@ func (e *rfxEnv) storeFor(t *testing.T) rfxOrder {
 	return o
 }
 
-// mfxRefusedStates builds one order per source state that MD6 refuses. The worker must be running.
-func (e *rfxEnv) mfxRefusedStates(t *testing.T, refunds bool) mfxStates {
+// moreOrder adds a buyer/order to the store of base (unpaid: a DRAFT hold) and tops the stock up when needed. One store
+// per gate keeps the number of connection pools under the focused PG's max_connections=30: every store the harness
+// seeds opens several pools that live until the test ends.
+func (e *rfxEnv) moreOrder(t *testing.T, base rfxOrder) rfxOrder {
+	t.Helper()
+	e.ensureStock(t, base)
+	s := base.s
+	s.p = sstMoreHold(t, base.s.p)
+	return rfxOrder{s: s, order: s.p.hold.OrderID, endpoint: base.endpoint, secret: base.secret}
+}
+
+// mfxRefusedStates builds one order per source state that MD6 refuses, all in the store of base (base's own hold is
+// the DRAFT one). The worker must be running.
+func (e *rfxEnv) mfxRefusedStates(t *testing.T, base rfxOrder, refunds bool) mfxStates {
 	t.Helper()
 	var st mfxStates
-	st.draft = e.storeFor(t)
+	st.draft = base
 	// AWAITING_PAYMENT: a started, pinned, unpaid attempt.
-	st.awaiting = e.storeFor(t)
+	st.awaiting = e.moreOrder(t, base)
 	res, _ := e.pinned(t, st.awaiting.s)
 	st.awaiting.attempt = res.AttemptID
 	// CANCELLED: the session expires unpaid and the poller closes the attempt.
-	st.cancelled = e.storeFor(t)
+	st.cancelled = e.moreOrder(t, base)
 	res, session := e.pinned(t, st.cancelled.s)
 	st.cancelled.attempt, st.cancelled.session = res.AttemptID, session
 	e.fake.SetState(session, "expired", "unpaid")
 	e.awaitFact(t, res.AttemptID, "CLOSED_UNPAID")
 	// PAID_ALLOCATION_FAILED + REVIEW_REQUIRED work: a payment that arrives after the closure (§0.2 late payment).
-	st.allocFailed = e.storeFor(t)
+	st.allocFailed = e.moreOrder(t, base)
 	res, session = e.pinned(t, st.allocFailed.s)
 	st.allocFailed.attempt, st.allocFailed.session = res.AttemptID, session
 	e.fake.SetState(session, "expired", "unpaid")
 	e.awaitFact(t, res.AttemptID, "CLOSED_UNPAID")
 	e.fake.SetState(session, "complete", "paid")
-	if status := e.deliver(t, st.allocFailed.endpoint, st.allocFailed.secret, sflEvent(res.AttemptID, session)); status != 200 {
+	if status := e.deliver(t, base.endpoint, base.secret, sflEvent(res.AttemptID, session)); status != 200 {
 		t.Fatalf("late-payment webhook answered %d", status)
 	}
 	e.awaitFact(t, res.AttemptID, "CAPTURED")
 	e.awaitReview(t, res.AttemptID, "PAID_ALLOCATION_FAILED")
 	// CONFIRMED + work REVIEW_REQUIRED (owner fixture: no product path yields it on demand).
-	st.reviewWork = e.storeFor(t)
-	st.reviewWork = e.payInStore(t, st.reviewWork)
+	st.reviewWork = e.payMore(t, base)
 	mustExec(t, e.f.owner, `UPDATE fulfillment.payment_work_items SET state='REVIEW_REQUIRED' WHERE order_id=$1`, st.reviewWork.order)
 	// READY work + a review that appeared after capture.
-	st.refundHistory = e.payInStore(t, e.storeFor(t))
+	st.refundHistory = e.payMore(t, base)
 	srqReview(t, e, st.refundHistory.attempt, "REFUND_HISTORY")
-	st.conflicting = e.payInStore(t, e.storeFor(t))
+	st.conflicting = e.payMore(t, base)
 	srqReview(t, e, st.conflicting.attempt, "CONFLICTING_REPORT")
 	if refunds {
-		st.fullRefund = e.payInStore(t, e.storeFor(t))
+		st.fullRefund = e.payMore(t, base)
 		id := e.mustRefund(t, st.fullRefund, st.fullRefund.captured, "requested_by_customer")
 		e.awaitRefundFact(t, id, st.fullRefund.attempt, "SUCCEEDED")
-		st.refundInFlight = e.payInStore(t, e.storeFor(t))
+		st.refundInFlight = e.payMore(t, base)
 		e.fake.HoldNextRefund("pending", "processing")
 		id = e.mustRefund(t, st.refundInFlight, st.refundInFlight.captured, "requested_by_customer")
 		e.awaitRefund(t, "refund pinned", id, st.refundInFlight.attempt, 45*time.Second, `SELECT stripe_refund_id IS NOT NULL FROM payments.stripe_refunds WHERE id=$1`)

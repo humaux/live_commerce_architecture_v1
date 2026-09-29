@@ -39,10 +39,11 @@ func mffAssertQuiet(t *testing.T, e *rfxEnv, o rfxOrder, before map[string]strin
 func TestManualFulfilmentMF03Transitions(t *testing.T) {
 	e := rfxNew(t)
 	e.startWorker(t)
-	main := e.payInStore(t, e.storeFor(t))
-	race := e.payInStore(t, e.storeFor(t))
-	partial := e.payInStore(t, e.storeFor(t))
-	st := e.mfxRefusedStates(t, true)
+	base := e.storeFor(t) // one store for the whole gate (connection budget); base's own hold is the DRAFT order
+	main := e.payMore(t, base)
+	race := e.payMore(t, base)
+	partial := e.payMore(t, base)
+	st := e.mfxRefusedStates(t, base, true)
 	// the worker keeps polling: wait for every capture job to settle so background writes cannot look like effects
 	for _, o := range []rfxOrder{main, race, partial} {
 		e.await(t, "capture jobs settled", o.attempt, 45*time.Second, `SELECT NOT EXISTS(SELECT 1 FROM river_payment.river_job WHERE args->>'operation_id'=$1 AND state NOT IN ('completed','cancelled','discarded'))`)
@@ -199,7 +200,7 @@ func TestManualFulfilmentMF03Transitions(t *testing.T) {
 	})
 
 	t.Run("two concurrent records: exactly one version 1 (real two-transaction witness)", func(t *testing.T) {
-		o := e.payInStore(t, e.storeFor(t))
+		o := e.payMore(t, base)
 		ctx := context.Background()
 		holder, err := e.f.owner.Begin(ctx)
 		if err != nil {
@@ -263,7 +264,7 @@ func TestManualFulfilmentMF03Transitions(t *testing.T) {
 	})
 
 	t.Run("void of an order that was never shipped", func(t *testing.T) {
-		o := e.payInStore(t, e.storeFor(t))
+		o := e.payMore(t, base)
 		if status, out, _ := e.mfxPut(o, o.token(), t04Key("mff-void0"), mfxVoid(0, "wrong_order")); status != 422 || srqCode(out) != "void_requires_shipped" {
 			t.Fatalf("void without a head: %d %v", status, out)
 		}

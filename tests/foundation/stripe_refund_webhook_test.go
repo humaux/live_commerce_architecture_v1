@@ -301,9 +301,16 @@ func TestStripeRF08Webhook(t *testing.T) {
 		o := e.payMore(t, oa)
 		e.grant(t, o, "orders:read", "payments:refund")
 		e.stopAllWorkers() // hold the refund unsent
+		restarted := false
+		defer func() {
+			if !restarted {
+				e.startWorker(t)
+			}
+		}()
 		id := e.mustRefund(t, o, 1000, "requested_by_customer")
 		e.fake.DashboardRefund(o.pi, 500)
 		posts := e.fake.RefundPosts()
+		restarted = true
 		e.startWorker(t)
 		e.awaitRefundFact(t, id, o.attempt, "REJECTED")
 		if r := (&srfEnv{rfxEnv: e}).failureReason(t, id, "REJECTED"); r != "external_refund_detected" {
