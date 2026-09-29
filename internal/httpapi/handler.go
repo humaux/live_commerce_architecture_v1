@@ -50,6 +50,11 @@ type Options struct {
 	// RefundJobs is the insert-only river_payment client (cmd/api newMerchantRefundJobs). nil leaves the
 	// stripe-refund-v1 §7.1 refund routes unmounted.
 	RefundJobs *river.Client[pgx.Tx]
+	// PaymentEnvironment is the deployment's payment environment, SANDBOX or LIVE (payments.ProfileEnvironment of
+	// COMMERCE_PAYMENT_PROFILE, chosen by cmd/api). The refund POST refuses an attempt of another environment
+	// (stripe-live-enable-v1 §5.2, S5). Empty means SANDBOX so pre-LIVE callers keep their behavior; any other
+	// value not in {SANDBOX, LIVE} leaves the refund routes unmounted.
+	PaymentEnvironment string
 }
 
 func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
@@ -131,7 +136,11 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerOrderRoutes(mux, pool)
 	registerStudioRoutes(mux, pool, configured.Studio || configured.Live != nil, configured.Live, configured.BrowserInput)
 	registerClaimRoutes(mux, pool, configured.ClaimLabels)
-	registerRefundRoutes(mux, pool, configured.RefundJobs)
+	paymentEnvironment := configured.PaymentEnvironment
+	if paymentEnvironment == "" {
+		paymentEnvironment = "SANDBOX"
+	}
+	registerRefundRoutesIn(mux, pool, configured.RefundJobs, paymentEnvironment)
 	registerShipmentRoutes(mux, pool)
 	foundation := platform.NewHandler(pool, platform.HandlerOptions{SessionStoreList: configured.SessionStoreList})
 	if configured.SessionStoreList {

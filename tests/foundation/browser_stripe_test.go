@@ -582,7 +582,7 @@ func (e *sbEnv) act(t *testing.T, a sbAction) error {
 	case "method-enable":
 		e.setMethod(t, true)
 	case "qualification-revoke": // owner fixture: the operator revokes the method qualification (SP07 drift pattern)
-		mustExec(t, e.f.owner, `UPDATE payments.account_qualifications SET revoked_at=clock_timestamp() WHERE id=$1`, e.qual)
+		qualExec(t, e.f.owner, `UPDATE payments.account_qualifications SET revoked_at=clock_timestamp() WHERE id=$1`, e.qual)
 	case "binding-disable": // owner fixture: the store's Stripe binding is disabled (PAYUNi drift pattern)
 		mustExec(t, e.f.owner, `UPDATE integration.bindings SET enabled=false,semantic_version=semantic_version+1
 		 WHERE id=(SELECT binding_id FROM integration.merchant_accounts WHERE id=$1)`, e.conn)

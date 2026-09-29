@@ -436,11 +436,13 @@ sys.exit(1 if names & {"dsn_lc_stripe_registrar", "dsn_lc_meta_registrar"} else 
     why44+=" ops-admin audit line missing or leaked a value"
   out44=$(STRIPE_SECRET_KEY=$live_key STRIPE_ACCOUNT_ID=acct_0000000000 "$LC_SCRIPTS_DIR/ops-admin.sh" stripe-admin register \
     --tenant t --store s --principal p 2>&1 </dev/null) && why44+=" ops-admin accepted a live-shaped key"
-  [[ "$out44" == *"unexpected format"* && "$out44" != *"$live_key"* ]] || why44+=" live key not refused by name"
+  # stripe-live-enable-v1 LR-3/O2: an sk_live_ key is refused in every mode with this fixed code (was "unexpected format").
+  [[ "$out44" == *"stripe_live_key_unrestricted"* && "$out44" != *"$live_key"* ]] || why44+=" live key not refused by name"
+  # §5.2: without LC_STRIPE_LIVE_ENABLED + LC_STRIPE_LIVE_APPROVAL_REF in compose.env, LIVE is refused before any container.
   out44=$("$LC_SCRIPTS_DIR/ops-admin.sh" stripe-admin qualify --profile LIVE 2>&1 </dev/null) && why44+=" ops-admin accepted --profile LIVE"
   [[ "$out44" == *"LIVE is refused"* ]] || why44+=" --profile LIVE not refused by name"
   unset live_key
-  if [[ -z "$why44" ]]; then rec S44 PASS "stripe-admin/meta-admin one-shots run isolated, registrar logins admitted, no long-running service mounts them; ops-admin.sh forwards by name, audits without values, refuses live keys and --profile LIVE"; else rec S44 FAIL "$why44 (logs/S44-*.log)"; fi
+  if [[ -z "$why44" ]]; then rec S44 PASS "stripe-admin/meta-admin one-shots run isolated, registrar logins admitted, no long-running service mounts them; ops-admin.sh forwards by name, audits without values, refuses sk_live_ keys and --profile LIVE without the pair"; else rec S44 FAIL "$why44 (logs/S44-*.log)"; fi
 
   # S17-S24 edge
   local r
