@@ -61,7 +61,7 @@ pgsocket volume    : postgres ◄── migrate (network none), provision-logins
 ```
 Profiles: `db` (postgres, migrate, provision-logins), `app` (edge-netns, caddy, api, admin,
 storefront, expiry-worker), `payments-sandbox` (payment-worker-sandbox: PAYUNi + Stripe/refund dispatch when
-`LC_STRIPE_ENABLED=1`), `payments-live` (REAL MONEY; Stripe is refused on LIVE), `meta` (meta-worker, holds K_actor),
+`LC_STRIPE_ENABLED=1`), `payments-live` (REAL MONEY; Stripe LIVE only with the pair, rule 20), `meta` (meta-worker, holds K_actor),
 `claims` (claims-worker: intake poller + the only sender of Meta private replies; owner approval for real sends),
 `ops` (pg-ops, stripe-admin, meta-admin; never listed in `COMPOSE_PROFILES`).
 The media worker is **not deployed**, because it is MOCK-only (`worker_env.go:174`); there is no `media` profile
@@ -179,15 +179,24 @@ No new Go modules and no new npm packages. `lcentry` uses only the Go standard l
     environment, so any later plain `docker compose up/run` recreated services on the previous release.
     deploy.sh now rewrites the line atomically just before `up -d`; watchdog W10 flags drift (S43).
 
-19. **Operator inputs are never files or env-file values.** `STRIPE_SECRET_KEY`, `STRIPE_ACCOUNT_ID`,
+19. **Operator inputs are never repo files, knob files or env-file values.** `STRIPE_SECRET_KEY`, `STRIPE_ACCOUNT_ID`,
     `STRIPE_WEBHOOK_SECRET[_NEXT]` and `META_PAGE_ACCESS_TOKEN` are read by `ops-admin.sh` from the caller's
-    environment or a no-echo prompt and forwarded to a one-shot container by NAME (never argv). They are visible in
+    environment, a no-echo prompt or (O-D, stripe-live-enable-v1 LD3) a transient transport file named by
+    `<NAME>_FILE` (absolute path, regular file, not a symlink, owned by the invoking uid, mode 0400/0600, one line;
+    the owner removes it after registration) and forwarded to a one-shot container by NAME (never argv). They are visible in
     that container's config until `--rm` removes it (host root only, like the secret files). `lcentry` deliberately
     still expands only `DATABASE_URL` and `COMMERCE_*` `_FILE` variables. preflight P07 forbids `STRIPE_*` and
     `META_PAGE_ACCESS_TOKEN` in any knob file, and `COMMERCE_META_GRAPH_BASE_URL` (loopback MOCK switch).
-20. **One Stripe switch.** `LC_STRIPE_ENABLED` (compose.env) drives `COMMERCE_STRIPE_CHECKOUT_ENABLED` and
-    `COMMERCE_STRIPE_WEBHOOK_ENABLED` on the api and `COMMERCE_STRIPE_ENABLED` on `payment-worker-sandbox` only, so the
-    three cannot diverge and the LIVE worker can never receive it. preflight P06 requires SANDBOX + `payments-sandbox`.
+20. **Two Stripe switches** (stripe-live-enable-v1 LD6, §5.2). `LC_STRIPE_ENABLED` (compose.env) drives
+    `COMMERCE_STRIPE_WEBHOOK_ENABLED` on the api and `COMMERCE_STRIPE_ENABLED` on the payment worker of the deployed profile
+    (`payment-worker-sandbox`, or `payment-worker-live` when LIVE). `LC_STRIPE_CHECKOUT_ENABLED` (default: follows
+    `LC_STRIPE_ENABLED`) drives only `COMMERCE_STRIPE_CHECKOUT_ENABLED` on the api: setting it to 0 and restarting the api removes
+    Stripe from the hosted checkout for every store while webhook and worker keep reconciling (never stop the worker to stop
+    sales). LIVE is admitted only with the pair `LC_STRIPE_LIVE_ENABLED=1` + `LC_STRIPE_LIVE_APPROVAL_REF`
+    (`[A-Za-z0-9._:-]{8,128}`, the pointer to the owner's written approval), wired into `api` and `payment-worker-live` by
+    compose and forwarded by `ops-admin.sh` to stripe-admin by name. preflight P06 requires (SANDBOX and `payments-sandbox`)
+    or (LIVE and `payments-live` and the pair); a half-set pair fails. `live-revoke` and `method` never need the pair.
+    Operator steps: `docs/runbooks/stripe-live.md`.
 21. **No `media-worker` service or `media` profile**, although the unit brief listed one "off by default". Its startup
     contract needs three media logins, a material keyring and a projects JSON that are not in the manifest, and every
     LiveKit project is hard-wired to MOCK (`worker_env.go:174`). A stub that cannot start would make
