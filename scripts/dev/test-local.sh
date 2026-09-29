@@ -125,6 +125,7 @@ fi
 if [[ "$test_mode" == --browser-password-auth ]]; then
   # PA11: refuse a no-test success (merchant-password-auth-v1 §9).
   test -f tests/admin/password-auth.spec.ts
+  test -f tests/admin/password-bff.test.ts
   test -f tests/foundation/browser_password_auth_test.go
   grep -q '^func TestBrowserPasswordAuth' tests/foundation/browser_password_auth_test.go
   mkdir -p output/playwright
@@ -257,6 +258,7 @@ if [[ "$test_mode" == --browser-identity ]]; then
   LC_BROWSER_IDENTITY_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=180s -run '^(TestBrowserIdentityRealChain|TestBrowserSettingsWizardRealChain|TestMerchantAccountAPIProcessRestart)$' -v ./tests/foundation
   printf 'PASS: isolated PG + signed MOCK IdP browser chain; fixture removed at exit.\n'
 elif [[ "$test_mode" == --browser-password-auth ]]; then
+  node --test --experimental-strip-types tests/admin/password-bff.test.ts   # PA10 (Node, no browser, no PG)
   LC_BROWSER_PASSWORD_AUTH_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=900s -run '^TestBrowserPasswordAuth$' -v ./tests/foundation
   printf 'PASS: isolated Next + Go + PG + loopback SMTP fake password-auth browser chain (PA11); no real mailbox, no owner secret.\n'
 elif [[ "$test_mode" == --browser-admin-legacy ]]; then
