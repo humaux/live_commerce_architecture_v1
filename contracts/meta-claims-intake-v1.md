@@ -787,3 +787,20 @@ Integrator note at freeze (2026-09-29): the two skip codes `binding_disabled` / 
 are accepted (clearer diagnosis than one code). Round-3 P2s (column lists, `principal_holds`
 definer, `origin_ref`, `issue_system_link` return type, stale "generation 0 only" wording in IR-9)
 are fixed by the implementing unit, which must list how each was handled.
+
+### Wave-3 amendment (2026-09-29, integrator ruling i — binding; MCI02/KC03 compare against §4.3 plus these rows)
+
+These rows amend the §4.3 table (ratifying meta-intake-core round 2). They are additions or
+replacements of the named §4.3 rows only; every other §4.3 row is unchanged.
+
+| Role | Object | Privilege | RLS policy |
+| --- | --- | --- | --- |
+| commerce_integration_writer | functions | + EXECUTE `identity.principal_holds(uuid,uuid,uuid,text[])` (so `integration.register_meta_page_token` enforces §7 "owner membership + store validated": principal, tenant, store and membership active and `integration:manage` held; raises 42501 otherwise) | — |
+| commerce_integration_writer | schema | + USAGE `identity` (needed to call `identity.principal_holds`) | — |
+| commerce_meta_registrar | schema | + USAGE `integration` (needed to call `integration.register_meta_page_token`) | — |
+| commerce_integration_writer | integration.meta_page_heads | UPDATE`(current_version, updated_at)` — replaces UPDATE`(current_version)` in the §4.3 row "integration.meta_page_credentials, integration.meta_page_heads" | `true` (bodies are the control) |
+
+Related wave-3 rulings recorded in `docs/delivery/units/meta-intake-rulings.md`: j (RATE_LIMITED
+stays out of the merchant `Stats.Rejected` 7-key board), k (§5.4 exact job link only for jobs
+inserted by the intake login; CHECK `events_source_platform`), l (§3: a Facebook comment with
+`parent_id == post_id` is top-level; late webhooks use the window's current match mode).
