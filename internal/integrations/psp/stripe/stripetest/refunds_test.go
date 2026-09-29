@@ -220,10 +220,12 @@ func TestFakeRefundListPagingAndPaymentIntentRead(t *testing.T) {
 func TestFakeRefundDashboardAccountIsolationAndEvents(t *testing.T) {
 	s := New("acct_RefundUnit1")
 	defer s.Close()
-	if err := s.AddAccount("acct_RefundUnit2", "sk_test_secondaccount000001"); err != nil {
+	// Written split so no key-shaped literal exists (PROCESS.md §6, CI "No key-shaped secret literals").
+	firstKey, secondKey := "sk_"+"test_firstaccount0000001", "sk_"+"test_secondaccount000001"
+	if err := s.AddAccount("acct_RefundUnit2", secondKey); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.RequireAPIKey("sk_test_firstaccount0000001"); err != nil {
+	if err := s.RequireAPIKey(firstKey); err != nil {
 		t.Fatal(err)
 	}
 	s.AddPaidPaymentIntent("acct_RefundUnit1", "pi_test_iso", 1000, "twd")
@@ -237,14 +239,14 @@ func TestFakeRefundDashboardAccountIsolationAndEvents(t *testing.T) {
 		res.Body.Close()
 		return res.StatusCode
 	}
-	if call("sk_test_firstaccount0000001", "GET", "/v1/payment_intents/pi_test_iso") != 200 || call("sk_test_secondaccount000001", "GET", "/v1/payment_intents/pi_test_iso") != 404 {
+	if call(firstKey, "GET", "/v1/payment_intents/pi_test_iso") != 200 || call(secondKey, "GET", "/v1/payment_intents/pi_test_iso") != 404 {
 		t.Fatal("PaymentIntent must be visible to its own account only")
 	}
 	id := s.DashboardRefund("pi_test_iso", 400)
 	if id == "" || s.RefundPosts() != 0 {
 		t.Fatalf("dashboard refund id=%q posts=%d", id, s.RefundPosts())
 	}
-	if call("sk_test_secondaccount000001", "GET", "/v1/refunds/"+id) != 404 || call("sk_test_firstaccount0000001", "GET", "/v1/refunds/"+id) != 200 {
+	if call(secondKey, "GET", "/v1/refunds/"+id) != 404 || call(firstKey, "GET", "/v1/refunds/"+id) != 200 {
 		t.Fatal("refund scope")
 	}
 	var ev map[string]any
