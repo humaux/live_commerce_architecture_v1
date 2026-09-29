@@ -207,9 +207,9 @@ No new Go modules and no new npm packages. `lcentry` uses only the Go standard l
 
 - **S29m (I8) stays BLOCKED**: not in R1's path (Studio/media are not deployed, `LC_REQUIRE_MEDIA_GATE=0`); owner lane =
   integrator (restore-stable `live.media_plan_ready()` migration). It keeps `smoke.sh full` at exit 3 by design.
-- **G1 Meta route activation has no operator entry point**: `meta_inbox.activate_route` (commerce_meta_curator) is called only
-  by tests; there is no CLI, HTTP path or login. Real-merchant comment intake cannot be onboarded until a `meta-admin route`
-  subcommand (+ curator login in logins.tsv) exists; needs an implementation unit and the owner's Meta asset proof.
+- **G1 closed (R1 ruling F2)**: `ops-admin.sh meta-admin route|route-disable` (login `lc_meta_registrar`; definers
+  `integration.register_meta_binding` 0066 + `meta_inbox.activate_route`/`disable_route` 0028). No curator login: the curator
+  authority is retention/terminal review, not routing. Gate `TestMetaRouteRegistrarF2` (REAL_PG), smoke S44.
 - **G2 claim-source routes are never mounted in the deployed api**: `registerClaimSourceRoutes` is reached only through
   `registerClaimRoutes`, which needs `COMMERCE_CLAIMS_ENABLED=1`; `cmd/api/claims.go` refuses that unless Studio is enabled,
   and preflight P06 forces `COMMERCE_STUDIO_ENABLED=0`. `PUT .../claim-source` is therefore 404 here. Owner lane: cmd/api +

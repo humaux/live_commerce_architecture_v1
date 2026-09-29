@@ -47,7 +47,7 @@ Command media-worker owns the process that runs the live-media River queue: Live
 
 ## `cmd/meta-admin`
 
-Command meta-admin owns the operator-only Meta registrar CLI (meta-claims-intake-v1 §7).
+Command meta-admin owns the operator-only Meta registrar CLI (meta-claims-intake-v1 §7, R1 ruling F2).
 
 - Depends on (internal): `internal/command`, `internal/integrations/metareply`
 - Depends on (third-party): `github.com/jackc/pgx/v5/pgxpool`
@@ -239,7 +239,7 @@ Package meta owns admission of signed Meta webhook events: HMAC verification, st
 
 ## `internal/integrations/metareply`
 
-Package metareply owns the first Meta private reply of a keyword-claim bundle (meta-claims-intake-v1 §6.3, §7): the dispatcher routes (facebook|instagram, meta.private_reply, service), the per-store Page-token custody (AES-256-GCM seal/open and the registrar call), and the fixed reply text.
+Package metareply owns the first Meta private reply of a keyword-claim bundle (meta-claims-intake-v1 §6.3, §7): the dispatcher routes (facebook|instagram, meta.private_reply, service), the per-store Page-token custody (AES-256-GCM seal/open and the registrar call), the operator route registration (RegisterRoute/DisableRoute: store binding + webhook route, R1 ruling F2) and the fixed reply text.
 
 - Depends on (internal): `internal/claims`, `internal/command`, `internal/integrations/core`, `internal/integrations/meta`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`

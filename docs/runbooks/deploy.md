@@ -27,7 +27,7 @@ Change rules: 命令必须与脚本保持一致；改脚本行为时同步本文
   - B3：PAYUNi 商户资质和 LIVE 批准。
   - B4：PAYUNi NotifyURL 没有接收端（`/payuni/notify` 由 Caddy 保留并返回 404）。支付结果只来自 worker 查询。
   - B5：直播/Studio（LiveKit 仅 MOCK）。
-  - B6：Meta 未开放给客户：Meta App Review / Access Tier 是 owner 事项；评论 → 认领 → 私信链路的运维缺口见 §6.3 与 merchant-onboarding.md（**没有 Meta 路由激活的运维入口 G1；claim-source 路由未挂载 G2**）。
+  - B6：Meta 未开放给客户：Meta App Review / Access Tier 是 owner 事项；评论 → 认领 → 私信链路的运维缺口见 §6.3 与 merchant-onboarding.md（G1 路由激活已由 `meta-admin route` 关闭；**claim-source 路由未挂载 G2 仍开放**）。
   - B7：T21 独立评审未完成。
   - B8：Compose 作为生产环境与 §4.2 的定位冲突。
 - 状态词汇：DESIGN / MODEL_ONLY / MOCK / SANDBOX / LIVE / NOT_RUN / BLOCKED。本地 smoke 通过不等于产品通过。
@@ -203,9 +203,19 @@ deploy/scripts/deploy.sh upgrade <tag>
    `private_reply=true` 还要求该绑定已登记 Page token（否则 `page_token_missing`）。**这个路由现在不能靠部署配置打开**：在本包构建的 api 里它返回 404（原因见 G2）。
 5. 启用真实私信发送（**需要 owner 明确批准**，因为这会向真实买家发消息）：填好 `claims-worker.env` 的 Graph 版本，`COMPOSE_PROFILES` 增加 `claims`，
    `deploy.sh upgrade`；部署后检查会等待 `claims_worker_ready`。日志里的 `claims_worker_routes` 行列出该进程服务的路由（IR-13）。
-6. **已知缺口（G1，需要集成者/owner 裁决）**：`meta_inbox.activate_route(...)`（把 Meta app/object/asset 映射到租户与店铺，`commerce_meta_curator` 权限）
-   目前**只有测试调用，没有运维 CLI、HTTP 或登录**，所以真实店铺的评论入口无法被激活。需要一个 `meta-admin route` 子命令和对应的 curator 登录
-   （owner 必须提供 Meta 资产所有权证明 `proof_hash`）。在它落地前 §6.3 的 1–5 只能验证到 webhook 验证与 K_actor/claims-worker 启动，不能端到端接入真实商家。
+6. **Webhook 路由（G1 已关闭，R1 裁决 F2）**：把 Meta app/object/asset 映射到租户与店铺。登录 `lc_meta_registrar`（已在 provisioning 中，
+   preflight/provisioning 检查它能执行 `register_meta_binding`、`activate_route`、`disable_route`、`register_meta_page_token` 共 4 个 definer）。
+   `--proof` 是 owner 提供的资产所有权证据的 sha256（小写 64 位十六进制），例如把 `GET /{page-id}/subscribed_apps` 的 Graph 读回结果存档后
+   `sha256sum`；CLI 不调用 Meta，证据文件由 owner 保管（不进仓库、不进日志）。`--principal` 必须在该店铺持有 `integration:manage`。
+   ```sh
+   deploy/scripts/ops-admin.sh meta-admin route --tenant ... --store ... --principal ... \
+     --app <app_id> --object page --asset <page-id> --proof <sha256hex> --proof-expires 2026-12-31T00:00:00Z --expected-epoch 0
+   # 输出 {"binding_id":...,"binding_version":1,"route_id":...,"route_epoch":1}；binding_id 用于第 3 步 page-token 的 --binding
+   # 重新激活/换证据：--expected-epoch <当前 route_epoch>；停用：
+   deploy/scripts/ops-admin.sh meta-admin route-disable --route <route_id> --expected-epoch <route_epoch>
+   ```
+   顺序：先第 6 步（route，得到 binding_id）→ 再第 3 步（page-token）→ 第 4 步（认领来源，仍受 G2 阻塞）。
+   证据：`TestMetaRouteRegistrarF2`（REAL_PG：签名评论在 route 前隔离、route 后恰好一个 job、跨店冲突、停用后再隔离、无 integration:manage 拒绝）、smoke S44。
 
 7. **已知缺口（G2，需要集成者裁决；归属 cmd/api + internal/httpapi 的认领/Studio 通道，部署单元不绕过）**：`claim-source` 路由从未在已部署的 api 里挂载。
    `registerClaimSourceRoutes` 只被 `registerClaimRoutes`（`internal/httpapi/claims.go:110`）调用；后者只在 `COMMERCE_CLAIMS_ENABLED=1` 时运行，

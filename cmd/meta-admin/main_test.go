@@ -117,3 +117,55 @@ func TestDatabaseFailuresAreMasked(t *testing.T) {
 		t.Fatalf("parse error not masked: %v", err)
 	}
 }
+
+const routeArgs = "route --tenant 11111111-1111-4111-8111-111111111111 --store 22222222-2222-4222-8222-222222222222 " +
+	"--principal 33333333-3333-4333-8333-333333333333 --app 123456789012345 --object page --asset 1234567890 " +
+	"--proof 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef --proof-expires 2099-01-01T00:00:00Z --expected-epoch 0"
+
+// F2: route / route-disable validate every flag before connecting, print only IDs/epochs, mask DB errors.
+func TestRouteSubcommands(t *testing.T) {
+	savedR, savedD := route, disable
+	defer func() { route, disable = savedR, savedD }()
+	var got metareply.RouteRegistration
+	route = func(_ context.Context, _ string, r metareply.RouteRegistration) (any, error) {
+		got = r
+		return metareply.RouteResult{BindingID: "44444444-4444-4444-8444-444444444444", BindingVersion: 1, RouteID: "55555555-5555-4555-8555-555555555555", RouteEpoch: 1}, nil
+	}
+	disable = func(_ context.Context, _ string, id string, epoch int64) (any, error) {
+		return map[string]int64{"route_epoch": epoch + 1}, nil
+	}
+	out, err := do(t, env(), routeArgs)
+	if err != nil || out != `{"binding_id":"44444444-4444-4444-8444-444444444444","binding_version":1,"route_id":"55555555-5555-4555-8555-555555555555","route_epoch":1}`+"\n" ||
+		got.Object != "page" || got.AppID != "123456789012345" || got.ExpectedEpoch != 0 || got.ProofExpires.Year() != 2099 {
+		t.Fatalf("route: %q %v %+v", out, err, got)
+	}
+	if out, err := do(t, env(), "route-disable --route 55555555-5555-4555-8555-555555555555 --expected-epoch 1"); err != nil || out != `{"route_epoch":2}`+"\n" {
+		t.Fatalf("disable: %q %v", out, err)
+	}
+	route = func(context.Context, string, metareply.RouteRegistration) (any, error) {
+		t.Fatal("connected on invalid input")
+		return nil, nil
+	}
+	disable = func(context.Context, string, string, int64) (any, error) {
+		t.Fatal("connected on invalid input")
+		return nil, nil
+	}
+	for _, line := range []string{
+		strings.Replace(routeArgs, "--object page", "--object tiktok", 1),
+		strings.Replace(routeArgs, "--proof 0123", "--proof ABCD", 1),
+		strings.Replace(routeArgs, "2099-01-01T00:00:00Z", "2001-01-01T00:00:00Z", 1),
+		strings.Replace(routeArgs, " --expected-epoch 0", "", 1),
+		strings.Replace(routeArgs, "--app 123456789012345", "--app x1", 1),
+		routeArgs + " --route 55555555-5555-4555-8555-555555555555",
+		"route-disable --route 55555555-5555-4555-8555-555555555555 --expected-epoch 0",
+		"route-disable --route nope --expected-epoch 1",
+	} {
+		if out, err := do(t, env(), line); !errors.Is(err, errUsage) || out != "" {
+			t.Fatalf("%q -> %q %v", line, out, err)
+		}
+	}
+	route, disable = savedR, savedD
+	if out, err := do(t, env(), routeArgs); !errors.Is(err, errRegister) || out != "" || strings.Contains(err.Error(), dsnSentinel1) {
+		t.Fatalf("db failure not masked: %q %v", out, err)
+	}
+}

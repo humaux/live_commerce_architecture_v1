@@ -28,6 +28,7 @@ var (
 var (
 	assetPattern = regexp.MustCompile(`^[0-9]{1,40}$`)
 	scopePattern = regexp.MustCompile(`^[a-z_]{1,64}$`)
+	proofPattern = regexp.MustCompile(`^[0-9a-f]{64}$`)
 )
 
 // register is the database step, replaceable by tests.
@@ -66,8 +67,58 @@ func main() {
 	}
 }
 
+// route and disable are the database steps of `route` / `route-disable`, replaceable by tests.
+var route = func(ctx context.Context, dsn string, r metareply.RouteRegistration) (any, error) {
+	var out metareply.RouteResult
+	err := withPool(ctx, dsn, func(pool *pgxpool.Pool) (err error) {
+		out, err = metareply.RegisterRoute(ctx, pool, r)
+		return err
+	})
+	return out, err
+}
+
+var disable = func(ctx context.Context, dsn, routeID string, epoch int64) (any, error) {
+	var next int64
+	err := withPool(ctx, dsn, func(pool *pgxpool.Pool) (err error) {
+		next, err = metareply.DisableRoute(ctx, pool, routeID, epoch)
+		return err
+	})
+	return map[string]int64{"route_epoch": next}, err
+}
+
+// withPool opens a one-connection registrar pool and maps errors to the fixed sentinels.
+func withPool(ctx context.Context, dsn string, fn func(*pgxpool.Pool) error) error {
+	cfg, err := pgxpool.ParseConfig(dsn)
+	if err != nil {
+		return errDatabase // parse errors can echo the DSN
+	}
+	cfg.MaxConns = 1
+	pool, err := pgxpool.NewWithConfig(ctx, cfg)
+	if err != nil {
+		return errDatabase
+	}
+	defer pool.Close()
+	switch err := fn(pool); {
+	case err == nil:
+		return nil
+	case errors.Is(err, command.ErrConflict):
+		return errConflict
+	case errors.Is(err, command.ErrInvalid):
+		return errUsage
+	default:
+		return errRegister
+	}
+}
+
 func run(ctx context.Context, args []string, getenv func(string) string, stdout io.Writer) error {
-	if ctx == nil || getenv == nil || stdout == nil || len(args) < 1 || args[0] != "page-token" {
+	if ctx == nil || getenv == nil || stdout == nil || len(args) < 1 {
+		return errUsage
+	}
+	switch args[0] {
+	case "page-token":
+	case "route", "route-disable":
+		return runRoute(ctx, args, getenv, stdout)
+	default:
 		return errUsage
 	}
 	fs := flag.NewFlagSet("page-token", flag.ContinueOnError)
@@ -115,5 +166,57 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout 
 		return errConfig
 	}
 	_, err = stdout.Write(append(out, '\n'))
+	return err
+}
+
+// runRoute: `route` binds a Meta webhook asset to a store (R1 ruling F2); `route-disable` CAS-disables it.
+// The operator attests ownership with --proof (sha256 hex of the saved evidence, docs/runbooks/deploy.md §6.3).
+func runRoute(ctx context.Context, args []string, getenv func(string) string, stdout io.Writer) error {
+	fs := flag.NewFlagSet(args[0], flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	var r metareply.RouteRegistration
+	var expires, routeID string
+	fs.StringVar(&r.TenantID, "tenant", "", "")
+	fs.StringVar(&r.StoreID, "store", "", "")
+	fs.StringVar(&r.PrincipalID, "principal", "", "")
+	fs.StringVar(&r.AppID, "app", "", "")
+	fs.StringVar(&r.Object, "object", "", "")
+	fs.StringVar(&r.AssetID, "asset", "", "")
+	fs.StringVar(&r.Proof, "proof", "", "")
+	fs.StringVar(&expires, "proof-expires", "", "")
+	fs.StringVar(&routeID, "route", "", "")
+	fs.Int64Var(&r.ExpectedEpoch, "expected-epoch", -1, "")
+	if fs.Parse(args[1:]) != nil || fs.NArg() != 0 {
+		return errUsage
+	}
+	dsn := getenv("COMMERCE_META_REGISTRAR_DATABASE_URL")
+	if strings.TrimSpace(dsn) == "" || len(dsn) > 8192 {
+		return errConfig
+	}
+	var out any
+	var err error
+	if args[0] == "route-disable" {
+		if !command.ValidID(routeID) || r.ExpectedEpoch <= 0 {
+			return errUsage
+		}
+		out, err = disable(ctx, dsn, routeID, r.ExpectedEpoch)
+	} else {
+		t, perr := time.Parse(time.RFC3339, expires)
+		if perr != nil || routeID != "" || !t.After(time.Now()) || !command.ValidID(r.TenantID) || !command.ValidID(r.StoreID) ||
+			!command.ValidID(r.PrincipalID) || !assetPattern.MatchString(r.AppID) || !assetPattern.MatchString(r.AssetID) ||
+			(r.Object != "page" && r.Object != "instagram") || !proofPattern.MatchString(r.Proof) || r.ExpectedEpoch < 0 {
+			return errUsage
+		}
+		r.ProofExpires = t
+		out, err = route(ctx, dsn, r)
+	}
+	if err != nil {
+		return err
+	}
+	line, err := json.Marshal(out)
+	if err != nil {
+		return errConfig
+	}
+	_, err = stdout.Write(append(line, '\n'))
 	return err
 }

@@ -1,7 +1,8 @@
 // Package metareply owns the first Meta private reply of a keyword-claim bundle
 // (meta-claims-intake-v1 §6.3, §7): the dispatcher routes (facebook|instagram, meta.private_reply,
-// service), the per-store Page-token custody (AES-256-GCM seal/open and the registrar call), and
-// the fixed reply text.
+// service), the per-store Page-token custody (AES-256-GCM seal/open and the registrar call), the
+// operator route registration (RegisterRoute/DisableRoute: store binding + webhook route, R1 ruling F2)
+// and the fixed reply text.
 //
 // It never plans operations or issues links (internal/claimsintake and the SQL definers do), never
 // sends more than one POST per operation (every non-2xx or doubt is UNKNOWN; Reconcile is

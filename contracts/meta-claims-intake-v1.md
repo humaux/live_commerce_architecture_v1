@@ -804,3 +804,11 @@ Related wave-3 rulings recorded in `docs/delivery/units/meta-intake-rulings.md`:
 stays out of the merchant `Stats.Rejected` 7-key board), k (§5.4 exact job link only for jobs
 inserted by the intake login; CHECK `events_source_platform`), l (§3: a Facebook comment with
 `parent_id == post_id` is top-level; late webhooks use the window's current match mode).
+
+R1 final-wave ruling F2 (2026-09-29, `docs/delivery/units/r1-final-rulings.md`): the operator path to a
+routable store is `meta-admin route` (registrar login): migration 0066 `integration.register_meta_binding(tenant,
+store, principal, provider facebook|instagram, asset) -> (binding_id, binding_version)` (definer
+commerce_integration_writer, EXECUTE commerce_meta_registrar only, principal must hold `integration:manage`,
+reuses the enabled binding, audit `meta.binding_registered`) followed in the same transaction by 0028
+`meta_inbox.activate_route`; `route-disable` calls `disable_route`. §7 order for operators: route → page-token →
+claim source. Gate `TestMetaRouteRegistrarF2` (REAL_PG).

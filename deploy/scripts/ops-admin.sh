@@ -5,12 +5,13 @@
 #   operator's own inputs, never one of the app containers (api/admin/storefront/workers hold neither).
 #   Prints the CLI's JSON result line (IDs and versions only); never prints a secret.
 # Usage: ops-admin.sh stripe-admin register|rotate|webhook|qualify|method [flags]   (stripe-psp-v1 §13)
-#        ops-admin.sh meta-admin page-token [flags]                                  (meta-claims-intake-v1 §7)
+#        ops-admin.sh meta-admin page-token|route|route-disable [flags]             (meta-claims-intake-v1 §7, R1 F2)
 #   Operator inputs are read from the caller's environment or, on a terminal, prompted WITHOUT echo:
 #     stripe-admin register|rotate : STRIPE_SECRET_KEY (sk_test_/rk_test_ only), STRIPE_ACCOUNT_ID
 #     stripe-admin webhook         : STRIPE_WEBHOOK_SECRET [, STRIPE_WEBHOOK_SECRET_NEXT]  (whsec_...)
 #     stripe-admin qualify SANDBOX : STRIPE_SECRET_KEY, STRIPE_ACCOUNT_ID, STRIPE_SANDBOX=1
 #     meta-admin page-token        : META_PAGE_ACCESS_TOKEN
+#     meta-admin route|route-disable: none (ids, --proof digest and epochs are flags)
 # Runs as/in: deploy host (root or a docker-group user), through lib.sh lc_compose_with_ops.
 # Reads env: compose.env, and the input variables above (forwarded into the one-shot container by
 #   NAME only, so the value is never in argv, `ps` or a file; it exists in that container's config
@@ -29,7 +30,7 @@ set -Eeuo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 usage() {
-  lc_die "usage: ops-admin.sh stripe-admin register|rotate|webhook|qualify|method [flags] | meta-admin page-token [flags]" 2
+  lc_die "usage: ops-admin.sh stripe-admin register|rotate|webhook|qualify|method [flags] | meta-admin page-token|route|route-disable [flags]" 2
 }
 tool=${1:-}
 sub=${2:-}
@@ -38,7 +39,7 @@ shift 2
 args=("$@")
 case "$tool:$sub" in
 stripe-admin:register | stripe-admin:rotate | stripe-admin:webhook | stripe-admin:qualify | stripe-admin:method) ;;
-meta-admin:page-token) ;;
+meta-admin:page-token | meta-admin:route | meta-admin:route-disable) ;;
 *) usage ;;
 esac
 

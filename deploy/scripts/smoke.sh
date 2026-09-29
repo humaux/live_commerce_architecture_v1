@@ -397,6 +397,14 @@ full_cases() {
   *meta_admin_*) ;;
   *) why44+=" meta-admin: no fixed error code in output" ;;
   esac
+  # F2 route: synthetic principal holds no integration:manage, so the registrar definer refuses (42501 ->
+  # meta_admin_register_failed); config/usage/database would mean the operator path itself is broken.
+  out44=$(lc_compose_with_ops run --rm --no-deps -T meta-admin /app/bin/meta-admin route \
+    --tenant 00000000-0000-4000-8000-000000000001 --store 00000000-0000-4000-8000-000000000002 \
+    --principal 00000000-0000-4000-8000-000000000003 --app 1234567890 --object page --asset 1234567890 \
+    --proof "$(printf '0%.0s' {1..64})" --proof-expires 2099-01-01T00:00:00Z --expected-epoch 0 2>&1 || true)
+  printf '%s\n' "$out44" >"$EV/logs/S44-meta-route.log"
+  [[ "$out44" == *meta_admin_register_failed* ]] || why44+=" meta-admin route: got [${out44:0:60}] want meta_admin_register_failed"
   for s in api expiry-worker payment-worker-sandbox meta-worker claims-worker; do
     if lc_compose config --format json 2>/dev/null | python3 -c '
 import json, sys

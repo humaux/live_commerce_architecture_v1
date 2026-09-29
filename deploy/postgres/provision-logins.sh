@@ -188,7 +188,8 @@ log "login=lc_api_runtime river_privileges=ok (ruling 19)"
 # The two registrar logins must be able to run their definers (the CLIs report only a fixed code).
 regs="$(su_psql <<'SQL'
 SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-WHERE n.nspname = 'integration' AND p.proname = 'register_meta_page_token'
+WHERE ((n.nspname = 'integration' AND p.proname IN ('register_meta_page_token','register_meta_binding'))
+    OR (n.nspname = 'meta_inbox' AND p.proname IN ('activate_route','disable_route')))
   AND has_function_privilege('lc_meta_registrar', p.oid, 'EXECUTE');
 SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
 WHERE ((n.nspname = 'integration' AND p.proname IN ('register_stripe_account','rotate_stripe_key'))
@@ -197,7 +198,7 @@ WHERE ((n.nspname = 'integration' AND p.proname IN ('register_stripe_account','r
 SQL
 )" || die "registrar privilege query failed"
 { read -r meta_reg; read -r stripe_reg; } <<<"$regs"
-[[ "$meta_reg" == 1 && "$stripe_reg" == 5 ]] || die "DRIFT registrar EXECUTE meta_page_token=$meta_reg stripe=$stripe_reg (want 1 and 5)"
+[[ "$meta_reg" == 4 && "$stripe_reg" == 5 ]] || die "DRIFT registrar EXECUTE meta=$meta_reg stripe=$stripe_reg (want 4 and 5)"
 log "registrars execute=ok meta=$meta_reg stripe=$stripe_reg"
 
 # ---- 5. every login authenticates over TCP, exactly like its service -------------------------
