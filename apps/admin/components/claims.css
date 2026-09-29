@@ -56,6 +56,17 @@ table.claims-table { table-layout: auto; font-variant-numeric: tabular-nums; }
 .claims-manual-form > .primary { flex: none; }
 .claims-form > .primary { min-height: 39px; white-space: nowrap; }
 .claims-form-hint, .claims-form > [role="status"] { grid-column: 1 / -1; font-size: 13px; }
+/* Comment source: one wrapping row, link field first and full width (Claims panel idiom). */
+.claims-form.claims-source-form { display: flex; flex-wrap: wrap; align-items: flex-start; }
+.claims-source-form > .claims-field { flex: 1 1 240px; }
+.claims-source-form > .claims-field:first-child { flex-basis: 100%; }
+.claims-source-form input[aria-invalid="true"] { border-color: #b3394a; }
+.claims-check { display: grid; flex: 1 1 260px; gap: 4px; min-width: 0; }
+.claims-check > label { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.claims-check input { min-height: 0; width: 17px; height: 17px; margin: 0; accent-color: var(--teal); }
+.claims-check small { padding-left: 27px; font-size: 13px; }
+.claims-source-form > .primary { flex: none; align-self: flex-end; }
+.claims-source-status { margin: 14px 0 0; }
 .claims-result { margin-top: 14px; padding: 11px 13px; border-radius: 5px; }
 .claims-result.accepted { background: #d9f2e9; color: #126953; }
 .claims-result.rejected { background: #fff5f5; color: #8e2732; }

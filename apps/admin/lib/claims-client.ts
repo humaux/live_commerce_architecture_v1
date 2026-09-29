@@ -1,4 +1,4 @@
-// Owns the Studio › Claims browser requests: M1–M7 through the same private Studio
+// Owns the Studio › Claims browser requests: M1–M7 and the comment-source read/bind (claim-source) through the same private Studio
 // read/write boundary (same-origin BFF, CSRF header, session-boundary check before and
 // after every write, private no-store JSON only), plus the existing catalog reads the
 // offer form and link builder need (products, SKUs, purchase-entry origin).
@@ -8,6 +8,8 @@
 // Depends on: studio-client.ts (read, write, StudioError), claims-model.ts (parsers).
 
 import { read, StudioError, write } from "./studio-client";
+import { parseClaimSource, parseClaimSourceEnvelope } from "./claim-source-model";
+import type { claimSourceBody } from "./claims-request";
 import {
   catalogProduct, catalogSKU, parseBoard, parseBundlePage, parseCatalogPage, parseClaimLink,
   parseManualResult, parseOffer, parsePurchaseEntry, parseWindow,
@@ -51,6 +53,17 @@ export const recordManualClaim = (store: string, session: string, body: { text: 
  */
 export const issueClaimLink = (store: string, session: string, bundle: string, body: { expected_generation: number; release_binding: boolean }, key: string, boundary: string) =>
   parsed(() => write(`${base(store, session)}/bundles/${bundle}/link`, "POST", body, key, boundary), parseClaimLink, true);
+
+/** Comment source of the scene: the bound Meta post/media or null (live:read side; Go decides). */
+export const readClaimSource = (store: string, session: string, signal: AbortSignal) =>
+  parsed(() => read(`/api/stores/${store}/live-sessions/${session}/claim-source`, signal), parseClaimSourceEnvelope, false);
+/**
+ * Bind, rebind (version CAS) or deactivate the comment source (live:manage + integration:execute).
+ * Go → live.put_claim_source inside command.Run; a definite refusal carries error.api
+ * (input_invalid, input_unresolvable, binding_missing, binding_ambiguous, source_conflict, version_changed).
+ */
+export const putClaimSource = (store: string, session: string, body: ReturnType<typeof claimSourceBody>, key: string, boundary: string) =>
+  parsed(() => write(`/api/stores/${store}/live-sessions/${session}/claim-source`, "PUT", body, key, boundary), parseClaimSource, true);
 
 // Catalog routes answer "no-store" (not "private, no-store"), so they use this plain read.
 async function catalogRead(path: string, signal: AbortSignal): Promise<unknown> {
