@@ -222,8 +222,18 @@
       "backend_code_baseline": "7f9ed8c",
       "prior_baseline_evidence": "docs/implementation/2026-09-20-catalog-inventory-acceptance.md",
       "global_gate_pass": false,
-      "completed_additions": ["绑定租户店铺与筛选的有界keyset分页", "同事务catalog:read与inventory:read账簿投影", "zh-CN/zh-TW/en商品库存页面及浏览器真实API验收"],
-      "remaining": ["公开市场报价入口/政策管理界面与折扣", "商品媒体/属性矩阵", "真实身份提供商和生产商店开通", "完整交易和付款状态迁移", "全产品页面和浏览器验收"],
+      "completed_additions": [
+        "绑定租户店铺与筛选的有界keyset分页",
+        "同事务catalog:read与inventory:read账簿投影",
+        "zh-CN/zh-TW/en商品库存页面及浏览器真实API验收"
+      ],
+      "remaining": [
+        "公开市场报价入口/政策管理界面与折扣",
+        "商品媒体/属性矩阵",
+        "真实身份提供商和生产商店开通",
+        "完整交易和付款状态迁移",
+        "全产品页面和浏览器验收"
+      ],
       "cart_quote_evidence": "docs/implementation/2026-09-20-cart-quote-acceptance.md",
       "latest_go_aggregate": "2026-09-20基线e2cbfd5真实隔离PG 96顶层测试0失败0跳过，race/vet及独立cart-quote审查通过；不是checkout或全产品通过"
     }
@@ -266,7 +276,13 @@
       "source_baseline": "442cbe7",
       "global_gate_pass": false,
       "design_record": "docs/implementation/2026-09-25-buyer-history-design-record.md",
-      "remaining": ["按订单托管支付页与真实沙箱回调", "过期买家身份安全恢复", "可信超商选店", "商家分享与真实公开路由联合验收", "真实DNS/TLS部署及完整产品门禁"]
+      "remaining": [
+        "按订单托管支付页与真实沙箱回调",
+        "过期买家身份安全恢复",
+        "可信超商选店",
+        "商家分享与真实公开路由联合验收",
+        "真实DNS/TLS部署及完整产品门禁"
+      ]
     }
   },
   {
@@ -575,7 +591,10 @@
       "restart_recovery_source_commit": "86b641a",
       "restart_recovery_root_tested_commit": "b99a2d1",
       "restart_recovery_historical_failed_commit": "dfe844a",
-      "restart_recovery_historical_full_failures": ["TestLegacyRuntimeIsolationPopulatedUpgrade", "TestLiveMediaStopLMR05RealCrashAndCommitAckLoss"],
+      "restart_recovery_historical_full_failures": [
+        "TestLegacyRuntimeIsolationPopulatedUpgrade",
+        "TestLiveMediaStopLMR05RealCrashAndCommitAckLoss"
+      ],
       "restart_recovery_current_full": "Root b99a2d1 actual exit0,696PASS0FAIL0SKIP,foundation1132.853s,race/vet; log /Volumes/data/output/full-integrated-b99a2d1-root-20260927.log SHA25630a36b7e9277653205ca270a171f7705a40d9dcfdfaf4f1ac2474f86bf11a2c6",
       "restart_recovery_lri_followup": "ec5c25c merged da37adc: root --legacy-isolation exit0,10PASS,31.288s; historical full result unchanged",
       "restart_recovery_lmr_followup": "Owner approved old LMR05 wait35s to90s, safety unchanged; test3eb66c2 independently reviewed; root7b7da24 --live-media-stop exit0,53PASS,245.464s; new full b99a2d1 also PASS, named case58.82s. MRR90 remains separate proof.",
@@ -679,7 +698,7 @@
       "internal/cart/**",
       "tests/claims/**"
     ],
-    "status": "NOT_STARTED",
+    "status": "IN_PROGRESS_SLICE_PASS",
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
@@ -688,7 +707,8 @@
       "real_pg": "NOT_RUN",
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
-      "independent_review": "NOT_RUN"
+      "independent_review": "NOT_RUN",
+      "r1_2026_09_29": "Claims core + Meta comment intake (0064) + claim-source (Studio bind post) + one private reply per comment: REAL_PG MCI/KC gates PASS, BROWSER --browser-live-claims PASS; Meta LIVE (Page token, App Review) NOT_RUN owner prerequisite. Evidence output/r1-integration/release-gate/run3/FINAL-table.txt"
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
@@ -719,7 +739,7 @@
       "internal/integrations/psp/**",
       "tests/orders/**"
     ],
-    "status": "IN_PROGRESS",
+    "status": "IN_PROGRESS_SLICE_PASS",
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
@@ -728,7 +748,8 @@
       "real_pg": "PASS_BOUNDED_REGRESSION_433_TOP_LEVEL_TESTS_AT_e6f052f",
       "provider_sandbox": "NOT_RUN",
       "provider_live": "NOT_RUN",
-      "independent_review": "PASS_BOUNDED_INTERNAL_AND_PAYMENT_RUNTIME_SIGNED_MOCK"
+      "independent_review": "PASS_BOUNDED_INTERNAL_AND_PAYMENT_RUNTIME_SIGNED_MOCK",
+      "r1_2026_09_29": "Stripe per-store Checkout (0061) + refunds (0062) + buyer card UI: REAL_PG SP/RF gates PASS; SANDBOX SP16/RF10/SP21 + BROWSER SP18 card 4242/decline/3DS on real Stripe test mode PASS; LIVE NOT_RUN (owner activation). PAYUNi unchanged. Evidence output/r1-integration/release-gate/run3/FINAL-table.txt"
     },
     "evidence": "Latest bounded runtime: docs/implementation/2026-09-25-payment-worker-acceptance.md; source/tests e6f052f; full433 PASS/0FAIL/0SKIP actual PG18/race/vet215.448s; buyer Node55 and actual browser11cases. Earlier per-slice evidence retained below; this is not real PSP or complete G03/G05 acceptance.",
     "delivery_prerequisite": {
@@ -928,7 +949,7 @@
       "tests/e2e/commerce/**",
       "evidence/commerce/**"
     ],
-    "status": "NOT_STARTED",
+    "status": "IN_PROGRESS_SLICE_PASS",
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
@@ -937,7 +958,8 @@
       "real_pg": "NOT_RUN",
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
-      "independent_review": "NOT_RUN"
+      "independent_review": "NOT_RUN",
+      "r1_2026_09_29": "--browser-e2e deal loop comment->claim->private reply->cart->pay (Stripe MOCK)->ship->partial refund with negatives (replay, negated/question comments, cross-tenant, leak scan): BROWSER PASS. Evidence output/r1-integration/release-gate/run3/FINAL-table.txt"
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
@@ -960,7 +982,7 @@
       "internal/integrations/shipping/**",
       "tests/fulfillment/**"
     ],
-    "status": "NOT_STARTED",
+    "status": "IN_PROGRESS",
     "prerequisite_note": "T11已先验收共享配送配置内核2a5e43c（见delivery-service-acceptance）；本T13完整物流适配/包裹/面单/RMA仍未启动或验收，不因此改变依赖和G08状态",
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
@@ -970,7 +992,8 @@
       "real_pg": "NOT_RUN",
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
-      "independent_review": "NOT_RUN"
+      "independent_review": "NOT_RUN",
+      "r1_2026_09_29": "Manual fulfilment (0063): merchant carrier+tracking incl. 7-ELEVEN/FamilyMart/Hi-Life/OK CVS codes, versions/void, CSV export, buyer view: REAL_PG MF + BROWSER MF07 PASS. Carrier APIs, labels, CVS store selection at checkout, RMA: NOT_STARTED (R2)."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
@@ -1224,7 +1247,8 @@
       "real_pg": "PASS_BOUNDED_LOCAL_LRC_WSD_SPL",
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
-      "independent_review": "PASS_BOUNDED_LOCAL_ONLY"
+      "independent_review": "PASS_BOUNDED_LOCAL_ONLY",
+      "r1_2026_09_29": "Adversarial security review of R1 surface (5 dimensions, verified): 6 P2 fixed with red->green tests (sec-fixes S1-S6), 0 P0/P1. Full fault-injection matrix NOT_RUN."
     },
     "local_logical_restore": {
       "status": "ACCEPTED_LOCAL",
@@ -1303,7 +1327,7 @@
       "docs/runbooks/**",
       "evidence/release/**"
     ],
-    "status": "NOT_STARTED",
+    "status": "IN_PROGRESS",
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
@@ -1312,7 +1336,8 @@
       "real_pg": "NOT_RUN",
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
-      "independent_review": "NOT_RUN"
+      "independent_review": "NOT_RUN",
+      "r1_2026_09_29": "Deploy package (compose, runbooks, release-gate.sh, CI deploy smoke 55 PASS / S29m BLOCKED media lane): R1 release gate 0 FAIL, all NOT_RUN accepted. Production host, OIDC IdP, Stripe live activation, Meta App Review: owner prerequisites; no production deploy performed."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   }

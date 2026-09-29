@@ -68,3 +68,6 @@ G4. Accepted NOT_RUN for R1 (owner prerequisites or covered elsewhere): Meta LIV
    event after deploy); RF11(b) (refund against Stripe SANDBOX is covered by RF10 via the API).
 G5. Migration 0066 `integration.register_meta_binding` + `meta-admin route`/`route-disable` (F2 as
    implemented): accepted.
+G6. Deploy smoke full runs with identity on and fetches only the public OIDC discovery document of
+    `https://accounts.google.com` (no client, no login; override `LC_SMOKE_OIDC_ISSUER`): accepted. Known
+    limit: the CI smoke job depends on that host being reachable; a stub IdP is the upgrade path if it flakes.
