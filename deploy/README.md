@@ -91,18 +91,19 @@ The media worker is **not deployed**, because it is MOCK-only (`worker_env.go:17
 | `../scripts/dev/release-gate.sh` | R1 acceptance table over every tier (packet, build/vet, TS typecheck, secret grep, depmap, unit, foundation, every browser mode, smoke static/full); NOT_RUN when prerequisites are missing |
 | `host/crontab.example` | Backup + watchdog schedule |
 
-## Status matrix (2026-09-28)
+## Status matrix (2026-09-29; earlier rows 2026-09-28)
 
 | Area | Status | Evidence |
 |---|---|---|
 | Static package: syntax, shellcheck, pins, compose config (4 profile sets × 2 files), lcentry tests (96.7 %), Caddyfile validate/fmt, ignore files | **PASS** | `smoke.sh static` (S01–S06) |
-| `smoke.sh full` | **BLOCKED** at S07: `cmd/migrate` missing (I1) | exits 3, evidence under `.evidence/` |
+| **R1 (unit deploy-release), `smoke.sh full` on 813a980** in a privileged Linux `docker:dind` container (real image builds, root, ports 80/443; the macOS host cannot run `full`) | **LOCAL, 52 PASS / 0 FAIL / 1 BLOCKED (S29m, I8) / 1 NOT_RUN (S34, no Chromium)**, exit 3 | `output/deploy-release/smoke-full-813a980/` (result.json + logs). New cases green: S13 (17 logins, ruling-19 River privileges, registrar EXECUTE), S13n (two injected drifts each fail provisioning by name), S16 (claims-worker + Stripe-enabled sandbox worker ready), S19 (Stripe webhook route reaches the Go API), S44 (operator one-shots + `ops-admin.sh`), S10f/S10g (custody and operator-input negatives). S44b red run first: the wrapper's token regex was invalid (ERE bound > 255), fixed in 813a980 |
+| `smoke.sh full` (older rows below) | historical: BLOCKED at S07 before I1 | superseded by the row above |
 | DB layer + edge with **scratch** images: postgres (non-root, read-only, checksums, archiving), migrate ×2 over the socket, provision-logins ×2 (12 logins, matrix, TCP auth, readiness), superuser-over-TCP rejected, api/caddy healthy, worker ready tokens, Caddy internal-CA TLS, default-deny, webhook routing, 308 redirect, unknown Host not proxied, 503 + Retry-After window, hardening of 7 containers, no secret in inspect/logs, backup + restore into a new DB, WAL archiving, basebackup + `pg_verifybackup`, PITR drill (2 s), watchdog W2–W9, diagnostics bundle, graceful stop, clean teardown | **VERIFIED_LOCAL (scratch)** | Scratch `lc-go` built on the host from this tree plus the §7 `cmd/migrate` proposal (outside the worktree, not committed); real `lc-caddy` from `docker/caddy.Dockerfile`. This is not product acceptance |
 | All 4 image builds + `smoke.sh full` with the I1 proposal: independent test_worker run on 22d5d3f | **FAIL** | 41 PASS / 3 FAIL (S08, S34, S39). S21 was a false PASS. Root causes F1–F3 are in deviations 10–12 |
 | Same, author re-run after the fixes (f318632, scratch clone + `cmd/migrate` proposal, sandbox-CA base images via `GO_IMAGE`/`NODE_IMAGE`) | **VERIFIED_LOCAL: 45 PASS / 0 FAIL / 1 BLOCKED**, exit 3 | S07 built through `--network host` (loopback proxy); S08 7 names; S21 `307 -> /zh-CN -> 200`; S34 Chromium PASS; S37–S39 PASS (S39 covers all 4 rollback paths); S33 clean; secret scan hits=0. An independent re-run is still owed, because the author cannot be the only acceptor |
 | Review P1 fixes (2026-09-28): S40 Caddy access-log redaction, S41 superuser rotation without log leak, S42 PITR promote + cut-over, S43 compose.env tag persistence + W10 | see `smoke.sh full` evidence of the fix commit | Author run on a scratch clone + I1 proposal; results recorded in the task's deploy-verify-final.md. An independent re-run is still owed |
 | Logical-restore media gate (S29m) | **BLOCKED (I8)** | Live `media_plan_ready=t`, restored `f`, PITR `t`. It used to be hidden inside the S29 PASS |
-| Real ACME/DNS, OIDC login, PAYUNi sandbox/live, Meta webhooks, media, 2-host TLS, K8s, load, CVE scan | **NOT_RUN** | Need owner inputs (O2, O3, O11, B3–B6) |
+| Real ACME/DNS, OIDC login, PAYUNi sandbox/live, Stripe SANDBOX registration + webhook delivery + checkout, Meta webhooks/private replies, media, 2-host TLS, K8s, load, CVE scan | **NOT_RUN** | Need owner inputs (O2, O3, O11, B3–B6, Stripe test key, Meta App) |
 
 ## Deploy-only dependency ledger (integrator: copy into docs/implementation/dependencies.md, I5)
 
