@@ -70,6 +70,9 @@
 					replace token REDACTED
 					replace access_token REDACTED
 					replace id_token REDACTED
+					replace password REDACTED
+					replace new_password REDACTED
+					replace email REDACTED
 				}
 				request>headers>Referer query {
 					replace hub.verify_token REDACTED
@@ -78,6 +81,9 @@
 					replace token REDACTED
 					replace access_token REDACTED
 					replace id_token REDACTED
+					replace password REDACTED
+					replace new_password REDACTED
+					replace email REDACTED
 				}
 				resp_headers>Location query {
 					replace hub.verify_token REDACTED
@@ -86,6 +92,9 @@
 					replace token REDACTED
 					replace access_token REDACTED
 					replace id_token REDACTED
+					replace password REDACTED
+					replace new_password REDACTED
+					replace email REDACTED
 				}
 			}
 		}

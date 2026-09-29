@@ -401,9 +401,13 @@ func (p *Passwords) Complete(ctx context.Context, ip netip.Addr, binding, purpos
 
 // challengeResult picks the SQL expiry when there is one; for "no row" answers (taken email, unknown
 // reset email) it fabricates the same 10-minute shape so the response cannot tell them apart (PD6).
+// Both paths are normalised to whole UTC seconds: a real value decodes from timestamptz with
+// microsecond precision while time.Now() on Linux carries nanoseconds, and the differing string
+// length would tell the two apart. The SQL expiry stays authoritative in the row.
 func challengeResult(binding string, expires *time.Time) Challenge {
+	t := time.Now().Add(challengeTTL)
 	if expires != nil {
-		return Challenge{Binding: binding, ExpiresAt: *expires}
+		t = *expires
 	}
-	return Challenge{Binding: binding, ExpiresAt: time.Now().Add(challengeTTL)}
+	return Challenge{Binding: binding, ExpiresAt: t.UTC().Truncate(time.Second)}
 }

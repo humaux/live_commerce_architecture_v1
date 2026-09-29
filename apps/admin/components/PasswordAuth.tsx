@@ -236,7 +236,7 @@ export function PasswordAuth({
       )}
 
       {step === "form" ? (
-        <form className="entry-form" style={left} onSubmit={onForm}>
+        <form className="entry-form" method="post" style={left} onSubmit={onForm}>
           <label>
             <span>{c.email}</span>
             <input
@@ -274,7 +274,7 @@ export function PasswordAuth({
           </div>
         </form>
       ) : (
-        <form className="entry-form" style={left} onSubmit={onCode}>
+        <form className="entry-form" method="post" style={left} onSubmit={onCode}>
           <label>
             <span>{c.code}</span>
             <input

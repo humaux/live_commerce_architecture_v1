@@ -8,11 +8,13 @@ import (
 	"context"
 	"crypto/sha1" // #nosec: HIBP protocol fixture
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/netip"
 	"net/url"
+	"regexp"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -400,5 +402,24 @@ func TestPasswordUnitServiceNilProviderNeedsPasswordLogin(t *testing.T) {
 	}
 	if _, err := New(pool, nil, Policy{PasswordLogin: true, SessionTTL: time.Minute}); !errors.Is(err, ErrInvalid) {
 		t.Fatal("ttl bounds must still apply")
+	}
+}
+
+// PD6: the "no row" answers (taken sign-up email, unknown reset email) must not be told apart from a
+// real challenge by the expires_at string. time.Now() carries nanoseconds on Linux, timestamptz
+// decodes at microseconds; both must serialise as whole UTC seconds.
+func TestPasswordUnitChallengeExpiryShape(t *testing.T) {
+	re := regexp.MustCompile(`^"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ"$`)
+	dbShaped := time.Now().Add(challengeTTL).Truncate(time.Microsecond).Add(123456 * time.Nanosecond).In(time.FixedZone("x", 8*3600))
+	fake := challengeResult("b", nil)
+	real := challengeResult("b", &dbShaped)
+	for name, c := range map[string]Challenge{"fabricated": fake, "sql": real} {
+		b, err := json.Marshal(c.ExpiresAt)
+		if err != nil || !re.Match(b) {
+			t.Errorf("%s expires_at %s does not match whole-second UTC shape (%v)", name, b, err)
+		}
+	}
+	if d := fake.ExpiresAt.Sub(real.ExpiresAt); d > 2*time.Second || d < -2*time.Second {
+		t.Errorf("fabricated and SQL expiry differ by %v", d)
 	}
 }

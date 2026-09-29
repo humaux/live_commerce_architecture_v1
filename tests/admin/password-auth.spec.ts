@@ -400,6 +400,25 @@ test("BFF contract: Origin, query, client IP, strict keys, cookie clearing on 20
 });
 
 // ---------------------------------------------------------------------------------------------------
+// Before React hydrates, a form without method=post submits as GET and puts the email and password into the
+// URL (history, Caddy access logs). Every server-rendered form holding a secret field must POST.
+test("SSR: no form with a password field lacks method=post (/, /signup, /reset)", async () => {
+  const ctx = await playwrightRequest.newContext({ baseURL: publicOrigin });
+  let seen = 0;
+  for (const path of ["/zh-CN/", "/zh-CN/signup", "/zh-CN/reset", "/en/signup"]) {
+    const res = await ctx.get(path);
+    expect(res.status(), path).toBe(200);
+    const forms = (await res.text()).match(/<form\b[^>]*>[\s\S]*?<\/form>/gi) ?? [];
+    for (const form of forms) {
+      if (!/name="(password|new_password)"/.test(form)) continue;
+      seen++;
+      expect(form, `${path}: <form> with a password field must be method=post`).toMatch(/^<form\b[^>]*\bmethod="post"/i);
+    }
+  }
+  expect(seen, "at least one SSR password form must be found").toBeGreaterThan(0);
+  await ctx.dispose();
+});
+
 test("throttled UI state and the 60 s resend cooldown", async ({ page, context }) => {
   test.setTimeout(150_000);
   await page.setViewportSize({ width: 1586, height: 992 });

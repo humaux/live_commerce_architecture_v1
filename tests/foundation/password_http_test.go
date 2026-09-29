@@ -231,6 +231,25 @@ func TestPasswordPA08HTTP(t *testing.T) {
 			t.Fatalf("reset known/unknown: %d %d, want 202 both", rKnown.Status, rUnknown.Status)
 		}
 		same("reset known vs unknown", rKnown, rUnknown)
+		// expires_at is excluded from shape() but is itself an enumeration channel: a fabricated value with
+		// nanoseconds next to a microsecond DB value is told apart by length alone. Whole UTC seconds, within 2 s.
+		expiryRe := regexp.MustCompile(`^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$`)
+		expiry := func(what string, a, b pwaResp) {
+			t.Helper()
+			as, _ := a.JSON["expires_at"].(string)
+			bs, _ := b.JSON["expires_at"].(string)
+			if !expiryRe.MatchString(as) || !expiryRe.MatchString(bs) {
+				t.Errorf("%s: expires_at %q / %q must both be whole-second UTC (PD6)", what, as, bs)
+				return
+			}
+			ta, _ := time.Parse(time.RFC3339, as)
+			tb, _ := time.Parse(time.RFC3339, bs)
+			if d := ta.Sub(tb); d > 2*time.Second || d < -2*time.Second {
+				t.Errorf("%s: expires_at differs by %v", what, d)
+			}
+		}
+		expiry("signup new vs taken", rNew, rTaken)
+		expiry("reset known vs unknown", rKnown, rUnknown)
 
 		disabled, dpw := pwaEmail(), pwaSecret()
 		e.register(disabled, dpw)
