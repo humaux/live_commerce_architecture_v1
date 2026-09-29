@@ -48,6 +48,7 @@ type Refund struct{ ID, Status, FailureReason, PendingReason, Currency, PaymentI
 type PaymentCharge struct{ PaymentIntentID, ChargeID, Currency string; AmountCaptured, AmountRefunded int64; Refunded, Disputed, Livemode bool }
 func RefundIdempotencyKey(refundID string) string            // "lc:stripe:refund:v1:"+uuid
 func RefundAmountOK(currency string, amountMinor int64) bool  // twin of payments.stripe_refund_amount_ok
+func EncodeRefundBody(p RefundParams) ([]byte, error)       // ruling 18: exact POST bytes, pins body_sha256 before send
 func (c *Client) CreateRefund(ctx context.Context, p RefundParams) (Refund, CallMeta, error)
 func (c *Client) RetrieveRefund(ctx context.Context, id string) (Refund, CallMeta, error)
 func (c *Client) ListRefunds(ctx context.Context, paymentIntentID, startingAfter string) ([]Refund, CallMeta, error)
