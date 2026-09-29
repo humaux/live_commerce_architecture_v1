@@ -1,5 +1,5 @@
 import { callBackend, fixtureSession } from "@/lib/backend";
-import { orderActionRoute, validCSVHeaders, validOrdersQuery } from "@/lib/orders-request";
+import { orderActionRoute, validCSVHeaders, validKeylessRequest, validOrdersQuery } from "@/lib/orders-request";
 import { validStudioInputToken, validStudioQuery } from "@/lib/studio-request";
 import {
   claimLinkRoute, claimsCollection, claimsRoutes, claimsSubpath, validClaimLink,
@@ -78,13 +78,7 @@ async function route(request: Request, context: Context) {
   // Exact resources: no query at all, including a bare trailing '?'.
   if (action && request.url.includes("?")) return error(422, "invalid_request");
   // Reads and the keyless refresh carry no body and no key; only commands do.
-  if (
-    action && action !== "command" &&
-    (request.body !== null ||
-      request.headers.has("transfer-encoding") ||
-      request.headers.has("idempotency-key") ||
-      (request.headers.has("content-length") && request.headers.get("content-length") !== "0"))
-  )
+  if (action && action !== "command" && !validKeylessRequest(action, request))
     return error(422, "invalid_request");
   // URL.search drops an empty trailing '?'. Exact resources must reject that too;
   // Only collection GETs inherit the bounded pagination parser in Go.

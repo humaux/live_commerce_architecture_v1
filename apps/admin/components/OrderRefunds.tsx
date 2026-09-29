@@ -5,7 +5,7 @@
 // -> Go internal/httpapi/refunds.go (GET orders:read; POST payments:refund). Money authority stays in Go/SQL:
 // the amount check here is only a hint, and no success is shown before the server state is re-read (GET).
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { money } from "@/lib/client";
 import { postRefund, readRefunds, refreshRefund } from "@/lib/orders-client";
@@ -72,6 +72,8 @@ export function OrderRefunds({
   const [busy, setBusy] = useState(false);
   const [uncertain, setUncertain] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
+  const amountInput = useRef<HTMLInputElement>(null);
+  const confirmText = useRef<HTMLParagraphElement>(null);
   // One key per submission, reused only for a byte-identical retry of that submission.
   const pending = useRef<{ key: string; body: string } | null>(null);
 
@@ -98,6 +100,14 @@ export function OrderRefunds({
     if (open && !element.open) element.showModal();
     if (!open && element.open) element.close();
   }, [open]);
+
+  // Step change unmounts the focused control; park focus on non-submit content so a repeated Enter/Space
+  // cannot activate "Confirm refund" before the restated amount was shown (§7.1 two-step confirmation).
+  useEffect(() => {
+    if (!open) return;
+    if (step === "confirm") confirmText.current?.focus();
+    else amountInput.current?.focus();
+  }, [open, step]);
 
   const refundable = list?.refundable_minor ?? 0;
   const whole = wholeOnly(currency);
@@ -266,6 +276,7 @@ export function OrderRefunds({
                 <label>
                   {c.refundAmount} ({currency})
                   <input
+                    ref={amountInput}
                     data-testid="refund-amount"
                     inputMode="decimal"
                     autoComplete="off"
@@ -294,25 +305,26 @@ export function OrderRefunds({
                 </label>
               </>
             ) : (
-              <p data-testid="refund-confirm-text">{c.refundConfirm(m(typed ?? 0), currency)}</p>
+              <p ref={confirmText} tabIndex={-1} data-testid="refund-confirm-text">{c.refundConfirm(m(typed ?? 0), currency)}</p>
             )}
             {problem && <p className="orders-bad" role="alert" data-testid="refund-problem">{problem}</p>}
             <div className="orders-dialog-actions">
               {step === "form" ? (
-                <>
+                // Distinct keys: the confirm buttons must be new DOM elements, never the focused "Review" button relabelled.
+                <Fragment key="form">
                   <button type="button" onClick={finish}>{c.cancel}</button>
                   <button type="submit" className="primary" data-testid="refund-continue" disabled={!amountOK}>
                     {c.refundContinue}
                   </button>
-                </>
+                </Fragment>
               ) : (
-                <>
+                <Fragment key="confirm">
                   <button type="button" disabled={busy || uncertain} onClick={() => setStep("form")}>{c.refundBack}</button>
                   <button type="submit" className="primary" data-testid="refund-submit" disabled={busy}>
                     {busy ? c.refundSending : uncertain ? c.refundRetry : c.refundSubmit}
                   </button>
                   {uncertain && <button type="button" onClick={finish}>{c.close}</button>}
-                </>
+                </Fragment>
               )}
             </div>
           </form>

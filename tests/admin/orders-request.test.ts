@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
+import { Readable } from "node:stream";
 import { test } from "node:test";
-import { orderActionRoute, validCSVHeaders, validOrdersQuery } from "../../apps/admin/lib/orders-request.ts";
+import { orderActionRoute, validCSVHeaders, validKeylessRequest, validOrdersQuery } from "../../apps/admin/lib/orders-request.ts";
 
 const collection =
   "http://127.0.0.1:3100/api/stores/11111111-1111-4111-8111-111111111111/orders";
@@ -79,4 +80,33 @@ test("CSV pass-through requires the exact attachment headers", () => {
   const missing = new Headers(good);
   missing.delete("x-export-truncated");
   assert.equal(validCSVHeaders(missing), false);
+});
+
+// Next 16.3.5 (NextRequestAdapter.fromNodeNextRequest) passes the Node IncomingMessage as the body of every
+// non-GET/HEAD request, so an empty POST still has a non-null `body` stream. Model exactly that here.
+const target = "http://127.0.0.1:3100/api/stores/s/x";
+const nextShaped = (method: string, headers: Record<string, string> = {}) =>
+  new Request(target, { method, headers, ...(method === "GET" ? {} : { body: Readable.from([]) as never, duplex: "half" }) });
+
+test("keyless refresh POST is accepted with Next's always-present empty body stream", () => {
+  const empty = nextShaped("POST", { "content-length": "0" });
+  assert.notEqual(empty.body, null, "premise: Next-shaped POST has a body stream");
+  assert.equal(validKeylessRequest("refresh", empty), true);
+  assert.equal(validKeylessRequest("refresh", nextShaped("POST")), true);
+});
+
+test("keyless requests still reject payload, chunking and keys", () => {
+  for (const headers of [
+    { "content-length": "2" },
+    { "transfer-encoding": "chunked" },
+    { "idempotency-key": "refund-12345678" },
+    { "content-length": "0", "idempotency-key": "refund-12345678" },
+  ])
+    assert.equal(validKeylessRequest("refresh", nextShaped("POST", headers)), false, JSON.stringify(headers));
+  assert.equal(validKeylessRequest("get", nextShaped("GET")), true);
+  assert.equal(validKeylessRequest("csv", nextShaped("GET", { "content-length": "0" })), true);
+  assert.equal(validKeylessRequest("get", nextShaped("GET", { "content-length": "1" })), false);
+  assert.equal(validKeylessRequest("get", nextShaped("GET", { "idempotency-key": "k-12345678" })), false);
+  // Only refresh may carry the adapter's stream; a GET-kind request with a body stream stays rejected.
+  assert.equal(validKeylessRequest("get", nextShaped("POST", { "content-length": "0" })), false);
 });

@@ -57,3 +57,16 @@ export function validCSVHeaders(headers: Headers) {
     /^(?:true|false)$/.test(headers.get("x-export-truncated") ?? "")
   );
 }
+
+// Reads, csv and the keyless refresh carry no key and no payload. Body emptiness comes from the headers:
+// Next's Node adapter always hands a non-GET/HEAD request a stream, so `request.body !== null` is true for
+// an empty POST too (verified on Next 16.3.5) and must only be tested where the method cannot carry one.
+export function validKeylessRequest(kind: OrderActionKind, request: Request) {
+  const length = request.headers.get("content-length");
+  return (
+    (kind === "refresh" || request.body === null) &&
+    !request.headers.has("transfer-encoding") &&
+    !request.headers.has("idempotency-key") &&
+    (length === null || length === "0")
+  );
+}
