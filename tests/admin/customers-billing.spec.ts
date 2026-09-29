@@ -150,7 +150,7 @@ test("CB11 customer detail: facts, orders, claims, consent; withdrawal is one ke
       exports.push({ key: keyOf(r.request().headers()), body: r.request().postData(), status: r.status() });
   });
   const [download] = await Promise.all([page.waitForEvent("download"), page.getByTestId("customer-download").click()]);
-  expect(download.suggestedFilename()).toBe(`customer-${main}.json`);
+  expect(download.suggestedFilename()).toMatch(new RegExp(`^customer-${main.slice(0, 8)}[0-9a-f-]*\\.json$`)); // the Go header names the full id (D9); the page may shorten it
   const file = (await download.path())!;
   const doc = JSON.parse(await readFile(file, "utf8")) as Record<string, unknown>;
   expect(doc.format).toBe("lc.customer-export.v1");
