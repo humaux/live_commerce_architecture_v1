@@ -285,6 +285,16 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 	if err != nil {
 		return fmt.Errorf("validate runtime role: %w", err)
 	}
+	// The claims intake authority (meta-claims-intake-v1 §4.1) has its own probe so that every
+	// other authority also rejects a login that can reach commerce_claims_intake, and the intake
+	// login rejects every other authority (both directions, via the exactly-one rule below).
+	var claimsIntake, claimsIntakeUsage, claimsIntakeSet bool
+	if err := pool.QueryRow(ctx, `SELECT coalesce(pg_has_role(session_user, to_regrole('commerce_claims_intake'), 'MEMBER'),false),
+		coalesce(pg_has_role(session_user, to_regrole('commerce_claims_intake'), 'USAGE'),false),
+		coalesce(pg_has_role(session_user, to_regrole('commerce_claims_intake'), 'SET'),false)`).
+		Scan(&claimsIntake, &claimsIntakeUsage, &claimsIntakeSet); err != nil {
+		return fmt.Errorf("validate runtime role: %w", err)
+	}
 	// Exactly one authority, including indirect grants. Checking only the desired
 	// role would let a mixed login smuggle merchant privileges into buyer code.
 	memberships := map[string]bool{"runtime": runtimeMember, "identity": identityMember,
@@ -293,7 +303,7 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 		"meta_registrar": metaRegistrar, "meta_curator": metaCurator, "meta_consumer": metaConsumer,
 		"meta_worker": metaWorker, "media_registrar": mediaRegistrar,
 		"media_worker": mediaWorker, "media_executor": mediaExecutor, "media_recovery": mediaRecovery,
-		"stripe_ingress": stripeIngress, "stripe_registrar": stripeRegistrar}
+		"stripe_ingress": stripeIngress, "stripe_registrar": stripeRegistrar, "claims_intake": claimsIntake}
 	roleCount := 0
 	for _, member := range memberships {
 		if member {
@@ -314,6 +324,9 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 	}
 	if authority == "meta_worker" {
 		roleValid = roleValid && metaWorkerUsage && !metaWorkerSet && !systemAuthority
+	}
+	if authority == "claims_intake" {
+		roleValid = roleValid && claimsIntakeUsage && !claimsIntakeSet && !systemAuthority
 	}
 	if authority == "media_worker" {
 		roleValid = roleValid && mediaWorkerUsage && !mediaWorkerSet && !systemAuthority

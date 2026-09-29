@@ -1,16 +1,22 @@
-// ingest.go owns the D8 ingest entry point: Ingest/IngestParsed turn one parsed comment
-// into one claims.events row and, when accepted, an absolute line target (contract §4.3).
+// ingest.go owns the shared ingest core: Ingest/IngestParsed (manual) and IngestMetaIntake
+// (meta_intake.go) turn one parsed comment into one claims.events row and, when accepted,
+// an absolute line target (contract §4.3; meta-claims-intake-v1 §5.3 for the meta source).
 //
-// Non-goals: no permission check (callers must already hold authority; the only v1
-// production caller is RecordManualClaim), no Meta source (T10c), no text storage, no
-// cart, inventory or message effect.
+// Non-goals: no permission check (callers must already hold authority; the only manual
+// production caller is RecordManualClaim), no text storage, no cart, inventory or message
+// effect, no reply planning (the intake worker does that after this core returns).
 //
 // Depends on: claims/grammar (Result shape), command (sentinels); tables
 // live.claim_windows (FOR SHARE window fence), live.offers (FOR SHARE offer fence),
-// claims.bundles, claims.lines and claims.events as commerce_runtime under RLS.
+// claims.bundles, claims.lines and claims.events as commerce_runtime under RLS (manual) or as
+// commerce_claims_intake under claims.intake_scope() policies (meta); meta only also reads
+// live.claim_window_intervals and live.claim_sources.
+// Used by: RecordManualClaim (manual), internal/claimsintake via IngestMetaIntake (meta).
 //
-// Lock order (§5.6, caller already holds its receipt advisory): claim-source advisory →
-// live.claim_windows → live.offers → claims.bundles → claims.lines → claims.events insert.
+// Lock order (§5.6, caller already holds its receipt advisory / intake lease): claim-source
+// advisory → [meta: claims-actor then claims-session-cap advisories] → live.claim_windows →
+// [meta: live.claim_window_intervals] → live.offers → claims.bundles → claims.lines →
+// claims.events insert.
 
 package claims
 
@@ -35,12 +41,12 @@ type IngestInput struct {
 	TenantID      string    // must equal app.tenant_id of tx (server-derived, never from request)
 	StoreID       string    // must equal app.store_id of tx
 	SessionID     string    // claim context; this session's window is locked
-	SourceKind    string    // v1: "manual" only ("meta" reserved for T10c -> ErrInvalid)
-	SourceEventID string    // canonical UUID, unique per store across kinds
-	Platform      string    // v1: "manual" only
+	SourceKind    string    // "manual"; "meta" only through IngestMetaIntake (else ErrInvalid)
+	SourceEventID string    // canonical UUID, unique per store across kinds (meta: the inbox event id)
+	Platform      string    // "manual"; "facebook"|"instagram" only through IngestMetaIntake
 	ActorKey      string    // 64 lowercase hex, opaque, derived by the caller
 	ActorLabel    string    // manual only; required only when the bundle does not exist yet, ignored otherwise
-	PrincipalID   string    // manual: must equal app.principal_id
+	PrincipalID   string    // manual: must equal app.principal_id; meta: "" (no principal)
 	Text          string    // Ingest only; parsed then discarded; must be "" for IngestParsed
 	OccurredAt    time.Time // UTC µs; <= clock_timestamp()+120s
 }
@@ -69,6 +75,8 @@ type IngestResult struct {
 	PreviousQuantity int64  `json:"previous_quantity"`
 	LineVersion      int64  `json:"line_version"`
 	BundleVersion    int64  `json:"bundle_version"`
+	// BundleCreated is true only when this call inserted the bundle (never on Duplicate).
+	BundleCreated bool `json:"bundle_created"`
 }
 
 // Ingest parses Text with kw-v1 and ingests the result (= IngestParsed(grammar.Parse(Text))).
@@ -93,47 +101,92 @@ func Ingest(ctx context.Context, tx pgx.Tx, in IngestInput) (IngestResult, error
 // event. Every accepted command bumps line and bundle versions even if N is unchanged.
 // Caller: RecordManualClaim (the only v1 production caller; KC15 guard).
 func IngestParsed(ctx context.Context, tx pgx.Tx, in IngestInput, p grammar.Result) (IngestResult, error) {
-	if ctx == nil || tx == nil || !validIngest(in, p) {
+	return ingest(ctx, tx, in, p, nil)
+}
+
+// ingest is the one core behind both sources. m is nil for the manual source; for the meta
+// source it carries the facts of the leased claims.meta_intake row (meta-claims-intake-v1
+// §5.3): the window is matched through live.claim_window_intervals (opened_at <= occurred_at
+// and, once closed, occurred_at < closed_at with receipt within the 60 s grace), the §4.2
+// advisories are taken right after the claim-source advisory, the offer is resolved by id,
+// RATE_LIMITED is decided before the bundle step and a missing bundle is created without a
+// label. Everything else (dedup, offer precedence, line target, event record) is shared.
+func ingest(ctx context.Context, tx pgx.Tx, in IngestInput, p grammar.Result, m *metaIngest) (IngestResult, error) {
+	if ctx == nil || tx == nil || (m == nil && !validIngest(in, p)) || (m != nil && !validShape(in, p, m)) {
 		return IngestResult{}, command.ErrInvalid
 	}
-	var isolation, tenantID, storeID, principalID string
+	var isolation, tenantID, storeID, principalID, buyerID string
 	var inClock bool
 	err := tx.QueryRow(ctx, `SELECT current_setting('transaction_isolation'),
 		coalesce(current_setting('app.tenant_id',true),''),coalesce(current_setting('app.store_id',true),''),
-		coalesce(current_setting('app.principal_id',true),''),$1::timestamptz<=clock_timestamp()+interval '120 seconds'`,
-		in.OccurredAt).Scan(&isolation, &tenantID, &storeID, &principalID, &inClock)
+		coalesce(current_setting('app.principal_id',true),''),coalesce(current_setting('app.buyer_id',true),''),
+		$1::timestamptz<=clock_timestamp()+interval '120 seconds'`,
+		in.OccurredAt).Scan(&isolation, &tenantID, &storeID, &principalID, &buyerID, &inClock)
 	if err != nil {
 		return IngestResult{}, mapError(err)
 	}
-	if isolation != "read committed" || tenantID != in.TenantID || storeID != in.StoreID || principalID != in.PrincipalID || !inClock {
+	if isolation != "read committed" || tenantID != in.TenantID || storeID != in.StoreID || principalID != in.PrincipalID {
+		return IngestResult{}, command.ErrInvalid
+	}
+	// Manual: a future occurred_at is invalid input. Meta: the poller's own clock decides, and a
+	// future comment is DROPPED as WINDOW_CLOSED (§5.3), never an error.
+	if (m == nil && !inClock) || (m != nil && buyerID != "") {
 		return IngestResult{}, command.ErrInvalid
 	}
 	if err := waitAdvisory(ctx, tx, "claim-source|"+in.TenantID+"|"+in.StoreID+"|"+in.SourceEventID); err != nil {
 		return IngestResult{}, err
+	}
+	if m != nil {
+		// §4.2: serialise the per-actor rate window and the per-session cap; manual ingest never
+		// takes these keys. Order fixed: actor, then session cap.
+		if err := waitAdvisory(ctx, tx, "claims-actor|"+in.TenantID+"|"+in.StoreID+"|"+in.SessionID+"|"+in.ActorKey); err != nil {
+			return IngestResult{}, err
+		}
+		if err := waitAdvisory(ctx, tx, "claims-session-cap|"+in.TenantID+"|"+in.StoreID+"|"+in.SessionID); err != nil {
+			return IngestResult{}, err
+		}
 	}
 	if prior, found, err := readSource(ctx, tx, in, p); err != nil || found {
 		return prior, err
 	}
 
 	var w window
-	err = tx.QueryRow(ctx, `SELECT generation,match_mode,opened_at FROM live.claim_windows
-		WHERE tenant_id=$1 AND store_id=$2 AND session_id=$3 AND state='OPEN' FOR SHARE`,
-		in.TenantID, in.StoreID, in.SessionID).Scan(&w.generation, &w.mode, &w.openedAt)
-	if errors.Is(err, pgx.ErrNoRows) || (err == nil && in.OccurredAt.Before(w.openedAt)) {
-		return IngestResult{Outcome: OutcomeRejected, Reason: ReasonWindowClosed, SessionID: in.SessionID, GrammarVersion: p.Version}, nil
-	}
-	if err != nil {
-		return IngestResult{}, mapError(err)
+	closed := IngestResult{Outcome: OutcomeRejected, Reason: ReasonWindowClosed, SessionID: in.SessionID, GrammarVersion: p.Version}
+	if m == nil {
+		err = tx.QueryRow(ctx, `SELECT generation,match_mode,opened_at FROM live.claim_windows
+			WHERE tenant_id=$1 AND store_id=$2 AND session_id=$3 AND state='OPEN' FOR SHARE`,
+			in.TenantID, in.StoreID, in.SessionID).Scan(&w.generation, &w.mode, &w.openedAt)
+		if errors.Is(err, pgx.ErrNoRows) || (err == nil && in.OccurredAt.Before(w.openedAt)) {
+			return closed, nil
+		}
+		if err != nil {
+			return IngestResult{}, mapError(err)
+		}
+	} else {
+		var ok bool
+		if w, ok, err = matchMetaWindow(ctx, tx, in, m, inClock); err != nil {
+			return IngestResult{}, err
+		} else if !ok {
+			return closed, nil
+		}
 	}
 	if p.Kind == grammar.NoMatch {
 		return record(ctx, tx, in, w, shape(p, ReasonNoMatch, offer{}))
 	}
+	if m != nil && m.unknownKeyword {
+		// The unresolved head was never persisted (claims R5/§8): only the reason is kept.
+		return record(ctx, tx, in, w, shape(p, ReasonUnknownKeyword, offer{}))
+	}
 
 	var o offer
+	lookup, key := "keyword=$4", any(p.Keyword)
+	if m != nil {
+		lookup, key = "id=$4::uuid", any(m.offerID)
+	}
 	err = tx.QueryRow(ctx, `SELECT id::text,keyword,sku_id::text,active,activated_at,max_quantity_per_claim FROM live.offers
-		WHERE tenant_id=$1 AND store_id=$2 AND session_id=$3 AND keyword=$4 FOR SHARE`,
-		in.TenantID, in.StoreID, in.SessionID, p.Keyword).Scan(&o.id, &o.keyword, &o.skuID, &o.active, &o.activatedAt, &o.maxQuantity)
-	if errors.Is(err, pgx.ErrNoRows) {
+		WHERE tenant_id=$1 AND store_id=$2 AND session_id=$3 AND `+lookup+` FOR SHARE`,
+		in.TenantID, in.StoreID, in.SessionID, key).Scan(&o.id, &o.keyword, &o.skuID, &o.active, &o.activatedAt, &o.maxQuantity)
+	if errors.Is(err, pgx.ErrNoRows) && m == nil {
 		// Nothing about the unresolved head is stored: no keyword, quantity or offer (I03).
 		return record(ctx, tx, in, w, shape(p, ReasonUnknownKeyword, offer{}))
 	}
@@ -142,6 +195,15 @@ func IngestParsed(ctx context.Context, tx pgx.Tx, in IngestInput, p grammar.Resu
 	}
 	if reason := offerReason(p, w.mode, o, in.OccurredAt); reason != "" {
 		return record(ctx, tx, in, w, shape(p, reason, o))
+	}
+	if m != nil {
+		limited, err := metaRateLimited(ctx, tx, in)
+		if err != nil {
+			return IngestResult{}, err
+		}
+		if limited {
+			return record(ctx, tx, in, w, shape(p, ReasonRateLimited, o))
+		}
 	}
 
 	b, err := lockBundle(ctx, tx, in)
@@ -162,6 +224,7 @@ func IngestParsed(ctx context.Context, tx pgx.Tx, in IngestInput, p grammar.Resu
 
 	e := shape(p, "", o)
 	e.bundleID = b.id
+	e.bundleCreated = b.created && m != nil // meta only: the manual path keeps its exact result bytes
 	if newLine {
 		e.lineVersion = 1
 		_, err = tx.Exec(ctx, `INSERT INTO claims.lines(tenant_id,store_id,session_id,bundle_id,offer_id,sku_id,quantity,version)
@@ -213,15 +276,29 @@ type event struct {
 	explicit                             *bool
 	bundleID                             string
 	lineVersion, previous, bundleVersion int64
+	bundleCreated                        bool // this call inserted the bundle (never true for a duplicate)
 }
 
-// validIngest is the §4.3 step-1 shape check (everything but the SQL-side clock and GUCs).
-func validIngest(in IngestInput, p grammar.Result) bool {
+// validIngest is the manual-source §4.3 step-1 shape check (everything but the SQL-side
+// clock and GUCs).
+func validIngest(in IngestInput, p grammar.Result) bool { return validShape(in, p, nil) }
+
+// validShape is the shared shape check. m is nil for the manual source (kind and platform
+// "manual", a principal) and non-nil for the meta source (kind "meta", facebook/instagram,
+// no principal, no label).
+func validShape(in IngestInput, p grammar.Result, m *metaIngest) bool {
 	if !command.ValidID(in.TenantID) || !command.ValidID(in.StoreID) || !command.ValidID(in.SessionID) ||
-		!command.ValidID(in.SourceEventID) || !command.ValidID(in.PrincipalID) ||
-		in.SourceKind != manualSource || in.Platform != manualSource || !actorKeyPattern.MatchString(in.ActorKey) ||
+		!command.ValidID(in.SourceEventID) || !actorKeyPattern.MatchString(in.ActorKey) ||
 		in.Text != "" || in.OccurredAt.IsZero() || !in.OccurredAt.Equal(in.OccurredAt.Truncate(time.Microsecond)) ||
 		in.OccurredAt.Year() < 2000 || in.OccurredAt.Year() > 2199 {
+		return false
+	}
+	if m == nil {
+		if !command.ValidID(in.PrincipalID) || in.SourceKind != manualSource || in.Platform != manualSource {
+			return false
+		}
+	} else if in.PrincipalID != "" || in.ActorLabel != "" || in.SourceKind != metaSource ||
+		(in.Platform != "facebook" && in.Platform != "instagram") || !validMetaIngest(m) {
 		return false
 	}
 	// A label reaches SQL only as a NormalizeLabel fixed point, so the bundles CHECK can
@@ -233,6 +310,10 @@ func validIngest(in IngestInput, p grammar.Result) bool {
 	}
 	if p.Version != grammar.Version {
 		return false
+	}
+	if m != nil && m.unknownKeyword {
+		// An unresolved head carries no keyword, quantity or offer; only the grammar kind survives.
+		return (p.Kind == grammar.Match || p.Kind == grammar.InvalidQuantity) && p.Keyword == "" && p.Quantity == 0 && !p.Explicit
 	}
 	switch p.Kind {
 	case grammar.Match:
@@ -291,7 +372,7 @@ func (e event) result(eventID, sessionID string, generation int64, duplicate boo
 	return IngestResult{Outcome: outcome, Reason: e.reason, Duplicate: duplicate, EventID: eventID, SessionID: sessionID,
 		WindowGeneration: generation, GrammarVersion: grammar.Version, OfferID: e.offerID, Keyword: e.keyword,
 		BundleID: e.bundleID, Quantity: e.quantity, PreviousQuantity: e.previous, LineVersion: e.lineVersion,
-		BundleVersion: e.bundleVersion}
+		BundleVersion: e.bundleVersion, BundleCreated: e.bundleCreated && !duplicate}
 }
 
 // record inserts the event (RLS: source_kind='manual' and principal_id=app.principal_id)
@@ -306,7 +387,7 @@ func record(ctx context.Context, tx pgx.Tx, in IngestInput, w window, e event) (
 		source_event_id,platform,occurred_at,grammar_version,grammar_kind,match_mode,outcome,reason,offer_id,quantity,
 		explicit_quantity,bundle_id,line_version,previous_quantity,bundle_version,principal_id)
 		VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,nullif($13,''),nullif($14,'')::uuid,nullif($15::integer,0),
-		$16,nullif($17,'')::uuid,nullif($18::bigint,0),nullif($19::integer,0),nullif($20::bigint,0),$21)
+		$16,nullif($17,'')::uuid,nullif($18::bigint,0),nullif($19::integer,0),nullif($20::bigint,0),nullif($21,'')::uuid)
 		RETURNING id::text`,
 		in.TenantID, in.StoreID, in.SessionID, w.generation, in.SourceKind, in.SourceEventID, in.Platform, in.OccurredAt,
 		grammar.Version, string(e.kind), string(w.mode), outcome, string(e.reason), e.offerID, e.quantity, e.explicit,
@@ -374,13 +455,15 @@ func value(v *int64) int64 {
 	return *v
 }
 
-// bundleRow is the actor's bundle locked FOR NO KEY UPDATE.
+// bundleRow is the actor's bundle locked FOR NO KEY UPDATE; created is true when this call
+// inserted it.
 type bundleRow struct {
 	id        string
 	lineCount int
+	created   bool
 }
 
-// lockBundle locks the actor's bundle, creating it (with the label) only if absent.
+// lockBundle locks the actor's bundle, creating it (with the label; meta bundles have none) only if absent.
 // An existing bundle is never INSERTed again: CHECK and RLS WITH CHECK run on the proposed
 // row before conflict arbitration, so a NULL-label manual INSERT would raise 23514 (S05).
 // The INSERT uses a targetless ON CONFLICT DO NOTHING so that a label already taken in the
@@ -401,12 +484,13 @@ func lockBundle(ctx context.Context, tx pgx.Tx, in IngestInput) (bundleRow, erro
 	if !errors.Is(err, pgx.ErrNoRows) {
 		return bundleRow{}, mapError(err)
 	}
-	if in.ActorLabel == "" {
+	if in.ActorLabel == "" && in.SourceKind != metaSource {
 		return bundleRow{}, command.ErrInvalid
 	}
-	if _, err := tx.Exec(ctx, `INSERT INTO claims.bundles(tenant_id,store_id,session_id,platform,actor_key,label)
-		VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING`,
-		in.TenantID, in.StoreID, in.SessionID, in.Platform, in.ActorKey, in.ActorLabel); err != nil {
+	tag, err := tx.Exec(ctx, `INSERT INTO claims.bundles(tenant_id,store_id,session_id,platform,actor_key,label)
+		VALUES($1,$2,$3,$4,$5,nullif($6,'')) ON CONFLICT DO NOTHING`,
+		in.TenantID, in.StoreID, in.SessionID, in.Platform, in.ActorKey, in.ActorLabel)
+	if err != nil {
 		return bundleRow{}, mapError(err)
 	}
 	if err := selectBundle(); errors.Is(err, pgx.ErrNoRows) {
@@ -414,5 +498,6 @@ func lockBundle(ctx context.Context, tx pgx.Tx, in IngestInput) (bundleRow, erro
 	} else if err != nil {
 		return bundleRow{}, mapError(err)
 	}
+	b.created = tag.RowsAffected() == 1
 	return b, nil
 }
