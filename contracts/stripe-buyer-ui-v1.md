@@ -174,3 +174,16 @@ SU06 is SANDBOX, never LIVE. NOT_RUN: SP17 (capture proven by refresh signal + p
 2. **Q2 Copy:** the six new §7 strings ship as drafted in zh-CN/zh-TW/en; owner may reword before go-live.
 3. **Q3 Methods:** R1 enables one payment method per store (Stripe); a method chooser is R2. The
    "unavailable" note wording for a store with no method stays as is.
+
+## Integrator rulings at merge (2026-09-29)
+
+- UI implementer calls accepted: (1) CREATING/READY past the local clock's cutoff shows Cancel +
+  `cutoff` note; (2) Stripe operation errors stay visible until the next buyer action; (3) the
+  refresh throttle (10 s, 30 per page life) lives in `requestPaymentSignal`; (4)
+  `validPaymentPrepared(body, request, method)` keeps the required `method` argument.
+- F2 accepted: a revoked qualification / disabled binding / disabled method leaves the pinned view
+  at READY with `methods []` and the handoff answers UNAVAILABLE (fail closed; nothing persists).
+- F3 **changed**: real Stripe SANDBOX rejected TWD 100 and 1200 minor and accepted 2500. The TWD
+  local minimum becomes **2500 minor (NT$25)** in every layer that encodes it (stripe-psp-v1 §4
+  table, Go amount checks, SQL `stripe_amount_ok`/`stripe_unit_amount`, storefront
+  `STRIPE_AMOUNT` table) — one follow-up unit, with SP02 parity vectors updated to match.
