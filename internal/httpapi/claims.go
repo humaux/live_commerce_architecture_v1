@@ -106,6 +106,8 @@ func registerClaimRoutes(mux *http.ServeMux, pool *pgxpool.Pool, labels *claims.
 	// transport errors and the 405 fallback, forbids a Referer.
 	mux.HandleFunc("POST "+base+"/bundles/{bundle_id}/link", noReferrer(claimsRoute(http.MethodPost, false, claimLinkRoute(pool))))
 	mux.HandleFunc(base+"/bundles/{bundle_id}/link", noReferrer(studioRoute("", false, nil)))
+	// Comment source (meta-claims-intake-v1 §2, claimsource.go): GET/PUT claim-source of a session.
+	registerClaimSourceRoutes(mux, pool)
 	// Methodless fallbacks keep 405 inside the same private response boundary.
 	for _, path := range []string{base, base + "/window", base + "/offers", base + "/offers/{offer_id}", base + "/manual", base + "/bundles"} {
 		mux.HandleFunc(path, studioRoute("", false, nil))

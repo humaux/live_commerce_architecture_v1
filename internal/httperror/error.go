@@ -73,6 +73,12 @@ func write(w http.ResponseWriter, status int, code string, retryable bool) {
 		"invalid_url":           "Tracking URL is not valid.",
 		"void_requires_shipped": "Only a shipped record can be voided.",
 		"invalid_void":          "Void request is not valid.",
+		// meta-claims-intake-v1 §2 / claim-source unit: comment source binding (version_changed above is shared).
+		"input_invalid":      "The pasted link or id is not a supported Facebook or Instagram post.",
+		"input_unresolvable": "This link cannot be resolved without Meta; paste the numeric post or media id.",
+		"binding_missing":    "No enabled Meta connection is ready for this post.",
+		"binding_ambiguous":  "Several Meta connections are enabled; the post cannot be assigned to one.",
+		"source_conflict":    "This post already feeds another live session.",
 	}
 	message, ok := messages[code]
 	if !ok {

@@ -66,6 +66,18 @@ type Config struct {
 	HTTPClient          *http.Client
 }
 
+// Validate is the configuration part of Routes' checks (no I/O), so a command can refuse a bad
+// base URL or API version before opening any connection.
+func (c Config) Validate() error {
+	if !versionPattern.MatchString(c.GraphVersion) || !(c.GraphBaseURL == graphHost || loopbackPattern.MatchString(c.GraphBaseURL)) {
+		return ErrConfig
+	}
+	return nil
+}
+
+// GraphHost is the only non-loopback base URL Config accepts.
+const GraphHost = graphHost
+
 // checkFunc runs claims.check_meta_reply; separated so unit tests need no database.
 type checkFunc func(ctx context.Context, operationID string, linkHash []byte) (string, error)
 
@@ -88,8 +100,7 @@ func Routes(checkPool *pgxpool.Pool, linkKey claims.ReplyLinkKey, pageKeys *Page
 }
 
 func newRoutes(check checkFunc, linkKey claims.ReplyLinkKey, pageKeys *PageTokenKeyring, cfg Config) ([]core.DispatchRoute, error) {
-	if check == nil || linkKey.ID() == "" || pageKeys == nil || !versionPattern.MatchString(cfg.GraphVersion) ||
-		!(cfg.GraphBaseURL == graphHost || loopbackPattern.MatchString(cfg.GraphBaseURL)) {
+	if check == nil || linkKey.ID() == "" || pageKeys == nil || cfg.Validate() != nil {
 		return nil, ErrConfig
 	}
 	client := &http.Client{}
