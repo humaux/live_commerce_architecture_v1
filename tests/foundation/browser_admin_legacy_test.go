@@ -36,11 +36,9 @@ func TestBrowserAdminLedgerFixtureChain(t *testing.T) {
 	// Fixed ports: the specs and cmd/admin-fixture hard-code them. Refuse rather than talk to a
 	// stranger's server that happens to own one.
 	for _, addr := range []string{"127.0.0.1:18081", "127.0.0.1:3100", "127.0.0.1:3101"} {
-		l, err := net.Listen("tcp", addr)
-		if err != nil {
+		if !portFree(addr) {
 			t.Fatalf("port %s is busy; stop the other process (this gate never kills by port)", addr)
 		}
-		_ = l.Close()
 	}
 	evidence := adminEvidence(t, root, "admin-ledger")
 
@@ -168,6 +166,20 @@ func startBrowserNode(t *testing.T, ctx context.Context, evidence, name, dir str
 	})
 }
 
+// portFree waits up to 5 s for addr to be bindable: the previous gate of this process may have just
+// killed its server, and the kernel releases the listening socket asynchronously after the exit.
+func portFree(addr string) bool {
+	for deadline := time.Now().Add(5 * time.Second); ; time.Sleep(50 * time.Millisecond) {
+		if l, err := net.Listen("tcp", addr); err == nil {
+			_ = l.Close()
+			return true
+		}
+		if time.Now().After(deadline) {
+			return false
+		}
+	}
+}
+
 // stopProcessGroup (F6) returns only when no process of the group is left: the parent's exit does not
 // mean its next-server child has released the fixed port, so the next gate's port check would race it.
 func stopProcessGroup(t *testing.T, pgid int) {
@@ -250,11 +262,9 @@ func adminMockSuite(t *testing.T, suite string, onboarding bool) {
 		t.Fatal(err)
 	}
 	for _, addr := range []string{"127.0.0.1:19111", "127.0.0.1:3100"} {
-		l, err := net.Listen("tcp", addr)
-		if err != nil {
+		if !portFree(addr) {
 			t.Fatalf("port %s is busy; stop the other process (this gate never kills by port)", addr)
 		}
-		_ = l.Close()
 	}
 	evidence := adminEvidence(t, root, "admin-"+suite)
 	env := map[string]string{
