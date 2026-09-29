@@ -307,7 +307,7 @@ function Body({
                 {detail.privacy_actions.map((action, index) => (
                   <tr key={`${action.completed_at}-${index}`}>
                     <td>{displayTime(locale, action.completed_at)}</td>
-                    <td>{c.kinds[action.kind] ?? action.kind}</td>
+                    <td>{c.kinds[action.kind.toLowerCase()] ?? action.kind}</td>
                     <td>{c.via[action.via] ?? action.via}</td>
                   </tr>
                 ))}

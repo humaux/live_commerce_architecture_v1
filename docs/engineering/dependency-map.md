@@ -101,6 +101,14 @@ Package billing owns the platform-fee subscription mirror and the derived store 
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
 - Used by: `cmd/api`, `internal/httpapi`
 
+## `internal/billing/billingtest`
+
+Package billingtest owns the independent MOCK of the Stripe Billing endpoints the platform-fee client calls: GET /v1/account, POST /v1/customers (idempotency cache), POST /v1/checkout/sessions and /{id}/expire, POST /v1/billing_portal/sessions, GET /v1/subscriptions/{id} and the list by customer, GET /v1/prices/{id}, plus a signed-event builder.
+
+- Depends on (internal): `internal/integrations/psp/stripe/stripetest`
+- Depends on (third-party): —
+- Used by: — (entry point or unused)
+
 ## `internal/buyer`
 
 Package buyer owns the anonymous buyer capability boundary: issuing short-lived opaque capability tokens on the issuer pool and scoping every buyer transaction to one (tenant, store, owner, session) with a replay-safe command record.
@@ -283,7 +291,7 @@ Package stripetest owns the independent MOCK Stripe HTTP service: Checkout sessi
 
 - Depends on (internal): —
 - Depends on (third-party): —
-- Used by: — (entry point or unused)
+- Used by: `internal/billing/billingtest`
 
 ## `internal/inventory`
 

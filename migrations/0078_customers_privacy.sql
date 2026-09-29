@@ -915,7 +915,7 @@ COMMENT ON INDEX checkout.orders_by_owner IS 'customers list/detail aggregates a
 COMMENT ON INDEX claims.bundles_by_owner IS 'customers list claims_count/platforms and erasure relabel read bound bundles per owner (0078).';
 COMMENT ON FUNCTION customers.guard_append_only() IS 'customers package trigger guard: consent_events and privacy_actions are append-only.';
 COMMENT ON FUNCTION customers.consent_allows(uuid,uuid,uuid,text,text) IS
- 'THE consent gate (CD5): latest (occurred_at,id) event for (tenant,store,owner,purpose,channel) is granted AND buyer.owners.active. STABLE definer, owner commerce_privacy_writer, EXECUTE commerce_auth only (R3 grants its planners in 0080, C-7). Unknown owner, other store or invalid pair = false, never an error. Necessary, not sufficient, for any actor_key send/audience (CD5).';
+ 'internal/customers owns THE consent gate (CD5): latest (occurred_at,id) event for (tenant,store,owner,purpose,channel) is granted AND buyer.owners.active. STABLE definer, owner commerce_privacy_writer, EXECUTE commerce_auth only (R3 grants its planners in 0080, C-7). Unknown owner, other store or invalid pair = false, never an error. Necessary, not sufficient, for any actor_key send/audience (CD5).';
 COMMENT ON FUNCTION customers.apply_erasure(uuid,uuid,uuid) IS
  'internal/customers CD7 steps, idempotent; internal (EXECUTE nobody). Caller holds the owner row lock and GUC scope. Withdraws consents, revokes capability sessions, deactivates the owner, redacts destination snapshots no order references, relabels bound manual bundles erased-<32 hex>. Never writes actor_key, claims.meta_intake, live.claim_sources or social.*. Returns counts.';
 COMMENT ON FUNCTION customers.buyer_set_consent(bytea,uuid,text,text,boolean,text,text,uuid) IS

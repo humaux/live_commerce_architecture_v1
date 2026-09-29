@@ -30,7 +30,7 @@ const detail = () => ({
   claims: [{ session_id: "33333333-3333-4333-8333-333333333333", platform: "facebook", bound_at: "2026-09-10T00:00:00Z", line_count: 2 }],
   consent_history: [{ purpose: "marketing_messages", channel: "meta_dm", granted: true, source: "buyer_checkout",
     policy_version: "lc-2026-10", occurred_at: "2026-09-10T00:00:00Z" }],
-  privacy_actions: [{ kind: "export", via: "merchant", completed_at: "2026-09-11T00:00:00Z", summary: null }],
+  privacy_actions: [{ kind: "EXPORT", via: "merchant", completed_at: "2026-09-11T00:00:00Z", summary: null }],
 });
 
 test("customer list accepts the frozen row and rejects unknown keys, dup ids, bad cursor, oversize", () => {
@@ -72,6 +72,7 @@ test("customer detail: bounded lists, order summaries reuse the orders parser, i
   assert.throws(() => parseCustomerDetail({ ...detail(), claims: [{ session_id: id, platform: "facebook", bound_at: "2026-09-10T00:00:00Z", line_count: 2, actor_key: "x" }] }, id));
   assert.throws(() => parseCustomerDetail({ ...detail(), consent_history: [{ ...detail().consent_history[0], channel: "meta_ads" }] }, id));
   assert.throws(() => parseCustomerDetail({ ...detail(), privacy_actions: [{ ...detail().privacy_actions[0], summary: [] }] }, id));
+  assert.throws(() => parseCustomerDetail({ ...detail(), privacy_actions: [{ ...detail().privacy_actions[0], kind: "export" }] }, id));
   const { privacy_actions: _drop, ...missing } = detail();
   assert.throws(() => parseCustomerDetail(missing, id));
 });

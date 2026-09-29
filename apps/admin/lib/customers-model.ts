@@ -67,6 +67,8 @@ const maxMoney = 1_000_000_000_000;
 // Go time.Time / SQL to_char output: RFC3339 UTC, fraction of any length (contract does not pin the digits).
 const instant = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/;
 const token = /^[a-z][a-z0-9_-]{0,31}$/;
+const privacyKinds = ["EXPORT", "ERASURE"];
+const privacyVia = ["buyer", "merchant", "restore"];
 
 export function object(value: unknown, keys: string[]): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("unavailable");
@@ -143,7 +145,8 @@ function parseClaim(value: unknown): ClaimSummary {
 }
 function parsePrivacyAction(value: unknown): PrivacyAction {
   const v = object(value, ["kind", "via", "completed_at", "summary"]);
-  if (typeof v.kind !== "string" || !token.test(v.kind) || typeof v.via !== "string" || !token.test(v.via) ||
+  // Exact Go enums (internal/customers validPrivacyAction): kind EXPORT|ERASURE, via buyer|merchant|restore.
+  if (typeof v.kind !== "string" || !privacyKinds.includes(v.kind) || typeof v.via !== "string" || !privacyVia.includes(v.via) ||
     !isInstant(v.completed_at)) throw new Error("unavailable");
   const summary = v.summary;
   if (summary !== null && (typeof summary !== "object" || Array.isArray(summary))) throw new Error("unavailable");
