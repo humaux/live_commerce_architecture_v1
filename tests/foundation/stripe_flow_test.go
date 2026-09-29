@@ -836,10 +836,21 @@ func TestStripeSP10Deadline(t *testing.T) {
 	t.Run("still_open_at_plus_60m_escalates_and_keeps_stock", func(t *testing.T) {
 		s := e.stripeStore(t)
 		res, session := e.pinned(t, s)
-		e.fake.FailNext("expire", 500)           // Stripe does not confirm the expiry in this cycle
+		// Stripe never confirms the expiry during this scenario. One queued failure is not
+		// enough: the next claim's expire (fresh key) would succeed, and a Stripe-confirmed
+		// expired+unpaid session legitimately closes and releases (§6.5 step 7a, §10) even after the
+		// EXPIRY_UNCONFIRMED review; the await loop wakes that claim at any 400 ms tick.
+		for i := 0; i < 1000; i++ {
+			e.fake.FailNext("expire", 500)
+		}
+		defer e.fake.ClearFailures()
 		e.age(t, res.AttemptID, 101*time.Minute) // expires_at + 61 min
 		e.awaitReview(t, res.AttemptID, "PROVIDER_EXPIRY_UNCONFIRMED")
-		e.fake.ClearFailures()
+		e.wantStock(t, s, sflPending)
+		// "Still open" holds across further poller cycles (the await loop above wakes them
+		// every 400 ms): each retries expire, sees open, and must keep the stock.
+		sstWake(t, e.f, res.AttemptID)
+		time.Sleep(3 * time.Second)
 		e.wantStock(t, s, sflPending)
 		if e.has(t, res.AttemptID, "CLOSED_UNPAID") {
 			t.Fatal("stock released without Stripe confirming the expiry")
