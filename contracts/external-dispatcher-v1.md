@@ -158,3 +158,8 @@ and a reconcile-mode denial is `completeAmbiguous('policy_check_failed')`, `:236
 `reconcile` mode; existing routes ignore the field (no behaviour change). Full text: `meta-ads-v1.md` §3.1.
 
 - 2026-09-30 (meta-ads brief ruling B13): A10-D2 Check denials carry a stable code recorded on the op; A10-D3 job insert names the route's queue. Additive; existing routes unchanged.
+- Integrator rulings, merged 2026-09-30 (unit ads-a10, `1bf3535`; `internal/integrations/core`), additive, existing routes byte-identical:
+  - A10-D1 `DispatchRequest.Mode` is `json:"-"` (ephemeral per claim, never marshalled); set on the request given to `Check` and to every callback.
+  - A10-D2 `DenyPolicy(code)` returns `PolicyDenial{Code}` (`errors.Is(_, ErrPolicyDenied)`); in dispatch mode it records BLOCKED_POLICY with that code when it matches `codePattern`, else `policy_denied`. A bare `ErrPolicyDenied` keeps `policy_denied`. Reconcile-mode Check denials stay UNKNOWN `policy_check_failed` (unchanged).
+  - A10-D3 `InsertOperationJobOn(ctx, jobs, tx, operationID, queue, priority)`: same args/kind as `InsertOperationJob`, explicit queue `^[a-z][a-z0-9_]{0,39}$` and priority 1..4, else `command.ErrInvalid`. `InsertOperationJob` stays on queue `default`. The `river_job` guard must admit the queue (ads-core `post_river/0015`).
+  - A10-D4 reconcile with `ReconcileWithSecret`: loader `ErrPolicyDenied` → UNKNOWN `credential_unavailable`; other loader error/panic → UNKNOWN `secret_load_failed`; the secret is zeroed after the callback. Route validation: exactly one of `Reconcile`/`ReconcileWithSecret`, the latter only with the `LoadSecret`+`DispatchWithSecret` pair.
