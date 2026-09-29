@@ -13,11 +13,11 @@ MOCK, SANDBOX, LIVE, NOT_RUN): a pass here is only ever as strong as the label i
 | T0 static | `check_packet.py`, `go vet`, secret-literal grep, `depmap.sh --check`, `check-pkgdocs.sh`, `check-gates.sh`, `test-node.sh` (Node unit suites) | CI (`.github/workflows/foundation.yml`) | Go, Python 3, Node 24 |
 | T1 foundation | default `bash scripts/dev/test-local.sh` (no flag): the whole Go module under `-race` on a disposable real PostgreSQL 18 | CI | Docker, pinned PG image |
 | T2 subset | one focused slice of the T1 suite (`--checkout`, `--meta-inbox`, `--live-media-*`, ...); faster feedback, never acceptance on its own | developers; T1 in CI covers the same code | Docker |
-| T3 browser | real Chromium against the packaged Next apps + Go + PG; MOCK IdP/PSP unless the row says SANDBOX | developers, one mode at a time (`bash scripts/dev/test-local.sh <mode>`); NOT_RUN in CI. `scripts/dev/release-gate.sh` (run-all wrapper) is planned in `docs/delivery/units/deploy-release.md` and does not exist yet | Docker, pnpm, Node 24, Playwright Chromium |
+| T3 browser | real Chromium against the packaged Next apps + Go + PG; MOCK IdP/PSP unless the row says SANDBOX | developers, one mode at a time (`bash scripts/dev/test-local.sh <mode>`); NOT_RUN in CI. `scripts/dev/release-gate.sh` runs every mode in this file (R1 acceptance) | Docker, pnpm, Node 24, Playwright Chromium |
 
 CI is deliberately T0 + T1 only (owner decision: full foundation plus static checks). Browser modes are
-too slow and machine-bound for every push. Until `release-gate.sh` lands, every T3 row below is NOT_RUN in
-automation and only runs when a developer invokes its mode.
+too slow and machine-bound for every push. T3 rows run in automation only through `bash scripts/dev/release-gate.sh`
+(R1 acceptance, one PASS/FAIL/NOT_RUN table), or when a developer invokes a mode.
 
 ## test-local.sh modes
 
@@ -39,6 +39,7 @@ automation and only runs when a developer invokes its mode.
 | `--browser-payment` | isolated buyer payment UI/native POST gate with a local mock PSP; not provider payment or deployment acceptance | T3 browser | `bash scripts/dev/test-local.sh --browser-payment` |
 | `--stripe-browser` | SP18/SU05-SU09 buyer Stripe Checkout in Chromium: card 4242, decline, 3DS, plus the PAYUNi baseline; SANDBOX steps need STRIPE_BROWSER=1 STRIPE_SANDBOX=1 and a Stripe test key in secrets.env (else NOT_RUN, exit 2); one go test process per step, parsed from go test -json | T3 browser | `bash scripts/dev/test-local.sh --stripe-browser` |
 | `--browser-refund-fulfilment` | MF07 + RF11(a) isolated admin + storefront Next, Go, PG, real worker and the MOCK Stripe fake; RF11(b) SANDBOX is NOT_RUN unless it says otherwise above; not provider or deployment acceptance | T3 browser | `bash scripts/dev/test-local.sh --browser-refund-fulfilment` |
+| `--browser-e2e` | T12 deal loop in one real-browser chain: signed Meta MOCK comment -> claim -> private reply -> cart -> Stripe MOCK pay -> order -> manual ship -> partial refund, admin + storefront, PG facts, negatives, tenant isolation, leak scan; SANDBOX tier NOT_RUN (F12), CVS pickup NOT_RUN (F3) | T3 browser | `bash scripts/dev/test-local.sh --browser-e2e` |
 | `--checkout` | checkout subset only; full regression still required | T2 subset | `bash scripts/dev/test-local.sh --checkout` |
 | `--payment` | payment start/query subset only; full regression still required | T2 subset | `bash scripts/dev/test-local.sh --payment` |
 | `--payment-worker` | isolated payment worker subset; no real-provider or deployment claim | T2 subset | `bash scripts/dev/test-local.sh --payment-worker` |
@@ -79,6 +80,7 @@ automation and only runs when a developer invokes its mode.
 | `tests/admin/orders-bff.spec.ts`, `orders-request.test.ts` | `--browser-merchant-orders-bff` |
 | `tests/admin/orders-ui.spec.ts`, `orders-model.test.ts` | `--browser-merchant-orders-ui` |
 | `tests/admin/manual-fulfilment.spec.ts`, `refund.spec.ts`, `refund-bff.test.ts` | `--browser-refund-fulfilment` |
+| `tests/e2e/deal-loop.spec.ts` | `--browser-e2e` |
 
 The `--browser-admin-legacy` gate replaced a manual five-step procedure (`docs/implementation/
 2026-09-20-admin-ledger-acceptance.md` ss "Repeatable local run"): three of its specs had no runner
