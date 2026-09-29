@@ -199,6 +199,8 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 ('integration.plan_claim_reply(uuid,uuid,bytea,text,bigint)'::regprocedure::oid,false,'commerce_integration_writer',false),
 	 ('integration.load_meta_page_token(uuid,bigint,bytea)'::regprocedure::oid,true,'commerce_integration_writer',false),
 	 ('integration.register_meta_page_token(uuid,uuid,uuid,uuid,text,text,bigint,text,bytea,bytea,text[])'::regprocedure::oid,false,'commerce_integration_writer',false),
+	 -- R1 ruling F2 (migration 0066): the Meta registrar's binding definer, same owner/grant shape as the page-token one.
+	 ('integration.register_meta_binding(uuid,uuid,uuid,text,text)'::regprocedure::oid,false,'commerce_integration_writer',false),
 	 ('integration.guard_claims_intake_job()'::regprocedure::oid,false,'commerce_integration_writer',false),
 	 ('integration.guard_external_operation_job_link()'::regprocedure::oid,false,'commerce_integration_writer',false))
 	 SELECT count(*),bool_and(a.oid IS NOT NULL AND p.prosecdef AND p.proconfig = ARRAY['search_path=pg_catalog']
@@ -215,7 +217,7 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 AND NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'))
 	 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 	 LEFT JOIN approved a ON a.oid=p.oid WHERE n.nspname='integration'`).Scan(&functions, &safe)
-	if err != nil || functions != 35 || !safe {
+	if err != nil || functions != 36 || !safe {
 		t.Fatalf("fixed function ACL: count=%d safe=%v err=%v", functions, safe, err)
 	}
 }
