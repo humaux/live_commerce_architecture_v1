@@ -37,6 +37,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
@@ -117,7 +118,10 @@ func mciSetup(t *testing.T, o mciOpts) *mciEnv {
 	if e.pageKeys, err = metareply.NewPageTokenKeyring("pt_key_1", map[string][]byte{"pt_key_1": e.pageKeyRaw}); err != nil {
 		t.Fatal(err)
 	}
-	mustExec(t, f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'integration:execute') ON CONFLICT DO NOTHING`, f.tenantA, f.storeA1, h.actor)
+	// integration:execute: put_claim_source. integration:manage: register_meta_page_token requires it since the
+	// wave-3 amendment (contract §15, ruling i: "integration:manage held; raises 42501 otherwise").
+	mustExec(t, f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission)
+		VALUES($1,$2,$3,'integration:execute'),($1,$2,$3,'integration:manage') ON CONFLICT DO NOTHING`, f.tenantA, f.storeA1, h.actor)
 	// Rows staged by an earlier test of this shared database must not be picked up by this
 	// test's poller (it leases the oldest PENDING row globally).
 	mustExec(t, f.owner, `DELETE FROM claims.meta_intake WHERE state='PENDING'`)
@@ -234,13 +238,15 @@ func (e *mciEnv) startConsumer(_ *testing.T) {
 	t.Helper()
 	f := e.h.f
 	ctx := context.Background()
-	w, err := meta.NewConsumerWorkerWithClaims(ctx, mcConsumer(t, e.page), mcKeys(t, e.page), e.actor)
+	consumerPool := mcConsumer(t, e.page)
+	w, err := meta.NewConsumerWorkerWithClaims(ctx, consumerPool, mcKeys(t, e.page), e.actor)
 	if err != nil {
 		t.Fatalf("consumer with claims: %v", err)
 	}
 	workers := river.NewWorkers()
 	river.AddWorker(workers, w)
-	client, err := river.NewClient(riverpgxv5.New(miPool(t, f, "commerce_meta_worker")), &river.Config{Schema: "river_meta", Workers: workers,
+	riverPool := miPool(t, f, "commerce_meta_worker")
+	client, err := river.NewClient(riverpgxv5.New(riverPool), &river.Config{Schema: "river_meta", Workers: workers,
 		Queues: map[string]river.QueueConfig{"meta_inbox": {MaxWorkers: e.consumerWorkers}}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 		JobTimeout: 15 * time.Second, RescueStuckJobsAfter: 30 * time.Second})
 	if err != nil {
@@ -257,6 +263,11 @@ func (e *mciEnv) startConsumer(_ *testing.T) {
 			if err := client.StopAndCancel(stop); err != nil {
 				t.Errorf("consumer River stop: %v", err)
 			}
+			// A restart opens fresh pools; closing these now keeps a test that restarts the consumer
+			// inside the harness's max_connections=30 (idle connections otherwise live until the parent
+			// test ends). pgxpool.Close is idempotent, so the t.Cleanup close stays harmless.
+			riverPool.Close()
+			consumerPool.Close()
 		})
 	}
 }
@@ -852,12 +863,29 @@ func TestMetaClaimsMCI04IngestPreconditions(t *testing.T) {
 		t.Fatalf("an intake id that was not leased in this tx: %v", err)
 	}
 	_ = tx.Rollback(ctx)
-	tx, id := e.leaseTx(t, pgx.RepeatableRead, true)
-	if _, err := claims.IngestMetaIntake(ctx, tx, id); !errors.Is(err, command.ErrInvalid) {
+	// REPEATABLE READ: no lease can exist there (contract §4.4/§5.3: lease_meta_intake runs only in a READ
+	// COMMITTED NOGUC transaction and raises 22023 otherwise), so IngestMetaIntake is given the pending row's id
+	// under the right scope GUCs and must still refuse the isolation level.
+	rr, err := e.intakePool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var pgErr *pgconn.PgError
+	if _, err := rr.Exec(ctx, `SELECT * FROM claims.lease_meta_intake()`); !errors.As(err, &pgErr) || pgErr.Code != "22023" {
+		t.Fatalf("lease_meta_intake under REPEATABLE READ: %v, want 22023", err)
+	}
+	_ = rr.Rollback(ctx)
+	if rr, err = e.intakePool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := rr.Exec(ctx, `SELECT set_config('app.tenant_id',$1,true),set_config('app.store_id',$2,true)`, e.h.f.tenantA, e.h.f.storeA1); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := claims.IngestMetaIntake(ctx, rr, row.ID); !errors.Is(err, command.ErrInvalid) {
 		t.Fatalf("REPEATABLE READ transaction accepted: %v", err)
 	}
-	_ = tx.Rollback(ctx)
-	tx, id = e.leaseTx(t, pgx.ReadCommitted, false)
+	_ = rr.Rollback(ctx)
+	tx, id := e.leaseTx(t, pgx.ReadCommitted, false)
 	if _, err := claims.IngestMetaIntake(ctx, tx, id); !errors.Is(err, command.ErrInvalid) {
 		t.Fatalf("missing scope GUCs accepted: %v", err)
 	}
@@ -1202,6 +1230,10 @@ func TestMetaClaimsMCI05OneIntakePerComment(t *testing.T) {
 				t.Fatal("every run must still commit its own social fact")
 			}
 		}
+		// Everything is staged: stop the consumer (and close its pools) so the 20 pollers fit the harness's
+		// max_connections=30 next to the fixture pools.
+		e.stopConsumer()
+		e.stopConsumer = mciNoop
 		before := e.countEvents(t)
 		// 20 pollers race for the one row: exactly one applies it.
 		if leased := e.applyConcurrently(t, 20); leased != 1 || e.countEvents(t) != before+1 {
@@ -1218,7 +1250,9 @@ func TestMetaClaimsMCI05ImmutableFactsAndDuplicates(t *testing.T) {
 	f := e.h.f
 	ctx := context.Background()
 	requeue := func(id string, extra string) {
-		mustExec(t, f.owner, `UPDATE claims.meta_intake SET state='PENDING',lease_xid=NULL,not_before=clock_timestamp()-interval '1 second'`+extra+` WHERE id=$1`, id)
+		// applied_event_id is cleared with the state: CHECK (state='APPLIED')=(applied_event_id IS NOT NULL) (0064);
+		// the replay must find the stored event through claims.events, not through this column.
+		mustExec(t, f.owner, `UPDATE claims.meta_intake SET state='PENDING',applied_event_id=NULL,lease_xid=NULL,not_before=clock_timestamp()-interval '1 second'`+extra+` WHERE id=$1`, id)
 	}
 
 	s := e.postFB(t, "", "", "A1+2", mciAt(3*time.Second), nil)
@@ -1254,7 +1288,8 @@ func TestMetaClaimsMCI05ImmutableFactsAndDuplicates(t *testing.T) {
 	if first.reason != "UNKNOWN_KEYWORD" {
 		t.Fatalf("expected UNKNOWN_KEYWORD, got %+v", first)
 	}
-	e.h.offer(t, e.session, kw, e.sku, 5)
+	// Another SKU: offer A1 already holds e.sku and one SKU has at most one active offer (claims KC04).
+	e.h.offer(t, e.session, kw, e.h.stock.skus[1].ID, 5)
 	requeue(urow.ID, "")
 	tx, id = e.leaseTx(t, pgx.ReadCommitted, true)
 	res, err = claims.IngestMetaIntake(ctx, tx, id)
@@ -1490,8 +1525,11 @@ func TestMetaClaimsMCI06RateBounds(t *testing.T) {
 		if n := miCount(t, f.owner, `SELECT count(*) FROM claims.bundles WHERE session_id=$1 AND actor_key=$2`, e.session, mciActorKey(e.actorRaw, "page", e.pageAsset, from)); n != 1 {
 			t.Fatalf("one actor must own exactly one bundle, got %d", n)
 		}
-		if n := miCount(t, f.owner, `SELECT count(*) FROM claims.events WHERE session_id=$1 AND reason='RATE_LIMITED' AND (bundle_id IS NOT NULL OR offer_id IS NOT NULL OR quantity IS NOT NULL OR line_version IS NOT NULL)`, e.session); n != 0 {
-			t.Fatal("a RATE_LIMITED event wrote bundle/line fields (it must be the bare §3.1 row)")
+		// §4.4 clause 3 adds the claims §3.1 row `RATE_LIMITED | MATCH | set | N, flag | NULL`: offer and quantity
+		// are recorded, bundle_id/line_version stay NULL (no bundle or line write).
+		if n := miCount(t, f.owner, `SELECT count(*) FROM claims.events WHERE session_id=$1 AND reason='RATE_LIMITED' AND (bundle_id IS NOT NULL OR line_version IS NOT NULL
+			OR offer_id IS NULL OR quantity IS NULL OR explicit_quantity IS NULL)`, e.session); n != 0 {
+			t.Fatal("a RATE_LIMITED event is not the §3.1 row (offer and quantity set, bundle/line NULL)")
 		}
 	})
 

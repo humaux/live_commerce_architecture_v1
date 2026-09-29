@@ -2,8 +2,8 @@
 // claims intake poller (internal/claimsintake) and the main-schema external_operation_v1 River
 // worker whose only routes are the Meta private replies (internal/integrations/metareply).
 //
-// It never serves HTTP, never reads the Meta payload keyring, K_actor (COMMERCE_CLAIMS_ACTOR_KEY) or any
-// STRIPE_* variable, never sends anything but the first private reply of a new claim bundle, and never
+// It never serves HTTP, never reads the Meta payload keyring, the claims actor key K_actor (owned by
+// cmd/meta-worker) or any Stripe variable, never sends anything but the first private reply of a new claim bundle, and never
 // prints a key, token, DSN or driver error (one fixed error string per failure class).
 //
 // Depends on:

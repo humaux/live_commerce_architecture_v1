@@ -59,8 +59,8 @@ func main() {
 
 func validDSN(s string) bool { return len(s) >= 1 && len(s) <= 8192 && strings.TrimSpace(s) != "" }
 
-// loadConfig reads only the variables listed in doc.go: never COMMERCE_CLAIMS_ACTOR_KEY,
-// COMMERCE_META_PAYLOAD_* or STRIPE_* (the env sentinel test records every name asked for).
+// loadConfig reads only the variables listed in doc.go: never K_actor, the Meta payload keyring or a
+// Stripe variable (the env sentinel test records every name asked for; MCI10 greps this package for them).
 func loadConfig(getenv func(string) string) (workerConfig, error) {
 	var c workerConfig
 	if getenv == nil {

@@ -17,7 +17,9 @@
 //   - PostgreSQL: claims.check_meta_reply (commerce_worker pool, definer commerce_claims_writer),
 //     integration.load_meta_page_token (dispatcher LoadSecret transaction, definer
 //     commerce_integration_writer), integration.register_meta_page_token (registrar login).
-//   - graph.facebook.com: POST /{version}/{asset_id}/messages (loopback httptest only in MOCK).
+//   - graph.facebook.com: POST /{version}/{asset_id}/messages (loopback httptest only in MOCK); docs
+//     https://developers.facebook.com/docs/messenger-platform/discovery/private-replies/ and
+//     https://developers.facebook.com/docs/instagram-platform/private-replies/ (retrieved 2026-09-28).
 //
 // Used by: cmd/claims-worker (Routes), cmd/meta-admin (RegisterPageToken, LoadPageTokenKeyring).
 package metareply

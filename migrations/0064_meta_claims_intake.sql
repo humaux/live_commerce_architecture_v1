@@ -1005,3 +1005,45 @@ COMMENT ON COLUMN claims.meta_intake.actor_key IS 'Pseudonymous personal data (a
 COMMENT ON COLUMN claims.meta_intake.comment_ref IS 'Platform comment id (IR-4): needed as recipient.comment_id of the private reply; not comment text. Retention class: comment refs (T14).';
 COMMENT ON COLUMN live.claim_sources.source_object_id IS 'Platform object id of the live post/media (pseudonymous platform data). Retention class: claim sources (T14).';
 COMMENT ON COLUMN integration.meta_page_credentials.ciphertext IS 'AES-256-GCM sealed Meta Page access token; only integration.load_meta_page_token (owner commerce_integration_writer) reads it.';
+
+-- Column documentation for the five new tables (PROCESS.md §5 "every new column gets COMMENT ON";
+-- MCI02 definer_hygiene_and_COMMENT_ON). Columns documented individually above keep their text.
+DO $$
+DECLARE r record; c text;
+BEGIN
+ FOR r IN SELECT * FROM (VALUES
+  ('live.claim_window_intervals','tenant_id,store_id,session_id',
+   'Scope and parent window (FK live.claim_windows, ON DELETE CASCADE); RLS IS for commerce_claims_intake.'),
+  ('live.claim_window_intervals','generation,opened_at,closed_at',
+   'One OPEN interval of the window generation (closed_at NULL while open); written only by trigger live.track_claim_window_interval, read by the intake worker to decide window_closed drops (MCI06).'),
+  ('live.claim_sources','tenant_id,store_id,id,session_id',
+   'Scope, row id and the live session (FK live.claim_windows) this Meta object feeds; written only by live.put_claim_source.'),
+  ('live.claim_sources','platform,object,asset_id,binding_id,binding_version',
+   'The store''s enabled Meta binding (provider, Page/IG asset, semantic version at bind time) the object belongs to; platform facebook <=> object page.'),
+  ('live.claim_sources','private_reply,reply_locale,active,version,principal_id',
+   'Merchant settings: automated first private reply on/off and its language, collecting on/off, CAS version (live.put_claim_source), and the merchant who last saved it.'),
+  ('live.claim_sources','intake_count,intake_capped,created_at,updated_at',
+   'Staging counters maintained by claims.insert_meta_intake (comments staged / skipped at the §4.2 intake cap) and row timestamps; no comment text.'),
+  ('claims.meta_intake','tenant_id,store_id,id,inbox_event_id,source_id,session_id',
+   'Scope, row id, the meta_inbox event it was staged from (one intake per event) and the claim source/session it maps to.'),
+  ('claims.meta_intake','platform,app_id,object,asset_id,live_media,occurred_at,received_at',
+   'Delivery facts of the Meta comment (app, Page/IG asset, live-media flag, comment time and receive time); text-free.'),
+  ('claims.meta_intake','grammar_version,grammar_kind,offer_id,unknown_keyword,quantity,explicit_quantity',
+   'Result of the kw-v1 keyword grammar computed in the consumer transaction (matched offer, quantity); the comment text itself is never stored.'),
+  ('claims.meta_intake','state,drop_reason,fail_code,attempts,not_before,applied_event_id,lease_xid,created_at,updated_at',
+   'Staging state machine for the intake worker (PENDING -> APPLIED/DROPPED/FAILED, retries bounded at 10, lease by transaction id).'),
+  ('integration.meta_page_credentials','tenant_id,store_id,binding_id,provider,asset_id,version',
+   'Binding (FK integration.bindings provider/asset) and append-only Page-token version; written only by integration.register_meta_page_token.'),
+  ('integration.meta_page_credentials','key_id,nonce,scopes_attested,principal_id,created_at',
+   'Sealing key id and AES-GCM nonce of the ciphertext, operator-attested token scopes and the registering principal; never a plaintext token.'),
+  ('integration.meta_page_heads','tenant_id,store_id,binding_id,current_version,updated_at',
+   'Current Page-token version per binding (CAS head) and its last change; commerce_claims_writer reads only current_version for the private_reply check.')
+ ) AS v(tbl,cols,why)
+ LOOP
+  FOREACH c IN ARRAY string_to_array(r.cols,',') LOOP
+   IF col_description(r.tbl::regclass,(SELECT a.attnum FROM pg_attribute a WHERE a.attrelid=r.tbl::regclass AND a.attname=c)) IS NULL THEN
+    EXECUTE format('COMMENT ON COLUMN %s.%I IS %L',r.tbl,c,r.why);
+   END IF;
+  END LOOP;
+ END LOOP;
+END $$;

@@ -233,7 +233,7 @@ func (d *mciDispatcher) run(t *testing.T, op string) {
 
 func (e *mciEnv) opState(t *testing.T, op string) (state, code, ref, job string) {
 	t.Helper()
-	err := e.h.f.owner.QueryRow(context.Background(), `SELECT o.state,o.result_code,o.provider_reference,coalesce(j.state,'') FROM integration.operations o LEFT JOIN river.river_job j ON j.id=o.job_id WHERE o.id=$1`, op).Scan(&state, &code, &ref, &job)
+	err := e.h.f.owner.QueryRow(context.Background(), `SELECT o.state,coalesce(o.result_code,''),coalesce(o.provider_reference,''),coalesce(j.state::text,'') FROM integration.operations o LEFT JOIN river.river_job j ON j.id=o.job_id WHERE o.id=$1`, op).Scan(&state, &code, &ref, &job)
 	if err != nil {
 		t.Fatalf("read operation: %v", err)
 	}
@@ -392,6 +392,10 @@ func TestMetaClaimsMCI07ReplySkips(t *testing.T) {
 			mustExec(t, e.h.f.owner, `UPDATE integration.bindings SET enabled=false,semantic_version=semantic_version+1 WHERE id=$1`, e.pageBinding)
 		}, "binding_disabled"},
 		{"binding_changed", mciOpts{private: true}, func(t *testing.T, e *mciEnv) {
+			// The Page-token rows reference the binding's (provider, asset) (0064 FK: an asset change is a new
+			// binding), so the re-point is only possible once the token rows are gone.
+			mustExec(t, e.h.f.owner, `DELETE FROM integration.meta_page_heads WHERE binding_id=$1`, e.pageBinding)
+			mustExec(t, e.h.f.owner, `DELETE FROM integration.meta_page_credentials WHERE binding_id=$1`, e.pageBinding)
 			mustExec(t, e.h.f.owner, `UPDATE integration.bindings SET external_asset_id=$2,semantic_version=semantic_version+1 WHERE id=$1`, e.pageBinding, mciDigits(14))
 		}, "binding_changed"},
 		{"source_off", mciOpts{private: true}, func(t *testing.T, e *mciEnv) {
@@ -416,8 +420,32 @@ func TestMetaClaimsMCI07ReplySkips(t *testing.T) {
 				t.Fatal("a skipped reply left an operation or a link")
 			}
 			after := miCount(t, f.owner, `SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action=$3 AND principal_id=$4`, f.tenantA, f.storeA1, "claim_reply_skipped:"+c.code, e.h.actor)
-			if after-before != 1 {
-				t.Fatalf("audit claim_reply_skipped:%s +%d want +1 (principal = source principal)", c.code, after-before)
+			want := int64(1)
+			if c.code == "source_off" {
+				// §5.3 step 3: §6.2 (and so claim_reply_plannable and its audit) runs only for a source with
+				// private_reply=true; a source that has replies off writes no skip audit (ruling u). The audited
+				// source_off skip is the race inside §6.2, exercised directly below.
+				want = 0
+			}
+			if after-before != want {
+				t.Fatalf("audit claim_reply_skipped:%s +%d want +%d (principal = source principal)", c.code, after-before, want)
+			}
+			if c.code == "source_off" {
+				e.postFB(t, "", "", "A1", mciAt(3*time.Second), nil)
+				tx, id := e.leaseTx(t, pgx.ReadCommitted, true)
+				if _, err := claims.IngestMetaIntake(context.Background(), tx, id); err != nil {
+					t.Fatal(err)
+				}
+				var code string
+				if err := tx.QueryRow(context.Background(), `SELECT integration.claim_reply_plannable($1::uuid)`, id).Scan(&code); err != nil || code != "source_off" {
+					t.Fatalf("claim_reply_plannable with private_reply off: %q %v", code, err)
+				}
+				if err := tx.Commit(context.Background()); err != nil {
+					t.Fatal(err)
+				}
+				if n := miCount(t, f.owner, `SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action=$3 AND principal_id=$4`, f.tenantA, f.storeA1, "claim_reply_skipped:source_off", e.h.actor); n-after != 1 {
+					t.Fatalf("claim_reply_plannable source_off audit +%d want +1", n-after)
+				}
 			}
 		})
 	}
@@ -560,6 +588,10 @@ func TestMetaClaimsMCI07CheckDenials(t *testing.T) {
 		beforeAp func(t *testing.T, e *mciEnv, r mciReply)                // after staging, before apply
 		after    func(t *testing.T, e *mciEnv, r mciReply) *mciDispatcher // after plan, before dispatch; may return a custom dispatcher
 		wantCode string
+		// wantState defaults to BLOCKED_POLICY. The binding gate is the dispatcher's own (§6.3 "re-checked by
+		// the dispatcher's own final gate"), whose frozen outcome for a never-dispatched READY op is terminal
+		// STALE_BINDING (external-operation-v1 §5), still with zero HTTP calls.
+		wantState string
 	}
 	g := newMciGraph(t)
 	denials := []denial{
@@ -606,7 +638,7 @@ func TestMetaClaimsMCI07CheckDenials(t *testing.T) {
 			}
 			return e.newDispatcher(t, g, &other, nil)
 		}},
-		{name: "binding changed after plan (dispatcher gate)", wantCode: "binding_changed", after: func(t *testing.T, e *mciEnv, r mciReply) *mciDispatcher {
+		{name: "binding changed after plan (dispatcher gate)", wantCode: "binding_changed", wantState: "STALE_BINDING", after: func(t *testing.T, e *mciEnv, r mciReply) *mciDispatcher {
 			mustExec(t, e.h.f.owner, `UPDATE integration.bindings SET semantic_version=semantic_version+1 WHERE id=$1`, e.pageBinding)
 			return nil
 		}},
@@ -651,7 +683,11 @@ func TestMetaClaimsMCI07CheckDenials(t *testing.T) {
 			}
 			before := g.posts("")
 			d.run(t, r.op)
-			code, _ := e.awaitOp(t, r.op, "BLOCKED_POLICY", 30*time.Second)
+			want := "BLOCKED_POLICY"
+			if c.wantState != "" {
+				want = c.wantState
+			}
+			code, _ := e.awaitOp(t, r.op, want, 30*time.Second)
 			if c.wantCode != "" && code != c.wantCode {
 				t.Fatalf("result_code=%q want %q", code, c.wantCode)
 			}

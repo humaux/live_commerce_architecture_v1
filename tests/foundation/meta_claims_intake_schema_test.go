@@ -386,6 +386,9 @@ func mciExpected(t *testing.T, pool *pgxpool.Pool) (want mciWant, definers map[s
 	w["commerce_claims_intake|sequence|river.river_job_id_seq|USAGE"] = true
 	w.exec(intake, "claims.lease_meta_intake", "claims.fail_meta_intake", "claims.intake_scope", "integration.claim_reply_plannable", "integration.plan_claim_reply")
 	w.schema(intake, "claims", "live", "integration", "river")
+	// Not a 0064 grant: the snapshot reports effective privileges, and a role created by 0064 inherits
+	// PUBLIC's default USAGE on schema public (0001 revokes only CREATE). Pre-existing roles already had it.
+	w.schema(intake, "public")
 	// commerce_claims_writer (owner of its definers)
 	w.table(cw, "claims.meta_intake", "SELECT", "INSERT")
 	w.cols(cw, "claims.meta_intake", list("state", "fail_code", "attempts", "not_before", "lease_xid", "updated_at"), "UPDATE")
@@ -416,7 +419,13 @@ func mciExpected(t *testing.T, pool *pgxpool.Pool) (want mciWant, definers map[s
 	w.schema(iw, "claims", "live", "control", "ops")
 	w.table(iw, "integration.meta_page_credentials", "SELECT", "INSERT")
 	w.table(iw, "integration.meta_page_heads", "SELECT", "INSERT")
-	w.cols(iw, "integration.meta_page_heads", list("current_version"), "UPDATE")
+	// Contract §15 wave-3 amendment (ruling i): UPDATE(current_version, updated_at) replaces UPDATE(current_version);
+	// + EXECUTE identity.principal_holds and USAGE identity for commerce_integration_writer; + USAGE integration for
+	// commerce_meta_registrar.
+	w.cols(iw, "integration.meta_page_heads", list("current_version", "updated_at"), "UPDATE")
+	w.exec(iw, "identity.principal_holds")
+	w.schema(iw, "identity")
+	w.schema(reg, "integration")
 	w.table(rt, "live.claim_sources", "SELECT")
 	w.exec(rt, "live.put_claim_source")
 	w.exec(wk, "claims.check_meta_reply", "integration.load_meta_page_token")
@@ -948,7 +957,10 @@ func TestMetaClaimsMCI02PolicyBehaviour(t *testing.T) {
 		if err := insert(2); !mciSQLIs(err, "42501") {
 			t.Errorf("system insert of generation 2: SQLSTATE=%s want 42501 (WITH CHECK generation=1)", miSQLState(err))
 		}
-		set(e.h.actor)
+		// A principal GUC that is not the row's principal: the pre-existing merchant policy link_issue (0060,
+		// principal_id = app.principal_id) cannot admit the row, so only link_system_issue could, and it must
+		// not while app.principal_id is set.
+		set(randomUUID())
 		if err := insert(1); !mciSQLIs(err, "42501") {
 			t.Errorf("insert with app.principal_id set: SQLSTATE=%s want 42501 (SYSTEM only)", miSQLState(err))
 		}

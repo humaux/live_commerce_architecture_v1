@@ -56,3 +56,21 @@ t. UI defaults `private_reply=false`, `active=true`; `intake_capped` copy "Skipp
    The stale "MOCK capture — comments are not read automatically yet" banner becomes: no source →
    "Bind a Facebook or Instagram post to read comments automatically"; bound → "Reading comments from
    the bound post" (+ "unverified" for facebook); three locales.
+
+## Wave-5 integration rulings (2026-09-29, first MCI run against the merged code)
+
+u. Contract conflict §5.3 step 3 ("§6.2 only for a source with `private_reply=true`") vs the MCI07 row
+   ("source `private_reply` off before apply → one `claim_reply_skipped:source_off` audit"): §5.3 governs.
+   A source with replies off writes no skip audit (no audit row per bundle for merchants who never enabled
+   replies); the audited `source_off` skip is the race inside §6.2 (`claim_reply_plannable` sees the flag off
+   under its lock). MCI07 asserts both.
+v. MCI triage (product vs test, evidence output/r1-integration/wave5/pg-mci-*.log): product fixes — 0064
+   column COMMENT ON for the five new tables (PROCESS §5), metareply doc.go Graph docs URL + date, claims-worker
+   docs no longer spell forbidden env names (MCI10 greps them). Test fixes, each proven by contract text —
+   ruling i rows in the MCI02 expected set (+ PUBLIC-inherited USAGE on schema public for the new role), token
+   registrar principal holds `integration:manage` (ruling i), REPEATABLE READ cannot lease (§5.3), requeue
+   clears `applied_event_id` (0064 CHECK), S03 offer on a second SKU (KC04 one active offer per SKU),
+   RATE_LIMITED row keeps offer/quantity (§4.4 clause 3), consumer restarts close their pools
+   (max_connections=30 gate), `link_system_issue` probe uses a principal GUC ≠ row principal (0060 `link_issue`
+   is the merchant path), binding re-point drops the token rows first (0064 FK), dispatcher binding gate is
+   STALE_BINDING (external-operation-v1 §5, §6.3).
