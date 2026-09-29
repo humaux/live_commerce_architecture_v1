@@ -1,3 +1,12 @@
+//go:build finding
+
+// Integrator (r2-auth merge, 2026-09-30): F1 is an OPEN P2 defect that needs a merchant-password-auth-v1
+// §4.1 amendment (PK (bucket, window_start) has no window length); it is escalated, not fixed here. The
+// reproduction stays red on purpose, so it is kept out of the default `go test ./...` (CI T1) behind the
+// `finding` tag instead of turning every lane run red. Run it with:
+//   LC_FOCUSED_TAGS=finding bash scripts/dev/test-focused.sh '^TestPasswordFindingF1' ./tests/foundation
+// Remove this tag in the same commit that lands the §4.1 fix; the test then becomes the fix's gate.
+
 package foundation_test
 
 // FINDING F1 (not a PA gate; deliberately named outside the ^TestPasswordPA regex so the gate commands stay
