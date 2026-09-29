@@ -138,6 +138,8 @@ try {
     let text = "";
     for (let i = 0; i < 60; i++) {
       await page.reload(); await page.getByTestId("toggle-order-history").click(); await page.locator(`button[data-order-id="${orderID}"]`).click();
+      // The payment block (status + refund lines) renders after its own fetch; read the DOM only once it is there.
+      await page.getByTestId("payment-status").waitFor({ timeout: 10_000 });
       text = await page.locator("body").innerText();
       if (/Refunded/i.test(text) && /5.10 business days/i.test(text)) break;
       await pause(1000);

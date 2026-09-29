@@ -191,7 +191,10 @@ func brfBuyerNode(t *testing.T, ctx context.Context, e *rfxEnv, o rfxOrder, scri
 	t.Helper()
 	root, _ := filepath.Abs("../..")
 	const storefrontOrigin = "https://buyer.example"
-	bhPublish(t, o.s.p.bcHarness, storefrontOrigin, o.s.p.f.tenantA, o.store())
+	// RF11 runs the buyer script twice (processing, final) on one store: publish once.
+	if countRows(t, e.f.owner, `SELECT count(*) FROM control.storefront_publications WHERE tenant_id=$1 AND store_id=$2`, o.s.p.f.tenantA, o.store()) == 0 {
+		bhPublish(t, o.s.p.bcHarness, storefrontOrigin, o.s.p.f.tenantA, o.store())
+	}
 	bffKey := base64.RawURLEncoding.EncodeToString(randomBytes(32))
 	handler, err := buyerhttp.New(ctx, o.s.p.a.issuer, o.s.p.a.runtime, o.s.p.bcHarness.service, bffKey, time.Hour, e.svc)
 	if err != nil {
@@ -325,7 +328,23 @@ func TestBrowserRefund(t *testing.T) {
 			for _, id := range e.fake.RefundIDs(order.pi) {
 				e.fake.SetRefundStatus(id, "succeeded", "")
 			}
-			e.wakeAllRefunds(order)
+			// The fake sends no webhook (R-8: webhook + merchant refresh only), so stand in for it the way
+			// awaitRefund does: keep the attempt's refund jobs due until the SUCCEEDED fact is committed
+			// (the observation and the apply are separate job runs). Bounded; the page assertion still decides.
+			deadline := time.Now().Add(45 * time.Second)
+			for {
+				e.wakeAllRefunds(order)
+				var done bool
+				if err := e.f.owner.QueryRow(r.Context(), `SELECT EXISTS(SELECT 1 FROM payments.refund_facts f JOIN payments.stripe_refunds x ON x.id=f.refund_id
+					WHERE x.attempt_id=$1::uuid AND f.kind='SUCCEEDED')`, order.attempt).Scan(&done); err == nil && done {
+					break
+				}
+				if time.Now().After(deadline) {
+					http.Error(w, "refund did not settle", http.StatusGatewayTimeout)
+					return
+				}
+				time.Sleep(100 * time.Millisecond)
+			}
 			w.WriteHeader(http.StatusNoContent)
 		}))
 		t.Cleanup(control.Close)
