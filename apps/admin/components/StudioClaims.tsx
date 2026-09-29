@@ -531,7 +531,8 @@ export function StudioClaims({ locale, store, scene, initialError }: {
                 <Field id="claims-manual-buyer" label={c.buyer}>
                   <select id="claims-manual-buyer" value={manual.bundle} disabled={blocked} onChange={(event) => setManual({ ...manual, bundle: event.target.value })}>
                     <option value="">{c.newBuyer}</option>
-                    {facts.bundles.map((bundle) => <option key={bundle.bundle_id} value={bundle.bundle_id}>{bundle.label} · {bundle.ref}</option>)}
+                    {/* Go adds manual claims only to manual bundles (claims.manualActor). */}
+                    {facts.bundles.filter((bundle) => bundle.platform === "manual").map((bundle) => <option key={bundle.bundle_id} value={bundle.bundle_id}>{bundle.label} · {bundle.ref}</option>)}
                   </select></Field>
                 {!manual.bundle && <Field id="claims-manual-label" label={c.label} hint={c.labelHint}>
                   <input id="claims-manual-label" value={manual.label} maxLength={120} autoComplete="off" disabled={blocked}
@@ -556,7 +557,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
               <thead><tr><th scope="col">{c.ref}</th><th scope="col">{c.buyer}</th><th scope="col">{c.items}</th><th scope="col">{c.link}</th><th scope="col">{c.actions}</th></tr></thead>
               <tbody>{facts.bundles.map((bundle) => <tr key={bundle.bundle_id} data-testid={`bundle-${bundle.label}`}>
                 <th scope="row" className="claims-ref">{bundle.ref}</th>
-                <td><span className="claims-product">{bundle.label}</span><small>{bundle.bound ? c.bound : c.unbound}</small></td>
+                <td><span className="claims-product">{bundle.platform === "manual" ? bundle.label : c.sourcePlatform[bundle.platform]}</span><small>{bundle.bound ? c.bound : c.unbound}</small></td>
                 <td><ul className="claims-lines">{bundle.lines.map((line) => <li key={line.offer_id}>
                   <strong>{line.keyword} × {line.quantity}</strong><small>{line.applied ? c.inCart : c.notInCart}</small></li>)}</ul></td>
                 <td>{bundle.link.state === "ACTIVE" && bundle.link.expires_at ? c.linkActive(time(locale, bundle.link.expires_at))

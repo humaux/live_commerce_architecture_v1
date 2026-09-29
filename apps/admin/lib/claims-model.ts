@@ -5,7 +5,7 @@
 // (Go decides windows, offers, claims and links; the UI only displays their results).
 // Depends on: claims-request.ts (validClaimLink, shared with the BFF) only.
 
-import { validClaimLink, type ClaimLink } from "./claims-request";
+import { validClaimLink, type ClaimLink } from "./claims-request.ts";
 
 export type MatchMode = "EXACT" | "KEYWORD_QTY_ONLY";
 export const persistedReasons = ["NO_MATCH", "UNKNOWN_KEYWORD", "OFFER_INACTIVE", "INVALID_QUANTITY",
@@ -32,7 +32,7 @@ export type ManualResult = {
 };
 export type BundleLine = { offer_id: string; keyword: string; sku_id: string; quantity: number; version: number; applied: boolean };
 export type Bundle = {
-  bundle_id: string; ref: string; platform: "manual"; label: string; bound: boolean; version: number;
+  bundle_id: string; ref: string; platform: BundlePlatform; label: string; bound: boolean; version: number;
   link: { state: "NONE" | "ACTIVE" | "EXPIRED"; generation: number; expires_at: string | null };
   lines: BundleLine[]; created_at: string; updated_at: string;
 };
@@ -105,11 +105,17 @@ export function parseManualResult(value: unknown): ManualResult {
   return row as ManualResult;
 }
 
+export const bundlePlatforms = ["manual", "facebook", "instagram"] as const;
+export type BundlePlatform = typeof bundlePlatforms[number];
+
 function parseBundle(value: unknown): Bundle {
   const row = exact(value, ["bundle_id", "ref", "platform", "label", "bound", "version", "link", "lines", "created_at", "updated_at"]);
   const link = exact(row.link, ["state", "generation", "expires_at"]);
-  if (!id(row.bundle_id) || typeof row.ref !== "string" || !/^[0-9A-F]{8}$/.test(row.ref) || row.platform !== "manual" ||
-    !text(row.label, 60) || typeof row.bound !== "boolean" || !count(row.version) ||
+  // meta-claims-intake-v1 §4/§8: platform widens to facebook|instagram; CHECK (platform='manual')=(label IS NOT NULL),
+  // so a manual bundle has a label and a Meta bundle has none (Go renders NULL as "").
+  if (!id(row.bundle_id) || typeof row.ref !== "string" || !/^[0-9A-F]{8}$/.test(row.ref) ||
+    !bundlePlatforms.includes(row.platform as BundlePlatform) || !text(row.label, 60) ||
+    (row.platform === "manual") !== (row.label !== "") || typeof row.bound !== "boolean" || !count(row.version) ||
     !["NONE", "ACTIVE", "EXPIRED"].includes(link.state as string) || !count(link.generation) ||
     (link.expires_at !== null && !date(link.expires_at)) || (link.state === "NONE") !== (link.expires_at === null) ||
     !Array.isArray(row.lines) || row.lines.length > 50 || !date(row.created_at) || !date(row.updated_at)) invalid();
