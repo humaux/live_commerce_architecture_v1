@@ -156,3 +156,5 @@ Additive, lands with the meta-ads A-10 unit: `DispatchRequest` gains `Mode strin
 set by the dispatcher from `claim.Mode` before `Check` (today `Check` runs for every claimed op, `dispatcher.go:226`,
 and a reconcile-mode denial is `completeAmbiguous('policy_check_failed')`, `:236–240`). Ads/CAPI `Check` returns nil in
 `reconcile` mode; existing routes ignore the field (no behaviour change). Full text: `meta-ads-v1.md` §3.1.
+
+- 2026-09-30 (meta-ads brief ruling B13): A10-D2 Check denials carry a stable code recorded on the op; A10-D3 job insert names the route's queue. Additive; existing routes unchanged.

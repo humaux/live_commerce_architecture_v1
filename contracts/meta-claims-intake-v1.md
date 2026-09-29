@@ -812,3 +812,5 @@ commerce_integration_writer, EXECUTE commerce_meta_registrar only, principal mus
 reuses the enabled binding, audit `meta.binding_registered`) followed in the same transaction by 0028
 `meta_inbox.activate_route`; `route-disable` calls `disable_route`. §7 order for operators: route → page-token →
 claim source. Gate `TestMetaRouteRegistrarF2` (REAL_PG).
+
+- 2026-09-30 (ruling B27): claims-retention-purge-v1 grants EXECUTE on `meta_inbox.lock_purgeable` to commerce_retention_writer.

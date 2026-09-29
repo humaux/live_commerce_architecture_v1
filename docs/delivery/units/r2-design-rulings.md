@@ -105,3 +105,37 @@ Findings: output/contract-review/r2-round3.json. stripe-live PASS_WITH_P2; four 
 - X9 The seven CVS verification P2s (TCV11 vs §16.1, MG01/MG02 undefined, buyer-entered rows readable
   store-wide, kill-switch mode mismatch, BUYER/ALLOCATE ledger CHECK, start_stripe_payment citation,
   EXECUTE grants vs the checkout pool) are fixed in the contract before implementation.
+- X10 E-map probe 2026-09-30 (evidence output/cvs-emap-probe/, SANDBOX + LIVE read-only):
+  7-11 emap.pcsc.com.tw with an unregistered eshopid -> error E0014; FamilyMart mfme.map.com.tw with an
+  unregistered cvsname -> retrieve.aspx "無來源網頁資料" (no callback). Chain e-maps only call back to
+  registered e-shops (SHOPLINE uses its own registration). ECPay stage Express/map (public C2C test
+  merchant) called back our ServerReplyURL for UNIMARTC2C and FAMIC2C with CVSStoreID/Name/Address.
+  Implementation must: trim trailing spaces (7-11 values are space-padded), keep the raw address and
+  display it as returned (FamilyMart returns full-width digits/dash), accept 6-digit store ids with
+  leading zeros as strings. Our ECPay map path is TD3; direct chain registration is not planned.
+
+## Brief rulings (2026-09-30) — answers to the brief authors' open questions; bind every R2 unit
+Auth: B1 deactivation = ops-admin.log + session.revoked events (no 0070 CHECK change). B2 PA01/PA02 stay
+with the implementers; auth-tests adds one independent black-box assertion each. B3 the lane integrator
+lands F0 (x/crypto + frozen internal/mail/message.go) before dispatch. B4 preflight rule numbers are
+assigned by the integrator at the final merge; units name rules by purpose.
+Stripe-live: B5 accept `identity.merchant_refund_environment` (S5). B6 use test-focused.sh regexes, no
+new test-local modes. B7 legal pages cover the owner's single store (W1); per-store policies are a later
+contract before merchant #2. B8 the footer data-deletion link merges only together with
+customers-billing-ui (lane order).
+Customers/billing: B9 `billing_restricted` is HTTP 402 everywhere (meta-ads approve/publish change 409→402).
+B10 CB08 fake lives in internal/billing/billingtest. B11 accept LC_BILLING_ENABLED, LC_BILLING_RETURN_ORIGIN.
+Ads: B12 add §4.4 rows `ads.operator_set_settings` (EXECUTE commerce_meta_registrar) and
+payments.refund_facts SELECT + read policy for commerce_ads_writer; MA02 asserts them. B13 record
+A10-D2/D3 in external-dispatcher-v1. B14 accept D2 (200-char cap), D5/D6/D9. B15 MA02 billing clauses
+and the ads-core mount wait for ads-capi (0080).
+CVS: B16 package path = contract §7 `internal/integrations/shipping/ecpay`. B17 accept E1 (Finish takes
+SecretClaim, SecretClaim.Mode). B18 order: ads-a10 merges, then the CVS lane F0 (R-7a), then cvs-ecpay.
+B19 accept C4 (pickup_source appended as the last CSV column; MF06 golden updated in the same change,
+not weakened). B20 ECPay map `Device`: the buyer BFF sends 1 for mobile user agents, 0 otherwise (buyers
+come from FB/IG on phones). B21 accept A4 (ABANDONED attempts may be cancelled). B22 cvs-core proves
+with a REAL_PG test that the integration_writer definers can run resolve_access / command_results.
+Retention: B23 accept IR-U1 (D4 CHECK widening for 'erased-'). B24 accept D1/D2. B25 lc_retention_operator
+is provisioned only by the runbook after owner approval, never via logins.tsv. B26 a pre-existing
+reserved-pattern label stops 0071 with 55000 (fresh pilot DB; no automatic relabel). B27 record the
+meta_inbox.lock_purgeable grant in meta-claims-intake-v1's amendment notes.

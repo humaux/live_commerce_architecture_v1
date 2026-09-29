@@ -561,3 +561,10 @@ Recorded from `docs/delivery/units/r2-design-rulings.md` (binding; owner may rev
 - **Billing Q6** arrears (RESTRICTED) restricts new claim windows and new ads only: here approve/publish/create/activate (§5.2); pause, reads and CAPI never blocked. **Q4** pilot stores UNBILLED = unrestricted. **Q12** consent channel `meta_ads` / purpose `ads_personalization` is the CAPI gate (AD8).
 - Still open with the integrator (not owner questions): A-1..A-11 in §0.1. Still open with the owner: O5 (§13).
 - **Round-3 rulings (2026-09-30)** from `docs/delivery/units/r2-design-rulings.md` "Round-3 integrator rulings": X1 round-3 P1s applied with the reviewer's exact text + cheap P2; X2 reconcile-mode Check via additive `DispatchRequest.Mode`; X6 contract FROZEN at v1 2026-09-30, remaining owner questions keep their defaults and do not block implementation.
+
+
+## Integrator amendment (2026-09-30, brief rulings B9, B12–B15 in docs/delivery/units/r2-design-rulings.md)
+- `billing_restricted` on approve/publish is HTTP 402 (was 409), shared with customers-billing-v1.
+- §4.4 adds: `ads.operator_set_settings` EXECUTE → commerce_meta_registrar; `payments.refund_facts` SELECT + read policy (store-scoped) → commerce_ads_writer. MA02 asserts both.
+- A10-D2 (coded denials) and A10-D3 (queue-aware job insert) are recorded in external-dispatcher-v1.
+- D2 read-result cap 200 chars; D5/D6/D9 accepted; ads-core mount and MA02 billing clauses wait for 0080.
