@@ -74,3 +74,10 @@ v. MCI triage (product vs test, evidence output/r1-integration/wave5/pg-mci-*.lo
    (max_connections=30 gate), `link_system_issue` probe uses a principal GUC ≠ row principal (0060 `link_issue`
    is the merchant path), binding re-point drops the token rows first (0064 FK), dispatcher binding gate is
    STALE_BINDING (external-operation-v1 §5, §6.3).
+
+## Integrator ratification after wave-5 integration (2026-09-29)
+
+w. The claim-source GET response carries `platforms` (the store's enabled Meta platforms) so the UI knows
+   when to show the platform select: ratified as an interface amendment (OpenAPI updated).
+x. Rulings u and v recorded by the integration agent (§5.3 wins over the MCI07 row: no `source_off`
+   audit when private replies are off; MCI triage list): ratified.

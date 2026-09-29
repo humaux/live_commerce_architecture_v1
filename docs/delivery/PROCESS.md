@@ -87,9 +87,10 @@ external service it touches and why, without archaeology. These rules generalize
 **Package level** — every Go package has a package comment (in `doc.go` or the main file):
 1. `// Package x owns …` — the single responsibility.
 2. `// It never …` — the non-goals (what callers must not expect from it).
-3. `// Depends on: …` — each internal package / external service it calls, one line each, with
-   why. External services name the host (`api.stripe.com`, `graph.facebook.com`).
-4. `// Used by: …` — the entry points (`cmd/*`, other packages) that call it.
+3. External services it calls name the host and why (`api.stripe.com`, `graph.facebook.com`).
+   Internal "depends on / used by" is NOT hand-written: `docs/engineering/dependency-map.md` is
+   generated from `go list` and CI fails when it is stale, so it is the single source of truth
+   (hand-written lists rot; amended 2026-09-29).
 
 **Call sites** — a call that crosses a package boundary into another domain, or any SQL on
 another domain's table, carries a one-line comment naming the table/role/function and why:
