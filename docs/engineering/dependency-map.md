@@ -123,7 +123,7 @@ Package grammar owns the pure kw-v1 live-comment grammar (width map, trim, keywo
 
 - Depends on (internal): —
 - Depends on (third-party): —
-- Used by: `internal/claims`
+- Used by: `internal/claims`, `internal/integrations/meta`
 
 ## `internal/command`
 
@@ -209,7 +209,7 @@ Package livekit implements bounded LiveKit Cloud Egress and browser-input wire p
 
 Package meta admits signed Meta webhook events.
 
-- Depends on (internal): `internal/command`, `internal/platform`
+- Depends on (internal): `internal/claims/grammar`, `internal/command`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
 - Used by: `cmd/api`, `cmd/meta-worker`
 
