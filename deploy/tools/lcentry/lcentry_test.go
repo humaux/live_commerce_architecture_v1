@@ -3,8 +3,7 @@
 // (deploy-design §6). Run: go test -count=1 -cover ./deploy/tools/...
 // Runs as/in: developer host / CI; no containers, no network beyond loopback
 // httptest servers. Reads env/secrets: none (temp dirs only, fake values).
-// Used by: deploy/scripts/smoke.sh S04 (coverage gate >= 90%).
-// Depends on: stdlib testing + net/http/httptest.
+// Gate: deploy/scripts/smoke.sh S04 enforces coverage >= 90%.
 // Status: MODEL_ONLY (unit level). Change rules: every rule in fileenv.go and
 // probe.go needs a case here; never put real secrets in fixtures.
 

@@ -5,10 +5,6 @@
 // (a social actor is not a verified customer), no storage of the typed text anywhere, and
 // no label outside claims.bundles.label.
 //
-// Depends on: command (Run, Audit), platform (Scope), claims/grammar (Parse,
-// NormalizeLabel), IngestParsed (ingest.go); tables live.offers and claims.bundles read as
-// commerce_runtime for the canonical request and actor resolution.
-//
 // Privacy: the receipt request carries only principal, session, bundle id or a keyed
 // label MAC, grammar version/kind, resolved offer id and quantity/explicit. Text, label
 // and any unkeyed hash of either never reach the request digest, receipt, audit or logs.

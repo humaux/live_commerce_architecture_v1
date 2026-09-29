@@ -3,13 +3,6 @@
 // and identity.read_merchant_refunds do, in SQL), never calls Stripe, and never writes stock, order or
 // fulfilment state (RD6). Authority is decided in the database (payments:refund on POSTs, orders:read on
 // GET) and re-checked here with platform.RequirePermission after the SQL call.
-//
-// Depends on: platform (Scope, RequirePermission), command (ValidID, ErrInvalid/ErrConflict), River
-// InsertTx into river_payment through the caller's insert-only client (payment_refund_v1 and the refresh
-// payment_signal_v1, same transaction as the SQL definer), ops.command_results (read-only replay
-// pre-check, commerce_runtime scope policy), payments.request_stripe_refund / _refresh and
-// identity.read_merchant_refunds (PG definers, EXECUTE commerce_runtime).
-// Used by: internal/httpapi/refunds.go (the only caller); orders.go is not edited.
 
 package merchantorders
 

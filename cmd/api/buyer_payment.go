@@ -1,10 +1,6 @@
 // buyer_payment.go owns the API-side configuration and assembly of the hosted buyer payment
 // service (PAYUNi always, Stripe Checkout when COMMERCE_STRIPE_CHECKOUT_ENABLED=1). It never
 // reads STRIPE_* secrets, starts a worker, or contacts a provider from the API process.
-//
-// Depends on: internal/checkout (hosted service), internal/platform (hosted pool),
-// river_payment via an insert-only River client (payment query/signal jobs).
-// Used by: buyer.go (loadBuyerConfig / buildBuyerHandler).
 
 package main
 

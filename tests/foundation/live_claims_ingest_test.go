@@ -15,11 +15,8 @@
 // what the concurrency cases need (KC09-KC11), HTTP (KC13/KC14). Waits are observed in
 // pg_stat_activity (lpWaitLock), never by sleeping.
 //
-// Depends on: lcHarness (live_claims_test.go) and its helpers; claims.Ingest/IngestParsed
-// called directly in merchant transactions (the contract's only-caller rule is a source
-// guard, KC15, not a runtime restriction on tests); storefront (GetCart/SetCart/
-// CreateQuote/LockCartOwner) and live (GetDraft/UpdateDraft) for the mixed workload;
-// docker logs of the labelled fixture container for PG server-log capture.
+// Ingest/IngestParsed are called directly in merchant transactions: the contract's only-caller rule is a
+// source guard (KC15), not a runtime restriction on tests.
 package foundation_test
 
 import (

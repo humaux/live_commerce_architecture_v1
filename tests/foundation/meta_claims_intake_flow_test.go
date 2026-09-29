@@ -8,10 +8,7 @@
 // `river_meta` client -> claims.meta_intake -> claimsintake.Poller.ApplyOne (driven by the test,
 // never on a timer) -> claims. The reply half (fake Graph, dispatcher) lives in the reply file.
 //
-// Depends on: the foundation fixture chain (lcSetup -> cqSetup -> real PostgreSQL), miSetup /
-// miRoute / miInstagramRoute / mcPost / mcAwait for the signed inbound path, lcHarness for
-// sessions, windows, offers, links and redeem, t06StartDispatcher for the dispatcher. The owner
-// pool is used only for synthetic setup, fault injection (throw-away triggers, backdated
+// The owner pool is used only for synthetic setup, fault injection (throw-away triggers, backdated
 // timestamps of staged rows) and read-back of columns no runtime role may read.
 //
 // Evidence label: MOCK (REAL_PG + River). Every id, name and text is a synthetic sentinel; no

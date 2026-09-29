@@ -12,11 +12,6 @@ package foundation_test
 // stripeadmin (registrar login + fake transport), never through a merchant
 // runtime role. Fixtures that deliberately mutate rows as the migration owner
 // (drift, aging) are named at their call site so the evidence can list them.
-//
-// Depends on: PG roles commerce_payment_registrar/commerce_hosted_runtime,
-// stripetest (fake api.stripe.com), the frozen checkout/stripeadmin signatures
-// in docs/delivery/units/stripe-b1-{start-http,ingress-assembly}.md.
-// Used by: stripe_{flow,webhook_http,buyer_http,process,registrar}_test.go.
 
 import (
 	"context"

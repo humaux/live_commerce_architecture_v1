@@ -1,10 +1,7 @@
 // stripe_webhook.go owns the API process wiring of POST /v1/stripe/webhook/{endpoint_id}
 // (contracts/stripe-psp-v1.md §0.2, §12; brief stripe-b1-ingress-assembly).
 // It never reads STRIPE_* variables or the payment API-key keyring, and never opens a pool
-// unless the flag is on. Depends on: internal/payments/stripewebhook (handler + PG admission),
-// internal/platform (OpenStripeIngressPool, ValidateSameDatabase), internal/integrations/accounts
-// (LoadKeyring over the separate COMMERCE_STRIPE_WEBHOOK_* signing namespace).
-// Used by: cmd/api main.go (load after Meta, mount after mountMeta).
+// unless the flag is on.
 
 package main
 

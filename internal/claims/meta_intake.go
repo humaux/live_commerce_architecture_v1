@@ -8,13 +8,8 @@
 // by internal/claimsintake), never reads Meta storage or comment text (the row is text-free),
 // never opens a transaction or touches River.
 //
-// Depends on: the shared core in ingest.go; claims/grammar (Result shape); command
-// (sentinels). Tables, as commerce_claims_intake under claims.intake_scope() policies:
-// claims.meta_intake (the leased row), live.claim_sources (active flag), live.claim_windows
-// (FOR SHARE fence), live.claim_window_intervals (window history), live.offers, claims.bundles,
-// claims.lines, claims.events.
-// Used by: internal/claimsintake Poller only (KC15 guard: IngestMetaIntake only from the intake
-// worker; Ingest/IngestParsed only from RecordManualClaim).
+// KC15 guard: IngestMetaIntake is called only from the intake worker; Ingest/IngestParsed only from
+// RecordManualClaim.
 
 package claims
 

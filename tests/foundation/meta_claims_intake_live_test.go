@@ -9,8 +9,8 @@
 // probe result is reported by name. MCI12 (the one owner-approved private reply) is deliberately not
 // written: it needs O1-O5 and a per-send approval in chat.
 //
-// Depends on: graph.facebook.com (https://developers.facebook.com/docs/graph-api/, retrieved
-// 2026-09-29 for the read endpoints only), the standard library.
+// External: graph.facebook.com (https://developers.facebook.com/docs/graph-api/, retrieved 2026-09-29 for the
+// read endpoints only).
 package foundation_test
 
 import (

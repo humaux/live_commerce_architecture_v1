@@ -8,18 +8,6 @@
 // text-free), never holds a Page token, and never retries by looping inside one transaction: a
 // failed apply is rolled back and recorded once by claims.fail_meta_intake, which owns the backoff
 // and the 10-attempt cap.
-//
-// Depends on:
-//   - internal/claims: IngestMetaIntake (the claim itself), SystemLinkToken/ReplyLinkKey (the link
-//     token; only sha256(token) reaches SQL).
-//   - internal/integrations/core: InsertOperationJob (external_operation_v1 River job, inserted from the
-//     intake login inside the plan transaction; guarded by the post-River 0014 triggers).
-//   - internal/platform: ValidateClaimsIntakePool (the pool must be the dedicated commerce_claims_intake login).
-//   - PostgreSQL, as commerce_claims_intake: claims.lease_meta_intake, claims.fail_meta_intake (definer
-//     commerce_claims_writer), integration.claim_reply_plannable, integration.plan_claim_reply (definer
-//     commerce_integration_writer), and the leased claims.meta_intake row under claims.intake_scope() RLS.
-//
-// Used by: cmd/claims-worker (New, Run); tests/foundation drive ApplyOne.
 package claimsintake
 
 import (

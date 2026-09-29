@@ -6,13 +6,6 @@
 // production caller is RecordManualClaim), no text storage, no cart, inventory or message
 // effect, no reply planning (the intake worker does that after this core returns).
 //
-// Depends on: claims/grammar (Result shape), command (sentinels); tables
-// live.claim_windows (FOR SHARE window fence), live.offers (FOR SHARE offer fence),
-// claims.bundles, claims.lines and claims.events as commerce_runtime under RLS (manual) or as
-// commerce_claims_intake under claims.intake_scope() policies (meta); meta only also reads
-// live.claim_window_intervals and live.claim_sources.
-// Used by: RecordManualClaim (manual), internal/claimsintake via IngestMetaIntake (meta).
-//
 // Lock order (§5.6, caller already holds its receipt advisory / intake lease): claim-source
 // advisory → [meta: claims-actor then claims-session-cap advisories] → live.claim_windows →
 // [meta: live.claim_window_intervals] → live.offers → claims.bundles → claims.lines →

@@ -12,12 +12,9 @@
 // implementation bodies: every assertion cites a contract section. Tests never weaken a
 // contract rule to pass; a failing assertion is a product finding.
 //
-// Depends on: the foundation fixture chain fixture()->t04Fixture->pricingFixture->cqSetup
-// (real PostgreSQL; commerce_runtime login foundation_api; buyer runtime and issuer
-// logins; USD store A1 with two catalog SKUs and a pricing market), live.CreateDraft for
-// sessions (live:manage), and the owner (superuser) pool only for synthetic setup, fault
-// injection and read-back of columns no runtime role may read (claims.links.token_hash,
-// claims.bundles.owner_id), exactly as the contract's own KC rows describe.
+// The owner (superuser) pool is used only for synthetic setup, fault injection and read-back of columns no
+// runtime role may read (claims.links.token_hash, claims.bundles.owner_id), exactly as the contract's own
+// KC rows describe.
 //
 // Isolation: every test owns fresh principals (live:* grants are explicit; there is no
 // backfill, contract §12), fresh draft sessions and SKUs. The store-wide "one OPEN

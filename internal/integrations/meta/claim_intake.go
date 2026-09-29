@@ -5,11 +5,7 @@
 // Non-goals: no SQL (consumer.go calls meta_inbox.stage_claim_intake with the result), no
 // network, no River, no claims/live table access, no storage of comment text, from.name or
 // username, and no Graph or private-reply code (internal/integrations/metareply).
-//
-// Depends on: claims/grammar (Parse, a pure function; the only claims import, never
-// internal/claims itself) and the parsing helpers of protocol.go (ParseStrict, canonical).
-// Used by: ConsumerWorker.Work (consumer.go) in the meta-worker process; cmd/meta-worker loads
-// the key.
+// It imports only claims/grammar (Parse, a pure function) from claims, never internal/claims itself.
 //
 // Facts (retrieved 2026-09-28, https://developers.facebook.com/docs/graph-api/webhooks/reference/page/
 // and .../reference/instagram/): Page feed comment value carries post_id, comment_id, parent_id,

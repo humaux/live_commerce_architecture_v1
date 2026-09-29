@@ -5,8 +5,7 @@
 // replay, the input parser's HTTP outcome and the binding resolution errors. Evidence label REAL_PG (HTTP over
 // httptest, no Meta call exists in R1).
 //
-// Depends on: the claims gate harness (lcSetup, lcPrincipal) and the Meta inbox helpers (miSetup, miBinding,
-// miRoute). Every value is synthetic. Two fresh stores of the shared tenant isolate the gate from Meta bindings
+// Every value is synthetic. Two fresh stores of the shared tenant isolate the gate from Meta bindings
 // other gates leave enabled in store A1 (one binding per platform is a claim-source rule).
 package foundation_test
 

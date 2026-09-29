@@ -4,16 +4,6 @@
 // reads a Stripe key or STRIPE_* variable, never releases stock, and never treats a
 // redirect or handoff as proof of payment.
 //
-// Depends on:
-//   - checkout SQL definers (post-River phase, role commerce_hosted_runtime):
-//     checkout.start_stripe_payment, checkout.request_stripe_signal;
-//     0061: checkout.take_stripe_handoff, checkout.hosted_payment_provider.
-//   - river_payment (via the injected River client, InsertTx only): payment_query_v1 and
-//     payment_signal_v1 jobs inserted in the same transaction as the SQL call that links them.
-//   - internal/integrations/psp/stripe: APIVersion and the amount table only (no network).
-//
-// Used by: internal/buyerhttp (prepare/handoff/refresh/cancel routes), cmd/api (buyer_payment.go).
-//
 // Contract: contracts/stripe-psp-v1.md §0.2, §6.4, §9.2, §9.3, §11.
 
 package checkout

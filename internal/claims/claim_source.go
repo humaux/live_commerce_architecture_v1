@@ -8,14 +8,9 @@
 // logic (internal/claimsintake, live.put_claim_source's own guards decide route, binding and
 // credential validity), no HTTP decoding (internal/httpapi/claimsource.go).
 //
-// Depends on: command (Run, Audit, sentinels), platform (Scope), tables as commerce_runtime under
-// store-scoped RLS: live.claim_sources (read), integration.bindings (read the store's enabled Meta
-// bindings to pick the asset, and list their platforms for GET), live.claim_windows (insert the CLOSED default row when the session has
-// none, because live.claim_sources references it), live.sessions (existence); a per-session advisory
-// lock (claim-source-put|tenant|store|session) serializing PUTs so expected_version is a real CAS; SQL function
-// live.put_claim_source (definer commerce_claims_writer: principal_holds live:manage +
-// integration:execute, route/binding/credential checks, CAS on version).
-// Used by: internal/httpapi (claimsource.go routes GET/PUT claim-source).
+// PUTs are serialized by a per-session advisory lock (claim-source-put|tenant|store|session) so
+// expected_version is a real CAS; the CLOSED default live.claim_windows row is inserted when the session
+// has none, because live.claim_sources references it.
 
 package claims
 

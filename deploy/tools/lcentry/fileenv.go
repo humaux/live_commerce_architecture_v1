@@ -4,7 +4,6 @@
 // Reads env: NAME_FILE for NAME ~ ^(DATABASE_URL|COMMERCE_[A-Z0-9_]+)$ only.
 // Reads secrets: /run/secrets/<file> (Compose bind-mounted file secrets,
 // mode 0440 root:${LC_SECRETS_GID}; the container joins that group).
-// Used by: main.go runCommand. Depends on: stdlib only.
 // Status: MODEL_ONLY; verified by smoke S04 (unit) and S26 (no values in inspect).
 // Change rules: the literal "__UNSET__" sentinel is shared with
 // deploy/scripts/secrets-init.sh and preflight.sh; change all three together.

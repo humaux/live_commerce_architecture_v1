@@ -4,8 +4,6 @@
 // storefront (/) containers; all share the edge netns loopback.
 // Reads env: none (proxy variables are deliberately ignored).
 // Reads secrets: none.
-// Used by: deploy/compose.yml healthchecks; deploy/scripts/smoke.sh S15.
-// Depends on: stdlib net/http only.
 // Status: MODEL_ONLY; verified by smoke S04 (unit) and S15 (runtime).
 // Change rules: never allow non-loopback targets — the probe must not become
 // an SSRF/egress primitive inside the shared netns.

@@ -2,9 +2,7 @@
 // (contracts/stripe-refund-v1.md §3, §3.1). It never decides refund state, capacity or review
 // (payments.apply_stripe_refund does that in SQL), never retries and never mints a second create key.
 //
-// Ownership: integration_worker. Depends on: client.go (call, classify, CallMeta), session.go
-// (bounded token patterns), strictjson.go; api.stripe.com only through Client.call.
-// Used by: internal/payments (RefundWorker and the refund/charge branches of SignalWorker).
+// Ownership: integration_worker. External: api.stripe.com only through Client.call (docs URLs below).
 //
 // Wire facts (docs.stripe.com, retrieved 2026-09-28, F-R1..F-R7 of stripe-refund-v1 §1):
 //   - POST /v1/refunds        https://docs.stripe.com/api/refunds/create  (payment_intent, amount, reason,

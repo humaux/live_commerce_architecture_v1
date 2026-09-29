@@ -4,12 +4,6 @@
 //
 // Non-goals: no carrier API, label, tracking poll, provider operation or River job (MD2); no
 // buyer message (MD10); never fetches a tracking URL (§0 rejected alternative: SSRF surface).
-//
-// Depends on: fulfillment.record_manual_shipment and fulfillment.read_manual_shipment_history
-// (migrations/0063; commerce_checkout_writer / commerce_auth definers, EXECUTE commerce_runtime;
-// they re-authorize fulfillment:write / orders:read in the database) and platform.RequirePermission
-// as the second, Go-side fence after the SQL call.
-// Used by: internal/httpapi/shipments.go (PUT shipment, GET shipment/history).
 
 package merchantorders
 

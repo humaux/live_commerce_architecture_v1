@@ -10,7 +10,7 @@
 // negation or question interpretation, and no knowledge of offers, windows or modes:
 // the KEYWORD_QTY_ONLY rule is applied at ingest by package claims (§2.3).
 //
-// Depends on: the standard library only. unicode/utf8 decodes; the unicode category
+// Stdlib only: unicode/utf8 decodes; the unicode category
 // tables are consulted solely by NormalizeLabel to reject control (Cc) and format (Cf)
 // characters, never for case mapping; fmt supplies the Formatter interface that keeps
 // a Result redacted under every verb.

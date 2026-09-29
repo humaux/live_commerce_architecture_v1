@@ -1,13 +1,9 @@
 // refunds.go owns the merchant refund routes of stripe-refund-v1 §7.1 under
 // /v1/admin/stores/{store_id}/orders/{order_id}/refunds. It decides no refund rule (SQL and
 // internal/merchantorders do), never calls Stripe, and never returns a driver message.
-//
-// Depends on: internal/merchantorders (RequestRefund, ListRefunds, RefreshRefund), platform.WithScope
-// (one commerce_runtime READ COMMITTED transaction per request, opened with the route's permission; its
-// nil return is the COMMIT acknowledgement the 201 waits for), the River insert-only client that
-// cmd/api builds with newMerchantRefundJobs, and the Studio transport helpers (studioRoute, claimsBody)
-// for the private no-store response boundary, strict JSON and query rejection.
-// Used by: NewHandler (mounted only when Options.RefundJobs is set by the integrator).
+// Each route runs in one commerce_runtime READ COMMITTED transaction (platform.WithScope, opened with the
+// route's permission) whose nil return is the COMMIT acknowledgement the 201 waits for, and keeps the Studio
+// private no-store boundary with strict JSON and query rejection.
 
 package httpapi
 

@@ -5,9 +5,6 @@
 // Non-goals: no key loading or rotation (cmd/api reads COMMERCE_CLAIMS_LABEL_KEY; §10),
 // no storage (the database only ever sees SHA-256 of a token and keyed label MACs inside
 // receipt request digests), no HTTP header parsing.
-//
-// Depends on: crypto/hmac, crypto/sha256, crypto/rand, encoding/base64 and command
-// (sentinel errors) only.
 
 package claims
 
