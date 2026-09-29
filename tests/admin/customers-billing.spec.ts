@@ -105,7 +105,7 @@ test("CB11 customers list: table, phone last 3 only, search by name and phone di
   await page.getByTestId("customers-search").fill("zzzznomatch");
   await page.getByTestId("customers-search-submit").click();
   await expect(page.getByText(en.emptySearch)).toBeVisible();
-  await expect(page.getByTestId("customers-table")).toHaveCount(0);
+  await expect(page.locator('[data-testid^="customer-row-"]')).toHaveCount(0);
   await noSecrets(page);
   // the input itself is bounded to 40 characters
   await expect(page.getByTestId("customers-search")).toHaveAttribute("maxlength", "40");
