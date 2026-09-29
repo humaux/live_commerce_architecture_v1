@@ -34,3 +34,8 @@ k. §5.4 exact job link applies only to jobs inserted by the intake login (keeps
    duplicate-job gate valid): ratified. The CHECK `events_source_platform` addition: ratified.
 l. Facebook top-level comment rule `parent_id == post_id` treated as top-level (docs-based, LIVE
    unverified → probe U-list); late webhooks use the window's current match mode: ratified.
+m. Reply origin: `plan_claim_reply` writes the stored `control.storefront_domains.origin` form
+   (`https://host`); `RenderClaimLink` accepting a bare host too is fine; tests use the stored form.
+n. metareply keyring env loader may not reuse the unexported `meta.parseStrict`; duplicate JSON member
+   names collapsing is accepted for R1 (operator-controlled env; `ponytail:` marked). Upgrade path:
+   export a strict parser from `internal/integrations/meta` in the maintainability unit.

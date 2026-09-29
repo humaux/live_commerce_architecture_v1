@@ -41,3 +41,13 @@ All defaults proposed with the briefs are ACCEPTED:
     direct dependency and a row added to docs/engineering/dependencies.md.
 21. RF04 (over-refund concurrency witness) may never be waived as "baseline"; every red RF/MF gate
     is triaged into product / test / dependency with evidence before merge.
+22. Admin UI: new `apps/admin/components/order-actions.css` accepted; after a refund/shipment change
+    that drops the selected order out of the current filter, keep the list and refresh only the
+    detail; refund section visible for CAPTURED / PARTIALLY_REFUNDED / REFUNDED / REVIEW_REQUIRED
+    (REVIEW_REQUIRED without capture shows "unavailable").
+23. RF07 contract conflict (§4.4 currency change = identity mismatch → job ends, vs §6 step 4 →
+    REFUND_AMOUNT_MISMATCH review): BOTH. A Stripe refund report whose currency differs from the
+    request ends the job as `stripe_refund_mismatch` (no resend, no release) AND opens a
+    `REFUND_AMOUNT_MISMATCH` review for a human; refundable capacity stays reserved. RF07 asserts
+    all three. (Stripe refunds are always in the charge currency, so a mismatch means a wrong match
+    or corrupted data — a human must look.)
