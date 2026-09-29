@@ -71,7 +71,10 @@ for (const v of vectors) {
     const e = v.event;
     if (!e || root.object !== 'event' || root.id !== e.id || root.type !== e.type ||
         root.livemode !== e.livemode || (root.account !== undefined) !== e.account_present ||
-        root.data.object.id !== e.session_id) {
+        root.data.object.id !== e.session_id ||
+        // refund/charge vectors (stripe-refund-v1 §3 projection): only checked where the vector states them
+        (e.payment_intent_id !== undefined && (root.data.object.payment_intent ?? '') !== e.payment_intent_id) ||
+        (e.metadata_refund !== undefined && ((root.data.object.metadata ?? {}).lc_refund ?? '') !== e.metadata_refund)) {
       console.error(`FAIL ${v.name}: projection mismatch`);
       failures++;
       continue;
