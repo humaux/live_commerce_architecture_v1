@@ -1,5 +1,17 @@
-// Package merchantorders reads the private merchant order projection. Checkout
-// remains the only transaction and payment state owner.
+// Package merchantorders owns the private merchant order projection (identity.read_merchant_orders:
+// payment, refund-amount and shipment fields), the merchant-arranged manual shipment command and history
+// (manual-fulfilment-v1) and the unshipped-orders CSV export. Checkout remains the only transaction and
+// payment state owner. refunds.go (refund-core) shares this package's decoders.
+//
+// It never writes ledger, stock, reservation, payment-fact or refund state, never creates a provider
+// operation or River job, never calls a carrier or fetches a tracking URL, and never stores or logs an
+// export file or recipient data.
+//
+// Depends on: identity.read_merchant_orders, fulfillment.record_manual_shipment,
+// fulfillment.read_manual_shipment_history and identity.export_unshipped_orders (migrations/0063; each a
+// SECURITY DEFINER that re-authorizes the merchant in the database), platform.RequirePermission (second
+// Go-side authority fence), internal/pagination (cursor binding "merchant-orders").
+// Used by: internal/httpapi (orders.go, shipments.go, refunds.go).
 package merchantorders
 
 import (
@@ -9,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 	"unicode"
@@ -47,6 +60,10 @@ type Summary struct {
 	PaymentState     string `json:"payment_state"`
 	TestMode         bool   `json:"test_mode"`
 	WorkState        string `json:"work_state"`
+	// RefundedMinor / RefundPendingMinor come from identity.read_merchant_orders (0063, stripe-refund-v1
+	// §7.1): succeeded-and-not-reversed vs held-but-not-succeeded refund amounts of the order's attempt.
+	RefundedMinor      int64 `json:"refunded_minor"`
+	RefundPendingMinor int64 `json:"refund_pending_minor"`
 }
 
 type Item struct {
@@ -96,6 +113,8 @@ type Detail struct {
 	Items       []Item      `json:"items"`
 	Totals      Totals      `json:"totals"`
 	Destination Destination `json:"destination"`
+	// Shipment is the current SHIPPED head (manual-fulfilment-v1 §4.1); null otherwise.
+	Shipment *Shipment `json:"shipment"`
 }
 
 func List(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, in ListRequest) (pagination.Page[Summary], error) {
@@ -131,7 +150,7 @@ func List(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, in
 		if err != nil {
 			return empty, err
 		}
-		if in.State != "all" && item.CommercialState != in.State {
+		if !matchesState(in.State, item) {
 			return empty, ErrUnavailable
 		}
 		empty.Items = append(empty.Items, item)
@@ -216,10 +235,25 @@ func validAuthorityInput(scope platform.Scope, token string) bool {
 
 func validState(state string) bool {
 	switch state {
-	case "", "all", "DRAFT", "AWAITING_PAYMENT", "CONFIRMED", "CANCELLED":
+	case "", "all", "DRAFT", "AWAITING_PAYMENT", "CONFIRMED", "CANCELLED", "shipped", "unshipped":
 		return true
 	}
 	return false
+}
+
+// matchesState re-checks the SQL filter on every decoded row (a wrong-filter page is a projection
+// failure, not data). "unshipped" is the MD6 subset observable in a summary; the SQL adds the review
+// and refund clauses.
+func matchesState(state string, v Summary) bool {
+	switch state {
+	case "", "all":
+		return true
+	case "shipped":
+		return v.FulfillmentState == "MERCHANT_SHIPPED"
+	case "unshipped":
+		return v.CommercialState == "CONFIRMED" && v.FulfillmentState == "MANUAL_UNASSIGNED" && v.WorkState == "READY"
+	}
+	return v.CommercialState == state
 }
 
 func decodeArray(raw []byte, max int) ([]json.RawMessage, error) {
@@ -230,7 +264,7 @@ func decodeArray(raw []byte, max int) ([]json.RawMessage, error) {
 	return objects, nil
 }
 
-var summaryKeys = []string{"order_id", "created_at", "updated_at", "currency", "total_minor", "commercial_state", "fulfillment_state", "payment_state", "test_mode", "work_state"}
+var summaryKeys = []string{"order_id", "created_at", "updated_at", "currency", "total_minor", "commercial_state", "fulfillment_state", "payment_state", "test_mode", "work_state", "refunded_minor", "refund_pending_minor"}
 
 func decodeSummary(raw json.RawMessage) (Summary, error) {
 	if _, err := exact(raw, summaryKeys...); err != nil {
@@ -255,12 +289,12 @@ func validSummary(v Summary) bool {
 		return false
 	}
 	switch v.FulfillmentState {
-	case "MANUAL_UNASSIGNED", "CANCELLED", "PAID_ALLOCATION_FAILED":
+	case "MANUAL_UNASSIGNED", "CANCELLED", "PAID_ALLOCATION_FAILED", "MERCHANT_SHIPPED":
 	default:
 		return false
 	}
 	switch v.PaymentState {
-	case "NOT_STARTED", "REVIEW_REQUIRED", "CAPTURED", "AUTHORIZED", "PENDING":
+	case "NOT_STARTED", "REVIEW_REQUIRED", "CAPTURED", "AUTHORIZED", "PENDING", "PARTIALLY_REFUNDED", "REFUNDED":
 	default:
 		return false
 	}
@@ -268,6 +302,28 @@ func validSummary(v Summary) bool {
 	case "NONE", "READY", "REVIEW_REQUIRED":
 	default:
 		return false
+	}
+	if !money(v.RefundedMinor) || !money(v.RefundPendingMinor) || v.RefundedMinor+v.RefundPendingMinor > v.TotalMinor {
+		return false
+	}
+	// I05: refund amounts and payment_state come from the same SQL facts, so they must agree.
+	switch v.PaymentState {
+	case "NOT_STARTED", "AUTHORIZED", "PENDING":
+		if v.RefundedMinor != 0 || v.RefundPendingMinor != 0 {
+			return false
+		}
+	case "CAPTURED":
+		if v.RefundedMinor != 0 {
+			return false
+		}
+	case "PARTIALLY_REFUNDED":
+		if v.RefundedMinor == 0 || v.RefundedMinor >= v.TotalMinor {
+			return false
+		}
+	case "REFUNDED":
+		if v.RefundedMinor != v.TotalMinor {
+			return false
+		}
 	}
 	if v.PaymentState == "NOT_STARTED" && (v.TestMode || v.WorkState != "NONE") {
 		return false
@@ -278,20 +334,38 @@ func validSummary(v Summary) bool {
 	if v.FulfillmentState == "PAID_ALLOCATION_FAILED" && (v.PaymentState != "REVIEW_REQUIRED" || v.WorkState != "REVIEW_REQUIRED") {
 		return false
 	}
-	if v.WorkState == "READY" && (v.PaymentState != "CAPTURED" || v.CommercialState != "CONFIRMED" || v.FulfillmentState != "MANUAL_UNASSIGNED") {
+	// stripe-refund-v1 §7.1 / manual-fulfilment-v1 §5.1 invariants.
+	if v.WorkState == "READY" && (v.CommercialState != "CONFIRMED" || !captured(v.PaymentState) ||
+		(v.FulfillmentState != "MANUAL_UNASSIGNED" && v.FulfillmentState != "MERCHANT_SHIPPED")) {
+		return false
+	}
+	if v.FulfillmentState == "MERCHANT_SHIPPED" && (v.WorkState != "READY" || v.CommercialState != "CONFIRMED") {
 		return false
 	}
 	if v.WorkState == "REVIEW_REQUIRED" && v.PaymentState != "REVIEW_REQUIRED" {
 		return false
 	}
-	return v.CommercialState != "CONFIRMED" ||
-		(v.WorkState != "NONE" && (v.PaymentState == "CAPTURED" || v.PaymentState == "REVIEW_REQUIRED"))
+	return v.CommercialState != "CONFIRMED" || (v.WorkState != "NONE" && captured(v.PaymentState))
+}
+
+// captured is the payment_state set in which a capture fact exists (or its review supersedes it).
+func captured(state string) bool {
+	switch state {
+	case "CAPTURED", "PARTIALLY_REFUNDED", "REFUNDED", "REVIEW_REQUIRED":
+		return true
+	}
+	return false
 }
 
 func decodeDetail(raw json.RawMessage) (Detail, error) {
-	fields, err := exact(raw, append(append([]string{}, summaryKeys...), "country", "service_code", "items", "totals", "destination")...)
+	fields, err := exactNullable(raw, []string{"shipment"}, append(append([]string{}, summaryKeys...), "country", "service_code", "items", "totals", "destination", "shipment")...)
 	if err != nil {
 		return Detail{}, err
+	}
+	if !bytes.Equal(bytes.TrimSpace(fields["shipment"]), []byte("null")) {
+		if _, err = exactNullable(fields["shipment"], []string{"carrier_name", "tracking_url"}, shipmentKeys...); err != nil {
+			return Detail{}, err
+		}
 	}
 	if _, err = exact(fields["totals"], "subtotal_minor", "discount_minor", "shipping_minor", "shipping_tax_minor", "tax_minor", "total_minor"); err != nil {
 		return Detail{}, err
@@ -328,7 +402,19 @@ func decodeDetail(raw json.RawMessage) (Detail, error) {
 	return out, nil
 }
 
+// validShipment holds the head-shipment invariants: a shipment is shown exactly for a
+// MERCHANT_SHIPPED order and only while its head is SHIPPED (a voided head is null).
+func validShipment(order Summary, s *Shipment) bool {
+	if s == nil {
+		return order.FulfillmentState != "MERCHANT_SHIPPED"
+	}
+	return order.FulfillmentState == "MERCHANT_SHIPPED" && s.Status == "SHIPPED" && validShipmentFields(*s)
+}
+
 func validDetail(v Detail) bool {
+	if !validShipment(v.Summary, v.Shipment) {
+		return false
+	}
 	if !country(v.Country) || !serviceCode.MatchString(v.ServiceCode) || v.Destination.Country != v.Country ||
 		!money(v.Totals.SubtotalMinor) || !money(v.Totals.DiscountMinor) || !money(v.Totals.ShippingMinor) ||
 		!money(v.Totals.ShippingTaxMinor) || !money(v.Totals.TaxMinor) || v.Totals.TotalMinor != v.TotalMinor {
@@ -390,13 +476,19 @@ func validDetail(v Detail) bool {
 }
 
 func exact(raw json.RawMessage, names ...string) (map[string]json.RawMessage, error) {
+	return exactNullable(raw, []string{"pickup"}, names...)
+}
+
+// exactNullable is exact with an explicit set of keys whose value may be JSON null (the key itself
+// must still be present). Every other key must be non-null.
+func exactNullable(raw json.RawMessage, nullable []string, names ...string) (map[string]json.RawMessage, error) {
 	var fields map[string]json.RawMessage
 	if !bytes.HasPrefix(bytes.TrimSpace(raw), []byte("{")) || json.Unmarshal(raw, &fields) != nil || len(fields) != len(names) {
 		return nil, ErrUnavailable
 	}
 	for _, name := range names {
 		value, ok := fields[name]
-		if !ok || len(value) == 0 || (name != "pickup" && bytes.Equal(bytes.TrimSpace(value), []byte("null"))) {
+		if !ok || len(value) == 0 || (!slices.Contains(nullable, name) && bytes.Equal(bytes.TrimSpace(value), []byte("null"))) {
 			return nil, ErrUnavailable
 		}
 	}

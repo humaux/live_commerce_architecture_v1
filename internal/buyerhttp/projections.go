@@ -269,6 +269,9 @@ type orderResponse struct {
 	FulfillmentState string                `json:"fulfillment_state"`
 	HoldExpiresAt    *time.Time            `json:"hold_expires_at,omitempty"`
 	Snapshot         orderSnapshotResponse `json:"snapshot"`
+	// Shipment is always emitted, null unless the merchant's manual shipment head is SHIPPED
+	// (manual-fulfilment-v1 §5.2); checkout.Get reads it under buyer RLS without merchant-only columns.
+	Shipment *checkout.BuyerShipment `json:"shipment"`
 }
 
 func projectOrder(order checkout.Order) orderResponse {
@@ -276,7 +279,7 @@ func projectOrder(order checkout.Order) orderResponse {
 	destination := order.Snapshot.Destination
 	out := orderResponse{
 		OrderID: order.OrderID, CommercialState: order.CommercialState, FulfillmentState: order.FulfillmentState,
-		CartID: quote.CartID, CartVersion: quote.CartVersion,
+		CartID: quote.CartID, CartVersion: quote.CartVersion, Shipment: order.Shipment,
 		Snapshot: orderSnapshotResponse{
 			Quote: orderQuoteResponse{
 				Currency: quote.Currency, Lines: projectQuoteLines(quote.Lines),

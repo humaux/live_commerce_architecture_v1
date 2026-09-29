@@ -65,6 +65,20 @@ type Order struct {
 	CommercialState  string   `json:"commercial_state"`
 	FulfillmentState string   `json:"fulfillment_state"`
 	Snapshot         Snapshot `json:"snapshot"`
+	// Shipment is always emitted: null unless the order's manual shipment head is SHIPPED
+	// (manual-fulfilment-v1 §5.2). Merchant-only fields (note, void_reason, principal) are never read.
+	Shipment *BuyerShipment `json:"shipment"`
+}
+
+// BuyerShipment is the merchant's attestation that the parcel was dispatched with this carrier and
+// tracking (MERCHANT_SHIPPED); it is never in-transit or delivered evidence (I13).
+type BuyerShipment struct {
+	Status         string    `json:"status"`
+	CarrierCode    string    `json:"carrier_code"`
+	CarrierName    *string   `json:"carrier_name"`
+	TrackingNumber string    `json:"tracking_number"`
+	TrackingURL    *string   `json:"tracking_url"`
+	RecordedAt     time.Time `json:"recorded_at"`
 }
 
 func New(ctx context.Context, checkoutPool *pgxpool.Pool, jobs *river.Client[pgx.Tx]) (*Service, error) {
@@ -235,6 +249,25 @@ func (s *Service) Get(ctx context.Context, token, storeID, orderID string) (Orde
 		command.InLocalTime(&out.Snapshot)
 		if out.OrderID != orderID || out.Generation < 1 || out.JobID < 1 ||
 			out.Snapshot.Quote.ID == "" || out.Snapshot.Destination.ID == "" {
+			return command.ErrConflict
+		}
+		// fulfillment.manual_shipment_*: buyer RLS (owner scope) and column grants (0063) hide the
+		// merchant-only columns; only a SHIPPED head is shown, a voided head reads as null.
+		var shipment BuyerShipment
+		err = tx.QueryRow(callCtx, `SELECT v.status,v.carrier_code,v.carrier_name,v.tracking_number,v.tracking_url,v.recorded_at
+			FROM fulfillment.manual_shipment_heads h JOIN fulfillment.manual_shipment_versions v
+			 ON v.tenant_id=h.tenant_id AND v.store_id=h.store_id AND v.order_id=h.order_id AND v.version=h.current_version
+			WHERE h.tenant_id=$1 AND h.store_id=$2 AND h.owner_id=$3 AND h.order_id=$4 AND v.status='SHIPPED'`,
+			scope.TenantID, scope.StoreID, scope.OwnerID, orderID).Scan(&shipment.Status, &shipment.CarrierCode,
+			&shipment.CarrierName, &shipment.TrackingNumber, &shipment.TrackingURL, &shipment.RecordedAt)
+		if err == nil {
+			shipment.RecordedAt = shipment.RecordedAt.UTC()
+			out.Shipment = &shipment
+		} else if !errors.Is(err, pgx.ErrNoRows) {
+			return err
+		}
+		// The deferred 0063 guard makes MERCHANT_SHIPPED <=> SHIPPED head; a disagreement is drift, not data.
+		if (out.Shipment != nil) != (out.FulfillmentState == "MERCHANT_SHIPPED") {
 			return command.ErrConflict
 		}
 		return checkCapability(callCtx, tx, tokenHash[:], storeID, scope)
