@@ -48,3 +48,23 @@ S5. Registrar `Rotate` binds the AAD to the registered account id read via the r
 S6. Tracking URL: Go canonicalizer rejects hosts containing characters outside RFC 3986 reg-name
     (`<`, `>`, `"`, etc.) and the SQL CHECK is tightened to match; buyer/admin renderers unchanged.
 Each fix: root cause, a test that fails before, contract note where the contract text changes.
+
+## Release-gate rulings (2026-09-29, after run2)
+
+G2 (R1 blocker). Split the Studio flag: `COMMERCE_STUDIO_ENABLED` = live-session planning + keyword
+   claims + claim-source (R1, ON in deploy); new `COMMERCE_STUDIO_MEDIA_ENABLED` = LiveKit media
+   planning/execution (default 0; MUST stay 0 in R1; preflight P06 enforces it instead of STUDIO=0).
+   With media off: no MediaPlanner is built, `live.media_plan_ready()` is not required, media routes are
+   not mounted (404), and the admin Studio UI hides media controls using a capability the API already
+   exposes or a new read-only field (no new visual design). Deploy: STUDIO=1, CLAIMS=1, MEDIA=0.
+   Smoke asserts the claims board and claim-source routes answer 401/403 (not 404) on the deployed api.
+   Browser: Studio claims gate passes in planning-only mode.
+G3. Smoke S01 (shellcheck) and `smoke.sh full` run in a new GitHub Actions job on the Linux runner
+   (shellcheck preinstalled, Docker as root) instead of downloading tools locally.
+G4. Accepted NOT_RUN for R1 (owner prerequisites or covered elsewhere): Meta LIVE probes (Page token);
+   populated-database migration upgrade tests (R1's first deploy is a fresh DB — runbook: must pass
+   before upgrading any live DB); rotated-key refund replay (needs a second test key); SP16 29-minute
+   expiry probe (developer-only); SP17 real Stripe webhook delivery (runbook: send a Dashboard test
+   event after deploy); RF11(b) (refund against Stripe SANDBOX is covered by RF10 via the API).
+G5. Migration 0066 `integration.register_meta_binding` + `meta-admin route`/`route-disable` (F2 as
+   implemented): accepted.
