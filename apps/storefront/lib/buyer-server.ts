@@ -1,9 +1,15 @@
+// BFF for /api/buyer/* -> Go /v1/buyer/* (internal/buyer, internal/checkout). Payment routes:
+//   GET orders/{id}/payment; POST .../payment/prepare (keyed, body), .../handoff|refresh|cancel
+//   (keyless, nonretryable; Go HostedPaymentStarter Begin/Take/RefreshPayment/CancelPayment).
+// Every success body is re-validated with lib/payment-contract.ts before it reaches the browser.
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { isIP } from "node:net";
 import {
   validHostedHandoff,
   validOrderPayment,
   validPaymentPrepared,
+  validPaymentSignal,
+  type PaymentMethodCode,
 } from "./payment-contract.ts";
 import {
   CLAIM_TOKEN,
@@ -45,7 +51,7 @@ type Route = {
     | "claim";
   query?: "catalog" | "options" | "orders";
   session?: string;
-  payment?: "view" | "prepare" | "handoff";
+  payment?: "view" | "prepare" | "handoff" | "refresh" | "cancel";
   orderID?: string;
   // Claim-link preview/redeem (live-keyword-claims-v1 B1/B2): the only routes that take
   // and forward the X-Commerce-Claim-Token header.
@@ -324,7 +330,7 @@ function route(
       route: selected ? { ...selected, method } : undefined,
     };
   }
-  const payment = /^orders\/([^/]+)\/payment(?:\/(prepare|handoff))?$/.exec(
+  const payment = /^orders\/([^/]+)\/payment(?:\/(prepare|handoff|refresh|cancel))?$/.exec(
     suffix,
   );
   if (payment) {
@@ -633,7 +639,9 @@ async function bodyJSON(
           typeof parsed !== "object" ||
           Array.isArray(parsed) ||
           Object.keys(parsed).length !== 3 ||
-          (parsed as Record<string, unknown>).method_code !== "payuni_credit" ||
+          !["payuni_credit", "stripe_checkout"].includes(
+            (parsed as Record<string, string>).method_code,
+          ) ||
           !Number.isSafeInteger(
             (parsed as Record<string, unknown>).method_version,
           ) ||
@@ -791,8 +799,11 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
   const pathname = new URL(request.url).pathname;
   // Classify before config/auth: even an early failure must not invite a second
   // one-shot handoff. See buyer-payment-public-v1, not ordinary keyed writes.
+  // Refresh and cancel share the keyless, nonretryable class (stripe-buyer-ui-v1 §2).
   const handoff =
-    /^\/api\/buyer\/orders\/[^/]+\/payment\/handoff(?:\/.*)?$/.test(pathname);
+    /^\/api\/buyer\/orders\/[^/]+\/payment\/(?:handoff|refresh|cancel)(?:\/.*)?$/.test(
+      pathname,
+    );
   const changingCookie =
     request.method === "POST" &&
     /^\/api\/buyer\/session\/(?:prepare|reset)$/.test(pathname);
@@ -986,9 +997,16 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
       (target.payment === "view" &&
         !validOrderPayment(data, target.orderID!)) ||
       (target.payment === "prepare" &&
-        !validPaymentPrepared(data, target.orderID!)) ||
+        !validPaymentPrepared(
+          data,
+          target.orderID!,
+          // bodyJSON already proved the body is JSON with a valid method_code.
+          (JSON.parse(body!) as { method_code: PaymentMethodCode }).method_code,
+        )) ||
       (target.payment === "handoff" &&
-        !validHostedHandoff(data, target.orderID!)))
+        !validHostedHandoff(data, target.orderID!)) ||
+      ((target.payment === "refresh" || target.payment === "cancel") &&
+        !validPaymentSignal(data, target.orderID!)))
   )
     return fail(503, "unavailable");
   return success(data);
