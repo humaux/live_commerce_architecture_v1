@@ -121,6 +121,8 @@ Comments explain *why* and *what it touches*, not what the next line does.
   migration without explicit owner approval in chat.
 - Secrets only from env / `~/.config/livecommerce/secrets.env` (outside the repo); never in code,
   tests, logs, commits or agent replies. Stripe keys must be `sk_test_`/`rk_test_`.
+  Fake keys in tests are written split (`"sk_" + "test_..."`) so no key-shaped literal exists;
+  CI step "No key-shaped secret literals" enforces it.
 - Tenant/store scope comes from server-side auth only.
 - Migration numbers: this release branch owns 0060–0079. Only the integrator merges migrations,
   OpenAPI, shared JSON schema, go.mod/go.sum and pnpm-lock.

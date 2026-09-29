@@ -229,7 +229,7 @@ func sflWorkerBinary(t *testing.T, e *sflEnv) {
 			"COMMERCE_ACCOUNT_ACTIVE_KEY_ID=query_test", "COMMERCE_ACCOUNT_KEYS_JSON=" + string(keysJSON),
 			"COMMERCE_ACCOUNT_REPLAY_KEY=" + base64.StdEncoding.EncodeToString(randomBytes(32)),
 			// Global Stripe credentials the worker must never read (§0.2): sentinels would leak if it did.
-			"STRIPE_SECRET_KEY=sk_test_sentinel" + t04Tag(), "STRIPE_WEBHOOK_SECRET=whsec_sentinel" + t04Tag(), "STRIPE_ACCOUNT_ID=acct_sentinel" + t04Tag()}
+			"STRIPE_SECRET_KEY=sk_" + "test_sentinel" + t04Tag(), "STRIPE_WEBHOOK_SECRET=whsec_" + "sentinel" + t04Tag(), "STRIPE_ACCOUNT_ID=acct_sentinel" + t04Tag()}
 		if stripe != "" {
 			env = append(env, "COMMERCE_STRIPE_ENABLED="+stripe)
 		}

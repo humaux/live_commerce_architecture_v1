@@ -38,7 +38,7 @@ func TestStripeSP01Config(t *testing.T) {
 		{"PROVIDER_MOCK env name", Config{SecretKey: fakeTestKey, AccountID: fakeAccount, Environment: "PROVIDER_MOCK"}, false, ErrInvalid},
 		{"lowercase env", Config{SecretKey: fakeTestKey, AccountID: fakeAccount, Environment: "sandbox"}, false, ErrInvalid},
 		{"empty key", Config{AccountID: fakeAccount, Environment: "SANDBOX"}, false, ErrInvalid},
-		{"publishable key", Config{SecretKey: "pk_test_FAKESENTINELKEY0000000000", AccountID: fakeAccount, Environment: "SANDBOX"}, false, ErrInvalid},
+		{"publishable key", Config{SecretKey: "pk_" + "test_FAKESENTINELKEY0000000000", AccountID: fakeAccount, Environment: "SANDBOX"}, false, ErrInvalid},
 		{"key with whitespace", Config{SecretKey: " " + fakeTestKey, AccountID: fakeAccount, Environment: "SANDBOX"}, false, ErrInvalid},
 		{"key trailing newline", Config{SecretKey: fakeTestKey + "\n", AccountID: fakeAccount, Environment: "SANDBOX"}, false, ErrInvalid},
 		{"key too short", Config{SecretKey: "sk_test_short", AccountID: fakeAccount, Environment: "SANDBOX"}, false, ErrInvalid},
