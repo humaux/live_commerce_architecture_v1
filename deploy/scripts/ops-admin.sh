@@ -66,7 +66,9 @@ need() {
     export "$name=$v"
     unset v
   fi
-  [[ "${!name}" =~ $re ]] || lc_die "$name has an unexpected format ($hint)"
+  # ERE bounds stop at 255 (RE_DUP_MAX), so the upper length limit is checked separately.
+  v=${!name}
+  [[ "$v" =~ $re && ${#v} -le 4096 ]] || lc_die "$name has an unexpected format ($hint)"
   forward+=(-e "$name")
 }
 
@@ -92,7 +94,7 @@ stripe-admin:qualify)
   fi
   ;;
 meta-admin:page-token)
-  need META_PAGE_ACCESS_TOKEN secret '^[^[:space:]]{16,4096}$' "Page access token; scopes are attested by --scopes"
+  need META_PAGE_ACCESS_TOKEN secret '^[^[:space:]]{16,}$' "Page access token; scopes are attested by --scopes"
   ;;
 esac
 
