@@ -65,6 +65,10 @@ try {
     try {
       if(req.url==="/") { res.writeHead(200,{"content-type":"text/html","cache-control":"no-store"});res.end('<!doctype html><title>Buyer transport gate</title><p>Test-only runner, not storefront UI.</p><script type="module">import * as buyer from "/__gate_client.js"; window.buyer=buyer;</script>');return; }
       if(req.url==="/__gate_client.js") {res.writeHead(200,{"content-type":"text/javascript","cache-control":"no-store"});res.end(clientJS);return;}
+      // buyer-client.ts imports sibling modules ("./claim-contract.ts"); the browser resolves them against
+      // /__gate_client.js, so serve exactly the storefront lib files it names, type-stripped, never Next.
+      const sibling=/^\/([a-z][a-z-]*)\.ts$/.exec(req.url);
+      if(sibling&&clientJS.includes(`"./${sibling[1]}.ts"`)) {res.writeHead(200,{"content-type":"text/javascript","cache-control":"no-store"});res.end(stripTypeScriptTypes(await readFile(path.join(root,"apps/storefront/lib",sibling[1]+".ts"),"utf8"),{mode:"strip"}));return;}
       const chunks=[];for await(const x of req) chunks.push(x);let body=Buffer.concat(chunks);
       if(req.url==="/api/buyer/session/prepare") prepares++;
       const current=hook&&hook.path===req.url?hook:null;
