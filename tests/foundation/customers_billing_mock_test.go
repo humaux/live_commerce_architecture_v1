@@ -295,8 +295,9 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 			t.Errorf("portal with billing off: %v, want ErrUnavailable", err)
 		}
 		st, err := off.Status(m.ctx, m.f.runtime, m.scope, m.token)
-		if err != nil || st.Standing != billing.Unbilled || len(st.Plans) != 0 || st.Subscriptions == nil {
-			t.Errorf("status with billing off: %+v %v", st, err)
+		raw, _ := json.Marshal(st)
+		if err != nil || st.Standing != billing.Unbilled || len(st.Plans) != 0 || !strings.Contains(string(raw), `"plans":[]`) || !strings.Contains(string(raw), `"subscriptions":[]`) {
+			t.Errorf("status with billing off: %s %v (arrays must marshal as [], never null)", raw, err)
 		}
 		before := len(m.fake.Calls())
 		if _, err := off.Status(m.ctx, m.f.runtime, m.scope, m.token); err != nil || len(m.fake.Calls()) != before {
@@ -469,8 +470,8 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 				t.Errorf("the recorded session %s is not open", known)
 			}
 		}
-		if len(m.fake.CallsTo("POST", "/v1/checkout/sessions")) != 5 {
-			t.Errorf("%d create calls, want 5 (never an idempotent replay)", len(m.fake.CallsTo("POST", "/v1/checkout/sessions")))
+		if len(m.fake.CallsTo("POST", "/v1/checkout/sessions")) != 4 {
+			t.Errorf("%d create calls, want 4 (first, second, lost response, retry: never an idempotent replay)", len(m.fake.CallsTo("POST", "/v1/checkout/sessions")))
 		}
 		for _, c := range m.fake.CallsTo("POST", "/v1/checkout/sessions") {
 			if c.IdempotencyKey != "" {
@@ -796,11 +797,9 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 		m := cbmSetup(t, "", false)
 		cus := m.pinned(m.store, m.token)
 		sub := m.fake.AddSubscription(billingtest.Sub{Customer: cus, Status: "active", StoreMeta: m.store})
-		if _, err := m.svc.Status(m.ctx, m.f.runtime, m.scope, m.token); err != nil { // nothing mirrored yet: refreshes
-			t.Fatal(err)
-		}
-		if m.rowStatus(sub.ID) != "active" {
-			t.Fatalf("status must mirror on read when nothing is stored: %q", m.rowStatus(sub.ID))
+		// B10: refresh-on-read applies only when a stored row is older than 10 min, so the first row arrives by webhook
+		if rec := m.signed(m.fake.SubscriptionEvent("customer.subscription.created", sub.ID, billingtest.EventOpts{})); rec.Code != 200 || m.rowStatus(sub.ID) != "active" {
+			t.Fatalf("first mirror by webhook: HTTP %d row %q", rec.Code, m.rowStatus(sub.ID))
 		}
 		lists := func() []billingtest.Call { return m.fake.CallsTo("GET", "/v1/subscriptions") }
 		n := len(lists())

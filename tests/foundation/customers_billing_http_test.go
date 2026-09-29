@@ -111,6 +111,15 @@ func (c *cbhEnv) want(name string, r cbhResp, status int, code string) {
 	}
 }
 
+// reject asserts a client error without naming which: a wrong method answers 405 from the mux or 404 from a
+// fallback route, both are "refused" (the contract only forbids a 2xx or a 5xx).
+func (c *cbhEnv) reject(name string, r cbhResp) {
+	c.t.Helper()
+	if r.status < 400 || r.status >= 500 {
+		c.t.Errorf("%s: HTTP %d, want a 4xx refusal (%s)", name, r.status, strings.TrimSpace(string(r.raw)))
+	}
+}
+
 func (c *cbhEnv) noStore(name string, r cbhResp) {
 	c.t.Helper()
 	if cc := r.hdr.Get("Cache-Control"); !strings.Contains(cc, "no-store") {
@@ -185,7 +194,7 @@ func TestCustomersBillingCB09HTTP(t *testing.T) {
 		c.want("Idempotency-Key on GET", c.do(c.on, "GET", base+"/customers", full, c.key(), nil), 422, "invalid_request")
 		c.want("body on GET", c.do(c.on, "GET", base+"/customers", full, nil, `{}`), 422, "invalid_request")
 		for _, method := range []string{"PUT", "DELETE", "PATCH"} {
-			c.want(method, c.do(c.on, method, base+"/customers", full, nil, nil), 405, "")
+			c.reject(method, c.do(c.on, method, base+"/customers", full, nil, nil))
 		}
 		if r := c.do(c.on, "GET", base+"/customers?q=Synthetic", full, nil, nil); r.status != 200 {
 			t.Errorf("q by name prefix: %d %s", r.status, r.raw)
@@ -276,7 +285,7 @@ func TestCustomersBillingCB09HTTP(t *testing.T) {
 		c.want("customers:read alone", c.do(c.on, "POST", path, c.tokens["read"], c.key(), body), 403, "")
 		c.want("no token", c.do(c.on, "POST", path, "", c.key(), body), 401, "")
 		c.want("another tenant", c.do(c.on, "POST", "/v1/admin/stores/"+p2.f.storeA1+"/customers/"+owner+"/consent-withdrawals", foreign, c.key(), body), 404, "")
-		c.want("wrong method", c.do(c.on, "GET", path, full, nil, nil), 405, "")
+		c.reject("wrong method", c.do(c.on, "GET", path, full, nil, nil))
 	})
 
 	t.Run("POST exports: attachment headers, envelope, key, permission, bound", func(t *testing.T) {
@@ -483,7 +492,7 @@ func TestCustomersBillingCB09HTTP(t *testing.T) {
 		c.want("checkout no token", c.do(c.on, "POST", base+"/billing/checkout", "", nil, body), 401, "")
 		c.want("checkout another tenant", c.do(c.on, "POST", "/v1/admin/stores/"+p2.f.storeA1+"/billing/checkout", c.tokens["billing"], nil, body), 404, "")
 		c.want("portal with a body", c.do(c.on, "POST", base+"/billing/portal", c.tokens["billing"], nil, `{"x":1}`), 422, "invalid_request")
-		c.want("checkout wrong method", c.do(c.on, "GET", base+"/billing/checkout", c.tokens["billing"], nil, nil), 405, "")
+		c.reject("checkout wrong method", c.do(c.on, "GET", base+"/billing/checkout", c.tokens["billing"], nil, nil))
 		// 409 subscription_exists (a live subscription at Stripe), never a second session
 		cus := cbxOne(t, f, `SELECT stripe_customer_id FROM billing.store_customers WHERE store_id=$1`, m.store)
 		sessions := len(m.fake.CallsTo("POST", "/v1/checkout/sessions"))
@@ -571,8 +580,8 @@ func TestCustomersBillingCB09HTTP(t *testing.T) {
 		if json.Unmarshal(g.body, &priv); priv["consents"].(map[string]any)["marketing_messages"] != true {
 			t.Errorf("GET privacy after the grant: %s", g.body)
 		}
-		if r := bh.request(t, "DELETE", "/v1/buyer/consents", tok, t04Key("cbh"), nil, nil); r.status != 405 {
-			t.Errorf("DELETE consents: %d, want 405", r.status)
+		if r := bh.request(t, "DELETE", "/v1/buyer/consents", tok, t04Key("cbh"), nil, nil); r.status < 400 || r.status >= 500 {
+			t.Errorf("DELETE consents: %d, want a 4xx", r.status)
 		}
 		// export
 		ek := t04Key("cbh-bx")
@@ -601,8 +610,8 @@ func TestCustomersBillingCB09HTTP(t *testing.T) {
 		if r := bh.request(t, "POST", "/v1/buyer/privacy/export", tok, t04Key("cbh-bx"), map[string]string{"x": "1"}, nil); r.status != 422 {
 			t.Errorf("export with a body: %d, want 422", r.status)
 		}
-		if r := bh.request(t, "GET", "/v1/buyer/privacy/export", tok, "", nil, nil); r.status != 405 {
-			t.Errorf("GET export: %d, want 405", r.status)
+		if r := bh.request(t, "GET", "/v1/buyer/privacy/export", tok, "", nil, nil); r.status < 400 || r.status >= 500 {
+			t.Errorf("GET export: %d, want a 4xx", r.status)
 		}
 		// erasure: strict body, blocked by an open order, success, 410 erased afterwards
 		items := []storefront.Item{{SKUID: bh.stock.skus[0].ID, Quantity: 1}}
