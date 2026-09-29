@@ -113,6 +113,9 @@ type Outcome struct {
 	State             string `json:"state"`
 	Code              string `json:"code"`
 	ProviderReference string `json:"provider_reference"`
+	// Detail is route-private data from the adapter to its own DispatchRoute.Finish (R-7a). Complete
+	// ignores it and it is never marshalled; it must hold a comparable value (tests compare Outcomes).
+	Detail any `json:"-"`
 }
 
 type externalOperationArgs struct {
