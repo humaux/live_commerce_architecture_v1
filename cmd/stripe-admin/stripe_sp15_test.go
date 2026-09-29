@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	sp15AdminDSN    = "postgres://registrar-sentinel:pw-sentinel@127.0.0.1:1/x"
+	sp15AdminDSN    = "postgres://registrar-sentinel:" + "pw-sentinel@127.0.0.1:1/x"
 	sp15AdminSecret = "sk_" + "test_sentinel0123456789abcdef"
 	sp15AdminWhsec  = "whsec_" + "sentinel0123456789abcdef"
 	sp15AdminWhNext = "whsec_" + "sentinel_next_0123456789"

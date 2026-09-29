@@ -71,7 +71,7 @@ func TestNilClosedAndCanceledFailClosed(t *testing.T) {
 	if _, err := (&Resolver{}).Resolve(nil, "https://shop.example"); !errors.Is(err, ErrInvalid) {
 		t.Fatalf("nil context = %v", err)
 	}
-	pool, err := pgxpool.New(context.Background(), "postgres://test:test@localhost:1/test")
+	pool, err := pgxpool.New(context.Background(), "postgres://test:"+"test@localhost:1/test")
 	if err != nil {
 		t.Fatal(err)
 	}

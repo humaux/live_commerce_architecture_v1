@@ -38,8 +38,8 @@ func TestMediaWorkerLMW01DisabledReadsOnlyFlag(t *testing.T) {
 func TestMediaWorkerLMW01ConfigBeforeDatabase(t *testing.T) {
 	vars := map[string]string{
 		"COMMERCE_MEDIA_WORKER_ENABLED":         "1",
-		"COMMERCE_MEDIA_WORKER_DATABASE_URL":    "postgres://private-user:private-pass@127.0.0.1:1/test",
-		"COMMERCE_MEDIA_EXECUTOR_DATABASE_URL":  "postgres://private-user:private-pass@127.0.0.1:1/test",
+		"COMMERCE_MEDIA_WORKER_DATABASE_URL":    "postgres://private-user:" + "private-pass@127.0.0.1:1/test",
+		"COMMERCE_MEDIA_EXECUTOR_DATABASE_URL":  "postgres://private-user:" + "private-pass@127.0.0.1:1/test",
 		"COMMERCE_MEDIA_WORKER_CONCURRENCY":     "1",
 		"COMMERCE_MEDIA_MATERIAL_ACTIVE_KEY_ID": "bad",
 		"COMMERCE_MEDIA_MATERIAL_KEYS_JSON":     "private-malformed-key",

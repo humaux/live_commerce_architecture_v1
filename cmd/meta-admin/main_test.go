@@ -18,7 +18,7 @@ const fakeToken = "EAAB" + "cli-sentinel-page-token-0123456789"
 func env() map[string]string {
 	k := base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{4}, 32))
 	return map[string]string{
-		"COMMERCE_META_REGISTRAR_DATABASE_URL":   "postgres://operator:pw-secret@127.0.0.1:1/lc",
+		"COMMERCE_META_REGISTRAR_DATABASE_URL":   "postgres://operator:" + "pw-secret@127.0.0.1:1/lc",
 		"META_PAGE_ACCESS_TOKEN":                 fakeToken,
 		"COMMERCE_META_PAGE_TOKEN_ACTIVE_KEY_ID": "pt-1",
 		"COMMERCE_META_PAGE_TOKEN_KEYS_JSON":     `{"keys":[{"id":"pt-1","key_base64":"` + k + `"}]}`,
@@ -106,7 +106,7 @@ func TestDatabaseFailuresAreMasked(t *testing.T) {
 	}
 	// A malformed DSN must not echo itself either.
 	v := env()
-	v["COMMERCE_META_REGISTRAR_DATABASE_URL"] = "postgres://operator:pw-secret@[bad"
+	v["COMMERCE_META_REGISTRAR_DATABASE_URL"] = "postgres://operator:" + "pw-secret@[bad"
 	if _, err := do(t, v, "page-token "+ids); !errors.Is(err, errDatabase) || strings.Contains(err.Error(), "pw-secret") {
 		t.Fatalf("parse error not masked: %v", err)
 	}
