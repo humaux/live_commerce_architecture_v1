@@ -187,8 +187,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		if issuedDefault != nil || expiresDefault != nil {
 			t.Fatalf("claims.links issued_at/expires_at must have no DEFAULT (§3): %v %v", issuedDefault, expiresDefault)
 		}
-		if n := countRows(t, f.owner, `SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='claims' AND c.relkind IN ('r','p') `); n != 4 {
-			t.Fatalf("schema claims has %d tables, want bundles/lines/events/links", n)
+		// meta-claims-intake-v1 §4: claims.meta_intake joins the four T10 tables.
+		if n := countRows(t, f.owner, `SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='claims' AND c.relkind IN ('r','p') `); n != 5 {
+			t.Fatalf("schema claims has %d tables, want bundles/lines/events/links/meta_intake", n)
 		}
 	})
 
@@ -239,6 +240,37 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		add(wr, "claims.lines", "UPDATE", "applied_version")
 		add(wr, "live.offers", "SELECT", "tenant_id", "store_id", "id", "session_id", "keyword", "active")
 		add(wr, "identity.sessions", "SELECT", "token_hash", "principal_id", "audience", "revoked_at", "expires_at")
+		// meta-claims-intake-v1 §4.3 rows (exactly; the contract is the source, not the migration).
+		const ci, iw = "commerce_claims_intake", "commerce_integration_writer"
+		add(ci, "live.offers", "SELECT", cols("live.offers")...)
+		add(ci, "live.offers", "UPDATE", "updated_at")
+		add(ci, "live.claim_windows", "SELECT", cols("live.claim_windows")...)
+		add(ci, "live.claim_windows", "UPDATE", "updated_at")
+		add(ci, "claims.bundles", "SELECT", cols("claims.bundles", "owner_id")...)
+		add(ci, "claims.bundles", "INSERT", "tenant_id", "store_id", "session_id", "platform", "actor_key", "label")
+		add(ci, "claims.bundles", "UPDATE", "line_count", "version", "updated_at")
+		add(ci, "claims.lines", "SELECT", cols("claims.lines")...)
+		add(ci, "claims.lines", "INSERT", cols("claims.lines", "applied_version")...)
+		add(ci, "claims.lines", "UPDATE", "quantity", "version", "updated_at")
+		add(ci, "claims.events", "SELECT", cols("claims.events")...)
+		add(ci, "claims.events", "INSERT", cols("claims.events")...)
+		add(iw, "claims.events", "SELECT", "tenant_id", "store_id", "id", "session_id", "source_event_id", "outcome", "bundle_id", "bundle_version")
+		add(wr, "claims.events", "SELECT", "tenant_id", "store_id", "id", "session_id", "source_kind", "source_event_id", "outcome", "bundle_id")
+		add(wr, "live.claim_windows", "SELECT", "tenant_id", "store_id", "session_id", "state", "generation")
+		add(wr, "claims.meta_intake", "SELECT", cols("claims.meta_intake")...)
+		add(wr, "claims.meta_intake", "INSERT", cols("claims.meta_intake")...)
+		add(wr, "claims.meta_intake", "UPDATE", "state", "fail_code", "attempts", "not_before", "lease_xid", "updated_at")
+		add(wr, "live.claim_sources", "SELECT", cols("live.claim_sources")...)
+		add(wr, "live.claim_sources", "INSERT", "tenant_id", "store_id", "session_id", "platform", "binding_id", "binding_version", "object", "asset_id",
+			"source_object_id", "private_reply", "reply_locale", "active", "version", "principal_id")
+		add(wr, "live.claim_sources", "UPDATE", "intake_count", "intake_capped", "binding_id", "binding_version", "private_reply", "reply_locale", "active", "version", "principal_id", "updated_at")
+		add(wr, "live.claim_window_intervals", "SELECT", cols("live.claim_window_intervals")...)
+		add(wr, "live.claim_window_intervals", "INSERT", cols("live.claim_window_intervals")...)
+		add(wr, "live.claim_window_intervals", "UPDATE", "closed_at")
+		add(wr, "integration.operations", "SELECT", "id", "tenant_id", "store_id", "action", "state", "request")
+		add(wr, "meta_inbox.routes", "SELECT", "tenant_id", "store_id", "object", "asset_id", "binding_id", "enabled")
+		add(wr, "integration.bindings", "SELECT", "id", "tenant_id", "store_id", "provider", "external_asset_id", "semantic_version", "enabled")
+		add(wr, "integration.meta_page_heads", "SELECT", "tenant_id", "store_id", "binding_id", "current_version")
 		got := lcStrings(t, f.owner, `SELECT DISTINCT p.grantee::text||' '||p.table_schema||'.'||p.table_name||'.'||p.column_name||' '||p.privilege_type
 			FROM information_schema.column_privileges p
 			JOIN pg_class c ON c.oid=format('%I.%I',p.table_schema,p.table_name)::regclass
@@ -246,17 +278,26 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			  AND (format('%s.%s',p.table_schema,p.table_name)=ANY($1) OR p.grantee='commerce_claims_writer')`, lcTables)
 		lcSameSet(t, "§3.2 column privilege matrix", got, want)
 		tableWant := []string{rt + " live.offers SELECT", rt + " live.offers INSERT", rt + " live.claim_windows SELECT", rt + " live.claim_windows INSERT",
-			rt + " claims.lines SELECT", rt + " claims.events SELECT", rt + " claims.events INSERT"}
+			rt + " claims.lines SELECT", rt + " claims.events SELECT", rt + " claims.events INSERT",
+			// meta-claims-intake-v1 §4.3 table-level rows
+			ci + " live.offers SELECT", ci + " live.claim_windows SELECT", ci + " claims.lines SELECT", ci + " claims.events SELECT", ci + " claims.events INSERT",
+			wr + " claims.meta_intake SELECT", wr + " claims.meta_intake INSERT", wr + " live.claim_sources SELECT",
+			wr + " live.claim_window_intervals SELECT", wr + " live.claim_window_intervals INSERT"}
 		tableGot := lcStrings(t, f.owner, `SELECT p.grantee::text||' '||p.table_schema||'.'||p.table_name||' '||p.privilege_type
 			FROM information_schema.table_privileges p JOIN pg_class c ON c.oid=format('%I.%I',p.table_schema,p.table_name)::regclass
 			WHERE p.grantee::text<>pg_get_userbyid(c.relowner)
 			  AND (format('%s.%s',p.table_schema,p.table_name)=ANY($1) OR p.grantee='commerce_claims_writer')`, lcTables)
 		lcSameSet(t, "§3.2 table-level privileges", tableGot, tableWant)
 		lcSameSet(t, "commerce_claims_writer EXECUTE", lcStrings(t, f.owner, `SELECT DISTINCT routine_schema||'.'||routine_name FROM information_schema.routine_privileges WHERE grantee='commerce_claims_writer'`),
-			[]string{"claims.issue_link", "claims.mark_applied", "claims.preview_link", "claims.redeem_link", "identity.resolve_access"})
+			[]string{"claims.issue_link", "claims.mark_applied", "claims.preview_link", "claims.redeem_link", "identity.resolve_access",
+				// meta-claims-intake-v1 §4.3: owned definers + principal_holds
+				"claims.check_meta_reply", "claims.fail_meta_intake", "claims.insert_meta_intake", "claims.intake_scope", "claims.issue_system_link",
+				"claims.lease_meta_intake", "identity.principal_holds", "live.put_claim_source", "live.track_claim_window_interval"})
 		lcSameSet(t, "schema claims ACL", lcStrings(t, f.owner, `SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END||' '||a.privilege_type
 			FROM pg_namespace n CROSS JOIN LATERAL aclexplode(n.nspacl) a WHERE n.nspname='claims' AND a.grantee<>n.nspowner`),
-			[]string{"commerce_buyer_runtime USAGE", "commerce_claims_writer USAGE", "commerce_runtime USAGE"})
+			[]string{"commerce_buyer_runtime USAGE", "commerce_claims_writer USAGE", "commerce_runtime USAGE",
+				// meta-claims-intake-v1 §4.3 schema USAGE rows
+				"commerce_claims_intake USAGE", "commerce_integration_writer USAGE", "commerce_meta_writer USAGE", "commerce_worker USAGE"})
 		var usage []bool
 		if err := f.owner.QueryRow(ctx, `SELECT ARRAY[has_schema_privilege('commerce_claims_writer','live','USAGE'),has_schema_privilege('commerce_claims_writer','identity','USAGE'),
 			has_schema_privilege('commerce_claims_writer','claims','USAGE')]`).Scan(&usage); err != nil || !usage[0] || !usage[1] || !usage[2] {
@@ -268,7 +309,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		// No other commerce_* role (nor PUBLIC) holds any privilege on the six tables; the
 		// buyer runtime has none on any claims.* or live.* table (§3.2).
 		denied := lcStrings(t, f.owner, `SELECT r.rolname||' '||c.oid::regclass::text FROM pg_roles r CROSS JOIN pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
-			WHERE r.rolname LIKE 'commerce\_%' AND r.rolname NOT IN ('commerce_runtime','commerce_claims_writer')
+			WHERE r.rolname LIKE 'commerce\_%' AND r.rolname NOT IN ('commerce_runtime','commerce_claims_writer','commerce_claims_intake')
+			  AND NOT (r.rolname='commerce_integration_writer' AND c.oid::regclass::text='claims.events') -- §4.3 column SELECT, asserted above
 			  AND c.relkind IN ('r','p','v','m') AND (c.oid::regclass::text=ANY($1) OR (r.rolname='commerce_buyer_runtime' AND n.nspname IN ('claims','live')))
 			  AND (has_table_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') OR has_any_column_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,REFERENCES'))`, lcTables)
 		if len(denied) != 0 {
@@ -286,15 +328,24 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 	})
 
 	t.Run("definers", func(t *testing.T) {
-		type fnRow struct{ name, args, result, owner, config, volatility, comment, acl string }
+		type fnRow struct{ name, args, result, owner, config, volatility, comment, acl, caller string }
 		want := map[string]fnRow{
 			"issue_link": {args: "p_auth_hash bytea, p_store uuid, p_session uuid, p_bundle uuid, p_expected_generation bigint, p_new_hash bytea, p_release boolean",
-				result: "TABLE(generation bigint, expires_at timestamp with time zone, released boolean)", volatility: "v", acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE"},
-			"mark_applied": {args: "p_bundle uuid, p_offers uuid[], p_versions bigint[]", result: "integer", volatility: "v", acl: "commerce_buyer_runtime:EXECUTE,commerce_claims_writer:EXECUTE"},
+				result: "TABLE(generation bigint, expires_at timestamp with time zone, released boolean)", volatility: "v", acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
+			"mark_applied": {args: "p_bundle uuid, p_offers uuid[], p_versions bigint[]", result: "integer", volatility: "v", acl: "commerce_buyer_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_buyer_runtime"},
 			"preview_link": {args: "p_hash bytea", result: "TABLE(bundle_version bigint, bound boolean, expires_at timestamp with time zone, offer_id uuid, keyword text, sku_id uuid, quantity integer, pending boolean, offer_active boolean)",
-				volatility: "s", acl: "commerce_buyer_runtime:EXECUTE,commerce_claims_writer:EXECUTE"},
+				volatility: "s", acl: "commerce_buyer_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_buyer_runtime"},
 			"redeem_link": {args: "p_hash bytea, p_expected_version bigint", result: "TABLE(bundle_id uuid, bundle_version bigint, offer_id uuid, sku_id uuid, quantity integer, line_version bigint, pending boolean, offer_active boolean)",
-				volatility: "v", acl: "commerce_buyer_runtime:EXECUTE,commerce_claims_writer:EXECUTE"},
+				volatility: "v", acl: "commerce_buyer_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_buyer_runtime"},
+			// meta-claims-intake-v1 §4.3 / §5 / §6.3: the six new claims-schema definers (all owned by commerce_claims_writer).
+			"intake_scope": {args: "", result: "TABLE(tenant_id uuid, store_id uuid, session_id uuid)", volatility: "s",
+				acl: "commerce_claims_intake:EXECUTE,commerce_claims_writer:EXECUTE,commerce_integration_writer:EXECUTE", caller: "commerce_claims_intake"},
+			"insert_meta_intake": {args: "p_tenant uuid, p_store uuid, p_event uuid, p_received timestamp with time zone, p_app text, p_object text, p_asset text, p_object_id text, p_comment_ref text, p_actor_key text, p_occurred timestamp with time zone, p_kind text, p_keyword text, p_quantity integer, p_explicit boolean, p_live_media boolean",
+				result: "uuid", volatility: "v", acl: "commerce_claims_writer:EXECUTE,commerce_meta_writer:EXECUTE", caller: "commerce_meta_writer"},
+			"lease_meta_intake": {args: "", result: "SETOF claims.meta_intake", volatility: "v", acl: "commerce_claims_intake:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_claims_intake"},
+			"fail_meta_intake":  {args: "p_intake uuid, p_code text, p_final boolean", result: "void", volatility: "v", acl: "commerce_claims_intake:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_claims_intake"},
+			"issue_system_link": {args: "p_intake uuid, p_hash bytea", result: "timestamp with time zone", volatility: "v", acl: "commerce_claims_writer:EXECUTE,commerce_integration_writer:EXECUTE", caller: "commerce_integration_writer"},
+			"check_meta_reply":  {args: "p_operation uuid, p_hash bytea", result: "text", volatility: "s", acl: "commerce_claims_writer:EXECUTE,commerce_worker:EXECUTE", caller: "commerce_worker"},
 		}
 		rows, err := f.owner.Query(ctx, `SELECT p.proname::text,pg_get_function_identity_arguments(p.oid),pg_get_function_result(p.oid),p.prosecdef,pg_get_userbyid(p.proowner)::text,
 			coalesce(array_to_string(p.proconfig,','),''),p.provolatile::text,coalesce(obj_description(p.oid,'pg_proc'),''),
@@ -317,25 +368,27 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				t.Fatalf("unexpected function claims.%s", r.name)
 			}
 			seen++
-			caller := "commerce_buyer_runtime"
-			if r.name == "issue_link" {
-				caller = "commerce_runtime"
-			}
 			if !definer || r.owner != "commerce_claims_writer" || r.config != "search_path=pg_catalog" || r.args != w.args || r.result != w.result ||
-				r.volatility != w.volatility || r.acl != w.acl || !strings.Contains(r.comment, "internal/claims") || !strings.Contains(r.comment, caller) {
+				r.volatility != w.volatility || r.acl != w.acl || !strings.Contains(r.comment, "internal/claims") || !strings.Contains(r.comment, w.caller) {
 				t.Fatalf("claims.%s definer shape %+v (definer=%t), want %+v", r.name, r, definer, w)
 			}
 		}
-		if rows.Err() != nil || seen != 4 {
-			t.Fatalf("claims functions seen=%d err=%v", seen, rows.Err())
+		if rows.Err() != nil || seen != len(want) {
+			t.Fatalf("claims functions seen=%d want %d err=%v", seen, len(want), rows.Err())
 		}
-		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 4 {
-			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its four functions", n)
+		// Four T10 definers + six meta-claims-intake-v1 claims definers + live.put_claim_source and the
+		// live.claim_windows interval trigger function (§2, §4).
+		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 12 {
+			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its twelve functions", n)
 		}
 		denied := lcStrings(t, f.owner, `SELECT r.rolname||' '||p.proname FROM pg_roles r CROSS JOIN pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 			WHERE n.nspname='claims' AND r.rolname LIKE 'commerce\_%' AND has_function_privilege(r.oid,p.oid,'EXECUTE')
 			  AND NOT (r.rolname='commerce_claims_writer' OR (r.rolname='commerce_runtime' AND p.proname='issue_link')
-			       OR (r.rolname='commerce_buyer_runtime' AND p.proname IN ('preview_link','redeem_link','mark_applied')))`)
+			       OR (r.rolname='commerce_buyer_runtime' AND p.proname IN ('preview_link','redeem_link','mark_applied'))
+			       OR (r.rolname='commerce_claims_intake' AND p.proname IN ('intake_scope','lease_meta_intake','fail_meta_intake'))
+			       OR (r.rolname='commerce_integration_writer' AND p.proname IN ('intake_scope','issue_system_link'))
+			       OR (r.rolname='commerce_meta_writer' AND p.proname='insert_meta_intake')
+			       OR (r.rolname='commerce_worker' AND p.proname='check_meta_reply'))`)
 		if len(denied) != 0 {
 			t.Fatalf("unexpected EXECUTE on claims definers: %v", denied)
 		}
@@ -606,6 +659,12 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		for _, role := range roles {
 			for _, table := range lcTables {
 				for _, q := range []string{`SELECT 1 FROM ` + table + ` LIMIT 1`, `INSERT INTO ` + table + ` DEFAULT VALUES`, `UPDATE ` + table + ` SET tenant_id=tenant_id`, `DELETE FROM ` + table} {
+					// The single exemption of meta-claims-intake-v1 §4.4 clause 10: commerce_integration_writer holds
+					// column SELECT on claims.events (§4.3), so `SELECT 1 FROM claims.events` succeeds. Every other
+					// role/table/statement pair stays 42501.
+					if role == "commerce_integration_writer" && table == "claims.events" && strings.HasPrefix(q, "SELECT") {
+						continue
+					}
 					tx, err := f.owner.Begin(ctx)
 					if err != nil {
 						t.Fatal(err)
@@ -782,6 +841,16 @@ func lcPopulatedUpgrade(t *testing.T) {
 	}
 	mustExec(t, owner, `CREATE TABLE public.lc_schema_migrations (version text PRIMARY KEY, checksum text NOT NULL, applied_at timestamptz NOT NULL DEFAULT now())`)
 	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0060_live_claims.sql',$1)`, fmt.Sprintf("%x", sha256.Sum256(body)))
+	// 0064 and post-River 0014 (meta-claims-intake-v1) build on 0060's tables and roles, so they are
+	// held back with it and applied on top of the populated data in the second phase below.
+	dependents := []string{"0064_meta_claims_intake.sql", "post_river/0014_meta_claims_intake_river.sql"}
+	for _, version := range dependents {
+		dependent, err := os.ReadFile(filepath.Join("../../migrations", version))
+		if err != nil {
+			t.Fatal(err)
+		}
+		mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES($1,$2)`, version, fmt.Sprintf("%x", sha256.Sum256(dependent)))
+	}
 	if err := migrations.Apply(ctx, owner); err != nil {
 		t.Fatalf("apply everything before 0060: %v", err)
 	}
@@ -809,7 +878,7 @@ func lcPopulatedUpgrade(t *testing.T) {
 	for _, table := range []string{"live.sessions", "live.programs", "catalog.skus", "identity.store_grants"} {
 		before[table] = countRows(t, owner, `SELECT count(*) FROM `+table)
 	}
-	mustExec(t, owner, `DELETE FROM public.lc_schema_migrations WHERE version='0060_live_claims.sql'`)
+	mustExec(t, owner, `DELETE FROM public.lc_schema_migrations WHERE version='0060_live_claims.sql' OR version=ANY($1)`, dependents)
 	for i := 0; i < 2; i++ {
 		if err := migrations.Apply(ctx, owner); err != nil {
 			t.Fatalf("0060 upgrade apply %d on populated data: %v", i+1, err)

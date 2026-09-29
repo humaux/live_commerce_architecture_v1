@@ -74,7 +74,7 @@ type Window struct {
 type Stats struct {
 	Generation int64            `json:"generation"`
 	Accepted   int64            `json:"accepted"`
-	Rejected   map[Reason]int64 `json:"rejected"` // all 7 persisted reasons present, 0 when none
+	Rejected   map[Reason]int64 `json:"rejected"` // exactly the 7 boardReasons present, 0 when none
 }
 type Board struct {
 	Window Window  `json:"window"`
@@ -436,10 +436,11 @@ func readOffers(ctx context.Context, tx pgx.Tx, scope platform.Scope, sessionID,
 }
 
 // readStats counts claims.events of one window generation by outcome and reason. Every
-// persisted reason is present (0 when none); generation 0 (never opened) is all zero.
+// boardReasons key is present (0 when none) and no other key is ever added (RATE_LIMITED rows are
+// persisted but not reported yet); generation 0 (never opened) is all zero.
 func readStats(ctx context.Context, tx pgx.Tx, scope platform.Scope, sessionID string, generation int64) (Stats, error) {
 	stats := Stats{Generation: generation, Rejected: map[Reason]int64{}}
-	for _, reason := range persistedReasons {
+	for _, reason := range boardReasons {
 		stats.Rejected[reason] = 0
 	}
 	if generation == 0 {
@@ -460,7 +461,7 @@ func readStats(ctx context.Context, tx pgx.Tx, scope platform.Scope, sessionID s
 		}
 		if reason == "" {
 			stats.Accepted = count
-		} else {
+		} else if _, ok := stats.Rejected[Reason(reason)]; ok {
 			stats.Rejected[Reason(reason)] = count
 		}
 	}

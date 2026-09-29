@@ -1,20 +1,24 @@
 // Package claims owns live keyword offers, claim windows, claim bundles and claim-link redemption.
 // It never reserves inventory, sends messages, reads Meta storage or creates orders.
 //
-// Contract: contracts/live-keyword-claims-v1.md (FROZEN, with the §0.1 integrator rulings).
-// Ingress is MOCK/manual only in this slice: RecordManualClaim is the only production
-// caller of Ingest/IngestParsed; Meta comment intake is T10c.
+// Contract: contracts/live-keyword-claims-v1.md (FROZEN, with the §0.1 integrator rulings)
+// and contracts/meta-claims-intake-v1.md (FROZEN; §4.4 amends the former). Two ingress
+// paths share one unexported core (ingest.go): RecordManualClaim is the only production
+// caller of Ingest/IngestParsed; IngestMetaIntake (meta_intake.go) is called only by the
+// claims intake worker (internal/claimsintake, commerce_claims_intake login).
 //
 // Files: claims.go (shared types, authority, errors, locks), grammar/ (pure kw-v1),
 // merchant.go (board, window, offers, bundle list), manual.go (RecordManualClaim),
-// ingest.go (Ingest/IngestParsed), link.go (IssueLink), credentials.go (LabelKey,
-// LinkToken, redaction), buyer.go (PreviewLink/RedeemLink).
+// ingest.go (shared ingest core, Ingest/IngestParsed), meta_intake.go (IngestMetaIntake),
+// link.go (IssueLink), credentials.go (LabelKey, LinkToken, redaction), buyer.go
+// (PreviewLink/RedeemLink).
 //
 // Depends on (and only on): command (receipts, audit, sentinel errors), platform (merchant
 // scope and RequirePermission), buyer (buyer scope, RunCommand), storefront (the only cart
 // writer), pagination (claim-bundles cursors), claims/grammar, pgx and the standard
-// library. Only HTTP adapters import this package. It never imports inventory, checkout,
-// integrations/meta or River.
+// library. Only HTTP adapters and internal/claimsintake import this package. It never
+// imports inventory, checkout, integrations/meta or River (Meta facts reach it only as rows
+// of claims.meta_intake staged by the consumer's SQL edge meta_inbox.stage_claim_intake).
 //
 // Tables and roles: live.offers, live.claim_windows and claims.{bundles,lines,events} are
 // written by commerce_runtime under RLS + column grants (migrations/0060_live_claims.sql).
@@ -61,8 +65,9 @@ const (
 	MatchKeywordQtyOnly MatchMode = "KEYWORD_QTY_ONLY"
 )
 
-// Reason explains a REJECTED command. The first seven are persisted in claims.events;
-// WINDOW_CLOSED is reported but never persisted.
+// Reason explains a REJECTED command. All but WINDOW_CLOSED are persisted in claims.events;
+// WINDOW_CLOSED is reported but never persisted. RATE_LIMITED exists for source_kind='meta'
+// only (meta-claims-intake-v1 §4.2).
 type Reason string
 
 const (
@@ -73,11 +78,18 @@ const (
 	ReasonQuantityRequired Reason = "QUANTITY_REQUIRED"
 	ReasonQuantityOverMax  Reason = "QUANTITY_OVER_MAX"
 	ReasonBundleLimit      Reason = "BUNDLE_LIMIT"
+	ReasonRateLimited      Reason = "RATE_LIMITED"
 	ReasonWindowClosed     Reason = "WINDOW_CLOSED"
 )
 
-// persistedReasons lists every reason claims.events can store (Stats reports all of them).
+// persistedReasons lists every reason claims.events can store (boardReasons is the reported subset).
 var persistedReasons = []Reason{ReasonNoMatch, ReasonUnknownKeyword, ReasonOfferInactive,
+	ReasonInvalidQuantity, ReasonQuantityRequired, ReasonQuantityOverMax, ReasonBundleLimit, ReasonRateLimited}
+
+// boardReasons is the closed 7-key set the merchant board's Stats.Rejected reports (the Studio
+// parser apps/admin/lib/claims-model.ts requires exactly these keys). RATE_LIMITED is persisted
+// but not reported until the claims-board UI unit adds it in all locales; readStats skips it.
+var boardReasons = []Reason{ReasonNoMatch, ReasonUnknownKeyword, ReasonOfferInactive,
 	ReasonInvalidQuantity, ReasonQuantityRequired, ReasonQuantityOverMax, ReasonBundleLimit}
 
 // Outcomes and window states as stored in the database.
@@ -88,8 +100,12 @@ const (
 	WindowClosed    = "CLOSED"
 )
 
-// manualSource is the only v1 source kind and platform ("meta" is reserved for T10c).
-const manualSource = "manual"
+// Source kinds. "manual" is RecordManualClaim's kind and platform; "meta" (platform facebook
+// or instagram) is accepted only through IngestMetaIntake.
+const (
+	manualSource = "manual"
+	metaSource   = "meta"
+)
 
 // authorize mirrors live.authorize (internal/live/draft.go): canonical scope, READ
 // COMMITTED, exact tenant/store/principal GUC equality with the platform.Scope, then
