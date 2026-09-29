@@ -1,0 +1,377 @@
+#!/usr/bin/env bash
+# File: scripts/dev/release-gate.sh
+# Purpose: the R1 acceptance command (docs/delivery/PROCESS.md §1, R1-8). Runs every automated tier
+#   in order and prints ONE table of PASS / FAIL / NOT_RUN. A tier whose prerequisites are missing is
+#   NOT_RUN, never PASS; a skipped test is listed as NOT_RUN; zero tests, a missing log or a
+#   non-zero exit is FAIL. The overall line says PASS only when every row is PASS.
+# Order: G01 check_packet, G02 build/vet/gofmt, G03 TypeScript typecheck, G04 secret grep,
+#   G05 dependency map, G06 unit tests (all packages but tests/foundation), G07 the whole foundation
+#   package (real PG, race, vet: test-local.sh), then EVERY browser mode listed in test-local.sh's
+#   usage line (names containing "browser", plus --browser-e2e), SANDBOX modes only with the Stripe
+#   TEST key present, then G90 deploy smoke static and G91 deploy smoke full.
+# Usage: bash scripts/dev/release-gate.sh [--strict] [--list] [--only ID[,ID...]]
+#   --strict  exit 3 when there is no FAIL but at least one NOT_RUN (use for release acceptance)
+#   --list    print the step ids and exit
+#   --only    run just these ids (e.g. G01,G04,B-browser-buyer); the table then shows only them
+#   Exit: 0 no FAIL (and, with --strict, no NOT_RUN), 1 any FAIL, 2 usage, 3 --strict and NOT_RUN.
+# Runs as/in: a developer machine or CI runner with go, python3; docker/node/pnpm/Chromium for the
+#   PG and browser tiers; Linux + root + free 80/443 for `smoke.sh full` (G91: NOT_RUN unless
+#   LC_RELEASE_GATE_SMOKE_FULL=1). Never needs production access and never contacts a live provider.
+# Reads env: STRIPE_BROWSER=1 and STRIPE_SANDBOX=1 (opt in to SANDBOX modes), LC_SECRETS_FILE
+#   (default ~/.config/livecommerce/secrets.env; only the presence and the sk_test_/rk_test_ prefix
+#   of STRIPE_SECRET_KEY are checked, in a subshell, never printed), LC_RELEASE_GATE_OUT (evidence
+#   dir), LC_RELEASE_GATE_SMOKE_FULL, GOTOOLCHAIN (default go1.27.1).
+# Reads secrets: none printed. Logs may hold what the tests print; the secret grep (G04) and the CI
+#   rule keep key-shaped literals out of the repo, and no command here echoes an environment.
+# Used by: the integrator before merging a release branch; docs/delivery/PROCESS.md §1 R1-8.
+# Depends on: scripts/check_packet.py, scripts/dev/{depmap,test-local}.sh, deploy/scripts/smoke.sh,
+#   .github/workflows/foundation.yml (the G04 pattern is a copy; G04 fails if the two diverge),
+#   docs/delivery/GATES.md when present (every selected mode must be listed there).
+# Status: MODEL of the gate is exercised by `--list` and by a run with prerequisites removed; the
+#   PASS rows are only as real as the underlying suites (see each row's log).
+# Evidence: $LC_RELEASE_GATE_OUT (default <main checkout>/output/release-gate/<UTC>-<sha12>/):
+#   results.tsv (id, tier, status, note, exit code, log), summary.txt (the table, commit, dirty flag),
+#   one <id>.log per step with the command and its exit code. Worktrees are deleted after merge, so the
+#   default is the MAIN checkout's output/ (PROCESS.md §4).
+# Change rules: a new gate mode in test-local.sh needs no change here (parsed from its usage line) but
+#   must be added to docs/delivery/GATES.md; never map a SKIP or an empty run to PASS; keep bash 3.2
+#   compatible (macOS): no associative arrays, no mapfile.
+set -uo pipefail
+
+strict=0 list=0 only=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+  --strict) strict=1 ;;
+  --list) list=1 ;;
+  --only)
+    shift
+    only=",${1:-},"
+    ;;
+  *)
+    echo "usage: release-gate.sh [--strict] [--list] [--only ID[,ID...]]" >&2
+    exit 2
+    ;;
+  esac
+  shift
+done
+
+cd "$(dirname "$0")/../.." || exit 2
+ROOT=$(pwd)
+export GOTOOLCHAIN="${GOTOOLCHAIN:-go1.27.1}"
+sha=$(git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
+dirty=$(git status --porcelain 2>/dev/null | grep -v '^?? output/' | wc -l | tr -d ' ')
+MAIN=$(cd "$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)/.." 2>/dev/null && pwd || echo "$ROOT")
+OUT="${LC_RELEASE_GATE_OUT:-$MAIN/output/release-gate/$(date -u +%Y%m%dT%H%M%SZ)-$sha}"
+
+have() { command -v "$1" >/dev/null 2>&1; }
+selected() { [[ -z "$only" || "$only" == *",$1,"* ]]; }
+
+# ---- mode discovery: the usage line of test-local.sh is the single list of modes ------------------
+modes=$(sed -n "s/.*Usage: bash scripts\/dev\/test-local.sh \[\(.*\)\]\\\\n'.*/\1/p" scripts/dev/test-local.sh | tr '|' '\n')
+browser_modes=$(printf '%s\n' "$modes" | grep -E -- '^--(.*browser.*|e2e)$' || true)
+all_modes=$(printf '%s\n' "$modes" | grep -c . | tr -d ' ')
+ids="G01 G02 G03 G04 G05 G06 G07"
+for m in $browser_modes; do ids="$ids B-${m#--}"; done
+ids="$ids G90 G91"
+
+if ((list)); then
+  for id in $ids; do echo "$id"; done
+  exit 0
+fi
+if [[ -z "$browser_modes" ]]; then
+  echo "release-gate: cannot parse the usage line of scripts/dev/test-local.sh (no browser modes found)" >&2
+  exit 2
+fi
+
+mkdir -p "$OUT" || exit 2
+: >"$OUT/results.tsv"
+rows=""
+n_pass=0 n_fail=0 n_notrun=0
+
+# record ID TIER STATUS NOTE [EXIT] [LOG]
+record() {
+  local id=$1 tier=$2 status=$3 note=$4 code=${5:--} log=${6:--}
+  printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$id" "$tier" "$status" "$note" "$code" "$log" >>"$OUT/results.tsv"
+  rows="$rows$(printf '%-24s %-10s %-8s %s' "$id" "$tier" "$status" "$note")"$'\n'
+  case "$status" in PASS) n_pass=$((n_pass + 1)) ;; FAIL) n_fail=$((n_fail + 1)) ;; *) n_notrun=$((n_notrun + 1)) ;; esac
+  printf '%-24s %-10s %-8s %s\n' "$id" "$tier" "$status" "$note" >&2
+}
+
+# run_cmd ID CMD... : run CMD in $ROOT with combined output in $OUT/ID.log; sets rc and LOG.
+run_cmd() {
+  local id=$1
+  shift
+  LOG="$OUT/$id.log"
+  {
+    printf '# command: %s\n# commit: %s dirty_files: %s\n# started: %s\n' "$*" "$sha" "$dirty" "$(date -u +%FT%TZ)"
+  } >"$LOG"
+  "$@" >>"$LOG" 2>&1
+  rc=$?
+  printf '# exit: %s\n' "$rc" >>"$LOG"
+}
+
+docker_ok() { have docker && docker info >/dev/null 2>&1; }
+# Chromium of the repo's pinned Playwright must exist (a missing browser is a missing prerequisite).
+browser_ok() {
+  have node && have pnpm && [[ -d node_modules/@playwright ]] &&
+    node --input-type=module -e "import fs from 'node:fs'; import('@playwright/test').then(m=>process.exit(fs.existsSync(m.chromium.executablePath())?0:1)).catch(()=>process.exit(1))" >/dev/null 2>&1
+}
+
+# ---- G01 architecture packet --------------------------------------------------------------------
+if selected G01; then
+  if ! have python3; then
+    record G01 STATIC NOT_RUN "python3 missing"
+  else
+    # check_packet.py always rewrites a tracked timestamp file; put it back so a gate run never dirties the tree.
+    pc=experiments/results/packet-check.json
+    cp "$pc" "$OUT/packet-check.before.json" 2>/dev/null
+    run_cmd G01 python3 scripts/check_packet.py
+    cp "$OUT/packet-check.before.json" "$pc" 2>/dev/null
+    if ((rc == 0)); then record G01 STATIC PASS "check_packet.py exit 0" 0 "$LOG"; else record G01 STATIC FAIL "check_packet.py exit $rc" "$rc" "$LOG"; fi
+  fi
+fi
+
+# ---- G02 build, vet, gofmt ----------------------------------------------------------------------
+if selected G02; then
+  if ! have go; then
+    record G02 STATIC NOT_RUN "go missing"
+  else
+    run_cmd G02 bash -c 'go build ./... && go vet ./... && { u=$(gofmt -l $(git ls-files "*.go")); [ -z "$u" ] || { echo "gofmt needs to run on:"; echo "$u"; exit 1; }; }'
+    if ((rc == 0)); then record G02 STATIC PASS "go build + vet + gofmt clean" 0 "$LOG"; else record G02 STATIC FAIL "build/vet/gofmt exit $rc" "$rc" "$LOG"; fi
+  fi
+fi
+
+# ---- G03 TypeScript strict typecheck ------------------------------------------------------------
+if selected G03; then
+  if ! have pnpm || [[ ! -d node_modules ]]; then
+    record G03 STATIC NOT_RUN "pnpm or node_modules missing (pnpm install --frozen-lockfile)"
+  else
+    run_cmd G03 bash -c 'pnpm run typecheck:i18n && pnpm run typecheck:admin && pnpm run typecheck:storefront'
+    if ((rc == 0)); then record G03 STATIC PASS "tsc strict: i18n, admin, storefront" 0 "$LOG"; else record G03 STATIC FAIL "typecheck exit $rc" "$rc" "$LOG"; fi
+  fi
+fi
+
+# ---- G04 key-shaped secret literals (copy of the CI step; fails if the CI pattern changes) ---------
+SECRET_RE='(sk|rk|pk)_(test|live)_[A-Za-z0-9]{8,}|whsec_[A-Za-z0-9]{8,}|EAA[A-Za-z0-9]{40,}|postgres(ql)?://[A-Za-z0-9_.-]+:[^@"$ {%]+@'
+if selected G04; then
+  LOG="$OUT/G04.log"
+  if ! have git; then
+    record G04 STATIC NOT_RUN "git missing"
+  elif ! grep -qF -- "$SECRET_RE" .github/workflows/foundation.yml 2>/dev/null; then
+    printf 'the pattern in release-gate.sh no longer matches .github/workflows/foundation.yml\n' >"$LOG"
+    record G04 STATIC FAIL "secret pattern drifted from the CI step: update both" 1 "$LOG"
+  else
+    # -c prints counts only, so a hit never puts the matching text into the gate output or log.
+    git grep -cE "$SECRET_RE" -- ':!*.md' ':!pnpm-lock.yaml' ':!tests/payments/stripe-webhook-vectors.json' >"$LOG" 2>&1
+    if [[ $? -eq 1 ]]; then
+      record G04 STATIC PASS "no key-shaped literal (sk_/rk_/pk_/whsec_/EAA/inline-password DSN)" 0 "$LOG"
+    else
+      record G04 STATIC FAIL "key-shaped literal in the files listed in the log (counts per file)" 1 "$LOG"
+    fi
+  fi
+fi
+
+# ---- G05 dependency map is current ---------------------------------------------------------------
+if selected G05; then
+  if ! have go || ! have python3; then
+    record G05 STATIC NOT_RUN "go or python3 missing"
+  else
+    run_cmd G05 bash scripts/dev/depmap.sh --check
+    if ((rc == 0)); then record G05 STATIC PASS "dependency-map.md current" 0 "$LOG"; else record G05 STATIC FAIL "dependency map stale (bash scripts/dev/depmap.sh)" "$rc" "$LOG"; fi
+  fi
+fi
+
+# ---- go test -json summariser: prints "pass fail skip" and writes skipped names to $2 -------------
+summarise_json() { # $1 = jsonl log, $2 = file for skipped test names
+  python3 - "$1" "$2" <<'PY'
+import json, sys
+p = f = s = 0
+skipped = []
+for line in open(sys.argv[1], errors="replace"):
+    line = line.strip()
+    if not line.startswith("{"):
+        continue
+    try:
+        e = json.loads(line)
+    except ValueError:
+        continue
+    a, t = e.get("Action"), e.get("Test")
+    if not t:
+        if a == "fail":
+            f += 1  # package-level failure (build error, panic, timeout)
+        continue
+    if a == "pass":
+        p += 1
+    elif a == "fail":
+        f += 1
+    elif a == "skip":
+        s += 1
+        skipped.append(e.get("Package", "?").rsplit("/", 1)[-1] + "." + t)
+open(sys.argv[2], "w").write("\n".join(skipped))
+print(p, f, s)
+PY
+}
+
+# ---- G06 unit tests (everything but tests/foundation, which needs PG) ----------------------------
+if selected G06; then
+  if ! have go || ! have python3; then
+    record G06 UNIT NOT_RUN "go or python3 missing"
+  else
+    LOG="$OUT/G06.jsonl"
+    pkgs=$(go list ./... 2>/dev/null | grep -v '/tests/foundation$')
+    # shellcheck disable=SC2086
+    go test -count=1 -json $pkgs >"$LOG" 2>"$OUT/G06.stderr"
+    rc=$?
+    read -r up uf us <<<"$(summarise_json "$LOG" "$OUT/G06.skipped")"
+    if ((rc != 0 || uf > 0)); then
+      record G06 UNIT FAIL "go test exit $rc, pass=$up fail=$uf skip=$us" "$rc" "$LOG"
+    elif ((up == 0)); then
+      record G06 UNIT FAIL "no test ran (pass=0): an empty run is never PASS" "$rc" "$LOG"
+    else
+      record G06 UNIT PASS "$up tests pass, 0 fail (packages except tests/foundation)" "$rc" "$LOG"
+    fi
+    if ((us > 0)); then
+      record G06s UNIT NOT_RUN "$us skipped, prerequisite missing: $(tr '\n' ' ' <"$OUT/G06.skipped")" - "$OUT/G06.skipped"
+    fi
+  fi
+fi
+
+# ---- G07 whole foundation package: real PostgreSQL, race detector, vet ----------------------------
+if selected G07; then
+  if ! docker_ok || ! have go || ! have node; then
+    record G07 REAL_PG NOT_RUN "docker daemon, go or node missing"
+  else
+    run_cmd G07 bash scripts/dev/test-local.sh
+    if ((rc != 0)); then
+      record G07 REAL_PG FAIL "test-local.sh exit $rc" "$rc" "$LOG"
+    elif grep -qE -- '^--- SKIP|^\s+--- SKIP' "$LOG"; then
+      record G07 REAL_PG FAIL "a test was skipped (SKIP is never PASS)" "$rc" "$LOG"
+    else
+      record G07 REAL_PG PASS "test-local.sh foundation exit 0 (go test -race ./... + go vet)" "$rc" "$LOG"
+    fi
+  fi
+fi
+
+# ---- stripe SANDBOX prerequisite (no value is printed) ---------------------------------------------
+stripe_sandbox_ready() {
+  [[ "${STRIPE_BROWSER:-}" == 1 && "${STRIPE_SANDBOX:-}" == 1 ]] || return 1
+  local f="${LC_SECRETS_FILE:-$HOME/.config/livecommerce/secrets.env}"
+  [[ -r "$f" ]] || return 1
+  ( # subshell: the key never leaves it
+    set +x
+    # shellcheck disable=SC1090
+    . "$f" 2>/dev/null
+    [[ "${STRIPE_SECRET_KEY:-}" =~ ^(sk|rk)_test_ ]]
+  )
+}
+
+# ---- browser modes ------------------------------------------------------------------------------
+gates_doc=docs/delivery/GATES.md
+for m in $browser_modes; do
+  id="B-${m#--}"
+  selected "$id" || continue
+  tier=BROWSER
+  [[ "$m" == --stripe-browser ]] && tier=SANDBOX
+  if [[ -f "$gates_doc" ]] && ! grep -qF -- "$m" "$gates_doc"; then
+    record "$id" "$tier" FAIL "mode $m is not listed in $gates_doc" 1 -
+    continue
+  fi
+  if [[ "$m" == --stripe-browser ]] && ! stripe_sandbox_ready; then
+    record "$id" SANDBOX NOT_RUN "needs STRIPE_BROWSER=1, STRIPE_SANDBOX=1 and an sk_test_/rk_test_ key in secrets.env"
+    continue
+  fi
+  if ! docker_ok || ! have go; then
+    record "$id" "$tier" NOT_RUN "docker daemon or go missing"
+    continue
+  fi
+  # --live-browser-input is a Go/PG gate (no Chromium); every other mode drives a real browser.
+  if [[ "$m" != --live-browser-input ]] && ! browser_ok; then
+    record "$id" "$tier" NOT_RUN "node/pnpm, @playwright/test or its Chromium missing (pnpm install; pnpm exec playwright install chromium)"
+    continue
+  fi
+  run_cmd "$id" bash scripts/dev/test-local.sh "$m"
+  if grep -q '^NOT_RUN' "$LOG" && ((rc == 2)); then
+    record "$id" "$tier" NOT_RUN "$(grep -m1 '^NOT_RUN' "$LOG" | cut -c1-110)" "$rc" "$LOG"
+  elif ((rc != 0)); then
+    record "$id" "$tier" FAIL "test-local.sh $m exit $rc" "$rc" "$LOG"
+  elif grep -qE -- '--- SKIP' "$LOG"; then
+    record "$id" "$tier" FAIL "a test was skipped (SKIP is never PASS)" "$rc" "$LOG"
+  elif ! grep -qE -- '^PASS:' "$LOG"; then
+    record "$id" "$tier" FAIL "exit 0 but no PASS line: an empty run is never PASS" "$rc" "$LOG"
+  else
+    record "$id" "$tier" PASS "$(grep -m1 '^PASS:' "$LOG" | cut -c7-110)" "$rc" "$LOG"
+    # A mode may pass its MOCK part and say a SANDBOX part was not run: list that separately.
+    if grep -q 'NOT_RUN' "$LOG"; then
+      record "${id}+" SANDBOX NOT_RUN "$(grep -m1 'NOT_RUN' "$LOG" | cut -c1-110)" - "$LOG"
+    fi
+  fi
+done
+
+# ---- smoke result reader: FAIL if any FAIL, NOT_RUN if any NOT_RUN/BLOCKED, else PASS ----------------
+smoke_verdict() { # $1 = smoke log; prints "STATUS|note"
+  python3 - "$1" <<'PY'
+import json, re, sys
+text = open(sys.argv[1], errors="replace").read()
+m = re.findall(r"evidence: (\S+/result\.json)", text)
+if not m:
+    print("FAIL|no evidence file reported (smoke did not finish)")
+    sys.exit(0)
+try:
+    r = json.load(open(m[-1]))
+except Exception:
+    print("FAIL|evidence file unreadable")
+    sys.exit(0)
+res = r.get("results", [])
+bad = [c["id"] for c in res if c["status"] == "FAIL"]
+nr = [c["id"] for c in res if c["status"] in ("NOT_RUN", "BLOCKED")]
+n_pass = sum(1 for c in res if c["status"] == "PASS")
+exp = set(r.get("expected_cases", []))
+missing = sorted(exp - {c["id"] for c in res})
+where = m[-1]
+if bad or missing:
+    print("FAIL|FAIL=%s missing=%s (%s)" % (",".join(bad) or "-", ",".join(missing) or "-", where))
+elif nr:
+    print("NOT_RUN|%d PASS, not run: %s (%s)" % (n_pass, ",".join(nr), where))
+else:
+    print("PASS|%d cases PASS (%s)" % (n_pass, where))
+PY
+}
+
+# ---- G90 deploy smoke static -------------------------------------------------------------------------
+if selected G90; then
+  if ! have python3 || ! have docker; then
+    record G90 DEPLOY NOT_RUN "python3 or docker missing"
+  else
+    run_cmd G90 bash deploy/scripts/smoke.sh static
+    v=$(smoke_verdict "$LOG")
+    record G90 DEPLOY "${v%%|*}" "smoke static: ${v#*|}" "$rc" "$LOG"
+  fi
+fi
+
+# ---- G91 deploy smoke full (Linux deploy host, root, ports 80/443) -----------------------------------
+if selected G91; then
+  if [[ "${LC_RELEASE_GATE_SMOKE_FULL:-0}" != 1 ]]; then
+    record G91 DEPLOY NOT_RUN "run on the Linux deploy host as root: LC_RELEASE_GATE_SMOKE_FULL=1 or bash deploy/scripts/smoke.sh full"
+  elif [[ "$(uname -s)" != Linux || "$(id -u)" != 0 ]] || ! docker_ok; then
+    record G91 DEPLOY NOT_RUN "smoke full needs Linux, root and a docker daemon"
+  else
+    run_cmd G91 bash deploy/scripts/smoke.sh full
+    v=$(smoke_verdict "$LOG")
+    record G91 DEPLOY "${v%%|*}" "smoke full: ${v#*|}" "$rc" "$LOG"
+  fi
+fi
+
+# ---- table ----------------------------------------------------------------------------------------------
+if [[ -n "$only" ]]; then subset=" [subset via --only: not a release verdict]"; else subset=""; fi
+if ((n_fail > 0)); then overall="FAIL ($n_fail FAIL, $n_notrun NOT_RUN, $n_pass PASS)"; code=1
+elif ((n_notrun > 0)); then overall="INCOMPLETE: no FAIL, but $n_notrun NOT_RUN (not release acceptance), $n_pass PASS"; code=0
+else overall="PASS ($n_pass PASS)"; code=0; fi
+overall="$overall$subset"
+if ((strict && n_fail == 0 && n_notrun > 0)); then code=3; fi
+{
+  echo "release-gate  commit=$sha  dirty_files=$dirty  modes_in_test-local=$all_modes  evidence=$OUT"
+  printf '%-24s %-10s %-8s %s\n' ID TIER STATUS NOTE
+  printf '%s' "$rows"
+  echo "OVERALL: $overall"
+} | tee "$OUT/summary.txt"
+exit "$code"

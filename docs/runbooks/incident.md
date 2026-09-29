@@ -27,6 +27,8 @@ dc() { docker compose --project-directory /opt/live-commerce/deploy --env-file /
 | expiry-worker | `dc logs expiry-worker` | slog | 正常：`expiry_worker_ready`；异常：`*_invalid_config`、`*_database*`、`*_start_failed` |
 | payment-worker-* | `dc logs payment-worker-sandbox` | slog | 正常：`payment_worker_ready`；其他标记同上 |
 | meta-worker | `dc logs meta-worker` | slog | 正常：`meta_worker_ready`；异常：`worker_start_diagnostic` |
+| claims-worker（profile claims） | `dc logs claims-worker` | slog | 正常：`claims_worker_ready` 和一行 `claims_worker_routes`；异常：`claims_worker_invalid_config`、`claims_worker_database_unavailable`、`claims_worker_routes_unavailable`、`claims_worker_start_failed`。**它是唯一向 Meta 用户发送私信的进程**：怀疑误发时先 `dc stop claims-worker` |
+| stripe-admin / meta-admin（一次性，profile ops） | `deploy/scripts/ops-admin.sh ...`，审计行在 `$LC_STATE_DIR/ops-admin.log` | 只有 JSON 结果行 | 失败只输出固定码：`stripeadmin: config\|database\|rejected\|provider`、`meta_admin_usage\|config\|database\|register_failed\|version_conflict`；`database` = 登录/连接问题（先看 provision-logins 的 DRIFT）
 | postgres | `dc logs postgres` | stderr（`%m [%p] user@db/app`） | 慢 SQL > 500 ms、锁等待、DDL、检查点；**不记录绑定参数** |
 | migrate | `dc logs migrate` | 固定标记 | 成功：`migrate_applied`；异常：`migrate_busy`、`migrate_failed sqlstate=…`、`migrate_invalid_config` |
 | provision-logins | `dc logs provision-logins` | 每个登录角色一行 | `auth=ok`、`DRIFT ...`、`ready.*=t/f`、`summary ... result=ok` |
@@ -118,6 +120,8 @@ dc() { docker compose --project-directory /opt/live-commerce/deploy --env-file /
 | 事件 | 处置 |
 |---|---|
 | `commerce_account_keys_json` 或 replay key 泄露（涉及真实资金） | 立即 `dc stop payment-worker-live`，通知 owner，按 deploy.md §7 轮换（追加新 key），评估商户 PSP 凭据是否需要在 PAYUNi 侧重置 |
+| Stripe webhook 签名 keyring 或某端点的 `whsec_` 泄露 | 在 Stripe 后台滚动该端点的签名密钥，用 `ops-admin.sh stripe-admin webhook ... STRIPE_WEBHOOK_SECRET_NEXT` 登记新密钥（deploy.md §6.1 步骤 3），必要时追加 keyring key（deploy.md §7）；`STRIPE_SECRET_KEY` 泄露 → 在 Stripe 后台撤销并 `stripe-admin rotate` |
+| Meta Page token 泄露 | 在 Meta 后台撤销 token，`dc stop claims-worker`，用 `ops-admin.sh meta-admin page-token` 登记新 token（`--expected-version` = 当前版本），确认后再启动 |
 | BFF key 泄露 | 轮换这一对 key（api + admin 或 api + storefront），同时重启 |
 | 数据库口令泄露 | 轮换对应的 `pw_<login>`，执行 `--rederive`，重跑 provision 并重启相关服务；超级用户口令用 `deploy/scripts/pg-ops.sh rotate-superuser`（deploy.md §7，**禁止**手工 `ALTER ROLE`：`log_statement='ddl'` 会把新口令写进日志） |
 | 诊断包、日志或备份外泄 | 视为 PII 事件，通知 owner（O8） |

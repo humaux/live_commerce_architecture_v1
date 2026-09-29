@@ -18,10 +18,10 @@
 # Used by: operators before deploy.sh (printed tag -> deploy.sh first|upgrade <tag>, which records it
 #   in compose.env), smoke.sh S07.
 # Depends on: deploy/docker/*.Dockerfile, git (commit id), docker.
-# Exit: 0 built, 1 build failed, 3 BLOCKED (cmd/migrate missing = REQUIRES_INTEGRATOR I1;
+# Exit: 0 built, 1 build failed, 3 BLOCKED (cmd/migrate missing; kept as a guard, it exists since I1 closed:
 #   the Go image would be undeployable without it, so nothing is faked).
-# Status: DESIGN; S07 is BLOCKED until cmd/migrate lands. With the I1 proposal applied, all four
-#   images built (VERIFIED_LOCAL 2026-09-28, sandbox CA base images passed via GO_IMAGE/NODE_IMAGE).
+# Status: DESIGN; all four images build and pass smoke S07/S08 (R1, Linux dind run recorded in
+#   deploy/README.md). lc-go now also carries claims-worker, stripe-admin and meta-admin.
 # Change rules: keep tags immutable (never reuse a tag for different content; "-dirty" tags are
 #   for rehearsal only and must not be deployed to production).
 set -Eeuo pipefail

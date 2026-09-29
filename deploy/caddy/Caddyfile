@@ -8,7 +8,7 @@
 #   optional LC_ACME_CA (unset = Let's Encrypt production; staging URL for rehearsals) from
 #   env/caddy.env. `*.localhost` names automatically use Caddy's internal CA (smoke only).
 # Reads secrets: none. Certificates/ACME keys persist in the caddy-data volume (/data).
-# Used by: deploy/compose.yml caddy; deploy/scripts/smoke.sh S05, S17-S24; deploy.sh post checks;
+# Used by: deploy/compose.yml caddy; deploy/scripts/smoke.sh S05, S17-S24 (S19: meta + stripe routes); deploy.sh post checks;
 #   docs/runbooks/deploy.md §证书与域名, incident.md §caddy.
 # Depends on: api/admin/storefront listening on the shared loopback; lc-caddy image.
 # Status: DESIGN; verified by smoke S05 (validate/fmt) and S17-S24 (runtime).
@@ -139,6 +139,13 @@
 	request_header -X-Commerce-BFF-Key
 	request_header -X-Commerce-Buyer-BFF-Key
 	handle /v1/meta/webhooks/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	# Stripe webhook endpoint: POST /v1/stripe/webhook/{endpoint_id} (stripe-psp-v1 §0.2, §12). The
+	# signature is over the RAW body, so nothing here rewrites it (no encode/rewrite on this path is
+	# applied to the request; the 2 MB cap above is only a ceiling, the app enforces its own limit).
+	# The endpoint id in the URL is the operator-registered one (stripe-admin webhook), not a secret.
+	handle /v1/stripe/webhook/* {
 		reverse_proxy 127.0.0.1:8080
 	}
 	# Reserved PAYUNi NotifyURL. No receiver exists yet (contracts/buyer-payment-http-v1.md:18); B4.

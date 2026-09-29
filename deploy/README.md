@@ -20,7 +20,10 @@ queues live inside it. There is no Kafka, Redis or service mesh (AGENTS.md).
 > A real deploy needs explicit owner approval.
 
 Runbooks (Chinese): [deploy](../docs/runbooks/deploy.md) ·
-[backup/restore](../docs/runbooks/backup-restore.md) · [incident](../docs/runbooks/incident.md)
+[backup/restore](../docs/runbooks/backup-restore.md) · [incident](../docs/runbooks/incident.md) ·
+[first merchant onboarding](../docs/runbooks/merchant-onboarding.md) (owner-only prerequisites called out)
+
+R1 acceptance command (whole repo, one PASS/FAIL/NOT_RUN table): `bash scripts/dev/release-gate.sh --strict`.
 
 ## Quick start (single host, as root)
 
@@ -33,6 +36,9 @@ deploy/scripts/secrets-init.sh                    # creates missing secrets only
 deploy/scripts/preflight.sh --online              # P01-P16, names only
 deploy/scripts/deploy.sh first <sha12>            # postgres -> migrate -> provision -> tag into compose.env -> up -> checks
 cp deploy/host/crontab.example /etc/cron.d/live-commerce   # backups + watchdog (edit paths)
+# Operator one-shots (own containers, registrar logins, inputs prompted without echo, never stored):
+deploy/scripts/ops-admin.sh stripe-admin register|rotate|webhook|qualify|method ...   # docs/runbooks/deploy.md §6.1
+deploy/scripts/ops-admin.sh meta-admin page-token ...                                 # docs/runbooks/deploy.md §6.3
 ```
 Upgrade: `deploy.sh upgrade <tag>`. It takes a backup, opens a 503 window, runs migrate and provision, then starts the stack.
 Rollback: `deploy.sh app-rollback <tag>` works only when the migration ledger is unchanged. Otherwise the answer is forward-fix.
@@ -48,12 +54,18 @@ Internet ─80/443(+udp)─► edge-netns (pause) ── shared 127.0.0.1 ──
                                                                  ├ api :8080 (must be loopback)
                                                                  ├ admin :3100 (Next standalone)
                                                                  └ storefront :3200 (next start)
-backend (internal) : postgres :5432 ◄── api, expiry-worker, meta-worker, payment-worker-* (+egress)
+backend (internal) : postgres :5432 ◄── api, expiry-worker, meta-worker, payment-worker-* (+egress: PAYUNi, api.stripe.com),
+                     claims-worker (+egress: graph.facebook.com)
+ops one-shots      : stripe-admin (backend + egress), meta-admin (backend) — profile ops, run only via ops-admin.sh
 pgsocket volume    : postgres ◄── migrate (network none), provision-logins, pg-ops (network none)
 ```
 Profiles: `db` (postgres, migrate, provision-logins), `app` (edge-netns, caddy, api, admin,
-storefront, expiry-worker), `payments-sandbox`, `payments-live` (REAL MONEY), `meta`, `ops` (pg-ops).
-The media worker is **not deployed**, because it is MOCK-only (`worker_env.go:174`).
+storefront, expiry-worker), `payments-sandbox` (payment-worker-sandbox: PAYUNi + Stripe/refund dispatch when
+`LC_STRIPE_ENABLED=1`), `payments-live` (REAL MONEY; Stripe is refused on LIVE), `meta` (meta-worker, holds K_actor),
+`claims` (claims-worker: intake poller + the only sender of Meta private replies; owner approval for real sends),
+`ops` (pg-ops, stripe-admin, meta-admin; never listed in `COMPOSE_PROFILES`).
+The media worker is **not deployed**, because it is MOCK-only (`worker_env.go:174`); there is no `media` profile
+(deviation 21).
 
 ## Files
 
@@ -62,19 +74,21 @@ The media worker is **not deployed**, because it is MOCK-only (`worker_env.go:17
 | `compose.yml` / `compose.two-host-db.yml` | Whole stack; 2-host override (NOT_RUN) |
 | `docker/{go,admin,storefront,caddy}.Dockerfile` | `lc-go` (all Go binaries + migrate + lcentry), `lc-admin`, `lc-storefront`, `lc-caddy` |
 | `tools/lcentry/` | Stdlib-only launcher: `*_FILE` secret files → env, then `execve`; loopback HTTP probe |
-| `caddy/Caddyfile` | Edge routing/TLS: admin, shop, api (default-deny, `/healthz` only), hooks (`/v1/meta/webhooks/*`); access log with credential query parameters redacted |
+| `caddy/Caddyfile` | Edge routing/TLS: admin, shop, api (default-deny, `/healthz` only), hooks (`/v1/meta/webhooks/*`, `/v1/stripe/webhook/*`); access log with credential query parameters redacted |
 | `postgres/postgresql.conf`, `pg_hba.conf` | Server settings + WAL archiving; superuser socket-only, services via scram |
-| `postgres/logins.tsv` | Service LOGIN → one authority → grant shape → consumer (single source) |
-| `postgres/provision-logins.sh` | Idempotent logins + verification matrix + TCP auth + readiness gates |
+| `postgres/logins.tsv` | Service LOGIN → one authority → grant shape → consumer (single source); 17 core logins incl. Stripe ingress/registrar, claims intake/worker, Meta registrar |
+| `postgres/provision-logins.sh` | Idempotent logins + verification matrix + ruling-19 River privileges + registrar EXECUTE + TCP auth + readiness gates |
 | `postgres/ops/*` | backup, basebackup, restore-dump, restore-pitr (`--drill`/`--promote`), pitr-install (cut-over), rotate-superuser, verify.sql (run inside `pg-ops`) |
 | `secrets.manifest.tsv` | Every secret file: kind, generator, consumers, rotation |
-| `env/*.env.example` | `compose.env` (cross-service values) + per-service knob templates |
+| `env/*.env.example` | `compose.env` (cross-service values, incl. `LC_STRIPE_ENABLED`) + per-service knob templates (`claims-worker.env` added in R1) |
 | `scripts/lib.sh` | Shared helpers (`lc_compose`, `lc_psql`, `lc_secret_scan`, env loader) |
 | `scripts/host-setup.sh`, `secrets-init.sh`, `preflight.sh` | Host prep, secret generation, config validation |
 | `scripts/build-images.sh`, `check-pins.sh` | Image build (sha12 tags, OCI labels); digest-pin guard |
+| `scripts/ops-admin.sh` | Operator CLIs (`stripe-admin`, `meta-admin`) as one-shot `ops` containers; prompts inputs without echo; refuses live keys and `--profile LIVE`; audit line without values |
 | `scripts/deploy.sh`, `pg-ops.sh` | first / upgrade / app-rollback (keeps compose.env `IMAGE_TAG` = deployed tag); DB operations wrapper incl. `rotate-superuser`, `pitr-cutover` |
 | `scripts/watchdog.sh`, `collect-diagnostics.sh` | Cron health checks W1–W10; incident bundle (secret-scanned) |
-| `scripts/smoke.sh`, `smoke-browser.mjs` | Acceptance `static` (S01–S06) / `full` (S07–S43) with evidence |
+| `scripts/smoke.sh`, `smoke-browser.mjs` | Acceptance `static` (S01–S06) / `full` (S07–S44, S10f/g, S13n) with evidence |
+| `../scripts/dev/release-gate.sh` | R1 acceptance table over every tier (packet, build/vet, TS typecheck, secret grep, depmap, unit, foundation, every browser mode, smoke static/full); NOT_RUN when prerequisites are missing |
 | `host/crontab.example` | Backup + watchdog schedule |
 
 ## Status matrix (2026-09-28)
@@ -164,10 +178,43 @@ No new Go modules and no new npm packages. `lcentry` uses only the Go standard l
     environment, so any later plain `docker compose up/run` recreated services on the previous release.
     deploy.sh now rewrites the line atomically just before `up -d`; watchdog W10 flags drift (S43).
 
+19. **Operator inputs are never files or env-file values.** `STRIPE_SECRET_KEY`, `STRIPE_ACCOUNT_ID`,
+    `STRIPE_WEBHOOK_SECRET[_NEXT]` and `META_PAGE_ACCESS_TOKEN` are read by `ops-admin.sh` from the caller's
+    environment or a no-echo prompt and forwarded to a one-shot container by NAME (never argv). They are visible in
+    that container's config until `--rm` removes it (host root only, like the secret files). `lcentry` deliberately
+    still expands only `DATABASE_URL` and `COMMERCE_*` `_FILE` variables. preflight P07 forbids `STRIPE_*` and
+    `META_PAGE_ACCESS_TOKEN` in any knob file, and `COMMERCE_META_GRAPH_BASE_URL` (loopback MOCK switch).
+20. **One Stripe switch.** `LC_STRIPE_ENABLED` (compose.env) drives `COMMERCE_STRIPE_CHECKOUT_ENABLED` and
+    `COMMERCE_STRIPE_WEBHOOK_ENABLED` on the api and `COMMERCE_STRIPE_ENABLED` on `payment-worker-sandbox` only, so the
+    three cannot diverge and the LIVE worker can never receive it. preflight P06 requires SANDBOX + `payments-sandbox`.
+21. **No `media-worker` service or `media` profile**, although the unit brief listed one "off by default". Its startup
+    contract needs three media logins, a material keyring and a projects JSON that are not in the manifest, and every
+    LiveKit project is hard-wired to MOCK (`worker_env.go:174`). A stub that cannot start would make
+    `config --profiles media` fail on missing secrets. It stays reference-only in `env/media-worker.env.example`;
+    integrator ruling requested (see the unit return).
+22. **Operator binaries ship in `lc-go`** (`stripe-admin`, `meta-admin` next to the services) instead of a fifth image:
+    the api/worker containers never mount the registrar logins, so the binaries alone grant nothing (S44 asserts no
+    long-running service mounts `dsn_lc_stripe_registrar`/`dsn_lc_meta_registrar`). Split the image if a reviewer
+    wants defence in depth beyond that.
+23. **Custody separation is enforced, not just documented**: `secrets-init.sh` never generates a key equal to any
+    keyring key or another standalone b64 key; preflight P04 checks all four keyrings and the replay/K_actor/K_link keys
+    pairwise (negative S10f).
+24. **`smoke.sh static` and `make_config` are BSD/GNU portable** (`sed -i.bak`), so macOS developer machines and CI run the
+    same cases. `smoke.sh full` still needs a Linux host with root (GNU userland, ports 80/443).
+
+## Known limits recorded by the R1 deploy unit
+
+- **S29m (I8) stays BLOCKED**: not in R1's path (Studio/media are not deployed, `LC_REQUIRE_MEDIA_GATE=0`); owner lane =
+  integrator (restore-stable `live.media_plan_ready()` migration). It keeps `smoke.sh full` at exit 3 by design.
+- **G1 Meta route activation has no operator entry point**: `meta_inbox.activate_route` (commerce_meta_curator) is called only
+  by tests; there is no CLI, HTTP path or login. Real-merchant comment intake cannot be onboarded until a `meta-admin route`
+  subcommand (+ curator login in logins.tsv) exists; needs an implementation unit and the owner's Meta asset proof.
+- SANDBOX Stripe registration/qualification/webhook delivery and every Meta LIVE step need owner inputs: NOT_RUN in CI.
+
 ## Blockers and hand-offs
 
 - **REQUIRES_INTEGRATOR** (outside `deploy/**`):
-  - I1 `cmd/migrate`: blocks S07+ and any deploy.
+  - I1 `cmd/migrate`: **closed** (exists; S07+ run).
   - I2 `/healthz` route in both Next apps.
   - I3 storefront `output:"standalone"`.
   - I4 `ErrLedgerAhead` + configurable Apply timeout.

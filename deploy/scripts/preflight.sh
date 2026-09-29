@@ -6,7 +6,8 @@
 #   Prints only rule id, PASS/FAIL/WARN/SKIP and variable/file NAMES — never values.
 # Usage: preflight.sh [--online] [--skip-images]
 # Rules: P01 compose.env vars/hosts  P02 secret dir/file modes  P03 secret formats
-#   P04 inequalities + DSN/password consistency  P05 active key ids  P06 flags, dependencies,
+#   P04 inequalities (incl. custody separation of the four keyrings and K_actor/K_link/replay keys)
+#   + DSN/password consistency  P05 active key ids  P06 flags, dependencies,
 #   profiles, knob-file allowlists  P07 forbidden test/fixture vars  P08 grammars/ranges
 #   P09 owner secrets  P10 images present  P11 ACME (production)  P12 DB TLS  P13 disk space
 #   --online: P14 DNS -> this host  P15 OIDC discovery from the edge  P16 clock sync
@@ -205,7 +206,8 @@ for name, kind, gen in manifest:
         rings[name] = keyring(v, kind)
         ok = rings[name] is not None
     elif kind == "key_id":
-        ok = acct_id.fullmatch(v) is not None if "account" in name else meta_id.fullmatch(v) is not None
+        # account + Stripe webhook signing rings use accounts.LoadKeyring (<=40); Meta rings <=64.
+        ok = acct_id.fullmatch(v) is not None if ("account" in name or "stripe_webhook" in name) else meta_id.fullmatch(v) is not None
     elif kind == "dsn_tcp":
         ok = dsn_tcp_ok(v, name[len("dsn_"):])
     elif kind == "dsn_socket":
@@ -218,7 +220,9 @@ for name, kind, gen in manifest:
         ok = False
     rec("P03", ok, name)
 for idf, ringf in (("commerce_account_active_key_id", "commerce_account_keys_json"),
-                   ("commerce_meta_payload_active_key_id", "commerce_meta_payload_keys_json")):
+                   ("commerce_meta_payload_active_key_id", "commerce_meta_payload_keys_json"),
+                   ("commerce_stripe_webhook_active_key_id", "commerce_stripe_webhook_keys_json"),
+                   ("commerce_meta_page_token_active_key_id", "commerce_meta_page_token_keys_json")):
     ring = rings.get(ringf)
     rec("P05", ring is not None and values.get(idf) in ring, idf)
 
@@ -228,6 +232,21 @@ rec("P04", None not in (bff, buyer) and bff != buyer, "commerce_buyer_bff_key !=
 rec("P04", None not in (buyer, cookie) and buyer != cookie, "commerce_buyer_cookie_key != commerce_buyer_bff_key")
 acct = rings.get("commerce_account_keys_json") or {}
 rec("P04", values.get("commerce_account_replay_key") not in acct.values(), "commerce_account_replay_key not in keyring")
+# R1 custody separation (stripe-psp-v1 §12, meta-claims-intake-v1 §3/§7): no key bytes are shared between
+# the payment API-key ring, the Stripe webhook signing ring, the Meta payload ring and the Page-token ring,
+# and the standalone std-base64 keys (replay keys, K_actor, K_link) are pairwise distinct and in no ring.
+ring_names = ("commerce_account_keys_json", "commerce_stripe_webhook_keys_json",
+              "commerce_meta_payload_keys_json", "commerce_meta_page_token_keys_json")
+ring_keys = {n: set((rings.get(n) or {}).values()) for n in ring_names}
+for i, a in enumerate(ring_names):
+    for b in ring_names[i + 1:]:
+        rec("P04", not (ring_keys[a] & ring_keys[b]), a + " shares no key with " + b)
+solo = [n for n, k, g in manifest if k == "b64std32"]
+for i, a in enumerate(solo):
+    va = values.get(a)
+    rec("P04", va is not None and all(va not in ks for ks in ring_keys.values()), a + " not in any keyring")
+    for b in solo[i + 1:]:
+        rec("P04", va is not None and va != values.get(b), a + " != " + b)
 for login in logins:
     dsn, pw = values.get("dsn_" + login), values.get("pw_" + login)
     ok = False
@@ -249,6 +268,7 @@ allow = {
     "admin.env": {"NODE_OPTIONS", "TZ"},
     "storefront.env": {"NODE_OPTIONS", "TZ"},
     "payment-worker.env": {"COMMERCE_PAYMENT_WORKER_CONCURRENCY", "TZ"},
+    "claims-worker.env": {"COMMERCE_META_GRAPH_VERSION", "COMMERCE_META_GRAPH_AUTH_HEADER", "TZ"},
     "expiry-worker.env": {"COMMERCE_EXPIRY_WORKER_CONCURRENCY", "TZ"},
     "meta-worker.env": {"COMMERCE_META_WORKER_CONCURRENCY", "TZ"},
     "caddy.env": {"ACME_EMAIL", "LC_ACME_CA", "TZ"},
@@ -265,7 +285,9 @@ for fname in allow:
 compose_env = parse_env(E.get("LC_COMPOSE_ENV")) if os.path.isfile(E.get("LC_COMPOSE_ENV", "")) else {}
 
 # ---- P07 forbidden variables ----------------------------------------------------------------------
-forbidden = re.compile(r"^(COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS|COMMERCE_FIXTURE_.*|LC_TEST_.*|FIXTURE_.*|LC_ADMIN_GUARD_DSN)$")
+# COMMERCE_META_GRAPH_BASE_URL is a loopback-MOCK switch (metareply.Config): production always dials graph.facebook.com.
+# STRIPE_*/META_PAGE_ACCESS_TOKEN are operator inputs for ops-admin.sh only, never a knob or compose value.
+forbidden = re.compile(r"^(COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS|COMMERCE_FIXTURE_.*|LC_TEST_.*|FIXTURE_.*|LC_ADMIN_GUARD_DSN|COMMERCE_META_GRAPH_BASE_URL|STRIPE_[A-Z_]+|META_PAGE_ACCESS_TOKEN)$")
 bad = sorted({k for d in list(knobs.values()) + [compose_env] for k in d if forbidden.match(k)})
 rec("P07", not bad, "forbidden vars absent" if not bad else ",".join(bad))
 
@@ -289,7 +311,9 @@ payment = flag("COMMERCE_BUYER_PAYMENT_ENABLED", api.get("COMMERCE_BUYER_PAYMENT
 meta = flag("COMMERCE_META_WEBHOOK_ENABLED", api.get("COMMERCE_META_WEBHOOK_ENABLED", ""))
 studio = flag("COMMERCE_STUDIO_ENABLED", api.get("COMMERCE_STUDIO_ENABLED", ""))
 profiles = {p.strip() for p in E.get("COMPOSE_PROFILES", "").split(",") if p.strip()}
-rec("P06", profiles <= {"db", "app", "payments-sandbox", "payments-live", "meta", "ops"}, "COMPOSE_PROFILES known")
+stripe_on = flag("LC_STRIPE_ENABLED", E.get("LC_STRIPE_ENABLED", ""))
+rec("P06", profiles <= {"db", "app", "payments-sandbox", "payments-live", "meta", "claims", "ops"}, "COMPOSE_PROFILES known")
+rec("P06", "ops" not in profiles, "COMPOSE_PROFILES must not list ops (one-shots run through ops-admin.sh / pg-ops.sh)")
 rec("P06", not accounts or identity, "COMMERCE_ACCOUNTS_ENABLED requires LC_IDENTITY_ENABLED")
 rec("P06", not studio, "COMMERCE_STUDIO_ENABLED must be 0 (media worker not deployable)")
 rec("P06", not payment or buyer_on, "COMMERCE_BUYER_PAYMENT_ENABLED requires LC_BUYER_ENABLED")
@@ -300,6 +324,14 @@ if "app" in profiles and profile_name:
 rec("P06", "payments-live" not in profiles, "payments-live active (REAL MONEY: owner approval required)", warn=True)
 if "app" in profiles:
     rec("P06", not meta or "meta" in profiles, "COMMERCE_META_WEBHOOK_ENABLED requires meta profile")
+    # Stripe is SANDBOX-only in this release (cmd/api + cmd/payment-worker refuse LIVE): the api flag pair and
+    # the sandbox worker are driven by the single LC_STRIPE_ENABLED, so the profile and worker must agree.
+    if stripe_on:
+        rec("P06", profile_name == "SANDBOX", "LC_STRIPE_ENABLED requires COMMERCE_PAYMENT_PROFILE=SANDBOX")
+        rec("P06", "payments-sandbox" in profiles, "LC_STRIPE_ENABLED requires the payments-sandbox profile")
+    # claims-worker sends first private replies through the Meta consumer's data: it needs the meta profile.
+    rec("P06", "claims" not in profiles or "meta" in profiles, "claims profile requires meta profile")
+    rec("P06", "claims" not in profiles or meta, "claims profile requires COMMERCE_META_WEBHOOK_ENABLED=1 (nothing to intake otherwise)", warn=True)
 
 # ---- P08 grammars and ranges -------------------------------------------------------------------------------
 ttl = E.get("LC_BUYER_SESSION_TTL_SECONDS", "")
@@ -307,6 +339,11 @@ rec("P08", re.fullmatch(r"[1-9][0-9]{1,6}", ttl) is not None and 60 <= int(ttl) 
 cur = E.get("LC_ONBOARDING_CURRENCIES", "")
 rec("P08", (not cur and not onboarding) or (cur and all(re.fullmatch(r"[A-Z]{3}", c.strip()) for c in cur.split(","))),
     "LC_ONBOARDING_CURRENCIES")
+cw = knobs.get("claims-worker.env", {})
+if "claims" in profiles:
+    rec("P08", re.fullmatch(r"v[0-9]{1,3}\.[0-9]{1,2}", cw.get("COMMERCE_META_GRAPH_VERSION", "")) is not None,
+        "COMMERCE_META_GRAPH_VERSION (vNN.N, no default; from probe U5)")
+    rec("P08", cw.get("COMMERCE_META_GRAPH_AUTH_HEADER", "") in ("", "0", "1"), "COMMERCE_META_GRAPH_AUTH_HEADER")
 for fname, key in (("payment-worker.env", "COMMERCE_PAYMENT_WORKER_CONCURRENCY"),
                    ("expiry-worker.env", "COMMERCE_EXPIRY_WORKER_CONCURRENCY"),
                    ("meta-worker.env", "COMMERCE_META_WORKER_CONCURRENCY")):

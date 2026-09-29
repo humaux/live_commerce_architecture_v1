@@ -47,6 +47,12 @@ services:
     secrets: [pg_ca_crt]
   meta-worker:
     secrets: [pg_ca_crt]
+  claims-worker:
+    secrets: [pg_ca_crt]
+  stripe-admin:
+    secrets: [pg_ca_crt]
+  meta-admin:
+    secrets: [pg_ca_crt]
 
 networks:
   backend:

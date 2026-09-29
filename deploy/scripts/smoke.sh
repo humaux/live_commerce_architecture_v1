@@ -4,14 +4,17 @@
 #   static  S01-S06: script syntax (+shellcheck when installed), digest pins, compose config for
 #           all profile sets (+ two-host override), lcentry vet/tests/coverage, Caddyfile
 #           validate/fmt, ignore files. Needs no running containers.
-#   full    static + S07-S43 on an ISOLATED project "lc-smoke-<run>" with temp config, temp
+#   full    static + S07-S44 on an ISOLATED project "lc-smoke-<run>" with temp config, temp
 #           secrets and temp backup dir, *.localhost hosts on 127.0.0.1, identity=0 (no IdP),
-#           buyer=1, buyer_payment=0, meta_webhook=0, studio=0. It touches ONLY its own
+#           buyer=1, buyer_payment=0, meta_webhook=0, studio=0, Stripe webhook/worker flags on (SANDBOX). It touches ONLY its own
 #           project and removes its containers/volumes/networks/temp dirs at the end.
 #           Review-P1 regression cases (2026-09-28): S40 access-log redaction of credential query
 #           parameters (Caddy), S41 superuser rotation without the password reaching the postgres
 #           log, S42 PITR promote + cut-over (new timeline, rows == target, archiver healthy),
 #           S43 compose.env IMAGE_TAG follows deploy.sh (plain `up -d` keeps the tag; watchdog W10).
+#           R1 additions (deploy-release unit): S13 also checks the ruling-19 River privileges and the
+#           registrar EXECUTE grants (S13n injects two drifts: both must fail provisioning by name), S16 the claims-worker + Stripe-enabled sandbox worker, S19 the
+#           Stripe webhook route, S44 the operator one-shots stripe-admin / meta-admin.
 # Usage: smoke.sh static | full
 # Exit: 0 PASS, 1 FAIL, 3 BLOCKED (e.g. cmd/migrate missing, ports busy, docker missing, or a
 #   REQUIRES_INTEGRATOR item observed at runtime: S29m = I8). result.json "not_run" names each one.
@@ -80,14 +83,14 @@ static_cases() {
     local cfg p ok=1
     cfg=$(mktemp -d)
     make_config "$cfg" static
-    for p in "db,app,payments-sandbox,payments-live,meta,ops" "app,payments-sandbox" "db,ops" "app,meta"; do
+    for p in "db,app,payments-sandbox,payments-live,meta,claims,ops" "app,payments-sandbox" "db,ops" "app,meta,claims"; do
       COMPOSE_PROFILES=$p runc S03 docker compose --project-directory "$LC_DEPLOY_DIR" --env-file "$cfg/compose.env" \
         -f "$LC_DEPLOY_DIR/compose.yml" config -q || ok=0
       COMPOSE_PROFILES=$p LC_PG_BIND_ADDR=127.0.0.1 runc S03 docker compose --project-directory "$LC_DEPLOY_DIR" \
         --env-file "$cfg/compose.env" -f "$LC_DEPLOY_DIR/compose.yml" -f "$LC_DEPLOY_DIR/compose.two-host-db.yml" config -q || ok=0
     done
     rm -rf "$cfg"
-    if ((ok)); then rec S03 PASS "compose config (4 profile sets x 2 files)"; else rec S03 FAIL "compose config (logs/S03.log)"; fi
+    if ((ok)); then rec S03 PASS "compose config (4 profile sets x 2 files, incl. claims + ops one-shots)"; else rec S03 FAIL "compose config (logs/S03.log)"; fi
   else
     rec S03 NOT_RUN "docker compose not available"
   fi
@@ -137,16 +140,21 @@ static_cases() {
 make_config() {
   local dir=$1 kind=$2 svc
   mkdir -p "$dir/env" "$dir/secrets" "$dir/backup/dumps" "$dir/backup/base" "$dir/backup/wal" "$dir/state"
-  for svc in api admin storefront payment-worker expiry-worker meta-worker caddy postgres; do
+  for svc in api admin storefront payment-worker expiry-worker meta-worker claims-worker caddy postgres; do
     cp "$LC_DEPLOY_DIR/env/$svc.env.example" "$dir/env/$svc.env"
   done
-  sed -i -e 's/^COMMERCE_ACCOUNTS_ENABLED=.*/COMMERCE_ACCOUNTS_ENABLED=0/' \
+  # `sed -i.bak` + rm: the only in-place form that is identical on GNU (Linux CI/deploy host) and BSD
+  # (macOS developer machines), so `smoke.sh static` and release-gate.sh run on both.
+  sed -i.bak -e 's/^COMMERCE_ACCOUNTS_ENABLED=.*/COMMERCE_ACCOUNTS_ENABLED=0/' \
     -e 's/^COMMERCE_BUYER_PAYMENT_ENABLED=.*/COMMERCE_BUYER_PAYMENT_ENABLED=0/' \
     -e 's/^COMMERCE_OIDC_CLIENT_ID=.*/COMMERCE_OIDC_CLIENT_ID=smoke-client/' "$dir/env/api.env"
-  sed -i -e 's/^ACME_EMAIL=.*/ACME_EMAIL=smoke@example.com/' "$dir/env/caddy.env"
+  sed -i.bak -e 's/^ACME_EMAIL=.*/ACME_EMAIL=smoke@example.com/' "$dir/env/caddy.env"
+  # claims-worker never sends in smoke (no page token, no claim source); the version only has to parse.
+  sed -i.bak -e 's/^COMMERCE_META_GRAPH_VERSION=.*/COMMERCE_META_GRAPH_VERSION=v22.0/' "$dir/env/claims-worker.env"
+  rm -f "$dir"/env/*.bak
   cat >"$dir/compose.env" <<EOF
 COMPOSE_PROJECT_NAME=${PROJECT:-lc-smoke-static}
-COMPOSE_PROFILES=db,app,payments-sandbox,meta
+COMPOSE_PROFILES=db,app,payments-sandbox,meta,claims
 IMAGE_TAG=${SMOKE_TAG:-smoke}
 LC_IMAGE_PREFIX=${LC_IMAGE_PREFIX:-lc}
 LC_ENVIRONMENT=smoke
@@ -171,6 +179,7 @@ LC_ONBOARDING_ENABLED=0
 LC_ONBOARDING_CURRENCIES=
 LC_BUYER_ENABLED=1
 LC_BUYER_SESSION_TTL_SECONDS=3600
+LC_STRIPE_ENABLED=1
 LC_REQUIRE_MEDIA_GATE=0
 LC_ALERT_WEBHOOK_URL=
 EOF
@@ -178,7 +187,7 @@ EOF
 }
 
 # ================================ full ============================================================
-ALL_FULL=(S07 S08 S09 S10 S11 S12 S13 S14 S15 S16 S17 S18 S19 S20 S21 S22 S23 S24 S25 S26 S27 S28 S29 S29m S30 S31 S32 S33 S34 S35 S36 S37 S38 S39 S40 S41 S42 S43)
+ALL_FULL=(S07 S08 S09 S10 S11 S12 S13 S13n S14 S15 S16 S44 S17 S18 S19 S20 S21 S22 S23 S24 S25 S26 S27 S28 S29 S29m S30 S31 S32 S33 S34 S35 S36 S37 S38 S39 S40 S41 S42 S43)
 block_rest() { # reason — mark every full case not yet recorded as BLOCKED
   local id
   for id in "${ALL_FULL[@]}"; do
@@ -263,8 +272,10 @@ full_cases() {
     modes=$(stat -c '%a' "$LC_SECRETS_DIR"/* | sort -u | tr '\n' ' ')
     runc S09 "$LC_SCRIPTS_DIR/secrets-init.sh" || true
     after=$(cd "$LC_SECRETS_DIR" && sha256sum -- * | sha256sum)
-    if [[ "$before" == "$after" && "$modes" == "440 " ]] && grep -q 'created=0 kept=36' "$EV/logs/S09.log"; then
-      rec S09 PASS "36 files, mode 0440, idempotent"
+    local n_secrets
+    n_secrets=$(awk -F'\t' '!/^#/ && NF { n++ } END { print n }' "$LC_DEPLOY_DIR/secrets.manifest.tsv")
+    if [[ "$before" == "$after" && "$modes" == "440 " ]] && grep -q "created=0 kept=$n_secrets" "$EV/logs/S09.log"; then
+      rec S09 PASS "$n_secrets files (= manifest rows), mode 0440, idempotent"
     else rec S09 FAIL "modes=[$modes] checksum_stable=$([[ $before == "$after" ]] && echo yes || echo no)"; fi
   else rec S09 FAIL "secrets-init.sh (logs/S09.log)"; fi
 
@@ -293,6 +304,11 @@ full_cases() {
   negative S10c P07 neg_c
   negative S10d P03 neg_d
   negative S10e P06 neg_e
+  # R1: K_actor must differ from K_link (custody separation), and no operator input may become a knob.
+  neg_f() { cp -f "$1/secrets/commerce_claims_actor_key" "$1/secrets/commerce_claims_reply_link_key"; }
+  neg_g() { echo 'STRIPE_SECRET_KEY=placeholder' >>"$1/env/api.env"; }
+  negative S10f P04 neg_f
+  negative S10g P07 neg_g
 
   # S37 (+ S11-S16): the real first-deploy path
   if runc S37 "$LC_SCRIPTS_DIR/deploy.sh" --smoke first; then rec S37 PASS "deploy.sh first"; else
@@ -314,10 +330,29 @@ full_cases() {
     if [[ "$ledger" == "$expected" ]]; then rec S12 PASS "migrate x2 exit 0, ledger=$ledger"; else rec S12 FAIL "ledger=$ledger expected=$expected"; fi
   else rec S12 FAIL "migrate re-run (logs/S12.log)"; fi
 
+  local n_logins
+  n_logins=$(awk -F'\t' '!/^#/ && $4 == "core" { n++ } END { print n }' "$LC_DEPLOY_DIR/postgres/logins.tsv")
   if runc S13 lc_compose run --rm -T --no-deps provision-logins && runc S13 lc_compose run --rm -T --no-deps provision-logins &&
-    [[ $(grep -c 'auth=ok' "$EV/logs/S13.log") == 24 ]] && ! grep -q DRIFT "$EV/logs/S13.log"; then
-    rec S13 PASS "provision x2, 12 logins auth ok, matrix ok, readiness true"
+    [[ $(grep -c 'auth=ok' "$EV/logs/S13.log") == $((2 * n_logins)) ]] && ! grep -q DRIFT "$EV/logs/S13.log" &&
+    grep -q 'river_privileges=ok' "$EV/logs/S13.log" && grep -q 'registrars execute=ok' "$EV/logs/S13.log"; then
+    rec S13 PASS "provision x2, $n_logins logins auth ok, matrix ok, ruling-19 river privileges ok, registrars can execute, readiness true"
   else rec S13 FAIL "provision-logins (logs/S13.log)"; fi
+
+  # S13n: the two new provisioning checks must be able to FAIL (PROCESS.md §2 stage 4: one red run each).
+  # (1) ruling 19: DELETE on river_payment.river_job for commerce_runtime exceeds what the API may hold;
+  # (2) authority matrix: a claims-intake login that also joins commerce_worker. Each drift is injected as
+  # the superuser, provisioning must exit non-zero and NAME the drift, and the revert must restore green.
+  local why13n=""
+  lc_psql <<<"GRANT DELETE ON river_payment.river_job TO commerce_runtime;" >/dev/null
+  if runc S13n lc_compose run --rm -T --no-deps provision-logins; then why13n="ruling-19 drift was accepted"; fi
+  grep -q 'problem=runtime_river_privileges_exceed_ruling_19' "$EV/logs/S13n.log" || why13n+=" ruling-19 drift not named"
+  lc_psql <<<"REVOKE DELETE ON river_payment.river_job FROM commerce_runtime;" >/dev/null
+  lc_psql <<<"GRANT commerce_worker TO lc_claims_intake;" >/dev/null
+  if runc S13n lc_compose run --rm -T --no-deps provision-logins; then why13n+=" mixed-authority drift was accepted"; fi
+  grep -q 'DRIFT login=lc_claims_intake .*membership=' "$EV/logs/S13n.log" || why13n+=" mixed-authority drift not named"
+  lc_psql <<<"REVOKE commerce_worker FROM lc_claims_intake;" >/dev/null
+  runc S13n lc_compose run --rm -T --no-deps provision-logins || why13n+=" provisioning not green after revert"
+  if [[ -z "$why13n" ]]; then rec S13n PASS "ruling-19 and mixed-authority drift each fail provisioning by name; green after revert"; else rec S13n FAIL "$why13n (logs/S13n.log)"; fi
 
   if lc_compose exec -T postgres bash -c 'PGPASSWORD="$(< /run/secrets/pg_superuser_password)" psql -X -h postgres -U postgres -d live_commerce -c "SELECT 1"' \
     >"$EV/logs/S14.log" 2>&1; then
@@ -334,12 +369,42 @@ full_cases() {
 
   sleep 30
   bad=""
-  for s in expiry-worker:expiry_worker_ready payment-worker-sandbox:payment_worker_ready meta-worker:meta_worker_ready; do
+  for s in expiry-worker:expiry_worker_ready payment-worker-sandbox:payment_worker_ready meta-worker:meta_worker_ready claims-worker:claims_worker_ready; do
     grep -q "${s#*:}" < <(lc_compose logs --no-log-prefix "${s%%:*}" 2>&1) || bad+=" ${s%%:*}:no-token"
     st=$(docker inspect -f '{{.RestartCount}}' "$(lc_compose ps -q "${s%%:*}")")
     [[ "$st" == 0 ]] || bad+=" ${s%%:*}:restarts=$st"
   done
-  if [[ -z "$bad" ]]; then rec S16 PASS "worker ready tokens, 0 restarts after 30 s"; else rec S16 FAIL "$bad"; fi
+  if [[ -z "$bad" ]]; then rec S16 PASS "worker ready tokens (incl. claims-worker, Stripe-enabled sandbox worker), 0 restarts after 30 s"; else rec S16 FAIL "$bad"; fi
+
+  # S44 operator one-shots (profile ops) run in their OWN containers with their own registrar logins:
+  # no operator input, no request: `stripe-admin method` with no flags must get past config, the
+  # keyrings and the registrar authority gate (platform.OpenStripeRegistrarPool) and then be refused as
+  # `stripeadmin: config` (bad scope). `stripeadmin: database` would mean the login/authority is wrong.
+  # meta-admin gets a dummy token and syntactically valid ids: it must get past config + keyring
+  # (not `meta_admin_config`) and fail only in the registration step. Also proves the one-shots are
+  # NOT part of the long-running stack and that api/workers cannot see the registrar logins.
+  local why44="" out44
+  out44=$(lc_compose_with_ops run --rm --no-deps -T stripe-admin /app/bin/stripe-admin method 2>&1 || true)
+  printf '%s\n' "$out44" >"$EV/logs/S44-stripe.log"
+  [[ "$out44" == *"stripeadmin: config"* ]] || why44="stripe-admin method: got [${out44:0:80}] want stripeadmin: config"
+  out44=$(META_PAGE_ACCESS_TOKEN=smoke-dummy-token-0000 lc_compose_with_ops run --rm --no-deps -T -e META_PAGE_ACCESS_TOKEN meta-admin /app/bin/meta-admin page-token \
+    --tenant 00000000-0000-4000-8000-000000000001 --store 00000000-0000-4000-8000-000000000002 \
+    --principal 00000000-0000-4000-8000-000000000003 --binding 00000000-0000-4000-8000-000000000004 \
+    --provider facebook --asset 1234567890 --expected-version 0 --scopes pages_messaging 2>&1 || true)
+  printf '%s\n' "$out44" >"$EV/logs/S44-meta.log"
+  case "$out44" in
+  *meta_admin_config* | *meta_admin_database*) why44+=" meta-admin: got [${out44:0:60}] (config/database failure before registration)" ;;
+  *meta_admin_*) ;;
+  *) why44+=" meta-admin: no fixed error code in output" ;;
+  esac
+  for s in api expiry-worker payment-worker-sandbox meta-worker claims-worker; do
+    if lc_compose config --format json 2>/dev/null | python3 -c '
+import json, sys
+svc = json.load(sys.stdin)["services"][sys.argv[1]]
+names = set(svc.get("secrets") and [x["source"] if isinstance(x, dict) else x for x in svc["secrets"]] or [])
+sys.exit(1 if names & {"dsn_lc_stripe_registrar", "dsn_lc_meta_registrar"} else 0)' "$s"; then :; else why44+=" $s mounts a registrar DSN"; fi
+  done
+  if [[ -z "$why44" ]]; then rec S44 PASS "stripe-admin/meta-admin one-shots run isolated, registrar logins admitted, no long-running service mounts them"; else rec S44 FAIL "$why44 (logs/S44-*.log)"; fi
 
   # S17-S24 edge
   local r
@@ -352,9 +417,14 @@ full_cases() {
   r=$(edge hooks.localhost /v1/meta/webhooks/1/page)
   r1=$(edge hooks.localhost /payuni/notify)
   r2=$(edge hooks.localhost /)
-  if [[ "${r%%|*}" == 404 && -n "$(cut -d'|' -f2 <<<"$r")" && "$r1" == "404||0" && "$r2" == "404||0" ]]; then
-    rec S19 PASS "meta webhook route reaches Go API ($(cut -d'|' -f2 <<<"$r")); notify and / 404 at Caddy"
-  else rec S19 FAIL "webhook=$r notify=$r1 root=$r2"; fi
+  # Stripe: a POST with an empty JSON body to an unregistered endpoint id must be ANSWERED BY THE GO API
+  # (a status and a content type; Caddy's own default-deny answer is the empty "404||0").
+  local r3
+  r3=$(edge hooks.localhost /v1/stripe/webhook/00000000-0000-4000-8000-000000000000 -X POST -H 'Content-Type: application/json' -d '{}')
+  if [[ "${r%%|*}" == 404 && -n "$(cut -d'|' -f2 <<<"$r")" && "$r1" == "404||0" && "$r2" == "404||0" &&
+    "${r3%%|*}" =~ ^[1-5][0-9][0-9]$ && "$r3" != "404||0" && -n "$(cut -d'|' -f2 <<<"$r3")" ]]; then
+    rec S19 PASS "meta + stripe webhook routes reach Go API (meta $(cut -d'|' -f2 <<<"$r"), stripe ${r3%%|*}); notify and / 404 at Caddy"
+  else rec S19 FAIL "webhook=$r stripe=$r3 notify=$r1 root=$r2"; fi
   r=$(edge shop.localhost /payment/return)
   if [[ "${r%%|*}" == 200 ]] && grep -q 'data-testid="payment-return"' "$EV/logs/body" && [[ "$(hdr content-security-policy)" == *"default-src 'none'"* ]]; then
     rec S20 PASS "storefront /payment/return 200 + CSP"
@@ -603,7 +673,7 @@ full_cases() {
     local s img w10copy
     [[ "$(env_tag)" == "$rb_tag" ]] || { why43="b) compose.env IMAGE_TAG=$(env_tag) after app-rollback $rb_tag" && return; }
     (unset IMAGE_TAG && runc S43 lc_compose up -d) || { why43="plain up -d failed" && return; }
-    for s in api admin storefront caddy expiry-worker payment-worker-sandbox meta-worker; do
+    for s in api admin storefront caddy expiry-worker payment-worker-sandbox meta-worker claims-worker; do
       img=$(docker inspect -f '{{.Config.Image}}' "$(lc_compose ps -q "$s")" 2>/dev/null || echo "<no container>")
       [[ "$img" == *":$rb_tag" ]] || { why43="plain up -d moved $s to $img" && return; }
     done
@@ -744,7 +814,7 @@ def ver(cmd):
     except Exception:
         return "unavailable"
 static_ids = ["S01", "S02", "S03", "S04", "S05", "S06"]
-full_ids = static_ids + ["S%02d" % i for i in range(7, 44)] + ["S10a", "S10b", "S10c", "S10d", "S10e", "S29m"]
+full_ids = static_ids + ["S%02d" % i for i in range(7, 45)] + ["S10a", "S10b", "S10c", "S10d", "S10e", "S10f", "S10g", "S13n", "S29m"]
 result = {
     "run_id": os.path.basename(ev), "task_id": "T22", "commit": commit,
     "environment": {"mode": mode, "host": platform.node(), "kernel": platform.release(),

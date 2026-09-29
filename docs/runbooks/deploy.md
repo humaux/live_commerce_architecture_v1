@@ -5,8 +5,10 @@ Runs as/in: 文档（运维人员在部署主机上以 root 执行其中命令�
 Reads env / secrets: 无（命令读取 /etc/live-commerce/compose.env 与 secrets 目录，本文不含任何密钥值）。
 Used by: 运维/owner/集成者；deploy/README.md 链接到此。
 Depends on: deploy/scripts/*.sh, deploy/compose.yml, deploy/env/*.env.example。
-Status: DESIGN。未在生产执行过；smoke full 目前 BLOCKED（缺 cmd/migrate，I1）。
-  本地（scratch 克隆，加入 I1 提案）：45 PASS / 1 BLOCKED（S29m，I8），包括 first/upgrade/app-rollback 全部路径。
+Status: DESIGN。未在生产执行过。cmd/migrate 已存在（I1 关闭），smoke full 在 Linux 容器（dind）里对真实构建的四个镜像跑通：
+  见 deploy/README.md 状态表；唯一 BLOCKED 是 S29m（I8，逻辑恢复后 media 门禁 t→f，R1 不在关键路径：Studio/media 不部署）。
+  R1 新增（deploy-release 单元）：Stripe SANDBOX（api 结账 + webhook、sandbox worker 的 Stripe/退款派发）、claims-worker、
+  meta-worker 的 K_actor、运维一次性任务 stripe-admin / meta-admin（`deploy/scripts/ops-admin.sh`）、smoke S44。
   2026-09-28 评审 P1 修复：deploy.sh 把部署的 tag 写回 compose.env（§3–§5，smoke S43、看门狗 W10）；
   超级用户口令轮换改为 `pg-ops.sh rotate-superuser`（§7，smoke S41）。
 Change rules: 命令必须与脚本保持一致；改脚本行为时同步本文。
@@ -20,12 +22,12 @@ Change rules: 命令必须与脚本保持一致；改脚本行为时同步本文
 - **任何生产部署、LIVE 支付、真实退款、营销重播、破坏性迁移都必须有 owner 明确批准**（AGENTS.md）。
   本手册只描述获批后的操作步骤。
 - 以下上线阻塞项关闭前，不得宣称"可生产"：
-  - B1：`cmd/migrate` 尚不存在（REQUIRES_INTEGRATOR I1），所以 smoke full 和部署都会阻塞。
+  - B1：已关闭。`cmd/migrate` 存在，是唯一的生产迁移入口（`deploy.sh` 与 smoke S12 使用它）。
   - B2：未选定 IdP（OIDC），商家无法登录。
   - B3：PAYUNi 商户资质和 LIVE 批准。
   - B4：PAYUNi NotifyURL 没有接收端（`/payuni/notify` 由 Caddy 保留并返回 404）。支付结果只来自 worker 查询。
   - B5：直播/Studio（LiveKit 仅 MOCK）。
-  - B6：Meta 未开放给客户。
+  - B6：Meta 未开放给客户：Meta App Review / Access Tier 是 owner 事项；评论 → 认领 → 私信链路的运维缺口见 §6.3 与 merchant-onboarding.md（**没有 Meta 路由激活的运维入口**）。
   - B7：T21 独立评审未完成。
   - B8：Compose 作为生产环境与 §4.2 的定位冲突。
 - 状态词汇：DESIGN / MODEL_ONLY / MOCK / SANDBOX / LIVE / NOT_RUN / BLOCKED。本地 smoke 通过不等于产品通过。
@@ -54,7 +56,10 @@ Change rules: 命令必须与脚本保持一致；改脚本行为时同步本文
    跨服务的值**只能**写在这里。
 2. 编辑 `/etc/live-commerce/env/*.env`。这些文件只放各服务自己的旋钮；compose.yml 里 `environment:` 已接好的变量不得重复定义（preflight P06 会拦截）：
    - `api.env`：OIDC client id、`COMMERCE_SESSION_TTL`、`COMMERCE_PAYMENT_PROFILE=SANDBOX`、`COMMERCE_STUDIO_ENABLED=0`（必须为 0）。
+   - `claims-worker.env`（R1 新增，升级时要从 `deploy/env/claims-worker.env.example` 复制）：`COMMERCE_META_GRAPH_VERSION`（**无默认值**，取 owner 用 MCI11 只读探测确认的 vNN.N；`CHANGE_ME` 会被 preflight P08 拒绝）。
    - `caddy.env`：真实的 `ACME_EMAIL`。`LC_ACME_CA` 要么保持注释，要么填 https URL，**不能留空**。
+   - Stripe 只有一个总开关：`compose.env` 的 `LC_STRIPE_ENABLED`（api 的结账开关 + webhook 路由 + sandbox worker 的 Stripe/退款派发）。它只允许 SANDBOX：
+     `COMMERCE_PAYMENT_PROFILE=SANDBOX` 且启用 `payments-sandbox` profile（P06）；API/worker 在 LIVE 下拒绝启动 Stripe，直到 owner 批准激活。
 3. 生成密钥（只补缺失的文件，不覆盖、不打印值）：
    ```sh
    deploy/scripts/secrets-init.sh
@@ -62,6 +67,10 @@ Change rules: 命令必须与脚本保持一致；改脚本行为时同步本文
 4. owner 提供的密钥：用真实值替换文件内容 `__UNSET__`，权限保持 `0440 root:10500`。
    - `commerce_oidc_client_secret`：如果保持 `__UNSET__`，表示使用公共 PKCE 客户端，P09 给出 WARN。
    - `commerce_meta_apps_json`：仅在启用 Meta 时需要。
+   - **不属于任何文件的运维输入**：`STRIPE_SECRET_KEY`（只接受 `sk_test_`/`rk_test_`）、`STRIPE_ACCOUNT_ID`、`STRIPE_WEBHOOK_SECRET[_NEXT]`、`META_PAGE_ACCESS_TOKEN`。
+     它们只在运行 `deploy/scripts/ops-admin.sh` 时由操作者提供（终端无回显提示或调用者环境变量），**不写入仓库、compose.env、env 文件或 secrets 目录**；preflight P07 会拒绝把它们放进任何旋钮文件。
+     新增的自动生成密钥（`secrets-init.sh` 补齐）：Stripe webhook 签名 keyring（与支付 API-key keyring 分离）、Meta Page-token keyring、`commerce_claims_actor_key`（K_actor）、`commerce_claims_reply_link_key`（K_link）以及 5 个新登录的 pw_/dsn_。
+     preflight P04 检查四个 keyring 互不共享 key、三个独立 b64 密钥两两不同且不在任何 keyring 中。
 5. 校验：
    ```sh
    deploy/scripts/preflight.sh --online    # 只输出规则号、PASS/FAIL 和变量名
@@ -80,7 +89,7 @@ deploy/scripts/deploy.sh first <sha12>   # preflight → 镜像检查 → postgr
 - 部署后检查（脚本会自动执行）：
   - 所有常驻服务 running/healthy。
   - 所有 `lc-*` 镜像的容器都运行 `:$IMAGE_TAG`。发现旧容器时直接失败。
-  - worker 就绪标记要出现在**该容器本次启动之后**的日志里，也就是 `docker logs --since <.State.StartedAt>`，最多等 60 s。标记包括 `expiry_worker_ready`、`payment_worker_ready`、`meta_worker_ready`。
+  - worker 就绪标记要出现在**该容器本次启动之后**的日志里，也就是 `docker logs --since <.State.StartedAt>`，最多等 60 s。标记包括 `expiry_worker_ready`、`payment_worker_ready`、`meta_worker_ready`、`claims_worker_ready`（仅当对应 profile 启用）。
     `up -d` 不会重建配置没变的容器，所以重复执行 `first`，或回滚到正在运行的 tag，都是合法的空操作，检查会通过。
   - `https://<api>/healthz` 返回 200。
 - 构建主机的代理在本机回环地址（`127.0.0.1`/`localhost`/`[::1]`）时，BuildKit 的 RUN 步骤访问不到它。
@@ -121,13 +130,82 @@ deploy/scripts/deploy.sh upgrade <tag>
 3. 其他情况 → **前向修复 + 对账**（架构.md §22.1）。**禁止在真实支付之上恢复数据库**。
 - 应用回滚不等于数据库回滚。脚本永远不会自动回滚或自动恢复。
 
-## 6. 功能上线顺序
+## 6. 功能上线顺序与进程清单
 
-- **Phase A**：identity + accounts + buyer + payments **SANDBOX**（`COMPOSE_PROFILES=db,app,payments-sandbox`）。
-- **Phase B**：**LIVE** 需要 owner 批准和 PAYUNi 资质。切换 profile 为 `payments-live`，把 `COMMERCE_PAYMENT_PROFILE` 改为 `LIVE`。
-  在历史 sandbox job 处理完之前保留 `payments-sandbox`。preflight 会对 `payments-live` 给出 WARN 提醒。
-- Meta：在 meta-runtime 门禁重新通过之前保持关闭（`COMMERCE_META_WEBHOOK_ENABLED=0`，不启用 `meta` profile）。
+进程（compose 服务 → profile）：`api`/`admin`/`storefront`/`caddy`/`expiry-worker` → `app`；`payment-worker-sandbox` → `payments-sandbox`；
+`payment-worker-live` → `payments-live`；`meta-worker` → `meta`；`claims-worker` → `claims`；`postgres`/`migrate`/`provision-logins` → `db`；
+一次性运维任务 `stripe-admin`/`meta-admin`/`pg-ops` → `ops`（**不要写进 `COMPOSE_PROFILES`**，由 `ops-admin.sh`/`pg-ops.sh` 自行追加）。
+`media-worker` **不是** compose 服务：LiveKit 全部硬编码 MOCK（`worker_env.go:174`，B5），见 `deploy/env/media-worker.env.example`（仅参考）。
+
+- **Phase A**：identity + accounts + buyer + payments **SANDBOX**（`COMPOSE_PROFILES=db,app,payments-sandbox`），加 Stripe SANDBOX（§6.1）。
+- **Phase B**：**LIVE** 需要 owner 批准和 PAYUNi/Stripe 资质。切换 profile 为 `payments-live`，把 `COMMERCE_PAYMENT_PROFILE` 改为 `LIVE`。
+  在历史 sandbox job 处理完之前保留 `payments-sandbox`。preflight 会对 `payments-live` 给出 WARN 提醒。Stripe 在 LIVE 下被代码拒绝。
+- Meta 评论入口：`meta` profile + `COMMERCE_META_WEBHOOK_ENABLED=1` + owner 提供的 `commerce_meta_apps_json`（§6.3）。
+- Meta 私信发送：`claims` profile。**这是唯一会向买家发送 Meta 消息的进程**，只在 owner 批准真实发送后启用（§6.3）。
 - Studio/直播：保持关闭（P06 强制 `COMMERCE_STUDIO_ENABLED=0`，media worker 不部署）。
+
+### 6.1 Stripe SANDBOX：账户登记与 webhook 端点
+
+前提：`LC_STRIPE_ENABLED=1`、`payments-sandbox` 已运行、owner 提供 Stripe **测试**账户的 `sk_test_`/`rk_test_` key 和 `acct_...`。
+全部通过 `deploy/scripts/ops-admin.sh`（一次性容器，持有 `lc_stripe_registrar` 登录，其他常驻容器不挂载它；输出只有 ID 和版本号）：
+
+1. 登记账户（`VerifyAccount` 先核对 key 属于该账户且 `livemode=false`，之后才写库）：
+   ```sh
+   deploy/scripts/ops-admin.sh stripe-admin register --tenant <tenant> --store <store> --principal <owner-principal>
+   # 提示输入 STRIPE_SECRET_KEY（无回显）与 STRIPE_ACCOUNT_ID；输出 {"connection_id":...,"credential_version":1}
+   ```
+   `<principal>` 必须是该租户已存在的 owner 成员。key 轮换：`ops-admin.sh stripe-admin rotate --tenant ... --connection <id> --expected-version <n>`。
+2. 创建 webhook 端点。**先**在本机生成端点 id（UUID，例如 `uuidgen | tr A-Z a-z`），URL 由它决定：
+   `https://<LC_HOOKS_HOST>/v1/stripe/webhook/<endpoint-id>`（Caddy 只在 hooks 域名放行这条路径，请求体原样转发）。
+   在 Stripe Dashboard（测试模式）或 API 创建端点时：
+   - **API 版本固定为 `2026-08-26.dahlia`**（代码常量 `internal/integrations/psp/stripe/config.go`，webhook 与请求版本必须一致）。
+   - **订阅事件共 8 个**：`checkout.session.completed`、`checkout.session.async_payment_succeeded`、`checkout.session.async_payment_failed`、`checkout.session.expired`、
+     `refund.created`、`refund.updated`、`refund.failed`、`charge.refunded`（后四个是退款；`charge.refund.updated` 已弃用，不订阅）。
+   - 记下 Stripe 返回的签名密钥 `whsec_...`（只显示一次）。
+3. 登记端点及其签名密钥（用 **Stripe webhook 签名 keyring** 密封，不是支付 API-key keyring）：
+   ```sh
+   deploy/scripts/ops-admin.sh stripe-admin webhook --tenant ... --store ... --principal ... \
+     --connection <connection-id> --endpoint <endpoint-id> --profile SANDBOX --expected-version 0 --enabled
+   # 提示输入 STRIPE_WEBHOOK_SECRET（whsec_...，无回显）；输出 {"endpoint_id":...,"key_version":1}
+   ```
+   端点的 profile 必须等于 `COMMERCE_PAYMENT_PROFILE`，否则 API 返回 404；签名密钥无法解密返回 503 `signing_unavailable`（Stripe 会重试）。
+   签名密钥轮换（Stripe 允许 ≤24 h 双密钥）：新密钥设为 `STRIPE_WEBHOOK_SECRET_NEXT` 再执行同一命令，`--expected-version` 用当前版本。
+4. 资格探测与支付方式（SANDBOX，会真实创建并立即过期一个 sandbox Checkout Session）：
+   ```sh
+   STRIPE_SANDBOX=1 deploy/scripts/ops-admin.sh stripe-admin qualify --tenant ... --store ... --principal ... \
+     --connection <id> --expected-version <n> --profile SANDBOX --currency <ISO> --amount-minor <method minimum> --return-url https://<LC_STORE_HOST>/payment/return
+   deploy/scripts/ops-admin.sh stripe-admin method --tenant ... --store ... --principal ... --market <id> --country <CC> \
+     --connection <id> --qualification <qualification-id> --expected-version 0 --enabled --visible --sort 10 --min <minor> --max <minor> \
+     --name-hans ... --name-hant ... --name-en ...
+   ```
+   TWD 最小 2500（Stripe SANDBOX 实测，stripe-psp-v1 D15）。`--profile LIVE` 被 `ops-admin.sh` 和 CLI 双重拒绝。
+5. 自检：webhook 配置错误（密钥环、入口登录、profile）会让 api 启动失败，日志只有 `api stopped`（不输出原因），所以以 `docker compose ps api` 为 healthy、
+   preflight 全绿为准；smoke S19 证明 hooks 域名的 `/v1/stripe/webhook/*` 到达 Go API，S16 证明启用 Stripe 的 sandbox worker 就绪。
+   Stripe Dashboard 里的“发送测试事件”和真实 Checkout 属于 SANDBOX 验证，由 owner 执行；工程侧证据为 NOT_RUN（SP16/SP18/SP17 见 stripe-psp-v1 §14）。
+
+### 6.2 商家 Stripe 与退款
+
+商家在后台发起退款（`payments:refund`，owner 创建店铺时已获得，裁决 24）；退款由 `payment-worker-sandbox` 的 Stripe/退款 worker 发出，结果靠 `refund.*`/`charge.refunded` webhook 与查询对账。
+**真实退款需要 owner 明确批准**；SANDBOX 只对测试支付发起。人工发货（承运商 + 运单号）是商家后台操作，无需部署步骤。
+
+### 6.3 Meta：评论入口、Page token、认领来源
+
+1. 前提（owner 事项，工程无法代办）：Meta App（App Review / Access Tier）、Page/IG 资产、`commerce_meta_apps_json`（`{"apps":[{"app_id","object","app_secret","verify_token"}]}`，从 Meta 开发者后台取）。
+   Webhook 回调地址：`https://<LC_HOOKS_HOST>/v1/meta/webhooks/<app_id>/<object>`（`object` 为 `page` 或 `instagram`，与 `commerce_meta_apps_json` 的条目一一对应，`internal/integrations/meta/env.go:69`）；hub.verify_token 在 Caddy 访问日志里被替换为 REDACTED（smoke S40）。
+2. 启用：`COMMERCE_META_WEBHOOK_ENABLED=1`（api.env）、`COMPOSE_PROFILES` 增加 `meta`；`meta-worker` 同时持有 K_actor（`commerce_claims_actor_key`），没有它评论不会被暂存为认领。
+3. **Page access token 登记**（`claims-worker` 发送私信用；`scopes_attested` 由操作者依据 token debug 输出声明：FB 为 `pages_messaging`，IG 为 `instagram_manage_comments`、`pages_read_engagement`）：
+   ```sh
+   deploy/scripts/ops-admin.sh meta-admin page-token --tenant ... --store ... --principal <有 integration:manage 的成员> \
+     --binding <binding-id> --provider facebook --asset <page-id> --expected-version 0 --scopes pages_messaging
+   # 提示输入 META_PAGE_ACCESS_TOKEN（无回显）；输出 {"version":1}。明文 token 从不进入 PG、日志或仓库
+   ```
+4. **认领来源绑定**：商家在后台把直播场次绑定到具体的 Facebook 贴文/Instagram media（`PUT .../live-sessions/{session}/claim-source`，需要 `live:manage` + `integration:execute`，owner 已具备，裁决 24）。
+   `private_reply=true` 还要求该绑定已登记 Page token（否则 `page_token_missing`）。无需部署配置。
+5. 启用真实私信发送（**需要 owner 明确批准**，因为这会向真实买家发消息）：填好 `claims-worker.env` 的 Graph 版本，`COMPOSE_PROFILES` 增加 `claims`，
+   `deploy.sh upgrade`；部署后检查会等待 `claims_worker_ready`。日志里的 `claims_worker_routes` 行列出该进程服务的路由（IR-13）。
+6. **已知缺口（G1，需要集成者/owner 裁决）**：`meta_inbox.activate_route(...)`（把 Meta app/object/asset 映射到租户与店铺，`commerce_meta_curator` 权限）
+   目前**只有测试调用，没有运维 CLI、HTTP 或登录**，所以真实店铺的评论入口无法被激活。需要一个 `meta-admin route` 子命令和对应的 curator 登录
+   （owner 必须提供 Meta 资产所有权证明 `proof_hash`）。在它落地前 §6.3 的 1–5 只能验证到 webhook 验证与 K_actor/claims-worker 启动，不能端到端接入真实商家。
 
 ## 7. 密钥轮换（按 deploy/secrets.manifest.tsv 的 rotation 列）
 
@@ -140,6 +218,12 @@ deploy/scripts/deploy.sh upgrade <tag>
 | `commerce_buyer_cookie_key` | 替换后所有买家会话失效 |
 | `commerce_account_keys_json` / `commerce_meta_payload_keys_json` | **只能追加**新 key，再修改 active id 文件并重启相关服务。**禁止删除**仍被存储凭据引用的 key |
 | `commerce_account_replay_key` | 只能走 owner 批准的流程 |
+| `commerce_stripe_webhook_keys_json` / `commerce_stripe_webhook_active_key_id` | **只能追加**新 key，改 active id，重启 api，再用 `ops-admin.sh stripe-admin webhook ... --expected-version <当前>` 重新密封各端点的签名密钥。**禁止删除**仍被已登记端点引用的 key |
+| `commerce_stripe_webhook_replay_key` | 只能走 owner 批准的流程（不得等于任何签名 key 或支付 key） |
+| `commerce_meta_page_token_keys_json` / `commerce_meta_page_token_active_key_id` | **只能追加**新 key，改 active id，重启 claims-worker，再用 `ops-admin.sh meta-admin page-token` 重新登记 token（`--expected-version` 用当前版本）|
+| `commerce_claims_actor_key`（K_actor） | 轮换会让所有认领 actor 重新映射：只能走 owner 批准的流程，必须不同于其他任何密钥 |
+| `commerce_claims_reply_link_key`（K_link） | 计划与发送之间轮换会让在途私信在 Check 被拒（不发送）；轮换后重启 claims-worker，必须不同于其他任何密钥 |
+| Stripe API key（`STRIPE_SECRET_KEY`） | 在 Stripe 后台轮换后执行 `ops-admin.sh stripe-admin rotate`（运维输入，不落盘）；`STRIPE_WEBHOOK_SECRET` 见 §6.1 步骤 3 |
 
 所有密钥文件权限保持 `0440 root:10500`。改完后执行 `preflight.sh`。
 
@@ -177,7 +261,8 @@ deploy/scripts/deploy.sh upgrade <tag>
 ## 10. 发布检查清单
 
 - [ ] owner 批准记录（范围、tag、窗口）
-- [ ] `deploy/scripts/smoke.sh static` 和 `smoke.sh full` 均 PASS，证据位于 `deploy/.evidence/<run>/result.json`，由集成者复制到 `evidence/release/`（I6）
+- [ ] `bash scripts/dev/release-gate.sh --strict` 退出码 0（R1 验收命令：每个 tier 一行 PASS/FAIL/NOT_RUN；NOT_RUN 不是通过），证据在主 checkout 的 `output/release-gate/<UTC>-<sha>/`
+- [ ] `deploy/scripts/smoke.sh static` 和 `smoke.sh full`（Linux 部署主机、root）无 FAIL，证据位于 `deploy/.evidence/<run>/result.json`，由集成者复制到 `evidence/release/`（I6）；`S29m` BLOCKED（I8）是已记录的已知限制，不是 PASS
 - [ ] 独立验收：test_worker 复跑 smoke；security_reviewer 审查 hba、密钥、加固和 Caddy（作者不能是唯一验收人）
 - [ ] `preflight.sh --online` 全部 PASS
 - [ ] 升级前备份已经成功，且最近 30 天内做过恢复演练（backup-restore.md）

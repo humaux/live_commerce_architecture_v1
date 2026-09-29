@@ -31,7 +31,7 @@ LC_SCRIPT_NAME="${LC_SCRIPT_NAME:-$(basename "$0")}"
 export LC_SCRIPTS_DIR LC_DEPLOY_DIR LC_REPO_ROOT LC_CONFIG_DIR LC_COMPOSE_ENV
 
 # Core services with no long-running process (excluded from health/watchdog loops).
-LC_ONESHOT_SERVICES=(migrate provision-logins pg-ops)
+LC_ONESHOT_SERVICES=(migrate provision-logins pg-ops stripe-admin meta-admin)
 
 lc_ts() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 lc_log() {
@@ -132,7 +132,7 @@ lc_compose() {
 # lc_compose_with_ops ARGS... — current profiles + ops (pg-ops runs next to the live stack).
 lc_compose_with_ops() { COMPOSE_PROFILES="${COMPOSE_PROFILES:+$COMPOSE_PROFILES,}ops" lc_compose "$@"; }
 # lc_compose_all ARGS... — every profile (teardown of a whole project, e.g. smoke).
-lc_compose_all() { COMPOSE_PROFILES="db,app,payments-sandbox,payments-live,meta,ops" lc_compose "$@"; }
+lc_compose_all() { COMPOSE_PROFILES="db,app,payments-sandbox,payments-live,meta,claims,ops" lc_compose "$@"; }
 
 # lc_active_services — services enabled by COMPOSE_PROFILES (one per line).
 lc_active_services() { lc_compose config --services 2>/dev/null; }

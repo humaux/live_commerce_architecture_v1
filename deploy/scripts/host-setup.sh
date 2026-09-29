@@ -90,7 +90,7 @@ install_template() { # src dst
   fi
 }
 install_template "$LC_DEPLOY_DIR/env/compose.env.example" "$config/compose.env"
-for svc in api admin storefront payment-worker expiry-worker meta-worker caddy postgres; do
+for svc in api admin storefront payment-worker expiry-worker meta-worker claims-worker caddy postgres; do
   install_template "$LC_DEPLOY_DIR/env/$svc.env.example" "$config/env/$svc.env"
 done
 
