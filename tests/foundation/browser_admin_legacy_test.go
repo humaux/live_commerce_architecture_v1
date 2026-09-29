@@ -146,6 +146,7 @@ func startBrowserNode(t *testing.T, ctx context.Context, evidence, name, dir str
 	// `next dev` forks a next-server child that outlives a signal to its parent and keeps the fixed
 	// port; own a process group and signal the whole group (this PID's group only, never by port).
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	cmd.Cancel = func() error { return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL) }
 	cmd.Stdout, cmd.Stderr = log, log
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("could not start %s", name)
