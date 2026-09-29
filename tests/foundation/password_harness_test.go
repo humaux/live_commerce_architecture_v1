@@ -146,7 +146,13 @@ func newPwa(t *testing.T, opts ...pwaOpt) *pwaEnv {
 	if err != nil {
 		t.Fatalf("real SMTP adapter against mailtest: %v", err)
 	}
-	e := &pwaEnv{started: time.Now().Add(-time.Second), t: t, f: f, oidc: oidc, pool: pool, pepper: randomBytes(32), smtp: smtp, from: from, hibp: newPwaHIBP(t), bffKey: base64.RawURLEncoding.EncodeToString(randomBytes(32))}
+	e := &pwaEnv{t: t, f: f, oidc: oidc, pool: pool, pepper: randomBytes(32), smtp: smtp, from: from, hibp: newPwaHIBP(t), bffKey: base64.RawURLEncoding.EncodeToString(randomBytes(32))}
+	// started comes from the database clock that stamps email_challenges.created_at, with no slack: a
+	// Go-clock start minus 1 s swept in the PENDING login challenges PA05 leaves on purpose (it calls
+	// start_login_challenge directly, no mail) whenever PA08 ran right after it in one go test process.
+	if err := f.owner.QueryRow(pwaBG, `SELECT clock_timestamp()`).Scan(&e.started); err != nil {
+		t.Fatalf("database clock: %v", err)
+	}
 	policy := identity.PasswordPolicy{Pepper: e.pepper, SessionTTL: time.Hour, BreachCheck: "hibp", HIBPBaseURL: e.hibp.srv.URL, AllowLoopback: true}
 	for _, o := range opts {
 		o(&policy)
