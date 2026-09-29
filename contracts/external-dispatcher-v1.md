@@ -149,3 +149,10 @@ BLOCKED_POLICY `credential_unavailable`; any other error → UNKNOWN `secret_loa
 zero calls. Lease inequality becomes `CallTimeout + 3*DBTimeout + 1s < lease`. Existing routes
 are unaffected. Added gate: a secret is never observable by Check/Reconcile, and a loader
 failure makes zero provider calls.
+
+## Amendment note (meta-ads-v1 round 3, 2026-09-30; ruling X2 in `docs/delivery/units/r2-design-rulings.md`)
+
+Additive, lands with the meta-ads A-10 unit: `DispatchRequest` gains `Mode string` (`"dispatch"|"reconcile"`),
+set by the dispatcher from `claim.Mode` before `Check` (today `Check` runs for every claimed op, `dispatcher.go:226`,
+and a reconcile-mode denial is `completeAmbiguous('policy_check_failed')`, `:236–240`). Ads/CAPI `Check` returns nil in
+`reconcile` mode; existing routes ignore the field (no behaviour change). Full text: `meta-ads-v1.md` §3.1.
