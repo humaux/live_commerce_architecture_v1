@@ -265,22 +265,6 @@ func TestCustomersBillingCB09HTTP(t *testing.T) {
 		c.reject("query on detail", c.do(c.on, "GET", base+"/customers/"+owner+"?x=1", full, nil, nil))
 	})
 
-	t.Run("permission sets are exactly the §5 rows: customers:read alone reads a detail; customers:privacy alone exports, withdraws and erases", func(t *testing.T) {
-		if r := c.do(c.on, "GET", base+"/customers/"+owner, c.tokens["read"], nil, nil); r.status != 200 {
-			t.Errorf("GET customers/{id} with customers:read alone: HTTP %d code=%q, want 200 (§5 lists customers:read only)", r.status, cbhCode(r))
-		}
-		if r := c.do(c.on, "POST", base+"/customers/"+owner+"/exports", c.tokens["privacy"], c.key(), nil); r.status != 200 {
-			t.Errorf("POST exports with customers:privacy alone: HTTP %d code=%q, want 200 (§5 lists customers:privacy only)", r.status, cbhCode(r))
-		}
-		if r := c.do(c.on, "POST", base+"/customers/"+owner+"/consent-withdrawals", c.tokens["privacy"], c.key(), map[string]any{"purpose": "ads_personalization", "channel": "meta_ads"}); r.status != 201 {
-			t.Errorf("POST consent-withdrawals with customers:privacy alone: HTTP %d code=%q, want 201", r.status, cbhCode(r))
-		}
-		victim := c.bundleOwner(t, h, m)
-		if r := c.do(c.on, "POST", base+"/customers/"+victim+"/erasure", c.tokens["privacy"], c.key(), map[string]string{"confirm": "ERASE"}); r.status != 200 {
-			t.Errorf("POST erasure with customers:privacy alone: HTTP %d code=%q, want 200", r.status, cbhCode(r))
-		}
-	})
-
 	t.Run("POST consent-withdrawals: key, strict body, permission, replay, conflict", func(t *testing.T) {
 		path := base + "/customers/" + owner + "/consent-withdrawals"
 		body := map[string]any{"purpose": "marketing_messages", "channel": "meta_dm"}
@@ -749,4 +733,38 @@ func (c *cbhEnv) bundleOwner(t *testing.T, h *lcHarness, m *cbmEnv) string {
 	}
 	h.closeWindow(t, s)
 	return cp.Scope.OwnerID
+}
+
+// TestCustomersBillingCB09Permissions is the permission-set half of CB09: §5 lists exactly one permission per merchant
+// row (customers:read for the reads, customers:privacy for withdraw/export/erase). It is a separate top-level test so a
+// deviation between the frozen table and an implementation that asks for more (e.g. orders:read for the order summaries
+// inside a customer) cannot hide the other CB09 assertions.
+func TestCustomersBillingCB09Permissions(t *testing.T) {
+	m := cbmSetup(t, false, false)
+	f, ctx := m.f, m.ctx
+	h := &lcHarness{cqHarness: m.p.cqHarness, ctx: ctx}
+	h.actor, h.token = lcPrincipal(t, f, m.tenant, []string{m.store}, "store:read", "live:read", "live:manage")
+	var err error
+	if h.labels, err = claims.NewLabelKey(randomBytes(32)); err != nil {
+		t.Fatal(err)
+	}
+	c := &cbhEnv{cbmEnv: m}
+	c.on = httpapi.NewHandler(f.runtime, httpapi.Options{Billing: m.svc, ClaimLabels: &h.labels, Studio: true})
+	mk := func(perms ...string) string { return lcTokenFor(t, f, m.tenant, m.store, perms...) }
+	c.tokens = map[string]string{"read": mk("customers:read"), "privacy": mk("customers:privacy")}
+	base := "/v1/admin/stores/" + m.store
+	owner := m.p.cap.Scope.OwnerID
+	if r := c.do(c.on, "GET", base+"/customers/"+owner, c.tokens["read"], nil, nil); r.status != 200 {
+		t.Errorf("GET customers/{id} with customers:read alone: HTTP %d code=%q, want 200 (§5 lists customers:read only)", r.status, cbhCode(r))
+	}
+	if r := c.do(c.on, "POST", base+"/customers/"+owner+"/exports", c.tokens["privacy"], c.key(), nil); r.status != 200 {
+		t.Errorf("POST exports with customers:privacy alone: HTTP %d code=%q, want 200 (§5 lists customers:privacy only)", r.status, cbhCode(r))
+	}
+	if r := c.do(c.on, "POST", base+"/customers/"+owner+"/consent-withdrawals", c.tokens["privacy"], c.key(), map[string]any{"purpose": "ads_personalization", "channel": "meta_ads"}); r.status != 201 {
+		t.Errorf("POST consent-withdrawals with customers:privacy alone: HTTP %d code=%q, want 201", r.status, cbhCode(r))
+	}
+	victim := c.bundleOwner(t, h, m)
+	if r := c.do(c.on, "POST", base+"/customers/"+victim+"/erasure", c.tokens["privacy"], c.key(), map[string]string{"confirm": "ERASE"}); r.status != 200 {
+		t.Errorf("POST erasure with customers:privacy alone: HTTP %d code=%q, want 200", r.status, cbhCode(r))
+	}
 }
