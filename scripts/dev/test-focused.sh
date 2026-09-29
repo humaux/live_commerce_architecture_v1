@@ -27,8 +27,16 @@ cd "$repo_root"
 lock_dir="${LC_TEST_LOCK_DIR:-${TMPDIR:-/tmp}/lc-test-pg.lock}"
 until mkdir "$lock_dir" 2>/dev/null; do
   holder="$(cat "$lock_dir/pid" 2>/dev/null || true)"
-  if [[ -n "$holder" ]] && ! kill -0 "$holder" 2>/dev/null; then
-    rm -rf "$lock_dir"   # holder died without cleanup
+  # Stale if the holder died, or its PID was reused by an unrelated process (observed
+  # 2026-09-29: a dead holder's PID reused by `sleep 3000` blocked every agent).
+  if [[ -n "$holder" ]] && { ! kill -0 "$holder" 2>/dev/null ||
+      ! ps -o command= -p "$holder" 2>/dev/null | grep -q 'test-focused\.sh'; }; then
+    rm -rf "$lock_dir"
+    continue
+  fi
+  # A holder that died between mkdir and writing its pid leaves no pid file.
+  if [[ -z "$holder" ]] && [[ -n "$(find "$lock_dir" -maxdepth 0 -mmin +1 2>/dev/null)" ]]; then
+    rm -rf "$lock_dir"
     continue
   fi
   sleep 2
