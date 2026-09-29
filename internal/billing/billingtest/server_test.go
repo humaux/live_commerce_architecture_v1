@@ -207,7 +207,7 @@ func TestFakeFaultsAndCapture(t *testing.T) {
 	}
 	form := url.Values{"b": {"2"}, "a": {"1", "0"}}
 	f.do("POST", "/v1/customers", form, map[string]string{"Idempotency-Key": "kk", "Stripe-Version": APIVersion})
-	c := f.s.CallsTo("POST", "/v1/customers")
+	c := f.s.CallsExact("POST", "/v1/customers")
 	if len(c) != 1 || c[0].SortedBody() != "a=1&a=0&b=2" || c[0].IdempotencyKey != "kk" || c[0].StripeVersion != APIVersion {
 		t.Fatalf("capture: %+v", c)
 	}

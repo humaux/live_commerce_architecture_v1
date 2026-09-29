@@ -541,10 +541,10 @@ func TestCustomersBillingCB09HTTP(t *testing.T) {
 		c.reject("checkout wrong method", c.do(c.on, "GET", base+"/billing/checkout", c.tokens["billing"], nil, nil))
 		// 409 subscription_exists (a live subscription at Stripe), never a second session
 		cus := cbxOne(t, f, `SELECT stripe_customer_id FROM billing.store_customers WHERE store_id=$1`, m.store)
-		sessions := len(m.fake.CallsTo("POST", "/v1/checkout/sessions"))
+		sessions := len(m.fake.CallsExact("POST", "/v1/checkout/sessions"))
 		m.fake.AddSubscription(billingtest.Sub{Customer: cus, Status: "active", StoreMeta: m.store})
 		c.want("subscription exists", c.do(c.on, "POST", base+"/billing/checkout", c.tokens["billing"], nil, body), 409, "subscription_exists")
-		if len(m.fake.CallsTo("POST", "/v1/checkout/sessions")) != sessions {
+		if len(m.fake.CallsExact("POST", "/v1/checkout/sessions")) != sessions {
 			t.Error("a session was created although a subscription exists")
 		}
 		// billing disabled (no service): GETs work, the POSTs are 503 billing_unavailable

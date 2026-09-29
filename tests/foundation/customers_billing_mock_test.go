@@ -204,6 +204,26 @@ func (m *cbmEnv) pinned(store, token string) string {
 	return cus
 }
 
+// age moves a mirrored row's retrieved_at back by d (disclosed fixture: the monotone trigger forbids it, so triggers are
+// off for this one statement; the service's own clock cannot be skewed from outside).
+func (m *cbmEnv) age(sub string, d time.Duration) {
+	m.t.Helper()
+	tx, err := m.f.owner.Begin(m.ctx)
+	if err != nil {
+		m.t.Fatal(err)
+	}
+	defer tx.Rollback(m.ctx)
+	if _, err := tx.Exec(m.ctx, `SET LOCAL session_replication_role = replica`); err != nil {
+		m.t.Fatal(err)
+	}
+	if _, err := tx.Exec(m.ctx, `UPDATE billing.subscriptions SET retrieved_at=retrieved_at-$2::interval WHERE stripe_subscription_id=$1`, sub, fmt.Sprintf("%d seconds", int64(d.Seconds()))); err != nil {
+		m.t.Fatal(err)
+	}
+	if err := tx.Commit(m.ctx); err != nil {
+		m.t.Fatal(err)
+	}
+}
+
 func (m *cbmEnv) rowStatus(sub string) string {
 	return cbxOne(m.t, m.f, `SELECT status FROM billing.subscriptions WHERE stripe_subscription_id=$1`, sub)
 }
@@ -349,16 +369,15 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 		if cbxOne(t, m.f, `SELECT count(*)::text FROM billing.store_customers WHERE store_id=$1`, m.store) != "0" {
 			t.Fatal("a failed customer create left a pinned row")
 		}
-		m.fake.LoseNext("customer") // Stripe creates the customer, the response never arrives
-		if _, err := m.checkout("price_Cb08Month"); err == nil {
-			t.Fatal("a lost customer response must surface as an error")
-		}
+		m.fake.LoseNext("customer") // Stripe creates the customer, the response never arrives; net/http itself replays a POST that carries an Idempotency-Key
 		if _, err := m.checkout("price_Cb08Month"); err != nil {
-			t.Fatalf("retry: %v", err)
+			if _, err := m.checkout("price_Cb08Month"); err != nil { // the stable key makes the caller's retry a replay too
+				t.Fatalf("retry: %v", err)
+			}
 		}
-		calls := m.fake.CallsTo("POST", "/v1/customers")
-		if len(calls) != 3 {
-			t.Fatalf("%d customer-create calls, want 3 (failed, lost, retried)", len(calls))
+		calls := m.fake.CallsExact("POST", "/v1/customers")
+		if len(calls) < 3 {
+			t.Fatalf("%d customer-create calls, want >= 3 (failed, lost, replayed)", len(calls))
 		}
 		wantKey := "lc:billing:customer:v1:" + m.store + ":SANDBOX"
 		for i, c := range calls {
@@ -409,7 +428,7 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 		if lq, _ := url.ParseQuery(list.RawQuery); lq.Get("customer") != m.fake.Customers()[0] || lq.Get("status") != "all" {
 			t.Errorf("step 1 list query %q, want customer=<pinned>&status=all", list.RawQuery)
 		}
-		create := m.fake.CallsTo("POST", "/v1/checkout/sessions")[0]
+		create := m.fake.CallsExact("POST", "/v1/checkout/sessions")[0]
 		form := cbmForm(create)
 		wantKeys := "cancel_url,client_reference_id,customer,expires_at,line_items[0][price],line_items[0][quantity],mode,subscription_data[metadata][lc_store],subscription_data[trial_period_days],success_url"
 		if cbmKeys(form) != wantKeys {
@@ -467,10 +486,10 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 				t.Errorf("the recorded session %s is not open", known)
 			}
 		}
-		if len(m.fake.CallsTo("POST", "/v1/checkout/sessions")) != 4 {
-			t.Errorf("%d create calls, want 4 (first, second, lost response, retry: never an idempotent replay)", len(m.fake.CallsTo("POST", "/v1/checkout/sessions")))
+		if len(m.fake.CallsExact("POST", "/v1/checkout/sessions")) != 4 {
+			t.Errorf("%d create calls, want 4 (first, second, lost response, retry: never an idempotent replay)", len(m.fake.CallsExact("POST", "/v1/checkout/sessions")))
 		}
-		for _, c := range m.fake.CallsTo("POST", "/v1/checkout/sessions") {
+		for _, c := range m.fake.CallsExact("POST", "/v1/checkout/sessions") {
 			if c.IdempotencyKey != "" {
 				t.Errorf("a checkout create carried the key %q", c.IdempotencyKey)
 			}
@@ -486,7 +505,7 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 		if _, err := m.svc.StartCheckout(m.ctx, m.f.runtime, scope, token, "price_Cb08Month"); err != nil {
 			t.Fatalf("checkout after a canceled subscription: %v", err)
 		}
-		c := m.fake.CallsTo("POST", "/v1/checkout/sessions")
+		c := m.fake.CallsExact("POST", "/v1/checkout/sessions")
 		if len(c) != 1 {
 			t.Fatalf("%d create calls", len(c))
 		}
@@ -501,13 +520,13 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 			st, tok, sc := m.extraStore()
 			cu := m.pinned(st, tok)
 			sub := m.fake.AddSubscription(billingtest.Sub{Customer: cu, Status: status, StoreMeta: st})
-			created := len(m.fake.CallsTo("POST", "/v1/checkout/sessions"))
+			created := len(m.fake.CallsExact("POST", "/v1/checkout/sessions"))
 			_, err := m.svc.StartCheckout(m.ctx, m.f.runtime, sc, tok, "price_Cb08Month")
 			if exists {
 				if !errors.Is(err, billing.ErrSubscriptionExists) {
 					t.Errorf("%s: %v, want ErrSubscriptionExists (409)", status, err)
 				}
-				if len(m.fake.CallsTo("POST", "/v1/checkout/sessions")) != created {
+				if len(m.fake.CallsExact("POST", "/v1/checkout/sessions")) != created {
 					t.Errorf("%s: a session was created despite the existing subscription", status)
 				}
 			} else if err != nil {
@@ -539,7 +558,7 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 				t.Errorf("parallel call %d: %v", i, err)
 			}
 		}
-		created := len(m.fake.CallsTo("POST", "/v1/checkout/sessions"))
+		created := len(m.fake.CallsExact("POST", "/v1/checkout/sessions"))
 		if created != n || m.fake.OpenSessions() != 1 {
 			t.Errorf("created %d sessions, %d open; want %d created and exactly one open (older ones expired)", created, m.fake.OpenSessions(), n)
 		}
@@ -805,7 +824,7 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 			t.Fatalf("fresh row: no refresh expected: %+v %v lists %d -> %d", st, err, n, len(lists()))
 		}
 		// age the row past 10 minutes and change the truth at Stripe
-		mustExec(t, m.f.owner, `UPDATE billing.subscriptions SET retrieved_at=now()-interval '11 minutes' WHERE stripe_subscription_id=$1`, sub.ID)
+		m.age(sub.ID, 11*time.Minute)
 		m.fake.SetSubStatus(sub.ID, "past_due")
 		st, err = m.svc.Status(m.ctx, m.f.runtime, m.scope, m.token)
 		if err != nil || st.Stale || st.Standing != billing.Grace || st.Subscriptions[0].Status != "past_due" {
@@ -817,7 +836,7 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 			t.Errorf("refresh list query %q, want customer=<pinned>&status=all&limit=100", got[len(got)-1].RawQuery)
 		}
 		// Stripe down: the database state with stale=true, no error
-		mustExec(t, m.f.owner, `UPDATE billing.subscriptions SET retrieved_at=now()-interval '11 minutes' WHERE stripe_subscription_id=$1`, sub.ID)
+		m.age(sub.ID, 11*time.Minute)
 		m.fake.SetSubStatus(sub.ID, "canceled")
 		m.fake.FailNext("list", 500)
 		st, err = m.svc.Status(m.ctx, m.f.runtime, m.scope, m.token)
@@ -849,7 +868,6 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		m.pinned(cbxStore(t, m.f, m.tenant), m.token) // no-op fixture: keep the customer path warm
 		portal, err := m.svc.OpenPortal(m.ctx, m.f.runtime, m.scope, m.token)
 		if err != nil {
 			t.Fatal(err)

@@ -181,6 +181,17 @@ func (s *Server) CallsTo(method, prefix string) (out []Call) {
 	return out
 }
 
+// CallsExact returns the captured calls of one method whose path equals path (CallsTo matches a prefix: the create
+// path "/v1/checkout/sessions" is also the prefix of every ".../{id}/expire").
+func (s *Server) CallsExact(method, path string) (out []Call) {
+	for _, c := range s.Calls() {
+		if c.Method == method && c.Path == path {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
 // ResetCalls forgets the captured calls (state is kept).
 func (s *Server) ResetCalls() { s.mu.Lock(); s.calls = nil; s.mu.Unlock() }
 
