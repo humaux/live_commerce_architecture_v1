@@ -6,7 +6,7 @@ Reads env / secrets: 无（命令读取 /etc/live-commerce/compose.env 与 secre
 Used by: 运维/owner/集成者；deploy/README.md 链接到此。
 Depends on: deploy/scripts/*.sh, deploy/compose.yml, deploy/env/*.env.example。
 Status: DESIGN。未在生产执行过。cmd/migrate 已存在（I1 关闭），smoke full 在 Linux 容器（dind）里对真实构建的四个镜像跑通：
-  见 deploy/README.md 状态表；唯一 BLOCKED 是 S29m（I8，逻辑恢复后 media 门禁 t→f，R1 不在关键路径：Studio/media 不部署）。
+  见 deploy/README.md 状态表；唯一 BLOCKED 是 S29m（I8，逻辑恢复后 media 门禁 t→f，R1 不在关键路径：LiveKit 媒体不部署，`COMMERCE_STUDIO_MEDIA_ENABLED=0`）。
   R1 新增（deploy-release 单元）：Stripe SANDBOX（api 结账 + webhook、sandbox worker 的 Stripe/退款派发）、claims-worker、
   meta-worker 的 K_actor、运维一次性任务 stripe-admin / meta-admin（`deploy/scripts/ops-admin.sh`）、smoke S44。
   2026-09-28 评审 P1 修复：deploy.sh 把部署的 tag 写回 compose.env（§3–§5，smoke S43、看门狗 W10）；
@@ -55,7 +55,7 @@ Change rules: 命令必须与脚本保持一致；改脚本行为时同步本文
    - 共享开关：`LC_IDENTITY_ENABLED`、`LC_OIDC_ISSUER`、`LC_BUYER_*`。
    跨服务的值**只能**写在这里。
 2. 编辑 `/etc/live-commerce/env/*.env`。这些文件只放各服务自己的旋钮；compose.yml 里 `environment:` 已接好的变量不得重复定义（preflight P06 会拦截）：
-   - `api.env`：OIDC client id、`COMMERCE_SESSION_TTL`、`COMMERCE_PAYMENT_PROFILE=SANDBOX`、`COMMERCE_STUDIO_ENABLED=0`（必须为 0）。
+   - `api.env`：OIDC client id、`COMMERCE_SESSION_TTL`、`COMMERCE_PAYMENT_PROFILE=SANDBOX`、`COMMERCE_STUDIO_ENABLED=1` + `COMMERCE_CLAIMS_ENABLED=1`（场次规划、关键词下单、认领来源；需要 `LC_IDENTITY_ENABLED=1`）、`COMMERCE_STUDIO_MEDIA_ENABLED=0`（必须为 0，P06 强制）。
    - `claims-worker.env`（R1 新增，升级时要从 `deploy/env/claims-worker.env.example` 复制）：`COMMERCE_META_GRAPH_VERSION`（**无默认值**，取 owner 用 MCI11 只读探测确认的 vNN.N；`CHANGE_ME` 会被 preflight P08 拒绝）。
    - `caddy.env`：真实的 `ACME_EMAIL`。`LC_ACME_CA` 要么保持注释，要么填 https URL，**不能留空**。
    - Stripe 只有一个总开关：`compose.env` 的 `LC_STRIPE_ENABLED`（api 的结账开关 + webhook 路由 + sandbox worker 的 Stripe/退款派发）。它只允许 SANDBOX：
@@ -142,7 +142,7 @@ deploy/scripts/deploy.sh upgrade <tag>
   在历史 sandbox job 处理完之前保留 `payments-sandbox`。preflight 会对 `payments-live` 给出 WARN 提醒。Stripe 在 LIVE 下被代码拒绝。
 - Meta 评论入口：`meta` profile + `COMMERCE_META_WEBHOOK_ENABLED=1` + owner 提供的 `commerce_meta_apps_json`（§6.3）。
 - Meta 私信发送：`claims` profile。**这是唯一会向买家发送 Meta 消息的进程**，只在 owner 批准真实发送后启用（§6.3）。
-- Studio/直播：保持关闭（P06 强制 `COMMERCE_STUDIO_ENABLED=0`，media worker 不部署）。
+- Studio（R1 裁决 G2）：场次规划 + 关键词下单 + 认领来源开启（`COMMERCE_STUDIO_ENABLED=1`、`COMMERCE_CLAIMS_ENABLED=1`，密钥 `commerce_claims_label_key` 由 secrets-init 生成）；LiveKit 媒体保持关闭（P06 强制 `COMMERCE_STUDIO_MEDIA_ENABLED=0`，media 路由不挂载＝404，media worker 不部署）。smoke S45 验证。
 
 ### 6.1 Stripe SANDBOX：账户登记与 webhook 端点
 
@@ -214,15 +214,13 @@ deploy/scripts/deploy.sh upgrade <tag>
    # 重新激活/换证据：--expected-epoch <当前 route_epoch>；停用：
    deploy/scripts/ops-admin.sh meta-admin route-disable --route <route_id> --expected-epoch <route_epoch>
    ```
-   顺序：先第 6 步（route，得到 binding_id）→ 再第 3 步（page-token）→ 第 4 步（认领来源，仍受 G2 阻塞）。
+   顺序：先第 6 步（route，得到 binding_id）→ 再第 3 步（page-token）→ 第 4 步（认领来源，G2 已关闭）。
    证据：`TestMetaRouteRegistrarF2`（REAL_PG：签名评论在 route 前隔离、route 后恰好一个 job、跨店冲突、停用后再隔离、无 integration:manage 拒绝）、smoke S44。
 
-7. **已知缺口（G2，需要集成者裁决；归属 cmd/api + internal/httpapi 的认领/Studio 通道，部署单元不绕过）**：`claim-source` 路由从未在已部署的 api 里挂载。
-   `registerClaimSourceRoutes` 只被 `registerClaimRoutes`（`internal/httpapi/claims.go:110`）调用；后者只在 `COMMERCE_CLAIMS_ENABLED=1` 时运行，
-   而 `cmd/api/claims.go` 在 Studio 未启用时拒绝该开关，并要求 `COMMERCE_CLAIMS_LABEL_KEY`。部署包 preflight P06 强制 `COMMERCE_STUDIO_ENABLED=0`（媒体 worker 不可部署），
-   compose 也没有接入 `COMMERCE_CLAIMS_ENABLED`/`COMMERCE_CLAIMS_LABEL_KEY`。结果：`PUT .../claim-source` 在任何由本包部署的环境里都是 404，
-   评论无法绑定到直播场次。修复在代码侧：把 claim-source 的挂载从 Studio/claims-label 门控里拆出来（需要集成者裁决门控语义），落地后再补 compose 变量与 smoke 用例。
-   在此之前 §6.3 的 4–5 只能在测试里验证，不能端到端接入真实商家；这与 G1 互相独立，两者都要关闭。
+7. **G2 已关闭（R1 裁决 G2）**：Studio 开关拆分。`COMMERCE_STUDIO_ENABLED=1` 挂载场次规划并允许 `COMMERCE_CLAIMS_ENABLED=1`（关键词下单 + `GET/PUT .../claim-source`）；
+   `COMMERCE_STUDIO_MEDIA_ENABLED=0` 时不构建媒体 planner、不要求 `live.media_plan_ready()`，演练/输入路由返回 404，后台 Studio 隐藏演练栏（API 的 `media_enabled=false`）。
+   compose 已接入 `COMMERCE_CLAIMS_LABEL_KEY_FILE`（secret `commerce_claims_label_key`）。证据：`TestStudioG2FlagMatrix`、`TestStudioPlanningOnlyG2APIProcess`（真实二进制 + PG）、
+   KC16/T12 浏览器门禁（仅规划模式）、smoke S45（部署后 claims/claim-source 未带令牌返回 401/403，媒体路由 404）。
 
 ## 7. 密钥轮换（按 deploy/secrets.manifest.tsv 的 rotation 列）
 

@@ -5,7 +5,8 @@
 #   NOT_RUN, never PASS; a test that skips with a `NOT_RUN:` message is listed as NOT_RUN, any other
 #   skip is FAIL; zero tests, a missing log or a non-zero exit is FAIL (R1 ruling F5). Go results are
 #   read as `go test -json` events (G06 natively, the `-v` logs of test-local.sh via `go tool test2json`).
-#   The overall line says PASS only when every row is PASS.
+#   The overall line says PASS only when every row is PASS or an accepted NOT_RUN ("(accepted: <reason>)");
+#   any other NOT_RUN is labelled "UNACCEPTED:" and keeps the overall INCOMPLETE.
 # Order: G01 check_packet, G02 build/vet/gofmt, G03 TypeScript typecheck, G04 secret grep,
 #   G05 dependency map, G06 unit tests (all packages but tests/foundation), G06n Node unit suites
 #   (scripts/dev/test-node.sh, ruling F9), G07 the whole foundation
@@ -14,7 +15,8 @@
 #   TEST key present, then G90 deploy smoke static, G91 deploy smoke full and G99 (no gate rewrote a
 #   tracked .impeccable file, ruling F7; full runs only).
 # Usage: bash scripts/dev/release-gate.sh [--strict] [--list] [--only ID[,ID...]]
-#   --strict  exit 3 when there is no FAIL but at least one NOT_RUN (use for release acceptance)
+#   --strict  exit 3 when there is no FAIL but at least one UNACCEPTED NOT_RUN (use for release acceptance);
+#             NOT_RUN rows listed in the accepted catalogue below (R1 rulings F11/F12/G3/G4) do not count
 #   --list    print the step ids and exit
 #   --only    run just these ids (e.g. G01,G04,B-browser-buyer); the table then shows only them
 #   Exit: 0 no FAIL (and, with --strict, no NOT_RUN), 1 any FAIL, 2 usage, 3 --strict and NOT_RUN.
@@ -96,11 +98,60 @@ mkdir -p "$OUT" || exit 2
 impeccable_before=$(git status --porcelain --untracked-files=no -- .impeccable 2>/dev/null)
 : >"$OUT/results.tsv"
 rows=""
-n_pass=0 n_fail=0 n_notrun=0
+n_pass=0 n_fail=0 n_notrun=0 n_accepted=0
+
+# ---- accepted NOT_RUN catalogue (R1 rulings F11, F12, G3, G4: docs/delivery/units/r1-final-rulings.md) --
+# A NOT_RUN row is "accepted" only when EVERY item it names matches an entry below; its note is then
+# prefixed "(accepted: <reason>)". Any other NOT_RUN is prefixed "UNACCEPTED:" and counted as open.
+# Items: the lines of a *.skipped list (go test names), the "not run: S01,S34" ids of a smoke row, or
+# else the note itself. First match wins; keep specific entries above broad ones.
+accepted_notrun() { # $1 id, $2 note, $3 log/list file -> prints the reason(s), or nothing
+  python3 - "$1" "$2" "$3" <<'PY'
+import fnmatch, re, sys
+rid, note, path = sys.argv[1:4]
+catalogue = [  # (row id glob, item glob, reason)
+    ("*", "*TestStripeSP16Sandbox/expires_at_29min*", "G4 SP16 29-min expiry probe is developer-only"),
+    ("*", "*TestStripeRF10Sandbox/rotated_key*", "G4 rotated-key replay needs a second Stripe test key"),
+    ("*", "*populated_upgrade*", "G4 populated-DB upgrade test: R1 first deploy is a fresh DB"),
+    ("*", "*TestMetaClaimsMCI11LiveReadOnlyProbes*", "G4 Meta LIVE probes need the owner's Page token"),
+    ("*", "*TestBrowserRefund*SANDBOX*", "G4 RF11(b) covered by RF10 via the API (G07z)"),
+    ("*", "*TestBrowserE2EDealLoopSandbox*", "F12 T12 SANDBOX tier covered by SP18"),
+    ("B-stripe-browser+", "*SP17*", "G4 SP17 real webhook delivery: Dashboard test event after deploy"),
+    ("G06s", "*TestStripe*Sandbox", "runs in G07z with the Stripe test key"),
+    ("G06s", "admin-fixture.TestFixtureEmptyDatabase*", "runs in G07 (REAL_PG fixture guard)"),
+    ("G07+", "TestStripe*Sandbox", "runs in G07z with the Stripe test key"),
+    ("G07+", "TestStripeSP21Registrar/sandbox_probe*", "runs in G07z with the Stripe test key"),
+    ("G06n+", "*r04-input-runner*", "F11 live media (LiveKit) is not in R1"),
+    ("G90", "S01", "G3 shellcheck runs in CI job deploy-smoke"),
+    ("G91", "*", "G3 smoke full runs in CI job deploy-smoke"),
+]
+items = []
+if path.endswith(".skipped"):
+    try:
+        items = [l.strip() for l in open(path) if l.strip()]
+    except OSError:
+        items = []
+if not items:
+    m = re.search(r"not run: ([A-Za-z0-9,]+)", note)
+    items = m.group(1).split(",") if m else [note]
+reasons = []
+for item in items:
+    hit = next((r for g, pat, r in catalogue if fnmatch.fnmatchcase(rid, g) and fnmatch.fnmatchcase(item, pat)), None)
+    if hit is None:
+        sys.exit(0)  # one unaccepted item keeps the whole row open
+    if hit not in reasons:
+        reasons.append(hit)
+print("; ".join(reasons))
+PY
+}
 
 # record ID TIER STATUS NOTE [EXIT] [LOG]
 record() {
-  local id=$1 tier=$2 status=$3 note=$4 code=${5:--} log=${6:--}
+  local id=$1 tier=$2 status=$3 note=$4 code=${5:--} log=${6:--} why
+  if [[ "$status" == NOT_RUN ]]; then
+    why=$(accepted_notrun "$id" "$note" "$log")
+    if [[ -n "$why" ]]; then note="(accepted: $why) $note"; n_accepted=$((n_accepted + 1)); else note="UNACCEPTED: $note"; fi
+  fi
   printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$id" "$tier" "$status" "$note" "$code" "$log" >>"$OUT/results.tsv"
   rows="$rows$(printf '%-24s %-10s %-8s %s' "$id" "$tier" "$status" "$note")"$'\n'
   case "$status" in PASS) n_pass=$((n_pass + 1)) ;; FAIL) n_fail=$((n_fail + 1)) ;; *) n_notrun=$((n_notrun + 1)) ;; esac
@@ -496,11 +547,13 @@ fi
 
 # ---- table ----------------------------------------------------------------------------------------------
 if [[ -n "$only" ]]; then subset=" [subset via --only: not a release verdict]"; else subset=""; fi
-if ((n_fail > 0)); then overall="FAIL ($n_fail FAIL, $n_notrun NOT_RUN, $n_pass PASS)"; code=1
-elif ((n_notrun > 0)); then overall="INCOMPLETE: no FAIL, but $n_notrun NOT_RUN (not release acceptance), $n_pass PASS"; code=0
+n_open=$((n_notrun - n_accepted))
+if ((n_fail > 0)); then overall="FAIL ($n_fail FAIL, $n_notrun NOT_RUN [$n_accepted accepted, $n_open UNACCEPTED], $n_pass PASS)"; code=1
+elif ((n_open > 0)); then overall="INCOMPLETE: no FAIL, but $n_open UNACCEPTED NOT_RUN (not release acceptance), $n_accepted accepted NOT_RUN, $n_pass PASS"; code=0
+elif ((n_notrun > 0)); then overall="PASS with accepted NOT_RUN: 0 FAIL, $n_pass PASS, $n_accepted NOT_RUN (accepted by F11/F12/G3/G4)"; code=0
 else overall="PASS ($n_pass PASS)"; code=0; fi
 overall="$overall$subset"
-if ((strict && n_fail == 0 && n_notrun > 0)); then code=3; fi
+if ((strict && n_fail == 0 && n_open > 0)); then code=3; fi
 {
   echo "release-gate  commit=$sha  dirty_files=$dirty  modes_in_test-local=$all_modes  evidence=$OUT"
   printf '%-24s %-10s %-8s %s\n' ID TIER STATUS NOTE

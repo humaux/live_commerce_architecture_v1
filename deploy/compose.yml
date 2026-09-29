@@ -164,6 +164,8 @@ services:
       COMMERCE_META_INGRESS_DATABASE_URL_FILE: /run/secrets/dsn_lc_api_meta_ingress
       COMMERCE_BFF_KEY_FILE: /run/secrets/commerce_bff_key
       COMMERCE_BUYER_BFF_KEY_FILE: /run/secrets/commerce_buyer_bff_key
+      # Manual-label HMAC key of keyword claims (cmd/api/claims.go; read only with COMMERCE_CLAIMS_ENABLED=1).
+      COMMERCE_CLAIMS_LABEL_KEY_FILE: /run/secrets/commerce_claims_label_key
       COMMERCE_OIDC_CLIENT_SECRET_FILE: /run/secrets/commerce_oidc_client_secret
       COMMERCE_ACCOUNT_KEYS_JSON_FILE: /run/secrets/commerce_account_keys_json
       COMMERCE_ACCOUNT_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_account_active_key_id
@@ -194,6 +196,7 @@ services:
       - commerce_stripe_webhook_replay_key
       - commerce_bff_key
       - commerce_buyer_bff_key
+      - commerce_claims_label_key
       - commerce_oidc_client_secret
       - commerce_account_keys_json
       - commerce_account_active_key_id
@@ -630,6 +633,7 @@ secrets:
   dsn_lc_stripe_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_stripe_registrar" }
   dsn_lc_meta_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_meta_registrar" }
   commerce_bff_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_bff_key" }
+  commerce_claims_label_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_claims_label_key" }
   commerce_buyer_bff_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_buyer_bff_key" }
   commerce_buyer_cookie_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_buyer_cookie_key" }
   commerce_oidc_client_secret: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_oidc_client_secret" }

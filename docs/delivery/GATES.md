@@ -13,11 +13,34 @@ MOCK, SANDBOX, LIVE, NOT_RUN): a pass here is only ever as strong as the label i
 | T0 static | `check_packet.py`, `go vet`, secret-literal grep, `depmap.sh --check`, `check-pkgdocs.sh`, `check-gates.sh`, `test-node.sh` (Node unit suites) | CI (`.github/workflows/foundation.yml`) | Go, Python 3, Node 24 |
 | T1 foundation | default `bash scripts/dev/test-local.sh` (no flag): the whole Go module under `-race` on a disposable real PostgreSQL 18 | CI | Docker, pinned PG image |
 | T2 subset | one focused slice of the T1 suite (`--checkout`, `--meta-inbox`, `--live-media-*`, ...); faster feedback, never acceptance on its own | developers; T1 in CI covers the same code | Docker |
+| T4 deploy smoke | `deploy/scripts/smoke.sh static` (S01-S06 incl. shellcheck) and `smoke.sh full` (S07-S45: images, compose stack, preflight negatives, backup/restore/PITR, edge, S45 Studio planning + claims mounted / media 404) | CI job `deploy-smoke` (`.github/workflows/deploy-smoke.yml`, R1 ruling G3), verdict by `.github/scripts/smoke-verdict.py`: any FAIL, NOT_RUN, never-run case or a BLOCKED other than S29m (F11) fails the job | ubuntu-24.04 runner, root, Docker, free 80/443 |
 | T3 browser | real Chromium against the packaged Next apps + Go + PG; MOCK IdP/PSP unless the row says SANDBOX | developers, one mode at a time (`bash scripts/dev/test-local.sh <mode>`); NOT_RUN in CI. `scripts/dev/release-gate.sh` runs every mode in this file (R1 acceptance) | Docker, pnpm, Node 24, Playwright Chromium |
 
-CI is deliberately T0 + T1 only (owner decision: full foundation plus static checks). Browser modes are
+CI is deliberately T0 + T1 plus T4 deploy smoke (owner decision: full foundation plus static checks; ruling G3 added the smoke job). Browser modes are
 too slow and machine-bound for every push. T3 rows run in automation only through `bash scripts/dev/release-gate.sh`
 (R1 acceptance, one PASS/FAIL/NOT_RUN table), or when a developer invokes a mode.
+
+## Accepted NOT_RUN (R1)
+
+`scripts/dev/release-gate.sh` labels a NOT_RUN row `(accepted: <reason>)` only when every item it names is in
+its catalogue (function `accepted_notrun`); every other NOT_RUN is labelled `UNACCEPTED:`, keeps the overall
+line INCOMPLETE and makes `--strict` exit 3. The catalogue is exactly:
+
+| Item | Reason (ruling) |
+| --- | --- |
+| Meta LIVE read-only probes (`TestMetaClaimsMCI11LiveReadOnlyProbes`) | G4: needs the owner's Page token |
+| populated-database migration upgrade subtests (`*populated_upgrade*`) | G4: R1's first deploy is a fresh DB; runbook requires them before upgrading a live DB |
+| rotated-key refund replay (`TestStripeRF10Sandbox/rotated_key*`) | G4: needs a second Stripe test key |
+| SP16 29-minute expiry probe | G4: developer-only |
+| SP17 real Stripe webhook delivery (`B-stripe-browser+`) | G4: Dashboard test event after deploy |
+| RF11(b) refund in the browser against Stripe SANDBOX | G4: covered by RF10 through the API (G07z) |
+| T12 SANDBOX tier (`TestBrowserE2EDealLoopSandbox`) | F12: hosted Stripe page proven by SP18 |
+| R04 LiveKit input runner (`G06n+`) | F11: live media is not in R1 |
+| Stripe SANDBOX tests skipped in G06/G07 (no key in that process) | run in G07z with the test key |
+| `admin-fixture` guard test skipped in G06 | runs in G07 (REAL_PG) |
+| smoke static S01 without local shellcheck (`G90`), smoke full (`G91`) | G3: run in CI job `deploy-smoke` |
+
+Smoke S29m BLOCKED is accepted in the CI job (F11), not by release-gate.
 
 ## test-local.sh modes
 

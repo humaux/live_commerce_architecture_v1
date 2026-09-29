@@ -100,7 +100,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	handler := httpapi.NewHandler(pool, httpapi.Options{SessionStoreList: identityConfig.enabled, Accounts: accountService, Live: studioPlanner,
+	handler := httpapi.NewHandler(pool, httpapi.Options{SessionStoreList: identityConfig.enabled, Accounts: accountService, Studio: studioConfig.enabled, Live: studioPlanner,
 		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs})
 	if identityHandler != nil {
 		mux := http.NewServeMux()

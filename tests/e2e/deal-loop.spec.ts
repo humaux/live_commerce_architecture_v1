@@ -137,6 +137,9 @@ test("T12 deal loop: wizard store, Studio, claim source, signed Meta comment, pr
   await merchant.getByRole("button", { name: "Create draft" }).click();
   await merchant.waitForURL(/scene=[0-9a-f-]{36}/);
   const scene = new URL(merchant.url()).searchParams.get("scene") as string;
+  // R1 deploy shape (ruling G2): planning-only Studio, no rehearsal column or controls.
+  await expect(merchant.locator(".studio-surface.studio-planning-only")).toBeVisible();
+  await expect(merchant.getByRole("button", { name: /MOCK rehearsal|Request stop/ })).toHaveCount(0);
   await merchant.getByTestId("studio-open-claims").click();
   await expect(merchant.getByTestId("merchant-claims")).toBeVisible();
   await merchant.getByRole("button", { name: "Open claim window" }).click();

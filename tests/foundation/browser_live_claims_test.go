@@ -187,8 +187,8 @@ func TestBrowserLiveClaimsRealChain(t *testing.T) {
 	}
 	mux := http.NewServeMux()
 	mux.Handle("/v1/identity/", private)
-	mux.Handle("/", httpapi.NewHandler(h.f.runtime, httpapi.Options{SessionStoreList: true,
-		Live: lmpPlanner(t, h.f.runtime, "river_media"), ClaimLabels: &labels}))
+	// R1 deploy shape (ruling G2): planning-only Studio + claims, no media planner (media routes 404).
+	mux.Handle("/", httpapi.NewHandler(h.f.runtime, httpapi.Options{SessionStoreList: true, Studio: true, ClaimLabels: &labels}))
 	transport := &claimsTransportLog{}
 	adminAPI := httptest.NewServer(transport.wrap(mux))
 	t.Cleanup(adminAPI.Close)

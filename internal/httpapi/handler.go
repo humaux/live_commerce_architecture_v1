@@ -38,8 +38,12 @@ import (
 type Options struct {
 	SessionStoreList bool
 	Accounts         *accounts.Service
-	Live             *live.MediaPlanner
-	BrowserInput     *live.BrowserInputRuntime
+	// Studio mounts the live-session planning routes (studio-v1 GET/POST/GET/PATCH) without any media
+	// subsystem (R1 ruling G2). Live non-nil implies Studio and adds the MOCK rehearsal routes;
+	// BrowserInput additionally adds the input routes.
+	Studio       bool
+	Live         *live.MediaPlanner
+	BrowserInput *live.BrowserInputRuntime
 	// ClaimLabels is the server-held manual-label HMAC key (cmd/api loads
 	// COMMERCE_CLAIMS_LABEL_KEY). nil leaves the keyword-claims routes unmounted.
 	ClaimLabels *claims.LabelKey
@@ -125,7 +129,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerSettingsDiscoveryRoutes(mux, pool)
 	registerAccountRoutes(mux, pool, configured.Accounts)
 	registerOrderRoutes(mux, pool)
-	registerStudioRoutes(mux, pool, configured.Live, configured.BrowserInput)
+	registerStudioRoutes(mux, pool, configured.Studio || configured.Live != nil, configured.Live, configured.BrowserInput)
 	registerClaimRoutes(mux, pool, configured.ClaimLabels)
 	registerRefundRoutes(mux, pool, configured.RefundJobs)
 	registerShipmentRoutes(mux, pool)

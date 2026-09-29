@@ -108,10 +108,10 @@ value_for() { # $1 file, $2 kind -> prints a new value
   case "$kind" in
   hex32) gen_hex32 ;;
   b64url32)
-    # Distinct keys: merchant BFF != buyer BFF != buyer cookie key (C8).
+    # Distinct keys: merchant BFF != buyer BFF != buyer cookie key (C8) != claims label key (G2).
     while :; do
       v=$(gen_b64url32)
-      for other in commerce_bff_key commerce_buyer_bff_key commerce_buyer_cookie_key; do
+      for other in commerce_bff_key commerce_buyer_bff_key commerce_buyer_cookie_key commerce_claims_label_key; do
         [[ "$other" != "$file" && -f "$dir/$other" && "$(read_secret "$other")" == "$v" ]] && continue 2
       done
       printf '%s' "$v"

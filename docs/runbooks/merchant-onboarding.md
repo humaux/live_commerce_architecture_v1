@@ -59,9 +59,8 @@ Change rules: 命令必须与 deploy/scripts/ops-admin.sh 和 cmd/*-admin 的子
 **G1 已关闭（R1 裁决 F2）**：`ops-admin.sh meta-admin route` 创建/复用店铺的 facebook/instagram 绑定并激活 webhook 路由（deploy.md §6.3 第 6 步），
 需要 owner 提供资产所有权证据的 sha256（`--proof`）。顺序：route → page-token → 认领来源（G2）。
 
-**当前工程缺口 G2（阻塞真实接入）**：`PUT .../live-sessions/{session}/claim-source` 在由本部署包构建的 api 里返回 404，不是配置问题。
-路由只在 `COMMERCE_CLAIMS_ENABLED=1` 时挂载，而该开关要求 Studio 启用，部署包 preflight P06 强制 `COMMERCE_STUDIO_ENABLED=0`，compose 也没有接入 claims 开关。
-修复归属 cmd/api + internal/httpapi（把 claim-source 挂载从 Studio/claims-label 门控里拆出），需要集成者裁决；部署单元不绕过。详见 deploy.md §6.3 G2。
+**G2 已关闭（R1 裁决 G2）**：部署默认 `COMMERCE_STUDIO_ENABLED=1`、`COMMERCE_CLAIMS_ENABLED=1`、`COMMERCE_STUDIO_MEDIA_ENABLED=0`，
+`PUT .../live-sessions/{session}/claim-source` 已挂载（smoke S45 验证未带令牌时返回 401/403）。直播媒体（LiveKit 演练）仍不部署，Studio 页面不显示演练栏。详见 deploy.md §6.3 第 7 步。
 
 ## 5. 域名与证书
 

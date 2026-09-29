@@ -230,6 +230,8 @@ for idf, ringf in (("commerce_account_active_key_id", "commerce_account_keys_jso
 bff, buyer, cookie = values.get("commerce_bff_key"), values.get("commerce_buyer_bff_key"), values.get("commerce_buyer_cookie_key")
 rec("P04", None not in (bff, buyer) and bff != buyer, "commerce_buyer_bff_key != commerce_bff_key")
 rec("P04", None not in (buyer, cookie) and buyer != cookie, "commerce_buyer_cookie_key != commerce_buyer_bff_key")
+label = values.get("commerce_claims_label_key")
+rec("P04", label is not None and label not in (bff, buyer, cookie), "commerce_claims_label_key differs from the BFF/cookie keys")
 acct = rings.get("commerce_account_keys_json") or {}
 rec("P04", values.get("commerce_account_replay_key") not in acct.values(), "commerce_account_replay_key not in keyring")
 # R1 custody separation (stripe-psp-v1 §12, meta-claims-intake-v1 §3/§7): no key bytes are shared between
@@ -263,7 +265,7 @@ rec("P04", bool(su) and values.get("dsn_migrate_owner", "").find(" password=" + 
 env_dir = E.get("LC_ENV_DIR", "")
 allow = {
     "api.env": {"COMMERCE_ACCOUNTS_ENABLED", "COMMERCE_BUYER_PAYMENT_ENABLED", "COMMERCE_META_WEBHOOK_ENABLED",
-                "COMMERCE_STUDIO_ENABLED", "COMMERCE_OIDC_CLIENT_ID", "COMMERCE_IDENTITY_PROVIDER_KEY",
+                "COMMERCE_STUDIO_ENABLED", "COMMERCE_STUDIO_MEDIA_ENABLED", "COMMERCE_CLAIMS_ENABLED", "COMMERCE_OIDC_CLIENT_ID", "COMMERCE_IDENTITY_PROVIDER_KEY",
                 "COMMERCE_SESSION_TTL", "COMMERCE_PAYMENT_PROFILE", "TZ"},
     "admin.env": {"NODE_OPTIONS", "TZ"},
     "storefront.env": {"NODE_OPTIONS", "TZ"},
@@ -310,12 +312,17 @@ accounts = flag("COMMERCE_ACCOUNTS_ENABLED", api.get("COMMERCE_ACCOUNTS_ENABLED"
 payment = flag("COMMERCE_BUYER_PAYMENT_ENABLED", api.get("COMMERCE_BUYER_PAYMENT_ENABLED", ""))
 meta = flag("COMMERCE_META_WEBHOOK_ENABLED", api.get("COMMERCE_META_WEBHOOK_ENABLED", ""))
 studio = flag("COMMERCE_STUDIO_ENABLED", api.get("COMMERCE_STUDIO_ENABLED", ""))
+studio_media = flag("COMMERCE_STUDIO_MEDIA_ENABLED", api.get("COMMERCE_STUDIO_MEDIA_ENABLED", ""))
+claims_on = flag("COMMERCE_CLAIMS_ENABLED", api.get("COMMERCE_CLAIMS_ENABLED", ""))
 profiles = {p.strip() for p in E.get("COMPOSE_PROFILES", "").split(",") if p.strip()}
 stripe_on = flag("LC_STRIPE_ENABLED", E.get("LC_STRIPE_ENABLED", ""))
 rec("P06", profiles <= {"db", "app", "payments-sandbox", "payments-live", "meta", "claims", "ops"}, "COMPOSE_PROFILES known")
 rec("P06", "ops" not in profiles, "COMPOSE_PROFILES must not list ops (one-shots run through ops-admin.sh / pg-ops.sh)")
 rec("P06", not accounts or identity, "COMMERCE_ACCOUNTS_ENABLED requires LC_IDENTITY_ENABLED")
-rec("P06", not studio, "COMMERCE_STUDIO_ENABLED must be 0 (media worker not deployable)")
+# R1 ruling G2: Studio (planning + claims + claim-source) is deployable; LiveKit media is not (F11).
+rec("P06", not studio or identity, "COMMERCE_STUDIO_ENABLED requires LC_IDENTITY_ENABLED")
+rec("P06", not claims_on or studio, "COMMERCE_CLAIMS_ENABLED requires COMMERCE_STUDIO_ENABLED")
+rec("P06", not studio_media, "COMMERCE_STUDIO_MEDIA_ENABLED must be 0 (media worker not deployable)")
 rec("P06", not payment or buyer_on, "COMMERCE_BUYER_PAYMENT_ENABLED requires LC_BUYER_ENABLED")
 profile_name = api.get("COMMERCE_PAYMENT_PROFILE", "")
 if "app" in profiles and profile_name:

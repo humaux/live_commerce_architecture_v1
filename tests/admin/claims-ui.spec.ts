@@ -249,6 +249,13 @@ test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MO
   await expect(merchant.getByRole("button", { name: "Live workspace" })).toBeVisible();
   await merchant.goto(`${origin}/en/studio?store=${store}&scene=${session}`);
   await expect(merchant.getByTestId("merchant-studio")).toBeVisible();
+  // R1 ruling G2: the harness runs planning-only Studio (media off), so the API reports
+  // media_enabled=false and the rehearsal column and its controls are absent.
+  await expect(merchant.getByLabel("Scene name")).toHaveValue(scene);
+  await expect(merchant.locator(".studio-surface.studio-planning-only")).toBeVisible();
+  await expect(merchant.getByRole("complementary", { name: "MOCK rehearsal" })).toHaveCount(0);
+  await expect(merchant.getByRole("button", { name: /MOCK rehearsal|Request stop/ })).toHaveCount(0);
+  pass("planning-only Studio: scene detail loads, rehearsal panel and controls hidden (media_enabled=false)");
   await merchant.getByTestId("studio-open-claims").click();
   await expect(merchant.getByTestId("merchant-claims")).toBeVisible();
   await expect(merchant.getByRole("heading", { level: 1, name: "Keyword claims" })).toBeVisible();

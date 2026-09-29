@@ -205,16 +205,15 @@ No new Go modules and no new npm packages. `lcentry` uses only the Go standard l
 
 ## Known limits recorded by the R1 deploy unit
 
-- **S29m (I8) stays BLOCKED**: not in R1's path (Studio/media are not deployed, `LC_REQUIRE_MEDIA_GATE=0`); owner lane =
+- **S29m (I8) stays BLOCKED**: not in R1's path (LiveKit media is not deployed, `COMMERCE_STUDIO_MEDIA_ENABLED=0`, `LC_REQUIRE_MEDIA_GATE=0`); owner lane =
   integrator (restore-stable `live.media_plan_ready()` migration). It keeps `smoke.sh full` at exit 3 by design.
 - **G1 closed (R1 ruling F2)**: `ops-admin.sh meta-admin route|route-disable` (login `lc_meta_registrar`; definers
   `integration.register_meta_binding` 0066 + `meta_inbox.activate_route`/`disable_route` 0028). No curator login: the curator
   authority is retention/terminal review, not routing. Gate `TestMetaRouteRegistrarF2` (REAL_PG), smoke S44.
-- **G2 claim-source routes are never mounted in the deployed api**: `registerClaimSourceRoutes` is reached only through
-  `registerClaimRoutes`, which needs `COMMERCE_CLAIMS_ENABLED=1`; `cmd/api/claims.go` refuses that unless Studio is enabled,
-  and preflight P06 forces `COMMERCE_STUDIO_ENABLED=0`. `PUT .../claim-source` is therefore 404 here. Owner lane: cmd/api +
-  internal/httpapi (split the claim-source mount from the Studio/claims-label gate; integrator ruling on the gate semantics).
-  The deploy unit does not work around it. Also needs the compose/env wiring and a smoke case once the code lands.
+- **G2 closed (R1 ruling G2)**: `COMMERCE_STUDIO_ENABLED=1` = planning + claims + claim-source, `COMMERCE_CLAIMS_ENABLED=1`
+  (label key secret `commerce_claims_label_key`), `COMMERCE_STUDIO_MEDIA_ENABLED=0` (P06; media routes 404, no MediaPlanner,
+  no `live.media_plan_ready()` requirement). Smoke S45 asserts claims/claim-source answer 401/403 on the deployed api; S10e/S10h
+  the P06 refusals. Smoke full runs identity=1 against a public OIDC discovery document (`LC_SMOKE_OIDC_ISSUER`).
 - SANDBOX Stripe registration/qualification/webhook delivery and every Meta LIVE step need owner inputs: NOT_RUN in CI.
 
 ## Blockers and hand-offs

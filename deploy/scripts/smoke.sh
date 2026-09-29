@@ -5,8 +5,10 @@
 #           all profile sets (+ two-host override), lcentry vet/tests/coverage, Caddyfile
 #           validate/fmt, ignore files. Needs no running containers.
 #   full    static + S07-S44 on an ISOLATED project "lc-smoke-<run>" with temp config, temp
-#           secrets and temp backup dir, *.localhost hosts on 127.0.0.1, identity=0 (no IdP),
-#           buyer=1, buyer_payment=0, meta_webhook=0, studio=0, Stripe webhook/worker flags on (SANDBOX). It touches ONLY its own
+#           secrets and temp backup dir, *.localhost hosts on 127.0.0.1, identity=1 against a PUBLIC OIDC
+#           discovery document only (LC_SMOKE_OIDC_ISSUER, default https://accounts.google.com: no client
+#           registration, no login; the API resolves discovery at startup), buyer=1, buyer_payment=0,
+#           meta_webhook=0, studio=1 + claims=1 + studio_media=0 (R1 ruling G2), Stripe webhook/worker flags on (SANDBOX). It touches ONLY its own
 #           project and removes its containers/volumes/networks/temp dirs at the end.
 #           Review-P1 regression cases (2026-09-28): S40 access-log redaction of credential query
 #           parameters (Caddy), S41 superuser rotation without the password reaching the postgres
@@ -15,6 +17,9 @@
 #           R1 additions (deploy-release unit): S13 also checks the ruling-19 River privileges and the
 #           registrar EXECUTE grants (S13n injects two drifts: both must fail provisioning by name), S16 the claims-worker + Stripe-enabled sandbox worker, S19 the
 #           Stripe webhook route, S44 the operator one-shots stripe-admin / meta-admin.
+#           G2 (R1 ruling): S45 planning-only Studio + claims + claim-source answer 401/403 (mounted) on the
+#           deployed api and the LiveKit media route is 404; S10e/S10h preflight P06 refuses media on and
+#           claims without Studio.
 # Usage: smoke.sh static | full
 # Exit: 0 PASS, 1 FAIL, 3 BLOCKED (e.g. cmd/migrate missing, ports busy, docker missing, or a
 #   REQUIRES_INTEGRATOR item observed at runtime: S29m = I8). result.json "not_run" names each one.
@@ -24,7 +29,7 @@
 #   ports LC_SMOKE_HTTP_PORT (80) / LC_SMOKE_HTTPS_PORT (443) on 127.0.0.1.
 # Reads env: LC_SMOKE_HTTP_PORT, LC_SMOKE_HTTPS_PORT, LC_SMOKE_KEEP=1 (keep stack for debugging).
 # Reads secrets: only the temp secrets it generates itself (never /etc/live-commerce).
-# Used by: operators, test_worker/security_reviewer acceptance, CI (static).
+# Used by: operators, test_worker/security_reviewer acceptance, CI job deploy-smoke (static + full, ruling G3).
 # Depends on: bash, docker + compose, go (S04), python3, curl, openssl, node + repo Playwright
 #   (S34 optional), every other deploy/scripts/*.sh.
 # Status: DESIGN. static = runnable now; full = BLOCKED at S07 until cmd/migrate exists (I1), and
@@ -173,8 +178,8 @@ LC_BACKUP_DIR=$dir/backup
 LC_STATE_DIR=$dir/state
 LC_PG_HOST=postgres
 LC_PG_SSLMODE=disable
-LC_IDENTITY_ENABLED=0
-LC_OIDC_ISSUER=
+LC_IDENTITY_ENABLED=1
+LC_OIDC_ISSUER=${LC_SMOKE_OIDC_ISSUER:-https://accounts.google.com}
 LC_ONBOARDING_ENABLED=0
 LC_ONBOARDING_CURRENCIES=
 LC_BUYER_ENABLED=1
@@ -187,7 +192,7 @@ EOF
 }
 
 # ================================ full ============================================================
-ALL_FULL=(S07 S08 S09 S10 S11 S12 S13 S13n S14 S15 S16 S44 S17 S18 S19 S20 S21 S22 S23 S24 S25 S26 S27 S28 S29 S29m S30 S31 S32 S33 S34 S35 S36 S37 S38 S39 S40 S41 S42 S43)
+ALL_FULL=(S07 S08 S09 S10 S11 S12 S13 S13n S14 S15 S16 S44 S17 S18 S19 S45 S20 S21 S22 S23 S24 S25 S26 S27 S28 S29 S29m S30 S31 S32 S33 S34 S35 S36 S37 S38 S39 S40 S41 S42 S43)
 block_rest() { # reason — mark every full case not yet recorded as BLOCKED
   local id
   for id in "${ALL_FULL[@]}"; do
@@ -298,12 +303,14 @@ full_cases() {
   neg_b() { echo 'LISTEN_ADDR=0.0.0.0:8080' >>"$1/env/api.env"; }
   neg_c() { echo 'COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS=1' >>"$1/env/api.env"; }
   neg_d() { rm -f "$1/secrets/commerce_buyer_cookie_key"; }
-  neg_e() { sed -i 's/^COMMERCE_STUDIO_ENABLED=.*/COMMERCE_STUDIO_ENABLED=1/' "$1/env/api.env"; }
+  neg_e() { sed -i 's/^COMMERCE_STUDIO_MEDIA_ENABLED=.*/COMMERCE_STUDIO_MEDIA_ENABLED=1/' "$1/env/api.env"; }
+  neg_h() { sed -i 's/^COMMERCE_STUDIO_ENABLED=.*/COMMERCE_STUDIO_ENABLED=0/' "$1/env/api.env"; } # claims stays 1
   negative S10a P04 neg_a
   negative S10b P06 neg_b
   negative S10c P07 neg_c
   negative S10d P03 neg_d
   negative S10e P06 neg_e
+  negative S10h P06 neg_h
   # R1: K_actor must differ from K_link (custody separation), and no operator input may become a knob.
   neg_f() { cp -f "$1/secrets/commerce_claims_actor_key" "$1/secrets/commerce_claims_reply_link_key"; }
   neg_g() { echo 'STRIPE_SECRET_KEY=placeholder' >>"$1/env/api.env"; }
@@ -454,6 +461,21 @@ sys.exit(1 if names & {"dsn_lc_stripe_registrar", "dsn_lc_meta_registrar"} else 
     "${r3%%|*}" =~ ^[1-5][0-9][0-9]$ && "$r3" != "404||0" && -n "$(cut -d'|' -f2 <<<"$r3")" ]]; then
     rec S19 PASS "meta + stripe webhook routes reach Go API (meta $(cut -d'|' -f2 <<<"$r"), stripe ${r3%%|*}); notify and / 404 at Caddy"
   else rec S19 FAIL "webhook=$r stripe=$r3 notify=$r1 root=$r2"; fi
+  # S45 R1 ruling G2: planning-only Studio + keyword claims + claim-source are MOUNTED on the deployed api
+  # (no token -> 401/403, never 404) and the LiveKit media routes are NOT (404). Probed on the api's own
+  # loopback listener: Caddy default-denies /v1/admin/* on the api host (S18) and admin talks to it directly.
+  api_status() { # path -> the status the api answers (lcentry probe prints "probe: status N" above 200)
+    local out
+    out=$(lc_compose exec -T api /app/bin/lcentry probe -max-status 200 "http://127.0.0.1:8080$1" 2>&1) && { echo 200; return; }
+    sed -n 's/^probe: status \([0-9][0-9]*\)$/\1/p' <<<"$out" | head -n1
+  }
+  local sessions=/v1/admin/stores/00000000-0000-4000-8000-000000000001/live-sessions s45
+  local scene=$sessions/00000000-0000-4000-8000-000000000002
+  s45="list=$(api_status "$sessions") claims=$(api_status "$scene/claims") source=$(api_status "$scene/claim-source") media=$(api_status "$scene/rehearsal/start")"
+  if [[ "$s45" =~ ^list=40[13]\ claims=40[13]\ source=40[13]\ media=404$ ]]; then
+    rec S45 PASS "Studio planning + claims + claim-source mounted (auth required), media route 404: $s45"
+  else rec S45 FAIL "$s45 (want 401/403 x3, media 404)"; fi
+
   r=$(edge shop.localhost /payment/return)
   if [[ "${r%%|*}" == 200 ]] && grep -q 'data-testid="payment-return"' "$EV/logs/body" && [[ "$(hdr content-security-policy)" == *"default-src 'none'"* ]]; then
     rec S20 PASS "storefront /payment/return 200 + CSP"
@@ -843,7 +865,7 @@ def ver(cmd):
     except Exception:
         return "unavailable"
 static_ids = ["S01", "S02", "S03", "S04", "S05", "S06"]
-full_ids = static_ids + ["S%02d" % i for i in range(7, 45)] + ["S10a", "S10b", "S10c", "S10d", "S10e", "S10f", "S10g", "S13n", "S29m"]
+full_ids = static_ids + ["S%02d" % i for i in range(7, 46)] + ["S10a", "S10b", "S10c", "S10d", "S10e", "S10f", "S10g", "S10h", "S13n", "S29m"]
 result = {
     "run_id": os.path.basename(ev), "task_id": "T22", "commit": commit,
     "environment": {"mode": mode, "host": platform.node(), "kernel": platform.release(),

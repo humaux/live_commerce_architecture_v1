@@ -215,8 +215,8 @@ ready="$(su_psql <<<"SELECT integration.payment_queue_ready(), checkout.expiry_q
 IFS='|' read -r r_pay r_exp r_meta r_media <<<"$ready"
 log "ready.integration.payment_queue_ready=$r_pay ready.checkout.expiry_queue_ready=$r_exp ready.meta_inbox.runtime_ready=$r_meta ready.live.media_plan_ready=$r_media"
 [[ "$r_pay$r_exp$r_meta" == ttt ]] || die "a readiness gate is false: unapplied/partial migration (no auto-repair)"
-# The media gate is only needed by Studio/media-worker, which are not deployable in this release
-# (preflight P06 forces COMMERCE_STUDIO_ENABLED=0). It is false on every LOGICALLY restored
+# The media gate is only needed by Studio media/media-worker, which are not deployable in this release
+# (preflight P06 forces COMMERCE_STUDIO_MEDIA_ENABLED=0; planning-only Studio never queries it). It is false on every LOGICALLY restored
 # database (constraint-digest pin, see deploy/postgres/ops/verify.sql), so it is required only
 # with LC_REQUIRE_MEDIA_GATE=1.
 if [[ "$r_media" != t ]]; then

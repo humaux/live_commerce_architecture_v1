@@ -7,8 +7,8 @@
 --   live.media_plan_ready() is reported but only REQUIRED with -v require_media=1: it pins an
 --   md5 of pg_get_constraintdef() that PostgreSQL does not reproduce after pg_dump/pg_restore
 --   (nested AND from BETWEEN is flattened on re-parse; VERIFIED_LOCAL 2026-09-28), so every
---   LOGICAL restore reports it false. Physical/PITR restores keep it true. Studio/media are not
---   deployable in this release (COMMERCE_STUDIO_ENABLED=0 enforced by preflight P06).
+--   LOGICAL restore reports it false. Physical/PITR restores keep it true. LiveKit media is not
+--   deployable in this release (COMMERCE_STUDIO_MEDIA_ENABLED=0 enforced by preflight P06).
 --   Fix is REQUIRES_INTEGRATOR (restore-stable gate in migrations/).
 -- Runs as/in: psql inside pg-ops as the superuser, against a restored database
 --   (restore-dump.sh) or a paused PITR scratch cluster (restore-pitr.sh). Read-only queries,
