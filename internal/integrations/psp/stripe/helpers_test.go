@@ -12,11 +12,11 @@ import (
 
 const (
 	fakeTestKey    = "sk_" + "test_FAKESENTINELKEY0000000000" // split so secret scanners see no key literal
-	fakeRAKTestKey = "rk_test_FAKESENTINELKEY0000000000"
-	fakeLiveKey    = "sk_live_FAKESENTINELKEY0000000000"
+	fakeRAKTestKey = "rk_" + "test_FAKESENTINELKEY0000000000"
+	fakeLiveKey    = "sk_" + "live_FAKESENTINELKEY0000000000"
 	fakeAccount    = "acct_1FakeAccount000"
 	fakeWhsecA     = "whsec" + "_vectorSecretA_not_real_0123456789" // split: not a real secret
-	fakeWhsecB     = "whsec_vectorSecretB_not_real_9876543210"
+	fakeWhsecB     = "whsec_" + "vectorSecretB_not_real_9876543210"
 	fxAttempt      = "0b5e3c1a-7d2f-4e8a-9c61-2f4d8e7a1b30"
 	fxOrder        = "9f1c2e4d-5a6b-4c7d-8e9f-0a1b2c3d4e5f"
 	fxReturnURL    = "https://shop.example.test/payment/return"

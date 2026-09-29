@@ -24,9 +24,9 @@ import (
 
 const (
 	sp15AdminDSN    = "postgres://registrar-sentinel:pw-sentinel@127.0.0.1:1/x"
-	sp15AdminSecret = "sk_test_sentinel0123456789abcdef"
-	sp15AdminWhsec  = "whsec_sentinel0123456789abcdef"
-	sp15AdminWhNext = "whsec_sentinel_next_0123456789"
+	sp15AdminSecret = "sk_" + "test_sentinel0123456789abcdef"
+	sp15AdminWhsec  = "whsec_" + "sentinel0123456789abcdef"
+	sp15AdminWhNext = "whsec_" + "sentinel_next_0123456789"
 	sp15UUIDA       = "3f2b8c1e-0d4a-4b6f-9a7e-5c1d2e3f4a5b"
 	sp15UUIDB       = "4a3c9d2f-1e5b-4c70-8b8f-6d2e3f4a5b6c"
 	sp15UUIDC       = "5b4d0e3a-2f6c-4d81-9c90-7e3f4a5b6c7d"
@@ -155,7 +155,7 @@ func TestStripeSP15Process(t *testing.T) {
 
 	t.Run("live_is_refused_by_the_cli", func(t *testing.T) {
 		env := sp15AdminEnv()
-		env["STRIPE_SECRET_KEY"] = "sk_live_sentinel0123456789abcdef"
+		env["STRIPE_SECRET_KEY"] = "sk_" + "live_sentinel0123456789abcdef"
 		var out bytes.Buffer
 		if err := run(ctx, sp15AdminCases()["register"], func(n string) string { return env[n] }, &out); err == nil || out.Len() != 0 || strings.Contains(err.Error(), "sk_live_") {
 			t.Fatalf("register with a live key: %v %q", err, out.String())

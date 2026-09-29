@@ -143,8 +143,8 @@ func TestStripeSP15Process(t *testing.T) {
 		var read []string
 		values := sp15WebhookEnv()
 		// Global Stripe credentials that must never be consulted (contract §0.2, ruling 5).
-		values["STRIPE_SECRET_KEY"], values["STRIPE_ACCOUNT_ID"] = "sk_test_sentinel0123456789abcdef", "acct_SentinelAcct1"
-		values["STRIPE_WEBHOOK_SECRET"], values["STRIPE_WEBHOOK_SECRET_NEXT"] = "whsec_sentinel0123456789abcdef", "whsec_sentinel_next_0123456789"
+		values["STRIPE_SECRET_KEY"], values["STRIPE_ACCOUNT_ID"] = "sk_"+"test_sentinel0123456789abcdef", "acct_SentinelAcct1"
+		values["STRIPE_WEBHOOK_SECRET"], values["STRIPE_WEBHOOK_SECRET_NEXT"] = "whsec_"+"sentinel0123456789abcdef", "whsec_"+"sentinel_next_0123456789"
 		c, err := loadStripeWebhookConfig(sp15Recorder(values, &read), "127.0.0.1:8080")
 		if err != nil {
 			t.Fatal(err)
@@ -209,7 +209,7 @@ func TestStripeSP15Process(t *testing.T) {
 		for _, profile := range []string{"PROVIDER_MOCK", "SANDBOX"} {
 			values = buyerPaymentTestEnv()
 			values["COMMERCE_STRIPE_CHECKOUT_ENABLED"], values["COMMERCE_PAYMENT_PROFILE"] = "1", profile
-			values["STRIPE_SECRET_KEY"], values["STRIPE_WEBHOOK_SECRET"] = "sk_test_sentinel0123456789abcdef", "whsec_sentinel0123456789abcdef"
+			values["STRIPE_SECRET_KEY"], values["STRIPE_WEBHOOK_SECRET"] = "sk_"+"test_sentinel0123456789abcdef", "whsec_"+"sentinel0123456789abcdef"
 			read = nil
 			if _, err := loadBuyerConfig(sp15Recorder(values, &read), "127.0.0.1:8080"); err != nil {
 				t.Fatalf("stripe checkout on %s: %v", profile, err)

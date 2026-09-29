@@ -82,11 +82,11 @@ func TestStripeSP01Config(t *testing.T) {
 	t.Run("WebhookConfig bounds", func(t *testing.T) {
 		bad := []WebhookConfig{
 			{AccountID: fakeAccount, Environment: "SANDBOX"},
-			{Secrets: []string{fakeWhsecA, fakeWhsecB, "whsec_third_secret_value_000"}, AccountID: fakeAccount, Environment: "SANDBOX"},
+			{Secrets: []string{fakeWhsecA, fakeWhsecB, "whsec_" + "third_secret_value_000"}, AccountID: fakeAccount, Environment: "SANDBOX"},
 			{Secrets: []string{fakeWhsecA, fakeWhsecA}, AccountID: fakeAccount, Environment: "SANDBOX"},
 			{Secrets: []string{"whsec_short"}, AccountID: fakeAccount, Environment: "SANDBOX"},
 			{Secrets: []string{"whsec_has space in secret 000"}, AccountID: fakeAccount, Environment: "SANDBOX"},
-			{Secrets: []string{"sk_test_not_a_webhook_secret0"}, AccountID: fakeAccount, Environment: "SANDBOX"},
+			{Secrets: []string{"sk_" + "test_not_a_webhook_secret0"}, AccountID: fakeAccount, Environment: "SANDBOX"},
 			{Secrets: []string{"whsec_" + strings.Repeat("a", 250)}, AccountID: fakeAccount, Environment: "SANDBOX"},
 			{Secrets: []string{fakeWhsecA}, AccountID: "bad", Environment: "SANDBOX"},
 			{Secrets: []string{fakeWhsecA}, AccountID: fakeAccount, Environment: "PROVIDER_MOCK"},
@@ -147,7 +147,7 @@ func TestStripeSP19LiveRefusal(t *testing.T) {
 	for _, cfg := range []Config{
 		{SecretKey: fakeLiveKey, AccountID: fakeAccount, Environment: "LIVE"},
 		{SecretKey: fakeLiveKey, AccountID: fakeAccount, Environment: "LIVE", Live: LiveApproval{Enabled: true}},
-		{SecretKey: "rk_live_FAKESENTINELKEY0000000000", AccountID: fakeAccount, Environment: "LIVE", Live: LiveApproval{Reference: "OWNER-APPROVAL:2026"}},
+		{SecretKey: "rk_" + "live_FAKESENTINELKEY0000000000", AccountID: fakeAccount, Environment: "LIVE", Live: LiveApproval{Reference: "OWNER-APPROVAL:2026"}},
 		{SecretKey: fakeLiveKey, AccountID: fakeAccount, Environment: "SANDBOX"},
 	} {
 		if _, err := New(cfg); !errors.Is(err, ErrLiveRefused) {

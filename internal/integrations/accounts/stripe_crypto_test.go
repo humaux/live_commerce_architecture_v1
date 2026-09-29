@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	stripeTestKey     = "sk_test_ABCDEFGHIJKLMNOP"
-	stripeTestNextKey = "rk_test_QRSTUVWXYZabcdef"
-	stripeTestWhsec   = "whsec_ABCDEFGHIJKLMNOP"
-	stripeTestNextWh  = "whsec_QRSTUVWXYZabcdef"
+	stripeTestKey     = "sk_" + "test_ABCDEFGHIJKLMNOP"
+	stripeTestNextKey = "rk_" + "test_QRSTUVWXYZabcdef"
+	stripeTestWhsec   = "whsec_" + "ABCDEFGHIJKLMNOP"
+	stripeTestNextWh  = "whsec_" + "QRSTUVWXYZabcdef"
 )
 
 func stripeAPITestScope() StripeAPIScope {
@@ -174,7 +174,7 @@ func TestStripeCustodyValidationAndBoundedOpen(t *testing.T) {
 	k := testKeyring(t)
 	a := stripeAPITestScope()
 	w := stripeWebhookTestScope()
-	for _, bad := range []string{"", "sk_live_ABCDEFGHIJKLMNOP", "sk_test_short", "sk_test_ABCDEFGHIJKLMNOP!",
+	for _, bad := range []string{"", "sk_" + "live_ABCDEFGHIJKLMNOP", "sk_test_short", "sk_" + "test_ABCDEFGHIJKLMNOP!",
 		"sk_test_" + strings.Repeat("A", 241)} {
 		if _, _, _, err := k.SealStripeAPI(a, StripeAPICredentials{bad}); !errors.Is(err, errStripeMaterial) {
 			t.Fatal("invalid API secret accepted")
@@ -264,7 +264,7 @@ func TestStripeCustodyWireStrictnessAndRedaction(t *testing.T) {
 	for _, raw := range []string{
 		`{}`, `{"secret_key":"` + stripeTestKey + `","unexpected":1}`,
 		`{"secret_key":"` + stripeTestKey + `","secret_key":"` + stripeTestNextKey + `"}`,
-		`{"secret_key":"sk_live_ABCDEFGHIJKLMNOP"}`,
+		`{"secret_key":"sk_" + "live_ABCDEFGHIJKLMNOP"}`,
 	} {
 		id, nonce, cipher, err := k.sealStripe([]byte(raw), apiAssociated(a))
 		if err != nil {

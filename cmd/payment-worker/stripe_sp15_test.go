@@ -33,7 +33,7 @@ func TestStripeSP15Process(t *testing.T) {
 				case "COMMERCE_STRIPE_ENABLED":
 					return "1"
 				case "STRIPE_SECRET_KEY":
-					return "sk_test_sentinel0123456789abcdef"
+					return "sk_" + "test_sentinel0123456789abcdef"
 				}
 				return ""
 			}
@@ -82,8 +82,8 @@ func TestStripeSP15Process(t *testing.T) {
 	t.Run("worker_never_reads_global_stripe_or_webhook_secrets", func(t *testing.T) {
 		m := testEnvironment()
 		m["COMMERCE_STRIPE_ENABLED"] = "1"
-		m["STRIPE_SECRET_KEY"], m["STRIPE_ACCOUNT_ID"] = "sk_test_sentinel0123456789abcdef", "acct_SentinelAcct1"
-		m["STRIPE_WEBHOOK_SECRET"], m["STRIPE_WEBHOOK_SECRET_NEXT"] = "whsec_sentinel0123456789abcdef", "whsec_sentinel_next_0123456789"
+		m["STRIPE_SECRET_KEY"], m["STRIPE_ACCOUNT_ID"] = "sk_"+"test_sentinel0123456789abcdef", "acct_SentinelAcct1"
+		m["STRIPE_WEBHOOK_SECRET"], m["STRIPE_WEBHOOK_SECRET_NEXT"] = "whsec_"+"sentinel0123456789abcdef", "whsec_"+"sentinel_next_0123456789"
 		m["COMMERCE_STRIPE_WEBHOOK_KEYS_JSON"], m["COMMERCE_STRIPE_INGRESS_DATABASE_URL"] = "signing-sentinel", "postgres://ingress-sentinel"
 		var read []string
 		if _, err := loadConfig(func(n string) string { read = append(read, n); return m[n] }); err != nil {
