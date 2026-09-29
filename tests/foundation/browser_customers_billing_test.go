@@ -172,7 +172,7 @@ func TestBrowserCustomersBilling(t *testing.T) {
 	mainOwner := main.s.p.cap.Scope.OwnerID
 	mainToken := main.token()
 	restricted, _ := e.member(t, main, "orders:read") // store:read + orders:read only (finance reads under orders:read, contract 6)
-	nofinance, _ := e.member(t, main)                  // store:read only: no customers, billing or finance
+	nofinance, _ := e.member(t, main)                 // store:read only: no customers, billing or finance
 	// a second customer without any payment (erasable), and the claims of both through the real claims path
 	h := cblClaims(t, main)
 	skus := h.stock.skus
