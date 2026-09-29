@@ -836,8 +836,11 @@ func lcPopulatedUpgrade(t *testing.T) {
 	mustExec(t, owner, `CREATE TABLE public.lc_schema_migrations (version text PRIMARY KEY, checksum text NOT NULL, applied_at timestamptz NOT NULL DEFAULT now())`)
 	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0060_live_claims.sql',$1)`, fmt.Sprintf("%x", sha256.Sum256(body)))
 	// 0064 and post-River 0014 (meta-claims-intake-v1) build on 0060's tables and roles, so they are
-	// held back with it and applied on top of the populated data in the second phase below.
-	dependents := []string{"0064_meta_claims_intake.sql", "post_river/0014_meta_claims_intake_river.sql"}
+	// held back with it and applied on top of the populated data in the second phase below. The meta-ads
+	// migrations (0074/0075, post-River 0015) build on 0064's Page-token custody tables and 0074's role, so they
+	// are held back too (unit ads-core; nothing else about this gate changes).
+	dependents := []string{"0064_meta_claims_intake.sql", "0074_meta_ads.sql", "0075_meta_ads_insights.sql",
+		"post_river/0014_meta_claims_intake_river.sql", "post_river/0015_meta_ads_river.sql"}
 	for _, version := range dependents {
 		dependent, err := os.ReadFile(filepath.Join("../../migrations", version))
 		if err != nil {

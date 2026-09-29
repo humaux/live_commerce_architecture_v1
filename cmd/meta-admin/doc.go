@@ -9,6 +9,11 @@
 //   - page-token: seals a per-store Page access token under the Page-token keyring and calls
 //     integration.register_meta_page_token. Flags: --tenant --store --principal --binding --provider
 //     --asset --expected-version --scopes (comma-separated attestation from the token debug output).
+//   - ads-settings: the operator's only change path for a store's ads settings (meta-ads-v1 4.1, ruling B12), via the
+//     SQL definer ads.operator_set_settings. Flags: --tenant --store (required) and at least one of --environment
+//     SANDBOX|LIVE (LIVE only after the owner approves in chat), --sandbox-ad-account <digits, "" clears>,
+//     --max-active-budget-minor <n> (per-store ceiling in minor units, 0 = ads off), --allowance-currency TWD|USD|HKD.
+//     Omitted flags keep the current value. Prints {"updated_at": ...} only.
 //
 // It never prints a token, key, DSN or driver message (stdout carries ids and versions only, stderr one
 // fixed code), never runs in the API or a worker, and never calls Meta: it cannot verify the scopes,

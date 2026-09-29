@@ -118,6 +118,8 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout 
 	case "page-token":
 	case "route", "route-disable":
 		return runRoute(ctx, args, getenv, stdout)
+	case "ads-settings":
+		return runAdsSettings(ctx, args, getenv, stdout)
 	default:
 		return errUsage
 	}

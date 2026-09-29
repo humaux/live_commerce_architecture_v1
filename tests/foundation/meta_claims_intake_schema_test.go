@@ -124,6 +124,14 @@ func mciIntakeFiles(t *testing.T) (numbered, post string) {
 func mciApplyWithout(t *testing.T, owner *pgxpool.Pool) {
 	t.Helper()
 	skipA, skipB := mciIntakeFiles(t)
+	// The meta-ads migrations (unit ads-core: 0074/0075, post-River 0015) build on the intake's Page-token custody tables, so
+	// they cannot run before it; they are ledger-marked applied below and never executed by this gate.
+	adsNumbered, _ := filepath.Glob("../../migrations/[0-9][0-9][0-9][0-9]_meta_ads*.sql")
+	adsPost, _ := filepath.Glob("../../migrations/post_river/[0-9][0-9][0-9][0-9]_meta_ads_river.sql")
+	adsSkip := map[string]bool{}
+	for _, path := range append(adsNumbered, adsPost...) {
+		adsSkip[path] = true
+	}
 	ctx := context.Background()
 	numbered, _ := filepath.Glob("../../migrations/[0-9][0-9][0-9][0-9]_*.sql")
 	post, _ := filepath.Glob("../../migrations/post_river/[0-9][0-9][0-9][0-9]_*.sql")
@@ -137,6 +145,14 @@ func mciApplyWithout(t *testing.T, owner *pgxpool.Pool) {
 			body, err := os.ReadFile(path)
 			if err != nil {
 				t.Fatal(err)
+			}
+			if adsSkip[path] {
+				// Recorded as applied WITHOUT running: the ads objects exist in neither the pre nor the post state of this
+				// gate, so its exact-delta assertions stay about the intake migrations only (unit ads-core).
+				if _, err := tx.Exec(ctx, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES($1,$2)`, prefix+filepath.Base(path), fmt.Sprintf("%x", sha256.Sum256(body))); err != nil {
+					t.Fatal(err)
+				}
+				continue
 			}
 			if _, err := tx.Exec(ctx, string(body)); err != nil {
 				t.Fatalf("historical migration %s: %v", path, err)

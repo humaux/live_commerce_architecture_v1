@@ -202,13 +202,20 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 -- R1 ruling F2 (migration 0066): the Meta registrar's binding definer, same owner/grant shape as the page-token one.
 	 ('integration.register_meta_binding(uuid,uuid,uuid,text,text)'::regprocedure::oid,false,'commerce_integration_writer',false),
 	 ('integration.guard_claims_intake_job()'::regprocedure::oid,false,'commerce_integration_writer',false),
-	 ('integration.guard_external_operation_job_link()'::regprocedure::oid,false,'commerce_integration_writer',false))
+	 ('integration.guard_external_operation_job_link()'::regprocedure::oid,false,'commerce_integration_writer',false),
+	 -- meta-ads-v1 (migration 0074, post-River 0015; unit ads-core): the ads token registrar is hash-authenticated and
+	 -- callable by the merchant runtime (checked below as the ONE runtime exception), the loader is the dispatcher's only
+	 -- ads credential read, and the two River guards have no caller EXECUTE.
+	 ('integration.register_meta_ads_token(bytea,uuid,uuid,uuid,bigint)'::regprocedure::oid,false,'commerce_integration_writer',false),
+	 ('integration.load_meta_ads_token(uuid,bigint,bytea)'::regprocedure::oid,true,'commerce_integration_writer',false),
+	 ('integration.guard_ads_job()'::regprocedure::oid,false,'commerce_integration_writer',false),
+	 ('integration.guard_ads_job_link()'::regprocedure::oid,false,'commerce_integration_writer',false))
 	 SELECT count(*),bool_and(a.oid IS NOT NULL AND p.prosecdef AND p.proconfig = ARRAY['search_path=pg_catalog']
 	 AND pg_get_userbyid(p.proowner)=a.owner
 	 AND has_function_privilege('commerce_worker',p.oid,'EXECUTE')=a.worker_execute
 	 AND has_function_privilege('commerce_payment_registrar',p.oid,'EXECUTE')=a.registrar_execute
 	 AND NOT has_function_privilege('commerce_stripe_ingress',p.oid,'EXECUTE')
-	 AND NOT has_function_privilege('commerce_runtime',p.oid,'EXECUTE')
+	 AND has_function_privilege('commerce_runtime',p.oid,'EXECUTE')=(p.oid='integration.register_meta_ads_token(bytea,uuid,uuid,uuid,bigint)'::regprocedure::oid)
 	 AND NOT has_function_privilege('commerce_buyer_runtime',p.oid,'EXECUTE')
 	 AND NOT has_function_privilege('commerce_buyer_issuer',p.oid,'EXECUTE')
 	 AND NOT has_function_privilege('commerce_checkout_runtime',p.oid,'EXECUTE')
@@ -217,7 +224,7 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 AND NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'))
 	 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 	 LEFT JOIN approved a ON a.oid=p.oid WHERE n.nspname='integration'`).Scan(&functions, &safe)
-	if err != nil || functions != 36 || !safe {
+	if err != nil || functions != 40 || !safe {
 		t.Fatalf("fixed function ACL: count=%d safe=%v err=%v", functions, safe, err)
 	}
 }
