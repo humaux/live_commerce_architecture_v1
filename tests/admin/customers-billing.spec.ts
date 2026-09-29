@@ -463,8 +463,23 @@ test("CB11 permission fence: a member without customers:read / billing:manage se
     await page.goto(`/en/billing?store=${store}`);
     await expect(page.getByText(bc.forbidden)).toBeVisible();
     await expect(page.getByTestId("billing-standing")).toHaveCount(0);
+    // finance reads under orders:read (contract 6, read_finance_summary): this member may see it, the store:read-only one may not
     await page.goto(`/en/finance?store=${store}`);
-    await expect(page.getByText(en.financeForbidden)).toBeVisible();
+    await expect(page.getByTestId("finance-page")).toBeVisible();
+    await expect(page.getByText(en.financeForbidden)).toHaveCount(0);
+    const bare = await browser.newContext();
+    try {
+      await bare.addCookies([
+        { name: "__Host-commerce_session", value: required("LC_BROWSER_NOFIN_TOKEN"), url, secure: true, httpOnly: true, sameSite: "Lax" },
+        { name: "__Host-commerce_csrf", value: csrf, url, secure: true, httpOnly: false, sameSite: "Lax" },
+      ]);
+      const bp = await bare.newPage();
+      await bp.goto(new URL(`/en/finance?store=${store}`, origin).toString());
+      await expect(bp.getByText(en.financeForbidden)).toBeVisible();
+      await expect(bp.getByTestId("finance-table")).toHaveCount(0);
+    } finally {
+      await bare.close();
+    }
     // the banner reads store:read only: a member with just store:read still sees it when the store is restricted
     await ctl("standing/restricted");
     await page.goto(`/en/orders?store=${store}`);

@@ -171,8 +171,8 @@ func TestBrowserCustomersBilling(t *testing.T) {
 	principal := main.s.p.f.principalA
 	mainOwner := main.s.p.cap.Scope.OwnerID
 	mainToken := main.token()
-	restricted, _ := e.member(t, main, "orders:read") // store:read + orders:read only
-
+	restricted, _ := e.member(t, main, "orders:read") // store:read + orders:read only (finance reads under orders:read, contract 6)
+	nofinance, _ := e.member(t, main)                  // store:read only: no customers, billing or finance
 	// a second customer without any payment (erasable), and the claims of both through the real claims path
 	h := cblClaims(t, main)
 	skus := h.stock.skus
@@ -290,7 +290,7 @@ func TestBrowserCustomersBilling(t *testing.T) {
 	env := map[string]string{
 		"LC_BROWSER_STORE": store, "LC_BROWSER_CUSTOMER": mainOwner, "LC_BROWSER_CUSTOMER_ERASE": erasable, "LC_BROWSER_ORDER": main.order,
 		"LC_BROWSER_SESSION": studioSession, "LC_BROWSER_PRICE": "price_Cb11Month", "LC_BROWSER_CONTROL": control.URL, "LC_BROWSER_CONTROL_KEY": controlKey,
-		"LC_BROWSER_PHONE_TAIL": "001", "LC_BROWSER_PHONE_FULL": "886900000001", "LC_BROWSER_ACTOR_KEY": actorKey, "LC_BROWSER_RESTRICTED_TOKEN": restricted,
+		"LC_BROWSER_PHONE_TAIL": "001", "LC_BROWSER_PHONE_FULL": "886900000001", "LC_BROWSER_ACTOR_KEY": actorKey, "LC_BROWSER_RESTRICTED_TOKEN": restricted, "LC_BROWSER_NOFIN_TOKEN": nofinance,
 	}
 	brfPlaywright(t, ctx, stack, []string{"customers-billing.spec.ts"}, env)
 
