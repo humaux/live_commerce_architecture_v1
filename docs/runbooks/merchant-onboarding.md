@@ -54,11 +54,15 @@ Change rules: 命令必须与 deploy/scripts/ops-admin.sh 和 cmd/*-admin 的子
 ## 4. Meta Page（评论入口 → 认领 → 私信）
 
 前提 O6。步骤见 deploy.md §6.3：`commerce_meta_apps_json` → `COMMERCE_META_WEBHOOK_ENABLED=1` + `meta` profile →
-`ops-admin.sh meta-admin page-token`（登记 Page token）→ 商家在后台把直播场次绑定到 Facebook 贴文/Instagram media → owner 批准后启用 `claims` profile。
+`ops-admin.sh meta-admin page-token`（登记 Page token）→ 商家在后台把直播场次绑定到 Facebook 贴文/Instagram media（**目前不可用，见 G2**）→ owner 批准后启用 `claims` profile。
 
 **当前工程缺口 G1（阻塞真实接入）**：Meta 应用/资产到租户与店铺的路由（`meta_inbox.activate_route`，`commerce_meta_curator` 权限）以及
 `integration.bindings` 的 facebook/instagram 绑定，目前没有已验证的运维入口（cmd/ 下没有调用者，测试之外没有登录持有该权限）。
 在补上 `meta-admin route` 子命令和 curator 登录之前，本步骤不能对真实商家端到端完成；这不是部署配置问题，需要集成者派发实现并由 owner 提供资产所有权证明。
+
+**当前工程缺口 G2（阻塞真实接入）**：`PUT .../live-sessions/{session}/claim-source` 在由本部署包构建的 api 里返回 404，不是配置问题。
+路由只在 `COMMERCE_CLAIMS_ENABLED=1` 时挂载，而该开关要求 Studio 启用，部署包 preflight P06 强制 `COMMERCE_STUDIO_ENABLED=0`，compose 也没有接入 claims 开关。
+修复归属 cmd/api + internal/httpapi（把 claim-source 挂载从 Studio/claims-label 门控里拆出），需要集成者裁决；部署单元不绕过。详见 deploy.md §6.3 G2。
 
 ## 5. 域名与证书
 

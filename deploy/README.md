@@ -210,6 +210,11 @@ No new Go modules and no new npm packages. `lcentry` uses only the Go standard l
 - **G1 Meta route activation has no operator entry point**: `meta_inbox.activate_route` (commerce_meta_curator) is called only
   by tests; there is no CLI, HTTP path or login. Real-merchant comment intake cannot be onboarded until a `meta-admin route`
   subcommand (+ curator login in logins.tsv) exists; needs an implementation unit and the owner's Meta asset proof.
+- **G2 claim-source routes are never mounted in the deployed api**: `registerClaimSourceRoutes` is reached only through
+  `registerClaimRoutes`, which needs `COMMERCE_CLAIMS_ENABLED=1`; `cmd/api/claims.go` refuses that unless Studio is enabled,
+  and preflight P06 forces `COMMERCE_STUDIO_ENABLED=0`. `PUT .../claim-source` is therefore 404 here. Owner lane: cmd/api +
+  internal/httpapi (split the claim-source mount from the Studio/claims-label gate; integrator ruling on the gate semantics).
+  The deploy unit does not work around it. Also needs the compose/env wiring and a smoke case once the code lands.
 - SANDBOX Stripe registration/qualification/webhook delivery and every Meta LIVE step need owner inputs: NOT_RUN in CI.
 
 ## Blockers and hand-offs

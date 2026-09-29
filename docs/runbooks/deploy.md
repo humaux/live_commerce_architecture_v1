@@ -27,7 +27,7 @@ Change rules: 命令必须与脚本保持一致；改脚本行为时同步本文
   - B3：PAYUNi 商户资质和 LIVE 批准。
   - B4：PAYUNi NotifyURL 没有接收端（`/payuni/notify` 由 Caddy 保留并返回 404）。支付结果只来自 worker 查询。
   - B5：直播/Studio（LiveKit 仅 MOCK）。
-  - B6：Meta 未开放给客户：Meta App Review / Access Tier 是 owner 事项；评论 → 认领 → 私信链路的运维缺口见 §6.3 与 merchant-onboarding.md（**没有 Meta 路由激活的运维入口**）。
+  - B6：Meta 未开放给客户：Meta App Review / Access Tier 是 owner 事项；评论 → 认领 → 私信链路的运维缺口见 §6.3 与 merchant-onboarding.md（**没有 Meta 路由激活的运维入口 G1；claim-source 路由未挂载 G2**）。
   - B7：T21 独立评审未完成。
   - B8：Compose 作为生产环境与 §4.2 的定位冲突。
 - 状态词汇：DESIGN / MODEL_ONLY / MOCK / SANDBOX / LIVE / NOT_RUN / BLOCKED。本地 smoke 通过不等于产品通过。
@@ -199,13 +199,20 @@ deploy/scripts/deploy.sh upgrade <tag>
      --binding <binding-id> --provider facebook --asset <page-id> --expected-version 0 --scopes pages_messaging
    # 提示输入 META_PAGE_ACCESS_TOKEN（无回显）；输出 {"version":1}。明文 token 从不进入 PG、日志或仓库
    ```
-4. **认领来源绑定**：商家在后台把直播场次绑定到具体的 Facebook 贴文/Instagram media（`PUT .../live-sessions/{session}/claim-source`，需要 `live:manage` + `integration:execute`，owner 已具备，裁决 24）。
-   `private_reply=true` 还要求该绑定已登记 Page token（否则 `page_token_missing`）。无需部署配置。
+4. **认领来源绑定**（**当前部署包内不可用，见已知缺口 G2**）：设计上商家在后台把直播场次绑定到具体的 Facebook 贴文/Instagram media（`PUT .../live-sessions/{session}/claim-source`，需要 `live:manage` + `integration:execute`，owner 已具备，裁决 24）。
+   `private_reply=true` 还要求该绑定已登记 Page token（否则 `page_token_missing`）。**这个路由现在不能靠部署配置打开**：在本包构建的 api 里它返回 404（原因见 G2）。
 5. 启用真实私信发送（**需要 owner 明确批准**，因为这会向真实买家发消息）：填好 `claims-worker.env` 的 Graph 版本，`COMPOSE_PROFILES` 增加 `claims`，
    `deploy.sh upgrade`；部署后检查会等待 `claims_worker_ready`。日志里的 `claims_worker_routes` 行列出该进程服务的路由（IR-13）。
 6. **已知缺口（G1，需要集成者/owner 裁决）**：`meta_inbox.activate_route(...)`（把 Meta app/object/asset 映射到租户与店铺，`commerce_meta_curator` 权限）
    目前**只有测试调用，没有运维 CLI、HTTP 或登录**，所以真实店铺的评论入口无法被激活。需要一个 `meta-admin route` 子命令和对应的 curator 登录
    （owner 必须提供 Meta 资产所有权证明 `proof_hash`）。在它落地前 §6.3 的 1–5 只能验证到 webhook 验证与 K_actor/claims-worker 启动，不能端到端接入真实商家。
+
+7. **已知缺口（G2，需要集成者裁决；归属 cmd/api + internal/httpapi 的认领/Studio 通道，部署单元不绕过）**：`claim-source` 路由从未在已部署的 api 里挂载。
+   `registerClaimSourceRoutes` 只被 `registerClaimRoutes`（`internal/httpapi/claims.go:110`）调用；后者只在 `COMMERCE_CLAIMS_ENABLED=1` 时运行，
+   而 `cmd/api/claims.go` 在 Studio 未启用时拒绝该开关，并要求 `COMMERCE_CLAIMS_LABEL_KEY`。部署包 preflight P06 强制 `COMMERCE_STUDIO_ENABLED=0`（媒体 worker 不可部署），
+   compose 也没有接入 `COMMERCE_CLAIMS_ENABLED`/`COMMERCE_CLAIMS_LABEL_KEY`。结果：`PUT .../claim-source` 在任何由本包部署的环境里都是 404，
+   评论无法绑定到直播场次。修复在代码侧：把 claim-source 的挂载从 Studio/claims-label 门控里拆出来（需要集成者裁决门控语义），落地后再补 compose 变量与 smoke 用例。
+   在此之前 §6.3 的 4–5 只能在测试里验证，不能端到端接入真实商家；这与 G1 互相独立，两者都要关闭。
 
 ## 7. 密钥轮换（按 deploy/secrets.manifest.tsv 的 rotation 列）
 

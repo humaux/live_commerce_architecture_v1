@@ -2,8 +2,9 @@
 # File: scripts/dev/release-gate.sh
 # Purpose: the R1 acceptance command (docs/delivery/PROCESS.md §1, R1-8). Runs every automated tier
 #   in order and prints ONE table of PASS / FAIL / NOT_RUN. A tier whose prerequisites are missing is
-#   NOT_RUN, never PASS; a skipped test is listed as NOT_RUN; zero tests, a missing log or a
-#   non-zero exit is FAIL. The overall line says PASS only when every row is PASS.
+#   NOT_RUN, never PASS; a test that skips with a `NOT_RUN:` message is listed as NOT_RUN, any other
+#   skip is FAIL; zero tests, a missing log or a non-zero exit is FAIL. The overall line says PASS
+#   only when every row is PASS.
 # Order: G01 check_packet, G02 build/vet/gofmt, G03 TypeScript typecheck, G04 secret grep,
 #   G05 dependency map, G06 unit tests (all packages but tests/foundation), G07 the whole foundation
 #   package (real PG, race, vet: test-local.sh), then EVERY browser mode listed in test-local.sh's
@@ -236,18 +237,56 @@ if selected G06; then
   fi
 fi
 
+# ---- skip classifier for `go test -v` text logs ----------------------------------------------------
+# A skip is NOT_RUN only when its t.Skip message starts with "NOT_RUN:" (the tests' own statement that a
+# prerequisite is absent: Stripe test key, Meta Page token, migrator hook). Any other skip (fixture
+# missing, permission not granted) stays a FAIL. The message is the log line(s) printed between the
+# test's `=== RUN` line and the next `===`/`---` line; a skip with no such line is "other" (fail-safe).
+# Prints "notrun other"; names go to $2 (NOT_RUN) and $3 (other), one per line.
+classify_skips() { # $1 = go test -v log
+  python3 - "$1" "$2" "$3" <<'PY'
+import re, sys
+lines = open(sys.argv[1], errors="replace").read().splitlines()
+nr, other = [], []
+for i, line in enumerate(lines):
+    m = re.match(r"\s*--- SKIP: (\S+)", line)
+    if not m:
+        continue
+    name = m.group(1)
+    msg = ""
+    for j in range(i - 1, -1, -1):
+        if re.match(r"\s*=== RUN\s+" + re.escape(name) + r"\s*$", lines[j]):
+            for k in range(j + 1, i):
+                if re.match(r"\s*(===|---) ", lines[k]):
+                    break
+                msg += lines[k] + "\n"
+            break
+    ok = re.search(r"^\s*\S+\.go:\d+: NOT_RUN:", msg, re.M)
+    (nr if ok else other).append(name)
+open(sys.argv[2], "w").write("\n".join(nr))
+open(sys.argv[3], "w").write("\n".join(other))
+print(len(nr), len(other))
+PY
+}
+
 # ---- G07 whole foundation package: real PostgreSQL, race detector, vet ----------------------------
 if selected G07; then
-  if ! docker_ok || ! have go || ! have node; then
-    record G07 REAL_PG NOT_RUN "docker daemon, go or node missing"
+  if ! docker_ok || ! have go || ! have node || ! have python3; then
+    record G07 REAL_PG NOT_RUN "docker daemon, go, node or python3 missing"
   else
     run_cmd G07 bash scripts/dev/test-local.sh
     if ((rc != 0)); then
       record G07 REAL_PG FAIL "test-local.sh exit $rc" "$rc" "$LOG"
-    elif grep -qE -- '^--- SKIP|^\s+--- SKIP' "$LOG"; then
-      record G07 REAL_PG FAIL "a test was skipped (SKIP is never PASS)" "$rc" "$LOG"
     else
-      record G07 REAL_PG PASS "test-local.sh foundation exit 0 (go test -race ./... + go vet)" "$rc" "$LOG"
+      read -r sn so <<<"$(classify_skips "$LOG" "$OUT/G07.skipped" "$OUT/G07.skipped-other")"
+      if ((so > 0)); then
+        record G07 REAL_PG FAIL "$so test(s) skipped without a NOT_RUN: message (SKIP is never PASS): $(tr '\n' ' ' <"$OUT/G07.skipped-other" | cut -c1-140)" "$rc" "$LOG"
+      else
+        record G07 REAL_PG PASS "test-local.sh foundation exit 0 (go test -race ./... + go vet)" "$rc" "$LOG"
+        if ((sn > 0)); then
+          record G07+ REAL_PG NOT_RUN "$sn skipped with NOT_RUN: (SANDBOX/LIVE/migrator prerequisites): $(tr '\n' ' ' <"$OUT/G07.skipped" | cut -c1-140)" - "$OUT/G07.skipped"
+        fi
+      fi
     fi
   fi
 fi
