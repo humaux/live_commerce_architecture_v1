@@ -308,7 +308,11 @@ else
   # Serial real-clock MRR cases add ~344s to the measured ~715s baseline.
   # This suite envelope does not change recovery's 90s gate or the separately
   # owner-approved LMR05 90s wait; their safety predicates remain unchanged.
-  GOTOOLCHAIN=go1.27.1 go test -p 1 -race -count=1 -timeout=1500s -v ./...
+  # 2026-09-29: the GitHub runner took ~1449s for this package on bef13f2 (before Stripe B1);
+  # adding the SP06-SP21 gates pushed daf08ee past 1500s (panic: test timed out after 25m0s,
+  # while TestStripeSP10Deadline was 22s in). 2700s keeps headroom inside the 60 min CI job.
+  # Upgrade path when the package nears ~40 min: shard foundation across CI jobs by -run regex.
+  GOTOOLCHAIN=go1.27.1 go test -p 1 -race -count=1 -timeout=2700s -v ./...
   GOTOOLCHAIN=go1.27.1 go vet ./...
   printf 'PASS: isolated real PostgreSQL foundation tests; fixture removed at exit.\n'
 fi
