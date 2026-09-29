@@ -18,7 +18,7 @@ admin-fixture serves a disposable local database, never an existing shop.
 buyer_payment.go owns the API-side configuration and assembly of the hosted buyer payment service (PAYUNi always, Stripe Checkout when COMMERCE_STRIPE_CHECKOUT_ENABLED=1).
 
 - Depends on (internal): `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/httpapi`, `internal/identity`, `internal/identityhttp`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/live`, `internal/oidclogin`, `internal/payments/stripewebhook`, `internal/platform`
-- Depends on (third-party): `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
+- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
 - Used by: — (entry point or unused)
 
 ## `cmd/expiry-worker`
@@ -154,7 +154,7 @@ Package fulfillment owns merchant delivery-service configuration revisions.
 Package httpapi is the composition layer for authenticated admin routes.
 
 - Depends on (internal): `internal/catalog`, `internal/claims`, `internal/command`, `internal/fulfillment`, `internal/httperror`, `internal/integrations/accounts`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/pagination`, `internal/payments`, `internal/platform`, `internal/pricing`
-- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
+- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`
 - Used by: `cmd/admin-fixture`, `cmd/api`
 
 ## `internal/httperror`
@@ -231,7 +231,7 @@ Package stripe owns Stripe Checkout Session wire calls and webhook signature ver
 
 ## `internal/integrations/psp/stripe/stripetest`
 
-Package stripetest owns the independent MOCK Stripe Checkout HTTP service.
+Package stripetest owns the independent MOCK Stripe HTTP service: Checkout sessions (server.go) and refunds / PaymentIntent+charge reads (refunds.go).
 
 - Depends on (internal): —
 - Depends on (third-party): —
@@ -263,10 +263,10 @@ Package live owns the merchant-scoped planning draft aggregate.
 
 ## `internal/merchantorders`
 
-Package merchantorders reads the private merchant order projection.
+Package merchantorders owns the private merchant order projection (identity.read_merchant_orders: payment, refund-amount and shipment fields), the merchant-arranged manual shipment command and history (manual-fulfilment-v1) and the unshipped-orders CSV export.
 
 - Depends on (internal): `internal/command`, `internal/pagination`, `internal/platform`, `internal/pricing`, `internal/storefront`
-- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
+- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/riverqueue/river`, `golang.org/x/text/unicode/norm`
 - Used by: `internal/httpapi`
 
 ## `internal/oidclogin`
