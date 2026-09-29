@@ -247,8 +247,13 @@ try {
   assert.equal(posts4.filter((x) => x.path.endsWith("/erasure")).length, 0);
   await p4.getByTestId("privacy-erase").click();
   await typed.fill("ERASE");
+  const erasureResponses = [];
+  p4.on("response", (r) => { if (/\/api\/buyer\/privacy\/erasure$/.test(new URL(r.url()).pathname)) erasureResponses.push(r); });
   await submit.click();
-  await expect(p4.getByTestId("privacy-erased")).toBeVisible();
+  await expect(p4.getByTestId("privacy-erased")).toBeVisible().catch(async (error) => {
+    const seen = await Promise.all(erasureResponses.map(async (r) => `${r.status()} ${(await r.text()).slice(0, 300)}`));
+    throw new Error(`no erased state: erasure responses=${JSON.stringify(seen)} cause=${error.message.split("\n")[0]}`);
+  });
   await expect(p4.getByTestId("privacy-erased")).toContainText(en.erasedTitle);
   const erasures = posts4.filter((x) => x.path.endsWith("/erasure"));
   assert.equal(erasures.length, 1);
