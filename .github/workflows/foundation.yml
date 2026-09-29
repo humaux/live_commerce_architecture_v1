@@ -39,11 +39,11 @@ jobs:
           cache: false
       - name: No key-shaped secret literals
         # Fake keys and synthetic DSNs with inline passwords must be split ("sk_" + "test_...",
-        # "postgres://u:" + "pw@h") so secret scanners never see a
+        # DSN passwords in a separate const) so secret scanners never see a
         # key-shaped literal (GitGuardian false positives 2026-09-28/29). Real keys never belong here.
         # The shared webhook vector file (Go + Node cross-check, values named *_not_real_*) is exempt.
         run: |
-          if git grep -nE '(sk|rk|pk)_(test|live)_[A-Za-z0-9]{8,}|whsec_[A-Za-z0-9]{8,}|EAA[A-Za-z0-9]{40,}|postgres(ql)?://[A-Za-z0-9_.-]+:[^@"$ {%]+@' -- ':!*.md' ':!pnpm-lock.yaml' ':!tests/payments/stripe-webhook-vectors.json'; then
+          if git grep -nE '(sk|rk|pk)_(test|live)_[A-Za-z0-9]{8,}|whsec_[A-Za-z0-9]{8,}|EAA[A-Za-z0-9]{40,}|postgres(ql)?://[A-Za-z0-9_.-]+:[^@"$ {%]+@|postgres(ql)?://[A-Za-z0-9_.-]+:" *\+ *"[^"]*@' -- ':!*.md' ':!pnpm-lock.yaml' ':!tests/payments/stripe-webhook-vectors.json'; then
             echo "key-shaped literal found; split fake keys or remove real ones" >&2; exit 1
           fi
       - name: Dependency map is current
