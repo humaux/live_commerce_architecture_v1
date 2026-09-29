@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -36,7 +37,9 @@ import (
 	"livecommerce/internal/command"
 	"livecommerce/internal/fulfillment"
 	"livecommerce/internal/httpapi"
+	integration "livecommerce/internal/integrations/core"
 	"livecommerce/internal/integrations/shipping/ecpay"
+	"livecommerce/internal/integrations/shipping/ecpay/ecpayroute"
 	"livecommerce/internal/integrations/shipping/ecpay/ecpaytest"
 	"livecommerce/internal/inventory"
 	"livecommerce/internal/platform"
@@ -46,29 +49,34 @@ import (
 const tcvHooksOrigin = "https://hooks.tcv.example"
 
 type tcvEnv struct {
-	t        *testing.T
-	p        psHarness
-	fake     *ecpaytest.Fake
-	keys     *ecpay.Keyring
-	client   *ecpay.Client
-	cvs      *fulfillment.CVS
-	merchant http.Handler
-	svc      *checkout.Service
-	bh       bhHarness
-	hooks    http.Handler
-	jobs     *river.Client[pgx.Tx]
-	mk       ecpaytest.Merchant
-	tag      string
-	origin   string
-	cfg      fulfillment.CVSConfig
-	svcs     map[string]fulfillment.ServiceInput
-	svcVer   map[string]int64
+	t           *testing.T
+	p           psHarness
+	fake        *ecpaytest.Fake
+	keys        *ecpay.Keyring
+	client      *ecpay.Client
+	cvs         *fulfillment.CVS
+	merchant    http.Handler
+	svc         *checkout.Service
+	bh          bhHarness
+	hooks       http.Handler
+	jobs        *river.Client[pgx.Tx]
+	mk          ecpaytest.Merchant
+	tag         string
+	origin      string
+	cfg         fulfillment.CVSConfig
+	svcs        map[string]fulfillment.ServiceInput
+	svcVer      map[string]int64
+	r           *rfxEnv  // set when tcvOpts.stripe
+	ro          rfxOrder // the rfx store (endpoint, secret) when tcvOpts.stripe
+	queue       string   // dispatcher queue (startDispatcher)
+	settingsVer int64    // last version of the store CVS settings written through cvsSettings
 }
 
 // tcvOpts tunes the environment.
 type tcvOpts struct {
 	ecpayDisabled bool   // CVS_ECPAY_ENABLED=0 (kill switch)
 	payEnv        string // payment environment; default SANDBOX
+	stripe        bool   // build on the rfx Stripe environment (paid card orders through the real capture path)
 }
 
 func tcvKeyring(t *testing.T) *ecpay.Keyring {
@@ -96,8 +104,17 @@ func tcvNew(t *testing.T, opts ...tcvOpts) *tcvEnv {
 		o.payEnv = "SANDBOX"
 	}
 	ctx := context.Background()
-	p := psSetup(t)
-	e := &tcvEnv{t: t, p: p, svcs: map[string]fulfillment.ServiceInput{}, svcVer: map[string]int64{}, fake: ecpaytest.New(), keys: tcvKeyring(t), tag: t04Tag(), origin: "https://tcv-" + t04Tag() + ".example"}
+	var p psHarness
+	var rEnv *rfxEnv
+	var rOrder rfxOrder
+	if o.stripe {
+		rEnv = rfxNew(t)
+		rOrder = rEnv.storeFor(t)
+		p = rOrder.s.p
+	} else {
+		p = psSetup(t)
+	}
+	e := &tcvEnv{r: rEnv, ro: rOrder, t: t, p: p, svcs: map[string]fulfillment.ServiceInput{}, svcVer: map[string]int64{}, fake: ecpaytest.New(), keys: tcvKeyring(t), tag: t04Tag(), origin: "https://tcv-" + t04Tag() + ".example"}
 	var err error
 	if e.client, err = ecpay.NewClient(ecpay.Environment(o.payEnv), e.fake.Transport()); err != nil {
 		t.Fatal(err)
@@ -109,7 +126,7 @@ func tcvNew(t *testing.T, opts ...tcvOpts) *tcvEnv {
 	if e.cvs, err = fulfillment.NewCVS(p.f.runtime, e.jobs, e.keys, e.client, e.cfg); err != nil {
 		t.Fatalf("NewCVS: %v", err)
 	}
-	e.merchant = httpapi.NewHandler(p.f.runtime, httpapi.Options{CVS: e.cvs})
+	e.merchant = e.newMerchantHandler()
 	e.hooks = e.cvs.HooksHandler()
 	bc, err := checkout.NewBuyerCVS(p.pool, e.keys, e.client, e.cfg)
 	if err != nil {
@@ -542,7 +559,7 @@ func (e *tcvEnv) reclient() {
 	if e.cvs, err = fulfillment.NewCVS(e.p.f.runtime, e.jobs, e.keys, e.client, e.cfg); err != nil {
 		e.t.Fatal(err)
 	}
-	e.merchant = httpapi.NewHandler(e.p.f.runtime, httpapi.Options{CVS: e.cvs})
+	e.merchant = e.newMerchantHandler()
 	e.hooks = e.cvs.HooksHandler()
 	bc, err := checkout.NewBuyerCVS(e.p.pool, e.keys, e.client, e.cfg)
 	if err != nil {
@@ -574,4 +591,155 @@ func fulfillmentCfg(e *tcvEnv, payEnv string) fulfillment.CVSConfig {
 	c := e.cfg
 	c.PaymentEnvironment = payEnv
 	return c
+}
+
+// newMerchantHandler is the merchant handler with the CVS routes and the refund routes (an insert-only river_payment client, as cmd/api).
+func (e *tcvEnv) newMerchantHandler() http.Handler {
+	e.t.Helper()
+	refunds, err := river.NewClient(riverpgxv5.New(e.p.f.runtime), &river.Config{Schema: "river_payment"})
+	if err != nil {
+		e.t.Fatal(err)
+	}
+	return httpapi.NewHandler(e.p.f.runtime, httpapi.Options{CVS: e.cvs, RefundJobs: refunds})
+}
+
+// ---- the real ecpay.cvs_create route, in process --------------------------------------------------------------------------
+
+// startDispatcher runs the real dispatcher with ecpayroute.Routes over the fake, on a private River queue (jobs are moved to it by route()),
+// the same shape cmd/worker assembles. The worker pool is a real commerce_worker login.
+func (e *tcvEnv) startDispatcher() {
+	e.t.Helper()
+	ctx := context.Background()
+	routes, err := ecpayroute.Routes(e.p.worker, e.keys, e.client, e.cfg.ECPay)
+	if err != nil {
+		e.t.Fatalf("ecpayroute.Routes: %v", err)
+	}
+	opts := integration.DefaultDispatcherOptions()
+	opts.RetryDelay = 100 * time.Millisecond
+	disp, err := integration.NewDispatcher(ctx, e.p.worker, routes, opts)
+	if err != nil {
+		e.t.Fatalf("dispatcher: %v", err)
+	}
+	e.queue = "cvs_" + strings.ReplaceAll(randomUUID(), "-", "")
+	workers := river.NewWorkers()
+	river.AddWorker(workers, disp)
+	client, err := river.NewClient(riverpgxv5.New(e.p.worker), &river.Config{Schema: "river", Workers: workers, Queues: map[string]river.QueueConfig{e.queue: {MaxWorkers: 2}},
+		JobTimeout: 20 * time.Second, RescueStuckJobsAfter: 30 * time.Second, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
+	if err != nil {
+		e.t.Fatal(err)
+	}
+	if err := client.Start(ctx); err != nil {
+		e.t.Fatal(err)
+	}
+	e.t.Cleanup(func() {
+		c, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = client.StopAndCancel(c)
+	})
+}
+
+// route moves the River job of an operation onto the private queue so the in-process dispatcher (and only it) picks it up.
+func (e *tcvEnv) route(operationID string) {
+	e.t.Helper()
+	tag, err := e.p.f.owner.Exec(context.Background(), `UPDATE river.river_job SET queue=$1 WHERE id=(SELECT job_id FROM integration.operations WHERE id=$2::uuid) AND state='available'`, e.queue, operationID)
+	if err != nil || tag.RowsAffected() != 1 {
+		e.t.Fatalf("route the job of operation %s to the dispatcher queue: rows=%v err=%v", operationID, tag.RowsAffected(), err)
+	}
+}
+
+func (e *tcvEnv) shipPath(order string) string {
+	return "/v1/admin/stores/" + e.store() + "/orders/" + order + "/cvs-shipment"
+}
+
+// ship requests a label as token; on 202 with routeJob the job is handed to the dispatcher.
+func (e *tcvEnv) ship(token, order string, expected int64, key string, routeJob bool) (int, map[string]any, []byte) {
+	e.t.Helper()
+	if key == "" {
+		key = t04Key("tcv-ship")
+	}
+	st, out, raw := e.mcall(token, "POST", e.shipPath(order), key, fmt.Sprintf(`{"expected_version":%d}`, expected))
+	if st == 202 && routeJob {
+		e.route(tcvStr(out, "operation_id"))
+	}
+	return st, out, raw
+}
+
+// shipState is the latest attempt of an order: state, attempt, version ("" when none).
+func (e *tcvEnv) shipState(order string) (string, int, int64) {
+	var state string
+	var attempt int
+	var version int64
+	err := e.p.f.owner.QueryRow(context.Background(), `SELECT state,attempt,version FROM fulfillment.cvs_shipments WHERE order_id=$1 ORDER BY attempt DESC LIMIT 1`, order).Scan(&state, &attempt, &version)
+	if err == pgx.ErrNoRows {
+		return "", 0, 0
+	}
+	if err != nil {
+		e.t.Fatal(err)
+	}
+	return state, attempt, version
+}
+
+func (e *tcvEnv) awaitShip(order, want string) {
+	e.t.Helper()
+	deadline := time.Now().Add(30 * time.Second)
+	for {
+		state, _, _ := e.shipState(order)
+		if state == want {
+			return
+		}
+		if time.Now().After(deadline) {
+			e.t.Fatalf("shipment of %s: state %q after 30s, want %s", order, state, want)
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+}
+
+// tradeNo is the frozen MerchantTradeNo of the latest attempt.
+func (e *tcvEnv) tradeNo(order string) string {
+	var tn string
+	if err := e.p.f.owner.QueryRow(context.Background(), `SELECT merchant_trade_no FROM fulfillment.cvs_shipments WHERE order_id=$1 ORDER BY attempt DESC LIMIT 1`, order).Scan(&tn); err != nil {
+		e.t.Fatal(err)
+	}
+	return tn
+}
+
+// endpointID reads the status route id from the merchant profile projection.
+func (e *tcvEnv) endpointID() string {
+	e.t.Helper()
+	st, out, raw := e.mcall(e.token(), "GET", "/v1/admin/stores/"+e.store()+"/logistics/ecpay", "", "")
+	if st != 200 {
+		e.t.Fatalf("profile: %d %s", st, raw)
+	}
+	url := tcvStr(out, "status_url")
+	i := strings.LastIndex(url, "/")
+	if i < 0 || !strings.Contains(url, "/v1/cvs/ecpay/status/") {
+		e.t.Fatalf("status_url %q", url)
+	}
+	return url[i+1:]
+}
+
+// postStatus signs fields with the store's ECPay keys and POSTs them to the status hook.
+func (e *tcvEnv) postStatus(endpoint string, fields url.Values) *httptest.ResponseRecorder {
+	return e.hook("/v1/cvs/ecpay/status/"+endpoint, ecpaytest.SignStatus(e.mk, fields), nil)
+}
+
+// statusFor builds an F7 status notification for the recorded trade of an order.
+func (e *tcvEnv) statusFor(order, rtnCode string) url.Values {
+	e.t.Helper()
+	tr, ok := e.fake.Trade(e.tradeNo(order))
+	if !ok {
+		e.t.Fatalf("the fake has no trade for %s (was a Create sent?)", order)
+	}
+	return ecpaytest.StatusFields(tr, rtnCode, time.Now().Format("2006/01/02 15:04:05"), "SENTINELRECIPIENT")
+}
+
+// recart bumps the buyer's cart (same owner, new cart version), so the same owner can attempt another order.
+func (b *tcvBuyer) recart() {
+	b.e.t.Helper()
+	b.e.topUp()
+	c, err := b.h.cart(t04Key("tcv-recart"), storefront.CartInput{ExpectedVersion: b.cartVersion(), Items: []storefront.Item{{SKUID: b.e.p.stock.skus[0].ID, Quantity: 2}}})
+	if err != nil {
+		b.e.t.Fatalf("recart: %v", err)
+	}
+	b.h.input.CartVersion = c.Version
 }
