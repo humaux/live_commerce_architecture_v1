@@ -258,6 +258,12 @@ func TestClaimsRetentionCRP10SourceGuards(t *testing.T) {
 		if err != nil || strings.TrimSpace(string(out)) != "" {
 			t.Errorf("gofmt -l: %v %q", err, out)
 		}
+		// check_packet.py rewrites the tracked experiments/results/packet-check.json on every run: restore it so the guard
+		// leaves the working tree as it found it.
+		resultFile := filepath.Join(crRoot, "experiments", "results", "packet-check.json")
+		if keep, err := os.ReadFile(resultFile); err == nil {
+			t.Cleanup(func() { _ = os.WriteFile(resultFile, keep, 0o644) })
+		}
 		pkt := exec.Command("python3", "scripts/check_packet.py")
 		pkt.Dir = crRoot
 		if out, err := pkt.CombinedOutput(); err != nil {
