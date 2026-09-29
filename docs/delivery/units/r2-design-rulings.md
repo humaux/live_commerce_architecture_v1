@@ -139,3 +139,9 @@ Retention: B23 accept IR-U1 (D4 CHECK widening for 'erased-'). B24 accept D1/D2.
 is provisioned only by the runbook after owner approval, never via logins.tsv. B26 a pre-existing
 reserved-pattern label stops 0071 with 55000 (fresh pilot DB; no automatic relabel). B27 record the
 meta_inbox.lock_purgeable grant in meta-claims-intake-v1's amendment notes.
+- X11 Owner correction (2026-09-30): there is NO Taiwan sender; all parcels ship from mainland China to
+  Taiwan through cross-border logistics. The pilot merchant's default store source is buyer_entered
+  (C1b) with official store-search links; the ECPay map/adapter stays as an optional integration for
+  Taiwan-based merchants and is not a pilot prerequisite. Pay-at-pickup (C2) unchanged: the
+  cross-border carrier's Taiwan last mile collects. Auto-backfill for the pilot waits on a registered
+  store-picker usable by a non-Taiwan entity (research in progress; likely the cross-border carrier).
