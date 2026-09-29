@@ -14,6 +14,7 @@ const (
 	fakeTestKey    = "sk_" + "test_FAKESENTINELKEY0000000000" // split so secret scanners see no key literal
 	fakeRAKTestKey = "rk_" + "test_FAKESENTINELKEY0000000000"
 	fakeLiveKey    = "sk_" + "live_FAKESENTINELKEY0000000000"
+	fakeRAKLiveKey = "rk_" + "live_FAKESENTINELKEY0000000000" // LD3: the only live key shape LIVE admits
 	fakeAccount    = "acct_1FakeAccount000"
 	fakeWhsecA     = "whsec" + "_vectorSecretA_not_real_0123456789" // split: not a real secret
 	fakeWhsecB     = "whsec_" + "vectorSecretB_not_real_9876543210"

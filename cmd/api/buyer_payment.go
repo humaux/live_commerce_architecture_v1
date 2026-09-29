@@ -61,9 +61,16 @@ func loadBuyerPaymentConfig(getenv func(string) string, addr string) (buyerPayme
 	// hosted service in B1 (no Stripe-only deployment) and never reads STRIPE_* variables:
 	// API keys live in PG under the operator registrar. The return URL is the same neutral
 	// COMMERCE_PAYMENT_RETURN_URL, already canonicalised above.
+	// LD6: this flag is the platform-wide kill switch (LC_STRIPE_CHECKOUT_ENABLED in compose). On LIVE it also
+	// needs the owner's flag+reference pair (stripe-live-enable-v1 §5.2); the pair is read only in that case.
 	stripeEnabled, err := flag(getenv("COMMERCE_STRIPE_CHECKOUT_ENABLED"))
-	if err != nil || (stripeEnabled && c.profile != "PROVIDER_MOCK" && c.profile != "SANDBOX") {
+	if err != nil {
 		return buyerPaymentConfig{}, errBuyerConfig
+	}
+	if stripeEnabled && c.profile == "LIVE" {
+		if _, err := loadStripeLiveApproval(getenv); err != nil {
+			return buyerPaymentConfig{}, errBuyerConfig
+		}
 	}
 	if stripeEnabled {
 		stripeConfig := checkout.StripeHostedConfig{ReturnURL: c.endpoints.ReturnURL}

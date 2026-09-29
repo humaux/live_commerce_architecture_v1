@@ -1,5 +1,8 @@
 // stripe_runtime.go owns lease-bound Stripe client material for payment workers.
 // It never reads environment credentials, stores a process-global Stripe key, or calls Stripe at startup.
+// LIVE (contracts/stripe-live-enable-v1.md §5.2): only NewLiveStripeRuntime builds a LIVE runtime, with the
+// owner's flag+reference pair and the real transport; NewStripeRuntime keeps refusing LIVE (S7).
+// External: api.stripe.com through internal/integrations/psp/stripe, one client per claimed operation.
 
 package payments
 
@@ -32,6 +35,30 @@ type StripeRuntime struct {
 	keys      *accounts.Keyring
 	profile   string
 	transport http.RoundTripper
+	live      stripe.LiveApproval // zero unless profile == "LIVE" (NewLiveStripeRuntime)
+}
+
+// ProfileEnvironment maps a payment profile to the Stripe environment its rows must carry (S6, LD1):
+// PROVIDER_MOCK and SANDBOX -> SANDBOX, LIVE -> LIVE, anything else is a configuration error (ok=false).
+// It is the single copy of this rule; every SANDBOX/LIVE guard in Go calls it.
+func ProfileEnvironment(profile string) (string, bool) {
+	switch profile {
+	case "PROVIDER_MOCK", "SANDBOX":
+		return "SANDBOX", true
+	case "LIVE":
+		return "LIVE", true
+	}
+	return "", false
+}
+
+// stripeClientConfig builds the adapter config for one claimed operation. The LIVE pair rides along only
+// for a LIVE environment, so a SANDBOX runtime can never present it (admit() would call that a mismatch).
+func (s *StripeRuntime) stripeClientConfig(secretKey, accountID, environment string) stripe.Config {
+	cfg := stripe.Config{SecretKey: secretKey, AccountID: accountID, Environment: environment}
+	if environment == "LIVE" {
+		cfg.Live = s.live
+	}
+	return cfg
 }
 
 func (StripeRuntime) String() string     { return "payments.StripeRuntime{redacted}" }
@@ -44,12 +71,33 @@ func (StripeRuntime) MarshalJSON() ([]byte, error) {
 // The exact historical credential is loaded after each operation is claimed.
 func NewStripeRuntime(ctx context.Context, pool *pgxpool.Pool, keys *accounts.Keyring,
 	profile string, mockTransport ...http.RoundTripper) (*StripeRuntime, error) {
+	// S7: LIVE is deliberately not admitted here; it has its own constructor with the pair.
 	if ctx == nil || pool == nil || keys == nil ||
 		(profile != "PROVIDER_MOCK" && profile != "SANDBOX") ||
 		(profile == "PROVIDER_MOCK" && (len(mockTransport) != 1 || mockTransport[0] == nil)) ||
 		(profile == "SANDBOX" && len(mockTransport) != 0) {
 		return nil, errStripeRuntimeConfig
 	}
+	var transport http.RoundTripper
+	if profile == "PROVIDER_MOCK" {
+		transport = mockTransport[0]
+	}
+	return newStripeRuntime(ctx, pool, keys, profile, transport, stripe.LiveApproval{})
+}
+
+// NewLiveStripeRuntime is the only way to a LIVE Stripe worker runtime (stripe-live-enable-v1 §5.2): profile
+// LIVE, the real transport (a mock never admits a live key), and a valid flag+reference pair. It checks the
+// same role/queue/SQL capabilities as NewStripeRuntime and makes no provider call.
+func NewLiveStripeRuntime(ctx context.Context, pool *pgxpool.Pool, keys *accounts.Keyring,
+	live stripe.LiveApproval) (*StripeRuntime, error) {
+	if ctx == nil || pool == nil || keys == nil || !live.Valid() {
+		return nil, errStripeRuntimeConfig
+	}
+	return newStripeRuntime(ctx, pool, keys, "LIVE", nil, live)
+}
+
+func newStripeRuntime(ctx context.Context, pool *pgxpool.Pool, keys *accounts.Keyring, profile string,
+	transport http.RoundTripper, live stripe.LiveApproval) (*StripeRuntime, error) {
 	if err := platform.ValidateWorkerPool(ctx, pool); err != nil {
 		return nil, errStripeRuntimeDatabase
 	}
@@ -76,11 +124,7 @@ func NewStripeRuntime(ctx context.Context, pool *pgxpool.Pool, keys *accounts.Ke
 		) AS v(signature))`).Scan(&ready, &capabilities); err != nil || !ready || !capabilities {
 		return nil, errStripeRuntimeDatabase
 	}
-	runtime := &StripeRuntime{pool: pool, keys: keys, profile: profile}
-	if profile == "PROVIDER_MOCK" {
-		runtime.transport = mockTransport[0]
-	}
-	return runtime, nil
+	return &StripeRuntime{pool: pool, keys: keys, profile: profile, transport: transport, live: live}, nil
 }
 
 type stripeSessionSnapshot struct {
@@ -102,8 +146,11 @@ type stripeSessionSnapshot struct {
 }
 
 func validStripeSnapshot(s stripeSessionSnapshot, id, profile string) bool {
-	if !command.ValidID(s.TenantID) || !command.ValidID(s.StoreID) || !command.ValidID(s.ConnectionID) ||
-		s.AttemptID != id || s.Profile != profile || s.Environment != "SANDBOX" ||
+	// LD1: a snapshot's environment must be the runtime profile's environment (a SANDBOX row never runs
+	// under a LIVE worker and vice versa); an unknown profile has no environment and is refused.
+	env, known := ProfileEnvironment(profile)
+	if !known || !command.ValidID(s.TenantID) || !command.ValidID(s.StoreID) || !command.ValidID(s.ConnectionID) ||
+		s.AttemptID != id || s.Profile != profile || s.Environment != env ||
 		s.CredentialVersion <= 0 || s.AccountID == "" || s.DBNow.IsZero() ||
 		s.ExpiresAt.IsZero() || s.SendDeadline.IsZero() || s.HandoffCutoff.IsZero() ||
 		!s.SendDeadline.Before(s.HandoffCutoff) || !s.HandoffCutoff.Before(s.ExpiresAt) ||
@@ -221,8 +268,7 @@ func (s *StripeRuntime) clientForClaim(ctx context.Context, snapshot stripeSessi
 	if err != nil {
 		return nil, errStripeMaterial
 	}
-	config := stripe.Config{SecretKey: credentials.SecretKey, AccountID: scope.AccountID,
-		Environment: scope.Environment}
+	config := s.stripeClientConfig(credentials.SecretKey, scope.AccountID, scope.Environment)
 	var client *stripe.Client
 	if s.transport == nil {
 		client, err = stripe.New(config)

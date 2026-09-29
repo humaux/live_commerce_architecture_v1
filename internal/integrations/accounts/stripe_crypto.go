@@ -80,24 +80,48 @@ type stripeWebhookWire struct {
 
 func validStripeAPIScope(s StripeAPIScope) bool {
 	return stripeScopeUUID.MatchString(s.TenantID) && stripeScopeUUID.MatchString(s.StoreID) &&
-		stripeScopeUUID.MatchString(s.ConnectionID) && s.Environment == "SANDBOX" &&
+		stripeScopeUUID.MatchString(s.ConnectionID) && validStripeEnvironment(s.Environment) &&
 		s.CredentialVersion > 0 && len(s.AccountID) >= 6 && len(s.AccountID) <= 64
 }
 
 func validStripeWebhookScope(s StripeWebhookScope) bool {
 	return stripeScopeUUID.MatchString(s.TenantID) && stripeScopeUUID.MatchString(s.StoreID) &&
 		stripeScopeUUID.MatchString(s.ConnectionID) && stripeScopeUUID.MatchString(s.EndpointID) &&
-		s.Environment == "SANDBOX" && s.KeyVersion > 0 &&
-		(s.Profile == "PROVIDER_MOCK" || s.Profile == "SANDBOX") &&
+		validStripeEnvironment(s.Environment) && s.KeyVersion > 0 &&
+		validStripeProfile(s.Environment, s.Profile) &&
 		len(s.AccountID) >= 6 && len(s.AccountID) <= 64
 }
+
+// validStripeEnvironment: stripe-live-enable-v1 §5.2 admits LIVE next to SANDBOX in the
+// keyring scope. Sealing a LIVE credential is custody, not permission to call Stripe: the
+// flag+ref pair is enforced where a client is built (payments.NewLiveStripeRuntime,
+// stripeadmin.OpenLive), never here.
+func validStripeEnvironment(env string) bool { return env == "SANDBOX" || env == "LIVE" }
+
+// validStripeProfile: a LIVE endpoint profile exists only for a LIVE account and vice versa
+// (`(Environment=="LIVE") == (Profile=="LIVE")`; PROVIDER_MOCK/SANDBOX only for SANDBOX).
+func validStripeProfile(env, profile string) bool {
+	if env == "LIVE" {
+		return profile == "LIVE"
+	}
+	return profile == "PROVIDER_MOCK" || profile == "SANDBOX"
+}
+
+// scopeCheckApproval satisfies stripe.admit's flag+ref shape so the KEY GRAMMAR of a LIVE
+// credential (rk_live_ only, LD3) is checked at seal/open time. It is a syntax stand-in, not
+// an approval: constructing a client does no I/O here and the value is never used to dial.
+var scopeCheckApproval = stripe.LiveApproval{Enabled: true, Reference: "keyring-scope-check"}
 
 func validStripeAPI(s StripeAPIScope, c StripeAPICredentials) bool {
 	if !validStripeAPIScope(s) {
 		return false
 	}
+	cfg := stripe.Config{SecretKey: c.SecretKey, AccountID: s.AccountID, Environment: s.Environment}
+	if s.Environment == "LIVE" {
+		cfg.Live = scopeCheckApproval
+	}
 	// Stage A owns the account and API-key grammar; constructing a client does no I/O.
-	_, err := stripe.New(stripe.Config{SecretKey: c.SecretKey, AccountID: s.AccountID, Environment: s.Environment})
+	_, err := stripe.New(cfg)
 	return err == nil
 }
 

@@ -233,7 +233,8 @@ func stripeSessionIdentity(session stripe.Session, s stripeSessionSnapshot) bool
 	return session.ID != "" && session.ClientReferenceID == s.AttemptID &&
 		session.MetadataAttempt == s.AttemptID && session.MetadataProfile == s.Profile &&
 		session.ExpiresAt != nil && *session.ExpiresAt == s.ExpiresAt.Unix() &&
-		session.Mode == "payment" && !session.Livemode &&
+		session.Mode == "payment" && session.Livemode == (s.Environment == "LIVE") && // LD1: livemode = attempt environment
+
 		len(session.PaymentMethodTypes) == 1 && session.PaymentMethodTypes[0] == "card"
 }
 

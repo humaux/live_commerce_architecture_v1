@@ -2,13 +2,15 @@
 // It never reads PG, decides payment state, releases stock or retries on its own.
 //
 // Ownership: integration_worker (contracts/stripe-psp-v1.md §5, §15).
-// Non-goals: order/payment state, SQL, River jobs, Connect, refunds, PaymentIntents
-// outside Checkout, Stripe CLI support, and any LIVE money movement in v1.
+// Non-goals: order/payment state, SQL, River jobs, Connect, PaymentIntents outside
+// Checkout, Stripe CLI support, and deciding whether a store may go LIVE (that is SQL:
+// contracts/stripe-live-enable-v1.md §3; this package only admits a key/environment pair).
 // Dependencies: standard library only (§5.1). stripe-go is deliberately not used so the
 // exact wire bytes, headers and classification stay reviewable in this package.
 // Callers: the payment worker (create/retrieve/expire/find), the API webhook
-// handler (WebhookVerifier only) and cmd/stripe-admin (VerifyAccount). This is the
-// only package in the repository allowed to dial api.stripe.com (SP20).
+// handler (WebhookVerifier only) and cmd/stripe-admin (VerifyAccount, AccountReadiness).
+// This is the only package in the repository allowed to dial api.stripe.com (SP20);
+// GET /v1/account is also read for LIVE readiness (readiness.go, stripe-live-enable-v1 LD8).
 //
 // This file holds the error vocabulary, Config and key admission (§5.2).
 package stripe
@@ -91,6 +93,12 @@ type LiveApproval struct {
 	Reference string
 }
 
+// Valid reports whether the pair is a complete owner approval: the flag is on and the reference has
+// the §5.2 shape. Constructors of LIVE-capable components (payments.NewLiveStripeRuntime,
+// stripeadmin.OpenLive) call it to fail fast; admit() re-checks it on every client, so this is never
+// the only gate.
+func (a LiveApproval) Valid() bool { return a.Enabled && approvalPattern.MatchString(a.Reference) }
+
 func (Config) String() string               { return "stripe.Config{redacted}" }
 func (c Config) GoString() string           { return c.String() }
 func (Config) MarshalJSON() ([]byte, error) { return []byte(`"stripe.Config{redacted}"`), nil }
@@ -121,7 +129,13 @@ func admit(cfg Config, mock bool) error {
 	if mock || cfg.Environment != envLive {
 		return refuse(ErrLiveRefused, "stripe_key_mode_mismatch")
 	}
-	if !cfg.Live.Enabled || !approvalPattern.MatchString(cfg.Live.Reference) {
+	// LD3/LR-3: only a restricted key (rk_live_) is admitted; an unrestricted secret key is
+	// refused before the flag+ref pair is even looked at, so no approval can legitimise it.
+	// https://docs.stripe.com/keys/restricted-api-keys (retrieved 2026-09-29, L3).
+	if strings.HasPrefix(cfg.SecretKey, "sk_live_") {
+		return refuse(ErrLiveRefused, "stripe_live_key_unrestricted")
+	}
+	if !cfg.Live.Valid() {
 		return refuse(ErrLiveRefused, "stripe_live_refused")
 	}
 	return nil
