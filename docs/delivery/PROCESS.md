@@ -124,11 +124,11 @@ Comments explain *why* and *what it touches*, not what the next line does.
   tests, logs, commits or agent replies. Stripe keys must be `sk_test_`/`rk_test_`.
   Fake keys in tests are written split (`"sk_" + "test_..."`) so no key-shaped literal exists;
   CI step "No key-shaped secret literals" enforces it.
-  Synthetic DSN passwords go in a neutrally named constant with a neutral value
-  (`const dsnSentinel1 = "sentinel-intake-7c1"`) and DSNs reference it
-  (`"postgres://u:" + dsnSentinel1 + "@h/db"`); leak assertions search for the constant, never a
-  copied literal. Split literals and constants named `*Password*` / values containing `secret` were
-  all still flagged by GitGuardian (2026-09-29).
+  Synthetic DSNs are assembled with `net/url` (`url.URL{Scheme:"postgres", User:
+  url.UserPassword(u, dsnSentinel1), Host:..., Path:...}`), with the sentinel in a neutrally named
+  constant; leak assertions search for the constant. GitGuardian flagged every literal form
+  (whole literal, split literal, `"postgres://u:" + const + "@host"`, `*Password*` constants) in
+  2026-09-29.
 - Tenant/store scope comes from server-side auth only.
 - Migration numbers: this release branch owns 0060–0079. Only the integrator merges migrations,
   OpenAPI, shared JSON schema, go.mod/go.sum and pnpm-lock.
