@@ -15,9 +15,10 @@ speaks the REST API directly so every parameter is reviewed and golden-tested).
 | Module | Version | Why | Imported by | Rejected alternatives |
 | --- | --- | --- | --- | --- |
 | `github.com/jackc/pgx/v5` | v5.11.0 | PostgreSQL driver + pool; native types, `COPY`, per-tx GUCs needed for RLS scope | nearly every `internal/*` package and `cmd/*` (see dependency-map) | `database/sql` + lib/pq (no pool control, maintenance mode); ORMs (hide SQL the contracts freeze) |
-| `github.com/riverqueue/river` (+ `riverdriver/riverpgxv5`) | v0.40.0 | Durable jobs in the same PG transaction as the business write (outbox without a second system) | `internal/jobqueue`, `internal/payments`, `internal/checkout`, `internal/live`, `internal/integrations/{core,meta}`, `cmd/api` | Kafka/Redis queues (forbidden by ADR baseline); hand-rolled `SKIP LOCKED` table (reinventing retries/leases) |
+| `github.com/riverqueue/river` (+ `riverdriver/riverpgxv5`, `rivertype`) | v0.40.0 | Durable jobs in the same PG transaction as the business write (outbox without a second system) | `internal/jobqueue`, `internal/payments`, `internal/checkout`, `internal/live`, `internal/integrations/{core,meta}`, `cmd/api` | Kafka/Redis queues (forbidden by ADR baseline); hand-rolled `SKIP LOCKED` table (reinventing retries/leases) |
 | `github.com/coreos/go-oidc/v3` | v3.21.0 | OIDC ID-token verification for merchant login (JWKS, issuer, audience) | `internal/oidclogin` | Hand-written JWT verification (security risk); a hosted auth SDK (vendor lock-in) |
 | `golang.org/x/oauth2` | v0.37.0 | Authorization-code + PKCE exchange for OIDC | `internal/oidclogin` | Hand-written token exchange |
+| `golang.org/x/text` (`unicode/norm`) | v0.39.0 | NFC-normalize merchant-typed carrier names before storing/comparing (manual-fulfilment-v1 §3.1, ruling 20); was already an indirect dependency | `internal/merchantorders` | Refusing non-NFC input (hostile to CJK IMEs); hand-written Unicode tables |
 
 ## npm packages (`package.json`, `apps/*/package.json`)
 
