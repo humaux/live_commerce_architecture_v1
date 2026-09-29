@@ -93,7 +93,7 @@ const cbmOrigin = "https://admin.example.test"
 
 func cbmConfig() billing.Config {
 	return billing.Config{SecretKey: "sk_" + "test_" + hex.EncodeToString(randomBytes(12)), WebhookSecret: "whsec_" + hex.EncodeToString(randomBytes(16)),
-		ReturnOrigin: cbmOrigin, PriceIDs: []string{"price_Cb08Month", "price_Cb08Year", "price_Cb08Live", "price_Cb08One", "price_Cb08Missing"}}
+		ReturnOrigin: cbmOrigin, PriceIDs: []string{"price_Cb08Month", "price_Cb08Year", "price_Cb08Live", "price_Cb08One"}}
 }
 
 // cbmSetup builds the fake, the service and the webhook handler over a fresh store of the shared fixture.
@@ -846,7 +846,7 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 		// plans: only active, recurring, test-mode prices; cached 10 minutes; a failed fetch omits that plan
 		plans := st.Plans
 		if len(plans) != 1 || plans[0].PriceID != "price_Cb08Month" || plans[0].Name != "Pro Monthly" || plans[0].AmountMinor != 30000 || !strings.EqualFold(plans[0].Currency, "twd") || plans[0].Interval != "month" {
-			t.Fatalf("plans %+v, want only price_Cb08Month (inactive, live-mode, one-time and missing prices dropped)", plans)
+			t.Fatalf("plans %+v, want only price_Cb08Month (inactive, live-mode and one-time prices dropped)", plans)
 		}
 		priceCalls := len(m.fake.CallsTo("GET", "/v1/prices/"))
 		if _, err := m.svc.Status(m.ctx, m.f.runtime, m.scope, m.token); err != nil || len(m.fake.CallsTo("GET", "/v1/prices/")) != priceCalls {
@@ -859,6 +859,21 @@ func TestCustomersBillingCB08Mock(t *testing.T) {
 		}
 		if len(m.fake.CallsTo("GET", "/v1/prices/")) != len(m.cfg.PriceIDs) {
 			t.Errorf("%d price fetches for %d configured ids", len(m.fake.CallsTo("GET", "/v1/prices/")), len(m.cfg.PriceIDs))
+		}
+	})
+
+	t.Run("plans: a failed price fetch omits that plan and logs; the next read tries again", func(t *testing.T) {
+		m := cbmSetup(t, false, false)
+		m.fake.FailNext("price", 500)
+		st, err := m.svc.Status(m.ctx, m.f.runtime, m.scope, m.token)
+		if err != nil || len(st.Plans) != 0 {
+			t.Fatalf("with the only sellable price failing: plans=%+v err=%v, want none and no error", st.Plans, err)
+		}
+		if len(m.logs.Lines("billing_stripe_error")) < 1 || !strings.Contains(strings.Join(m.logs.Lines("billing_stripe_error"), "\n"), "price_retrieve") {
+			t.Errorf("a failed price fetch must be logged: %q", m.logs.String())
+		}
+		if st, err := m.svc.Status(m.ctx, m.f.runtime, m.scope, m.token); err != nil || len(st.Plans) != 1 || st.Plans[0].PriceID != "price_Cb08Month" {
+			t.Errorf("the next read after Stripe recovered: plans=%+v err=%v, want the plan back", st.Plans, err)
 		}
 	})
 
