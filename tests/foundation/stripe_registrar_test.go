@@ -410,12 +410,18 @@ func TestStripeSP21Registrar(t *testing.T) {
 		defer real.Close()
 		scope := stripeadmin.Scope{TenantID: p.f.tenantA, StoreID: p.f.storeA1, PrincipalID: p.f.principalA}
 		account, secret := os.Getenv("STRIPE_ACCOUNT_ID"), os.Getenv("STRIPE_SECRET_KEY")
+		// Same default as SP16 (psp/stripe sandbox_test.go): ProbeCheckout requires an https return URL,
+		// and no harness sets COMMERCE_PAYMENT_RETURN_URL, so an empty value was refused locally (ErrRejected).
+		returnURL := os.Getenv("COMMERCE_PAYMENT_RETURN_URL")
+		if returnURL == "" {
+			returnURL = "https://example.com/livecommerce/payment/return"
+		}
 		conn, err := real.Register(ctx, scope, account, secret)
 		if err != nil {
 			t.Fatalf("register sandbox account: %v", err)
 		}
 		id, err := real.Qualify(ctx, scope, stripeadmin.QualifyInput{ConnectionID: conn, AccountID: account, SecretKey: secret, Profile: "SANDBOX",
-			Currency: "HKD", ReturnURL: os.Getenv("COMMERCE_PAYMENT_RETURN_URL"), ExpectedVersion: 1, AmountMinor: 400})
+			Currency: "HKD", ReturnURL: returnURL, ExpectedVersion: 1, AmountMinor: 400})
 		if err != nil {
 			t.Fatalf("sandbox probe: %v", err)
 		}

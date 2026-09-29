@@ -68,13 +68,18 @@ MAIN=$(cd "$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)/
 OUT="${LC_RELEASE_GATE_OUT:-$MAIN/output/release-gate/$(date -u +%Y%m%dT%H%M%SZ)-$sha}"
 
 have() { command -v "$1" >/dev/null 2>&1; }
+# SANDBOX opt-in is read once and then removed from the environment: only the SANDBOX rows (G07z and
+# --stripe-browser) get it back, so no other suite turns into a half-configured SANDBOX run.
+stripe_opt_in=0
+[[ "${STRIPE_BROWSER:-}" == 1 && "${STRIPE_SANDBOX:-}" == 1 ]] && stripe_opt_in=1
+unset STRIPE_BROWSER STRIPE_SANDBOX STRIPE_SECRET_KEY STRIPE_SECRET_KEY_ROTATED STRIPE_ACCOUNT_ID
 selected() { [[ -z "$only" || "$only" == *",$1,"* ]]; }
 
 # ---- mode discovery: the usage line of test-local.sh is the single list of modes ------------------
 modes=$(sed -n "s/.*Usage: bash scripts\/dev\/test-local.sh \[\(.*\)\]\\\\n'.*/\1/p" scripts/dev/test-local.sh | tr '|' '\n')
 browser_modes=$(printf '%s\n' "$modes" | grep -E -- '^--(.*browser.*|e2e)$' || true)
 all_modes=$(printf '%s\n' "$modes" | grep -c . | tr -d ' ')
-ids="G01 G02 G03 G04 G05 G06 G06n G07"
+ids="G01 G02 G03 G04 G05 G06 G06n G07 G07z"
 for m in $browser_modes; do ids="$ids B-${m#--}"; done
 ids="$ids G90 G91 G99"
 
@@ -326,7 +331,7 @@ fi
 
 # ---- stripe SANDBOX prerequisite (no value is printed) ---------------------------------------------
 stripe_sandbox_ready() {
-  [[ "${STRIPE_BROWSER:-}" == 1 && "${STRIPE_SANDBOX:-}" == 1 ]] || return 1
+  ((stripe_opt_in)) || return 1
   local f="${LC_SECRETS_FILE:-$HOME/.config/livecommerce/secrets.env}"
   [[ -r "$f" ]] || return 1
   ( # subshell: the key never leaves it
@@ -336,6 +341,33 @@ stripe_sandbox_ready() {
     [[ "${STRIPE_SECRET_KEY:-}" =~ ^(sk|rk)_test_ ]]
   )
 }
+
+# ---- G07z Stripe SANDBOX API tiers with the owner's test key (SP16 unit, RF10 + SP21 real PG) ---------
+# The key is read in a subshell from the secrets file and exported to these go test processes only.
+if selected G07z; then
+  if ! stripe_sandbox_ready; then
+    record G07z SANDBOX NOT_RUN "needs STRIPE_BROWSER=1, STRIPE_SANDBOX=1 and an sk_test_/rk_test_ key in secrets.env"
+  elif ! docker_ok || ! have go; then
+    record G07z SANDBOX NOT_RUN "docker daemon or go missing"
+  else
+    run_cmd G07z bash -c 'set +x
+      STRIPE_SECRET_KEY="$(. "${LC_SECRETS_FILE:-$HOME/.config/livecommerce/secrets.env}" 2>/dev/null; printf %s "${STRIPE_SECRET_KEY:-}")"
+      export STRIPE_SECRET_KEY STRIPE_SANDBOX=1 STRIPE_ACCOUNT_ID=acct_1UJDb0RusP6Wwj7e
+      go test -count=1 -v -run "^TestStripeSP16Sandbox$" ./internal/integrations/psp/stripe || exit 1
+      bash scripts/dev/test-focused.sh "^(TestStripeRF10Sandbox|TestStripeSP21Registrar)$"'
+    if ((rc != 0)); then
+      record G07z SANDBOX FAIL "SP16/RF10/SP21 SANDBOX exit $rc" "$rc" "$LOG"
+    else
+      read -r gp gf sn so <<<"$(judge_gotest "$LOG" "$OUT/G07z.skipped" "$OUT/G07z.skipped-other")"
+      if ((gf > 0 || gp == 0 || so > 0)); then
+        record G07z SANDBOX FAIL "pass=$gp fail=$gf other-skips=$so" "$rc" "$LOG"
+      else
+        record G07z SANDBOX PASS "$gp SANDBOX tests/subtests pass against Stripe test mode (SP16, RF10, SP21 probe)" "$rc" "$LOG"
+        if ((sn > 0)); then record G07z+ SANDBOX NOT_RUN "skipped with NOT_RUN: $(tr '\n' ' ' <"$OUT/G07z.skipped" | cut -c1-100)" - "$OUT/G07z.skipped"; fi
+      fi
+    fi
+  fi
+fi
 
 # ---- browser modes ------------------------------------------------------------------------------
 gates_doc=docs/delivery/GATES.md
@@ -361,7 +393,11 @@ for m in $browser_modes; do
     record "$id" "$tier" NOT_RUN "node/pnpm, @playwright/test or its Chromium missing (pnpm install; pnpm exec playwright install chromium)"
     continue
   fi
-  run_cmd "$id" bash scripts/dev/test-local.sh "$m"
+  if [[ "$m" == --stripe-browser ]]; then
+    run_cmd "$id" env STRIPE_BROWSER=1 STRIPE_SANDBOX=1 bash scripts/dev/test-local.sh "$m"
+  else
+    run_cmd "$id" bash scripts/dev/test-local.sh "$m"
+  fi
   if grep -q '^NOT_RUN' "$LOG" && ((rc == 2)); then
     record "$id" "$tier" NOT_RUN "$(grep -m1 '^NOT_RUN' "$LOG" | cut -c1-110)" "$rc" "$LOG"
   elif ((rc != 0)); then
