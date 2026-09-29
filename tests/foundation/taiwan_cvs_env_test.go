@@ -99,7 +99,7 @@ func tcvNew(t *testing.T, opts ...tcvOpts) *tcvEnv {
 	p := psSetup(t)
 	e := &tcvEnv{t: t, p: p, svcs: map[string]fulfillment.ServiceInput{}, svcVer: map[string]int64{}, fake: ecpaytest.New(), keys: tcvKeyring(t), tag: t04Tag(), origin: "https://tcv-" + t04Tag() + ".example"}
 	var err error
-	if e.client, err = ecpay.NewClient(ecpay.EnvSandbox, e.fake.Transport()); err != nil {
+	if e.client, err = ecpay.NewClient(ecpay.Environment(o.payEnv), e.fake.Transport()); err != nil {
 		t.Fatal(err)
 	}
 	e.cfg = fulfillment.CVSConfig{ECPay: ecpay.Config{Enabled: !o.ecpayDisabled, HooksOrigin: tcvHooksOrigin}, PaymentEnvironment: o.payEnv}
@@ -126,7 +126,8 @@ func tcvNew(t *testing.T, opts ...tcvOpts) *tcvEnv {
 	bhPublish(t, p.bcHarness, e.origin, p.f.tenantA, p.f.storeA1)
 	e.bh = bhHarness{bcHarness: p.bcHarness, server: srv, key: bffKey, origin: e.origin}
 	// the fake's directory: the documented stage stores (F5) plus a Hi-Life row
-	e.fake.SetStoreList("UNIMART", []ecpaytest.Store{{ID: "131386", Name: "Stage 7-ELEVEN", Addr: "Stage address 7", Phone: "0200000001"}, {ID: "000123", Name: "Leading zero store", Addr: "Zero address"}})
+	e.fake.SetStoreList("UNIMART", []ecpaytest.Store{{ID: "131386", Name: "Stage 7-ELEVEN", Addr: "Stage address 7", Phone: "0200000001"}, {ID: "000123", Name: "Leading zero store", Addr: "Zero address"},
+		{ID: "1328", Name: "Four char store", Addr: "Four address"}, {ID: "1234567", Name: "Seven char store", Addr: "Seven address"}, {ID: "123456789", Name: "Nine char store", Addr: "Nine address"}})
 	e.fake.SetStoreList("FAMI", []ecpaytest.Store{{ID: "006598", Name: "Stage FamilyMart", Addr: "Stage address F"}})
 	e.fake.SetStoreList("HILIFE", []ecpaytest.Store{{ID: "2001", Name: "Stage Hi-Life", Addr: "Stage address H"}})
 	return e
@@ -201,8 +202,8 @@ func (e *tcvEnv) connect(mode string) string {
 	merchantID := fmt.Sprintf("2%09d", binary.BigEndian.Uint32(randomBytes(4))%1000000000)
 	e.mk = ecpaytest.Merchant{ID: merchantID, Key: "k" + t04Tag() + "abcd", IV: "v" + t04Tag() + "wxyz"}
 	e.fake.AddMerchant(e.mk)
-	body := fmt.Sprintf(`{"expected_version":0,"environment":"SANDBOX","mode":%q,"merchant_id":%q,"hash_key":%q,"hash_iv":%q,"sender_name":"寄件人測試","sender_cell_phone":"0911222333"}`,
-		mode, merchantID, e.mk.Key, e.mk.IV)
+	body := fmt.Sprintf(`{"expected_version":0,"environment":%q,"mode":%q,"merchant_id":%q,"hash_key":%q,"hash_iv":%q,"sender_name":"寄件人測試","sender_cell_phone":"0911222333"}`,
+		e.cfg.PaymentEnvironment, mode, merchantID, e.mk.Key, e.mk.IV)
 	status, out, raw := e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/logistics/ecpay", "tcv-connect-"+t04Tag(), body)
 	if status != 200 {
 		e.t.Fatalf("connect ECPay: %d %s", status, raw)
@@ -515,4 +516,62 @@ func tcvRefusedWithStatus(err error, statuses ...int) bool {
 		}
 	}
 	return false
+}
+
+// mapReturnWith is mapReturn with field overrides (a forged or mismatching return: the map return has no MAC, F3).
+func (e *tcvEnv) mapReturnWith(selectionID string, form map[string]string, override map[string]string) *httptest.ResponseRecorder {
+	v := url.Values{}
+	for k, val := range form {
+		v.Set(k, val)
+	}
+	ret := e.fake.MapReturn(v)
+	for k, val := range override {
+		ret.Set(k, val)
+	}
+	return e.hook("/v1/cvs/ecpay/map-return/"+selectionID, ret, nil)
+}
+
+// reclient replaces the ECPay client (and everything holding it) with a fresh one: an empty in-process directory cache, as after a
+// process restart or the next 20:00 refresh.
+func (e *tcvEnv) reclient() {
+	e.t.Helper()
+	var err error
+	if e.client, err = ecpay.NewClient(ecpay.Environment(e.cfg.PaymentEnvironment), e.fake.Transport()); err != nil {
+		e.t.Fatal(err)
+	}
+	if e.cvs, err = fulfillment.NewCVS(e.p.f.runtime, e.jobs, e.keys, e.client, e.cfg); err != nil {
+		e.t.Fatal(err)
+	}
+	e.merchant = httpapi.NewHandler(e.p.f.runtime, httpapi.Options{CVS: e.cvs})
+	e.hooks = e.cvs.HooksHandler()
+	bc, err := checkout.NewBuyerCVS(e.p.pool, e.keys, e.client, e.cfg)
+	if err != nil {
+		e.t.Fatal(err)
+	}
+	e.svc = e.p.bcHarness.service.WithPaymentEnvironment(e.cfg.PaymentEnvironment).WithBuyerCVS(bc)
+	e.bh = e.tcbServe(e.svc)
+}
+
+// hookRaw posts an arbitrary body to the hooks handler.
+func (e *tcvEnv) hookRaw(path, body, contentType string) *httptest.ResponseRecorder {
+	req := httptest.NewRequest("POST", path, strings.NewReader(body))
+	req.Header.Set("Content-Type", contentType)
+	w := httptest.NewRecorder()
+	e.hooks.ServeHTTP(w, req)
+	return w
+}
+
+func urlValues(m map[string]string) url.Values {
+	v := url.Values{}
+	for k, val := range m {
+		v.Set(k, val)
+	}
+	return v
+}
+
+// fulfillmentCfg is the environment's CVS config with another payment environment.
+func fulfillmentCfg(e *tcvEnv, payEnv string) fulfillment.CVSConfig {
+	c := e.cfg
+	c.PaymentEnvironment = payEnv
+	return c
 }
