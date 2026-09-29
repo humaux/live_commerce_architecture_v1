@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"livecommerce/internal/customers"
 	"livecommerce/internal/merchantorders"
 )
 
@@ -25,6 +26,12 @@ func TestDomainErrorCodesReachJSONBody(t *testing.T) {
 			merchantorders.ErrNotRefundable:       "not_refundable",
 			merchantorders.ErrRefundBlockedReview: "refund_blocked_review",
 			merchantorders.ErrRefundLimit:         "refund_limit",
+		}},
+		"customers": {customersClassify, map[error]string{
+			customers.ErrIdempotencyConflict: "idempotency_conflict",
+			customers.ErrErasureBlocked:      "erasure_blocked",
+			customers.ErrExportTooLarge:      "export_too_large",
+			customers.ErrErased:              "erased",
 		}},
 		"shipments": {shipmentClassify, map[error]string{
 			merchantorders.ErrVersionChanged:      "version_changed",

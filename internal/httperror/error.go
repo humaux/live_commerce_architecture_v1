@@ -80,6 +80,11 @@ func write(w http.ResponseWriter, status int, code string, retryable bool) {
 		"binding_ambiguous":  "Several Meta connections are enabled; the post cannot be assigned to one.",
 		"source_conflict":    "This post already feeds another live session.",
 		"page_token_missing": "Private replies need a registered Page token for this connection.",
+		// customers-billing-v1 §5/§6 (customers-core): consent, export and erasure.
+		"idempotency_conflict": "This request key was already used for a different request.",
+		"erasure_blocked":      "Erasure is blocked while a hold, payment or refund is in progress.",
+		"erased":               "This data has been erased.",
+		"export_too_large":     "The export is too large to generate.",
 	}
 	message, ok := messages[code]
 	if !ok {

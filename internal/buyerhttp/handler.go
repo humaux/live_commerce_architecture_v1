@@ -97,6 +97,10 @@ const (
 	paymentCancelRoute
 	claimLinkRoute
 	claimRedeemRoute
+	privacyRoute
+	consentsRoute
+	privacyExportRoute
+	privacyErasureRoute
 )
 
 type route struct {
@@ -130,6 +134,14 @@ func matchRoute(path string) route {
 		return route{kind: claimLinkRoute}
 	case claimRedeemPath:
 		return route{kind: claimRedeemRoute}
+	case privacyPath:
+		return route{kind: privacyRoute}
+	case consentsPath:
+		return route{kind: consentsRoute}
+	case privacyExportPath:
+		return route{kind: privacyExportRoute}
+	case privacyErasurePath:
+		return route{kind: privacyErasureRoute}
 	}
 	if rest, ok := strings.CutPrefix(path, "/v1/buyer/orders/"); ok {
 		for _, entry := range []struct {
@@ -174,6 +186,12 @@ func allowed(kind routeKind, method string) bool {
 	case claimLinkRoute:
 		return method == http.MethodGet
 	case claimRedeemRoute:
+		return method == http.MethodPost
+	case privacyRoute:
+		return method == http.MethodGet
+	case consentsRoute:
+		return method == http.MethodPut
+	case privacyExportRoute, privacyErasureRoute:
 		return method == http.MethodPost
 	}
 	return false
@@ -512,6 +530,17 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 			Authenticated bool `json:"authenticated"`
 		}{true})
 		return nil
+	}
+	// customers-core: the privacy handlers write their own response (attachment or JSON) and return only an error.
+	switch selected.kind {
+	case privacyRoute:
+		return h.privacyGet(ctx, w, r, storeID, token, key)
+	case consentsRoute:
+		return h.consentPut(ctx, w, r, storeID, token, key)
+	case privacyExportRoute:
+		return h.privacyExport(ctx, w, r, storeID, token, key)
+	case privacyErasureRoute:
+		return h.privacyErase(ctx, w, r, storeID, token, key)
 	}
 	var out any
 	var err error

@@ -133,6 +133,8 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerClaimRoutes(mux, pool, configured.ClaimLabels)
 	registerRefundRoutes(mux, pool, configured.RefundJobs)
 	registerShipmentRoutes(mux, pool)
+	registerCustomerRoutes(mux, pool)
+	registerFinanceRoutes(mux, pool)
 	foundation := platform.NewHandler(pool, platform.HandlerOptions{SessionStoreList: configured.SessionStoreList})
 	if configured.SessionStoreList {
 		mux.Handle("GET /v1/admin/stores", foundation)

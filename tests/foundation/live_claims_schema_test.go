@@ -251,6 +251,11 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		add(iw, "claims.events", "SELECT", "tenant_id", "store_id", "id", "session_id", "source_event_id", "outcome", "bundle_id", "bundle_version")
 		add(wr, "claims.events", "SELECT", "tenant_id", "store_id", "id", "session_id", "source_kind", "source_event_id", "outcome", "bundle_id")
 		add(wr, "live.claim_windows", "SELECT", "tenant_id", "store_id", "session_id", "state", "generation")
+		// customers-billing-v1 §3.1 (0078): the customer projection reads counts/platform/time of bound bundles and the
+		// privacy writer relabels manual labels; neither ever reads actor_key or link hashes.
+		add("commerce_auth", "claims.bundles", "SELECT", "tenant_id", "store_id", "id", "session_id", "platform", "owner_id", "bound_at", "line_count")
+		add("commerce_privacy_writer", "claims.bundles", "SELECT", "tenant_id", "store_id", "id", "session_id", "platform", "owner_id", "bound_at", "label", "line_count")
+		add("commerce_privacy_writer", "claims.bundles", "UPDATE", "label")
 		add(wr, "claims.meta_intake", "SELECT", cols("claims.meta_intake")...)
 		add(wr, "claims.meta_intake", "INSERT", cols("claims.meta_intake")...)
 		add(wr, "claims.meta_intake", "UPDATE", "state", "fail_code", "attempts", "not_before", "lease_xid", "updated_at")
@@ -291,7 +296,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			FROM pg_namespace n CROSS JOIN LATERAL aclexplode(n.nspacl) a WHERE n.nspname='claims' AND a.grantee<>n.nspowner`),
 			[]string{"commerce_buyer_runtime USAGE", "commerce_claims_writer USAGE", "commerce_runtime USAGE",
 				// meta-claims-intake-v1 §4.3 schema USAGE rows
-				"commerce_claims_intake USAGE", "commerce_integration_writer USAGE", "commerce_meta_writer USAGE", "commerce_worker USAGE"})
+				"commerce_claims_intake USAGE", "commerce_integration_writer USAGE", "commerce_meta_writer USAGE", "commerce_worker USAGE",
+				// customers-billing-v1 §3.1 (0078): the customer projection and the privacy writer read/relabel bound bundles
+				"commerce_auth USAGE", "commerce_privacy_writer USAGE"})
 		var usage []bool
 		if err := f.owner.QueryRow(ctx, `SELECT ARRAY[has_schema_privilege('commerce_claims_writer','live','USAGE'),has_schema_privilege('commerce_claims_writer','identity','USAGE'),
 			has_schema_privilege('commerce_claims_writer','claims','USAGE')]`).Scan(&usage); err != nil || !usage[0] || !usage[1] || !usage[2] {
@@ -305,6 +312,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		denied := lcStrings(t, f.owner, `SELECT r.rolname||' '||c.oid::regclass::text FROM pg_roles r CROSS JOIN pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
 			WHERE r.rolname LIKE 'commerce\_%' AND r.rolname NOT IN ('commerce_runtime','commerce_claims_writer','commerce_claims_intake')
 			  AND NOT (r.rolname='commerce_integration_writer' AND c.oid::regclass::text='claims.events') -- §4.3 column SELECT, asserted above
+			  AND NOT (r.rolname IN ('commerce_auth','commerce_privacy_writer') AND c.oid::regclass::text='claims.bundles') -- 0078 column grants, asserted above
 			  AND c.relkind IN ('r','p','v','m') AND (c.oid::regclass::text=ANY($1) OR (r.rolname='commerce_buyer_runtime' AND n.nspname IN ('claims','live')))
 			  AND (has_table_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') OR has_any_column_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,REFERENCES'))`, lcTables)
 		if len(denied) != 0 {
@@ -659,6 +667,12 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 					if role == "commerce_integration_writer" && table == "claims.events" && strings.HasPrefix(q, "SELECT") {
 						continue
 					}
+					// customers-billing-v1 §3.1 (0078): commerce_auth holds column SELECT on claims.bundles (customer list
+					// claims_count/platforms), so `SELECT 1 FROM claims.bundles` succeeds; its write statements stay 42501 and
+					// the matrix above pins the exact columns (no actor_key, label or link hash).
+					if role == "commerce_auth" && table == "claims.bundles" && strings.HasPrefix(q, "SELECT") {
+						continue
+					}
 					tx, err := f.owner.Begin(ctx)
 					if err != nil {
 						t.Fatal(err)
@@ -682,7 +696,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		lcSameSet(t, "functions reaching claims bindings/links", lcStrings(t, f.owner, `SELECT p.oid::regprocedure::text FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 			WHERE n.nspname NOT IN ('pg_catalog','information_schema') AND p.prosrc ~* 'claims\.(bundles|links)'
 			  AND (has_function_privilege('commerce_runtime',p.oid,'EXECUTE') OR has_function_privilege('commerce_buyer_runtime',p.oid,'EXECUTE'))`),
-			[]string{"claims.issue_link(bytea,uuid,uuid,uuid,bigint,bytea,boolean)", "claims.mark_applied(uuid,uuid[],bigint[])", "claims.preview_link(bytea)", "claims.redeem_link(bytea,bigint)"})
+			[]string{"claims.issue_link(bytea,uuid,uuid,uuid,bigint,bytea,boolean)", "claims.mark_applied(uuid,uuid[],bigint[])", "claims.preview_link(bytea)", "claims.redeem_link(bytea,bigint)",
+				// customers-billing-v1 §3.1 (0078): read-only projections of bound-bundle counts/time, no binding write.
+				"identity.read_merchant_customers(bytea,uuid,uuid,integer,timestamp with time zone,uuid,text)", "customers.buyer_read_privacy(bytea,uuid,boolean)"})
 		lcSameSet(t, "roles able to write owner_id", lcStrings(t, f.owner, `SELECT DISTINCT p.grantee::text FROM information_schema.column_privileges p
 			WHERE p.table_schema='claims' AND p.table_name='bundles' AND p.column_name IN ('owner_id','bound_at') AND p.privilege_type='UPDATE'
 			  AND p.grantee::text<>(SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='claims.bundles'::regclass)`), []string{"commerce_claims_writer"})
@@ -837,7 +853,8 @@ func lcPopulatedUpgrade(t *testing.T) {
 	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0060_live_claims.sql',$1)`, fmt.Sprintf("%x", sha256.Sum256(body)))
 	// 0064 and post-River 0014 (meta-claims-intake-v1) build on 0060's tables and roles, so they are
 	// held back with it and applied on top of the populated data in the second phase below.
-	dependents := []string{"0064_meta_claims_intake.sql", "post_river/0014_meta_claims_intake_river.sql"}
+	// 0078 (customers-billing-v1) reads claims.bundles too, so it is held back with 0060 as well.
+	dependents := []string{"0064_meta_claims_intake.sql", "post_river/0014_meta_claims_intake_river.sql", "0078_customers_privacy.sql"}
 	for _, version := range dependents {
 		dependent, err := os.ReadFile(filepath.Join("../../migrations", version))
 		if err != nil {
