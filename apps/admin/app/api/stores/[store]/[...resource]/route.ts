@@ -41,7 +41,8 @@ const routes: Record<string, RegExp> = {
     `^(products|skus|warehouses|inventory/adjustments|products/${uuid}/archive|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets|live-sessions|${studioAction}|${claimsRoutes.POST})$`,
   ),
   PATCH: new RegExp(`^(products/${uuid}|skus/${uuid}|${studioDetail}|${claimsRoutes.PATCH})$`),
-  PUT: new RegExp(`^(${setting}|${policy})$`),
+  // Studio PUT is only the comment-source bind (claims-request.ts); settings PUTs are the rest.
+  PUT: new RegExp(`^(${setting}|${policy}|${claimsRoutes.PUT})$`),
 };
 const exactStore = new RegExp(`^${uuid}$`);
 const inspectRoute = new RegExp(`^${inspect}$`);
@@ -66,7 +67,7 @@ async function route(request: Request, context: Context) {
   // the browser secret boundary. The Go runtime stays explicitly injected/off.
   if (input && !authConfig?.publicOrigin.startsWith("https://")) return error(404, "not_found");
   if (exactStore.test(store) && studio && studioAny.test(path) && !routes[request.method]?.test(path))
-    return error(405, "method_not_allowed", "GET, POST, PATCH");
+    return error(405, "method_not_allowed", "GET, POST, PATCH, PUT");
   if (!exactStore.test(store) || (!routes[request.method]?.test(path) && !action))
     return error(404, "not_found");
   const order = request.method === "GET" && orderRoute.test(path);
@@ -285,7 +286,7 @@ const unsupported = async (_request: Request, context: Context) => {
     ? localError(404, "not_found")
     : path.startsWith("live-sessions") && !studioAny.test(path)
     ? localError(404, "not_found")
-    : localError(405, "method_not_allowed", path.startsWith("live-sessions") ? "GET, POST, PATCH" : "GET, POST, PATCH, PUT");
+    : localError(405, "method_not_allowed", "GET, POST, PATCH, PUT");
   if (path.startsWith("live-sessions"))
     response.headers.set("Cache-Control", "private, no-store");
   if (claimLinkRoute(path)) response.headers.set("Referrer-Policy", "no-referrer");

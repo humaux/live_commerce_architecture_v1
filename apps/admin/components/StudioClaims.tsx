@@ -4,10 +4,16 @@
 // window badge and Open/Close, quantity-rule selector (CLOSED only), offers table and
 // form, per-reason counters with the frozen host prompt, MOCK manual comment entry,
 // bundle list, and the masked one-time link dialog (issue / replace / release+replace).
+// It also owns the "Comment source" section: the one pasted link/ID that binds this scene
+// to a Facebook post/live video or Instagram media, its save (version CAS, Idempotency-Key
+// reused only by "retry same request") and its status line. Go parses and validates the
+// pasted text; the UI never decides what a valid source is.
 // Non-goals: no claim rule (Go decides every outcome; the UI shows results, never
 // predicts them), no automatic comment reading (MOCK capture only), no storage of any
 // response, label or token (browser memory only; the token is dropped when the dialog
 // closes, the page hides or the session ends), no link delivery (the merchant copies it).
+// BFF routes: /api/stores/{store}/live-sessions/{scene}/claims… (M1–M7, Go claims.go) and
+// …/claim-source (GET read, PUT bind; Go live.put_claim_source, live:manage + integration:execute).
 // Depends on: claims-client.ts (M1–M7 and catalog reads), studio-client.ts (scene detail
 // for its title and can_manage), settings-client.ts (session boundary), claims-copy.ts
 // plus studio-copy.ts (shared Studio words), WorkspaceFrame (shared admin shell) and
@@ -21,9 +27,11 @@ import { sessionBoundary } from "@/lib/settings-client";
 import { readStudioDetail, StudioError, type StudioErrorCode } from "@/lib/studio-client";
 import type { StudioDetail } from "@/lib/studio-model";
 import {
-  createClaimOffer, issueClaimLink, readClaimBundles, readClaimProducts, readClaimSKUs, readClaimsBoard,
-  readStorefrontOrigin, recordManualClaim, setClaimWindow, updateClaimOffer,
+  createClaimOffer, issueClaimLink, putClaimSource, readClaimBundles, readClaimProducts, readClaimSKUs,
+  readClaimsBoard, readClaimSource, readStorefrontOrigin, recordManualClaim, setClaimWindow, updateClaimOffer,
 } from "@/lib/claims-client";
+import type { ClaimSource } from "@/lib/claim-source-model";
+import { claimSourceBody, claimSourceInputMax, validClaimSourceInput, type ClaimSourceForm } from "@/lib/claims-request";
 import {
   persistedReasons, type Board, type Bundle, type CatalogProduct, type CatalogSKU, type ManualResult, type MatchMode,
   type Offer,
@@ -34,10 +42,11 @@ import { WorkspaceFrame } from "./WorkspaceFrame";
 import "./claims.css";
 
 type Status = "loading" | "ready" | StudioErrorCode;
-type Action = "window" | "offer" | "update" | "manual" | "link";
-type ActionError = { action: Action; code: StudioErrorCode | "no-origin" | "form"; message?: string };
+type Action = "window" | "offer" | "update" | "manual" | "link" | "source";
+type ActionError = { action: Action; code: StudioErrorCode | "no-origin" | "form"; message?: string; api?: string };
 type Pending = { action: Action; key: string; run: (key: string, boundary: string) => Promise<void> };
-type Facts = { detail: StudioDetail; board: Board; bundles: Bundle[]; next: string };
+// source is read on its own: a failing source read (sourceError) never hides the rest of the panel.
+type Facts = { detail: StudioDetail; board: Board; bundles: Bundle[]; next: string; source: ClaimSource | null; sourceError: StudioErrorCode | null };
 type Issued = { ref: string; origin: string; token: string | null; generation: number; expiresAt: string; released: boolean; replayed: boolean };
 
 function time(locale: Locale, value: string) {
@@ -54,6 +63,11 @@ function Field({ id, label, hint, children }: { id: string; label: string; hint?
   </div>;
 }
 const codeOf = (error: unknown): StudioErrorCode => error instanceof StudioError ? error.code : "unavailable";
+// The form the saved source (or the defaults of a first bind: collecting, reply off) would produce.
+// Private reply defaults to off: it messages real buyers, so the merchant opts in.
+const sourceFormOf = (source: ClaimSource | null, locale: Locale): ClaimSourceForm => source
+  ? { input: source.source_object_id, private_reply: source.private_reply, reply_locale: source.reply_locale, active: source.active }
+  : { input: "", private_reply: false, reply_locale: locale, active: true };
 const utf8Bytes = (value: string) => new TextEncoder().encode(value).length;
 
 export function StudioClaims({ locale, store, scene, initialError }: {
@@ -81,6 +95,8 @@ export function StudioClaims({ locale, store, scene, initialError }: {
   const [issued, setIssued] = useState<Issued | null>(null);
   const [buyerLocale, setBuyerLocale] = useState<Locale>(locale);
   const [revealed, setRevealed] = useState(false);
+  const [sourceForm, setSourceForm] = useState<ClaimSourceForm>(() => sourceFormOf(null, locale));
+  const sourceDirty = useRef(false);
   const boundary = useRef("");
   const pending = useRef<Pending | null>(null);
   const origin = useRef<string | null>(null);
@@ -108,12 +124,16 @@ export function StudioClaims({ locale, store, scene, initialError }: {
     setStatus((value) => value === "ready" ? value : "loading");
     try {
       const before = await sessionBoundary().catch(() => { throw new StudioError("signed-out"); });
-      const [detail, board, page] = await Promise.all([readStudioDetail(storeID, scene, abort.signal),
-        readClaimsBoard(storeID, scene, abort.signal), readClaimBundles(storeID, scene, "", abort.signal)]);
+      const [detail, board, page, source] = await Promise.all([readStudioDetail(storeID, scene, abort.signal),
+        readClaimsBoard(storeID, scene, abort.signal), readClaimBundles(storeID, scene, "", abort.signal),
+        readClaimSource(storeID, scene, abort.signal).then((value) => ({ value, error: null as StudioErrorCode | null }),
+          (error) => { if (codeOf(error) === "signed-out") throw error; return { value: null, error: codeOf(error) as StudioErrorCode | null }; })]);
       if (current !== epoch.current || abort.signal.aborted) return;
       if ((await sessionBoundary().catch(() => "")) !== before) throw new StudioError("signed-out");
       boundary.current = before;
-      setFacts({ detail, board, bundles: page.items, next: page.next_cursor });
+      setFacts({ detail, board, bundles: page.items, next: page.next_cursor, source: source.value, sourceError: source.error });
+      // Other saves re-read the facts too; never overwrite what the merchant is still typing.
+      if (!sourceDirty.current) setSourceForm(sourceFormOf(source.value, locale));
       setModeDraft(board.window.match_mode);
       setStatus("ready");
     } catch (error) {
@@ -122,7 +142,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
       if (code === "signed-out") signOut();
       else setStatus(code);
     }
-  }, [initialError, storeID, scene, signOut]);
+  }, [initialError, storeID, scene, signOut, locale]);
 
   useEffect(() => {
     void load();
@@ -196,7 +216,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
       const code = codeOf(error);
       if (code !== "uncertain") pending.current = null;
       if (code === "signed-out") signOut();
-      else setActionError({ action, code });
+      else setActionError({ action, code, api: error instanceof StudioError ? error.api : "" });
     } finally { setBusy(null); }
   }
 
@@ -205,6 +225,11 @@ export function StudioClaims({ locale, store, scene, initialError }: {
     : value === "invalid" ? c.invalid : c.unavailable;
   function errorText(error: ActionError) {
     if (error.message) return error.message;
+    if (error.action === "source") {
+      const known = (c.sourceErrors as Record<string, string>)[error.api ?? ""];
+      if (known) return known;
+      if (error.code === "forbidden") return c.sourceForbidden;
+    }
     if (error.code === "no-origin") return c.noOrigin;
     if (error.code === "conflict") return c.conflict[error.action];
     if (error.code === "uncertain") return c.uncertain;
@@ -223,6 +248,22 @@ export function StudioClaims({ locale, store, scene, initialError }: {
   const prompt = keywordForPrompt && claimWindow ? hostPrompt(promptLanguage, claimWindow.match_mode, keywordForPrompt) : "";
   const blocked = !canManage || !!busy || pending.current !== null;
 
+  const source = facts?.source ?? null;
+  const sourceSaved = sourceFormOf(source, locale);
+  const sourceChanged = !source || sourceForm.input.trim() !== sourceSaved.input || sourceForm.private_reply !== sourceSaved.private_reply ||
+    sourceForm.reply_locale !== sourceSaved.reply_locale || sourceForm.active !== sourceSaved.active;
+  const sourceLocked = blocked || !!facts?.sourceError;
+  const editSource = (patch: Partial<ClaimSourceForm>) => {
+    sourceDirty.current = true;
+    setSourceForm((form) => ({ ...form, ...patch }));
+    if (actionError?.action === "source" && actionError.code === "form") setActionError(null);
+  };
+  function saveSource() {
+    if (!validClaimSourceInput(sourceForm.input)) return setActionError({ action: "source", code: "form", message: c.sourceInputInvalid });
+    // expected_version 0 = first bind; a later save must match the version this panel read.
+    const body = claimSourceBody(sourceForm, source?.version ?? 0);
+    void perform("source", async (key, current) => { await putClaimSource(storeID, scene, body, key, current); sourceDirty.current = false; });
+  }
   function toggleWindow() {
     if (!claimWindow) return;
     const open = claimWindow.state === "CLOSED";
@@ -327,6 +368,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
             // Every claims write is CAS- or absolute-quantity safe, so after reading the
             // facts again a fresh submit may replace an unknown earlier one.
             pending.current = null;
+            sourceDirty.current = false;
             setActionError(null);
             void load();
           }}>{shared.refresh}</button>
@@ -382,6 +424,43 @@ export function StudioClaims({ locale, store, scene, initialError }: {
             </section>
           </aside>
           <div className="claims-work">
+            <section className="claims-section" aria-labelledby="claims-source-title" data-testid="claims-source">
+              <h2 id="claims-source-title">{c.source}</h2>
+              <p className="claims-muted">{c.sourceIntro}</p>
+              {facts.sourceError ? <p className="claims-muted" role="status">{c.sourceUnavailable}</p> : <>
+                {source ? <dl className="claims-facts claims-source-status" data-testid="claims-source-status">
+                  <div><dt>{c.sourceBoundTitle}</dt><dd>{c.sourcePlatform[source.platform]}</dd></div>
+                  <div><dt>{c.sourceObject}</dt><dd data-testid="claims-source-object">{source.source_object_id}</dd></div>
+                  <div><dt>{c.sourceState}</dt><dd>{source.active ? c.sourceOn : c.sourceOff}</dd></div>
+                  <div><dt>{c.sourceVerification}</dt><dd data-testid="claims-source-verified">{source.verified ? c.sourceVerified : c.sourceUnverified}</dd></div>
+                  <div><dt>{c.sourceCount}</dt><dd data-testid="claims-source-count">{source.intake_count}</dd></div>
+                  <div><dt>{c.sourceCapped}</dt><dd data-testid="claims-source-capped">{source.intake_capped}</dd></div>
+                  <div><dt>{c.sourceUpdated}</dt><dd>{time(locale, source.updated_at)}</dd></div>
+                </dl> : <p className="claims-muted" role="status" data-testid="claims-source-none">{c.sourceNone}</p>}
+                <form className="claims-form claims-source-form" onSubmit={(event) => { event.preventDefault(); saveSource(); }}>
+                  <Field id="claims-source-input" label={c.sourceInput} hint={c.sourceInputHint}>
+                    <input id="claims-source-input" value={sourceForm.input} maxLength={claimSourceInputMax} autoComplete="off" spellCheck={false}
+                      disabled={sourceLocked} aria-describedby="claims-source-input-hint"
+                      aria-invalid={actionError?.action === "source" && actionError.code === "form" ? true : undefined}
+                      onChange={(event) => editSource({ input: event.target.value })} /></Field>
+                  <Field id="claims-source-locale" label={c.sourceReplyLocale}>
+                    <select id="claims-source-locale" value={sourceForm.reply_locale} disabled={sourceLocked}
+                      onChange={(event) => editSource({ reply_locale: event.target.value as Locale })}>
+                      {locales.map((item) => <option key={item} value={item}>{localeNames[item]}</option>)}</select></Field>
+                  <div className="claims-check">
+                    <label><input type="checkbox" id="claims-source-reply" checked={sourceForm.private_reply} disabled={sourceLocked}
+                      aria-describedby="claims-source-reply-hint" onChange={(event) => editSource({ private_reply: event.target.checked })} />{c.sourcePrivateReply}</label>
+                    <small id="claims-source-reply-hint" className="claims-muted">{c.sourcePrivateReplyHint}</small>
+                  </div>
+                  <div className="claims-check">
+                    <label><input type="checkbox" id="claims-source-active" checked={sourceForm.active} disabled={sourceLocked}
+                      onChange={(event) => editSource({ active: event.target.checked })} />{c.sourceActive}</label>
+                  </div>
+                  <button type="submit" className="primary" disabled={sourceLocked || !sourceChanged}>{busy === "source" ? c.working : c.sourceSave}</button>
+                </form>
+              </>}
+              {alert("source")}
+            </section>
             <section className="claims-section" aria-labelledby="claims-offers-title">
               <h2 id="claims-offers-title">{c.offers}</h2>
               {board.offers.length ? <div className="claims-table-scroll">

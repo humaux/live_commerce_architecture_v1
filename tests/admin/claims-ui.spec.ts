@@ -8,7 +8,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { createHash, randomBytes } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { hostPrompt } from "../../apps/admin/lib/claims-copy";
+import { claimsCopy, hostPrompt } from "../../apps/admin/lib/claims-copy";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -55,6 +55,145 @@ async function merchantShot(page: Page, name: string) {
   if ((page.viewportSize()?.width ?? 0) <= 680)
     await expect.poll(() => page.locator(".rail").evaluate((rail) => Math.ceil(rail.getBoundingClientRect().right))).toBeLessThanOrEqual(0);
   await shot(page, name, false);
+}
+
+
+// Comment source (claim-source HTTP interface). The Go route is built in parallel, so this
+// phase is MOCK: the claim-source BFF path is answered in the browser from the frozen wire
+// shapes; every other claims call in this file still runs through the real chain. Remove the
+// route once the Go route is merged so the same steps run against Go + PostgreSQL.
+type Wire = Record<string, unknown>;
+const sourceCodes = ["input_invalid", "input_unresolvable", "binding_missing", "binding_ambiguous", "source_conflict", "version_changed"] as const;
+async function claimSourcePhase(merchant: Page, pass: (name: string) => void) {
+  let source: Wire | null = null;
+  let readStatus = 200;
+  let failAfterApply = false;
+  const refusals: { status: number; code: string }[] = [];
+  const puts: { key: string; body: string }[] = [];
+  const applied = new Map<string, Wire>();
+  const headers = { "content-type": "application/json", "cache-control": "private, no-store" };
+  await merchant.route(/\/api\/stores\/[^/]+\/live-sessions\/[^/]+\/claim-source$/, async (route) => {
+    const request = route.request();
+    if (request.method() === "GET") {
+      if (readStatus !== 200) return route.fulfill({ status: readStatus, headers, body: JSON.stringify({ code: "retry_later" }) });
+      return route.fulfill({ status: 200, headers, body: JSON.stringify({ source }) });
+    }
+    expect(request.method()).toBe("PUT");
+    const key = request.headers()["idempotency-key"] ?? "";
+    const raw = request.postData() ?? "";
+    puts.push({ key, body: raw });
+    const refusal = refusals.shift();
+    if (refusal) return route.fulfill({ status: refusal.status, headers, body: JSON.stringify({ code: refusal.code, message: "x", request_id: "", retryable: false, details: {} }) });
+    if (applied.has(key)) return route.fulfill({ status: 200, headers, body: JSON.stringify(applied.get(key)) });
+    const body = JSON.parse(raw) as Wire;
+    expect(Object.keys(body).sort()).toEqual(["active", "expected_version", "input", "private_reply", "reply_locale"]);
+    if (body.expected_version !== ((source?.version as number | undefined) ?? 0))
+      return route.fulfill({ status: 409, headers, body: JSON.stringify({ code: "version_changed" }) });
+    const post = /^https:\/\/www\.facebook\.com\/[^/]+\/posts\/([0-9]+)$/.exec(String(body.input));
+    source = { id: "33333333-3333-4333-8333-333333333333", platform: "facebook", object: "page", asset_id: "page-asset-1",
+      source_object_id: post ? post[1] : String(body.input), private_reply: body.private_reply, reply_locale: body.reply_locale,
+      active: body.active, version: ((source?.version as number | undefined) ?? 0) + 1, verified: false,
+      intake_count: 4, intake_capped: 1, updated_at: "2026-09-29T08:30:00Z" };
+    applied.set(key, source);
+    if (failAfterApply) { failAfterApply = false; return route.fulfill({ status: 503, headers, body: JSON.stringify({ code: "retry_later" }) }); }
+    return route.fulfill({ status: 200, headers, body: JSON.stringify(source) });
+  });
+
+  const section = merchant.getByTestId("claims-source");
+  const input = section.getByLabel("Post or media link or ID", { exact: true });
+  const save = section.getByRole("button", { name: "Save comment source" });
+  const alert = section.getByRole("alert");
+  const active = section.locator("#claims-source-active");
+  await merchant.getByRole("button", { name: "Refresh facts" }).click();
+  await expect(section.getByTestId("claims-source-none")).toBeVisible();
+  await expect(input).toHaveAccessibleDescription(claimsCopy.en.sourceInputHint);
+  // Empty input is refused in the browser: no request, an alert, and the field flagged.
+  await save.click();
+  await expect(alert).toHaveText(claimsCopy.en.sourceInputInvalid);
+  await expect(input).toHaveAttribute("aria-invalid", "true");
+  expect(puts).toHaveLength(0);
+  await input.fill("two words");
+  await save.click();
+  await expect(alert).toHaveText(claimsCopy.en.sourceInputInvalid);
+  expect(puts).toHaveLength(0);
+
+  // First bind: byte-exact body, fresh key, re-read shows the server's facts.
+  await input.fill("  https://www.facebook.com/somepage/posts/123456789012345 ");
+  await section.getByLabel("Reply language", { exact: true }).selectOption("zh-TW");
+  await section.getByLabel("Send a private reply with the cart link").check();
+  await expect(input).not.toHaveAttribute("aria-invalid", "true");
+  await save.click();
+  await expect(section.getByTestId("claims-source-object")).toHaveText("123456789012345");
+  expect(puts).toHaveLength(1);
+  expect(puts[0].key).toMatch(/^[0-9a-f-]{36}$/);
+  expect(puts[0].body).toBe(JSON.stringify({ input: "https://www.facebook.com/somepage/posts/123456789012345", private_reply: true,
+    reply_locale: "zh-TW", active: true, expected_version: 0 }));
+  await expect(section.getByTestId("claims-source-verified")).toHaveText("Unverified");
+  await expect(section.getByTestId("claims-source-count")).toHaveText("4");
+  await expect(section.getByTestId("claims-source-capped")).toHaveText("1");
+  await expect(section.getByTestId("claims-source-status")).toContainText("Facebook post or live video");
+  await expect(input).toHaveValue("123456789012345");
+  await expect(save).toBeDisabled();
+  await merchantShot(merchant, "merchant-claims-source-bound-en");
+  pass("comment source: empty/space input refused in the browser; first bind sends the exact five-key body, then re-reads and shows platform, unverified label and intake counts");
+
+  // Rebind with the version CAS: deactivate (a new key), then every refusal in every locale.
+  await active.uncheck();
+  await save.click();
+  await expect(section.getByTestId("claims-source-status")).toContainText("Paused");
+  expect(puts).toHaveLength(2);
+  expect(JSON.parse(puts[1].body)).toMatchObject({ active: false, expected_version: 1, input: "123456789012345" });
+  expect(puts[1].key).not.toBe(puts[0].key);
+  for (const locale of ["en", "zh-CN", "zh-TW"] as const) {
+    if (locale !== "en") await merchant.goto(`${origin}/${locale}/studio/claims?store=${store}&scene=${session}`);
+    const words = claimsCopy[locale];
+    const box = merchant.getByTestId("claims-source");
+    await expect(box.getByTestId("claims-source-status")).toBeVisible();
+    await box.locator("#claims-source-active").check();
+    for (const [index, code] of sourceCodes.entries()) {
+      // Statuses differ on purpose: the wording keys on the backend code, not the HTTP status.
+      refusals.push({ status: index % 2 ? 409 : 422, code });
+      await box.locator(".claims-source-form button[type=submit]").click();
+      await expect(box.getByRole("alert")).toHaveText(words.sourceErrors[code]);
+    }
+    refusals.push({ status: 403, code: "forbidden" });
+    await box.locator(".claims-source-form button[type=submit]").click();
+    await expect(box.getByRole("alert")).toHaveText(words.sourceForbidden);
+    refusals.push({ status: 409, code: "no_such_code" });
+    await box.locator(".claims-source-form button[type=submit]").click();
+    await expect(box.getByRole("alert")).toHaveText(words.conflict.source);
+    if (locale === "zh-TW") await merchantShot(merchant, "merchant-claims-source-refused-zh-TW");
+  }
+  pass("comment source: all six refusal codes plus forbidden and an unknown 409 are worded in en, zh-CN and zh-TW");
+
+  // Unknown result: the write committed but the answer was lost. Fields lock, retry reuses
+  // the identical key and body, and the server-side replay leaves exactly one new version.
+  await merchant.goto(`${origin}/en/studio/claims?store=${store}&scene=${session}`);
+  await expect(section.getByTestId("claims-source-status")).toBeVisible();
+  const before = puts.length, version = source!.version as number;
+  await active.check();
+  failAfterApply = true;
+  await save.click();
+  await expect(alert).toContainText(claimsCopy.en.uncertain);
+  await expect(input).toBeDisabled();
+  await section.getByRole("button", { name: "Retry same request" }).click();
+  await expect(section.getByTestId("claims-source-status")).toContainText("On");
+  expect(puts).toHaveLength(before + 2);
+  expect(puts[before + 1]).toEqual(puts[before]);
+  expect(source!.version).toBe(version + 1);
+  pass("comment source: unknown result locks the form; retry reuses the same Idempotency-Key and bytes and the replay applies once");
+
+  // A failing source read must not take the rest of the claims panel down.
+  readStatus = 503;
+  await merchant.getByRole("button", { name: "Refresh facts" }).click();
+  await expect(section.getByText(claimsCopy.en.sourceUnavailable)).toBeVisible();
+  await expect(section.getByLabel("Post or media link or ID", { exact: true })).toHaveCount(0);
+  await expect(merchant.getByRole("heading", { level: 2, name: "Offers" })).toBeVisible();
+  readStatus = 200;
+  await merchant.getByRole("button", { name: "Refresh facts" }).click();
+  await expect(section.getByTestId("claims-source-status")).toBeVisible();
+  pass("comment source: an unavailable source read is isolated to its own section");
+  await merchant.unroute(/\/api\/stores\/[^/]+\/live-sessions\/[^/]+\/claim-source$/);
 }
 
 test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MOCK ingress", async ({ browser }) => {
@@ -234,6 +373,8 @@ test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MO
   }
   expect(await controlCall("facts")).toEqual(facts);
   pass("tokens never in a URL, Referer, log, storage or other route; no inventory, quote or order effect");
+
+  await claimSourcePhase(merchant, pass);
 
   await merchant.setViewportSize({ width: 390, height: 844 });
   await fitsWidth(merchant);
