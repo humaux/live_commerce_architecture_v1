@@ -660,8 +660,10 @@ func TestManualFulfilmentMF06Export(t *testing.T) {
 			want := map[string]string{"service_code": d.ServiceCode, "destination_kind": d.Destination.Kind, "recipient_name": d.Destination.RecipientName, "phone": phone, "country": d.Destination.Country,
 				"region": d.Destination.HomeAddress.Region, "city": d.Destination.HomeAddress.City, "postal_code": d.Destination.HomeAddress.PostalCode, "line1": d.Destination.HomeAddress.Line1,
 				"line2": d.Destination.HomeAddress.Line2, "items": strings.Join(items, "; "), "total_minor": fmt.Sprint(d.TotalMinor), "currency": d.Currency}
+			want["pickup_source"] = "" // home delivery
 			if p := d.Destination.Pickup; p != nil {
 				want["pickup_namespace"], want["pickup_code"], want["pickup_name"], want["pickup_address"] = p.Namespace, p.Code, p.Name, p.Address
+				want["pickup_source"] = "merchant_attested" // every pickup these gates create is MANUAL_ATTESTED (C4)
 			}
 			for name, w := range want {
 				if row[col[name]] != w {

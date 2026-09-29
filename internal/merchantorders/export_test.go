@@ -17,7 +17,7 @@ import (
 func exportRow() ExportRow {
 	return ExportRow{OrderID: orderID, CreatedAtUTC: "2026-09-25T04:05:06Z", ServiceCode: "cvs_711", DestinationKind: "cvs_711",
 		RecipientName: "Chen, \"Amy\"", Phone: "+886912-345-678", Country: "TW", PickupNamespace: "seven", PickupCode: "000123",
-		PickupName: "Shop", PickupAddress: "2 St", Items: "SKU-1×2; SKU-2×1", TotalMinor: 1100, Currency: "TWD"}
+		PickupName: "Shop", PickupAddress: "2 St", Items: "SKU-1×2; SKU-2×1", TotalMinor: 1100, Currency: "TWD", PickupSource: "merchant_attested"}
 }
 
 func csvOf(t *testing.T, rows ...ExportRow) string {
@@ -33,11 +33,11 @@ func csvOf(t *testing.T, rows ...ExportRow) string {
 func TestWriteUnshippedCSV(t *testing.T) {
 	got := csvOf(t, exportRow())
 	lines := strings.Split(got, "\r\n")
-	if !strings.HasPrefix(got, "\xEF\xBB\xBForder_id,created_at_utc,service_code,destination_kind,recipient_name,phone,country,region,city,postal_code,line1,line2,pickup_namespace,pickup_code,pickup_name,pickup_address,items,total_minor,currency\r\n") ||
+	if !strings.HasPrefix(got, "\xEF\xBB\xBForder_id,created_at_utc,service_code,destination_kind,recipient_name,phone,country,region,city,postal_code,line1,line2,pickup_namespace,pickup_code,pickup_name,pickup_address,items,total_minor,currency,pickup_source\r\n") ||
 		len(lines) != 3 || lines[2] != "" || strings.Contains(got, "\n\n") || strings.Count(got, "\n") != strings.Count(got, "\r\n") {
 		t.Fatalf("framing: %q", got)
 	}
-	want := orderID + `,2026-09-25T04:05:06Z,cvs_711,cvs_711,"Chen, ""Amy""",0912345678,TW,,,,,,seven,000123,Shop,2 St,SKU-1×2; SKU-2×1,1100,TWD`
+	want := orderID + `,2026-09-25T04:05:06Z,cvs_711,cvs_711,"Chen, ""Amy""",0912345678,TW,,,,,,seven,000123,Shop,2 St,SKU-1×2; SKU-2×1,1100,TWD,merchant_attested`
 	if lines[1] != want {
 		t.Fatalf("row:\n got %s\nwant %s", lines[1], want)
 	}
@@ -93,7 +93,7 @@ func exportJSONRow(i int) map[string]any {
 		"service_code": "home", "destination_kind": "home", "recipient_name": "Buyer", "phone": "+886900000001", "country": "TW",
 		"region": "", "city": "Taipei", "postal_code": "", "line1": "3 Main St", "line2": "", "pickup_namespace": "", "pickup_code": "",
 		"pickup_name": "", "pickup_address": "", "items": []any{map[string]any{"code": "SKU-1", "quantity": 2}, map[string]any{"code": "SKU-2", "quantity": 1}},
-		"total_minor": 110, "currency": "TWD"}
+		"total_minor": 110, "currency": "TWD", "pickup_source": ""}
 }
 
 func exportRows(n int) []any {
