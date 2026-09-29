@@ -2,7 +2,7 @@
 
 Status: hand-kept, mechanically checked by `bash scripts/dev/check-gates.sh` (CI). The script fails when a
 mode in the usage line of `scripts/dev/test-local.sh` has no row here, when a row names a mode that no
-longer exists, or when a `tests/admin/*.spec.ts|*.test.ts` file is run by no gate. Nothing may exist that
+longer exists, when any tracked `*.spec.*|*.test.*` file (whole repo) is run by no gate, or when CI stops invoking `scripts/dev/test-node.sh`. Nothing may exist that
 no gate runs (PROCESS.md, unit maintainability). Evidence labels follow `AGENTS.md` (DESIGN, MODEL_ONLY,
 MOCK, SANDBOX, LIVE, NOT_RUN): a pass here is only ever as strong as the label in its "proves" cell.
 
@@ -10,13 +10,14 @@ MOCK, SANDBOX, LIVE, NOT_RUN): a pass here is only ever as strong as the label i
 
 | Tier | What | Where it runs | Needs |
 | --- | --- | --- | --- |
-| T0 static | `check_packet.py`, `go vet`, secret-literal grep, `depmap.sh --check`, `check-pkgdocs.sh`, `check-gates.sh` | CI (`.github/workflows/foundation.yml`) and the release gate | Go, Python 3 |
-| T1 foundation | default `bash scripts/dev/test-local.sh` (no flag): the whole Go module under `-race` on a disposable real PostgreSQL 18 | CI and the release gate | Docker, pinned PG image |
-| T2 subset | one focused slice of the T1 suite (`--checkout`, `--meta-inbox`, `--live-media-*`, ...); faster feedback, never acceptance on its own | developers; the release gate runs T1 instead | Docker |
-| T3 browser | real Chromium against the packaged Next apps + Go + PG; MOCK IdP/PSP unless the row says SANDBOX | the release gate (`scripts/dev/release-gate.sh`), not CI | Docker, pnpm, Node 24, Playwright Chromium |
+| T0 static | `check_packet.py`, `go vet`, secret-literal grep, `depmap.sh --check`, `check-pkgdocs.sh`, `check-gates.sh`, `test-node.sh` (Node unit suites) | CI (`.github/workflows/foundation.yml`) | Go, Python 3, Node 24 |
+| T1 foundation | default `bash scripts/dev/test-local.sh` (no flag): the whole Go module under `-race` on a disposable real PostgreSQL 18 | CI | Docker, pinned PG image |
+| T2 subset | one focused slice of the T1 suite (`--checkout`, `--meta-inbox`, `--live-media-*`, ...); faster feedback, never acceptance on its own | developers; T1 in CI covers the same code | Docker |
+| T3 browser | real Chromium against the packaged Next apps + Go + PG; MOCK IdP/PSP unless the row says SANDBOX | developers, one mode at a time (`bash scripts/dev/test-local.sh <mode>`); NOT_RUN in CI. `scripts/dev/release-gate.sh` (run-all wrapper) is planned in `docs/delivery/units/deploy-release.md` and does not exist yet | Docker, pnpm, Node 24, Playwright Chromium |
 
 CI is deliberately T0 + T1 only (owner decision: full foundation plus static checks). Browser modes are
-too slow and machine-bound for every push; the release gate runs every T3 row below.
+too slow and machine-bound for every push. Until `release-gate.sh` lands, every T3 row below is NOT_RUN in
+automation and only runs when a developer invokes its mode.
 
 ## test-local.sh modes
 
@@ -84,10 +85,13 @@ The `--browser-admin-legacy` gate replaced a manual five-step procedure (`docs/i
 after the identity work. Its specs write screenshots under `output/playwright/ledger-review/`
 (gitignored), no longer into tracked `.impeccable/review/`.
 
-## Node unit suites (no Docker; run by the release gate)
+## Node unit suites (no Docker; `bash scripts/dev/test-node.sh`, run by CI)
 
-| Command | Covers | Note |
+| Suite | Covers | Note |
 | --- | --- | --- |
-| `node --test --experimental-strip-types apps/storefront/tests/*.test.mjs` | storefront buyer client/server, payment contract and return | |
-| `node --test --experimental-strip-types packages/i18n/tests/*.test.ts` | locale resolution and catalogs | |
-| `node --test tests/media/*.test.mjs` | R04 local LiveKit input probe | needs `COMMERCE_R04_LIVEKIT_BINARY` (pinned binary); NOT_RUN without it, never PASS |
+| `apps/storefront/tests/*.test.mjs` | storefront buyer client/server, payment contract and return | CI, always |
+| `packages/i18n/tests/*.test.ts` | locale resolution and catalogs | CI, always |
+| `tests/media/r04-input-runner.test.mjs` | R04 local LiveKit input probe | needs `COMMERCE_R04_LIVEKIT_BINARY` (pinned binary). Without it `test-node.sh` prints `NOT_RUN` (CI does); `--require-r04` turns that into exit 2 |
+
+`tests/admin/claims-request.test.ts` and siblings are also run inside their browser mode (table above); `claim.test.mjs`
+runs in both places.
