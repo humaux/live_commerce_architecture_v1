@@ -1,6 +1,6 @@
-// File: deploy/tools/lcentry/main.go
-// Purpose: Command lcentry is the tiny, stdlib-only launcher baked into every
-// deploy image (lc-go, lc-admin, lc-storefront). It has two sub-commands:
+// Command lcentry owns the tiny, stdlib-only launcher baked into every deploy image (lc-go,
+// lc-admin, lc-storefront). It never prints a secret value (variable names only), never talks to
+// anything but a loopback health URL, and never changes an application binary. Sub-commands:
 //
 //	lcentry run -- /abs/target [args...]
 //	    Expand NAME_FILE=/run/secrets/<file> into NAME=<file contents> for the

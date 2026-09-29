@@ -2,6 +2,7 @@
 // stripe-b1-ingress-assembly). The order of checks below is part of the contract: cheap
 // request-shape refusals first, then bounded body, then per-endpoint material, then signature,
 // then one admission transaction. Nothing is ACKed before COMMIT.
+
 package stripewebhook
 
 import (

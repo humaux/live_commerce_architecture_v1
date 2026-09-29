@@ -1,5 +1,9 @@
-// Package core owns the provider-neutral external-operation ledger boundary.
-// It does not call providers or commit caller-owned transactions.
+// Package core owns the provider-neutral external-operation ledger boundary: the external_operation
+// records, their River dispatcher and the sealed-secret handle that provider routes receive.
+//
+// It never calls a provider itself (routes registered by metareply, payments and others do), never
+// commits caller-owned transactions, and never retries an UNKNOWN outcome with a new idempotency
+// key.
 package core
 
 import (

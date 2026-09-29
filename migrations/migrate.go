@@ -1,4 +1,10 @@
-// Package migrations applies forward-only, checksummed business migrations.
+// Package migrations owns applying the embedded, forward-only, checksummed business SQL migrations
+// (0001-) and the River schema, under one advisory lock, then exiting.
+//
+// It never edits or reorders an applied migration (a checksum mismatch stops the run), never runs
+// down-migrations, and never runs from the API or a worker: cmd/migrate is its only production
+// caller. Numbering: the current release branch owns 0060-0079; only the integrator merges
+// migrations.
 package migrations
 
 import (

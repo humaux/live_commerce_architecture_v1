@@ -1,4 +1,4 @@
-// Command claims-worker is the T10c claims host (meta-claims-intake-v1 §5.3, IR-13): it runs the
+// Command claims-worker owns the T10c claims host (meta-claims-intake-v1 §5.3, IR-13): it runs the
 // claims intake poller (internal/claimsintake) and the main-schema external_operation_v1 River
 // worker whose only routes are the Meta private replies (internal/integrations/metareply).
 //

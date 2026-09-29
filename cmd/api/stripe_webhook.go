@@ -5,6 +5,7 @@
 // internal/platform (OpenStripeIngressPool, ValidateSameDatabase), internal/integrations/accounts
 // (LoadKeyring over the separate COMMERCE_STRIPE_WEBHOOK_* signing namespace).
 // Used by: cmd/api main.go (load after Meta, mount after mountMeta).
+
 package main
 
 import (

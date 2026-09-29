@@ -90,6 +90,8 @@ export function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     "/((?!api|_next|demo-assets|favicon.ico|robots.txt).*)",
-    "/api/:path*",
+    // Only the store BFF has guards here. Matching /api/auth/* or /api/onboarding/* made Next buffer
+    // their request bodies before the route's streaming size limit ran (identity-mock red run).
+    "/api/stores/:path*",
   ],
 };

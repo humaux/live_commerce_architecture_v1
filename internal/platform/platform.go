@@ -1,5 +1,8 @@
-// Package platform provides the narrow HTTP and database foundation shared by
-// the API process. Domain packages receive a scoped transaction, never a pool.
+// Package platform owns the narrow HTTP and database foundation shared by the API process: pool
+// opening per DB role, WithScope (token to tenant/store scope inside one transaction) and permission
+// checks. Domain packages receive a scoped transaction, never a pool. It never holds a domain rule,
+// never widens a role's grants, and never accepts a tenant or store id that did not come from a
+// verified session.
 package platform
 
 import (

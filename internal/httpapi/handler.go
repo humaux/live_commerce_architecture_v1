@@ -1,5 +1,7 @@
-// Package httpapi is the composition layer for authenticated admin routes.
-// Domains do not import it; they receive only the transaction and resolved Scope.
+// Package httpapi owns the composition layer for authenticated merchant/admin routes: routing,
+// bearer resolution, request bounds and error mapping. Domains do not import it; they receive only
+// the transaction and resolved Scope. It never implements a domain rule, never opens a pool of its
+// own, and never trusts a tenant or store id from a request body.
 package httpapi
 
 import (

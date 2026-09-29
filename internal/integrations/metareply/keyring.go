@@ -18,6 +18,7 @@ import (
 
 	"livecommerce/internal/command"
 	"livecommerce/internal/integrations/core"
+	"livecommerce/internal/integrations/meta"
 )
 
 // Page-token custody (meta-claims-intake-v1 §7). Payload {page_access_token}; AES-256-GCM with
@@ -78,14 +79,16 @@ func NewPageTokenKeyring(activeID string, keys map[string][]byte) (*PageTokenKey
 // LoadPageTokenKeyring reads COMMERCE_META_PAGE_TOKEN_ACTIVE_KEY_ID and
 // COMMERCE_META_PAGE_TOKEN_KEYS_JSON, the payload-keyring format
 // `{"keys":[{"id":"…","key_base64":"<44-char std base64 of 32 bytes>"}]}`. Unknown members are
-// rejected; ponytail: duplicate object member names collapse silently (encoding/json), unlike
-// meta.parseStrict, because that helper is unexported; duplicate key ids are still rejected.
+// rejected, and so are duplicate object member names (meta.ParseStrict, ruling n) and duplicate key ids.
 func LoadPageTokenKeyring(getenv func(string) string) (*PageTokenKeyring, error) {
 	if getenv == nil {
 		return nil, ErrConfig
 	}
 	raw := getenv(envKeysJSON)
 	if len(raw) < 1 || len(raw) > 8192 {
+		return nil, ErrConfig
+	}
+	if _, err := meta.ParseStrict([]byte(raw)); err != nil { // duplicate members would silently collapse in encoding/json
 		return nil, ErrConfig
 	}
 	var doc struct {
