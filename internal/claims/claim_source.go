@@ -11,7 +11,8 @@
 // Depends on: command (Run, Audit, sentinels), platform (Scope), tables as commerce_runtime under
 // store-scoped RLS: live.claim_sources (read), integration.bindings (read the store's enabled Meta
 // bindings to pick the asset), live.claim_windows (insert the CLOSED default row when the session has
-// none, because live.claim_sources references it), live.sessions (existence); SQL function
+// none, because live.claim_sources references it), live.sessions (existence); a per-session advisory
+// lock (claim-source-put|tenant|store|session) serializing PUTs so expected_version is a real CAS; SQL function
 // live.put_claim_source (definer commerce_claims_writer: principal_holds live:manage +
 // integration:execute, route/binding/credential checks, CAS on version).
 // Used by: internal/httpapi (claimsource.go routes GET/PUT claim-source).
@@ -286,6 +287,15 @@ func PutClaimSource(ctx context.Context, tx pgx.Tx, scope platform.Scope, token,
 	}{scope.PrincipalID, sessionID, strings.TrimSpace(in.Input), in.PrivateReply, in.ReplyLocale, in.Active, in.ExpectedVersion}
 	var out ClaimSource
 	err = command.Run(ctx, tx, scope, "live.claim_source.put", key, request, &out, func() error {
+		// One writer per session: without it two PUTs with the same expected_version both see "no
+		// source" (or an inactive one), both skip the deactivation and INSERT different rows, leaving two
+		// active sources that GET cannot show (LIMIT 1). Lock order: this advisory lock (its own
+		// namespace, not Ingest's claim-source dedup key) -> window row (ensureWindow) -> source row;
+		// IngestMetaIntake takes source -> window FOR SHARE and never this
+		// lock, so the order cannot invert. Not claim_windows FOR UPDATE: that would take window before source.
+		if err := waitAdvisory(ctx, tx, "claim-source-put|"+scope.TenantID+"|"+scope.StoreID+"|"+sessionID); err != nil {
+			return err
+		}
 		if err := requireSession(ctx, tx, scope, sessionID); err != nil {
 			return err
 		}
@@ -300,6 +310,7 @@ func PutClaimSource(ctx context.Context, tx pgx.Tx, scope platform.Scope, token,
 		if err := ensureWindow(ctx, tx, scope, sessionID); err != nil {
 			return err
 		}
+		// Read under the lock (read committed: this statement sees every earlier writer's commit).
 		current, err := loadSource(ctx, tx, scope, sessionID)
 		if err != nil {
 			return err
@@ -307,12 +318,17 @@ func PutClaimSource(ctx context.Context, tx pgx.Tx, scope platform.Scope, token,
 		if err := authorizeSourceWrite(ctx, tx, scope, token); err != nil {
 			return err
 		}
+		// CAS on every path: the caller holds the version of the session's current source (0 when none).
+		var currentVersion int64
+		if current != nil {
+			currentVersion = current.Version
+		}
+		if currentVersion != in.ExpectedVersion {
+			return ErrVersionChanged
+		}
 		expected := in.ExpectedVersion
 		if current != nil && (current.Object != object || current.AssetID != asset || current.SourceObjectID != objectID) {
-			// Re-bind: the caller must hold the current source's version; retire it first.
-			if current.Version != in.ExpectedVersion {
-				return ErrVersionChanged
-			}
+			// Re-bind: retire the current source first (its version was just checked).
 			if current.Active {
 				if err := putSource(ctx, tx, sessionID, current.Object, current.AssetID, current.SourceObjectID,
 					false, current.ReplyLocale, false, current.Version); err != nil {

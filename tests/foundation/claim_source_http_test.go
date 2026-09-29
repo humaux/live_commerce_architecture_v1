@@ -17,7 +17,9 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -332,5 +334,73 @@ func TestClaimSourceCS01(t *testing.T) {
 	// One receipt and one audit row per applied PUT, none for failures or replays.
 	if n := countRows(t, f.owner, `SELECT count(*) FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2 AND operation='live.claim_source.put'`, f.tenantA, e.store); n < 7 {
 		t.Fatalf("receipts=%d", n)
+	}
+}
+
+// TestClaimSourceCS02ConcurrentPut: two or more PUTs on one session that hold the same expected_version must
+// serialize (per-session advisory lock in PutClaimSource): exactly one applies, the rest get version_changed, and
+// the session never ends with two active sources (the hidden one would keep feeding claims and private replies).
+// Both starting points of the lost update are exercised: the session has no source but its claim window exists
+// (ensureWindow writes nothing), and its latest source is inactive.
+func TestClaimSourceCS02ConcurrentPut(t *testing.T) {
+	e := csSetup(t)
+	f := e.f
+	const racers, rounds = 6, 4
+	n0 := 0
+	for _, start := range []string{"no_source", "inactive_source"} {
+		for round := 0; round < rounds; round++ {
+			s := e.session(t, e.store)
+			// Bind then retire (or delete) a source so the window row exists and the session is not fresh.
+			n0++
+			seed := "facebook.com/x/posts/" + strconv.Itoa(1000+n0)
+			status, out, raw := e.call(t, "PUT", e.store, s, e.token, t04Key("cs-key"), csBody(seed, false, "en", true, 0))
+			csWant(t, start+" seed", status, out, raw, 200, "")
+			expected := int64(0)
+			if start == "inactive_source" {
+				status, out, raw = e.call(t, "PUT", e.store, s, e.token, t04Key("cs-key"), csBody(seed, false, "en", false, 1))
+				csWant(t, start+" seed off", status, out, raw, 200, "")
+				expected = 2
+			} else {
+				mustExec(t, f.owner, `DELETE FROM live.claim_sources WHERE session_id=$1`, s)
+			}
+			codes := make([]string, racers)
+			statuses := make([]int, racers)
+			bodies := make([]map[string]any, racers)
+			gate := make(chan struct{})
+			var wg sync.WaitGroup
+			for i := 0; i < racers; i++ {
+				wg.Add(1)
+				go func(i int) {
+					defer wg.Done()
+					<-gate
+					post := "facebook.com/x/posts/" + strconv.Itoa(2000+n0*10+i)
+					st, o, _ := e.call(t, "PUT", e.store, s, e.token, t04Key("cs-key"), csBody(post, false, "en", true, expected))
+					statuses[i], bodies[i] = st, o
+					codes[i], _ = o["code"].(string)
+				}(i)
+			}
+			close(gate)
+			wg.Wait()
+			wins, winner := 0, ""
+			for i := range statuses {
+				switch {
+				case statuses[i] == 200:
+					wins++
+					winner, _ = bodies[i]["id"].(string)
+				case statuses[i] != 409 || codes[i] != "version_changed":
+					t.Fatalf("%s round %d racer %d: status=%d code=%s", start, round, i, statuses[i], codes[i])
+				}
+			}
+			if wins != 1 {
+				t.Fatalf("%s round %d: %d PUTs applied, want exactly 1", start, round, wins)
+			}
+			if n := countRows(t, f.owner, `SELECT count(*) FROM live.claim_sources WHERE session_id=$1 AND active`, s); n != 1 {
+				t.Fatalf("%s round %d: %d active sources, want 1", start, round, n)
+			}
+			status, out, raw = e.call(t, "GET", e.store, s, e.token, "", "")
+			if src, _ := out["source"].(map[string]any); status != 200 || src == nil || src["id"] != winner {
+				t.Fatalf("%s round %d: GET does not show the applied source: %s", start, round, raw)
+			}
+		}
 	}
 }
