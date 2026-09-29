@@ -294,8 +294,9 @@ for m in $browser_modes; do
     record "$id" "$tier" NOT_RUN "$(grep -m1 '^NOT_RUN' "$LOG" | cut -c1-110)" "$rc" "$LOG"
   elif ((rc != 0)); then
     record "$id" "$tier" FAIL "test-local.sh $m exit $rc" "$rc" "$LOG"
-  elif grep -qE -- '--- SKIP' "$LOG"; then
-    record "$id" "$tier" FAIL "a test was skipped (SKIP is never PASS)" "$rc" "$LOG"
+  elif grep -E -- '--- SKIP' "$LOG" | grep -qv 'SANDBOX'; then
+    # Only a subtest that names SANDBOX may be skipped (its prerequisite is the Stripe test key).
+    record "$id" "$tier" FAIL "a non-SANDBOX test was skipped (SKIP is never PASS)" "$rc" "$LOG"
   elif ! grep -qE -- '^PASS:' "$LOG"; then
     record "$id" "$tier" FAIL "exit 0 but no PASS line: an empty run is never PASS" "$rc" "$LOG"
   else
@@ -303,6 +304,8 @@ for m in $browser_modes; do
     # A mode may pass its MOCK part and say a SANDBOX part was not run: list that separately.
     if grep -q 'NOT_RUN' "$LOG"; then
       record "${id}+" SANDBOX NOT_RUN "$(grep -m1 'NOT_RUN' "$LOG" | cut -c1-110)" - "$LOG"
+    elif grep -qE -- '--- SKIP' "$LOG"; then
+      record "${id}+" SANDBOX NOT_RUN "skipped: $(grep -E -- '--- SKIP' "$LOG" | sed 's/^ *--- SKIP: //; s/ (.*//' | tr '\n' ';' | cut -c1-100)" - "$LOG"
     fi
   fi
 done
