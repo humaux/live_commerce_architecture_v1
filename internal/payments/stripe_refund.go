@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
@@ -36,6 +37,7 @@ var (
 	errRefundJob      = errors.New("stripe_refund_invalid_job")
 	errRefundFamily   = errors.New("stripe_refund_wrong_family")
 	errRefundDatabase = errors.New("stripe_refund_database")
+	errRefundMismatch = errors.New("stripe_refund_mismatch")
 	errRefundBudget   = errors.New("stripe_refund_budget_exhausted")
 	errRefundBinding  = errors.New("stripe_refund_binding_changed")
 )
@@ -365,7 +367,9 @@ func (w *refundWorker) send(ctx, callCtx context.Context, client *stripe.Client,
 		// (a stale presend proof, a sticky review, the resend cap) means: never send without the
 		// proof and never release capacity; the job retries and the window closes at 19 h. A recorded
 		// first-send rejection also lands here until its REJECTED fact is applied (no resend, ever).
-		return w.finish(ctx, id, claim, "stripe_refund_uncertain", time.Minute)
+		// 2 min, not 1: MaxGenerations (720) must outlast the 19 h window closure, or the job is cancelled
+		// at ~12 h and a review-held refund stays REQUESTED until a merchant refresh (review P2).
+		return w.finish(ctx, id, claim, "stripe_refund_uncertain", 2*time.Minute)
 	}
 	if mark != "SEND" && mark != "RESEND" {
 		return w.finish(ctx, id, claim, "stripe_refund_uncertain", 5*time.Second)
@@ -535,7 +539,12 @@ func (w *refundWorker) recordAndSnooze(ctx context.Context, id string, claim cor
 		if ctx.Err() != nil {
 			return river.JobSnooze(5 * time.Second)
 		}
-		// Identity or shape refusal is a mismatch, anything else a record failure; both end UNKNOWN.
+		// §4.4: an identity refusal (PT409) finishes UNKNOWN stripe_refund_mismatch. It backs off 15 min, not
+		// 5 s: on the create path every retry re-POSTs the same key, and a drifted report will not heal.
+		if errors.Is(err, errRefundMismatch) {
+			return w.finish(ctx, id, claim, "stripe_refund_mismatch", 15*time.Minute)
+		}
+		// Anything else is a record failure; it also ends UNKNOWN.
 		return w.finish(ctx, id, claim, "stripe_record_failed", 5*time.Second)
 	}
 	return river.JobSnooze(delay)
@@ -615,6 +624,10 @@ func (w *refundWorker) recordJSON(ctx context.Context, id string, claim core.Cla
 		}
 	} else if _, err := tx.Exec(bounded, query, id, claim.Generation, claim.LeaseToken, w.profile, encoded,
 		job.Job.ID); err != nil {
+		var pg *pgconn.PgError
+		if errors.As(err, &pg) && pg.Code == "PT409" {
+			return errRefundMismatch // §4.4: identity/pin/account refusal of the report
+		}
 		return errRefundDatabase
 	}
 	if err := tx.Commit(bounded); err != nil {

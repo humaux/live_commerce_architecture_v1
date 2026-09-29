@@ -126,12 +126,14 @@ func RequestRefund(ctx context.Context, tx pgx.Tx, jobs *river.Client[pgx.Tx], s
 	}
 	digest := sha256.Sum256(body)
 	// Replay pre-check: read-only, so a replay never inserts a River job that no signal row would own.
+	// Same rule as the SQL definer (post_river 0013): another principal's key is a conflict, never a replay.
 	var prevHash, prevResponse []byte
-	err = tx.QueryRow(ctx, `SELECT request_hash,response FROM ops.command_results
+	var prevPrincipal string
+	err = tx.QueryRow(ctx, `SELECT request_hash,response,coalesce(principal_id::text,'') FROM ops.command_results
 		WHERE tenant_id=$1 AND store_id=$2 AND operation=$3 AND idempotency_key=$4`,
-		scope.TenantID, scope.StoreID, refundOperation, key).Scan(&prevHash, &prevResponse)
+		scope.TenantID, scope.StoreID, refundOperation, key).Scan(&prevHash, &prevResponse, &prevPrincipal)
 	if err == nil {
-		if !bytes.Equal(prevHash, digest[:]) {
+		if !bytes.Equal(prevHash, digest[:]) || prevPrincipal != scope.PrincipalID {
 			return RefundResult{}, command.ErrConflict
 		}
 		replayed, derr := decodeRefundResult(prevResponse)
