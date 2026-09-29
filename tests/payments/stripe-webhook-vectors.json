@@ -541,6 +541,217 @@
         "account_present": false,
         "probe": false
       }
+    },
+    {
+      "name": "refund_updated_projects_payment_intent_and_lc_refund",
+      "secrets": [
+        "whsec_vectorSecretA_not_real_0123456789"
+      ],
+      "header": "t=1790000000,v1=02f7f1044ebe0be137983df616797ee974069ab8b5b7e2b9874ce7fd63f8945d",
+      "now": 1790000000,
+      "expect": "ok",
+      "body": "{\"id\":\"evt_1VectorRefundUpd\",\"object\":\"event\",\"api_version\":\"2026-08-26.dahlia\",\"created\":1789999995,\"livemode\":false,\"pending_webhooks\":1,\"type\":\"refund.updated\",\"data\":{\"object\":{\"id\":\"re_1VectorRefund\",\"object\":\"refund\",\"amount\":1000,\"currency\":\"twd\",\"status\":\"succeeded\",\"payment_intent\":\"pi_1VectorIntent\",\"metadata\":{\"lc_refund\":\"5d0a7f52-3c1e-4b7a-8f0d-6a2b9c4e1d77\",\"lc_attempt\":\"0b5e3c1a-7d2f-4e8a-9c61-2f4d8e7a1b30\"},\"destination_details\":{\"card\":{\"reference\":\"ARN_VECTOR_SENTINEL\"}}}}}",
+      "event": {
+        "id": "evt_1VectorRefundUpd",
+        "type": "refund.updated",
+        "object_type": "refund",
+        "session_id": "re_1VectorRefund",
+        "client_reference_id": "",
+        "metadata_attempt": "0b5e3c1a-7d2f-4e8a-9c61-2f4d8e7a1b30",
+        "payment_intent_id": "pi_1VectorIntent",
+        "metadata_refund": "5d0a7f52-3c1e-4b7a-8f0d-6a2b9c4e1d77",
+        "livemode": false,
+        "account_present": false,
+        "probe": false
+      }
+    },
+    {
+      "name": "refund_failed_projects_same_fields",
+      "secrets": [
+        "whsec_vectorSecretA_not_real_0123456789"
+      ],
+      "header": "t=1790000000,v1=c10af330e9a7be78c5986637f965d8050120424c3dd906730e277d1081a10097",
+      "now": 1790000000,
+      "expect": "ok",
+      "body": "{\"id\":\"evt_1VectorRefundFail\",\"object\":\"event\",\"api_version\":\"2026-08-26.dahlia\",\"created\":1789999995,\"livemode\":false,\"pending_webhooks\":1,\"type\":\"refund.failed\",\"data\":{\"object\":{\"id\":\"re_1VectorRefund\",\"object\":\"refund\",\"amount\":1000,\"currency\":\"twd\",\"status\":\"failed\",\"payment_intent\":\"pi_1VectorIntent\",\"metadata\":{\"lc_refund\":\"5d0a7f52-3c1e-4b7a-8f0d-6a2b9c4e1d77\",\"lc_attempt\":\"0b5e3c1a-7d2f-4e8a-9c61-2f4d8e7a1b30\"},\"destination_details\":{\"card\":{\"reference\":\"ARN_VECTOR_SENTINEL\"}},\"failure_reason\":\"declined\"}}}",
+      "event": {
+        "id": "evt_1VectorRefundFail",
+        "type": "refund.failed",
+        "object_type": "refund",
+        "session_id": "re_1VectorRefund",
+        "client_reference_id": "",
+        "metadata_attempt": "0b5e3c1a-7d2f-4e8a-9c61-2f4d8e7a1b30",
+        "payment_intent_id": "pi_1VectorIntent",
+        "metadata_refund": "5d0a7f52-3c1e-4b7a-8f0d-6a2b9c4e1d77",
+        "livemode": false,
+        "account_present": false,
+        "probe": false
+      }
+    },
+    {
+      "name": "refund_created_dashboard_has_no_lc_refund",
+      "secrets": [
+        "whsec_vectorSecretA_not_real_0123456789"
+      ],
+      "header": "t=1790000000,v1=62061de070817f6a453323bd85bacdd6e92b7676583dc34e366e4b31dd0a7ea9",
+      "now": 1790000000,
+      "expect": "ok",
+      "body": "{\"id\":\"evt_1VectorRefundDash\",\"object\":\"event\",\"api_version\":\"2026-08-26.dahlia\",\"created\":1789999995,\"livemode\":false,\"pending_webhooks\":1,\"type\":\"refund.created\",\"data\":{\"object\":{\"id\":\"re_1VectorDash\",\"object\":\"refund\",\"amount\":1000,\"currency\":\"twd\",\"status\":\"succeeded\",\"payment_intent\":\"pi_1VectorIntent\",\"metadata\":{},\"destination_details\":{\"card\":{\"reference\":\"ARN_VECTOR_SENTINEL\"}}}}}",
+      "event": {
+        "id": "evt_1VectorRefundDash",
+        "type": "refund.created",
+        "object_type": "refund",
+        "session_id": "re_1VectorDash",
+        "client_reference_id": "",
+        "metadata_attempt": "",
+        "payment_intent_id": "pi_1VectorIntent",
+        "metadata_refund": "",
+        "livemode": false,
+        "account_present": false,
+        "probe": false
+      }
+    },
+    {
+      "name": "refund_null_payment_intent_projects_empty",
+      "secrets": [
+        "whsec_vectorSecretA_not_real_0123456789"
+      ],
+      "header": "t=1790000000,v1=1fa9693f65903d0a6ef7940ee379c5c3cf4230e30b272acb58427863c2ddd865",
+      "now": 1790000000,
+      "expect": "ok",
+      "body": "{\"id\":\"evt_1VectorRefundNoPI\",\"object\":\"event\",\"api_version\":\"2026-08-26.dahlia\",\"created\":1789999995,\"livemode\":false,\"pending_webhooks\":1,\"type\":\"refund.updated\",\"data\":{\"object\":{\"id\":\"re_1VectorRefund\",\"object\":\"refund\",\"amount\":1000,\"currency\":\"twd\",\"status\":\"succeeded\",\"payment_intent\":null,\"metadata\":{\"lc_refund\":\"5d0a7f52-3c1e-4b7a-8f0d-6a2b9c4e1d77\",\"lc_attempt\":\"0b5e3c1a-7d2f-4e8a-9c61-2f4d8e7a1b30\"},\"destination_details\":{\"card\":{\"reference\":\"ARN_VECTOR_SENTINEL\"}}}}}",
+      "event": {
+        "id": "evt_1VectorRefundNoPI",
+        "type": "refund.updated",
+        "object_type": "refund",
+        "session_id": "re_1VectorRefund",
+        "client_reference_id": "",
+        "metadata_attempt": "0b5e3c1a-7d2f-4e8a-9c61-2f4d8e7a1b30",
+        "payment_intent_id": "",
+        "metadata_refund": "5d0a7f52-3c1e-4b7a-8f0d-6a2b9c4e1d77",
+        "livemode": false,
+        "account_present": false,
+        "probe": false
+      }
+    },
+    {
+      "name": "charge_refunded_projects_payment_intent",
+      "secrets": [
+        "whsec_vectorSecretA_not_real_0123456789"
+      ],
+      "header": "t=1790000000,v1=ddf91995d83be5775f0fcdce5112c022d8f0b58a7554d58506be31b798047ec1",
+      "now": 1790000000,
+      "expect": "ok",
+      "body": "{\"id\":\"evt_1VectorCharge\",\"object\":\"event\",\"api_version\":\"2026-08-26.dahlia\",\"created\":1789999995,\"livemode\":false,\"pending_webhooks\":1,\"type\":\"charge.refunded\",\"data\":{\"object\":{\"id\":\"ch_1VectorCharge\",\"object\":\"charge\",\"amount\":2500,\"amount_refunded\":1000,\"payment_intent\":\"pi_1VectorIntent\",\"metadata\":{},\"receipt_url\":\"https://pay.stripe.com/receipts/SENTINEL\",\"billing_details\":{\"email\":\"sentinel@example.invalid\"}}}}",
+      "event": {
+        "id": "evt_1VectorCharge",
+        "type": "charge.refunded",
+        "object_type": "charge",
+        "session_id": "ch_1VectorCharge",
+        "client_reference_id": "",
+        "metadata_attempt": "",
+        "payment_intent_id": "pi_1VectorIntent",
+        "metadata_refund": "",
+        "livemode": false,
+        "account_present": false,
+        "probe": false
+      }
+    },
+    {
+      "name": "refund_livemode_true_projected_not_decided",
+      "secrets": [
+        "whsec_vectorSecretA_not_real_0123456789"
+      ],
+      "header": "t=1790000000,v1=4868a8b1b3add0f0461bbbb920ea2934ca189994820bc204ff02a80ed2fabc15",
+      "now": 1790000000,
+      "expect": "ok",
+      "body": "{\"id\":\"evt_1VectorRefundLive\",\"object\":\"event\",\"api_version\":\"2026-08-26.dahlia\",\"created\":1789999995,\"livemode\":true,\"pending_webhooks\":1,\"type\":\"refund.updated\",\"data\":{\"object\":{\"id\":\"re_1VectorRefund\",\"object\":\"refund\",\"amount\":1000,\"currency\":\"twd\",\"status\":\"succeeded\",\"payment_intent\":\"pi_1VectorIntent\",\"metadata\":{\"lc_refund\":\"5d0a7f52-3c1e-4b7a-8f0d-6a2b9c4e1d77\",\"lc_attempt\":\"0b5e3c1a-7d2f-4e8a-9c61-2f4d8e7a1b30\"},\"destination_details\":{\"card\":{\"reference\":\"ARN_VECTOR_SENTINEL\"}}}}}",
+      "event": {
+        "id": "evt_1VectorRefundLive",
+        "type": "refund.updated",
+        "object_type": "refund",
+        "session_id": "re_1VectorRefund",
+        "client_reference_id": "",
+        "metadata_attempt": "0b5e3c1a-7d2f-4e8a-9c61-2f4d8e7a1b30",
+        "payment_intent_id": "pi_1VectorIntent",
+        "metadata_refund": "5d0a7f52-3c1e-4b7a-8f0d-6a2b9c4e1d77",
+        "livemode": true,
+        "account_present": false,
+        "probe": false
+      }
+    },
+    {
+      "name": "checkout_session_projection_unchanged",
+      "secrets": [
+        "whsec_vectorSecretA_not_real_0123456789"
+      ],
+      "header": "t=1790000000,v1=d8556697917c5bc6ebc81ab57383e30a75f71838d7d73c69185dfb7efb78ae13",
+      "now": 1790000000,
+      "expect": "ok",
+      "body": "{\"id\":\"evt_1VectorSessUnchanged\",\"object\":\"event\",\"api_version\":\"2026-08-26.dahlia\",\"created\":1789999995,\"livemode\":false,\"pending_webhooks\":1,\"type\":\"checkout.session.completed\",\"data\":{\"object\":{\"id\":\"cs_test_vector9\",\"object\":\"checkout.session\",\"client_reference_id\":\"0b5e3c1a-7d2f-4e8a-9c61-2f4d8e7a1b30\",\"metadata\":{\"lc_attempt\":\"0b5e3c1a-7d2f-4e8a-9c61-2f4d8e7a1b30\"}}}}",
+      "event": {
+        "id": "evt_1VectorSessUnchanged",
+        "type": "checkout.session.completed",
+        "object_type": "checkout.session",
+        "session_id": "cs_test_vector9",
+        "client_reference_id": "0b5e3c1a-7d2f-4e8a-9c61-2f4d8e7a1b30",
+        "metadata_attempt": "0b5e3c1a-7d2f-4e8a-9c61-2f4d8e7a1b30",
+        "payment_intent_id": "",
+        "metadata_refund": "",
+        "livemode": false,
+        "account_present": false,
+        "probe": false
+      }
+    },
+    {
+      "name": "refund_bad_signature_body_flip",
+      "secrets": [
+        "whsec_vectorSecretA_not_real_0123456789"
+      ],
+      "header": "t=1790000000,v1=dfc43b8464a94d1ce8edc4baa2aa3b409d1393cdebf13b7af54a38bc6f34963b",
+      "now": 1790000000,
+      "expect": "signature",
+      "body": "{\"id\":\"evt_1VectorRefundBad\",\"object\":\"event\",\"api_version\":\"2026-08-26.dahlia\",\"created\":1789999995,\"livemode\":false,\"pending_webhooks\":1,\"type\":\"refund.updated\",\"data\":{\"object\":{\"id\":\"re_1VectorRefund\",\"object\":\"refund\",\"amount\":1001,\"currency\":\"twd\",\"status\":\"succeeded\",\"payment_intent\":\"pi_1VectorIntent\",\"metadata\":{\"lc_refund\":\"5d0a7f52-3c1e-4b7a-8f0d-6a2b9c4e1d77\",\"lc_attempt\":\"0b5e3c1a-7d2f-4e8a-9c61-2f4d8e7a1b30\"},\"destination_details\":{\"card\":{\"reference\":\"ARN_VECTOR_SENTINEL\"}}}}}"
+    },
+    {
+      "name": "refund_signature_over_other_body",
+      "secrets": [
+        "whsec_vectorSecretA_not_real_0123456789"
+      ],
+      "header": "t=1790000000,v1=60feac8a7de665ec3fede0f45c49fd121d98b59bb0699f43c16a20fdb673324c",
+      "now": 1790000000,
+      "expect": "signature",
+      "body": "{\"id\":\"evt_1VectorRefundBad2\",\"object\":\"event\",\"api_version\":\"2026-08-26.dahlia\",\"created\":1789999995,\"livemode\":false,\"pending_webhooks\":1,\"type\":\"refund.updated\",\"data\":{\"object\":{\"id\":\"re_1VectorRefunX\",\"object\":\"refund\",\"amount\":1000,\"currency\":\"twd\",\"status\":\"succeeded\",\"payment_intent\":\"pi_1VectorIntent\",\"metadata\":{\"lc_refund\":\"5d0a7f52-3c1e-4b7a-8f0d-6a2b9c4e1d77\",\"lc_attempt\":\"0b5e3c1a-7d2f-4e8a-9c61-2f4d8e7a1b30\"},\"destination_details\":{\"card\":{\"reference\":\"ARN_VECTOR_SENTINEL\"}}}}}"
+    },
+    {
+      "name": "malformed_refund_lc_refund_not_string",
+      "secrets": [
+        "whsec_vectorSecretA_not_real_0123456789"
+      ],
+      "header": "t=1790000000,v1=dffd6024227de85ce4454d99c9164a903468f6265066814c0bed9645840a7bf7",
+      "now": 1790000000,
+      "expect": "malformed",
+      "body": "{\"id\":\"evt_1VectorRefundM1\",\"object\":\"event\",\"api_version\":\"2026-08-26.dahlia\",\"created\":1789999995,\"livemode\":false,\"pending_webhooks\":1,\"type\":\"refund.updated\",\"data\":{\"object\":{\"id\":\"re_1VectorRefund\",\"object\":\"refund\",\"amount\":1000,\"currency\":\"twd\",\"status\":\"succeeded\",\"payment_intent\":\"pi_1VectorIntent\",\"metadata\":{\"lc_refund\":7,\"lc_attempt\":\"0b5e3c1a-7d2f-4e8a-9c61-2f4d8e7a1b30\"},\"destination_details\":{\"card\":{\"reference\":\"ARN_VECTOR_SENTINEL\"}}}}}"
+    },
+    {
+      "name": "malformed_refund_payment_intent_not_string",
+      "secrets": [
+        "whsec_vectorSecretA_not_real_0123456789"
+      ],
+      "header": "t=1790000000,v1=dd9e3b9ba66cdbf1df12763c405de7e9078468d2dc47606ab4daca43160b4283",
+      "now": 1790000000,
+      "expect": "malformed",
+      "body": "{\"id\":\"evt_1VectorRefundM2\",\"object\":\"event\",\"api_version\":\"2026-08-26.dahlia\",\"created\":1789999995,\"livemode\":false,\"pending_webhooks\":1,\"type\":\"refund.updated\",\"data\":{\"object\":{\"id\":\"re_1VectorRefund\",\"object\":\"refund\",\"amount\":1000,\"currency\":\"twd\",\"status\":\"succeeded\",\"payment_intent\":7,\"metadata\":{\"lc_refund\":\"5d0a7f52-3c1e-4b7a-8f0d-6a2b9c4e1d77\",\"lc_attempt\":\"0b5e3c1a-7d2f-4e8a-9c61-2f4d8e7a1b30\"},\"destination_details\":{\"card\":{\"reference\":\"ARN_VECTOR_SENTINEL\"}}}}}"
+    },
+    {
+      "name": "malformed_refund_duplicate_lc_refund_key",
+      "secrets": [
+        "whsec_vectorSecretA_not_real_0123456789"
+      ],
+      "header": "t=1790000000,v1=d63f6ec98258d0fb73149e21e26a1530f7b3da40009a7f2f835d0a96314efa85",
+      "now": 1790000000,
+      "expect": "malformed",
+      "body": "{\"id\":\"evt_1VectorRefundM3\",\"object\":\"event\",\"api_version\":\"2026-08-26.dahlia\",\"created\":1789999995,\"livemode\":false,\"pending_webhooks\":1,\"type\":\"refund.updated\",\"data\":{\"object\":{\"id\":\"re_1VectorRefund\",\"object\":\"refund\",\"amount\":1000,\"currency\":\"twd\",\"status\":\"succeeded\",\"payment_intent\":\"pi_1VectorIntent\",\"metadata\":{\"lc_refund\":\"5d0a7f52-3c1e-4b7a-8f0d-6a2b9c4e1d77\",\"lc_refund\":\"5d0a7f52-3c1e-4b7a-8f0d-6a2b9c4e1d77\",\"lc_attempt\":\"0b5e3c1a-7d2f-4e8a-9c61-2f4d8e7a1b30\"},\"destination_details\":{\"card\":{\"reference\":\"ARN_VECTOR_SENTINEL\"}}}}}"
     }
   ]
 }

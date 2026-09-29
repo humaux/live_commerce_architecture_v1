@@ -1,7 +1,10 @@
-// Package stripetest owns the independent MOCK Stripe Checkout HTTP service.
+// Package stripetest owns the independent MOCK Stripe HTTP service: Checkout sessions
+// (server.go) and refunds / PaymentIntent+charge reads (refunds.go).
 // It never contacts Stripe, decides payment state in PG, or stores real card data.
 // Depends on: Go net/http and httptest for isolated wire behavior; no external service.
-// Used by: Stripe payment worker and HTTP integration tests.
+// Written from https://docs.stripe.com/api/refunds and /api/payment_intents/retrieve
+// (retrieved 2026-09-29) plus contracts/stripe-refund-v1.md §1/§3, never from the adapter.
+// Used by: Stripe payment worker and HTTP integration tests (tests/foundation/stripe_*).
 package stripetest
 
 import (
@@ -85,6 +88,7 @@ type Server struct {
 	failures         map[string][]int    // op -> queued HTTP statuses (FailNext)
 	requests         []Request
 	accepted, denied int
+	rf               *refundState // refunds.go: PaymentIntents, charges, refunds (lazy)
 }
 
 // Request is one audited call. It deliberately carries no body, key or header
@@ -92,7 +96,8 @@ type Server struct {
 // the fake becoming a secret sink.
 // KeyFingerprint (first 4 bytes of SHA-256, hex) identifies which credential made a
 // call without the fake ever logging the key; tests compute it with KeyFingerprint.
-type Request struct{ Method, Path, Account, IdempotencyKey, KeyFingerprint string }
+// RawQuery is the URL query of the call (e.g. "expand[]=latest_charge"); it never holds secrets.
+type Request struct{ Method, Path, Account, IdempotencyKey, KeyFingerprint, RawQuery string }
 
 // KeyFingerprint is the non-secret label recorded in Request.KeyFingerprint.
 func KeyFingerprint(key string) string {
@@ -243,6 +248,7 @@ func (s *Server) SetState(id, status, paymentStatus string) bool {
 	}
 	if paymentStatus == "paid" {
 		v.PaymentIntent = &paymentIntent{ID: "pi_test_" + id, Object: "payment_intent", Status: "succeeded", AmountReceived: v.AmountTotal, Currency: v.Currency}
+		s.registerPaymentIntentLocked(v.PaymentIntent.ID, v.owner, v.AmountTotal, v.Currency, id)
 	}
 	return true
 }
@@ -309,7 +315,7 @@ func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	if token, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer "); ok {
 		fp = KeyFingerprint(token)
 	}
-	s.requests = append(s.requests, Request{Method: r.Method, Path: r.URL.Path, Account: account, IdempotencyKey: r.Header.Get("Idempotency-Key"), KeyFingerprint: fp})
+	s.requests = append(s.requests, Request{Method: r.Method, Path: r.URL.Path, Account: account, IdempotencyKey: r.Header.Get("Idempotency-Key"), KeyFingerprint: fp, RawQuery: r.URL.RawQuery})
 	s.mu.Unlock()
 	if r.URL.Path == "/v1/account" && r.Method == http.MethodGet {
 		if st := s.failed("account"); st != 0 {
@@ -317,6 +323,9 @@ func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		writeJSON(w, 200, map[string]any{"id": account, "object": "account", "livemode": false})
+		return
+	}
+	if s.serveRefunds(w, r, account) {
 		return
 	}
 	base := "/v1/checkout/sessions"
