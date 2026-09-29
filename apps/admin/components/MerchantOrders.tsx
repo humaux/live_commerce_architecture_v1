@@ -1,5 +1,9 @@
 "use client";
 
+// Merchant orders page (approved C inline row). BFF: GET /api/stores/{store}/orders[/{id}] and order-actions
+// -> Go internal/httpapi/orders.go + shipments.go. The refund and shipment sections live in OrderRefunds /
+// OrderShipment (their BFF routes are listed there); the export button is a plain GET download of
+// orders/unshipped.csv streamed by the BFF from Go, never fetched into JS memory.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
@@ -8,13 +12,17 @@ import type { Store } from "@/lib/model";
 import { money } from "@/lib/client";
 import { csrfCookie, sessionBoundary } from "@/lib/settings-client";
 import {
+  exportUnshippedHref,
+  readOrderActions,
   readOrderDetail,
   readOrderList,
   OrderReadError,
   type OrderReadCode,
 } from "@/lib/orders-client";
 import {
+  displayTime,
   orderStates,
+  type OrderActions,
   type OrderDetail,
   type OrderFilter,
   type OrderList,
@@ -23,7 +31,14 @@ import {
 import { ordersCopy, type OrdersCopy } from "@/lib/orders-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { Icon } from "./Icon";
+import { OrderRefunds } from "./OrderRefunds";
+import { OrderShipment } from "./OrderShipment";
 import "./orders.css";
+import "./order-actions.css";
+
+const noActions: OrderActions = { refund: false, fulfillment_write: false, orders_export: false };
+// Refund section applies once money was captured (stripe-refund-v1 §4.3); earlier payment states have nothing to refund.
+const capturedPayment = ["CAPTURED", "PARTIALLY_REFUNDED", "REFUNDED", "REVIEW_REQUIRED"];
 
 type Status = "initial" | "loading" | "ready" | "hidden" | OrderReadCode;
 type View = {
@@ -49,17 +64,6 @@ function url(
   return `/${locale}/orders${params.size ? `?${params}` : ""}`;
 }
 
-function displayTime(locale: Locale, value: string) {
-  return new Intl.DateTimeFormat(locale, {
-    timeZone: "UTC",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(new Date(value));
-}
 function amount(locale: Locale, currency: string, minor: number) {
   return money(locale, currency, minor);
 }
@@ -73,7 +77,13 @@ function badge(state: string, c: OrdersCopy) {
     </span>
   );
 }
-function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy) {
+type Sections = {
+  store: string;
+  actions: OrderActions;
+  boundary: string;
+  onChanged: () => Promise<boolean>;
+};
+function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy, sections: Sections) {
   const m = (value: number) => amount(locale, detail.currency, value);
   const dest = detail.destination;
   const address = dest.pickup
@@ -207,6 +217,32 @@ function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy) {
           </p>
         )}
       </div>
+      {sections.boundary && (
+        <section className="orders-sections">
+          {capturedPayment.includes(detail.payment_state) && (
+            <OrderRefunds
+              store={sections.store}
+              detail={detail}
+              locale={locale}
+              c={c}
+              canRefund={sections.actions.refund}
+              boundary={sections.boundary}
+              onChanged={sections.onChanged}
+            />
+          )}
+          {detail.commercial_state === "CONFIRMED" && (
+            <OrderShipment
+              store={sections.store}
+              detail={detail}
+              locale={locale}
+              c={c}
+              canWrite={sections.actions.fulfillment_write}
+              boundary={sections.boundary}
+              onChanged={sections.onChanged}
+            />
+          )}
+        </section>
+      )}
     </section>
   );
 }
@@ -241,6 +277,7 @@ export function MerchantOrders({
     detail: null,
     detailStatus: "initial",
   });
+  const [actions, setActions] = useState<OrderActions | null>(null);
   const generation = useRef(0);
   const controller = useRef<AbortController | null>(null);
   const hidden = useRef(false);
@@ -380,6 +417,54 @@ export function MerchantOrders({
       });
     }
   }, [key, initialError, store, state, cursor, order]);
+
+  // Permission probe for the action buttons only; every write is re-authorized by Go. A failed probe hides actions.
+  useEffect(() => {
+    if (!store || initialError) {
+      setActions(null);
+      return;
+    }
+    const active = new AbortController();
+    readOrderActions(store.id, active.signal).then(setActions, () => {
+      if (!active.signal.aborted) setActions(noActions);
+    });
+    return () => active.abort();
+  }, [store, initialError, refresh]);
+
+  // After a refund/shipment response: re-GET list + selected detail from the server (no optimistic state).
+  // If the order no longer matches the filter (e.g. just shipped under "ready to ship") the old page is kept.
+  const reload = useCallback(async () => {
+    if (!store || !order || hidden.current || blocked.current || !session.current) return false;
+    const epoch = generation.current;
+    const boundary = session.current;
+    const signal = controller.current?.signal ?? new AbortController().signal;
+    try {
+      const [page, detail] = await Promise.all([
+        readOrderList(store.id, state, cursor, signal),
+        readOrderDetail(store.id, order, signal),
+      ]);
+      if (
+        generation.current !== epoch ||
+        hidden.current ||
+        signal.aborted ||
+        (await sessionBoundary()) !== boundary
+      )
+        return false;
+      setView((previous) =>
+        previous.key === key
+          ? {
+              ...previous,
+              page: page.items.some((row) => row.order_id === order) ? page : previous.page,
+              detail,
+              detailStatus: "ready",
+            }
+          : previous,
+      );
+      return true;
+    } catch {
+      return false;
+    }
+  }, [key, store, state, cursor, order]);
 
   useEffect(() => {
     void load();
@@ -557,6 +642,19 @@ export function MerchantOrders({
             <Icon name="refresh" size={18} />
             {c.refresh}
           </button>
+          {store && current.status === "ready" && actions?.orders_export && (
+            <>
+              <a
+                className="orders-export"
+                data-testid="orders-export"
+                href={exportUnshippedHref(store.id)}
+                download
+              >
+                {c.exportCsv}
+              </a>
+              <p className="orders-export-hint">{c.exportHint}</p>
+            </>
+          )}
         </div>
         {current.status === "loading" && (
           <p className="orders-message" role="status">
@@ -609,6 +707,16 @@ export function MerchantOrders({
                           ? current.detailStatus
                           : "initial"
                       }
+                      sections={
+                        store
+                          ? {
+                              store: store.id,
+                              actions: actions ?? noActions,
+                              boundary: session.current,
+                              onChanged: reload,
+                            }
+                          : null
+                      }
                     />
                   ))}
                 </tbody>
@@ -657,6 +765,7 @@ function OrderRow({
   onSelect,
   detail,
   detailStatus,
+  sections,
 }: {
   row: OrderSummary;
   c: OrdersCopy;
@@ -665,6 +774,7 @@ function OrderRow({
   onSelect: () => void;
   detail: OrderDetail | null;
   detailStatus: Status;
+  sections: Sections | null;
 }) {
   return (
     <>
@@ -703,8 +813,8 @@ function OrderRow({
       {selected && (
         <tr className="orders-detail-row">
           <td colSpan={5}>
-            {detail ? (
-              detailPanel(detail, locale, c)
+            {detail && sections ? (
+              detailPanel(detail, locale, c, sections)
             ) : (
               <p className="orders-detail-message" role="status">
                 {detailStatus === "loading"
