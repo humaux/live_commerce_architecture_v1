@@ -55,7 +55,7 @@ Internet ─80/443(+udp)─► edge-netns (pause) ── shared 127.0.0.1 ──
                                                                  ├ admin :3100 (Next standalone)
                                                                  └ storefront :3200 (next start)
 backend (internal) : postgres :5432 ◄── api, expiry-worker, meta-worker, payment-worker-* (+egress: PAYUNi, api.stripe.com),
-                     claims-worker (+egress: graph.facebook.com)
+                     claims-worker (+egress: graph.facebook.com), ads-worker (+egress: graph.facebook.com)
 ops one-shots      : stripe-admin (backend + egress), meta-admin (backend) — profile ops, run only via ops-admin.sh
 pgsocket volume    : postgres ◄── migrate (network none), provision-logins, pg-ops (network none)
 ```
@@ -63,6 +63,8 @@ Profiles: `db` (postgres, migrate, provision-logins), `app` (edge-netns, caddy, 
 storefront, expiry-worker), `payments-sandbox` (payment-worker-sandbox: PAYUNi + Stripe/refund dispatch when
 `LC_STRIPE_ENABLED=1`), `payments-live` (REAL MONEY; Stripe is refused on LIVE), `meta` (meta-worker, holds K_actor),
 `claims` (claims-worker: intake poller + the only sender of Meta private replies; owner approval for real sends),
+`ads` (ads-worker: the only Meta ad-account writer and the only holder of the HPKE private ring; with api.env
+`COMMERCE_META_ADS_APP_ID`, after 0080 per ruling B15),
 `ops` (pg-ops, stripe-admin, meta-admin; never listed in `COMPOSE_PROFILES`).
 The media worker is **not deployed**, because it is MOCK-only (`worker_env.go:174`); there is no `media` profile
 (deviation 21).

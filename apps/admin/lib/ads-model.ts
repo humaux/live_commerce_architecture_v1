@@ -110,7 +110,7 @@ function currencyCode(o: Rec, key: string): string {
 }
 
 // ---------- error body ----------
-// Go answers `{"error":"<code>"}` (ads-core Frozen HTTP); the BFF's safeError rewrites to `{code,...}`.
+// Go answers `{"code":"<code>",...}` (httperror.Write; the brief's `{"error":...}` was wrong); the BFF passes it through.
 // Both shapes are read so a hook gap degrades to `retry_later`, never to a guessed code.
 export function adsErrorCode(body: unknown): AdsCode {
   const o = body && typeof body === "object" ? (body as Rec) : {};

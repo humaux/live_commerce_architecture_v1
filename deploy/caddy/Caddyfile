@@ -52,6 +52,8 @@
 	#   code, state       OIDC authorization response on admin /api/auth/callback
 	#                     (apps/admin/app/api/auth/callback/route.ts); `state` also appears in the
 	#                     Location of /api/auth/login's redirect to the IdP.
+	#                     Also the Meta ads connect return on admin /api/ads/meta/callback
+	#                     (meta-ads-v1 §2 step 2, apps/admin/app/api/ads/meta/callback/route.ts).
 	#   token, access_token, id_token  defensive: bearer-style parameters must never be logged.
 	# The same rules apply to the Referer request header and the Location response header, which
 	# can carry those URLs as well. Other parameters stay visible (e.g. hub.challenge) for triage.

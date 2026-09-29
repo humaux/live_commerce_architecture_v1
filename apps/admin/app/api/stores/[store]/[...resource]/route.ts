@@ -4,6 +4,7 @@ import { validStudioInputToken, validStudioQuery } from "@/lib/studio-request";
 import {
   claimLinkRoute, claimsCollection, claimsRoutes, claimsSubpath, validClaimLink,
 } from "@/lib/claims-request";
+import { adsAny, adsBodyless, adsKeyless, adsRoutes, validAdsQuery, validIfMatch } from "@/lib/ads-request";
 import { parseStudioInput, parseStudioInputPrepared } from "@/lib/studio-model";
 import {
   authConfig,
@@ -35,14 +36,14 @@ const studioAction = `${studioDetail}/(?:rehearsal/(?:start|stop)|input/(?:start
 const studioAny = new RegExp(`^(?:live-sessions|${studioDetail}|${studioAction}|${studioInputRead}|${studioDetail}/${claimsSubpath})$`);
 const routes: Record<string, RegExp> = {
   GET: new RegExp(
-    `^(catalog-ledger|products|warehouses|inventory|products/${uuid}/skus|${purchaseEntry}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy}|${orders}|live-sessions|${studioDetail}|${studioInputRead}|${claimsRoutes.GET})$`,
+    `^(catalog-ledger|products|warehouses|inventory|products/${uuid}/skus|${purchaseEntry}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy}|${orders}|live-sessions|${studioDetail}|${studioInputRead}|${claimsRoutes.GET}|${adsRoutes.GET})$`,
   ),
   POST: new RegExp(
-    `^(products|skus|warehouses|inventory/adjustments|products/${uuid}/archive|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets|live-sessions|${studioAction}|${claimsRoutes.POST})$`,
+    `^(products|skus|warehouses|inventory/adjustments|products/${uuid}/archive|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets|live-sessions|${studioAction}|${claimsRoutes.POST}|${adsRoutes.POST})$`,
   ),
   PATCH: new RegExp(`^(products/${uuid}|skus/${uuid}|${studioDetail}|${claimsRoutes.PATCH})$`),
   // Studio PUT is only the comment-source bind (claims-request.ts); settings PUTs are the rest.
-  PUT: new RegExp(`^(${setting}|${policy}|${claimsRoutes.PUT})$`),
+  PUT: new RegExp(`^(${setting}|${policy}|${claimsRoutes.PUT}|${adsRoutes.PUT})$`),
 };
 const exactStore = new RegExp(`^${uuid}$`);
 const inspectRoute = new RegExp(`^${inspect}$`);
@@ -73,8 +74,11 @@ async function route(request: Request, context: Context) {
   const order = request.method === "GET" && orderRoute.test(path);
   const accountRoute = path.startsWith("provider-accounts");
   const inspection = request.method === "POST" && inspectRoute.test(path);
+  // Ads (adsRoutes): session/store authority only, and only `ads/report` may carry a query (from,to).
+  const ads = adsAny.test(path);
+  if (ads && !validAdsQuery(request.url, path)) return error(422, "invalid_request");
   // New setup routes require actual session/store authority, never a shared fixture.
-  if ((studio || order || action || accountRoute || discoveryRoute.test(path)) && !authConfig)
+  if ((studio || order || action || accountRoute || ads || discoveryRoute.test(path)) && !authConfig)
     return error(404, "not_found");
   // Exact resources: no query at all, including a bare trailing '?'.
   if (action && request.url.includes("?")) return error(422, "invalid_request");
@@ -199,9 +203,19 @@ async function route(request: Request, context: Context) {
       }
       init.body = new TextDecoder().decode(data);
     }
+    // PUT ads/drafts/{id} is revision-guarded: forward exactly one bare-decimal If-Match, never anything else.
+    const ifMatch = request.headers.get("if-match");
+    const draftPut = request.method === "PUT" && /^ads\/drafts\//.test(path);
+    if (draftPut && !validIfMatch(ifMatch)) return error(422, "invalid_request");
+    const bodyless = adsBodyless.test(path);
+    if (bodyless) {
+      if (init.body !== "{}") return error(422, "invalid_request");
+      delete init.body;
+    }
     init.headers = {
-      "Content-Type": "application/json",
-      ...(!inspection ? { "Idempotency-Key": key } : {}),
+      ...(!bodyless ? { "Content-Type": "application/json" } : {}),
+      ...(!inspection && !adsKeyless.test(path) ? { "Idempotency-Key": key } : {}),
+      ...(draftPut ? { "If-Match": ifMatch as string } : {}),
     };
   }
   const response = await callBackend(path + url.search, init, token, store);

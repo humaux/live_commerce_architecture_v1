@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
-  adsAny, adsRoutes, callbackRedirect, clearConnectCookie, connectCookie, connectErrorFor, localeFromCookie, parseCallbackQuery,
+  adsAny, adsBodyless, adsKeyless, adsRoutes, callbackRedirect, clearConnectCookie, connectCookie, connectErrorFor, localeFromCookie, parseCallbackQuery,
   parseConnectBody, safeDialogURL, storeFromCookie, validAdsQuery, validIdempotencyKey, validIfMatch,
 } from "../../apps/admin/lib/ads-request.ts";
 
@@ -124,4 +124,13 @@ test("callback Go answers map to the fixed connect_error values", () => {
   assert.equal(connectErrorFor(422, null), "invalid_request");
   assert.equal(connectErrorFor(503, null), "unavailable");
   assert.equal(connectErrorFor(500, { error: "over_allowance" }), "unavailable");
+});
+
+test("Go transport split: pause/end bodiless, approve keyless, nothing else", () => {
+  for (const a of ["pause", "end"]) assert.ok(adsBodyless.test(`ads/drafts/${uuid}/${a}`), a);
+  assert.ok(adsKeyless.test(`ads/drafts/${uuid}/approve`));
+  for (const bad of [`ads/drafts/${uuid}/approve`, `ads/drafts/${uuid}/publish`, `ads/drafts/${uuid}`, "ads/capi", `ads/drafts/${uuid}/pause/x`])
+    assert.ok(!adsBodyless.test(bad), bad);
+  for (const bad of [`ads/drafts/${uuid}/publish`, `ads/drafts/${uuid}/pause`, "ads/drafts", `ads/drafts/${uuid}/approve/x`])
+    assert.ok(!adsKeyless.test(bad), bad);
 });

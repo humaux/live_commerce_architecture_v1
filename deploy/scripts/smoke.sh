@@ -88,7 +88,7 @@ static_cases() {
     local cfg p ok=1
     cfg=$(mktemp -d)
     make_config "$cfg" static
-    for p in "db,app,payments-sandbox,payments-live,meta,claims,ops" "app,payments-sandbox" "db,ops" "app,meta,claims"; do
+    for p in "db,app,payments-sandbox,payments-live,meta,claims,ads,ops" "app,payments-sandbox" "db,ops" "app,meta,claims"; do
       COMPOSE_PROFILES=$p runc S03 docker compose --project-directory "$LC_DEPLOY_DIR" --env-file "$cfg/compose.env" \
         -f "$LC_DEPLOY_DIR/compose.yml" config -q || ok=0
       COMPOSE_PROFILES=$p LC_PG_BIND_ADDR=127.0.0.1 runc S03 docker compose --project-directory "$LC_DEPLOY_DIR" \
@@ -145,7 +145,7 @@ static_cases() {
 make_config() {
   local dir=$1 kind=$2 svc
   mkdir -p "$dir/env" "$dir/secrets" "$dir/backup/dumps" "$dir/backup/base" "$dir/backup/wal" "$dir/state"
-  for svc in api admin storefront payment-worker expiry-worker meta-worker claims-worker caddy postgres; do
+  for svc in api admin storefront payment-worker expiry-worker meta-worker claims-worker ads-worker caddy postgres; do
     cp "$LC_DEPLOY_DIR/env/$svc.env.example" "$dir/env/$svc.env"
   done
   # `sed -i.bak` + rm: the only in-place form that is identical on GNU (Linux CI/deploy host) and BSD
@@ -523,11 +523,14 @@ sys.exit(1 if names & {"dsn_lc_stripe_registrar", "dsn_lc_meta_registrar"} else 
     -H "Referer: https://admin.localhost/api/auth/callback?code=${canary}r&state=${canary}q" >/dev/null
   "${CURL[@]}" -o /dev/null --resolve "admin.localhost:$HTTP_PORT:127.0.0.1" \
     "http://admin.localhost:$HTTP_PORT/api/auth/callback?code=${canary}l&state=${canary}m" >/dev/null 2>&1 || true
+  # meta-ads-v1 §2 step 2: the Meta ads connect return carries code/state too.
+  edge admin.localhost "/api/ads/meta/callback?code=${canary}a&state=${canary}b" >/dev/null
   sleep 2
   lc_compose logs --no-color >"$EV/logs/S40-compose.log" 2>&1 || true
   hits=$({ grep -c -- "$canary" "$EV/logs/S40-compose.log" || true; } | tail -n1)
   if [[ "$hits" == 0 ]] && grep -q 'hub.challenge=42&hub.mode=subscribe&hub.verify_token=REDACTED' "$EV/logs/S40-compose.log" &&
     grep -q '/api/auth/callback?code=REDACTED&state=REDACTED' "$EV/logs/S40-compose.log" &&
+    grep -q '/api/ads/meta/callback?code=REDACTED&state=REDACTED' "$EV/logs/S40-compose.log" &&
     grep -q '"Referer":\["https://admin.localhost/api/auth/callback?code=REDACTED&state=REDACTED"\]' "$EV/logs/S40-compose.log" &&
     grep -q '"Location":\["https://admin.localhost[^"]*/api/auth/callback?code=REDACTED&state=REDACTED"\]' "$EV/logs/S40-compose.log"; then
     rec S40 PASS "canary verify_token/code/state absent from all logs; uri, Referer and redirect Location logged as REDACTED"

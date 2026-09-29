@@ -8,5 +8,7 @@
 // inserts River jobs and admits signed webhooks), never reads STRIPE_* secrets, and holds no
 // business rule: routes and rules live in internal/httpapi and the domain packages. External
 // services: none called at request time except the OIDC issuer during identity login
-// (internal/oidclogin).
+// (internal/oidclogin) and graph.facebook.com during the merchant Meta-ads connect callback
+// (merchant_ads.go via internal/integrations/meta_ads: code exchange + pick list; never a Graph write,
+// never a token read-back: the API process holds HPKE public keys only).
 package main

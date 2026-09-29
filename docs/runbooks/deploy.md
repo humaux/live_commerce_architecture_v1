@@ -144,6 +144,8 @@ deploy/scripts/deploy.sh upgrade <tag>
 - Meta 私信发送：`claims` profile。**这是唯一会向买家发送 Meta 消息的进程**，只在 owner 批准真实发送后启用（§6.3）。
 - Studio（R1 裁决 G2）：场次规划 + 关键词下单 + 认领来源开启（`COMMERCE_STUDIO_ENABLED=1`、`COMMERCE_CLAIMS_ENABLED=1`，密钥 `commerce_claims_label_key` 由 secrets-init 生成）；LiveKit 媒体保持关闭（P06 强制 `COMMERCE_STUDIO_MEDIA_ENABLED=0`，media 路由不挂载＝404，media worker 不部署）。smoke S45 验证。
 
+- Meta 广告（meta-ads-v1）：`ads` profile（ads-worker）+ api.env `COMMERCE_META_ADS_APP_ID`，见 §6.4。**裁决 B15：0080（ads-capi）合并前保持关闭**（preflight P06 强制）。
+
 ### 6.1 Stripe SANDBOX：账户登记与 webhook 端点
 
 前提：`LC_STRIPE_ENABLED=1`、`payments-sandbox` 已运行、owner 提供 Stripe **测试**账户的 `sk_test_`/`rk_test_` key 和 `acct_...`。
@@ -222,6 +224,15 @@ deploy/scripts/deploy.sh upgrade <tag>
    compose 已接入 `COMMERCE_CLAIMS_LABEL_KEY_FILE`（secret `commerce_claims_label_key`）。证据：`TestStudioG2FlagMatrix`、`TestStudioPlanningOnlyG2APIProcess`（真实二进制 + PG）、
    KC16/T12 浏览器门禁（仅规划模式）、smoke S45（部署后 claims/claim-source 未带令牌返回 401/403，媒体路由 404）。
 
+### 6.4 Meta 广告：商家连接广告账户（meta-ads-v1）
+
+前提：`migrations/0080_*`（ads-capi）已合并（裁决 B15，P06 检查）；应用「大梦」4291253377792879 已挂到香港大碗 Business Portfolio 且 owner 完成 App Review / 商业验证（裁决 O-C，owner 步骤）；每店广告上限默认 NT$0＝关闭（裁决 O4），由运营设置。
+
+1. 密钥：`secrets-init.sh` 生成 HPKE X25519 私钥环 `commerce_meta_ads_hpke_private_keys_json`（**只有 ads-worker 挂载**）并派生公钥环 `commerce_meta_ads_hpke_public_keys_json` + `commerce_meta_ads_hpke_active_key_id`（api 挂载，只能加密、不能解密）。owner 以文件提供 `commerce_meta_ads_app_secret`（替换 `__UNSET__`，0440，裁决 O-D；不经过聊天）。
+2. 配置：api.env 设 `COMMERCE_META_ADS_APP_ID`、`COMMERCE_META_ADS_CONFIG_ID`（Facebook Login for Business 配置）、`COMMERCE_META_ADS_REDIRECT_URI=https://<LC_ADMIN_HOST>/api/ads/meta/callback`（同时登记到 Meta 应用后台，contract §11）、`COMMERCE_META_ADS_GRAPH_VERSION=v26.0`；ads-worker.env 设同一版本和 `COMMERCE_META_ADS_PARTNER_AGENT`；`COMPOSE_PROFILES` 加 `ads`。`preflight.sh` P03/P05/P06/P08/P09 全绿后 `deploy.sh upgrade`（post-check 等 `ads_worker_ready`）。
+3. 回调 URL 的 `code`/`state` 由 Caddy 访问日志改写为 REDACTED（smoke S40 覆盖 `/api/ads/meta/callback`）；admin 对该路径发 `Referrer-Policy: no-referrer`。
+4. 关闭：清空 `COMMERCE_META_ADS_APP_ID` 并重启 api（路由 404）。**不要先停 ads-worker**：暂停（pause）只有它能发到 Meta；先在 admin 暂停所有投放，确认 ops 终态后再去掉 `ads` profile。
+
 ## 7. 密钥轮换（按 deploy/secrets.manifest.tsv 的 rotation 列）
 
 | 密钥 | 做法 |
@@ -253,6 +264,7 @@ deploy/scripts/deploy.sh upgrade <tag>
 5. 验证 `lc_psql` 可用，并对 `docker compose logs postgres` 做 `lc_secret_scan`，命中即失败。
 - 中途失败：`.pg_superuser_password.rotating` 会保留，**重新执行同一命令即可继续**（若新值已生效则跳过 ALTER）。不要删除这个文件。
 - 完成后更新离线加密的密钥副本（backup-restore.md §7）。PITR 不受影响：临时集群用 peer 认证，`--promote` 会把超级用户口令设为当前值。
+- Meta 广告 HPKE 环：私钥环只**追加**新 key（不得删除仍能打开已存 token 的 key）→ `secrets-init.sh --rederive`（重新派生公钥环）→ 把 `commerce_meta_ads_hpke_active_key_id` 改成新 id → 重启 ads-worker，再重启 api。P04 检查公私钥环 id 一致、P05 检查 active id 在公钥环中。
 
 ## 8. 证书与域名
 

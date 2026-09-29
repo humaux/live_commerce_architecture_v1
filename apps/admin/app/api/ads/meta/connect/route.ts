@@ -56,7 +56,7 @@ export async function POST(request: Request) {
   // Go POST ads/meta/connect is keyed (command.Run): a byte-identical retry with the same key returns the same state.
   const upstream = await callBackend(
     "ads/meta/connect",
-    { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": key }, body: "{}" },
+    { method: "POST", headers: { "Idempotency-Key": key } }, // Go adsNoBody: 422 on any body
     token,
     store,
   );

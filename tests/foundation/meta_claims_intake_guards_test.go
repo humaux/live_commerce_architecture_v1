@@ -224,7 +224,7 @@ func TestMetaClaimsMCI10SecretClaimOnlyInLoadSecret(t *testing.T) {
 				}
 				continue
 			}
-			uses, loads := false, false
+			uses, loads, loadsAds := false, false, false
 			ast.Inspect(fn, func(n ast.Node) bool {
 				switch x := n.(type) {
 				case *ast.Ident:
@@ -235,6 +235,10 @@ func TestMetaClaimsMCI10SecretClaimOnlyInLoadSecret(t *testing.T) {
 					if x.Kind == token.STRING && strings.Contains(x.Value, "load_meta_page_token") {
 						loads = true
 					}
+					// meta-ads-v1 AD11: the ads loader is the one other lease-fenced LoadSecret hook.
+					if x.Kind == token.STRING && strings.Contains(x.Value, "integration.load_meta_ads_token") {
+						loadsAds = true
+					}
 				}
 				return true
 			})
@@ -242,8 +246,8 @@ func TestMetaClaimsMCI10SecretClaimOnlyInLoadSecret(t *testing.T) {
 				continue
 			}
 			mentions++
-			if s.dir != "internal/integrations/metareply" || !loads {
-				t.Errorf("%s: function %s references SecretClaim but is not the load_meta_page_token loader in metareply", s.path, fn.Name.Name)
+			if !(s.dir == "internal/integrations/metareply" && loads) && !(s.dir == "internal/integrations/meta_ads" && loadsAds) {
+				t.Errorf("%s: function %s references SecretClaim but is not the load_meta_page_token loader in metareply or the load_meta_ads_token loader in meta_ads", s.path, fn.Name.Name)
 			}
 		}
 	}

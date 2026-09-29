@@ -100,8 +100,13 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	// ads-graph: nil when COMMERCE_META_ADS_APP_ID is unset (surface off). Needs ads-core's Options.Ads.
+	adsService, err := newMerchantAds(pool, os.Getenv)
+	if err != nil {
+		return err
+	}
 	handler := httpapi.NewHandler(pool, httpapi.Options{SessionStoreList: identityConfig.enabled, Accounts: accountService, Studio: studioConfig.enabled, Live: studioPlanner,
-		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs})
+		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs, Ads: adsService})
 	if identityHandler != nil {
 		mux := http.NewServeMux()
 		mux.Handle("/v1/identity/", identityHandler)

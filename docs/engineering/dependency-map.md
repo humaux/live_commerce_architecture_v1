@@ -13,11 +13,19 @@ Command admin-fixture owns a disposable local fixture for the admin ledger UI: i
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`
 - Used by: — (entry point or unused)
 
+## `cmd/ads-worker`
+
+Command ads-worker owns the Meta ads River host (meta-ads-v1 §6, ads-graph): the main-schema external_operation_v1 dispatcher whose only routes are the eight meta_ads actions (internal/integrations/meta_ads), the ads domain workers and periodic jobs (internal/ads: publish-advance sweeper, insights planner, OAuth-state purge), all on the River queue "ads" only.
+
+- Depends on (internal): `internal/ads`, `internal/integrations/core`, `internal/integrations/meta_ads`, `internal/integrations/meta_ads/tokenopen`, `internal/jobqueue`, `internal/platform`
+- Depends on (third-party): `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
+- Used by: — (entry point or unused)
+
 ## `cmd/api`
 
 Command api owns the API process assembly: it loads each feature's configuration (identity, accounts, buyer and hosted payment, Meta webhooks, Stripe webhooks, Studio, claims, merchant refunds), opens the scoped DB pools, builds the handlers and mounts them on one listener.
 
-- Depends on (internal): `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/httpapi`, `internal/identity`, `internal/identityhttp`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/live`, `internal/oidclogin`, `internal/payments/stripewebhook`, `internal/platform`
+- Depends on (internal): `internal/ads`, `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/httpapi`, `internal/identity`, `internal/identityhttp`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta_ads`, `internal/live`, `internal/oidclogin`, `internal/payments/stripewebhook`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
 - Used by: — (entry point or unused)
 
@@ -99,7 +107,7 @@ Package ads owns the merchant-side lifecycle of a Meta ad campaign (contracts/me
 
 - Depends on (internal): `internal/command`, `internal/integrations/core`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`
-- Used by: `internal/httpapi`
+- Used by: `cmd/ads-worker`, `cmd/api`, `internal/httpapi`, `internal/integrations/meta_ads`
 
 ## `internal/buyer`
 
@@ -163,7 +171,7 @@ Package command owns scoped replay records and small transaction primitives.
 
 - Depends on (internal): `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`
-- Used by: `cmd/meta-admin`, `internal/ads`, `internal/buyer`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/metareply`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/pagination`, `internal/payments`, `internal/payments/stripeadmin`, `internal/pricing`, `internal/storefront`
+- Used by: `cmd/meta-admin`, `internal/ads`, `internal/buyer`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/pagination`, `internal/payments`, `internal/payments/stripeadmin`, `internal/pricing`, `internal/storefront`
 
 ## `internal/domains`
 
@@ -227,7 +235,7 @@ Package core owns the provider-neutral external-operation ledger boundary: the e
 
 - Depends on (internal): `internal/command`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`
-- Used by: `cmd/api`, `cmd/claims-worker`, `internal/ads`, `internal/claimsintake`, `internal/integrations/accounts`, `internal/integrations/metareply`, `internal/payments`
+- Used by: `cmd/ads-worker`, `cmd/api`, `cmd/claims-worker`, `internal/ads`, `internal/claimsintake`, `internal/integrations/accounts`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/payments`
 
 ## `internal/integrations/livekit`
 
@@ -243,7 +251,23 @@ Package meta owns admission of signed Meta webhook events: HMAC verification, st
 
 - Depends on (internal): `internal/claims/grammar`, `internal/command`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
-- Used by: `cmd/api`, `cmd/meta-worker`, `internal/integrations/metareply`
+- Used by: `cmd/api`, `cmd/meta-worker`, `internal/integrations/meta_ads`, `internal/integrations/meta_ads/tokenopen`, `internal/integrations/metareply`
+
+## `internal/integrations/meta_ads`
+
+Package metaads owns every Meta Graph wire call of the ads product (contracts/meta-ads-v1.md §3): the eight meta_ads dispatcher routes (create_campaign, create_adset, create_creative, create_ad, preflight_account, activate, pause, read_insights), the CAPI event POST (Client.PostEvent, called by the ads-capi route), the merchant OAuth connect (OAuth.Connect: code exchange, client business, granted permissions, ad-account/dataset pick list, HPKE seal), the Meta money conversions (I05), the read-result grammar carried in integration.operations.provider_reference, and the seal side of token custody (SealKeys: public keys only).
+
+- Depends on (internal): `internal/ads`, `internal/command`, `internal/integrations/core`, `internal/integrations/meta`, `internal/platform`
+- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`
+- Used by: `cmd/ads-worker`, `cmd/api`, `internal/integrations/meta_ads/tokenopen`
+
+## `internal/integrations/meta_ads/tokenopen`
+
+Package tokenopen owns the OPEN half of BISU token custody (meta-ads-v1 A-4, ads-graph G1): the HPKE private keys and Keyring.Open, which turns a sealed ads token back into plaintext for one dispatcher call.
+
+- Depends on (internal): `internal/integrations/meta`, `internal/integrations/meta_ads`
+- Depends on (third-party): —
+- Used by: `cmd/ads-worker`
 
 ## `internal/integrations/metareply`
 
@@ -291,7 +315,7 @@ Package jobqueue owns the server-chosen River queue names (checkout expiry and t
 
 - Depends on (internal): —
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/riverqueue/river`
-- Used by: `cmd/claims-worker`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `internal/checkout`, `internal/payments`, `internal/payments/stripewebhook`
+- Used by: `cmd/ads-worker`, `cmd/claims-worker`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `internal/checkout`, `internal/payments`, `internal/payments/stripewebhook`
 
 ## `internal/live`
 
@@ -355,7 +379,7 @@ Package platform owns the narrow HTTP and database foundation shared by the API 
 
 - Depends on (internal): `internal/httperror`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
-- Used by: `cmd/admin-fixture`, `cmd/api`, `cmd/claims-worker`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `internal/ads`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/command`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/metareply`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/payments`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`, `internal/pricing`
+- Used by: `cmd/admin-fixture`, `cmd/ads-worker`, `cmd/api`, `cmd/claims-worker`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `internal/ads`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/command`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/payments`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`, `internal/pricing`
 
 ## `internal/pricing`
 

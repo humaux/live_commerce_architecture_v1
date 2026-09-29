@@ -45,6 +45,7 @@ export function WorkspaceFrame({
     ["live", "live", c.live],
     ["siteChat", "chat", c.siteChat],
     ["meta", "meta", c.meta],
+    ["ads", "meta", c.ads],
     ["support", "support", c.support],
     ["settings", "settings", c.settings],
   ];
@@ -59,11 +60,15 @@ export function WorkspaceFrame({
       router.push(
         `/${locale}/settings${search.get("store") ? `?store=${encodeURIComponent(search.get("store")!)}` : ""}`,
       );
+    else if (id === "ads")
+      router.push(
+        `/${locale}/ads${search.get("store") ? `?store=${encodeURIComponent(search.get("store")!)}` : ""}`,
+      );
     else if (id === "live")
       router.push(
         `/${locale}/studio${search.get("store") ? `?store=${encodeURIComponent(search.get("store")!)}` : ""}`,
       );
-    else if (active === "settings" || active === "orders" || active === "live")
+    else if (active === "settings" || active === "orders" || active === "live" || active === "ads")
       router.push(`/${locale}/`);
     else onSection?.(id);
   }
