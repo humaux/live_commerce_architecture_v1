@@ -168,8 +168,8 @@ func TestMerchantOrdersAuthorityAndOnboarding(t *testing.T) {
 	for table, want := range map[string][]string{
 		"checkout.orders":                {"commercial_state", "country", "created_at", "currency", "fulfillment_state", "id", "owner_id", "service_code", "snapshot", "store_id", "tenant_id", "total_minor", "updated_at"},
 		"checkout.payment_attempts":      {"amount_minor", "connection_id", "currency", "environment", "execution_profile", "id", "order_id", "owner_id", "store_id", "tenant_id"},
-		"payments.facts":                 {"amount_minor", "attempt_id", "connection_id", "currency", "environment", "execution_profile", "kind", "store_id", "tenant_id"},
-		"payments.review_cases":          {"attempt_id", "reason", "store_id", "tenant_id"}, // 0063 adds reason (MD6 review predicate)
+		"payments.facts":                 {"amount_minor", "attempt_id", "connection_id", "currency", "environment", "execution_profile", "kind", "received_at", "store_id", "tenant_id"}, // 0078 adds received_at (BD7 finance day)
+		"payments.review_cases":          {"attempt_id", "reason", "store_id", "tenant_id"},                                                                                               // 0063 adds reason (MD6 review predicate)
 		"fulfillment.payment_work_items": {"attempt_id", "order_id", "owner_id", "state", "store_id", "tenant_id"},
 	} {
 		var got []string

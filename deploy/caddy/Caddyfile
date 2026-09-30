@@ -150,6 +150,12 @@
 	handle /v1/stripe/webhook/* {
 		reverse_proxy 127.0.0.1:8080
 	}
+	# Platform-fee billing webhook: POST /v1/platform/stripe/webhook (customers-billing-v1 §5, billing-core
+	# B9). Same raw-body rule as the PSP webhook above: nothing rewrites the signed bytes; the app caps the
+	# body at 64 KiB. Exact path only (cmd/api mountPlatformBilling).
+	handle /v1/platform/stripe/webhook {
+		reverse_proxy 127.0.0.1:8080
+	}
 	# Reserved PAYUNi NotifyURL. No receiver exists yet (contracts/buyer-payment-http-v1.md:18); B4.
 	handle /payuni/notify {
 		respond 404

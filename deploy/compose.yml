@@ -187,6 +187,14 @@ services:
       COMMERCE_META_ADS_APP_SECRET_FILE: /run/secrets/commerce_meta_ads_app_secret
       COMMERCE_META_ADS_TOKEN_HPKE_PUBLIC_KEYS_JSON_FILE: /run/secrets/commerce_meta_ads_hpke_public_keys_json
       COMMERCE_META_ADS_TOKEN_HPKE_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_meta_ads_hpke_active_key_id
+      # Platform billing (customers-billing-v1 T17, billing-core B3): LC_BILLING_ENABLED unset = billing off
+      # (LoadConfig treats "" as disabled and rejects "0", so no :-0 default). The webhook reuses the
+      # commerce_stripe_ingress login above (COMMERCE_STRIPE_INGRESS_DATABASE_URL). SANDBOX keys only (BD8).
+      LC_BILLING_ENABLED: ${LC_BILLING_ENABLED:-}
+      LC_BILLING_PRICE_IDS: ${LC_BILLING_PRICE_IDS:-}
+      LC_BILLING_RETURN_ORIGIN: https://${LC_ADMIN_HOST:?set LC_ADMIN_HOST}
+      LC_PLATFORM_STRIPE_SECRET_KEY_FILE: /run/secrets/commerce_platform_stripe_secret_key
+      LC_PLATFORM_STRIPE_WEBHOOK_SECRET_FILE: /run/secrets/commerce_platform_stripe_webhook_secret
     secrets:
       - dsn_lc_api_runtime
       - dsn_lc_api_identity
@@ -199,6 +207,8 @@ services:
       - commerce_stripe_webhook_keys_json
       - commerce_stripe_webhook_active_key_id
       - commerce_stripe_webhook_replay_key
+      - commerce_platform_stripe_secret_key
+      - commerce_platform_stripe_webhook_secret
       - commerce_bff_key
       - commerce_buyer_bff_key
       - commerce_claims_label_key
@@ -672,6 +682,8 @@ secrets:
   commerce_stripe_webhook_keys_json: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_stripe_webhook_keys_json" }
   commerce_stripe_webhook_active_key_id: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_stripe_webhook_active_key_id" }
   commerce_stripe_webhook_replay_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_stripe_webhook_replay_key" }
+  commerce_platform_stripe_secret_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_platform_stripe_secret_key" }
+  commerce_platform_stripe_webhook_secret: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_platform_stripe_webhook_secret" }
   commerce_meta_page_token_keys_json: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_meta_page_token_keys_json" }
   commerce_meta_page_token_active_key_id: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_meta_page_token_active_key_id" }
   commerce_claims_actor_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_claims_actor_key" }

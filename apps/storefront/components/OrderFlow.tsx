@@ -8,6 +8,7 @@
 // The shipment block renders Go GET /v1/buyer/orders/{id} `shipment` (BFF orders/{id}); no route of its own.
 import { useEffect, useRef, useState } from "react";
 import OrderPayment from "./OrderPayment";
+import { ConsentChoices, noConsentChoices, submitCheckoutConsents } from "./ConsentChoices";
 import type { Locale } from "@live-commerce/i18n";
 import { BuyerClientError } from "../lib/buyer-client";
 import { carrierNames, orderCopy } from "../lib/order-copy";
@@ -97,6 +98,7 @@ export default function OrderFlow({
   const [head, setHead] = useState<Destination | null>(null);
   const [option, setOption] = useState<Option | null>(null);
   const [confirmed, setConfirmed] = useState<Destination | null>(null);
+  const [consents, setConsents] = useState(noConsentChoices);
   const [notice, setNotice] = useState<
     "loading" | "recovered" | "failed" | "invalid" | "uncertain" | null
   >("loading");
@@ -355,6 +357,7 @@ export default function OrderFlow({
           {copy.confirmed}
         </p>
       )}
+      <ConsentChoices locale={locale} value={consents} onChange={setConsents} disabled={busy || blocked} />
       <button
         data-testid="create-order"
         className="primary create-order"
@@ -368,6 +371,7 @@ export default function OrderFlow({
                 context,
                 checkoutInput(quote, option, cart, confirmed),
               );
+              void submitCheckoutConsents(context, consents); // never blocks the order (customers-billing-v1 U7)
               if (isCurrent() && version === live.current) onOrder(result);
             } catch (reason) {
               if (version === live.current) setConfirmed(null);

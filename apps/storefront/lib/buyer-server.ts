@@ -16,6 +16,15 @@ import {
   validClaimPreview,
   validClaimRedeemed,
 } from "./claim-contract.ts";
+// customers-billing-ui hook: buyer privacy routes (customers-billing-v1 §5) and their closed response validators.
+import {
+  privacyBodies,
+  privacyRoutes,
+  validBuyerExport,
+  validBuyerPrivacy,
+  validConsentResult,
+  validErasureSummary,
+} from "./privacy-contract.ts";
 
 const COOKIE = "__Host-commerce_buyer";
 const MAX_JSON = 64 * 1024;
@@ -48,7 +57,9 @@ type Route = {
     | "destination"
     | "checkout"
     | "payment"
-    | "claim";
+    | "claim"
+    | "consent"
+    | "erasure";
   query?: "catalog" | "options" | "orders";
   session?: string;
   payment?: "view" | "prepare" | "handoff" | "refresh" | "cancel";
@@ -71,6 +82,10 @@ const messages: Record<string, string> = {
   insufficient_inventory: "Insufficient available inventory.",
   rate_limited: "Too many requests.",
   unavailable: "Temporarily unavailable.",
+  erased: "This data was erased.",
+  erasure_blocked: "Erasure is blocked while a payment may still be open.",
+  export_too_large: "The export is too large for one file.",
+  idempotency_conflict: "Request conflicts with an earlier one.",
 };
 
 function headers(extra?: HeadersInit) {
@@ -322,6 +337,7 @@ function route(
     "claim-link/redeem": {
       POST: { privatePath: "claim-link/redeem", body: "claim", claim: "redeem" },
     },
+    ...privacyRoutes,
   };
   if (Object.hasOwn(exact, suffix)) {
     const selected = exact[suffix][method];
@@ -545,7 +561,7 @@ function strictJSON(text: string, allowNull = false): unknown {
   return JSON.parse(text) as unknown;
 }
 
-type Shape = { [key: string]: "string" | "integer" | Shape | [Shape] };
+type Shape = { [key: string]: "string" | "integer" | "boolean" | Shape | [Shape] };
 const shapes: Record<Exclude<Route["body"], undefined>, Shape> = {
   empty: {},
   cart: {
@@ -587,6 +603,8 @@ const shapes: Record<Exclude<Route["body"], undefined>, Shape> = {
     locale: "string",
   },
   claim: { expected_bundle_version: "integer" },
+  consent: privacyBodies.consent,
+  erasure: privacyBodies.erasure,
 };
 
 function matchesShape(value: unknown, shape: Shape): boolean {
@@ -597,6 +615,7 @@ function matchesShape(value: unknown, shape: Shape): boolean {
     if (!expected) return false;
     if (expected === "string") return typeof field === "string";
     if (expected === "integer") return Number.isSafeInteger(field);
+    if (expected === "boolean") return typeof field === "boolean";
     if (Array.isArray(expected))
       return (
         Array.isArray(field) &&
@@ -749,7 +768,7 @@ async function upstreamError(
   if (
     typeof code !== "string" ||
     !Object.hasOwn(messages, code) ||
-    ![400, 401, 403, 404, 409, 415, 422, 429, 503].includes(response.status)
+    ![400, 401, 403, 404, 409, 410, 415, 422, 429, 503].includes(response.status)
   )
     return failure(503, "unavailable", nonretryable);
   return failure(response.status, code, nonretryable);
@@ -980,6 +999,16 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
     claimToken ?? undefined,
   );
   if (request.signal.aborted) return fail(503, "unavailable");
+  // Erasure revokes the capability (customers-billing-v1 §5): the cookie is cleared on the 200 and on the replay 410.
+  const erasure = target.privatePath === "privacy/erasure";
+  const revoked = {
+    "Set-Cookie": `${COOKIE}=; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax`,
+  };
+  if (erasure && response.status === 410) {
+    const gone = failure(410, "erased", true);
+    gone.headers.append("Set-Cookie", revoked["Set-Cookie"]);
+    return gone;
+  }
   if (!response.ok) return upstreamError(response, handoff);
   const data = await upstreamJSON(response, !!target.payment);
   if (request.signal.aborted || data === null || typeof data !== "object")
@@ -1009,5 +1038,20 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
         !validPaymentSignal(data, target.orderID!)))
   )
     return fail(503, "unavailable");
+  // Buyer privacy: only the frozen closed shapes leave the BFF; the export is offered as a download, never cached.
+  const privacyValid =
+    target.privatePath === "privacy"
+      ? validBuyerPrivacy(data)
+      : target.privatePath === "consents"
+        ? validConsentResult(data)
+        : target.privatePath === "privacy/export"
+          ? validBuyerExport(data)
+          : erasure
+            ? validErasureSummary(data)
+            : true;
+  if (!privacyValid) return fail(503, "unavailable");
+  if (erasure) return success(data, revoked);
+  if (target.privatePath === "privacy/export")
+    return success(data, { "Content-Disposition": 'attachment; filename="my-data.json"' });
   return success(data);
 }

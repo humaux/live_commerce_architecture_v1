@@ -21,6 +21,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 	"livecommerce/internal/ads"
+	"livecommerce/internal/billing"
 	"livecommerce/internal/catalog"
 	"livecommerce/internal/claims"
 	"livecommerce/internal/command"
@@ -54,6 +55,9 @@ type Options struct {
 	// Ads is the meta-ads-v1 merchant service (cmd/api builds it with the insert-only river client, the FLfB dialog
 	// config and the metaads OAuth exchange). nil leaves the ads routes unmounted; mount only after 0080 (contract 4.3).
 	Ads *ads.Service
+	// Billing is the platform-fee service (cmd/api buildPlatformBilling). nil (LC_BILLING_ENABLED unset)
+	// still mounts the billing GET routes; the POSTs answer 503 billing_unavailable.
+	Billing *billing.Service
 }
 
 func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
@@ -138,6 +142,9 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerRefundRoutes(mux, pool, configured.RefundJobs)
 	registerShipmentRoutes(mux, pool)
 	registerAdsRoutes(mux, pool, configured.Ads)
+	registerCustomerRoutes(mux, pool)
+	registerFinanceRoutes(mux, pool)
+	registerBillingRoutes(mux, pool, configured.Billing)
 	foundation := platform.NewHandler(pool, platform.HandlerOptions{SessionStoreList: configured.SessionStoreList})
 	if configured.SessionStoreList {
 		mux.Handle("GET /v1/admin/stores", foundation)
