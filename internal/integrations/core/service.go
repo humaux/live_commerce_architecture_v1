@@ -401,7 +401,7 @@ func mapError(err error) error {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {
 		switch pgErr.Code {
-		case "40001", "23505":
+		case "40001", "23505", "PT409":
 			return command.ErrConflict
 		case "23503", "P0002":
 			return command.ErrNotFound

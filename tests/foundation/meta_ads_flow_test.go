@@ -8,6 +8,7 @@ package foundation_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -29,6 +30,7 @@ import (
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 
 	"livecommerce/internal/ads"
+	"livecommerce/internal/command"
 	integration "livecommerce/internal/integrations/core"
 	metaads "livecommerce/internal/integrations/meta_ads"
 	"livecommerce/internal/integrations/meta_ads/tokenopen"
@@ -1030,6 +1032,13 @@ func (l *logBuf) String() string              { l.mu.Lock(); defer l.mu.Unlock()
 // disableBinding disables a binding through the real integration service (semantic_version bump), as a merchant would.
 func (e *adsEnv) disableBinding(binding string) {
 	e.t.Helper()
+	if err := e.tryDisableBinding(binding); err != nil {
+		e.t.Fatalf("disable binding: %v", err)
+	}
+}
+
+func (e *adsEnv) tryDisableBinding(binding string) error {
+	e.t.Helper()
 	jobs, err := river.NewClient[pgx.Tx](riverpgxv5.New(e.f.runtime), &river.Config{Schema: "river"})
 	if err != nil {
 		e.t.Fatal(err)
@@ -1042,13 +1051,10 @@ func (e *adsEnv) disableBinding(binding string) {
 	if err := e.f.owner.QueryRow(e.ctx, `SELECT semantic_version FROM integration.bindings WHERE id=$1`, binding).Scan(&version); err != nil {
 		e.t.Fatal(err)
 	}
-	err = platform.WithScope(e.ctx, e.f.runtime, e.token, e.store, "store:read", func(tx pgx.Tx, sc platform.Scope) error {
+	return platform.WithScope(e.ctx, e.f.runtime, e.token, e.store, "store:read", func(tx pgx.Tx, sc platform.Scope) error {
 		_, err := svc.SetBindingEnabled(e.ctx, tx, sc, e.token, t04Key("adsdisable"), binding, version, false)
 		return err
 	})
-	if err != nil {
-		e.t.Fatalf("disable binding: %v", err)
-	}
 }
 
 // connectAccount runs a second connect for another ad account granted to the same BISU token and returns its binding id.
@@ -1140,6 +1146,41 @@ func TestMetaAdsMA06Binding(t *testing.T) {
 		}
 		for _, r := range e.g.RequestsSince(mark) {
 			t.Errorf("Graph request after the binding changed: %s %s", r.Method, r.Path)
+		}
+	})
+
+	t.Run("a binding with a spending campaign cannot be disabled; pause still reaches Meta (contract 5.3, round-2 P1)", func(t *testing.T) {
+		e := newAdsEnv(t, adsOpts{})
+		d := e.newDraft(adsDraftIn{})
+		e.mustApprove(d)
+		e.mustPublish(d)
+		if a := e.driveTo(d, "activate", 1); a.State != "SUCCEEDED" {
+			t.Fatalf("activate %s/%s", a.State, a.Code)
+		}
+		if err := e.tryDisableBinding(e.adBinding); !errors.Is(err, command.ErrConflict) {
+			t.Fatalf("disable of a binding with an ACTIVE campaign: %v, want command.ErrConflict", err)
+		}
+		var enabled bool
+		if err := e.f.owner.QueryRow(e.ctx, `SELECT enabled FROM integration.bindings WHERE id=$1`, e.adBinding).Scan(&enabled); err != nil || !enabled {
+			t.Fatalf("binding enabled=%v err=%v after the refused disable", enabled, err)
+		}
+		mark := e.g.Mark()
+		if r := e.pause(d); r.Status != 200 {
+			t.Fatalf("pause: %d %s", r.Status, r.Raw)
+		}
+		e.settle()
+		if p := e.mustOp(d, "pause", 1); p.State != "SUCCEEDED" {
+			t.Fatalf("pause %s/%s", p.State, p.Code)
+		}
+		if o, _ := e.g.Object(e.g.Objects("campaign")[0].ID); o.Status != "PAUSED" {
+			t.Fatalf("remote campaign %s after pause", o.Status)
+		}
+		if n := e.g.Count(fakegraph.RouteStatusPost); n < 2 || len(e.g.RequestsSince(mark)) == 0 {
+			t.Fatalf("status posts %d, requests since pause %d", n, len(e.g.RequestsSince(mark)))
+		}
+		// not spending any more: the merchant may now disconnect
+		if err := e.tryDisableBinding(e.adBinding); err != nil {
+			t.Fatalf("disable after a SUCCEEDED pause: %v", err)
 		}
 	})
 

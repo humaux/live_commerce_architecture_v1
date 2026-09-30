@@ -489,6 +489,28 @@ ALTER FUNCTION ads.draft_counts(uuid) OWNER TO commerce_ads_writer;
 COMMENT ON FUNCTION ads.draft_counts(uuid) IS
  'ads owner; internal helper (approve, publish, Check, advance sweeper), no caller EXECUTE. AD6/§5.3 single test: false only when every activate op is absent or BLOCKED_POLICY, or a pause SUCCEEDED was claimed after every activate left READY/DISPATCHING, or now > ends_at + 1 day. READY/DISPATCHING/UNKNOWN/SUCCEEDED activates always count.';
 
+-- Round-2 review P1 (contract 5.3 "pause is always allowed"): a disabled binding makes every MERCHANT op on it
+-- STALE_BINDING at claim (integration.claim_operation), so a pause could never reach Meta and a spending campaign
+-- would run to end_time with no in-product stop. Fix at the root, without amending the dispatcher: a meta_ads
+-- binding cannot be disabled while any draft on it counts (AD6 test = may still spend). The merchant pauses
+-- first (its op SUCCEEDED makes the draft non-counting), then disconnects. Narrows 5.3 to "enabled binding or no
+-- spending campaign" (integrator ruling R2-ADS-PAUSE-1).
+CREATE FUNCTION ads.guard_binding_disable() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ IF EXISTS(SELECT 1 FROM ads.campaign_drafts d WHERE d.ad_binding_id=OLD.id AND ads.draft_counts(d.id)) THEN
+  RAISE EXCEPTION 'binding_in_use' USING ERRCODE='PT409';
+ END IF;
+ RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION ads.guard_binding_disable() FROM PUBLIC;
+ALTER FUNCTION ads.guard_binding_disable() OWNER TO commerce_ads_writer;
+COMMENT ON FUNCTION ads.guard_binding_disable() IS
+ 'ads owner; trigger function only (no caller EXECUTE). Refuses (PT409 binding_in_use) disabling a meta_ads binding while a draft on it counts by the AD6 test, so pause stays dispatchable (contract 5.3).';
+CREATE TRIGGER bindings_ads_disable_guard BEFORE UPDATE ON integration.bindings
+ FOR EACH ROW WHEN (OLD.provider='meta_ads' AND OLD.enabled AND NOT NEW.enabled)
+ EXECUTE FUNCTION ads.guard_binding_disable();
+
 -- Sum of the allowance held by OTHER drafts of the store that are approved for their current revision and count.
 CREATE FUNCTION ads.allowance_used(p_tenant uuid,p_store uuid,p_except uuid) RETURNS bigint
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$

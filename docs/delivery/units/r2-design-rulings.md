@@ -139,3 +139,8 @@ Retention: B23 accept IR-U1 (D4 CHECK widening for 'erased-'). B24 accept D1/D2.
 is provisioned only by the runbook after owner approval, never via logins.tsv. B26 a pre-existing
 reserved-pattern label stops 0071 with 55000 (fresh pilot DB; no automatic relabel). B27 record the
 meta_inbox.lock_purgeable grant in meta-claims-intake-v1's amendment notes.
+
+R2-ADS-PAUSE-1 (round-2 review P1, meta-ads-v1 §5.3): "pause is always allowed" is narrowed to "with an enabled binding". The dispatcher's
+enabled/semantic_version gate is unchanged; instead `0074` trigger `integration.bindings.bindings_ads_disable_guard` refuses (PT409
+`binding_in_use`, core maps to ErrConflict) disabling a `meta_ads` binding while any draft on it counts by the AD6 test. The merchant
+pauses first; a SUCCEEDED pause makes the draft non-counting and the disconnect then succeeds. Gate: MA06 "a binding with a spending campaign cannot be disabled".
