@@ -143,6 +143,7 @@ type adsOpts struct {
 	noConnect   bool          // do not run the connect chain
 	unfunded    bool          // account has no funding source
 	retryDelay  time.Duration // dispatcher RetryDelay between an UNKNOWN and its reconcile claim (default 150ms)
+	fx          *testFixture  // attach the ads surface to an existing store (phase B: the payment fixture's private tenant/store, principalA, tokens["a"])
 	callTimeout time.Duration // dispatcher CallTimeout (default 700ms; race tests hold a Graph call in flight and need longer)
 }
 
@@ -184,6 +185,9 @@ func adsDigits(n int) string { return mciDigits(n) }
 func newAdsEnv(t *testing.T, o adsOpts) *adsEnv {
 	t.Helper()
 	f := fixture(t)
+	if o.fx != nil {
+		f = o.fx
+	}
 	pubEnv, ring := adsKeys(t)
 	ctx := context.Background()
 	e := &adsEnv{t: t, f: f, ctx: ctx, opts: o, tenant: f.tenantA, principals: map[string]string{}, probe: &adsProbe{inCheck: map[string]int{}, gate: map[string]chan struct{}{}, entered: map[string]chan struct{}{}}}
@@ -193,10 +197,15 @@ func newAdsEnv(t *testing.T, o adsOpts) *adsEnv {
 	e.opts.allowance = o.allowance
 	e.g = fakegraph.New()
 	t.Cleanup(e.g.Close)
-	e.store = cbxStore(t, f, e.tenant)
-	t.Cleanup(e.retire) // runs after the River client stopped (registered later, so it runs earlier)
-
-	e.creator, e.token = lcPrincipal(t, f, e.tenant, []string{e.store}, "store:read", "ads:read", "ads:manage", "ads:approve", "integration:manage")
+	if o.fx != nil {
+		e.tenant, e.store, e.creator, e.token = f.tenantA, f.storeA1, f.principalA, f.tokens["a"]
+		mustExec(t, f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) SELECT $1,$2,$3,p FROM unnest(ARRAY['ads:read','ads:manage','ads:approve','integration:manage']) p ON CONFLICT DO NOTHING`, e.tenant, e.store, e.creator)
+		t.Cleanup(e.retire)
+	} else {
+		e.store = cbxStore(t, f, e.tenant)
+		t.Cleanup(e.retire) // runs after the River client stopped (registered later, so it runs earlier)
+		e.creator, e.token = lcPrincipal(t, f, e.tenant, []string{e.store}, "store:read", "ads:read", "ads:manage", "ads:approve", "integration:manage")
+	}
 	e.account, e.clientBiz, e.pageAsset, e.pixel = "91"+adsDigits(11), "51"+adsDigits(11), "77"+adsDigits(11), "88"+adsDigits(11)
 	e.botToken = "SENTINEL-EAAG-BISU-" + t04Tag() + t04Tag()
 	e.g.AddAccount(fakegraph.Account{ID: e.account, Currency: "TWD", Timezone: "Asia/Taipei", Status: 1, Funded: !o.unfunded, MinDailyBudget: "100"})
@@ -403,7 +412,9 @@ func (e *adsEnv) retire() {
 		   AND args->>'operation_id' IN (SELECT id::text FROM integration.operations WHERE store_id=$1)`,
 		`UPDATE integration.operations SET state='FAILED_FINAL',generation=greatest(generation,1),lease_mode='',lease_until=NULL,lease_token_hash=NULL,result_code='test_retired'
 		   WHERE store_id=$1 AND provider IN ('meta_ads','meta_dataset') AND state IN ('READY','DISPATCHING','UNKNOWN','ACKNOWLEDGED')`,
-		`UPDATE ads.campaign_drafts SET starts_at=starts_at-interval '200 days',ends_at=ends_at-interval '200 days' WHERE store_id=$1`,
+		// pin unpinned remote ids (set-once NULL->value) and take the drafts out of every global sweeper: candidates need publish_attempt>0
+		`UPDATE ads.remote_objects r SET remote_id=o.provider_reference FROM integration.operations o WHERE o.id=r.operation_id AND r.store_id=$1 AND r.remote_id IS NULL AND r.kind IN ('campaign','adset','creative','ad') AND o.state='SUCCEEDED' AND o.provider_reference ~ '^[0-9]{1,40}$'`,
+		`UPDATE ads.campaign_drafts SET starts_at=starts_at-interval '200 days',ends_at=ends_at-interval '200 days',publish_attempt=0 WHERE store_id=$1`,
 		`UPDATE ads.store_settings SET capi_enabled=false,capi_dataset_binding=NULL,capi_enabled_by=NULL WHERE store_id=$1`,
 	} {
 		var err error

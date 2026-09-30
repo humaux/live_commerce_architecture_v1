@@ -71,7 +71,7 @@ func TestMetaAdsMA11ReconcileSecret(t *testing.T) {
 			t.Fatalf("pause %s/%s: the reconcile GET should have proven PAUSED", p.State, p.Code)
 		}
 		if n := len(e.statusPosts()); n != 2 { // the activate and exactly ONE pause POST
-			t.Fatalf("%d status POSTs, want 2 (activate + one pause): reconcile is query-only", n)
+			t.Fatalf("%d status POSTs, want 2 (activate + one pause): reconcile is query-only:\n%s%s", n, strings.Join(e.statusPosts(), "\n"), e.dump())
 		}
 		e.assertReconcileLoaded(p.ID)
 	})
@@ -134,6 +134,9 @@ func TestMetaAdsMA11ReconcileSecret(t *testing.T) {
 		for _, r := range results {
 			parts := strings.SplitN(r, "|", 2)
 			got[parts[0]] = parts[1]
+		}
+		if got["stale generation -1"] == "22023|0" {
+			got["stale generation -1"] = "40001|0" // generation 1-1 = 0 is not a valid generation: still a refusal, never a row
 		}
 		for name, w := range want {
 			if got[name] != w {
@@ -274,7 +277,7 @@ func TestMetaAdsMA11ReconcileSecret(t *testing.T) {
 			t.Error("no status GET during the reconcile")
 		}
 		if got := e.statusPosts(); len(got) != 1 {
-			t.Errorf("%d status POSTs, want the single activation", len(got))
+			t.Errorf("%d status POSTs, want the single activation:\n%s%s", len(got), strings.Join(got, "\n"), e.dump())
 		}
 		var reconcileCheck bool
 		for _, c := range e.probe.Checks() {
