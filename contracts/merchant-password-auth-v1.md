@@ -43,7 +43,7 @@ owner supplies secrets as files, never through chat); domain `xgdwm.com` on Clou
 | PD8 | **Sessions reuse `identity.sessions`** (audience `merchant`, token hash only, TTL from existing `COMMERCE_SESSION_TTL` 5 min–24 h) and `identity.session_events('session.issued')`. A session is issued **only** inside the definer that consumes a correct code (§4.3), never from a function that takes a principal id. This is **not** a barrier against the `commerce_identity` login itself: it chooses the code HMAC, so a leaked identity DSN (`dsn_lc_api_identity`, already its own manifest row) means takeover of every password account — the same trust already placed in that role by `identity.issue_merchant_session(p_issuer,p_subject,…)` in 0004. | merchant-identity-v1 rule: no function takes an arbitrary principal target; trust boundary stated honestly. |
 | PD9 | **Separate principals per method.** A password principal has one row in `identity.password_credentials`; an OIDC principal has `identity.external_identities`. Same email in both ⇒ two principals; no linking in v1. | No merge by email; linking is an account-takeover path. |
 | PD10 | **Reset = code + new password in one step,** then: password version +1, consecutive-failure counter reset, **all** merchant sessions of the principal revoked (`session.revoked` events), one new session issued. | Ruling Q5. Revoking kills an attacker's session. |
-| PD11 | **Password policy:** NFC-normalized, 12–128 Unicode code points (ruling Q2; see §11 for the NIST gap), no composition rules; not equal to the email **at sign-up** (at reset Go holds only the binding, not the email, so `equals_email` is NOT_IMPLEMENTED there — documented limit); not in Have I Been Pwned (k-anonymity range API, `Add-Padding: true`, F6) at sign-up and reset. HIBP unreachable (2 s timeout) ⇒ accept and audit `password.breach_check_unavailable` (fail-open, ruling Q3). | NIST: no composition rules, blocklist required (F4). |
+| PD11 | **Password policy:** NFC-normalized, 12–128 Unicode code points (ruling Q2; see §11 for the NIST gap), no composition rules; not equal to the email **at sign-up** (at reset Go holds only the binding, not the email, so `equals_email` is NOT_IMPLEMENTED there — documented limit); not in Have I Been Pwned (k-anonymity range API, `Add-Padding: true`, F6) at sign-up and reset. HIBP unreachable (2 s timeout) ⇒ accept and log `password.breach_check_unavailable` (fail-open, ruling Q3; logged, not an audit row, §15 A3). | NIST: no composition rules, blocklist required (F4). |
 | PD12 | **Hard disable after 100 consecutive wrong passwords** on one credential (`disabled_at`); the counter saturates at 100 and never raises (§4.2). Only a successful reset, or the owner-approved operator unlock (§11), re-enables. A disabled credential answers exactly like an unknown email (§2 Login). Temporary throttles (§6) fire long before this. | NIST §3.2.2 cap (F4). Lockout abuse bounds: §11. |
 | PD13 | **Tenant scope is unknown before authentication** and must not come from the client (I01), so there is no per-tenant login bucket. The ceiling on cost/abuse is a deployment-wide mail budget split into three shares (§6): unauthenticated, login of principals **without** an active membership, and login of principals **with** one — so self-registered accounts without a store cannot spend store members' login mail. | Honest equivalent of per-tenant limits (round-2 P1). |
 | PD14 | **Client IP** for rate limits: Caddy is the edge and replaces incoming `X-Forwarded-*` (F9, verified in `deploy/caddy/Caddyfile` header: no `trusted_proxies`). The admin BFF takes the single `X-Forwarded-For` value, requires an IP literal, and forwards it as `X-Commerce-Client-IP` on the BFF-key-authenticated private call (ruling R-5). Go buckets IPv4 by /32 and IPv6 by /64 (plus /48 for sign-up) and stores only `HMAC(auth_pepper, bucket)`. The admin host stays DNS-only (no Cloudflare proxy) until a `trusted_proxies` review (ruling Q6), checked by PA15. | No raw IP at rest; no trust in a browser header. |
@@ -185,7 +185,8 @@ writer holds only explicit grants; only the definers are `OWNER TO commerce_iden
 - index `(email, purpose) WHERE consumed_at IS NULL`; index `(expires_at)`; index `(principal_id, created_at) WHERE purpose = 'reset'` (PD5 count).
 - On consume or expiry purge, `pending_password_hash` is set NULL.
 
-`identity.auth_throttle` — `bucket bytea` (32-byte HMAC), `window_start timestamptz`, `hits int`,
+`identity.auth_throttle` — `bucket bytea` (32 bytes: `sha256(p_bucket || int4send(window seconds) || int4send(offset))`,
+derived inside `auth_throttle_hit` so every window of a bucket has its own key, §15 A1), `window_start timestamptz`, `hits int`,
 PK `(bucket, window_start)`; index `(window_start)`.
 
 `identity.auth_events` (append-only audit; no tenant exists yet so `ops.audit_events` cannot hold
@@ -203,7 +204,7 @@ password. Retention 180 days (ruling Q8).
 
 | Function | Does |
 | --- | --- |
-| `identity.auth_throttle_hit(p_bucket bytea, p_window_seconds int, p_offset_seconds int) RETURNS int` | Upsert +1 in the window aligned to `p_offset_seconds` (0, or 28800 for the UTC+8 day), return hits; deletes ≤ 100 throttle rows older than 2 days, ≤ 100 challenges expired > 1 day, ≤ 100 `auth_events` older than 180 days (I23). |
+| `identity.auth_throttle_hit(p_bucket bytea, p_window_seconds int, p_offset_seconds int) RETURNS int` | Upsert +1 in the window aligned to `p_offset_seconds` (0, or 28800 for the UTC+8 day) under the derived key `sha256(p_bucket || int4send(p_window_seconds) || int4send(p_offset_seconds))` (§15 A1), return hits; deletes ≤ 100 throttle rows older than 2 days, ≤ 100 challenges expired > 1 day, ≤ 100 `auth_events` older than 180 days (I23). |
 | `identity.start_signup_challenge(p_id uuid, p_email text, p_hash text, p_binding bytea, p_code bytea, p_locale text, p_ip bytea) RETURNS TABLE(outcome text, expires_at timestamptz)` | Advisory xact lock on the email; `EXISTS` if a credential has the email (no row); else supersede open signup challenges for the email **with the same `ip_hmac`**, then supersede the oldest while ≥ 3 remain open (PD4), insert, `CHALLENGE`. |
 | `identity.password_login_material(p_email text) RETURNS TABLE(password_hash text, password_version bigint, disabled boolean)` | Zero rows when unknown or principal inactive. Returns no principal id. |
 | `identity.record_password_failure(p_email text) RETURNS void` | `failed_count = LEAST(failed_count+1, 100)`; sets `disabled_at` when it reaches 100 and `disabled_at` IS NULL; audit. Never raises for a disabled or unknown email (same statement count; no-op for unknown). |
@@ -287,6 +288,7 @@ Admin BFF (`apps/admin/lib/auth.ts`): `COMMERCE_OIDC_ISSUER` optional when the p
 | Bucket (HMAC key input) | Limit | Applies to |
 | --- | --- | --- |
 | `ip:<ip/32 or /64>` | 30 / 15 min | every step-1 and complete call |
+| `ip48:<ipv6/48>` | 60 / 15 min | every step-1 and complete call from IPv6 (§15 A2) |
 | `ip-signup:<ip/32 or /64>` | 5 / hour | sign-up |
 | `ip48-signup:<ipv6/48>` | 20 / hour | sign-up from IPv6 |
 | `ip-mail-unauth:<ip/32 or /64>` | 10 / UTC+8 day | sign-up, exists-notice, reset — hit before `global-mail-unauth` and before the existence lookup |
@@ -305,8 +307,8 @@ Shares are `floor(cap × pct / 100)`; with the minimum cap 20 they are 8 / 3 / 9
 
 Over a per-client limit → 429 `throttled` with `Retry-After` = window remainder; identical for
 known and unknown emails. Over a `global-mail-*` limit → 503 `mail_unavailable` (fail closed, O-B),
-raised before any existence lookup, identical for known and unknown emails. Audit `throttled` with
-the bucket kind only. The provider's real daily cap is UNKNOWN (F8): `COMMERCE_MAIL_DAILY_CAP` is
+raised before any existence lookup, identical for known and unknown emails. `throttled` is logged with
+the bucket kind only, not written as an audit row (§15 A3). The provider's real daily cap is UNKNOWN (F8): `COMMERCE_MAIL_DAILY_CAP` is
 set from the first observed `smtp_rejected` rate, never raised above what the mailbox has sustained.
 
 ## 7. HTTP
@@ -558,3 +560,37 @@ revise before go-live:
   **R-3** privilege-controlled tables like 0004, with the owner-role P1 fixed (tables owned by the
   migration role). **R-4** OIDC optional when password login is enabled. **R-5**
   `X-Commerce-Client-IP` trusted only after the BFF-key check. **R-6** migration 0071 released.
+
+## 15. Lane-close amendments (2026-09-30, r2/auth closing pass; binding over the text above)
+
+Findings: independent test F1 (`tests/foundation/password_finding_test.go`) and the round-1 review P2s
+(`output/r2-implement-result.json` key `auth`). Each item names its gate.
+
+- **A1 (F1, P2): one throttle key per window.** `PK (bucket, window_start)` has no window length, so two
+  windows of one bucket that start at the same instant (60 s + 1 h in the first minute of an hour; 1 h + day in
+  the first hour of a UTC+8 day) shared a row and every hit counted twice: a merchant's third login mail in that
+  hour was refused and the day row kept them out for up to 23 h. Fix in the shared definer, so every caller is
+  covered: `auth_throttle_hit` stores `sha256(p_bucket || int4send(window seconds) || int4send(offset))`. The column
+  is still 32 bytes, the table shape, PK and signature are unchanged, and Go still passes the §6 bucket HMAC.
+  Gates: `TestPasswordFindingF1ThrottleWindowsShareRows` (no longer behind the `finding` tag) and the PA07 hour/day
+  row-count check after five login mails.
+- **A2 (round-1 P2): `ip48` bucket on every step-1 and complete call.** IPv6 only, 60 / 15 min, hit right after
+  `ip` (§6). Without it a holder of one /48 (65,536 /64s) could keep all PD3 slots busy with fresh random
+  bindings (reset `complete`) or dummy-PHC verifies (login), each /64 staying under its own 30 / 15 min.
+  Gate: PA07 subtest `ip48_60_per_15min_counts_every_step1_and_complete_call` (call 60 passes, 61 and 62 are 429,
+  another /48 unaffected). Not added: a read-only "does the challenge exist" definer before hashing on reset.
+- **A3 (round-1 P2): `throttled` and `password.breach_check_unavailable` are logged, not audited.** §4.2 has no
+  definer that can write them and none is added: a throttled request is attacker-driven and high-volume, so an
+  audit row per refused request would let one source bloat `auth_events`; HIBP outages are visible as the
+  log line plus the fail-open count. The two actions stay in the `auth_events` CHECK for operator use. PA08 already
+  accepts the log line.
+- **A4 (test finding): the one-source guarantee needs `COMMERCE_MAIL_DAILY_CAP` >= 100.** At the minimum cap 20
+  the `global-mail-unauth` share is 8, which one source (`ip-mail-unauth` 10/day, `ip48-mail-unauth` 20/day) can
+  exhaust. The range stays 20-100000 (a private pilot may use a small cap); a public host runs >= 100 (share 40 >
+  the per-/48 limit 20 plus one victim reset). The one-source PA07 scenario runs at the default cap 200.
+- **A5 (test finding): private-wire statuses.** A body that fails the strict-JSON rules (unknown field, trailing
+  JSON, `null`, wrong type) answers 400 `invalid_json`, the same as the existing identity handlers; 422 is for
+  semantic errors (`password_policy`, invalid email, and `invalid_request` for a `complete` whose `new_password` does
+  not match its purpose). merchant-browser-auth-v1's "invalid 422" is read as the semantic case.
+- **A6 (note, no change): dead limit.** `email-mail-unauth`'s 10/day equals `ip-mail-unauth`'s and is hit by the same
+  calls, so one source never observes it independently; it stays as defence in depth for a rotated `ip` key.

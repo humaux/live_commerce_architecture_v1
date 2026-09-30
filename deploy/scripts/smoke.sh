@@ -318,6 +318,18 @@ full_cases() {
   neg_g() { echo 'STRIPE_SECRET_KEY=placeholder' >>"$1/env/api.env"; }
   negative S10f P04 neg_f
   negative S10g P07 neg_g
+  # merchant-password-auth-v1: the password-login rules (P06 dependency, P08 SMTP grammar, P09 owner secret).
+  neg_i() { # password login without identity
+    echo 'LC_PASSWORD_LOGIN_ENABLED=1' >>"$1/compose.env"
+    sed -i.bak 's/^LC_IDENTITY_ENABLED=.*/LC_IDENTITY_ENABLED=0/' "$1/compose.env" && rm -f "$1/compose.env.bak"
+  }
+  neg_j() { echo 'LC_PASSWORD_LOGIN_ENABLED=1' >>"$1/compose.env"; } # no SMTP host/user/from
+  neg_k() { # valid SMTP settings, but commerce_smtp_password is still the owner placeholder
+    printf 'LC_PASSWORD_LOGIN_ENABLED=1\nLC_SMTP_HOST=smtp.example.test\nLC_SMTP_USERNAME=sender@example.test\nLC_MAIL_FROM=sender@example.test\n' >>"$1/compose.env"
+  }
+  negative S10i P06 neg_i
+  negative S10j P08 neg_j
+  negative S10k P09 neg_k
 
   # S37 (+ S11-S16): the real first-deploy path
   if runc S37 "$LC_SCRIPTS_DIR/deploy.sh" --smoke first; then rec S37 PASS "deploy.sh first"; else
@@ -886,7 +898,7 @@ def ver(cmd):
     except Exception:
         return "unavailable"
 static_ids = ["S01", "S02", "S03", "S04", "S05", "S06"]
-full_ids = static_ids + ["S%02d" % i for i in range(7, 46)] + ["S10a", "S10b", "S10c", "S10d", "S10e", "S10f", "S10g", "S10h", "S13n", "S29m"]
+full_ids = static_ids + ["S%02d" % i for i in range(7, 46)] + ["S10a", "S10b", "S10c", "S10d", "S10e", "S10f", "S10g", "S10h", "S10i", "S10j", "S10k", "S13n", "S29m"]
 result = {
     "run_id": os.path.basename(ev), "task_id": "T22", "commit": commit,
     "environment": {"mode": mode, "host": platform.node(), "kernel": platform.release(),

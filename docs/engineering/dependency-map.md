@@ -25,7 +25,7 @@ Command ads-worker owns the Meta ads River host (meta-ads-v1 §6, ads-graph): th
 
 Command api owns the API process assembly: it loads each feature's configuration (identity, accounts, buyer and hosted payment, Meta webhooks, Stripe webhooks, Studio, claims, merchant refunds, Taiwan CVS), opens the scoped DB pools, builds the handlers and mounts them on one listener.
 
-- Depends on (internal): `internal/ads`, `internal/attribution`, `internal/billing`, `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/fulfillment`, `internal/httpapi`, `internal/httperror`, `internal/identity`, `internal/identityhttp`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta_ads`, `internal/integrations/shipping/ecpay`, `internal/live`, `internal/oidclogin`, `internal/payments/stripewebhook`, `internal/platform`
+- Depends on (internal): `internal/ads`, `internal/attribution`, `internal/billing`, `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/fulfillment`, `internal/httpapi`, `internal/httperror`, `internal/identity`, `internal/identityhttp`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta_ads`, `internal/integrations/shipping/ecpay`, `internal/live`, `internal/mail`, `internal/oidclogin`, `internal/payments/stripewebhook`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
 - Used by: — (entry point or unused)
 
@@ -247,15 +247,15 @@ Package httperror owns transport-safe error envelopes, never domain policy.
 
 ## `internal/identity`
 
-Package identity owns merchant login and first-store bootstrap.
+Package identity owns merchant login and first-store bootstrap: the OIDC login (Service) and the email + password + emailed-code login (Passwords, contracts/merchant-password-auth-v1.md).
 
-- Depends on (internal): `internal/oidclogin`
-- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
+- Depends on (internal): `internal/mail`, `internal/oidclogin`
+- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `golang.org/x/crypto/argon2`, `golang.org/x/text/unicode/norm`
 - Used by: `cmd/api`, `internal/identityhttp`
 
 ## `internal/identityhttp`
 
-Package identityhttp owns the trusted identity HTTP surface (/v1/identity/*) that only the local BFF may call, authenticated by a fixed BFF key: login start and complete, first store bootstrap and logout.
+Package identityhttp owns the trusted identity HTTP surface (/v1/identity/*) that only the local BFF may call, authenticated by a fixed BFF key: OIDC login start and complete, first store bootstrap and logout (handler.go), and the merchant password routes /v1/identity/password/* (password.go, contracts/merchant-password-auth-v1.md §7.1).
 
 - Depends on (internal): `internal/httperror`, `internal/identity`
 - Depends on (third-party): —
@@ -388,6 +388,22 @@ Package live owns the merchant-scoped live-planning aggregate: drafts, the Studi
 - Depends on (internal): `internal/command`, `internal/integrations/livekit`, `internal/pagination`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgtype`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
 - Used by: `cmd/api`, `cmd/media-worker`, `internal/httpapi`
+
+## `internal/mail`
+
+Package mail owns outbound transactional email for merchant password auth (contracts/merchant-password-auth-v1.md §3): one message, sent once, over a generic SMTP adapter with implicit TLS on port 465, classified as sent, ErrFailed or ErrUnknown.
+
+- Depends on (internal): —
+- Depends on (third-party): —
+- Used by: `cmd/api`, `internal/identity`, `internal/mail/mailtest`
+
+## `internal/mail/mailtest`
+
+Package mailtest owns the loopback implicit-TLS SMTP server and in-memory mailbox that the MOCK, HTTP and BROWSER gates drive the real internal/mail adapter against (contract contracts/merchant-password-auth-v1.md §3, PA02).
+
+- Depends on (internal): `internal/mail`
+- Depends on (third-party): —
+- Used by: — (entry point or unused)
 
 ## `internal/merchantorders`
 

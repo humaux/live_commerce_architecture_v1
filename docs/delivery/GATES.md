@@ -49,6 +49,7 @@ Smoke S29m BLOCKED is accepted in the CI job (F11), not by release-gate.
 | Mode | Proves | Tier | Run |
 | --- | --- | --- | --- |
 | `--browser-identity` | isolated PG + signed MOCK IdP browser chain; fixture removed at exit | T3 browser | `bash scripts/dev/test-local.sh --browser-identity` |
+| `--browser-password-auth` | PA10 BFF pure logic (Node) + PA11 isolated Next + Go + PG + loopback SMTP fake password sign-up/login/reset browser chain (Chromium desktop + 390px, zh-CN/zh-TW/en); no real mailbox, no owner secret | T3 browser | `bash scripts/dev/test-local.sh --browser-password-auth` |
 | `--browser-admin-legacy` | admin ledger (fixture bearer) + production fail-closed + identity-mock + entry-mock browser suites; no signed IdP, not production acceptance | T3 browser | `bash scripts/dev/test-local.sh --browser-admin-legacy` |
 | `--browser-buyer` | isolated PG + real buyer browser transport; not UI/PSP/deployment acceptance | T3 browser | `bash scripts/dev/test-local.sh --browser-buyer` |
 | `--browser-merchant-buyer` | isolated merchant-to-buyer browser chain; not provider payment or real DNS/TLS deployment proof | T3 browser | `bash scripts/dev/test-local.sh --browser-merchant-buyer` |
@@ -96,6 +97,7 @@ Smoke S29m BLOCKED is accepted in the CI job (F11), not by release-gate.
 | --- | --- |
 | `tests/admin/auth-real.spec.ts`, `settings-real.spec.ts` | `--browser-identity` |
 | `tests/admin/ledger.spec.ts`, `production.spec.ts`, `visual-states.spec.ts` | `--browser-admin-legacy` (suite `ledger`: `admin-fixture` PG + Go API, dev Next fixture adapter on :3100, packaged production Next on :3101) |
+| `tests/admin/password-auth.spec.ts`, `password-bff.test.ts` | `--browser-password-auth` (suite `password-auth`, started by `TestBrowserPasswordAuth`; PA10 runs first under `node --test`) |
 | `tests/admin/auth.spec.ts` | `--browser-admin-legacy` (suite `identity-mock`, MOCK Go API on :19111) |
 | `tests/admin/entry.spec.ts` | `--browser-admin-legacy` (suite `entry-mock`, MOCK Go API on :19111) |
 | `tests/admin/claims-ui.spec.ts`, `claims-request.test.ts`, `claim-source.test.ts`, `claims-model.test.ts` | `--browser-live-claims` |
