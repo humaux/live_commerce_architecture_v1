@@ -56,6 +56,9 @@ func newCapiEnv(t *testing.T, o adsOpts) *capiEnv {
 	o.dataset = true
 	e := newAdsEnv(t, o)
 	c := &capiEnv{adsEnv: e, p: p, ua: "Mozilla/5.0 (synthetic-ads-tests) SENTINEL-UA-" + t04Tag(), origin: "https://capi-" + t04Tag() + ".example.test"}
+	if o.origin != "" {
+		c.origin = o.origin
+	}
 	bhPublish(t, p.bcHarness, c.origin, p.f.tenantA, p.f.storeA1)
 	key := base64.RawURLEncoding.EncodeToString(randomBytes(32))
 	handler, err := buyerhttp.New(context.Background(), p.a.issuer, p.a.runtime, p.bcHarness.service, key, time.Hour)

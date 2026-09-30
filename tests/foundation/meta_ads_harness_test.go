@@ -143,6 +143,7 @@ type adsOpts struct {
 	noConnect   bool          // do not run the connect chain
 	unfunded    bool          // account has no funding source
 	retryDelay  time.Duration // dispatcher RetryDelay between an UNKNOWN and its reconcile claim (default 150ms)
+	origin      string        // storefront origin the CAPI env publishes (default synthetic; the buyer browser gate needs https://buyer.example)
 	fx          *testFixture  // attach the ads surface to an existing store (phase B: the payment fixture's private tenant/store, principalA, tokens["a"])
 	callTimeout time.Duration // dispatcher CallTimeout (default 700ms; race tests hold a Graph call in flight and need longer)
 }
@@ -836,10 +837,9 @@ func (e *adsEnv) resumeDispatch() {
 	}
 }
 
-// settle waits until no operation of this store is READY/DISPATCHING with a runnable job (held jobs and UNKNOWN operations
-// whose budget is exhausted do not count), i.e. until the dispatcher went idle.
-func (e *adsEnv) settle() {
-	e.t.Helper()
+// settleErr waits until no operation of this store is READY/DISPATCHING with a runnable job (held jobs and UNKNOWN operations
+// whose budget is exhausted do not count), i.e. until the dispatcher went idle. Error-returning so goroutines can use it.
+func (e *adsEnv) settleErr() error {
 	deadline := time.Now().Add(45 * time.Second)
 	quiet := 0
 	for time.Now().Before(deadline) {
@@ -847,20 +847,29 @@ func (e *adsEnv) settle() {
 		if err := e.f.owner.QueryRow(e.ctx, `SELECT count(*) FROM integration.operations o JOIN river.river_job j ON j.id=o.job_id
 			WHERE o.store_id=$1 AND o.provider IN ('meta_ads','meta_dataset') AND o.state IN ('READY','DISPATCHING','UNKNOWN','ACKNOWLEDGED')
 			AND (j.state IN ('available','running','retryable') OR (j.state='scheduled' AND j.scheduled_at<now()+interval '1 minute'))`, e.store).Scan(&n); err != nil {
-			e.t.Fatal(err)
+			return err
 		}
 		if n == 0 {
 			quiet++
 			if quiet >= 3 {
-				return
+				return nil
 			}
 		} else {
 			quiet = 0
 		}
 		time.Sleep(40 * time.Millisecond)
 	}
-	e.t.Fatalf("dispatcher did not go idle: %+v", e.dump())
+	return fmt.Errorf("dispatcher did not go idle: %s", e.dumpSafe())
 }
+
+func (e *adsEnv) settle() {
+	e.t.Helper()
+	if err := e.settleErr(); err != nil {
+		e.t.Fatal(err)
+	}
+}
+
+func (e *adsEnv) dumpSafe() string { return "(see ops)" }
 
 func (e *adsEnv) dump() string {
 	var b strings.Builder

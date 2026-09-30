@@ -1680,3 +1680,34 @@ func TestMetaAdsMA07Insights(t *testing.T) {
 		}
 	})
 }
+
+// TestMetaAdsMA07ReportShape: the report of a window in which Meta delivered nothing is still the frozen three-block document
+// (ads-core Frozen HTTP: meta_delivery.account_timezone is a string, blocks carry currency; §7: each block has window/timezone).
+// The admin UI parses it strictly (ads-model.ts parseReport), so a null account_timezone turns the whole report into "unavailable".
+func TestMetaAdsMA07ReportShape(t *testing.T) {
+	e := newAdsEnv(t, adsOpts{noWorker: true})
+	rep := e.api("GET", "/report?from="+taipeiDay(-6)+"&to="+taipeiDay(0), e.token, nil, nil)
+	if rep.Status != 200 {
+		t.Fatalf("report: %d %s", rep.Status, rep.Raw)
+	}
+	for _, k := range []string{"window", "timezone", "orders", "meta_delivery", "meta_reported"} {
+		if _, ok := rep.JSON[k]; !ok {
+			t.Errorf("report lacks %s: %s", k, rep.Raw)
+		}
+	}
+	md, _ := rep.JSON["meta_delivery"].(map[string]any)
+	mr, _ := rep.JSON["meta_reported"].(map[string]any)
+	if s, ok := md["account_timezone"].(string); !ok || s == "" {
+		t.Errorf("meta_delivery.account_timezone = %v in a window without insights; the frozen shape is a string (the admin UI refuses the whole report otherwise): %s", md["account_timezone"], rep.Raw)
+	}
+	for name, blk := range map[string]map[string]any{"meta_delivery": md, "meta_reported": mr} {
+		if s, ok := blk["currency"].(string); !ok || len(s) != 3 {
+			t.Errorf("%s.currency = %v", name, blk["currency"])
+		}
+	}
+	for _, k := range []string{"spend_minor", "impressions", "clicks"} {
+		if _, ok := md[k].(float64); !ok {
+			t.Errorf("meta_delivery.%s = %v, want a number", k, md[k])
+		}
+	}
+}
