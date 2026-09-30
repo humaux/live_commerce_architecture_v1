@@ -171,6 +171,7 @@ type adsEnv struct {
 	principals                           map[string]string // extra members: label -> token
 	drafts                               []string
 	dispatchOpts                         integration.DispatcherOptions
+	onLoad                               func(integration.SecretClaim) // test hook: runs inside the loader wrapper before the real loader
 }
 
 type adsSweepArgs struct{ kind string }
@@ -367,6 +368,9 @@ func (e *adsEnv) startWorker(ring *tokenopen.Keyring) {
 }
 
 func (e *adsEnv) recordLoad(c integration.SecretClaim) {
+	if e.onLoad != nil {
+		e.onLoad(c)
+	}
 	rec := adsLoadRec{Claim: c, Op: c.OperationID}
 	_ = e.f.owner.QueryRow(e.ctx, `SELECT state,lease_mode FROM integration.operations WHERE id=$1`, c.OperationID).Scan(&rec.OpState, &rec.Lease)
 	e.probe.mu.Lock()
@@ -920,4 +924,27 @@ func (e *adsEnv) remote(draft string) map[string]string {
 		}
 	}
 	return out
+}
+
+// newInsertOnlyClient is a River client on the runtime pool that only inserts (queue validation tests).
+func newInsertOnlyClient(f *testFixture) (*river.Client[pgx.Tx], error) {
+	return river.NewClient[pgx.Tx](riverpgxv5.New(f.runtime), &river.Config{Schema: "river"})
+}
+
+// foreignOp inserts one synthetic NON-ads operation (provider mock_provider, action payment.authorize) with an initial event (owner
+// fixture, disclosed) so "an ads role sees zero rows / a loader refuses it" assertions have something to refuse. Removed at cleanup.
+func (e *adsEnv) foreignOp() string {
+	e.t.Helper()
+	op, binding := randomUUID(), randomUUID()
+	mustExec(e.t, e.f.owner, `INSERT INTO integration.bindings(id,tenant_id,store_id,principal_id,provider,external_asset_id) VALUES($1,$2,$3,$4,'mock_provider',$5)`, binding, e.tenant, e.store, e.creator, "asset-"+t04Tag())
+	mustExec(e.t, e.f.owner, `INSERT INTO integration.operations(id,tenant_id,store_id,principal_id,binding_id,binding_version,provider,external_asset_id,purpose,action,semantic_key,request_hash,request,job_id)
+		SELECT $1,$2,$3,$4,b.id,b.semantic_version,'mock_provider',b.external_asset_id,'transactional','payment.authorize',$5,sha256('x'::bytea),'{}'::jsonb,1 FROM integration.bindings b WHERE b.id=$6`,
+		op, e.tenant, e.store, e.creator, "foreign-"+t04Tag()+"-key", binding)
+	mustExec(e.t, e.f.owner, `INSERT INTO integration.operation_events(tenant_id,store_id,operation_id,generation,state,mode,reason_code) VALUES($1,$2,$3,0,'READY','','operation_planned')`, e.tenant, e.store, op)
+	e.t.Cleanup(func() {
+		_ = e.ownerReplicaBestEffort(`DELETE FROM integration.operation_events WHERE operation_id=$1`, op)
+		_ = e.ownerReplicaBestEffort(`DELETE FROM integration.operations WHERE id=$1`, op)
+		_ = e.ownerReplicaBestEffort(`DELETE FROM integration.bindings WHERE id=$1`, binding)
+	})
+	return op
 }
