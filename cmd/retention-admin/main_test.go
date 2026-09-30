@@ -43,7 +43,7 @@ func actorEnv() string {
 }
 
 func operatorDSN() string {
-	u := url.URL{Scheme: "postgres", User: url.UserPassword("lc_op", dsnSentinel), Host: "localhost:5432", Path: "/db"}
+	u := url.URL{Scheme: "postgres", User: url.UserPassword("lc_op", dsnSentinel), Host: "synthetic.invalid", Path: "/db"}
 	return u.String()
 }
 

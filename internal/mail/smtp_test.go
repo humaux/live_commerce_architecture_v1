@@ -17,6 +17,10 @@ import (
 	"livecommerce/internal/mail/mailtest"
 )
 
+// smtpSentinel stands in for the SMTP authorization code in leak assertions: neutral name and value so
+// secret scanners (GitGuardian; PROCESS.md §6) do not read it as a credential.
+const smtpSentinel = "sentinel-smtp-7c1"
+
 const (
 	canaryRcpt    = "canary-rcpt@recipient.example"
 	canarySubject = "canary-subject-7731"
@@ -93,16 +97,16 @@ func TestNewSMTPConfig(t *testing.T) {
 }
 
 func TestConfigAndSMTPStringRedacted(t *testing.T) {
-	c, err := mail.NewSMTP(mail.Config{Host: "smtp.qq.com", Username: "u@qq.com", Password: "pw-canary-1", From: "u@qq.com"})
+	c, err := mail.NewSMTP(mail.Config{Host: "smtp.qq.com", Username: "u@qq.com", Password: smtpSentinel, From: "u@qq.com"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if got := c.String(); got != "mail.SMTP(host=smtp.qq.com)" {
 		t.Fatalf("String = %q", got)
 	}
-	cfg := mail.Config{Host: "smtp.qq.com", Username: "u@qq.com", Password: "pw-canary-1", From: "u@qq.com"}
+	cfg := mail.Config{Host: "smtp.qq.com", Username: "u@qq.com", Password: smtpSentinel, From: "u@qq.com"}
 	for _, s := range []string{fmt.Sprintf("%v %+v %#v", cfg, cfg, cfg), fmt.Sprintf("%v %+v %#v", c, c, c)} {
-		if strings.Contains(s, "pw-canary-1") || strings.Contains(s, "u@qq.com") {
+		if strings.Contains(s, smtpSentinel) || strings.Contains(s, "u@qq.com") {
 			t.Fatalf("redaction failed: %s", s)
 		}
 	}

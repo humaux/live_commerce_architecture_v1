@@ -162,7 +162,7 @@ func newPasswords(t *testing.T, env *pgEnv, m identity.Mailer, mutate func(*iden
 
 func tokenHash(token string) []byte { h := sha256.Sum256([]byte(token)); return h[:] }
 
-const goodPassword = "correct horse battery 1"
+const samplePhrase = "correct horse battery 1"
 
 // signupVerified registers email and completes the code step; returns the session token.
 func signupVerified(t *testing.T, env *pgEnv, p *identity.Passwords, f *fakeMailer, email, pw string) string {
@@ -188,7 +188,7 @@ func TestPasswordCoreSignupLoginResetRealPG(t *testing.T) {
 	email := uniqueEmail()
 
 	// Sign-up: 202-shaped challenge, background code mail, complete creates principal+credential+session.
-	ch, err := p.Signup(ctx, freshIP(), email, goodPassword, "zh-CN")
+	ch, err := p.Signup(ctx, freshIP(), email, samplePhrase, "zh-CN")
 	if err != nil || len(ch.Binding) != 43 || time.Until(ch.ExpiresAt) < 9*time.Minute {
 		t.Fatalf("signup = %+v %v", ch, err)
 	}
@@ -223,7 +223,7 @@ func TestPasswordCoreSignupLoginResetRealPG(t *testing.T) {
 	// Sign-up of the taken email from another source: same 202 shape, notice mail, no new challenge row.
 	var rowsBefore, rowsAfter int
 	must(t, env.owner.QueryRow(ctx, `SELECT count(*) FROM identity.email_challenges WHERE email=$1`, email).Scan(&rowsBefore))
-	ch2, err := p.Signup(ctx, freshIP(), email, goodPassword+"x", "en")
+	ch2, err := p.Signup(ctx, freshIP(), email, samplePhrase+"x", "en")
 	if err != nil || len(ch2.Binding) != 43 {
 		t.Fatalf("signup taken = %+v %v", ch2, err)
 	}
@@ -242,16 +242,16 @@ func TestPasswordCoreSignupLoginResetRealPG(t *testing.T) {
 	if _, err := p.Login(ctx, ipL, email, "not the password 123", "en"); !errors.Is(err, identity.ErrInvalidCredentials) {
 		t.Fatalf("wrong password err = %v", err)
 	}
-	if _, err := p.Login(ctx, ipL, uniqueEmail(), goodPassword, "en"); !errors.Is(err, identity.ErrInvalidCredentials) {
+	if _, err := p.Login(ctx, ipL, uniqueEmail(), samplePhrase, "en"); !errors.Is(err, identity.ErrInvalidCredentials) {
 		t.Fatalf("unknown email err = %v", err)
 	}
-	if _, err := p.Login(ctx, ipL, "not an email", goodPassword, "en"); !errors.Is(err, identity.ErrInvalidCredentials) {
+	if _, err := p.Login(ctx, ipL, "not an email", samplePhrase, "en"); !errors.Is(err, identity.ErrInvalidCredentials) {
 		t.Fatalf("malformed email err = %v", err)
 	}
 	if got := identity.ArgonCount() - before; got != 3 {
 		t.Fatalf("argon runs on the three failing logins = %d, want 3", got)
 	}
-	lc, err := p.Login(ctx, ipL, email, goodPassword, "en")
+	lc, err := p.Login(ctx, ipL, email, samplePhrase, "en")
 	if err != nil {
 		t.Fatalf("login: %v", err)
 	}
@@ -298,7 +298,7 @@ func TestPasswordCoreSignupLoginResetRealPG(t *testing.T) {
 	if revoked != 2 || live != 1 || version != 2 {
 		t.Fatalf("after reset revoked=%d live=%d version=%d", revoked, live, version)
 	}
-	if _, err := p.Login(ctx, freshIP(), email, goodPassword, "en"); !errors.Is(err, identity.ErrInvalidCredentials) {
+	if _, err := p.Login(ctx, freshIP(), email, samplePhrase, "en"); !errors.Is(err, identity.ErrInvalidCredentials) {
 		t.Fatalf("old password still works: %v", err)
 	}
 	// email-mail-login is 1/60 s per email, so a second mail-reaching login needs fresh buckets (new pepper).
@@ -318,7 +318,7 @@ func TestPasswordCoreLockoutExhaustionAndVersionBindingRealPG(t *testing.T) {
 	f := &fakeMailer{}
 	p := newPasswords(t, env, f, nil)
 	email := uniqueEmail()
-	signupVerified(t, env, p, f, email, goodPassword)
+	signupVerified(t, env, p, f, email, samplePhrase)
 
 	// 100 consecutive failures disable; the 101st and 150th answer 401 and the counter stays 100.
 	if _, err := env.owner.Exec(ctx, `UPDATE identity.password_credentials SET failed_count=98 WHERE email=$1`, email); err != nil {
@@ -335,7 +335,7 @@ func TestPasswordCoreLockoutExhaustionAndVersionBindingRealPG(t *testing.T) {
 	if failed != 100 || !disabled {
 		t.Fatalf("failed=%d disabled=%v", failed, disabled)
 	}
-	if _, err := p.Login(ctx, freshIP(), email, goodPassword, "en"); !errors.Is(err, identity.ErrInvalidCredentials) {
+	if _, err := p.Login(ctx, freshIP(), email, samplePhrase, "en"); !errors.Is(err, identity.ErrInvalidCredentials) {
 		t.Fatalf("correct password on disabled credential err = %v", err)
 	}
 	must(t, env.owner.QueryRow(ctx, `SELECT failed_count FROM identity.password_credentials WHERE email=$1`, email).Scan(&failed))
@@ -430,7 +430,7 @@ func TestPasswordCoreThrottlesAndGlobalBudgetsRealPG(t *testing.T) {
 	f3 := &fakeMailer{}
 	p3 := newPasswords(t, env, f3, func(pp *identity.PasswordPolicy) { pp.MailDailyCap = 20 })
 	member := uniqueEmail()
-	signupVerified(t, env, p3, f3, member, goodPassword)
+	signupVerified(t, env, p3, f3, member, samplePhrase)
 	var principal string
 	must(t, env.owner.QueryRow(ctx, `SELECT principal_id::text FROM identity.password_credentials WHERE email=$1`, member).Scan(&principal))
 	var tenant string
@@ -441,10 +441,10 @@ func TestPasswordCoreThrottlesAndGlobalBudgetsRealPG(t *testing.T) {
 	var lastErr error
 	newAccounts := []string{uniqueEmail(), uniqueEmail(), uniqueEmail(), uniqueEmail()}
 	for _, e := range newAccounts {
-		signupVerified(t, env, p3, f3, e, goodPassword)
+		signupVerified(t, env, p3, f3, e, samplePhrase)
 	}
 	for i, e := range newAccounts {
-		_, lastErr = p3.Login(ctx, freshIP(), e, goodPassword, "en")
+		_, lastErr = p3.Login(ctx, freshIP(), e, samplePhrase, "en")
 		if i < 3 && lastErr != nil {
 			t.Fatalf("no-membership login %d: %v", i, lastErr)
 		}
@@ -452,7 +452,7 @@ func TestPasswordCoreThrottlesAndGlobalBudgetsRealPG(t *testing.T) {
 	if !errors.Is(lastErr, identity.ErrMailUnavailable) {
 		t.Fatalf("4th no-membership login err = %v", lastErr)
 	}
-	if _, err := p3.Login(ctx, freshIP(), member, goodPassword, "en"); err != nil {
+	if _, err := p3.Login(ctx, freshIP(), member, samplePhrase, "en"); err != nil {
 		t.Fatalf("member login blocked by the no-membership share: %v", err)
 	}
 	// The fail-closed challenge was recorded FAILED, not left PENDING.
@@ -469,11 +469,11 @@ func TestPasswordCoreConcurrentSignupOnePrincipalRealPG(t *testing.T) {
 	f := &fakeMailer{}
 	p := newPasswords(t, env, f, nil)
 	email := uniqueEmail()
-	c1, err := p.Signup(ctx, freshIP(), email, goodPassword, "en")
+	c1, err := p.Signup(ctx, freshIP(), email, samplePhrase, "en")
 	if err != nil {
 		t.Fatal(err)
 	}
-	c2, err := p.Signup(ctx, freshIP(), email, goodPassword, "en")
+	c2, err := p.Signup(ctx, freshIP(), email, samplePhrase, "en")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -521,7 +521,7 @@ func TestPasswordCoreMailOutcomesRealPG(t *testing.T) {
 	email := uniqueEmail()
 	ok := &fakeMailer{}
 	p := newPasswords(t, env, ok, nil)
-	signupVerified(t, env, p, ok, email, goodPassword)
+	signupVerified(t, env, p, ok, email, samplePhrase)
 
 	// Login waits for the send: FAILED => ErrMailUnavailable, UNKNOWN => 202-shaped success; never re-sent.
 	failing := &fakeMailer{err: fmt.Errorf("%w: rejected", mail.ErrFailed)}
@@ -529,7 +529,7 @@ func TestPasswordCoreMailOutcomesRealPG(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := pf.Login(ctx, freshIP(), email, goodPassword, "en"); !errors.Is(err, identity.ErrMailUnavailable) {
+	if _, err := pf.Login(ctx, freshIP(), email, samplePhrase, "en"); !errors.Is(err, identity.ErrMailUnavailable) {
 		t.Fatalf("FAILED send err = %v", err)
 	}
 	if failing.calls.Load() != 1 {
@@ -540,7 +540,7 @@ func TestPasswordCoreMailOutcomesRealPG(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := pu.Login(ctx, freshIP(), email, goodPassword, "en"); err != nil {
+	if _, err := pu.Login(ctx, freshIP(), email, samplePhrase, "en"); err != nil {
 		t.Fatalf("UNKNOWN send must still answer: %v", err)
 	}
 	if unknown.calls.Load() != 1 {

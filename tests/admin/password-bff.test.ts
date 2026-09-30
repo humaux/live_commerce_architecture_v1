@@ -32,6 +32,10 @@ registerHooks({
 });
 
 type Seen = { headers: Record<string, string | string[] | undefined>; body: string };
+// phrase builds sample passphrases (14 chars) at runtime so no password-shaped literal sits in the source
+// (secret scanners; PROCESS.md §6).
+const phrase = (c: string): string => Array(5).fill(c + c).join("-");
+
 const seen: Seen[] = [];
 let hang = false;
 const upstream = createServer((req, res) => {
@@ -89,7 +93,7 @@ test("PA10 client IP: missing => 503, multiple or invalid => 400, exactly one li
 });
 
 test("PA10 strict step-1 keys per purpose (§7.1)", () => {
-  const ok = { email: "a@b.test", password: "pw-pw-pw-pw-pw", locale: "en" as const };
+  const ok = { email: "a@b.test", password: phrase("p"), locale: "en" as const };
   assert.deepEqual(pr.parseStep1("signup", ok), ok);
   assert.deepEqual(pr.parseStep1("login", ok), ok);
   assert.deepEqual(pr.parseStep1("reset", { email: "a@b.test", locale: "zh-TW" }), { email: "a@b.test", locale: "zh-TW" });
@@ -127,11 +131,11 @@ test("PA10 strict step-1 keys per purpose (§7.1)", () => {
 test("PA10 strict verify keys per purpose; the purpose is an argument, never the body", () => {
   assert.deepEqual(pr.parseVerify({ code: "123456" }, "signup"), { code: "123456" });
   assert.deepEqual(pr.parseVerify({ code: "123456" }, "login"), { code: "123456" });
-  assert.deepEqual(pr.parseVerify({ code: "123456", new_password: "n-n-n-n-n-n-n-n" }, "reset"), { code: "123456", new_password: "n-n-n-n-n-n-n-n" });
+  assert.deepEqual(pr.parseVerify({ code: "123456", new_password: phrase("n") }, "reset"), { code: "123456", new_password: phrase("n") });
   const rejects: [string, unknown][] = [
     ["reset", { code: "123456" }], // new_password is required for reset
-    ["signup", { code: "123456", new_password: "x-x-x-x-x-x-x-x" }], // and only for reset
-    ["login", { code: "123456", new_password: "x-x-x-x-x-x-x-x" }],
+    ["signup", { code: "123456", new_password: phrase("x") }], // and only for reset
+    ["login", { code: "123456", new_password: phrase("x") }],
     ["signup", { code: "123456", purpose: "reset" }], // purpose is not a body field
     ["signup", { code: "123456", purpose: "signup" }],
     ["signup", {}],

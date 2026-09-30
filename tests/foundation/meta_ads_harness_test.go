@@ -58,7 +58,7 @@ const (
 	adsVersion      = "v26.0"
 	adsPartner      = "lc_ads_tests"
 	adsKeyID        = "adstest_k1"
-	adsExternalKey  = "synthetic-capi-external-id-key-0123456789abcdef0123456789abcdef"
+	adsExternalKey  = "synthetic capi external id sentinel for tests (63 bytes long).."
 	adsPerms        = "ads:read,ads:manage,ads:approve,integration:manage"
 	adsDefaultAllow = 1_000_000 // NT$10,000 in minor units
 )
