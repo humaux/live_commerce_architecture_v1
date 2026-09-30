@@ -151,9 +151,9 @@ BEGIN
  RETURN jsonb_build_object('window',jsonb_build_object('from',to_char(p_from,'YYYY-MM-DD'),'to',to_char(p_to,'YYYY-MM-DD')),
   'timezone','Asia/Taipei','orders',v_orders,
   'meta_delivery',jsonb_build_object('spend_minor',v_del.spend,'impressions',v_del.imp,'clicks',v_del.clk,'currency',v_cur,
-   'account_timezone',v_del.tz,'fetched_at',CASE WHEN v_del.fetched IS NULL THEN NULL ELSE to_jsonb(ads.ts(v_del.fetched)) END,
+   'account_timezone',coalesce(v_del.tz,'Asia/Taipei'),'fetched_at',CASE WHEN v_del.fetched IS NULL THEN NULL ELSE to_jsonb(ads.ts(v_del.fetched)) END,
    'final_through',CASE WHEN v_final IS NULL THEN NULL ELSE to_jsonb(to_char(v_final,'YYYY-MM-DD')) END),
-  'meta_reported',jsonb_build_object('purchases',v_rep.purchases,'purchase_value_minor',v_rep.value,'currency',v_cur,
+  'meta_reported',jsonb_build_object('purchases',coalesce(v_rep.purchases,0),'purchase_value_minor',coalesce(v_rep.value,0),'currency',v_cur,
    'fetched_at',CASE WHEN v_rep.fetched IS NULL THEN NULL ELSE to_jsonb(ads.ts(v_rep.fetched)) END));
 END $$;
 REVOKE ALL ON FUNCTION ads.report(bytea,uuid,date,date) FROM PUBLIC;

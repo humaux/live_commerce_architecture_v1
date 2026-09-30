@@ -1,9 +1,13 @@
 package ads
 
 import (
+	"encoding/json"
 	"errors"
+	"net/http/httptest"
 	"testing"
 	"time"
+
+	"livecommerce/internal/httperror"
 )
 
 // validate_test.go: UNIT tests of the pure local validation (contract 5.2) and the refusal/status table.
@@ -99,5 +103,18 @@ func TestRefusalStatusesFollowTheFrozenTable(t *testing.T) {
 	}
 	if refusal("something_new").Status != 409 {
 		t.Fatal("unknown codes must default to 409")
+	}
+}
+
+// Every frozen refusal code must survive httperror's message allowlist; a code missing there reaches the
+// merchant as "internal" (the MA04 finding).
+func TestFrozenCodesSurviveHTTPError(t *testing.T) {
+	for c, status := range frozenStatus {
+		w := httptest.NewRecorder()
+		httperror.Write(w, status, c)
+		var e httperror.Envelope
+		if err := json.Unmarshal(w.Body.Bytes(), &e); err != nil || e.Code != c {
+			t.Errorf("code %q is rewritten to %q by httperror (add it to the message table)", c, e.Code)
+		}
 	}
 }

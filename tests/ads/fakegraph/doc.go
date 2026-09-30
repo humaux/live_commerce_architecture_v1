@@ -1,4 +1,4 @@
-// Package fakegraph is a MOCK of the parts of Meta's Graph / Marketing API that meta-ads-v1 (§1 F-table, §3) relies on,
+// Package fakegraph owns a MOCK of the parts of Meta's Graph / Marketing API that meta-ads-v1 (§1 F-table, §3) relies on,
 // written by the independent ads-tests author from the contract and from Meta's public documentation only, never from the
 // adapter under test. It serves, on a loopback httptest listener:
 //
