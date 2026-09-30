@@ -25,6 +25,7 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -342,6 +343,42 @@ func (e *pwaEnv) bucket(kind, value string) []byte {
 	m := hmac.New(sha256.New, e.pepper)
 	m.Write([]byte(kind + ":" + value))
 	return m.Sum(nil)
+}
+
+// pwaWindows are the contract §6 windows (length, offset) of each bucket kind. auth_throttle_hit stores
+// sha256(bucket || int4send(length) || int4send(offset)) (F1 fix), so rows are read through these keys.
+var pwaWindows = map[string][][2]int{
+	"ip": {{900, 0}}, "ip-signup": {{3600, 0}}, "ip48-signup": {{3600, 0}}, "ip48": {{900, 0}},
+	"ip-mail-unauth": {{86400, 28800}}, "ip48-mail-unauth": {{86400, 28800}},
+	"email-pw": {{900, 0}}, "binding": {{600, 0}},
+	"email-mail-unauth": {{60, 0}, {3600, 0}, {86400, 28800}}, "email-mail-unauth-total": {{86400, 28800}},
+	"email-mail-login": {{60, 0}, {3600, 0}, {86400, 28800}},
+}
+
+// storedKey is the auth_throttle.bucket value of one window of a bucket (see pwaWindows).
+func (e *pwaEnv) storedKey(kind, value string, seconds, offset int) []byte {
+	h := sha256.New()
+	h.Write(e.bucket(kind, value))
+	var w [8]byte
+	binary.BigEndian.PutUint32(w[:4], uint32(seconds))
+	binary.BigEndian.PutUint32(w[4:], uint32(offset))
+	h.Write(w[:])
+	return h.Sum(nil)
+}
+
+// storedKeys is every stored key of a bucket kind (one per contract window); the test fails on an unknown kind
+// so a typo cannot turn a "no rows" assertion into a vacuous pass.
+func (e *pwaEnv) storedKeys(kind, value string) [][]byte {
+	e.t.Helper()
+	ws, ok := pwaWindows[kind]
+	if !ok {
+		e.t.Fatalf("no §6 windows known for bucket kind %q", kind)
+	}
+	var out [][]byte
+	for _, w := range ws {
+		out = append(out, e.storedKey(kind, value, w[0], w[1]))
+	}
+	return out
 }
 
 // --- HTTP -------------------------------------------------------------------------------------

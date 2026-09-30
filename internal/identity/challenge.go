@@ -143,7 +143,7 @@ func (p *Passwords) Signup(ctx context.Context, ip netip.Addr, email, password, 
 		return Challenge{}, ErrInvalid
 	}
 	ip = ip.Unmap()
-	sign := []bucket{ipBucket(ip), {kind: "ip-signup", value: ipPrefix(ip).String(), wins: winIPSignup}}
+	sign := append(ipBuckets(ip), bucket{kind: "ip-signup", value: ipPrefix(ip).String(), wins: winIPSignup})
 	if p48, ok := ip48Prefix(ip); ok {
 		sign = append(sign, bucket{kind: "ip48-signup", value: p48.String(), wins: winIP48Sign})
 	}
@@ -201,7 +201,7 @@ func (p *Passwords) Login(ctx context.Context, ip netip.Addr, email, password, l
 		return Challenge{}, ErrInvalid
 	}
 	ip = ip.Unmap()
-	if err := p.throttle(ctx, ipBucket(ip)); err != nil {
+	if err := p.throttle(ctx, ipBuckets(ip)...); err != nil {
 		return Challenge{}, err
 	}
 	pw := norm.NFC.String(password)
@@ -304,7 +304,7 @@ func (p *Passwords) Reset(ctx context.Context, ip netip.Addr, email, locale stri
 		return Challenge{}, ErrInvalid
 	}
 	ip = ip.Unmap()
-	if err := p.throttle(ctx, ipBucket(ip)); err != nil {
+	if err := p.throttle(ctx, ipBuckets(ip)...); err != nil {
 		return Challenge{}, err
 	}
 	em, err := NormalizeEmail(email)
@@ -349,7 +349,7 @@ func (p *Passwords) Complete(ctx context.Context, ip netip.Addr, binding, purpos
 		return Session{}, ErrInvalidCode // no throttle, no work: nothing to guess
 	}
 	ip = ip.Unmap()
-	if err := p.throttle(ctx, ipBucket(ip)); err != nil {
+	if err := p.throttle(ctx, ipBuckets(ip)...); err != nil {
 		return Session{}, err
 	}
 	if !validToken(binding) {

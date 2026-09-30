@@ -64,7 +64,7 @@ func pwaNextDayStart() time.Time {
 // elapseAll moves every row of a single-window bucket (ip, email-pw, ip-signup, binding) `secs` into the past.
 func (e *pwaEnv) elapseAll(kind, value string, secs int) {
 	e.t.Helper()
-	tag, err := e.f.owner.Exec(pwaBG, `UPDATE identity.auth_throttle SET window_start = window_start - make_interval(secs => $2) WHERE bucket=$1`, e.bucket(kind, value), secs)
+	tag, err := e.f.owner.Exec(pwaBG, `UPDATE identity.auth_throttle SET window_start = window_start - make_interval(secs => $2) WHERE bucket = ANY($1)`, e.storedKeys(kind, value), secs)
 	if err != nil {
 		e.t.Fatal(err)
 	}
@@ -114,7 +114,7 @@ func TestPasswordPA07Throttle(t *testing.T) {
 			}
 			var start time.Time
 			var hits int
-			if err := e.f.owner.QueryRow(pwaBG, `SELECT window_start, hits FROM identity.auth_throttle WHERE bucket=$1`, b).Scan(&start, &hits); err != nil {
+			if err := e.f.owner.QueryRow(pwaBG, `SELECT window_start, hits FROM identity.auth_throttle WHERE bucket=sha256($1::bytea||int4send($2::int)||int4send($3::int))`, b, w.seconds, w.offset).Scan(&start, &hits); err != nil {
 				t.Fatalf("one row per bucket and window expected: %v", err)
 			}
 			s := start.UTC().Unix()
@@ -210,14 +210,14 @@ func TestPasswordPA07Throttle(t *testing.T) {
 			t.Errorf("Retry-After %s exceeds the 15 min window", te.RetryAfter)
 		}
 		// A3: the chain stopped at `ip`, so email-pw for the 31st email was never touched.
-		if n := e.q1(`SELECT count(*) FROM identity.auth_throttle WHERE bucket=$1`, e.bucket("email-pw", email31+"‖"+pwaPrefix(ip))); n != 0 {
+		if n := e.q1(`SELECT count(*) FROM identity.auth_throttle WHERE bucket = ANY($1)`, e.storedKeys("email-pw", email31+"‖"+pwaPrefix(ip))); n != 0 {
 			t.Errorf("email-pw was hit after the ip bucket had already tripped (A3 stop-at-first): %d rows", n)
 		}
 		// a complete call is throttled too
 		e.wantThrottle(e.wrongCompleteFrom(ip), "complete from the throttled source")
 		// window alignment: 15 min
 		var start time.Time
-		if err := e.f.owner.QueryRow(pwaBG, `SELECT window_start FROM identity.auth_throttle WHERE bucket=$1`, e.bucket("ip", pwaPrefix(ip))).Scan(&start); err != nil || start.UTC().Unix()%900 != 0 {
+		if err := e.f.owner.QueryRow(pwaBG, `SELECT window_start FROM identity.auth_throttle WHERE bucket = ANY($1)`, e.storedKeys("ip", pwaPrefix(ip))).Scan(&start); err != nil || start.UTC().Unix()%900 != 0 {
 			t.Errorf("ip window start %v (err %v) not aligned to 15 minutes", start.UTC(), err)
 		}
 		// over HTTP: 429 + Retry-After header, no extra keys beyond the error envelope
@@ -288,7 +288,7 @@ func TestPasswordPA07Throttle(t *testing.T) {
 		e.wantThrottle(func() error { _, err := e.pw.Signup(pwaBG, ip, pwaEmail(), pwaSecret(), "en"); return err }(), "sign-up over the shared day bucket")
 		// window alignment of the day bucket
 		var start time.Time
-		if err := e.f.owner.QueryRow(pwaBG, `SELECT window_start FROM identity.auth_throttle WHERE bucket=$1`, e.bucket("ip-mail-unauth", pwaPrefix(ip))).Scan(&start); err != nil || start.UTC().Hour() != 16 || start.UTC().Minute() != 0 || start.UTC().Second() != 0 {
+		if err := e.f.owner.QueryRow(pwaBG, `SELECT window_start FROM identity.auth_throttle WHERE bucket = ANY($1)`, e.storedKeys("ip-mail-unauth", pwaPrefix(ip))).Scan(&start); err != nil || start.UTC().Hour() != 16 || start.UTC().Minute() != 0 || start.UTC().Second() != 0 {
 			t.Errorf("ip-mail-unauth window start %v (err %v), want 16:00:00 UTC (UTC+8 midnight)", start.UTC(), err)
 		}
 	})
@@ -307,6 +307,35 @@ func TestPasswordPA07Throttle(t *testing.T) {
 		}
 		e.wantThrottle(func() error { _, err := e.pw.Reset(pwaBG, v6(n48, 21), pwaEmail(), "en"); return err }(), "21st unauthenticated mail from one IPv6 /48 (each from a fresh /64)")
 		if _, err := e.pw.Reset(pwaBG, v6(n48+1, 1), pwaEmail(), "en"); err != nil {
+			t.Errorf("a different /48 was throttled: %v", err)
+		}
+	})
+
+	t.Run("ip48_60_per_15min_counts_every_step1_and_complete_call", func(t *testing.T) {
+		e := e.sub(t)
+		_ = e
+		pwaStable15(t, 2*time.Minute)
+		v6 := func(net48 uint16, net64 uint16) netip.Addr {
+			return netip.AddrFrom16([16]byte{0x20, 0x01, 0x0d, 0xb8, byte(net48 >> 8), byte(net48), byte(net64 >> 8), byte(net64), 0, 0, 0, 0, 0, 0, 0, 1})
+		}
+		n48 := uint16(pwaIPCounter.Add(1))
+		// Every call comes from a fresh /64, so the per-/64 `ip` bucket (30) never trips; only the /48 can.
+		for i := uint16(1); i <= 60; i++ {
+			if i%2 == 1 {
+				if err := e.wrongLoginFrom(v6(n48, i), pwaEmail()); !errors.Is(err, identity.ErrInvalidCredentials) {
+					t.Fatalf("call %d (login): %v", i, err)
+				}
+			} else if err := e.wrongCompleteFrom(v6(n48, i)); !errors.Is(err, identity.ErrInvalidCode) {
+				t.Fatalf("call %d (complete): %v", i, err)
+			}
+		}
+		te := e.wantThrottle(e.wrongLoginFrom(v6(n48, 61), pwaEmail()), "61st login from one IPv6 /48 in 15 min")
+		if te.RetryAfter > 15*time.Minute {
+			t.Errorf("Retry-After %s exceeds the 15 min window", te.RetryAfter)
+		}
+		e.wantThrottle(e.wrongCompleteFrom(v6(n48, 62)), "62nd call (complete) from the same /48")
+		// a different /48 is unaffected
+		if err := e.wrongLoginFrom(v6(n48+1, 1), pwaEmail()); !errors.Is(err, identity.ErrInvalidCredentials) {
 			t.Errorf("a different /48 was throttled: %v", err)
 		}
 	})
@@ -429,7 +458,7 @@ func TestPasswordPA07Throttle(t *testing.T) {
 			_, _ = e.pw.Reset(pwaBG, pwaIP(), victim, "en")
 		}
 		e.awaitMails(victim, 4) // sign-up mail + three reset mails
-		if n := e.q1(`SELECT count(*) FROM identity.auth_throttle WHERE bucket=$1`, e.bucket("email-mail-login", victim)); n != 0 {
+		if n := e.q1(`SELECT count(*) FROM identity.auth_throttle WHERE bucket = ANY($1)`, e.storedKeys("email-mail-login", victim)); n != 0 {
 			t.Fatalf("email-mail-login has %d rows before any password-verified login", n)
 		}
 		login := func(what string) error {
@@ -446,6 +475,14 @@ func TestPasswordPA07Throttle(t *testing.T) {
 		for n := 2; n <= 5; n++ {
 			e.elapse("email-mail-login", victim, "minute")
 			e.wantOK(login("n"), "login mail "+strconv.Itoa(n))
+		}
+		// F1: every window counts only its own hits. After five login mails the hour row and the day row each
+		// say 5 (not 10), also in the first hour of a UTC+8 day where both windows start at the same instant.
+		for _, w := range [][2]int{{3600, 0}, {86400, 28800}} {
+			var hits int
+			if err := e.f.owner.QueryRow(pwaBG, `SELECT hits FROM identity.auth_throttle WHERE bucket=$1`, e.storedKey("email-mail-login", victim, w[0], w[1])).Scan(&hits); err != nil || hits != 5 {
+				t.Errorf("email-mail-login window %ds+%d after 5 login mails: hits=%d err=%v, want 5 (F1: windows must not share a row)", w[0], w[1], hits, err)
+			}
 		}
 		e.elapse("email-mail-login", victim, "minute")
 		te = e.wantThrottle(login("6"), "6th login mail within the hour")
@@ -503,7 +540,7 @@ func TestPasswordPA07Throttle(t *testing.T) {
 		A := pwaIP()
 		e.saturate(victim, A)
 		// The login-mail bucket was never consumed by the attacker.
-		if n := e.q1(`SELECT count(*) FROM identity.auth_throttle WHERE bucket=$1`, e.bucket("email-mail-login", victim)); n != 0 {
+		if n := e.q1(`SELECT count(*) FROM identity.auth_throttle WHERE bucket = ANY($1)`, e.storedKeys("email-mail-login", victim)); n != 0 {
 			t.Errorf("attacker traffic touched email-mail-login: %d rows", n)
 		}
 		B := pwaIP()
@@ -681,7 +718,7 @@ func TestPasswordPA07Throttle(t *testing.T) {
 		if _, err := s.pw.Login(pwaBG, pwaIP(), members[9], pws[9], "en"); !errors.Is(err, identity.ErrMailUnavailable) {
 			t.Fatalf("10th member login: %v, want ErrMailUnavailable (share 9)", err)
 		}
-		if n := g.q1(`SELECT count(*) FROM identity.auth_throttle WHERE bucket=$1 AND hits=1`, g.bucket("email-mail-login", members[9])); n < 1 {
+		if n := g.q1(`SELECT count(*) FROM identity.auth_throttle WHERE bucket = ANY($1) AND hits=1`, g.storedKeys("email-mail-login", members[9])); n < 1 {
 			t.Error("the 503 did not consume an email-mail-login hit")
 		}
 		_, err := s.pw.Login(pwaBG, pwaIP(), members[9], pws[9], "en")

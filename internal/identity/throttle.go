@@ -31,6 +31,7 @@ type window struct{ seconds, offset, limit int }
 
 var (
 	winIP        = []window{{900, 0, 30}}                                   // ip: 30 / 15 min
+	winIP48      = []window{{900, 0, 60}}                                   // ip48: 60 / 15 min (IPv6 /48)
 	winIPSignup  = []window{{3600, 0, 5}}                                   // ip-signup: 5 / hour
 	winIP48Sign  = []window{{3600, 0, 20}}                                  // ip48-signup: 20 / hour
 	winIPMail    = []window{{86400, utc8Day, 10}}                           // ip-mail-unauth: 10 / UTC+8 day
@@ -66,7 +67,7 @@ func ipPrefix(ip netip.Addr) netip.Prefix {
 	return netip.PrefixFrom(ip, 64).Masked()
 }
 
-// ip48Prefix is the IPv6 /48 bucket used for sign-up and unauthenticated mail; ok is false for IPv4.
+// ip48Prefix is the IPv6 /48 bucket used for every step-1/complete call, sign-up and unauthenticated mail; ok is false for IPv4.
 func ip48Prefix(ip netip.Addr) (netip.Prefix, bool) {
 	ip = ip.Unmap()
 	if !ip.Is6() {
@@ -87,7 +88,8 @@ func (p *Passwords) throttle(ctx context.Context, buckets ...bucket) error {
 			for _, w := range b.wins {
 				var hits int
 				// identity.auth_throttle_hit: upsert +1 in the aligned window and return the count;
-				// the definer also purges old rows (I23). The limit is enforced here, not in SQL.
+				// the definer keys every window of a bucket separately (F1, contract §15 A1) and also
+				// purges old rows (I23). The limit is enforced here, not in SQL.
 				if err := tx.QueryRow(ctx, `SELECT identity.auth_throttle_hit($1,$2,$3)`, p.bucketKey(b.kind, b.value), w.seconds, w.offset).Scan(&hits); err != nil {
 					return err
 				}
@@ -152,7 +154,13 @@ func (p *Passwords) unauthMailBuckets(email string, ip netip.Addr) []bucket {
 		p.globalBucket("global-mail-unauth", unauth))
 }
 
-// ipBucket is the `ip` bucket hit by every step-1 and complete call.
-func ipBucket(ip netip.Addr) bucket {
-	return bucket{kind: "ip", value: ipPrefix(ip).String(), wins: winIP}
+// ipBuckets are the buckets hit by every step-1 and complete call: `ip` (/32 or /64) and, for IPv6, `ip48`.
+// ip48 bounds what one /48 (65,536 /64s) can push into the PD3 hash limiter before any per-binding or
+// per-email bucket can stop it (round-1 review P2: random bindings / dummy-PHC verifies).
+func ipBuckets(ip netip.Addr) []bucket {
+	out := []bucket{{kind: "ip", value: ipPrefix(ip).String(), wins: winIP}}
+	if p48, ok := ip48Prefix(ip); ok {
+		out = append(out, bucket{kind: "ip48", value: p48.String(), wins: winIP48})
+	}
+	return out
 }

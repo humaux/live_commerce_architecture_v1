@@ -1,17 +1,11 @@
-//go:build finding
-
-// Integrator (r2-auth merge, 2026-09-30): F1 is an OPEN P2 defect that needs a merchant-password-auth-v1
-// §4.1 amendment (PK (bucket, window_start) has no window length); it is escalated, not fixed here. The
-// reproduction stays red on purpose, so it is kept out of the default `go test ./...` (CI T1) behind the
-// `finding` tag instead of turning every lane run red. Run it with:
-//   LC_FOCUSED_TAGS=finding bash scripts/dev/test-focused.sh '^TestPasswordFindingF1' ./tests/foundation
-// Remove this tag in the same commit that lands the §4.1 fix; the test then becomes the fix's gate.
+// F1 regression gate (merchant-password-auth-v1 §4.2, amended 2026-09-30): identity.auth_throttle_hit keys each
+// window of a bucket separately. Originally a red-on-purpose reproduction behind the `finding` build tag; the
+// fix landed with the tag removed, so this is now part of the default suite.
 
 package foundation_test
 
-// FINDING F1 (not a PA gate; deliberately named outside the ^TestPasswordPA regex so the gate commands stay
-// green). It is a red-on-purpose reproduction of a defect the gates could not otherwise expose because the
-// wall clock cannot be moved.
+// FINDING F1 (not a PA gate; named outside the ^TestPasswordPA regex). Reproduces a defect the PA gates could not
+// expose because the wall clock cannot be moved.
 //
 // Contract §4.1 keys identity.auth_throttle by (bucket, window_start) and §6 lets ONE bucket carry several
 // windows (email-mail-unauth: 60 s, 1 h, UTC+8 day; email-mail-login: 60 s, 1 h, UTC+8 day). Whenever two
@@ -21,9 +15,9 @@ package foundation_test
 // limit (5 / hour, 5 / day) trips on the 3rd mail instead of the 6th, and sign-up/reset mail (5 / hour) on the 4th.
 // This test builds the coincidence deterministically at any time of day by choosing the day window's offset so its
 // start equals the current minute start, then asks for the counts of two windows of one bucket.
-// Expected (contract intent): each window counts its own hits, so both calls return 1. Actual: the second returns 2.
-// Code: migrations/0070_merchant_password_auth.sql identity.auth_throttle_hit (ON CONFLICT (bucket, window_start));
-// internal/identity/throttle.go throttle() (same bucket bytes for every window of a bucket).
+// Expected (contract intent): each window counts its own hits, so both calls return 1 in 2 rows.
+// Code: migrations/0070_merchant_password_auth.sql identity.auth_throttle_hit stores sha256(p_bucket || length || offset)
+// (amended §4.2), so the rows are counted through the two derived keys.
 
 import (
 	"testing"
@@ -48,7 +42,7 @@ func TestPasswordFindingF1ThrottleWindowsShareRows(t *testing.T) {
 			continue // the minute rolled between the two calls; measure again
 		}
 		var rows int
-		if err := e.f.owner.QueryRow(pwaBG, `SELECT count(*) FROM identity.auth_throttle WHERE bucket=$1`, b).Scan(&rows); err != nil {
+		if err := e.f.owner.QueryRow(pwaBG, `SELECT count(*) FROM identity.auth_throttle WHERE bucket IN (sha256($1::bytea||int4send(60)||int4send(0)), sha256($1::bytea||int4send(86400)||int4send($2::int)))`, b, offset).Scan(&rows); err != nil {
 			t.Fatal(err)
 		}
 		t.Logf("first window (60 s) hits=%d, second window (day, same start) hits=%d, rows=%d", minuteHits, dayHits, rows)

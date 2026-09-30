@@ -603,14 +603,14 @@ func TestPasswordCoreThrottleWindowsAndPurgeBoundRealPG(t *testing.T) {
 	var startAge time.Duration
 	var ageSecs float64
 	must(t, env.owner.QueryRow(ctx, `SELECT (extract(epoch FROM window_start)::bigint + 28800) % 86400 = 0,
-		extract(epoch FROM clock_timestamp() - window_start) FROM identity.auth_throttle WHERE bucket=$1`, b).Scan(&aligned, &ageSecs))
+		extract(epoch FROM clock_timestamp() - window_start) FROM identity.auth_throttle WHERE bucket=sha256($1::bytea||int4send(86400)||int4send(28800))`, b).Scan(&aligned, &ageSecs)) // F1: stored key is derived per window
 	startAge = time.Duration(ageSecs * float64(time.Second))
 	if !aligned || startAge < 0 || startAge >= 24*time.Hour {
 		t.Fatalf("UTC+8 window misaligned: aligned=%v age=%v", aligned, startAge)
 	}
 	c := bytes32()
 	hit(c, 900, 0)
-	must(t, env.owner.QueryRow(ctx, `SELECT extract(epoch FROM window_start)::bigint % 900 = 0 FROM identity.auth_throttle WHERE bucket=$1`, c).Scan(&aligned))
+	must(t, env.owner.QueryRow(ctx, `SELECT extract(epoch FROM window_start)::bigint % 900 = 0 FROM identity.auth_throttle WHERE bucket=sha256($1::bytea||int4send(900)||int4send(0))`, c).Scan(&aligned))
 	if !aligned {
 		t.Fatal("15 min window misaligned")
 	}

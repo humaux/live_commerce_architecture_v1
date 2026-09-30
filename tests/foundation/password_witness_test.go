@@ -122,20 +122,21 @@ func pwaStableHour(t *testing.T) {
 // pwaStable15 waits when fewer than `margin` remain in the current 15 minute window (ip, email-pw).
 func pwaStable15(t *testing.T, margin time.Duration) { pwaAwaitSafeWindow(t, 900, 0, margin) }
 
-// elapse moves a bucket's current window of the given class ("minute" or "hour") into the past so the
-// next hit opens a new window, i.e. simulates 61 s / 2 h passing without sleeping (owner pool; the
-// caller states why via pwaDisclose). Rows are classified by alignment (call pwaStableHour first):
-// hour windows start on a multiple of 3600 s that is not a UTC+8 day start; minute windows on any
-// other multiple of 60 s. Fails when no such row exists so a typo cannot silently do nothing.
+// elapse moves a bucket's current window of the given class ("minute" = the 60 s window, "hour" = the 1 h
+// window) into the past so the next hit opens a new window, i.e. simulates 61 s / 2 h passing without
+// sleeping (owner pool; the caller states why via pwaDisclose). Each window has its own stored key (F1 fix),
+// so the class picks the key; only its newest row moves (earlier elapses leave older rows). Fails when no row moved so a typo cannot silently do nothing.
 func (e *pwaEnv) elapse(kind, value, class string) {
 	e.t.Helper()
-	b := e.bucket(kind, value)
 	var q string
+	var b []byte
 	switch class {
 	case "minute":
-		q = `UPDATE identity.auth_throttle SET window_start = window_start - make_interval(secs => 61 + 60*(1 + floor(random()*1000000)::int)) WHERE bucket=$1 AND window_start = (SELECT max(window_start) FROM identity.auth_throttle WHERE bucket=$1 AND EXTRACT(epoch FROM window_start)::bigint % 3600 <> 0)`
+		b = e.storedKey(kind, value, 60, 0)
+		q = `UPDATE identity.auth_throttle SET window_start = window_start - make_interval(secs => 61 + 60*(1 + floor(random()*1000000)::int)) WHERE bucket=$1 AND window_start = (SELECT max(window_start) FROM identity.auth_throttle WHERE bucket=$1)`
 	case "hour":
-		q = `UPDATE identity.auth_throttle SET window_start = window_start - make_interval(hours => 2 + floor(random()*10000)::int) WHERE bucket=$1 AND window_start = (SELECT max(window_start) FROM identity.auth_throttle WHERE bucket=$1 AND EXTRACT(epoch FROM window_start)::bigint % 3600 = 0 AND (EXTRACT(epoch FROM window_start)::bigint + 28800) % 86400 <> 0)`
+		b = e.storedKey(kind, value, 3600, 0)
+		q = `UPDATE identity.auth_throttle SET window_start = window_start - make_interval(hours => 2 + floor(random()*10000)::int) WHERE bucket=$1 AND window_start = (SELECT max(window_start) FROM identity.auth_throttle WHERE bucket=$1)`
 	default:
 		e.t.Fatalf("elapse class %q", class)
 	}

@@ -85,7 +85,7 @@ CREATE INDEX auth_events_created ON identity.auth_events(created_at);
 CREATE FUNCTION identity.auth_throttle_hit(p_bucket bytea, p_window_seconds int, p_offset_seconds int)
 RETURNS int LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog AS $$
 #variable_conflict use_column
-DECLARE v_now timestamptz := clock_timestamp(); v_start timestamptz; v_hits int;
+DECLARE v_now timestamptz := clock_timestamp(); v_start timestamptz; v_hits int; v_key bytea;
 BEGIN
     IF p_bucket IS NULL OR octet_length(p_bucket) <> 32 OR p_window_seconds IS NULL OR p_window_seconds NOT BETWEEN 1 AND 86400
        OR p_offset_seconds IS NULL OR p_offset_seconds NOT BETWEEN 0 AND 86399 THEN
@@ -94,7 +94,12 @@ BEGIN
     -- Fixed window. p_offset_seconds is the zone offset east of UTC (0, or 28800 for the UTC+8 finance
     -- day), so a 86400 s window with 28800 starts at 16:00 UTC = 00:00 UTC+8 (ruling Q11).
     v_start := to_timestamp((floor((extract(epoch FROM v_now) + p_offset_seconds) / p_window_seconds) * p_window_seconds - p_offset_seconds)::double precision);
-    INSERT INTO identity.auth_throttle(bucket, window_start, hits) VALUES (p_bucket, v_start, 1)
+    -- F1 (2026-09-30): the stored key is sha256(p_bucket || window length || offset), so two windows of one
+    -- bucket that start at the same instant (60 s + 1 h in the first minute of an hour; 1 h + day in the
+    -- first hour of a UTC+8 day) never share a row and each counts its own hits. Still 32 bytes; callers
+    -- keep passing the bucket HMAC and never see the derived key.
+    v_key := sha256(p_bucket || int4send(p_window_seconds) || int4send(p_offset_seconds));
+    INSERT INTO identity.auth_throttle(bucket, window_start, hits) VALUES (v_key, v_start, 1)
     ON CONFLICT (bucket, window_start) DO UPDATE SET hits = identity.auth_throttle.hits + 1
     RETURNING identity.auth_throttle.hits INTO v_hits;
     -- I23 bounded purge: <= 100 rows per table per call, deterministic order so concurrent purges
@@ -421,7 +426,7 @@ COMMENT ON COLUMN identity.email_challenges.mail_state IS 'PENDING -> SENT | FAI
 COMMENT ON COLUMN identity.email_challenges.provider_message_id IS 'SMTP 2xx reply text, at most 128 bytes.';
 
 COMMENT ON TABLE identity.auth_throttle IS 'Owner: internal/identity. Fixed-window counters for pre-authentication rate limits (§6); bucket = HMAC(auth_pepper, kind:value), so no raw ip/email at rest. Purged 2 days after the window (Q8). Non-goal: not a general rate limiter, not per tenant (tenant is unknown before authentication, PD13).';
-COMMENT ON COLUMN identity.auth_throttle.bucket IS '32-byte HMAC-SHA256 of the bucket key.';
+COMMENT ON COLUMN identity.auth_throttle.bucket IS '32-byte sha256(bucket HMAC || window length || offset): one key per window of a bucket (F1), so windows that start at the same instant never share a row.';
 COMMENT ON COLUMN identity.auth_throttle.window_start IS 'Aligned window start (UTC, or UTC+8 day for daily buckets).';
 COMMENT ON COLUMN identity.auth_throttle.hits IS 'Hits in the window, incremented by auth_throttle_hit.';
 
