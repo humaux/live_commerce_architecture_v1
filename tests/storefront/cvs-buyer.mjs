@@ -102,12 +102,15 @@ async function newContext(mobile) {
   c.on("page", (p) => {
     p.on("frameattached", (f) => { if (f !== p.mainFrame()) iframeSeen.push(f.url()); });
     p.on("pageerror", (e) => console.log("PAGEERROR", e.message));
+    p.on("response", async (r) => { if (r.url().includes("/api/buyer/") && r.status() >= 400) console.log("HTTP", r.status(), r.request().method(), new URL(r.url()).pathname, (await r.text().catch(() => "")).slice(0, 200)); });
   });
   return c;
 }
 // Opens the product page, chooses the delivery option by chain and asks for the quotation.
-async function toQuote(page, store, locale, kind) {
+async function toQuote(page, store, locale, kind, quantity = 1) {
   await page.goto(`${store.origin}/${locale}/products/${store.product}`);
+  // a pay-at-pickup total must be a whole TWD amount (F20: GoodsAmount/CollectionAmount are integers); the fixture SKU costs TWD 12.50
+  for (let i = 1; i < quantity; i++) await page.getByRole("button", { name: "Increase quantity", exact: true }).click();
   await page.getByRole("button", { name: copy[locale].delivery, exact: true }).click();
   await page.locator("#delivery").selectOption({ label: `${copy[locale].chains[kind]} · TW` });
   await page.getByRole("button", { name: copy[locale].quote, exact: true }).click();
@@ -210,10 +213,24 @@ try {
   // ---- store 2 on its own host: the return lands there, with that host's cookie ---------------------------------------------
   {
     const ctx = await newContext(false), page = await ctx.newPage();
-    await toQuote(page, stores.map2, "en", "cvs_711");
+    await toQuote(page, stores.map2, "en", "cvs_711", 2);
     await mapRoundTrip(page, ctx, stores.map2, "en", "cvs_711", "store2");
     await showsStoreCard(page, stores.map2, "en", "cvs_711", "store2");
     assert.equal((await ctx.cookies(stores.map1.origin)).length, 0, "the store 2 buyer has no cookie of store 1's host");
+    // pay at pickup: no Stripe step, the placed order shows the pending collection (§16.2, §16.4)
+    await page.getByRole("radio", { name: /Pay at pickup/i }).check();
+    await expect(page.getByTestId("cvs-pay-note")).toBeVisible();
+    await page.getByTestId("confirm-address").click();
+    await expect(page.getByTestId("create-order")).toBeEnabled();
+    await page.getByTestId("create-order").click();
+    try { await expect(page.getByTestId("order-section")).toBeVisible({ timeout: 30000 }); } catch (e) {
+      console.log("ALERTS", JSON.stringify(await page.locator("[role=alert], .purchase-error, [data-testid=cvs-create-error]").allInnerTexts()));
+      await shot(page, "pay-at-pickup-failed", "en", "desktop"); throw e;
+    }
+    await expect(page.getByTestId("order-collection")).toHaveAttribute("data-state", "PENDING");
+    await expect(page.getByTestId("order-collection")).toContainText(/Pay at pickup/i);
+    assert.equal(await page.getByTestId("pay-order").count(), 0, "a pay-at-pickup order has no card payment step");
+    await shot(page, "pay-at-pickup-order", "en", "desktop");
     pass("store 2: the map return lands on the originating store's host with its own __Host- cookie and shows the store card");
     await ctx.close();
   }

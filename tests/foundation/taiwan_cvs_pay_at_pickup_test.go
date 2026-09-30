@@ -417,6 +417,47 @@ func TestCvsPayAtPickupBegin(t *testing.T) {
 		}
 	})
 
+	t.Run("over the real buyer HTTP route: coded refusals, never a retryable 503", func(t *testing.T) {
+		// POST /v1/buyer/checkout is the route the storefront calls. Every CVS refusal of Begin is a definitive, coded 422/429 (section 16.2);
+		// a 503 would tell the storefront "could not confirm, retry" for a request that was refused for good.
+		e.cvsSettings(tcvAllChains, true, "100", 500) // NT$100 cap
+		over := e.sku(10100, 10)
+		b := e.newBuyer(storefront.Item{SKUID: over, Quantity: 1})
+		pickup := e.tppEntered(b, code)
+		dest, err := b.destination("cvs_711", pickup, tppName, tppPhone)
+		if err != nil {
+			t.Fatal(err)
+		}
+		quote, err := b.quote(code)
+		if err != nil {
+			t.Fatal(err)
+		}
+		body := map[string]any{"quote_id": quote.ID, "destination_id": dest.ID, "cart_version": b.cartVersion(), "service_version": 1, "allocation_version": 1, "payment_mode": "pay_at_pickup"}
+		res := b.req("POST", "/v1/buyer/checkout", t04Key("tpp-http"), body, nil)
+		if res.status != 422 || tcvStr(tcvJSON(t, res.body), "code") != "pay_at_pickup_amount_exceeds" {
+			t.Errorf("over the store cap through HTTP: want 422 pay_at_pickup_amount_exceeds, got %d %s", res.status, res.body)
+		}
+		// the (max_open+1)th order: 429 with Retry-After
+		e.cvsSettings(tcvAllChains, true, "20000", 500)
+		open := e.count(`SELECT count(*) FROM checkout.orders WHERE store_id=$1 AND payment_mode='pay_at_pickup' AND collection_state='PENDING' AND fulfillment_state='MANUAL_UNASSIGNED'`, e.store())
+		e.cvsSettings(tcvAllChains, true, "20000", open)
+		b2 := e.newBuyer()
+		pk2 := e.tppEntered(b2, code)
+		d2, err := b2.destination("cvs_711", pk2, tppName, tppPhone)
+		if err != nil {
+			t.Fatal(err)
+		}
+		q2, err := b2.quote(code)
+		if err != nil {
+			t.Fatal(err)
+		}
+		res = b2.req("POST", "/v1/buyer/checkout", t04Key("tpp-http-limit"), map[string]any{"quote_id": q2.ID, "destination_id": d2.ID, "cart_version": b2.cartVersion(), "service_version": 1, "allocation_version": 1, "payment_mode": "pay_at_pickup"}, nil)
+		if res.status != 429 || tcvStr(tcvJSON(t, res.body), "code") != "pay_at_pickup_limit" || res.header.Get("Retry-After") == "" {
+			t.Errorf("at max_open through HTTP: want 429 pay_at_pickup_limit with Retry-After, got %d %s", res.status, res.body)
+		}
+		e.cvsSettings(tcvAllChains, true, "20000", 500)
+	})
+
 	t.Run("payment_mode is a closed vocabulary", func(t *testing.T) {
 		b := e.newBuyer()
 		pickup := e.tppEntered(b, code)

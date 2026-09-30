@@ -94,6 +94,7 @@ func brcMock(t *testing.T) {
 		}
 	}
 	e2.service("cvs_711", "API", 0)
+	e2.cvsSettings(tcvAllChains, true, "20000", 500)
 	for _, kind := range []string{"cvs_711", "cvs_familymart", "cvs_hilife", "cvs_okmart"} {
 		e3.service(kind, "MANUAL", 0)
 	}
@@ -176,6 +177,12 @@ func brcMock(t *testing.T) {
 	}
 	if n := e1.count(`SELECT count(*) FROM fulfillment.cvs_selections WHERE store_id=$1 AND return_origin<>$2`, e1.store(), o1); n != 0 {
 		t.Errorf("store 1 has %d selections returning to another origin", n)
+	}
+	if n := e2.count(`SELECT count(*) FROM checkout.orders WHERE store_id=$1 AND payment_mode='pay_at_pickup' AND collection_state='PENDING' AND commercial_state='CONFIRMED'`, e2.store()); n != 1 {
+		t.Errorf("store 2: %d CONFIRMED pay-at-pickup orders placed through the UI, want 1", n)
+	}
+	if n := e2.count(`SELECT count(*) FROM checkout.payment_attempts a JOIN checkout.orders o ON o.id=a.order_id WHERE o.store_id=$1`, e2.store()); n != 0 {
+		t.Errorf("store 2: %d payment attempts for a pay-at-pickup order", n)
 	}
 	if n := e3.count(`SELECT count(*) FROM fulfillment.cvs_selections WHERE store_id=$1`, e3.store()); n != 0 {
 		t.Errorf("the buyer_entered store opened %d ECPay map selections", n)
