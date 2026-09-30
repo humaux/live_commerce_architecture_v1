@@ -58,7 +58,13 @@ type ConnectFunc func(ctx context.Context, code string, seal SealInfo) (ConnectR
 
 // DialogConfig is the Facebook Login for Business dialog configuration (contract 2 step 1). The dialog
 // host is www.facebook.com; AppID is app 大梦 (O-C), RedirectURI the fixed admin callback.
-type DialogConfig struct{ AppID, ConfigID, RedirectURI, GraphVersion string }
+//
+// StateKey (>= 32 bytes, server-side only, derived from the Meta app secret in cmd/api) keys the OAuth state HMAC, so a
+// reader of ops.command_results (which keeps the Idempotency-Key) still cannot recompute a live state.
+type DialogConfig struct {
+	AppID, ConfigID, RedirectURI, GraphVersion string
+	StateKey                                   []byte
+}
 
 // ErrConnectFailed is returned by a ConnectFunc for any exchange failure; the HTTP layer maps it to
 // 502 meta_connect_failed without echoing the cause.

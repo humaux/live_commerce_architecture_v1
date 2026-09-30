@@ -5,6 +5,7 @@
 package httpapi
 
 import (
+	"bytes"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -36,7 +37,7 @@ func adsHandler(t *testing.T) http.Handler {
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc, err := ads.NewService(jobs, nil, ads.DialogConfig{AppID: "1", ConfigID: "2", RedirectURI: "https://a.example.test/cb", GraphVersion: "v26.0"})
+	svc, err := ads.NewService(jobs, nil, ads.DialogConfig{AppID: "1", ConfigID: "2", RedirectURI: "https://a.example.test/cb", GraphVersion: "v26.0", StateKey: bytes.Repeat([]byte{7}, 32)})
 	if err != nil {
 		t.Fatal(err)
 	}

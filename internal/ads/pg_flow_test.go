@@ -1,6 +1,7 @@
 package ads
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
@@ -155,7 +156,7 @@ func newAdsFx(t *testing.T) *adsFx {
 				{Kind: "dataset", ID: "7001", Name: "Pixel"}},
 			Token: SealedToken{KeyID: "k1", Enc: make([]byte, 32), Ciphertext: make([]byte, 48)}}, nil
 	}
-	f.svc, err = NewService(f.client, connect, DialogConfig{AppID: "4291253377792879", ConfigID: "123456789", RedirectURI: "https://admin.example.test/api/admin/ads/meta/callback", GraphVersion: "v26.0"})
+	f.svc, err = NewService(f.client, connect, DialogConfig{AppID: "4291253377792879", ConfigID: "123456789", RedirectURI: "https://admin.example.test/api/admin/ads/meta/callback", GraphVersion: "v26.0", StateKey: bytes.Repeat([]byte{7}, 32)})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -196,7 +196,7 @@ BEGIN
  SELECT x.received_at,x.environment INTO f FROM payments.facts x WHERE x.attempt_id=p_attempt AND x.kind='CAPTURED';
  -- C4 frozen request: internal ids + event time only (no token, no PII). test_event_code iff SANDBOX (AD9).
  v_request:=jsonb_build_object('v',1,'attempt_id',p_attempt,'event_id','lc-purchase-'||p_attempt::text,
-  'event_time',extract(epoch FROM f.received_at)::bigint)
+  'event_time',floor(extract(epoch FROM f.received_at))::bigint) -- contract: the fact's received_at in unix seconds, floored (a bigint cast rounds)
   ||CASE WHEN s.environment='SANDBOX' THEN jsonb_build_object('test_event_code',s.capi_test_event_code) ELSE '{}'::jsonb END;
  INSERT INTO integration.operations(tenant_id,store_id,id,principal_id,binding_id,binding_version,provider,external_asset_id,
   purpose,action,semantic_key,request_hash,request,job_id)

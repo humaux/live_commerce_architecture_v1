@@ -233,6 +233,8 @@ deploy/scripts/deploy.sh upgrade <tag>
 3. 回调 URL 的 `code`/`state` 由 Caddy 访问日志改写为 REDACTED（smoke S40 覆盖 `/api/ads/meta/callback`）；admin 对该路径发 `Referrer-Policy: no-referrer`。
 4. 关闭：清空 `COMMERCE_META_ADS_APP_ID` 并重启 api（路由 404）。**不要先停 ads-worker**：暂停（pause）只有它能发到 Meta；先在 admin 暂停所有投放，确认 ops 终态后再去掉 `ads` profile。
 5. CAPI 与商品 feed（ads-capi，0080）：`secrets-init.sh` 生成 `commerce_capi_external_id_key`（b64std32，**只有 ads-worker 挂载**；缺失则 ads-worker 拒绝启动，已部署环境升级前先重跑 `secrets-init.sh` 补齐）。轮换会改变所有买家的 external_id（匹配率重置，不丢数据）。商品 feed 为 `https://<LC_STORE_HOST>/feeds/meta.csv`（storefront → api `GET /v1/buyer/feeds/meta.csv`，只按已验证 Host 解析店铺，Caddy 无需改动）。买家在隐私页授予 `ads_personalization` 时，同一事务写入 `ads.capi_contexts`（浏览器 UA，8 天后清除）。**生产挂载阻塞项**：`ads.capi_contexts`/`ads.capi_events`/`ads.insights_daily` 尚未登记 customers-billing CD7 保留类（meta-ads-v1 §12），登记前不得在生产开启 CAPI。
+6. 广告权限开通（meta-ads-v1 A-1）：0074 只放宽权限 CHECK，`create_initial_store` 不授予 `ads:*`，已部署店铺的 Ads 页在开通前不可用。owner 在聊天批准后，用迁移属主连接运行（幂等、只作用于一个店铺的创建者；需该主体已持有完整创建者权限集，否则整笔回滚）：`psql "$MIGRATION_DATABASE_URL" -v ON_ERROR_STOP=1 -v store_id=<店铺 uuid> -v principal_id=<主体 uuid> -f scripts/ops/grant-ads-permissions.sql`，输出 `granted=<0..3>`。授予权限不等于可投放：每店广告上限默认 NT$0（关闭，裁决 O4），由运营另行设置。
+7. 卡住的草稿（无法解绑广告账户）：解绑会被触发器 `bindings_ads_disable_guard` 以 `binding_in_use`（409）拒绝，直到该店所有草稿都不再“可能花费”（AD6）。先在 admin 暂停；暂停 op 需到 SUCCEEDED。若暂停一直到不了：(a) 令牌被 Meta 撤销 → 商家用**同一个**广告账户重新连接（令牌换新、binding 不变），advance sweeper 会再规划下一个 pause seq；(b) 激活 op 停在 UNKNOWN → 等 reconcile（不要手工改 ops 行）；(c) 以上都不成立 → 在 Ads Manager 核实广告已停，草稿在 `ends_at + 1 天` 后自动不再计入，解绑随之放行。没有操作员强制覆盖（有意：覆盖等于允许“看不见的花费”）；如需加速，先记录根因再另立契约。
 
 ### 6.5 平台服务费（Stripe Billing，SANDBOX）与 R2 权限补发
 

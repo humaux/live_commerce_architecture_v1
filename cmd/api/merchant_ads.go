@@ -12,6 +12,8 @@
 package main
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
 	"errors"
 	"regexp"
 
@@ -79,7 +81,11 @@ func newMerchantAds(pool *pgxpool.Pool, getenv func(string) string) (*ads.Servic
 	if err != nil {
 		return nil, errMerchantAdsConfig
 	}
-	svc, err := ads.NewService(jobs, oauth.Connect, ads.DialogConfig{AppID: appID, ConfigID: configID, RedirectURI: redirect, GraphVersion: version})
+	// OAuth state key: HMAC of a fixed label under the app secret (domain-separated, never the secret itself); the api
+	// already holds the secret for the code exchange, so no new deploy secret is needed.
+	km := hmac.New(sha256.New, secret)
+	km.Write([]byte("livecommerce/ads-oauth-state-key/v1"))
+	svc, err := ads.NewService(jobs, oauth.Connect, ads.DialogConfig{AppID: appID, ConfigID: configID, RedirectURI: redirect, GraphVersion: version, StateKey: km.Sum(nil)})
 	if err != nil {
 		return nil, errMerchantAdsConfig
 	}

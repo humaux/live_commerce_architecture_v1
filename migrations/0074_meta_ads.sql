@@ -1241,7 +1241,10 @@ BEGIN
  -- CAS on the body's publish_attempt: a concurrent publish moved it, so exactly one wins (attempt_changed).
  IF d.publish_attempt<>p_attempt OR d.publish_attempt>=5 THEN PERFORM ads.deny('attempt_changed'); END IF;
  v_approver:=ads.approver(d.id);
- IF v_approver IS NULL OR d.ended_at IS NOT NULL THEN PERFORM ads.deny('invalid_request'); END IF;
+ -- X7: any pause op (like ended_at) makes this draft final; a new attempt could never activate (check_activate pause_requested),
+ -- so refuse it up front. Resume = copy into a new draft.
+ IF v_approver IS NULL OR d.ended_at IS NOT NULL
+  OR EXISTS(SELECT 1 FROM ads.remote_objects r WHERE r.draft_id=d.id AND r.kind='pause') THEN PERFORM ads.deny('invalid_request'); END IF;
  IF ads.restricted(a.out_tenant,p_store) THEN PERFORM ads.deny('billing_restricted'); END IF;
  -- §5.3: a re-publish needs every earlier attempt non-spending by the AD6 test (a still-counting draft may be live).
  IF d.publish_attempt>=1 AND ads.draft_counts(d.id) THEN PERFORM ads.deny('prior_attempt_not_paused'); END IF;

@@ -1060,7 +1060,8 @@
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
       "independent_review": "NOT_RUN",
-      "r2_2026_09_30": "meta-ads-v1 on r2/ads: independent gates MA01, MA02 (schema/allowance/billing), MA04-MA07, MA11 REAL_PG + MOCK (tests/ads/fakegraph) PASS; MA09a BROWSER (MOCK) PASS via test-local.sh --browser-meta-ads; evidence output/r2-ads-merge/tests/ and output/ads-tests/ (red+green per gate). MA-S1..S4 SANDBOX, MA-L1/L2 LIVE, MA10 review: NOT_RUN."
+      "r2_2026_09_30": "meta-ads-v1 on r2/ads: independent gates MA01, MA02 (schema/allowance/billing), MA04-MA07, MA11 REAL_PG + MOCK (tests/ads/fakegraph) PASS; MA09a BROWSER (MOCK) PASS via test-local.sh --browser-meta-ads; evidence output/r2-ads-merge/tests/ and output/ads-tests/ (red+green per gate). MA-S1..S4 SANDBOX, MA-L1/L2 LIVE, MA10 review: NOT_RUN.",
+      "r2_close_2026_09_30": "r2/ads close pass: r3-review P2s fixed with red+green gates (IG-only creative page_id, publish refused after a pause (X7), CAPI event_time floored, OAuth state HMAC-keyed, ads permission provisioning script); evidence output/r2-close-ads/. NOT_RUN/BLOCKED until MA-S1 SANDBOX: AD7 auto-pause on an ad account that is no longer ACTIVE; 5.2 min_daily_budget x days local check; no admin disconnect route yet (binding_in_use copy added with it); MA-S1..S4, MA-L1/L2, MA10."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },

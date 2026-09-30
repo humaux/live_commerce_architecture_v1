@@ -1337,6 +1337,31 @@ func TestMetaAdsMA06Binding(t *testing.T) {
 			t.Fatal("ops planned by a refused re-publish")
 		}
 	})
+
+	// X7 (contract 6.3): a paused draft never re-activates, so a re-publish after a pause would build a whole new
+	// attempt that check_activate refuses forever (r3 review P2). publish_draft refuses it up front, plans nothing.
+	t.Run("publish of a draft that was paused is refused (resume = copy into a new draft)", func(t *testing.T) {
+		e := newAdsEnv(t, adsOpts{})
+		d := e.newDraft(adsDraftIn{})
+		e.mustApprove(d)
+		e.mustPublish(d)
+		e.driveTo(d, "activate", 1)
+		if r := e.pause(d); r.Status != 200 {
+			t.Fatalf("pause: %d %s", r.Status, r.Raw)
+		}
+		e.settle()
+		if p := e.mustOp(d, "pause", 1); p.State != "SUCCEEDED" {
+			t.Fatalf("pause %s/%s", p.State, p.Code)
+		}
+		before := len(e.ops(d))
+		r := e.api("POST", "/drafts/"+d+"/publish", e.token, adsKey(), map[string]any{"publish_attempt": 1})
+		if r.Status != 422 || !strings.Contains(string(r.Raw), "invalid_request") {
+			t.Fatalf("re-publish of a paused draft: %d %s (want 422 invalid_request)", r.Status, r.Raw)
+		}
+		if len(e.ops(d)) != before {
+			t.Fatal("ops planned by a refused re-publish of a paused draft")
+		}
+	})
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

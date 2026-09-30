@@ -1,7 +1,10 @@
 package ads
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -29,7 +32,7 @@ func testService(t *testing.T) *Service {
 		t.Fatal(err)
 	}
 	s, err := NewService(jobs, nil, DialogConfig{AppID: "4291253377792879", ConfigID: "123456789",
-		RedirectURI: "https://admin.example.test/api/admin/ads/meta/callback", GraphVersion: "v26.0"})
+		RedirectURI: "https://admin.example.test/api/admin/ads/meta/callback", GraphVersion: "v26.0", StateKey: bytes.Repeat([]byte{7}, 32)})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,17 +44,19 @@ func TestNewServiceValidatesDialogConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ok := DialogConfig{AppID: "1", ConfigID: "2", RedirectURI: "https://a.example.test/cb", GraphVersion: "v26.0"}
+	ok := DialogConfig{AppID: "1", ConfigID: "2", RedirectURI: "https://a.example.test/cb", GraphVersion: "v26.0", StateKey: bytes.Repeat([]byte{7}, 32)}
 	if _, err = NewService(jobs, nil, ok); err != nil {
 		t.Fatal(err)
 	}
 	for name, bad := range map[string]DialogConfig{
-		"http redirect":     {AppID: "1", ConfigID: "2", RedirectURI: "http://a.example.test/cb", GraphVersion: "v26.0"},
-		"userinfo redirect": {AppID: "1", ConfigID: "2", RedirectURI: "https://u:p@a.example.test/cb", GraphVersion: "v26.0"},
-		"fragment redirect": {AppID: "1", ConfigID: "2", RedirectURI: "https://a.example.test/cb#x", GraphVersion: "v26.0"},
+		"http redirect":     {AppID: "1", ConfigID: "2", RedirectURI: "http://a.example.test/cb", GraphVersion: "v26.0", StateKey: bytes.Repeat([]byte{7}, 32)},
+		"userinfo redirect": {AppID: "1", ConfigID: "2", RedirectURI: "https://u:p@a.example.test/cb", GraphVersion: "v26.0", StateKey: bytes.Repeat([]byte{7}, 32)},
+		"fragment redirect": {AppID: "1", ConfigID: "2", RedirectURI: "https://a.example.test/cb#x", GraphVersion: "v26.0", StateKey: bytes.Repeat([]byte{7}, 32)},
 		"app id":            {AppID: "x", ConfigID: "2", RedirectURI: "https://a.example.test/cb", GraphVersion: "v26.0"},
 		"config id":         {AppID: "1", ConfigID: "", RedirectURI: "https://a.example.test/cb", GraphVersion: "v26.0"},
-		"version":           {AppID: "1", ConfigID: "2", RedirectURI: "https://a.example.test/cb", GraphVersion: "26"},
+		"no state key":      {AppID: "1", ConfigID: "2", RedirectURI: "https://a.example.test/cb", GraphVersion: "v26.0"},
+		"short state key":   {AppID: "1", ConfigID: "2", RedirectURI: "https://a.example.test/cb", GraphVersion: "v26.0", StateKey: []byte("short")},
+		"version":           {AppID: "1", ConfigID: "2", RedirectURI: "https://a.example.test/cb", GraphVersion: "26", StateKey: bytes.Repeat([]byte{7}, 32)},
 	} {
 		if _, err = NewService(jobs, nil, bad); err == nil {
 			t.Fatalf("%s accepted", name)
@@ -62,10 +67,11 @@ func TestNewServiceValidatesDialogConfig(t *testing.T) {
 	}
 }
 
-func TestOAuthStateIsDeterministicScopedAndHashed(t *testing.T) {
+func TestOAuthStateIsDeterministicScopedKeyedAndHashed(t *testing.T) {
+	key := bytes.Repeat([]byte{7}, 32)
 	scope := platform.Scope{TenantID: "t1", StoreID: "s1", PrincipalID: "p1"}
-	a, ha := stateParam(scope, "key-aaaaaaaa")
-	b, hb := stateParam(scope, "key-aaaaaaaa")
+	a, ha := stateParam(key, scope, "key-aaaaaaaa")
+	b, hb := stateParam(key, scope, "key-aaaaaaaa")
 	if a != b || string(ha) != string(hb) {
 		t.Fatal("state must be reproducible for a replay")
 	}
@@ -73,11 +79,11 @@ func TestOAuthStateIsDeterministicScopedAndHashed(t *testing.T) {
 		t.Fatalf("state shape %q", a)
 	}
 	for _, other := range []platform.Scope{{TenantID: "t2", StoreID: "s1", PrincipalID: "p1"}, {TenantID: "t1", StoreID: "s2", PrincipalID: "p1"}, {TenantID: "t1", StoreID: "s1", PrincipalID: "p2"}} {
-		if c, _ := stateParam(other, "key-aaaaaaaa"); c == a {
+		if c, _ := stateParam(key, other, "key-aaaaaaaa"); c == a {
 			t.Fatal("state must differ per scope")
 		}
 	}
-	if c, _ := stateParam(scope, "key-bbbbbbbb"); c == a {
+	if c, _ := stateParam(key, scope, "key-bbbbbbbb"); c == a {
 		t.Fatal("state must differ per key")
 	}
 	if string(stateHash(a)) != string(ha) || len(ha) != 32 {
@@ -85,6 +91,15 @@ func TestOAuthStateIsDeterministicScopedAndHashed(t *testing.T) {
 	}
 	if strings.Contains(string(ha), a) {
 		t.Fatal("hash leaks state")
+	}
+	// r3 P2: a reader of ops.command_results knows scope and Idempotency-Key but not the server key, so the
+	// unkeyed derivation of the first version (and any other key) must not reproduce a live state.
+	if c, _ := stateParam(bytes.Repeat([]byte{8}, 32), scope, "key-aaaaaaaa"); c == a {
+		t.Fatal("state must depend on the server-side key")
+	}
+	raw := sha256.Sum256([]byte("livecommerce/ads-oauth-state/v1|t1|s1|p1|key-aaaaaaaa"))
+	if old := base64.RawURLEncoding.EncodeToString(raw[:]); old == a {
+		t.Fatal("state equals the unkeyed v1 derivation")
 	}
 }
 

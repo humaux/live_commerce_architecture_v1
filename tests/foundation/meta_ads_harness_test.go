@@ -237,7 +237,7 @@ func newAdsEnv(t *testing.T, o adsOpts) *adsEnv {
 	if err != nil {
 		t.Fatal(err)
 	}
-	e.svc, err = ads.NewService(jobs, oauth.Connect, ads.DialogConfig{AppID: adsApp, ConfigID: adsConfigID, RedirectURI: adsRedirect, GraphVersion: adsVersion})
+	e.svc, err = ads.NewService(jobs, oauth.Connect, ads.DialogConfig{AppID: adsApp, ConfigID: adsConfigID, RedirectURI: adsRedirect, GraphVersion: adsVersion, StateKey: bytes.Repeat([]byte{7}, 32)})
 	if err != nil {
 		t.Fatalf("ads.NewService: %v", err)
 	}

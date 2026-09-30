@@ -208,13 +208,15 @@ func buildCreate(req core.DispatchRequest) (createSpec, bool) {
 			InstagramUserID        string `json:"instagram_user_id"`
 			LinkURL                string `json:"link_url"`
 		}
-		if !decodeStrict(req.Request, &r) || !r.valid() || r.Name != tag || !validID(r.PageID) {
+		if !decodeStrict(req.Request, &r) || !r.valid() || r.Name != tag || (r.PageID != "" && !validID(r.PageID)) {
 			return createSpec{}, false
 		}
+		// page_id is optional only for BOOST_POST of an Instagram media (Instagram-only store: the
+		// identity has no Page, 0074 ads.request_for omits the key); the other two shapes need it.
 		payload := map[string]any{"name": tag}
 		switch {
 		case r.Template == "BOOST_POST" && r.ObjectStoryID != "" && r.SourceInstagramMediaID == "" && r.InstagramUserID == "" && r.LinkURL == "":
-			if !storyPattern.MatchString(r.ObjectStoryID) {
+			if r.PageID == "" || !storyPattern.MatchString(r.ObjectStoryID) {
 				return createSpec{}, false
 			}
 			payload["object_story_id"] = r.ObjectStoryID
@@ -227,7 +229,7 @@ func buildCreate(req core.DispatchRequest) (createSpec, bool) {
 				payload["instagram_user_id"] = r.InstagramUserID
 			}
 		case r.Template == "PRODUCT_TRAFFIC" && r.LinkURL != "" && r.ObjectStoryID == "" && r.SourceInstagramMediaID == "" && r.InstagramUserID == "":
-			if !validLink(r.LinkURL) {
+			if r.PageID == "" || !validLink(r.LinkURL) {
 				return createSpec{}, false
 			}
 			payload["object_story_spec"] = map[string]any{"page_id": r.PageID,

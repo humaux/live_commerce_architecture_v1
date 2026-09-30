@@ -2,6 +2,7 @@ package ads
 
 import (
 	"context"
+	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
@@ -54,9 +55,10 @@ func NewService(jobs *river.Client[pgx.Tx], connect ConnectFunc, dialog DialogCo
 	u, perr := url.Parse(dialog.RedirectURI)
 	if perr != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || u.Fragment != "" || len(dialog.RedirectURI) > 512 ||
 		!digitsPattern.MatchString(dialog.AppID) || !digitsPattern.MatchString(dialog.ConfigID) ||
-		!versionPattern.MatchString(dialog.GraphVersion) {
+		!versionPattern.MatchString(dialog.GraphVersion) || len(dialog.StateKey) < 32 {
 		return nil, command.ErrInvalid
 	}
+	dialog.StateKey = append([]byte(nil), dialog.StateKey...) // the caller may clear its copy
 	return &Service{jobs: jobs, core: inner, connect: connect, dialog: dialog}, nil
 }
 
@@ -94,12 +96,16 @@ type connectReceipt struct {
 }
 
 // stateParam derives the OAuth state deterministically from the caller's scope and Idempotency-Key, so a replay rebuilds the
-// same dialog URL without the receipt storing it. It is unguessable to anyone without the key, and it only matters together
-// with the server-side binding to principal + store (a stolen state fails as state_mismatch in another session).
-func stateParam(scope platform.Scope, key string) (param string, hash []byte) {
-	raw := sha256.Sum256([]byte("livecommerce/ads-oauth-state/v1|" + scope.TenantID + "|" + scope.StoreID + "|" + scope.PrincipalID + "|" + key))
-	digest := sha256.Sum256([]byte(base64.RawURLEncoding.EncodeToString(raw[:])))
-	return base64.RawURLEncoding.EncodeToString(raw[:]), digest[:]
+// same dialog URL without the receipt storing it. It is an HMAC-SHA256 under the server-side key (r3 review P2): the
+// Idempotency-Key sits in clear in ops.command_results, so an unkeyed hash of it would be recomputable by a reader of that
+// table. It still matters only together with the server-side binding to principal + store (a stolen state fails as
+// state_mismatch in another session); only its SHA-256 is stored (ads.begin_connect).
+func stateParam(key []byte, scope platform.Scope, idemKey string) (param string, hash []byte) {
+	m := hmac.New(sha256.New, key)
+	m.Write([]byte("livecommerce/ads-oauth-state/v2|" + scope.TenantID + "|" + scope.StoreID + "|" + scope.PrincipalID + "|" + idemKey))
+	param = base64.RawURLEncoding.EncodeToString(m.Sum(nil))
+	digest := sha256.Sum256([]byte(param))
+	return param, digest[:]
 }
 
 // stateHash is the digest stored for a state parameter (SHA-256 of its text).
@@ -115,7 +121,7 @@ func (s *Service) Connect(ctx context.Context, tx pgx.Tx, scope platform.Scope, 
 	if err != nil || s == nil {
 		return out, platform.ErrUnauthorized
 	}
-	param, digest := stateParam(scope, key)
+	param, digest := stateParam(s.dialog.StateKey, scope, key)
 	var receipt connectReceipt
 	err = command.Run(ctx, tx, scope, "ads.meta.connect", key, struct {
 		PrincipalID string `json:"principal_id"`

@@ -174,6 +174,30 @@ func TestCreateCreativeShapes(t *testing.T) {
 	}
 }
 
+// An Instagram-only store has no Page binding: ads.request_for omits page_id for BOOST_POST of an
+// Instagram media (0074), and create_creative must still go out (r3 review P2; before the fix it was
+// refused locally after the campaign and ad set already existed).
+func TestCreateCreativeInstagramOnlyNoPage(t *testing.T) {
+	c, f := newFake(t, reply200(`{"id":"1"}`))
+	secret := core.NewSecret([]byte(fakeToken))
+	ig := `{"v":1,"draft_id":"` + draftID + `","attempt":1,"name":"lc-` + opID + `","template":"BOOST_POST","source_instagram_media_id":"901","instagram_user_id":"902"}`
+	if out, _ := c.dispatch(context.Background(), dreq(ActionCreateCreative, ig), secret); out.State != "SUCCEEDED" {
+		t.Fatalf("ig-only = %+v", out)
+	}
+	if b := f.log()[0].body; b["source_instagram_media_id"] != "901" || b["instagram_user_id"] != "902" {
+		t.Fatalf("ig-only body = %v", b)
+	}
+	// A Facebook boost and a product-traffic creative still need the Page id.
+	for _, body := range []string{
+		`{"v":1,"draft_id":"` + draftID + `","attempt":1,"name":"lc-` + opID + `","template":"BOOST_POST","object_story_id":"777_888"}`,
+		`{"v":1,"draft_id":"` + draftID + `","attempt":1,"name":"lc-` + opID + `","template":"PRODUCT_TRAFFIC","link_url":"https://shop.example.test/p/a"}`,
+	} {
+		if out, _ := c.dispatch(context.Background(), dreq(ActionCreateCreative, body), secret); out != badRequest {
+			t.Errorf("page-less %s = %+v want bad_request", body, out)
+		}
+	}
+}
+
 func TestBadRequestsNeverReachGraph(t *testing.T) {
 	c, f := newFake(t, reply200(`{"id":"1"}`))
 	secret := core.NewSecret([]byte(fakeToken))
