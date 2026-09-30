@@ -220,6 +220,13 @@ store_id,id,owner_id); `payments.refund_facts` SELECT(tenant_id,store_id,refund_
 INSERT (policy limited to the three `customers.*` actions); EXECUTE on `identity.resolve_access`,
 `buyer.resolve_scope`. `commerce_auth` gets SELECT on `customers.*` + policies for its reads.
 No login role reads `customers.*` directly.
+Amendment (2026-09-30, lane close; reviewer P2 "USING(true) vs GUC-scoped"): the policy text above is the rule for every
+WRITE and for reads on other domains' tables. Three reads are deliberately `USING (true)`, restricted to
+`commerce_privacy_writer` (migration 0078 header comment): SELECT on `customers.consent_events` /
+`customers.privacy_actions` (`customers.consent_allows` must answer from any GUC state, e.g. the R3 sweeper) and on
+`buyer.owners` / `buyer.capability_sessions` (the buyer erasure retry must find an already revoked session before any
+scope exists to answer 410 `erased`). The tenant/store/owner filter is explicit inside each definer (CB02 asserts the
+policy names and quals from `pg_policies`); no login role can reach these tables, only the definers.
 
 ### 3.2 `0079_platform_billing.sql`
 
@@ -327,7 +334,13 @@ Amendment (R1 review P1-2): detail and export return order summaries/details, wh
 through the one existing projection (`merchantorders.Get`, gated by `orders:read`). A principal therefore needs
 `orders:read` in addition to the row permission; detail needs `customers:read`+`orders:read`, export needs
 `customers:privacy`+`customers:read`+`orders:read` (export builds on the detail read). This is fail-closed and keeps a
-single order-PII gate; the list, consent-withdrawal and erasure rows are unchanged (no order PII returned).
+single order-PII gate; the consent-withdrawal and erasure rows are unchanged (no order PII returned).
+Amendment (2026-09-30, lane close; reviewer P2): the LIST row is not PII-free by design. Under `customers:read` alone it
+returns minimized destination PII taken from the latest order destination: `display_name` (recipient name) and
+`phone_last3` (last three phone digits), and `q` matches the recipient-name prefix or the phone-digit suffix (D6). That
+minimum is what makes a customer recognizable in the list; the full destination, address, items and payment facts
+stay behind `orders:read` (detail/export). Asserted in CB09Permissions (list with `customers:read` alone: 200, `phone_last3`
+has at most 3 digits, no other destination field).
 
 Export content: store name, customer_id, orders (existing merchant order Detail shape, produced by the
 existing projection per order id), consent history, claims summary (platform + time, never actor_key),

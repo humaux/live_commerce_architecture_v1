@@ -82,10 +82,13 @@ export function validConsentResult(value: unknown): value is ConsentResult {
     typeof value.granted === "boolean" && instant(value.occurred_at)
   );
 }
-/** POST privacy/erasure 200: four counts only. */
-export function validErasureSummary(value: unknown): value is ErasureSummary {
-  return exact(value, ["consents_withdrawn", "sessions_revoked", "snapshots_redacted", "bundles_relabelled"]) &&
-    [value.consents_withdrawn, value.sessions_revoked, value.snapshots_redacted, value.bundles_relabelled].every(count);
+/** POST privacy/erasure 200: Go's envelope {erased, orders_retained, summary:{4 counts}} (buyerhttp erasureResponse, contract §5:
+ * the buyer is told order records are kept for legal retention). The page shows no counts, only the erased state. */
+export function validErasureSummary(value: unknown): value is { erased: true; orders_retained: true; summary: ErasureSummary } {
+  if (!exact(value, ["erased", "orders_retained", "summary"]) || value.erased !== true || value.orders_retained !== true) return false;
+  const summary = value.summary;
+  return exact(summary, ["consents_withdrawn", "sessions_revoked", "snapshots_redacted", "bundles_relabelled"]) &&
+    [summary.consents_withdrawn, summary.sessions_revoked, summary.snapshots_redacted, summary.bundles_relabelled].every(count);
 }
 /** POST privacy/export 200: the lc.customer-export.v1 envelope; the buyer copy never carries customer_id (customers-core D8). */
 export function validBuyerExport(value: unknown): boolean {

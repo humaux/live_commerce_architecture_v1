@@ -241,7 +241,7 @@ deploy/scripts/deploy.sh upgrade <tag>
 1. 前提（owner 事项）：平台自己的 Stripe **测试**账户（与商家 PSP 账户不同，BD1）、计划 price id（Billing Q1/Q2）。
    owner 以文件提供两个密钥（O-D，绝不经聊天）：`commerce_platform_stripe_secret_key`（只接受 `sk_test_`/`rk_test_`，BD8）、
    `commerce_platform_stripe_webhook_secret`（`whsec_`，Stripe 后台为端点 `https://<LC_HOOKS_HOST>/v1/platform/stripe/webhook` 生成；
-   这是与商家 PSP webhook 不同的端点）。
+   这是与商家 PSP webhook 不同的端点）。**创建端点时必须带 `api_version=`<`internal/integrations/psp/stripe.APIVersion` 当前值>**（载荷使用端点的 API 版本而非客户端的 Stripe-Version；旧版本没有 `invoice.parent`，`invoice.*` 事件会被确认但不生效，日志出现 `billing_ops_alert code=invoice_without_subscription` 即为版本不符）。
 2. 启用：`compose.env` 设 `LC_BILLING_ENABLED=1`、`LC_BILLING_PRICE_IDS=price_...`（逗号分隔，1–10 个），`deploy.sh upgrade`。
    未设 = 关闭（`0` 会让 api 启动失败，preflight P06 拦截）；preflight P08 校验 price id，P09 校验两个密钥文件格式。
    webhook 复用 `commerce_stripe_ingress` 登录（`COMMERCE_STRIPE_INGRESS_DATABASE_URL`）。

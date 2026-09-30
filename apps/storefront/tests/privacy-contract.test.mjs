@@ -65,8 +65,15 @@ test("consent result and erasure summary validators", () => {
   ])
     assert.equal(validConsentResult(bad), false, JSON.stringify(bad));
   const summary = { consents_withdrawn: 2, sessions_revoked: 1, snapshots_redacted: 3, bundles_relabelled: 0 };
-  assert.equal(validErasureSummary(summary), true);
-  for (const bad of [{ ...summary, extra: 1 }, { ...summary, sessions_revoked: -1 }, { ...summary, snapshots_redacted: 1.5 }, {}])
+  const envelope = (over = {}) => ({ erased: true, orders_retained: true, summary, ...over });
+  assert.equal(validErasureSummary(envelope()), true);
+  const badSummaries = [{ ...summary, extra: 1 }, { ...summary, sessions_revoked: -1 }, { ...summary, snapshots_redacted: 1.5 }, {}];
+  for (const bad of [
+    summary, // the old flat shape
+    envelope({ erased: false }), envelope({ orders_retained: false }), envelope({ extra: 1 }),
+    { erased: true, orders_retained: true },
+    ...badSummaries.map((s) => envelope({ summary: s })),
+  ])
     assert.equal(validErasureSummary(bad), false, JSON.stringify(bad));
 });
 

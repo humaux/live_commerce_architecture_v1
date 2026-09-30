@@ -507,6 +507,30 @@ func TestWebhookStatusCodesBeforeAnyDatabaseWork(t *testing.T) {
 	}
 }
 
+// An endpoint on a pre-basil API version delivers invoice.* without parent.subscription_details: the event is
+// acknowledged (nothing to retry) but must leave an operator-visible alert, never a silent 200.
+func TestWebhookInvoiceWithoutSubscriptionAlerts(t *testing.T) {
+	var logs bytes.Buffer
+	previous := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&logs, nil)))
+	defer slog.SetDefault(previous)
+	svc := webhookService(t, roundTrip(func(r *http.Request) (*http.Response, error) {
+		t.Fatalf("no subscription id must not reach Stripe: %s", r.URL.Path)
+		return nil, nil
+	}))
+	body := eventBody("invoice.paid", false, `{"object":"invoice","id":"in_1","subscription":"sub_1Abc"}`) // pre-basil shape
+	rec := postWebhook(svc.WebhookHandler(lazyPool(t)), "POST", body, map[string]string{"Stripe-Signature": signed(fakeWebhookSecret, time.Now(), body)})
+	if rec.Code != 200 || strings.Count(logs.String(), "invoice_without_subscription") != 1 {
+		t.Fatalf("status=%d logs=%q, want 200 and one invoice_without_subscription alert", rec.Code, logs.String())
+	}
+	logs.Reset()
+	body = eventBody("customer.subscription.updated", false, `{"object":"customer","id":"cus_1"}`)
+	postWebhook(svc.WebhookHandler(lazyPool(t)), "POST", body, map[string]string{"Stripe-Signature": signed(fakeWebhookSecret, time.Now(), body)})
+	if strings.Contains(logs.String(), "invoice_without_subscription") {
+		t.Fatalf("a non-invoice miss must not raise the invoice alert: %q", logs.String())
+	}
+}
+
 func TestWebhookDisabledAnswers503(t *testing.T) {
 	for name, h := range map[string]http.Handler{
 		"nil service":     (*Service)(nil).WebhookHandler(nil),

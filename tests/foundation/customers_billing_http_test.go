@@ -761,6 +761,23 @@ func TestCustomersBillingCB09Permissions(t *testing.T) {
 	if r := c.do(c.on, "GET", base+"/customers", c.tokens["read"], nil, nil); r.status != 200 {
 		t.Errorf("GET customers (list, no order PII) with customers:read alone: HTTP %d code=%q, want 200", r.status, cbhCode(r))
 	}
+	// §5 amendment (lane close): the list row carries minimized destination PII by design (display_name, phone_last3 <= 3 digits)
+	// under customers:read alone; nothing else of the destination may appear.
+	if r := c.do(c.on, "GET", base+"/customers", c.tokens["read"], nil, nil); r.status == 200 {
+		items, _ := r.json["items"].([]any)
+		if len(items) < 1 {
+			t.Errorf("list with customers:read alone returned no rows: %s", r.raw)
+		}
+		for _, it := range items {
+			row := it.(map[string]any)
+			if last3, ok := row["phone_last3"].(string); ok && !regexp.MustCompile(`^[0-9]{0,3}$`).MatchString(last3) {
+				t.Errorf("phone_last3 %q is not at most 3 digits", last3)
+			}
+			if strings.Contains(string(r.raw), "address") || strings.Contains(string(r.raw), "line1") {
+				t.Errorf("list leaks destination fields beyond display_name/phone_last3: %s", r.raw)
+			}
+		}
+	}
 	if r := c.do(c.on, "GET", base+"/customers/"+owner, c.tokens["read"], nil, nil); r.status != 403 {
 		t.Errorf("GET customers/{id} with customers:read alone: HTTP %d code=%q, want 403 (order PII needs orders:read)", r.status, cbhCode(r))
 	}
