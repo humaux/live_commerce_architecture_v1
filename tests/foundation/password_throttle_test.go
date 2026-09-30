@@ -62,14 +62,34 @@ func pwaNextDayStart() time.Time {
 }
 
 // elapseAll moves every row of a single-window bucket (ip, email-pw, ip-signup, binding) `secs` into the past.
+// Rows move oldest first, one statement each: a single UPDATE of all rows fails with 23505 whenever the
+// executor happens to visit a newer row before the older row it is about to land on.
 func (e *pwaEnv) elapseAll(kind, value string, secs int) {
 	e.t.Helper()
-	tag, err := e.f.owner.Exec(pwaBG, `UPDATE identity.auth_throttle SET window_start = window_start - make_interval(secs => $2) WHERE bucket = ANY($1)`, e.storedKeys(kind, value), secs)
+	rows, err := e.f.owner.Query(pwaBG, `SELECT bucket, window_start FROM identity.auth_throttle WHERE bucket = ANY($1) ORDER BY window_start`, e.storedKeys(kind, value))
 	if err != nil {
-		e.t.Fatal(err)
+		e.t.Fatalf("elapseAll(%s): %v", kind, err)
 	}
-	if tag.RowsAffected() == 0 {
+	type row struct {
+		b []byte
+		s time.Time
+	}
+	var all []row
+	for rows.Next() {
+		var r row
+		if err := rows.Scan(&r.b, &r.s); err != nil {
+			e.t.Fatalf("elapseAll(%s): %v", kind, err)
+		}
+		all = append(all, r)
+	}
+	rows.Close()
+	if len(all) == 0 {
 		e.t.Fatalf("elapseAll(%s): no rows", kind)
+	}
+	for _, r := range all {
+		if _, err := e.f.owner.Exec(pwaBG, `UPDATE identity.auth_throttle SET window_start = window_start - make_interval(secs => $3) WHERE bucket=$1 AND window_start=$2`, r.b, r.s, secs); err != nil {
+			e.t.Fatalf("elapseAll(%s): %v", kind, err)
+		}
 	}
 }
 
@@ -318,7 +338,7 @@ func TestPasswordPA07Throttle(t *testing.T) {
 		v6 := func(net48 uint16, net64 uint16) netip.Addr {
 			return netip.AddrFrom16([16]byte{0x20, 0x01, 0x0d, 0xb8, byte(net48 >> 8), byte(net48), byte(net64 >> 8), byte(net64), 0, 0, 0, 0, 0, 0, 0, 1})
 		}
-		n48 := uint16(pwaIPCounter.Add(1))
+		n48 := 0xC000 | uint16(pwaIPCounter.Add(1)&0x0fff) // own range: other subtests use small n48 and n48+1
 		// Every call comes from a fresh /64, so the per-/64 `ip` bucket (30) never trips; only the /48 can.
 		for i := uint16(1); i <= 60; i++ {
 			if i%2 == 1 {
@@ -335,7 +355,7 @@ func TestPasswordPA07Throttle(t *testing.T) {
 		}
 		e.wantThrottle(e.wrongCompleteFrom(v6(n48, 62)), "62nd call (complete) from the same /48")
 		// a different /48 is unaffected
-		if err := e.wrongLoginFrom(v6(n48+1, 1), pwaEmail()); !errors.Is(err, identity.ErrInvalidCredentials) {
+		if err := e.wrongLoginFrom(v6(n48^0x1000, 1), pwaEmail()); !errors.Is(err, identity.ErrInvalidCredentials) {
 			t.Errorf("a different /48 was throttled: %v", err)
 		}
 	})

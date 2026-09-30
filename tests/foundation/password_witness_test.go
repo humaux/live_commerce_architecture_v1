@@ -142,7 +142,7 @@ func (e *pwaEnv) elapse(kind, value, class string) {
 	}
 	tag, err := e.f.owner.Exec(pwaBG, q, b)
 	if err != nil {
-		e.t.Fatal(err)
+		e.t.Fatalf("elapse(%s,%s): %v", kind, class, err)
 	}
 	if tag.RowsAffected() != 1 {
 		e.t.Fatalf("elapse(%s,%s): %d rows moved, want 1 (bucket key or window class wrong)", kind, class, tag.RowsAffected())
