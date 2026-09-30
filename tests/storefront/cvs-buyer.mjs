@@ -40,6 +40,7 @@ const certDir = await mkdtemp(path.join(tmpdir(), "lc-cvs-edge-"));
 const pass = (name) => console.log(`PASS ${name}`);
 let browser, edge, proxy;
 const iframeSeen = [];
+const mapPosts = []; // every form the browser POSTed to the stage map: { mobile, device }
 
 const copy = {
   "zh-TW": {
@@ -160,6 +161,7 @@ try {
       const chunks = []; for await (const x of req) chunks.push(x);
       const body = Buffer.concat(chunks), host = String(req.headers.host).replace(/:443$/, "");
       let out;
+      if (host === "logistics-stage.ecpay.com.tw") mapPosts.push({ mobile: /Mobile|Android|iPhone/i.test(String(req.headers["user-agent"])), device: new URLSearchParams(body.toString()).get("Device") });
       if (host === "logistics-stage.ecpay.com.tw") out = await relayTo(fake, req, body, { "x-ecpay-host": host, host: fake.host });
       else if (host === "hooks.tcv.example") out = await relayTo(hooks, req, body, { host: hooks.host });
       else out = await relayTo({ hostname: "127.0.0.1", port: nextPort }, req, body);
@@ -281,6 +283,10 @@ try {
   }
   assert.equal(iframeSeen.length, 0, `an iframe was attached: ${iframeSeen}`);
   pass("no iframe was ever attached to any page (F4)");
+  // B20: the buyer BFF sends Device=1 for mobile user agents and 0 otherwise (buyers arrive from Facebook / Instagram on phones)
+  assert(mapPosts.length >= 6 && mapPosts.some((m) => m.mobile) && mapPosts.some((m) => !m.mobile), `map posts seen: ${JSON.stringify(mapPosts)}`);
+  for (const m of mapPosts) assert.equal(m.device, m.mobile ? "1" : "0", `B20: Device=${m.device} for a ${m.mobile ? "mobile" : "desktop"} browser`);
+  pass("B20 Device=1 for phones, 0 for desktops in every map form");
 } finally {
   for (const c of contexts) await c.close().catch(() => {});
   await browser?.close().catch(() => {});

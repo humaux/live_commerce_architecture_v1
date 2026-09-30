@@ -529,8 +529,6 @@ func TestCvsShipmentLifecycle(t *testing.T) {
 		st, out, _ = abandon(o)
 		refused("4 days into a 5-day window", st, out)
 		age(o, "25 hours") // 5 days + 1 h: lapsed
-		dbg := e.client.Query(ctx, ecpay.Credentials{MerchantID: e.mk.ID, HashKey: e.mk.Key, HashIV: e.mk.IV}, e.tradeNo(o))
-		t.Logf("DEBUG direct query: outcome=%s code=%s status=%q id=%q status-events=%d", dbg.Outcome, dbg.Code, dbg.StatusCode, dbg.LogisticsID, e.events(o, "AND source='ecpay_status'"))
 		if st, _, raw := abandon(o); st != 200 {
 			t.Errorf("lapsed + fresh created-only query (300): want 200, got %d %s", st, raw)
 		}
