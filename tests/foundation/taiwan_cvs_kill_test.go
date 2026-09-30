@@ -30,11 +30,12 @@ import (
 	"livecommerce/internal/platform"
 )
 
-// TestCvsChildWorker is the child of the kill gate; it does nothing in a normal run.
+// TestCvsChildWorker is the child of the kill gate; it returns at once in a normal run (a helper, not a gate: a SKIP
+// would read as an unexplained skip to the release gate, same pattern as TestT06DispatcherCrashChild).
 func TestCvsChildWorker(t *testing.T) {
 	dsn := os.Getenv("TCV_CHILD_DSN")
 	if dsn == "" {
-		t.Skip("helper of TestCvsShipmentLifecycle (child process); not a gate")
+		return
 	}
 	ctx := context.Background()
 	keys, err := ecpay.LoadKeyring(func(n string) string {

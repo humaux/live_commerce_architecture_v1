@@ -1794,11 +1794,12 @@ func TestMetaAdsMA07ReportShape(t *testing.T) {
 	}
 }
 
-// TestMetaAdsChildWorker is the helper process of TestMetaAdsMA05ChildKill (skipped unless LC_ADS_CHILD=1; NOT a gate). It is a real
+// TestMetaAdsChildWorker is the helper process of TestMetaAdsMA05ChildKill (a no-op return unless LC_ADS_CHILD=1, like
+// TestT06DispatcherCrashChild: a SKIP here would read as an unexplained skip to the release gate; NOT a gate). It is a real
 // separate OS process that runs the ads dispatcher over its own commerce_worker login against the fake Graph until it is killed.
 func TestMetaAdsChildWorker(t *testing.T) {
 	if os.Getenv("LC_ADS_CHILD") != "1" {
-		t.Skip("helper process of TestMetaAdsMA05ChildKill; not a gate")
+		return
 	}
 	ctx := context.Background()
 	pool, err := platform.OpenWorkerPool(ctx, os.Getenv("LC_ADS_CHILD_DSN"))
