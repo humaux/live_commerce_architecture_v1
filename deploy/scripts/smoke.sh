@@ -293,12 +293,17 @@ full_cases() {
   # S10 preflight positive + negatives
   if runc S10 "$LC_SCRIPTS_DIR/preflight.sh"; then rec S10 PASS "preflight positive"; else rec S10 FAIL "preflight positive (logs/S10.log)"; fi
   negative() { # id rule mutate-function
-    local id=$1 rule=$2 copy
+    local id=$1 rule=$2 copy pf
     copy=$(mktemp -d "$SMOKE_ROOT/neg.XXXXXX")
     cp -a "$SMOKE_ROOT/config/." "$copy/"
     "$3" "$copy"
-    if (export LC_COMPOSE_ENV="$copy/compose.env" LC_ENV_DIR="$copy/env" LC_SECRETS_DIR="$copy/secrets" &&
-      "$LC_SCRIPTS_DIR/preflight.sh" --skip-images >"$EV/logs/$id.log" 2>&1); then
+    # preflight reads os.environ and lc_load_env lets the environment win over the file, and this process
+    # already exported the base compose.env (line ~276). Unset every compose.env key first, or a mutation of
+    # an existing key (LC_IDENTITY_ENABLED, LC_OIDC_ISSUER) is silently overridden (S10i/S10l, 2026-10-01).
+    pf="$LC_SCRIPTS_DIR/preflight.sh"
+    if (while IFS='=' read -r k _; do unset "$k"; done < <(grep -E '^[A-Z_][A-Z0-9_]*=' "$SMOKE_ROOT/config/compose.env" "$copy/compose.env" | cut -d: -f2-) &&
+      export LC_COMPOSE_ENV="$copy/compose.env" LC_ENV_DIR="$copy/env" LC_SECRETS_DIR="$copy/secrets" &&
+      "$pf" --skip-images >"$EV/logs/$id.log" 2>&1); then
       rec "$id" FAIL "preflight passed but $rule FAIL expected"
     elif grep -q "^$rule FAIL" "$EV/logs/$id.log"; then
       rec "$id" PASS "$rule FAIL as expected"
@@ -456,7 +461,7 @@ sys.exit(1 if names & {"dsn_lc_stripe_registrar", "dsn_lc_meta_registrar"} else 
   printf '%s\n' "$out44" >"$EV/logs/S44b.log"
   [[ "$out44" == *meta_admin_* && "$out44" != *meta_admin_config* ]] || why44+=" ops-admin meta-admin: [${out44:0:80}]"
   after_lines=$(awk 'END { print NR }' "$ops_log" 2>/dev/null || echo 0)
-  ((after_lines == before_lines + 1)) && grep -q 'tool=meta-admin sub=page-token exit=1' "$ops_log" && ! grep -q 'smoke-dummy-token' "$ops_log" ||
+  ((after_lines == before_lines + 1)) && grep -Eq 'tool=meta-admin sub=page-token live_pair=[01] exit=1' "$ops_log" && ! grep -q 'smoke-dummy-token' "$ops_log" ||
     why44+=" ops-admin audit line missing or leaked a value"
   out44=$(STRIPE_SECRET_KEY=$live_key STRIPE_ACCOUNT_ID=acct_0000000000 "$LC_SCRIPTS_DIR/ops-admin.sh" stripe-admin register \
     --tenant t --store s --principal p 2>&1 </dev/null) && why44+=" ops-admin accepted a live-shaped key"
