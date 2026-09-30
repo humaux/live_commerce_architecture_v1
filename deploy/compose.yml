@@ -628,6 +628,7 @@ services:
       - pw_lc_claims_intake
       - pw_lc_claims_worker
       - pw_lc_retention_job
+      - pw_lc_ads_worker
       - pw_lc_stripe_registrar
       - pw_lc_meta_registrar
     volumes:
@@ -698,6 +699,7 @@ secrets:
   pw_lc_claims_intake: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_claims_intake" }
   pw_lc_claims_worker: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_claims_worker" }
   pw_lc_retention_job: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_retention_job" }
+  pw_lc_ads_worker: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_ads_worker" }
   pw_lc_stripe_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_stripe_registrar" }
   pw_lc_meta_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_meta_registrar" }
   dsn_lc_api_runtime: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_api_runtime" }
