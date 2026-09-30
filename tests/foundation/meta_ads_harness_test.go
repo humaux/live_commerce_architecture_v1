@@ -142,6 +142,7 @@ type adsOpts struct {
 	maxGen      int64         // dispatcher MaxGenerations (default 6)
 	noConnect   bool          // do not run the connect chain
 	unfunded    bool          // account has no funding source
+	retryDelay  time.Duration // dispatcher RetryDelay between an UNKNOWN and its reconcile claim (default 150ms)
 	callTimeout time.Duration // dispatcher CallTimeout (default 700ms; race tests hold a Graph call in flight and need longer)
 }
 
@@ -321,6 +322,9 @@ func (e *adsEnv) startWorker(ring *tokenopen.Keyring) {
 		e.dispatchOpts.CallTimeout = e.opts.callTimeout
 	}
 	e.dispatchOpts.RetryDelay = 150 * time.Millisecond
+	if e.opts.retryDelay > 0 {
+		e.dispatchOpts.RetryDelay = e.opts.retryDelay
+	}
 	e.dispatchOpts.MaxGenerations = 6
 	if e.opts.maxGen > 0 {
 		e.dispatchOpts.MaxGenerations = e.opts.maxGen
@@ -393,7 +397,7 @@ func (e *adsEnv) retire() {
 		`SET LOCAL session_replication_role=replica`,
 		`UPDATE river.river_job SET state='cancelled',finalized_at=now() WHERE queue='ads' AND state IN ('available','scheduled','retryable','running')
 		   AND args->>'operation_id' IN (SELECT id::text FROM integration.operations WHERE store_id=$1)`,
-		`UPDATE integration.operations SET state='FAILED_FINAL',lease_mode='',lease_until=NULL,lease_token_hash=NULL,result_code='test_retired'
+		`UPDATE integration.operations SET state='FAILED_FINAL',generation=greatest(generation,1),lease_mode='',lease_until=NULL,lease_token_hash=NULL,result_code='test_retired'
 		   WHERE store_id=$1 AND provider IN ('meta_ads','meta_dataset') AND state IN ('READY','DISPATCHING','UNKNOWN','ACKNOWLEDGED')`,
 		`UPDATE ads.campaign_drafts SET starts_at=starts_at-interval '200 days',ends_at=ends_at-interval '200 days' WHERE store_id=$1`,
 		`UPDATE ads.store_settings SET capi_enabled=false,capi_dataset_binding=NULL,capi_enabled_by=NULL WHERE store_id=$1`,
