@@ -69,7 +69,8 @@ type tcvEnv struct {
 	r           *rfxEnv  // set when tcvOpts.stripe
 	ro          rfxOrder // the rfx store (endpoint, secret) when tcvOpts.stripe
 	queue       string   // dispatcher queue (startDispatcher)
-	settingsVer int64    // last version of the store CVS settings written through cvsSettings
+	statusSeq   int
+	settingsVer int64 // last version of the store CVS settings written through cvsSettings
 }
 
 // tcvOpts tunes the environment.
@@ -730,7 +731,9 @@ func (e *tcvEnv) statusFor(order, rtnCode string) url.Values {
 	if !ok {
 		e.t.Fatalf("the fake has no trade for %s (was a Create sent?)", order)
 	}
-	return ecpaytest.StatusFields(tr, rtnCode, time.Now().Format("2006/01/02 15:04:05"), "SENTINELRECIPIENT")
+	// every notification carries its own UpdateStatusDate (a re-delivered identical body is a duplicate, deduped by design)
+	e.statusSeq++
+	return ecpaytest.StatusFields(tr, rtnCode, time.Now().Add(time.Duration(e.statusSeq)*time.Second).Format("2006/01/02 15:04:05"), "SENTINELRECIPIENT")
 }
 
 // recart bumps the buyer's cart (same owner, new cart version), so the same owner can attempt another order.
@@ -777,4 +780,19 @@ func (e *tcvEnv) payHold(hold checkout.Result, b *tcvBuyer) rfxOrder {
 	s.p.hold = hold
 	s.p.cap = b.cap // the hosted payment start authenticates as the order's own buyer
 	return e.r.pay(e.t, s, e.ro.endpoint, e.ro.secret)
+}
+
+// abandon abandons the latest attempt with the acknowledgement. While the dispatcher still owns the reconcile budget the route answers 409
+// reconcile_in_progress (an UNKNOWN attempt is abandonable only after the budget is exhausted or the 1-hour settle rule); it polls for that.
+func (e *tcvEnv) abandon(order string) (int, map[string]any, []byte) {
+	e.t.Helper()
+	deadline := time.Now().Add(30 * time.Second)
+	for {
+		_, _, version := e.shipState(order)
+		st, out, raw := e.mcall(e.token(), "POST", e.shipPath(order)+"/abandon", t04Key("tcv-abandon"), fmt.Sprintf(`{"expected_version":%d,"i_checked_ecpay_backend":true}`, version))
+		if st != 409 || tcvStr(out, "code") != "reconcile_in_progress" || time.Now().After(deadline) {
+			return st, out, raw
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
 }

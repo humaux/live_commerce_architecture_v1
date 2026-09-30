@@ -18,6 +18,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"livecommerce/internal/checkout"
+	"livecommerce/internal/integrations/shipping/ecpay/ecpaytest"
 	"livecommerce/internal/storefront"
 )
 
@@ -541,7 +542,10 @@ func TestCvsCollectionStatus(t *testing.T) {
 				t.Errorf("%s %s: state %s collection %s", c.kind, c.atStore, st, e.collectionState(order))
 			}
 			auditBefore := e.audit("fulfillment.collection_reported")
-			e.tppStatuses(endpoint, order, c.picked)
+			pickedBody := e.statusFor(order, c.picked)
+			if w := e.postStatus(endpoint, pickedBody); w.Code != 200 || w.Body.String() != "1|OK" {
+				t.Fatalf("%s %s: %d %q", c.kind, c.picked, w.Code, w.Body.String())
+			}
 			if st, _, _ := e.shipState(order); st != "PICKED_UP" || e.collectionState(order) != "COLLECTED" {
 				t.Errorf("%s %s: state %s collection %s, want PICKED_UP/COLLECTED", c.kind, c.picked, st, e.collectionState(order))
 			}
@@ -550,7 +554,9 @@ func TestCvsCollectionStatus(t *testing.T) {
 			}
 			// a duplicate report is one transition (one event, still 1|OK)
 			events := e.events(order, "AND provider_code=$2", c.picked)
-			e.tppStatuses(endpoint, order, c.picked)
+			if w := e.postStatus(endpoint, pickedBody); w.Code != 200 || w.Body.String() != "1|OK" { // ECPay re-delivers the identical body
+				t.Fatalf("%s duplicate delivery: %d %q", c.kind, w.Code, w.Body.String())
+			}
 			if got := e.events(order, "AND provider_code=$2", c.picked); got != events || e.audit("fulfillment.collection_reported") != auditBefore+1 {
 				t.Errorf("%s: a duplicate report wrote a second event/audit (%d -> %d)", c.kind, events, got)
 			}
@@ -1018,6 +1024,102 @@ func TestCvsPayAtPickupRelease(t *testing.T) {
 		}
 		if st := try(insert(-int64(qty)+1, "fulfillment.pay_at_pickup.cancel"), gucs); st != "42501" {
 			t.Errorf("DEALLOCATE with a wrong quantity: want 42501, got %q", st)
+		}
+	})
+
+	t.Run("ECPay attempts: in flight, CREATED, 2098 re-delivery, ABANDONED late report, 3020 restock", func(t *testing.T) {
+		e.connect("C2C")
+		api, _, _ := e.service("cvs_711", "API", 0)
+		apiFami, _, _ := e.service("cvs_familymart", "API", 0)
+		endpoint := e.endpointID()
+		place := func(kind, code string) string {
+			order, _ := e.cvsOrder(tcvOrderSpec{kind: kind, code: code, paymentMode: "pay_at_pickup"})
+			return order
+		}
+		created := func(order string) {
+			if st, _, raw := e.ship(e.token(), order, 0, "", true); st != 202 {
+				t.Fatalf("request shipment: %d %s", st, raw)
+			}
+			e.awaitShip(order, "CREATED")
+		}
+		mustRelease := func(order, action, expected string) (int, map[string]any, []byte) {
+			return e.release(writer, order, t04Key("tpp-e-"+action), action, expected)
+		}
+		// REQUESTED (the job is not routed to any worker): may already be at ECPay
+		o1 := place("cvs_711", api)
+		if st, _, raw := e.ship(e.token(), o1, 0, "", false); st != 202 {
+			t.Fatalf("request: %d %s", st, raw)
+		}
+		if st, _, raw := mustRelease(o1, "cancel", "PENDING"); st != 409 || tcvStr(tcvJSON(t, raw), "code") != "cvs_attempt_in_flight" {
+			t.Errorf("REQUESTED attempt: want 409 cvs_attempt_in_flight, got %d %s", st, raw)
+		}
+		if n := len(e.deallocRows(o1)); n != 0 || e.collectionState(o1) != "PENDING" {
+			t.Errorf("a refused cancel changed the order (%d DEALLOCATE rows, state %s)", n, e.collectionState(o1))
+		}
+		// UNKNOWN (403 rate limit at ECPay: nothing recorded there)
+		e.fake.SetCreateMode(ecpaytest.Create403, "")
+		o2 := place("cvs_711", api)
+		if st, _, raw := e.ship(e.token(), o2, 0, "", true); st != 202 {
+			t.Fatalf("request: %d %s", st, raw)
+		}
+		e.awaitShip(o2, "UNKNOWN")
+		e.fake.SetCreateMode(ecpaytest.CreateOK, "")
+		if st, _, raw := mustRelease(o2, "cancel", "PENDING"); st != 409 || tcvStr(tcvJSON(t, raw), "code") != "cvs_attempt_in_flight" {
+			t.Errorf("UNKNOWN attempt: want 409 cvs_attempt_in_flight, got %d %s", st, raw)
+		}
+		// the merchant abandons it (acknowledgement; ECPay shows nothing): ABANDONED counts as not handed over, so the cancel now works
+		tn := e.tradeNo(o2)
+		if st, _, raw := e.abandon(o2); st != 200 {
+			t.Fatalf("abandon: %d %s", st, raw)
+		}
+		if st, _, raw := mustRelease(o2, "cancel", "PENDING"); st != 200 {
+			t.Fatalf("cancel after abandon: %d %s", st, raw)
+		}
+		ledger := e.count(`SELECT count(*) FROM inventory.ledger WHERE reservation_id=$1`, o2)
+		late := ecpaytest.StatusFields(ecpaytest.Trade{MerchantID: e.mk.ID, TradeNo: tn, LogisticsID: "8000001", SubType: "UNIMARTC2C", GoodsAmount: "25", PaymentNo: "1"}, "2030", "2026/09/30 10:00:00", "SENTINELRECIPIENT")
+		if w := e.postStatus(endpoint, late); w.Code != 200 || w.Body.String() != "1|OK" {
+			t.Errorf("a late report for the abandoned attempt of a CANCELLED order: %d %q (always ACK)", w.Code, w.Body.String())
+		}
+		if st, _, _ := e.shipState(o2); st != "ABANDONED" || e.collectionState(o2) != "CANCELLED" || e.count(`SELECT count(*) FROM inventory.ledger WHERE reservation_id=$1`, o2) != ledger {
+			t.Errorf("late report changed state %s / collection %s / ledger", st, e.collectionState(o2))
+		}
+		if e.events(o2, "AND event_code LIKE '%duplicate_label_risk'") < 1 {
+			t.Error("a late report for an ABANDONED attempt must raise duplicate_label_risk")
+		}
+		// CREATED: handed to the provider
+		o3 := place("cvs_711", api)
+		created(o3)
+		if st, _, raw := mustRelease(o3, "cancel", "PENDING"); st != 422 || tcvStr(tcvJSON(t, raw), "code") != "not_cancellable" {
+			t.Errorf("CREATED shipment: want 422 not_cancellable, got %d %s", st, raw)
+		}
+		// 2074 -> 2098 -> restock refused; 2074 again -> restock allowed; a later 2067 conflicts with the merchant's record
+		o4 := place("cvs_711", api)
+		created(o4)
+		e.tppStatuses(endpoint, o4, "2030", "2073", "2074")
+		if e.collectionState(o4) != "RETURNED" {
+			t.Fatalf("2074 must set RETURNED, got %s", e.collectionState(o4))
+		}
+		e.tppStatuses(endpoint, o4, "2098")
+		if st, _, _ := e.shipState(o4); st != "AT_STORE" {
+			t.Errorf("2098 re-delivery to the pickup store: state %s, want AT_STORE", st)
+		}
+		if st, _, raw := mustRelease(o4, "restock", "RETURNED"); st != 409 || tcvStr(tcvJSON(t, raw), "code") != "parcel_not_returned" {
+			t.Errorf("restock while the parcel is back at the store: want 409 parcel_not_returned, got %d %s", st, raw)
+		}
+		e.tppStatuses(endpoint, o4, "2074")
+		if st, out, raw := mustRelease(o4, "restock", "RETURNED"); st != 200 || tcvStr(out, "collection_state") != "RESTOCKED" {
+			t.Fatalf("restock after 2074: %d %s", st, raw)
+		}
+		e.tppStatuses(endpoint, o4, "2067")
+		if e.collectionState(o4) != "RESTOCKED" || e.events(o4, "AND event_code LIKE '%collection_conflict'") < 1 {
+			t.Errorf("a signed 2067 on a RESTOCKED order: collection %s, conflict events %d (want RESTOCKED + collection_conflict)", e.collectionState(o4), e.events(o4, "AND event_code LIKE '%collection_conflict'"))
+		}
+		// FamilyMart 3020 -> RETURNED -> restock
+		o5 := place("cvs_familymart", apiFami)
+		created(o5)
+		e.tppStatuses(endpoint, o5, "3024", "3018", "3020")
+		if st, out, raw := mustRelease(o5, "restock", "RETURNED"); st != 200 || tcvStr(out, "collection_state") != "RESTOCKED" {
+			t.Errorf("restock after 3020: %d %s", st, raw)
 		}
 	})
 }
