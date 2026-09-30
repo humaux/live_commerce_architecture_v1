@@ -2,6 +2,9 @@
 //   GET orders/{id}/payment; POST .../payment/prepare (keyed, body), .../handoff|refresh|cancel
 //   (keyless, nonretryable; Go HostedPaymentStarter Begin/Take/RefreshPayment/CancelPayment).
 // Every success body is re-validated with lib/payment-contract.ts before it reaches the browser.
+// CVS (taiwan-cvs-logistics-v1 §5.2, §16.1): exactly POST cvs-selections (keyed), GET cvs-selections/{id},
+// POST cvs-selections/{id}/verify (keyless, no body) and POST cvs-stores (keyed) -> Go internal/buyerhttp/cvs.go;
+// bodies and answers are re-validated with lib/cvs-contract.ts. No generic proxying.
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { isIP } from "node:net";
 import {
@@ -25,6 +28,15 @@ import {
   validConsentResult,
   validErasureSummary,
 } from "./privacy-contract.ts";
+import {
+  CVS_ERROR_CODES,
+  DEFINITE_CVS_CODES,
+  isPaymentMode,
+  validBuyerStore,
+  validCvsSelection,
+  validCvsSelectionOpen,
+  validReturnPath,
+} from "./cvs-contract.ts";
 
 const COOKIE = "__Host-commerce_buyer";
 const MAX_JSON = 64 * 1024;
@@ -59,7 +71,9 @@ type Route = {
     | "payment"
     | "claim"
     | "consent"
-    | "erasure";
+    | "erasure"
+    | "cvsSelection"
+    | "cvsStore";
   query?: "catalog" | "options" | "orders";
   session?: string;
   payment?: "view" | "prepare" | "handoff" | "refresh" | "cancel";
@@ -67,6 +81,10 @@ type Route = {
   // Claim-link preview/redeem (live-keyword-claims-v1 B1/B2): the only routes that take
   // and forward the X-Commerce-Claim-Token header.
   claim?: "preview" | "redeem";
+  // CVS map selection / buyer-entered store routes; keyless = POST with neither key nor body (verify).
+  cvs?: "open" | "get" | "verify" | "store";
+  keyless?: boolean;
+  selectionID?: string;
 };
 
 const messages: Record<string, string> = {
@@ -86,6 +104,10 @@ const messages: Record<string, string> = {
   erasure_blocked: "Erasure is blocked while a payment may still be open.",
   export_too_large: "The export is too large for one file.",
   idempotency_conflict: "Request conflicts with an earlier one.",
+  // taiwan-cvs-logistics-v1 §5.2/§16 refusals; the UI maps the code to text, these are generic fallbacks.
+  ...Object.fromEntries(
+    CVS_ERROR_CODES.map((code) => [code, "Request refused."]),
+  ),
 };
 
 function headers(extra?: HeadersInit) {
@@ -104,7 +126,11 @@ function failure(status: number, code: string, nonretryable = false): Response {
       code: safeCode,
       message: messages[safeCode],
       request_id,
-      retryable: !nonretryable && (status === 503 || status === 429),
+      // A definite CVS refusal (e.g. pay_at_pickup_limit, 429) committed nothing: never "retryable".
+    retryable:
+      !nonretryable &&
+      !DEFINITE_CVS_CODES.includes(code) &&
+      (status === 503 || status === 429),
       details: {},
     },
     { status, headers: h },
@@ -333,6 +359,12 @@ function route(
     },
     checkout: { POST: { privatePath: "checkout", body: "checkout" } },
     orders: { GET: { privatePath: "orders", query: "orders" } },
+    "cvs-selections": {
+      POST: { privatePath: "cvs-selections", body: "cvsSelection", cvs: "open" },
+    },
+    "cvs-stores": {
+      POST: { privatePath: "cvs-stores", body: "cvsStore", cvs: "store" },
+    },
     "claim-link": { GET: { privatePath: "claim-link", claim: "preview" } },
     "claim-link/redeem": {
       POST: { privatePath: "claim-link/redeem", body: "claim", claim: "redeem" },
@@ -363,6 +395,24 @@ function route(
               body: kind === "prepare" ? "payment" : undefined,
               payment: kind as Route["payment"],
               orderID: payment[1],
+            }
+          : undefined,
+    };
+  }
+  const selection = /^cvs-selections\/([^/]+)(?:\/(verify))?$/.exec(suffix);
+  if (selection) {
+    if (!UUID.test(selection[1])) return { known: true, invalidID: true };
+    const verify = selection[2] === "verify";
+    return {
+      known: true,
+      route:
+        method === (verify ? "POST" : "GET")
+          ? {
+              method,
+              privatePath: suffix,
+              cvs: verify ? "verify" : "get",
+              keyless: verify,
+              selectionID: selection[1],
             }
           : undefined,
     };
@@ -596,6 +646,21 @@ const shapes: Record<Exclude<Route["body"], undefined>, Shape> = {
     cart_version: "integer",
     service_version: "integer",
     allocation_version: "integer",
+    payment_mode: "string",
+  },
+  cvsSelection: {
+    cart_version: "integer",
+    market_id: "string",
+    service_code: "string",
+    return_path: "string",
+  },
+  cvsStore: {
+    cart_version: "integer",
+    market_id: "string",
+    service_code: "string",
+    store_code: "string",
+    store_name: "string",
+    store_address: "string",
   },
   payment: {
     method_code: "string",
@@ -623,6 +688,28 @@ function matchesShape(value: unknown, shape: Shape): boolean {
       );
     return matchesShape(field, expected);
   });
+}
+
+// Checks beyond key/type shape for the CVS bodies (exact key sets, allowlisted return_path) and the checkout
+// payment_mode enum. Go re-validates everything; this keeps malformed input off the private transport.
+const UUID_TEXT = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+function extraShapeOK(shape: Shape, parsed: unknown): boolean {
+  const v = parsed as Record<string, unknown>;
+  if (shape === shapes.checkout)
+    return v.payment_mode === undefined || isPaymentMode(v.payment_mode);
+  if (shape !== shapes.cvsSelection && shape !== shapes.cvsStore) return true;
+  if (
+    Object.keys(v).length !== Object.keys(shape).length ||
+    (v.cart_version as number) < 1 ||
+    !UUID_TEXT.test(String(v.market_id)) ||
+    !/^[a-z][a-z0-9_-]{0,39}$/.test(String(v.service_code))
+  )
+    return false;
+  return shape === shapes.cvsSelection
+    ? validReturnPath(v.return_path)
+    : ["store_code", "store_name", "store_address"].every(
+        (k) => typeof v[k] === "string" && (v[k] as string).length <= 512,
+      );
 }
 
 async function bodyJSON(
@@ -653,6 +740,7 @@ async function bodyJSON(
     const parsed = strictJSON(text);
     if (
       !matchesShape(parsed, shape) ||
+      !extraShapeOK(shape, parsed) ||
       (shape === shapes.payment &&
         (!parsed ||
           typeof parsed !== "object" ||
@@ -716,6 +804,12 @@ async function upstream(
   // (ads.put_capi_context); without this the API would see this server's fetch agent. Consents PUT only.
   const agent = request.headers.get("user-agent");
   if (path === "consents" && method === "PUT" && agent) outbound.set("User-Agent", agent);
+  // B20: ECPay map Device=1 for phone user agents (buyers arrive from FB/IG on phones); Go buyerhttp/cvs.go mobileHint reads it.
+  if (
+    path === "cvs-selections" &&
+    /Mobile|Android|iPhone/i.test(request.headers.get("user-agent") ?? "")
+  )
+    outbound.set("X-Commerce-Device", "mobile");
   try {
     return await fetch(`${config.api}/v1/buyer/${path}`, {
       method,
@@ -868,7 +962,7 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
     return fail(409, "context_changed");
   const isSession = !!target.session;
   const key = request.headers.get("idempotency-key");
-  if (isSession || request.method === "GET" || handoff) {
+  if (isSession || request.method === "GET" || handoff || target.keyless) {
     if (key !== null) return fail(422, "invalid_request");
   } else if (!key || !KEY.test(key)) return fail(422, "invalid_request");
   if (
@@ -1017,6 +1111,16 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
   if (!response.ok) return upstreamError(response, handoff);
   const data = await upstreamJSON(response, !!target.payment);
   if (request.signal.aborted || data === null || typeof data !== "object")
+    return fail(503, "unavailable");
+  if (
+    target.cvs &&
+    (![200, 201].includes(response.status) ||
+      (target.cvs === "open" && !validCvsSelectionOpen(data)) ||
+      (target.cvs === "store" && !validBuyerStore(data)) ||
+      ((target.cvs === "get" || target.cvs === "verify") &&
+        (!validCvsSelection(data) ||
+          (data as { selection_id: string }).selection_id !== target.selectionID)))
+  )
     return fail(503, "unavailable");
   if (
     target.claim &&

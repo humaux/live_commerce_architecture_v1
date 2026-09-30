@@ -21,6 +21,8 @@ import (
 	"livecommerce/internal/claimsintake"
 	"livecommerce/internal/integrations/core"
 	"livecommerce/internal/integrations/metareply"
+	"livecommerce/internal/integrations/shipping/ecpay"
+	"livecommerce/internal/integrations/shipping/ecpay/ecpayroute"
 	"livecommerce/internal/jobqueue"
 	"livecommerce/internal/platform"
 )
@@ -40,6 +42,10 @@ type workerConfig struct {
 	linkKey   claims.ReplyLinkKey
 	pageKeys  *metareply.PageTokenKeyring
 	graph     metareply.Config
+	// ECPay CVS route (taiwan-cvs-logistics-v1 §7.4): registered only when ecpayCfg.Enabled.
+	ecpayCfg    ecpay.Config
+	ecpayKeys   *ecpay.Keyring
+	ecpayClient *ecpay.Client
 }
 
 func (workerConfig) String() string     { return "claimsWorkerConfig{redacted}" }
@@ -103,6 +109,26 @@ func loadConfig(getenv func(string) string) (workerConfig, error) {
 	if c.graph.Validate() != nil {
 		return workerConfig{}, errWorkerConfig
 	}
+	if c.ecpayCfg, err = ecpay.LoadConfig(getenv); err != nil {
+		return workerConfig{}, errWorkerConfig
+	}
+	if c.ecpayCfg.Enabled {
+		// One ECPay environment per deployment = its payment profile (§12, LQ5): PROVIDER_MOCK runs SANDBOX.
+		env := ecpay.EnvSandbox
+		switch getenv("COMMERCE_PAYMENT_PROFILE") {
+		case "PROVIDER_MOCK", "SANDBOX":
+		case "LIVE":
+			env = ecpay.EnvLive
+		default:
+			return workerConfig{}, errWorkerConfig
+		}
+		if c.ecpayKeys, err = ecpay.LoadKeyring(getenv); err != nil {
+			return workerConfig{}, errWorkerConfig
+		}
+		if c.ecpayClient, err = ecpay.NewClient(env, nil); err != nil {
+			return workerConfig{}, errWorkerConfig
+		}
+	}
 	return c, nil
 }
 
@@ -132,6 +158,13 @@ func run(ctx context.Context, getenv func(string) string) error {
 	routes, err := metareply.Routes(workerPool, c.linkKey, c.pageKeys, c.graph)
 	if err != nil {
 		return errWorkerRoutes
+	}
+	if c.ecpayCfg.Enabled {
+		ecpayRoutes, err := ecpayroute.Routes(workerPool, c.ecpayKeys, c.ecpayClient, c.ecpayCfg)
+		if err != nil {
+			return errWorkerRoutes
+		}
+		routes = append(routes, ecpayRoutes...)
 	}
 	dispatcher, err := core.NewDispatcher(startup, workerPool, routes, core.DefaultDispatcherOptions())
 	if err != nil {

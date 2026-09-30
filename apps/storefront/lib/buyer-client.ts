@@ -13,6 +13,9 @@ const OPERATION =
 // Keep this set exact; payment UI owns GET-only recovery after uncertainty.
 const HANDOFF =
   /^orders\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/payment\/(?:handoff|refresh|cancel)$/;
+// taiwan-cvs-logistics-v1 §5.2: verify re-reads a map selection; keyless, no body, safe to repeat.
+const CVS_VERIFY =
+  /^cvs-selections\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/verify$/;
 
 export type SessionStatus = {
   state: "absent" | "expired" | "inactive" | "active";
@@ -36,11 +39,14 @@ export class BuyerClientError extends Error {
     | "requires_reset"
     | "request_failed";
   readonly status?: number;
-  constructor(code: BuyerClientError["code"], status?: number) {
+  // The server's own refusal code (e.g. cvs_recipient_rejected) when a definite 4xx carried one; UI text only.
+  readonly detail?: string;
+  constructor(code: BuyerClientError["code"], status?: number, detail?: string) {
     super(code);
     this.name = "BuyerClientError";
     this.code = code;
     this.status = status;
+    this.detail = detail;
   }
 }
 
@@ -383,7 +389,8 @@ export async function buyerRequest(
     suffix.startsWith("/")
   )
     throw new BuyerClientError("request_failed");
-  const handoff = method === "POST" && HANDOFF.test(suffix);
+  const handoff =
+    method === "POST" && (HANDOFF.test(suffix) || CVS_VERIFY.test(suffix));
   if (method !== "GET") {
     if (journal(storage())) throw new BuyerClientError("uncertain");
     if (

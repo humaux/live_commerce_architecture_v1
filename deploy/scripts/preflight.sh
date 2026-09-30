@@ -342,6 +342,7 @@ studio_media = flag("COMMERCE_STUDIO_MEDIA_ENABLED", api.get("COMMERCE_STUDIO_ME
 claims_on = flag("COMMERCE_CLAIMS_ENABLED", api.get("COMMERCE_CLAIMS_ENABLED", ""))
 profiles = {p.strip() for p in E.get("COMPOSE_PROFILES", "").split(",") if p.strip()}
 stripe_on = flag("LC_STRIPE_ENABLED", E.get("LC_STRIPE_ENABLED", ""))
+ecpay_on = flag("LC_CVS_ECPAY_ENABLED", E.get("LC_CVS_ECPAY_ENABLED", ""))
 # customers-billing-v1 T17: platform-fee billing; unset = off (billing.LoadConfig rejects "0", so only "" or "1").
 billing_on = flag("LC_BILLING_ENABLED", E.get("LC_BILLING_ENABLED", ""))
 rec("P06", E.get("LC_BILLING_ENABLED", "") != "0", "LC_BILLING_ENABLED unset or 1 (0 stops the api)")
@@ -365,6 +366,11 @@ if "app" in profiles:
     if stripe_on:
         rec("P06", profile_name == "SANDBOX", "LC_STRIPE_ENABLED requires COMMERCE_PAYMENT_PROFILE=SANDBOX")
         rec("P06", "payments-sandbox" in profiles, "LC_STRIPE_ENABLED requires the payments-sandbox profile")
+    # taiwan-cvs-logistics-v1 §12: ECPay is SANDBOX-only here (compose pins the claims-worker to SANDBOX, LIVE create
+    # off), and its label create route runs in claims-worker, so the api profile and the claims profile must agree.
+    if ecpay_on:
+        rec("P06", profile_name == "SANDBOX", "LC_CVS_ECPAY_ENABLED requires COMMERCE_PAYMENT_PROFILE=SANDBOX")
+        rec("P06", "claims" in profiles, "LC_CVS_ECPAY_ENABLED requires the claims profile (ecpay.cvs_create route)")
     # claims-worker sends first private replies through the Meta consumer's data: it needs the meta profile.
     rec("P06", "claims" not in profiles or "meta" in profiles, "claims profile requires meta profile")
     rec("P06", "claims" not in profiles or meta, "claims profile requires COMMERCE_META_WEBHOOK_ENABLED=1 (nothing to intake otherwise)", warn=True)
@@ -453,6 +459,8 @@ if meta and "app" in profiles:
     rec("P09", values.get("commerce_meta_apps_json", "__UNSET__") != "__UNSET__", "commerce_meta_apps_json")
 if ads_app:
     rec("P09", values.get("commerce_meta_ads_app_secret", "__UNSET__") != "__UNSET__", "commerce_meta_ads_app_secret")
+if ecpay_on:
+    rec("P09", values.get("ecpay_logistics_keyring", "__UNSET__") != "__UNSET__", "ecpay_logistics_keyring")
 if identity:
     rec("P09", values.get("commerce_oidc_client_secret", "__UNSET__") != "__UNSET__",
         "commerce_oidc_client_secret (__UNSET__ = public PKCE client)", warn=True)

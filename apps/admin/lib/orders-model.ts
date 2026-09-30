@@ -2,6 +2,9 @@
 // -> Go `internal/merchantorders`, `internal/httpapi/{orders,refunds,shipments}.go`).
 // Invariants mirror merchant-orders-v1 as amended by stripe-refund-v1 §7.1 and manual-fulfilment-v1 §5.1;
 // the server stays the authority for every write, these parsers only refuse malformed reads.
+// CVS (contracts/taiwan-cvs-logistics-v1.md §16, cvs-core C4): summary/detail add pickup_source, payment_mode and
+// collection_state; a pay-at-pickup order is CONFIRMED with no payment (NOT_STARTED, no work item), so the payment
+// invariants below are relaxed for exactly that mode and nowhere else.
 const commercialStates = ["DRAFT", "AWAITING_PAYMENT", "CONFIRMED", "CANCELLED"] as const;
 // `shipped`/`unshipped` are server-side list filters (manual-fulfilment-v1 §5.1), not order states.
 export const orderStates = [
@@ -9,10 +12,14 @@ export const orderStates = [
   ...commercialStates,
   "shipped",
   "unshipped",
+  // PROVIDER_LABEL_CREATED with a CREATED current attempt: the forwarder's daily drop list (§8).
+  "cvs_pending",
 ] as const;
 export type OrderFilter = (typeof orderStates)[number];
 export type CommercialState = (typeof commercialStates)[number];
-const fulfillmentStates = ["MANUAL_UNASSIGNED", "MERCHANT_SHIPPED", "CANCELLED", "PAID_ALLOCATION_FAILED"] as const;
+const fulfillmentStates = [
+  "MANUAL_UNASSIGNED", "MERCHANT_SHIPPED", "CANCELLED", "PAID_ALLOCATION_FAILED", "PROVIDER_LABEL_CREATED",
+] as const;
 export type FulfillmentState = (typeof fulfillmentStates)[number];
 const paymentStates = [
   "NOT_STARTED", "PENDING", "AUTHORIZED", "CAPTURED", "PARTIALLY_REFUNDED", "REFUNDED", "REVIEW_REQUIRED",
@@ -20,6 +27,22 @@ const paymentStates = [
 export type PaymentState = (typeof paymentStates)[number];
 const capturedStates: readonly PaymentState[] = ["CAPTURED", "PARTIALLY_REFUNDED", "REFUNDED", "REVIEW_REQUIRED"];
 export type WorkState = "NONE" | "READY" | "REVIEW_REQUIRED";
+// §16.1: where the pickup store came from (null for a home order).
+export const pickupSources = ["ecpay_directory", "buyer_entered", "merchant_attested"] as const;
+export type PickupSource = (typeof pickupSources)[number];
+export const paymentModes = ["card", "pay_at_pickup"] as const;
+export type PaymentMode = (typeof paymentModes)[number];
+export const collectionStates = ["PENDING", "COLLECTED", "RETURNED", "REFUNDED_OFFLINE", "CANCELLED", "RESTOCKED"] as const;
+export type CollectionState = (typeof collectionStates)[number];
+const cvsKinds = ["cvs_711", "cvs_familymart", "cvs_hilife", "cvs_okmart"] as const;
+export type CvsKind = (typeof cvsKinds)[number];
+export const verificationKinds = ["MANUAL_ATTESTED", "PROVIDER_DIRECTORY_VERIFIED", "BUYER_ENTERED"] as const;
+// The pickup_source shown to the merchant is derived from the pickup's verification kind (§16.1).
+const sourceOf: Record<(typeof verificationKinds)[number], PickupSource> = {
+  MANUAL_ATTESTED: "merchant_attested",
+  PROVIDER_DIRECTORY_VERIFIED: "ecpay_directory",
+  BUYER_ENTERED: "buyer_entered",
+};
 
 export type OrderSummary = {
   order_id: string;
@@ -34,6 +57,9 @@ export type OrderSummary = {
   work_state: WorkState;
   refunded_minor: number;
   refund_pending_minor: number;
+  pickup_source: PickupSource | null;
+  payment_mode: PaymentMode;
+  collection_state: CollectionState | null;
 };
 export type OrderList = { items: OrderSummary[]; next_cursor: string };
 export type LineAmount = {
@@ -66,15 +92,15 @@ export type HomeAddress = {
   line2: string;
 };
 export type Pickup = {
-  kind: "cvs_711" | "cvs_familymart";
+  kind: CvsKind;
   namespace: string;
   code: string;
   name: string;
   address: string;
-  verification_kind: "MANUAL_ATTESTED";
+  verification_kind: (typeof verificationKinds)[number];
 };
 export type Destination = {
-  kind: "home" | "cvs_711" | "cvs_familymart";
+  kind: "home" | CvsKind;
   country: string;
   recipient_name: string;
   phone: string;
@@ -118,7 +144,7 @@ const maxMoney = 1_000_000_000_000;
 const summaryKeys = [
   "order_id", "created_at", "updated_at", "currency", "total_minor",
   "commercial_state", "fulfillment_state", "payment_state", "test_mode", "work_state",
-  "refunded_minor", "refund_pending_minor",
+  "refunded_minor", "refund_pending_minor", "pickup_source", "payment_mode", "collection_state",
 ];
 
 function object(value: unknown, keys: string[]): Record<string, unknown> {
@@ -165,18 +191,42 @@ export function parseOrderSummary(value: unknown): OrderSummary {
     !oneOf(v.fulfillment_state, fulfillmentStates) ||
     !oneOf(v.payment_state, paymentStates) ||
     !oneOf(v.work_state, ["NONE", "READY", "REVIEW_REQUIRED"]) || typeof v.test_mode !== "boolean" ||
-    !money(v.refunded_minor) || !money(v.refund_pending_minor))
+    !money(v.refunded_minor) || !money(v.refund_pending_minor) ||
+    !(v.pickup_source === null || oneOf(v.pickup_source, pickupSources)) ||
+    !oneOf(v.payment_mode, paymentModes) ||
+    !(v.collection_state === null || oneOf(v.collection_state, collectionStates)))
     throw new Error("unavailable");
   const row = v as OrderSummary;
+  // §16.2 schema CHECK: pay_at_pickup <=> collection_state set. Such an order never has a payment attempt, refund
+  // or payment work item, so every payment-derived invariant is replaced by these (and only for this mode).
+  const pap = row.payment_mode === "pay_at_pickup";
+  if (pap !== (row.collection_state !== null)) throw new Error("unavailable");
+  if (pap) {
+    if (row.payment_state !== "NOT_STARTED" || row.test_mode || row.work_state === "REVIEW_REQUIRED" ||
+      row.refunded_minor !== 0 || row.refund_pending_minor !== 0 || row.pickup_source === null ||
+      (row.fulfillment_state === "CANCELLED") !== (row.commercial_state === "CANCELLED") ||
+      (row.commercial_state === "CANCELLED" && row.collection_state !== "CANCELLED") ||
+      (row.collection_state === "CANCELLED" && row.commercial_state !== "CANCELLED") ||
+      (row.commercial_state !== "CANCELLED" && row.commercial_state !== "CONFIRMED") ||
+      row.fulfillment_state === "PAID_ALLOCATION_FAILED" ||
+      (["MERCHANT_SHIPPED", "PROVIDER_LABEL_CREATED"].includes(row.fulfillment_state) && row.commercial_state !== "CONFIRMED") ||
+      (row.collection_state !== "PENDING" && row.collection_state !== "CANCELLED" &&
+        !["MERCHANT_SHIPPED", "PROVIDER_LABEL_CREATED"].includes(row.fulfillment_state)))
+      throw new Error("unavailable");
+    return row;
+  }
+  if (row.pickup_source === "buyer_entered" && row.fulfillment_state === "PROVIDER_LABEL_CREATED") throw new Error("unavailable");
   if ((row.payment_state === "NOT_STARTED" && (row.test_mode || row.work_state !== "NONE")) ||
     (row.fulfillment_state === "CANCELLED" && row.commercial_state !== "CANCELLED") ||
     (row.fulfillment_state === "PAID_ALLOCATION_FAILED" &&
       (row.payment_state !== "REVIEW_REQUIRED" || row.work_state !== "REVIEW_REQUIRED")) ||
     (row.work_state === "READY" &&
       (!capturedStates.includes(row.payment_state) || row.commercial_state !== "CONFIRMED" ||
-        (row.fulfillment_state !== "MANUAL_UNASSIGNED" && row.fulfillment_state !== "MERCHANT_SHIPPED"))) ||
+        (row.fulfillment_state !== "MANUAL_UNASSIGNED" && row.fulfillment_state !== "MERCHANT_SHIPPED" &&
+          row.fulfillment_state !== "PROVIDER_LABEL_CREATED"))) ||
     (row.work_state === "REVIEW_REQUIRED" && row.payment_state !== "REVIEW_REQUIRED") ||
-    (row.fulfillment_state === "MERCHANT_SHIPPED" && (row.work_state !== "READY" || row.commercial_state !== "CONFIRMED")) ||
+    ((row.fulfillment_state === "MERCHANT_SHIPPED" || row.fulfillment_state === "PROVIDER_LABEL_CREATED") &&
+      (row.work_state !== "READY" || row.commercial_state !== "CONFIRMED")) ||
     (row.commercial_state === "CONFIRMED" &&
       (row.work_state === "NONE" || !capturedStates.includes(row.payment_state))))
     throw new Error("unavailable");
@@ -203,19 +253,21 @@ export function parseOrderDetail(value: unknown, requestedID: string): OrderDeta
     t.total_minor !== summary.total_minor) throw new Error("unavailable");
   const d = object(v.destination, ["kind", "country", "recipient_name", "phone", "home_address", "pickup"]);
   const h = object(d.home_address, ["region", "city", "postal_code", "line1", "line2"]);
-  if (!oneOf(d.kind, ["home", "cvs_711", "cvs_familymart"]) || d.country !== v.country ||
+  if (!oneOf(d.kind, ["home", ...cvsKinds]) || d.country !== v.country ||
     !text(d.recipient_name, 120, true) || !phone(d.phone) ||
     !text(h.region, 100, false) || !text(h.city, 100, false) || !text(h.postal_code, 20, false) ||
     !text(h.line1, 200, false) || !text(h.line2, 200, false)) throw new Error("unavailable");
   let pickup: Pickup | null = null;
   if (d.kind === "home") {
-    if (d.pickup !== null || h.city === "" || h.line1 === "") throw new Error("unavailable");
+    if (d.pickup !== null || h.city === "" || h.line1 === "" || summary.pickup_source !== null) throw new Error("unavailable");
   } else {
     const p = object(d.pickup, ["kind", "namespace", "code", "name", "address", "verification_kind"]);
     if (d.country !== "TW" || p.kind !== d.kind || Object.values(h).some((field) => field !== "") ||
       !pattern(p.namespace, /^[a-z][a-z0-9_.:-]{0,63}$/) ||
       !pattern(p.code, /^[A-Za-z0-9_-]{1,32}$/) || !text(p.name, 120, true) ||
-      !text(p.address, 400, true) || p.verification_kind !== "MANUAL_ATTESTED") throw new Error("unavailable");
+      !text(p.address, 400, true) || !oneOf(p.verification_kind, verificationKinds) ||
+      // pickup_source is derived from the same verification kind; a disagreement is server drift.
+      summary.pickup_source !== sourceOf[p.verification_kind]) throw new Error("unavailable");
     pickup = p as Pickup;
   }
   let subtotal = 0, discount = 0, tax = 0;

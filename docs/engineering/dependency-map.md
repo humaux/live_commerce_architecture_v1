@@ -23,9 +23,9 @@ Command ads-worker owns the Meta ads River host (meta-ads-v1 §6, ads-graph): th
 
 ## `cmd/api`
 
-Command api owns the API process assembly: it loads each feature's configuration (identity, accounts, buyer and hosted payment, Meta webhooks, Stripe webhooks, Studio, claims, merchant refunds), opens the scoped DB pools, builds the handlers and mounts them on one listener.
+Command api owns the API process assembly: it loads each feature's configuration (identity, accounts, buyer and hosted payment, Meta webhooks, Stripe webhooks, Studio, claims, merchant refunds, Taiwan CVS), opens the scoped DB pools, builds the handlers and mounts them on one listener.
 
-- Depends on (internal): `internal/ads`, `internal/attribution`, `internal/billing`, `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/httpapi`, `internal/httperror`, `internal/identity`, `internal/identityhttp`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta_ads`, `internal/live`, `internal/oidclogin`, `internal/payments/stripewebhook`, `internal/platform`
+- Depends on (internal): `internal/ads`, `internal/attribution`, `internal/billing`, `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/fulfillment`, `internal/httpapi`, `internal/httperror`, `internal/identity`, `internal/identityhttp`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta_ads`, `internal/integrations/shipping/ecpay`, `internal/live`, `internal/oidclogin`, `internal/payments/stripewebhook`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
 - Used by: — (entry point or unused)
 
@@ -33,7 +33,7 @@ Command api owns the API process assembly: it loads each feature's configuration
 
 Command claims-worker owns the T10c claims host (meta-claims-intake-v1 §5.3, IR-13): it runs the claims intake poller (internal/claimsintake) and the main-schema external_operation_v1 River worker whose only routes are the Meta private replies (internal/integrations/metareply).
 
-- Depends on (internal): `internal/claims`, `internal/claimsintake`, `internal/integrations/core`, `internal/integrations/metareply`, `internal/jobqueue`, `internal/platform`
+- Depends on (internal): `internal/claims`, `internal/claimsintake`, `internal/integrations/core`, `internal/integrations/metareply`, `internal/integrations/shipping/ecpay`, `internal/integrations/shipping/ecpay/ecpayroute`, `internal/jobqueue`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
 - Used by: — (entry point or unused)
 
@@ -153,7 +153,7 @@ Package buyer owns the anonymous buyer capability boundary: issuing short-lived 
 
 Package buyerhttp owns the private, BFF-only buyer transport (catalog, cart, quote, checkout, payment and claim routes).
 
-- Depends on (internal): `internal/attribution`, `internal/buyer`, `internal/checkout`, `internal/claims`, `internal/command`, `internal/customers`, `internal/domains`, `internal/httperror`, `internal/pagination`, `internal/platform`, `internal/storefront`
+- Depends on (internal): `internal/attribution`, `internal/buyer`, `internal/checkout`, `internal/claims`, `internal/command`, `internal/customers`, `internal/domains`, `internal/fulfillment`, `internal/httperror`, `internal/pagination`, `internal/platform`, `internal/storefront`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`
 - Used by: `cmd/api`
 
@@ -169,7 +169,7 @@ Package catalog owns the merchant-scoped catalog transaction slice: products, SK
 
 Package checkout owns the trusted buyer checkout transaction: Begin turns a priced cart snapshot into an order plus a stock hold, then hosted payment start (PAYUNi always, Stripe Checkout when enabled), the buyer's order and payment views, and the checkout-expiry worker that releases due holds.
 
-- Depends on (internal): `internal/buyer`, `internal/command`, `internal/fulfillment`, `internal/integrations/accounts`, `internal/integrations/psp/payuni`, `internal/integrations/psp/stripe`, `internal/inventory`, `internal/jobqueue`, `internal/pagination`, `internal/platform`, `internal/pricing`, `internal/storefront`
+- Depends on (internal): `internal/buyer`, `internal/command`, `internal/fulfillment`, `internal/integrations/accounts`, `internal/integrations/psp/payuni`, `internal/integrations/psp/stripe`, `internal/integrations/shipping/ecpay`, `internal/inventory`, `internal/jobqueue`, `internal/pagination`, `internal/platform`, `internal/pricing`, `internal/storefront`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgtype`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
 - Used by: `cmd/api`, `cmd/expiry-worker`, `internal/buyerhttp`
 
@@ -223,11 +223,11 @@ Package domains owns resolving a published storefront from an exact, trusted ori
 
 ## `internal/fulfillment`
 
-Package fulfillment owns merchant delivery-service configuration revisions, per-market delivery allocation (which warehouses serve a country) and pickup attestation (buyer-scoped read and lock).
+Package fulfillment owns merchant delivery-service configuration revisions, per-market delivery allocation (which warehouses serve a country), pickup attestation (buyer-scoped read and lock) and the merchant side of Taiwan convenience-store shipping (taiwan-cvs-logistics-v1, cvs*.go): the ECPay logistics connection, chain and pay-at-pickup settings, one label request per order, shipment read, print form, abandon, collection record, pay-at-pickup cancel/restock and the two public provider hooks (map return, status).
 
-- Depends on (internal): `internal/buyer`, `internal/command`, `internal/pagination`, `internal/platform`, `internal/pricing`
-- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
-- Used by: `internal/checkout`, `internal/httpapi`, `internal/storefront`
+- Depends on (internal): `internal/buyer`, `internal/command`, `internal/integrations/core`, `internal/integrations/shipping/ecpay`, `internal/pagination`, `internal/platform`, `internal/pricing`
+- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`
+- Used by: `cmd/api`, `internal/buyerhttp`, `internal/checkout`, `internal/httpapi`, `internal/storefront`
 
 ## `internal/httpapi`
 
@@ -275,7 +275,7 @@ Package core owns the provider-neutral external-operation ledger boundary: the e
 
 - Depends on (internal): `internal/command`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`
-- Used by: `cmd/ads-worker`, `cmd/api`, `cmd/claims-worker`, `internal/ads`, `internal/attribution`, `internal/attribution/capiroute`, `internal/claimsintake`, `internal/integrations/accounts`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/payments`
+- Used by: `cmd/ads-worker`, `cmd/api`, `cmd/claims-worker`, `internal/ads`, `internal/attribution`, `internal/attribution/capiroute`, `internal/claimsintake`, `internal/fulfillment`, `internal/integrations/accounts`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/integrations/shipping/ecpay/ecpayroute`, `internal/payments`
 
 ## `internal/integrations/livekit`
 
@@ -340,6 +340,30 @@ Package stripetest owns the independent MOCK Stripe HTTP service: Checkout sessi
 - Depends on (internal): —
 - Depends on (third-party): —
 - Used by: `internal/billing/billingtest`
+
+## `internal/integrations/shipping/ecpay`
+
+Package ecpay owns the wire side of taiwan-cvs-logistics-v1 §7 against ECPay 物流整合 API v1: the CheckMacValue (MAC) scheme, the e-map form and its unsigned return, the GetStoreList directory cache and connect probe, Express/Create, Query/V5, the print forms, the status-notification parser, the logistics-credential keyring (AES-256-GCM, R-1) and the CVS_ECPAY_* configuration.
+
+- Depends on (internal): —
+- Depends on (third-party): —
+- Used by: `cmd/api`, `cmd/claims-worker`, `internal/checkout`, `internal/fulfillment`, `internal/integrations/shipping/ecpay/ecpayroute`
+
+## `internal/integrations/shipping/ecpay/ecpayroute`
+
+Package ecpayroute owns the dispatcher route ecpay_logistics / ecpay.cvs_create / transactional of taiwan-cvs-logistics-v1 §7.4: the lease-fenced credential and shipment load, the ECPay Create and Query calls through the wire package, and the completion hook that runs inside the dispatcher's completion transaction.
+
+- Depends on (internal): `internal/integrations/core`, `internal/integrations/shipping/ecpay`, `internal/platform`
+- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
+- Used by: `cmd/claims-worker`
+
+## `internal/integrations/shipping/ecpay/ecpaytest`
+
+Package ecpaytest is an in-process fake of the ECPay logistics HTTP API (gate unit cvs-tests, TCV01/TCV05/TCV06/TCV16).
+
+- Depends on (internal): —
+- Depends on (third-party): —
+- Used by: — (entry point or unused)
 
 ## `internal/inventory`
 
@@ -419,7 +443,7 @@ Package platform owns the narrow HTTP and database foundation shared by the API 
 
 - Depends on (internal): `internal/httperror`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
-- Used by: `cmd/admin-fixture`, `cmd/ads-worker`, `cmd/api`, `cmd/claims-worker`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `internal/ads`, `internal/attribution/capiroute`, `internal/billing`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/command`, `internal/customers`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/payments`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`, `internal/pricing`, `internal/reporting`
+- Used by: `cmd/admin-fixture`, `cmd/ads-worker`, `cmd/api`, `cmd/claims-worker`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `internal/ads`, `internal/attribution/capiroute`, `internal/billing`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/command`, `internal/customers`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/integrations/shipping/ecpay/ecpayroute`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/payments`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`, `internal/pricing`, `internal/reporting`
 
 ## `internal/pricing`
 
@@ -464,6 +488,14 @@ Package fakegraph owns a MOCK of the parts of Meta's Graph / Marketing API that 
 ## `tests/foundation`
 
 Package foundation holds the real-PostgreSQL foundation and browser acceptance tests (files *_test.go, package foundation_test; browser gates need -tags browser).
+
+- Depends on (internal): —
+- Depends on (third-party): —
+- Used by: — (entry point or unused)
+
+## `tests/integrations/ecpay`
+
+Package ecpay_test holds the independent black-box gates of internal/integrations/shipping/ecpay (files *_test.go, package ecpay_test): TCV01 (MAC, recipient and store-code golden tables, trade number), TCV07/TCV10 (SANDBOX, build tag sandbox).
 
 - Depends on (internal): —
 - Depends on (third-party): —

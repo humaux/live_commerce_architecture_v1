@@ -25,6 +25,7 @@ import (
 	"livecommerce/internal/catalog"
 	"livecommerce/internal/claims"
 	"livecommerce/internal/command"
+	"livecommerce/internal/fulfillment"
 	"livecommerce/internal/httperror"
 	"livecommerce/internal/integrations/accounts"
 	"livecommerce/internal/inventory"
@@ -58,6 +59,9 @@ type Options struct {
 	// Billing is the platform-fee service (cmd/api buildPlatformBilling). nil (LC_BILLING_ENABLED unset)
 	// still mounts the billing GET routes; the POSTs answer 503 billing_unavailable.
 	Billing *billing.Service
+	// CVS mounts the taiwan-cvs-logistics-v1 merchant routes (§8: ECPay connection, settings, label request, print, abandon,
+	// collection, pay-at-pickup release). nil leaves them unmounted (cmd/api buildCVS).
+	CVS *fulfillment.CVS
 }
 
 func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
@@ -145,6 +149,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerCustomerRoutes(mux, pool)
 	registerFinanceRoutes(mux, pool)
 	registerBillingRoutes(mux, pool, configured.Billing)
+	registerCVSRoutes(mux, pool, configured.CVS)
 	foundation := platform.NewHandler(pool, platform.HandlerOptions{SessionStoreList: configured.SessionStoreList})
 	if configured.SessionStoreList {
 		mux.Handle("GET /v1/admin/stores", foundation)

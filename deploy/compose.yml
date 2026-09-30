@@ -13,7 +13,9 @@
 #   LC_IDENTITY_ENABLED, LC_OIDC_ISSUER, LC_ONBOARDING_ENABLED, LC_ONBOARDING_CURRENCIES,
 #   LC_BUYER_ENABLED, LC_BUYER_SESSION_TTL_SECONDS (one value -> api "<N>s", storefront "<N>"),
 #   LC_STRIPE_ENABLED (one switch -> api COMMERCE_STRIPE_{WEBHOOK,CHECKOUT}_ENABLED and
-#   payment-worker-sandbox COMMERCE_STRIPE_ENABLED; SANDBOX only, stripe-psp-v1 §0.2/§12).
+#   payment-worker-sandbox COMMERCE_STRIPE_ENABLED; SANDBOX only, stripe-psp-v1 §0.2/§12),
+#   LC_CVS_ECPAY_ENABLED (one switch -> api + claims-worker CVS_ECPAY_ENABLED; SANDBOX only,
+#   taiwan-cvs-logistics-v1 §12).
 # Reads secrets: every row of deploy/secrets.manifest.tsv, mounted at /run/secrets/<name>
 #   (Compose non-swarm file secrets = read-only bind mounts that keep host modes 0440
 #   root:${LC_SECRETS_GID}); apps receive them only as NAME_FILE paths expanded by lcentry.
@@ -195,7 +197,14 @@ services:
       LC_BILLING_RETURN_ORIGIN: https://${LC_ADMIN_HOST:?set LC_ADMIN_HOST}
       LC_PLATFORM_STRIPE_SECRET_KEY_FILE: /run/secrets/commerce_platform_stripe_secret_key
       LC_PLATFORM_STRIPE_WEBHOOK_SECRET_FILE: /run/secrets/commerce_platform_stripe_webhook_secret
+      # taiwan-cvs-logistics-v1 §12: hooks origin for both ServerReplyURLs (map return, status), the ECPay
+      # switch (one LC_CVS_ECPAY_ENABLED for api + claims-worker), and the keyring the API-side loaders
+      # decrypt with (status MAC, print form, probe). The ECPay environment = api.env COMMERCE_PAYMENT_PROFILE.
+      COMMERCE_CVS_HOOKS_ORIGIN: https://${LC_HOOKS_HOST:?set LC_HOOKS_HOST}
+      CVS_ECPAY_ENABLED: ${LC_CVS_ECPAY_ENABLED:-0}
+      ECPAY_LOGISTICS_KEYRING_FILE: /run/secrets/ecpay_logistics_keyring
     secrets:
+      - ecpay_logistics_keyring
       - dsn_lc_api_runtime
       - dsn_lc_api_identity
       - dsn_lc_api_buyer_issuer
@@ -414,8 +423,17 @@ services:
       COMMERCE_CLAIMS_REPLY_LINK_KEY_FILE: /run/secrets/commerce_claims_reply_link_key
       COMMERCE_META_PAGE_TOKEN_KEYS_JSON_FILE: /run/secrets/commerce_meta_page_token_keys_json
       COMMERCE_META_PAGE_TOKEN_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_meta_page_token_active_key_id
+      # taiwan-cvs-logistics-v1 §12: ECPay create/query route (cmd/claims-worker registers it iff CVS_ECPAY_ENABLED=1).
+      # ponytail: ECPay is SANDBOX-only in this release (preflight P06: LC_CVS_ECPAY_ENABLED=1 requires the api's
+      # COMMERCE_PAYMENT_PROFILE=SANDBOX), so the worker's profile and LIVE-create switch are fixed here; a LIVE
+      # ECPay deployment is an owner-approved change of these two lines together with the api profile (§0.3 P4).
+      CVS_ECPAY_ENABLED: ${LC_CVS_ECPAY_ENABLED:-0}
+      CVS_ECPAY_LIVE_CREATE: "0"
+      COMMERCE_CVS_HOOKS_ORIGIN: https://${LC_HOOKS_HOST:?set LC_HOOKS_HOST}
+      COMMERCE_PAYMENT_PROFILE: SANDBOX
+      ECPAY_LOGISTICS_KEYRING_FILE: /run/secrets/ecpay_logistics_keyring
       GOMEMLIMIT: 200MiB
-    secrets: [dsn_lc_claims_intake, dsn_lc_claims_worker, commerce_claims_reply_link_key, commerce_meta_page_token_keys_json, commerce_meta_page_token_active_key_id]
+    secrets: [dsn_lc_claims_intake, dsn_lc_claims_worker, commerce_claims_reply_link_key, commerce_meta_page_token_keys_json, commerce_meta_page_token_active_key_id, ecpay_logistics_keyring]
     cpus: 0.5
     mem_limit: 256m
 
@@ -687,6 +705,7 @@ secrets:
   commerce_platform_stripe_webhook_secret: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_platform_stripe_webhook_secret" }
   commerce_meta_page_token_keys_json: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_meta_page_token_keys_json" }
   commerce_meta_page_token_active_key_id: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_meta_page_token_active_key_id" }
+  ecpay_logistics_keyring: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/ecpay_logistics_keyring" }
   commerce_claims_actor_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_claims_actor_key" }
   commerce_claims_reply_link_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_claims_reply_link_key" }
   dsn_lc_ads_worker: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_ads_worker" }

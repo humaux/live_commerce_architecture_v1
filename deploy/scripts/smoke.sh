@@ -20,6 +20,8 @@
 #           G2 (R1 ruling): S45 planning-only Studio + claims + claim-source answer 401/403 (mounted) on the
 #           deployed api and the LiveKit media route is 404; S10e/S10h preflight P06 refuses media on and
 #           claims without Studio.
+#           R2 CVS (TCV08 deploy leg): S46 only /v1/cvs/ecpay/{map-return,status}/* reach Go on the hooks host;
+#           any other /v1/cvs/* there, and the same routes on the api host, are Caddy's 404.
 # Usage: smoke.sh static | full
 # Exit: 0 PASS, 1 FAIL, 3 BLOCKED (e.g. cmd/migrate missing, ports busy, docker missing, or a
 #   REQUIRES_INTEGRATOR item observed at runtime: S29m = I8). result.json "not_run" names each one.
@@ -192,7 +194,7 @@ EOF
 }
 
 # ================================ full ============================================================
-ALL_FULL=(S07 S08 S09 S10 S11 S12 S13 S13n S14 S15 S16 S44 S17 S18 S19 S45 S20 S21 S22 S23 S24 S25 S26 S27 S28 S29 S29m S30 S31 S32 S33 S34 S35 S36 S37 S38 S39 S40 S41 S42 S43)
+ALL_FULL=(S07 S08 S09 S10 S11 S12 S13 S13n S14 S15 S16 S44 S17 S18 S19 S46 S45 S20 S21 S22 S23 S24 S25 S26 S27 S28 S29 S29m S30 S31 S32 S33 S34 S35 S36 S37 S38 S39 S40 S41 S42 S43)
 block_rest() { # reason — mark every full case not yet recorded as BLOCKED
   local id
   for id in "${ALL_FULL[@]}"; do
@@ -461,6 +463,19 @@ sys.exit(1 if names & {"dsn_lc_stripe_registrar", "dsn_lc_meta_registrar"} else 
     "${r3%%|*}" =~ ^[1-5][0-9][0-9]$ && "$r3" != "404||0" && -n "$(cut -d'|' -f2 <<<"$r3")" ]]; then
     rec S19 PASS "meta + stripe webhook routes reach Go API (meta $(cut -d'|' -f2 <<<"$r"), stripe ${r3%%|*}); notify and / 404 at Caddy"
   else rec S19 FAIL "webhook=$r stripe=$r3 notify=$r1 root=$r2"; fi
+  # S46 taiwan-cvs-logistics-v1 §12 / TCV08 deploy leg: the two ECPay hooks are answered by Go (a status + a content type,
+  # whether CVS_ECPAY_ENABLED is on or off); another /v1/cvs path on the hooks host and the hooks on the api host are Caddy's
+  # empty 404. Empty bodies to random ids: nothing is recorded.
+  local c1 c2 c3 c4 c5 cid=00000000-0000-4000-8000-000000000046
+  c1=$(edge hooks.localhost "/v1/cvs/ecpay/map-return/$cid" -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data '')
+  c2=$(edge hooks.localhost "/v1/cvs/ecpay/status/$cid" -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data '')
+  c3=$(edge hooks.localhost "/v1/cvs/ecpay/other/$cid" -X POST --data '')
+  c4=$(edge api.localhost "/v1/cvs/ecpay/map-return/$cid" -X POST --data '')
+  c5=$(edge api.localhost "/v1/cvs/ecpay/status/$cid" -X POST --data '')
+  if [[ "${c1%%|*}" =~ ^[1-5][0-9][0-9]$ && -n "$(cut -d'|' -f2 <<<"$c1")" && "${c2%%|*}" =~ ^[1-5][0-9][0-9]$ &&
+    -n "$(cut -d'|' -f2 <<<"$c2")" && "$c3" == "404||0" && "$c4" == "404||0" && "$c5" == "404||0" ]]; then
+    rec S46 PASS "cvs hooks reach Go on hooks host (map-return ${c1%%|*}, status ${c2%%|*}); other /v1/cvs path and api host 404 at Caddy"
+  else rec S46 FAIL "map-return=$c1 status=$c2 other=$c3 api-map=$c4 api-status=$c5"; fi
   # S45 R1 ruling G2: planning-only Studio + keyword claims + claim-source are MOUNTED on the deployed api
   # (no token -> 401/403, never 404) and the LiveKit media routes are NOT (404). Probed on the api's own
   # loopback listener: Caddy default-denies /v1/admin/* on the api host (S18) and admin talks to it directly.

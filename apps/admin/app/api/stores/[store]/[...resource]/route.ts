@@ -1,6 +1,9 @@
 import { callBackend, fixtureSession } from "@/lib/backend";
-import { orderActionRoute, validCSVHeaders, validKeylessRequest, validOrdersQuery } from "@/lib/orders-request";
+import {
+  orderActionRoute, validCSVHeaders, validKeylessCommandRequest, validKeylessRequest, validOrdersQuery,
+} from "@/lib/orders-request";
 import { customersRoute, validCustomersBody, validCustomersRequest } from "@/lib/customers-request";
+import { logisticsRoute } from "@/lib/logistics-request";
 import { validStudioInputToken, validStudioQuery } from "@/lib/studio-request";
 import {
   claimLinkRoute, claimsCollection, claimsRoutes, claimsSubpath, validClaimLink,
@@ -64,6 +67,8 @@ async function route(request: Request, context: Context) {
   const action = orderActionRoute(request.method, path);
   // customers-billing-ui: customers/finance/billing resources (lib/customers-request.ts grammar) -> Go customers.go/finance.go/billing.go.
   const customers = customersRoute(request.method, path);
+  // taiwan-cvs-logistics-v1 §8/§16.5: GET|PUT logistics/ecpay, POST logistics/ecpay/enabled, GET|PUT logistics/cvs-settings.
+  const logistic = logisticsRoute(request.method, path);
   const studio = path.startsWith("live-sessions");
   if (studio && !authConfig) return error(404, "not_found");
   const input = studioInputRoute.test(path);
@@ -72,7 +77,7 @@ async function route(request: Request, context: Context) {
   if (input && !authConfig?.publicOrigin.startsWith("https://")) return error(404, "not_found");
   if (exactStore.test(store) && studio && studioAny.test(path) && !routes[request.method]?.test(path))
     return error(405, "method_not_allowed", "GET, POST, PATCH, PUT");
-  if (!exactStore.test(store) || (!routes[request.method]?.test(path) && !action && !customers))
+  if (!exactStore.test(store) || (!routes[request.method]?.test(path) && !action && !customers && !logistic))
     return error(404, "not_found");
   const order = request.method === "GET" && orderRoute.test(path);
   const accountRoute = path.startsWith("provider-accounts");
@@ -81,14 +86,20 @@ async function route(request: Request, context: Context) {
   const ads = adsAny.test(path);
   if (ads && !validAdsQuery(request.url, path)) return error(422, "invalid_request");
   // New setup routes require actual session/store authority, never a shared fixture.
-  if ((studio || order || action || customers || accountRoute || ads || discoveryRoute.test(path)) && !authConfig)
+  if ((studio || order || action || customers || logistic || accountRoute || ads || discoveryRoute.test(path)) && !authConfig)
     return error(404, "not_found");
   // Query grammar, Idempotency-Key presence and empty/JSON body declaration (keyless: billing POSTs; bodyless: export, portal).
   if (customers && !validCustomersRequest(customers, request)) return error(422, "invalid_request");
   // Exact resources: no query at all, including a bare trailing '?'.
-  if (action && request.url.includes("?")) return error(422, "invalid_request");
+  if ((action || logistic) && request.url.includes("?")) return error(422, "invalid_request");
   // Reads and the keyless refresh carry no body and no key; only commands do.
-  if (action && action !== "command" && !validKeylessRequest(action, request))
+  // (keyless-command = print-form: a JSON body but no Idempotency-Key.)
+  if (action && action !== "command" && action !== "keyless-command" && !validKeylessRequest(action, request))
+    return error(422, "invalid_request");
+  if (action === "keyless-command" && !validKeylessCommandRequest(request)) return error(422, "invalid_request");
+  // Logistics reads carry no body/key/transfer-encoding, like every other exact BFF read.
+  if (logistic === "get" && (request.body !== null || request.headers.has("transfer-encoding") ||
+    request.headers.has("idempotency-key") || (request.headers.has("content-length") && request.headers.get("content-length") !== "0")))
     return error(422, "invalid_request");
   // URL.search drops an empty trailing '?'. Exact resources must reject that too;
   // Only collection GETs inherit the bounded pagination parser in Go.
@@ -138,7 +149,7 @@ async function route(request: Request, context: Context) {
     token = sessionToken(request) ?? undefined;
     if (!token) {
       const denied = error(401, "unauthorized");
-      if (order || action || customers) clearAuthCookies(denied.headers);
+      if (order || action || customers || logistic) clearAuthCookies(denied.headers);
       return denied;
     }
     if (
@@ -176,8 +187,8 @@ async function route(request: Request, context: Context) {
     )
       return error(415, "json_required");
     const key = request.headers.get("idempotency-key") ?? "";
-    // Billing POSTs are keyless by contract (§6); every other command needs its key.
-    const keyless = customers === "checkout" || customers === "portal";
+    // Billing POSTs are keyless by contract (§6), print-form is a keyless command; every other command needs its key.
+    const keyless = customers === "checkout" || customers === "portal" || action === "keyless-command";
     if (!inspection && !keyless && !/^[A-Za-z0-9_.:-]{8,128}$/.test(key))
       return error(422, "invalid_request");
     const customersBodyless = customers === "export" || customers === "portal";
@@ -310,7 +321,7 @@ async function route(request: Request, context: Context) {
     status: response.status,
     headers: {
       "Content-Type": "application/json",
-      "Cache-Control": order || action || customers ? "private, no-store" : "no-store",
+      "Cache-Control": order || action || customers || logistic ? "private, no-store" : "no-store",
       "X-Request-ID": response.headers.get("x-request-id") ?? "",
     },
   });

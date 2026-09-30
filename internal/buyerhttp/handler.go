@@ -143,6 +143,9 @@ func matchRoute(path string) route {
 	case privacyErasurePath:
 		return route{kind: privacyErasureRoute}
 	}
+	if cvs := matchCVSRoute(path); cvs.kind != unknownRoute {
+		return cvs
+	}
 	if rest, ok := strings.CutPrefix(path, "/v1/buyer/orders/"); ok {
 		for _, entry := range []struct {
 			suffix string
@@ -166,6 +169,9 @@ func matchRoute(path string) route {
 }
 
 func allowed(kind routeKind, method string) bool {
+	if isCVSRoute(kind) {
+		return allowedCVS(kind, method)
+	}
 	switch kind {
 	case sessionRoute:
 		return method == http.MethodGet || method == http.MethodPost || method == http.MethodDelete
@@ -410,7 +416,8 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		fail(http.StatusUnprocessableEntity, "invalid_request")
 		return
 	}
-	noReplayKey := issue || selected.kind == bootstrapRoute || selected.kind == retireRoute || isKeylessPaymentRoute(selected.kind)
+	noReplayKey := issue || selected.kind == bootstrapRoute || selected.kind == retireRoute || isKeylessPaymentRoute(selected.kind) ||
+		selected.kind == routeCVSSelectionVerify
 	write := r.Method == http.MethodPut || (r.Method == http.MethodPost && !noReplayKey)
 	key, valid := keyFor(r, noReplayKey, write)
 	// "clm:" cart.set keys are derived by claims.RedeemLink under the opposite lock order
@@ -439,8 +446,14 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		fail(status, code)
 		return
 	}
-	if err = h.dispatch(ctx, w, r, selected, routeInfo.StoreID, token, key); err != nil {
+	// cvsHTTPError here, once for every route: a coded CVS refusal from any service (checkout Begin's pay-at-pickup PT422/PT429
+	// included) is answered with its code, never the generic retryable 503 (TCV15).
+	if err = cvsHTTPError(h.dispatch(ctx, w, r, selected, routeInfo.StoreID, token, key)); err != nil {
 		status, code := classify(err)
+		var coded codedResponse
+		if errors.As(err, &coded) && coded.RetryAfterSeconds > 0 {
+			w.Header().Set("Retry-After", strconv.Itoa(coded.RetryAfterSeconds)) // 429 pay_at_pickup_limit / rate_limited
+		}
 		fail(status, code)
 	}
 }
@@ -549,6 +562,8 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 		out, err = h.paymentRequest(ctx, r, selected, storeID, token, key)
 	case claimLinkRoute, claimRedeemRoute:
 		out, err = h.claimRequest(ctx, r, selected.kind, storeID, token, key)
+	case routeCVSSelectionOpen, routeCVSSelectionGet, routeCVSSelectionVerify, routeCVSStoreEnter:
+		out, err = h.cvsRequest(ctx, r, selected, storeID, token, key)
 	case ordersRoute:
 		var request pagination.Request
 		request, err = ordersRequest(r.URL.RawQuery)
@@ -665,6 +680,12 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 	}
 	if ctx.Err() != nil {
 		return ctx.Err()
+	}
+	if created, ok := out.(createdResponse); ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(created.Body)
+		return nil
 	}
 	writeOK(w, out)
 	return nil

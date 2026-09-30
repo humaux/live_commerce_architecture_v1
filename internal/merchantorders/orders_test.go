@@ -21,7 +21,8 @@ const token = "merchant-test-token-0123456789-abcdef"
 var scope = platform.Scope{TenantID: "11111111-1111-4111-8111-111111111111", StoreID: "22222222-2222-4222-8222-222222222222", PrincipalID: "44444444-4444-4444-8444-444444444444", Revision: 2}
 
 func summary() map[string]any {
-	return map[string]any{"order_id": orderID, "created_at": "2026-09-25T04:05:06.123456Z", "updated_at": "2026-09-25T04:06:06.123456Z", "currency": "TWD", "total_minor": 110, "commercial_state": "CONFIRMED", "fulfillment_state": "MANUAL_UNASSIGNED", "payment_state": "CAPTURED", "test_mode": true, "work_state": "READY", "refunded_minor": 0, "refund_pending_minor": 0}
+	return map[string]any{"order_id": orderID, "created_at": "2026-09-25T04:05:06.123456Z", "updated_at": "2026-09-25T04:06:06.123456Z", "currency": "TWD", "total_minor": 110, "commercial_state": "CONFIRMED", "fulfillment_state": "MANUAL_UNASSIGNED", "payment_state": "CAPTURED", "test_mode": true, "work_state": "READY", "refunded_minor": 0, "refund_pending_minor": 0,
+		"pickup_source": nil, "payment_mode": "card", "collection_state": nil}
 }
 
 func detail() map[string]any {
@@ -81,8 +82,57 @@ func TestStrictProjectionAndInclusiveAmount(t *testing.T) {
 	d["kind"] = "cvs_711"
 	d["home_address"] = map[string]any{"region": "", "city": "", "postal_code": "", "line1": "", "line2": ""}
 	d["pickup"] = map[string]any{"kind": "cvs_711", "namespace": "fixture.local", "code": "000123", "name": "Shop", "address": "2 St", "verification_kind": "MANUAL_ATTESTED"}
+	v3["pickup_source"] = "merchant_attested"
 	if got, err := decodeDetail(raw(v3)); err != nil || got.Destination.Pickup.Code != "000123" {
 		t.Fatalf("pickup: %+v %v", got.Destination.Pickup, err)
+	}
+	// taiwan-cvs-logistics-v1 C4: every pickup kind is admitted only with its matching label, all four chains decode.
+	for _, tc := range []struct{ kind, verification, source string }{
+		{"cvs_711", "PROVIDER_DIRECTORY_VERIFIED", "ecpay_directory"}, {"cvs_familymart", "BUYER_ENTERED", "buyer_entered"},
+		{"cvs_hilife", "MANUAL_ATTESTED", "merchant_attested"}, {"cvs_okmart", "BUYER_ENTERED", "buyer_entered"}} {
+		vk := detail()
+		dk := vk["destination"].(map[string]any)
+		dk["kind"] = tc.kind
+		dk["home_address"] = map[string]any{"region": "", "city": "", "postal_code": "", "line1": "", "line2": ""}
+		dk["pickup"] = map[string]any{"kind": tc.kind, "namespace": "fixture.local", "code": "000123", "name": "Shop", "address": "2 St", "verification_kind": tc.verification}
+		vk["pickup_source"] = tc.source
+		if _, err := decodeDetail(raw(vk)); err != nil {
+			t.Fatalf("%s/%s: %v", tc.kind, tc.verification, err)
+		}
+		vk["pickup_source"] = "merchant_attested"
+		if tc.source != "merchant_attested" {
+			if _, err := decodeDetail(raw(vk)); !errors.Is(err, ErrUnavailable) {
+				t.Fatalf("%s: mismatched label accepted: %v", tc.kind, err)
+			}
+		}
+	}
+	// A pay_at_pickup order is CONFIRMED with no payment attempt (payment NOT_STARTED, work NONE) and a collection state.
+	vp := detail()
+	vp["payment_state"], vp["work_state"], vp["test_mode"], vp["payment_mode"], vp["collection_state"] = "NOT_STARTED", "NONE", false, "pay_at_pickup", "PENDING"
+	if _, err := decodeDetail(raw(vp)); err != nil {
+		t.Fatalf("pay_at_pickup detail: %v", err)
+	}
+	for name, mutate := range map[string]func(map[string]any){
+		"card with collection state":  func(v map[string]any) { v["collection_state"] = "PENDING" },
+		"pay_at_pickup without state": func(v map[string]any) { v["collection_state"] = nil },
+		"unknown collection state":    func(v map[string]any) { v["collection_state"] = "PAID" },
+		"pay_at_pickup with capture":  func(v map[string]any) { v["payment_state"] = "CAPTURED" },
+		"unknown payment mode":        func(v map[string]any) { v["payment_mode"] = "cash" },
+	} {
+		vx := detail()
+		if name != "card with collection state" && name != "unknown payment mode" {
+			vx["payment_state"], vx["work_state"], vx["test_mode"], vx["payment_mode"], vx["collection_state"] = "NOT_STARTED", "NONE", false, "pay_at_pickup", "PENDING"
+		}
+		mutate(vx)
+		if _, err := decodeDetail(raw(vx)); !errors.Is(err, ErrUnavailable) {
+			t.Fatalf("%s accepted: %v", name, err)
+		}
+	}
+	// PROVIDER_LABEL_CREATED needs a CONFIRMED card order with READY work, exactly like MERCHANT_SHIPPED.
+	vl := detail()
+	vl["fulfillment_state"] = "PROVIDER_LABEL_CREATED"
+	if _, err := decodeDetail(raw(vl)); err != nil {
+		t.Fatalf("label created: %v", err)
 	}
 	d["home_address"].(map[string]any)["city"] = "Taipei"
 	if _, err := decodeDetail(raw(v3)); !errors.Is(err, ErrUnavailable) {

@@ -104,6 +104,13 @@ type DispatchRequest struct {
 // sets ReconcileWithSecret (meta-ads-v1 A-10), fenced on the reconcile claim. Exactly one of
 // Reconcile / ReconcileWithSecret is set; ReconcileWithSecret needs the LoadSecret pair. Check and
 // plain Reconcile never see a Secret.
+//
+// Finish (optional, taiwan-cvs-logistics-v1 R-7a) runs inside completeOperation's DBTimeout-bounded
+// transaction before Service.Complete, on every completion path including BLOCKED_POLICY and
+// UNKNOWN; its SecretClaim carries the lease fence and claim mode for a lease-fenced SQL writer.
+// An error or panic rolls the whole transaction back and the dispatcher returns
+// errCompletionUncertain (the operation stays DISPATCHING and the next claim reconciles), so a
+// Finish must be total over provider data: an error is reserved for database faults.
 type DispatchRoute struct {
 	Provider            string
 	Action              string
@@ -114,6 +121,7 @@ type DispatchRoute struct {
 	DispatchWithSecret  func(context.Context, DispatchRequest, Secret) (Outcome, error)
 	Reconcile           func(context.Context, DispatchRequest) (Outcome, error)
 	ReconcileWithSecret func(context.Context, DispatchRequest, Secret) (Outcome, error)
+	Finish              func(context.Context, pgx.Tx, SecretClaim, Outcome) error
 }
 
 type DispatcherOptions struct {
@@ -393,6 +401,7 @@ func (d *Dispatcher) loadSecret(ctx context.Context, route DispatchRoute, operat
 	defer d.rollback(tx)
 	secret, err, panicked = invokeLoad(bounded, route.LoadSecret, tx, SecretClaim{
 		OperationID: operation.ID, Generation: claim.Generation, LeaseToken: append([]byte(nil), claim.LeaseToken...),
+		Mode: claim.Mode,
 	})
 	if err == nil && !panicked {
 		if err = tx.Commit(bounded); err != nil {
@@ -429,7 +438,7 @@ func (d *Dispatcher) completeAndFinish(ctx context.Context, operation Operation,
 	if ctx.Err() != nil {
 		return river.JobSnooze(d.options.RetryDelay)
 	}
-	if err := d.completeOperation(ctx, operation.ID, claim, outcome); err != nil {
+	if err := d.completeOperation(ctx, operation, claim, outcome); err != nil {
 		return errCompletionUncertain
 	}
 	if exhausted {
@@ -475,7 +484,7 @@ func (d *Dispatcher) claimOperation(ctx context.Context, operationID string) (Cl
 	return claim, operation, nil
 }
 
-func (d *Dispatcher) completeOperation(ctx context.Context, operationID string, claim ClaimResult, outcome Outcome) error {
+func (d *Dispatcher) completeOperation(ctx context.Context, operation Operation, claim ClaimResult, outcome Outcome) error {
 	bounded, cancel := context.WithTimeout(ctx, d.options.DBTimeout)
 	defer cancel()
 	tx, err := d.pool.BeginTx(bounded, pgx.TxOptions{})
@@ -483,7 +492,17 @@ func (d *Dispatcher) completeOperation(ctx context.Context, operationID string, 
 		return err
 	}
 	defer d.rollback(tx)
-	if err := d.service.Complete(bounded, tx, operationID, claim.Generation, claim.LeaseToken, outcome); err != nil {
+	// R-7a: the route's local finish commits atomically with the completion or not at all.
+	route := d.routes[dispatchRouteKey{provider: operation.Provider, action: operation.Action, purpose: operation.Purpose}]
+	if route.Finish != nil {
+		if err := invokeFinish(bounded, route.Finish, tx, SecretClaim{
+			OperationID: operation.ID, Generation: claim.Generation, LeaseToken: append([]byte(nil), claim.LeaseToken...),
+			Mode: claim.Mode,
+		}, outcome); err != nil {
+			return err
+		}
+	}
+	if err := d.service.Complete(bounded, tx, operation.ID, claim.Generation, claim.LeaseToken, outcome); err != nil {
 		return err
 	}
 	return tx.Commit(bounded)
@@ -578,6 +597,18 @@ func invokeLoad(ctx context.Context, callback func(context.Context, pgx.Tx, Secr
 	}()
 	secret, err = callback(ctx, tx, claim)
 	return secret, err, false
+}
+
+// errFinishPanicked replaces a Finish panic so no panic value reaches River's job errors.
+var errFinishPanicked = errors.New("external_operation_finish_panicked")
+
+func invokeFinish(ctx context.Context, callback func(context.Context, pgx.Tx, SecretClaim, Outcome) error, tx pgx.Tx, claim SecretClaim, outcome Outcome) (err error) {
+	defer func() {
+		if recover() != nil {
+			err = errFinishPanicked
+		}
+	}()
+	return callback(ctx, tx, claim, outcome)
 }
 
 func invokeSecretOutcome(ctx context.Context, callback func(context.Context, DispatchRequest, Secret) (Outcome, error), request DispatchRequest, secret Secret) (outcome Outcome, err error, panicked bool) {

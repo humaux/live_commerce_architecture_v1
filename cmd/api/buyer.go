@@ -5,6 +5,7 @@ import (
 	"crypto/subtle"
 	"errors"
 	"net/http"
+	"os"
 	"path"
 	"strings"
 	"time"
@@ -79,23 +80,31 @@ func loadBuyerConfig(getenv func(string) string, addr string) (buyerConfig, erro
 }
 
 func buildBuyerHandler(ctx context.Context, c buyerConfig) (http.Handler, func(), error) {
+	h, _, closePools, err := buildBuyerWithCVS(ctx, c, nil, os.Getenv)
+	return h, closePools, err
+}
+
+// buildBuyerWithCVS is buildBuyerHandler plus the taiwan-cvs-logistics-v1 surface: with the main (merchant) pool it builds the CVS
+// parts once, so the merchant service, the public hooks and the buyer service share one ECPay client and directory cache, and
+// the checkout service learns the deployment payment environment and the buyer CVS surface. mainPool nil = no CVS (unit tests).
+func buildBuyerWithCVS(ctx context.Context, c buyerConfig, mainPool *pgxpool.Pool, getenv func(string) string) (http.Handler, cvsParts, func(), error) {
 	if !c.enabled {
-		return nil, func() {}, nil
+		return nil, cvsParts{}, func() {}, nil
 	}
 	issuer, err := platform.OpenBuyerIssuerPool(ctx, c.issuerDSN)
 	if err != nil {
-		return nil, nil, errBuyerConfig
+		return nil, cvsParts{}, nil, errBuyerConfig
 	}
 	runtime, err := platform.OpenBuyerPool(ctx, c.buyerDSN)
 	if err != nil {
 		issuer.Close()
-		return nil, nil, errBuyerConfig
+		return nil, cvsParts{}, nil, errBuyerConfig
 	}
 	checkoutPool, err := platform.OpenCheckoutPool(ctx, c.checkoutDSN)
 	if err != nil {
 		runtime.Close()
 		issuer.Close()
-		return nil, nil, errBuyerConfig
+		return nil, cvsParts{}, nil, errBuyerConfig
 	}
 	var hostedPool *pgxpool.Pool
 	closePools := func() {
@@ -112,26 +121,34 @@ func buildBuyerHandler(ctx context.Context, c buyerConfig) (http.Handler, func()
 	jobs, err := river.NewClient(riverpgxv5.New(checkoutPool), &river.Config{Schema: "river_expiry"})
 	if err != nil {
 		closePools()
-		return nil, nil, errBuyerConfig
+		return nil, cvsParts{}, nil, errBuyerConfig
 	}
 	service, err := checkout.New(ctx, checkoutPool, jobs)
 	if err != nil {
 		closePools()
-		return nil, nil, errBuyerConfig
+		return nil, cvsParts{}, nil, errBuyerConfig
+	}
+	var parts cvsParts
+	if mainPool != nil {
+		if parts, err = buildCVS(ctx, getenv, mainPool, checkoutPool, c.payment.profile); err != nil {
+			closePools()
+			return nil, cvsParts{}, nil, errBuyerConfig
+		}
+		service = service.WithPaymentEnvironment(parts.PaymentEnvironment).WithBuyerCVS(parts.Buyer)
 	}
 	payment, openedHostedPool, err := buildBuyerPayment(ctx, c.payment)
 	if err != nil {
 		closePools()
-		return nil, nil, errBuyerConfig
+		return nil, cvsParts{}, nil, errBuyerConfig
 	}
 	hostedPool = openedHostedPool
 	h, err := buyerhttp.New(ctx, issuer, runtime, service, c.bffKey, c.ttl, payment)
 	if err != nil {
 		closePools()
-		return nil, nil, errBuyerConfig
+		return nil, cvsParts{}, nil, errBuyerConfig
 	}
 	// ads-capi C6: the public Meta product feed, beside the buyer router, on the buyer runtime pool.
-	return mountFeed(h, httperror.Middleware(attribution.FeedHandler(runtime)), c.bffKey), closePools, nil
+	return mountFeed(h, httperror.Middleware(attribution.FeedHandler(runtime)), c.bffKey), parts, closePools, nil
 }
 
 // feedPath is the one route mountFeed serves (meta-ads-v1 §7; the storefront app proxies /feeds/meta.csv to it).

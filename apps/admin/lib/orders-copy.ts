@@ -205,6 +205,28 @@ const en = {
     home: "Home delivery",
     cvs_711: "7-ELEVEN pickup",
     cvs_familymart: "FamilyMart pickup",
+    cvs_hilife: "Hi-Life pickup",
+    cvs_okmart: "OK mart pickup",
+    PROVIDER_LABEL_CREATED: "Carrier label created",
+    cvs_pending: "Label created, not yet dropped",
+  },
+  // taiwan-cvs-logistics-v1 §16: payment mode, pay-at-pickup state and where the pickup store came from.
+  payMode: "Payment mode",
+  payModes: { card: "Card", pay_at_pickup: "Pay at pickup" },
+  collectionLabel: "Pay-at-pickup status",
+  collectionStates: {
+    PENDING: "Waiting for pickup payment",
+    COLLECTED: "Paid at pickup",
+    RETURNED: "Not collected · returned",
+    REFUNDED_OFFLINE: "Refunded outside this site",
+    CANCELLED: "Cancelled · stock released",
+    RESTOCKED: "Returned · stock restored",
+  },
+  sourceLabel: "Store source",
+  pickupSources: {
+    ecpay_directory: "Chosen on the ECPay store map (checked against the store list)",
+    buyer_entered: "Store entered by the buyer (not verified; check it on the chain's site before shipping)",
+    merchant_attested: "Attested by the seller",
   },
 };
 export type OrdersCopy = typeof en;
@@ -287,6 +309,19 @@ export const ordersCopy: Record<Locale, OrdersCopy> = {
       MANUAL_UNASSIGNED: "待分配", PAID_ALLOCATION_FAILED: "分配异常待核对", NOT_STARTED: "尚未开始",
       PENDING: "处理中", AUTHORIZED: "已授权·未扣款", CAPTURED: "已扣款", REVIEW_REQUIRED: "待核对",
       NONE: "无", READY: "待处理", home: "宅配", cvs_711: "7-ELEVEN 取货", cvs_familymart: "全家取货",
+      cvs_hilife: "莱尔富取货", cvs_okmart: "OK超商取货", PROVIDER_LABEL_CREATED: "已建立物流单", cvs_pending: "已建单·待交寄",
+    },
+    payMode: "付款方式", payModes: { card: "信用卡", pay_at_pickup: "取货付款" },
+    collectionLabel: "取货付款状态",
+    collectionStates: {
+      PENDING: "等待取货付款", COLLECTED: "已取货付款", RETURNED: "未取货·已退回",
+      REFUNDED_OFFLINE: "已在本站外退款", CANCELLED: "已取消·库存已释放", RESTOCKED: "已退回·库存已恢复",
+    },
+    sourceLabel: "门店来源",
+    pickupSources: {
+      ecpay_directory: "已从绿界门市地图选取（已与门市名单核对）",
+      buyer_entered: "买家自填门店（未验证，出货前请到超商官网核对）",
+      merchant_attested: "卖家已确认",
     },
   },
   "zh-TW": {
@@ -365,6 +400,19 @@ export const ordersCopy: Record<Locale, OrdersCopy> = {
       MANUAL_UNASSIGNED: "待分配", PAID_ALLOCATION_FAILED: "分配異常待核對", NOT_STARTED: "尚未開始",
       PENDING: "處理中", AUTHORIZED: "已授權·未扣款", CAPTURED: "已扣款", REVIEW_REQUIRED: "待核對",
       NONE: "無", READY: "待處理", home: "宅配", cvs_711: "7-ELEVEN 取貨", cvs_familymart: "全家取貨",
+      cvs_hilife: "萊爾富取貨", cvs_okmart: "OK超商取貨", PROVIDER_LABEL_CREATED: "已建立物流單", cvs_pending: "已建單·待交寄",
+    },
+    payMode: "付款方式", payModes: { card: "信用卡", pay_at_pickup: "取貨付款" },
+    collectionLabel: "取貨付款狀態",
+    collectionStates: {
+      PENDING: "等待取貨付款", COLLECTED: "已取貨付款", RETURNED: "未取貨·已退回",
+      REFUNDED_OFFLINE: "已在本站外退款", CANCELLED: "已取消·庫存已釋放", RESTOCKED: "已退回·庫存已恢復",
+    },
+    sourceLabel: "門市來源",
+    pickupSources: {
+      ecpay_directory: "已從綠界門市地圖選取（已與門市名單核對）",
+      buyer_entered: "買家自填門市（未驗證，出貨前請至超商官網核對）",
+      merchant_attested: "賣家已確認",
     },
   },
 };
