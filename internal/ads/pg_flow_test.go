@@ -127,11 +127,8 @@ func newAdsFx(t *testing.T) *adsFx {
 	}
 	f.runtime = login("ads_test_runtime", "commerce_runtime")
 	f.worker = login("ads_test_worker", "commerce_worker")
-	// Billing stub: 0079/0080 belong to other units; a UNBILLED store (pilot) is the default standing (Q4).
-	f.must(`CREATE SCHEMA IF NOT EXISTS billing`)
-	f.must(`CREATE OR REPLACE FUNCTION billing.store_standing(uuid,uuid) RETURNS text LANGUAGE sql STABLE AS $$ SELECT 'UNBILLED'::text $$`)
-	f.must(`GRANT USAGE ON SCHEMA billing TO commerce_ads_writer`)
-	f.must(`GRANT EXECUTE ON FUNCTION billing.store_standing(uuid,uuid) TO commerce_ads_writer`)
+	// Billing standing is the real 0079 billing.store_standing with 0080's grant to commerce_ads_writer (the pre-merge
+	// stub is gone): a store without subscriptions is UNBILLED (pilot, Q4), so approve/publish are not restricted.
 	f.tenant, f.store, f.principal = newUUID(f), newUUID(f), newUUID(f)
 	f.must(`INSERT INTO control.tenants(id,name) VALUES($1,'ads-tenant')`, f.tenant)
 	f.must(`INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,'ads-store','TWD')`, f.tenant, f.store)
