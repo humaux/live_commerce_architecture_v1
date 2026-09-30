@@ -17,6 +17,7 @@
 // Environment (names only; every one is required, any missing or invalid value refuses to start):
 // COMMERCE_ADS_WORKER_DATABASE_URL (commerce_worker login), COMMERCE_META_ADS_GRAPH_VERSION (v26.0, A-9),
 // COMMERCE_META_ADS_TOKEN_HPKE_PRIVATE_KEYS_FILE (path of the owner-supplied key file, O-D),
-// COMMERCE_META_ADS_PARTNER_AGENT (CAPI partner_agent, F7). In a container deploy/tools/lcentry expands
+// COMMERCE_META_ADS_PARTNER_AGENT (CAPI partner_agent, F7), COMMERCE_CAPI_EXTERNAL_ID_KEY_FILE (C3 HMAC key of the
+// CAPI external_id, >= 32 bytes, worker only, O-D). In a container deploy/tools/lcentry expands
 // each NAME_FILE into NAME=<contents>; the key file is accepted in either form (metaads.SecretFromEnv).
 package main

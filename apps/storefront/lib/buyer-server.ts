@@ -712,6 +712,10 @@ async function upstream(
   if (body !== undefined) outbound.set("Content-Type", "application/json");
   if (key) outbound.set("Idempotency-Key", key);
   if (claimToken) outbound.set("X-Commerce-Claim-Token", claimToken);
+  // meta-ads-v1 A-3: Go consentPut records the BROWSER User-Agent for CAPI after an ads_personalization grant
+  // (ads.put_capi_context); without this the API would see this server's fetch agent. Consents PUT only.
+  const agent = request.headers.get("user-agent");
+  if (path === "consents" && method === "PUT" && agent) outbound.set("User-Agent", agent);
   try {
     return await fetch(`${config.api}/v1/buyer/${path}`, {
       method,

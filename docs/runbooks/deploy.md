@@ -232,6 +232,7 @@ deploy/scripts/deploy.sh upgrade <tag>
 2. 配置：api.env 设 `COMMERCE_META_ADS_APP_ID`、`COMMERCE_META_ADS_CONFIG_ID`（Facebook Login for Business 配置）、`COMMERCE_META_ADS_REDIRECT_URI=https://<LC_ADMIN_HOST>/api/ads/meta/callback`（同时登记到 Meta 应用后台，contract §11）、`COMMERCE_META_ADS_GRAPH_VERSION=v26.0`；ads-worker.env 设同一版本和 `COMMERCE_META_ADS_PARTNER_AGENT`；`COMPOSE_PROFILES` 加 `ads`。`preflight.sh` P03/P05/P06/P08/P09 全绿后 `deploy.sh upgrade`（post-check 等 `ads_worker_ready`）。
 3. 回调 URL 的 `code`/`state` 由 Caddy 访问日志改写为 REDACTED（smoke S40 覆盖 `/api/ads/meta/callback`）；admin 对该路径发 `Referrer-Policy: no-referrer`。
 4. 关闭：清空 `COMMERCE_META_ADS_APP_ID` 并重启 api（路由 404）。**不要先停 ads-worker**：暂停（pause）只有它能发到 Meta；先在 admin 暂停所有投放，确认 ops 终态后再去掉 `ads` profile。
+5. CAPI 与商品 feed（ads-capi，0080）：`secrets-init.sh` 生成 `commerce_capi_external_id_key`（b64std32，**只有 ads-worker 挂载**；缺失则 ads-worker 拒绝启动，已部署环境升级前先重跑 `secrets-init.sh` 补齐）。轮换会改变所有买家的 external_id（匹配率重置，不丢数据）。商品 feed 为 `https://<LC_STORE_HOST>/feeds/meta.csv`（storefront → api `GET /v1/buyer/feeds/meta.csv`，只按已验证 Host 解析店铺，Caddy 无需改动）。买家在隐私页授予 `ads_personalization` 时，同一事务写入 `ads.capi_contexts`（浏览器 UA，8 天后清除）。**生产挂载阻塞项**：`ads.capi_contexts`/`ads.capi_events`/`ads.insights_daily` 尚未登记 customers-billing CD7 保留类（meta-ads-v1 §12），登记前不得在生产开启 CAPI。
 
 ### 6.5 平台服务费（Stripe Billing，SANDBOX）与 R2 权限补发
 

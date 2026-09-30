@@ -20,6 +20,7 @@ package buyerhttp
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -28,6 +29,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"livecommerce/internal/attribution"
 	"livecommerce/internal/buyer"
 	"livecommerce/internal/customers"
 )
@@ -63,8 +65,14 @@ func (h *handler) consentPut(ctx context.Context, w http.ResponseWriter, r *http
 	}
 	out, err := buyerTransaction(ctx, h.pool, func(c context.Context, tx pgx.Tx) (customers.ConsentResult, error) {
 		result, err := customers.BuyerSetConsent(c, tx, storeID, token, key, in)
-		// A-3 (meta-ads-v1, R3): ads.put_capi_context(hash, store, User-Agent) goes here, same tx, iff in.Purpose==PurposeAdsPersonalization && in.Granted.
-		return result, err
+		if err != nil || in.Purpose != customers.PurposeAdsPersonalization || !in.Granted {
+			return result, err
+		}
+		// ads.put_capi_context (meta-ads-v1 A-3, 0080): same tx, grant only; the definer upserts the CAPI browser
+		// context only while customers.consent_allows(ads_personalization, meta_ads) holds. User-Agent is the
+		// browser's, forwarded by the storefront BFF on this route only.
+		hash := sha256.Sum256([]byte(token))
+		return result, attribution.PutCAPIContext(c, tx, hash[:], storeID, r.UserAgent())
 	})
 	if err != nil {
 		return privacyError(err)

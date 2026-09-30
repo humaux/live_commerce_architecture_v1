@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/subtle"
 	"errors"
 	"net/http"
 	"path"
@@ -11,8 +12,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
+	"livecommerce/internal/attribution"
 	"livecommerce/internal/buyerhttp"
 	"livecommerce/internal/checkout"
+	"livecommerce/internal/httperror"
 	"livecommerce/internal/identityhttp"
 	"livecommerce/internal/platform"
 )
@@ -127,5 +130,28 @@ func buildBuyerHandler(ctx context.Context, c buyerConfig) (http.Handler, func()
 		closePools()
 		return nil, nil, errBuyerConfig
 	}
-	return h, closePools, nil
+	// ads-capi C6: the public Meta product feed, beside the buyer router, on the buyer runtime pool.
+	return mountFeed(h, httperror.Middleware(attribution.FeedHandler(runtime)), c.bffKey), closePools, nil
+}
+
+// feedPath is the one route mountFeed serves (meta-ads-v1 §7; the storefront app proxies /feeds/meta.csv to it).
+const feedPath = "/v1/buyer/feeds/meta.csv"
+
+// mountFeed serves feedPath from feed and everything else from next. The feed data is public, but the route keeps the
+// buyer API's rule that only the storefront BFF (which derives the origin from the verified Host) may call it: a wrong or
+// missing X-Commerce-Buyer-BFF-Key is 401 before any SQL, compared in constant time.
+func mountFeed(next, feed http.Handler, bffKey string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != feedPath {
+			next.ServeHTTP(w, r)
+			return
+		}
+		if keys := r.Header.Values("X-Commerce-Buyer-BFF-Key"); len(keys) != 1 || subtle.ConstantTimeCompare([]byte(keys[0]), []byte(bffKey)) != 1 {
+			httperror.Middleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				httperror.Write(w, http.StatusUnauthorized, "unauthorized")
+			})).ServeHTTP(w, r)
+			return
+		}
+		feed.ServeHTTP(w, r)
+	})
 }

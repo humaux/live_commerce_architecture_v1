@@ -856,9 +856,10 @@ func lcPopulatedUpgrade(t *testing.T) {
 	// migrations (0074/0075, post-River 0015) build on 0064's Page-token custody tables and 0074's role, so they
 	// are held back too (unit ads-core; nothing else about this gate changes).
 	// 0078 (customers-billing-v1) reads claims.bundles and 0079 reads live.claim_windows / claim_window_intervals,
-	// so both are held back with 0060 as well (0079 after 0078: it needs 0078's permission values).
+	// so both are held back with 0060 as well (0079 after 0078: it needs 0078's permission values). 0080 (ads-capi)
+	// builds on 0074 and 0078/0079, so it is held back with them.
 	dependents := []string{"0064_meta_claims_intake.sql", "0074_meta_ads.sql", "0075_meta_ads_insights.sql",
-		"0078_customers_privacy.sql", "0079_platform_billing.sql",
+		"0078_customers_privacy.sql", "0079_platform_billing.sql", "0080_meta_capi.sql",
 		"post_river/0014_meta_claims_intake_river.sql", "post_river/0015_meta_ads_river.sql"}
 	for _, version := range dependents {
 		dependent, err := os.ReadFile(filepath.Join("../../migrations", version))

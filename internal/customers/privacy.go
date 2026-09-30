@@ -7,8 +7,8 @@
 // (KeyUUID); the same key repeats the stored result, a different body under the same key is
 // ErrIdempotencyConflict, so retrying after an UNKNOWN commit result is always safe and never re-grants.
 //
-// Non-goals: no marketing send, no Meta call, no ads.put_capi_context (A-3 belongs to meta-ads, see the seam
-// comment in internal/buyerhttp/privacy.go), no actor-level deletion (U08), no async queue.
+// Non-goals: no marketing send, no Meta call, no ads.put_capi_context (A-3 belongs to meta-ads; internal/buyerhttp/privacy.go
+// consentPut calls it through internal/attribution), no actor-level deletion (U08), no async queue.
 
 package customers
 

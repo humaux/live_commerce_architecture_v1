@@ -135,8 +135,10 @@ const (
 	cbsRefreshArgs = "bytea,uuid," + cbsApplyArgs
 )
 
+// The two commerce_ads_writer grantees are R3's, not 0078/0079's: meta-ads-v1 §4.3/§4.4 rows of
+// 0080_meta_capi.sql (A-3 consent, §5.2 standing), placed after 0079 by C-7; the C-7 subtest proves where they live.
 var cbsFunctions = []cbsFn{
-	{"customers.consent_allows(uuid,uuid,uuid,text,text)", "commerce_privacy_writer", []string{"commerce_auth"}, true},
+	{"customers.consent_allows(uuid,uuid,uuid,text,text)", "commerce_privacy_writer", []string{"commerce_auth", "commerce_ads_writer"}, true},
 	{"customers.buyer_set_consent(bytea,uuid,text,text,boolean,text,text,uuid)", "commerce_privacy_writer", []string{"commerce_buyer_runtime"}, false},
 	{"customers.merchant_withdraw_consent(bytea,uuid,uuid,text,text,uuid)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
 	{"customers.record_export(bytea,uuid,uuid,text,uuid,jsonb)", "commerce_privacy_writer", []string{"commerce_runtime", "commerce_buyer_runtime"}, false},
@@ -148,7 +150,7 @@ var cbsFunctions = []cbsFn{
 	{"identity.export_finance_summary(bytea,uuid,date,date)", "commerce_auth", []string{"commerce_runtime"}, false},
 	{"identity.read_billing(bytea,uuid)", "commerce_auth", []string{"commerce_runtime"}, false},
 	{"identity.read_billing_standing(bytea,uuid)", "commerce_auth", []string{"commerce_runtime"}, false},
-	{"billing.store_standing(uuid,uuid)", "commerce_billing_writer", []string{"commerce_auth"}, true},
+	{"billing.store_standing(uuid,uuid)", "commerce_billing_writer", []string{"commerce_auth", "commerce_ads_writer"}, true},
 	{"billing.platform_account_conflict(text)", "commerce_billing_writer", []string{"commerce_runtime", "commerce_stripe_ingress"}, false},
 	{"billing.pin_customer(bytea,uuid,text,text,text)", "commerce_billing_writer", []string{"commerce_runtime"}, false},
 	{"billing.apply_subscription(" + cbsApplyArgs + ")", "commerce_billing_writer", []string{"commerce_stripe_ingress"}, false},
@@ -642,8 +644,38 @@ func TestCustomersBillingCB02Schema(t *testing.T) {
 				t.Errorf("%s grants/policies to a role created by a later-shipping file: %q", name, m)
 			}
 		}
-		for _, r := range e.list(`SELECT rolname::text FROM pg_roles WHERE rolname ~ '^commerce_(ads|capi|cvs|retention)'`) {
-			t.Errorf("role %s exists in an R2 database: a 0078/0079 reference to it would fail on a fresh database", r)
+		// The release tree now also ships R3 (0074 creates commerce_ads_writer), so the role legitimately exists here.
+		// C-7's real rule is where grants to it live: every GRANT/REVOKE/POLICY naming an R3 role on a customers.* or
+		// billing.* object (or those schemas) must be in a migration numbered after 0079, so an R2 database that already
+		// has 0078/0079 gets them only when R3 lands (migrate.go applies missing versions in lexical order).
+		stmt := regexp.MustCompile(`(?is)\b(GRANT|REVOKE|CREATE\s+POLICY)\b[^;]*;`)
+		r3 := regexp.MustCompile(`(?i)\bcommerce_(ads|capi|meta_ads|cvs|retention)[a-z_]*`)
+		r2obj := regexp.MustCompile(`(?i)\b(customers|billing)\.|\bSCHEMA\b[^;]*\b(customers|billing)\b`)
+		files, _ := filepath.Glob("../../migrations/[0-9][0-9][0-9][0-9]_*.sql")
+		found := 0
+		for _, path := range files {
+			raw, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var stripped []string
+			for _, l := range strings.Split(string(raw), "\n") {
+				if i := strings.Index(l, "--"); i >= 0 && !strings.Contains(l[:i], "'") {
+					l = l[:i]
+				}
+				stripped = append(stripped, l)
+			}
+			for _, m := range stmt.FindAllString(strings.Join(stripped, "\n"), -1) {
+				if r3.MatchString(m) && r2obj.MatchString(m) {
+					found++
+					if base := filepath.Base(path); base <= "0079_platform_billing.sql" {
+						t.Errorf("%s grants an R3 role on a customers/billing object before 0080 (C-7): %q", base, m)
+					}
+				}
+			}
+		}
+		if found == 0 && len(e.list(`SELECT rolname::text FROM pg_roles WHERE rolname='commerce_ads_writer'`)) == 1 {
+			t.Error("commerce_ads_writer exists but no migration grants it the 0080 customers/billing rows (meta-ads-v1 §4.4)")
 		}
 	})
 

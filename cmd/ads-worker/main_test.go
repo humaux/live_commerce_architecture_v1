@@ -41,12 +41,22 @@ func keyFile(t *testing.T) string {
 	return f
 }
 
+func capiKeyFile(t *testing.T) string {
+	t.Helper()
+	f := filepath.Join(t.TempDir(), "capi-key")
+	if err := os.WriteFile(f, []byte("capi-external-id-key-fixture-32byte!"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return f
+}
+
 func testEnv(t *testing.T) map[string]string {
 	return map[string]string{
 		"COMMERCE_ADS_WORKER_DATABASE_URL":               syntheticDSN(),
 		"COMMERCE_META_ADS_GRAPH_VERSION":                "v26.0",
 		"COMMERCE_META_ADS_TOKEN_HPKE_PRIVATE_KEYS_FILE": keyFile(t),
 		"COMMERCE_META_ADS_PARTNER_AGENT":                "lc-ads",
+		"COMMERCE_CAPI_EXTERNAL_ID_KEY_FILE":             capiKeyFile(t),
 	}
 }
 
@@ -77,10 +87,11 @@ func TestEveryVariableIsRequired(t *testing.T) {
 		}
 	}
 	for name, mut := range map[string]func(map[string]string){
-		"blank dsn":    func(m map[string]string) { m["COMMERCE_ADS_WORKER_DATABASE_URL"] = "   " },
-		"bad version":  func(m map[string]string) { m["COMMERCE_META_ADS_GRAPH_VERSION"] = "26" },
-		"bad partner":  func(m map[string]string) { m["COMMERCE_META_ADS_PARTNER_AGENT"] = "bad agent" },
-		"missing file": func(m map[string]string) { m["COMMERCE_META_ADS_TOKEN_HPKE_PRIVATE_KEYS_FILE"] += ".nope" },
+		"blank dsn":             func(m map[string]string) { m["COMMERCE_ADS_WORKER_DATABASE_URL"] = "   " },
+		"bad version":           func(m map[string]string) { m["COMMERCE_META_ADS_GRAPH_VERSION"] = "26" },
+		"bad partner":           func(m map[string]string) { m["COMMERCE_META_ADS_PARTNER_AGENT"] = "bad agent" },
+		"missing file":          func(m map[string]string) { m["COMMERCE_META_ADS_TOKEN_HPKE_PRIVATE_KEYS_FILE"] += ".nope" },
+		"missing capi key file": func(m map[string]string) { m["COMMERCE_CAPI_EXTERNAL_ID_KEY_FILE"] += ".nope" },
 	} {
 		env := testEnv(t)
 		mut(env)
@@ -97,7 +108,7 @@ func TestEveryVariableIsRequired(t *testing.T) {
 // claims variables) and must not accept a Graph base URL override.
 func TestOnlyDocumentedVariablesAreRead(t *testing.T) {
 	values := testEnv(t)
-	allowed := map[string]bool{"COMMERCE_META_ADS_TOKEN_HPKE_PRIVATE_KEYS": true} // lcentry-expanded form of the _FILE variable
+	allowed := map[string]bool{"COMMERCE_META_ADS_TOKEN_HPKE_PRIVATE_KEYS": true, "COMMERCE_CAPI_EXTERNAL_ID_KEY": true} // lcentry-expanded forms of the _FILE variables
 	for name := range values {
 		allowed[name] = true
 	}

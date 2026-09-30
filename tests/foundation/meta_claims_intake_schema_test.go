@@ -131,6 +131,8 @@ func mciApplyWithout(t *testing.T, owner *pgxpool.Pool) {
 	// The meta-ads migrations (unit ads-core: 0074/0075, post-River 0015) build on the intake's Page-token custody tables, so
 	// they cannot run before it; they are ledger-marked applied below and never executed by this gate.
 	adsNumbered, _ := filepath.Glob("../../migrations/[0-9][0-9][0-9][0-9]_meta_ads*.sql")
+	capiNumbered, _ := filepath.Glob("../../migrations/[0-9][0-9][0-9][0-9]_meta_capi.sql") // ads-capi 0080 builds on 0074's schema
+	adsNumbered = append(adsNumbered, capiNumbered...)
 	adsPost, _ := filepath.Glob("../../migrations/post_river/[0-9][0-9][0-9][0-9]_meta_ads_river.sql")
 	adsSkip := map[string]bool{}
 	for _, path := range append(adsNumbered, adsPost...) {
