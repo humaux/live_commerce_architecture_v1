@@ -9,12 +9,17 @@ package foundation_test
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
@@ -23,7 +28,10 @@ import (
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 
+	"livecommerce/internal/ads"
 	integration "livecommerce/internal/integrations/core"
+	metaads "livecommerce/internal/integrations/meta_ads"
+	"livecommerce/internal/integrations/meta_ads/tokenopen"
 	"livecommerce/internal/platform"
 	"livecommerce/tests/ads/fakegraph"
 )
@@ -1709,5 +1717,118 @@ func TestMetaAdsMA07ReportShape(t *testing.T) {
 		if _, ok := md[k].(float64); !ok {
 			t.Errorf("meta_delivery.%s = %v, want a number", k, md[k])
 		}
+	}
+}
+
+// TestMetaAdsChildWorker is the helper process of TestMetaAdsMA05ChildKill (skipped unless LC_ADS_CHILD=1; NOT a gate). It is a real
+// separate OS process that runs the ads dispatcher over its own commerce_worker login against the fake Graph until it is killed.
+func TestMetaAdsChildWorker(t *testing.T) {
+	if os.Getenv("LC_ADS_CHILD") != "1" {
+		t.Skip("helper process of TestMetaAdsMA05ChildKill; not a gate")
+	}
+	ctx := context.Background()
+	pool, err := platform.OpenWorkerPool(ctx, os.Getenv("LC_ADS_CHILD_DSN"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ring, err := tokenopen.LoadKeyring(os.Getenv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := metaads.Config{GraphBaseURL: os.Getenv("LC_ADS_CHILD_GRAPH"), GraphVersion: adsVersion, PartnerAgent: adsPartner}
+	routes, err := metaads.Routes(pool, cfg, ring, ads.NewChecker(pool).Check)
+	if err != nil {
+		t.Fatal(err)
+	}
+	opts := t06DispatchOptions()
+	opts.CallTimeout, opts.RetryDelay, opts.MaxGenerations, opts.LeaseSeconds = 30*time.Second, 150*time.Millisecond, 6, 90
+	worker, err := integration.NewDispatcher(ctx, pool, routes, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	workers := river.NewWorkers()
+	river.AddWorker(workers, worker)
+	client, err := river.NewClient(riverpgxv5.New(pool), &river.Config{Schema: "river", Workers: workers, Queues: map[string]river.QueueConfig{"ads": {MaxWorkers: 2}},
+		JobTimeout: 60 * time.Second, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := client.Start(ctx); err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println("CHILD READY")
+	select {}
+}
+
+// TestMetaAdsMA05ChildKill: a real process kill after the activate POST was sent. The child process holds the operation DISPATCHING
+// (lease held) while the call is in flight; it is SIGKILLed; Meta still applies the activation (it does not know the caller died);
+// after the lease and River's stuck-job rescue a NEW dispatcher reconciles by the status GET and pins SUCCEEDED, and Meta saw
+// exactly ONE status POST (F9: a status POST is never repeated blindly).
+func TestMetaAdsMA05ChildKill(t *testing.T) {
+	e := newAdsEnv(t, adsOpts{noDispatch: true, callTimeout: 30 * time.Second})
+	dsn := miRole(t, e.f, "commerce_worker")
+	env := []string{"PATH=" + os.Getenv("PATH"), "LC_ADS_CHILD=1", "LC_ADS_CHILD_DSN=" + dsn, "LC_ADS_CHILD_GRAPH=" + e.g.URL(),
+		"COMMERCE_META_ADS_TOKEN_HPKE_PRIVATE_KEYS=" + adsPrivEnv["COMMERCE_META_ADS_TOKEN_HPKE_PRIVATE_KEYS"]}
+	logPath := filepath.Join(t.TempDir(), "child.log")
+	logFile, err := os.Create(logPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command(os.Args[0], "-test.run=^TestMetaAdsChildWorker$", "-test.v")
+	cmd.Env = env
+	cmd.Stdout, cmd.Stderr = logFile, logFile
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+	child := &mrProcess{cmd: cmd, done: make(chan error, 1), logPath: logPath}
+	go func() { child.done <- cmd.Wait(); _ = logFile.Close() }()
+	t.Cleanup(func() {
+		if !child.exited {
+			_ = cmd.Process.Kill()
+			<-child.done
+		}
+	})
+	mrReadyLog(t, child, "CHILD READY")
+
+	d := e.newDraft(adsDraftIn{})
+	e.mustApprove(d)
+	e.mustPublish(d)
+	e.driveTo(d, "preflight", 1) // the child process dispatches; the parent only sweeps
+	hold, arrived := make(chan struct{}), make(chan struct{}, 1)
+	e.g.Inject(fakegraph.Fault{Route: fakegraph.RouteStatusPost, Kind: fakegraph.FaultHold, Hold: hold, Arrived: arrived})
+	e.sweep("advance")
+	select {
+	case <-arrived:
+	case err := <-child.done:
+		child.exited = true
+		t.Fatalf("child exited before the activate POST: %v log=%s", err, logPath)
+	case <-time.After(45 * time.Second):
+		t.Fatalf("the activate POST never arrived; log=%s%s", logPath, e.dump())
+	}
+	act := e.mustOp(d, "activate", 1)
+	if act.State != "DISPATCHING" {
+		t.Fatalf("activate %s while its call is in flight", act.State)
+	}
+	mrStop(t, child, syscall.SIGKILL, false)
+	close(hold) // Meta applies the activation although its caller is gone
+	deadline := time.Now().Add(10 * time.Second)
+	camp := e.g.Objects("campaign")[0].ID
+	for o, _ := e.g.Object(camp); o.Status != "ACTIVE" && time.Now().Before(deadline); o, _ = e.g.Object(camp) {
+		time.Sleep(20 * time.Millisecond)
+	}
+	if o, _ := e.g.Object(camp); o.Status != "ACTIVE" {
+		t.Fatalf("the held activation was not applied: %s", o.Status)
+	}
+	// recovery, as the T06 crash gate does: only age this owned fixture; River must rescue the job itself
+	mustExec(t, e.f.owner, `UPDATE integration.operations SET lease_until=clock_timestamp()-interval '1 second' WHERE id=$1`, act.ID)
+	mustExec(t, e.f.owner, `UPDATE river.river_job SET attempted_at=clock_timestamp()-interval '2 hours' WHERE state='running' AND id=(SELECT job_id FROM integration.operations WHERE id=$1)`, act.ID)
+	e.startDispatch()
+	e.awaitOp(act.ID, 120*time.Second, "SUCCEEDED")
+	if n := len(e.statusPosts()); n != 1 {
+		t.Fatalf("%d status POSTs after kill + recovery, want exactly 1", n)
+	}
+	e.sweep("advance")
+	if got := e.status(d); got != "ACTIVE" {
+		t.Errorf("draft status %s after the reconciled activation", got)
 	}
 }

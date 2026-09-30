@@ -69,6 +69,7 @@ var adsAppSecret = "SENTINEL-APPSECRET-" + strings.Repeat("a1b2", 8)
 
 var (
 	adsKeyOnce sync.Once
+	adsPrivEnv map[string]string // the private-key env of the worker processes (child process helper)
 	adsPubEnv  map[string]string
 	adsRing    *tokenopen.Keyring
 	adsKeyErr  error
@@ -89,6 +90,7 @@ func adsKeys(t *testing.T) (map[string]string, *tokenopen.Keyring) {
 			"COMMERCE_META_ADS_TOKEN_HPKE_ACTIVE_KEY_ID":    adsKeyID,
 		}
 		env := map[string]string{"COMMERCE_META_ADS_TOKEN_HPKE_PRIVATE_KEYS": fmt.Sprintf(`{"keys":[{"id":%q,"private_key_base64":%q}]}`, adsKeyID, prv)}
+		adsPrivEnv = env
 		adsRing, adsKeyErr = tokenopen.LoadKeyring(func(k string) string { return env[k] })
 	})
 	if adsKeyErr != nil {
@@ -143,6 +145,7 @@ type adsOpts struct {
 	noConnect   bool          // do not run the connect chain
 	unfunded    bool          // account has no funding source
 	retryDelay  time.Duration // dispatcher RetryDelay between an UNKNOWN and its reconcile claim (default 150ms)
+	noDispatch  bool          // the parent works queue ads_sweep only: a child process (or e.startDispatch) dispatches
 	origin      string        // storefront origin the CAPI env publishes (default synthetic; the buyer browser gate needs https://buyer.example)
 	fx          *testFixture  // attach the ads surface to an existing store (phase B: the payment fixture's private tenant/store, principalA, tokens["a"])
 	callTimeout time.Duration // dispatcher CallTimeout (default 700ms; race tests hold a Graph call in flight and need longer)
@@ -331,6 +334,9 @@ func (e *adsEnv) startWorker(ring *tokenopen.Keyring) {
 	e.dispatchOpts.CallTimeout = 700 * time.Millisecond
 	if e.opts.callTimeout > 0 {
 		e.dispatchOpts.CallTimeout = e.opts.callTimeout
+		if e.opts.callTimeout > 15*time.Second {
+			e.dispatchOpts.LeaseSeconds = 90
+		}
 	}
 	e.dispatchOpts.RetryDelay = 150 * time.Millisecond
 	if e.opts.retryDelay > 0 {
@@ -357,7 +363,7 @@ func (e *adsEnv) startWorker(ring *tokenopen.Keyring) {
 	// Neutralize jobs a previous test left on the shared queue: their operations belong to another store and fake Graph.
 	e.cancelLeftoverJobs()
 	e.client, err = river.NewClient(riverpgxv5.New(e.workerPool), &river.Config{Schema: "river", Workers: workers,
-		Queues: map[string]river.QueueConfig{"ads": {MaxWorkers: 4}, "ads_sweep": {MaxWorkers: 2}}, JobTimeout: 20 * time.Second,
+		Queues: e.queues(), JobTimeout: e.dispatchOpts.CallTimeout + 20*time.Second, RescueStuckJobsAfter: e.dispatchOpts.CallTimeout + 30*time.Second,
 		Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
 	if err != nil {
 		t.Fatal(err)
@@ -374,6 +380,40 @@ func (e *adsEnv) startWorker(ring *tokenopen.Keyring) {
 		if err := e.client.StopAndCancel(ctx); err != nil {
 			t.Error("ads River client did not stop")
 		}
+	})
+}
+
+func (e *adsEnv) queues() map[string]river.QueueConfig {
+	q := map[string]river.QueueConfig{"ads_sweep": {MaxWorkers: 2}}
+	if !e.opts.noDispatch {
+		q["ads"] = river.QueueConfig{MaxWorkers: 4}
+	}
+	return q
+}
+
+// startDispatch adds a second River client that works queue ads only (a parent started with noDispatch has none), sharing the same
+// routes and options; River rescues jobs a killed process left running.
+func (e *adsEnv) startDispatch() {
+	t := e.t
+	t.Helper()
+	worker, err := integration.NewDispatcher(e.ctx, e.workerPool, e.routes, e.dispatchOpts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	workers := river.NewWorkers()
+	river.AddWorker(workers, worker)
+	client, err := river.NewClient(riverpgxv5.New(e.workerPool), &river.Config{Schema: "river", Workers: workers, Queues: map[string]river.QueueConfig{"ads": {MaxWorkers: 4}},
+		JobTimeout: 20 * time.Second, RescueStuckJobsAfter: 30 * time.Second, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := client.Start(e.ctx); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+		defer cancel()
+		_ = client.StopAndCancel(ctx)
 	})
 }
 
