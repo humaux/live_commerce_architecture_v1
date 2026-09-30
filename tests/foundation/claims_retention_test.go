@@ -3417,6 +3417,9 @@ func TestClaimsRetentionCRP02Schema(t *testing.T) {
 	})
 }
 
+// crp07Sentinel is a synthetic password; leak assertions search for it (PROCESS §6).
+const crp07Sentinel = "sentinel-crp07-password"
+
 const crpHex64ForSQL = "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
 
 func crLogCount(t *testing.T, pool *pgxpool.Pool, kind string) int {
@@ -3888,7 +3891,7 @@ func TestClaimsRetentionCRP07Privacy(t *testing.T) {
 		t.Errorf("CLI run: exit %d stdout %q", code, so)
 	}
 	// an unreachable database: fixed code, the password never printed
-	badU := url.URL{Scheme: "postgres", User: url.UserPassword("lc_retention_operator", "sentinel-crp07-password"), Host: "127.0.0.1:1", Path: "/x", RawQuery: "sslmode=disable&connect_timeout=2"}
+	badU := url.URL{Scheme: "postgres", User: url.UserPassword("lc_retention_operator", crp07Sentinel), Host: "127.0.0.1:1", Path: "/x", RawQuery: "sslmode=disable&connect_timeout=2"}
 	code, so, se = crCLI(t, cli, []string{"COMMERCE_RETENTION_OPERATOR_DATABASE_URL=" + badU.String()}, "", "status")
 	record("db-down", code, so, se)
 	if code != 1 || strings.TrimSpace(se) != "retention_admin_database" {
@@ -3907,7 +3910,7 @@ func TestClaimsRetentionCRP07Privacy(t *testing.T) {
 
 	// --- assertions ---
 	all := strings.Join(outputs, "\n")
-	for _, s := range append(append([]string{}, needles...), "sentinel-crp07-password", base64.StdEncoding.EncodeToString(e.actorRaw), we.jobDSNSecret) {
+	for _, s := range append(append([]string{}, needles...), crp07Sentinel, base64.StdEncoding.EncodeToString(e.actorRaw), we.jobDSNSecret) {
 		if s != "" && strings.Contains(all, s) {
 			t.Errorf("captured CLI/worker output contains a sentinel (%d chars starting %.6s)", len(s), s)
 		}

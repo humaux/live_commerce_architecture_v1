@@ -25,6 +25,9 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// crp09Sentinel is a synthetic password; leak assertions search for it (PROCESS §6).
+const crp09Sentinel = "sentinel-crp09-pw"
+
 // crWorkerEnv is the complete environment of a real claims-worker (names of meta-intake-reply.md + §5). The three
 // logins are real LOGIN roles granted exactly their authority; retentionDSN overrides the retention-job login.
 type crWorkerEnv struct {
@@ -418,6 +421,7 @@ func TestClaimsRetentionCRP09Worker(t *testing.T) {
 			t.Fatal(err)
 		}
 		u.Path = "/lc_crp09_other"
+		crp09Unreachable := (&url.URL{Scheme: "postgres", User: url.UserPassword("nobody", crp09Sentinel), Host: "127.0.0.1:1", Path: "/x", RawQuery: "connect_timeout=2"}).String()
 		cases := []struct {
 			name, code string
 			env        []string
@@ -427,7 +431,7 @@ func TestClaimsRetentionCRP09Worker(t *testing.T) {
 			{"empty", "claims_worker_invalid_config", we.with("COMMERCE_RETENTION_JOB_DATABASE_URL", "", false), ""},
 			{"whitespace", "claims_worker_invalid_config", we.with("COMMERCE_RETENTION_JOB_DATABASE_URL", "   ", false), ""},
 			{"not a DSN", "claims_worker_database_unavailable", we.with("COMMERCE_RETENTION_JOB_DATABASE_URL", "not a dsn %%", false), ""},
-			{"unreachable host", "claims_worker_database_unavailable", we.with("COMMERCE_RETENTION_JOB_DATABASE_URL", "postgres://nobody:sentinel-crp09-pw@127.0.0.1:1/x?connect_timeout=2", false), "sentinel-crp09-pw"},
+			{"unreachable host", "claims_worker_database_unavailable", we.with("COMMERCE_RETENTION_JOB_DATABASE_URL", crp09Unreachable, false), crp09Sentinel},
 			{"login reaching two authorities (job + worker)", "claims_worker_database_unavailable", we.with("COMMERCE_RETENTION_JOB_DATABASE_URL", mixed, false), mixedPassword},
 			{"job login with SET ROLE", "claims_worker_database_unavailable", we.with("COMMERCE_RETENTION_JOB_DATABASE_URL", setRole, false), setPassword},
 			{"the operator login", "claims_worker_database_unavailable", we.with("COMMERCE_RETENTION_JOB_DATABASE_URL", operator, false), operatorPassword},
