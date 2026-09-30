@@ -58,8 +58,11 @@ Change rules: 命令必须与脚本保持一致；改脚本行为时同步本文
    - `api.env`：OIDC client id、`COMMERCE_SESSION_TTL`、`COMMERCE_PAYMENT_PROFILE=SANDBOX`、`COMMERCE_STUDIO_ENABLED=1` + `COMMERCE_CLAIMS_ENABLED=1`（场次规划、关键词下单、认领来源；需要 `LC_IDENTITY_ENABLED=1`）、`COMMERCE_STUDIO_MEDIA_ENABLED=0`（必须为 0，P06 强制）。
    - `claims-worker.env`（R1 新增，升级时要从 `deploy/env/claims-worker.env.example` 复制）：`COMMERCE_META_GRAPH_VERSION`（**无默认值**，取 owner 用 MCI11 只读探测确认的 vNN.N；`CHANGE_ME` 会被 preflight P08 拒绝）。
    - `caddy.env`：真实的 `ACME_EMAIL`。`LC_ACME_CA` 要么保持注释，要么填 https URL，**不能留空**。
-   - Stripe 只有一个总开关：`compose.env` 的 `LC_STRIPE_ENABLED`（api 的结账开关 + webhook 路由 + sandbox worker 的 Stripe/退款派发）。它只允许 SANDBOX：
-     `COMMERCE_PAYMENT_PROFILE=SANDBOX` 且启用 `payments-sandbox` profile（P06）；API/worker 在 LIVE 下拒绝启动 Stripe，直到 owner 批准激活。
+   - Stripe 有两个开关（stripe-live-enable-v1 LD6）：`compose.env` 的 `LC_STRIPE_ENABLED`（api 的 webhook 路由 + 当前 profile 的 payment worker 的 Stripe/退款派发）
+     和 `LC_STRIPE_CHECKOUT_ENABLED`（只管买家结账，缺省跟随 `LC_STRIPE_ENABLED`；设为 0 并重启 api 即平台级停收，webhook 与 worker 继续对账）。
+     SANDBOX：`COMMERCE_PAYMENT_PROFILE=SANDBOX` 且启用 `payments-sandbox`；LIVE：`COMMERCE_PAYMENT_PROFILE=LIVE`、启用 `payments-live`，
+     并在 compose.env 成对设置 `LC_STRIPE_LIVE_ENABLED=1` 与 `LC_STRIPE_LIVE_APPROVAL_REF`（指向 owner 书面批准，格式 `[A-Za-z0-9._:-]{8,128}`；P06 双向检查）。
+     没有配对时 API/worker/`ops-admin.sh` 都拒绝 LIVE。逐店审批、canary 与停收步骤见 `docs/runbooks/stripe-live.md`。
 3. 生成密钥（只补缺失的文件，不覆盖、不打印值）：
    ```sh
    deploy/scripts/secrets-init.sh
@@ -67,8 +70,10 @@ Change rules: 命令必须与脚本保持一致；改脚本行为时同步本文
 4. owner 提供的密钥：用真实值替换文件内容 `__UNSET__`，权限保持 `0440 root:10500`。
    - `commerce_oidc_client_secret`：如果保持 `__UNSET__`，表示使用公共 PKCE 客户端，P09 给出 WARN。
    - `commerce_meta_apps_json`：仅在启用 Meta 时需要。
-   - **不属于任何文件的运维输入**：`STRIPE_SECRET_KEY`（只接受 `sk_test_`/`rk_test_`）、`STRIPE_ACCOUNT_ID`、`STRIPE_WEBHOOK_SECRET[_NEXT]`、`META_PAGE_ACCESS_TOKEN`。
-     它们只在运行 `deploy/scripts/ops-admin.sh` 时由操作者提供（终端无回显提示或调用者环境变量），**不写入仓库、compose.env、env 文件或 secrets 目录**；preflight P07 会拒绝把它们放进任何旋钮文件。
+   - **不属于任何配置文件的运维输入**：`STRIPE_SECRET_KEY`（SANDBOX 只接受 `sk_test_`/`rk_test_`；LIVE 只接受受限 key `rk_live_`，`sk_live_` 一律拒绝）、`STRIPE_ACCOUNT_ID`、`STRIPE_WEBHOOK_SECRET[_NEXT]`、`META_PAGE_ACCESS_TOKEN`。
+     它们只在运行 `deploy/scripts/ops-admin.sh` 时由操作者提供：终端无回显提示、调用者环境变量，或（O-D）`<NAME>_FILE=<绝对路径>` 指向 owner 在服务器上写入的一次性传输文件
+     （普通文件、非符号链接、属主 = 运行 ops-admin 的 uid、权限 0400/0600、只有一行；用完由 owner 删除，见 stripe-live.md）。
+     **不写入仓库、compose.env、env 文件或 secrets 目录**；preflight P07 会拒绝把它们放进任何旋钮文件。
      新增的自动生成密钥（`secrets-init.sh` 补齐）：Stripe webhook 签名 keyring（与支付 API-key keyring 分离）、Meta Page-token keyring、`commerce_claims_actor_key`（K_actor）、`commerce_claims_reply_link_key`（K_link）以及 5 个新登录的 pw_/dsn_。
      preflight P04 检查四个 keyring 互不共享 key、三个独立 b64 密钥两两不同且不在任何 keyring 中。
 5. 校验：
@@ -138,8 +143,9 @@ deploy/scripts/deploy.sh upgrade <tag>
 `media-worker` **不是** compose 服务：LiveKit 全部硬编码 MOCK（`worker_env.go:174`，B5），见 `deploy/env/media-worker.env.example`（仅参考）。
 
 - **Phase A**：identity + accounts + buyer + payments **SANDBOX**（`COMPOSE_PROFILES=db,app,payments-sandbox`），加 Stripe SANDBOX（§6.1）。
-- **Phase B**：**LIVE** 需要 owner 批准和 PAYUNi/Stripe 资质。切换 profile 为 `payments-live`，把 `COMMERCE_PAYMENT_PROFILE` 改为 `LIVE`。
-  在历史 sandbox job 处理完之前保留 `payments-sandbox`。preflight 会对 `payments-live` 给出 WARN 提醒。Stripe 在 LIVE 下被代码拒绝。
+- **Phase B**：**LIVE** 需要 owner 批准和 PAYUNi/Stripe 资质。切换 profile 为 `payments-live`，把 `COMMERCE_PAYMENT_PROFILE` 改为 `LIVE`；Stripe 需要 compose.env 的
+  LIVE 配对（`LC_STRIPE_LIVE_ENABLED=1` + `LC_STRIPE_LIVE_APPROVAL_REF`，§2），完整顺序、cutover 前置 SQL 与 canary 见 `docs/runbooks/stripe-live.md`。
+  PAYUNi 在 LIVE 下仍不可用，直到 PAYUNi B3 LIVE 批准。在历史 sandbox job 处理完之前保留 `payments-sandbox`。preflight 会对 `payments-live` 给出 WARN 提醒。
 - Meta 评论入口：`meta` profile + `COMMERCE_META_WEBHOOK_ENABLED=1` + owner 提供的 `commerce_meta_apps_json`（§6.3）。
 - Meta 私信发送：`claims` profile。**这是唯一会向买家发送 Meta 消息的进程**，只在 owner 批准真实发送后启用（§6.3）。
 - Studio（R1 裁决 G2）：场次规划 + 关键词下单 + 认领来源开启（`COMMERCE_STUDIO_ENABLED=1`、`COMMERCE_CLAIMS_ENABLED=1`，密钥 `commerce_claims_label_key` 由 secrets-init 生成）；LiveKit 媒体保持关闭（P06 强制 `COMMERCE_STUDIO_MEDIA_ENABLED=0`，media 路由不挂载＝404，media worker 不部署）。smoke S45 验证。
@@ -180,7 +186,7 @@ deploy/scripts/deploy.sh upgrade <tag>
      --connection <id> --qualification <qualification-id> --expected-version 0 --enabled --visible --sort 10 --min <minor> --max <minor> \
      --name-hans ... --name-hant ... --name-en ...
    ```
-   TWD 最小 2500（Stripe SANDBOX 实测，stripe-psp-v1 D15）。`--profile LIVE` 被 `ops-admin.sh` 和 CLI 双重拒绝。
+   TWD 最小 2500（Stripe SANDBOX 实测，stripe-psp-v1 D15）。`--profile LIVE` / `--environment LIVE` 只有在 compose.env 设置了 LIVE 配对时才会被 `ops-admin.sh` 放行（否则 `stripe_live_refused`），CLI 再校验一次；LIVE 步骤见 `docs/runbooks/stripe-live.md`。
 5. 自检：webhook 配置错误（密钥环、入口登录、profile）会让 api 启动失败，日志只有 `api stopped`（不输出原因），所以以 `docker compose ps api` 为 healthy、
    preflight 全绿为准；smoke S19 证明 hooks 域名的 `/v1/stripe/webhook/*` 到达 Go API，S16 证明启用 Stripe 的 sandbox worker 就绪。
    Stripe Dashboard 里的“发送测试事件”和真实 Checkout 属于 SANDBOX 验证，由 owner 执行；工程侧证据为 NOT_RUN（SP16/SP18/SP17 见 stripe-psp-v1 §14）。
@@ -188,7 +194,7 @@ deploy/scripts/deploy.sh upgrade <tag>
 ### 6.2 商家 Stripe 与退款
 
 商家在后台发起退款（`payments:refund`，owner 创建店铺时已获得，裁决 24）；退款由 `payment-worker-sandbox` 的 Stripe/退款 worker 发出，结果靠 `refund.*`/`charge.refunded` webhook 与查询对账。
-**真实退款需要 owner 明确批准**；SANDBOX 只对测试支付发起。人工发货（承运商 + 运单号）是商家后台操作，无需部署步骤。
+**真实退款需要 owner 明确批准**；SANDBOX 只对测试支付发起，LIVE 下退款不依赖店铺审批状态但仍需 `payments:refund`（stripe-live-enable-v1 LD7；agent/CI 从不调用 LIVE 退款路径，只有 owner 的 canary）。人工发货（承运商 + 运单号）是商家后台操作，无需部署步骤。
 
 ### 6.3 Meta：评论入口、Page token、认领来源
 

@@ -3,7 +3,7 @@ File: docs/runbooks/merchant-onboarding.md
 Purpose: 运维人员接入第一个真实商家的步骤（店铺、Stripe 账户、Meta Page、域名），并逐项标出只有 owner 能完成的前置条件和当前的工程缺口。
 Runs as/in: 文档（运维人员在部署主机上以 root 执行其中命令；商家自己的操作在后台 UI 完成）。
 Reads env / secrets: 无。命令通过 deploy/scripts/ops-admin.sh 提示输入运维输入（STRIPE_SECRET_KEY、STRIPE_ACCOUNT_ID、STRIPE_WEBHOOK_SECRET、META_PAGE_ACCESS_TOKEN），
-  这些输入不写入任何文件；本文不含任何密钥值。
+  这些输入不写入仓库或配置文件（LIVE 时由 owner 写入服务器上的一次性 `<NAME>_FILE` 传输文件，用后删除）；本文不含任何密钥值。
 Used by: 运维/owner/集成者；docs/runbooks/deploy.md §6 链接到此。
 Depends on: deploy/scripts/ops-admin.sh、deploy.md（栈已按 §3 部署且 healthy）、contracts/stripe-psp-v1.md §13、contracts/meta-claims-intake-v1.md §7。
 Status: DESIGN。没有在真实商家上执行过；SANDBOX 步骤需要 owner 的 Stripe 测试账户（工程侧证据 NOT_RUN）。
@@ -21,7 +21,7 @@ Change rules: 命令必须与 deploy/scripts/ops-admin.sh 和 cmd/*-admin 的子
 | O1 | 接受 Compose 作为生产形态的 ADR（架构.md §4.2，B8） | owner | 不得宣称“可生产” |
 | O2 | 登录方式：邮箱 + 密码 + 邮件验证码（`LC_PASSWORD_LOGIN_ENABLED=1`，需要专用发信邮箱及其 SMTP 授权码，见 `docs/runbooks/mail.md`）；OIDC IdP 在启用密码登录时是**可选**的（`LC_OIDC_ISSUER` 留空即纯密码登录）。仅在不启用密码登录时才必须选型并注册 OIDC client（回调 `https://<LC_ADMIN_HOST>/api/auth/callback`，B2） | owner | 商家无法登录 |
 | O3 | 域名与 DNS：`LC_ADMIN_HOST`、`LC_STORE_HOST`、`LC_API_HOST`、`LC_HOOKS_HOST` 四个互不相同的名字指向部署主机 | owner | preflight P14 失败，无法签发证书 |
-| O4 | Stripe：**测试**账户的 `sk_test_`/`rk_test_` key 和 `acct_...`（SANDBOX）；LIVE 激活是单独的 owner 决定，代码目前拒绝 LIVE | owner | Stripe 支付方式无法登记 |
+| O4 | Stripe：**测试**账户的 `sk_test_`/`rk_test_` key 和 `acct_...`（SANDBOX）；LIVE 是单独的 owner 决定，需要受限 key `rk_live_`（写入服务器上的一次性文件）、书面批准（`approval_ref`）和 compose.env 的 LIVE 配对，步骤见 stripe-live.md | owner | Stripe 支付方式无法登记 |
 | O5 | PAYUNi 商户资质与 LIVE 批准（B3）；NotifyURL 无接收端（B4） | owner | PAYUNi 只能 SANDBOX |
 | O6 | Meta：App、App Review / Access Tier、Page 或 Instagram 资产、`commerce_meta_apps_json`（B6） | owner | 评论入口和私信都不可用 |
 | O7 | 承运商合同、台湾超商物流面单（R2）；R1 只有人工发货（承运商 + 运单号，商家后台录入） | owner | 无自动面单 |
@@ -49,6 +49,7 @@ Change rules: 命令必须与 deploy/scripts/ops-admin.sh 和 cmd/*-admin 的子
 `stripe-admin register` → 在 Stripe 测试模式创建 webhook 端点（API 版本 `2026-08-26.dahlia`，8 个事件，含 4 个退款事件）→
 `stripe-admin webhook` → `STRIPE_SANDBOX=1 stripe-admin qualify` → `stripe-admin method`。
 商家不能自助登记 Stripe（把平台 key 绑到任意店铺会混同资金，contracts/stripe-psp-v1.md D1）。
+**LIVE**：不在本节；按 `docs/runbooks/stripe-live.md`（逐店审批 → LIVE 探测 → canary → 放开），每一步是单独的 `ops-admin.sh` 命令和审计行。
 **验收（SANDBOX，owner 执行）**：买家用 Stripe 测试卡 4242 完成支付，订单变为已支付；商家后台退款成功。工程侧此项为 NOT_RUN，MOCK 证据见 `tests/foundation` 的 SP/RF 系列。
 
 ## 4. Meta Page（评论入口 → 认领 → 私信）

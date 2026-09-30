@@ -345,6 +345,12 @@ studio_media = flag("COMMERCE_STUDIO_MEDIA_ENABLED", api.get("COMMERCE_STUDIO_ME
 claims_on = flag("COMMERCE_CLAIMS_ENABLED", api.get("COMMERCE_CLAIMS_ENABLED", ""))
 profiles = {p.strip() for p in E.get("COMPOSE_PROFILES", "").split(",") if p.strip()}
 stripe_on = flag("LC_STRIPE_ENABLED", E.get("LC_STRIPE_ENABLED", ""))
+checkout_on = flag("LC_STRIPE_CHECKOUT_ENABLED", E.get("LC_STRIPE_CHECKOUT_ENABLED", ""))  # LD6: platform kill switch, "" = follow LC_STRIPE_ENABLED
+rec("P06", not checkout_on or stripe_on, "LC_STRIPE_CHECKOUT_ENABLED=1 requires LC_STRIPE_ENABLED=1 (checkout without the worker and webhook strands held stock)")
+stripe_live_flag = flag("LC_STRIPE_LIVE_ENABLED", E.get("LC_STRIPE_LIVE_ENABLED", ""))
+stripe_live_ref = E.get("LC_STRIPE_LIVE_APPROVAL_REF", "")
+stripe_live_ref_ok = re.fullmatch(r"[A-Za-z0-9._:-]{8,128}", stripe_live_ref) is not None
+stripe_live_pair = stripe_live_flag and stripe_live_ref_ok  # LQ8 reference shape; the owner's message itself is not checkable here
 ecpay_on = flag("LC_CVS_ECPAY_ENABLED", E.get("LC_CVS_ECPAY_ENABLED", ""))
 # customers-billing-v1 T17: platform-fee billing; unset = off (billing.LoadConfig rejects "0", so only "" or "1").
 billing_on = flag("LC_BILLING_ENABLED", E.get("LC_BILLING_ENABLED", ""))
@@ -364,11 +370,20 @@ if "app" in profiles and profile_name:
 rec("P06", "payments-live" not in profiles, "payments-live active (REAL MONEY: owner approval required)", warn=True)
 if "app" in profiles:
     rec("P06", not meta or "meta" in profiles, "COMMERCE_META_WEBHOOK_ENABLED requires meta profile")
-    # Stripe is SANDBOX-only in this release (cmd/api + cmd/payment-worker refuse LIVE): the api flag pair and
-    # the sandbox worker are driven by the single LC_STRIPE_ENABLED, so the profile and worker must agree.
+    # stripe-live-enable-v1 §5.2/LD6: LC_STRIPE_ENABLED (webhook + worker) and LC_STRIPE_CHECKOUT_ENABLED (buyer
+    # checkout, the platform kill switch) are separate; the profile, the worker profile and the LIVE pair must agree.
+    # The pair is read from compose.env keys (same names ops-admin.sh maps to COMMERCE_STRIPE_LIVE_*); both or neither.
     if stripe_on:
-        rec("P06", profile_name == "SANDBOX", "LC_STRIPE_ENABLED requires COMMERCE_PAYMENT_PROFILE=SANDBOX")
-        rec("P06", "payments-sandbox" in profiles, "LC_STRIPE_ENABLED requires the payments-sandbox profile")
+        if profile_name == "LIVE":
+            rec("P06", "payments-live" in profiles, "LC_STRIPE_ENABLED on COMMERCE_PAYMENT_PROFILE=LIVE requires the payments-live profile")
+            rec("P06", stripe_live_pair, "LC_STRIPE_ENABLED on COMMERCE_PAYMENT_PROFILE=LIVE requires LC_STRIPE_LIVE_ENABLED=1 and LC_STRIPE_LIVE_APPROVAL_REF")
+        else:
+            rec("P06", profile_name == "SANDBOX", "LC_STRIPE_ENABLED requires COMMERCE_PAYMENT_PROFILE=SANDBOX or LIVE (with the live pair)")
+            rec("P06", "payments-sandbox" in profiles, "LC_STRIPE_ENABLED on SANDBOX requires the payments-sandbox profile")
+    # A LIVE pair without a LIVE deployment is a leftover that would arm the next profile switch: fail both directions.
+    rec("P06", stripe_live_flag == bool(stripe_live_ref), "LC_STRIPE_LIVE_ENABLED and LC_STRIPE_LIVE_APPROVAL_REF are set together or not at all")
+    rec("P06", not stripe_live_flag or stripe_live_ref_ok, "LC_STRIPE_LIVE_APPROVAL_REF matches [A-Za-z0-9._:-]{8,128}")
+    rec("P06", profile_name == "LIVE" or not stripe_live_pair, "LC_STRIPE_LIVE_ENABLED is only meaningful with COMMERCE_PAYMENT_PROFILE=LIVE", warn=True)
     # taiwan-cvs-logistics-v1 §12: ECPay is SANDBOX-only here (compose pins the claims-worker to SANDBOX, LIVE create
     # off), and its label create route runs in claims-worker, so the api profile and the claims profile must agree.
     if ecpay_on:

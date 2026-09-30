@@ -97,3 +97,140 @@ func TestValidEnvironmentReachesMaskedDatabaseError(t *testing.T) {
 		}
 	}
 }
+
+// ---- stripe-live-core: LIVE subcommands and gates (contracts/stripe-live-enable-v1.md §5.2, S4, S8) ----
+
+const liveRef = "owner-chat:2026-09-30:stripe-live:shop"
+
+func liveEnv() map[string]string {
+	v := env()
+	v["COMMERCE_STRIPE_LIVE_ENABLED"] = "1"
+	v["COMMERCE_STRIPE_LIVE_APPROVAL_REF"] = liveRef
+	// LIVE never needs the sandbox opt-in or an operator key: the stored key is unsealed with the API keyring.
+	delete(v, "STRIPE_SECRET_KEY")
+	delete(v, "STRIPE_ACCOUNT_ID")
+	return v
+}
+
+const (
+	approveLine = "live-approve " + ids + " --approval 55555555-5555-4555-8555-555555555555 --connection 44444444-4444-4444-8444-444444444444" +
+		" --expected-version 2 --currency TWD --approval-ref " + liveRef + " --approved-at 2026-09-30T08:30:00Z --canary-max 5000 --max 2000000" +
+		" --attest account_active,canary_private,descriptor,dispute_notice,managed_off,payout_bank,policy_pages,radar_default,rak_live,three_ds,webhook_live"
+	canaryLine = "live-canary " + ids + " --approval 55555555-5555-4555-8555-555555555555 --attempt 66666666-6666-4666-8666-666666666666 --refund 77777777-7777-4777-8777-777777777777"
+	revokeLine = "live-revoke " + ids + " --approval 55555555-5555-4555-8555-555555555555 --revoke-ref owner-chat:2026-09-30:revoke"
+)
+
+func TestLiveSubcommandsUsageErrorsAreFixed(t *testing.T) {
+	for _, line := range []string{
+		"live-bogus " + ids,
+		"live-approve " + ids + " --nope=leak",
+		strings.Replace(approveLine, "2026-09-30T08:30:00Z", "yesterday-leak", 1),
+		"live-canary " + ids + " extra",
+		"live-revoke " + ids + " --secret sentinel-flag-value",
+		"register " + ids + " --environment PRODUCTION",
+		"rotate " + ids + " --connection c --expected-version 1 --environment live",
+	} {
+		out, err := do(t, liveEnv(), line)
+		if !errors.Is(err, errUsage) || out != "" || strings.Contains(err.Error(), "leak") || strings.Contains(err.Error(), "sentinel") {
+			t.Fatalf("%q -> %q %v", line, out, err)
+		}
+	}
+}
+
+func TestLiveGatesNeedTheOwnersPairBeforeAnyConnection(t *testing.T) {
+	registerLive := "register " + ids + " --environment LIVE"
+	rotateLive := "rotate " + ids + " --connection c --expected-version 1 --environment LIVE"
+	webhookLive := "webhook " + ids + " --connection c --profile LIVE --enabled"
+	qualifyLive := "qualify " + ids + " --profile LIVE --connection c --expected-version 1"
+	gated := map[string]string{"register": registerLive, "rotate": rotateLive, "webhook": webhookLive, "qualify": qualifyLive,
+		"live-approve": approveLine, "live-canary": canaryLine}
+	halves := map[string]func(map[string]string){
+		"no pair": func(v map[string]string) {
+			delete(v, "COMMERCE_STRIPE_LIVE_ENABLED")
+			delete(v, "COMMERCE_STRIPE_LIVE_APPROVAL_REF")
+		},
+		"flag only":       func(v map[string]string) { delete(v, "COMMERCE_STRIPE_LIVE_APPROVAL_REF") },
+		"ref only":        func(v map[string]string) { delete(v, "COMMERCE_STRIPE_LIVE_ENABLED") },
+		"flag 0 with ref": func(v map[string]string) { v["COMMERCE_STRIPE_LIVE_ENABLED"] = "0" },
+		"flag true":       func(v map[string]string) { v["COMMERCE_STRIPE_LIVE_ENABLED"] = "true" },
+		"short ref":       func(v map[string]string) { v["COMMERCE_STRIPE_LIVE_APPROVAL_REF"] = "short" },
+	}
+	for name, line := range gated {
+		for half, mutate := range halves {
+			v := liveEnv()
+			mutate(v)
+			out, err := do(t, v, line)
+			if !errors.Is(err, errConfig) || out != "" || strings.Contains(err.Error(), liveRef) {
+				t.Fatalf("%s with %s: %q %v", name, half, out, err)
+			}
+		}
+		// The complete pair passes the gates and reaches the (closed) database step, masked.
+		out, err := do(t, liveEnv(), line)
+		if !errors.Is(err, stripeadmin.ErrDatabase) || out != "" {
+			t.Fatalf("%s with the pair: %q %v", name, out, err)
+		}
+	}
+	// live-approve additionally needs the API keyring (it unseals the stored key) and never a STRIPE_* key.
+	v := liveEnv()
+	delete(v, "COMMERCE_ACCOUNT_KEYS_JSON")
+	if out, err := do(t, v, approveLine); !errors.Is(err, errConfig) || out != "" {
+		t.Fatalf("live-approve without the API keyring: %q %v", out, err)
+	}
+	// LIVE qualify needs no STRIPE_SANDBOX opt-in (the pair is the opt-in) but still the API keyring.
+	v = liveEnv()
+	delete(v, "COMMERCE_ACCOUNT_KEYS_JSON")
+	if out, err := do(t, v, qualifyLive); !errors.Is(err, errConfig) || out != "" {
+		t.Fatalf("live qualify without the API keyring: %q %v", out, err)
+	}
+}
+
+// S8 / LD6: live-revoke and method never read the pair or a keyring, so the per-store kill switch cannot be
+// blocked by deploy env. A recorder proves the read set.
+func TestLiveRevokeAndMethodAreAdmittedWithoutThePair(t *testing.T) {
+	for name, line := range map[string]string{
+		"live-revoke":            revokeLine,
+		"method --enabled=false": "method " + ids + " --market m --country HK --enabled=false",
+	} {
+		values := map[string]string{"COMMERCE_STRIPE_REGISTRAR_DATABASE_URL": env()["COMMERCE_STRIPE_REGISTRAR_DATABASE_URL"]}
+		var read []string
+		var out bytes.Buffer
+		err := run(context.Background(), strings.Fields(line), func(n string) string { read = append(read, n); return values[n] }, &out)
+		if !errors.Is(err, stripeadmin.ErrDatabase) || out.Len() != 0 {
+			t.Fatalf("%s without any pair or keyring: %q %v", name, out.String(), err)
+		}
+		for _, n := range read {
+			if n != "COMMERCE_STRIPE_REGISTRAR_DATABASE_URL" {
+				t.Fatalf("%s read %s", name, n)
+			}
+		}
+		// Even with a pair present in the environment, they never look at it.
+		values["COMMERCE_STRIPE_LIVE_ENABLED"], values["COMMERCE_STRIPE_LIVE_APPROVAL_REF"] = "1", liveRef
+		read = nil
+		_ = run(context.Background(), strings.Fields(line), func(n string) string { read = append(read, n); return values[n] }, &out)
+		for _, n := range read {
+			if strings.HasPrefix(n, "COMMERCE_STRIPE_LIVE_") {
+				t.Fatalf("%s read %s", name, n)
+			}
+		}
+	}
+}
+
+// SANDBOX paths keep their read set: they never look at the LIVE pair (SP15 read-set invariant).
+func TestSandboxPathsReadNoLiveVariable(t *testing.T) {
+	for _, line := range []string{
+		"register " + ids, "register " + ids + " --environment SANDBOX",
+		"rotate " + ids + " --connection c --expected-version 1",
+		"webhook " + ids + " --connection c --profile SANDBOX --enabled",
+		"qualify " + ids + " --profile PROVIDER_MOCK --connection c --expected-version 1",
+	} {
+		v := env()
+		v["COMMERCE_STRIPE_LIVE_ENABLED"], v["COMMERCE_STRIPE_LIVE_APPROVAL_REF"] = "1", liveRef
+		var read []string
+		_ = run(context.Background(), strings.Fields(line), func(n string) string { read = append(read, n); return v[n] }, &bytes.Buffer{})
+		for _, n := range read {
+			if strings.HasPrefix(n, "COMMERCE_STRIPE_LIVE_") {
+				t.Fatalf("%q read %s", line, n)
+			}
+		}
+	}
+}

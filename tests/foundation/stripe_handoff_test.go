@@ -183,7 +183,7 @@ func TestStripeSP21PinnedHandoffAfterKeyRotation(t *testing.T) {
 	if out, err := take(requestHash[:], "PROVIDER_MOCK", configDigest[:]); err == nil && (out["disposition"] == "REDIRECT" || out["redirect_url"] != nil) {
 		t.Fatalf("forged owner handoff disclosed URL: %v", out)
 	}
-	mustExec(t, p.f.owner, `UPDATE payments.account_qualifications SET revoked_at=clock_timestamp() WHERE id=$1`, proof)
+	qualExec(t, p.f.owner, `UPDATE payments.account_qualifications SET revoked_at=clock_timestamp() WHERE id=$1`, proof)
 	if out, err := take(tokenHash[:], "PROVIDER_MOCK", configDigest[:]); err != nil || out["disposition"] != "UNAVAILABLE" || out["redirect_url"] != nil {
 		t.Fatalf("revoked qualification handoff=%v err=%v", out, err)
 	}

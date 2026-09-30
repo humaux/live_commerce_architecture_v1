@@ -13,8 +13,10 @@
 #   LC_IDENTITY_ENABLED, LC_OIDC_ISSUER, LC_PASSWORD_LOGIN_ENABLED (+ LC_SMTP_HOST, LC_SMTP_USERNAME, LC_MAIL_FROM,
 #   LC_MAIL_DAILY_CAP, LC_BREACH_CHECK), LC_ONBOARDING_ENABLED, LC_ONBOARDING_CURRENCIES,
 #   LC_BUYER_ENABLED, LC_BUYER_SESSION_TTL_SECONDS (one value -> api "<N>s", storefront "<N>"),
-#   LC_STRIPE_ENABLED (one switch -> api COMMERCE_STRIPE_{WEBHOOK,CHECKOUT}_ENABLED and
-#   payment-worker-sandbox COMMERCE_STRIPE_ENABLED; SANDBOX only, stripe-psp-v1 §0.2/§12),
+#   LC_STRIPE_ENABLED (-> api COMMERCE_STRIPE_WEBHOOK_ENABLED and COMMERCE_STRIPE_ENABLED on the worker of the
+#   deployed profile) and LC_STRIPE_CHECKOUT_ENABLED (-> api COMMERCE_STRIPE_CHECKOUT_ENABLED only; follows
+#   LC_STRIPE_ENABLED when unset; the platform kill switch), LC_STRIPE_LIVE_ENABLED + LC_STRIPE_LIVE_APPROVAL_REF
+#   (the LIVE pair -> api and payment-worker-live; stripe-live-enable-v1 LD6/§5.2),
 #   LC_CVS_ECPAY_ENABLED (one switch -> api + claims-worker CVS_ECPAY_ENABLED; SANDBOX only,
 #   taiwan-cvs-logistics-v1 §12).
 # Reads secrets: every row of deploy/secrets.manifest.tsv, mounted at /run/secrets/<name>
@@ -186,11 +188,16 @@ services:
       COMMERCE_META_PAYLOAD_KEYS_JSON_FILE: /run/secrets/commerce_meta_payload_keys_json
       COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_meta_payload_active_key_id
       COMMERCE_META_APPS_JSON_FILE: /run/secrets/commerce_meta_apps_json
-      # Stripe (stripe-psp-v1 §0.2/§12): one switch for the checkout flag and the webhook route. The
-      # API never reads STRIPE_* (API keys live sealed in PG); webhook signing keys use the SEPARATE
-      # COMMERCE_STRIPE_WEBHOOK_* keyring (cmd/api/stripe_webhook.go remapSigningNames).
+      # Stripe (stripe-psp-v1 §0.2/§12, stripe-live-enable-v1 LD6): TWO switches (LD6). The webhook route follows
+      # LC_STRIPE_ENABLED; the buyer checkout flag has its own source LC_STRIPE_CHECKOUT_ENABLED (defaults to
+      # LC_STRIPE_ENABLED) so the platform can stop new checkouts while webhook + worker keep reconciling.
+      # LIVE needs the pair below (both or neither; preflight P06). The API never reads STRIPE_* (API keys live
+      # sealed in PG); webhook signing keys use the SEPARATE COMMERCE_STRIPE_WEBHOOK_* keyring
+      # (cmd/api/stripe_webhook.go remapSigningNames).
       COMMERCE_STRIPE_WEBHOOK_ENABLED: ${LC_STRIPE_ENABLED:-0}
-      COMMERCE_STRIPE_CHECKOUT_ENABLED: ${LC_STRIPE_ENABLED:-0}
+      COMMERCE_STRIPE_CHECKOUT_ENABLED: ${LC_STRIPE_CHECKOUT_ENABLED:-${LC_STRIPE_ENABLED:-0}}
+      COMMERCE_STRIPE_LIVE_ENABLED: ${LC_STRIPE_LIVE_ENABLED:-0}
+      COMMERCE_STRIPE_LIVE_APPROVAL_REF: ${LC_STRIPE_LIVE_APPROVAL_REF:-}
       COMMERCE_STRIPE_INGRESS_DATABASE_URL_FILE: /run/secrets/dsn_lc_api_stripe_ingress
       COMMERCE_STRIPE_WEBHOOK_KEYS_JSON_FILE: /run/secrets/commerce_stripe_webhook_keys_json
       COMMERCE_STRIPE_WEBHOOK_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_stripe_webhook_active_key_id
@@ -365,8 +372,8 @@ services:
     environment:
       COMMERCE_PAYMENT_WORKER_ENABLED: "1"
       COMMERCE_PAYMENT_WORKER_PROFILE: SANDBOX   # one process per profile (disjoint River queues)
-      # Stripe dispatch + refund worker on the SANDBOX queue. payment-worker-live never gets this
-      # (cmd/payment-worker refuses Stripe on LIVE: no live activation without owner approval).
+      # Stripe dispatch + refund worker on the SANDBOX queue (kept in a LIVE deployment only to drain SANDBOX work,
+      # stripe-live-enable-v1 LD1). payment-worker-live gets the same switch plus the LIVE pair below.
       COMMERCE_STRIPE_ENABLED: ${LC_STRIPE_ENABLED:-0}
       COMMERCE_PAYMENT_WORKER_DATABASE_URL_FILE: /run/secrets/dsn_lc_payment_sandbox
       COMMERCE_ACCOUNT_KEYS_JSON_FILE: /run/secrets/commerce_account_keys_json
@@ -388,6 +395,11 @@ services:
     environment:
       COMMERCE_PAYMENT_WORKER_ENABLED: "1"
       COMMERCE_PAYMENT_WORKER_PROFILE: LIVE
+      # stripe-live-enable-v1 §5.2: Stripe dispatch + refunds on the LIVE queue only with the LIVE pair (both or
+      # neither; cmd/payment-worker refuses a lone half). Stopping this worker is NOT a kill switch (LD6).
+      COMMERCE_STRIPE_ENABLED: ${LC_STRIPE_ENABLED:-0}
+      COMMERCE_STRIPE_LIVE_ENABLED: ${LC_STRIPE_LIVE_ENABLED:-0}
+      COMMERCE_STRIPE_LIVE_APPROVAL_REF: ${LC_STRIPE_LIVE_APPROVAL_REF:-}
       COMMERCE_PAYMENT_WORKER_DATABASE_URL_FILE: /run/secrets/dsn_lc_payment_live
       COMMERCE_ACCOUNT_KEYS_JSON_FILE: /run/secrets/commerce_account_keys_json
       COMMERCE_ACCOUNT_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_account_active_key_id

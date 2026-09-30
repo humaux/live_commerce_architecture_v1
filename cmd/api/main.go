@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"livecommerce/internal/httpapi"
+	"livecommerce/internal/payments"
 	"livecommerce/internal/platform"
 )
 
@@ -118,8 +119,18 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	// stripe-live-enable-v1 §5.2: the refund routes need the deployment's payment environment. An unset profile keeps
+	// the pre-LIVE SANDBOX behavior (payment-free deployments); a set but unknown profile is refused at start.
+	paymentEnvironment := ""
+	if profile := os.Getenv("COMMERCE_PAYMENT_PROFILE"); profile != "" {
+		env, ok := payments.ProfileEnvironment(profile)
+		if !ok {
+			return errors.New("payment profile is not supported")
+		}
+		paymentEnvironment = env
+	}
 	handler := httpapi.NewHandler(pool, httpapi.Options{SessionStoreList: identityConfig.enabled, Accounts: accountService, Studio: studioConfig.enabled, Live: studioPlanner,
-		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs, Ads: adsService, Billing: billingService, CVS: cvs.Merchant})
+		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs, Ads: adsService, Billing: billingService, CVS: cvs.Merchant, PaymentEnvironment: paymentEnvironment})
 	if identityHandler != nil {
 		mux := http.NewServeMux()
 		mux.Handle("/v1/identity/", identityHandler)

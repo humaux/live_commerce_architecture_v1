@@ -62,6 +62,11 @@ type Options struct {
 	// CVS mounts the taiwan-cvs-logistics-v1 merchant routes (§8: ECPay connection, settings, label request, print, abandon,
 	// collection, pay-at-pickup release). nil leaves them unmounted (cmd/api buildCVS).
 	CVS *fulfillment.CVS
+	// PaymentEnvironment is the deployment's payment environment, SANDBOX or LIVE (payments.ProfileEnvironment of
+	// COMMERCE_PAYMENT_PROFILE, chosen by cmd/api). The refund POST refuses an attempt of another environment
+	// (stripe-live-enable-v1 §5.2, S5). Empty means SANDBOX so pre-LIVE callers keep their behavior; any other
+	// value not in {SANDBOX, LIVE} leaves the refund routes unmounted.
+	PaymentEnvironment string
 }
 
 func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
@@ -143,7 +148,11 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerOrderRoutes(mux, pool)
 	registerStudioRoutes(mux, pool, configured.Studio || configured.Live != nil, configured.Live, configured.BrowserInput)
 	registerClaimRoutes(mux, pool, configured.ClaimLabels)
-	registerRefundRoutes(mux, pool, configured.RefundJobs)
+	paymentEnvironment := configured.PaymentEnvironment
+	if paymentEnvironment == "" {
+		paymentEnvironment = "SANDBOX"
+	}
+	registerRefundRoutesIn(mux, pool, configured.RefundJobs, paymentEnvironment)
 	registerShipmentRoutes(mux, pool)
 	registerAdsRoutes(mux, pool, configured.Ads)
 	registerCustomerRoutes(mux, pool)

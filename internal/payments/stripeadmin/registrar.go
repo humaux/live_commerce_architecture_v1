@@ -36,13 +36,17 @@ var (
 const (
 	sqlBudget       = 15 * time.Second
 	qualifyBudget   = 60 * time.Second // three Stripe calls of up to 10 s each plus SQL
-	environment     = "SANDBOX"        // B1 registers SANDBOX only; the SQL CHECK refuses LIVE independently
+	envSandbox      = "SANDBOX"        // Open registers SANDBOX; the SQL CHECKs accept SANDBOX and LIVE
+	envLive         = "LIVE"           // OpenLive registers LIVE (stripe-live-enable-v1 §5.2)
 	qualifyValidFor = "30 days"        // §0.2: expiry in (now, observed_at + 30 days]
 )
 
 var (
-	accountPattern = regexp.MustCompile(`^acct_[A-Za-z0-9]{1,59}$`)
-	countryPattern = regexp.MustCompile(`^[A-Z]{2}$`)
+	accountPattern  = regexp.MustCompile(`^acct_[A-Za-z0-9]{1,59}$`)
+	countryPattern  = regexp.MustCompile(`^[A-Z]{2}$`)
+	currencyPattern = regexp.MustCompile(`^[A-Z]{3}$`)
+	// refPattern is the approval_ref / revoke_ref grammar of payments.stripe_live_approvals (§3.2).
+	refPattern = regexp.MustCompile(`^[A-Za-z0-9._:-]{8,128}$`)
 )
 
 // Scope is the operator-chosen owner scope; the SQL validates the owner membership of Principal.
@@ -83,6 +87,37 @@ type Registrar struct {
 	apiKeys     *accounts.Keyring
 	signingKeys *accounts.Keyring
 	transport   http.RoundTripper
+	// live is the owner's pair; complete only on a registrar from OpenLive. It selects environment LIVE for
+	// register/rotate/qualify/webhook and enables LiveApprove/LiveCanary. LiveRevoke and SetMethod never need it.
+	live stripe.LiveApproval
+	// newProvider is a test seam only (unexported): nil means the real adapter. It exists because a LIVE client
+	// can never be built over a mock transport, yet LiveApprove/Qualify(LIVE) still need Go-side unit tests.
+	newProvider func(stripe.Config) (provider, error)
+}
+
+// provider is the slice of *stripe.Client the registrar uses.
+type provider interface {
+	VerifyAccount(ctx context.Context) (stripe.CallMeta, error)
+	AccountReadiness(ctx context.Context) (stripe.Readiness, stripe.CallMeta, error)
+	ProbeCheckout(ctx context.Context, qualificationID, currency string, amountMinor int64,
+		returnURL string) (string, stripe.CallMeta, error)
+}
+
+// environment is the Stripe environment this registrar registers and operates: LIVE only after OpenLive.
+func (r *Registrar) environment() string {
+	if r.live.Enabled {
+		return envLive
+	}
+	return envSandbox
+}
+
+// profileAllowed: a SANDBOX registrar takes PROVIDER_MOCK and SANDBOX profiles, a LIVE registrar only LIVE
+// (S7: Open keeps refusing LIVE; SQL also requires (account environment = LIVE) = (profile = LIVE)).
+func (r *Registrar) profileAllowed(profile string) bool {
+	if r.live.Enabled {
+		return profile == "LIVE"
+	}
+	return profile == "PROVIDER_MOCK" || profile == "SANDBOX"
 }
 
 func (Registrar) String() string     { return "stripeadmin.Registrar{redacted}" }
@@ -104,6 +139,25 @@ func Open(ctx context.Context, dsn string, apiKeys, signingKeys *accounts.Keyrin
 		return nil, ErrDatabase
 	}
 	r := newRegistrar(pool, apiKeys, signingKeys, mockTransport...)
+	r.closePool = pool.Close
+	return r, nil
+}
+
+// OpenLive is Open for a LIVE registrar (stripe-live-enable-v1 §5.2): it needs the owner's complete
+// flag+reference pair, never takes a mock transport, and its Register/Rotate use environment LIVE (rk_live_
+// keys only), Qualify/SetWebhookEndpoint use profile LIVE, and LiveApprove/LiveCanary are available.
+// The pair is only a deployment gate here; the per-store gate is the SQL approval row.
+func OpenLive(ctx context.Context, dsn string, apiKeys, signingKeys *accounts.Keyring,
+	live stripe.LiveApproval) (*Registrar, error) {
+	if ctx == nil || !live.Valid() {
+		return nil, ErrConfig
+	}
+	pool, err := platform.OpenStripeRegistrarPool(ctx, dsn)
+	if err != nil {
+		return nil, ErrDatabase
+	}
+	r := newRegistrar(pool, apiKeys, signingKeys)
+	r.live = live
 	r.closePool = pool.Close
 	return r, nil
 }
@@ -179,16 +233,30 @@ func (r *Registrar) registeredAccount(ctx context.Context, s Scope, connectionID
 	return account, nil
 }
 
-// providerClient builds the Stage-A client for the operator's key. LIVE keys are refused by the
-// adapter's admission matrix (§5.2) and surfaced as ErrRejected.
-func (r *Registrar) providerClient(secretKey, accountID string) (*stripe.Client, error) {
-	cfg := stripe.Config{SecretKey: secretKey, AccountID: accountID, Environment: environment}
-	var c *stripe.Client
+// providerClient builds the Stage-A client for the operator's key. The adapter's admission matrix (§5.1)
+// decides: a live key on a SANDBOX registrar, a test key on a LIVE one, sk_live_ anywhere and a missing pair
+// are all ErrLiveRefused, surfaced as ErrRejected. A mock transport is never used for LIVE (admit refuses it).
+func (r *Registrar) providerClient(secretKey, accountID string) (provider, error) {
+	cfg := stripe.Config{SecretKey: secretKey, AccountID: accountID, Environment: r.environment()}
+	if r.live.Enabled {
+		cfg.Live = r.live
+	}
+	var c provider
 	var err error
-	if r.transport != nil {
-		c, err = stripe.NewWithMockTransport(cfg, r.transport)
-	} else {
-		c, err = stripe.New(cfg)
+	switch {
+	case r.newProvider != nil:
+		// Test seam: still run the adapter's admission matrix (no I/O) so key-mode and pair refusals hold in tests.
+		if _, err = stripe.New(cfg); err == nil {
+			c, err = r.newProvider(cfg)
+		}
+	case r.transport != nil:
+		var sc *stripe.Client
+		sc, err = stripe.NewWithMockTransport(cfg, r.transport)
+		c = sc
+	default:
+		var sc *stripe.Client
+		sc, err = stripe.New(cfg)
+		c = sc
 	}
 	switch {
 	case errors.Is(err, stripe.ErrLiveRefused):
@@ -200,7 +268,7 @@ func (r *Registrar) providerClient(secretKey, accountID string) (*stripe.Client,
 }
 
 // verify implements ruling 8: GET /v1/account with the supplied key must return the operator's
-// account id. The adapter admits only test keys in SANDBOX, so livemode=false holds by construction.
+// account id. The adapter binds the key mode to the environment (test keys in SANDBOX, rk_live_ in LIVE).
 func (r *Registrar) verify(ctx context.Context, secretKey, accountID string) error {
 	c, err := r.providerClient(secretKey, accountID)
 	if err != nil {
@@ -235,7 +303,7 @@ func (r *Registrar) Register(ctx context.Context, s Scope, accountID, secretKey 
 		return "", err
 	}
 	keyID, nonce, ciphertext, err := r.apiKeys.SealStripeAPI(accounts.StripeAPIScope{TenantID: s.TenantID,
-		StoreID: s.StoreID, ConnectionID: connection, Environment: environment, AccountID: accountID,
+		StoreID: s.StoreID, ConnectionID: connection, Environment: r.environment(), AccountID: accountID,
 		CredentialVersion: 1}, accounts.StripeAPICredentials{SecretKey: secretKey})
 	if err != nil {
 		return "", ErrConfig
@@ -243,7 +311,7 @@ func (r *Registrar) Register(ctx context.Context, s Scope, accountID, secretKey 
 	var out string
 	if err := r.scan(bounded, &out, `SELECT integration.register_stripe_account($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5::uuid,
 		$6::text,$7::text,$8::text,$9::bytea,$10::bytea)::text`, s.TenantID, s.StoreID, s.PrincipalID,
-		connection, binding, environment, accountID, keyID, nonce, ciphertext); err != nil {
+		connection, binding, r.environment(), accountID, keyID, nonce, ciphertext); err != nil {
 		return "", err
 	}
 	if out != connection {
@@ -268,7 +336,7 @@ func (r *Registrar) storedCredential(ctx context.Context, s Scope, connectionID 
 		return "", "", ErrDatabase
 	}
 	creds, err := r.apiKeys.OpenStripeAPI(accounts.StripeAPIScope{TenantID: s.TenantID, StoreID: s.StoreID,
-		ConnectionID: connectionID, Environment: environment, AccountID: account,
+		ConnectionID: connectionID, Environment: r.environment(), AccountID: account,
 		CredentialVersion: expectedVersion}, keyID, nonce, ciphertext)
 	if err != nil {
 		return "", "", ErrConfig // custody cannot open it: wrong keyring or a mismatching envelope
@@ -299,7 +367,7 @@ func (r *Registrar) Rotate(ctx context.Context, s Scope, connectionID string, ex
 		return 0, err
 	}
 	keyID, nonce, ciphertext, err := r.apiKeys.SealStripeAPI(accounts.StripeAPIScope{TenantID: s.TenantID,
-		StoreID: s.StoreID, ConnectionID: connectionID, Environment: environment, AccountID: account,
+		StoreID: s.StoreID, ConnectionID: connectionID, Environment: r.environment(), AccountID: account,
 		CredentialVersion: expectedVersion + 1}, accounts.StripeAPICredentials{SecretKey: secretKey})
 	if err != nil {
 		return 0, ErrConfig
@@ -324,7 +392,7 @@ func (r *Registrar) Rotate(ctx context.Context, s Scope, connectionID string, ex
 func (r *Registrar) SetWebhookEndpoint(ctx context.Context, s Scope, in EndpointInput) (string, int64, error) {
 	if r == nil || r.db == nil || ctx == nil || r.signingKeys == nil || !validScope(s) ||
 		!command.ValidID(in.ConnectionID) || (in.AccountID != "" && !accountPattern.MatchString(in.AccountID)) ||
-		(in.Profile != "PROVIDER_MOCK" && in.Profile != "SANDBOX") || in.ExpectedVersion < 0 ||
+		!r.profileAllowed(in.Profile) || in.ExpectedVersion < 0 ||
 		(in.ExpectedVersion == 0) != (in.EndpointID == "") || (in.EndpointID != "" && !command.ValidID(in.EndpointID)) {
 		return "", 0, ErrConfig
 	}
@@ -344,7 +412,7 @@ func (r *Registrar) SetWebhookEndpoint(ctx context.Context, s Scope, in Endpoint
 	}
 	next := in.ExpectedVersion + 1
 	keyID, nonce, ciphertext, err := r.signingKeys.SealStripeWebhook(accounts.StripeWebhookScope{TenantID: s.TenantID,
-		StoreID: s.StoreID, ConnectionID: in.ConnectionID, EndpointID: endpoint, Environment: environment,
+		StoreID: s.StoreID, ConnectionID: in.ConnectionID, EndpointID: endpoint, Environment: r.environment(),
 		AccountID: account, Profile: in.Profile, KeyVersion: next}, in.Secrets)
 	if err != nil {
 		return "", 0, ErrConfig
@@ -363,10 +431,11 @@ func (r *Registrar) SetWebhookEndpoint(ctx context.Context, s Scope, in Endpoint
 }
 
 // Qualify records method-qualification evidence for the credential version the operator expects.
-// SANDBOX: open the STORED credential at expected_version (payments.stripe_registrar_credential,
+// SANDBOX and LIVE: open the STORED credential at expected_version (payments.stripe_registrar_credential,
 // head only) and probe the connection's REGISTERED account with it (S4): verify the account, run
-// stripe.ProbeCheckout (create at now+31m, expire, retrieve expired+unpaid+!livemode) and store
-// evidence "stripe-probe:<session id>". in.AccountID / in.SecretKey are optional operator
+// stripe.ProbeCheckout (create at now+31m, expire, retrieve expired+unpaid+livemode==environment; no charge is
+// possible, nobody completes the session) and store evidence "stripe-probe:<session id>" (cs_live_… for LIVE,
+// which the SQL requires). in.AccountID / in.SecretKey are optional operator
 // assertions that must equal the stored values, so an old key or another account's key cannot
 // qualify version N. PROVIDER_MOCK: no network, evidence "provider-mock:<qualification>". The SQL
 // rechecks the head version after the probe. observed_at/expires_at come from the DB transaction
@@ -374,7 +443,7 @@ func (r *Registrar) SetWebhookEndpoint(ctx context.Context, s Scope, in Endpoint
 // future" and "<= observed+30 days" checks.
 func (r *Registrar) Qualify(ctx context.Context, s Scope, in QualifyInput) (string, error) {
 	if r == nil || r.db == nil || ctx == nil || !validScope(s) || !command.ValidID(in.ConnectionID) ||
-		in.ExpectedVersion < 1 || (in.Profile != "PROVIDER_MOCK" && in.Profile != "SANDBOX") {
+		in.ExpectedVersion < 1 || !r.profileAllowed(in.Profile) {
 		return "", ErrConfig
 	}
 	qualification, err := newUUID()
@@ -384,7 +453,7 @@ func (r *Registrar) Qualify(ctx context.Context, s Scope, in QualifyInput) (stri
 	bounded, cancel := context.WithTimeout(ctx, qualifyBudget)
 	defer cancel()
 	evidence := "provider-mock:" + qualification
-	if in.Profile == "SANDBOX" {
+	if in.Profile == "SANDBOX" || in.Profile == "LIVE" {
 		if r.apiKeys == nil || (in.AccountID != "" && !accountPattern.MatchString(in.AccountID)) {
 			return "", ErrConfig
 		}

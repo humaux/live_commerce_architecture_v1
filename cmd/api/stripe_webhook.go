@@ -68,10 +68,16 @@ func loadStripeWebhookConfig(getenv func(string) string, addr string) (stripeWeb
 	if len(c.dsn) < 1 || len(c.dsn) > 8192 || strings.TrimSpace(c.dsn) == "" {
 		return stripeWebhookConfig{}, errStripeConfig
 	}
-	// LIVE ingress is refused in B1: contracts/stripe-psp-v1.md §0.2 admits MOCK/SANDBOX only.
+	// stripe-live-enable-v1 §5.2: LIVE ingress is admitted only with the owner's flag+reference pair. The pair
+	// is read only for LIVE, so a SANDBOX/MOCK deployment reads exactly the names it always did (SP15).
 	c.profile = getenv("COMMERCE_PAYMENT_PROFILE")
-	if c.profile != "PROVIDER_MOCK" && c.profile != "SANDBOX" {
+	if c.profile != "PROVIDER_MOCK" && c.profile != "SANDBOX" && c.profile != "LIVE" {
 		return stripeWebhookConfig{}, errStripeConfig
+	}
+	if c.profile == "LIVE" {
+		if _, err := loadStripeLiveApproval(getenv); err != nil {
+			return stripeWebhookConfig{}, errStripeConfig
+		}
 	}
 	if c.keys, err = accounts.LoadKeyring(remapSigningNames(getenv)); err != nil {
 		return stripeWebhookConfig{}, errStripeConfig

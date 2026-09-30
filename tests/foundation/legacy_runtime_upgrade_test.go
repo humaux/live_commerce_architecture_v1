@@ -165,7 +165,7 @@ func lriOldProfileQuery(t *testing.T, f *testFixture, profile string) pqFixture 
 	t.Helper()
 	p := psSetupItemsOn(t, f, 1, "river")
 	if profile == "SANDBOX" {
-		mustExec(t, f.owner, `UPDATE payments.account_qualifications SET proof_class='REAL_SANDBOX',evidence_ref='local synthetic qualification; no provider call' WHERE id=$1`, p.proof)
+		qualExec(t, f.owner, `UPDATE payments.account_qualifications SET proof_class='REAL_SANDBOX',evidence_ref='local synthetic qualification; no provider call' WHERE id=$1`, p.proof)
 	} else if profile == "LIVE" {
 		binding, account, proof := randomUUID(), randomUUID(), randomUUID()
 		ctx := context.Background()

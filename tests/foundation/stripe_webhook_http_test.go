@@ -790,7 +790,6 @@ func TestStripeSP13WebhookHTTP(t *testing.T) {
 				return err
 			},
 			"nil_keyring":     func() error { _, err := stripewebhook.NewInbox(ctx, h.ingress, nil, "PROVIDER_MOCK"); return err },
-			"live_profile":    func() error { _, err := stripewebhook.NewInbox(ctx, h.ingress, h.e.signing, "LIVE"); return err },
 			"unknown_profile": func() error { _, err := stripewebhook.NewInbox(ctx, h.ingress, h.e.signing, "PROD"); return err },
 			"nil_pool":        func() error { _, err := stripewebhook.NewInbox(ctx, nil, h.e.signing, "PROVIDER_MOCK"); return err },
 		} {

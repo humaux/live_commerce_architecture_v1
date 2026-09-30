@@ -283,7 +283,7 @@ func TestStripeRF03Schema(t *testing.T) {
 		u := func(n int) string { return fmt.Sprintf(srsUUID, n) }
 		base := srsRefundBase()
 		srsCheck(t, e, "payments.stripe_refunds", base, map[string]map[string]string{
-			"LIVE environment":                {"environment": "'LIVE'"},
+			"unknown environment":             {"environment": "'PROD'"}, // was "LIVE environment": 0077 widens the CHECK to SANDBOX|LIVE (SL02 covers it)
 			"account id shape":                {"account_id": "'acct_'"},
 			"credential_version 0":            {"credential_version": "0"},
 			"payment_intent shape":            {"payment_intent_id": "'pi bad'"},
