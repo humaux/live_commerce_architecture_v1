@@ -1156,13 +1156,12 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
         : target.privatePath === "privacy/export"
           ? validBuyerExport(data)
           : erasure
-            ? // Go /v1/buyer/privacy/erasure answers {erased, orders_retained, summary} (internal/buyerhttp erasureResponse);
-              // the page gets only the four counts.
-              data !== null && typeof data === "object" && (data as { erased?: unknown }).erased === true &&
-              validErasureSummary((data as { summary?: unknown }).summary)
+            ? // Go /v1/buyer/privacy/erasure answers {erased, orders_retained, summary} (internal/buyerhttp erasureResponse).
+              // The envelope is validated and passed through whole: PrivacyCenter re-validates the same closed shape.
+              validErasureSummary(data)
             : true;
   if (!privacyValid) return fail(503, "unavailable");
-  if (erasure) return success((data as { summary: unknown }).summary, revoked);
+  if (erasure) return success(data, revoked);
   if (target.privatePath === "privacy/export")
     return success(data, { "Content-Disposition": 'attachment; filename="my-data.json"' });
   return success(data);

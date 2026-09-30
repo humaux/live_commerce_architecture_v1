@@ -541,8 +541,11 @@ else
   # 2026-09-29: the GitHub runner took ~1449s for this package on bef13f2 (before Stripe B1);
   # adding the SP06-SP21 gates pushed daf08ee past 1500s (panic: test timed out after 25m0s,
   # while TestStripeSP10Deadline was 22s in). 2700s keeps headroom inside the 60 min CI job.
-  # Upgrade path when the package nears ~40 min: shard foundation across CI jobs by -run regex.
-  GOTOOLCHAIN=go1.27.1 go test -p 1 -race -count=1 -timeout=2700s -v ./...
+  # 2026-09-30: with the R2 lanes merged the foundation package alone needs ~54 min on the dev Mac (release gate at
+  # 57c5aaa: panic "test timed out after 45m0s" with 61 tests not started; those took a further 527 s). -timeout is a
+  # hang bound, not a gate: 4500s, and the CI job bound moves to 90 min with it (.github/workflows/foundation.yml).
+  # ponytail: one serial package; shard foundation across CI jobs by -run regex when a run nears 70 min.
+  GOTOOLCHAIN=go1.27.1 go test -p 1 -race -count=1 -timeout=4500s -v ./...
   GOTOOLCHAIN=go1.27.1 go vet ./...
   printf 'PASS: isolated real PostgreSQL foundation tests; fixture removed at exit.\n'
 fi

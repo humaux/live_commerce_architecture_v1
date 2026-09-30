@@ -860,11 +860,12 @@ func (e *adsEnv) sweep(kind string) {
 }
 
 // pauseDispatch stops River from fetching queue `ads` (operations stay READY, sweepers still run); resumeDispatch undoes it.
+// QueuePause only writes river_queue.paused_at and notifies: the producer stops fetching asynchronously, so both helpers
+// wait for this client's own queue event before returning — otherwise a job planned right after the call can still be
+// fetched (MA06 flaked in the full suite on exactly that window).
 func (e *adsEnv) pauseDispatch() {
 	e.t.Helper()
-	if err := e.client.QueuePause(e.ctx, "ads", nil); err != nil {
-		e.t.Fatalf("pause queue ads: %v", err)
-	}
+	e.setDispatch(river.EventKindQueuePaused, e.client.QueuePause)
 	e.t.Cleanup(func() {
 		_, _ = e.f.owner.Exec(context.Background(), `UPDATE river.river_queue SET paused_at=NULL WHERE name='ads'`)
 	})
@@ -872,8 +873,33 @@ func (e *adsEnv) pauseDispatch() {
 
 func (e *adsEnv) resumeDispatch() {
 	e.t.Helper()
-	if err := e.client.QueueResume(e.ctx, "ads", nil); err != nil {
-		e.t.Fatalf("resume queue ads: %v", err)
+	e.setDispatch(river.EventKindQueueResumed, e.client.QueueResume)
+}
+
+func (e *adsEnv) setDispatch(kind river.EventKind, change func(context.Context, string, *river.QueuePauseOpts) error) {
+	e.t.Helper()
+	var already bool
+	if err := e.f.owner.QueryRow(e.ctx, `SELECT COALESCE((SELECT paused_at IS NOT NULL FROM river.river_queue WHERE name='ads'),false)`).Scan(&already); err != nil {
+		e.t.Fatal(err)
+	}
+	events, cancel := e.client.Subscribe(kind)
+	defer cancel()
+	if err := change(e.ctx, "ads", nil); err != nil {
+		e.t.Fatalf("%s queue ads: %v", kind, err)
+	}
+	if already == (kind == river.EventKindQueuePaused) {
+		return // no state change: the producer emits no event
+	}
+	timeout := time.After(30 * time.Second)
+	for {
+		select {
+		case ev := <-events:
+			if ev != nil && ev.Queue != nil && ev.Queue.Name == "ads" {
+				return
+			}
+		case <-timeout:
+			e.t.Fatalf("queue ads producer did not confirm %s", kind)
+		}
 	}
 }
 
