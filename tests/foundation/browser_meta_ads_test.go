@@ -206,10 +206,9 @@ func TestBrowserMetaAds(t *testing.T) {
 			for i := -2; i <= 0; i++ {
 				e.g.SetInsights(campaign, taipeiDay(i), fakegraph.Insights{Spend: "12.30", Impressions: "1000", Clicks: "9", PurchaseCount: "2", PurchaseValue: "45.90"})
 			}
-			// disclosed fixture: history before the reads (the draft starts in the future when the UI creates it). The UI start is
-			// now+3h..5h, so a 2-day shift left starts_at's Taipei date at day -1 after 21:00 Taipei and ads.insights_plan
-			// (0074: from greatest(starts_at Taipei date, today-3)) skipped the first seeded day. 3 days always covers day -2..0.
-			if err := e.ownerReplicaBestEffort(`UPDATE ads.campaign_drafts SET starts_at=starts_at-interval '3 days' WHERE store_id=$1 AND publish_attempt>0 AND ended_at IS NULL`, e.store); err != nil {
+			// disclosed fixture: two days of history before the reads (the draft starts in the future when the UI creates it);
+			// pinned to Taipei day -2, not shifted by 2 days: the UI start is now+3h..5h, which crosses midnight after 21:00.
+			if err := e.ownerReplicaBestEffort(adsStartDayMinus2+` WHERE store_id=$1 AND publish_attempt>0 AND ended_at IS NULL`, e.store); err != nil {
 				fail(err)
 				return
 			}

@@ -1084,7 +1084,10 @@ func TestMetaAdsMA06Binding(t *testing.T) {
 		d := e.newDraft(adsDraftIn{})
 		e.mustApprove(d)
 		e.mustPublish(d)
-		e.driveTo(d, "campaign", 1)
+		// ads.publish_draft plans campaign #1 itself, so no sweep is needed to get it SUCCEEDED. driveTo (sweep, settle, check)
+		// raced it: when the campaign finished before the first advance ran, that advance planned the adset and the running
+		// dispatcher finished it before pauseDispatch ("adset SUCCEEDED" in the full suite, where this step is fast).
+		e.awaitOp(e.mustOp(d, "campaign", 1).ID, 30*time.Second, "SUCCEEDED")
 		e.pauseDispatch()
 		e.sweep("advance") // plans adset #1 (READY, undispatched)
 		adset := e.mustOp(d, "adset", 1)
@@ -1426,17 +1429,22 @@ func (e *adsEnv) daily(draft string) map[string]adsDay {
 	return out
 }
 
-// activeDraft returns an activated draft whose start was moved two days back (owner SQL, replica: the approval hash no longer
-// matters after the activate) so [today-2, today] are readable days; ends_at stays in the future.
+// activeDraft returns an activated draft whose start was moved to noon of Taipei day -2 (owner SQL, replica: the approval hash
+// no longer matters after the activate) so [today-2, today] are readable days; ends_at stays in the future. A relative
+// "-2 days" shift of the draft's now+hours start landed on Taipei day -1 late in the evening (2 reads, not 3).
 func (e *adsEnv) activeDraft(budget int64) (d, camp string) {
 	e.t.Helper()
 	d = e.newDraft(adsDraftIn{Budget: budget})
 	e.mustApprove(d)
 	e.mustPublish(d)
 	e.driveTo(d, "activate", 1)
-	e.ownerReplica(`UPDATE ads.campaign_drafts SET starts_at=starts_at-interval '2 days' WHERE id=$1`, d)
+	e.ownerReplica(adsStartDayMinus2+` WHERE id=$1`, d)
 	return d, e.g.Objects("campaign")[0].ID
 }
+
+// adsStartDayMinus2 pins a draft's start to noon of Taipei day -2: ads.insights_plan (0074) reads from
+// greatest(starts_at's Taipei date, today-3), so the readable days are exactly [today-2, today] at any wall-clock time.
+const adsStartDayMinus2 = `UPDATE ads.campaign_drafts SET starts_at=(((now() AT TIME ZONE 'Asia/Taipei')::date-2)+time '12:00') AT TIME ZONE 'Asia/Taipei'`
 
 func TestMetaAdsMA07Insights(t *testing.T) {
 	keyRe := regexp.MustCompile(`^ads:ins:[0-9a-f-]{36}:[0-9]{4}-[0-9]{2}-[0-9]{2}:[0-9]{10}$`)
