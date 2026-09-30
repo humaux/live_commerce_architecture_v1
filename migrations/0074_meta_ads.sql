@@ -1503,10 +1503,10 @@ ALTER FUNCTION ads.advance_decide(ads.campaign_drafts,ads.store_settings) OWNER 
 COMMENT ON FUNCTION ads.advance_decide(ads.campaign_drafts,ads.store_settings) IS
  'ads owner; internal helper of ads.advance_next/advance_plan, no caller EXECUTE. The single decision of the advance sweeper (contract 6.3): pause (ended, AD7 auto-pause, late activate, 15-minute retry), then the create chain, then preflight, then activate only when the fresh ready preflight and the AD6 room test hold. Never plans anything for a draft that has a pause op or has ended (X7).';
 
-CREATE FUNCTION ads.advance_candidates(p_limit integer) RETURNS SETOF uuid
+CREATE FUNCTION ads.advance_candidates(p_limit integer, p_offset integer) RETURNS SETOF uuid
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
 BEGIN
- IF p_limit IS NULL OR p_limit NOT BETWEEN 1 AND 500 THEN RAISE EXCEPTION 'invalid ads sweep' USING ERRCODE='22023'; END IF;
+ IF p_limit IS NULL OR p_limit NOT BETWEEN 1 AND 500 OR p_offset IS NULL OR p_offset<0 THEN RAISE EXCEPTION 'invalid ads sweep' USING ERRCODE='22023'; END IF;
  -- ponytail: sequential scan of published drafts; add an index on publish_attempt>0 when a store holds thousands.
  RETURN QUERY SELECT d.id FROM ads.campaign_drafts d
   WHERE d.publish_attempt>0 AND (
@@ -1516,13 +1516,13 @@ BEGIN
      OR (r.kind IN ('campaign','adset','creative','ad') AND o.state='SUCCEEDED' AND r.remote_id IS NULL)))
    OR (ads.draft_campaign(d.id) IS NOT NULL AND ads.draft_counts(d.id)))
   ORDER BY (SELECT a.approved_at FROM ads.draft_approvals a WHERE a.draft_id=d.id AND a.revision=d.revision) NULLS LAST,d.id
-  LIMIT p_limit;
+  LIMIT p_limit OFFSET p_offset;
 END $$;
-REVOKE ALL ON FUNCTION ads.advance_candidates(integer) FROM PUBLIC;
-ALTER FUNCTION ads.advance_candidates(integer) OWNER TO commerce_ads_writer;
-GRANT EXECUTE ON FUNCTION ads.advance_candidates(integer) TO commerce_worker;
-COMMENT ON FUNCTION ads.advance_candidates(integer) IS
- 'ads owner; only caller the ads_publish_advance_v1 periodic job (commerce_worker). Published drafts to look at, in approved_at order (the AD6 room test is order-dependent), selected by approvals, pinned ids and operation states, never by derived status (contract 6.3): inside ends_at + 3 days, or with a non-terminal or unpinned operation, or still counting toward the allowance. Drafts never published (attempt 0) have nothing to advance.';
+REVOKE ALL ON FUNCTION ads.advance_candidates(integer,integer) FROM PUBLIC;
+ALTER FUNCTION ads.advance_candidates(integer,integer) OWNER TO commerce_ads_writer;
+GRANT EXECUTE ON FUNCTION ads.advance_candidates(integer,integer) TO commerce_worker;
+COMMENT ON FUNCTION ads.advance_candidates(integer,integer) IS
+ 'ads owner; only caller the ads_publish_advance_v1 periodic job (commerce_worker). Published drafts to look at, in approved_at order (the AD6 room test is order-dependent), selected by approvals, pinned ids and operation states, never by derived status (contract 6.3): inside ends_at + 3 days, or with a non-terminal or unpinned operation, or still counting toward the allowance. Drafts never published (attempt 0) have nothing to advance. Paged by (p_limit, p_offset) over one stable order: the caller lists every page before advancing any draft (advancing shifts the set), so no published draft is starved by a fixed first page.';
 
 CREATE FUNCTION ads.advance_next(p_draft uuid) RETURNS text
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$

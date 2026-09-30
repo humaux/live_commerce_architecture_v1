@@ -598,3 +598,85 @@ func fakePool() *pgxpool.Pool {
 	}
 	return pool
 }
+
+// TestAdsCoreRealPGAdvanceBeyondFirstPage (review R1 P1): ads.advance_candidates is global and a published draft stays a
+// candidate for days, so more than one page of candidates must all be advanced in a run. 51 published drafts (plus the
+// lifecycle test's leftovers) each get their adset planned after the campaign SUCCEEDED; before the fix only the first 50 by
+// approved_at were ever looked at.
+func TestAdsCoreRealPGAdvanceBeyondFirstPage(t *testing.T) {
+	f := sharedAdsFx(t)
+	if f.adBinding == "" {
+		t.Skip("connect step did not run in this selection")
+	}
+	fbBinding := newUUID(f)
+	f.must(`INSERT INTO integration.bindings(id,tenant_id,store_id,principal_id,provider,external_asset_id) VALUES($1,$2,$3,$4,'facebook','111')`,
+		fbBinding, f.tenant, f.store, f.principal)
+	f.operatorSet("SANDBOX", "9001", 1_000_000_000)
+	now := time.Now().UTC()
+	const n = advancePage + 1
+	drafts := make([]string, 0, n)
+	for i := 0; i < n; i++ {
+		in := DraftInput{AdBindingID: f.adBinding, IdentityBindingID: fbBinding, Template: "BOOST_POST", SourceRef: "111_9" + strconv.Itoa(i), Currency: "TWD",
+			LifetimeBudgetMinor: 300000, StartsAt: now.Add(11 * time.Minute), EndsAt: now.Add(49 * time.Hour), Countries: []string{"TW"}, AgeMin: 18, AgeMax: 65}
+		var created struct{ ID string }
+		if err := f.scoped("ads:manage", func(tx pgx.Tx, s platform.Scope) error {
+			raw, e := f.svc.CreateDraft(f.ctx, tx, s, f.token, "page-draft-key-"+strconv.Itoa(1000+i), in)
+			if e == nil {
+				e = json.Unmarshal(raw, &created)
+			}
+			return e
+		}); err != nil {
+			t.Fatalf("create %d: %v", i, err)
+		}
+		if err := f.scoped("ads:approve", func(tx pgx.Tx, s platform.Scope) error {
+			if _, e := f.svc.Approve(f.ctx, tx, s, f.token, created.ID, 1); e != nil {
+				return e
+			}
+			_, e := f.svc.Publish(f.ctx, tx, s, f.token, "page-publish-key-"+strconv.Itoa(1000+i), created.ID, 0)
+			return e
+		}); err != nil {
+			t.Fatalf("approve/publish %d: %v", i, err)
+		}
+		f.finish(f.opOf(created.ID, "campaign", 1), "SUCCEEDED", strconv.Itoa(5000+i))
+		drafts = append(drafts, created.ID)
+	}
+	w := &advanceWorker{pool: f.worker}
+	if err := w.advanceAll(f.ctx, f.client); err != nil {
+		t.Fatalf("advanceAll: %v", err)
+	}
+	for i, d := range drafts {
+		if c := f.str(`SELECT count(*)::text FROM ads.remote_objects WHERE draft_id=$1 AND kind='adset'`, d); c != "1" {
+			t.Fatalf("draft %d of %d (approved position beyond one page) has %s adset ops planned, want 1", i+1, n, c)
+		}
+	}
+	// The SQL contract itself: offset pages are disjoint and their union covers more than one page.
+	seen := map[string]bool{}
+	for off := 0; ; off += advancePage {
+		rows, err := f.worker.Query(f.ctx, `SELECT d::text FROM ads.advance_candidates($1,$2) d`, advancePage, off)
+		if err != nil {
+			t.Fatal(err)
+		}
+		k := 0
+		for rows.Next() {
+			var id string
+			if err = rows.Scan(&id); err != nil {
+				t.Fatal(err)
+			}
+			if seen[id] {
+				t.Fatalf("draft %s on two pages", id)
+			}
+			seen[id] = true
+			k++
+		}
+		rows.Close()
+		if k < advancePage {
+			break
+		}
+	}
+	if len(seen) < n {
+		t.Fatalf("pages cover %d drafts, want at least %d", len(seen), n)
+	}
+	if _, err := f.worker.Exec(f.ctx, `SELECT ads.advance_candidates(10,-1)`); err == nil {
+		t.Fatal("negative offset accepted")
+	}
+}

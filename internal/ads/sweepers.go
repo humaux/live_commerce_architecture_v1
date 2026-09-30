@@ -23,7 +23,7 @@ import (
 
 const (
 	queueAds      = "ads"
-	advanceLimit  = 50  // contract 6.3: at most 50 drafts per run
+	advancePage   = 50  // candidate page size; every page is listed and advanced each run (review R1: a fixed first page starved drafts 51+)
 	insightsLimit = 200 // drafts per hourly run; bounded because each plans up to 4 reads
 	ingestLimit   = 200
 	sweepTimeout  = 90 * time.Second
@@ -83,7 +83,7 @@ type advanceWorker struct {
 
 func (*advanceWorker) Timeout(*river.Job[advanceArgs]) time.Duration { return sweepTimeout }
 
-// Work ingests finished insight reads, then advances up to advanceLimit drafts in approved_at order. One draft's failure is
+// Work ingests finished insight reads, then advances every candidate draft in approved_at order (paged). One draft's failure is
 // logged (draft id only, never a payload) and does not stop the others; nothing here retries a remote effect.
 func (w *advanceWorker) Work(ctx context.Context, _ *river.Job[advanceArgs]) error {
 	client := river.ClientFromContext[pgx.Tx](ctx)
@@ -110,12 +110,43 @@ func (w *advanceWorker) Work(ctx context.Context, _ *river.Job[advanceArgs]) err
 			slog.Warn("ads insights ingest failed", "operation", id)
 		}
 	}
-	drafts, err := candidates(ctx, w.pool, `SELECT d FROM ads.advance_candidates($1) d`, advanceLimit)
-	if err != nil {
-		return err
+	return w.advanceAll(ctx, client)
+}
+
+// advanceAll lists every page of ads.advance_candidates first, then advances the drafts in that order: advancing pins ids and
+// ends drafts, which would shift a later page's offset and skip rows if the two were interleaved. Stops at the job deadline
+// (sweepTimeout); the next run starts again from the oldest approval, so no draft is starved by a fixed first page.
+func (w *advanceWorker) advanceAll(ctx context.Context, client *river.Client[pgx.Tx]) error {
+	var drafts []string
+	for offset := 0; ; offset += advancePage {
+		// ads.advance_candidates: published drafts in approved_at order; (limit, offset) is one stable page of that order.
+		page, err := w.pool.Query(ctx, `SELECT d FROM ads.advance_candidates($1,$2) d`, advancePage, offset)
+		if err != nil {
+			return err
+		}
+		n := 0
+		for page.Next() {
+			var id string
+			if err = page.Scan(&id); err != nil {
+				page.Close()
+				return err
+			}
+			drafts = append(drafts, id)
+			n++
+		}
+		page.Close()
+		if err = page.Err(); err != nil {
+			return err
+		}
+		if n < advancePage {
+			break
+		}
 	}
 	for _, id := range drafts {
-		if err = w.advanceOne(ctx, client, id); err != nil {
+		if ctx.Err() != nil {
+			return nil // deadline: the rest is picked up by the next run
+		}
+		if err := w.advanceOne(ctx, client, id); err != nil {
 			slog.Warn("ads advance failed", "draft", id)
 		}
 	}

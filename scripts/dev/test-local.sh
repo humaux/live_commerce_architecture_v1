@@ -400,6 +400,9 @@ elif [[ "$test_mode" == --browser-customers-billing ]]; then
   LC_BROWSER_CUSTOMERS_BILLING_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1700s -run '^TestBrowserCustomersBilling$' -v ./tests/foundation
   printf 'PASS: CB11 isolated admin + storefront Next, Go, PG, real worker; platform billing = MOCK (independent billingtest fake, Stripe pages answered in the browser); not provider or deployment acceptance; CB10 SANDBOX and CB12 LIVE are NOT_RUN.\n'
 elif [[ "$test_mode" == --browser-meta-ads ]]; then
+  # AL1: the frozen ad link / feed link (origin + /products/{id}) must reach a 200 page on the production storefront build.
+  node tests/storefront/ad-link.mjs
+  node --test --experimental-strip-types apps/storefront/tests/ad-link-route.test.mjs
   LC_BROWSER_META_ADS_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1700s -run '^TestBrowserMetaAds(Consent)?$' -v ./tests/foundation
   printf 'PASS: MA09a isolated admin Next, Go API + ads worker, PG; Meta = MOCK (fake Graph + the Facebook Login dialog answered by the browser route); not Meta, provider or deployment acceptance; MA09b buyer consent -> CAPI context runs against the production storefront Next build.\n'
 elif [[ "$test_mode" == --checkout ]]; then
