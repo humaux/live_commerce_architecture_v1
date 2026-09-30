@@ -19,7 +19,7 @@ import { createWriteStream } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { expect } from "@playwright/test";
-import { launch, ctxOpts, phone } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
+import { engine, launch, ctxOpts, phone, iosZoomOffenders } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
 
 const env = (name) => {
   const value = process.env[name];
@@ -92,6 +92,8 @@ async function shot(page, name, locale, viewport) {
   const file = path.join(evidence, `cvs-${name}-${locale}-${viewport}.png`);
   await page.screenshot({ path: file, fullPage: true });
   assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `horizontal overflow at ${viewport} ${locale}`);
+  // Engine-specific by nature: the focus-zoom rule exists only on iOS Safari, so it is asserted on the iPhone profile (webkit, phone viewport) only.
+  if (engine === "webkit" && viewport === "mobile") assert.deepEqual(await iosZoomOffenders(page), [], `iOS focus-zoom: form controls under 16px at ${viewport} ${locale}`);
   let list = []; try { list = JSON.parse(await readFile(manifest, "utf8")); } catch { /* first */ }
   list.push({ File: path.basename(file), Sha256: createHash("sha256").update(await readFile(file)).digest("hex"), Locale: locale, Viewport: viewport });
   await writeFile(manifest, JSON.stringify(list, null, 2));
