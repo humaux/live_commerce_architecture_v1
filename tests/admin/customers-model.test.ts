@@ -24,6 +24,7 @@ const summary = () => ({
   updated_at: "2026-09-20T00:00:00.000000Z", currency: "TWD", total_minor: 1000, commercial_state: "AWAITING_PAYMENT",
   fulfillment_state: "MANUAL_UNASSIGNED", payment_state: "PENDING", test_mode: true, work_state: "NONE",
   refunded_minor: 0, refund_pending_minor: 0,
+  pickup_source: null, payment_mode: "card", collection_state: null, // taiwan-cvs-logistics-v1 C4 keys of merchantorders.Summary
 });
 const detail = () => ({
   ...customer(), orders: [summary()],

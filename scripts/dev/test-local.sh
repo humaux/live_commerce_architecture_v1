@@ -205,6 +205,8 @@ if [[ "$test_mode" == --browser-cvs ]]; then
   grep -q '^func TestBrowserTaiwanCvs' tests/foundation/browser_taiwan_cvs_test.go
   test -f tests/admin/taiwan-cvs.spec.ts
   test -f tests/storefront/cvs-buyer.mjs
+  # Pure admin BFF grammar/model gates first (LGR/LGM): no Docker needed, fail before any build.
+  node --test --experimental-strip-types tests/admin/logistics-model.test.ts tests/admin/logistics-request.test.ts
   mkdir -p output/playwright
 fi
 if [[ "$test_mode" == --browser-e2e ]]; then
