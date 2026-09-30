@@ -109,6 +109,22 @@ Package ads owns the merchant-side lifecycle of a Meta ad campaign (contracts/me
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`
 - Used by: `cmd/ads-worker`, `cmd/api`, `internal/httpapi`, `internal/integrations/meta_ads`
 
+## `internal/attribution`
+
+Package attribution owns the storefront-side half of Meta conversion attribution (contracts/meta-ads-v1.md, T16): the capi_purchase_sweep_v1 sweeper that plans one CAPI Purchase operation per consented CAPTURED payment attempt, the public product feed of a verified storefront host, the consent hook that records a buyer's browser user agent, and the pure hashing helpers (F16 phone hash, C3 external id, AD8 event id).
+
+- Depends on (internal): `internal/command`, `internal/httperror`, `internal/integrations/core`
+- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`
+- Used by: `internal/attribution/capiroute`
+
+## `internal/attribution/capiroute`
+
+Package capiroute owns the dispatcher route (provider meta_dataset, action meta.capi.purchase) that sends one Meta Conversions API Purchase event per planned operation: the PG-only Check (consent, binding, environment, age), the lease-fenced LoadSecret that reads the buyer's user data and the dataset token in one transaction and hashes in memory, and the DispatchWithSecret that posts exactly one event through metaads.Client.PostEvent.
+
+- Depends on (internal): `internal/attribution`, `internal/command`, `internal/integrations/core`, `internal/integrations/meta_ads`, `internal/integrations/meta_ads/tokenopen`, `internal/platform`
+- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`
+- Used by: — (entry point or unused)
+
 ## `internal/buyer`
 
 Package buyer owns the anonymous buyer capability boundary: issuing short-lived opaque capability tokens on the issuer pool and scoping every buyer transaction to one (tenant, store, owner, session) with a replay-safe command record.
@@ -171,7 +187,7 @@ Package command owns scoped replay records and small transaction primitives.
 
 - Depends on (internal): `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`
-- Used by: `cmd/meta-admin`, `internal/ads`, `internal/buyer`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/pagination`, `internal/payments`, `internal/payments/stripeadmin`, `internal/pricing`, `internal/storefront`
+- Used by: `cmd/meta-admin`, `internal/ads`, `internal/attribution`, `internal/attribution/capiroute`, `internal/buyer`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/pagination`, `internal/payments`, `internal/payments/stripeadmin`, `internal/pricing`, `internal/storefront`
 
 ## `internal/domains`
 
@@ -203,7 +219,7 @@ Package httperror owns transport-safe error envelopes, never domain policy.
 
 - Depends on (internal): —
 - Depends on (third-party): —
-- Used by: `internal/buyerhttp`, `internal/httpapi`, `internal/identityhttp`, `internal/platform`
+- Used by: `internal/attribution`, `internal/buyerhttp`, `internal/httpapi`, `internal/identityhttp`, `internal/platform`
 
 ## `internal/identity`
 
@@ -235,7 +251,7 @@ Package core owns the provider-neutral external-operation ledger boundary: the e
 
 - Depends on (internal): `internal/command`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`
-- Used by: `cmd/ads-worker`, `cmd/api`, `cmd/claims-worker`, `internal/ads`, `internal/claimsintake`, `internal/integrations/accounts`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/payments`
+- Used by: `cmd/ads-worker`, `cmd/api`, `cmd/claims-worker`, `internal/ads`, `internal/attribution`, `internal/attribution/capiroute`, `internal/claimsintake`, `internal/integrations/accounts`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/payments`
 
 ## `internal/integrations/livekit`
 
@@ -259,7 +275,7 @@ Package metaads owns every Meta Graph wire call of the ads product (contracts/me
 
 - Depends on (internal): `internal/ads`, `internal/command`, `internal/integrations/core`, `internal/integrations/meta`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`
-- Used by: `cmd/ads-worker`, `cmd/api`, `internal/integrations/meta_ads/tokenopen`
+- Used by: `cmd/ads-worker`, `cmd/api`, `internal/attribution/capiroute`, `internal/integrations/meta_ads/tokenopen`
 
 ## `internal/integrations/meta_ads/tokenopen`
 
@@ -267,7 +283,7 @@ Package tokenopen owns the OPEN half of BISU token custody (meta-ads-v1 A-4, ads
 
 - Depends on (internal): `internal/integrations/meta`, `internal/integrations/meta_ads`
 - Depends on (third-party): —
-- Used by: `cmd/ads-worker`
+- Used by: `cmd/ads-worker`, `internal/attribution/capiroute`
 
 ## `internal/integrations/metareply`
 
@@ -379,7 +395,7 @@ Package platform owns the narrow HTTP and database foundation shared by the API 
 
 - Depends on (internal): `internal/httperror`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
-- Used by: `cmd/admin-fixture`, `cmd/ads-worker`, `cmd/api`, `cmd/claims-worker`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `internal/ads`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/command`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/payments`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`, `internal/pricing`
+- Used by: `cmd/admin-fixture`, `cmd/ads-worker`, `cmd/api`, `cmd/claims-worker`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `internal/ads`, `internal/attribution/capiroute`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/command`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/payments`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`, `internal/pricing`
 
 ## `internal/pricing`
 
