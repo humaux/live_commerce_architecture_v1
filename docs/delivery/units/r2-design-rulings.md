@@ -145,3 +145,15 @@ meta_inbox.lock_purgeable grant in meta-claims-intake-v1's amendment notes.
   Taiwan-based merchants and is not a pilot prerequisite. Pay-at-pickup (C2) unchanged: the
   cross-border carrier's Taiwan last mile collects. Auto-backfill for the pilot waits on a registered
   store-picker usable by a non-Taiwan entity (research in progress; likely the cross-border carrier).
+
+## Integration rulings (2026-10-01)
+- I1 Ratify stripe-live-enable-v1 amendment 2026-09-30b (W11a settled-op exclusion, refund refresh
+  environment guard, P06 rule, rotate command): verified by the lane verifier against 0008/0061/0062.
+- I2 0070 was edited in place for the auth F1 throttle fix; allowed because no environment has applied
+  0070 (pilot host runs 0066). From the first R2 deploy on, identity.auth_throttle_hit changes only by a
+  new migration.
+- I3 R2 release gate round 3 at b031285: foundation 1472 pass / 0 fail / 10 skip (SANDBOX/LIVE
+  prerequisites), 20 browser modes green, release-gate 0 FAIL. Remaining NOT_RUN: WebKit (install needs
+  owner approval), Stripe SANDBOX gates (run separately with STRIPE_BROWSER=1 STRIPE_SANDBOX=1),
+  platform-billing SANDBOX CB10, PA12/PA13 live mail, LG01 with LC_LEGAL_REQUIRE_FINAL=1 (owner policy
+  text pending).
