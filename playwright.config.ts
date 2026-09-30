@@ -1,4 +1,4 @@
-import { defineConfig } from "@playwright/test";
+import { defineConfig, devices } from "@playwright/test";
 
 // These suites have deliberately different server/authority fixtures. Never
 // silently run signed-identity tests against a ledger's shared dev bearer.
@@ -19,6 +19,12 @@ const suites: Record<string, string[]> = {
 };
 if (!Object.hasOwn(suites, suite)) throw new Error("Invalid LC_BROWSER_SUITE");
 
+// Engine switch (admin pages): LC_BROWSER_ENGINE=webkit runs the same specs in Playwright WebKit with the Desktop Safari
+// profile (scripts/dev/test-local.sh --browser-webkit); default chromium leaves every existing gate unchanged. The Go
+// harness forwards the variable (browserEnvironment in tests/foundation/browser_identity_chain_test.go). Under webkit the admin is
+// reached over a self-signed https front (browserFront in the same file: WebKit refuses `__Host-` cookies on http), hence ignoreHTTPSErrors.
+const safari = process.env.LC_BROWSER_ENGINE === "webkit" ? { ...devices["Desktop Safari"], ignoreHTTPSErrors: true } : {};
+
 export default defineConfig({
   testDir: "./tests/admin",
   testMatch: suites[suite],
@@ -33,6 +39,7 @@ export default defineConfig({
   ],
   outputDir: "output/playwright/test-results",
   use: {
+    ...safari,
     baseURL: "http://127.0.0.1:3100",
     headless: true,
     viewport: { width: 1586, height: 992 },

@@ -102,6 +102,12 @@ func stripeNodeEnvironment(environ []string, secretNames map[string]bool, values
 	env := []string{}
 	for _, entry := range environ {
 		name, value, _ := strings.Cut(entry, "=")
+		// LC_BROWSER_ENGINE (chromium|webkit) is the single LC_* name Node must keep: tests/storefront/browser-engine.mjs reads it (the SP18
+		// hosted-checkout run on real Safari). It is not a secret; the value is still screened by sbValueLeak like every other value.
+		if _, replaced := values[name]; name == "LC_BROWSER_ENGINE" && !replaced && !sbValueLeak.MatchString(value) {
+			env = append(env, entry)
+			continue
+		}
 		if _, replaced := values[name]; replaced || strings.HasPrefix(name, "COMMERCE_") || strings.HasPrefix(name, "LC_") ||
 			strings.HasPrefix(name, "STRIPE_") || secretNames[name] || name == "DATABASE_URL" || name == "POSTGRES_PASSWORD" ||
 			sbValueLeak.MatchString(value) {

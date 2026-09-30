@@ -18,7 +18,8 @@ import { readFile, writeFile, mkdtemp } from "node:fs/promises";
 import { createWriteStream } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { chromium, devices, expect } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { launch, ctxOpts, phone } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
 
 const env = (name) => {
   const value = process.env[name];
@@ -96,9 +97,9 @@ async function shot(page, name, locale, viewport) {
   await writeFile(manifest, JSON.stringify(list, null, 2));
 }
 async function newContext(mobile) {
-  const c = await browser.newContext(mobile
-    ? { ...devices["Pixel 7"], viewport: { width: 390, height: 844 }, screen: { width: 390, height: 844 }, ignoreHTTPSErrors: true }
-    : { ignoreHTTPSErrors: true, viewport: { width: 1440, height: 900 } });
+  const c = await browser.newContext(ctxOpts(mobile
+    ? { ...phone, viewport: { width: 390, height: 844 }, screen: { width: 390, height: 844 }, ignoreHTTPSErrors: true }
+    : { ignoreHTTPSErrors: true, viewport: { width: 1440, height: 900 } }));
   contexts.push(c);
   c.on("page", (p) => {
     p.on("frameattached", (f) => { if (f !== p.mainFrame()) iframeSeen.push(f.url()); });
@@ -177,7 +178,7 @@ try {
     const upstream = net.connect(edgePort, "127.0.0.1", () => { socket.write("HTTP/1.1 200 Connection Established\r\n\r\n"); if (head.length) upstream.write(head); socket.pipe(upstream).pipe(socket); });
     for (const s of [socket, upstream]) { sockets.add(s); s.on("close", () => sockets.delete(s)); s.on("error", () => { socket.destroy(); upstream.destroy(); }); }
   });
-  browser = await chromium.launch({ headless: true, proxy: { server: `http://127.0.0.1:${await listen(proxy)}` } });
+  browser = await launch({ headless: true, proxy: { server: `http://127.0.0.1:${await listen(proxy)}` } });
 
   // ---- store 1: ecpay_map, every locale, desktop and phone ------------------------------------------------------------
   for (const [locale, mobile] of [["zh-TW", false], ["en", true], ["zh-CN", false], ["zh-TW", true]]) {

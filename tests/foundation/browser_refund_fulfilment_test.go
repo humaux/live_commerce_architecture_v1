@@ -142,7 +142,9 @@ func brfStartAdmin(t *testing.T, ctx context.Context, e *rfxEnv, principal, evid
 func brfPlaywright(t *testing.T, ctx context.Context, s *brfStack, specs []string, env map[string]string) {
 	t.Helper()
 	config := filepath.Join(s.evidence, "playwright.rf.config.ts")
-	body := fmt.Sprintf(`import { defineConfig } from "@playwright/test";
+	body := fmt.Sprintf(`import { defineConfig, devices } from "@playwright/test";
+// LC_BROWSER_ENGINE=webkit: Desktop Safari profile for the admin pages (forwarded by browserEnvironment); chromium otherwise.
+const safari = process.env.LC_BROWSER_ENGINE === "webkit" ? { ...devices["Desktop Safari"], ignoreHTTPSErrors: true } : {};
 export default defineConfig({
   testDir: %q,
   testMatch: %s,
@@ -150,7 +152,7 @@ export default defineConfig({
   expect: { timeout: 10000 },
   reporter: [["list"]],
   outputDir: %q,
-  use: { baseURL: %q, headless: true, viewport: { width: 1586, height: 992 }, trace: "retain-on-failure", screenshot: "only-on-failure" },
+  use: { ...safari, baseURL: %q, headless: true, viewport: { width: 1586, height: 992 }, trace: "retain-on-failure", screenshot: "only-on-failure" },
 });
 `, filepath.Join(s.root, "tests/admin"), mustJSON(t, specs), filepath.Join(s.evidence, "results"), s.origin)
 	if err := os.WriteFile(config, []byte(body), 0o600); err != nil {

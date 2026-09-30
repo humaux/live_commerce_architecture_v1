@@ -58,7 +58,7 @@ func TestBrowserPasswordAuth(t *testing.T) {
 	uiAddress := listener.Addr().String()
 	_ = listener.Close()
 	_, uiPort, _ := net.SplitHostPort(uiAddress)
-	publicOrigin := "http://" + uiAddress
+	publicOrigin := browserFront(t, uiAddress) // https TLS front under LC_BROWSER_ENGINE=webkit, else http://uiAddress
 
 	private, err := identityhttp.NewHandler(e.oidc, e.bffKey)
 	if err != nil {
@@ -156,7 +156,7 @@ func TestBrowserPasswordAuth(t *testing.T) {
 	client := &http.Client{Timeout: time.Second}
 	ready := false
 	for attempt := 0; attempt < 100 && !ready; attempt++ {
-		if response, err := client.Get(publicOrigin + "/api/stores"); err == nil {
+		if response, err := client.Get("http://" + uiAddress + "/api/stores"); err == nil {
 			_ = response.Body.Close()
 			ready = response.StatusCode == http.StatusUnauthorized
 		}

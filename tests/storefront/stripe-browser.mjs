@@ -20,7 +20,8 @@ import {readFile,writeFile,mkdtemp,rm} from "node:fs/promises";
 import {createWriteStream} from "node:fs";
 import {tmpdir} from "node:os";
 import path from "node:path";
-import {chromium,devices,expect} from "@playwright/test";
+import { expect } from "@playwright/test";
+import { launch, ctxOpts, phone, phoneName } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
 
 const root=process.cwd(),evidence=process.env.LC_STRIPE_EVIDENCE,CONTROL=process.env.LC_STRIPE_CONTROL;
 const cfg=JSON.parse(process.env.LC_STRIPE_CASE??"{}");
@@ -146,7 +147,7 @@ function attach(page){
   page.on("pageerror",e=>{if(page.url().startsWith(origin))consoleLines.push(String(e.message));});
 }
 async function context(mobile=false){
-  const c=await browser.newContext(mobile?{...devices["Pixel 7"],viewport:{width:390,height:844},screen:{width:390,height:844},ignoreHTTPSErrors:true}:{ignoreHTTPSErrors:true,viewport:{width:1440,height:900}});contexts.push(c);
+  const c=await browser.newContext(ctxOpts(mobile?{...phone,viewport:{width:390,height:844},screen:{width:390,height:844},ignoreHTTPSErrors:true}:{ignoreHTTPSErrors:true,viewport:{width:1440,height:900}}));contexts.push(c);
   await c.addInitScript(INIT);
   await c.route(/https:\/\/(?:sandbox-api|api)\.payuni\.com\.tw\//,route=>{payuniHits++;return route.abort();});
   if(!SANDBOX)await c.route(/^https:\/\/checkout\.stripe\.com\//,route=>{stripeVisits++;return route.fulfill({status:200,contentType:"text/html; charset=utf-8",body:"<!doctype html><title>Synthetic Stripe hosted page</title><main>Synthetic hosted page (MOCK)</main>"});});
@@ -562,7 +563,7 @@ const watchdog=setTimeout(async()=>{ // fail loudly with a snapshot instead of b
 try{
   execFileSync("openssl",["req","-x509","-newkey","rsa:2048","-nodes","-keyout",path.join(certDir,"key.pem"),"-out",path.join(certDir,"cert.pem"),"-days","1","-subj","/CN=buyer.example"],{stdio:"ignore"});
   nextPort=await startNext();const proxyPort=await startEdge();
-  browser=await chromium.launch({headless:true,proxy:{server:`http://127.0.0.1:${proxyPort}`}});
+  browser=await launch({headless:true,proxy:{server:`http://127.0.0.1:${proxyPort}`}});
   scan=await ({SP18:sp18,SU07:su07,SU09:su09,OBS:obs}[cfg.kind])();pass=true;
 }catch(error){
   failure=redact(error?.stack??error);say(`FAIL ${failure.split("\n").slice(0,12).join("\n")}`);
@@ -570,7 +571,7 @@ try{
 }finally{
   clearTimeout(watchdog);
   await writeFile(path.join(evidence,"result.json"),JSON.stringify({kind:cfg.kind,mode:cfg.mode,case:process.env.LC_STRIPE_CASE?`${cfg.kind}-${cfg.scenario??""}-${cfg.mobile?"mobile":"desktop"}-${cfg.locale}`:"",pass,orders,cases,scan,
-    screenshots:shots,unreached_rows:unreached,selectors,refused_hosts:[...refused].sort(),viewport:cfg.mobile?"390x844 Pixel 7":"1440x900",locale:cfg.locale,card:cfg.card??null,failure:pass?"":failure.slice(0,600)}),{flag:"w",mode:0o600});
+    screenshots:shots,unreached_rows:unreached,selectors,refused_hosts:[...refused].sort(),viewport:cfg.mobile?`390x844 ${phoneName}`:"1440x900",locale:cfg.locale,card:cfg.card??null,failure:pass?"":failure.slice(0,600)}),{flag:"w",mode:0o600});
   for(const ctx of contexts)await ctx.close().catch(()=>{});
   await browser?.close().catch(()=>{});
   for(const s of sockets)s.destroy();
