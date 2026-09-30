@@ -8,6 +8,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strconv"
 	"strings"
@@ -162,5 +163,29 @@ func TestDirectoryMapPrintAndStatusSigning(t *testing.T) {
 	}
 	if f.CountCalls("GetStoreList") != 3 {
 		t.Fatalf("calls %v", f.Calls())
+	}
+}
+
+func TestHandlerServesOverRealHTTP(t *testing.T) {
+	f := New()
+	f.AddMerchant(stage)
+	f.SetStoreList("UNIMART", []Store{{ID: "131386", Name: "a", Addr: "b"}})
+	srv := httptest.NewServer(f.Handler())
+	defer srv.Close()
+	rt := ForwardTransport(srv.URL)
+	form := signed(stage, url.Values{"CvsType": {"UNIMART"}})
+	req, _ := http.NewRequest("POST", "https://logistics-stage.ecpay.com.tw/Helper/GetStoreList", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := rt.RoundTrip(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if !strings.Contains(string(b), `"StoreId":"131386"`) {
+		t.Fatalf("over HTTP: %s", b)
+	}
+	if got := f.Calls(); len(got) != 1 || got[0].Env != "SANDBOX" {
+		t.Fatalf("the environment follows the dialled host: %v", got)
 	}
 }

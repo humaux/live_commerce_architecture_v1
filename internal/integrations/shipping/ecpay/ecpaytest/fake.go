@@ -78,6 +78,7 @@ type Fake struct {
 	paymentNo, validationNo, logisticsID string
 	seq                                  int
 	byteOrder                            bool
+	queryFail                            bool
 	now                                  func() time.Time
 }
 
@@ -408,6 +409,12 @@ func encodeBody(v url.Values) string {
 }
 
 func (f *Fake) serveQuery(req *http.Request, form url.Values) *http.Response {
+	f.mu.Lock()
+	fail := f.queryFail
+	f.mu.Unlock()
+	if fail {
+		return respond(req, 500, "text/plain", "error")
+	}
 	m, ok := f.verified(form)
 	if !ok {
 		return respond(req, 200, "text/html", "0|CheckMacValue Error")
@@ -485,6 +492,9 @@ func Mac(params url.Values, key, iv string) string { return mac(params, key, iv,
 // as CVSPaymentNo vs CollectionAmount, which the Query V5 response carries together.
 func MacByteOrder(params url.Values, key, iv string) string { return mac(params, key, iv, true) }
 
+// SetQueryFail makes every Query V5 answer HTTP 500 (the reconcile cannot learn anything) until it is switched off.
+func (f *Fake) SetQueryFail(on bool) { f.mu.Lock(); f.queryFail = on; f.mu.Unlock() }
+
 // SetByteOrderMAC makes the fake sign its own responses (Create, Query) in byte order instead of folded order.
 func (f *Fake) SetByteOrderMAC(on bool) { f.mu.Lock(); f.byteOrder = on; f.mu.Unlock() }
 
@@ -548,4 +558,43 @@ func ParseCreateBody(body string) (url.Values, bool) {
 	}
 	v, err := url.ParseQuery(rest)
 	return v, err == nil
+}
+
+// Handler serves the fake over real HTTP for out-of-process clients (the kill/restart gate): the client names the ECPay host in the
+// X-Ecpay-Host header (ForwardTransport sets it), so the environment (stage or live) is still chosen by the host the adapter dialled.
+func (f *Fake) Handler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r2 := r.Clone(r.Context())
+		r2.URL.Scheme, r2.URL.Host = "https", r.Header.Get("X-Ecpay-Host")
+		resp, err := f.serve(r2)
+		if err != nil {
+			if r.Context().Err() == nil {
+				http.Error(w, "fake failure", http.StatusBadGateway)
+			}
+			return
+		}
+		defer resp.Body.Close()
+		for k, v := range resp.Header {
+			w.Header()[k] = v
+		}
+		w.WriteHeader(resp.StatusCode)
+		_, _ = io.Copy(w, resp.Body)
+	})
+}
+
+// ForwardTransport returns a RoundTripper that sends every request to the fake's Handler at baseURL, naming the ECPay host in a header.
+func ForwardTransport(baseURL string) http.RoundTripper { return forward{baseURL} }
+
+type forward struct{ base string }
+
+func (t forward) RoundTrip(req *http.Request) (*http.Response, error) {
+	u, err := url.Parse(t.base)
+	if err != nil {
+		return nil, err
+	}
+	r2 := req.Clone(req.Context())
+	r2.Header.Set("X-Ecpay-Host", req.URL.Host)
+	r2.URL.Scheme, r2.URL.Host = u.Scheme, u.Host
+	r2.Host = u.Host
+	return http.DefaultTransport.RoundTrip(r2)
 }

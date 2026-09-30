@@ -70,6 +70,9 @@ type tcvEnv struct {
 	ro          rfxOrder // the rfx store (endpoint, secret) when tcvOpts.stripe
 	queue       string   // dispatcher queue (startDispatcher)
 	statusSeq   int
+	keyringJSON string // the same keyring document, for the child process
+	queueOver   string // startDispatcher listens on this queue instead of a fresh one
+	rescueAfter time.Duration
 	settingsVer int64 // last version of the store CVS settings written through cvsSettings
 }
 
@@ -80,7 +83,7 @@ type tcvOpts struct {
 	stripe        bool   // build on the rfx Stripe environment (paid card orders through the real capture path)
 }
 
-func tcvKeyring(t *testing.T) *ecpay.Keyring {
+func tcvKeyring(t *testing.T) (*ecpay.Keyring, string) {
 	t.Helper()
 	doc := fmt.Sprintf(`{"active":"k1","keys":[{"id":"k1","key_base64":%q}]}`, base64.StdEncoding.EncodeToString(randomBytes(32)))
 	k, err := ecpay.LoadKeyring(func(name string) string {
@@ -92,7 +95,7 @@ func tcvKeyring(t *testing.T) *ecpay.Keyring {
 	if err != nil {
 		t.Fatalf("keyring: %v", err)
 	}
-	return k
+	return k, doc
 }
 
 func tcvNew(t *testing.T, opts ...tcvOpts) *tcvEnv {
@@ -115,8 +118,9 @@ func tcvNew(t *testing.T, opts ...tcvOpts) *tcvEnv {
 	} else {
 		p = psSetup(t)
 	}
-	e := &tcvEnv{r: rEnv, ro: rOrder, t: t, p: p, svcs: map[string]fulfillment.ServiceInput{}, svcVer: map[string]int64{}, fake: ecpaytest.New(), keys: tcvKeyring(t), tag: t04Tag(), origin: "https://tcv-" + t04Tag() + ".example"}
+	e := &tcvEnv{r: rEnv, ro: rOrder, t: t, p: p, svcs: map[string]fulfillment.ServiceInput{}, svcVer: map[string]int64{}, fake: ecpaytest.New(), tag: t04Tag(), origin: "https://tcv-" + t04Tag() + ".example"}
 	var err error
+	e.keys, e.keyringJSON = tcvKeyring(t)
 	if e.client, err = ecpay.NewClient(ecpay.Environment(o.payEnv), e.fake.Transport()); err != nil {
 		t.Fatal(err)
 	}
@@ -608,7 +612,10 @@ func (e *tcvEnv) newMerchantHandler() http.Handler {
 
 // startDispatcher runs the real dispatcher with ecpayroute.Routes over the fake, on a private River queue (jobs are moved to it by route()),
 // the same shape cmd/worker assembles. The worker pool is a real commerce_worker login.
-func (e *tcvEnv) startDispatcher() {
+func (e *tcvEnv) startDispatcher() { e.startDispatcherWith(nil) }
+
+// startDispatcherWith is startDispatcher with dispatcher option overrides (small call timeouts and budgets make the UNKNOWN paths quick).
+func (e *tcvEnv) startDispatcherWith(tune func(*integration.DispatcherOptions)) {
 	e.t.Helper()
 	ctx := context.Background()
 	routes, err := ecpayroute.Routes(e.p.worker, e.keys, e.client, e.cfg.ECPay)
@@ -617,15 +624,25 @@ func (e *tcvEnv) startDispatcher() {
 	}
 	opts := integration.DefaultDispatcherOptions()
 	opts.RetryDelay = 100 * time.Millisecond
+	if tune != nil {
+		tune(&opts)
+	}
 	disp, err := integration.NewDispatcher(ctx, e.p.worker, routes, opts)
 	if err != nil {
 		e.t.Fatalf("dispatcher: %v", err)
 	}
 	e.queue = "cvs_" + strings.ReplaceAll(randomUUID(), "-", "")
+	if e.queueOver != "" {
+		e.queue = e.queueOver
+	}
+	rescue := 30 * time.Second
+	if e.rescueAfter > 0 {
+		rescue = e.rescueAfter
+	}
 	workers := river.NewWorkers()
 	river.AddWorker(workers, disp)
 	client, err := river.NewClient(riverpgxv5.New(e.p.worker), &river.Config{Schema: "river", Workers: workers, Queues: map[string]river.QueueConfig{e.queue: {MaxWorkers: 2}},
-		JobTimeout: 20 * time.Second, RescueStuckJobsAfter: 30 * time.Second, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
+		JobTimeout: 20 * time.Second, RescueStuckJobsAfter: rescue, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
 	if err != nil {
 		e.t.Fatal(err)
 	}
@@ -796,3 +813,21 @@ func (e *tcvEnv) abandon(order string) (int, map[string]any, []byte) {
 		time.Sleep(200 * time.Millisecond)
 	}
 }
+
+func (e *tcvEnv) awaitShipWithin(order, want string, d time.Duration) {
+	e.t.Helper()
+	deadline := time.Now().Add(d)
+	for {
+		state, _, _ := e.shipState(order)
+		if state == want {
+			return
+		}
+		if time.Now().After(deadline) {
+			e.t.Fatalf("shipment of %s: state %q after %v, want %s", order, state, d, want)
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+}
+
+// newFakeServer serves the fake over real HTTP (out-of-process clients).
+func newFakeServer(f *ecpaytest.Fake) *httptest.Server { return httptest.NewServer(f.Handler()) }
