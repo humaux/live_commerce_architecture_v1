@@ -8,8 +8,10 @@ package foundation_test
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -17,6 +19,9 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+
+	"livecommerce/internal/buyer"
 )
 
 // tceOptions lists the checkout-options rows keyed by delivery kind.
@@ -111,6 +116,43 @@ func TestCvsBuyerEnteredStore(t *testing.T) {
 				}
 			} else if res.status != 422 || tcvStr(tcvJSON(t, res.body), "code") != "bad_store_code" {
 				t.Errorf("%s code %q: want 422 bad_store_code, got %d %s", r.Kind, r.Code, res.status, res.body)
+			}
+		}
+	})
+
+	t.Run("SQL twin of the store-code table: the definer itself checks the format (Go validation bypassed)", func(t *testing.T) {
+		raw, err := os.ReadFile("../integrations/ecpay/testdata/store_code.json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		var rows []struct {
+			Kind string `json:"kind"`
+			Code string `json:"code"`
+			OK   bool   `json:"ok"`
+		}
+		if err := json.Unmarshal(raw, &rows); err != nil {
+			t.Fatal(err)
+		}
+		b := e.newBuyer()
+		tokenHash := sha256.Sum256([]byte(b.cap.Token))
+		for _, r := range rows {
+			code, known := svc[r.Kind]
+			if !known {
+				continue
+			}
+			var sqlState string
+			// buyer.WithScope on the checkout pool: exactly how BuyerCVS.EnterStore reaches the definer, minus its Go pre-validation
+			err := buyer.WithScope(ctx, e.p.pool, b.cap.Token, e.store(), func(callCtx context.Context, tx pgx.Tx, _ buyer.Scope) error {
+				var out []byte
+				return tx.QueryRow(callCtx, `SELECT fulfillment.record_buyer_cvs_store($1,$2::uuid,$3,$4,$5::bigint,$6::uuid,$7,$8,$9,$10)`,
+					tokenHash[:], e.store(), "tce-sql-"+t04Tag(), randomBytes(32), b.cartVersion(), e.p.market.ID, code, r.Code, "測試門市", "台北市測試路1號").Scan(&out)
+			})
+			sqlState = tcsErrMessage(err)
+			if r.OK && sqlState != "" {
+				t.Errorf("%s %q must be accepted by the definer, got %q", r.Kind, r.Code, sqlState)
+			}
+			if !r.OK && sqlState != "bad_store_code" {
+				t.Errorf("%s %q must be refused by the definer with bad_store_code, got %q", r.Kind, r.Code, sqlState)
 			}
 		}
 	})
@@ -376,4 +418,16 @@ func TestCvsBuyerEnteredStore(t *testing.T) {
 			t.Errorf("entering a store while the store is ecpay_map: want 422 service_unavailable, got %d %s", late.status, late.body)
 		}
 	})
+}
+
+// tcsErrMessage returns the message of a PgError raised by a definer ("" for nil), or the error text otherwise.
+func tcsErrMessage(err error) string {
+	if err == nil {
+		return ""
+	}
+	var pg *pgconn.PgError
+	if errors.As(err, &pg) {
+		return pg.Message
+	}
+	return err.Error()
 }

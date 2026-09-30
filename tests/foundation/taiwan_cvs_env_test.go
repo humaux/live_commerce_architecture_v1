@@ -69,6 +69,7 @@ type tcvEnv struct {
 	r           *rfxEnv  // set when tcvOpts.stripe
 	ro          rfxOrder // the rfx store (endpoint, secret) when tcvOpts.stripe
 	queue       string   // dispatcher queue (startDispatcher)
+	apiCode     string   // the API 7-ELEVEN service code of browser fixtures
 	statusSeq   int
 	keyringJSON string // the same keyring document, for the child process
 	queueOver   string // startDispatcher listens on this queue instead of a fresh one
@@ -78,9 +79,11 @@ type tcvEnv struct {
 
 // tcvOpts tunes the environment.
 type tcvOpts struct {
-	ecpayDisabled bool   // CVS_ECPAY_ENABLED=0 (kill switch)
-	payEnv        string // payment environment; default SANDBOX
-	stripe        bool   // build on the rfx Stripe environment (paid card orders through the real capture path)
+	ecpayDisabled bool    // CVS_ECPAY_ENABLED=0 (kill switch)
+	payEnv        string  // payment environment; default SANDBOX
+	stripe        bool    // build on the rfx Stripe environment (paid card orders through the real capture path)
+	origin        string  // the storefront origin published for this store (default: a random https origin)
+	share         *tcvEnv // reuse another env's fake, keyring and ECPay client (two stores served by one process)
 }
 
 func tcvKeyring(t *testing.T) (*ecpay.Keyring, string) {
@@ -119,10 +122,17 @@ func tcvNew(t *testing.T, opts ...tcvOpts) *tcvEnv {
 		p = psSetup(t)
 	}
 	e := &tcvEnv{r: rEnv, ro: rOrder, t: t, p: p, svcs: map[string]fulfillment.ServiceInput{}, svcVer: map[string]int64{}, fake: ecpaytest.New(), tag: t04Tag(), origin: "https://tcv-" + t04Tag() + ".example"}
+	if o.origin != "" {
+		e.origin = o.origin
+	}
 	var err error
-	e.keys, e.keyringJSON = tcvKeyring(t)
-	if e.client, err = ecpay.NewClient(ecpay.Environment(o.payEnv), e.fake.Transport()); err != nil {
-		t.Fatal(err)
+	if o.share != nil {
+		e.fake, e.keys, e.keyringJSON, e.client = o.share.fake, o.share.keys, o.share.keyringJSON, o.share.client
+	} else {
+		e.keys, e.keyringJSON = tcvKeyring(t)
+		if e.client, err = ecpay.NewClient(ecpay.Environment(o.payEnv), e.fake.Transport()); err != nil {
+			t.Fatal(err)
+		}
 	}
 	e.cfg = fulfillment.CVSConfig{ECPay: ecpay.Config{Enabled: !o.ecpayDisabled, HooksOrigin: tcvHooksOrigin}, PaymentEnvironment: o.payEnv}
 	if e.jobs, err = river.NewClient(riverpgxv5.New(p.f.runtime), &river.Config{Schema: "river"}); err != nil {
@@ -147,7 +157,10 @@ func tcvNew(t *testing.T, opts ...tcvOpts) *tcvEnv {
 	t.Cleanup(srv.Close)
 	bhPublish(t, p.bcHarness, e.origin, p.f.tenantA, p.f.storeA1)
 	e.bh = bhHarness{bcHarness: p.bcHarness, server: srv, key: bffKey, origin: e.origin}
-	// the fake's directory: the documented stage stores (F5) plus a Hi-Life row
+	// the fake's directory: the documented stage stores (F5) plus a Hi-Life row (a shared fake already has them)
+	if o.share != nil {
+		return e
+	}
 	e.fake.SetStoreList("UNIMART", []ecpaytest.Store{{ID: "131386", Name: "Stage 7-ELEVEN", Addr: "Stage address 7", Phone: "0200000001"}, {ID: "000123", Name: "Leading zero store", Addr: "Zero address"},
 		{ID: "1328", Name: "Four char store", Addr: "Four address"}, {ID: "1234567", Name: "Seven char store", Addr: "Seven address"}, {ID: "123456789", Name: "Nine char store", Addr: "Nine address"}})
 	e.fake.SetStoreList("FAMI", []ecpaytest.Store{{ID: "006598", Name: "Stage FamilyMart", Addr: "Stage address F"}})
@@ -243,7 +256,11 @@ func (e *tcvEnv) connect(mode string) string {
 func (e *tcvEnv) service(kind, mode string, feeMinor int64) (code string, serviceVersion, allocationVersion int64) {
 	e.t.Helper()
 	p := e.p
-	in := fulfillment.ServiceInput{MarketID: p.market.ID, Country: "TW", Code: "cvs" + t04Tag(), PolicyVersion: 1, NameHans: "超商取货", NameHant: "超商取貨", NameEN: "Convenience store pickup",
+	// chain labels of cvs-ui U2, so the storefront delivery list can be told apart by chain in every locale
+	hans := map[string]string{"cvs_711": "7-ELEVEN", "cvs_familymart": "全家", "cvs_hilife": "莱尔富", "cvs_okmart": "OK超商"}
+	hant := map[string]string{"cvs_711": "7-ELEVEN", "cvs_familymart": "全家", "cvs_hilife": "萊爾富", "cvs_okmart": "OK超商"}
+	en := map[string]string{"cvs_711": "7-ELEVEN", "cvs_familymart": "FamilyMart", "cvs_hilife": "Hi-Life", "cvs_okmart": "OK mart"}
+	in := fulfillment.ServiceInput{MarketID: p.market.ID, Country: "TW", Code: "cvs" + t04Tag(), PolicyVersion: 1, NameHans: hans[kind], NameHant: hant[kind], NameEN: en[kind],
 		DeliveryKind: kind, Mode: mode, Enabled: true, Visible: true}
 	if mode == "API" {
 		var binding string
@@ -831,3 +848,25 @@ func (e *tcvEnv) awaitShipWithin(order, want string, d time.Duration) {
 
 // newFakeServer serves the fake over real HTTP (out-of-process clients).
 func newFakeServer(f *ecpaytest.Fake) *httptest.Server { return httptest.NewServer(f.Handler()) }
+
+// newHTTPServer serves a handler on a loopback listener for out-of-process clients (the browser gates).
+func newHTTPServer(t *testing.T, h http.Handler) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(h)
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+// routeNewJobs keeps moving the River jobs of this store's new ECPay create operations onto the dispatcher queue (for gates where a browser, not the
+// test, requests the label). It stops with the test.
+func (e *tcvEnv) routeNewJobs() {
+	ctx, cancel := context.WithCancel(context.Background())
+	e.t.Cleanup(cancel)
+	go func() {
+		for ctx.Err() == nil {
+			_, _ = e.p.f.owner.Exec(ctx, `UPDATE river.river_job SET queue=$1 WHERE state='available' AND queue<>$1 AND kind='external_operation_v1'
+			  AND id IN (SELECT job_id FROM integration.operations WHERE tenant_id=$2 AND provider='ecpay_logistics' AND state='READY')`, e.queue, e.tenant())
+			time.Sleep(100 * time.Millisecond)
+		}
+	}()
+}
