@@ -542,10 +542,10 @@ func TestStripeSP07Start(t *testing.T) {
 		}, rebegin)
 		sstAdmissionDrift(t, "qualification_revoked", func(t *testing.T, e *sstEnv, s *sstStore) {
 			// owner fixture: no registrar operation revokes.
-			mustExec(t, e.f.owner, `UPDATE payments.account_qualifications SET revoked_at=clock_timestamp() WHERE id=$1`, s.qualification)
+			qualExec(t, e.f.owner, `UPDATE payments.account_qualifications SET revoked_at=clock_timestamp() WHERE id=$1`, s.qualification)
 		}, rebegin)
 		sstAdmissionDrift(t, "qualification_expired", func(t *testing.T, e *sstEnv, s *sstStore) {
-			mustExec(t, e.f.owner, `UPDATE payments.account_qualifications SET observed_at=clock_timestamp()-interval '2 hours',expires_at=clock_timestamp()-interval '1 hour' WHERE id=$1`, s.qualification)
+			qualExec(t, e.f.owner, `UPDATE payments.account_qualifications SET observed_at=clock_timestamp()-interval '2 hours',expires_at=clock_timestamp()-interval '1 hour' WHERE id=$1`, s.qualification)
 		}, rebegin)
 		sstAdmissionDrift(t, "binding_disabled", func(t *testing.T, e *sstEnv, s *sstStore) {
 			mustExec(t, e.f.owner, `UPDATE integration.bindings SET enabled=false WHERE id=(SELECT binding_id FROM integration.merchant_accounts WHERE id=$1)`, s.connection)
@@ -720,7 +720,7 @@ func TestStripeSP07Start(t *testing.T) {
 			{"nil_jobs", ctx, nil, "PROVIDER_MOCK", e.keys, good},
 			{"no_provider", ctx, e.jobs, "PROVIDER_MOCK", e.keys, checkout.HostedProviders{}},
 			{"payuni_without_keys", ctx, e.jobs, "PROVIDER_MOCK", nil, good},
-			{"stripe_on_live_profile", ctx, e.jobs, "LIVE", e.keys, good},
+			// "stripe_on_live_profile" removed: the Stripe branch admits LIVE since 0077 (stripe-live-enable-v1 §5.2); see hosted_live_test.go.
 			{"stripe_on_unknown_profile", ctx, e.jobs, "PRODUCTION", e.keys, good},
 			{"stripe_http_return_url", ctx, e.jobs, "PROVIDER_MOCK", e.keys, checkout.HostedProviders{Stripe: &checkout.StripeHostedConfig{ReturnURL: "http://checkout.example.test/return"}}},
 			{"stripe_query_in_return_url", ctx, e.jobs, "PROVIDER_MOCK", e.keys, checkout.HostedProviders{Stripe: &checkout.StripeHostedConfig{ReturnURL: sstReturnURL + "?x=1"}}},

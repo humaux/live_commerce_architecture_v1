@@ -35,8 +35,10 @@ lc_meta_consumer	commerce_meta_consumer	inherit_noset	core	meta-worker:COMMERCE_
 lc_api_stripe_ingress	commerce_stripe_ingress	inherit_noset	core	api:COMMERCE_STRIPE_INGRESS_DATABASE_URL	tests/foundation/stripe_authority_test.go:32(saIngressRole)+meta_inbox_test.go:47-48(miRole grant shape)
 lc_claims_intake	commerce_claims_intake	inherit_noset	core	claims-worker:COMMERCE_CLAIMS_INTAKE_DATABASE_URL	tests/foundation/meta_claims_intake_flow_test.go:155(miRole)
 lc_claims_worker	commerce_worker	in_role	core	claims-worker:COMMERCE_WORKER_DATABASE_URL	tests/foundation/external_operation_test.go:112
+lc_retention_job	commerce_retention_job	inherit_noset	core	claims-worker:COMMERCE_RETENTION_JOB_DATABASE_URL	tests/foundation/claims_retention_test.go(CRP02/CRP09: retention job login shape)
 lc_stripe_registrar	commerce_payment_registrar	inherit_noset	core	stripe-admin:COMMERCE_STRIPE_REGISTRAR_DATABASE_URL	tests/foundation/stripe_authority_test.go:33(saRegistrarRole)
 lc_meta_registrar	commerce_meta_registrar	inherit_noset	core	meta-admin:COMMERCE_META_REGISTRAR_DATABASE_URL	tests/foundation/meta_inbox_test.go:47-48(miRole grant shape)
+lc_ads_worker	commerce_worker	in_role	core	ads-worker:COMMERCE_ADS_WORKER_DATABASE_URL	tests/foundation/external_operation_test.go:112
 lc_media_worker	commerce_media_worker	inherit_noset	media	-	tests/foundation/studio_process_test.go:89-94
 lc_media_executor	commerce_media_executor	inherit_noset	media	-	tests/foundation/studio_process_test.go:89-94
 lc_media_recovery	commerce_media_recovery	inherit_noset	media	-	tests/foundation/live_media_recovery_test.go:33-36

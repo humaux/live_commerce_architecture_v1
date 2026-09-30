@@ -1,8 +1,10 @@
 // probe.go: the registrar's SANDBOX qualification probe (contracts/stripe-psp-v1.md §13,
 // integrator ruling 7 of docs/delivery/units/stripe-b1-rulings.md). It creates one throwaway
 // Checkout Session tagged metadata[lc_probe]=1, expires it at once and requires the
-// retrieved copy to be expired + unpaid + not livemode. It never reads PG, never touches an
-// order and never runs against LIVE.
+// retrieved copy to be expired + unpaid + livemode equal to the client's environment (false in
+// SANDBOX, true on a LIVE-admitted client; stripe-live-enable-v1 §5.1). It never reads PG and
+// never touches an order. A LIVE probe creates and expires a session that nobody completes,
+// so it cannot charge anyone.
 //
 // Ownership: integration_worker. Dependencies: client.go call/classify, params.go patterns.
 // Callers: internal/payments/stripeadmin (Qualify) only. The webhook handler ignores the
@@ -42,8 +44,10 @@ func (c *Client) ProbeCheckout(ctx context.Context, qualificationID, currency st
 func (c *Client) probeCheckout(ctx context.Context, now time.Time, qualificationID, currency string,
 	amountMinor int64, returnURL string) (string, CallMeta, error) {
 	var meta CallMeta
-	if c == nil || ctx == nil || c.cfg.Environment == envLive {
-		return "", meta, refuse(ErrLiveRefused, "stripe_probe_live_refused")
+	// A LIVE client only exists if admit() accepted the flag+ref pair (New), so no extra LIVE
+	// refusal is needed here; the livemode check below binds the evidence to the environment.
+	if c == nil || ctx == nil {
+		return "", meta, ErrInvalid
 	}
 	if !uuidPattern.MatchString(qualificationID) || !validReturnURL(returnURL) {
 		return "", meta, ErrInvalid
@@ -73,7 +77,8 @@ func (c *Client) probeCheckout(ctx context.Context, now time.Time, qualification
 	if err != nil {
 		return "", meta, err
 	}
-	if s.Status != "expired" || s.PaymentStatus != "unpaid" || s.Livemode {
+	// LD1: a LIVE probe must come back livemode=true, a SANDBOX one livemode=false.
+	if s.Status != "expired" || s.PaymentStatus != "unpaid" || s.Livemode != c.wantLivemode() {
 		return "", meta, refuse(ErrRejected, "stripe_probe_not_expired")
 	}
 	return s.ID, meta, nil

@@ -220,6 +220,13 @@ store_id,id,owner_id); `payments.refund_facts` SELECT(tenant_id,store_id,refund_
 INSERT (policy limited to the three `customers.*` actions); EXECUTE on `identity.resolve_access`,
 `buyer.resolve_scope`. `commerce_auth` gets SELECT on `customers.*` + policies for its reads.
 No login role reads `customers.*` directly.
+Amendment (2026-09-30, lane close; reviewer P2 "USING(true) vs GUC-scoped"): the policy text above is the rule for every
+WRITE and for reads on other domains' tables. Three reads are deliberately `USING (true)`, restricted to
+`commerce_privacy_writer` (migration 0078 header comment): SELECT on `customers.consent_events` /
+`customers.privacy_actions` (`customers.consent_allows` must answer from any GUC state, e.g. the R3 sweeper) and on
+`buyer.owners` / `buyer.capability_sessions` (the buyer erasure retry must find an already revoked session before any
+scope exists to answer 410 `erased`). The tenant/store/owner filter is explicit inside each definer (CB02 asserts the
+policy names and quals from `pg_policies`); no login role can reach these tables, only the definers.
 
 ### 3.2 `0079_platform_billing.sql`
 
@@ -303,9 +310,9 @@ the existing allowlist proxy; same session/CSRF/Origin rules as orders; bodies s
 | Method + path | Permission | Result |
 | --- | --- | --- |
 | `GET customers?limit&after&q` | customers:read | list rows: `customer_id, first_seen_at, last_activity_at, display_name, phone_last3, orders_count, paid_orders_count, captured_minor, refunded_minor, currency, claims_count, platforms[], consents{marketing_messages,ads_personalization}, active` |
-| `GET customers/{id}` | customers:read | row + `orders[]` (merchant-orders-v1 Summary shape, newest 50) + `claims[]` (`session_id, platform, bound_at, line_count`) + consent history + privacy actions |
+| `GET customers/{id}` | customers:read + orders:read (amended, R1 review P1-2) | row + `orders[]` (merchant-orders-v1 Summary shape, newest 50) + `claims[]` (`session_id, platform, bound_at, line_count`) + consent history + privacy actions |
 | `POST customers/{id}/consent-withdrawals` `{purpose,channel}` + Idempotency-Key | customers:privacy | 201 |
-| `POST customers/{id}/exports` + Idempotency-Key | customers:privacy | 200 `application/json` attachment `lc.customer-export.v1` (≤ 1 MiB, ≤ 200 orders else 409 `export_too_large`), `Cache-Control: no-store` |
+| `POST customers/{id}/exports` + Idempotency-Key | customers:privacy + customers:read + orders:read (amended, R1 review P1-2) | 200 `application/json` attachment `lc.customer-export.v1` (≤ 1 MiB, ≤ 200 orders else 409 `export_too_large`), `Cache-Control: no-store` |
 | `POST customers/{id}/erasure` `{confirm:"ERASE"}` + Idempotency-Key | customers:privacy | 200 summary counts; 409 `erasure_blocked` |
 | `GET finance/summary?from&to` / `GET finance/summary.csv?…` | orders:read / +orders:export | daily rows + totals |
 | `GET billing` | billing:manage | §3.2 `read_billing` + `plans[]` (configured price ids with name/amount/currency/interval from Stripe, 10-min process cache) + `stale` flag |
@@ -322,6 +329,18 @@ unexpired session id, `POST /v1/checkout/sessions/{id}/expire` it (own idempoten
 retry, therefore leave at most one open session; a session whose create response was lost is never returned to anyone
 and expires within 30 min. Operator prerequisite (§10): Dashboard
 "limit customers to one subscription" + portal login link enabled (F-B12), which also covers the gap outside trials.
+
+Amendment (R1 review P1-2): detail and export return order summaries/details, which carry order and destination PII,
+through the one existing projection (`merchantorders.Get`, gated by `orders:read`). A principal therefore needs
+`orders:read` in addition to the row permission; detail needs `customers:read`+`orders:read`, export needs
+`customers:privacy`+`customers:read`+`orders:read` (export builds on the detail read). This is fail-closed and keeps a
+single order-PII gate; the consent-withdrawal and erasure rows are unchanged (no order PII returned).
+Amendment (2026-09-30, lane close; reviewer P2): the LIST row is not PII-free by design. Under `customers:read` alone it
+returns minimized destination PII taken from the latest order destination: `display_name` (recipient name) and
+`phone_last3` (last three phone digits), and `q` matches the recipient-name prefix or the phone-digit suffix (D6). That
+minimum is what makes a customer recognizable in the list; the full destination, address, items and payment facts
+stay behind `orders:read` (detail/export). Asserted in CB09Permissions (list with `customers:read` alone: 200, `phone_last3`
+has at most 3 digits, no other destination field).
 
 Export content: store name, customer_id, orders (existing merchant order Detail shape, produced by the
 existing projection per order id), consent history, claims summary (platform + time, never actor_key),
@@ -492,3 +511,12 @@ Accepted defaults (owner may revise before go-live):
 Open owner inputs: Q1 (platform billing entity/account), Q2 (plan price/currency) — §10. Integrator rulings still
 needed from the integrator (not the owner): C-1, C-2, C-3, C-4, C-6, C-7, C-8 (§0.1; C-7/C-8 default = R3 grants in meta-ads
 `0080_meta_capi.sql`); C-5 is a correction, not a choice.
+
+## Amendment by claims-retention-purge-v1 (integrator, 2026-09-30, U08 merge)
+
+Recorded from `contracts/claims-retention-purge-v1.md` §6 (FROZEN 2026-09-30); that file is the source of the rows.
+
+- Clause 7: the §9 U08 bullets point to claims-retention-purge-v1; CD7 unchanged (owner erasure still never touches
+  actor data). Note: C2 clears bindings after `claims_days`, so the CB03 projection loses old claims.
+- IR-U1 (ruling B23): 0071 `bundle_label_reserved` admits `label = 'erased-'||replace(id::text,'-','')` (a bundle's
+  own id only), so CD7's `customers.apply_erasure` relabel does not hit 23514.

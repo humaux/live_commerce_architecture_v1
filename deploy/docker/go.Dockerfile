@@ -7,11 +7,13 @@
 # Reads env (build): none. Build args: GO_IMAGE / RUNTIME_IMAGE (digest pins), GO_CMDS, GIT_SHA.
 # Reads secrets: none at build time. Runtime secrets arrive as /run/secrets/* files and are
 #   expanded by /app/bin/lcentry (deploy/tools/lcentry) — never baked into the image.
-# Contents: /app/bin/{api,payment-worker,expiry-worker,meta-worker,claims-worker,media-worker,migrate,
-#   stripe-admin,meta-admin,lcentry}. stripe-admin/meta-admin are OPERATOR CLIs: present in the image so
+# Contents: /app/bin/{api,payment-worker,expiry-worker,meta-worker,claims-worker,ads-worker,media-worker,migrate,
+#   stripe-admin,meta-admin,retention-admin,lcentry}. stripe-admin/meta-admin are OPERATOR CLIs: present in the image so
 #   `ops` one-shots can run them, but no long-running service is given their registrar logins or inputs.
+#   retention-admin (U08): the deploy post-check runs only `status` with the claims-worker's retention-job
+#   login; the operator login never reaches the deploy host (claims-retention-purge-v1 §10(5)).
 # Used by: deploy/compose.yml services api, expiry-worker, payment-worker-{sandbox,live},
-#   meta-worker, claims-worker, migrate, stripe-admin, meta-admin. media-worker is built but NOT deployed (MOCK-only, worker_env.go:174).
+#   meta-worker, claims-worker, ads-worker (profile ads), migrate, stripe-admin, meta-admin. media-worker is built but NOT deployed (MOCK-only, worker_env.go:174).
 # Depends on: go.mod/go.sum (module "livecommerce", go 1.27.1), cmd/**, internal/**,
 #   migrations/** (embedded SQL), deploy/tools/lcentry. `cmd/migrate` is REQUIRES_INTEGRATOR (I1):
 #   until it exists this build stops with exit 3 "BLOCKED" instead of shipping an image without it.
@@ -40,7 +42,7 @@ COPY internal ./internal
 COPY migrations ./migrations
 COPY deploy/tools ./deploy/tools
 # `migrate` is required for any deploy (the only production caller of migrations.Apply).
-ARG GO_CMDS="api payment-worker expiry-worker meta-worker claims-worker media-worker migrate stripe-admin meta-admin"
+ARG GO_CMDS="api payment-worker expiry-worker meta-worker claims-worker ads-worker media-worker migrate stripe-admin meta-admin retention-admin"
 # -buildvcs=false: .git is excluded by .dockerignore; the revision goes into the OCI label.
 # -ldflags=-buildid= : reproducible output for identical inputs.
 # Every cmd/<name> is checked BEFORE anything compiles, so a missing one (I1: cmd/migrate) fails

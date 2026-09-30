@@ -49,6 +49,7 @@ Smoke S29m BLOCKED is accepted in the CI job (F11), not by release-gate.
 | Mode | Proves | Tier | Run |
 | --- | --- | --- | --- |
 | `--browser-identity` | isolated PG + signed MOCK IdP browser chain; fixture removed at exit | T3 browser | `bash scripts/dev/test-local.sh --browser-identity` |
+| `--browser-password-auth` | PA10 BFF pure logic (Node) + PA11 isolated Next + Go + PG + loopback SMTP fake password sign-up/login/reset browser chain (Chromium desktop + 390px, zh-CN/zh-TW/en); no real mailbox, no owner secret | T3 browser | `bash scripts/dev/test-local.sh --browser-password-auth` |
 | `--browser-admin-legacy` | admin ledger (fixture bearer) + production fail-closed + identity-mock + entry-mock browser suites; no signed IdP, not production acceptance | T3 browser | `bash scripts/dev/test-local.sh --browser-admin-legacy` |
 | `--browser-buyer` | isolated PG + real buyer browser transport; not UI/PSP/deployment acceptance | T3 browser | `bash scripts/dev/test-local.sh --browser-buyer` |
 | `--browser-merchant-buyer` | isolated merchant-to-buyer browser chain; not provider payment or real DNS/TLS deployment proof | T3 browser | `bash scripts/dev/test-local.sh --browser-merchant-buyer` |
@@ -62,6 +63,9 @@ Smoke S29m BLOCKED is accepted in the CI job (F11), not by release-gate.
 | `--browser-payment` | isolated buyer payment UI/native POST gate with a local mock PSP; not provider payment or deployment acceptance | T3 browser | `bash scripts/dev/test-local.sh --browser-payment` |
 | `--stripe-browser` | SP18/SU05-SU09 buyer Stripe Checkout in Chromium: card 4242, decline, 3DS, plus the PAYUNi baseline; SANDBOX steps need STRIPE_BROWSER=1 STRIPE_SANDBOX=1 and a Stripe test key in secrets.env (else NOT_RUN, exit 2); one go test process per step, parsed from go test -json | T3 browser | `bash scripts/dev/test-local.sh --stripe-browser` |
 | `--browser-refund-fulfilment` | MF07 + RF11(a) isolated admin + storefront Next, Go, PG, real worker and the MOCK Stripe fake; RF11(b) SANDBOX is NOT_RUN unless it says otherwise above; not provider or deployment acceptance | T3 browser | `bash scripts/dev/test-local.sh --browser-refund-fulfilment` |
+| `--browser-customers-billing` | CB11 isolated admin + storefront Next, Go, PG, real worker; customers list/detail/consent/export/erasure, finance, billing standing + redirect; platform billing = MOCK (independent `billingtest` fake); zh-TW + en, desktop + 390px; CB10 SANDBOX and CB12 LIVE are NOT_RUN | T3 browser | `bash scripts/dev/test-local.sh --browser-customers-billing` |
+| `--browser-meta-ads` | MA09a isolated admin Next, Go API + ads worker, PG: connect via fake OAuth, `state_mismatch`, pick-list refusal, draft → approve → publish → pause → copy, allowance-off and SANDBOX banners, report three blocks; MA09b buyer consent → CAPI context on the production storefront build; Meta = MOCK (`tests/ads/fakegraph`); MA-S1..S4 SANDBOX and MA-L1/L2 LIVE are NOT_RUN | T3 browser | `bash scripts/dev/test-local.sh --browser-meta-ads` |
+| `--browser-cvs` | TCV08 isolated admin + storefront Next, Go, PG: ECPay map pick, buyer-entered store, pay-at-pickup order, merchant ECPay connect/settings, label request/print, collection + cancel/restock; ECPay = MOCK (`ecpaytest` fake map/Create + signed status posts); the admin logistics BFF grammar/model tests run first under `node --test`; ECPay SANDBOX and WebKit variants are NOT_RUN | T3 browser | `bash scripts/dev/test-local.sh --browser-cvs` |
 | `--browser-e2e` | T12 deal loop in one real-browser chain: signed Meta MOCK comment -> claim -> private reply -> cart -> Stripe MOCK pay -> order -> manual ship -> partial refund, admin + storefront, PG facts, negatives, tenant isolation, leak scan; SANDBOX tier NOT_RUN (F12), CVS pickup NOT_RUN (F3) | T3 browser | `bash scripts/dev/test-local.sh --browser-e2e` |
 | `--checkout` | checkout subset only; full regression still required | T2 subset | `bash scripts/dev/test-local.sh --checkout` |
 | `--payment` | payment start/query subset only; full regression still required | T2 subset | `bash scripts/dev/test-local.sh --payment` |
@@ -94,6 +98,7 @@ Smoke S29m BLOCKED is accepted in the CI job (F11), not by release-gate.
 | --- | --- |
 | `tests/admin/auth-real.spec.ts`, `settings-real.spec.ts` | `--browser-identity` |
 | `tests/admin/ledger.spec.ts`, `production.spec.ts`, `visual-states.spec.ts` | `--browser-admin-legacy` (suite `ledger`: `admin-fixture` PG + Go API, dev Next fixture adapter on :3100, packaged production Next on :3101) |
+| `tests/admin/password-auth.spec.ts`, `password-bff.test.ts` | `--browser-password-auth` (suite `password-auth`, started by `TestBrowserPasswordAuth`; PA10 runs first under `node --test`) |
 | `tests/admin/auth.spec.ts` | `--browser-admin-legacy` (suite `identity-mock`, MOCK Go API on :19111) |
 | `tests/admin/entry.spec.ts` | `--browser-admin-legacy` (suite `entry-mock`, MOCK Go API on :19111) |
 | `tests/admin/claims-ui.spec.ts`, `claims-request.test.ts`, `claim-source.test.ts`, `claims-model.test.ts` | `--browser-live-claims` |
@@ -103,6 +108,9 @@ Smoke S29m BLOCKED is accepted in the CI job (F11), not by release-gate.
 | `tests/admin/orders-bff.spec.ts`, `orders-request.test.ts` | `--browser-merchant-orders-bff` |
 | `tests/admin/orders-ui.spec.ts`, `orders-model.test.ts` | `--browser-merchant-orders-ui` |
 | `tests/admin/manual-fulfilment.spec.ts`, `refund.spec.ts`, `refund-bff.test.ts` | `--browser-refund-fulfilment` |
+| `tests/admin/customers-billing.spec.ts`, `customers-bff.test.ts`, `customers-model.test.ts`, `customers-request.test.ts`, `billing-model.test.ts` | `--browser-customers-billing` |
+| `tests/admin/ads.spec.ts`, `ads-model.test.ts`, `ads-request.test.ts`; `tests/storefront/ads-consent.mjs` | `--browser-meta-ads` |
+| `tests/admin/taiwan-cvs.spec.ts`, `logistics-model.test.ts`, `logistics-request.test.ts`; `tests/storefront/cvs-buyer.mjs` | `--browser-cvs` |
 | `tests/e2e/deal-loop.spec.ts` | `--browser-e2e` |
 
 The `--browser-admin-legacy` gate replaced a manual five-step procedure (`docs/implementation/

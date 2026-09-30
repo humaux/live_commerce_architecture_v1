@@ -146,6 +146,11 @@ meta_inbox.lock_purgeable grant in meta-claims-intake-v1's amendment notes.
   cross-border carrier's Taiwan last mile collects. Auto-backfill for the pilot waits on a registered
   store-picker usable by a non-Taiwan entity (research in progress; likely the cross-border carrier).
 
+R2-ADS-PAUSE-1 (round-2 review P1, meta-ads-v1 §5.3): "pause is always allowed" is narrowed to "with an enabled binding". The dispatcher's
+enabled/semantic_version gate is unchanged; instead `0074` trigger `integration.bindings.bindings_ads_disable_guard` refuses (PT409
+`binding_in_use`, core maps to ErrConflict) disabling a `meta_ads` binding while any draft on it counts by the AD6 test. The merchant
+pauses first; a SUCCEEDED pause makes the draft non-counting and the disconnect then succeeds. Gate: MA06 "a binding with a spending campaign cannot be disabled".
+
 ## Integration rulings (2026-10-01)
 - I1 Ratify stripe-live-enable-v1 amendment 2026-09-30b (W11a settled-op exclusion, refund refresh
   environment guard, P06 rule, rotate command): verified by the lane verifier against 0008/0061/0062.

@@ -34,7 +34,8 @@ func TestStripeSP01Config(t *testing.T) {
 		{"live key LIVE ref without flag", Config{SecretKey: fakeLiveKey, AccountID: fakeAccount, Environment: "LIVE", Live: LiveApproval{Reference: "OWNER-APPROVAL:2026"}}, false, ErrLiveRefused},
 		{"live key LIVE short ref", Config{SecretKey: fakeLiveKey, AccountID: fakeAccount, Environment: "LIVE", Live: LiveApproval{Enabled: true, Reference: "short"}}, false, ErrLiveRefused},
 		{"live key LIVE bad ref chars", Config{SecretKey: fakeLiveKey, AccountID: fakeAccount, Environment: "LIVE", Live: LiveApproval{Enabled: true, Reference: "owner approval ok"}}, false, ErrLiveRefused},
-		{"live key LIVE approved", Config{SecretKey: fakeLiveKey, AccountID: fakeAccount, Environment: "LIVE", Live: approved}, false, nil},
+		{"live key LIVE approved", Config{SecretKey: fakeRAKLiveKey, AccountID: fakeAccount, Environment: "LIVE", Live: approved}, false, nil}, // stripe-live-core S2: was sk_live_; only rk_live_ is admitted now
+		{"sk_live LIVE approved refused", Config{SecretKey: fakeLiveKey, AccountID: fakeAccount, Environment: "LIVE", Live: approved}, false, ErrLiveRefused},
 		{"PROVIDER_MOCK env name", Config{SecretKey: fakeTestKey, AccountID: fakeAccount, Environment: "PROVIDER_MOCK"}, false, ErrInvalid},
 		{"lowercase env", Config{SecretKey: fakeTestKey, AccountID: fakeAccount, Environment: "sandbox"}, false, ErrInvalid},
 		{"empty key", Config{AccountID: fakeAccount, Environment: "SANDBOX"}, false, ErrInvalid},
@@ -70,7 +71,7 @@ func TestStripeSP01Config(t *testing.T) {
 	}
 
 	// Refusal codes are fixed and grep-able.
-	_, err := New(Config{SecretKey: fakeLiveKey, AccountID: fakeAccount, Environment: "LIVE"})
+	_, err := New(Config{SecretKey: fakeRAKLiveKey, AccountID: fakeAccount, Environment: "LIVE"}) // S2: rk_live_ reaches the pair check
 	if err == nil || err.Error() != "stripe: stripe_live_refused" {
 		t.Fatalf("live refusal code: %v", err)
 	}

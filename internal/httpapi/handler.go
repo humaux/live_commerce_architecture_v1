@@ -20,9 +20,12 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
+	"livecommerce/internal/ads"
+	"livecommerce/internal/billing"
 	"livecommerce/internal/catalog"
 	"livecommerce/internal/claims"
 	"livecommerce/internal/command"
+	"livecommerce/internal/fulfillment"
 	"livecommerce/internal/httperror"
 	"livecommerce/internal/integrations/accounts"
 	"livecommerce/internal/inventory"
@@ -50,6 +53,20 @@ type Options struct {
 	// RefundJobs is the insert-only river_payment client (cmd/api newMerchantRefundJobs). nil leaves the
 	// stripe-refund-v1 §7.1 refund routes unmounted.
 	RefundJobs *river.Client[pgx.Tx]
+	// Ads is the meta-ads-v1 merchant service (cmd/api builds it with the insert-only river client, the FLfB dialog
+	// config and the metaads OAuth exchange). nil leaves the ads routes unmounted; mount only after 0080 (contract 4.3).
+	Ads *ads.Service
+	// Billing is the platform-fee service (cmd/api buildPlatformBilling). nil (LC_BILLING_ENABLED unset)
+	// still mounts the billing GET routes; the POSTs answer 503 billing_unavailable.
+	Billing *billing.Service
+	// CVS mounts the taiwan-cvs-logistics-v1 merchant routes (§8: ECPay connection, settings, label request, print, abandon,
+	// collection, pay-at-pickup release). nil leaves them unmounted (cmd/api buildCVS).
+	CVS *fulfillment.CVS
+	// PaymentEnvironment is the deployment's payment environment, SANDBOX or LIVE (payments.ProfileEnvironment of
+	// COMMERCE_PAYMENT_PROFILE, chosen by cmd/api). The refund POST refuses an attempt of another environment
+	// (stripe-live-enable-v1 §5.2, S5). Empty means SANDBOX so pre-LIVE callers keep their behavior; any other
+	// value not in {SANDBOX, LIVE} leaves the refund routes unmounted.
+	PaymentEnvironment string
 }
 
 func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
@@ -131,8 +148,17 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerOrderRoutes(mux, pool)
 	registerStudioRoutes(mux, pool, configured.Studio || configured.Live != nil, configured.Live, configured.BrowserInput)
 	registerClaimRoutes(mux, pool, configured.ClaimLabels)
-	registerRefundRoutes(mux, pool, configured.RefundJobs)
+	paymentEnvironment := configured.PaymentEnvironment
+	if paymentEnvironment == "" {
+		paymentEnvironment = "SANDBOX"
+	}
+	registerRefundRoutesIn(mux, pool, configured.RefundJobs, paymentEnvironment)
 	registerShipmentRoutes(mux, pool)
+	registerAdsRoutes(mux, pool, configured.Ads)
+	registerCustomerRoutes(mux, pool)
+	registerFinanceRoutes(mux, pool)
+	registerBillingRoutes(mux, pool, configured.Billing)
+	registerCVSRoutes(mux, pool, configured.CVS)
 	foundation := platform.NewHandler(pool, platform.HandlerOptions{SessionStoreList: configured.SessionStoreList})
 	if configured.SessionStoreList {
 		mux.Handle("GET /v1/admin/stores", foundation)

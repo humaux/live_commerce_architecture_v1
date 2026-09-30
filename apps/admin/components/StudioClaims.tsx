@@ -238,8 +238,12 @@ export function StudioClaims({ locale, store, scene, initialError }: {
     if (error.code === "uncertain") return c.uncertain;
     return statusText(error.code === "form" ? "invalid" : error.code);
   }
+  // U6 (customers-billing-v1 §5): a window open refused by billing (Go PT412 -> 402 `billing_restricted`, api code kept by
+  // studio-client) says why and links to billing; nothing else in Studio is affected by standing.
+  const restricted = (error: ActionError) => error.action === "window" && error.api === "billing_restricted";
   const alert = (action: Action) => actionError?.action === action && <div role="alert" className="claims-alert">
-    <p>{errorText(actionError)}</p>
+    <p>{restricted(actionError) ? c.billingRestricted : errorText(actionError)}</p>
+    {restricted(actionError) && <p><a href={`/${locale}/billing${storeID ? `?store=${storeID}` : ""}`} data-testid="claims-billing-link">{c.billingLink}</a></p>}
     {actionError.code === "uncertain" && pending.current?.action === action && <button type="button" disabled={!!busy}
       onClick={() => { const value = pending.current; if (value) void perform(value.action, value.run, value); }}>{shared.retrySame}</button>}
   </div>;

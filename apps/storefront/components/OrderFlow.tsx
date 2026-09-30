@@ -6,12 +6,27 @@
 // OrderDetails hosts <OrderPayment> (BFF orders/{id}/payment[/prepare|handoff|refresh|cancel]);
 // its Refresh order button also fires the Stripe payment/refresh signal via paymentSignalRef.
 // The shipment block renders Go GET /v1/buyer/orders/{id} `shipment` (BFF orders/{id}); no route of its own.
+// CVS options (taiwan-cvs-logistics-v1 §5, §16): the address form is replaced by <CvsPickup> (BFF cvs-selections,
+// cvs-selections/{id}/verify, cvs-stores -> Go /v1/buyer/cvs-*), the destination is written with kind=cvs_* +
+// pickup_id (BFF PUT destination -> Go SetDestination) and Begin carries payment_mode (BFF POST checkout ->
+// Go checkout.Begin). A pay-at-pickup order takes no Stripe step: OrderPayment is not mounted for it.
 import { useEffect, useRef, useState } from "react";
 import OrderPayment from "./OrderPayment";
+import { ConsentChoices, noConsentChoices, submitCheckoutConsents } from "./ConsentChoices";
+import CvsPickup, { CvsOrderStatus, type PickupHandle } from "./CvsPickup";
 import type { Locale } from "@live-commerce/i18n";
 import { BuyerClientError } from "../lib/buyer-client";
 import { carrierNames, orderCopy } from "../lib/order-copy";
 import { purchaseCopy } from "../lib/purchase-copy";
+import { cvsCopy } from "../lib/cvs-copy";
+import {
+  isCvsErrorCode,
+  isCvsKind,
+  type CvsDraft,
+  type CvsErrorCode,
+  type CvsKind,
+  type PaymentMode,
+} from "../lib/cvs-contract";
 import {
   checkoutInput,
   currentDestination,
@@ -19,7 +34,8 @@ import {
   purchasePage,
   readPurchase,
   validCart,
-  validOption,
+  validOptionRow,
+  isUnavailable,
   validDestinationWrite,
   writeDestination,
   writeCheckout,
@@ -52,6 +68,7 @@ const fieldsOf = (d: DestinationWrite | Destination): Fields => ({
 });
 type Run = (work: (isCurrent: () => boolean) => Promise<void>) => Promise<void>;
 type Money = (amount: number, currency: string) => string;
+const noHome: HomeAddress = { region: "", city: "", postal_code: "", line1: "", line2: "" };
 const inputs = [
   ["recipient_name", "name", 120, true],
   ["phone", "tel", 32, true],
@@ -97,6 +114,7 @@ export default function OrderFlow({
   const [head, setHead] = useState<Destination | null>(null);
   const [option, setOption] = useState<Option | null>(null);
   const [confirmed, setConfirmed] = useState<Destination | null>(null);
+  const [consents, setConsents] = useState(noConsentChoices);
   const [notice, setNotice] = useState<
     "loading" | "recovered" | "failed" | "invalid" | "uncertain" | null
   >("loading");
@@ -106,6 +124,11 @@ export default function OrderFlow({
   );
   const live = useRef(0);
   const attempt = useRef<{ body: DestinationWrite; key: string } | null>(null);
+  // CVS (§16): payment mode, the picker's ensure() handle and the one refusal shown next to the create button.
+  const [paymentMode, setPaymentMode] = useState<PaymentMode>("card");
+  const [createError, setCreateError] = useState<CvsErrorCode | null>(null);
+  const pickup = useRef<PickupHandle | null>(null);
+  const cvsOption = option && isCvsKind(option.delivery_kind) ? (option as Option & { delivery_kind: CvsKind }) : null;
 
   useEffect(() => {
     const version = ++live.current;
@@ -137,16 +160,17 @@ export default function OrderFlow({
           const page = await purchasePage(
             `checkout-options?market_id=${quote.market_id}&country=${quote.country}&limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
             context,
-            validOption,
+            validOptionRow,
           );
+          // A row the store lists but cannot sell yet ("coming soon") is never checkout-able here.
           found = page.items.find(
-            (o) =>
+            (o): o is Option =>
+              !isUnavailable(o) &&
               o.market_id === quote.market_id &&
               o.country === quote.country &&
               o.method === quote.method &&
               o.currency === quote.currency &&
-              o.mode === "MANUAL" &&
-              o.delivery_kind === "home",
+              (o.delivery_kind !== "home" || o.mode === "MANUAL"),
           );
           cursor = page.next_cursor;
           if (cursor && (seen.has(cursor) || seen.size >= 100))
@@ -222,6 +246,23 @@ export default function OrderFlow({
       phone,
       home_address,
     };
+    if (cvsOption) {
+      // §16.1: the store first (map selection verified / buyer-entered record), then the ordinary destination
+      // write with kind=cvs_* + pickup_id. A null means the picker already showed what is missing.
+      setCreateError(null);
+      const pickupID = await pickup.current?.ensure();
+      if (!pickupID || !current()) return;
+      body = {
+        expected_version: head?.version ?? 0,
+        cart_version: cart.version,
+        kind: cvsOption.delivery_kind,
+        country,
+        recipient_name: recipient_name.trim(),
+        phone: phone.trim(),
+        home_address: { ...noHome },
+        pickup_id: pickupID,
+      };
+    }
     if (!validDestinationWrite(body)) {
       setNotice("invalid");
       return;
@@ -232,7 +273,8 @@ export default function OrderFlow({
       if (
         attempt.current?.key === pending.key &&
         JSON.stringify(fieldsOf(attempt.current.body)) ===
-          JSON.stringify(fields)
+          JSON.stringify(fieldsOf(body)) &&
+        attempt.current.body.pickup_id === body.pickup_id
       )
         body = attempt.current.body;
       else replace = pending.key; // Explicit reconfirmation of the displayed head, never silent replay of lost PII.
@@ -269,7 +311,7 @@ export default function OrderFlow({
       data-testid="address-section"
       aria-labelledby="address-title"
     >
-      <h2 id="address-title">{copy.address}</h2>
+      <h2 id="address-title">{cvsOption ? cvsCopy[locale].title : copy.address}</h2>
       <p>{quote ? copy.explain : copy.recoverWithoutQuote}</p>
       <p className="address-total">
         {quote && (
@@ -315,8 +357,43 @@ export default function OrderFlow({
           }
           className="address-fields"
         >
-          <legend className="sr-only">{copy.address}</legend>
-          {inputs.map(([name, autoComplete, maxLength, required]) => (
+          <legend className="sr-only">
+            {cvsOption ? cvsCopy[locale].title : copy.address}
+          </legend>
+          {cvsOption && (
+            <CvsPickup
+              context={context}
+              locale={locale}
+              option={cvsOption}
+              cartVersion={cart.version}
+              recipient={{ recipient_name: fields.recipient_name, phone: fields.phone }}
+              onRecipient={(next) => {
+                setFields({ ...fields, ...next });
+                setConfirmed(null);
+                if (notice === "invalid") setNotice(null);
+              }}
+              paymentMode={paymentMode}
+              onPaymentMode={(mode) => {
+                setPaymentMode(mode);
+                setConfirmed(null);
+                setCreateError(null);
+              }}
+              onRestore={(draft: CvsDraft) => {
+                setFields((old) => ({
+                  ...old,
+                  recipient_name: draft.recipient_name,
+                  phone: draft.phone,
+                }));
+                if (cvsOption.payment_modes?.includes(draft.payment_mode))
+                  setPaymentMode(draft.payment_mode);
+              }}
+              onStoreChange={() => setConfirmed(null)}
+              run={run}
+              handle={pickup}
+              total={quote ? money(quote.amount.total_minor, quote.currency) : ""}
+            />
+          )}
+          {!cvsOption && inputs.map(([name, autoComplete, maxLength, required]) => (
             <label
               key={name}
               className={
@@ -346,15 +423,23 @@ export default function OrderFlow({
           >
             {expired && recoveringDestination
               ? copy.recoverAddress
-              : copy.confirm}
+              : cvsOption
+                ? cvsCopy[locale].confirmPickup
+                : copy.confirm}
           </button>
         </fieldset>
       </form>
       {confirmed && (
         <p role="status" className="address-confirmed">
-          {copy.confirmed}
+          {cvsOption ? cvsCopy[locale].confirmedPickup : copy.confirmed}
         </p>
       )}
+      {createError && (
+        <p role="alert" data-testid="cvs-create-error">
+          {cvsCopy[locale].errors[createError]}
+        </p>
+      )}
+      <ConsentChoices locale={locale} value={consents} onChange={setConsents} disabled={busy || blocked} />
       <button
         data-testid="create-order"
         className="primary create-order"
@@ -366,19 +451,42 @@ export default function OrderFlow({
             try {
               const result = await writeCheckout(
                 context,
-                checkoutInput(quote, option, cart, confirmed),
+                checkoutInput(
+                  quote,
+                  option,
+                  cart,
+                  confirmed,
+                  Date.now(),
+                  cvsOption ? paymentMode : undefined,
+                ),
               );
+              void submitCheckoutConsents(context, consents); // never blocks the order (customers-billing-v1 U7)
               if (isCurrent() && version === live.current) onOrder(result);
             } catch (reason) {
               if (version === live.current) setConfirmed(null);
+              // A definite CVS/pay-at-pickup refusal (§16.2) is shown here, not as a generic failure.
+              if (
+                cvsOption &&
+                reason instanceof BuyerClientError &&
+                isCvsErrorCode(reason.detail)
+              ) {
+                if (version === live.current) setCreateError(reason.detail);
+                return;
+              }
               throw reason;
             }
           })
         }
       >
-        {copy.create}
+        {cvsOption && paymentMode === "pay_at_pickup"
+          ? cvsCopy[locale].createPickup
+          : copy.create}
       </button>
-      <p className="order-note">{copy.unavailable}</p>
+      <p className="order-note">
+        {cvsOption && paymentMode === "pay_at_pickup"
+          ? cvsCopy[locale].payAtPickupNote
+          : copy.unavailable}
+      </p>
     </section>
   );
 }
@@ -554,9 +662,16 @@ export function OrderDetails({
           .join(" · ")}
         {destination.pickup &&
           `${destination.pickup.name} · ${destination.pickup.code} · ${destination.pickup.address}`}
+        {destination.pickup?.verification_kind === "BUYER_ENTERED" && (
+          <>
+            <br />
+            <span data-testid="order-pickup-entered">{cvsCopy[locale].enteredLabel}</span>
+          </>
+        )}
         <br />
         {destination.country}
       </address>
+      <CvsOrderStatus order={order} locale={locale} money={money} />
       {order.shipment && (
         <ShipmentBlock shipment={order.shipment} locale={locale} />
       )}
@@ -572,18 +687,21 @@ export function OrderDetails({
           <p className="order-note">{copy.holdNote}</p>
         </>
       )}
-      <OrderPayment
-        key={`${context}:${order.order_id}`}
-        context={context}
-        order={order}
-        locale={locale}
-        money={money}
-        busy={busy}
-        refreshToken={paymentRefresh}
-        onBusy={onPaymentBusy}
-        isSelected={isSelected}
-        paymentSignalRef={paymentSignalRef}
-      />
+      {/* Pay-at-pickup is not a Stripe payment (§16.2): no payment read, no start, no refresh signal. */}
+      {order.payment_mode !== "pay_at_pickup" && (
+        <OrderPayment
+          key={`${context}:${order.order_id}`}
+          context={context}
+          order={order}
+          locale={locale}
+          money={money}
+          busy={busy}
+          refreshToken={paymentRefresh}
+          onBusy={onPaymentBusy}
+          isSelected={isSelected}
+          paymentSignalRef={paymentSignalRef}
+        />
+      )}
       <button
         data-testid="refresh-order"
         disabled={busy}

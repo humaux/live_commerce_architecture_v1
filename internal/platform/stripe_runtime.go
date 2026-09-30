@@ -8,7 +8,37 @@ import (
 	"errors"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"livecommerce/internal/integrations/psp/stripe"
 )
+
+// LoadStripeLiveApproval reads COMMERCE_STRIPE_LIVE_ENABLED and COMMERCE_STRIPE_LIVE_APPROVAL_REF, the
+// owner's LIVE flag+reference pair (contracts/stripe-live-enable-v1.md §5.1). "" and "0" mean the flag is
+// off; both-or-neither: a flag without a reference or a reference without the flag is an error, as is a
+// malformed reference. Neither set returns the zero LiveApproval (no LIVE). The returned error is fixed
+// text and never carries the reference. Callers (cmd/api, cmd/payment-worker, cmd/stripe-admin) still
+// decide whether the profile they run may use it; stripe.admit re-validates the pair on every client.
+func LoadStripeLiveApproval(getenv func(string) string) (stripe.LiveApproval, error) {
+	if getenv == nil {
+		return stripe.LiveApproval{}, errors.New("stripe live approval invalid")
+	}
+	var live stripe.LiveApproval
+	switch getenv("COMMERCE_STRIPE_LIVE_ENABLED") {
+	case "", "0":
+	case "1":
+		live.Enabled = true
+	default:
+		return stripe.LiveApproval{}, errors.New("stripe live approval invalid")
+	}
+	live.Reference = getenv("COMMERCE_STRIPE_LIVE_APPROVAL_REF")
+	if !live.Enabled && live.Reference == "" {
+		return stripe.LiveApproval{}, nil
+	}
+	if !live.Valid() { // flag without ref, ref without flag, or a malformed ref
+		return stripe.LiveApproval{}, errors.New("stripe live approval invalid")
+	}
+	return live, nil
+}
 
 // OpenStripeIngressPool admits the insert-only webhook authority. Neither the
 // merchant nor payment-worker pool may be substituted when this opener fails.
@@ -57,7 +87,17 @@ var stripeIngressFunctions = []string{
 	// stripe-refund-v1 D2: 0062 replaces the 16-argument prepare with 16 + payment_intent + lc_refund.
 	"payments.stripe_webhook_prepare(uuid,bigint,text,text,bigint,text,text,text,text,text,boolean,boolean,boolean,boolean,bytea,bigint,text,text)",
 	"payments.stripe_webhook_commit(uuid,uuid,bigint)",
+	// customers-billing-v1 C-4 (0079): the platform webhook shares this login and executes exactly this ABI.
+	// billing.platform_account_conflict(text) is granted to BOTH this login and commerce_runtime (startup
+	// check), so it is not in this list (a runtime pool would fail the fixed-function scan); see
+	// stripeIngressExtraFunctions below.
+	"billing.apply_subscription(text,text,text,text,text,timestamp with time zone,timestamp with time zone,boolean,timestamp with time zone,timestamp with time zone,uuid,boolean)",
 }
+
+// stripeIngressExtraFunctions are functions the ingress login may execute in addition to
+// stripeIngressFunctions but that other pools legitimately hold too, so they cannot join the fixed list
+// (which every non-ingress pool must NOT hold). Resolved by regprocedure, ingress only.
+var stripeIngressExtraFunctions = []string{"billing.platform_account_conflict(text)"}
 var stripeRegistrarFunctions = []string{
 	"integration.register_stripe_account(uuid,uuid,uuid,uuid,uuid,text,text,text,bytea,bytea)",
 	"integration.rotate_stripe_key(uuid,uuid,uuid,uuid,bigint,text,bytea,bytea)",
@@ -68,6 +108,10 @@ var stripeRegistrarFunctions = []string{
 	"payments.stripe_registrar_credential(uuid,uuid,uuid,uuid,bigint)",
 	"payments.qualify_stripe_method(uuid,uuid,uuid,uuid,uuid,bigint,text,text,timestamp with time zone,timestamp with time zone)",
 	"payments.set_stripe_method(uuid,uuid,uuid,uuid,text,uuid,uuid,bigint,boolean,boolean,integer,bigint,bigint,text,text,text)",
+	// stripe-live-enable-v1 §3.4 (migration 0077): LIVE approval, canary verification and the per-store kill switch.
+	"payments.approve_stripe_live(uuid,uuid,uuid,uuid,uuid,text,text,timestamp with time zone,bigint,bigint,text[],jsonb)",
+	"payments.record_stripe_live_canary(uuid,uuid,uuid,uuid,uuid,uuid)",
+	"payments.revoke_stripe_live(uuid,uuid,uuid,uuid,text)",
 }
 
 func validateStripeAuthority(ctx context.Context, pool *pgxpool.Pool, authority string) error {
@@ -107,7 +151,8 @@ func validateStripeAuthority(ctx context.Context, pool *pgxpool.Pool, authority 
 	   SELECT t.oid FROM unnest(string_to_array(substring(w.signature from '\((.*)\)$'),',')) WITH ORDINALITY a(name,ord)
 	   JOIN pg_catalog.pg_type t ON t.typnamespace='pg_catalog'::regnamespace
 	    AND t.typname=CASE a.name WHEN 'bigint' THEN 'int8' WHEN 'integer' THEN 'int4'
-	     WHEN 'boolean' THEN 'bool' WHEN 'timestamp with time zone' THEN 'timestamptz' ELSE a.name END
+	     WHEN 'boolean' THEN 'bool' WHEN 'timestamp with time zone' THEN 'timestamptz'
+	     WHEN 'text[]' THEN '_text' ELSE a.name END
 	   ORDER BY a.ord),' ')
 	)
 	SELECT EXISTS(SELECT 1 FROM reachable r CROSS JOIN fixed f
@@ -123,6 +168,17 @@ func validateStripeAuthority(ctx context.Context, pool *pgxpool.Pool, authority 
 	}
 	if len(allowed) == 0 {
 		return nil
+	}
+	if authority == "stripe_ingress" {
+		for _, signature := range stripeIngressExtraFunctions {
+			var oid uint32
+			if err := pool.QueryRow(ctx, `SELECT coalesce(to_regprocedure($1)::oid::bigint,0)::oid`, signature).Scan(&oid); err != nil {
+				return errors.New("unsafe stripe database privileges")
+			}
+			if oid != 0 {
+				allowedOIDs = append(allowedOIDs, oid)
+			}
+		}
 	}
 	// New Stripe roles cannot read any application table. The only exception is
 	// the ingress role's river_payment.river_job INSERT/SELECT plus column-level

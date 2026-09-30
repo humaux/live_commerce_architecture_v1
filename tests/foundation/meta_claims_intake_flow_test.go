@@ -754,7 +754,13 @@ func TestMetaClaimsMCI04ConsumerAtomicity(t *testing.T) {
 			e.noIntake(t, "page", e.pageAsset, s.comment, "failed consumer transaction")
 			// Fault removed: the same River job now yields exactly one fact, one mark, one intake.
 			drop()
-			mustExec(t, f.owner, `UPDATE `+mcJobTable(t, f)+` SET scheduled_at=clock_timestamp() WHERE id=$1`, s.ev.job)
+			// Make the retry due as River's JobScheduler would (retryable -> available). Only moving scheduled_at left the
+			// promotion to the leader-only scheduler (5 s tick, staggered start, 15 s TTL of a leader that did not resign),
+			// which can outlast mcAwait's 10 s (R2 release gate 2026-09-30: "actual River consumer did not complete").
+			if tag, err := f.owner.Exec(ctx, `UPDATE `+mcJobTable(t, f)+` SET state='available',scheduled_at=clock_timestamp()
+			 WHERE id=$1 AND state='retryable'`, s.ev.job); err != nil || tag.RowsAffected() != 1 {
+				t.Fatalf("retryable job not made due: rows=%d err=%v", tag.RowsAffected(), err)
+			}
 			e.startConsumer(t)
 			mcAwait(t, e.page, s.ev)
 			if miCount(t, f.owner, `SELECT count(*) FROM social.comment_events WHERE event_id=$1`, s.ev.id) != 1 || e.fbIntake(t, s).State != "PENDING" {
@@ -988,6 +994,8 @@ func (e *mciEnv) workerEnv(t *testing.T, graphURL string) []string {
 		"COMMERCE_CLAIMS_WORKER_ENABLED=1",
 		"COMMERCE_CLAIMS_INTAKE_DATABASE_URL=" + e.intakePool.Config().ConnString(),
 		"COMMERCE_WORKER_DATABASE_URL=" + workerLogin,
+		// claims-retention-purge-v1 §5 (U08): required whenever the worker is enabled; the job runs report-only here.
+		"COMMERCE_RETENTION_JOB_DATABASE_URL=" + miRole(t, f, "commerce_retention_job"),
 		"COMMERCE_CLAIMS_REPLY_LINK_KEY=" + base64.StdEncoding.EncodeToString(e.linkRaw),
 		"COMMERCE_META_PAGE_TOKEN_ACTIVE_KEY_ID=pt_key_1",
 		`COMMERCE_META_PAGE_TOKEN_KEYS_JSON={"keys":[{"id":"pt_key_1","key_base64":"` + base64.StdEncoding.EncodeToString(e.pageKeyRaw) + `"}]}`,

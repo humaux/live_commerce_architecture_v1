@@ -16,6 +16,9 @@ type SecretClaim struct {
 	OperationID string
 	Generation  int64
 	LeaseToken  []byte
+	// Mode is the claim mode, "dispatch" or "reconcile" (R-7a, cvs-ecpay E3), so a loader or Finish
+	// can fence on integration.operations.lease_mode.
+	Mode string
 }
 
 func (SecretClaim) String() string               { return redactedSecret }

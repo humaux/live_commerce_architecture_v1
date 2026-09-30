@@ -17,9 +17,14 @@
 #           R1 additions (deploy-release unit): S13 also checks the ruling-19 River privileges and the
 #           registrar EXECUTE grants (S13n injects two drifts: both must fail provisioning by name), S16 the claims-worker + Stripe-enabled sandbox worker, S19 the
 #           Stripe webhook route, S44 the operator one-shots stripe-admin / meta-admin.
+#           R2 U08: S46 retention-admin on the claims-worker's retention-job login: `status` works and
+#           shows a run (RunOnStart), every other subcommand refuses the job login (exit 2), no service
+#           mounts an operator DSN (claims-retention-purge-v1 §10(5), CRP09).
 #           G2 (R1 ruling): S45 planning-only Studio + claims + claim-source answer 401/403 (mounted) on the
 #           deployed api and the LiveKit media route is 404; S10e/S10h preflight P06 refuses media on and
 #           claims without Studio.
+#           R2 CVS (TCV08 deploy leg): S47 only (renumbered at the R2 integration merge; S46 is U08) — /v1/cvs/ecpay/{map-return,status}/* reach Go on the hooks host;
+#           any other /v1/cvs/* there, and the same routes on the api host, are Caddy's 404.
 # Usage: smoke.sh static | full
 # Exit: 0 PASS, 1 FAIL, 3 BLOCKED (e.g. cmd/migrate missing, ports busy, docker missing, or a
 #   REQUIRES_INTEGRATOR item observed at runtime: S29m = I8). result.json "not_run" names each one.
@@ -88,7 +93,7 @@ static_cases() {
     local cfg p ok=1
     cfg=$(mktemp -d)
     make_config "$cfg" static
-    for p in "db,app,payments-sandbox,payments-live,meta,claims,ops" "app,payments-sandbox" "db,ops" "app,meta,claims"; do
+    for p in "db,app,payments-sandbox,payments-live,meta,claims,ads,ops" "app,payments-sandbox" "db,ops" "app,meta,claims"; do
       COMPOSE_PROFILES=$p runc S03 docker compose --project-directory "$LC_DEPLOY_DIR" --env-file "$cfg/compose.env" \
         -f "$LC_DEPLOY_DIR/compose.yml" config -q || ok=0
       COMPOSE_PROFILES=$p LC_PG_BIND_ADDR=127.0.0.1 runc S03 docker compose --project-directory "$LC_DEPLOY_DIR" \
@@ -145,7 +150,7 @@ static_cases() {
 make_config() {
   local dir=$1 kind=$2 svc
   mkdir -p "$dir/env" "$dir/secrets" "$dir/backup/dumps" "$dir/backup/base" "$dir/backup/wal" "$dir/state"
-  for svc in api admin storefront payment-worker expiry-worker meta-worker claims-worker caddy postgres; do
+  for svc in api admin storefront payment-worker expiry-worker meta-worker claims-worker ads-worker caddy postgres; do
     cp "$LC_DEPLOY_DIR/env/$svc.env.example" "$dir/env/$svc.env"
   done
   # `sed -i.bak` + rm: the only in-place form that is identical on GNU (Linux CI/deploy host) and BSD
@@ -186,13 +191,14 @@ LC_BUYER_ENABLED=1
 LC_BUYER_SESSION_TTL_SECONDS=3600
 LC_STRIPE_ENABLED=1
 LC_REQUIRE_MEDIA_GATE=0
+LC_REQUIRE_RETENTION_ENFORCED=0
 LC_ALERT_WEBHOOK_URL=
 EOF
   : "$kind"
 }
 
 # ================================ full ============================================================
-ALL_FULL=(S07 S08 S09 S10 S11 S12 S13 S13n S14 S15 S16 S44 S17 S18 S19 S45 S20 S21 S22 S23 S24 S25 S26 S27 S28 S29 S29m S30 S31 S32 S33 S34 S35 S36 S37 S38 S39 S40 S41 S42 S43)
+ALL_FULL=(S07 S08 S09 S10 S11 S12 S13 S13n S14 S15 S16 S44 S46 S17 S18 S19 S47 S45 S20 S21 S22 S23 S24 S25 S26 S27 S28 S29 S29m S30 S31 S32 S33 S34 S35 S36 S37 S38 S39 S40 S41 S42 S43)
 block_rest() { # reason — mark every full case not yet recorded as BLOCKED
   local id
   for id in "${ALL_FULL[@]}"; do
@@ -316,6 +322,18 @@ full_cases() {
   neg_g() { echo 'STRIPE_SECRET_KEY=placeholder' >>"$1/env/api.env"; }
   negative S10f P04 neg_f
   negative S10g P07 neg_g
+  # merchant-password-auth-v1: the password-login rules (P06 dependency, P08 SMTP grammar, P09 owner secret).
+  neg_i() { # password login without identity
+    echo 'LC_PASSWORD_LOGIN_ENABLED=1' >>"$1/compose.env"
+    sed -i.bak 's/^LC_IDENTITY_ENABLED=.*/LC_IDENTITY_ENABLED=0/' "$1/compose.env" && rm -f "$1/compose.env.bak"
+  }
+  neg_j() { echo 'LC_PASSWORD_LOGIN_ENABLED=1' >>"$1/compose.env"; } # no SMTP host/user/from
+  neg_k() { # valid SMTP settings, but commerce_smtp_password is still the owner placeholder
+    printf 'LC_PASSWORD_LOGIN_ENABLED=1\nLC_SMTP_HOST=smtp.example.test\nLC_SMTP_USERNAME=sender@example.test\nLC_MAIL_FROM=sender@example.test\n' >>"$1/compose.env"
+  }
+  negative S10i P06 neg_i
+  negative S10j P08 neg_j
+  negative S10k P09 neg_k
 
   # S37 (+ S11-S16): the real first-deploy path
   if runc S37 "$LC_SCRIPTS_DIR/deploy.sh" --smoke first; then rec S37 PASS "deploy.sh first"; else
@@ -436,11 +454,33 @@ sys.exit(1 if names & {"dsn_lc_stripe_registrar", "dsn_lc_meta_registrar"} else 
     why44+=" ops-admin audit line missing or leaked a value"
   out44=$(STRIPE_SECRET_KEY=$live_key STRIPE_ACCOUNT_ID=acct_0000000000 "$LC_SCRIPTS_DIR/ops-admin.sh" stripe-admin register \
     --tenant t --store s --principal p 2>&1 </dev/null) && why44+=" ops-admin accepted a live-shaped key"
-  [[ "$out44" == *"unexpected format"* && "$out44" != *"$live_key"* ]] || why44+=" live key not refused by name"
+  # stripe-live-enable-v1 LR-3/O2: an sk_live_ key is refused in every mode with this fixed code (was "unexpected format").
+  [[ "$out44" == *"stripe_live_key_unrestricted"* && "$out44" != *"$live_key"* ]] || why44+=" live key not refused by name"
+  # §5.2: without LC_STRIPE_LIVE_ENABLED + LC_STRIPE_LIVE_APPROVAL_REF in compose.env, LIVE is refused before any container.
   out44=$("$LC_SCRIPTS_DIR/ops-admin.sh" stripe-admin qualify --profile LIVE 2>&1 </dev/null) && why44+=" ops-admin accepted --profile LIVE"
   [[ "$out44" == *"LIVE is refused"* ]] || why44+=" --profile LIVE not refused by name"
   unset live_key
-  if [[ -z "$why44" ]]; then rec S44 PASS "stripe-admin/meta-admin one-shots run isolated, registrar logins admitted, no long-running service mounts them; ops-admin.sh forwards by name, audits without values, refuses live keys and --profile LIVE"; else rec S44 FAIL "$why44 (logs/S44-*.log)"; fi
+  if [[ -z "$why44" ]]; then rec S44 PASS "stripe-admin/meta-admin one-shots run isolated, registrar logins admitted, no long-running service mounts them; ops-admin.sh forwards by name, audits without values, refuses sk_live_ keys and --profile LIVE without the pair"; else rec S44 FAIL "$why44 (logs/S44-*.log)"; fi
+
+  # S46 U08 retention job login (claims-retention-purge-v1 §5, §10(5)). Smoke has no operator login by design,
+  # so the policy stays report-only (enforced=0, LC_REQUIRE_RETENTION_ENFORCED=0 in the smoke compose.env).
+  local why46="" out46 rc46 last46
+  out46=$(lc_compose run --rm --no-deps -T claims-worker /app/bin/retention-admin status 2>&1) && rc46=0 || rc46=$?
+  printf '%s\n' "$out46" >"$EV/logs/S46-status.log"
+  last46=$(sed -n 's/^last_run_unix=\([0-9][0-9]*\)$/\1/p' <<<"$out46")
+  if [[ $rc46 != 0 ]] || ! grep -qx 'enforced=0' <<<"$out46"; then why46+=" status: rc=$rc46 [${out46:0:60}] want 0 with enforced=0"; fi
+  [[ -n "$last46" && "$last46" -gt 0 ]] || why46+=" no retention run recorded (RunOnStart)"
+  out46=$(lc_compose run --rm --no-deps -T claims-worker /app/bin/retention-admin run --limit 1 2>&1) && rc46=0 || rc46=$?
+  printf '%s\n' "$out46" >"$EV/logs/S46-run.log"
+  [[ $rc46 == 2 && "$out46" == *retention_admin_usage* ]] || why46+=" run on the job login: rc=$rc46 [${out46:0:60}] want 2 retention_admin_usage"
+  if lc_compose_all config --format json 2>/dev/null | python3 -c '
+import json, sys
+doc = json.load(sys.stdin)
+bad = [n for n in doc.get("secrets", {}) if "retention_operator" in n]
+for name, svc in doc["services"].items():
+    bad += [name for k in (svc.get("environment") or {}) if "RETENTION_OPERATOR" in k]
+sys.exit(1 if bad else 0)'; then :; else why46+=" an operator retention DSN is configured"; fi
+  if [[ -z "$why46" ]]; then rec S46 PASS "retention-admin status on the job login (enforced=0 report-only, last run recorded), job login refused for run, no operator DSN in compose"; else rec S46 FAIL "$why46 (logs/S46-*.log)"; fi
 
   # S17-S24 edge
   local r
@@ -461,6 +501,19 @@ sys.exit(1 if names & {"dsn_lc_stripe_registrar", "dsn_lc_meta_registrar"} else 
     "${r3%%|*}" =~ ^[1-5][0-9][0-9]$ && "$r3" != "404||0" && -n "$(cut -d'|' -f2 <<<"$r3")" ]]; then
     rec S19 PASS "meta + stripe webhook routes reach Go API (meta $(cut -d'|' -f2 <<<"$r"), stripe ${r3%%|*}); notify and / 404 at Caddy"
   else rec S19 FAIL "webhook=$r stripe=$r3 notify=$r1 root=$r2"; fi
+  # S47 taiwan-cvs-logistics-v1 §12 / TCV08 deploy leg: the two ECPay hooks are answered by Go (a status + a content type,
+  # whether CVS_ECPAY_ENABLED is on or off); another /v1/cvs path on the hooks host and the hooks on the api host are Caddy's
+  # empty 404. Empty bodies to random ids: nothing is recorded.
+  local c1 c2 c3 c4 c5 cid=00000000-0000-4000-8000-000000000046
+  c1=$(edge hooks.localhost "/v1/cvs/ecpay/map-return/$cid" -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data '')
+  c2=$(edge hooks.localhost "/v1/cvs/ecpay/status/$cid" -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data '')
+  c3=$(edge hooks.localhost "/v1/cvs/ecpay/other/$cid" -X POST --data '')
+  c4=$(edge api.localhost "/v1/cvs/ecpay/map-return/$cid" -X POST --data '')
+  c5=$(edge api.localhost "/v1/cvs/ecpay/status/$cid" -X POST --data '')
+  if [[ "${c1%%|*}" =~ ^[1-5][0-9][0-9]$ && -n "$(cut -d'|' -f2 <<<"$c1")" && "${c2%%|*}" =~ ^[1-5][0-9][0-9]$ &&
+    -n "$(cut -d'|' -f2 <<<"$c2")" && "$c3" == "404||0" && "$c4" == "404||0" && "$c5" == "404||0" ]]; then
+    rec S47 PASS "cvs hooks reach Go on hooks host (map-return ${c1%%|*}, status ${c2%%|*}); other /v1/cvs path and api host 404 at Caddy"
+  else rec S47 FAIL "map-return=$c1 status=$c2 other=$c3 api-map=$c4 api-status=$c5"; fi
   # S45 R1 ruling G2: planning-only Studio + keyword claims + claim-source are MOUNTED on the deployed api
   # (no token -> 401/403, never 404) and the LiveKit media routes are NOT (404). Probed on the api's own
   # loopback listener: Caddy default-denies /v1/admin/* on the api host (S18) and admin talks to it directly.
@@ -525,12 +578,15 @@ sys.exit(1 if names & {"dsn_lc_stripe_registrar", "dsn_lc_meta_registrar"} else 
     -H "Referer: https://admin.localhost/api/auth/callback?code=${canary}r&state=${canary}q" >/dev/null
   "${CURL[@]}" -o /dev/null --resolve "admin.localhost:$HTTP_PORT:127.0.0.1" \
     "http://admin.localhost:$HTTP_PORT/api/auth/callback?code=${canary}l&state=${canary}m" >/dev/null 2>&1 || true
+  # meta-ads-v1 §2 step 2: the Meta ads connect return carries code/state too.
+  edge admin.localhost "/api/ads/meta/callback?code=${canary}a&state=${canary}b" >/dev/null
   sleep 2
   lc_compose logs --no-color >"$EV/logs/S40-compose.log" 2>&1 || true
   hits=$({ grep -c -- "$canary" "$EV/logs/S40-compose.log" || true; } | tail -n1)
   if [[ "$hits" == 0 ]] && grep -q 'hub.challenge=42&hub.mode=subscribe&hub.verify_token=REDACTED' "$EV/logs/S40-compose.log" &&
     grep -q 'hub_verify_token=REDACTED' "$EV/logs/S40-compose.log" &&
     grep -q '/api/auth/callback?code=REDACTED&state=REDACTED' "$EV/logs/S40-compose.log" &&
+    grep -q '/api/ads/meta/callback?code=REDACTED&state=REDACTED' "$EV/logs/S40-compose.log" &&
     grep -q '"Referer":\["https://admin.localhost/api/auth/callback?code=REDACTED&state=REDACTED"\]' "$EV/logs/S40-compose.log" &&
     grep -q '"Location":\["https://admin.localhost[^"]*/api/auth/callback?code=REDACTED&state=REDACTED"\]' "$EV/logs/S40-compose.log"; then
     rec S40 PASS "canary verify_token/code/state absent from all logs; uri, Referer and redirect Location logged as REDACTED"
@@ -868,7 +924,7 @@ def ver(cmd):
     except Exception:
         return "unavailable"
 static_ids = ["S01", "S02", "S03", "S04", "S05", "S06"]
-full_ids = static_ids + ["S%02d" % i for i in range(7, 46)] + ["S10a", "S10b", "S10c", "S10d", "S10e", "S10f", "S10g", "S10h", "S13n", "S29m"]
+full_ids = static_ids + ["S%02d" % i for i in range(7, 46)] + ["S10a", "S10b", "S10c", "S10d", "S10e", "S10f", "S10g", "S10h", "S10i", "S10j", "S10k", "S13n", "S29m"]
 result = {
     "run_id": os.path.basename(ev), "task_id": "T22", "commit": commit,
     "environment": {"mode": mode, "host": platform.node(), "kernel": platform.release(),

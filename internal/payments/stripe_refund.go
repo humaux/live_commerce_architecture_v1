@@ -112,14 +112,16 @@ type stripeRefundSnapshot struct {
 }
 
 func validRefundSnapshot(s stripeRefundSnapshot, id, profile string) bool {
-	return command.ValidID(s.TenantID) && command.ValidID(s.StoreID) && command.ValidID(s.AttemptID) &&
-		command.ValidID(s.OrderID) && command.ValidID(s.ConnectionID) && s.Environment == "SANDBOX" &&
+	// LD1: the refund row's environment must be the runtime profile's environment (refund loader rule).
+	env, known := ProfileEnvironment(profile)
+	return known && s.Environment == env && command.ValidID(s.TenantID) && command.ValidID(s.StoreID) && command.ValidID(s.AttemptID) &&
+		command.ValidID(s.OrderID) && command.ValidID(s.ConnectionID) &&
 		s.AccountID != "" && s.CredentialVersion > 0 && s.KeyID != "" && len(s.Nonce) == 12 &&
 		len(s.Ciphertext) >= 17 && s.PaymentIntentID != "" && s.AmountMinor > 0 &&
 		stripe.RefundAmountOK(s.Currency, s.AmountMinor) && !s.RequestedAt.IsZero() && !s.ResendUntil.IsZero() &&
 		s.ResendUntil.Equal(s.RequestedAt.Add(20*time.Hour)) && !s.DBNow.IsZero() && s.SendCount >= 0 &&
 		(s.FirstSentAt == nil) == (s.SendCount == 0) && (s.StripeRefundID == "") == (s.PinnedAt == nil) &&
-		(profile == "PROVIDER_MOCK" || profile == "SANDBOX") && command.ValidID(id)
+		command.ValidID(id)
 }
 
 // loadRefund reads the frozen refund and the account's current-head credential under the refund lease
@@ -163,7 +165,7 @@ func (s *StripeRuntime) clientForRefund(ctx context.Context, snap stripeRefundSn
 	if err != nil {
 		return nil, errStripeMaterial
 	}
-	config := stripe.Config{SecretKey: credentials.SecretKey, AccountID: snap.AccountID, Environment: snap.Environment}
+	config := s.stripeClientConfig(credentials.SecretKey, snap.AccountID, snap.Environment)
 	var client *stripe.Client
 	if s.transport == nil {
 		client, err = stripe.New(config)

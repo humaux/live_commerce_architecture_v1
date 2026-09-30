@@ -224,16 +224,25 @@ func TestMetaClaimsMCI10SecretClaimOnlyInLoadSecret(t *testing.T) {
 				}
 				continue
 			}
-			uses, loads := false, false
+			uses, loads, loadsAds, cvsSQL := false, false, false, false
 			ast.Inspect(fn, func(n ast.Node) bool {
 				switch x := n.(type) {
 				case *ast.Ident:
 					if x.Name == "SecretClaim" {
 						uses = true
 					}
+					// taiwan-cvs-logistics-v1 §7.4, ruling B17 (E1: Finish takes the SecretClaim): the ECPay route's two
+					// lease-fenced statements are package constants, not literals in the function.
+					if x.Name == "loadSQL" || x.Name == "finishSQL" {
+						cvsSQL = true
+					}
 				case *ast.BasicLit:
 					if x.Kind == token.STRING && strings.Contains(x.Value, "load_meta_page_token") {
 						loads = true
+					}
+					// meta-ads-v1 AD11: the ads loader is the one other lease-fenced LoadSecret hook.
+					if x.Kind == token.STRING && strings.Contains(x.Value, "integration.load_meta_ads_token") {
+						loadsAds = true
 					}
 				}
 				return true
@@ -242,8 +251,17 @@ func TestMetaClaimsMCI10SecretClaimOnlyInLoadSecret(t *testing.T) {
 				continue
 			}
 			mentions++
-			if s.dir != "internal/integrations/metareply" || !loads {
-				t.Errorf("%s: function %s references SecretClaim but is not the load_meta_page_token loader in metareply", s.path, fn.Name.Name)
+			// ads-capi C2 (meta-ads-v1 §6.4): the CAPI route's LoadSecret is the third lease-fenced loader; it calls the same
+			// integration.load_meta_ads_token and reads ads.capi_user_data in that fenced transaction.
+			if !(s.dir == "internal/integrations/metareply" && loads) && !(s.dir == "internal/integrations/meta_ads" && loadsAds) &&
+				!(s.dir == "internal/attribution/capiroute" && loadsAds) &&
+				// R2 integration (the CVS lane never met this guard): in ecpayroute only the fenced loader/finisher
+				// (load, finishOn: they run loadSQL/finishSQL = integration.load_cvs_create / finish_cvs_create, checked
+				// below) and their two one-line dispatcher hooks (loadSecret, finish) may take the claim.
+				!(s.dir == "internal/integrations/shipping/ecpay/ecpayroute" && (cvsSQL || fn.Name.Name == "loadSecret" || fn.Name.Name == "finish") &&
+					strings.Contains(s.text, "FROM integration.load_cvs_create(") && strings.Contains(s.text, "SELECT integration.finish_cvs_create(") &&
+					strings.Count(s.text, "integration.load_") == strings.Count(s.text, "integration.load_cvs_create")) {
+				t.Errorf("%s: function %s references SecretClaim but is not the load_meta_page_token loader in metareply, the load_meta_ads_token loader in meta_ads or attribution/capiroute, or the load_cvs_create/finish_cvs_create route in ecpayroute", s.path, fn.Name.Name)
 			}
 		}
 	}
@@ -348,12 +366,13 @@ func exprText(e ast.Expr) string {
 
 // TestMetaClaimsMCI10SecretEnvOwnership: each secret is read by the process the contract names and
 // no other. K_actor belongs to the meta-worker consumer, K_link and the Page-token keyring to the
-// claims-worker (and the registrar CLI for the keyring); the claims-worker never reads the Meta
+// claims-worker (and the registrar CLI for the keyring; K_actor also the retention-admin operator CLI); the claims-worker never reads the Meta
 // payload keyring, K_actor or Stripe keys.
 func TestMetaClaimsMCI10SecretEnvOwnership(t *testing.T) {
 	srcs := mciSources(t, "internal", "cmd")
 	allow := map[string][]string{
-		"COMMERCE_CLAIMS_ACTOR_KEY":      {"cmd/meta-worker/", "internal/integrations/meta/"},
+		// claims-retention-purge-v1 §6 clause 4 (IR-2): plus the operator CLI cmd/retention-admin (never a service).
+		"COMMERCE_CLAIMS_ACTOR_KEY":      {"cmd/meta-worker/", "internal/integrations/meta/", "cmd/retention-admin/"},
 		"COMMERCE_CLAIMS_REPLY_LINK_KEY": {"cmd/claims-worker/", "internal/claims/", "internal/claimsintake/"},
 		"COMMERCE_META_PAGE_TOKEN_":      {"cmd/claims-worker/", "cmd/meta-admin/", "internal/integrations/metareply/"},
 	}

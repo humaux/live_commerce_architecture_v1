@@ -28,6 +28,10 @@ const summary = {
   work_state: "NONE",
   refunded_minor: 0,
   refund_pending_minor: 0,
+  // taiwan-cvs-logistics-v1 C4 keys (frozen 2026-09-30): a home card order carries these neutral values.
+  pickup_source: null,
+  payment_mode: "card",
+  collection_state: null,
 };
 const detail = {
   ...summary,
@@ -124,6 +128,7 @@ test("MOU detail parser rejects spoofed recipient, pickup and mismatched money",
     );
   const pickup = {
     ...detail,
+    pickup_source: "merchant_attested",
     destination: {
       kind: "cvs_familymart",
       country: "TW",
@@ -308,4 +313,80 @@ test("refund amount entry converts exactly and enforces the TWD whole-dollar ste
   assert.equal(refundAmountOK(0, 250000, "TWD"), false);
   assert.equal(refundAmountOK(null, 250000, "TWD"), false);
   assert.equal(refundAmountOK(1, 1250, "USD"), true);
+});
+
+// --- cvs-ui: taiwan-cvs-logistics-v1 §16 (pay-at-pickup, pickup_source, PROVIDER_LABEL_CREATED, cvs_pending) -----------
+import { orderStates } from "../../apps/admin/lib/orders-model.ts";
+// A pay-at-pickup order: CONFIRMED at placement, no payment attempt/work item/refund (payment NOT_STARTED, work NONE).
+const pap = { ...summary, commercial_state: "CONFIRMED", payment_mode: "pay_at_pickup", collection_state: "PENDING", pickup_source: "buyer_entered" };
+const cvsDest = (kind: string, verification_kind: string) => ({
+  kind, country: "TW", recipient_name: "Synthetic Recipient", phone: "0912345678",
+  home_address: { region: "", city: "", postal_code: "", line1: "", line2: "" },
+  pickup: { kind, namespace: "buyer.11111111-1111-4111-8111-111111111111", code: "0012", name: "Synthetic store", address: "Synthetic address 1", verification_kind },
+});
+
+test("CVSA01 pay-at-pickup summary: CONFIRMED without payment is valid only in that mode", () => {
+  for (const row of [
+    pap,
+    { ...pap, fulfillment_state: "MERCHANT_SHIPPED" },
+    { ...pap, fulfillment_state: "MERCHANT_SHIPPED", collection_state: "COLLECTED" },
+    { ...pap, fulfillment_state: "MERCHANT_SHIPPED", collection_state: "RETURNED" },
+    { ...pap, fulfillment_state: "PROVIDER_LABEL_CREATED", pickup_source: "ecpay_directory" },
+    { ...pap, fulfillment_state: "MERCHANT_SHIPPED", collection_state: "REFUNDED_OFFLINE" },
+    { ...pap, fulfillment_state: "MERCHANT_SHIPPED", collection_state: "RESTOCKED" },
+    { ...pap, commercial_state: "CANCELLED", fulfillment_state: "CANCELLED", collection_state: "CANCELLED" },
+  ])
+    assert.equal(parseOrderSummary(row).order_id, id, JSON.stringify(row));
+  // the same numbers as a CARD order stay rejected (CONFIRMED needs captured payment + work)
+  assert.throws(() => parseOrderSummary({ ...pap, payment_mode: "card", collection_state: null, pickup_source: null }), /unavailable/);
+  for (const [name, row] of [
+    ["pay_at_pickup without collection_state", { ...pap, collection_state: null }],
+    ["card with collection_state", { ...summary, collection_state: "PENDING" }],
+    ["unknown payment_mode", { ...pap, payment_mode: "cod" }],
+    ["unknown collection_state", { ...pap, collection_state: "PAID" }],
+    ["pickup_source outside the enum", { ...pap, pickup_source: "provider" }],
+    ["pay_at_pickup with a payment attempt", { ...pap, payment_state: "CAPTURED", work_state: "READY" }],
+    ["pay_at_pickup with a refund", { ...pap, refunded_minor: 500 }],
+    ["pay_at_pickup test_mode", { ...pap, test_mode: true }],
+    ["pay_at_pickup without a store source", { ...pap, pickup_source: null }],
+    ["CANCELLED collection on a live order", { ...pap, collection_state: "CANCELLED" }],
+    ["CANCELLED order with a PENDING collection", { ...pap, commercial_state: "CANCELLED", fulfillment_state: "CANCELLED" }],
+    ["COLLECTED before shipment", { ...pap, collection_state: "COLLECTED" }],
+    ["RESTOCKED before shipment", { ...pap, collection_state: "RESTOCKED" }],
+    ["pay_at_pickup DRAFT", { ...pap, commercial_state: "DRAFT" }],
+    ["buyer-entered store with an ECPay label", { ...paid, pickup_source: "buyer_entered", fulfillment_state: "PROVIDER_LABEL_CREATED" }],
+    ["missing payment_mode", (({ payment_mode: _, ...rest }) => rest)(pap)],
+  ] as const)
+    assert.throws(() => parseOrderSummary(row), /unavailable/, name);
+  // a card order with an ECPay label is a normal shipped state
+  assert.equal(parseOrderSummary({ ...paid, pickup_source: "ecpay_directory", fulfillment_state: "PROVIDER_LABEL_CREATED" }).fulfillment_state, "PROVIDER_LABEL_CREATED");
+  assert.throws(() => parseOrderSummary({ ...paid, fulfillment_state: "PROVIDER_LABEL_CREATED", work_state: "NONE" }), /unavailable/);
+});
+
+test("CVSA02 detail: pickup_source must agree with the pickup verification kind; new chains and kinds parse", () => {
+  const base = { ...detail, ...pap };
+  for (const [kind, verification, source] of [
+    ["cvs_711", "BUYER_ENTERED", "buyer_entered"],
+    ["cvs_hilife", "BUYER_ENTERED", "buyer_entered"],
+    ["cvs_okmart", "BUYER_ENTERED", "buyer_entered"],
+    ["cvs_711", "PROVIDER_DIRECTORY_VERIFIED", "ecpay_directory"],
+    ["cvs_familymart", "MANUAL_ATTESTED", "merchant_attested"],
+  ] as const)
+    assert.equal(
+      parseOrderDetail({ ...base, pickup_source: source, destination: cvsDest(kind, verification) }, id).destination.pickup?.verification_kind,
+      verification,
+    );
+  for (const [name, change] of [
+    ["buyer-entered pickup labelled as directory-verified", { pickup_source: "ecpay_directory", destination: cvsDest("cvs_711", "BUYER_ENTERED") }],
+    ["directory pickup labelled buyer-entered", { pickup_source: "buyer_entered", destination: cvsDest("cvs_711", "PROVIDER_DIRECTORY_VERIFIED") }],
+    ["CVS pickup without a source", { pickup_source: null, destination: cvsDest("cvs_711", "BUYER_ENTERED") }],
+    ["unknown verification kind", { destination: cvsDest("cvs_711", "SELF_DECLARED") }],
+    ["home destination with a pickup_source", { ...detail, ...pap, pickup_source: "buyer_entered" }],
+  ] as const)
+    assert.throws(() => parseOrderDetail({ ...base, ...change }, id), /unavailable/, name);
+});
+
+test("CVSA03 the cvs_pending list filter exists beside the older filters", () => {
+  assert.ok(orderStates.includes("cvs_pending"));
+  assert.ok(orderStates.includes("shipped") && orderStates.includes("unshipped"));
 });

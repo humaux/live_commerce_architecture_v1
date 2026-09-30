@@ -376,7 +376,7 @@ func TestStripeSP14BuyerHTTP(t *testing.T) {
 				return x.srv
 			}, ""},
 			{"qualification_revoked", func(t *testing.T, x *sbhStripe) bhHarness {
-				mustExec(t, x.h.f.owner, `UPDATE payments.account_qualifications SET revoked_at=clock_timestamp() WHERE id=$1`, x.s.qualification)
+				qualExec(t, x.h.f.owner, `UPDATE payments.account_qualifications SET revoked_at=clock_timestamp() WHERE id=$1`, x.s.qualification)
 				return x.srv
 			}, ""},
 			{"after_cutoff", func(t *testing.T, x *sbhStripe) bhHarness {

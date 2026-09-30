@@ -243,6 +243,9 @@ func claimsScoped(pool *pgxpool.Pool, permission string, fn action) http.Handler
 // deadlock (40P01) is a retryable 503 rather than 409, and any unclassified error is 503
 // "unavailable" rather than 500. No driver message or detail is ever returned.
 func claimsClassify(err error) (int, string) {
+	if errors.Is(err, claims.ErrBillingRestricted) { // billing-core B12: new window under RESTRICTED (PT412)
+		return http.StatusPaymentRequired, "billing_restricted"
+	}
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == "40P01" {
 		return http.StatusServiceUnavailable, "retry_later"

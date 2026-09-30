@@ -118,7 +118,6 @@ catalogue = [  # (row id glob, item glob, reason)
     ("*", "*TestBrowserE2EDealLoopSandbox*", "F12 T12 SANDBOX tier covered by SP18"),
     ("B-stripe-browser+", "*SP17*", "G4 SP17 real webhook delivery: Dashboard test event after deploy"),
     ("G06s", "*TestStripe*Sandbox", "runs in G07z with the Stripe test key"),
-    ("G06s", "admin-fixture.TestFixtureEmptyDatabase*", "runs in G07 (REAL_PG fixture guard)"),
     ("G07+", "TestStripe*Sandbox", "runs in G07z with the Stripe test key"),
     ("G07+", "TestStripeSP21Registrar/sandbox_probe*", "runs in G07z with the Stripe test key"),
     ("G06n+", "*r04-input-runner*", "F11 live media (LiveKit) is not in R1"),
@@ -291,9 +290,7 @@ if selected G06; then
     else
       record G06 UNIT PASS "$up tests pass, 0 fail (packages except tests/foundation)" "$rc" "$LOG"
     fi
-    if ((us > 0)); then
-      record G06s UNIT NOT_RUN "$us skipped, prerequisite missing: $(tr '\n' ' ' <"$OUT/G06.skipped")" - "$OUT/G06.skipped"
-    fi
+    # G06s (the skips) is recorded after G07: a skip here is covered only by a PASS of that test in G07.
   fi
 fi
 
@@ -378,6 +375,41 @@ if selected G07; then
       fi
     fi
   fi
+fi
+
+# ---- G06s: unit-run skips (real-PG tests of non-foundation packages lack the PG env in G06) ---------------
+# A G06 skip ("pkg.Test") is covered only when the SAME test PASSed in this run's G07 (go test -p 1 -v ./...
+# prints each package's results before its "ok <import path>" line). Uncovered skips stay NOT_RUN and go
+# through the accepted catalogue; covered ones are listed as the G06r PASS row (they ran, against real PG).
+if selected G06 && selected G07 && [[ -s "$OUT/G06.skipped" ]]; then
+  python3 - "$OUT/G06.skipped" "$OUT/G07.log" "$OUT/G06s.covered" "$OUT/G06s.skipped" <<'PY'
+import re, sys
+skipped = [l.strip() for l in open(sys.argv[1]) if l.strip()]
+passed, pending = set(), []
+try:
+    for line in open(sys.argv[2], errors="replace"):
+        m = re.match(r"\s*--- PASS: (\S+) \(", line)
+        if m:
+            pending.append(m.group(1))
+            continue
+        m = re.match(r"(ok|FAIL)\s+(\S+)", line)
+        if m:
+            if m.group(1) == "ok":
+                passed.update(m.group(2).rsplit("/", 1)[-1] + "." + t for t in pending)
+            pending = []
+except OSError:
+    pass
+open(sys.argv[3], "w").write("\n".join(t for t in skipped if t in passed))
+open(sys.argv[4], "w").write("\n".join(t for t in skipped if t not in passed))
+PY
+elif [[ -s "$OUT/G06.skipped" ]]; then
+  cp "$OUT/G06.skipped" "$OUT/G06s.skipped" && : >"$OUT/G06s.covered"
+fi
+if [[ -s "$OUT/G06s.covered" ]]; then
+  record G06r UNIT PASS "$(grep -c . "$OUT/G06s.covered") G06-skipped test(s) PASSED in G07 (real PG): $(tr '\n' ' ' <"$OUT/G06s.covered" | cut -c1-140)" - "$OUT/G06s.covered"
+fi
+if [[ -s "$OUT/G06s.skipped" ]]; then
+  record G06s UNIT NOT_RUN "$(grep -c . "$OUT/G06s.skipped") skipped in G06 and not passed in G07: $(tr '\n' ' ' <"$OUT/G06s.skipped")" - "$OUT/G06s.skipped"
 fi
 
 # ---- stripe SANDBOX prerequisite (no value is printed) ---------------------------------------------

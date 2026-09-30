@@ -27,6 +27,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -119,11 +120,39 @@ func mciIntakeFiles(t *testing.T) (numbered, post string) {
 	return a[0], b[0]
 }
 
+// mciRetentionFile is claims-retention-purge-v1's numbered migration (0071): it requires 0064 (55000
+// precondition), so MCI02 holds it back with the intake files and its §4 rows join the delta (§6 clause 5).
+func mciRetentionFile(t *testing.T) string {
+	t.Helper()
+	a, _ := filepath.Glob("../../migrations/[0-9][0-9][0-9][0-9]_claims_retention.sql")
+	if len(a) != 1 {
+		t.Fatalf("expected exactly one migrations/NNNN_claims_retention.sql (got %v)", a)
+	}
+	return a[0]
+}
+
+// mciRetentionRoles are created by 0071; outside the three §6-clause-5 tables their privileges are CRP02's.
+var mciRetentionRoles = map[string]bool{"commerce_retention_writer": true, "commerce_retention_job": true, "commerce_retention_operator": true}
+
 // mciApplyWithout mirrors migrations.Apply (same phase order, ledger and River grants) but skips
-// the two meta-claims-intake files, producing the "populated 0063" database of §12 MCI02.
+// the two meta-claims-intake files (and the dependent 0071), producing the "populated 0063" database of §12 MCI02.
+// mciHeldBack lists the numbered migrations after 0064 that depend on it (0078 customers-core, 0079 billing-core).
+var mciHeldBack = []string{"0078_customers_privacy.sql", "0079_platform_billing.sql"}
+
 func mciApplyWithout(t *testing.T, owner *pgxpool.Pool) {
 	t.Helper()
 	skipA, skipB := mciIntakeFiles(t)
+	skipR := mciRetentionFile(t)
+	// The meta-ads migrations (unit ads-core: 0074/0075, post-River 0015) build on the intake's Page-token custody tables, so
+	// they cannot run before it; they are ledger-marked applied below and never executed by this gate.
+	adsNumbered, _ := filepath.Glob("../../migrations/[0-9][0-9][0-9][0-9]_meta_ads*.sql")
+	capiNumbered, _ := filepath.Glob("../../migrations/[0-9][0-9][0-9][0-9]_meta_capi.sql") // ads-capi 0080 builds on 0074's schema
+	adsNumbered = append(adsNumbered, capiNumbered...)
+	adsPost, _ := filepath.Glob("../../migrations/post_river/[0-9][0-9][0-9][0-9]_meta_ads_river.sql")
+	adsSkip := map[string]bool{}
+	for _, path := range append(adsNumbered, adsPost...) {
+		adsSkip[path] = true
+	}
 	ctx := context.Background()
 	numbered, _ := filepath.Glob("../../migrations/[0-9][0-9][0-9][0-9]_*.sql")
 	post, _ := filepath.Glob("../../migrations/post_river/[0-9][0-9][0-9][0-9]_*.sql")
@@ -131,15 +160,28 @@ func mciApplyWithout(t *testing.T, owner *pgxpool.Pool) {
 	sort.Strings(post)
 	apply := func(tx pgx.Tx, paths []string, prefix string, skip string) {
 		for _, path := range paths {
-			if path == skip {
+			if path == skip || path == skipR {
 				continue
 			}
 			body, err := os.ReadFile(path)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if _, err := tx.Exec(ctx, string(body)); err != nil {
-				t.Fatalf("historical migration %s: %v", path, err)
+			if adsSkip[path] {
+				// Recorded as applied WITHOUT running: the ads objects exist in neither the pre nor the post state of this
+				// gate, so its exact-delta assertions stay about the intake migrations only (unit ads-core).
+				if _, err := tx.Exec(ctx, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES($1,$2)`, prefix+filepath.Base(path), fmt.Sprintf("%x", sha256.Sum256(body))); err != nil {
+					t.Fatal(err)
+				}
+				continue
+			}
+			// Held-back migrations build on 0064's objects (customers-billing-v1: 0079 reads
+			// live.claim_window_intervals): recorded in the ledger without running, so the intake Apply below
+			// yields exactly the intake delta; the test's Cleanup un-records and applies them on top.
+			if !slices.Contains(mciHeldBack, filepath.Base(path)) {
+				if _, err := tx.Exec(ctx, string(body)); err != nil {
+					t.Fatalf("historical migration %s: %v", path, err)
+				}
 			}
 			if _, err := tx.Exec(ctx, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES($1,$2)`, prefix+filepath.Base(path), fmt.Sprintf("%x", sha256.Sum256(body))); err != nil {
 				t.Fatal(err)
@@ -150,6 +192,9 @@ func mciApplyWithout(t *testing.T, owner *pgxpool.Pool) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// A Fatalf inside apply leaves the tx open; pool.Close (t.Cleanup) would then wait forever for the
+	// acquired connection and leak the labelled container. Rollback after Commit is a no-op.
+	defer func() { _ = tx.Rollback(ctx) }()
 	if _, err := tx.Exec(ctx, `CREATE TABLE IF NOT EXISTS public.lc_schema_migrations (version text PRIMARY KEY, checksum text NOT NULL, applied_at timestamptz NOT NULL DEFAULT now())`); err != nil {
 		t.Fatal(err)
 	}
@@ -179,6 +224,7 @@ func mciApplyWithout(t *testing.T, owner *pgxpool.Pool) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer func() { _ = tx.Rollback(ctx) }()
 	for _, stmt := range []string{
 		`GRANT SELECT, INSERT, UPDATE(kind) ON river.river_job TO commerce_checkout_runtime; GRANT USAGE ON SEQUENCE river.river_job_id_seq TO commerce_checkout_runtime;
 		 GRANT SELECT ON river.river_job TO commerce_checkout_writer,commerce_integration_writer`,
@@ -374,7 +420,8 @@ func mciExpected(t *testing.T, pool *pgxpool.Pool) (want mciWant, definers map[s
 	w.cols(intake, "live.claim_sources", list("tenant_id", "store_id", "id", "session_id", "active", "private_reply"), "SELECT")
 	w.table(intake, "live.offers", "SELECT")
 	w.cols(intake, "live.offers", list("updated_at"), "UPDATE")
-	w.cols(intake, "claims.bundles", mciColumns(t, pool, "claims.bundles", "owner_id"), "SELECT")
+	// purged_at (0071) is readable by commerce_retention_writer only (claims-retention-purge-v1 §4).
+	w.cols(intake, "claims.bundles", mciColumns(t, pool, "claims.bundles", "owner_id", "purged_at"), "SELECT")
 	w.cols(intake, "claims.bundles", list("tenant_id", "store_id", "session_id", "platform", "actor_key", "label"), "INSERT")
 	w.cols(intake, "claims.bundles", list("line_count", "version", "updated_at"), "UPDATE")
 	w.table(intake, "claims.lines", "SELECT")
@@ -431,6 +478,15 @@ func mciExpected(t *testing.T, pool *pgxpool.Pool) (want mciWant, definers map[s
 	w.exec(wk, "claims.check_meta_reply", "integration.load_meta_page_token")
 	w.schema(wk, "claims")
 	w.exec(reg, "integration.register_meta_page_token")
+	// claims-retention-purge-v1 §4 rows on the §4.3 tables (§6 clause 5); "lock-only" UPDATE is a real column grant.
+	const rw = "commerce_retention_writer"
+	w.cols(rw, "claims.meta_intake", list("tenant_id", "store_id", "id", "inbox_event_id", "session_id", "object", "asset_id", "comment_ref", "actor_key", "state", "received_at"), "SELECT")
+	w.table(rw, "claims.meta_intake", "DELETE")
+	w.cols(rw, "claims.meta_intake", list("updated_at"), "UPDATE")
+	w.cols(rw, "integration.operations", list("id", "tenant_id", "store_id", "action", "state", "request", "created_at"), "SELECT")
+	w.cols(rw, "integration.operations", list("request", "semantic_key", "updated_at"), "UPDATE")
+	w.cols(rw, "live.claim_windows", list("tenant_id", "store_id", "session_id", "state", "closed_at"), "SELECT")
+	w.cols(rw, "live.claim_windows", list("updated_at"), "UPDATE")
 	// Definer ownership: the owner's implicit EXECUTE is part of the effective privilege set.
 	definers = map[string]string{
 		"claims.insert_meta_intake": cw, "claims.lease_meta_intake": cw, "claims.fail_meta_intake": cw, "claims.intake_scope": cw, "claims.issue_system_link": cw,
@@ -474,6 +530,15 @@ func TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta(t *testing.T) {
 	owner := mciStartPG(t)
 	ctx := context.Background()
 	mciApplyWithout(t, owner)
+	t.Cleanup(func() { // the held-back migrations must also apply over the upgraded, populated database
+		if _, err := owner.Exec(ctx, `DELETE FROM public.lc_schema_migrations WHERE version=ANY($1)`, mciHeldBack); err != nil {
+			t.Errorf("un-record held-back migrations: %v", err)
+			return
+		}
+		if err := migrations.Apply(ctx, owner); err != nil {
+			t.Errorf("held-back migrations over the upgraded database: %v", err)
+		}
+	})
 
 	// Populated database: one tenant/store/session with an OPEN generation-1 window, one CLOSED
 	// generation-2 window (closed_at set), one CLOSED generation-0 window and a manual bundle.
@@ -495,6 +560,18 @@ func TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta(t *testing.T) {
 		return lcDigest(t, &testFixture{owner: owner}, "claims", "live", "identity", "control")
 	}
 	before, preCatalog := digest(), mciSnapshot(t, owner)
+	// 0071 adds claims.bundles.purged_at (NULL on every existing row), which changes t::text; bundles are
+	// compared on their pre-upgrade columns plus "no purged_at set" (claims-retention-purge-v1 §6 clause 5).
+	bundleCols := mciColumns(t, owner, "claims.bundles", "purged_at") // pre-upgrade: no purged_at yet (non-empty except list)
+	bundlesDigest := func() string {
+		var d string
+		if err := owner.QueryRow(ctx, `SELECT count(*)::text||':'||coalesce(md5(string_agg(r::text,E'\n' ORDER BY r::text)),'') FROM (SELECT `+
+			strings.Join(bundleCols, ",")+` FROM claims.bundles) r`).Scan(&d); err != nil {
+			t.Fatal(err)
+		}
+		return d
+	}
+	bundlesBefore := bundlesDigest()
 	var ledgerBefore int
 	if err := owner.QueryRow(ctx, `SELECT count(*) FROM public.lc_schema_migrations`).Scan(&ledgerBefore); err != nil {
 		t.Fatal(err)
@@ -512,8 +589,8 @@ func TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta(t *testing.T) {
 	if err := owner.QueryRow(ctx, `SELECT count(*) FROM public.lc_schema_migrations`).Scan(&ledgerAfter); err != nil {
 		t.Fatal(err)
 	}
-	if ledgerAfter != ledgerBefore+2 {
-		t.Fatalf("ledger grew by %d, want exactly 2 (one numbered + one post-River file, once)", ledgerAfter-ledgerBefore)
+	if ledgerAfter != ledgerBefore+3 {
+		t.Fatalf("ledger grew by %d, want exactly 3 (one numbered + one post-River file + the dependent 0071, once)", ledgerAfter-ledgerBefore)
 	}
 	if extra := append(mciDiff(post1.acl, post2.acl), mciDiff(post2.acl, post1.acl)...); len(extra) != 0 {
 		t.Fatalf("the second Apply changed privileges:\n  %s", mciHead(extra))
@@ -521,7 +598,16 @@ func TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta(t *testing.T) {
 
 	t.Run("existing data untouched", func(t *testing.T) {
 		after := digest()
+		if got := bundlesDigest(); got != bundlesBefore {
+			t.Errorf("claims.bundles pre-upgrade columns changed by the upgrade")
+		}
+		if n := countRows(t, owner, `SELECT count(*) FROM claims.bundles WHERE purged_at IS NOT NULL`); n != 0 {
+			t.Errorf("the upgrade set purged_at on %d existing bundles", n)
+		}
 		for table, was := range before {
+			if table == "claims.bundles" {
+				continue // compared above on its pre-upgrade columns
+			}
 			if after[table] != was {
 				t.Errorf("table %s changed by the upgrade", table)
 			}
@@ -535,6 +621,9 @@ func TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta(t *testing.T) {
 		for fn, own := range post1.fnOwner {
 			if _, existed := preCatalog.fnOwner[fn]; existed {
 				continue
+			}
+			if own == "commerce_retention_writer" {
+				continue // claims-retention-purge-v1 §3 definers (0071): shape and ACL are CRP02's
 			}
 			if named, ok := definers[fn]; ok {
 				if own != named {
@@ -558,8 +647,19 @@ func TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta(t *testing.T) {
 		fixed := map[string]bool{"claims.meta_intake": false, "claims.events": false, "live.claim_sources": false}
 		delta := mciDiff(post1.acl, preCatalog.acl)
 		var filtered []string
+		clause5 := map[string]bool{"claims.meta_intake": true, "integration.operations": true, "live.claim_windows": true}
 		for _, fact := range delta {
 			parts := strings.Split(fact, "|")
+			if mciRetentionRoles[parts[0]] {
+				// Only the §6 clause 5 tables belong to this delta; every other 0071 privilege is CRP02's.
+				table := parts[2]
+				if parts[1] == "column" {
+					table = table[:strings.LastIndex(table, ".")]
+				}
+				if (parts[1] != "table" && parts[1] != "column") || !clause5[table] {
+					continue
+				}
+			}
 			if parts[0] == "commerce_integration_writer" && parts[1] == "column" && strings.HasSuffix(fact, "|SELECT") {
 				table := parts[2][:strings.LastIndex(parts[2], ".")]
 				if _, ok := fixed[table]; ok {
@@ -641,7 +741,9 @@ func TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta(t *testing.T) {
 			t.Errorf("no_merchant_claim_reply must be RESTRICTIVE: %s", def)
 		}
 		allowed := map[string]bool{"commerce_claims_intake": true, "commerce_claims_writer": true, "commerce_integration_writer": true, "commerce_runtime": true,
-			"commerce_meta_writer": true, "commerce_meta_consumer": true, "commerce_worker": true, "commerce_meta_registrar": true}
+			"commerce_meta_writer": true, "commerce_meta_consumer": true, "commerce_worker": true, "commerce_meta_registrar": true,
+			// claims-retention-purge-v1 §4 (0071, held back with 0064): every U08 policy is TO commerce_retention_writer only.
+			"commerce_retention_writer": true}
 		for key, def := range post1.policies {
 			if _, existed := preCatalog.policies[key]; existed {
 				continue

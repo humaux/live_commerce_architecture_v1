@@ -1,12 +1,16 @@
-// Command stripe-admin is the operator-only Stripe registrar CLI (contracts/stripe-psp-v1.md §13).
-// It owns argument/env parsing and one JSON result line; all logic lives in
-// internal/payments/stripeadmin. It never prints keys or secrets (stdout carries IDs and versions
-// only, stderr one fixed code), never runs in the API or worker, and refuses LIVE.
+// Command stripe-admin is the operator-only Stripe registrar CLI (contracts/stripe-psp-v1.md §13,
+// contracts/stripe-live-enable-v1.md §5.2). It owns argument/env parsing and one JSON result line; all
+// logic lives in internal/payments/stripeadmin. It never prints keys or secrets (stdout carries IDs,
+// versions and timestamps only, stderr one fixed code), never runs in the API or worker, and touches LIVE
+// only when the owner's COMMERCE_STRIPE_LIVE_ENABLED=1 + COMMERCE_STRIPE_LIVE_APPROVAL_REF pair is set
+// (register/rotate --environment LIVE, webhook/qualify --profile LIVE, live-approve, live-canary);
+// live-revoke and method never read the pair, so the per-store kill switch does not depend on deploy env.
 //
 // Environment: COMMERCE_STRIPE_REGISTRAR_DATABASE_URL; STRIPE_SECRET_KEY and STRIPE_ACCOUNT_ID for
 // register/rotate (rotate must match the registered account); SANDBOX qualify needs STRIPE_SANDBOX=1
 // and the API keyring, probes with the stored credential and treats STRIPE_SECRET_KEY /
-// STRIPE_ACCOUNT_ID as optional assertions (S4); STRIPE_WEBHOOK_SECRET[_NEXT]
+// STRIPE_ACCOUNT_ID as optional assertions (S4); LIVE qualify and live-approve use the API keyring and
+// the stored key the same way (no key input, no STRIPE_SANDBOX); STRIPE_WEBHOOK_SECRET[_NEXT]
 // for webhook, whose AAD account is derived from the registered connection in SQL (§0.2), never
 // from STRIPE_ACCOUNT_ID (least privilege; SP15 env sentinel).
 package main
@@ -21,7 +25,9 @@ import (
 	"strings"
 
 	"livecommerce/internal/integrations/accounts"
+	"livecommerce/internal/integrations/psp/stripe"
 	"livecommerce/internal/payments/stripeadmin"
+	"livecommerce/internal/platform"
 )
 
 var (
@@ -93,15 +99,20 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout 
 		return errUsage
 	}
 	name, rest := args[0], args[1:]
+	if strings.HasPrefix(name, "live-") {
+		return runLive(ctx, name, rest, getenv, stdout) // live.go: live-approve, live-canary, live-revoke
+	}
 	c := newCommand(name)
-	var connection, endpoint, profile, currency, returnURL, market, country, qualification string
+	var connection, endpoint, profile, currency, returnURL, market, country, qualification, environment string
 	var expected, amount, minMinor, maxMinor int64
 	var enabled, visible bool
 	var sort int
 	var nameHans, nameHant, nameEN string
 	switch name {
 	case "register":
+		c.fs.StringVar(&environment, "environment", "SANDBOX", "")
 	case "rotate":
+		c.fs.StringVar(&environment, "environment", "SANDBOX", "")
 		c.fs.StringVar(&connection, "connection", "", "")
 		c.fs.Int64Var(&expected, "expected-version", 0, "")
 	case "webhook":
@@ -137,9 +148,21 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout 
 	if err := c.parse(rest); err != nil {
 		return err
 	}
+	if (name == "register" || name == "rotate") && environment != "SANDBOX" && environment != "LIVE" {
+		return errUsage
+	}
 	dsn := getenv("COMMERCE_STRIPE_REGISTRAR_DATABASE_URL")
 	if strings.TrimSpace(dsn) == "" {
 		return errConfig
+	}
+	// LIVE (register/rotate --environment LIVE, webhook/qualify --profile LIVE) needs the owner's pair; every
+	// other path reads no LIVE variable at all (SP15: each subcommand reads only its own names).
+	var live stripe.LiveApproval
+	if environment == "LIVE" || ((name == "webhook" || name == "qualify") && profile == "LIVE") {
+		var err error
+		if live, err = requireLivePair(getenv); err != nil {
+			return err
+		}
 	}
 
 	// Validate everything the operation needs from the environment before any connection opens.
@@ -160,9 +183,10 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout 
 		secrets = accounts.StripeWebhookSecrets{CurrentSecret: getenv("STRIPE_WEBHOOK_SECRET"),
 			NextSecret: getenv("STRIPE_WEBHOOK_SECRET_NEXT")}
 	case "qualify":
-		if profile == "SANDBOX" {
-			// The probe creates and expires a real sandbox Checkout Session: explicit opt-in only.
-			if getenv("STRIPE_SANDBOX") != "1" {
+		if profile == "SANDBOX" || profile == "LIVE" {
+			// The probe creates and expires a real Checkout Session (sandbox: explicit opt-in only; LIVE: the
+			// owner's pair, checked above, is the opt-in, and nothing can be charged).
+			if profile == "SANDBOX" && getenv("STRIPE_SANDBOX") != "1" {
 				return errConfig
 			}
 			// S4: the probe uses the credential stored at --expected-version, opened with the API
@@ -176,7 +200,7 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout 
 	}
 
 	// No mock transport is ever passed here: the deployable CLI can only dial api.stripe.com (SP20).
-	reg, err := stripeadmin.Open(ctx, dsn, apiKeys, signingKeys)
+	reg, err := openRegistrar(ctx, dsn, apiKeys, signingKeys, live)
 	if err != nil {
 		return err
 	}
@@ -223,4 +247,24 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout 
 		}
 		return emit(stdout, map[string]any{"method_version": v})
 	}
+}
+
+// requireLivePair returns the owner's complete flag+reference pair or errConfig. The fixed sentinel never
+// carries the reference. Called only on the paths that need LIVE (see run and runLive).
+func requireLivePair(getenv func(string) string) (stripe.LiveApproval, error) {
+	live, err := platform.LoadStripeLiveApproval(getenv)
+	if err != nil || !live.Valid() {
+		return stripe.LiveApproval{}, errConfig
+	}
+	return live, nil
+}
+
+// openRegistrar opens the SANDBOX registrar (no pair) or the LIVE one. No mock transport is ever passed here: the
+// deployable CLI can only dial api.stripe.com (SP20).
+func openRegistrar(ctx context.Context, dsn string, apiKeys, signingKeys *accounts.Keyring,
+	live stripe.LiveApproval) (*stripeadmin.Registrar, error) {
+	if live.Enabled {
+		return stripeadmin.OpenLive(ctx, dsn, apiKeys, signingKeys, live)
+	}
+	return stripeadmin.Open(ctx, dsn, apiKeys, signingKeys)
 }

@@ -7,7 +7,7 @@
 # Reads env (runtime, wired in deploy/compose.yml): HOSTNAME=localhost and PORT=3100 (listener;
 #   Docker would otherwise set HOSTNAME to the container id; "localhost" rather than 127.0.0.1 so
 #   Next relativises same-origin redirects, see compose.yml admin), COMMERCE_IDENTITY_ENABLED,
-#   COMMERCE_PUBLIC_ORIGIN, COMMERCE_API_ORIGIN, COMMERCE_OIDC_ISSUER, COMMERCE_ONBOARDING_*,
+#   COMMERCE_PUBLIC_ORIGIN, COMMERCE_API_ORIGIN, COMMERCE_OIDC_ISSUER (optional when COMMERCE_PASSWORD_LOGIN_ENABLED=1), COMMERCE_PASSWORD_LOGIN_ENABLED, COMMERCE_ONBOARDING_*,
 #   COMMERCE_FIXTURE_ENABLED=0 (apps/admin/lib/auth.ts, lib/backend.ts).
 # Reads secrets: /run/secrets/commerce_bff_key via COMMERCE_BFF_KEY_FILE, expanded by lcentry.
 #   authConfig is evaluated at server module load (runtime), never at build time.

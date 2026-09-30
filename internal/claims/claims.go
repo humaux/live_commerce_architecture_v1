@@ -162,6 +162,11 @@ func waitAdvisory(ctx context.Context, tx pgx.Tx, key string) error {
 	return err
 }
 
+// ErrBillingRestricted is SQLSTATE PT412 raised by the 0079 trigger billing_guard_window_open when a store
+// in RESTRICTED billing standing opens a NEW claim window (customers-billing-v1 BD5, C-3). PT402 is not
+// reused: it already means insufficient stock. httpapi maps it to 402 billing_restricted.
+var ErrBillingRestricted = errors.New("billing restricted")
+
 // mapError is the contract §4.5 table. Constraint violations whose DETAIL can echo row
 // data (23505, 23514, 23503) become bare sentinels, never a wrapped *pgconn.PgError, so a
 // label cannot reach callers, responses or application logs (§0.1 P2(b)); labels are also
@@ -184,6 +189,8 @@ func mapError(err error) error {
 			return command.ErrConflict
 		case "23503":
 			return command.ErrNotFound
+		case "PT412":
+			return ErrBillingRestricted
 		case "PT401":
 			return platform.ErrUnauthorized
 		case "PT403":

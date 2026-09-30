@@ -21,8 +21,11 @@ import (
 	"livecommerce/internal/claimsintake"
 	"livecommerce/internal/integrations/core"
 	"livecommerce/internal/integrations/metareply"
+	"livecommerce/internal/integrations/shipping/ecpay"
+	"livecommerce/internal/integrations/shipping/ecpay/ecpayroute"
 	"livecommerce/internal/jobqueue"
 	"livecommerce/internal/platform"
+	"livecommerce/internal/retention"
 )
 
 var (
@@ -34,12 +37,17 @@ var (
 )
 
 type workerConfig struct {
-	enabled   bool
-	intakeDSN string
-	workerDSN string
-	linkKey   claims.ReplyLinkKey
-	pageKeys  *metareply.PageTokenKeyring
-	graph     metareply.Config
+	enabled      bool
+	intakeDSN    string
+	workerDSN    string
+	retentionDSN string
+	linkKey      claims.ReplyLinkKey
+	pageKeys     *metareply.PageTokenKeyring
+	graph        metareply.Config
+	// ECPay CVS route (taiwan-cvs-logistics-v1 §7.4): registered only when ecpayCfg.Enabled.
+	ecpayCfg    ecpay.Config
+	ecpayKeys   *ecpay.Keyring
+	ecpayClient *ecpay.Client
 }
 
 func (workerConfig) String() string     { return "claimsWorkerConfig{redacted}" }
@@ -76,7 +84,9 @@ func loadConfig(getenv func(string) string) (workerConfig, error) {
 	}
 	c.intakeDSN = getenv("COMMERCE_CLAIMS_INTAKE_DATABASE_URL")
 	c.workerDSN = getenv("COMMERCE_WORKER_DATABASE_URL")
-	if !validDSN(c.intakeDSN) || !validDSN(c.workerDSN) {
+	// U08 (claims-retention-purge-v1 §5): the hourly purge job runs on its own login, required whenever the worker is on.
+	c.retentionDSN = getenv("COMMERCE_RETENTION_JOB_DATABASE_URL")
+	if !validDSN(c.intakeDSN) || !validDSN(c.workerDSN) || !validDSN(c.retentionDSN) {
 		return workerConfig{}, errWorkerConfig
 	}
 	raw, err := base64.StdEncoding.DecodeString(getenv("COMMERCE_CLAIMS_REPLY_LINK_KEY"))
@@ -102,6 +112,26 @@ func loadConfig(getenv func(string) string) (workerConfig, error) {
 	}
 	if c.graph.Validate() != nil {
 		return workerConfig{}, errWorkerConfig
+	}
+	if c.ecpayCfg, err = ecpay.LoadConfig(getenv); err != nil {
+		return workerConfig{}, errWorkerConfig
+	}
+	if c.ecpayCfg.Enabled {
+		// One ECPay environment per deployment = its payment profile (§12, LQ5): PROVIDER_MOCK runs SANDBOX.
+		env := ecpay.EnvSandbox
+		switch getenv("COMMERCE_PAYMENT_PROFILE") {
+		case "PROVIDER_MOCK", "SANDBOX":
+		case "LIVE":
+			env = ecpay.EnvLive
+		default:
+			return workerConfig{}, errWorkerConfig
+		}
+		if c.ecpayKeys, err = ecpay.LoadKeyring(getenv); err != nil {
+			return workerConfig{}, errWorkerConfig
+		}
+		if c.ecpayClient, err = ecpay.NewClient(env, nil); err != nil {
+			return workerConfig{}, errWorkerConfig
+		}
 	}
 	return c, nil
 }
@@ -129,9 +159,29 @@ func run(ctx context.Context, getenv func(string) string) error {
 	if !sameDatabase(startup, intakePool, workerPool) {
 		return errWorkerDatabase // the operation the poller plans must be the one the dispatcher reads
 	}
+	// platform.OpenRetentionJobPool: admission of lc_retention_job (exactly one authority); the purge job's only SQL.
+	retentionPool, err := platform.OpenRetentionJobPool(startup, c.retentionDSN)
+	if err != nil {
+		return errWorkerDatabase
+	}
+	defer retentionPool.Close()
+	if !sameDatabase(startup, retentionPool, workerPool) {
+		return errWorkerDatabase // the purge must run against the database whose river schema holds its job
+	}
+	retentionWorker, err := retention.NewWorker(retentionPool)
+	if err != nil {
+		return errWorkerDatabase
+	}
 	routes, err := metareply.Routes(workerPool, c.linkKey, c.pageKeys, c.graph)
 	if err != nil {
 		return errWorkerRoutes
+	}
+	if c.ecpayCfg.Enabled {
+		ecpayRoutes, err := ecpayroute.Routes(workerPool, c.ecpayKeys, c.ecpayClient, c.ecpayCfg)
+		if err != nil {
+			return errWorkerRoutes
+		}
+		routes = append(routes, ecpayRoutes...)
 	}
 	dispatcher, err := core.NewDispatcher(startup, workerPool, routes, core.DefaultDispatcherOptions())
 	if err != nil {
@@ -143,12 +193,15 @@ func run(ctx context.Context, getenv func(string) string) error {
 	}
 	workers := river.NewWorkers()
 	river.AddWorker(workers, dispatcher)
+	river.AddWorker(workers, retentionWorker)
 	// Default queue of the main river schema: the only queue external_operation_v1 jobs use. A stuck job
 	// (crash mid-dispatch) is rescued after one minute so a reply is not stranded for River's default hour.
 	client, err := river.NewClient(riverpgxv5.New(workerPool), &river.Config{
-		Schema: "river", Workers: workers, RescueStuckJobsAfter: time.Minute,
-		Queues: map[string]river.QueueConfig{river.QueueDefault: {MaxWorkers: 4}},
-		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Schema: "river", Workers: workers, RescueStuckJobsAfter: retention.RescueWindow,
+		// U08: hourly + on start, unique per hour (retention.JobArgs.InsertOpts); inserted by commerce_worker (IR-4).
+		PeriodicJobs: []*river.PeriodicJob{retention.PeriodicJob()},
+		Queues:       map[string]river.QueueConfig{river.QueueDefault: {MaxWorkers: 4}},
+		Logger:       slog.New(slog.NewTextHandler(io.Discard, nil)),
 	})
 	if err != nil {
 		return errWorkerStart

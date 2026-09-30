@@ -119,8 +119,7 @@ func TestProbeCheckoutRefusals(t *testing.T) {
 	if len(calls) != 0 {
 		t.Fatal("invalid probe input reached the network")
 	}
-	live := &Client{cfg: Config{Environment: envLive}}
-	if _, _, err := live.ProbeCheckout(context.Background(), probeQualification, "HKD", 400, fxReturnURL); !errors.Is(err, ErrLiveRefused) {
-		t.Fatalf("LIVE probe not refused: %v", err)
-	}
+	// stripe-live-core: a LIVE client is no longer refused by ProbeCheckout itself (it only
+	// exists after admit() accepted the pair); the LIVE probe rules are asserted in
+	// live_test.go (TestStripeSL01LiveConfig).
 }

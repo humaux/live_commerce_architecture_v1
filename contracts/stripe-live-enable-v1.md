@@ -278,7 +278,9 @@ LIVE-admitted client and requires `expired`+`unpaid`+`livemode=true` (probe.go:4
   `payments.request_stripe_refund`, which has no profile input) refuses any attempt whose environment
   differs from the deployment profile's environment with the existing `not_refundable` error
   (`ErrNotRefundable`, httpapi/refunds.go:142), so a pre-cutover SANDBOX capture can never create a
-  refund the LIVE worker refuses (`validStripeSnapshot`) and W11 never sees.
+  refund the LIVE worker refuses (`validStripeSnapshot`) and W11 never sees. The refresh route
+  (`POST …/refunds/{refund_id}/refresh`) applies the same guard before its River insert
+  (`merchantorders.RefreshRefundIn`, amendment 2026-09-30b).
 - `internal/integrations/accounts/stripe_crypto.go`: `validStripeAPIScope` and `validStripeWebhookScope`
   admit `Environment IN (SANDBOX, LIVE)`; webhook scope requires `(Environment=="LIVE") == (Profile=="LIVE")`.
 - `deploy/compose.yml`: the **existing** `COMMERCE_STRIPE_CHECKOUT_ENABLED` gets the separate source
@@ -359,7 +361,7 @@ LIVE endpoint is the existing quarantine `livemode_mismatch`. Buyer and merchant
 | One store, reversible | `ops-admin.sh stripe-admin method --enabled=false` (no pair needed) | next `start_stripe_payment` PT409 (method), UI shows unavailable; succeeds in every state incl. after revoke/expiry/rotate | handoff of open sessions until cutoff (D16), worker, webhook, refunds |
 | One store, hard | `ops-admin.sh stripe-admin live-revoke` (no pair needed, §5.2) | qualifications revoked → start PT409; re-enable needs new approval + qualify + canary | same |
 | Platform | `LC_STRIPE_CHECKOUT_ENABLED=0` + `deploy.sh` (api restart) | Stripe removed from the hosted service for all stores | worker, webhook, refunds keep running |
-| API key compromise | Stripe Dashboard → API keys → the RAK → **Expire key** (or **Rotate key** with Expiration = **Now**); never use the 7-day grace period for a compromise (L2); then owner writes the new `rk_live_` to a file and Claude runs `STRIPE_SECRET_KEY_FILE=… ops-admin.sh stripe-admin rotate` | all Stripe I/O for that account fails auth → attempts stay UNKNOWN (stock kept) until the new key is registered and re-qualified | — |
+| API key compromise | Stripe Dashboard → API keys → the RAK → **Expire key** (or **Rotate key** with Expiration = **Now**); never use the 7-day grace period for a compromise (L2); then owner writes the new `rk_live_` to a file and Claude runs `STRIPE_SECRET_KEY_FILE=<path> STRIPE_ACCOUNT_ID=<acct_…> ops-admin.sh stripe-admin rotate --environment LIVE --tenant <t> --store <s> --principal <p> --connection <c> --expected-version <n>` (without `--environment LIVE` the CLI defaults to SANDBOX and refuses the `rk_live_` key; ops-admin now says so before any container starts) | all Stripe I/O for that account fails auth → attempts stay UNKNOWN (stock kept) until the new key is registered and re-qualified | — |
 | Webhook secret compromise | Dashboard → the live endpoint → **Roll secret** with immediate expiry; then `STRIPE_WEBHOOK_SECRET_FILE=… ops-admin.sh stripe-admin webhook --profile LIVE` | events signed with the old secret are rejected; Stripe retries for up to 3 days (L4) | worker polling |
 
 Open sessions are not force-expired (they close at `expires_at`, ≤40 min, D4). A forced expire-all is
@@ -369,7 +371,7 @@ out of scope (§13).
 
 | Signal | Threshold (default) | Source |
 | --- | --- | --- |
-| Stripe `integration.operations` in `UNKNOWN` older than 60 min | > 0 | operations (`state`, `created_at`) |
+| Stripe `integration.operations` in `UNKNOWN` older than 60 min, **excluding settled ones** (`result_code` `stripe_terminal_observed` / `stripe_refund_terminal`, see amendment 2026-09-30b) | > 0 | operations (`state`, `created_at`, `result_code`) |
 | `payments.review_cases` on LIVE attempts created in the last 24 h | > 0 | review_cases |
 | `payment_work_items` in `REVIEW_REQUIRED` (incl. `CLOSURE_CONTRADICTED`) | > 0 | work items |
 | LIVE refunds without a terminal fact older than 24 h, or review `REFUND_UNRESOLVED`/`REFUND_HISTORY` | > 0 | stripe_refunds, refund_facts, review_cases |
@@ -530,3 +532,15 @@ Rulings still needed from the integrator (not owner inputs):
 - **LR-3** Accept `sk_live_` refusal in LIVE (§5.1) as a Stage-A parser change (SP01 vectors change).
   *Default:* accept.
 - (Old LR-2 is resolved: revoke-only trigger + scoped policy on `account_qualifications`, §3.1/§3.3.)
+
+Amendment 2026-09-30b (r2 close-out of lane `stripe-live`, integrator-side; no contract semantics widened):
+- §8 row 1 (W11a): `finish_stripe_query` (0061) and `finish_stripe_refund` (0062) complete every *settled*
+  operation in state `UNKNOWN` with `result_code` `stripe_terminal_observed` / `stripe_refund_terminal`, and only
+  once the terminal `payments.facts` / `refund_facts` row exists. The literal §8 text therefore fired on every
+  paid or refunded LIVE order 60 min after success. Those two codes are excluded; a stuck operation (any other
+  code) still counts. Gate: SL09 subtest `W11a_a_settled_LIVE_payment_and_refund_are_not_trouble`.
+- §5.2 / §7.1: the refund refresh route takes the same deployment-environment guard as the refund POST.
+- §7 API-key-compromise row: the rotate command names `--environment LIVE` and the scope flags; `ops-admin.sh`
+  refuses register/rotate on a LIVE-pair host without it (`stripe_live_environment_required`). Gate: SL06.
+- Preflight P06: `LC_STRIPE_CHECKOUT_ENABLED=1` requires `LC_STRIPE_ENABLED=1` (checkout without worker/webhook
+  strands held stock). Gate: SL06 `shell_preflight_P06`.

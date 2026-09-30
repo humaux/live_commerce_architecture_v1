@@ -811,6 +811,19 @@ All four findings re-verified against SQL; none rebutted.
 | A3 | P2 | §6 AT_STORE/UNCLAIMED + 2098 → AT_STORE | §16.8 restock refused while a shipment is CREATED/AT_DC/AT_STORE (409 `parcel_not_returned`); TCV17. |
 | A4 | P2 | X8 text vs §6 ABANDONED paths (CREATED lapse + fresh query; UNKNOWN + acknowledgement) | §16.8 cancel: ABANDONED accepted as not handed over — **recorded deviation from X8's literal text**; later status/finish on CANCELLED → event + `duplicate_label_risk`; TCV17. |
 
+### 14.6 R2 close-out amendment notes (2026-09-30; lane `cvs`, branch r2/cvs; implementation test findings and review P2s)
+
+Smallest amendments where the code had to deviate from, or go beyond, the frozen text. Gates: TCV18 (`TestCvsCloseDispatchWindow`,
+`TestCvsCloseLoadWaitsForOrderLock`, `TestCvsCloseOperationInsertScope`) and the two unit tests named below.
+
+| # | Amendment | Why |
+| --- | --- | --- |
+| N1 | §4.3 `load_cvs_create` (dispatch mode): the payable check now runs after `checkout.orders ... FOR SHARE` (inside `fulfillment.cvs_order_payable`), so it waits for a refund that already holds the order row (RD3: `request_stripe_refund` locks the order first). New trigger `payments.guard_refund_cvs_dispatch` (BEFORE INSERT on `payments.stripe_refunds`) refuses a card refund with `PT409 cvs_attempt_in_flight` (HTTP 409 `conflict`) while the order's CVS shipment is REQUESTED and its operation is DISPATCHING (the Create may be on the wire). A READY (unclaimed) operation stays refundable: that refund is what stops the dispatch (TCV05). | Review P2: a full refund that committed between the worker's load and ECPay's answer still got a label (no transaction is open in that window). stripe-refund-v1 RD6 (refunds never change fulfilment state) is untouched: the refusal writes nothing and is transient. |
+| N2 | §4.3 `cvs_create_insert` policy adds `tenant_id`/`store_id` = the caller's `app.*` GUCs, like every other integration_writer insert policy. | Review P2 (defence in depth; `plan_cvs_create` sets both GUCs before its insert). |
+| N3 | §7.5 applies to the map-return hook too: per-selection cap 4 and a global cap 16 concurrent map-return transactions, answered `503 busy` (retryable, nothing recorded), taken after the body is read. | Review P2: the hook is public and unsigned; each well-formed POST opens a `FOR UPDATE` transaction. |
+| N4 | §4.3 `register_ecpay_logistics` input: `merchant_id` is digits only at the Go boundary (`fulfillment.ecpayMerchantID` = `ecpay.merchantIDRE`, ECPay's ids are numeric); the SQL CHECKs keep the wider alnum set (a superset, never reached by a lettered id). | Test finding: a lettered id passed Connect validation and failed later as `ecpay_probe_failed`. |
+| N5 | §12 wiring: `COMMERCE_CVS_HOOKS_ORIGIN`, `CVS_ECPAY_ENABLED` and `CVS_ECPAY_LIVE_CREATE` are set only in `deploy/compose.yml` (api and claims-worker), not in `api.env.example`: preflight P06 rejects wiring keys in the env example. One `compose.env` switch `LC_CVS_ECPAY_ENABLED` drives `CVS_ECPAY_ENABLED` on both services; the claims-worker is pinned to `COMMERCE_PAYMENT_PROFILE=SANDBOX` and `CVS_ECPAY_LIVE_CREATE=0`, so LIVE create needs an owner-approved edit of those compose lines (as §0.3 P4 already requires). | Integrator merge finding (97981f0): the original §12 text failed the preflight knob allowlist and duplicated a YAML key. |
+
 ## 15. Integrator rulings (2026-09-29)
 
 From `docs/delivery/units/r2-design-rulings.md` (binding; the owner may revise before go-live). Question

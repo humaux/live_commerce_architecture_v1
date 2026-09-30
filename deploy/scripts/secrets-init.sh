@@ -20,7 +20,8 @@
 #   base64url), accounts/env.go (std base64 keys, id ^[A-Za-z0-9_-]{1,40}$, replay key not in
 #   the keyring; the Stripe webhook signing keyring reuses this loader under COMMERCE_STRIPE_WEBHOOK_*),
 #   meta/env.go and metareply/keyring.go ({"keys":[...]} with 44-char keys) and
-#   meta.LoadClaimsActorKey / cmd/claims-worker (44-char std base64, K_actor and K_link distinct). Output lists file names
+#   meta.LoadClaimsActorKey / cmd/claims-worker (44-char std base64, K_actor and K_link distinct) and
+#   metaads.LoadSealKeys / tokenopen.LoadKeyring (HPKE X25519 rings, public derived from private). Output lists file names
 #   and created|kept|rederived only.
 set -Eeuo pipefail
 # shellcheck source-path=SCRIPTDIR source=lib.sh
@@ -66,6 +67,32 @@ day = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d")
 prefix = {"account": "acct-", "signing": "whk-", "meta": "meta-", "pagetoken": "pt-"}[kind]
 entry = {"id": prefix + day, "key_base64": base64.b64encode(os.urandom(32)).decode()}
 print(json.dumps([entry] if kind in ("account", "signing") else {"keys": [entry]}, separators=(",", ":")), end="")
+PY
+}
+# meta-ads-v1 G3 (ads-graph): HPKE X25519 token custody. The PRIVATE ring is generated here (raw 32-byte
+# keys from openssl's PKCS#8 DER, whose last 32 bytes are the key); the PUBLIC ring is DERIVED from it so
+# the api (seal) and ads-worker (open) always agree. Formats: metaads.LoadSealKeys / tokenopen.LoadKeyring.
+gen_hpke_private_ring() {
+  python3 <<'PY'
+import base64, datetime, json, subprocess
+der = subprocess.run(["openssl", "genpkey", "-algorithm", "X25519", "-outform", "DER"], check=True, capture_output=True).stdout
+assert len(der) == 48, "unexpected X25519 PKCS#8 length"
+day = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d")
+entry = {"id": "ads-hpke-" + day, "private_key_base64": base64.b64encode(der[-32:]).decode()}
+print(json.dumps({"keys": [entry]}, separators=(",", ":")), end="")
+PY
+}
+derive_hpke_public_ring() { # $1 = private ring file
+  python3 - "$dir/$1" <<'PY'
+import base64, json, subprocess, sys
+PKCS8_X25519 = bytes.fromhex("302e020100300506032b656e04220420")  # RFC 8410 PrivateKeyInfo prefix
+out = []
+for e in json.load(open(sys.argv[1]))["keys"]:
+    der = subprocess.run(["openssl", "pkey", "-inform", "DER", "-pubout", "-outform", "DER"], check=True,
+                         capture_output=True, input=PKCS8_X25519 + base64.b64decode(e["private_key_base64"])).stdout
+    assert len(der) == 44, "unexpected X25519 SPKI length"
+    out.append({"id": e["id"], "public_key_base64": base64.b64encode(der[-32:]).decode()})
+print(json.dumps({"keys": out}, separators=(",", ":")), end="")
 PY
 }
 last_key_id() { # $1 = keyring file name; newest (last) entry id
@@ -146,9 +173,11 @@ value_for() { # $1 file, $2 kind -> prints a new value
     commerce_meta_payload_active_key_id) last_key_id commerce_meta_payload_keys_json ;;
     commerce_stripe_webhook_active_key_id) last_key_id commerce_stripe_webhook_keys_json ;;
     commerce_meta_page_token_active_key_id) last_key_id commerce_meta_page_token_keys_json ;;
+    commerce_meta_ads_hpke_active_key_id) last_key_id commerce_meta_ads_hpke_public_keys_json ;;
     *) lc_die "no key_id rule for $file" ;;
     esac
     ;;
+  hpke_private_ring) gen_hpke_private_ring ;;
   *) lc_die "no generator for kind $kind ($file)" ;;
   esac
 }
@@ -169,6 +198,10 @@ derive_for() { # $1 file, $2 kind -> prints the derived DSN
     [[ "$LC_PG_SSLMODE" == verify-full || "$LC_PG_SSLMODE" == verify-ca ]] && extra="&sslrootcert=/run/secrets/pg_ca_crt"
     printf 'postgres://%s:%s@%s:5432/live_commerce?sslmode=%s&application_name=%s%s' \
       "$login" "$pw" "$LC_PG_HOST" "$LC_PG_SSLMODE" "$svc" "$extra"
+    ;;
+  hpke_public_ring)
+    [[ -f "$dir/commerce_meta_ads_hpke_private_keys_json" ]] || lc_die "commerce_meta_ads_hpke_private_keys_json missing (manifest order)"
+    derive_hpke_public_ring commerce_meta_ads_hpke_private_keys_json
     ;;
   *) lc_die "no derivation for kind $kind ($file)" ;;
   esac
