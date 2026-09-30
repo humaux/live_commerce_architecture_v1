@@ -81,6 +81,15 @@ stripe-admin:register | stripe-admin:rotate | stripe-admin:webhook | stripe-admi
   done
   ;;
 esac
+# r2 close: register/rotate default to --environment SANDBOX in the CLI, and on a pair host the key check above only
+# admits rk_live_; without this the key-compromise rotation would die inside the container (stripe_key_mode_mismatch).
+case "$tool:$sub" in
+stripe-admin:register | stripe-admin:rotate)
+  if ((pair_ok && !live_needed)); then
+    lc_die "stripe_live_environment_required: this host has the LIVE pair, so stripe-admin $sub needs --environment LIVE (the default is SANDBOX and refuses an rk_live_ key)"
+  fi
+  ;;
+esac
 if ((live_needed && !pair_ok)); then
   lc_die "stripe_live_refused: LIVE is refused without LC_STRIPE_LIVE_ENABLED=1 and LC_STRIPE_LIVE_APPROVAL_REF (8-128 chars of A-Za-z0-9._:-) in compose.env (stripe-live-enable-v1 §5.2)"
 fi

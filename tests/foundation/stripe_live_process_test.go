@@ -656,6 +656,11 @@ func slxOpsAdmin(t *testing.T) {
 	add("", `run sandbox_rejects_sk_live_value none STRIPE_SECRET_KEY="$SKLIVE" STRIPE_ACCOUNT_ID=`+acct+` -- stripe-admin register --environment SANDBOX`)
 	add("", `run live_rejects_sk_live_value ok STRIPE_SECRET_KEY="$SKLIVE" STRIPE_ACCOUNT_ID=`+acct+` -- stripe-admin register --environment LIVE`)
 	add("", `run live_rejects_test_key_value ok STRIPE_SECRET_KEY="$SKTEST" STRIPE_ACCOUNT_ID=`+acct+` -- stripe-admin register --environment LIVE`)
+	// r2 close: on a pair host a register/rotate without --environment LIVE defaulted to SANDBOX and failed mid-incident
+	// with a mismatch inside the container; ops-admin now names the missing flag before any container starts.
+	add("", `run pair_rotate_without_environment ok STRIPE_SECRET_KEY="$RKLIVE" STRIPE_ACCOUNT_ID=`+acct+` -- stripe-admin rotate --tenant t --connection c --expected-version 1`)
+	add("", `run pair_register_without_environment ok STRIPE_SECRET_KEY="$RKLIVE" STRIPE_ACCOUNT_ID=`+acct+` -- stripe-admin register --tenant t`)
+	add("", `run pair_rotate_environment_LIVE ok STRIPE_SECRET_KEY="$RKLIVE" STRIPE_ACCOUNT_ID=`+acct+` -- stripe-admin rotate --environment LIVE --tenant t --connection c --expected-version 1`)
 	add("", `run caller_env_pair_is_not_trusted env-only COMMERCE_STRIPE_LIVE_ENABLED=1 COMMERCE_STRIPE_LIVE_APPROVAL_REF="$REF" -- stripe-admin live-approve --approval x`)
 	add("", `run caller_env_pair_is_not_forwarded none COMMERCE_STRIPE_LIVE_ENABLED=1 COMMERCE_STRIPE_LIVE_APPROVAL_REF="$REF" -- stripe-admin method --enabled=false`)
 
@@ -712,6 +717,9 @@ func slxOpsAdmin(t *testing.T) {
 	refused("file_sk_live_key", "stripe_live_key_unrestricted")
 	refused("live_rejects_sk_live_value", "stripe_live_key_unrestricted")
 	refused("live_rejects_test_key_value", "")
+	refused("pair_rotate_without_environment", "stripe_live_environment_required")
+	refused("pair_register_without_environment", "stripe_live_environment_required")
+	admitted("pair_rotate_environment_LIVE")
 	rw := admitted("webhook_file_valid")
 	if !stubHas(rw, "ENVMATCH STRIPE_WEBHOOK_SECRET=1") || !stubHas(rw, "-e STRIPE_WEBHOOK_SECRET") {
 		t.Errorf("webhook_file_valid: %v", rw.stub)
@@ -850,6 +858,8 @@ func slxPreflight(t *testing.T) {
 		{"SANDBOX profile with only payments-live is mixed and fails", "db,app,payments-live", "SANDBOX", on, "FAIL"},
 		{"LIVE without Stripe needs no pair", "db,app,payments-live", "LIVE", map[string]string{}, "WARN"},
 		{"SANDBOX with Stripe off passes", "db,app,payments-sandbox", "SANDBOX", map[string]string{}, "PASS"},
+		{"the checkout switch on without LC_STRIPE_ENABLED strands stock and fails", "db,app,payments-sandbox", "SANDBOX", map[string]string{"LC_STRIPE_CHECKOUT_ENABLED": "1"}, "FAIL"},
+		{"the checkout switch on with LC_STRIPE_ENABLED passes", "db,app,payments-sandbox", "SANDBOX", slxMerge(on, map[string]string{"LC_STRIPE_CHECKOUT_ENABLED": "1"}), "PASS"},
 		{"the checkout switch alone (0) keeps a LIVE+pair deployment valid", "db,app,payments-live", "LIVE", slxMerge(pair, map[string]string{"LC_STRIPE_CHECKOUT_ENABLED": "0"}), "WARN"},
 	} {
 		if got := slxP06(t, c.profiles, c.payment, c.compose); got != c.want {

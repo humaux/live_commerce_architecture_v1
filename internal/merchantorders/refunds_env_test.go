@@ -123,3 +123,46 @@ func TestRequestRefundInMapsGuardAuthorityErrorsAndValidatesEnvironment(t *testi
 		}
 	}
 }
+
+// r2 close (review P2): the refresh route of the same §7.1 family takes the same guard as the POST, before its
+// River insert, so a LIVE API never enqueues a wake-up for a pre-cutover SANDBOX refund (the LIVE worker would
+// refuse it and W11 would never see it).
+func TestRefreshRefundInEnvironmentGuard(t *testing.T) {
+	jobs := guardJobs(t)
+	for _, tc := range []struct {
+		name        string
+		deployment  string
+		attemptEnv  *string
+		wantRefused bool
+	}{
+		{"SANDBOX attempt in a LIVE deployment", "LIVE", envPtr("SANDBOX"), true},
+		{"LIVE attempt in a SANDBOX deployment", "SANDBOX", envPtr("LIVE"), true},
+		{"order without an attempt (NULL)", "LIVE", nil, true},
+		{"LIVE attempt in a LIVE deployment", "LIVE", envPtr("LIVE"), false},
+		{"SANDBOX attempt in a SANDBOX deployment", "SANDBOX", envPtr("SANDBOX"), false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			tx := &guardTx{env: tc.attemptEnv}
+			_, err := RefreshRefundIn(context.Background(), tx, jobs, scope, tc.deployment, token, rfOrder, rfRefund)
+			last := tx.queries[len(tx.queries)-1]
+			if tc.wantRefused {
+				if !errors.Is(err, ErrNotRefundable) {
+					t.Fatalf("want ErrNotRefundable, got %v", err)
+				}
+				if strings.Contains(last, "gen_random_uuid") {
+					t.Fatal("a refused refresh reached the River insert path")
+				}
+				return
+			}
+			if !strings.Contains(last, "gen_random_uuid") { // the signal id draw precedes the River insert
+				t.Fatalf("matching environment stopped early: %v", last)
+			}
+		})
+	}
+	for _, env := range []string{"", "live", "PRODUCTION"} {
+		tx := &guardTx{env: envPtr("LIVE")}
+		if _, err := RefreshRefundIn(context.Background(), tx, jobs, scope, env, token, rfOrder, rfRefund); !errors.Is(err, command.ErrInvalid) || len(tx.queries) != 0 {
+			t.Fatalf("environment %q: %v after %d statements", env, err, len(tx.queries))
+		}
+	}
+}

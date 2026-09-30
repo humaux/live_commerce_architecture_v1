@@ -100,6 +100,24 @@ func validRefundRequest(in RefundRequest) bool {
 		in.ExpectedRefundableMinor <= command.MaxMoney && (in.Reason == "requested_by_customer" || in.Reason == "duplicate")
 }
 
+// requireRefundEnvironment is the S5 deployment-environment guard shared by the refund POST and the refresh
+// route. identity.merchant_refund_environment (commerce_auth definer, payments:refund with a fresh final fence):
+// commerce_runtime cannot read checkout.payment_attempts.environment itself, and the payments definers have no
+// profile input. NULL (order without an attempt) or another environment is ErrNotRefundable, the same error the
+// definer gives an order without a captured attempt; a missing order is PT404 from the function. It runs before
+// any River insert, so a refused call leaves no orphan job.
+func requireRefundEnvironment(ctx context.Context, tx pgx.Tx, scope platform.Scope, tokenHash []byte, orderID, environment string) error {
+	var attemptEnvironment *string
+	if err := tx.QueryRow(ctx, `SELECT identity.merchant_refund_environment($1::bytea,$2::uuid,$3::uuid)`,
+		tokenHash, scope.StoreID, orderID).Scan(&attemptEnvironment); err != nil {
+		return mapRefundError(err)
+	}
+	if attemptEnvironment == nil || *attemptEnvironment != environment {
+		return ErrNotRefundable
+	}
+	return nil
+}
+
 // RequestRefund is RequestRefundIn for a SANDBOX deployment (the pre-LIVE signature, unchanged).
 func RequestRefund(ctx context.Context, tx pgx.Tx, jobs *river.Client[pgx.Tx], scope platform.Scope,
 	token, key, orderID string, in RefundRequest) (RefundResult, error) {
@@ -153,18 +171,9 @@ func RequestRefundIn(ctx context.Context, tx pgx.Tx, jobs *river.Client[pgx.Tx],
 	if !errors.Is(err, pgx.ErrNoRows) {
 		return RefundResult{}, mapRefundError(err)
 	}
-	// identity.merchant_refund_environment (commerce_auth definer, payments:refund with a fresh final fence):
-	// commerce_runtime cannot read checkout.payment_attempts.environment itself, and payments.request_stripe_refund
-	// has no profile input. NULL (order without an attempt) or another environment is not_refundable, the same
-	// error the definer gives an order without a captured attempt; a missing order is PT404 from the function.
 	hash := sha256.Sum256([]byte(token))
-	var attemptEnvironment *string
-	if err = tx.QueryRow(ctx, `SELECT identity.merchant_refund_environment($1::bytea,$2::uuid,$3::uuid)`,
-		hash[:], scope.StoreID, orderID).Scan(&attemptEnvironment); err != nil {
-		return RefundResult{}, mapRefundError(err)
-	}
-	if attemptEnvironment == nil || *attemptEnvironment != environment {
-		return RefundResult{}, ErrNotRefundable
+	if err = requireRefundEnvironment(ctx, tx, scope, hash[:], orderID, environment); err != nil {
+		return RefundResult{}, err
 	}
 	var refundID string
 	if err = tx.QueryRow(ctx, `SELECT gen_random_uuid()::text`).Scan(&refundID); err != nil {
@@ -218,14 +227,26 @@ func ListRefunds(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, or
 	return decodeRefundList(raw)
 }
 
-// RefreshRefund records one throttled MERCHANT_REFRESH wake-up. Scheduled=false means the SQL definer
-// refused (throttle, terminal refund): the caller must roll back the transaction, because the River job
-// inserted here would have no signal row.
+// RefreshRefund is RefreshRefundIn for a SANDBOX deployment (the pre-LIVE signature, unchanged).
 func RefreshRefund(ctx context.Context, tx pgx.Tx, jobs *river.Client[pgx.Tx], scope platform.Scope,
 	token, orderID, refundID string) (RefundSignal, error) {
+	return RefreshRefundIn(ctx, tx, jobs, scope, "SANDBOX", token, orderID, refundID)
+}
+
+// RefreshRefundIn records one throttled MERCHANT_REFRESH wake-up. Scheduled=false means the SQL definer
+// refused (throttle, terminal refund): the caller must roll back the transaction, because the River job
+// inserted here would have no signal row. Like RequestRefundIn it refuses an order whose attempt is in
+// another environment than the deployment's (ErrNotRefundable, before any River insert): the other
+// environment's worker would refuse the work and the LIVE monitor would never see it (stripe-live-enable-v1 §5.2).
+func RefreshRefundIn(ctx context.Context, tx pgx.Tx, jobs *river.Client[pgx.Tx], scope platform.Scope,
+	environment, token, orderID, refundID string) (RefundSignal, error) {
 	if tx == nil || jobs == nil || !validAuthorityInput(scope, token) || !command.ValidID(orderID) ||
-		!command.ValidID(refundID) {
+		!command.ValidID(refundID) || (environment != "SANDBOX" && environment != "LIVE") {
 		return RefundSignal{}, command.ErrInvalid
+	}
+	hash := sha256.Sum256([]byte(token))
+	if err := requireRefundEnvironment(ctx, tx, scope, hash[:], orderID, environment); err != nil {
+		return RefundSignal{}, err
 	}
 	var signalID string
 	if err := tx.QueryRow(ctx, `SELECT gen_random_uuid()::text`).Scan(&signalID); err != nil {
@@ -235,7 +256,6 @@ func RefreshRefund(ctx context.Context, tx pgx.Tx, jobs *river.Client[pgx.Tx], s
 	if err != nil || job == nil || job.Job == nil {
 		return RefundSignal{}, ErrUnavailable
 	}
-	hash := sha256.Sum256([]byte(token))
 	var raw []byte
 	if err = tx.QueryRow(ctx, `SELECT payments.request_stripe_refund_refresh($1::bytea,$2::uuid,$3::uuid,$4::uuid,$5::uuid,$6::bigint)`,
 		hash[:], scope.StoreID, orderID, refundID, signalID, job.Job.ID).Scan(&raw); err != nil {

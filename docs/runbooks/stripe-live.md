@@ -98,6 +98,10 @@ STRIPE_WEBHOOK_SECRET_FILE=<owner 写的文件路径> \
 端点 uuid 必须与 owner 在 Dashboard 里注册的 URL 一致。
 
 ### 步骤 3 审批（把 owner 的书面批准落成 DB 行）
+**前置（`--attest` 里的两个码要有证据才能写）：**
+- `policy_pages`：`LC_LEGAL_REQUIRE_FINAL=1 node tests/storefront/legal-pages.mjs` 必须全绿（LG01；现状 BLOCKED：页脚在 customers-billing-ui 合并前未挂载 B8，且政策文本仍有 owner/draft 占位）。
+- `rak_live`：`output/stripe-live/rak-permissions.txt` 必须存在（SL08 在 owner 的 `rk_test_` 上跑过；现状 NOT_RUN）。
+缺任一项就不得把对应码写进 `--attest`，也就不能批准。
 需要配对（ops-admin 与 CLI 都先拒绝没有配对的调用）。`--attest` 必须列全 §9 的 11 个码，缺一个被拒绝：
 ```sh
 deploy/scripts/ops-admin.sh stripe-admin live-approve --tenant <tenant> --store <store> --principal <owner-principal> \
@@ -164,7 +168,7 @@ deploy/scripts/ops-admin.sh stripe-admin method --tenant <tenant> --store <store
 
 | 事件 | 做法 | 后果 |
 | --- | --- | --- |
-| API key 泄露 | Stripe Dashboard → API keys → 该受限 key → **Expire key**（或 **Rotate key**，Expiration 选 **Now**；泄露时**绝不**用 7 天宽限期）。然后 owner 把新 `rk_live_` 写进文件，运行 `STRIPE_SECRET_KEY_FILE=<路径> STRIPE_ACCOUNT_ID=<acct_...> deploy/scripts/ops-admin.sh stripe-admin rotate --tenant <tenant> --connection <connection-id> --expected-version <n>`（配对必须仍在 compose.env） | 该账户所有 Stripe I/O 认证失败，attempt 保持 UNKNOWN（库存保留）直到新 key 登记并重新 `qualify`；审批保留 |
+| API key 泄露 | Stripe Dashboard → API keys → 该受限 key → **Expire key**（或 **Rotate key**，Expiration 选 **Now**；泄露时**绝不**用 7 天宽限期）。然后 owner 把新 `rk_live_` 写进文件，运行 `STRIPE_SECRET_KEY_FILE=<路径> STRIPE_ACCOUNT_ID=<acct_...> deploy/scripts/ops-admin.sh stripe-admin rotate --environment LIVE --tenant <tenant> --store <store> --principal <owner-principal> --connection <connection-id> --expected-version <n>`（配对必须仍在 compose.env；缺 `--environment LIVE` 时 ops-admin 直接拒绝 `stripe_live_environment_required`） | 该账户所有 Stripe I/O 认证失败，attempt 保持 UNKNOWN（库存保留）直到新 key 登记并重新 `qualify`；审批保留 |
 | webhook 签名密钥泄露 | Dashboard → live 端点 → **Roll secret**，选立即过期；然后 `STRIPE_WEBHOOK_SECRET_FILE=<路径> deploy/scripts/ops-admin.sh stripe-admin webhook … --profile LIVE --expected-version <当前版本> --enabled` | 旧密钥签名的事件被拒绝；Stripe 最多重试 3 天（L4）；worker 轮询不受影响 |
 | 传输文件在仓库、备份或日志里被发现 | 视同 key 泄露：先按上一行处置，再删除文件，再 `lc_secret_scan` 检查日志 | — |
 

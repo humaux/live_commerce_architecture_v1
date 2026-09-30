@@ -34,7 +34,8 @@ func registerRefundRoutes(mux *http.ServeMux, pool *pgxpool.Pool, jobs *river.Cl
 
 // registerRefundRoutesIn mounts the routes for the deployment environment (payments.ProfileEnvironment of
 // COMMERCE_PAYMENT_PROFILE, chosen by cmd/api). stripe-live-enable-v1 §5.2: the refund POST refuses any
-// attempt of another environment with not_refundable (merchantorders.RequestRefundIn). An environment
+// attempt of another environment with not_refundable (merchantorders.RequestRefundIn); the refresh route applies the
+// same guard (merchantorders.RefreshRefundIn). An environment
 // outside {SANDBOX, LIVE} mounts nothing, exactly like a nil client, so a misconfigured deployment cannot
 // accept refunds for an unknown environment.
 func registerRefundRoutesIn(mux *http.ServeMux, pool *pgxpool.Pool, jobs *river.Client[pgx.Tx], environment string) {
@@ -79,7 +80,7 @@ func registerRefundRoutesIn(mux *http.ServeMux, pool *pgxpool.Pool, jobs *river.
 		var out merchantorders.RefundSignal
 		if !refundScope(w, r, pool, "payments:refund", func(ctx context.Context, tx pgx.Tx, s platform.Scope) error {
 			var err error
-			out, err = merchantorders.RefreshRefund(ctx, tx, jobs, s, bearerToken(r), r.PathValue("order_id"), r.PathValue("refund_id"))
+			out, err = merchantorders.RefreshRefundIn(ctx, tx, jobs, s, environment, bearerToken(r), r.PathValue("order_id"), r.PathValue("refund_id"))
 			if err == nil && !out.Scheduled {
 				return errRefundNotScheduled // roll back: the inserted job has no signal row
 			}

@@ -316,7 +316,8 @@ studio_media = flag("COMMERCE_STUDIO_MEDIA_ENABLED", api.get("COMMERCE_STUDIO_ME
 claims_on = flag("COMMERCE_CLAIMS_ENABLED", api.get("COMMERCE_CLAIMS_ENABLED", ""))
 profiles = {p.strip() for p in E.get("COMPOSE_PROFILES", "").split(",") if p.strip()}
 stripe_on = flag("LC_STRIPE_ENABLED", E.get("LC_STRIPE_ENABLED", ""))
-flag("LC_STRIPE_CHECKOUT_ENABLED", E.get("LC_STRIPE_CHECKOUT_ENABLED", ""))  # LD6: platform kill switch, "" = follow LC_STRIPE_ENABLED
+checkout_on = flag("LC_STRIPE_CHECKOUT_ENABLED", E.get("LC_STRIPE_CHECKOUT_ENABLED", ""))  # LD6: platform kill switch, "" = follow LC_STRIPE_ENABLED
+rec("P06", not checkout_on or stripe_on, "LC_STRIPE_CHECKOUT_ENABLED=1 requires LC_STRIPE_ENABLED=1 (checkout without the worker and webhook strands held stock)")
 stripe_live_flag = flag("LC_STRIPE_LIVE_ENABLED", E.get("LC_STRIPE_LIVE_ENABLED", ""))
 stripe_live_ref = E.get("LC_STRIPE_LIVE_APPROVAL_REF", "")
 stripe_live_ref_ok = re.fullmatch(r"[A-Za-z0-9._:-]{8,128}", stripe_live_ref) is not None
