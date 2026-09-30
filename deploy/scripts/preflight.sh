@@ -453,6 +453,12 @@ if identity:
         iss = urlsplit(E.get("LC_OIDC_ISSUER", ""))
         rec("P08", iss.scheme == "https" and bool(iss.hostname) and not iss.query and not iss.fragment
             and not (prod and (iss.hostname or "").endswith("example.com")), "LC_OIDC_ISSUER")
+    if password_login and not E.get("LC_OIDC_ISSUER", ""):
+        # cmd/api/identity.go loadIdentityConfig: with password login on, OIDC is all-or-nothing, so a leftover
+        # client id / provider key (e.g. the example's CHANGE_ME_CLIENT_ID) with no issuer stops the api with only
+        # "api stopped" (pilot host, 2026-10-01).
+        for k in ("COMMERCE_OIDC_CLIENT_ID", "COMMERCE_IDENTITY_PROVIDER_KEY"):
+            rec("P08", api.get(k, "") == "", k + " must be empty when LC_OIDC_ISSUER is empty (password-only login)")
     if password_login:
         # cmd/api/identity.go loadPasswordConfig grammar: DNS name host, From carries exactly the username.
         smtp_host, smtp_user, mail_from = E.get("LC_SMTP_HOST", ""), E.get("LC_SMTP_USERNAME", ""), E.get("LC_MAIL_FROM", "")

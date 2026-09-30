@@ -334,6 +334,12 @@ full_cases() {
   negative S10i P06 neg_i
   negative S10j P08 neg_j
   negative S10k P09 neg_k
+  neg_l() { # password-only (no issuer) but a leftover OIDC client id / provider key: api would stop at startup
+    printf 'LC_PASSWORD_LOGIN_ENABLED=1\nLC_SMTP_HOST=smtp.example.test\nLC_SMTP_USERNAME=sender@example.test\nLC_MAIL_FROM=sender@example.test\n' >>"$1/compose.env"
+    sed -i.bak 's/^LC_OIDC_ISSUER=.*/LC_OIDC_ISSUER=/' "$1/compose.env" && rm -f "$1/compose.env.bak"
+    echo 'COMMERCE_OIDC_CLIENT_ID=CHANGE_ME_CLIENT_ID' >>"$1/env/api.env"
+  }
+  negative S10l P08 neg_l
 
   # S37 (+ S11-S16): the real first-deploy path
   if runc S37 "$LC_SCRIPTS_DIR/deploy.sh" --smoke first; then rec S37 PASS "deploy.sh first"; else
@@ -924,7 +930,7 @@ def ver(cmd):
     except Exception:
         return "unavailable"
 static_ids = ["S01", "S02", "S03", "S04", "S05", "S06"]
-full_ids = static_ids + ["S%02d" % i for i in range(7, 46)] + ["S10a", "S10b", "S10c", "S10d", "S10e", "S10f", "S10g", "S10h", "S10i", "S10j", "S10k", "S13n", "S29m"]
+full_ids = static_ids + ["S%02d" % i for i in range(7, 46)] + ["S10a", "S10b", "S10c", "S10d", "S10e", "S10f", "S10g", "S10h", "S10i", "S10j", "S10k", "S10l", "S13n", "S29m"]
 result = {
     "run_id": os.path.basename(ev), "task_id": "T22", "commit": commit,
     "environment": {"mode": mode, "host": platform.node(), "kernel": platform.release(),

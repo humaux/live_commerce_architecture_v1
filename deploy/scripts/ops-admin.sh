@@ -110,6 +110,7 @@ read_secret_file() { # NAME — sets v from ${NAME}_FILE
   v=
   IFS= read -r v <&"$fd" || [[ -n "$v" ]] || lc_die "$fvar rejected: empty"
   # exactly one line: any further byte (a second line, even a blank one) is refused
+  # shellcheck disable=SC2034 # the byte itself is irrelevant; only whether one exists
   if IFS= read -r -N 1 extra <&"$fd"; then lc_die "$fvar rejected: must contain exactly one line"; fi
   exec {fd}<&-
 }
