@@ -96,6 +96,16 @@ func (c *capiEnv) capture(profile, environment string) {
 	c.t.Helper()
 	q := c.p
 	mustExec(c.t, q.f.owner, `UPDATE checkout.payment_attempts SET execution_profile=$2,environment=$3 WHERE id=$1`, q.result.AttemptID, profile, environment)
+	// The attempt's payment_query_v1 job was routed by the OLD profile. Move it with the profile (owner, replica: the family
+	// guard forbids a queue rewrite), as payment_runtime_test does; otherwise integration.payment_queue_ready() stays false for
+	// every later test in the shared fixture DB (SP06 "payment queue readiness" failed after this file, 2026-09-30).
+	c.ownerReplica(`UPDATE river_payment.river_job j SET queue=integration.payment_job_queue(j.id)
+		FROM checkout.payment_attempts a WHERE a.id=$1 AND j.id=a.job_id AND j.queue IS DISTINCT FROM integration.payment_job_queue(j.id)`, q.result.AttemptID)
+	var aligned bool
+	if err := q.f.owner.QueryRow(c.ctx, `SELECT NOT EXISTS(SELECT 1 FROM river_payment.river_job j WHERE j.args->>'operation_id'=$1
+		AND j.state NOT IN ('completed','cancelled','discarded') AND j.queue IS DISTINCT FROM integration.payment_job_queue(j.id))`, q.result.AttemptID).Scan(&aligned); err != nil || !aligned {
+		c.t.Fatalf("fixture attempt %s left a payment job off its profile queue (aligned=%v err=%v)", q.result.AttemptID, aligned, err)
+	}
 	claim := q.claim(c.t)
 	report := pcFull(q)
 	if err := pqRecord(q.worker, q.result.OperationID, claim, profile, report); err != nil {
