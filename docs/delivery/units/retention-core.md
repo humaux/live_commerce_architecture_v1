@@ -141,7 +141,7 @@ meta/*`, `internal/claims/**`, `tests/**`, `deploy/**`, `.github/**`, `docs/runb
 ```sh
 GOTOOLCHAIN=go1.27.1 go vet ./... && gofmt -l internal cmd && bash scripts/dev/check-pkgdocs.sh
 GOTOOLCHAIN=go1.27.1 go test -race -count=1 ./internal/retention/... ./cmd/retention-admin/... ./internal/integrations/meta/... ./internal/platform/...
-LC_FOCUSED_TIMEOUT=1800s bash scripts/dev/test-focused.sh '^Test(LiveClaims|MetaClaimsIntake|MetaConsumer|MetaInbox|T06|Pool)'
+LC_FOCUSED_TIMEOUT=1800s bash scripts/dev/test-focused.sh '^Test(LiveClaims|MetaClaims|MetaConsumer|MetaInbox|T06|Pool)'
 python3 scripts/check_packet.py
 ```
 Unit tests: flag/stdin parsing table, SQLSTATE → error → exit code, Counts/Selector formatting, `SocialPeerKey`

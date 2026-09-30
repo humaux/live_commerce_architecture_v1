@@ -472,6 +472,7 @@ for k in ("LC_HTTP_PORT", "LC_HTTPS_PORT"):
 rec("P08", E.get("LC_PG_SSLMODE") in ("disable", "require", "verify-ca", "verify-full"), "LC_PG_SSLMODE")
 rec("P08", E.get("LC_SECRETS_GID", "").isdigit(), "LC_SECRETS_GID")
 rec("P08", E.get("LC_REQUIRE_MEDIA_GATE", "0") in ("0", "1"), "LC_REQUIRE_MEDIA_GATE")
+rec("P08", E.get("LC_REQUIRE_RETENTION_ENFORCED", "1") in ("0", "1"), "LC_REQUIRE_RETENTION_ENFORCED")
 
 if billing_on:
     # Same grammar as internal/billing.LoadConfig (1..10 distinct price ids); ids are not secrets.

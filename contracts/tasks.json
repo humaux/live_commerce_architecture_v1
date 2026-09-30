@@ -1028,7 +1028,9 @@
       "real_pg": "NOT_RUN",
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
-      "independent_review": "NOT_RUN"
+      "independent_review": "NOT_RUN",
+      "r2_u08_2026_09_30": "U08 claims retention purge + actor erasure (contracts/claims-retention-purge-v1.md) merged on r2/retention from unit/retention-core 220e43a: 0071 + internal/retention + cmd/retention-admin + claims-worker hourly job; exact-set gates KC03/MCI02/MCI10 updated to §6 clauses 1/2/4/5 (REAL_PG PASS, evidence output/r2-retention-merge/). CRP01-CRP10 NOT_RUN (retention-tests unit), security review NOT_RUN, CRP11 LIVE NOT_RUN; production-mount blocker not lifted (§10 (2)(3) pending; waiver W1 governs).",
+      "r2_u08_tests_2026_09_30": "unit/retention-tests f493e8f merged on r2/retention (5522655): CRP01 UNIT PASS=12 (internal/retention + cmd/retention-admin, -race); CRP02-CRP10 REAL_PG PASS=9 FAIL=0 SKIP=0 (CRP09 River = MOCK); regressions LiveClaims|MetaConsumer PASS=31 and MetaClaims|MetaInbox|MetaRuntime PASS=69 SKIP=1 (MCI11 LIVE); red runs per gate in output/retention-tests/LEDGER.tsv; evidence output/r2-retention-merge/{tests-merge-static,pg-crp02-10,pg-regression,pg-regression-metaclaims}.log. Still NOT_RUN: CRP10 security_reviewer verdict, CRP11 LIVE, CB05 (0078 not on this lane), full go test -race ./... (CI). Production-mount blocker unchanged."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },

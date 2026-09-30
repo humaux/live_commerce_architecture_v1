@@ -17,10 +17,13 @@
 #           R1 additions (deploy-release unit): S13 also checks the ruling-19 River privileges and the
 #           registrar EXECUTE grants (S13n injects two drifts: both must fail provisioning by name), S16 the claims-worker + Stripe-enabled sandbox worker, S19 the
 #           Stripe webhook route, S44 the operator one-shots stripe-admin / meta-admin.
+#           R2 U08: S46 retention-admin on the claims-worker's retention-job login: `status` works and
+#           shows a run (RunOnStart), every other subcommand refuses the job login (exit 2), no service
+#           mounts an operator DSN (claims-retention-purge-v1 §10(5), CRP09).
 #           G2 (R1 ruling): S45 planning-only Studio + claims + claim-source answer 401/403 (mounted) on the
 #           deployed api and the LiveKit media route is 404; S10e/S10h preflight P06 refuses media on and
 #           claims without Studio.
-#           R2 CVS (TCV08 deploy leg): S46 only /v1/cvs/ecpay/{map-return,status}/* reach Go on the hooks host;
+#           R2 CVS (TCV08 deploy leg): S47 only (renumbered at the R2 integration merge; S46 is U08) — /v1/cvs/ecpay/{map-return,status}/* reach Go on the hooks host;
 #           any other /v1/cvs/* there, and the same routes on the api host, are Caddy's 404.
 # Usage: smoke.sh static | full
 # Exit: 0 PASS, 1 FAIL, 3 BLOCKED (e.g. cmd/migrate missing, ports busy, docker missing, or a
@@ -188,13 +191,14 @@ LC_BUYER_ENABLED=1
 LC_BUYER_SESSION_TTL_SECONDS=3600
 LC_STRIPE_ENABLED=1
 LC_REQUIRE_MEDIA_GATE=0
+LC_REQUIRE_RETENTION_ENFORCED=0
 LC_ALERT_WEBHOOK_URL=
 EOF
   : "$kind"
 }
 
 # ================================ full ============================================================
-ALL_FULL=(S07 S08 S09 S10 S11 S12 S13 S13n S14 S15 S16 S44 S17 S18 S19 S46 S45 S20 S21 S22 S23 S24 S25 S26 S27 S28 S29 S29m S30 S31 S32 S33 S34 S35 S36 S37 S38 S39 S40 S41 S42 S43)
+ALL_FULL=(S07 S08 S09 S10 S11 S12 S13 S13n S14 S15 S16 S44 S46 S17 S18 S19 S47 S45 S20 S21 S22 S23 S24 S25 S26 S27 S28 S29 S29m S30 S31 S32 S33 S34 S35 S36 S37 S38 S39 S40 S41 S42 S43)
 block_rest() { # reason — mark every full case not yet recorded as BLOCKED
   local id
   for id in "${ALL_FULL[@]}"; do
@@ -458,6 +462,26 @@ sys.exit(1 if names & {"dsn_lc_stripe_registrar", "dsn_lc_meta_registrar"} else 
   unset live_key
   if [[ -z "$why44" ]]; then rec S44 PASS "stripe-admin/meta-admin one-shots run isolated, registrar logins admitted, no long-running service mounts them; ops-admin.sh forwards by name, audits without values, refuses sk_live_ keys and --profile LIVE without the pair"; else rec S44 FAIL "$why44 (logs/S44-*.log)"; fi
 
+  # S46 U08 retention job login (claims-retention-purge-v1 §5, §10(5)). Smoke has no operator login by design,
+  # so the policy stays report-only (enforced=0, LC_REQUIRE_RETENTION_ENFORCED=0 in the smoke compose.env).
+  local why46="" out46 rc46 last46
+  out46=$(lc_compose run --rm --no-deps -T claims-worker /app/bin/retention-admin status 2>&1) && rc46=0 || rc46=$?
+  printf '%s\n' "$out46" >"$EV/logs/S46-status.log"
+  last46=$(sed -n 's/^last_run_unix=\([0-9][0-9]*\)$/\1/p' <<<"$out46")
+  if [[ $rc46 != 0 ]] || ! grep -qx 'enforced=0' <<<"$out46"; then why46+=" status: rc=$rc46 [${out46:0:60}] want 0 with enforced=0"; fi
+  [[ -n "$last46" && "$last46" -gt 0 ]] || why46+=" no retention run recorded (RunOnStart)"
+  out46=$(lc_compose run --rm --no-deps -T claims-worker /app/bin/retention-admin run --limit 1 2>&1) && rc46=0 || rc46=$?
+  printf '%s\n' "$out46" >"$EV/logs/S46-run.log"
+  [[ $rc46 == 2 && "$out46" == *retention_admin_usage* ]] || why46+=" run on the job login: rc=$rc46 [${out46:0:60}] want 2 retention_admin_usage"
+  if lc_compose_all config --format json 2>/dev/null | python3 -c '
+import json, sys
+doc = json.load(sys.stdin)
+bad = [n for n in doc.get("secrets", {}) if "retention_operator" in n]
+for name, svc in doc["services"].items():
+    bad += [name for k in (svc.get("environment") or {}) if "RETENTION_OPERATOR" in k]
+sys.exit(1 if bad else 0)'; then :; else why46+=" an operator retention DSN is configured"; fi
+  if [[ -z "$why46" ]]; then rec S46 PASS "retention-admin status on the job login (enforced=0 report-only, last run recorded), job login refused for run, no operator DSN in compose"; else rec S46 FAIL "$why46 (logs/S46-*.log)"; fi
+
   # S17-S24 edge
   local r
   r=$(edge api.localhost /healthz)
@@ -477,7 +501,7 @@ sys.exit(1 if names & {"dsn_lc_stripe_registrar", "dsn_lc_meta_registrar"} else 
     "${r3%%|*}" =~ ^[1-5][0-9][0-9]$ && "$r3" != "404||0" && -n "$(cut -d'|' -f2 <<<"$r3")" ]]; then
     rec S19 PASS "meta + stripe webhook routes reach Go API (meta $(cut -d'|' -f2 <<<"$r"), stripe ${r3%%|*}); notify and / 404 at Caddy"
   else rec S19 FAIL "webhook=$r stripe=$r3 notify=$r1 root=$r2"; fi
-  # S46 taiwan-cvs-logistics-v1 §12 / TCV08 deploy leg: the two ECPay hooks are answered by Go (a status + a content type,
+  # S47 taiwan-cvs-logistics-v1 §12 / TCV08 deploy leg: the two ECPay hooks are answered by Go (a status + a content type,
   # whether CVS_ECPAY_ENABLED is on or off); another /v1/cvs path on the hooks host and the hooks on the api host are Caddy's
   # empty 404. Empty bodies to random ids: nothing is recorded.
   local c1 c2 c3 c4 c5 cid=00000000-0000-4000-8000-000000000046
@@ -488,8 +512,8 @@ sys.exit(1 if names & {"dsn_lc_stripe_registrar", "dsn_lc_meta_registrar"} else 
   c5=$(edge api.localhost "/v1/cvs/ecpay/status/$cid" -X POST --data '')
   if [[ "${c1%%|*}" =~ ^[1-5][0-9][0-9]$ && -n "$(cut -d'|' -f2 <<<"$c1")" && "${c2%%|*}" =~ ^[1-5][0-9][0-9]$ &&
     -n "$(cut -d'|' -f2 <<<"$c2")" && "$c3" == "404||0" && "$c4" == "404||0" && "$c5" == "404||0" ]]; then
-    rec S46 PASS "cvs hooks reach Go on hooks host (map-return ${c1%%|*}, status ${c2%%|*}); other /v1/cvs path and api host 404 at Caddy"
-  else rec S46 FAIL "map-return=$c1 status=$c2 other=$c3 api-map=$c4 api-status=$c5"; fi
+    rec S47 PASS "cvs hooks reach Go on hooks host (map-return ${c1%%|*}, status ${c2%%|*}); other /v1/cvs path and api host 404 at Caddy"
+  else rec S47 FAIL "map-return=$c1 status=$c2 other=$c3 api-map=$c4 api-status=$c5"; fi
   # S45 R1 ruling G2: planning-only Studio + keyword claims + claim-source are MOUNTED on the deployed api
   # (no token -> 401/403, never 404) and the LiveKit media routes are NOT (404). Probed on the api's own
   # loopback listener: Caddy default-denies /v1/admin/* on the api host (S18) and admin talks to it directly.

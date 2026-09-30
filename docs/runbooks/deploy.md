@@ -211,6 +211,9 @@ deploy/scripts/deploy.sh upgrade <tag>
    `private_reply=true` 还要求该绑定已登记 Page token（否则 `page_token_missing`）。**这个路由现在不能靠部署配置打开**：在本包构建的 api 里它返回 404（原因见 G2）。
 5. 启用真实私信发送（**需要 owner 明确批准**，因为这会向真实买家发消息）：填好 `claims-worker.env` 的 Graph 版本，`COMPOSE_PROFILES` 增加 `claims`，
    `deploy.sh upgrade`；部署后检查会等待 `claims_worker_ready`。日志里的 `claims_worker_routes` 行列出该进程服务的路由（IR-13）。
+   R2（U08）：claims-worker 还需要 `dsn_lc_retention_job`（`secrets-init.sh` 生成、provisioning 建登录），每小时跑保留期清理；
+   部署后检查用该登录执行 `retention-admin status`，要求 26 小时内有一次运行且 `enforced=1`（`compose.env`
+   `LC_REQUIRE_RETENTION_ENFORCED=0` 仅限 W1 试点）。启用保留策略与按人删除见 `docs/runbooks/claims-data-deletion.md`。
 6. **Webhook 路由（G1 已关闭，R1 裁决 F2）**：把 Meta app/object/asset 映射到租户与店铺。登录 `lc_meta_registrar`（已在 provisioning 中，
    preflight/provisioning 检查它能执行 `register_meta_binding`、`activate_route`、`disable_route`、`register_meta_page_token` 共 4 个 definer）。
    `--proof` 是 owner 提供的资产所有权证据的 sha256（小写 64 位十六进制），例如把 `GET /{page-id}/subscribed_apps` 的 Graph 读回结果存档后

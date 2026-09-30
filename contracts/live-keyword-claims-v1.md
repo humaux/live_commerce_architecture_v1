@@ -1098,3 +1098,20 @@ privilege for … role" sentences of §3.2 with the wording in meta-claims-intak
 query succeed). The implementing unit applies this amendment; the gate change is
 integrator-approved at freeze of meta-claims-intake-v1 and is not an implementer rewrite of a
 gate.
+
+## Amendment by claims-retention-purge-v1 (integrator, 2026-09-30, U08 merge)
+
+Recorded from `contracts/claims-retention-purge-v1.md` §6 (FROZEN 2026-09-30); that file is the source of the rows.
+
+- Clause 1: §3 "no DELETE grant" and the §3.2 matrix (KC03 equality) gain the claims-retention-purge-v1 §4
+  `commerce_retention_writer` rows (SELECT/UPDATE column sets on `claims.bundles`, `claims.lines`, `claims.links`,
+  `live.claim_windows`; DELETE on `claims.links` only) and the `claims.bundles.purged_at` column,
+  `bundle_purged_unbound`/`bundle_label_reserved` CHECKs and the `claims.links_not_purged` trigger. `purged_at` is not
+  readable by `commerce_runtime`/`commerce_claims_intake`. Schema `claims` has 7 tables (+`retention_policy`,
+  `retention_log`); the 7 U08 functions are owned by `commerce_retention_writer`. KC03 subtests are otherwise unchanged.
+- Clause 2: §3.3 R4 "no other function or grant can clear `owner_id`" gains: "except the U08 definers, which clear it
+  only together with deleting the bundle's link and setting `purged_at` (RD8: no link can be issued afterwards)".
+  KC03's "no function EXECUTE-able by `commerce_runtime` or `commerce_buyer_runtime` can clear `owner_id` without
+  replacing `token_hash`" stays true unchanged.
+- Clause 3: §8/§11.4/§12 "production mount blocked by T14/U08" is replaced by "lifted per claims-retention-purge-v1
+  §10" (all six conditions; until they hold, waiver W1 governs).

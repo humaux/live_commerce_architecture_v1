@@ -446,6 +446,8 @@ services:
       # main-schema external_operation_v1 dispatcher (commerce_worker).
       COMMERCE_CLAIMS_INTAKE_DATABASE_URL_FILE: /run/secrets/dsn_lc_claims_intake
       COMMERCE_WORKER_DATABASE_URL_FILE: /run/secrets/dsn_lc_claims_worker
+      # U08 hourly retention purge on its own login (lc_retention_job); the operator login is never deployed.
+      COMMERCE_RETENTION_JOB_DATABASE_URL_FILE: /run/secrets/dsn_lc_retention_job
       COMMERCE_CLAIMS_REPLY_LINK_KEY_FILE: /run/secrets/commerce_claims_reply_link_key
       COMMERCE_META_PAGE_TOKEN_KEYS_JSON_FILE: /run/secrets/commerce_meta_page_token_keys_json
       COMMERCE_META_PAGE_TOKEN_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_meta_page_token_active_key_id
@@ -459,7 +461,7 @@ services:
       COMMERCE_PAYMENT_PROFILE: SANDBOX
       ECPAY_LOGISTICS_KEYRING_FILE: /run/secrets/ecpay_logistics_keyring
       GOMEMLIMIT: 200MiB
-    secrets: [dsn_lc_claims_intake, dsn_lc_claims_worker, commerce_claims_reply_link_key, commerce_meta_page_token_keys_json, commerce_meta_page_token_active_key_id, ecpay_logistics_keyring]
+    secrets: [dsn_lc_claims_intake, dsn_lc_claims_worker, dsn_lc_retention_job, commerce_claims_reply_link_key, commerce_meta_page_token_keys_json, commerce_meta_page_token_active_key_id, ecpay_logistics_keyring]
     cpus: 0.5
     mem_limit: 256m
 
@@ -625,6 +627,7 @@ services:
       - pw_lc_api_stripe_ingress
       - pw_lc_claims_intake
       - pw_lc_claims_worker
+      - pw_lc_retention_job
       - pw_lc_stripe_registrar
       - pw_lc_meta_registrar
     volumes:
@@ -694,6 +697,7 @@ secrets:
   pw_lc_api_stripe_ingress: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_api_stripe_ingress" }
   pw_lc_claims_intake: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_claims_intake" }
   pw_lc_claims_worker: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_claims_worker" }
+  pw_lc_retention_job: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_retention_job" }
   pw_lc_stripe_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_stripe_registrar" }
   pw_lc_meta_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_meta_registrar" }
   dsn_lc_api_runtime: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_api_runtime" }
@@ -711,6 +715,7 @@ secrets:
   dsn_lc_api_stripe_ingress: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_api_stripe_ingress" }
   dsn_lc_claims_intake: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_claims_intake" }
   dsn_lc_claims_worker: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_claims_worker" }
+  dsn_lc_retention_job: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_retention_job" }
   dsn_lc_stripe_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_stripe_registrar" }
   dsn_lc_meta_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_meta_registrar" }
   commerce_bff_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_bff_key" }

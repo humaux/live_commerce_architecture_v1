@@ -213,6 +213,11 @@ No new Go modules and no new npm packages. `lcentry` uses only the Go standard l
     pairwise (negative S10f).
 24. **`smoke.sh static` and `make_config` are BSD/GNU portable** (`sed -i.bak`), so macOS developer machines and CI run the
     same cases. `smoke.sh full` still needs a Linux host with root (GNU userland, ports 80/443).
+25. **U08 claims retention (R2)**: claims-worker runs the hourly `claims_retention_v1` purge on its own login
+    `lc_retention_job` (`dsn_lc_retention_job`); `retention-admin` ships in `lc-go`. With the `claims` profile on,
+    `deploy.sh` post-checks run `retention-admin status` on that login and require a run in the last 26 h and
+    `enforced=1` (`LC_REQUIRE_RETENTION_ENFORCED=0` only under waiver W1). `lc_retention_operator` is never
+    provisioned here (`docs/runbooks/claims-data-deletion.md`); smoke S46 asserts the job login cannot erase.
 
 ## Known limits recorded by the R1 deploy unit
 
