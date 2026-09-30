@@ -900,6 +900,8 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
     const result = await bodyJSON(request, shapes[target.body], changingCookie);
     if (result.error) return result.error;
     body = result.body;
+    // The browser sends the closed `{}` shape, but Go's export takes no body at all (buyerhttp noBody): do not forward it.
+    if (target.privatePath === "privacy/export") body = undefined;
   } else {
     const result = await noBody(request);
     if (result !== "empty")

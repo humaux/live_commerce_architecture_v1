@@ -84,6 +84,11 @@ passed="$(grep -c '^--- PASS' "$log" || true)"
 failed="$(grep -c '^--- FAIL' "$log" || true)"
 skipped="$(grep -c '^--- SKIP' "$log" || true)"
 echo "test-focused: top-level PASS=$passed FAIL=$failed SKIP=$skipped exit=$status"
+if [[ "$status" == 0 && "$failed" != 0 ]]; then
+  # observed 2026-09-30: FAIL=1 printed with exit=0 (a failed top-level test must never end as PASS)
+  echo "test-focused: $failed top-level test(s) failed but go test reported exit 0 — treated as FAILURE" >&2
+  exit 1
+fi
 if [[ "$status" == 0 && "$passed" == 0 ]]; then
   echo "test-focused: zero tests matched '$run_regex' — treated as FAILURE, not PASS" >&2
   exit 3

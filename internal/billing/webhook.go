@@ -17,6 +17,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -77,6 +78,11 @@ func (s *Service) serveWebhook(w http.ResponseWriter, r *http.Request, ingress *
 	}
 	subID, ok := subscriptionID(ev, raw)
 	if !ok {
+		if strings.HasPrefix(ev.Type, "invoice.") {
+			// An endpoint on an API version older than stripe.APIVersion has no invoice.parent: without this line the
+			// miss is silent and standing would depend on customer.subscription.updated alone (runbook §6.4 pins it).
+			slog.Warn("billing_ops_alert", "code", "invoice_without_subscription")
+		}
 		acknowledge(w)
 		return
 	}

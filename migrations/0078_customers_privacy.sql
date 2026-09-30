@@ -693,14 +693,27 @@ BEGIN
  END IF;
 
  -- ponytail: read-time aggregates (CD3); materialize when p95 > 300 ms at a measured store size (§9).
- WITH base AS MATERIALIZED (
+ -- The row set is driven from owners that HAVE activity (orders / bound bundles), never from every buyer.owners row:
+ -- buyer.issue_capability creates an owner per anonymous visitor, so scanning owners made each page O(visitors)
+ -- (lane-close review P2, CB03 10k idle owners). The per-customer aggregates below then run over customers only.
+ WITH active_owner AS MATERIALIZED (
+  SELECT o.owner_id AS id FROM checkout.orders o WHERE o.tenant_id=s.tenant_id AND o.store_id=p_store
+   AND (p_customer IS NULL OR o.owner_id=p_customer)
+  UNION
+  SELECT b.owner_id FROM claims.bundles b WHERE b.tenant_id=s.tenant_id AND b.store_id=p_store AND b.owner_id IS NOT NULL
+   AND (p_customer IS NULL OR b.owner_id=p_customer)
+ ), base AS MATERIALIZED (
   SELECT ow.tenant_id,ow.store_id,ow.id,ow.created_at AS first_seen,ow.active,
    greatest(
     (SELECT max(o.created_at) FROM checkout.orders o WHERE o.tenant_id=ow.tenant_id AND o.store_id=ow.store_id AND o.owner_id=ow.id),
     (SELECT max(b.bound_at) FROM claims.bundles b WHERE b.tenant_id=ow.tenant_id AND b.store_id=ow.store_id AND b.owner_id=ow.id)
    ) AS last_activity
-  FROM buyer.owners ow
-  WHERE ow.tenant_id=s.tenant_id AND ow.store_id=p_store AND (p_customer IS NULL OR ow.id=p_customer)
+  FROM active_owner ao
+  -- LATERAL ... LIMIT 1 forces one primary-key probe per customer: without it the planner (no statistics right after a
+  -- bulk insert of visitors) chose a hash join that read the whole owners table again.
+  CROSS JOIN LATERAL (SELECT w.tenant_id,w.store_id,w.id,w.created_at,w.active FROM buyer.owners w
+    WHERE w.id=ao.id AND w.tenant_id=s.tenant_id AND w.store_id=p_store LIMIT 1) ow
+  WHERE (p_customer IS NULL OR ow.id=p_customer)
    AND (p_q IS NULL OR EXISTS(SELECT 1 FROM checkout.orders qo WHERE qo.tenant_id=ow.tenant_id AND qo.store_id=ow.store_id
      AND qo.owner_id=ow.id AND CASE WHEN v_phone
       THEN right(regexp_replace(coalesce(qo.snapshot#>>'{destination,phone}',''),'[^0-9]','','g'),char_length(v_digits))=v_digits

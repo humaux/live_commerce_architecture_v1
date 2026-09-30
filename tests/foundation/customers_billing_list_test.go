@@ -664,6 +664,43 @@ func TestCustomersBillingCB03List(t *testing.T) {
 			t.Errorf("finance without orders:read: %v, want ErrForbidden", err)
 		}
 	})
+
+	// Lane-close review P2: buyer.issue_capability creates an owner per anonymous visitor, so a list that scans every
+	// buyer.owners row is O(visitors) per page. The work counter is pg_stat_xact_user_tables on buyer.owners inside the
+	// one transaction (tuples fetched by any scan, including inside the SECURITY DEFINER function): deterministic, unlike
+	// a timing bound. 10k idle owners must not be read; the customers themselves still are.
+	t.Run("list reads customers, not every visitor (10k idle owners)", func(t *testing.T) {
+		before := c.all(tok1, s1, "")
+		mustExec(t, e.f.owner, `INSERT INTO buyer.owners(tenant_id,store_id) SELECT st.tenant_id,st.id FROM control.stores st,generate_series(1,10000) WHERE st.id=$1`, s1)
+		var oid uint32
+		if err := e.f.owner.QueryRow(ctx, `SELECT 'buyer.owners'::regclass::oid`).Scan(&oid); err != nil {
+			t.Fatal(err)
+		}
+		var work int64
+		err := platform.WithScope(ctx, e.f.runtime, tok1, s1, "store:read", func(tx pgx.Tx, s platform.Scope) error {
+			read := func() (n int64) {
+				if err := tx.QueryRow(ctx, `SELECT coalesce(sum(seq_tup_read+idx_tup_fetch),0)::bigint FROM pg_stat_xact_user_tables WHERE relid=$1::oid`, oid).Scan(&n); err != nil {
+					t.Fatal(err)
+				}
+				return n
+			}
+			start := read()
+			if _, err := customers.List(ctx, tx, s, tok1, customers.ListRequest{Page: pagination.Request{Limit: 50}}); err != nil {
+				return err
+			}
+			work = read() - start
+			return nil
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if work >= 1000 {
+			t.Errorf("list read %d buyer.owners tuples with 10000 idle owners in the store (want < 1000: customers only)", work)
+		}
+		if after := c.all(tok1, s1, ""); len(after) != len(before) {
+			t.Errorf("idle owners changed the customer list: %d -> %d rows", len(before), len(after))
+		}
+	})
 }
 
 // grant records the buyer's own consent through the frozen Go API (real buyer pool and capability).
