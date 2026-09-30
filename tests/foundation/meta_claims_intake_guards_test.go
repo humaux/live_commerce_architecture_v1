@@ -224,12 +224,17 @@ func TestMetaClaimsMCI10SecretClaimOnlyInLoadSecret(t *testing.T) {
 				}
 				continue
 			}
-			uses, loads, loadsAds := false, false, false
+			uses, loads, loadsAds, cvsSQL := false, false, false, false
 			ast.Inspect(fn, func(n ast.Node) bool {
 				switch x := n.(type) {
 				case *ast.Ident:
 					if x.Name == "SecretClaim" {
 						uses = true
+					}
+					// taiwan-cvs-logistics-v1 §7.4, ruling B17 (E1: Finish takes the SecretClaim): the ECPay route's two
+					// lease-fenced statements are package constants, not literals in the function.
+					if x.Name == "loadSQL" || x.Name == "finishSQL" {
+						cvsSQL = true
 					}
 				case *ast.BasicLit:
 					if x.Kind == token.STRING && strings.Contains(x.Value, "load_meta_page_token") {
@@ -249,8 +254,14 @@ func TestMetaClaimsMCI10SecretClaimOnlyInLoadSecret(t *testing.T) {
 			// ads-capi C2 (meta-ads-v1 §6.4): the CAPI route's LoadSecret is the third lease-fenced loader; it calls the same
 			// integration.load_meta_ads_token and reads ads.capi_user_data in that fenced transaction.
 			if !(s.dir == "internal/integrations/metareply" && loads) && !(s.dir == "internal/integrations/meta_ads" && loadsAds) &&
-				!(s.dir == "internal/attribution/capiroute" && loadsAds) {
-				t.Errorf("%s: function %s references SecretClaim but is not the load_meta_page_token loader in metareply or the load_meta_ads_token loader in meta_ads or attribution/capiroute", s.path, fn.Name.Name)
+				!(s.dir == "internal/attribution/capiroute" && loadsAds) &&
+				// R2 integration (the CVS lane never met this guard): in ecpayroute only the fenced loader/finisher
+				// (load, finishOn: they run loadSQL/finishSQL = integration.load_cvs_create / finish_cvs_create, checked
+				// below) and their two one-line dispatcher hooks (loadSecret, finish) may take the claim.
+				!(s.dir == "internal/integrations/shipping/ecpay/ecpayroute" && (cvsSQL || fn.Name.Name == "loadSecret" || fn.Name.Name == "finish") &&
+					strings.Contains(s.text, "FROM integration.load_cvs_create(") && strings.Contains(s.text, "SELECT integration.finish_cvs_create(") &&
+					strings.Count(s.text, "integration.load_") == strings.Count(s.text, "integration.load_cvs_create")) {
+				t.Errorf("%s: function %s references SecretClaim but is not the load_meta_page_token loader in metareply, the load_meta_ads_token loader in meta_ads or attribution/capiroute, or the load_cvs_create/finish_cvs_create route in ecpayroute", s.path, fn.Name.Name)
 			}
 		}
 	}

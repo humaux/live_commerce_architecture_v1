@@ -804,7 +804,7 @@ func slxP06(t *testing.T, profiles, paymentProfile string, compose map[string]st
 	if err := os.MkdirAll(envDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	for _, f := range []string{"admin", "storefront", "payment-worker", "claims-worker", "expiry-worker", "meta-worker", "caddy", "postgres"} {
+	for _, f := range []string{"admin", "storefront", "payment-worker", "claims-worker", "ads-worker", "expiry-worker", "meta-worker", "caddy", "postgres"} { // every file of preflight's knob allowlist (ads-worker.env: R2 ads lane)
 		if err := os.WriteFile(filepath.Join(envDir, f+".env"), nil, 0o644); err != nil {
 			t.Fatal(err)
 		}
