@@ -54,6 +54,8 @@ type CVS struct {
 	client *ecpay.Client
 	cfg    CVSConfig
 	gates  *endpointGates
+	// mapGates caps the unauthenticated map-return hook globally (key "*"); gates caps it per selection (key "map:<id>").
+	mapGates *endpointGates
 }
 
 // NewCVS wires the service. jobs is the insert-only River client (Schema "river"): the API process never runs a worker.
@@ -69,11 +71,11 @@ func NewCVS(pool *pgxpool.Pool, jobs *river.Client[pgx.Tx], keys *ecpay.Keyring,
 		// CVS_ECPAY_ENABLED=1 with buyer payment off (no environment to pin) is a startup error (C9).
 		return nil, command.ErrInvalid
 	}
-	return &CVS{pool: pool, jobs: jobs, keys: keys, client: client, cfg: cfg, gates: newEndpointGates(4)}, nil
+	return &CVS{pool: pool, jobs: jobs, keys: keys, client: client, cfg: cfg, gates: newEndpointGates(4), mapGates: newEndpointGates(mapGlobalCap)}, nil
 }
 
 var (
-	ecpayMerchantID = regexp.MustCompile(`^[A-Za-z0-9]{1,10}$`)
+	ecpayMerchantID = regexp.MustCompile(`^[0-9]{1,10}$`) // same rule as ecpay.merchantIDRE; the SQL CHECKs stay the wider alnum superset
 	ecpaySecret     = regexp.MustCompile(`^[!-~]{1,64}$`)
 	cvsErrCode      = regexp.MustCompile(`^[a-z][a-z0-9_]{2,59}$`)
 	cvsKey          = regexp.MustCompile(`^[A-Za-z0-9_.:-]{8,128}$`)

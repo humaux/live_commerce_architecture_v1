@@ -390,10 +390,37 @@ func TestHooksHandlerRefusalsBeforeAnyDatabaseWork(t *testing.T) {
 	if rec = post("/v1/cvs/ecpay/status/"+endpoint, "x=y"); rec.Code != http.StatusServiceUnavailable || rec.Body.String() == "1|OK" {
 		t.Fatalf("saturated endpoint: %d %q", rec.Code, rec.Body.String())
 	}
+	// Close-out P2: the unauthenticated map-return hook is capped per selection and globally; the gate answers 503 "busy" before any
+	// transaction (an exhausted gate must never reach the pool), and is taken only after the body was read.
+	selection := "44444444-4444-4444-8444-444444444444"
+	mapBody := "MerchantID=2000132&MerchantTradeNo=ABC123&LogisticsSubType=UNIMARTC2C&CVSStoreID=131386&CVSOutSide=0"
+	for i := 0; i < 4; i++ {
+		c.gates.enter("map:" + selection)
+	}
+	if rec = post("/v1/cvs/ecpay/map-return/"+selection, mapBody); rec.Code != http.StatusServiceUnavailable || rec.Body.String() != "busy" {
+		t.Fatalf("saturated selection on the map hook: %d %q", rec.Code, rec.Body.String())
+	}
+	for i := 0; i < mapGlobalCap; i++ {
+		c.mapGates.enter("*")
+	}
+	if rec = post("/v1/cvs/ecpay/map-return/55555555-5555-4555-8555-555555555555", mapBody); rec.Code != http.StatusServiceUnavailable || rec.Body.String() != "busy" {
+		t.Fatalf("saturated global map gate: %d %q", rec.Code, rec.Body.String())
+	}
 	req := httptest.NewRequest(http.MethodGet, "/v1/cvs/ecpay/status/"+endpoint, nil)
 	rec = httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusMethodNotAllowed {
 		t.Fatalf("GET on the status hook: %d", rec.Code)
+	}
+}
+
+// Close-out P3: the adapter and ECPay itself use digit-only MerchantIDs (ecpay.merchantIDRE); a lettered id used to pass Connect and
+// fail later as ecpay_probe_failed. It is refused as invalid input before any network call.
+func TestConnectRefusesLetteredMerchantID(t *testing.T) {
+	c := cvsForTests(t, CVSConfig{ECPay: ecpay.Config{Enabled: true, HooksOrigin: "https://hooks.example.test"}, PaymentEnvironment: "SANDBOX"})
+	in := ConnectInput{Environment: "SANDBOX", Mode: "C2C", MerchantID: "ABC1234", HashKey: "unit-hash-key", HashIV: "unit-hash-iv",
+		SenderName: "寄件人測試", SenderCellPhone: "0911222333"}
+	if _, err := c.Connect(context.Background(), strings.Repeat("t", 43), "22222222-2222-4222-8222-222222222222", "connect-key-0001", in); !errors.Is(err, command.ErrInvalid) {
+		t.Fatalf("connect with a lettered merchant id: %v", err)
 	}
 }

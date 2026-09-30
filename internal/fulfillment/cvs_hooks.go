@@ -33,6 +33,9 @@ const (
 	statusMaxBody    = 16 << 10
 	hookBodyTimeout  = 5 * time.Second
 	hookTxTimeout    = 10 * time.Second
+	// mapGlobalCap bounds concurrent map-return transactions (each holds a commerce_runtime connection and a row lock in
+	// record_cvs_map_return); far below the pool size, far above real buyer concurrency (each tx takes milliseconds).
+	mapGlobalCap = 16
 )
 
 // endpointGates caps concurrent status ingress per endpoint id (the Stripe "ingress can be exhausted" finding applies).
@@ -132,6 +135,19 @@ func (c *CVS) mapReturn(w http.ResponseWriter, r *http.Request) {
 		plain(w, http.StatusBadRequest, "0|invalid")
 		return
 	}
+	// The hook is public and unsigned: bound the transactions a flood of well-formed selection ids can open (per selection and
+	// globally) so the pool stays available for merchants. Taken after the body read so slow senders cannot hold a slot.
+	// 503 is retryable by the browser/ECPay; nothing was recorded.
+	if !c.gates.enter("map:" + selection) {
+		plain(w, http.StatusServiceUnavailable, "busy")
+		return
+	}
+	defer c.gates.leave("map:" + selection)
+	if !c.mapGates.enter("*") {
+		plain(w, http.StatusServiceUnavailable, "busy")
+		return
+	}
+	defer c.mapGates.leave("*")
 	// Only the sha256 of the nonce is compared (and only the digest is stored): the MerchantTradeNo itself never persists.
 	digest := sha256.Sum256([]byte(mr.MerchantTradeNo))
 	ctx, cancel := context.WithTimeout(r.Context(), hookTxTimeout)

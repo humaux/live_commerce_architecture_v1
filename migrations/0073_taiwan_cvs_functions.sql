@@ -221,7 +221,8 @@ CREATE POLICY ecpay_registrar_audit ON ops.audit_events FOR INSERT TO commerce_i
   AND action IN ('logistics.ecpay.connected','logistics.ecpay.rotated','logistics.ecpay.enabled','logistics.ecpay.disabled'));
 CREATE POLICY cvs_create_insert ON integration.operations FOR INSERT TO commerce_integration_writer
  WITH CHECK(provider='ecpay_logistics' AND action='ecpay.cvs_create' AND purpose='transactional' AND actor_kind='MERCHANT'
-  AND state='READY' AND generation=0);
+  AND state='READY' AND generation=0
+  AND tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid AND store_id=nullif(current_setting('app.store_id',true),'')::uuid);
 GRANT SELECT ON fulfillment.cvs_shipments TO commerce_integration_writer;
 CREATE POLICY cvs_shipment_integration_read ON fulfillment.cvs_shipments FOR SELECT TO commerce_integration_writer USING(true);
 GRANT SELECT(id,tenant_id,store_id,state,expires_at,connection_id) ON fulfillment.cvs_selections TO commerce_integration_writer;
@@ -952,6 +953,10 @@ DECLARE v_ok boolean;
 BEGIN
  IF p_tenant IS NULL OR p_store IS NULL OR p_order IS NULL THEN RAISE EXCEPTION 'invalid payable check' USING ERRCODE='22023'; END IF;
  PERFORM set_config('app.tenant_id',p_tenant::text,true),set_config('app.store_id',p_store::text,true);
+ -- Close-out (review P2, 2026-09-30): request_stripe_refund takes this order row FOR UPDATE first (RD3). Waiting on it here means a
+ -- refund that is still uncommitted is committed (and therefore seen by the money check below) before the label purchase is
+ -- cleared; a refund that starts after this transaction is refused by payments.guard_refund_cvs_dispatch while the operation is DISPATCHING.
+ PERFORM 1 FROM checkout.orders o WHERE o.tenant_id=p_tenant AND o.store_id=p_store AND o.id=p_order FOR SHARE;
  v_ok:=fulfillment.order_money_shippable(p_tenant,p_store,p_order);
  PERFORM set_config('app.tenant_id','',true),set_config('app.store_id','',true);
  RETURN v_ok;
@@ -959,6 +964,27 @@ END $$;
 ALTER FUNCTION fulfillment.cvs_order_payable(uuid,uuid,uuid) OWNER TO commerce_checkout_writer;
 REVOKE ALL ON FUNCTION fulfillment.cvs_order_payable(uuid,uuid,uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION fulfillment.cvs_order_payable(uuid,uuid,uuid) TO commerce_integration_writer;
+
+-- Close-out (review P2, 2026-09-30): a card refund cannot start while the label purchase may be on the wire. Between the worker's
+-- load_cvs_create and ECPay's answer no transaction is open, so the money check alone cannot see a refund that commits there. The
+-- refund request already holds the order lock (RD3) when this trigger runs, and cvs_order_payable waits for that lock, so the two
+-- orders are: refund committed first -> the check refuses the Create; operation already DISPATCHING -> the refund is refused here.
+-- READY (not yet claimed) stays refundable: that refund is what stops the dispatch (TCV05). Replaces nothing in post_river/0013.
+CREATE FUNCTION payments.guard_refund_cvs_dispatch() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ IF EXISTS(SELECT 1 FROM fulfillment.cvs_shipments c
+   JOIN integration.operations o ON o.tenant_id=c.tenant_id AND o.store_id=c.store_id AND o.id=c.operation_id
+  WHERE c.tenant_id=NEW.tenant_id AND c.store_id=NEW.store_id AND c.order_id=NEW.order_id
+   AND c.state='REQUESTED' AND o.state='DISPATCHING') THEN
+  RAISE EXCEPTION 'cvs_attempt_in_flight' USING ERRCODE='PT409'; END IF;
+ RETURN NEW;
+END $$;
+ALTER FUNCTION payments.guard_refund_cvs_dispatch() OWNER TO commerce_checkout_writer;
+REVOKE ALL ON FUNCTION payments.guard_refund_cvs_dispatch() FROM PUBLIC;
+CREATE TRIGGER guard_refund_cvs_dispatch BEFORE INSERT ON payments.stripe_refunds
+ FOR EACH ROW EXECUTE FUNCTION payments.guard_refund_cvs_dispatch();
+COMMENT ON FUNCTION payments.guard_refund_cvs_dispatch() IS 'fulfillment (CVS) owner; BEFORE INSERT on payments.stripe_refunds (written only by payments.request_stripe_refund, which holds the order lock). Refuses PT409 cvs_attempt_in_flight while the order''s CVS label operation is DISPATCHING; reads cvs_shipments and integration.operations only; no writes, no provider I/O.';
 GRANT SELECT(tenant_id,store_id,owner_id,id,payment_mode,collection_state,commercial_state) ON checkout.orders TO commerce_integration_writer;
 
 -- ---------------------------------------------------------------------------------------------------
@@ -2111,7 +2137,7 @@ COMMENT ON FUNCTION fulfillment.record_buyer_cvs_store(bytea,uuid,text,bytea,big
 COMMENT ON FUNCTION fulfillment.read_cvs_offer(bytea,uuid) IS 'internal/checkout options only; STABLE, EXECUTE commerce_checkout_runtime (the options login is not a commerce_runtime member). Mode ecpay_map iff the store has an enabled qualified profile, else buyer_entered; asserts the caller GUCs equal the buyer scope.';
 COMMENT ON FUNCTION fulfillment.order_money_shippable(uuid,uuid,uuid) IS 'internal/fulfillment: the MD6 payment/review/refund clauses of 0063 (card) plus the pay_at_pickup branch (§16.2). SECURITY INVOKER: runs with the calling definer''s grants (commerce_checkout_writer, commerce_auth). Non-goal: does not authorize anyone or check fulfillment state.';
 COMMENT ON FUNCTION fulfillment.manual_shipment_eligible(uuid,uuid,uuid) IS 'MD6 shipping eligibility (0063, replaced in 0073): order_money_shippable AND CONFIRMED + MANUAL_UNASSIGNED AND no live ECPay attempt. Single source for record_manual_shipment, request_cvs_shipment, the list filter and the export.';
-COMMENT ON FUNCTION fulfillment.cvs_order_payable(uuid,uuid,uuid) IS 'internal/integrations shipping route via integration.load_cvs_create only; EXECUTE commerce_integration_writer. Dispatch-time money check (refund/review committed after the request stops the label purchase); boolean only; resets the scope GUCs it set.';
+COMMENT ON FUNCTION fulfillment.cvs_order_payable(uuid,uuid,uuid) IS 'internal/integrations shipping route via integration.load_cvs_create only; EXECUTE commerce_integration_writer. Dispatch-time money check (refund/review committed after the request stops the label purchase); takes the order row FOR SHARE so an uncommitted refund is waited for; boolean only; resets the scope GUCs it set.';
 COMMENT ON FUNCTION fulfillment.settle_cvs_attempt(uuid,uuid,uuid) IS 'fulfillment helper (no caller EXECUTE): settles a latest REQUESTED/UNKNOWN attempt from its operation for gaps no dispatcher completion reaches (claim-side STALE_BINDING, exhausted budget, stale lease > 1 h). Idempotent; callers hold the tenant/store GUCs.';
 COMMENT ON FUNCTION integration.plan_cvs_create(uuid,uuid,uuid,smallint,uuid,uuid,uuid,bigint) IS 'fulfillment.request_cvs_shipment only; EXECUTE commerce_checkout_writer. Verifies the River job is this transaction''s external_operation_v1 row, locks the binding FOR SHARE and inserts the READY ecpay.cvs_create operation (request = {order_id, attempt} only, TD8) plus its event. No integration:execute, no core.Service.Plan.';
 COMMENT ON FUNCTION fulfillment.request_cvs_shipment(bytea,uuid,uuid,text,bytea,bigint,uuid,bigint) IS 'internal/fulfillment CVS.Request only; EXECUTE commerce_runtime. fulfillment:write via resolve_access before any lock; a replayed key RAISEs PT2RP (Go rolls back its job). Freezes connection, credential version, environment, subtype, store, amounts (I05: server-derived TWD), trade no. Errors PT422 not_shippable|no_cvs_destination|connection_unavailable|cvs_environment_mismatch|cvs_amount_exceeds|cvs_recipient_rejected, PT409 version_changed.';
