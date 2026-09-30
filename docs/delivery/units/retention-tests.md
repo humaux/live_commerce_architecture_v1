@@ -81,7 +81,7 @@ received_at, disclosed in evidence`). No hand-written dependency lists.
 GOTOOLCHAIN=go1.27.1 go vet ./tests/foundation ./internal/retention ./cmd/retention-admin
 GOTOOLCHAIN=go1.27.1 go test -race -count=1 -run '^TestClaimsRetentionCRP01' ./internal/retention ./cmd/retention-admin
 LC_FOCUSED_TIMEOUT=2400s bash scripts/dev/test-focused.sh '^TestClaimsRetentionCRP(0[2-9]|10)'
-LC_FOCUSED_TIMEOUT=2400s bash scripts/dev/test-focused.sh '^Test(LiveClaims|MetaClaimsIntake|MetaConsumer|CustomersBillingCB05)'
+LC_FOCUSED_TIMEOUT=2400s bash scripts/dev/test-focused.sh '^Test(LiveClaims|MetaClaims|MetaConsumer|CustomersBillingCB05)'
 python3 scripts/check_packet.py
 ```
 Red proof per gate (PROCESS §2.4): one targeted mutation of the merged candidate in a scratch copy (reverted) →

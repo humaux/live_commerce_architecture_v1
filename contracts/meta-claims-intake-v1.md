@@ -826,3 +826,4 @@ Recorded from `contracts/claims-retention-purge-v1.md` §6 (FROZEN 2026-09-30); 
   (column SELECT, DELETE, lock-only UPDATE(updated_at)), `integration.operations` (column SELECT,
   UPDATE(request,semantic_key,updated_at)) and `live.claim_windows` (column SELECT, lock-only UPDATE(updated_at)).
   MCI02 holds back the dependent 0071 with 0064 (ledger +3) and leaves every other 0071 privilege to CRP02.
+  It also records the grant `EXECUTE meta_inbox.lock_purgeable(uuid)` to the NOLOGIN `commerce_retention_writer` only (B27; meta-inbox-v1 amendment).

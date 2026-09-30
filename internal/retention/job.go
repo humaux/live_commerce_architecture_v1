@@ -40,6 +40,8 @@ type Worker struct {
 	river.WorkerDefaults[JobArgs]
 	pool  *pgxpool.Pool
 	batch func(context.Context) (Counts, error)
+	// budget is the unit-test seam of the time bound; zero means jobBudget.
+	budget time.Duration
 }
 
 // NewWorker returns the job worker over the retention-job pool the caller already validated
@@ -53,7 +55,7 @@ func NewWorker(jobPool *pgxpool.Pool) (*Worker, error) {
 	return w, nil
 }
 
-// Work runs up to maxBatches batches, each its own transaction, and stops when more=0 or busy=1.
+// Work runs up to maxBatches batches, each its own transaction, and stops when more=0, busy=1 or the time budget is spent.
 // A database error is returned so River retries the job; batches already committed stay committed.
 func (w *Worker) Work(ctx context.Context, _ *river.Job[JobArgs]) error {
 	if w == nil || w.batch == nil {
@@ -61,9 +63,17 @@ func (w *Worker) Work(ctx context.Context, _ *river.Job[JobArgs]) error {
 	}
 	total := Counts{}
 	batches := 0
+	budget := w.budget
+	if budget == 0 {
+		budget = jobBudget
+	}
+	start := time.Now()
 	for batches < maxBatches {
 		if err := ctx.Err(); err != nil {
 			return err
+		}
+		if batches > 0 && time.Since(start) >= budget {
+			break // the rest waits for the next hour; the job must end inside RescueWindow
 		}
 		c, err := w.batch(ctx)
 		if err != nil {
@@ -91,8 +101,16 @@ func (w *Worker) Work(ctx context.Context, _ *river.Job[JobArgs]) error {
 	return nil
 }
 
-// Timeout bounds one job: 20 batches must finish well inside a River rescue window.
-func (w *Worker) Timeout(*river.Job[JobArgs]) time.Duration { return 5 * time.Minute }
+// RescueWindow is River's RescueStuckJobsAfter in cmd/claims-worker. A job running longer is rescued and a second
+// runner starts beside the first, so the job bounds itself below it.
+const RescueWindow = time.Minute
+
+// jobBudget: no new batch starts after this; Timeout leaves the rest of the window for the batch in flight.
+// What is left waits for the next hourly run (more stays 1), so a long backlog never outlives the rescue window.
+const jobBudget = RescueWindow * 3 / 4
+
+// Timeout bounds one job below RescueWindow (see jobBudget).
+func (w *Worker) Timeout(*river.Job[JobArgs]) time.Duration { return RescueWindow - 5*time.Second }
 
 // PeriodicJob is the hourly schedule, also run once at claims-worker start. The constructor
 // returns no InsertOpts so JobArgs.InsertOpts (hourly uniqueness, queue default) applies.

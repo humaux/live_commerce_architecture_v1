@@ -782,13 +782,25 @@ func TestClaimsRetentionCRP03ReportOnly(t *testing.T) {
 	if st.Enforced || st.LastRunMore || time.Since(time.Unix(st.LastRunUnix, 0)) > time.Minute || st.LastRunUnix <= 0 {
 		t.Errorf("status after a report-only run: %+v", st)
 	}
-	// The cap: two eligible links with p_limit=1 count one and say more=1 (still nothing written).
+	// The cap: two eligible links with p_limit=1 count one (still nothing written). r2-close-retention: report-only
+	// never says more=1 (nothing is removed, so the backlog cannot shrink; more=1 would make the job run 20 batches an
+	// hour and trip the runbook's last_run_more escalation falsely) and writes exactly one run row.
 	extra := e.w.bundle(t, x.recent, "manual", "", "rg-c1-extra-"+t04Tag())
 	e.w.link(t, x.recent, extra, crOld(7))
 	before = crDigests(t, e.f.owner)
+	var markCap time.Time
+	if err := e.f.owner.QueryRow(ctx, `SELECT clock_timestamp()`).Scan(&markCap); err != nil {
+		t.Fatal(err)
+	}
 	capped := e.run(1)
-	crWant(t, "report-only capped run", capped, map[string]int64{"enforced": 0, "links": 1, "more": 1})
+	crWant(t, "report-only capped run", capped, map[string]int64{"enforced": 0, "links": 1, "more": 0})
 	crSameDigests(t, "capped report-only run", before, crDigests(t, e.f.owner))
+	if rows := crLogSince(t, e.f.owner, markCap); len(rows) != 1 || rows[0].counts["more"] != float64(0) {
+		t.Errorf("capped report-only run log rows %+v, want exactly one run row with more=0", rows)
+	}
+	if st, err := retention.GetStatus(ctx, e.job); err != nil || st.LastRunMore {
+		t.Errorf("status after a capped report-only run: %+v %v, want last_run_more=false", st, err)
+	}
 	// The operator may run the same batch (EXECUTE run_retention) and is recorded under its own login.
 	mark2 := dbNow
 	if err := e.f.owner.QueryRow(ctx, `SELECT clock_timestamp()`).Scan(&mark2); err != nil {
@@ -3290,6 +3302,9 @@ func TestClaimsRetentionCRP02Schema(t *testing.T) {
 			"erasure bundle triple partial": {`INSERT INTO claims.retention_log(kind,request_id,selector_digest,bundle_ref,counts) VALUES('actor_erased',gen_random_uuid(),$1,gen_random_uuid(),'{}')`, []any{digest[:]}},
 			"actor_digest 31 bytes":         {`INSERT INTO claims.retention_log(kind,request_id,selector_digest,actor_digest,counts) VALUES('actor_erased',gen_random_uuid(),$1,$2,'{}')`, []any{digest[:], digest[:31]}},
 			"run row with an actor digest":  {`INSERT INTO claims.retention_log(kind,actor_digest,counts) VALUES('run',$1,'{}')`, []any{digest[:]}},
+			"array of numbers count":        {`INSERT INTO claims.retention_log(kind,counts) VALUES('run','{"links":[1]}')`, nil},
+			"run row with a request id":     {`INSERT INTO claims.retention_log(kind,request_id,counts) VALUES('run',gen_random_uuid(),'{}')`, nil},
+			"replay row with a selector":    {`INSERT INTO claims.retention_log(kind,selector_digest,counts) VALUES('replay',$1,'{}')`, []any{digest[:]}},
 			"replay row with a bundle ref":  {`INSERT INTO claims.retention_log(kind,bundle_tenant,bundle_store,bundle_ref,counts) VALUES('replay',gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),'{}')`, nil},
 		} {
 			if err := ins(q.sql, q.args...); crSQLState(err) != "23514" {
@@ -4224,11 +4239,11 @@ func TestClaimsRetentionCRP08RestoreReplay(t *testing.T) {
 		crSameDigests(t, "second replay", fp, crDigests(t, ownerR, "claims.bundles", "claims.links", "claims.meta_intake", "integration.operations"))
 	})
 
-	t.Run("replay-with-pending-intake-and-nonterminal-operation-residue", func(t *testing.T) {
-		// Contract §3 says a replay ignores the RD5 hold; §4 says the writer may delete only non-PENDING intake rows and redact only
-		// terminal reply operations. A snapshot taken while an intake row of the erased actor was PENDING (or its reply not yet
-		// terminal) therefore keeps those two rows after a replay. This subtest RECORDS the observed residue (it does not
-		// assert it away): the bundles must be de-identified either way, and the residue is reported as a contract conflict.
+	t.Run("replay-removes-pending-intake-and-redacts-nonterminal-operations", func(t *testing.T) {
+		// Contract §3 (r2-close-retention amendment): a replay ignores the RD5 hold, including the PENDING-intake and
+		// non-terminal-reply-operation limits of the §4 policies, which a replay lifts through a transaction-local flag
+		// set only inside claims.replay_actor_erasures. A snapshot taken while an intake row of the erased actor was
+		// PENDING (or its reply not yet terminal) must not keep the actor key or the comment_ref after the replay.
 		ownerR, opR, _ := restore("lc_crp08_residue")
 		for _, ts := range tombstones {
 			if ts.ActorDigest != nil {
@@ -4237,6 +4252,7 @@ func TestClaimsRetentionCRP08RestoreReplay(t *testing.T) {
 		}
 		mustExec(t, ownerR, `UPDATE claims.meta_intake SET state='PENDING',applied_event_id=NULL,drop_reason=NULL,received_at=clock_timestamp() WHERE comment_ref=$1`, p.intakeIDs[0])
 		mustExec(t, ownerR, `UPDATE integration.operations SET state='READY',generation=0 WHERE id=$1`, p.ops[0])
+		other := q.fingerprint(t, ownerR)
 		if _, err := retention.Replay(ctx, opR, nil); err != nil {
 			t.Fatalf("replay: %v", err)
 		}
@@ -4247,9 +4263,25 @@ func TestClaimsRetentionCRP08RestoreReplay(t *testing.T) {
 				t.Errorf("bundle %s not de-identified by the replay: purged=%v key kept=%t", b.id, purged, actor == keyP)
 			}
 		}
-		pending := crCount(t, ownerR, `SELECT count(*) FROM claims.meta_intake WHERE actor_key=$1`, keyP)
-		unredacted := crCount(t, ownerR, `SELECT count(*) FROM integration.operations WHERE id=$1 AND request ? 'comment_ref'`, p.ops[0])
-		t.Logf("FINDING (contract conflict, escalated): after a replay that ignores the hold, %d PENDING intake row(s) still carry the erased actor key and %d non-terminal reply operation(s) still carry the comment_ref (RLS of §4 forbids deleting/redacting them)", pending, unredacted)
+		if n := crCount(t, ownerR, `SELECT count(*) FROM claims.meta_intake WHERE actor_key=$1`, keyP); n != 0 {
+			t.Errorf("%d intake row(s) (PENDING included) still carry the erased actor key after the replay", n)
+		}
+		var state string
+		var hasRef bool
+		if err := ownerR.QueryRow(ctx, `SELECT state,request ? 'comment_ref' FROM integration.operations WHERE id=$1`, p.ops[0]).Scan(&state, &hasRef); err != nil {
+			t.Fatal(err)
+		}
+		if hasRef || state != "READY" {
+			t.Errorf("non-terminal reply operation after the replay: state=%s comment_ref present=%t, want state untouched (READY) and comment_ref redacted", state, hasRef)
+		}
+		if q.fingerprint(t, ownerR) != other {
+			t.Error("the replay changed an untouched actor")
+		}
+		// the flag is transaction-local: a later erase in the same session must not inherit it (PENDING rows stay protected)
+		var flag string
+		if err := ownerR.QueryRow(ctx, `SELECT coalesce(current_setting('lc.retention_replay',true),'')`).Scan(&flag); err != nil || flag == "on" {
+			t.Errorf("lc.retention_replay leaked past the replay transaction: %q %v", flag, err)
+		}
 	})
 
 	t.Run("green-replay-from-an-external-tombstone-file-via-the-cli", func(t *testing.T) {

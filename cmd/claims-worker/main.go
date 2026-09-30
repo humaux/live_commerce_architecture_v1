@@ -164,7 +164,7 @@ func run(ctx context.Context, getenv func(string) string) error {
 	// Default queue of the main river schema: the only queue external_operation_v1 jobs use. A stuck job
 	// (crash mid-dispatch) is rescued after one minute so a reply is not stranded for River's default hour.
 	client, err := river.NewClient(riverpgxv5.New(workerPool), &river.Config{
-		Schema: "river", Workers: workers, RescueStuckJobsAfter: time.Minute,
+		Schema: "river", Workers: workers, RescueStuckJobsAfter: retention.RescueWindow,
 		// U08: hourly + on start, unique per hour (retention.JobArgs.InsertOpts); inserted by commerce_worker (IR-4).
 		PeriodicJobs: []*river.PeriodicJob{retention.PeriodicJob()},
 		Queues:       map[string]river.QueueConfig{river.QueueDefault: {MaxWorkers: 4}},

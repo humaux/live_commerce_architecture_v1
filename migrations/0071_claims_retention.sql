@@ -26,7 +26,12 @@
 --  * Every definer pins search_path=pg_catalog, lock_timeout=2s (IR-5), fully qualifies relations, REVOKEs PUBLIC.
 --  * Global lock order: advisory hashtextextended('claims-retention',0) -> claim_windows FOR SHARE -> bundles FOR NO
 --    KEY UPDATE -> lines -> links -> meta_intake -> operations -> conversations -> messages/comment_events -> log.
---    The job uses SKIP LOCKED on every row lock and never waits on a row; erase waits (55P03 after 2 s).
+--    The job takes SKIP LOCKED on every row it CHOOSES; C2 then updates/deletes lines and links of a bundle it already
+--    holds FOR NO KEY UPDATE without SKIP LOCKED (every claims writer locks the bundle first, so those rows cannot be
+--    held by anyone else; a stuck one costs 55P03 after 2 s and a River retry). Erase waits (55P03 after 2 s).
+--    Replay mode (r2-close-retention): claims.replay_actor_erasures sets the transaction-local flag lc.retention_replay
+--    so that apply_actor_erasure may also delete PENDING intake rows and redact non-terminal reply operations of an
+--    erased actor (a restored snapshot must not keep them); erase_actor resets the flag first (RD5 hold applies).
 --  * The reserved label pattern `purged-|erased-`+32 hex is enforced by CHECK so a merchant cannot pre-occupy the
 --    (random) label a later purge assigns (contract §13 F1). D4/B23: a bundle may carry only ITS OWN `erased-<id hex>`
 --    (customers.apply_erasure, 0078); that value is not random and not predictable by another bundle's merchant
@@ -95,11 +100,11 @@ CREATE TABLE claims.retention_log (
  actor_digest bytea CHECK (octet_length(actor_digest)=32),
  bundle_tenant uuid, bundle_store uuid, bundle_ref uuid,
  counts jsonb NOT NULL CHECK (jsonb_typeof(counts)='object' AND octet_length(counts::text)<=1024
-  AND NOT jsonb_path_exists(counts,'$.* ? (@.type() != "number")')),
+  AND NOT jsonb_path_exists(counts,'strict $.* ? (@.type() != "number")')),
  executed_by name NOT NULL DEFAULT session_user,
  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
  CHECK ((kind='actor_erased') = (request_id IS NOT NULL AND selector_digest IS NOT NULL)),
- CHECK (kind='actor_erased' OR (actor_digest IS NULL AND bundle_ref IS NULL)),
+ CHECK (kind='actor_erased' OR (actor_digest IS NULL AND bundle_ref IS NULL AND request_id IS NULL AND selector_digest IS NULL)),
  CHECK (kind<>'actor_erased' OR ((actor_digest IS NOT NULL) <> (bundle_ref IS NOT NULL))),
  CHECK ((bundle_ref IS NULL) = (bundle_tenant IS NULL) AND (bundle_ref IS NULL) = (bundle_store IS NULL)));
 CREATE UNIQUE INDEX retention_one_request ON claims.retention_log(request_id) WHERE kind='actor_erased';
@@ -146,7 +151,7 @@ GRANT SELECT(tenant_id,store_id,id,inbox_event_id,session_id,object,asset_id,com
 GRANT DELETE ON claims.meta_intake TO commerce_retention_writer;
 GRANT UPDATE(updated_at) ON claims.meta_intake TO commerce_retention_writer;
 CREATE POLICY intake_retention_read ON claims.meta_intake FOR SELECT TO commerce_retention_writer USING (true);
-CREATE POLICY intake_retention_delete ON claims.meta_intake FOR DELETE TO commerce_retention_writer USING (state<>'PENDING');
+CREATE POLICY intake_retention_delete ON claims.meta_intake FOR DELETE TO commerce_retention_writer USING (state<>'PENDING' OR coalesce(current_setting('lc.retention_replay',true),'')='on');
 CREATE POLICY intake_retention_lock ON claims.meta_intake FOR UPDATE TO commerce_retention_writer USING (true) WITH CHECK (false);
 
 GRANT SELECT(tenant_id,store_id,session_id,state,closed_at) ON live.claim_windows TO commerce_retention_writer;
@@ -159,9 +164,10 @@ GRANT UPDATE(request,semantic_key,updated_at) ON integration.operations TO comme
 CREATE POLICY operation_retention_read ON integration.operations FOR SELECT TO commerce_retention_writer
  USING (action='meta.private_reply');
 CREATE POLICY operation_retention_update ON integration.operations FOR UPDATE TO commerce_retention_writer
- USING (action='meta.private_reply' AND state IN ('SUCCEEDED','FAILED_FINAL','CANCELLED','BLOCKED_POLICY','STALE_BINDING'))
- WITH CHECK (action='meta.private_reply' AND state IN ('SUCCEEDED','FAILED_FINAL','CANCELLED','BLOCKED_POLICY','STALE_BINDING')
-  AND NOT request ? 'comment_ref' AND semantic_key LIKE 'mpr-%');
+ USING (action='meta.private_reply' AND (state IN ('SUCCEEDED','FAILED_FINAL','CANCELLED','BLOCKED_POLICY','STALE_BINDING')
+  OR coalesce(current_setting('lc.retention_replay',true),'')='on'))
+ WITH CHECK (action='meta.private_reply' AND (state IN ('SUCCEEDED','FAILED_FINAL','CANCELLED','BLOCKED_POLICY','STALE_BINDING')
+  OR coalesce(current_setting('lc.retention_replay',true),'')='on') AND NOT request ? 'comment_ref' AND semantic_key LIKE 'mpr-%');
 
 GRANT SELECT, DELETE ON social.conversations, social.messages, social.comment_events TO commerce_retention_writer;
 GRANT UPDATE(next_seq) ON social.conversations TO commerce_retention_writer;
@@ -338,7 +344,9 @@ BEGIN
    WHERE x.kind='run' AND x.created_at < v_now - interval '400 days' ORDER BY x.created_at LIMIT p_limit);
  END IF;
 
- v_more:=greatest(n_links,n_bundles,n_intake,n_ops,n_comments,n_messages,n_conv)>=p_limit;
+ -- more=1 only when enforced: a report-only run removes nothing, so its backlog never shrinks and more=1 would make the
+ -- job rerun 20 batches an hour and trip the runbook's last_run_more escalation (r2-close-retention).
+ v_more:=pol.enforced AND greatest(n_links,n_bundles,n_intake,n_ops,n_comments,n_messages,n_conv)>=p_limit;
  v_counts:=jsonb_build_object('enforced',pol.enforced::int,'links',n_links,'bundles',n_bundles,'intake',n_intake,
   'operations',n_ops,'comment_events',n_comments,'messages',n_messages,'conversations',n_conv,'more',v_more::int);
  INSERT INTO claims.retention_log(kind,counts) VALUES('run',v_counts);
@@ -362,6 +370,7 @@ LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog SET lock_t
 DECLARE v_now timestamptz:=clock_timestamp(); v_single boolean:=p_bundle IS NOT NULL;
  n_bundles integer:=0; n_lines integer:=0; n_links integer:=0; n_intake integer:=0; n_comments integer:=0;
  n_ops integer:=0; n_messages integer:=0; n_conv integer:=0; n_defer integer:=0; r record;
+ v_replay boolean:=coalesce(current_setting('lc.retention_replay',true),'')='on';
 BEGIN
  IF (v_single AND (p_tenant IS NULL OR p_store IS NULL OR p_actor_key IS NOT NULL))
   OR (NOT v_single AND (p_platform IS NULL OR p_platform NOT IN ('facebook','instagram')
@@ -406,12 +415,14 @@ BEGIN
     n_defer:=n_defer+1;
    END IF;
   END LOOP;
-  DELETE FROM claims.meta_intake m WHERE m.actor_key=p_actor_key AND m.state<>'PENDING';
+  -- replay (restore): a PENDING row of an erased actor goes too, else the consumer would re-claim and reply to them.
+  DELETE FROM claims.meta_intake m WHERE m.actor_key=p_actor_key AND (m.state<>'PENDING' OR v_replay);
   GET DIAGNOSTICS n_intake=ROW_COUNT;
-  -- C4: terminal private-reply operations of the bundles; non-terminal ones were a hold (RD5) or are left (replay).
+  -- C4: terminal private-reply operations of the bundles; non-terminal ones were a hold (RD5) or, in replay, are redacted
+  -- too and keep their state: the adapter then fails pre-send (errBadRequest, zero calls) and the dispatcher records UNKNOWN.
   UPDATE integration.operations o SET request=(o.request - 'comment_ref') || '{"redacted":true}'::jsonb,
     semantic_key='mpr-purged:'||o.id::text, updated_at=v_now FROM claims.bundles b
-   WHERE o.action='meta.private_reply' AND o.state IN ('SUCCEEDED','FAILED_FINAL','CANCELLED','BLOCKED_POLICY','STALE_BINDING')
+   WHERE o.action='meta.private_reply' AND (v_replay OR o.state IN ('SUCCEEDED','FAILED_FINAL','CANCELLED','BLOCKED_POLICY','STALE_BINDING'))
     AND o.request ? 'comment_ref' AND o.tenant_id=b.tenant_id AND o.store_id=b.store_id
     AND o.request->>'bundle_id'=b.id::text AND b.purged_at IS NULL AND b.platform=p_platform AND b.actor_key=p_actor_key;
   GET DIAGNOSTICS n_ops=ROW_COUNT;
@@ -469,6 +480,8 @@ BEGIN
   OR (v_c AND (p_tenant IS NULL OR p_store IS NULL OR p_object IS NOT NULL OR p_asset IS NOT NULL OR p_peer_keys IS NOT NULL)) THEN
   RAISE EXCEPTION 'invalid actor erasure' USING ERRCODE='22023';
  END IF;
+ -- The replay flag is transaction-local and settable by any session: erase always runs with the RD5 hold semantics.
+ PERFORM set_config('lc.retention_replay','off',true);
  -- busy: the advisory wait is bounded by lock_timeout (55P03); the operator re-runs (a repeat is idempotent by request id).
  PERFORM pg_advisory_xact_lock(hashtextextended('claims-retention',0));
  v_canon:=CASE WHEN v_a THEN 'a|'||p_object||'|'||p_asset||'|'||encode(sha256(convert_to(p_actor_key,'UTF8')),'hex')
@@ -635,6 +648,8 @@ BEGIN
   RAISE EXCEPTION 'invalid erasure tombstones' USING ERRCODE='22023';
  END IF;
  PERFORM pg_advisory_xact_lock(hashtextextended('claims-retention',0));
+ -- Replay mode for apply_actor_erasure and the §4 policies, transaction-local, reset below.
+ PERFORM set_config('lc.retention_replay','on',true);
  IF p_tombstones IS NOT NULL THEN
   -- A missing tombstone is inserted as an actor_erased row (counts {}); an existing one is not duplicated.
   INSERT INTO claims.retention_log(kind,request_id,selector_digest,actor_digest,bundle_tenant,bundle_store,bundle_ref,counts)
@@ -662,6 +677,7 @@ BEGIN
   v_c:=claims.apply_actor_erasure(NULL,NULL,t.bundle_tenant,t.bundle_store,t.bundle_ref,NULL);
   SELECT jsonb_object_agg(kk,coalesce((v_sum->>kk)::bigint,0)+coalesce((v_c->>kk)::bigint,0)) INTO v_sum FROM unnest(v_keys) kk;
  END LOOP;
+ PERFORM set_config('lc.retention_replay','off',true);
  IF v_sum='{}'::jsonb THEN
   v_sum:=(SELECT jsonb_object_agg(kk,0) FROM unnest(v_keys) kk);
  END IF;
@@ -727,9 +743,9 @@ COMMENT ON TRIGGER links_not_purged ON claims.links IS
 COMMENT ON FUNCTION claims.links_not_purged() IS
  'internal/retention trigger function of claims.links only; no caller EXECUTE (RD8). Owner commerce_retention_writer. Non-goal: authority checks (issue_link owns those).';
 COMMENT ON FUNCTION claims.run_retention(integer) IS
- 'internal/retention (Worker.Work on commerce_retention_job, RunOnce on commerce_retention_operator). One batch of the hourly purge, C1-C6 of the contract, <= p_limit rows per class, SKIP LOCKED, advisory key hashtextextended(''claims-retention'',0) (busy => {"busy":1}). Report-only unless claims.retention_policy.enforced. Returns and logs numeric counts only. Non-goals: erasing one actor, choosing rows by caller input.';
+ 'internal/retention (Worker.Work on commerce_retention_job, RunOnce on commerce_retention_operator). One batch of the hourly purge, C1-C6 of the contract, <= p_limit rows per class, SKIP LOCKED, advisory key hashtextextended(''claims-retention'',0) (busy => {"busy":1}). Report-only unless claims.retention_policy.enforced (report-only never returns more=1). Returns and logs numeric counts only. Non-goals: erasing one actor, choosing rows by caller input.';
 COMMENT ON FUNCTION claims.apply_actor_erasure(text,text,uuid,uuid,uuid,text[]) IS
- 'internal/retention internal helper of erase_actor and replay_actor_erasures; no EXECUTE grant. Idempotent RD1 de-identification plus deletion of the actor''s links, intake, comment events, terminal reply refs and (peer keys) conversations. Never applies the RD5 hold.';
+ 'internal/retention internal helper of erase_actor and replay_actor_erasures; no EXECUTE grant. Idempotent RD1 de-identification plus deletion of the actor''s links, intake, comment events, terminal reply refs and (peer keys) conversations. Never applies the RD5 hold; in replay mode (lc.retention_replay=on, set only by replay_actor_erasures) it also deletes PENDING intake rows and redacts non-terminal reply operations.';
 COMMENT ON FUNCTION claims.erase_actor(uuid,text,text,text,text,uuid,uuid,uuid,text[]) IS
  'internal/retention Erase (commerce_retention_operator via cmd/retention-admin erase). One synchronous tx: exactly one selector (sender key / comment ref / bundle), request-id idempotency (PT409 on another selector, PT404 unknown), RD5 8-day hold returning {"held":1,"retry_after"} with nothing written, then apply_actor_erasure and an actor_erased log row (digest only). Non-goals: a request queue, Meta callbacks.';
 COMMENT ON FUNCTION claims.set_retention_policy(bigint,boolean,integer,integer,integer,integer) IS
@@ -737,4 +753,4 @@ COMMENT ON FUNCTION claims.set_retention_policy(bigint,boolean,integer,integer,i
 COMMENT ON FUNCTION claims.retention_status() IS
  'internal/retention GetStatus (commerce_retention_job and commerce_retention_operator; smoke uses the job login). Numbers only: enforced, version, periods, last_run_unix (0 = never), last_run_more.';
 COMMENT ON FUNCTION claims.replay_actor_erasures(claims.erasure_tombstone[]) IS
- 'internal/retention Replay (commerce_retention_operator via cmd/retention-admin replay) after a restore (架构 §21.4): applies every actor_erased tuple from the log or the supplied list (inserted first, no duplicates) without the RD5 hold. Peer-key social deletions are not replayable. Non-goal: normal operation.';
+ 'internal/retention Replay (commerce_retention_operator via cmd/retention-admin replay) after a restore (架构 §21.4): applies every actor_erased tuple from the log or the supplied list (inserted first, no duplicates) without the RD5 hold (PENDING intake rows and non-terminal reply operations of an erased actor are deleted/redacted too). Peer-key social deletions are not replayable. Non-goal: normal operation.';

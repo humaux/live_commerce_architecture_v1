@@ -52,7 +52,7 @@ unset pw COMMERCE_RETENTION_OPERATOR_DATABASE_URL
    `ra policy-set --expected-version <version> --enforced=true --link-days 7 --intake-days 30 --claims-days 90 --social-days 30`
 3. `ra status` 应显示 `enforced=1`。之后把 `compose.env` 的 `LC_REQUIRE_RETENTION_ENFORCED` 设回 `1`（W1 期间可为 0）。
 4. 部署后检查（`deploy.sh` retention_check）从此要求 `enforced=1` 且最近 26 小时内有一次清理；失败 = 部署未验证。
-   `last_run_more=1` 连续超过 24 小时 → 清理跟不上（合同 §9 上限：每小时 20×500 行/类），升级给集成者。
+   `last_run_more=1` 连续超过 24 小时（仅 enforced 模式；report-only 时 more 恒为 0，积压看 run 行的各 counts） → 清理跟不上（合同 §9 上限：每小时 20×500 行/类），升级给集成者。
 
 **第二个商家接入之前必须完成本节**（ruling X4：W1 到期）。
 
@@ -68,11 +68,14 @@ unset pw COMMERCE_RETENTION_OPERATOR_DATABASE_URL
 选择器的 id 只从 stdin 传入，绝不出现在命令行、日志或工单里：
 
 ```sh
+# 选择器 id 一律用 read -rs 读入（不回显、不进 shell history）；绝不以赋值或命令行参数键入
 # (c) 店家给出的认领单
 ra erase --request <uuid> --tenant <uuid> --store <uuid> --bundle <uuid> </dev/null
 # (b) 请求人自己的评论 id
+read -rs COMMENT_ID
 printf '{"comment_ref":"%s"}' "$COMMENT_ID" | ra erase --request <uuid> --object page --asset <page id>
 # (a) Meta 发送者 id（--app 可重复 0..8 次，用于删除私信/评论 social.* 行）
+read -rs SENDER_ID
 printf '{"sender_id":"%s"}' "$SENDER_ID" | ra erase --request <uuid> --object page --asset <page id> --app <app id>
 unset COMMENT_ID SENDER_ID
 ```

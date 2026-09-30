@@ -198,6 +198,23 @@ func TestWorkerLoop(t *testing.T) {
 	}
 }
 
+// A long backlog must end the job inside the rescue window: no new batch starts after the budget, and the rest
+// waits for the next hour (more stays 1, the job still succeeds).
+func TestWorkerStopsStartingBatchesAfterBudget(t *testing.T) {
+	calls := 0
+	w := &Worker{budget: 30 * time.Millisecond, batch: func(context.Context) (Counts, error) {
+		calls++
+		time.Sleep(20 * time.Millisecond)
+		return Counts{"more": 1}, nil
+	}}
+	if err := w.Work(context.Background(), &river.Job[JobArgs]{}); err != nil {
+		t.Fatal(err)
+	}
+	if calls < 1 || calls >= maxBatches {
+		t.Fatalf("calls=%d, want the budget to stop the loop after at least 1 and fewer than %d batches", calls, maxBatches)
+	}
+}
+
 func TestJobContract(t *testing.T) {
 	if (JobArgs{}).Kind() != "claims_retention_v1" || JobKind != "claims_retention_v1" {
 		t.Fatal("kind")
@@ -207,8 +224,13 @@ func TestJobContract(t *testing.T) {
 		t.Fatalf("insert opts %+v", opts)
 	}
 	w := &Worker{}
-	if w.Timeout(nil) != 5*time.Minute {
-		t.Fatal("timeout")
+	// r2-close-retention: River rescues a job running longer than cmd/claims-worker's RescueStuckJobsAfter (one minute)
+	// and starts a second runner, so the job must time out before that.
+	if d := w.Timeout(nil); d <= 0 || d >= RescueWindow {
+		t.Fatalf("timeout %v, want 0 < timeout < rescue window %v", d, RescueWindow)
+	}
+	if RescueWindow != time.Minute {
+		t.Fatal("RescueWindow must equal the claims-worker RescueStuckJobsAfter (one minute)")
 	}
 	if PeriodicJob() == nil {
 		t.Fatal("periodic job")
