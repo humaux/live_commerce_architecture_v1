@@ -903,7 +903,8 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
   if (target.body) {
     const result = await bodyJSON(request, shapes[target.body], changingCookie);
     if (result.error) return result.error;
-    body = result.body;
+    // Go privacyExport takes no body (internal/buyerhttp noBody → 422); the browser hop's {} stops here.
+    body = target.privatePath === "privacy/export" ? undefined : result.body;
   } else {
     const result = await noBody(request);
     if (result !== "empty")
