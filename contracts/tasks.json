@@ -1050,7 +1050,7 @@
       "internal/integrations/meta_ads/**",
       "tests/ads/**"
     ],
-    "status": "NOT_STARTED",
+    "status": "IN_PROGRESS",
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
@@ -1059,7 +1059,8 @@
       "real_pg": "NOT_RUN",
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
-      "independent_review": "NOT_RUN"
+      "independent_review": "NOT_RUN",
+      "r2_2026_09_30": "meta-ads-v1 on r2/ads: independent gates MA01, MA02 (schema/allowance/billing), MA04-MA07, MA11 REAL_PG + MOCK (tests/ads/fakegraph) PASS; MA09a BROWSER (MOCK) PASS via test-local.sh --browser-meta-ads; evidence output/r2-ads-merge/tests/ and output/ads-tests/ (red+green per gate). MA-S1..S4 SANDBOX, MA-L1/L2 LIVE, MA10 review: NOT_RUN."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
@@ -1085,7 +1086,7 @@
       "tests/attribution/**",
       "internal/integrations/meta_catalog/**"
     ],
-    "status": "NOT_STARTED",
+    "status": "IN_PROGRESS",
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
     "max_attempts_before_escalation": 2,
     "completion_dimensions": {
@@ -1094,7 +1095,8 @@
       "real_pg": "NOT_RUN",
       "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
       "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
-      "independent_review": "NOT_RUN"
+      "independent_review": "NOT_RUN",
+      "r2_2026_09_30": "CAPI + product feed on r2/ads: MA03 consent, MA08 CAPI, feed REAL_PG + MOCK PASS; MA09b BROWSER buyer consent PASS; evidence output/r2-ads-merge/tests/. Catalog mapping beyond the CSV feed and audience export: NOT_STARTED. MA-S4 SANDBOX: NOT_RUN."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
