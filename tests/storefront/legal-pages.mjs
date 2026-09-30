@@ -18,7 +18,7 @@ import net from "node:net";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { chromium } from "@playwright/test";
+import { launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
 
 const root = process.cwd();
 const storefront = path.join(root, "apps/storefront");
@@ -73,7 +73,7 @@ try {
     try { ready = (await fetch(`${origin}/en/legal/privacy`)).status === 200; } catch { await new Promise((r) => setTimeout(r, 100)); }
   }
   await mkdir(evidenceDir, { recursive: true });
-  browser = await chromium.launch();
+  browser = await launch();
   const viewports = { desktop: { width: 1440, height: 900 }, mobile: { width: 390, height: 844 } };
   const expectedLinks = (locale) => [...slugs.map((s) => `/${locale}/legal/${s}`), `/${locale}/data-deletion`].sort();
 
@@ -82,7 +82,7 @@ try {
       for (const [vp, size] of Object.entries(viewports)) {
         const name = `${locale}/${slug} @${vp}`;
         await check(name, async () => {
-          const context = await browser.newContext({ viewport: size });
+          const context = await browser.newContext(ctxOpts({ viewport: size }));
           const page = await context.newPage();
           const foreign = [];
           page.on("request", (r) => {

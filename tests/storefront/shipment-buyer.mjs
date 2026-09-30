@@ -15,7 +15,8 @@ import { readFile, writeFile, mkdtemp, rm } from "node:fs/promises";
 import { createWriteStream } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { chromium, devices, expect } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { launch, ctxOpts, phone } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
 
 const env = (name) => {
   const value = process.env[name];
@@ -68,9 +69,9 @@ async function startNext() {
   throw new Error("owned Next readiness timeout");
 }
 async function context(mobile) {
-  const c = await browser.newContext(mobile
-    ? { ...devices["Pixel 7"], viewport: { width: 390, height: 844 }, screen: { width: 390, height: 844 }, ignoreHTTPSErrors: true }
-    : { ignoreHTTPSErrors: true, viewport: { width: 1440, height: 900 } });
+  const c = await browser.newContext(ctxOpts(mobile
+    ? { ...phone, viewport: { width: 390, height: 844 }, screen: { width: 390, height: 844 }, ignoreHTTPSErrors: true }
+    : { ignoreHTTPSErrors: true, viewport: { width: 1440, height: 900 } }));
   contexts.push(c);
   await c.addCookies([{ name: "__Host-commerce_buyer", value: seal(buyerToken), url: origin, secure: true, httpOnly: true, sameSite: "Lax" }]);
   return c;
@@ -111,7 +112,7 @@ try {
     const upstream = net.connect(edgePort, "127.0.0.1", () => { socket.write("HTTP/1.1 200 Connection Established\r\n\r\n"); if (head.length) upstream.write(head); socket.pipe(upstream).pipe(socket); });
     for (const s of [socket, upstream]) { sockets.add(s); s.on("close", () => sockets.delete(s)); s.on("error", () => { socket.destroy(); upstream.destroy(); }); }
   });
-  browser = await chromium.launch({ headless: true, proxy: { server: `http://127.0.0.1:${await listen(proxy)}` } });
+  browser = await launch({ headless: true, proxy: { server: `http://127.0.0.1:${await listen(proxy)}` } });
 
   for (const locale of ["en", "zh-TW", "zh-CN"]) {
     for (const mobile of [false, true]) {

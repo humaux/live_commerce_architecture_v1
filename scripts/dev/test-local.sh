@@ -10,8 +10,8 @@ command -v go >/dev/null
 # public official golden vector; missing Node must fail before starting fixtures.
 command -v node >/dev/null
 test_mode="${1:-foundation}"
-if [[ "$#" -gt 1 ]] || [[ "$test_mode" != foundation && "$test_mode" != --browser-identity && "$test_mode" != --browser-password-auth && "$test_mode" != --browser-admin-legacy && "$test_mode" != --browser-buyer && "$test_mode" != --browser-merchant-buyer && "$test_mode" != --browser-merchant-orders-bff && "$test_mode" != --browser-merchant-orders-ui && "$test_mode" != --browser-input-delivery && "$test_mode" != --browser-studio-bff && "$test_mode" != --browser-studio-ui && "$test_mode" != --browser-live-claims && "$test_mode" != --browser-order && "$test_mode" != --browser-payment && "$test_mode" != --stripe-browser && "$test_mode" != --browser-refund-fulfilment && "$test_mode" != --browser-customers-billing && "$test_mode" != --browser-meta-ads && "$test_mode" != --browser-cvs && "$test_mode" != --browser-e2e && "$test_mode" != --checkout && "$test_mode" != --payment && "$test_mode" != --payment-worker && "$test_mode" != --expiry-worker && "$test_mode" != --storefront-resolver && "$test_mode" != --buyer-http && "$test_mode" != --purchase-entry && "$test_mode" != --merchant-orders && "$test_mode" != --meta-inbox && "$test_mode" != --meta-consumer && "$test_mode" != --meta-runtime && "$test_mode" != --legacy-isolation && "$test_mode" != --local-recovery && "$test_mode" != --live-planning && "$test_mode" != --live-authority && "$test_mode" != --live-media-plan && "$test_mode" != --live-media-execution && "$test_mode" != --live-browser-input && "$test_mode" != --live-media-input && "$test_mode" != --live-media-crash && "$test_mode" != --live-media-stop && "$test_mode" != --live-media-recovery && "$test_mode" != --live-media-runtime && "$test_mode" != --studio-backend ]]; then
-  printf 'Usage: bash scripts/dev/test-local.sh [--browser-identity|--browser-password-auth|--browser-admin-legacy|--browser-buyer|--browser-merchant-buyer|--browser-merchant-orders-bff|--browser-merchant-orders-ui|--browser-input-delivery|--browser-studio-bff|--browser-studio-ui|--browser-live-claims|--browser-order|--browser-payment|--stripe-browser|--browser-refund-fulfilment|--browser-customers-billing|--browser-meta-ads|--browser-cvs|--browser-e2e|--checkout|--payment|--payment-worker|--expiry-worker|--storefront-resolver|--buyer-http|--purchase-entry|--merchant-orders|--meta-inbox|--meta-consumer|--meta-runtime|--legacy-isolation|--local-recovery|--live-planning|--live-authority|--live-media-plan|--live-media-execution|--live-browser-input|--live-media-input|--live-media-crash|--live-media-stop|--live-media-recovery|--live-media-runtime|--studio-backend]\n' >&2
+if [[ "$#" -gt 1 ]] || [[ "$test_mode" != foundation && "$test_mode" != --browser-identity && "$test_mode" != --browser-password-auth && "$test_mode" != --browser-admin-legacy && "$test_mode" != --browser-buyer && "$test_mode" != --browser-merchant-buyer && "$test_mode" != --browser-merchant-orders-bff && "$test_mode" != --browser-merchant-orders-ui && "$test_mode" != --browser-input-delivery && "$test_mode" != --browser-studio-bff && "$test_mode" != --browser-studio-ui && "$test_mode" != --browser-live-claims && "$test_mode" != --browser-order && "$test_mode" != --browser-payment && "$test_mode" != --stripe-browser && "$test_mode" != --browser-refund-fulfilment && "$test_mode" != --browser-customers-billing && "$test_mode" != --browser-meta-ads && "$test_mode" != --browser-cvs && "$test_mode" != --browser-webkit && "$test_mode" != --browser-e2e && "$test_mode" != --checkout && "$test_mode" != --payment && "$test_mode" != --payment-worker && "$test_mode" != --expiry-worker && "$test_mode" != --storefront-resolver && "$test_mode" != --buyer-http && "$test_mode" != --purchase-entry && "$test_mode" != --merchant-orders && "$test_mode" != --meta-inbox && "$test_mode" != --meta-consumer && "$test_mode" != --meta-runtime && "$test_mode" != --legacy-isolation && "$test_mode" != --local-recovery && "$test_mode" != --live-planning && "$test_mode" != --live-authority && "$test_mode" != --live-media-plan && "$test_mode" != --live-media-execution && "$test_mode" != --live-browser-input && "$test_mode" != --live-media-input && "$test_mode" != --live-media-crash && "$test_mode" != --live-media-stop && "$test_mode" != --live-media-recovery && "$test_mode" != --live-media-runtime && "$test_mode" != --studio-backend ]]; then
+  printf 'Usage: bash scripts/dev/test-local.sh [--browser-identity|--browser-password-auth|--browser-admin-legacy|--browser-buyer|--browser-merchant-buyer|--browser-merchant-orders-bff|--browser-merchant-orders-ui|--browser-input-delivery|--browser-studio-bff|--browser-studio-ui|--browser-live-claims|--browser-order|--browser-payment|--stripe-browser|--browser-refund-fulfilment|--browser-customers-billing|--browser-meta-ads|--browser-cvs|--browser-webkit|--browser-e2e|--checkout|--payment|--payment-worker|--expiry-worker|--storefront-resolver|--buyer-http|--purchase-entry|--merchant-orders|--meta-inbox|--meta-consumer|--meta-runtime|--legacy-isolation|--local-recovery|--live-planning|--live-authority|--live-media-plan|--live-media-execution|--live-browser-input|--live-media-input|--live-media-crash|--live-media-stop|--live-media-recovery|--live-media-runtime|--studio-backend]\n' >&2
   exit 2
 fi
 if [[ "$test_mode" == --browser-merchant-buyer ]]; then
@@ -209,6 +209,17 @@ if [[ "$test_mode" == --browser-cvs ]]; then
   node --test --experimental-strip-types tests/admin/logistics-model.test.ts tests/admin/logistics-request.test.ts
   mkdir -p output/playwright
 fi
+if [[ "$test_mode" == --browser-webkit ]]; then
+  # WebKit/iPhone Safari coverage of the buyer-critical flows (MOCK tier; docs/delivery/GATES.md). Refuse before any build when the WebKit
+  # browser is absent: that is NOT_RUN (exit 2), never a green run on Chromium.
+  test -f tests/storefront/browser-engine.mjs
+  command -v node >/dev/null
+  if ! node --input-type=module -e 'import { webkit } from "@playwright/test"; import { existsSync } from "node:fs"; process.exit(existsSync(webkit.executablePath()) ? 0 : 1)' 2>/dev/null; then
+    printf 'NOT_RUN: Playwright WebKit is not installed (pnpm exec playwright install webkit); nothing was started.\n' >&2
+    exit 2
+  fi
+  mkdir -p output/playwright
+fi
 if [[ "$test_mode" == --browser-e2e ]]; then
   # T12: refuse a no-test success; the whole deal loop is one Go test driving one Playwright spec.
   test -f tests/foundation/browser_e2e_test.go
@@ -216,13 +227,13 @@ if [[ "$test_mode" == --browser-e2e ]]; then
   test -f tests/e2e/deal-loop.spec.ts
   mkdir -p output/playwright
 fi
-if [[ "$test_mode" == --browser-buyer || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-order || "$test_mode" == --browser-payment || "$test_mode" == --stripe-browser || "$test_mode" == --browser-refund-fulfilment || "$test_mode" == --browser-customers-billing || "$test_mode" == --browser-meta-ads || "$test_mode" == --browser-cvs || "$test_mode" == --browser-live-claims || "$test_mode" == --browser-e2e ]]; then
+if [[ "$test_mode" == --browser-buyer || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-order || "$test_mode" == --browser-payment || "$test_mode" == --stripe-browser || "$test_mode" == --browser-refund-fulfilment || "$test_mode" == --browser-customers-billing || "$test_mode" == --browser-meta-ads || "$test_mode" == --browser-cvs || "$test_mode" == --browser-webkit || "$test_mode" == --browser-live-claims || "$test_mode" == --browser-e2e ]]; then
   command -v pnpm >/dev/null
   command -v openssl >/dev/null
   COMMERCE_BUYER_WEB_ENABLED=0 pnpm run build:storefront
   mkdir -p output/playwright
 fi
-if [[ "$test_mode" == --browser-identity || "$test_mode" == --browser-password-auth || "$test_mode" == --browser-admin-legacy || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-merchant-orders-bff || "$test_mode" == --browser-merchant-orders-ui || "$test_mode" == --browser-input-delivery || "$test_mode" == --browser-studio-bff || "$test_mode" == --browser-studio-ui || "$test_mode" == --browser-live-claims || "$test_mode" == --browser-refund-fulfilment || "$test_mode" == --browser-customers-billing || "$test_mode" == --browser-meta-ads || "$test_mode" == --browser-cvs || "$test_mode" == --browser-e2e ]]; then
+if [[ "$test_mode" == --browser-identity || "$test_mode" == --browser-password-auth || "$test_mode" == --browser-admin-legacy || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-merchant-orders-bff || "$test_mode" == --browser-merchant-orders-ui || "$test_mode" == --browser-input-delivery || "$test_mode" == --browser-studio-bff || "$test_mode" == --browser-studio-ui || "$test_mode" == --browser-live-claims || "$test_mode" == --browser-refund-fulfilment || "$test_mode" == --browser-customers-billing || "$test_mode" == --browser-meta-ads || "$test_mode" == --browser-cvs || "$test_mode" == --browser-webkit || "$test_mode" == --browser-e2e ]]; then
   command -v pnpm >/dev/null
   command -v node >/dev/null
   # Production package, but local-only runtime configuration is injected by the
@@ -287,6 +298,52 @@ export LC_TEST_DATABASE_URL="postgres://postgres:${POSTGRES_PASSWORD}@${test_por
 export LC_TEST_DATABASE_ALLOWED=1
 export COMMERCE_FIXTURE_ALLOWED=1
 export LC_ADMIN_GUARD_DSN="postgres://postgres:${POSTGRES_PASSWORD}@${test_port}/lc_admin_fixture?sslmode=disable"
+# fresh_pg: recreate the task-owned PG container (same pinned image, limits and loopback binding as above) and re-export the two DSNs.
+# Every go test process needs a FRESH cluster: the foundation fixture creates cluster-scoped roles (foundation_api, ...) and refuses a
+# cluster that already has them. Used by --stripe-browser and --browser-webkit, one step per go test process.
+fresh_pg() {
+  if [[ "$(docker inspect -f '{{index .Config.Labels "livecommerce.fixture"}}' "$test_container" 2>/dev/null || true)" == "$test_container" ]]; then
+    docker rm -f "$test_container" >/dev/null
+  fi
+  docker run -d --pull=never --name "$test_container" \
+    --label "livecommerce.fixture=$test_container" --memory=1g --cpus=1 --pids-limit=128 \
+    --tmpfs /var/lib/postgresql:rw,size=268435456 \
+    -e POSTGRES_PASSWORD -e POSTGRES_DB=lc_foundation_test \
+    -p 127.0.0.1::5432 \
+    postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 \
+    -c shared_buffers=32MB -c max_connections=60 >/dev/null
+  for ((attempt=0; attempt<40; attempt++)); do
+    if docker exec "$test_container" pg_isready -h 127.0.0.1 -U postgres -d lc_foundation_test >/dev/null 2>&1; then break; fi
+    sleep 0.5
+  done
+  docker exec "$test_container" pg_isready -h 127.0.0.1 -U postgres -d lc_foundation_test >/dev/null
+  docker exec "$test_container" createdb -U postgres lc_admin_fixture
+  test_port="$(docker port "$test_container" 5432/tcp)"
+  [[ "$test_port" == 127.0.0.1:* ]]
+  export LC_TEST_DATABASE_URL="postgres://postgres:${POSTGRES_PASSWORD}@${test_port}/lc_foundation_test?sslmode=disable"
+  export LC_ADMIN_GUARD_DSN="postgres://postgres:${POSTGRES_PASSWORD}@${test_port}/lc_admin_fixture?sslmode=disable"
+}
+# go_json_counts <go test -json log> <min leaf cases>: prints "pass=.. fail=.. skip=.. leaf_pass=.. leaf_fail=.. leaf_skip=.. VERDICT=0|1".
+# Contract stripe-psp-v1 §14 parsing rule: any SKIP, any FAIL, fewer leaf cases than expected, zero passing tests or a missing log is VERDICT=1.
+go_json_counts() {
+python3 - "$1" "$2" <<'PY'
+import json,sys
+t={"pass":0,"fail":0,"skip":0};leaf=dict(t)
+try:
+    lines=open(sys.argv[1]).read().splitlines()
+except OSError:
+    print("missing-log VERDICT=1");sys.exit(0)
+for line in lines:
+    try: e=json.loads(line)
+    except ValueError: continue
+    a=e.get("Action");n=e.get("Test")
+    if n and a in t:
+        t[a]+=1
+        if "/" in n: leaf[a]+=1
+ok=t["fail"]==0 and t["skip"]==0 and t["pass"]>0 and leaf["pass"]>=int(sys.argv[2])
+print("pass=%d fail=%d skip=%d leaf_pass=%d leaf_fail=%d leaf_skip=%d VERDICT=%d"%(t["pass"],t["fail"],t["skip"],leaf["pass"],leaf["fail"],leaf["skip"],0 if ok else 1))
+PY
+}
 if [[ "$test_mode" == --browser-identity ]]; then
   LC_BROWSER_IDENTITY_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=180s -run '^(TestBrowserIdentityRealChain|TestBrowserSettingsWizardRealChain|TestMerchantAccountAPIProcessRestart)$' -v ./tests/foundation
   printf 'PASS: isolated PG + signed MOCK IdP browser chain; fixture removed at exit.\n'
@@ -337,28 +394,7 @@ elif [[ "$test_mode" == --stripe-browser ]]; then
   # Every go test process needs a FRESH cluster: the foundation fixture creates cluster-scoped roles
   # (foundation_api, ...) and refuses a cluster that already has them. Recreate the task-owned container
   # (same pinned image, limits and loopback binding as above) before each step.
-  stripe_fresh_pg() {
-    if [[ "$(docker inspect -f '{{index .Config.Labels "livecommerce.fixture"}}' "$test_container" 2>/dev/null || true)" == "$test_container" ]]; then
-      docker rm -f "$test_container" >/dev/null
-    fi
-    docker run -d --pull=never --name "$test_container" \
-      --label "livecommerce.fixture=$test_container" --memory=1g --cpus=1 --pids-limit=128 \
-      --tmpfs /var/lib/postgresql:rw,size=268435456 \
-      -e POSTGRES_PASSWORD -e POSTGRES_DB=lc_foundation_test \
-      -p 127.0.0.1::5432 \
-      postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 \
-      -c shared_buffers=32MB -c max_connections=60 >/dev/null
-    for ((attempt=0; attempt<40; attempt++)); do
-      if docker exec "$test_container" pg_isready -h 127.0.0.1 -U postgres -d lc_foundation_test >/dev/null 2>&1; then break; fi
-      sleep 0.5
-    done
-    docker exec "$test_container" pg_isready -h 127.0.0.1 -U postgres -d lc_foundation_test >/dev/null
-    docker exec "$test_container" createdb -U postgres lc_admin_fixture
-    test_port="$(docker port "$test_container" 5432/tcp)"
-    [[ "$test_port" == 127.0.0.1:* ]]
-    export LC_TEST_DATABASE_URL="postgres://postgres:${POSTGRES_PASSWORD}@${test_port}/lc_foundation_test?sslmode=disable"
-    export LC_ADMIN_GUARD_DSN="postgres://postgres:${POSTGRES_PASSWORD}@${test_port}/lc_admin_fixture?sslmode=disable"
-  }
+  stripe_fresh_pg() { fresh_pg; }
   # run_stripe_step <label> <go -run regex> <timeout> <min leaf cases> [env assignments...]
   # Parses `go test -json` (contract §14 parsing rule): any SKIP, any FAIL, fewer leaf cases than
   # expected, zero passing tests, a missing log or a non-zero exit is FAIL, never PASS.
@@ -370,24 +406,7 @@ elif [[ "$test_mode" == --stripe-browser ]]; then
     # Only this go test process (never Node) receives the Stripe key; the Go test strips it again.
     env "$@" LC_STRIPE_BROWSER_ACCEPTANCE=1 LC_STRIPE_EVIDENCE_ROOT="$stripe_out" LC_BASELINE_OUT_DIR="$stripe_out" \
       GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout="$tmo" -json -run "$regex" ./tests/foundation >"$log" 2>"$log.stderr" || rc=$?
-    counts="$(python3 - "$log" "$min" <<'PY'
-import json,sys
-t={"pass":0,"fail":0,"skip":0};leaf=dict(t)
-try:
-    lines=open(sys.argv[1]).read().splitlines()
-except OSError:
-    print("missing-log VERDICT=1");sys.exit(0)
-for line in lines:
-    try: e=json.loads(line)
-    except ValueError: continue
-    a=e.get("Action");n=e.get("Test")
-    if n and a in t:
-        t[a]+=1
-        if "/" in n: leaf[a]+=1
-ok=t["fail"]==0 and t["skip"]==0 and t["pass"]>0 and leaf["pass"]>=int(sys.argv[2])
-print("pass=%d fail=%d skip=%d leaf_pass=%d leaf_fail=%d leaf_skip=%d VERDICT=%d"%(t["pass"],t["fail"],t["skip"],leaf["pass"],leaf["fail"],leaf["skip"],0 if ok else 1))
-PY
-)"
+    counts="$(go_json_counts "$log" "$min")"
     verdict="${counts##*VERDICT=}"; counts="${counts%% VERDICT=*}"
     printf '%s: %s exit=%d verdict=%d duration=%ds log=%s\n' "$label" "$counts" "$rc" "$verdict" "$(( $(date +%s) - started ))" "$log"
     if [[ "$rc" != 0 || "$verdict" != 0 ]]; then stripe_status=1; printf 'FAIL: %s (go test exit=%d, parse verdict=%d)\n' "$label" "$rc" "$verdict" >&2; fi
@@ -433,6 +452,38 @@ elif [[ "$test_mode" == --browser-meta-ads ]]; then
 elif [[ "$test_mode" == --browser-cvs ]]; then
   LC_BROWSER_CVS_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1700s -run '^TestBrowserTaiwanCvs$' -v ./tests/foundation
   printf 'PASS: TCV08 MOCK isolated admin + storefront Next, Go, PG, ecpaytest fake map/Create and signed status posts; SANDBOX and WebKit variants are NOT_RUN unless the go test log says otherwise; not provider or deployment acceptance.\n'
+elif [[ "$test_mode" == --browser-webkit ]]; then
+  # Same production storefront + admin builds and the same go tests as the Chromium modes, with LC_BROWSER_ENGINE=webkit: phone-sized buyer
+  # contexts run Playwright's iPhone 15 profile, desktop ones and every admin page run Desktop Safari. One go test process per step on a
+  # fresh PG cluster; any SKIP/FAIL, too few leaf cases or a missing log is a failed step (go_json_counts). Evidence goes to the MAIN checkout.
+  webkit_main="$(cd "$(git rev-parse --git-common-dir)/.." && pwd)"
+  webkit_out="$webkit_main/output/webkit"
+  mkdir -p "$webkit_out"
+  webkit_sha="$(git rev-parse --short=12 HEAD)"
+  webkit_status=0
+  # Steps can be narrowed while fixing one flow (LC_WEBKIT_STEPS=payment,cvs); the default is all six and release-gate.sh requires all six.
+  webkit_steps=",${LC_WEBKIT_STEPS:-buyer,order,payment,merchant-buyer,cvs,password-auth},"
+  # run_webkit_step <label> <acceptance env var> <go -run regex> <timeout> <min leaf cases>
+  run_webkit_step() {
+    local label="$1" accept="$2" regex="$3" tmo="$4" min="$5"
+    [[ "$webkit_steps" == *",$label,"* ]] || return 0
+    local log="$webkit_out/$webkit_sha-$label.jsonl" started rc=0 verdict=0 counts
+    fresh_pg
+    started="$(date +%s)"
+    env "$accept=1" LC_BROWSER_ENGINE=webkit GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout="$tmo" -json -run "$regex" ./tests/foundation >"$log" 2>"$log.stderr" || rc=$?
+    counts="$(go_json_counts "$log" "$min")"
+    verdict="${counts##*VERDICT=}"; counts="${counts%% VERDICT=*}"
+    printf '%s: %s exit=%d verdict=%d duration=%ds log=%s\n' "$label" "$counts" "$rc" "$verdict" "$(( $(date +%s) - started ))" "$log"
+    if [[ "$rc" != 0 || "$verdict" != 0 ]]; then webkit_status=1; printf 'FAIL: %s (go test exit=%d, parse verdict=%d)\n' "$label" "$rc" "$verdict" >&2; fi
+  }
+  run_webkit_step buyer LC_BROWSER_BUYER_ACCEPTANCE '^TestBrowserBuyerRealChain$' 900s 0
+  run_webkit_step order LC_BROWSER_ORDER_ACCEPTANCE '^TestBrowserBuyerOrderUI$' 900s 0
+  run_webkit_step payment LC_BROWSER_PAYMENT_ACCEPTANCE '^TestBrowserBuyerPaymentUI$' 900s 0
+  run_webkit_step merchant-buyer LC_BROWSER_MERCHANT_BUYER_ACCEPTANCE '^TestBrowserMerchantBuyerRealChain$' 900s 0
+  run_webkit_step cvs LC_BROWSER_CVS_ACCEPTANCE '^TestBrowserTaiwanCvs$/^WebKit$' 1700s 1
+  run_webkit_step password-auth LC_BROWSER_PASSWORD_AUTH_ACCEPTANCE '^TestBrowserPasswordAuth$' 1200s 0
+  if [[ "$webkit_status" != 0 ]]; then printf 'FAIL: --browser-webkit (see logs in %s)\n' "$webkit_out" >&2; exit 1; fi
+  printf 'PASS: --browser-webkit MOCK tier on Playwright WebKit (iPhone 15 buyer, Desktop Safari admin behind a self-signed https front) steps [%s]: buyer, order, payment, merchant-buyer, cvs (TCV08 buyer + merchant), password-auth; Stripe SP18 SANDBOX on WebKit = LC_BROWSER_ENGINE=webkit --stripe-browser (see GATES.md); not provider, real-device or deployment acceptance.\n' "${webkit_steps//,/ }"
 elif [[ "$test_mode" == --checkout ]]; then
   # Focused diagnosis uses the same isolated real PG and cleanup guard. It never
   # substitutes for the full foundation/race/vet release gate below.

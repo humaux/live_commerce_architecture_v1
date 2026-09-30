@@ -9,7 +9,7 @@ package foundation_test
 // Next build; the ecpaytest fake answers the stage map (over real HTTP, behind a synthetic edge) and the Go hooks handler answers the provider
 // return; the merchant admin half runs the production admin Next build against the private Go API with the CVS routes and a signed mock OIDC issuer.
 // Evidence labels: MOCK (fake map/Create, signed MOCK status posts). SANDBOX variant (stage map + Stripe 4242) needs ECPAY_LOGISTICS_SANDBOX=1
-// STRIPE_SANDBOX=1 STRIPE_BROWSER=1 and the SP18 harness: otherwise NOT_RUN. WebKit is used only if already installed (none is here): NOT_RUN.
+// STRIPE_SANDBOX=1 STRIPE_BROWSER=1 and the SP18 harness: otherwise NOT_RUN. The WebKit subtest re-runs the MOCK stack under Playwright WebKit (iPhone 15 / Desktop Safari) when it is installed, NOT_RUN otherwise.
 // Owner-pool writes (disclosed fixtures): the registrar-only ok/hilife flags are not touched; product names for screenshots only.
 
 import (
@@ -54,11 +54,38 @@ func TestBrowserTaiwanCvs(t *testing.T) {
 		if os.Getenv("ECPAY_LOGISTICS_SANDBOX") != "1" || os.Getenv("STRIPE_SANDBOX") != "1" || os.Getenv("STRIPE_BROWSER") != "1" {
 			t.Skip("NOT_RUN: the SANDBOX variant (stage map + Stripe 4242) needs ECPAY_LOGISTICS_SANDBOX=1 STRIPE_SANDBOX=1 STRIPE_BROWSER=1 and the owner's test keys")
 		}
-		t.Skip("NOT_RUN: the SANDBOX variant reuses the SP18 harness of stripe-b2-browser-tests, which is not merged in this base")
+		// Probed 2026-10-01: POST https://logistics-stage.ecpay.com.tw/Express/map (MerchantID 2000933, no CheckMacValue) answers 200 with an
+		// auto-post form into the multi-hop 7-ELEVEN e-map page, so the stage map itself needs no keys. What blocks this variant is the rest of
+		// the chain: connecting the store runs the signed GetStoreList probe, and verifying the returned store id runs it again, both with the
+		// stage HashKey/HashIV of merchant 2000933 (ECPAY_STAGE_C2C_* as in tests/integrations/ecpay), which are not provisioned in
+		// ~/.config/livecommerce/secrets.env; and the tcvEnv fixtures are built on the ecpaytest fake transport, not the real stage host.
+		// The Stripe 4242 half exists already (LC_BROWSER_ENGINE=webkit|chromium ... --stripe-browser, SP18) and is not repeated here.
+		t.Skip("NOT_RUN: the SANDBOX variant needs ECPAY_STAGE_C2C_{MERCHANT_ID,HASH_KEY,HASH_IV} for the stage GetStoreList probe and directory verification (not provisioned) and a stage-transport tcvEnv; the stage map itself is keyless but hands off to an interactive e-map page that is not scripted")
 	})
 	t.Run("WebKit", func(t *testing.T) {
-		t.Skip("NOT_RUN: WebKit is not installed locally (installing a browser is a download); the iOS same-tab rule is asserted with Chromium's mobile profile only")
+		// MOCK stack again (fresh stores, fresh evidence dir) with LC_BROWSER_ENGINE=webkit: the buyer half runs in Playwright's iPhone 15
+		// (phone matrix) / Desktop Safari (desktop matrix) profiles and the merchant half in Desktop Safari. This is where the iOS same-tab map
+		// round trip and Device=1 for an iPhone user agent (B20) are proven on the real Safari engine, not on Chromium's Pixel profile.
+		root, _ := filepath.Abs("../..")
+		if !brcWebKitInstalled(root) {
+			t.Skip("NOT_RUN: Playwright WebKit is not installed (pnpm exec playwright install webkit)")
+		}
+		t.Setenv("LC_BROWSER_ENGINE", "webkit")
+		brcMock(t)
 	})
+}
+
+// brcWebKitInstalled asks Playwright itself where its WebKit binary lives (PLAYWRIGHT_BROWSERS_PATH, per-OS cache, revision pinned by the
+// installed @playwright/test) and reports whether that file exists. A missing Node/Playwright is "not installed" too: the subtest then says NOT_RUN.
+func brcWebKitInstalled(root string) bool {
+	cmd := exec.Command("node", "-e", `import("@playwright/test").then(m=>console.log(m.webkit.executablePath()))`)
+	cmd.Dir = root
+	out, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+	_, err = os.Stat(strings.TrimSpace(string(out)))
+	return err == nil
 }
 
 func brcMock(t *testing.T) {
@@ -208,7 +235,7 @@ func brcStartAdmin(t *testing.T, ctx context.Context, e *tcvEnv, evidence string
 	address := listener.Addr().String()
 	_ = listener.Close()
 	_, port, _ := net.SplitHostPort(address)
-	origin := "http://" + address
+	origin := browserFront(t, address) // https TLS front under LC_BROWSER_ENGINE=webkit, else http://address
 	f := e.p.f
 	idp := newBrowserIDP(t, origin+"/api/auth/callback")
 	mustExec(t, f.owner, `INSERT INTO identity.external_identities(issuer,subject,principal_id) VALUES($1,'browser-subject',$2)`, idp.server.URL, f.principalA)
@@ -257,7 +284,7 @@ func brcStartAdmin(t *testing.T, ctx context.Context, e *tcvEnv, evidence string
 	t.Cleanup(func() { _ = syscall.Kill(-next.Process.Pid, syscall.SIGKILL); _, _ = next.Process.Wait() })
 	client := &http.Client{Timeout: time.Second}
 	for attempt := 0; ; attempt++ {
-		if response, err := client.Get(origin + "/api/stores"); err == nil {
+		if response, err := client.Get("http://" + address + "/api/stores"); err == nil {
 			_ = response.Body.Close()
 			if response.StatusCode == http.StatusUnauthorized {
 				break

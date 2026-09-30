@@ -11,7 +11,8 @@
 #   G05 dependency map, G06 unit tests (all packages but tests/foundation), G06n Node unit suites
 #   (scripts/dev/test-node.sh, ruling F9), G07 the whole foundation
 #   package (real PG, race, vet: test-local.sh), then EVERY browser mode listed in test-local.sh's
-#   usage line (names containing "browser", plus --browser-e2e), SANDBOX modes only with the Stripe
+#   usage line (names containing "browser", plus --browser-e2e; --browser-webkit is its own B-browser-webkit row on Playwright
+#   WebKit, NOT_RUN when WebKit is not installed), SANDBOX modes only with the Stripe
 #   TEST key present, then G90 deploy smoke static, G91 deploy smoke full and G99 (no gate rewrote a
 #   tracked .impeccable file, ruling F7; full runs only).
 # Usage: bash scripts/dev/release-gate.sh [--strict] [--list] [--only ID[,ID...]]
@@ -492,6 +493,15 @@ for m in $browser_modes; do
       if grep -q 'NOT_RUN' "$LOG"; then record "${id}+" SANDBOX NOT_RUN "$(grep -m1 'NOT_RUN' "$LOG" | cut -c1-110)" - "$LOG"; fi
     else
       record "$id" "$tier" FAIL "stripe-browser exit 0 without a passing -json step: never PASS" "$rc" "$LOG"
+    fi
+  elif [[ "$m" == --browser-webkit ]]; then
+    # Own row for the real Safari engine (Playwright WebKit, iPhone 15 buyer / Desktop Safari admin). test-local.sh runs six go test -json steps
+    # and prints one "<step>: pass=N fail=0 skip=0 ... exit=0 verdict=0" line each; all six must be clean, never inferred from the exit code alone.
+    wk=$(grep -cE '^[a-z-]+: pass=[1-9][0-9]* fail=0 skip=0 .*exit=0 verdict=0' "$LOG" || true)
+    if ((wk >= 6)) && ! grep -qE 'verdict=[^0]' "$LOG" && grep -q '^PASS:' "$LOG"; then
+      record "$id" "$tier" PASS "$wk WebKit steps clean (buyer/order/payment/merchant-buyer/cvs/password-auth)" "$rc" "$LOG"
+    else
+      record "$id" "$tier" FAIL "browser-webkit exit 0 but only $wk/6 clean step lines: never PASS" "$rc" "$LOG"
     fi
   else
     read -r gp gf sn so <<<"$(judge_gotest "$LOG" "$OUT/$id.skipped" "$OUT/$id.skipped-other")"

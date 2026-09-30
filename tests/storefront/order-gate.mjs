@@ -10,7 +10,8 @@ import {readFile, writeFile, mkdtemp, rm, mkdir, copyFile} from "node:fs/promise
 import {createWriteStream} from "node:fs";
 import {tmpdir} from "node:os";
 import path from "node:path";
-import {chromium, expect} from "@playwright/test";
+import { expect } from "@playwright/test";
+import { launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
 
 const root=process.cwd(), evidence=process.env.LC_ORDER_EVIDENCE;
 assert(evidence && /^http:\/\/127\.0\.0\.1:\d+$/.test(process.env.LC_ORDER_CONTROL));
@@ -56,7 +57,7 @@ function arm(suffix,fields={}) {
   return hook={path:`/api/buyer/${suffix}`,entered:deferred(),release:deferred(),result:deferred(),...fields};
 }
 async function newContext(mobile=false) {
-  const c=await browser.newContext({ignoreHTTPSErrors:true,viewport:mobile?{width:390,height:844}:{width:1440,height:900}});contexts.push(c);
+  const c=await browser.newContext(ctxOpts({ignoreHTTPSErrors:true,viewport:mobile?{width:390,height:844}:{width:1440,height:900}}));contexts.push(c);
   await c.exposeBinding("__gateStorageWrite",(_,value)=>storageWrites.push(value));
   await c.addInitScript(()=>{
     const native=Storage.prototype.setItem;
@@ -157,7 +158,7 @@ try {
     const upstream=net.connect(edgePort,"127.0.0.1",()=>{socket.write("HTTP/1.1 200 Connection Established\r\n\r\n");if(head.length)upstream.write(head);socket.pipe(upstream).pipe(socket);});
     for(const s of [socket,upstream]){sockets.add(s);s.on("close",()=>sockets.delete(s));s.on("error",()=>{socket.destroy();upstream.destroy();});}
   });
-  browser=await chromium.launch({headless:true,proxy:{server:`http://127.0.0.1:${await listen(proxy)}`}});
+  browser=await launch({headless:true,proxy:{server:`http://127.0.0.1:${await listen(proxy)}`}});
 
   // BO01/BO03: native form, all locales, in-memory PII and causal lost PUT.
   const c1=await newContext(),{p:a,quote:q1}=await quotePage(c1);await rememberCookie(c1);

@@ -10,11 +10,13 @@ import { readFile, writeFile, mkdtemp, rm } from "node:fs/promises";
 import { createWriteStream } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { chromium, expect } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
 
 const root = process.cwd(), evidence = process.env.LC_JOINT_EVIDENCE;
 const adminOrigin = process.env.COMMERCE_PUBLIC_ORIGIN, buyerOrigin = "https://buyer.example";
-assert(evidence && /^http:\/\/127\.0\.0\.1:\d+$/.test(adminOrigin));
+// http://127.0.0.1 (chromium) or the https TLS front browserFront() builds for WebKit, which refuses `__Host-` cookies on http.
+assert(evidence && /^https?:\/\/127\.0\.0\.1:\d+$/.test(adminOrigin));
 assert(/^http:\/\/127\.0\.0\.1:\d+$/.test(process.env.LC_JOINT_CONTROL));
 const certDir = await mkdtemp(path.join(tmpdir(), "lc-merchant-buyer-edge-"));
 const children = new Set(), sockets = new Set(), logs = [];
@@ -98,8 +100,8 @@ try {
     }
   });
   const proxyPort = await listen(proxy);
-  browser = await chromium.launch({headless: true, proxy: {server: `http://127.0.0.1:${proxyPort}`, bypass: "127.0.0.1"}});
-  const context = await browser.newContext({ignoreHTTPSErrors: true, viewport: {width: 390, height: 844}});
+  browser = await launch({headless: true, proxy: {server: `http://127.0.0.1:${proxyPort}`, bypass: "127.0.0.1"}});
+  const context = await browser.newContext(ctxOpts({ignoreHTTPSErrors: true, viewport: {width: 390, height: 844}}));
   const merchant = await context.newPage();
   const uiErrors = [];
   context.on("page", page => page.on("pageerror", error => uiErrors.push(error.name)));
@@ -142,7 +144,7 @@ try {
     assert.equal(projected.status, 200);
     assert.deepEqual(projected.body, {product_id: product.id, locale, state: "configured", url: urls[locale]});
     // Actual document GET with scripts disabled models a link preview/crawler.
-    const crawler = await browser.newContext({ignoreHTTPSErrors: true, javaScriptEnabled: false});
+    const crawler = await browser.newContext(ctxOpts({ignoreHTTPSErrors: true, javaScriptEnabled: false}));
     const preview = await crawler.newPage();
     assert.equal((await preview.goto(urls[locale])).status(), 200);
     await crawler.close();

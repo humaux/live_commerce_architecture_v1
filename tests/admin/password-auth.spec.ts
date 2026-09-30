@@ -243,7 +243,7 @@ test("full chain: sign-up -> code -> onboarding -> logout -> sign-in -> code -> 
 
   // forgot -> reset -> signed in, from a second, signed-out browser; the first browser's session is revoked
   const newPw = newPassword();
-  const other = await browser.newContext({ baseURL: publicOrigin, viewport: { width: 1586, height: 992 } });
+  const other = await browser.newContext({ ignoreHTTPSErrors: true, baseURL: publicOrigin, viewport: { width: 1586, height: 992 } });
   await useSource(other, source());
   const page2 = await other.newPage();
   await page2.goto(`/${locale}/reset`);
@@ -264,13 +264,13 @@ test("full chain: sign-up -> code -> onboarding -> logout -> sign-in -> code -> 
   // every other merchant session of the principal died with the reset (PD10), including the first browser's
   expect((await browserJSON(page, "/api/stores")).status, "the first browser's session was revoked by the reset").toBe(401);
   for (const [name, token, want] of [["old login session", loginSession, 401], ["first session", firstSession, 401], ["reset session", resetSession, 200]] as const) {
-    const probe = await playwrightRequest.newContext({ baseURL: publicOrigin, extraHTTPHeaders: { cookie: `${sessionName}=${token}` } });
+    const probe = await playwrightRequest.newContext({ ignoreHTTPSErrors: true, baseURL: publicOrigin, extraHTTPHeaders: { cookie: `${sessionName}=${token}` } });
     expect((await probe.get("/api/stores")).status(), name).toBe(want);
     await probe.dispose();
   }
   await other.close();
   // the old password no longer works, the new one does (BFF level)
-  const anon = await playwrightRequest.newContext({ baseURL: publicOrigin, extraHTTPHeaders: { origin: publicOrigin, "x-forwarded-for": source() } });
+  const anon = await playwrightRequest.newContext({ ignoreHTTPSErrors: true, baseURL: publicOrigin, extraHTTPHeaders: { origin: publicOrigin, "x-forwarded-for": source() } });
   expect((await anon.post("/api/auth/password/login", { data: { email, password, locale: "en" } })).status()).toBe(401);
   // The new password passes the password check: 202 (code mailed) or, when the login mail bucket is still inside its
   // 60 s window from the earlier sign-in, 429 - which is only reachable AFTER a correct password (a wrong one is 401).
@@ -288,7 +288,7 @@ test("BFF contract: Origin, query, client IP, strict keys, cookie clearing on 20
     return { res, text, json: () => (text ? JSON.parse(text) : null), setCookies: res.headersArray().filter((h) => h.name.toLowerCase() === "set-cookie").map((h) => h.value) };
   };
   const ok = (ip = source()) => ({ origin: publicOrigin, "x-forwarded-for": ip });
-  const ctx = await playwrightRequest.newContext({ baseURL: publicOrigin });
+  const ctx = await playwrightRequest.newContext({ ignoreHTTPSErrors: true, baseURL: publicOrigin });
   const email = newEmail();
   const password = newPassword();
   const step1 = { email, password, locale: "en" };
@@ -335,7 +335,11 @@ test("BFF contract: Origin, query, client IP, strict keys, cookie clearing on 20
   const cookieHeader = `${challengeName}=${challengeValue}`;
 
   // verify: no cookie / duplicated cookie / wrong code all keep everything; a 401 never clears the challenge cookie
-  expect([400, 401, 403, 422]).toContain((await api(ctx, "/api/auth/password/verify", { data: { code }, headers: ok() })).res.status());
+  // "no cookie" must mean no cookie on the wire: `ctx`'s jar already holds the Secure challenge cookie from sign-up and sends it over an
+  // https origin (WebKit gate, browserFront) though not over http://127.0.0.1, so the no-cookie probe uses its own empty context.
+  const bare = await playwrightRequest.newContext({ ignoreHTTPSErrors: true, baseURL: publicOrigin });
+  expect([400, 401, 403, 422]).toContain((await api(bare, "/api/auth/password/verify", { data: { code }, headers: ok() })).res.status());
+  await bare.dispose();
   const dup = await api(ctx, "/api/auth/password/verify", { data: { code }, headers: { ...ok(), cookie: `${cookieHeader}; ${cookieHeader}` } });
   expect(dup.res.status()).toBeGreaterThanOrEqual(400);
   expect(dup.setCookies.some((c) => c.startsWith(`${sessionName}=`))).toBe(false);
@@ -372,7 +376,7 @@ test("BFF contract: Origin, query, client IP, strict keys, cookie clearing on 20
   const lWrong = await api(ctx, "/api/auth/password/verify", { data: { code: wrongCodeFor(lCode) }, headers: { ...ok(loginIP), cookie: withSession } });
   expect(lWrong.res.status()).toBe(401);
   expect(lWrong.setCookies.some((c) => c.startsWith(`${sessionName}=`) && /Max-Age=0/i.test(c)), "a failed verify must not clear the session").toBe(false);
-  const probe = await playwrightRequest.newContext({ baseURL: publicOrigin, extraHTTPHeaders: { cookie: `${sessionName}=${session}` } });
+  const probe = await playwrightRequest.newContext({ ignoreHTTPSErrors: true, baseURL: publicOrigin, extraHTTPHeaders: { cookie: `${sessionName}=${session}` } });
   expect((await probe.get("/api/stores")).status()).toBe(200);
   await probe.dispose();
 
@@ -403,7 +407,7 @@ test("BFF contract: Origin, query, client IP, strict keys, cookie clearing on 20
 // Before React hydrates, a form without method=post submits as GET and puts the email and password into the
 // URL (history, Caddy access logs). Every server-rendered form holding a secret field must POST.
 test("SSR: no form with a password field lacks method=post (/, /signup, /reset)", async () => {
-  const ctx = await playwrightRequest.newContext({ baseURL: publicOrigin });
+  const ctx = await playwrightRequest.newContext({ ignoreHTTPSErrors: true, baseURL: publicOrigin });
   let seen = 0;
   for (const path of ["/zh-CN/", "/zh-CN/signup", "/zh-CN/reset", "/en/signup"]) {
     const res = await ctx.get(path);
@@ -435,7 +439,7 @@ test("throttled UI state and the 60 s resend cooldown", async ({ page, context }
   expect(invalidText.trim().length).toBeGreaterThan(0);
   await other.close();
   // ten wrong checks for one (email, source) through the BFF, then the UI is throttled
-  const api = await playwrightRequest.newContext({ baseURL: publicOrigin, extraHTTPHeaders: { origin: publicOrigin, "x-forwarded-for": ip } });
+  const api = await playwrightRequest.newContext({ ignoreHTTPSErrors: true, baseURL: publicOrigin, extraHTTPHeaders: { origin: publicOrigin, "x-forwarded-for": ip } });
   for (let i = 0; i < 10; i++) expect((await api.post("/api/auth/password/login", { data: { email: victim, password: newPassword(), locale: "en" } })).status()).toBe(401);
   const throttled = await api.post("/api/auth/password/login", { data: { email: victim, password: newPassword(), locale: "en" } });
   expect(throttled.status()).toBe(429);
@@ -550,7 +554,7 @@ test("matrix: locale copy differs per locale and the reset wording is the same f
     return text.replaceAll(masked, "<MASK>");
   };
   const known = newEmail();
-  await (await playwrightRequest.newContext({ baseURL: publicOrigin, extraHTTPHeaders: { origin: publicOrigin, "x-forwarded-for": source() } })).post("/api/auth/password/signup", { data: { email: known, password: newPassword(), locale: "en" } });
+  await (await playwrightRequest.newContext({ ignoreHTTPSErrors: true, baseURL: publicOrigin, extraHTTPHeaders: { origin: publicOrigin, "x-forwarded-for": source() } })).post("/api/auth/password/signup", { data: { email: known, password: newPassword(), locale: "en" } });
   await nthCode(known, 1);
   const a = await visible(known);
   const b = await visible(newEmail());

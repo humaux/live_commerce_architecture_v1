@@ -12,7 +12,8 @@ import { createWriteStream } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { stripTypeScriptTypes } from "node:module";
-import { chromium, expect } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
 
 const root = process.cwd(), evidence = process.env.LC_BUYER_EVIDENCE;
 assert(evidence && process.env.COMMERCE_BUYER_API_ORIGIN?.startsWith("http://127.0.0.1:"));
@@ -92,8 +93,8 @@ try {
     for(const s of [socket,upstream]) {sockets.add(s);s.on("close",()=>sockets.delete(s));s.on("error",()=>{socket.destroy();upstream.destroy();});}
   });
   const proxyPort=await listen(proxy);
-  browser=await chromium.launch({headless:true,proxy:{server:`http://127.0.0.1:${proxyPort}`}});
-  const context=()=>browser.newContext({ignoreHTTPSErrors:true});
+  browser=await launch({headless:true,proxy:{server:`http://127.0.0.1:${proxyPort}`}});
+  const context=()=>browser.newContext(ctxOpts({ignoreHTTPSErrors:true}));
   const page=async c=>{const p=await c.newPage();await p.goto(origin);await p.waitForFunction(()=>Boolean(window.buyer));return p;};
   const init=p=>p.evaluate(()=>window.buyer.initializeBuyerSession());
   const state=p=>p.evaluate(()=>window.buyer.readBuyerSession());
@@ -197,7 +198,7 @@ try {
   // Render the actual approved B route, not the transport-only fixture page.
   // This proves catalog -> preserved cart -> current quote, not hosted payment.
   const productID=cat.body.items.find(item=>item.sku_id===process.env.LC_BUYER_SKU).product_id;
-  const uiContext=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width:390,height:780},deviceScaleFactor:887/390});
+  const uiContext=await browser.newContext(ctxOpts({ignoreHTTPSErrors:true,viewport:{width:390,height:780},deviceScaleFactor:887/390}));
   const ui=await uiContext.newPage();
   await ui.goto(`${origin}/zh-TW/products/${productID}`);
   await expect(ui.getByRole("heading",{name:"帆布收納袋（兩入組）"})).toBeVisible();
