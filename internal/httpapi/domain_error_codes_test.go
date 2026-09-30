@@ -6,6 +6,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"livecommerce/internal/billing"
+	"livecommerce/internal/claims"
+	"livecommerce/internal/customers"
 	"livecommerce/internal/merchantorders"
 )
 
@@ -26,6 +29,12 @@ func TestDomainErrorCodesReachJSONBody(t *testing.T) {
 			merchantorders.ErrRefundBlockedReview: "refund_blocked_review",
 			merchantorders.ErrRefundLimit:         "refund_limit",
 		}},
+		"customers": {customersClassify, map[error]string{
+			customers.ErrIdempotencyConflict: "idempotency_conflict",
+			customers.ErrErasureBlocked:      "erasure_blocked",
+			customers.ErrExportTooLarge:      "export_too_large",
+			customers.ErrErased:              "erased",
+		}},
 		"shipments": {shipmentClassify, map[error]string{
 			merchantorders.ErrVersionChanged:      "version_changed",
 			merchantorders.ErrNotShippable:        "not_shippable",
@@ -34,6 +43,10 @@ func TestDomainErrorCodesReachJSONBody(t *testing.T) {
 			merchantorders.ErrInvalidURL:          "invalid_url",
 			merchantorders.ErrVoidRequiresShipped: "void_requires_shipped",
 			merchantorders.ErrInvalidVoid:         "invalid_void",
+		}},
+		"billing": {billingClassify, map[error]string{
+			billing.ErrSubscriptionExists: "subscription_exists",
+			billing.ErrNoCustomer:         "no_billing_customer",
 		}},
 	}
 	for family, f := range families {
@@ -56,6 +69,34 @@ func TestDomainErrorCodesReachJSONBody(t *testing.T) {
 					t.Fatalf("body code=%q message=%q, want code %q with its own message", body.Code, body.Message, want)
 				}
 			})
+		}
+	}
+}
+
+// billing-core B2/B12: the two billing codes outside the 4xx family loop above must also reach the body
+// (503 billing_unavailable is retryable, 402 billing_restricted is the claim-window guard).
+func TestBillingStatusCodesReachJSONBody(t *testing.T) {
+	for _, tc := range []struct {
+		err    error
+		status int
+		code   string
+	}{
+		{billing.ErrUnavailable, http.StatusServiceUnavailable, "billing_unavailable"},
+		{claims.ErrBillingRestricted, http.StatusPaymentRequired, "billing_restricted"},
+	} {
+		status, code := billingClassify(tc.err)
+		if tc.status == http.StatusPaymentRequired {
+			status, code = claimsClassify(tc.err)
+		}
+		rec := httptest.NewRecorder()
+		respondError(rec, status, code)
+		var body struct {
+			Code    string `json:"code"`
+			Message string `json:"message"`
+		}
+		if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil || rec.Code != tc.status ||
+			body.Code != tc.code || body.Message == "" || body.Message == "Request could not be completed." {
+			t.Fatalf("%v: status=%d body=%+v err=%v, want %d %s", tc.err, rec.Code, body, err, tc.status, tc.code)
 		}
 	}
 }

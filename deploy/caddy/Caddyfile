@@ -53,6 +53,8 @@
 	#   code, state       OIDC authorization response on admin /api/auth/callback
 	#                     (apps/admin/app/api/auth/callback/route.ts); `state` also appears in the
 	#                     Location of /api/auth/login's redirect to the IdP.
+	#                     Also the Meta ads connect return on admin /api/ads/meta/callback
+	#                     (meta-ads-v1 §2 step 2, apps/admin/app/api/ads/meta/callback/route.ts).
 	#   token, access_token, id_token  defensive: bearer-style parameters must never be logged.
 	# The same rules apply to the Referer request header and the Location response header, which
 	# can carry those URLs as well. Other parameters stay visible (e.g. hub.challenge) for triage.
@@ -150,6 +152,12 @@
 	# applied to the request; the 2 MB cap above is only a ceiling, the app enforces its own limit).
 	# The endpoint id in the URL is the operator-registered one (stripe-admin webhook), not a secret.
 	handle /v1/stripe/webhook/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	# Platform-fee billing webhook: POST /v1/platform/stripe/webhook (customers-billing-v1 §5, billing-core
+	# B9). Same raw-body rule as the PSP webhook above: nothing rewrites the signed bytes; the app caps the
+	# body at 64 KiB. Exact path only (cmd/api mountPlatformBilling).
+	handle /v1/platform/stripe/webhook {
 		reverse_proxy 127.0.0.1:8080
 	}
 	# Reserved PAYUNi NotifyURL. No receiver exists yet (contracts/buyer-payment-http-v1.md:18); B4.

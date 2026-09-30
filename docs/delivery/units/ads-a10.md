@@ -73,7 +73,7 @@ why it must not retry; comments say why/what it touches. No hand-written depende
 ```sh
 GOTOOLCHAIN=go1.27.1 go vet ./internal/integrations/... && gofmt -l internal
 GOTOOLCHAIN=go1.27.1 go test -race -count=1 ./internal/integrations/...
-LC_FOCUSED_TIMEOUT=1800s bash scripts/dev/test-focused.sh '^Test(T06|MetaClaimsIntakeMCI|ExternalOperation|Accounts)'   # regression, existing routes byte-identical
+LC_FOCUSED_TIMEOUT=1800s bash scripts/dev/test-focused.sh '^Test(T06|MetaClaims|ExternalOperation|Accounts)'   # regression, existing routes byte-identical
 bash scripts/dev/depmap.sh && python3 scripts/check_packet.py
 ```
 Logs → `/Volumes/data/live_commerce_architecture_v1/output/ads-a10/` (command, SHA, exit, PASS/FAIL/SKIP).

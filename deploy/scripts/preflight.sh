@@ -6,7 +6,8 @@
 #   Prints only rule id, PASS/FAIL/WARN/SKIP and variable/file NAMES — never values.
 # Usage: preflight.sh [--online] [--skip-images]
 # Rules: P01 compose.env vars/hosts  P02 secret dir/file modes  P03 secret formats
-#   P04 inequalities (incl. custody separation of the four keyrings and K_actor/K_link/replay keys)
+#   P04 inequalities (incl. custody separation of the four keyrings and K_actor/K_link/replay keys;
+#   the ads HPKE public ring matches its private ring)
 #   + DSN/password consistency  P05 active key ids  P06 flags, dependencies,
 #   profiles, knob-file allowlists  P07 forbidden test/fixture vars  P08 grammars/ranges
 #   P09 owner secrets  P10 images present  P11 ACME (production)  P12 DB TLS  P13 disk space
@@ -187,6 +188,22 @@ def meta_apps_ok(v):
             return False
         seen.add(key)
     return len(v) <= 32768
+def hpke_ring(v, field):
+    # meta-ads-v1 G3: metaads.LoadSealKeys (public) / tokenopen.LoadKeyring (private), 1..16 X25519 keys.
+    try:
+        doc = json.loads(v)
+    except ValueError:
+        return None
+    if not isinstance(doc, dict) or set(doc) != {"keys"} or not isinstance(doc["keys"], list) \
+            or not 1 <= len(doc["keys"]) <= 16 or len(v) > 8192:
+        return None
+    ids = {}
+    for e in doc["keys"]:
+        if not isinstance(e, dict) or set(e) != {"id", field} or not isinstance(e["id"], str) \
+                or not meta_id.fullmatch(e["id"]) or e["id"] in ids or not b64std32(e[field]):
+            return None
+        ids[e["id"]] = e[field]
+    return ids
 rings = {}
 for name, kind, gen in manifest:
     if name not in values:
@@ -216,13 +233,17 @@ for name, kind, gen in manifest:
         ok = 0 < len(v) <= 4096 and "\n" not in v
     elif kind == "meta_apps":
         ok = meta_apps_ok(v)
+    elif kind in ("hpke_private_ring", "hpke_public_ring"):
+        rings[name] = hpke_ring(v, "private_key_base64" if kind == "hpke_private_ring" else "public_key_base64")
+        ok = rings[name] is not None
     else:
         ok = False
     rec("P03", ok, name)
 for idf, ringf in (("commerce_account_active_key_id", "commerce_account_keys_json"),
                    ("commerce_meta_payload_active_key_id", "commerce_meta_payload_keys_json"),
                    ("commerce_stripe_webhook_active_key_id", "commerce_stripe_webhook_keys_json"),
-                   ("commerce_meta_page_token_active_key_id", "commerce_meta_page_token_keys_json")):
+                   ("commerce_meta_page_token_active_key_id", "commerce_meta_page_token_keys_json"),
+                   ("commerce_meta_ads_hpke_active_key_id", "commerce_meta_ads_hpke_public_keys_json")):
     ring = rings.get(ringf)
     rec("P05", ring is not None and values.get(idf) in ring, idf)
 
@@ -258,6 +279,9 @@ for login in logins:
         except ValueError:
             ok = False
     rec("P04", ok, "dsn_" + login + " embeds pw_" + login)
+hp, hq = rings.get("commerce_meta_ads_hpke_private_keys_json"), rings.get("commerce_meta_ads_hpke_public_keys_json")
+rec("P04", hp is not None and hq is not None and list(hp) == list(hq),
+    "commerce_meta_ads_hpke_public_keys_json ids == private ring ids (secrets-init.sh --rederive after a rotation)")
 su = values.get("pg_superuser_password")
 rec("P04", bool(su) and values.get("dsn_migrate_owner", "").find(" password=" + su + " ") >= 0, "dsn_migrate_owner embeds pg_superuser_password")
 
@@ -266,11 +290,13 @@ env_dir = E.get("LC_ENV_DIR", "")
 allow = {
     "api.env": {"COMMERCE_ACCOUNTS_ENABLED", "COMMERCE_BUYER_PAYMENT_ENABLED", "COMMERCE_META_WEBHOOK_ENABLED",
                 "COMMERCE_STUDIO_ENABLED", "COMMERCE_STUDIO_MEDIA_ENABLED", "COMMERCE_CLAIMS_ENABLED", "COMMERCE_OIDC_CLIENT_ID", "COMMERCE_IDENTITY_PROVIDER_KEY",
-                "COMMERCE_SESSION_TTL", "COMMERCE_PAYMENT_PROFILE", "TZ"},
+                "COMMERCE_SESSION_TTL", "COMMERCE_PAYMENT_PROFILE", "COMMERCE_META_ADS_APP_ID", "COMMERCE_META_ADS_CONFIG_ID",
+                "COMMERCE_META_ADS_REDIRECT_URI", "COMMERCE_META_ADS_GRAPH_VERSION", "TZ"},
     "admin.env": {"NODE_OPTIONS", "TZ"},
     "storefront.env": {"NODE_OPTIONS", "TZ"},
     "payment-worker.env": {"COMMERCE_PAYMENT_WORKER_CONCURRENCY", "TZ"},
     "claims-worker.env": {"COMMERCE_META_GRAPH_VERSION", "COMMERCE_META_GRAPH_AUTH_HEADER", "TZ"},
+    "ads-worker.env": {"COMMERCE_META_ADS_GRAPH_VERSION", "COMMERCE_META_ADS_PARTNER_AGENT", "TZ"},
     "expiry-worker.env": {"COMMERCE_EXPIRY_WORKER_CONCURRENCY", "TZ"},
     "meta-worker.env": {"COMMERCE_META_WORKER_CONCURRENCY", "TZ"},
     "caddy.env": {"ACME_EMAIL", "LC_ACME_CA", "TZ"},
@@ -316,7 +342,10 @@ studio_media = flag("COMMERCE_STUDIO_MEDIA_ENABLED", api.get("COMMERCE_STUDIO_ME
 claims_on = flag("COMMERCE_CLAIMS_ENABLED", api.get("COMMERCE_CLAIMS_ENABLED", ""))
 profiles = {p.strip() for p in E.get("COMPOSE_PROFILES", "").split(",") if p.strip()}
 stripe_on = flag("LC_STRIPE_ENABLED", E.get("LC_STRIPE_ENABLED", ""))
-rec("P06", profiles <= {"db", "app", "payments-sandbox", "payments-live", "meta", "claims", "ops"}, "COMPOSE_PROFILES known")
+# customers-billing-v1 T17: platform-fee billing; unset = off (billing.LoadConfig rejects "0", so only "" or "1").
+billing_on = flag("LC_BILLING_ENABLED", E.get("LC_BILLING_ENABLED", ""))
+rec("P06", E.get("LC_BILLING_ENABLED", "") != "0", "LC_BILLING_ENABLED unset or 1 (0 stops the api)")
+rec("P06", profiles <= {"db", "app", "payments-sandbox", "payments-live", "meta", "claims", "ads", "ops"}, "COMPOSE_PROFILES known")
 rec("P06", "ops" not in profiles, "COMPOSE_PROFILES must not list ops (one-shots run through ops-admin.sh / pg-ops.sh)")
 rec("P06", not accounts or identity, "COMMERCE_ACCOUNTS_ENABLED requires LC_IDENTITY_ENABLED")
 # R1 ruling G2: Studio (planning + claims + claim-source) is deployable; LiveKit media is not (F11).
@@ -339,6 +368,17 @@ if "app" in profiles:
     # claims-worker sends first private replies through the Meta consumer's data: it needs the meta profile.
     rec("P06", "claims" not in profiles or "meta" in profiles, "claims profile requires meta profile")
     rec("P06", "claims" not in profiles or meta, "claims profile requires COMMERCE_META_WEBHOOK_ENABLED=1 (nothing to intake otherwise)", warn=True)
+# meta-ads-v1: the api mounts the merchant ads routes iff COMMERCE_META_ADS_APP_ID is set (cmd/api newMerchantAds).
+# ads-worker is the only dispatcher of ads operations: without it a pause would never reach Meta (§6.3 pause always works).
+ads_app = api.get("COMMERCE_META_ADS_APP_ID", "")
+if ads_app:
+    rec("P06", "ads" in profiles, "COMMERCE_META_ADS_APP_ID requires the ads profile (ads-worker dispatches pause)")
+    rec("P06", identity, "COMMERCE_META_ADS_APP_ID requires LC_IDENTITY_ENABLED")
+    # Ruling B15: the ads mount waits for ads-capi's 0080 (billing.store_standing grant, contract §4.3).
+    mig = os.path.join(os.path.dirname(deploy), "migrations")
+    rec("P06", os.path.isdir(mig) and any(re.fullmatch(r"0080_.*\.sql", f) for f in os.listdir(mig)),
+        "COMMERCE_META_ADS_APP_ID requires migrations/0080 (ruling B15: ads mount waits for ads-capi)")
+rec("P06", "ads" not in profiles or bool(ads_app), "ads profile without COMMERCE_META_ADS_APP_ID (nothing to dispatch)", warn=True)
 
 # ---- P08 grammars and ranges -------------------------------------------------------------------------------
 ttl = E.get("LC_BUYER_SESSION_TTL_SECONDS", "")
@@ -351,6 +391,20 @@ if "claims" in profiles:
     rec("P08", re.fullmatch(r"v[0-9]{1,3}\.[0-9]{1,2}", cw.get("COMMERCE_META_GRAPH_VERSION", "")) is not None,
         "COMMERCE_META_GRAPH_VERSION (vNN.N, no default; from probe U5)")
     rec("P08", cw.get("COMMERCE_META_GRAPH_AUTH_HEADER", "") in ("", "0", "1"), "COMMERCE_META_GRAPH_AUTH_HEADER")
+aw = knobs.get("ads-worker.env", {})
+graph_version = re.compile(r"v[0-9]{1,3}\.[0-9]{1,2}")
+if ads_app:
+    rec("P08", re.fullmatch(r"[0-9]{1,40}", ads_app) is not None, "COMMERCE_META_ADS_APP_ID (numeric Meta app id)")
+    rec("P08", re.fullmatch(r"[0-9]{1,40}", api.get("COMMERCE_META_ADS_CONFIG_ID", "")) is not None, "COMMERCE_META_ADS_CONFIG_ID")
+    rec("P08", api.get("COMMERCE_META_ADS_REDIRECT_URI", "") == "https://" + E.get("LC_ADMIN_HOST", "") + "/api/ads/meta/callback",
+        "COMMERCE_META_ADS_REDIRECT_URI == https://<LC_ADMIN_HOST>/api/ads/meta/callback")
+    rec("P08", graph_version.fullmatch(api.get("COMMERCE_META_ADS_GRAPH_VERSION", "")) is not None, "COMMERCE_META_ADS_GRAPH_VERSION (api)")
+if "ads" in profiles:
+    rec("P08", graph_version.fullmatch(aw.get("COMMERCE_META_ADS_GRAPH_VERSION", "")) is not None, "COMMERCE_META_ADS_GRAPH_VERSION (ads-worker)")
+    rec("P08", not ads_app or aw.get("COMMERCE_META_ADS_GRAPH_VERSION") == api.get("COMMERCE_META_ADS_GRAPH_VERSION"),
+        "COMMERCE_META_ADS_GRAPH_VERSION api == ads-worker")
+    rec("P08", re.fullmatch(r"[A-Za-z0-9_.-]{1,50}", aw.get("COMMERCE_META_ADS_PARTNER_AGENT", "")) is not None
+        and "CHANGE_ME" not in aw.get("COMMERCE_META_ADS_PARTNER_AGENT", ""), "COMMERCE_META_ADS_PARTNER_AGENT")
 for fname, key in (("payment-worker.env", "COMMERCE_PAYMENT_WORKER_CONCURRENCY"),
                    ("expiry-worker.env", "COMMERCE_EXPIRY_WORKER_CONCURRENCY"),
                    ("meta-worker.env", "COMMERCE_META_WORKER_CONCURRENCY")):
@@ -382,9 +436,23 @@ rec("P08", E.get("LC_PG_SSLMODE") in ("disable", "require", "verify-ca", "verify
 rec("P08", E.get("LC_SECRETS_GID", "").isdigit(), "LC_SECRETS_GID")
 rec("P08", E.get("LC_REQUIRE_MEDIA_GATE", "0") in ("0", "1"), "LC_REQUIRE_MEDIA_GATE")
 
+if billing_on:
+    # Same grammar as internal/billing.LoadConfig (1..10 distinct price ids); ids are not secrets.
+    ids = [i.strip() for i in E.get("LC_BILLING_PRICE_IDS", "").split(",")]
+    rec("P08", 1 <= len(ids) <= 10 and len(set(ids)) == len(ids)
+        and all(re.fullmatch(r"price_[A-Za-z0-9]{1,64}", i) for i in ids), "LC_BILLING_PRICE_IDS")
 # ---- P09 owner-supplied secrets ------------------------------------------------------------------------------
+if billing_on and "app" in profiles:
+    # customers-billing-v1 BD8: SANDBOX platform keys only; owner-supplied files (O-D). Same patterns as
+    # internal/billing.LoadConfig, so a bad file fails here instead of stopping the api at start.
+    rec("P09", re.fullmatch(r"(sk|rk)_test_[A-Za-z0-9]{16,240}", values.get("commerce_platform_stripe_secret_key", "")) is not None,
+        "commerce_platform_stripe_secret_key (sk_test_/rk_test_ only; LC_BILLING_ENABLED=1)")
+    rec("P09", re.fullmatch(r"whsec_[!-~]{16,249}", values.get("commerce_platform_stripe_webhook_secret", "")) is not None,
+        "commerce_platform_stripe_webhook_secret (whsec_; LC_BILLING_ENABLED=1)")
 if meta and "app" in profiles:
     rec("P09", values.get("commerce_meta_apps_json", "__UNSET__") != "__UNSET__", "commerce_meta_apps_json")
+if ads_app:
+    rec("P09", values.get("commerce_meta_ads_app_secret", "__UNSET__") != "__UNSET__", "commerce_meta_ads_app_secret")
 if identity:
     rec("P09", values.get("commerce_oidc_client_secret", "__UNSET__") != "__UNSET__",
         "commerce_oidc_client_secret (__UNSET__ = public PKCE client)", warn=True)

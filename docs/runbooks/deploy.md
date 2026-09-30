@@ -144,6 +144,8 @@ deploy/scripts/deploy.sh upgrade <tag>
 - Meta 私信发送：`claims` profile。**这是唯一会向买家发送 Meta 消息的进程**，只在 owner 批准真实发送后启用（§6.3）。
 - Studio（R1 裁决 G2）：场次规划 + 关键词下单 + 认领来源开启（`COMMERCE_STUDIO_ENABLED=1`、`COMMERCE_CLAIMS_ENABLED=1`，密钥 `commerce_claims_label_key` 由 secrets-init 生成）；LiveKit 媒体保持关闭（P06 强制 `COMMERCE_STUDIO_MEDIA_ENABLED=0`，media 路由不挂载＝404，media worker 不部署）。smoke S45 验证。
 
+- Meta 广告（meta-ads-v1）：`ads` profile（ads-worker）+ api.env `COMMERCE_META_ADS_APP_ID`，见 §6.4。**裁决 B15：0080（ads-capi）合并前保持关闭**（preflight P06 强制）。
+
 ### 6.1 Stripe SANDBOX：账户登记与 webhook 端点
 
 前提：`LC_STRIPE_ENABLED=1`、`payments-sandbox` 已运行、owner 提供 Stripe **测试**账户的 `sk_test_`/`rk_test_` key 和 `acct_...`。
@@ -222,6 +224,36 @@ deploy/scripts/deploy.sh upgrade <tag>
    compose 已接入 `COMMERCE_CLAIMS_LABEL_KEY_FILE`（secret `commerce_claims_label_key`）。证据：`TestStudioG2FlagMatrix`、`TestStudioPlanningOnlyG2APIProcess`（真实二进制 + PG）、
    KC16/T12 浏览器门禁（仅规划模式）、smoke S45（部署后 claims/claim-source 未带令牌返回 401/403，媒体路由 404）。
 
+### 6.4 Meta 广告：商家连接广告账户（meta-ads-v1）
+
+前提：`migrations/0080_*`（ads-capi）已合并（裁决 B15，P06 检查）；应用「大梦」4291253377792879 已挂到香港大碗 Business Portfolio 且 owner 完成 App Review / 商业验证（裁决 O-C，owner 步骤）；每店广告上限默认 NT$0＝关闭（裁决 O4），由运营设置。
+
+1. 密钥：`secrets-init.sh` 生成 HPKE X25519 私钥环 `commerce_meta_ads_hpke_private_keys_json`（**只有 ads-worker 挂载**）并派生公钥环 `commerce_meta_ads_hpke_public_keys_json` + `commerce_meta_ads_hpke_active_key_id`（api 挂载，只能加密、不能解密）。owner 以文件提供 `commerce_meta_ads_app_secret`（替换 `__UNSET__`，0440，裁决 O-D；不经过聊天）。
+2. 配置：api.env 设 `COMMERCE_META_ADS_APP_ID`、`COMMERCE_META_ADS_CONFIG_ID`（Facebook Login for Business 配置）、`COMMERCE_META_ADS_REDIRECT_URI=https://<LC_ADMIN_HOST>/api/ads/meta/callback`（同时登记到 Meta 应用后台，contract §11）、`COMMERCE_META_ADS_GRAPH_VERSION=v26.0`；ads-worker.env 设同一版本和 `COMMERCE_META_ADS_PARTNER_AGENT`；`COMPOSE_PROFILES` 加 `ads`。`preflight.sh` P03/P05/P06/P08/P09 全绿后 `deploy.sh upgrade`（post-check 等 `ads_worker_ready`）。
+3. 回调 URL 的 `code`/`state` 由 Caddy 访问日志改写为 REDACTED（smoke S40 覆盖 `/api/ads/meta/callback`）；admin 对该路径发 `Referrer-Policy: no-referrer`。
+4. 关闭：清空 `COMMERCE_META_ADS_APP_ID` 并重启 api（路由 404）。**不要先停 ads-worker**：暂停（pause）只有它能发到 Meta；先在 admin 暂停所有投放，确认 ops 终态后再去掉 `ads` profile。
+5. CAPI 与商品 feed（ads-capi，0080）：`secrets-init.sh` 生成 `commerce_capi_external_id_key`（b64std32，**只有 ads-worker 挂载**；缺失则 ads-worker 拒绝启动，已部署环境升级前先重跑 `secrets-init.sh` 补齐）。轮换会改变所有买家的 external_id（匹配率重置，不丢数据）。商品 feed 为 `https://<LC_STORE_HOST>/feeds/meta.csv`（storefront → api `GET /v1/buyer/feeds/meta.csv`，只按已验证 Host 解析店铺，Caddy 无需改动）。买家在隐私页授予 `ads_personalization` 时，同一事务写入 `ads.capi_contexts`（浏览器 UA，8 天后清除）。**生产挂载阻塞项**：`ads.capi_contexts`/`ads.capi_events`/`ads.insights_daily` 尚未登记 customers-billing CD7 保留类（meta-ads-v1 §12），登记前不得在生产开启 CAPI。
+6. 广告权限开通（meta-ads-v1 A-1）：0074 只放宽权限 CHECK，`create_initial_store` 不授予 `ads:*`，已部署店铺的 Ads 页在开通前不可用。owner 在聊天批准后，用迁移属主连接运行（幂等、只作用于一个店铺的创建者；需该主体已持有完整创建者权限集，否则整笔回滚）：`psql "$MIGRATION_DATABASE_URL" -v ON_ERROR_STOP=1 -v store_id=<店铺 uuid> -v principal_id=<主体 uuid> -f scripts/ops/grant-ads-permissions.sql`，输出 `granted=<0..3>`。授予权限不等于可投放：每店广告上限默认 NT$0（关闭，裁决 O4），由运营另行设置。
+7. 卡住的草稿（无法解绑广告账户）：解绑会被触发器 `bindings_ads_disable_guard` 以 `binding_in_use`（409）拒绝，直到该店所有草稿都不再“可能花费”（AD6）。先在 admin 暂停；暂停 op 需到 SUCCEEDED。若暂停一直到不了：(a) 令牌被 Meta 撤销 → 商家用**同一个**广告账户重新连接（令牌换新、binding 不变），advance sweeper 会再规划下一个 pause seq；(b) 激活 op 停在 UNKNOWN → 等 reconcile（不要手工改 ops 行）；(c) 以上都不成立 → 在 Ads Manager 核实广告已停，草稿在 `ends_at + 1 天` 后自动不再计入，解绑随之放行。没有操作员强制覆盖（有意：覆盖等于允许“看不见的花费”）；如需加速，先记录根因再另立契约。
+
+### 6.5 平台服务费（Stripe Billing，SANDBOX）与 R2 权限补发
+
+1. 前提（owner 事项）：平台自己的 Stripe **测试**账户（与商家 PSP 账户不同，BD1）、计划 price id（Billing Q1/Q2）。
+   owner 以文件提供两个密钥（O-D，绝不经聊天）：`commerce_platform_stripe_secret_key`（只接受 `sk_test_`/`rk_test_`，BD8）、
+   `commerce_platform_stripe_webhook_secret`（`whsec_`，Stripe 后台为端点 `https://<LC_HOOKS_HOST>/v1/platform/stripe/webhook` 生成；
+   这是与商家 PSP webhook 不同的端点）。
+2. 启用：`compose.env` 设 `LC_BILLING_ENABLED=1`、`LC_BILLING_PRICE_IDS=price_...`（逗号分隔，1–10 个），`deploy.sh upgrade`。
+   未设 = 关闭（`0` 会让 api 启动失败，preflight P06 拦截）；preflight P08 校验 price id，P09 校验两个密钥文件格式。
+   webhook 复用 `commerce_stripe_ingress` 登录（`COMMERCE_STRIPE_INGRESS_DATABASE_URL`）。
+3. **R2 权限补发**（0079 只给新建店铺的创建者 `customers:read`、`customers:privacy`、`billing:manage`；0079 之前建的店铺需手动补发，
+   **需 owner 在聊天中批准**）：
+   ```sh
+   # 以迁移 owner（数据库 owner）连接执行，见脚本头部 HOW；部署包暂无该脚本的 ops 包装（DESIGN）：
+   psql "$MIGRATION_DATABASE_URL" -v ON_ERROR_STOP=1 -v store_id=<store uuid> -v principal_id=<创建者 principal uuid> \
+     -f scripts/ops/grant-r2-permissions.sql   # 输出 granted=<0..3>，幂等，只作用于该店铺的创建者
+   ```
+4. 标准（standing）为 RESTRICTED 时只拒绝新开认领窗口（HTTP 402 `billing_restricted`）；退款、履约、结账不受影响（Q6）。
+
 ## 7. 密钥轮换（按 deploy/secrets.manifest.tsv 的 rotation 列）
 
 | 密钥 | 做法 |
@@ -253,6 +285,7 @@ deploy/scripts/deploy.sh upgrade <tag>
 5. 验证 `lc_psql` 可用，并对 `docker compose logs postgres` 做 `lc_secret_scan`，命中即失败。
 - 中途失败：`.pg_superuser_password.rotating` 会保留，**重新执行同一命令即可继续**（若新值已生效则跳过 ALTER）。不要删除这个文件。
 - 完成后更新离线加密的密钥副本（backup-restore.md §7）。PITR 不受影响：临时集群用 peer 认证，`--promote` 会把超级用户口令设为当前值。
+- Meta 广告 HPKE 环：私钥环只**追加**新 key（不得删除仍能打开已存 token 的 key）→ `secrets-init.sh --rederive`（重新派生公钥环）→ 把 `commerce_meta_ads_hpke_active_key_id` 改成新 id → 重启 ads-worker，再重启 api。P04 检查公私钥环 id 一致、P05 检查 active id 在公钥环中。
 
 ## 8. 证书与域名
 

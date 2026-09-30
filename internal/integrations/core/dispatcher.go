@@ -16,6 +16,57 @@ import (
 
 var ErrPolicyDenied = errors.New("policy denied")
 
+// PolicyDenial is a Check denial that names its BLOCKED_POLICY result code (A10-D2). It satisfies
+// errors.Is(_, ErrPolicyDenied), so a route that returns it is denied exactly like a bare
+// ErrPolicyDenied; only the recorded code differs. It is meaningful in dispatch mode only: a
+// reconcile-mode denial is never BLOCKED_POLICY because an effect may already exist upstream.
+type PolicyDenial struct{ Code string }
+
+func (d PolicyDenial) Error() string { return "policy denied: " + d.Code }
+
+// Is makes PolicyDenial a policy denial for errors.Is without wrapping the ErrPolicyDenied sentinel.
+func (PolicyDenial) Is(target error) bool { return target == ErrPolicyDenied }
+
+// DenyPolicy returns a policy denial recorded as BLOCKED_POLICY with code. A code that fails
+// codePattern is recorded as "policy_denied" (the dispatcher never rejects a denial for its code).
+func DenyPolicy(code string) error { return PolicyDenial{Code: code} }
+
+// denialCode is the result code recorded for a Check denial: the PolicyDenial code when valid,
+// else the historic "policy_denied" (bare ErrPolicyDenied keeps its byte-identical outcome).
+func denialCode(err error) string {
+	var denial PolicyDenial
+	if errors.As(err, &denial) && codePattern.MatchString(denial.Code) {
+		return denial.Code
+	}
+	return "policy_denied"
+}
+
+// secretCallback returns the callback that receives the loaded Secret for this claim mode, or nil
+// when the route's mode has no secret path (plain Dispatch, plain Reconcile). LoadSecret runs
+// exactly when this is non-nil, so a reconcile claim loads a credential only for routes that opted
+// in with ReconcileWithSecret (A-10).
+func secretCallback(route DispatchRoute, mode string) func(context.Context, DispatchRequest, Secret) (Outcome, error) {
+	if route.LoadSecret == nil {
+		return nil
+	}
+	if mode == "reconcile" {
+		return route.ReconcileWithSecret
+	}
+	return route.DispatchWithSecret
+}
+
+// secretLoadFailure maps a failed LoadSecret to the recorded result. Dispatch mode: a policy denial
+// means no credential and zero provider calls, so BLOCKED_POLICY is truthful (blocked=true).
+// Reconcile mode (A-10): an effect may already exist upstream, so the operation stays UNKNOWN
+// (blocked=false) and the same key is reconciled again, never re-POSTed. Any other loader error or
+// panic is "secret_load_failed": the loader ran inside the lease, so only Reconcile follows.
+func secretLoadFailure(mode string, loadErr error, panicked bool) (code string, blocked bool) {
+	if loadErr != nil && !panicked && errors.Is(loadErr, ErrPolicyDenied) {
+		return "credential_unavailable", mode == "dispatch"
+	}
+	return "secret_load_failed", false
+}
+
 var (
 	errInvalidJob          = errors.New("external_operation_invalid_job")
 	errOperationMissing    = errors.New("external_operation_missing")
@@ -40,21 +91,29 @@ type DispatchRequest struct {
 	Request           json.RawMessage `json:"request"`
 	ProviderReference string          `json:"provider_reference"`
 	IdempotencyKey    string          `json:"idempotency_key"`
+	// Mode is the claim mode, "dispatch" or "reconcile" (A10-D1). It is ephemeral per claim (never
+	// marshalled, never stored) and is set before Check and before every callback, so a Check for a
+	// query-only reconcile can skip dispatch-only rules. Routes that ignore it behave as before.
+	Mode string `json:"-"`
 }
 
 // DispatchRoute sets either Dispatch, or the LoadSecret + DispatchWithSecret pair (both or
-// neither; meta-claims-intake-v1 §6.4). LoadSecret runs in dispatch mode only, after the final
-// gate, in one DBTimeout-bounded dispatcher transaction that ends before DispatchWithSecret; its
-// only allowed body is one lease-fenced SQL loader. Check and Reconcile never see a Secret.
+// neither; meta-claims-intake-v1 §6.4). LoadSecret runs after the final gate, in one
+// DBTimeout-bounded dispatcher transaction that ends before the callback; its only allowed body is
+// one lease-fenced SQL loader. It runs in dispatch mode, and in reconcile mode only when the route
+// sets ReconcileWithSecret (meta-ads-v1 A-10), fenced on the reconcile claim. Exactly one of
+// Reconcile / ReconcileWithSecret is set; ReconcileWithSecret needs the LoadSecret pair. Check and
+// plain Reconcile never see a Secret.
 type DispatchRoute struct {
-	Provider           string
-	Action             string
-	Purpose            string
-	Check              func(context.Context, DispatchRequest) error
-	Dispatch           func(context.Context, DispatchRequest) (Outcome, error)
-	LoadSecret         func(context.Context, pgx.Tx, SecretClaim) (Secret, error)
-	DispatchWithSecret func(context.Context, DispatchRequest, Secret) (Outcome, error)
-	Reconcile          func(context.Context, DispatchRequest) (Outcome, error)
+	Provider            string
+	Action              string
+	Purpose             string
+	Check               func(context.Context, DispatchRequest) error
+	Dispatch            func(context.Context, DispatchRequest) (Outcome, error)
+	LoadSecret          func(context.Context, pgx.Tx, SecretClaim) (Secret, error)
+	DispatchWithSecret  func(context.Context, DispatchRequest, Secret) (Outcome, error)
+	Reconcile           func(context.Context, DispatchRequest) (Outcome, error)
+	ReconcileWithSecret func(context.Context, DispatchRequest, Secret) (Outcome, error)
 }
 
 type DispatcherOptions struct {
@@ -134,8 +193,11 @@ func compileDispatchRoutes(routes []DispatchRoute) (map[dispatchRouteKey]Dispatc
 	for _, route := range routes {
 		plain := route.Dispatch != nil && route.LoadSecret == nil && route.DispatchWithSecret == nil
 		secret := route.Dispatch == nil && route.LoadSecret != nil && route.DispatchWithSecret != nil
+		// A-10: exactly one reconcile callback; the secret variant needs the loader pair.
+		reconcile := (route.Reconcile != nil) != (route.ReconcileWithSecret != nil) &&
+			(route.ReconcileWithSecret == nil || secret)
 		if !validProvider(route.Provider) || !actionPattern.MatchString(route.Action) || !validPurpose(route.Purpose) ||
-			route.Check == nil || !(plain || secret) || route.Reconcile == nil {
+			route.Check == nil || !(plain || secret) || !reconcile {
 			return nil, errInvalidJob
 		}
 		key := dispatchRouteKey{provider: route.Provider, action: route.Action, purpose: route.Purpose}
@@ -223,7 +285,7 @@ func (d *Dispatcher) runOperation(ctx context.Context, operationID string) error
 
 	callCtx, cancel := context.WithTimeout(ctx, d.options.CallTimeout)
 	defer cancel()
-	checkErr, checkPanicked := invokeCheck(callCtx, route.Check, dispatchRequest(operation))
+	checkErr, checkPanicked := invokeCheck(callCtx, route.Check, dispatchRequestMode(operation, claim.Mode))
 	if ctx.Err() != nil {
 		return river.JobSnooze(d.options.RetryDelay)
 	}
@@ -235,7 +297,8 @@ func (d *Dispatcher) runOperation(ctx context.Context, operationID string) error
 	}
 	if checkErr != nil {
 		if claim.Mode == "dispatch" && errors.Is(checkErr, ErrPolicyDenied) {
-			return d.completeAndFinish(ctx, operation, claim, Outcome{State: "BLOCKED_POLICY", Code: "policy_denied"}, false)
+			// A10-D2: a coded denial records its own code; a bare ErrPolicyDenied stays "policy_denied".
+			return d.completeAndFinish(ctx, operation, claim, Outcome{State: "BLOCKED_POLICY", Code: denialCode(checkErr)}, false)
 		}
 		return d.completeAmbiguous(ctx, operation, claim, "policy_check_failed")
 	}
@@ -260,11 +323,11 @@ func (d *Dispatcher) runOperation(ctx context.Context, operationID string) error
 		return d.completeAmbiguous(ctx, operation, claim, "binding_changed")
 	}
 
-	request := dispatchRequest(operation)
+	request := dispatchRequestMode(operation, claim.Mode)
 	var outcome Outcome
 	var callbackErr error
 	var callbackPanicked bool
-	if claim.Mode == "dispatch" && route.LoadSecret != nil {
+	if withSecret := secretCallback(route, claim.Mode); withSecret != nil {
 		secret, loadErr, loadPanicked := d.loadSecret(callCtx, route, operation, claim)
 		if ctx.Err() != nil {
 			secret.zero()
@@ -274,15 +337,17 @@ func (d *Dispatcher) runOperation(ctx context.Context, operationID string) error
 			secret.zero()
 			return d.completeAmbiguous(ctx, operation, claim, "callback_timeout")
 		}
-		if loadErr != nil && !loadPanicked && errors.Is(loadErr, ErrPolicyDenied) {
-			// Pre-dispatch denial: no credential means zero provider calls, so BLOCKED_POLICY is truthful.
-			return d.completeAndFinish(ctx, operation, claim, Outcome{State: "BLOCKED_POLICY", Code: "credential_unavailable"}, false)
-		}
 		if loadErr != nil || loadPanicked {
-			// Zero calls were made, but the loader ran in the lease: only Reconcile follows, never a re-POST.
-			return d.completeAmbiguous(ctx, operation, claim, "secret_load_failed")
+			// Dispatch denial: no credential means zero provider calls, so BLOCKED_POLICY is truthful.
+			// Anything else (and every reconcile-mode failure) stays UNKNOWN: only Reconcile follows,
+			// never a re-POST, because an effect may already exist upstream.
+			code, blocked := secretLoadFailure(claim.Mode, loadErr, loadPanicked)
+			if blocked {
+				return d.completeAndFinish(ctx, operation, claim, Outcome{State: "BLOCKED_POLICY", Code: code}, false)
+			}
+			return d.completeAmbiguous(ctx, operation, claim, code)
 		}
-		outcome, callbackErr, callbackPanicked = invokeSecretOutcome(callCtx, route.DispatchWithSecret, request, secret)
+		outcome, callbackErr, callbackPanicked = invokeSecretOutcome(callCtx, withSecret, request, secret)
 		secret.zero()
 	} else if claim.Mode == "dispatch" {
 		outcome, callbackErr, callbackPanicked = invokeOutcome(callCtx, route.Dispatch, request)
@@ -466,6 +531,14 @@ func scanOperation(row rowScanner) (operation Operation, err error) {
 		&operation.Request, &operation.State, &operation.Generation, &operation.LeaseMode, &operation.LeaseUntil,
 		&operation.ResultCode, &operation.ProviderReference)
 	return operation, err
+}
+
+// dispatchRequestMode is dispatchRequest with the claim mode set (A10-D1); Check and the callback
+// each get their own copy so neither can mutate what the other sees.
+func dispatchRequestMode(operation Operation, mode string) DispatchRequest {
+	request := dispatchRequest(operation)
+	request.Mode = mode
+	return request
 }
 
 func dispatchRequest(operation Operation) DispatchRequest {

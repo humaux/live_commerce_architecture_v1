@@ -13,11 +13,19 @@ Command admin-fixture owns a disposable local fixture for the admin ledger UI: i
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`
 - Used by: — (entry point or unused)
 
+## `cmd/ads-worker`
+
+Command ads-worker owns the Meta ads River host (meta-ads-v1 §6, ads-graph): the main-schema external_operation_v1 dispatcher whose only routes are the eight meta_ads actions (internal/integrations/meta_ads), the ads domain workers and periodic jobs (internal/ads: publish-advance sweeper, insights planner, OAuth-state purge), all on the River queue "ads" only.
+
+- Depends on (internal): `internal/ads`, `internal/attribution`, `internal/attribution/capiroute`, `internal/integrations/core`, `internal/integrations/meta_ads`, `internal/integrations/meta_ads/tokenopen`, `internal/jobqueue`, `internal/platform`
+- Depends on (third-party): `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
+- Used by: — (entry point or unused)
+
 ## `cmd/api`
 
 Command api owns the API process assembly: it loads each feature's configuration (identity, accounts, buyer and hosted payment, Meta webhooks, Stripe webhooks, Studio, claims, merchant refunds), opens the scoped DB pools, builds the handlers and mounts them on one listener.
 
-- Depends on (internal): `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/httpapi`, `internal/identity`, `internal/identityhttp`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/live`, `internal/oidclogin`, `internal/payments/stripewebhook`, `internal/platform`
+- Depends on (internal): `internal/ads`, `internal/attribution`, `internal/billing`, `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/httpapi`, `internal/httperror`, `internal/identity`, `internal/identityhttp`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta_ads`, `internal/live`, `internal/oidclogin`, `internal/payments/stripewebhook`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
 - Used by: — (entry point or unused)
 
@@ -50,7 +58,7 @@ Command media-worker owns the process that runs the live-media River queue: Live
 Command meta-admin owns the operator-only Meta registrar CLI (meta-claims-intake-v1 §7, R1 ruling F2).
 
 - Depends on (internal): `internal/command`, `internal/integrations/metareply`
-- Depends on (third-party): `github.com/jackc/pgx/v5/pgxpool`
+- Depends on (third-party): `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
 - Used by: — (entry point or unused)
 
 ## `cmd/meta-worker`
@@ -93,19 +101,59 @@ Command lcentry owns the tiny, stdlib-only launcher baked into every deploy imag
 - Depends on (third-party): —
 - Used by: — (entry point or unused)
 
+## `internal/ads`
+
+Package ads owns the merchant-side lifecycle of a Meta ad campaign (contracts/meta-ads-v1.md, T15): connecting an ad account (OAuth state, pick list, sealed token copy), drafting, approving and publishing a campaign whose only spend switch is a Check-gated `activate` operation, pausing it, the per-store allowance, and the periodic sweepers that plan the next remote step or ingest insights.
+
+- Depends on (internal): `internal/command`, `internal/integrations/core`, `internal/platform`
+- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`
+- Used by: `cmd/ads-worker`, `cmd/api`, `internal/httpapi`, `internal/integrations/meta_ads`
+
+## `internal/attribution`
+
+Package attribution owns the storefront-side half of Meta conversion attribution (contracts/meta-ads-v1.md, T16): the capi_purchase_sweep_v1 sweeper that plans one CAPI Purchase operation per consented CAPTURED payment attempt, the public product feed of a verified storefront host, the consent hook that records a buyer's browser user agent, and the pure hashing helpers (F16 phone hash, C3 external id, AD8 event id).
+
+- Depends on (internal): `internal/command`, `internal/httperror`, `internal/integrations/core`
+- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`
+- Used by: `cmd/ads-worker`, `cmd/api`, `internal/attribution/capiroute`, `internal/buyerhttp`
+
+## `internal/attribution/capiroute`
+
+Package capiroute owns the dispatcher route (provider meta_dataset, action meta.capi.purchase) that sends one Meta Conversions API Purchase event per planned operation: the PG-only Check (consent, binding, environment, age), the lease-fenced LoadSecret that reads the buyer's user data and the dataset token in one transaction and hashes in memory, and the DispatchWithSecret that posts exactly one event through metaads.Client.PostEvent.
+
+- Depends on (internal): `internal/attribution`, `internal/command`, `internal/integrations/core`, `internal/integrations/meta_ads`, `internal/integrations/meta_ads/tokenopen`, `internal/platform`
+- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`
+- Used by: `cmd/ads-worker`
+
+## `internal/billing`
+
+Package billing owns the platform-fee subscription mirror and the derived store standing (contracts/customers-billing-v1.md, T17): pinning a Stripe customer to a store, starting a Stripe Checkout subscription (one open session, trial once), opening the Stripe customer portal, turning a verified Stripe webhook into a retrieved Subscription mirrored by billing.apply_subscription, and reading standing/usage.
+
+- Depends on (internal): `internal/command`, `internal/httperror`, `internal/integrations/psp/stripe`, `internal/platform`
+- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
+- Used by: `cmd/api`, `internal/httpapi`
+
+## `internal/billing/billingtest`
+
+Package billingtest owns the independent MOCK of the Stripe Billing endpoints the platform-fee client calls: GET /v1/account, POST /v1/customers (idempotency cache), POST /v1/checkout/sessions and /{id}/expire, POST /v1/billing_portal/sessions, GET /v1/subscriptions/{id} and the list by customer, GET /v1/prices/{id}, plus a signed-event builder.
+
+- Depends on (internal): `internal/integrations/psp/stripe/stripetest`
+- Depends on (third-party): —
+- Used by: — (entry point or unused)
+
 ## `internal/buyer`
 
 Package buyer owns the anonymous buyer capability boundary: issuing short-lived opaque capability tokens on the issuer pool and scoping every buyer transaction to one (tenant, store, owner, session) with a replay-safe command record.
 
 - Depends on (internal): `internal/command`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
-- Used by: `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/fulfillment`, `internal/storefront`
+- Used by: `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/customers`, `internal/fulfillment`, `internal/storefront`
 
 ## `internal/buyerhttp`
 
 Package buyerhttp owns the private, BFF-only buyer transport (catalog, cart, quote, checkout, payment and claim routes).
 
-- Depends on (internal): `internal/buyer`, `internal/checkout`, `internal/claims`, `internal/command`, `internal/domains`, `internal/httperror`, `internal/pagination`, `internal/platform`, `internal/storefront`
+- Depends on (internal): `internal/attribution`, `internal/buyer`, `internal/checkout`, `internal/claims`, `internal/command`, `internal/customers`, `internal/domains`, `internal/httperror`, `internal/pagination`, `internal/platform`, `internal/storefront`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`
 - Used by: `cmd/api`
 
@@ -155,7 +203,15 @@ Package command owns scoped replay records and small transaction primitives.
 
 - Depends on (internal): `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`
-- Used by: `cmd/meta-admin`, `internal/buyer`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/metareply`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/pagination`, `internal/payments`, `internal/payments/stripeadmin`, `internal/pricing`, `internal/storefront`
+- Used by: `cmd/meta-admin`, `internal/ads`, `internal/attribution`, `internal/attribution/capiroute`, `internal/billing`, `internal/buyer`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/customers`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/pagination`, `internal/payments`, `internal/payments/stripeadmin`, `internal/pricing`, `internal/reporting`, `internal/storefront`
+
+## `internal/customers`
+
+Package customers owns consent and owner-level privacy actions (contracts/customers-billing-v1.md, FROZEN 2026-09-30): the merchant customer list/detail read-time projection over buyer.owners (CD1-CD3), append-only consent with the single gate customers.consent_allows (CD4/CD5), and the synchronous export and erasure of one owner with tombstone replay (CD6-CD8).
+
+- Depends on (internal): `internal/buyer`, `internal/command`, `internal/merchantorders`, `internal/pagination`, `internal/platform`
+- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
+- Used by: `internal/buyerhttp`, `internal/httpapi`
 
 ## `internal/domains`
 
@@ -177,7 +233,7 @@ Package fulfillment owns merchant delivery-service configuration revisions, per-
 
 Package httpapi owns the composition layer for authenticated merchant/admin routes: routing, bearer resolution, request bounds and error mapping.
 
-- Depends on (internal): `internal/catalog`, `internal/claims`, `internal/command`, `internal/fulfillment`, `internal/httperror`, `internal/integrations/accounts`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/pagination`, `internal/payments`, `internal/platform`, `internal/pricing`
+- Depends on (internal): `internal/ads`, `internal/billing`, `internal/catalog`, `internal/claims`, `internal/command`, `internal/customers`, `internal/fulfillment`, `internal/httperror`, `internal/integrations/accounts`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/pagination`, `internal/payments`, `internal/platform`, `internal/pricing`, `internal/reporting`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`
 - Used by: `cmd/admin-fixture`, `cmd/api`
 
@@ -187,7 +243,7 @@ Package httperror owns transport-safe error envelopes, never domain policy.
 
 - Depends on (internal): —
 - Depends on (third-party): —
-- Used by: `internal/buyerhttp`, `internal/httpapi`, `internal/identityhttp`, `internal/platform`
+- Used by: `cmd/api`, `internal/attribution`, `internal/billing`, `internal/buyerhttp`, `internal/httpapi`, `internal/identityhttp`, `internal/platform`
 
 ## `internal/identity`
 
@@ -219,7 +275,7 @@ Package core owns the provider-neutral external-operation ledger boundary: the e
 
 - Depends on (internal): `internal/command`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`
-- Used by: `cmd/api`, `cmd/claims-worker`, `internal/claimsintake`, `internal/integrations/accounts`, `internal/integrations/metareply`, `internal/payments`
+- Used by: `cmd/ads-worker`, `cmd/api`, `cmd/claims-worker`, `internal/ads`, `internal/attribution`, `internal/attribution/capiroute`, `internal/claimsintake`, `internal/integrations/accounts`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/payments`
 
 ## `internal/integrations/livekit`
 
@@ -235,7 +291,23 @@ Package meta owns admission of signed Meta webhook events: HMAC verification, st
 
 - Depends on (internal): `internal/claims/grammar`, `internal/command`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
-- Used by: `cmd/api`, `cmd/meta-worker`, `internal/integrations/metareply`
+- Used by: `cmd/api`, `cmd/meta-worker`, `internal/integrations/meta_ads`, `internal/integrations/meta_ads/tokenopen`, `internal/integrations/metareply`
+
+## `internal/integrations/meta_ads`
+
+Package metaads owns every Meta Graph wire call of the ads product (contracts/meta-ads-v1.md §3): the eight meta_ads dispatcher routes (create_campaign, create_adset, create_creative, create_ad, preflight_account, activate, pause, read_insights), the CAPI event POST (Client.PostEvent, called by the ads-capi route), the merchant OAuth connect (OAuth.Connect: code exchange, client business, granted permissions, ad-account/dataset pick list, HPKE seal), the Meta money conversions (I05), the read-result grammar carried in integration.operations.provider_reference, and the seal side of token custody (SealKeys: public keys only).
+
+- Depends on (internal): `internal/ads`, `internal/command`, `internal/integrations/core`, `internal/integrations/meta`, `internal/platform`
+- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`
+- Used by: `cmd/ads-worker`, `cmd/api`, `internal/attribution/capiroute`, `internal/integrations/meta_ads/tokenopen`
+
+## `internal/integrations/meta_ads/tokenopen`
+
+Package tokenopen owns the OPEN half of BISU token custody (meta-ads-v1 A-4, ads-graph G1): the HPKE private keys and Keyring.Open, which turns a sealed ads token back into plaintext for one dispatcher call.
+
+- Depends on (internal): `internal/integrations/meta`, `internal/integrations/meta_ads`
+- Depends on (third-party): —
+- Used by: `cmd/ads-worker`, `internal/attribution/capiroute`
 
 ## `internal/integrations/metareply`
 
@@ -259,7 +331,7 @@ Package stripe owns Stripe Checkout Session wire calls and webhook signature ver
 
 - Depends on (internal): —
 - Depends on (third-party): —
-- Used by: `internal/checkout`, `internal/integrations/accounts`, `internal/payments`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`
+- Used by: `internal/billing`, `internal/checkout`, `internal/integrations/accounts`, `internal/payments`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`
 
 ## `internal/integrations/psp/stripe/stripetest`
 
@@ -267,7 +339,7 @@ Package stripetest owns the independent MOCK Stripe HTTP service: Checkout sessi
 
 - Depends on (internal): —
 - Depends on (third-party): —
-- Used by: — (entry point or unused)
+- Used by: `internal/billing/billingtest`
 
 ## `internal/inventory`
 
@@ -283,7 +355,7 @@ Package jobqueue owns the server-chosen River queue names (checkout expiry and t
 
 - Depends on (internal): —
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/riverqueue/river`
-- Used by: `cmd/claims-worker`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `internal/checkout`, `internal/payments`, `internal/payments/stripewebhook`
+- Used by: `cmd/ads-worker`, `cmd/claims-worker`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `internal/checkout`, `internal/payments`, `internal/payments/stripewebhook`
 
 ## `internal/live`
 
@@ -299,7 +371,7 @@ Package merchantorders owns the private merchant order projection (identity.read
 
 - Depends on (internal): `internal/command`, `internal/pagination`, `internal/platform`, `internal/pricing`, `internal/storefront`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/riverqueue/river`, `golang.org/x/text/unicode/norm`
-- Used by: `internal/httpapi`
+- Used by: `internal/customers`, `internal/httpapi`
 
 ## `internal/oidclogin`
 
@@ -315,7 +387,7 @@ Package pagination owns bounded, opaque keyset positions for scoped lists: Encod
 
 - Depends on (internal): `internal/command`
 - Depends on (third-party): —
-- Used by: `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/payments`, `internal/pricing`, `internal/storefront`
+- Used by: `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/customers`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/payments`, `internal/pricing`, `internal/storefront`
 
 ## `internal/payments`
 
@@ -347,7 +419,7 @@ Package platform owns the narrow HTTP and database foundation shared by the API 
 
 - Depends on (internal): `internal/httperror`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
-- Used by: `cmd/admin-fixture`, `cmd/api`, `cmd/claims-worker`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/command`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/metareply`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/payments`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`, `internal/pricing`
+- Used by: `cmd/admin-fixture`, `cmd/ads-worker`, `cmd/api`, `cmd/claims-worker`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `internal/ads`, `internal/attribution/capiroute`, `internal/billing`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/command`, `internal/customers`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/payments`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`, `internal/pricing`, `internal/reporting`
 
 ## `internal/pricing`
 
@@ -356,6 +428,14 @@ Package pricing owns merchant market policy writes (markets and their currency) 
 - Depends on (internal): `internal/command`, `internal/pagination`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
 - Used by: `internal/checkout`, `internal/fulfillment`, `internal/httpapi`, `internal/merchantorders`, `internal/payments`, `internal/storefront`
+
+## `internal/reporting`
+
+Package reporting owns read-only finance aggregates for the merchant: the BD7 daily captured / refunded / net summary by currency and environment over at most 92 days in the Asia/Taipei day (Q11), and its CSV export (orders:export, audited).
+
+- Depends on (internal): `internal/command`, `internal/platform`
+- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
+- Used by: `internal/httpapi`
 
 ## `internal/storefront`
 
@@ -372,6 +452,14 @@ Package migrations owns applying the embedded, forward-only, checksummed busines
 - Depends on (internal): —
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river/riverdriver/riverpgxv5`, `github.com/riverqueue/river/rivermigrate`
 - Used by: `cmd/admin-fixture`, `cmd/migrate`
+
+## `tests/ads/fakegraph`
+
+Package fakegraph owns a MOCK of the parts of Meta's Graph / Marketing API that meta-ads-v1 (§1 F-table, §3) relies on, written by the independent ads-tests author from the contract and from Meta's public documentation only, never from the adapter under test.
+
+- Depends on (internal): —
+- Depends on (third-party): —
+- Used by: — (entry point or unused)
 
 ## `tests/foundation`
 

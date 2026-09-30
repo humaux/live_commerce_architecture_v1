@@ -303,9 +303,9 @@ the existing allowlist proxy; same session/CSRF/Origin rules as orders; bodies s
 | Method + path | Permission | Result |
 | --- | --- | --- |
 | `GET customers?limit&after&q` | customers:read | list rows: `customer_id, first_seen_at, last_activity_at, display_name, phone_last3, orders_count, paid_orders_count, captured_minor, refunded_minor, currency, claims_count, platforms[], consents{marketing_messages,ads_personalization}, active` |
-| `GET customers/{id}` | customers:read | row + `orders[]` (merchant-orders-v1 Summary shape, newest 50) + `claims[]` (`session_id, platform, bound_at, line_count`) + consent history + privacy actions |
+| `GET customers/{id}` | customers:read + orders:read (amended, R1 review P1-2) | row + `orders[]` (merchant-orders-v1 Summary shape, newest 50) + `claims[]` (`session_id, platform, bound_at, line_count`) + consent history + privacy actions |
 | `POST customers/{id}/consent-withdrawals` `{purpose,channel}` + Idempotency-Key | customers:privacy | 201 |
-| `POST customers/{id}/exports` + Idempotency-Key | customers:privacy | 200 `application/json` attachment `lc.customer-export.v1` (≤ 1 MiB, ≤ 200 orders else 409 `export_too_large`), `Cache-Control: no-store` |
+| `POST customers/{id}/exports` + Idempotency-Key | customers:privacy + customers:read + orders:read (amended, R1 review P1-2) | 200 `application/json` attachment `lc.customer-export.v1` (≤ 1 MiB, ≤ 200 orders else 409 `export_too_large`), `Cache-Control: no-store` |
 | `POST customers/{id}/erasure` `{confirm:"ERASE"}` + Idempotency-Key | customers:privacy | 200 summary counts; 409 `erasure_blocked` |
 | `GET finance/summary?from&to` / `GET finance/summary.csv?…` | orders:read / +orders:export | daily rows + totals |
 | `GET billing` | billing:manage | §3.2 `read_billing` + `plans[]` (configured price ids with name/amount/currency/interval from Stripe, 10-min process cache) + `stale` flag |
@@ -322,6 +322,12 @@ unexpired session id, `POST /v1/checkout/sessions/{id}/expire` it (own idempoten
 retry, therefore leave at most one open session; a session whose create response was lost is never returned to anyone
 and expires within 30 min. Operator prerequisite (§10): Dashboard
 "limit customers to one subscription" + portal login link enabled (F-B12), which also covers the gap outside trials.
+
+Amendment (R1 review P1-2): detail and export return order summaries/details, which carry order and destination PII,
+through the one existing projection (`merchantorders.Get`, gated by `orders:read`). A principal therefore needs
+`orders:read` in addition to the row permission; detail needs `customers:read`+`orders:read`, export needs
+`customers:privacy`+`customers:read`+`orders:read` (export builds on the detail read). This is fail-closed and keeps a
+single order-PII gate; the list, consent-withdrawal and erasure rows are unchanged (no order PII returned).
 
 Export content: store name, customer_id, orders (existing merchant order Detail shape, produced by the
 existing projection per order id), consent history, claims summary (platform + time, never actor_key),

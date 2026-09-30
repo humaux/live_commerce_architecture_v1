@@ -58,6 +58,25 @@ func write(w http.ResponseWriter, status int, code string, retryable bool) {
 		"insufficient_inventory": "Insufficient available inventory.",
 		"retry_later":            "Temporarily unavailable.", "unavailable": "Temporarily unavailable.",
 		"internal": "Request could not be completed.",
+		// meta-ads-v1 §7 / internal/ads frozenStatus: every frozen ads refusal code must be listed here or the
+		// merchant sees "internal" (found by MA04; internal/ads TestFrozenCodesSurviveHTTPError guards the drift).
+		"state_mismatch":           "This Meta connection attempt does not belong to this session.",
+		"state_expired":            "This Meta connection attempt expired.",
+		"meta_connect_failed":      "Meta could not complete the connection.",
+		"not_in_pick_list":         "That ad account or dataset was not offered by Meta for this login.",
+		"client_business_changed":  "This ad account now belongs to a different Meta business.",
+		"revision_changed":         "The draft changed since it was loaded.",
+		"draft_approved":           "An approved draft cannot be edited.",
+		"over_allowance":           "The budget exceeds the store's ads allowance.",
+		"attempt_changed":          "The publish attempt changed since it was loaded.",
+		"prior_attempt_not_paused": "An earlier attempt is not confirmed paused.",
+		"budget_below_minimum":     "The budget is below the minimum.",
+		"not_whole_unit":           "The budget must be a whole currency unit.",
+		"currency_mismatch":        "The currency does not match the ad account.",
+		"starts_too_soon":          "The start time is too soon.",
+		"binding_disabled":         "The Meta ads connection is not enabled.",
+		"source_not_owned":         "That post does not belong to this store's connection.",
+		"product_not_published":    "The product is not published.",
 		// stripe-refund-v1 §7.1 (ruling 15: unknown codes were rewritten to "internal").
 		"refundable_changed":    "Refundable amount changed since it was loaded.",
 		"exceeds_refundable":    "Amount exceeds the refundable amount.",
@@ -80,6 +99,16 @@ func write(w http.ResponseWriter, status int, code string, retryable bool) {
 		"binding_ambiguous":  "Several Meta connections are enabled; the post cannot be assigned to one.",
 		"source_conflict":    "This post already feeds another live session.",
 		"page_token_missing": "Private replies need a registered Page token for this connection.",
+		// customers-billing-v1 §5/§6 (customers-core): consent, export and erasure.
+		"idempotency_conflict": "This request key was already used for a different request.",
+		"erasure_blocked":      "Erasure is blocked while a hold, payment or refund is in progress.",
+		"erased":               "This data has been erased.",
+		"export_too_large":     "The export is too large to generate.",
+		// customers-billing-v1 §5 / billing-core B2, B12: platform billing.
+		"billing_unavailable": "Billing is temporarily unavailable.",
+		"billing_restricted":  "New claim windows are paused until billing is up to date.",
+		"subscription_exists": "This store already has a subscription.",
+		"no_billing_customer": "No billing account exists for this store yet.",
 	}
 	message, ok := messages[code]
 	if !ok {

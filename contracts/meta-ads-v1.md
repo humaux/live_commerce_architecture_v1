@@ -568,3 +568,53 @@ Recorded from `docs/delivery/units/r2-design-rulings.md` (binding; owner may rev
 - §4.4 adds: `ads.operator_set_settings` EXECUTE → commerce_meta_registrar; `payments.refund_facts` SELECT + read policy (store-scoped) → commerce_ads_writer. MA02 asserts both.
 - A10-D2 (coded denials) and A10-D3 (queue-aware job insert) are recorded in external-dispatcher-v1.
 - D2 read-result cap 200 chars; D5/D6/D9 accepted; ads-core mount and MA02 billing clauses wait for 0080.
+
+## Integrator merge notes (2026-09-30, lane r2/ads: ads-core + ads-graph + ads-ui)
+Recorded from the unit hooks; implemented in 0074/0075/post_river 0015 and asserted by MA02 (ads-tests).
+- §4.4 extra rows: R-C commerce_ads_writer column SELECT + read policy on control.storefront_domains (ACTIVE),
+  control.storefront_publications (published), catalog.products (active) for §5.2 PRODUCT_TRAFFIC validation and the
+  D11 link freeze; R-E commerce_ads_writer river USAGE + river.river_job SELECT (planned-job verification, 0014 pattern);
+  R-F commerce_integration_writer ads.connections UPDATE(token_version,oauth_state_id,connected_by,connected_at) +
+  ads.oauth_states UPDATE(used_at) WITH CHECK (false); R-G EXECUTE of the merchant definers → commerce_runtime, the
+  check/advance/insights/purge definers + integration.load_meta_ads_token → commerce_worker. R-D: operator audit lives
+  in ads.operator_events (no principal for ops.audit_events).
+- §4.1 drift: ads.connections carries `token_version bigint NOT NULL` (mirror of the head version, read by
+  ads.connection_version) so commerce_runtime needs no grant on the token head table.
+- §3 read-result grammar key length is {2,4} (the preflight key `fund` has 4). 0074 reads preflight keys by substring
+  (accepts `fund`); 0075's insights parser keeps {2,3}, which fits every insights key (es,sp,im,cl,pu,pv,cur,tz).
+- `metaads.Routes` takes the `metaads.TokenOpener` interface (not `*tokenopen.Keyring`) so cmd/api never links the
+  HPKE private-key loader (MA11, `go list -deps ./cmd/api`).
+- G3 secret files: lcentry expands `NAME_FILE` to `NAME`; `metaads.SecretFromEnv` accepts either (both = error).
+  The public HPKE ring is derived from the private ring by deploy/scripts/secrets-init.sh (kinds hpke_private_ring /
+  hpke_public_ring); preflight P03/P04/P05 check both and their id sets.
+- §7 error body is the shared internal/httperror shape `{code,...}` (the ads-core brief's `{"error":code}` was wrong);
+  OpenAPI for §7 lives in contracts/ads-openapi.json (core-openapi.json keeps its fixed operation count).
+- Admin BFF transport: pause/end/connect are forwarded with no body and approve with no Idempotency-Key, as §7 freezes.
+- B15 is enforced at deploy time: preflight P06 fails `COMMERCE_META_ADS_APP_ID` without migrations/0080 and
+  without the `ads` profile (pause must always reach ads-worker).
+
+## Lane close amendments (2026-09-30, r2/ads close pass; smallest notes, contract text above is otherwise unchanged)
+- **§5.3 pause vs disabled binding (R2-ADS-PAUSE-1, a5ad682):** "Pause is always allowed ... disabled-but-same-asset binding" is narrowed to
+  "with an ENABLED binding". The dispatcher's enabled/semantic_version gate is unchanged; trigger `0074 bindings_ads_disable_guard` refuses
+  (PT409 `binding_in_use`, core maps it to a 409 conflict) disabling a `meta_ads` binding while any draft on it counts by the AD6 test.
+  Today no HTTP route or admin page calls `core.Service.SetBindingEnabled`, so no merchant sees this refusal; the copy
+  ("pause the campaign first, then disconnect") is added with the route that first exposes a disconnect.
+  Operator path for a stuck draft (pause can never reach SUCCEEDED): docs/runbooks/deploy.md §6.4 items 6-7 (no override exists; the binding frees at
+  `ends_at + 1 day` by design).
+- **§5.3 publish after pause (X7 consequence):** `ads.publish_draft` refuses (422 `invalid_request`, zero ops) a draft that has any `pause` op,
+  exactly like an ended draft. A re-publish could never activate (check_activate `pause_requested`), so the merchant copies the draft instead (X7).
+- **§4.3 C4 event_time:** `event_time = floor(extract(epoch FROM received_at))` (the first 0080 cast rounded, up to 0.5 s ahead of the fact).
+- **§3 creative request:** `page_id` is optional for a BOOST_POST of an Instagram media when the store has no Facebook Page binding
+  (`ads.request_for` omits the key); a Facebook boost and PRODUCT_TRAFFIC still require it (the adapter refuses them locally, zero HTTP).
+- **§4.3/§4.4 drift recorded, implementation is the authority:** 0080 reads `storefront.quotes(snapshot)` by `quote_id` (not
+  `destination_id`/`destination_snapshots(phone)`); the §4.4 tables also list `river.river_job` SELECT + river USAGE (R-E), `control.storefront_domains`,
+  `control.storefront_publications`, `catalog.products.status` (R-C), as the merge notes above. §6.4/MA08 `ph`: CAPI omits `ph` (0080 `ph_e164` is NULL, column not granted) until checkout records recipient = buyer, as customers-billing CD5 requires; MA08 asserts the omission.
+- **§7 error key:** the wire key is `code` (shared `internal/httperror` shape), not `error`.
+- **OAuth state (§2 step 1):** the state is an HMAC-SHA256 keyed by a key derived from the Meta app secret (server-side only) over
+  tenant|store|principal|Idempotency-Key, so `ops.command_results` (which keeps the key) cannot be used to recompute a live state; only its SHA-256 is stored.
+  Replaces the unkeyed SHA-256 derivation (r3 review P2); the state is still single-use, 10 min, bound to principal + store.
+- **Provisioning (A-1):** `scripts/ops/grant-ads-permissions.sql` grants `ads:read`, `ads:manage`, `ads:approve` to one existing store creator
+  (same safety checks as grant-r2-permissions.sql); deploy.md §6.4 item 6.
+- **Known, tracked as NOT_RUN/BLOCKED until MA-S1 (tasks.json T15):** auto-pause (AD7) covers budget reached and DISAPPROVED/WITH_ISSUES only,
+  not an ad account that is no longer ACTIVE; the min-daily-budget x days check of §5.2 is not enforced locally (Meta rejects the ad set,
+  the attempt FAILS and can be re-published).

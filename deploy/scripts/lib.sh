@@ -132,7 +132,7 @@ lc_compose() {
 # lc_compose_with_ops ARGS... — current profiles + ops (pg-ops runs next to the live stack).
 lc_compose_with_ops() { COMPOSE_PROFILES="${COMPOSE_PROFILES:+$COMPOSE_PROFILES,}ops" lc_compose "$@"; }
 # lc_compose_all ARGS... — every profile (teardown of a whole project, e.g. smoke).
-lc_compose_all() { COMPOSE_PROFILES="db,app,payments-sandbox,payments-live,meta,claims,ops" lc_compose "$@"; }
+lc_compose_all() { COMPOSE_PROFILES="db,app,payments-sandbox,payments-live,meta,claims,ads,ops" lc_compose "$@"; }
 
 # lc_active_services — services enabled by COMPOSE_PROFILES (one per line).
 lc_active_services() { lc_compose config --services 2>/dev/null; }

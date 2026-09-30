@@ -224,7 +224,7 @@ func TestMetaClaimsMCI10SecretClaimOnlyInLoadSecret(t *testing.T) {
 				}
 				continue
 			}
-			uses, loads := false, false
+			uses, loads, loadsAds := false, false, false
 			ast.Inspect(fn, func(n ast.Node) bool {
 				switch x := n.(type) {
 				case *ast.Ident:
@@ -235,6 +235,10 @@ func TestMetaClaimsMCI10SecretClaimOnlyInLoadSecret(t *testing.T) {
 					if x.Kind == token.STRING && strings.Contains(x.Value, "load_meta_page_token") {
 						loads = true
 					}
+					// meta-ads-v1 AD11: the ads loader is the one other lease-fenced LoadSecret hook.
+					if x.Kind == token.STRING && strings.Contains(x.Value, "integration.load_meta_ads_token") {
+						loadsAds = true
+					}
 				}
 				return true
 			})
@@ -242,8 +246,11 @@ func TestMetaClaimsMCI10SecretClaimOnlyInLoadSecret(t *testing.T) {
 				continue
 			}
 			mentions++
-			if s.dir != "internal/integrations/metareply" || !loads {
-				t.Errorf("%s: function %s references SecretClaim but is not the load_meta_page_token loader in metareply", s.path, fn.Name.Name)
+			// ads-capi C2 (meta-ads-v1 §6.4): the CAPI route's LoadSecret is the third lease-fenced loader; it calls the same
+			// integration.load_meta_ads_token and reads ads.capi_user_data in that fenced transaction.
+			if !(s.dir == "internal/integrations/metareply" && loads) && !(s.dir == "internal/integrations/meta_ads" && loadsAds) &&
+				!(s.dir == "internal/attribution/capiroute" && loadsAds) {
+				t.Errorf("%s: function %s references SecretClaim but is not the load_meta_page_token loader in metareply or the load_meta_ads_token loader in meta_ads or attribution/capiroute", s.path, fn.Name.Name)
 			}
 		}
 	}
