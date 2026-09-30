@@ -790,7 +790,7 @@ func (e *tcvEnv) abandon(order string) (int, map[string]any, []byte) {
 	for {
 		_, _, version := e.shipState(order)
 		st, out, raw := e.mcall(e.token(), "POST", e.shipPath(order)+"/abandon", t04Key("tcv-abandon"), fmt.Sprintf(`{"expected_version":%d,"i_checked_ecpay_backend":true}`, version))
-		if st != 409 || tcvStr(out, "code") != "reconcile_in_progress" || time.Now().After(deadline) {
+		if st != 409 || (tcvStr(out, "code") != "reconcile_in_progress" && tcvStr(out, "code") != "version_changed") || time.Now().After(deadline) {
 			return st, out, raw
 		}
 		time.Sleep(200 * time.Millisecond)
