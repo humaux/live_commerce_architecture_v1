@@ -69,20 +69,21 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	if err := migrations.Apply(ctx, fresh); err != nil {
 		t.Fatalf("fresh apply: %v", err)
 	}
+	// ACL items are compared as sets: an upgrade grants in a different order than a fresh apply (post-River before the R2 files).
 	// Same objects either way: relations+columns, functions (with body hash), policies, triggers, table/function ACLs, roles.
 	const catalog = `SELECT x FROM (
-		SELECT 'col '||c.oid::regclass::text||' '||a.attname||' '||format_type(a.atttypid,a.atttypmod)||' '||a.attnotnull::text||' '||coalesce(c.relacl::text,'')||' '||coalesce(a.attacl::text,'')||' '||c.relrowsecurity::text||c.relforcerowsecurity::text AS x
+		SELECT 'col '||c.oid::regclass::text||' '||a.attname||' '||format_type(a.atttypid,a.atttypmod)||' '||a.attnotnull::text||' '||coalesce((SELECT string_agg(i::text, ',' ORDER BY i::text) FROM unnest(c.relacl) i),'')||' '||coalesce((SELECT string_agg(i::text, ',' ORDER BY i::text) FROM unnest(a.attacl) i),'')||' '||c.relrowsecurity::text||c.relforcerowsecurity::text AS x
 		  FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped
 		  WHERE n.nspname NOT IN ('pg_catalog','information_schema','pg_toast') AND c.relkind IN ('r','p','v','m')
-		UNION ALL SELECT 'fn '||p.oid::regprocedure::text||' '||md5(p.prosrc)||' '||p.prosecdef::text||' '||pg_get_userbyid(p.proowner)||' '||coalesce(p.proacl::text,'')||' '||coalesce(p.proconfig::text,'')
+		UNION ALL SELECT 'fn '||p.oid::regprocedure::text||' '||md5(p.prosrc)||' '||p.prosecdef::text||' '||pg_get_userbyid(p.proowner)||' '||coalesce((SELECT string_agg(i::text, ',' ORDER BY i::text) FROM unnest(p.proacl) i),'')||' '||coalesce(p.proconfig::text,'')
 		  FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname NOT IN ('pg_catalog','information_schema')
-		UNION ALL SELECT 'pol '||polrelid::regclass::text||' '||polname||' '||polcmd||' '||coalesce(pg_get_expr(polqual,polrelid),'')||' '||coalesce(pg_get_expr(polwithcheck,polrelid),'')||' '||polroles::regrole[]::text FROM pg_policy
-		UNION ALL SELECT 'trg '||tgrelid::regclass::text||' '||tgname||' '||tgfoid::regprocedure::text||' '||tgtype::text||' '||tgenabled FROM pg_trigger WHERE NOT tgisinternal
+		UNION ALL SELECT 'pol '||polrelid::regclass::text||' '||polname||' '||polcmd::text||' '||coalesce(pg_get_expr(polqual,polrelid),'')||' '||coalesce(pg_get_expr(polwithcheck,polrelid),'')||' '||polroles::regrole[]::text FROM pg_policy
+		UNION ALL SELECT 'trg '||tgrelid::regclass::text||' '||tgname||' '||tgfoid::regprocedure::text||' '||tgtype::text||' '||tgenabled::text FROM pg_trigger WHERE NOT tgisinternal
 		UNION ALL SELECT 'con '||conrelid::regclass::text||' '||conname||' '||pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid<>0
 		UNION ALL SELECT 'idx '||indexrelid::regclass::text||' '||pg_get_indexdef(indexrelid) FROM pg_index i JOIN pg_class c ON c.oid=i.indrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname NOT IN ('pg_catalog','information_schema','pg_toast')
 		UNION ALL SELECT 'role '||rolname||' '||rolcanlogin::text||rolinherit::text||rolbypassrls::text FROM pg_roles WHERE rolname LIKE 'commerce\_%'
 		UNION ALL SELECT 'member '||roleid::regrole::text||' '||member::regrole::text FROM pg_auth_members WHERE roleid::regrole::text LIKE 'commerce\_%'
-		UNION ALL SELECT 'ns '||nspname||' '||coalesce(nspacl::text,'') FROM pg_namespace WHERE nspname NOT LIKE 'pg\_%' AND nspname<>'information_schema'
+		UNION ALL SELECT 'ns '||nspname||' '||coalesce((SELECT string_agg(i::text, ',' ORDER BY i::text) FROM unnest(nspacl) i),'') FROM pg_namespace WHERE nspname NOT LIKE 'pg\_%' AND nspname<>'information_schema'
 	) s ORDER BY x`
 	a, b := lcStrings(t, upgraded, catalog), lcStrings(t, fresh, catalog)
 	seen := map[string]int{}

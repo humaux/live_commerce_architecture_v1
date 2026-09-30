@@ -504,8 +504,11 @@ func TestPasswordPA03Schema(t *testing.T) {
 		mustExec(t, o, `DROP TABLE identity.auth_events, identity.auth_throttle, identity.email_challenges, identity.password_credentials CASCADE`)
 		mustExec(t, o, `DELETE FROM public.lc_schema_migrations WHERE version='0070_merchant_password_auth.sql'`)
 		var newest string
-		if err := o.QueryRow(ctx, `SELECT max(version) FROM public.lc_schema_migrations WHERE version ~ '^[0-9]{4}_'`).Scan(&newest); err != nil || !strings.HasPrefix(newest, "0066_") {
-			t.Fatalf("newest applied migration = %q (%v), want 0066_*", newest, err)
+		// R2 integration: the other R2 lanes' migrations (0071..0080) are applied here too, so "the 0066 state" is
+		// asserted as: 0070 itself is not in the ledger and its predecessor in ledger order is 0066. The whole R2 set
+		// as one upgrade of the release head is TestR2IntegrationUpgradeFromReleaseHead.
+		if err := o.QueryRow(ctx, `SELECT max(version) FROM public.lc_schema_migrations WHERE version ~ '^[0-9]{4}_' AND version < '0071'`).Scan(&newest); err != nil || !strings.HasPrefix(newest, "0066_") {
+			t.Fatalf("newest applied migration below 0071 = %q (%v), want 0066_*", newest, err)
 		}
 		// Populate: a store owner through the real definers already exists from the seed; add sessions/principals.
 		for range 3 {

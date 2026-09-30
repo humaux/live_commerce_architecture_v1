@@ -593,7 +593,7 @@ if ((online)); then
   else
     echo "P15 SKIP identity disabled or no OIDC issuer (password-only login)"
   fi
-  # merchant-password-auth-v1 ruling Q6 (contract gate PA15; rule P17, number assigned by the R2 auth integrator per ruling B4):
+  # merchant-password-auth-v1 ruling Q6 (contract gate PA15; rule P17 — final number, ruling B4, confirmed at the R2 integration merge: every other R2 rule lives under P06/P08/P09):
   # per-IP limits trust the edge's X-Forwarded-For, so with password login on the admin host must resolve
   # ONLY to this host. A Cloudflare-proxied name resolves to Cloudflare anycast addresses, none of which
   # are this host's, so "every address is ours" also proves "no Cloudflare range" without a hard-coded list.
