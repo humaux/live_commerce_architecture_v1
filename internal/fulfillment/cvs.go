@@ -728,8 +728,7 @@ func (c *CVS) Abandon(ctx context.Context, token, storeID, key, orderID string, 
 	}
 	var src actionSource
 	var creds ecpay.Credentials
-	var dbNow time.Time
-	started := time.Now()
+	var dbNow, started time.Time
 	err = c.scoped(ctx, token, storeID, "fulfillment:write", func(tx pgx.Tx, s platform.Scope) error {
 		var err error
 		if src, err = c.actionSource(ctx, tx, token, storeID, orderID, "abandon"); err != nil {
@@ -744,7 +743,11 @@ func (c *CVS) Abandon(ctx context.Context, token, storeID, key, orderID string, 
 				return err
 			}
 		}
-		return tx.QueryRow(ctx, `SELECT clock_timestamp()`).Scan(&dbNow)
+		if err := tx.QueryRow(ctx, `SELECT clock_timestamp()`).Scan(&dbNow); err != nil {
+			return err
+		}
+		started = time.Now() // pairs with dbNow: the first transaction's own duration must not be counted twice (TCV05)
+		return nil
 	})
 	if err != nil {
 		return ShipmentView{}, mapCVSError(err)

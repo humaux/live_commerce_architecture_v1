@@ -285,6 +285,14 @@ Package ecpayroute owns the dispatcher route ecpay_logistics / ecpay.cvs_create 
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
 - Used by: `cmd/claims-worker`
 
+## `internal/integrations/shipping/ecpay/ecpaytest`
+
+Package ecpaytest is an in-process fake of the ECPay logistics HTTP API (gate unit cvs-tests, TCV01/TCV05/TCV06/TCV16).
+
+- Depends on (internal): —
+- Depends on (third-party): —
+- Used by: — (entry point or unused)
+
 ## `internal/inventory`
 
 Package inventory owns ledger-backed physical inventory commands: warehouses, on-hand adjustment, reserve and release, and the pure allocation planner.
@@ -392,6 +400,14 @@ Package migrations owns applying the embedded, forward-only, checksummed busines
 ## `tests/foundation`
 
 Package foundation holds the real-PostgreSQL foundation and browser acceptance tests (files *_test.go, package foundation_test; browser gates need -tags browser).
+
+- Depends on (internal): —
+- Depends on (third-party): —
+- Used by: — (entry point or unused)
+
+## `tests/integrations/ecpay`
+
+Package ecpay_test holds the independent black-box gates of internal/integrations/shipping/ecpay (files *_test.go, package ecpay_test): TCV01 (MAC, recipient and store-code golden tables, trade number), TCV07/TCV10 (SANDBOX, build tag sandbox).
 
 - Depends on (internal): —
 - Depends on (third-party): —

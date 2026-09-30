@@ -39,11 +39,16 @@ func TestMapReturnParse(t *testing.T) {
 	if err != nil || pct.StoreID != "1328" {
 		t.Fatalf("percent-encoded padding: %+v %v", pct, err)
 	}
+	// Shape is the definer's bad_store_id (§4.3 step 3, after the nonce), not a parse error: these reach record_cvs_map_return.
+	for _, id := range []string{"1234567890", "12-34"} {
+		if got, err := ParseMapReturn([]byte(strings.Replace(ok, "131386++", id, 1))); err != nil || got.StoreID != id {
+			t.Errorf("store id %q must pass to the definer: %+v %v", id, got, err)
+		}
+	}
 	for name, body := range map[string]string{
 		"empty":       "",
 		"duplicate":   ok + "&CVSStoreID=999999",
-		"9+ chars":    strings.Replace(ok, "131386++", "1234567890", 1),
-		"symbols":     strings.Replace(ok, "131386++", "12-34", 1),
+		"oversize id": strings.Replace(ok, "131386++", strings.Repeat("1", maxMapStoreID+1), 1),
 		"no store":    strings.Replace(ok, "&CVSStoreID=131386++", "", 1),
 		"bad subtype": strings.Replace(ok, "UNIMARTC2C", "NOPE", 1),
 		"bad outside": strings.Replace(ok, "CVSOutSide=0", "CVSOutSide=7", 1),

@@ -781,6 +781,12 @@ async function upstream(
   if (body !== undefined) outbound.set("Content-Type", "application/json");
   if (key) outbound.set("Idempotency-Key", key);
   if (claimToken) outbound.set("X-Commerce-Claim-Token", claimToken);
+  // B20: ECPay map Device=1 for phone user agents (buyers arrive from FB/IG on phones); Go buyerhttp/cvs.go mobileHint reads it.
+  if (
+    path === "cvs-selections" &&
+    /Mobile|Android|iPhone/i.test(request.headers.get("user-agent") ?? "")
+  )
+    outbound.set("X-Commerce-Device", "mobile");
   try {
     return await fetch(`${config.api}/v1/buyer/${path}`, {
       method,

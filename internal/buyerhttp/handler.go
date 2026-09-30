@@ -428,7 +428,9 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		fail(status, code)
 		return
 	}
-	if err = h.dispatch(ctx, w, r, selected, routeInfo.StoreID, token, key); err != nil {
+	// cvsHTTPError here, once for every route: a coded CVS refusal from any service (checkout Begin's pay-at-pickup PT422/PT429
+	// included) is answered with its code, never the generic retryable 503 (TCV15).
+	if err = cvsHTTPError(h.dispatch(ctx, w, r, selected, routeInfo.StoreID, token, key)); err != nil {
 		status, code := classify(err)
 		var coded codedResponse
 		if errors.As(err, &coded) && coded.RetryAfterSeconds > 0 {

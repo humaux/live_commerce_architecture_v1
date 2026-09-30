@@ -607,11 +607,16 @@ func sortedIDs(ids []string) []string {
 // cvsRefusal maps a PT422/PT429 of the CVS-aware definers to a coded refusal the buyer HTTP layer classifies (unit default C7):
 // 422 with the message as code, or 429 with Retry-After 60. A message outside the code grammar is a plain invalid request.
 func cvsRefusal(pg *pgconn.PgError) error {
+	if pg.Code == "PT429" {
+		// A rate limit stays a 429 even when its message is not a code (same fallback as fulfillment.mapCVSError).
+		code := "rate_limited"
+		if cvsCode.MatchString(pg.Message) {
+			code = pg.Message
+		}
+		return &fulfillment.CVSError{Status: 429, Code: code, RetryAfter: 60}
+	}
 	if !cvsCode.MatchString(pg.Message) {
 		return command.ErrInvalid
-	}
-	if pg.Code == "PT429" {
-		return &fulfillment.CVSError{Status: 429, Code: pg.Message, RetryAfter: 60}
 	}
 	return &fulfillment.CVSError{Status: 422, Code: pg.Message}
 }

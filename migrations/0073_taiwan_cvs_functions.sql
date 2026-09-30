@@ -593,7 +593,7 @@ BEGIN
  IF v_sub IS NULL THEN RAISE EXCEPTION 'service_unavailable' USING ERRCODE='PT422'; END IF;
  IF (SELECT count(*) FROM fulfillment.cvs_selections x WHERE x.tenant_id=v_scope.tenant_id AND x.store_id=p_store
    AND x.owner_id=v_scope.owner_id AND x.cart_id=v_cart.id AND x.state='OPEN' AND x.expires_at>clock_timestamp())>=10 THEN
-  RAISE EXCEPTION 'too many open selections' USING ERRCODE='PT429'; END IF;
+  RAISE EXCEPTION 'too_many_open_selections' USING ERRCODE='PT429'; END IF;
  v_now:=clock_timestamp(); v_expires:=v_now+interval '15 minutes';
  INSERT INTO fulfillment.cvs_selections(tenant_id,store_id,owner_id,id,session_id,cart_id,cart_version,kind,connection_id,
   credential_version,logistics_subtype,nonce_sha256,state,return_origin,return_path,created_at,expires_at,updated_at,version)
@@ -819,7 +819,7 @@ BEGIN
   RAISE EXCEPTION 'bad_store_address' USING ERRCODE='PT422'; END IF;
  IF (SELECT count(*) FROM buyer.command_results r WHERE r.tenant_id=v_scope.tenant_id AND r.store_id=p_store
    AND r.owner_id=v_scope.owner_id AND r.operation='fulfillment.cvs_store.enter' AND r.created_at>clock_timestamp()-interval '1 hour')>=20 THEN
-  RAISE EXCEPTION 'too many stores entered' USING ERRCODE='PT429'; END IF;
+  RAISE EXCEPTION 'too_many_stores_entered' USING ERRCODE='PT429'; END IF;
  v_now:=clock_timestamp(); v_ns:='buyer.'||v_scope.owner_id;
  PERFORM pg_advisory_xact_lock(hashtextextended('fulfillment.pickup|'||v_scope.tenant_id||'|'||p_store||'|'||v_svc.delivery_kind||'|'||v_ns||'|'||p_store_code,0));
  SELECT h.current_version,h.pickup_id,h.enabled INTO v_pk FROM fulfillment.pickup_heads h WHERE h.tenant_id=v_scope.tenant_id
@@ -1251,7 +1251,9 @@ BEGIN
   AND x.attempt=p_attempt AND x.operation_id=p_operation FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'cvs shipment unavailable' USING ERRCODE='P0002'; END IF;
  PERFORM set_config('app.principal_id',c.principal_id::text,true);
- v_ocode:=regexp_replace(lower(coalesce(nullif(p_outcome_code,''),'unspecified')),'[^a-z0-9_.]','_','g');
+ -- The adapter's codes already carry the ecpay. prefix (ecpay.Client Code*); strip it once so result_code is ecpay.rejected, never
+ -- ecpay.ecpay.rejected, while dispatcher-made codes (binding_changed ...) still get it below.
+ v_ocode:=regexp_replace(regexp_replace(lower(coalesce(nullif(p_outcome_code,''),'unspecified')),'[^a-z0-9_.]','_','g'),'^ecpay\.','');
  v_lid:=CASE WHEN p_logistics_id ~ '^[0-9A-Za-z_-]{1,40}$' THEN p_logistics_id END;
  v_pay:=p_payment_no; v_val:=p_validation_no; v_ship:=p_shipment_no;
  FOREACH f IN ARRAY ARRAY['payment_no','validation_no','shipment_no'] LOOP
@@ -1417,23 +1419,27 @@ BEGIN
  IF v_to IS NOT NULL THEN
   INSERT INTO fulfillment.cvs_shipment_events(tenant_id,store_id,order_id,attempt,source,event_code,from_state,to_state)
    VALUES(c.tenant_id,c.store_id,c.order_id,c.attempt,'local','shipment.status',c.state,v_to);
-  -- §16.4 collection: 2067/3022 PICKED_UP => COLLECTED, 2074/3020 UNCLAIMED => RETURNED (pay_at_pickup orders only, audited).
-  IF v_to IN ('PICKED_UP','UNCLAIMED') THEN
-   SELECT k.payment_mode,k.collection_state INTO o FROM checkout.orders k
-    WHERE k.tenant_id=c.tenant_id AND k.store_id=c.store_id AND k.id=c.order_id;
-   IF o.payment_mode='pay_at_pickup' THEN
-    v_collect:=CASE v_to WHEN 'PICKED_UP' THEN 'COLLECTED' ELSE 'RETURNED' END;
-    IF o.collection_state='PENDING' THEN
-     UPDATE checkout.orders SET collection_state=v_collect,updated_at=v_now
-      WHERE tenant_id=c.tenant_id AND store_id=c.store_id AND id=c.order_id;
-     -- §11.5 n/a: no stock, ledger, payment or refund row; the platform never moves pay-at-pickup money.
-     INSERT INTO ops.audit_events(tenant_id,store_id,principal_id,action)
-      VALUES(c.tenant_id,c.store_id,c.principal_id,'fulfillment.collection_reported');
-    ELSIF o.collection_state IS DISTINCT FROM v_collect THEN
-     -- A conflicting state the merchant already recorded: event + alert only, never a change.
-     INSERT INTO fulfillment.cvs_shipment_events(tenant_id,store_id,order_id,attempt,source,event_code,from_state,to_state)
-      VALUES(c.tenant_id,c.store_id,c.order_id,c.attempt,'local','alert.collection_conflict',o.collection_state,v_collect);
-    END IF;
+ END IF;
+ -- §16.4 collection: 2067/3022 PICKED_UP => COLLECTED, 2074/3020 UNCLAIMED => RETURNED (pay_at_pickup orders only, audited).
+ -- Keyed on the reported code, not on the transition: a pickup/return report that cannot move the shipment (e.g. 2067 after
+ -- 2074 + merchant restock, TCV17) still raises collection_conflict against the state the merchant already recorded.
+ IF c.logistics_subtype<>'OKMARTC2C' AND v_code IN (c_pick,c_back) THEN
+  SELECT k.payment_mode,k.collection_state INTO o FROM checkout.orders k
+   WHERE k.tenant_id=c.tenant_id AND k.store_id=c.store_id AND k.id=c.order_id;
+  IF o.payment_mode='pay_at_pickup' THEN
+   v_collect:=CASE v_code WHEN c_pick THEN 'COLLECTED' ELSE 'RETURNED' END;
+   IF o.collection_state='PENDING' AND v_to IN ('PICKED_UP','UNCLAIMED') THEN
+    UPDATE checkout.orders SET collection_state=v_collect,updated_at=v_now
+     WHERE tenant_id=c.tenant_id AND store_id=c.store_id AND id=c.order_id;
+    -- §11.5 n/a: no stock, ledger, payment or refund row; the platform never moves pay-at-pickup money.
+    INSERT INTO ops.audit_events(tenant_id,store_id,principal_id,action)
+     VALUES(c.tenant_id,c.store_id,c.principal_id,'fulfillment.collection_reported');
+   ELSIF o.collection_state<>'PENDING' AND o.collection_state <> ALL(CASE v_collect WHEN 'COLLECTED'
+     THEN ARRAY['COLLECTED','REFUNDED_OFFLINE'] ELSE ARRAY['RETURNED','RESTOCKED'] END) THEN
+    -- A conflicting state the merchant already recorded (its own successors REFUNDED_OFFLINE/RESTOCKED are not a conflict):
+    -- event + alert only, never a change.
+    INSERT INTO fulfillment.cvs_shipment_events(tenant_id,store_id,order_id,attempt,source,event_code,from_state,to_state)
+     VALUES(c.tenant_id,c.store_id,c.order_id,c.attempt,'local','alert.collection_conflict',o.collection_state,v_collect);
    END IF;
   END IF;
  END IF;

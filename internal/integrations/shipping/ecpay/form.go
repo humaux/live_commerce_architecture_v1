@@ -22,7 +22,6 @@ const (
 var (
 	merchantIDRE = regexp.MustCompile(`^[0-9]{1,10}$`)
 	tradeNoRE    = regexp.MustCompile(`^[A-Za-z0-9]{1,20}$`)
-	storeIDRE    = regexp.MustCompile(`^[0-9A-Za-z]{1,9}$`) // F3 S(9); per-chain length is cvs-core's rule
 	logisticsRE  = regexp.MustCompile(`^[0-9A-Za-z_-]{1,40}$`)
 	paymentNoRE  = regexp.MustCompile(`^[0-9A-Za-z]{1,32}$`)
 )
@@ -82,6 +81,11 @@ func PrintForm(env Environment, cr Credentials, subType, logisticsID, paymentNo,
 	return host + path, fields, nil
 }
 
+// maxMapStoreID only bounds the lookup key. The store-id shape (F3 S(9) alnum) is decided by fulfillment.record_cvs_map_return
+// AFTER its nonce check (contract §4.3 check order), so a malformed id REJECTs the selection with bad_store_id instead of
+// leaving it OPEN (TCV03).
+const maxMapStoreID = 32
+
 // ParseMapReturn parses the e-map return (the browser's auto-POST to our ServerReplyURL): at most
 // 8 KiB, duplicate keys are ErrInvalid, unknown fields are dropped. Trailing spaces are trimmed from
 // values (7-ELEVEN pads them, X10) and the store id stays a string with its leading zeros. The
@@ -100,7 +104,7 @@ func ParseMapReturn(body []byte) (MapReturn, error) {
 		StoreID: get("CVSStoreID"), Outside: get("CVSOutSide"),
 	}
 	if _, known := subTypes[out.SubType]; !known || !merchantIDRE.MatchString(out.MerchantID) ||
-		!tradeNoRE.MatchString(out.MerchantTradeNo) || !storeIDRE.MatchString(out.StoreID) ||
+		!tradeNoRE.MatchString(out.MerchantTradeNo) || len(out.StoreID) == 0 || len(out.StoreID) > maxMapStoreID ||
 		(out.Outside != "" && out.Outside != "0" && out.Outside != "1") {
 		return MapReturn{}, ErrInvalid
 	}
