@@ -692,6 +692,9 @@ func TestPasswordPA07Throttle(t *testing.T) {
 		}
 		data := g.smtp.DataCount()
 		ip4 := pwaIP()
+		// The refused login and its retry must land in the same epoch-aligned 60 s email-mail-login window: a minute
+		// rollover between them makes the retry a second 503 instead of the 429 (seen once at the R2 integration run).
+		pwaAwaitSafeWindow(t, 60, 0, 10*time.Second)
 		if _, err := s.pw.Login(pwaBG, ip4, storeless[3], pws[3], "en"); !errors.Is(err, identity.ErrMailUnavailable) {
 			t.Fatalf("4th store-less login: %v, want ErrMailUnavailable (share 3)", err)
 		}
