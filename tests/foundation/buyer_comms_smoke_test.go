@@ -104,6 +104,11 @@ func (e *tcvEnv) bcmSetup() {
 	e.grantCreator("orders:read", "payments:refund", "fulfillment:write")
 	e.service("cvs_711", "MANUAL", 0)
 	e.cofEnsureSettings(0, true, false, 72)
+	// Disclosed owner-pool fixture, same isolation the gate file documents: the database is shared across tests and a
+	// gate test can leave rows behind (TestBuyerCommsGateStoreCapDoesNotStarveOtherStores leaves 25 PENDING rows of its
+	// capped store BY DESIGN), and claim_batch is global — these tests' claim-count assertions assume an empty outbox.
+	mustExec(e.t, e.p.f.owner, `DELETE FROM notify.outbox`)
+	mustExec(e.t, e.p.f.owner, `DELETE FROM checkout.lookup_throttle`)
 }
 
 func TestBuyerCommsOutbox(t *testing.T) {
