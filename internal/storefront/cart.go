@@ -20,6 +20,11 @@ import (
 type Item struct {
 	SKUID    string `json:"sku_id"`
 	Quantity int64  `json:"quantity"`
+	// LiveUnitPriceMinor is the live (claim-origin) unit price proven by claims.live_prices for this line
+	// (amend "Live tools (R4)" rule 5). It is set only by GetCart/SetCart through applyCartLivePrices, never
+	// from a client body (canonicalItems zeroes it on every write), and is display-only: the Quote stays the
+	// only charge authority (I05). Zero (and omitted on the wire) means the catalog price.
+	LiveUnitPriceMinor int64 `json:"live_unit_price_minor,omitempty"`
 }
 type Cart struct {
 	ID       string `json:"id"`
@@ -48,7 +53,33 @@ func GetCart(ctx context.Context, tx pgx.Tx, s buyer.Scope) (Cart, error) {
 	if err := buyer.CheckScope(ctx, tx, s); err != nil {
 		return Cart{}, err
 	}
-	return readCart(ctx, tx, s, false)
+	out, err := readCart(ctx, tx, s, false)
+	if err != nil {
+		return out, err
+	}
+	if err = applyCartLivePrices(ctx, tx, s, out); err != nil {
+		return Cart{}, err
+	}
+	return out, nil
+}
+
+// applyCartLivePrices stamps the live unit price on every cart line whose claim origin claims.live_prices
+// still honours (binding, link expiry, claimed quantity, active priced offer). It reuses liveClaimPrices
+// (claim_price.go), the same evaluator CreateQuote and RevalidateQuote use, and never reads a client value.
+func applyCartLivePrices(ctx context.Context, tx pgx.Tx, s buyer.Scope, out Cart) error {
+	if len(out.Items) == 0 {
+		return nil
+	}
+	bySKU, err := liveClaimPrices(ctx, tx, s, out.ID)
+	if err != nil {
+		return err
+	}
+	for i := range out.Items {
+		if l, ok := bySKU[out.Items[i].SKUID]; ok {
+			out.Items[i].LiveUnitPriceMinor = l.price
+		}
+	}
+	return nil
 }
 
 func SetCart(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string, in CartInput) (out Cart, err error) {
@@ -109,6 +140,9 @@ func SetCart(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string, in CartI
 			return err
 		}
 		current.Items = in.Items
+		if err = applyCartLivePrices(ctx, tx, s, current); err != nil {
+			return err
+		}
 		out = current
 		return event(ctx, tx, s, current.ID, "", "cart.updated")
 	})
@@ -214,6 +248,8 @@ func canonicalItems(items []Item) ([]Item, error) {
 		if !command.ValidID(item.SKUID) || item.Quantity < 1 || item.Quantity > command.MaxQuantity || (i > 0 && out[i-1].SKUID == item.SKUID) {
 			return nil, command.ErrInvalid
 		}
+		// A client can never name a live price: only applyCartLivePrices (from claims.live_prices) sets it.
+		out[i].LiveUnitPriceMinor = 0
 	}
 	return out, nil
 }

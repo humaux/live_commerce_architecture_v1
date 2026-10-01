@@ -21,7 +21,7 @@ import { validPromotion, type QuotePromotion } from "./promo-contract.ts";
 // checkout-options, quotes, destination, checkout, orders). Owns: request journals/CAS and the exact wire shapes.
 // It never decides money or eligibility (Go does). CVS additions follow contracts/taiwan-cvs-logistics-v1.md
 // §5 and §16 (options rows, CVS destinations by pickup_id, Begin payment_mode, order CVS projection).
-export type Item = { sku_id: string; quantity: number };
+export type Item = { sku_id: string; quantity: number; live_unit_price_minor?: number };
 export type Cart = {
   id: string;
   currency: string;
@@ -280,7 +280,9 @@ export const validItems = (v: unknown): v is Item[] =>
   v.every(
     (x) =>
       record(x) &&
-      exact(x, ["sku_id", "quantity"]) &&
+      (exact(x, ["sku_id", "quantity"]) ||
+        (exact(x, ["sku_id", "quantity", "live_unit_price_minor"]) &&
+          integer(x.live_unit_price_minor, 1, MAX_AMOUNT))) &&
       id(x.sku_id) &&
       integer(x.quantity, 1, 1_000_000_000),
   ) &&

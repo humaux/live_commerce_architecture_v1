@@ -127,6 +127,7 @@ function Line({ locale, line, currency, readOnly }: { locale: Locale; line: Line
           <p className="sf-line__unit">
             {formatMoney(locale, line.unitMinor, currency)}
             {line.compareAtMinor !== null && line.compareAtMinor > line.unitMinor && <s>{formatMoney(locale, line.compareAtMinor, currency)}</s>}
+            {line.liveUnitMinor !== null && <em className="sf-line__live">{copy.livePrice}</em>}
             {line.stock === "low" && <em>{copy.lowStock}</em>}
             {line.stock === "out" && <em className="sf-line__out">{copy.outOfStock}</em>}
           </p>

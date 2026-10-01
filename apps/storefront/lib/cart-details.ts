@@ -9,6 +9,7 @@ import { purchasePage, validOptionRow, validProduct, isUnavailable } from "./pur
 import type { Cart, Product } from "./purchase.ts";
 import { parseProductDetail } from "./shop-contract.ts";
 import type { ProductDetail, StockHint } from "./shop-contract.ts";
+import { linePrice } from "./line-price.ts";
 
 export type LineView = {
   sku_id: string;
@@ -20,6 +21,9 @@ export type LineView = {
   productID: string | null;
   imageID: string | null;
   unitMinor: number;
+  // liveUnitMinor is set only for a line whose claim origin still earns a live price (the cart
+  // read's live_unit_price_minor); unitMinor is then that price and compareAtMinor the catalog price.
+  liveUnitMinor: number | null;
   compareAtMinor: number | null;
   stock: StockHint | null;
 };
@@ -59,9 +63,15 @@ export async function loadCartDetails(context: string, cart: Cart): Promise<Cart
   const fetched = new Map<string, ProductDetail | null>(await Promise.all(productIDs.map(async (id) => [id, await productDetail(id)] as const)));
   const lines: LineView[] = cart.items.map((item) => {
     const row = rows.get(item.sku_id);
-    if (!row) return { sku_id: item.sku_id, quantity: item.quantity, gone: true, title: "", variantTitle: null, slug: null, productID: null, imageID: null, unitMinor: 0, compareAtMinor: null, stock: null };
+    if (!row) return { sku_id: item.sku_id, quantity: item.quantity, gone: true, title: "", variantTitle: null, slug: null, productID: null, imageID: null, unitMinor: 0, liveUnitMinor: null, compareAtMinor: null, stock: null };
     const detail = fetched.get(row.product_id) ?? null;
     const variant = detail?.variants.find((v) => v.sku_id === item.sku_id) ?? null;
+    // The cart read's live_unit_price_minor is display-only; Go proves it from the claim origin, never the client.
+    const priced = linePrice(
+      variant?.price_minor ?? row.price_minor,
+      variant?.compare_at_minor ?? null,
+      item.live_unit_price_minor ?? null,
+    );
     return {
       sku_id: item.sku_id,
       quantity: item.quantity,
@@ -72,8 +82,9 @@ export async function loadCartDetails(context: string, cart: Cart): Promise<Cart
       slug: detail?.slug ?? null,
       productID: row.product_id,
       imageID: detail?.images[0]?.id ?? row.images?.[0]?.id ?? null,
-      unitMinor: variant?.price_minor ?? row.price_minor,
-      compareAtMinor: variant?.compare_at_minor ?? null,
+      unitMinor: priced.unitMinor,
+      liveUnitMinor: priced.liveUnitMinor,
+      compareAtMinor: priced.compareAtMinor,
       stock: variant?.stock ?? null,
     };
   });
