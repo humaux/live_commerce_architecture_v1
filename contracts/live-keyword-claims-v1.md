@@ -1129,9 +1129,10 @@ Append-only; the §13 "Live-only price" row now points here. Binding for the liv
    `expected_version`; version 0 = create; empty keyword = remove). `session_id` only has to exist in the store.
 2. **One-action seeding** `POST .../live-sessions/{session_id}/claims/offer-import` with `source` = `library` | `session`
    (+ `from_session_id`, same store). One receipt, one audit row. Never overwrites: for every candidate (library row, or
-   an **active** offer of the source session) it creates a new offer with `max_quantity_per_claim` = 1 (library) or the
-   source value (session), or reports a conflict `{keyword, sku_id, reason}` with reason `keyword_taken` (keyword already
-   in the target session, for any SKU), `sku_taken` (the SKU already has an active offer), `sku_unavailable` (SKU or product
+   an **active** offer of the source session) it creates a new offer with `max_quantity_per_claim` = 3 (library; accepted
+   implementation deviation 5) or the source value (session), or reports a conflict `{keyword, sku_id, reason}` with reason
+   `already_present` (the same keyword is already on the same SKU in the target session), `keyword_taken` (the keyword is
+   already in the target session for a different SKU), `sku_taken` (the SKU already has an active offer), `sku_unavailable` (SKU or product
    inactive / other currency) or `session_full` (200-offer cap). Result `{created: [Offer], conflicts: [...]}`;
    conflicts are data (HTTP 200). `live_price_minor` is **never copied** from another session: a live price is a per-live
    money decision (SHOPLINE sets it per live) and must be re-entered.
