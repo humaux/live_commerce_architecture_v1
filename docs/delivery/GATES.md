@@ -49,7 +49,7 @@ Smoke S29m BLOCKED is accepted in the CI job (F11), not by release-gate.
 | Mode | Proves | Tier | Run |
 | --- | --- | --- | --- |
 | `--browser-identity` | isolated PG + signed MOCK IdP browser chain; fixture removed at exit | T3 browser | `bash scripts/dev/test-local.sh --browser-identity` |
-| `--browser-password-auth` | PA10 BFF pure logic (Node) + PA11 isolated Next + Go + PG + loopback SMTP fake password sign-up/login/reset browser chain (Chromium desktop + 390px, zh-CN/zh-TW/en); no real mailbox, no owner secret | T3 browser | `bash scripts/dev/test-local.sh --browser-password-auth` |
+| `--browser-password-auth` | PA10 BFF pure logic (Node) + PA11 isolated Next + Go + PG + loopback SMTP fake password sign-up/login/reset browser chain (Chromium desktop + 390px, zh-CN/zh-TW/en); no real mailbox, no owner secret; plus the staff-team independent chain `TestBrowserStaffTeam` (owner invites a fulfilment user from the Team page -> mail captured over the real SMTP adapter -> invitee signs up + accepts -> orders visible, exact fulfilment powers, direct /team and /billing refused -> role to viewer -> revoke -> next request refused; token hygiene; Chromium desktop + 390px, zh-TW + en; MOCK mail; the `@defect` role-aware-nav test is a recorded gap) | T3 browser | `bash scripts/dev/test-local.sh --browser-password-auth` |
 | `--browser-admin-legacy` | admin ledger (fixture bearer) + production fail-closed + identity-mock + entry-mock browser suites; no signed IdP, not production acceptance | T3 browser | `bash scripts/dev/test-local.sh --browser-admin-legacy` |
 | `--browser-buyer` | isolated PG + real buyer browser transport; not UI/PSP/deployment acceptance | T3 browser | `bash scripts/dev/test-local.sh --browser-buyer` |
 | `--browser-merchant-buyer` | isolated merchant-to-buyer browser chain; not provider payment or real DNS/TLS deployment proof | T3 browser | `bash scripts/dev/test-local.sh --browser-merchant-buyer` |
@@ -100,6 +100,7 @@ Smoke S29m BLOCKED is accepted in the CI job (F11), not by release-gate.
 | `tests/admin/auth-real.spec.ts`, `settings-real.spec.ts` | `--browser-identity` |
 | `tests/admin/ledger.spec.ts`, `production.spec.ts`, `visual-states.spec.ts` | `--browser-admin-legacy` (suite `ledger`: `admin-fixture` PG + Go API, dev Next fixture adapter on :3100, packaged production Next on :3101) |
 | `tests/admin/password-auth.spec.ts`, `password-bff.test.ts` | `--browser-password-auth` (suite `password-auth`, started by `TestBrowserPasswordAuth`; PA10 runs first under `node --test`) |
+| `tests/admin/staff-team.spec.ts` | `--browser-password-auth` (suite `staff-team`, started by `TestBrowserStaffTeam`, same loopback-SMTP harness; `LC_STAFF_TEAM_SPEC_ARGS="--grep-invert @defect"` isolates the known-gap test) |
 | `tests/admin/auth.spec.ts` | `--browser-admin-legacy` (suite `identity-mock`, MOCK Go API on :19111) |
 | `tests/admin/entry.spec.ts` | `--browser-admin-legacy` (suite `entry-mock`, MOCK Go API on :19111) |
 | `tests/admin/claims-ui.spec.ts`, `claims-request.test.ts`, `claim-source.test.ts`, `claims-model.test.ts` | `--browser-live-claims` |
@@ -125,7 +126,14 @@ after the identity work. Its specs write screenshots under `output/playwright/le
 | --- | --- | --- |
 | `apps/storefront/tests/*.test.mjs` | storefront buyer client/server, payment contract and return | CI, always |
 | `packages/i18n/tests/*.test.ts` | locale resolution and catalogs | CI, always |
+| `tests/admin/team-model.test.ts`, `tests/admin/team-bff.test.ts` | staff-team: request/answer grammar (author) and the real `/api/team/[action]` route against a loopback Go fake: exact Origin, double-submit CSRF, no query, strict body, BFF key + bearer forwarding, one call and never a retry, allow-listed error rebuild, token never echoed (independent gate) | CI, always |
 | `tests/media/r04-input-runner.test.mjs` | R04 local LiveKit input probe | needs `COMMERCE_R04_LIVEKIT_BINARY` (pinned binary). Without it `test-node.sh` prints `NOT_RUN` (CI does); `--require-r04` turns that into exit 2 |
 
 `tests/admin/claims-request.test.ts` and siblings are also run inside their browser mode (table above); `claim.test.mjs`
 runs in both places.
+
+## Real-PG gates of the R4 wave (T1 foundation; focused loop `bash scripts/dev/test-focused.sh '<regex>'`)
+
+| Test | Proves (REAL_PG, MOCK mailbox) | Focused run |
+| --- | --- | --- |
+| `tests/foundation/staff_team_gate_test.go` `TestStaffGate*` (SG01-SG08) | staff-team independent gate from contracts/storefront-v2.md §D: accept refusals identical and non-consuming (unknown/malformed/wrong e-mail/OIDC-only/expired/revoked/used), single use under concurrency and against revoke, 72 h CHECK, token bound to its store + role; the five role bundles exactly as §D for every permission of the live CHECK plus refund/billing/order-actions over the real HTTP handler; owner floor through the product, under concurrency and by direct DML (owner pool and `commerce_staff_writer`, deferred trigger); app logins cannot write staff tables; role change and revoke effective on the next request (concurrent hammer); only the owner manages the team, tenant/store scope server-side; token never in SQL text, bound args, rows, logs or API URLs; 17-action audit; mail locale/link/resend. NOT the author smoke `staff_team_smoke_test.go`. | `bash scripts/dev/test-focused.sh '^TestStaffGate'` |

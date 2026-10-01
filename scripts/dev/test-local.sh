@@ -131,6 +131,10 @@ if [[ "$test_mode" == --browser-password-auth ]]; then
   test -f tests/admin/password-bff.test.ts
   test -f tests/foundation/browser_password_auth_test.go
   grep -q '^func TestBrowserPasswordAuth' tests/foundation/browser_password_auth_test.go
+  # staff-team (R4) independent gate rides on the same loopback-SMTP harness: refuse a no-test success here too.
+  test -f tests/admin/staff-team.spec.ts
+  test -f tests/foundation/browser_staff_team_test.go
+  grep -q '^func TestBrowserStaffTeam' tests/foundation/browser_staff_team_test.go
   mkdir -p output/playwright
 fi
 if [[ "$test_mode" == --browser-admin-legacy ]]; then
@@ -349,8 +353,8 @@ if [[ "$test_mode" == --browser-identity ]]; then
   printf 'PASS: isolated PG + signed MOCK IdP browser chain; fixture removed at exit.\n'
 elif [[ "$test_mode" == --browser-password-auth ]]; then
   node --test --experimental-strip-types tests/admin/password-bff.test.ts   # PA10 (Node, no browser, no PG)
-  LC_BROWSER_PASSWORD_AUTH_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=900s -run '^TestBrowserPasswordAuth$' -v ./tests/foundation
-  printf 'PASS: isolated Next + Go + PG + loopback SMTP fake password-auth browser chain (PA11); no real mailbox, no owner secret.\n'
+  LC_BROWSER_PASSWORD_AUTH_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1800s -run '^(TestBrowserPasswordAuth|TestBrowserStaffTeam)$' -v ./tests/foundation
+  printf 'PASS: isolated Next + Go + PG + loopback SMTP fake password-auth browser chain (PA11) and staff-team invite/accept/role/revoke chain (zh-TW + en, desktop + 390px); no real mailbox, no owner secret.\n'
 elif [[ "$test_mode" == --browser-admin-legacy ]]; then
   LC_BROWSER_ADMIN_LEGACY_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=600s -run '^TestBrowserAdmin(LedgerFixtureChain|IdentityMock|EntryMock)$' -v ./tests/foundation
   printf 'PASS: admin ledger (fixture bearer) + production fail-closed + identity-mock + entry-mock browser suites; no signed IdP, not production acceptance.\n'
