@@ -489,6 +489,14 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		fail(status, code)
 		return
 	}
+	// View-only guest-lookup sessions (lookup.go): one gate for every route that takes a buyer bearer, before any route logic runs.
+	if token != "" {
+		if err = h.authorizeView(ctx, selected, r.Method, routeInfo.StoreID, token); err != nil {
+			status, code := classify(err)
+			fail(status, code)
+			return
+		}
+	}
 	// cvsHTTPError here, once for every route: a coded CVS refusal from any service (checkout Begin's pay-at-pickup PT422/PT429
 	// included) is answered with its code, never the generic retryable 503 (TCV15).
 	if err = cvsHTTPError(h.dispatch(ctx, w, r, selected, routeInfo.StoreID, token, key)); err != nil {

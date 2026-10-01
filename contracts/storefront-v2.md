@@ -161,8 +161,11 @@ a NEW capability session for the order's existing buyer owner (hash of the BFF t
 Every mismatch (unknown order, wrong email/phone, erased owner, other store) is the same 404 `not_found`, produced by the same work (one
 index range scan, one sha256 compare against the stored value or a dummy), so neither body nor timing reveals existence. Limits (fixed
 10-minute windows, counted before any lookup, per hashed key): 10 per client IP, 5 per order ref, 200 per store -> 429 `rate_limited` with
-Retry-After. Known risk, accepted by the brief: the issued session is the buyer's normal capability (it reaches every order of that owner,
-and the owner's privacy export / erasure), so the 48-bit order number plus the second factor and the limits are the whole gate.
+Retry-After. The issued session is VIEW-ONLY (integrator ruling): `buyer.capability_sessions.view_order_id` names the one order it may read. The Go buyer
+handler classifies every authenticated request through `buyer.session_view_order` and, for a view-only session, allows only GET session, session
+bootstrap/retire/logout and GET `/v1/buyer/orders/{that order}`; every other route (order list, other orders, payment, bank transfer, CVS, claims,
+consents, privacy export / erasure, cart, checkout) is 403 `forbidden` (default deny, so a new route is closed until listed). The checkout-issued
+capability (view_order_id NULL) keeps its rights.
 
 **E6. Merchant new-order mail.** Sent to the store's owner address(es) (`identity.store_staff` role owner, verified password email), one
 mail per store per 5 minutes covering every pending `merchant_new` row ("N new orders", no buyer data, link to the admin orders page is not

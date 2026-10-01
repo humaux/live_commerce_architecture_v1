@@ -346,11 +346,30 @@ END $$;
 -- ---------------------------------------------------------------------------------------------------
 -- E. Guest order lookup (§E5): throttle first, then one index range scan, one hash compare, then the capability for the EXISTING owner.
 -- ---------------------------------------------------------------------------------------------------
-CREATE FUNCTION buyer.issue_order_capability(p_store uuid, p_owner uuid, p_hash bytea, p_ttl bigint) RETURNS uuid
+-- A guest-lookup session is VIEW-ONLY (integrator ruling): view_order_id names the one order it may read; NULL = the checkout-issued capability with
+-- its full rights. The Go buyer handler asks buyer.session_view_order before every authenticated route and allows a restricted session only
+-- session status / bootstrap / retire and GET of that one order (internal/buyerhttp/lookup.go, default deny).
+ALTER TABLE buyer.capability_sessions ADD COLUMN view_order_id uuid;
+COMMENT ON COLUMN buyer.capability_sessions.view_order_id IS 'internal/buyerhttp lookup: NULL = full buyer capability (checkout-issued); set = view-only guest-lookup session that may read only this order (checkout.orders.id). Written once by buyer.issue_order_capability; never updated.';
+
+CREATE FUNCTION buyer.session_view_order(p_hash bytea, p_store uuid) RETURNS TABLE(found boolean, view_order_id uuid)
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ IF p_hash IS NULL OR octet_length(p_hash)<>32 OR p_store IS NULL THEN RAISE EXCEPTION 'invalid buyer capability request' USING ERRCODE='PT400'; END IF;
+ -- classification only (expiry, revocation and owner state are judged by resolve_scope afterwards): an unknown hash is found=false
+ RETURN QUERY SELECT true,c.view_order_id FROM buyer.capability_sessions c WHERE c.token_hash=p_hash AND c.store_id=p_store;
+ IF NOT FOUND THEN RETURN QUERY SELECT false,NULL::uuid; END IF;
+END $$;
+ALTER FUNCTION buyer.session_view_order(bytea,uuid) OWNER TO commerce_buyer_writer;
+REVOKE ALL ON FUNCTION buyer.session_view_order(bytea,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION buyer.session_view_order(bytea,uuid) TO commerce_buyer_issuer;
+COMMENT ON FUNCTION buyer.session_view_order(bytea,uuid) IS 'internal/buyerhttp only (EXECUTE commerce_buyer_issuer): one row {found, view_order_id} for a capability hash in a store; view_order_id non-NULL = view-only guest-lookup session. Non-goal: no expiry or revocation judgement.';
+
+CREATE FUNCTION buyer.issue_order_capability(p_store uuid, p_owner uuid, p_order uuid, p_hash bytea, p_ttl bigint) RETURNS uuid
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE v_tenant uuid; v_store_active boolean; v_tenant_active boolean; v_owner_active boolean; v_session uuid; v_created timestamptz;
 BEGIN
- IF p_store IS NULL OR p_owner IS NULL OR p_hash IS NULL OR octet_length(p_hash)<>32 OR p_ttl IS NULL OR p_ttl<60 OR p_ttl>2592000 THEN
+ IF p_store IS NULL OR p_owner IS NULL OR p_order IS NULL OR p_hash IS NULL OR octet_length(p_hash)<>32 OR p_ttl IS NULL OR p_ttl<60 OR p_ttl>2592000 THEN
   RAISE EXCEPTION 'invalid buyer capability request' USING ERRCODE='PT400'; END IF;
  SELECT s.tenant_id INTO v_tenant FROM control.stores s WHERE s.id=p_store;
  -- same lock order as issue_capability / resolve_scope: tenant -> store -> owner
@@ -360,14 +379,14 @@ BEGIN
  IF v_tenant_active IS NOT TRUE OR v_store_active IS NOT TRUE OR v_owner_active IS NOT TRUE THEN
   RAISE EXCEPTION 'unauthorized' USING ERRCODE='PT401'; END IF;
  v_created:=clock_timestamp();
- INSERT INTO buyer.capability_sessions(tenant_id,store_id,owner_id,token_hash,created_at,expires_at)
-  VALUES(v_tenant,p_store,p_owner,p_hash,v_created,v_created+make_interval(secs=>p_ttl)) RETURNING id INTO v_session;
+ INSERT INTO buyer.capability_sessions(tenant_id,store_id,owner_id,token_hash,created_at,expires_at,view_order_id)
+  VALUES(v_tenant,p_store,p_owner,p_hash,v_created,v_created+make_interval(secs=>p_ttl),p_order) RETURNING id INTO v_session;
  INSERT INTO buyer.capability_events(tenant_id,store_id,owner_id,session_id,action) VALUES(v_tenant,p_store,p_owner,v_session,'capability.issued');
  RETURN v_session;
 END $$;
-ALTER FUNCTION buyer.issue_order_capability(uuid,uuid,bytea,bigint) OWNER TO commerce_buyer_writer;
-REVOKE ALL ON FUNCTION buyer.issue_order_capability(uuid,uuid,bytea,bigint) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION buyer.issue_order_capability(uuid,uuid,bytea,bigint) TO commerce_checkout_writer;
+ALTER FUNCTION buyer.issue_order_capability(uuid,uuid,uuid,bytea,bigint) OWNER TO commerce_buyer_writer;
+REVOKE ALL ON FUNCTION buyer.issue_order_capability(uuid,uuid,uuid,bytea,bigint) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION buyer.issue_order_capability(uuid,uuid,uuid,bytea,bigint) TO commerce_checkout_writer;
 
 CREATE FUNCTION checkout.lookup_hit(p_key text, p_limit integer) RETURNS void
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -418,7 +437,7 @@ BEGIN
   RETURN;
  END IF;
  BEGIN
-  PERFORM buyer.issue_order_capability(p_store,v_hit.owner_id,p_token,p_ttl);
+  PERFORM buyer.issue_order_capability(p_store,v_hit.owner_id,v_hit.id,p_token,p_ttl);
  EXCEPTION WHEN SQLSTATE 'PT401' THEN
   RETURN; -- erased / inactive owner, store or tenant: the same empty answer as a mismatch
  END;
@@ -485,6 +504,6 @@ COMMENT ON FUNCTION notify.claim_batch(integer,integer,integer) IS 'internal/not
 COMMENT ON FUNCTION notify.record_result(uuid,text,bytea) IS 'internal/notify worker only; EXECUTE commerce_worker. SENT / FAILED (retry or give up) / UNKNOWN (final) for the rows of one batch, only from SENDING; returns the row count.';
 COMMENT ON FUNCTION notify.read_store_settings(bytea,uuid) IS 'internal/notify merchant route; EXECUTE commerce_runtime. integration:read via identity.resolve_access with a fresh final fence; no row = on.';
 COMMENT ON FUNCTION notify.set_store_settings(bytea,uuid,boolean) IS 'internal/notify merchant route; EXECUTE commerce_runtime. integration:manage; idempotent upsert of the opt-out flag.';
-COMMENT ON FUNCTION buyer.issue_order_capability(uuid,uuid,bytea,bigint) IS 'checkout.guest_order_lookup only (EXECUTE commerce_checkout_writer): registers a capability session for an EXISTING active buyer owner with the BFF-minted token hash; PT401 for an inactive owner, store or tenant. Non-goal: no new owner, no admission limit of its own (the lookup throttles first).';
+COMMENT ON FUNCTION buyer.issue_order_capability(uuid,uuid,uuid,bytea,bigint) IS 'checkout.guest_order_lookup only (EXECUTE commerce_checkout_writer): registers a VIEW-ONLY capability session (view_order_id = the matched order) for an EXISTING active buyer owner with the BFF-minted token hash; PT401 for an inactive owner, store or tenant. Non-goal: no new owner, no admission limit of its own (the lookup throttles first).';
 COMMENT ON FUNCTION checkout.lookup_hit(text,integer) IS 'checkout.guest_order_lookup only (no caller EXECUTE): +1 in the current 600 s window of one hashed bucket, PT429 over the limit.';
-COMMENT ON FUNCTION checkout.guest_order_lookup(uuid,text,text,bytea,bytea,bigint,bytea) IS 'internal/buyerhttp lookup route; EXECUTE commerce_buyer_issuer. Throttles (ip 10, order ref 5, store 200 per 10 min), finds the order by a 12-hex id prefix (or full id) in the store, compares sha256(email) or sha256(normalised phone) with p_contact, and on a match issues a capability for the order owner (p_token = sha256 of the BFF token). Returns the order id, or no row for every kind of mismatch.';
+COMMENT ON FUNCTION checkout.guest_order_lookup(uuid,text,text,bytea,bytea,bigint,bytea) IS 'internal/buyerhttp lookup route; EXECUTE commerce_buyer_issuer. Throttles (ip 10, order ref 5, store 200 per 10 min), finds the order by a 12-hex id prefix (or full id) in the store, compares sha256(email) or sha256(normalised phone) with p_contact, and on a match issues a view-only capability for that order (p_token = sha256 of the BFF token). Returns the order id, or no row for every kind of mismatch.';

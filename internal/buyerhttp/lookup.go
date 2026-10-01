@@ -7,6 +7,10 @@
 // erased owner) is the same 404 not_found, the throttle counts before any read, and the comparison is digest against digest in SQL. It never
 // trusts a store or tenant from the body (the store is the published-origin resolver's), never logs the order ref, the contact or the token,
 // and never stores the client IP (only its sha256 inside a throttle bucket).
+//
+// Guest-lookup sessions are VIEW-ONLY (integrator ruling, contracts/storefront-v2.md §E5): the capability row carries view_order_id, and
+// authorizeView below is the one shared gate (called by ServeHTTP for every authenticated route) that lets such a session do exactly four things
+// and is closed by default for every other route, present or future.
 // Route kind lives clear of handler.go's iota block (220), like cvs.go's and transfer.go's.
 
 package buyerhttp
@@ -142,5 +146,51 @@ func (h *handler) orderLookup(ctx context.Context, w http.ResponseWriter, r *htt
 	writeOK(w, struct {
 		OrderID string `json:"order_id"`
 	}{orderID})
+	return nil
+}
+
+// viewOnly asks buyer.session_view_order (commerce_buyer_issuer) whether the bearer is a view-only guest-lookup session and for which order.
+// An unknown hash is simply not restricted: the route's own resolve_scope then refuses it exactly as before.
+func (h *handler) viewOnly(ctx context.Context, storeID, token string) (orderID string, restricted bool, err error) {
+	hash := sha256.Sum256([]byte(token))
+	var found bool
+	var view *string
+	// buyer.session_view_order (0090): {found, view_order_id}; classification only, no expiry judgement.
+	if err = h.issuerPool.QueryRow(ctx, `SELECT found,view_order_id::text FROM buyer.session_view_order($1,$2::uuid)`, hash[:], storeID).Scan(&found, &view); err != nil {
+		return "", false, err
+	}
+	if !found || view == nil {
+		return "", false, nil
+	}
+	return *view, true, nil
+}
+
+// viewAllowed is the whole allowlist of a view-only session: session status (GET), bootstrap, retire, logout (DELETE) and GET of its one order.
+// Everything else (order list, other orders, payment, bank transfer, CVS, claims, consents, privacy export / erasure, cart, checkout) is closed.
+func viewAllowed(selected route, method, viewOrder string) bool {
+	switch selected.kind {
+	case sessionRoute:
+		return method == http.MethodGet || method == http.MethodDelete
+	case bootstrapRoute, retireRoute:
+		return method == http.MethodPost
+	case orderRoute:
+		return method == http.MethodGet && selected.id == viewOrder
+	}
+	return false
+}
+
+// authorizeView is the shared authorization point for view-only sessions; it returns a 403 refusal for a restricted session on a closed route.
+// Routes without a buyer bearer (media, design) never reach it.
+func (h *handler) authorizeView(ctx context.Context, selected route, method, storeID, token string) error {
+	if h.issuerPool == nil {
+		return responseError{http.StatusServiceUnavailable, "unavailable"}
+	}
+	order, restricted, err := h.viewOnly(ctx, storeID, token)
+	if err != nil {
+		return responseError{http.StatusServiceUnavailable, "unavailable"}
+	}
+	if restricted && !viewAllowed(selected, method, order) {
+		return responseError{http.StatusForbidden, "forbidden"}
+	}
 	return nil
 }

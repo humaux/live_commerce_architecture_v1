@@ -531,10 +531,73 @@ func TestGuestOrderLookup(t *testing.T) {
 		if got := e.bh.request(t, "GET", "/v1/buyer/orders/"+mine, token, "", nil, nil); got.status != 200 {
 			t.Fatalf("own order: %d", got.status)
 		}
-		if got := e.bh.request(t, "GET", "/v1/buyer/orders/"+other, token, "", nil, nil); got.status != 404 {
+		if got := e.bh.request(t, "GET", "/v1/buyer/orders/"+other, token, "", nil, nil); got.status != 403 {
 			t.Fatalf("another owner's order through a guest session: %d %s", got.status, got.body)
 		}
 	})
+}
+
+// BCM05: a guest-lookup session is VIEW-ONLY (integrator ruling): it reads its one order and nothing else, on every other buyer route it is 403
+// from the shared gate; the checkout-issued capability keeps every right.
+func TestGuestLookupSessionIsViewOnly(t *testing.T) {
+	e := tcvNew(t)
+	e.bcmSetup()
+	mine, full := e.bcmPlace("viewonly@example.test")
+	other, _ := e.bcmPlace("neighbour@example.test")
+	guest := strings.TrimRight(strings.ReplaceAll(strings.ReplaceAll(randomToken(), "+", "-"), "/", "_"), "=")
+	res := e.bh.request(t, "POST", "/v1/buyer/orders/lookup", guest, "", map[string]string{"order_ref": notify.OrderNumber(mine), "contact": "viewonly@example.test"},
+		func(r *http.Request) { r.Header.Set("X-Commerce-Client-IP", "198.18.0.1") })
+	if res.status != 200 {
+		t.Fatalf("lookup: %d %s", res.status, res.body)
+	}
+	var view *string
+	if err := e.p.f.owner.QueryRow(context.Background(), `SELECT view_order_id::text FROM buyer.capability_sessions WHERE token_hash=sha256($1::bytea)`, []byte(guest)).Scan(&view); err != nil || view == nil || *view != mine {
+		t.Fatalf("the lookup session row names its order: %v %v", view, err)
+	}
+	g := func(method, path, key string, input any) bhResponse {
+		return e.bh.request(t, method, path, guest, key, input, nil)
+	}
+	for _, ok := range []string{"/v1/buyer/session", "/v1/buyer/orders/" + mine} {
+		if r := g("GET", ok, "", nil); r.status != 200 {
+			t.Errorf("GET %s with the guest session: %d %s", ok, r.status, r.body)
+		}
+	}
+	for _, tc := range []struct {
+		method, path string
+		body         any
+	}{
+		{"GET", "/v1/buyer/orders", nil},
+		{"GET", "/v1/buyer/orders/" + other, nil},
+		{"GET", "/v1/buyer/privacy", nil},
+		{"POST", "/v1/buyer/privacy/export", nil},
+		{"POST", "/v1/buyer/privacy/erasure", map[string]string{"confirm": "ERASE"}},
+		{"PUT", "/v1/buyer/consents", map[string]any{"purpose": "ads_personalization", "channel": "web", "granted": true, "source": "settings"}},
+		{"GET", "/v1/buyer/orders/" + mine + "/payment", nil},
+		{"POST", "/v1/buyer/orders/" + mine + "/payment/prepare", map[string]any{"method_code": "stripe_checkout", "method_version": 1, "locale": "en"}},
+		{"GET", "/v1/buyer/orders/" + mine + "/bank-transfer", nil},
+		{"GET", "/v1/buyer/cart", nil},
+		{"GET", "/v1/buyer/catalog", nil},
+	} {
+		key := ""
+		if tc.method != "GET" {
+			key = t04Key("bcm-view")
+		}
+		if r := g(tc.method, tc.path, key, tc.body); r.status != 403 {
+			t.Errorf("%s %s with the guest session: %d %s (want 403)", tc.method, tc.path, r.status, r.body)
+		}
+	}
+	if n := e.count(`SELECT count(*) FROM customers.privacy_actions WHERE kind='ERASURE'`); n != 0 {
+		t.Errorf("no erasure may have started: %d", n)
+	}
+	// the checkout-issued capability is unchanged
+	for _, path := range []string{"/v1/buyer/session", "/v1/buyer/orders", "/v1/buyer/orders/" + mine, "/v1/buyer/privacy"} {
+		if r := full.req("GET", path, "", nil, nil); r.status != 200 {
+			t.Errorf("checkout session GET %s: %d %s", path, r.status, r.body)
+		}
+	}
+	if r := full.req("POST", "/v1/buyer/privacy/export", t04Key("bcm-export"), nil, nil); r.status != 200 {
+		t.Errorf("checkout session privacy export: %d %s", r.status, r.body)
+	}
 }
 
 func TestNotifySettingsRoute(t *testing.T) {

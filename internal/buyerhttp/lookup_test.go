@@ -81,3 +81,38 @@ func TestLookupClientIP(t *testing.T) {
 		}
 	}
 }
+
+func TestViewOnlyAllowlist(t *testing.T) {
+	const mine, other = "00000000-0000-0000-0000-00000000000a", "00000000-0000-0000-0000-00000000000b"
+	for _, tc := range []struct {
+		path, method string
+		want         bool
+	}{
+		{"/v1/buyer/session", http.MethodGet, true},
+		{"/v1/buyer/session", http.MethodDelete, true},
+		{"/v1/buyer/session", http.MethodPost, false},
+		{"/v1/buyer/session/bootstrap", http.MethodPost, true},
+		{"/v1/buyer/session/retire", http.MethodPost, true},
+		{"/v1/buyer/orders/" + mine, http.MethodGet, true},
+		{"/v1/buyer/orders/" + other, http.MethodGet, false},
+		{"/v1/buyer/orders", http.MethodGet, false},
+		{"/v1/buyer/orders/" + mine + "/payment", http.MethodGet, false},
+		{"/v1/buyer/orders/" + mine + "/payment/prepare", http.MethodPost, false},
+		{"/v1/buyer/orders/" + mine + "/bank-transfer", http.MethodGet, false},
+		{"/v1/buyer/orders/" + mine + "/bank-transfer/proof", http.MethodPut, false},
+		{"/v1/buyer/privacy", http.MethodGet, false},
+		{"/v1/buyer/privacy/export", http.MethodPost, false},
+		{"/v1/buyer/privacy/erasure", http.MethodPost, false},
+		{"/v1/buyer/consents", http.MethodPut, false},
+		{"/v1/buyer/cart", http.MethodGet, false},
+		{"/v1/buyer/checkout", http.MethodPost, false},
+		{"/v1/buyer/claim-link", http.MethodGet, false},
+		{"/v1/buyer/cvs-selections", http.MethodPost, false},
+		{"/v1/buyer/catalog", http.MethodGet, false},
+		{"/v1/buyer/orders/lookup", http.MethodPost, false},
+	} {
+		if got := viewAllowed(matchRoute(tc.path), tc.method, mine); got != tc.want {
+			t.Errorf("%s %s: allowed=%v want %v", tc.method, tc.path, got, tc.want)
+		}
+	}
+}
