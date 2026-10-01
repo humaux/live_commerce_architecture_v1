@@ -573,7 +573,12 @@ func TestMerchantToolsDashboardScale(t *testing.T) {
 	if err = tx.Commit(ctx); err != nil {
 		t.Fatal(err)
 	}
-	defer mustExec(t, e.p.f.owner, `DELETE FROM checkout.orders WHERE store_id=$1 AND job_id>=900000000`, e.store())
+	// Cleanup also VACUUMs: the 10k copied rows carry the order snapshot (TOAST), and a plain DELETE keeps those pages, which pushed
+	// the full G07 suite past the 256 MiB tmpfs data directory (release gate b843c8c: "No space left on device" in the next file).
+	defer func() {
+		mustExec(t, e.p.f.owner, `DELETE FROM checkout.orders WHERE store_id=$1 AND job_id>=900000000`, e.store())
+		mustExec(t, e.p.f.owner, `VACUUM checkout.orders`)
+	}()
 	_ = e.mtDashboard(a) // warm
 	var worst time.Duration
 	for i := 0; i < 5; i++ {
