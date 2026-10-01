@@ -12,7 +12,7 @@ import {tmpdir} from "node:os";
 import path from "node:path";
 import { expect } from "@playwright/test";
 import { reachCheckout, switchLocale } from "./shop-helpers.mjs";
-import { launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
+import { isWebkitCancelledFetch, launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
 
 const root=process.cwd(), evidence=process.env.LC_ORDER_EVIDENCE;
 assert(evidence && /^http:\/\/127\.0\.0\.1:\d+$/.test(process.env.LC_ORDER_CONTROL));
@@ -74,7 +74,7 @@ async function newContext(mobile=false) {
     };
   });
   c.on("page",p=>{
-    p.on("pageerror",e=>pageErrors.push(e.name));
+    p.on("pageerror",e=>pageErrors.push({name:e.name,message:e.message}));
     p.on("console",m=>consoleText.push(m.text()));
     p.on("request",r=>requestURLs.push(r.url()));
   });return c;
@@ -453,7 +453,7 @@ try {
   for(const value of [...Object.values(pii),"Synthetic Changed Unit","Synthetic Concurrent Address","Synthetic Confirmed New Address",...secrets]){
     assert(!attempted.includes(value),"PII/bearer attempted persistent write");assert(!urls.includes(value)&&!urls.includes(encodeURIComponent(value)),"PII/bearer URL leak");assert(!messages.includes(value),"PII/bearer console leak");
   }
-  assert.equal(pageErrors.length,0,"browser application exception");
+  assert.deepEqual(pageErrors.filter(e=>!isWebkitCancelledFetch(e)).map(e=>e.name),[],"browser application exception"); // WebKit cancelled-fetch console noise: browser-engine.mjs
   pass("BO06 all attempted local/session writes, URLs and console exclude PII/bearer; other owner denied");
   await writeFile(path.join(evidence,"result.json"),JSON.stringify({cases:observations.length,orders,repeated_orders:[order1,orderB],observations,storage_write_attempts:storageWrites.length,scope:"actual UI/Next/Go/isolated PG; synthetic TLS and buyer data; no PSP/production",not_run:["full foundation/race/vet and existing browser regression are separate root gates","independent visual review"]},null,2),{mode:0o600});
 }finally{
