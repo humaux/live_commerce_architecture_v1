@@ -1,7 +1,9 @@
 // Package storefront owns buyer purchase intent and immutable price snapshots: the buyer catalog
 // read, cart, delivery destination and quote/revalidation.
 //
-// It never reserves stock, accepts payment, resolves identity or calls providers.
+// It never reserves stock, accepts payment, resolves identity or calls providers. Quote is the only
+// price authority: the unit price is the catalog price, except for a cart line whose claim origin
+// claims.live_prices (SQL function of the claims package, no Go import) still honours (claim_price.go).
 package storefront
 
 import (
@@ -28,6 +30,18 @@ type Cart struct {
 type CartInput struct {
 	ExpectedVersion int64  `json:"expected_version"`
 	Items           []Item `json:"items"`
+	// Origins is set only by claims.RedeemLink: SKU -> the claim line that supplied the quantity
+	// (live-keyword-claims-v1 amendment "Live tools (R4)" rule 4). json:"-" so no HTTP body and no
+	// receipt request hash can carry it: a buyer can never name an origin, only redeem a bound link.
+	Origins map[string]ClaimOrigin `json:"-"`
+}
+
+// ClaimOrigin records which claim line a cart line came from. It is evidence only: Quote asks
+// claims.live_prices whether the origin still earns a live price (binding, link expiry, offer state).
+type ClaimOrigin struct {
+	BundleID string
+	OfferID  string
+	Quantity int64 // the claimed quantity; a live price survives only while the line quantity <= this
 }
 
 func GetCart(ctx context.Context, tx pgx.Tx, s buyer.Scope) (Cart, error) {
@@ -61,6 +75,17 @@ func SetCart(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string, in CartI
 		if _, err = lockCatalog(ctx, tx, s, current.Currency, in.Items); err != nil {
 			return err
 		}
+		var origins map[string]ClaimOrigin
+		if current.ID != "" {
+			// storefront.cart_lines (own table): origins of the lines about to be rewritten.
+			if origins, err = readOrigins(ctx, tx, s, current.ID); err != nil {
+				return err
+			}
+		}
+		origins, err = carryOrigins(in.Items, origins, in.Origins)
+		if err != nil {
+			return err
+		}
 		if current.ID == "" {
 			err = tx.QueryRow(ctx, `INSERT INTO storefront.carts(tenant_id,store_id,owner_id,creator_session_id,currency)
 				VALUES($1,$2,$3,$4,$5) RETURNING id::text`, s.TenantID, s.StoreID, s.OwnerID, s.SessionID, current.Currency).Scan(&current.ID)
@@ -72,7 +97,10 @@ func SetCart(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string, in CartI
 			return err
 		}
 		for _, item := range in.Items {
-			if _, err = tx.Exec(ctx, `INSERT INTO storefront.cart_lines(tenant_id,store_id,owner_id,cart_id,sku_id,quantity) VALUES($1,$2,$3,$4,$5,$6)`, s.TenantID, s.StoreID, s.OwnerID, current.ID, item.SKUID, item.Quantity); err != nil {
+			o := origins[item.SKUID] // zero value = no claim origin (NULL columns)
+			if _, err = tx.Exec(ctx, `INSERT INTO storefront.cart_lines(tenant_id,store_id,owner_id,cart_id,sku_id,quantity,claim_bundle_id,claim_offer_id,claim_quantity)
+				VALUES($1,$2,$3,$4,$5,$6,nullif($7,'')::uuid,nullif($8,'')::uuid,nullif($9::bigint,0))`,
+				s.TenantID, s.StoreID, s.OwnerID, current.ID, item.SKUID, item.Quantity, o.BundleID, o.OfferID, o.Quantity); err != nil {
 				return err
 			}
 		}
@@ -101,6 +129,48 @@ func LockCartOwner(ctx context.Context, tx pgx.Tx, s buyer.Scope) error {
 	}
 	_, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,0))`, "cart|"+s.TenantID+"|"+s.StoreID+"|"+s.OwnerID)
 	return err
+}
+
+// readOrigins returns the claim origin of every cart line that has one (SKU -> origin).
+func readOrigins(ctx context.Context, tx pgx.Tx, s buyer.Scope, cartID string) (map[string]ClaimOrigin, error) {
+	rows, err := tx.Query(ctx, `SELECT sku_id::text,claim_bundle_id::text,claim_offer_id::text,claim_quantity FROM storefront.cart_lines
+		WHERE tenant_id=$1 AND store_id=$2 AND owner_id=$3 AND cart_id=$4 AND claim_bundle_id IS NOT NULL`, s.TenantID, s.StoreID, s.OwnerID, cartID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[string]ClaimOrigin{}
+	for rows.Next() {
+		var sku string
+		var o ClaimOrigin
+		if err = rows.Scan(&sku, &o.BundleID, &o.OfferID, &o.Quantity); err != nil {
+			return nil, err
+		}
+		out[sku] = o
+	}
+	return out, rows.Err()
+}
+
+// carryOrigins decides which origins the rewritten cart keeps. A fresh origin (from a redeem)
+// replaces the SKU's old one; otherwise the existing origin is kept. Either way it survives only
+// while the line quantity is <= the claimed quantity, so raising a claimed line above its claim
+// drops the whole line back to the catalog price (fail closed, no split price lines). SKUs that
+// left the cart lose their origin. A malformed fresh origin is a programming error -> ErrInvalid. Pure.
+func carryOrigins(items []Item, existing, fresh map[string]ClaimOrigin) (map[string]ClaimOrigin, error) {
+	out := map[string]ClaimOrigin{}
+	for _, item := range items {
+		o, ok := fresh[item.SKUID]
+		if ok && (!command.ValidID(o.BundleID) || !command.ValidID(o.OfferID) || o.Quantity < 1 || o.Quantity > 999) {
+			return nil, command.ErrInvalid
+		}
+		if !ok {
+			o, ok = existing[item.SKUID]
+		}
+		if ok && item.Quantity <= o.Quantity {
+			out[item.SKUID] = o
+		}
+	}
+	return out, nil
 }
 
 // A read lock prevents a READ COMMITTED header/line tear across two statements.

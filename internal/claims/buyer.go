@@ -23,6 +23,7 @@ import (
 
 	"livecommerce/internal/buyer"
 	"livecommerce/internal/command"
+	"livecommerce/internal/pricing"
 	"livecommerce/internal/storefront"
 )
 
@@ -33,10 +34,13 @@ type PreviewLine struct {
 	SKUCode        string `json:"sku_code"`
 	ProductName    string `json:"product_name"`
 	Currency       string `json:"currency"`
-	UnitPriceMinor int64  `json:"unit_price_minor"` // display only; Quote remains the price authority
-	Quantity       int64  `json:"quantity"`
-	Pending        bool   `json:"pending"`
-	Available      bool   `json:"available"`
+	UnitPriceMinor int64  `json:"unit_price_minor"` // display only; Quote remains the price authority. The live price when one applies.
+	// Live tools (R4): set only when a live price applies; both omitted for a catalog-priced line.
+	CatalogUnitPriceMinor int64  `json:"catalog_unit_price_minor,omitempty"`
+	PriceRule             string `json:"price_rule,omitempty"`
+	Quantity              int64  `json:"quantity"`
+	Pending               bool   `json:"pending"`
+	Available             bool   `json:"available"`
 }
 type Preview struct {
 	BundleVersion int64         `json:"bundle_version"`
@@ -112,7 +116,41 @@ func PreviewLink(ctx context.Context, tx pgx.Tx, s buyer.Scope, token LinkToken)
 	if len(out.Lines) == 0 {
 		return Preview{}, command.ErrNotFound
 	}
-	return out, nil
+	return out, overlayPreviewPrices(ctx, tx, token, &out)
+}
+
+// overlayPreviewPrices shows each line's live price (claims.preview_live_prices: same link guards as
+// preview_link, active priced offers only) as the display unit price, keeping the catalog price beside
+// it. Display only: the Quote re-proves the origin and decides the charge (amendment "Live tools (R4)" rule 6).
+func overlayPreviewPrices(ctx context.Context, tx pgx.Tx, token LinkToken, out *Preview) error {
+	rows, err := tx.Query(ctx, `SELECT keyword,live_price_minor FROM claims.preview_live_prices($1::bytea)`, token.hash())
+	if err != nil {
+		return mapError(err)
+	}
+	defer rows.Close()
+	live := map[string]int64{}
+	for rows.Next() {
+		var keyword string
+		var price int64
+		if err := rows.Scan(&keyword, &price); err != nil {
+			return mapError(err)
+		}
+		live[keyword] = price
+	}
+	if err := rows.Err(); err != nil {
+		return mapError(err)
+	}
+	for i := range out.Lines {
+		line := &out.Lines[i]
+		if price, ok := live[line.Keyword]; ok {
+			// pricing.ResolveUnitPrice is the one rule (storefront applies it at Quote time).
+			unit, rule := pricing.ResolveUnitPrice(line.UnitPriceMinor, &price)
+			if rule == pricing.RuleLiveClaim {
+				line.CatalogUnitPriceMinor, line.UnitPriceMinor, line.PriceRule = line.UnitPriceMinor, unit, rule
+			}
+		}
+	}
+	return nil
 }
 
 // claimLine is one row of claims.redeem_link.
@@ -178,8 +216,14 @@ func RedeemLink(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string, token
 		// storefront.SetCart is the only cart writer; claims never writes storefront tables.
 		// Its nested cart.set receipt key is derived from the redeem key (never client input).
 		derived := sha256.Sum256([]byte("claims.redeem|" + key))
+		// Origins: the claim line behind each applied quantity. This is the only writer of cart-line origins
+		// (CartInput.Origins is json:"-"); claims.live_prices re-proves them at every Quote.
+		origins := make(map[string]storefront.ClaimOrigin, len(apply))
+		for _, line := range apply {
+			origins[line.skuID] = storefront.ClaimOrigin{BundleID: line.bundleID, OfferID: line.offerID, Quantity: line.quantity}
+		}
 		out.Cart, err = storefront.SetCart(ctx, tx, s, redeemKeyPrefix+hex.EncodeToString(derived[:])[:48],
-			storefront.CartInput{ExpectedVersion: cart.Version, Items: mergeCart(cart.Items, apply)})
+			storefront.CartInput{ExpectedVersion: cart.Version, Items: mergeCart(cart.Items, apply), Origins: origins})
 		if err != nil {
 			return err
 		}

@@ -193,7 +193,7 @@ Package checkout owns the trusted buyer checkout transaction: Begin turns a pric
 
 Package claims owns live keyword offers, claim windows, claim bundles and claim-link redemption.
 
-- Depends on (internal): `internal/buyer`, `internal/claims/grammar`, `internal/command`, `internal/pagination`, `internal/platform`, `internal/storefront`
+- Depends on (internal): `internal/buyer`, `internal/claims/grammar`, `internal/command`, `internal/pagination`, `internal/platform`, `internal/pricing`, `internal/storefront`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
 - Used by: `cmd/api`, `cmd/claims-worker`, `internal/buyerhttp`, `internal/claimsintake`, `internal/httpapi`, `internal/integrations/metareply`
 
@@ -491,7 +491,7 @@ Package pricing owns merchant market policy writes (markets and their currency) 
 
 - Depends on (internal): `internal/command`, `internal/pagination`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
-- Used by: `internal/checkout`, `internal/fulfillment`, `internal/httpapi`, `internal/merchantorders`, `internal/payments`, `internal/storefront`
+- Used by: `internal/checkout`, `internal/claims`, `internal/fulfillment`, `internal/httpapi`, `internal/merchantorders`, `internal/payments`, `internal/storefront`
 
 ## `internal/reporting`
 

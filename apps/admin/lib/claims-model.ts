@@ -21,7 +21,18 @@ export type Offer = {
   offer_id: string; session_id: string; keyword: string; sku_id: string; sku_code: string;
   product_name: string; max_quantity_per_claim: number; active: boolean; version: number;
   activated_at: string; updated_at: string;
+  // Live tools (R4): the SKU's catalog price (for the "live price is higher" warning) and the live-only price (null = none).
+  sku_price_minor: number; currency: string; live_price_minor: number | null;
 };
+/** One keyword-library row (store-level default keyword per SKU). version 0 + keyword "" = the row was removed. */
+export type LibraryEntry = {
+  sku_id: string; sku_code: string; product_name: string; keyword: string; version: number;
+  sku_price_minor: number; currency: string; updated_at: string;
+};
+export const importConflictReasons = ["keyword_taken", "already_present", "sku_taken", "sku_unavailable", "session_full"] as const;
+export type ImportConflictReason = (typeof importConflictReasons)[number];
+/** Result of "import library keywords" / "copy offers from a session": what was created and what was refused. */
+export type ImportResult = { created: Offer[]; conflicts: { keyword: string; sku_id: string; reason: ImportConflictReason }[] };
 export type Board = {
   window: ClaimWindow; offers: Offer[];
   stats: { generation: number; accepted: number; rejected: Record<PersistedReason, number> };
@@ -71,12 +82,48 @@ export function parseWindow(value: unknown, sessionID: string): ClaimWindow {
 /** Closed M3/M4 / M1-offer parser for one scene. */
 export function parseOffer(value: unknown, sessionID: string): Offer {
   const row = exact(value, ["offer_id", "session_id", "keyword", "sku_id", "sku_code", "product_name",
-    "max_quantity_per_claim", "active", "version", "activated_at", "updated_at"]);
+    "max_quantity_per_claim", "active", "version", "activated_at", "updated_at", "sku_price_minor", "currency", "live_price_minor"]);
   if (!id(row.offer_id) || row.session_id !== sessionID || !keyword(row.keyword) || !id(row.sku_id) ||
     !text(row.sku_code, 128) || !text(row.product_name, 400) || !count(row.max_quantity_per_claim, 1) ||
     (row.max_quantity_per_claim as number) > 999 || typeof row.active !== "boolean" || !count(row.version, 1) ||
-    !date(row.activated_at) || !date(row.updated_at)) invalid();
+    !date(row.activated_at) || !date(row.updated_at) || !count(row.sku_price_minor) ||
+    typeof row.currency !== "string" || !/^[A-Z]{3}$/.test(row.currency) ||
+    (row.live_price_minor !== null && (!count(row.live_price_minor, 1) || (row.live_price_minor as number) > 1e12))) invalid();
   return row as Offer;
+}
+
+/** Closed GET .../claims/library parser. */
+export function parseLibrary(value: unknown): LibraryEntry[] {
+  const row = exact(value, ["entries"]);
+  if (!Array.isArray(row.entries) || row.entries.length > 1000) invalid();
+  return row.entries.map(libraryEntry);
+}
+const libraryFields = ["sku_id", "sku_code", "product_name", "keyword", "version", "sku_price_minor", "currency", "updated_at"];
+function libraryEntry(value: unknown): LibraryEntry {
+  const row = exact(value, libraryFields);
+  if (!id(row.sku_id) || !keyword(row.keyword) || !text(row.sku_code, 128) || !text(row.product_name, 400) ||
+    !count(row.version, 1) || !count(row.sku_price_minor) || typeof row.currency !== "string" || !/^[A-Z]{3}$/.test(row.currency) ||
+    !date(row.updated_at)) invalid();
+  return row as LibraryEntry;
+}
+/** Closed PUT .../claims/library/{sku} parser: a saved row, or the removal receipt (empty keyword, version 0). */
+export function parseLibrarySaved(value: unknown): LibraryEntry {
+  const row = exact(value, libraryFields);
+  if (row.keyword === "" && row.version === 0 && id(row.sku_id)) return row as LibraryEntry;
+  return libraryEntry(value);
+}
+
+/** Closed POST .../claims/offer-import parser (conflicts are data, never an error). */
+export function parseImportResult(value: unknown, sessionID: string): ImportResult {
+  const row = exact(value, ["created", "conflicts"]);
+  if (!Array.isArray(row.created) || row.created.length > 200 || !Array.isArray(row.conflicts) || row.conflicts.length > 1000) invalid();
+  const created = row.created.map((item) => parseOffer(item, sessionID));
+  const conflicts = row.conflicts.map((item) => {
+    const conflict = exact(item, ["keyword", "sku_id", "reason"]);
+    if (!keyword(conflict.keyword) || !id(conflict.sku_id) || !(importConflictReasons as readonly unknown[]).includes(conflict.reason)) invalid();
+    return conflict as ImportResult["conflicts"][number];
+  });
+  return { created, conflicts };
 }
 
 /** Closed M1 parser; stats must describe the window's current round. */
@@ -169,4 +216,24 @@ export function parsePurchaseEntry(value: unknown, productID: string, locale: st
   if (row.product_id !== productID || row.locale !== locale || typeof row.state !== "string" || typeof row.url !== "string" ||
     (row.state === "configured") !== (row.url !== "")) invalid();
   return row as PurchaseEntry;
+}
+
+// Live tools (R4) price helpers: money is integer minor units on the wire; the input is a decimal string in the
+// currency's own decimal places. Pure; no float arithmetic (digits are split, never multiplied).
+/** Decimal places of a currency (Intl's own table, the same one lib/client.ts money() divides by). */
+export function currencyDigits(currency: string): number {
+  return new Intl.NumberFormat("en", { style: "currency", currency }).resolvedOptions().maximumFractionDigits ?? 2;
+}
+/** "12.5" -> 1250 (digits 2); null when not a positive decimal within the currency's places or above 1e12 minor units. */
+export function parsePriceMinor(input: string, digits: number): number | null {
+  const match = /^(\d{1,13})(?:\.(\d+))?$/.exec(input.trim());
+  if (!match || (match[2]?.length ?? 0) > digits) return null;
+  const minor = Number(match[1] + (match[2] ?? "").padEnd(digits, "0"));
+  return Number.isSafeInteger(minor) && minor >= 1 && minor <= 1e12 ? minor : null;
+}
+/** 1250 (digits 2) -> "12.50"; 1250 (digits 0) -> "1250". */
+export function priceInputText(minor: number, digits: number): string {
+  if (digits === 0) return String(minor);
+  const text = String(minor).padStart(digits + 1, "0");
+  return `${text.slice(0, -digits)}.${text.slice(-digits)}`;
 }

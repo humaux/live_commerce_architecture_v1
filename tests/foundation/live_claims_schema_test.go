@@ -213,7 +213,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		const rt, wr = "commerce_runtime", "commerce_claims_writer"
 		add(rt, "live.offers", "SELECT", cols("live.offers")...)
 		add(rt, "live.offers", "INSERT", cols("live.offers")...)
-		add(rt, "live.offers", "UPDATE", "max_quantity_per_claim", "active", "activated_at", "version", "updated_at")
+		// live-tools 0092 ("Live tools (R4)" amendment): live_price_minor joins the merchant-writable offer columns.
+		add(rt, "live.offers", "UPDATE", "max_quantity_per_claim", "active", "activated_at", "version", "updated_at", "live_price_minor")
 		add(rt, "live.claim_windows", "SELECT", cols("live.claim_windows")...)
 		add(rt, "live.claim_windows", "INSERT", cols("live.claim_windows")...)
 		add(rt, "live.claim_windows", "UPDATE", "state", "match_mode", "generation", "opened_at", "closed_at", "version", "principal_id", "updated_at")
@@ -234,7 +235,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		add(wr, "claims.bundles", "UPDATE", "owner_id", "bound_at")
 		add(wr, "claims.lines", "SELECT", "tenant_id", "store_id", "bundle_id", "offer_id", "sku_id", "quantity", "version", "applied_version")
 		add(wr, "claims.lines", "UPDATE", "applied_version")
-		add(wr, "live.offers", "SELECT", "tenant_id", "store_id", "id", "session_id", "keyword", "active")
+		// live-tools 0092: claims.live_prices / preview_live_prices read the offer SKU and live price.
+		add(wr, "live.offers", "SELECT", "tenant_id", "store_id", "id", "session_id", "keyword", "active", "sku_id", "live_price_minor")
 		add(wr, "identity.sessions", "SELECT", "token_hash", "principal_id", "audience", "revoked_at", "expires_at")
 		// meta-claims-intake-v1 §4.3 rows (exactly; the contract is the source, not the migration).
 		const ci, iw = "commerce_claims_intake", "commerce_integration_writer"
@@ -355,6 +357,11 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				volatility: "s", acl: "commerce_buyer_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_buyer_runtime"},
 			"redeem_link": {args: "p_hash bytea, p_expected_version bigint", result: "TABLE(bundle_id uuid, bundle_version bigint, offer_id uuid, sku_id uuid, quantity integer, line_version bigint, pending boolean, offer_active boolean)",
 				volatility: "v", acl: "commerce_buyer_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_buyer_runtime"},
+			// live-tools 0092 ("Live tools (R4)" amendment rules 5-6): the buyer price definers.
+			"live_prices": {args: "p_bundles uuid[], p_offers uuid[], p_skus uuid[]", result: "TABLE(sku_id uuid, bundle_id uuid, offer_id uuid, live_price_minor bigint)",
+				volatility: "s", acl: "commerce_buyer_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_buyer_runtime"},
+			"preview_live_prices": {args: "p_hash bytea", result: "TABLE(keyword text, live_price_minor bigint)",
+				volatility: "s", acl: "commerce_buyer_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_buyer_runtime"},
 			// meta-claims-intake-v1 §4.3 / §5 / §6.3: the six new claims-schema definers (all owned by commerce_claims_writer).
 			"intake_scope": {args: "", result: "TABLE(tenant_id uuid, store_id uuid, session_id uuid)", volatility: "s",
 				acl: "commerce_claims_intake:EXECUTE,commerce_claims_writer:EXECUTE,commerce_integration_writer:EXECUTE", caller: "commerce_claims_intake"},
@@ -409,13 +416,13 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		}
 		// Four T10 definers + six meta-claims-intake-v1 claims definers + live.put_claim_source and the
 		// live.claim_windows interval trigger function (§2, §4).
-		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 12 {
-			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its twelve functions", n)
+		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 14 {
+			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its fourteen functions (twelve + live-tools live_prices, preview_live_prices)", n)
 		}
 		denied := lcStrings(t, f.owner, `SELECT r.rolname||' '||p.proname FROM pg_roles r CROSS JOIN pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 			WHERE n.nspname='claims' AND r.rolname LIKE 'commerce\_%' AND has_function_privilege(r.oid,p.oid,'EXECUTE')
 			  AND NOT (r.rolname='commerce_claims_writer' OR (r.rolname='commerce_runtime' AND p.proname='issue_link')
-			       OR (r.rolname='commerce_buyer_runtime' AND p.proname IN ('preview_link','redeem_link','mark_applied'))
+			       OR (r.rolname='commerce_buyer_runtime' AND p.proname IN ('preview_link','redeem_link','mark_applied','live_prices','preview_live_prices'))
 			       OR (r.rolname='commerce_claims_intake' AND p.proname IN ('intake_scope','lease_meta_intake','fail_meta_intake'))
 			       OR (r.rolname='commerce_integration_writer' AND p.proname IN ('intake_scope','issue_system_link'))
 			       OR (r.rolname='commerce_meta_writer' AND p.proname='insert_meta_intake')

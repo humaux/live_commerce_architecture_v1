@@ -28,6 +28,12 @@ type QuoteLine struct {
 	Quantity       int64              `json:"quantity"`
 	UnitPriceMinor int64              `json:"unit_price_minor"`
 	Amount         pricing.LineAmount `json:"amount"`
+	// Live-only price evidence (migration 0092). Absent PriceRule means the catalog price. They are part of
+	// the immutable quote snapshot, hence of the order snapshot that embeds it ("which price rule applied").
+	PriceRule             string `json:"price_rule,omitempty"` // pricing.RuleLiveClaim when set
+	CatalogUnitPriceMinor int64  `json:"catalog_unit_price_minor,omitempty"`
+	ClaimBundleID         string `json:"claim_bundle_id,omitempty"`
+	ClaimOfferID          string `json:"claim_offer_id,omitempty"`
 }
 type Quote struct {
 	ID                 string              `json:"id"`
@@ -74,6 +80,9 @@ func CreateQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string, in Q
 		}
 		lines, err := lockCatalog(ctx, tx, s, cart.Currency, cart.Items)
 		if err != nil {
+			return err
+		}
+		if err = applyLivePrices(ctx, tx, s, cart.ID, lines); err != nil {
 			return err
 		}
 		inputs := make([]pricing.AmountLine, len(lines))

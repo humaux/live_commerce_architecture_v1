@@ -1082,7 +1082,7 @@ delta and gates.
 | Per-buyer limit | Partial: per actor per offer |
 | Auto-lock stock on comment | Rejected for v1 (arch §11.2) |
 | Auto Messenger reply with cart link | Deferred to T10c/T07 (G07); manual copy now |
-| Live-only price, claim export, buyer tags | Deferred |
+| Live-only price | Adopted by the "Live tools (R4)" amendment below (claim-origin only); claim export, buyer tags stay deferred |
 
 ## Amendment by meta-claims-intake-v1 (integrator, 2026-09-29)
 
@@ -1115,3 +1115,50 @@ Recorded from `contracts/claims-retention-purge-v1.md` §6 (FROZEN 2026-09-30); 
   replacing `token_hash`" stays true unchanged.
 - Clause 3: §8/§11.4/§12 "production mount blocked by T14/U08" is replaced by "lifted per claims-retention-purge-v1
   §10" (all six conditions; until they hold, waiver W1 governs).
+
+## Amendment "Live tools (R4)" (live-tools unit, migration 0092, 2026-10-01)
+
+Append-only; the §13 "Live-only price" row now points here. Binding for the live-tools unit. Rules:
+
+1. **Keyword library.** `live.keyword_library(tenant_id, store_id, sku_id, keyword, version, principal_id, ...)`: at most one
+   default keyword per SKU and one SKU per keyword per store (`kw-v1` canonical form, same CHECK as `live.offers.keyword`).
+   Written only by `commerce_runtime` under RLS (`live:manage`; reads `live:read`). It is a template: a library row never
+   claims anything by itself; only offers in a session do. The library is store-level, but the
+   routes live under any session's claims path because the admin BFF scopes private Studio traffic to `live-sessions/`:
+   `GET .../live-sessions/{session_id}/claims/library`, `PUT .../claims/library/{sku_id}` (`keyword` +
+   `expected_version`; version 0 = create; empty keyword = remove). `session_id` only has to exist in the store.
+2. **One-action seeding** `POST .../live-sessions/{session_id}/claims/offer-import` with `source` = `library` | `session`
+   (+ `from_session_id`, same store). One receipt, one audit row. Never overwrites: for every candidate (library row, or
+   an **active** offer of the source session) it creates a new offer with `max_quantity_per_claim` = 1 (library) or the
+   source value (session), or reports a conflict `{keyword, sku_id, reason}` with reason `keyword_taken` (keyword already
+   in the target session, for any SKU), `sku_taken` (the SKU already has an active offer), `sku_unavailable` (SKU or product
+   inactive / other currency) or `session_full` (200-offer cap). Result `{created: [Offer], conflicts: [...]}`;
+   conflicts are data (HTTP 200). `live_price_minor` is **never copied** from another session: a live price is a per-live
+   money decision (SHOPLINE sets it per live) and must be re-entered.
+3. **Live-only price.** `live.offers.live_price_minor bigint NULL CHECK (BETWEEN 1 AND 1e12)`, set at offer create (optional
+   key) and by `PATCH offers/{id}` (optional key: absent = unchanged, `0` = clear, `>=1` = set; JSON null stays rejected by
+   the strict decoder). The offer projection gains `sku_price_minor`, `currency`, `live_price_minor` (null when none) so the
+   UI can warn when the live price exceeds the SKU price (allowed, warned only). The price is evaluated at Quote time, not
+   frozen at offer time: changing it affects later quotes only; an existing quote keeps its snapshot and is revalidated.
+4. **Claim origin (the only way to a live price).** `storefront.cart_lines` gains `claim_bundle_id`, `claim_offer_id`,
+   `claim_quantity` (all NULL or all set, CHECK). They are written only by `RedeemLink` through the nested
+   `storefront.SetCart` (field `CartInput.Origins`, tagged `json:"-"`: no client body can set it). A direct `SetCart` keeps a
+   line's origin only when the SKU is already in the cart with that origin **and** the new quantity is `<= claim_quantity`;
+   otherwise the origin is dropped (normal price). A redeem that applies a line replaces that SKU's origin (last apply wins).
+5. **Quote authority.** `CreateQuote` and `RevalidateQuote` (the only unit-price code path) read the cart's origins and call
+   `claims.live_prices(...)` (definer, EXECUTE `commerce_buyer_runtime`). A row is returned only when ALL hold at
+   `clock_timestamp()`: the bundle is bound to the calling buyer; its `claims.links` row exists with `expires_at > now`; the
+   claim line (bundle, offer) exists for that SKU; the offer is `active`, belongs to the bundle's session, targets that SKU and
+   has `live_price_minor IS NOT NULL`. Otherwise the line is priced from `catalog.skus.price_minor`. A quote line carries
+   `price_rule` (`"live_claim"`; absent = catalog), `catalog_unit_price_minor`, `claim_bundle_id`, `claim_offer_id`;
+   `unit_price_minor` is the applied price. `pricing.ResolveUnitPrice` is the pure rule. The order snapshot embeds the quote
+   snapshot, so the applied rule is recorded with the order. If the link expires between Quote and checkout,
+   `RevalidateQuote` returns `ErrConflict` (price differs) and the buyer re-quotes at the catalog price: fail closed.
+6. **Claim-link display.** `claims.preview_live_prices(p_hash)` (buyer definer, same guards as `preview_link`) feeds
+   `claims.PreviewLine.UnitPriceMinor` (display: the live price when one applies) plus the Go-only fields
+   `CatalogUnitPriceMinor` and `PriceRule`. The buyer HTTP projection B1 keeps its closed key set (the storefront parser
+   `apps/storefront/lib/claim-contract.ts` is exact-keys), so only `unit_price_minor` changes value; showing the struck-out
+   catalog price needs a coordinated storefront change (follow-up). The Quote still decides the charged price.
+7. **Gate.** A buyer cannot obtain a live price via a direct cart, via an expired link, via another session's offer on the
+   same SKU, via a bundle bound to another buyer, via an inactive or price-less offer, or by raising the quantity above the
+   claimed quantity. KC03 gains the 0092 grants/functions; no other KC03 row changes.

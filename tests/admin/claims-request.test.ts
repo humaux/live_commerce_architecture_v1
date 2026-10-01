@@ -16,6 +16,8 @@ test("claims BFF allowlist is exactly M1–M7 per method", () => {
     ["GET", `${session}/claims`], ["GET", `${session}/claims/bundles`],
     ["POST", `${session}/claims/window`], ["POST", `${session}/claims/offers`], ["POST", `${session}/claims/manual`],
     ["POST", `${session}/claims/bundles/${other}/link`], ["PATCH", `${session}/claims/offers/${other}`],
+    // Live tools (R4): library read/write and the one-action import.
+    ["GET", `${session}/claims/library`], ["PUT", `${session}/claims/library/${other}`], ["POST", `${session}/claims/offer-import`],
   ];
   for (const [method, path] of allowed) {
     assert.ok(new RegExp(`^${claimsRoutes[method as keyof typeof claimsRoutes]}$`).test(path), `${method} ${path}`);
@@ -26,6 +28,9 @@ test("claims BFF allowlist is exactly M1–M7 per method", () => {
     ["POST", `${session}/claims/bundles`], ["GET", `${session}/claims/bundles/${other}/link`],
     ["POST", `${session}/claims/offers/${other}`], ["POST", `${session}/claims/labels`],
     ["POST", `${session}/claims/bundles/AAAAAAAA-2222-4222-8222-222222222222/link`],
+    ["POST", `${session}/claims/library`], ["PUT", `${session}/claims/library`], ["GET", `${session}/claims/library/${other}`],
+    ["DELETE", `${session}/claims/library/${other}`], ["GET", `${session}/claims/offer-import`], ["PUT", `${session}/claims/offer-import`],
+    ["POST", `${session}/claims/offer-import/${other}`], ["POST", `${session}/claims/offers/import`],
   ] as [keyof typeof claimsRoutes, string][])
     assert.equal(new RegExp(`^${claimsRoutes[method] ?? "(?!)"}$`).test(path), false, `${method} ${path}`);
   assert.equal(claimsCollection(`${session}/claims/bundles`), true);
