@@ -27,7 +27,7 @@ export type ClaimCart = {
   id: string;
   currency: string;
   version: number;
-  items: { sku_id: string; quantity: number }[];
+  items: { sku_id: string; quantity: number; live_unit_price_minor?: number }[];
 };
 export type ClaimRedeemed = {
   bundle_version: number;
@@ -53,8 +53,14 @@ function exact(value: unknown, keys: readonly string[]): value is Record<string,
 }
 const count = (value: unknown, min: number) => Number.isSafeInteger(value) && (value as number) >= min;
 const time = (value: unknown) => typeof value === "string" && value.length <= 40 && Number.isFinite(Date.parse(value));
-const item = (value: unknown) => exact(value, ["sku_id", "quantity"]) &&
-  typeof value.sku_id === "string" && UUID.test(value.sku_id) && count(value.quantity, 1);
+// A cart item is {sku_id, quantity}; a line whose claim origin still earns a live price also carries
+// live_unit_price_minor (amend "Live tools (R4)" rule 5). Any other key is refused.
+const item = (value: unknown) => {
+  if (!exact(value, ["sku_id", "quantity"]) && !exact(value, ["sku_id", "quantity", "live_unit_price_minor"])) return false;
+  const v = value as Record<string, unknown>;
+  return typeof v.sku_id === "string" && UUID.test(v.sku_id) && count(v.quantity, 1) &&
+    (v.live_unit_price_minor === undefined || (Number.isSafeInteger(v.live_unit_price_minor) && (v.live_unit_price_minor as number) >= 1));
+};
 
 /** Closed B1 projection (no label, actor, platform, owner or scene title). */
 export function validClaimPreview(value: unknown): value is ClaimPreview {

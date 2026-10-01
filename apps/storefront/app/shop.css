@@ -313,6 +313,7 @@ a.sf-line__title:hover { text-decoration: underline; }
 .sf-line__unit { font-size: 14px; color: var(--sf-ink-2); display: flex; flex-wrap: wrap; gap: 2px 8px; font-variant-numeric: tabular-nums; }
 .sf-line__unit em { font-style: normal; color: var(--sf-warn); font-weight: 600; }
 .sf-line__unit em.sf-line__out { color: var(--sf-sale); }
+.sf-line__unit em.sf-line__live { color: #7a3c9a; }
 .sf-line__ctl { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; }
 .sf-summary { display: grid; gap: 10px; }
 .sf-summary__row { display: flex; justify-content: space-between; align-items: baseline; font-size: 16px; }

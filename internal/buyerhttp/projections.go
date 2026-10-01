@@ -108,6 +108,9 @@ func projectCatalog(page pagination.Page[storefront.CatalogItem]) catalogRespons
 type cartItemResponse struct {
 	SKUID    string `json:"sku_id"`
 	Quantity int64  `json:"quantity"`
+	// LiveUnitPriceMinor is the live (claim-origin) unit price for this line when claims.live_prices still
+	// honours its origin, omitted otherwise (the storefront then shows the catalog price).
+	LiveUnitPriceMinor int64 `json:"live_unit_price_minor,omitempty"`
 }
 
 type cartResponse struct {
@@ -120,7 +123,7 @@ type cartResponse struct {
 func projectCart(cart storefront.Cart) cartResponse {
 	out := cartResponse{ID: cart.ID, Currency: cart.Currency, Version: cart.Version, Items: make([]cartItemResponse, 0, len(cart.Items))}
 	for _, item := range cart.Items {
-		out.Items = append(out.Items, cartItemResponse{SKUID: item.SKUID, Quantity: item.Quantity})
+		out.Items = append(out.Items, cartItemResponse{SKUID: item.SKUID, Quantity: item.Quantity, LiveUnitPriceMinor: item.LiveUnitPriceMinor})
 	}
 	return out
 }

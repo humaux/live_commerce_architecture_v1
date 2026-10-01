@@ -9,7 +9,7 @@
 // Matrix (four cells, one scene/post/SKU each, one stack): zh-TW x desktop (1440), zh-TW x 390 px, en x desktop, en x 390 px. Merchant and buyer both
 // run at the cell's viewport. BFF routes exercised: /api/stores/{store}/live-sessions (+ claims library, offer-import, offers, window, claim-source) on
 // the admin side; /api/buyer/session, cart, quotes, destinations, cvs-stores, orders on the storefront side.
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Locator, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -18,6 +18,7 @@ import { studioCopy } from "../../apps/admin/lib/studio-copy";
 import { claimCopy } from "../../apps/storefront/lib/claim-copy";
 import { cvsCopy } from "../../apps/storefront/lib/cvs-copy";
 import { purchaseCopy } from "../../apps/storefront/lib/purchase-copy";
+import { shopCopy } from "../../apps/storefront/lib/shop-copy";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -215,6 +216,27 @@ for (const cell of cells) {
       await expect(buyer.getByTestId("claim-added")).toHaveText(claim.added);
       await expect(buyer.getByTestId(`claim-cart-${run.sku_id}`)).toContainText("× 2");
       await act("check", { name: "cart", scene, sku_id: run.sku_id });
+      // The cart drawer and the cart page both show the claimed line at the LIVE price (catalog struck through),
+      // and the line/subtotal totals use it (2 x 200 = 400, not the 600 the catalog would give).
+      const cartCopy = shopCopy[locale];
+      const claimedLine = (scope: Locator) => scope.locator(`[data-testid="cart-line"][data-sku="${run.sku_id}"]`);
+      const assertLiveLine = async (scope: Locator, label: string) => {
+        const line = claimedLine(scope);
+        await expect(line.locator(".sf-line__unit"), `${label}: the claimed line shows the LIVE unit price`).toContainText(has(live.unit));
+        await expect(line.locator(".sf-line__unit s"), `${label}: the catalog price is struck through`).toContainText(has(live.normalUnit));
+        await expect(line.locator(".sf-line__unit em.sf-line__live"), `${label}: the line is labelled a live price`).toContainText(cartCopy.livePrice);
+        await expect(line.getByTestId("cart-line-total"), `${label}: the line total uses the live price (2 x 200)`).toContainText(has(live.total));
+        const subtotal = scope.getByTestId("cart-subtotal");
+        await expect(subtotal, `${label}: the subtotal uses the live price`).toContainText(has(live.total));
+        expect(await subtotal.innerText(), `${label}: the subtotal must not show the normal total`).not.toMatch(has(live.normalTotal));
+      };
+      // The cart page loads the cart fresh (CartProvider GET /api/buyer/cart), so assert it first, then the
+      // drawer from the same page (the claim page keeps its own cart state and the drawer would lag it).
+      await buyer.goto(`${buyerOrigin}/${locale}/cart`);
+      await assertLiveLine(buyer.getByTestId("cart-page"), "cart page");
+      await shot(buyer, "buyer-cart-live-price", locale, viewport);
+      await buyer.getByTestId("header-cart").click();
+      await assertLiveLine(buyer.getByTestId("cart-drawer"), "cart drawer");
       const claimOrder = await checkoutPayAtPickup(buyer, locale, viewport, `buyer-claim-${n}`, live.total, live.normalTotal);
       const stored = await buyer.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage } }));
       expect(stored.includes(token), "the claim token must not be stored in the browser").toBe(false);

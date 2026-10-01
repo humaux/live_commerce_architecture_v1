@@ -12,6 +12,9 @@ package foundation_test
 //   LTG01 TestLiveToolsGateLivePriceOnlyThroughClaim   direct cart (domain + HTTP incl. forged body keys), another session's offer
 //                                                      on the same SKU, a bundle bound to another buyer, raising the quantity, a
 //                                                      price-less offer: only a bound, unexpired, claimed line is live-priced
+//   LTG01b TestLiveToolsGateCartReadLivePrice          the buyer cart read (storefront.GetCart, GET /v1/buyer/cart) returns
+//                                                      live_unit_price_minor for a live-claim line and nothing for a direct line,
+//                                                      another buyer's origin, a raised quantity or an expired link
 //   LTG02 TestLiveToolsGateRawCartForgery              raw cart_lines writes as the buyer database role: shape CHECKs, foreign
 //                                                      bundle/offer pairs, claim_quantity below AND above the claimed quantity
 //   LTG03 TestLiveToolsGateOfferLifecycleAndExpiry     inactive offer / cleared price / link expiry end the price at the next quote;
@@ -175,6 +178,17 @@ func (e *ltgEnv) wantLive(what string, l storefront.QuoteLine, price int64, bund
 	if l.UnitPriceMinor != price || l.PriceRule != "live_claim" || l.CatalogUnitPriceMinor != ltgCatalog || l.ClaimBundleID != bundle || l.ClaimOfferID != offer {
 		e.t.Fatalf("%s: want live price %d (bundle %s offer %s), got %+v", what, price, bundle, offer, l)
 	}
+}
+
+// cartLive returns the live unit price of the single money-SKU line in b's cart (0 = none). It reads
+// the domain cart (storefront.GetCart), the same projection the buyer GET /v1/buyer/cart serves.
+func (e *ltgEnv) cartLive(b *tcvBuyer) int64 {
+	e.t.Helper()
+	cart := e.h.cartOf(e.t, b.cap)
+	if len(cart.Items) != 1 || cart.Items[0].SKUID != e.money {
+		e.t.Fatalf("cart: want one money line, got %+v", cart.Items)
+	}
+	return cart.Items[0].LiveUnitPriceMinor
 }
 
 // rawCartLine rewrites the buyer's cart line of sku with raw SQL as the buyer database role (DELETE + INSERT: the only writes the role has).
@@ -392,6 +406,71 @@ func TestLiveToolsGateLivePriceOnlyThroughClaim(t *testing.T) {
 	e.wantCatalog("offer without a live price", l)
 	if n := e.count(`SELECT count(*) FROM storefront.cart_lines WHERE owner_id=$1 AND claim_offer_id=$2`, b4.cap.Scope.OwnerID, o3.ID); n != 1 {
 		t.Fatalf("the origin of a price-less offer is still recorded as evidence of origin (%d)", n)
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------------------------
+// LTG01b
+// ---------------------------------------------------------------------------------------------------------------------------------------
+
+// The buyer cart read returns live_unit_price_minor for a line whose claim origin still earns a live
+// price, and nothing (0, omitted on the wire) for any other line. It is display-only and uses the same
+// evaluator as the Quote, so the cart preview and the quotation agree.
+func TestLiveToolsGateCartReadLivePrice(t *testing.T) {
+	e := ltgNew(t)
+	s1, o1 := e.session("A1", ltgLive, 5)
+	bundle1, l1 := e.claimLink(s1, "amy", "A1+2")
+	s2, _ := e.session("A1", 15000, 5)
+	_, l2 := e.claimLink(s2, "bob", "A1+2")
+
+	// (1) a non-claim line carries no live unit price.
+	if got := e.cartLive(e.direct(ltgQty)); got != 0 {
+		t.Fatalf("direct cart live unit price = %d, want 0", got)
+	}
+
+	// (2) the claimant: the cart read returns the live unit price on the wire (and the domain value).
+	b1 := e.redeemed(l1)
+	if got := e.cartLive(b1); got != ltgLive {
+		t.Fatalf("claimant cart live unit price = %d, want %d", got, ltgLive)
+	}
+	got := b1.req("GET", "/v1/buyer/cart", "", nil, nil)
+	if got.status != 200 {
+		t.Fatalf("GET cart: %d %s", got.status, got.body)
+	}
+	items := tcvJSON(t, got.body)["items"].([]any)
+	if len(items) != 1 || int64(items[0].(map[string]any)["live_unit_price_minor"].(float64)) != ltgLive {
+		t.Fatalf("GET cart item must carry live_unit_price_minor=%d: %s", ltgLive, got.body)
+	}
+
+	// (3) a forged origin naming another buyer's bundle earns nothing on the cart read either.
+	b3 := e.buyerCap()
+	if _, err := e.h.putCart(b3.cap, t04Key("ltg-crl-b3"), storefront.CartInput{Items: []storefront.Item{{SKUID: e.money, Quantity: ltgQty}}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.rawCartLine(b3, e.money, ltgQty, bundle1, o1.ID, ltgQty); err != nil {
+		t.Fatalf("forgery setup (buyer role INSERT): %v", err)
+	}
+	if got := e.cartLive(b3); got != 0 {
+		t.Fatalf("another buyer's origin live unit price = %d, want 0", got)
+	}
+
+	// (4) quantity above the claim drops the live price for the whole line.
+	b4 := e.redeemed(l2)
+	if got := e.cartLive(b4); got != 15000 {
+		t.Fatalf("session-2 claimant cart live unit price = %d, want 15000", got)
+	}
+	cart := e.h.cartOf(t, b4.cap)
+	if r := b4.req("PUT", "/v1/buyer/cart", t04Key("ltg-crl-raise"), map[string]any{"expected_version": cart.Version, "items": []map[string]any{{"sku_id": e.money, "quantity": ltgQty + 1}}}, nil); r.status != 200 {
+		t.Fatalf("raise quantity: %d %s", r.status, r.body)
+	}
+	if got := e.cartLive(b4); got != 0 {
+		t.Fatalf("quantity above the claim live unit price = %d, want 0", got)
+	}
+
+	// (5) an expired link shows no live unit price.
+	e.setLinkExpiry(bundle1, -time.Minute)
+	if got := e.cartLive(b1); got != 0 {
+		t.Fatalf("expired link live unit price = %d, want 0", got)
 	}
 }
 
