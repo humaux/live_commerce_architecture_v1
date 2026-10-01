@@ -27,7 +27,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -136,23 +135,15 @@ var mciRetentionRoles = map[string]bool{"commerce_retention_writer": true, "comm
 
 // mciApplyWithout mirrors migrations.Apply (same phase order, ledger and River grants) but skips
 // the two meta-claims-intake files (and the dependent 0071), producing the "populated 0063" database of §12 MCI02.
-// mciHeldBack lists the numbered migrations after 0064 that depend on it (0078 customers-core, 0079 billing-core).
-var mciHeldBack = []string{"0078_customers_privacy.sql", "0079_platform_billing.sql"}
-
-func mciApplyWithout(t *testing.T, owner *pgxpool.Pool) {
+// HELD BACK = derived from file numbers, never a hand list: every numbered migration after the intake's (0064) and every
+// post_river file after the intake's (0014) is recorded in the ledger WITHOUT running, so Apply in the test body yields
+// exactly the intake (+0071 retention) delta on the populated pre-0064 database. Their ledger rows are returned; the
+// test's Cleanup un-records them and runs migrations.Apply, proving every later file (ads/capi, R3/R4 ... whatever is
+// added next) applies in order over the upgraded populated DB. A new migration therefore needs no edit here.
+func mciApplyWithout(t *testing.T, owner *pgxpool.Pool) (heldBack []string) {
 	t.Helper()
 	skipA, skipB := mciIntakeFiles(t)
 	skipR := mciRetentionFile(t)
-	// The meta-ads migrations (unit ads-core: 0074/0075, post-River 0015) build on the intake's Page-token custody tables, so
-	// they cannot run before it; they are ledger-marked applied below and never executed by this gate.
-	adsNumbered, _ := filepath.Glob("../../migrations/[0-9][0-9][0-9][0-9]_meta_ads*.sql")
-	capiNumbered, _ := filepath.Glob("../../migrations/[0-9][0-9][0-9][0-9]_meta_capi.sql") // ads-capi 0080 builds on 0074's schema
-	adsNumbered = append(adsNumbered, capiNumbered...)
-	adsPost, _ := filepath.Glob("../../migrations/post_river/[0-9][0-9][0-9][0-9]_meta_ads_river.sql")
-	adsSkip := map[string]bool{}
-	for _, path := range append(adsNumbered, adsPost...) {
-		adsSkip[path] = true
-	}
 	ctx := context.Background()
 	numbered, _ := filepath.Glob("../../migrations/[0-9][0-9][0-9][0-9]_*.sql")
 	post, _ := filepath.Glob("../../migrations/post_river/[0-9][0-9][0-9][0-9]_*.sql")
@@ -167,21 +158,11 @@ func mciApplyWithout(t *testing.T, owner *pgxpool.Pool) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if adsSkip[path] {
-				// Recorded as applied WITHOUT running: the ads objects exist in neither the pre nor the post state of this
-				// gate, so its exact-delta assertions stay about the intake migrations only (unit ads-core).
-				if _, err := tx.Exec(ctx, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES($1,$2)`, prefix+filepath.Base(path), fmt.Sprintf("%x", sha256.Sum256(body))); err != nil {
-					t.Fatal(err)
-				}
-				continue
-			}
-			// Held-back migrations build on 0064's objects (customers-billing-v1: 0079 reads
-			// live.claim_window_intervals): recorded in the ledger without running, so the intake Apply below
-			// yields exactly the intake delta; the test's Cleanup un-records and applies them on top.
-			if !slices.Contains(mciHeldBack, filepath.Base(path)) {
-				if _, err := tx.Exec(ctx, string(body)); err != nil {
-					t.Fatalf("historical migration %s: %v", path, err)
-				}
+			// Later than the intake file => held back (recorded, not run; see the comment above this function).
+			if filepath.Base(path)[:4] > filepath.Base(skip)[:4] {
+				heldBack = append(heldBack, prefix+filepath.Base(path))
+			} else if _, err := tx.Exec(ctx, string(body)); err != nil {
+				t.Fatalf("historical migration %s: %v", path, err)
 			}
 			if _, err := tx.Exec(ctx, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES($1,$2)`, prefix+filepath.Base(path), fmt.Sprintf("%x", sha256.Sum256(body))); err != nil {
 				t.Fatal(err)
@@ -253,6 +234,7 @@ func mciApplyWithout(t *testing.T, owner *pgxpool.Pool) {
 	if err := tx.Commit(ctx); err != nil {
 		t.Fatal(err)
 	}
+	return heldBack
 }
 
 // ---------------------------------------------------------------------------------------
@@ -529,9 +511,9 @@ func mciHead(items []string) string {
 func TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta(t *testing.T) {
 	owner := mciStartPG(t)
 	ctx := context.Background()
-	mciApplyWithout(t, owner)
+	heldBack := mciApplyWithout(t, owner)
 	t.Cleanup(func() { // the held-back migrations must also apply over the upgraded, populated database
-		if _, err := owner.Exec(ctx, `DELETE FROM public.lc_schema_migrations WHERE version=ANY($1)`, mciHeldBack); err != nil {
+		if _, err := owner.Exec(ctx, `DELETE FROM public.lc_schema_migrations WHERE version=ANY($1)`, heldBack); err != nil {
 			t.Errorf("un-record held-back migrations: %v", err)
 			return
 		}

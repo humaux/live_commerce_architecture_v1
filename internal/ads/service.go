@@ -2,9 +2,7 @@ package ads
 
 import (
 	"context"
-	"crypto/hmac"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"net/url"
@@ -17,6 +15,7 @@ import (
 
 	"livecommerce/internal/command"
 	"livecommerce/internal/integrations/core"
+	metaoauth "livecommerce/internal/integrations/meta/oauth"
 	"livecommerce/internal/platform"
 )
 
@@ -101,18 +100,11 @@ type connectReceipt struct {
 // table. It still matters only together with the server-side binding to principal + store (a stolen state fails as
 // state_mismatch in another session); only its SHA-256 is stored (ads.begin_connect).
 func stateParam(key []byte, scope platform.Scope, idemKey string) (param string, hash []byte) {
-	m := hmac.New(sha256.New, key)
-	m.Write([]byte("livecommerce/ads-oauth-state/v2|" + scope.TenantID + "|" + scope.StoreID + "|" + scope.PrincipalID + "|" + idemKey))
-	param = base64.RawURLEncoding.EncodeToString(m.Sum(nil))
-	digest := sha256.Sum256([]byte(param))
-	return param, digest[:]
+	return metaoauth.StateParam(key, "livecommerce/ads-oauth-state/v2", scope.TenantID, scope.StoreID, scope.PrincipalID, idemKey)
 }
 
 // stateHash is the digest stored for a state parameter (SHA-256 of its text).
-func stateHash(param string) []byte {
-	d := sha256.Sum256([]byte(param))
-	return d[:]
-}
+func stateHash(param string) []byte { return metaoauth.StateHash(param) }
 
 // Connect starts a connect: stores the hashed state (ads.begin_connect: ads:manage + integration:manage, 10 min, single
 // use) and returns the FLfB dialog URL. Idempotent per Idempotency-Key.
@@ -143,15 +135,7 @@ func (s *Service) Connect(ctx context.Context, tx pgx.Tx, scope platform.Scope, 
 // override_default_response_type=true yields a server-exchangeable code and a BISU token (F3).
 // Source: https://developers.facebook.com/documentation/facebook-login/facebook-login-for-business (retrieved 2026-09-30).
 func (s *Service) dialogURL(state string) string {
-	q := url.Values{}
-	q.Set("client_id", s.dialog.AppID)
-	q.Set("config_id", s.dialog.ConfigID)
-	q.Set("response_type", "code")
-	q.Set("override_default_response_type", "true")
-	q.Set("redirect_uri", s.dialog.RedirectURI)
-	q.Set("state", state)
-	u := url.URL{Scheme: "https", Host: "www.facebook.com", Path: "/" + s.dialog.GraphVersion + "/dialog/oauth", RawQuery: q.Encode()}
-	return u.String()
+	return metaoauth.Dialog{AppID: s.dialog.AppID, ConfigID: s.dialog.ConfigID, RedirectURI: s.dialog.RedirectURI, GraphVersion: s.dialog.GraphVersion}.URL(state)
 }
 
 // Callback consumes the state, exchanges the code with no transaction open, and stores the sealed result. It returns the

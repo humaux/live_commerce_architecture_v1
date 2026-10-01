@@ -15,6 +15,7 @@ import { customersCopy } from "@/lib/customers-copy";
 import { designCopy } from "@/lib/design-copy";
 import { teamCopy } from "@/lib/team-copy";
 import { catalogCopy } from "@/lib/catalog-v2-copy";
+import { toolsCopy } from "@/lib/merchant-tools-copy";
 import { promotionsCopy } from "@/lib/promotions-copy";
 import { navAccessFrom, navVisible, type NavAccess } from "@/lib/team-model";
 import { BillingBanner } from "./BillingBanner";
@@ -59,9 +60,11 @@ export function WorkspaceFrame({
   // catalog-media: website-service / Meta-messages / platform-support entries removed: they led to a "not connected"
   // placeholder panel. Re-add an entry only together with a real page.
   // catalog-core: products and collections are real pages; the ledger (home) stays reachable as Inventory.
+  // merchant-tools: the dashboard is the landing (/{locale}); the stock ledger is its own page (/{locale}/inventory).
   // Nav ids that are their own page under /[locale]/<id> (one entry per page; units append here).
   const pageRoutes = ["products", "collections", "customers", "finance", "billing", "design", "team", "promotions"];
   const nav = [
+    ["dashboard", "dashboard", toolsCopy[locale].navDashboard],
     ["products", "product", c.products],
     ["collections", "product", catalogCopy[locale].nav.collections],
     ["inventory", "inventory", c.inventory],
@@ -79,7 +82,10 @@ export function WorkspaceFrame({
   function select(id: string) {
     if (onBeforeNavigate && !onBeforeNavigate()) return;
     setNavOpen(false);
-    if (id === "orders")
+    const storeQuery = storeParam ? `?store=${encodeURIComponent(storeParam)}` : "";
+    if (id === "dashboard") router.push(`/${locale}/${storeQuery}`);
+    else if (id === "inventory" && active !== "inventory") router.push(`/${locale}/inventory${storeQuery}`);
+    else if (id === "orders")
       router.push(
         `/${locale}/orders${search.get("store") ? `?store=${encodeURIComponent(search.get("store")!)}` : ""}`,
       );

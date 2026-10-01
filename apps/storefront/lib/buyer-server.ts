@@ -42,6 +42,7 @@ import {
   validTransferView,
 } from "./bank-transfer-contract.ts";
 import { validLookupBody, validLookupResult } from "./lookup-contract.ts";
+import { validLinkBody, validLinkResult } from "./order-link-contract.ts";
 import {
   CVS_ERROR_CODES,
   DEFINITE_CVS_CODES,
@@ -89,7 +90,8 @@ type Route = {
     | "cvsSelection"
     | "cvsStore"
     | "transferProof"
-    | "lookup";
+    | "lookup"
+    | "link";
   query?: "catalog" | "options" | "orders";
   session?: string;
   payment?: "view" | "prepare" | "handoff" | "refresh" | "cancel";
@@ -105,6 +107,8 @@ type Route = {
   transfer?: "view" | "proof";
   // Guest order lookup: handled by lookup() before any cookie / context check.
   lookup?: boolean;
+  // Manual-order buyer link exchange (storefront-v2 G3): same cookie-less, mint-a-token handling as the guest lookup, other private path and body.
+  link?: boolean;
 };
 
 const messages: Record<string, string> = {
@@ -389,6 +393,9 @@ function route(
     orders: { GET: { privatePath: "orders", query: "orders" } },
     "orders/lookup": {
       POST: { privatePath: "orders/lookup", body: "lookup", lookup: true },
+    },
+    "orders/link": {
+      POST: { privatePath: "orders/link", body: "link", link: true },
     },
     "cvs-selections": {
       POST: { privatePath: "cvs-selections", body: "cvsSelection", cvs: "open" },
@@ -701,6 +708,7 @@ const shapes: Record<Exclude<Route["body"], undefined>, Shape> = {
   },
   transferProof: { last5: "string", amount_minor: "integer", paid_at: "string" },
   lookup: { order_ref: "string", contact: "string" },
+  link: { order_id: "string", token: "string" },
   cvsSelection: {
     cart_version: "integer",
     market_id: "string",
@@ -756,6 +764,7 @@ function extraShapeOK(shape: Shape, parsed: unknown): boolean {
       (v.buyer_email === undefined || validBuyerEmail(v.buyer_email))
     );
   if (shape === shapes.lookup) return validLookupBody(parsed);
+  if (shape === shapes.link) return validLinkBody(parsed);
   if (shape === shapes.transferProof)
     return Object.keys(v).length === Object.keys(shape).length && validProofBody(v);
   if (shape !== shapes.cvsSelection && shape !== shapes.cvsStore) return true;
@@ -1013,6 +1022,33 @@ async function lookup(
   });
 }
 
+// POST /api/buyer/orders/link. Like lookup(): no cookie is read; a fresh capability token is minted exactly like session/prepare, Go exchanges the
+// single-use link token for a FULL capability of the order's owner registered with that token, and the cookie is set only when Go said 200 AND named
+// the same order the link did. The link token is forwarded once in the JSON body and never echoed or logged; every refusal is relayed as Go's code.
+async function orderLink(request: Request, cfg: Config, origin: string): Promise<Response> {
+  if (request.headers.has("idempotency-key")) return failure(422, "invalid_request");
+  const result = await bodyJSON(request, shapes.link);
+  if (result.error) return result.error;
+  const named = (JSON.parse(result.body ?? "{}") as { order_id?: string }).order_id ?? "";
+  const token = randomBytes(32).toString("base64url");
+  const response = await upstream(request, cfg, origin, token, "orders/link", "POST", result.body, undefined, undefined, forwardedIP(request));
+  if (request.signal.aborted) return failure(503, "unavailable");
+  if (!response.ok) {
+    const refusal = await upstreamError(response);
+    const wait = response.headers.get("retry-after");
+    if (response.status === 429 && wait !== null && /^[0-9]{1,5}$/.test(wait)) refusal.headers.set("Retry-After", wait);
+    return refusal;
+  }
+  const data = await upstreamJSON(response);
+  if (response.status !== 200 || !validLinkResult(data, named)) return failure(503, "unavailable");
+  const iat = Math.floor(Date.now() / 1000);
+  const envelope: Envelope = { v: 1, token, iat, exp: iat + cfg.ttl, origin };
+  const value = envelopeValue(cfg, envelope);
+  return success(data, {
+    "Set-Cookie": `${COOKIE}=${value}; Path=/; Max-Age=${cfg.ttl}; Secure; HttpOnly; SameSite=Lax`,
+  });
+}
+
 function forbiddenHeaders(request: Request): boolean {
   return [
     "authorization",
@@ -1065,6 +1101,7 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
   if (isMutation && request.headers.get("origin") !== origin)
     return fail(403, "forbidden");
   if (target.lookup) return lookup(request, cfg, origin);
+  if (target.link) return orderLink(request, cfg, origin);
   const found = identify(request, cfg, origin);
   if (found.invalid) return fail(401, "unauthorized");
   if (

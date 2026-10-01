@@ -91,7 +91,7 @@ export type NavAccess = { role: string | null; permissions: string[] } | null;
 const navNeeds: Record<string, string> = {
   products: "catalog:read", inventory: "inventory:read", orders: "orders:read", live: "live:read", customers: "customers:read",
   finance: "orders:read", billing: "billing:manage", ads: "ads:read", settings: "integration:read",
-  collections: "catalog:read", promotions: "pricing:read", design: "integration:read",
+  dashboard: "orders:read", collections: "catalog:read", promotions: "pricing:read", design: "integration:read",
 };
 export function navVisible(id: string, access: NavAccess): boolean {
   if (access === null) return true;

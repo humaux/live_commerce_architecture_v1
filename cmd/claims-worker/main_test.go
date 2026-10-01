@@ -77,6 +77,8 @@ func TestOnlyDocumentedVariablesAreRead(t *testing.T) {
 		allowed[name] = true
 	}
 	allowed["COMMERCE_META_GRAPH_BASE_URL"], allowed["COMMERCE_META_GRAPH_AUTH_HEADER"] = true, true
+	// meta-page-token-v2 private ring (merchant connect): probed for presence on every start, loaded only when set (optional).
+	allowed["COMMERCE_META_PAGE_HPKE_PRIVATE_KEYS"], allowed["COMMERCE_META_PAGE_HPKE_PRIVATE_KEYS_FILE"] = true, true
 	// ECPay CVS switches (taiwan-cvs-logistics-v1 §12): read on every start; the profile and keyring only when enabled.
 	allowed["CVS_ECPAY_ENABLED"], allowed["CVS_ECPAY_LIVE_CREATE"], allowed["COMMERCE_CVS_HOOKS_ORIGIN"] = true, true, true
 	c, err := loadConfig(func(name string) string {

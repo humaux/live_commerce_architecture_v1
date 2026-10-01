@@ -16,6 +16,7 @@ import (
 	"testing"
 
 	"livecommerce/internal/integrations/core"
+	metaoauth "livecommerce/internal/integrations/meta/oauth"
 )
 
 const (
@@ -287,7 +288,7 @@ func TestCreateClassificationTable(t *testing.T) {
 	}
 	// Transport failure (closed server) is UNKNOWN, not FAILED_FINAL.
 	c, _ := newFake(t, reply200(`{}`))
-	c.g.base = "http://127.0.0.1:1"
+	c.g, _ = newGraph(Config{GraphBaseURL: "http://127.0.0.1:1", GraphVersion: "v26.0"}) // closed port: the shared transport owns the base now
 	if out, err := c.dispatch(context.Background(), dreq(ActionCreateCampaign, campaignBody), secret); err != nil || out != unconfirmed() {
 		t.Errorf("transport = %+v,%v", out, err)
 	}
@@ -603,7 +604,7 @@ func TestHostGuardAndRedirects(t *testing.T) {
 	}
 	// Oversized response bodies are unusable (UNKNOWN), not buffered without bound.
 	c, _ = newFake(t, func(_ call, w http.ResponseWriter) {
-		_, _ = w.Write([]byte(`{"id":"1","pad":"` + strings.Repeat("a", maxBody) + `"}`))
+		_, _ = w.Write([]byte(`{"id":"1","pad":"` + strings.Repeat("a", metaoauth.MaxBody) + `"}`))
 	})
 	if out, _ := c.dispatch(context.Background(), dreq(ActionCreateCampaign, campaignBody), core.NewSecret([]byte(fakeToken))); out != unconfirmed() {
 		t.Fatalf("oversize = %+v", out)

@@ -83,6 +83,8 @@ export const limits = {
   collectionTitle: 80, collectionDescription: 2000, collectionProducts: 500, code: 64,
 } as const;
 const maxMoney = 1_000_000_000_000;
+// Plain module on purpose: server pages import these values (a "use client" module exports client references only).
+export const productStatuses = ["all", "draft", "active", "archived"] as const;
 export const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const codePattern = /^[A-Za-z0-9_.-]{1,64}$/;
 
@@ -153,6 +155,12 @@ export function parseProduct(v: unknown): ProductDetail {
   };
 }
 // Create/patch/price/archive answers only need to be well-formed objects with an id: the editor re-reads after every write.
+// inventory.Balance answer of POST inventory/adjustments: identified by warehouse_id + sku_id (no `id`).
+export const parseBalance = (v: unknown): { sku_id: string } => {
+  const r = rec(v);
+  uuid(r.warehouse_id);
+  return { sku_id: uuid(r.sku_id) };
+};
 export const parseCreated = (v: unknown): { id: string } => ({ id: uuid(rec(v).id) });
 // A SKU as the create/patch/price routes answer it (no stock): the editor re-reads the product after every write.
 export function parseWarehouses(v: unknown): { id: string; name: string }[] {
@@ -244,4 +252,12 @@ export function fromMinor(minor: number, currency: string): string {
   if (digits === 0) return String(minor);
   const text = String(minor).padStart(digits + 1, "0");
   return `${text.slice(0, -digits)}.${text.slice(-digits)}`;
+}
+
+// Proposed SKU code for one option combination: product slug + the 1-based position of each value on its axis
+// (`summer-tee-2-1`). ASCII by construction for any script of option values (a CJK value used to vanish from the code and
+// collide), unique per product because values are unique per axis, stable when values are appended. Codes are unique per store.
+export function proposedCode(slug: string, axes: OptionAxis[], values: string[]): string {
+  const suffix = ["", ...values.map((v, i) => String(axes[i].values.indexOf(v) + 1))].join("-") || "-1";
+  return slug.slice(0, limits.code - suffix.length).replace(/-+$/, "") + suffix;
 }
