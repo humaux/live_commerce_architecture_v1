@@ -23,7 +23,8 @@ const (
 	KindMerchantNew = "merchant_new"
 )
 
-// DefaultLocale is used when the order carries no known locale (today: always, checkout does not capture it yet).
+// DefaultLocale is used when the order carries no known locale: merchant-created orders (never placed through buyer
+// checkout, checkout.orders.locale NULL) and orders placed before migration 0097.
 const DefaultLocale = "zh-TW"
 
 // Payload is the jsonb notify.claim_batch returns for one send (one buyer mail, or one merchant batch). Pointer fields are NULL in SQL.

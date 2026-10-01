@@ -64,10 +64,12 @@ func writeRaw(w http.ResponseWriter, raw rawResponse) {
 	_, _ = w.Write(raw.body)
 }
 
-// uploadRoute reads the single multipart `file` part before any transaction opens (a slow client must not hold
-// a database transaction), but only after the Authorization header is at least well-formed; scoped then
-// authenticates for real and runs store (catalog:write). The part's filename and Content-Type are ignored:
-// catalog.SniffImage decides the type. Shared by the product-photo and collection-image uploads.
+// uploadRoute authenticates and authorizes the merchant (catalog:write) BEFORE any body byte is read: an
+// unauthenticated client must not be able to make the API buffer up to 2 MiB per request. The authorization runs
+// as a standalone WithScope that only resolves access and commits; the body is then read outside any transaction
+// (a slow client must not hold one), and the final scoped call re-runs the same check inside the store transaction.
+// The part's filename and Content-Type are ignored: catalog.SniffImage decides the type. Shared by the
+// product-photo and collection-image uploads.
 func uploadRoute(pool *pgxpool.Pool, store func(context.Context, pgx.Tx, platform.Scope, *http.Request, []byte) (any, error)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		header := r.Header.Get("Authorization")
@@ -77,6 +79,13 @@ func uploadRoute(pool *pgxpool.Pool, store func(context.Context, pgx.Tx, platfor
 		}
 		if media, _, err := mime.ParseMediaType(r.Header.Get("Content-Type")); err != nil || media != "multipart/form-data" {
 			respondError(w, http.StatusUnsupportedMediaType, "invalid_request")
+			return
+		}
+		// security ordering: refuse unauthenticated/unauthorized uploads without touching the body (see header comment).
+		if err := platform.WithScope(r.Context(), pool, strings.TrimPrefix(header, "Bearer "), r.PathValue("store_id"), "catalog:write",
+			func(pgx.Tx, platform.Scope) error { return nil }); err != nil {
+			status, code := classify(err)
+			respondError(w, status, code)
 			return
 		}
 		r.Body = http.MaxBytesReader(w, r.Body, maxUploadBody)

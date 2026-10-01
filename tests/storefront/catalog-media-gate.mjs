@@ -86,12 +86,14 @@ async function scenario(index, run) {
   merchant.on("pageerror", error => uiErrors.push(`${label} merchant ${error.name}: ${error.message}`));
   await merchant.goto(`${adminOrigin}/en`);
   await merchant.getByRole("button", {name: "Sign in with identity service", exact: true}).click();
-  await expect(merchant.getByRole("button", {name: "Add product", exact: true})).toBeVisible();
-  await merchant.goto(`${adminOrigin}/${run.locale}`);
+  // 0094 made /[locale]/ the merchant dashboard and the stock Ledger moved to /[locale]/inventory (nav "Inventory"):
+  // the SKU rows, the photo manager, the rename and the price/archive inspector all live there now.
+  await merchant.goto(`${adminOrigin}/en/inventory`);
   const row = code => merchant.locator("tbody tr").filter({hasText: code});
   const select = async code => { await row(code).locator("button.product-name").click(); await expect(merchant.getByTestId("photo-manager")).toBeVisible(); };
   const bff = (resource) => `/api/stores/${store}/${resource}`;
   const done = (method, resource) => merchant.waitForResponse(r => r.request().method() === method && new URL(r.url()).pathname === bff(resource));
+  await merchant.goto(`${adminOrigin}/${run.locale}/inventory`);
   await expect(row(fx.sku1.code)).toBeVisible();
   await expect(row(fx.sku2.code)).toBeVisible();
   await select(fx.sku1.code);
@@ -139,10 +141,11 @@ async function scenario(index, run) {
   assert.equal((await archived).status(), 200, `${label} archive`);
   // The status column is hidden by the baseline CSS at 390px, so the row state is asserted attached (not visible) and the inspector,
   // which is visible on both viewports, shows the archived SKU's archive control disabled.
-  await expect(row(fx.sku2.code).locator(".status.archived")).toBeAttached();
-  await expect(row(fx.sku1.code).locator(".status.active")).toBeAttached();
+  // the row state lives in the status column; the mobile badge (.status.mobile-status) is a second copy, so scope to .status-col
+  await expect(row(fx.sku2.code).locator(".status-col .status.archived")).toBeAttached();
+  await expect(row(fx.sku1.code).locator(".status-col .status.active")).toBeAttached();
   await expect(merchant.getByTestId("archive-sku")).toBeDisabled();
-  if (run.vp === "desktop") await expect(row(fx.sku2.code).locator(".status.archived")).toBeVisible();
+  if (run.vp === "desktop") await expect(row(fx.sku2.code).locator(".status-col .status.archived")).toBeVisible();
   await expect(row(fx.sku1.code).locator("[data-photo=real]")).toBeVisible(); // the Ledger shows the real cover
   assert.equal(await merchant.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${label} admin horizontal overflow`);
   await shot(merchant, "admin-ledger", run);

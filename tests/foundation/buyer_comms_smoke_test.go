@@ -6,7 +6,9 @@ package foundation_test
 //   BCM01 TestBuyerCommsOutbox       triggers enqueue exactly once per (order, kind) in the order transaction (placed, paid, refunded, cancelled),
 //                                    the worker sends them with the order's own bank snapshot, merchant batch <= 1 per 5 min, UNKNOWN never re-sent,
 //                                    definite refusal retried with backoff then FAILED, dead SENDING -> UNKNOWN, caps hold, no recipient / stale are
-//                                    SKIPPED, erasure clears the recipient hash and skips pending rows, the log has no body or address column
+//                                    SKIPPED, erasure clears the recipient hash and skips pending rows, the log has no body or address column,
+//                                    the checkout locale persists on the order (0097) and picks the buyer mail language (zh-CN copy + link,
+//                                    empty input = zh-TW default, an unknown locale never reaches placement)
 //   BCM02 TestGuestOrderLookup       order number + email or phone issues a working capability for the order's owner; every mismatch is the same
 //                                    404; ip / ref throttles answer 429 with Retry-After; the same work is done for a hit and a miss
 //   BCM03 TestNotifySettingsRoute    GET/PUT notification-settings (permissions, strict body) and the opt-out SKIPs merchant mail
@@ -169,6 +171,59 @@ func TestBuyerCommsOutbox(t *testing.T) {
 			t.Fatal("a SENT row must never be claimed again")
 		}
 		_ = b
+	})
+
+	t.Run("the checkout locale persists on the order and picks the buyer mail language", func(t *testing.T) {
+		// 0097: checkout.Begin persists the buyer's locale (empty input = the zh-TW default) and notify.claim_batch
+		// feeds it to the renderer, so a zh-CN buyer gets Simplified copy and a /zh-CN/ order link.
+		b := e.newBuyer()
+		in := b.h.input
+		in.PaymentMode, in.BuyerEmail, in.Locale = "bank_transfer", "cn@example.test", "zh-CN"
+		res, err := e.svc.Begin(context.Background(), b.cap.Token, e.store(), t04Key("bcm-locale-cn"), in)
+		if err != nil {
+			t.Fatalf("place zh-CN order: %v", err)
+		}
+		var loc string
+		if err := f.owner.QueryRow(ctx, `SELECT locale FROM checkout.orders WHERE id=$1`, res.OrderID).Scan(&loc); err != nil || loc != "zh-CN" {
+			t.Fatalf("order locale %q err %v, want zh-CN persisted at placement", loc, err)
+		}
+		w.Once(ctx)
+		var found bool
+		for _, msg := range m.take() {
+			if msg.To == "cn@example.test" {
+				found = true
+				if !strings.Contains(msg.Subject, "订单已成立") || !strings.Contains(msg.Text, "/zh-CN/orders/"+res.OrderID) {
+					t.Errorf("zh-CN buyer mail rendered in the wrong language:\n%s", msg.Text)
+				}
+			}
+		}
+		if !found {
+			t.Fatal("no buyer mail for the zh-CN order")
+		}
+		// empty locale input persists the zh-TW default and the mail stays Traditional
+		b = e.newBuyer()
+		in = b.h.input
+		in.PaymentMode, in.BuyerEmail = "bank_transfer", "def@example.test"
+		res, err = e.svc.Begin(context.Background(), b.cap.Token, e.store(), t04Key("bcm-locale-def"), in)
+		if err != nil {
+			t.Fatalf("place default-locale order: %v", err)
+		}
+		if err := f.owner.QueryRow(ctx, `SELECT locale FROM checkout.orders WHERE id=$1`, res.OrderID).Scan(&loc); err != nil || loc != "zh-TW" {
+			t.Fatalf("default order locale %q err %v, want zh-TW", loc, err)
+		}
+		w.Once(ctx)
+		for _, msg := range m.take() {
+			if msg.To == "def@example.test" && !strings.Contains(msg.Subject, "訂單已成立") {
+				t.Errorf("default buyer mail must stay zh-TW:\n%s", msg.Text)
+			}
+		}
+		// an unknown locale is refused before placement
+		b = e.newBuyer()
+		in = b.h.input
+		in.PaymentMode, in.Locale = "bank_transfer", "fr"
+		if _, err := e.svc.Begin(context.Background(), b.cap.Token, e.store(), t04Key("bcm-locale-fr"), in); err == nil {
+			t.Fatal("an unknown locale must be refused before placement")
+		}
 	})
 
 	t.Run("the log has no body and no address column; direct enqueue of an existing (order, kind) is a no-op", func(t *testing.T) {
