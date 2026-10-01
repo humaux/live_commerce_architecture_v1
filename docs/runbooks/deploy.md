@@ -128,7 +128,7 @@ deploy/scripts/deploy.sh upgrade <tag>
 
 ### 4.1 升级 4dc08b3 → R4（试点主机，保留真实 owner 数据，只能前向）
 
-范围：迁移 0081–0098 与 post_river 0018–0019（含 0096 worker 权限拆分）、expiry-worker 买家邮件循环（默认关）、meta-connect（默认关）、store-admin 注册员登录。
+范围：迁移 0081–0105（没有 0084）与 post_river 0018–0019（含 0096 worker 权限拆分；0099–0105 为 R4 审查后的修复：转账、Meta 断开退订、超商代收守卫、直播价结账与按认领数量消耗、买家查询限流按店铺分桶与订单链接幂等）、expiry-worker 买家邮件循环（默认关）、meta-connect（默认关）、store-admin 注册员登录。
 没有 owner 在聊天里的明确批准，不得执行（AGENTS.md）。下面每一步都能在升级前离线检查；升级本身仍是 §4 的 `deploy.sh upgrade`。
 
 1. **取代码**：试点主机没有 GitHub 凭据，用 git bundle 把发布 SHA 带到 `/opt/live-commerce`（做法见 `output/deploy-gce/bootstrap.md`），`git checkout <发布SHA>`，`git status` 必须干净。
@@ -139,14 +139,15 @@ deploy/scripts/deploy.sh upgrade <tag>
    `pw_lc_store_registrar`、`dsn_lc_store_registrar`、`commerce_meta_page_hpke_private_keys_json`、`commerce_meta_page_hpke_public_keys_json`、`commerce_meta_page_hpke_active_key_id`
    （输出 `created=5`；已有文件不会被覆盖）。**不需要**新的 owner 密钥：买家邮件复用已有的 `commerce_smtp_password`（compose 现在把它同时挂给 api 和 expiry-worker）。
 4. **离线预检**：`deploy/scripts/preflight.sh`（升级命令里还会再跑一次）。必须没有 FAIL；P03/P05 会检查新密钥的格式与 key id 对应，P04 检查公钥环 id == 私钥环 id。试点已知的 P11（staging CA 对 `LC_ENVIRONMENT=production`）是升级前就存在的状态，由 owner 决定，不要为升级顺手改它。
+   新增 P18（0104）：`LC_STORE_HOST` 必须只解析到本机（DNS-only，不能走 Cloudflare 代理），因为买家查询 / 订单链接的按 IP 限流信任边缘覆盖写入的 `X-Forwarded-For`；P18 FAIL 时先确认 DNS，不要关掉检查。
 5. **构建 + 升级**：`deploy/scripts/build-images.sh`（记下 `IMAGE_TAG=<sha12>`，`-dirty` 禁止）→ `deploy/scripts/deploy.sh upgrade <sha12>`。
-   脚本顺序：preflight → **强制备份** `pre-upgrade-<tag>`（失败则什么都不改）→ 停 api/admin/storefront 与全部 worker → migrate（0081–0098 + post_river 0018–0019）→ provision-logins → 写 IMAGE_TAG → `up -d` → 部署后检查。
+   脚本顺序：preflight → **强制备份** `pre-upgrade-<tag>`（失败则什么都不改）→ 停 api/admin/storefront 与全部 worker → migrate（0081–0105 + post_river 0018–0019）→ provision-logins → 写 IMAGE_TAG → `up -d` → 部署后检查。
    0096 的切换没有新旧权限混用的窗口：迁移创建各 worker 的专属 authority，之后 provision-logins 为 5 个 worker 登录授予自己的 authority 并 `REVOKE commerce_worker`，所有 worker 此时都已停止，起来时用的已经是各自的专属登录。
 6. **升级后必查**（把输出存证据）：
    - `deploy.sh` 退出码 0，日志里有 `post-check all lc-* containers run tag <sha12>` 和各 worker 的 `*_worker_ready`。
    - provision-logins 输出每个登录一行 `membership=ok`，没有 `DRIFT`；新增 `login=lc_store_registrar ... membership=ok`；`registrars execute=ok`。
    - `deploy/scripts/ops-admin.sh store-admin status --store <店铺uuid>` 能连上（注册员登录可用；店铺存在时输出发布状态，不存在时是 `store_admin_not_found`）。
-   - 店铺与商品数据仍在（admin 后台打开商品列表），并且 `deploy.sh` 日志的 `ledger_count before=<N> after=<N+19>`：17 个业务迁移（0081–0083、0085–0098；没有 0084）+ post_river 0018、0019。
+   - 店铺与商品数据仍在（admin 后台打开商品列表），并且 `deploy.sh` 日志的 `ledger_count before=<N> after=<N+26>`：24 个业务迁移（0081–0083、0085–0105；没有 0084）+ post_river 0018、0019。
 7. **之后由 owner 逐项开启，每项单独批准**（都不属于升级本身）：
    - 买家邮件：确认 `commerce_smtp_password` 已是真值、`LC_SMTP_*`/`LC_MAIL_FROM` 正确 → compose.env 设 `LC_BUYER_MAIL_ENABLED=1` → `deploy/scripts/preflight.sh`（P06/P08/P09）→ 不要再跑 `deploy.sh upgrade`（tag 不变，会再次停机并备份），改用
      `docker compose --project-directory deploy --env-file /etc/live-commerce/compose.env up -d --no-deps expiry-worker`（只重建 expiry-worker）→ 日志出现 `expiry_worker_ready` 且无 `expiry_worker_invalid_config`。关闭：改回 0 再执行同一条命令。
