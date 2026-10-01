@@ -115,7 +115,7 @@ export function ManualOrder({
             </label>
           </div>
         )}
-        {(options.status === "loading" || options.status === "hidden") && <p className="orders-message" role="status">{c.loading}</p>}
+        {(options.status === "loading" || options.status === "hidden") && !placed && <p className="orders-message" role="status">{c.loading}</p>}
         {listFailure && <p className="orders-message" role="status">{listFailure}</p>}
         {placed && store && (
           <section className="mt-card" data-testid="manual-order-result" aria-label={c.created}>
@@ -144,7 +144,8 @@ export function ManualOrder({
             </div>
           </section>
         )}
-        {!placed && store && options.status === "ready" && (
+        {/* The form stays mounted while the delivery choices (re)load: a guarded re-read must never wipe what the merchant typed. */}
+        {!placed && store && !listFailure && (
           <form className="mt-form" onSubmit={(event) => void submit(event)} data-testid="manual-order-form" noValidate>
             <ItemPicker locale={locale} store={store} lines={lines} setLines={setLines} />
             <section className="mt-card">
@@ -158,7 +159,7 @@ export function ManualOrder({
             <section className="mt-card">
               <h2>{c.deliveryTitle}</h2>
               <label className="mt-field">{c.delivery}
-                <select data-testid="mo-option" value={optionKey} onChange={(e) => selectOption(e.target.value)}>
+                <select data-testid="mo-option" value={optionKey} disabled={options.status !== "ready"} onChange={(e) => selectOption(e.target.value)}>
                   <option value="">{c.choose}</option>
                   {available.map((o) => <option key={o.option_key} value={o.option_key}>{optionName(o)}</option>)}
                 </select>
@@ -224,8 +225,7 @@ function ItemPicker({ locale, store, lines, setLines }: { locale: Locale; store:
   const [searching, setSearching] = useState(false);
   const controller = useRef<AbortController | null>(null);
   useEffect(() => () => controller.current?.abort(), []);
-  async function search(event: FormEvent) {
-    event.preventDefault();
+  async function search() {
     controller.current?.abort();
     const active = new AbortController();
     controller.current = active;
@@ -258,10 +258,14 @@ function ItemPicker({ locale, store, lines, setLines }: { locale: Locale; store:
   return (
     <section className="mt-card" data-testid="mo-items">
       <h2>{c.itemsTitle}</h2>
-      <form className="mt-row" onSubmit={(event) => void search(event)}>
-        <label className="mt-field">{c.search}<input data-testid="mo-search" value={q} maxLength={120} onChange={(e) => setQ(e.target.value)} /></label>
-        <div className="mt-actions" style={{ alignSelf: "end" }}><button type="submit" disabled={searching}>{c.searchButton}</button></div>
-      </form>
+      {/* Not a <form>: this picker lives inside the order form, and HTML forbids nested forms (the parser would drop the inner one). */}
+      <div className="mt-row">
+        <label className="mt-field">{c.search}
+          <input data-testid="mo-search" value={q} maxLength={120} onChange={(e) => setQ(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void search(); } }} />
+        </label>
+        <div className="mt-actions" style={{ alignSelf: "end" }}><button type="button" data-testid="mo-search-button" disabled={searching} onClick={() => void search()}>{c.searchButton}</button></div>
+      </div>
       {results && (results.length === 0 ? <p className="mt-note">{c.noResults}</p> : (
         <ul className="mt-results">
           {results.map((p) => (

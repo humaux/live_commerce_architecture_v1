@@ -17,7 +17,10 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -35,14 +38,23 @@ import (
 
 // mtOrderEnv builds the CVS/checkout environment, bank transfer (72 h, CVS allowed), a MANUAL 7-ELEVEN service with pay-at-pickup on,
 // and the merchant handler that carries the manual-order pipeline wired exactly as cmd/api wires it.
-func mtOrderEnv(t *testing.T) (*tcvEnv, mtAdmin, string) {
+func mtOrderEnv(t *testing.T, opts ...tcvOpts) (*tcvEnv, mtAdmin, string) {
 	t.Helper()
-	e := tcvNew(t)
+	e := tcvNew(t, opts...)
 	e.grantCreator("orders:read", "integration:manage", "integration:read", "payments:refund", "fulfillment:write")
 	e.topUp()
 	e.cofEnsureSettings(0, true, true, 72)
 	cvsCode, _, _ := e.service("cvs_711", "MANUAL", 0)
 	e.cvsSettings(tcvAllChains, true, "20000", 20)
+	manual := mtManualOrders(t, e)
+	h := httpapi.NewHandler(e.p.f.runtime, httpapi.Options{CVS: e.cvs, ManualOrders: manual})
+	return e, mtAdmin{t: t, h: h, store: e.store(), token: e.token()}, cvsCode
+}
+
+// mtManualOrders wires the manual-order pipeline the way cmd/api buildBuyerWithCVS does: its own 30-day issuer service, the buyer runtime pool, the FINAL
+// checkout service, and a deployment secret.
+func mtManualOrders(t *testing.T, e *tcvEnv) *merchanttools.ManualOrders {
+	t.Helper()
 	links, err := buyer.New(e.p.a.issuer, 30*24*time.Hour)
 	if err != nil {
 		t.Fatal(err)
@@ -52,8 +64,7 @@ func mtOrderEnv(t *testing.T) (*tcvEnv, mtAdmin, string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h := httpapi.NewHandler(e.p.f.runtime, httpapi.Options{CVS: e.cvs, ManualOrders: manual})
-	return e, mtAdmin{t: t, h: h, store: e.store(), token: e.token()}, cvsCode
+	return manual
 }
 
 type mtOptions struct {
@@ -71,6 +82,32 @@ func (a mtAdmin) options() []merchanttools.ManualOption {
 		a.t.Fatal(err)
 	}
 	return out.Options
+}
+
+var mtIPSeed atomic.Int64
+
+// mtRedeem exchanges a manual-order link for a buyer capability through the REAL buyer handler: a fresh bearer (the BFF's minted token), the link token in the
+// body, and a distinct client IP per call so the shared 10-per-10-minutes IP throttle bucket is never the thing under test. It returns the HTTP answer and the bearer.
+func (e *tcvEnv) mtRedeem(order, linkToken string) (bhResponse, string) {
+	e.t.Helper()
+	bearer := randomToken()
+	n := mtIPSeed.Add(1)
+	res := e.bh.request(e.t, "POST", "/v1/buyer/orders/link", bearer, "", map[string]any{"order_id": order, "token": linkToken},
+		func(r *http.Request) {
+			r.Header.Set("X-Commerce-Client-IP", fmt.Sprintf("198.51.%d.%d", n/250, n%250+1))
+		})
+	return res, bearer
+}
+
+// mtLinkParts splits a returned buyer_link into (order id, link token) and checks its shape against the storefront origin.
+func (e *tcvEnv) mtLinkParts(link, locale string) (order, token string) {
+	e.t.Helper()
+	rest, ok := strings.CutPrefix(link, e.origin+"/"+locale+"/order-link#o=")
+	order, token, found := strings.Cut(rest, "&t=")
+	if !ok || !found || len(order) != 36 || len(token) != 43 {
+		e.t.Fatalf("link shape: %q", link)
+	}
+	return order, token
 }
 
 func (a mtAdmin) place(key string, body map[string]any) (int, map[string]any) {
@@ -141,6 +178,9 @@ func TestMerchantToolsManualOrder(t *testing.T) {
 			t.Fatalf("place: %d %v", code, out)
 		}
 		order1, _ = out["order_id"].(string)
+		if exp, _ := out["expires_at"].(string); !strings.HasSuffix(exp, "Z") {
+			t.Fatalf("expires_at must be RFC 3339 UTC (the admin parser requires Z): %q", exp)
+		}
 		total1 = int64(out["total_minor"].(float64))
 		var source, state string
 		var dbTotal int64
@@ -158,12 +198,19 @@ func TestMerchantToolsManualOrder(t *testing.T) {
 			t.Fatalf("audit rows: %d", n)
 		}
 		link, _ := out["buyer_link"].(string)
-		prefix := e.origin + "/zh-TW/order-link#o=" + order1 + "&t="
-		if out["link_state"] != "configured" || !strings.HasPrefix(link, prefix) || len(link) != len(prefix)+43 {
+		linkOrder, linkToken := e.mtLinkParts(link, "zh-TW")
+		if out["link_state"] != "configured" || linkOrder != order1 {
 			t.Fatalf("link: %v %v", out["link_state"], link)
 		}
-		token1 = strings.TrimPrefix(link, prefix)
-		// The capability in the link is a real buyer capability of THIS order: the buyer HTTP handler serves the order's transfer view with it.
+		// The link token is NOT a capability: used as a bearer it opens nothing; exchanged once it yields a full capability of THIS order.
+		if bare := e.bh.request(t, "GET", "/v1/buyer/orders/"+order1+"/bank-transfer", linkToken, "", nil, nil); bare.status == 200 {
+			t.Fatalf("the link token must not work as a bearer: %d", bare.status)
+		}
+		exchanged, capability := e.mtRedeem(order1, linkToken)
+		if exchanged.status != 200 || !strings.Contains(string(exchanged.body), order1) {
+			t.Fatalf("redeem: %d %s", exchanged.status, exchanged.body)
+		}
+		token1 = capability
 		view := e.bh.request(t, "GET", "/v1/buyer/orders/"+order1+"/bank-transfer", token1, "", nil, nil)
 		if view.status != 200 || !strings.Contains(string(view.body), order1) {
 			t.Fatalf("buyer view with the link capability: %d %s", view.status, view.body)
@@ -177,7 +224,7 @@ func TestMerchantToolsManualOrder(t *testing.T) {
 	t.Run("replay: same key and body is the same order, other body is idempotency_conflict", func(t *testing.T) {
 		before := reservedBefore()
 		code, out := a.place(key1, mtBody(sku, 2, homeKey, "bank_transfer", mtHome))
-		if code != 200 || out["order_id"] != order1 || out["buyer_link"] == nil {
+		if exp, _ := out["expires_at"].(string); code != 200 || out["order_id"] != order1 || out["buyer_link"] == nil || !strings.HasSuffix(exp, "Z") {
 			t.Fatalf("replay: %d %v", code, out)
 		}
 		if got := reservedBefore(); got != before {
@@ -365,7 +412,11 @@ func TestMerchantToolsDashboard(t *testing.T) {
 	}
 	order1, _ := out1["order_id"].(string)
 	total1 := int64(out1["total_minor"].(float64))
-	token1 := strings.SplitN(out1["buyer_link"].(string), "&t=", 2)[1]
+	_, linkToken1 := e.mtLinkParts(out1["buyer_link"].(string), "zh-TW")
+	redeemed, token1 := e.mtRedeem(out1["order_id"].(string), linkToken1)
+	if redeemed.status != 200 {
+		t.Fatalf("redeem: %d %s", redeemed.status, redeemed.body)
+	}
 	_, out2 := a.place(t04Key("mtd-2"), mtBody(sku, 2, cvsKey, "pay_at_pickup", mtCVS))
 	_, out3 := a.place(t04Key("mtd-3"), mtBody(sku, 1, cvsKey, "bank_transfer", mtCVS))
 	if out1["order_id"] == nil || out2["order_id"] == nil || out3["order_id"] == nil {

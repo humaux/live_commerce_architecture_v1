@@ -172,6 +172,9 @@ func matchRoute(path string) route {
 	if path == lookupPath {
 		return route{kind: routeLookup}
 	}
+	if path == orderLinkPath {
+		return route{kind: routeOrderLink}
+	}
 	if image, ok := strings.CutPrefix(path, "/v1/buyer/media/s/"); ok {
 		if image != "" && !strings.Contains(image, "/") {
 			return route{kind: storeMediaRoute, image: image}
@@ -222,7 +225,7 @@ func allowed(kind routeKind, method string) bool {
 	if isTransferRoute(kind) {
 		return allowedTransfer(kind, method)
 	}
-	if kind == routeLookup {
+	if kind == routeLookup || kind == routeOrderLink {
 		return method == http.MethodPost
 	}
 	switch kind {
@@ -471,7 +474,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	noReplayKey := issue || selected.kind == bootstrapRoute || selected.kind == retireRoute || isKeylessPaymentRoute(selected.kind) ||
-		selected.kind == routeCVSSelectionVerify || selected.kind == routeLookup
+		selected.kind == routeCVSSelectionVerify || selected.kind == routeLookup || selected.kind == routeOrderLink
 	write := r.Method == http.MethodPut || (r.Method == http.MethodPost && !noReplayKey)
 	key, valid := keyFor(r, noReplayKey, write)
 	// "clm:" cart.set keys are derived by claims.RedeemLink under the opposite lock order
@@ -568,6 +571,9 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 	}
 	if selected.kind == routeLookup {
 		return h.orderLookup(ctx, w, r, storeID, token)
+	}
+	if selected.kind == routeOrderLink {
+		return h.orderLink(ctx, w, r, storeID, token)
 	}
 	if selected.kind == bootstrapRoute {
 		if err := decodeJSON(r, &struct{}{}); err != nil {

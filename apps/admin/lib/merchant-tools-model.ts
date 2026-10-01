@@ -4,7 +4,7 @@
 // Framework-free on purpose (no next/*, no lib/auth.ts) so node --test can import it. The server decides every rule and every
 // permission: nothing here gates an action; it refuses malformed answers and keeps junk (a price field, a tenant id) off the wire.
 import { count, isInstant, object } from "./customers-model.ts";
-import { canonicalUUID, parseOrderSummary, type OrderSummary } from "./orders-model.ts";
+import { canonicalUUID, parseSourcedOrderSummary, type OrderSummary } from "./orders-model.ts";
 
 export const MAX_CSV_BYTES = 2 * 1024 * 1024;
 export const MAX_CSV_ROWS = 1500; // measured ceiling of one all-or-nothing transaction (see internal/merchanttools/csvfile.go)
@@ -46,7 +46,7 @@ export function parseDashboard(value: unknown): Dashboard {
   if (new Set(gmv.map((g) => `${g.currency}|${g.environment}`)).size !== gmv.length) throw fail();
   return {
     generated_at: v.generated_at, timezone: "Asia/Taipei", orders: orders as Dashboard["orders"], gmv,
-    todos: todos as Dashboard["todos"], latest_orders: v.latest_orders.map(parseOrderSummary),
+    todos: todos as Dashboard["todos"], latest_orders: v.latest_orders.map((item) => parseSourcedOrderSummary(item)),
   };
 }
 

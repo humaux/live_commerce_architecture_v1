@@ -323,6 +323,9 @@ func (m *ManualOrders) Place(ctx context.Context, token, storeID, key string, in
 		return ManualResult{}, false, mapReceiptError(err)
 	}
 	capability := m.capability("order", storeID, key)
+	// The link token is NOT the capability: it is a separate single-use secret (derived from the same key, so a replay re-derives the same link)
+	// that the storefront exchanges for a fresh capability of the order's owner (checkout.redeem_order_link); the capability never leaves the server.
+	linkToken := m.capability("link", storeID, key)
 	if !replayed {
 		if receipt, err = m.pipeline(ctx, capability, storeID, key, in); err != nil {
 			return ManualResult{}, false, classifyPipeline(ctx, err)
@@ -330,11 +333,13 @@ func (m *ManualOrders) Place(ctx context.Context, token, storeID, key string, in
 		// One merchant transaction: receipt + source mark + audit. A failure here leaves a placed order with source=storefront until the
 		// merchant retries the same key (every earlier step replays and this one runs again).
 		hash := sha256.Sum256([]byte(token))
+		linkHash := sha256.Sum256([]byte(linkToken))
 		var saved manualReceipt
 		err = platform.WithScope(ctx, m.pool, token, storeID, manualPermission, func(tx pgx.Tx, scope platform.Scope) error {
 			return command.Run(ctx, tx, scope, manualOperation, key, in, &saved, func() error {
-				// fulfillment.mark_order_merchant_manual (0094): inventory:reserve re-verified in SQL, order of this store, <= 10 minutes old.
-				if _, err := tx.Exec(ctx, `SELECT fulfillment.mark_order_merchant_manual($1,$2::uuid,$3::uuid)`, hash[:], storeID, receipt.OrderID); err != nil {
+				// fulfillment.mark_order_merchant_manual (0094): inventory:reserve re-verified in SQL, order of this store, <= 10 minutes old; it also
+				// records sha256 of the buyer link token (single-use, 7 days), so the plaintext token exists only in this response.
+				if _, err := tx.Exec(ctx, `SELECT fulfillment.mark_order_merchant_manual($1,$2::uuid,$3::uuid,$4)`, hash[:], storeID, receipt.OrderID, linkHash[:]); err != nil {
 					return err
 				}
 				saved = receipt
@@ -346,9 +351,10 @@ func (m *ManualOrders) Place(ctx context.Context, token, storeID, key string, in
 		}
 		receipt = saved
 	}
+	receipt.ExpiresAt = receipt.ExpiresAt.UTC() // the wire is RFC 3339 UTC ("Z"), which the admin parser requires; a replayed receipt decodes in local time
 	out := ManualResult{manualReceipt: receipt, LinkState: state, Source: "merchant_manual"}
 	if state == "configured" && domains.ValidOrigin(origin) {
-		link := origin + "/" + in.Locale + "/order-link#o=" + receipt.OrderID + "&t=" + capability
+		link := origin + "/" + in.Locale + "/order-link#o=" + receipt.OrderID + "&t=" + linkToken
 		out.BuyerLink = &link
 	}
 	return out, replayed, nil
