@@ -5,6 +5,8 @@
 // (<LogisticsSettings>: BFF logistics/ecpay, logistics/ecpay/enabled, logistics/cvs-settings -> Go
 // internal/httpapi/cvs.go, taiwan-cvs-logistics-v1 §8/§16.5) in step 2, and its delivery-service editor offers
 // mode "API (ECPay)" for CVS kinds only while the ECPay connection is enabled and checked (§4.1 predicate).
+// <StorefrontSettings> (below the steps) is the storefront publish/unpublish card: BFF storefront, storefront/publication
+// -> Go internal/httpapi/storefront.go (published-storefront-resolver-v1 "Writer (R3)").
 import {
   useCallback,
   useEffect,
@@ -15,6 +17,7 @@ import {
 import type { Locale } from "@live-commerce/i18n";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { LogisticsSettings } from "./LogisticsSettings";
+import { StorefrontSettings } from "./StorefrontSettings";
 import { availabilityReason, settingsCopy } from "@/lib/settings-copy";
 import {
   csrfCookie,
@@ -2737,6 +2740,7 @@ export function SettingsWizard({
             </div>
           </aside>
         </div>
+        {store && <StorefrontSettings store={store.id} locale={locale} />}
       </div>
     </WorkspaceFrame>
   );

@@ -42,7 +42,7 @@ COPY internal ./internal
 COPY migrations ./migrations
 COPY deploy/tools ./deploy/tools
 # `migrate` is required for any deploy (the only production caller of migrations.Apply).
-ARG GO_CMDS="api payment-worker expiry-worker meta-worker claims-worker ads-worker media-worker migrate stripe-admin meta-admin retention-admin"
+ARG GO_CMDS="api payment-worker expiry-worker meta-worker claims-worker ads-worker media-worker migrate stripe-admin meta-admin store-admin retention-admin"
 # -buildvcs=false: .git is excluded by .dockerignore; the revision goes into the OCI label.
 # -ldflags=-buildid= : reproducible output for identical inputs.
 # Every cmd/<name> is checked BEFORE anything compiles, so a missing one (I1: cmd/migrate) fails

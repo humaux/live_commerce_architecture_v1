@@ -33,6 +33,7 @@ import (
 	"livecommerce/internal/merchantorders"
 	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
+	"livecommerce/internal/storefrontadmin"
 )
 
 // NewHandler keeps transport validation separate from domain invariants. There
@@ -144,6 +145,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	}))
 	registerSettingsRoutes(mux, pool)
 	registerSettingsDiscoveryRoutes(mux, pool)
+	registerStorefrontRoutes(mux, pool)
 	registerAccountRoutes(mux, pool, configured.Accounts)
 	registerOrderRoutes(mux, pool)
 	registerStudioRoutes(mux, pool, configured.Studio || configured.Live != nil, configured.Live, configured.BrowserInput)
@@ -330,6 +332,8 @@ func classify(err error) (int, string) {
 	case errors.Is(err, catalog.ErrPurchaseEntryUnavailable):
 		return http.StatusServiceUnavailable, "unavailable"
 	case errors.Is(err, merchantorders.ErrUnavailable):
+		return http.StatusServiceUnavailable, "unavailable"
+	case errors.Is(err, storefrontadmin.ErrUnavailable):
 		return http.StatusServiceUnavailable, "unavailable"
 	case errors.Is(err, live.ErrStudioProjection):
 		return http.StatusServiceUnavailable, "unavailable"

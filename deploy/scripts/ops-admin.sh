@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # File: deploy/scripts/ops-admin.sh
-# Purpose: the ONLY sanctioned way to run the operator CLIs (stripe-admin, meta-admin) against a
+# Purpose: the ONLY sanctioned way to run the operator CLIs (stripe-admin, meta-admin, store-admin) against a
 #   deployed stack: a one-shot container of profile `ops` that holds the registrar logins and the
 #   operator's own inputs, never one of the app containers (api/admin/storefront/workers hold neither).
 #   Prints the CLI's JSON result line (IDs and versions only); never prints a secret.
 # Usage: ops-admin.sh stripe-admin register|rotate|webhook|qualify|method [flags]   (stripe-psp-v1 §13)
 #        ops-admin.sh stripe-admin live-approve|live-canary|live-revoke [flags]     (stripe-live-enable-v1 §5.2, §7)
 #        ops-admin.sh meta-admin page-token|route|route-disable [flags]             (meta-claims-intake-v1 §7, R1 F2)
+#        ops-admin.sh store-admin domain-bind|domain-suspend|domain-detach|status [flags]   (R3 storefront-publish,
+#                     contract published-storefront-resolver-v1 "Writer (R3)"; docs/runbooks/merchant-onboarding.md)
 #   Operator inputs are read from the caller's environment, from a file named by NAME_FILE (O-D, LD3:
 #   a live key only ever arrives by file path) or, on a terminal, prompted WITHOUT echo:
 #     stripe-admin register|rotate : STRIPE_SECRET_KEY[_FILE] (SANDBOX: sk_test_/rk_test_; LIVE pair set:
@@ -17,6 +19,7 @@
 #     stripe-admin live-*|method   : none (the keyring is mounted by compose; no secret input)
 #     meta-admin page-token        : META_PAGE_ACCESS_TOKEN[_FILE]
 #     meta-admin route|route-disable: none (ids, --proof digest and epochs are flags)
+#     store-admin *                : none (store id, origin, --evidence reference and --valid-until are flags; no secret)
 #   LIVE gate (stripe-live-enable-v1 §5.2, O3): `--profile LIVE` / `--environment LIVE`, live-approve and
 #   live-canary need the pair LC_STRIPE_LIVE_ENABLED=1 + LC_STRIPE_LIVE_APPROVAL_REF in compose.env (mapped to
 #   COMMERCE_STRIPE_LIVE_* and forwarded by NAME). live-revoke and `method` never need it (kill switch, LD6).
@@ -26,7 +29,7 @@
 #   until `--rm` removes it, readable only by host root, exactly like the secret files).
 # Reads secrets: none directly; the container mounts its own DSN + keyrings (compose.yml).
 # Used by: docs/runbooks/deploy.md §Stripe / §Meta, docs/runbooks/merchant-onboarding.md; smoke S44.
-# Depends on: compose services stripe-admin / meta-admin, a running postgres with migrations and
+# Depends on: compose services stripe-admin / meta-admin / store-admin, a running postgres with migrations and
 #   provisioned logins (deploy.sh first).
 # Status: DESIGN; the registrar-login and container wiring is verified by smoke S13 and S44, a real
 #   SANDBOX registration is owner-run (NOT_RUN in CI: needs the owner's Stripe test key).
@@ -41,7 +44,7 @@ set -Eeuo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 usage() {
-  lc_die "usage: ops-admin.sh stripe-admin register|rotate|webhook|qualify|method|live-approve|live-canary|live-revoke [flags] | meta-admin page-token|route|route-disable [flags]" 2
+  lc_die "usage: ops-admin.sh stripe-admin register|rotate|webhook|qualify|method|live-approve|live-canary|live-revoke [flags] | meta-admin page-token|route|route-disable [flags] | store-admin domain-bind|domain-suspend|domain-detach|status [flags]" 2
 }
 tool=${1:-}
 sub=${2:-}
@@ -53,6 +56,7 @@ case "$tool:$sub" in
 stripe-admin:register | stripe-admin:rotate | stripe-admin:webhook | stripe-admin:qualify | stripe-admin:method) ;;
 stripe-admin:live-approve | stripe-admin:live-canary | stripe-admin:live-revoke) ;;
 meta-admin:page-token | meta-admin:route | meta-admin:route-disable) ;;
+store-admin:domain-bind | store-admin:domain-suspend | store-admin:domain-detach | store-admin:status) ;;
 *) usage ;;
 esac
 

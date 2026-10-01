@@ -28,6 +28,7 @@
 # Status: DESIGN. Static `config` validated by smoke S03; runtime S07-S43 by `smoke.sh full`.
 #   R1 additions (unit deploy-release): claims-worker, Stripe ingress/keyring wiring, K_actor on
 #   meta-worker, and the operator one-shots stripe-admin / meta-admin (profile ops).
+#   R3 addition (unit storefront-publish): the operator one-shot store-admin (domain bind/suspend/detach/status).
 # Change rules:
 #   * `environment:` = fixed WIRING (listeners, derived origins, *_FILE paths, ENABLED=1 of
 #     profile-gated workers). env/<svc>.env = per-service KNOBS only; preflight P06 fails if a
@@ -35,7 +36,7 @@
 #   * Profiles decide what runs: db, app, payments-sandbox, payments-live, meta, claims, ops.
 #     `claims` (claims-worker) is the only service that can SEND to Meta users (first private
 #     reply of a claim); it stays off until the owner approves real sends (docs/runbooks/deploy.md).
-#   * stripe-admin / meta-admin are OPERATOR one-shots (profile ops, `restart: no`): they run only
+#   * stripe-admin / meta-admin / store-admin are OPERATOR one-shots (profile ops, `restart: no`): they run only
 #     through deploy/scripts/ops-admin.sh, hold the registrar logins that no long-running service
 #     mounts, and never share a container with api/admin/storefront/workers.
 #   * Never `docker compose down -v` outside smoke (smoke owns its own project + volumes).
@@ -535,6 +536,22 @@ services:
     mem_limit: 128m
     stop_grace_period: 10s
 
+  store-admin:
+    # R3 storefront-publish (migrations/0081, contract published-storefront-resolver-v1 "Writer (R3)"): the platform
+    # operator binds / suspends / detaches the store's public origin after verifying ownership and TLS out of band;
+    # `status` prints the store's publication state and domains. Database only, no secrets besides the registrar DSN.
+    <<: *go
+    profiles: [ops]
+    command: ["/app/bin/store-admin"]
+    restart: "no"
+    networks: [backend]
+    environment:
+      COMMERCE_STORE_REGISTRAR_DATABASE_URL_FILE: /run/secrets/dsn_lc_store_registrar
+    secrets: [dsn_lc_store_registrar]
+    cpus: 0.5
+    mem_limit: 128m
+    stop_grace_period: 10s
+
   # -------------------------------------------------------------------------------------------
   # Database: postgres + one-shot migrate/provision jobs + on-demand pg-ops.
   # -------------------------------------------------------------------------------------------
@@ -631,6 +648,7 @@ services:
       - pw_lc_ads_worker
       - pw_lc_stripe_registrar
       - pw_lc_meta_registrar
+      - pw_lc_store_registrar
     volumes:
       - pgsocket:/var/run/postgresql
       - ./postgres/provision-logins.sh:/provision/provision-logins.sh:ro
@@ -702,6 +720,7 @@ secrets:
   pw_lc_ads_worker: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_ads_worker" }
   pw_lc_stripe_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_stripe_registrar" }
   pw_lc_meta_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_meta_registrar" }
+  pw_lc_store_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_store_registrar" }
   dsn_lc_api_runtime: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_api_runtime" }
   dsn_lc_api_identity: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_api_identity" }
   dsn_lc_api_buyer_issuer: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_api_buyer_issuer" }
@@ -720,6 +739,7 @@ secrets:
   dsn_lc_retention_job: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_retention_job" }
   dsn_lc_stripe_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_stripe_registrar" }
   dsn_lc_meta_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_meta_registrar" }
+  dsn_lc_store_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_store_registrar" }
   commerce_bff_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_bff_key" }
   commerce_claims_label_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_claims_label_key" }
   commerce_buyer_bff_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_buyer_bff_key" }

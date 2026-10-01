@@ -55,6 +55,8 @@ services:
     secrets: [pg_ca_crt]
   meta-admin:
     secrets: [pg_ca_crt]
+  store-admin:
+    secrets: [pg_ca_crt]
 
 networks:
   backend:
