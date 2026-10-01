@@ -34,6 +34,7 @@ const base = {
   pickup_source: null,
   payment_mode: "card",
   collection_state: null,
+  source: "storefront", // migration 0094: every merchant orders row carries its source
 };
 const row =(change: Record<string, unknown>) => ({ ...base, ...change });
 const detailBase = {

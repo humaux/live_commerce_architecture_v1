@@ -25,7 +25,7 @@ Command ads-worker owns the Meta ads River host (meta-ads-v1 §6, ads-graph): th
 
 Command api owns the API process assembly: it loads each feature's configuration (identity, accounts, buyer and hosted payment, Meta webhooks, Stripe webhooks, Studio, claims, merchant refunds, Taiwan CVS), opens the scoped DB pools, builds the handlers and mounts them on one listener.
 
-- Depends on (internal): `internal/ads`, `internal/attribution`, `internal/billing`, `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/fulfillment`, `internal/httpapi`, `internal/httperror`, `internal/identity`, `internal/identityhttp`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta/oauth`, `internal/integrations/meta/pagetoken`, `internal/integrations/meta_ads`, `internal/integrations/psp/stripe`, `internal/integrations/shipping/ecpay`, `internal/live`, `internal/mail`, `internal/metaconnect`, `internal/oidclogin`, `internal/payments`, `internal/payments/stripewebhook`, `internal/platform`
+- Depends on (internal): `internal/ads`, `internal/attribution`, `internal/billing`, `internal/buyer`, `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/fulfillment`, `internal/httpapi`, `internal/httperror`, `internal/identity`, `internal/identityhttp`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta/oauth`, `internal/integrations/meta/pagetoken`, `internal/integrations/meta_ads`, `internal/integrations/psp/stripe`, `internal/integrations/shipping/ecpay`, `internal/live`, `internal/mail`, `internal/merchanttools`, `internal/metaconnect`, `internal/oidclogin`, `internal/payments`, `internal/payments/stripewebhook`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
 - Used by: — (entry point or unused)
 
@@ -163,7 +163,7 @@ Package buyer owns the anonymous buyer capability boundary: issuing short-lived 
 
 - Depends on (internal): `internal/command`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
-- Used by: `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/customers`, `internal/fulfillment`, `internal/storefront`
+- Used by: `cmd/api`, `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/customers`, `internal/fulfillment`, `internal/merchanttools`, `internal/storefront`
 
 ## `internal/buyerhttp`
 
@@ -179,7 +179,7 @@ Package catalog owns the merchant-scoped catalog transaction slice: products (dr
 
 - Depends on (internal): `internal/command`, `internal/domains`, `internal/pagination`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
-- Used by: `cmd/admin-fixture`, `internal/design`, `internal/httpapi`
+- Used by: `cmd/admin-fixture`, `internal/design`, `internal/httpapi`, `internal/merchanttools`
 
 ## `internal/checkout`
 
@@ -187,7 +187,7 @@ Package checkout owns the trusted buyer checkout transaction: Begin turns a pric
 
 - Depends on (internal): `internal/buyer`, `internal/command`, `internal/fulfillment`, `internal/integrations/accounts`, `internal/integrations/psp/payuni`, `internal/integrations/psp/stripe`, `internal/integrations/shipping/ecpay`, `internal/inventory`, `internal/jobqueue`, `internal/pagination`, `internal/platform`, `internal/pricing`, `internal/promotions`, `internal/storefront`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgtype`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
-- Used by: `cmd/api`, `cmd/expiry-worker`, `internal/buyerhttp`
+- Used by: `cmd/api`, `cmd/expiry-worker`, `internal/buyerhttp`, `internal/merchanttools`
 
 ## `internal/claims`
 
@@ -219,7 +219,7 @@ Package command owns scoped replay records and small transaction primitives.
 
 - Depends on (internal): `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`
-- Used by: `cmd/meta-admin`, `cmd/store-admin`, `internal/ads`, `internal/attribution`, `internal/attribution/capiroute`, `internal/billing`, `internal/buyer`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/customers`, `internal/design`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta/pagetoken`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/metaconnect`, `internal/notify`, `internal/pagination`, `internal/payments`, `internal/payments/stripeadmin`, `internal/pricing`, `internal/promotions`, `internal/reporting`, `internal/storefront`, `internal/storefrontadmin`
+- Used by: `cmd/meta-admin`, `cmd/store-admin`, `internal/ads`, `internal/attribution`, `internal/attribution/capiroute`, `internal/billing`, `internal/buyer`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/customers`, `internal/design`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta/pagetoken`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/merchanttools`, `internal/metaconnect`, `internal/notify`, `internal/pagination`, `internal/payments`, `internal/payments/stripeadmin`, `internal/pricing`, `internal/promotions`, `internal/reporting`, `internal/storefront`, `internal/storefrontadmin`
 
 ## `internal/customers`
 
@@ -243,7 +243,7 @@ Package domains owns resolving a published storefront from an exact, trusted ori
 
 - Depends on (internal): `internal/command`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
-- Used by: `cmd/store-admin`, `internal/buyerhttp`, `internal/catalog`, `internal/storefrontadmin`
+- Used by: `cmd/store-admin`, `internal/buyerhttp`, `internal/catalog`, `internal/merchanttools`, `internal/storefrontadmin`
 
 ## `internal/fulfillment`
 
@@ -251,13 +251,13 @@ Package fulfillment owns merchant delivery-service configuration revisions, per-
 
 - Depends on (internal): `internal/buyer`, `internal/command`, `internal/integrations/core`, `internal/integrations/shipping/ecpay`, `internal/pagination`, `internal/platform`, `internal/pricing`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`
-- Used by: `cmd/api`, `internal/buyerhttp`, `internal/checkout`, `internal/httpapi`, `internal/storefront`
+- Used by: `cmd/api`, `internal/buyerhttp`, `internal/checkout`, `internal/httpapi`, `internal/merchanttools`, `internal/storefront`
 
 ## `internal/httpapi`
 
 Package httpapi owns the composition layer for authenticated merchant/admin routes: routing, bearer resolution, request bounds and error mapping.
 
-- Depends on (internal): `internal/ads`, `internal/billing`, `internal/catalog`, `internal/claims`, `internal/command`, `internal/customers`, `internal/design`, `internal/fulfillment`, `internal/httperror`, `internal/integrations/accounts`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/metaconnect`, `internal/notify`, `internal/pagination`, `internal/payments`, `internal/platform`, `internal/pricing`, `internal/promotions`, `internal/reporting`, `internal/storefrontadmin`
+- Depends on (internal): `internal/ads`, `internal/billing`, `internal/catalog`, `internal/claims`, `internal/command`, `internal/customers`, `internal/design`, `internal/fulfillment`, `internal/httperror`, `internal/integrations/accounts`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/merchanttools`, `internal/metaconnect`, `internal/notify`, `internal/pagination`, `internal/payments`, `internal/platform`, `internal/pricing`, `internal/promotions`, `internal/reporting`, `internal/storefrontadmin`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`
 - Used by: `cmd/admin-fixture`, `cmd/api`
 
@@ -419,7 +419,7 @@ Package inventory owns ledger-backed physical inventory commands: warehouses, on
 
 - Depends on (internal): `internal/command`, `internal/pagination`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
-- Used by: `cmd/admin-fixture`, `internal/checkout`, `internal/httpapi`
+- Used by: `cmd/admin-fixture`, `internal/checkout`, `internal/httpapi`, `internal/merchanttools`
 
 ## `internal/jobqueue`
 
@@ -459,7 +459,15 @@ Package merchantorders owns the private merchant order projection (identity.read
 
 - Depends on (internal): `internal/command`, `internal/pagination`, `internal/platform`, `internal/pricing`, `internal/storefront`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/riverqueue/river`, `golang.org/x/text/unicode/norm`
-- Used by: `internal/customers`, `internal/httpapi`
+- Used by: `internal/customers`, `internal/httpapi`, `internal/merchanttools`
+
+## `internal/merchanttools`
+
+Package merchanttools owns three admin-side tools of contracts/storefront-v2.md section G: the dashboard read model (dashboard.go), the product CSV export and all-or-nothing import (csvfile.go, csvexport.go, csvimport.go) and the merchant-created ("manual") order (manual.go).
+
+- Depends on (internal): `internal/buyer`, `internal/catalog`, `internal/checkout`, `internal/command`, `internal/domains`, `internal/fulfillment`, `internal/inventory`, `internal/merchantorders`, `internal/pagination`, `internal/platform`, `internal/pricing`, `internal/reporting`, `internal/storefront`
+- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
+- Used by: `cmd/api`, `internal/httpapi`
 
 ## `internal/metaconnect`
 
@@ -491,7 +499,7 @@ Package pagination owns bounded, opaque keyset positions for scoped lists: Encod
 
 - Depends on (internal): `internal/command`
 - Depends on (third-party): —
-- Used by: `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/customers`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/payments`, `internal/pricing`, `internal/storefront`
+- Used by: `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/customers`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/merchanttools`, `internal/payments`, `internal/pricing`, `internal/storefront`
 
 ## `internal/payments`
 
@@ -523,7 +531,7 @@ Package platform owns the narrow HTTP and database foundation shared by the API 
 
 - Depends on (internal): `internal/httperror`, `internal/integrations/psp/stripe`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
-- Used by: `cmd/admin-fixture`, `cmd/ads-worker`, `cmd/api`, `cmd/claims-worker`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `cmd/retention-admin`, `cmd/store-admin`, `cmd/stripe-admin`, `internal/ads`, `internal/attribution/capiroute`, `internal/billing`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/command`, `internal/customers`, `internal/design`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/integrations/shipping/ecpay/ecpayroute`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/metaconnect`, `internal/notify`, `internal/payments`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`, `internal/pricing`, `internal/promotions`, `internal/reporting`, `internal/storefrontadmin`
+- Used by: `cmd/admin-fixture`, `cmd/ads-worker`, `cmd/api`, `cmd/claims-worker`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `cmd/retention-admin`, `cmd/store-admin`, `cmd/stripe-admin`, `internal/ads`, `internal/attribution/capiroute`, `internal/billing`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/command`, `internal/customers`, `internal/design`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/integrations/shipping/ecpay/ecpayroute`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/merchanttools`, `internal/metaconnect`, `internal/notify`, `internal/payments`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`, `internal/pricing`, `internal/promotions`, `internal/reporting`, `internal/storefrontadmin`
 
 ## `internal/pricing`
 
@@ -531,7 +539,7 @@ Package pricing owns merchant market policy writes (markets and their currency) 
 
 - Depends on (internal): `internal/command`, `internal/pagination`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
-- Used by: `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/fulfillment`, `internal/httpapi`, `internal/merchantorders`, `internal/payments`, `internal/promotions`, `internal/storefront`
+- Used by: `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/fulfillment`, `internal/httpapi`, `internal/merchantorders`, `internal/merchanttools`, `internal/payments`, `internal/promotions`, `internal/storefront`
 
 ## `internal/promotions`
 
@@ -547,7 +555,7 @@ Package reporting owns read-only finance aggregates for the merchant: the BD7 da
 
 - Depends on (internal): `internal/command`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
-- Used by: `internal/httpapi`
+- Used by: `internal/httpapi`, `internal/merchanttools`
 
 ## `internal/retention`
 
@@ -563,7 +571,7 @@ Package storefront owns buyer purchase intent and immutable price snapshots: the
 
 - Depends on (internal): `internal/buyer`, `internal/command`, `internal/fulfillment`, `internal/pagination`, `internal/pricing`, `internal/promotions`
 - Depends on (third-party): `github.com/jackc/pgx/v5`
-- Used by: `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/merchantorders`
+- Used by: `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/merchantorders`, `internal/merchanttools`
 
 ## `internal/storefrontadmin`
 

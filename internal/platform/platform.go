@@ -467,7 +467,20 @@ func WithScope(ctx context.Context, pool *pgxpool.Pool, token, storeID, permissi
 	if fn == nil {
 		return ErrUnauthorized
 	}
-	return withScopeContext(ctx, pool, token, storeID, permission, func(_ context.Context, tx pgx.Tx, scope Scope) error {
+	return withScopeContext(ctx, pool, token, storeID, permission, requestTimeout, func(_ context.Context, tx pgx.Tx, scope Scope) error {
+		return fn(tx, scope)
+	})
+}
+
+// WithScopeBudget is WithScope with a caller-chosen whole-transaction budget instead of the 5 s default. It exists only for
+// the merchant CSV product import (internal/merchanttools, up to 5,000 rows in ONE all-or-nothing transaction), which cannot
+// fit the interactive budget. Authority is identical (same resolve_access, same GUCs); only the context deadline and the
+// per-statement / idle-in-transaction timeouts follow the budget, bounded to (5 s, 120 s]. Every other caller keeps WithScope.
+func WithScopeBudget(ctx context.Context, pool *pgxpool.Pool, token, storeID, permission string, budget time.Duration, fn func(pgx.Tx, Scope) error) error {
+	if fn == nil || budget <= requestTimeout || budget > 120*time.Second {
+		return ErrUnauthorized
+	}
+	return withScopeContext(ctx, pool, token, storeID, permission, budget, func(_ context.Context, tx pgx.Tx, scope Scope) error {
 		return fn(tx, scope)
 	})
 }
@@ -502,11 +515,11 @@ func RequirePermission(ctx context.Context, tx pgx.Tx, scope Scope, token, permi
 	}
 }
 
-func withScopeContext(ctx context.Context, pool *pgxpool.Pool, token, storeID, permission string, fn func(context.Context, pgx.Tx, Scope) error) (err error) {
+func withScopeContext(ctx context.Context, pool *pgxpool.Pool, token, storeID, permission string, budget time.Duration, fn func(context.Context, pgx.Tx, Scope) error) (err error) {
 	if pool == nil || fn == nil || len(token) < 32 || len(token) > 512 || !isCanonicalUUID(storeID) {
 		return ErrUnauthorized
 	}
-	scopeCtx, cancel := context.WithTimeout(ctx, requestTimeout)
+	scopeCtx, cancel := context.WithTimeout(ctx, budget)
 	defer cancel()
 	transaction, err := pool.BeginTx(scopeCtx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
 	if err != nil {
@@ -527,7 +540,7 @@ func withScopeContext(ctx context.Context, pool *pgxpool.Pool, token, storeID, p
 	_, err = transaction.Exec(scopeCtx, `SELECT
 		set_config('statement_timeout', $1, true),
 		set_config('lock_timeout', $2, true),
-		set_config('idle_in_transaction_session_timeout', $3, true)`, requestTimeout.String(), lockTimeout.String(), requestTimeout.String())
+		set_config('idle_in_transaction_session_timeout', $3, true)`, pgMillis(budget), lockTimeout.String(), pgMillis(budget))
 	if err != nil {
 		return err
 	}
@@ -563,6 +576,9 @@ func withScopeContext(ctx context.Context, pool *pgxpool.Pool, token, storeID, p
 	}
 	return transaction.Commit(scopeCtx)
 }
+
+// pgMillis spells a duration in the unit form PostgreSQL's time GUCs accept: Duration.String() gives "1m0s" for a minute, which PG refuses.
+func pgMillis(d time.Duration) string { return fmt.Sprintf("%dms", d.Milliseconds()) }
 
 func rollback(transaction pgx.Tx) {
 	cleanup, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -705,7 +721,7 @@ func withRequestScope(r *http.Request, pool *pgxpool.Pool, storeID, permission s
 	}
 	requestCtx, cancel := context.WithTimeout(r.Context(), requestTimeout)
 	defer cancel()
-	return withScopeContext(requestCtx, pool, token, storeID, permission, fn)
+	return withScopeContext(requestCtx, pool, token, storeID, permission, requestTimeout, fn)
 }
 
 func bearerToken(r *http.Request) (string, bool) {
