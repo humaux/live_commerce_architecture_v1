@@ -1,7 +1,11 @@
 "use client";
 
-// Product page purchase flow (BFF /api/buyer/{catalog,cart,checkout-options,quotes,destination,checkout,orders}
-// -> Go /v1/buyer/*). Delivery list (checkout-options): home and the four CVS chains; a chain the store cannot
+// Checkout surface at /{locale}/products/Checkout (lib/routes.ts explains why this path): the delivery choice, quotation,
+// address, payment and order screens over the buyer's EXISTING multi-SKU cart. It is the former single-product purchase page
+// minus the product picker: items are added on the product page / drawer / cart page (CartProvider), this page starts at the
+// cart and ends at the placed order. All crash-recovery journals (pending cart/quote/destination/checkout, order locator) and
+// data-testids are unchanged, so the order, payment, CVS and bank-transfer flows below behave exactly as before.
+// (BFF /api/buyer/{cart,checkout-options,quotes,destination,checkout,orders} -> Go /v1/buyer/*). Delivery list (checkout-options): home and the four CVS chains; a chain the store cannot
 // sell yet arrives as {available:false, reason} and is shown disabled "Coming soon"
 // (contracts/taiwan-cvs-logistics-v1.md §5.1). The CVS store picker itself lives in OrderFlow/CvsPickup and
 // returns to this route with ?cvs_selection= (§5.2), which is why the route keeps checkout state across a reload.
@@ -18,20 +22,22 @@ import { orderCopy } from "../lib/order-copy";
 import { cvsCopy } from "../lib/cvs-copy";
 import OrderFlow, { OrderDetails } from "./OrderFlow";
 import OrderHistory from "./OrderHistory";
-import ProductGallery from "./ProductGallery";
+import { CartLines } from "./CartLines";
+import { useCart } from "./CartProvider";
+import { useCartDetails } from "./CartLines";
+import { checkoutPath } from "../lib/routes";
+import { shopCopy } from "../lib/shop-copy";
+import Link from "next/link";
 import { historyCopy } from "../lib/history-copy";
 import {
-  cartSelection,
   assertPurchaseContext,
   optionKey,
-  lineSubtotal,
   pendingPurchase,
   purchasePage,
   readPurchase,
   validCart,
   validOptionRow,
   isUnavailable,
-  validProduct,
   validQuote,
   writePurchase,
   knownOrderID,
@@ -41,25 +47,19 @@ import {
   forgetAddressAttempt,
   continueShopping,
 } from "../lib/purchase";
-import type { Cart, Product, OptionRow, Quote, Order } from "../lib/purchase";
+import type { Cart, OptionRow, Quote, Order } from "../lib/purchase";
 
-export default function ProductPurchase({
+export default function CheckoutFlow({
   locale: initialLocale,
-  productID,
   demonstration = false,
 }: {
   locale: Locale;
-  productID: string;
   demonstration?: boolean;
 }) {
   const [locale, setLocale] = useState(initialLocale);
   const copy = purchaseCopy[locale];
-  const [products, setProducts] = useState<Product[]>([]);
-  const [cursor, setCursor] = useState("");
   const [context, setContext] = useState("");
   const [cart, setCart] = useState<Cart | null>(null);
-  const [sku, setSKU] = useState("");
-  const [quantity, setQuantity] = useState("1");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [paymentBusy, setPaymentBusy] = useState(false);
@@ -90,15 +90,12 @@ export default function ProductPurchase({
   const working = useRef(false);
   const deliveryRef = useRef<HTMLElement>(null);
   const quoteRef = useRef<HTMLElement>(null);
-  const selected = products.find((p) => p.sku_id === sku);
-  const subtotal = selected
-    ? lineSubtotal(selected.price_minor, Number(quantity))
-    : null;
+  const shell = useCart();
+  const { details } = useCartDetails();
+  const subtotal = details ? details.subtotal : null;
   const found = options.find((o) => optionKey(o) === method);
   // Unavailable rows are listed disabled, so they can never be the chosen delivery.
   const chosen = found && !isUnavailable(found) ? found : undefined;
-  const draftKey = (ctx: string) =>
-    `commerce-product-selection-v1:${ctx}:${productID}`;
   const money = (amount: number, currency: string) => {
     const formatter = new Intl.NumberFormat(locale, {
       style: "currency",
@@ -190,87 +187,14 @@ export default function ProductPurchase({
         else await load();
         return;
       }
-      let [page, current] = await Promise.all([
-        purchasePage(
-          `catalog?product_id=${productID}&limit=100`,
-          ctx,
-          validProduct,
-        ),
-        readPurchase("cart", ctx, validCart),
-      ]);
+      const current = await readPurchase("cart", ctx, validCart);
       if (version !== epoch.current) return;
-      if (
-        page.items.some(
-          (p) => p.product_id !== productID || p.currency !== current.currency,
-        )
-      )
-        throw new BuyerClientError("invalid_response");
-      const raw = sessionStorage.getItem(draftKey(ctx));
-      let saved: { sku: string; quantity: string } | null = null;
-      if (raw) {
-        try {
-          const d = JSON.parse(raw);
-          if (
-            typeof d.sku === "string" &&
-            /^[0-9a-f-]{36}$/.test(d.sku) &&
-            typeof d.quantity === "string" &&
-            /^\d{1,10}$/.test(d.quantity)
-          )
-            saved = d;
-        } catch {
-          /* Optional selection only, not a command journal. */
-        }
-      }
-      const visited = new Set<string>();
-      while (
-        saved &&
-        !page.items.some((p) => p.sku_id === saved.sku) &&
-        page.next_cursor
-      ) {
-        if (visited.has(page.next_cursor) || visited.size >= 100)
-          throw new BuyerClientError("invalid_response");
-        visited.add(page.next_cursor);
-        const more = await purchasePage(
-          `catalog?product_id=${productID}&limit=100&cursor=${encodeURIComponent(page.next_cursor)}`,
-          ctx,
-          validProduct,
-        );
-        if (
-          more.items.some(
-            (p) =>
-              p.product_id !== productID || p.currency !== current.currency,
-          )
-        )
-          throw new BuyerClientError("invalid_response");
-        page = {
-          items: [...page.items, ...more.items],
-          next_cursor: more.next_cursor,
-        };
-      }
       await assertPurchaseContext(ctx);
       if (version !== epoch.current) return;
       currentContext.current = ctx;
       setContext(ctx);
       setCart(current);
-      setProducts(page.items);
-      setCursor(page.next_cursor);
-      let selectedID =
-        page.items.find((p) => current.items.some((i) => i.sku_id === p.sku_id))
-          ?.sku_id ??
-        page.items[0]?.sku_id ??
-        "";
-      let qty = String(
-        current.items.find((i) => i.sku_id === selectedID)?.quantity ?? 1,
-      );
-      if (saved) {
-        selectedID = page.items.some((p) => p.sku_id === saved.sku)
-          ? saved.sku
-          : "";
-        qty = saved.quantity;
-        if (!selectedID) setError("conflict");
-      }
-      setSKU(selectedID);
-      setQuantity(qty);
+      void shell.refresh();
       const unresolved = syncRecovery(ctx).waiting !== null;
       setPending(unresolved);
       if (unresolved) setError("pending");
@@ -303,7 +227,7 @@ export default function ProductPurchase({
       epoch.current++;
       forgetAddressAttempt();
     };
-  }, [productID]); // Route locale never changes account/currency.
+  }, []); // Route locale never changes account/currency.
 
   useEffect(() => {
     setLocale(initialLocale);
@@ -374,22 +298,6 @@ export default function ProductPurchase({
     };
   }, [context]);
 
-  function select(nextSKU: string, nextQuantity: string) {
-    if (busy || pending || orderLocked || error === "session") return;
-    setSKU(nextSKU);
-    setQuantity(nextQuantity);
-    setQuote(null);
-    setDeliveryOpen(false);
-    try {
-      sessionStorage.setItem(
-        draftKey(context),
-        JSON.stringify({ sku: nextSKU, quantity: nextQuantity }),
-      );
-    } catch {
-      setError("failed");
-    }
-  }
-
   async function act(fn: (isCurrent: () => boolean) => Promise<void>) {
     if (working.current || paymentWorking.current) return;
     const version = epoch.current;
@@ -438,38 +346,6 @@ export default function ProductPurchase({
 
   return (
     <>
-      <header className="shop-header">
-        <span>{copy.store}</span>
-        <label className="locale">
-          <span className="sr-only">{copy.language}</span>
-          <select
-            value={locale}
-            disabled={busy || paymentBusy}
-            onChange={(event) => {
-              try {
-                sessionStorage.setItem(
-                  draftKey(context),
-                  JSON.stringify({ sku, quantity }),
-                );
-                const next = event.target.value as Locale;
-                window.history.replaceState(
-                  window.history.state,
-                  "",
-                  `/${next}/products/${productID}`,
-                );
-                document.documentElement.lang = next;
-                setLocale(next);
-              } catch {
-                setError("failed");
-              }
-            }}
-          >
-            <option value="zh-CN">简体中文</option>
-            <option value="zh-TW">繁體中文</option>
-            <option value="en">English</option>
-          </select>
-        </label>
-      </header>
       {demonstration && <p className="demonstration">{copy.demonstration}</p>}
       <main
         className="purchase-main"
@@ -609,135 +485,22 @@ export default function ProductPurchase({
         )}
         {historyOpen ? null : loading ? (
           <p role="status">{copy.loading}</p>
-        ) : order ? null : !products.length ? (
-          <p>{copy.empty}</p>
+        ) : order ? null : !cart || !cart.items.length ? (
+          <div className="sf-empty" data-testid="checkout-empty">
+            <p className="sf-empty__title">{shopCopy[locale].checkoutEmpty}</p>
+            <Link className="sf-btn sf-btn--primary" href={`/${locale}/products`}>
+              {shopCopy[locale].continueShopping}
+            </Link>
+          </div>
         ) : (
           <>
-            <section className="product-detail" aria-labelledby="product-title">
-              {/* catalog-media: merchant photos from the catalog read above (every SKU row of a product carries the same list). */}
-              <ProductGallery
-                locale={locale}
-                productID={productID}
-                name={selected?.name ?? products[0].name}
-                images={products[0].images ?? []}
-              />
-              <h1 id="product-title">{selected?.name ?? products[0].name}</h1>
-              {selected && (
-                <p className="unit-price">
-                  {money(selected.price_minor, selected.currency)}
-                </p>
-              )}
-              <p className="description">
-                {selected?.description ?? products[0].description}
-              </p>
+            <section className="checkout-lines" aria-labelledby="checkout-title">
+              <h1 id="checkout-title">{shopCopy[locale].checkoutTitle}</h1>
+              <CartLines locale={locale} readOnly />
+              <Link className="sf-link" href={`/${locale}/cart`}>
+                {shopCopy[locale].checkoutBack}
+              </Link>
             </section>
-            <fieldset
-              className="sku-options"
-              disabled={busy || pending || orderLocked || error === "session"}
-            >
-              <legend>{copy.choose}</legend>
-              {products.map((p) => (
-                <label
-                  key={p.sku_id}
-                  className={p.sku_id === sku ? "sku-row selected" : "sku-row"}
-                >
-                  <input
-                    type="radio"
-                    name="sku"
-                    value={p.sku_id}
-                    checked={p.sku_id === sku}
-                    onChange={() => select(p.sku_id, quantity)}
-                  />
-                  <span>{p.sku_code}</span>
-                </label>
-              ))}
-              {cursor && (
-                <button
-                  className="text-button"
-                  onClick={() =>
-                    void act(async (isCurrent) => {
-                      const page = await purchasePage(
-                        `catalog?product_id=${productID}&limit=100&cursor=${encodeURIComponent(cursor)}`,
-                        context,
-                        validProduct,
-                      );
-                      if (!isCurrent()) return;
-                      if (
-                        page.items.some(
-                          (p) =>
-                            p.product_id !== productID ||
-                            p.currency !== cart?.currency,
-                        )
-                      )
-                        throw new BuyerClientError("invalid_response");
-                      setProducts((old) =>
-                        Array.from(
-                          new Map(
-                            [...old, ...page.items].map((p) => [p.sku_id, p]),
-                          ).values(),
-                        ),
-                      );
-                      setCursor(page.next_cursor);
-                    })
-                  }
-                >
-                  {copy.more}
-                </button>
-              )}
-            </fieldset>
-            <div className="quantity-row">
-              <label htmlFor="quantity">{copy.quantity}</label>
-              <div className="stepper">
-                <button
-                  aria-label={copy.decrease}
-                  disabled={
-                    busy ||
-                    pending ||
-                    orderLocked ||
-                    error === "session" ||
-                    Number(quantity) <= 1
-                  }
-                  onClick={() => select(sku, String(Number(quantity) - 1))}
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M5 12h14" />
-                  </svg>
-                </button>
-                <input
-                  id="quantity"
-                  type="number"
-                  inputMode="numeric"
-                  min="1"
-                  max="1000000000"
-                  step="1"
-                  value={quantity}
-                  disabled={
-                    busy || pending || orderLocked || error === "session"
-                  }
-                  onChange={(e) => select(sku, e.target.value)}
-                  aria-invalid={subtotal === null}
-                />
-                <button
-                  aria-label={copy.increase}
-                  disabled={
-                    busy ||
-                    pending ||
-                    orderLocked ||
-                    error === "session" ||
-                    Number(quantity) >= 1_000_000_000
-                  }
-                  onClick={() => select(sku, String(Number(quantity) + 1))}
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M5 12h14M12 5v14" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            {subtotal === null && <p role="status">{copy.amountInvalid}</p>}
-            {!!cart?.items.some((i) => i.sku_id !== sku) && (
-              <p className="cart-note">{copy.savedCart}</p>
-            )}
             {deliveryOpen && (
               <section
                 className="delivery-section"
@@ -896,7 +659,7 @@ export default function ProductPurchase({
           </>
         )}
       </main>
-      {selected && !historyOpen && !order && !orderLocked && (
+      {cart && cart.items.length > 0 && !historyOpen && !order && !orderLocked && (
         <footer className="purchase-footer">
           <div className="footer-inner">
             <div>
@@ -906,7 +669,7 @@ export default function ProductPurchase({
                   ? money(quote.amount.total_minor, quote.currency)
                   : subtotal === null
                     ? "—"
-                    : money(subtotal, selected.currency)}
+                    : money(subtotal, cart.currency)}
               </strong>
               <small>{quote ? copy.unpaid : copy.shippingLater}</small>
             </div>
@@ -917,7 +680,6 @@ export default function ProductPurchase({
                 loading ||
                 error === "session" ||
                 pending ||
-                subtotal === null ||
                 (!quote && deliveryOpen && !chosen)
               }
               onClick={() =>
@@ -929,16 +691,9 @@ export default function ProductPurchase({
                     });
                     return;
                   }
-                  if (!cart || subtotal === null) return;
+                  if (!cart) return;
                   if (!deliveryOpen) {
-                    const result = await writePurchase(context, {
-                      kind: "cart",
-                      body: cartSelection(cart, sku, Number(quantity)),
-                    });
-                    if (!isCurrent()) return;
-                    if (result.kind !== "cart")
-                      throw new BuyerClientError("invalid_response");
-                    setCart(result.value);
+                    // The cart was already written by the product page / cart page; checkout only reads delivery options.
                     setQuote(null);
                     await deliveryOptions();
                   } else if (chosen) {
