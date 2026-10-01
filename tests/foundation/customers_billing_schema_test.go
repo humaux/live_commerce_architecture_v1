@@ -29,6 +29,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -1043,8 +1044,21 @@ func cbsCreatorGrants(t *testing.T, e cbsEnv, f *testFixture) {
 				t.Errorf("creator holds %s %d times, want once", p, n)
 			}
 		}
-		if len(got) != len(op01Base)+9 {
-			t.Errorf("creator holds %d grants %v, want the 0065 set plus the three (%d)", len(got), got, len(op01Base)+9)
+		// Documented change (contracts/storefront-v2.md section D, migration 0089_staff_team.sql): the store creator is the
+		// first `owner`, whose bundle is EVERY permission the live store_grants CHECK accepts (staff_permission_catalogue,
+		// which already includes ads:* from 0074). The old count (0065 set + these three = 22) predates that. The C-5
+		// claim that matters is unchanged: the three new permissions appear exactly once (above), the creator holds the
+		// whole 0065 set, and nothing outside the catalogue is granted.
+		catalogue := e.list(`SELECT unnest(identity.staff_permission_catalogue())`)
+		want := append(append([]string{}, op01Base...), "live:read", "live:manage", "payments:refund", "fulfillment:write", "orders:export", "integration:execute")
+		want = append(want, newPerms...)
+		for _, p := range want {
+			if !slices.Contains(got, p) {
+				t.Errorf("creator lacks %s of the 0065 set plus the three", p)
+			}
+		}
+		if g, c := slices.Sorted(slices.Values(got)), slices.Sorted(slices.Values(catalogue)); !slices.Equal(g, c) {
+			t.Errorf("creator holds %d grants %v, want exactly the owner bundle = permission catalogue %v", len(g), g, c)
 		}
 		total := func() string {
 			return e.one(`SELECT count(*)::text FROM identity.store_grants WHERE tenant_id=$1`, first.TenantID)

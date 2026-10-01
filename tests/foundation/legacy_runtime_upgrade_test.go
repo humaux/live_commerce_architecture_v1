@@ -64,6 +64,84 @@ func lriPre0032Fixture(t *testing.T) *testFixture {
 	return f
 }
 
+// lriShims is the historical-schema fallback for the CURRENT Go code on a pre-0032 fixture. The Go packages name schema
+// objects that later migrations added: internal/pricing SetPolicy/LockCurrent name pricing.policy_versions.
+// free_shipping_threshold_minor (0088, contracts/storefront-v2.md section C); internal/storefront SetCart/applyLivePrices
+// name storefront.cart_lines.claim_* (0092, live tools); internal/checkout Begin calls checkout.set_order_locale (0097).
+// On the old schema the first such statement failed (42703/42883, surfaced as "checkout database unavailable") and no
+// legacy upgrade gate could even seed its checkout. Product code stays unchanged: the fixture receives a minimal SHIM of
+// each object (same name and signature as the real migration, no behaviour beyond what an old order can carry), only
+// when it is absent, exactly like the begin_hold shim in lriPre0032Fixture. Every legacy gate upgrades through
+// lriApply, which drops the shims whose migration is not yet recorded right before Apply (the real ADD COLUMN / CREATE
+// FUNCTION have no IF NOT EXISTS). Column shims only ever hold NULL (no legacy fixture sets a threshold or a claim
+// origin); lriApply refuses to drop one that holds data (held = SQL returning the count of non-NULL values).
+var lriShims = []struct{ migration, exists, add, held, drop string }{
+	{"0088_checkout_offline.sql",
+		`SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='pricing' AND table_name='policy_versions' AND column_name='free_shipping_threshold_minor')`,
+		`ALTER TABLE pricing.policy_versions ADD COLUMN free_shipping_threshold_minor bigint;
+		 GRANT SELECT(free_shipping_threshold_minor) ON pricing.policy_versions TO commerce_buyer_runtime`,
+		`SELECT count(*) FROM pricing.policy_versions WHERE free_shipping_threshold_minor IS NOT NULL`,
+		`ALTER TABLE pricing.policy_versions DROP COLUMN free_shipping_threshold_minor`},
+	{"0092_live_tools.sql",
+		`SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='storefront' AND table_name='cart_lines' AND column_name='claim_bundle_id')`,
+		`ALTER TABLE storefront.cart_lines ADD COLUMN claim_bundle_id uuid, ADD COLUMN claim_offer_id uuid, ADD COLUMN claim_quantity bigint`,
+		`SELECT count(*) FROM storefront.cart_lines WHERE claim_bundle_id IS NOT NULL OR claim_offer_id IS NOT NULL OR claim_quantity IS NOT NULL`,
+		`ALTER TABLE storefront.cart_lines DROP COLUMN claim_bundle_id, DROP COLUMN claim_offer_id, DROP COLUMN claim_quantity`},
+	{"0097_order_locale.sql",
+		`SELECT to_regprocedure('checkout.set_order_locale(bytea,uuid,uuid,text)') IS NOT NULL`,
+		`CREATE FUNCTION checkout.set_order_locale(p_hash bytea,p_store uuid,p_order uuid,p_locale text) RETURNS void LANGUAGE sql AS 'SELECT';
+		 REVOKE ALL ON FUNCTION checkout.set_order_locale(bytea,uuid,uuid,text) FROM PUBLIC;
+		 GRANT EXECUTE ON FUNCTION checkout.set_order_locale(bytea,uuid,uuid,text) TO commerce_checkout_runtime`,
+		``,
+		`DROP FUNCTION checkout.set_order_locale(bytea,uuid,uuid,text)`},
+}
+
+// lriAddShims adds every missing shim (idempotent). Called by the shared policy writer, so any historical fixture that
+// reaches pricing gets the objects the current Go names.
+func lriAddShims(f *testFixture) error {
+	ctx := context.Background()
+	for _, sh := range lriShims {
+		var has bool
+		if err := f.owner.QueryRow(ctx, sh.exists).Scan(&has); err != nil {
+			return err
+		}
+		if has {
+			continue
+		}
+		if _, err := f.owner.Exec(ctx, sh.add); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// lriApply is migrations.Apply for the legacy upgrade gates: it first drops the shims whose migration is not yet
+// recorded, refusing if a column shim ever held data. Idempotent on a retry.
+func lriApply(ctx context.Context, pool *pgxpool.Pool) error {
+	for _, sh := range lriShims {
+		var has, recorded bool
+		if err := pool.QueryRow(ctx, sh.exists).Scan(&has); err != nil {
+			return err
+		}
+		if err := pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM public.lc_schema_migrations WHERE version=$1)`, sh.migration).Scan(&recorded); err != nil {
+			return err
+		}
+		if !has || recorded {
+			continue
+		}
+		if sh.held != "" {
+			var held int
+			if err := pool.QueryRow(ctx, sh.held).Scan(&held); err != nil || held != 0 {
+				return fmt.Errorf("historical shim of %s holds %d values (err %v); refusing to drop it", sh.migration, held, err)
+			}
+		}
+		if _, err := pool.Exec(ctx, sh.drop); err != nil {
+			return err
+		}
+	}
+	return migrations.Apply(ctx, pool)
+}
+
 // Historical post-River router gates must replay their original SQL bytes at
 // the old cutover, not call latest Apply (which now performs the 0032 cutover).
 func lriApplyHistoricalPost(f *testFixture, target string) error {
@@ -376,12 +454,16 @@ func TestLegacyRuntimeIsolationPopulatedUpgrade(t *testing.T) {
 	}
 	business["integration.operations"] = expectedOperations
 	// Apply also includes 0072 (taiwan-cvs C4): checkout.orders gains payment_mode (default 'card') and collection_state (NULL); every
-	// historical order keeps all old values and acquires exactly those two keys.
+	// historical order keeps all old values and acquires exactly those keys. Documented later additive columns (each a nullable
+	// or defaulted ADD COLUMN, so a historical order acquires only its default): 0088 buyer_email NULL (storefront-v2 section C),
+	// 0094 source 'storefront' (section G, merchant-created orders are the only other value), 0097 locale NULL (order-locale unit;
+	// the Begin of a fixture order ran against the lriShims no-op set_order_locale, so no locale was ever stored).
+	const addedOrderKeys = `{"payment_mode":"card","collection_state":null,"buyer_email":null,"source":"storefront","locale":null}`
 	var expectedOrders string
 	if err := f.owner.QueryRow(ctx, `SELECT coalesce(jsonb_agg(
-	 value || '{"payment_mode":"card","collection_state":null}'::jsonb
-	 ORDER BY (value || '{"payment_mode":"card","collection_state":null}'::jsonb)::text),'[]'::jsonb)::text
-	 FROM jsonb_array_elements($1::jsonb)`, business["checkout.orders"]).Scan(&expectedOrders); err != nil {
+	 value || $2::jsonb
+	 ORDER BY (value || $2::jsonb)::text),'[]'::jsonb)::text
+	 FROM jsonb_array_elements($1::jsonb)`, business["checkout.orders"], addedOrderKeys).Scan(&expectedOrders); err != nil {
 		t.Fatal("expected additive CVS order columns", err)
 	}
 	business["checkout.orders"] = expectedOrders
@@ -398,7 +480,7 @@ func TestLegacyRuntimeIsolationPopulatedUpgrade(t *testing.T) {
 	if oldPayment == "[]" || oldExpiry == "[]" || oldExternal == "[]" || oldMeta == "[]" || oldQueues["payment_mock_v1"] == "[]" || oldQueues["checkout_expiry_v1"] == "[]" {
 		t.Fatal("historical populated source was empty")
 	}
-	if err := migrations.Apply(ctx, f.owner); err != nil {
+	if err := lriApply(ctx, f.owner); err != nil {
 		t.Fatal("populated legacy cutover", err)
 	}
 	lriReady(t, f, true)
@@ -446,7 +528,7 @@ func TestLegacyRuntimeIsolationPopulatedUpgrade(t *testing.T) {
 	}
 	postJobs := map[string]string{"river_payment.river_job": oldPayment, "river_expiry.river_job": oldExpiry, "river.river_job": oldExternal}
 	postLedger := lriLedger(t, f, "")
-	if err := migrations.Apply(ctx, f.owner); err != nil {
+	if err := lriApply(ctx, f.owner); err != nil {
 		t.Fatal("repeat populated Apply", err)
 	}
 	for table, before := range postJobs {
@@ -487,7 +569,7 @@ func TestLegacyRuntimeIsolationUpgradeRejectsTamperedLedger(t *testing.T) {
 		t.Fatal(err)
 	}
 	mustExec(t, f.owner, `UPDATE public.lc_schema_migrations SET checksum='tampered' WHERE version='0031_meta_river_isolation.sql'`)
-	if err := migrations.Apply(context.Background(), f.owner); err == nil {
+	if err := lriApply(context.Background(), f.owner); err == nil {
 		t.Fatal("current Apply accepted a changed historical checksum")
 	}
 	if miCount(t, f.owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version='0032_legacy_river_isolation.sql'`) != 0 ||
@@ -496,7 +578,7 @@ func TestLegacyRuntimeIsolationUpgradeRejectsTamperedLedger(t *testing.T) {
 	}
 	mustExec(t, f.owner, `UPDATE public.lc_schema_migrations SET checksum=$1 WHERE version='0031_meta_river_isolation.sql'`, checksum)
 	mustExec(t, f.owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0031_unknown_local.sql','unknown')`)
-	if err := migrations.Apply(context.Background(), f.owner); err == nil {
+	if err := lriApply(context.Background(), f.owner); err == nil {
 		t.Fatal("current Apply accepted an unknown historical migration")
 	}
 	if miCount(t, f.owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version='0032_legacy_river_isolation.sql'`) != 0 ||
@@ -504,7 +586,7 @@ func TestLegacyRuntimeIsolationUpgradeRejectsTamperedLedger(t *testing.T) {
 		t.Fatal("unknown-version rejection mutated old lane or installed preparation")
 	}
 	mustExec(t, f.owner, `DELETE FROM public.lc_schema_migrations WHERE version='0031_unknown_local.sql'`)
-	if err := migrations.Apply(context.Background(), f.owner); err != nil {
+	if err := lriApply(context.Background(), f.owner); err != nil {
 		t.Fatal("corrected ledger retry", err)
 	}
 	lriReady(t, f, true)
@@ -528,7 +610,7 @@ func TestLegacyRuntimeIsolationUpgradeFailClosedRetry(t *testing.T) {
 			paymentQueues = lriRows(t, f, "river_payment.river_queue", "")
 			expiryQueues = lriRows(t, f, "river_expiry.river_queue", "")
 		}
-		if err := migrations.Apply(ctx, f.owner); err == nil {
+		if err := lriApply(ctx, f.owner); err == nil {
 			t.Fatalf("%s accepted unsafe cutover", label)
 		}
 		lriNoPost(t, f, sourceJobs, sourceQueues, paymentDest, expiryDest, paymentQueues, expiryQueues)
@@ -579,7 +661,7 @@ func TestLegacyRuntimeIsolationUpgradeFailClosedRetry(t *testing.T) {
 	defer migrationPool.Close()
 	blocked, stop := context.WithTimeout(ctx, 15*time.Second)
 	result := make(chan error, 1)
-	go func() { result <- migrations.Apply(blocked, migrationPool) }()
+	go func() { result <- lriApply(blocked, migrationPool) }()
 	observed := false
 	deadline := time.Now().Add(10 * time.Second)
 	for time.Now().Before(deadline) {
@@ -610,7 +692,7 @@ func TestLegacyRuntimeIsolationUpgradeFailClosedRetry(t *testing.T) {
 	// both run after the cancelled attempt has fully ended.
 	waitAdvisoryLockReleased(t, f.owner, "cancelled migration attempt still holds the migration advisory lock", 718020260920)
 	lriNoPost(t, f, sourceBeforeLock, queuesBeforeLock, "[]", "[]", paymentQueuesBeforeLock, expiryQueuesBeforeLock)
-	if err := migrations.Apply(ctx, f.owner); err != nil {
+	if err := lriApply(ctx, f.owner); err != nil {
 		t.Fatal("corrected partial-native retry", err)
 	}
 	lriReady(t, f, true)
@@ -622,7 +704,7 @@ func TestLegacyRuntimeIsolationUpgradeFailClosedRetry(t *testing.T) {
 
 func TestLegacyRuntimeIsolationFamilyCollidingIDs(t *testing.T) {
 	f := lriPre0032Fixture(t)
-	if err := migrations.Apply(context.Background(), f.owner); err != nil {
+	if err := lriApply(context.Background(), f.owner); err != nil {
 		t.Fatal(err)
 	}
 	// Actual new-family producers make an expiry row at the payment sequence's
@@ -668,7 +750,7 @@ func lriPrunedSequenceFixture(t *testing.T) (*testFixture, pqFixture, psHarness,
 	lriCloseProducerPools(p)
 	ctx := context.Background()
 	mustExec(t, f.owner, `UPDATE river.river_job SET state='running',attempt=1,attempted_at=clock_timestamp() WHERE id=$1`, q.result.JobID)
-	if err := migrations.Apply(ctx, f.owner); err == nil {
+	if err := lriApply(ctx, f.owner); err == nil {
 		t.Fatal("native preparation unexpectedly completed while old job running")
 	}
 	lriReady(t, f, false)
@@ -695,7 +777,7 @@ func TestLegacyRuntimeIsolationUpgradeSequencesDoNotReuseRefs(t *testing.T) {
 	if oldLow >= p.hold.JobID || paymentHigh <= q.result.JobID {
 		t.Fatal("test did not establish independent sequence maxima")
 	}
-	if err := migrations.Apply(ctx, f.owner); err != nil {
+	if err := lriApply(ctx, f.owner); err != nil {
 		t.Fatal("sequence cutover", err)
 	}
 	lriReady(t, f, true)
@@ -726,7 +808,7 @@ func TestLegacyRuntimeIsolationUpgradeMirroredSequenceHighWater(t *testing.T) {
 	if oldLow >= q.result.JobID || expiryHigh <= p.hold.JobID {
 		t.Fatal("mirrored independent maxima absent")
 	}
-	if err := migrations.Apply(ctx, f.owner); err != nil {
+	if err := lriApply(ctx, f.owner); err != nil {
 		t.Fatal("mirrored sequence cutover", err)
 	}
 	lriReady(t, f, true)
@@ -761,7 +843,7 @@ func TestLegacyRuntimeIsolationUpgradeCopiedRowsAboveOldSequence(t *testing.T) {
 	}
 	oldPayment := lriRows(t, f, "river.river_job", `WHERE kind='payment_query_v1'`)
 	oldExpiry := lriRows(t, f, "river.river_job", `WHERE kind='checkout_expiry_v1'`)
-	if err := migrations.Apply(ctx, f.owner); err != nil {
+	if err := lriApply(ctx, f.owner); err != nil {
 		t.Fatal("copied-row sequence cutover", err)
 	}
 	if lriRows(t, f, "river_payment.river_job", "") != oldPayment || lriRows(t, f, "river_expiry.river_job", "") != oldExpiry {
