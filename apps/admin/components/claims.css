@@ -104,3 +104,11 @@ table.claims-table { table-layout: auto; font-variant-numeric: tabular-nums; }
   .claims-table > tbody > tr > .claims-row-actions { grid-column: 1 / -1; white-space: normal; display: flex; flex-wrap: wrap; gap: 8px; }
   .claims-row-actions button + button { margin-left: 0; }
 }
+/* Live tools (R4): import toolbar, live-price warning, import result. Layout only; same tokens as the rest of the panel. */
+.claims-toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin-top: 14px; }
+.claims-toolbar > .claims-field { flex: 0 1 240px; }
+.claims-toolbar > small { flex: 1 1 100%; }
+.claims-table td > input[type="text"] { width: 110px; }
+.claims-warn { color: #86551a; }
+.claims-import-result { margin-top: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 5px; background: #f4f7fa; }
+.claims-import-result ul { margin: 6px 0 0; padding-left: 18px; }

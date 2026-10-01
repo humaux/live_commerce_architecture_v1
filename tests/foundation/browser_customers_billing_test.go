@@ -397,6 +397,7 @@ func cbbrBuyerNode(t *testing.T, ctx context.Context, e *rfxEnv, o rfxOrder, evi
 	server := httptest.NewServer(handler)
 	t.Cleanup(server.Close)
 	mustExec(t, e.f.owner, `UPDATE catalog.products SET name='Synthetic browser privacy product',description='Synthetic acceptance fixture' WHERE id=$1`, o.s.p.stock.product.ID)
+	sfiAxisBySKUCode(t, e.f.owner, o.s.p.stock.product.ID) // the storefront shell sells variants (one chip per SKU code)
 	values := map[string]string{"COMMERCE_BUYER_WEB_ENABLED": "1", "COMMERCE_BUYER_API_ORIGIN": server.URL, "COMMERCE_BUYER_DEMO_LABEL": "1", "COMMERCE_BUYER_BFF_KEY": bffKey,
 		"COMMERCE_BUYER_COOKIE_KEY": base64.RawURLEncoding.EncodeToString(randomBytes(32)), "COMMERCE_BUYER_SESSION_TTL": "3600",
 		"LC_PB_EVIDENCE": evidence, "LC_PB_PRODUCT": o.s.p.stock.product.ID, "LC_PB_ORIGIN": storefrontOrigin, "LC_PB_POLICY": customers.PrivacyPolicyVersion}

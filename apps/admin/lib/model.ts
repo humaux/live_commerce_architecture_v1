@@ -15,10 +15,16 @@ export type LedgerRow = {
   unavailable: number;
   available: number;
   balance_version: number;
+  // catalog-media: product row version/status for rename+archive, id of the position-0 photo (null: none).
+  product_version: number;
+  product_status: "active" | "archived";
+  cover_image_id: string | null;
 };
 export type Page<T> = { items: T[]; next_cursor: string };
 export type Warehouse = { id: string; name: string };
-export type Store = { id: string; name: string; currency: string };
+// role/permissions (0089, role-aware navigation) are the caller's own staff role and effective permissions in this store;
+// absent from older mocks. Display hint only: the Go API authorizes every request.
+export type Store = { id: string; name: string; currency: string; role?: string | null; permissions?: string[] };
 export type InitialStore = {
   tenant_id: string;
   store_id: string;
@@ -51,4 +57,16 @@ export type WorkspaceData = {
   warehouseCursor: string;
   warehouseID: string;
   error: APIError | null;
+};
+
+// catalog-media: one product photo as returned by GET products/{id}/images (Go catalog.Image).
+export type ProductImage = {
+  id: string;
+  product_id: string;
+  position: number;
+  content_type: "image/jpeg" | "image/png" | "image/webp";
+  size_bytes: number;
+  width: number | null;
+  height: number | null;
+  version: number;
 };

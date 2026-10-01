@@ -88,14 +88,14 @@ func GetDeliveryPolicy(ctx context.Context, tx pgx.Tx, scope platform.Scope, tok
 	}
 	var out Policy
 	err = tx.QueryRow(ctx, `SELECT v.market_id::text,v.country,v.method,v.currency,v.shipping_mode,v.tax_mode,v.tax_basis,
-		v.version,v.shipping_minor,v.tax_rate_bps,v.quote_ttl_seconds,v.enabled
+		v.version,v.shipping_minor,v.tax_rate_bps,v.quote_ttl_seconds,v.enabled,v.free_shipping_threshold_minor
 		FROM pricing.policy_heads h JOIN pricing.policy_versions v
 		ON (v.tenant_id,v.store_id,v.market_id,v.country,v.method,v.version)=
 		(h.tenant_id,h.store_id,h.market_id,h.country,h.method,h.current_version)
 		WHERE h.tenant_id=$1 AND h.store_id=$2 AND h.market_id=$3 AND h.country=$4 AND h.method=$5`,
 		scope.TenantID, scope.StoreID, marketID, country, method).Scan(
 		&out.MarketID, &out.Country, &out.Method, &out.Currency, &out.ShippingMode, &out.TaxMode, &out.TaxBasis,
-		&out.Version, &out.ShippingMinor, &out.TaxRateBPS, &out.QuoteTTLSeconds, &out.Enabled)
+		&out.Version, &out.ShippingMinor, &out.TaxRateBPS, &out.QuoteTTLSeconds, &out.Enabled, &out.FreeShippingThresholdMinor)
 	if err != nil {
 		return Policy{}, mapError(err)
 	}

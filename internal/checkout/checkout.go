@@ -7,6 +7,10 @@
 // CONFIRMED at Begin, no payment attempt) and serves the buyer CVS surface (cvs.go: e-map selection, directory
 // verification, buyer-entered store) plus the CVS checkout options.
 //
+// bank_transfer (storefront-v2 §C, migration 0088 + post_river/0018) is the third mode: the order waits AWAITING_TRANSFER with its stock
+// RESERVED for the merchant's window, the buyer submits transfer details (transfer.go), and only a merchant act (internal/merchantorders)
+// confirms it; the same ExpiryWorker releases an unpaid window. An optional buyer email is stored on the order.
+//
 // It never computes prices (internal/pricing and the storefront snapshot do), never settles money on
 // a provider's word alone (payments.apply_capture is the single stock writer for captures), never
 // reads STRIPE_* secrets, never holds pay-at-pickup money, and never accepts a client-supplied amount.
@@ -20,6 +24,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
+	"net/mail"
 	"regexp"
 	"sort"
 	"strings"
@@ -36,6 +41,7 @@ import (
 	"livecommerce/internal/inventory"
 	"livecommerce/internal/jobqueue"
 	"livecommerce/internal/platform"
+	"livecommerce/internal/promotions"
 	"livecommerce/internal/storefront"
 )
 
@@ -43,6 +49,13 @@ var checkoutKey = regexp.MustCompile(`^[A-Za-z0-9_.:-]{8,128}$`)
 var errCheckoutDatabase = errors.New("checkout database unavailable")
 
 const holdDuration = 15 * time.Minute
+
+// A bank_transfer hold lasts the merchant's window (6..168 h, checkout.bank_transfer_settings); Go does not know the window before
+// begin_hold, so Begin only bounds the answer: begin_hold alone sets it and the SQL CHECK orders_expiry_window caps it at 168 h.
+const (
+	minTransferHold = 6 * time.Hour
+	maxTransferHold = 168 * time.Hour
+)
 
 type Service struct {
 	pool *pgxpool.Pool
@@ -52,6 +65,9 @@ type Service struct {
 	// nil (the default) means ECPay is off for options (unit default C9, TCV11 kill switch).
 	paymentEnv string
 	cvs        *BuyerCVS
+	// noCard is true when this process has no buyer payment service (cmd/api: COMMERCE_BUYER_PAYMENT_ENABLED off), so a card order
+	// could never be paid. The zero value keeps card allowed: only the one production wiring site (cmd/api/buyer.go) turns it on.
+	noCard bool
 }
 
 type Input struct {
@@ -62,7 +78,11 @@ type Input struct {
 	AllocationVersion int64  `json:"allocation_version"`
 	// PaymentMode is "card" (or empty, the same thing) or "pay_at_pickup" (§16.2, CVS destinations only; SQL decides).
 	// omitempty keeps the request digest of an old card request unchanged, so pre-upgrade replays still match.
+	// "bank_transfer" (storefront-v2 §C) places the order AWAITING_TRANSFER with the stock reserved for the merchant's window.
 	PaymentMode string `json:"payment_mode,omitempty"`
+	// BuyerEmail is optional (storefront-v2 §C), validated by validBuyerEmail and stored on the order for notifications (PII: customers
+	// export/erasure cover it). omitempty keeps pre-0088 request digests unchanged.
+	BuyerEmail string `json:"buyer_email,omitempty"`
 }
 
 type Result struct {
@@ -71,7 +91,8 @@ type Result struct {
 	Generation    int64     `json:"generation"`
 	ExpiresAt     time.Time `json:"expires_at"`
 	JobID         int64     `json:"job_id"`
-	// PaymentMode / CommercialState come from begin_hold (§16.2): pay_at_pickup orders are CONFIRMED at placement.
+	// PaymentMode / CommercialState come from begin_hold (§16.2): pay_at_pickup orders are CONFIRMED at placement; bank_transfer orders are
+	// AWAITING_TRANSFER until the merchant confirms or the window ends.
 	PaymentMode     string `json:"payment_mode"`
 	CommercialState string `json:"commercial_state"`
 }
@@ -144,6 +165,26 @@ func (s *Service) WithBuyerCVS(b *BuyerCVS) *Service {
 	return &c
 }
 
+// WithoutCardPayment returns a copy that neither lists "card" in options nor accepts a card Begin (ops-polish OP1). cmd/api calls it
+// when no hosted payment service is wired; the per-store method check is order-bound SQL (checkout.hosted_payment_view*) and stays there.
+func (s *Service) WithoutCardPayment() *Service {
+	if s == nil {
+		return nil
+	}
+	c := *s
+	c.noCard = true
+	return &c
+}
+
+// cardRefusal is the one place a card Begin is refused when card cannot be paid (OP1). The code is the typed 422 the buyer API
+// already serializes for coded refusals (httperror "card_unavailable"); pay_at_pickup is never affected.
+func cardRefusal(mode string, noCard bool) error {
+	if mode == "card" && noCard {
+		return &fulfillment.CVSError{Status: 422, Code: "card_unavailable"}
+	}
+	return nil
+}
+
 // CVS returns the buyer CVS surface, nil when not wired (routes then answer 404).
 func (s *Service) CVS() *BuyerCVS {
 	if s == nil {
@@ -197,6 +238,10 @@ func (s *Service) Begin(ctx context.Context, token, storeID, key string, in Inpu
 			out = saved
 			return nil
 		}
+		// OP1: refuse a card order nobody can pay, after the receipt lookup so an exact replay of an already placed order still returns it.
+		if err = cardRefusal(mode, s.noCard); err != nil {
+			return err
+		}
 		if err = advisory(callCtx, tx, "checkout.cart|"+scope.TenantID+"|"+scope.StoreID+"|"+scope.OwnerID); err != nil {
 			return err
 		}
@@ -207,7 +252,7 @@ func (s *Service) Begin(ctx context.Context, token, storeID, key string, in Inpu
 		var active bool
 		err = tx.QueryRow(callCtx, `SELECT EXISTS(SELECT 1 FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2
 			AND owner_id=$3 AND cart_id=$4 AND cart_version=$5
-			AND commercial_state IN ('DRAFT','AWAITING_PAYMENT','CONFIRMED'))`,
+			AND commercial_state IN ('DRAFT','AWAITING_PAYMENT','AWAITING_TRANSFER','CONFIRMED'))`,
 			scope.TenantID, scope.StoreID, scope.OwnerID, quote.CartID, quote.CartVersion).Scan(&active)
 		if err != nil {
 			return err
@@ -295,9 +340,26 @@ func (s *Service) Begin(ctx context.Context, token, storeID, key string, in Inpu
 		}
 		command.InLocalTime(&out) // same location as row-scanned reads/replays
 		if out.OrderID != orderID || out.ReservationID != orderID || out.Generation != 1 ||
-			out.JobID != job.Job.ID || !out.ExpiresAt.After(now) || out.ExpiresAt.After(now.Add(holdDuration+5*time.Second)) ||
+			out.JobID != job.Job.ID || !out.ExpiresAt.After(now) || !holdWithinBounds(mode, now, out.ExpiresAt) ||
 			out.PaymentMode != mode || out.CommercialState != commercialAtPlacement(mode) {
 			return command.ErrConflict
+		}
+		if in.BuyerEmail != "" {
+			// checkout.set_order_buyer_email: same transaction as the placement, so a rolled-back Begin leaves no email and a replay (receipt
+			// above) never re-attaches one. The expiry job above stays 15 minutes: expire_held answers NOT_DUE with the real due time.
+			if _, err = tx.Exec(callCtx, `SELECT checkout.set_order_buyer_email($1,$2::uuid,$3::uuid,$4)`,
+				tokenHash[:], storeID, orderID, in.BuyerEmail); err != nil {
+				return err
+			}
+		}
+		if quote.Promotion != nil {
+			// storefront-v2 §F: promotions.redeem is the authoritative, locking usage check + redemption insert. It runs AFTER begin_hold
+			// (the order row it joins must exist) and in this same transaction: a refusal (promo_changed / promo_used_up / promo_expired ...)
+			// is a PT422 that rolls the order, the stock hold, the expiry job and the receipt back together, and the buyer re-quotes.
+			// Not retried: the refusal is a fact about the code, a retry with the same key would get the same answer.
+			if err = promotions.Redeem(callCtx, tx, tokenHash[:], storeID, orderID, in.BuyerEmail, destination.Phone); err != nil {
+				return err
+			}
 		}
 		return nil
 	})
@@ -370,7 +432,9 @@ func (s *Service) Get(ctx context.Context, token, storeID, orderID string) (Orde
 			view.UpdatedAt = view.UpdatedAt.UTC()
 			out.CVSShipment = &view
 		}
-		if (out.PaymentMode != "card" && out.PaymentMode != "pay_at_pickup") || (out.PaymentMode == "card") != (out.CollectionState == nil) {
+		// payment_mode <=> collection_state (orders_payment_collection CHECK): only pay_at_pickup carries one; card and bank_transfer never do.
+		if (out.PaymentMode != "card" && out.PaymentMode != "pay_at_pickup" && out.PaymentMode != "bank_transfer") ||
+			(out.PaymentMode == "pay_at_pickup") != (out.CollectionState != nil) {
 			return command.ErrConflict
 		}
 		return checkCapability(callCtx, tx, tokenHash[:], storeID, scope)
@@ -384,14 +448,40 @@ func (s *Service) Get(ctx context.Context, token, storeID, orderID string) (Orde
 func validInput(in Input) bool {
 	return command.ValidID(in.QuoteID) && command.ValidID(in.DestinationID) &&
 		in.CartVersion > 0 && in.ServiceVersion > 0 && in.AllocationVersion > 0 &&
-		(in.PaymentMode == "" || in.PaymentMode == "card" || in.PaymentMode == "pay_at_pickup")
+		(in.PaymentMode == "" || in.PaymentMode == "card" || in.PaymentMode == "pay_at_pickup" || in.PaymentMode == "bank_transfer") &&
+		validBuyerEmail(in.BuyerEmail)
+}
+
+// validBuyerEmail admits "" (the field is optional) or one plain address of at most 254 bytes: net/mail must parse it and return it
+// unchanged, so a display name, angle brackets, comments or surrounding space are all refused. The SQL CHECK on orders.buyer_email is the twin.
+func validBuyerEmail(email string) bool {
+	if email == "" {
+		return true
+	}
+	if len(email) > 254 || strings.ContainsAny(email, " \t\r\n<>(),;:\"") {
+		return false
+	}
+	addr, err := mail.ParseAddress(email)
+	return err == nil && addr.Address == email && addr.Name == ""
+}
+
+// holdWithinBounds checks begin_hold's answer: 15 minutes for card/pay_at_pickup, the 6..168 h window for bank_transfer.
+func holdWithinBounds(mode string, now, expires time.Time) bool {
+	if mode == "bank_transfer" {
+		return !expires.Before(now.Add(minTransferHold-5*time.Second)) && !expires.After(now.Add(maxTransferHold+5*time.Second))
+	}
+	return !expires.After(now.Add(holdDuration + 5*time.Second))
 }
 
 // commercialAtPlacement is the order state begin_hold writes: pay_at_pickup orders are CONFIRMED at placement (§16.2, no Stripe
-// session); card orders start DRAFT and are confirmed by the captured payment.
+// session); bank_transfer orders wait AWAITING_TRANSFER for the merchant (never auto-confirmed); card orders start DRAFT and are
+// confirmed by the captured payment.
 func commercialAtPlacement(mode string) string {
-	if mode == "pay_at_pickup" {
+	switch mode {
+	case "pay_at_pickup":
 		return "CONFIRMED"
+	case "bank_transfer":
+		return "AWAITING_TRANSFER"
 	}
 	return "DRAFT"
 }
@@ -456,6 +546,10 @@ func safeError(ctx context.Context, err error) error {
 	}
 	var refusal *fulfillment.CVSError
 	if errors.As(err, &refusal) {
+		return err
+	}
+	var promo *promotions.Coded // §F: a coded promotion refusal reaches the buyer as its 422 promo_* code, not as "unavailable"
+	if errors.As(err, &promo) {
 		return err
 	}
 	var pgErr *pgconn.PgError

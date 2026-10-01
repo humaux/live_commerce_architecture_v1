@@ -62,11 +62,57 @@ func TestBuyerHTTPOptionsProjectionExactKeys(t *testing.T) {
 	if err = json.Unmarshal(body["items"], &items); err != nil || len(items) != 1 {
 		t.Fatal("wrong items")
 	}
-	if !reflect.DeepEqual(sortedKeys(items[0]), []string{"allocation_version", "country", "currency", "delivery_code", "delivery_kind", "market_code", "market_id", "market_name", "method", "mode", "name_en", "name_hans", "name_hant", "service_version", "sort_order"}) {
+	if !reflect.DeepEqual(sortedKeys(items[0]), []string{"allocation_version", "country", "currency", "delivery_code", "delivery_kind", "free_shipping_threshold_minor", "market_code", "market_id", "market_name", "method", "mode", "name_en", "name_hans", "name_hant", "service_version", "sort_order"}) {
 		t.Fatal("wrong option keys")
 	}
 	empty, err := json.Marshal(projectOptions(pagination.Page[checkout.Option]{}))
 	if err != nil || !strings.Contains(string(empty), `"items":[]`) {
 		t.Fatal("empty options must be []")
+	}
+}
+
+// storefront-v2 §C: payment_modes and transfer_window_hours reach the buyer together, only when bank_transfer is offered.
+func TestBuyerHTTPOptionsProjectionCarriesTransferWindow(t *testing.T) {
+	page := pagination.Page[checkout.Option]{Items: []checkout.Option{
+		{DeliveryKind: "home", PaymentModes: []string{"card", "bank_transfer"}, TransferWindowHours: 72},
+		{DeliveryKind: "home"},
+	}}
+	raw, err := json.Marshal(projectOptions(page))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var body struct {
+		Items []map[string]json.RawMessage `json:"items"`
+	}
+	if err = json.Unmarshal(raw, &body); err != nil || len(body.Items) != 2 {
+		t.Fatalf("projection: %v %s", err, raw)
+	}
+	if string(body.Items[0]["transfer_window_hours"]) != "72" || string(body.Items[0]["payment_modes"]) != `["card","bank_transfer"]` {
+		t.Errorf("a bank_transfer row carries its window: %s", raw)
+	}
+	if _, present := body.Items[1]["transfer_window_hours"]; present {
+		t.Errorf("a card-only row must not carry a window: %s", raw)
+	}
+}
+
+// storefront-v2 §C: free_shipping_threshold_minor is always present on an option row (a number or null), never omitted.
+func TestBuyerHTTPOptionsProjectionCarriesFreeShippingThreshold(t *testing.T) {
+	threshold := int64(150000)
+	page := pagination.Page[checkout.Option]{Items: []checkout.Option{
+		{DeliveryKind: "home", FreeShippingThresholdMinor: &threshold},
+		{DeliveryKind: "home"},
+	}}
+	raw, err := json.Marshal(projectOptions(page))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var body struct {
+		Items []map[string]json.RawMessage `json:"items"`
+	}
+	if err = json.Unmarshal(raw, &body); err != nil || len(body.Items) != 2 {
+		t.Fatalf("projection: %v %s", err, raw)
+	}
+	if string(body.Items[0]["free_shipping_threshold_minor"]) != "150000" || string(body.Items[1]["free_shipping_threshold_minor"]) != "null" {
+		t.Errorf("threshold must be the number or an explicit null: %s", raw)
 	}
 }

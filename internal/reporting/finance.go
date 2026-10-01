@@ -47,6 +47,16 @@ type FinanceRow struct {
 	CapturedMinor int64  `json:"captured_minor"`
 	RefundedMinor int64  `json:"refunded_minor"`
 	NetMinor      int64  `json:"net_minor"`
+	// Pay-at-pickup money the carrier collected (ops-polish OP3, BD7): orders with payment_mode=pay_at_pickup and
+	// collection_state=COLLECTED on the UTC+8 day of collection. A different money path (the carrier remits, not a PSP), so it is
+	// never part of CapturedMinor or NetMinor. Supplied by identity.read_finance_summary (migrations/0085); decodeRows also accepts the older 7-key shape.
+	PickupCollectedCount int64 `json:"pickup_collected_count"`
+	PickupCollectedMinor int64 `json:"pickup_collected_minor"`
+	// Bank-transfer money the merchant confirmed (storefront-v2 §C, migration 0088): orders with payment_mode=bank_transfer whose transfer
+	// is CONFIRMED on the UTC+8 day of the confirmation, at the server order total (I05). Offline money (the merchant's bank, not a PSP),
+	// so it is never part of CapturedMinor or NetMinor; always environment LIVE. An offline refund removes the order from the column.
+	BankTransferConfirmedCount int64 `json:"bank_transfer_confirmed_count"`
+	BankTransferConfirmedMinor int64 `json:"bank_transfer_confirmed_minor"`
 }
 
 // FinanceSummary: Totals hold one row per (currency, environment) with Day == "".
@@ -129,7 +139,13 @@ func decodeRows(raw []byte, from, to string) ([]FinanceRow, error) {
 	rows := make([]FinanceRow, 0, len(objects))
 	for _, object := range objects {
 		var fields map[string]json.RawMessage
-		if json.Unmarshal(object, &fields) != nil || len(fields) != 7 {
+		// 7 keys: the BD7 projection; 9: plus the two pay-at-pickup keys; 11: plus the two bank-transfer keys (each pair both or neither, in
+		// that order). Anything else is drift.
+		if json.Unmarshal(object, &fields) != nil || (len(fields) != 7 && len(fields) != 9 && len(fields) != 11) {
+			return nil, ErrUnavailable
+		}
+		if len(fields) >= 9 && (fields["pickup_collected_count"] == nil || fields["pickup_collected_minor"] == nil) ||
+			len(fields) == 11 && (fields["bank_transfer_confirmed_count"] == nil || fields["bank_transfer_confirmed_minor"] == nil) {
 			return nil, ErrUnavailable
 		}
 		var row FinanceRow
@@ -150,7 +166,9 @@ func validRow(r FinanceRow, from, to string) bool {
 	return dayPattern.MatchString(r.Day) && r.Day >= from && r.Day <= to && currencyCode.MatchString(r.Currency) &&
 		(r.Environment == "SANDBOX" || r.Environment == "LIVE") &&
 		r.CapturedCount >= 0 && r.CapturedMinor >= 0 && r.RefundedMinor >= 0 &&
-		(r.CapturedCount > 0 || r.CapturedMinor == 0) && r.NetMinor == r.CapturedMinor-r.RefundedMinor
+		(r.CapturedCount > 0 || r.CapturedMinor == 0) && r.NetMinor == r.CapturedMinor-r.RefundedMinor &&
+		r.PickupCollectedCount >= 0 && r.PickupCollectedMinor >= 0 && (r.PickupCollectedCount > 0 || r.PickupCollectedMinor == 0) &&
+		r.BankTransferConfirmedCount >= 0 && r.BankTransferConfirmedMinor >= 0 && (r.BankTransferConfirmedCount > 0 || r.BankTransferConfirmedMinor == 0)
 }
 
 func rowLess(a, b FinanceRow) bool {
@@ -179,6 +197,10 @@ func Totals(rows []FinanceRow) []FinanceRow {
 		t.CapturedMinor += r.CapturedMinor
 		t.RefundedMinor += r.RefundedMinor
 		t.NetMinor += r.NetMinor
+		t.PickupCollectedCount += r.PickupCollectedCount
+		t.PickupCollectedMinor += r.PickupCollectedMinor
+		t.BankTransferConfirmedCount += r.BankTransferConfirmedCount
+		t.BankTransferConfirmedMinor += r.BankTransferConfirmedMinor
 	}
 	out := make([]FinanceRow, 0, len(sums))
 	for _, t := range sums {
@@ -188,17 +210,20 @@ func Totals(rows []FinanceRow) []FinanceRow {
 	return out
 }
 
-// CSV renders the D13 columns with a header row. Every field is a date, a 3-letter currency, a closed
+// CSV renders the D13 columns plus the two pay-at-pickup columns (OP3) and the two bank-transfer confirmed columns with a header row. Every field is a date, a 3-letter currency, a closed
 // environment word or an integer, so no field can start a spreadsheet formula.
 func CSV(rows []FinanceRow) ([]byte, error) {
 	var buf bytes.Buffer
 	w := csv.NewWriter(&buf)
-	if err := w.Write([]string{"day", "currency", "environment", "captured_count", "captured_minor", "refunded_minor", "net_minor"}); err != nil {
+	if err := w.Write([]string{"day", "currency", "environment", "captured_count", "captured_minor", "refunded_minor", "net_minor", "pickup_collected_count", "pickup_collected_minor",
+		"bank_transfer_confirmed_count", "bank_transfer_confirmed_minor"}); err != nil {
 		return nil, err
 	}
 	for _, r := range rows {
 		if err := w.Write([]string{r.Day, r.Currency, r.Environment, strconv.FormatInt(r.CapturedCount, 10),
-			strconv.FormatInt(r.CapturedMinor, 10), strconv.FormatInt(r.RefundedMinor, 10), strconv.FormatInt(r.NetMinor, 10)}); err != nil {
+			strconv.FormatInt(r.CapturedMinor, 10), strconv.FormatInt(r.RefundedMinor, 10), strconv.FormatInt(r.NetMinor, 10),
+			strconv.FormatInt(r.PickupCollectedCount, 10), strconv.FormatInt(r.PickupCollectedMinor, 10),
+			strconv.FormatInt(r.BankTransferConfirmedCount, 10), strconv.FormatInt(r.BankTransferConfirmedMinor, 10)}); err != nil {
 			return nil, err
 		}
 	}

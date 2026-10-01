@@ -33,6 +33,7 @@ import (
 	"livecommerce/internal/merchantorders"
 	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
+	"livecommerce/internal/storefrontadmin"
 )
 
 // NewHandler keeps transport validation separate from domain invariants. There
@@ -109,8 +110,8 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	mux.HandleFunc("POST "+base+"/products", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.ProductInput) (any, error) {
 		return catalog.CreateProduct(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)
 	}))
-	mux.HandleFunc("PATCH "+base+"/products/{product_id}", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.ProductInput) (any, error) {
-		return catalog.UpdateProduct(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), in)
+	mux.HandleFunc("PATCH "+base+"/products/{product_id}", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.ProductPatch) (any, error) {
+		return catalog.PatchProduct(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), in)
 	}))
 	mux.HandleFunc("POST "+base+"/products/{product_id}/archive", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in versionInput) (any, error) {
 		return catalog.ArchiveProduct(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), in.ExpectedVersion)
@@ -142,8 +143,12 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	mux.HandleFunc("POST "+base+"/inventory/adjustments", bodyRoute(pool, "inventory:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in inventory.Adjustment) (any, error) {
 		return inventory.AdjustOnHand(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)
 	}))
+	registerImageRoutes(mux, pool)
+	registerDesignRoutes(mux, pool) // unit store-design: storefront-v2 section B, design.go
+	registerCatalogV2Routes(mux, pool)
 	registerSettingsRoutes(mux, pool)
 	registerSettingsDiscoveryRoutes(mux, pool)
+	registerStorefrontRoutes(mux, pool)
 	registerAccountRoutes(mux, pool, configured.Accounts)
 	registerOrderRoutes(mux, pool)
 	registerStudioRoutes(mux, pool, configured.Studio || configured.Live != nil, configured.Live, configured.BrowserInput)
@@ -159,6 +164,9 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerFinanceRoutes(mux, pool)
 	registerBillingRoutes(mux, pool, configured.Billing)
 	registerCVSRoutes(mux, pool, configured.CVS)
+	registerOfflinePaymentRoutes(mux, pool)
+	registerPromotionRoutes(mux, pool)
+	registerNotifySettingsRoutes(mux, pool)
 	foundation := platform.NewHandler(pool, platform.HandlerOptions{SessionStoreList: configured.SessionStoreList})
 	if configured.SessionStoreList {
 		mux.Handle("GET /v1/admin/stores", foundation)
@@ -331,6 +339,8 @@ func classify(err error) (int, string) {
 		return http.StatusServiceUnavailable, "unavailable"
 	case errors.Is(err, merchantorders.ErrUnavailable):
 		return http.StatusServiceUnavailable, "unavailable"
+	case errors.Is(err, storefrontadmin.ErrUnavailable):
+		return http.StatusServiceUnavailable, "unavailable"
 	case errors.Is(err, live.ErrStudioProjection):
 		return http.StatusServiceUnavailable, "unavailable"
 	case errors.Is(err, platform.ErrScopeNotFound):
@@ -370,6 +380,10 @@ func respondError(w http.ResponseWriter, status int, code string) {
 	httperror.Write(w, status, code)
 }
 func respond(w http.ResponseWriter, status int, value any) {
+	if raw, ok := value.(rawResponse); ok { // product-photo preview bytes (images.go)
+		writeRaw(w, raw)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(value)

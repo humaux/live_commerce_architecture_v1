@@ -1,5 +1,6 @@
 // Causal gate: actual merchant UI -> admin BFF/Go/PG -> configured URL -> buyer
 // production Next. The only host mapping is this disposable TLS/CONNECT edge.
+import { openBuyerSession } from "./shop-helpers.mjs";
 import assert from "node:assert/strict";
 import http from "node:http";
 import https from "node:https";
@@ -161,13 +162,15 @@ try {
       // The real merchant Open control fresh-reads projection and navigates.
       await merchant.getByRole("button", {name: "Open purchase page", exact: true}).click();
       page = merchant;
-      await page.waitForURL(urls.en);
+      // the configured URL carries the product id; the storefront answers a permanent redirect to the slug page (landing on either is the buyer page)
+      await page.waitForURL(url => url.toString() === urls.en || url.toString().startsWith(`${buyerOrigin}/en/products/`));
     } else await page.goto(urls[locale]);
     await expect(page.getByRole("heading", {name, exact: true})).toBeVisible();
-    await expect(page.getByRole("radio", {name: code, exact: true})).toBeChecked();
-    await expect(page.getByRole("radio")).toHaveCount(1);
-    assert.equal(await page.getByRole("radio").inputValue(), sku.id);
-    await expect(page.locator(".unit-price")).toHaveText(new Intl.NumberFormat(locale, {style: "currency", currency: sku.currency}).format(123.45));
+    // Storefront shell: the merchant's single axis-less SKU is the product's one variant (no chips); the buy box names the SKU it would add.
+    await expect(page.getByRole("radio")).toHaveCount(0);
+    assert.equal(await page.getByTestId("product-buy").getAttribute("data-sku"), sku.id);
+    await expect(page.getByTestId("variant-price")).toHaveText(new Intl.NumberFormat(locale, {style: "currency", currency: sku.currency}).format(123.45));
+    await openBuyerSession(page); // the shell opens a buyer session at the first cart write, not on view: open it as the old page did on load
     const state = await page.evaluate(async () => (await fetch("/api/buyer/session")).json());
     assert.equal(state.state, "active");
     const catalog = await page.evaluate(async ({product, context}) => { const response = await fetch(`/api/buyer/catalog?product_id=${product}`, {headers: {"X-Buyer-Context": context}}); return {status: response.status, body: await response.json()}; }, {product: product.id, context: state.context});
@@ -178,8 +181,9 @@ try {
     pass(`${locale} exact configured URL has persisted product, SKU, price and mobile scope`);
   }
   await buyer.goto(`${buyerOrigin}/en/products/${process.env.LC_JOINT_FOREIGN_PRODUCT}`);
-  await expect(buyer.locator("main[aria-busy=false]")).toBeVisible();
-  await expect(buyer.getByRole("radio")).toHaveCount(0);
+  // a foreign tenant's product is the shell's 404 page (identical to unknown): no buy box, no product heading
+  await expect(buyer.getByTestId("not-found")).toBeVisible();
+  await expect(buyer.getByTestId("product-buy")).toHaveCount(0);
   await expect(buyer.getByRole("heading", {name: "BCAT foreign product", exact: true})).toHaveCount(0);
   const foreign = await buyer.evaluate(async product => {
     const state = await (await fetch("/api/buyer/session")).json();
@@ -187,11 +191,13 @@ try {
     return {status: response.status, body: await response.json()};
   }, process.env.LC_JOINT_FOREIGN_PRODUCT);
   assert.equal(foreign.status, 200);
-  assert.deepEqual(foreign.body, {items: [], next_cursor: ""});
+  // isolation: no foreign item and no cursor. The catalog read also names the buyer's OWN store (store_name, a public field added by the catalog read since this gate was written).
+  assert.deepEqual({items: foreign.body.items, next_cursor: foreign.body.next_cursor}, {items: [], next_cursor: ""});
+  assert.equal(typeof foreign.body.store_name, "string");
   noPurchaseEffects(afterSaves, await control("facts"));
   pass("foreign tenant product is absent and viewing creates no purchase facts");
   await buyer.goto(urls.en);
-  await expect(buyer.getByRole("radio", {name: code, exact: true})).toBeChecked();
+  assert.equal(await buyer.getByTestId("product-buy").getAttribute("data-sku"), sku.id);
   const activeState = await buyer.evaluate(async () => (await fetch("/api/buyer/session")).json());
   assert.equal(activeState.state, "active");
   const beforeRevocation = await control("facts");
@@ -203,8 +209,10 @@ try {
   assert.equal(denied.status, 404, "valid existing buyer must hit publication denial");
   assert.equal(denied.body.code, "not_found");
   await buyer.reload();
-  await expect(buyer.locator("main").getByRole("alert")).toBeVisible();
-  await expect(buyer.getByRole("radio")).toHaveCount(0);
+  // unpublished: the storefront answers its not-found page and no product (buy box) renders
+  await expect(buyer.getByTestId("store-closed")).toBeVisible();
+  await expect(buyer.getByTestId("product-buy")).toHaveCount(0);
+  assert.equal((await buyer.request.get(buyer.url())).status(), 404);
   await merchant.goto(`${adminOrigin}/en`);
   await merchant.getByRole("button", {name, exact: true}).click();
   await expect(merchant.getByTestId("purchase-entry").getByRole("status")).toHaveText("No verified, published storefront address is available.");

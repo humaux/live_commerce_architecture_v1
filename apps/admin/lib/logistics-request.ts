@@ -12,6 +12,12 @@ const routes: [string, RegExp, LogisticsKind][] = [
   ["POST", /^logistics\/ecpay\/enabled$/, "command"],
   ["GET", /^logistics\/cvs-settings$/, "get"],
   ["PUT", /^logistics\/cvs-settings$/, "command"],
+  // storefront-v2 §C: the store's bank-transfer settings (Go internal/httpapi/offline.go; integration:read / integration:manage).
+  ["GET", /^bank-transfer-settings$/, "get"],
+  ["PUT", /^bank-transfer-settings$/, "command"],
+  // storefront-v2 §E6: the new-order mail opt-out (Go internal/httpapi/notify.go; integration:read / integration:manage).
+  ["GET", /^notification-settings$/, "get"],
+  ["PUT", /^notification-settings$/, "command"],
 ];
 export function logisticsRoute(method: string, path: string): LogisticsKind | null {
   return routes.find(([m, re]) => m === method && re.test(path))?.[2] ?? null;

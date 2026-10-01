@@ -16,7 +16,7 @@
 #           S43 compose.env IMAGE_TAG follows deploy.sh (plain `up -d` keeps the tag; watchdog W10).
 #           R1 additions (deploy-release unit): S13 also checks the ruling-19 River privileges and the
 #           registrar EXECUTE grants (S13n injects two drifts: both must fail provisioning by name), S16 the claims-worker + Stripe-enabled sandbox worker, S19 the
-#           Stripe webhook route, S44 the operator one-shots stripe-admin / meta-admin.
+#           Stripe webhook route, S44 the operator one-shots stripe-admin / meta-admin / store-admin.
 #           R2 U08: S46 retention-admin on the claims-worker's retention-job login: `status` works and
 #           shows a run (RunOnStart), every other subcommand refuses the job login (exit 2), no service
 #           mounts an operator DSN (claims-retention-purge-v1 §10(5), CRP09).
@@ -446,12 +446,24 @@ full_cases() {
     --proof "$(printf '0%.0s' {1..64})" --proof-expires 2099-01-01T00:00:00Z --expected-epoch 0 2>&1 || true)
   printf '%s\n' "$out44" >"$EV/logs/S44-meta-route.log"
   [[ "$out44" == *meta_admin_register_failed* ]] || why44+=" meta-admin route: got [${out44:0:60}] want meta_admin_register_failed"
+  # R3 storefront-publish: store-admin on a synthetic store/origin must get past config and the registrar authority
+  # (commerce_storefront_registrar EXECUTE on control.operator_*) and be answered by the definer: no such store/domain
+  # -> the fixed code store_admin_not_found. store_admin_config/_database/_failed would mean the operator path is broken.
+  # (A real store is not available in smoke; the exit-0 JSON shape is the PG process gate's job.)
+  out44=$(lc_compose_with_ops run --rm --no-deps -T store-admin /app/bin/store-admin status \
+    --store 00000000-0000-4000-8000-000000000002 2>&1 || true)
+  printf '%s\n' "$out44" >"$EV/logs/S44-store-status.log"
+  [[ "$out44" == *store_admin_not_found* ]] || why44+=" store-admin status: got [${out44:0:60}] want store_admin_not_found"
+  out44=$(lc_compose_with_ops run --rm --no-deps -T store-admin /app/bin/store-admin domain-suspend \
+    --origin https://smoke.example.com 2>&1 || true)
+  printf '%s\n' "$out44" >"$EV/logs/S44-store-suspend.log"
+  [[ "$out44" == *store_admin_not_found* ]] || why44+=" store-admin domain-suspend: got [${out44:0:60}] want store_admin_not_found"
   for s in api expiry-worker payment-worker-sandbox meta-worker claims-worker; do
     if lc_compose config --format json 2>/dev/null | python3 -c '
 import json, sys
 svc = json.load(sys.stdin)["services"][sys.argv[1]]
 names = set(svc.get("secrets") and [x["source"] if isinstance(x, dict) else x for x in svc["secrets"]] or [])
-sys.exit(1 if names & {"dsn_lc_stripe_registrar", "dsn_lc_meta_registrar"} else 0)' "$s"; then :; else why44+=" $s mounts a registrar DSN"; fi
+sys.exit(1 if names & {"dsn_lc_stripe_registrar", "dsn_lc_meta_registrar", "dsn_lc_store_registrar"} else 0)' "$s"; then :; else why44+=" $s mounts a registrar DSN"; fi
   done
   # S44b: the sanctioned wrapper itself. A syntactically valid dummy token must be forwarded by NAME and
   # reach the CLI (fixed meta_admin_* code, exit 1, audit line without values); a live-shaped Stripe key
@@ -476,7 +488,15 @@ sys.exit(1 if names & {"dsn_lc_stripe_registrar", "dsn_lc_meta_registrar"} else 
   out44=$("$LC_SCRIPTS_DIR/ops-admin.sh" stripe-admin qualify --profile LIVE 2>&1 </dev/null) && why44+=" ops-admin accepted --profile LIVE"
   [[ "$out44" == *"LIVE is refused"* ]] || why44+=" --profile LIVE not refused by name"
   unset live_key
-  if [[ -z "$why44" ]]; then rec S44 PASS "stripe-admin/meta-admin one-shots run isolated, registrar logins admitted, no long-running service mounts them; ops-admin.sh forwards by name, audits without values, refuses sk_live_ keys and --profile LIVE without the pair"; else rec S44 FAIL "$why44 (logs/S44-*.log)"; fi
+  # The sanctioned wrapper also forwards store-admin (allowlist) and audits it without flag values.
+  before_lines=$(awk 'END { print NR }' "$ops_log" 2>/dev/null || echo 0)
+  out44=$("$LC_SCRIPTS_DIR/ops-admin.sh" store-admin status --store 00000000-0000-4000-8000-000000000002 2>&1 </dev/null) && why44+=" ops-admin store-admin status accepted a nonexistent store"
+  printf '%s\n' "$out44" >"$EV/logs/S44c.log"
+  [[ "$out44" == *store_admin_not_found* ]] || why44+=" ops-admin store-admin: [${out44:0:80}]"
+  after_lines=$(awk 'END { print NR }' "$ops_log" 2>/dev/null || echo 0)
+  ((after_lines == before_lines + 1)) && grep -Eq 'tool=store-admin sub=status live_pair=[01] exit=1' "$ops_log" ||
+    why44+=" ops-admin store-admin audit line missing"
+  if [[ -z "$why44" ]]; then rec S44 PASS "stripe-admin/meta-admin/store-admin one-shots run isolated, registrar logins admitted, no long-running service mounts them; ops-admin.sh forwards by name, audits without values, refuses sk_live_ keys and --profile LIVE without the pair"; else rec S44 FAIL "$why44 (logs/S44-*.log)"; fi
 
   # S46 U08 retention job login (claims-retention-purge-v1 §5, §10(5)). Smoke has no operator login by design,
   # so the policy stays report-only (enforced=0, LC_REQUIRE_RETENTION_ENFORCED=0 in the smoke compose.env).

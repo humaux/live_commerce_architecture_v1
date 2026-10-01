@@ -69,7 +69,10 @@ func NewBuyerCVS(checkoutPool *pgxpool.Pool, keys *ecpay.Keyring, client *ecpay.
 }
 
 var (
-	returnPathPattern = regexp.MustCompile(`^/(zh-TW|zh-CN|en)/products/[A-Za-z0-9_-]{1,64}$`)
+	// returnPathPattern: the ECPay map returns the buyer to exactly /{locale}/checkout (the storefront checkout page) or the legacy
+	// product form /{locale}/products/{id}. Same strictness as before (no query, no fragment, no extra segment, three locales).
+	// Mirrored byte for byte in migrations/0093 (open_cvs_selection and the cvs_selections CHECK): Go answers early, SQL is the authority.
+	returnPathPattern = regexp.MustCompile(`^/(zh-TW|zh-CN|en)/(products/[A-Za-z0-9_-]{1,64}|checkout)$`)
 	storeCodePattern  = regexp.MustCompile(`^[0-9]{3,8}$`)
 	serviceCodeRx     = regexp.MustCompile(`^[a-z][a-z0-9_-]{0,39}$`)
 )

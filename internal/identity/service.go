@@ -1,5 +1,6 @@
 // Package identity owns merchant login and first-store bootstrap: the OIDC login (Service) and the
-// email + password + emailed-code login (Passwords, contracts/merchant-password-auth-v1.md). Its
+// email + password + emailed-code login (Passwords, contracts/merchant-password-auth-v1.md), plus the store staff team (Staff:
+// invitations, roles, revoke; contracts/storefront-v2.md §D, staff.go). Its
 // dedicated database pool is an authentication authority (role commerce_identity, EXECUTE on the
 // identity.* definers only), never a business runtime pool.
 //

@@ -142,6 +142,10 @@ func buildBuyerWithCVS(ctx context.Context, c buyerConfig, mainPool *pgxpool.Poo
 		return nil, cvsParts{}, nil, errBuyerConfig
 	}
 	hostedPool = openedHostedPool
+	if payment == nil {
+		// ops-polish OP1: no hosted payment service means no card order can ever be paid; options stop offering card, Begin refuses it.
+		service = service.WithoutCardPayment()
+	}
 	h, err := buyerhttp.New(ctx, issuer, runtime, service, c.bffKey, c.ttl, payment)
 	if err != nil {
 		closePools()

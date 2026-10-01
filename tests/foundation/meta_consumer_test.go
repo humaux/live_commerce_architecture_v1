@@ -132,7 +132,7 @@ func mcPre0029Fixture(t *testing.T) *testFixture {
 		t.Fatal(err)
 	}
 	// Apply installed these River privileges between upstream and post-River SQL in the release this historical state models (before
-	// migration 0084 split commerce_worker); the current Apply that later upgrades this database revokes them from commerce_worker.
+	// migration 0096 split commerce_worker); the current Apply that later upgrades this database revokes them from commerce_worker.
 	mustExec(t, owner, `GRANT SELECT,INSERT,UPDATE(kind) ON river.river_job TO commerce_runtime;
 	 GRANT USAGE ON SEQUENCE river.river_job_id_seq TO commerce_runtime;
 	 GRANT SELECT,INSERT,UPDATE(kind) ON river.river_job TO commerce_checkout_runtime;

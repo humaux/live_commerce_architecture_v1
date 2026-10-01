@@ -7,6 +7,14 @@
 import { csrfCookie, safeError, sessionBoundary, writeSettings } from "./settings-client";
 import { OrderReadError, read } from "./orders-client";
 import {
+  parseTransferDetail,
+  parseTransferSettings,
+  type TransferAction,
+  type TransferDetail,
+  type TransferSettings,
+} from "./transfer-model";
+import { parseNotifySettings, type NotifySettings } from "./notify-model";
+import {
   parseCvsSettings,
   parseCvsShipment,
   parseEcpay,
@@ -109,3 +117,32 @@ export async function postPrintForm(
     return { ok: false, code: "retry_later" };
   }
 }
+
+// ---- bank transfer (contracts/storefront-v2.md §C) -> Go internal/httpapi/offline.go ------------------------------------------
+// Go GET bank-transfer-settings (integration:read): defaults at version 0 when the store never saved any.
+export const readTransferSettings = (store: string, signal: AbortSignal): Promise<TransferSettings> =>
+  get(`/api/stores/${store}/bank-transfer-settings`, parseTransferSettings, signal);
+// Go PUT bank-transfer-settings (integration:manage): version CAS (0 inserts); a change never touches placed orders.
+export const putTransferSettings = (store: string, key: string, body: string, boundary: string) =>
+  write(store, "PUT", "bank-transfer-settings", key, body, boundary);
+// Go GET orders/{id}/bank-transfer (orders:read). 404 = the order is not a bank-transfer order.
+export async function readTransfer(store: string, id: string, signal: AbortSignal): Promise<TransferDetail | null> {
+  try {
+    return await get(`${orderPath(store, id)}/bank-transfer`, (value) => parseTransferDetail(value, id), signal);
+  } catch (error) {
+    if (error instanceof OrderReadError && error.code === "not-found") return null;
+    throw error;
+  }
+}
+// Go POST orders/{id}/bank-transfer/{confirm|reject|refund-offline} (payments:refund, keyed): the merchant's audited decision. Never
+// optimistic: callers re-GET after every answer (the answer body is not used).
+export const postTransferDecision = (store: string, id: string, action: TransferAction, key: string, body: string, boundary: string) =>
+  write(store, "POST", `orders/${id}/bank-transfer/${action}`, key, body, boundary);
+
+// ---- new-order mail opt-out (contracts/storefront-v2.md §E6) -> Go internal/httpapi/notify.go -----------------------------------
+// Go GET notification-settings (integration:read): no stored row reads as on.
+export const readNotifySettings = (store: string, signal: AbortSignal): Promise<NotifySettings> =>
+  get(`/api/stores/${store}/notification-settings`, parseNotifySettings, signal);
+// Go PUT notification-settings (integration:manage): an idempotent set of the one flag; callers re-GET after every answer.
+export const putNotifySettings = (store: string, key: string, body: string, boundary: string) =>
+  write(store, "PUT", "notification-settings", key, body, boundary);

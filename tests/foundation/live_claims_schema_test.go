@@ -213,7 +213,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		const rt, wr = "commerce_runtime", "commerce_claims_writer"
 		add(rt, "live.offers", "SELECT", cols("live.offers")...)
 		add(rt, "live.offers", "INSERT", cols("live.offers")...)
-		add(rt, "live.offers", "UPDATE", "max_quantity_per_claim", "active", "activated_at", "version", "updated_at")
+		// live-tools 0092 ("Live tools (R4)" amendment): live_price_minor joins the merchant-writable offer columns.
+		add(rt, "live.offers", "UPDATE", "max_quantity_per_claim", "active", "activated_at", "version", "updated_at", "live_price_minor")
 		add(rt, "live.claim_windows", "SELECT", cols("live.claim_windows")...)
 		add(rt, "live.claim_windows", "INSERT", cols("live.claim_windows")...)
 		add(rt, "live.claim_windows", "UPDATE", "state", "match_mode", "generation", "opened_at", "closed_at", "version", "principal_id", "updated_at")
@@ -234,7 +235,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		add(wr, "claims.bundles", "UPDATE", "owner_id", "bound_at")
 		add(wr, "claims.lines", "SELECT", "tenant_id", "store_id", "bundle_id", "offer_id", "sku_id", "quantity", "version", "applied_version")
 		add(wr, "claims.lines", "UPDATE", "applied_version")
-		add(wr, "live.offers", "SELECT", "tenant_id", "store_id", "id", "session_id", "keyword", "active")
+		// live-tools 0092: claims.live_prices / preview_live_prices read the offer SKU and live price.
+		add(wr, "live.offers", "SELECT", "tenant_id", "store_id", "id", "session_id", "keyword", "active", "sku_id", "live_price_minor")
 		add(wr, "identity.sessions", "SELECT", "token_hash", "principal_id", "audience", "revoked_at", "expires_at")
 		// meta-claims-intake-v1 §4.3 rows (exactly; the contract is the source, not the migration).
 		const ci, iw = "commerce_claims_intake", "commerce_integration_writer"
@@ -305,7 +307,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			[]string{"claims.issue_link", "claims.mark_applied", "claims.preview_link", "claims.redeem_link", "identity.resolve_access",
 				// meta-claims-intake-v1 §4.3: owned definers + principal_holds
 				"claims.check_meta_reply", "claims.fail_meta_intake", "claims.insert_meta_intake", "claims.intake_scope", "claims.issue_system_link",
-				"claims.lease_meta_intake", "identity.principal_holds", "live.put_claim_source", "live.track_claim_window_interval"})
+				"claims.lease_meta_intake", "identity.principal_holds", "live.put_claim_source", "live.track_claim_window_interval",
+				// live-tools 0092: the buyer price definers it owns.
+				"claims.live_prices", "claims.preview_live_prices"})
 		lcSameSet(t, "schema claims ACL", lcStrings(t, f.owner, `SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END||' '||a.privilege_type
 			FROM pg_namespace n CROSS JOIN LATERAL aclexplode(n.nspacl) a WHERE n.nspname='claims' AND a.grantee<>n.nspowner`),
 			[]string{"commerce_buyer_runtime USAGE", "commerce_claims_writer USAGE", "commerce_runtime USAGE",
@@ -355,6 +359,11 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				volatility: "s", acl: "commerce_buyer_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_buyer_runtime"},
 			"redeem_link": {args: "p_hash bytea, p_expected_version bigint", result: "TABLE(bundle_id uuid, bundle_version bigint, offer_id uuid, sku_id uuid, quantity integer, line_version bigint, pending boolean, offer_active boolean)",
 				volatility: "v", acl: "commerce_buyer_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_buyer_runtime"},
+			// live-tools 0092 ("Live tools (R4)" amendment rules 5-6): the buyer price definers.
+			"live_prices": {args: "p_bundles uuid[], p_offers uuid[], p_skus uuid[]", result: "TABLE(sku_id uuid, bundle_id uuid, offer_id uuid, live_price_minor bigint)",
+				volatility: "s", acl: "commerce_buyer_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_buyer_runtime"},
+			"preview_live_prices": {args: "p_hash bytea", result: "TABLE(keyword text, live_price_minor bigint)",
+				volatility: "s", acl: "commerce_buyer_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_buyer_runtime"},
 			// meta-claims-intake-v1 §4.3 / §5 / §6.3: the six new claims-schema definers (all owned by commerce_claims_writer).
 			"intake_scope": {args: "", result: "TABLE(tenant_id uuid, store_id uuid, session_id uuid)", volatility: "s",
 				acl: "commerce_claims_intake:EXECUTE,commerce_claims_writer:EXECUTE,commerce_integration_writer:EXECUTE", caller: "commerce_claims_intake"},
@@ -409,13 +418,13 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		}
 		// Four T10 definers + six meta-claims-intake-v1 claims definers + live.put_claim_source and the
 		// live.claim_windows interval trigger function (§2, §4).
-		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 12 {
-			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its twelve functions", n)
+		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 14 {
+			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its fourteen functions (twelve + live-tools live_prices, preview_live_prices)", n)
 		}
 		denied := lcStrings(t, f.owner, `SELECT r.rolname||' '||p.proname FROM pg_roles r CROSS JOIN pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 			WHERE n.nspname='claims' AND r.rolname LIKE 'commerce\_%' AND has_function_privilege(r.oid,p.oid,'EXECUTE')
 			  AND NOT (r.rolname='commerce_claims_writer' OR (r.rolname='commerce_runtime' AND p.proname='issue_link')
-			       OR (r.rolname='commerce_buyer_runtime' AND p.proname IN ('preview_link','redeem_link','mark_applied'))
+			       OR (r.rolname='commerce_buyer_runtime' AND p.proname IN ('preview_link','redeem_link','mark_applied','live_prices','preview_live_prices'))
 			       OR (r.rolname='commerce_claims_intake' AND p.proname IN ('intake_scope','lease_meta_intake','fail_meta_intake'))
 			       OR (r.rolname='commerce_integration_writer' AND p.proname IN ('intake_scope','issue_system_link'))
 			       OR (r.rolname='commerce_meta_writer' AND p.proname='insert_meta_intake')
@@ -730,6 +739,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			WHERE n.nspname NOT IN ('pg_catalog','information_schema') AND p.prosrc ~* 'claims\.(bundles|links)'
 			  AND (has_function_privilege('commerce_runtime',p.oid,'EXECUTE') OR has_function_privilege('commerce_buyer_runtime',p.oid,'EXECUTE'))`),
 			[]string{"claims.issue_link(bytea,uuid,uuid,uuid,bigint,bytea,boolean)", "claims.mark_applied(uuid,uuid[],bigint[])", "claims.preview_link(bytea)", "claims.redeem_link(bytea,bigint)",
+				// live-tools 0092: buyer-runtime price definers (read-only; bound owner and link expiry are checked inside).
+				"claims.live_prices(uuid[],uuid[],uuid[])", "claims.preview_live_prices(bytea)",
 				// customers-billing-v1 §3.1 (0078): read-only projections of bound-bundle counts/time, no binding write.
 				"identity.read_merchant_customers(bytea,uuid,uuid,integer,timestamp with time zone,uuid,text)", "customers.buyer_read_privacy(bytea,uuid,boolean)"})
 		lcSameSet(t, "roles able to write owner_id", lcStrings(t, f.owner, `SELECT DISTINCT p.grantee::text FROM information_schema.column_privileges p
@@ -896,10 +907,13 @@ func lcPopulatedUpgrade(t *testing.T) {
 	dependents := []string{"0064_meta_claims_intake.sql", "0074_meta_ads.sql", "0075_meta_ads_insights.sql",
 		"0078_customers_privacy.sql", "0079_platform_billing.sql", "0080_meta_capi.sql",
 		"post_river/0014_meta_claims_intake_river.sql", "post_river/0015_meta_ads_river.sql",
-		// 0084 (+ post-River 0018, worker-authority-split) move claims/ads/payment grants, so they need every file above.
-		"0084_worker_authorities.sql", "post_river/0018_worker_authorities.sql",
+		// 0096 (+ post-River 0019, worker-authority-split) move claims/ads/payment grants, so they need every file above.
+		"0096_worker_authorities.sql", "post_river/0019_worker_authorities.sql",
 		// 0071 (claims-retention-purge-v1) requires 0060+0064 (55000 precondition), so it is held back as well.
-		"0071_claims_retention.sql"}
+		"0071_claims_retention.sql",
+		// R3/R4 files that redefine 0078 definers (finance summary 0085/0088, erasure 0090/0091) or extend 0060 offers (0092)
+		// cannot run while 0078/0060 are held back; they are re-applied with them.
+		"0085_finance_pay_at_pickup.sql", "0088_checkout_offline.sql", "0089_staff_team.sql", "0090_buyer_comms.sql", "0091_promotions.sql", "0092_live_tools.sql"}
 	for _, version := range dependents {
 		dependent, err := os.ReadFile(filepath.Join("../../migrations", version))
 		if err != nil {
@@ -907,7 +921,7 @@ func lcPopulatedUpgrade(t *testing.T) {
 		}
 		mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES($1,$2)`, version, fmt.Sprintf("%x", sha256.Sum256(dependent)))
 	}
-	waPrecreateRoles(t, owner) // 0084 is held back above, but the current Apply's River grants name its roles
+	waPrecreateRoles(t, owner) // 0096 is held back above, but the current Apply's River grants name its roles
 	if err := migrations.Apply(ctx, owner); err != nil {
 		t.Fatalf("apply everything before 0060: %v", err)
 	}

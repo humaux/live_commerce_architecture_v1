@@ -247,7 +247,7 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 ('integration.plan_cvs_create(uuid,uuid,uuid,smallint,uuid,uuid,uuid,bigint)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,true,false),
 	 ('integration.load_cvs_create(uuid,bigint,bytea,text)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
 	 ('integration.finish_cvs_create(uuid,bigint,bytea,text,text,text,text,text,text,text)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
-	 -- T21-02/03 (migration 0084): the lane classifier is evaluated by the four integration-reading workers inside their RLS
+	 -- T21-02/03 (migration 0096): the lane classifier is evaluated by the four integration-reading workers inside their RLS
 	 -- policies; the two private gates run inside definers and have no caller EXECUTE.
 	 ('integration.operation_lane(text,text)'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live','commerce_ads_worker','commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
 	 ('integration.operation_authority_ok(text,text)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),

@@ -41,6 +41,7 @@ import {
   type PaymentMode,
 } from "../lib/cvs-contract";
 import { cvsCopy } from "../lib/cvs-copy";
+import { bankTransferCopy } from "../lib/bank-transfer-copy";
 import { assertPurchaseContext } from "../lib/purchase";
 import type { Option, Order } from "../lib/purchase";
 
@@ -402,7 +403,13 @@ export default function CvsPickup({
                   setErrors({});
                 }}
               />
-              <span>{mode === "card" ? copy.payCard : copy.payAtPickup}</span>
+              <span>
+                {mode === "card"
+                  ? copy.payCard
+                  : mode === "bank_transfer"
+                    ? bankTransferCopy[locale].payBank
+                    : copy.payAtPickup}
+              </span>
             </label>
           ))}
           {payAtPickup && (

@@ -15,7 +15,7 @@
     "jsx": "react-jsx",
     "incremental": true,
     "plugins": [{ "name": "next" }],
-    "paths": { "@/*": ["./*"] }
+    "paths": { "@/*": ["./*"], "@live-commerce/markdown-lite": ["../../packages/markdown-lite/src/index.ts"] }
   },
   "include": [
     "next-env.d.ts",

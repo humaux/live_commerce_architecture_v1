@@ -254,6 +254,15 @@ func identityMux(oidc, password http.Handler) http.Handler {
 	return mux
 }
 
+// withStaff adds the staff-team routes (identityhttp/staff.go, migration 0089) in front of the identity mux. Kept separate so
+// identityMux keeps its two-handler shape; the longer /v1/identity/staff/ pattern wins.
+func withStaff(base, staff http.Handler) http.Handler {
+	mux := http.NewServeMux()
+	mux.Handle("/v1/identity/staff/", staff)
+	mux.Handle("/v1/identity/", base)
+	return mux
+}
+
 func buildIdentityHandler(ctx context.Context, c identityConfig) (http.Handler, func(), error) {
 	if !c.enabled {
 		return nil, func() {}, nil
@@ -296,7 +305,18 @@ func buildIdentityHandler(ctx context.Context, c identityConfig) (http.Handler, 
 		pool.Close()
 		return nil, nil, err
 	}
-	return identityMux(handler, passwordHandler), func() {
+	// Staff invitations send mail, so they exist only where password login (and with it the SMTP adapter) is configured.
+	staff, err := identity.NewStaff(pool, c.mailer, c.publicOrigin)
+	if err != nil {
+		pool.Close()
+		return nil, nil, err
+	}
+	staffHandler, err := identityhttp.NewStaffHandler(staff, c.bffKey)
+	if err != nil {
+		pool.Close()
+		return nil, nil, err
+	}
+	return withStaff(identityMux(handler, passwordHandler), staffHandler), func() {
 		// A12: stop background mail sends and wait for in-flight ones (<= 25 s) BEFORE the pool closes,
 		// because each finished send records its outcome through the pool.
 		drain, cancel := context.WithTimeout(context.Background(), 25*time.Second)

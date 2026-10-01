@@ -63,27 +63,47 @@ func registerClaimRoutes(mux *http.ServeMux, pool *pgxpool.Pool, labels *claims.
 		})))
 	// M2 open, close or re-mode the session's claim window (version CAS).
 	mux.HandleFunc("POST "+base+"/window", claimsRoute(http.MethodPost, false, claimsBodyRoute(pool,
-		[]string{"expected_version", "state", "match_mode"}, nil,
+		[]string{"expected_version", "state", "match_mode"}, nil, nil,
 		func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in claims.WindowInput) (any, error) {
 			return claims.SetWindow(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), r.PathValue("session_id"), in)
 		})))
 	// M3 bind a keyword to a SKU inside this session.
+	// Live tools (R4): optional live_price_minor (>=1, 0 = none) is the live-only unit price.
 	mux.HandleFunc("POST "+base+"/offers", claimsRoute(http.MethodPost, false, claimsBodyRoute(pool,
-		[]string{"keyword", "sku_id", "max_quantity_per_claim"}, nil,
+		[]string{"keyword", "sku_id", "max_quantity_per_claim"}, nil, []string{"live_price_minor"},
 		func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in claims.OfferInput) (any, error) {
 			return claims.CreateOffer(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), r.PathValue("session_id"), in)
 		})))
 	// M4 change max quantity / active of one offer (version CAS). "active" is required:
 	// a missing boolean must never decode to a silent deactivation.
+	// Optional live_price_minor: absent = unchanged, 0 = clear, >=1 = set (JSON null stays rejected).
 	mux.HandleFunc("PATCH "+base+"/offers/{offer_id}", claimsRoute(http.MethodPatch, false, claimsBodyRoute(pool,
-		[]string{"expected_version", "max_quantity_per_claim", "active"}, nil,
+		[]string{"expected_version", "max_quantity_per_claim", "active"}, nil, []string{"live_price_minor"},
 		func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in claims.OfferUpdate) (any, error) {
 			return claims.UpdateOffer(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), r.PathValue("session_id"), r.PathValue("offer_id"), in)
+		})))
+	// Live tools (R4): one-action offer seeding from the keyword library or another session (conflicts are data).
+	mux.HandleFunc("POST "+base+"/offer-import", claimsRoute(http.MethodPost, false, claimsBodyRoute(pool,
+		[]string{"source"}, nil, []string{"from_session_id"},
+		func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in claims.ImportInput) (any, error) {
+			return claims.ImportOffers(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), r.PathValue("session_id"), in)
+		})))
+	// Live tools (R4): the store-level keyword library, under a session path because the admin BFF scopes
+	// private Studio traffic to live-sessions/ (session_id only has to exist in the store).
+	mux.HandleFunc("GET "+base+"/library", claimsRoute(http.MethodGet, false, claimsScoped(pool, "live:read",
+		func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
+			entries, err := claims.ListLibrary(ctx, tx, s, bearerToken(r), r.PathValue("session_id"))
+			return map[string]any{"entries": entries}, err
+		})))
+	mux.HandleFunc("PUT "+base+"/library/{sku_id}", claimsRoute(http.MethodPut, false, claimsBodyRoute(pool,
+		[]string{"keyword", "expected_version"}, nil, nil,
+		func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in claims.LibraryInput) (any, error) {
+			return claims.SetLibraryKeyword(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), r.PathValue("session_id"), r.PathValue("sku_id"), in)
 		})))
 	// M5 MOCK operator ingress: text plus exactly one of bundle_id / actor_label. REJECTED
 	// and WINDOW_CLOSED are 200 results (data, not errors).
 	mux.HandleFunc("POST "+base+"/manual", claimsRoute(http.MethodPost, false, claimsBodyRoute(pool,
-		[]string{"text"}, []string{"bundle_id", "actor_label"},
+		[]string{"text"}, []string{"bundle_id", "actor_label"}, nil,
 		func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in claims.ManualClaimInput) (any, error) {
 			return claims.RecordManualClaim(ctx, tx, s, *labels, bearerToken(r), r.Header.Get("Idempotency-Key"), r.PathValue("session_id"), in)
 		})))
@@ -105,7 +125,7 @@ func registerClaimRoutes(mux *http.ServeMux, pool *pgxpool.Pool, labels *claims.
 	// Comment source (meta-claims-intake-v1 §2, claimsource.go): GET/PUT claim-source of a session.
 	registerClaimSourceRoutes(mux, pool)
 	// Methodless fallbacks keep 405 inside the same private response boundary.
-	for _, path := range []string{base, base + "/window", base + "/offers", base + "/offers/{offer_id}", base + "/manual", base + "/bundles"} {
+	for _, path := range []string{base, base + "/window", base + "/offers", base + "/offers/{offer_id}", base + "/offer-import", base + "/library", base + "/library/{sku_id}", base + "/manual", base + "/bundles"} {
 		mux.HandleFunc(path, studioRoute("", false, nil))
 	}
 }
@@ -169,7 +189,7 @@ func claimsRoute(method string, query bool, next http.HandlerFunc) http.HandlerF
 			respondError(w, http.StatusUnprocessableEntity, "invalid_request")
 			return
 		}
-		for _, name := range []string{"session_id", "offer_id", "bundle_id"} {
+		for _, name := range []string{"session_id", "offer_id", "bundle_id", "sku_id"} {
 			if value := r.PathValue(name); value != "" && !command.ValidID(value) {
 				respondError(w, http.StatusUnprocessableEntity, "invalid_request")
 				return
@@ -180,10 +200,10 @@ func claimsRoute(method string, query bool, next http.HandlerFunc) http.HandlerF
 }
 
 // claimsBodyRoute decodes a strict claims body (claimsBody) and runs fn in a live:manage
-// platform.WithScope transaction. Used by M2–M5.
-func claimsBodyRoute[T any](pool *pgxpool.Pool, required, oneOf []string, fn func(context.Context, pgx.Tx, platform.Scope, *http.Request, T) (any, error)) http.HandlerFunc {
+// platform.WithScope transaction (optional keys may be absent, never null). Used by M2–M5 and the R4 live tools.
+func claimsBodyRoute[T any](pool *pgxpool.Pool, required, oneOf, optional []string, fn func(context.Context, pgx.Tx, platform.Scope, *http.Request, T) (any, error)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		in, ok := claimsBody[T](w, r, required, oneOf)
+		in, ok := claimsBody[T](w, r, required, oneOf, optional...)
 		if !ok {
 			return
 		}

@@ -21,7 +21,7 @@
 # Exit: 0 built, 1 build failed, 3 BLOCKED (cmd/migrate missing; kept as a guard, it exists since I1 closed:
 #   the Go image would be undeployable without it, so nothing is faked).
 # Status: DESIGN; all four images build and pass smoke S07/S08 (R1, Linux dind run recorded in
-#   deploy/README.md). lc-go now also carries claims-worker, ads-worker, stripe-admin and meta-admin.
+#   deploy/README.md). lc-go now also carries claims-worker, ads-worker, stripe-admin, meta-admin and store-admin.
 # Change rules: keep tags immutable (never reuse a tag for different content; "-dirty" tags are
 #   for rehearsal only and must not be deployed to production).
 set -Eeuo pipefail

@@ -1,5 +1,5 @@
 // File: tests/foundation/worker_authority_helpers_test.go
-// Purpose: shared names and openers for the five per-process worker authorities of migration 0084 (T21-02/03),
+// Purpose: shared names and openers for the five per-process worker authorities of migration 0096 (T21-02/03),
 //
 //	so every worker-flavoured test logs in as the authority its production process uses instead of the empty
 //	legacy commerce_worker role.
@@ -22,7 +22,7 @@ import (
 	"livecommerce/internal/platform"
 )
 
-// The five worker authorities (NOLOGIN roles of migration 0084) and the empty legacy role.
+// The five worker authorities (NOLOGIN roles of migration 0096) and the empty legacy role.
 const (
 	waPayment = "commerce_payment_worker"
 	waLive    = "commerce_payment_live"
@@ -35,7 +35,7 @@ const (
 // waAll lists every worker authority a negative ACL assertion must cover, plus the legacy role (which must stay empty).
 var waAll = []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy}
 
-// waLegacyWorld reports whether f is a historical-state database from before migration 0084 (no worker authorities yet).
+// waLegacyWorld reports whether f is a historical-state database from before migration 0096 (no worker authorities yet).
 func waLegacyWorld(t *testing.T, f *testFixture) bool {
 	t.Helper()
 	var legacy bool
@@ -49,7 +49,7 @@ func waLegacyWorld(t *testing.T, f *testFixture) bool {
 // a historical replay created or recreated objects (old SQL grants those to commerce_worker only).
 var waLegacyLogins sync.Map // *pgxpool.Pool (owner) -> []string
 
-// waOpen opens a platform worker pool for authority a over a fresh test login in role. On a historical pre-0084 database (the
+// waOpen opens a platform worker pool for authority a over a fresh test login in role. On a historical pre-0096 database (the
 // "old release" fixtures that replay original migration bytes) the authority role is created bare and the login additionally receives a
 // DIRECT copy of everything the old shared commerce_worker holds there (ACL entries and RLS policies), so the pool passes the current
 // startup validation and still exercises the old SQL those tests are about; waAfterApply drops the clones after an upgrade.
@@ -146,8 +146,8 @@ func waValidator(a platform.WorkerAuthority) func(context.Context, *pgxpool.Pool
 	return func(ctx context.Context, pool *pgxpool.Pool) error { return platform.ValidateWorkerPool(ctx, pool, a) }
 }
 
-// waPrecreateRoles creates the five worker authorities exactly as migration 0084 does (that migration is idempotent). Historical-state
-// fixtures hold 0084 back (it needs 0064/0073/0074/0080 objects) but still run the CURRENT migrations.Apply, whose River grants
+// waPrecreateRoles creates the five worker authorities exactly as migration 0096 does (that migration is idempotent). Historical-state
+// fixtures hold 0096 back (it needs 0064/0073/0074/0080 objects) but still run the CURRENT migrations.Apply, whose River grants
 // target these roles, so they must exist before that Apply.
 func waPrecreateRoles(t *testing.T, owner *pgxpool.Pool) {
 	t.Helper()
@@ -157,7 +157,7 @@ func waPrecreateRoles(t *testing.T, owner *pgxpool.Pool) {
 }
 
 // waEnsureRole creates authority as a bare NOLOGIN role when it is one of the five worker authorities and does not exist yet (a
-// historical-state fixture that upgrades with the current migrations.Apply later: 0084 is idempotent and then grants it its privileges).
+// historical-state fixture that upgrades with the current migrations.Apply later: 0096 is idempotent and then grants it its privileges).
 func waEnsureRole(t *testing.T, owner *pgxpool.Pool, authority string) {
 	t.Helper()
 	switch authority {

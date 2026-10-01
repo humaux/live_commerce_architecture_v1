@@ -220,7 +220,7 @@ func TestStripeRF12Guards(t *testing.T) {
 					}
 				}
 			}
-			// T21-02 (migration 0084) split the old shared commerce_worker: for these payment functions its successors are the two payment
+			// T21-02 (migration 0096) split the old shared commerce_worker: for these payment functions its successors are the two payment
 			// authorities, and nobody else may execute them.
 			for i, r := range oldGrant {
 				if r == "commerce_worker" {

@@ -241,7 +241,7 @@ CREATE TABLE fulfillment.cvs_selections (                       -- one buyer map
  returned_outside boolean, reject_code text CHECK(reject_code ~ '^[a-z_]{1,40}$'),
  pickup_id uuid, country text NOT NULL DEFAULT 'TW' CHECK(country='TW'),
  return_origin text NOT NULL,                                     -- the store's ACTIVE storefront_domains.origin (round 2)
- return_path text NOT NULL CHECK(return_path ~ '^/(zh-TW|zh-CN|en)/products/[A-Za-z0-9_-]{1,64}$'),  -- only route with checkout (OrderFlow)
+ return_path text NOT NULL CHECK(return_path ~ '^/(zh-TW|zh-CN|en)/(products/[A-Za-z0-9_-]{1,64}|checkout)$'),  -- the routes that host checkout (OrderFlow); widened by migration 0093
  created_at timestamptz NOT NULL, expires_at timestamptz NOT NULL,
  updated_at timestamptz NOT NULL, version bigint NOT NULL CHECK(version>0),
  PRIMARY KEY(tenant_id,store_id,owner_id,id), UNIQUE(id),
@@ -435,7 +435,7 @@ chain's official store-search URL (§16.1).
 
 | Method/path | Input | Success / errors |
 | --- | --- | --- |
-| POST `/cvs-selections` | `Idempotency-Key`; body exactly `{cart_version, market_id, service_code, return_path}` (`return_path` = the product page the buyer checks out on, allowlisted `^/(zh-TW|zh-CN|en)/products/[A-Za-z0-9_-]{1,64}$` — checkout (`OrderFlow`) exists only under `products/[productID]` (ProductPurchase.tsx); `/claim` is excluded because its link token lives only in the URL fragment and is dropped on load and on `pagehide` (ClaimLink.tsx:120-146), so a return there always renders not-found; anything else → 422 `bad_return_path`. A later claim-page checkout adds its path by amendment). `return_origin` is **not** a body field: Go takes the authenticated `X-Commerce-Storefront-Origin` (§4.3 open_cvs_selection) → 422 `bad_return_origin` | 201 `{selection_id, expires_at, form:{action, fields:{MerchantID, MerchantTradeNo, LogisticsType:"CVS", LogisticsSubType, IsCollection:"N", ServerReplyURL, Device}}}`. `MerchantTradeNo` = 20 chars crypto/rand `[A-Za-z0-9]` generated in Go, only its sha256 stored; `ServerReplyURL = <COMMERCE_CVS_HOOKS_ORIGIN>/v1/cvs/ecpay/map-return/{selection_id}`; `action` is the fixed stage/prod map URL by environment (never from input). 409 cart/version, 422 `service_unavailable`, 429. Replay returns 409 `selection_replay_new_key` (the nonce is not re-derivable; the client opens a new selection). |
+| POST `/cvs-selections` | `Idempotency-Key`; body exactly `{cart_version, market_id, service_code, return_path}` (`return_path` = the page the buyer checks out on, allowlisted `^/(zh-TW|zh-CN|en)/(products/[A-Za-z0-9_-]{1,64}|checkout)$`; AMENDMENT 2026-10-01 (unit storefront-integration, migration 0093 + `internal/checkout/cvs.go`): the storefront shell hosts checkout (`OrderFlow`) at exactly `/{locale}/checkout`, so that one path is accepted in addition to the product form, with the same strictness (three locales, no query, no fragment, no extra segment, no host) in Go, in `fulfillment.open_cvs_selection` and in the `cvs_selections.return_path` CHECK; `/claim` is excluded because its link token lives only in the URL fragment and is dropped on load and on `pagehide` (ClaimLink.tsx:120-146), so a return there always renders not-found; anything else → 422 `bad_return_path`. A later claim-page checkout adds its path by amendment). `return_origin` is **not** a body field: Go takes the authenticated `X-Commerce-Storefront-Origin` (§4.3 open_cvs_selection) → 422 `bad_return_origin` | 201 `{selection_id, expires_at, form:{action, fields:{MerchantID, MerchantTradeNo, LogisticsType:"CVS", LogisticsSubType, IsCollection:"N", ServerReplyURL, Device}}}`. `MerchantTradeNo` = 20 chars crypto/rand `[A-Za-z0-9]` generated in Go, only its sha256 stored; `ServerReplyURL = <COMMERCE_CVS_HOOKS_ORIGIN>/v1/cvs/ecpay/map-return/{selection_id}`; `action` is the fixed stage/prod map URL by environment (never from input). 409 cart/version, 422 `service_unavailable`, 429. Replay returns 409 `selection_replay_new_key` (the nonce is not re-derivable; the client opens a new selection). |
 | POST `/cvs-selections/{id}/verify` | none | 200 read projection. If RETURNED, Go retries the directory lookup (§7.2) then `verify_cvs_selection`; directory fetch failure → 200 `{state:"RETURNED", retry_after_s}`. |
 | GET `/cvs-selections/{id}` | none | 200 read projection. |
 
@@ -1000,6 +1000,16 @@ per PROCESS §5.
   No money movement.
 - Buyer order page: COLLECTED "已取貨付款", RETURNED "未取貨，已退回"; pending pay-at-pickup orders show
   "取貨時付款 NT$<total>".
+
+**Amendment T21-01 (2026-10-01; `migrations/0083_cvs_restock_guard.sql`; supersedes the restock deny-list of §16.8).** One predicate,
+`fulfillment.cvs_parcel_returned`, is true iff the latest ECPay attempt is `UNCLAIMED` or no attempt was ever handed to ECPay
+(only FAILED/ABANDONED history: the manual / MERCHANT_SHIPPED path); REQUESTED, UNKNOWN, CREATED, AT_DC, AT_STORE and PICKED_UP are
+false. `restock` and the merchant-recorded `returned` both require it, else 409 `parcel_not_returned`. A 7-ELEVEN 2098 re-delivery
+that moves the shipment UNCLAIMED → AT_STORE reverts `collection_state` RETURNED → PENDING (event `collection.reverted`, audit
+`fulfillment.collection_reported`), so a later 2067 reaches COLLECTED through the normal branch; RESTOCKED is never reverted.
+After a 2098 a restock request (expected `RETURNED`) therefore answers 409 `collection_state_changed`; `parcel_not_returned`
+remains the defence for any order that is RETURNED while the parcel is not back. Test (REAL_PG, run result in the unit evidence):
+`TestCvsPayAtPickupRelease` (sequence 2030,2073,2074,2098,2067).
 
 ### 16.5 Store settings (C4; spec (e))
 

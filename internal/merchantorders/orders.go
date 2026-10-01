@@ -6,7 +6,11 @@
 // Its order projections also carry the taiwan-cvs-logistics-v1 fields (pickup_source, payment_mode,
 // collection_state, PROVIDER_LABEL_CREATED) read-only from identity.read_merchant_orders.
 //
-// It never writes ledger, stock, reservation, payment-fact or refund state, never creates a provider
+// offline.go is the merchant side of the bank_transfer payment mode (storefront-v2 §C): the store's bank-transfer settings, one
+// order's transfer detail and the three audited decisions (confirm, reject the buyer's submission, record an offline refund), each one
+// SQL definer of migration 0088 (payments.decide_bank_transfer is the only writer of a confirmation, never automatic).
+//
+// It never writes ledger, stock, reservation, payment-fact or refund state itself (decide_bank_transfer does, in SQL), never creates a provider
 // operation or River job, never calls a carrier or fetches a tracking URL, and never stores or logs an
 // export file or recipient data (ECPay shipments live in internal/fulfillment).
 package merchantorders
@@ -238,7 +242,7 @@ func validAuthorityInput(scope platform.Scope, token string) bool {
 
 func validState(state string) bool {
 	switch state {
-	case "", "all", "DRAFT", "AWAITING_PAYMENT", "CONFIRMED", "CANCELLED", "shipped", "unshipped", "cvs_pending":
+	case "", "all", "DRAFT", "AWAITING_PAYMENT", "AWAITING_TRANSFER", "CONFIRMED", "CANCELLED", "shipped", "unshipped", "cvs_pending":
 		return true
 	}
 	return false
@@ -254,9 +258,9 @@ func matchesState(state string, v Summary) bool {
 	case "shipped":
 		return v.FulfillmentState == "MERCHANT_SHIPPED"
 	case "unshipped":
-		// Card orders carry a READY work item; a pay_at_pickup order never has a payment attempt (work NONE).
+		// Card orders carry a READY work item; a pay_at_pickup or bank_transfer order never has a payment attempt (work NONE).
 		return v.CommercialState == "CONFIRMED" && v.FulfillmentState == "MANUAL_UNASSIGNED" &&
-			(v.WorkState == "READY" || (v.PaymentMode == "pay_at_pickup" && v.WorkState == "NONE"))
+			(v.WorkState == "READY" || ((v.PaymentMode == "pay_at_pickup" || v.PaymentMode == "bank_transfer") && v.WorkState == "NONE"))
 	case "cvs_pending":
 		// C4: the forwarder's daily drop list (the SQL adds "current attempt CREATED").
 		return v.FulfillmentState == "PROVIDER_LABEL_CREATED"
@@ -295,7 +299,7 @@ func validSummary(v Summary) bool {
 		return false
 	}
 	switch v.CommercialState {
-	case "DRAFT", "AWAITING_PAYMENT", "CONFIRMED", "CANCELLED":
+	case "DRAFT", "AWAITING_PAYMENT", "AWAITING_TRANSFER", "CONFIRMED", "CANCELLED":
 	default:
 		return false
 	}
@@ -359,6 +363,18 @@ func validSummary(v Summary) bool {
 			!v.TestMode && (v.CommercialState == "CONFIRMED" || (v.CommercialState == "CANCELLED" && v.FulfillmentState == "CANCELLED")) &&
 			v.FulfillmentState != "PAID_ALLOCATION_FAILED"
 	}
+	if v.PaymentMode == "bank_transfer" {
+		// storefront-v2 §C: never a payment attempt, fact, refund or work item (the offline fact lives in checkout.bank_transfers);
+		// AWAITING_TRANSFER while the merchant has not confirmed (stock still only reserved, nothing shipped), CONFIRMED after, CANCELLED
+		// when the window ended unpaid. A transfer order is never auto-confirmed, so CONFIRMED here is the merchant's act.
+		return v.PaymentState == "NOT_STARTED" && v.WorkState == "NONE" && v.RefundedMinor == 0 && v.RefundPendingMinor == 0 && !v.TestMode &&
+			v.FulfillmentState != "PAID_ALLOCATION_FAILED" &&
+			((v.CommercialState == "AWAITING_TRANSFER" && v.FulfillmentState == "MANUAL_UNASSIGNED") || v.CommercialState == "CONFIRMED" ||
+				(v.CommercialState == "CANCELLED" && v.FulfillmentState == "CANCELLED"))
+	}
+	if v.CommercialState == "AWAITING_TRANSFER" {
+		return false // only a bank_transfer order can wait for a transfer
+	}
 	if (v.FulfillmentState == "MERCHANT_SHIPPED" || v.FulfillmentState == "PROVIDER_LABEL_CREATED") &&
 		(v.WorkState != "READY" || v.CommercialState != "CONFIRMED") {
 		return false
@@ -377,11 +393,11 @@ func validPickupSource(s *string) bool {
 	return *s == "ecpay_directory" || *s == "buyer_entered" || *s == "merchant_attested"
 }
 
-// validCollection: payment_mode card <=> collection_state null (checkout.orders orders_payment_collection CHECK); the
+// validCollection: payment_mode card or bank_transfer <=> collection_state null (checkout.orders orders_payment_collection CHECK); the
 // pay_at_pickup states are the §16.4/§16.8 set.
 func validCollection(v Summary) bool {
 	switch v.PaymentMode {
-	case "card":
+	case "card", "bank_transfer":
 		return v.CollectionState == nil
 	case "pay_at_pickup":
 		if v.CollectionState == nil {

@@ -56,7 +56,7 @@ func ReadPurchaseEntry(ctx context.Context, tx pgx.Tx, scope platform.Scope, tok
 	}
 	out = PurchaseEntry{ProductID: productID, Locale: locale}
 	switch productStatus {
-	case "archived":
+	case "archived", "draft": // a draft is not buyable until published (catalog v2)
 		out.State = "product_inactive"
 		return out, nil
 	case "active":

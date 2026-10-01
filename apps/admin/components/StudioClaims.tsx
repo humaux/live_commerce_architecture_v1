@@ -26,17 +26,19 @@ import { useRouter } from "next/navigation";
 import { locales, localeNames, type Locale } from "@live-commerce/i18n";
 import type { Store } from "@/lib/model";
 import { sessionBoundary } from "@/lib/settings-client";
-import { readStudioDetail, StudioError, type StudioErrorCode } from "@/lib/studio-client";
+import { readStudioDetail, readStudioPage, StudioError, type StudioErrorCode } from "@/lib/studio-client";
 import type { StudioDetail } from "@/lib/studio-model";
+import { money } from "@/lib/client";
 import {
-  createClaimOffer, issueClaimLink, putClaimSource, readClaimBundles, readClaimProducts, readClaimSKUs,
-  readClaimsBoard, readClaimSource, readStorefrontOrigin, recordManualClaim, setClaimWindow, updateClaimOffer,
+  createClaimOffer, importClaimOffers, issueClaimLink, putClaimSource, readClaimBundles, readClaimProducts, readClaimSKUs,
+  readClaimsBoard, readClaimSource, readKeywordLibrary, readStorefrontOrigin, recordManualClaim, setClaimWindow,
+  setLibraryKeyword, updateClaimOffer,
 } from "@/lib/claims-client";
 import type { ClaimSource, SourcePlatform } from "@/lib/claim-source-model";
 import { claimSourceBody, claimSourceInputMax, validClaimSourceInput, type ClaimSourceForm } from "@/lib/claims-request";
 import {
-  persistedReasons, type Board, type Bundle, type CatalogProduct, type CatalogSKU, type ManualResult, type MatchMode,
-  type Offer,
+  currencyDigits, parsePriceMinor, persistedReasons, priceInputText, type Board, type Bundle, type CatalogProduct, type CatalogSKU,
+  type ImportResult, type LibraryEntry, type ManualResult, type MatchMode, type Offer,
 } from "@/lib/claims-model";
 import { claimLinkMessage, claimsCopy, hostPrompt } from "@/lib/claims-copy";
 import { studioCopy } from "@/lib/studio-copy";
@@ -44,11 +46,12 @@ import { WorkspaceFrame } from "./WorkspaceFrame";
 import "./claims.css";
 
 type Status = "loading" | "ready" | StudioErrorCode;
-type Action = "window" | "offer" | "update" | "manual" | "link" | "source";
+type Action = "window" | "offer" | "update" | "manual" | "link" | "source" | "import" | "library";
 type ActionError = { action: Action; code: StudioErrorCode | "no-origin" | "form"; message?: string; api?: string };
 type Pending = { action: Action; key: string; run: (key: string, boundary: string) => Promise<void> };
 // source is read on its own: a failing source read (sourceError) never hides the rest of the panel.
-type Facts = { detail: StudioDetail; board: Board; bundles: Bundle[]; next: string; source: ClaimSource | null; platforms: SourcePlatform[]; sourceError: StudioErrorCode | null };
+// library is read on its own too (null = it could not be read); scenes feed "copy offers from".
+type Facts = { detail: StudioDetail; board: Board; bundles: Bundle[]; next: string; source: ClaimSource | null; platforms: SourcePlatform[]; sourceError: StudioErrorCode | null; library: LibraryEntry[] | null };
 type Issued = { ref: string; origin: string; token: string | null; generation: number; expiresAt: string; released: boolean; replayed: boolean };
 
 function time(locale: Locale, value: string) {
@@ -85,8 +88,14 @@ export function StudioClaims({ locale, store, scene, initialError }: {
   const [products, setProducts] = useState<CatalogProduct[] | null>(null);
   const [catalogError, setCatalogError] = useState(false);
   const [skus, setSKUs] = useState<CatalogSKU[]>([]);
-  const [offerForm, setOfferForm] = useState({ keyword: "", product: "", sku: "", max: "3" });
+  const [offerForm, setOfferForm] = useState({ keyword: "", product: "", sku: "", max: "3", live: "" });
   const [limits, setLimits] = useState<Record<string, string>>({});
+  // Live tools (R4): live-price edits per offer, library keyword edits per SKU, copy-from scene, last import outcome.
+  const [prices, setPrices] = useState<Record<string, string>>({});
+  const [libraryEdits, setLibraryEdits] = useState<Record<string, string>>({});
+  const [scenes, setScenes] = useState<{ id: string; title: string }[]>([]);
+  const [copyFrom, setCopyFrom] = useState("");
+  const [imported, setImported] = useState<{ result: ImportResult; names: Record<string, string> } | null>(null);
   const [manual, setManual] = useState({ bundle: "", label: "", text: "" });
   const [result, setResult] = useState<ManualResult | null>(null);
   const [modeDraft, setModeDraft] = useState<MatchMode>("EXACT");
@@ -127,14 +136,15 @@ export function StudioClaims({ locale, store, scene, initialError }: {
     setStatus((value) => value === "ready" ? value : "loading");
     try {
       const before = await sessionBoundary().catch(() => { throw new StudioError("signed-out"); });
-      const [detail, board, page, source] = await Promise.all([readStudioDetail(storeID, scene, abort.signal),
+      const [detail, board, page, library, source] = await Promise.all([readStudioDetail(storeID, scene, abort.signal),
         readClaimsBoard(storeID, scene, abort.signal), readClaimBundles(storeID, scene, "", abort.signal),
+        readKeywordLibrary(storeID, scene, abort.signal).catch((error) => { if (codeOf(error) === "signed-out") throw error; return null; }),
         readClaimSource(storeID, scene, abort.signal).then((value) => ({ value, error: null as StudioErrorCode | null }),
           (error) => { if (codeOf(error) === "signed-out") throw error; return { value: { source: null, platforms: [] as SourcePlatform[] }, error: codeOf(error) as StudioErrorCode | null }; })]);
       if (current !== epoch.current || abort.signal.aborted) return;
       if ((await sessionBoundary().catch(() => "")) !== before) throw new StudioError("signed-out");
       boundary.current = before;
-      setFacts({ detail, board, bundles: page.items, next: page.next_cursor, source: source.value.source, platforms: source.value.platforms, sourceError: source.error });
+      setFacts({ detail, board, bundles: page.items, next: page.next_cursor, source: source.value.source, platforms: source.value.platforms, sourceError: source.error, library });
       // Other saves re-read the facts too; never overwrite what the merchant is still typing.
       if (!sourceDirty.current) setSourceForm(sourceFormOf(source.value.source, locale));
       setModeDraft(board.window.match_mode);
@@ -158,6 +168,16 @@ export function StudioClaims({ locale, store, scene, initialError }: {
     readClaimProducts(storeID, abort.signal).then(setProducts).catch(() => { if (!abort.signal.aborted) setCatalogError(true); });
     return () => abort.abort();
   }, [initialError, storeID]);
+
+  // Other scenes of the store (first page) for "copy offers from".
+  useEffect(() => {
+    if (initialError || !storeID) return;
+    const abort = new AbortController();
+    readStudioPage(storeID, "", abort.signal)
+      .then((page) => setScenes(page.items.filter((item) => item.session_id !== scene).map((item) => ({ id: item.session_id, title: item.title }))))
+      .catch(() => { /* the copy control just stays empty; the rest of the panel is unaffected */ });
+    return () => abort.abort();
+  }, [initialError, storeID, scene]);
 
   useEffect(() => {
     setSKUs([]);
@@ -299,10 +319,14 @@ export function StudioClaims({ locale, store, scene, initialError }: {
       return setActionError({ action: "offer", code: "form", message: c.keywordInvalid });
     if (!/^[1-9][0-9]{0,2}$/.test(offerForm.max)) return setActionError({ action: "offer", code: "form", message: c.maxInvalid });
     if (!offerForm.sku) return setActionError({ action: "offer", code: "form", message: c.skuRequired });
-    const body = { keyword, sku_id: offerForm.sku, max_quantity_per_claim: max };
+    // Live price is optional; empty = none. Parsed in the SKU's own currency decimals (Go re-validates).
+    const sku = skus.find((item) => item.id === offerForm.sku);
+    const live = offerForm.live.trim() === "" ? null : parsePriceMinor(offerForm.live, currencyDigits(sku?.currency ?? "USD"));
+    if (offerForm.live.trim() !== "" && live === null) return setActionError({ action: "offer", code: "form", message: c.live.livePriceInvalid });
+    const body = { keyword, sku_id: offerForm.sku, max_quantity_per_claim: max, ...(live === null ? {} : { live_price_minor: live }) };
     void perform("offer", async (key, current) => {
       await createClaimOffer(storeID, scene, body, key, current);
-      setOfferForm((form) => ({ ...form, keyword: "" }));
+      setOfferForm((form) => ({ ...form, keyword: "", live: "" }));
     });
   }
   function updateOffer(offer: Offer, active: boolean, limit: string) {
@@ -311,6 +335,50 @@ export function StudioClaims({ locale, store, scene, initialError }: {
     void perform("update", async (key, current) => {
       await updateClaimOffer(storeID, scene, offer.offer_id, body, key, current);
       setLimits((values) => { const next = { ...values }; delete next[offer.offer_id]; return next; });
+    });
+  }
+  // Live price save/clear: same PATCH with an explicit live_price_minor (0 = clear); the limit and active flag
+  // are re-sent unchanged from the loaded offer (the version CAS guards against a concurrent edit).
+  function saveLivePrice(offer: Offer, text: string) {
+    const clear = text.trim() === "";
+    const minor = clear ? 0 : parsePriceMinor(text, currencyDigits(offer.currency));
+    if (minor === null) return setActionError({ action: "update", code: "form", message: c.live.livePriceInvalid });
+    const body = { expected_version: offer.version, max_quantity_per_claim: offer.max_quantity_per_claim, active: offer.active, live_price_minor: minor };
+    void perform("update", async (key, current) => {
+      await updateClaimOffer(storeID, scene, offer.offer_id, body, key, current);
+      setPrices((values) => { const next = { ...values }; delete next[offer.offer_id]; return next; });
+    });
+  }
+  // Library: the offer form's keyword + SKU pickers also add a library row (version 0 = new).
+  function addLibrary() {
+    const keyword = offerForm.keyword.trim();
+    if (!/^[A-Za-z0-9０-９Ａ-Ｚａ-ｚ]{1,16}$/.test(keyword)) return setActionError({ action: "library", code: "form", message: c.keywordInvalid });
+    if (!offerForm.sku) return setActionError({ action: "library", code: "form", message: c.skuRequired });
+    const existing = facts?.library?.find((entry) => entry.sku_id === offerForm.sku);
+    const body = { keyword, expected_version: existing?.version ?? 0 };
+    void perform("library", async (key, current) => {
+      await setLibraryKeyword(storeID, scene, offerForm.sku, body, key, current);
+      setOfferForm((form) => ({ ...form, keyword: "" }));
+    });
+  }
+  function saveLibrary(entry: LibraryEntry, keyword: string) {
+    const text = keyword.trim();
+    if (!/^[A-Za-z0-9０-９Ａ-Ｚａ-ｚ]{1,16}$/.test(text)) return setActionError({ action: "library", code: "form", message: c.keywordInvalid });
+    void perform("library", async (key, current) => {
+      await setLibraryKeyword(storeID, scene, entry.sku_id, { keyword: text, expected_version: entry.version }, key, current);
+      setLibraryEdits((values) => { const next = { ...values }; delete next[entry.sku_id]; return next; });
+    });
+  }
+  function removeLibrary(entry: LibraryEntry) {
+    if (!globalThis.confirm(c.live.libraryRemoveConfirm(entry.keyword))) return;
+    void perform("library", async (key, current) => { await setLibraryKeyword(storeID, scene, entry.sku_id, { keyword: "", expected_version: entry.version }, key, current); });
+  }
+  // One action seeds this scene's offers; refusals come back as data and are listed, never silently dropped.
+  function importOffers(body: { source: "library" } | { source: "session"; from_session_id: string }) {
+    const names = Object.fromEntries((facts?.library ?? []).map((entry) => [entry.sku_id, entry.sku_code]));
+    void perform("import", async (key, current) => {
+      const result = await importClaimOffers(storeID, scene, body, key, current);
+      setImported({ result, names });
     });
   }
   function record() {
@@ -483,16 +551,46 @@ export function StudioClaims({ locale, store, scene, initialError }: {
             </section>
             <section className="claims-section" aria-labelledby="claims-offers-title">
               <h2 id="claims-offers-title">{c.offers}</h2>
+              <div className="claims-toolbar" data-testid="claims-import-tools">
+                <button type="button" disabled={blocked || !facts.library?.length} onClick={() => importOffers({ source: "library" })}>{c.live.importLibrary}</button>
+                <Field id="claims-copy-from" label={c.live.copyFrom}>
+                  <select id="claims-copy-from" value={copyFrom} disabled={blocked || !scenes.length} onChange={(event) => setCopyFrom(event.target.value)}>
+                    <option value="">{scenes.length ? c.live.chooseScene : c.live.noOtherScenes}</option>
+                    {scenes.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></Field>
+                <button type="button" disabled={blocked || !copyFrom} onClick={() => importOffers({ source: "session", from_session_id: copyFrom })}>{c.live.copyOffers}</button>
+                <small className="claims-muted">{c.live.copyHint}</small>
+              </div>
+              {busy === "import" && <p className="claims-muted" role="status">{c.working}</p>}
+              {imported && <div role="status" className="claims-import-result" data-testid="claims-import-result">
+                <p>{c.live.importDone(imported.result.created.length, imported.result.conflicts.length)}</p>
+                {imported.result.conflicts.length > 0 && <>
+                  <strong>{c.live.conflictsTitle}</strong>
+                  <ul>{imported.result.conflicts.map((item) => <li key={`${item.keyword}-${item.sku_id}`}>
+                    <span className="claims-keyword">{item.keyword}</span> — {c.live.conflictReason[item.reason]}</li>)}</ul></>}
+              </div>}
+              {alert("import")}
               {board.offers.length ? <div className="claims-table-scroll">
                 <table className="claims-table claims-offers-table">
-                  <thead><tr><th scope="col">{c.keyword}</th><th scope="col">{c.product}</th><th scope="col">{c.maxPerClaim}</th><th scope="col">{c.status}</th><th scope="col">{c.actions}</th></tr></thead>
+                  <thead><tr><th scope="col">{c.keyword}</th><th scope="col">{c.product}</th><th scope="col">{c.maxPerClaim}</th><th scope="col">{c.live.livePrice}</th><th scope="col">{c.status}</th><th scope="col">{c.actions}</th></tr></thead>
                   <tbody>{board.offers.map((offer) => {
                     const limit = limits[offer.offer_id] ?? String(offer.max_quantity_per_claim);
+                    const digits = currencyDigits(offer.currency);
+                    const savedPrice = offer.live_price_minor === null ? "" : priceInputText(offer.live_price_minor, digits);
+                    const price = prices[offer.offer_id] ?? savedPrice;
                     return <tr key={offer.offer_id} data-testid={`offer-${offer.keyword}`}>
                       <th scope="row" className="claims-keyword">{offer.keyword}</th>
                       <td><span className="claims-product">{offer.product_name}</span><small>{offer.sku_code}</small></td>
                       <td><input type="number" min={1} max={999} step={1} inputMode="numeric" aria-label={`${c.maxPerClaim} ${offer.keyword}`}
                         value={limit} disabled={blocked} onChange={(event) => setLimits({ ...limits, [offer.offer_id]: event.target.value })} /></td>
+                      <td data-testid={`offer-price-${offer.keyword}`}>
+                        <input type="text" inputMode="decimal" autoComplete="off" aria-label={`${c.live.livePrice} ${offer.keyword}`} placeholder={c.live.livePriceNone}
+                          value={price} disabled={blocked} onChange={(event) => setPrices({ ...prices, [offer.offer_id]: event.target.value })} />
+                        <small>{c.live.normalPrice(money(locale, offer.currency, offer.sku_price_minor))}</small>
+                        {offer.live_price_minor !== null && offer.live_price_minor > offer.sku_price_minor && <small role="status" className="claims-warn">
+                          {c.live.higherWarning(money(locale, offer.currency, offer.live_price_minor), money(locale, offer.currency, offer.sku_price_minor))}</small>}
+                        {price !== savedPrice && <button type="button" disabled={blocked} onClick={() => saveLivePrice(offer, price)}>
+                          {price.trim() === "" ? c.live.clearLivePrice : c.live.saveLivePrice}</button>}
+                      </td>
                       <td><span className={`claims-badge ${offer.active ? "open" : "closed"}`}>{offer.active ? c.active : c.paused}</span></td>
                       <td className="claims-row-actions">
                         {limit !== String(offer.max_quantity_per_claim) && <button type="button" disabled={blocked}
@@ -522,12 +620,38 @@ export function StudioClaims({ locale, store, scene, initialError }: {
                 <Field id="claims-offer-max" label={c.maxPerClaim}>
                   <input id="claims-offer-max" type="number" min={1} max={999} step={1} inputMode="numeric" value={offerForm.max} disabled={blocked}
                     onChange={(event) => setOfferForm({ ...offerForm, max: event.target.value })} /></Field>
+                <Field id="claims-offer-live" label={c.live.livePrice} hint={c.live.livePriceHint}>
+                  <input id="claims-offer-live" type="text" inputMode="decimal" autoComplete="off" value={offerForm.live} disabled={blocked}
+                    aria-describedby="claims-offer-live-hint" onChange={(event) => setOfferForm({ ...offerForm, live: event.target.value })} /></Field>
                 <button type="submit" className="primary" disabled={blocked}>{busy === "offer" ? c.working : c.addOffer}</button>
+                <button type="button" disabled={blocked} data-testid="claims-add-library" onClick={addLibrary}>{busy === "library" ? c.working : c.live.libraryAdd}</button>
                 <p id="claims-keyword-hint" className="claims-muted claims-form-hint">{c.keywordHint}</p>
                 {catalogError ? <p className="claims-muted" role="status">{c.catalogUnavailable}</p>
                   : products && !products.length && <p className="claims-muted" role="status">{c.noProducts}</p>}
               </form>
               {alert("offer")}
+            </section>
+            <section className="claims-section" aria-labelledby="claims-library-title" data-testid="claims-library">
+              <h2 id="claims-library-title">{c.live.library}</h2>
+              <p className="claims-muted">{c.live.libraryHint}</p>
+              {facts.library && (facts.library.length ? <div className="claims-table-scroll">
+                <table className="claims-table claims-library-table">
+                  <thead><tr><th scope="col">{c.live.libraryKeyword}</th><th scope="col">{c.product}</th><th scope="col">{c.actions}</th></tr></thead>
+                  <tbody>{facts.library.map((entry) => {
+                    const edit = libraryEdits[entry.sku_id] ?? entry.keyword;
+                    return <tr key={entry.sku_id} data-testid={`library-${entry.keyword}`}>
+                      <td><input type="text" maxLength={32} autoComplete="off" aria-label={`${c.live.libraryKeyword} ${entry.sku_code}`} value={edit} disabled={blocked}
+                        onChange={(event) => setLibraryEdits({ ...libraryEdits, [entry.sku_id]: event.target.value })} /></td>
+                      <td><span className="claims-product">{entry.product_name}</span><small>{entry.sku_code}</small></td>
+                      <td className="claims-row-actions">
+                        {edit !== entry.keyword && <button type="button" disabled={blocked} onClick={() => saveLibrary(entry, edit)}>{c.live.librarySave}</button>}
+                        <button type="button" disabled={blocked} onClick={() => removeLibrary(entry)}>{c.live.libraryRemove}</button>
+                      </td>
+                    </tr>;
+                  })}</tbody>
+                </table>
+              </div> : <p className="claims-muted">{c.live.libraryEmpty}</p>)}
+              {alert("library")}
             </section>
             <section className="claims-section" aria-labelledby="claims-manual-title">
               <h2 id="claims-manual-title">{c.manual}</h2>

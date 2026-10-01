@@ -11,6 +11,7 @@ import (
 
 	"livecommerce/internal/checkout"
 	"livecommerce/internal/jobqueue"
+	"livecommerce/internal/notify"
 	"livecommerce/internal/platform"
 )
 
@@ -25,6 +26,7 @@ type workerConfig struct {
 	enabled     bool
 	dsn         string
 	concurrency int
+	mail        *mailConfig // nil = no buyer mail loop (COMMERCE_BUYER_MAIL_ENABLED unset or 0)
 }
 
 func main() {
@@ -61,6 +63,17 @@ func loadConfig(getenv func(string) string) (workerConfig, error) {
 		}
 		config.concurrency = n
 	}
+	switch getenv("COMMERCE_BUYER_MAIL_ENABLED") {
+	case "", "0":
+	case "1":
+		m, err := loadMailConfig(getenv)
+		if err != nil {
+			return workerConfig{}, err
+		}
+		config.mail = m
+	default:
+		return workerConfig{}, errWorkerConfig
+	}
 	return config, nil
 }
 
@@ -78,6 +91,21 @@ func run(ctx context.Context, getenv func(string) string) error {
 	if err != nil {
 		return err
 	}
+	// notify.Worker: the buyer / merchant mail outbox loop (mail.go). It stops with the River client and is waited for, so a record in flight
+	// is written before the pool closes.
+	loopCtx, stopLoop := context.WithCancel(ctx)
+	loopDone := make(chan struct{})
+	close(loopDone)
+	if config.mail != nil {
+		nw, err := notify.NewWorker(pool, config.mail.smtp, config.mail.dailyCap)
+		if err != nil {
+			stopLoop()
+			return errWorkerConfig
+		}
+		loopDone = make(chan struct{})
+		go func() { defer close(loopDone); nw.Run(loopCtx) }()
+	}
+	defer func() { stopLoop(); <-loopDone }()
 	switch err := jobqueue.Run(ctx, client, "expiry_worker_ready"); {
 	case errors.Is(err, jobqueue.ErrStart):
 		return errWorkerStart

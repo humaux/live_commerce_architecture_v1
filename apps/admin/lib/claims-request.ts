@@ -11,14 +11,14 @@ const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
 // Relative to `live-sessions/{session_id}/`: every claims sub-resource, plus the Meta
 // comment source (claim-source: GET read, PUT bind; claim-source-v1 frozen HTTP interface).
-export const claimsSubpath = `(?:claims(?:/(?:window|offers(?:/${uuid})?|manual|bundles(?:/${uuid}/link)?))?|claim-source)`;
-// Relative to `stores/{store_id}/`, per method (M1/M6/source GET, M2/M3/M5/M7 POST, M4 PATCH,
-// source PUT). The BFF forwards each path unchanged to /v1/admin/stores/{store_id}/<path>.
+export const claimsSubpath = `(?:claims(?:/(?:window|offers(?:/${uuid})?|offer-import|library(?:/${uuid})?|manual|bundles(?:/${uuid}/link)?))?|claim-source)`;
+// Relative to `stores/{store_id}/`, per method (M1/M6/source/library GET, M2/M3/M5/M7/offer-import POST, M4 PATCH,
+// source and library-row PUT; Live tools R4, amendment in the claims contract). The BFF forwards each path unchanged to /v1/admin/stores/{store_id}/<path>.
 export const claimsRoutes = {
-  GET: `live-sessions/${uuid}/(?:claims(?:/bundles)?|claim-source)`,
-  POST: `live-sessions/${uuid}/claims/(?:window|offers|manual|bundles/${uuid}/link)`,
+  GET: `live-sessions/${uuid}/(?:claims(?:/bundles|/library)?|claim-source)`,
+  POST: `live-sessions/${uuid}/claims/(?:window|offers|offer-import|manual|bundles/${uuid}/link)`,
   PATCH: `live-sessions/${uuid}/claims/offers/${uuid}`,
-  PUT: `live-sessions/${uuid}/claim-source`,
+  PUT: `live-sessions/${uuid}/(?:claim-source|claims/library/${uuid})`,
 } as const;
 const bundlesCollection = new RegExp(`^live-sessions/${uuid}/claims/bundles$`);
 const linkRoute = new RegExp(`^live-sessions/${uuid}/claims/bundles/${uuid}/link$`);

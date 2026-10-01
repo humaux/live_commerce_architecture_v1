@@ -5,6 +5,8 @@
 // (<LogisticsSettings>: BFF logistics/ecpay, logistics/ecpay/enabled, logistics/cvs-settings -> Go
 // internal/httpapi/cvs.go, taiwan-cvs-logistics-v1 §8/§16.5) in step 2, and its delivery-service editor offers
 // mode "API (ECPay)" for CVS kinds only while the ECPay connection is enabled and checked (§4.1 predicate).
+// <StorefrontSettings> (below the steps) is the storefront publish/unpublish card: BFF storefront, storefront/publication
+// -> Go internal/httpapi/storefront.go (published-storefront-resolver-v1 "Writer (R3)").
 import {
   useCallback,
   useEffect,
@@ -15,6 +17,9 @@ import {
 import type { Locale } from "@live-commerce/i18n";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { LogisticsSettings } from "./LogisticsSettings";
+import { BankTransferSettings } from "./BankTransferSettings";
+import { NotifySettings } from "./NotifySettings";
+import { StorefrontSettings } from "./StorefrontSettings";
 import { availabilityReason, settingsCopy } from "@/lib/settings-copy";
 import {
   csrfCookie,
@@ -74,6 +79,8 @@ type Draft = {
   serviceKind: Service["delivery_kind"];
   serviceMode: Service["mode"];
   shipping: string;
+  // "" = no free-shipping threshold (storefront-v2 §C); otherwise whole minor units.
+  freeShipping: string;
   taxMode: "none" | "inclusive" | "exclusive";
   taxBasis: "goods" | "goods_and_shipping";
   taxRate: string;
@@ -110,6 +117,7 @@ const emptyDraft: Draft = {
   serviceKind: "home",
   serviceMode: "MANUAL",
   shipping: "0",
+  freeShipping: "",
   taxMode: "none",
   taxBasis: "goods",
   taxRate: "0",
@@ -335,6 +343,10 @@ export function SettingsWizard({
     return {
       ...current,
       shipping: String(saved?.shipping_minor ?? 0),
+      freeShipping:
+        saved?.free_shipping_threshold_minor == null
+          ? ""
+          : String(saved.free_shipping_threshold_minor),
       taxMode: saved?.tax_mode ?? "none",
       taxBasis: saved?.tax_basis ?? "goods",
       taxRate: String(saved?.tax_rate_bps ?? 0),
@@ -442,6 +454,7 @@ export function SettingsWizard({
     if (
       [
         "shipping",
+        "freeShipping",
         "taxMode",
         "taxBasis",
         "taxRate",
@@ -1471,6 +1484,11 @@ export function SettingsWizard({
   function policySubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const shipping = integer(draft.shipping, 0, 1000000000000),
+      // Empty = no threshold; anything else must be whole minor units (the Go quote re-validates).
+      free =
+        draft.freeShipping.trim() === ""
+          ? null
+          : integer(draft.freeShipping, 0, 1000000000000),
       tax = integer(draft.taxRate, 0, 10000),
       ttl = integer(draft.ttl, 60, 1800);
     const ref = draft.reference.trim();
@@ -1480,6 +1498,7 @@ export function SettingsWizard({
       !validCode(draft.serviceCode) ||
       (draft.serviceKind !== "home" && draft.country !== "TW") ||
       shipping === null ||
+      (draft.freeShipping.trim() !== "" && free === null) ||
       tax === null ||
       ttl === null ||
       (draft.taxMode === "none" && tax !== 0) ||
@@ -1507,6 +1526,8 @@ export function SettingsWizard({
         currency: activeMarket.currency,
         shipping_mode: "country_flat",
         shipping_minor: shipping,
+        // Absent = no threshold (Go omitempty); every save writes a full new policy version, so omitting clears it.
+        ...(free === null ? {} : { free_shipping_threshold_minor: free }),
         tax_mode: draft.taxMode,
         tax_basis: draft.taxBasis,
         tax_rate_bps: tax,
@@ -1660,6 +1681,7 @@ export function SettingsWizard({
     !policy ||
     draft.reference.trim() !== "" ||
     policy.shipping_minor !== Number(draft.shipping) ||
+    (policy.free_shipping_threshold_minor ?? "") !== (draft.freeShipping.trim() === "" ? "" : Number(draft.freeShipping)) ||
     policy.tax_mode !== draft.taxMode ||
     policy.tax_basis !== draft.taxBasis ||
     policy.tax_rate_bps !== Number(draft.taxRate) ||
@@ -1808,6 +1830,10 @@ export function SettingsWizard({
                   <h2 className="settings-section-title">{c.manual}</h2>
                   <p className="settings-note">{c.manualHint}</p>
                   <LogisticsSettings store={store.id} locale={locale} />
+                  {/* storefront-v2 §C: bank-transfer details and window (BFF bank-transfer-settings -> Go offline.go). */}
+                  <BankTransferSettings store={store.id} locale={locale} />
+                  {/* storefront-v2 §E6: new-order email opt-out (BFF notification-settings -> Go notify.go). */}
+                  <NotifySettings store={store.id} locale={locale} />
                   <div className="settings-actions">
                     <button type="button" onClick={() => goStep(1)}>
                       {c.back}
@@ -2351,6 +2377,19 @@ export function SettingsWizard({
                               />
                             </label>
                             <label>
+                              {c.freeShipping}
+                              <input
+                                type="number"
+                                min="0"
+                                data-testid="settings-free-shipping"
+                                value={draft.freeShipping}
+                                onChange={(event) =>
+                                  update("freeShipping", event.target.value)
+                                }
+                              />
+                              <small>{c.freeShippingHint}</small>
+                            </label>
+                            <label>
                               {c.taxMode}
                               <select
                                 value={draft.taxMode}
@@ -2737,6 +2776,7 @@ export function SettingsWizard({
             </div>
           </aside>
         </div>
+        {store && <StorefrontSettings store={store.id} locale={locale} />}
       </div>
     </WorkspaceFrame>
   );

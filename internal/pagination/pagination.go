@@ -127,9 +127,13 @@ func validBinding(b Binding) bool {
 	case "products", "warehouses", "inventory", "provider-accounts", "markets":
 		return b.ParentID == "" && b.Filter == ""
 	case "merchant-orders":
-		return b.ParentID == "" && (b.Filter == "all" || b.Filter == "DRAFT" || b.Filter == "AWAITING_PAYMENT" || b.Filter == "CONFIRMED" || b.Filter == "CANCELLED" || b.Filter == "shipped" || b.Filter == "unshipped")
+		return b.ParentID == "" && (b.Filter == "all" || b.Filter == "DRAFT" || b.Filter == "AWAITING_PAYMENT" || b.Filter == "AWAITING_TRANSFER" || b.Filter == "CONFIRMED" || b.Filter == "CANCELLED" || b.Filter == "shipped" || b.Filter == "unshipped")
 	case "live-sessions":
 		return b.ParentID == "" && b.Filter == ""
+	case "collections": // internal/catalog.ListCollectionsPage (catalog-core, migration 0086)
+		return b.ParentID == "" && b.Filter == ""
+	case "catalog-products": // internal/catalog.ListProductSummaries: Filter is the sha256 hex of status + search text
+		return b.ParentID == "" && len(b.Filter) == 64
 	case "customers": // internal/customers.List: Filter is empty or the sha256 hex of the search text
 		return b.ParentID == "" && (b.Filter == "" || len(b.Filter) == 64)
 	case "delivery-services":
@@ -171,7 +175,8 @@ func validKeyCount(collection string, count int) bool {
 // timeKeyed collections page by (created_at, id): exactly two keys, a microsecond UTC
 // timestamp then a UUID, and only byte-canonical cursors are accepted.
 func timeKeyed(collection string) bool {
-	return collection == "merchant-orders" || collection == "live-sessions" || collection == "claim-bundles" || collection == "customers"
+	return collection == "merchant-orders" || collection == "live-sessions" || collection == "claim-bundles" || collection == "customers" ||
+		collection == "collections" || collection == "catalog-products"
 }
 
 func invalid(what string) error { return fmt.Errorf("%w: invalid %s", command.ErrInvalid, what) }

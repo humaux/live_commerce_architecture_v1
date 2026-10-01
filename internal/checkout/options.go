@@ -40,7 +40,8 @@ type Option struct {
 	SortOrder         int    `json:"sort_order"`
 	// CVS rows (taiwan-cvs-logistics-v1 §5.1, §16.1, §16.5). PickupSelection is how the buyer names the store: "ecpay_map" when the
 	// store has an enabled qualified ECPay profile, else "buyer_entered" (mode is decided in SQL only, X9). PaymentModes lists
-	// "card" and, when the store enabled it, "pay_at_pickup". StoreSearchURL is the chain's official search page (buyer_entered only).
+	// "card" (only while this process can take card payment, OP1) and, when the store enabled it, "pay_at_pickup"; a row with no mode
+	// is not offered. StoreSearchURL is the chain's official search page (buyer_entered only).
 	// Available is present (false) only on a row the store configured but the buyer cannot use yet: Reason coming_soon (OK mart /
 	// Hi-Life not verified) or temporarily_unavailable (CVS_ECPAY_ENABLED off with an enabled profile).
 	PickupSelection string   `json:"pickup_selection,omitempty"`
@@ -48,6 +49,21 @@ type Option struct {
 	StoreSearchURL  string   `json:"store_search_url,omitempty"`
 	Available       *bool    `json:"available,omitempty"`
 	Reason          string   `json:"reason,omitempty"`
+	// TransferWindowHours (storefront-v2 §C) is present only when "bank_transfer" is in PaymentModes: how long the stock stays reserved
+	// for the transfer. A home row carries PaymentModes only when the store enabled bank transfer (absent = card only, as before).
+	TransferWindowHours int `json:"transfer_window_hours,omitempty"`
+	// FreeShippingThresholdMinor (storefront-v2 §A/§C) is the row's delivery policy threshold: the merchandise subtotal at or above
+	// which the quote charges shipping 0 (pricing.Calculate applies it; this field only lets the storefront word a hint). nil when the
+	// policy has none, and also when it is 0 ("always free" needs no progress hint; the buyer UI accepts positive integers or null).
+	// The quote stays the only authority on the amount charged (I05): a stale hint can mislead copy, never money.
+	FreeShippingThresholdMinor *int64 `json:"free_shipping_threshold_minor"`
+}
+
+// transferOffer is checkout.read_transfer_offer: the store's bank-transfer switch, whether CVS destinations may use it, and the window.
+// It never carries bank details (those are shown on the buyer's own order only).
+type transferOffer struct {
+	enabled, allowCVS bool
+	windowHours       int
 }
 
 type optionsCursor struct {
@@ -139,7 +155,8 @@ func (s *Service) ListOptions(ctx context.Context, token, storeID string, in Opt
 		// eligibility equality against the current (possibly renamed) service.
 		// The count/all_active gate checks every assigned warehouse, not SKU stock.
 		rows, err := tx.Query(callCtx, `SELECT m.id::text,m.code,m.name,sv.country,sv.currency,sv.code,sv.policy_method,
-			sv.version,av.version,sv.delivery_kind,sv.mode,sv.name_hans,sv.name_hant,sv.name_en,sv.sort_order
+			sv.version,av.version,sv.delivery_kind,sv.mode,sv.name_hans,sv.name_hant,sv.name_en,sv.sort_order,
+			pv.free_shipping_threshold_minor
 			FROM pricing.markets m
 			JOIN control.stores st ON st.tenant_id=m.tenant_id AND st.id=m.store_id
 			JOIN fulfillment.service_heads sh ON sh.tenant_id=m.tenant_id AND sh.store_id=m.store_id AND sh.market_id=m.id
@@ -178,9 +195,13 @@ func (s *Service) ListOptions(ctx context.Context, token, storeID string, in Opt
 			var option Option
 			if err = rows.Scan(&option.MarketID, &option.MarketCode, &option.MarketName, &option.Country, &option.Currency,
 				&option.DeliveryCode, &option.Method, &option.ServiceVersion, &option.AllocationVersion,
-				&option.DeliveryKind, &option.Mode, &option.NameHans, &option.NameHant, &option.NameEN, &option.SortOrder); err != nil {
+				&option.DeliveryKind, &option.Mode, &option.NameHans, &option.NameHant, &option.NameEN, &option.SortOrder,
+				&option.FreeShippingThresholdMinor); err != nil {
 				rows.Close()
 				return err
+			}
+			if option.FreeShippingThresholdMinor != nil && *option.FreeShippingThresholdMinor <= 0 {
+				option.FreeShippingThresholdMinor = nil // 0 = always free: no hint to show (see the field comment)
 			}
 			fetched = append(fetched, option)
 		}
@@ -194,7 +215,12 @@ func (s *Service) ListOptions(ctx context.Context, token, storeID string, in Opt
 		if more {
 			fetched = fetched[:limit]
 		}
-		items, err := s.decorateCVS(callCtx, tx, tokenHash[:], storeID, fetched)
+		var offer transferOffer
+		if err = tx.QueryRow(callCtx, `SELECT enabled,allow_cvs,window_hours FROM checkout.read_transfer_offer($1,$2::uuid)`,
+			tokenHash[:], storeID).Scan(&offer.enabled, &offer.allowCVS, &offer.windowHours); err != nil {
+			return err
+		}
+		items, err := s.decorateCVS(callCtx, tx, tokenHash[:], storeID, fetched, offer)
 		if err != nil {
 			return err
 		}
@@ -227,13 +253,16 @@ var cvsSearchURLs = map[string]string{
 // decorateCVS adds the §5.1/§16.5 CVS fields to the fetched rows and drops the rows the store did not configure. Store mode and
 // settings are read only through fulfillment.read_cvs_offer (no table access, buyer scope from the capability); non-CVS rows pass
 // unchanged. CVS_ECPAY_ENABLED is the process kill switch: an ecpay_map store is then temporarily_unavailable, never buyer_entered.
-func (s *Service) decorateCVS(ctx context.Context, tx pgx.Tx, tokenHash []byte, storeID string, rows []Option) ([]Option, error) {
+func (s *Service) decorateCVS(ctx context.Context, tx pgx.Tx, tokenHash []byte, storeID string, rows []Option, transfer transferOffer) ([]Option, error) {
 	items := make([]Option, 0, len(rows))
 	hasCVS := false
 	for _, option := range rows {
 		hasCVS = hasCVS || option.DeliveryKind != "home"
 	}
-	if !hasCVS {
+	if !hasCVS && !transfer.enabled {
+		if s.noCard {
+			return items, nil // home rows are card-only (OP1): nothing payable, nothing offered
+		}
 		return append(items, rows...), nil
 	}
 	var offer struct {
@@ -243,18 +272,27 @@ func (s *Service) decorateCVS(ctx context.Context, tx pgx.Tx, tokenHash []byte, 
 		papMax    *int32
 		ok, hl    bool
 	}
-	if err := tx.QueryRow(ctx, `SELECT pickup_selection,enabled_chains,pay_at_pickup_enabled,pay_at_pickup_max_twd,ok_verified,hilife_verified
-		FROM fulfillment.read_cvs_offer($1,$2::uuid)`, tokenHash, storeID).Scan(&offer.selection, &offer.chains, &offer.pap,
-		&offer.papMax, &offer.ok, &offer.hl); err != nil {
-		return nil, err
-	}
-	if offer.selection != "ecpay_map" && offer.selection != "buyer_entered" {
-		return nil, command.ErrConflict
+	if hasCVS {
+		if err := tx.QueryRow(ctx, `SELECT pickup_selection,enabled_chains,pay_at_pickup_enabled,pay_at_pickup_max_twd,ok_verified,hilife_verified
+			FROM fulfillment.read_cvs_offer($1,$2::uuid)`, tokenHash, storeID).Scan(&offer.selection, &offer.chains, &offer.pap,
+			&offer.papMax, &offer.ok, &offer.hl); err != nil {
+			return nil, err
+		}
+		if offer.selection != "ecpay_map" && offer.selection != "buyer_entered" {
+			return nil, command.ErrConflict
+		}
 	}
 	ecpayOn := s.cvs != nil && s.cvs.cfg.ECPay.Enabled
 	for _, option := range rows {
 		if option.DeliveryKind == "home" {
-			items = append(items, option)
+			// Home rows are card-only unless the store enabled bank transfer; then they list their modes like a CVS row does.
+			if transfer.enabled {
+				option.PaymentModes = paymentModes(!s.noCard, false, true)
+				option.TransferWindowHours = transfer.windowHours
+			}
+			if !s.noCard || transfer.enabled {
+				items = append(items, option)
+			}
 			continue
 		}
 		if !slices.Contains(offer.chains, option.DeliveryKind) {
@@ -265,9 +303,13 @@ func (s *Service) decorateCVS(ctx context.Context, tx pgx.Tx, tokenHash []byte, 
 			continue
 		}
 		option.PickupSelection = offer.selection
-		option.PaymentModes = []string{"card"}
-		if offer.pap && offer.papMax != nil {
-			option.PaymentModes = append(option.PaymentModes, "pay_at_pickup")
+		bank := transfer.enabled && transfer.allowCVS
+		option.PaymentModes = paymentModes(!s.noCard, offer.pap && offer.papMax != nil, bank)
+		if len(option.PaymentModes) == 0 {
+			continue // OP1: no payment mode can be completed, so the buyer is not offered this chain
+		}
+		if bank {
+			option.TransferWindowHours = transfer.windowHours
 		}
 		if offer.selection == "buyer_entered" {
 			option.StoreSearchURL = cvsSearchURLs[option.DeliveryKind]
@@ -278,6 +320,22 @@ func (s *Service) decorateCVS(ctx context.Context, tx pgx.Tx, tokenHash []byte, 
 		items = append(items, option)
 	}
 	return items, nil
+}
+
+// paymentModes lists what a buyer can complete on a row: card while the process can take it, pay_at_pickup / bank_transfer when the
+// store enabled them (the caller decides destination eligibility).
+func paymentModes(card, payAtPickup, bankTransfer bool) []string {
+	modes := make([]string, 0, 3)
+	if card {
+		modes = append(modes, "card")
+	}
+	if payAtPickup {
+		modes = append(modes, "pay_at_pickup")
+	}
+	if bankTransfer {
+		modes = append(modes, "bank_transfer")
+	}
+	return modes
 }
 
 // unavailableReason: OK mart needs ok_verified and Hi-Life hilife_verified (TD6, F17/F18); a disabled process kill switch makes every

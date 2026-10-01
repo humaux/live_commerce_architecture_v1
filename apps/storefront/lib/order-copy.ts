@@ -41,6 +41,7 @@ const en = {
     "A timer ending does not confirm cancellation. Refresh to check the order status.",
   DRAFT: "Not paid",
   AWAITING_PAYMENT: "Payment pending",
+  AWAITING_TRANSFER: "Waiting for bank transfer",
   CONFIRMED: "Order confirmed",
   CANCELLED: "Order canceled",
   unavailable:
@@ -122,6 +123,7 @@ export const orderCopy: Record<Locale, Copy> = {
     holdNote: "时间结束不代表订单已取消，请刷新以确认当前状态。",
     DRAFT: "尚未付款",
     AWAITING_PAYMENT: "等待支付结果",
+    AWAITING_TRANSFER: "等待银行转账",
     CONFIRMED: "订单已确认",
     CANCELLED: "订单已取消",
     unavailable: "此页面暂未开放支付。创建订单不会扣款。",
@@ -167,6 +169,7 @@ export const orderCopy: Record<Locale, Copy> = {
     holdNote: "時間結束不代表訂單已取消，請重新整理以確認目前狀態。",
     DRAFT: "尚未付款",
     AWAITING_PAYMENT: "等待付款結果",
+    AWAITING_TRANSFER: "等待銀行轉帳",
     CONFIRMED: "訂單已確認",
     CANCELLED: "訂單已取消",
     unavailable: "此頁面暫未開放付款。建立訂單不會扣款。",

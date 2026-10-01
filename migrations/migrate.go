@@ -3,7 +3,7 @@
 //
 // It never edits or reorders an applied migration (a checksum mismatch stops the run), never runs
 // down-migrations, and never runs from the API or a worker: cmd/migrate is its only production
-// caller. Numbering: the current release branch owns 0060-0079 (0084 is integrator-assigned to worker-authority-split); only the integrator merges
+// caller. Numbering: the current release branch owns 0060-0079 (0096 is integrator-assigned to worker-authority-split); only the integrator merges
 // migrations.
 package migrations
 
@@ -132,7 +132,7 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 	// T21-02: only the two workers that run a client on the main schema (claims-worker's default
 	// lane, ads-worker's queue ads) hold it; commerce_worker is an empty legacy role, so every
 	// Apply also strips whatever an older release granted it on the three legacy schemas
-	// (post_river/0018 then asserts it holds nothing).
+	// (post_river/0019 then asserts it holds nothing).
 	if _, err = lockConn.Exec(ctx, `REVOKE ALL ON ALL TABLES IN SCHEMA river,river_payment,river_expiry FROM commerce_worker;
 		REVOKE ALL ON ALL SEQUENCES IN SCHEMA river,river_payment,river_expiry FROM commerce_worker;
 		REVOKE ALL ON SCHEMA river,river_payment,river_expiry FROM commerce_worker;

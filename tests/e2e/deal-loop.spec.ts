@@ -230,9 +230,9 @@ test("T12 deal loop: wizard store, Studio, claim source, signed Meta comment, pr
 
   // ------------------------------------------------------------------------------------------------ 6. checkout
   const purchase = purchaseCopy[L];
-  await buyer.goto(`${buyerOrigin}/${L}/products/${fixtures.product_id}`);
-  await expect(buyer.locator("#quantity")).toBeVisible();
-  await expect(buyer.locator("#quantity")).toHaveValue("2");
+  // The storefront shell's checkout page (/{locale}/checkout) opens on the claimed cart: A1 x 2 (read-only lines show "× 2").
+  await buyer.goto(`${buyerOrigin}/${L}/checkout`);
+  await expect(buyer.locator(".sf-line__unit", { hasText: "× 2" })).toBeVisible();
   await buyer.getByRole("button", { name: purchase.delivery, exact: true }).click();
   const quotation = buyer.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/quotes" && r.request().method() === "POST");
   await buyer.getByRole("button", { name: purchase.quote, exact: true }).click();
@@ -293,7 +293,7 @@ test("T12 deal loop: wizard store, Studio, claim source, signed Meta comment, pr
 
   // ------------------------------------------------------------------------------------------------ 9. buyer sees the shipment
   async function openOrder(page: Page) {
-    await page.goto(`${buyerOrigin}/${L}/products/${fixtures.product_id}`);
+    await page.goto(`${buyerOrigin}/${L}/checkout`); // order history lives on the checkout page (storefront shell)
     await page.getByTestId("toggle-order-history").click();
     const detailResponse = page.waitForResponse((r) => new URL(r.url()).pathname === `/api/buyer/orders/${order}` && r.request().method() === "GET");
     await page.locator(`button[data-order-id="${order}"]`).click();

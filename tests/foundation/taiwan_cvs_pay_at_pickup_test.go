@@ -1144,8 +1144,13 @@ func TestCvsPayAtPickupRelease(t *testing.T) {
 		if st, _, _ := e.shipState(o4); st != "AT_STORE" {
 			t.Errorf("2098 re-delivery to the pickup store: state %s, want AT_STORE", st)
 		}
-		if st, _, raw := mustRelease(o4, "restock", "RETURNED"); st != 409 || tcvStr(tcvJSON(t, raw), "code") != "parcel_not_returned" {
-			t.Errorf("restock while the parcel is back at the store: want 409 parcel_not_returned, got %d %s", st, raw)
+		// T21-01 (0083): the 2098 reverses the 2074 the RETURNED state came from, so the order is PENDING again and the restock
+		// request (expected RETURNED) is stale: 409 collection_state_changed. parcel_not_returned is exercised on o6 below.
+		if got := e.collectionState(o4); got != "PENDING" {
+			t.Errorf("2098 re-delivery must revert RETURNED to PENDING, got %s", got)
+		}
+		if st, _, raw := mustRelease(o4, "restock", "RETURNED"); st != 409 || tcvStr(tcvJSON(t, raw), "code") != "collection_state_changed" {
+			t.Errorf("restock while the parcel is back at the store: want 409 collection_state_changed, got %d %s", st, raw)
 		}
 		e.tppStatuses(endpoint, o4, "2074")
 		if st, out, raw := mustRelease(o4, "restock", "RETURNED"); st != 200 || tcvStr(out, "collection_state") != "RESTOCKED" {
@@ -1161,6 +1166,36 @@ func TestCvsPayAtPickupRelease(t *testing.T) {
 		e.tppStatuses(endpoint, o5, "3024", "3018", "3020")
 		if st, out, raw := mustRelease(o5, "restock", "RETURNED"); st != 200 || tcvStr(out, "collection_state") != "RESTOCKED" {
 			t.Errorf("restock after 3020: %d %s", st, raw)
+		}
+		// T21-01: 2030 -> 2073 -> 2074 -> 2098 -> 2067 must end COLLECTED (ECPay collected the cash) and never restock.
+		o6 := place("cvs_711", api)
+		created(o6)
+		e.tppStatuses(endpoint, o6, "2030", "2073", "2074", "2098", "2067")
+		if st, _, _ := e.shipState(o6); st != "PICKED_UP" || e.collectionState(o6) != "COLLECTED" {
+			t.Errorf("2074,2098,2067: shipment %s collection %s, want PICKED_UP/COLLECTED", st, e.collectionState(o6))
+		}
+		if n := e.events(o6, "AND event_code='collection.reverted'"); n != 1 {
+			t.Errorf("collection.reverted events = %d, want 1", n)
+		}
+		if st, _, raw := mustRelease(o6, "restock", "RETURNED"); st != 409 || len(e.deallocRows(o6)) != 0 || e.collectionState(o6) != "COLLECTED" {
+			t.Errorf("restock after the buyer collected: want 409, no DEALLOCATE row, COLLECTED; got %d %s (rows %d, %s)", st, raw, len(e.deallocRows(o6)), e.collectionState(o6))
+		}
+		// Defence in depth (CR1): a RETURNED order whose parcel is not back (planted; no event sequence reaches it any more).
+		if _, err := e.p.f.owner.Exec(context.Background(), `UPDATE checkout.orders SET collection_state='RETURNED' WHERE id=$1`, o6); err != nil {
+			t.Fatalf("plant RETURNED: %v", err)
+		}
+		if st, _, raw := mustRelease(o6, "restock", "RETURNED"); st != 409 || tcvStr(tcvJSON(t, raw), "code") != "parcel_not_returned" || len(e.deallocRows(o6)) != 0 {
+			t.Errorf("RETURNED but PICKED_UP: want 409 parcel_not_returned and no DEALLOCATE row, got %d %s", st, raw)
+		}
+		// A merchant-recorded 'returned' needs the same evidence: refused while the parcel is CREATED / AT_STORE.
+		o7 := place("cvs_711", api)
+		created(o7)
+		if st, _, raw := e.record(writer, o7, t04Key("tpp-ret-created"), "PENDING", "returned"); st != 409 || tcvStr(tcvJSON(t, raw), "code") != "parcel_not_returned" {
+			t.Errorf("returned while CREATED: want 409 parcel_not_returned, got %d %s", st, raw)
+		}
+		e.tppStatuses(endpoint, o7, "2030", "2073")
+		if st, _, raw := e.record(writer, o7, t04Key("tpp-ret-store"), "PENDING", "returned"); st != 409 || tcvStr(tcvJSON(t, raw), "code") != "parcel_not_returned" || e.collectionState(o7) != "PENDING" {
+			t.Errorf("returned while AT_STORE: want 409 parcel_not_returned and PENDING, got %d %s (%s)", st, raw, e.collectionState(o7))
 		}
 	})
 }

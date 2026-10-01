@@ -84,6 +84,12 @@ export function proxy(request: NextRequest) {
     secure: request.nextUrl.protocol === "https:",
   });
   response.headers.set("Cache-Control", "private, no-store");
+  // staff-team D3: the invitation token is in the path; a real response header (the page's <meta> is parsed too late for the
+  // stylesheet/script requests that precede it). next.config.ts sets the same pair for /:locale/invite/*.
+  if (/^\/(?:zh-CN|zh-TW|en)\/invite\//.test(path)) {
+    response.headers.set("Referrer-Policy", "no-referrer");
+    response.headers.set("Cache-Control", "no-store");
+  }
   return response;
 }
 

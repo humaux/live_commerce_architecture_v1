@@ -28,8 +28,8 @@ import (
 // https://www.facebook.com/business/help/2284463181837648 (contract F17, retrieved 2026-09-29 as a search excerpt only).
 // Contract F17 says "exact columns: re-verify at implementation"; this unit had no network, so the re-verification is
 // NOT_RUN and the set below is the long-standing required list (id, title, description, availability, condition, price,
-// link, image_link, brand). image_link is emitted empty because the catalog schema stores no product image yet; Meta
-// reports such items as incomplete until a supplemental image feed or a catalog image column exists.
+// link, image_link, brand). image_link is the storefront origin + /media/p/<product>/<first image> (catalog-media CM4,
+// migrations/0082) and stays empty for a product without photos; Meta reports such items as incomplete.
 var feedColumns = []string{"id", "title", "description", "availability", "condition", "price", "link", "image_link", "brand"}
 
 const originHeader = "X-Commerce-Storefront-Origin"
@@ -39,6 +39,7 @@ type feedRow struct {
 	ID, Title, Description, Availability string
 	PriceMinor                           int64
 	Currency, Link, Brand                string
+	ImageLink                            string // absolute public URL of the product's first photo, "" when none
 }
 
 // feedPrice formats price_minor as Meta's "<amount> <ISO>" (I05: exact decimal of minor units / 100, never a float).
@@ -63,7 +64,7 @@ func writeFeed(w *csv.Writer, rows []feedRow) error {
 		if !ok {
 			continue
 		}
-		if err := w.Write([]string{r.ID, r.Title, r.Description, r.Availability, "new", price, r.Link, "", r.Brand}); err != nil {
+		if err := w.Write([]string{r.ID, r.Title, r.Description, r.Availability, "new", price, r.Link, r.ImageLink, r.Brand}); err != nil {
 			return err
 		}
 	}
@@ -117,7 +118,7 @@ func loadFeed(ctx context.Context, pool *pgxpool.Pool, origin string) ([]feedRow
 	if err != nil {
 		return nil, err
 	}
-	defer rs.Close()
+	defer rs.Close() // closed again explicitly below; Close is idempotent
 	var out []feedRow
 	for rs.Next() {
 		var r feedRow
@@ -126,7 +127,50 @@ func loadFeed(ctx context.Context, pool *pgxpool.Pool, origin string) ([]feedRow
 		}
 		out = append(out, r)
 	}
-	return out, rs.Err()
+	if err = rs.Err(); err != nil {
+		return nil, err
+	}
+	rs.Close() // the connection must be idle before the second statement
+	return out, addImageLinks(ctx, tx, origin, out)
+}
+
+// addImageLinks sets ImageLink from catalog.buyer_feed_images (migrations/0082, owner commerce_catalog_media, EXECUTE
+// commerce_buyer_runtime): the first photo id of each active product of the published store, no bytes. The feed row's
+// link is origin + "/products/" + product id (ads.feed_rows), which is the join key back to the product.
+func addImageLinks(ctx context.Context, tx pgx.Tx, origin string, rows []feedRow) error {
+	if len(rows) == 0 {
+		return nil
+	}
+	rs, err := tx.Query(ctx, `SELECT product_id::text,image_id::text FROM catalog.buyer_feed_images($1::text)`, origin)
+	if err != nil {
+		return err
+	}
+	defer rs.Close()
+	first := map[string]string{}
+	for rs.Next() {
+		var product, image string
+		if err = rs.Scan(&product, &image); err != nil {
+			return err
+		}
+		first[product] = image
+	}
+	if err = rs.Err(); err != nil {
+		return err
+	}
+	for i := range rows {
+		rows[i].ImageLink = imageLink(origin, rows[i].Link, first)
+	}
+	return nil
+}
+
+// imageLink maps a feed row link (origin/products/<product>) and the first-photo map to the public photo URL, or ""
+// when the link is not of that shape or the product has no photo.
+func imageLink(origin, link string, first map[string]string) string {
+	product, ok := strings.CutPrefix(link, origin+"/products/")
+	if image := first[product]; ok && image != "" {
+		return origin + "/media/p/" + product + "/" + image
+	}
+	return ""
 }
 
 // feedError maps the definer's SQLSTATEs to HTTP without ever returning a driver message.

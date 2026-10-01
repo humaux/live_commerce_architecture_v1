@@ -79,7 +79,7 @@ func OpenBuyerIssuerPool(ctx context.Context, dsn string) (*pgxpool.Pool, error)
 }
 
 // WorkerAuthority names the one NOLOGIN authority a worker process's DB login joins (T21-02,
-// migration 0084). The values are the membership keys of validatePoolAuthority; the roles are
+// migration 0096). The values are the membership keys of validatePoolAuthority; the roles are
 // commerce_payment_worker (payment-worker SANDBOX/PROVIDER_MOCK), commerce_payment_live (payment-worker
 // LIVE), commerce_expiry_worker, commerce_ads_worker and commerce_claims_worker. The legacy shared
 // commerce_worker role is empty and never admitted.
@@ -354,7 +354,7 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 		Scan(&retentionJob, &retentionJobUsage, &retentionJobSet, &retentionOperator, &retentionOperatorUsage, &retentionOperatorSet); err != nil {
 		return fmt.Errorf("validate runtime role: %w", err)
 	}
-	// T21-02 worker authorities (migration 0084). The legacy commerce_worker above is empty and is a
+	// T21-02 worker authorities (migration 0096). The legacy commerce_worker above is empty and is a
 	// membership of its own, never a valid authority: a login still in it matches no pool kind.
 	var payWorker, payLive, expiryWorker, adsWorker, claimsWorker bool
 	if err := pool.QueryRow(ctx, `SELECT coalesce(pg_has_role(session_user, to_regrole('commerce_payment_worker'), 'MEMBER'),false),

@@ -348,7 +348,7 @@ func TestMerchantPurchaseEntryHTTPReplayAndNoPurchaseEffects(t *testing.T) {
 		return w.Body.Bytes()
 	}
 	key := t04Key("entry-create")
-	body := []byte(`{"name":"Entry HTTP product","description":"Isolated fixture"}`)
+	body := []byte(`{"name":"Entry HTTP product","description":"Isolated fixture","status":"active"}`)
 	created := request("POST", base+"/products", tf.token, key, body, 200)
 	var product catalog.Product
 	if err := json.Unmarshal(created, &product); err != nil {

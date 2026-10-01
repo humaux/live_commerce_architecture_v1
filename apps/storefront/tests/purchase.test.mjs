@@ -248,6 +248,8 @@ test("CVSP01 options: CVS rows carry pickup_selection/payment_modes; unavailable
   assert.equal(validOption(mapOption), true);
   assert.equal(validOption(enteredOption), true);
   assert.equal(validOption({ ...mapOption, available: true }), true);
+  // ops-polish OP1: with no card payment the row offers pay_at_pickup alone, and checkout accepts exactly that mode
+  assert.equal(validOption({ ...mapOption, payment_modes: ["pay_at_pickup"] }), true);
   assert.equal(validOptionRow(soonRow), true);
   assert.equal(isUnavailable(soonRow), true);
   assert.equal(isUnavailable(mapOption), false);
@@ -256,7 +258,7 @@ test("CVSP01 options: CVS rows carry pickup_selection/payment_modes; unavailable
     ["CVS row without pickup_selection", (({ pickup_selection, ...r }) => r)(mapOption)],
     ["CVS row without payment_modes", (({ payment_modes, ...r }) => r)(mapOption)],
     ["unknown selection mode", { ...mapOption, pickup_selection: "merchant" }],
-    ["payment_modes without card", { ...mapOption, payment_modes: ["pay_at_pickup"] }],
+    ["payment_modes empty", { ...mapOption, payment_modes: [] }],
     ["payment_modes duplicate", { ...mapOption, payment_modes: ["card", "card"] }],
     ["unknown payment mode", { ...mapOption, payment_modes: ["card", "cash"] }],
     ["entered without search url", (({ store_search_url, ...r }) => r)(enteredOption)],

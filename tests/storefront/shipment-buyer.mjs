@@ -86,7 +86,7 @@ async function shot(page, name, locale, viewport) {
   await writeFile(manifest, JSON.stringify(list, null, 2));
 }
 async function openOrder(page, locale) {
-  await page.goto(`${origin}/${locale}/products/${productID}`);
+  await page.goto(`${origin}/${locale}/checkout`); // the order history lives on the checkout page (storefront shell)
   await page.getByTestId("toggle-order-history").click();
   const detailResponse = page.waitForResponse((r) => new URL(r.url()).pathname === `/api/buyer/orders/${orderID}` && r.request().method() === "GET");
   await page.locator(`button[data-order-id="${orderID}"]`).click();

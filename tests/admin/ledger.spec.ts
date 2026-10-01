@@ -37,11 +37,9 @@ test("approved ledger reproduction and mobile table remain usable", async ({
     animations: "disabled",
   });
   await page.getByRole("button", { name: "打开导航" }).click();
-  await page.getByRole("button", { name: "网站客服", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "网站客服" })).toBeVisible();
-  await expect(
-    page.getByText("网站客服、Meta 会话与平台支持使用独立的授权和数据域。"),
-  ).toBeVisible();
+  // catalog-media: the dead "not connected" entries are gone from the navigation, so no placeholder is reachable.
+  for (const name of ["网站客服", "Meta 消息", "平台支持"])
+    await expect(page.getByRole("button", { name, exact: true })).toHaveCount(0);
 });
 
 test("locale routes preserve the scoped search and explicit choice", async ({

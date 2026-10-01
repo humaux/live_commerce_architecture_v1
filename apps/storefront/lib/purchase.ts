@@ -14,6 +14,8 @@ import {
   type CvsKind,
   type PaymentMode,
 } from "./cvs-contract.ts";
+import { validBuyerEmail } from "./bank-transfer-contract.ts";
+import { validPromotion, type QuotePromotion } from "./promo-contract.ts";
 
 // Buyer purchase transport + strict validators for the BFF /api/buyer/* routes (cart, catalog,
 // checkout-options, quotes, destination, checkout, orders). Owns: request journals/CAS and the exact wire shapes.
@@ -34,7 +36,10 @@ export type Product = {
   sku_code: string;
   currency: string;
   price_minor: number;
+  // catalog-media CM4: the product's photos in display order ([] when none). Optional so older fixtures still parse.
+  images?: ProductImageMeta[];
 };
+export type ProductImageMeta = { id: string; width: number | null; height: number | null };
 export type Option = {
   market_id: string;
   country: string;
@@ -50,8 +55,15 @@ export type Option = {
   sort_order: number;
   // CVS rows only (taiwan-cvs-logistics-v1 §5.1): how the store is chosen and which payment modes exist.
   pickup_selection?: "ecpay_map" | "buyer_entered";
+  // Home rows carry payment_modes only when the store enabled bank transfer (storefront-v2 §C); absent = card only.
   payment_modes?: PaymentMode[];
   store_search_url?: string;
+  // Present exactly when payment_modes lists bank_transfer: hours the stock stays reserved for the transfer (6..168).
+  transfer_window_hours?: number;
+  // Per-policy free-delivery threshold in minor units (storefront-v2 §A/§C): Go emits it on every row (number or null,
+  // internal/checkout/options.go; the MOCK fake of tests/storefront/shop-fake-api.mjs mirrors it). The cart page and the delivery step
+  // show their "add X more for free delivery" hint only when a row carries a positive one. The quote still decides shipping, never this.
+  free_shipping_threshold_minor?: number | null;
 };
 // A configured chain that cannot be sold yet (ECPay chain gate, §5.1): listed but disabled ("Coming soon").
 // Go sends only the identity/label fields plus available:false and a reason; versions are not needed.
@@ -101,13 +113,17 @@ export type Quote = {
     tax_minor: number;
     total_minor: number;
   };
+  // storefront-v2 §F: present only when a discount code applied (the server quote already carries its discount_minor).
+  promotion?: QuotePromotion;
 };
 type CartWrite = { expected_version: number; items: Item[] };
-type QuoteWrite = {
+export type QuoteWrite = {
   cart_version: number;
   market_id: string;
   country: string;
   method: string;
+  // storefront-v2 §F: optional canonical (upper-case) discount code; omitted = no code. The server prices it, never this field.
+  promo_code?: string;
 };
 type Pending = { v: 1; context: string; key: string } & (
   | { kind: "cart"; body: CartWrite }
@@ -169,8 +185,11 @@ export type CheckoutWrite = {
   cart_version: number;
   service_version: number;
   allocation_version: number;
-  // Only set for CVS options (§16.2); a home checkout body is unchanged and Go reads a missing mode as card.
+  // Set for CVS options (§16.2) and for a home option that offers several modes (storefront-v2 §C); a card-only home body is unchanged
+  // and Go reads a missing mode as card.
   payment_mode?: PaymentMode;
+  // Optional buyer email (storefront-v2 §C), trimmed, validated by validBuyerEmail; Go and the SQL CHECK re-validate.
+  buyer_email?: string;
 };
 // manual-fulfilment-v1 §3.1 carrier codes; a label, never an integration binding.
 export const CARRIER_CODES = [
@@ -197,7 +216,7 @@ export type Order = {
   order_id: string;
   cart_id: string;
   cart_version: number;
-  commercial_state: "DRAFT" | "AWAITING_PAYMENT" | "CONFIRMED" | "CANCELLED";
+  commercial_state: "DRAFT" | "AWAITING_PAYMENT" | "AWAITING_TRANSFER" | "CONFIRMED" | "CANCELLED";
   fulfillment_state:
     | "MANUAL_UNASSIGNED"
     | "CANCELLED"
@@ -213,7 +232,7 @@ export type Order = {
   cvs_shipment?: BuyerCvsShipment | null;
   hold_expires_at?: string;
   snapshot: {
-    quote: Pick<Quote, "currency" | "lines" | "amount">;
+    quote: Pick<Quote, "currency" | "lines" | "amount" | "promotion">;
     destination: DestinationDetails;
     service: {
       code: string;
@@ -272,14 +291,36 @@ export const validCart = (v: unknown): v is Cart =>
   currency(v.currency) &&
   integer(v.version) &&
   validItems(v.items);
+export const validProductImages = (v: unknown): v is ProductImageMeta[] =>
+  Array.isArray(v) &&
+  v.length <= 8 &&
+  v.every(
+    (x) =>
+      record(x) &&
+      exact(x, ["id", "width", "height"]) &&
+      id(x.id) &&
+      (x.width === null || integer(x.width, 1, 100000)) &&
+      (x.height === null || integer(x.height, 1, 100000)),
+  );
 export const validProduct = (v: unknown): v is Product =>
   record(v) &&
+  (v.images === undefined || validProductImages(v.images)) &&
   id(v.product_id) &&
   id(v.sku_id) &&
   [v.name, v.description, v.sku_code].every((x) => typeof x === "string") &&
   currency(v.currency) &&
   integer(v.price_minor, 0, MAX_AMOUNT);
 const HOME_AND_CVS = ["home", "cvs_711", "cvs_familymart", "cvs_hilife", "cvs_okmart"];
+// payment_modes: 1..3 distinct known modes; transfer_window_hours (6..168) is present exactly when bank_transfer is listed.
+const validPaymentModes = (v: Record<string, unknown>, min: number) =>
+  Array.isArray(v.payment_modes) &&
+  v.payment_modes.length >= min &&
+  v.payment_modes.length <= 3 &&
+  v.payment_modes.every(isPaymentMode) &&
+  new Set(v.payment_modes).size === v.payment_modes.length &&
+  (v.payment_modes.includes("bank_transfer")
+    ? integer(v.transfer_window_hours, 6, 168)
+    : v.transfer_window_hours === undefined);
 const optionLabels = (v: Record<string, unknown>) =>
   [v.name_hans, v.name_hant, v.name_en].every((x) => typeof x === "string") &&
   integer(v.sort_order, -2147483648, 2147483647);
@@ -287,12 +328,7 @@ const optionLabels = (v: Record<string, unknown>) =>
 // own constants (cvs-contract.ts CVS_SEARCH_LINKS), never a server-supplied href.
 const validCvsOptionFields = (v: Record<string, unknown>) =>
   (v.pickup_selection === "ecpay_map" || v.pickup_selection === "buyer_entered") &&
-  Array.isArray(v.payment_modes) &&
-  v.payment_modes.length >= 1 &&
-  v.payment_modes.length <= 2 &&
-  v.payment_modes.every(isPaymentMode) &&
-  new Set(v.payment_modes).size === v.payment_modes.length &&
-  v.payment_modes.includes("card") &&
+  validPaymentModes(v, 1) &&
   (v.pickup_selection === "buyer_entered"
     ? typeof v.store_search_url === "string" &&
       v.store_search_url.startsWith("https://") &&
@@ -301,6 +337,9 @@ const validCvsOptionFields = (v: Record<string, unknown>) =>
 export const validOption = (v: unknown): v is Option =>
   record(v) &&
   (v.available === undefined || v.available === true) &&
+  (v.free_shipping_threshold_minor === undefined ||
+    v.free_shipping_threshold_minor === null ||
+    integer(v.free_shipping_threshold_minor, 1, MAX_AMOUNT)) &&
   v.reason === undefined &&
   id(v.market_id) &&
   currency(v.currency) &&
@@ -313,7 +352,12 @@ export const validOption = (v: unknown): v is Option =>
   optionLabels(v) &&
   (v.delivery_kind === "home"
     ? v.pickup_selection === undefined &&
-      v.payment_modes === undefined &&
+      (v.payment_modes === undefined
+        ? v.transfer_window_hours === undefined
+        : // Go lists modes on a home row only when the store enabled bank transfer, and never pay_at_pickup (CVS only).
+          validPaymentModes(v, 1) &&
+          (v.payment_modes as unknown[]).includes("bank_transfer") &&
+          !(v.payment_modes as unknown[]).includes("pay_at_pickup")) &&
       v.store_search_url === undefined
     : country(v.country) && v.country === "TW" && validCvsOptionFields(v));
 // {available:false, reason} rows keep only identity + labels (a chain the store configured but ECPay gates).
@@ -343,6 +387,7 @@ const validQuoteSummary = (v: unknown): v is Order["snapshot"]["quote"] =>
       integer(x.quantity, 1, 1_000_000_000) &&
       integer(x.unit_price_minor, 0, MAX_AMOUNT),
   ) &&
+  (v.promotion === undefined || validPromotion(v.promotion)) &&
   record(v.amount) &&
   [
     "subtotal_minor",
@@ -485,7 +530,7 @@ export const validOrder = (v: unknown): v is Order =>
   id(v.order_id) &&
   id(v.cart_id) &&
   integer(v.cart_version, 1) &&
-  ["DRAFT", "AWAITING_PAYMENT", "CONFIRMED", "CANCELLED"].includes(
+  ["DRAFT", "AWAITING_PAYMENT", "AWAITING_TRANSFER", "CONFIRMED", "CANCELLED"].includes(
     String(v.commercial_state),
   ) &&
   FULFILLMENT_STATES.includes(String(v.fulfillment_state)) &&
@@ -519,7 +564,7 @@ export const validOrderSummary = (v: unknown): v is OrderSummary =>
   id(v.order_id) &&
   id(v.cart_id) &&
   integer(v.cart_version, 1) &&
-  ["DRAFT", "AWAITING_PAYMENT", "CONFIRMED", "CANCELLED"].includes(
+  ["DRAFT", "AWAITING_PAYMENT", "AWAITING_TRANSFER", "CONFIRMED", "CANCELLED"].includes(
     String(v.commercial_state),
   ) &&
   FULFILLMENT_STATES.includes(String(v.fulfillment_state)) &&
@@ -591,8 +636,10 @@ const validCheckoutWrite = (v: unknown): v is CheckoutWrite =>
     "service_version",
     "allocation_version",
     ...(v.payment_mode === undefined ? [] : ["payment_mode"]),
+    ...(v.buyer_email === undefined ? [] : ["buyer_email"]),
   ]) &&
   (v.payment_mode === undefined || isPaymentMode(v.payment_mode)) &&
+  (v.buyer_email === undefined || validBuyerEmail(v.buyer_email)) &&
   id(v.quote_id) &&
   id(v.destination_id) &&
   integer(v.cart_version, 1) &&
@@ -606,8 +653,10 @@ export function checkoutInput(
   destination: Destination,
   now = Date.now(),
   paymentMode?: PaymentMode,
+  buyerEmail?: string,
 ): CheckoutWrite {
   const cvs = option.delivery_kind !== "home";
+  const email = buyerEmail?.trim() ?? "";
   if (
     !validQuote(quote) ||
     !validOption(option) ||
@@ -624,10 +673,13 @@ export function checkoutInput(
     (!cvs && option.mode !== "MANUAL") ||
     destination.kind !== option.delivery_kind ||
     (cvs && destination.pickup?.kind !== option.delivery_kind) ||
-    // payment_mode belongs to CVS rows only and must be one the row offers (§16.2, §5.1).
+    // payment_mode must be one the row offers (§16.2, §5.1); a home row names modes only when bank transfer is on (storefront-v2 §C).
     (cvs
       ? !(option.payment_modes ?? []).includes(paymentMode ?? "card")
-      : paymentMode !== undefined) ||
+      : option.payment_modes === undefined
+        ? paymentMode !== undefined
+        : !option.payment_modes.includes(paymentMode ?? "card")) ||
+    (email !== "" && !validBuyerEmail(email)) ||
     destination.cart_id !== cart.id ||
     destination.cart_version !== cart.version ||
     destination.country !== quote.country ||
@@ -642,7 +694,8 @@ export function checkoutInput(
     cart_version: cart.version,
     service_version: option.service_version,
     allocation_version: option.allocation_version,
-    ...(cvs ? { payment_mode: paymentMode ?? "card" } : {}),
+    ...(cvs || option.payment_modes !== undefined ? { payment_mode: paymentMode ?? "card" } : {}),
+    ...(email === "" ? {} : { buyer_email: email }),
   };
 }
 
@@ -668,6 +721,18 @@ export function cartSelection(
   const items = [
     ...cart.items.filter((x) => x.sku_id !== sku),
     { sku_id: sku, quantity },
+  ].sort((a, b) => a.sku_id.localeCompare(b.sku_id));
+  if (!validItems(items)) throw new BuyerClientError("request_failed");
+  return { expected_version: cart.version, items };
+}
+
+// Cart page edits: set one line's quantity (0 removes it) and keep every other line, against the version the buyer saw.
+export function cartWithQuantity(cart: Cart, sku: string, quantity: number): CartWrite {
+  if (!validCart(cart) || !id(sku) || !integer(quantity, 0, 1_000_000_000))
+    throw new BuyerClientError("invalid_response");
+  const items = [
+    ...cart.items.filter((x) => x.sku_id !== sku),
+    ...(quantity === 0 ? [] : [{ sku_id: sku, quantity }]),
   ].sort((a, b) => a.sku_id.localeCompare(b.sku_id));
   if (!validItems(items)) throw new BuyerClientError("request_failed");
   return { expected_version: cart.version, items };
@@ -734,7 +799,10 @@ export function parsePending(raw: string, context: string): Pending {
       return v as Pending;
     if (
       v.kind === "quote" &&
-      exact(b, ["cart_version", "market_id", "country", "method"]) &&
+      (exact(b, ["cart_version", "market_id", "country", "method"]) ||
+        (exact(b, ["cart_version", "market_id", "country", "method", "promo_code"]) &&
+          typeof b.promo_code === "string" &&
+          /^[A-Z0-9-]{3,24}$/.test(b.promo_code))) &&
       integer(b.cart_version, 1) &&
       id(b.market_id) &&
       typeof b.country === "string" &&
@@ -889,7 +957,8 @@ export async function writePurchase(
         typeof value.code === "string"
       ) {
         clearPending(pending);
-        throw new BuyerClientError("request_failed", response.status);
+        // §F: the server's coded refusal (promo_expired ...) reaches the UI as `detail`; text only, never a state.
+        throw new BuyerClientError("request_failed", response.status, value.code);
       }
       throw new BuyerClientError("uncertain", response.status);
     }
@@ -1169,7 +1238,7 @@ function validCheckoutReceipt(
     return false;
   if (
     receipt.commercial_state !== undefined &&
-    !["DRAFT", "AWAITING_PAYMENT", "CONFIRMED", "CANCELLED"].includes(
+    !["DRAFT", "AWAITING_PAYMENT", "AWAITING_TRANSFER", "CONFIRMED", "CANCELLED"].includes(
       String(receipt.commercial_state),
     )
   )

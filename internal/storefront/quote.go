@@ -8,7 +8,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"livecommerce/internal/buyer"
 	"livecommerce/internal/command"
-	"livecommerce/internal/pricing" // The only calculator; snapshots never re-price on GET.
+	"livecommerce/internal/pricing"    // The only calculator; snapshots never re-price on GET.
+	"livecommerce/internal/promotions" // quote_check: a typed discount code becomes a frozen pricing.Promo (storefront-v2 §F).
 )
 
 type QuoteInput struct {
@@ -16,6 +17,9 @@ type QuoteInput struct {
 	MarketID    string `json:"market_id"`
 	Country     string `json:"country"`
 	Method      string `json:"method"`
+	// PromoCode is an optional discount code the buyer typed (storefront-v2 §F). omitempty keeps the request digest of a code-less quote
+	// unchanged, so pre-0091 replays still match. It is validated and priced here, never trusted as an amount.
+	PromoCode string `json:"promo_code,omitempty"`
 }
 type QuoteLine struct {
 	SKUID          string             `json:"sku_id"`
@@ -28,6 +32,12 @@ type QuoteLine struct {
 	Quantity       int64              `json:"quantity"`
 	UnitPriceMinor int64              `json:"unit_price_minor"`
 	Amount         pricing.LineAmount `json:"amount"`
+	// Live-only price evidence (migration 0092). Absent PriceRule means the catalog price. They are part of
+	// the immutable quote snapshot, hence of the order snapshot that embeds it ("which price rule applied").
+	PriceRule             string `json:"price_rule,omitempty"` // pricing.RuleLiveClaim when set
+	CatalogUnitPriceMinor int64  `json:"catalog_unit_price_minor,omitempty"`
+	ClaimBundleID         string `json:"claim_bundle_id,omitempty"`
+	ClaimOfferID          string `json:"claim_offer_id,omitempty"`
 }
 type Quote struct {
 	ID                 string              `json:"id"`
@@ -39,8 +49,11 @@ type Quote struct {
 	Policy             pricing.Policy      `json:"policy"`
 	Lines              []QuoteLine         `json:"lines"`
 	Amount             pricing.Calculation `json:"amount"`
-	CreatedAt          time.Time           `json:"created_at"`
-	ExpiresAt          time.Time           `json:"expires_at"`
+	// Promotion is the code this quote was priced with (nil = none). omitempty: a code-less snapshot has no key, so pre-0091 quotes
+	// round-trip byte-equal through checkout.begin_hold's snapshot comparison. Version freezes the merchant's code row (promo_changed).
+	Promotion *pricing.Promo `json:"promotion,omitempty"`
+	CreatedAt time.Time      `json:"created_at"`
+	ExpiresAt time.Time      `json:"expires_at"`
 }
 
 func CreateQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string, in QuoteInput) (out Quote, err error) {
@@ -76,18 +89,46 @@ func CreateQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string, in Q
 		if err != nil {
 			return err
 		}
+		if err = applyLivePrices(ctx, tx, s, cart.ID, lines); err != nil {
+			return err
+		}
 		inputs := make([]pricing.AmountLine, len(lines))
 		for i, line := range lines {
 			inputs[i] = pricing.AmountLine{UnitPriceMinor: line.UnitPriceMinor, Quantity: line.Quantity}
 		}
-		amount, err := pricing.Calculate(policy, inputs)
+		var promo *pricing.Promo
+		if in.PromoCode != "" {
+			// §F: the code is checked against the PRE-discount merchandise subtotal of the locked catalog lines (never a client amount);
+			// the effect it returns is frozen below. Advisory here: checkout's promotions.redeem is the authoritative, locking check.
+			var subtotal int64
+			for _, line := range inputs {
+				part, err := command.CheckMoney(line.UnitPriceMinor, line.Quantity)
+				if err != nil {
+					return err
+				}
+				if subtotal += part; subtotal > command.MaxMoney {
+					return command.ErrInvalid
+				}
+			}
+			found, err := promotions.Check(ctx, tx, s.TenantID, s.StoreID, s.OwnerID, in.PromoCode, subtotal)
+			if err != nil {
+				return err
+			}
+			promo = &found
+		}
+		amount, err := pricing.CalculateWith(policy, inputs, promo)
 		if err != nil {
 			return err
+		}
+		if promo != nil && amount.DiscountMinor == 0 {
+			// A code that takes nothing off this cart (a tiny cart rounded down to a whole currency unit) is refused rather than silently
+			// burning one of its uses on a zero discount. Same answer as an unknown code: nothing to enumerate.
+			return &promotions.Coded{Status: 422, Code: "promo_invalid"}
 		}
 		for i := range lines {
 			lines[i].Amount = amount.Lines[i]
 		}
-		out = Quote{CartID: cart.ID, Currency: cart.Currency, CalculationVersion: "v1", CartVersion: cart.Version, MarketVersion: market.Version, Policy: policy, Lines: lines, Amount: amount}
+		out = Quote{CartID: cart.ID, Currency: cart.Currency, CalculationVersion: "v1", CartVersion: cart.Version, MarketVersion: market.Version, Policy: policy, Lines: lines, Amount: amount, Promotion: promo}
 		if err = tx.QueryRow(ctx, `SELECT gen_random_uuid()::text,clock_timestamp()`).Scan(&out.ID, &out.CreatedAt); err != nil {
 			return err
 		}

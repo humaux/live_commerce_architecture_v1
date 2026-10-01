@@ -1,7 +1,8 @@
 // Package identityhttp owns the trusted identity HTTP surface (/v1/identity/*) that only the local
 // BFF may call, authenticated by a fixed BFF key: OIDC login start and complete, first store
 // bootstrap and logout (handler.go), and the merchant password routes /v1/identity/password/*
-// (password.go, contracts/merchant-password-auth-v1.md §7.1).
+// (password.go, contracts/merchant-password-auth-v1.md §7.1) and the staff-team routes /v1/identity/staff/* (staff.go,
+// contracts/storefront-v2.md §D).
 //
 // It never handles cookies, Origin or CSRF (those belong to Next), never issues a business API
 // token, never lets the business runtime pool sign in, and never trusts X-Commerce-Client-IP before

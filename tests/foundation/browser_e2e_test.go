@@ -543,7 +543,7 @@ func (x *e2eRun) provision(t *testing.T) map[string]any {
 	f0 := &x.f
 	tag := t04Tag()
 	product, err := t04Scoped(ctx, f0, x.token, x.store, "catalog:write", func(tx pgx.Tx, s platform.Scope) (catalog.Product, error) {
-		return catalog.CreateProduct(ctx, tx, s, t04Key("e2e-product"), catalog.ProductInput{Name: e2eProductName, Description: "Synthetic acceptance fixture"})
+		return catalog.CreateProduct(ctx, tx, s, t04Key("e2e-product"), catalog.ProductInput{Name: e2eProductName, Description: "Synthetic acceptance fixture", Status: catalog.StatusActive})
 	})
 	if err != nil {
 		t.Fatalf("create product: %v", err)

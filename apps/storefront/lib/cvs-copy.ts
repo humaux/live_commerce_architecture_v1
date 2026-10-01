@@ -94,6 +94,7 @@ const en = {
     pay_at_pickup_unavailable: "Pay at pickup is not available for this store or chain.",
     pay_at_pickup_amount_exceeds: "This order is above the seller's pay-at-pickup limit.",
     pay_at_pickup_limit: "The seller has too many unpaid pickup orders right now. Try again later or pay by card.",
+    card_unavailable: "Card payment is not available for this store. Choose another payment option.",
   } as Record<CvsErrorCode, string>,
   // order page (§5.3, §16.4, §16.8)
   pickupSection: "Store pickup",
@@ -200,6 +201,7 @@ export const cvsCopy: Record<Locale, Copy> = {
       pay_at_pickup_unavailable: "此店铺或超商暂不支持取货付款。",
       pay_at_pickup_amount_exceeds: "订单金额超过卖家设定的取货付款上限。",
       pay_at_pickup_limit: "卖家目前的未取货订单过多，请稍后再试或改用信用卡。",
+      card_unavailable: "此店铺暂不支持信用卡付款，请选择其他付款方式。",
     },
     pickupSection: "门店取货",
     shipmentTitle: "取货进度",
@@ -301,6 +303,7 @@ export const cvsCopy: Record<Locale, Copy> = {
       pay_at_pickup_unavailable: "此商店或超商暫不支援取貨付款。",
       pay_at_pickup_amount_exceeds: "訂單金額超過賣家設定的取貨付款上限。",
       pay_at_pickup_limit: "賣家目前的未取貨訂單過多，請稍後再試或改用信用卡。",
+      card_unavailable: "此商店暫不支援信用卡付款，請選擇其他付款方式。",
     },
     pickupSection: "門市取貨",
     shipmentTitle: "取貨進度",

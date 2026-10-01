@@ -218,7 +218,7 @@ func tcsFunctions() []tcsFn {
 		{"fulfillment", "read_cvs_selection", cw, true, []string{cr}, false},
 		// contract 4.3 lists runtime, checkout_writer, worker; load_cvs_create (owner commerce_integration_writer) calls it, so that owner
 		// needs EXECUTE too: recorded as a contract gap, accepted here.
-		{"fulfillment", "ecpay_recipient_ok", "", false, []string{rt, cw, iw}, false}, // no worker: no Go caller and no fulfillment schema USAGE (0084 revoked the old commerce_worker grant)
+		{"fulfillment", "ecpay_recipient_ok", "", false, []string{rt, cw, iw}, false}, // no worker: no Go caller and no fulfillment schema USAGE (0096 revoked the old commerce_worker grant)
 		{"fulfillment", "request_cvs_shipment", cw, true, []string{rt}, false},
 		{"integration", "plan_cvs_create", iw, true, []string{cw}, false},
 		{"fulfillment", "read_cvs_shipment_command", cw, true, []string{rt}, false},

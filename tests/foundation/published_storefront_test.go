@@ -220,12 +220,13 @@ func TestPublishedStorefrontAuthorityAndConstraints(t *testing.T) {
 		}
 	}
 	// commerce_ads_writer: meta-ads-v1 §4.4 (0080) — ads.feed_rows resolves the store from the verified origin through this
-	// function only; the ACL stays a closed list.
+	// function only; the ACL stays a closed list. commerce_catalog_media (0082, docs/delivery/units/catalog-media.md CM4) is the
+	// third and last grantee: its two origin-keyed definers (buyer_media_image, buyer_feed_images) resolve the store here too.
 	var safe bool
 	err := f.owner.QueryRow(ctx, `SELECT p.prosecdef AND p.proowner='commerce_buyer_writer'::regrole
 		AND p.proconfig=ARRAY['search_path=pg_catalog']::text[] AND NOT EXISTS (
 		 SELECT 1 FROM aclexplode(p.proacl) a WHERE a.privilege_type='EXECUTE'
-		 AND a.grantee NOT IN ('commerce_buyer_writer'::regrole,'commerce_buyer_issuer'::regrole,'commerce_ads_writer'::regrole))
+		 AND a.grantee NOT IN ('commerce_buyer_writer'::regrole,'commerce_buyer_issuer'::regrole,'commerce_ads_writer'::regrole,'commerce_catalog_media'::regrole))
 		FROM pg_proc p WHERE p.oid='buyer.resolve_published_store(text)'::regprocedure`).Scan(&safe)
 	if err != nil || !safe {
 		t.Fatalf("function owner/ACL/search_path: %v", err)

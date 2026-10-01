@@ -45,10 +45,10 @@ func bcatRead(t *testing.T, h bhHarness, query string) bcatPage {
 	}
 	var page map[string]json.RawMessage
 	if json.Unmarshal(r.body, &raw) != nil || json.Unmarshal(r.body, &page) != nil ||
-		len(page) != 2 || page["items"] == nil || page["next_cursor"] == nil || out.Items == nil {
+		len(page) != 3 || page["items"] == nil || page["next_cursor"] == nil || page["store_name"] == nil || out.Items == nil {
 		t.Fatal("catalog page is not an exact non-null page projection")
 	}
-	want := []string{"currency", "description", "name", "price_minor", "product_id", "sku_code", "sku_id"}
+	want := []string{"currency", "description", "images", "name", "price_minor", "product_id", "sku_code", "sku_id"}
 	for _, item := range raw.Items {
 		keys := make([]string, 0, len(item))
 		for key := range item {
