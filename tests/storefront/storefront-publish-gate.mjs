@@ -32,6 +32,8 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const listen = async server => { server.listen(0, "127.0.0.1"); await once(server, "listening"); return server.address().port; };
 const VIEW = { desktop: { width: 1280, height: 900 }, "390px": { width: 390, height: 844 } };
 // Expected product copy per locale (state text and the card's three hints), written from the unit brief, not the component.
+// apps/storefront/lib/shop-copy.ts closedTitle (the not-found page of a store that is not published or not bound)
+const CLOSED = { en: "This shop is not open yet", "zh-TW": "商店尚未開張" };
 const COPY = {
   en: { title: /Storefront/i, published: "Published", unpublished: "Not published", awaiting: /Awaiting platform domain/, publishedNoDomain: /Published, but buyers cannot open the store/,
     ready: /A domain is live\. Publish when you are ready/, live: /Live: buyers can open your store/, savedPub: "Published.", savedUnpub: "Unpublished.", conflict: /changed after you loaded it/ },
@@ -159,9 +161,12 @@ try {
     try { return await fn(await context.newPage()); } finally { await context.close(); }
   }
   const notFound = (locale, view, why, shot) => anonymous(view, async page => {
-    await page.goto(productUrl(locale));
-    await expect(page.locator("main[aria-busy=false]")).toBeVisible();
-    await expect(page.locator("main").getByRole("alert")).toBeVisible();
+    // 0093 (storefront-integration): an unpublished / unbound / suspended / detached store is the shop shell's real 404 with the "not open yet" page.
+    const response = await page.goto(productUrl(locale));
+    assert.equal(response.status(), 404, `${why}: the closed store answers 404`);
+    await expect(page.getByTestId("store-closed")).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(CLOSED[locale]);
+    await expect(page.getByTestId("product-buy")).toHaveCount(0);
     await expect(page.getByRole("radio")).toHaveCount(0);
     await expect(page.getByRole("heading", { name, exact: true })).toHaveCount(0);
     const state = await page.evaluate(async () => { const response = await fetch("/api/buyer/session"); return { status: response.status, body: await response.json() }; });
@@ -175,13 +180,14 @@ try {
   const sees = (locale, view, why, shot) => anonymous(view, async page => {
     const response = await page.goto(productUrl(locale));
     assert.equal(response.status(), 200);
+    // 0093: the product page is the shop shell's (h1 title, data-sku on the buy box, variant price); the buyer session is created at the first
+    // add-to-cart (CartProvider), not by viewing the page, so a view proves the buyer API answers on the published origin (it 404s on a closed one).
     await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
-    await expect(page.getByRole("radio", { name: code, exact: true })).toBeChecked();
-    await expect(page.getByRole("radio")).toHaveCount(1);
-    assert.equal(await page.getByRole("radio").inputValue(), sku.id);
-    await expect(page.locator(".unit-price")).toHaveText(new Intl.NumberFormat(locale, { style: "currency", currency: sku.currency }).format(123.45));
-    const state = await page.evaluate(async () => (await fetch("/api/buyer/session")).json());
-    assert.equal(state.state, "active", `${why}: anonymous buyer session must be active`);
+    await expect(page.getByTestId("product-buy")).toHaveAttribute("data-sku", sku.id);
+    await expect(page.getByTestId("variant-price")).toContainText("123.45");
+    const session = await page.evaluate(async () => { const r = await fetch("/api/buyer/session"); return { status: r.status, body: await r.json() }; });
+    assert.equal(session.status, 200, `${why}: the buyer API answers on a published origin`);
+    assert(["absent", "active"].includes(session.body.state), `${why}: unexpected buyer session state ${session.body.state}`);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${why}: horizontal overflow`);
     if (shot) await page.screenshot({ path: path.join(evidence, shot), fullPage: true });
     pass(`anonymous buyer sees the product on ${buyerOrigin} (${locale}, ${view}): ${why}`);

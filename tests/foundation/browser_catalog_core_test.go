@@ -61,6 +61,9 @@ func ccbStartAdmin(t *testing.T, ctx context.Context, f *testFixture, principal,
 	origin := "http://" + address
 	idp := newBrowserIDP(t, origin+"/api/auth/callback")
 	mustExec(t, f.owner, `INSERT INTO identity.external_identities(issuer,subject,principal_id) VALUES($1,'browser-subject',$2)`, idp.server.URL, principal)
+	// the spec checks the workspace nav through nav-orders; the role-aware nav (0089, apps/admin/lib/team-model.ts) shows it only with orders:read
+	// (the browser run owns its fixture cluster, so the grant needs no cleanup)
+	mustExec(t, f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'orders:read') ON CONFLICT DO NOTHING`, f.tenantA, f.storeA1, principal)
 	role := "ccb_" + strings.ReplaceAll(randomUUID(), "-", "")
 	password := randomToken()
 	mustExec(t, f.owner, `CREATE ROLE `+pgx.Identifier{role}.Sanitize()+` LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE IN ROLE commerce_identity PASSWORD '`+password+`'`)
