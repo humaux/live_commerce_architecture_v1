@@ -12,7 +12,7 @@ import { createWriteStream } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { expect } from "@playwright/test";
-import { launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
+import { isWebkitCancelledFetch, launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
 
 const root = process.cwd(), evidence = process.env.LC_JOINT_EVIDENCE;
 const adminOrigin = process.env.COMMERCE_PUBLIC_ORIGIN, buyerOrigin = "https://buyer.example";
@@ -105,8 +105,9 @@ try {
   const context = await browser.newContext(ctxOpts({ignoreHTTPSErrors: true, viewport: {width: 390, height: 844}}));
   const merchant = await context.newPage();
   const uiErrors = [];
-  context.on("page", page => page.on("pageerror", error => uiErrors.push(error.name)));
-  merchant.on("pageerror", error => uiErrors.push(error.name));
+  const uiError = error => { if (!isWebkitCancelledFetch(error)) uiErrors.push(error.name); };
+  context.on("page", page => page.on("pageerror", uiError));
+  merchant.on("pageerror", uiError);
   let sawIssuer = false;
   merchant.on("request", request => { if (new URL(request.url()).origin === process.env.COMMERCE_OIDC_ISSUER) sawIssuer = true; });
   await merchant.goto(`${adminOrigin}/en`);

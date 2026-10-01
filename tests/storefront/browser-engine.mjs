@@ -36,3 +36,11 @@ export const iosZoomOffenders = (page) => page.evaluate(() => {
     return !skip.has((el.type || "").toLowerCase()) && box.width > 0 && box.height > 0 && parseFloat(getComputedStyle(el).fontSize) < 16;
   }).map((el) => `${el.tagName.toLowerCase()}${el.name ? `[name=${el.name}]` : ""}#${el.id} ${getComputedStyle(el).fontSize}`);
 });
+
+// WebKit only: a navigation (reload, language switch, goto) that cancels an in-flight fetch makes WebKit write "Fetch API cannot load <url> due to
+// access control checks." to the console as an error, although the page catches the rejection (buyer-client request(), the admin loaders). Playwright's
+// WebKit backend reports every javascript-error console message as a pageerror whose name is the text before the first ':' ("Fetch API cannot load
+// https") and whose message is the rest. Chromium keeps the strict pageerror count; a real uncaught exception keeps its own name (TypeError ...).
+// Excused for exactly that text on an own-origin /api/ URL and nothing else.
+export const isWebkitCancelledFetch = (error) =>
+  engine === "webkit" && error.name === "Fetch API cannot load https" && /^\/[\w.:-]+\/api\/\S* due to access control checks\.$/.test(error.message);

@@ -77,12 +77,17 @@ export function proxy(request: NextRequest) {
     }
     response = NextResponse.redirect(target);
   }
-  response.cookies.set("commerce_locale", locale, {
-    sameSite: "lax",
-    path: "/",
-    maxAge: 31536000,
-    secure: request.nextUrl.protocol === "https:",
-  });
+  // A <Link> prefetch is not the person choosing a language. Its response must not rewrite the preference: a dashboard's /en prefetches
+  // landing a few ms after a navigation to /zh-TW/... flipped the cookie back to en, and the OAuth callback (which reads it) then
+  // returned the merchant to /en/settings.
+  const prefetch = request.headers.has("next-router-prefetch") || /prefetch/i.test(request.headers.get("sec-purpose") ?? request.headers.get("purpose") ?? "");
+  if (!prefetch)
+    response.cookies.set("commerce_locale", locale, {
+      sameSite: "lax",
+      path: "/",
+      maxAge: 31536000,
+      secure: request.nextUrl.protocol === "https:",
+    });
   response.headers.set("Cache-Control", "private, no-store");
   // staff-team D3: the invitation token is in the path; a real response header (the page's <meta> is parsed too late for the
   // stylesheet/script requests that precede it). next.config.ts sets the same pair for /:locale/invite/*.

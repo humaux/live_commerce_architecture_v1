@@ -296,6 +296,21 @@ test.describe("meta-connect independent browser gate", () => {
     await page.getByTestId("metaconnect-connect").waitFor();
   });
 
+  // Root cause of the zh-TW mobile notice that came back in English: the dashboard's <Link> prefetches of /en/... answered a few ms after the
+  // navigation to /zh-TW/settings and their Set-Cookie flipped commerce_locale back to en; /api/meta/callback reads that cookie.
+  test("a Next <Link> prefetch never rewrites the locale preference; a real navigation does", async ({ page }) => {
+    await signedLogin(page);
+    const locale = async (path: string, headers: Record<string, string>) => {
+      const response = await page.request.get(`${origin}${path}`, { headers, maxRedirects: 0 });
+      expect(response.status(), path).toBe(200);
+      return response.headersArray().filter((h) => h.name.toLowerCase() === "set-cookie" && h.value.startsWith("commerce_locale=")).map((h) => h.value.split(";")[0]);
+    };
+    expect(await locale(`/zh-TW/settings?store=${store}`, { "next-router-prefetch": "1" })).toEqual([]);
+    expect(await locale(`/zh-TW/settings?store=${store}`, { "sec-purpose": "prefetch" })).toEqual([]);
+    expect(await locale(`/zh-TW/settings?store=${store}`, {})).toEqual(["commerce_locale=zh-TW"]);
+    expect(await locale(`/en/settings?store=${store}`, {})).toEqual(["commerce_locale=en"]);
+  });
+
   test("no open redirect: whatever the cookies or query say, /api/meta/callback only ever redirects to /<locale>/settings", async ({ page }) => {
     await signedLogin(page);
     const state = "A".repeat(43);
