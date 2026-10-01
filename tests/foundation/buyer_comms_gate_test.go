@@ -61,7 +61,7 @@ func bgBank(t *testing.T) *bgEnv {
 
 func (g *bgEnv) worker(dailyCap int) *notify.Worker {
 	g.t.Helper()
-	w, err := notify.NewWorker(g.p.worker, g.smtp, dailyCap)
+	w, err := notify.NewWorker(g.p.expiry, g.smtp, dailyCap)
 	if err != nil {
 		g.t.Fatal(err)
 	}
@@ -202,7 +202,7 @@ func TestBuyerCommsGateExactlyOnce(t *testing.T) {
 			go func() {
 				defer wg.Done()
 				var raw []byte
-				if err := g.p.worker.QueryRow(ctx, `SELECT notify.claim_batch(3,100000,1000)`).Scan(&raw); err != nil {
+				if err := g.p.expiry.QueryRow(ctx, `SELECT notify.claim_batch(3,100000,1000)`).Scan(&raw); err != nil {
 					t.Error(err)
 					return
 				}
@@ -241,12 +241,12 @@ func TestBuyerCommsGateExactlyOnce(t *testing.T) {
 		}
 		// SENT is final: a late or replayed result can neither revive nor flip it
 		for _, b := range batches {
-			mustExec(t, g.p.worker, `SELECT notify.record_result($1::uuid,'SENT',NULL)`, b)
+			mustExec(t, g.p.expiry, `SELECT notify.record_result($1::uuid,'SENT',NULL)`, b)
 		}
 		for _, b := range batches {
 			for _, late := range []string{"FAILED", "UNKNOWN", "SENT"} {
 				var n int
-				if err := g.p.worker.QueryRow(ctx, `SELECT notify.record_result($1::uuid,$2,NULL)`, b, late).Scan(&n); err != nil {
+				if err := g.p.expiry.QueryRow(ctx, `SELECT notify.record_result($1::uuid,$2,NULL)`, b, late).Scan(&n); err != nil {
 					t.Fatalf("record_result: %v", err)
 				}
 				if n != 0 {
@@ -299,7 +299,7 @@ func TestBuyerCommsGateExactlyOnce(t *testing.T) {
 		g.cofAge(o2, 80)
 		for i := 0; i < 6; i++ {
 			wg.Add(1)
-			go func() { defer wg.Done(); _, _ = g.p.worker.Exec(ctx, `SELECT checkout.expire_held($1,1)`, o2) }()
+			go func() { defer wg.Done(); _, _ = g.p.expiry.Exec(ctx, `SELECT checkout.expire_held($1,1)`, o2) }()
 		}
 		wg.Wait()
 		if c := g.count(`SELECT count(*) FROM notify.outbox WHERE order_id=$1 AND kind='cancelled'`, o2); c != 1 {

@@ -106,7 +106,7 @@ func (e *tcvEnv) cogExpireUntilSettled(order string, within time.Duration) (stri
 	for {
 		var disposition string
 		var retry *time.Time
-		if err := e.p.worker.QueryRow(context.Background(), `SELECT disposition,retry_at FROM checkout.expire_held($1,1)`, order).Scan(&disposition, &retry); err != nil {
+		if err := e.p.expiry.QueryRow(context.Background(), `SELECT disposition,retry_at FROM checkout.expire_held($1,1)`, order).Scan(&disposition, &retry); err != nil {
 			return "", err
 		}
 		if disposition != "NOT_DUE" || time.Now().After(deadline) {
@@ -1081,7 +1081,7 @@ func TestCogTransferACL(t *testing.T) {
 		"checkout.read_transfer_offer(bytea,uuid)":                                                                      {"commerce_checkout_runtime"},
 		"checkout.set_order_buyer_email(bytea,uuid,uuid,text)":                                                          {"commerce_checkout_runtime"},
 		"checkout.clear_buyer_email(uuid,uuid,uuid)":                                                                    {"commerce_privacy_writer"},
-		"checkout.expire_held(uuid,bigint)":                                                                             {"commerce_worker"},
+		"checkout.expire_held(uuid,bigint)":                                                                             {"commerce_expiry_worker"}, // 0096 (T21-02): cmd/expiry-worker runs as lc_expiry_worker -> commerce_expiry_worker (deploy/postgres/logins.tsv)
 		"checkout.bank_transfer_json(uuid,uuid,uuid,boolean)":                                                           nil,
 	} {
 		got := grantees(sig)
@@ -1113,8 +1113,24 @@ func TestCogTransferACL(t *testing.T) {
 		if got := names(`set\s+state\s*=\s*'CONFIRMED'`); fmt.Sprint(got) != "[payments.decide_bank_transfer]" {
 			t.Errorf("functions that set a transfer CONFIRMED: %v (anything else is an auto-confirm path)", got)
 		}
-		if n := e.count(`SELECT count(*) FROM pg_trigger WHERE tgrelid='checkout.bank_transfers'::regclass AND NOT tgisinternal`); n != 0 {
-			t.Errorf("%d triggers on checkout.bank_transfers", n)
+		// Migration 0090 (buyer comms) adds exactly one AFTER UPDATE trigger, notify_transfer_refund, whose function only enqueues the refund mail and
+		// RETURNs NULL; it can neither confirm nor update the transfer (the two source scans above cover every function body). Anything else is a new path.
+		rows, err := owner.Query(context.Background(), `SELECT t.tgname||'->'||tf.nspname||'.'||p.proname FROM pg_trigger t JOIN pg_proc p ON p.oid=t.tgfoid JOIN pg_namespace tf ON tf.oid=p.pronamespace
+		  WHERE t.tgrelid='checkout.bank_transfers'::regclass AND NOT t.tgisinternal ORDER BY 1`)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer rows.Close()
+		var trig []string
+		for rows.Next() {
+			var s string
+			if err := rows.Scan(&s); err != nil {
+				t.Fatal(err)
+			}
+			trig = append(trig, s)
+		}
+		if fmt.Sprint(trig) != "[notify_transfer_refund->notify.on_transfer_refund]" {
+			t.Errorf("triggers on checkout.bank_transfers: %v", trig)
 		}
 	})
 }

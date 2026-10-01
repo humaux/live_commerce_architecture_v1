@@ -657,7 +657,7 @@ func TestGuestLookupSessionIsViewOnly(t *testing.T) {
 	if r := g("GET", "/v1/buyer/orders/"+mine+"/bank-transfer", "", nil); r.status != 200 {
 		t.Errorf("GET bank-transfer instructions of its own order: %d %s", r.status, r.body)
 	}
-	if n := e.count(`SELECT count(*) FROM customers.privacy_actions WHERE kind='ERASURE'`); n != 0 {
+	if n := e.count(`SELECT count(*) FROM customers.privacy_actions WHERE kind='ERASURE' AND tenant_id=$1`, e.tenant()); n != 0 { // scoped to this test's tenant: the suite shares one DB and other tests leave erasure rows
 		t.Errorf("no erasure may have started: %d", n)
 	}
 	// the checkout-issued capability is unchanged
