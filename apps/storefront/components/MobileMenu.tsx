@@ -12,7 +12,7 @@ import { shopCopy } from "../lib/shop-copy";
 import { CloseIcon, MenuIcon, SearchIcon } from "./icons";
 import LocaleSwitch from "./LocaleSwitch";
 
-export default function MobileMenu({ locale, links, preview }: { locale: Locale; links: NavLink[]; preview: string | null }) {
+export default function MobileMenu({ locale, links, preview, searchable = true }: { locale: Locale; links: NavLink[]; preview: string | null; searchable?: boolean }) {
   const copy = shopCopy[locale];
   const ref = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState(false);
@@ -44,6 +44,7 @@ export default function MobileMenu({ locale, links, preview }: { locale: Locale;
               <CloseIcon />
             </button>
           </div>
+          {searchable && (
           <form className="sf-search sf-search--sheet" role="search" action={`/${locale}/search`} method="get">
             <label className="sr-only" htmlFor="sf-sheet-q">
               {copy.search}
@@ -54,6 +55,7 @@ export default function MobileMenu({ locale, links, preview }: { locale: Locale;
               <SearchIcon />
             </button>
           </form>
+          )}
           <nav aria-label={copy.mainNav}>
             <ul className="sf-sheet__list">
               {links.map((link) => (

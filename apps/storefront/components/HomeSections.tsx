@@ -14,6 +14,7 @@ import { getCollection, listProducts } from "../lib/shop-upstream";
 import { shopCopy } from "../lib/shop-copy";
 import { ArrowRightIcon } from "./icons";
 import ProductCardView from "./ProductCard";
+import Rail from "./Rail";
 
 export function Prose({ markdown }: { markdown: string }) {
   // renderMarkdown emits only p/ul/li/strong/em/br/a(https, nofollow) from fully escaped input.
@@ -88,11 +89,11 @@ async function FeaturedSection({ section, locale, preview }: { section: Extract<
           {copy.viewAll}
         </Link>
       </div>
-      <ul className="sf-rail">
+      <Rail locale={locale}>
         {result.value.products.map((card) => (
           <ProductCardView key={card.id} locale={locale} card={card} currency={result.value.store.currency} preview={preview} />
         ))}
-      </ul>
+      </Rail>
     </section>
   );
 }

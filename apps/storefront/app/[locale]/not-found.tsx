@@ -17,9 +17,11 @@ export default async function NotFound() {
   return (
     <main className="sf-wrap">
       <div className="sf-empty sf-empty--page" data-testid={closed ? "store-closed" : "not-found"}>
-        <p className="sf-empty__code" aria-hidden="true">
-          {closed ? "·" : "404"}
-        </p>
+        {!closed && (
+          <p className="sf-empty__code" aria-hidden="true">
+            404
+          </p>
+        )}
         <h1 className="sf-empty__title">{closed ? copy.closedTitle : copy.notFoundTitle}</h1>
         <p className="sf-muted">{closed ? copy.closedBody : copy.notFoundBody}</p>
         {!closed && (

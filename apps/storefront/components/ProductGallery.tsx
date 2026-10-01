@@ -9,6 +9,7 @@ import { useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { productImage } from "../lib/routes";
 import { fmt, shopCopy } from "../lib/shop-copy";
+import { ImageIcon } from "./icons";
 
 export default function ProductGallery({
   locale,
@@ -28,6 +29,7 @@ export default function ProductGallery({
     return (
       <div className="sf-gal" data-testid="product-gallery">
         <div className="sf-gal__ph" role="img" aria-label={copy.noImage}>
+          <ImageIcon size={44} />
           <span aria-hidden="true">{copy.noImage}</span>
         </div>
       </div>
