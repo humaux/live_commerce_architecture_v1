@@ -59,6 +59,9 @@ export type Option = {
   store_search_url?: string;
   // Present exactly when payment_modes lists bank_transfer: hours the stock stays reserved for the transfer (6..168).
   transfer_window_hours?: number;
+  // Optional per-policy free-delivery threshold in minor units (storefront-v2 §C). No producer emits it yet; the cart page
+  // shows its "add X more for free delivery" hint only when a row carries it. The quote still decides shipping, never this.
+  free_shipping_threshold_minor?: number | null;
 };
 // A configured chain that cannot be sold yet (ECPay chain gate, §5.1): listed but disabled ("Coming soon").
 // Go sends only the identity/label fields plus available:false and a reason; versions are not needed.
@@ -328,6 +331,9 @@ const validCvsOptionFields = (v: Record<string, unknown>) =>
 export const validOption = (v: unknown): v is Option =>
   record(v) &&
   (v.available === undefined || v.available === true) &&
+  (v.free_shipping_threshold_minor === undefined ||
+    v.free_shipping_threshold_minor === null ||
+    integer(v.free_shipping_threshold_minor, 1, MAX_AMOUNT)) &&
   v.reason === undefined &&
   id(v.market_id) &&
   currency(v.currency) &&
@@ -708,6 +714,18 @@ export function cartSelection(
   const items = [
     ...cart.items.filter((x) => x.sku_id !== sku),
     { sku_id: sku, quantity },
+  ].sort((a, b) => a.sku_id.localeCompare(b.sku_id));
+  if (!validItems(items)) throw new BuyerClientError("request_failed");
+  return { expected_version: cart.version, items };
+}
+
+// Cart page edits: set one line's quantity (0 removes it) and keep every other line, against the version the buyer saw.
+export function cartWithQuantity(cart: Cart, sku: string, quantity: number): CartWrite {
+  if (!validCart(cart) || !id(sku) || !integer(quantity, 0, 1_000_000_000))
+    throw new BuyerClientError("invalid_response");
+  const items = [
+    ...cart.items.filter((x) => x.sku_id !== sku),
+    ...(quantity === 0 ? [] : [{ sku_id: sku, quantity }]),
   ].sort((a, b) => a.sku_id.localeCompare(b.sku_id));
   if (!validItems(items)) throw new BuyerClientError("request_failed");
   return { expected_version: cart.version, items };
