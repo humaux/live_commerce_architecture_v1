@@ -1001,6 +1001,16 @@ per PROCESS §5.
 - Buyer order page: COLLECTED "已取貨付款", RETURNED "未取貨，已退回"; pending pay-at-pickup orders show
   "取貨時付款 NT$<total>".
 
+**Amendment T21-01 (2026-10-01; `migrations/0083_cvs_restock_guard.sql`; supersedes the restock deny-list of §16.8).** One predicate,
+`fulfillment.cvs_parcel_returned`, is true iff the latest ECPay attempt is `UNCLAIMED` or no attempt was ever handed to ECPay
+(only FAILED/ABANDONED history: the manual / MERCHANT_SHIPPED path); REQUESTED, UNKNOWN, CREATED, AT_DC, AT_STORE and PICKED_UP are
+false. `restock` and the merchant-recorded `returned` both require it, else 409 `parcel_not_returned`. A 7-ELEVEN 2098 re-delivery
+that moves the shipment UNCLAIMED → AT_STORE reverts `collection_state` RETURNED → PENDING (event `collection.reverted`, audit
+`fulfillment.collection_reported`), so a later 2067 reaches COLLECTED through the normal branch; RESTOCKED is never reverted.
+After a 2098 a restock request (expected `RETURNED`) therefore answers 409 `collection_state_changed`; `parcel_not_returned`
+remains the defence for any order that is RETURNED while the parcel is not back. Test (REAL_PG, run result in the unit evidence):
+`TestCvsPayAtPickupRelease` (sequence 2030,2073,2074,2098,2067).
+
 ### 16.5 Store settings (C4; spec (e))
 
 Per store, not per ECPay profile (a `buyer_entered` store has no profile):
