@@ -101,17 +101,8 @@ export default function CheckoutFlow({
   const chosen = found && !isUnavailable(found) ? found : undefined;
   const chosenProgress =
     chosen && subtotal !== null && !quote ? freeShippingProgress(subtotal, chosen.free_shipping_threshold_minor ?? null) : null;
-  const money = (amount: number, currency: string) => {
-    const formatter = new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency,
-      // zh-TW's local "$" is ambiguous when an order is shared across markets.
-      currencyDisplay: locale === "zh-TW" && currency === "TWD" ? "code" : "symbol",
-    });
-    return formatter.format(
-      amount / 10 ** (formatter.resolvedOptions().maximumFractionDigits ?? 2),
-    );
-  };
+  // One money format for the whole storefront (lib/money.ts): the bar, the quotation, the order and the history read like the cart lines.
+  const money = (amount: number, currency: string) => formatMoney(locale, amount, currency);
 
   function showError(reason: unknown) {
     if (

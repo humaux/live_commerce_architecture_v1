@@ -1,7 +1,8 @@
-// Money display for the storefront shell (server and client components alike). Display only: Go decides every amount
-// (I05: the quote, never the browser, owns money); this turns integer minor units into text. It never parses or sums.
-// Same rule as the checkout flow's formatter: zh-TW shows the ISO code ("TWD 1,200") because "$" is ambiguous when an
-// order is shared across markets; the number of minor digits comes from Intl (TWD = 2 in this system, JPY = 0).
+// The ONE money formatter of the storefront (shop window, cart, checkout bar and quotation, orders, history, claim page; server and
+// client components alike; apps/storefront/tests/money.test.mjs fails if a component builds its own again). Display only: Go decides
+// every amount (I05: the quote, never the browser, owns money); this turns integer minor units into text. It never parses or sums.
+// zh-TW shows the ISO code ("TWD 1,200") because "$" is ambiguous when an order is shared across markets; the number of minor digits
+// comes from Intl (TWD = 2 in this system, JPY = 0) and whole amounts drop them, so a line, a subtotal and a total read alike.
 import type { Locale } from "@live-commerce/i18n";
 
 export function minorDigits(locale: Locale, currency: string): number {
@@ -14,8 +15,7 @@ export function formatMoney(locale: Locale, amount: number, currency: string): s
     style: "currency",
     currency,
     currencyDisplay: locale === "zh-TW" && currency === "TWD" ? "code" : "symbol",
-    // A shop window reads "TWD 980", not "TWD 980.00"; cents appear only when there are cents. (Checkout screens keep the
-    // always-two-digit form of components/CheckoutFlow.tsx.)
+    // "TWD 980", never "TWD 980.00", on every screen; cents appear only when there are cents (then always two digits).
     minimumFractionDigits: amount % 10 ** digits === 0 ? 0 : digits,
   });
   return formatter.format(amount / 10 ** digits);

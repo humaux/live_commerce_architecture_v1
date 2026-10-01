@@ -175,7 +175,7 @@ try{
   await mobilePage.getByTestId("toggle-order-history").click();await mobilePage.locator(`button[data-order-id="${a}"]`).click();
   await expect(mobilePage.getByTestId("order-id")).toHaveText(a);await expect(mobilePage.getByTestId("payment-status")).toHaveAttribute("data-state","NOT_STARTED");
   await expect(mobilePage.locator("html")).toHaveAttribute("lang","zh-TW");
-  await expect(mobilePage.locator(".order-total")).toContainText(/TWD\s*25\.00/);
+  await expect(mobilePage.locator(".order-total")).toContainText(/TWD\s*25(?![\d.,]*\d)/); // one storefront money format: whole amounts carry no ".00"
   await expect(mobilePage.getByTestId("payment-status")).toHaveText("付款狀態: 尚未付款");
   await expect(mobilePage.getByTestId("payment-commercial-status")).toHaveText("訂單狀態: 尚未付款");
   await mobilePage.getByTestId("order-payment").screenshot({path:path.join(evidence,"mobile-native-history-ready.png")});
