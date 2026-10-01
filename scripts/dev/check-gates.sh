@@ -11,6 +11,10 @@
 # Usage: bash scripts/dev/check-gates.sh   (exit 1 on any finding)
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
+# Syntax first: a merge can leave a gate script that no longer parses (R4: a lost `fi` broke every mode).
+for s in scripts/dev/test-local.sh scripts/dev/test-node.sh scripts/dev/test-focused.sh scripts/dev/release-gate.sh; do
+  bash -n "$s" || { echo "check-gates: $s does not parse (bash -n)" >&2; exit 1; }
+done
 python3 - <<'PY'
 import fnmatch, glob, os, re, subprocess, sys
 bad = []
