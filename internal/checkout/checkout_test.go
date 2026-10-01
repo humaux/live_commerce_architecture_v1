@@ -42,6 +42,33 @@ func TestInputHasOnlyFrozenFields(t *testing.T) {
 	}
 }
 
+// TestInputLocaleValidation pins the server-side locale rule: only the three storefront locales (or empty, meaning
+// the zh-TW default persisted at placement) are accepted, and the frozen digest shape is unchanged by the new field.
+func TestInputLocaleValidation(t *testing.T) {
+	valid := Input{QuoteID: testID, DestinationID: testID, CartVersion: 1, ServiceVersion: 1, AllocationVersion: 1}
+	if !validInput(valid) {
+		t.Fatal("empty locale (the zh-TW default) must stay valid")
+	}
+	body, err := json.Marshal(valid)
+	if err != nil || strings.Contains(string(body), "locale") {
+		t.Fatalf("omitted locale must not change the request digest: %s %v", body, err)
+	}
+	for _, locale := range []string{"zh-CN", "zh-TW", "en"} {
+		in := valid
+		in.Locale = locale
+		if !validInput(in) {
+			t.Fatalf("locale %q rejected", locale)
+		}
+	}
+	for _, locale := range []string{"fr", "zh-Hant", "EN", " en", "en-US"} {
+		in := valid
+		in.Locale = locale
+		if validInput(in) {
+			t.Fatalf("locale %q must be refused", locale)
+		}
+	}
+}
+
 func TestSQLFailuresAreBounded(t *testing.T) {
 	for _, tc := range []struct {
 		code string

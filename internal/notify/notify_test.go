@@ -97,6 +97,36 @@ func TestRenderRules(t *testing.T) {
 	}
 }
 
+// TestRenderLocaleSelection is the template-selection gate for the buyer mails: the order's own locale (persisted
+// by checkout.set_order_locale, migration 0097, and fed through notify.claim_batch) picks the copy and the order
+// link; no locale (merchant-created order) falls back to the zh-TW default.
+func TestRenderLocaleSelection(t *testing.T) {
+	for _, tt := range []struct {
+		locale   string // "" models a NULL checkout.orders.locale (merchant-created order)
+		subject  string
+		linkPart string
+	}{
+		{"zh-TW", "訂單已成立", "/zh-TW/orders/"},
+		{"zh-CN", "订单已成立", "/zh-CN/orders/"},
+		{"en", "Your order is placed", "/en/orders/"},
+		{"", "訂單已成立", "/zh-TW/orders/"}, // the DefaultLocale fallback
+	} {
+		p := base(KindPlaced)
+		if tt.locale != "" {
+			p.Locale = ptr(tt.locale)
+		}
+		m := Render(p)[0]
+		if !strings.Contains(m.Subject, tt.subject) {
+			t.Errorf("locale %q: subject %q lacks %q", tt.locale, m.Subject, tt.subject)
+		}
+		for _, part := range []string{m.Text, m.HTML} {
+			if !strings.Contains(part, "https://shop.example.test"+tt.linkPart+oid) {
+				t.Errorf("locale %q: part lacks the localized order link %q:\n%s", tt.locale, tt.linkPart, part)
+			}
+		}
+	}
+}
+
 func TestRenderMerchantBatch(t *testing.T) {
 	p := Payload{Kind: KindMerchantNew, StoreName: "Shop", To: []string{"a@example.test", "b@example.test"}, Count: 3, OrderIDs: []string{oid, "bad"}}
 	msgs := Render(p)
