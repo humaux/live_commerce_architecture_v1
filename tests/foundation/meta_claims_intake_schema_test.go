@@ -137,7 +137,8 @@ var mciRetentionRoles = map[string]bool{"commerce_retention_writer": true, "comm
 // mciApplyWithout mirrors migrations.Apply (same phase order, ledger and River grants) but skips
 // the two meta-claims-intake files (and the dependent 0071), producing the "populated 0063" database of §12 MCI02.
 // mciHeldBack lists the numbered migrations after 0064 that depend on it (0078 customers-core, 0079 billing-core).
-var mciHeldBack = []string{"0078_customers_privacy.sql", "0079_platform_billing.sql"}
+// R3/R4: 0085/0088 redefine 0078 read_finance_summary, 0090/0091 patch 0078 customers.apply_erasure, so they are held back too.
+var mciHeldBack = []string{"0078_customers_privacy.sql", "0079_platform_billing.sql", "0085_finance_pay_at_pickup.sql", "0088_checkout_offline.sql", "0090_buyer_comms.sql", "0091_promotions.sql"}
 
 func mciApplyWithout(t *testing.T, owner *pgxpool.Pool) {
 	t.Helper()
@@ -151,6 +152,9 @@ func mciApplyWithout(t *testing.T, owner *pgxpool.Pool) {
 	// meta-connect 0095 (merchant Page connect) builds on the intake's Page-token tables and meta_inbox routes: same treatment.
 	connectNumbered, _ := filepath.Glob("../../migrations/[0-9][0-9][0-9][0-9]_meta_connect.sql")
 	adsNumbered = append(adsNumbered, connectNumbered...)
+	// 0089 (staff-team) derives role bundles from the full permission catalogue, which includes the ads permissions this
+	// gate never creates, so it is recorded without running exactly like the ads files it depends on.
+	adsNumbered = append(adsNumbered, "../../migrations/0089_staff_team.sql")
 	adsPost, _ := filepath.Glob("../../migrations/post_river/[0-9][0-9][0-9][0-9]_meta_ads_river.sql")
 	adsSkip := map[string]bool{}
 	for _, path := range append(adsNumbered, adsPost...) {

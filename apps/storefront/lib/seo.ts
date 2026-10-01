@@ -61,7 +61,7 @@ export function robotsTxt(origin: string | null, open: boolean): string {
     "Allow: /",
     "Disallow: /api/",
     "Disallow: /*/cart",
-    "Disallow: /*/products/Checkout",
+    "Disallow: /*/checkout",
     "Disallow: /*/claim",
     "Disallow: /*/privacy",
     "Disallow: /*/search",

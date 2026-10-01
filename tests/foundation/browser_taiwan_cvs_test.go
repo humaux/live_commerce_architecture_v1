@@ -127,6 +127,7 @@ func brcMock(t *testing.T) {
 	}
 	for _, e := range []*tcvEnv{e1, e2, e3} {
 		mustExec(t, e.p.f.owner, `UPDATE catalog.products SET name='Synthetic CVS browser product',description='Synthetic acceptance fixture' WHERE id=$1`, e.p.stock.product.ID)
+		sfiAxisBySKUCode(t, e.p.f.owner, e.p.stock.product.ID) // the storefront shell sells variants (one chip per SKU code)
 	}
 
 	bffKey := base64.RawURLEncoding.EncodeToString(randomBytes(32))

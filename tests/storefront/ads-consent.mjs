@@ -114,6 +114,26 @@ try {
   await ctl("context/none");
   pass("start: no CAPI context in the store");
 
+  // 0) AL2: the frozen ad / Meta-feed link (origin + /products/{id}, migrations/0074 + 0080) reaches a published product page on the REAL stack
+  // (Go + PG + published store): 308 to the locale route, 308 to the slug page, then a 200 page naming the product. The first hop alone is
+  // tests/storefront/ad-link.mjs (no upstream); the product id is a real catalog row of the fixture store.
+  {
+    const productID = env("LC_AC_PRODUCT");
+    const c0 = await browser.newContext({ ignoreHTTPSErrors: true });
+    contexts.push(c0);
+    const p0 = await c0.newPage();
+    const first = await c0.request.get(`${origin}/products/${productID}`, { maxRedirects: 0 });
+    assert.equal(first.status(), 308, "AL2 hop 1: the ad link is a permanent redirect");
+    assert.equal(first.headers().location, `/zh-TW/products/${productID}`);
+    const landed = await p0.goto(`${origin}/products/${productID}`);
+    assert.equal(landed.status(), 200, "AL2: the ad link lands on a 200 page");
+    const slug = new URL(p0.url()).pathname;
+    assert.match(slug, /^\/zh-TW\/products\/(?![0-9a-f]{8}-[0-9a-f]{4}-)[a-z0-9-]+$/, "AL2: the final URL is the slug page, not the id");
+    await expect(p0.getByTestId("add-to-cart")).toBeVisible();
+    await c0.close();
+    pass("AL2: ad/feed link /products/{id} -> 308 -> 308 -> slug page 200 on the real stack");
+  }
+
   // 1) privacy page: the O6 disclosure, then grant ads_personalization
   const c1 = await browser.newContext({ ignoreHTTPSErrors: true, userAgent: ua1 });
   contexts.push(c1);

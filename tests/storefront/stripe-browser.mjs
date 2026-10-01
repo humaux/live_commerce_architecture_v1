@@ -9,6 +9,7 @@
 // (observed at the edge); Go control server /facts and /act (counts and fixture actions only).
 // Output: result.json (+ PNGs) in LC_STRIPE_EVIDENCE. Every console line is redacted: a Stripe URL,
 // session id, key or synthetic email must never reach browser.log (SU08).
+import { reachCheckout, switchLocale } from "./shop-helpers.mjs";
 import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
 import http from "node:http";
@@ -28,7 +29,7 @@ const cfg=JSON.parse(process.env.LC_STRIPE_CASE??"{}");
 assert(evidence&&/^http:\/\/127\.0\.0\.1:\d+$/.test(CONTROL??""),"driver env");
 assert(["SP18","SU07","SU09","OBS"].includes(cfg.kind)&&["SANDBOX","MOCK"].includes(cfg.mode),"case");
 const SANDBOX=cfg.mode==="SANDBOX";
-const origin="https://buyer.example",product=`${origin}/en/products/${process.env.LC_STRIPE_PRODUCT}`;
+const origin="https://buyer.example",product=`${origin}/en/products/${process.env.LC_STRIPE_PRODUCT}`,checkout=`${origin}/en/checkout`;
 const ex=expect.configure({timeout:20000});
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 const within=(p,ms,fallback)=>Promise.race([Promise.resolve(p).catch(()=>fallback),new Promise(r=>setTimeout(()=>r(fallback),ms))]); // a wedged page must not wedge the driver
@@ -159,10 +160,11 @@ const requestIs=(response,suffix,method)=>new URL(response.url()).pathname===`/a
 async function newOrder(page,{pay=true}={}){
   // After a reload the restored order mounts asynchronously: wait for whichever of the two entry points
   // exists rather than counting once (count() is 0 while the page is still hydrating).
-  await ex(page.getByTestId("continue-shopping").or(page.locator("#quantity")).first()).toBeVisible({timeout:20000});
-  if(await page.getByTestId("continue-shopping").count())await page.getByTestId("continue-shopping").click();
-  await ex(page.locator("#quantity")).toBeEnabled();
-  await page.locator("#quantity").fill("2");
+  // Storefront shell: the checkout page shows the previous order (continue-shopping) or an empty cart; then product page -> Add to cart (2) -> checkout.
+  await page.goto(checkout);
+  await ex(page.getByTestId("continue-shopping").or(page.getByTestId("checkout-empty")).first()).toBeVisible({timeout:20000});
+  if(await page.getByTestId("continue-shopping").count()){await page.getByTestId("continue-shopping").click();await ex(page.getByTestId("checkout-empty")).toBeVisible();} // let the continuation settle before navigating away
+  await reachCheckout(page,origin,"en",process.env.LC_STRIPE_PRODUCT,{quantity:2});
   await page.getByRole("button",{name:"Choose delivery",exact:true}).click();
   const quotation=page.waitForResponse(r=>requestIs(r,"quotes","POST"));
   await page.getByRole("button",{name:"Get current total",exact:true}).click();assert.equal((await quotation).status(),200);
@@ -183,7 +185,7 @@ async function newOrder(page,{pay=true}={}){
   else assert.equal(payment.body.methods.length,0);
   return id;
 }
-async function setLocale(page,loc){await page.locator("header select").selectOption(loc);await ex(page.locator("html")).toHaveAttribute("lang",loc);}
+async function setLocale(page,loc){await switchLocale(page,loc);}
 const payBtn=(p,l)=>p.getByRole("button",{name:LOC[l].pay,exact:true});
 const recoverBtn=(p,l)=>p.getByRole("button",{name:LOC[l].recover,exact:true});
 const cancelBtn=(p,l)=>p.getByRole("button",{name:LOC[l].cancel,exact:true});
@@ -429,7 +431,7 @@ async function su07(){
   passed("SU07 child closed => Continue reuses the same session (1 session row, 1 prepare, 2 handoffs)");
   // 3. double click + second tab => 1 prepare, 1 session
   id=await newOrder(page);
-  const other=await c.newPage();await other.goto(product);await ex(other.getByTestId("order-id")).toHaveText(id);await ex(payBtn(other,l)).toBeVisible();
+  const other=await c.newPage();await other.goto(checkout);await ex(other.getByTestId("order-id")).toHaveText(id);await ex(payBtn(other,l)).toBeVisible();
   const popups=[];c.on("page",p=>popups.push(p));
   await Promise.all([payBtn(page,l).dblclick(),payBtn(other,l).click()]);
   await until(async()=>(await control(id)).order.pinned===1&&stripeVisits>=3,60000,"pinned session + hosted navigation");

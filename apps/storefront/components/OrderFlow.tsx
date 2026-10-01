@@ -22,6 +22,8 @@ import { purchaseCopy } from "../lib/purchase-copy";
 import { cvsCopy } from "../lib/cvs-copy";
 import { bankTransferCopy } from "../lib/bank-transfer-copy";
 import { isTransferErrorCode, validBuyerEmail, type TransferErrorCode } from "../lib/bank-transfer-contract";
+import { isPromoErrorCode, type PromoErrorCode } from "../lib/promo-contract";
+import { promoCopy } from "../lib/promo-copy";
 import {
   isCvsErrorCode,
   isCvsKind,
@@ -134,6 +136,7 @@ export default function OrderFlow({
   const [email, setEmail] = useState("");
   const [emailInvalid, setEmailInvalid] = useState(false);
   const [transferError, setTransferError] = useState<TransferErrorCode | null>(null);
+  const [promoError, setPromoError] = useState<PromoErrorCode | null>(null); // §F: the one discount-code refusal shown next to the create button
   const bank = bankTransferCopy[locale];
   const pickup = useRef<PickupHandle | null>(null);
   const cvsOption = option && isCvsKind(option.delivery_kind) ? (option as Option & { delivery_kind: CvsKind }) : null;
@@ -482,6 +485,11 @@ export default function OrderFlow({
           {bank.errors[transferError]}
         </p>
       )}
+      {promoError && (
+        <p role="alert" data-testid="promo-create-error">
+          {promoCopy[locale].errors[promoError]} {promoCopy[locale].atCheckout}
+        </p>
+      )}
       <label className="buyer-email" data-testid="buyer-email">
         <span>{bank.emailLabel}</span>
         <input
@@ -520,6 +528,7 @@ export default function OrderFlow({
               return;
             }
             setTransferError(null);
+            setPromoError(null);
             try {
               const result = await writeCheckout(
                 context,
@@ -537,6 +546,12 @@ export default function OrderFlow({
               if (isCurrent() && version === live.current) onOrder(result);
             } catch (reason) {
               if (version === live.current) setConfirmed(null);
+              // storefront-v2 §F: a definite discount-code refusal at placement (edited, paused, expired or used up since the quote). No order
+              // exists; the quotation's code field above re-applies or removes it.
+              if (reason instanceof BuyerClientError && isPromoErrorCode(reason.detail)) {
+                if (version === live.current) setPromoError(reason.detail);
+                return;
+              }
               // A definite bank-transfer refusal (the store switched it off meanwhile) is shown here, not as a generic failure.
               if (reason instanceof BuyerClientError && isTransferErrorCode(reason.detail)) {
                 if (version === live.current) setTransferError(reason.detail);

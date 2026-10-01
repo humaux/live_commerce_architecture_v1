@@ -87,3 +87,27 @@ func TestCalculateFreeShippingThreshold(t *testing.T) {
 		t.Fatal("empty policy input accepted")
 	}
 }
+
+func TestResolveUnitPrice(t *testing.T) {
+	t.Parallel()
+	ptr := func(v int64) *int64 { return &v }
+	for _, tc := range []struct {
+		name    string
+		catalog int64
+		live    *int64
+		price   int64
+		rule    string
+	}{
+		{"no origin", 1000, nil, 1000, RuleCatalog},
+		{"live lower", 1000, ptr(700), 700, RuleLiveClaim},
+		{"live higher is applied as set", 1000, ptr(1500), 1500, RuleLiveClaim},
+		{"zero is not a price", 1000, ptr(0), 1000, RuleCatalog},
+		{"negative is not a price", 1000, ptr(-5), 1000, RuleCatalog},
+		{"above the checkout bound", 1000, ptr(1_000_000_000_001), 1000, RuleCatalog},
+		{"upper bound ok", 1000, ptr(1_000_000_000_000), 1_000_000_000_000, RuleLiveClaim},
+	} {
+		if got, rule := ResolveUnitPrice(tc.catalog, tc.live); got != tc.price || rule != tc.rule {
+			t.Fatalf("%s: got (%d,%s), want (%d,%s)", tc.name, got, rule, tc.price, tc.rule)
+		}
+	}
+}

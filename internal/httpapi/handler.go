@@ -170,6 +170,8 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerBillingRoutes(mux, pool, configured.Billing)
 	registerCVSRoutes(mux, pool, configured.CVS)
 	registerOfflinePaymentRoutes(mux, pool)
+	registerPromotionRoutes(mux, pool)
+	registerNotifySettingsRoutes(mux, pool)
 	foundation := platform.NewHandler(pool, platform.HandlerOptions{SessionStoreList: configured.SessionStoreList})
 	if configured.SessionStoreList {
 		mux.Handle("GET /v1/admin/stores", foundation)

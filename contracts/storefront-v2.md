@@ -33,8 +33,10 @@ Buyer reads (Go private buyer routes behind the storefront BFF, published-origin
   → `{store:{name, currency}, products:[{id, slug, title, price_min_minor, price_max_minor, compare_at_min_minor|null, cover_image_id|null, in_stock: bool}], next: cursor|null}`.
   `q` matches title/description/SKU code, case-insensitive literal (escape LIKE), active only.
 - `GET catalog/v2/products/{slug_or_id}` → `{id, slug, title, description, seo:{title, description}, images:[{id,width,height}], options:[{name, values[]}], variants:[{sku_id, title, option_values[], price_minor, compare_at_minor|null, stock: in|low|out}], collections:[{slug,title}]}`; 404 identical for unknown/draft/archived/foreign store.
-- `GET catalog/v2/collections` → `{collections:[{slug, title, image_id|null, product_count}]}` (active only, count of active products).
-- `GET catalog/v2/collections/{slug}` → `{slug, title, description, image_id|null}` (products via the list route with `collection=`).
+- `GET catalog/v2/collections` → `{collections:[{id, slug, title, image_id|null, product_count}]}` (active only, count of active products).
+- `GET catalog/v2/collections/{slug}` → `{id, slug, title, description, image_id|null}` (products via the list route with `collection=`).
+  AMENDMENT 2026-10-01 (unit storefront-integration, migration 0093): both reads also return `id` (the collection uuid). The photo URL is
+  `/media/c/{id}/{image_id}` (the Go route needs the collection id, so the storefront could not build it from the earlier slug-only shape).
 - Images keep the catalog-media path `/media/p/{product_id}/{image_id}`; collection images use `/media/c/{collection_id}/{image_id}` (same rules: published store, active collection, immutable cache).
 
 Merchant admin routes (scope from server auth; catalog:read / catalog:write): CRUD for collections
@@ -124,6 +126,9 @@ Admin routes (store:write — use the narrowest existing permission the settings
   column; expiry → order cancelled and stock released. No PSP involved; never auto-confirm.
 - Free-shipping threshold per delivery policy: `free_shipping_threshold_minor|null`; quote applies
   shipping 0 when merchandise subtotal ≥ threshold (server-side, in the existing quote path).
+  AMENDMENT 2026-10-01 (unit storefront-integration): every `GET /v1/buyer/checkout-options` row carries the same key
+  `free_shipping_threshold_minor` (integer minor units, or `null` when the policy has none or the threshold is 0 = always free, which needs no
+  hint). It lets the cart and the delivery step word "add X more for free delivery"; the quote stays the only authority on the amount charged.
 - Buyer email (optional, validated, ≤ 254) captured at checkout and stored on the order for
   notifications (PII: erasure/export paths of customers-privacy must include it).
 
@@ -136,6 +141,77 @@ inventory:read), `fulfilment` (orders:read, fulfillment:write, orders:export, in
 store + role), invitee signs up / logs in with password auth and accepts; owner can change role or
 revoke (immediate: sessions of that membership stop authorizing on next request). At least one owner
 always remains. All actions audited.
+
+## E. Buyer communications (producer: unit buyer-comms, migration 0090)
+
+Amendment written before code; the integrator reviews it on merge. Owners: SQL schema `notify` + `checkout.guest_order_lookup`
+(migration 0090, owner role commerce_checkout_writer), Go `internal/notify` (renderer, worker, merchant toggle), `internal/buyerhttp`
+(lookup route), storefront `/[locale]/orders/lookup`. Evidence labels per AGENTS.md; real SMTP is never used by tests (loopback fake).
+
+**E1. Events (exactly once per (order, kind)).** `notify.outbox` has PRIMARY KEY (order_id, kind); rows are inserted by AFTER UPDATE
+triggers inside the same transaction that moves the order, `ON CONFLICT DO NOTHING`, never from Go and never inside an SMTP call.
+A trigger failure is swallowed with a WARNING: a mail problem must never roll back a payment or a stock move.
+
+| kind | transition that enqueues it |
+|---|---|
+| `placed` | `commercial_state` becomes AWAITING_TRANSFER (bank_transfer), or CONFIRMED for pay_at_pickup (pickup details) |
+| `paid` | CONFIRMED for card (capture) or for bank_transfer (merchant confirmed the transfer) |
+| `shipped` | `fulfillment_state` becomes MERCHANT_SHIPPED (carrier + tracking), or a CVS shipment reaches AT_DC / AT_STORE (pickup store) |
+| `cancelled` | CANCELLED coming from AWAITING_TRANSFER or CONFIRMED (expiry, rejection window end, cancel). Abandoned DRAFT / AWAITING_PAYMENT card checkouts send nothing |
+| `refunded` | Stripe refund fact SUCCEEDED, bank_transfers REFUNDED_OFFLINE, or collection_state REFUNDED_OFFLINE |
+| `merchant_new` | the first transition of an order into AWAITING_TRANSFER, or into CONFIRMED from DRAFT / AWAITING_PAYMENT (not bank-transfer confirm) |
+
+**E2. Delivery.** One worker loop (`notify.Worker`, hosted by `cmd/expiry-worker`: it already holds the checkout-lifecycle worker pool and
+the only River client that handles order expiry; no new process, no River job kind, because queue admission is guarded by post_river
+triggers owned by other units) claims rows through `notify.claim_batch` (FOR UPDATE SKIP LOCKED, state PENDING -> SENDING), renders, sends
+one SMTP attempt, records through `notify.record_result`. SENT is final. A definite refusal (mail.ErrFailed) goes back to PENDING with
+backoff 2 min, 10 min, then FAILED after the third attempt. `mail.ErrUnknown` records UNKNOWN and is NEVER re-sent (SMTP has no
+idempotency key, I06): it is logged once (`buyer_mail_unknown`, kind + order id only) and stays queryable. A SENDING row whose worker died
+(claimed over 15 min ago) becomes UNKNOWN for the same reason. A PENDING row older than 24 h becomes SKIPPED (a stale "shipped" mail is
+worse than none). The recipient is read from `checkout.orders.buyer_email` at send time only; no body, no address is stored.
+
+**E3. Caps (must not starve merchant login codes).** Counted per UTC+8 day over rows that reached SENDING: all buyer and merchant notify
+mail together may not exceed floor(COMMERCE_MAIL_DAILY_CAP x 60 / 100); per store at most 30 buyer mails in a rolling hour. Over a cap the row
+stays PENDING (retried next tick, SKIPPED after 24 h). The login-code buckets of identity are a separate ledger and are untouched.
+
+**E4. Content.** Locale zh-TW unless the order snapshot carries a known locale (today it does not; en and zh-CN copy exist for when it does).
+Plain text + simple HTML, no remote image, no tracking pixel, all dynamic text HTML-escaped, store name + order number + link
+`{published origin}/{locale}/orders/{order_id}` (origin = the store's ACTIVE storefront domain; no link when none). Order number = first 12 hex
+digits of the order id, uppercase, shown as `XXXX-XXXX-XXXX`. `placed` (bank_transfer) carries the order's own bank snapshot and the
+transfer deadline (`orders.expires_at`); `placed` (pay_at_pickup) the pickup store; `shipped` carrier + tracking number (+ https tracking
+URL when present) or CVS store + shipping number.
+
+**E5. Guest order lookup.** `POST /v1/buyer/orders/lookup` (BFF `POST /api/buyer/orders/lookup`, page `/[locale]/orders/lookup`). Body
+`{order_ref, contact}`: order_ref = the order number (12 hex, dashes/spaces/case ignored) or a full order id; contact = the order's buyer
+email, or the delivery phone (digits, +886/leading 0 ignored). The BFF mints a fresh cookie envelope exactly like `session/prepare`
+and sends its token as the bearer; Go resolves the store from the published origin only (never the body), forwards the client IP
+(`X-Commerce-Client-IP`, one valid literal, as for password auth) and calls `checkout.guest_order_lookup`. On a match the definer registers
+a NEW capability session for the order's existing buyer owner (hash of the BFF token; same TTL and cookie as checkout) and returns
+`{order_id}`; the BFF then sets the cookie (replacing any current buyer cookie) and the page navigates to `/{locale}/orders/{order_id}`.
+Every mismatch (unknown order, wrong email/phone, erased owner, other store) is the same 404 `not_found`, produced by the same work (one
+index range scan, one sha256 compare against the stored value or a dummy), so neither body nor timing reveals existence. Limits (fixed
+10-minute windows, counted before any lookup, per hashed key): 10 per client IP, 5 per order ref, 200 per store -> 429 `rate_limited` with
+Retry-After. The issued session is VIEW-ONLY (integrator ruling): `buyer.capability_sessions.view_order_id` names the one order it may read. The Go buyer
+handler classifies every authenticated request through `buyer.session_view_order` and, for a view-only session, allows only GET session, session
+bootstrap/retire/logout and GET `/v1/buyer/orders/{that order}` plus, read-only, GET of that order's `/payment` status and `/bank-transfer`
+instructions; every other route (order list, other orders, any POST/PUT incl. payment prepare/handoff and the transfer proof, CVS, claims,
+consents, privacy export / erasure, cart, checkout) is 403 `forbidden` (default deny, so a new route is closed until listed). The checkout-issued
+capability (view_order_id NULL) keeps its rights.
+
+**E6. Merchant new-order mail.** Sent to the store's owner address(es) (`identity.store_staff` role owner, verified password email), one
+mail per store per 5 minutes covering every pending `merchant_new` row ("N new orders", no buyer data, link to the admin orders page is not
+included because the admin origin is not store data). Opt-out: `notify.store_settings.merchant_new_order_email` (default true), merchant
+routes `GET|PUT /v1/admin/stores/{store_id}/notification-settings` (integration:read / integration:manage), a Settings toggle. An opted-out
+store's rows are SKIPPED.
+
+**E7. Retention and erasure.** The mail log keeps kind, order id, state, attempt count, timestamps and `recipient_hash`
+(sha256 of "order id : lowercase address"), never a body or an address. When `checkout.orders.buyer_email` is set to NULL (customers erasure
+via `checkout.clear_buyer_email`) a trigger clears `recipient_hash` of that order's rows and SKIPs its PENDING ones. Rows older than 180 days
+are deleted by `notify.claim_batch` (bounded, 200 per call).
+
+**E8. Configuration.** `COMMERCE_BUYER_MAIL_ENABLED=1` switches the loop on in `cmd/expiry-worker`; then it needs the same SMTP variables
+as the API (COMMERCE_SMTP_HOST / _USERNAME / _PASSWORD[_FILE], COMMERCE_MAIL_FROM) and COMMERCE_MAIL_DAILY_CAP (default 200, 20..100000). Unset
+= no mail is claimed (rows wait up to 24 h, then SKIPPED).
 
 ## B-acceptance (unit store-design, implemented; evidence labels per AGENTS.md)
 
@@ -169,9 +245,67 @@ Implemented as: `identity.store_staff` (role label) + `identity.staff_invitation
 `identity.staff_{list,invite,record_invite_mail,revoke_invite,set_role,remove,accept}` (EXECUTE commerce_identity only; owner commerce_staff_writer).
 Transport: `POST /v1/identity/staff/{list,invite,revoke-invite,set-role,remove,accept}` (BFF key + merchant bearer) behind
 `POST /api/team/{action}`; pages `/[locale]/team` and `/[locale]/invite/[token]`. Role bundles are `identity.staff_role_permissions(role)`
-(owner = all 25 permissions incl. billing:manage; admin = owner minus billing:manage; staff management = the owner role row itself).
+(owner = the whole live permission catalogue at grant time, incl. ads:* and billing:manage, the store creator included, existing owners backfilled; admin = catalogue minus billing:manage; viewer = every :read; staff management = the owner role row itself).
+Navigation: `GET /v1/admin/stores` items also carry the caller's `role` and effective `permissions`; the admin hides entries the member cannot use (display hint, Go authorizes every request). `/[locale]/invite/**` is served with real `Referrer-Policy: no-referrer` and `Cache-Control: no-store` headers.
 - Owner floor: every mutating definer checks it under a per-store advisory lock and a deferred constraint trigger re-checks at commit (direct DML cannot orphan a store).
 - Revoke = role row + store grants deleted, membership deactivated when no grant remains; `identity.resolve_access` therefore refuses on the next request.
 - Accept refusal is one generic PT404 `invite_invalid` (unknown/expired/revoked/used token, other email, OIDC-only account); PT409 `already_member` only for the caller's own membership.
 - Limits: 20 live invitations and 50 creations per 24 h per store (PT429 `too_many_invitations`). Mail: one send after commit, outcome in `mail_state`, a resend is a new invitation that revokes the old one.
 - Evidence tier: REAL_PG author smoke `tests/foundation/staff_team_smoke_test.go` (4 tests, one red run each for email binding and owner floor); browser/E2E and mail over real SMTP: NOT_RUN.
+
+## F. Promotions (producer: unit promotions, migration 0091; amendment written before code, R4 wave 2)
+
+Discount codes. The server quote stays the only price authority (cart-quote-v1, checkout-quote-validation-v1): a code is validated
+and applied INSIDE `storefront.CreateQuote`, its effect is frozen in the quote snapshot, and BeginCheckout re-validates it under a
+lock. No client amount, no second total: the existing `discount_minor` fields (line + aggregate) are filled.
+
+Code (merchant-managed, one row per `(store, code)`):
+- `code`: stored upper-case, `^[A-Z0-9-]{3,24}$`; buyers type any case, the server trims and upper-cases. Unique per store.
+- `kind`: `percent` (integer 1..90, floor rounding on the merchandise subtotal) or `fixed` (positive amount in store-currency
+  minor units, capped at the merchandise subtotal). The discount never exceeds the merchandise subtotal, so goods never go below 0.
+  Whole-currency-unit rule: TWD is charged in whole dollars (stripe-psp-v1 D15, amount%100), so for a TWD store the discount is
+  rounded DOWN to a whole dollar (never up) and a `fixed` amount must itself be a whole-dollar multiple of 100 minor units
+  (`invalid_promotion` otherwise); other currencies use their minor unit. A code whose discount on the cart is 0 after this rounding
+  is refused as `promo_invalid` instead of burning a use.
+- `min_subtotal_minor` (>= 0, compared with the PRE-discount merchandise subtotal), `starts_at` / `ends_at` (optional instants;
+  the admin UI enters Asia/Taipei wall time and sends RFC 3339 with `+08:00`; `ends_at > starts_at`), `total_limit` and
+  `per_buyer_limit` (optional positive integers), `status` `active|paused`, `version` (CAS on every change).
+- A code never discounts shipping. Free shipping stays the delivery policy threshold of section C, compared with the PRE-discount
+  merchandise subtotal (a code cannot un-waive shipping the buyer qualified for; the threshold is a statement about the cart).
+- One code per order. Tax is computed on the discounted goods (line discount allocated proportionally, largest remainder, ties to the
+  lower line index); exclusive total = subtotal - discount + shipping + tax, inclusive total = subtotal - discount + shipping.
+
+Quote: `POST /v1/buyer/quotes` accepts optional `promo_code` (omitted/`""` = none). The quote snapshot gains
+`promotion: {id, code, version, kind, percent, fixed_minor}` ONLY when a code applied (key absent otherwise, so pre-0091 snapshots
+round-trip byte-equal through `checkout.begin_hold`'s comparison); the buyer quote response carries `promotion: {code, kind, percent,
+fixed_minor}` under the same rule. A refused code makes the quote request fail with HTTP 422 and a coded envelope (no quote is
+stored): `promo_invalid` (unknown, other store, or paused: one answer, nothing to enumerate), `promo_not_started`, `promo_expired`,
+`promo_min_subtotal`, `promo_used_up`, `promo_buyer_limit`. BeginCheckout adds `promo_changed` (the code was edited or paused after
+the quote was priced: re-quote). Quote-time checks are advisory (no lock); BeginCheckout's are authoritative.
+
+Usage counting (atomic, no oversubscription): a redemption row is written by `promotions.redeem` in the SAME transaction as
+`checkout.begin_hold`, after the order row exists, under `FOR UPDATE` on the code row, which serialises every placement with that
+code. Usage = redemptions whose order is still `DRAFT | AWAITING_PAYMENT | AWAITING_TRANSFER | CONFIRMED`; an expired or cancelled
+order (`CANCELLED`) frees its use automatically (nothing to decrement, so expiry/cancel paths are untouched). A refunded or shipped
+order keeps counting (a refund is not a reason to reuse a limited code).
+Per-buyer limit identity: the buyer capability owner, the sha256 of the lower-cased order e-mail (when given) and of the digits of the
+destination phone (always present at Begin). Any match counts. WEAKNESS (documented, not hidden): a buyer who uses a new device AND
+a new phone AND a new e-mail is a new buyer; the code is a marketing control, not an entitlement. Hashes are salted with the store id
+and stored only for this check.
+
+Merchant admin (scope from server auth; permission `pricing:read` to list, `pricing:write` to change; same Idempotency-Key receipt
+rules as the other settings): `GET /v1/admin/stores/{store_id}/promotions` -> `{promotions:[{id, code, kind, percent|null,
+fixed_minor|null, min_subtotal_minor, starts_at|null, ends_at|null, total_limit|null, per_buyer_limit|null, status, version, used,
+created_at}]}` (`used` = active usage above); `POST .../promotions` (create, `code` immutable afterwards) ; `POST
+.../promotions/{id}` with `expected_version` (edit any of the other fields or `status`); 409 `version_changed` on a stale version,
+409 `promo_exists` on a duplicate code, 422 `invalid_promotion` on a rule violation. Pausing never touches placed orders.
+
+Defence in depth: `promotions.redeem` also checks that the order snapshot's frozen effect equals the code row's own terms and that the
+discount is possible (1 <= discount <= subtotal, not above the code's own percent or fixed amount); otherwise `promo_changed`. It is a
+bound, not a second calculator: the amount is computed only by `internal/pricing`.
+
+Other consumers of the order amounts (verified, unchanged): ECPay shipment for a CARD order declares the PRE-discount merchandise
+subtotal as goods value; a pay-at-pickup order collects the order total (discounted).
+
+Money rules unchanged: refunds cap at the CAPTURED (paid) amount, which already equals the order total = the discounted quote total;
+Stripe sees one line item equal to that total (stripe-psp-v1 D7), so no Stripe-side discount exists.

@@ -29,6 +29,7 @@ func TestBrowserBuyerRealChain(t *testing.T) {
 			mustExec(t, h.f.owner, `UPDATE catalog.skus SET code=$2,price_minor=39000 WHERE id=$1`, h.stock.skus[i].ID, code)
 		}
 	}
+	sfiAxisBySKUCode(t, h.f.owner, h.stock.product.ID) // the storefront shell sells variants: one chip per SKU code
 	root, err := filepath.Abs("../..")
 	if err != nil {
 		t.Fatal(err)

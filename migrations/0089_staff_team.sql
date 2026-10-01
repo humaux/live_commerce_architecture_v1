@@ -92,26 +92,32 @@ CREATE INDEX staff_invitations_store ON identity.staff_invitations(tenant_id, st
 
 -- ---------------------------------------------------------------------------------------------
 -- Role bundles (contracts/storefront-v2.md §D). store:read is in every bundle: resolve_access requires it first.
--- A permission added by a later migration is NOT in any bundle until this function is redefined.
+-- owner/admin/viewer follow the live catalogue; live_operator and fulfilment are fixed lists (contract §D).
 -- ---------------------------------------------------------------------------------------------
+-- The permission catalogue is the live store_grants_permission_check (every migration that adds a permission rewrites it), so
+-- the owner bundle is "all permissions" at GRANT time, including any permission introduced by a later migration (integrator ruling D1).
+CREATE FUNCTION identity.staff_permission_catalogue() RETURNS text[]
+LANGUAGE sql STABLE SET search_path = pg_catalog AS $$
+    SELECT COALESCE(array_agg(m[1] ORDER BY m[1]), '{}'::text[])
+      FROM pg_constraint c, regexp_matches(pg_get_constraintdef(c.oid), '''([a-z_]+:[a-z_]+)''', 'g') m
+     WHERE c.conrelid = 'identity.store_grants'::regclass AND c.conname = 'store_grants_permission_check'
+$$;
 CREATE FUNCTION identity.staff_role_permissions(p_role text)
-RETURNS text[] LANGUAGE sql IMMUTABLE SET search_path = pg_catalog AS $$
+RETURNS text[] LANGUAGE sql STABLE SET search_path = pg_catalog AS $$
     SELECT CASE p_role
-      WHEN 'owner' THEN ARRAY['store:read','audit:read','audit:write','catalog:read','catalog:write','inventory:read','inventory:write',
-        'inventory:reserve','pricing:read','pricing:write','integration:read','integration:manage','integration:execute','orders:read',
-        'live:read','live:manage','payments:refund','fulfillment:write','orders:export','customers:read','customers:privacy',
-        'billing:manage','ads:read','ads:manage','ads:approve']
+      WHEN 'owner' THEN identity.staff_permission_catalogue()
       -- admin = owner minus billing (staff management is the owner role itself, see header).
-      WHEN 'admin' THEN ARRAY['store:read','audit:read','audit:write','catalog:read','catalog:write','inventory:read','inventory:write',
-        'inventory:reserve','pricing:read','pricing:write','integration:read','integration:manage','integration:execute','orders:read',
-        'live:read','live:manage','payments:refund','fulfillment:write','orders:export','customers:read','customers:privacy',
-        'ads:read','ads:manage','ads:approve']
+      WHEN 'admin' THEN ARRAY(SELECT x FROM unnest(identity.staff_permission_catalogue()) x WHERE x <> 'billing:manage')
       WHEN 'live_operator' THEN ARRAY['store:read','live:read','live:manage','catalog:read','orders:read','inventory:read']
       WHEN 'fulfilment' THEN ARRAY['store:read','orders:read','fulfillment:write','orders:export','inventory:read','inventory:write','inventory:reserve']
-      WHEN 'viewer' THEN ARRAY['store:read','audit:read','catalog:read','inventory:read','pricing:read','integration:read','orders:read',
-        'live:read','customers:read','ads:read']
+      -- viewer = every :read permission of the catalogue.
+      WHEN 'viewer' THEN ARRAY(SELECT x FROM unnest(identity.staff_permission_catalogue()) x WHERE x LIKE '%:read')
     END
 $$;
+ALTER FUNCTION identity.staff_permission_catalogue() OWNER TO commerce_staff_writer;
+REVOKE ALL ON FUNCTION identity.staff_permission_catalogue() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION identity.staff_permission_catalogue() TO commerce_staff_writer;
+COMMENT ON FUNCTION identity.staff_permission_catalogue() IS 'Owner: internal/identity. Every permission accepted by store_grants_permission_check right now (parsed from the live constraint). Internal to the staff bundles.';
 ALTER FUNCTION identity.staff_role_permissions(text) OWNER TO commerce_staff_writer;
 REVOKE ALL ON FUNCTION identity.staff_role_permissions(text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION identity.staff_role_permissions(text) TO commerce_staff_writer;
@@ -188,6 +194,8 @@ CREATE FUNCTION identity.staff_creator_trigger() RETURNS trigger LANGUAGE plpgsq
 BEGIN
     INSERT INTO identity.store_staff(tenant_id, store_id, principal_id, role) VALUES (NEW.tenant_id, NEW.store_id, NEW.principal_id, 'owner')
     ON CONFLICT DO NOTHING;
+    -- D1: the creator holds the full owner bundle (create_initial_store's own list predates ads:* and later permissions).
+    PERFORM identity.staff_apply_role(NEW.tenant_id, NEW.store_id, NEW.principal_id, 'owner');
     RETURN NULL;
 END $$;
 INSERT INTO identity.store_staff(tenant_id, store_id, principal_id, role)
@@ -417,6 +425,55 @@ GRANT EXECUTE ON FUNCTION identity.staff_list(bytea,uuid), identity.staff_invite
   identity.staff_record_invite_mail(uuid,text), identity.staff_revoke_invite(bytea,uuid,uuid), identity.staff_set_role(bytea,uuid,uuid,text),
   identity.staff_remove(bytea,uuid,uuid), identity.staff_accept(bytea,bytea) TO commerce_identity;
 
+-- D1 backfill: every existing owner holds the full owner bundle (additive; nothing is removed).
+INSERT INTO identity.store_grants(tenant_id, store_id, principal_id, permission)
+SELECT t.tenant_id, t.store_id, t.principal_id, x FROM identity.store_staff t, unnest(identity.staff_role_permissions('owner')) x
+WHERE t.role = 'owner'
+ON CONFLICT DO NOTHING;
+
+-- ---------------------------------------------------------------------------------------------
+-- Role-aware navigation (integrator ruling D2): the session store list also returns the caller's staff role and effective
+-- permissions per store, so the admin UI can hide entries it cannot use. The server stays the authority on every request.
+-- Same authority as 0005 (owner commerce_auth, SECURITY DEFINER, search_path pg_catalog); only two columns are added.
+-- ---------------------------------------------------------------------------------------------
+GRANT SELECT ON identity.store_staff TO commerce_auth;
+DROP FUNCTION identity.list_session_stores(bytea);
+CREATE FUNCTION identity.list_session_stores(p_hash bytea)
+RETURNS TABLE (id uuid, name text, currency text, role text, permissions text[])
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = pg_catalog AS $$
+DECLARE
+    v_principal uuid;
+BEGIN
+    SELECT p.id INTO v_principal
+    FROM identity.sessions AS login
+    JOIN identity.principals AS p ON p.id = login.principal_id AND p.active
+    WHERE login.token_hash = p_hash AND login.audience = 'merchant'
+      AND login.revoked_at IS NULL AND login.expires_at > statement_timestamp();
+    IF NOT FOUND THEN
+        RAISE EXCEPTION USING ERRCODE = 'PT401', MESSAGE = 'unauthorized';
+    END IF;
+
+    RETURN QUERY
+    SELECT s.id, s.name, s.currency,
+           (SELECT f.role FROM identity.store_staff AS f WHERE f.tenant_id = s.tenant_id AND f.store_id = s.id AND f.principal_id = m.principal_id),
+           ARRAY(SELECT x.permission FROM identity.store_grants AS x WHERE x.tenant_id = s.tenant_id AND x.store_id = s.id
+                 AND x.principal_id = m.principal_id ORDER BY x.permission)
+    FROM identity.memberships AS m
+    JOIN control.tenants AS t ON t.id = m.tenant_id AND t.active
+    JOIN control.stores AS s ON s.tenant_id = t.id AND s.active
+    JOIN identity.store_grants AS g ON g.tenant_id = s.tenant_id
+      AND g.store_id = s.id AND g.principal_id = m.principal_id
+      AND g.permission = 'store:read'
+    WHERE m.principal_id = v_principal AND m.active
+    ORDER BY s.id
+    LIMIT 101;
+END;
+$$;
+ALTER FUNCTION identity.list_session_stores(bytea) OWNER TO commerce_auth;
+REVOKE ALL ON FUNCTION identity.list_session_stores(bytea) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION identity.list_session_stores(bytea) TO commerce_runtime;
+COMMENT ON FUNCTION identity.list_session_stores(bytea) IS '0005 + 0089: the caller''s active stores with the caller''s staff role (NULL for pre-0089 members) and effective permissions per store; bounded projection of the hashed merchant session, never a client-chosen principal.';
+
 -- ---------------------------------------------------------------------------------------------
 -- COMMENT ON (PROCESS §5)
 -- ---------------------------------------------------------------------------------------------
@@ -436,7 +493,7 @@ COMMENT ON COLUMN identity.staff_invitations.accepted_at IS 'Set once by staff_a
 COMMENT ON COLUMN identity.staff_invitations.accepted_by IS 'Principal that accepted.';
 COMMENT ON COLUMN identity.staff_invitations.revoked_at IS 'Set by the owner revoking it or by a resend to the same email; mutually exclusive with accepted_at.';
 COMMENT ON COLUMN identity.staff_invitations.mail_state IS 'PENDING -> SENT | FAILED | UNKNOWN, set once by staff_record_invite_mail; UNKNOWN is never retried (I06).';
-COMMENT ON FUNCTION identity.staff_role_permissions(text) IS 'Owner: internal/identity. The five role bundles of contracts/storefront-v2.md §D as permission arrays. Pure; a permission introduced later is in no bundle until this function is redefined.';
+COMMENT ON FUNCTION identity.staff_role_permissions(text) IS 'Owner: internal/identity. The five role bundles of contracts/storefront-v2.md §D as permission arrays; owner = whole catalogue, admin = catalogue minus billing:manage, viewer = every :read, evaluated when grants are written.';
 COMMENT ON FUNCTION identity.staff_lock_store(uuid) IS 'Internal: transaction-scoped advisory lock keyed by store; serializes every staff mutation and the owner-floor trigger of one store.';
 COMMENT ON FUNCTION identity.staff_assert_owner_floor(uuid,uuid) IS 'Internal: raises PT409 last_owner when the store has no owner row.';
 COMMENT ON FUNCTION identity.staff_owner_floor_trigger() IS 'Internal: deferred constraint-trigger body; re-checks the owner floor at commit under the store lock so direct DML cannot leave a store ownerless.';

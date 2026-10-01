@@ -76,8 +76,8 @@ test("CVS01 map form: only the two ECPay e-map actions, exact fields, top-level-
   assert.equal(validCvsSelectionOpen({ ...open, extra: 1 }), false);
 });
 
-test("CVS02 return path allowlist excludes /claim and anything but the product page", () => {
-  for (const good of ["/zh-TW/products/abc_1-2", "/en/products/x", "/zh-CN/products/" + "a".repeat(64)])
+test("CVS02 return path allowlist excludes /claim and anything but the checkout or product page", () => {
+  for (const good of ["/zh-TW/products/abc_1-2", "/en/products/x", "/zh-CN/products/" + "a".repeat(64), "/en/checkout", "/zh-TW/checkout", "/zh-CN/checkout"])
     assert.equal(validReturnPath(good), true, good);
   for (const bad of [
     "/zh-TW/claim",
@@ -89,6 +89,13 @@ test("CVS02 return path allowlist excludes /claim and anything but the product p
     "/en/products/x?y=1",
     "/en/products/x#f",
     "/en/products/" + "a".repeat(65),
+    "/en/checkout/",
+    "/en/checkout/x",
+    "/en/Checkout",
+    "/fr/checkout",
+    "/en/checkout?y=1",
+    "/en/checkout#f",
+    "//evil.example.test/en/checkout",
   ])
     assert.equal(validReturnPath(bad), false, bad);
 });

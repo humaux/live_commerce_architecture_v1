@@ -41,6 +41,7 @@ import (
 	"livecommerce/internal/inventory"
 	"livecommerce/internal/jobqueue"
 	"livecommerce/internal/platform"
+	"livecommerce/internal/promotions"
 	"livecommerce/internal/storefront"
 )
 
@@ -351,6 +352,15 @@ func (s *Service) Begin(ctx context.Context, token, storeID, key string, in Inpu
 				return err
 			}
 		}
+		if quote.Promotion != nil {
+			// storefront-v2 §F: promotions.redeem is the authoritative, locking usage check + redemption insert. It runs AFTER begin_hold
+			// (the order row it joins must exist) and in this same transaction: a refusal (promo_changed / promo_used_up / promo_expired ...)
+			// is a PT422 that rolls the order, the stock hold, the expiry job and the receipt back together, and the buyer re-quotes.
+			// Not retried: the refusal is a fact about the code, a retry with the same key would get the same answer.
+			if err = promotions.Redeem(callCtx, tx, tokenHash[:], storeID, orderID, in.BuyerEmail, destination.Phone); err != nil {
+				return err
+			}
+		}
 		return nil
 	})
 	if err != nil {
@@ -536,6 +546,10 @@ func safeError(ctx context.Context, err error) error {
 	}
 	var refusal *fulfillment.CVSError
 	if errors.As(err, &refusal) {
+		return err
+	}
+	var promo *promotions.Coded // §F: a coded promotion refusal reaches the buyer as its 422 promo_* code, not as "unavailable"
+	if errors.As(err, &promo) {
 		return err
 	}
 	var pgErr *pgconn.PgError

@@ -3,7 +3,7 @@
 // Cart drawer (native <dialog>, so focus trap, Esc and the backdrop are the browser's own) and the header bag button that
 // opens it. No BFF call of its own: it renders the shared CartProvider state through components/CartLines.tsx.
 // The product page opens it after "Add to cart" (setDrawerOpen(true)); "View cart" goes to /{locale}/cart,
-// "Checkout" to /{locale}/products/Checkout (lib/routes.ts explains the path).
+// "Checkout" to /{locale}/checkout.
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import type { Locale } from "@live-commerce/i18n";
