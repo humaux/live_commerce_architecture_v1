@@ -140,6 +140,11 @@ func (h *handler) orderLookup(ctx context.Context, w http.ResponseWriter, r *htt
 		return codedResponse{responseError{http.StatusTooManyRequests, "rate_limited"}, lookupWindow - int(time.Now().Unix()%lookupWindow)}
 	case errors.As(err, &pg) && pg.Code == "PT400":
 		return responseError{http.StatusUnprocessableEntity, "invalid_request"}
+	// D2 (§E5 amendment 2026-10-01): the bearer already names a capability session (a registered buyer's token reused
+	// as the lookup bearer). A clear non-retryable 409 — the order matched, so the indistinguishable 404 does not
+	// apply, and the existing session stays untouched (0098 raises PT409 on the token-hash collision).
+	case errors.As(err, &pg) && pg.Code == "PT409":
+		return responseError{http.StatusConflict, "conflict"}
 	default:
 		return responseError{http.StatusServiceUnavailable, "unavailable"}
 	}
