@@ -170,12 +170,12 @@ Package buyer owns the anonymous buyer capability boundary: issuing short-lived 
 Package buyerhttp owns the private, BFF-only buyer transport (catalog, cart, quote, checkout, payment and claim routes).
 
 - Depends on (internal): `internal/attribution`, `internal/buyer`, `internal/checkout`, `internal/claims`, `internal/command`, `internal/customers`, `internal/domains`, `internal/fulfillment`, `internal/httperror`, `internal/pagination`, `internal/platform`, `internal/storefront`
-- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`
+- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
 - Used by: `cmd/api`
 
 ## `internal/catalog`
 
-Package catalog owns the merchant-scoped catalog transaction slice: products, SKUs, price history, the wide product/SKU ledger read projection (contracts/admin-ledger-v1.md) and the purchase-entry read.
+Package catalog owns the merchant-scoped catalog transaction slice: products, SKUs, price history, the wide product/SKU ledger read projection (contracts/admin-ledger-v1.md) and the purchase-entry read, and the merchant product photos (images.go, migrations/0082).
 
 - Depends on (internal): `internal/command`, `internal/domains`, `internal/pagination`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`

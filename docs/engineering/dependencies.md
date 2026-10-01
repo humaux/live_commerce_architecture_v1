@@ -22,6 +22,15 @@ speaks the REST API directly so every parameter is reviewed and golden-tested).
 | `golang.org/x/sys` (`cpu`, indirect) | v0.48.0 | Pulled in by `golang.org/x/crypto/blake2b` (used by `argon2`) for CPU feature detection on amd64 only; missing from go.sum it broke the linux/amd64 image build while arm64 dev builds passed (2026-10-01) | indirect via `golang.org/x/crypto` | none (transitive requirement of x/crypto) |
 | `golang.org/x/text` (`unicode/norm`) | v0.42.0 (raised from v0.39.0 by x/crypto v0.57.0's requirement, MVS) | NFC-normalize merchant-typed carrier names before storing/comparing (manual-fulfilment-v1 §3.1, ruling 20); was already an indirect dependency | `internal/merchantorders`; `internal/identity` (auth-core: NFC-normalize passwords before Argon2id, merchant-password-auth-v1 PD11, so the same typed password hashes identically across IMEs/OSes) | Refusing non-NFC input (hostile to CJK IMEs); hand-written Unicode tables |
 
+### No module added: product photos (catalog-media, migrations/0082)
+
+Photo validation uses only the Go standard library: `image.DecodeConfig` with the `image/jpeg` and `image/png` decoders
+(registered by blank import in `internal/catalog/images.go`) for width/height, plus magic-byte sniffing for JPEG, PNG and WebP.
+`golang.org/x/image/webp` is **not** in `go.mod` and was rejected: a decoder dependency is not worth the two numbers it would
+add (WebP width/height stay NULL, the browser sizes the image itself). Bytes are stored as uploaded, never re-encoded, so no
+imaging library (resize/thumbnail) is needed either. No npm package was added: the admin uploader is a native `<input
+type="file">` + `FormData`, the storefront gallery a plain `<img>`.
+
 ## npm packages (`package.json`, `apps/*/package.json`)
 
 | Package | Scope | Why | Used by |

@@ -60,19 +60,40 @@ type catalogItemResponse struct {
 	SKUCode     string `json:"sku_code"`
 	Currency    string `json:"currency"`
 	PriceMinor  int64  `json:"price_minor"`
+	// Images is the product's photos in display order, [] when none (catalog-media CM4); bytes are fetched from
+	// /media/p/{product_id}/{id} on the storefront origin.
+	Images []catalogImageResponse `json:"images"`
+}
+
+type catalogImageResponse struct {
+	ID     string `json:"id"`
+	Width  *int   `json:"width"`
+	Height *int   `json:"height"`
+}
+
+// catalogResult is one scoped transaction's catalog page plus the store name (same buyer.WithScope read).
+type catalogResult struct {
+	page pagination.Page[storefront.CatalogItem]
+	name string
 }
 
 type catalogResponse struct {
 	Items      []catalogItemResponse `json:"items"`
 	NextCursor string                `json:"next_cursor"`
+	// StoreName is the published store's public name (storefront home heading), set by the route, not projectCatalog.
+	StoreName string `json:"store_name"`
 }
 
 func projectCatalog(page pagination.Page[storefront.CatalogItem]) catalogResponse {
 	out := catalogResponse{Items: make([]catalogItemResponse, 0, len(page.Items)), NextCursor: page.NextCursor}
 	for _, item := range page.Items {
+		images := make([]catalogImageResponse, 0, len(item.Images))
+		for _, img := range item.Images {
+			images = append(images, catalogImageResponse{ID: img.ID, Width: img.Width, Height: img.Height})
+		}
 		out.Items = append(out.Items, catalogItemResponse{
 			ProductID: item.ProductID, SKUID: item.SKUID, Name: item.Name, Description: item.Description,
-			SKUCode: item.SKUCode, Currency: item.Currency, PriceMinor: item.PriceMinor,
+			SKUCode: item.SKUCode, Currency: item.Currency, PriceMinor: item.PriceMinor, Images: images,
 		})
 	}
 	return out

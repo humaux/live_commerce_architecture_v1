@@ -31,6 +31,7 @@ func TestWriteFeedEscaping(t *testing.T) {
 	var buf bytes.Buffer
 	rows := []feedRow{
 		{ID: "a", Title: `He said "hi", ok`, Description: "line1\nline2, more", Availability: "in stock", PriceMinor: 123400, Currency: "TWD", Link: "https://s.example.test/products/p", Brand: "Shop, Inc"},
+		{ID: "img", Title: "with photo", Availability: "in stock", PriceMinor: 100, Currency: "TWD", Link: "https://s.example.test/products/p", Brand: "b", ImageLink: "https://s.example.test/media/p/p/i"},
 		{ID: "skipped", Title: "bad price", Availability: "in stock", PriceMinor: -5, Currency: "TWD", Link: "l", Brand: "b"},
 		{ID: "c", Title: "=1+1", Description: "d", Availability: "out of stock", PriceMinor: 100, Currency: "USD", Link: "l2", Brand: "b"},
 	}
@@ -41,7 +42,7 @@ func TestWriteFeedEscaping(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got) != 3 || strings.Join(got[0], ",") != strings.Join(feedColumns, ",") {
+	if len(got) != 4 || strings.Join(got[0], ",") != strings.Join(feedColumns, ",") {
 		t.Fatalf("shape = %v", got)
 	}
 	want := []string{"a", `He said "hi", ok`, "line1\nline2, more", "in stock", "new", "1234.00 TWD", "https://s.example.test/products/p", "", "Shop, Inc"}
@@ -50,8 +51,11 @@ func TestWriteFeedEscaping(t *testing.T) {
 			t.Errorf("row 1 col %d = %q want %q", i, got[1][i], want[i])
 		}
 	}
-	if got[2][0] != "c" || got[2][4] != "new" || got[2][5] != "1.00 USD" {
-		t.Errorf("row 2 = %v", got[2])
+	if got[2][0] != "img" || got[2][7] != "https://s.example.test/media/p/p/i" {
+		t.Errorf("row 2 image_link = %v", got[2])
+	}
+	if got[3][0] != "c" || got[3][4] != "new" || got[3][5] != "1.00 USD" || got[3][7] != "" {
+		t.Errorf("row 3 = %v", got[3])
 	}
 }
 
@@ -78,6 +82,20 @@ func TestFeedHandlerRejectsBeforeSQL(t *testing.T) {
 		h.ServeHTTP(rec, req)
 		if rec.Code != tc.want {
 			t.Errorf("%s: status %d want %d", name, rec.Code, tc.want)
+		}
+	}
+}
+
+func TestImageLink(t *testing.T) {
+	first := map[string]string{"p1": "i1"}
+	for link, want := range map[string]string{
+		"https://s.example.test/products/p1":     "https://s.example.test/media/p/p1/i1",
+		"https://s.example.test/products/p2":     "", // product without a photo
+		"https://other.example.test/products/p1": "", // link of another origin is never rewritten
+		"p1":                                     "",
+	} {
+		if got := imageLink("https://s.example.test", link, first); got != want {
+			t.Errorf("imageLink(%q) = %q want %q", link, got, want)
 		}
 	}
 }

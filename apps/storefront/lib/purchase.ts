@@ -34,7 +34,10 @@ export type Product = {
   sku_code: string;
   currency: string;
   price_minor: number;
+  // catalog-media CM4: the product's photos in display order ([] when none). Optional so older fixtures still parse.
+  images?: ProductImageMeta[];
 };
+export type ProductImageMeta = { id: string; width: number | null; height: number | null };
 export type Option = {
   market_id: string;
   country: string;
@@ -272,8 +275,20 @@ export const validCart = (v: unknown): v is Cart =>
   currency(v.currency) &&
   integer(v.version) &&
   validItems(v.items);
+export const validProductImages = (v: unknown): v is ProductImageMeta[] =>
+  Array.isArray(v) &&
+  v.length <= 8 &&
+  v.every(
+    (x) =>
+      record(x) &&
+      exact(x, ["id", "width", "height"]) &&
+      id(x.id) &&
+      (x.width === null || integer(x.width, 1, 100000)) &&
+      (x.height === null || integer(x.height, 1, 100000)),
+  );
 export const validProduct = (v: unknown): v is Product =>
   record(v) &&
+  (v.images === undefined || validProductImages(v.images)) &&
   id(v.product_id) &&
   id(v.sku_id) &&
   [v.name, v.description, v.sku_code].every((x) => typeof x === "string") &&

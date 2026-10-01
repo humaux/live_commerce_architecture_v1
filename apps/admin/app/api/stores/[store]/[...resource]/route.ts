@@ -30,6 +30,11 @@ const deliveryCollection = `markets/${uuid}/countries/[A-Z]{2}/delivery-services
 const paymentCollection = `markets/${uuid}/countries/TW/payment-methods`;
 const policy = `${deliveryCollection}/[a-z][a-z0-9_-]{0,39}/policy`;
 const purchaseEntry = `products/${uuid}/purchase-entry`;
+// catalog-media CM3: product photos -> Go internal/httpapi/images.go. Exactly these five resources, nothing generic.
+const imagesRoot = `products/${uuid}/images`;
+const imageItem = `${imagesRoot}/${uuid}`;
+const imageWrites = `${imagesRoot}|${imageItem}/delete|${imagesRoot}/order`;
+const MAX_UPLOAD = 2.5 * 1024 * 1024; // CM3: BFF body cap; Go re-checks 2 MiB for the file itself and is the authority
 const orders = `orders(?:/${uuid})?`;
 // R3 storefront-publish: GET storefront (state + bound origins), POST storefront/publication {published, expected_version}
 // -> Go internal/httpapi/storefront.go. Domain binding has no merchant route (operator CLI cmd/store-admin).
@@ -44,10 +49,10 @@ const studioAction = `${studioDetail}/(?:rehearsal/(?:start|stop)|input/(?:start
 const studioAny = new RegExp(`^(?:live-sessions|${studioDetail}|${studioAction}|${studioInputRead}|${studioDetail}/${claimsSubpath})$`);
 const routes: Record<string, RegExp> = {
   GET: new RegExp(
-    `^(catalog-ledger|products|warehouses|inventory|${storefrontRead}|products/${uuid}/skus|${purchaseEntry}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy}|${orders}|live-sessions|${studioDetail}|${studioInputRead}|${claimsRoutes.GET}|${adsRoutes.GET})$`,
+    `^(catalog-ledger|products|warehouses|inventory|products/${uuid}/skus|${purchaseEntry}|${storefrontRead}|${imagesRoot}|${imageItem}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy}|${orders}|live-sessions|${studioDetail}|${studioInputRead}|${claimsRoutes.GET}|${adsRoutes.GET})$`,
   ),
   POST: new RegExp(
-    `^(products|skus|warehouses|inventory/adjustments|${storefrontWrite}|products/${uuid}/archive|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets|live-sessions|${studioAction}|${claimsRoutes.POST}|${adsRoutes.POST})$`,
+    `^(products|skus|warehouses|inventory/adjustments|products/${uuid}/archive|${storefrontWrite}|${imageWrites}|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets|live-sessions|${studioAction}|${claimsRoutes.POST}|${adsRoutes.POST})$`,
   ),
   PATCH: new RegExp(`^(products/${uuid}|skus/${uuid}|${studioDetail}|${claimsRoutes.PATCH})$`),
   // Studio PUT is only the comment-source bind (claims-request.ts); settings PUTs are the rest.
@@ -61,6 +66,10 @@ const discoveryRoute = new RegExp(
 const pagedSettingsRoute = new RegExp(`^(markets|${deliveryCollection})$`);
 const purchaseEntryRoute = new RegExp(`^${purchaseEntry}$`);
 const orderRoute = new RegExp(`^${orders}$`);
+const imagesRootRoute = new RegExp(`^${imagesRoot}$`);
+const imageItemRoute = new RegExp(`^${imageItem}$`);
+const imagesAny = new RegExp(`^(?:${imagesRoot}|${imageItem}|${imageItem}/delete|${imagesRoot}/order)$`);
+const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 type Context = { params: Promise<{ store: string; resource: string[] }> };
 
 async function route(request: Request, context: Context) {
@@ -117,6 +126,20 @@ async function route(request: Request, context: Context) {
   if (exactResource && request.url.includes("?"))
     return error(422, "invalid_request");
   const url = new URL(request.url);
+  // Photo routes take no query; a read carries no body or key; the upload alone is multipart (checked below).
+  const imageUpload = request.method === "POST" && imagesRootRoute.test(path);
+  const imageBytes = request.method === "GET" && imageItemRoute.test(path);
+  if (imagesAny.test(path)) {
+    if (request.url.includes("?")) return error(422, "invalid_request");
+    if (
+      request.method === "GET" &&
+      (request.body !== null || request.headers.has("transfer-encoding") || request.headers.has("idempotency-key") ||
+        (request.headers.has("content-length") && request.headers.get("content-length") !== "0"))
+    )
+      return error(422, "invalid_request");
+    if (imageUpload && Number(request.headers.get("content-length") ?? "0") > MAX_UPLOAD)
+      return error(413, "invalid_request");
+  }
   if (studio) {
     if (!validStudioQuery(request.url, request.method === "GET" && (path === "live-sessions" || claimsCollection(path))))
       return error(422, "invalid_request");
@@ -196,7 +219,7 @@ async function route(request: Request, context: Context) {
         return error(403, "forbidden");
     }
     if (
-      request.headers.get("content-type")?.split(";")[0] !== "application/json"
+      request.headers.get("content-type")?.split(";")[0] !== (imageUpload ? "multipart/form-data" : "application/json")
     )
       return error(415, "json_required");
     const key = request.headers.get("idempotency-key") ?? "";
@@ -223,9 +246,9 @@ async function route(request: Request, context: Context) {
         const part = await reader.read();
         if (part.done) break;
         size += part.value.byteLength;
-        if (size > 65536) {
+        if (size > (imageUpload ? MAX_UPLOAD : 65536)) {
           await reader.cancel();
-          return error(400, "invalid_json");
+          return imageUpload ? error(413, "invalid_request") : error(400, "invalid_json");
         }
         chunks.push(part.value);
       }
@@ -235,10 +258,11 @@ async function route(request: Request, context: Context) {
         data.set(chunk, at);
         at += chunk.length;
       }
-      init.body = new TextDecoder().decode(data);
+      // The photo bytes go to Go untouched (Go sniffs the type and owns the 2 MiB rule); everything else is JSON text.
+      init.body = imageUpload ? new Blob([data]) : new TextDecoder().decode(data);
     }
     // Exact bodies for the customers/billing commands (closed keys, ERASE word, consent pairs, price id).
-    if (customers && !validCustomersBody(customers, init.body ?? "")) return error(400, "invalid_json");
+    if (customers && !validCustomersBody(customers, typeof init.body === "string" ? init.body : "")) return error(400, "invalid_json");
     // PUT ads/drafts/{id} is revision-guarded: forward exactly one bare-decimal If-Match, never anything else.
     const ifMatch = request.headers.get("if-match");
     const draftPut = request.method === "PUT" && /^ads\/drafts\//.test(path);
@@ -250,7 +274,7 @@ async function route(request: Request, context: Context) {
       delete init.body;
     }
     init.headers = {
-      ...(customersBodyless || adsNoBody ? {} : { "Content-Type": "application/json" }),
+      ...(customersBodyless || adsNoBody ? {} : { "Content-Type": imageUpload ? (request.headers.get("content-type") ?? "") : "application/json" }),
       ...(!inspection && !keyless && !adsKeyless.test(path) ? { "Idempotency-Key": key } : {}),
       ...(draftPut ? { "If-Match": ifMatch as string } : {}),
     };
@@ -293,6 +317,21 @@ async function route(request: Request, context: Context) {
     return denied;
   }
   if (!response.ok) return safeError(response);
+  if (imageBytes) {
+    // Preview bytes stream straight through, only as a validated raster type, never as a document.
+    const type = (response.headers.get("content-type") ?? "").split(";", 1)[0].trim().toLowerCase();
+    if (response.status !== 200 || !response.body || !IMAGE_TYPES.has(type)) return error(503, "retry_later");
+    return new Response(response.body, {
+      status: 200,
+      headers: {
+        "Content-Type": type,
+        "Cache-Control": "private, max-age=300",
+        "Content-Security-Policy": "default-src 'none'; sandbox",
+        "X-Content-Type-Options": "nosniff",
+        "X-Request-ID": response.headers.get("x-request-id") ?? "",
+      },
+    });
+  }
   if (customers === "export" || customers === "finance-csv") {
     // PII exports: streamed straight through, never buffered or stored here; only the exact attachment shape passes.
     const json = customers === "export";

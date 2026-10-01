@@ -40,11 +40,16 @@ func TestBuyerHTTPCatalogQueryAdmission(t *testing.T) {
 	}
 }
 
+var imageWidth = 7
+
 func TestBuyerHTTPCatalogProjectionExactKeys(t *testing.T) {
 	page := pagination.Page[storefront.CatalogItem]{Items: []storefront.CatalogItem{{
 		ProductID: "product", SKUID: "sku", Name: "name", Description: "description", SKUCode: "code", Currency: "USD", PriceMinor: 123,
+		Images: []storefront.CatalogImage{{ID: "img", Width: &imageWidth}},
 	}}, NextCursor: "next"}
-	raw, err := json.Marshal(projectCatalog(page))
+	projected := projectCatalog(page)
+	projected.StoreName = "Shop"
+	raw, err := json.Marshal(projected)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,15 +57,24 @@ func TestBuyerHTTPCatalogProjectionExactKeys(t *testing.T) {
 	if err = json.Unmarshal(raw, &body); err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(sortedKeys(body), []string{"items", "next_cursor"}) {
+	if !reflect.DeepEqual(sortedKeys(body), []string{"items", "next_cursor", "store_name"}) {
 		t.Fatal("unexpected page keys")
 	}
 	var items []map[string]json.RawMessage
 	if err = json.Unmarshal(body["items"], &items); err != nil || len(items) != 1 {
 		t.Fatal("missing item")
 	}
-	if !reflect.DeepEqual(sortedKeys(items[0]), []string{"currency", "description", "name", "price_minor", "product_id", "sku_code", "sku_id"}) {
+	if !reflect.DeepEqual(sortedKeys(items[0]), []string{"currency", "description", "images", "name", "price_minor", "product_id", "sku_code", "sku_id"}) {
 		t.Fatal("unexpected item keys")
+	}
+	var images []map[string]json.RawMessage
+	if err = json.Unmarshal(items[0]["images"], &images); err != nil || len(images) != 1 ||
+		!reflect.DeepEqual(sortedKeys(images[0]), []string{"height", "id", "width"}) || string(images[0]["height"]) != "null" || string(images[0]["width"]) != "7" {
+		t.Fatalf("unexpected image keys: %s", items[0]["images"])
+	}
+	noImages, _ := json.Marshal(projectCatalog(pagination.Page[storefront.CatalogItem]{Items: []storefront.CatalogItem{{ProductID: "p"}}}))
+	if !strings.Contains(string(noImages), `"images":[]`) {
+		t.Fatal("a product without photos must project images as []")
 	}
 	empty, err := json.Marshal(projectCatalog(pagination.Page[storefront.CatalogItem]{}))
 	if err != nil || !strings.Contains(string(empty), `"items":[]`) {

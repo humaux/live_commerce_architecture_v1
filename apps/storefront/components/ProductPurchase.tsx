@@ -18,6 +18,7 @@ import { orderCopy } from "../lib/order-copy";
 import { cvsCopy } from "../lib/cvs-copy";
 import OrderFlow, { OrderDetails } from "./OrderFlow";
 import OrderHistory from "./OrderHistory";
+import ProductGallery from "./ProductGallery";
 import { historyCopy } from "../lib/history-copy";
 import {
   cartSelection,
@@ -613,6 +614,13 @@ export default function ProductPurchase({
         ) : (
           <>
             <section className="product-detail" aria-labelledby="product-title">
+              {/* catalog-media: merchant photos from the catalog read above (every SKU row of a product carries the same list). */}
+              <ProductGallery
+                locale={locale}
+                productID={productID}
+                name={selected?.name ?? products[0].name}
+                images={products[0].images ?? []}
+              />
               <h1 id="product-title">{selected?.name ?? products[0].name}</h1>
               {selected && (
                 <p className="unit-price">

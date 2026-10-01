@@ -15,6 +15,10 @@ export type LedgerRow = {
   unavailable: number;
   available: number;
   balance_version: number;
+  // catalog-media: product row version/status for rename+archive, id of the position-0 photo (null: none).
+  product_version: number;
+  product_status: "active" | "archived";
+  cover_image_id: string | null;
 };
 export type Page<T> = { items: T[]; next_cursor: string };
 export type Warehouse = { id: string; name: string };
@@ -51,4 +55,16 @@ export type WorkspaceData = {
   warehouseCursor: string;
   warehouseID: string;
   error: APIError | null;
+};
+
+// catalog-media: one product photo as returned by GET products/{id}/images (Go catalog.Image).
+export type ProductImage = {
+  id: string;
+  product_id: string;
+  position: number;
+  content_type: "image/jpeg" | "image/png" | "image/webp";
+  size_bytes: number;
+  width: number | null;
+  height: number | null;
+  version: number;
 };
