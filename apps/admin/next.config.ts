@@ -39,6 +39,11 @@ const config: NextConfig = {
         source: "/api/ads/meta/callback",
         headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
       },
+      // meta-connect: the merchant Page connect return carries the same one-time `code`/`state`.
+      {
+        source: "/api/meta/callback",
+        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
+      },
     ];
   },
 };

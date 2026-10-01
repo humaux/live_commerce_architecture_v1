@@ -63,6 +63,20 @@ Change rules: 命令必须与 deploy/scripts/ops-admin.sh 和 cmd/*-admin 的子
 **G2 已关闭（R1 裁决 G2）**：部署默认 `COMMERCE_STUDIO_ENABLED=1`、`COMMERCE_CLAIMS_ENABLED=1`、`COMMERCE_STUDIO_MEDIA_ENABLED=0`，
 `PUT .../live-sessions/{session}/claim-source` 已挂载（smoke S45 验证未带令牌时返回 401/403）。直播媒体（LiveKit 演练）仍不部署，Studio 页面不显示演练栏。详见 deploy.md §6.3 第 7 步。
 
+### 4.1 连接 Facebook 主页（商家自助，R4 meta-connect；取代上面的 `route` + `page-token` 日常路径）
+
+商家自己在后台完成，**不需要运维**（前提：api.env 已设 `COMMERCE_META_LOGIN_CONFIG_ID` 等，owner 已在 Meta 后台登记回调地址与 Login for Business 配置，见 deploy.md §6.7）：
+
+1. 商家（持有 `integration:manage`）打开 设置 → 「Facebook 主頁 / Instagram」卡片 → 点「連接 Facebook 主頁」。
+2. 在 Facebook 弹出的对话框里登录并勾选**全部**权限和要连接的主页（缺任何一项，卡片会列出需要补授权的权限/主页任务，不会部分启用）。
+3. 返回设置页后在列表里选一个主页（若该主页有关联的 Instagram 账号，可勾选一并连接）→「連接此主頁」。系统在一个事务里完成：加密保存 Page token（HPKE 公钥封存 meta-page-token-v2：API 只能封存、永远无法读回；只有 claims-worker 的私钥环能打开发私信）、登记绑定、激活 webhook 路由、订阅 Page 的 `feed`。
+4. 卡片显示主页名/ID、Instagram 用户名、已授权权限、令牌状态（正常 / 已过期或撤销→「重新连接」）和最近一次收到评论的时间。
+5. 之后在 Studio 的“评论来源”里绑定贴文（没有连接主页时，该处会提示并链接到设置卡片）。
+6. 「中断连接」会销毁已保存的 token、停用路由与绑定；评论即停止进入认领（API 无法读回 token，所以不向 Meta 发取消订阅，Meta 侧的订阅残留只会产生被隔离的事件）。一个主页只能连接到一间店铺（跨店返回 409，不透露对方）；已被其他店铺占有的主页需要运维通过 `meta-admin` 处理。
+7. 评论入口之外，**真实私信发送仍需 owner 批准并启用 `claims` profile**（见 §4 与 deploy.md §6.3 第 5 步）。
+
+`ops-admin.sh meta-admin page-token|route` 保留为 break-glass（商家卡片不可用、或需代商家修复时）。
+
 ## 5. 域名与证书
 
 四个域名解析到部署主机后，Caddy 自动签发证书（首次演练可在 `caddy.env` 打开 staging CA，正式签发前注释掉）。

@@ -35,10 +35,10 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 		}
 	}
 	sort.Strings(r2)
-	// 0070..0089 without 0076 (never allocated) and 0084 (never allocated) = 18, + 0093 storefront-integration = 19, + post-River 0015..0018 = 23, + worker-authority-split's 0096 and post-River 0019 = 25 (they build on R2/R3/R4 objects, so they are held back with them; R3/R4 lanes add files): a lane that drops or adds a file
+	// 0070..0089 without 0076 (never allocated) and 0084 (never allocated) = 18, + 0093 storefront-integration = 19, + 0095 meta-connect, + 0090..0092 and post-River 0015..0018 + worker-authority-split's 0096 and post-River 0019 = 27+2 (they build on R2/R3/R4 objects, so they are held back with them): a lane that drops or adds a file
 	// must update this. 0081 storefront-publish has its own upgrade gate TestStorefrontPublishSPW02UpgradeAfter0080.
-	if len(r2) != 28 {
-		t.Fatalf("R2 migration set = %d files %v, want 28", len(r2), r2)
+	if len(r2) != 29 {
+		t.Fatalf("R2 migration set = %d files %v, want 29", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)

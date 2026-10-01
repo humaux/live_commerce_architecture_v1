@@ -827,3 +827,63 @@ Recorded from `contracts/claims-retention-purge-v1.md` §6 (FROZEN 2026-09-30); 
   UPDATE(request,semantic_key,updated_at)) and `live.claim_windows` (column SELECT, lock-only UPDATE(updated_at)).
   MCI02 holds back the dependent 0071 with 0064 (ledger +3) and leaves every other 0071 privilege to CRP02.
   It also records the grant `EXECUTE meta_inbox.lock_purgeable(uuid)` to the NOLOGIN `commerce_retention_writer` only (B27; meta-inbox-v1 amendment).
+
+## Amendment: Merchant connect (R4, unit meta-connect, integrator-owned text)
+
+Owner correction 2026-10-01: a merchant connects their own Facebook Page / Instagram account in the admin; the operator CLI
+(`meta-admin route|page-token`) stays as break-glass. Migration 0095, packages `internal/metaconnect`,
+`internal/integrations/meta/oauth` (shared with ads), HTTP `internal/httpapi/meta_connect.go`, admin card
+`apps/admin/components/MetaConnect.tsx`. Evidence tier: MOCK (REAL_PG + fake Graph); real Meta is NOT_RUN.
+
+1. **Flow.** `POST …/meta-connect/start` (integration:manage, keyed) → Facebook Login for Business dialog (`config_id`
+   `COMMERCE_META_LOGIN_CONFIG_ID`, `response_type=code`, state = HMAC under a key derived from the app secret, only its
+   SHA-256 stored, 10 minutes, single use, principal + store bound, ≤ 10 live per store) → `GET …/callback?code&state`
+   (state consumed first; code exchanged, extended to a long-lived user token so the Page token does not expire; granted
+   permissions from `/me/permissions`; Pages from `/me/accounts?fields=id,name,tasks,instagram_business_account{id,username}`;
+   the user token is NOT persisted: it lives in the API process memory for 10 minutes and is zeroed on pick or expiry) →
+   `GET …/states/{id}` (pick list: ids, names, `missing` and `ig_missing` lists) → `POST …/pick {state_id,page_id,include_instagram}`
+   → `GET …/status`, `POST …/disconnect {}`.
+2. **Never partial-enable.** Required Facebook permissions: `pages_show_list`, `pages_manage_metadata`, `pages_read_engagement`,
+   `pages_messaging`, plus the Page tasks `MESSAGING` and `MODERATE`; Instagram (only when the Page links an account and the merchant
+   keeps it): `instagram_basic`, `instagram_manage_comments`, `instagram_manage_messages`. A missing item is `422 missing_permission` and
+   the pick list names what to re-grant; nothing is bound, sealed, routed or subscribed. The SQL re-checks the same lists.
+3. **Pick = two transactions around Graph.** (1) `integration.meta_connect_prepare` validates state, pickability and
+   one-store-per-Page (`meta_inbox.connect_owner_ok`, `409 page_taken`, never naming the other store) BEFORE any Meta call;
+   (2) network (with the in-memory user token): re-read `/me/accounts` for the Page token and re-verify tasks/IG, then `POST /{page_id}/subscribed_apps?subscribed_fields=feed`
+   (Instagram comments / live_comments arrive through the app-level subscription); (3) one transaction: bindings via the existing
+   `core.RegisterBinding` / `SetBindingEnabled`, seal the Page token **as meta-page-token-v2** per binding (HPKE to the PUBLIC ring, info with the head
+   version + 1), `integration.meta_connect_finish` (0064 head CAS credentials, `meta_inbox.connect_activate` routes with a 365-day
+   proof window, `integration.meta_connections` row, state done, pending token wiped). A failure after step 2 leaves a Meta-side
+   subscription without a route (events quarantined), never a route without a token.
+4. **Disconnect** (one transaction): `meta_connect_disconnect` deletes every credential head and version, disables the routes
+   (`asset_owners` stays: a Page cannot silently move stores), deletes the connection row; the caller disables the bindings. There is no
+   Graph unsubscribe (the API cannot open a stored token); the Meta-side subscription stays and only yields quarantined events. A Graph
+   error 190 on a private reply flips the connection to `reauth_required` via `integration.meta_connect_mark_reauth` (worker EXECUTE;
+   only ever active → reauth_required); the card then offers Reconnect, which appends credential version +1.
+5. **§7 custody amendment (integrator ruling 2026-10-01: the API may SEAL, never OPEN).** New credential version
+   `meta-page-token-v2`: HPKE (DHKEM X25519 / HKDF-SHA256 / AES-256-GCM, stdlib `crypto/hpke`, no dependency) to PUBLIC keys; the info array
+   `["livecommerce/meta-page-token/v2", tenant, store, binding, provider, asset, version, key_id]` carries the v1 AAD fields. The 32-byte
+   encapsulated key is stored in the `nonce` column (0095 widens its CHECK to 12 or 32 bytes for facebook/instagram); **a row is v2 exactly when
+   its nonce is 32 bytes**, v1 rows (AES, operator CLI) are unchanged and stay readable. Seal half: `internal/integrations/meta/pagetoken`
+   (public ring `COMMERCE_META_PAGE_HPKE_PUBLIC_KEYS_JSON` + `COMMERCE_META_PAGE_HPKE_ACTIVE_KEY_ID`, mounted into cmd/api). Open half:
+   `internal/integrations/meta/pagetoken/pageopen` (private ring `COMMERCE_META_PAGE_HPKE_PRIVATE_KEYS_FILE`, mounted ONLY into claims-worker;
+   `metareply.RoutesV2` opens v2 in `LoadSecret`, `load_meta_page_token` and its lease fence unchanged). cmd/api never loads the v1 AES
+   keyring or the private ring; the MCI10 env guard names claims-worker/pageopen as the only readers of the private ring and
+   `TestMetaConnectAPIHoldsNoPagePrivateKey` checks cmd/api sources, dependencies, the compose api service and the manifest. No new secret for the
+   Meta app: id/secret come from the `page` entry of `COMMERCE_META_APPS_JSON`. New secrets: `commerce_meta_page_hpke_private_keys_json`
+   (claims-worker), derived `commerce_meta_page_hpke_public_keys_json` and `commerce_meta_page_hpke_active_key_id` (api).
+6. **§4.3 delta (MCI02/KC03 compare against §4.3 plus these rows).** New tables `integration.meta_connect_states`,
+   `integration.meta_connections` (FORCE RLS, writer policy `true` for `commerce_integration_writer`; the states table holds no token column);
+   `commerce_integration_writer`:
+   DELETE on `integration.meta_page_credentials` and `integration.meta_page_heads`, USAGE on schema `meta_inbox`, the new tables
+   (SELECT, INSERT, column UPDATE; DELETE on connections), EXECUTE on four `meta_inbox.connect_*` helpers (owner `commerce_meta_writer`);
+   `commerce_runtime`: EXECUTE on nine `integration.meta_connect_*` definers; `commerce_worker`: EXECUTE on
+   `integration.meta_connect_mark_reauth`. Index `meta_inbox.events_asset_recent`. MCI02 records 0095 in its ledger without running it
+   (it builds on 0064 and the meta_inbox routes), like 0074/0080.
+7. **Gates.** `TestMetaConnect*` (REAL_PG: state mismatch/expired/foreign principal/single use, missing permission/task, IG present and absent,
+   sealed credential opens only under its AAD, no secret in any stored text, webhook → claim → private reply on the merchant-connected Page,
+   Graph 190 → reauth → reconnect, cross-tenant bind refused without a Meta call, disconnect stops intake, re-connect), unit tests of
+   `metaoauth` and `metaconnect`, `--browser-meta-connect` (BROWSER, MOCK). NOT_RUN: Meta SANDBOX/LIVE (dialog, `/me/accounts` with the
+   user-token configuration, `subscribed_apps`, App Review).
+8. **Known limits.** `/me/accounts` is read with a user token (the configuration's token type) — UNKNOWN until a SANDBOX probe that it lists
+   Pages and returns Page `access_token`s as documented for Facebook Login for Business; the long-lived exchange is assumed to apply. The user token is held in one API process's memory (a restart or another replica between callback and pick answers `410 state_expired`; the merchant restarts). `route_expires_at` is one year after (re)connect.

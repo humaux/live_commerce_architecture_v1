@@ -5,25 +5,19 @@ package metaads
 // the body cap and the "an error never carries a URL" rule live in one place.
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"regexp"
 	"strings"
+
+	metaoauth "livecommerce/internal/integrations/meta/oauth"
 )
 
 // GraphHost is the only non-loopback base URL Config accepts (meta-ads-v1 §3).
-const GraphHost = "https://graph.facebook.com"
-
-const (
-	// maxBody caps every Graph response (brief: bounded bodies <= 1 MiB).
-	maxBody = 1 << 20
-)
+const GraphHost = metaoauth.GraphHost
 
 var (
 	// ErrConfig is every constructor/config failure; it never carries a secret.
@@ -66,27 +60,19 @@ func (c Config) validate() error {
 	return nil
 }
 
-// graph is the shared Graph transport. It holds no credential.
-type graph struct {
-	base, version string
-	hc            *http.Client
-}
+// graph is the shared Graph transport (internal/integrations/meta/oauth.Graph; one implementation for ads and the Page
+// connect). It holds no credential.
+type graph struct{ g *metaoauth.Graph }
 
 func newGraph(cfg Config) (*graph, error) {
 	if err := cfg.validate(); err != nil {
 		return nil, err
 	}
-	base := cfg.GraphBaseURL
-	if base == "" {
-		base = GraphHost
+	g, err := metaoauth.NewGraph(cfg.GraphBaseURL, cfg.GraphVersion, cfg.HTTPClient)
+	if err != nil {
+		return nil, ErrConfig
 	}
-	hc := &http.Client{}
-	if cfg.HTTPClient != nil {
-		copied := *cfg.HTTPClient
-		hc = &copied
-	}
-	hc.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
-	return &graph{base: base, version: cfg.GraphVersion, hc: hc}, nil
+	return &graph{g: g}, nil
 }
 
 // reply is one bounded Graph response.
@@ -97,53 +83,14 @@ type reply struct {
 
 func (r reply) ok() bool { return r.status >= 200 && r.status <= 299 }
 
-// do performs one Graph call: path is relative to /{version}/ (no leading slash). A GET carries the
-// token in the Authorization header (never the URL); a POST carries it as `access_token` in the JSON
-// body (the documented POST form; metareply precedent) and never in the URL. // UNKNOWN until MA-S1:
-// that Graph accepts `Authorization: Bearer` on GET reads for BISU tokens; fallback is the documented
-// access_token query parameter, which would need a reviewed change because it puts the token in a URL.
-// The only secret allowed in a URL is the OAuth exchange's client_secret (contract F3, GET form); its
-// errors are flattened to errTransport. A non-nil error means "no usable response": the request may
-// or may not have been processed, so callers of mutating calls must treat it as UNKNOWN.
+// do performs one Graph call through metaoauth.Graph.Do (host rule, no-redirect rule, body cap and "an error never carries
+// a URL" live there); every transport failure is errTransport. See Graph.Do for the token placement and UNKNOWN rules.
 func (g *graph) do(ctx context.Context, method, path string, query url.Values, token []byte, payload map[string]any) (reply, error) {
-	target := g.base + "/" + g.version + "/" + path
-	if len(query) > 0 {
-		target += "?" + query.Encode()
-	}
-	var body io.Reader
-	if method == http.MethodPost {
-		if payload == nil {
-			payload = map[string]any{}
-		}
-		if len(token) > 0 {
-			payload["access_token"] = string(token) // ponytail: Go strings cannot be zeroed; process-memory only, short-lived
-		}
-		raw, err := json.Marshal(payload)
-		if err != nil {
-			return reply{}, errTransport
-		}
-		body = bytes.NewReader(raw)
-	}
-	req, err := http.NewRequestWithContext(ctx, method, target, body)
+	rep, err := g.g.Do(ctx, method, path, query, token, payload)
 	if err != nil {
 		return reply{}, errTransport
 	}
-	req.Header.Set("Accept", "application/json")
-	if method == http.MethodPost {
-		req.Header.Set("Content-Type", "application/json")
-	} else if len(token) > 0 {
-		req.Header.Set("Authorization", "Bearer "+string(token))
-	}
-	resp, err := g.hc.Do(req)
-	if err != nil {
-		return reply{}, errTransport
-	}
-	defer resp.Body.Close()
-	raw, err := io.ReadAll(io.LimitReader(resp.Body, maxBody+1))
-	if err != nil || len(raw) > maxBody {
-		return reply{}, errTransport
-	}
-	return reply{status: resp.StatusCode, body: raw}, nil
+	return reply{status: rep.Status, body: rep.Body}, nil
 }
 
 // SecretFromEnv returns the secret named name (for example COMMERCE_META_ADS_APP_SECRET) from either

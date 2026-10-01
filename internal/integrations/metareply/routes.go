@@ -19,6 +19,8 @@ import (
 	"livecommerce/internal/claims"
 	"livecommerce/internal/command"
 	"livecommerce/internal/integrations/core"
+	"livecommerce/internal/integrations/meta/pagetoken"
+	"livecommerce/internal/integrations/meta/pagetoken/pageopen"
 	"livecommerce/internal/platform"
 )
 
@@ -85,6 +87,13 @@ type checkFunc func(ctx context.Context, operationID string, linkHash []byte) (s
 // checkPool must be the commerce_claims_worker pool (platform.ValidateWorkerPool) and is used for one
 // STABLE statement per Check; no transaction is held across I/O.
 func Routes(checkPool *pgxpool.Pool, linkKey claims.ReplyLinkKey, pageKeys *PageTokenKeyring, cfg Config) ([]core.DispatchRoute, error) {
+	return RoutesV2(checkPool, linkKey, pageKeys, nil, cfg)
+}
+
+// RoutesV2 is Routes plus the HPKE private ring that opens meta-page-token-v2 credentials (sealed by the merchant connect in cmd/api,
+// which holds only public keys). A stored credential is v1 (AES keyring, nonce 12 bytes) or v2 (HPKE, nonce = 32-byte encapsulated
+// key); with v2 == nil a v2 row is a pre-dispatch denial, never an open attempt.
+func RoutesV2(checkPool *pgxpool.Pool, linkKey claims.ReplyLinkKey, pageKeys *PageTokenKeyring, v2 *pageopen.Keyring, cfg Config) ([]core.DispatchRoute, error) {
 	if checkPool == nil {
 		return nil, ErrConfig
 	}
@@ -96,10 +105,18 @@ func Routes(checkPool *pgxpool.Pool, linkKey claims.ReplyLinkKey, pageKeys *Page
 		err = checkPool.QueryRow(ctx, `SELECT claims.check_meta_reply($1::uuid,$2::bytea)`, operationID, linkHash).Scan(&code)
 		return code, err
 	}
-	return newRoutes(check, linkKey, pageKeys, cfg)
+	// integration.meta_connect_mark_reauth (0095, commerce_worker): a Graph 190 flips the merchant's connect card to "reconnect".
+	reauth := func(ctx context.Context, operationID string) {
+		_, _ = checkPool.Exec(ctx, `SELECT integration.meta_connect_mark_reauth($1::uuid)`, operationID)
+	}
+	return newRoutesWith(check, reauth, linkKey, pageKeys, v2, cfg)
 }
 
 func newRoutes(check checkFunc, linkKey claims.ReplyLinkKey, pageKeys *PageTokenKeyring, cfg Config) ([]core.DispatchRoute, error) {
+	return newRoutesWith(check, nil, linkKey, pageKeys, nil, cfg)
+}
+
+func newRoutesWith(check checkFunc, reauth func(context.Context, string), linkKey claims.ReplyLinkKey, pageKeys *PageTokenKeyring, v2 *pageopen.Keyring, cfg Config) ([]core.DispatchRoute, error) {
 	if check == nil || linkKey.ID() == "" || pageKeys == nil || cfg.Validate() != nil {
 		return nil, ErrConfig
 	}
@@ -109,7 +126,7 @@ func newRoutes(check checkFunc, linkKey claims.ReplyLinkKey, pageKeys *PageToken
 		client = &copied
 	}
 	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
-	a := &adapter{check: check, linkKey: linkKey, keys: pageKeys, cfg: cfg, client: client}
+	a := &adapter{check: check, reauth: reauth, linkKey: linkKey, keys: pageKeys, v2: v2, cfg: cfg, client: client}
 	routes := make([]core.DispatchRoute, 0, 2)
 	for _, provider := range []string{"facebook", "instagram"} {
 		routes = append(routes, core.DispatchRoute{
@@ -125,8 +142,10 @@ func newRoutes(check checkFunc, linkKey claims.ReplyLinkKey, pageKeys *PageToken
 
 type adapter struct {
 	check   checkFunc
+	reauth  func(ctx context.Context, operationID string) // nil in unit tests; flips the connect card on a Graph 190
 	linkKey claims.ReplyLinkKey
 	keys    *PageTokenKeyring
+	v2      *pageopen.Keyring // nil: v2 (HPKE) credentials are denied
 	cfg     Config
 	client  *http.Client
 }
@@ -213,6 +232,18 @@ func (a *adapter) loadSecretFor(provider string) func(context.Context, pgx.Tx, c
 		if row.provider != provider || !hasScopes(row.scopes, requiredScopes[provider]) {
 			return core.Secret{}, fmt.Errorf("page token lacks attested scope: %w", core.ErrPolicyDenied)
 		}
+		if len(row.nonce) == pagetoken.EncSize { // v2: HPKE, sealed by the merchant connect to the public ring
+			if a.v2 == nil {
+				return core.Secret{}, fmt.Errorf("page token v2 without private ring: %w", core.ErrPolicyDenied)
+			}
+			plain, err := a.v2.Open(pagetoken.Scope{TenantID: row.tenant, StoreID: row.store, BindingID: row.binding,
+				Provider: row.provider, AssetID: row.asset, Version: row.version}, row.keyID, row.nonce, row.ciphertext)
+			if err != nil {
+				return core.Secret{}, ErrSecret
+			}
+			defer clear(plain)
+			return core.NewSecret(plain), nil
+		}
 		return a.keys.Open(PageTokenScope{TenantID: row.tenant, StoreID: row.store, BindingID: row.binding,
 			Provider: row.provider, AssetID: row.asset, Version: row.version}, row.keyID, row.nonce, row.ciphertext)
 	}
@@ -291,6 +322,11 @@ func (a *adapter) dispatch(ctx context.Context, req core.DispatchRequest, secret
 	defer resp.Body.Close()
 	raw, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBody+1))
 	if err != nil || len(raw) > maxResponseBody || resp.StatusCode < 200 || resp.StatusCode > 299 {
+		// Graph error 190 = the Page token is invalid/expired/revoked: ask the merchant to reconnect. The outcome stays UNKNOWN
+		// (never repeated: one private reply per comment); only the card status changes.
+		if a.reauth != nil && err == nil && graphErrorCode(raw) == 190 {
+			a.reauth(ctx, req.OperationID)
+		}
 		return unconfirmed, nil
 	}
 	var ok struct {
@@ -300,6 +336,19 @@ func (a *adapter) dispatch(ctx context.Context, req core.DispatchRequest, secret
 		return unconfirmed, nil
 	}
 	return core.Outcome{State: "SUCCEEDED", Code: codeSent, ProviderReference: ok.MessageID}, nil
+}
+
+// graphErrorCode reads error.code of a Graph error envelope (0 when the body is not one).
+func graphErrorCode(raw []byte) int {
+	var e struct {
+		Error struct {
+			Code int `json:"code"`
+		} `json:"error"`
+	}
+	if json.Unmarshal(raw, &e) != nil {
+		return 0
+	}
+	return e.Error.Code
 }
 
 // reconcile is query-only and proves nothing until probe U4 shows a read field that does; it
