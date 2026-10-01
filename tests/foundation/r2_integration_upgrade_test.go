@@ -37,9 +37,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	sort.Strings(r2)
 	// 0070..0089 without 0076 (never allocated) and 0084 (worker-authority-split, not merged yet) = 18, + 0093 storefront-integration = 19, + 0095 meta-connect, + 0090..0092 and post-River 0015..0018 (R3/R4 lanes add files): a lane that drops or adds a file
 	// must update this. 0081 storefront-publish has its own upgrade gate TestStorefrontPublishSPW02UpgradeAfter0080. 0097
-	// (buyer-comms order locale) is the 29th file.
-	if len(r2) != 32 {
-		t.Fatalf("R2 migration set = %d files %v, want 32", len(r2), r2)
+	// (buyer-comms order locale) is the 29th file; 0101 (promotion/live-tools volatility + buyer-principal fence) adds one more file.
+	if len(r2) != 33 {
+		t.Fatalf("R2 migration set = %d files %v, want 33", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
@@ -51,6 +51,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 		}
 		mustExec(t, upgraded, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES($1,$2)`, version, fmt.Sprintf("%x", sha256.Sum256(body)))
 	}
+	// The current migrations.Apply grants River privileges to the 0096 worker authorities before 0096 itself can run
+	// (it is held back in this release-head ledger), so pre-create them exactly as 0096 does (idempotent).
+	waPrecreateRoles(t, upgraded)
 	if err := migrations.Apply(ctx, upgraded); err != nil {
 		t.Fatalf("release-head schema (everything but the R2 files): %v", err)
 	}

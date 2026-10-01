@@ -485,3 +485,24 @@ func mustQuote(t *testing.T, b *tcvBuyer, code string) storefront.Quote {
 	}
 	return q
 }
+
+// P2 fixes (output/kimi-calibration/K3-REVIEW-PROMOTIONS.md): quote_check is VOLATILE (it depends on clock_timestamp() through
+// promotions.refusal_for) and must refuse a buyer-scoped transaction whose app.principal_id is set (the buyer path requires it empty).
+func TestPromotionQuoteCheckVolatilityAndFence(t *testing.T) {
+	e := tcvNew(t)
+	e.grantCreator("pricing:read", "pricing:write")
+	ctx := context.Background()
+	var vol string
+	if err := e.p.f.owner.QueryRow(ctx, `SELECT provolatile::text FROM pg_proc WHERE oid='promotions.quote_check(uuid,uuid,uuid,text,bigint)'::regprocedure`).Scan(&vol); err != nil || vol != "v" {
+		t.Fatalf("quote_check provolatile=%q (%v), want v", vol, err)
+	}
+	b := e.newBuyer()
+	_, err := cqBuyer(b.h.a.runtime, b.cap, func(ctx context.Context, tx pgx.Tx, s buyer.Scope) (struct{}, error) {
+		if _, e := tx.Exec(ctx, `SELECT set_config('app.principal_id',$1,true)`, randomUUID()); e != nil {
+			return struct{}{}, e
+		}
+		_, e := tx.Exec(ctx, `SELECT promotions.quote_check($1::uuid,$2::uuid,$3::uuid,$4,$5::bigint)`, s.TenantID, s.StoreID, s.OwnerID, "FENCE", 100)
+		return struct{}{}, e
+	})
+	requirePGCode(t, err, "PT403", "quote_check with a merchant principal set")
+}

@@ -294,7 +294,9 @@ order keeps counting (a refund is not a reason to reuse a limited code).
 Per-buyer limit identity: the buyer capability owner, the sha256 of the lower-cased order e-mail (when given) and of the digits of the
 destination phone (always present at Begin). Any match counts. WEAKNESS (documented, not hidden): a buyer who uses a new device AND
 a new phone AND a new e-mail is a new buyer; the code is a marketing control, not an entitlement. Hashes are salted with the store id
-and stored only for this check.
+and stored only for this check. Erasure (customers.apply_erasure → promotions.clear_buyer) clears the e-mail/phone hashes, so a
+returning erased buyer restarts their per-buyer limit — privacy is preferred over limit enforcement (total_limit, the aggregate cap,
+is unaffected).
 
 Merchant admin (scope from server auth; permission `pricing:read` to list, `pricing:write` to change; same Idempotency-Key receipt
 rules as the other settings): `GET /v1/admin/stores/{store_id}/promotions` -> `{promotions:[{id, code, kind, percent|null,

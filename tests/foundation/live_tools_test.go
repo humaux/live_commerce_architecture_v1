@@ -428,3 +428,16 @@ func TestLiveToolsLibraryImportAndCopy(t *testing.T) {
 	requirePGCode(t, err, "23514", "live price CHECK >= 1")
 	_ = time.Now
 }
+
+// P2 fix (output/kimi-calibration/K3-REVIEW-PROMOTIONS.md): the live-price definers read clock_timestamp() for link expiry, so
+// they must be VOLATILE, not STABLE.
+func TestLiveToolsVolatility(t *testing.T) {
+	h := lcSetup(t)
+	ctx := context.Background()
+	for _, fn := range []string{"claims.live_prices(uuid[],uuid[],uuid[])", "claims.preview_live_prices(bytea)"} {
+		var vol string
+		if err := h.f.owner.QueryRow(ctx, `SELECT provolatile::text FROM pg_proc WHERE oid=$1::regprocedure`, fn).Scan(&vol); err != nil || vol != "v" {
+			t.Fatalf("%s provolatile=%q (%v), want v", fn, vol, err)
+		}
+	}
+}
