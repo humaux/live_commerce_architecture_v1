@@ -242,7 +242,7 @@ export function createFakeApi({ port = 0, origin = "https://shop.example", bffKe
     if (path === "catalog") {
       const after = url.searchParams.get("cursor") ? Number(Buffer.from(url.searchParams.get("cursor"), "base64url").toString()) : 0;
       const limit = Math.min(100, Number(url.searchParams.get("limit") ?? 100));
-      const rows = live().flatMap((p) => p.variants.filter((v) => !(p.variants.length === 1 && false)).map((v) => ({ product_id: p.id, sku_id: v.sku_id, name: p.title, description: p.description, sku_code: v.sku_code, currency: CURRENCY, price_minor: v.price_minor, images: p.images })));
+      const rows = live().flatMap((p) => p.variants.filter((v) => !(p.variants.length === 1 && false)).map((v) => ({ product_id: p.id, sku_id: v.sku_id, name: p.title, description: p.description, sku_code: v.sku_code, currency: CURRENCY, price_minor: v.price_minor, images: p.slug === state.imagelessSlug ? [] : p.images })));
       const slice = rows.slice(after, after + limit);
       return json(res, 200, { items: slice, next_cursor: after + limit < rows.length ? Buffer.from(String(after + limit)).toString("base64url") : "", store_name: "晨光選物" });
     }
