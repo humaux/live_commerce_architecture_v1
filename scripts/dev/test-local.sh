@@ -10,8 +10,8 @@ command -v go >/dev/null
 # public official golden vector; missing Node must fail before starting fixtures.
 command -v node >/dev/null
 test_mode="${1:-foundation}"
-if [[ "$#" -gt 1 ]] || [[ "$test_mode" != foundation && "$test_mode" != --browser-identity && "$test_mode" != --browser-catalog-core && "$test_mode" != --browser-meta-connect && "$test_mode" != --browser-promotions && "$test_mode" != --browser-ops-polish && "$test_mode" != --browser-design && "$test_mode" != --browser-password-auth && "$test_mode" != --browser-admin-legacy && "$test_mode" != --browser-buyer && "$test_mode" != --browser-merchant-buyer && "$test_mode" != --browser-manual-order && "$test_mode" != --browser-merchant-orders-bff && "$test_mode" != --browser-merchant-orders-ui && "$test_mode" != --browser-input-delivery && "$test_mode" != --browser-studio-bff && "$test_mode" != --browser-studio-ui && "$test_mode" != --browser-live-claims && "$test_mode" != --browser-order && "$test_mode" != --browser-payment && "$test_mode" != --stripe-browser && "$test_mode" != --browser-refund-fulfilment && "$test_mode" != --browser-customers-billing && "$test_mode" != --browser-meta-ads && "$test_mode" != --browser-cvs && "$test_mode" != --browser-catalog-media && "$test_mode" != --browser-storefront-publish && "$test_mode" != --browser-storefront && "$test_mode" != --browser-webkit && "$test_mode" != --browser-e2e && "$test_mode" != --checkout && "$test_mode" != --payment && "$test_mode" != --payment-worker && "$test_mode" != --expiry-worker && "$test_mode" != --storefront-resolver && "$test_mode" != --buyer-http && "$test_mode" != --purchase-entry && "$test_mode" != --merchant-orders && "$test_mode" != --meta-inbox && "$test_mode" != --meta-consumer && "$test_mode" != --meta-runtime && "$test_mode" != --legacy-isolation && "$test_mode" != --local-recovery && "$test_mode" != --live-planning && "$test_mode" != --live-authority && "$test_mode" != --live-media-plan && "$test_mode" != --live-media-execution && "$test_mode" != --live-browser-input && "$test_mode" != --live-media-input && "$test_mode" != --live-media-crash && "$test_mode" != --live-media-stop && "$test_mode" != --live-media-recovery && "$test_mode" != --live-media-runtime && "$test_mode" != --studio-backend ]]; then
-  printf 'Usage: bash scripts/dev/test-local.sh [--browser-identity|--browser-promotions|--browser-password-auth|--browser-admin-legacy|--browser-buyer|--browser-merchant-buyer|--browser-manual-order|--browser-merchant-orders-bff|--browser-merchant-orders-ui|--browser-input-delivery|--browser-studio-bff|--browser-studio-ui|--browser-live-claims|--browser-order|--browser-payment|--stripe-browser|--browser-refund-fulfilment|--browser-customers-billing|--browser-meta-ads|--browser-cvs|--browser-catalog-media|--browser-storefront-publish|--browser-storefront|--browser-webkit|--browser-e2e|--checkout|--payment|--payment-worker|--expiry-worker|--storefront-resolver|--buyer-http|--purchase-entry|--merchant-orders|--meta-inbox|--meta-consumer|--meta-runtime|--legacy-isolation|--local-recovery|--live-planning|--live-authority|--live-media-plan|--live-media-execution|--live-browser-input|--live-media-input|--live-media-crash|--live-media-stop|--live-media-recovery|--live-media-runtime|--studio-backend|--browser-design|--browser-ops-polish|--browser-meta-connect|--browser-catalog-core]\n' >&2
+if [[ "$#" -gt 1 ]] || [[ "$test_mode" != foundation && "$test_mode" != --browser-checkout-offline && "$test_mode" != --browser-identity && "$test_mode" != --browser-catalog-core && "$test_mode" != --browser-meta-connect && "$test_mode" != --browser-promotions && "$test_mode" != --browser-ops-polish && "$test_mode" != --browser-design && "$test_mode" != --browser-password-auth && "$test_mode" != --browser-admin-legacy && "$test_mode" != --browser-buyer && "$test_mode" != --browser-merchant-buyer && "$test_mode" != --browser-manual-order && "$test_mode" != --browser-merchant-orders-bff && "$test_mode" != --browser-merchant-orders-ui && "$test_mode" != --browser-input-delivery && "$test_mode" != --browser-studio-bff && "$test_mode" != --browser-studio-ui && "$test_mode" != --browser-live-claims && "$test_mode" != --browser-order && "$test_mode" != --browser-payment && "$test_mode" != --stripe-browser && "$test_mode" != --browser-refund-fulfilment && "$test_mode" != --browser-customers-billing && "$test_mode" != --browser-meta-ads && "$test_mode" != --browser-cvs && "$test_mode" != --browser-catalog-media && "$test_mode" != --browser-storefront-publish && "$test_mode" != --browser-storefront && "$test_mode" != --browser-webkit && "$test_mode" != --browser-e2e && "$test_mode" != --checkout && "$test_mode" != --payment && "$test_mode" != --payment-worker && "$test_mode" != --expiry-worker && "$test_mode" != --storefront-resolver && "$test_mode" != --buyer-http && "$test_mode" != --purchase-entry && "$test_mode" != --merchant-orders && "$test_mode" != --meta-inbox && "$test_mode" != --meta-consumer && "$test_mode" != --meta-runtime && "$test_mode" != --legacy-isolation && "$test_mode" != --local-recovery && "$test_mode" != --live-planning && "$test_mode" != --live-authority && "$test_mode" != --live-media-plan && "$test_mode" != --live-media-execution && "$test_mode" != --live-browser-input && "$test_mode" != --live-media-input && "$test_mode" != --live-media-crash && "$test_mode" != --live-media-stop && "$test_mode" != --live-media-recovery && "$test_mode" != --live-media-runtime && "$test_mode" != --studio-backend ]]; then
+  printf 'Usage: bash scripts/dev/test-local.sh [--browser-identity|--browser-checkout-offline|--browser-promotions|--browser-password-auth|--browser-admin-legacy|--browser-buyer|--browser-merchant-buyer|--browser-manual-order|--browser-merchant-orders-bff|--browser-merchant-orders-ui|--browser-input-delivery|--browser-studio-bff|--browser-studio-ui|--browser-live-claims|--browser-order|--browser-payment|--stripe-browser|--browser-refund-fulfilment|--browser-customers-billing|--browser-meta-ads|--browser-cvs|--browser-catalog-media|--browser-storefront-publish|--browser-storefront|--browser-webkit|--browser-e2e|--checkout|--payment|--payment-worker|--expiry-worker|--storefront-resolver|--buyer-http|--purchase-entry|--merchant-orders|--meta-inbox|--meta-consumer|--meta-runtime|--legacy-isolation|--local-recovery|--live-planning|--live-authority|--live-media-plan|--live-media-execution|--live-browser-input|--live-media-input|--live-media-crash|--live-media-stop|--live-media-recovery|--live-media-runtime|--studio-backend|--browser-design|--browser-ops-polish|--browser-meta-connect|--browser-catalog-core]\n' >&2
   exit 2
 fi
 if [[ "$test_mode" == --browser-storefront && "${LC_SHOP_MOCK:-0}" == 1 ]]; then
@@ -314,13 +314,21 @@ if [[ "$test_mode" == --browser-storefront ]]; then
   test -f tests/storefront/shop-real-gate.mjs
   node --test --experimental-strip-types apps/storefront/tests/shop.test.mjs
 fi
-if [[ "$test_mode" == --browser-buyer || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-manual-order || "$test_mode" == --browser-order || "$test_mode" == --browser-payment || "$test_mode" == --stripe-browser || "$test_mode" == --browser-refund-fulfilment || "$test_mode" == --browser-customers-billing || "$test_mode" == --browser-meta-ads || "$test_mode" == --browser-storefront || "$test_mode" == --browser-cvs || "$test_mode" == --browser-catalog-media || "$test_mode" == --browser-storefront-publish || "$test_mode" == --browser-webkit || "$test_mode" == --browser-live-claims || "$test_mode" == --browser-e2e || "$test_mode" == --browser-ops-polish || "$test_mode" == --browser-promotions ]]; then
+if [[ "$test_mode" == --browser-checkout-offline ]]; then
+  # COB (BROWSER, MOCK: no PSP on this path): refuse a no-test success before any build.
+  test -f tests/foundation/browser_checkout_offline_test.go
+  grep -q '^func TestBrowserCheckoutOffline' tests/foundation/browser_checkout_offline_test.go
+  test -f tests/admin/checkout-offline.spec.ts
+  test -f tests/storefront/offline-buyer.mjs
+  mkdir -p output/playwright
+fi
+if [[ "$test_mode" == --browser-buyer || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-manual-order || "$test_mode" == --browser-order || "$test_mode" == --browser-payment || "$test_mode" == --stripe-browser || "$test_mode" == --browser-refund-fulfilment || "$test_mode" == --browser-customers-billing || "$test_mode" == --browser-meta-ads || "$test_mode" == --browser-storefront || "$test_mode" == --browser-cvs || "$test_mode" == --browser-catalog-media || "$test_mode" == --browser-storefront-publish || "$test_mode" == --browser-webkit || "$test_mode" == --browser-live-claims || "$test_mode" == --browser-e2e || "$test_mode" == --browser-ops-polish || "$test_mode" == --browser-promotions || "$test_mode" == --browser-checkout-offline ]]; then
   command -v pnpm >/dev/null
   command -v openssl >/dev/null
   COMMERCE_BUYER_WEB_ENABLED=0 pnpm run build:storefront
   mkdir -p output/playwright
 fi
-if [[ "$test_mode" == --browser-identity || "$test_mode" == --browser-catalog-core || "$test_mode" == --browser-meta-connect || "$test_mode" == --browser-ops-polish || "$test_mode" == --browser-design || "$test_mode" == --browser-password-auth || "$test_mode" == --browser-admin-legacy || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-manual-order || "$test_mode" == --browser-merchant-orders-bff || "$test_mode" == --browser-merchant-orders-ui || "$test_mode" == --browser-input-delivery || "$test_mode" == --browser-studio-bff || "$test_mode" == --browser-studio-ui || "$test_mode" == --browser-live-claims || "$test_mode" == --browser-refund-fulfilment || "$test_mode" == --browser-customers-billing || "$test_mode" == --browser-meta-ads || "$test_mode" == --browser-cvs || "$test_mode" == --browser-catalog-media || "$test_mode" == --browser-storefront-publish || "$test_mode" == --browser-webkit || "$test_mode" == --browser-e2e || "$test_mode" == --browser-promotions ]]; then
+if [[ "$test_mode" == --browser-identity || "$test_mode" == --browser-catalog-core || "$test_mode" == --browser-meta-connect || "$test_mode" == --browser-ops-polish || "$test_mode" == --browser-design || "$test_mode" == --browser-password-auth || "$test_mode" == --browser-admin-legacy || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-manual-order || "$test_mode" == --browser-merchant-orders-bff || "$test_mode" == --browser-merchant-orders-ui || "$test_mode" == --browser-input-delivery || "$test_mode" == --browser-studio-bff || "$test_mode" == --browser-studio-ui || "$test_mode" == --browser-live-claims || "$test_mode" == --browser-refund-fulfilment || "$test_mode" == --browser-customers-billing || "$test_mode" == --browser-meta-ads || "$test_mode" == --browser-cvs || "$test_mode" == --browser-catalog-media || "$test_mode" == --browser-storefront-publish || "$test_mode" == --browser-webkit || "$test_mode" == --browser-e2e || "$test_mode" == --browser-promotions || "$test_mode" == --browser-checkout-offline ]]; then
   command -v pnpm >/dev/null
   command -v node >/dev/null
   # Production package, but local-only runtime configuration is injected by the
@@ -565,6 +573,130 @@ elif [[ "$test_mode" == --browser-ops-polish ]]; then
 elif [[ "$test_mode" == --browser-promotions ]]; then
   LC_BROWSER_PROMOTIONS_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1700s -run '^TestBrowserPromotions$' -v ./tests/foundation
   printf 'PASS: promotions browser gate (BROWSER, MOCK IdP): the merchant creates a 10%% code with a minimum spend in /promotions, an anonymous buyer adds 2 products in the new storefront, applies the code at checkout, sees the discount and places a bank_transfer order, the merchant order view and finance show the discounted amounts; invalid and below-minimum codes show their messages; zh-TW + en, desktop + 390px; PG readback of codes/orders/redemptions; Stripe SANDBOX and WebKit are NOT_RUN here.\n'
+elif [[ "$test_mode" == --browser-checkout-offline ]]; then
+  LC_BROWSER_CHECKOUT_OFFLINE_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1700s -run '^TestBrowserCheckoutOffline$' -v ./tests/foundation
+  printf 'PASS: COB BROWSER (MOCK) isolated admin + storefront Next, Go, PG: merchant settings (bank details, window, free-shipping threshold) -> buyer home-delivery checkout with bank transfer + proof -> merchant confirm/reject in the order page -> buyer sees the result; the expiry function is run on a controlled clock and releases the stock; zh-TW + en, desktop + 390px; no PSP; not deployment acceptance.\n'
+elif [[ "$test_mode" == --browser-webkit ]]; then
+  # Same production storefront + admin builds and the same go tests as the Chromium modes, with LC_BROWSER_ENGINE=webkit: phone-sized buyer
+  # contexts run Playwright's iPhone 15 profile, desktop ones and every admin page run Desktop Safari. One go test process per step on a
+  # fresh PG cluster; any SKIP/FAIL, too few leaf cases or a missing log is a failed step (go_json_counts). Evidence goes to the MAIN checkout.
+  webkit_main="$(cd "$(git rev-parse --git-common-dir)/.." && pwd)"
+  webkit_out="$webkit_main/output/webkit"
+  mkdir -p "$webkit_out"
+  webkit_sha="$(git rev-parse --short=12 HEAD)"
+  webkit_status=0
+  # Steps can be narrowed while fixing one flow (LC_WEBKIT_STEPS=payment,cvs); the default is all six and release-gate.sh requires all six.
+  webkit_steps=",${LC_WEBKIT_STEPS:-buyer,order,payment,merchant-buyer,cvs,password-auth},"
+  # run_webkit_step <label> <acceptance env var> <go -run regex> <timeout> <min leaf cases>
+  run_webkit_step() {
+    local label="$1" accept="$2" regex="$3" tmo="$4" min="$5"
+    [[ "$webkit_steps" == *",$label,"* ]] || return 0
+    local log="$webkit_out/$webkit_sha-$label.jsonl" started rc=0 verdict=0 counts
+    fresh_pg
+    started="$(date +%s)"
+    env "$accept=1" LC_BROWSER_ENGINE=webkit GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout="$tmo" -json -run "$regex" ./tests/foundation >"$log" 2>"$log.stderr" || rc=$?
+    counts="$(go_json_counts "$log" "$min")"
+    verdict="${counts##*VERDICT=}"; counts="${counts%% VERDICT=*}"
+    printf '%s: %s exit=%d verdict=%d duration=%ds log=%s\n' "$label" "$counts" "$rc" "$verdict" "$(( $(date +%s) - started ))" "$log"
+    if [[ "$rc" != 0 || "$verdict" != 0 ]]; then webkit_status=1; printf 'FAIL: %s (go test exit=%d, parse verdict=%d)\n' "$label" "$rc" "$verdict" >&2; fi
+  }
+  run_webkit_step buyer LC_BROWSER_BUYER_ACCEPTANCE '^TestBrowserBuyerRealChain$' 900s 0
+  run_webkit_step order LC_BROWSER_ORDER_ACCEPTANCE '^TestBrowserBuyerOrderUI$' 900s 0
+  run_webkit_step payment LC_BROWSER_PAYMENT_ACCEPTANCE '^TestBrowserBuyerPaymentUI$' 900s 0
+  run_webkit_step merchant-buyer LC_BROWSER_MERCHANT_BUYER_ACCEPTANCE '^TestBrowserMerchantBuyerRealChain$' 900s 0
+  run_webkit_step cvs LC_BROWSER_CVS_ACCEPTANCE '^TestBrowserTaiwanCvs$/^WebKit$' 1700s 1
+  run_webkit_step password-auth LC_BROWSER_PASSWORD_AUTH_ACCEPTANCE '^TestBrowserPasswordAuth$' 1200s 0
+  if [[ "$webkit_status" != 0 ]]; then printf 'FAIL: --browser-webkit (see logs in %s)\n' "$webkit_out" >&2; exit 1; fi
+  printf 'PASS: --browser-webkit MOCK tier on Playwright WebKit (iPhone 15 buyer, Desktop Safari admin behind a self-signed https front) steps [%s]: buyer, order, payment, merchant-buyer, cvs (TCV08 buyer + merchant), password-auth; Stripe SP18 SANDBOX on WebKit = LC_BROWSER_ENGINE=webkit --stripe-browser (see GATES.md); not provider, real-device or deployment acceptance.\n' "${webkit_steps//,/ }"
+elif [[ "$test_mode" == --checkout ]]; then
+  # Focused diagnosis uses the same isolated real PG and cleanup guard. It never
+  # substitutes for the full foundation/race/vet release gate below.
+  # This selector now includes the expiry-worker crash/rescue suites as well as
+  # checkout. Their aggregate exceeded 120s; individual SQL/deadline gates stay.
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=240s -run '^TestBuyerCheckout' -v ./tests/foundation
+  printf 'PASS: checkout subset only; full regression still required.\n'
+elif [[ "$test_mode" == --payment ]]; then
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^TestBuyerPayment' -v ./tests/foundation
+  printf 'PASS: payment start/query subset only; full regression still required.\n'
+elif [[ "$test_mode" == --payment-worker ]]; then
+  test -f tests/foundation/payment_runtime_test.go
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=120s -run '^TestBuyerPaymentWorker' -v ./tests/foundation
+  printf 'PASS: isolated payment worker subset; no real-provider or deployment claim.\n'
+elif [[ "$test_mode" == --expiry-worker ]]; then
+  test -f tests/foundation/expiry_runtime_test.go
+  test -f tests/foundation/expiry_admission_test.go
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=150s -run '^TestBuyerCheckoutExpiryRuntime' -v ./tests/foundation
+  printf 'PASS: isolated expiry worker subset; no production or recovery-SLO claim.\n'
+elif [[ "$test_mode" == --merchant-orders ]]; then
+  test -f tests/foundation/merchant_orders_test.go
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^TestMerchantOrders' -v ./tests/foundation
+  printf 'PASS: isolated merchant order read subset; no merchant UI/provider/deployment claim.\n'
+elif [[ "$test_mode" == --live-planning ]]; then
+  test -f tests/foundation/live_planning_test.go
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^TestLivePlanning' -v ./internal/live ./tests/foundation
+  printf 'PASS: isolated live draft planning only; no broadcast, HTTP, provider or G06 acceptance.\n'
+elif [[ "$test_mode" == --live-authority ]]; then
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^Test(LivePlanning|LiveMediaAuthorization)' -v ./tests/foundation
+  printf 'PASS: isolated MOCK media authority registry and draft planning; no controller, LIVE intake, provider or G06 acceptance.\n'
+elif [[ "$test_mode" == --live-media-plan ]]; then
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=240s -run '^Test(LivePlanning|LiveMediaAuthorization|LiveMediaPlan)' -v ./internal/live ./tests/foundation
+  printf 'PASS: isolated MOCK media start intent and native queue; no provider execution, LIVE intake or G06 acceptance.\n'
+elif [[ "$test_mode" == --live-media-execution ]]; then
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=300s -run '^Test(LivePlanning|LiveMediaAuthorization|LiveMediaPlan|LiveMediaExecution)' -v ./internal/live ./tests/foundation
+  printf 'PASS: isolated MOCK media execution and recovery; no Stop, LIVE provider, resource reclamation or G06 acceptance.\n'
+elif [[ "$test_mode" == --live-media-input ]]; then
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^TestLiveMediaExecutionBIC' -v ./tests/foundation
+  printf 'PASS: isolated BIC custody subset only; full media and BIC05 regression still required.\n'
+elif [[ "$test_mode" == --live-browser-input ]]; then
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=240s -run '^TestLiveBrowserInputBRW' -v ./tests/foundation
+  GOTOOLCHAIN=go1.27.1 go vet ./internal/live ./tests/foundation
+  printf 'PASS: isolated BRW SQL/executor and Go HTTP subset; HTTPS browser/SFU and recovery gates remain separate.\n'
+elif [[ "$test_mode" == --live-media-crash ]]; then
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^TestLiveMediaStopLMR05RealCrashAndCommitAckLoss$' -v ./tests/foundation
+  printf 'PASS: isolated LMR05 crash diagnostic only; Stop and full regression still required.\n'
+elif [[ "$test_mode" == --live-media-stop ]]; then
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=300s -run '^Test(LivePlanning|LiveMediaAuthorization|LiveMediaPlan|LiveMediaExecution|LiveMediaStop)' -v ./internal/live ./tests/foundation
+  printf 'PASS: isolated bounded MOCK media Stop; no Cloud, LIVE intake, operator escalation recovery or G06 acceptance.\n'
+elif [[ "$test_mode" == --live-media-recovery ]]; then
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -failfast -timeout=540s -run '^TestLiveMediaRecoveryMRR' -v ./tests/foundation
+  printf 'PASS: isolated MRR observer SQL/process gates only; no Cloud, human alert delivery, LIVE intake or G06 acceptance.\n'
+elif [[ "$test_mode" == --live-media-runtime ]]; then
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=360s -run '^Test(MediaWorkerLMW|WorkerEnvironmentLMW|LiveMediaRuntimeLMW)' -v ./cmd/media-worker ./internal/integrations/livekit ./tests/foundation
+  printf 'PASS: isolated actual media command, PG18 and local TLS runtime; no Cloud, LIVE intake or G06 acceptance.\n'
+elif [[ "$test_mode" == --studio-backend ]]; then
+  GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=360s -run '^Test(StudioBackend|StudioCursor|StudioInput)' -v ./internal/pagination ./internal/live ./internal/httpapi ./cmd/api ./tests/foundation
+  printf 'PASS: isolated Studio backend/API and local MOCK media gate; not BFF/browser, Cloud, LIVE intake or full Studio acceptance.\n'
+elif [[ "$test_mode" == --meta-inbox ]]; then
+  test -f tests/foundation/meta_inbox_test.go
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^TestMetaInbox' -v ./tests/foundation
+  printf 'PASS: isolated Meta inbox subset only; no public mount/provider qualification claim.\n'
+elif [[ "$test_mode" == --meta-consumer ]]; then
+  test -f tests/foundation/meta_consumer_test.go
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^TestMetaConsumer' -v ./tests/foundation
+  printf 'PASS: isolated Meta social consumer subset only; no public mount/provider qualification claim.\n'
+elif [[ "$test_mode" == --legacy-isolation ]]; then
+  test -f tests/foundation/legacy_runtime_isolation_test.go
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=240s -run '^TestLegacyRuntimeIsolation' -v ./tests/foundation
+  printf 'PASS: isolated legacy-family subset only; not full regression/provider/production acceptance.\n'
+elif [[ "$test_mode" == --local-recovery ]]; then
+  # This bounded gate creates its own source/restore clusters; the parent
+  # fixture still enforces explicit local-PG consent. No existing DB is restored.
+  test -f tests/foundation/local_recovery_test.go
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^TestLocalRecovery' -v ./tests/foundation
+  printf 'PASS: isolated logical restore/cold-start subset only; not PITR, production RPO/RTO or deployment acceptance.\n'
+elif [[ "$test_mode" == --meta-runtime ]]; then
+  test -f tests/foundation/meta_runtime_test.go
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^TestMetaRuntime' -v ./tests/foundation
+  printf 'PASS: isolated Meta API/worker runtime subset only; no public deployment/provider qualification claim.\n'
+elif [[ "$test_mode" == --storefront-resolver ]]; then
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=120s -run '^TestPublishedStorefront' -v ./tests/foundation
+  printf 'PASS: published-origin resolver subset only; not public HTTP or provider proof.\n'
+elif [[ "$test_mode" == --buyer-http ]]; then
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=120s -run '^TestBuyerHTTP' -v ./tests/foundation
+  printf 'PASS: private buyer HTTP subset only; not public BFF/browser or provider proof.\n'
+elif [[ "$test_mode" == --purchase-entry ]]; then
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=120s -run '^TestMerchantPurchaseEntry' -v ./tests/foundation
+  printf 'PASS: merchant purchase-entry real PG/HTTP subset only; not buyer UI or provider checkout.\n'
 elif [[ "$test_mode" == --browser-webkit ]]; then
   # Same production storefront + admin builds and the same go tests as the Chromium modes, with LC_BROWSER_ENGINE=webkit: phone-sized buyer
   # contexts run Playwright's iPhone 15 profile, desktop ones and every admin page run Desktop Safari. One go test process per step on a
