@@ -41,7 +41,8 @@ import (
 	"livecommerce/migrations"
 )
 
-var lcTables = []string{"live.offers", "live.claim_windows", "claims.bundles", "claims.lines", "claims.events", "claims.links"}
+// claims.live_price_uses: the 0105 (R4S-01) live-price consumption ledger; no runtime role holds any privilege on it.
+var lcTables = []string{"live.offers", "live.claim_windows", "claims.bundles", "claims.lines", "claims.events", "claims.links", "claims.live_price_uses"}
 
 // lcProbe runs one statement under a savepoint of tx and always rolls it back, so probes
 // cannot affect each other. want "" means success; otherwise the exact SQLSTATE. A
@@ -182,9 +183,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			t.Fatalf("claims.links issued_at/expires_at must have no DEFAULT (§3): %v %v", issuedDefault, expiresDefault)
 		}
 		// meta-claims-intake-v1 §4: claims.meta_intake joins the four T10 tables; claims-retention-purge-v1 §2
-		// (§6 clause 1) adds retention_policy and retention_log.
-		if n := countRows(t, f.owner, `SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='claims' AND c.relkind IN ('r','p') `); n != 7 {
-			t.Fatalf("schema claims has %d tables, want bundles/lines/events/links/meta_intake/retention_policy/retention_log", n)
+		// (§6 clause 1) adds retention_policy and retention_log; 0105 (R4S-01) adds the live_price_uses ledger.
+		if n := countRows(t, f.owner, `SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='claims' AND c.relkind IN ('r','p') `); n != 8 {
+			t.Fatalf("schema claims has %d tables, want bundles/lines/events/links/meta_intake/retention_policy/retention_log/live_price_uses", n)
 		}
 	})
 
@@ -238,6 +239,12 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		// live-tools 0092: claims.live_prices / preview_live_prices read the offer SKU and live price.
 		add(wr, "live.offers", "SELECT", "tenant_id", "store_id", "id", "session_id", "keyword", "active", "sku_id", "live_price_minor")
 		add(wr, "identity.sessions", "SELECT", "token_hash", "principal_id", "audience", "revoked_at", "expires_at")
+		// 0105 (R4S-01): the consumption ledger (written only by claims.consume_live_prices), order state for the held-use sum
+		// and the buyer's own quote lines (no order snapshot, no destination, no PII).
+		add(wr, "claims.live_price_uses", "SELECT", "tenant_id", "store_id", "bundle_id", "offer_id", "order_id", "quantity")
+		add(wr, "claims.live_price_uses", "INSERT", "tenant_id", "store_id", "bundle_id", "offer_id", "order_id", "quantity")
+		add(wr, "checkout.orders", "SELECT", "tenant_id", "store_id", "owner_id", "id", "creator_session_id", "quote_id", "commercial_state", "created_at")
+		add(wr, "storefront.quotes", "SELECT", "tenant_id", "store_id", "owner_id", "id", "snapshot")
 		// meta-claims-intake-v1 §4.3 rows (exactly; the contract is the source, not the migration).
 		const ci, iw = "commerce_claims_intake", "commerce_integration_writer"
 		add(ci, "live.offers", "SELECT", cols("live.offers")...)
@@ -309,7 +316,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				"claims.check_meta_reply", "claims.fail_meta_intake", "claims.insert_meta_intake", "claims.intake_scope", "claims.issue_system_link",
 				"claims.lease_meta_intake", "identity.principal_holds", "live.put_claim_source", "live.track_claim_window_interval",
 				// live-tools 0092: the buyer price definers it owns.
-				"claims.live_prices", "claims.preview_live_prices"})
+				"claims.live_prices", "claims.preview_live_prices",
+				// 0105 (R4S-01): the consumption definer it owns.
+				"claims.consume_live_prices"})
 		lcSameSet(t, "schema claims ACL", lcStrings(t, f.owner, `SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END||' '||a.privilege_type
 			FROM pg_namespace n CROSS JOIN LATERAL aclexplode(n.nspacl) a WHERE n.nspname='claims' AND a.grantee<>n.nspowner`),
 			[]string{"commerce_buyer_runtime USAGE", "commerce_claims_writer USAGE", "commerce_runtime USAGE",
@@ -368,6 +377,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				volatility: "v", acl: "commerce_buyer_runtime:EXECUTE,commerce_checkout_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_buyer_runtime"},
 			"preview_live_prices": {args: "p_hash bytea", result: "TABLE(keyword text, live_price_minor bigint)",
 				volatility: "v", acl: "commerce_buyer_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_buyer_runtime"},
+			// 0105 (R4S-01): the only ledger writer, called by checkout.Begin on the checkout pool (never the buyer pool).
+			"consume_live_prices": {args: "p_order uuid", result: "integer", volatility: "v", acl: "commerce_checkout_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_checkout_runtime"},
 			// meta-claims-intake-v1 §4.3 / §5 / §6.3: the six new claims-schema definers (all owned by commerce_claims_writer).
 			"intake_scope": {args: "", result: "TABLE(tenant_id uuid, store_id uuid, session_id uuid)", volatility: "s",
 				acl: "commerce_claims_intake:EXECUTE,commerce_claims_writer:EXECUTE,commerce_integration_writer:EXECUTE", caller: "commerce_claims_intake"},
@@ -422,8 +433,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		}
 		// Four T10 definers + six meta-claims-intake-v1 claims definers + live.put_claim_source and the
 		// live.claim_windows interval trigger function (§2, §4).
-		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 14 {
-			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its fourteen functions (twelve + live-tools live_prices, preview_live_prices)", n)
+		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 15 {
+			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its fifteen functions (twelve + live-tools live_prices, preview_live_prices + 0105 consume_live_prices)", n)
 		}
 		denied := lcStrings(t, f.owner, `SELECT r.rolname||' '||p.proname FROM pg_roles r CROSS JOIN pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 			WHERE n.nspname='claims' AND r.rolname LIKE 'commerce\_%' AND has_function_privilege(r.oid,p.oid,'EXECUTE')
@@ -431,6 +442,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			       OR (r.rolname='commerce_buyer_runtime' AND p.proname IN ('preview_link','redeem_link','mark_applied','live_prices','preview_live_prices'))
 			       -- 0103 D1: checkout.Begin's RevalidateQuote; commerce_hosted_runtime inherits commerce_checkout_runtime (0025)
 			       OR (r.rolname IN ('commerce_checkout_runtime','commerce_hosted_runtime') AND p.proname='live_prices')
+			       -- 0105 (R4S-01): checkout.Begin consumes the claimed quantity on the same pool
+			       OR (r.rolname IN ('commerce_checkout_runtime','commerce_hosted_runtime') AND p.proname='consume_live_prices')
 			       OR (r.rolname='commerce_claims_intake' AND p.proname IN ('intake_scope','lease_meta_intake','fail_meta_intake'))
 			       OR (r.rolname='commerce_integration_writer' AND p.proname IN ('intake_scope','issue_system_link'))
 			       OR (r.rolname='commerce_meta_writer' AND p.proname='insert_meta_intake')

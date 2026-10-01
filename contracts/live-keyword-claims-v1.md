@@ -1152,7 +1152,21 @@ Append-only; the §13 "Live-only price" row now points here. Binding for the liv
    `clock_timestamp()`: the bundle is bound to the calling buyer; its `claims.links` row exists with `expires_at > now`; the
    claim line (bundle, offer) exists for that SKU and its `quantity` is >= the cart line quantity (the SQL, not the cart's own
    `claim_quantity`, is the authority); the offer is `active`, belongs to the bundle's session, targets that SKU and
-   has `live_price_minor IS NOT NULL`. Otherwise the line is priced from `catalog.skus.price_minor`. A quote line carries
+   has `live_price_minor IS NOT NULL`; and (0105, R4S-01) the claim line's quantity MINUS the quantity already consumed by
+   orders that still hold it covers the cart line quantity. Otherwise the line is priced from `catalog.skus.price_minor`.
+   **Consumption rule (0105):** a live price applies to at most the claimed quantity of a claim line ACROSS ALL orders. Every
+   live-priced line of a placed order is recorded in `claims.live_price_uses(tenant_id, store_id, bundle_id, offer_id, order_id,
+   quantity)` by the definer `claims.consume_live_prices(order)` (EXECUTE `commerce_checkout_runtime` only), which
+   `checkout.Begin` calls after `checkout.begin_hold` in the same transaction; it reads the lines from the order's own quote,
+   locks the claim line, recounts and refuses with PT409 (`ErrConflict`, the buyer re-quotes) when another order took the
+   units first, so an order never carries a live price without its ledger row. A use is held while its order's
+   `commercial_state <> 'CANCELLED'` (DRAFT/AWAITING_PAYMENT/AWAITING_TRANSFER/CONFIRMED, i.e. unpaid holds and paid,
+   fulfilled or refunded orders keep it); every stock-releasing path (expiry, unpaid close, merchant/CVS cancel) sets
+   CANCELLED and so gives the quantity back with no extra write. The ledger is FORCE RLS with no runtime-role privilege;
+   its writer `commerce_claims_writer` reads only order state (column SELECT on `checkout.orders`) and the buyer's own quote
+   (column SELECT on `storefront.quotes`), never the order snapshot. Schema `claims` thereby has 8 tables. The 0092 header
+   sentence "a forged or stale cart origin can never produce a price a legitimate claim would not" holds only with this rule
+   (0092/0103 are checksummed and unchanged; 0105's header records the correction). A quote line carries
    `price_rule` (`"live_claim"`; absent = catalog), `catalog_unit_price_minor`, `claim_bundle_id`, `claim_offer_id`;
    `unit_price_minor` is the applied price. `pricing.ResolveUnitPrice` is the pure rule. The order snapshot embeds the quote
    snapshot, so the applied rule is recorded with the order. If the link expires between Quote and checkout,
@@ -1164,4 +1178,7 @@ Append-only; the §13 "Live-only price" row now points here. Binding for the liv
    catalog price needs a coordinated storefront change (follow-up). The Quote still decides the charged price.
 7. **Gate.** A buyer cannot obtain a live price via a direct cart, via an expired link, via another session's offer on the
    same SKU, via a bundle bound to another buyer, via an inactive or price-less offer, or by raising the quantity above the
-   claimed quantity. KC03 gains the 0092 grants/functions; no other KC03 row changes.
+   claimed quantity, nor by ordering again after the claimed quantity was ordered (re-sending the same cart after checkout,
+   0105): a second order of an already-ordered claim line is priced at catalog until the first order is CANCELLED. KC03 gains
+   the 0092 grants/functions and the 0105 ledger, definer and column grants; no other KC03 row changes. Gate:
+   `tests/foundation/live_price_consumption_gate_test.go` (LPC01-06).
