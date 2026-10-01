@@ -72,7 +72,7 @@ func (e *tcvEnv) bcmOwner() string {
 
 func (e *tcvEnv) bcmWorker(m *bcmMailer, cap int) *notify.Worker {
 	e.t.Helper()
-	w, err := notify.NewWorker(e.p.worker, m, cap)
+	w, err := notify.NewWorker(e.p.expiry, m, cap)
 	if err != nil {
 		e.t.Fatal(err)
 	}
@@ -399,7 +399,7 @@ func TestBuyerCommsOutbox(t *testing.T) {
 		}
 		claim := func(daily, hourly int) int {
 			var raw []byte
-			if err := e.p.worker.QueryRow(ctx, `SELECT notify.claim_batch(10,$1,$2)`, daily, hourly).Scan(&raw); err != nil {
+			if err := e.p.expiry.QueryRow(ctx, `SELECT notify.claim_batch(10,$1,$2)`, daily, hourly).Scan(&raw); err != nil {
 				t.Fatal(err)
 			}
 			var out []json.RawMessage

@@ -204,7 +204,7 @@ func mciDispatchOptions() integration.DispatcherOptions {
 func (e *mciEnv) newDispatcher(t *testing.T, g *mciGraph, link *claims.ReplyLinkKey, edit func(*mciDispatcher, *pgxpool.Pool)) *mciDispatcher {
 	t.Helper()
 	f := e.h.f
-	pool := miPool(t, f, "commerce_worker")
+	pool := miPool(t, f, waClaims)
 	key := e.link
 	if link != nil {
 		key = *link
@@ -851,7 +851,7 @@ func TestMetaClaimsMCI07ChildKillAfterSend(t *testing.T) {
 	// Only age this owned fixture (as the T06 crash gate does): River must rescue the job itself.
 	mustExec(t, f.owner, `UPDATE integration.operations SET lease_until=clock_timestamp()-interval '1 second' WHERE id=$1`, r.op)
 	mustExec(t, f.owner, `UPDATE river.river_job SET queue=$1,attempted_at=clock_timestamp()-interval '2 hours' WHERE state='running' AND id=(SELECT job_id FROM integration.operations WHERE id=$2)`, queue, r.op)
-	pool := miPool(t, f, "commerce_worker")
+	pool := miPool(t, f, waClaims)
 	routes, err := metareply.Routes(pool, e.link, e.pageKeys, metareply.Config{GraphBaseURL: g.srv.URL, GraphVersion: "v99.0", HTTPClient: g.srv.Client()})
 	if err != nil {
 		t.Fatal(err)
@@ -868,7 +868,7 @@ func TestMetaClaimsMCI07ChildKillAfterSend(t *testing.T) {
 // that set LoadSecret.
 func TestMetaClaimsMCI07DispatcherRouteShape(t *testing.T) {
 	f := fixture(t)
-	pool := miPool(t, f, "commerce_worker")
+	pool := miPool(t, f, waClaims)
 	ctx := context.Background()
 	base := t06Route()
 	load := func(context.Context, pgx.Tx, integration.SecretClaim) (integration.Secret, error) {

@@ -49,7 +49,7 @@ type tokenRow struct {
 
 // LoadSecret returns the dispatcher LoadSecret hook for one binding provider. Its only body is one
 // call to the lease-fenced loader integration.load_meta_ads_token (definer commerce_integration_writer,
-// EXECUTE commerce_worker; the only reader of ads ciphertext), inside the dispatcher's transaction.
+// EXECUTE commerce_ads_worker; the only reader of ads ciphertext), inside the dispatcher's transaction.
 // Zero rows or a missing attested scope is a policy denial (dispatch: BLOCKED_POLICY before any Graph
 // call; reconcile: stays UNKNOWN credential_unavailable, dispatcher A10-D4). ads-capi reuses it for the
 // meta_dataset route.
@@ -101,7 +101,7 @@ func hasScopes(have, need []string) bool {
 var adsActions = []string{ActionCreateCampaign, ActionCreateAdset, ActionCreateCreative, ActionCreateAd,
 	ActionPreflight, ActionActivate, ActionPause, ActionReadInsights}
 
-// Routes returns the eight meta_ads routes (purpose "marketing"). pool must be the commerce_worker
+// Routes returns the eight meta_ads routes (purpose "marketing"). pool must be the commerce_ads_worker
 // pool (platform.ValidateWorkerPool) and is used for that check only; no transaction is held across
 // I/O. check is ads.Checker.Check. Every route: LoadSecret = load_meta_ads_token + keys,
 // DispatchWithSecret, ReconcileWithSecret (A-10).
@@ -109,7 +109,7 @@ func Routes(pool *pgxpool.Pool, cfg Config, keys TokenOpener, check func(context
 	if pool == nil {
 		return nil, ErrConfig
 	}
-	if err := platform.ValidateWorkerPool(context.Background(), pool); err != nil {
+	if err := platform.ValidateWorkerPool(context.Background(), pool, platform.WorkerAds); err != nil {
 		return nil, err
 	}
 	return newRoutes(cfg, keys, check)

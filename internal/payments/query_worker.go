@@ -83,7 +83,7 @@ func NewQueryWorker(ctx context.Context, pool *pgxpool.Pool, keys *accounts.Keyr
 		(profile == "PROVIDER_MOCK") != (options.MockTransport != nil) {
 		return nil, errPaymentQueryJob
 	}
-	if err := platform.ValidateWorkerPool(ctx, pool); err != nil {
+	if err := platform.ValidateWorkerPool(ctx, pool, WorkerAuthority(profile)); err != nil {
 		return nil, errPaymentQueryDatabase
 	}
 	// Reconciliation jobs enter the same schema that payment consumers maintain.
@@ -125,6 +125,11 @@ func (w *QueryWorker) Work(ctx context.Context, job *river.Job[paymentQueryArgs]
 	}
 	id := job.Args.OperationID
 	op, err := w.read(ctx, id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		// T21-02: RLS shows this authority only payment-lane operations, so a job naming a foreign-family (or missing)
+		// operation reads as no row: same outcome as the explicit family check below, nothing claimed, no provider call.
+		return river.JobCancel(errPaymentQueryFamily)
+	}
 	if err != nil {
 		return w.dbError(ctx)
 	}

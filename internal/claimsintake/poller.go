@@ -75,7 +75,7 @@ func New(ctx context.Context, intakePool *pgxpool.Pool, linkKey claims.ReplyLink
 		return nil, ErrConfig
 	}
 	// No Workers and no Queues: an insert-only client (River lifecycle stays in cmd/claims-worker's
-	// commerce_worker client). River's log output is discarded because job args carry operation ids.
+	// commerce_claims_worker client). River's log output is discarded because job args carry operation ids.
 	jobs, err := river.NewClient(riverpgxv5.New(intakePool), &river.Config{
 		Schema: "river", Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
 	if err != nil {

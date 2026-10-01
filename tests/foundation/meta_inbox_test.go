@@ -572,7 +572,7 @@ func TestMetaInboxRetentionTerminalEvidenceAndPrivateACL(t *testing.T) {
 	if _, err := m.curator.Exec(ctx, `SELECT meta_inbox.record_terminal($1,'processed',$2)`, unknownID, strings.Repeat("b", 64)); miSQLState(err) != "22023" {
 		t.Fatalf("curator asserted processed SQLSTATE=%s", miSQLState(err))
 	}
-	for name, p := range map[string]*pgxpool.Pool{"ingress": m.ingress, "registrar": m.registrar, "curator": m.curator, "merchant": m.f.runtime, "worker": miPool(t, m.f, "commerce_worker")} {
+	for name, p := range map[string]*pgxpool.Pool{"ingress": m.ingress, "registrar": m.registrar, "curator": m.curator, "merchant": m.f.runtime, "payment worker": miPool(t, m.f, waPayment), "claims worker": miPool(t, m.f, waClaims)} {
 		t.Run("private read denied "+name, func(t *testing.T) {
 			var id string
 			err := p.QueryRow(ctx, `SELECT event_id::text FROM meta_private.event_bodies WHERE event_id=$1`, routedID).Scan(&id)

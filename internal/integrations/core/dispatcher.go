@@ -175,7 +175,7 @@ func NewDispatcher(ctx context.Context, pool *pgxpool.Pool, routes []DispatchRou
 			return nil, errInvalidJob
 		}
 	}
-	if err := platform.ValidateWorkerPool(ctx, pool); err != nil {
+	if err := platform.ValidateWorkerPool(ctx, pool, platform.WorkerClaims, platform.WorkerAds); err != nil { // the two dispatcher hosts; each route package pins its own
 		return nil, err
 	}
 	return &Dispatcher{pool: pool, routes: compiled, options: options}, nil

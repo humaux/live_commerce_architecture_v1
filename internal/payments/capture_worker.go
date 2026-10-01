@@ -58,7 +58,7 @@ func NewCaptureWorker(ctx context.Context, pool *pgxpool.Pool) (*CaptureWorker, 
 	if ctx == nil {
 		return nil, errCaptureJob
 	}
-	if err := platform.ValidateWorkerPool(ctx, pool); err != nil {
+	if err := platform.ValidateWorkerPool(ctx, pool, platform.WorkerPayment, platform.WorkerPaymentLive); err != nil {
 		return nil, errCaptureDatabase
 	}
 	return &CaptureWorker{pool: pool}, nil

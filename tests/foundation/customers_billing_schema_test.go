@@ -261,7 +261,7 @@ func TestCustomersBillingCB02Schema(t *testing.T) {
 			got := e.list(`SELECT coalesce(nullif(pg_get_userbyid(a.grantee),''),'PUBLIC') FROM pg_namespace n, aclexplode(n.nspacl) a
 			 WHERE n.nspname=$1 AND a.privilege_type='USAGE' AND a.grantee<>n.nspowner`, schema)
 			cbsEq(t, "schema "+schema+" USAGE grantees (owners + EXECUTE grantees, never PUBLIC)", got, roles)
-			if e.bool(`SELECT has_schema_privilege('commerce_buyer_writer',$1,'USAGE') OR has_schema_privilege('commerce_worker',$1,'USAGE')`, schema) {
+			if e.bool(`SELECT has_schema_privilege('commerce_buyer_writer',$1,'USAGE') OR EXISTS(SELECT 1 FROM unnest($2::text[]) w(r) WHERE has_schema_privilege(w.r,$1,'USAGE'))`, schema, waAll) {
 				t.Errorf("schema %s must not be usable by the buyer writer / worker roles", schema)
 			}
 		}
@@ -308,7 +308,7 @@ func TestCustomersBillingCB02Schema(t *testing.T) {
 				}
 			}
 		}
-		for _, r := range []string{"commerce_buyer_runtime", "commerce_buyer_writer", "commerce_worker", "commerce_runtime", "commerce_checkout_runtime", "commerce_checkout_writer", "commerce_stripe_ingress", "commerce_integration_writer"} {
+		for _, r := range []string{"commerce_buyer_runtime", "commerce_buyer_writer", waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_runtime", "commerce_checkout_runtime", "commerce_checkout_writer", "commerce_stripe_ingress", "commerce_integration_writer"} {
 			for _, tb := range cbsTables {
 				if e.bool(`SELECT has_table_privilege($1,$2,'SELECT') OR has_table_privilege($1,$2,'INSERT') OR has_table_privilege($1,$2,'UPDATE') OR has_table_privilege($1,$2,'DELETE')`, r, tb) {
 					t.Errorf("%s holds a direct privilege on %s (contract: no login role reads customers.* / billing.* directly)", r, tb)
@@ -582,7 +582,7 @@ func TestCustomersBillingCB02Schema(t *testing.T) {
 		}
 		// runtime lacks the ingress/read-side-only functions (also CB06)
 		for _, sig := range []string{"billing.apply_subscription(" + cbsApplyArgs + ")", "billing.store_standing(uuid,uuid)", "customers.consent_allows(uuid,uuid,uuid,text,text)"} {
-			for _, r := range []string{"commerce_runtime", "commerce_buyer_runtime", "commerce_worker"} {
+			for _, r := range []string{"commerce_runtime", "commerce_buyer_runtime", waPayment, waLive, waExpiry, waAds, waClaims, waLegacy} {
 				if e.bool(`SELECT has_function_privilege($1,$2::regprocedure,'EXECUTE')`, r, sig) {
 					t.Errorf("%s can execute %s", r, sig)
 				}

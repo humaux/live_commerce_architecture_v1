@@ -137,7 +137,10 @@ func lriApplyHistoricalPost(f *testFixture, target string) error {
 			return err
 		}
 	}
-	return tx.Commit(ctx)
+	if err := tx.Commit(ctx); err != nil {
+		return err
+	}
+	return waResyncLegacy(f) // the replayed old SQL granted its objects to commerce_worker only
 }
 
 func lriRows(t *testing.T, f *testFixture, table, predicate string) string {
@@ -153,6 +156,7 @@ func lriLedger(t *testing.T, f *testFixture, predicate string) string {
 func lriCloseProducerPools(p psHarness) {
 	p.pool.Close()
 	p.worker.Close()
+	p.expiry.Close()
 	p.a.runtime.Close()
 	p.a.issuer.Close()
 	p.a.identity.Close()
@@ -464,7 +468,7 @@ func TestLegacyRuntimeIsolationPopulatedUpgrade(t *testing.T) {
 	mustExec(t, f.owner, `UPDATE river_expiry.river_queue SET paused_at=NULL WHERE name='checkout_expiry_v1'`)
 	bcDue(t, expiry[0].bcHarness, expiry[0].hold)
 	mustExec(t, f.owner, `UPDATE river_expiry.river_job SET state='available',scheduled_at=clock_timestamp() WHERE id=$1`, expiry[0].hold.JobID)
-	worker := pwWorkerPool(t, f)
+	worker := waOpen(t, f, waExpiry, platform.WorkerExpiry) // the current family-bound expiry worker (T21-02: its own authority)
 	ewClient(t, worker, 1)
 	ewAwait(t, f.owner, expiry[0].hold.JobID, "completed")
 	ewAssertOrder(t, expiry[0], "CANCELLED", "EXPIRED", 1)

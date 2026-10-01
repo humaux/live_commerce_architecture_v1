@@ -38,8 +38,8 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0070..0089 without 0076 (never allocated) and 0084 (worker-authority-split, not merged yet) = 18, + 0093 storefront-integration = 19, + 0095 meta-connect, + 0090..0092 and post-River 0015..0018 (R3/R4 lanes add files): a lane that drops or adds a file
 	// must update this. 0081 storefront-publish has its own upgrade gate TestStorefrontPublishSPW02UpgradeAfter0080. 0097
 	// (buyer-comms order locale) is the 29th file.
-	if len(r2) != 30 {
-		t.Fatalf("R2 migration set = %d files %v, want 30", len(r2), r2)
+	if len(r2) != 32 {
+		t.Fatalf("R2 migration set = %d files %v, want 32", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)

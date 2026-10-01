@@ -173,7 +173,7 @@ func slpRun(t *testing.T, k *slpKit) {
 	}
 	var disposition string
 	var generation int64
-	if err := s.p.worker.QueryRow(ctx, `SELECT disposition,generation FROM integration.claim_operation($1::uuid,60,$2::bytea)`, a3, token).Scan(&disposition, &generation); err != nil || disposition != "claimed" {
+	if err := s.workerFor(t, k.profile).QueryRow(ctx, `SELECT disposition,generation FROM integration.claim_operation($1::uuid,60,$2::bytea)`, a3, token).Scan(&disposition, &generation); err != nil || disposition != "claimed" {
 		t.Fatalf("%s: claim of the attempt operation: %q %v", k.name, disposition, err)
 	}
 	var account string
@@ -185,7 +185,7 @@ func slpRun(t *testing.T, k *slpKit) {
 			"RefundRef": "", "PaymentIntentID": pi3, "ChargeID": "ch_slp1", "Currency": "TWD", "AmountCaptured": 2500, "AmountRefunded": 0, "Refunded": false,
 			"Disputed": false, "Livemode": livemode, "LocalReason": ""}
 		raw, _ := json.Marshal(report)
-		_, err := s.p.worker.Exec(ctx, `SELECT integration.record_stripe_charge_observation($1::uuid,$2::bigint,$3::bytea,$4,$5::jsonb,1)`, a3, generation, token, k.profile, string(raw))
+		_, err := s.workerFor(t, k.profile).Exec(ctx, `SELECT integration.record_stripe_charge_observation($1::uuid,$2::bigint,$3::bytea,$4,$5::jsonb,1)`, a3, generation, token, k.profile, string(raw))
 		return err
 	}
 	slrWant(t, k.name+" charge observation with a crossed Livemode", charge(!live), "22023", "")
@@ -205,13 +205,13 @@ func slpRun(t *testing.T, k *slpKit) {
 		t.Fatal(err)
 	}
 	var rgen int64
-	if err := s.p.worker.QueryRow(ctx, `SELECT disposition,generation FROM integration.claim_operation($1::uuid,60,$2::bytea)`, r3, rtoken).Scan(&disposition, &rgen); err != nil || disposition != "claimed" {
+	if err := s.workerFor(t, k.profile).QueryRow(ctx, `SELECT disposition,generation FROM integration.claim_operation($1::uuid,60,$2::bytea)`, r3, rtoken).Scan(&disposition, &rgen); err != nil || disposition != "claimed" {
 		t.Fatalf("%s: claim of the refund operation: %q %v", k.name, disposition, err)
 	}
 	record := func(livemode bool) error {
 		rep := s.refundReport(t, r3, a3, pi3, "re_slp_"+t04Tag(), "pending", 1000, livemode)
 		raw, _ := json.Marshal(rep)
-		_, err := s.p.worker.Exec(ctx, `SELECT integration.record_stripe_refund_observation($1::uuid,$2::bigint,$3::bytea,$4,$5::jsonb,1)`, r3, rgen, rtoken, k.profile, string(raw))
+		_, err := s.workerFor(t, k.profile).Exec(ctx, `SELECT integration.record_stripe_refund_observation($1::uuid,$2::bigint,$3::bytea,$4,$5::jsonb,1)`, r3, rgen, rtoken, k.profile, string(raw))
 		return err
 	}
 	bad, good := record(!live), record(live)

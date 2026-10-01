@@ -133,7 +133,7 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 			}
 			var disposition string
 			var retry *time.Time
-			e = h.worker.QueryRow(r.Context(), `SELECT disposition,retry_at FROM checkout.expire_held($1,1)`, id).Scan(&disposition, &retry)
+			e = h.expiry.QueryRow(r.Context(), `SELECT disposition,retry_at FROM checkout.expire_held($1,1)`, id).Scan(&disposition, &retry)
 			if e != nil || disposition != "EXPIRED" {
 				fail()
 				return

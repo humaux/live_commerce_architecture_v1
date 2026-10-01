@@ -27,7 +27,7 @@ import (
 
 // pg_flow_test.go is the implementer's REAL_PG flow check of unit ads-capi (not the independent MA03/MA08 gates): every
 // migration on the isolated PG (0078/0079 must be merged), then consent hook -> sweeper transaction -> Check -> lease-fenced
-// user data -> feed, all through the real definers under the real roles (commerce_worker, commerce_buyer_runtime). Fixture
+// user data -> feed, all through the real definers under the real roles (commerce_ads_worker, commerce_buyer_runtime). Fixture
 // rows for the payment chain are written with session_replication_role=replica (FK triggers off, CHECKs still on) because
 // only the CAPI-relevant columns matter here. Evidence tier: REAL_PG, no Meta. Skips unless LC_TEST_DATABASE_ALLOWED=1
 // (scripts/dev/test-focused.sh sets it). Non-goal: LoadSecret's token half (needs a sealed credential; ads-tests MA08).
@@ -118,7 +118,7 @@ func newPGFx(t *testing.T) *pgFx {
 		t.Fatalf("migrations: %v", err)
 	}
 	f := &pgFx{t: t, ctx: ctx, owner: owner}
-	f.worker = f.login(cfg, "capi_test_worker", "commerce_worker")
+	f.worker = f.login(cfg, "capi_test_worker", "commerce_ads_worker")
 	f.buyerDB = f.login(cfg, "capi_test_buyer", "commerce_buyer_runtime")
 	if f.client, err = river.NewClient(riverpgxv5.New(f.worker), &river.Config{Schema: "river"}); err != nil {
 		t.Fatal(err)
@@ -481,7 +481,7 @@ func TestAttributionRealPGFlow(t *testing.T) {
 			t.Errorf("expired lease = %v", err)
 		}
 		f.must(`UPDATE integration.operations SET lease_until=now()+interval '30 seconds',lease_mode='dispatch' WHERE id=$1`, op)
-		// commerce_worker has no direct read of the destination (phone) table: the definer is the only way.
+		// commerce_ads_worker has no direct read of the destination (phone) table: the definer is the only way.
 		if _, err := f.worker.Exec(f.ctx, `SELECT phone FROM storefront.destination_snapshots`); sqlState(err) != "42501" {
 			t.Errorf("worker read of destination_snapshots = %v", err)
 		}

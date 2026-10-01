@@ -11,7 +11,7 @@
 --     client hits this) surfaced the capability_sessions token-hash unique violation as a retryable 503. It now raises
 --     PT409 -> a clear non-retryable 409 conflict; the existing session is untouched (replacing it would silently
 --     downgrade a registered buyer's full capability to view-only).
--- Owning packages: internal/notify (claim_batch, commerce_worker) and internal/buyerhttp (guest_order_lookup,
+-- Owning packages: internal/notify (claim_batch, commerce_expiry_worker since 0096) and internal/buyerhttp (guest_order_lookup,
 -- commerce_buyer_issuer). Non-goals: no schema change, no new roles, no behaviour change for any other caller.
 
 -- Integrator merge note: k.locale (column added by 0097_order_locale) replaces the never-written snapshot key that
@@ -122,8 +122,8 @@ BEGIN
 END $$;
 ALTER FUNCTION notify.claim_batch(integer,integer,integer) OWNER TO commerce_checkout_writer;
 REVOKE ALL ON FUNCTION notify.claim_batch(integer,integer,integer) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION notify.claim_batch(integer,integer,integer) TO commerce_worker;
-COMMENT ON FUNCTION notify.claim_batch(integer,integer,integer) IS 'internal/notify worker only; EXECUTE commerce_worker. Housekeeping (UNKNOWN for dead SENDING, stale SKIPPED, 180-day delete), then claims up to p_limit buyer rows (FOR UPDATE SKIP LOCKED) under the daily budget p_daily_cap and p_store_hourly per store — both applied BEFORE the LIMIT, so a capped store cannot starve the others (0098, D1) — plus at most one merchant batch per store per 5 minutes. Returns the renderer input as jsonb; the recipient address leaves SQL only here, in memory.';
+GRANT EXECUTE ON FUNCTION notify.claim_batch(integer,integer,integer) TO commerce_expiry_worker; -- 0096 split: the buyer mail loop runs in expiry-worker
+COMMENT ON FUNCTION notify.claim_batch(integer,integer,integer) IS 'internal/notify worker only; EXECUTE commerce_expiry_worker (0096 split). Housekeeping (UNKNOWN for dead SENDING, stale SKIPPED, 180-day delete), then claims up to p_limit buyer rows (FOR UPDATE SKIP LOCKED) under the daily budget p_daily_cap and p_store_hourly per store — both applied BEFORE the LIMIT, so a capped store cannot starve the others (0098, D1) — plus at most one merchant batch per store per 5 minutes. Returns the renderer input as jsonb; the recipient address leaves SQL only here, in memory.';
 
 CREATE OR REPLACE FUNCTION checkout.guest_order_lookup(p_store uuid, p_ref text, p_kind text, p_contact bytea, p_token bytea, p_ttl bigint, p_ip bytea)
 RETURNS TABLE(order_id uuid)

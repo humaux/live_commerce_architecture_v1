@@ -7,7 +7,7 @@
 // recorded UNKNOWN and left alone), never stores a body or a recipient address (only a hash, cleared by erasure), never embeds remote
 // images or tracking links, and never reads the daily mail budget of the login codes (separate ledger).
 //
-// SQL touched, all through definers of commerce_checkout_writer: notify.claim_batch and notify.record_result (commerce_worker pool),
+// SQL touched, all through definers of commerce_checkout_writer: notify.claim_batch and notify.record_result (commerce_expiry_worker pool),
 // notify.read_store_settings / notify.set_store_settings (merchant request transaction). External host: the configured SMTP server only,
 // through internal/mail (the same sender as password auth and staff invitations).
 package notify

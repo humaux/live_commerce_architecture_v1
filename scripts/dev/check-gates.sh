@@ -15,6 +15,11 @@ cd "$(git rev-parse --show-toplevel)"
 for s in scripts/dev/test-local.sh scripts/dev/test-node.sh scripts/dev/test-focused.sh scripts/dev/release-gate.sh; do
   bash -n "$s" || { echo "check-gates: $s does not parse (bash -n)" >&2; exit 1; }
 done
+# Worker-authority split (0096): no migration numbered after it may grant to the retired shared commerce_worker role
+# (a grant there reaches no worker login; post_river/0019 asserts the same at apply time — this fails earlier, in CI).
+for f in $(ls migrations/0*.sql | awk -F/ '$2 > "0096"'); do
+  if grep -nE "TO[[:space:]]+commerce_worker([^_a-z]|$)" "$f" >/dev/null; then echo "check-gates: $f grants to commerce_worker (use the split authorities, migrations/0096)" >&2; exit 1; fi
+done
 python3 - <<'PY'
 import fnmatch, glob, os, re, subprocess, sys
 bad = []

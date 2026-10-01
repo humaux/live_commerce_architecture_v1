@@ -131,7 +131,8 @@ func mcPre0029Fixture(t *testing.T) *testFixture {
 	if _, err := upstream.Migrate(ctx, rivermigrate.DirectionUp, nil); err != nil {
 		t.Fatal(err)
 	}
-	// Apply installs these River privileges between upstream and post-River SQL.
+	// Apply installed these River privileges between upstream and post-River SQL in the release this historical state models (before
+	// migration 0096 split commerce_worker); the current Apply that later upgrades this database revokes them from commerce_worker.
 	mustExec(t, owner, `GRANT SELECT,INSERT,UPDATE(kind) ON river.river_job TO commerce_runtime;
 	 GRANT USAGE ON SEQUENCE river.river_job_id_seq TO commerce_runtime;
 	 GRANT SELECT,INSERT,UPDATE(kind) ON river.river_job TO commerce_checkout_runtime;
@@ -308,7 +309,7 @@ func TestMetaConsumerPopulated0028Upgrade(t *testing.T) {
 	}
 	workers := river.NewWorkers()
 	river.AddWorker(workers, w)
-	workerPool := miPool(t, f, "commerce_worker")
+	workerPool := miPool(t, f, "commerce_worker") // historical pre-0029 database: the old shared worker role is the only one that exists
 	client, err := river.NewClient(riverpgxv5.New(workerPool), &river.Config{Schema: "river", Workers: workers, Queues: map[string]river.QueueConfig{"meta_inbox": {MaxWorkers: 1}}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), JobTimeout: 15 * time.Second, RescueStuckJobsAfter: 30 * time.Second})
 	if err != nil {
 		t.Fatal(err)
@@ -339,7 +340,7 @@ func TestMetaConsumerAuthority(t *testing.T) {
 	if _, err := meta.NewConsumerWorker(ctx, consumer, keys); err != nil {
 		t.Fatal("dedicated consumer refused", err)
 	}
-	for name, p := range map[string]*pgxpool.Pool{"owner": m.f.owner, "runtime": m.f.runtime, "ingress": m.ingress, "registrar": m.registrar, "curator": m.curator, "ordinary worker": miPool(t, m.f, "commerce_worker")} {
+	for name, p := range map[string]*pgxpool.Pool{"owner": m.f.owner, "runtime": m.f.runtime, "ingress": m.ingress, "registrar": m.registrar, "curator": m.curator, "ordinary worker": miPool(t, m.f, waClaims)} {
 		t.Run(name, func(t *testing.T) {
 			if w, err := meta.NewConsumerWorker(ctx, p, keys); err == nil || w != nil {
 				t.Fatal("non-consumer authority accepted")

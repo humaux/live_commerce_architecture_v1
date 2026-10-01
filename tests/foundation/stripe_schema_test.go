@@ -132,7 +132,7 @@ func TestStripeSP06Schema(t *testing.T) {
 	for _, table := range []string{"payments.stripe_sessions", "payments.stripe_webhook_receipts", "payments.stripe_signals", "payments.stripe_webhook_endpoints"} {
 		stripeMustCatalog(t, p, table+" FORCE RLS", `SELECT coalesce((SELECT relrowsecurity AND relforcerowsecurity FROM pg_class WHERE oid=to_regclass($1)),false)`, table)
 		stripeMustCatalog(t, p, table+" direct privilege refused to PUBLIC", `SELECT NOT EXISTS (SELECT 1 FROM pg_class c CROSS JOIN LATERAL aclexplode(COALESCE(c.relacl,acldefault('r',c.relowner))) acl WHERE c.oid=to_regclass($1) AND acl.grantee=0 AND acl.privilege_type IN ('SELECT','INSERT','UPDATE'))`, table)
-		for _, role := range []string{"commerce_runtime", "commerce_worker"} {
+		for _, role := range []string{"commerce_runtime", waPayment, waLive, waExpiry, waAds, waClaims, waLegacy} {
 			stripeMustCatalog(t, p, table+" direct privilege refused to "+role, `SELECT NOT has_table_privilege($1,$2,'SELECT') AND NOT has_table_privilege($1,$2,'INSERT') AND NOT has_table_privilege($1,$2,'UPDATE')`, role, table)
 		}
 	}

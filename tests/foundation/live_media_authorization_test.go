@@ -186,7 +186,7 @@ func lmaCounts(t *testing.T, f *testFixture, id string) (header, children, revok
 func lmaStartupAdmitted(t *testing.T, pool *pgxpool.Pool, worker bool) {
 	t.Helper()
 	if worker {
-		if err := platform.ValidateWorkerPool(context.Background(), pool); err != nil {
+		if err := platform.ValidateWorkerPool(context.Background(), pool, platform.WorkerClaims); err != nil {
 			t.Fatalf("clean worker login rejected: %v", err)
 		}
 		return
@@ -308,7 +308,7 @@ func TestLiveMediaAuthorizationLMA02ActualRoleBoundary(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, member := range []string{"", "commerce_runtime", "commerce_worker", "commerce_meta_ingress", "commerce_meta_worker", "commerce_checkout_runtime"} {
+	for _, member := range []string{"", "commerce_runtime", waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_meta_ingress", "commerce_meta_worker", "commerce_checkout_runtime"} {
 		t.Run("role-"+member, func(t *testing.T) {
 			_, p := lmaLogin(t, h.lp.f, member)
 			data, _ := json.Marshal(spec)
@@ -350,7 +350,7 @@ func TestLiveMediaAuthorizationLMA02ActualRoleBoundary(t *testing.T) {
 		AND owner='commerce_media_writer' AND has_function_privilege('commerce_media_registrar',oid,'EXECUTE')
 		AND NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(proacl,acldefault('f',proowner))) acl WHERE acl.grantee=0 AND acl.privilege_type='EXECUTE')
 		AND NOT has_function_privilege('commerce_runtime',oid,'EXECUTE')
-		AND NOT has_function_privilege('commerce_worker',oid,'EXECUTE')) FROM funcs`).Scan(&safe)
+		AND NOT EXISTS(SELECT 1 FROM unnest(ARRAY['commerce_payment_worker','commerce_payment_live','commerce_expiry_worker','commerce_ads_worker','commerce_claims_worker','commerce_worker']) w(r) WHERE has_function_privilege(w.r,oid,'EXECUTE'))) FROM funcs`).Scan(&safe)
 	if err != nil || !safe {
 		t.Fatalf("fixed definer ACL: safe=%t err=%v", safe, err)
 	}
@@ -367,10 +367,10 @@ func TestLiveMediaAuthorizationLMA02ActualRoleBoundary(t *testing.T) {
 	if a, b, c := lmaCounts(t, h.lp.f, id); a != 1 || b != 1 || c != 0 {
 		t.Fatal("ACL attempts mutated facts")
 	}
-	for _, member := range []string{"commerce_runtime", "commerce_worker"} {
+	for _, member := range []string{"commerce_runtime", waClaims} {
 		t.Run("mixed-registrar-"+member, func(t *testing.T) {
 			login, pool := lmaLogin(t, h.lp.f, member)
-			lmaStartupAdmitted(t, pool, member == "commerce_worker")
+			lmaStartupAdmitted(t, pool, member == waClaims)
 			if _, err := h.lp.f.owner.Exec(ctx, "GRANT commerce_media_registrar TO "+pgx.Identifier{login}.Sanitize()); err != nil {
 				t.Fatal(err)
 			}
@@ -384,13 +384,13 @@ func TestLiveMediaAuthorizationLMA02ActualRoleBoundary(t *testing.T) {
 					admitted.Close()
 					t.Fatal("mixed registrar/runtime admitted")
 				}
-			} else if err := platform.ValidateWorkerPool(ctx, pool); err == nil {
+			} else if err := platform.ValidateWorkerPool(ctx, pool, platform.WorkerClaims); err == nil {
 				t.Fatal("mixed registrar/worker admitted")
 			}
 			if _, err := h.lp.f.owner.Exec(ctx, "REVOKE commerce_media_registrar FROM "+pgx.Identifier{login}.Sanitize()); err != nil {
 				t.Fatal(err)
 			}
-			lmaStartupAdmitted(t, pool, member == "commerce_worker")
+			lmaStartupAdmitted(t, pool, member == waClaims)
 		})
 	}
 	t.Run("set-only-execute", func(t *testing.T) {
@@ -451,7 +451,7 @@ func TestLiveMediaAuthorizationLMA02ActualRoleBoundary(t *testing.T) {
 		lmaStartupAdmitted(t, pool, false)
 	})
 	t.Run("public-execute", func(t *testing.T) {
-		_, pool := lmaLogin(t, h.lp.f, "commerce_worker")
+		_, pool := lmaLogin(t, h.lp.f, waClaims)
 		lmaStartupAdmitted(t, pool, true)
 		if _, err := h.lp.f.owner.Exec(ctx, "GRANT EXECUTE ON FUNCTION live.register_prepared_media(jsonb,bytea,bytea) TO PUBLIC"); err != nil {
 			t.Fatal(err)
@@ -461,7 +461,7 @@ func TestLiveMediaAuthorizationLMA02ActualRoleBoundary(t *testing.T) {
 				t.Error(err)
 			}
 		})
-		if err := platform.ValidateWorkerPool(ctx, pool); err == nil {
+		if err := platform.ValidateWorkerPool(ctx, pool, platform.WorkerClaims); err == nil {
 			t.Fatal("PUBLIC media EXECUTE admitted")
 		}
 		if _, err := h.lp.f.owner.Exec(ctx, "REVOKE EXECUTE ON FUNCTION live.register_prepared_media(jsonb,bytea,bytea) FROM PUBLIC"); err != nil {

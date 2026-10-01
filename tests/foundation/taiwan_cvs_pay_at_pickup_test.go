@@ -159,7 +159,7 @@ func TestCvsPayAtPickupBegin(t *testing.T) {
 		// the expiry job reaches STALE and releases nothing (disclosed owner-pool fixture: created_at and expires_at move together so the job is due)
 		mustExec(t, f.owner, `UPDATE checkout.orders SET created_at=created_at-interval '3 hours',expires_at=expires_at-interval '3 hours' WHERE id=$1`, res.OrderID)
 		var disposition string
-		if err := e.p.worker.QueryRow(ctx, `SELECT disposition FROM checkout.expire_held($1::uuid,$2::bigint)`, res.OrderID, res.Generation).Scan(&disposition); err != nil {
+		if err := e.p.expiry.QueryRow(ctx, `SELECT disposition FROM checkout.expire_held($1::uuid,$2::bigint)`, res.OrderID, res.Generation).Scan(&disposition); err != nil {
 			t.Fatalf("expire_held: %v", err)
 		}
 		if disposition != "STALE" {

@@ -989,7 +989,7 @@ func TestMetaClaimsMCI04CrashMidApplyIsRepolledAndAppliedOnce(t *testing.T) {
 func (e *mciEnv) workerEnv(t *testing.T, graphURL string) []string {
 	t.Helper()
 	f := e.h.f
-	workerLogin := miRole(t, f, "commerce_worker")
+	workerLogin := miRole(t, f, waClaims)
 	env := []string{
 		"COMMERCE_CLAIMS_WORKER_ENABLED=1",
 		"COMMERCE_CLAIMS_INTAKE_DATABASE_URL=" + e.intakePool.Config().ConnString(),

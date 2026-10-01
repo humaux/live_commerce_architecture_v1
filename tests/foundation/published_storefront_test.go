@@ -166,7 +166,7 @@ func TestPublishedStorefrontAuthorityAndConstraints(t *testing.T) {
 			t.Fatal("constructor accepted wrong authority")
 		}
 	}
-	for _, dsn := range []string{a.mixedURL, bcRole(t, f, "commerce_worker"), bcRole(t, f, "commerce_checkout_runtime"), bcRole(t, f, "commerce_auth")} {
+	for _, dsn := range []string{a.mixedURL, bcRole(t, f, waPayment), bcRole(t, f, waLive), bcRole(t, f, waExpiry), bcRole(t, f, waAds), bcRole(t, f, waClaims), bcRole(t, f, "commerce_checkout_runtime"), bcRole(t, f, "commerce_auth")} {
 		pool, err := pgxpool.New(ctx, dsn)
 		if err != nil {
 			t.Fatal("fixture pool")
@@ -178,7 +178,7 @@ func TestPublishedStorefrontAuthorityAndConstraints(t *testing.T) {
 			}
 		}()
 	}
-	for _, role := range []string{"commerce_runtime", "commerce_auth", "commerce_identity", "commerce_buyer_runtime", "commerce_checkout_runtime", "commerce_worker"} {
+	for _, role := range []string{"commerce_runtime", "commerce_auth", "commerce_identity", "commerce_buyer_runtime", "commerce_checkout_runtime", waPayment, waLive, waExpiry, waAds, waClaims, waLegacy} {
 		t.Run(role, func(t *testing.T) {
 			tx, err := f.owner.Begin(ctx)
 			if err != nil {
@@ -193,7 +193,7 @@ func TestPublishedStorefrontAuthorityAndConstraints(t *testing.T) {
 		})
 	}
 	for _, table := range []string{"control.storefront_publications", "control.storefront_domains"} {
-		for _, role := range []string{"commerce_runtime", "commerce_identity", "commerce_buyer_runtime", "commerce_buyer_issuer", "commerce_checkout_runtime", "commerce_worker"} {
+		for _, role := range []string{"commerce_runtime", "commerce_identity", "commerce_buyer_runtime", "commerce_buyer_issuer", "commerce_checkout_runtime", waPayment, waLive, waExpiry, waAds, waClaims, waLegacy} {
 			var access bool
 			if err := f.owner.QueryRow(ctx, `SELECT has_table_privilege($1,$2,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') OR has_any_column_privilege($1,$2,'SELECT,INSERT,UPDATE,REFERENCES')`, role, table).Scan(&access); err != nil || access {
 				t.Fatalf("unexpected direct table or column privilege: role=%s table=%s err=%v", role, table, err)
