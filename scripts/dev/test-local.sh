@@ -14,7 +14,8 @@ if [[ "$#" -gt 1 ]] || [[ "$test_mode" != foundation && "$test_mode" != --browse
   printf 'Usage: bash scripts/dev/test-local.sh [--browser-identity|--browser-password-auth|--browser-admin-legacy|--browser-buyer|--browser-merchant-buyer|--browser-merchant-orders-bff|--browser-merchant-orders-ui|--browser-input-delivery|--browser-studio-bff|--browser-studio-ui|--browser-live-claims|--browser-order|--browser-payment|--stripe-browser|--browser-refund-fulfilment|--browser-customers-billing|--browser-meta-ads|--browser-cvs|--browser-catalog-media|--browser-storefront-publish|--browser-storefront|--browser-webkit|--browser-e2e|--checkout|--payment|--payment-worker|--expiry-worker|--storefront-resolver|--buyer-http|--purchase-entry|--merchant-orders|--meta-inbox|--meta-consumer|--meta-runtime|--legacy-isolation|--local-recovery|--live-planning|--live-authority|--live-media-plan|--live-media-execution|--live-browser-input|--live-media-input|--live-media-crash|--live-media-stop|--live-media-recovery|--live-media-runtime|--studio-backend|--browser-design]\n' >&2
   exit 2
 fi
-if [[ "$test_mode" == --browser-storefront ]]; then
+if [[ "$test_mode" == --browser-storefront && "${LC_SHOP_MOCK:-0}" == 1 ]]; then
+  # LC_SHOP_MOCK=1: the fast MOCK variant (no PG, no Docker). The default --browser-storefront is the REAL stack (below, unit storefront-integration).
   # SF gate (unit storefront-shell, MOCK tier): the buyer storefront shell on the production Next build against a contract-shaped FAKE of the
   # Go buyer API (tests/storefront/shop-fake-api.mjs). No PG/Go/Docker is started, so it needs no machine-wide PG lock. Not real-stack acceptance:
   # run the same pages against the real API once catalog-core (0086) and store-design (0087) are merged (docs/delivery/GATES.md).
@@ -268,7 +269,14 @@ if [[ "$test_mode" == --browser-e2e ]]; then
   test -f tests/e2e/deal-loop.spec.ts
   mkdir -p output/playwright
 fi
-if [[ "$test_mode" == --browser-buyer || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-order || "$test_mode" == --browser-payment || "$test_mode" == --stripe-browser || "$test_mode" == --browser-refund-fulfilment || "$test_mode" == --browser-customers-billing || "$test_mode" == --browser-meta-ads || "$test_mode" == --browser-cvs || "$test_mode" == --browser-catalog-media || "$test_mode" == --browser-storefront-publish || "$test_mode" == --browser-webkit || "$test_mode" == --browser-live-claims || "$test_mode" == --browser-e2e ]]; then
+if [[ "$test_mode" == --browser-storefront ]]; then
+  # Real stack (unit storefront-integration): the pure logic tests first (the MOCK fake only feeds node tests/the LC_SHOP_MOCK variant), then PG + Go + Next.
+  test -f tests/foundation/browser_storefront_test.go
+  grep -q '^func TestBrowserStorefront' tests/foundation/browser_storefront_test.go
+  test -f tests/storefront/shop-real-gate.mjs
+  node --test --experimental-strip-types apps/storefront/tests/shop.test.mjs
+fi
+if [[ "$test_mode" == --browser-buyer || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-order || "$test_mode" == --browser-payment || "$test_mode" == --stripe-browser || "$test_mode" == --browser-refund-fulfilment || "$test_mode" == --browser-customers-billing || "$test_mode" == --browser-meta-ads || "$test_mode" == --browser-storefront || "$test_mode" == --browser-cvs || "$test_mode" == --browser-catalog-media || "$test_mode" == --browser-storefront-publish || "$test_mode" == --browser-webkit || "$test_mode" == --browser-live-claims || "$test_mode" == --browser-e2e ]]; then
   command -v pnpm >/dev/null
   command -v openssl >/dev/null
   COMMERCE_BUYER_WEB_ENABLED=0 pnpm run build:storefront
@@ -496,6 +504,11 @@ elif [[ "$test_mode" == --browser-meta-ads ]]; then
 elif [[ "$test_mode" == --browser-cvs ]]; then
   LC_BROWSER_CVS_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1700s -run '^TestBrowserTaiwanCvs$' -v ./tests/foundation
   printf 'PASS: TCV08 MOCK isolated admin + storefront Next, Go, PG, ecpaytest fake map/Create and signed status posts; SANDBOX and WebKit variants are NOT_RUN unless the go test log says otherwise; not provider or deployment acceptance.\n'
+elif [[ "$test_mode" == --browser-storefront ]]; then
+  # SFR gate (unit storefront-integration, SANDBOX): the storefront shell on the production build against the real buyerhttp handler and PG,
+  # a shop built through the real admin API and published through the 0081 definers (tests/foundation/browser_storefront_test.go).
+  LC_BROWSER_STOREFRONT_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1500s -run '^TestBrowserStorefront$' -v ./tests/foundation
+  printf 'PASS: SFR01-SFR09 buyer storefront shell on the REAL stack (production Next + real Go buyer API + isolated PG; shop built through the admin API, published through the migration 0081 definers; checkout path, free-shipping threshold and collection photo ids from the producers); synthetic CONNECT edge, no provider, no device. The MOCK sibling: LC_SHOP_MOCK=1 bash scripts/dev/test-local.sh --browser-storefront.\n'
 elif [[ "$test_mode" == --browser-catalog-media ]]; then
   LC_BROWSER_CATALOG_MEDIA_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1500s -run '^TestBrowserCatalogMedia$' -v ./tests/foundation
   printf 'PASS: catalog-media browser gate (BROWSER, MOCK IdP): merchant uploads 2 photos, reorders, renames, reprices and archives a SKU in the Ledger; an anonymous buyer sees the home grid, gallery order, new price and no archived SKU; zh-TW + en, desktop + 390px; publication/domain rows are seeded until unit storefront-publish merges; not provider or deployment acceptance.\n'

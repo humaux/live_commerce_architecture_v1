@@ -64,7 +64,7 @@ export default function ProductBuy({ locale, product, currency }: { locale: Loca
   const stockText = !variant ? copy.selectionIncomplete : variant.stock === "in" ? copy.inStock : variant.stock === "low" ? copy.lowStock : copy.outOfStock;
   const addLabel = soldOut ? copy.outOfStock : copy.addToCart;
   return (
-    <div className="sf-buy" data-testid="product-buy">
+    <div className="sf-buy" data-testid="product-buy" data-sku={variant?.sku_id}>
       <div className="sf-buy__price" aria-live="polite">
         {variant ? (
           <>

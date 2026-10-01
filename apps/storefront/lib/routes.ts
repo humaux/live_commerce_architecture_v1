@@ -1,12 +1,10 @@
 // Storefront URL builders (no I/O). One place so the sitemap, canonical tags, cards and the cart agree on paths.
-// The checkout surface lives at /{locale}/products/Checkout ON PURPOSE: the CVS map return path is allowlisted in Go and SQL
-// (internal/checkout/cvs.go returnPathPattern, migrations/0073 open_cvs_selection) as /{locale}/products/[A-Za-z0-9_-]{1,64};
-// anything else is 422 bad_return_path. "Checkout" has a capital letter, so it can never collide with a product slug
-// (lowercase, contracts/storefront-v2.md section A) or a UUID. Widen that allowlist, then move this to /{locale}/checkout.
+// The checkout surface lives at /{locale}/checkout. The CVS map return path is allowlisted in Go and SQL
+// (internal/checkout/cvs.go returnPathPattern, migration 0093 open_cvs_selection + cvs_selections CHECK) as exactly
+// /{zh-CN|zh-TW|en}/checkout or the product form /{locale}/products/{id}; any other path is 422 bad_return_path.
 import type { Locale } from "@live-commerce/i18n";
 
-export const CHECKOUT_SEGMENT = "Checkout";
-export const checkoutPath = (locale: Locale) => `/${locale}/products/${CHECKOUT_SEGMENT}`;
+export const checkoutPath = (locale: Locale) => `/${locale}/checkout`;
 export const cartPath = (locale: Locale) => `/${locale}/cart`;
 export const productPath = (locale: Locale, slugOrID: string) => `/${locale}/products/${slugOrID}`;
 export const collectionPath = (locale: Locale, slug: string) => `/${locale}/collections/${slug}`;

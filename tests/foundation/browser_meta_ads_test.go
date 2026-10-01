@@ -395,7 +395,7 @@ func TestBrowserMetaAdsConsent(t *testing.T) {
 	t.Cleanup(control.Close)
 	values := map[string]string{"COMMERCE_BUYER_WEB_ENABLED": "1", "COMMERCE_BUYER_API_ORIGIN": c.bh.server.URL, "COMMERCE_BUYER_DEMO_LABEL": "1", "COMMERCE_BUYER_BFF_KEY": c.bh.key,
 		"COMMERCE_BUYER_COOKIE_KEY": base64.RawURLEncoding.EncodeToString(randomBytes(32)), "COMMERCE_BUYER_SESSION_TTL": "3600",
-		"LC_AC_EVIDENCE": evidence, "LC_AC_ORIGIN": storefrontOrigin, "LC_AC_CONTROL": control.URL, "LC_AC_CONTROL_KEY": controlKey}
+		"LC_AC_EVIDENCE": evidence, "LC_AC_ORIGIN": storefrontOrigin, "LC_AC_PRODUCT": c.p.stock.product.ID, "LC_AC_CONTROL": control.URL, "LC_AC_CONTROL_KEY": controlKey}
 	cmd := exec.CommandContext(ctx, "node", "tests/storefront/ads-consent.mjs")
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	defer func() {

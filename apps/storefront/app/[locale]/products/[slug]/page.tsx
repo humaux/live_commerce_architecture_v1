@@ -13,7 +13,7 @@ import PageHead from "../../../../components/PageHead";
 import ProductBuy from "../../../../components/ProductBuy";
 import ProductGallery from "../../../../components/ProductGallery";
 import { withPreview } from "../../../../lib/design";
-import { CHECKOUT_SEGMENT, collectionPath, productImage, productPath } from "../../../../lib/routes";
+import { collectionPath, productImage, productPath } from "../../../../lib/routes";
 import { productJsonLd } from "../../../../lib/seo";
 import { shopCopy } from "../../../../lib/shop-copy";
 import { alternates, gate, must } from "../../../../lib/shop-page";
@@ -24,7 +24,7 @@ const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { locale, slug } = await params;
-  if (!isLocale(locale) || slug === CHECKOUT_SEGMENT) return {};
+  if (!isLocale(locale)) return {};
   const found = await getProduct(slug);
   if (found.state !== "ok") return { robots: { index: false, follow: false } };
   const p = found.value;
@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
 export default async function Page({ params }: { params: Params }) {
   const { locale, slug } = await params;
-  if (!isLocale(locale) || slug === CHECKOUT_SEGMENT) notFound();
+  if (!isLocale(locale)) notFound();
   const { shop, preview } = await gate();
   const [found, currencyResult] = await Promise.all([getProduct(slug), storeCurrency()]);
   const product = must(found);

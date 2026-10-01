@@ -1,7 +1,6 @@
 // GET /{locale}/collections: grid of the store's active collections (title, product count).
-// Go: GET catalog/v2/collections via lib/shop-upstream.ts listCollections. The buyer read carries no collection id, so the
-// /media/c/{collection_id}/{image_id} URL cannot be built from it (contract gap, see output/storefront-shell/DEVIATIONS.md):
-// each tile is a typographic tile until the read also returns `id`; when it does, `image_id` + `id` render the photo.
+// Go: GET catalog/v2/collections via lib/shop-upstream.ts listCollections. The read carries the collection `id` (contract A, 0093), so a
+// tile with an image renders /media/c/{id}/{image_id}; a collection without a photo gets a typographic tile.
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -40,7 +39,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
           {collections.map((c) => (
             <li key={c.slug}>
               <Link className="sf-tile" href={withPreview(collectionPath(locale, c.slug), preview)} data-testid="collection-tile">
-                {c.id && c.image_id ? <img src={collectionImage(c.id, c.image_id)} alt="" loading="lazy" /> : <span className="sf-tile__ph" aria-hidden="true">{[...c.title][0]}</span>}
+                {c.image_id ? <img src={collectionImage(c.id, c.image_id)} alt="" loading="lazy" /> : <span className="sf-tile__ph" aria-hidden="true">{[...c.title][0]}</span>}
                 <span className="sf-tile__label">
                   <strong>{c.title}</strong>
                   <small>{fmt(copy.productCount, { n: c.product_count })}</small>

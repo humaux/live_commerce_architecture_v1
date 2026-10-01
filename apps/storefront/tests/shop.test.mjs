@@ -94,8 +94,9 @@ test("catalog-v2 parsers accept the frozen shapes and refuse drift", () => {
   assert.equal(parseProductDetail({ ...detail, variants: [{ ...variants[0], stock: "plenty" }] }), null);
   assert.equal(parseProductDetail({ ...detail, variants: [{ ...variants[0], option_values: ["M"] }] }), null, "values must align with the axes");
   assert.equal(parseProductDetail({ ...detail, options: [{}, {}, {}, {}] }), null);
-  assert.deepEqual(parseCollections({ collections: [{ slug: "c", title: "C", image_id: null, product_count: 2 }] }), [{ id: null, slug: "c", title: "C", image_id: null, product_count: 2 }]);
-  assert.equal(parseCollections({ collections: [{ slug: "c", title: "C", image_id: null, product_count: -1 }] }), null);
+  assert.deepEqual(parseCollections({ collections: [{ id: U(7), slug: "c", title: "C", image_id: null, product_count: 2 }] }), [{ id: U(7), slug: "c", title: "C", image_id: null, product_count: 2 }]);
+  assert.equal(parseCollections({ collections: [{ id: U(7), slug: "c", title: "C", image_id: null, product_count: -1 }] }), null);
+  assert.equal(parseCollections({ collections: [{ slug: "c", title: "C", image_id: null, product_count: 2 }] }), null, "contract A: the id is required");
 });
 
 test("free-delivery progress words the hint only when a threshold exists", () => {
@@ -139,7 +140,7 @@ test("seo: sitemap escapes and carries hreflang; robots refuses everything for a
   assert(xml.includes("<loc>https://s.example/zh-TW</loc>") && xml.includes("/products/a&amp;b") && xml.includes('hreflang="en"'));
   assert.equal(robotsTxt(null, false), "User-agent: *\nDisallow: /\n");
   const open = robotsTxt("https://s.example", true);
-  assert(open.includes("Sitemap: https://s.example/sitemap.xml") && open.includes("Disallow: /*/products/Checkout") && open.includes("Disallow: /api/"));
+  assert(open.includes("Sitemap: https://s.example/sitemap.xml") && open.includes("Disallow: /*/checkout") && open.includes("Disallow: /api/"));
 });
 
 test("money: whole amounts drop cents, minor digits come from the currency, filters round-trip", () => {

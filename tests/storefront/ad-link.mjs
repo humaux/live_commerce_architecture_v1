@@ -1,8 +1,9 @@
 // Gate AL1 (BROWSER-less, real production storefront build): the link the ads SQL freezes (PRODUCT_TRAFFIC link_url, migrations/0074)
 // and the Meta feed `link` (migrations/0080) is origin + "/products/" + product id. Fetch exactly that path from `next start`
 // and check the FIRST hop: a permanent redirect to the locale route. The second hop (/{locale}/products/{id} -> 308 -> the slug page,
-// 200 for a published store) needs a store behind the BFF, so it is asserted by the MOCK shell gate SF07 (tests/storefront/shop-gate.mjs)
-// and by the tester's real-stack run; here there is no upstream (COMMERCE_BUYER_WEB_ENABLED=0), so the product page would be a 404.
+// 200 for a published store) needs a store behind the BFF, so it is asserted twice elsewhere: by the MOCK shell gate SF07
+// (tests/storefront/shop-gate.mjs) and, on the REAL stack (Go + PG + published store), by gate AL2 in tests/storefront/ads-consent.mjs
+// (--browser-meta-ads). Here there is no upstream (COMMERCE_BUYER_WEB_ENABLED=0), so the product page would be a 404.
 // Needs `pnpm run build:storefront` first (scripts/dev/test-local.sh --browser-meta-ads does it). Usage: node tests/storefront/ad-link.mjs
 import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";

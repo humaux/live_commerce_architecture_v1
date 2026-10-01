@@ -24,6 +24,7 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 	}
 	h := bhSetup(t)
 	mustExec(t, h.f.owner, `UPDATE catalog.products SET name='Synthetic browser order product',description='Synthetic acceptance fixture' WHERE id=$1`, h.stock.product.ID)
+	sfiAxisBySKUCode(t, h.f.owner, h.stock.product.ID) // the storefront shell sells variants (one chip per SKU code)
 	root, err := filepath.Abs("../..")
 	if err != nil {
 		t.Fatal(err)

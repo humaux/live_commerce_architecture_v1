@@ -4,6 +4,7 @@ package buyerhttp
 // before any SQL; visibility, stock hints and paging against real PG are in tests/foundation/catalog_v2_smoke_test.go.
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -149,8 +150,8 @@ func TestProjectV2IsClosedAndNonNull(t *testing.T) {
 	for kind, raw := range map[routeKind]string{
 		catalogV2ProductsRoute:    `{"store":{"name":"S","currency":"TWD"},"products":[{"id":"x","slug":"s","title":"t","price_min_minor":1,"price_max_minor":1,"compare_at_min_minor":null,"cover_image_id":null,"in_stock":true,"on_hand":5}],"next_offset":null}`,
 		catalogV2ProductRoute:     `{"id":"x","slug":"s","title":"t","description":"","seo":{"title":"","description":""},"images":[],"options":[],"variants":[],"collections":[],"cost":1}`,
-		catalogV2CollectionsRoute: `{"collections":[{"slug":"s","title":"t","image_id":null,"product_count":1,"internal":1}]}`,
-		catalogV2CollectionRoute:  `{"slug":"s","title":"t","description":"","image_id":null,"status":"active"}`,
+		catalogV2CollectionsRoute: `{"collections":[{"id":"c1","slug":"s","title":"t","image_id":null,"product_count":1,"internal":1}]}`,
+		catalogV2CollectionRoute:  `{"id":"c1","slug":"s","title":"t","description":"","image_id":null,"status":"active"}`,
 	} {
 		if _, err := projectV2(kind, []byte(raw), q); err == nil {
 			t.Errorf("kind %v accepted an unknown key", kind)
@@ -163,5 +164,19 @@ func TestProjectV2IsClosedAndNonNull(t *testing.T) {
 	d := detail.(v2Detail)
 	if d.Images == nil || d.Options == nil || d.Collections == nil || d.Variants[0].OptionValues == nil {
 		t.Errorf("null slices leaked: %+v", d)
+	}
+	// storefront-v2 §A amendment (0093): both collection reads carry the collection id (the /media/c/{id}/{image} URL needs it).
+	for kind, raw := range map[routeKind]string{
+		catalogV2CollectionsRoute: `{"collections":[{"id":"c1","slug":"s","title":"t","image_id":"i1","product_count":2}]}`,
+		catalogV2CollectionRoute:  `{"id":"c1","slug":"s","title":"t","description":"","image_id":"i1"}`,
+	} {
+		out, err := projectV2(kind, []byte(raw), q)
+		if err != nil {
+			t.Fatal(err)
+		}
+		wire, _ := json.Marshal(out)
+		if !strings.Contains(string(wire), `"id":"c1"`) {
+			t.Errorf("kind %v dropped the collection id: %s", kind, wire)
+		}
 	}
 }

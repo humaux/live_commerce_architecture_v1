@@ -7,6 +7,7 @@
 //   is the only accepted exception). LC_BASELINE_MUTATE=1 rewrites one character of the PAYUNi
 //   "Pay" copy in flight at the edge (repo untouched) as the SU05 red run: compare must fail.
 // Calls: BFF /api/buyer/... only; the sandbox PSP form POST is intercepted in Chromium (no network).
+import { reachCheckout, switchLocale } from "./shop-helpers.mjs";
 import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
 import http from "node:http";
@@ -67,7 +68,7 @@ function relay(req,body){
 const normalize=html=>html.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,"<uuid>")
   .replace(/\d{4}-\d\d-\d\d[T ][\d:.]+Z?/g,"<time>").replace(/\b_R_[A-Za-z0-9]+_\b/g,"<rid>").replace(/:r[0-9a-z]+:/g,"<rid>").replace(/\s+/g," ").trim();
 async function capture(page,vp,stateName,loc,keepLocale=false){
-  if(!keepLocale)await page.locator("header select").selectOption(loc);
+  if(!keepLocale)await switchLocale(page,loc);
   await ex(page.locator("html")).toHaveAttribute("lang",loc);
   const el=page.getByTestId("order-payment");await ex(el).toBeVisible();
   const dom=normalize(await el.evaluate(n=>n.outerHTML));
@@ -81,8 +82,8 @@ async function capture(page,vp,stateName,loc,keepLocale=false){
   captures[`${vp}/${stateName}/${loc}`]={dom,sha256:createHash("sha256").update(shot).digest("hex"),png};
 }
 async function makeOrder(page){
-  if(await page.getByTestId("continue-shopping").count())await page.getByTestId("continue-shopping").click();
-  await ex(page.locator("#quantity")).toBeEnabled();await page.locator("#quantity").fill("2");
+  if(await page.getByTestId("continue-shopping").count()){await page.getByTestId("continue-shopping").click();await ex(page.getByTestId("checkout-empty")).toBeVisible();} // let the continuation settle before navigating away
+  await reachCheckout(page,origin,"en",process.env.LC_BASELINE_PRODUCT,{quantity:2}); // product page -> Add to cart (2) -> /en/checkout (storefront shell)
   await page.getByRole("button",{name:"Choose delivery",exact:true}).click();
   const q=page.waitForResponse(r=>new URL(r.url()).pathname==="/api/buyer/quotes"&&r.request().method()==="POST");
   await page.getByRole("button",{name:"Get current total",exact:true}).click();assert.equal((await q).status(),200);
@@ -130,7 +131,7 @@ try{
     await makeOrder(page);
     for(const loc of ["zh-CN","zh-TW","en"])await capture(page,vp,"fresh",loc);
     // Order 2: sending (prepare held), then read-only after the handoff.
-    await page.locator("header select").selectOption("en");await makeOrder(page);
+    await makeOrder(page);
     let entered;const enteredP=new Promise(r=>entered=r);let release;const releaseP=new Promise(r=>release=r);
     holdPrepare={entered,release:releaseP};
     const pop=page.waitForEvent("popup");await page.getByTestId("pay-order").click();const child=await pop;await enteredP;

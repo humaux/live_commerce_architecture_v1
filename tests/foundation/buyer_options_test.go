@@ -59,7 +59,7 @@ func boptRead(t *testing.T, h bhHarness, query string) boptPage {
 	if json.Unmarshal(r.body, &top) != nil || json.Unmarshal(r.body, &rows) != nil || len(top) != 2 || top["items"] == nil || top["next_cursor"] == nil || p.Items == nil {
 		t.Fatal("options page projection not exact/non-null")
 	}
-	want := []string{"allocation_version", "country", "currency", "delivery_code", "delivery_kind", "market_code", "market_id", "market_name", "method", "mode", "name_en", "name_hans", "name_hant", "service_version", "sort_order"}
+	want := []string{"allocation_version", "country", "currency", "delivery_code", "delivery_kind", "free_shipping_threshold_minor", "market_code", "market_id", "market_name", "method", "mode", "name_en", "name_hans", "name_hant", "service_version", "sort_order"}
 	for _, row := range rows.Items {
 		keys := make([]string, 0, len(row))
 		for key := range row {

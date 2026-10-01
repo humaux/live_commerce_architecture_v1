@@ -33,8 +33,10 @@ Buyer reads (Go private buyer routes behind the storefront BFF, published-origin
   → `{store:{name, currency}, products:[{id, slug, title, price_min_minor, price_max_minor, compare_at_min_minor|null, cover_image_id|null, in_stock: bool}], next: cursor|null}`.
   `q` matches title/description/SKU code, case-insensitive literal (escape LIKE), active only.
 - `GET catalog/v2/products/{slug_or_id}` → `{id, slug, title, description, seo:{title, description}, images:[{id,width,height}], options:[{name, values[]}], variants:[{sku_id, title, option_values[], price_minor, compare_at_minor|null, stock: in|low|out}], collections:[{slug,title}]}`; 404 identical for unknown/draft/archived/foreign store.
-- `GET catalog/v2/collections` → `{collections:[{slug, title, image_id|null, product_count}]}` (active only, count of active products).
-- `GET catalog/v2/collections/{slug}` → `{slug, title, description, image_id|null}` (products via the list route with `collection=`).
+- `GET catalog/v2/collections` → `{collections:[{id, slug, title, image_id|null, product_count}]}` (active only, count of active products).
+- `GET catalog/v2/collections/{slug}` → `{id, slug, title, description, image_id|null}` (products via the list route with `collection=`).
+  AMENDMENT 2026-10-01 (unit storefront-integration, migration 0093): both reads also return `id` (the collection uuid). The photo URL is
+  `/media/c/{id}/{image_id}` (the Go route needs the collection id, so the storefront could not build it from the earlier slug-only shape).
 - Images keep the catalog-media path `/media/p/{product_id}/{image_id}`; collection images use `/media/c/{collection_id}/{image_id}` (same rules: published store, active collection, immutable cache).
 
 Merchant admin routes (scope from server auth; catalog:read / catalog:write): CRUD for collections
@@ -124,6 +126,9 @@ Admin routes (store:write — use the narrowest existing permission the settings
   column; expiry → order cancelled and stock released. No PSP involved; never auto-confirm.
 - Free-shipping threshold per delivery policy: `free_shipping_threshold_minor|null`; quote applies
   shipping 0 when merchandise subtotal ≥ threshold (server-side, in the existing quote path).
+  AMENDMENT 2026-10-01 (unit storefront-integration): every `GET /v1/buyer/checkout-options` row carries the same key
+  `free_shipping_threshold_minor` (integer minor units, or `null` when the policy has none or the threshold is 0 = always free, which needs no
+  hint). It lets the cart and the delivery step word "add X more for free delivery"; the quote stays the only authority on the amount charged.
 - Buyer email (optional, validated, ≤ 254) captured at checkout and stored on the order for
   notifications (PII: erasure/export paths of customers-privacy must include it).
 

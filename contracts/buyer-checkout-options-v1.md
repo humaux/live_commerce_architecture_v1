@@ -121,3 +121,10 @@ safe error behavior remain. Browser input never chooses a tenant/store.
   negatives; old catalog/query boundary regression and unit exact projection.
 - CO05 full real PG/race/vet, independent source/evidence review, code graph and
   acceptance record. Public browser/PSP/CVS source gates explicitly NOT_RUN.
+
+## Free-shipping threshold joins every row (storefront-integration, amends this contract; storefront-v2 §C)
+
+Every option row carries `free_shipping_threshold_minor`: the row's delivery policy threshold in minor units (`pricing.policy_versions`, migration
+0088), or `null` when the policy has none or the threshold is 0 (always free: nothing to hint). The key is always present. It is a display hint
+for the cart and delivery step ("add X more for free delivery"); `pricing.Calculate` in the server quote stays the only authority on shipping,
+so a stale hint can mislead wording, never the amount charged (I05).
