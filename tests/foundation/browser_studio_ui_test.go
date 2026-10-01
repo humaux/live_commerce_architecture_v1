@@ -5,6 +5,7 @@ package foundation_test
 import (
 	"bytes"
 	"context"
+	"errors"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -17,6 +18,8 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/identity"
@@ -64,7 +67,16 @@ func TestBrowserStudioUIRealChain(t *testing.T) {
 	})
 	mustExec(t, h.lp.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'live:read')`, h.lp.f.tenantA, h.lp.f.storeA1, h.lp.limited)
 	// the spec leaves Studio through nav-orders; the role-aware nav (0089, apps/admin/lib/team-model.ts) shows it only with orders:read
-	mustExec(t, h.lp.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'orders:read') ON CONFLICT DO NOTHING`, h.lp.f.tenantA, h.lp.f.storeA1, h.lp.actor)
+	var addedOrdersRead bool // removed again only if this test added it (the live-planning fixture is shared)
+	if err := h.lp.f.owner.QueryRow(ctx, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'orders:read') ON CONFLICT DO NOTHING RETURNING true`,
+		h.lp.f.tenantA, h.lp.f.storeA1, h.lp.actor).Scan(&addedOrdersRead); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		t.Fatal(err)
+	}
+	if addedOrdersRead {
+		t.Cleanup(func() {
+			_, _ = h.lp.f.owner.Exec(context.Background(), `DELETE FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission='orders:read'`, h.lp.f.tenantA, h.lp.f.storeA1, h.lp.actor)
+		})
+	}
 	expiredToken := randomToken()
 	tx, err := h.lp.f.owner.Begin(ctx)
 	if err != nil {
