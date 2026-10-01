@@ -257,6 +257,8 @@ if [[ "$test_mode" == --browser-catalog-media ]]; then
   test -f tests/foundation/browser_catalog_media_test.go
   grep -q '^func TestBrowserCatalogMedia' tests/foundation/browser_catalog_media_test.go
   test -f tests/storefront/catalog-media-gate.mjs
+  mkdir -p output/playwright
+fi
 if [[ "$test_mode" == --browser-ops-polish ]]; then
   # ops-polish independent gates (OP1 buyer half, OP2, OP3 UI half, OP4): refuse a no-test success before any build.
   test -f tests/foundation/browser_ops_polish_test.go
@@ -293,8 +295,7 @@ if [[ "$test_mode" == --browser-storefront ]]; then
   test -f tests/storefront/shop-real-gate.mjs
   node --test --experimental-strip-types apps/storefront/tests/shop.test.mjs
 fi
-if [[ "$test_mode" == --browser-buyer || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-order || "$test_mode" == --browser-payment || "$test_mode" == --stripe-browser || "$test_mode" == --browser-refund-fulfilment || "$test_mode" == --browser-customers-billing || "$test_mode" == --browser-meta-ads || "$test_mode" == --browser-storefront || "$test_mode" == --browser-cvs || "$test_mode" == --browser-catalog-media || "$test_mode" == --browser-storefront-publish || "$test_mode" == --browser-webkit || "$test_mode" == --browser-live-claims || "$test_mode" == --browser-e2e ]]; then
-if [[ "$test_mode" == --browser-buyer || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-order || "$test_mode" == --browser-payment || "$test_mode" == --stripe-browser || "$test_mode" == --browser-refund-fulfilment || "$test_mode" == --browser-customers-billing || "$test_mode" == --browser-meta-ads || "$test_mode" == --browser-cvs || "$test_mode" == --browser-ops-polish || "$test_mode" == --browser-webkit || "$test_mode" == --browser-live-claims || "$test_mode" == --browser-e2e ]]; then
+if [[ "$test_mode" == --browser-buyer || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-order || "$test_mode" == --browser-payment || "$test_mode" == --stripe-browser || "$test_mode" == --browser-refund-fulfilment || "$test_mode" == --browser-customers-billing || "$test_mode" == --browser-meta-ads || "$test_mode" == --browser-storefront || "$test_mode" == --browser-cvs || "$test_mode" == --browser-catalog-media || "$test_mode" == --browser-storefront-publish || "$test_mode" == --browser-webkit || "$test_mode" == --browser-live-claims || "$test_mode" == --browser-e2e || "$test_mode" == --browser-ops-polish ]]; then
   command -v pnpm >/dev/null
   command -v openssl >/dev/null
   COMMERCE_BUYER_WEB_ENABLED=0 pnpm run build:storefront

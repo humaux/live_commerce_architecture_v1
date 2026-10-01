@@ -244,7 +244,8 @@ for idf, ringf in (("commerce_account_active_key_id", "commerce_account_keys_jso
                    ("commerce_meta_payload_active_key_id", "commerce_meta_payload_keys_json"),
                    ("commerce_stripe_webhook_active_key_id", "commerce_stripe_webhook_keys_json"),
                    ("commerce_meta_page_token_active_key_id", "commerce_meta_page_token_keys_json"),
-                   ("commerce_meta_ads_hpke_active_key_id", "commerce_meta_ads_hpke_public_keys_json")):
+                   ("commerce_meta_ads_hpke_active_key_id", "commerce_meta_ads_hpke_public_keys_json"),
+                   ("commerce_meta_page_hpke_active_key_id", "commerce_meta_page_hpke_public_keys_json")):
     ring = rings.get(ringf)
     rec("P05", ring is not None and values.get(idf) in ring, idf)
 
@@ -280,9 +281,10 @@ for login in logins:
         except ValueError:
             ok = False
     rec("P04", ok, "dsn_" + login + " embeds pw_" + login)
-hp, hq = rings.get("commerce_meta_ads_hpke_private_keys_json"), rings.get("commerce_meta_ads_hpke_public_keys_json")
-rec("P04", hp is not None and hq is not None and list(hp) == list(hq),
-    "commerce_meta_ads_hpke_public_keys_json ids == private ring ids (secrets-init.sh --rederive after a rotation)")
+for hpke_name in ("ads", "page"):
+    hp, hq = rings.get("commerce_meta_%s_hpke_private_keys_json" % hpke_name), rings.get("commerce_meta_%s_hpke_public_keys_json" % hpke_name)
+    rec("P04", hp is not None and hq is not None and list(hp) == list(hq),
+        "commerce_meta_%s_hpke_public_keys_json ids == private ring ids (secrets-init.sh --rederive after a rotation)" % hpke_name)
 su = values.get("pg_superuser_password")
 rec("P04", bool(su) and values.get("dsn_migrate_owner", "").find(" password=" + su + " ") >= 0, "dsn_migrate_owner embeds pg_superuser_password")
 

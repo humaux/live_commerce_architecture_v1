@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
 	"livecommerce/internal/command"
-	"livecommerce/internal/integrations/metareply"
 )
 
 func granted(names ...string) map[string]bool {
@@ -87,30 +88,47 @@ func TestMapErrorOnlyEchoesFrozenCodes(t *testing.T) {
 	}
 }
 
-// The pending USER token is sealed with the Page-token keyring under a state-id scope: it must never open as a Page credential
-// of any binding, and a Page credential must never open as a pending token.
-func TestPendingSealIsNotAPageCredential(t *testing.T) {
-	keys, err := metareply.NewPageTokenKeyring("k1", map[string][]byte{"k1": bytes.Repeat([]byte{9}, 32)})
-	if err != nil {
-		t.Fatal(err)
+// The USER token is held in memory only, per state, bound to tenant + store, expiring, zeroed on drop and bounded in number.
+func TestPendingUserTokenLivesOnlyInMemory(t *testing.T) {
+	s := &Service{pending: map[string]*pendingUser{}}
+	tok := []byte("USER-TOKEN")
+	if !s.hold("st1", "t1", "s1", tok, time.Now().Add(time.Minute)) {
+		t.Fatal("hold refused")
 	}
-	const tenant, store, state, binding = "00000000-0000-4000-8000-000000000001", "00000000-0000-4000-8000-000000000002",
-		"00000000-0000-4000-8000-000000000003", "00000000-0000-4000-8000-000000000004"
-	keyID, nonce, ct, err := keys.Seal(pendingScope(tenant, store, state), "USER-TOKEN")
-	if err != nil {
-		t.Fatal(err)
+	clear(tok) // the caller zeroing its copy must not touch the held one
+	got, ok := s.peek("st1", "t1", "s1")
+	if !ok || string(got) != "USER-TOKEN" {
+		t.Fatalf("peek: %q %v", got, ok)
 	}
-	if sec, err := keys.Open(pendingScope(tenant, store, state), keyID, nonce, ct); err != nil || string(sec.Reveal()) != "USER-TOKEN" {
-		t.Fatalf("pending roundtrip: %v", err)
+	clear(got) // nor must zeroing a peeked copy
+	if again, _ := s.peek("st1", "t1", "s1"); string(again) != "USER-TOKEN" {
+		t.Fatal("peek returned the live slice")
 	}
-	for _, s := range []metareply.PageTokenScope{
-		pendingScope(tenant, store, binding),
-		{TenantID: tenant, StoreID: store, BindingID: state, Provider: "facebook", AssetID: "123", Version: 1},
-		pendingScope(tenant, "00000000-0000-4000-8000-000000000009", state),
-	} {
-		if _, err := keys.Open(s, keyID, nonce, ct); err == nil {
-			t.Fatalf("pending ciphertext opened under %+v", s)
-		}
+	if _, ok := s.peek("st1", "t2", "s1"); ok {
+		t.Error("another tenant read the token")
+	}
+	if _, ok := s.peek("st1", "t1", "s2"); ok {
+		t.Error("another store read the token")
+	}
+	held := s.pending["st1"].token
+	s.drop("st1")
+	if _, ok := s.peek("st1", "t1", "s1"); ok || string(held) == "USER-TOKEN" {
+		t.Error("drop must forget and zero the token")
+	}
+	s.hold("old", "t1", "s1", []byte("OLD"), time.Now().Add(-time.Second))
+	oldTok := s.pending["old"].token
+	if _, ok := s.peek("old", "t1", "s1"); ok {
+		t.Error("an expired token was readable")
+	}
+	s.hold("new", "t1", "s1", []byte("NEW"), time.Now().Add(time.Minute)) // sweeps the expired entry
+	if string(oldTok) == "OLD" || s.pending["old"] != nil {
+		t.Error("an expired token must be zeroed and removed on the next hold")
+	}
+	for i := 0; i < maxPending; i++ {
+		s.hold("fill"+strconv.Itoa(i), "t1", "s1", []byte("X"), time.Now().Add(time.Minute))
+	}
+	if s.hold("overflow", "t1", "s1", []byte("X"), time.Now().Add(time.Minute)) {
+		t.Error("the in-memory store must be bounded")
 	}
 }
 

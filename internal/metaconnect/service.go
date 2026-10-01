@@ -4,12 +4,12 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"net/url"
 	"regexp"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -19,20 +19,22 @@ import (
 	"livecommerce/internal/command"
 	"livecommerce/internal/integrations/core"
 	metaoauth "livecommerce/internal/integrations/meta/oauth"
-	"livecommerce/internal/integrations/metareply"
+	"livecommerce/internal/integrations/meta/pagetoken"
 	"livecommerce/internal/platform"
 )
 
 // service.go is the merchant-facing connect service called by internal/httpapi/meta_connect.go. Every method runs inside the
 // caller's platform.WithScope transaction (commerce_runtime, READ COMMITTED) except Callback, Pick and Disconnect, which need
 // network steps between transactions. Persistence is the integration.meta_connect_* definers of migration 0095; this file shapes
-// input, seals the tokens, makes the Graph calls and writes the audit rows. No Graph call happens with a transaction open.
+// input, seals the Page token to PUBLIC HPKE keys (pagetoken: this process can seal, never open), makes the Graph calls and writes the
+// audit rows. No Graph call happens with a transaction open. The USER token between callback and pick is never persisted: it sits in
+// this process's memory for the state's 10 minutes (pendingUser) and is zeroed on pick or expiry.
 
 const (
 	stateDomain    = "livecommerce/meta-connect-state/v1"
 	stateKeyLabel  = "livecommerce/meta-connect-state-key/v1"
 	connectTimeout = 25 * time.Second // the merchant waits on a browser redirect: a stuck Meta fails fast as ErrConnectFailed
-	pendingAsset   = "0"              // AAD placeholder of the pending USER token (its scope is a state id, never a binding)
+	maxPending     = 256              // user tokens held in memory at once (each lives <= 10 minutes)
 )
 
 var (
@@ -52,8 +54,8 @@ type Config struct {
 	PageAppID, IGAppID string
 	// StateKey keys the OAuth state HMAC (derived from the app secret, never the secret itself).
 	StateKey []byte
-	// Keys seals the user token between callback and pick and the Page token for good (meta-page-token-v1).
-	Keys *metareply.PageTokenKeyring
+	// Seal holds the HPKE PUBLIC keys that seal the Page token (meta-page-token-v2); cmd/api has no private key and cannot open one.
+	Seal *pagetoken.SealKeys
 }
 
 // Service is the merchant connect service.
@@ -61,6 +63,56 @@ type Service struct {
 	cfg   Config
 	graph *metaoauth.Graph
 	core  *core.Service
+
+	// pending holds each live state's USER token (state id -> token), in memory only. ponytail: one API process; with several replicas
+	// a pick that lands on another replica than the callback answers state_expired and the merchant restarts the connect.
+	mu      sync.Mutex
+	pending map[string]*pendingUser
+}
+
+type pendingUser struct {
+	token         []byte
+	tenant, store string
+	expires       time.Time
+}
+
+// hold keeps the user token for the state's lifetime (a copy; the caller zeroes its own). Expired entries are zeroed first.
+func (s *Service) hold(state, tenant, store string, token []byte, expires time.Time) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	now := time.Now()
+	for id, p := range s.pending {
+		if !p.expires.After(now) {
+			clear(p.token)
+			delete(s.pending, id)
+		}
+	}
+	if len(s.pending) >= maxPending {
+		return false
+	}
+	s.pending[state] = &pendingUser{token: append([]byte(nil), token...), tenant: tenant, store: store, expires: expires}
+	return true
+}
+
+// peek returns a copy of the state's user token (the caller zeroes it) when it belongs to this tenant and store and has not expired.
+func (s *Service) peek(state, tenant, store string) ([]byte, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	p := s.pending[state]
+	if p == nil || p.tenant != tenant || p.store != store || !p.expires.After(time.Now()) {
+		return nil, false
+	}
+	return append([]byte(nil), p.token...), true
+}
+
+// drop zeroes and forgets the state's user token (after a successful pick).
+func (s *Service) drop(state string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if p := s.pending[state]; p != nil {
+		clear(p.token)
+		delete(s.pending, state)
+	}
 }
 
 // StateKeyFor derives the OAuth state key from the app secret (domain separated; the API already holds the secret).
@@ -79,14 +131,14 @@ func New(cfg Config, jobs *river.Client[pgx.Tx]) (*Service, error) {
 		return nil, err
 	}
 	u, perr := url.Parse(cfg.App.RedirectURI)
-	if cfg.Graph == nil || cfg.Keys == nil || perr != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || u.Fragment != "" ||
+	if cfg.Graph == nil || cfg.Seal == nil || perr != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || u.Fragment != "" ||
 		len(cfg.App.RedirectURI) > 512 || !digits.MatchString(cfg.App.ID) || len(cfg.App.Secret) < 1 || !digits.MatchString(cfg.ConfigID) ||
 		!digits.MatchString(cfg.PageAppID) || !digits.MatchString(cfg.IGAppID) || len(cfg.StateKey) < 32 {
 		return nil, command.ErrInvalid
 	}
 	cfg.StateKey = append([]byte(nil), cfg.StateKey...)
 	cfg.App.Secret = append([]byte(nil), cfg.App.Secret...)
-	return &Service{cfg: cfg, graph: cfg.Graph, core: inner}, nil
+	return &Service{cfg: cfg, graph: cfg.Graph, core: inner, pending: map[string]*pendingUser{}}, nil
 }
 
 func tokenHash(token string) ([]byte, error) {
@@ -95,12 +147,6 @@ func tokenHash(token string) ([]byte, error) {
 	}
 	h := sha256.Sum256([]byte(token))
 	return h[:], nil
-}
-
-// pendingScope is the AAD scope of the sealed USER token: the connect state id stands in for the binding, so a pending
-// ciphertext can never open as a Page credential (a state id is never a binding id).
-func pendingScope(tenant, store, state string) metareply.PageTokenScope {
-	return metareply.PageTokenScope{TenantID: tenant, StoreID: store, BindingID: state, Provider: "facebook", AssetID: pendingAsset, Version: 1}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -150,8 +196,8 @@ func (s *Service) Start(ctx context.Context, tx pgx.Tx, scope platform.Scope, to
 }
 
 // Callback consumes the state, exchanges the code (and extends it to a long-lived user token so the Page token never expires),
-// reads granted permissions and the Pages with no transaction open, and stores the pick list plus the sealed user token. It
-// returns the state id. Retry rule: the state is single-use, so a failed exchange burns it and the merchant starts a new
+// reads granted permissions and the Pages with no transaction open, stores the pick list in SQL and keeps the user token in memory
+// (never persisted). It returns the state id. Retry rule: the state is single-use, so a failed exchange burns it and the merchant starts a new
 // connect; the exchange is never retried here (a code is single-use at Meta).
 func (s *Service) Callback(ctx context.Context, pool *pgxpool.Pool, token, storeID, code, state string) (string, error) {
 	if s == nil || pool == nil {
@@ -192,25 +238,22 @@ func (s *Service) Callback(ctx context.Context, pool *pgxpool.Pool, token, store
 	if err != nil {
 		return "", err
 	}
-	// Sealed with the Page-token keyring, scope = this state; wiped on pick, disconnect and at expiry.
-	keyID, nonce, ct, err := s.cfg.Keys.Seal(pendingScope(tenant, storeID, stateID), string(user))
-	if err != nil {
-		return "", ErrConnectFailed
-	}
 	raw, err := json.Marshal(pages)
 	if err != nil {
 		return "", ErrConnectFailed
 	}
 	err = platform.WithScope(ctx, pool, token, storeID, "integration:manage", func(tx pgx.Tx, scope platform.Scope) error {
-		// integration.meta_connect_put_result: pick list, granted permissions and the sealed user token on the consumed state, once.
-		if _, e := tx.Exec(ctx, `SELECT integration.meta_connect_put_result($1,$2,$3,$4::jsonb,$5,$6,$7,$8)`, hash, storeID, stateID,
-			string(raw), scopes, keyID, nonce, ct); e != nil {
+		// integration.meta_connect_put_result: pick list and granted permissions on the consumed state, once (no token reaches SQL).
+		if _, e := tx.Exec(ctx, `SELECT integration.meta_connect_put_result($1,$2,$3,$4::jsonb,$5)`, hash, storeID, stateID, string(raw), scopes); e != nil {
 			return e
 		}
 		return command.Audit(ctx, tx, scope, "meta.connect.callback")
 	})
 	if err != nil {
 		return "", mapError(err)
+	}
+	if !s.hold(stateID, tenant, storeID, user, time.Now().Add(10*time.Minute)) {
+		return "", ErrConnectFailed
 	}
 	return stateID, nil
 }
@@ -266,14 +309,11 @@ type Picked struct {
 }
 
 type prepared struct {
-	Page       pageEntry `json:"page"`
-	KeyID      string    `json:"key_id"`
-	Nonce      string    `json:"nonce"`
-	Ciphertext string    `json:"ciphertext"`
+	Page pageEntry `json:"page"`
 }
 
 // Pick binds the chosen Page. Order (a failure at any step leaves nothing half-enabled):
-//  1. tx: meta_connect_prepare validates state, permissions, one-store-per-Page and returns the sealed user token;
+//  1. tx: meta_connect_prepare validates state, permissions, one-store-per-Page and returns the pick row;
 //  2. network (no tx): re-read /me/accounts for the Page token and re-verify tasks, POST subscribed_apps;
 //  3. tx: bindings (core), seal the Page token per binding, meta_connect_finish writes credentials + routes + connection.
 //
@@ -294,7 +334,7 @@ func (s *Service) Pick(ctx context.Context, pool *pgxpool.Pool, token, storeID s
 	err = platform.WithScope(ctx, pool, token, storeID, "integration:manage", func(tx pgx.Tx, sc platform.Scope) error {
 		scope = sc
 		var raw string
-		// integration.meta_connect_prepare: state ownership, pickable Page/IG, one-store-per-Page, sealed user token.
+		// integration.meta_connect_prepare: state ownership, pickable Page/IG, one-store-per-Page.
 		if e := tx.QueryRow(ctx, `SELECT integration.meta_connect_prepare($1,$2,$3,$4,$5)::text`, hash, storeID, in.StateID, in.PageID, in.IncludeInstagram).Scan(&raw); e != nil {
 			return e
 		}
@@ -303,16 +343,11 @@ func (s *Service) Pick(ctx context.Context, pool *pgxpool.Pool, token, storeID s
 	if err != nil {
 		return Picked{}, mapError(err)
 	}
-	nonce, e1 := base64.StdEncoding.DecodeString(prep.Nonce)
-	ct, e2 := base64.StdEncoding.DecodeString(prep.Ciphertext)
-	if e1 != nil || e2 != nil {
-		return Picked{}, ErrConnectFailed
+	// The user token lives only in this process's memory (callback -> pick); no replica memory = the connect must start again.
+	user, ok := s.peek(in.StateID, scope.TenantID, storeID)
+	if !ok {
+		return Picked{}, refusal("state_expired")
 	}
-	userSecret, err := s.cfg.Keys.Open(pendingScope(scope.TenantID, storeID, in.StateID), prep.KeyID, nonce, ct)
-	if err != nil {
-		return Picked{}, ErrConnectFailed
-	}
-	user := userSecret.Reveal()
 	defer clear(user)
 
 	igID := ""
@@ -341,7 +376,7 @@ func (s *Service) Pick(ctx context.Context, pool *pgxpool.Pool, token, storeID s
 				return err
 			}
 		}
-		// integration.meta_connect_finish: credentials (head CAS), routes, connection row, state done, pending token wiped.
+		// integration.meta_connect_finish: credentials (head CAS), routes, connection row, state done.
 		var igBinding, igKey any
 		var igExpected any
 		var igNonce, igCT any
@@ -358,6 +393,7 @@ func (s *Service) Pick(ctx context.Context, pool *pgxpool.Pool, token, storeID s
 	if err != nil {
 		return Picked{}, mapError(err)
 	}
+	s.drop(in.StateID) // the user token is zeroed as soon as the pick committed
 	return Picked{PageID: in.PageID, Instagram: igID != ""}, nil
 }
 
@@ -372,7 +408,7 @@ type sealed struct {
 
 // bind ensures the store's enabled facebook/instagram binding for the asset (core.RegisterBinding for a new one,
 // core.SetBindingEnabled to re-enable a disconnected one: no second binding path), reads its credential head and seals the Page
-// token under AAD(tenant, store, binding, provider, asset, head+1) exactly as meta-page-token-v1 (cmd/meta-admin page-token).
+// token to the public HPKE ring under info(tenant, store, binding, provider, asset, head+1) (meta-page-token-v2).
 func (s *Service) bind(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, hash []byte, state, provider, asset string, pageToken []byte) (sealed, error) {
 	var id string
 	var version int64
@@ -403,8 +439,9 @@ func (s *Service) bind(ctx context.Context, tx pgx.Tx, scope platform.Scope, tok
 	if err = tx.QueryRow(ctx, `SELECT integration.meta_connect_head($1,$2,$3::uuid)`, hash, scope.StoreID, id).Scan(&head); err != nil {
 		return sealed{}, err
 	}
-	keyID, nonce, ct, err := s.cfg.Keys.Seal(metareply.PageTokenScope{TenantID: scope.TenantID, StoreID: scope.StoreID, BindingID: id,
-		Provider: provider, AssetID: asset, Version: head + 1}, string(pageToken))
+	// meta-page-token-v2: HPKE to the public ring; the API can seal this token but never open it again.
+	keyID, nonce, ct, err := s.cfg.Seal.Seal(pagetoken.Scope{TenantID: scope.TenantID, StoreID: scope.StoreID, BindingID: id,
+		Provider: provider, AssetID: asset, Version: head + 1}, pageToken)
 	if err != nil {
 		return sealed{}, ErrConnectFailed
 	}
@@ -416,24 +453,14 @@ func (s *Service) bind(ctx context.Context, tx pgx.Tx, scope platform.Scope, tok
 // ---------------------------------------------------------------------------------------------------------------------
 
 type disconnected struct {
-	PageID      string  `json:"page_id"`
-	FBBinding   string  `json:"fb_binding"`
-	IGBinding   *string `json:"ig_binding"`
-	Credentials []struct {
-		Binding    string `json:"binding"`
-		Provider   string `json:"provider"`
-		Asset      string `json:"asset"`
-		Version    int64  `json:"version"`
-		KeyID      string `json:"key_id"`
-		Nonce      string `json:"nonce"`
-		Ciphertext string `json:"ciphertext"`
-	} `json:"credentials"`
+	PageID    string  `json:"page_id"`
+	FBBinding string  `json:"fb_binding"`
+	IGBinding *string `json:"ig_binding"`
 }
 
 // Disconnect destroys the sealed Page credentials, disables the routes and the bindings and deletes the connection row in ONE
-// transaction (meta_connect_disconnect + core.SetBindingEnabled), then, after COMMIT, makes the best-effort Graph unsubscribe
-// with the in-memory Page token. The unsubscribe outcome is ignored: the route is already disabled, so a leftover subscription
-// only yields quarantined events.
+// transaction (meta_connect_disconnect + core.SetBindingEnabled). There is no Graph unsubscribe: this process can seal a Page token
+// but never open one, and the route is disabled, so a leftover Meta-side subscription only yields quarantined events.
 func (s *Service) Disconnect(ctx context.Context, pool *pgxpool.Pool, token, storeID string) error {
 	if s == nil || pool == nil {
 		return platform.ErrUnauthorized
@@ -443,11 +470,9 @@ func (s *Service) Disconnect(ctx context.Context, pool *pgxpool.Pool, token, sto
 		return err
 	}
 	var out disconnected
-	var scope platform.Scope
 	err = platform.WithScope(ctx, pool, token, storeID, "integration:manage", func(tx pgx.Tx, sc platform.Scope) error {
-		scope = sc
 		var raw string
-		// integration.meta_connect_disconnect: deletes heads and versions, disables routes, deletes the connection row.
+		// integration.meta_connect_disconnect: deletes heads and versions, disables routes, deletes the connection row (ids only back).
 		if e := tx.QueryRow(ctx, `SELECT integration.meta_connect_disconnect($1,$2)::text`, hash, storeID).Scan(&raw); e != nil {
 			return e
 		}
@@ -477,25 +502,6 @@ func (s *Service) Disconnect(ctx context.Context, pool *pgxpool.Pool, token, sto
 	})
 	if err != nil {
 		return mapError(err)
-	}
-	for _, c := range out.Credentials {
-		if c.Provider != "facebook" {
-			continue // one Page subscription serves both providers
-		}
-		nonce, e1 := base64.StdEncoding.DecodeString(c.Nonce)
-		ct, e2 := base64.StdEncoding.DecodeString(c.Ciphertext)
-		if e1 != nil || e2 != nil {
-			continue
-		}
-		secret, e := s.cfg.Keys.Open(metareply.PageTokenScope{TenantID: scope.TenantID, StoreID: scope.StoreID, BindingID: c.Binding,
-			Provider: c.Provider, AssetID: c.Asset, Version: c.Version}, c.KeyID, nonce, ct)
-		if e != nil {
-			continue
-		}
-		netCtx, cancel := context.WithTimeout(ctx, connectTimeout)
-		s.unsubscribe(netCtx, out.PageID, secret.Reveal())
-		cancel()
-		clear(secret.Reveal())
 	}
 	return nil
 }

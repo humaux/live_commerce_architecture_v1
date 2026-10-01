@@ -30,7 +30,7 @@ import (
 
 	"livecommerce/internal/httpapi"
 	metaoauth "livecommerce/internal/integrations/meta/oauth"
-	"livecommerce/internal/integrations/metareply"
+	"livecommerce/internal/integrations/meta/pagetoken"
 	"livecommerce/internal/metaconnect"
 	"livecommerce/tests/metaconnect/fakegraph"
 )
@@ -52,16 +52,13 @@ func TestBrowserMetaConnect(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	keys, err := metareply.NewPageTokenKeyring("pt_key_1", map[string][]byte{"pt_key_1": randomBytes(32)})
-	if err != nil {
-		t.Fatal(err)
-	}
+	seal, open := mcnPageRing(t)
 	jobs, err := newInsertOnlyClient(f)
 	if err != nil {
 		t.Fatal(err)
 	}
 	svc, err := metaconnect.New(metaconnect.Config{Graph: graph, App: metaoauth.App{ID: miApp, RedirectURI: mcnRedirect, Secret: []byte(miSecret)},
-		ConfigID: mcnConfig, GraphVersion: mcnVersion, PageAppID: miApp, IGAppID: miApp, StateKey: metaconnect.StateKeyFor([]byte(miSecret)), Keys: keys}, jobs)
+		ConfigID: mcnConfig, GraphVersion: mcnVersion, PageAppID: miApp, IGAppID: miApp, StateKey: metaconnect.StateKeyFor([]byte(miSecret)), Seal: seal}, jobs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -151,16 +148,19 @@ func TestBrowserMetaConnect(t *testing.T) {
 	if err := f.owner.QueryRow(ctx, `SELECT c.key_id,c.nonce,c.ciphertext,c.binding_id::text FROM integration.meta_page_credentials c WHERE c.store_id=$1 AND c.asset_id=$2 AND c.version=1`, store, pageB.ID).Scan(&keyID, &nonce, &ct, &binding); err != nil {
 		t.Fatalf("Page B credential: %v", err)
 	}
-	if sec, err := keys.Open(metareply.PageTokenScope{TenantID: f.tenantA, StoreID: store, BindingID: binding, Provider: "facebook", AssetID: pageB.ID, Version: 1}, keyID, nonce, ct); err != nil || string(sec.Reveal()) != pageB.Token {
-		t.Errorf("Page B credential does not open to its Page token: %v", err)
+	if plain, err := open.Open(pagetoken.Scope{TenantID: f.tenantA, StoreID: store, BindingID: binding, Provider: "facebook", AssetID: pageB.ID, Version: 1}, keyID, nonce, ct); err != nil || string(plain) != pageB.Token {
+		t.Errorf("Page B credential does not open (with the claims-worker's private ring) to its Page token: %v", err)
 	}
 	for action, min := range map[string]int{"meta.connect.started": 4, "meta.connect.callback": 3, "meta.connect.page_connected": 2, "meta.connect.disconnected": 1} {
 		if n := count(`SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action=$2 AND principal_id=$3`, store, action, principal); n < min {
 			t.Errorf("audit %s: %d rows, want >= %d", action, n, min)
 		}
 	}
-	if fake.Subscribed(pageA.ID) || fake.Subscribed(pageC.ID) || !fake.Subscribed(pageB.ID) {
-		t.Error("final subscriptions: only Page B may be subscribed (A was unsubscribed on disconnect, C never)")
+	if !fake.Subscribed(pageA.ID) || fake.Subscribed(pageC.ID) || !fake.Subscribed(pageB.ID) {
+		t.Error("final subscriptions: A and B stay subscribed at Meta (the API cannot open a stored token to unsubscribe; the route is disabled), C never was")
+	}
+	if fake.Count("DELETE", "/subscribed_apps") != 0 {
+		t.Error("the API made a Graph unsubscribe call")
 	}
 	for _, r := range fake.Requests() {
 		if r.HasQueryToken || (r.HasClientSecret && r.Path != "oauth/access_token") {

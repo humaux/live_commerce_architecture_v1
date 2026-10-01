@@ -1,15 +1,16 @@
 // merchant_meta_connect.go builds the merchant Facebook Page / Instagram connect service for the API process
 // (contracts/meta-claims-intake-v1.md "Merchant connect (R4)"): the Login for Business dialog and code exchange for the existing
 // Meta app (id + secret from the same COMMERCE_META_APPS_JSON entry the webhook verifier uses, so no second secret exists),
-// the Page-token keyring that seals the user token between callback and pick and the Page token for good, and an insert-only
-// River client (core.RegisterBinding needs one; no queue or worker starts here).
+// the HPKE PUBLIC ring that seals the Page token (meta-page-token-v2), and an insert-only River client (core.RegisterBinding needs
+// one; no queue or worker starts here).
 //
 // Non-goals: no route (internal/httpapi/meta_connect.go), no rule (internal/metaconnect and migration 0095), no Graph call
-// except through internal/metaconnect. This process now holds the Page-token keyring (seal + the disconnect-time open), which
-// contract §7 had reserved for cmd/claims-worker: the price of self-serve sealing, recorded in the contract amendment.
+// except through internal/metaconnect, and NO private key: this file must never import pagetoken/pageopen nor name the v1 AES
+// keyring or the private HPKE ring (token custody: the API seals, only claims-worker opens; checked by
+// TestMetaConnectAPIHoldsNoPagePrivateKey).
 // Variables (names only): COMMERCE_META_LOGIN_CONFIG_ID (empty = surface off, nothing else is read),
 // COMMERCE_META_LOGIN_REDIRECT_URI, COMMERCE_META_LOGIN_GRAPH_VERSION, COMMERCE_META_APPS_JSON,
-// COMMERCE_META_PAGE_TOKEN_KEYS_JSON, COMMERCE_META_PAGE_TOKEN_ACTIVE_KEY_ID.
+// COMMERCE_META_PAGE_HPKE_PUBLIC_KEYS_JSON, COMMERCE_META_PAGE_HPKE_ACTIVE_KEY_ID.
 
 package main
 
@@ -23,7 +24,7 @@ import (
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 
 	metaoauth "livecommerce/internal/integrations/meta/oauth"
-	"livecommerce/internal/integrations/metareply"
+	"livecommerce/internal/integrations/meta/pagetoken"
 	"livecommerce/internal/metaconnect"
 )
 
@@ -78,7 +79,7 @@ func newMetaConnect(pool *pgxpool.Pool, getenv func(string) string) (*metaconnec
 	}
 	secret := []byte(page.AppSecret)
 	defer clear(secret)
-	keys, err := metareply.LoadPageTokenKeyring(getenv)
+	seal, err := pagetoken.LoadSealKeys(getenv)
 	if err != nil {
 		return nil, errMetaConnectConfig
 	}
@@ -95,7 +96,7 @@ func newMetaConnect(pool *pgxpool.Pool, getenv func(string) string) (*metaconnec
 	svc, err := metaconnect.New(metaconnect.Config{
 		Graph: graph, App: metaoauth.App{ID: page.AppID, RedirectURI: getenv("COMMERCE_META_LOGIN_REDIRECT_URI"), Secret: secret},
 		ConfigID: configID, GraphVersion: getenv("COMMERCE_META_LOGIN_GRAPH_VERSION"), PageAppID: page.AppID, IGAppID: igApp,
-		StateKey: metaconnect.StateKeyFor(secret), Keys: keys,
+		StateKey: metaconnect.StateKeyFor(secret), Seal: seal,
 	}, jobs)
 	if err != nil {
 		return nil, errMetaConnectConfig

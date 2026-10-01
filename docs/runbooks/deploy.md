@@ -254,11 +254,12 @@ deploy/scripts/deploy.sh upgrade <tag>
    - Facebook Login for Business → 配置（试点：「直播SaaS主页连接」，id `2952863798433821`，令牌类型 **用户访问令牌**），权限**恰好**：`pages_show_list`、`pages_manage_metadata`、`pages_read_engagement`、`pages_messaging`、`instagram_basic`、`instagram_manage_comments`、`instagram_manage_messages`、`business_management`。最少要求（缺则拒绝连接）：前四项；Instagram 三项仅在主页有关联 IG 账号时要求。
    - Webhooks：Page 对象订阅 `feed`、Instagram 对象订阅 `comments`、`live_comments`（回调见 §6.3 第 1 步）；`commerce_meta_apps_json` 里 `page` 条目的 `app_id`/`app_secret` 就是登录用的 app（无需另一个 secret）。
    - 正式对外（非开发者/测试者账号使用）需要 App Review 通过上述权限；R4 未验证（SANDBOX/LIVE NOT_RUN）。
-2. **api.env**：`COMMERCE_META_LOGIN_CONFIG_ID`、`COMMERCE_META_LOGIN_REDIRECT_URI=https://<LC_ADMIN_HOST>/api/meta/callback`、`COMMERCE_META_LOGIN_GRAPH_VERSION=v26.0`（示例见 `deploy/env/api.env.example`）。要求 `COMMERCE_META_WEBHOOK_ENABLED=1` 和 `LC_IDENTITY_ENABLED`；`claims` profile 负责真实私信（P06 对缺 claims 给出警告）。api 容器现在也挂载 Page-token keyring（`commerce_meta_page_token_*`，只用于封存商家自己的 Page token 与断开连接时的取消订阅；合同 §7 修订）。
+2. **api.env**：`COMMERCE_META_LOGIN_CONFIG_ID`、`COMMERCE_META_LOGIN_REDIRECT_URI=https://<LC_ADMIN_HOST>/api/meta/callback`、`COMMERCE_META_LOGIN_GRAPH_VERSION=v26.0`（示例见 `deploy/env/api.env.example`）。要求 `COMMERCE_META_WEBHOOK_ENABLED=1` 和 `LC_IDENTITY_ENABLED`；`claims` profile 负责真实私信（P06 对缺 claims 给出警告）。**Token 托管（合同 §7，与 ads 同一规则）**：api 只挂 HPKE **公钥**环（`commerce_meta_page_hpke_public_keys_json` + `commerce_meta_page_hpke_active_key_id`，meta-page-token-v2），只能封存、永远无法打开 Page token；**私钥环 `commerce_meta_page_hpke_private_keys_json` 只挂 claims-worker**（`secrets-init.sh` 生成，公钥环由它派生；轮换：只追加私钥 → `--rederive` → 改 active key id → 重启 claims-worker 再重启 api）。v1（AES，operator CLI 路径）的行继续可读：按 nonce 长度（12 = v1，32 = v2）区分。`TestMetaConnectAPIHoldsNoPagePrivateKey` 静态保证 api 的源码/依赖/compose/manifest 不含任何打开密钥。
 3. 升级：先跑迁移 0095，再 `preflight.sh`（P06/P08）→ `deploy.sh upgrade`。Caddy 访问日志已对所有路径把 `code`/`state` 查询参数替换为 REDACTED（`deploy/caddy/Caddyfile` 全局规则，同样覆盖 `/api/meta/callback`；这是一次性凭据）；smoke S40 目前只对 `/api/ads/meta/callback` 放 canary，未单独覆盖新路径（已知缺口）。
 4. 关闭：清空 `COMMERCE_META_LOGIN_CONFIG_ID` 并重启 api（路由 404；已连接的主页保持，webhook 与私信不受影响）。
 5. 排障：卡片显示“已过期或撤销”= 私信发送时 Graph 返回 190（`reauth_required`），商家点「重新连接」即可（同一主页、新令牌版本）；“跨店 409 page_taken”= 该主页已属于另一间店铺（路由的 `meta_inbox.asset_owners` 不随断开释放，需运维评估后用 `meta-admin` 处理）；回调返回 `meta_connect_failed` = Meta 侧交换/列表/订阅失败，状态已被烧掉，重新开始即可，没有任何半启用状态。
-6. 证据：`TestMetaConnect*`（REAL_PG + River，MOCK Graph：状态/权限/拒绝、挑选、IG 有无、webhook→认领→私信、190、断开、跨店）、`--browser-meta-connect`（浏览器，MOCK）。真实 Meta（对话框、`/me/accounts`、订阅）NOT_RUN。
+6. 已知限制：商家在 callback 与选主页之间的 user token 只放在 api 进程内存（不落库，10 分钟）；api 在此期间重启或多副本时，选主页会返回 `state_expired`，商家重新连接即可。断开连接不向 Meta 取消订阅（api 打不开已存的 token）。
+7. 证据：`TestMetaConnect*`（REAL_PG + River，MOCK Graph：状态/权限/拒绝、挑选、IG 有无、webhook→认领→私信、190、断开、跨店）、`--browser-meta-connect`（浏览器，MOCK）。真实 Meta（对话框、`/me/accounts`、订阅）NOT_RUN。
 
 ### 6.5 平台服务费（Stripe Billing，SANDBOX）与 R2 权限补发
 

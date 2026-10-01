@@ -216,7 +216,7 @@ test("while connected the store keeps its Page: no second connect offer, reload 
   await expect(page.getByTestId("metaconnect-reconnect")).toHaveCount(0); // token active and far from expiry
 });
 
-test("disconnect asks for confirmation, destroys the connection and unsubscribes the Page", async ({ page }) => {
+test("disconnect asks for confirmation, destroys the connection (the Meta-side subscription stays; the route is disabled)", async ({ page }) => {
   await signedLogin(page);
   await openSettings(page);
   await page.getByTestId("metaconnect-disconnect").click();
@@ -228,7 +228,7 @@ test("disconnect asks for confirmation, destroys the connection and unsubscribes
   await expect(page.getByTestId("metaconnect-none")).toBeVisible({ timeout: 30_000 });
   await expect(page.getByTestId("metaconnect-notice")).toHaveText(en.disconnectedNotice);
   const facts = (await (await ctl("facts")).json()) as { subscribed: { A: boolean; B: boolean; C: boolean } };
-  expect(facts.subscribed.A).toBe(false);
+  expect(facts.subscribed.A).toBe(true); // no unsubscribe: the API can seal a Page token but never open one
   await noSecrets(page);
 });
 
@@ -246,7 +246,7 @@ test("reconnect with a Facebook-only Page: Instagram absent, card says none link
   await expect(page.getByTestId("metaconnect-page")).toContainText(pageB.name);
   await expect(page.getByTestId("metaconnect-ig")).toHaveText(en.noInstagram);
   const facts = (await (await ctl("facts")).json()) as { subscribed: { A: boolean; B: boolean; C: boolean } };
-  expect(facts.subscribed).toEqual({ A: false, B: true, C: false });
+  expect(facts.subscribed).toEqual({ A: true, B: true, C: false });
   await noSecrets(page);
 });
 });

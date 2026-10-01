@@ -1,8 +1,10 @@
 -- 0095 merchant self-serve Facebook Page / Instagram connect (contracts/meta-claims-intake-v1.md "Merchant connect (R4)",
 -- unit meta-connect). Until now a Page token, binding and route could only be registered by the operator CLI
 -- (cmd/meta-admin, login commerce_meta_registrar). This adds the merchant path under the SAME custody rules:
---   * the token is sealed exactly as meta-page-token-v1 (AES-256-GCM, AAD bound to tenant/store/binding/provider/asset/version);
---     only the sealed bytes reach SQL, never plaintext;
+--   * the token is sealed as meta-page-token-v2: HPKE to PUBLIC keys (cmd/api holds no private key and can never open a Page token;
+--     only the claims-worker's private ring does), info bound to tenant/store/binding/provider/asset/version/key id. v1 rows (AES-256-GCM,
+--     operator CLI, nonce 12 bytes) stay valid: a row is v2 exactly when its nonce is the 32-byte HPKE encapsulated key. Only sealed bytes
+--     reach SQL, never plaintext, and the USER token between callback and pick never reaches SQL at all (it lives in API memory);
 --   * every definer authenticates the merchant session by hash (identity.resolve_access, integration:manage / :read) and
 --     requires the result to equal this transaction's app.* GUC scope (platform.WithScope set it from the same session);
 --   * the Page -> store route is written by a helper owned by commerce_meta_writer (the owner of the 0028 route definers)
@@ -10,6 +12,12 @@
 -- Owning package: internal/metaconnect (callers: httpapi meta_connect.go, commerce_runtime) and internal/integrations/metareply
 -- (mark_reauth, commerce_worker). Non-goals: no Graph call here, no plaintext token, no Page-token read for anyone but the
 -- disconnecting merchant's own API call (see meta_connect_disconnect), the 0064 loader/registrar stay as they are.
+
+-- v2 credentials carry the 32-byte HPKE encapsulated key in the nonce column (as 0074 already allows for meta_ads/meta_dataset).
+ALTER TABLE integration.meta_page_credentials DROP CONSTRAINT meta_page_credentials_nonce_check;
+ALTER TABLE integration.meta_page_credentials ADD CONSTRAINT meta_page_credentials_nonce_check
+ CHECK ((provider IN ('facebook','instagram') AND octet_length(nonce) IN (12,32))
+     OR (provider IN ('meta_ads','meta_dataset') AND octet_length(nonce)=32));
 
 -- ---------------------------------------------------------------------------------------
 -- Tables (all FORCE RLS, PUBLIC revoked; the only reader/writer is commerce_integration_writer through the definers below).
@@ -23,18 +31,13 @@ CREATE TABLE integration.meta_connect_states (
  pages jsonb CHECK(pages IS NULL OR (jsonb_typeof(pages)='array' AND jsonb_array_length(pages)<=25 AND octet_length(pages::text)<=16384)),
  scopes_attested text[] CHECK(scopes_attested IS NULL OR (cardinality(scopes_attested) BETWEEN 1 AND 64
   AND array_to_string(scopes_attested,',') ~ '^[a-z_]{1,64}(,[a-z_]{1,64}){0,63}$')),
- -- The sealed USER token between callback and pick (AES-256-GCM, page-token keyring, AAD scope = this state), deleted on pick
- -- or at expiry (opportunistically by begin and by disconnect; there is no periodic job).
- pending_key_id text CHECK(pending_key_id ~ '^[A-Za-z0-9_-]{1,64}$'),
- pending_nonce bytea CHECK(octet_length(pending_nonce)=12),
- pending_ciphertext bytea CHECK(octet_length(pending_ciphertext) BETWEEN 17 AND 8192),
+ -- The USER token between callback and pick is NOT stored: it lives in the API process memory (10 min, zeroed on pick/expiry), so no
+ -- row here can ever hold a token and the API never needs to open anything it persisted.
  done_at timestamptz,
  CHECK(used_at IS NULL OR used_at >= created_at), CHECK(expires_at > created_at),
- CHECK((pending_ciphertext IS NULL) = (pending_nonce IS NULL) AND (pending_nonce IS NULL) = (pending_key_id IS NULL)),
  UNIQUE(tenant_id,store_id,id),
  FOREIGN KEY(tenant_id,store_id) REFERENCES control.stores(tenant_id,id),
  FOREIGN KEY(tenant_id,principal_id) REFERENCES identity.memberships(tenant_id,principal_id));
-CREATE INDEX meta_connect_states_expiry ON integration.meta_connect_states(expires_at) WHERE pending_ciphertext IS NOT NULL;
 
 CREATE TABLE integration.meta_connections (
  tenant_id uuid NOT NULL, store_id uuid NOT NULL, PRIMARY KEY(tenant_id,store_id),
@@ -60,7 +63,7 @@ ALTER TABLE integration.meta_connections FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON integration.meta_connect_states, integration.meta_connections FROM PUBLIC;
 
 -- The definer owner is the control (0064 page_credential_writer pattern): its bodies decide every row.
-GRANT SELECT, INSERT, UPDATE(used_at,pages,scopes_attested,pending_key_id,pending_nonce,pending_ciphertext,done_at)
+GRANT SELECT, INSERT, UPDATE(used_at,pages,scopes_attested,done_at)
  ON integration.meta_connect_states TO commerce_integration_writer;
 CREATE POLICY meta_connect_states_writer ON integration.meta_connect_states FOR ALL TO commerce_integration_writer USING (true) WITH CHECK (true);
 GRANT SELECT, INSERT, DELETE, UPDATE(page_name,fb_binding,ig_binding,ig_id,ig_username,scopes,status,connected_by,connected_at,updated_at,route_expires_at)
@@ -181,9 +184,6 @@ DECLARE a record; v_id uuid:=gen_random_uuid(); v_exp timestamptz;
 BEGIN
  IF p_state_hash IS NULL OR octet_length(p_state_hash)<>32 THEN RAISE EXCEPTION 'invalid_request' USING ERRCODE='MC422'; END IF;
  SELECT * INTO a FROM integration.meta_connect_auth(p_hash,p_store,'integration:manage');
- -- ponytail: the expired user-token ciphertexts are wiped here (every connect start) and at disconnect; no periodic job.
- UPDATE integration.meta_connect_states s SET pending_key_id=NULL,pending_nonce=NULL,pending_ciphertext=NULL
-  WHERE s.pending_ciphertext IS NOT NULL AND s.expires_at<=clock_timestamp();
  IF (SELECT count(*) FROM integration.meta_connect_states s WHERE s.tenant_id=a.out_tenant AND s.store_id=p_store
    AND s.used_at IS NULL AND s.expires_at>clock_timestamp())>=10 THEN
   RAISE EXCEPTION 'conflict' USING ERRCODE='MC409'; END IF;
@@ -208,16 +208,13 @@ BEGIN
  RETURN s.id;
 END $$;
 
-CREATE FUNCTION integration.meta_connect_put_result(p_hash bytea,p_store uuid,p_state uuid,p_pages jsonb,p_scopes text[],
- p_key_id text,p_nonce bytea,p_ciphertext bytea) RETURNS void
+CREATE FUNCTION integration.meta_connect_put_result(p_hash bytea,p_store uuid,p_state uuid,p_pages jsonb,p_scopes text[]) RETURNS void
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE a record; s integration.meta_connect_states; e jsonb;
 BEGIN
  IF p_state IS NULL OR p_pages IS NULL OR jsonb_typeof(p_pages)<>'array' OR jsonb_array_length(p_pages)>25 OR octet_length(p_pages::text)>16384
   OR p_scopes IS NULL OR array_ndims(p_scopes)<>1 OR cardinality(p_scopes) NOT BETWEEN 1 AND 64
-  OR array_to_string(p_scopes,',') !~ '^[a-z_]{1,64}(,[a-z_]{1,64}){0,63}$'
-  OR p_key_id IS NULL OR p_key_id !~ '^[A-Za-z0-9_-]{1,64}$' OR p_nonce IS NULL OR octet_length(p_nonce)<>12
-  OR p_ciphertext IS NULL OR octet_length(p_ciphertext) NOT BETWEEN 17 AND 8192 THEN
+  OR array_to_string(p_scopes,',') !~ '^[a-z_]{1,64}(,[a-z_]{1,64}){0,63}$' THEN
   RAISE EXCEPTION 'invalid_request' USING ERRCODE='MC422'; END IF;
  FOR e IN SELECT * FROM jsonb_array_elements(p_pages) LOOP
   IF jsonb_typeof(e)<>'object' OR e->>'page_id' IS NULL OR e->>'page_id' !~ '^[0-9]{1,40}$'
@@ -230,8 +227,7 @@ BEGIN
   AND x.principal_id=a.out_principal FOR UPDATE;
  IF NOT FOUND OR s.used_at IS NULL OR s.pages IS NOT NULL THEN RAISE EXCEPTION 'state_mismatch' USING ERRCODE='MC409'; END IF;
  IF s.expires_at<=clock_timestamp() THEN RAISE EXCEPTION 'state_expired' USING ERRCODE='MC410'; END IF;
- UPDATE integration.meta_connect_states x SET pages=p_pages,scopes_attested=p_scopes,pending_key_id=p_key_id,pending_nonce=p_nonce,
-  pending_ciphertext=p_ciphertext WHERE x.id=s.id;
+ UPDATE integration.meta_connect_states x SET pages=p_pages,scopes_attested=p_scopes WHERE x.id=s.id;
 END $$;
 
 CREATE FUNCTION integration.meta_connect_get_state(p_hash bytea,p_store uuid,p_state uuid) RETURNS jsonb
@@ -250,7 +246,7 @@ BEGIN
 END $$;
 
 -- Pick, step 1 (before any Meta call): the state must be this principal's, consumed, unexpired, not finished, and the chosen
--- Page (and IG) must be pickable. Returns the sealed user token so the API can fetch the Page token (it never leaves memory).
+-- Page (and IG) must be pickable. Returns the pick row; the API holds the user token in memory and fetches the Page token itself.
 CREATE FUNCTION integration.meta_connect_prepare(p_hash bytea,p_store uuid,p_state uuid,p_page text,p_with_ig boolean) RETURNS jsonb
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE a record; s integration.meta_connect_states; e jsonb; v_page jsonb; v_other text;
@@ -261,7 +257,7 @@ BEGIN
   AND x.principal_id=a.out_principal FOR UPDATE;
  IF NOT FOUND OR s.used_at IS NULL OR s.pages IS NULL THEN RAISE EXCEPTION 'state_mismatch' USING ERRCODE='MC409'; END IF;
  IF s.expires_at<=clock_timestamp() THEN RAISE EXCEPTION 'state_expired' USING ERRCODE='MC410'; END IF;
- IF s.done_at IS NOT NULL OR s.pending_ciphertext IS NULL THEN RAISE EXCEPTION 'state_used' USING ERRCODE='MC409'; END IF;
+ IF s.done_at IS NOT NULL THEN RAISE EXCEPTION 'state_used' USING ERRCODE='MC409'; END IF;
  FOR e IN SELECT * FROM jsonb_array_elements(s.pages) LOOP
   IF e->>'page_id'=p_page THEN v_page:=e; END IF;
  END LOOP;
@@ -276,8 +272,7 @@ BEGIN
  IF NOT meta_inbox.connect_owner_ok('page',p_page,a.out_tenant,p_store)
   OR (p_with_ig AND NOT meta_inbox.connect_owner_ok('instagram',v_page->>'ig_id',a.out_tenant,p_store)) THEN
   RAISE EXCEPTION 'page_taken' USING ERRCODE='MC409'; END IF;
- RETURN jsonb_build_object('page',v_page,'scopes',to_jsonb(s.scopes_attested),'key_id',s.pending_key_id,
-  'nonce',encode(s.pending_nonce,'base64'),'ciphertext',encode(s.pending_ciphertext,'base64'));
+ RETURN jsonb_build_object('page',v_page,'scopes',to_jsonb(s.scopes_attested));
 END $$;
 
 -- The head version of a binding's Page credential (0 = none): the CAS input of the seal (its AAD carries the version).
@@ -301,12 +296,12 @@ DECLARE a record; s integration.meta_connect_states; e jsonb; v_page jsonb; v_ot
  v_ig text[]:=ARRAY['instagram_basic','instagram_manage_comments','instagram_manage_messages'];
 BEGIN
  IF p_page IS NULL OR p_page !~ '^[0-9]{1,40}$' OR p_fb_binding IS NULL OR p_fb_expected IS NULL OR p_fb_expected<0 OR p_fb_expected>=1<<62
-  OR p_fb_key IS NULL OR p_fb_key !~ '^[A-Za-z0-9_-]{1,64}$' OR p_fb_nonce IS NULL OR octet_length(p_fb_nonce)<>12
+  OR p_fb_key IS NULL OR p_fb_key !~ '^[A-Za-z0-9_-]{1,64}$' OR p_fb_nonce IS NULL OR octet_length(p_fb_nonce)<>32
   OR p_fb_ct IS NULL OR octet_length(p_fb_ct) NOT BETWEEN 17 AND 8192 OR p_app_page IS NULL OR p_app_page !~ '^[0-9]{1,40}$'
   OR ((p_ig_binding IS NULL) IS DISTINCT FROM (p_ig_expected IS NULL)) OR ((p_ig_binding IS NULL) IS DISTINCT FROM (p_ig_key IS NULL))
   OR ((p_ig_binding IS NULL) IS DISTINCT FROM (p_ig_nonce IS NULL)) OR ((p_ig_binding IS NULL) IS DISTINCT FROM (p_ig_ct IS NULL))
   OR (p_ig_binding IS NOT NULL AND (p_ig_expected<0 OR p_ig_expected>=1<<62 OR p_ig_key !~ '^[A-Za-z0-9_-]{1,64}$'
-   OR octet_length(p_ig_nonce)<>12 OR octet_length(p_ig_ct) NOT BETWEEN 17 AND 8192 OR p_app_ig IS NULL OR p_app_ig !~ '^[0-9]{1,40}$')) THEN
+   OR octet_length(p_ig_nonce)<>32 OR octet_length(p_ig_ct) NOT BETWEEN 17 AND 8192 OR p_app_ig IS NULL OR p_app_ig !~ '^[0-9]{1,40}$')) THEN
   RAISE EXCEPTION 'invalid_request' USING ERRCODE='MC422'; END IF;
  SELECT * INTO a FROM integration.meta_connect_auth(p_hash,p_store,'integration:manage');
  SELECT * INTO s FROM integration.meta_connect_states x WHERE x.id=p_state AND x.tenant_id=a.out_tenant AND x.store_id=p_store
@@ -357,7 +352,7 @@ BEGIN
   ON CONFLICT (tenant_id,store_id) DO UPDATE SET page_name=EXCLUDED.page_name,fb_binding=EXCLUDED.fb_binding,ig_binding=EXCLUDED.ig_binding,
    ig_id=EXCLUDED.ig_id,ig_username=EXCLUDED.ig_username,scopes=EXCLUDED.scopes,status='active',connected_by=EXCLUDED.connected_by,
    connected_at=clock_timestamp(),updated_at=clock_timestamp(),route_expires_at=EXCLUDED.route_expires_at;
- UPDATE integration.meta_connect_states x SET done_at=clock_timestamp(),pending_key_id=NULL,pending_nonce=NULL,pending_ciphertext=NULL WHERE x.id=s.id;
+ UPDATE integration.meta_connect_states x SET done_at=clock_timestamp() WHERE x.id=s.id;
  RETURN jsonb_build_object('page_id',p_page,'instagram',p_ig_binding IS NOT NULL);
 END $$;
 
@@ -402,31 +397,23 @@ BEGIN
    ELSE to_char(greatest(v_last,v_ig) AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') END);
 END $$;
 
--- Disconnect: ONE transaction destroys the sealed Page tokens and disables the routes. It returns the head ciphertexts once so
--- the API can make its best-effort DELETE subscribed_apps with the in-memory token after COMMIT (the ciphertext is useless
--- without the Page-token keyring and its AAD); the caller then disables the bindings (core.SetBindingEnabled).
+-- Disconnect: ONE transaction destroys the sealed Page tokens and disables the routes; the caller then disables the bindings
+-- (core.SetBindingEnabled). The API cannot open a stored token, so there is no Graph unsubscribe: the leftover Meta-side subscription
+-- only produces events for a disabled route (quarantined).
 CREATE FUNCTION integration.meta_connect_disconnect(p_hash bytea,p_store uuid) RETURNS jsonb
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE a record; c integration.meta_connections; r record; v_creds jsonb:='[]'::jsonb;
+DECLARE a record; c integration.meta_connections;
 BEGIN
  SELECT * INTO a FROM integration.meta_connect_auth(p_hash,p_store,'integration:manage');
  SELECT * INTO c FROM integration.meta_connections x WHERE x.tenant_id=a.out_tenant AND x.store_id=p_store FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'not_found' USING ERRCODE='MC404'; END IF;
- FOR r IN SELECT k.binding_id,k.provider,k.asset_id,k.version,k.key_id,k.nonce,k.ciphertext FROM integration.meta_page_credentials k
-   JOIN integration.meta_page_heads h ON h.tenant_id=k.tenant_id AND h.store_id=k.store_id AND h.binding_id=k.binding_id AND h.current_version=k.version
-   WHERE k.tenant_id=a.out_tenant AND k.store_id=p_store AND k.binding_id IN (c.fb_binding,c.ig_binding) LOOP
-  v_creds:=v_creds||jsonb_build_object('binding',r.binding_id,'provider',r.provider,'asset',r.asset_id,'version',r.version,'key_id',r.key_id,
-   'nonce',encode(r.nonce,'base64'),'ciphertext',encode(r.ciphertext,'base64'));
- END LOOP;
  -- Head first, then the versions (the 0064 head FK is deferred anyway): no credential of these bindings survives.
  DELETE FROM integration.meta_page_heads h WHERE h.tenant_id=a.out_tenant AND h.store_id=p_store AND h.binding_id IN (c.fb_binding,c.ig_binding);
  DELETE FROM integration.meta_page_credentials k WHERE k.tenant_id=a.out_tenant AND k.store_id=p_store AND k.binding_id IN (c.fb_binding,c.ig_binding);
  PERFORM meta_inbox.connect_disable(a.out_tenant,p_store,'page',c.page_id);
  IF c.ig_id IS NOT NULL THEN PERFORM meta_inbox.connect_disable(a.out_tenant,p_store,'instagram',c.ig_id); END IF;
- UPDATE integration.meta_connect_states x SET pending_key_id=NULL,pending_nonce=NULL,pending_ciphertext=NULL
-  WHERE x.tenant_id=a.out_tenant AND x.store_id=p_store AND x.pending_ciphertext IS NOT NULL;
  DELETE FROM integration.meta_connections x WHERE x.tenant_id=a.out_tenant AND x.store_id=p_store;
- RETURN jsonb_build_object('page_id',c.page_id,'fb_binding',c.fb_binding,'ig_binding',c.ig_binding,'credentials',v_creds);
+ RETURN jsonb_build_object('page_id',c.page_id,'fb_binding',c.fb_binding,'ig_binding',c.ig_binding);
 END $$;
 
 -- Graph 190 (token invalid / revoked) seen by the private-reply dispatcher: flip the card to "reconnect". Only ever moves
@@ -446,7 +433,7 @@ DO $$
 DECLARE f text;
 BEGIN
  FOREACH f IN ARRAY ARRAY['integration.meta_connect_auth(bytea,uuid,text)','integration.meta_connect_begin(bytea,uuid,bytea)',
-  'integration.meta_connect_consume(bytea,uuid,bytea)','integration.meta_connect_put_result(bytea,uuid,uuid,jsonb,text[],text,bytea,bytea)',
+  'integration.meta_connect_consume(bytea,uuid,bytea)','integration.meta_connect_put_result(bytea,uuid,uuid,jsonb,text[])',
   'integration.meta_connect_get_state(bytea,uuid,uuid)','integration.meta_connect_prepare(bytea,uuid,uuid,text,boolean)',
   'integration.meta_connect_head(bytea,uuid,uuid)',
   'integration.meta_connect_finish(bytea,uuid,uuid,text,uuid,bigint,text,bytea,bytea,uuid,bigint,text,bytea,bytea,text,text)',
@@ -457,7 +444,7 @@ BEGIN
   EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC',f);
  END LOOP;
  FOREACH f IN ARRAY ARRAY['integration.meta_connect_begin(bytea,uuid,bytea)','integration.meta_connect_consume(bytea,uuid,bytea)',
-  'integration.meta_connect_put_result(bytea,uuid,uuid,jsonb,text[],text,bytea,bytea)','integration.meta_connect_get_state(bytea,uuid,uuid)',
+  'integration.meta_connect_put_result(bytea,uuid,uuid,jsonb,text[])','integration.meta_connect_get_state(bytea,uuid,uuid)',
   'integration.meta_connect_prepare(bytea,uuid,uuid,text,boolean)','integration.meta_connect_head(bytea,uuid,uuid)',
   'integration.meta_connect_finish(bytea,uuid,uuid,text,uuid,bigint,text,bytea,bytea,uuid,bigint,text,bytea,bytea,text,text)',
   'integration.meta_connect_status(bytea,uuid)','integration.meta_connect_disconnect(bytea,uuid)'] LOOP
@@ -467,34 +454,33 @@ BEGIN
 END $$;
 
 COMMENT ON TABLE integration.meta_connect_states IS
- 'internal/metaconnect: single-use Facebook Login for Business state per principal and store (10 min) holding the Page pick list and the sealed USER token until pick or expiry. Written only by integration.meta_connect_* definers (commerce_integration_writer). Non-goal: never a plaintext token, never a Page token.';
+ 'internal/metaconnect: single-use Facebook Login for Business state per principal and store (10 min) holding the Page pick list and the granted permissions until pick or expiry. Written only by integration.meta_connect_* definers (commerce_integration_writer). Non-goal: never any token (the user token lives in API memory).';
 COMMENT ON TABLE integration.meta_connections IS
  'internal/metaconnect: the store''s merchant-connected Facebook Page (and optional Instagram account): ids, display names, granted permissions, status active|reauth_required, route expiry. One row per store; deleted on disconnect. Written only by integration.meta_connect_finish/disconnect/mark_reauth. Non-goal: no token or secret column.';
 COMMENT ON FUNCTION integration.meta_connect_auth(bytea,uuid,text) IS
  'integration owner; internal helper of the meta_connect definers, no caller EXECUTE. identity.resolve_access for integration:manage|read plus equality with the transaction GUC scope; refusals MC401/MC403/MC404.';
 COMMENT ON FUNCTION integration.meta_connect_begin(bytea,uuid,bytea) IS
- 'integration owner; only caller internal/metaconnect.Service.Start (commerce_runtime, integration:manage). Stores sha256(state) for this principal and store (10 min, single use, at most 10 live per store) and wipes expired pending user tokens.';
+ 'integration owner; only caller internal/metaconnect.Service.Start (commerce_runtime, integration:manage). Stores sha256(state) for this principal and store (10 min, single use, at most 10 live per store).';
 COMMENT ON FUNCTION integration.meta_connect_consume(bytea,uuid,bytea) IS
  'integration owner; only caller internal/metaconnect.Service.Callback. Marks the state used iff it is this principal''s, this store''s, unused and unexpired (state_mismatch / state_expired); uniform refusal otherwise.';
-COMMENT ON FUNCTION integration.meta_connect_put_result(bytea,uuid,uuid,jsonb,text[],text,bytea,bytea) IS
- 'integration owner; only caller internal/metaconnect.Service.Callback after the code exchange. Stores the pick list (ids and names), granted permissions and the sealed user token on the consumed state, once.';
+COMMENT ON FUNCTION integration.meta_connect_put_result(bytea,uuid,uuid,jsonb,text[]) IS
+ 'integration owner; only caller internal/metaconnect.Service.Callback after the code exchange. Stores the pick list (ids and names) and granted permissions on the consumed state, once.';
 COMMENT ON FUNCTION integration.meta_connect_get_state(bytea,uuid,uuid) IS
  'integration owner; only caller GET meta-connect/states/{id} (commerce_runtime). Pick list and granted permissions of this principal''s unexpired, unfinished state; never the sealed token.';
 COMMENT ON FUNCTION integration.meta_connect_prepare(bytea,uuid,uuid,text,boolean) IS
- 'integration owner; only caller internal/metaconnect.Service.Pick step 1. Validates the pick (state, pickable Page/IG, one-store-per-Page via meta_inbox.connect_owner_ok) BEFORE any Meta call and returns the sealed user token so the API can fetch the Page token; refusals missing_permission / page_taken / already_connected.';
+ 'integration owner; only caller internal/metaconnect.Service.Pick step 1. Validates the pick (state, pickable Page/IG, one-store-per-Page via meta_inbox.connect_owner_ok) BEFORE any Meta call and returns the pick row; refusals missing_permission / page_taken / already_connected.';
 COMMENT ON FUNCTION integration.meta_connect_head(bytea,uuid,uuid) IS
  'integration owner; only caller internal/metaconnect.Service.Pick (commerce_runtime). The current Page-credential version of a binding of this store (0 = none), the CAS input of the seal.';
 COMMENT ON FUNCTION integration.meta_connect_finish(bytea,uuid,uuid,text,uuid,bigint,text,bytea,bytea,uuid,bigint,text,bytea,bytea,text,text) IS
- 'integration owner; only caller internal/metaconnect.Service.Pick step 2. One transaction: sealed Page credential(s) under the 0064 head CAS, merchant routes via meta_inbox.connect_activate, the connection row, state done and pending token wiped. Never receives plaintext.';
+ 'integration owner; only caller internal/metaconnect.Service.Pick step 2. One transaction: sealed Page credential(s) under the 0064 head CAS, merchant routes via meta_inbox.connect_activate, the connection row, state done. Receives only sealed (HPKE v2) bytes, never plaintext.';
 COMMENT ON FUNCTION integration.meta_connect_put_credential(uuid,uuid,uuid,uuid,text,text,bigint,text,bytea,bytea,text[]) IS
  'integration owner; internal helper of meta_connect_finish, no caller EXECUTE. One meta_page_credentials version under the head CAS (the 0064 register_meta_page_token rules).';
 COMMENT ON FUNCTION integration.meta_connect_status(bytea,uuid) IS
  'integration owner; only caller GET meta-connect/status (commerce_runtime, integration:read). The card: Page, IG, permissions, status, route expiry, last routed webhook time; no token, no ciphertext.';
 COMMENT ON FUNCTION integration.meta_connect_disconnect(bytea,uuid) IS
- 'integration owner; only caller internal/metaconnect.Service.Disconnect (commerce_runtime, integration:manage). Deletes the sealed Page credentials (heads and versions), disables the Page/IG routes, deletes the connection row and returns the head ciphertexts once for the caller''s best-effort Graph unsubscribe.';
+ 'integration owner; only caller internal/metaconnect.Service.Disconnect (commerce_runtime, integration:manage). Deletes the sealed Page credentials (heads and versions), disables the Page/IG routes and deletes the connection row; returns ids only (the API cannot open a token, so no Graph unsubscribe).';
 COMMENT ON FUNCTION integration.meta_connect_mark_reauth(uuid) IS
  'integration owner; only caller the private-reply adapter (commerce_worker) on a Graph 190. Moves the operation''s store connection active -> reauth_required; no-op for an unknown operation or an already flagged connection.';
 COMMENT ON POLICY meta_connect_states_writer ON integration.meta_connect_states IS '0095: the definer owner reads/writes states; the policy body is the control (0064 page_credential_writer pattern).';
 COMMENT ON POLICY meta_connections_writer ON integration.meta_connections IS '0095: the definer owner reads/writes connections; the policy body is the control.';
-COMMENT ON INDEX integration.meta_connect_states_expiry IS '0095: finds expired pending user tokens for the opportunistic wipe in meta_connect_begin.';
 COMMENT ON INDEX meta_inbox.events_asset_recent IS '0095: the card''s last-webhook read (meta_inbox.connect_last_event); partial on routed events.';

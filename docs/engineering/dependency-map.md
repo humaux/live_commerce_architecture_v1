@@ -25,7 +25,7 @@ Command ads-worker owns the Meta ads River host (meta-ads-v1 §6, ads-graph): th
 
 Command api owns the API process assembly: it loads each feature's configuration (identity, accounts, buyer and hosted payment, Meta webhooks, Stripe webhooks, Studio, claims, merchant refunds, Taiwan CVS), opens the scoped DB pools, builds the handlers and mounts them on one listener.
 
-- Depends on (internal): `internal/ads`, `internal/attribution`, `internal/billing`, `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/fulfillment`, `internal/httpapi`, `internal/httperror`, `internal/identity`, `internal/identityhttp`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta/oauth`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/integrations/psp/stripe`, `internal/integrations/shipping/ecpay`, `internal/live`, `internal/mail`, `internal/metaconnect`, `internal/oidclogin`, `internal/payments`, `internal/payments/stripewebhook`, `internal/platform`
+- Depends on (internal): `internal/ads`, `internal/attribution`, `internal/billing`, `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/fulfillment`, `internal/httpapi`, `internal/httperror`, `internal/identity`, `internal/identityhttp`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta/oauth`, `internal/integrations/meta/pagetoken`, `internal/integrations/meta_ads`, `internal/integrations/psp/stripe`, `internal/integrations/shipping/ecpay`, `internal/live`, `internal/mail`, `internal/metaconnect`, `internal/oidclogin`, `internal/payments`, `internal/payments/stripewebhook`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
 - Used by: — (entry point or unused)
 
@@ -33,7 +33,7 @@ Command api owns the API process assembly: it loads each feature's configuration
 
 Command claims-worker owns the T10c claims host (meta-claims-intake-v1 §5.3, IR-13): it runs the claims intake poller (internal/claimsintake) and the main-schema external_operation_v1 River worker whose only routes are the Meta private replies (internal/integrations/metareply).
 
-- Depends on (internal): `internal/claims`, `internal/claimsintake`, `internal/integrations/core`, `internal/integrations/metareply`, `internal/integrations/shipping/ecpay`, `internal/integrations/shipping/ecpay/ecpayroute`, `internal/jobqueue`, `internal/platform`, `internal/retention`
+- Depends on (internal): `internal/claims`, `internal/claimsintake`, `internal/integrations/core`, `internal/integrations/meta/pagetoken/pageopen`, `internal/integrations/metareply`, `internal/integrations/shipping/ecpay`, `internal/integrations/shipping/ecpay/ecpayroute`, `internal/jobqueue`, `internal/platform`, `internal/retention`
 - Depends on (third-party): `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
 - Used by: — (entry point or unused)
 
@@ -219,7 +219,7 @@ Package command owns scoped replay records and small transaction primitives.
 
 - Depends on (internal): `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`
-- Used by: `cmd/meta-admin`, `cmd/store-admin`, `internal/ads`, `internal/attribution`, `internal/attribution/capiroute`, `internal/billing`, `internal/buyer`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/customers`, `internal/design`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/metaconnect`, `internal/notify`, `internal/pagination`, `internal/payments`, `internal/payments/stripeadmin`, `internal/pricing`, `internal/promotions`, `internal/reporting`, `internal/storefront`, `internal/storefrontadmin`
+- Used by: `cmd/meta-admin`, `cmd/store-admin`, `internal/ads`, `internal/attribution`, `internal/attribution/capiroute`, `internal/billing`, `internal/buyer`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/customers`, `internal/design`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta/pagetoken`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/metaconnect`, `internal/notify`, `internal/pagination`, `internal/payments`, `internal/payments/stripeadmin`, `internal/pricing`, `internal/promotions`, `internal/reporting`, `internal/storefront`, `internal/storefrontadmin`
 
 ## `internal/customers`
 
@@ -315,7 +315,7 @@ Package meta owns admission of signed Meta webhook events: HMAC verification, st
 
 - Depends on (internal): `internal/claims/grammar`, `internal/command`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
-- Used by: `cmd/api`, `cmd/meta-worker`, `cmd/retention-admin`, `internal/integrations/meta_ads`, `internal/integrations/meta_ads/tokenopen`, `internal/integrations/metareply`
+- Used by: `cmd/api`, `cmd/meta-worker`, `cmd/retention-admin`, `internal/integrations/meta/pagetoken`, `internal/integrations/meta/pagetoken/pageopen`, `internal/integrations/meta_ads`, `internal/integrations/meta_ads/tokenopen`, `internal/integrations/metareply`
 
 ## `internal/integrations/meta/oauth`
 
@@ -325,13 +325,29 @@ Package metaoauth owns the Meta OAuth plumbing shared by the merchant ads connec
 - Depends on (third-party): —
 - Used by: `cmd/api`, `internal/ads`, `internal/integrations/meta_ads`, `internal/metaconnect`
 
+## `internal/integrations/meta/pagetoken`
+
+Package pagetoken owns the SEAL half of meta-page-token-v2 custody (contracts/meta-claims-intake-v1.md "Merchant connect (R4)"): the merchant connect in cmd/api seals the Page access token it just received to HPKE PUBLIC keys, so the API can encrypt a token but never read one back.
+
+- Depends on (internal): `internal/command`, `internal/integrations/meta`
+- Depends on (third-party): —
+- Used by: `cmd/api`, `internal/integrations/meta/pagetoken/pageopen`, `internal/integrations/metareply`, `internal/metaconnect`
+
+## `internal/integrations/meta/pagetoken/pageopen`
+
+Package pageopen owns the OPEN half of meta-page-token-v2 custody: the HPKE private-key ring and Open.
+
+- Depends on (internal): `internal/integrations/meta`, `internal/integrations/meta/pagetoken`, `internal/integrations/meta_ads`
+- Depends on (third-party): —
+- Used by: `cmd/claims-worker`, `internal/integrations/metareply`
+
 ## `internal/integrations/meta_ads`
 
 Package metaads owns every Meta Graph wire call of the ads product (contracts/meta-ads-v1.md §3): the eight meta_ads dispatcher routes (create_campaign, create_adset, create_creative, create_ad, preflight_account, activate, pause, read_insights), the CAPI event POST (Client.PostEvent, called by the ads-capi route), the merchant OAuth connect (OAuth.Connect: code exchange, client business, granted permissions, ad-account/dataset pick list, HPKE seal), the Meta money conversions (I05), the read-result grammar carried in integration.operations.provider_reference, and the seal side of token custody (SealKeys: public keys only).
 
 - Depends on (internal): `internal/ads`, `internal/command`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta/oauth`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`
-- Used by: `cmd/ads-worker`, `cmd/api`, `internal/attribution/capiroute`, `internal/integrations/meta_ads/tokenopen`
+- Used by: `cmd/ads-worker`, `cmd/api`, `internal/attribution/capiroute`, `internal/integrations/meta/pagetoken/pageopen`, `internal/integrations/meta_ads/tokenopen`
 
 ## `internal/integrations/meta_ads/tokenopen`
 
@@ -345,9 +361,9 @@ Package tokenopen owns the OPEN half of BISU token custody (meta-ads-v1 A-4, ads
 
 Package metareply owns the first Meta private reply of a keyword-claim bundle (meta-claims-intake-v1 §6.3, §7): the dispatcher routes (facebook|instagram, meta.private_reply, service), the per-store Page-token custody (AES-256-GCM seal/open and the registrar call), the operator route registration (RegisterRoute/DisableRoute: store binding + webhook route, R1 ruling F2) and the fixed reply text.
 
-- Depends on (internal): `internal/claims`, `internal/command`, `internal/integrations/core`, `internal/integrations/meta`, `internal/platform`
+- Depends on (internal): `internal/claims`, `internal/command`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta/pagetoken`, `internal/integrations/meta/pagetoken/pageopen`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
-- Used by: `cmd/api`, `cmd/claims-worker`, `cmd/meta-admin`, `internal/metaconnect`
+- Used by: `cmd/claims-worker`, `cmd/meta-admin`
 
 ## `internal/integrations/psp/payuni`
 
@@ -449,7 +465,7 @@ Package merchantorders owns the private merchant order projection (identity.read
 
 Package metaconnect owns the merchant self-serve connection of a Facebook Page (and its Instagram account) to a store (contracts/meta-claims-intake-v1.md "Merchant connect (R4)", unit meta-connect): the Facebook Login for Business start and callback, the Page pick list, the one-transaction bind (sealed Page credential + binding + webhook route + connection row) and the disconnect.
 
-- Depends on (internal): `internal/command`, `internal/integrations/core`, `internal/integrations/meta/oauth`, `internal/integrations/metareply`, `internal/platform`
+- Depends on (internal): `internal/command`, `internal/integrations/core`, `internal/integrations/meta/oauth`, `internal/integrations/meta/pagetoken`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`
 - Used by: `cmd/api`, `internal/httpapi`
 

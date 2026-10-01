@@ -72,13 +72,13 @@ PY
 # meta-ads-v1 G3 (ads-graph): HPKE X25519 token custody. The PRIVATE ring is generated here (raw 32-byte
 # keys from openssl's PKCS#8 DER, whose last 32 bytes are the key); the PUBLIC ring is DERIVED from it so
 # the api (seal) and ads-worker (open) always agree. Formats: metaads.LoadSealKeys / tokenopen.LoadKeyring.
-gen_hpke_private_ring() {
-  python3 <<'PY'
-import base64, datetime, json, subprocess
+gen_hpke_private_ring() { # $1 = key id prefix
+  python3 - "$1" <<'PY'
+import base64, datetime, json, subprocess, sys
 der = subprocess.run(["openssl", "genpkey", "-algorithm", "X25519", "-outform", "DER"], check=True, capture_output=True).stdout
 assert len(der) == 48, "unexpected X25519 PKCS#8 length"
 day = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d")
-entry = {"id": "ads-hpke-" + day, "private_key_base64": base64.b64encode(der[-32:]).decode()}
+entry = {"id": sys.argv[1] + day, "private_key_base64": base64.b64encode(der[-32:]).decode()}
 print(json.dumps({"keys": [entry]}, separators=(",", ":")), end="")
 PY
 }
@@ -174,10 +174,16 @@ value_for() { # $1 file, $2 kind -> prints a new value
     commerce_stripe_webhook_active_key_id) last_key_id commerce_stripe_webhook_keys_json ;;
     commerce_meta_page_token_active_key_id) last_key_id commerce_meta_page_token_keys_json ;;
     commerce_meta_ads_hpke_active_key_id) last_key_id commerce_meta_ads_hpke_public_keys_json ;;
+    commerce_meta_page_hpke_active_key_id) last_key_id commerce_meta_page_hpke_public_keys_json ;;
     *) lc_die "no key_id rule for $file" ;;
     esac
     ;;
-  hpke_private_ring) gen_hpke_private_ring ;;
+  hpke_private_ring)
+    case "$file" in
+    commerce_meta_page_hpke_private_keys_json) gen_hpke_private_ring page-hpke- ;;
+    *) gen_hpke_private_ring ads-hpke- ;;
+    esac
+    ;;
   *) lc_die "no generator for kind $kind ($file)" ;;
   esac
 }
@@ -200,8 +206,9 @@ derive_for() { # $1 file, $2 kind -> prints the derived DSN
       "$login" "$pw" "$LC_PG_HOST" "$LC_PG_SSLMODE" "$svc" "$extra"
     ;;
   hpke_public_ring)
-    [[ -f "$dir/commerce_meta_ads_hpke_private_keys_json" ]] || lc_die "commerce_meta_ads_hpke_private_keys_json missing (manifest order)"
-    derive_hpke_public_ring commerce_meta_ads_hpke_private_keys_json
+    private=${file/_public_/_private_}
+    [[ -f "$dir/$private" ]] || lc_die "$private missing (manifest order)"
+    derive_hpke_public_ring "$private"
     ;;
   *) lc_die "no derivation for kind $kind ($file)" ;;
   esac

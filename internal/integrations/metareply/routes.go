@@ -19,6 +19,8 @@ import (
 	"livecommerce/internal/claims"
 	"livecommerce/internal/command"
 	"livecommerce/internal/integrations/core"
+	"livecommerce/internal/integrations/meta/pagetoken"
+	"livecommerce/internal/integrations/meta/pagetoken/pageopen"
 	"livecommerce/internal/platform"
 )
 
@@ -85,6 +87,13 @@ type checkFunc func(ctx context.Context, operationID string, linkHash []byte) (s
 // checkPool must be the commerce_worker pool (platform.ValidateWorkerPool) and is used for one
 // STABLE statement per Check; no transaction is held across I/O.
 func Routes(checkPool *pgxpool.Pool, linkKey claims.ReplyLinkKey, pageKeys *PageTokenKeyring, cfg Config) ([]core.DispatchRoute, error) {
+	return RoutesV2(checkPool, linkKey, pageKeys, nil, cfg)
+}
+
+// RoutesV2 is Routes plus the HPKE private ring that opens meta-page-token-v2 credentials (sealed by the merchant connect in cmd/api,
+// which holds only public keys). A stored credential is v1 (AES keyring, nonce 12 bytes) or v2 (HPKE, nonce = 32-byte encapsulated
+// key); with v2 == nil a v2 row is a pre-dispatch denial, never an open attempt.
+func RoutesV2(checkPool *pgxpool.Pool, linkKey claims.ReplyLinkKey, pageKeys *PageTokenKeyring, v2 *pageopen.Keyring, cfg Config) ([]core.DispatchRoute, error) {
 	if checkPool == nil {
 		return nil, ErrConfig
 	}
@@ -100,14 +109,14 @@ func Routes(checkPool *pgxpool.Pool, linkKey claims.ReplyLinkKey, pageKeys *Page
 	reauth := func(ctx context.Context, operationID string) {
 		_, _ = checkPool.Exec(ctx, `SELECT integration.meta_connect_mark_reauth($1::uuid)`, operationID)
 	}
-	return newRoutesWith(check, reauth, linkKey, pageKeys, cfg)
+	return newRoutesWith(check, reauth, linkKey, pageKeys, v2, cfg)
 }
 
 func newRoutes(check checkFunc, linkKey claims.ReplyLinkKey, pageKeys *PageTokenKeyring, cfg Config) ([]core.DispatchRoute, error) {
-	return newRoutesWith(check, nil, linkKey, pageKeys, cfg)
+	return newRoutesWith(check, nil, linkKey, pageKeys, nil, cfg)
 }
 
-func newRoutesWith(check checkFunc, reauth func(context.Context, string), linkKey claims.ReplyLinkKey, pageKeys *PageTokenKeyring, cfg Config) ([]core.DispatchRoute, error) {
+func newRoutesWith(check checkFunc, reauth func(context.Context, string), linkKey claims.ReplyLinkKey, pageKeys *PageTokenKeyring, v2 *pageopen.Keyring, cfg Config) ([]core.DispatchRoute, error) {
 	if check == nil || linkKey.ID() == "" || pageKeys == nil || cfg.Validate() != nil {
 		return nil, ErrConfig
 	}
@@ -117,7 +126,7 @@ func newRoutesWith(check checkFunc, reauth func(context.Context, string), linkKe
 		client = &copied
 	}
 	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
-	a := &adapter{check: check, reauth: reauth, linkKey: linkKey, keys: pageKeys, cfg: cfg, client: client}
+	a := &adapter{check: check, reauth: reauth, linkKey: linkKey, keys: pageKeys, v2: v2, cfg: cfg, client: client}
 	routes := make([]core.DispatchRoute, 0, 2)
 	for _, provider := range []string{"facebook", "instagram"} {
 		routes = append(routes, core.DispatchRoute{
@@ -136,6 +145,7 @@ type adapter struct {
 	reauth  func(ctx context.Context, operationID string) // nil in unit tests; flips the connect card on a Graph 190
 	linkKey claims.ReplyLinkKey
 	keys    *PageTokenKeyring
+	v2      *pageopen.Keyring // nil: v2 (HPKE) credentials are denied
 	cfg     Config
 	client  *http.Client
 }
@@ -221,6 +231,18 @@ func (a *adapter) loadSecretFor(provider string) func(context.Context, pgx.Tx, c
 		}
 		if row.provider != provider || !hasScopes(row.scopes, requiredScopes[provider]) {
 			return core.Secret{}, fmt.Errorf("page token lacks attested scope: %w", core.ErrPolicyDenied)
+		}
+		if len(row.nonce) == pagetoken.EncSize { // v2: HPKE, sealed by the merchant connect to the public ring
+			if a.v2 == nil {
+				return core.Secret{}, fmt.Errorf("page token v2 without private ring: %w", core.ErrPolicyDenied)
+			}
+			plain, err := a.v2.Open(pagetoken.Scope{TenantID: row.tenant, StoreID: row.store, BindingID: row.binding,
+				Provider: row.provider, AssetID: row.asset, Version: row.version}, row.keyID, row.nonce, row.ciphertext)
+			if err != nil {
+				return core.Secret{}, ErrSecret
+			}
+			defer clear(plain)
+			return core.NewSecret(plain), nil
 		}
 		return a.keys.Open(PageTokenScope{TenantID: row.tenant, StoreID: row.store, BindingID: row.binding,
 			Provider: row.provider, AssetID: row.asset, Version: row.version}, row.keyID, row.nonce, row.ciphertext)

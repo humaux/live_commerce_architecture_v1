@@ -9,16 +9,28 @@ package foundation_test
 import (
 	"bytes"
 	"context"
+	"crypto/ecdh"
+	"crypto/hpke"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"os/exec"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/riverqueue/river"
+
 	"livecommerce/internal/httpapi"
 	metaoauth "livecommerce/internal/integrations/meta/oauth"
+	"livecommerce/internal/integrations/meta/pagetoken"
+	"livecommerce/internal/integrations/meta/pagetoken/pageopen"
 	"livecommerce/internal/integrations/metareply"
 	"livecommerce/internal/metaconnect"
 	"livecommerce/tests/metaconnect/fakegraph"
@@ -36,11 +48,39 @@ var (
 	mcnTasks = []string{"ADVERTISE", "MESSAGING", "MODERATE", "MANAGE"}
 )
 
+// mcnPageRing builds a fresh meta-page-token-v2 HPKE pair: the PUBLIC seal keys cmd/api would hold and the PRIVATE ring only claims-worker
+// holds (here: the dispatcher built by mcnEnv.dispatcher). Keys are generated, never fixed.
+func mcnPageRing(t *testing.T) (*pagetoken.SealKeys, *pageopen.Keyring) {
+	t.Helper()
+	raw := randomBytes(32)
+	sk, err := hpke.DHKEM(ecdh.X25519()).NewPrivateKey(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b64 := base64.StdEncoding.EncodeToString
+	env := map[string]string{
+		"COMMERCE_META_PAGE_HPKE_PUBLIC_KEYS_JSON": `{"keys":[{"id":"mcn-v2-1","public_key_base64":"` + b64(sk.PublicKey().Bytes()) + `"}]}`,
+		"COMMERCE_META_PAGE_HPKE_ACTIVE_KEY_ID":    "mcn-v2-1",
+		"COMMERCE_META_PAGE_HPKE_PRIVATE_KEYS":     `{"keys":[{"id":"mcn-v2-1","private_key_base64":"` + b64(raw) + `"}]}`,
+	}
+	seal, err := pagetoken.LoadSealKeys(func(k string) string { return env[k] })
+	if err != nil {
+		t.Fatal(err)
+	}
+	open, err := pageopen.LoadKeyring(func(k string) string { return env[k] })
+	if err != nil {
+		t.Fatal(err)
+	}
+	return seal, open
+}
+
 type mcnEnv struct {
 	t       *testing.T
 	e       *mciEnv
 	f       *testFixture
 	fake    *fakegraph.Server
+	open    *pageopen.Keyring // the claims-worker's private ring; cmd/api (the service under test) never gets it
+	cfg     metaconnect.Config
 	handler http.Handler
 	store   string
 	token   string
@@ -62,12 +102,14 @@ func newMcnEnv(t *testing.T) *mcnEnv {
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc, err := metaconnect.New(metaconnect.Config{Graph: graph, App: metaoauth.App{ID: miApp, RedirectURI: mcnRedirect, Secret: []byte(miSecret)},
-		ConfigID: mcnConfig, GraphVersion: mcnVersion, PageAppID: miApp, IGAppID: miApp, StateKey: metaconnect.StateKeyFor([]byte(miSecret)), Keys: e.pageKeys}, jobs)
+	seal, open := mcnPageRing(t)
+	cfg := metaconnect.Config{Graph: graph, App: metaoauth.App{ID: miApp, RedirectURI: mcnRedirect, Secret: []byte(miSecret)},
+		ConfigID: mcnConfig, GraphVersion: mcnVersion, PageAppID: miApp, IGAppID: miApp, StateKey: metaconnect.StateKeyFor([]byte(miSecret)), Seal: seal}
+	svc, err := metaconnect.New(cfg, jobs)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return &mcnEnv{t: t, e: e, f: f, fake: fake, handler: httpapi.NewHandler(f.runtime, httpapi.Options{MetaConnect: svc}), store: f.storeA1, token: e.h.token}
+	return &mcnEnv{t: t, e: e, f: f, fake: fake, open: open, cfg: cfg, handler: httpapi.NewHandler(f.runtime, httpapi.Options{MetaConnect: svc}), store: f.storeA1, token: e.h.token}
 }
 
 type mcnResp struct {
@@ -163,6 +205,19 @@ func (m *mcnEnv) reset() {
 	if r := m.call("POST", "/disconnect", true, map[string]any{}); r.Status != 200 && r.Status != 404 {
 		m.t.Fatalf("reset disconnect: %d %s", r.Status, r.Raw)
 	}
+}
+
+// dispatcher is mciEnv.newDispatcher with the real metareply routes built over BOTH rings: the v1 AES keyring (operator CLI rows) and the
+// v2 HPKE private ring that opens what the merchant connect sealed.
+func (m *mcnEnv) dispatcher(g *mciGraph) *mciDispatcher {
+	m.t.Helper()
+	return m.e.newDispatcher(m.t, g, nil, func(d *mciDispatcher, pool *pgxpool.Pool) {
+		routes, err := metareply.RoutesV2(pool, m.e.link, m.e.pageKeys, m.open, metareply.Config{GraphBaseURL: g.srv.URL, GraphVersion: "v99.0", HTTPClient: g.srv.Client()})
+		if err != nil {
+			m.t.Fatalf("metareply.RoutesV2: %v", err)
+		}
+		d.routes = routes
+	})
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -340,8 +395,8 @@ func TestMetaConnectFlow(t *testing.T) {
 	if m.fake.Count("GET", "oauth/access_token") < 2 {
 		t.Fatal("expected the code exchange and the long-lived extend")
 	}
-	if m.count(`SELECT count(*) FROM integration.meta_connect_states WHERE id=$1 AND pending_ciphertext IS NOT NULL AND done_at IS NULL`, state) != 1 {
-		t.Fatal("the pending user token must be sealed in the state until pick")
+	if m.count(`SELECT count(*) FROM information_schema.columns WHERE table_schema='integration' AND table_name='meta_connect_states' AND column_name LIKE 'pending%'`) != 0 {
+		t.Fatal("the user token must live in API memory only: no pending-token column may exist")
 	}
 
 	var fbBinding, igBinding string
@@ -380,8 +435,8 @@ func TestMetaConnectFlow(t *testing.T) {
 		}
 		if m.count(`SELECT count(*) FROM integration.meta_page_heads WHERE binding_id=ANY($1::uuid[]) AND current_version=1`, []string{fbBinding, igBinding}) != 2 ||
 			m.count(`SELECT count(*) FROM meta_inbox.routes WHERE enabled AND app_id=$1 AND binding_id=ANY($2::uuid[])`, miApp, []string{fbBinding, igBinding}) != 2 ||
-			m.count(`SELECT count(*) FROM integration.meta_connect_states WHERE id=$1 AND done_at IS NOT NULL AND pending_ciphertext IS NULL`, state) != 1 {
-			t.Fatal("expected 2 heads at v1, 2 enabled routes and a finished state without its sealed user token")
+			m.count(`SELECT count(*) FROM integration.meta_connect_states WHERE id=$1 AND done_at IS NOT NULL`, state) != 1 {
+			t.Fatal("expected 2 heads at v1, 2 enabled routes and a finished state")
 		}
 		// The sealed credential opens (only) with the page-token keyring, to exactly Page A's token, for BOTH providers.
 		for _, c := range []struct{ binding, provider, asset string }{{fbBinding, "facebook", pageA.ID}, {igBinding, "instagram", pageA.IGID}} {
@@ -390,12 +445,20 @@ func TestMetaConnectFlow(t *testing.T) {
 			if err := f.owner.QueryRow(ctx, `SELECT key_id,nonce,ciphertext FROM integration.meta_page_credentials WHERE binding_id=$1 AND version=1`, c.binding).Scan(&keyID, &nonce, &ct); err != nil {
 				t.Fatal(err)
 			}
-			sec, err := m.e.pageKeys.Open(metareply.PageTokenScope{TenantID: f.tenantA, StoreID: m.store, BindingID: c.binding, Provider: c.provider, AssetID: c.asset, Version: 1}, keyID, nonce, ct)
-			if err != nil || string(sec.Reveal()) != pageA.Token {
-				t.Fatalf("%s credential does not open to the Page token: %v", c.provider, err)
+			if len(nonce) != pagetoken.EncSize {
+				t.Fatalf("%s credential is not meta-page-token-v2 (nonce %d bytes)", c.provider, len(nonce))
 			}
-			if _, err := m.e.pageKeys.Open(metareply.PageTokenScope{TenantID: f.tenantA, StoreID: m.store, BindingID: c.binding, Provider: c.provider, AssetID: c.asset, Version: 2}, keyID, nonce, ct); err == nil {
-				t.Fatal("the AAD must bind the version")
+			scope := pagetoken.Scope{TenantID: f.tenantA, StoreID: m.store, BindingID: c.binding, Provider: c.provider, AssetID: c.asset, Version: 1}
+			plain, err := m.open.Open(scope, keyID, nonce, ct)
+			if err != nil || string(plain) != pageA.Token {
+				t.Fatalf("%s credential does not open (with the claims-worker's private ring) to the Page token: %v", c.provider, err)
+			}
+			scope.Version = 2
+			if _, err := m.open.Open(scope, keyID, nonce, ct); err == nil {
+				t.Fatal("the HPKE info must bind the version")
+			}
+			if _, err := m.e.pageKeys.Open(metareply.PageTokenScope{TenantID: f.tenantA, StoreID: m.store, BindingID: c.binding, Provider: c.provider, AssetID: c.asset, Version: 1}, keyID, nonce, ct); err == nil {
+				t.Fatal("a v2 row must not open under the v1 AES keyring")
 			}
 		}
 		// A state is single use for picks too, and a connected store refuses another Page until disconnect.
@@ -442,7 +505,7 @@ func TestMetaConnectFlow(t *testing.T) {
 		e.srcFB = e.mustSource(t, "page", pageA.ID, e.postID, true)
 		e.srcIG = e.mustSource(t, "instagram", pageA.IGID, e.mediaID, true)
 		g := newMciGraph(t)
-		d := e.newDispatcher(t, g, nil, nil)
+		d := m.dispatcher(g)
 		for _, ig := range []bool{false, true} {
 			r := e.planReply(t, ig, "", "A1")
 			if r.op == "" || r.bundleID == "" {
@@ -553,7 +616,7 @@ func TestMetaConnectFlow(t *testing.T) {
 		}
 	})
 
-	t.Run("disconnect destroys the token, stops intake, disables bindings and unsubscribes", func(t *testing.T) {
+	t.Run("disconnect destroys the token, stops intake and disables bindings (no Graph unsubscribe: the API cannot open a token)", func(t *testing.T) {
 		e := m.e
 		r := m.call("POST", "/disconnect", true, map[string]any{})
 		if r.Status != 200 {
@@ -570,8 +633,8 @@ func TestMetaConnectFlow(t *testing.T) {
 			m.count(`SELECT count(*) FROM meta_inbox.routes WHERE binding_id=ANY($1::uuid[]) AND enabled`, []string{fbBinding, igBinding}) != 0 {
 			t.Fatal("bindings and routes must be disabled")
 		}
-		if m.fake.Subscribed(pageA.ID) {
-			t.Fatal("best-effort unsubscribe did not reach the fake Graph")
+		if m.fake.Count("DELETE", "/subscribed_apps") != 0 {
+			t.Fatal("the API must make no Graph call with a stored Page token (it cannot open one)")
 		}
 		if m.count(`SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action IN ('meta.connect.started','meta.connect.callback','meta.connect.page_connected','meta.connect.disconnected')`, f.tenantA, m.store) < 4 {
 			t.Fatal("every connect step must be audited")
@@ -603,6 +666,29 @@ func TestMetaConnectFlow(t *testing.T) {
 		}
 		m.reset()
 	})
+
+	t.Run("a pick after an API restart (no user token in memory) is refused as expired and enables nothing", func(t *testing.T) {
+		m.reset()
+		page := mcnPage("Restart page", false)
+		st, cb := m.connect(m.store, m.token, fakegraph.User{Permissions: mcnFullPerms, Pages: []fakegraph.Page{page}})
+		if cb.Status != 200 {
+			t.Fatalf("callback: %d %s", cb.Status, cb.Raw)
+		}
+		restarted, err := metaconnect.New(m.cfg, mustInsertClient(t, f)) // a fresh process: same config, empty memory
+		if err != nil {
+			t.Fatal(err)
+		}
+		old := m.handler
+		m.handler = httpapi.NewHandler(f.runtime, httpapi.Options{MetaConnect: restarted})
+		defer func() { m.handler = old }()
+		subs := m.fake.Count("POST", "/subscribed_apps")
+		if r := m.pick(st, page.ID, false); r.Status != 410 || r.code() != "state_expired" {
+			t.Fatalf("pick after restart: %d %s", r.Status, r.Raw)
+		}
+		if m.fake.Count("POST", "/subscribed_apps") != subs || m.count(`SELECT count(*) FROM integration.bindings WHERE external_asset_id=$1`, page.ID) != 0 {
+			t.Fatal("a pick without the user token must call nothing and bind nothing")
+		}
+	})
 }
 
 func toStrings(v any) []string {
@@ -614,4 +700,97 @@ func toStrings(v any) []string {
 		}
 	}
 	return out
+}
+
+func mustInsertClient(t *testing.T, f *testFixture) *river.Client[pgx.Tx] {
+	t.Helper()
+	c, err := newInsertOnlyClient(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return c
+}
+
+// TestMetaConnectAPIHoldsNoPagePrivateKey: token custody (contract meta-claims-intake-v1 §7, same rule as ads): the API process may SEAL a
+// Page token (HPKE public ring, meta-page-token-v2) but must never be able to OPEN one. Static: no cmd/api source reads the v1 AES keyring
+// or the v2 private ring, the built dependency set of cmd/api contains no opener, the api service of deploy/compose.yml mounts neither
+// secret, and the manifest names claims-worker (not api) as the only consumer of the private ring.
+func TestMetaConnectAPIHoldsNoPagePrivateKey(t *testing.T) {
+	forbidden := []string{"COMMERCE_META_PAGE_TOKEN_", "COMMERCE_META_PAGE_HPKE_PRIVATE", "commerce_meta_page_token_", "commerce_meta_page_hpke_private"}
+	entries, err := os.ReadDir("../../cmd/api")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".go") || strings.HasSuffix(e.Name(), "_test.go") {
+			continue
+		}
+		raw, _ := os.ReadFile("../../cmd/api/" + e.Name())
+		for _, f := range forbidden {
+			if strings.Contains(string(raw), f) {
+				t.Errorf("cmd/api/%s names %s: the API must not hold a Page-token opening key", e.Name(), f)
+			}
+		}
+	}
+	out, err := exec.Command("go", "list", "-deps", "../../cmd/api").Output()
+	if err != nil {
+		t.Fatalf("go list -deps ./cmd/api: %v", err)
+	}
+	for _, pkg := range []string{"integrations/meta/pagetoken/pageopen", "integrations/metareply", "integrations/meta_ads/tokenopen"} {
+		if strings.Contains(string(out), "livecommerce/internal/"+pkg+"\n") {
+			t.Errorf("cmd/api links %s: it must be unable to open a stored token", pkg)
+		}
+	}
+	if !strings.Contains(string(out), "livecommerce/internal/integrations/meta/pagetoken\n") {
+		t.Error("cmd/api does not link the seal-only package pagetoken (the merchant connect would have no way to seal)")
+	}
+	compose, err := os.ReadFile("../../deploy/compose.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	block := func(service string) string {
+		text := string(compose)
+		start := strings.Index(text, "\n  "+service+":\n")
+		if start < 0 {
+			t.Fatalf("compose has no %s service", service)
+		}
+		rest := text[start+1:]
+		end := regexp.MustCompile(`\n  [a-z][a-z0-9-]*:\n`).FindStringIndex(rest[1:])
+		if end == nil {
+			return rest
+		}
+		return rest[:end[0]+1]
+	}
+	api := block("api")
+	for _, f := range forbidden {
+		if strings.Contains(api, f) {
+			t.Errorf("deploy/compose.yml api service mentions %s: the API must not mount a Page-token opening key", f)
+		}
+	}
+	for _, need := range []string{"COMMERCE_META_PAGE_HPKE_PUBLIC_KEYS_JSON_FILE", "COMMERCE_META_PAGE_HPKE_ACTIVE_KEY_ID_FILE"} {
+		if !strings.Contains(api, need) {
+			t.Errorf("deploy/compose.yml api service lacks %s (the merchant connect could not seal)", need)
+		}
+	}
+	if w := block("claims-worker"); !strings.Contains(w, "commerce_meta_page_hpke_private_keys_json") {
+		t.Error("claims-worker does not mount the private ring: it could not open the v2 tokens it must send with")
+	}
+	manifest, err := os.ReadFile("../../deploy/secrets.manifest.tsv")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, line := range strings.Split(string(manifest), "\n") {
+		cols := strings.Split(line, "\t")
+		if len(cols) < 4 || strings.HasPrefix(line, "#") {
+			continue
+		}
+		consumers := strings.Split(cols[3], ",")
+		isApi := false
+		for _, c := range consumers {
+			isApi = isApi || c == "api"
+		}
+		if (strings.HasPrefix(cols[0], "commerce_meta_page_token_") || cols[0] == "commerce_meta_page_hpke_private_keys_json") && isApi {
+			t.Errorf("manifest lists api as a consumer of %s", cols[0])
+		}
+	}
 }

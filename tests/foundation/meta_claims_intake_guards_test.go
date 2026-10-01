@@ -374,9 +374,10 @@ func TestMetaClaimsMCI10SecretEnvOwnership(t *testing.T) {
 		// claims-retention-purge-v1 §6 clause 4 (IR-2): plus the operator CLI cmd/retention-admin (never a service).
 		"COMMERCE_CLAIMS_ACTOR_KEY":      {"cmd/meta-worker/", "internal/integrations/meta/", "cmd/retention-admin/"},
 		"COMMERCE_CLAIMS_REPLY_LINK_KEY": {"cmd/claims-worker/", "internal/claims/", "internal/claimsintake/"},
-		// meta-connect (R4, contract amendment "Merchant connect"): cmd/api's merchant_meta_connect.go loads the keyring to seal the
-		// merchant's own Page token at connect time; no other cmd/api file and no other internal package may.
-		"COMMERCE_META_PAGE_TOKEN_": {"cmd/claims-worker/", "cmd/meta-admin/", "internal/integrations/metareply/", "cmd/api/merchant_meta_connect.go"},
+		"COMMERCE_META_PAGE_TOKEN_":      {"cmd/claims-worker/", "cmd/meta-admin/", "internal/integrations/metareply/"},
+		// meta-page-token-v2 (merchant connect): the HPKE PRIVATE ring belongs to claims-worker and its opener only; cmd/api holds the
+		// public ring (COMMERCE_META_PAGE_HPKE_PUBLIC_KEYS_JSON, a different name) and TestMetaConnectAPIHoldsNoPagePrivateKey checks it.
+		"COMMERCE_META_PAGE_HPKE_PRIVATE_KEYS": {"cmd/claims-worker/", "internal/integrations/meta/pagetoken/pageopen/"},
 	}
 	for _, s := range srcs {
 		for env, owners := range allow {

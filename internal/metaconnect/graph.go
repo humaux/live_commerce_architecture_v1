@@ -202,9 +202,3 @@ func (s *Service) subscribe(ctx context.Context, pageID string, pageToken []byte
 	}
 	return nil
 }
-
-// unsubscribe is the best-effort DELETE /{page_id}/subscribed_apps after a disconnect committed; its outcome is ignored (the
-// route is already disabled, so a leftover subscription only produces quarantined events).
-func (s *Service) unsubscribe(ctx context.Context, pageID string, pageToken []byte) {
-	_, _ = s.graph.Do(ctx, http.MethodDelete, pageID+"/subscribed_apps", nil, pageToken, nil)
-}

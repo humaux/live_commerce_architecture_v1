@@ -35,7 +35,7 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 		}
 	}
 	sort.Strings(r2)
-	// 0070..0089 without 0076 (never allocated) and 0084 (worker-authority-split, not merged yet) = 18, + 0093 storefront-integration = 19, + 0095 meta-connect = 20, + post-River 0015..0018 = 24 (R3/R4 lanes add files): a lane that drops or adds a file
+	// 0070..0089 without 0076 (never allocated) and 0084 (worker-authority-split, not merged yet) = 18, + 0093 storefront-integration = 19, + 0095 meta-connect, + 0090..0092 and post-River 0015..0018 (R3/R4 lanes add files): a lane that drops or adds a file
 	// must update this. 0081 storefront-publish has its own upgrade gate TestStorefrontPublishSPW02UpgradeAfter0080.
 	if len(r2) != 27 {
 		t.Fatalf("R2 migration set = %d files %v, want 27", len(r2), r2)
