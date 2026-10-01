@@ -13,6 +13,7 @@ import {
   setLoginCookie,
   validAuthorizationURL,
 } from "@/lib/auth";
+import { inviteNextPath } from "@/lib/invite-next";
 
 export async function POST(request: Request) {
   // U4: password-only deployments have no OIDC issuer; this route then does not exist.
@@ -20,15 +21,22 @@ export async function POST(request: Request) {
   if (new URL(request.url).search || !requireOrigin(request))
     return localError(403, "forbidden");
   let locale: Locale = "zh-CN";
+  let next: string | null = null;
   try {
     const form = new URLSearchParams(
       await readBody(request, "application/x-www-form-urlencoded", 1024),
     );
     const entries = [...form.entries()];
+    // invite-next: an optional second field carries the return-to invite path through the OIDC round trip;
+    // it is validated here and again on callback, so only the exact invite pattern survives (lib/invite-next.ts).
     if (
-      entries.length !== 1 ||
+      entries.length < 1 ||
+      entries.length > 2 ||
       entries[0][0] !== "locale" ||
-      !isLocale(entries[0][1])
+      !isLocale(entries[0][1]) ||
+      (entries.length === 2 &&
+        (entries[1][0] !== "next" ||
+          !(next = inviteNextPath(entries[1][1]))))
     )
       return localError(422, "invalid_request");
     locale = entries[0][1] as Locale;
@@ -49,7 +57,7 @@ export async function POST(request: Request) {
   if (!location || typeof body?.binding !== "string")
     return localError(503, "retry_later");
   const response = redirect(location);
-  if (!setLoginCookie(response.headers, body.binding, locale, body.expires_at))
+  if (!setLoginCookie(response.headers, body.binding, locale, body.expires_at, next))
     return localError(503, "retry_later");
   return response;
 }

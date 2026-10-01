@@ -47,7 +47,7 @@ type Worker struct {
 	every time.Duration
 }
 
-// NewWorker binds the commerce_worker pool and the SMTP sender. dailyCap is COMMERCE_MAIL_DAILY_CAP: notify mail may use 60% of it (§E3).
+// NewWorker binds the commerce_expiry_worker pool and the SMTP sender. dailyCap is COMMERCE_MAIL_DAILY_CAP: notify mail may use 60% of it (§E3).
 func NewWorker(pool *pgxpool.Pool, m Mailer, dailyCap int) (*Worker, error) {
 	if pool == nil || m == nil || dailyCap < 20 || dailyCap > 100000 {
 		return nil, errors.New("notify: pool, mailer and a daily cap of 20..100000 required")
@@ -60,7 +60,7 @@ type pgQueue struct {
 	budget int
 }
 
-// Claim calls notify.claim_batch (commerce_worker): housekeeping, then up to limit buyer rows and at most one merchant batch per store.
+// Claim calls notify.claim_batch (commerce_expiry_worker): housekeeping, then up to limit buyer rows and at most one merchant batch per store.
 func (q pgQueue) Claim(ctx context.Context, limit int) ([]Payload, error) {
 	var raw []byte
 	if err := q.pool.QueryRow(ctx, `SELECT notify.claim_batch($1::integer,$2::integer,$3::integer)`, limit, q.budget, storeHourly).Scan(&raw); err != nil {
@@ -73,7 +73,7 @@ func (q pgQueue) Claim(ctx context.Context, limit int) ([]Payload, error) {
 	return out, nil
 }
 
-// Record calls notify.record_result (commerce_worker) on a context that survives shutdown, so a send that happened is always written down.
+// Record calls notify.record_result (commerce_expiry_worker) on a context that survives shutdown, so a send that happened is always written down.
 func (q pgQueue) Record(ctx context.Context, batch, state string, recipientHash []byte) error {
 	rctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), recordTimeout)
 	defer cancel()

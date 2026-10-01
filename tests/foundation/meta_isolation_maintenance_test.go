@@ -158,7 +158,7 @@ func TestMetaRuntimeIsolationTwoWayRealMaintenance(t *testing.T) {
 	oldWorkerBinary := mrBuild(t, "../../cmd/expiry-worker", "expiry-worker-maintenance")
 	ordinary := mrLaunch(t, oldWorkerBinary, "old-maintenance", []string{
 		"COMMERCE_EXPIRY_WORKER_ENABLED=1",
-		"COMMERCE_EXPIRY_WORKER_DATABASE_URL=" + miRole(t, f, "commerce_worker"),
+		"COMMERCE_EXPIRY_WORKER_DATABASE_URL=" + miRole(t, f, waExpiry),
 		"COMMERCE_EXPIRY_WORKER_CONCURRENCY=1",
 	})
 	mrReadyLog(t, ordinary, "expiry_worker_ready")

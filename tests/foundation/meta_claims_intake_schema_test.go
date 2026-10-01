@@ -180,6 +180,7 @@ func mciApplyWithout(t *testing.T, owner *pgxpool.Pool) (heldBack []string) {
 		t.Fatal(err)
 	}
 	apply(tx, numbered, "", skipA)
+	waPrecreateRoles(t, owner) // 0096 is held back (every migration after the intake file is held back) but the current Apply's River grants name its roles
 	if err := tx.Commit(ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -194,8 +195,8 @@ func mciApplyWithout(t *testing.T, owner *pgxpool.Pool) (heldBack []string) {
 	}
 	for _, stmt := range []string{
 		`GRANT SELECT, INSERT, UPDATE(kind) ON river.river_job TO commerce_runtime; GRANT USAGE ON SEQUENCE river.river_job_id_seq TO commerce_runtime`,
-		`GRANT USAGE ON SCHEMA river TO commerce_worker; GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river TO commerce_worker;
-		 REVOKE ALL ON river.river_migration FROM commerce_worker; GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river TO commerce_worker`,
+		`GRANT USAGE ON SCHEMA river TO commerce_claims_worker,commerce_ads_worker; GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river TO commerce_claims_worker,commerce_ads_worker;
+		 REVOKE ALL ON river.river_migration FROM commerce_claims_worker,commerce_ads_worker; GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river TO commerce_claims_worker,commerce_ads_worker`,
 	} {
 		if _, err := owner.Exec(ctx, stmt); err != nil {
 			t.Fatal(err)
@@ -222,10 +223,14 @@ func mciApplyWithout(t *testing.T, owner *pgxpool.Pool) (heldBack []string) {
 		`REVOKE ALL ON river.river_job FROM commerce_checkout_runtime,commerce_checkout_writer; REVOKE UPDATE(kind) ON river.river_job FROM commerce_checkout_runtime;
 		 REVOKE UPDATE(queue) ON river.river_job FROM commerce_checkout_writer; REVOKE ALL ON river.river_job_id_seq FROM commerce_checkout_runtime;
 		 REVOKE ALL ON SCHEMA river FROM commerce_checkout_runtime,commerce_checkout_writer;
-		 GRANT USAGE ON SCHEMA river_payment,river_expiry TO commerce_worker;
-		 GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river_payment,river_expiry TO commerce_worker;
-		 REVOKE ALL ON river_payment.river_migration,river_expiry.river_migration FROM commerce_worker;
-		 GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river_payment,river_expiry TO commerce_worker`,
+		 GRANT USAGE ON SCHEMA river_payment TO commerce_payment_worker,commerce_payment_live;
+		 GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river_payment TO commerce_payment_worker,commerce_payment_live;
+		 REVOKE ALL ON river_payment.river_migration FROM commerce_payment_worker,commerce_payment_live;
+		 GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river_payment TO commerce_payment_worker,commerce_payment_live;
+		 GRANT USAGE ON SCHEMA river_expiry TO commerce_expiry_worker;
+		 GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river_expiry TO commerce_expiry_worker;
+		 REVOKE ALL ON river_expiry.river_migration FROM commerce_expiry_worker;
+		 GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river_expiry TO commerce_expiry_worker`,
 	} {
 		if _, err := tx.Exec(ctx, stmt); err != nil {
 			t.Fatal(err)
@@ -872,12 +877,17 @@ func TestMetaClaimsMCI02PoolValidator(t *testing.T) {
 		t.Fatalf("ValidateClaimsIntakePool refused the dedicated login: %v", err)
 	}
 	for name, pool := range map[string]*pgxpool.Pool{
-		"intake + worker":             mciMixedPool(t, f, false, "commerce_claims_intake", "commerce_worker"),
+		"intake + payment worker":     mciMixedPool(t, f, false, "commerce_claims_intake", waPayment),
+		"intake + payment live":       mciMixedPool(t, f, false, "commerce_claims_intake", waLive),
+		"intake + expiry worker":      mciMixedPool(t, f, false, "commerce_claims_intake", waExpiry),
+		"intake + ads worker":         mciMixedPool(t, f, false, "commerce_claims_intake", waAds),
+		"intake + claims worker":      mciMixedPool(t, f, false, "commerce_claims_intake", waClaims),
+		"intake + legacy worker":      mciMixedPool(t, f, false, "commerce_claims_intake", waLegacy),
 		"intake + meta consumer":      mciMixedPool(t, f, false, "commerce_claims_intake", "commerce_meta_consumer"),
 		"intake + runtime":            mciMixedPool(t, f, false, "commerce_claims_intake", "commerce_runtime"),
 		"intake + integration writer": mciMixedPool(t, f, false, "commerce_claims_intake", "commerce_integration_writer"),
 		"intake with SET ROLE":        mciMixedPool(t, f, true, "commerce_claims_intake"),
-		"another authority (worker)":  mciMixedPool(t, f, false, "commerce_worker"),
+		"another authority (worker)":  mciMixedPool(t, f, false, waClaims),
 		"the runtime pool":            f.runtime,
 		"the owner pool":              f.owner,
 	} {
@@ -886,9 +896,13 @@ func TestMetaClaimsMCI02PoolValidator(t *testing.T) {
 		}
 	}
 	// Reverse direction: a login that can also reach the intake role fails every other validator.
-	workerMix := mciMixedPool(t, f, false, "commerce_worker", "commerce_claims_intake")
-	if err := platform.ValidateWorkerPool(ctx, workerMix); err == nil {
-		t.Error("ValidateWorkerPool accepted a worker login that also holds commerce_claims_intake")
+	for _, a := range []platform.WorkerAuthority{platform.WorkerPayment, platform.WorkerPaymentLive, platform.WorkerExpiry, platform.WorkerAds, platform.WorkerClaims} {
+		role := map[platform.WorkerAuthority]string{platform.WorkerPayment: waPayment, platform.WorkerPaymentLive: waLive, platform.WorkerExpiry: waExpiry,
+			platform.WorkerAds: waAds, platform.WorkerClaims: waClaims}[a]
+		workerMix := mciMixedPool(t, f, false, role, "commerce_claims_intake")
+		if err := platform.ValidateWorkerPool(ctx, workerMix, a); err == nil {
+			t.Errorf("ValidateWorkerPool(%s) accepted a worker login that also holds commerce_claims_intake", a)
+		}
 	}
 	consumerMix := mciMixedPool(t, f, false, "commerce_meta_consumer", "commerce_claims_intake")
 	if err := platform.ValidateMetaConsumerPool(ctx, consumerMix); err == nil {
@@ -1095,7 +1109,7 @@ func TestMetaClaimsMCI02PolicyBehaviour(t *testing.T) {
 	})
 
 	t.Run("check_meta_reply from the worker pool (no GUCs) sees the link and the window", func(t *testing.T) {
-		pool := miPool(t, f, "commerce_worker")
+		pool := miPool(t, f, waClaims)
 		token := e.token(t, first)
 		hash := sha256.Sum256([]byte(token))
 		var code string

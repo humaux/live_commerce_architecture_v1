@@ -31,6 +31,7 @@ import (
 	"net/http/httptest"
 	"net/textproto"
 	"reflect"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -558,8 +559,19 @@ func TestCatalogMediaSchemaSurface(t *testing.T) {
 	if !nameGrant {
 		t.Error("buyer runtime must read control.stores(name) for store_name")
 	}
-	if mediaName {
-		t.Error("the definer owner must not read control.stores(name)")
+	// Documented change (contracts/storefront-v2.md section A "Buyer reads": every buyer v2 list returns
+	// store:{name, currency}; migrations/0086_catalog_v2.sql grants SELECT(name,currency) to this definer owner,
+	// behind the same active-store policy; name is already public through the 0082 buyer grant above).
+	// Before 0086 this role must NOT read name; since 0086 it must read exactly name+currency and never write.
+	if !mediaName {
+		t.Error("the definer owner must read control.stores(name) since 0086 (storefront-v2 section A: store:{name,currency})")
+	}
+	for _, priv := range []string{"INSERT", "UPDATE", "DELETE", "TRUNCATE"} {
+		var can bool
+		_ = f.owner.QueryRow(ctx, `SELECT has_table_privilege('commerce_catalog_media','control.stores',$1)`, priv).Scan(&can)
+		if can {
+			t.Errorf("the definer owner holds %s on control.stores", priv)
+		}
 	}
 
 	// The buyer runtime pool really is denied the table (privilege, not only has_*_privilege).
@@ -647,7 +659,7 @@ func TestCatalogMediaRLSScope(t *testing.T) {
 	seed(f.tenantB, f.storeB, foreign)
 	visible := func(token, store string) (products []string) {
 		err := platform.WithScope(ctx, f.runtime, token, store, "catalog:read", func(tx pgx.Tx, _ platform.Scope) error {
-			rows, err := tx.Query(ctx, `SELECT product_id::text FROM catalog.product_images ORDER BY 1`)
+			rows, err := tx.Query(ctx, `SELECT DISTINCT product_id::text FROM catalog.product_images ORDER BY 1`)
 			if err != nil {
 				return err
 			}
@@ -666,9 +678,38 @@ func TestCatalogMediaRLSScope(t *testing.T) {
 		}
 		return products
 	}
+	// The fixture DB is shared by the whole run and the stores are fixed, so earlier tests (catalog_core_gate_test.go
+	// uploads product photos as tenant B / A1) leave image rows in the same stores. The RLS invariant is therefore
+	// stated against the owner's unfiltered view: a scope sees exactly the rows of its OWN store (including the seeded
+	// one) and none of the other two seeded products.
+	ownProducts := func(store string) (ids []string) {
+		rows, err := f.owner.Query(ctx, `SELECT DISTINCT product_id::text FROM catalog.product_images WHERE store_id=$1 ORDER BY 1`, store)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var p string
+			if err := rows.Scan(&p); err != nil {
+				t.Fatal(err)
+			}
+			ids = append(ids, p)
+		}
+		if err := rows.Err(); err != nil {
+			t.Fatal(err)
+		}
+		return ids
+	}
+	seeded := []string{product, other, foreign}
 	for _, c := range []struct{ token, store, want string }{{f.tokens["a"], f.storeA1, product}, {f.tokens["a2"], f.storeA2, other}, {f.tokens["b"], f.storeB, foreign}} {
-		if got := visible(c.token, c.store); len(got) != 1 || got[0] != c.want {
-			t.Errorf("scope %s sees %v, want only %s", c.store, got, c.want)
+		got := visible(c.token, c.store)
+		if want := ownProducts(c.store); !slices.Equal(got, want) {
+			t.Errorf("scope %s sees %v, want exactly its own store's %v", c.store, got, want)
+		}
+		for _, s := range seeded {
+			if has := slices.Contains(got, s); has != (s == c.want) {
+				t.Errorf("scope %s sees seeded product %s = %v, want %v", c.store, s, has, s == c.want)
+			}
 		}
 	}
 	// WITH CHECK: an insert for another store from the A1 scope is refused by RLS, not silently moved.

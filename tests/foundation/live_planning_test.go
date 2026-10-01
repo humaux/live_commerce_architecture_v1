@@ -619,7 +619,7 @@ func TestLivePlanningLSP05BoundariesConstraintsAndACL(t *testing.T) {
 	 EXISTS(SELECT 1 FROM pg_class c CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a WHERE c.oid='live.sessions'::regclass AND a.grantee=0),
 	 EXISTS(SELECT 1 FROM pg_class c CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a WHERE c.oid='live.programs'::regclass AND a.grantee=0),
 	 has_table_privilege('commerce_buyer_runtime','live.sessions','SELECT'),
-	 has_table_privilege('commerce_worker','live.sessions','SELECT')`).Scan(&forcedSessions, &forcedPrograms, &publicSchema, &publicSessions, &publicPrograms, &buyerSessions, &workerSessions)
+	 EXISTS(SELECT 1 FROM unnest(ARRAY['commerce_payment_worker','commerce_payment_live','commerce_expiry_worker','commerce_ads_worker','commerce_claims_worker','commerce_worker']) w(r) WHERE has_table_privilege(w.r,'live.sessions','SELECT'))`).Scan(&forcedSessions, &forcedPrograms, &publicSchema, &publicSessions, &publicPrograms, &buyerSessions, &workerSessions)
 	if err != nil || !forcedSessions || !forcedPrograms || publicSchema || publicSessions || publicPrograms || buyerSessions || workerSessions {
 		t.Fatalf("live ACL boundary forced=%t/%t public=%t/%t/%t buyer=%t worker=%t err=%v", forcedSessions, forcedPrograms, publicSchema, publicSessions, publicPrograms, buyerSessions, workerSessions, err)
 	}

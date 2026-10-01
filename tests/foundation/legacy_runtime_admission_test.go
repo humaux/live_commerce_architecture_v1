@@ -203,7 +203,7 @@ func TestLegacyRuntimeIsolationAdmissionAndReadiness(t *testing.T) {
 	if payment, expiry := ready(); !payment || !expiry {
 		t.Fatal("rejected writes degraded readiness")
 	}
-	if client, err := checkout.NewExpiryClient(ctx, p.worker, 1); client == nil || err != nil {
+	if client, err := checkout.NewExpiryClient(ctx, p.expiry, 1); client == nil || err != nil {
 		t.Fatalf("valid expiry constructor rejected: %v", err)
 	}
 	if client, err := payments.NewWorkerClient(ctx, p.worker, pwKeys(t), "PROVIDER_MOCK", 1, opts); client == nil || err != nil {

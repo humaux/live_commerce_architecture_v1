@@ -29,6 +29,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -261,7 +262,7 @@ func TestCustomersBillingCB02Schema(t *testing.T) {
 			got := e.list(`SELECT coalesce(nullif(pg_get_userbyid(a.grantee),''),'PUBLIC') FROM pg_namespace n, aclexplode(n.nspacl) a
 			 WHERE n.nspname=$1 AND a.privilege_type='USAGE' AND a.grantee<>n.nspowner`, schema)
 			cbsEq(t, "schema "+schema+" USAGE grantees (owners + EXECUTE grantees, never PUBLIC)", got, roles)
-			if e.bool(`SELECT has_schema_privilege('commerce_buyer_writer',$1,'USAGE') OR has_schema_privilege('commerce_worker',$1,'USAGE')`, schema) {
+			if e.bool(`SELECT has_schema_privilege('commerce_buyer_writer',$1,'USAGE') OR EXISTS(SELECT 1 FROM unnest($2::text[]) w(r) WHERE has_schema_privilege(w.r,$1,'USAGE'))`, schema, waAll) {
 				t.Errorf("schema %s must not be usable by the buyer writer / worker roles", schema)
 			}
 		}
@@ -308,7 +309,7 @@ func TestCustomersBillingCB02Schema(t *testing.T) {
 				}
 			}
 		}
-		for _, r := range []string{"commerce_buyer_runtime", "commerce_buyer_writer", "commerce_worker", "commerce_runtime", "commerce_checkout_runtime", "commerce_checkout_writer", "commerce_stripe_ingress", "commerce_integration_writer"} {
+		for _, r := range []string{"commerce_buyer_runtime", "commerce_buyer_writer", waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_runtime", "commerce_checkout_runtime", "commerce_checkout_writer", "commerce_stripe_ingress", "commerce_integration_writer"} {
 			for _, tb := range cbsTables {
 				if e.bool(`SELECT has_table_privilege($1,$2,'SELECT') OR has_table_privilege($1,$2,'INSERT') OR has_table_privilege($1,$2,'UPDATE') OR has_table_privilege($1,$2,'DELETE')`, r, tb) {
 					t.Errorf("%s holds a direct privilege on %s (contract: no login role reads customers.* / billing.* directly)", r, tb)
@@ -582,7 +583,7 @@ func TestCustomersBillingCB02Schema(t *testing.T) {
 		}
 		// runtime lacks the ingress/read-side-only functions (also CB06)
 		for _, sig := range []string{"billing.apply_subscription(" + cbsApplyArgs + ")", "billing.store_standing(uuid,uuid)", "customers.consent_allows(uuid,uuid,uuid,text,text)"} {
-			for _, r := range []string{"commerce_runtime", "commerce_buyer_runtime", "commerce_worker"} {
+			for _, r := range []string{"commerce_runtime", "commerce_buyer_runtime", waPayment, waLive, waExpiry, waAds, waClaims, waLegacy} {
 				if e.bool(`SELECT has_function_privilege($1,$2::regprocedure,'EXECUTE')`, r, sig) {
 					t.Errorf("%s can execute %s", r, sig)
 				}
@@ -1043,8 +1044,21 @@ func cbsCreatorGrants(t *testing.T, e cbsEnv, f *testFixture) {
 				t.Errorf("creator holds %s %d times, want once", p, n)
 			}
 		}
-		if len(got) != len(op01Base)+9 {
-			t.Errorf("creator holds %d grants %v, want the 0065 set plus the three (%d)", len(got), got, len(op01Base)+9)
+		// Documented change (contracts/storefront-v2.md section D, migration 0089_staff_team.sql): the store creator is the
+		// first `owner`, whose bundle is EVERY permission the live store_grants CHECK accepts (staff_permission_catalogue,
+		// which already includes ads:* from 0074). The old count (0065 set + these three = 22) predates that. The C-5
+		// claim that matters is unchanged: the three new permissions appear exactly once (above), the creator holds the
+		// whole 0065 set, and nothing outside the catalogue is granted.
+		catalogue := e.list(`SELECT unnest(identity.staff_permission_catalogue())`)
+		want := append(append([]string{}, op01Base...), "live:read", "live:manage", "payments:refund", "fulfillment:write", "orders:export", "integration:execute")
+		want = append(want, newPerms...)
+		for _, p := range want {
+			if !slices.Contains(got, p) {
+				t.Errorf("creator lacks %s of the 0065 set plus the three", p)
+			}
+		}
+		if g, c := slices.Sorted(slices.Values(got)), slices.Sorted(slices.Values(catalogue)); !slices.Equal(g, c) {
+			t.Errorf("creator holds %d grants %v, want exactly the owner bundle = permission catalogue %v", len(g), g, c)
 		}
 		total := func() string {
 			return e.one(`SELECT count(*)::text FROM identity.store_grants WHERE tenant_id=$1`, first.TenantID)

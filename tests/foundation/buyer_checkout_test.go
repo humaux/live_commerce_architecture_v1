@@ -32,14 +32,14 @@ import (
 // or public browser checkout. Every identity, address and shipment is synthetic.
 type bcHarness struct {
 	cqHarness
-	pool, worker *pgxpool.Pool
-	service      *checkout.Service
-	input        checkout.Input
-	quote        storefront.Quote
-	destination  storefront.Destination
-	delivery     fulfillment.ServiceInput
-	allocation   fulfillment.AllocationInput
-	poolURL      string
+	pool, worker, expiry *pgxpool.Pool
+	service              *checkout.Service
+	input                checkout.Input
+	quote                storefront.Quote
+	destination          storefront.Destination
+	delivery             fulfillment.ServiceInput
+	allocation           fulfillment.AllocationInput
+	poolURL              string
 }
 
 func bcRole(t *testing.T, f *testFixture, authority string) string {
@@ -80,12 +80,10 @@ func bcSetup(t *testing.T) bcHarness {
 		t.Fatal(err)
 	}
 	t.Cleanup(pool.Close)
-	worker, err := platform.OpenWorkerPool(context.Background(), bcRole(t, h.f, "commerce_worker"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(worker.Close)
-	b := bcHarness{cqHarness: h, pool: pool, worker: worker, service: bcService(t, pool), delivery: delivery, allocation: allocation, poolURL: url}
+	// T21-02: the harness' "worker" is the SANDBOX/MOCK payment authority, "expiry" the expiry worker's own login.
+	worker := waOpen(t, h.f, waPayment, platform.WorkerPayment)
+	expiry := waOpen(t, h.f, waExpiry, platform.WorkerExpiry)
+	b := bcHarness{cqHarness: h, pool: pool, worker: worker, expiry: expiry, service: bcService(t, pool), delivery: delivery, allocation: allocation, poolURL: url}
 	b.prepare(t, h.cap, []storefront.Item{{SKUID: h.stock.skus[0].ID, Quantity: 2}})
 	return b
 }
@@ -333,7 +331,7 @@ func TestBuyerCheckoutAuthorityAndLegacyMerchantFence(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	for name, pool := range map[string]*pgxpool.Pool{"buyer": b.a.runtime, "issuer": b.a.issuer, "merchant": b.f.runtime, "identity": b.a.identity, "worker": b.worker} {
+	for name, pool := range map[string]*pgxpool.Pool{"buyer": b.a.runtime, "issuer": b.a.issuer, "merchant": b.f.runtime, "identity": b.a.identity, "worker": b.worker, "expiry": b.expiry} {
 		t.Run(name, func(t *testing.T) {
 			for _, sql := range []string{`SELECT checkout.begin_hold(NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL)`, `INSERT INTO checkout.command_results DEFAULT VALUES`, `UPDATE checkout.orders SET commercial_state='CANCELLED'`} {
 				_, e := pool.Exec(context.Background(), sql)
@@ -402,7 +400,10 @@ func TestBuyerCheckoutPoolAuthorityMatrix(t *testing.T) {
 	openers := map[string]func(context.Context, string) (*pgxpool.Pool, error){
 		"commerce_runtime": platform.OpenPool, "commerce_identity": platform.OpenIdentityPool,
 		"commerce_buyer_runtime": platform.OpenBuyerPool, "commerce_buyer_issuer": platform.OpenBuyerIssuerPool,
-		"commerce_worker": platform.OpenWorkerPool, "commerce_checkout_runtime": platform.OpenCheckoutPool,
+		"commerce_checkout_runtime": platform.OpenCheckoutPool,
+		// T21-02: one opener per worker authority; the legacy empty commerce_worker is refused (WAS tests).
+		waPayment: waOpener(platform.WorkerPayment), waLive: waOpener(platform.WorkerPaymentLive),
+		waExpiry: waOpener(platform.WorkerExpiry), waAds: waOpener(platform.WorkerAds), waClaims: waOpener(platform.WorkerClaims),
 	}
 	for authority, open := range openers {
 		t.Run(authority, func(t *testing.T) {
@@ -434,7 +435,7 @@ func TestBuyerCheckoutPoolAuthorityMatrix(t *testing.T) {
 			}
 		})
 	}
-	for name, pool := range map[string]*pgxpool.Pool{"owner": b.f.owner, "buyer": b.a.runtime, "merchant": b.f.runtime, "worker": b.worker} {
+	for name, pool := range map[string]*pgxpool.Pool{"owner": b.f.owner, "buyer": b.a.runtime, "merchant": b.f.runtime, "worker": b.worker, "expiry": b.expiry} {
 		t.Run("constructor-"+name, func(t *testing.T) {
 			jobs, e := river.NewClient(riverpgxv5.New(pool), &river.Config{Schema: "river_expiry"})
 			if e != nil {
@@ -538,7 +539,7 @@ func bcExpire(t *testing.T, b bcHarness, result checkout.Result, generation int6
 	t.Helper()
 	var disposition string
 	var retry *time.Time
-	if e := b.worker.QueryRow(context.Background(), `SELECT disposition,retry_at FROM checkout.expire_held($1,$2)`, result.OrderID, generation).Scan(&disposition, &retry); e != nil {
+	if e := b.expiry.QueryRow(context.Background(), `SELECT disposition,retry_at FROM checkout.expire_held($1,$2)`, result.OrderID, generation).Scan(&disposition, &retry); e != nil {
 		t.Fatal(e)
 	}
 	return disposition
@@ -643,13 +644,13 @@ func bcActualRiverExpiry(t *testing.T, mode string) {
 	queue := ewQueue
 	mustExec(t, b.f.owner, `UPDATE river_expiry.river_job SET state='available',scheduled_at=clock_timestamp() WHERE id=$1`, r.JobID)
 	var e error
-	w, e := checkout.NewExpiryWorker(context.Background(), b.worker)
+	w, e := checkout.NewExpiryWorker(context.Background(), b.expiry)
 	if e != nil {
 		t.Fatal(e)
 	}
 	workers := river.NewWorkers()
 	river.AddWorker(workers, w)
-	client, e := river.NewClient(riverpgxv5.New(b.worker), &river.Config{Schema: "river_expiry", Workers: workers, Queues: map[string]river.QueueConfig{queue: {MaxWorkers: 2}}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
+	client, e := river.NewClient(riverpgxv5.New(b.expiry), &river.Config{Schema: "river_expiry", Workers: workers, Queues: map[string]river.QueueConfig{queue: {MaxWorkers: 2}}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
 	if e != nil {
 		t.Fatal(e)
 	}

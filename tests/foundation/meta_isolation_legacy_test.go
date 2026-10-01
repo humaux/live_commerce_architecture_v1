@@ -53,6 +53,9 @@ func mcApplyHistorical(t *testing.T, f *testFixture, versions ...string) {
 	if err := tx.Commit(ctx); err != nil {
 		t.Fatal(err)
 	}
+	if err := waResyncLegacy(f); err != nil { // the replayed old SQL granted its objects to commerce_worker only
+		t.Fatal(err)
+	}
 }
 
 func mcOldSetup(t *testing.T, f *testFixture, object string) miTest {

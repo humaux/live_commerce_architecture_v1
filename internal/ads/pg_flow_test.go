@@ -127,7 +127,7 @@ func newAdsFx(t *testing.T) *adsFx {
 		return pool
 	}
 	f.runtime = login("ads_test_runtime", "commerce_runtime")
-	f.worker = login("ads_test_worker", "commerce_worker")
+	f.worker = login("ads_test_worker", "commerce_ads_worker")
 	// Billing standing is the real 0079 billing.store_standing with 0080's grant to commerce_ads_writer (the pre-merge
 	// stub is gone): a store without subscriptions is UNBILLED (pilot, Q4), so approve/publish are not restricted.
 	f.tenant, f.store, f.principal = newUUID(f), newUUID(f), newUUID(f)

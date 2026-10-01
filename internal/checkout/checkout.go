@@ -83,6 +83,10 @@ type Input struct {
 	// BuyerEmail is optional (storefront-v2 §C), validated by validBuyerEmail and stored on the order for notifications (PII: customers
 	// export/erasure cover it). omitempty keeps pre-0088 request digests unchanged.
 	BuyerEmail string `json:"buyer_email,omitempty"`
+	// Locale is the buyer's storefront locale ("zh-CN" | "zh-TW" | "en"); empty means the zh-TW default (notify.DefaultLocale).
+	// Validated by validInput and persisted on the order (checkout.orders.locale, migration 0097) so buyer notification
+	// mails render in the buyer's own language (internal/notify localeOf). omitempty keeps old request digests unchanged.
+	Locale string `json:"locale,omitempty"`
 }
 
 type Result struct {
@@ -352,6 +356,19 @@ func (s *Service) Begin(ctx context.Context, token, storeID, key string, in Inpu
 				return err
 			}
 		}
+		{
+			// checkout.set_order_locale (0097): persist the buyer's locale in the same placement transaction so buyer notification
+			// mails render in the buyer's language (notify.claim_batch -> Payload.Locale -> notify.localeOf). An empty input means
+			// the zh-TW default (notify.DefaultLocale); set once by the creating session, like the email above.
+			locale := in.Locale
+			if locale == "" {
+				locale = "zh-TW"
+			}
+			if _, err = tx.Exec(callCtx, `SELECT checkout.set_order_locale($1,$2::uuid,$3::uuid,$4)`,
+				tokenHash[:], storeID, orderID, locale); err != nil {
+				return err
+			}
+		}
 		if quote.Promotion != nil {
 			// storefront-v2 §F: promotions.redeem is the authoritative, locking usage check + redemption insert. It runs AFTER begin_hold
 			// (the order row it joins must exist) and in this same transaction: a refusal (promo_changed / promo_used_up / promo_expired ...)
@@ -449,7 +466,17 @@ func validInput(in Input) bool {
 	return command.ValidID(in.QuoteID) && command.ValidID(in.DestinationID) &&
 		in.CartVersion > 0 && in.ServiceVersion > 0 && in.AllocationVersion > 0 &&
 		(in.PaymentMode == "" || in.PaymentMode == "card" || in.PaymentMode == "pay_at_pickup" || in.PaymentMode == "bank_transfer") &&
-		validBuyerEmail(in.BuyerEmail)
+		validBuyerEmail(in.BuyerEmail) && validLocale(in.Locale)
+}
+
+// validLocale admits "" (the field is optional; the order then persists the zh-TW default) or exactly one of the
+// three storefront locales. The SQL CHECK on orders.locale and the NOT-NULL guard in checkout.set_order_locale are the twins.
+func validLocale(locale string) bool {
+	switch locale {
+	case "", "zh-CN", "zh-TW", "en":
+		return true
+	}
+	return false
 }
 
 // validBuyerEmail admits "" (the field is optional) or one plain address of at most 254 bytes: net/mail must parse it and return it

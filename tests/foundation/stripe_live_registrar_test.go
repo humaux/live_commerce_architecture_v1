@@ -15,7 +15,7 @@ package foundation_test
 //   - LIVE session/payment-intent pin (payments.stripe_sessions) and refund pin (payments.stripe_refunds): the worker
 //     that pins them needs a live key; the guards allow NULL->value once;
 //   - payments.provider_observations rows (the worker's report): the FACT itself is decided by the real definers
-//     payments.apply_capture -> apply_stripe_observation / apply_stripe_refund as commerce_worker;
+//     payments.apply_capture -> apply_stripe_observation / apply_stripe_refund as the payment worker authority;
 //   - payments.stripe_webhook_receipts ACCEPTED rows for the LIVE endpoint (the real ingress is SL05's);
 //   - a PROVIDER_MOCK qualification on a LIVE connection and tamper/restore UPDATEs under
 //     session_replication_role=replica (each restored before the next case) to isolate one canary predicate.
@@ -127,6 +127,17 @@ type slrEnv struct {
 	scope                  stripeadmin.Scope
 	conn, binding, account string
 	handler                http.Handler
+}
+
+// workerFor returns the payment worker pool whose authority serves profile: LIVE attempts are claimable and
+// recordable only by commerce_payment_live, SANDBOX/PROVIDER_MOCK only by commerce_payment_worker (T21-03).
+func (s *slrEnv) workerFor(t *testing.T, profile string) *pgxpool.Pool {
+	t.Helper()
+	if profile != "LIVE" {
+		return s.p.worker
+	}
+	// A fresh login per call: the pool is closed with the (sub)test t, so it must not be cached across subtests.
+	return waOpen(t, s.p.f, waLive, platform.WorkerPaymentLive)
 }
 
 func slrNew(t *testing.T, base *testFixture) *slrEnv {
@@ -352,7 +363,7 @@ func (s *slrEnv) observe(t *testing.T, attempt string, report map[string]any) []
 	return hash
 }
 
-// apply runs the real dispatcher payments.apply_capture as commerce_worker (the reconcile job's SQL).
+// apply runs the real dispatcher payments.apply_capture as the payment worker authority (the reconcile job's SQL).
 func (s *slrEnv) apply(attempt string, hash []byte) error {
 	_, err := s.p.worker.Exec(context.Background(), `SELECT payments.apply_capture($1::uuid,$2::bytea)`, attempt, hash)
 	return err

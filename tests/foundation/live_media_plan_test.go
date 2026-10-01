@@ -390,7 +390,7 @@ func TestLiveMediaPlanLMP04ActualRoleAndFrozenDraft(t *testing.T) {
 		t.Fatal(err)
 	}
 	ctx := context.Background()
-	_, worker := lmaLogin(t, h.lp.f, "commerce_worker")
+	_, worker := lmaLogin(t, h.lp.f, waClaims)
 	before := lmpFacts(t, h)
 	// The ordinary runtime has an INSERT grant on the legacy operation table;
 	// its RLS policy, not the absence of a grant, must reject MEDIA_ATTEMPT.

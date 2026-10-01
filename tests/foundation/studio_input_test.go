@@ -153,7 +153,7 @@ func TestStudioInputPreparedAndACL(t *testing.T) {
 		t.Fatal("private prepared binding envelope changed")
 	}
 	for _, fn := range []string{"live.read_studio_input(bytea,uuid,uuid)", "live.read_studio_input_prepared(bytea,uuid,uuid)"} {
-		for _, role := range []string{"commerce_runtime", "commerce_media_worker", "commerce_media_executor", "commerce_media_registrar", "commerce_worker"} {
+		for _, role := range []string{"commerce_runtime", "commerce_media_worker", "commerce_media_executor", "commerce_media_registrar", waPayment, waLive, waExpiry, waAds, waClaims, waLegacy} {
 			var allowed bool
 			if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT has_function_privilege($1,$2,'EXECUTE')`, role, fn).Scan(&allowed); err != nil || allowed != (role == "commerce_runtime") {
 				t.Fatalf("input read ABI role=%s allowed=%t err=%v", role, allowed, err)

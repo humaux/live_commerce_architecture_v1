@@ -220,6 +220,14 @@ func TestStripeRF12Guards(t *testing.T) {
 					}
 				}
 			}
+			// T21-02 (migration 0096) split the old shared commerce_worker: for these payment functions its successors are the two payment
+			// authorities, and nobody else may execute them.
+			for i, r := range oldGrant {
+				if r == "commerce_worker" {
+					oldGrant = append(append(append([]string{}, oldGrant[:i]...), "commerce_payment_live", "commerce_payment_worker"), oldGrant[i+1:]...)
+					break
+				}
+			}
 			sort.Strings(oldGrant)
 			if len(oldGrant) > 0 && grants != strings.Join(oldGrant, ",") {
 				t.Errorf("%s: EXECUTE granted to [%s], B1 granted [%s]", qualified, grants, strings.Join(oldGrant, ","))

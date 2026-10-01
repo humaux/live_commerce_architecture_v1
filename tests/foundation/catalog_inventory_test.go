@@ -186,6 +186,41 @@ func t04Count(t *testing.T, f *testFixture, query string, args ...any) int {
 	return count
 }
 
+// t04OnlyStoreProducts is the isolation assertion of this test, stated against ground truth instead of "empty".
+// The fixture DB is shared by the whole run and stores A2/B are fixed, so earlier tests (catalog_core_gate_test.go
+// CC03/CC06/CC08 create products as tenant B in storeB; archived rows stay) legitimately leave rows in them: the
+// 2026-10-01 full run printed those rows, every one with store_id = storeB (proved by this check), i.e. B reading its
+// OWN store, not a cross-tenant read. The invariant that must hold: every row the scope returns belongs to
+// (that scope's store) per the owner's unfiltered view (so none is the A1 stock this test just created), and the scope
+// sees all of them (RLS/filters hide nothing of its own store).
+func t04OnlyStoreProducts(t *testing.T, f *testFixture, label, store string, got []catalog.Product) {
+	t.Helper()
+	rows, err := f.owner.Query(context.Background(), `SELECT id::text FROM catalog.products WHERE store_id=$1`, store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	own := map[string]bool{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			t.Fatal(err)
+		}
+		own[id] = true
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range got {
+		if !own[p.ID] {
+			t.Errorf("%s scope returned product %s that is not in store %s", label, p.ID, store)
+		}
+	}
+	if len(got) < 100 && len(got) != len(own) {
+		t.Errorf("%s scope returned %d products, the owner sees %d in store %s", label, len(got), len(own), store)
+	}
+}
+
 func TestT04MigrationScopeForeignKeysAndRuntimePrivileges(t *testing.T) {
 	f := t04Fixture(t)
 	ctx := context.Background()
@@ -204,15 +239,17 @@ func TestT04MigrationScopeForeignKeysAndRuntimePrivileges(t *testing.T) {
 	productsA2, err := t04Scoped(ctx, f, f.tokens["a2"], f.storeA2, "catalog:read", func(tx pgx.Tx, scope platform.Scope) ([]catalog.Product, error) {
 		return catalog.ListProducts(ctx, tx, scope)
 	})
-	if err != nil || len(productsA2) != 0 {
-		t.Fatalf("same-tenant foreign-store products=%v err=%v, want empty", productsA2, err)
+	if err != nil {
+		t.Fatal(err)
 	}
+	t04OnlyStoreProducts(t, f, "same-tenant foreign-store", f.storeA2, productsA2)
 	productsB, err := t04Scoped(ctx, f, f.tokens["b"], f.storeB, "catalog:read", func(tx pgx.Tx, scope platform.Scope) ([]catalog.Product, error) {
 		return catalog.ListProducts(ctx, tx, scope)
 	})
-	if err != nil || len(productsB) != 0 {
-		t.Fatalf("foreign-tenant products=%v err=%v, want empty", productsB, err)
+	if err != nil {
+		t.Fatal(err)
 	}
+	t04OnlyStoreProducts(t, f, "foreign-tenant", f.storeB, productsB)
 	if got := t04Count(t, f, `SELECT count(*) FROM catalog.products`); got < 1 {
 		t.Fatal("owner fixture cannot read created product")
 	}

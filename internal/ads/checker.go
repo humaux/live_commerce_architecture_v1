@@ -9,14 +9,14 @@ import (
 )
 
 // checker.go is the dispatcher Check of every meta_ads route (contract 6.1): PG only, no network, no secret. It asks one SQL
-// definer (ads.check_create / check_activate / check_read, EXECUTE commerce_worker) and turns the returned BLOCKED_POLICY
+// definer (ads.check_create / check_activate / check_read, EXECUTE commerce_ads_worker) and turns the returned BLOCKED_POLICY
 // code into core.DenyPolicy, so the dispatcher records that exact code with zero provider calls. The rules live in SQL because
 // they read the approval, the operation ledger and the allowance under the store lock; this file decides only which one applies.
 
 // Checker is the PG-only Check for provider meta_ads. The CAPI Check is ads-capi's own route Check.
 type Checker struct{ pool *pgxpool.Pool }
 
-// NewChecker returns a Checker over the dispatcher's commerce_worker pool.
+// NewChecker returns a Checker over the dispatcher's commerce_ads_worker pool.
 func NewChecker(pool *pgxpool.Pool) *Checker { return &Checker{pool: pool} }
 
 // Check implements core.DispatchRoute.Check for meta_ads. Reconcile mode returns nil: a reconcile is query-only and has no

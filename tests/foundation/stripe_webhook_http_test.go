@@ -802,7 +802,7 @@ func TestStripeSP13WebhookHTTP(t *testing.T) {
 			t.Fatal("NewHandler accepted a nil inbox")
 		}
 		// Neither the merchant runtime pool nor the worker pool may stand in for the ingress role.
-		for name, dsn := range map[string]string{"runtime": bcRole(t, h.e.f, "commerce_runtime"), "worker": bcRole(t, h.e.f, "commerce_worker")} {
+		for name, dsn := range map[string]string{"runtime": bcRole(t, h.e.f, "commerce_runtime"), "payment worker": bcRole(t, h.e.f, waPayment), "claims worker": bcRole(t, h.e.f, waClaims)} {
 			pool, err := platform.OpenPool(ctx, dsn)
 			if err != nil {
 				continue // the runtime opener may itself refuse; either way it is not an ingress pool

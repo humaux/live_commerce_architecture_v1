@@ -338,6 +338,9 @@ def flag(name, value):
 identity = flag("LC_IDENTITY_ENABLED", E.get("LC_IDENTITY_ENABLED", ""))
 onboarding = flag("LC_ONBOARDING_ENABLED", E.get("LC_ONBOARDING_ENABLED", ""))
 password_login = flag("LC_PASSWORD_LOGIN_ENABLED", E.get("LC_PASSWORD_LOGIN_ENABLED", ""))
+# storefront-v2 §E8: the buyer-mail loop of expiry-worker (default off). It needs the same mailbox grammar and owner secret as the
+# password-login mail, but not identity: the loop only reads notify.outbox.
+buyer_mail = flag("LC_BUYER_MAIL_ENABLED", E.get("LC_BUYER_MAIL_ENABLED", ""))
 rec("P06", not password_login or identity, "LC_PASSWORD_LOGIN_ENABLED requires LC_IDENTITY_ENABLED")
 buyer_on = flag("LC_BUYER_ENABLED", E.get("LC_BUYER_ENABLED", ""))
 accounts = flag("COMMERCE_ACCOUNTS_ENABLED", api.get("COMMERCE_ACCOUNTS_ENABLED", ""))
@@ -347,6 +350,7 @@ studio = flag("COMMERCE_STUDIO_ENABLED", api.get("COMMERCE_STUDIO_ENABLED", ""))
 studio_media = flag("COMMERCE_STUDIO_MEDIA_ENABLED", api.get("COMMERCE_STUDIO_MEDIA_ENABLED", ""))
 claims_on = flag("COMMERCE_CLAIMS_ENABLED", api.get("COMMERCE_CLAIMS_ENABLED", ""))
 profiles = {p.strip() for p in E.get("COMPOSE_PROFILES", "").split(",") if p.strip()}
+rec("P06", not buyer_mail or "app" in profiles, "LC_BUYER_MAIL_ENABLED requires the app profile (expiry-worker runs the loop)")
 stripe_on = flag("LC_STRIPE_ENABLED", E.get("LC_STRIPE_ENABLED", ""))
 checkout_on = flag("LC_STRIPE_CHECKOUT_ENABLED", E.get("LC_STRIPE_CHECKOUT_ENABLED", ""))  # LD6: platform kill switch, "" = follow LC_STRIPE_ENABLED
 rec("P06", not checkout_on or stripe_on, "LC_STRIPE_CHECKOUT_ENABLED=1 requires LC_STRIPE_ENABLED=1 (checkout without the worker and webhook strands held stock)")
@@ -476,16 +480,17 @@ if identity:
         for k in ("COMMERCE_OIDC_CLIENT_ID", "COMMERCE_IDENTITY_PROVIDER_KEY"):
             rec("P08", api.get(k, "") == "", k + " must be empty when LC_OIDC_ISSUER is empty (password-only login)")
     if password_login:
-        # cmd/api/identity.go loadPasswordConfig grammar: DNS name host, From carries exactly the username.
-        smtp_host, smtp_user, mail_from = E.get("LC_SMTP_HOST", ""), E.get("LC_SMTP_USERNAME", ""), E.get("LC_MAIL_FROM", "")
-        rec("P08", re.fullmatch(r"[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+", smtp_host) is not None, "LC_SMTP_HOST (DNS name)")
-        rec("P08", re.fullmatch(r"[^@\s<>]+@[^@\s<>]+\.[^@\s<>]+", smtp_user) is not None and not (prod and "CHANGE_ME" in smtp_user), "LC_SMTP_USERNAME")
-        rec("P08", bool(smtp_user) and (mail_from.lower().endswith("<" + smtp_user.lower() + ">") or mail_from.lower() == smtp_user.lower()),
-            "LC_MAIL_FROM carries exactly LC_SMTP_USERNAME")
-        cap = E.get("LC_MAIL_DAILY_CAP", "200")
-        rec("P08", cap.isdigit() and 20 <= int(cap) <= 100000, "LC_MAIL_DAILY_CAP")
         rec("P08", E.get("LC_BREACH_CHECK", "hibp") == "hibp", "LC_BREACH_CHECK must be hibp outside loopback tests")
     rec("P08", not onboarding or bool(cur), "LC_ONBOARDING_CURRENCIES required by onboarding")
+if password_login or buyer_mail:
+    # cmd/api/identity.go loadPasswordConfig + cmd/expiry-worker/mail.go loadMailConfig grammar: DNS name host, From carries exactly the username.
+    smtp_host, smtp_user, mail_from = E.get("LC_SMTP_HOST", ""), E.get("LC_SMTP_USERNAME", ""), E.get("LC_MAIL_FROM", "")
+    rec("P08", re.fullmatch(r"[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+", smtp_host) is not None, "LC_SMTP_HOST (DNS name)")
+    rec("P08", re.fullmatch(r"[^@\s<>]+@[^@\s<>]+\.[^@\s<>]+", smtp_user) is not None and not (prod and "CHANGE_ME" in smtp_user), "LC_SMTP_USERNAME")
+    rec("P08", bool(smtp_user) and (mail_from.lower().endswith("<" + smtp_user.lower() + ">") or mail_from.lower() == smtp_user.lower()),
+        "LC_MAIL_FROM carries exactly LC_SMTP_USERNAME")
+    cap = E.get("LC_MAIL_DAILY_CAP", "200")
+    rec("P08", cap.isdigit() and 20 <= int(cap) <= 100000, "LC_MAIL_DAILY_CAP")
 if payment or accounts:
     rec("P08", profile_name in ("SANDBOX", "LIVE"), "COMMERCE_PAYMENT_PROFILE")
 for k in ("LC_HTTP_PORT", "LC_HTTPS_PORT"):
@@ -518,7 +523,7 @@ if ecpay_on:
 if identity and (not password_login or E.get("LC_OIDC_ISSUER", "")):
     rec("P09", values.get("commerce_oidc_client_secret", "__UNSET__") != "__UNSET__",
         "commerce_oidc_client_secret (__UNSET__ = public PKCE client)", warn=True)
-if identity and password_login:
+if (identity and password_login) or buyer_mail:
     rec("P09", values.get("commerce_smtp_password", "__UNSET__") != "__UNSET__",
         "commerce_smtp_password (owner-supplied SMTP authorization code of a dedicated sending mailbox)")
 

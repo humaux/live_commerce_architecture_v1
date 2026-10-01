@@ -64,8 +64,10 @@ export function TeamInvite({ locale, token, signedIn, passwordLogin }: { locale:
           <>
             <p data-testid="invite-need-login">{c.inviteNeedLogin}</p>
             <div className="customers-actions">
-              <a className="orders-export" href={`/${locale}/`} data-testid="invite-signin">{c.signIn}</a>
-              {passwordLogin && <a className="orders-export" href={`/${locale}/signup`} data-testid="invite-signup">{c.signUp}</a>}
+              {/* invite-next: hand the invite path to sign-in/sign-up as `next`; both pages validate it with
+                  lib/invite-next.ts and redirect back only when it matches the invite pattern (no open redirect). */}
+              <a className="orders-export" href={`/${locale}/?next=${encodeURIComponent(`/${locale}/invite/${token}`)}`} data-testid="invite-signin">{c.signIn}</a>
+              {passwordLogin && <a className="orders-export" href={`/${locale}/signup?next=${encodeURIComponent(`/${locale}/invite/${token}`)}`} data-testid="invite-signup">{c.signUp}</a>}
             </div>
           </>
         )}

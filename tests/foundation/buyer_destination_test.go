@@ -283,7 +283,7 @@ func TestBuyerDestinationValidationAndSQLBoundaries(t *testing.T) {
 		return 0, e
 	})
 	daSQLState(t, err, "42501")
-	for _, role := range []string{"commerce_worker", "commerce_buyer_issuer", "commerce_identity"} {
+	for _, role := range []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_buyer_issuer", "commerce_identity"} {
 		tx, e := h.f.owner.Begin(context.Background())
 		if e != nil {
 			t.Fatal(e)

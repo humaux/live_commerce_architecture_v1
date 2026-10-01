@@ -78,10 +78,37 @@ func OpenBuyerIssuerPool(ctx context.Context, dsn string) (*pgxpool.Pool, error)
 	return openPool(ctx, dsn, "buyer_issuer")
 }
 
-// OpenWorkerPool is a separate non-HTTP authority. River's lifecycle grants
-// must never be inherited by a merchant, buyer, or identity service login.
-func OpenWorkerPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
-	return openPool(ctx, dsn, "worker")
+// WorkerAuthority names the one NOLOGIN authority a worker process's DB login joins (T21-02,
+// migration 0096). The values are the membership keys of validatePoolAuthority; the roles are
+// commerce_payment_worker (payment-worker SANDBOX/PROVIDER_MOCK), commerce_payment_live (payment-worker
+// LIVE), commerce_expiry_worker, commerce_ads_worker and commerce_claims_worker. The legacy shared
+// commerce_worker role is empty and never admitted.
+type WorkerAuthority string
+
+const (
+	WorkerPayment     WorkerAuthority = "payment_worker"
+	WorkerPaymentLive WorkerAuthority = "payment_live"
+	WorkerExpiry      WorkerAuthority = "expiry_worker"
+	WorkerAds         WorkerAuthority = "ads_worker"
+	WorkerClaims      WorkerAuthority = "claims_worker"
+)
+
+// OpenWorkerPool is a separate non-HTTP authority. River's lifecycle grants must never be inherited
+// by a merchant, buyer, or identity service login, and a worker may hold only its own lane's
+// authority: a login in any other worker authority (or the empty legacy commerce_worker) is refused.
+func OpenWorkerPool(ctx context.Context, dsn string, authority WorkerAuthority) (*pgxpool.Pool, error) {
+	if !authority.valid() {
+		return nil, errors.New("worker authority required")
+	}
+	return openPool(ctx, dsn, string(authority))
+}
+
+func (a WorkerAuthority) valid() bool {
+	switch a {
+	case WorkerPayment, WorkerPaymentLive, WorkerExpiry, WorkerAds, WorkerClaims:
+		return true
+	}
+	return false
 }
 
 // ValidateMetaIngressPool admits only a dedicated webhook producer. The borrowed
@@ -142,13 +169,28 @@ func openPool(ctx context.Context, dsn string, authority string) (*pgxpool.Pool,
 // ValidateWorkerPool reuses the startup authority gate when an internal worker
 // receives an existing pool. The caller retains ownership of that pool; failure
 // never closes it. A nil pool and an owner/mixed-role connection fail closed.
-func ValidateWorkerPool(ctx context.Context, pool *pgxpool.Pool) error {
+// allowed lists the worker authorities the calling package serves (at least one,
+// e.g. payments: WorkerPayment for SANDBOX/MOCK or WorkerPaymentLive for LIVE; the dispatcher:
+// WorkerClaims or WorkerAds); the pool must hold exactly one of them and no other authority.
+func ValidateWorkerPool(ctx context.Context, pool *pgxpool.Pool, allowed ...WorkerAuthority) error {
 	if pool == nil {
 		return errors.New("worker database pool required")
 	}
+	if len(allowed) == 0 {
+		return errors.New("worker authority required")
+	}
 	bounded, cancel := context.WithTimeout(ctx, startupTimeout)
 	defer cancel()
-	return validatePoolAuthority(bounded, pool, "worker")
+	var err error
+	for _, a := range allowed {
+		if !a.valid() {
+			return errors.New("worker authority required")
+		}
+		if err = validatePoolAuthority(bounded, pool, string(a)); err == nil {
+			return nil
+		}
+	}
+	return err
 }
 
 // ValidateCheckoutPool checks an existing pool without taking ownership of it.
@@ -228,7 +270,7 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 		       pg_has_role(session_user, 'commerce_identity', 'MEMBER'),
 		       pg_has_role(session_user, 'commerce_buyer_runtime', 'MEMBER'),
 		       pg_has_role(session_user, 'commerce_buyer_issuer', 'MEMBER'),
-		       pg_has_role(session_user, 'commerce_worker', 'MEMBER'),
+		       coalesce(pg_has_role(session_user, to_regrole('commerce_worker'), 'MEMBER'),false),
 		       coalesce(pg_has_role(session_user, to_regrole('commerce_checkout_runtime'), 'MEMBER'),false),
 		       coalesce(pg_has_role(session_user, to_regrole('commerce_hosted_runtime'), 'MEMBER'),false),
 		       coalesce(pg_has_role(session_user, to_regrole('commerce_hosted_runtime'), 'USAGE'),false),
@@ -312,10 +354,23 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 		Scan(&retentionJob, &retentionJobUsage, &retentionJobSet, &retentionOperator, &retentionOperatorUsage, &retentionOperatorSet); err != nil {
 		return fmt.Errorf("validate runtime role: %w", err)
 	}
+	// T21-02 worker authorities (migration 0096). The legacy commerce_worker above is empty and is a
+	// membership of its own, never a valid authority: a login still in it matches no pool kind.
+	var payWorker, payLive, expiryWorker, adsWorker, claimsWorker bool
+	if err := pool.QueryRow(ctx, `SELECT coalesce(pg_has_role(session_user, to_regrole('commerce_payment_worker'), 'MEMBER'),false),
+		coalesce(pg_has_role(session_user, to_regrole('commerce_payment_live'), 'MEMBER'),false),
+		coalesce(pg_has_role(session_user, to_regrole('commerce_expiry_worker'), 'MEMBER'),false),
+		coalesce(pg_has_role(session_user, to_regrole('commerce_ads_worker'), 'MEMBER'),false),
+		coalesce(pg_has_role(session_user, to_regrole('commerce_claims_worker'), 'MEMBER'),false)`).
+		Scan(&payWorker, &payLive, &expiryWorker, &adsWorker, &claimsWorker); err != nil {
+		return fmt.Errorf("validate runtime role: %w", err)
+	}
 	// Exactly one authority, including indirect grants. Checking only the desired
 	// role would let a mixed login smuggle merchant privileges into buyer code.
 	memberships := map[string]bool{"runtime": runtimeMember, "identity": identityMember,
-		"buyer_runtime": buyerRuntimeMember, "buyer_issuer": buyerIssuerMember, "worker": workerMember,
+		"buyer_runtime": buyerRuntimeMember, "buyer_issuer": buyerIssuerMember, "legacy_worker": workerMember,
+		"payment_worker": payWorker, "payment_live": payLive, "expiry_worker": expiryWorker,
+		"ads_worker": adsWorker, "claims_worker": claimsWorker,
 		"checkout_runtime": checkoutMember, "meta_ingress": metaIngress,
 		"meta_registrar": metaRegistrar, "meta_curator": metaCurator, "meta_consumer": metaConsumer,
 		"meta_worker": metaWorker, "media_registrar": mediaRegistrar,

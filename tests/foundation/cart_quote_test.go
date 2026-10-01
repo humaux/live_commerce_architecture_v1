@@ -53,6 +53,10 @@ func cqSetup(t *testing.T) cqHarness {
 	return h
 }
 func (h cqHarness) setPolicy(in pricing.PolicyInput) (pricing.Policy, error) {
+	// Historical (pre-0088/0092) fixtures lack columns the current Go names (see lriShims).
+	if err := lriAddShims(h.f); err != nil {
+		return pricing.Policy{}, err
+	}
 	return pricingScoped(context.Background(), h.f, h.f.tokens["a"], h.f.storeA1, "pricing:write", func(tx pgx.Tx, s platform.Scope) (pricing.Policy, error) {
 		return pricing.SetPolicy(context.Background(), tx, s, t04Key("cq-policy"), in)
 	})

@@ -99,8 +99,55 @@ static_cases() {
       COMPOSE_PROFILES=$p LC_PG_BIND_ADDR=127.0.0.1 runc S03 docker compose --project-directory "$LC_DEPLOY_DIR" \
         --env-file "$cfg/compose.env" -f "$LC_DEPLOY_DIR/compose.yml" -f "$LC_DEPLOY_DIR/compose.two-host-db.yml" config -q || ok=0
     done
+    # S03w (deploy-r4): the rendered stack must match deploy/postgres/logins.tsv and the secret custody rules. Every core login's
+    # consumer service gets its DSN as <ENV_VAR>_FILE=/run/secrets/dsn_<login> and mounts exactly that file; no other service
+    # mounts a dsn_ file; the SMTP secret reaches only api + expiry-worker; the Page-token HPKE PRIVATE ring only claims-worker
+    # (api: public ring); expiry-worker has the egress network and the mail loop OFF by default; the registrar one-shots are
+    # profile ops. A wiring drift here fails before any container exists (smoke S13/S44 prove the same at runtime).
+    COMPOSE_PROFILES="db,app,payments-sandbox,payments-live,meta,claims,ads,ops" docker compose --project-directory "$LC_DEPLOY_DIR" \
+      --env-file "$cfg/compose.env" -f "$LC_DEPLOY_DIR/compose.yml" config --format json >"$cfg/rendered.json" 2>>"$EV/logs/S03.log" || ok=0
+    if ! python3 - "$cfg/rendered.json" "$LC_DEPLOY_DIR/postgres/logins.tsv" >>"$EV/logs/S03.log" 2>&1 <<'PY'; then ok=0; fi
+import json, sys
+svcs = json.load(open(sys.argv[1]))["services"]
+def secrets_of(name):
+    return {x["source"] if isinstance(x, dict) else x for x in svcs[name].get("secrets") or []}
+bad = []
+consumers = {}
+for line in open(sys.argv[2], encoding="utf-8"):
+    f = line.rstrip("\n").split("\t")
+    if line.startswith("#") or len(f) < 6 or f[3] != "core":
+        continue
+    login, consumer = f[0], f[4]
+    svc, var = consumer.split(":", 1)
+    env = svcs[svc].get("environment") or {}
+    if env.get(var + "_FILE") != "/run/secrets/dsn_" + login:
+        bad.append("%s: %s_FILE != /run/secrets/dsn_%s" % (svc, var, login))
+    if "dsn_" + login not in secrets_of(svc):
+        bad.append("%s does not mount dsn_%s" % (svc, login))
+    consumers.setdefault("dsn_" + login, set()).add(svc)
+for name, svc in ((n, s) for s in svcs for n in secrets_of(s)):
+    if name.startswith("dsn_") and name != "dsn_migrate_owner" and svc not in consumers.get(name, set()):
+        bad.append("%s mounts %s (not its consumer in logins.tsv)" % (svc, name))
+mounted = lambda secret: {s for s in svcs if secret in secrets_of(s)}
+for secret, want in (("commerce_smtp_password", {"api", "expiry-worker"}),
+                     ("commerce_meta_page_hpke_private_keys_json", {"claims-worker"}),
+                     ("commerce_meta_page_hpke_public_keys_json", {"api"}),
+                     ("commerce_meta_ads_hpke_private_keys_json", {"ads-worker"})):
+    if mounted(secret) != want:
+        bad.append("%s mounted by %s, want %s" % (secret, sorted(mounted(secret)), sorted(want)))
+ew = svcs["expiry-worker"]
+if "egress" not in (ew.get("networks") or {}):
+    bad.append("expiry-worker lacks the egress network (SMTP)")
+if str((ew.get("environment") or {}).get("COMMERCE_BUYER_MAIL_ENABLED")) != "0":
+    bad.append("expiry-worker mail loop is not off by default")
+for one_shot in ("stripe-admin", "meta-admin", "store-admin"):
+    if svcs[one_shot].get("profiles") != ["ops"]:
+        bad.append(one_shot + " is not profile ops only")
+print("S03w problems: " + ("; ".join(bad) if bad else "none"))
+sys.exit(1 if bad else 0)
+PY
     rm -rf "$cfg"
-    if ((ok)); then rec S03 PASS "compose config (4 profile sets x 2 files, incl. claims + ops one-shots)"; else rec S03 FAIL "compose config (logs/S03.log)"; fi
+    if ((ok)); then rec S03 PASS "compose config (4 profile sets x 2 files, incl. claims + ops one-shots) + login/secret/network wiring matches logins.tsv"; else rec S03 FAIL "compose config or wiring (logs/S03.log)"; fi
   else
     rec S03 NOT_RUN "docker compose not available"
   fi
@@ -292,30 +339,39 @@ full_cases() {
 
   # S10 preflight positive + negatives
   if runc S10 "$LC_SCRIPTS_DIR/preflight.sh"; then rec S10 PASS "preflight positive"; else rec S10 FAIL "preflight positive (logs/S10.log)"; fi
-  negative() { # id rule mutate-function
-    local id=$1 rule=$2 copy pf
+  # pf_copy ID mutate-function — preflight on a mutated copy of the smoke config; returns preflight's exit code (log: logs/ID.log).
+  pf_copy() {
+    local id=$1 copy pf rc=0
     copy=$(mktemp -d "$SMOKE_ROOT/neg.XXXXXX")
     cp -a "$SMOKE_ROOT/config/." "$copy/"
-    "$3" "$copy"
+    "$2" "$copy"
     # preflight reads os.environ and lc_load_env lets the environment win over the file, and this process
     # already exported the base compose.env (line ~276). Unset every compose.env key first, or a mutation of
     # an existing key (LC_IDENTITY_ENABLED, LC_OIDC_ISSUER) is silently overridden (S10i/S10l, 2026-10-01).
     pf="$LC_SCRIPTS_DIR/preflight.sh"
-    if (while IFS='=' read -r k _; do unset "$k"; done < <(grep -E '^[A-Z_][A-Z0-9_]*=' "$SMOKE_ROOT/config/compose.env" "$copy/compose.env" | cut -d: -f2-) &&
+    (while IFS='=' read -r k _; do unset "$k"; done < <(grep -E '^[A-Z_][A-Z0-9_]*=' "$SMOKE_ROOT/config/compose.env" "$copy/compose.env" | cut -d: -f2-) &&
       export LC_COMPOSE_ENV="$copy/compose.env" LC_ENV_DIR="$copy/env" LC_SECRETS_DIR="$copy/secrets" &&
-      "$pf" --skip-images >"$EV/logs/$id.log" 2>&1); then
+      "$pf" --skip-images >"$EV/logs/$id.log" 2>&1) || rc=$?
+    rm -rf "$copy"
+    return "$rc"
+  }
+  negative() { # id rule mutate-function
+    local id=$1 rule=$2
+    if pf_copy "$id" "$3"; then
       rec "$id" FAIL "preflight passed but $rule FAIL expected"
     elif grep -q "^$rule FAIL" "$EV/logs/$id.log"; then
       rec "$id" PASS "$rule FAIL as expected"
     else rec "$id" FAIL "failed without $rule"; fi
-    rm -rf "$copy"
+  }
+  positive() { # id mutate-function: the valid counterpart of a negative group must pass (red/green pair)
+    if pf_copy "$1" "$2"; then rec "$1" PASS "preflight green"; else rec "$1" FAIL "preflight refused a valid configuration (logs/$1.log)"; fi
   }
   neg_a() { cp -f "$1/secrets/commerce_bff_key" "$1/secrets/commerce_buyer_bff_key"; }
   neg_b() { echo 'LISTEN_ADDR=0.0.0.0:8080' >>"$1/env/api.env"; }
   neg_c() { echo 'COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS=1' >>"$1/env/api.env"; }
   neg_d() { rm -f "$1/secrets/commerce_buyer_cookie_key"; }
-  neg_e() { sed -i 's/^COMMERCE_STUDIO_MEDIA_ENABLED=.*/COMMERCE_STUDIO_MEDIA_ENABLED=1/' "$1/env/api.env"; }
-  neg_h() { sed -i 's/^COMMERCE_STUDIO_ENABLED=.*/COMMERCE_STUDIO_ENABLED=0/' "$1/env/api.env"; } # claims stays 1
+  neg_e() { sed -i.bak 's/^COMMERCE_STUDIO_MEDIA_ENABLED=.*/COMMERCE_STUDIO_MEDIA_ENABLED=1/' "$1/env/api.env" && rm -f "$1/env/api.env.bak"; }
+  neg_h() { sed -i.bak 's/^COMMERCE_STUDIO_ENABLED=.*/COMMERCE_STUDIO_ENABLED=0/' "$1/env/api.env" && rm -f "$1/env/api.env.bak"; } # claims stays 1
   negative S10a P04 neg_a
   negative S10b P06 neg_b
   negative S10c P07 neg_c
@@ -345,6 +401,30 @@ full_cases() {
     echo 'COMMERCE_OIDC_CLIENT_ID=CHANGE_ME_CLIENT_ID' >>"$1/env/api.env"
   }
   negative S10l P08 neg_l
+  # deploy-r4 (storefront-v2 §E8): the buyer-mail loop of expiry-worker. A non-flag value, the loop without a mailbox, and the loop
+  # with a mailbox but the owner placeholder secret must each be refused by name.
+  neg_m() { echo 'LC_BUYER_MAIL_ENABLED=yes' >>"$1/compose.env"; }
+  neg_n() { echo 'LC_BUYER_MAIL_ENABLED=1' >>"$1/compose.env"; } # no SMTP host/user/from
+  neg_o() { # valid SMTP settings, commerce_smtp_password still the owner placeholder
+    printf 'LC_BUYER_MAIL_ENABLED=1\nLC_SMTP_HOST=smtp.example.test\nLC_SMTP_USERNAME=sender@example.test\nLC_MAIL_FROM=sender@example.test\n' >>"$1/compose.env"
+  }
+  neg_p() { # meta-connect on, but the claims profile / webhook off and the redirect URI wrong
+    printf 'COMMERCE_META_LOGIN_CONFIG_ID=2952863798433821\nCOMMERCE_META_LOGIN_REDIRECT_URI=https://wrong.example.test/cb\n' >>"$1/env/api.env"
+  }
+  negative S10m P06 neg_m
+  negative S10n P08 neg_n
+  negative S10o P09 neg_o
+  negative S10p P08 neg_p
+  pos_q() { # the green side: buyer mail on with a valid mailbox + a non-placeholder secret, meta-connect on with the pilot values
+    printf 'LC_BUYER_MAIL_ENABLED=1\nLC_SMTP_HOST=smtp.example.test\nLC_SMTP_USERNAME=sender@example.test\nLC_MAIL_FROM=sender@example.test\n' >>"$1/compose.env"
+    # secrets are 0440: replace the files (rm needs only the directory), keep the mode
+    rm -f "$1/secrets/commerce_smtp_password" "$1/secrets/commerce_meta_apps_json"
+    printf 'smoke-not-a-real-smtp-code\n' >"$1/secrets/commerce_smtp_password"
+    printf '{"apps":[{"app_id":"1","object":"page","app_secret":"smoke-not-a-real-app-secret","verify_token":"smoke-verify"}]}\n' >"$1/secrets/commerce_meta_apps_json"
+    chmod 0440 "$1/secrets/commerce_smtp_password" "$1/secrets/commerce_meta_apps_json"
+    printf 'COMMERCE_META_WEBHOOK_ENABLED=1\nCOMMERCE_META_LOGIN_CONFIG_ID=2952863798433821\nCOMMERCE_META_LOGIN_REDIRECT_URI=https://admin.localhost/api/meta/callback\n' >>"$1/env/api.env"
+  }
+  positive S10q pos_q
 
   # S37 (+ S11-S16): the real first-deploy path
   if runc S37 "$LC_SCRIPTS_DIR/deploy.sh" --smoke first; then rec S37 PASS "deploy.sh first"; else
@@ -387,8 +467,13 @@ full_cases() {
   if runc S13n lc_compose run --rm -T --no-deps provision-logins; then why13n+=" mixed-authority drift was accepted"; fi
   grep -q 'DRIFT login=lc_claims_intake .*membership=' "$EV/logs/S13n.log" || why13n+=" mixed-authority drift not named"
   lc_psql <<<"REVOKE commerce_worker FROM lc_claims_intake;" >/dev/null
+  # (3) T21-02: a worker login that also joins ANOTHER worker authority (sandbox payment + live payment) must be named too.
+  lc_psql <<<"GRANT commerce_payment_live TO lc_payment_sandbox;" >/dev/null
+  if runc S13n lc_compose run --rm -T --no-deps provision-logins; then why13n+=" two-worker-authority drift was accepted"; fi
+  grep -q 'DRIFT login=lc_payment_sandbox .*membership=' "$EV/logs/S13n.log" || why13n+=" two-worker-authority drift not named"
+  lc_psql <<<"REVOKE commerce_payment_live FROM lc_payment_sandbox;" >/dev/null
   runc S13n lc_compose run --rm -T --no-deps provision-logins || why13n+=" provisioning not green after revert"
-  if [[ -z "$why13n" ]]; then rec S13n PASS "ruling-19 and mixed-authority drift each fail provisioning by name; green after revert"; else rec S13n FAIL "$why13n (logs/S13n.log)"; fi
+  if [[ -z "$why13n" ]]; then rec S13n PASS "ruling-19, mixed-authority and two-worker-authority drift each fail provisioning by name; green after revert"; else rec S13n FAIL "$why13n (logs/S13n.log)"; fi
 
   if lc_compose exec -T postgres bash -c 'PGPASSWORD="$(< /run/secrets/pg_superuser_password)" psql -X -h postgres -U postgres -d live_commerce -c "SELECT 1"' \
     >"$EV/logs/S14.log" 2>&1; then
@@ -955,7 +1040,7 @@ def ver(cmd):
     except Exception:
         return "unavailable"
 static_ids = ["S01", "S02", "S03", "S04", "S05", "S06"]
-full_ids = static_ids + ["S%02d" % i for i in range(7, 46)] + ["S10a", "S10b", "S10c", "S10d", "S10e", "S10f", "S10g", "S10h", "S10i", "S10j", "S10k", "S10l", "S13n", "S29m"]
+full_ids = static_ids + ["S%02d" % i for i in range(7, 46)] + ["S10a", "S10b", "S10c", "S10d", "S10e", "S10f", "S10g", "S10h", "S10i", "S10j", "S10k", "S10l", "S10m", "S10n", "S10o", "S10p", "S10q", "S13n", "S29m"]
 result = {
     "run_id": os.path.basename(ev), "task_id": "T22", "commit": commit,
     "environment": {"mode": mode, "host": platform.node(), "kernel": platform.release(),

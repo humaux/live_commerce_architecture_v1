@@ -194,7 +194,7 @@ func pwaAssertSchema(t *testing.T, owner *pgxpool.Pool) {
 			pubFuncs++
 			t.Errorf("identity.%s is executable by PUBLIC", name)
 		}
-		for role, want := range map[string]bool{"commerce_identity": true, "commerce_runtime": false, "commerce_auth": false, "commerce_worker": false} {
+		for role, want := range map[string]bool{"commerce_identity": true, "commerce_runtime": false, "commerce_auth": false, waPayment: false, waLive: false, waExpiry: false, waAds: false, waClaims: false, waLegacy: false} {
 			var got bool
 			if err := owner.QueryRow(ctx, `SELECT has_function_privilege($1, $2::oid, 'EXECUTE')`, role, oid).Scan(&got); err != nil {
 				t.Fatal(err)

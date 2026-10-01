@@ -217,7 +217,7 @@ func slsCatalog(t *testing.T) {
 		t.Errorf("SL02 approvals: missing privilege %s", k)
 	}
 	// No runtime/worker/ingress/checkout/integration/registrar privilege on approvals (table or any column).
-	for _, role := range []string{"commerce_runtime", "commerce_worker", "commerce_stripe_ingress", "commerce_checkout_writer", "commerce_integration_writer",
+	for _, role := range []string{"commerce_runtime", waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_stripe_ingress", "commerce_checkout_writer", "commerce_integration_writer",
 		"commerce_checkout_runtime", "commerce_hosted_runtime", "commerce_payment_registrar", "commerce_auth"} {
 		for _, priv := range []string{"SELECT", "INSERT", "UPDATE", "DELETE", "TRUNCATE", "REFERENCES"} {
 			var ok bool
@@ -242,7 +242,7 @@ func slsCatalog(t *testing.T) {
 	}
 	// qualifications: nobody but the registry writer may set revoked_at, and nobody holds table-level UPDATE. (UPDATE(id) row-lock
 	// grants of 0016/0061 to other authorities predate 0077; the revoke-only trigger makes them inert and is tested below.)
-	for _, role := range []string{"commerce_runtime", "commerce_worker", "commerce_stripe_ingress", "commerce_checkout_writer", "commerce_integration_writer", "commerce_payment_registrar"} {
+	for _, role := range []string{"commerce_runtime", waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_stripe_ingress", "commerce_checkout_writer", "commerce_integration_writer", "commerce_payment_registrar"} {
 		var ok bool
 		if err := p.QueryRow(ctx, `SELECT has_table_privilege($1,'payments.account_qualifications','UPDATE') OR has_column_privilege($1,'payments.account_qualifications','revoked_at','UPDATE')`, role).Scan(&ok); err != nil {
 			t.Fatal(err)
@@ -282,7 +282,7 @@ func slsCatalog(t *testing.T) {
 		if owner != c.owner || !secdef || strings.Join(config, ",") != "search_path=pg_catalog" || strings.Join(holders, ",") != strings.Join(c.execute, ",") {
 			t.Errorf("SL02 definer %s: owner=%s secdef=%v config=%v EXECUTE=%v; want %s/true/[search_path=pg_catalog]/%v", c.sig, owner, secdef, config, holders, c.owner, c.execute)
 		}
-		for _, role := range []string{"commerce_worker", "commerce_stripe_ingress", "commerce_checkout_writer", "commerce_integration_writer", "commerce_hosted_runtime"} {
+		for _, role := range []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_stripe_ingress", "commerce_checkout_writer", "commerce_integration_writer", "commerce_hosted_runtime"} {
 			if c.owner == "commerce_auth" {
 				break
 			}
@@ -646,8 +646,8 @@ func slsApplyWithout(t *testing.T, owner *pgxpool.Pool, skipNumbered, skipPost s
 	// The same River/queue grants migrations.Apply issues between the phases (copied from mciApplyWithout).
 	for _, stmt := range []string{
 		`GRANT SELECT, INSERT, UPDATE(kind) ON river.river_job TO commerce_runtime; GRANT USAGE ON SEQUENCE river.river_job_id_seq TO commerce_runtime`,
-		`GRANT USAGE ON SCHEMA river TO commerce_worker; GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river TO commerce_worker;
-		 REVOKE ALL ON river.river_migration FROM commerce_worker; GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river TO commerce_worker`,
+		`GRANT USAGE ON SCHEMA river TO commerce_claims_worker,commerce_ads_worker; GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river TO commerce_claims_worker,commerce_ads_worker;
+		 REVOKE ALL ON river.river_migration FROM commerce_claims_worker,commerce_ads_worker; GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river TO commerce_claims_worker,commerce_ads_worker`,
 	} {
 		if _, err := owner.Exec(ctx, stmt); err != nil {
 			t.Fatal(err)
@@ -669,10 +669,14 @@ func slsApplyWithout(t *testing.T, owner *pgxpool.Pool, skipNumbered, skipPost s
 		`REVOKE ALL ON river.river_job FROM commerce_checkout_runtime,commerce_checkout_writer; REVOKE UPDATE(kind) ON river.river_job FROM commerce_checkout_runtime;
 		 REVOKE UPDATE(queue) ON river.river_job FROM commerce_checkout_writer; REVOKE ALL ON river.river_job_id_seq FROM commerce_checkout_runtime;
 		 REVOKE ALL ON SCHEMA river FROM commerce_checkout_runtime,commerce_checkout_writer;
-		 GRANT USAGE ON SCHEMA river_payment,river_expiry TO commerce_worker;
-		 GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river_payment,river_expiry TO commerce_worker;
-		 REVOKE ALL ON river_payment.river_migration,river_expiry.river_migration FROM commerce_worker;
-		 GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river_payment,river_expiry TO commerce_worker`,
+		 GRANT USAGE ON SCHEMA river_payment TO commerce_payment_worker,commerce_payment_live;
+		 GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river_payment TO commerce_payment_worker,commerce_payment_live;
+		 REVOKE ALL ON river_payment.river_migration FROM commerce_payment_worker,commerce_payment_live;
+		 GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river_payment TO commerce_payment_worker,commerce_payment_live;
+		 GRANT USAGE ON SCHEMA river_expiry TO commerce_expiry_worker;
+		 GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river_expiry TO commerce_expiry_worker;
+		 REVOKE ALL ON river_expiry.river_migration FROM commerce_expiry_worker;
+		 GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river_expiry TO commerce_expiry_worker`,
 	} {
 		if _, err := tx.Exec(ctx, stmt); err != nil {
 			t.Fatal(err)

@@ -84,7 +84,7 @@ const GraphHost = graphHost
 type checkFunc func(ctx context.Context, operationID string, linkHash []byte) (string, error)
 
 // Routes returns the two dispatcher routes (facebook and instagram, meta.private_reply, service).
-// checkPool must be the commerce_worker pool (platform.ValidateWorkerPool) and is used for one
+// checkPool must be the commerce_claims_worker pool (platform.ValidateWorkerPool) and is used for one
 // STABLE statement per Check; no transaction is held across I/O.
 func Routes(checkPool *pgxpool.Pool, linkKey claims.ReplyLinkKey, pageKeys *PageTokenKeyring, cfg Config) ([]core.DispatchRoute, error) {
 	return RoutesV2(checkPool, linkKey, pageKeys, nil, cfg)
@@ -97,7 +97,7 @@ func RoutesV2(checkPool *pgxpool.Pool, linkKey claims.ReplyLinkKey, pageKeys *Pa
 	if checkPool == nil {
 		return nil, ErrConfig
 	}
-	if err := platform.ValidateWorkerPool(context.Background(), checkPool); err != nil {
+	if err := platform.ValidateWorkerPool(context.Background(), checkPool, platform.WorkerClaims); err != nil {
 		return nil, err
 	}
 	check := func(ctx context.Context, operationID string, linkHash []byte) (code string, err error) {
@@ -105,7 +105,7 @@ func RoutesV2(checkPool *pgxpool.Pool, linkKey claims.ReplyLinkKey, pageKeys *Pa
 		err = checkPool.QueryRow(ctx, `SELECT claims.check_meta_reply($1::uuid,$2::bytea)`, operationID, linkHash).Scan(&code)
 		return code, err
 	}
-	// integration.meta_connect_mark_reauth (0095, commerce_worker): a Graph 190 flips the merchant's connect card to "reconnect".
+	// integration.meta_connect_mark_reauth (0095, commerce_claims_worker): a Graph 190 flips the merchant's connect card to "reconnect".
 	reauth := func(ctx context.Context, operationID string) {
 		_, _ = checkPool.Exec(ctx, `SELECT integration.meta_connect_mark_reauth($1::uuid)`, operationID)
 	}
