@@ -9,6 +9,7 @@ import { formatMoney } from "../lib/money";
 import { productImage, productPath } from "../lib/routes";
 import type { ProductCard as Card } from "../lib/shop-contract";
 import { fmt, shopCopy } from "../lib/shop-copy";
+import { ImageIcon } from "./icons";
 
 export default function ProductCardView({
   locale,
@@ -34,8 +35,10 @@ export default function ProductCardView({
           {card.cover_image_id ? (
             <img src={productImage(card.id, card.cover_image_id)} alt="" loading={eager ? "eager" : "lazy"} decoding="async" />
           ) : (
-            // No photo: the neutral block keeps the 4/5 media box and shows the locale label; the title below stays the accessible name.
+            // No photo: a picture glyph and the locale label keep the 4/5 media box recognisable as "no image" (not a broken load);
+            // the box is a labelled image, the title below stays the card's accessible name.
             <span className="sf-card__ph" role="img" aria-label={copy.noImage}>
+              <ImageIcon />
               <span className="sf-card__ph-text" aria-hidden="true">
                 {copy.noImage}
               </span>

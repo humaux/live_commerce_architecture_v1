@@ -32,6 +32,7 @@ import {
   type ClaimPreview,
 } from "../lib/claim-contract";
 import { claimCopy } from "../lib/claim-copy";
+import { formatMoney } from "../lib/money";
 
 type View = "loading" | "ready" | "not-found" | "conflict" | "failed" | "session";
 
@@ -67,14 +68,7 @@ export default function ClaimLink({
   const fragmentRead = useRef(false);
   const epoch = useRef(0);
 
-  const money = (amount: number, currency: string) => {
-    const formatter = new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency,
-      currencyDisplay: locale === "zh-TW" && currency === "TWD" ? "code" : "symbol",
-    });
-    return formatter.format(amount / 10 ** (formatter.resolvedOptions().maximumFractionDigits ?? 2));
-  };
+  const money = (amount: number, currency: string) => formatMoney(locale, amount, currency);
 
   function fail(reason: unknown) {
     if (

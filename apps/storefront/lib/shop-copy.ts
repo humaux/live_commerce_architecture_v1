@@ -105,6 +105,9 @@ const en = {
   collectionsEmpty: "No collections yet",
   photo: "Photo {n} of {total}",
   noImage: "No image",
+  defaultStoreName: "Store",
+  railPrev: "Previous products",
+  railNext: "Next products",
   save: "Save {amount}",
   priceFrom: "from {price}",
 };
@@ -212,6 +215,9 @@ const zhTW: Copy = {
   collectionsEmpty: "目前沒有商品分類",
   photo: "第 {n} 張，共 {total} 張",
   noImage: "無圖片",
+  defaultStoreName: "商店",
+  railPrev: "上一組商品",
+  railNext: "下一組商品",
   save: "省 {amount}",
   priceFrom: "{price} 起",
 };
@@ -318,6 +324,9 @@ const zhCN: Copy = {
   collectionsEmpty: "目前没有商品分类",
   photo: "第 {n} 张，共 {total} 张",
   noImage: "无图片",
+  defaultStoreName: "商店",
+  railPrev: "上一组商品",
+  railNext: "下一组商品",
   save: "省 {amount}",
   priceFrom: "{price} 起",
 };

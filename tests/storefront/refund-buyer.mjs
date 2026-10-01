@@ -32,7 +32,9 @@ const control = env("LC_RF_CONTROL"), phase = env("LC_RF_PHASE");
 const captured = Number(env("LC_RF_CAPTURED")), partial = Number(env("LC_RF_PARTIAL"));
 const cookieKey = env("COMMERCE_BUYER_COOKIE_KEY");
 assert(["processing", "final"].includes(phase));
-const money = (minor) => (minor / 100).toFixed(2);
+// The buyer pages show whole amounts without ".00" ("NT$10", "TWD 25"; lib/money.ts) and cents only when there are cents.
+const money = (minor) => (minor % 100 === 0 ? (minor / 100).toLocaleString("en-US") : (minor / 100).toFixed(2));
+const shows = (text, minor) => new RegExp(`(?:[A-Z]{3}|[A-Z]{0,2}\\$)\\s*${money(minor).replace(/[.,]/g, "\\$&")}(?![\\d.,]*\\d)`).test(text.replace(/\u00a0/g, " "));
 const children = new Set(), sockets = new Set(), contexts = [], logs = [];
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 const listen = async (s) => { s.listen(0, "127.0.0.1"); await once(s, "listening"); return s.address().port; };
@@ -146,7 +148,7 @@ try {
       await pause(1000);
     }
     assert(/Refunded/i.test(text) && /5.10 business days/i.test(text), "no 'Refunded X — your bank may take 5–10 business days' after the refund succeeded");
-    assert(text.includes(money(partial)), "the refunded amount is missing");
+    assert(shows(text, partial), "the refunded amount is missing");
     view = await paymentView(page);
     assert.equal(view.body.payment_state, "PARTIALLY_REFUNDED");
     assert.deepEqual(view.body.refund, { refunded_minor: partial, pending_minor: 0 });
@@ -164,7 +166,7 @@ try {
         assert.deepEqual(view.body.refund, { refunded_minor: captured, pending_minor: 0 });
         assert.deepEqual(Object.keys(view.body.refund).sort(), ["pending_minor", "refunded_minor"]);
         await expect(page.getByTestId("payment-status")).toHaveAttribute("data-state", "REFUNDED");
-        assert((await page.locator("body").innerText()).includes(money(captured)), `refunded total for ${locale}`);
+        assert(shows(await page.locator("body").innerText(), captured), `refunded total for ${locale}`);
         await shot(page, "refund-buyer", locale, mobile ? "mobile" : "desktop");
         await c.close();
       }

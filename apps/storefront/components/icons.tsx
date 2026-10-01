@@ -58,6 +58,19 @@ export const ChevronRightIcon = () => (
     <path d="M9 6l6 6-6 6" />
   </Icon>
 );
+export const ChevronLeftIcon = () => (
+  <Icon size={18}>
+    <path d="M15 6l-6 6 6 6" />
+  </Icon>
+);
+// "No photo" glyph of the image placeholders: a framed picture with a sun and a ridge.
+export const ImageIcon = ({ size = 30 }: { size?: number }) => (
+  <Icon size={size}>
+    <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" />
+    <circle cx="9" cy="10" r="1.6" />
+    <path d="M4 17.5l5-4.5 3.5 3 3-2.5 4.5 4" />
+  </Icon>
+);
 export const ArrowRightIcon = () => (
   <Icon size={18}>
     <path d="M5 12h14M13 6l6 6-6 6" />

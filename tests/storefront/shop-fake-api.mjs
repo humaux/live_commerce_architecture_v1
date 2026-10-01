@@ -153,7 +153,7 @@ function design(extra = {}) {
 // ---- server -------------------------------------------------------------------------------------------------------------
 export function createFakeApi({ port = 0, origin = "https://shop.example", bffKey }) {
   const products = buildCatalog();
-  const state = { requests: [], sessions: new Map(), carts: new Map(), receipts: new Map(), quotes: new Map(), unpublished: false, down: false, hideProductSlug: null };
+  const state = { requests: [], sessions: new Map(), carts: new Map(), receipts: new Map(), quotes: new Map(), unpublished: false, down: false, hideProductSlug: null, imagelessSlug: null };
   const idsOf = design()._ids;
   const imageSeeds = new Map([[idsOf.hero, ["hero", "wide"]], [idsOf.about, ["about", "square"]], [idsOf.logo, ["logo", "square"]], [uid(44), ["collection", "square"]]]);
   for (const p of products) for (const img of p.images) imageSeeds.set(img.id, [img.id, "portrait"]);
@@ -167,7 +167,7 @@ export function createFakeApi({ port = 0, origin = "https://shop.example", bffKe
   const card = (p) => {
     const buyable = p.variants.filter((v) => v.stock !== "out"), pool = buyable.length ? buyable : p.variants;
     const prices = pool.map((v) => v.price_minor), cmp = pool.filter((v) => v.compare_at_minor && v.compare_at_minor > v.price_minor).map((v) => v.compare_at_minor);
-    return { id: p.id, slug: p.slug, title: p.title, price_min_minor: Math.min(...prices), price_max_minor: Math.max(...prices), compare_at_min_minor: cmp.length ? Math.min(...cmp) : null, cover_image_id: p.images[0]?.id ?? null, in_stock: buyable.length > 0 };
+    return { id: p.id, slug: p.slug, title: p.title, price_min_minor: Math.min(...prices), price_max_minor: Math.max(...prices), compare_at_min_minor: cmp.length ? Math.min(...cmp) : null, cover_image_id: p.slug === state.imagelessSlug ? null : p.images[0]?.id ?? null, in_stock: buyable.length > 0 };
   };
   const cartOf = (token) => state.carts.get(token) ?? { id: "", currency: CURRENCY, version: 0, items: [] };
   const skuIndex = () => new Map(products.flatMap((p) => p.variants.map((v) => [v.sku_id, { p, v }])));
@@ -227,7 +227,7 @@ export function createFakeApi({ port = 0, origin = "https://shop.example", bffKe
       if (one) {
         const p = live().find((x) => x.slug === one[1] || x.id === one[1]);
         if (!p) return error(res, 404, "not_found");
-        return json(res, 200, { id: p.id, slug: p.slug, title: p.title, description: p.description, seo: { title: "", description: "" }, images: p.images, options: p.options, variants: p.variants.map(({ sku_id, title, option_values, price_minor, compare_at_minor, stock }) => ({ sku_id, title, option_values, price_minor, compare_at_minor, stock })), collections: p.collections.map((s) => ({ slug: s, title: COLLECTIONS.find((c) => c.slug === s).title })) });
+        return json(res, 200, { id: p.id, slug: p.slug, title: p.title, description: p.description, seo: { title: "", description: "" }, images: p.slug === state.imagelessSlug ? [] : p.images, options: p.options, variants: p.variants.map(({ sku_id, title, option_values, price_minor, compare_at_minor, stock }) => ({ sku_id, title, option_values, price_minor, compare_at_minor, stock })), collections: p.collections.map((s) => ({ slug: s, title: COLLECTIONS.find((c) => c.slug === s).title })) });
       }
       return error(res, 404, "not_found");
     }
@@ -242,7 +242,7 @@ export function createFakeApi({ port = 0, origin = "https://shop.example", bffKe
     if (path === "catalog") {
       const after = url.searchParams.get("cursor") ? Number(Buffer.from(url.searchParams.get("cursor"), "base64url").toString()) : 0;
       const limit = Math.min(100, Number(url.searchParams.get("limit") ?? 100));
-      const rows = live().flatMap((p) => p.variants.filter((v) => !(p.variants.length === 1 && false)).map((v) => ({ product_id: p.id, sku_id: v.sku_id, name: p.title, description: p.description, sku_code: v.sku_code, currency: CURRENCY, price_minor: v.price_minor, images: p.images })));
+      const rows = live().flatMap((p) => p.variants.filter((v) => !(p.variants.length === 1 && false)).map((v) => ({ product_id: p.id, sku_id: v.sku_id, name: p.title, description: p.description, sku_code: v.sku_code, currency: CURRENCY, price_minor: v.price_minor, images: p.slug === state.imagelessSlug ? [] : p.images })));
       const slice = rows.slice(after, after + limit);
       return json(res, 200, { items: slice, next_cursor: after + limit < rows.length ? Buffer.from(String(after + limit)).toString("base64url") : "", store_name: "晨光選物" });
     }

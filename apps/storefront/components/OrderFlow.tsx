@@ -319,6 +319,9 @@ export default function OrderFlow({
     }
   }
 
+  // The create button stays disabled until the address and total are confirmed; say so next to it (and to assistive tech) while that is the reason.
+  const needsConfirm = !confirmed && !blocked && !expired;
+
   return (
     <section
       className="address-section"
@@ -513,9 +516,16 @@ export default function OrderFlow({
         </p>
       )}
       <ConsentChoices locale={locale} value={consents} onChange={setConsents} disabled={busy || blocked} />
+      {/* Why the button below is disabled, in words (never colour alone): the address must be confirmed first. */}
+      {needsConfirm && (
+        <p id="create-order-hint" className="order-note" data-testid="create-order-hint">
+          {copy.createNeedsConfirm}
+        </p>
+      )}
       <button
         data-testid="create-order"
         className="primary create-order"
+        aria-describedby={needsConfirm ? "create-order-hint" : undefined}
         disabled={busy || blocked || expired || !confirmed || !option}
         onClick={() =>
           void run(async (isCurrent) => {

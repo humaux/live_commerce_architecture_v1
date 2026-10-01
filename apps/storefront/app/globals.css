@@ -265,11 +265,13 @@ h1 {
   color: var(--muted);
   line-height: 1.5;
 }
+/* The summary + action bar is the last block of the checkout page and sticks to the bottom edge of the viewport while the page is longer
+   than the screen; at the end of the page it rests in the flow above the shell footer, so it can never cover the footer's links, whatever
+   its height (wrapped labels, large text, narrow phones). A fixed bar needed a magic padding under the footer and still hid it in screenshots. */
 .purchase-footer {
-  position: fixed;
+  position: sticky;
   bottom: 0;
-  left: 0;
-  right: 0;
+  z-index: 20;
   background: white;
   border-top: 1px solid var(--line);
   padding: 18px 21px max(18px, env(safe-area-inset-bottom));
@@ -315,6 +317,16 @@ h1 {
 }
 .primary:hover:not(:disabled) {
   background: #1c6554;
+}
+/* A disabled action is grey with a dashed edge, never the action teal faded (the pale teal read as an enabled button gone wrong).
+   The reason is written next to it and linked with aria-describedby (OrderFlow create-order-hint). */
+.primary:disabled,
+.payment-pay:disabled {
+  background: #e7edf3;
+  color: #46566a;
+  border: 1px dashed #98a8ba;
+  opacity: 1;
+  cursor: not-allowed;
 }
 .purchase-error {
   background: #fff3ed;

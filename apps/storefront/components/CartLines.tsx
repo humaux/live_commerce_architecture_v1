@@ -16,7 +16,7 @@ import { freeShippingProgress } from "../lib/shop-contract";
 import { checkoutPath, productImage, productPath } from "../lib/routes";
 import { formatMoney } from "../lib/money";
 import { fmt, shopCopy } from "../lib/shop-copy";
-import { ArrowRightIcon, MinusIcon, PlusIcon, TrashIcon } from "./icons";
+import { ArrowRightIcon, ImageIcon, MinusIcon, PlusIcon, TrashIcon } from "./icons";
 
 export function useCartDetails(): { details: CartDetails | null; failed: boolean; loading: boolean } {
   const { cart, context } = useCart();
@@ -105,7 +105,13 @@ function Line({ locale, line, currency, readOnly }: { locale: Locale; line: Line
   return (
     <li className="sf-line" data-testid="cart-line" data-sku={line.sku_id}>
       <div className="sf-line__media">
-        {image ? <img src={image} alt="" width={96} height={120} loading="lazy" /> : <span className="sf-line__ph" aria-hidden="true" />}
+        {image ? (
+          <img src={image} alt="" width={96} height={120} loading="lazy" />
+        ) : (
+          <span className="sf-line__ph" role="img" aria-label={copy.noImage}>
+            <ImageIcon size={28} />
+          </span>
+        )}
       </div>
       <div className="sf-line__body">
         <div className="sf-line__head">

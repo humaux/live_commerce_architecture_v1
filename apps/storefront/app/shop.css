@@ -62,6 +62,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .sf-brand img { height: 34px; width: auto; max-width: 180px; object-fit: contain; display: block; }
 .sf-nav { display: none; }
 .sf-header__tools { display: flex; align-items: center; gap: 2px; justify-self: end; }
+.sf-header__tools:empty { min-width: 44px; } /* closed store: no search or cart, the brand stays centred */
 .sf-iconbtn { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--sf-ink); text-decoration: none; }
 .sf-iconbtn:hover:not(:disabled) { background: var(--sf-paper); }
 .sf-badge { position: absolute; top: 4px; right: 2px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; font-variant-numeric: tabular-nums; }
@@ -148,8 +149,11 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .sf-card__link { display: block; text-decoration: none; }
 .sf-card__media { position: relative; display: block; aspect-ratio: 4 / 5; background: #efece5; border-radius: var(--sf-radius); overflow: hidden; }
 .sf-card__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .5s cubic-bezier(.2,.8,.2,1); }
-.sf-card__ph, .sf-tile__ph, .sf-gal__ph span { position: absolute; inset: 0; display: grid; place-items: center; }
-.sf-card__ph-text, .sf-gal__ph span { padding: 0 12px; text-align: center; font-size: 14px; font-weight: 600; letter-spacing: .06em; color: color-mix(in srgb, var(--accent) 45%, #6f6a60); }
+.sf-tile__ph { position: absolute; inset: 0; display: grid; place-items: center; }
+/* "No photo" blocks (card, gallery, cart line): the same warm paper box as a photo would fill, a picture glyph and the locale label. */
+.sf-card__ph, .sf-gal__ph, .sf-line__ph { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: color-mix(in srgb, var(--accent) 45%, #6f6a60); }
+.sf-card__ph { position: absolute; inset: 0; }
+.sf-card__ph-text, .sf-gal__ph span { padding: 0 12px; text-align: center; font-size: 14px; font-weight: 600; letter-spacing: .06em; }
 .sf-card__link:hover .sf-card__media img { transform: scale(1.035); }
 .sf-card__title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 10px; font-size: 15px; line-height: 1.4; font-weight: 500; color: var(--sf-ink); }
 .sf-card__price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin-top: 4px; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -196,6 +200,19 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .sf-rail::-webkit-scrollbar { display: none; }
 .sf-rail > li { flex: 0 0 58%; max-width: 250px; scroll-snap-align: start; }
 @media (min-width: 720px) { .sf-rail { gap: 20px; } .sf-rail > li { flex-basis: 24%; max-width: 280px; } }
+/* The rail runs to the viewport edge, so the last visible card is cut there: an edge fade (only on the side that has more) and, on wide
+   screens, previous/next buttons say it scrolls (components/Rail.tsx sets data-more-start / data-more-end). */
+.sf-railwrap { position: relative; }
+.sf-railwrap::before, .sf-railwrap::after { content: ""; position: absolute; top: 0; bottom: 18px; width: 64px; z-index: 1; pointer-events: none; opacity: 0; transition: opacity .2s; }
+.sf-railwrap::before { left: 0; background: linear-gradient(to right, #fff, rgba(255,255,255,0)); }
+.sf-railwrap::after { right: 0; background: linear-gradient(to left, #fff, rgba(255,255,255,0)); }
+.sf-railwrap[data-more-start="true"]::before, .sf-railwrap[data-more-end="true"]::after { opacity: 1; }
+.sf-railbtn { display: none; position: absolute; top: 34%; z-index: 2; width: 44px; height: 44px; padding: 0; align-items: center; justify-content: center; border: 1px solid var(--sf-line); border-radius: 50%; background: #fff; color: var(--sf-ink); box-shadow: 0 4px 14px rgba(20,24,31,.14); cursor: pointer; }
+.sf-railbtn:hover { background: var(--sf-paper); }
+.sf-railbtn--prev { left: 8px; }
+.sf-railbtn--next { right: 12px; }
+@media (min-width: 720px) { .sf-railbtn { display: inline-flex; } }
+.sf-railbtn[hidden] { display: none; }
 .sf-section--prose { max-width: 720px; text-align: center; box-shadow: 0 0 0 100vmax var(--sf-paper); clip-path: inset(0 -100vmax); background: var(--sf-paper); margin-top: 44px; padding-top: 52px; padding-bottom: 52px; }
 .sf-section--prose + .sf-section { margin-top: 0; }
 .sf-section--prose h2 { margin-bottom: 14px; }
@@ -302,7 +319,8 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .sf-lines.is-loading { opacity: .6; transition: opacity .15s; }
 .sf-line { display: grid; grid-template-columns: 84px 1fr; gap: 14px; padding: 16px 0; border-bottom: 1px solid var(--sf-line); }
 .sf-line__media { width: 84px; aspect-ratio: 4 / 5; border-radius: 8px; overflow: hidden; background: #efece5; }
-.sf-line__media img, .sf-line__ph { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sf-line__media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sf-line__ph { width: 100%; height: 100%; }
 .sf-line__body { min-width: 0; display: grid; gap: 4px; align-content: start; }
 .sf-line__head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
 .sf-line__title { font-size: 15px; font-weight: 600; line-height: 1.4; text-decoration: none; overflow-wrap: anywhere; }
@@ -365,13 +383,13 @@ a.sf-line__title:hover { text-decoration: underline; }
 @media (prefers-reduced-motion: reduce) {
   .sf-skel { animation: none; }
   .sf-sheet[open], .sf-drawer[open], .sf-sticky { animation: none; }
-  .sf-card__media img, .sf-free__bar span { transition: none; }
+  .sf-card__media img, .sf-free__bar span, .sf-railwrap::before, .sf-railwrap::after { transition: none; }
   .sf-card__link:hover .sf-card__media img { transform: none; }
   html { scroll-behavior: auto; }
 }
 
 /* ---- checkout screens keep their own styles (globals.css); only the font and page rhythm follow the shell ---- */
 .purchase-main { padding-top: 24px; }
-/* The checkout action bar is position:fixed over the bottom of the viewport; without room under the shell footer its language links and
-   legal links are unreachable when the page is scrolled to the end (found by the buyer browser gate, storefront-integration). */
-body:has(.purchase-footer) .sf-footer { padding-bottom: 120px; }
+/* The product page's phone buy bar (.sf-sticky) is position:fixed over the bottom ~70px: keep that room under the shell footer so the language
+   links and the copyright line are reachable at the end of the page. (The checkout bar is sticky in the flow and needs none: globals.css.) */
+@media (max-width: 899.98px) { body:has(.sf-sticky) .sf-footer { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); } }

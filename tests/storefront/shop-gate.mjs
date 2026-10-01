@@ -96,7 +96,21 @@ try {
   const phone = () => browser.newContext(ctxOpts({ ignoreHTTPSErrors: true, viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: "zh-TW" }));
   const desk = () => browser.newContext(ctxOpts({ ignoreHTTPSErrors: true, viewport: { width: 1280, height: 900 }, locale: "zh-TW" }));
   const noOverflow = (p) => p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
-  const shot = async (p, name, fullPage = true) => { if (shots) await p.screenshot({ path: path.join(shots, `${name}.png`), fullPage }); };
+  // A Playwright fullPage capture is not what a buyer sees: it paints a sticky header at the scroll offset it happens to have (visual QA
+  // finding 2), a fixed bottom bar at the first viewport's bottom edge instead of the end of the page (finding 1) and leaves lazy images
+  // below the fold blank (finding 3). Walk the page so lazy images load, return to the top, and let the bottom bars sit in the flow, which
+  // is where they rest when the buyer reaches the end. The real layout is asserted in SF11, never read off a picture.
+  const shot = async (p, name, fullPage = true) => {
+    if (!shots) return;
+    const file = path.join(shots, `${name}.png`);
+    if (!fullPage) { await p.screenshot({ path: file }); return; }
+    await p.evaluate(async () => {
+      for (let y = 0; y < document.documentElement.scrollHeight; y += innerHeight) { window.scrollTo(0, y); await new Promise((r) => setTimeout(r, 100)); }
+      await Promise.all([...document.images].map((i) => (i.complete ? 0 : new Promise((done) => { i.onload = i.onerror = done; setTimeout(done, 4000); }))));
+      window.scrollTo(0, 0);
+    });
+    await p.screenshot({ path: file, fullPage: true, style: ".purchase-footer, .sf-sticky { position: static !important; animation: none !important; }" });
+  };
   const text = async (url, headers = {}) => { const r = await fetch(url, { headers }); return r; };
   // Node fetch cannot reach shop.example; raw relay with the virtual host instead.
   const raw = (p, headers = {}) => relay(next.port, { url: p, method: "GET", headers: { host: HOST, ...headers } }, Buffer.alloc(0));
@@ -271,8 +285,136 @@ try {
   await p.goto(`${origin}/zh-TW`); await expect(p.getByTestId("section-hero")).toBeVisible();
   pass("SF10 unpublished store: branded closed 404, robots Disallow, no sitemap; upstream down -> 500 error state, recovers");
 
+  // ---- SF11 visual-QA polish (k3 report; every finding was reproduced in this browser first, see the commit log for which were capture artifacts) --
+  // Each numbered part reports its own failure so one run lists everything that is still wrong.
+  const failures = [];
+  const part = async (label, fn) => { try { await fn(); } catch (e) { failures.push(`${label}: ${String(e.message).split("\n").filter((l) => l.trim()).slice(0, 4).join(" / ").slice(0, 500)}`); } };
+  const small = (loc) => loc.evaluateAll((els) => els.map((e) => { const b = e.getBoundingClientRect(); return `${Math.round(b.width)}x${Math.round(b.height)}`; }).filter((t) => { const [w, h] = t.split("x").map(Number); return w < 44 || h < 44; }));
+  // Footer content a fixed/sticky bottom bar could hide: scroll to the end, nothing in the viewport may sit under the bar, and the last footer line must be in view.
+  const footerCovered = async (pg) => {
+    // The page height is still moving while cart lines and images load: wait until it is stable before looking at the end of the page.
+    let last = -1; for (let i = 0; i < 40; i++) { const h = await pg.evaluate(() => document.documentElement.scrollHeight); if (h === last) break; last = h; await pg.waitForTimeout(150); }
+    await pg.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight)); await pg.waitForTimeout(300);
+    const r = await pg.evaluate(() => {
+      const items = [...document.querySelectorAll(".sf-footer a, .sf-footer__base p")], last = document.querySelector(".sf-footer__base p").getBoundingClientRect();
+      const bad = items.filter((el) => {
+        const b = el.getBoundingClientRect(); if (b.bottom <= 0 || b.top >= innerHeight) return false;
+        const hit = document.elementFromPoint(b.x + b.width / 2, Math.min(innerHeight - 1, Math.max(0, b.y + b.height / 2)));
+        return !hit || !!hit.closest(".purchase-footer, .sf-sticky");
+      }).map((el) => el.textContent.trim());
+      return { n: items.length, bad, lastInView: last.top >= 0 && last.bottom <= innerHeight };
+    });
+    assert(r.n >= 10 && r.lastInView && r.bad.length === 0, `footer content under a bottom bar: ${JSON.stringify(r)}`);
+  };
+  const checkoutStep = async (pg) => { // cart -> delivery -> quotation, the same clicks as SF05
+    await pg.goto(`${origin}/zh-TW/checkout`);
+    await pg.getByRole("button", { name: "選擇配送" }).click(); await expect(pg.getByLabel("配送方式")).toBeVisible();
+    await pg.getByRole("button", { name: "取得目前總額" }).click(); await expect(pg.locator(".quotation")).toBeVisible();
+    await expect(pg.getByTestId("create-order")).toBeVisible();
+  };
+  const moneyTexts = (pg) => pg.evaluate(() => [...document.querySelectorAll(".sf-line__total, .sf-line__unit, [data-testid=cart-subtotal], .purchase-footer strong, .quotation li span:last-child, .quotation dd, .sf-summary__row strong")].map((e) => e.textContent.trim()).filter((t) => /\d/.test(t)));
+  const noDecimals = async (pg, min, where) => { const t = await moneyTexts(pg); assert(t.length >= min, `${where}: only ${t.length} amounts found`); assert(!t.some((x) => /\d\.\d\d\b/.test(x)), `${where}: whole TWD amounts must not carry .00: ${t.join(" | ")}`); };
+
+  await part("1 checkout bar 1280", async () => { await d.goto(`${origin}/zh-TW/checkout`); await d.locator(".purchase-footer").waitFor(); await footerCovered(d); });
+  await part("1 checkout bar 390", async () => { await checkoutStep(p); await footerCovered(p); });
+  const narrow = await browser.newContext(ctxOpts({ ignoreHTTPSErrors: true, viewport: { width: 320, height: 568 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: "zh-TW" })), np = await narrow.newPage();
+  await part("1 checkout bar 320", async () => {
+    await np.goto(`${origin}/zh-TW/products/cedar-fig-candle`); await np.getByTestId("add-to-cart").click(); await np.getByTestId("cart-checkout").waitFor();
+    await np.goto(`${origin}/zh-TW/checkout`); await np.locator(".purchase-footer").waitFor(); await footerCovered(np);
+  });
+  for (const [label, ctx] of [["320", np], ["390", p]]) await part(`1 product phone bar ${label}`, async () => {
+    await ctx.goto(`${origin}/zh-TW/products/cedar-fig-candle`); await ctx.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight)); await expect(ctx.getByTestId("sticky-buy")).toBeVisible(); await footerCovered(ctx);
+  });
+  await narrow.close();
+
+  // 2. one header, never repeated mid-page (the repeat in fullPage captures was the sticky header painted at the scroll offset)
+  await part("2 one header", async () => {
+    for (const url of ["/zh-TW/products/cedar-fig-candle", "/zh-TW/products", "/zh-TW/checkout"]) {
+      await p.goto(`${origin}${url}`); await expect(p.locator("header.sf-header")).toBeVisible();
+      assert.equal(await p.locator("header.sf-header").count(), 1, `${url}: exactly one site header`);
+      assert.equal(await p.getByTestId("menu-open").count(), 1, `${url}: exactly one menu button`);
+      assert.equal(await p.locator(".sf-header").evaluate((e) => getComputedStyle(e).position), "sticky", "the header sticks inside normal flow");
+    }
+  });
+
+  // 3. a product without a photo shows a recognisable placeholder (icon + localized accessible label) on the card, the gallery and the cart line
+  api.state.imagelessSlug = "olive-board";
+  await part("3 placeholder card", async () => {
+    await p.goto(`${origin}/zh-TW/products`);
+    const ph = p.getByTestId("product-card").filter({ hasText: "橄欖木砧板" }).getByRole("img", { name: "無圖片" });
+    await expect(ph).toBeVisible(); await expect(ph.locator("svg")).toHaveCount(1);
+    await ph.scrollIntoViewIfNeeded(); await shot(p, "m-noimage-card", false);
+  });
+  await part("3 placeholder gallery", async () => {
+    await p.goto(`${origin}/zh-TW/products/olive-board`);
+    await expect(p.getByTestId("product-gallery").getByRole("img", { name: "無圖片" }).locator("svg")).toHaveCount(1);
+    await shot(p, "m-noimage-product", false);
+    await p.goto(`${origin}/en/products/olive-board`);
+    await expect(p.getByTestId("product-gallery").getByRole("img", { name: "No image" }).locator("svg")).toHaveCount(1);
+  });
+  await part("3 placeholder cart line", async () => {
+    await p.goto(`${origin}/zh-TW/products/olive-board`);
+    await p.getByTestId("add-to-cart").click(); await expect(p.getByTestId("cart-drawer")).toBeVisible();
+    await p.getByRole("link", { name: "查看購物車" }).click(); await p.waitForURL(/\/zh-TW\/cart$/);
+    const line = p.getByTestId("cart-line").filter({ hasText: "橄欖木砧板" });
+    try { await expect(line.getByRole("img", { name: "無圖片" }).locator("svg")).toHaveCount(1); await shot(p, "m-noimage-cartline", false); }
+    finally { await line.getByRole("button", { name: /移出購物車/ }).click(); await expect(line).toHaveCount(0); } // leave the cart as the next parts expect it
+  });
+  api.state.imagelessSlug = null;
+
+  // 4 + 7. one money format on the cart page, 44x44 targets for the remove link, the quantity buttons and the variant chips
+  await part("4 cart money", async () => { await p.goto(`${origin}/zh-TW/cart`); await expect(p.getByTestId("cart-line")).toHaveCount(1); await noDecimals(p, 3, "cart"); });
+  await part("7 cart targets", async () => {
+    assert.equal(await p.locator(".sf-link-btn").count(), 1);
+    assert.deepEqual(await small(p.locator(".sf-link-btn, .sf-stepper button")), [], "cart remove link and quantity buttons are at least 44x44");
+  });
+  await part("7 chips", async () => {
+    await p.goto(`${origin}/zh-TW/products/cedar-fig-candle`);
+    await expect(p.locator("label.sf-chip")).toHaveCount(2); assert.deepEqual(await small(p.locator("label.sf-chip")), [], "variant chips are at least 44x44");
+  });
+
+  await part("4 checkout money", async () => { await checkoutStep(p); await noDecimals(p, 6, "checkout"); });
+
+  // 5. a disabled create-order button is visibly different from the action colour and says why (the pale teal read as an enabled button gone wrong)
+  await part("5 disabled CTA", async () => {
+    const create = p.getByTestId("create-order");
+    await expect(create).toBeDisabled();
+    const look = await create.evaluate((e) => { const s = getComputedStyle(e), hint = document.getElementById(e.getAttribute("aria-describedby") ?? "-"); return { opacity: s.opacity, bg: s.backgroundColor, hint: hint ? hint.textContent.trim() : "", hintShown: !!hint && hint.getBoundingClientRect().height > 0 }; });
+    assert.equal(look.opacity, "1", "disabled is a distinct grey, the action colour is never just faded"); assert.notEqual(look.bg, "rgb(36, 121, 101)", "disabled must not wear the action teal");
+    assert(look.hint.length > 6 && look.hintShown, `the disabled create-order button needs a visible description: ${JSON.stringify(look)}`);
+    await create.scrollIntoViewIfNeeded(); await shot(p, "m-checkout-disabled-cta", false);
+  });
+
+  // 6. closed store: no shopping chrome, the brand fallback is localized, no unexplained dot
+  api.state.unpublished = true;
+  await part("6 closed store", async () => {
+    for (const [loc, brand] of [["zh-TW", "商店"], ["zh-CN", "商店"], ["en", "Store"]]) {
+      await p.goto(`${origin}/${loc}`); await expect(p.getByTestId("store-closed")).toBeVisible();
+      assert.equal((await p.locator(".sf-brand").innerText()).trim(), brand, `${loc} closed brand`);
+      assert.equal(await p.locator(".sf-header .sf-search, .sf-header .sf-searchlink, [data-testid=header-cart]").count(), 0, `${loc} closed store must not offer search or cart`);
+      assert.equal(await p.locator(".sf-empty__code").count(), 0, `${loc} closed store: no decorative dot`);
+      if (loc === "zh-TW") await shot(p, "m-closed-localized", false);
+    }
+  });
+  api.state.unpublished = false;
+
+  // 8. desktop home rail: the clipped last card is announced by an edge fade and prev/next buttons, and the buttons reach the last card
+  await part("8 rail", async () => {
+    await d.goto(`${origin}/zh-TW`); await d.waitForLoadState("networkidle");
+    const rail = d.getByTestId("rail");
+    await expect(rail).toHaveAttribute("data-more-end", "true"); await expect(rail).toHaveAttribute("data-more-start", "false");
+    await expect(d.getByTestId("rail-next")).toBeVisible(); await expect(d.getByTestId("rail-prev")).toBeHidden();
+    await rail.scrollIntoViewIfNeeded(); await shot(d, "d-home-rail", false);
+    for (let i = 0; i < 6 && (await rail.getAttribute("data-more-end")) === "true"; i++) { await d.getByTestId("rail-next").click(); await d.waitForTimeout(500); }
+    await expect(rail).toHaveAttribute("data-more-end", "false"); await expect(d.getByTestId("rail-prev")).toBeVisible(); await expect(d.getByTestId("rail-next")).toBeHidden();
+    assert(await rail.evaluate((e) => { const ul = e.querySelector("ul"); return ul.lastElementChild.getBoundingClientRect().right <= ul.getBoundingClientRect().right + 1; }), "the last card is fully visible at the end of the rail");
+    await p.goto(`${origin}/zh-TW`); await expect(p.getByTestId("rail-next")).toBeHidden(); // phones swipe: the next card already peeks
+  });
+  assert.deepEqual(failures, [], "visual-QA polish still failing:\n" + failures.join("\n"));
+  pass("SF11 visual-QA polish: footer never covered (checkout bar 1280/390/320, product phone bar 320/390), one header, image placeholders with icon+label, one money format, 44px targets, disabled CTA described, closed store chrome, home rail affordance");
+
   assert.deepEqual(problems, [], "client errors / hydration warnings on the phone page");
-  pass("SF11 no page errors or hydration warnings across the whole phone walk-through");
+  pass("SF12 no page errors or hydration warnings across the whole phone walk-through");
 
   console.log(`engine=${engine} cases=${cases} mode=${mode} MOCK`);
 } finally {

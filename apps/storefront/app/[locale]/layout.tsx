@@ -45,10 +45,11 @@ export default async function Layout({ children, params }: { children: React.Rea
   const locale = raw as Locale;
   const preview = await previewToken();
   const shop = await loadShop(preview);
-  const design = shop.state === "ok" ? shop.design : defaultDesign("");
+  const copy = shopCopy[locale];
+  // No published store (closed host, or the design could not be read): the neutral shell names itself in the buyer's language, never "Store".
+  const design = shop.state === "ok" ? shop.design : defaultDesign(copy.defaultStoreName);
   const accent = design.profile.accent_color;
   const style = { "--accent": accent, "--on-accent": onAccent(accent), "--accent-text": accentText(accent) } as CSSProperties;
-  const copy = shopCopy[locale];
   // Link tokens survive navigation only while the draft is actually being shown (an expired token silently falls back).
   const keep = shop.state === "ok" && shop.draft ? preview : null;
   return (
@@ -60,7 +61,7 @@ export default async function Layout({ children, params }: { children: React.Rea
           </a>
           {shop.state === "ok" && shop.draft && <PreviewBanner locale={locale} />}
           {design.profile.announcement && <Announcement text={design.profile.announcement} />}
-          <ShopHeader locale={locale} design={design} preview={keep} />
+          <ShopHeader locale={locale} design={design} preview={keep} closed={shop.state === "closed"} />
           <div id="main" tabIndex={-1} className="sf-main">
             {children}
           </div>

@@ -13,6 +13,7 @@ const en = {
   country: "Country",
   confirm: "Confirm address",
   create: "Create unpaid order",
+  createNeedsConfirm: "Confirm your delivery address above to create the order.",
   loading: "Loading delivery details…",
   explain:
     "Check your delivery address and the quoted total before creating your order.",
@@ -104,6 +105,7 @@ export const orderCopy: Record<Locale, Copy> = {
     country: "国家／地区",
     confirm: "确认收货信息",
     create: "创建未付款订单",
+    createNeedsConfirm: "请先确认上方收货信息，才能创建订单。",
     loading: "正在加载收货信息…",
     explain: "请核对收货地址和报价总额，再创建订单。",
     confirmed: "收货信息与总额已确认。修改任一字段后，需要重新确认。",
@@ -150,6 +152,7 @@ export const orderCopy: Record<Locale, Copy> = {
     country: "國家／地區",
     confirm: "確認收件資訊",
     create: "建立未付款訂單",
+    createNeedsConfirm: "請先確認上方收件資訊，才能建立訂單。",
     loading: "正在載入收件資訊…",
     explain: "請核對收件地址與報價總額，再建立訂單。",
     confirmed: "收件資訊與總額已確認。修改任一欄位後，需要重新確認。",

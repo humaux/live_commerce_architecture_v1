@@ -51,7 +51,9 @@ export function Announcement({ text }: { text: string }) {
   );
 }
 
-export function ShopHeader({ locale, design, preview }: { locale: Locale; design: Design; preview: string | null }) {
+// `closed`: the host has no published store, so the cart and search would lead nowhere; only the brand, the language links and the legal
+// pages stay.
+export function ShopHeader({ locale, design, preview, closed = false }: { locale: Locale; design: Design; preview: string | null; closed?: boolean }) {
   const copy = shopCopy[locale];
   const { profile, nav } = design;
   const links = resolveNav(locale, nav.header, preview);
@@ -59,7 +61,7 @@ export function ShopHeader({ locale, design, preview }: { locale: Locale; design
   return (
     <header className="sf-header">
       <div className="sf-header__row">
-        <MobileMenu locale={locale} links={links} preview={preview} />
+        <MobileMenu locale={locale} links={links} preview={preview} searchable={!closed} />
         <Link className="sf-brand" href={home} aria-label={profile.name}>
           {profile.logo_image_id ? <img src={storeImage(profile.logo_image_id)} alt={profile.name} height={34} /> : <span>{profile.name}</span>}
         </Link>
@@ -73,20 +75,24 @@ export function ShopHeader({ locale, design, preview }: { locale: Locale; design
           </ul>
         </nav>
         <div className="sf-header__tools">
-          <form className="sf-search sf-search--inline" role="search" action={`/${locale}/search`} method="get">
-            <label className="sr-only" htmlFor="sf-q">
-              {copy.search}
-            </label>
-            <input id="sf-q" name="q" type="search" placeholder={copy.searchPlaceholder} maxLength={60} autoComplete="off" enterKeyHint="search" />
-            {preview && <input type="hidden" name="preview" value={preview} />}
-            <button type="submit" aria-label={copy.searchSubmit}>
-              <SearchIcon />
-            </button>
-          </form>
-          <Link className="sf-iconbtn sf-searchlink" href={withSearch(locale, preview)} aria-label={copy.search}>
-            <SearchIcon />
-          </Link>
-          <HeaderCart locale={locale} />
+          {!closed && (
+            <>
+              <form className="sf-search sf-search--inline" role="search" action={`/${locale}/search`} method="get">
+                <label className="sr-only" htmlFor="sf-q">
+                  {copy.search}
+                </label>
+                <input id="sf-q" name="q" type="search" placeholder={copy.searchPlaceholder} maxLength={60} autoComplete="off" enterKeyHint="search" />
+                {preview && <input type="hidden" name="preview" value={preview} />}
+                <button type="submit" aria-label={copy.searchSubmit}>
+                  <SearchIcon />
+                </button>
+              </form>
+              <Link className="sf-iconbtn sf-searchlink" href={withSearch(locale, preview)} aria-label={copy.search}>
+                <SearchIcon />
+              </Link>
+              <HeaderCart locale={locale} />
+            </>
+          )}
         </div>
       </div>
     </header>

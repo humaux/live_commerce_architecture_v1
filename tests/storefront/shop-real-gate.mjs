@@ -3,7 +3,7 @@
 // saved + published + a preview draft, a delivery policy with a free-shipping threshold) and published through the migration 0081 definers.
 // Started by tests/foundation/browser_storefront_test.go (TestBrowserStorefront, build tag browser) which owns PG and writes facts.json; this
 // script never sees a database credential. A self-signed https edge preserves the virtual host shop.example (the BFF derives the store origin from
-// Host) behind a CONNECT-only proxy. The MOCK sibling tests/storefront/shop-gate.mjs (SF01-SF11, fake API) stays for fast iteration.
+// Host) behind a CONNECT-only proxy. The MOCK sibling tests/storefront/shop-gate.mjs (SF01-SF12, fake API) stays for fast iteration.
 // Env: LC_SFR_EVIDENCE, LC_SFR_FACTS (json), LC_SFR_CONTROL + LC_SFR_CONTROL_KEY (Go-only publication toggle), COMMERCE_BUYER_*,
 // LC_BROWSER_ENGINE=chromium|webkit (tests/storefront/browser-engine.mjs).
 import assert from "node:assert/strict";
@@ -30,9 +30,8 @@ const pass = (name) => { cases++; console.log(`PASS ${name}`); };
 async function listen(server) { server.listen(0, "127.0.0.1"); await once(server, "listening"); return server.address().port; }
 const P = (key) => facts.products.find((p) => p.key === key);
 const COPY = shopCopy.en;
-// The shell's shop-window money ("$4", cents only when there are cents) and the checkout screens' two-digit form ("$6.00").
+// The storefront's one money format on every screen (lib/money.ts): "$4", cents only when there are cents ("$6.50"), never "$6.00".
 const shop$ = (minor) => new Intl.NumberFormat("en", { style: "currency", currency: facts.currency, minimumFractionDigits: minor % 100 === 0 ? 0 : 2 }).format(minor / 100);
-const full$ = (minor) => new Intl.NumberFormat("en", { style: "currency", currency: facts.currency }).format(minor / 100);
 const num = (text) => Number(text.replace(/[^\d.]/g, ""));
 const fmt = (template, values) => template.replace(/\{(\w+)\}/g, (_, k) => values[k]);
 
@@ -225,7 +224,7 @@ try {
   assert(optionRows.length >= 1 && optionRows.every((o) => o.free_shipping_threshold_minor === T), `options must carry the policy threshold ${T}: ${JSON.stringify(optionRows.map((o) => o.free_shipping_threshold_minor))}`);
   await p.getByRole("button", { name: "Get current total", exact: true }).click();
   await expect(p.locator(".quotation")).toBeVisible();
-  await expect(p.locator(".quotation dl div").filter({ hasText: "Delivery" }).locator("dd")).toHaveText(full$(F)); // below the threshold the quote charges the fee
+  await expect(p.locator(".quotation dl div").filter({ hasText: "Delivery" }).locator("dd")).toHaveText(shop$(F)); // below the threshold the quote charges the fee
   const pc2 = await phone(), q = await pc2.newPage();
   await addProduct(q, "candle", 2); await addProduct(q, "dripper");
   await q.goto(`${origin}/en/cart`);
@@ -237,7 +236,7 @@ try {
   await expect(q.getByTestId("checkout-free-shipping")).toContainText(COPY.freeShipReached);
   await q.getByRole("button", { name: "Get current total", exact: true }).click();
   await expect(q.locator(".quotation")).toBeVisible();
-  await expect(q.locator(".quotation dl div").filter({ hasText: "Delivery" }).locator("dd")).toHaveText(full$(0)); // at or above the threshold shipping is free
+  await expect(q.locator(".quotation dl div").filter({ hasText: "Delivery" }).locator("dd")).toHaveText(shop$(0)); // at or above the threshold shipping is free
   await expect(q.getByTestId("address-section")).toBeVisible();
   await pc2.close();
   pass("SFR05 cart subtotal and free-delivery hint from the real policy threshold (below: remaining amount; at/above: qualified), the quote charges the fee below it and 0 above it, options rows carry the threshold");

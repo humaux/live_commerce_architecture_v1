@@ -109,7 +109,7 @@ async function created(p,quote,ownerOrders=1) {
   const breakdown=p.getByTestId("order-breakdown").locator("div");
   await expect(breakdown).toHaveCount(3);
   for(const [index,key] of ["shipping_minor","tax_minor","discount_minor"].entries()) {
-    await expect(breakdown.nth(index).locator("dd")).toHaveText(new Intl.NumberFormat("en",{style:"currency",currency:quote.currency}).format(quote.amount[key]/100));
+    await expect(breakdown.nth(index).locator("dd")).toHaveText(new Intl.NumberFormat("en",{style:"currency",currency:quote.currency,minimumFractionDigits:quote.amount[key]%100===0?0:2}).format(quote.amount[key]/100)); // storefront money: whole amounts carry no ".00" (lib/money.ts)
   }
   await expect(p.getByTestId("create-order")).toHaveCount(0);
   // This legacy fixture does not enable buyer payment. New payment UI must not

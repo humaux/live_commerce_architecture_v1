@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { BuyerClientError, readBuyerSession } from "../../../../lib/buyer-client";
 import { lookupCopy } from "../../../../lib/lookup-copy";
+import { formatMoney } from "../../../../lib/money";
 import { readOrder } from "../../../../lib/purchase";
 import type { Order } from "../../../../lib/purchase";
 import { OrderDetails } from "../../../../components/OrderFlow";
@@ -42,14 +43,7 @@ export default function OrderPage({ locale, orderID }: { locale: Locale; orderID
     };
   }, [orderID]);
 
-  const money = (amount: number, currency: string) => {
-    const formatter = new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency,
-      currencyDisplay: locale === "zh-TW" && currency === "TWD" ? "code" : "symbol",
-    });
-    return formatter.format(amount / 10 ** (formatter.resolvedOptions().maximumFractionDigits ?? 2));
-  };
+  const money = (amount: number, currency: string) => formatMoney(locale, amount, currency);
 
   return (
     <main data-testid="order-page" aria-busy={state === "loading"}>
