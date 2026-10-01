@@ -52,6 +52,11 @@ type Option struct {
 	// TransferWindowHours (storefront-v2 §C) is present only when "bank_transfer" is in PaymentModes: how long the stock stays reserved
 	// for the transfer. A home row carries PaymentModes only when the store enabled bank transfer (absent = card only, as before).
 	TransferWindowHours int `json:"transfer_window_hours,omitempty"`
+	// FreeShippingThresholdMinor (storefront-v2 §A/§C) is the row's delivery policy threshold: the merchandise subtotal at or above
+	// which the quote charges shipping 0 (pricing.Calculate applies it; this field only lets the storefront word a hint). nil when the
+	// policy has none, and also when it is 0 ("always free" needs no progress hint; the buyer UI accepts positive integers or null).
+	// The quote stays the only authority on the amount charged (I05): a stale hint can mislead copy, never money.
+	FreeShippingThresholdMinor *int64 `json:"free_shipping_threshold_minor"`
 }
 
 // transferOffer is checkout.read_transfer_offer: the store's bank-transfer switch, whether CVS destinations may use it, and the window.
@@ -150,7 +155,8 @@ func (s *Service) ListOptions(ctx context.Context, token, storeID string, in Opt
 		// eligibility equality against the current (possibly renamed) service.
 		// The count/all_active gate checks every assigned warehouse, not SKU stock.
 		rows, err := tx.Query(callCtx, `SELECT m.id::text,m.code,m.name,sv.country,sv.currency,sv.code,sv.policy_method,
-			sv.version,av.version,sv.delivery_kind,sv.mode,sv.name_hans,sv.name_hant,sv.name_en,sv.sort_order
+			sv.version,av.version,sv.delivery_kind,sv.mode,sv.name_hans,sv.name_hant,sv.name_en,sv.sort_order,
+			pv.free_shipping_threshold_minor
 			FROM pricing.markets m
 			JOIN control.stores st ON st.tenant_id=m.tenant_id AND st.id=m.store_id
 			JOIN fulfillment.service_heads sh ON sh.tenant_id=m.tenant_id AND sh.store_id=m.store_id AND sh.market_id=m.id
@@ -189,9 +195,13 @@ func (s *Service) ListOptions(ctx context.Context, token, storeID string, in Opt
 			var option Option
 			if err = rows.Scan(&option.MarketID, &option.MarketCode, &option.MarketName, &option.Country, &option.Currency,
 				&option.DeliveryCode, &option.Method, &option.ServiceVersion, &option.AllocationVersion,
-				&option.DeliveryKind, &option.Mode, &option.NameHans, &option.NameHant, &option.NameEN, &option.SortOrder); err != nil {
+				&option.DeliveryKind, &option.Mode, &option.NameHans, &option.NameHant, &option.NameEN, &option.SortOrder,
+				&option.FreeShippingThresholdMinor); err != nil {
 				rows.Close()
 				return err
+			}
+			if option.FreeShippingThresholdMinor != nil && *option.FreeShippingThresholdMinor <= 0 {
+				option.FreeShippingThresholdMinor = nil // 0 = always free: no hint to show (see the field comment)
 			}
 			fetched = append(fetched, option)
 		}

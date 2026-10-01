@@ -34,8 +34,8 @@ export type ProductDetail = {
   variants: Variant[];
   collections: { slug: string; title: string }[];
 };
-export type CollectionCard = { id: string | null; slug: string; title: string; image_id: string | null; product_count: number };
-export type CollectionInfo = { slug: string; title: string; description: string; image_id: string | null };
+export type CollectionCard = { id: string; slug: string; title: string; image_id: string | null; product_count: number };
+export type CollectionInfo = { id: string; slug: string; title: string; description: string; image_id: string | null };
 
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 const rec = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
@@ -113,16 +113,16 @@ export function parseCollections(v: unknown): CollectionCard[] | null {
   if (!rec(v) || !Array.isArray(v.collections) || v.collections.length > 200) return null;
   const out: CollectionCard[] = [];
   for (const c of v.collections) {
-    if (!rec(c) || !str(c.slug, 80) || !str(c.title, 200) || !maybe(c.image_id, uuid) || typeof c.product_count !== "number" || !Number.isInteger(c.product_count) || c.product_count < 0) return null;
-    // `id` is not in the frozen read (contracts/storefront-v2.md section A); parsed when a producer adds it, null otherwise.
-    out.push({ id: uuid(c.id) ? c.id : null, slug: c.slug, title: c.title, image_id: c.image_id as string | null, product_count: c.product_count });
+    if (!rec(c) || !uuid(c.id) || !str(c.slug, 80) || !str(c.title, 200) || !maybe(c.image_id, uuid) || typeof c.product_count !== "number" || !Number.isInteger(c.product_count) || c.product_count < 0) return null;
+    // `id` (contracts/storefront-v2.md section A, amended with migration 0093) builds /media/c/{id}/{image_id}.
+    out.push({ id: c.id, slug: c.slug, title: c.title, image_id: c.image_id as string | null, product_count: c.product_count });
   }
   return out;
 }
 
 export function parseCollection(v: unknown): CollectionInfo | null {
-  if (!rec(v) || !str(v.slug, 80) || !str(v.title, 200) || !str(v.description, 4000) || !maybe(v.image_id, uuid)) return null;
-  return { slug: v.slug, title: v.title, description: v.description, image_id: v.image_id as string | null };
+  if (!rec(v) || !uuid(v.id) || !str(v.slug, 80) || !str(v.title, 200) || !str(v.description, 4000) || !maybe(v.image_id, uuid)) return null;
+  return { id: v.id, slug: v.slug, title: v.title, description: v.description, image_id: v.image_id as string | null };
 }
 
 // ---- derived display helpers (no I/O) ---------------------------------------------------------------------------------

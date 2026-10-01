@@ -147,10 +147,19 @@ func TestOpenAndEnterStoreRefusalsBeforeSQL(t *testing.T) {
 		edit func(*SelectionOpenInput)
 		want string
 	}{
-		"claim return path":         {func(i *SelectionOpenInput) { i.ReturnPath = "/zh-TW/claim" }, "bad_return_path"},
-		"other locale":              {func(i *SelectionOpenInput) { i.ReturnPath = "/fr/products/abc" }, "bad_return_path"},
-		"traversal":                 {func(i *SelectionOpenInput) { i.ReturnPath = "/zh-TW/products/../x" }, "bad_return_path"},
-		"query in path":             {func(i *SelectionOpenInput) { i.ReturnPath = "/en/products/abc?x=1" }, "bad_return_path"},
+		"claim return path": {func(i *SelectionOpenInput) { i.ReturnPath = "/zh-TW/claim" }, "bad_return_path"},
+		"other locale":      {func(i *SelectionOpenInput) { i.ReturnPath = "/fr/products/abc" }, "bad_return_path"},
+		"traversal":         {func(i *SelectionOpenInput) { i.ReturnPath = "/zh-TW/products/../x" }, "bad_return_path"},
+		"query in path":     {func(i *SelectionOpenInput) { i.ReturnPath = "/en/products/abc?x=1" }, "bad_return_path"},
+		// 0093: /{locale}/checkout is the one new allowed path; every near-miss stays a 422.
+		"checkout with a segment":   {func(i *SelectionOpenInput) { i.ReturnPath = "/en/checkout/x" }, "bad_return_path"},
+		"checkout trailing slash":   {func(i *SelectionOpenInput) { i.ReturnPath = "/en/checkout/" }, "bad_return_path"},
+		"checkout capitalised":      {func(i *SelectionOpenInput) { i.ReturnPath = "/en/Checkout" }, "bad_return_path"},
+		"checkout with query":       {func(i *SelectionOpenInput) { i.ReturnPath = "/zh-CN/checkout?cvs=1" }, "bad_return_path"},
+		"checkout with fragment":    {func(i *SelectionOpenInput) { i.ReturnPath = "/zh-CN/checkout#x" }, "bad_return_path"},
+		"checkout other locale":     {func(i *SelectionOpenInput) { i.ReturnPath = "/fr/checkout" }, "bad_return_path"},
+		"checkout host-relative":    {func(i *SelectionOpenInput) { i.ReturnPath = "//evil.example/en/checkout" }, "bad_return_path"},
+		"checkout path is allowed":  {func(i *SelectionOpenInput) { i.ReturnPath = "/zh-TW/checkout" }, "service_unavailable"},
 		"ECPay off (no config yet)": {func(i *SelectionOpenInput) {}, "service_unavailable"},
 	} {
 		in := good

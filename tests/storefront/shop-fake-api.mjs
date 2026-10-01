@@ -75,9 +75,9 @@ function photo(seed, kind) {
 // ---- catalog data ------------------------------------------------------------------------------------------------------
 const money = (twd) => twd * 100;
 const COLLECTIONS = [
-  { slug: "home-fragrance", title: "居家香氛" },
-  { slug: "knitwear", title: "針織與配件" },
-  { slug: "tableware", title: "餐桌器皿" },
+  { id: uid(40), slug: "home-fragrance", title: "居家香氛", image: uid(44) },
+  { id: uid(41), slug: "knitwear", title: "針織與配件", image: null },
+  { id: uid(42), slug: "tableware", title: "餐桌器皿", image: null },
 ];
 // [title, slug, price TWD, compare-at TWD|null, axes, stock by variant index, collections, description]
 const BASE = [
@@ -155,7 +155,7 @@ export function createFakeApi({ port = 0, origin = "https://shop.example", bffKe
   const products = buildCatalog();
   const state = { requests: [], sessions: new Map(), carts: new Map(), receipts: new Map(), quotes: new Map(), unpublished: false, down: false, hideProductSlug: null };
   const idsOf = design()._ids;
-  const imageSeeds = new Map([[idsOf.hero, ["hero", "wide"]], [idsOf.about, ["about", "square"]], [idsOf.logo, ["logo", "square"]]]);
+  const imageSeeds = new Map([[idsOf.hero, ["hero", "wide"]], [idsOf.about, ["about", "square"]], [idsOf.logo, ["logo", "square"]], [uid(44), ["collection", "square"]]]);
   for (const p of products) for (const img of p.images) imageSeeds.set(img.id, [img.id, "portrait"]);
   const live = () => products.filter((p) => p.slug !== state.hideProductSlug);
 
@@ -220,9 +220,9 @@ export function createFakeApi({ port = 0, origin = "https://shop.example", bffKe
         const slice = out.slice(offset, offset + limit);
         return json(res, 200, { store: { name: "晨光選物", currency: CURRENCY }, products: slice.map(({ c }) => c), next: offset + limit < out.length ? Buffer.from(String(offset + limit)).toString("base64url") : null });
       }
-      if (rest === "collections") return json(res, 200, { collections: COLLECTIONS.map((c) => ({ slug: c.slug, title: c.title, image_id: null, product_count: live().filter((p) => p.collections.includes(c.slug)).length })) });
+      if (rest === "collections") return json(res, 200, { collections: COLLECTIONS.map((c) => ({ id: c.id, slug: c.slug, title: c.title, image_id: c.image, product_count: live().filter((p) => p.collections.includes(c.slug)).length })) });
       const col = /^collections\/([a-z0-9-]+)$/.exec(rest);
-      if (col) { const c = COLLECTIONS.find((x) => x.slug === col[1]); return c ? json(res, 200, { slug: c.slug, title: c.title, description: `${c.title}系列，每件都經過日常使用測試。`, image_id: null }) : error(res, 404, "not_found"); }
+      if (col) { const c = COLLECTIONS.find((x) => x.slug === col[1]); return c ? json(res, 200, { id: c.id, slug: c.slug, title: c.title, description: `${c.title}系列，每件都經過日常使用測試。`, image_id: c.image }) : error(res, 404, "not_found"); }
       const one = /^products\/([a-z0-9-]+)$/.exec(rest);
       if (one) {
         const p = live().find((x) => x.slug === one[1] || x.id === one[1]);

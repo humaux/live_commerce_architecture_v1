@@ -59,8 +59,9 @@ export type Option = {
   store_search_url?: string;
   // Present exactly when payment_modes lists bank_transfer: hours the stock stays reserved for the transfer (6..168).
   transfer_window_hours?: number;
-  // Optional per-policy free-delivery threshold in minor units (storefront-v2 §C). No producer emits it yet; the cart page
-  // shows its "add X more for free delivery" hint only when a row carries it. The quote still decides shipping, never this.
+  // Per-policy free-delivery threshold in minor units (storefront-v2 §A/§C): Go emits it on every row (number or null,
+  // internal/checkout/options.go; the MOCK fake of tests/storefront/shop-fake-api.mjs mirrors it). The cart page and the delivery step
+  // show their "add X more for free delivery" hint only when a row carries a positive one. The quote still decides shipping, never this.
   free_shipping_threshold_minor?: number | null;
 };
 // A configured chain that cannot be sold yet (ECPay chain gate, §5.1): listed but disabled ("Coming soon").

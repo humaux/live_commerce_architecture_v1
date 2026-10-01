@@ -32,6 +32,8 @@ type optionResponse struct {
 	Reason          string   `json:"reason,omitempty"`
 	// storefront-v2 §C: present only when payment_modes lists bank_transfer (the hold the order will keep, 6..168 hours).
 	TransferWindowHours int `json:"transfer_window_hours,omitempty"`
+	// storefront-v2 §C: the delivery policy's free-shipping threshold (minor units) or null; always present (a hint only, the quote decides).
+	FreeShippingThresholdMinor *int64 `json:"free_shipping_threshold_minor"`
 }
 
 type optionsResponse struct {
@@ -49,7 +51,7 @@ func projectOptions(page pagination.Page[checkout.Option]) optionsResponse {
 			DeliveryKind: item.DeliveryKind, Mode: item.Mode, NameHans: item.NameHans, NameHant: item.NameHant,
 			NameEN: item.NameEN, SortOrder: item.SortOrder, PickupSelection: item.PickupSelection,
 			PaymentModes: item.PaymentModes, StoreSearchURL: item.StoreSearchURL, Available: item.Available, Reason: item.Reason,
-			TransferWindowHours: item.TransferWindowHours,
+			TransferWindowHours: item.TransferWindowHours, FreeShippingThresholdMinor: item.FreeShippingThresholdMinor,
 		})
 	}
 	return out

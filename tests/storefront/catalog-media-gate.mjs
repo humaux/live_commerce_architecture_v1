@@ -154,10 +154,11 @@ async function scenario(index, run) {
   const buyer = await buyerContext.newPage();
   buyer.on("pageerror", error => uiErrors.push(`${label} buyer ${error.name}: ${error.message}`));
   await buyer.goto(`${buyerOrigin}/${run.locale}`);
-  await expect(buyer.locator("main[aria-busy=false]")).toBeVisible();
-  const card = buyer.getByTestId("home-product").filter({hasText: newName});
+  // Storefront shell: the default design (no saved version) shows one product grid of the newest products.
+  await expect(buyer.getByTestId("section-product-grid")).toBeVisible();
+  const card = buyer.getByTestId("product-card").filter({hasText: newName});
   await expect(card).toHaveCount(1);
-  await expect(buyer.getByTestId("home-product").filter({hasText: fx.old_name})).toHaveCount(0);
+  await expect(buyer.getByTestId("product-card").filter({hasText: fx.old_name})).toHaveCount(0);
   const cover = card.locator("img");
   await expect(cover).toHaveAttribute("src", `/media/p/${fx.product_id}/${ids[0]}`);
   await cover.scrollIntoViewIfNeeded();
@@ -179,20 +180,30 @@ async function scenario(index, run) {
   await shot(buyer, "buyer-home", run);
   pass(`${label} home grid: renamed product, cover photo with the exact uploaded bytes, new lowest active price`);
   await card.click();
-  await buyer.waitForURL(`${buyerOrigin}/${run.locale}/products/${fx.product_id}`);
+  // the card links to the slug page (the fixture product has the default slug = id prefix), never to the id URL
+  await buyer.waitForURL(url => new RegExp(`^${buyerOrigin.replace(/[.]/g, "\\.")}/${run.locale}/products/(?![0-9a-f]{8}-[0-9a-f]{4}-)[a-z0-9-]+$`).test(url.toString()));
   await expect(buyer.getByRole("heading", {name: newName, exact: true})).toBeVisible();
   const gallery = buyer.getByTestId("product-gallery");
   await expect(gallery).toBeVisible();
   await expect(gallery.locator("img").first()).toHaveAttribute("src", `/media/p/${fx.product_id}/${ids[0]}`);
-  const thumbs = gallery.locator("button img");
+  const strip = gallery.locator(".sf-gal__strip img"), thumbs = gallery.locator(".sf-gal__thumbs button img");
   await expect(thumbs).toHaveCount(2);
-  assert.deepEqual(await thumbs.evaluateAll(list => list.map(e => e.getAttribute("src"))), ids.map(id => `/media/p/${fx.product_id}/${id}`), `${label} gallery order`);
-  await gallery.locator("button").nth(1).click();
-  await expect(gallery.locator("img").first()).toHaveAttribute("src", `/media/p/${fx.product_id}/${ids[1]}`);
-  await expect(buyer.locator(".unit-price")).toHaveText(new Intl.NumberFormat(run.locale, {style: "currency", currency}).format(fx.sku1.price_new / 100));
-  await expect(buyer.getByRole("radio")).toHaveCount(1);
-  await expect(buyer.getByRole("radio", {name: fx.sku1.code, exact: true})).toBeChecked();
-  await expect(buyer.getByRole("radio", {name: fx.sku2.code, exact: true})).toHaveCount(0);
+  const expectedOrder = ids.map(id => `/media/p/${fx.product_id}/${id}`);
+  assert.deepEqual(await strip.evaluateAll(list => list.map(e => e.getAttribute("src"))), expectedOrder, `${label} gallery strip order`);
+  assert.deepEqual(await thumbs.evaluateAll(list => list.map(e => e.getAttribute("src"))), expectedOrder, `${label} gallery thumbnail order`);
+  // second photo: thumbnail click where the thumbnails show (desktop), swipe-strip scroll on a phone (thumbnails are hidden there)
+  const secondThumb = gallery.locator(".sf-gal__thumbs button").nth(1);
+  if (await secondThumb.isVisible()) {
+    await secondThumb.click();
+    await expect(secondThumb).toHaveAttribute("aria-current", "true");
+  } else {
+    await strip.nth(1).scrollIntoViewIfNeeded();
+    await expect(gallery.locator(".sf-gal__count")).toHaveText("2 / 2");
+  }
+  await expect(buyer.getByTestId("variant-price")).toHaveText(new Intl.NumberFormat(run.locale, {style: "currency", currency}).format(fx.sku1.price_new / 100));
+  // The fixture SKUs have no option axes, so the page sells the product's one active variant: exactly sku1, never the archived sku2.
+  await expect(buyer.getByRole("radio")).toHaveCount(0);
+  await expect(buyer.getByTestId("product-buy")).toHaveAttribute("data-sku", fx.sku1.id);
   assert.equal(await buyer.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${label} product horizontal overflow`);
   await shot(buyer, "buyer-product", run);
   pass(`${label} product page: gallery in the new order, new price, archived SKU gone`);
@@ -233,7 +244,7 @@ try {
   for (const [index, run] of matrix.entries()) results.push(await scenario(index, run));
   assert.deepEqual(uiErrors, []);
   await writeFile(path.join(evidence, "screenshots.json"), JSON.stringify(shots, null, 2), {mode: 0o600});
-  await writeFile(path.join(evidence, "result.json"), JSON.stringify({cases, results, boundary: "production Next; signed MOCK IdP; synthetic local TLS/CONNECT edge and publication rows (TODO storefront-publish: replace the seeded publication/domain rows with the unit's real publish flow)"}, null, 2), {mode: 0o600});
+  await writeFile(path.join(evidence, "result.json"), JSON.stringify({cases, results, boundary: "production Next; signed MOCK IdP; synthetic local TLS/CONNECT edge; publication + domain written through the migration 0081 definers (merchant publish, operator bind), not owner-seeded"}, null, 2), {mode: 0o600});
 } catch (error) {
   if (browser) for (const context of browser.contexts()) for (const [index, page] of context.pages().entries()) {
     await page.screenshot({path: path.join(evidence, `failure-${context.pages().length}-${index}.png`), fullPage: true}).catch(() => {});

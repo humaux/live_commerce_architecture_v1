@@ -212,7 +212,7 @@ try {
 
   // ---- SF05 checkout hand-off to the existing order flow ----------------------------------------------------------------
   await p.getByTestId("cart-checkout").click();
-  await p.waitForURL(/\/zh-TW\/products\/Checkout$/);
+  await p.waitForURL(/\/zh-TW\/checkout$/);
   await expect(p.getByTestId("cart-line")).toHaveCount(1);
   await p.getByRole("button", { name: "選擇配送" }).click();
   await expect(p.getByLabel("配送方式")).toBeVisible();
