@@ -14,7 +14,7 @@ import type { Store } from "@/lib/model";
 import { money } from "@/lib/client";
 import { useGuardedRead, type ReadCode } from "@/lib/customers-client";
 import { readProducts } from "@/lib/catalog-v2-client";
-import type { ProductSummary } from "@/lib/catalog-v2-model";
+import { productStatuses, type ProductSummary } from "@/lib/catalog-v2-model";
 import { catalogCopy } from "@/lib/catalog-v2-copy";
 import { imageURL } from "@/lib/images-client";
 import { WorkspaceFrame } from "./WorkspaceFrame";
@@ -23,7 +23,6 @@ import { Icon } from "./Icon";
 import "./orders.css";
 import "./ProductAdmin.css";
 
-export const productStatuses = ["all", "draft", "active", "archived"] as const;
 
 const href = (locale: Locale, store: string, q: string, status: string, after: string) => {
   const params = new URLSearchParams();

@@ -7,10 +7,9 @@ package foundation_test
 //
 // Stack (MOCK tier): production admin Next + signed MOCK IdP + real BFF -> Go API -> PG for the merchant, the production storefront Next
 // behind a disposable TLS/CONNECT edge for the anonymous buyer. Evidence labels: BROWSER, MOCK IdP; no provider, no real DNS/TLS.
-// Seeded fixtures (disclosed): four products with two SKUs each, their names/prices through owner SQL, and the storefront publication +
-// ACTIVE domain row for https://buyer.example.
-// TODO(storefront-publish): the publication/domain rows are seeded by bhSetup (bhPublish) because the storefront-publish unit is not merged
-// into this base; replace them with that unit's real publish flow when it lands.
+// Seeded fixtures (disclosed): four products with two SKUs each and their names/prices through owner SQL. The storefront publication and the
+// ACTIVE domain of https://buyer.example are NOT owner-seeded any more: sfiPublishViaDefiners runs the production writers of migration 0081
+// (merchant control.set_storefront_published, operator control.operator_bind_domain) like the storefront-publish gate does.
 
 import (
 	"context"
@@ -27,6 +26,7 @@ import (
 	"testing"
 	"time"
 
+	"livecommerce/internal/buyerhttp"
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/identity"
 	"livecommerce/internal/identityhttp"
@@ -37,7 +37,15 @@ func TestBrowserCatalogMedia(t *testing.T) {
 	if os.Getenv("LC_BROWSER_CATALOG_MEDIA_ACCEPTANCE") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
 		t.Fatal("use scripts/dev/test-local.sh --browser-catalog-media")
 	}
-	h := bhSetup(t)
+	// bhSetup minus bhPublish: the buyer HTTP service is production code; the admission facts come from the 0081 definers below.
+	b := bcSetup(t)
+	h := bhHarness{bcHarness: b, key: brToken(), origin: "https://buyer.example"}
+	handler, err := buyerhttp.New(context.Background(), b.a.issuer, b.a.runtime, b.service, h.key, time.Hour)
+	if err != nil {
+		t.Fatal("buyer HTTP constructor failed")
+	}
+	h.server = httptest.NewServer(handler)
+	t.Cleanup(h.server.Close)
 	f := h.f
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
@@ -115,6 +123,7 @@ func TestBrowserCatalogMedia(t *testing.T) {
 	mustExec(t, f.owner, `INSERT INTO identity.external_identities(issuer,subject,principal_id) VALUES($1,'browser-subject',$2)`, idp.server.URL, principal)
 	mustExec(t, f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission)
 		SELECT $1,$2,$3,p FROM unnest(ARRAY['store:read','catalog:read','catalog:write','inventory:read']) p`, f.tenantA, f.storeA1, principal)
+	sfiPublishViaDefiners(t, f, principal, h.origin)
 	adminKey := randomToken()
 	private, err := identityhttp.NewHandler(service, adminKey)
 	if err != nil {

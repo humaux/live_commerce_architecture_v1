@@ -71,6 +71,10 @@ type Summary struct {
 	PickupSource    *string `json:"pickup_source"`
 	PaymentMode     string  `json:"payment_mode"`
 	CollectionState *string `json:"collection_state"`
+	// Source is where the order was created: storefront (every buyer-placed order) or merchant_manual (admin Create Order, unit
+	// merchant-tools, migration 0094). It is NOT part of identity.read_merchant_orders: attachSources reads it per page through
+	// identity.read_order_sources, so the older projection definers stay untouched.
+	Source string `json:"source"`
 }
 
 type Item struct {
@@ -162,6 +166,9 @@ func List(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, in
 		}
 		empty.Items = append(empty.Items, item)
 	}
+	if err = attachSources(ctx, tx, scope, token, empty.Items); err != nil {
+		return pagination.Page[Summary]{Items: []Summary{}}, err
+	}
 	if len(empty.Items) > limit {
 		empty.Items = empty.Items[:limit]
 		last := empty.Items[len(empty.Items)-1]
@@ -195,6 +202,11 @@ func Get(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, orderID st
 	if err != nil || item.OrderID != orderID {
 		return Detail{}, ErrUnavailable
 	}
+	one := []Summary{item.Summary}
+	if err = attachSources(ctx, tx, scope, token, one); err != nil {
+		return Detail{}, err
+	}
+	item.Summary = one[0]
 	return item, nil
 }
 
@@ -215,6 +227,34 @@ func read(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, or
 		return nil, ErrUnavailable
 	}
 	return raw, nil
+}
+
+// attachSources fills Summary.Source for a page (<= 101 rows) from identity.read_order_sources (0094, orders:read re-verified in SQL).
+func attachSources(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, items []Summary) error {
+	if len(items) == 0 {
+		return nil
+	}
+	ids := make([]string, len(items))
+	for i, item := range items {
+		ids[i] = item.OrderID
+	}
+	hash := sha256.Sum256([]byte(token))
+	var raw []byte
+	if err := tx.QueryRow(ctx, `SELECT identity.read_order_sources($1,$2::uuid,$3::uuid[])`, hash[:], scope.StoreID, ids).Scan(&raw); err != nil {
+		return mapError(err)
+	}
+	var sources map[string]string
+	if json.Unmarshal(raw, &sources) != nil || len(sources) != len(items) {
+		return ErrUnavailable
+	}
+	for i := range items {
+		src, ok := sources[items[i].OrderID]
+		if !ok || (src != "storefront" && src != "merchant_manual") {
+			return ErrUnavailable
+		}
+		items[i].Source = src
+	}
+	return nil
 }
 
 func mapError(err error) error {

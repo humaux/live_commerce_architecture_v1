@@ -20,6 +20,7 @@ import (
 	"livecommerce/internal/claims"
 	"livecommerce/internal/claimsintake"
 	"livecommerce/internal/integrations/core"
+	"livecommerce/internal/integrations/meta/pagetoken/pageopen"
 	"livecommerce/internal/integrations/metareply"
 	"livecommerce/internal/integrations/shipping/ecpay"
 	"livecommerce/internal/integrations/shipping/ecpay/ecpayroute"
@@ -43,6 +44,7 @@ type workerConfig struct {
 	retentionDSN string
 	linkKey      claims.ReplyLinkKey
 	pageKeys     *metareply.PageTokenKeyring
+	pageOpen     *pageopen.Keyring // HPKE private ring of meta-page-token-v2 (merchant connect); nil = v2 credentials are denied
 	graph        metareply.Config
 	// ECPay CVS route (taiwan-cvs-logistics-v1 §7.4): registered only when ecpayCfg.Enabled.
 	ecpayCfg    ecpay.Config
@@ -98,6 +100,12 @@ func loadConfig(getenv func(string) string) (workerConfig, error) {
 	}
 	if c.pageKeys, err = metareply.LoadPageTokenKeyring(getenv); err != nil {
 		return workerConfig{}, errWorkerConfig
+	}
+	// The v2 private ring is the OPEN half of the merchant connect's seal (cmd/api holds only the public ring). Present = it must load.
+	if getenv("COMMERCE_META_PAGE_HPKE_PRIVATE_KEYS") != "" || getenv("COMMERCE_META_PAGE_HPKE_PRIVATE_KEYS_FILE") != "" {
+		if c.pageOpen, err = pageopen.LoadKeyring(getenv); err != nil {
+			return workerConfig{}, errWorkerConfig
+		}
 	}
 	c.graph = metareply.Config{GraphBaseURL: metareply.GraphHost, GraphVersion: getenv("COMMERCE_META_GRAPH_VERSION")}
 	if base := getenv("COMMERCE_META_GRAPH_BASE_URL"); base != "" {
@@ -172,7 +180,7 @@ func run(ctx context.Context, getenv func(string) string) error {
 	if err != nil {
 		return errWorkerDatabase
 	}
-	routes, err := metareply.Routes(workerPool, c.linkKey, c.pageKeys, c.graph)
+	routes, err := metareply.RoutesV2(workerPool, c.linkKey, c.pageKeys, c.pageOpen, c.graph)
 	if err != nil {
 		return errWorkerRoutes
 	}

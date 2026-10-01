@@ -10,11 +10,12 @@ command -v go >/dev/null
 # public official golden vector; missing Node must fail before starting fixtures.
 command -v node >/dev/null
 test_mode="${1:-foundation}"
-if [[ "$#" -gt 1 ]] || [[ "$test_mode" != foundation && "$test_mode" != --browser-identity && "$test_mode" != --browser-design && "$test_mode" != --browser-password-auth && "$test_mode" != --browser-admin-legacy && "$test_mode" != --browser-buyer && "$test_mode" != --browser-merchant-buyer && "$test_mode" != --browser-merchant-orders-bff && "$test_mode" != --browser-merchant-orders-ui && "$test_mode" != --browser-input-delivery && "$test_mode" != --browser-studio-bff && "$test_mode" != --browser-studio-ui && "$test_mode" != --browser-live-claims && "$test_mode" != --browser-order && "$test_mode" != --browser-payment && "$test_mode" != --stripe-browser && "$test_mode" != --browser-refund-fulfilment && "$test_mode" != --browser-customers-billing && "$test_mode" != --browser-meta-ads && "$test_mode" != --browser-cvs && "$test_mode" != --browser-catalog-media && "$test_mode" != --browser-storefront-publish && "$test_mode" != --browser-storefront && "$test_mode" != --browser-webkit && "$test_mode" != --browser-e2e && "$test_mode" != --checkout && "$test_mode" != --payment && "$test_mode" != --payment-worker && "$test_mode" != --expiry-worker && "$test_mode" != --storefront-resolver && "$test_mode" != --buyer-http && "$test_mode" != --purchase-entry && "$test_mode" != --merchant-orders && "$test_mode" != --meta-inbox && "$test_mode" != --meta-consumer && "$test_mode" != --meta-runtime && "$test_mode" != --legacy-isolation && "$test_mode" != --local-recovery && "$test_mode" != --live-planning && "$test_mode" != --live-authority && "$test_mode" != --live-media-plan && "$test_mode" != --live-media-execution && "$test_mode" != --live-browser-input && "$test_mode" != --live-media-input && "$test_mode" != --live-media-crash && "$test_mode" != --live-media-stop && "$test_mode" != --live-media-recovery && "$test_mode" != --live-media-runtime && "$test_mode" != --studio-backend ]]; then
-  printf 'Usage: bash scripts/dev/test-local.sh [--browser-identity|--browser-password-auth|--browser-admin-legacy|--browser-buyer|--browser-merchant-buyer|--browser-merchant-orders-bff|--browser-merchant-orders-ui|--browser-input-delivery|--browser-studio-bff|--browser-studio-ui|--browser-live-claims|--browser-order|--browser-payment|--stripe-browser|--browser-refund-fulfilment|--browser-customers-billing|--browser-meta-ads|--browser-cvs|--browser-catalog-media|--browser-storefront-publish|--browser-storefront|--browser-webkit|--browser-e2e|--checkout|--payment|--payment-worker|--expiry-worker|--storefront-resolver|--buyer-http|--purchase-entry|--merchant-orders|--meta-inbox|--meta-consumer|--meta-runtime|--legacy-isolation|--local-recovery|--live-planning|--live-authority|--live-media-plan|--live-media-execution|--live-browser-input|--live-media-input|--live-media-crash|--live-media-stop|--live-media-recovery|--live-media-runtime|--studio-backend|--browser-design]\n' >&2
+if [[ "$#" -gt 1 ]] || [[ "$test_mode" != foundation && "$test_mode" != --browser-identity && "$test_mode" != --browser-catalog-core && "$test_mode" != --browser-meta-connect && "$test_mode" != --browser-promotions && "$test_mode" != --browser-ops-polish && "$test_mode" != --browser-design && "$test_mode" != --browser-password-auth && "$test_mode" != --browser-admin-legacy && "$test_mode" != --browser-buyer && "$test_mode" != --browser-merchant-buyer && "$test_mode" != --browser-manual-order && "$test_mode" != --browser-merchant-orders-bff && "$test_mode" != --browser-merchant-orders-ui && "$test_mode" != --browser-input-delivery && "$test_mode" != --browser-studio-bff && "$test_mode" != --browser-studio-ui && "$test_mode" != --browser-live-claims && "$test_mode" != --browser-order && "$test_mode" != --browser-payment && "$test_mode" != --stripe-browser && "$test_mode" != --browser-refund-fulfilment && "$test_mode" != --browser-customers-billing && "$test_mode" != --browser-meta-ads && "$test_mode" != --browser-cvs && "$test_mode" != --browser-catalog-media && "$test_mode" != --browser-storefront-publish && "$test_mode" != --browser-storefront && "$test_mode" != --browser-webkit && "$test_mode" != --browser-e2e && "$test_mode" != --checkout && "$test_mode" != --payment && "$test_mode" != --payment-worker && "$test_mode" != --expiry-worker && "$test_mode" != --storefront-resolver && "$test_mode" != --buyer-http && "$test_mode" != --purchase-entry && "$test_mode" != --merchant-orders && "$test_mode" != --meta-inbox && "$test_mode" != --meta-consumer && "$test_mode" != --meta-runtime && "$test_mode" != --legacy-isolation && "$test_mode" != --local-recovery && "$test_mode" != --live-planning && "$test_mode" != --live-authority && "$test_mode" != --live-media-plan && "$test_mode" != --live-media-execution && "$test_mode" != --live-browser-input && "$test_mode" != --live-media-input && "$test_mode" != --live-media-crash && "$test_mode" != --live-media-stop && "$test_mode" != --live-media-recovery && "$test_mode" != --live-media-runtime && "$test_mode" != --studio-backend ]]; then
+  printf 'Usage: bash scripts/dev/test-local.sh [--browser-identity|--browser-promotions|--browser-password-auth|--browser-admin-legacy|--browser-buyer|--browser-merchant-buyer|--browser-manual-order|--browser-merchant-orders-bff|--browser-merchant-orders-ui|--browser-input-delivery|--browser-studio-bff|--browser-studio-ui|--browser-live-claims|--browser-order|--browser-payment|--stripe-browser|--browser-refund-fulfilment|--browser-customers-billing|--browser-meta-ads|--browser-cvs|--browser-catalog-media|--browser-storefront-publish|--browser-storefront|--browser-webkit|--browser-e2e|--checkout|--payment|--payment-worker|--expiry-worker|--storefront-resolver|--buyer-http|--purchase-entry|--merchant-orders|--meta-inbox|--meta-consumer|--meta-runtime|--legacy-isolation|--local-recovery|--live-planning|--live-authority|--live-media-plan|--live-media-execution|--live-browser-input|--live-media-input|--live-media-crash|--live-media-stop|--live-media-recovery|--live-media-runtime|--studio-backend|--browser-design|--browser-ops-polish|--browser-meta-connect|--browser-catalog-core]\n' >&2
   exit 2
 fi
-if [[ "$test_mode" == --browser-storefront ]]; then
+if [[ "$test_mode" == --browser-storefront && "${LC_SHOP_MOCK:-0}" == 1 ]]; then
+  # LC_SHOP_MOCK=1: the fast MOCK variant (no PG, no Docker). The default --browser-storefront is the REAL stack (below, unit storefront-integration).
   # SF gate (unit storefront-shell, MOCK tier): the buyer storefront shell on the production Next build against a contract-shaped FAKE of the
   # Go buyer API (tests/storefront/shop-fake-api.mjs). No PG/Go/Docker is started, so it needs no machine-wide PG lock. Not real-stack acceptance:
   # run the same pages against the real API once catalog-core (0086) and store-design (0087) are merged (docs/delivery/GATES.md).
@@ -35,6 +36,11 @@ fi
 if [[ "$test_mode" == --browser-merchant-buyer ]]; then
   # Do not report a pass from an exact Go test selector matching no test.
   test -f tests/foundation/browser_merchant_buyer_chain_test.go
+fi
+if [[ "$test_mode" == --browser-manual-order ]]; then
+  test -f tests/foundation/browser_manual_order_link_test.go
+  test -f tests/storefront/manual-order-link-gate.mjs
+  node --test --experimental-strip-types apps/storefront/tests/order-link.test.mjs tests/admin/merchant-tools-model.test.ts
 fi
 if [[ "$test_mode" == --live-authority ]]; then
   # A selector with no matching test is not an authority gate.
@@ -153,6 +159,10 @@ if [[ "$test_mode" == --browser-password-auth ]]; then
   test -f tests/admin/password-bff.test.ts
   test -f tests/foundation/browser_password_auth_test.go
   grep -q '^func TestBrowserPasswordAuth' tests/foundation/browser_password_auth_test.go
+  # staff-team (R4) independent gate rides on the same loopback-SMTP harness: refuse a no-test success here too.
+  test -f tests/admin/staff-team.spec.ts
+  test -f tests/foundation/browser_staff_team_test.go
+  grep -q '^func TestBrowserStaffTeam' tests/foundation/browser_staff_team_test.go
   mkdir -p output/playwright
 fi
 if [[ "$test_mode" == --browser-admin-legacy ]]; then
@@ -229,6 +239,14 @@ if [[ "$test_mode" == --browser-meta-ads ]]; then
   node --test --experimental-strip-types tests/admin/ads-model.test.ts tests/admin/ads-request.test.ts
   mkdir -p output/playwright
 fi
+if [[ "$test_mode" == --browser-meta-connect ]]; then
+  # meta-connect (BROWSER, Meta = MOCK fake Graph): refuse a no-test success and run the pure model/request gates first.
+  test -f tests/foundation/browser_meta_connect_test.go
+  grep -q '^func TestBrowserMetaConnect' tests/foundation/browser_meta_connect_test.go
+  test -f tests/admin/meta-connect.spec.ts
+  node --test --experimental-strip-types tests/admin/meta-connect-model.test.ts
+  mkdir -p output/playwright
+fi
 if [[ "$test_mode" == --browser-cvs ]]; then
   # TCV08 (BROWSER, MOCK ECPay map/Create + signed status posts): refuse a no-test success before any build.
   test -f tests/foundation/browser_taiwan_cvs_test.go
@@ -244,6 +262,31 @@ if [[ "$test_mode" == --browser-catalog-media ]]; then
   test -f tests/foundation/browser_catalog_media_test.go
   grep -q '^func TestBrowserCatalogMedia' tests/foundation/browser_catalog_media_test.go
   test -f tests/storefront/catalog-media-gate.mjs
+  mkdir -p output/playwright
+fi
+if [[ "$test_mode" == --browser-ops-polish ]]; then
+  # ops-polish independent gates (OP1 buyer half, OP2, OP3 UI half, OP4): refuse a no-test success before any build.
+  test -f tests/foundation/browser_ops_polish_test.go
+  grep -q '^func TestBrowserOpsPolishStorefront' tests/foundation/browser_ops_polish_test.go
+  grep -q '^func TestBrowserOpsPolishAdmin' tests/foundation/browser_ops_polish_test.go
+  test -f tests/admin/ops-polish.spec.ts
+  test -f tests/storefront/cvs-pap-only.mjs
+  # Pure model/copy contracts first (no Docker): finance row shapes, Studio subtitle, removed nav copy.
+  node --test --experimental-strip-types tests/admin/ops-polish-model.test.ts
+  mkdir -p output/playwright
+fi
+if [[ "$test_mode" == --browser-promotions ]]; then
+  # promotions browser gate (independent R4 tests): refuse a no-test success before any build.
+  test -f tests/foundation/browser_promotions_test.go
+  grep -q '^func TestBrowserPromotions' tests/foundation/browser_promotions_test.go
+  test -f tests/storefront/promotions-gate.mjs
+  mkdir -p output/playwright
+fi
+if [[ "$test_mode" == --browser-catalog-core ]]; then
+  # CC12 (BROWSER + REAL_PG): refuse a no-test success before any build; the admin Next build is the only web build this gate needs.
+  test -f tests/foundation/browser_catalog_core_test.go
+  grep -q '^func TestBrowserCatalogCore' tests/foundation/browser_catalog_core_test.go
+  test -f tests/admin/catalog-core.spec.ts
   mkdir -p output/playwright
 fi
 if [[ "$test_mode" == --browser-webkit ]]; then
@@ -268,13 +311,20 @@ if [[ "$test_mode" == --browser-e2e ]]; then
   test -f tests/e2e/live-tools.spec.ts
   mkdir -p output/playwright
 fi
-if [[ "$test_mode" == --browser-buyer || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-order || "$test_mode" == --browser-payment || "$test_mode" == --stripe-browser || "$test_mode" == --browser-refund-fulfilment || "$test_mode" == --browser-customers-billing || "$test_mode" == --browser-meta-ads || "$test_mode" == --browser-cvs || "$test_mode" == --browser-catalog-media || "$test_mode" == --browser-storefront-publish || "$test_mode" == --browser-webkit || "$test_mode" == --browser-live-claims || "$test_mode" == --browser-e2e ]]; then
+if [[ "$test_mode" == --browser-storefront ]]; then
+  # Real stack (unit storefront-integration): the pure logic tests first (the MOCK fake only feeds node tests/the LC_SHOP_MOCK variant), then PG + Go + Next.
+  test -f tests/foundation/browser_storefront_test.go
+  grep -q '^func TestBrowserStorefront' tests/foundation/browser_storefront_test.go
+  test -f tests/storefront/shop-real-gate.mjs
+  node --test --experimental-strip-types apps/storefront/tests/shop.test.mjs
+fi
+if [[ "$test_mode" == --browser-buyer || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-manual-order || "$test_mode" == --browser-order || "$test_mode" == --browser-payment || "$test_mode" == --stripe-browser || "$test_mode" == --browser-refund-fulfilment || "$test_mode" == --browser-customers-billing || "$test_mode" == --browser-meta-ads || "$test_mode" == --browser-storefront || "$test_mode" == --browser-cvs || "$test_mode" == --browser-catalog-media || "$test_mode" == --browser-storefront-publish || "$test_mode" == --browser-webkit || "$test_mode" == --browser-live-claims || "$test_mode" == --browser-e2e || "$test_mode" == --browser-ops-polish || "$test_mode" == --browser-promotions ]]; then
   command -v pnpm >/dev/null
   command -v openssl >/dev/null
   COMMERCE_BUYER_WEB_ENABLED=0 pnpm run build:storefront
   mkdir -p output/playwright
 fi
-if [[ "$test_mode" == --browser-identity || "$test_mode" == --browser-design || "$test_mode" == --browser-password-auth || "$test_mode" == --browser-admin-legacy || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-merchant-orders-bff || "$test_mode" == --browser-merchant-orders-ui || "$test_mode" == --browser-input-delivery || "$test_mode" == --browser-studio-bff || "$test_mode" == --browser-studio-ui || "$test_mode" == --browser-live-claims || "$test_mode" == --browser-refund-fulfilment || "$test_mode" == --browser-customers-billing || "$test_mode" == --browser-meta-ads || "$test_mode" == --browser-cvs || "$test_mode" == --browser-catalog-media || "$test_mode" == --browser-storefront-publish || "$test_mode" == --browser-webkit || "$test_mode" == --browser-e2e ]]; then
+if [[ "$test_mode" == --browser-identity || "$test_mode" == --browser-catalog-core || "$test_mode" == --browser-meta-connect || "$test_mode" == --browser-ops-polish || "$test_mode" == --browser-design || "$test_mode" == --browser-password-auth || "$test_mode" == --browser-admin-legacy || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-manual-order || "$test_mode" == --browser-merchant-orders-bff || "$test_mode" == --browser-merchant-orders-ui || "$test_mode" == --browser-input-delivery || "$test_mode" == --browser-studio-bff || "$test_mode" == --browser-studio-ui || "$test_mode" == --browser-live-claims || "$test_mode" == --browser-refund-fulfilment || "$test_mode" == --browser-customers-billing || "$test_mode" == --browser-meta-ads || "$test_mode" == --browser-cvs || "$test_mode" == --browser-catalog-media || "$test_mode" == --browser-storefront-publish || "$test_mode" == --browser-webkit || "$test_mode" == --browser-e2e || "$test_mode" == --browser-promotions ]]; then
   command -v pnpm >/dev/null
   command -v node >/dev/null
   # Production package, but local-only runtime configuration is injected by the
@@ -390,8 +440,8 @@ if [[ "$test_mode" == --browser-identity ]]; then
   printf 'PASS: isolated PG + signed MOCK IdP browser chain; fixture removed at exit.\n'
 elif [[ "$test_mode" == --browser-password-auth ]]; then
   node --test --experimental-strip-types tests/admin/password-bff.test.ts   # PA10 (Node, no browser, no PG)
-  LC_BROWSER_PASSWORD_AUTH_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=900s -run '^TestBrowserPasswordAuth$' -v ./tests/foundation
-  printf 'PASS: isolated Next + Go + PG + loopback SMTP fake password-auth browser chain (PA11); no real mailbox, no owner secret.\n'
+  LC_BROWSER_PASSWORD_AUTH_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1800s -run '^(TestBrowserPasswordAuth|TestBrowserStaffTeam)$' -v ./tests/foundation
+  printf 'PASS: isolated Next + Go + PG + loopback SMTP fake password-auth browser chain (PA11) and staff-team invite/accept/role/revoke chain (zh-TW + en, desktop + 390px); no real mailbox, no owner secret.\n'
 elif [[ "$test_mode" == --browser-admin-legacy ]]; then
   LC_BROWSER_ADMIN_LEGACY_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=600s -run '^TestBrowserAdmin(LedgerFixtureChain|IdentityMock|EntryMock)$' -v ./tests/foundation
   printf 'PASS: admin ledger (fixture bearer) + production fail-closed + identity-mock + entry-mock browser suites; no signed IdP, not production acceptance.\n'
@@ -419,6 +469,9 @@ elif [[ "$test_mode" == --browser-buyer ]]; then
 elif [[ "$test_mode" == --browser-merchant-buyer ]]; then
   LC_BROWSER_MERCHANT_BUYER_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=180s -run '^TestBrowserMerchantBuyerRealChain$' -v ./tests/foundation
   printf 'PASS: isolated merchant-to-buyer browser chain; not provider payment or real DNS/TLS deployment proof.\n'
+elif [[ "$test_mode" == --browser-manual-order ]]; then
+  LC_BROWSER_MANUAL_ORDER_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=300s -run '^TestBrowserManualOrderLink$' -v ./tests/foundation
+  printf 'PASS: isolated merchant UI manual order -> buyer link -> fresh browser exchange -> bank details -> transfer proof; signed MOCK IdP, local TLS/CONNECT edge; not provider or deployment acceptance.\n'
 elif [[ "$test_mode" == --browser-order ]]; then
   LC_BROWSER_ORDER_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=180s -run '^TestBrowserBuyerOrderUI$' -v ./tests/foundation
   printf 'PASS: isolated buyer address/order UI gate; not provider payment or deployment acceptance.\n'
@@ -493,12 +546,29 @@ elif [[ "$test_mode" == --browser-meta-ads ]]; then
   node --test --experimental-strip-types apps/storefront/tests/ad-link-route.test.mjs
   LC_BROWSER_META_ADS_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1700s -run '^TestBrowserMetaAds(Consent)?$' -v ./tests/foundation
   printf 'PASS: MA09a isolated admin Next, Go API + ads worker, PG; Meta = MOCK (fake Graph + the Facebook Login dialog answered by the browser route); not Meta, provider or deployment acceptance; MA09b buyer consent -> CAPI context runs against the production storefront Next build.\n'
+elif [[ "$test_mode" == --browser-meta-connect ]]; then
+  LC_BROWSER_META_CONNECT_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1200s -run '^TestBrowserMetaConnect$' -v ./tests/foundation
+  printf 'PASS: meta-connect isolated admin Next, Go API with the metaconnect service, PG; Meta = MOCK (tests/metaconnect/fakegraph + the Facebook Login dialog answered by the browser route); merchant connects Page A + Instagram, a forged state and a missing permission are refused, disconnect and a Facebook-only reconnect, en/zh-TW/zh-CN, desktop + 390px; not Meta, provider or deployment acceptance; Meta SANDBOX/LIVE are NOT_RUN.\n'
+elif [[ "$test_mode" == --browser-catalog-core ]]; then
+  LC_BROWSER_CATALOG_CORE_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1700s -run '^TestBrowserCatalogCore$' -v ./tests/foundation
+  printf 'PASS: CC12 isolated admin Next, Go API, PG; shopper view = the real buyer catalog v2 HTTP handler (not the storefront Next build); desktop + 390 px, en + zh-TW; not provider or deployment acceptance.\n'
 elif [[ "$test_mode" == --browser-cvs ]]; then
   LC_BROWSER_CVS_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1700s -run '^TestBrowserTaiwanCvs$' -v ./tests/foundation
   printf 'PASS: TCV08 MOCK isolated admin + storefront Next, Go, PG, ecpaytest fake map/Create and signed status posts; SANDBOX and WebKit variants are NOT_RUN unless the go test log says otherwise; not provider or deployment acceptance.\n'
+elif [[ "$test_mode" == --browser-storefront ]]; then
+  # SFR gate (unit storefront-integration, SANDBOX): the storefront shell on the production build against the real buyerhttp handler and PG,
+  # a shop built through the real admin API and published through the 0081 definers (tests/foundation/browser_storefront_test.go).
+  LC_BROWSER_STOREFRONT_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1500s -run '^TestBrowserStorefront$' -v ./tests/foundation
+  printf 'PASS: SFR01-SFR09 buyer storefront shell on the REAL stack (production Next + real Go buyer API + isolated PG; shop built through the admin API, published through the migration 0081 definers; checkout path, free-shipping threshold and collection photo ids from the producers); synthetic CONNECT edge, no provider, no device. The MOCK sibling: LC_SHOP_MOCK=1 bash scripts/dev/test-local.sh --browser-storefront.\n'
 elif [[ "$test_mode" == --browser-catalog-media ]]; then
   LC_BROWSER_CATALOG_MEDIA_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1500s -run '^TestBrowserCatalogMedia$' -v ./tests/foundation
   printf 'PASS: catalog-media browser gate (BROWSER, MOCK IdP): merchant uploads 2 photos, reorders, renames, reprices and archives a SKU in the Ledger; an anonymous buyer sees the home grid, gallery order, new price and no archived SKU; zh-TW + en, desktop + 390px; publication/domain rows are seeded until unit storefront-publish merges; not provider or deployment acceptance.\n'
+elif [[ "$test_mode" == --browser-ops-polish ]]; then
+  LC_BROWSER_OPS_POLISH_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1500s -run "^TestBrowserOpsPolish(${LC_OPS_POLISH_ONLY:-Storefront|Admin})\$" -v ./tests/foundation
+  printf 'PASS: ops-polish isolated storefront + admin Next, Go, PG; OP1 buyer flow with no card payment service (zh-TW + en, desktop + 390px), OP2 order-feed polling on a fake clock, OP3 finance column/CSV link, OP4 Studio subtitle and nav in three locales; MOCK IdP, no PSP, no ECPay profile; not provider or deployment acceptance.\n'
+elif [[ "$test_mode" == --browser-promotions ]]; then
+  LC_BROWSER_PROMOTIONS_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1700s -run '^TestBrowserPromotions$' -v ./tests/foundation
+  printf 'PASS: promotions browser gate (BROWSER, MOCK IdP): the merchant creates a 10%% code with a minimum spend in /promotions, an anonymous buyer adds 2 products in the new storefront, applies the code at checkout, sees the discount and places a bank_transfer order, the merchant order view and finance show the discounted amounts; invalid and below-minimum codes show their messages; zh-TW + en, desktop + 390px; PG readback of codes/orders/redemptions; Stripe SANDBOX and WebKit are NOT_RUN here.\n'
 elif [[ "$test_mode" == --browser-webkit ]]; then
   # Same production storefront + admin builds and the same go tests as the Chromium modes, with LC_BROWSER_ENGINE=webkit: phone-sized buyer
   # contexts run Playwright's iPhone 15 profile, desktop ones and every admin page run Desktop Safari. One go test process per step on a

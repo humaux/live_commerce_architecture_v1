@@ -3,7 +3,8 @@
 // through the BFF: GET /api/stores/{store}/catalog-products -> Go internal/httpapi/collections.go (components/ProductList.tsx).
 import { notFound } from "next/navigation";
 import { canonicalCursor } from "@/lib/orders-model";
-import { ProductList, productStatuses } from "@/components/ProductList";
+import { ProductList } from "@/components/ProductList";
+import { productStatuses } from "@/lib/catalog-v2-model";
 import { loadPage } from "../customers/page-data";
 
 export default async function ProductsPage({

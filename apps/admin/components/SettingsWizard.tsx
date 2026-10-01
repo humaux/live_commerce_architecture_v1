@@ -7,6 +7,8 @@
 // mode "API (ECPay)" for CVS kinds only while the ECPay connection is enabled and checked (§4.1 predicate).
 // <StorefrontSettings> (below the steps) is the storefront publish/unpublish card: BFF storefront, storefront/publication
 // -> Go internal/httpapi/storefront.go (published-storefront-resolver-v1 "Writer (R3)").
+// <MetaConnect> (below it) is the merchant Facebook Page / Instagram connect card: BFF /api/meta/{connect,callback} and
+// /api/stores/{store}/meta-connect/* -> Go internal/httpapi/meta_connect.go (meta-claims-intake-v1 "Merchant connect (R4)").
 import {
   useCallback,
   useEffect,
@@ -18,7 +20,9 @@ import type { Locale } from "@live-commerce/i18n";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { LogisticsSettings } from "./LogisticsSettings";
 import { BankTransferSettings } from "./BankTransferSettings";
+import { NotifySettings } from "./NotifySettings";
 import { StorefrontSettings } from "./StorefrontSettings";
+import { MetaConnect } from "./MetaConnect";
 import { availabilityReason, settingsCopy } from "@/lib/settings-copy";
 import {
   csrfCookie,
@@ -1831,6 +1835,8 @@ export function SettingsWizard({
                   <LogisticsSettings store={store.id} locale={locale} />
                   {/* storefront-v2 §C: bank-transfer details and window (BFF bank-transfer-settings -> Go offline.go). */}
                   <BankTransferSettings store={store.id} locale={locale} />
+                  {/* storefront-v2 §E6: new-order email opt-out (BFF notification-settings -> Go notify.go). */}
+                  <NotifySettings store={store.id} locale={locale} />
                   <div className="settings-actions">
                     <button type="button" onClick={() => goStep(1)}>
                       {c.back}
@@ -2774,6 +2780,8 @@ export function SettingsWizard({
           </aside>
         </div>
         {store && <StorefrontSettings store={store.id} locale={locale} />}
+        {/* Facebook Page / Instagram connect: BFF /api/meta/*, /api/stores/{store}/meta-connect/* -> Go internal/httpapi/meta_connect.go */}
+        {store && <MetaConnect store={store.id} locale={locale} />}
       </div>
     </WorkspaceFrame>
   );

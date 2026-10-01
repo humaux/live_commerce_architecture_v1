@@ -189,6 +189,12 @@ services:
       COMMERCE_META_PAYLOAD_KEYS_JSON_FILE: /run/secrets/commerce_meta_payload_keys_json
       COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_meta_payload_active_key_id
       COMMERCE_META_APPS_JSON_FILE: /run/secrets/commerce_meta_apps_json
+      # meta-connect (merchant Facebook Page / Instagram connect, cmd/api/merchant_meta_connect.go): the api seals the merchant's own
+      # Page token to the HPKE PUBLIC ring (meta-page-token-v2) and can never open one; the PRIVATE ring is mounted only into
+      # claims-worker. Read only when api.env sets COMMERCE_META_LOGIN_CONFIG_ID. The Meta app secret comes from
+      # COMMERCE_META_APPS_JSON above (no extra secret). TestMetaConnectAPIHoldsNoPagePrivateKey guards this block.
+      COMMERCE_META_PAGE_HPKE_PUBLIC_KEYS_JSON_FILE: /run/secrets/commerce_meta_page_hpke_public_keys_json
+      COMMERCE_META_PAGE_HPKE_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_meta_page_hpke_active_key_id
       # Stripe (stripe-psp-v1 §0.2/§12, stripe-live-enable-v1 LD6): TWO switches (LD6). The webhook route follows
       # LC_STRIPE_ENABLED; the buyer checkout flag has its own source LC_STRIPE_CHECKOUT_ENABLED (defaults to
       # LC_STRIPE_ENABLED) so the platform can stop new checkouts while webhook + worker keep reconciling.
@@ -249,6 +255,8 @@ services:
       - commerce_meta_payload_keys_json
       - commerce_meta_payload_active_key_id
       - commerce_meta_apps_json
+      - commerce_meta_page_hpke_public_keys_json
+      - commerce_meta_page_hpke_active_key_id
       - commerce_meta_ads_app_secret
       - commerce_meta_ads_hpke_public_keys_json
       - commerce_meta_ads_hpke_active_key_id
@@ -452,6 +460,8 @@ services:
       COMMERCE_CLAIMS_REPLY_LINK_KEY_FILE: /run/secrets/commerce_claims_reply_link_key
       COMMERCE_META_PAGE_TOKEN_KEYS_JSON_FILE: /run/secrets/commerce_meta_page_token_keys_json
       COMMERCE_META_PAGE_TOKEN_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_meta_page_token_active_key_id
+      # meta-page-token-v2 private ring: opens the Page tokens the merchant connect sealed to the public ring (only this process holds it).
+      COMMERCE_META_PAGE_HPKE_PRIVATE_KEYS_FILE: /run/secrets/commerce_meta_page_hpke_private_keys_json
       # taiwan-cvs-logistics-v1 §12: ECPay create/query route (cmd/claims-worker registers it iff CVS_ECPAY_ENABLED=1).
       # ponytail: ECPay is SANDBOX-only in this release (preflight P06: LC_CVS_ECPAY_ENABLED=1 requires the api's
       # COMMERCE_PAYMENT_PROFILE=SANDBOX), so the worker's profile and LIVE-create switch are fixed here; a LIVE
@@ -462,7 +472,7 @@ services:
       COMMERCE_PAYMENT_PROFILE: SANDBOX
       ECPAY_LOGISTICS_KEYRING_FILE: /run/secrets/ecpay_logistics_keyring
       GOMEMLIMIT: 200MiB
-    secrets: [dsn_lc_claims_intake, dsn_lc_claims_worker, dsn_lc_retention_job, commerce_claims_reply_link_key, commerce_meta_page_token_keys_json, commerce_meta_page_token_active_key_id, ecpay_logistics_keyring]
+    secrets: [dsn_lc_claims_intake, dsn_lc_claims_worker, dsn_lc_retention_job, commerce_claims_reply_link_key, commerce_meta_page_token_keys_json, commerce_meta_page_token_active_key_id, commerce_meta_page_hpke_private_keys_json, ecpay_logistics_keyring]
     cpus: 0.5
     mem_limit: 256m
 
@@ -760,6 +770,9 @@ secrets:
   commerce_platform_stripe_webhook_secret: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_platform_stripe_webhook_secret" }
   commerce_meta_page_token_keys_json: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_meta_page_token_keys_json" }
   commerce_meta_page_token_active_key_id: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_meta_page_token_active_key_id" }
+  commerce_meta_page_hpke_private_keys_json: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_meta_page_hpke_private_keys_json" }
+  commerce_meta_page_hpke_public_keys_json: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_meta_page_hpke_public_keys_json" }
+  commerce_meta_page_hpke_active_key_id: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_meta_page_hpke_active_key_id" }
   ecpay_logistics_keyring: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/ecpay_logistics_keyring" }
   commerce_claims_actor_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_claims_actor_key" }
   commerce_claims_reply_link_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_claims_reply_link_key" }

@@ -123,6 +123,7 @@ type v2Detail struct {
 	Collections []v2CollectionRef `json:"collections"`
 }
 type v2CollectionCard struct {
+	ID           string  `json:"id"` // storefront-v2 §A: builds /media/c/{id}/{image_id}
 	Slug         string  `json:"slug"`
 	Title        string  `json:"title"`
 	ImageID      *string `json:"image_id"`
@@ -132,6 +133,7 @@ type v2Collections struct {
 	Collections []v2CollectionCard `json:"collections"`
 }
 type v2CollectionOne struct {
+	ID          string  `json:"id"`
 	Slug        string  `json:"slug"`
 	Title       string  `json:"title"`
 	Description string  `json:"description"`

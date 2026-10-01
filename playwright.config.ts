@@ -10,6 +10,8 @@ const suites: Record<string, string[]> = {
   "identity-real": ["auth-real.spec.ts"],
   // PA11 (merchant-password-auth-v1): started by tests/foundation/browser_password_auth_test.go.
   "password-auth": ["password-auth.spec.ts"],
+  // staff-team (R4 independent gate): started by tests/foundation/browser_staff_team_test.go in the same mode.
+  "staff-team": ["staff-team.spec.ts"],
   "settings-real": ["settings-real.spec.ts"],
   "merchant-orders-bff": ["orders-bff.spec.ts"],
   "merchant-orders-ui": ["orders-ui.spec.ts"],

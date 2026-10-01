@@ -581,6 +581,13 @@ code {
   color: #576273;
   background: #e8ecf0;
 }
+/* Shown only ≤680px, where .status-col is hidden (Ledger mobile rows). */
+.mobile-status {
+  display: none;
+  margin-left: 6px;
+  padding: 1px 8px;
+  font-size: 10px;
+}
 .action-col {
   text-align: center;
   width: 98px;
@@ -1080,6 +1087,9 @@ code {
   .status-col,
   .action-col {
     display: none;
+  }
+  .product-cell .mobile-status {
+    display: inline-block;
   }
   .selection-col {
     width: 30px;

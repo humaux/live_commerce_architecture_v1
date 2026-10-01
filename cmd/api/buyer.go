@@ -14,10 +14,12 @@ import (
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"livecommerce/internal/attribution"
+	"livecommerce/internal/buyer"
 	"livecommerce/internal/buyerhttp"
 	"livecommerce/internal/checkout"
 	"livecommerce/internal/httperror"
 	"livecommerce/internal/identityhttp"
+	"livecommerce/internal/merchanttools"
 	"livecommerce/internal/platform"
 )
 
@@ -150,6 +152,19 @@ func buildBuyerWithCVS(ctx context.Context, c buyerConfig, mainPool *pgxpool.Poo
 	if err != nil {
 		closePools()
 		return nil, cvsParts{}, nil, errBuyerConfig
+	}
+	if mainPool != nil {
+		// merchant-tools (storefront-v2 G3): the admin Create Order runs the buyer path on these same pools and the FINAL checkout service
+		// (payment environment, CVS and no-card already applied). Its own issuer service keeps the 30-day capability TTL, so the order
+		// link outlives the 15-minute buyer session TTL; the buyer BFF key (a deployment secret) keys the HMAC that derives the token.
+		links, err := buyer.New(issuer, 30*24*time.Hour)
+		if err == nil {
+			parts.Manual, err = merchanttools.NewManualOrders(mainPool, links, runtime, service, []byte(c.bffKey))
+		}
+		if err != nil {
+			closePools()
+			return nil, cvsParts{}, nil, errBuyerConfig
+		}
 	}
 	// ads-capi C6: the public Meta product feed, beside the buyer router, on the buyer runtime pool.
 	return mountFeed(h, httperror.Middleware(attribution.FeedHandler(runtime)), c.bffKey), parts, closePools, nil

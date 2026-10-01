@@ -1,6 +1,6 @@
 "use client";
 
-// Checkout surface at /{locale}/products/Checkout (lib/routes.ts explains why this path): the delivery choice, quotation,
+// Checkout surface at /{locale}/checkout (lib/routes.ts: the CVS map return allowlist): the delivery choice, quotation,
 // address, payment and order screens over the buyer's EXISTING multi-SKU cart. It is the former single-product purchase page
 // minus the product picker: items are added on the product page / drawer / cart page (CartProvider), this page starts at the
 // cart and ends at the placed order. All crash-recovery journals (pending cart/quote/destination/checkout, order locator) and
@@ -27,7 +27,9 @@ import { CartLines } from "./CartLines";
 import { useCart } from "./CartProvider";
 import { useCartDetails } from "./CartLines";
 import { checkoutPath } from "../lib/routes";
-import { shopCopy } from "../lib/shop-copy";
+import { fmt, shopCopy } from "../lib/shop-copy";
+import { freeShippingProgress } from "../lib/shop-contract";
+import { formatMoney } from "../lib/money";
 import Link from "next/link";
 import { historyCopy } from "../lib/history-copy";
 import {
@@ -97,6 +99,8 @@ export default function CheckoutFlow({
   const found = options.find((o) => optionKey(o) === method);
   // Unavailable rows are listed disabled, so they can never be the chosen delivery.
   const chosen = found && !isUnavailable(found) ? found : undefined;
+  const chosenProgress =
+    chosen && subtotal !== null && !quote ? freeShippingProgress(subtotal, chosen.free_shipping_threshold_minor ?? null) : null;
   const money = (amount: number, currency: string) => {
     const formatter = new Intl.NumberFormat(locale, {
       style: "currency",
@@ -545,6 +549,14 @@ export default function CheckoutFlow({
                     </select>
                     {chosen && chosen.delivery_kind !== "home" && (
                       <p data-testid="cvs-next-step">{copy.cvs}</p>
+                    )}
+                    {chosenProgress && (
+                      // Hint only (from checkout-options, delivery policy): the quote below stays the sole authority on shipping.
+                      <p className="sf-muted" data-testid="checkout-free-shipping">
+                        {chosenProgress.reached
+                          ? shopCopy[locale].freeShipReached
+                          : fmt(shopCopy[locale].freeShipRemaining, { amount: formatMoney(locale, chosenProgress.remaining, cart?.currency ?? "TWD") })}
+                      </p>
                     )}
                   </>
                 )}

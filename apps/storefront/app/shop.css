@@ -371,3 +371,6 @@ a.sf-line__title:hover { text-decoration: underline; }
 
 /* ---- checkout screens keep their own styles (globals.css); only the font and page rhythm follow the shell ---- */
 .purchase-main { padding-top: 24px; }
+/* The checkout action bar is position:fixed over the bottom of the viewport; without room under the shell footer its language links and
+   legal links are unreachable when the page is scrolled to the end (found by the buyer browser gate, storefront-integration). */
+body:has(.purchase-footer) .sf-footer { padding-bottom: 120px; }

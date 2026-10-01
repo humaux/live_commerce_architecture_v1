@@ -69,7 +69,7 @@ export function ProductEditor({
         {read.status === "ready" && store && creating && <CreateForm locale={locale} store={store} boundary={read.boundary} />}
         {read.status === "ready" && store && !creating && detail && (
           <>
-            <Basics key={`${detail.id}:${detail.version}`} locale={locale} store={store} detail={detail} boundary={read.boundary} refresh={read.refresh} />
+            <Basics key={detail.id} locale={locale} store={store} detail={detail} boundary={read.boundary} refresh={read.refresh} />
             <section className="product-section">
               <ProductPhotoManager locale={locale} store={store.id} productID={detail.id} productName={detail.name} code="" disabled={false} onChanged={() => void read.refresh()} />
             </section>

@@ -12,6 +12,7 @@ import {
 import {
   DESIGN_MAX_JSON, designDetails, designGetPaths, designPostPaths, designPutPaths, isDesignImageBytes, isDesignJsonPut, isDesignPath, isDesignUpload, validDesignRequest,
 } from "@/lib/design-request";
+import { metaConnectAny, metaConnectRoutes, validMetaConnectRequest } from "@/lib/meta-connect-request";
 import { adsAny, adsBodyless, adsKeyless, adsRoutes, validAdsQuery, validIfMatch } from "@/lib/ads-request";
 import { parseStudioInput, parseStudioInputPrepared } from "@/lib/studio-model";
 import {
@@ -62,10 +63,10 @@ const studioAction = `${studioDetail}/(?:rehearsal/(?:start|stop)|input/(?:start
 const studioAny = new RegExp(`^(?:live-sessions|${studioDetail}|${studioAction}|${studioInputRead}|${studioDetail}/${claimsSubpath})$`);
 const routes: Record<string, RegExp> = {
   GET: new RegExp(
-    `^(catalog-ledger|${catalogProducts}|products|products/${uuid}|${collectionsRoot}|${collectionItem}|${collectionImage}|warehouses|inventory|products/${uuid}/skus|${purchaseEntry}|${storefrontRead}|${imagesRoot}|${imageItem}|${designGetPaths}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy}|${orders}|live-sessions|${studioDetail}|${studioInputRead}|${claimsRoutes.GET}|${adsRoutes.GET})$`,
+    `^(catalog-ledger|${catalogProducts}|products|products/${uuid}|${collectionsRoot}|${collectionItem}|${collectionImage}|warehouses|inventory|products/${uuid}/skus|${purchaseEntry}|${storefrontRead}|${imagesRoot}|${imageItem}|${designGetPaths}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy}|${orders}|live-sessions|${studioDetail}|${studioInputRead}|${claimsRoutes.GET}|${adsRoutes.GET}|${metaConnectRoutes.GET})$`,
   ),
   POST: new RegExp(
-    `^(products|skus|warehouses|inventory/adjustments|products/${uuid}/archive|${storefrontWrite}|${imageWrites}|${designPostPaths}|${catalogV2Writes}|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets|live-sessions|${studioAction}|${claimsRoutes.POST}|${adsRoutes.POST})$`,
+    `^(products|skus|warehouses|inventory/adjustments|products/${uuid}/archive|${storefrontWrite}|${imageWrites}|${designPostPaths}|${catalogV2Writes}|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets|live-sessions|${studioAction}|${claimsRoutes.POST}|${adsRoutes.POST}|${metaConnectRoutes.POST})$`,
   ),
   PATCH: new RegExp(`^(products/${uuid}|${collectionItem}|skus/${uuid}|${studioDetail}|${claimsRoutes.PATCH})$`),
   // Studio PUT is only the comment-source bind (claims-request.ts); settings PUTs are the rest.
@@ -117,6 +118,8 @@ async function route(request: Request, context: Context) {
   // Ads (adsRoutes): session/store authority only, and only `ads/report` may carry a query (from,to).
   const ads = adsAny.test(path);
   if (ads && !validAdsQuery(request.url, path)) return error(422, "invalid_request");
+  // Merchant Page/Instagram connect (meta-connect-request.ts): exact resources, no query; a read carries no body or key.
+  if (metaConnectAny.test(path) && !validMetaConnectRequest(request)) return error(422, "invalid_request");
   // New setup routes require actual session/store authority, never a shared fixture.
   if ((studio || order || action || customers || logistic || accountRoute || ads || discoveryRoute.test(path)) && !authConfig)
     return error(404, "not_found");
@@ -147,8 +150,10 @@ async function route(request: Request, context: Context) {
   const url = new URL(request.url);
   // catalog-core: a read carries no body or key; only the two list resources may carry a query, with known keys only.
   if (catalogV2Any.test(path)) {
+    // Exactly one cache-buster is allowed: GET collections/{id}/image?v=<image id> (the id changes per upload).
+    const cacheBuster = request.method === "GET" && collectionImageRoute.test(path) && new RegExp(`^\\?v=${uuid}$`).test(url.search);
     if (!catalogQueryRoute.test(path) || request.method !== "GET") {
-      if (request.url.includes("?")) return error(422, "invalid_request");
+      if (request.url.includes("?") && !cacheBuster) return error(422, "invalid_request");
     } else if (
       request.url.endsWith("?") ||
       [...url.searchParams.keys()].some((key) => !catalogQueryKeys.has(key)) ||
@@ -418,7 +423,7 @@ async function route(request: Request, context: Context) {
     status: response.status,
     headers: {
       "Content-Type": "application/json",
-      "Cache-Control": order || action || customers || logistic || storefront ? "private, no-store" : "no-store",
+      "Cache-Control": order || action || customers || logistic || storefront || metaConnectAny.test(path) ? "private, no-store" : "no-store",
       "X-Request-ID": response.headers.get("x-request-id") ?? "",
     },
   });

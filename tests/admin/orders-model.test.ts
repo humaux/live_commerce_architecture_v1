@@ -28,6 +28,7 @@ const summary = {
   work_state: "NONE",
   refunded_minor: 0,
   refund_pending_minor: 0,
+  source: "storefront",
   // taiwan-cvs-logistics-v1 C4 keys (frozen 2026-09-30): a home card order carries these neutral values.
   pickup_source: null,
   payment_mode: "card",
