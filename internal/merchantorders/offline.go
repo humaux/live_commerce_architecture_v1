@@ -2,7 +2,7 @@
 // transfer detail of one order, and the three audited decisions the merchant takes on it: confirm, reject the buyer's submission, record an
 // offline refund.
 //
-// Every call is one SQL definer of migration 0088 (checkout.read_bank_transfer_settings / set_bank_transfer_settings /
+// Every call is one SQL definer of migration 0088 (payments.read_bank_transfer_settings / set_bank_transfer_settings /
 // read_bank_transfer_merchant / decide_bank_transfer) inside the caller's platform.WithScope transaction; Go validates shape, SQL owns
 // every rule, permission and the idempotent receipt. A confirm is a merchant act only: there is no webhook, poll or bank feed, and the
 // confirmed amount is the server order total, never a client value (I05).
@@ -138,8 +138,8 @@ func ReadTransferSettings(ctx context.Context, tx pgx.Tx, scope platform.Scope, 
 	}
 	hash := sha256.Sum256([]byte(token))
 	var raw []byte
-	// checkout.read_bank_transfer_settings (0088): integration:read, GUCs from resolve_access, fresh final fence.
-	if err := tx.QueryRow(ctx, `SELECT checkout.read_bank_transfer_settings($1,$2::uuid)`, hash[:], scope.StoreID).Scan(&raw); err != nil {
+	// payments.read_bank_transfer_settings (0088): integration:read, GUCs from resolve_access, fresh final fence.
+	if err := tx.QueryRow(ctx, `SELECT payments.read_bank_transfer_settings($1,$2::uuid)`, hash[:], scope.StoreID).Scan(&raw); err != nil {
 		return TransferSettings{}, mapTransferError(err)
 	}
 	var out TransferSettings
@@ -168,8 +168,8 @@ func SetTransferSettings(ctx context.Context, tx pgx.Tx, scope platform.Scope, t
 	}
 	hash := sha256.Sum256([]byte(token))
 	var raw []byte
-	// checkout.set_bank_transfer_settings (0088): integration:manage, advisory lock per store, idempotent receipt, audit row.
-	if err = tx.QueryRow(ctx, `SELECT checkout.set_bank_transfer_settings($1,$2::uuid,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::integer)`,
+	// payments.set_bank_transfer_settings (0088): integration:manage, advisory lock per store, idempotent receipt, audit row.
+	if err = tx.QueryRow(ctx, `SELECT payments.set_bank_transfer_settings($1,$2::uuid,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::integer)`,
 		hash[:], scope.StoreID, key, digest, in.ExpectedVersion, in.Enabled, in.AllowCVS, in.BankName, in.Branch, in.AccountName,
 		in.AccountNumber, int32(in.WindowHours)).Scan(&raw); err != nil {
 		return TransferSettings{}, mapTransferError(err)
@@ -256,8 +256,8 @@ func ReadTransfer(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, o
 	}
 	hash := sha256.Sum256([]byte(token))
 	var raw []byte
-	// checkout.read_bank_transfer_merchant (0088): orders:read, fresh final fence.
-	if err := tx.QueryRow(ctx, `SELECT checkout.read_bank_transfer_merchant($1,$2::uuid,$3::uuid)`, hash[:], scope.StoreID, orderID).Scan(&raw); err != nil {
+	// payments.read_bank_transfer_merchant (0088): orders:read, fresh final fence.
+	if err := tx.QueryRow(ctx, `SELECT payments.read_bank_transfer_merchant($1,$2::uuid,$3::uuid)`, hash[:], scope.StoreID, orderID).Scan(&raw); err != nil {
 		return TransferDetail{}, mapTransferError(err)
 	}
 	var out TransferDetail
@@ -305,8 +305,8 @@ func DecideTransfer(ctx context.Context, tx pgx.Tx, scope platform.Scope, token,
 	}
 	hash := sha256.Sum256([]byte(token))
 	var raw []byte
-	// checkout.decide_bank_transfer (0088): the ONLY writer of a transfer confirmation (never auto-confirmed, never from a PSP signal).
-	if err = tx.QueryRow(ctx, `SELECT checkout.decide_bank_transfer($1,$2::uuid,$3::uuid,$4,$5,$6,$7)`,
+	// payments.decide_bank_transfer (0088): the ONLY writer of a transfer confirmation (never auto-confirmed, never from a PSP signal).
+	if err = tx.QueryRow(ctx, `SELECT payments.decide_bank_transfer($1,$2::uuid,$3::uuid,$4,$5,$6,$7)`,
 		hash[:], scope.StoreID, orderID, key, digest, action, reason).Scan(&raw); err != nil {
 		return TransferDecisionResult{}, mapTransferError(err)
 	}

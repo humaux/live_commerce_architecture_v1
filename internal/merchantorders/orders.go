@@ -8,7 +8,7 @@
 //
 // offline.go is the merchant side of the bank_transfer payment mode (storefront-v2 §C): the store's bank-transfer settings, one
 // order's transfer detail and the three audited decisions (confirm, reject the buyer's submission, record an offline refund), each one
-// SQL definer of migration 0088 (checkout.decide_bank_transfer is the only writer of a confirmation, never automatic).
+// SQL definer of migration 0088 (payments.decide_bank_transfer is the only writer of a confirmation, never automatic).
 //
 // It never writes ledger, stock, reservation, payment-fact or refund state itself (decide_bank_transfer does, in SQL), never creates a provider
 // operation or River job, never calls a carrier or fetches a tracking URL, and never stores or logs an

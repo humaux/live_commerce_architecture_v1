@@ -296,7 +296,7 @@ $$;
 -- ---------------------------------------------------------------------------------------------------
 -- G. Merchant settings (integration:read / integration:manage like cvs settings; 0073:1651 pattern).
 -- ---------------------------------------------------------------------------------------------------
-CREATE FUNCTION checkout.read_bank_transfer_settings(p_hash bytea,p_store uuid) RETURNS jsonb
+CREATE FUNCTION payments.read_bank_transfer_settings(p_hash bytea,p_store uuid) RETURNS jsonb
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE s record; v_final record; r record;
 BEGIN
@@ -319,11 +319,11 @@ BEGIN
  RETURN jsonb_build_object('version',r.version,'enabled',r.enabled,'allow_cvs',r.allow_cvs,'bank_name',r.bank_name,'branch',r.branch,
   'account_name',r.account_name,'account_number',r.account_number,'window_hours',r.window_hours);
 END $$;
-ALTER FUNCTION checkout.read_bank_transfer_settings(bytea,uuid) OWNER TO commerce_checkout_writer;
-REVOKE ALL ON FUNCTION checkout.read_bank_transfer_settings(bytea,uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION checkout.read_bank_transfer_settings(bytea,uuid) TO commerce_runtime;
+ALTER FUNCTION payments.read_bank_transfer_settings(bytea,uuid) OWNER TO commerce_checkout_writer;
+REVOKE ALL ON FUNCTION payments.read_bank_transfer_settings(bytea,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION payments.read_bank_transfer_settings(bytea,uuid) TO commerce_runtime;
 
-CREATE FUNCTION checkout.set_bank_transfer_settings(p_hash bytea,p_store uuid,p_key text,p_request_hash bytea,p_expected_version bigint,
+CREATE FUNCTION payments.set_bank_transfer_settings(p_hash bytea,p_store uuid,p_key text,p_request_hash bytea,p_expected_version bigint,
  p_enabled boolean,p_allow_cvs boolean,p_bank_name text,p_branch text,p_account_name text,p_account_number text,p_window_hours integer)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE s record; v_final record; cur record; v_saved bytea; v_response jsonb; v_now timestamptz; v_ver bigint;
@@ -382,9 +382,9 @@ BEGIN
   RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403'; END IF;
  RETURN v_response;
 END $$;
-ALTER FUNCTION checkout.set_bank_transfer_settings(bytea,uuid,text,bytea,bigint,boolean,boolean,text,text,text,text,integer) OWNER TO commerce_checkout_writer;
-REVOKE ALL ON FUNCTION checkout.set_bank_transfer_settings(bytea,uuid,text,bytea,bigint,boolean,boolean,text,text,text,text,integer) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION checkout.set_bank_transfer_settings(bytea,uuid,text,bytea,bigint,boolean,boolean,text,text,text,text,integer) TO commerce_runtime;
+ALTER FUNCTION payments.set_bank_transfer_settings(bytea,uuid,text,bytea,bigint,boolean,boolean,text,text,text,text,integer) OWNER TO commerce_checkout_writer;
+REVOKE ALL ON FUNCTION payments.set_bank_transfer_settings(bytea,uuid,text,bytea,bigint,boolean,boolean,text,text,text,text,integer) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION payments.set_bank_transfer_settings(bytea,uuid,text,bytea,bigint,boolean,boolean,text,text,text,text,integer) TO commerce_runtime;
 
 -- Buyer options: is the mode on, may a CVS destination use it, how long is the window (no bank details here; read_cvs_offer pattern).
 CREATE FUNCTION checkout.read_transfer_offer(p_hash bytea,p_store uuid)
@@ -521,7 +521,7 @@ GRANT EXECUTE ON FUNCTION checkout.read_bank_transfer_buyer(bytea,uuid,uuid) TO 
 -- orders:read for the read; resolve_access -> GUCs -> order lock -> buyer GUCs from the locked order -> replay -> rules -> write -> audit
 -- -> receipt -> fresh final authorization (release_pay_at_pickup, 0073:1778, pattern).
 -- ---------------------------------------------------------------------------------------------------
-CREATE FUNCTION checkout.read_bank_transfer_merchant(p_hash bytea,p_store uuid,p_order uuid) RETURNS jsonb
+CREATE FUNCTION payments.read_bank_transfer_merchant(p_hash bytea,p_store uuid,p_order uuid) RETURNS jsonb
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE s record; v_final record; v_json jsonb;
 BEGIN
@@ -540,13 +540,13 @@ BEGIN
  IF v_json IS NULL THEN RAISE EXCEPTION 'order not found' USING ERRCODE='PT404'; END IF;
  RETURN v_json;
 END $$;
-ALTER FUNCTION checkout.read_bank_transfer_merchant(bytea,uuid,uuid) OWNER TO commerce_checkout_writer;
-REVOKE ALL ON FUNCTION checkout.read_bank_transfer_merchant(bytea,uuid,uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION checkout.read_bank_transfer_merchant(bytea,uuid,uuid) TO commerce_runtime;
+ALTER FUNCTION payments.read_bank_transfer_merchant(bytea,uuid,uuid) OWNER TO commerce_checkout_writer;
+REVOKE ALL ON FUNCTION payments.read_bank_transfer_merchant(bytea,uuid,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION payments.read_bank_transfer_merchant(bytea,uuid,uuid) TO commerce_runtime;
 
 -- p_action: 'confirm' | 'reject' | 'refund_offline'. One definer so the three acts share the authorization, the lock order, the receipt and
 -- the audit; p_reason is the reject reason (NULL otherwise).
-CREATE FUNCTION checkout.decide_bank_transfer(p_hash bytea,p_store uuid,p_order uuid,p_key text,p_request_hash bytea,p_action text,p_reason text)
+CREATE FUNCTION payments.decide_bank_transfer(p_hash bytea,p_store uuid,p_order uuid,p_key text,p_request_hash bytea,p_action text,p_reason text)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE s record; v_final record; o record; t record; r record; l record; v_saved bytea; v_response jsonb; v_now timestamptz;
  v_lines integer:=0; v_op text;
@@ -638,9 +638,9 @@ BEGIN
   RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403'; END IF;
  RETURN v_response;
 END $$;
-ALTER FUNCTION checkout.decide_bank_transfer(bytea,uuid,uuid,text,bytea,text,text) OWNER TO commerce_checkout_writer;
-REVOKE ALL ON FUNCTION checkout.decide_bank_transfer(bytea,uuid,uuid,text,bytea,text,text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION checkout.decide_bank_transfer(bytea,uuid,uuid,text,bytea,text,text) TO commerce_runtime;
+ALTER FUNCTION payments.decide_bank_transfer(bytea,uuid,uuid,text,bytea,text,text) OWNER TO commerce_checkout_writer;
+REVOKE ALL ON FUNCTION payments.decide_bank_transfer(bytea,uuid,uuid,text,bytea,text,text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION payments.decide_bank_transfer(bytea,uuid,uuid,text,bytea,text,text) TO commerce_runtime;
 
 -- ---------------------------------------------------------------------------------------------------
 -- J. Merchant orders list filter (0073:1964) accepts AWAITING_TRANSFER; customers privacy (0078): the open transfer hold blocks erasure like
@@ -758,21 +758,21 @@ END $$;
 -- ---------------------------------------------------------------------------------------------------
 -- Documentation (PROCESS §5): owning package, allowed roles, non-goals.
 -- ---------------------------------------------------------------------------------------------------
-COMMENT ON TABLE checkout.bank_transfer_settings IS 'internal/checkout (offline payment): per-store bank-transfer switch, bank details and window hours (6..168). Written only by checkout.set_bank_transfer_settings (integration:manage), read by begin_hold, read_transfer_offer and read_bank_transfer_settings. No grant to runtime or buyer roles. Non-goal: no PSP data; a missing row means off.';
+COMMENT ON TABLE checkout.bank_transfer_settings IS 'internal/checkout (offline payment): per-store bank-transfer switch, bank details and window hours (6..168). Written only by payments.set_bank_transfer_settings (integration:manage), read by begin_hold, read_transfer_offer and read_bank_transfer_settings. No grant to runtime or buyer roles. Non-goal: no PSP data; a missing row means off.';
 COMMENT ON TABLE checkout.bank_transfers IS 'internal/checkout (offline payment): one row per bank_transfer order: bank-details snapshot, the buyer''s latest proof, the merchant''s reject reason and the offline money fact (confirmed_* = server order total at confirmation). Written only by begin_hold, submit_transfer_proof, decide_bank_transfer and expire_held (owner commerce_checkout_writer); commerce_auth reads the finance/shippability columns. Non-goal: never auto-confirmed, never a payments.facts row.';
 COMMENT ON COLUMN checkout.bank_transfers.state IS 'AWAITING (no proof yet) -> SUBMITTED <-> REJECTED (the buyer may re-submit) -> CONFIRMED (merchant, payments:refund) -> REFUNDED_OFFLINE; AWAITING/SUBMITTED/REJECTED -> EXPIRED by checkout.expire_held. REJECTED rejects the submission, not the order.';
 COMMENT ON COLUMN checkout.bank_transfers.confirmed_amount_minor IS 'I05: the server order total (checkout.orders.total_minor) at confirmation; never taken from the buyer''s claimed amount.';
 COMMENT ON COLUMN checkout.bank_transfers.account_number IS 'Merchant bank account snapshot; shown to the buyer only through checkout.read_bank_transfer_buyer (owner-scoped) and to the merchant through read_bank_transfer_merchant.';
 COMMENT ON COLUMN checkout.bank_transfer_settings.window_hours IS 'Hours a bank-transfer hold keeps stock RESERVED (6..168, default 72); begin_hold sets orders.expires_at = placement + window.';
-COMMENT ON FUNCTION checkout.read_bank_transfer_settings(bytea,uuid) IS 'internal/merchantorders only; EXECUTE commerce_runtime. integration:read, GUCs from resolve_access, fresh final fence. No row = off at version 0.';
-COMMENT ON FUNCTION checkout.set_bank_transfer_settings(bytea,uuid,text,bytea,bigint,boolean,boolean,text,text,text,text,integer) IS 'internal/merchantorders only; EXECUTE commerce_runtime. integration:manage, version CAS (0 inserts), idempotent receipt in ops.command_results, one audit row checkout.bank_transfer_settings_changed. Never touches placed orders.';
+COMMENT ON FUNCTION payments.read_bank_transfer_settings(bytea,uuid) IS 'internal/merchantorders only; EXECUTE commerce_runtime. integration:read, GUCs from resolve_access, fresh final fence. No row = off at version 0.';
+COMMENT ON FUNCTION payments.set_bank_transfer_settings(bytea,uuid,text,bytea,bigint,boolean,boolean,text,text,text,text,integer) IS 'internal/merchantorders only; EXECUTE commerce_runtime. integration:manage, version CAS (0 inserts), idempotent receipt in ops.command_results, one audit row checkout.bank_transfer_settings_changed. Never touches placed orders.';
 COMMENT ON FUNCTION checkout.read_transfer_offer(bytea,uuid) IS 'internal/checkout options only; EXECUTE commerce_checkout_runtime. Buyer-scope read of enabled/allow_cvs/window_hours; never bank details.';
 COMMENT ON FUNCTION checkout.set_order_buyer_email(bytea,uuid,uuid,text) IS 'internal/checkout Begin only; EXECUTE commerce_checkout_runtime. Sets orders.buyer_email once, by the creating session, within a minute of placement.';
 COMMENT ON FUNCTION checkout.submit_transfer_proof(bytea,uuid,text,bytea,uuid,text,bigint,timestamptz) IS 'internal/checkout only; EXECUTE commerce_checkout_runtime. The buyer''s own AWAITING_TRANSFER order, inside the window; idempotent receipt in checkout.command_results; editable until the merchant confirms. Coded PT422: not_bank_transfer, transfer_not_open, transfer_window_closed, invalid_proof.';
 COMMENT ON FUNCTION checkout.bank_transfer_json(uuid,uuid,uuid,boolean) IS 'Internal projection helper of checkout.read_bank_transfer_buyer/merchant; EXECUTE nobody (called by the two definers, same owner). Non-goal: no authorization of its own.';
 COMMENT ON FUNCTION checkout.read_bank_transfer_buyer(bytea,uuid,uuid) IS 'internal/checkout only; EXECUTE commerce_checkout_runtime. The buyer''s own order only (another owner''s id is 404); bank details hidden once EXPIRED.';
-COMMENT ON FUNCTION checkout.read_bank_transfer_merchant(bytea,uuid,uuid) IS 'internal/merchantorders only; EXECUTE commerce_runtime. orders:read, fresh final fence.';
-COMMENT ON FUNCTION checkout.decide_bank_transfer(bytea,uuid,uuid,text,bytea,text,text) IS 'internal/merchantorders only; EXECUTE commerce_runtime. The ONLY writer of a transfer confirmation: payments:refund, order row lock, idempotent receipt (ops.command_results), one audit row per act (checkout.bank_transfer_confirmed|rejected|refunded_offline). confirm = order CONFIRMED + reservation COMMITTED + MERCHANT ALLOCATE ledger rows; reject = submission REJECTED with a reason; refund_offline = REFUNDED_OFFLINE, no PSP, no stock row.';
+COMMENT ON FUNCTION payments.read_bank_transfer_merchant(bytea,uuid,uuid) IS 'internal/merchantorders only; EXECUTE commerce_runtime. orders:read, fresh final fence.';
+COMMENT ON FUNCTION payments.decide_bank_transfer(bytea,uuid,uuid,text,bytea,text,text) IS 'internal/merchantorders only; EXECUTE commerce_runtime. The ONLY writer of a transfer confirmation: payments:refund, order row lock, idempotent receipt (ops.command_results), one audit row per act (checkout.bank_transfer_confirmed|rejected|refunded_offline). confirm = order CONFIRMED + reservation COMMITTED + MERCHANT ALLOCATE ledger rows; reject = submission REJECTED with a reason; refund_offline = REFUNDED_OFFLINE, no PSP, no stock row.';
 COMMENT ON FUNCTION inventory.guard_bank_transfer_ledger() IS 'inventory trigger guard (BEFORE INSERT on ledger): the only MERCHANT ALLOCATE is the confirm of a CONFIRMED bank_transfer order for exactly the reserved quantity (storefront-v2 §C). DEFINER (commerce_checkout_writer).';
 COMMENT ON FUNCTION checkout.expire_held(uuid,bigint) IS 'internal/checkout ExpiryWorker only; EXECUTE commerce_worker. Releases a due DRAFT or AWAITING_TRANSFER hold (SYSTEM_EXPIRY RELEASE rows) and marks the transfer row EXPIRED; every other state is STALE.';
 COMMENT ON FUNCTION identity.read_finance_summary(bytea,uuid,date,date) IS 'internal/reporting only; EXECUTE commerce_runtime. orders:read; daily captured/refunded/net by currency and environment plus the pay-at-pickup collected and bank-transfer confirmed columns (never part of captured/net).';

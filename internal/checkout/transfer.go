@@ -4,7 +4,7 @@
 // Both calls go through SQL definers on the checkout pool (checkout.read_bank_transfer_buyer, checkout.submit_transfer_proof, migration 0088):
 // Go validates shape, the database owns every rule (owner scope, window, state, idempotency). The proof is a claim the merchant reads, never
 // money: nothing here confirms an order, moves stock or trusts the claimed amount (I05); only the merchant's confirm (internal/merchantorders,
-// checkout.decide_bank_transfer) does.
+// payments.decide_bank_transfer) does.
 //
 // Non-goals: no merchant action, no payment attempt, no notification send, no bank detail outside the buyer's own order response.
 

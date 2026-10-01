@@ -70,3 +70,27 @@ func TestBuyerHTTPOptionsProjectionExactKeys(t *testing.T) {
 		t.Fatal("empty options must be []")
 	}
 }
+
+// storefront-v2 §C: payment_modes and transfer_window_hours reach the buyer together, only when bank_transfer is offered.
+func TestBuyerHTTPOptionsProjectionCarriesTransferWindow(t *testing.T) {
+	page := pagination.Page[checkout.Option]{Items: []checkout.Option{
+		{DeliveryKind: "home", PaymentModes: []string{"card", "bank_transfer"}, TransferWindowHours: 72},
+		{DeliveryKind: "home"},
+	}}
+	raw, err := json.Marshal(projectOptions(page))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var body struct {
+		Items []map[string]json.RawMessage `json:"items"`
+	}
+	if err = json.Unmarshal(raw, &body); err != nil || len(body.Items) != 2 {
+		t.Fatalf("projection: %v %s", err, raw)
+	}
+	if string(body.Items[0]["transfer_window_hours"]) != "72" || string(body.Items[0]["payment_modes"]) != `["card","bank_transfer"]` {
+		t.Errorf("a bank_transfer row carries its window: %s", raw)
+	}
+	if _, present := body.Items[1]["transfer_window_hours"]; present {
+		t.Errorf("a card-only row must not carry a window: %s", raw)
+	}
+}

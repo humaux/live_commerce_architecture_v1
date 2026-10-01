@@ -2,7 +2,7 @@
 // `/api/stores/{store}/bank-transfer-settings` and `/api/stores/{store}/orders/{id}/bank-transfer*`) plus the request-body builders that put
 // exactly the frozen keys on the wire.
 // It never decides eligibility, money or permission: Go/SQL stay the authority for every write (a confirm is a merchant act checked in
-// checkout.decide_bank_transfer); a parser only refuses a malformed read. The amount shown is the server order total, never a client value.
+// payments.decide_bank_transfer); a parser only refuses a malformed read. The amount shown is the server order total, never a client value.
 
 export const TRANSFER_STATES = ["AWAITING", "SUBMITTED", "REJECTED", "CONFIRMED", "EXPIRED", "REFUNDED_OFFLINE"] as const;
 export type TransferState = (typeof TRANSFER_STATES)[number];

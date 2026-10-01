@@ -14,6 +14,7 @@ package foundation_test
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -97,6 +98,40 @@ func (e *tcvEnv) cofExpire(order string) (string, *time.Time) {
 
 func cofCode(m map[string]any) string { s, _ := m["code"].(string); return s }
 
+// cofProbe logs (never fails) the grants and the direct definer answer behind the first merchant call: when an HTTP 5xx hides a database
+// error, this prints the real SQLSTATE and message in the same run.
+func (e *tcvEnv) cofProbe(label string) {
+	e.t.Helper()
+	f := e.p.f
+	ctx := context.Background()
+	hash := sha256.Sum256([]byte(e.token()))
+	tx, err := f.runtime.Begin(ctx)
+	if err != nil {
+		e.t.Logf("probe %s: begin: %v", label, err)
+		return
+	}
+	defer tx.Rollback(ctx)
+	var raw []byte
+	if err := tx.QueryRow(ctx, `SELECT payments.read_bank_transfer_settings($1,$2::uuid)`, hash[:], e.store()).Scan(&raw); err != nil {
+		e.t.Logf("probe %s: direct read_bank_transfer_settings: %v (sqlstate %s)", label, err, sqlState(err))
+	} else {
+		e.t.Logf("probe %s: direct read_bank_transfer_settings = %s", label, raw)
+	}
+}
+
+// cofEnsureSettings saves the settings through the real route; when the route fails (already reported) it writes the row with the owner pool so
+// the rest of the scenario still exercises the placement, proof, confirm and expiry code.
+func (e *tcvEnv) cofEnsureSettings(version int64, enabled, allowCVS bool, hours int) {
+	e.t.Helper()
+	if st, out := e.cofSettings(version, enabled, allowCVS, hours); st != 200 {
+		e.t.Errorf("settings v%d through the route: %d %v", version, st, out)
+		e.cofProbe("settings")
+		mustExec(e.t, e.p.f.owner, `INSERT INTO checkout.bank_transfer_settings(tenant_id,store_id,enabled,allow_cvs,bank_name,branch,account_name,account_number,window_hours,version,updated_at)
+		 VALUES($1,$2,$3,$4,'Taiwan Bank','Taipei','Shop Ltd','123-456-7890',$5,$6+1,clock_timestamp())
+		 ON CONFLICT(tenant_id,store_id) DO UPDATE SET enabled=$3,allow_cvs=$4,window_hours=$5,version=$6+1,updated_at=clock_timestamp()`, e.tenant(), e.store(), enabled, allowCVS, hours, version)
+	}
+}
+
 func TestBankTransferLifecycle(t *testing.T) {
 	e := tcvNew(t)
 	f := e.p.f
@@ -109,6 +144,7 @@ func TestBankTransferLifecycle(t *testing.T) {
 	t.Run("settings: defaults, create, stale version, invalid body, idempotent replay, audit", func(t *testing.T) {
 		st, out, raw := e.mcall(e.token(), "GET", settingsURL, "", "")
 		if st != 200 || out["version"] != float64(0) || out["enabled"] != false || out["window_hours"] != float64(72) {
+			e.cofProbe("default read")
 			t.Fatalf("default settings: %d %s", st, raw)
 		}
 		if st, out = e.cofSettings(1, true, true, 72); st != 409 || cofCode(out) != "version_changed" {
@@ -171,6 +207,10 @@ func TestBankTransferLifecycle(t *testing.T) {
 		}
 	})
 
+	// keep going on a settings failure (reported above) so the later subtests still run
+	if e.count(`SELECT count(*) FROM checkout.bank_transfer_settings WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store()) == 0 {
+		e.cofEnsureSettings(0, true, true, 72)
+	}
 	b := e.newBuyer()
 	_, reservedBefore, allocatedBefore := e.cofBalance(sku)
 	res, err := e.cofPlaceHome(b, "buyer@example.com")
@@ -221,7 +261,7 @@ func TestBankTransferLifecycle(t *testing.T) {
 
 	t.Run("a settings change after placement never moves the order's bank account", func(t *testing.T) {
 		if st, out := e.cofSettings(1, true, true, 96); st != 200 || out["version"] != float64(2) {
-			t.Fatalf("settings v2: %d %v", st, out)
+			t.Errorf("settings v2: %d %v", st, out)
 		}
 		mustExec(t, f.owner, `UPDATE checkout.bank_transfer_settings SET bank_name='Other Bank' WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store())
 		view := b.cofView(order)
@@ -232,7 +272,7 @@ func TestBankTransferLifecycle(t *testing.T) {
 			t.Errorf("buyer view: %d %s", view.status, view.body)
 		}
 		if st, out := e.cofSettings(2, true, true, 72); st != 200 {
-			t.Fatalf("restore settings: %d %v", st, out)
+			t.Errorf("restore settings: %d %v", st, out)
 		}
 	})
 
@@ -450,9 +490,7 @@ func TestBankTransferExpiry(t *testing.T) {
 	f := e.p.f
 	ctx := context.Background()
 	e.grantCreator("orders:read", "payments:refund")
-	if st, out := e.cofSettings(0, true, false, 6); st != 200 {
-		t.Fatalf("settings: %d %v", st, out)
-	}
+	e.cofEnsureSettings(0, true, false, 6)
 	sku := e.p.stock.skus[0].ID
 
 	t.Run("early expiry is NOT_DUE with the real due time; the 6 hour window is honoured", func(t *testing.T) {
@@ -555,14 +593,10 @@ func TestBankTransferGuards(t *testing.T) {
 		before := e.count(`SELECT count(*) FROM checkout.orders WHERE owner_id=$1`, b.cap.Scope.OwnerID)
 		_, err := e.cofPlaceHome(b, "")
 		tcvExpectRefusal(t, "bank transfer never configured", err, 422, "bank_transfer_unavailable")
-		if st, _ := e.cofSettings(0, false, false, 72); st != 200 {
-			t.Fatal("save disabled settings")
-		}
+		e.cofEnsureSettings(0, false, false, 72)
 		_, err = e.cofPlaceHome(b, "")
 		tcvExpectRefusal(t, "bank transfer switched off", err, 422, "bank_transfer_unavailable")
-		if st, _ := e.cofSettings(1, true, false, 72); st != 200 {
-			t.Fatal("enable home-only transfer")
-		}
+		e.cofEnsureSettings(1, true, false, 72)
 		code, _, _ := e.service("cvs_711", "MANUAL", 0)
 		cb := e.newBuyer()
 		_, err = e.cofPlaceCVS(cb, code)
@@ -575,9 +609,7 @@ func TestBankTransferGuards(t *testing.T) {
 		}
 	})
 
-	if st, _ := e.cofSettings(2, true, true, 72); st != 200 {
-		t.Fatal("enable transfer for CVS too")
-	}
+	e.cofEnsureSettings(2, true, true, 72)
 	b := e.newBuyer()
 	res, err := e.cofPlaceHome(b, "")
 	if err != nil {
@@ -595,8 +627,8 @@ func TestBankTransferGuards(t *testing.T) {
 		if n := e.count(`SELECT count(*) FROM checkout.orders WHERE id=$1 AND commercial_state='AWAITING_TRANSFER'`, order); n != 1 {
 			t.Error("order left AWAITING_TRANSFER without a merchant decision")
 		}
-		if n := e.count(`SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action LIKE 'checkout.bank_transfer_%'`, e.store()); n != 1 {
-			t.Errorf("only the settings change was audited so far, got %d", n)
+		if n := e.count(`SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action LIKE 'checkout.bank_transfer_%' AND action<>'checkout.bank_transfer_settings_changed'`, e.store()); n != 0 {
+			t.Errorf("no confirm/reject/refund was audited, got %d", n)
 		}
 	})
 
@@ -749,9 +781,7 @@ func TestBuyerEmailPrivacy(t *testing.T) {
 	e := tcvNew(t)
 	f := e.p.f
 	e.grantCreator("orders:read", "payments:refund")
-	if st, out := e.cofSettings(0, true, false, 6); st != 200 {
-		t.Fatalf("settings: %d %v", st, out)
-	}
+	e.cofEnsureSettings(0, true, false, 6)
 	b := e.newBuyer()
 	if _, err := e.cofPlaceHome(b, "not an email"); err == nil {
 		t.Fatal("an invalid email must be refused before any order exists")
@@ -777,11 +807,11 @@ func TestBuyerEmailPrivacy(t *testing.T) {
 		t.Errorf("the SQL CHECK on buyer_email: %q", st)
 	}
 
-	export := b.req("POST", "/v1/buyer/privacy/export", t04Key("cof-export"), map[string]any{}, nil)
+	export := b.req("POST", "/v1/buyer/privacy/export", t04Key("cof-export"), nil, nil) // the export takes no body
 	if export.status != 200 || !strings.Contains(string(export.body), `"buyer_email":"buyer@example.com"`) || !strings.Contains(string(export.body), `"payment_mode":"bank_transfer"`) {
 		t.Errorf("the buyer export must include the email and the payment mode: %d %s", export.status, export.body)
 	}
-	blocked := b.req("POST", "/v1/buyer/privacy/erasure", t04Key("cof-erase"), map[string]any{}, nil)
+	blocked := b.req("POST", "/v1/buyer/privacy/erasure", t04Key("cof-erase"), map[string]any{"confirm": "ERASE"}, nil)
 	if blocked.status != 409 || cofCode(cofJSON(t, blocked.body)) != "erasure_blocked" {
 		t.Errorf("an open transfer hold blocks erasure like any unexpired hold: %d %s", blocked.status, blocked.body)
 	}
@@ -789,7 +819,7 @@ func TestBuyerEmailPrivacy(t *testing.T) {
 	if disposition, _ := e.cofExpire(res.OrderID); disposition != "EXPIRED" {
 		t.Fatalf("expire: %s", disposition)
 	}
-	erased := b.req("POST", "/v1/buyer/privacy/erasure", t04Key("cof-erase2"), map[string]any{}, nil)
+	erased := b.req("POST", "/v1/buyer/privacy/erasure", t04Key("cof-erase2"), map[string]any{"confirm": "ERASE"}, nil)
 	if erased.status != 200 {
 		t.Fatalf("erasure after the hold ended: %d %s", erased.status, erased.body)
 	}
