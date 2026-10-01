@@ -9,14 +9,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
-	"regexp"
-	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
 
 	"livecommerce/internal/ads"
 	"livecommerce/internal/command"
+	metaoauth "livecommerce/internal/integrations/meta/oauth"
 )
 
 const (
@@ -29,10 +28,6 @@ const (
 	pickListBudget = 15000
 	pickNameRunes  = 40
 	maxScopes      = 64
-)
-
-var (
-	scopePattern = regexp.MustCompile(`^[a-z_]{1,64}$`)
 )
 
 // AppConfig is the Meta app used for the code exchange. RedirectURI must equal the dialog value and
@@ -90,29 +85,19 @@ func (o *OAuth) Connect(ctx context.Context, code string, seal ads.SealInfo) (ad
 	ctx, cancel := context.WithTimeout(ctx, connectTimeout)
 	defer cancel()
 
-	// 1. Code exchange, server to server. Contract F3 documents GET with client_secret in the query;
-	// this is the only call whose URL holds a secret, over TLS to graph.facebook.com, never logged, and
-	// its errors are flattened (errTransport). // UNKNOWN until MA-S3 (U10): redirect_uri may be unneeded.
-	rep, err := o.g.do(ctx, "GET", "oauth/access_token", url.Values{
-		"client_id": {o.app.AppID}, "client_secret": {string(o.app.AppSecret)},
-		"redirect_uri": {o.app.RedirectURI}, "code": {code}}, nil, nil)
-	if err != nil || !rep.ok() {
+	// 1. Code exchange, server to server (metaoauth.Graph.Exchange: the one call whose URL holds client_secret; errors
+	// flattened, never retried).
+	token, err := o.g.g.Exchange(ctx, metaoauth.App{ID: o.app.AppID, RedirectURI: o.app.RedirectURI, Secret: o.app.AppSecret}, code)
+	if err != nil {
 		return ads.ConnectResult{}, ads.ErrConnectFailed
 	}
-	var tok struct {
-		AccessToken string `json:"access_token"`
-	}
-	err = json.Unmarshal(rep.body, &tok)
-	clear(rep.body)
-	token := []byte(tok.AccessToken)
-	tok.AccessToken = ""
 	defer clear(token) // ponytail: the string copy inside json/net/http cannot be zeroed; process-memory only
-	if err != nil || !ValidToken(token) {
+	if !ValidToken(token) {
 		return ads.ConnectResult{}, ads.ErrConnectFailed
 	}
 
 	// 2. Which client business granted the token (U7 guard at bind time).
-	rep, err = o.g.do(ctx, "GET", "me", url.Values{"fields": {"client_business_id"}}, token, nil)
+	rep, err := o.g.do(ctx, "GET", "me", url.Values{"fields": {"client_business_id"}}, token, nil)
 	if err != nil || !rep.ok() {
 		return ads.ConnectResult{}, ads.ErrConnectFailed
 	}
@@ -145,68 +130,19 @@ func (o *OAuth) Connect(ctx context.Context, code string, seal ads.SealInfo) (ad
 
 func validCode(code string) bool { return ValidToken([]byte(code)) && len(code) <= 2048 }
 
-type pageDoc struct {
-	Data   []json.RawMessage `json:"data"`
-	Paging struct {
-		Cursors struct {
-			After string `json:"after"`
-		} `json:"cursors"`
-		Next string `json:"next"`
-	} `json:"paging"`
-}
-
-// pages walks a Graph edge with cursors, at most limit pages, calling each on every item.
+// pages walks a Graph edge with cursors (metaoauth.Graph.Edge), at most limit pages, calling each on every item.
 func (o *OAuth) pages(ctx context.Context, path string, query url.Values, token []byte, limit int, each func(json.RawMessage) bool) error {
-	after := ""
-	for i := 0; i < limit; i++ {
-		q := url.Values{}
-		for k, v := range query {
-			q[k] = v
-		}
-		if after != "" {
-			q.Set("after", after)
-		}
-		rep, err := o.g.do(ctx, "GET", path, q, token, nil)
-		if err != nil || !rep.ok() {
-			return errTransport
-		}
-		var doc pageDoc
-		if json.Unmarshal(rep.body, &doc) != nil {
-			return errTransport
-		}
-		for _, item := range doc.Data {
-			if !each(item) {
-				return nil
-			}
-		}
-		if doc.Paging.Next == "" || !cursorPattern.MatchString(doc.Paging.Cursors.After) {
-			return nil
-		}
-		after = doc.Paging.Cursors.After
+	if o.g.g.Edge(ctx, path, query, token, limit, each) != nil {
+		return errTransport
 	}
 	return nil
 }
 
 func (o *OAuth) scopes(ctx context.Context, token []byte) ([]string, error) {
-	seen := map[string]bool{}
-	err := o.pages(ctx, "me/permissions", nil, token, 2, func(raw json.RawMessage) bool {
-		var p struct {
-			Permission string `json:"permission"`
-			Status     string `json:"status"`
-		}
-		if json.Unmarshal(raw, &p) == nil && p.Status == "granted" && scopePattern.MatchString(p.Permission) && len(seen) < maxScopes {
-			seen[p.Permission] = true
-		}
-		return true
-	})
+	out, err := o.g.g.Granted(ctx, token, maxScopes)
 	if err != nil {
-		return nil, err
+		return nil, errTransport
 	}
-	out := make([]string, 0, len(seen))
-	for s := range seen {
-		out = append(out, s)
-	}
-	sort.Strings(out)
 	return out, nil
 }
 

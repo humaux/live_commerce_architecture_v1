@@ -42,6 +42,7 @@ import {
 } from "@/lib/claims-model";
 import { claimLinkMessage, claimsCopy, hostPrompt } from "@/lib/claims-copy";
 import { studioCopy } from "@/lib/studio-copy";
+import { metaConnectCopy } from "@/lib/meta-connect-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import "./claims.css";
 
@@ -520,6 +521,9 @@ export function StudioClaims({ locale, store, scene, initialError }: {
                   <div><dt>{c.sourceCapped}</dt><dd data-testid="claims-source-capped">{source.intake_capped}</dd></div>
                   <div><dt>{c.sourceUpdated}</dt><dd>{time(locale, source.updated_at)}</dd></div>
                 </dl> : <p className="claims-muted" role="status" data-testid="claims-source-none">{c.sourceNone}</p>}
+                {/* No Meta binding on this store (platforms empty): point at the Settings connect card instead of a dead end. */}
+                {facts.platforms.length === 0 && <p className="claims-muted" role="status" data-testid="claims-source-connect">
+                  {metaConnectCopy[locale].studioNone} <a href={`/${locale}/settings?store=${storeID}`}>{metaConnectCopy[locale].studioLink}</a></p>}
                 <form className="claims-form claims-source-form" onSubmit={(event) => { event.preventDefault(); saveSource(); }}>
                   <Field id="claims-source-input" label={c.sourceInput} hint={c.sourceInputHint}>
                     <input id="claims-source-input" value={sourceForm.input} maxLength={claimSourceInputMax} autoComplete="off" spellCheck={false}

@@ -10,7 +10,7 @@ cd "$(git rev-parse --show-toplevel)"
 if [[ "$#" -gt 1 ]] || [[ "$#" -eq 1 && "$1" != --require-r04 ]]; then
   echo "Usage: bash scripts/dev/test-node.sh [--require-r04]" >&2; exit 2
 fi
-node --test --experimental-strip-types apps/storefront/tests/*.test.mjs packages/i18n/tests/*.test.ts packages/markdown-lite/tests/*.test.ts tests/admin/design-model.test.ts tests/admin/team-model.test.ts tests/admin/design-gate.test.ts tests/admin/promotions-model.test.ts tests/admin/team-bff.test.ts tests/admin/notify-model.test.ts
+node --test --experimental-strip-types apps/storefront/tests/*.test.mjs packages/i18n/tests/*.test.ts packages/markdown-lite/tests/*.test.ts tests/admin/design-model.test.ts tests/admin/team-model.test.ts tests/admin/design-gate.test.ts tests/admin/promotions-model.test.ts tests/admin/team-bff.test.ts tests/admin/notify-model.test.ts tests/admin/meta-connect-model.test.ts
 if [[ -n "${COMMERCE_R04_LIVEKIT_BINARY:-}" ]]; then
   node --test tests/media/r04-input-runner.test.mjs
 else
