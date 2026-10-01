@@ -161,6 +161,10 @@ Code (merchant-managed, one row per `(store, code)`):
 - `code`: stored upper-case, `^[A-Z0-9-]{3,24}$`; buyers type any case, the server trims and upper-cases. Unique per store.
 - `kind`: `percent` (integer 1..90, floor rounding on the merchandise subtotal) or `fixed` (positive amount in store-currency
   minor units, capped at the merchandise subtotal). The discount never exceeds the merchandise subtotal, so goods never go below 0.
+  Whole-currency-unit rule: TWD is charged in whole dollars (stripe-psp-v1 D15, amount%100), so for a TWD store the discount is
+  rounded DOWN to a whole dollar (never up) and a `fixed` amount must itself be a whole-dollar multiple of 100 minor units
+  (`invalid_promotion` otherwise); other currencies use their minor unit. A code whose discount on the cart is 0 after this rounding
+  is refused as `promo_invalid` instead of burning a use.
 - `min_subtotal_minor` (>= 0, compared with the PRE-discount merchandise subtotal), `starts_at` / `ends_at` (optional instants;
   the admin UI enters Asia/Taipei wall time and sends RFC 3339 with `+08:00`; `ends_at > starts_at`), `total_limit` and
   `per_buyer_limit` (optional positive integers), `status` `active|paused`, `version` (CAS on every change).
@@ -193,6 +197,13 @@ fixed_minor|null, min_subtotal_minor, starts_at|null, ends_at|null, total_limit|
 created_at}]}` (`used` = active usage above); `POST .../promotions` (create, `code` immutable afterwards) ; `POST
 .../promotions/{id}` with `expected_version` (edit any of the other fields or `status`); 409 `version_changed` on a stale version,
 409 `promo_exists` on a duplicate code, 422 `invalid_promotion` on a rule violation. Pausing never touches placed orders.
+
+Defence in depth: `promotions.redeem` also checks that the order snapshot's frozen effect equals the code row's own terms and that the
+discount is possible (1 <= discount <= subtotal, not above the code's own percent or fixed amount); otherwise `promo_changed`. It is a
+bound, not a second calculator: the amount is computed only by `internal/pricing`.
+
+Other consumers of the order amounts (verified, unchanged): ECPay shipment for a CARD order declares the PRE-discount merchandise
+subtotal as goods value; a pay-at-pickup order collects the order total (discounted).
 
 Money rules unchanged: refunds cap at the CAPTURED (paid) amount, which already equals the order total = the discounted quote total;
 Stripe sees one line item equal to that total (stripe-psp-v1 D7), so no Stripe-side discount exists.
