@@ -756,7 +756,14 @@ export function Ledger({
                               {row.product_name}
                             </button>
                             <small>{initial.fixture ? c.demo : row.code}</small>
-                            <small className="mobile-sku">{row.code}</small>
+                            <small className="mobile-sku">
+                              {row.code}
+                              {/* status-col is display:none ≤680px; this badge is
+                                  the only mobile-visible active/archived signal */}
+                              <span className={`status mobile-status ${row.status}`}>
+                                {row.status === "active" ? c.active : c.archived}
+                              </span>
+                            </small>
                           </div>
                         </div>
                       </th>
