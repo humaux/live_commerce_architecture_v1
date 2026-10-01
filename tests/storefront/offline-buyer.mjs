@@ -152,9 +152,9 @@ async function place(buyer, store) {
   assert.equal(quote.amount.total_minor, price, `${label}: total`);
   await expect(page.getByTestId("address-section")).toBeVisible();
   for (const [key, value] of Object.entries(pii)) await page.locator(`input[name="${key}"]`).fill(value);
+  await page.getByRole("radio", { name: c.bank }).check(); // choosing the mode resets the confirmed address: confirm after it
   await page.getByTestId("confirm-address").click();
   await expect(page.getByTestId("create-order")).toBeEnabled();
-  await page.getByRole("radio", { name: c.bank }).check();
   await expect(page.getByTestId("create-order")).toHaveText(c.create);
   await expect(page.locator(".order-note").filter({ hasText: c.note })).toBeVisible(); // the merchant's 6 hour window reaches the buyer
   if (email) await page.locator('input[name="buyer_email"]').fill(email);
