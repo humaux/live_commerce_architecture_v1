@@ -637,6 +637,23 @@ if ((online)); then
       echo "P17 PASS LC_ADMIN_HOST resolves only to this host"
     fi
   fi
+  # storefront-v2 §E5/§G3 guest-lookup and manual-order-link per-IP throttles (K3 authz F1): the buyer throttle buckets
+  # trust the storefront edge's overwritten X-Forwarded-For (deploy/caddy/Caddyfile), so LC_STORE_HOST must resolve ONLY
+  # to this host — the same DNS-only proof as P17, applied unconditionally because the buyer throttle is always live
+  # (unlike P17's password-login gate) and never behind a CDN without a fresh review (Caddyfile change rules).
+  if [[ -n "${LC_STORE_HOST:-}" && "${LC_ENVIRONMENT:-}" != smoke ]]; then
+    mine=" $(hostname -I 2>/dev/null) ${LC_PUBLIC_IP:-} "
+    addrs=$(getent ahosts "$LC_STORE_HOST" 2>/dev/null | awk '{print $1}' | sort -u | tr '\n' ' ')
+    foreign=0
+    [[ -n "$addrs" ]] || foreign=1
+    for a in $addrs; do [[ "$mine" == *" $a "* ]] || foreign=1; done
+    if ((foreign)); then
+      echo "P18 FAIL LC_STORE_HOST must resolve only to this host (DNS-only, no Cloudflare proxy) so the buyer throttle sees the real client IP"
+      fail=1
+    else
+      echo "P18 PASS LC_STORE_HOST resolves only to this host"
+    fi
+  fi
   if command -v timedatectl >/dev/null 2>&1 && [[ "$(timedatectl show -p NTPSynchronized --value 2>/dev/null)" == yes ]]; then
     echo "P16 PASS clock synchronized"
   elif [[ "${LC_ENVIRONMENT:-}" == smoke ]]; then

@@ -16,7 +16,7 @@ import { useGuardedRead, type ReadCode } from "@/lib/customers-client";
 import { readProduct, readProducts } from "@/lib/catalog-v2-client";
 import type { ProductDetail, ProductSummary } from "@/lib/catalog-v2-model";
 import { sessionBoundary } from "@/lib/settings-client";
-import { placeManualOrder, readManualOptions } from "@/lib/merchant-tools-client";
+import { placeManualOrder, readManualOptions, regenerateManualLink } from "@/lib/merchant-tools-client";
 import { draftProblem, manualBody, type ManualDraft, type ManualOption, type ManualPaymentMode, type ManualResult } from "@/lib/merchant-tools-model";
 import { toolsCopy } from "@/lib/merchant-tools-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
@@ -56,7 +56,10 @@ export function ManualOrder({
   const [uncertain, setUncertain] = useState(false);
   const [placed, setPlaced] = useState<ManualResult | null>(null);
   const [copied, setCopied] = useState(false);
+  const [regenBusy, setRegenBusy] = useState(false);
+  const [regenFailure, setRegenFailure] = useState("");
   const attempt = useRef<{ body: string; key: string } | null>(null);
+  const regen = useRef<{ body: string; key: string } | null>(null);
 
   const available: ManualOption[] = options.data ?? [];
   const option = available.find((item) => item.option_key === optionKey) ?? null;
@@ -93,6 +96,26 @@ export function ManualOrder({
   function reset() {
     setPlaced(null); setLines([]); setName(""); setPhone(""); setEmail(""); setHome(blankHome); setCVS(blankCVS);
     setOptionKey(""); setMode(""); setFailure(""); setUncertain(false); setCopied(false); attempt.current = null;
+    setRegenFailure(""); regen.current = null;
+  }
+  async function regenerate() {
+    if (!store || !placed || regenBusy || placed.buyer_link === null) return;
+    const body = { order_id: placed.order_id, locale: buyerLocale };
+    const text = JSON.stringify(body);
+    // A new key only when the request differs; the same body after an uncertain answer re-sends the same key (replay, same link).
+    if (!regen.current || regen.current.body !== text) regen.current = { body: text, key: crypto.randomUUID() };
+    setRegenBusy(true);
+    setRegenFailure("");
+    const outcome = await regenerateManualLink(store.id, regen.current.key, body, boundary);
+    setRegenBusy(false);
+    if (outcome.ok) {
+      setPlaced({ ...placed, buyer_link: outcome.value.buyer_link });
+      setCopied(false);
+      regen.current = null;
+      return;
+    }
+    setRegenFailure(c.errors[outcome.code] ?? c.errors.default);
+    if (!outcome.uncertain) regen.current = null; // a definite refusal: the next send is a new attempt
   }
   const listFailure =
     options.status === "signed-out" ? c.signedOut : options.status === "forbidden" ? c.forbidden
@@ -135,7 +158,11 @@ export function ManualOrder({
                   <button type="button" onClick={() => navigator.clipboard.writeText(placed.buyer_link!).then(() => setCopied(true), () => setCopied(false))}>
                     {copied ? c.copied : c.copy}
                   </button>
+                  <button type="button" data-testid="manual-order-regenerate" disabled={regenBusy} onClick={() => void regenerate()}>
+                    {regenBusy ? c.regenerating : c.regenerate}
+                  </button>
                 </div>
+                {regenFailure && <p className="mt-warn" role="alert" data-testid="manual-order-regen-error">{regenFailure}</p>}
               </>
             ) : <p className="mt-warn">{c.noLink}</p>}
             <div className="mt-actions" style={{ marginTop: 16 }}>

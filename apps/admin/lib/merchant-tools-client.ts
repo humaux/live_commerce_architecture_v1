@@ -5,7 +5,7 @@
 // file (import: idempotent by file hash), so a repeat can only replay.
 import { csrfCookie, safeError, sessionBoundary } from "./settings-client";
 import { get } from "./customers-client";
-import { parseDashboard, parseImportResult, parseManualOptions, parseManualResult, type Dashboard, type ImportResult, type ManualOption, type ManualResult } from "./merchant-tools-model";
+import { parseDashboard, parseImportResult, parseManualOptions, parseManualResult, parseRegenerateResult, type Dashboard, type ImportResult, type ManualOption, type ManualResult, type RegenerateResult } from "./merchant-tools-model";
 
 export type Outcome<T> = { ok: true; value: T; status: number } | { ok: false; code: string; uncertain: boolean; status: number };
 const base = (store: string) => `/api/stores/${store}/tools`;
@@ -54,6 +54,12 @@ export const sendImport = (store: string, mode: "preview" | "commit", file: Blob
 export const placeManualOrder = (store: string, key: string, body: unknown, boundary: string): Promise<Outcome<ManualResult>> =>
   write(`${base(store)}/orders/manual`, { headers: { "Content-Type": "application/json", "Idempotency-Key": key }, body: JSON.stringify(body) }, boundary,
     parseManualResult, 18000, (status) => status === 200 || status === 201);
+
+/** POST orders/manual/regenerate-link (K3 F2). The Idempotency-Key is chosen by the caller and reused for a retry of the SAME attempt: the new
+ *  link token is derived from it, so a replay re-delivers the same link and a new key is a new link (the previous one invalidated in SQL). */
+export const regenerateManualLink = (store: string, key: string, body: { order_id: string; locale: string }, boundary: string): Promise<Outcome<RegenerateResult>> =>
+  write(`${base(store)}/orders/manual/regenerate-link`, { headers: { "Content-Type": "application/json", "Idempotency-Key": key }, body: JSON.stringify(body) }, boundary,
+    parseRegenerateResult, 18000, (status) => status === 200 || status === 201);
 
 /** GET products/export.csv: returns the file bytes for a browser download (the BFF streams only the exact attachment shape). */
 export async function fetchExport(store: string): Promise<{ ok: true; blob: Blob; name: string } | { ok: false; code: string }> {

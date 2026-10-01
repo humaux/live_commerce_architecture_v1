@@ -27,6 +27,7 @@ import (
 )
 
 var manualOrderFields = []string{"items", "customer", "delivery", "payment_mode", "locale"}
+var manualRegenerateFields = []string{"order_id", "locale"}
 
 const importBudget = 60 * time.Second
 
@@ -111,6 +112,26 @@ func registerMerchantToolsRoutes(mux *http.ServeMux, pool *pgxpool.Pool, manual 
 		ctx, cancel := context.WithTimeout(r.Context(), 14*time.Second)
 		defer cancel()
 		result, replayed, err := manual.Place(ctx, bearerToken(r), r.PathValue("store_id"), r.Header.Get("Idempotency-Key"), in)
+		if err != nil {
+			status, code := toolsClassify(err)
+			respondError(w, status, code)
+			return
+		}
+		status := http.StatusCreated
+		if replayed {
+			status = http.StatusOK
+		}
+		respond(w, status, result)
+	}))
+	mux.HandleFunc("POST "+base+"/orders/manual/regenerate-link", cvsRoute(http.MethodPost, true, func(w http.ResponseWriter, r *http.Request) {
+		in, ok := cvsStrictBody[merchanttools.ManualRegenerateInput](w, r, manualRegenerateFields, nil)
+		if !ok {
+			return
+		}
+		// One merchant transaction (regenerate is a single SQL definer call + audit); the whole request gets 14 s inside the 15 s server cap.
+		ctx, cancel := context.WithTimeout(r.Context(), 14*time.Second)
+		defer cancel()
+		result, replayed, err := manual.RegenerateLink(ctx, bearerToken(r), r.PathValue("store_id"), r.Header.Get("Idempotency-Key"), in)
 		if err != nil {
 			status, code := toolsClassify(err)
 			respondError(w, status, code)

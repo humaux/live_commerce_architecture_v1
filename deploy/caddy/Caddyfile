@@ -128,6 +128,11 @@
 	request_body {
 		max_size 1MB
 	}
+	# K3 authz F1: the guest-lookup / manual-order-link per-IP throttles key on the client IP, so the storefront
+	# edge must OVERWRITE (never append) X-Forwarded-For — a client-supplied value would otherwise pick another
+	# store's bucket. Caddy's no-trusted_proxies default already replaces it; this pins the rule for review, and
+	# preflight P18 proves no CDN sits in front (DNS-only), so {remote_host} is the real buyer address.
+	request_header X-Forwarded-For {remote_host}
 	reverse_proxy 127.0.0.1:3200
 }
 

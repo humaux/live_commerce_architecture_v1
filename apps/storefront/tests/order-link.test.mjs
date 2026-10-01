@@ -13,6 +13,8 @@ const origin = "https://shop.example";
 const api = "http://127.0.0.1:3219";
 const order = "00000000-0000-4000-8000-000000000007";
 const token = Buffer.alloc(32, 9).toString("base64url");
+const proof = Buffer.alloc(32, 7).toString("base64url");
+const otherProof = Buffer.alloc(32, 8).toString("base64url");
 function enabled() {
   process.env.COMMERCE_BUYER_WEB_ENABLED = "1";
   process.env.COMMERCE_BUYER_API_ORIGIN = api;
@@ -24,7 +26,8 @@ function link(body, { method = "POST", extra = {} } = {}) {
   const headers = { Host: "shop.example", Origin: origin, "Content-Type": "application/json", ...extra };
   return new Request(`${origin}/api/buyer/orders/link`, { method, headers, body: method === "GET" ? undefined : body });
 }
-const good = JSON.stringify({ order_id: order, token });
+const good = JSON.stringify({ order_id: order, token, proof });
+const upstreamBody = JSON.stringify({ order_id: order, token });
 
 test("fragment: exactly #o=<order id>&t=<43-char token>; anything else is null", () => {
   assert.deepEqual(orderLinkFragment(`#o=${order}&t=${token}`), { orderID: order, token });
@@ -34,9 +37,9 @@ test("fragment: exactly #o=<order id>&t=<43-char token>; anything else is null",
   assert.equal(LINK_TOKEN.test(token), true);
 });
 
-test("body is exactly {order_id, token}; the answer is exactly the order the link named", () => {
-  assert.equal(validLinkBody({ order_id: order, token }), true);
-  for (const bad of [{}, { order_id: order }, { order_id: order, token, store_id: "x" }, { order_id: "x", token }, { order_id: order, token: "short" }, [], null, "x"])
+test("body is exactly {order_id, token, proof}; the answer is exactly the order the link named", () => {
+  assert.equal(validLinkBody({ order_id: order, token, proof }), true);
+  for (const bad of [{}, { order_id: order }, { order_id: order, token }, { order_id: order, token, proof, store_id: "x" }, { order_id: "x", token, proof }, { order_id: order, token: "short", proof }, { order_id: order, token, proof: "short" }, [], null, "x"])
     assert.equal(validLinkBody(bad), false);
   assert.equal(validLinkResult({ order_id: order }, order), true);
   for (const bad of [{}, { order_id: order, extra: 1 }, { order_id: "00000000-0000-4000-8000-000000000008" }, null, []]) assert.equal(validLinkResult(bad, order), false);
@@ -60,7 +63,8 @@ test("BFF link: no cookie needed, fresh token upstream, cookie only on a 200 nam
     const call = calls.at(-1);
     assert.equal(call.url, `${api}/v1/buyer/orders/link`);
     assert.equal(call.method, "POST");
-    assert.equal(call.body, good);
+    assert.equal(call.body, upstreamBody);
+    assert.equal(call.body.includes(proof), false, "the browser-bound proof never leaves the BFF");
     assert.equal(call.headers.get("Idempotency-Key"), null);
     const set = response.headers.get("set-cookie");
     assert.match(set, /^__Host-commerce_buyer=.+; Path=\/; Max-Age=3600; Secure; HttpOnly; SameSite=Lax$/);
@@ -68,8 +72,11 @@ test("BFF link: no cookie needed, fresh token upstream, cookie only on a 200 nam
     assert.equal(call.headers.get("Authorization"), `Bearer ${payload.token}`, "the cookie holds the capability token Go registered");
     assert.notEqual(payload.token, token, "the cookie capability is NOT the link token");
     assert.equal(set.includes(token), false);
+    // The SAME browser-bound proof re-derives the SAME capability (a lost-response retry re-delivers); a different proof is a different capability.
     await handleBuyerRequest(link(good));
-    assert.notEqual(calls.at(-1).headers.get("Authorization"), call.headers.get("Authorization"), "every exchange mints a new capability");
+    assert.equal(calls.at(-1).headers.get("Authorization"), call.headers.get("Authorization"), "the same proof re-derives the same capability");
+    await handleBuyerRequest(link(JSON.stringify({ order_id: order, token, proof: otherProof })));
+    assert.notEqual(calls.at(-1).headers.get("Authorization"), call.headers.get("Authorization"), "a different proof is a different capability");
 
     // every upstream refusal leaves the visitor's cookie alone and carries only Go's code
     answer = () => Response.json({ code: "not_found", message: "x", request_id: "0".repeat(32), retryable: false, details: {} }, { status: 404, headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } });
@@ -104,9 +111,11 @@ test("BFF link: strict local denial before any private fetch", async () => {
   try {
     const cases = [
       ["GET", 405, () => handleBuyerRequest(link(undefined, { method: "GET" }))],
-      ["bad order id", 400, () => handleBuyerRequest(link(JSON.stringify({ order_id: "nope", token })))],
-      ["short token", 400, () => handleBuyerRequest(link(JSON.stringify({ order_id: order, token: "abc" })))],
-      ["extra key", 400, () => handleBuyerRequest(link(JSON.stringify({ order_id: order, token, store_id: "x" })))],
+      ["bad order id", 400, () => handleBuyerRequest(link(JSON.stringify({ order_id: "nope", token, proof })))],
+      ["short token", 400, () => handleBuyerRequest(link(JSON.stringify({ order_id: order, token: "abc", proof })))],
+      ["missing proof", 400, () => handleBuyerRequest(link(JSON.stringify({ order_id: order, token })))],
+      ["short proof", 400, () => handleBuyerRequest(link(JSON.stringify({ order_id: order, token, proof: "abc" })))],
+      ["extra key", 400, () => handleBuyerRequest(link(JSON.stringify({ order_id: order, token, proof, store_id: "x" })))],
       ["not json", 400, () => handleBuyerRequest(link("{"))],
       ["other media type", 415, () => handleBuyerRequest(link(good, { extra: { "Content-Type": "text/plain" } }))],
       ["idempotency key", 422, () => handleBuyerRequest(link(good, { extra: { "Idempotency-Key": "abcdefgh1234" } }))],
