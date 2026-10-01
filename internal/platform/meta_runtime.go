@@ -25,7 +25,7 @@ func OpenMetaIngressPool(ctx context.Context, dsn string) (*pgxpool.Pool, error)
 }
 
 // OpenMetaConsumerPool opens the projection-only authority. River lifecycle
-// operations must use the separate Meta lifecycle pool, not commerce_worker.
+// operations must use the separate Meta lifecycle pool, not a worker authority.
 func OpenMetaConsumerPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	if ctx == nil || len(dsn) > 8192 {
 		return nil, errors.New("meta consumer database unavailable")

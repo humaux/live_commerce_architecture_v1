@@ -372,7 +372,7 @@ func TestDeliveryServiceSQLConstraintsAndRollback(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, role := range []string{"commerce_worker", "commerce_buyer_issuer", "commerce_identity"} {
+	for _, role := range []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_buyer_issuer", "commerce_identity"} {
 		t.Run(role, func(t *testing.T) {
 			tx, e := h.f.owner.Begin(context.Background())
 			if e != nil {

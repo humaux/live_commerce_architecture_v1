@@ -130,7 +130,7 @@ func TestMerchantPurchaseEntryAuthorityAndACL(t *testing.T) {
 		WHERE p.oid='identity.resolve_storefront_origin(bytea,uuid)'::regprocedure`).Scan(&restricted); err != nil || !restricted {
 		t.Fatalf("search_path/owner/PUBLIC execute boundary: %v", err)
 	}
-	for _, role := range []string{"commerce_runtime", "commerce_buyer_runtime", "commerce_buyer_issuer", "commerce_checkout_runtime", "commerce_worker", "commerce_identity"} {
+	for _, role := range []string{"commerce_runtime", "commerce_buyer_runtime", "commerce_buyer_issuer", "commerce_checkout_runtime", waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_identity"} {
 		var execute, tables, member bool
 		if err := tf.f.owner.QueryRow(ctx, `SELECT has_function_privilege($1,'identity.resolve_storefront_origin(bytea,uuid)','EXECUTE'),
 			has_any_column_privilege($1,'control.storefront_domains','SELECT') OR has_any_column_privilege($1,'control.storefront_publications','SELECT'),

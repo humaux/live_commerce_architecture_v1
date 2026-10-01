@@ -159,7 +159,7 @@ func run(ctx context.Context, getenv func(string) string) error {
 		return errWorkerDatabase
 	}
 	defer intakePool.Close()
-	workerPool, err := platform.OpenWorkerPool(startup, c.workerDSN)
+	workerPool, err := platform.OpenWorkerPool(startup, c.workerDSN, platform.WorkerClaims)
 	if err != nil {
 		return errWorkerDatabase
 	}
@@ -206,7 +206,7 @@ func run(ctx context.Context, getenv func(string) string) error {
 	// (crash mid-dispatch) is rescued after one minute so a reply is not stranded for River's default hour.
 	client, err := river.NewClient(riverpgxv5.New(workerPool), &river.Config{
 		Schema: "river", Workers: workers, RescueStuckJobsAfter: retention.RescueWindow,
-		// U08: hourly + on start, unique per hour (retention.JobArgs.InsertOpts); inserted by commerce_worker (IR-4).
+		// U08: hourly + on start, unique per hour (retention.JobArgs.InsertOpts); inserted by commerce_claims_worker (IR-4).
 		PeriodicJobs: []*river.PeriodicJob{retention.PeriodicJob()},
 		Queues:       map[string]river.QueueConfig{river.QueueDefault: {MaxWorkers: 4}},
 		Logger:       slog.New(slog.NewTextHandler(io.Discard, nil)),

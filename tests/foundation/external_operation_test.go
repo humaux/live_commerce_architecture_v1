@@ -109,7 +109,7 @@ func newT06GoFixture(t *testing.T, isolated ...*testFixture) *t06GoFixture {
 
 	workerName := "t06_go_worker_" + strings.ReplaceAll(randomUUID()[:8], "-", "")
 	password := hex.EncodeToString(randomBytes(32))
-	if _, err = base.owner.Exec(ctx, fmt.Sprintf(`CREATE ROLE %s LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION IN ROLE commerce_worker PASSWORD '%s'`,
+	if _, err = base.owner.Exec(ctx, fmt.Sprintf(`CREATE ROLE %s LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION IN ROLE commerce_claims_worker PASSWORD '%s'`,
 		pgx.Identifier{workerName}.Sanitize(), password)); err != nil {
 		t.Fatal(err)
 	}
@@ -118,7 +118,7 @@ func newT06GoFixture(t *testing.T, isolated ...*testFixture) *t06GoFixture {
 		t.Fatal(err)
 	}
 	workerURL.User = url.UserPassword(workerName, password)
-	f.worker, err = platform.OpenWorkerPool(ctx, workerURL.String())
+	f.worker, err = platform.OpenWorkerPool(ctx, workerURL.String(), platform.WorkerClaims) // T06 ledger fixtures use provider mock_provider: the default (claims) lane
 	if err != nil {
 		t.Fatal(err)
 	}

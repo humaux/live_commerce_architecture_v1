@@ -4,7 +4,7 @@ package foundation_test
 // cap, AD8 event_id, F16 hashing, C3 external_id). Tier UNIT (no PG) for money, spend, grammar, canonical draft, phone,
 // event id and external id; the Graph classification tables (creates / activate+pause / reads / CAPI) are driven through
 // the real route callbacks against the fake Graph (tests/ads/fakegraph, MOCK). metaads.Routes validates its worker pool,
-// so that one test needs a commerce_worker login of the shared PG fixture (it is `TestMetaAdsMA01Classification`, in the
+// so that one test needs a commerce_ads_worker login of the shared PG fixture (it is `TestMetaAdsMA01Classification`, in the
 // MA01 prefix; no rows are read or written, no Check runs, the token stub never touches PG).
 //
 // Written by the independent ads-tests author from the FROZEN contract and the frozen Go signatures of ads-graph /
@@ -282,7 +282,7 @@ func TestMetaAdsMA01Classification(t *testing.T) {
 	const acct = "9100000000001"
 	g.AddAccount(fakegraph.Account{ID: acct, Currency: "TWD", Timezone: "Asia/Taipei", Status: 1, Funded: true, MinDailyBudget: "100"})
 	g.Grant(ma01Token, "5100000000001", []string{"ads_management", "ads_read"}, []string{acct}, nil)
-	pool := miPool(t, f, "commerce_worker")
+	pool := miPool(t, f, waAds)
 	cfg := metaads.Config{GraphBaseURL: g.URL(), GraphVersion: "v26.0", PartnerAgent: "lc_test_partner"}
 	routes, err := metaads.Routes(pool, cfg, stubOpener{}, func(context.Context, integration.DispatchRequest) error { return nil })
 	if err != nil {

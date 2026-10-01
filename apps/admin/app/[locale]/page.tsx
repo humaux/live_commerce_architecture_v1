@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { isLocale } from "@live-commerce/i18n";
 import { onboardingPolicy, workspaceData } from "@/lib/backend";
 import { authConfig } from "@/lib/auth";
+import { inviteNextPath } from "@/lib/invite-next";
 import { Dashboard } from "@/components/Dashboard";
 import { Entry } from "@/components/Entry";
 import { loadPage } from "./customers/page-data";
@@ -55,6 +56,7 @@ export default async function Page({
       currencies={policy.currencies}
       passwordMode={status === "signed-out" && authConfig?.passwordLogin ? "signin" : undefined}
       oidc={!!authConfig?.issuer}
+      next={inviteNextPath(one("next"))}
     />
   );
 }

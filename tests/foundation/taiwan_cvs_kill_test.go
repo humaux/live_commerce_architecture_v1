@@ -47,7 +47,7 @@ func TestCvsChildWorker(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	pool, err := platform.OpenWorkerPool(ctx, dsn)
+	pool, err := platform.OpenWorkerPool(ctx, dsn, platform.WorkerClaims)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,7 +101,7 @@ func tshKillRestart(t *testing.T, e *tcvEnv, api string) {
 		t.Fatal(err)
 	}
 	cmd := exec.Command(self, "-test.run=^TestCvsChildWorker$", "-test.v", "-test.timeout=10m")
-	cmd.Env = append(os.Environ(), "TCV_CHILD_DSN="+bcRole(t, f, "commerce_worker"), "TCV_CHILD_KEYRING="+e.keyringJSON, "TCV_CHILD_FAKE="+srv.URL, "TCV_CHILD_QUEUE="+queue)
+	cmd.Env = append(os.Environ(), "TCV_CHILD_DSN="+bcRole(t, f, waClaims), "TCV_CHILD_KEYRING="+e.keyringJSON, "TCV_CHILD_FAKE="+srv.URL, "TCV_CHILD_QUEUE="+queue)
 	var childOut, childErr syncBuffer
 	cmd.Stdout, cmd.Stderr = &childOut, &childErr
 	if err := cmd.Start(); err != nil {

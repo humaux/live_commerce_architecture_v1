@@ -54,7 +54,7 @@ func TestMetaRuntimePoolRolesAndDatabaseIdentity(t *testing.T) {
 	ingressDSN := miRole(t, f, "commerce_meta_ingress")
 	consumerDSN := miRole(t, f, "commerce_meta_consumer")
 	workerDSN := miRole(t, f, "commerce_meta_worker")
-	ordinaryDSN := miRole(t, f, "commerce_worker")
+	ordinaryDSN := miRole(t, f, waClaims) // T21-02: the ordinary River worker is a claims/ads/payment/expiry authority
 	ingress, err := platform.OpenMetaIngressPool(ctx, ingressDSN)
 	if err != nil {
 		t.Fatal("dedicated ingress rejected", err)
@@ -94,11 +94,11 @@ func TestMetaRuntimePoolRolesAndDatabaseIdentity(t *testing.T) {
 			}
 		})
 	}
-	if p, err := platform.OpenWorkerPool(ctx, consumerDSN); err == nil {
+	if p, err := platform.OpenWorkerPool(ctx, consumerDSN, platform.WorkerClaims); err == nil {
 		p.Close()
 		t.Fatal("consumer login accepted as ordinary River worker")
 	}
-	if p, err := platform.OpenWorkerPool(ctx, workerDSN); err == nil {
+	if p, err := platform.OpenWorkerPool(ctx, workerDSN, platform.WorkerClaims); err == nil {
 		p.Close()
 		t.Fatal("Meta worker login accepted as ordinary River worker")
 	}

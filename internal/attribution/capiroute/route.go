@@ -22,7 +22,7 @@ import (
 )
 
 // route.go is the one CAPI dispatcher route (contract 6.1 CAPI bullet, C2/C4/C7).
-// Cross-domain calls: integration.load_meta_ads_token (dataset token, lease-fenced, commerce_worker) and
+// Cross-domain calls: integration.load_meta_ads_token (dataset token, lease-fenced, commerce_ads_worker) and
 // ads.capi_user_data (buyer user data, same lease fence, same transaction) in LoadSecret; ads.check_capi in Check.
 // The dispatcher zeroes the core.Secret after DispatchWithSecret returns; this file zeroes every buffer it owns.
 
@@ -62,13 +62,13 @@ type route struct {
 	ask           func(ctx context.Context, operationID string) (string, error) // ads.check_capi
 }
 
-// Routes returns the single CAPI route. pool must be the commerce_worker pool (platform.ValidateWorkerPool); cfg must
+// Routes returns the single CAPI route. pool must be the commerce_ads_worker pool (platform.ValidateWorkerPool); cfg must
 // carry PartnerAgent (F7) and a version; externalIDKey is the worker-only C3 key (>= 32 bytes, copied).
 func Routes(pool *pgxpool.Pool, cfg metaads.Config, keys *tokenopen.Keyring, externalIDKey []byte) ([]core.DispatchRoute, error) {
 	if pool == nil || keys == nil || len(externalIDKey) < minKeyBytes || cfg.PartnerAgent == "" {
 		return nil, ErrConfig
 	}
-	if err := platform.ValidateWorkerPool(context.Background(), pool); err != nil {
+	if err := platform.ValidateWorkerPool(context.Background(), pool, platform.WorkerAds); err != nil {
 		return nil, err
 	}
 	client, err := metaads.NewClient(cfg)
@@ -77,7 +77,7 @@ func Routes(pool *pgxpool.Pool, cfg metaads.Config, keys *tokenopen.Keyring, ext
 	}
 	ask := func(ctx context.Context, op string) (string, error) {
 		var code string
-		// ads.check_capi: PG only, EXECUTE commerce_worker; returns the BLOCKED_POLICY code or ''.
+		// ads.check_capi: PG only, EXECUTE commerce_ads_worker; returns the BLOCKED_POLICY code or ''.
 		err := pool.QueryRow(ctx, `SELECT ads.check_capi($1::uuid)`, op).Scan(&code)
 		return code, err
 	}
@@ -147,7 +147,7 @@ type userRow struct {
 // error that is not "no rows" leaves the operation UNKNOWN, and UNKNOWN is never resent (lost-event risk A-7).
 func (r *route) loadSecret(ctx context.Context, tx pgx.Tx, claim core.SecretClaim) (core.Secret, error) {
 	var tr tokenRow
-	// integration.load_meta_ads_token: commerce_worker, lease-fenced for (DISPATCHING,dispatch); the only reader of ads ciphertext.
+	// integration.load_meta_ads_token: commerce_ads_worker, lease-fenced for (DISPATCHING,dispatch); the only reader of ads ciphertext.
 	err := tx.QueryRow(ctx, `SELECT tenant_id::text,store_id::text,binding_id::text,provider,asset_id,version,key_id,nonce,ciphertext,scopes_attested
 		FROM integration.load_meta_ads_token($1::uuid,$2::bigint,$3::bytea)`, claim.OperationID, claim.Generation, claim.LeaseToken).
 		Scan(&tr.tenant, &tr.store, &tr.binding, &tr.provider, &tr.asset, &tr.version, &tr.keyID, &tr.nonce, &tr.ciphertext, &tr.scopes)

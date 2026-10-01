@@ -5,6 +5,7 @@
 import "server-only";
 import { timingSafeEqual } from "node:crypto";
 import type { APIError, Store } from "./model";
+import { inviteNextPath } from "./invite-next.ts";
 
 export const LOGIN_COOKIE = "__Host-commerce_login";
 export const SESSION_COOKIE = "__Host-commerce_session";
@@ -393,11 +394,14 @@ export function setLoginCookie(
   binding: string,
   locale: Locale,
   expiresAt: unknown,
+  next: string | null = null,
 ) {
   const age = maxAge(expiresAt, 300);
   if (age === 0 || !isBase64URL32(binding)) return false;
+  // invite-next: the return-to invite path rides in the login cookie and is re-validated on callback
+  // (lib/invite-next.ts); a null/foreign value simply means "redirect to the dashboard" after OIDC.
   const value = Buffer.from(
-    JSON.stringify({ binding, locale }),
+    JSON.stringify({ binding, locale, next }),
     "utf8",
   ).toString("base64url");
   if (value.length > 3072) return false;
@@ -407,7 +411,7 @@ export function setLoginCookie(
 
 export function loginBinding(
   request: Request,
-): { binding: string; locale: Locale } | null {
+): { binding: string; locale: Locale; next: string | null } | null {
   const value = exactCookie(request, LOGIN_COOKIE);
   if (!value || value.length > 3072) return null;
   try {
@@ -421,6 +425,7 @@ export function loginBinding(
     return {
       binding: item.binding,
       locale: isLocale(String(item.locale)) ? (item.locale as Locale) : "zh-CN",
+      next: inviteNextPath(item.next),
     };
   } catch {
     return null;

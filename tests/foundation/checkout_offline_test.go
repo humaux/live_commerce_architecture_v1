@@ -90,7 +90,7 @@ func (e *tcvEnv) cofExpire(order string) (string, *time.Time) {
 	e.t.Helper()
 	var disposition string
 	var retry *time.Time
-	if err := e.p.worker.QueryRow(context.Background(), `SELECT disposition,retry_at FROM checkout.expire_held($1,1)`, order).Scan(&disposition, &retry); err != nil {
+	if err := e.p.expiry.QueryRow(context.Background(), `SELECT disposition,retry_at FROM checkout.expire_held($1,1)`, order).Scan(&disposition, &retry); err != nil {
 		e.t.Fatal(err)
 	}
 	return disposition, retry

@@ -59,7 +59,7 @@ func NewSignalWorker(ctx context.Context, pool *pgxpool.Pool, s *StripeRuntime,
 		(s != nil && (s.pool != pool || s.profile != profile)) {
 		return nil, errStripeSignalJob
 	}
-	if err := platform.ValidateWorkerPool(ctx, pool); err != nil {
+	if err := platform.ValidateWorkerPool(ctx, pool, WorkerAuthority(profile)); err != nil {
 		return nil, errStripeSignalDatabase
 	}
 	jobs, err := river.NewClient(riverpgxv5.New(pool), &river.Config{Schema: "river_payment"})
@@ -90,6 +90,9 @@ func (w *SignalWorker) Work(ctx context.Context, job *river.Job[paymentSignalArg
 	if err := w.pool.QueryRow(bounded, `SELECT actor_kind,provider,action,purpose,state
 		FROM integration.operations WHERE id=$1::uuid`, job.Args.OperationID).
 		Scan(&op.ActorKind, &op.Provider, &op.Action, &op.Purpose, &op.State); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) { // T21-02: a foreign-lane operation is invisible to this authority (RLS): wrong family
+			return river.JobCancel(errStripeSignalFamily)
+		}
 		return errStripeSignalDatabase
 	}
 	if (!validQueryOperation(op) && !validRefundOperation(op)) || op.Provider != "stripe" {

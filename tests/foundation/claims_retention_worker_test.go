@@ -58,7 +58,7 @@ func crNewWorkerEnv(t *testing.T, f *testFixture) *crWorkerEnv {
 	t.Helper()
 	w := &crWorkerEnv{linkRaw: randomBytes(32), pageKeyRaw: randomBytes(32)}
 	intake, _, _ := crLoginDSN(t, f, false, "commerce_claims_intake")
-	worker, workerUser, _ := crLoginDSN(t, f, false, "commerce_worker")
+	worker, workerUser, _ := crLoginDSN(t, f, false, waClaims)
 	job, jobUser, jobPassword := crLoginDSN(t, f, false, "commerce_retention_job")
 	w.workerUser, w.jobUser, w.jobDSNSecret = workerUser, jobUser, jobPassword
 	w.env = []string{
@@ -246,7 +246,7 @@ func TestClaimsRetentionCRP09Worker(t *testing.T) {
 			t.Errorf("run rows by the retention-job login: %v, want one enforced run purging the expired link", rows)
 		}
 		if n := crCount(t, f.owner, `SELECT count(*) FROM claims.retention_log WHERE kind='run' AND executed_by=$1 AND created_at>=$2`, we.workerUser, mark); n != 0 {
-			t.Errorf("%d run rows were written by the commerce_worker login (the purge must run on lc_retention_job)", n)
+			t.Errorf("%d run rows were written by the commerce_claims_worker login (the purge must run on lc_retention_job)", n)
 		}
 		if n := crCount(t, f.owner, `SELECT count(*) FROM claims.links WHERE bundle_id=$1`, b.id); n != 0 {
 			t.Error("the job did not purge the expired link")
@@ -410,10 +410,10 @@ func TestClaimsRetentionCRP09Worker(t *testing.T) {
 	e.sub(t, "refuses-to-start-with-a-bad-retention-dsn", func(t *testing.T) {
 		e.clearJobs()
 		defer e.clearJobs()
-		mixed, _, mixedPassword := crLoginDSN(t, f, false, "commerce_retention_job", "commerce_worker")
+		mixed, _, mixedPassword := crLoginDSN(t, f, false, "commerce_retention_job", waClaims)
 		setRole, _, setPassword := crLoginDSN(t, f, true, "commerce_retention_job")
 		operator, _, operatorPassword := crLoginDSN(t, f, false, "commerce_retention_operator")
-		plainWorker, _, workerPassword := crLoginDSN(t, f, false, "commerce_worker")
+		plainWorker, _, workerPassword := crLoginDSN(t, f, false, waClaims)
 		mustExec(t, f.owner, `CREATE DATABASE lc_crp09_other`)
 		t.Cleanup(func() { _, _ = f.owner.Exec(ctx, `DROP DATABASE IF EXISTS lc_crp09_other WITH (FORCE)`) })
 		u, err := url.Parse(strings.TrimPrefix(we.env[3], "COMMERCE_RETENTION_JOB_DATABASE_URL="))

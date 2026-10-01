@@ -478,8 +478,8 @@ func TestLiveMediaExecutionLME01RolesSignaturesAndSecretBoundary(t *testing.T) {
 	if err := platform.ValidateMediaWorkerPool(ctx, h.worker); err != nil {
 		t.Fatalf("clean native role not restored after SET grant: %v", err)
 	}
-	_, ordinary := lmaLogin(t, h.lp.f, "commerce_worker")
-	if err := platform.ValidateWorkerPool(ctx, ordinary); err != nil {
+	_, ordinary := lmaLogin(t, h.lp.f, waClaims)
+	if err := platform.ValidateWorkerPool(ctx, ordinary, platform.WorkerClaims); err != nil {
 		t.Fatalf("old ordinary worker regressed: %v", err)
 	}
 	metaLogin, metaWorker := lmaLogin(t, h.lp.f, "commerce_meta_worker")

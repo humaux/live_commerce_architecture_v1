@@ -192,7 +192,7 @@ func TestBuyerCheckoutExpiryRollbackAndRetry(t *testing.T) {
 				mustExec(t, b.f.owner, `DROP FUNCTION public.`+name+`()`)
 			})
 			before := b.facts(t)
-			if _, e = b.worker.Exec(context.Background(), `SELECT * FROM checkout.expire_held($1,1)`, r.OrderID); e == nil {
+			if _, e = b.expiry.Exec(context.Background(), `SELECT * FROM checkout.expire_held($1,1)`, r.OrderID); e == nil {
 				t.Fatal("expiry fault did not fire")
 			}
 			if b.facts(t) != before {

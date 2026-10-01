@@ -196,7 +196,10 @@ handler classifies every authenticated request through `buyer.session_view_order
 bootstrap/retire/logout and GET `/v1/buyer/orders/{that order}` plus, read-only, GET of that order's `/payment` status and `/bank-transfer`
 instructions; every other route (order list, other orders, any POST/PUT incl. payment prepare/handoff and the transfer proof, CVS, claims,
 consents, privacy export / erasure, cart, checkout) is 403 `forbidden` (default deny, so a new route is closed until listed). The checkout-issued
-capability (view_order_id NULL) keeps its rights.
+capability (view_order_id NULL) keeps its rights. AMENDMENT 2026-10-01 (defect D2, migration 0098): a lookup whose bearer already names a
+capability session (a registered buyer's token reused as the lookup bearer; the BFF always mints fresh, so only a buggy/hostile client does
+this) is NOT a mismatch — the order did match — so the indistinguishable 404 does not apply; it is refused with a clear non-retryable
+409 `conflict` and the existing session is left untouched (issuing over it would silently downgrade a full buyer capability to view-only).
 
 **E6. Merchant new-order mail.** Sent to the store's owner address(es) (`identity.store_staff` role owner, verified password email), one
 mail per store per 5 minutes covering every pending `merchant_new` row ("N new orders", no buyer data, link to the admin orders page is not

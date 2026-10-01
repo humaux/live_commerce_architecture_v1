@@ -555,7 +555,7 @@ func TestT06DispatcherCrashChild(t *testing.T) {
 		return
 	}
 	ctx := context.Background()
-	pool, err := platform.OpenWorkerPool(ctx, os.Getenv("LC_T06_WORKER_DSN"))
+	pool, err := platform.OpenWorkerPool(ctx, os.Getenv("LC_T06_WORKER_DSN"), platform.WorkerClaims)
 	if err != nil {
 		t.Fatal("child worker authority failed")
 	}

@@ -125,7 +125,7 @@ func TestCvsCloseLoadWaitsForOrderLock(t *testing.T) {
 	done := make(chan error, 1)
 	go func() {
 		var n int
-		done <- e.p.worker.QueryRow(ctx, `SELECT count(*) FROM integration.load_cvs_create($1::uuid,1,$2,'dispatch')`, opID, token).Scan(&n)
+		done <- e.claims.QueryRow(ctx, `SELECT count(*) FROM integration.load_cvs_create($1::uuid,1,$2,'dispatch')`, opID, token).Scan(&n)
 	}()
 	select {
 	case err := <-done:

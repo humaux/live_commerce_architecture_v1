@@ -34,8 +34,11 @@ export default function ProductCardView({
           {card.cover_image_id ? (
             <img src={productImage(card.id, card.cover_image_id)} alt="" loading={eager ? "eager" : "lazy"} decoding="async" />
           ) : (
-            <span className="sf-card__ph" aria-hidden="true">
-              {[...card.title][0]}
+            // No photo: the neutral block keeps the 4/5 media box and shows the locale label; the title below stays the accessible name.
+            <span className="sf-card__ph" role="img" aria-label={copy.noImage}>
+              <span className="sf-card__ph-text" aria-hidden="true">
+                {copy.noImage}
+              </span>
             </span>
           )}
           {!card.in_stock && <span className="sf-tag sf-tag--out">{copy.soldOut}</span>}

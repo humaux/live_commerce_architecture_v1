@@ -300,7 +300,7 @@ func TestBuyerPaymentQueryFaultAndLeaseWaitRollback(t *testing.T) {
 	c := q.claim(t)
 	name := "pq_wait_" + t04Tag()
 	ctx := context.Background()
-	pool, e := platform.OpenWorkerPool(ctx, withApplicationName(t, bcRole(t, q.f, "commerce_worker"), name))
+	pool, e := platform.OpenWorkerPool(ctx, withApplicationName(t, bcRole(t, q.f, waPayment), name), platform.WorkerPayment)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -619,7 +619,7 @@ func TestBuyerPaymentQueryFinishClockAndReferenceFence(t *testing.T) {
 		t.Fatal("dynamic completion code accepted")
 	}
 	name := "pq_finish_" + t04Tag()
-	pool, e := platform.OpenWorkerPool(ctx, withApplicationName(t, bcRole(t, q.f, "commerce_worker"), name))
+	pool, e := platform.OpenWorkerPool(ctx, withApplicationName(t, bcRole(t, q.f, waPayment), name), platform.WorkerPayment)
 	if e != nil {
 		t.Fatal(e)
 	}

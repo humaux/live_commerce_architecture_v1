@@ -23,6 +23,20 @@ var (
 	errPaymentWorkerQueueUnready = errors.New("payment_worker_queue_unready")
 )
 
+// WorkerAuthority is the one DB authority allowed to serve an execution profile (T21-03): LIVE needs
+// commerce_payment_live, SANDBOX and PROVIDER_MOCK need commerce_payment_worker, so a sandbox login can
+// never run the LIVE queue and vice versa. The SQL side (integration.profile_authority_ok) enforces the
+// same split from session_user; this is the startup half. Unknown profile: empty (refused by platform).
+func WorkerAuthority(profile string) platform.WorkerAuthority {
+	switch profile {
+	case "LIVE":
+		return platform.WorkerPaymentLive
+	case "SANDBOX", "PROVIDER_MOCK":
+		return platform.WorkerPayment
+	}
+	return ""
+}
+
 type WorkerConfig struct {
 	Profile     string
 	Concurrency int
@@ -48,7 +62,7 @@ func NewPaymentWorkerClient(ctx context.Context, pool *pgxpool.Pool,
 		(c.Stripe != nil && (c.Stripe.pool != pool || c.Stripe.profile != c.Profile || c.Stripe.keys == nil)) {
 		return nil, errPaymentWorkerConfig
 	}
-	if err := platform.ValidateWorkerPool(ctx, pool); err != nil {
+	if err := platform.ValidateWorkerPool(ctx, pool, WorkerAuthority(c.Profile)); err != nil {
 		return nil, errPaymentWorkerDatabase
 	}
 	// The privileged SQL predicate checks the installed deferred router and all

@@ -197,7 +197,7 @@ func saCommerceRoles(t *testing.T, f *testFixture, self string, mustHave ...stri
 // crossFn is a catalog function of the OTHER Stripe role, for a direct EXECUTE row.
 func saMatrix(t *testing.T, f *testFixture, self, other, crossFn string) []saCase {
 	t.Helper()
-	must := []string{"commerce_worker", "commerce_runtime", "commerce_integration_writer", "commerce_payment_registry_writer",
+	must := []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_runtime", "commerce_integration_writer", "commerce_payment_registry_writer",
 		"commerce_hosted_runtime", "commerce_meta_ingress", "commerce_meta_consumer", "commerce_meta_worker",
 		"commerce_meta_registrar", "commerce_media_worker", "commerce_media_executor", other}
 	var cases []saCase
@@ -215,7 +215,7 @@ func saMatrix(t *testing.T, f *testFixture, self, other, crossFn string) []saCas
 	}
 	// §6.3 "in either direction": the Stripe group itself holding another
 	// authority is inherited by every login in it.
-	for _, r := range []string{"commerce_worker", "commerce_runtime", "commerce_integration_writer", "commerce_payment_registry_writer",
+	for _, r := range []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_runtime", "commerce_integration_writer", "commerce_payment_registry_writer",
 		"commerce_hosted_runtime", "commerce_meta_ingress", "commerce_media_worker", other} {
 		r := r
 		cases = append(cases, saCase{"reverse: " + r + " granted into " + self, func(t *testing.T, f *testFixture, l saLogin) {
@@ -329,7 +329,7 @@ func saMatrix(t *testing.T, f *testFixture, self, other, crossFn string) []saCas
 // saWrongRoleOnly: a login holding only some other authority must not open.
 func saWrongRoleOnly(t *testing.T, f *testFixture, other, want string, open saOpener) {
 	t.Helper()
-	for _, role := range []string{other, "commerce_runtime", "commerce_worker", "commerce_integration_writer",
+	for _, role := range []string{other, "commerce_runtime", waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_integration_writer",
 		"commerce_payment_registry_writer", "commerce_hosted_runtime", "commerce_meta_ingress", "postgres"} {
 		role := role
 		t.Run("only "+role, func(t *testing.T) {
@@ -391,7 +391,11 @@ func TestStripeAuthorityLegacyPoolsRejectStripeRoles(t *testing.T) {
 		{"OpenCheckoutPool", "commerce_checkout_runtime", platform.OpenCheckoutPool},
 		{"OpenHostedPool", "commerce_hosted_runtime", platform.OpenHostedPool},
 		{"OpenBuyerIssuerPool", "commerce_buyer_issuer", platform.OpenBuyerIssuerPool},
-		{"OpenWorkerPool", "commerce_worker", platform.OpenWorkerPool},
+		{"OpenWorkerPool(payment)", waPayment, waOpener(platform.WorkerPayment)},
+		{"OpenWorkerPool(payment live)", waLive, waOpener(platform.WorkerPaymentLive)},
+		{"OpenWorkerPool(expiry)", waExpiry, waOpener(platform.WorkerExpiry)},
+		{"OpenWorkerPool(ads)", waAds, waOpener(platform.WorkerAds)},
+		{"OpenWorkerPool(claims)", waClaims, waOpener(platform.WorkerClaims)},
 		{"OpenMetaIngressPool", "commerce_meta_ingress", platform.OpenMetaIngressPool},
 		{"OpenMetaConsumerPool", "commerce_meta_consumer", platform.OpenMetaConsumerPool},
 		{"OpenMetaWorkerPool", "commerce_meta_worker", platform.OpenMetaWorkerPool},

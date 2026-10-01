@@ -119,7 +119,7 @@ func run(ctx context.Context, getenv func(string) string) error {
 	}
 	startup, done := context.WithTimeout(ctx, 20*time.Second)
 	defer done()
-	pool, err := platform.OpenWorkerPool(startup, c.workerDSN)
+	pool, err := platform.OpenWorkerPool(startup, c.workerDSN, platform.WorkerAds)
 	if err != nil {
 		return errWorkerDatabase
 	}

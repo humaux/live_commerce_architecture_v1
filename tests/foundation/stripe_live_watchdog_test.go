@@ -350,10 +350,10 @@ func TestStripeSL09Watchdog(t *testing.T) {
 			token := randomBytes(32)
 			var disposition string
 			var generation int64
-			if err := l.p.worker.QueryRow(ctx, `SELECT disposition,generation FROM integration.claim_operation($1::uuid,60,$2::bytea)`, id, token).Scan(&disposition, &generation); err != nil || disposition != "claimed" {
+			if err := l.workerFor(t, "LIVE").QueryRow(ctx, `SELECT disposition,generation FROM integration.claim_operation($1::uuid,60,$2::bytea)`, id, token).Scan(&disposition, &generation); err != nil || disposition != "claimed" {
 				t.Fatalf("claim %s: %q %v", id, disposition, err)
 			}
-			if _, err := l.p.worker.Exec(ctx, sql, id, generation, token); err != nil {
+			if _, err := l.workerFor(t, "LIVE").Exec(ctx, sql, id, generation, token); err != nil {
 				t.Fatalf("finish: %v", err)
 			}
 		}

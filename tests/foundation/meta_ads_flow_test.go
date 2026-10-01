@@ -1796,13 +1796,13 @@ func TestMetaAdsMA07ReportShape(t *testing.T) {
 
 // TestMetaAdsChildWorker is the helper process of TestMetaAdsMA05ChildKill (a no-op return unless LC_ADS_CHILD=1, like
 // TestT06DispatcherCrashChild: a SKIP here would read as an unexplained skip to the release gate; NOT a gate). It is a real
-// separate OS process that runs the ads dispatcher over its own commerce_worker login against the fake Graph until it is killed.
+// separate OS process that runs the ads dispatcher over its own commerce_ads_worker login against the fake Graph until it is killed.
 func TestMetaAdsChildWorker(t *testing.T) {
 	if os.Getenv("LC_ADS_CHILD") != "1" {
 		return
 	}
 	ctx := context.Background()
-	pool, err := platform.OpenWorkerPool(ctx, os.Getenv("LC_ADS_CHILD_DSN"))
+	pool, err := platform.OpenWorkerPool(ctx, os.Getenv("LC_ADS_CHILD_DSN"), platform.WorkerAds)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1841,7 +1841,7 @@ func TestMetaAdsChildWorker(t *testing.T) {
 // exactly ONE status POST (F9: a status POST is never repeated blindly).
 func TestMetaAdsMA05ChildKill(t *testing.T) {
 	e := newAdsEnv(t, adsOpts{noDispatch: true, callTimeout: 30 * time.Second})
-	dsn := miRole(t, e.f, "commerce_worker")
+	dsn := miRole(t, e.f, waAds)
 	env := []string{"PATH=" + os.Getenv("PATH"), "LC_ADS_CHILD=1", "LC_ADS_CHILD_DSN=" + dsn, "LC_ADS_CHILD_GRAPH=" + e.g.URL(),
 		"COMMERCE_META_ADS_TOKEN_HPKE_PRIVATE_KEYS=" + adsPrivEnv["COMMERCE_META_ADS_TOKEN_HPKE_PRIVATE_KEYS"]}
 	logPath := filepath.Join(t.TempDir(), "child.log")

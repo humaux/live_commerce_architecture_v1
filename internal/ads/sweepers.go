@@ -18,7 +18,7 @@ import (
 // Meta (the dispatcher runs the operations), never hold a lock across I/O (each draft is one short transaction), and never
 // plan an activate (ads.advance_decide does, only through the Check-gated path).
 // SQL touched: ads.advance_candidates/advance_next/advance_plan, ads.pending_insight_reads/put_insights_day,
-// ads.insights_candidates/insights_days/insights_plan, ads.purge_oauth_states (EXECUTE commerce_worker).
+// ads.insights_candidates/insights_days/insights_plan, ads.purge_oauth_states (EXECUTE commerce_ads_worker).
 // The capi_purchase_sweep_v1 periodic kind is admitted by post_river/0015 but registered by ads-capi, not here.
 
 const (
@@ -62,7 +62,7 @@ func PeriodicJobs() []*river.PeriodicJob {
 	}
 }
 
-// AddWorkers registers the three sweeper workers on w over the commerce_worker pool.
+// AddWorkers registers the three sweeper workers on w over the commerce_ads_worker pool.
 func AddWorkers(w *river.Workers, pool *pgxpool.Pool) error {
 	if w == nil || pool == nil {
 		return command.ErrInvalid
