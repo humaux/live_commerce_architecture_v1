@@ -160,7 +160,7 @@ test("review: the merchant sees each buyer's submission; rejects A with a reason
       await dialog.getByTestId("transfer-submit").click();
       await expect(section.getByTestId("transfer-state")).toHaveAttribute("data-state", "REJECTED");
       await expect(section.getByTestId("transfer-reject-reason")).toContainText(reason);
-      await expect(section.getByTestId("transfer-confirm")).toHaveCount(0); // nothing left to decide until the buyer resubmits
+      await expect(section.getByTestId("transfer-reject")).toHaveCount(0); // a rejected submission cannot be rejected again; the merchant may still confirm
     } else {
       await section.getByTestId("transfer-confirm").click();
       const dialog = page.getByTestId("transfer-dialog");
