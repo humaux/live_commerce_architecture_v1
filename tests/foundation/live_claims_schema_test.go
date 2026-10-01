@@ -307,7 +307,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			[]string{"claims.issue_link", "claims.mark_applied", "claims.preview_link", "claims.redeem_link", "identity.resolve_access",
 				// meta-claims-intake-v1 §4.3: owned definers + principal_holds
 				"claims.check_meta_reply", "claims.fail_meta_intake", "claims.insert_meta_intake", "claims.intake_scope", "claims.issue_system_link",
-				"claims.lease_meta_intake", "identity.principal_holds", "live.put_claim_source", "live.track_claim_window_interval"})
+				"claims.lease_meta_intake", "identity.principal_holds", "live.put_claim_source", "live.track_claim_window_interval",
+				// live-tools 0092: the buyer price definers it owns.
+				"claims.live_prices", "claims.preview_live_prices"})
 		lcSameSet(t, "schema claims ACL", lcStrings(t, f.owner, `SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END||' '||a.privilege_type
 			FROM pg_namespace n CROSS JOIN LATERAL aclexplode(n.nspacl) a WHERE n.nspname='claims' AND a.grantee<>n.nspowner`),
 			[]string{"commerce_buyer_runtime USAGE", "commerce_claims_writer USAGE", "commerce_runtime USAGE",
@@ -737,6 +739,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			WHERE n.nspname NOT IN ('pg_catalog','information_schema') AND p.prosrc ~* 'claims\.(bundles|links)'
 			  AND (has_function_privilege('commerce_runtime',p.oid,'EXECUTE') OR has_function_privilege('commerce_buyer_runtime',p.oid,'EXECUTE'))`),
 			[]string{"claims.issue_link(bytea,uuid,uuid,uuid,bigint,bytea,boolean)", "claims.mark_applied(uuid,uuid[],bigint[])", "claims.preview_link(bytea)", "claims.redeem_link(bytea,bigint)",
+				// live-tools 0092: buyer-runtime price definers (read-only; bound owner and link expiry are checked inside).
+				"claims.live_prices(uuid[],uuid[],uuid[])", "claims.preview_live_prices(bytea)",
 				// customers-billing-v1 §3.1 (0078): read-only projections of bound-bundle counts/time, no binding write.
 				"identity.read_merchant_customers(bytea,uuid,uuid,integer,timestamp with time zone,uuid,text)", "customers.buyer_read_privacy(bytea,uuid,boolean)"})
 		lcSameSet(t, "roles able to write owner_id", lcStrings(t, f.owner, `SELECT DISTINCT p.grantee::text FROM information_schema.column_privileges p
