@@ -40,7 +40,8 @@ type Option struct {
 	SortOrder         int    `json:"sort_order"`
 	// CVS rows (taiwan-cvs-logistics-v1 §5.1, §16.1, §16.5). PickupSelection is how the buyer names the store: "ecpay_map" when the
 	// store has an enabled qualified ECPay profile, else "buyer_entered" (mode is decided in SQL only, X9). PaymentModes lists
-	// "card" and, when the store enabled it, "pay_at_pickup". StoreSearchURL is the chain's official search page (buyer_entered only).
+	// "card" (only while this process can take card payment, OP1) and, when the store enabled it, "pay_at_pickup"; a row with no mode
+	// is not offered. StoreSearchURL is the chain's official search page (buyer_entered only).
 	// Available is present (false) only on a row the store configured but the buyer cannot use yet: Reason coming_soon (OK mart /
 	// Hi-Life not verified) or temporarily_unavailable (CVS_ECPAY_ENABLED off with an enabled profile).
 	PickupSelection string   `json:"pickup_selection,omitempty"`
@@ -234,6 +235,9 @@ func (s *Service) decorateCVS(ctx context.Context, tx pgx.Tx, tokenHash []byte, 
 		hasCVS = hasCVS || option.DeliveryKind != "home"
 	}
 	if !hasCVS {
+		if s.noCard {
+			return items, nil // home rows are card-only (OP1): nothing payable, nothing offered
+		}
 		return append(items, rows...), nil
 	}
 	var offer struct {
@@ -254,7 +258,9 @@ func (s *Service) decorateCVS(ctx context.Context, tx pgx.Tx, tokenHash []byte, 
 	ecpayOn := s.cvs != nil && s.cvs.cfg.ECPay.Enabled
 	for _, option := range rows {
 		if option.DeliveryKind == "home" {
-			items = append(items, option)
+			if !s.noCard {
+				items = append(items, option)
+			}
 			continue
 		}
 		if !slices.Contains(offer.chains, option.DeliveryKind) {
@@ -265,9 +271,9 @@ func (s *Service) decorateCVS(ctx context.Context, tx pgx.Tx, tokenHash []byte, 
 			continue
 		}
 		option.PickupSelection = offer.selection
-		option.PaymentModes = []string{"card"}
-		if offer.pap && offer.papMax != nil {
-			option.PaymentModes = append(option.PaymentModes, "pay_at_pickup")
+		option.PaymentModes = paymentModes(!s.noCard, offer.pap && offer.papMax != nil)
+		if len(option.PaymentModes) == 0 {
+			continue // OP1: neither card nor pay-at-pickup can be completed, so the buyer is not offered this chain
 		}
 		if offer.selection == "buyer_entered" {
 			option.StoreSearchURL = cvsSearchURLs[option.DeliveryKind]
@@ -278,6 +284,18 @@ func (s *Service) decorateCVS(ctx context.Context, tx pgx.Tx, tokenHash []byte, 
 		items = append(items, option)
 	}
 	return items, nil
+}
+
+// paymentModes lists what a buyer can complete on a CVS row: card while the process can take it, pay_at_pickup when the store enabled it.
+func paymentModes(card, payAtPickup bool) []string {
+	modes := make([]string, 0, 2)
+	if card {
+		modes = append(modes, "card")
+	}
+	if payAtPickup {
+		modes = append(modes, "pay_at_pickup")
+	}
+	return modes
 }
 
 // unavailableReason: OK mart needs ok_verified and Hi-Life hilife_verified (TD6, F17/F18); a disabled process kill switch makes every

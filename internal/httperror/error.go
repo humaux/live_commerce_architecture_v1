@@ -114,7 +114,7 @@ func write(w http.ResponseWriter, status int, code string, retryable bool) {
 		"service_unavailable": "This delivery service is not available.", "selection_replay_new_key": "Start the store selection again.",
 		"bad_store_code": "The store number is not valid for this chain.", "bad_store_name": "The store name is not valid.",
 		"bad_store_address": "The store address is not valid.", "pay_at_pickup_unavailable": "Pay at pickup is not available for this order.",
-		"pay_at_pickup_amount_exceeds": "The amount is outside the pay-at-pickup limit.", "pay_at_pickup_limit": "Too many pay-at-pickup orders are open.",
+		"pay_at_pickup_amount_exceeds": "The amount is outside the pay-at-pickup limit.", "card_unavailable": "Card payment is not available for this store.", "pay_at_pickup_limit": "Too many pay-at-pickup orders are open.",
 		// meta-claims-intake-v1 §2 / claim-source unit: comment source binding (version_changed above is shared).
 		"input_invalid":      "The pasted link or id is not a supported Facebook or Instagram post.",
 		"input_unresolvable": "This link cannot be resolved without Meta; paste the numeric post or media id.",

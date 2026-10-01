@@ -53,6 +53,9 @@ export type FinanceRow = {
   captured_minor: number;
   refunded_minor: number;
   net_minor: number;
+  // ops-polish OP3: pay-at-pickup money the carrier collected that day; separate from captured/net (carrier remits, not a PSP).
+  pickup_collected_count: number;
+  pickup_collected_minor: number;
 };
 export type FinanceSummary = { from: string; to: string; timezone: string; rows: FinanceRow[]; totals: FinanceRow[] };
 export type ErasureSummary = {
@@ -180,12 +183,16 @@ export function parseErasureSummary(value: unknown): ErasureSummary {
 }
 
 const rowKeys = ["day", "currency", "environment", "captured_count", "captured_minor", "refunded_minor", "net_minor"];
+const pickupKeys = ["pickup_collected_count", "pickup_collected_minor"];
 function parseFinanceRow(value: unknown, total: boolean): FinanceRow {
-  const v = object(value, rowKeys);
+  // Both shapes of the Go row: 7 keys (before the pay-at-pickup columns) or 9; a half pair is refused by object().
+  const has = !!value && typeof value === "object" && pickupKeys.some((key) => key in (value as object));
+  const v: Record<string, unknown> = { pickup_collected_count: 0, pickup_collected_minor: 0, ...object(value, has ? [...rowKeys, ...pickupKeys] : rowKeys) };
   if (!(total ? v.day === "" : typeof v.day === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v.day)) ||
     typeof v.currency !== "string" || !/^[A-Z]{3}$/.test(v.currency) ||
     typeof v.environment !== "string" || !/^[A-Z_]{1,16}$/.test(v.environment) ||
     !count(v.captured_count) || !count(v.captured_minor) || !count(v.refunded_minor) ||
+    !count(v.pickup_collected_count) || !count(v.pickup_collected_minor) ||
     !Number.isSafeInteger(v.net_minor) || Math.abs(v.net_minor as number) > maxMoney ||
     // I05: net is exactly captured minus refunded; a report that disagrees with itself is refused, not shown.
     v.net_minor !== (v.captured_minor as number) - (v.refunded_minor as number)) throw new Error("unavailable");

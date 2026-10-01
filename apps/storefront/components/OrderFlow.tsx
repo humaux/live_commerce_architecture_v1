@@ -180,6 +180,9 @@ export default function OrderFlow({
         if (!found) throw new BuyerClientError("request_failed");
         if (version !== live.current) return;
         setOption(found);
+        // OP1: card may not be offered (no payment service); keep the buyer's mode only if this row still offers it, else pre-select its first.
+        const offered = found.payment_modes;
+        if (offered?.length) setPaymentMode((current) => (offered.includes(current) ? current : offered[0]));
         // Options can arrive after the buyer edits or confirms a recovered
         // address. Never hydrate fields/head again from that older snapshot.
       } catch {

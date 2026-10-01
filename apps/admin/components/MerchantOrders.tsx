@@ -6,6 +6,8 @@
 // orders/unshipped.csv streamed by the BFF from Go, never fetched into JS memory. The CVS section (OrderCvsShipment:
 // BFF orders/{id}/cvs-shipment*, collection, pay-at-pickup-release -> Go internal/httpapi/cvs.go) sits next to the
 // 0063 section in the same inline row; the list filter `cvs_pending` is one more state in the existing filter.
+// Live feel (ops-polish OP2): while the tab is visible the first page is re-read from the same list route every POLL_MS; ids not seen
+// before get a "new" marker and the tab title a count. No new route, no websocket, no notification API.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
@@ -39,6 +41,7 @@ import { OrderCvsShipment } from "./OrderCvsShipment";
 import "./orders.css";
 import "./order-actions.css";
 
+const POLL_MS = 20_000;
 const noActions: OrderActions = { refund: false, fulfillment_write: false, orders_export: false };
 // Refund section applies once money was captured (stripe-refund-v1 §4.3); earlier payment states have nothing to refund.
 const capturedPayment = ["CAPTURED", "PARTIALLY_REFUNDED", "REFUNDED", "REVIEW_REQUIRED"];
@@ -326,6 +329,10 @@ export function MerchantOrders({
   const session = useRef("");
   const cookie = useRef("");
   const previous = useRef<string[]>([]);
+  // OP2: ids already shown for this store+filter, and the ones that arrived after. Order ids only, never PII.
+  const seen = useRef<{ scope: string; ids: Set<string> } | null>(null);
+  const polling = useRef(false);
+  const [fresh, setFresh] = useState<ReadonlySet<string>>(new Set());
   const current =
     view.key === key && (!cookie.current || csrfCookie() === cookie.current)
       ? view
@@ -342,7 +349,11 @@ export function MerchantOrders({
       generation.current++;
       controller.current?.abort();
       cookie.current = "";
-      if (block) blocked.current = true;
+      if (block) {
+        blocked.current = true;
+        seen.current = null;
+        setFresh(new Set());
+      }
       // A hidden document can enter bfcache before effects run; remove PII now.
       flushSync(() =>
         setView({
@@ -355,6 +366,25 @@ export function MerchantOrders({
       );
     },
     [key],
+  );
+
+  // Marks rows not seen before in this store+filter scope (first page only; later pages are not "newest"). A scope change starts clean.
+  const noteSeen = useCallback(
+    (page: OrderList) => {
+      if (!store || cursor) return;
+      const scope = `${store.id}|${state}`;
+      if (seen.current?.scope !== scope) {
+        seen.current = { scope, ids: new Set(page.items.map((row) => row.order_id)) };
+        setFresh(new Set());
+        return;
+      }
+      const known = seen.current.ids;
+      const added = page.items.filter((row) => !known.has(row.order_id)).map((row) => row.order_id);
+      if (!added.length) return;
+      added.forEach((id) => known.add(id));
+      setFresh((old) => new Set([...old, ...added]));
+    },
+    [store, state, cursor],
   );
 
   const load = useCallback(async () => {
@@ -410,6 +440,7 @@ export function MerchantOrders({
       cookie.current = csrfCookie();
       const selected =
         order && page.items.some((row) => row.order_id === order);
+      noteSeen(page);
       setView({
         key,
         status: "ready",
@@ -457,7 +488,7 @@ export function MerchantOrders({
         detailStatus: code,
       });
     }
-  }, [key, initialError, store, state, cursor, order]);
+  }, [key, initialError, store, state, cursor, order, noteSeen]);
 
   // Permission probe for the action buttons only; every write is re-authorized by Go. A failed probe hides actions.
   useEffect(() => {
@@ -506,6 +537,45 @@ export function MerchantOrders({
       return false;
     }
   }, [key, store, state, cursor, order]);
+
+  // ponytail: polling; switch to SSE once more than ~50 merchant tabs hold this page open at once.
+  // Same guards as reload(): never while hidden/blocked, never overlapping, dropped if the session or load epoch changed.
+  const poll = useCallback(async () => {
+    if (!store || cursor || hidden.current || blocked.current || !session.current || polling.current) return;
+    polling.current = true;
+    const epoch = generation.current;
+    const boundary = session.current;
+    const signal = controller.current?.signal ?? new AbortController().signal;
+    try {
+      const page = await readOrderList(store.id, state, "", signal);
+      if (
+        generation.current !== epoch ||
+        hidden.current ||
+        signal.aborted ||
+        (await sessionBoundary()) !== boundary
+      )
+        return;
+      noteSeen(page);
+      // Only the rows change: filters, scroll position, the open detail and the cursor stack stay as the merchant left them.
+      setView((old) => (old.key === key && old.status === "ready" && old.page ? { ...old, page } : old));
+    } catch {
+      /* the next tick retries; a failed poll must not replace a good list with an error */
+    } finally {
+      polling.current = false;
+    }
+  }, [key, store, state, cursor, noteSeen]);
+  useEffect(() => {
+    const timer = window.setInterval(() => void poll(), POLL_MS);
+    return () => window.clearInterval(timer);
+  }, [poll]);
+  useEffect(() => {
+    if (!fresh.size) return;
+    const base = document.title;
+    document.title = `(${fresh.size}) ${base}`;
+    return () => {
+      document.title = base;
+    };
+  }, [fresh.size]);
 
   useEffect(() => {
     void load();
@@ -586,6 +656,7 @@ export function MerchantOrders({
     router.push(url(locale, nextStore, nextState, nextCursor, nextOrder));
   }
   function choose(row: OrderSummary) {
+    if (fresh.has(row.order_id)) setFresh((old) => new Set([...old].filter((id) => id !== row.order_id)));
     navigate(
       store?.id ?? "",
       state,
@@ -741,6 +812,7 @@ export function MerchantOrders({
                       c={c}
                       locale={locale}
                       selected={order === row.order_id}
+                      isNew={fresh.has(row.order_id)}
                       onSelect={() => choose(row)}
                       detail={order === row.order_id ? current.detail : null}
                       detailStatus={
@@ -803,6 +875,7 @@ function OrderRow({
   c,
   locale,
   selected,
+  isNew,
   onSelect,
   detail,
   detailStatus,
@@ -812,6 +885,7 @@ function OrderRow({
   c: OrdersCopy;
   locale: Locale;
   selected: boolean;
+  isNew: boolean;
   onSelect: () => void;
   detail: OrderDetail | null;
   detailStatus: Status;
@@ -839,6 +913,11 @@ function OrderRow({
             <span>
               {row.order_id.slice(0, 4)}…{row.order_id.slice(-4)}
             </span>
+            {isNew && (
+              <span className="orders-badge" data-testid={`order-new-${row.order_id}`}>
+                {c.newOrder}
+              </span>
+            )}
           </button>
         </td>
         <td data-label={c.created}>{displayTime(locale, row.created_at)}</td>
