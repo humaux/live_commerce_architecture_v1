@@ -66,7 +66,6 @@ func TestBrowserBuyerComms(t *testing.T) {
 			}
 			w.WriteHeader(http.StatusNoContent)
 		case r.Method == http.MethodGet && r.URL.Path == "/mails":
-			type m struct{ To, Subject, Text, HTML string }
 			out := []map[string]string{}
 			for _, x := range g.srv.Messages() {
 				out = append(out, map[string]string{"to": x.To, "subject": x.Subject, "text": x.Text, "html": x.HTML})

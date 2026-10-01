@@ -207,7 +207,7 @@ try {
     const hdr = { "X-Buyer-Context": context };
     const forbidden = [
       ["PUT", `/api/buyer/orders/${orderID}/bank-transfer/proof`, { last5: "12345", amount_minor: 100, paid_at: new Date().toISOString() }, { ...hdr, "Idempotency-Key": crypto.randomUUID() }],
-      ["POST", "/api/buyer/privacy/export", null, { ...hdr, "Idempotency-Key": crypto.randomUUID() }],
+      ["POST", "/api/buyer/privacy/export", {}, { ...hdr, "Idempotency-Key": crypto.randomUUID() }],
       ["POST", "/api/buyer/privacy/erasure", { confirm: "ERASE" }, { ...hdr, "Idempotency-Key": crypto.randomUUID() }],
       ["GET", "/api/buyer/orders", null, hdr],
       ["GET", "/api/buyer/privacy", null, hdr],
@@ -236,10 +236,13 @@ try {
     // ---- 5. wrong e-mail / wrong number / wrong phone: one identical refusal, nothing issued ------------------------------------------------------
     const ctxC = await newContext(mobile, locale), c = await ctxC.newPage();
     const refusals = [];
-    c.on("response", async (r) => { if (r.url().endsWith("/api/buyer/orders/lookup")) refusals.push({ status: r.status(), body: stripId(await r.text().catch(() => "")), cc: r.headers()["cache-control"], cookie: r.headers()["set-cookie"] ?? "" }); });
     await c.goto(`${origin}/${locale}/orders/lookup`);
     const attempt = async (ref, contact) => {
-      await c.getByTestId("lookup-ref").fill(ref); await c.getByTestId("lookup-contact").fill(contact); await c.getByTestId("lookup-submit").click();
+      await c.getByTestId("lookup-ref").fill(ref); await c.getByTestId("lookup-contact").fill(contact);
+      const answered = c.waitForResponse((r) => r.url().includes("/api/buyer/orders/lookup") && r.request().method() === "POST");
+      await c.getByTestId("lookup-submit").click();
+      const r = await answered;
+      refusals.push({ status: r.status(), cc: r.headers()["cache-control"], cookie: r.headers()["set-cookie"] ?? "" }); // (response.text() hangs on this unread fetch body; bodies are compared via in-page fetch below)
       await expect(c.getByTestId("lookup-problem")).toBeVisible();
       return { problem: await c.getByTestId("lookup-problem").getAttribute("data-problem"), text: (await c.getByTestId("lookup-problem").innerText()).trim() };
     };
@@ -251,8 +254,11 @@ try {
       assert.equal(r.problem, "noMatch", `${tag}: refusal class ${r.problem}`);
       assert.equal(r.text, lc.noMatch, `${tag}: refusal text`);
     }
-    assert.equal(refusals.length, emails.length > 1 ? 4 : 3, `${tag}: refusals seen ${refusals.length}`);
-    for (const r of refusals) { assert.equal(r.status, 404); assert.equal(r.body, refusals[0].body, `${tag}: refusal bodies differ`); assert.equal(r.cookie, "", `${tag}: a refusal set a cookie`); assert(r.cc?.includes("no-store")); }
+    assert.equal(refusals.length, emails.length > 1 ? 4 : 3, `${tag}: refusals seen`);
+    const rawLookup = (ref, contact) => c.evaluate(async ([ref, contact]) => { const r = await fetch("/api/buyer/orders/lookup", { method: "POST", credentials: "same-origin", cache: "no-store", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ order_ref: ref, contact }) }); return { status: r.status, body: await r.text() }; }, [ref, contact]);
+    const bodyA = await rawLookup("EEEE-EEEE-EEEE", email), bodyB = await rawLookup(number, `nobody-${tag.toLowerCase()}@buyers.example.test`);
+    assert.equal(bodyA.status, 404); assert.equal(stripId(bodyA.body), stripId(bodyB.body), `${tag}: unknown-order and wrong-email bodies differ`);
+    for (const r of refusals) { assert.equal(r.status, 404); assert.equal(r.cookie, "", `${tag}: a refusal set a cookie`); assert(r.cc?.includes("no-store")); }
     assert.equal((await ctxC.cookies()).filter((k) => /buyer|session/i.test(k.name)).length, 0, "a refused lookup issued no buyer cookie");
     assert(c.url().endsWith(`/${locale}/orders/lookup`), "the page stays on the lookup form");
     await shot(c, `refused-${tag}`);
