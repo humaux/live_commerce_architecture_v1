@@ -52,6 +52,7 @@ func TestCatalogCoreCC01PopulatedUpgrade(t *testing.T) {
 	if !slices.Contains(held, "0086_catalog_v2.sql") {
 		t.Fatalf("0086 not found among the held-back migrations: %v", held)
 	}
+	waPrecreateRoles(t, owner) // 0096 (worker authorities) is held back above; the current Apply's River grants name its roles
 	if err := migrations.Apply(ctx, owner); err != nil {
 		t.Fatalf("apply every migration before 0086: %v", err)
 	}
