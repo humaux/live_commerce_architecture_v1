@@ -32,6 +32,7 @@ import (
 	"livecommerce/internal/live"
 	"livecommerce/internal/merchantorders"
 	"livecommerce/internal/merchanttools"
+	"livecommerce/internal/metaconnect"
 	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
 	"livecommerce/internal/storefrontadmin"
@@ -58,6 +59,9 @@ type Options struct {
 	// Ads is the meta-ads-v1 merchant service (cmd/api builds it with the insert-only river client, the FLfB dialog
 	// config and the metaads OAuth exchange). nil leaves the ads routes unmounted; mount only after 0080 (contract 4.3).
 	Ads *ads.Service
+	// MetaConnect is the merchant Facebook Page / Instagram connect service (cmd/api newMetaConnect; contract meta-claims-intake-v1
+	// "Merchant connect (R4)"). nil leaves the meta-connect routes unmounted.
+	MetaConnect *metaconnect.Service
 	// Billing is the platform-fee service (cmd/api buildPlatformBilling). nil (LC_BILLING_ENABLED unset)
 	// still mounts the billing GET routes; the POSTs answer 503 billing_unavailable.
 	Billing *billing.Service
@@ -164,6 +168,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerRefundRoutesIn(mux, pool, configured.RefundJobs, paymentEnvironment)
 	registerShipmentRoutes(mux, pool)
 	registerAdsRoutes(mux, pool, configured.Ads)
+	registerMetaConnectRoutes(mux, pool, configured.MetaConnect)
 	registerCustomerRoutes(mux, pool)
 	registerFinanceRoutes(mux, pool)
 	registerBillingRoutes(mux, pool, configured.Billing)

@@ -119,6 +119,11 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	// meta-connect: nil when COMMERCE_META_LOGIN_CONFIG_ID is unset (merchant Page/Instagram connect off).
+	metaConnect, err := newMetaConnect(pool, os.Getenv)
+	if err != nil {
+		return err
+	}
 	// stripe-live-enable-v1 §5.2: the refund routes need the deployment's payment environment. An unset profile keeps
 	// the pre-LIVE SANDBOX behavior (payment-free deployments); a set but unknown profile is refused at start.
 	paymentEnvironment := ""
@@ -130,7 +135,7 @@ func run() error {
 		paymentEnvironment = env
 	}
 	handler := httpapi.NewHandler(pool, httpapi.Options{SessionStoreList: identityConfig.enabled, Accounts: accountService, Studio: studioConfig.enabled, Live: studioPlanner,
-		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs, Ads: adsService, Billing: billingService, CVS: cvs.Merchant, PaymentEnvironment: paymentEnvironment, ManualOrders: cvs.Manual})
+		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs, Ads: adsService, MetaConnect: metaConnect, Billing: billingService, CVS: cvs.Merchant, PaymentEnvironment: paymentEnvironment, ManualOrders: cvs.Manual})
 	if identityHandler != nil {
 		mux := http.NewServeMux()
 		mux.Handle("/v1/identity/", identityHandler)

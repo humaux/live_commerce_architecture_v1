@@ -77,6 +77,12 @@ func write(w http.ResponseWriter, status int, code string, retryable bool) {
 		"binding_disabled":         "The Meta ads connection is not enabled.",
 		"source_not_owned":         "That post does not belong to this store's connection.",
 		"product_not_published":    "The product is not published.",
+		// meta-connect (merchant Facebook Page / Instagram connect, internal/metaconnect frozenStatus): codes not already listed above;
+		// internal/metaconnect TestFrozenCodesSurviveHTTPError guards the drift.
+		"state_used":         "That Meta connection attempt was already completed.",
+		"missing_permission": "A required Facebook permission or Page access is missing.",
+		"already_connected":  "This store already has a Facebook Page connected.",
+		"page_taken":         "That Facebook Page is already connected to another store.",
 		// stripe-refund-v1 §7.1 (ruling 15: unknown codes were rewritten to "internal").
 		"refundable_changed":    "Refundable amount changed since it was loaded.",
 		"exceeds_refundable":    "Amount exceeds the refundable amount.",

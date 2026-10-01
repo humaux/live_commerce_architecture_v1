@@ -101,6 +101,9 @@ func pwIsolatedFixture(t *testing.T) *testFixture {
 	if err := migrations.Apply(ctx, owner); err != nil {
 		t.Fatal(err)
 	}
+	if pgStripeRevoke { // promotions-tests only: disclosed workaround of BASE defect B1, see promotions_gate_test.go / DEFECTS.md
+		mustExec(t, owner, `REVOKE EXECUTE ON FUNCTION catalog.products_default_slug(), design.refuse_history_change() FROM PUBLIC`)
+	}
 	f := &testFixture{owner: owner, databaseURL: u.String(), tenantA: randomUUID(), tenantB: randomUUID(), storeA1: randomUUID(), storeA2: randomUUID(), storeB: randomUUID(), principalA: randomUUID(), tokens: map[string]string{"a": randomToken(), "a2": randomToken(), "b": randomToken(), "expired": randomToken(), "revoked": randomToken(), "buyer": randomToken(), "revoked_grant": randomToken()}}
 	if err := f.seed(ctx); err != nil {
 		t.Fatal(fmt.Errorf("seed isolated worker database: %w", err))
