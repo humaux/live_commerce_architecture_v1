@@ -3,6 +3,9 @@
 Status: PASS_BOUNDED_INTERNAL_PUBLISHED_ORIGIN_RESOLVER, code `cbffd8a`.
 See [317-test acceptance](../docs/implementation/2026-09-25-published-storefront-resolver-acceptance.md).
 Local prerequisite only, not public checkout or domain provisioning.
+Writer (R3, migration 0081, unit storefront-publish): IMPLEMENTED, evidence MOCK (Go unit tests) + NOT_RUN (real-PG gates are
+the independent test phase's); see "Writer (R3)" at the end. The "no mutation API ships here" statements above describe the
+resolver slice only.
 Baseline: `1baa0d2`. Contributes to T03; full G01/G02/G11 remain NOT_RUN.
 
 ## Decision and scope
@@ -107,3 +110,35 @@ response must later explicitly project buyer fields: never serialize raw
 - Full DNS/CDN automation now: needs actual provider credentials and controlled
   ownership verification. Add the separately reviewed writer/adapter next;
   these unpopulated tables cannot confer real provider readiness by themselves.
+
+## Writer (R3)
+
+Unit `storefront-publish`, migration `0081_storefront_publish.sql`. The two facts the resolver consumes now have an audited
+production writer in two separate consents (rulings SP1-SP7):
+
+- **Publication is the merchant's act.** `control.read_storefront(p_hash,p_store)` (integration:read) and
+  `control.set_storefront_published(p_hash,p_store,p_published,p_expected)` (integration:manage); SECURITY DEFINER, owner
+  `commerce_storefront_writer`, `search_path=pg_catalog`, PUBLIC revoked, EXECUTE `commerce_runtime`. They verify the bearer
+  through `identity.resolve_access` and the WithScope GUCs (0078 pattern), compare-and-set on `version` (0 = no row; stale =
+  PT409 `version_conflict`), bump `version` and write one `ops.audit_events` row (`merchant.storefront_published` /
+  `merchant.storefront_unpublished`) per real change. Re-asserting the current state is a no-op. HTTP:
+  `GET /v1/admin/stores/{store_id}/storefront`, `POST .../storefront/publication {published, expected_version}`
+  (internal/httpapi/storefront.go; BFF allowlist GET `storefront`, POST `storefront/publication`; admin Settings card).
+  Publishing alone serves nothing: the resolver also needs an ACTIVE domain.
+- **Domain binding is the platform operator's act.** `control.operator_bind_domain(store,origin,evidence,valid_until)`,
+  `operator_suspend_domain(origin)`, `operator_detach_domain(origin)`, `operator_storefront_status(store)`; same owner;
+  EXECUTE `commerce_storefront_registrar` only (login `lc_store_registrar`, `cmd/store-admin` through `ops-admin.sh`, compose
+  profile `ops`). No merchant HTTP route exists. Bind creates the origin directly ACTIVE or advances/renews a non-DETACHED row of
+  the same store, stamping ownership/TLS verification with the database clock; `valid_until` is the TLS certificate notAfter
+  (future, at most 400 days). The origin grammar is the 0020 one (SQL regex = internal/domains.ValidOrigin, PR01 parity).
+  Lifecycle moves: bind -> ACTIVE (from none/REQUESTED/OWNERSHIP_PENDING/TLS_PENDING/SUSPENDED/ACTIVE), suspend -> SUSPENDED,
+  detach -> DETACHED; each real move bumps `version` and audits `operator.domain_bound|suspended|detached`. A DETACHED origin is
+  never re-bound (PT409 `domain_detached`); an origin of another store is PT409 `domain_owned_elsewhere`.
+- **Cache.** There is none: every write bumps `version` and the next `buyer.resolve_published_store` sees it (PR04), so nothing
+  needs invalidating.
+- **Audit attribution.** `ops.audit_events.principal_id` is NOT NULL and an operator has no principal, so operator actions are
+  attributed to the store's creating principal (`identity.initial_stores`; PT409 `store has no owner principal` when absent) with
+  the `operator.*` action prefix. Not a claim that the merchant acted.
+- **Pilot ceiling.** Caddy serves one store host per deployment, so one ACTIVE origin; per-store hosts need `on_demand_tls` with
+  an `ask` endpoint backed by the resolver. Non-goals: custom merchant domains, DNS automation, wildcard TLS, per-store legal
+  pages, unpublish side effects on open carts.

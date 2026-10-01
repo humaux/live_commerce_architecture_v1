@@ -31,6 +31,10 @@ const paymentCollection = `markets/${uuid}/countries/TW/payment-methods`;
 const policy = `${deliveryCollection}/[a-z][a-z0-9_-]{0,39}/policy`;
 const purchaseEntry = `products/${uuid}/purchase-entry`;
 const orders = `orders(?:/${uuid})?`;
+// R3 storefront-publish: GET storefront (state + bound origins), POST storefront/publication {published, expected_version}
+// -> Go internal/httpapi/storefront.go. Domain binding has no merchant route (operator CLI cmd/store-admin).
+const storefrontRead = "storefront";
+const storefrontWrite = "storefront/publication";
 const studioDetail = `live-sessions/${uuid}`;
 const studioInput = `${studioDetail}/input(?:/(?:start|token|prepared))?`;
 const studioInputRead = `${studioDetail}/input(?:/prepared)?`;
@@ -40,10 +44,10 @@ const studioAction = `${studioDetail}/(?:rehearsal/(?:start|stop)|input/(?:start
 const studioAny = new RegExp(`^(?:live-sessions|${studioDetail}|${studioAction}|${studioInputRead}|${studioDetail}/${claimsSubpath})$`);
 const routes: Record<string, RegExp> = {
   GET: new RegExp(
-    `^(catalog-ledger|products|warehouses|inventory|products/${uuid}/skus|${purchaseEntry}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy}|${orders}|live-sessions|${studioDetail}|${studioInputRead}|${claimsRoutes.GET}|${adsRoutes.GET})$`,
+    `^(catalog-ledger|products|warehouses|inventory|${storefrontRead}|products/${uuid}/skus|${purchaseEntry}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy}|${orders}|live-sessions|${studioDetail}|${studioInputRead}|${claimsRoutes.GET}|${adsRoutes.GET})$`,
   ),
   POST: new RegExp(
-    `^(products|skus|warehouses|inventory/adjustments|products/${uuid}/archive|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets|live-sessions|${studioAction}|${claimsRoutes.POST}|${adsRoutes.POST})$`,
+    `^(products|skus|warehouses|inventory/adjustments|${storefrontWrite}|products/${uuid}/archive|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets|live-sessions|${studioAction}|${claimsRoutes.POST}|${adsRoutes.POST})$`,
   ),
   PATCH: new RegExp(`^(products/${uuid}|skus/${uuid}|${studioDetail}|${claimsRoutes.PATCH})$`),
   // Studio PUT is only the comment-source bind (claims-request.ts); settings PUTs are the rest.
@@ -103,7 +107,9 @@ async function route(request: Request, context: Context) {
     return error(422, "invalid_request");
   // URL.search drops an empty trailing '?'. Exact resources must reject that too;
   // Only collection GETs inherit the bounded pagination parser in Go.
+  const storefront = path === storefrontRead || path === storefrontWrite;
   const exactResource =
+    storefront ||
     ((path === "markets" || path.startsWith("markets/")) &&
       !(request.method === "GET" && pagedSettingsRoute.test(path))) ||
     (accountRoute &&
@@ -121,6 +127,13 @@ async function route(request: Request, context: Context) {
         (request.headers.has("content-length") && request.headers.get("content-length") !== "0"))
     ) return error(422, "invalid_request");
   }
+  // The storefront GET carries no body, key or transfer-encoding (no query: exactResource above).
+  if (
+    request.method === "GET" && path === storefrontRead &&
+    (request.body !== null || request.headers.has("transfer-encoding") || request.headers.has("idempotency-key") ||
+      (request.headers.has("content-length") && request.headers.get("content-length") !== "0"))
+  )
+    return error(422, "invalid_request");
   if (order) {
     if (
       request.body !== null ||
@@ -321,7 +334,7 @@ async function route(request: Request, context: Context) {
     status: response.status,
     headers: {
       "Content-Type": "application/json",
-      "Cache-Control": order || action || customers || logistic ? "private, no-store" : "no-store",
+      "Cache-Control": order || action || customers || logistic || storefront ? "private, no-store" : "no-store",
       "X-Request-ID": response.headers.get("x-request-id") ?? "",
     },
   });

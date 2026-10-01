@@ -5,7 +5,7 @@ Runs as/in: 文档（运维人员在部署主机上以 root 执行其中命令�
 Reads env / secrets: 无。命令通过 deploy/scripts/ops-admin.sh 提示输入运维输入（STRIPE_SECRET_KEY、STRIPE_ACCOUNT_ID、STRIPE_WEBHOOK_SECRET、META_PAGE_ACCESS_TOKEN），
   这些输入不写入仓库或配置文件（LIVE 时由 owner 写入服务器上的一次性 `<NAME>_FILE` 传输文件，用后删除）；本文不含任何密钥值。
 Used by: 运维/owner/集成者；docs/runbooks/deploy.md §6 链接到此。
-Depends on: deploy/scripts/ops-admin.sh、deploy.md（栈已按 §3 部署且 healthy）、contracts/stripe-psp-v1.md §13、contracts/meta-claims-intake-v1.md §7。
+Depends on: deploy/scripts/ops-admin.sh（含 store-admin，§5.1）、deploy.md（栈已按 §3 部署且 healthy）、contracts/stripe-psp-v1.md §13、contracts/meta-claims-intake-v1.md §7。
 Status: DESIGN。没有在真实商家上执行过；SANDBOX 步骤需要 owner 的 Stripe 测试账户（工程侧证据 NOT_RUN）。
 Change rules: 命令必须与 deploy/scripts/ops-admin.sh 和 cmd/*-admin 的子命令保持一致；owner-only 项不得被写成“工程可以完成”。
 -->
@@ -66,7 +66,30 @@ Change rules: 命令必须与 deploy/scripts/ops-admin.sh 和 cmd/*-admin 的子
 ## 5. 域名与证书
 
 四个域名解析到部署主机后，Caddy 自动签发证书（首次演练可在 `caddy.env` 打开 staging CA，正式签发前注释掉）。
-商家自有域名（品牌域名指向 storefront）不在 R1 范围：storefront 的 origin 由 `LC_STORE_HOST` 推导，Caddy 只服务这四个名字（不匹配的 Host 不转发）。
+商家自有域名（品牌域名指向 storefront）不在 R1/R3 范围：storefront 的 origin 由 `LC_STORE_HOST` 推导，Caddy 只服务这四个名字（不匹配的 Host 不转发）。
+
+### 5.1 店铺上线：两步、两个不同的同意（R3 storefront-publish，迁移 0081）
+
+买家能打开店铺（storefront、购买入口、认领链接、Meta 私信里的购物车链接）需要**同时**满足两件事，缺一个都是 404：
+
+1. **商家发布**：商家在后台「设置」→「网店发布」卡片点「发布」并确认（需要 `integration:manage`）。这是商家的同意，运维不代做；取消发布同一张卡片。
+2. **平台绑定域名**：域名所有权和 TLS 的证明是平台的，不是商家的，只能由运维用 CLI 完成（没有商家 HTTP 路由）。
+   证书 `notAfter` 就是 `--valid-until`（RFC 3339，必须在未来且不超过 400 天）；`--evidence` 是你留存证明的引用（工单号、DNS 检查日期、证书指纹），不要写密钥。
+
+```sh
+set -a; . /etc/live-commerce/compose.env; set +a        # 取得 LC_STORE_HOST
+VALID_UNTIL="$(date -u -d "$(echo | openssl s_client -connect "$LC_STORE_HOST:443" -servername "$LC_STORE_HOST" 2>/dev/null \
+  | openssl x509 -noout -enddate | cut -d= -f2)" +%Y-%m-%dT%H:%M:%SZ)"
+deploy/scripts/ops-admin.sh store-admin domain-bind --store <store-uuid> --origin "https://$LC_STORE_HOST" \
+  --evidence "<工单/检查引用>" --valid-until "$VALID_UNTIL"
+deploy/scripts/ops-admin.sh store-admin status --store <store-uuid>   # published、domains[].serving 都为 true 才算上线
+```
+
+- `domain-bind` 一次调用创建或推进到 ACTIVE（时间戳由数据库时钟写入）并写审计 `operator.domain_bound`；对 ACTIVE 域名再次执行即证书续期（更新 `valid_until`，版本号 +1）。
+  证书到期前续期：`valid_until` 一过，解析器立刻拒绝该域名（`serving=false`）。
+- `domain-suspend --origin https://host`：立即停止服务（可再次 `domain-bind` 恢复）；`domain-detach --origin https://host`：永久解绑，该 origin 不能再被绑定（数据库 origin 全局唯一，需要换域名）。
+- 一个部署目前只有一个 ACTIVE origin：Caddy 只服务 `LC_STORE_HOST`。每店一个域名需要 Caddy `on_demand_tls` 加由解析器支撑的 `ask` 接口（见 `cmd/store-admin` 的 ponytail 注释），不在本单元范围。
+- 退出码非 0 时 stderr 只有一个固定码：`store_admin_usage`（参数）、`store_admin_not_found`、`store_admin_domain_detached`、`store_admin_domain_owned_elsewhere`、`store_admin_no_owner_principal`、`store_admin_conflict`、`store_admin_failed`。
 
 ## 6. 接入后检查
 

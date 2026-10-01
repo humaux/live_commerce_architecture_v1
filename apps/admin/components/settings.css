@@ -391,3 +391,16 @@
     animation: none !important;
   }
 }
+
+/* Settings -> 网店发布 card (components/StorefrontSettings.tsx). */
+.storefront-card {
+  border-top: 1px solid var(--line);
+  margin-top: 28px;
+  padding-top: 4px;
+}
+.storefront-card dd small {
+  display: block;
+  margin-top: 4px;
+  font-weight: 400;
+  color: var(--muted);
+}

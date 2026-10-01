@@ -39,6 +39,7 @@ cp deploy/host/crontab.example /etc/cron.d/live-commerce   # backups + watchdog 
 # Operator one-shots (own containers, registrar logins, inputs prompted without echo, never stored):
 deploy/scripts/ops-admin.sh stripe-admin register|rotate|webhook|qualify|method ...   # docs/runbooks/deploy.md §6.1
 deploy/scripts/ops-admin.sh meta-admin page-token ...                                 # docs/runbooks/deploy.md §6.3
+deploy/scripts/ops-admin.sh store-admin domain-bind --store <uuid> --origin https://host --evidence <ref> --valid-until <RFC3339>   # docs/runbooks/merchant-onboarding.md (go-live step 2)
 ```
 Upgrade: `deploy.sh upgrade <tag>`. It takes a backup, opens a 503 window, runs migrate and provision, then starts the stack.
 Rollback: `deploy.sh app-rollback <tag>` works only when the migration ledger is unchanged. Otherwise the answer is forward-fix.
@@ -56,7 +57,7 @@ Internet ─80/443(+udp)─► edge-netns (pause) ── shared 127.0.0.1 ──
                                                                  └ storefront :3200 (next start)
 backend (internal) : postgres :5432 ◄── api, expiry-worker, meta-worker, payment-worker-* (+egress: PAYUNi, api.stripe.com),
                      claims-worker (+egress: graph.facebook.com), ads-worker (+egress: graph.facebook.com)
-ops one-shots      : stripe-admin (backend + egress), meta-admin (backend) — profile ops, run only via ops-admin.sh
+ops one-shots      : stripe-admin (backend + egress), meta-admin (backend), store-admin (backend; login lc_store_registrar, R3 storefront-publish) — profile ops, run only via ops-admin.sh
 pgsocket volume    : postgres ◄── migrate (network none), provision-logins, pg-ops (network none)
 ```
 Profiles: `db` (postgres, migrate, provision-logins), `app` (edge-netns, caddy, api, admin,
@@ -65,7 +66,7 @@ storefront, expiry-worker), `payments-sandbox` (payment-worker-sandbox: PAYUNi +
 `claims` (claims-worker: intake poller + the only sender of Meta private replies; owner approval for real sends),
 `ads` (ads-worker: the only Meta ad-account writer and the only holder of the HPKE private ring; with api.env
 `COMMERCE_META_ADS_APP_ID`, after 0080 per ruling B15),
-`ops` (pg-ops, stripe-admin, meta-admin; never listed in `COMPOSE_PROFILES`).
+`ops` (pg-ops, stripe-admin, meta-admin, store-admin; never listed in `COMPOSE_PROFILES`).
 The media worker is **not deployed**, because it is MOCK-only (`worker_env.go:174`); there is no `media` profile
 (deviation 21).
 
@@ -86,7 +87,7 @@ The media worker is **not deployed**, because it is MOCK-only (`worker_env.go:17
 | `scripts/lib.sh` | Shared helpers (`lc_compose`, `lc_psql`, `lc_secret_scan`, env loader) |
 | `scripts/host-setup.sh`, `secrets-init.sh`, `preflight.sh` | Host prep, secret generation, config validation |
 | `scripts/build-images.sh`, `check-pins.sh` | Image build (sha12 tags, OCI labels); digest-pin guard |
-| `scripts/ops-admin.sh` | Operator CLIs (`stripe-admin`, `meta-admin`) as one-shot `ops` containers; prompts inputs without echo; refuses live keys and `--profile LIVE`; audit line without values |
+| `scripts/ops-admin.sh` | Operator CLIs (`stripe-admin`, `meta-admin`, `store-admin`) as one-shot `ops` containers; prompts inputs without echo; refuses live keys and `--profile LIVE`; audit line without values |
 | `scripts/deploy.sh`, `pg-ops.sh` | first / upgrade / app-rollback (keeps compose.env `IMAGE_TAG` = deployed tag); DB operations wrapper incl. `rotate-superuser`, `pitr-cutover` |
 | `scripts/watchdog.sh`, `collect-diagnostics.sh` | Cron health checks W1–W10; incident bundle (secret-scanned) |
 | `scripts/smoke.sh`, `smoke-browser.mjs` | Acceptance `static` (S01–S06) / `full` (S07–S44, S10f/g, S13n) with evidence |
