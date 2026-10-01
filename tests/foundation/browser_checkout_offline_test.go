@@ -233,7 +233,7 @@ func TestBrowserCheckoutOffline(t *testing.T) {
 	if err := <-exited; err != nil {
 		t.Fatalf("buyer browser gate failed: %v; evidence=%s", err, evidence)
 	}
-	brfShots(t, evidence, 12)
+	bcoShots(t, evidence, 12)
 	if n := e.count(`SELECT count(*) FROM checkout.bank_transfers WHERE order_id=ANY($1) AND state='CONFIRMED' AND confirmed_amount_minor=$2`, []string{orders["A"].ID, orders["B"].ID, orders["C"].ID, orders["D"].ID}, total); n != 4 {
 		t.Errorf("%d of the four orders are CONFIRMED at the server total %d", n, total)
 	}
@@ -333,4 +333,29 @@ func bcoStartAdmin(t *testing.T, ctx context.Context, e *tcvEnv, evidence string
 		time.Sleep(100 * time.Millisecond)
 	}
 	return &brfStack{root: root, evidence: evidence, origin: origin, api: api}
+}
+
+// bcoShots verifies the hashed screenshot manifest: at least min shots, every one hashed, exactly the locales zh-TW and en on desktop and 390px.
+func bcoShots(t *testing.T, evidence string, min int) {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join(evidence, "screenshots.json"))
+	if err != nil {
+		t.Fatalf("screenshot hash manifest missing: %v; evidence=%s", err, evidence)
+	}
+	var shots []struct{ File, Sha256, Locale, Viewport string }
+	if err := json.Unmarshal(raw, &shots); err != nil || len(shots) < min {
+		t.Fatalf("screenshot manifest has %d entries (want >= %d): %v", len(shots), min, err)
+	}
+	seen := map[string]bool{}
+	for _, s := range shots {
+		if len(s.Sha256) != 64 {
+			t.Fatalf("screenshot %s is not hashed", s.File)
+		}
+		seen[s.Locale+"/"+s.Viewport] = true
+	}
+	for _, want := range []string{"zh-TW/desktop", "zh-TW/mobile", "en/desktop", "en/mobile"} {
+		if !seen[want] {
+			t.Errorf("no screenshot for %s", want)
+		}
+	}
 }
