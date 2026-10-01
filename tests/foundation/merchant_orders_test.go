@@ -166,7 +166,7 @@ func TestMerchantOrdersAuthorityAndOnboarding(t *testing.T) {
 		}
 	}
 	for table, want := range map[string][]string{
-		"checkout.orders":                {"collection_state", "commercial_state", "country", "created_at", "currency", "fulfillment_state", "id", "owner_id", "payment_mode", "service_code", "snapshot", "store_id", "tenant_id", "total_minor", "updated_at"}, // 0073 (taiwan-cvs C4): +collection_state, payment_mode for the merchant projection
+		"checkout.orders":                {"collection_state", "commercial_state", "country", "created_at", "currency", "fulfillment_state", "id", "owner_id", "payment_mode", "service_code", "snapshot", "source", "store_id", "tenant_id", "total_minor", "updated_at"}, // 0094 (merchant-tools): +source for identity.read_order_sources; 0073 (taiwan-cvs C4): +collection_state, payment_mode for the merchant projection
 		"checkout.payment_attempts":      {"amount_minor", "connection_id", "currency", "environment", "execution_profile", "id", "order_id", "owner_id", "store_id", "tenant_id"},
 		"payments.facts":                 {"amount_minor", "attempt_id", "connection_id", "currency", "environment", "execution_profile", "kind", "received_at", "store_id", "tenant_id"}, // 0078 adds received_at (BD7 finance day)
 		"payments.review_cases":          {"attempt_id", "reason", "store_id", "tenant_id"},                                                                                               // 0063 adds reason (MD6 review predicate)
@@ -689,7 +689,7 @@ func TestMerchantOrdersHTTPPaginationPrivacyAndNoEffects(t *testing.T) {
 		t.Fatalf("all-buyers store page=%+v", full)
 	}
 	for _, item := range full.Items {
-		if len(item) != 15 { // 10 + refunded_minor, refund_pending_minor (0063) + pickup_source, payment_mode, collection_state (0073, taiwan-cvs C4)
+		if len(item) != 16 { // 10 + refunded_minor, refund_pending_minor (0063) + pickup_source, payment_mode, collection_state (0073, taiwan-cvs C4) + source (0094, merchant-tools)
 			t.Fatalf("summary has extra keys: %+v", item)
 		}
 	}
@@ -725,7 +725,7 @@ func TestMerchantOrdersHTTPPaginationPrivacyAndNoEffects(t *testing.T) {
 	for _, orderID := range []string{q.hold.OrderID, second.OrderID} {
 		status, raw := request("GET", base+"/"+orderID, q.f.tokens["a"], nil, nil)
 		var detail map[string]any
-		if status != 200 || json.Unmarshal(raw, &detail) != nil || len(detail) != 21 { // 15 + refunded_minor, refund_pending_minor, shipment (0063) + the three CVS keys (0073)
+		if status != 200 || json.Unmarshal(raw, &detail) != nil || len(detail) != 22 { // 16 (incl. source, 0094) + refunded_minor, refund_pending_minor, shipment (0063) + the three CVS keys (0073)
 			t.Fatalf("detail %s status=%d body=%s", orderID, status, raw)
 		}
 		if _, leaked := detail["owner_id"]; leaked {

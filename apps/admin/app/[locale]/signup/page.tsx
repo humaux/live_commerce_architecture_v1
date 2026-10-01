@@ -12,21 +12,27 @@ import {
   isBase64URL32,
 } from "@/lib/auth";
 import { onboardingPolicy } from "@/lib/backend";
+import { inviteNextPath } from "@/lib/invite-next";
 import { Entry } from "@/components/Entry";
 
 export default async function Page({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   if (!authConfig?.passwordLogin) notFound();
+  const query = await searchParams;
+  const next = inviteNextPath(typeof query.next === "string" ? query.next : null);
   const token =
     exactCookieHeader((await headers()).get("cookie"), SESSION_COOKIE) ?? "";
   // Any authenticated store list (even empty) proves the session; workspace pages own the rest.
+  // invite-next: an already-signed-in invitee goes straight back to the invite page, not the dashboard.
   if (isBase64URL32(token) && (await authenticatedStores(token)).stores)
-    redirect(`/${locale}/`);
+    redirect(next ?? `/${locale}/`);
   const policy = onboardingPolicy();
   return (
     <Entry
@@ -38,6 +44,7 @@ export default async function Page({
       passwordMode="signup"
       oidc={!!authConfig.issuer}
       path="signup"
+      next={next}
     />
   );
 }

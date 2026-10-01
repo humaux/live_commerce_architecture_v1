@@ -151,6 +151,17 @@ type fakeRow struct{ scan func(...any) error }
 
 func (r fakeRow) Scan(dest ...any) error { return r.scan(dest...) }
 func (t *fakeTx) QueryRow(_ context.Context, query string, args ...any) pgx.Row {
+	if strings.Contains(query, "read_order_sources") { // attachSources (0094): every listed order is a storefront order here
+		sources := map[string]string{}
+		for _, id := range args[2].([]string) {
+			sources[id] = "storefront"
+		}
+		return fakeRow{func(dest ...any) error {
+			encoded, _ := json.Marshal(sources)
+			*dest[0].(*[]byte) = encoded
+			return nil
+		}}
+	}
 	t.calls++
 	if t.calls == 1 {
 		t.args = args
@@ -177,6 +188,9 @@ func (t *fakeTx) QueryRow(_ context.Context, query string, args ...any) pgx.Row 
 func TestListSQLBindingsAndErrorClasses(t *testing.T) {
 	tx := &fakeTx{projection: raw([]any{summary()})}
 	page, err := List(context.Background(), tx, scope, token, ListRequest{})
+	if err == nil && (len(page.Items) != 1 || page.Items[0].Source != "storefront") {
+		t.Fatalf("source not attached: %+v", page.Items)
+	}
 	if err != nil || len(page.Items) != 1 || page.NextCursor != "" || tx.calls != 2 {
 		t.Fatalf("page=%+v calls=%d err=%v", page, tx.calls, err)
 	}

@@ -117,7 +117,8 @@ test("OP2 live order feed: 20 s poll, no overlap, pause when hidden, new marker,
   await expect(marker(page, one, /^New$/)).toBeVisible();
   await expect(page.getByText(/^New$/)).toHaveCount(1);
   await expect.poll(() => page.title()).toMatch(/^\(1\) /);
-  expect(await page.title()).toBe(`(1) ${baseTitle}`);
+  // brief OP2: the badge names the orders page ("(N) 訂單"), not the static layout title (fixed by agent/kimi-p2-ui)
+  expect(await page.title()).toMatch(/^\(1\) (Orders|订单|訂單)$/);
   // filters and the open order are exactly as the merchant left them
   expect(page.url()).toBe(urlBefore);
   await expect(page.getByTestId("state-filter")).toHaveValue("CONFIRMED");
@@ -133,7 +134,7 @@ test("OP2 live order feed: 20 s poll, no overlap, pause when hidden, new marker,
   const two = [await placeOrder(), await placeOrder()];
   await runUntilPoll(page, probe);
   for (const id of two) await expect(marker(page, id, /^New$/)).toBeVisible();
-  await expect.poll(() => page.title()).toBe(`(2) ${baseTitle}`);
+  await expect.poll(() => page.title()).toMatch(/^\(2\) (Orders|订单|訂單)$/);
 
   // never overlapping: a slow list, three more intervals pass while it is in flight, still exactly one request
   probe.hold = 1_500;
@@ -183,7 +184,7 @@ for (const [locale, word] of [["zh-TW", /^新$/], ["zh-CN", /^新$/]] as const) 
     const id = await placeOrder();
     await runUntilPoll(page, probe);
     await expect(marker(page, id, word)).toBeVisible();
-    await expect.poll(() => page.title()).toBe(`(1) ${baseTitle}`);
+    await expect.poll(() => page.title()).toMatch(/^\(1\) (Orders|订单|訂單)$/);
   });
 }
 

@@ -211,7 +211,14 @@ function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy, section
         <dl>
           <div>
             <dt>{c.commercial}</dt>
-            <dd>{badge(detail.commercial_state, c)}</dd>
+            <dd>
+              {badge(detail.commercial_state, c)}
+              {detail.source === "merchant_manual" && (
+                <span className="orders-badge" data-testid="order-detail-manual">
+                  {c.manualOrder}
+                </span>
+              )}
+            </dd>
           </div>
           <div>
             <dt>{c.payment}</dt>
@@ -585,11 +592,14 @@ export function MerchantOrders({
   useEffect(() => {
     if (!fresh.size) return;
     const base = document.title;
-    document.title = `(${fresh.size}) ${base}`;
+    // orders.title: the tab badge names this page, not the static app/layout title
+    // (lib/copy.ts "Commerce workspace"); restoring `base` on cleanup keeps the
+    // layout title intact when the badge count drops back to zero.
+    document.title = `(${fresh.size}) ${c.title}`;
     return () => {
       document.title = base;
     };
-  }, [fresh.size]);
+  }, [fresh.size, c.title]);
 
   useEffect(() => {
     void load();
@@ -930,6 +940,11 @@ function OrderRow({
             {isNew && (
               <span className="orders-badge" data-testid={`order-new-${row.order_id}`}>
                 {c.newOrder}
+              </span>
+            )}
+            {row.source === "merchant_manual" && (
+              <span className="orders-badge" data-testid={`order-manual-${row.order_id}`}>
+                {c.manualOrder}
               </span>
             )}
           </button>
