@@ -384,6 +384,36 @@ h2 {
 .text-button {
   margin-top: 8px;
 }
+/* storefront-v2 §F discount code field (components/PromoCode.tsx), reuses the address-field input look */
+.promo-code {
+  margin-top: 20px;
+  display: grid;
+  gap: 8px;
+}
+.promo-code-row {
+  display: flex;
+  gap: 10px;
+}
+.promo-code input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #becddd;
+  border-radius: 6px;
+  min-height: 48px;
+  padding: 0 12px;
+  font-size: 16px; /* >= 16px: iOS Safari must not zoom on focus */
+  text-transform: uppercase;
+}
+.promo-code small,
+.promo-code p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.promo-code [role="alert"] {
+  color: #8a2c1d;
+  font-weight: 600;
+}
 .address-section {
   border-top: 1px solid var(--line);
   padding-top: 24px;

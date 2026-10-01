@@ -21,6 +21,7 @@ import { purchaseCopy } from "../lib/purchase-copy";
 import { orderCopy } from "../lib/order-copy";
 import { cvsCopy } from "../lib/cvs-copy";
 import OrderFlow, { OrderDetails } from "./OrderFlow";
+import PromoCode from "./PromoCode";
 import OrderHistory from "./OrderHistory";
 import { CartLines } from "./CartLines";
 import { useCart } from "./CartProvider";
@@ -611,6 +612,10 @@ export default function CheckoutFlow({
                   }).format(new Date(quote.expires_at))}
                 </p>
                 <p>{copy.noPayment}</p>
+                {/* storefront-v2 §F: discount code; re-quotes this cart + delivery through writePurchase and replaces the quote. */}
+                {!orderLocked && error !== "session" && (
+                  <PromoCode context={context} quote={quote} locale={locale} busy={busy || pending} run={act} onQuote={setQuote} money={money} />
+                )}
                 <button
                   className="text-button"
                   disabled={

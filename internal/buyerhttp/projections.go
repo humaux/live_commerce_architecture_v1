@@ -5,6 +5,7 @@ import (
 
 	"livecommerce/internal/checkout"
 	"livecommerce/internal/pagination"
+	"livecommerce/internal/pricing"
 	"livecommerce/internal/storefront"
 )
 
@@ -160,6 +161,7 @@ type quoteResponse struct {
 	ExpiresAt   time.Time           `json:"expires_at"`
 	Lines       []quoteLineResponse `json:"lines"`
 	Amount      quoteAmountResponse `json:"amount"`
+	Promotion   *promotionResponse  `json:"promotion,omitempty"`
 }
 
 func projectQuoteLines(lines []storefront.QuoteLine) []quoteLineResponse {
@@ -185,6 +187,7 @@ func projectQuote(quote storefront.Quote) quoteResponse {
 			ShippingMinor: quote.Amount.ShippingMinor, ShippingTaxMinor: quote.Amount.ShippingTaxMinor,
 			TaxMinor: quote.Amount.TaxMinor, TotalMinor: quote.Amount.TotalMinor,
 		},
+		Promotion: projectPromotion(quote.Promotion),
 	}
 	return out
 }
@@ -258,9 +261,26 @@ func projectCheckout(result checkout.Result) checkoutResponse {
 }
 
 type orderQuoteResponse struct {
-	Currency string              `json:"currency"`
-	Lines    []quoteLineResponse `json:"lines"`
-	Amount   quoteAmountResponse `json:"amount"`
+	Currency  string              `json:"currency"`
+	Lines     []quoteLineResponse `json:"lines"`
+	Amount    quoteAmountResponse `json:"amount"`
+	Promotion *promotionResponse  `json:"promotion,omitempty"`
+}
+
+// promotionResponse is the buyer's view of the code a quote/order was priced with (storefront-v2 §F). Present only when a code applied (the
+// key is absent otherwise, so code-less responses keep their exact pre-0091 shape); the merchant's internal ids and version never leave Go.
+type promotionResponse struct {
+	Code       string `json:"code"`
+	Kind       string `json:"kind"`
+	Percent    int64  `json:"percent"`
+	FixedMinor int64  `json:"fixed_minor"`
+}
+
+func projectPromotion(p *pricing.Promo) *promotionResponse {
+	if p == nil {
+		return nil
+	}
+	return &promotionResponse{Code: p.Code, Kind: p.Kind, Percent: p.Percent, FixedMinor: p.FixedMinor}
 }
 
 type orderPickupResponse struct {
@@ -328,6 +348,7 @@ func projectOrder(order checkout.Order) orderResponse {
 					ShippingMinor: quote.Amount.ShippingMinor, ShippingTaxMinor: quote.Amount.ShippingTaxMinor,
 					TaxMinor: quote.Amount.TaxMinor, TotalMinor: quote.Amount.TotalMinor,
 				},
+				Promotion: projectPromotion(quote.Promotion),
 			},
 			Destination: orderDestinationResponse{
 				Kind: destination.Kind, Country: destination.Country, RecipientName: destination.RecipientName,

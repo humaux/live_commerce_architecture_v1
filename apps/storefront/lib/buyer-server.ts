@@ -16,6 +16,8 @@ import {
   validPaymentSignal,
   type PaymentMethodCode,
 } from "./payment-contract.ts";
+// storefront-v2 §F: the closed discount-code refusals (422 of the quote request and of checkout) and the promo_code mirror.
+import { PROMO_CODE_SHAPE, PROMO_ERROR_CODES } from "./promo-contract.ts";
 import {
   CLAIM_TOKEN,
   validClaimPreview,
@@ -123,6 +125,10 @@ const messages: Record<string, string> = {
   // storefront-v2 §C bank-transfer refusals (422 from the buyer definers); the UI maps the code to text.
   ...Object.fromEntries(
     TRANSFER_ERROR_CODES.map((code) => [code, "Request refused."]),
+  ),
+  // storefront-v2 §F discount-code refusals (422 from the quote request / BeginCheckout); the UI maps the code to text.
+  ...Object.fromEntries(
+    PROMO_ERROR_CODES.map((code) => [code, "Request refused."]),
   ),
 };
 
@@ -657,6 +663,7 @@ const shapes: Record<Exclude<Route["body"], undefined>, Shape> = {
     market_id: "string",
     country: "string",
     method: "string",
+    promo_code: "string", // optional (§F); extraShapeOK checks its grammar
   },
   destination: {
     expected_version: "integer",
@@ -731,6 +738,8 @@ function matchesShape(value: unknown, shape: Shape): boolean {
 const UUID_TEXT = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 function extraShapeOK(shape: Shape, parsed: unknown): boolean {
   const v = parsed as Record<string, unknown>;
+  if (shape === shapes.quote)
+    return v.promo_code === undefined || (typeof v.promo_code === "string" && PROMO_CODE_SHAPE.test(v.promo_code));
   if (shape === shapes.checkout)
     return (
       (v.payment_mode === undefined || isPaymentMode(v.payment_mode)) &&

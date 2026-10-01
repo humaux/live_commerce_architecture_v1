@@ -17,6 +17,7 @@ import (
 
 	"livecommerce/internal/checkout"
 	"livecommerce/internal/fulfillment"
+	"livecommerce/internal/promotions"
 )
 
 // The CVS route kinds live clear of handler.go's iota block so the two files never collide.
@@ -86,6 +87,11 @@ func cvsHTTPError(err error) error {
 			return codedResponse{coded, refusal.RetryAfter}
 		}
 		return coded
+	}
+	// storefront-v2 §F: a discount-code refusal (quote-time check or BeginCheckout's redeem) is a coded 422 promo_* like a CVS refusal.
+	var promo *promotions.Coded
+	if errors.As(err, &promo) {
+		return responseError{promo.Status, promo.Code}
 	}
 	return err
 }

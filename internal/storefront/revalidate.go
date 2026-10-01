@@ -50,7 +50,7 @@ func RevalidateQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, quoteID stri
 	if err != nil {
 		return Quote{}, err
 	}
-	if policy != out.Policy {
+	if !samePolicy(policy, out.Policy) {
 		return Quote{}, command.ErrConflict
 	}
 
@@ -72,7 +72,9 @@ func RevalidateQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, quoteID stri
 		}
 		inputs[i] = pricing.AmountLine{UnitPriceMinor: current.UnitPriceMinor, Quantity: current.Quantity}
 	}
-	amount, err := pricing.Calculate(policy, inputs)
+	// §F: the quote's own frozen promotion effect is re-applied, so the discount must reproduce exactly. Whether the code is still
+	// redeemable (edited, paused, expired, used up) is promotions.redeem's locked check in the same Begin transaction, not this one.
+	amount, err := pricing.CalculateWith(policy, inputs, out.Promotion)
 	if err != nil {
 		return Quote{}, err
 	}
@@ -94,6 +96,17 @@ func RevalidateQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, quoteID stri
 		return Quote{}, command.ErrConflict
 	}
 	return out, nil
+}
+
+// samePolicy compares two policies by value. `policy != out.Policy` compared FreeShippingThresholdMinor by pointer address, so every
+// policy with a free-shipping threshold (storefront-v2 §C) made RevalidateQuote, and so BeginCheckout, answer conflict.
+func samePolicy(left, right pricing.Policy) bool {
+	lt, rt := left.FreeShippingThresholdMinor, right.FreeShippingThresholdMinor
+	if (lt == nil) != (rt == nil) || (lt != nil && *lt != *rt) {
+		return false
+	}
+	left.FreeShippingThresholdMinor, right.FreeShippingThresholdMinor = nil, nil
+	return left == right
 }
 
 func sameCalculation(left, right pricing.Calculation) bool {
