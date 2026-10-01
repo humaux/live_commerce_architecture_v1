@@ -128,8 +128,7 @@ test("settings: the merchant sets bank details, the window and the free-shipping
   await expect(page.getByText(c.serviceSaved)).toBeVisible();
   // read back from the server after a reload: the card carries the saved values
   await page.reload();
-  await page.getByLabel(c.manual, { exact: true }).check();
-  await page.getByRole("button", { name: c.next, exact: true }).click();
+  await page.getByRole("button", { name: new RegExp(c.steps[1]) }).click(); // the draft keeps the wizard on step 3: back to step 2
   const again = page.getByTestId("transfer-settings-card");
   await expect(again.getByTestId("transfer-bank-name")).toHaveValue(bank.name);
   await expect(again.getByTestId("transfer-account-number")).toHaveValue(bank.account);
