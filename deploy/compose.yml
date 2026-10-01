@@ -189,6 +189,11 @@ services:
       COMMERCE_META_PAYLOAD_KEYS_JSON_FILE: /run/secrets/commerce_meta_payload_keys_json
       COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_meta_payload_active_key_id
       COMMERCE_META_APPS_JSON_FILE: /run/secrets/commerce_meta_apps_json
+      # meta-connect (merchant Facebook Page / Instagram connect, cmd/api/merchant_meta_connect.go): the api seals the merchant's own
+      # Page token with the Page-token keyring (contract amendment "Merchant connect (R4)"); read only when api.env sets
+      # COMMERCE_META_LOGIN_CONFIG_ID. The Meta app secret comes from COMMERCE_META_APPS_JSON above (no extra secret).
+      COMMERCE_META_PAGE_TOKEN_KEYS_JSON_FILE: /run/secrets/commerce_meta_page_token_keys_json
+      COMMERCE_META_PAGE_TOKEN_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_meta_page_token_active_key_id
       # Stripe (stripe-psp-v1 §0.2/§12, stripe-live-enable-v1 LD6): TWO switches (LD6). The webhook route follows
       # LC_STRIPE_ENABLED; the buyer checkout flag has its own source LC_STRIPE_CHECKOUT_ENABLED (defaults to
       # LC_STRIPE_ENABLED) so the platform can stop new checkouts while webhook + worker keep reconciling.
@@ -249,6 +254,8 @@ services:
       - commerce_meta_payload_keys_json
       - commerce_meta_payload_active_key_id
       - commerce_meta_apps_json
+      - commerce_meta_page_token_keys_json
+      - commerce_meta_page_token_active_key_id
       - commerce_meta_ads_app_secret
       - commerce_meta_ads_hpke_public_keys_json
       - commerce_meta_ads_hpke_active_key_id

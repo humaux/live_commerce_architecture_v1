@@ -245,6 +245,21 @@ deploy/scripts/deploy.sh upgrade <tag>
 6. 广告权限开通（meta-ads-v1 A-1）：0074 只放宽权限 CHECK，`create_initial_store` 不授予 `ads:*`，已部署店铺的 Ads 页在开通前不可用。owner 在聊天批准后，用迁移属主连接运行（幂等、只作用于一个店铺的创建者；需该主体已持有完整创建者权限集，否则整笔回滚）：`psql "$MIGRATION_DATABASE_URL" -v ON_ERROR_STOP=1 -v store_id=<店铺 uuid> -v principal_id=<主体 uuid> -f scripts/ops/grant-ads-permissions.sql`，输出 `granted=<0..3>`。授予权限不等于可投放：每店广告上限默认 NT$0（关闭，裁决 O4），由运营另行设置。
 7. 卡住的草稿（无法解绑广告账户）：解绑会被触发器 `bindings_ads_disable_guard` 以 `binding_in_use`（409）拒绝，直到该店所有草稿都不再“可能花费”（AD6）。先在 admin 暂停；暂停 op 需到 SUCCEEDED。若暂停一直到不了：(a) 令牌被 Meta 撤销 → 商家用**同一个**广告账户重新连接（令牌换新、binding 不变），advance sweeper 会再规划下一个 pause seq；(b) 激活 op 停在 UNKNOWN → 等 reconcile（不要手工改 ops 行）；(c) 以上都不成立 → 在 Ads Manager 核实广告已停，草稿在 `ends_at + 1 天` 后自动不再计入，解绑随之放行。没有操作员强制覆盖（有意：覆盖等于允许“看不见的花费”）；如需加速，先记录根因再另立契约。
 
+### 6.7 Meta：商家自助连接 Facebook 主页 / Instagram（meta-connect，R4）
+
+商家在后台设置页自己连接主页（取代日常使用 `meta-admin route/page-token`，后者保留为 break-glass）。api 在 `COMMERCE_META_LOGIN_CONFIG_ID` 非空时挂载 `…/meta-connect/*` 路由（`cmd/api/merchant_meta_connect.go`），空则 404 且不读其他变量。
+
+1. **Meta 后台设置（owner 事项，已为试点 app 大梦 4291253377792879 完成，2026-10-01；换 app 时重做）**：
+   - 应用 → Facebook 登录（商家版）→ 设置 → **有效的 OAuth 重定向 URI** 加入 `https://<LC_ADMIN_HOST>/api/meta/callback`（试点：`https://admin.xgdwm.com/api/meta/callback`；广告用的 `https://<LC_ADMIN_HOST>/api/ads/meta/callback` 另行登记，两个都要）。
+   - Facebook Login for Business → 配置（试点：「直播SaaS主页连接」，id `2952863798433821`，令牌类型 **用户访问令牌**），权限**恰好**：`pages_show_list`、`pages_manage_metadata`、`pages_read_engagement`、`pages_messaging`、`instagram_basic`、`instagram_manage_comments`、`instagram_manage_messages`、`business_management`。最少要求（缺则拒绝连接）：前四项；Instagram 三项仅在主页有关联 IG 账号时要求。
+   - Webhooks：Page 对象订阅 `feed`、Instagram 对象订阅 `comments`、`live_comments`（回调见 §6.3 第 1 步）；`commerce_meta_apps_json` 里 `page` 条目的 `app_id`/`app_secret` 就是登录用的 app（无需另一个 secret）。
+   - 正式对外（非开发者/测试者账号使用）需要 App Review 通过上述权限；R4 未验证（SANDBOX/LIVE NOT_RUN）。
+2. **api.env**：`COMMERCE_META_LOGIN_CONFIG_ID`、`COMMERCE_META_LOGIN_REDIRECT_URI=https://<LC_ADMIN_HOST>/api/meta/callback`、`COMMERCE_META_LOGIN_GRAPH_VERSION=v26.0`（示例见 `deploy/env/api.env.example`）。要求 `COMMERCE_META_WEBHOOK_ENABLED=1` 和 `LC_IDENTITY_ENABLED`；`claims` profile 负责真实私信（P06 对缺 claims 给出警告）。api 容器现在也挂载 Page-token keyring（`commerce_meta_page_token_*`，只用于封存商家自己的 Page token 与断开连接时的取消订阅；合同 §7 修订）。
+3. 升级：先跑迁移 0095，再 `preflight.sh`（P06/P08）→ `deploy.sh upgrade`。Caddy 访问日志已对所有路径把 `code`/`state` 查询参数替换为 REDACTED（`deploy/caddy/Caddyfile` 全局规则，同样覆盖 `/api/meta/callback`；这是一次性凭据）；smoke S40 目前只对 `/api/ads/meta/callback` 放 canary，未单独覆盖新路径（已知缺口）。
+4. 关闭：清空 `COMMERCE_META_LOGIN_CONFIG_ID` 并重启 api（路由 404；已连接的主页保持，webhook 与私信不受影响）。
+5. 排障：卡片显示“已过期或撤销”= 私信发送时 Graph 返回 190（`reauth_required`），商家点「重新连接」即可（同一主页、新令牌版本）；“跨店 409 page_taken”= 该主页已属于另一间店铺（路由的 `meta_inbox.asset_owners` 不随断开释放，需运维评估后用 `meta-admin` 处理）；回调返回 `meta_connect_failed` = Meta 侧交换/列表/订阅失败，状态已被烧掉，重新开始即可，没有任何半启用状态。
+6. 证据：`TestMetaConnect*`（REAL_PG + River，MOCK Graph：状态/权限/拒绝、挑选、IG 有无、webhook→认领→私信、190、断开、跨店）、`--browser-meta-connect`（浏览器，MOCK）。真实 Meta（对话框、`/me/accounts`、订阅）NOT_RUN。
+
 ### 6.5 平台服务费（Stripe Billing，SANDBOX）与 R2 权限补发
 
 1. 前提（owner 事项）：平台自己的 Stripe **测试**账户（与商家 PSP 账户不同，BD1）、计划 price id（Billing Q1/Q2）。

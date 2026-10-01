@@ -292,7 +292,8 @@ allow = {
     "api.env": {"COMMERCE_ACCOUNTS_ENABLED", "COMMERCE_BUYER_PAYMENT_ENABLED", "COMMERCE_META_WEBHOOK_ENABLED",
                 "COMMERCE_STUDIO_ENABLED", "COMMERCE_STUDIO_MEDIA_ENABLED", "COMMERCE_CLAIMS_ENABLED", "COMMERCE_OIDC_CLIENT_ID", "COMMERCE_IDENTITY_PROVIDER_KEY",
                 "COMMERCE_SESSION_TTL", "COMMERCE_PAYMENT_PROFILE", "COMMERCE_META_ADS_APP_ID", "COMMERCE_META_ADS_CONFIG_ID",
-                "COMMERCE_META_ADS_REDIRECT_URI", "COMMERCE_META_ADS_GRAPH_VERSION", "TZ"},
+                "COMMERCE_META_ADS_REDIRECT_URI", "COMMERCE_META_ADS_GRAPH_VERSION", "COMMERCE_META_LOGIN_CONFIG_ID",
+                "COMMERCE_META_LOGIN_REDIRECT_URI", "COMMERCE_META_LOGIN_GRAPH_VERSION", "TZ"},
     "admin.env": {"NODE_OPTIONS", "TZ"},
     "storefront.env": {"NODE_OPTIONS", "TZ"},
     "payment-worker.env": {"COMMERCE_PAYMENT_WORKER_CONCURRENCY", "TZ"},
@@ -403,6 +404,14 @@ if ads_app:
     rec("P06", os.path.isdir(mig) and any(re.fullmatch(r"0080_.*\.sql", f) for f in os.listdir(mig)),
         "COMMERCE_META_ADS_APP_ID requires migrations/0080 (ruling B15: ads mount waits for ads-capi)")
 rec("P06", "ads" not in profiles or bool(ads_app), "ads profile without COMMERCE_META_ADS_APP_ID (nothing to dispatch)", warn=True)
+# meta-connect (merchant Facebook Page / Instagram connect): the api mounts meta-connect iff COMMERCE_META_LOGIN_CONFIG_ID is set
+# (cmd/api newMetaConnect). It reuses the Meta app of COMMERCE_META_APPS_JSON and the Page-token keyring, so the webhook must be on
+# and the claims-worker (the only reply dispatcher) must run; sessions come from identity.
+login_cfg = api.get("COMMERCE_META_LOGIN_CONFIG_ID", "")
+if login_cfg:
+    rec("P06", meta, "COMMERCE_META_LOGIN_CONFIG_ID requires COMMERCE_META_WEBHOOK_ENABLED=1 (the Page route needs the webhook receiver)")
+    rec("P06", identity, "COMMERCE_META_LOGIN_CONFIG_ID requires LC_IDENTITY_ENABLED")
+    rec("P06", "claims" in profiles, "COMMERCE_META_LOGIN_CONFIG_ID requires the claims profile (claims-worker sends the private replies)", warn=True)
 
 # ---- P08 grammars and ranges -------------------------------------------------------------------------------
 ttl = E.get("LC_BUYER_SESSION_TTL_SECONDS", "")
@@ -423,6 +432,11 @@ if ads_app:
     rec("P08", api.get("COMMERCE_META_ADS_REDIRECT_URI", "") == "https://" + E.get("LC_ADMIN_HOST", "") + "/api/ads/meta/callback",
         "COMMERCE_META_ADS_REDIRECT_URI == https://<LC_ADMIN_HOST>/api/ads/meta/callback")
     rec("P08", graph_version.fullmatch(api.get("COMMERCE_META_ADS_GRAPH_VERSION", "")) is not None, "COMMERCE_META_ADS_GRAPH_VERSION (api)")
+if login_cfg:
+    rec("P08", re.fullmatch(r"[0-9]{1,40}", login_cfg) is not None, "COMMERCE_META_LOGIN_CONFIG_ID (Facebook Login for Business configuration id)")
+    rec("P08", api.get("COMMERCE_META_LOGIN_REDIRECT_URI", "") == "https://" + E.get("LC_ADMIN_HOST", "") + "/api/meta/callback",
+        "COMMERCE_META_LOGIN_REDIRECT_URI == https://<LC_ADMIN_HOST>/api/meta/callback")
+    rec("P08", graph_version.fullmatch(api.get("COMMERCE_META_LOGIN_GRAPH_VERSION", "")) is not None, "COMMERCE_META_LOGIN_GRAPH_VERSION")
 if "ads" in profiles:
     rec("P08", graph_version.fullmatch(aw.get("COMMERCE_META_ADS_GRAPH_VERSION", "")) is not None, "COMMERCE_META_ADS_GRAPH_VERSION (ads-worker)")
     rec("P08", not ads_app or aw.get("COMMERCE_META_ADS_GRAPH_VERSION") == api.get("COMMERCE_META_ADS_GRAPH_VERSION"),

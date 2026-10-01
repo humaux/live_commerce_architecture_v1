@@ -374,7 +374,9 @@ func TestMetaClaimsMCI10SecretEnvOwnership(t *testing.T) {
 		// claims-retention-purge-v1 §6 clause 4 (IR-2): plus the operator CLI cmd/retention-admin (never a service).
 		"COMMERCE_CLAIMS_ACTOR_KEY":      {"cmd/meta-worker/", "internal/integrations/meta/", "cmd/retention-admin/"},
 		"COMMERCE_CLAIMS_REPLY_LINK_KEY": {"cmd/claims-worker/", "internal/claims/", "internal/claimsintake/"},
-		"COMMERCE_META_PAGE_TOKEN_":      {"cmd/claims-worker/", "cmd/meta-admin/", "internal/integrations/metareply/"},
+		// meta-connect (R4, contract amendment "Merchant connect"): cmd/api's merchant_meta_connect.go loads the keyring to seal the
+		// merchant's own Page token at connect time; no other cmd/api file and no other internal package may.
+		"COMMERCE_META_PAGE_TOKEN_": {"cmd/claims-worker/", "cmd/meta-admin/", "internal/integrations/metareply/", "cmd/api/merchant_meta_connect.go"},
 	}
 	for _, s := range srcs {
 		for env, owners := range allow {

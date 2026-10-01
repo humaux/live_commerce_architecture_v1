@@ -148,6 +148,9 @@ func mciApplyWithout(t *testing.T, owner *pgxpool.Pool) {
 	adsNumbered, _ := filepath.Glob("../../migrations/[0-9][0-9][0-9][0-9]_meta_ads*.sql")
 	capiNumbered, _ := filepath.Glob("../../migrations/[0-9][0-9][0-9][0-9]_meta_capi.sql") // ads-capi 0080 builds on 0074's schema
 	adsNumbered = append(adsNumbered, capiNumbered...)
+	// meta-connect 0095 (merchant Page connect) builds on the intake's Page-token tables and meta_inbox routes: same treatment.
+	connectNumbered, _ := filepath.Glob("../../migrations/[0-9][0-9][0-9][0-9]_meta_connect.sql")
+	adsNumbered = append(adsNumbered, connectNumbered...)
 	adsPost, _ := filepath.Glob("../../migrations/post_river/[0-9][0-9][0-9][0-9]_meta_ads_river.sql")
 	adsSkip := map[string]bool{}
 	for _, path := range append(adsNumbered, adsPost...) {
