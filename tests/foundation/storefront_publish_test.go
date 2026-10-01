@@ -347,7 +347,9 @@ func TestStorefrontPublishSPW03MerchantScopeAndPermission(t *testing.T) {
 	}{
 		"foreign tenant store (read)":  {f.token, s.storeB, false, platform.ErrScopeNotFound},
 		"foreign tenant store (write)": {f.token, s.storeB, true, platform.ErrScopeNotFound},
-		"store the grantee cannot see": {f.otherToken, f.otherStore, true, platform.ErrScopeNotFound},
+		// limitedPrincipal holds nothing on otherStore. (otherPrincipal no longer qualifies: it is otherStore's creator in
+		// identity.initial_stores, and since 0089 the creator is that store's full owner via staff_creator_trigger.)
+		"store the grantee cannot see": {f.missingPermission, f.otherStore, true, platform.ErrScopeNotFound},
 		"read-only grantee writes":     {f.otherToken, f.store, true, platform.ErrForbidden},
 		"no integration grant at all":  {f.missingPermission, f.store, true, platform.ErrForbidden},
 		"no integration grant (read)":  {f.missingPermission, f.store, false, platform.ErrForbidden},
