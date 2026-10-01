@@ -302,7 +302,7 @@ func sgBundle(role string, universe []string) map[string]bool {
 	return out
 }
 
-func pgCode(err error) string {
+func pgCodeMsg(err error) string {
 	var pg *pgconn.PgError
 	if errors.As(err, &pg) {
 		return pg.Code + "/" + pg.Message
@@ -830,7 +830,7 @@ func TestStaffGateSG03OwnerFloorDirectDML(t *testing.T) {
 	for _, role := range []string{"", "commerce_staff_writer"} {
 		for name, stmt := range map[string][2]any{"delete sole owner": del, "demote sole owner": demote} {
 			err := e.dml(role, stmt)
-			if err == nil || !strings.Contains(pgCode(err), "last_owner") {
+			if err == nil || !strings.Contains(pgCodeMsg(err), "last_owner") {
 				t.Errorf("direct DML (%s, role %q) must be refused with last_owner at commit: %v", name, role, err)
 			}
 			if e.owners() != 1 {
@@ -841,7 +841,7 @@ func TestStaffGateSG03OwnerFloorDirectDML(t *testing.T) {
 	// Two owners: deleting one is fine, deleting both in one transaction is not.
 	p2, _, _ := e.join("owner")
 	del2 := [2]any{`DELETE FROM identity.store_staff WHERE store_id=$1::uuid AND principal_id=$2::uuid`, []any{st, p2}}
-	if err := e.dml("", del, del2); err == nil || !strings.Contains(pgCode(err), "last_owner") {
+	if err := e.dml("", del, del2); err == nil || !strings.Contains(pgCodeMsg(err), "last_owner") {
 		t.Errorf("deleting every owner in one transaction must fail: %v", err)
 	}
 	if e.owners() != 2 {
