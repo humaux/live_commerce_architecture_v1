@@ -29,6 +29,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"livecommerce/internal/fulfillment"
 	"livecommerce/internal/platform"
 	"livecommerce/internal/reporting"
 	"livecommerce/internal/storefront"
@@ -460,9 +461,11 @@ func TestCogIsolation(t *testing.T) {
 	b, order := e.cogPlace("")
 	b.cofProof(order, t04Key("cog-iso-p"), "12345", b.h.quote.Amount.TotalMinor)
 	allPerms := []string{"store:read", "orders:read", "payments:refund", "integration:read", "integration:manage"}
-	_, tokenB := lcPrincipal(t, f, f.tenantB, []string{f.storeB}, allPerms...)   // another tenant, every permission on ITS store
-	_, tokenA2 := lcPrincipal(t, f, f.tenantA, []string{f.storeA2}, allPerms...) // same tenant, another store only
-	readOnly, _ := e.member("orders:read")                                       // right store, too few permissions for the writes
+	_, tokenB := lcPrincipal(t, f, f.tenantB, []string{f.storeB}, allPerms...) // another tenant, every permission on ITS store
+	storeA2 := randomUUID()                                                    // a second store of the same tenant
+	mustExec(t, f.owner, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,'second store','TWD')`, e.tenant(), storeA2)
+	_, tokenA2 := lcPrincipal(t, f, f.tenantA, []string{storeA2}, allPerms...) // same tenant, that other store only
+	readOnly, _ := e.member("orders:read")                                     // right store, too few permissions for the writes
 	settingsBefore := e.count(`SELECT version FROM checkout.bank_transfer_settings WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store())
 	auditBefore := e.count(`SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action LIKE 'checkout.bank_transfer_%'`, e.store())
 
@@ -492,10 +495,10 @@ func TestCogIsolation(t *testing.T) {
 		{"other tenant on this store's path", tokenB, e.store()},
 		{"other tenant on its own store's path with this order id", tokenB, f.storeB},
 		{"same tenant, other store's grants, this store's path", tokenA2, e.store()},
-		{"same tenant, other store's grants, its own store's path with this order id", tokenA2, f.storeA2},
+		{"same tenant, other store's grants, its own store's path with this order id", tokenA2, storeA2},
 	} {
 		for _, r := range routes(c.store) {
-			if c.store == f.storeB || c.store == f.storeA2 {
+			if c.store == f.storeB || c.store == storeA2 {
 				// the settings routes of the caller's OWN store are legitimate (they never carry this store's data); the order routes are not
 				if strings.Contains(r.path, "bank-transfer-settings") {
 					st, _, raw := e.mcall(c.token, r.method, r.path, t04Key("cog-iso"), r.body)
@@ -729,9 +732,12 @@ func TestCogFreeShippingSnapshot(t *testing.T) {
 		p := e.p.policy
 		fee := int64(6000)
 		p.Method, p.ExpectedVersion, p.ShippingMinor, p.Enabled, p.FreeShippingThresholdMinor = "delivery:"+code, version, &fee, true, th
-		if _, err := e.p.setPolicy(p); err != nil {
+		saved, err := e.p.setPolicy(p)
+		if err != nil {
 			t.Fatalf("set policy: %v", err)
 		}
+		// the delivery service pins a policy version (Begin refuses a quote of another one): the merchant UI saves the policy and then the service
+		e.updateService(code, func(in *fulfillment.ServiceInput) { in.PolicyVersion = saved.Version })
 	}
 	// a pickup placement helper that returns the order and its quote (the buyer's quote is what Begin compares)
 	prepare := func() (*tcvBuyer, storefront.Destination, storefront.Quote) {
