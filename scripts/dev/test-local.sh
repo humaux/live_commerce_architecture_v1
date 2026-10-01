@@ -546,8 +546,7 @@ elif [[ "$test_mode" == --browser-meta-ads ]]; then
   LC_BROWSER_META_ADS_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1700s -run '^TestBrowserMetaAds(Consent)?$' -v ./tests/foundation
   printf 'PASS: MA09a isolated admin Next, Go API + ads worker, PG; Meta = MOCK (fake Graph + the Facebook Login dialog answered by the browser route); not Meta, provider or deployment acceptance; MA09b buyer consent -> CAPI context runs against the production storefront Next build.\n'
 elif [[ "$test_mode" == --browser-meta-connect ]]; then
-  LC_BROWSER_META_CONNECT_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1200s -run '^TestBrowserMetaConnect$' -v ./tests/foundation
-  LC_BROWSER_META_CONNECT_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1800s -run '^TestBrowserMetaConnectGate$' -v ./tests/foundation
+  LC_BROWSER_META_CONNECT_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=2400s -run '^TestBrowserMetaConnect(Gate)?$' -v ./tests/foundation
   printf 'PASS: meta-connect isolated admin Next, Go API with the metaconnect service, PG; Meta = MOCK (tests/metaconnect/fakegraph + the Facebook Login dialog answered by the browser route); merchant connects Page A + Instagram, a forged state and a missing permission are refused, disconnect and a Facebook-only reconnect, en/zh-TW/zh-CN, desktop + 390px; the independent gate (MCG10) adds the Studio claim-source picker, state replay and hostile-cookie callback refusals; not Meta, provider or deployment acceptance; Meta SANDBOX/LIVE are NOT_RUN.\n'
 elif [[ "$test_mode" == --browser-catalog-core ]]; then
   LC_BROWSER_CATALOG_CORE_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1700s -run '^TestBrowserCatalogCore$' -v ./tests/foundation

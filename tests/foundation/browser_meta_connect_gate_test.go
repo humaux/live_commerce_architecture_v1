@@ -45,7 +45,7 @@ func TestBrowserMetaConnectGate(t *testing.T) {
 	f := fixture(t)
 	store := cbxStore(t, f, f.tenantA)
 	principal, fixtureToken := lcPrincipal(t, f, f.tenantA, []string{store}, "store:read", "integration:manage", "integration:read",
-		"live:read", "live:manage", "integration:execute", "catalog:read", "inventory:read")
+		"live:read", "live:manage", "integration:execute", "catalog:read", "inventory:read", "orders:read") // orders:read: the role-aware nav shows nav-orders, which the spec waits on
 
 	fake := fakegraph.New()
 	t.Cleanup(fake.Close)
