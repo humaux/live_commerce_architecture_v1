@@ -137,3 +137,16 @@ Wire facts the storefront-shell consumer needs (all additive to section B; migra
   without `|null` is required; `""` for a nullable string is stored as null; `cta_target` must be null unless `cta_kind` is
   `collection`/`page`; `page` targets must be a page slug of the same document; page slugs unique; `line_url` accepts https
   or `line://`; markdown bodies may be empty. Rollback publishes a copy as a new version and leaves the draft untouched.
+
+### D acceptance (appended by unit staff-team, migration 0089; append only)
+
+Implemented as: `identity.store_staff` (role label) + `identity.staff_invitations` (sha256 token hash, 72 h CHECK) + definers
+`identity.staff_{list,invite,record_invite_mail,revoke_invite,set_role,remove,accept}` (EXECUTE commerce_identity only; owner commerce_staff_writer).
+Transport: `POST /v1/identity/staff/{list,invite,revoke-invite,set-role,remove,accept}` (BFF key + merchant bearer) behind
+`POST /api/team/{action}`; pages `/[locale]/team` and `/[locale]/invite/[token]`. Role bundles are `identity.staff_role_permissions(role)`
+(owner = all 25 permissions incl. billing:manage; admin = owner minus billing:manage; staff management = the owner role row itself).
+- Owner floor: every mutating definer checks it under a per-store advisory lock and a deferred constraint trigger re-checks at commit (direct DML cannot orphan a store).
+- Revoke = role row + store grants deleted, membership deactivated when no grant remains; `identity.resolve_access` therefore refuses on the next request.
+- Accept refusal is one generic PT404 `invite_invalid` (unknown/expired/revoked/used token, other email, OIDC-only account); PT409 `already_member` only for the caller's own membership.
+- Limits: 20 live invitations and 50 creations per 24 h per store (PT429 `too_many_invitations`). Mail: one send after commit, outcome in `mail_state`, a resend is a new invitation that revokes the old one.
+- Evidence tier: REAL_PG author smoke `tests/foundation/staff_team_smoke_test.go` (4 tests, one red run each for email binding and owner floor); browser/E2E and mail over real SMTP: NOT_RUN.

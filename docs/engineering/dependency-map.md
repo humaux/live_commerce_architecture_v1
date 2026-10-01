@@ -271,7 +271,7 @@ Package httperror owns transport-safe error envelopes, never domain policy.
 
 ## `internal/identity`
 
-Package identity owns merchant login and first-store bootstrap: the OIDC login (Service) and the email + password + emailed-code login (Passwords, contracts/merchant-password-auth-v1.md).
+Package identity owns merchant login and first-store bootstrap: the OIDC login (Service) and the email + password + emailed-code login (Passwords, contracts/merchant-password-auth-v1.md), plus the store staff team (Staff: invitations, roles, revoke; contracts/storefront-v2.md §D, staff.go).
 
 - Depends on (internal): `internal/mail`, `internal/oidclogin`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `golang.org/x/crypto/argon2`, `golang.org/x/text/unicode/norm`
@@ -279,7 +279,7 @@ Package identity owns merchant login and first-store bootstrap: the OIDC login (
 
 ## `internal/identityhttp`
 
-Package identityhttp owns the trusted identity HTTP surface (/v1/identity/*) that only the local BFF may call, authenticated by a fixed BFF key: OIDC login start and complete, first store bootstrap and logout (handler.go), and the merchant password routes /v1/identity/password/* (password.go, contracts/merchant-password-auth-v1.md §7.1).
+Package identityhttp owns the trusted identity HTTP surface (/v1/identity/*) that only the local BFF may call, authenticated by a fixed BFF key: OIDC login start and complete, first store bootstrap and logout (handler.go), and the merchant password routes /v1/identity/password/* (password.go, contracts/merchant-password-auth-v1.md §7.1) and the staff-team routes /v1/identity/staff/* (staff.go, contracts/storefront-v2.md §D).
 
 - Depends on (internal): `internal/httperror`, `internal/identity`
 - Depends on (third-party): —
