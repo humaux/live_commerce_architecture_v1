@@ -147,8 +147,10 @@ async function route(request: Request, context: Context) {
   const url = new URL(request.url);
   // catalog-core: a read carries no body or key; only the two list resources may carry a query, with known keys only.
   if (catalogV2Any.test(path)) {
+    // Exactly one cache-buster is allowed: GET collections/{id}/image?v=<image id> (the id changes per upload).
+    const cacheBuster = request.method === "GET" && collectionImageRoute.test(path) && new RegExp(`^\\?v=${uuid}$`).test(url.search);
     if (!catalogQueryRoute.test(path) || request.method !== "GET") {
-      if (request.url.includes("?")) return error(422, "invalid_request");
+      if (request.url.includes("?") && !cacheBuster) return error(422, "invalid_request");
     } else if (
       request.url.endsWith("?") ||
       [...url.searchParams.keys()].some((key) => !catalogQueryKeys.has(key)) ||

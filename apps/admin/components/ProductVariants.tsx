@@ -13,7 +13,7 @@ import type { Locale } from "@live-commerce/i18n";
 import type { Store } from "@/lib/model";
 import { command, readStockVersion, readWarehouses, send } from "@/lib/catalog-v2-client";
 import {
-  cleanAxes, codePattern, fromMinor, limits, parseCreated, sameValues, toMinor, variantMatrix, variantTitle,
+  cleanAxes, codePattern, fromMinor, limits, parseBalance, parseCreated, proposedCode, sameValues, toMinor, variantMatrix, variantTitle,
   type OptionAxis, type ProductDetail, type Variant,
 } from "@/lib/catalog-v2-model";
 import { catalogCopy, errorText } from "@/lib/catalog-v2-copy";
@@ -87,7 +87,7 @@ export function ProductVariants({ locale, store, detail, boundary, refresh }: Pr
       )}
       {full && <p className="audit-hint">{c.variantLimit}</p>}
       {!full && (detail.options.length === 0 ? detail.skus.length === 0 : missing.length > 0) && (
-        <NewVariants key={`${detail.version}:${detail.skus.length}`} locale={locale} store={store} detail={detail} rows={detail.options.length === 0 ? [[]] : missing.slice(0, limits.variants - detail.skus.length)} boundary={boundary} refresh={refresh} />
+        <NewVariants locale={locale} store={store} detail={detail} rows={detail.options.length === 0 ? [[]] : missing.slice(0, limits.variants - detail.skus.length)} boundary={boundary} refresh={refresh} />
       )}
     </section>
   );
@@ -182,7 +182,7 @@ function AdjustStock({ v, locale, store, boundary, refresh, write, close }: {
       return write.fail(catalogCopy[locale].errors.retry_later);
     }
     const ok = await write.run(command("POST", "inventory/adjustments", { warehouse_id: warehouse, sku_id: v.id, delta: n, expected_version: version, reason: reason.trim() }),
-      parseCreated, () => void refresh(), c.stockAdjusted);
+      parseBalance, () => void refresh(), c.stockAdjusted);
     if (ok) close();
   }
   return (
@@ -198,39 +198,50 @@ function AdjustStock({ v, locale, store, boundary, refresh, write, close }: {
   );
 }
 
-type NewRow = { values: string[]; code: string; price: string; key: string };
-const safeCode = (slug: string, values: string[]) =>
-  [slug, ...values].join("-").replace(/[^A-Za-z0-9_.-]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").slice(0, limits.code) || "SKU";
+type NewRow = { code: string; price: string; key: string };
 
-// Rows for option combinations (or the single default variant) that have no SKU yet. Each row owns one idempotency key,
-// regenerated whenever the row is edited (same key with different bytes would be a 409); rows are created in order and
-// the run stops at the first failure so the screen shows exactly which rows exist after the re-read.
+// Rows for option combinations (or the single default variant) that have no SKU yet. The typed values live in a map keyed
+// by the combination, so they survive the re-read that follows every create (no remount): created rows disappear, failed
+// rows keep what was typed and the failure stays visible. Each row owns one idempotency key, regenerated whenever the row is
+// edited (same key with different bytes would be a 409). Everything the client can know is checked BEFORE the first request
+// (price, code shape, duplicate codes inside the batch), so a bad row never leaves the matrix half created; the server's own
+// refusals (a code already used in the store) stop the run at that row and say which one.
 function NewVariants({ locale, store, detail, rows, boundary, refresh }: {
   locale: Locale; store: Store; detail: ProductDetail; rows: string[][]; boundary: string; refresh: () => Promise<boolean>;
 }) {
   const cc = catalogCopy[locale];
   const c = cc.edit;
-  const [list, setList] = useState<NewRow[]>(() => rows.map((values) => ({ values, code: safeCode(detail.slug, values), price: "", key: crypto.randomUUID() })));
+  const [typed, setTyped] = useState<Record<string, NewRow>>({});
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const running = useRef(false);
-  const edit = (i: number, patch: Partial<NewRow>) => setList((rowsNow) => rowsNow.map((r, j) => (j === i ? { ...r, ...patch, key: crypto.randomUUID() } : r)));
+  const idOf = (values: string[]) => JSON.stringify(values);
+  const list = rows.map((values) => {
+    const t = typed[idOf(values)];
+    return { values, id: idOf(values), row: t ?? { code: proposedCode(detail.slug, detail.options, values), price: "", key: "" } };
+  });
+  const edit = (id: string, base: NewRow, patch: Partial<NewRow>) => setTyped((now) => ({ ...now, [id]: { ...base, ...patch, key: crypto.randomUUID() } }));
 
   async function create() {
     if (running.current) return;
-    for (const r of list) {
-      if (toMinor(r.price, store.currency) === null) return setMessage(c.invalidPrice);
-      if (!codePattern.test(r.code)) return setMessage(c.invalidCode);
+    const codes = new Set<string>();
+    for (const { row } of list) {
+      if (toMinor(row.price, store.currency) === null) return setMessage(c.invalidPrice);
+      if (!codePattern.test(row.code) || codes.has(row.code)) return setMessage(c.invalidCode);
+      codes.add(row.code);
     }
     running.current = true;
     setBusy(true);
     setMessage("");
     let failed = "";
-    for (const r of list) {
-      const body = { product_id: detail.id, code: r.code, price_minor: toMinor(r.price, store.currency), option_values: r.values };
-      const outcome = await send(store.id, { key: r.key, method: "POST", resource: "skus", body: JSON.stringify(body) }, boundary, parseCreated);
+    for (const { values, id, row } of list) {
+      const key = row.key || crypto.randomUUID();
+      const body = { product_id: detail.id, code: row.code, price_minor: toMinor(row.price, store.currency), option_values: values };
+      const outcome = await send(store.id, { key, method: "POST", resource: "skus", body: JSON.stringify(body) }, boundary, parseCreated);
       if (!outcome.ok) {
-        failed = outcome.uncertain ? c.uncertain : errorText(cc, outcome.code);
+        // Keep the key with the row: an uncertain write retried with the same bytes replays instead of duplicating.
+        setTyped((now) => ({ ...now, [id]: { ...row, key } }));
+        failed = `${variantTitle(values)}: ${outcome.uncertain ? c.uncertain : errorText(cc, outcome.code)}`;
         break;
       }
     }
@@ -247,11 +258,11 @@ function NewVariants({ locale, store, detail, rows, boundary, refresh }: {
         <table className="orders-table product-variant-table">
           <thead><tr><th>{c.variant}</th><th>{c.code}</th><th>{c.price}</th></tr></thead>
           <tbody>
-            {list.map((r, i) => (
-              <tr key={r.values.join("\u0000")} data-testid={`new-variant-${i}`}>
-                <td data-label={c.variant}>{variantTitle(r.values)}</td>
-                <td data-label={c.code}><input aria-label={c.code} data-testid={`new-code-${i}`} value={r.code} maxLength={limits.code} onChange={(e) => edit(i, { code: e.target.value })} /></td>
-                <td data-label={c.price}><input aria-label={c.price} inputMode="decimal" data-testid={`new-price-${i}`} value={r.price} onChange={(e) => edit(i, { price: e.target.value })} /> <small>{store.currency}</small></td>
+            {list.map(({ values, id, row }, i) => (
+              <tr key={id} data-testid={`new-variant-${i}`}>
+                <td data-label={c.variant}>{variantTitle(values)}</td>
+                <td data-label={c.code}><input aria-label={c.code} data-testid={`new-code-${i}`} value={row.code} maxLength={limits.code} onChange={(e) => edit(id, row, { code: e.target.value })} /></td>
+                <td data-label={c.price}><input aria-label={c.price} inputMode="decimal" data-testid={`new-price-${i}`} value={row.price} onChange={(e) => edit(id, row, { price: e.target.value })} /> <small>{store.currency}</small></td>
               </tr>
             ))}
           </tbody>

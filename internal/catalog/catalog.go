@@ -159,6 +159,8 @@ func CreateProduct(ctx context.Context, tx pgx.Tx, scope platform.Scope, key str
 		finishProduct(&out)
 		return command.Audit(ctx, tx, scope, "catalog.product.created")
 	})
+	// A replayed answer stored before 0086 has no options / option_values: keep the JSON shape non-null.
+	finishProduct(&out)
 	return out, mapError(err)
 }
 
@@ -233,6 +235,8 @@ func PatchProduct(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, id 
 		finishProduct(&out)
 		return command.Audit(ctx, tx, scope, "catalog.product.updated")
 	})
+	// A replayed answer stored before 0086 has no options / option_values: keep the JSON shape non-null.
+	finishProduct(&out)
 	return out, mapVersionError(err)
 }
 
@@ -261,6 +265,8 @@ func ArchiveProduct(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, i
 		finishProduct(&out)
 		return command.Audit(ctx, tx, scope, "catalog.product.archived")
 	})
+	// A replayed answer stored before 0086 has no options / option_values: keep the JSON shape non-null.
+	finishProduct(&out)
 	return out, mapVersionError(err)
 }
 
@@ -365,6 +371,8 @@ func CreateSKU(ctx context.Context, tx pgx.Tx, scope platform.Scope, key string,
 		}
 		return command.Audit(ctx, tx, scope, "catalog.sku.created")
 	})
+	// A replayed answer stored before 0086 has no options / option_values: keep the JSON shape non-null.
+	finishSKU(&out)
 	return out, mapError(err)
 }
 
@@ -406,6 +414,8 @@ func UpdateSKU(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, id str
 		finishSKU(&out)
 		return command.Audit(ctx, tx, scope, "catalog.sku.updated")
 	})
+	// A replayed answer stored before 0086 has no options / option_values: keep the JSON shape non-null.
+	finishSKU(&out)
 	return out, mapVersionError(err)
 }
 
@@ -446,6 +456,8 @@ func SetSKUPrice(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, id s
 		}
 		return command.Audit(ctx, tx, scope, "catalog.sku.price_changed")
 	})
+	// A replayed answer stored before 0086 has no options / option_values: keep the JSON shape non-null.
+	finishSKU(&out)
 	return out, mapVersionError(err)
 }
 
@@ -474,6 +486,8 @@ func ArchiveSKU(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, id st
 		finishSKU(&out)
 		return command.Audit(ctx, tx, scope, "catalog.sku.archived")
 	})
+	// A replayed answer stored before 0086 has no options / option_values: keep the JSON shape non-null.
+	finishSKU(&out)
 	return out, mapVersionError(err)
 }
 
