@@ -3,7 +3,7 @@
 // saved + published + a preview draft, a delivery policy with a free-shipping threshold) and published through the migration 0081 definers.
 // Started by tests/foundation/browser_storefront_test.go (TestBrowserStorefront, build tag browser) which owns PG and writes facts.json; this
 // script never sees a database credential. A self-signed https edge preserves the virtual host shop.example (the BFF derives the store origin from
-// Host) behind a CONNECT-only proxy. The MOCK sibling tests/storefront/shop-gate.mjs (SF01-SF11, fake API) stays for fast iteration.
+// Host) behind a CONNECT-only proxy. The MOCK sibling tests/storefront/shop-gate.mjs (SF01-SF12, fake API) stays for fast iteration.
 // Env: LC_SFR_EVIDENCE, LC_SFR_FACTS (json), LC_SFR_CONTROL + LC_SFR_CONTROL_KEY (Go-only publication toggle), COMMERCE_BUYER_*,
 // LC_BROWSER_ENGINE=chromium|webkit (tests/storefront/browser-engine.mjs).
 import assert from "node:assert/strict";

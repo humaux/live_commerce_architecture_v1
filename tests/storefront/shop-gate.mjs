@@ -341,10 +341,12 @@ try {
     await p.goto(`${origin}/zh-TW/products`);
     const ph = p.getByTestId("product-card").filter({ hasText: "橄欖木砧板" }).getByRole("img", { name: "無圖片" });
     await expect(ph).toBeVisible(); await expect(ph.locator("svg")).toHaveCount(1);
+    await ph.scrollIntoViewIfNeeded(); await shot(p, "m-noimage-card", false);
   });
   await part("3 placeholder gallery", async () => {
     await p.goto(`${origin}/zh-TW/products/olive-board`);
     await expect(p.getByTestId("product-gallery").getByRole("img", { name: "無圖片" }).locator("svg")).toHaveCount(1);
+    await shot(p, "m-noimage-product", false);
     await p.goto(`${origin}/en/products/olive-board`);
     await expect(p.getByTestId("product-gallery").getByRole("img", { name: "No image" }).locator("svg")).toHaveCount(1);
   });
@@ -353,7 +355,7 @@ try {
     await p.getByTestId("add-to-cart").click(); await expect(p.getByTestId("cart-drawer")).toBeVisible();
     await p.getByRole("link", { name: "查看購物車" }).click(); await p.waitForURL(/\/zh-TW\/cart$/);
     const line = p.getByTestId("cart-line").filter({ hasText: "橄欖木砧板" });
-    try { await expect(line.getByRole("img", { name: "無圖片" }).locator("svg")).toHaveCount(1); }
+    try { await expect(line.getByRole("img", { name: "無圖片" }).locator("svg")).toHaveCount(1); await shot(p, "m-noimage-cartline", false); }
     finally { await line.getByRole("button", { name: /移出購物車/ }).click(); await expect(line).toHaveCount(0); } // leave the cart as the next parts expect it
   });
   api.state.imagelessSlug = null;
@@ -378,6 +380,7 @@ try {
     const look = await create.evaluate((e) => { const s = getComputedStyle(e), hint = document.getElementById(e.getAttribute("aria-describedby") ?? "-"); return { opacity: s.opacity, bg: s.backgroundColor, hint: hint ? hint.textContent.trim() : "", hintShown: !!hint && hint.getBoundingClientRect().height > 0 }; });
     assert.equal(look.opacity, "1", "disabled is a distinct grey, the action colour is never just faded"); assert.notEqual(look.bg, "rgb(36, 121, 101)", "disabled must not wear the action teal");
     assert(look.hint.length > 6 && look.hintShown, `the disabled create-order button needs a visible description: ${JSON.stringify(look)}`);
+    await create.scrollIntoViewIfNeeded(); await shot(p, "m-checkout-disabled-cta", false);
   });
 
   // 6. closed store: no shopping chrome, the brand fallback is localized, no unexplained dot
@@ -388,6 +391,7 @@ try {
       assert.equal((await p.locator(".sf-brand").innerText()).trim(), brand, `${loc} closed brand`);
       assert.equal(await p.locator(".sf-header .sf-search, .sf-header .sf-searchlink, [data-testid=header-cart]").count(), 0, `${loc} closed store must not offer search or cart`);
       assert.equal(await p.locator(".sf-empty__code").count(), 0, `${loc} closed store: no decorative dot`);
+      if (loc === "zh-TW") await shot(p, "m-closed-localized", false);
     }
   });
   api.state.unpublished = false;
@@ -398,6 +402,7 @@ try {
     const rail = d.getByTestId("rail");
     await expect(rail).toHaveAttribute("data-more-end", "true"); await expect(rail).toHaveAttribute("data-more-start", "false");
     await expect(d.getByTestId("rail-next")).toBeVisible(); await expect(d.getByTestId("rail-prev")).toBeHidden();
+    await rail.scrollIntoViewIfNeeded(); await shot(d, "d-home-rail", false);
     for (let i = 0; i < 6 && (await rail.getAttribute("data-more-end")) === "true"; i++) { await d.getByTestId("rail-next").click(); await d.waitForTimeout(500); }
     await expect(rail).toHaveAttribute("data-more-end", "false"); await expect(d.getByTestId("rail-prev")).toBeVisible(); await expect(d.getByTestId("rail-next")).toBeHidden();
     assert(await rail.evaluate((e) => { const ul = e.querySelector("ul"); return ul.lastElementChild.getBoundingClientRect().right <= ul.getBoundingClientRect().right + 1; }), "the last card is fully visible at the end of the rail");

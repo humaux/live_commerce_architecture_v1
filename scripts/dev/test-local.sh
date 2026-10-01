@@ -29,8 +29,8 @@ if [[ "$test_mode" == --browser-storefront && "${LC_SHOP_MOCK:-0}" == 1 ]]; then
   shop_out="${LC_SHOP_EVIDENCE:-$main_checkout/output/storefront-shell/run-$(git rev-parse --short=12 HEAD)}"
   mkdir -p "$shop_out"
   LC_SHOP_EVIDENCE="$shop_out" node tests/storefront/shop-gate.mjs | tee "$shop_out/shop-gate.log"
-  grep -q 'cases=11 ' "$shop_out/shop-gate.log"
-  printf 'PASS: SF01-SF11 MOCK buyer storefront shell (engine per LC_BROWSER_ENGINE) on the production Next build + contract-shaped fake API; not real Go/PG, published-origin resolver, order placement or deployment acceptance. Log: %s\n' "$shop_out/shop-gate.log"
+  grep -q 'cases=12 ' "$shop_out/shop-gate.log"
+  printf 'PASS: SF01-SF12 MOCK buyer storefront shell (SF11 = the visual-QA polish checks) (engine per LC_BROWSER_ENGINE) on the production Next build + contract-shaped fake API; not real Go/PG, published-origin resolver, order placement or deployment acceptance. Log: %s\n' "$shop_out/shop-gate.log"
   exit 0
 fi
 if [[ "$test_mode" == --browser-merchant-buyer ]]; then
