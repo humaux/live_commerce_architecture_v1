@@ -106,8 +106,8 @@ func TestBrowserBuyerComms(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(out), "cases=19 ") { // 4 runs x BC01-BC05 + BC06 + BC07
-		t.Fatalf("the gate did not report all 19 cases; evidence=%s", evidence)
+	if !strings.Contains(string(out), "cases=22 ") { // 4 runs x BC01-BC05 + BC06 + BC07 = 22
+		t.Fatalf("the gate did not report all 22 cases; evidence=%s", evidence)
 	}
 
 	// ---- independent PG readback -----------------------------------------------------------------------------------------------------------
