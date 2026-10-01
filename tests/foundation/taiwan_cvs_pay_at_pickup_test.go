@@ -670,14 +670,20 @@ func TestCvsCollectionStatus(t *testing.T) {
 		if st, _, raw := e.record(writer, card, t04Key("tpp-card"), "PENDING", "collected"); st != 422 || tcvStr(tcvJSON(t, raw), "code") != "not_pay_at_pickup" {
 			t.Errorf("card order: want 422 not_pay_at_pickup, got %d %s", st, raw)
 		}
-		// a later ECPay report that conflicts with the merchant's record: event only + alert, the record stays
+		// a later ECPay report that conflicts with the merchant's record: event only + alert, the record stays.
+		// T21-02 (0102): the merchant's collected record needs a PICKED_UP shipment, and ECPay's 2067 already set COLLECTED, so the
+		// collection is planted back to PENDING first (a disclosed fixture, as the file header states).
 		conflict, _ := pap("cvs_711", api711)
 		shipCreated(conflict)
-		e.tppStatuses(endpoint, conflict, "2030", "2073")
-		if st, _, raw := e.record(writer, conflict, t04Key("tpp-conf"), "PENDING", "collected"); st != 200 {
-			t.Fatalf("merchant collected on an AT_STORE ECPay order: %d %s", st, raw)
+		e.tppStatuses(endpoint, conflict, "2030", "2073", "2067") // PICKED_UP -> COLLECTED via ECPay
+		if e.collectionState(conflict) != "COLLECTED" {
+			t.Fatalf("setup: ECPay 2067 must record COLLECTED, got %s", e.collectionState(conflict))
 		}
-		e.tppStatuses(endpoint, conflict, "2074") // ECPay says unclaimed/returned
+		mustExec(t, f.owner, `UPDATE checkout.orders SET collection_state='PENDING' WHERE id=$1`, conflict)
+		if st, _, raw := e.record(writer, conflict, t04Key("tpp-conf"), "PENDING", "collected"); st != 200 {
+			t.Fatalf("merchant collected on a PICKED_UP ECPay order: %d %s", st, raw)
+		}
+		e.tppStatuses(endpoint, conflict, "2074") // ECPay says unclaimed/returned (backwards jump, event only)
 		if got := e.collectionState(conflict); got != "COLLECTED" {
 			t.Errorf("a conflicting ECPay report changed the merchant's record: %s", got)
 		}
