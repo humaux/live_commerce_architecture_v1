@@ -125,7 +125,19 @@ after the identity work. Its specs write screenshots under `output/playwright/le
 | --- | --- | --- |
 | `apps/storefront/tests/*.test.mjs` | storefront buyer client/server, payment contract and return | CI, always |
 | `packages/i18n/tests/*.test.ts` | locale resolution and catalogs | CI, always |
+| `tests/admin/notify-model.test.ts` | buyer-comms: new-order mail opt-out model, BFF grammar entry, three-locale copy parity | CI, always (listed in `test-node.sh`) |
 | `tests/media/r04-input-runner.test.mjs` | R04 local LiveKit input probe | needs `COMMERCE_R04_LIVEKIT_BINARY` (pinned binary). Without it `test-node.sh` prints `NOT_RUN` (CI does); `--require-r04` turns that into exit 2 |
 
 `tests/admin/claims-request.test.ts` and siblings are also run inside their browser mode (table above); `claim.test.mjs`
 runs in both places.
+
+## Buyer communications (unit buyer-comms, contracts/storefront-v2.md §E, migration 0090)
+
+| Gate | Command | Label | Proves / does not prove |
+| --- | --- | --- | --- |
+| Go units | `go test ./internal/notify ./internal/buyerhttp ./cmd/expiry-worker` | MOCK | renderer (6 kinds x 3 locales, escaping, link rules), worker recording against a fake queue and mailer, lookup normalisation and route table, worker env validation. No database, no SMTP |
+| PG smoke | `bash scripts/dev/test-focused.sh 'TestBuyerCommsOutbox\|TestGuestOrderLookup\|TestNotifySettingsRoute'` | REAL_PG + MOCK mail | triggers inside the real order transactions, exactly-once keys, caps, UNKNOWN / retry / stale / erasure rows, guest lookup through the real buyer HTTP handler (match, identical 404, throttles, working capability), merchant toggle route. The mailer is a fake: no SMTP wire |
+| Node units | `bash scripts/dev/test-node.sh` | MOCK | storefront lookup contract + BFF route (`apps/storefront/tests/lookup.test.mjs`), admin toggle model |
+
+NOT_RUN: real SMTP delivery of buyer mail (the SMTP adapter has its own MOCK gate in `internal/mail`), a browser run of `/[locale]/orders/lookup`
+and `/[locale]/orders/{id}`, any SANDBOX or LIVE mailbox. The independent tester owns the gate tests; the PG smoke above is the author's.

@@ -112,6 +112,73 @@ store + role), invitee signs up / logs in with password auth and accepts; owner 
 revoke (immediate: sessions of that membership stop authorizing on next request). At least one owner
 always remains. All actions audited.
 
+## E. Buyer communications (producer: unit buyer-comms, migration 0090)
+
+Amendment written before code; the integrator reviews it on merge. Owners: SQL schema `notify` + `checkout.guest_order_lookup`
+(migration 0090, owner role commerce_checkout_writer), Go `internal/notify` (renderer, worker, merchant toggle), `internal/buyerhttp`
+(lookup route), storefront `/[locale]/orders/lookup`. Evidence labels per AGENTS.md; real SMTP is never used by tests (loopback fake).
+
+**E1. Events (exactly once per (order, kind)).** `notify.outbox` has PRIMARY KEY (order_id, kind); rows are inserted by AFTER UPDATE
+triggers inside the same transaction that moves the order, `ON CONFLICT DO NOTHING`, never from Go and never inside an SMTP call.
+A trigger failure is swallowed with a WARNING: a mail problem must never roll back a payment or a stock move.
+
+| kind | transition that enqueues it |
+|---|---|
+| `placed` | `commercial_state` becomes AWAITING_TRANSFER (bank_transfer), or CONFIRMED for pay_at_pickup (pickup details) |
+| `paid` | CONFIRMED for card (capture) or for bank_transfer (merchant confirmed the transfer) |
+| `shipped` | `fulfillment_state` becomes MERCHANT_SHIPPED (carrier + tracking), or a CVS shipment reaches AT_DC / AT_STORE (pickup store) |
+| `cancelled` | CANCELLED coming from AWAITING_TRANSFER or CONFIRMED (expiry, rejection window end, cancel). Abandoned DRAFT / AWAITING_PAYMENT card checkouts send nothing |
+| `refunded` | Stripe refund fact SUCCEEDED, bank_transfers REFUNDED_OFFLINE, or collection_state REFUNDED_OFFLINE |
+| `merchant_new` | the first transition of an order into AWAITING_TRANSFER, or into CONFIRMED from DRAFT / AWAITING_PAYMENT (not bank-transfer confirm) |
+
+**E2. Delivery.** One worker loop (`notify.Worker`, hosted by `cmd/expiry-worker`: it already holds the checkout-lifecycle worker pool and
+the only River client that handles order expiry; no new process, no River job kind, because queue admission is guarded by post_river
+triggers owned by other units) claims rows through `notify.claim_batch` (FOR UPDATE SKIP LOCKED, state PENDING -> SENDING), renders, sends
+one SMTP attempt, records through `notify.record_result`. SENT is final. A definite refusal (mail.ErrFailed) goes back to PENDING with
+backoff 2 min, 10 min, then FAILED after the third attempt. `mail.ErrUnknown` records UNKNOWN and is NEVER re-sent (SMTP has no
+idempotency key, I06): it is logged once (`buyer_mail_unknown`, kind + order id only) and stays queryable. A SENDING row whose worker died
+(claimed over 15 min ago) becomes UNKNOWN for the same reason. A PENDING row older than 24 h becomes SKIPPED (a stale "shipped" mail is
+worse than none). The recipient is read from `checkout.orders.buyer_email` at send time only; no body, no address is stored.
+
+**E3. Caps (must not starve merchant login codes).** Counted per UTC+8 day over rows that reached SENDING: all buyer and merchant notify
+mail together may not exceed floor(COMMERCE_MAIL_DAILY_CAP x 60 / 100); per store at most 30 buyer mails in a rolling hour. Over a cap the row
+stays PENDING (retried next tick, SKIPPED after 24 h). The login-code buckets of identity are a separate ledger and are untouched.
+
+**E4. Content.** Locale zh-TW unless the order snapshot carries a known locale (today it does not; en and zh-CN copy exist for when it does).
+Plain text + simple HTML, no remote image, no tracking pixel, all dynamic text HTML-escaped, store name + order number + link
+`{published origin}/{locale}/orders/{order_id}` (origin = the store's ACTIVE storefront domain; no link when none). Order number = first 12 hex
+digits of the order id, uppercase, shown as `XXXX-XXXX-XXXX`. `placed` (bank_transfer) carries the order's own bank snapshot and the
+transfer deadline (`orders.expires_at`); `placed` (pay_at_pickup) the pickup store; `shipped` carrier + tracking number (+ https tracking
+URL when present) or CVS store + shipping number.
+
+**E5. Guest order lookup.** `POST /v1/buyer/orders/lookup` (BFF `POST /api/buyer/orders/lookup`, page `/[locale]/orders/lookup`). Body
+`{order_ref, contact}`: order_ref = the order number (12 hex, dashes/spaces/case ignored) or a full order id; contact = the order's buyer
+email, or the delivery phone (digits, +886/leading 0 ignored). The BFF mints a fresh cookie envelope exactly like `session/prepare`
+and sends its token as the bearer; Go resolves the store from the published origin only (never the body), forwards the client IP
+(`X-Commerce-Client-IP`, one valid literal, as for password auth) and calls `checkout.guest_order_lookup`. On a match the definer registers
+a NEW capability session for the order's existing buyer owner (hash of the BFF token; same TTL and cookie as checkout) and returns
+`{order_id}`; the BFF then sets the cookie (replacing any current buyer cookie) and the page navigates to `/{locale}/orders/{order_id}`.
+Every mismatch (unknown order, wrong email/phone, erased owner, other store) is the same 404 `not_found`, produced by the same work (one
+index range scan, one sha256 compare against the stored value or a dummy), so neither body nor timing reveals existence. Limits (fixed
+10-minute windows, counted before any lookup, per hashed key): 10 per client IP, 5 per order ref, 200 per store -> 429 `rate_limited` with
+Retry-After. Known risk, accepted by the brief: the issued session is the buyer's normal capability (it reaches every order of that owner,
+and the owner's privacy export / erasure), so the 48-bit order number plus the second factor and the limits are the whole gate.
+
+**E6. Merchant new-order mail.** Sent to the store's owner address(es) (`identity.store_staff` role owner, verified password email), one
+mail per store per 5 minutes covering every pending `merchant_new` row ("N new orders", no buyer data, link to the admin orders page is not
+included because the admin origin is not store data). Opt-out: `notify.store_settings.merchant_new_order_email` (default true), merchant
+routes `GET|PUT /v1/admin/stores/{store_id}/notification-settings` (integration:read / integration:manage), a Settings toggle. An opted-out
+store's rows are SKIPPED.
+
+**E7. Retention and erasure.** The mail log keeps kind, order id, state, attempt count, timestamps and `recipient_hash`
+(sha256 of "order id : lowercase address"), never a body or an address. When `checkout.orders.buyer_email` is set to NULL (customers erasure
+via `checkout.clear_buyer_email`) a trigger clears `recipient_hash` of that order's rows and SKIPs its PENDING ones. Rows older than 180 days
+are deleted by `notify.claim_batch` (bounded, 200 per call).
+
+**E8. Configuration.** `COMMERCE_BUYER_MAIL_ENABLED=1` switches the loop on in `cmd/expiry-worker`; then it needs the same SMTP variables
+as the API (COMMERCE_SMTP_HOST / _USERNAME / _PASSWORD[_FILE], COMMERCE_MAIL_FROM) and COMMERCE_MAIL_DAILY_CAP (default 200, 20..100000). Unset
+= no mail is claimed (rows wait up to 24 h, then SKIPPED).
+
 ## B-acceptance (unit store-design, implemented; evidence labels per AGENTS.md)
 
 Wire facts the storefront-shell consumer needs (all additive to section B; migration 0087, Go `internal/design`):
