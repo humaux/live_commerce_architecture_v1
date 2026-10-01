@@ -14,7 +14,8 @@ authority is introduced.
 `pagination.Page[CatalogItem]` inside the existing `buyer.WithScope` transaction.
 `CatalogRequest` has `ProductID string` and `Page pagination.Request`.
 `CatalogItem` JSON keys are exactly
-`product_id,sku_id,name,description,sku_code,currency,price_minor`.
+`product_id,sku_id,name,description,sku_code,currency,price_minor,images`
+(`images` added by the catalog-media amendment below; it was absent in v1.0).
 The name/description come from the product; other display data from the SKU.
 No full merchant DTO embedding, physical/customs fields, tenant/store/owner IDs,
 credentials, inventory promises, payment URL or fictional media fields.
@@ -60,6 +61,35 @@ A bare `?` remains 403; all existing routes still reject all query strings.
 For this GET, malformed allowed-query syntax/value maps to 422 invalid_request.
 GET rejects a body and Idempotency-Key; other methods have no new permission.
 Keep query admission narrowly tied to the exact canonical path and GET method.
+
+## Amendment catalog-media (R3, 2026-10-01; migrations/0082)
+
+Product photos exist now, so the buyer projections gain them. This amendment changes no scope, cursor, pagination
+or permission rule above.
+
+- **Item `images`**: `[{id, width, height}]`, ordered by merchant position (index 0 is the cover), always an array
+  (`[]` when the product has none), the same list on every SKU row of one product. `width`/`height` are integers or
+  `null` (WebP is not decoded). Only photos of an ACTIVE product of the buyer scope's store appear. Metadata only:
+  no bytes, no content type, no size, no position number.
+- **Page `store_name`**: the published store's public name (string, never null), a sibling of `items` and
+  `next_cursor`, so the page keys are exactly `items,next_cursor,store_name`. It lets the storefront home show the
+  shop name without a second route. Source: `control.stores.name` under the existing buyer_read policy
+  (column grant `SELECT(name)` to `commerce_buyer_runtime`).
+- **Bytes**: `GET /v1/buyer/media/p/{product_id}/{image_id}` (private BFF transport, same BFF key and
+  `X-Commerce-Storefront-Origin` rule as the Meta feed). It needs and accepts NO buyer bearer: an `Authorization`
+  header, cookie, query string, body or Idempotency-Key is refused (403 / 422). The store is resolved inside the
+  database from the verified origin; an unpublished origin, unknown or foreign image, or archived product is the
+  same 404 (no existence oracle); a malformed id is 422. Success: the stored bytes with the validated
+  `Content-Type` (`image/jpeg|png|webp`), `Cache-Control: public, max-age=86400, immutable` (the id changes
+  whenever the content changes), `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none';
+  sandbox`, `ETag` = SHA-256 of the bytes.
+- **Public URL**: the storefront Next app serves `/media/p/{product_id}/{image_id}` on the shop origin through
+  that route (`apps/storefront/app/media/p/[productID]/[imageID]/route.ts`); the Meta feed `image_link` is the
+  absolute shop origin plus that path for the product's first photo, empty when it has none.
+- Acceptance additions: BCAT06 buyer sees images of active products only, in position order, `[]` when none, and
+  never another store's photo; BCAT07 media route: published origin + active product returns the exact uploaded
+  bytes and headers above, every other case is the same 404; BCAT08 exact keys `items,next_cursor,store_name` and
+  item keys including `images`. All NOT_RUN until executed.
 
 ## Acceptance
 

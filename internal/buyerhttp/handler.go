@@ -101,11 +101,13 @@ const (
 	consentsRoute
 	privacyExportRoute
 	privacyErasureRoute
+	mediaRoute // GET /v1/buyer/media/p/{product_id}/{image_id}, media.go: no buyer bearer
 )
 
 type route struct {
-	kind routeKind
-	id   string
+	kind  routeKind
+	id    string
+	image string // mediaRoute only: the image id (id is the product id)
 }
 
 func matchRoute(path string) route {
@@ -146,6 +148,12 @@ func matchRoute(path string) route {
 	if cvs := matchCVSRoute(path); cvs.kind != unknownRoute {
 		return cvs
 	}
+	if rest, ok := strings.CutPrefix(path, "/v1/buyer/media/p/"); ok {
+		if product, image, two := strings.Cut(rest, "/"); two && product != "" && image != "" && !strings.Contains(image, "/") {
+			return route{kind: mediaRoute, id: product, image: image}
+		}
+		return route{}
+	}
 	if rest, ok := strings.CutPrefix(path, "/v1/buyer/orders/"); ok {
 		for _, entry := range []struct {
 			suffix string
@@ -177,7 +185,7 @@ func allowed(kind routeKind, method string) bool {
 		return method == http.MethodGet || method == http.MethodPost || method == http.MethodDelete
 	case bootstrapRoute, retireRoute:
 		return method == http.MethodPost
-	case catalogRoute, optionsRoute, ordersRoute, paymentRoute:
+	case catalogRoute, optionsRoute, ordersRoute, paymentRoute, mediaRoute:
 		return method == http.MethodGet
 	case cartRoute:
 		return method == http.MethodGet || method == http.MethodPut
@@ -412,7 +420,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		fail(http.StatusMethodNotAllowed, "method_not_allowed")
 		return
 	}
-	if selected.id != "" && !command.ValidID(selected.id) {
+	if (selected.id != "" && !command.ValidID(selected.id)) || (selected.image != "" && !command.ValidID(selected.image)) {
 		fail(http.StatusUnprocessableEntity, "invalid_request")
 		return
 	}
@@ -430,6 +438,12 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if issue {
 		if len(r.Header.Values("Authorization")) != 0 {
 			fail(http.StatusUnauthorized, "unauthorized")
+			return
+		}
+	} else if selected.kind == mediaRoute {
+		// Public bytes: a credential on this route is a mistake or an attack, never forwarded or honoured.
+		if len(r.Header.Values("Authorization")) != 0 {
+			fail(http.StatusForbidden, "forbidden")
 			return
 		}
 	} else {
@@ -468,6 +482,9 @@ func (e responseError) Error() string { return e.code }
 func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.Request, selected route, storeID, token, key string) error {
 	if isPaymentRoute(selected.kind) && h.payment == nil {
 		return responseError{http.StatusNotFound, "not_found"}
+	}
+	if selected.kind == mediaRoute {
+		return h.mediaGet(ctx, w, r, selected)
 	}
 	if selected.kind == sessionRoute && r.Method == http.MethodPost {
 		if err := decodeJSON(r, &struct{}{}); err != nil {
@@ -588,12 +605,20 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 		var request storefront.CatalogRequest
 		request, err = catalogRequest(r.URL.RawQuery)
 		if err == nil {
-			var page pagination.Page[storefront.CatalogItem]
-			page, err = scoped(ctx, h.pool, token, storeID, func(c context.Context, tx pgx.Tx, s buyer.Scope) (pagination.Page[storefront.CatalogItem], error) {
-				return storefront.ListCatalog(c, tx, s, request)
+			var result catalogResult
+			result, err = scoped(ctx, h.pool, token, storeID, func(c context.Context, tx pgx.Tx, s buyer.Scope) (catalogResult, error) {
+				var r catalogResult
+				var err error
+				if r.page, err = storefront.ListCatalog(c, tx, s, request); err != nil {
+					return r, err
+				}
+				r.name, err = storefront.StoreName(c, tx, s)
+				return r, err
 			})
 			if err == nil {
-				out = projectCatalog(page)
+				projected := projectCatalog(result.page)
+				projected.StoreName = result.name
+				out = projected
 			}
 		}
 	case cartRoute:

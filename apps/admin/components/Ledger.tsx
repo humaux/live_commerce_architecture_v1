@@ -1,12 +1,19 @@
 "use client";
 
+// Products & inventory workspace. BFF routes used (all -> Go internal/httpapi, scope from the merchant session):
+//   GET catalog-ledger (server page), GET products/{id}/purchase-entry, POST products|skus|inventory/adjustments,
+//   catalog-media: PATCH products/{id}, POST skus/{id}/price, POST skus|products/{id}/archive (journaled commands, the row's
+//   own expected_version) and the photo manager (ProductPhoto.tsx -> images routes). Never writes stock or prices outside
+//   those commands, and never trusts a client tenant/store id.
+
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { type Locale } from "@live-commerce/i18n";
 import { copy, type Copy } from "@/lib/copy";
 import type { APIError, PurchaseEntry, WorkspaceData } from "@/lib/model";
-import { money, sendCommand, type PendingCommand } from "@/lib/client";
-import { ProductPhoto } from "./ProductPhoto";
+import { money, sendCommand, validJournalCommand, type PendingCommand } from "@/lib/client";
+import { imageURL } from "@/lib/images-client";
+import { ProductPhoto, ProductPhotoManager } from "./ProductPhoto";
 import { Icon } from "./Icon";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 
@@ -120,6 +127,7 @@ export function Ledger({
   const [entryFeedback, setEntryFeedback] = useState("");
   const [query, setQuery] = useState(searchQuery);
   const [section, setSection] = useState("products");
+  const [confirming, setConfirming] = useState<"sku" | "product" | null>(null);
   const [pending, setPending] = useState<PendingCommand | null>(null),
     [busy, setBusy] = useState(false);
   const [journalReady, setJournalReady] = useState(false);
@@ -151,16 +159,9 @@ export function Ledger({
     try {
       const saved = localStorage.getItem(key);
       if (saved) {
-        const cmd = JSON.parse(saved);
-        if (
-          typeof cmd.key !== "string" ||
-          !["adjust", "product", "sku"].includes(cmd.kind) ||
-          !["products", "skus", "inventory/adjustments"].includes(
-            cmd.resource,
-          ) ||
-          typeof cmd.body !== "string"
-        )
-          throw new Error("Invalid journal");
+        const cmd: unknown = JSON.parse(saved);
+        // Known kind/resource pairs only (adds catalog-media edit, price and archive; lib/client.ts).
+        if (!validJournalCommand(cmd)) throw new Error("Invalid journal");
         setPending(cmd);
       }
       const unfinished = localStorage.getItem(`${key}:product`);
@@ -180,6 +181,7 @@ export function Ledger({
       });
     }
   }, [key]);
+  useEffect(() => setConfirming(null), [selectedID]);
   useEffect(() => {
     if (!locked) return;
     const warn = (event: BeforeUnloadEvent) => {
@@ -356,6 +358,13 @@ export function Ledger({
           setProductID("");
           setCreateOpen(false);
           setNotice(c.skuSaved);
+        } else if (command.kind === "edit") {
+          setNotice(c.productUpdated);
+        } else if (command.kind === "price") {
+          setNotice(c.priceUpdated);
+        } else if (command.kind === "archive") {
+          setConfirming(null);
+          setNotice(command.resource.startsWith("skus/") ? c.skuArchived : c.productArchived);
         } else {
           setDelta("0");
           setReason("");
@@ -416,6 +425,35 @@ export function Ledger({
       reason: reason.trim(),
     });
   }
+  // catalog-media CM5: rename/describe, reprice and archive use the existing PATCH / price / archive routes with the
+  // row's own expected_version, through the same journaled command path as every other write.
+  function saveProduct(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selected) return;
+    const data = new FormData(event.currentTarget);
+    const name = String(data.get("name") ?? "").trim();
+    if (!name) return setError(validationError);
+    command("edit", `products/${selected.product_id}`, {
+      name,
+      description: String(data.get("description") ?? ""),
+      expected_version: selected.product_version,
+    });
+  }
+  function changePrice(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selected) return;
+    const price = Number(new FormData(event.currentTarget).get("price"));
+    if (!Number.isSafeInteger(price) || price < 0 || price > 1_000_000_000_000) return setError(validationError);
+    command("price", `skus/${selected.sku_id}/price`, { price_minor: price, expected_version: selected.sku_version });
+  }
+  function archive(kind: "sku" | "product") {
+    if (!selected) return;
+    command(
+      "archive",
+      kind === "sku" ? `skus/${selected.sku_id}/archive` : `products/${selected.product_id}/archive`,
+      { expected_version: kind === "sku" ? selected.sku_version : selected.product_version },
+    );
+  }
   function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
@@ -456,15 +494,13 @@ export function Ledger({
       setWarehouseLoading(false);
     }
   }
-  const nav = [
-    ["products", "product", c.products],
-    ["inventory", "inventory", c.inventory],
-    ["live", "live", c.live],
-    ["siteChat", "chat", c.siteChat],
-    ["meta", "meta", c.meta],
-    ["support", "support", c.support],
-    ["settings", "settings", c.settings],
-  ];
+  const validationError: APIError = {
+    code: "invalid_request",
+    message: "",
+    request_id: "",
+    retryable: false,
+    details: {},
+  };
 
   return (
     <WorkspaceFrame
@@ -476,19 +512,8 @@ export function Ledger({
       locked={locked}
       onSection={setSection}
     >
-      {section !== "products" && section !== "inventory" ? (
-        <section className="unavailable">
-          <Icon
-            name={nav.find((n) => n[0] === section)?.[1] ?? "product"}
-            size={32}
-          />
-          <h1>{nav.find((n) => n[0] === section)?.[2]}</h1>
-          <p>{c.unavailable}</p>
-          <p>{c.sectionHint}</p>
-          <button onClick={() => setSection("products")}>{c.products}</button>
-        </section>
-      ) : (
-        <>
+      {/* Only products and inventory live here; the other nav entries are separate pages (WorkspaceFrame). */}
+      <>
           <div className="heading-row">
             <div>
               <h1>{c.heading}</h1>
@@ -712,6 +737,11 @@ export function Ledger({
                             code={row.code}
                             name={row.product_name}
                             demo={initial.fixture}
+                            imageSrc={
+                              row.cover_image_id
+                                ? imageURL(initial.storeID, row.product_id, row.cover_image_id)
+                                : undefined
+                            }
                           />
                           <div>
                             <button
@@ -799,6 +829,11 @@ export function Ledger({
                   name={selected.product_name}
                   demo={initial.fixture}
                   large
+                  imageSrc={
+                    selected.cover_image_id
+                      ? imageURL(initial.storeID, selected.product_id, selected.cover_image_id)
+                      : undefined
+                  }
                 />
                 <div>
                   <h2>{selected.product_name}</h2>
@@ -854,6 +889,101 @@ export function Ledger({
                 </fieldset>
                 <p className="audit-hint">{c.auditHint}</p>
               </form>
+              <form
+                className="adjustment"
+                key={`edit:${selected.product_id}:${selected.product_version}`}
+                onSubmit={saveProduct}
+                data-testid="product-edit"
+              >
+                <h2>{c.productDetails}</h2>
+                <fieldset disabled={locked || selected.product_status !== "active"}>
+                  <label>
+                    {c.name}
+                    <input name="name" required maxLength={120} defaultValue={selected.product_name} />
+                  </label>
+                  <label>
+                    {c.description}
+                    <textarea name="description" maxLength={8000} rows={3} defaultValue={selected.product_description} />
+                  </label>
+                  <button type="submit" className="primary">
+                    {busy ? c.pending : c.saveProduct}
+                  </button>
+                </fieldset>
+              </form>
+              <form
+                className="adjustment"
+                key={`price:${selected.sku_id}:${selected.sku_version}`}
+                onSubmit={changePrice}
+                data-testid="price-edit"
+              >
+                <h2>{c.changePrice}</h2>
+                <fieldset disabled={locked || selected.status !== "active"}>
+                  <label>
+                    {c.newPrice}
+                    <input
+                      name="price"
+                      type="number"
+                      min="0"
+                      max="1000000000000"
+                      step="1"
+                      required
+                      defaultValue={selected.price_minor}
+                    />
+                  </label>
+                  <button type="submit" className="primary">
+                    {busy ? c.pending : c.changePrice}
+                  </button>
+                </fieldset>
+              </form>
+              {initial.storeID && (
+                <ProductPhotoManager
+                  locale={locale}
+                  store={initial.storeID}
+                  productID={selected.product_id}
+                  productName={selected.product_name}
+                  code={selected.code}
+                  disabled={locked || selected.product_status !== "active"}
+                  onChanged={() => router.refresh()}
+                />
+              )}
+              <div className="adjustment" data-testid="archive-actions">
+                {confirming ? (
+                  <>
+                    <p role="alert">{confirming === "sku" ? c.confirmArchiveSku : c.confirmArchiveProduct}</p>
+                    <button
+                      type="button"
+                      className="primary"
+                      data-testid="confirm-archive"
+                      disabled={locked}
+                      onClick={() => archive(confirming)}
+                    >
+                      {busy ? c.pending : c.confirmArchive}
+                    </button>
+                    <button type="button" disabled={locked} onClick={() => setConfirming(null)}>
+                      {c.cancel}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      data-testid="archive-sku"
+                      disabled={locked || selected.status !== "active"}
+                      onClick={() => setConfirming("sku")}
+                    >
+                      {c.archiveSku}
+                    </button>
+                    <button
+                      type="button"
+                      data-testid="archive-product"
+                      disabled={locked || selected.product_status !== "active"}
+                      onClick={() => setConfirming("product")}
+                    >
+                      {c.archiveProduct}
+                    </button>
+                  </>
+                )}
+              </div>
             </section>
           ) : !entryProductID ? (
             <p className="selection-hint">{c.choose}</p>
@@ -925,8 +1055,7 @@ export function Ledger({
               </div>
             </section>
           )}
-        </>
-      )}
+      </>
     </WorkspaceFrame>
   );
 }

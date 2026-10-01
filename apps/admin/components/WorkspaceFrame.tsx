@@ -40,18 +40,17 @@ export function WorkspaceFrame({
   const [signingOut, setSigningOut] = useState(false);
   const [signOutFailed, setSignOutFailed] = useState(false);
   const signOutBusy = useRef(false);
+  // catalog-media: website-service / Meta-messages / platform-support entries removed: they led to a "not connected"
+  // placeholder panel. Re-add an entry only together with a real page.
   const nav = [
     ["products", "product", c.products],
     ["inventory", "inventory", c.inventory],
     ["orders", "orders", c.orders],
     ["live", "live", c.live],
-    ["siteChat", "chat", c.siteChat],
     ["customers", "support", customersCopy[locale].nav.customers],
     ["finance", "orders", customersCopy[locale].nav.finance],
     ["billing", "settings", customersCopy[locale].nav.billing],
-    ["meta", "meta", c.meta],
     ["ads", "meta", c.ads],
-    ["support", "support", c.support],
     ["settings", "settings", c.settings],
   ];
   function select(id: string) {

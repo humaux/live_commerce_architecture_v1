@@ -142,6 +142,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	mux.HandleFunc("POST "+base+"/inventory/adjustments", bodyRoute(pool, "inventory:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in inventory.Adjustment) (any, error) {
 		return inventory.AdjustOnHand(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)
 	}))
+	registerImageRoutes(mux, pool)
 	registerSettingsRoutes(mux, pool)
 	registerSettingsDiscoveryRoutes(mux, pool)
 	registerAccountRoutes(mux, pool, configured.Accounts)
@@ -370,6 +371,10 @@ func respondError(w http.ResponseWriter, status int, code string) {
 	httperror.Write(w, status, code)
 }
 func respond(w http.ResponseWriter, status int, value any) {
+	if raw, ok := value.(rawResponse); ok { // product-photo preview bytes (images.go)
+		writeRaw(w, raw)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(value)
