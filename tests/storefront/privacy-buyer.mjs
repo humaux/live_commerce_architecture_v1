@@ -21,6 +21,7 @@ import { readFile, writeFile, mkdtemp, rm } from "node:fs/promises";
 import { createWriteStream } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { reachCheckout, switchLocale } from "./shop-helpers.mjs";
 import { expect } from "@playwright/test";
 import { launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
 import { privacyCopy } from "../../apps/storefront/lib/privacy-copy.ts";
@@ -94,7 +95,7 @@ function watchConsents(page) {
 async function checkoutPage(context) {
   const p = await context.newPage();
   const puts = watchConsents(p);
-  await p.goto(`${origin}/en/products/${product}`);
+  await reachCheckout(p, origin, "en", product); // product page -> Add to cart -> /en/checkout (storefront shell)
   await p.getByRole("button", { name: "Choose delivery", exact: true }).click();
   const pending = p.waitForResponse((r) => requestIs(r, "quotes", "POST"));
   await p.getByRole("button", { name: "Get current total", exact: true }).click();
@@ -292,21 +293,23 @@ try {
   await expect(p1b.getByTestId("privacy-marketing_messages")).toContainText(en.granted);
   pass("U8 erase refused while an order is open: 409 erasure_blocked shown as text, consent intact");
 
-  // ---- data deletion instructions: public, static, no API ----
+  // ---- data deletion instructions: public, static, no API except the shell's read-only session status ----
   for (const locale of ["en", "zh-TW"]) {
     const c = await newContext();
     const p = await c.newPage();
     const urls = [];
-    p.on("request", (r) => urls.push(r.url()));
+    p.on("request", (r) => urls.push(`${r.method()} ${new URL(r.url()).pathname}`));
     await p.goto(`${origin}/${locale}/data-deletion`);
     const words = privacyCopy[locale];
     await expect(p.getByRole("heading", { level: 1 })).toHaveText(words.deletionTitle);
     for (const step of words.deletionSteps) await expect(p.getByText(step, { exact: false }).first()).toBeVisible();
     await expect(p.locator(`a[href="/${locale}/privacy"]`).first()).toBeVisible();
     await p.waitForLoadState("networkidle");
-    assert.deepEqual(urls.filter((u) => new URL(u).pathname.startsWith("/api/")), [], "the data-deletion page calls no API");
+    // Storefront shell: every page's header reads the buyer SESSION STATUS (GET /api/buyer/session, the cart badge) and nothing else. That read
+    // creates no session and sets no cookie for an anonymous visitor (asserted below); any other API call, or any write, still fails this gate.
+    assert.deepEqual([...new Set(urls.filter((u) => u.split(" ")[1].startsWith("/api/")))], ["GET /api/buyer/session"], "the data-deletion page calls no API other than the read-only session status");
     assert.equal((await c.cookies(origin)).length, 0, "the public page sets no cookie");
-    pass(`data-deletion instructions page (${locale}): public, static, no API call, no cookie`);
+    pass(`data-deletion instructions page (${locale}): public, static, only the cookie-less session-status read, no cookie`);
   }
 
   // ---- screenshots: en + zh-TW, desktop + 390 px ----
@@ -327,11 +330,16 @@ try {
       await p.goto(`${origin}/${locale}/data-deletion`);
       await expect(p.getByRole("heading", { level: 1 })).toHaveText(privacyCopy[locale].deletionTitle);
       await shot(p, "data-deletion", locale, viewport);
-      // the checkout consent block in the locale under test (the in-memory form survives the locale switch)
+      // the checkout consent block in the locale under test (the language link is a full navigation now: the pinned quote survives it,
+      // the unsaved address form does not, so it is filled and confirmed again)
       const { p: cp } = await checkoutPage(c);
       if (locale !== "en") {
-        await cp.locator("header select").selectOption(locale);
-        await expect(cp).toHaveURL(`${origin}/${locale}/products/${product}`);
+        await switchLocale(cp, locale);
+        await expect(cp).toHaveURL(`${origin}/${locale}/checkout`);
+        await expect(cp.getByTestId("address-section")).toBeVisible();
+        for (const [key, value] of Object.entries(pii)) await cp.locator(`input[name="${key}"]`).fill(value);
+        await cp.getByTestId("confirm-address").click();
+        await expect(cp.getByTestId("create-order")).toBeEnabled();
       }
       await expect(cp.locator("html")).toHaveAttribute("lang", locale);
       await cp.getByTestId("consent-choices").scrollIntoViewIfNeeded();

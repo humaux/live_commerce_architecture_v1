@@ -11,7 +11,8 @@
 // merchant.go (board, window, offers, bundle list), manual.go (RecordManualClaim),
 // ingest.go (shared ingest core, Ingest/IngestParsed), meta_intake.go (IngestMetaIntake),
 // link.go (IssueLink), credentials.go (LabelKey, LinkToken, redaction), buyer.go
-// (PreviewLink/RedeemLink).
+// (PreviewLink/RedeemLink; also the claim-origin and live-price display), keyword_library.go
+// (store keyword library and one-action offer seeding, "Live tools (R4)" amendment).
 //
 // Depends on (and only on): command (receipts, audit, sentinel errors), platform (merchant
 // scope and RequirePermission), buyer (buyer scope, RunCommand), storefront (the only cart

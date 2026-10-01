@@ -1,8 +1,6 @@
-# Owner text to supply (PENDING) or approve (DRAFT): 156 markers
+# Owner text to supply (PENDING) or approve (DRAFT): 141 markers
 # kind	locale	page	what
 PENDING	en	privacy	Policy effective date
-PENDING	en	privacy	Legal entity name (proposed: 香港大碗貿易有限公司; confirm)
-PENDING	en	privacy	Registered business address
 PENDING	en	privacy	Privacy contact email
 DRAFT	en	privacy	Order details: the items, quantities, prices and currency of your order, and its payment and delivery status.
 DRAFT	en	privacy	Delivery details you enter at checkout: recipient name, phone number, and a delivery address or convenience-store pickup point.
@@ -18,7 +16,6 @@ DRAFT	en	privacy	You can ask us to delete your profile, contact and delivery det
 DRAFT	en	privacy	Order, payment, refund and shipment records are kept for legal and financial reasons and are not removed by a deletion request.
 PENDING	en	privacy	Governing law and complaint route for privacy matters
 PENDING	en	terms	Terms effective date
-PENDING	en	terms	Legal entity name that sells and operates this store
 PENDING	en	terms	Business description: the goods sold
 DRAFT	en	terms	By placing an order you agree to these terms and to the shipping, refund and privacy pages.
 DRAFT	en	terms	Prices are shown on each product page with their currency. An order is confirmed only after payment is confirmed.
@@ -45,16 +42,12 @@ PENDING	en	shipping	Lead time from payment to dispatch, and transit time
 PENDING	en	shipping	Shipping fees, free-shipping threshold, and who pays import taxes or duties
 DRAFT	en	shipping	When the carrier and tracking number are recorded for your order, you can see them on your order page.
 PENDING	en	contact	Policy effective date
-PENDING	en	contact	Legal entity name (proposed: 香港大碗貿易有限公司; confirm)
 PENDING	en	contact	Business description: the goods sold
-PENDING	en	contact	Registered business address
 PENDING	en	contact	Customer support email
 PENDING	en	contact	Customer support phone
 PENDING	en	contact	Support hours and target response time
 DRAFT	en	contact	To delete your data, see /en/data-deletion.
 PENDING	zh-TW	privacy	政策生效日期
-PENDING	zh-TW	privacy	法律主體名稱（建議：香港大碗貿易有限公司，待確認）
-PENDING	zh-TW	privacy	登記營業地址
 PENDING	zh-TW	privacy	隱私事務聯絡電子郵件
 DRAFT	zh-TW	privacy	訂單資料：訂單的商品、數量、價格與幣別，以及付款與出貨狀態。
 DRAFT	zh-TW	privacy	您在結帳時填寫的收件資料：收件人姓名、電話，以及收件地址或超商取貨門市。
@@ -70,7 +63,6 @@ DRAFT	zh-TW	privacy	您可以要求刪除未與訂單綁定的個人檔案、聯
 DRAFT	zh-TW	privacy	訂單、付款、退款與出貨紀錄基於法律與財務保存要求而保留，不會因刪除要求而移除。
 PENDING	zh-TW	privacy	隱私事務的準據法與申訴管道
 PENDING	zh-TW	terms	條款生效日期
-PENDING	zh-TW	terms	銷售並營運本商店的法律主體名稱
 PENDING	zh-TW	terms	營業項目說明：所售商品
 DRAFT	zh-TW	terms	下單即表示您同意本條款，以及運送、退款與隱私權頁面的內容。
 DRAFT	zh-TW	terms	各商品頁面標示價格與幣別。付款確認後訂單才成立。
@@ -97,16 +89,12 @@ PENDING	zh-TW	shipping	付款至出貨的時程與運送時間
 PENDING	zh-TW	shipping	運費、免運門檻，以及進口稅費由誰負擔
 DRAFT	zh-TW	shipping	當訂單記錄了物流業者與追蹤編號後，您可在訂單頁面查看。
 PENDING	zh-TW	contact	政策生效日期
-PENDING	zh-TW	contact	法律主體名稱（建議：香港大碗貿易有限公司，待確認）
 PENDING	zh-TW	contact	營業項目說明：所售商品
-PENDING	zh-TW	contact	登記營業地址
 PENDING	zh-TW	contact	客服電子郵件
 PENDING	zh-TW	contact	客服電話
 PENDING	zh-TW	contact	客服時間與目標回覆時間
 DRAFT	zh-TW	contact	如需刪除您的資料，請見 /zh-TW/data-deletion。
 PENDING	zh-CN	privacy	政策生效日期
-PENDING	zh-CN	privacy	法律主体名称（建议：香港大碗貿易有限公司，待确认）
-PENDING	zh-CN	privacy	注册营业地址
 PENDING	zh-CN	privacy	隐私事务联系邮箱
 DRAFT	zh-CN	privacy	订单信息：订单的商品、数量、价格与币种，以及付款与发货状态。
 DRAFT	zh-CN	privacy	您在结账时填写的收件信息：收件人姓名、电话，以及收件地址或便利店取货门店。
@@ -122,7 +110,6 @@ DRAFT	zh-CN	privacy	您可以要求删除未与订单绑定的个人档案、联
 DRAFT	zh-CN	privacy	订单、付款、退款与发货记录基于法律与财务保存要求而保留，不会因删除请求而移除。
 PENDING	zh-CN	privacy	隐私事务的适用法律与投诉渠道
 PENDING	zh-CN	terms	条款生效日期
-PENDING	zh-CN	terms	销售并运营本店铺的法律主体名称
 PENDING	zh-CN	terms	经营范围说明：所售商品
 DRAFT	zh-CN	terms	下单即表示您同意本条款，以及运送、退款与隐私页面的内容。
 DRAFT	zh-CN	terms	各商品页面标示价格与币种。付款确认后订单才成立。
@@ -149,9 +136,7 @@ PENDING	zh-CN	shipping	付款至发货的时效与运输时间
 PENDING	zh-CN	shipping	运费、包邮门槛，以及进口税费由谁承担
 DRAFT	zh-CN	shipping	订单记录了承运商与运单号后，您可以在订单页面查看。
 PENDING	zh-CN	contact	政策生效日期
-PENDING	zh-CN	contact	法律主体名称（建议：香港大碗貿易有限公司，待确认）
 PENDING	zh-CN	contact	经营范围说明：所售商品
-PENDING	zh-CN	contact	注册营业地址
 PENDING	zh-CN	contact	客服邮箱
 PENDING	zh-CN	contact	客服电话
 PENDING	zh-CN	contact	客服时间与目标响应时间

@@ -15,6 +15,7 @@ import {
   type PaymentMode,
 } from "./cvs-contract.ts";
 import { validBuyerEmail } from "./bank-transfer-contract.ts";
+import { validPromotion, type QuotePromotion } from "./promo-contract.ts";
 
 // Buyer purchase transport + strict validators for the BFF /api/buyer/* routes (cart, catalog,
 // checkout-options, quotes, destination, checkout, orders). Owns: request journals/CAS and the exact wire shapes.
@@ -59,6 +60,10 @@ export type Option = {
   store_search_url?: string;
   // Present exactly when payment_modes lists bank_transfer: hours the stock stays reserved for the transfer (6..168).
   transfer_window_hours?: number;
+  // Per-policy free-delivery threshold in minor units (storefront-v2 §A/§C): Go emits it on every row (number or null,
+  // internal/checkout/options.go; the MOCK fake of tests/storefront/shop-fake-api.mjs mirrors it). The cart page and the delivery step
+  // show their "add X more for free delivery" hint only when a row carries a positive one. The quote still decides shipping, never this.
+  free_shipping_threshold_minor?: number | null;
 };
 // A configured chain that cannot be sold yet (ECPay chain gate, §5.1): listed but disabled ("Coming soon").
 // Go sends only the identity/label fields plus available:false and a reason; versions are not needed.
@@ -108,13 +113,17 @@ export type Quote = {
     tax_minor: number;
     total_minor: number;
   };
+  // storefront-v2 §F: present only when a discount code applied (the server quote already carries its discount_minor).
+  promotion?: QuotePromotion;
 };
 type CartWrite = { expected_version: number; items: Item[] };
-type QuoteWrite = {
+export type QuoteWrite = {
   cart_version: number;
   market_id: string;
   country: string;
   method: string;
+  // storefront-v2 §F: optional canonical (upper-case) discount code; omitted = no code. The server prices it, never this field.
+  promo_code?: string;
 };
 type Pending = { v: 1; context: string; key: string } & (
   | { kind: "cart"; body: CartWrite }
@@ -223,7 +232,7 @@ export type Order = {
   cvs_shipment?: BuyerCvsShipment | null;
   hold_expires_at?: string;
   snapshot: {
-    quote: Pick<Quote, "currency" | "lines" | "amount">;
+    quote: Pick<Quote, "currency" | "lines" | "amount" | "promotion">;
     destination: DestinationDetails;
     service: {
       code: string;
@@ -328,6 +337,9 @@ const validCvsOptionFields = (v: Record<string, unknown>) =>
 export const validOption = (v: unknown): v is Option =>
   record(v) &&
   (v.available === undefined || v.available === true) &&
+  (v.free_shipping_threshold_minor === undefined ||
+    v.free_shipping_threshold_minor === null ||
+    integer(v.free_shipping_threshold_minor, 1, MAX_AMOUNT)) &&
   v.reason === undefined &&
   id(v.market_id) &&
   currency(v.currency) &&
@@ -375,6 +387,7 @@ const validQuoteSummary = (v: unknown): v is Order["snapshot"]["quote"] =>
       integer(x.quantity, 1, 1_000_000_000) &&
       integer(x.unit_price_minor, 0, MAX_AMOUNT),
   ) &&
+  (v.promotion === undefined || validPromotion(v.promotion)) &&
   record(v.amount) &&
   [
     "subtotal_minor",
@@ -713,6 +726,18 @@ export function cartSelection(
   return { expected_version: cart.version, items };
 }
 
+// Cart page edits: set one line's quantity (0 removes it) and keep every other line, against the version the buyer saw.
+export function cartWithQuantity(cart: Cart, sku: string, quantity: number): CartWrite {
+  if (!validCart(cart) || !id(sku) || !integer(quantity, 0, 1_000_000_000))
+    throw new BuyerClientError("invalid_response");
+  const items = [
+    ...cart.items.filter((x) => x.sku_id !== sku),
+    ...(quantity === 0 ? [] : [{ sku_id: sku, quantity }]),
+  ].sort((a, b) => a.sku_id.localeCompare(b.sku_id));
+  if (!validItems(items)) throw new BuyerClientError("request_failed");
+  return { expected_version: cart.version, items };
+}
+
 export async function readPurchase<T>(
   suffix: string,
   context: string,
@@ -774,7 +799,10 @@ export function parsePending(raw: string, context: string): Pending {
       return v as Pending;
     if (
       v.kind === "quote" &&
-      exact(b, ["cart_version", "market_id", "country", "method"]) &&
+      (exact(b, ["cart_version", "market_id", "country", "method"]) ||
+        (exact(b, ["cart_version", "market_id", "country", "method", "promo_code"]) &&
+          typeof b.promo_code === "string" &&
+          /^[A-Z0-9-]{3,24}$/.test(b.promo_code))) &&
       integer(b.cart_version, 1) &&
       id(b.market_id) &&
       typeof b.country === "string" &&
@@ -929,7 +957,8 @@ export async function writePurchase(
         typeof value.code === "string"
       ) {
         clearPending(pending);
-        throw new BuyerClientError("request_failed", response.status);
+        // §F: the server's coded refusal (promo_expired ...) reaches the UI as `detail`; text only, never a state.
+        throw new BuyerClientError("request_failed", response.status, value.code);
       }
       throw new BuyerClientError("uncertain", response.status);
     }

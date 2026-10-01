@@ -121,6 +121,12 @@ func write(w http.ResponseWriter, status int, code string, retryable bool) {
 		"invalid_proof": "The transfer details are not valid.", "invalid_reason": "The rejection reason is not valid.", "transfer_not_submitted": "The buyer has not submitted transfer details.",
 		"already_confirmed": "The transfer was already confirmed.", "already_refunded": "The transfer was already refunded.",
 		"transfer_not_confirmed": "The transfer has not been confirmed.",
+		// storefront-v2 §F (unit promotions): discount codes. The buyer codes are the 422s of the quote request and of BeginCheckout.
+		"promo_invalid": "This discount code is not valid.", "promo_not_started": "This discount code is not active yet.",
+		"promo_expired": "This discount code has expired.", "promo_min_subtotal": "The order is below the minimum amount for this discount code.",
+		"promo_used_up": "This discount code has been fully used.", "promo_buyer_limit": "You have already used this discount code the maximum number of times.",
+		"promo_changed": "The discount code changed; refresh the quote and try again.",
+		"promo_exists":  "A discount code with this text already exists.", "invalid_promotion": "The discount code settings are not valid.",
 		// meta-claims-intake-v1 §2 / claim-source unit: comment source binding (version_changed above is shared).
 		"input_invalid":      "The pasted link or id is not a supported Facebook or Instagram post.",
 		"input_unresolvable": "This link cannot be resolved without Meta; paste the numeric post or media id.",

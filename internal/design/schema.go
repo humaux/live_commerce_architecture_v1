@@ -39,6 +39,8 @@ var (
 	slugPattern  = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
 	colorPattern = regexp.MustCompile(`^#[0-9A-Fa-f]{6}$`)
 	phonePattern = regexp.MustCompile(`^[0-9+()#*. -]{3,30}$`)
+	// entityPattern is any HTML character reference (&lt; &#60; &#x3c; ...): a plain-text field never carries markup, escaped or not.
+	entityPattern = regexp.MustCompile(`&[a-zA-Z#][^;\s]{0,10};`)
 
 	headerKinds = []string{"home", "all_products", "collection", "page", "url"}
 	footerKinds = []string{"page", "url", "collection"}
@@ -202,7 +204,22 @@ func (w *walker) text(m map[string]any, path, key string, max int, required bool
 			return nil
 		}
 	}
+	if reason := plainTextProblem(s); reason != "" {
+		w.bad(p, reason)
+		return nil
+	}
 	return s
+}
+
+// plainTextProblem is THE rule for every plain-text field (name, tagline, announcement, labels, headings, titles, contact
+// text): no angle brackets and no HTML entities, so neither raw nor pre-escaped markup is ever stored (contracts/storefront-v2.md
+// section B: "no HTML anywhere"). Markdown bodies have their own grammar (markdownProblem); URLs, slugs and enums are
+// validated by their own stricter checks.
+func plainTextProblem(s string) string {
+	if strings.ContainsAny(s, "<>") || entityPattern.MatchString(s) {
+		return "HTML is not allowed"
+	}
+	return ""
 }
 
 func (w *walker) rawString(m map[string]any, p, key string) (string, bool) {
@@ -537,7 +554,8 @@ func (w *walker) pages(x any) ([]any, map[string]bool) {
 // DefaultDocument is what a store without any draft or published version shows: the store name, the accent of the
 // admin palette and one product grid (contracts/storefront-v2.md section B, last paragraph). It always validates.
 func DefaultDocument(storeName string) []byte {
-	name := strings.TrimSpace(storeName)
+	// The store name comes from control.stores (free text of the signup flow): strip what plainTextProblem would refuse.
+	name := strings.TrimSpace(entityPattern.ReplaceAllString(strings.NewReplacer("<", "", ">", "").Replace(storeName), ""))
 	if r := []rune(name); len(r) > 60 {
 		name = strings.TrimSpace(string(r[:60]))
 	}

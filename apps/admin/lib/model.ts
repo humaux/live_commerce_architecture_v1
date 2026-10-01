@@ -22,7 +22,9 @@ export type LedgerRow = {
 };
 export type Page<T> = { items: T[]; next_cursor: string };
 export type Warehouse = { id: string; name: string };
-export type Store = { id: string; name: string; currency: string };
+// role/permissions (0089, role-aware navigation) are the caller's own staff role and effective permissions in this store;
+// absent from older mocks. Display hint only: the Go API authorizes every request.
+export type Store = { id: string; name: string; currency: string; role?: string | null; permissions?: string[] };
 export type InitialStore = {
   tenant_id: string;
   store_id: string;

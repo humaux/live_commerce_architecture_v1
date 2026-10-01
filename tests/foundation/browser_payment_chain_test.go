@@ -29,6 +29,7 @@ func TestBrowserBuyerPaymentUI(t *testing.T) {
 	h := hpSetup(t)
 	bhPublish(t, h.bcHarness, "https://buyer.example", h.f.tenantA, h.f.storeA1)
 	mustExec(t, h.f.owner, `UPDATE catalog.products SET name='Synthetic browser payment product',description='Synthetic acceptance fixture' WHERE id=$1`, h.stock.product.ID)
+	sfiAxisBySKUCode(t, h.f.owner, h.stock.product.ID) // the storefront shell sells variants (one chip per SKU code)
 	bffKey := randomToken()
 	handler, err := buyerhttp.New(context.Background(), h.a.issuer, h.a.runtime, h.service, bffKey, time.Hour, h.api.(*checkout.HostedPaymentStarter))
 	if err != nil {

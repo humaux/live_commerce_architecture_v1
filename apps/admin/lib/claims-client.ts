@@ -12,7 +12,7 @@ import { parseClaimSource, parseClaimSourceEnvelope } from "./claim-source-model
 import type { claimSourceBody } from "./claims-request";
 import {
   catalogProduct, catalogSKU, parseBoard, parseBundlePage, parseCatalogPage, parseClaimLink,
-  parseManualResult, parseOffer, parsePurchaseEntry, parseWindow,
+  parseImportResult, parseLibrary, parseLibrarySaved, parseManualResult, parseOffer, parsePurchaseEntry, parseWindow,
   type CatalogProduct, type CatalogSKU, type MatchMode,
 } from "./claims-model";
 
@@ -38,11 +38,20 @@ export const readClaimBundles = (store: string, session: string, cursor: string,
 export const setClaimWindow = (store: string, session: string, body: { expected_version: number; state: "OPEN" | "CLOSED"; match_mode: MatchMode }, key: string, boundary: string) =>
   parsed(() => write(`${base(store, session)}/window`, "POST", body, key, boundary), (value) => parseWindow(value, session), true);
 /** M3: bind a keyword to a SKU in this scene (live:manage). */
-export const createClaimOffer = (store: string, session: string, body: { keyword: string; sku_id: string; max_quantity_per_claim: number }, key: string, boundary: string) =>
+export const createClaimOffer = (store: string, session: string, body: { keyword: string; sku_id: string; max_quantity_per_claim: number; live_price_minor?: number }, key: string, boundary: string) =>
   parsed(() => write(`${base(store, session)}/offers`, "POST", body, key, boundary), (value) => parseOffer(value, session), true);
-/** M4: change an offer's limit or active flag with a version CAS (live:manage). */
-export const updateClaimOffer = (store: string, session: string, offer: string, body: { expected_version: number; max_quantity_per_claim: number; active: boolean }, key: string, boundary: string) =>
+/** M4: change an offer's limit, active flag or live price with a version CAS (live:manage). live_price_minor: absent = unchanged, 0 = clear. */
+export const updateClaimOffer = (store: string, session: string, offer: string, body: { expected_version: number; max_quantity_per_claim: number; active: boolean; live_price_minor?: number }, key: string, boundary: string) =>
   parsed(() => write(`${base(store, session)}/offers/${offer}`, "PATCH", body, key, boundary), (value) => parseOffer(value, session), true);
+/** Live tools (R4): the store keyword library, read through any scene of the store (live:read). */
+export const readKeywordLibrary = (store: string, session: string, signal: AbortSignal) =>
+  parsed(() => read(`${base(store, session)}/library`, signal), parseLibrary, false);
+/** Live tools (R4): set (keyword) or remove (empty keyword) a SKU's library keyword with a version CAS; 0 = new (live:manage). */
+export const setLibraryKeyword = (store: string, session: string, sku: string, body: { keyword: string; expected_version: number }, key: string, boundary: string) =>
+  parsed(() => write(`${base(store, session)}/library/${sku}`, "PUT", body, key, boundary), parseLibrarySaved, true);
+/** Live tools (R4): seed this scene's offers from the library or from another scene; conflicts come back as data (live:manage). */
+export const importClaimOffers = (store: string, session: string, body: { source: "library" } | { source: "session"; from_session_id: string }, key: string, boundary: string) =>
+  parsed(() => write(`${base(store, session)}/offer-import`, "POST", body, key, boundary), (value) => parseImportResult(value, session), true);
 /** M5: record one operator-attested comment; REJECTED is a result, not an error (live:manage). */
 export const recordManualClaim = (store: string, session: string, body: { text: string } & ({ bundle_id: string } | { actor_label: string }), key: string, boundary: string) =>
   parsed(() => write(`${base(store, session)}/manual`, "POST", body, key, boundary), parseManualResult, true);

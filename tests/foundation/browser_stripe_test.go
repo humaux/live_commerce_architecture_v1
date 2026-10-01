@@ -284,6 +284,7 @@ func sbNew(t *testing.T, mode string) *sbEnv {
 	mustExec(t, e.f.owner, `DELETE FROM payments.method_heads WHERE tenant_id=$1 AND store_id=$2 AND code='payuni_credit'`, e.p.f.tenantA, e.p.f.storeA1)
 	e.topUpStock(t)
 	mustExec(t, e.f.owner, `UPDATE catalog.products SET name='Synthetic browser payment product',description='Synthetic acceptance fixture' WHERE id=$1`, e.p.stock.product.ID)
+	sfiAxisBySKUCode(t, e.f.owner, e.p.stock.product.ID) // the storefront shell sells variants (one chip per SKU code)
 
 	hosted, err := platform.OpenHostedPool(ctx, hpRole(t, e.f))
 	if err != nil {
@@ -1021,6 +1022,7 @@ func TestBrowserPayuniBaseline(t *testing.T) {
 	h := hpSetup(t)
 	bhPublish(t, h.bcHarness, sbOrigin, h.f.tenantA, h.f.storeA1)
 	mustExec(t, h.f.owner, `UPDATE catalog.products SET name='Synthetic browser payment product',description='Synthetic acceptance fixture' WHERE id=$1`, h.stock.product.ID)
+	sfiAxisBySKUCode(t, h.f.owner, h.stock.product.ID) // the storefront shell sells variants (one chip per SKU code)
 	bffKey := randomToken()
 	handler, err := buyerhttp.New(context.Background(), h.a.issuer, h.a.runtime, h.service, bffKey, time.Hour, h.api.(*checkout.HostedPaymentStarter))
 	if err != nil {

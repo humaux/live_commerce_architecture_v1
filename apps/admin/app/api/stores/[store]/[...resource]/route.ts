@@ -4,12 +4,13 @@ import {
 } from "@/lib/orders-request";
 import { customersRoute, validCustomersBody, validCustomersRequest } from "@/lib/customers-request";
 import { logisticsRoute } from "@/lib/logistics-request";
+import { promotionsRoute } from "@/lib/promotions-request";
 import { validStudioInputToken, validStudioQuery } from "@/lib/studio-request";
 import {
   claimLinkRoute, claimsCollection, claimsRoutes, claimsSubpath, validClaimLink,
 } from "@/lib/claims-request";
 import {
-  DESIGN_MAX_JSON, designGetPaths, designPostPaths, designPutPaths, isDesignImageBytes, isDesignJsonPut, isDesignUpload, validDesignRequest,
+  DESIGN_MAX_JSON, designDetails, designGetPaths, designPostPaths, designPutPaths, isDesignImageBytes, isDesignJsonPut, isDesignPath, isDesignUpload, validDesignRequest,
 } from "@/lib/design-request";
 import { adsAny, adsBodyless, adsKeyless, adsRoutes, validAdsQuery, validIfMatch } from "@/lib/ads-request";
 import { parseStudioInput, parseStudioInputPrepared } from "@/lib/studio-model";
@@ -22,6 +23,7 @@ import {
   requireOrigin,
   readBody,
   safeError,
+  safeJSON,
   sessionToken,
 } from "@/lib/auth";
 
@@ -97,7 +99,8 @@ async function route(request: Request, context: Context) {
   // customers-billing-ui: customers/finance/billing resources (lib/customers-request.ts grammar) -> Go customers.go/finance.go/billing.go.
   const customers = customersRoute(request.method, path);
   // taiwan-cvs-logistics-v1 §8/§16.5: GET|PUT logistics/ecpay, POST logistics/ecpay/enabled, GET|PUT logistics/cvs-settings.
-  const logistic = logisticsRoute(request.method, path);
+  // storefront-v2 §F (unit promotions): GET|POST promotions, POST promotions/{id} share the logistics exact-resource policy (no query, keyed JSON).
+  const logistic = logisticsRoute(request.method, path) ?? promotionsRoute(request.method, path);
   const studio = path.startsWith("live-sessions");
   if (studio && !authConfig) return error(404, "not_found");
   const input = studioInputRoute.test(path);
@@ -353,7 +356,12 @@ async function route(request: Request, context: Context) {
     clearAuthCookies(denied.headers);
     return denied;
   }
-  if (!response.ok) return safeError(response);
+  if (!response.ok) {
+    // store-design D3: a refused document (422) keeps only the closed {path, reason} pair so the editor can mark the field.
+    if (response.status === 422 && isDesignPath(path))
+      return localError(422, "invalid_request", undefined, designDetails((await safeJSON<{ details?: unknown }>(response))?.details));
+    return safeError(response);
+  }
   if (imageBytes) {
     // Preview bytes stream straight through, only as a validated raster type, never as a document.
     const type = (response.headers.get("content-type") ?? "").split(";", 1)[0].trim().toLowerCase();

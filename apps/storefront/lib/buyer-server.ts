@@ -5,6 +5,8 @@
 // CVS (taiwan-cvs-logistics-v1 §5.2, §16.1): exactly POST cvs-selections (keyed), GET cvs-selections/{id},
 // POST cvs-selections/{id}/verify (keyless, no body) and POST cvs-stores (keyed) -> Go internal/buyerhttp/cvs.go;
 // bodies and answers are re-validated with lib/cvs-contract.ts. No generic proxying.
+// Guest order lookup (storefront-v2 §E5): exactly POST orders/lookup -> Go internal/buyerhttp/lookup.go. It is the one route that needs no
+// cookie: the BFF mints a fresh token like session/prepare, sends it as the bearer and sets the cookie ONLY on a 200 (lookup() below).
 // Bank transfer (storefront-v2 §C): exactly GET orders/{id}/bank-transfer and PUT orders/{id}/bank-transfer/proof (keyed) ->
 // Go internal/buyerhttp/transfer.go; body and answer re-validated with lib/bank-transfer-contract.ts.
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
@@ -16,6 +18,8 @@ import {
   validPaymentSignal,
   type PaymentMethodCode,
 } from "./payment-contract.ts";
+// storefront-v2 §F: the closed discount-code refusals (422 of the quote request and of checkout) and the promo_code mirror.
+import { PROMO_CODE_SHAPE, PROMO_ERROR_CODES } from "./promo-contract.ts";
 import {
   CLAIM_TOKEN,
   validClaimPreview,
@@ -37,6 +41,7 @@ import {
   validProofResult,
   validTransferView,
 } from "./bank-transfer-contract.ts";
+import { validLookupBody, validLookupResult } from "./lookup-contract.ts";
 import {
   CVS_ERROR_CODES,
   DEFINITE_CVS_CODES,
@@ -83,7 +88,8 @@ type Route = {
     | "erasure"
     | "cvsSelection"
     | "cvsStore"
-    | "transferProof";
+    | "transferProof"
+    | "lookup";
   query?: "catalog" | "options" | "orders";
   session?: string;
   payment?: "view" | "prepare" | "handoff" | "refresh" | "cancel";
@@ -97,6 +103,8 @@ type Route = {
   selectionID?: string;
   // Bank-transfer order page (storefront-v2 §C): GET view, PUT proof (keyed).
   transfer?: "view" | "proof";
+  // Guest order lookup: handled by lookup() before any cookie / context check.
+  lookup?: boolean;
 };
 
 const messages: Record<string, string> = {
@@ -123,6 +131,10 @@ const messages: Record<string, string> = {
   // storefront-v2 §C bank-transfer refusals (422 from the buyer definers); the UI maps the code to text.
   ...Object.fromEntries(
     TRANSFER_ERROR_CODES.map((code) => [code, "Request refused."]),
+  ),
+  // storefront-v2 §F discount-code refusals (422 from the quote request / BeginCheckout); the UI maps the code to text.
+  ...Object.fromEntries(
+    PROMO_ERROR_CODES.map((code) => [code, "Request refused."]),
   ),
 };
 
@@ -375,6 +387,9 @@ function route(
     },
     checkout: { POST: { privatePath: "checkout", body: "checkout" } },
     orders: { GET: { privatePath: "orders", query: "orders" } },
+    "orders/lookup": {
+      POST: { privatePath: "orders/lookup", body: "lookup", lookup: true },
+    },
     "cvs-selections": {
       POST: { privatePath: "cvs-selections", body: "cvsSelection", cvs: "open" },
     },
@@ -657,6 +672,7 @@ const shapes: Record<Exclude<Route["body"], undefined>, Shape> = {
     market_id: "string",
     country: "string",
     method: "string",
+    promo_code: "string", // optional (§F); extraShapeOK checks its grammar
   },
   destination: {
     expected_version: "integer",
@@ -684,6 +700,7 @@ const shapes: Record<Exclude<Route["body"], undefined>, Shape> = {
     buyer_email: "string",
   },
   transferProof: { last5: "string", amount_minor: "integer", paid_at: "string" },
+  lookup: { order_ref: "string", contact: "string" },
   cvsSelection: {
     cart_version: "integer",
     market_id: "string",
@@ -731,11 +748,14 @@ function matchesShape(value: unknown, shape: Shape): boolean {
 const UUID_TEXT = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 function extraShapeOK(shape: Shape, parsed: unknown): boolean {
   const v = parsed as Record<string, unknown>;
+  if (shape === shapes.quote)
+    return v.promo_code === undefined || (typeof v.promo_code === "string" && PROMO_CODE_SHAPE.test(v.promo_code));
   if (shape === shapes.checkout)
     return (
       (v.payment_mode === undefined || isPaymentMode(v.payment_mode)) &&
       (v.buyer_email === undefined || validBuyerEmail(v.buyer_email))
     );
+  if (shape === shapes.lookup) return validLookupBody(parsed);
   if (shape === shapes.transferProof)
     return Object.keys(v).length === Object.keys(shape).length && validProofBody(v);
   if (shape !== shapes.cvsSelection && shape !== shapes.cvsStore) return true;
@@ -831,6 +851,7 @@ async function upstream(
   body?: string,
   key?: string,
   claimToken?: string,
+  clientIP?: string,
 ): Promise<Response> {
   const outbound = new Headers({
     Accept: "application/json",
@@ -841,6 +862,8 @@ async function upstream(
   if (body !== undefined) outbound.set("Content-Type", "application/json");
   if (key) outbound.set("Idempotency-Key", key);
   if (claimToken) outbound.set("X-Commerce-Claim-Token", claimToken);
+  // Guest lookup throttles per client IP (Go hashes it into a bucket, never stores it); Caddy always sets X-Forwarded-For.
+  if (clientIP) outbound.set("X-Commerce-Client-IP", clientIP);
   // meta-ads-v1 A-3: Go consentPut records the BROWSER User-Agent for CAPI after an ads_personalization grant
   // (ads.put_capi_context); without this the API would see this server's fetch agent. Consents PUT only.
   const agent = request.headers.get("user-agent");
@@ -942,6 +965,54 @@ function prepared(config: Config, origin: string): Response {
   });
 }
 
+// One IP literal exactly (no list, port or zone), as lib/password-request.ts does for the admin; anything else = no header = Go's shared bucket.
+function forwardedIP(request: Request): string | undefined {
+  const value = request.headers.get("x-forwarded-for");
+  return value !== null && isIP(value) !== 0 && !value.includes("%") ? value : undefined;
+}
+
+// POST /api/buyer/orders/lookup. No cookie is needed or read: a fresh capability token is minted exactly like session/prepare, Go registers it
+// for the matched order's owner, and the cookie is set only when Go said 200 (a refusal leaves the visitor's current cookie alone).
+async function lookup(
+  request: Request,
+  cfg: Config,
+  origin: string,
+): Promise<Response> {
+  if (request.headers.has("idempotency-key")) return failure(422, "invalid_request");
+  const result = await bodyJSON(request, shapes.lookup);
+  if (result.error) return result.error;
+  const token = randomBytes(32).toString("base64url");
+  const response = await upstream(
+    request,
+    cfg,
+    origin,
+    token,
+    "orders/lookup",
+    "POST",
+    result.body,
+    undefined,
+    undefined,
+    forwardedIP(request),
+  );
+  if (request.signal.aborted) return failure(503, "unavailable");
+  if (!response.ok) {
+    const refusal = await upstreamError(response);
+    const wait = response.headers.get("retry-after");
+    if (response.status === 429 && wait !== null && /^[0-9]{1,5}$/.test(wait))
+      refusal.headers.set("Retry-After", wait);
+    return refusal;
+  }
+  const data = await upstreamJSON(response);
+  if (response.status !== 200 || !validLookupResult(data))
+    return failure(503, "unavailable");
+  const iat = Math.floor(Date.now() / 1000);
+  const envelope: Envelope = { v: 1, token, iat, exp: iat + cfg.ttl, origin };
+  const value = envelopeValue(cfg, envelope);
+  return success(data, {
+    "Set-Cookie": `${COOKIE}=${value}; Path=/; Max-Age=${cfg.ttl}; Secure; HttpOnly; SameSite=Lax`,
+  });
+}
+
 function forbiddenHeaders(request: Request): boolean {
   return [
     "authorization",
@@ -993,6 +1064,7 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
   const isMutation = request.method !== "GET";
   if (isMutation && request.headers.get("origin") !== origin)
     return fail(403, "forbidden");
+  if (target.lookup) return lookup(request, cfg, origin);
   const found = identify(request, cfg, origin);
   if (found.invalid) return fail(401, "unauthorized");
   if (

@@ -12,11 +12,12 @@ import {createWriteStream} from "node:fs";
 import {tmpdir} from "node:os";
 import path from "node:path";
 import { expect } from "@playwright/test";
+import { openBuyerSession, reachCheckout, switchLocale } from "./shop-helpers.mjs";
 import { engine, launch, ctxOpts, phone, phoneToken } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
 
 const root=process.cwd(), evidence=process.env.LC_PAYMENT_EVIDENCE;
 assert(evidence && /^http:\/\/127\.0\.0\.1:\d+$/.test(process.env.LC_PAYMENT_CONTROL));
-const origin="https://buyer.example", product=`${origin}/en/products/${process.env.LC_PAYMENT_PRODUCT}`;
+const origin="https://buyer.example", product=`${origin}/en/products/${process.env.LC_PAYMENT_PRODUCT}`, checkout=`${origin}/en/checkout`;
 const psp="https://sandbox-api.payuni.com.tw/api/upp";
 const pii={recipient_name:"Synthetic Gate Recipient",phone:"+886900000091",region:"Synthetic Region",city:"Synthetic City",postal_code:"99991",line1:"Synthetic Address Ninety One",line2:"Synthetic Unit Ninety Two"};
 const children=new Set(),sockets=new Set(),contexts=[],logs=[],calls=[],posts=[],cases=[];
@@ -70,8 +71,7 @@ async function context(mobile=false){
 }
 const requestIs=(response,suffix,method)=>new URL(response.url()).pathname===`/api/buyer/${suffix}`&&response.request().method()===method;
 async function makeOrder(page){
-  await expect(page.locator("#quantity")).toBeEnabled();
-  await page.locator("#quantity").fill("2");
+  await reachCheckout(page,origin,"en",process.env.LC_PAYMENT_PRODUCT,{quantity:2}); // product page -> Add to cart (2) -> checkout (storefront shell)
   await page.getByRole("button",{name:"Choose delivery",exact:true}).click();
   const quotation=page.waitForResponse(r=>requestIs(r,"quotes","POST"));
   await page.getByRole("button",{name:"Get current total",exact:true}).click();assert.equal((await quotation).status(),200);
@@ -136,7 +136,7 @@ try{
   await expect(page.getByTestId("payment-commercial-status")).toHaveText("Order status: Not paid");
   await page.getByTestId("order-payment").screenshot({path:path.join(evidence,"desktop-payment-ready.png")});
   await page.screenshot({path:path.join(evidence,"desktop-order-ready.png"),fullPage:true});
-  await page.getByTestId("continue-shopping").click();await expect(page.getByRole("button",{name:"Choose delivery",exact:true})).toBeEnabled();
+  await page.getByTestId("continue-shopping").click();await expect(page.getByTestId("checkout-empty")).toBeVisible(); // continued: empty cart
   const b=await makeOrder(page);assert.notEqual(a,b);
   const initial=await control();assert.equal(initial.attempts,0);assert.equal(initial.pages,0);
   await page.evaluate(()=>{window.__nativeOpen=window.open;window.open=()=>null;});
@@ -150,7 +150,7 @@ try{
   const pop=page.waitForEvent("popup");await page.getByTestId("pay-order").click();const child=await pop;
   assert.equal(await firstPrepare.result.promise,200);
   await expect(page.getByTestId("pay-order")).toHaveCount(0);
-  const other=await c.newPage();await other.goto(product);
+  const other=await c.newPage();await other.goto(checkout);
   await expect(other.getByTestId("order-id")).toHaveText(b);
   await expect(other.getByTestId("pay-order")).toBeVisible();
   const secondPop=other.waitForEvent("popup");await other.getByTestId("pay-order").click();await secondPop;
@@ -167,11 +167,11 @@ try{
   passed("BPU02 concurrent tabs queue on actual Web Lock; duplicate Pay adds no prepare/take/form");
 
   const mobile=await context(true);await mobile.addCookies(await c.cookies(origin));
-  const mobilePage=await mobile.newPage();await mobilePage.goto(product);
+  const mobilePage=await mobile.newPage();await mobilePage.goto(checkout);
   // Engine-specific: Playwright's macOS WebKit reports navigator.maxTouchPoints===0 even with hasTouch (real iOS Safari reports 5), so under webkit
   // touch capability is asserted through ontouchstart + (pointer: coarse); Chromium keeps the original maxTouchPoints>0 assertion.
   assert(await mobilePage.evaluate(([tok,wk])=>(wk?"ontouchstart" in window&&matchMedia("(pointer: coarse)").matches:navigator.maxTouchPoints>0)&&navigator.userAgent.includes(tok),[phoneToken,engine==="webkit"]));
-  await mobilePage.locator("header select").selectOption("zh-TW");
+  await switchLocale(mobilePage,"zh-TW");
   await mobilePage.getByTestId("toggle-order-history").click();await mobilePage.locator(`button[data-order-id="${a}"]`).click();
   await expect(mobilePage.getByTestId("order-id")).toHaveText(a);await expect(mobilePage.getByTestId("payment-status")).toHaveAttribute("data-state","NOT_STARTED");
   await expect(mobilePage.locator("html")).toHaveAttribute("lang","zh-TW");
@@ -196,10 +196,10 @@ try{
   await mobilePage.screenshot({path:path.join(evidence,"mobile-native-history-readonly.png"),fullPage:true});
   passed("BPU02 touch/phone-UA history Pay replays original key/body after navigated child, then posts once");
 
-  await page.locator("header select").selectOption("zh-CN");await expect(page.locator("html")).toHaveAttribute("lang","zh-CN");
+  await switchLocale(page,"zh-CN");
   await expect(page.getByTestId("order-id")).toHaveText(b);
-  await page.getByTestId("continue-shopping").click();await page.locator("header select").selectOption("en");
-  await expect(page.getByRole("button",{name:"Choose delivery",exact:true})).toBeEnabled();const d=await makeOrder(page);
+  await page.getByTestId("continue-shopping").click();await expect(page.getByTestId("checkout-empty")).toBeVisible(); // let the continuation settle before the language link navigates away
+  await switchLocale(page,"en");await expect(page.getByTestId("checkout-empty")).toBeVisible();const d=await makeOrder(page);
   await page.setViewportSize({width:390,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   await page.getByTestId("order-payment").screenshot({path:path.join(evidence,"mobile-payment-ready.png")});
   const lostPrepare=arm(`/api/buyer/orders/${d}/payment/prepare`,"partial");const preparePopup=page.waitForEvent("popup");
@@ -210,9 +210,7 @@ try{
   const contextAtPrepare=(await paymentMarker(page,d)).context;
   const changedContext=arm(`/api/buyer/orders/${d}/payment/prepare`,"hold");const stalePopup=page.waitForEvent("popup");
   await page.getByTestId("pay-order").click();await stalePopup;assert.equal(await changedContext.result.promise,200);
-  await c.clearCookies();const replacement=await c.newPage();await replacement.goto(product);
-  await expect(replacement.locator("#quantity")).toBeEnabled();
-  const replacementSession=await replacement.evaluate(async()=> (await(await fetch("/api/buyer/session",{cache:"no-store"})).json()).context);
+  await c.clearCookies();const replacement=await c.newPage();await replacement.goto(checkout);const replacementSession=await openBuyerSession(replacement); // the replacement buyer session (a cart write would wait on the purchase Web Lock the stalled prepare holds)
   assert(replacementSession&&replacementSession!==contextAtPrepare);
   changedContext.release.resolve();
   await expect(page.getByTestId("order-payment")).toHaveAttribute("aria-busy","false");
@@ -229,7 +227,7 @@ try{
   assert.equal(paymentCalls(d,"handoff").length,1);assert.equal(posts.length,2);
   passed("BPU02 child closed after committed Take cannot release cached form or retry");
 
-  await page.getByTestId("continue-shopping").click();await expect(page.getByRole("button",{name:"Choose delivery",exact:true})).toBeEnabled();
+  await page.getByTestId("continue-shopping").click();await expect(page.getByTestId("checkout-empty")).toBeVisible();
   const lostOrder=await makeOrder(page);
   const lost=arm(`/api/buyer/orders/${lostOrder}/payment/handoff`,"partial");const lostPopup=page.waitForEvent("popup");
   await page.getByTestId("pay-order").click();await lostPopup;assert.equal(await lost.result.promise,200);
@@ -261,7 +259,7 @@ try{
   await mobileReturn.screenshot({path:path.join(evidence,"mobile-payment-return.png"),fullPage:true});await mobileReturn.close();
   await returnPage.close();
   passed("BPU02 neutral GET/POST return never reports payment or changes facts");
-  for(const locale of ["zh-CN","zh-TW","en"]){await page.locator("header select").selectOption(locale);await expect(page.locator("html")).toHaveAttribute("lang",locale);await expect(page.getByTestId("payment-test-mode")).toBeVisible();}
+  for(const locale of ["zh-CN","zh-TW","en"]){await switchLocale(page,locale);await expect(page.getByTestId("payment-test-mode")).toBeVisible();}
   passed("BPU02 three locales and mobile retain server test-mode disclosure");
   await writeFile(path.join(evidence,"result.json"),JSON.stringify({cases:cases.length,posts}),{flag:"wx",mode:0o600});
 }finally{

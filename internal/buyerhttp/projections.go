@@ -5,6 +5,7 @@ import (
 
 	"livecommerce/internal/checkout"
 	"livecommerce/internal/pagination"
+	"livecommerce/internal/pricing"
 	"livecommerce/internal/storefront"
 )
 
@@ -32,6 +33,8 @@ type optionResponse struct {
 	Reason          string   `json:"reason,omitempty"`
 	// storefront-v2 §C: present only when payment_modes lists bank_transfer (the hold the order will keep, 6..168 hours).
 	TransferWindowHours int `json:"transfer_window_hours,omitempty"`
+	// storefront-v2 §C: the delivery policy's free-shipping threshold (minor units) or null; always present (a hint only, the quote decides).
+	FreeShippingThresholdMinor *int64 `json:"free_shipping_threshold_minor"`
 }
 
 type optionsResponse struct {
@@ -49,7 +52,7 @@ func projectOptions(page pagination.Page[checkout.Option]) optionsResponse {
 			DeliveryKind: item.DeliveryKind, Mode: item.Mode, NameHans: item.NameHans, NameHant: item.NameHant,
 			NameEN: item.NameEN, SortOrder: item.SortOrder, PickupSelection: item.PickupSelection,
 			PaymentModes: item.PaymentModes, StoreSearchURL: item.StoreSearchURL, Available: item.Available, Reason: item.Reason,
-			TransferWindowHours: item.TransferWindowHours,
+			TransferWindowHours: item.TransferWindowHours, FreeShippingThresholdMinor: item.FreeShippingThresholdMinor,
 		})
 	}
 	return out
@@ -160,6 +163,7 @@ type quoteResponse struct {
 	ExpiresAt   time.Time           `json:"expires_at"`
 	Lines       []quoteLineResponse `json:"lines"`
 	Amount      quoteAmountResponse `json:"amount"`
+	Promotion   *promotionResponse  `json:"promotion,omitempty"`
 }
 
 func projectQuoteLines(lines []storefront.QuoteLine) []quoteLineResponse {
@@ -185,6 +189,7 @@ func projectQuote(quote storefront.Quote) quoteResponse {
 			ShippingMinor: quote.Amount.ShippingMinor, ShippingTaxMinor: quote.Amount.ShippingTaxMinor,
 			TaxMinor: quote.Amount.TaxMinor, TotalMinor: quote.Amount.TotalMinor,
 		},
+		Promotion: projectPromotion(quote.Promotion),
 	}
 	return out
 }
@@ -258,9 +263,26 @@ func projectCheckout(result checkout.Result) checkoutResponse {
 }
 
 type orderQuoteResponse struct {
-	Currency string              `json:"currency"`
-	Lines    []quoteLineResponse `json:"lines"`
-	Amount   quoteAmountResponse `json:"amount"`
+	Currency  string              `json:"currency"`
+	Lines     []quoteLineResponse `json:"lines"`
+	Amount    quoteAmountResponse `json:"amount"`
+	Promotion *promotionResponse  `json:"promotion,omitempty"`
+}
+
+// promotionResponse is the buyer's view of the code a quote/order was priced with (storefront-v2 §F). Present only when a code applied (the
+// key is absent otherwise, so code-less responses keep their exact pre-0091 shape); the merchant's internal ids and version never leave Go.
+type promotionResponse struct {
+	Code       string `json:"code"`
+	Kind       string `json:"kind"`
+	Percent    int64  `json:"percent"`
+	FixedMinor int64  `json:"fixed_minor"`
+}
+
+func projectPromotion(p *pricing.Promo) *promotionResponse {
+	if p == nil {
+		return nil
+	}
+	return &promotionResponse{Code: p.Code, Kind: p.Kind, Percent: p.Percent, FixedMinor: p.FixedMinor}
 }
 
 type orderPickupResponse struct {
@@ -328,6 +350,7 @@ func projectOrder(order checkout.Order) orderResponse {
 					ShippingMinor: quote.Amount.ShippingMinor, ShippingTaxMinor: quote.Amount.ShippingTaxMinor,
 					TaxMinor: quote.Amount.TaxMinor, TotalMinor: quote.Amount.TotalMinor,
 				},
+				Promotion: projectPromotion(quote.Promotion),
 			},
 			Destination: orderDestinationResponse{
 				Kind: destination.Kind, Country: destination.Country, RecipientName: destination.RecipientName,

@@ -1,6 +1,9 @@
 // Gate AL1 (BROWSER-less, real production storefront build): the link the ads SQL freezes (PRODUCT_TRAFFIC link_url, migrations/0074)
 // and the Meta feed `link` (migrations/0080) is origin + "/products/" + product id. Fetch exactly that path from `next start`
-// and follow redirects: it must end on HTTP 200 (a 404 means paid clicks and catalog items land on a dead page).
+// and check the FIRST hop: a permanent redirect to the locale route. The second hop (/{locale}/products/{id} -> 308 -> the slug page,
+// 200 for a published store) needs a store behind the BFF, so it is asserted twice elsewhere: by the MOCK shell gate SF07
+// (tests/storefront/shop-gate.mjs) and, on the REAL stack (Go + PG + published store), by gate AL2 in tests/storefront/ads-consent.mjs
+// (--browser-meta-ads). Here there is no upstream (COMMERCE_BUYER_WEB_ENABLED=0), so the product page would be a 404.
 // Needs `pnpm run build:storefront` first (scripts/dev/test-local.sh --browser-meta-ads does it). Usage: node tests/storefront/ad-link.mjs
 import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -24,8 +27,8 @@ try {
     try { await fetch(base + "/"); break; } catch { if (i > 60) throw new Error("storefront did not start\n" + log); await new Promise((r) => setTimeout(r, 500)); }
   }
   const id = "0b2f6f3e-3c4d-4a59-8f0e-1a2b3c4d5e6f";
-  const res = await fetch(`${base}/products/${id}`); // follows redirects
-  if (res.status !== 200) throw new Error(`AL1 FAIL: GET /products/${id} -> ${res.status} at ${res.url}`);
-  if (!new URL(res.url).pathname.endsWith(`/products/${id}`)) throw new Error(`AL1 FAIL: landed on ${res.url}`);
-  console.log(`AL1 PASS: /products/${id} -> ${new URL(res.url).pathname} 200`);
+  const res = await fetch(`${base}/products/${id}`, { redirect: "manual" });
+  if (res.status !== 308) throw new Error(`AL1 FAIL: GET /products/${id} -> ${res.status}, expected a permanent redirect`);
+  if (res.headers.get("location") !== `/zh-TW/products/${id}`) throw new Error(`AL1 FAIL: redirected to ${res.headers.get("location")}`);
+  console.log(`AL1 PASS: /products/${id} -> 308 ${res.headers.get("location")} (second hop to the slug page: SF07)`);
 } finally { stop(); }

@@ -7,6 +7,7 @@
 // Nothing else is reachable. BFF routes exercised: /api/buyer/{checkout-options,quotes,cvs-selections,cvs-selections/{id}/verify,cvs-stores,destination,
 // checkout,orders/{id}} -> Go /v1/buyer/*. Evidence: screenshots (desktop 1440x900 and 390x844, three locales) hashed into screenshots.json.
 // Wording: contract strings for zh-TW (§5.3/§16.1/§16.4, cvs-ui U2/U3/U4); the rest is located through data-testid.
+import { reachCheckout } from "./shop-helpers.mjs";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import http from "node:http";
@@ -112,9 +113,9 @@ async function newContext(mobile) {
 }
 // Opens the product page, chooses the delivery option by chain and asks for the quotation.
 async function toQuote(page, store, locale, kind, quantity = 1) {
-  await page.goto(`${store.origin}/${locale}/products/${store.product}`);
+  // product page -> Add to cart (quantity) -> checkout (storefront shell, tests/storefront/shop-helpers.mjs)
   // a pay-at-pickup total must be a whole TWD amount (F20: GoodsAmount/CollectionAmount are integers); the fixture SKU costs TWD 12.50
-  for (let i = 1; i < quantity; i++) await page.getByRole("button", { name: "Increase quantity", exact: true }).click();
+  await reachCheckout(page, store.origin, locale, store.product, { quantity });
   await page.getByRole("button", { name: copy[locale].delivery, exact: true }).click();
   await page.locator("#delivery").selectOption({ label: `${copy[locale].chains[kind]} · TW` });
   await page.getByRole("button", { name: copy[locale].quote, exact: true }).click();
@@ -243,7 +244,7 @@ try {
   // ---- unverified chains are shown disabled "coming soon" -------------------------------------------------------------------
   {
     const ctx = await newContext(false), page = await ctx.newPage();
-    await page.goto(`${stores.map1.origin}/zh-TW/products/${stores.map1.product}`);
+    await reachCheckout(page, stores.map1.origin, "zh-TW", stores.map1.product);
     await page.getByRole("button", { name: copy["zh-TW"].delivery, exact: true }).click();
     for (const kind of ["cvs_hilife", "cvs_okmart"]) {
       const option = page.locator("#delivery option", { hasText: copy["zh-TW"].chains[kind] });

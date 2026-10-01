@@ -170,6 +170,8 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerCVSRoutes(mux, pool, configured.CVS)
 	registerOfflinePaymentRoutes(mux, pool)
 	registerMerchantToolsRoutes(mux, pool, configured.ManualOrders) // unit merchant-tools: storefront-v2 section G, merchanttools.go
+	registerPromotionRoutes(mux, pool)
+	registerNotifySettingsRoutes(mux, pool)
 	foundation := platform.NewHandler(pool, platform.HandlerOptions{SessionStoreList: configured.SessionStoreList})
 	if configured.SessionStoreList {
 		mux.Handle("GET /v1/admin/stores", foundation)
