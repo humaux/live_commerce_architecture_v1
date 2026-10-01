@@ -908,7 +908,10 @@ func lcPopulatedUpgrade(t *testing.T) {
 		"0078_customers_privacy.sql", "0079_platform_billing.sql", "0080_meta_capi.sql",
 		"post_river/0014_meta_claims_intake_river.sql", "post_river/0015_meta_ads_river.sql",
 		// 0071 (claims-retention-purge-v1) requires 0060+0064 (55000 precondition), so it is held back as well.
-		"0071_claims_retention.sql"}
+		"0071_claims_retention.sql",
+		// R3/R4 files that redefine 0078 definers (finance summary 0085/0088, erasure 0090/0091) or extend 0060 offers (0092)
+		// cannot run while 0078/0060 are held back; they are re-applied with them.
+		"0085_finance_pay_at_pickup.sql", "0088_checkout_offline.sql", "0090_buyer_comms.sql", "0091_promotions.sql", "0092_live_tools.sql"}
 	for _, version := range dependents {
 		dependent, err := os.ReadFile(filepath.Join("../../migrations", version))
 		if err != nil {
