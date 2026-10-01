@@ -456,6 +456,13 @@ try {
   assert.deepEqual(pageErrors.filter(e=>!isWebkitCancelledFetch(e)).map(e=>e.name),[],"browser application exception"); // WebKit cancelled-fetch console noise: browser-engine.mjs
   pass("BO06 all attempted local/session writes, URLs and console exclude PII/bearer; other owner denied");
   await writeFile(path.join(evidence,"result.json"),JSON.stringify({cases:observations.length,orders,repeated_orders:[order1,orderB],observations,storage_write_attempts:storageWrites.length,scope:"actual UI/Next/Go/isolated PG; synthetic TLS and buyer data; no PSP/production",not_run:["full foundation/race/vet and existing browser regression are separate root gates","independent visual review"]},null,2),{mode:0o600});
+}catch(error){
+  // A failed step leaves what the buyer was looking at (screenshot + visible text of every page), so an intermittent failure is diagnosable from its own run.
+  if(browser)for(const context of browser.contexts())for(const [index,page] of context.pages().entries()){
+    await page.screenshot({path:path.join(evidence,`failure-${index}.png`),fullPage:true}).catch(()=>{});
+    await writeFile(path.join(evidence,`failure-${index}.txt`),`${page.url()}\n${await page.locator("body").innerText().catch(()=>"")}`.slice(0,6000)).catch(()=>{});
+  }
+  throw error;
 }finally{
   if(hook?.release)hook.release.resolve();
   if(browser)await browser.close();for(const s of sockets)s.destroy();
