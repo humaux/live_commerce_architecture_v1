@@ -8,6 +8,7 @@ package pricing
 import (
 	"context"
 	"errors"
+	"math/bits"
 	"regexp"
 	"strings"
 	"unicode"
@@ -263,37 +264,115 @@ func LockCurrent(ctx context.Context, tx pgx.Tx, tenantID, storeID, marketID, co
 	return out, nil
 }
 
+// Promo is the frozen effect of one discount code (storefront-v2 section F). ID/Code/Version identify the merchant's code row at pricing
+// time (BeginCheckout compares Version under a lock, so an edit or pause after the quote is a typed refusal); Kind/Percent/FixedMinor are
+// all Calculate reads. omitempty on the numbers keeps a snapshot of the other kind byte-stable through checkout.begin_hold's comparison.
+type Promo struct {
+	ID         string `json:"id"`
+	Code       string `json:"code"`
+	Version    int64  `json:"version"`
+	Kind       string `json:"kind"`
+	Percent    int64  `json:"percent,omitempty"`
+	FixedMinor int64  `json:"fixed_minor,omitempty"`
+}
+
+// discountOn is the ONE place a code becomes money. I05: integer minor units only, floor rounding for percent, and the result never exceeds
+// the merchandise subtotal, so the goods charge cannot go below zero. Shipping is not an input: a code never discounts shipping.
+func (p Promo) discountOn(subtotal int64) (int64, error) {
+	if subtotal < 0 || subtotal > command.MaxMoney {
+		return 0, command.ErrInvalid
+	}
+	switch p.Kind {
+	case "percent":
+		if p.Percent < 1 || p.Percent > 90 || p.FixedMinor != 0 {
+			return 0, command.ErrInvalid
+		}
+		return subtotal * p.Percent / 100, nil // subtotal <= 1e12 and percent <= 90: no overflow
+	case "fixed":
+		if p.FixedMinor < 1 || p.FixedMinor > command.MaxMoney || p.Percent != 0 {
+			return 0, command.ErrInvalid
+		}
+		return min(p.FixedMinor, subtotal), nil
+	}
+	return 0, command.ErrInvalid
+}
+
+// allocateDiscount splits discount over the line subtotals proportionally (floor, then the leftover units one by one to the largest
+// fractional remainders, ties to the lower index) so the line discounts sum to exactly discount and none exceeds its line. 128-bit
+// product via math/bits: discount <= total <= 1e12 makes discount*line overflow int64.
+func allocateDiscount(discount int64, subtotals []int64, total int64) []int64 {
+	out := make([]int64, len(subtotals))
+	if discount == 0 || total == 0 {
+		return out
+	}
+	rems := make([]uint64, len(subtotals))
+	var given int64
+	for i, sub := range subtotals {
+		hi, lo := bits.Mul64(uint64(discount), uint64(sub))
+		q, r := bits.Div64(hi, lo, uint64(total)) // hi < total because discount <= total
+		out[i], rems[i] = int64(q), r
+		given += int64(q)
+	}
+	for left := discount - given; left > 0; left-- {
+		best := -1
+		for i := range rems {
+			if out[i] < subtotals[i] && (best < 0 || rems[i] > rems[best]) {
+				best = i
+			}
+		}
+		out[best]++
+		rems[best] = 0
+	}
+	return out
+}
+
+// Calculate prices a cart without a discount code; see CalculateWith.
 func Calculate(policy Policy, lines []AmountLine) (Calculation, error) {
+	return CalculateWith(policy, lines, nil)
+}
+
+// CalculateWith is the pure quote calculator. promo == nil is byte-identical to the pre-0091 calculation (discount 0).
+func CalculateWith(policy Policy, lines []AmountLine, promo *Promo) (Calculation, error) {
 	result := Calculation{ShippingMinor: policy.ShippingMinor, Lines: make([]LineAmount, 0, len(lines))}
 	if !validPolicy(policy) || len(lines) == 0 || len(lines) > 50 {
 		return Calculation{}, command.ErrInvalid
 	}
-	shipping := policy.ShippingMinor
-	for _, line := range lines {
+	subtotals := make([]int64, len(lines))
+	for i, line := range lines {
 		subtotal, err := command.CheckMoney(line.UnitPriceMinor, line.Quantity)
 		if err != nil {
 			return Calculation{}, err
 		}
-		tax := taxMinor(subtotal, policy.TaxRateBPS, policy.TaxMode)
-		lineTotal := subtotal
+		subtotals[i] = subtotal
+		if result.SubtotalMinor, err = addMoney(result.SubtotalMinor, subtotal); err != nil {
+			return Calculation{}, err
+		}
+	}
+	if promo != nil {
+		var err error
+		if result.DiscountMinor, err = promo.discountOn(result.SubtotalMinor); err != nil {
+			return Calculation{}, err
+		}
+	}
+	shares := allocateDiscount(result.DiscountMinor, subtotals, result.SubtotalMinor)
+	for i, subtotal := range subtotals {
+		net := subtotal - shares[i] // >= 0: a share never exceeds its line
+		tax := taxMinor(net, policy.TaxRateBPS, policy.TaxMode)
+		lineTotal := net
+		var err error
 		if policy.TaxMode == "exclusive" {
-			lineTotal, err = addMoney(subtotal, tax)
-			if err != nil {
+			if lineTotal, err = addMoney(net, tax); err != nil {
 				return Calculation{}, err
 			}
 		}
-		result.SubtotalMinor, err = addMoney(result.SubtotalMinor, subtotal)
-		if err != nil {
+		if result.TaxMinor, err = addMoney(result.TaxMinor, tax); err != nil {
 			return Calculation{}, err
 		}
-		result.TaxMinor, err = addMoney(result.TaxMinor, tax)
-		if err != nil {
-			return Calculation{}, err
-		}
-		result.Lines = append(result.Lines, LineAmount{SubtotalMinor: subtotal, TaxMinor: tax, TotalMinor: lineTotal})
+		result.Lines = append(result.Lines, LineAmount{SubtotalMinor: subtotal, DiscountMinor: shares[i], TaxMinor: tax, TotalMinor: lineTotal})
 	}
-	// I05 / storefront-v2 §C: free shipping is decided here, from the server-side merchandise subtotal and the policy's threshold, never
-	// from a client value. Shipping 0 also zeroes the shipping tax below because both read this one variable.
+	shipping := policy.ShippingMinor
+	// I05 / storefront-v2 §C: free shipping is decided here, from the server-side merchandise subtotal (BEFORE any code discount, section F)
+	// and the policy's threshold, never from a client value. Shipping 0 also zeroes the shipping tax below because both read this variable.
 	if policy.FreeShippingThresholdMinor != nil && result.SubtotalMinor >= *policy.FreeShippingThresholdMinor {
 		shipping = 0
 	}
@@ -306,7 +385,8 @@ func Calculate(policy Policy, lines []AmountLine) (Calculation, error) {
 	if err != nil {
 		return Calculation{}, err
 	}
-	total, err := addMoney(result.SubtotalMinor, shipping)
+	// I05: total = goods after discount + shipping (+ tax when exclusive); the discount is subtracted from goods only.
+	total, err := addMoney(result.SubtotalMinor-result.DiscountMinor, shipping)
 	if err != nil {
 		return Calculation{}, err
 	}

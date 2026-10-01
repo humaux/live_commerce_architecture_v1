@@ -150,3 +150,49 @@ Transport: `POST /v1/identity/staff/{list,invite,revoke-invite,set-role,remove,a
 - Accept refusal is one generic PT404 `invite_invalid` (unknown/expired/revoked/used token, other email, OIDC-only account); PT409 `already_member` only for the caller's own membership.
 - Limits: 20 live invitations and 50 creations per 24 h per store (PT429 `too_many_invitations`). Mail: one send after commit, outcome in `mail_state`, a resend is a new invitation that revokes the old one.
 - Evidence tier: REAL_PG author smoke `tests/foundation/staff_team_smoke_test.go` (4 tests, one red run each for email binding and owner floor); browser/E2E and mail over real SMTP: NOT_RUN.
+
+## F. Promotions (producer: unit promotions, migration 0091; amendment written before code, R4 wave 2)
+
+Discount codes. The server quote stays the only price authority (cart-quote-v1, checkout-quote-validation-v1): a code is validated
+and applied INSIDE `storefront.CreateQuote`, its effect is frozen in the quote snapshot, and BeginCheckout re-validates it under a
+lock. No client amount, no second total: the existing `discount_minor` fields (line + aggregate) are filled.
+
+Code (merchant-managed, one row per `(store, code)`):
+- `code`: stored upper-case, `^[A-Z0-9-]{3,24}$`; buyers type any case, the server trims and upper-cases. Unique per store.
+- `kind`: `percent` (integer 1..90, floor rounding on the merchandise subtotal) or `fixed` (positive amount in store-currency
+  minor units, capped at the merchandise subtotal). The discount never exceeds the merchandise subtotal, so goods never go below 0.
+- `min_subtotal_minor` (>= 0, compared with the PRE-discount merchandise subtotal), `starts_at` / `ends_at` (optional instants;
+  the admin UI enters Asia/Taipei wall time and sends RFC 3339 with `+08:00`; `ends_at > starts_at`), `total_limit` and
+  `per_buyer_limit` (optional positive integers), `status` `active|paused`, `version` (CAS on every change).
+- A code never discounts shipping. Free shipping stays the delivery policy threshold of section C, compared with the PRE-discount
+  merchandise subtotal (a code cannot un-waive shipping the buyer qualified for; the threshold is a statement about the cart).
+- One code per order. Tax is computed on the discounted goods (line discount allocated proportionally, largest remainder, ties to the
+  lower line index); exclusive total = subtotal - discount + shipping + tax, inclusive total = subtotal - discount + shipping.
+
+Quote: `POST /v1/buyer/quotes` accepts optional `promo_code` (omitted/`""` = none). The quote snapshot gains
+`promotion: {id, code, version, kind, percent, fixed_minor}` ONLY when a code applied (key absent otherwise, so pre-0091 snapshots
+round-trip byte-equal through `checkout.begin_hold`'s comparison); the buyer quote response carries `promotion: {code, kind, percent,
+fixed_minor}` under the same rule. A refused code makes the quote request fail with HTTP 422 and a coded envelope (no quote is
+stored): `promo_invalid` (unknown, other store, or paused: one answer, nothing to enumerate), `promo_not_started`, `promo_expired`,
+`promo_min_subtotal`, `promo_used_up`, `promo_buyer_limit`. BeginCheckout adds `promo_changed` (the code was edited or paused after
+the quote was priced: re-quote). Quote-time checks are advisory (no lock); BeginCheckout's are authoritative.
+
+Usage counting (atomic, no oversubscription): a redemption row is written by `promotions.redeem` in the SAME transaction as
+`checkout.begin_hold`, after the order row exists, under `FOR UPDATE` on the code row, which serialises every placement with that
+code. Usage = redemptions whose order is still `DRAFT | AWAITING_PAYMENT | AWAITING_TRANSFER | CONFIRMED`; an expired or cancelled
+order (`CANCELLED`) frees its use automatically (nothing to decrement, so expiry/cancel paths are untouched). A refunded or shipped
+order keeps counting (a refund is not a reason to reuse a limited code).
+Per-buyer limit identity: the buyer capability owner, the sha256 of the lower-cased order e-mail (when given) and of the digits of the
+destination phone (always present at Begin). Any match counts. WEAKNESS (documented, not hidden): a buyer who uses a new device AND
+a new phone AND a new e-mail is a new buyer; the code is a marketing control, not an entitlement. Hashes are salted with the store id
+and stored only for this check.
+
+Merchant admin (scope from server auth; permission `pricing:read` to list, `pricing:write` to change; same Idempotency-Key receipt
+rules as the other settings): `GET /v1/admin/stores/{store_id}/promotions` -> `{promotions:[{id, code, kind, percent|null,
+fixed_minor|null, min_subtotal_minor, starts_at|null, ends_at|null, total_limit|null, per_buyer_limit|null, status, version, used,
+created_at}]}` (`used` = active usage above); `POST .../promotions` (create, `code` immutable afterwards) ; `POST
+.../promotions/{id}` with `expected_version` (edit any of the other fields or `status`); 409 `version_changed` on a stale version,
+409 `promo_exists` on a duplicate code, 422 `invalid_promotion` on a rule violation. Pausing never touches placed orders.
+
+Money rules unchanged: refunds cap at the CAPTURED (paid) amount, which already equals the order total = the discounted quote total;
+Stripe sees one line item equal to that total (stripe-psp-v1 D7), so no Stripe-side discount exists.

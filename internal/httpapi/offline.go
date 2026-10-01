@@ -20,6 +20,7 @@ import (
 
 	"livecommerce/internal/merchantorders"
 	"livecommerce/internal/platform"
+	"livecommerce/internal/promotions"
 )
 
 var (
@@ -90,12 +91,16 @@ func offlineServe(w http.ResponseWriter, r *http.Request, pool *pgxpool.Pool, pe
 	respond(w, http.StatusOK, result)
 }
 
-// offlineClassify maps the coded refusals of the 0088 definers first, then the shared claims table (authority, not found, conflict,
+// offlineClassify maps the coded refusals of the 0088 (and 0091 promotions) definers first, then the shared claims table (authority, not found, conflict,
 // deadlock and unknown -> 503).
 func offlineClassify(err error) (int, string) {
 	var coded *merchantorders.TransferError
 	if errors.As(err, &coded) {
 		return coded.Status, coded.Code
+	}
+	var promo *promotions.Coded // storefront-v2 §F coded refusals (promo_exists, invalid_promotion, version_changed, idempotency_conflict)
+	if errors.As(err, &promo) {
+		return promo.Status, promo.Code
 	}
 	return claimsClassify(err)
 }
