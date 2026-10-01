@@ -55,6 +55,7 @@ func TestBrowserMetaConnectGate(t *testing.T) {
 		t.Fatal(err)
 	}
 	seal, open := mcnPageRing(t)
+	mcnRunUnsubscriber(t, mcnUnsubscriber(t, f, open, fake.URL())) // the claims-worker's disconnect job (D2); the API itself never unsubscribes
 	jobs, err := newInsertOnlyClient(f)
 	if err != nil {
 		t.Fatal(err)
@@ -163,8 +164,15 @@ func TestBrowserMetaConnectGate(t *testing.T) {
 			t.Errorf("audit %s: %d rows, want >= %d", action, n, min)
 		}
 	}
-	if fake.Count("DELETE", "/subscribed_apps") != 0 {
-		t.Error("the API made a Graph unsubscribe call (it cannot open a stored token)")
+	mcnAwaitUnsubscribeDrain(t, f, store)
+	if fake.Count("DELETE", "/subscribed_apps") < 1 {
+		t.Error("no Graph unsubscribe call: disconnect must hand the Page to the claims-worker's unsubscribe job")
+	}
+	if n := owned(`SELECT count(*) FROM integration.meta_unsubscribe_jobs WHERE store_id=$1 AND (ciphertext IS NOT NULL OR nonce IS NOT NULL)`, store); n != 0 {
+		t.Errorf("%d unsubscribe jobs still hold a sealed token", n)
+	}
+	if n := owned(`SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='meta.connect.unsubscribed'`, store); n < 1 {
+		t.Error("no audited unsubscribe")
 	}
 	for _, r := range fake.Requests() {
 		if r.HasQueryToken || (r.HasClientSecret && r.Path != "oauth/access_token") {
@@ -199,8 +207,8 @@ func TestBrowserMetaConnectGate(t *testing.T) {
 		t.Fatalf("screenshot hash manifest missing: %v; evidence=%s", err, evidence)
 	}
 	var shots []struct{ File, Sha256, Locale, Viewport string }
-	if err := json.Unmarshal(raw, &shots); err != nil || len(shots) < 19 {
-		t.Fatalf("screenshot manifest: %d entries (want >= 19): %v", len(shots), err)
+	if err := json.Unmarshal(raw, &shots); err != nil || len(shots) < 18 { // the spec takes 18: pick x2 (mobile), card-connected x4, card-disconnected x4, studio-with-page x4, studio-no-page, refused x3
+		t.Fatalf("screenshot manifest: %d entries (want >= 18): %v", len(shots), err)
 	}
 	seen := map[string]bool{}
 	for _, s := range shots {

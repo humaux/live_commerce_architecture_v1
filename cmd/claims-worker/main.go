@@ -195,6 +195,11 @@ func run(ctx context.Context, getenv func(string) string) error {
 	if err != nil {
 		return errWorkerRoutes
 	}
+	// Disconnect's durable "DELETE /{page}/subscribed_apps" jobs (migration 0100): needs the private ring that only this process holds.
+	unsubscriber, err := metareply.NewUnsubscriber(workerPool, c.pageKeys, c.pageOpen, c.graph)
+	if err != nil {
+		return errWorkerRoutes
+	}
 	poller, err := claimsintake.New(startup, intakePool, c.linkKey, claimsintake.Config{})
 	if err != nil {
 		return errWorkerDatabase
@@ -229,10 +234,16 @@ func run(ctx context.Context, getenv func(string) string) error {
 		defer close(polled)
 		_ = poller.Run(pollCtx)
 	}()
+	unsubscribed := make(chan struct{})
+	go func() {
+		defer close(unsubscribed)
+		unsubscriber.Run(pollCtx)
+	}()
 	// Fixed local startup witness; never implies Meta access.
 	runErr := jobqueue.Run(ctx, client, "claims_worker_ready")
 	stopPoll()
 	<-polled
+	<-unsubscribed
 	switch {
 	case errors.Is(runErr, jobqueue.ErrStart):
 		return errWorkerStart

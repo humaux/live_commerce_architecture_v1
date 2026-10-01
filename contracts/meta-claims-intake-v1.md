@@ -855,11 +855,21 @@ Owner correction 2026-10-01: a merchant connects their own Facebook Page / Insta
    version + 1), `integration.meta_connect_finish` (0064 head CAS credentials, `meta_inbox.connect_activate` routes with a 365-day
    proof window, `integration.meta_connections` row, state done, pending token wiped). A failure after step 2 leaves a Meta-side
    subscription without a route (events quarantined), never a route without a token.
-4. **Disconnect** (one transaction): `meta_connect_disconnect` deletes every credential head and version, disables the routes
-   (`asset_owners` stays: a Page cannot silently move stores), deletes the connection row; the caller disables the bindings. There is no
-   Graph unsubscribe (the API cannot open a stored token); the Meta-side subscription stays and only yields quarantined events. A Graph
-   error 190 on a private reply flips the connection to `reauth_required` via `integration.meta_connect_mark_reauth` (worker EXECUTE;
+4. **Disconnect** (one transaction; migration 0100): `meta_connect_disconnect` enqueues one durable unsubscribe job (`integration.meta_unsubscribe_jobs`: a copy of the
+   head sealed Page token, never plaintext), deletes every credential head and version, disables the routes (`asset_owners` stays: a Page cannot silently move stores),
+   deletes the connection row; the caller disables the bindings. The binding is disabled immediately whatever the job does. The API cannot open a stored token, so the
+   Graph `DELETE /{page_id}/subscribed_apps` is made by the claims-worker (`metareply.Unsubscriber`, the only holder of the private ring), best effort:
+   PENDING -> LEASED (60 s) -> SUCCEEDED | FAILED (4xx: Meta refused) | UNKNOWN (transport error, timeout, other 5xx, a 2xx without `success:true`, an expired lease: never
+   repeated, the DELETE may have landed) | SUPERSEDED (the same Page was connected again before the job ran). Only a definite not-applied answer (HTTP 429/503) goes back to
+   PENDING with exponential backoff (30 s, 60 s, ...), at most 5 attempts, then FAILED `retries_exhausted`; a worker without the private ring retries the same bounded way
+   (`token_unavailable`). Every terminal state wipes the sealed bytes and writes one audit row (`meta.connect.unsubscribed|unsubscribe_failed|unsubscribe_unknown`). Known
+   limit: a reconnect of the same Page in the instant between the worker leasing its job and finishing the DELETE leaves that Page unsubscribed until the next reconnect
+   (seconds window; a PENDING job is superseded atomically). A Graph
+   error 190 on a private reply flips the connection to `reauth_required` via `integration.meta_connect_mark_reauth` (claims-worker EXECUTE;
    only ever active → reauth_required); the card then offers Reconnect, which appends credential version +1.
+   **One Page per store under concurrency** (migration 0100): `meta_connect_finish` takes a transaction-scoped advisory lock keyed on (tenant, store) before reading the
+   connection, and its `ON CONFLICT (tenant_id,store_id) DO UPDATE` only refreshes the row of the SAME Page, so a second concurrent pick of a different Page gets
+   `409 already_connected`, never a second binding.
 5. **§7 custody amendment (integrator ruling 2026-10-01: the API may SEAL, never OPEN).** New credential version
    `meta-page-token-v2`: HPKE (DHKEM X25519 / HKDF-SHA256 / AES-256-GCM, stdlib `crypto/hpke`, no dependency) to PUBLIC keys; the info array
    `["livecommerce/meta-page-token/v2", tenant, store, binding, provider, asset, version, key_id]` carries the v1 AAD fields. The 32-byte
@@ -877,8 +887,8 @@ Owner correction 2026-10-01: a merchant connects their own Facebook Page / Insta
    `commerce_integration_writer`:
    DELETE on `integration.meta_page_credentials` and `integration.meta_page_heads`, USAGE on schema `meta_inbox`, the new tables
    (SELECT, INSERT, column UPDATE; DELETE on connections), EXECUTE on four `meta_inbox.connect_*` helpers (owner `commerce_meta_writer`);
-   `commerce_runtime`: EXECUTE on nine `integration.meta_connect_*` definers; `commerce_worker`: EXECUTE on
-   `integration.meta_connect_mark_reauth`. Index `meta_inbox.events_asset_recent`. MCI02 records 0095 in its ledger without running it
+   `commerce_runtime`: EXECUTE on nine `integration.meta_connect_*` definers; `commerce_claims_worker`: EXECUTE on
+   `integration.meta_connect_mark_reauth`. Migration 0100 (D1/D2): table `integration.meta_unsubscribe_jobs` (FORCE RLS, writer policy `true` for `commerce_integration_writer`; SELECT, INSERT, column UPDATE), one INSERT policy on `ops.audit_events` for `commerce_integration_writer` (three fixed `meta.connect.unsubscribe*` actions, only right after a job reached a terminal state), `commerce_claims_worker`: EXECUTE on `integration.claim_meta_unsubscribe()` and `integration.finish_meta_unsubscribe(uuid,text,text)` (owner `commerce_integration_writer`). Index `meta_inbox.events_asset_recent`. MCI02 records 0095 in its ledger without running it
    (it builds on 0064 and the meta_inbox routes), like 0074/0080.
 7. **Gates.** `TestMetaConnect*` (REAL_PG: state mismatch/expired/foreign principal/single use, missing permission/task, IG present and absent,
    sealed credential opens only under its AAD, no secret in any stored text, webhook → claim → private reply on the merchant-connected Page,

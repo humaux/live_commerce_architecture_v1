@@ -232,22 +232,34 @@ func (a *adapter) loadSecretFor(provider string) func(context.Context, pgx.Tx, c
 		if row.provider != provider || !hasScopes(row.scopes, requiredScopes[provider]) {
 			return core.Secret{}, fmt.Errorf("page token lacks attested scope: %w", core.ErrPolicyDenied)
 		}
-		if len(row.nonce) == pagetoken.EncSize { // v2: HPKE, sealed by the merchant connect to the public ring
-			if a.v2 == nil {
-				return core.Secret{}, fmt.Errorf("page token v2 without private ring: %w", core.ErrPolicyDenied)
-			}
-			plain, err := a.v2.Open(pagetoken.Scope{TenantID: row.tenant, StoreID: row.store, BindingID: row.binding,
-				Provider: row.provider, AssetID: row.asset, Version: row.version}, row.keyID, row.nonce, row.ciphertext)
-			if err != nil {
-				return core.Secret{}, ErrSecret
-			}
-			defer clear(plain)
-			return core.NewSecret(plain), nil
-		}
-		return a.keys.Open(PageTokenScope{TenantID: row.tenant, StoreID: row.store, BindingID: row.binding,
+		secret, err := openPageToken(a.keys, a.v2, PageTokenScope{TenantID: row.tenant, StoreID: row.store, BindingID: row.binding,
 			Provider: row.provider, AssetID: row.asset, Version: row.version}, row.keyID, row.nonce, row.ciphertext)
+		if errors.Is(err, errNoPrivateRing) {
+			return core.Secret{}, fmt.Errorf("page token v2 without private ring: %w", core.ErrPolicyDenied)
+		}
+		return secret, err
 	}
 }
+
+// openPageToken opens one stored credential: v2 (nonce = the 32-byte HPKE encapsulated key, sealed by the merchant connect to the public
+// ring) with the private ring, else v1 (AES keyring, 12-byte nonce). Shared by the dispatcher's LoadSecret and the Unsubscriber.
+func openPageToken(keys *PageTokenKeyring, v2 *pageopen.Keyring, s PageTokenScope, keyID string, nonce, ciphertext []byte) (core.Secret, error) {
+	if len(nonce) != pagetoken.EncSize {
+		return keys.Open(s, keyID, nonce, ciphertext)
+	}
+	if v2 == nil {
+		return core.Secret{}, errNoPrivateRing
+	}
+	plain, err := v2.Open(pagetoken.Scope{TenantID: s.TenantID, StoreID: s.StoreID, BindingID: s.BindingID, Provider: s.Provider,
+		AssetID: s.AssetID, Version: s.Version}, keyID, nonce, ciphertext)
+	if err != nil {
+		return core.Secret{}, ErrSecret
+	}
+	defer clear(plain)
+	return core.NewSecret(plain), nil
+}
+
+var errNoPrivateRing = errors.New("metareply: no private ring")
 
 func hasScopes(have, need []string) bool {
 	for _, n := range need {

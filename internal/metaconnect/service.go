@@ -459,8 +459,9 @@ type disconnected struct {
 }
 
 // Disconnect destroys the sealed Page credentials, disables the routes and the bindings and deletes the connection row in ONE
-// transaction (meta_connect_disconnect + core.SetBindingEnabled). There is no Graph unsubscribe: this process can seal a Page token
-// but never open one, and the route is disabled, so a leftover Meta-side subscription only yields quarantined events.
+// transaction (meta_connect_disconnect + core.SetBindingEnabled). This process makes no Graph unsubscribe (it can seal a Page token but
+// never open one): meta_connect_disconnect enqueues a durable job (migration 0100) that the claims-worker, the only holder of the private
+// ring, executes best effort (metareply.Unsubscriber). Until it runs, the disabled route only yields quarantined events.
 func (s *Service) Disconnect(ctx context.Context, pool *pgxpool.Pool, token, storeID string) error {
 	if s == nil || pool == nil {
 		return platform.ErrUnauthorized

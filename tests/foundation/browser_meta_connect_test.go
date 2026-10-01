@@ -53,6 +53,7 @@ func TestBrowserMetaConnect(t *testing.T) {
 		t.Fatal(err)
 	}
 	seal, open := mcnPageRing(t)
+	mcnRunUnsubscriber(t, mcnUnsubscriber(t, f, open, fake.URL())) // the claims-worker's disconnect job (D2); the API itself never unsubscribes
 	jobs, err := newInsertOnlyClient(f)
 	if err != nil {
 		t.Fatal(err)
@@ -156,11 +157,15 @@ func TestBrowserMetaConnect(t *testing.T) {
 			t.Errorf("audit %s: %d rows, want >= %d", action, n, min)
 		}
 	}
-	if !fake.Subscribed(pageA.ID) || fake.Subscribed(pageC.ID) || !fake.Subscribed(pageB.ID) {
-		t.Error("final subscriptions: A and B stay subscribed at Meta (the API cannot open a stored token to unsubscribe; the route is disabled), C never was")
+	mcnAwaitUnsubscribeDrain(t, f, store)
+	if fake.Subscribed(pageA.ID) || fake.Subscribed(pageC.ID) || !fake.Subscribed(pageB.ID) {
+		t.Error("final subscriptions: A was disconnected (the claims-worker job unsubscribed it), B is connected, C never was")
 	}
-	if fake.Count("DELETE", "/subscribed_apps") != 0 {
-		t.Error("the API made a Graph unsubscribe call")
+	if n := fake.Count("DELETE", "/subscribed_apps"); n != 1 {
+		t.Errorf("%d Graph unsubscribe calls, want exactly one (Page A)", n)
+	}
+	if n := count(`SELECT count(*) FROM integration.meta_unsubscribe_jobs WHERE store_id=$1 AND (ciphertext IS NOT NULL OR nonce IS NOT NULL)`, store); n != 0 {
+		t.Errorf("%d unsubscribe jobs still hold a sealed token", n)
 	}
 	for _, r := range fake.Requests() {
 		if r.HasQueryToken || (r.HasClientSecret && r.Path != "oauth/access_token") {
@@ -170,7 +175,7 @@ func TestBrowserMetaConnect(t *testing.T) {
 	mu.Lock()
 	needles := append([]string{miSecret, pageA.Token, pageB.Token, pageC.Token}, secrets...)
 	mu.Unlock()
-	for _, table := range []string{"integration.meta_connect_states", "integration.meta_connections", "integration.meta_page_credentials", "integration.bindings", "ops.audit_events", "ops.command_results", "meta_inbox.routes"} {
+	for _, table := range []string{"integration.meta_connect_states", "integration.meta_connections", "integration.meta_page_credentials", "integration.meta_unsubscribe_jobs", "integration.bindings", "ops.audit_events", "ops.command_results", "meta_inbox.routes"} {
 		for _, needle := range needles {
 			if n := count(`SELECT count(*) FROM `+table+` t WHERE t::text LIKE '%'||$1||'%'`, needle); n != 0 {
 				t.Errorf("a token or secret is stored in %s", table)

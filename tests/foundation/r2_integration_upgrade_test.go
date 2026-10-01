@@ -51,6 +51,7 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 		}
 		mustExec(t, upgraded, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES($1,$2)`, version, fmt.Sprintf("%x", sha256.Sum256(body)))
 	}
+	waPrecreateRoles(t, upgraded) // 0096 is marked applied above, but the current Apply's River grants name its worker authorities
 	if err := migrations.Apply(ctx, upgraded); err != nil {
 		t.Fatalf("release-head schema (everything but the R2 files): %v", err)
 	}
