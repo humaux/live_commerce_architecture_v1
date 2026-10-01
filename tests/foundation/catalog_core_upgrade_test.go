@@ -49,6 +49,14 @@ func TestCatalogCoreCC01PopulatedUpgrade(t *testing.T) {
 		held = append(held, version)
 		mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES($1,$2)`, version, sums[version])
 	}
+	// post-River 0019 (worker authorities) asserts the numbered 0096 ran, so it is held back with it.
+	if body, err := os.ReadFile("../../migrations/post_river/0019_worker_authorities.sql"); err != nil {
+		t.Fatal(err)
+	} else {
+		sums["post_river/0019_worker_authorities.sql"] = fmt.Sprintf("%x", sha256.Sum256(body))
+		held = append(held, "post_river/0019_worker_authorities.sql")
+		mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES($1,$2)`, "post_river/0019_worker_authorities.sql", sums["post_river/0019_worker_authorities.sql"])
+	}
 	if !slices.Contains(held, "0086_catalog_v2.sql") {
 		t.Fatalf("0086 not found among the held-back migrations: %v", held)
 	}
