@@ -60,7 +60,9 @@ export async function GET(request: Request) {
   const body = await safeJSON<{ token?: unknown; expires_at?: unknown }>(
     upstream,
   );
-  const response = redirect(`/${locale}/`);
+  // invite-next: a validated invite path from the login cookie wins over the dashboard; inviteNextPath already
+  // re-checked it, so a tampered cookie degrades to the plain dashboard redirect (never off-site).
+  const response = redirect(binding.next ?? `/${locale}/`);
   clearLoginCookie(response.headers);
   if (!setSessionCookies(response.headers, body?.token, body?.expires_at)) {
     const failed = authFailure(locale);

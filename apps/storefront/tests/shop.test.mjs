@@ -10,6 +10,7 @@ import { productJsonLd, robotsTxt, sitemapXml } from "../lib/seo.ts";
 import { formatMoney, majorToMinor, minorToMajor } from "../lib/money.ts";
 import { cartWithQuantity, validOption } from "../lib/purchase.ts";
 import { cartCount, cartProblem } from "../lib/cart-state.ts";
+import { shopCopy } from "../lib/shop-copy.ts";
 import { BuyerClientError } from "../lib/buyer-client.ts";
 
 const nb = (s) => s.replace(/\u00a0/g, " ");
@@ -182,4 +183,16 @@ test("checkout options accept the optional free-shipping threshold only as a pos
   assert.equal(validOption({ ...row, free_shipping_threshold_minor: null }), true);
   assert.equal(validOption({ ...row, free_shipping_threshold_minor: 0 }), false);
   assert.equal(validOption({ ...row, free_shipping_threshold_minor: "150000" }), false);
+});
+
+test("no-image placeholder copy: exactly the locale label a photo-less card or gallery renders", () => {
+  // The card/gallery placeholder block (components/ProductCard.tsx, components/ProductGallery.tsx) shows this string
+  // verbatim in every grid (home sections, collections, search, products list); the card title stays the visible name.
+  assert.equal(shopCopy.en.noImage, "No image");
+  assert.equal(shopCopy["zh-TW"].noImage, "無圖片");
+  assert.equal(shopCopy["zh-CN"].noImage, "无图片");
+  for (const locale of ["en", "zh-TW", "zh-CN"]) {
+    assert.equal(typeof shopCopy[locale].noImage, "string");
+    assert.ok(shopCopy[locale].noImage.length > 0);
+  }
 });

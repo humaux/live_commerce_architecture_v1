@@ -27,8 +27,8 @@ export default function ProductGallery({
   if (images.length === 0)
     return (
       <div className="sf-gal" data-testid="product-gallery">
-        <div className="sf-gal__ph" role="img" aria-label={copy.noPhoto}>
-          <span aria-hidden="true">{[...name][0]}</span>
+        <div className="sf-gal__ph" role="img" aria-label={copy.noImage}>
+          <span aria-hidden="true">{copy.noImage}</span>
         </div>
       </div>
     );

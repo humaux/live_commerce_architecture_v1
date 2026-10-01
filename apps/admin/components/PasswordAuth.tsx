@@ -11,6 +11,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { entryCopy, passwordCopy } from "@/lib/entry-copy";
+import { inviteNextPath } from "@/lib/invite-next";
 import {
   RESEND_COOLDOWN_SECONDS,
   fillCopy,
@@ -67,11 +68,15 @@ export function PasswordAuth({
   mode,
   oidc,
   notice,
+  next = null,
 }: {
   locale: Locale;
   mode: PasswordMode;
   oidc: boolean;
   notice: string;
+  // invite-next: validated same-origin invite path (lib/invite-next.ts) to return to after a
+  // successful sign-in/sign-up; re-validated here so a tampered query can never redirect off-site.
+  next?: string | null;
 }) {
   const c = passwordCopy[locale];
   const entry = entryCopy[locale];
@@ -87,6 +92,8 @@ export function PasswordAuth({
   const busyRef = useRef(false);
   const codeInput = useRef<HTMLInputElement>(null);
   const purpose = purposeOf[mode];
+  // invite-next: computed once so the render and the verify handler share one validated path.
+  const nextPath = inviteNextPath(next);
   const secondsLeft = Math.max(0, Math.ceil((resendAt - now) / 1000));
 
   useEffect(() => {
@@ -165,8 +172,15 @@ export function PasswordAuth({
       mode === "reset" ? { code, new_password: newPassword } : { code };
     const reply = await post("/api/auth/password/verify", body);
     if (reply.status === 200) {
-      const target = reply.json?.redirect;
-      if (typeof target === "string" && redirectPattern.test(target)) {
+      // invite-next: an invite `next` wins over the BFF's dashboard redirect; both are same-origin relative
+      // paths validated against an exact pattern, so this can never become an open redirect.
+      const target =
+        nextPath ??
+        (typeof reply.json?.redirect === "string" &&
+        redirectPattern.test(reply.json.redirect)
+          ? reply.json.redirect
+          : "");
+      if (target) {
         // busy stays true: the page is navigating away.
         window.location.assign(target);
         return;
@@ -350,7 +364,8 @@ export function PasswordAuth({
                 {c.toReset}
               </a>{" "}
               ·{" "}
-              <a href={`/${locale}/signup`} style={link}>
+              {/* invite-next: keep the return-to target when switching to sign-up from an invite link. */}
+              <a href={nextPath ? `/${locale}/signup?next=${encodeURIComponent(nextPath)}` : `/${locale}/signup`} style={link}>
                 {c.toSignup}
               </a>
             </>
@@ -370,6 +385,7 @@ export function PasswordAuth({
       {oidc && mode === "signin" && step === "form" && (
         <form method="post" action="/api/auth/login">
           <input type="hidden" name="locale" value={locale} />
+          {nextPath && <input type="hidden" name="next" value={nextPath} />}
           <p className="entry-scope">{c.or}</p>
           <button className="entry-check" type="submit">
             {entry.signIn}
