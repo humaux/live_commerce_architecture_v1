@@ -351,6 +351,7 @@ export const CVS_ERROR_CODES = [
   "pay_at_pickup_unavailable",
   "pay_at_pickup_amount_exceeds",
   "pay_at_pickup_limit",
+  "card_unavailable", // ops-polish OP1: Begin refuses a card order when this deployment takes no card payment
 ] as const;
 export type CvsErrorCode = (typeof CVS_ERROR_CODES)[number];
 export const isCvsErrorCode = (v: unknown): v is CvsErrorCode =>
@@ -379,6 +380,7 @@ export function errorField(
     case "pay_at_pickup_unavailable":
     case "pay_at_pickup_amount_exceeds":
     case "pay_at_pickup_limit":
+    case "card_unavailable":
     case "cvs_amount_exceeds":
       return "payment";
     default:

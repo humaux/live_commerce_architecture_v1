@@ -1,7 +1,7 @@
 import type { Locale } from "@live-commerce/i18n";
 
 const en = {
-  title: "Live Studio", subtitle: "Local MOCK rehearsal only. Nothing here publishes to a platform.",
+  title: "Live Studio", subtitle: "Prepare your live session: products, comment claims and orders in one place.",
   store: "Store", noStore: "No authorized store is available.", newScene: "New scene", scenes: "Scenes",
   empty: "No scenes yet. Create a draft to plan one.", loading: "Loading scenes…", detailLoading: "Loading scene…",
   name: "Scene name", schedule: "Scheduled time (UTC, optional)", pickSchedule: "Choose scheduled date and time (UTC)", aspect: "Canvas ratio", wide: "16:9 · landscape", tall: "9:16 · portrait",
@@ -36,7 +36,7 @@ export type StudioCopy = typeof en;
 export const studioCopy: Record<Locale, StudioCopy> = {
   en,
   "zh-CN": {
-    title: "直播工作室", subtitle: "仅供本地 MOCK 模拟演练，不会在平台公开直播。",
+    title: "直播工作室", subtitle: "准备直播场次：商品、评论认领与订单集中处理。",
     store: "店铺", noStore: "没有获授权的店铺。", newScene: "新建场次", scenes: "场次",
     empty: "暂无场次。先建立草稿来规划直播。", loading: "正在读取场次…", detailLoading: "正在读取场次…",
     name: "场次名称", schedule: "计划时间（UTC，可选）", pickSchedule: "选择计划日期和时间（UTC）", aspect: "画幅", wide: "16:9 · 横屏", tall: "9:16 · 竖屏",
@@ -68,7 +68,7 @@ export const studioCopy: Record<Locale, StudioCopy> = {
     provider: { facebook: "Facebook", instagram: "Instagram" },
   },
   "zh-TW": {
-    title: "直播工作室", subtitle: "僅供本機 MOCK 模擬演練，不會在平台公開直播。",
+    title: "直播工作室", subtitle: "準備直播場次：商品、留言認領與訂單集中處理。",
     store: "商店", noStore: "沒有獲授權的商店。", newScene: "新增場次", scenes: "場次",
     empty: "尚無場次。先建立草稿規劃直播。", loading: "正在讀取場次…", detailLoading: "正在讀取場次…",
     name: "場次名稱", schedule: "預定時間（UTC，選填）", pickSchedule: "選擇預定日期和時間（UTC）", aspect: "畫面比例", wide: "16:9 · 橫向", tall: "9:16 · 直向",

@@ -292,7 +292,6 @@ const validCvsOptionFields = (v: Record<string, unknown>) =>
   v.payment_modes.length <= 2 &&
   v.payment_modes.every(isPaymentMode) &&
   new Set(v.payment_modes).size === v.payment_modes.length &&
-  v.payment_modes.includes("card") &&
   (v.pickup_selection === "buyer_entered"
     ? typeof v.store_search_url === "string" &&
       v.store_search_url.startsWith("https://") &&

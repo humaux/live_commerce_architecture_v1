@@ -2,11 +2,13 @@ package checkout
 
 import (
 	"encoding/base64"
+	"errors"
 	"strings"
 	"testing"
 
 	"livecommerce/internal/buyer"
 	"livecommerce/internal/command"
+	"livecommerce/internal/fulfillment"
 )
 
 func TestOptionsCursorCanonicalAndScoped(t *testing.T) {
@@ -47,5 +49,41 @@ func TestOptionsCursorCanonicalAndScoped(t *testing.T) {
 		if _, err := decodeOptionsCursor(value, binding); err != command.ErrInvalid {
 			t.Fatalf("accepted malformed cursor %q: %v", value, err)
 		}
+	}
+}
+
+// OP1: card is offered only while the process can take card payment; a row with no mode at all is dropped.
+func TestPaymentModesOP1(t *testing.T) {
+	for _, c := range []struct {
+		card, pap bool
+		want      string
+	}{{true, false, "card"}, {true, true, "card,pay_at_pickup"}, {false, true, "pay_at_pickup"}, {false, false, ""}} {
+		if got := strings.Join(paymentModes(c.card, c.pap), ","); got != c.want {
+			t.Fatalf("paymentModes(%v,%v)=%q want %q", c.card, c.pap, got, c.want)
+		}
+	}
+}
+
+// OP1: home rows are card-only, so without card payment decorateCVS offers none of them (no DB needed: no CVS row, no offer query).
+func TestDecorateHomeRowsOP1(t *testing.T) {
+	rows := []Option{{DeliveryKind: "home", DeliveryCode: "home_delivery"}}
+	on, err := (&Service{}).decorateCVS(nil, nil, nil, "", rows)
+	if err != nil || len(on) != 1 {
+		t.Fatalf("card on: %v %v", on, err)
+	}
+	off, err := (&Service{noCard: true}).decorateCVS(nil, nil, nil, "", rows)
+	if err != nil || len(off) != 0 {
+		t.Fatalf("card off must drop home rows: %v %v", off, err)
+	}
+}
+
+// OP1: the shared Begin refusal is a typed 422 for card only; pay_at_pickup and a card-capable process pass.
+func TestCardRefusalOP1(t *testing.T) {
+	var refusal *fulfillment.CVSError
+	if err := cardRefusal("card", true); !errors.As(err, &refusal) || refusal.Status != 422 || refusal.Code != "card_unavailable" {
+		t.Fatalf("card with no PSP must be refused: %v", err)
+	}
+	if cardRefusal("card", false) != nil || cardRefusal("pay_at_pickup", true) != nil {
+		t.Fatal("only card without a PSP is refused")
 	}
 }

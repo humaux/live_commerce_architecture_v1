@@ -60,6 +60,16 @@ CVS discovery supplies a delivery choice, NOT a trusted pickup_id. The separate
 pickup-source/selection flow remains required before CVS destination creation;
 this increment must not claim end-to-end CVS checkout or invent an attestation.
 
+## Payment modes follow what can be paid (ops-polish OP1, amends this contract)
+
+`card` is listed in `payment_modes` (and a home row is offered at all) only while the process
+has a hosted buyer payment service (cmd/api `COMMERCE_BUYER_PAYMENT_ENABLED`); a CVS row then
+offers `pay_at_pickup` alone when the store enabled it, and a row with no mode is not offered.
+`checkout.Service.Begin` refuses `payment_mode=card` with coded 422 `card_unavailable` when the
+same condition holds (after the receipt lookup, so an exact replay still returns its order).
+The per-store method check stays order-bound in `checkout.hosted_payment_view*`; this rule is
+the process-level gate and is not a per-store guarantee.
+
 ## Stable bounded pagination and query admission
 
 Keyset order is `(market_id UUID, country COLLATE C, delivery_code COLLATE C)`

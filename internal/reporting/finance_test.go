@@ -7,6 +7,7 @@ package reporting
 import (
 	"context"
 	"errors"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -106,10 +107,10 @@ func TestCSV(t *testing.T) {
 		t.Fatal(err)
 	}
 	lines := strings.Split(strings.TrimSuffix(string(body), "\n"), "\n")
-	if lines[0] != "day,currency,environment,captured_count,captured_minor,refunded_minor,net_minor" || len(lines) != 5 {
+	if lines[0] != "day,currency,environment,captured_count,captured_minor,refunded_minor,net_minor,pickup_collected_count,pickup_collected_minor" || len(lines) != 5 {
 		t.Fatalf("%q", lines)
 	}
-	if lines[3] != "2026-09-02,TWD,LIVE,0,0,200,-200" {
+	if lines[3] != "2026-09-02,TWD,LIVE,0,0,200,-200,0,0" {
 		t.Fatalf("negative net line: %q", lines[3])
 	}
 	for _, line := range lines[1:] {
@@ -144,5 +145,34 @@ func TestMapError(t *testing.T) {
 	}
 	if got := mapError(pg("40P01")); errors.Is(got, ErrUnavailable) {
 		t.Fatal("deadlock hidden")
+	}
+}
+
+// OP3: the pay-at-pickup keys are accepted as a pair, summed per (currency, environment), kept out of captured/net, and exported.
+func TestPickupCollectedColumns(t *testing.T) {
+	row := func(day string, n, minor int) string {
+		return `{"day":"` + day + `","currency":"TWD","environment":"SANDBOX","captured_count":1,"captured_minor":1000,"refunded_minor":0,"net_minor":1000,` +
+			`"pickup_collected_count":` + strconv.Itoa(n) + `,"pickup_collected_minor":` + strconv.Itoa(minor) + `}`
+	}
+	rows, err := decodeRows([]byte("["+row("2026-09-01", 2, 700)+","+row("2026-09-02", 1, 300)+"]"), "2026-09-01", "2026-09-02")
+	if err != nil || len(rows) != 2 {
+		t.Fatalf("%v %v", rows, err)
+	}
+	total := Totals(rows)[0]
+	if total.PickupCollectedCount != 3 || total.PickupCollectedMinor != 1000 || total.CapturedMinor != 2000 || total.NetMinor != 2000 {
+		t.Fatalf("pickup money must be its own column, outside captured and net: %+v", total)
+	}
+	body, _ := CSV(rows)
+	if !strings.Contains(string(body), "2026-09-01,TWD,SANDBOX,1,1000,0,1000,2,700\n") {
+		t.Fatalf("csv: %q", body)
+	}
+	for name, bad := range map[string]string{
+		"one pickup key only":    strings.Replace(row("2026-09-01", 1, 100), `,"pickup_collected_count":1`, ``, 1),
+		"negative pickup":        row("2026-09-01", 1, -100),
+		"pickup amount no count": row("2026-09-01", 0, 100),
+	} {
+		if _, err := decodeRows([]byte("["+bad+"]"), "2026-09-01", "2026-09-02"); !errors.Is(err, ErrUnavailable) {
+			t.Fatalf("%s accepted: %v", name, err)
+		}
 	}
 }

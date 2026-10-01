@@ -52,6 +52,9 @@ type Service struct {
 	// nil (the default) means ECPay is off for options (unit default C9, TCV11 kill switch).
 	paymentEnv string
 	cvs        *BuyerCVS
+	// noCard is true when this process has no buyer payment service (cmd/api: COMMERCE_BUYER_PAYMENT_ENABLED off), so a card order
+	// could never be paid. The zero value keeps card allowed: only the one production wiring site (cmd/api/buyer.go) turns it on.
+	noCard bool
 }
 
 type Input struct {
@@ -144,6 +147,26 @@ func (s *Service) WithBuyerCVS(b *BuyerCVS) *Service {
 	return &c
 }
 
+// WithoutCardPayment returns a copy that neither lists "card" in options nor accepts a card Begin (ops-polish OP1). cmd/api calls it
+// when no hosted payment service is wired; the per-store method check is order-bound SQL (checkout.hosted_payment_view*) and stays there.
+func (s *Service) WithoutCardPayment() *Service {
+	if s == nil {
+		return nil
+	}
+	c := *s
+	c.noCard = true
+	return &c
+}
+
+// cardRefusal is the one place a card Begin is refused when card cannot be paid (OP1). The code is the typed 422 the buyer API
+// already serializes for coded refusals (httperror "card_unavailable"); pay_at_pickup is never affected.
+func cardRefusal(mode string, noCard bool) error {
+	if mode == "card" && noCard {
+		return &fulfillment.CVSError{Status: 422, Code: "card_unavailable"}
+	}
+	return nil
+}
+
 // CVS returns the buyer CVS surface, nil when not wired (routes then answer 404).
 func (s *Service) CVS() *BuyerCVS {
 	if s == nil {
@@ -196,6 +219,10 @@ func (s *Service) Begin(ctx context.Context, token, storeID, key string, in Inpu
 			}
 			out = saved
 			return nil
+		}
+		// OP1: refuse a card order nobody can pay, after the receipt lookup so an exact replay of an already placed order still returns it.
+		if err = cardRefusal(mode, s.noCard); err != nil {
+			return err
 		}
 		if err = advisory(callCtx, tx, "checkout.cart|"+scope.TenantID+"|"+scope.StoreID+"|"+scope.OwnerID); err != nil {
 			return err
