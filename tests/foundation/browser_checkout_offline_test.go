@@ -134,6 +134,12 @@ func TestBrowserCheckoutOffline(t *testing.T) {
 			}
 			select {
 			case err := <-exited:
+				// The script writes its marker and then closes its browsers and exits: the exit can win this select inside one poll interval.
+				// The marker is the truth; hand the exit result back for the final `<-exited`.
+				if _, statErr := os.Stat(filepath.Join(evidence, "ready-"+step)); statErr == nil {
+					exited <- err
+					return
+				}
 				t.Fatalf("the buyer script ended before %q: %v; evidence=%s", step, err, evidence)
 			case <-time.After(150 * time.Millisecond):
 			}

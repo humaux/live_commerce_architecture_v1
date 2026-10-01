@@ -93,7 +93,7 @@ const noOverflow = async (page, label) => assert.equal(await page.evaluate(() =>
 async function signIn(merchant) {
   await merchant.goto(`${adminOrigin}/en`);
   await merchant.getByRole("button", { name: "Sign in with identity service", exact: true }).click();
-  await expect(merchant.getByRole("button", { name: "Add product", exact: true })).toBeVisible();
+  await expect(merchant.getByTestId("dashboard-page")).toBeVisible(); // 0094 (merchant-tools, storefront-v2 G1): the sign-in landing is the dashboard, no longer the product ledger
 }
 async function createCode(merchant, label, code, minimum, window) {
   const bff = `/api/stores/${fx.store}/promotions`;
@@ -148,7 +148,7 @@ async function scenario(index, run) {
   await expect(buyer.getByTestId("cart-line")).toHaveCount(2);
   await expect(buyer.getByTestId("cart-subtotal")).toContainText(amt(subtotal));
   await buyer.getByTestId("cart-checkout").click();
-  await buyer.waitForURL(`**/${run.locale}/products/Checkout`);
+  await buyer.waitForURL(`**/${run.locale}/checkout`); // 0093 (storefront-integration): the checkout surface is /{locale}/checkout (apps/storefront/lib/routes.ts), no longer the product-form path
   await buyer.getByRole("button", { name: words.delivery, exact: true }).click();
   await buyer.getByLabel(words.deliveryLabel).selectOption({ label: `${run.locale === "zh-TW" ? fx.delivery_hant : fx.delivery_en} · TW` });
   const quoted = buyer.waitForResponse(r => new URL(r.url()).pathname === "/api/buyer/quotes" && r.request().method() === "POST");

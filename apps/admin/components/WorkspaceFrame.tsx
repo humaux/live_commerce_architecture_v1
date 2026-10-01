@@ -138,13 +138,7 @@ export function WorkspaceFrame({
   return (
     <div className="workspace">
       <a className="skip-link" href="#main">
-        {active === "settings"
-          ? c.settings
-          : active === "orders"
-            ? c.orders
-            : active === "live"
-              ? c.live
-            : c.heading}
+        {c.skipToContent}
       </a>
       <aside className={`rail ${navOpen ? "open" : ""}`}>
         <div className="brand">{c.title}</div>

@@ -232,10 +232,13 @@ test("create product then first SKU and read persisted zero balance", async ({
     code = `QA-${Date.now()}`;
   await page.goto("/en/inventory");
   await page.getByRole("button", { name: "Add product", exact: true }).click();
-  await page
+  // catalog-media (ca11a58): the fixture's pre-selected row opens the inspector, whose product-edit form has its own
+  // "Product name"/"Description" fields; the create form is its own labelled region, so scope the locators to it.
+  const createPanel = page.locator(".create-panel");
+  await createPanel
     .getByRole("textbox", { name: "Product name", exact: true })
     .fill(name);
-  await page
+  await createPanel
     .getByRole("textbox", { name: "Description", exact: true })
     .fill("Isolated acceptance fixture");
   await page
@@ -385,6 +388,7 @@ test("purchase-entry read failure keeps product and SKU write receipts", async (
   await page.goto("/en/inventory");
   await page.getByRole("button", { name: "Add product", exact: true }).click();
   await page
+    .locator(".create-panel")
     .getByRole("textbox", { name: "Product name", exact: true })
     .fill(name);
   await page
@@ -441,6 +445,7 @@ test("catalog write denial reports permission without claiming a product was sav
   await page.goto("/en/inventory");
   await page.getByRole("button", { name: "Add product", exact: true }).click();
   await page
+    .locator(".create-panel")
     .getByRole("textbox", { name: "Product name", exact: true })
     .fill("Permission probe");
   await page

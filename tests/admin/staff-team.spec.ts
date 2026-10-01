@@ -116,8 +116,9 @@ async function noHorizontalScroll(page: Page, what: string) {
 }
 
 // Sign-up up to a session; `priorMails` = mails already sent to the address (the sign-up code is the next one).
-async function signUp(page: Page, locale: string, email: string, password: string, priorMails: number) {
-  await page.goto(`/${locale}/signup`);
+// `fromHere` signs up on the page the caller already opened (an invite page's own sign-up link) instead of a fresh /signup.
+async function signUp(page: Page, locale: string, email: string, password: string, priorMails: number, fromHere = false) {
+  if (!fromHere) await page.goto(`/${locale}/signup`);
   await emailInput(page).fill(email);
   await passwordInput(page).fill(password);
   await submitButton(page).click();
@@ -225,7 +226,9 @@ for (const { locale, vp, first } of chains) {
       await noHorizontalScroll(invitee.page, "invite page (signed out)");
       await shot(invitee.page, "invite-signed-out", locale, vp);
       await invitee.page.getByTestId("invite-signup").click();
-      await expect(invitee.page).toHaveURL(new RegExp(`/${locale}/signup$`));
+      // invite-next (a2193e2, fragment carrier): the sign-up link hands its own invite path over in the URL FRAGMENT only. A query
+      // string would put the token in a request URL (Referer, access logs), which the hygiene check below forbids.
+      await expect(invitee.page).toHaveURL(`${publicOrigin}/${locale}/signup#next=${encodeURIComponent(url.pathname)}`);
 
       // ---- (first chain) an unrelated signed-in account gets the SAME generic refusal as an unknown token -------------------
       if (first) {
@@ -250,9 +253,9 @@ for (const { locale, vp, first } of chains) {
         }
       }
 
-      // ---- invitee signs up with the invited address, reopens the link, accepts -----------------------------------------------
-      await signUp(invitee.page, locale, inviteeEmail, newPassword(), 1);
-      await invitee.page.goto(link!);
+      // ---- invitee signs up (on that very sign-up page) with the invited address, is returned to the invite page, accepts -------
+      await signUp(invitee.page, locale, inviteeEmail, newPassword(), 1, true);
+      await expect(invitee.page, "after sign-up the invitee is back on the invite link, not the dashboard").toHaveURL(link!);
       await expect(invitee.page.getByTestId("invite-accept")).toBeVisible();
       await noHorizontalScroll(invitee.page, "invite page (signed in)");
       await shot(invitee.page, "invite-signed-in", locale, vp);

@@ -127,6 +127,9 @@ try {
   merchant.on("request", request => { if (new URL(request.url()).origin === process.env.COMMERCE_OIDC_ISSUER) sawIssuer = true; });
   await merchant.goto(`${adminOrigin}/en`);
   await merchant.getByRole("button", { name: "Sign in with identity service", exact: true }).click();
+  // 0094 (merchant-tools, storefront-v2 G1): the sign-in landing is the dashboard; the product ledger moved to /[locale]/inventory.
+  await expect(merchant.getByTestId("dashboard-page")).toBeVisible();
+  await merchant.goto(`${adminOrigin}/en/inventory`);
   await expect(merchant.getByRole("button", { name: "Add product", exact: true })).toBeVisible();
   assert(sawIssuer, "real signed MOCK IdP browser redirect required");
   const name = `Publish gate product ${Date.now()}`, code = `PUB-${Date.now()}`;
