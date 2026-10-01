@@ -1,7 +1,8 @@
 # live-tools (R4) independent test: product defects found
 
 Test author: independent (not the implementer). First pass base `r3/integration` 1f20d81 (incl. unit live-tools 2191be6); re-verified on the
-merged test base `db36a06` (r3/integration incl. merchant-tools 0094, meta-connect 0095, storefront-integration 0093). Gate files:
+merged test base `db36a06` (r3/integration incl. merchant-tools 0094, meta-connect 0095, storefront-integration 0093); re-verified again on
+`1c8ee21` (adds 0096 worker-authority split, 0097 order-locale, 0098 buyer-comms fixes). Gate files:
 `tests/foundation/live_tools_gate_test.go` (LTG01-LTG09, PG), `tests/foundation/browser_live_tools_test.go` + `tests/e2e/live-tools.spec.ts` (browser).
 Defects are NOT fixed here; the failing tests stay in the branch.
 
@@ -64,3 +65,11 @@ Defects are NOT fixed here; the failing tests stay in the branch.
   claim window, and since only one window per store can be open, the next cells cascaded on `claims-window-state` = Closed instead of failing at their own step.
 - The D1 workaround can also be armed by the gitignored flag file `output/live-tools/LTG_WORKAROUND_D1.on` (the Kimi sandbox runner may only invoke the
   allowlisted `scripts/dev/*` commands and cannot pass environment variables).
+- The worker-authority split (migration 0096) broke `TestBrowserLiveTools` on `1c8ee21`: `provisionMeta` passed the checkout harness' worker pool
+  (`x.e.p.worker`, which 0096 turned into the SANDBOX payment authority) into `metareply.Routes`/`t06StartDispatcher`, both of which validate
+  `platform.WorkerClaims`. Fixed in the test to use the claims-worker login `x.e.claims` (already the correct T21-02 authority for the meta-reply
+  dispatcher); `go vet -tags browser` clean after the change. Re-run green on `1c8ee21` (`kimi-evidence/browser-green-current-base.log`, PASS 48.95s).
+- Same 0096 regression, different owner: `TestBrowserE2EDealLoop` (unit T12, same `--browser-e2e` mode, runs first) now fails at
+  `browser_e2e_test.go:681: metareply.Routes: unsafe runtime database role` before it can reach create-order, so on `1c8ee21` the worker-split failure
+  masks D1 for T12 (on `db36a06` it reached create-order and failed there). Not this unit's gate and not fixed here; T12's driver must pass a claims-worker
+  pool the same way. The live-tools browser gate (`TestBrowserLiveTools`) is unaffected and PASS on this base.

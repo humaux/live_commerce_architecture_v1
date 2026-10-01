@@ -1,0 +1,33 @@
+# live-tools browser gate — GREEN run on HEAD 1c8ee21 (adds 0096 worker-authority split, 0097 order-locale, 0098 buyer-comms fixes)
+# command: bash scripts/dev/test-local.sh --browser-e2e        mode exit code: 1 (see below), TestBrowserLiveTools: PASS
+# date: 2026-10-02; canonical run id output/playwright/live-tools/20261001T171830.132021000
+# D1 workaround armed (disclosed fixture grant, output/live-tools/LTG_WORKAROUND_D1.on = 1): without it every order-from-claim step is red (defect D1).
+#
+# Test-code fix required for this base (in this commit): provisionMeta passed the checkout harness' worker pool (x.e.p.worker, which
+# migration 0096 turned into the SANDBOX payment authority) into metareply.Routes/t06StartDispatcher, both of which validate
+# platform.WorkerClaims. Switched to the claims-worker login x.e.claims (the correct T21-02 authority for the meta-reply dispatcher).
+#
+# Result: TestBrowserLiveTools PASS (48.95s) — 4/4 Playwright cells (zh-TW/en x desktop/390 px) green:
+#   merchant imports the store-level keyword library in Studio, sets the live price, opens the window, binds the MOCK Meta post;
+#   a signed comment claims keyword+2; the buyer opens the private-reply claim link, sees the live price, checks out pay_at_pickup at
+#   the live price (quote + order pages); a second buyer of the same SKU on the product page pays the normal price. Evidence scanned clean.
+#
+# The MODE exit code is 1 because TestBrowserE2EDealLoop (unit T12's gate, same mode, runs first) fails on this base EARLIER than D1:
+#   browser_e2e_test.go:681: metareply.Routes: unsafe runtime database role — the same worker-authority-split (0096) regression this
+#   branch fixed in ITS test but which T12's own fixture still carries (its driver passes a non-claims pool into metareply.Routes).
+#   On db36a06 (pre-0096) that test reached create-order and failed there (defect D1); on HEAD the worker-split failure masks D1 for T12.
+#   T12 is not this unit's gate; its fix belongs to the T12 author/integrator. TestBrowserLiveTools is this unit's browser gate and is PASS.
+# TestBrowserE2EDealLoopSandbox: SKIP (NOT_RUN — SANDBOX tier needs STRIPE_BROWSER=1 and STRIPE_SANDBOX=1 with the owner's test keys).
+#
+# ---- Go test output (key lines; TLS handshake noise = expected fake-Graph probing) ----
+# === RUN   TestBrowserE2EDealLoop
+#     browser_e2e_test.go:681: metareply.Routes: unsafe runtime database role
+# --- FAIL: TestBrowserE2EDealLoop (14.32s)
+# === RUN   TestBrowserE2EDealLoopSandbox
+# --- SKIP: TestBrowserE2EDealLoopSandbox (0.00s)
+# === RUN   TestBrowserLiveTools
+#     browser_live_tools_test.go:95: LC_LTG_WORKAROUND_D1 armed: checkout runtime granted claims USAGE + live_prices EXECUTE by the fixture (defect D1 masked, NOT acceptance)
+#     browser_live_tools_test.go:155: live-tools evidence logs scanned clean
+#     browser_live_tools_test.go:156: LIVE-TOOLS BROWSER (MOCK Meta, pay at pickup): chromium desktop + 390 px x zh-TW + en passed; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/live-tools-tests/output/playwright/live-tools/20261001T171830.132021000
+# --- PASS: TestBrowserLiveTools (48.95s)
+# FAIL  livecommerce/tests/foundation 63.967s   (mode exit 1 = T12 deal loop, not this gate)

@@ -304,7 +304,7 @@ func (x *ltRun) provisionMeta(t *testing.T) {
 	e.startConsumer(t)
 	t.Cleanup(func() { e.stopConsumer() })
 	x.graph = newMciGraph(t)
-	pool := x.e.p.worker // the commerce_worker login of the checkout harness: the one worker authority of this process
+	pool := x.e.claims // the claims-worker authority login (T21-02): metareply.Routes + the dispatcher both validate WorkerClaims
 	routes, err := metareply.Routes(pool, e.link, e.pageKeys, metareply.Config{GraphBaseURL: x.graph.srv.URL, GraphVersion: "v99.0", HTTPClient: x.graph.srv.Client()})
 	if err != nil {
 		t.Fatalf("metareply.Routes: %v", err)
