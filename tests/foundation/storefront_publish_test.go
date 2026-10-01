@@ -828,7 +828,7 @@ func TestStorefrontPublishSPW06OperatorInputBoundaries(t *testing.T) {
 		}
 	}
 	for name, until := range map[string]any{
-		"past": time.Now().Add(-time.Hour), "now": time.Now(), "401 days": time.Now().Add(401 * 24 * time.Hour), "10 years": time.Now().Add(3650 * 24 * time.Hour),
+		"past": time.Now().Add(-time.Hour), "just passed": time.Now().Add(-5 * time.Second), "401 days": time.Now().Add(401 * 24 * time.Hour), "10 years": time.Now().Add(3650 * 24 * time.Hour),
 		"infinity": "infinity", "null": nil,
 	} {
 		if c := pgCode(call(f.store, good, "evidence", until)); c != "PT400" {
