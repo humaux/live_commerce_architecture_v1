@@ -120,6 +120,7 @@ Smoke S29m BLOCKED is accepted in the CI job (F11), not by release-gate.
 | `tests/admin/storefront-model.test.ts`; `tests/storefront/storefront-publish-gate.mjs` | `--browser-storefront-publish` (the Node model test runs first under `node --test`; the `.mjs` driver is started by `TestBrowserStorefrontPublish`) |
 | `tests/admin/design.spec.ts`, `design-gate.test.ts`, `design-model.test.ts` | `--browser-design` (suite `store-design`, started by `TestBrowserStoreDesign`; the node tests run first under `node --test`) |
 | `tests/e2e/deal-loop.spec.ts` | `--browser-e2e` |
+| `tests/e2e/live-tools.spec.ts` (driven by `TestBrowserLiveTools`, tests/foundation/browser_live_tools_test.go) | `--browser-e2e` (runs after the deal loop in the same mode: Studio library import + live price, signed MOCK Meta claim, pay at pickup at the live price, direct purchase at the normal price; zh-TW + en x desktop + 390 px; BROWSER, MOCK) |
 
 The `--browser-admin-legacy` gate replaced a manual five-step procedure (`docs/implementation/
 2026-09-20-admin-ledger-acceptance.md` ss "Repeatable local run"): three of its specs had no runner
@@ -174,3 +175,22 @@ Run with `bash scripts/dev/test-focused.sh '^TestPromotion'` (also part of the d
 | `TestPromotionAdminGuards` | permissions, idempotent replay, duplicate code, stale version, rule violations, audit rows |
 
 Not covered here (NOT_RUN): browser pages for `/[locale]/promotions` and the storefront code field, real WebKit, and a Stripe SANDBOX payment of a discounted order.
+
+## Focused PG gates of unit live-tools (R4, migration 0092; independent test author; REAL_PG + HTTP_PG, MOCK PSP for the refund test)
+
+Run with `bash scripts/dev/test-focused.sh '^TestLiveToolsGate'` (also part of the default T1 foundation run). `tests/foundation/live_tools_test.go` is the implementer's
+author smoke, not this gate. Tests that place an order from a claim-origin cart or use the Stripe fake need the two fixture workarounds documented in
+`output/live-tools/tests/DEFECTS.md` (D1 `LC_LTG_WORKAROUND_D1=1`, B1 base defect); without them those tests are red, which is the point.
+
+| Test | Proves |
+| --- | --- |
+| `TestLiveToolsGateLivePriceOnlyThroughClaim` | LTG01: a direct cart (domain and real buyer HTTP incl. forged body keys), another session's offer on the same SKU, a bundle bound to another buyer, raising the quantity above the claim and a price-less offer never earn a live price; the claimant does, with full price evidence (`price_rule`, catalog price, bundle, offer) |
+| `TestLiveToolsGateRawCartForgery` | LTG02: raw `cart_lines` writes as the buyer role: every malformed origin shape is a 23514, an unknown/foreign/cross-session origin and `claim_quantity` below the line quantity earn nothing |
+| `TestLiveToolsGateForgedClaimQuantityAboveTheClaim` | LTG02b: a forged `claim_quantity` above the claimed quantity must not earn the live price (defect D2: red until fixed) |
+| `TestLiveToolsGateOfferLifecycleAndExpiry`, `TestLiveToolsGateLinkExpiry` | LTG03: pause / clear / reprice through the real PATCH route end the live price at the next quote, a live quote cannot place an order afterwards (conflict, zero facts), the price lives exactly as long as the link |
+| `TestLiveToolsGateCheckoutPlacesClaimOriginCart` | LTG03b: `checkout.Begin` on the checkout runtime pool places a claim-origin cart at catalog and at live price (defect D1: red until fixed) |
+| `TestLiveToolsGateSnapshotsAndOrders` | LTG04: `price_rule` in quote and order snapshots (card DRAFT and pay_at_pickup), catalog snapshots byte-compatible, later offer edits never touch an order |
+| `TestLiveToolsGateLibraryImportCopy` | LTG05: library CRUD, import/copy conflicts as 200 data, never overwrite, price never copied, permissions, tenant isolation, replay, `session_full` boundary, audit |
+| `TestLiveToolsGateConcurrentOfferCreation` | LTG06: concurrent creates, concurrent imports and create-vs-import: no duplicate, no 5xx, no 409 for an import |
+| `TestLiveToolsGatePromotionOnLivePrice` | LTG07: a discount code applies once and on the live price (percent, fixed cap, min subtotal, expiry falls back to catalog), placement through `promotions.redeem` |
+| `TestLiveToolsGateRefundsCappedAtPaid` | LTG08: a live-priced, discounted order paid through the real capture path refunds at most what was paid |

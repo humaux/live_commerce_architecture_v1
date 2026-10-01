@@ -262,6 +262,10 @@ if [[ "$test_mode" == --browser-e2e ]]; then
   test -f tests/foundation/browser_e2e_test.go
   grep -q '^func TestBrowserE2EDealLoop' tests/foundation/browser_e2e_test.go
   test -f tests/e2e/deal-loop.spec.ts
+  # live-tools (R4) independent gate: runs in this mode after the deal loop (same builds, same fixture rules).
+  test -f tests/foundation/browser_live_tools_test.go
+  grep -q '^func TestBrowserLiveTools' tests/foundation/browser_live_tools_test.go
+  test -f tests/e2e/live-tools.spec.ts
   mkdir -p output/playwright
 fi
 if [[ "$test_mode" == --browser-buyer || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-order || "$test_mode" == --browser-payment || "$test_mode" == --stripe-browser || "$test_mode" == --browser-refund-fulfilment || "$test_mode" == --browser-customers-billing || "$test_mode" == --browser-meta-ads || "$test_mode" == --browser-cvs || "$test_mode" == --browser-catalog-media || "$test_mode" == --browser-storefront-publish || "$test_mode" == --browser-webkit || "$test_mode" == --browser-live-claims || "$test_mode" == --browser-e2e ]]; then
@@ -472,8 +476,8 @@ elif [[ "$test_mode" == --stripe-browser ]]; then
   printf 'PASS: stripe-browser steps [%s] (SP18 = SANDBOX, SU07/SU09 = MOCK, SU05 baseline capture).\n' "${stripe_steps//,/ }"
   if [[ -n "$stripe_key" ]]; then printf 'SANDBOX checkout.stripe.com test mode; no live charge; SP17 webhook NOT_RUN\n'; fi
 elif [[ "$test_mode" == --browser-e2e ]]; then
-  LC_BROWSER_E2E_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1700s -run '^TestBrowserE2EDealLoop(Sandbox)?$' -v ./tests/foundation
-  printf 'PASS: T12 isolated admin + storefront Next, Go, PG, real worker/consumer/poller/dispatcher; Meta = MOCK (signed webhook, fake Graph), Stripe = MOCK (fake + routed hosted page); SANDBOX variant NOT_RUN unless it says otherwise above; not provider or deployment acceptance.\n'
+  LC_BROWSER_E2E_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1700s -run "${LC_E2E_RUN:-^(TestBrowserE2EDealLoop(Sandbox)?|TestBrowserLiveTools)$}" -v ./tests/foundation
+  printf 'PASS: T12 isolated admin + storefront Next, Go, PG, real worker/consumer/poller/dispatcher; Meta = MOCK (signed webhook, fake Graph), Stripe = MOCK (fake + routed hosted page); SANDBOX variant NOT_RUN unless it says otherwise above; not provider or deployment acceptance. Live tools (R4): Studio library import + live price, signed MOCK Meta claim, pay at pickup at the live price, direct purchase at the normal price (zh-TW + en, desktop + 390 px).\n'
 elif [[ "$test_mode" == --browser-refund-fulfilment ]]; then
   LC_BROWSER_REFUND_FULFILMENT_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1500s -run '^(TestBrowserManualFulfilment|TestBrowserRefund)$' -v ./tests/foundation
   printf 'PASS: MF07 + RF11(a) isolated admin + storefront Next, Go, PG, real worker and the MOCK Stripe fake; RF11(b) SANDBOX is NOT_RUN unless it says otherwise above; not provider or deployment acceptance.\n'
