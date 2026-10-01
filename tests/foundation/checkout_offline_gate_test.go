@@ -1107,8 +1107,15 @@ func TestCogTransferACL(t *testing.T) {
 			}
 			return out
 		}
-		if got := names(`update\s+checkout\.bank_transfers`); fmt.Sprint(got) != "[checkout.expire_held checkout.submit_transfer_proof payments.decide_bank_transfer]" {
+		// 0099 K3-03: checkout.clear_buyer_email (erasure) also UPDATEs the table, but only proof_last5 (asserted below); it can never set a state.
+		if got := names(`update\s+checkout\.bank_transfers`); fmt.Sprint(got) != "[checkout.clear_buyer_email checkout.expire_held checkout.submit_transfer_proof payments.decide_bank_transfer]" {
 			t.Errorf("functions that UPDATE the transfer: %v", got)
+		}
+		if got := names(`update\s+checkout\.bank_transfers\s+set\s+proof_last5\s*=\s*null`); fmt.Sprint(got) != "[checkout.clear_buyer_email]" {
+			t.Errorf("functions that clear the proof: %v", got)
+		}
+		if got := names(`update\s+checkout\.bank_transfers\s+set\s+state`); fmt.Sprint(got) != "[checkout.expire_held checkout.submit_transfer_proof payments.decide_bank_transfer]" {
+			t.Errorf("functions that set a transfer state with their first assignment: %v (clear_buyer_email must never)", got)
 		}
 		if got := names(`set\s+state\s*=\s*'CONFIRMED'`); fmt.Sprint(got) != "[payments.decide_bank_transfer]" {
 			t.Errorf("functions that set a transfer CONFIRMED: %v (anything else is an auto-confirm path)", got)
@@ -1132,6 +1139,7 @@ func TestCogTransferACL(t *testing.T) {
 		if fmt.Sprint(trig) != "[notify_transfer_refund->notify.on_transfer_refund]" {
 			t.Errorf("triggers on checkout.bank_transfers: %v", trig)
 		}
+
 	})
 }
 

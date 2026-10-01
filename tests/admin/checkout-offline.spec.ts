@@ -166,10 +166,18 @@ test("review: the merchant sees each buyer's submission; rejects A with a reason
       const dialog = page.getByTestId("transfer-dialog");
       await expect(dialog).toBeVisible();
       await expect(dialog.getByTestId("transfer-dialog-text")).toContainText(/25/); // the dialog names the amount the merchant must have seen arrive
+      await expect(dialog.getByTestId("transfer-no-proof-warning")).toHaveCount(0); // K3-04: the buyer submitted proof, so no warning
       await dialog.getByTestId("transfer-submit").click();
       await expect(section.getByTestId("transfer-state")).toHaveAttribute("data-state", "CONFIRMED");
       await expect(section.getByTestId("transfer-confirm")).toHaveCount(0);
       await expect(section.getByTestId("transfer-refund")).toBeVisible(); // the only remaining act is the offline refund record
+      // K3-02: the refund dialog offers the explicit restock choice (off by default, enabled before shipment); closed without refunding
+      await section.getByTestId("transfer-refund").click();
+      const refund = page.getByTestId("transfer-dialog");
+      await expect(refund.getByTestId("transfer-restock")).toBeEnabled();
+      await expect(refund.getByTestId("transfer-restock")).not.toBeChecked();
+      await refund.getByRole("button").first().click(); // Cancel
+      await expect(refund).toBeHidden();
     }
   }
   // order E has no proof yet: the merchant may see it, and it stays open
@@ -178,6 +186,13 @@ test("review: the merchant sees each buyer's submission; rejects A with a reason
   const eSection = (await expand(page, e.id)).getByTestId("order-transfer");
   await expect(eSection.getByTestId("transfer-state")).toHaveAttribute("data-state", "AWAITING");
   await expect(eSection.getByTestId("transfer-proof")).toHaveCount(0);
+  // K3-04: confirming without any buyer submission is allowed but the dialog warns first; closed without confirming
+  await eSection.getByTestId("transfer-confirm").click();
+  const warn = page.getByTestId("transfer-dialog");
+  await expect(warn.getByTestId("transfer-no-proof-warning")).toBeVisible();
+  await warn.getByRole("button").first().click(); // Cancel
+  await expect(warn).toBeHidden();
+  await expect(eSection.getByTestId("transfer-state")).toHaveAttribute("data-state", "AWAITING");
   await desktop.context.close();
   await phoneUI.context.close();
 });

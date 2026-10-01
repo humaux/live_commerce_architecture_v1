@@ -34,6 +34,8 @@
 .orders-bad { color: #975016; font-size: 13px; }
 .orders-form, .orders-dialog form { display: grid; gap: 12px; max-width: 440px; }
 .orders-form label, .orders-dialog label { display: grid; gap: 5px; color: var(--orders-muted); font-size: 12px; font-weight: 600; }
+.orders-dialog .orders-check { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.orders-dialog .orders-check small { flex-basis: 100%; margin: 0; font-weight: 400; }
 .orders-form input, .orders-form select, .orders-dialog input, .orders-dialog select { color: var(--ink); font-size: 14px; min-height: 42px; width: 100%; box-sizing: border-box; }
 .orders-form-actions, .orders-dialog-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
 .orders-section-action { margin-top: 2px; }

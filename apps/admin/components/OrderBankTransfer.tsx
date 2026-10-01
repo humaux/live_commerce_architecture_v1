@@ -3,7 +3,7 @@
 // Bank-transfer section of the merchant order detail row (contracts/storefront-v2.md §C), next to the refund / CVS / shipment sections.
 // BFF routes (lib/logistics-client.ts) -> Go internal/httpapi/offline.go:
 //   GET  /api/stores/{store}/orders/{id}/bank-transfer                                   (orders:read)
-//   POST .../bank-transfer/confirm | reject {reason} | refund-offline  (Idempotency-Key)  (payments:refund)
+//   POST .../bank-transfer/confirm | reject {reason} | refund-offline {restock}  (Idempotency-Key)  (payments:refund)
 // Nothing here is optimistic: every write re-GETs the transfer and re-reads the order (onChanged). One Idempotency-Key per dialog open,
 // reused only for a byte-identical retry after an unknown outcome. Confirm is the merchant's own act after checking their own bank account:
 // the amount is the server order total, and the platform never confirms anything by itself. Reject rejects the buyer's submission, not the
@@ -49,6 +49,7 @@ export function OrderBankTransfer({
   const [tick, setTick] = useState(0);
   const [open, setOpen] = useState<TransferAction | null>(null);
   const [reason, setReason] = useState("");
+  const [restock, setRestock] = useState(false);
   const [problem, setProblem] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -84,6 +85,7 @@ export function OrderBankTransfer({
   function begin(action: TransferAction) {
     pending.current = { key: `xfer-${crypto.randomUUID()}`, body: null };
     setReason("");
+    setRestock(false);
     setProblem("");
     setUncertain(false);
     setNotice("");
@@ -100,7 +102,7 @@ export function OrderBankTransfer({
   }
   async function send() {
     if (!open || busy || !pending.current) return;
-    const body = open === "reject" ? rejectBody(reason) : open === "confirm" ? confirmBody() : refundBody();
+    const body = open === "reject" ? rejectBody(reason) : open === "confirm" ? confirmBody() : refundBody(restock);
     if (body === null) {
       setProblem(tc.errors.invalid_reason);
       return;
@@ -130,13 +132,15 @@ export function OrderBankTransfer({
     pending.current = null;
     setProblem(transferError(tc, result.code));
     // A refusal that means "the state moved" (decided meanwhile, window ended) re-reads both the transfer and the order.
-    if (["already_confirmed", "already_refunded", "transfer_not_open", "transfer_window_closed", "transfer_not_submitted", "transfer_not_confirmed"].includes(result.code)) {
+    if (["already_confirmed", "already_refunded", "transfer_not_open", "transfer_window_closed", "transfer_not_submitted", "transfer_not_confirmed", "already_shipped"].includes(result.code)) {
       setTick((value) => value + 1);
       void onChanged();
     }
   }
 
   const proof = view?.proof ?? null;
+  // Hint only (the definer decides): anything past MANUAL_UNASSIGNED has been handed to fulfilment.
+  const shipped = detail.fulfillment_state !== "MANUAL_UNASSIGNED";
   return (
     <section className="orders-section" data-testid="order-transfer" aria-label={tc.secTitle}>
       <h2>{tc.secTitle}</h2>
@@ -239,6 +243,22 @@ export function OrderBankTransfer({
             <p data-testid="transfer-dialog-text">
               {open === "confirm" ? tc.confirmText(m(view.amount_minor, view.currency)) : open === "reject" ? tc.rejectText : tc.refundText}
             </p>
+            {open === "confirm" && !proof && (
+              <p className="orders-bad" role="note" data-testid="transfer-no-proof-warning">{tc.confirmNoProofWarning}</p>
+            )}
+            {open === "refund-offline" && (
+              <label className="orders-check">
+                <input
+                  type="checkbox"
+                  data-testid="transfer-restock"
+                  checked={restock && !shipped}
+                  disabled={busy || uncertain || shipped}
+                  onChange={(event) => setRestock(event.target.checked)}
+                />
+                <span>{tc.refundRestockLabel}</span>
+                <small className="orders-hint">{shipped ? tc.refundRestockShipped : tc.refundRestockHint}</small>
+              </label>
+            )}
             {open === "reject" && (
               <label>
                 <span>{tc.rejectReasonLabel}</span>

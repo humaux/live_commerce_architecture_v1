@@ -273,6 +273,11 @@ type TransferDecisionResult struct {
 	State           string `json:"state"`
 	CommercialState string `json:"commercial_state"`
 	ReleasedLines   int    `json:"released_lines"`
+	// K3-02: true when the refund released the allocation in the same transaction (only while fulfilment is not handed over).
+	Restocked bool `json:"restocked"`
+	// K3-04: true when the confirm happened with no buyer submission (legal per storefront-v2 §C; audited as
+	// checkout.bank_transfer_confirmed_without_proof).
+	ConfirmedWithoutProof bool `json:"confirmed_without_proof"`
 }
 
 // RejectInput is the exact reject body: why the submission was rejected (1..200 characters, shown to the buyer).
@@ -280,12 +285,21 @@ type RejectInput struct {
 	Reason string `json:"reason"`
 }
 
-// DecideTransfer runs one merchant decision: action "confirm" | "reject" | "refund_offline" (reason only for reject). payments:refund is
-// required (owners hold it); the SQL definer re-authorizes, takes the order lock, writes the idempotent receipt and exactly one audit row.
+// RefundOfflineInput is the exact refund-offline body (K3-02): restock releases the allocation through the guarded
+// ledger DEALLOCATE path in the refund transaction; only while fulfilment is not handed over, else 422 already_shipped.
+type RefundOfflineInput struct {
+	Restock bool `json:"restock"`
+}
+
+// DecideTransfer runs one merchant decision: action "confirm" | "reject" | "refund_offline" (reason only for reject,
+// restock only for refund_offline). payments:refund is
+// required (owners hold it); the SQL definer re-authorizes, takes the key-scoped advisory lock and the order lock, writes
+// the idempotent receipt and exactly one audit row.
 // Replaying the same key and body returns the first answer; the same key with another body is 409 idempotency_conflict.
-func DecideTransfer(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key, orderID, action string, reason *string) (TransferDecisionResult, error) {
+func DecideTransfer(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key, orderID, action string, reason *string, restock bool) (TransferDecisionResult, error) {
 	if tx == nil || !validAuthorityInput(scope, token) || !transferKey.MatchString(key) || !command.ValidID(orderID) ||
-		(action != "confirm" && action != "reject" && action != "refund_offline") || (action == "reject") != (reason != nil) {
+		(action != "confirm" && action != "reject" && action != "refund_offline") || (action == "reject") != (reason != nil) ||
+		(restock && action != "refund_offline") {
 		return TransferDecisionResult{}, command.ErrInvalid
 	}
 	if reason != nil {
@@ -299,15 +313,22 @@ func DecideTransfer(ctx context.Context, tx pgx.Tx, scope platform.Scope, token,
 		OrderID string  `json:"order_id"`
 		Action  string  `json:"action"`
 		Reason  *string `json:"reason"`
-	}{"checkout.bank_transfer", orderID, action, reason})
+		Restock bool    `json:"restock,omitempty"` // omitted when false: a pre-0099 receipt digest still replays
+	}{"checkout.bank_transfer", orderID, action, reason, restock})
 	if err != nil {
 		return TransferDecisionResult{}, err
 	}
+	// K3-02: the restock flag is a p_action VALUE, not a new parameter (CREATE OR REPLACE keeps the 0088 signature); the
+	// receipt operation stays 'checkout.bank_transfer.refund_offline' so the same key with the flag flipped conflicts.
+	sqlAction := action
+	if restock {
+		sqlAction = "refund_offline_restock"
+	}
 	hash := sha256.Sum256([]byte(token))
 	var raw []byte
-	// payments.decide_bank_transfer (0088): the ONLY writer of a transfer confirmation (never auto-confirmed, never from a PSP signal).
+	// payments.decide_bank_transfer (0088, re-created by 0099): the ONLY writer of a transfer confirmation (never auto-confirmed, never from a PSP signal).
 	if err = tx.QueryRow(ctx, `SELECT payments.decide_bank_transfer($1,$2::uuid,$3::uuid,$4,$5,$6,$7)`,
-		hash[:], scope.StoreID, orderID, key, digest, action, reason).Scan(&raw); err != nil {
+		hash[:], scope.StoreID, orderID, key, digest, sqlAction, reason).Scan(&raw); err != nil {
 		return TransferDecisionResult{}, mapTransferError(err)
 	}
 	// Second fence with the original Go Scope (merchantorders.read pattern).

@@ -6,6 +6,7 @@ import {
   canRefundOffline,
   canReject,
   confirmBody,
+  refundBody,
   parseTransferDetail,
   parseTransferSettings,
   rejectBody,
@@ -73,6 +74,9 @@ test("XFM04 decisions: which button each state offers, and the reject body", () 
   assert.deepEqual(["AWAITING", "SUBMITTED", "REJECTED", "CONFIRMED", "EXPIRED", "REFUNDED_OFFLINE"].map((s) => canReject(s as never)), [false, true, false, false, false, false]);
   assert.deepEqual(["AWAITING", "SUBMITTED", "REJECTED", "CONFIRMED", "EXPIRED", "REFUNDED_OFFLINE"].map((s) => canRefundOffline(s as never)), [false, false, false, true, false, false]);
   assert.equal(confirmBody(), "{}");
+  // K3-02: the refund always states the stock choice explicitly; restock is opt-in.
+  assert.equal(refundBody(false), '{"restock":false}');
+  assert.equal(refundBody(true), '{"restock":true}');
   assert.equal(rejectBody("  amount does not match  "), JSON.stringify({ reason: "amount does not match" }));
   for (const bad of ["", "   ", "x".repeat(201), "line\nbreak"]) assert.equal(rejectBody(bad), null, JSON.stringify(bad));
   assert.notEqual(rejectBody("x".repeat(200)), null);
@@ -83,9 +87,10 @@ test("XFM05 copy: the three locales carry every key, state and refusal text", ()
   for (const locale of ["zh-CN", "zh-TW"] as const) assert.equal(Object.keys(transferCopy[locale]).sort().join(), keys, locale);
   for (const [locale, c] of Object.entries(transferCopy)) {
     for (const state of ["AWAITING", "SUBMITTED", "REJECTED", "CONFIRMED", "EXPIRED", "REFUNDED_OFFLINE"]) assert.ok((c.states as Record<string, string>)[state], `${locale} ${state}`);
-    for (const code of ["already_confirmed", "already_refunded", "transfer_not_open", "transfer_window_closed", "transfer_not_submitted", "transfer_not_confirmed", "not_bank_transfer", "invalid_reason", "default"])
+    for (const code of ["already_confirmed", "already_refunded", "transfer_not_open", "transfer_window_closed", "transfer_not_submitted", "transfer_not_confirmed", "already_shipped", "restock_unavailable", "not_bank_transfer", "invalid_reason", "default"])
       assert.ok(c.errors[code]?.length > 0, `${locale} ${code}`);
     assert.match(c.confirmText("NT$900"), /900/);
+    for (const key of ["confirmNoProofWarning", "refundRestockLabel", "refundRestockHint", "refundRestockShipped"] as const) assert.ok(c[key].length > 0, `${locale} ${key}`);
   }
 });
 
