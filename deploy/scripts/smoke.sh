@@ -387,8 +387,13 @@ full_cases() {
   if runc S13n lc_compose run --rm -T --no-deps provision-logins; then why13n+=" mixed-authority drift was accepted"; fi
   grep -q 'DRIFT login=lc_claims_intake .*membership=' "$EV/logs/S13n.log" || why13n+=" mixed-authority drift not named"
   lc_psql <<<"REVOKE commerce_worker FROM lc_claims_intake;" >/dev/null
+  # (3) T21-02: a worker login that also joins ANOTHER worker authority (sandbox payment + live payment) must be named too.
+  lc_psql <<<"GRANT commerce_payment_live TO lc_payment_sandbox;" >/dev/null
+  if runc S13n lc_compose run --rm -T --no-deps provision-logins; then why13n+=" two-worker-authority drift was accepted"; fi
+  grep -q 'DRIFT login=lc_payment_sandbox .*membership=' "$EV/logs/S13n.log" || why13n+=" two-worker-authority drift not named"
+  lc_psql <<<"REVOKE commerce_payment_live FROM lc_payment_sandbox;" >/dev/null
   runc S13n lc_compose run --rm -T --no-deps provision-logins || why13n+=" provisioning not green after revert"
-  if [[ -z "$why13n" ]]; then rec S13n PASS "ruling-19 and mixed-authority drift each fail provisioning by name; green after revert"; else rec S13n FAIL "$why13n (logs/S13n.log)"; fi
+  if [[ -z "$why13n" ]]; then rec S13n PASS "ruling-19, mixed-authority and two-worker-authority drift each fail provisioning by name; green after revert"; else rec S13n FAIL "$why13n (logs/S13n.log)"; fi
 
   if lc_compose exec -T postgres bash -c 'PGPASSWORD="$(< /run/secrets/pg_superuser_password)" psql -X -h postgres -U postgres -d live_commerce -c "SELECT 1"' \
     >"$EV/logs/S14.log" 2>&1; then

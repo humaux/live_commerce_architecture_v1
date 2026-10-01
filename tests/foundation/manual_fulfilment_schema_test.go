@@ -102,10 +102,10 @@ func TestManualFulfilmentMF02Schema(t *testing.T) {
 			exec, deny []string
 		}
 		for _, f := range []fn{
-			{"fulfillment.record_manual_shipment(bytea,uuid,uuid,text,bytea,bigint,text,text,text,text,text,text,text)", "commerce_checkout_writer", []string{"commerce_runtime"}, []string{"commerce_worker", "commerce_checkout_runtime"}},
-			{"identity.read_merchant_orders(bytea,uuid,uuid,integer,timestamptz,uuid,text)", "commerce_auth", []string{"commerce_runtime"}, []string{"commerce_worker"}},
-			{"fulfillment.read_manual_shipment_history(bytea,uuid,uuid)", "commerce_auth", []string{"commerce_runtime"}, []string{"commerce_worker"}},
-			{"identity.export_unshipped_orders(bytea,uuid,integer)", "commerce_auth", []string{"commerce_runtime"}, []string{"commerce_worker"}},
+			{"fulfillment.record_manual_shipment(bytea,uuid,uuid,text,bytea,bigint,text,text,text,text,text,text,text)", "commerce_checkout_writer", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_checkout_runtime"}},
+			{"identity.read_merchant_orders(bytea,uuid,uuid,integer,timestamptz,uuid,text)", "commerce_auth", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy}},
+			{"fulfillment.read_manual_shipment_history(bytea,uuid,uuid)", "commerce_auth", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy}},
+			{"identity.export_unshipped_orders(bytea,uuid,integer)", "commerce_auth", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy}},
 		} {
 			var owner string
 			var definer, fixed, publicExec, commented bool
@@ -133,7 +133,7 @@ func TestManualFulfilmentMF02Schema(t *testing.T) {
 		for _, table := range []string{"fulfillment.manual_shipment_versions", "fulfillment.manual_shipment_heads"} {
 			srsMust(t, e, table+" FORCE RLS", `SELECT coalesce((SELECT relrowsecurity AND relforcerowsecurity FROM pg_class WHERE oid=to_regclass($1)),false)`, table)
 			srsMust(t, e, table+" refused to PUBLIC", `SELECT NOT EXISTS (SELECT 1 FROM pg_class c CROSS JOIN LATERAL aclexplode(COALESCE(c.relacl,acldefault('r',c.relowner))) acl WHERE c.oid=to_regclass($1) AND acl.grantee=0)`, table)
-			for _, role := range []string{"commerce_runtime", "commerce_worker", "commerce_integration_writer", "commerce_stripe_ingress"} {
+			for _, role := range []string{"commerce_runtime", waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_integration_writer", "commerce_stripe_ingress"} {
 				srsMust(t, e, table+" no privilege for "+role, `SELECT NOT has_any_column_privilege($1,$2,'SELECT') AND NOT has_any_column_privilege($1,$2,'INSERT') AND NOT has_any_column_privilege($1,$2,'UPDATE')`, role, table)
 			}
 			for _, role := range []string{"commerce_checkout_writer", "commerce_auth", "commerce_checkout_runtime"} {
@@ -142,7 +142,7 @@ func TestManualFulfilmentMF02Schema(t *testing.T) {
 		}
 		v, h := "fulfillment.manual_shipment_versions", "fulfillment.manual_shipment_heads"
 		// versions: append-only for every role (no UPDATE column privilege anywhere)
-		for _, role := range []string{"commerce_checkout_writer", "commerce_auth", "commerce_checkout_runtime", "commerce_runtime", "commerce_worker"} {
+		for _, role := range []string{"commerce_checkout_writer", "commerce_auth", "commerce_checkout_runtime", "commerce_runtime", waPayment, waLive, waExpiry, waAds, waClaims, waLegacy} {
 			srsMust(t, e, "versions never updatable by "+role, `SELECT NOT has_any_column_privilege($1,$2,'UPDATE')`, role, v)
 		}
 		srsPriv(t, e, "commerce_checkout_writer", v, "SELECT", true)
@@ -247,7 +247,7 @@ func TestManualFulfilmentMF02Schema(t *testing.T) {
 		}
 		refuse("UPDATE of a version (owner)", `UPDATE fulfillment.manual_shipment_versions SET note='x' WHERE order_id=$1`, o1.order)
 		refuse("DELETE of a version (owner)", `DELETE FROM fulfillment.manual_shipment_versions WHERE order_id=$1`, o1.order)
-		for _, role := range []string{"commerce_checkout_writer", "commerce_auth", "commerce_checkout_runtime", "commerce_runtime", "commerce_worker", "commerce_integration_writer"} {
+		for _, role := range []string{"commerce_checkout_writer", "commerce_auth", "commerce_checkout_runtime", "commerce_runtime", waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_integration_writer"} {
 			for _, stmt := range []string{`UPDATE fulfillment.manual_shipment_versions SET tracking_number='X'`, `DELETE FROM fulfillment.manual_shipment_versions`} {
 				tx, err := e.f.owner.Begin(ctx)
 				if err != nil {

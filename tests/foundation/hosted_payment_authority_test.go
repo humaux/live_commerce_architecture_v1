@@ -52,7 +52,7 @@ func TestBuyerPaymentHostedSQLAuthorityAndScope(t *testing.T) {
 		 has_function_privilege('commerce_hosted_runtime',to_regprocedure($1),'EXECUTE'),
 		 has_function_privilege('commerce_checkout_runtime',to_regprocedure($1),'EXECUTE'),
 		 has_function_privilege('commerce_runtime',to_regprocedure($1),'EXECUTE'),
-		 has_function_privilege('commerce_worker',to_regprocedure($1),'EXECUTE'),
+		 (SELECT bool_or(has_function_privilege(w.r,to_regprocedure($1),'EXECUTE')) FROM unnest(ARRAY['commerce_payment_worker','commerce_payment_live','commerce_expiry_worker','commerce_ads_worker','commerce_claims_worker','commerce_worker']) w(r)),
 		 has_function_privilege('commerce_buyer_runtime',to_regprocedure($1),'EXECUTE'),
 		 has_function_privilege('public',to_regprocedure($1),'EXECUTE'),
 		 p.prosecdef,p.proconfig=ARRAY['search_path=pg_catalog']::text[]

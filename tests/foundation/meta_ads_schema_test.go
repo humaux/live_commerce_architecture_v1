@@ -184,7 +184,7 @@ func TestMetaAdsMA02Schema(t *testing.T) {
 			execIn      map[string]bool // function name (schema-qualified, no args) prefix rules
 		}
 		facts := map[string][]string{}
-		for _, role := range []string{"commerce_runtime", "commerce_worker", "commerce_buyer_runtime", "commerce_integration_writer", "commerce_meta_registrar"} {
+		for _, role := range []string{"commerce_runtime", waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_buyer_runtime", "commerce_integration_writer", "commerce_meta_registrar"} {
 			facts[role] = adsGrantFacts(t, f, role, true)
 		}
 		adsOnly := func(role string) []string {
@@ -231,21 +231,27 @@ func TestMetaAdsMA02Schema(t *testing.T) {
 		}
 		// worker: check/advance/insights/planner/ingest/loader functions only, none authenticating a merchant hash
 		workerOK := regexp.MustCompile(`^(ads\.(check_[a-z]+|advance_[a-z]+|insights_[a-z]+|pending_insight_reads|put_insights_day|plan_capi[a-z_]*|purge_oauth_states|canonical_draft|capi_user_data)|integration\.load_meta_ads_token)$`)
-		for _, a := range adsOnly("commerce_worker") {
+		for _, a := range adsOnly(waAds) {
 			if a == "schema:ads:USAGE" {
 				continue
 			}
 			if !strings.HasPrefix(a, "func:") || !workerOK.MatchString(fnName(a)) || strings.HasPrefix(firstArg(a), "p_hash") {
-				t.Errorf("commerce_worker holds %s (§4.4: Check, sweepers, ingestion, loader only)", a)
+				t.Errorf("commerce_ads_worker holds %s (§4.4: Check, sweepers, ingestion, loader only)", a)
 			}
 		}
 		for _, must := range []string{"ads.check_create", "ads.check_activate", "ads.check_read", "ads.check_capi", "ads.advance_next", "ads.advance_plan", "ads.put_insights_day", "ads.plan_capi", "integration.load_meta_ads_token", "ads.capi_user_data"} {
 			found := false
-			for _, a := range adsOnly("commerce_worker") {
+			for _, a := range adsOnly(waAds) {
 				found = found || (strings.HasPrefix(a, "func:") && fnName(a) == must)
 			}
 			if !found {
-				t.Errorf("commerce_worker cannot execute %s", must)
+				t.Errorf("commerce_ads_worker cannot execute %s", must)
+			}
+		}
+		// T21-02: no other worker authority (and not the empty legacy commerce_worker) holds anything on the ads schema
+		for _, other := range []string{waPayment, waLive, waExpiry, waClaims, waLegacy} {
+			if held := adsOnly(other); len(held) != 0 {
+				t.Errorf("%s holds ads objects %v (only commerce_ads_worker may)", other, held)
 			}
 		}
 		// buyer runtime: exactly put_capi_context + feed_rows; registrar: exactly the operator definer
@@ -293,8 +299,8 @@ func TestMetaAdsMA02Schema(t *testing.T) {
 			holders = append(holders, s)
 		}
 		rows.Close()
-		if fmt.Sprint(holders) != "[commerce_integration_writer commerce_worker]" {
-			t.Errorf("EXECUTE on integration.load_meta_ads_token: %v, want owner + commerce_worker only", holders)
+		if fmt.Sprint(holders) != "[commerce_ads_worker commerce_integration_writer]" {
+			t.Errorf("EXECUTE on integration.load_meta_ads_token: %v, want owner + commerce_ads_worker only", holders)
 		}
 		var publicCount int
 		if err := f.owner.QueryRow(ctx, `SELECT

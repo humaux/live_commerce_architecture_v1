@@ -153,7 +153,7 @@ func TestMerchantOrdersAuthorityAndOnboarding(t *testing.T) {
 	if !slices.Equal(execPrincipals, []string{"commerce_auth", "commerce_runtime"}) {
 		t.Fatalf("merchant read EXECUTE ACL principals=%v", execPrincipals)
 	}
-	for _, role := range []string{"commerce_runtime", "commerce_hosted_runtime", "commerce_buyer_runtime", "commerce_buyer_issuer", "commerce_checkout_runtime", "commerce_worker", "commerce_identity"} {
+	for _, role := range []string{"commerce_runtime", "commerce_hosted_runtime", "commerce_buyer_runtime", "commerce_buyer_issuer", "commerce_checkout_runtime", waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_identity"} {
 		var execute, checkoutUsage, orderRead, attemptRead, authMember bool
 		if err := f.owner.QueryRow(ctx, `SELECT has_function_privilege($1,$2,'EXECUTE'),
 			has_schema_privilege($1,'checkout','USAGE'),has_any_column_privilege($1,'checkout.orders','SELECT'),

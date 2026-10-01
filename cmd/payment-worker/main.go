@@ -105,7 +105,7 @@ func run(ctx context.Context, getenv func(string) string) error {
 	if err != nil || !config.enabled {
 		return err
 	}
-	pool, err := platform.OpenWorkerPool(ctx, config.dsn)
+	pool, err := platform.OpenWorkerPool(ctx, config.dsn, payments.WorkerAuthority(config.profile))
 	if err != nil {
 		return errWorkerDatabase
 	}

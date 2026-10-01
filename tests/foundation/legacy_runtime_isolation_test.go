@@ -198,7 +198,7 @@ func TestLegacyRuntimeIsolationExpiryDoesNotMaintainForeignFamilies(t *testing.T
 	binary := mrBuild(t, "../../cmd/expiry-worker", "legacy-expiry-maintenance")
 	worker := mrLaunch(t, binary, "legacy-expiry-maintenance", []string{
 		"COMMERCE_EXPIRY_WORKER_ENABLED=1",
-		"COMMERCE_EXPIRY_WORKER_DATABASE_URL=" + miRole(t, f, "commerce_worker"),
+		"COMMERCE_EXPIRY_WORKER_DATABASE_URL=" + miRole(t, f, waExpiry),
 		"COMMERCE_EXPIRY_WORKER_CONCURRENCY=1",
 	})
 	mrReadyLog(t, worker, "expiry_worker_ready")

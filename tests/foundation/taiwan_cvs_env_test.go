@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 
@@ -51,6 +52,7 @@ const tcvHooksOrigin = "https://hooks.tcv.example"
 type tcvEnv struct {
 	t           *testing.T
 	p           psHarness
+	claims      *pgxpool.Pool // the claims-worker authority login: ECPay CVS create runs on the claims dispatcher (T21-02)
 	fake        *ecpaytest.Fake
 	keys        *ecpay.Keyring
 	client      *ecpay.Client
@@ -121,7 +123,7 @@ func tcvNew(t *testing.T, opts ...tcvOpts) *tcvEnv {
 	} else {
 		p = psSetup(t)
 	}
-	e := &tcvEnv{r: rEnv, ro: rOrder, t: t, p: p, svcs: map[string]fulfillment.ServiceInput{}, svcVer: map[string]int64{}, fake: ecpaytest.New(), tag: t04Tag(), origin: "https://tcv-" + t04Tag() + ".example"}
+	e := &tcvEnv{r: rEnv, ro: rOrder, t: t, p: p, claims: waOpen(t, p.f, waClaims, platform.WorkerClaims), svcs: map[string]fulfillment.ServiceInput{}, svcVer: map[string]int64{}, fake: ecpaytest.New(), tag: t04Tag(), origin: "https://tcv-" + t04Tag() + ".example"}
 	if o.origin != "" {
 		e.origin = o.origin
 	}
@@ -628,14 +630,14 @@ func (e *tcvEnv) newMerchantHandler() http.Handler {
 // ---- the real ecpay.cvs_create route, in process --------------------------------------------------------------------------
 
 // startDispatcher runs the real dispatcher with ecpayroute.Routes over the fake, on a private River queue (jobs are moved to it by route()),
-// the same shape cmd/worker assembles. The worker pool is a real commerce_worker login.
+// the same shape cmd/worker assembles. The worker pool is a real commerce_claims_worker login.
 func (e *tcvEnv) startDispatcher() { e.startDispatcherWith(nil) }
 
 // startDispatcherWith is startDispatcher with dispatcher option overrides (small call timeouts and budgets make the UNKNOWN paths quick).
 func (e *tcvEnv) startDispatcherWith(tune func(*integration.DispatcherOptions)) {
 	e.t.Helper()
 	ctx := context.Background()
-	routes, err := ecpayroute.Routes(e.p.worker, e.keys, e.client, e.cfg.ECPay)
+	routes, err := ecpayroute.Routes(e.claims, e.keys, e.client, e.cfg.ECPay)
 	if err != nil {
 		e.t.Fatalf("ecpayroute.Routes: %v", err)
 	}
@@ -644,7 +646,7 @@ func (e *tcvEnv) startDispatcherWith(tune func(*integration.DispatcherOptions)) 
 	if tune != nil {
 		tune(&opts)
 	}
-	disp, err := integration.NewDispatcher(ctx, e.p.worker, routes, opts)
+	disp, err := integration.NewDispatcher(ctx, e.claims, routes, opts)
 	if err != nil {
 		e.t.Fatalf("dispatcher: %v", err)
 	}
@@ -658,7 +660,7 @@ func (e *tcvEnv) startDispatcherWith(tune func(*integration.DispatcherOptions)) 
 	}
 	workers := river.NewWorkers()
 	river.AddWorker(workers, disp)
-	client, err := river.NewClient(riverpgxv5.New(e.p.worker), &river.Config{Schema: "river", Workers: workers, Queues: map[string]river.QueueConfig{e.queue: {MaxWorkers: 2}},
+	client, err := river.NewClient(riverpgxv5.New(e.claims), &river.Config{Schema: "river", Workers: workers, Queues: map[string]river.QueueConfig{e.queue: {MaxWorkers: 2}},
 		JobTimeout: 20 * time.Second, RescueStuckJobsAfter: rescue, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
 	if err != nil {
 		e.t.Fatal(err)

@@ -278,7 +278,7 @@ func TestDeliveryAllocationSQLCompletenessAndRoleBoundary(t *testing.T) {
 	if _, err := daSet(h, t04Key("allocation-sql"), in); err != nil {
 		t.Fatal(err)
 	}
-	for _, role := range []string{"commerce_worker", "commerce_buyer_issuer", "commerce_identity", "commerce_buyer_runtime"} {
+	for _, role := range []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_buyer_issuer", "commerce_identity", "commerce_buyer_runtime"} {
 		for _, query := range []string{`SELECT * FROM fulfillment.allocation_versions`, `SELECT * FROM inventory.lock_warehouse('` + in.WarehouseIDs[0] + `')`} {
 			tx, err := h.f.owner.Begin(ctx)
 			if err != nil {

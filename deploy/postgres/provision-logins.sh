@@ -82,6 +82,10 @@ ledger="$(su_psql <<<"SELECT CASE WHEN to_regclass('public.lc_schema_migrations'
     # Rotation = rewrite pw_<login>, re-run this job, restart the consumer.
     echo "SELECT format('ALTER ROLE %I WITH LOGIN INHERIT NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION CONNECTION LIMIT 40 PASSWORD %L', :'login', :'pw') \\gexec"
     echo "\\unset pw"
+    # T21-02: commerce_worker is an empty legacy role. A login an older release put in it (direct, from this script)
+    # leaves it before the matrix check, so an upgrade is not reported as drift. Only the five worker rows do this: any other
+    # login found in commerce_worker (smoke S13n injects one) is still reported as drift below.
+    echo "SELECT format('REVOKE commerce_worker FROM %I', :'login') WHERE :'authority' IN ('commerce_payment_worker','commerce_payment_live','commerce_expiry_worker','commerce_ads_worker','commerce_claims_worker') AND EXISTS (SELECT 1 FROM pg_auth_members m WHERE m.roleid = to_regrole('commerce_worker') AND m.member = to_regrole(:'login')) \\gexec"
     if [[ "$grant" == in_role ]]; then
       # Identical to CREATE ROLE ... IN ROLE: INHERIT follows the login attribute, SET TRUE.
       echo "SELECT format('GRANT %I TO %I', :'authority', :'login') \\gexec"
@@ -101,7 +105,8 @@ report="$(su_psql <<SQL
 WITH spec(login, authority, grant_shape) AS (VALUES $values),
 authorities(name) AS (VALUES
   ('commerce_runtime'),('commerce_identity'),('commerce_buyer_runtime'),('commerce_buyer_issuer'),
-  ('commerce_worker'),('commerce_checkout_runtime'),('commerce_meta_ingress'),('commerce_meta_registrar'),
+  ('commerce_worker'),('commerce_payment_worker'),('commerce_payment_live'),('commerce_expiry_worker'),('commerce_ads_worker'),
+  ('commerce_claims_worker'),('commerce_checkout_runtime'),('commerce_meta_ingress'),('commerce_meta_registrar'),
   ('commerce_meta_curator'),('commerce_meta_consumer'),('commerce_meta_worker'),('commerce_media_registrar'),
   ('commerce_media_worker'),('commerce_media_executor'),('commerce_media_recovery'),
   ('commerce_stripe_ingress'),('commerce_payment_registrar'),('commerce_claims_intake'),

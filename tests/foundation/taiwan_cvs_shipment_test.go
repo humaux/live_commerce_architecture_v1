@@ -1,7 +1,7 @@
 package foundation_test
 
 // TCV05 TestCvsShipmentLifecycle (contracts/taiwan-cvs-logistics-v1.md §10 TCV05, §4.3 request/plan/settle/load/finish/apply/abandon, §6, §7.4, §9).
-// Prefix `tsh`. Tier REAL_PG + MOCK: the real merchant HTTP handler, real definers under real role logins (commerce_runtime, commerce_worker via the
+// Prefix `tsh`. Tier REAL_PG + MOCK: the real merchant HTTP handler, real definers under real role logins (commerce_runtime, commerce_claims_worker via the
 // in-process dispatcher over ecpayroute), the independent ecpaytest fake for ECPay.
 // Owner-pool writes (disclosed fixtures, each named at its use): planting an old operation lease (the 1-hour settle rule), planting a live lease on an
 // ABANDONED attempt's operation (a late Finish), ageing cvs_shipments.created_at (the lapse window), rewriting one payments.facts.environment.
@@ -368,8 +368,8 @@ func TestCvsShipmentLifecycle(t *testing.T) {
 			t.Fatalf("plant the live lease: %v", err)
 		}
 		_ = tx.Commit(ctx)
-		if _, err := e.p.worker.Exec(ctx, `SELECT integration.finish_cvs_create($1::uuid,2,$2,'SUCCEEDED','ecpay.created','9100001','20000009','1234',NULL,'300')`, opID, token); err != nil {
-			t.Fatalf("finish_cvs_create under the commerce_worker login: %v", err)
+		if _, err := e.claims.Exec(ctx, `SELECT integration.finish_cvs_create($1::uuid,2,$2,'SUCCEEDED','ecpay.created','9100001','20000009','1234',NULL,'300')`, opID, token); err != nil {
+			t.Fatalf("finish_cvs_create under the commerce_claims_worker login: %v", err)
 		}
 		if s, _, _ := e.shipState(order); s != "ABANDONED" {
 			t.Errorf("a late Finish must never change an ABANDONED attempt, got %s", s)

@@ -225,7 +225,7 @@ func sflWorkerBinary(t *testing.T, e *sflEnv) {
 	keysJSON, _ := json.Marshal([]map[string]string{{"id": "query_test", "key_base64": key}})
 	base := func(profile, stripe string) []string {
 		env := []string{"PATH=" + os.Getenv("PATH"), "COMMERCE_PAYMENT_WORKER_ENABLED=1", "COMMERCE_PAYMENT_WORKER_PROFILE=" + profile,
-			"COMMERCE_PAYMENT_WORKER_CONCURRENCY=1", "COMMERCE_PAYMENT_WORKER_DATABASE_URL=" + bcRole(t, e.f, "commerce_worker"),
+			"COMMERCE_PAYMENT_WORKER_CONCURRENCY=1", "COMMERCE_PAYMENT_WORKER_DATABASE_URL=" + bcRole(t, e.f, waPayment),
 			"COMMERCE_ACCOUNT_ACTIVE_KEY_ID=query_test", "COMMERCE_ACCOUNT_KEYS_JSON=" + string(keysJSON),
 			"COMMERCE_ACCOUNT_REPLAY_KEY=" + base64.StdEncoding.EncodeToString(randomBytes(32)),
 			// Global Stripe credentials the worker must never read (§0.2): sentinels would leak if it did.
@@ -251,7 +251,7 @@ func sflWorkerBinary(t *testing.T, e *sflEnv) {
 			t.Fatalf("%s: err=%v out=%q", name, err, out)
 		}
 	}
-	u, err := url.Parse(bcRole(t, e.f, "commerce_worker"))
+	u, err := url.Parse(bcRole(t, e.f, waPayment))
 	if err != nil {
 		t.Fatal(err)
 	}

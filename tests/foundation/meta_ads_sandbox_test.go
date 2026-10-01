@@ -58,7 +58,7 @@ type sandboxRoutes map[string]integration.DispatchRoute
 func sandboxRoutesFor(t *testing.T) sandboxRoutes {
 	t.Helper()
 	f := fixture(t)
-	pool := miPool(t, f, "commerce_worker")
+	pool := miPool(t, f, waAds)
 	routes, err := metaads.Routes(pool, metaads.Config{GraphVersion: "v26.0", PartnerAgent: "lc_sandbox_gate"}, stubOpener{}, func(context.Context, integration.DispatchRequest) error { return nil })
 	if err != nil {
 		t.Fatal(err)

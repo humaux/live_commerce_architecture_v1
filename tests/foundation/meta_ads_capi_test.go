@@ -548,7 +548,7 @@ func TestMetaAdsMA08CAPI(t *testing.T) {
 		}
 	})
 
-	t.Run("user data only through the lease-fenced definer ads.capi_user_data; commerce_worker cannot read the source tables", func(t *testing.T) {
+	t.Run("user data only through the lease-fenced definer ads.capi_user_data; the worker authorities cannot read the source tables", func(t *testing.T) {
 		c := newCapiEnv(t, adsOpts{})
 		c.prime("SANDBOX", "SANDBOX")
 		var results []string
@@ -620,12 +620,14 @@ func TestMetaAdsMA08CAPI(t *testing.T) {
 		}
 		// worker has no table access to the user-data sources
 		for _, rel := range []string{"storefront.destination_snapshots", "ads.capi_contexts", "ads.capi_events", "checkout.orders", "checkout.payment_attempts", "storefront.quotes", "customers.consent_events", "buyer.owners"} {
-			var tbl, col bool
-			if err := c.f.owner.QueryRow(c.ctx, `SELECT has_table_privilege('commerce_worker',$1::regclass,'SELECT'),has_any_column_privilege('commerce_worker',$1::regclass,'SELECT')`, rel).Scan(&tbl, &col); err != nil {
-				t.Fatal(err)
-			}
-			if tbl || col {
-				t.Errorf("commerce_worker can SELECT %s (C2: user data only through the lease-fenced definer)", rel)
+			for _, role := range waAll {
+				var tbl, col bool
+				if err := c.f.owner.QueryRow(c.ctx, `SELECT has_table_privilege($2,$1::regclass,'SELECT'),has_any_column_privilege($2,$1::regclass,'SELECT')`, rel, role).Scan(&tbl, &col); err != nil {
+					t.Fatal(err)
+				}
+				if tbl || col {
+					t.Errorf("%s can SELECT %s (C2: user data only through the lease-fenced definer)", role, rel)
+				}
 			}
 		}
 		for _, q := range []string{`SELECT count(*) FROM storefront.destination_snapshots`, `SELECT count(*) FROM ads.capi_contexts`, `SELECT count(*) FROM checkout.orders`} {

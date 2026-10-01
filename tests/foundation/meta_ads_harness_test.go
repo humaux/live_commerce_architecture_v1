@@ -7,7 +7,7 @@ package foundation_test
 // What one adsEnv is (helper prefix `ade`/`adsEnv`): a fresh store of the shared fixture tenant; a creator principal and
 // further members with explicit ads grants per case (A-1: no auto grants); the real merchant HTTP surface
 // (httpapi.NewHandler + ads.Service over the real commerce_runtime pool, the real metaads.OAuth against the fake Graph);
-// the real dispatcher with metaads.Routes and capiroute.Routes over a commerce_worker login, the real ads sweepers, all on
+// the real dispatcher with metaads.Routes and capiroute.Routes over a commerce_ads_worker login, the real ads sweepers, all on
 // ONE real River client working queue `ads` only; the fake Graph (tests/ads/fakegraph) on loopback as GraphBaseURL.
 //
 // Ops, approvals, facts and grants come from the real definers and the real HTTP/OAuth path. The owner pool (a fixture
@@ -220,7 +220,7 @@ func newAdsEnv(t *testing.T, o adsOpts) *adsEnv {
 	e.g.Grant(e.botToken, e.clientBiz, []string{"ads_management", "ads_read", "business_management", "pages_show_list"}, []string{e.account}, pixels)
 	e.g.ExpectApp(adsApp, adsAppSecret, adsRedirect)
 
-	e.workerPool = miPool(t, f, "commerce_worker")
+	e.workerPool = miPool(t, f, waAds)
 	e.registrarPool = miPool(t, f, "commerce_meta_registrar")
 
 	// merchant HTTP surface: the real service + real OAuth against the fake Graph

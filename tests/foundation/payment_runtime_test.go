@@ -126,12 +126,7 @@ func pwKeys(t *testing.T) *accounts.Keyring {
 
 func pwWorkerPool(t *testing.T, f *testFixture) *pgxpool.Pool {
 	t.Helper()
-	pool, err := platform.OpenWorkerPool(context.Background(), bcRole(t, f, "commerce_worker"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(pool.Close)
-	return pool
+	return waOpen(t, f, waPayment, platform.WorkerPayment)
 }
 
 // Force the pre-upgrade producer's requested default queue before River's
@@ -484,7 +479,7 @@ func TestBuyerPaymentWorkerProcessSignalAndPoolCleanup(t *testing.T) {
 	if out, err := invalid.CombinedOutput(); err == nil || !strings.Contains(string(out), "payment_worker_invalid_config") || strings.Contains(string(out), "invalid\n") {
 		t.Fatalf("production binary accepted MOCK or leaked config: %v %q", err, out)
 	}
-	role := bcRole(t, f, "commerce_worker")
+	role := bcRole(t, f, waPayment)
 	u, err := url.Parse(role)
 	if err != nil {
 		t.Fatal(err)
@@ -583,7 +578,7 @@ func TestBuyerPaymentWorkerCrashChild(t *testing.T) {
 		return
 	}
 	ctx := context.Background()
-	pool, err := platform.OpenWorkerPool(ctx, os.Getenv("LC_PW_CHILD_DSN"))
+	pool, err := platform.OpenWorkerPool(ctx, os.Getenv("LC_PW_CHILD_DSN"), platform.WorkerPayment)
 	if err != nil {
 		t.Fatal("child worker authority")
 	}

@@ -231,7 +231,7 @@ func TestStudioBackendSTU02SafeProjectionAndRevocation(t *testing.T) {
 		t.Fatalf("foreign token read raw projection: %v", err)
 	}
 	// Only the runtime is allowed the narrow projection; not the worker or registrar.
-	for _, role := range []string{"commerce_media_registrar", "commerce_media_worker", "commerce_media_executor", "commerce_worker"} {
+	for _, role := range []string{"commerce_media_registrar", "commerce_media_worker", "commerce_media_executor", waPayment, waLive, waExpiry, waAds, waClaims, waLegacy} {
 		var grants bool
 		err := h.lp.f.owner.QueryRow(context.Background(), `SELECT has_function_privilege($1,'live.read_studio_media(bytea,uuid,uuid)','EXECUTE')`, role).Scan(&grants)
 		if err != nil || grants {

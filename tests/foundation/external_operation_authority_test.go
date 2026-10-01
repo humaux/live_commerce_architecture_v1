@@ -101,17 +101,34 @@ func t06AuthorityFinish(p *pgxpool.Pool, id string, gen int64, token []byte, sta
 func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	f := fixture(t)
 	ctx := context.Background()
-	dsn, p := t06AuthorityLogin(t, "commerce_worker")
-	checked, err := platform.OpenWorkerPool(ctx, dsn)
+	// T21-02: the T06 ledger fixtures use provider mock_provider = the default lane = the claims worker authority.
+	dsn, p := t06AuthorityLogin(t, waClaims)
+	checked, err := platform.OpenWorkerPool(ctx, dsn, platform.WorkerClaims)
 	if err != nil {
 		t.Fatal(err)
 	}
 	checked.Close()
-	if err := platform.ValidateWorkerPool(ctx, p); err != nil {
-		t.Fatalf("ordinary worker pool rejected: %v", err)
+	if err := platform.ValidateWorkerPool(ctx, p, platform.WorkerClaims); err != nil {
+		t.Fatalf("claims worker pool rejected: %v", err)
+	}
+	if err := platform.ValidateWorkerPool(ctx, p, platform.WorkerClaims, platform.WorkerAds); err != nil {
+		t.Fatalf("dispatcher host list rejected the claims worker: %v", err)
+	}
+	// The gate is per process: a claims login is not any other worker, and "no authority named" fails closed.
+	for _, wrong := range []platform.WorkerAuthority{platform.WorkerPayment, platform.WorkerPaymentLive, platform.WorkerExpiry, platform.WorkerAds} {
+		if err := platform.ValidateWorkerPool(ctx, p, wrong); err == nil {
+			t.Fatalf("claims login admitted as %s", wrong)
+		}
+		if unsafe, err := platform.OpenWorkerPool(ctx, dsn, wrong); err == nil {
+			unsafe.Close()
+			t.Fatalf("claims login opened as %s", wrong)
+		}
+	}
+	if err := platform.ValidateWorkerPool(ctx, p); err == nil {
+		t.Fatal("worker pool admitted without naming an authority")
 	}
 	for _, unsafe := range []*pgxpool.Pool{nil, f.owner, f.runtime} {
-		if err := platform.ValidateWorkerPool(ctx, unsafe); err == nil {
+		if err := platform.ValidateWorkerPool(ctx, unsafe, platform.WorkerClaims); err == nil {
 			t.Fatal("unsafe existing worker pool accepted")
 		}
 	}
@@ -123,17 +140,30 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 		unsafe.Close()
 		t.Fatal("worker admitted as merchant")
 	}
-	for _, roles := range []string{"commerce_worker,commerce_runtime", "commerce_worker,commerce_buyer_runtime", "commerce_worker,commerce_integration_writer"} {
+	// Mixed memberships: another business authority, another worker authority, or the empty legacy role.
+	for _, roles := range []string{waClaims + ",commerce_runtime", waClaims + ",commerce_buyer_runtime", waClaims + ",commerce_integration_writer",
+		waClaims + "," + waAds, waClaims + "," + waPayment, waClaims + "," + waLegacy} {
 		mixed, mixedPool := t06AuthorityLogin(t, roles)
-		if err := platform.ValidateWorkerPool(ctx, mixedPool); err == nil {
+		if err := platform.ValidateWorkerPool(ctx, mixedPool, platform.WorkerClaims); err == nil {
 			t.Fatalf("mixed existing worker pool accepted: %s", roles)
 		}
-		if unsafe, err := platform.OpenWorkerPool(ctx, mixed); err == nil {
+		if unsafe, err := platform.OpenWorkerPool(ctx, mixed, platform.WorkerClaims); err == nil {
 			unsafe.Close()
 			t.Fatalf("mixed worker accepted: %s", roles)
 		}
 	}
-	if unsafe, err := platform.OpenWorkerPool(ctx, f.databaseURL); err == nil {
+	// The legacy commerce_worker is empty: a login that only joins it matches no worker authority.
+	legacy, legacyPool := t06AuthorityLogin(t, waLegacy)
+	for _, a := range []platform.WorkerAuthority{platform.WorkerPayment, platform.WorkerPaymentLive, platform.WorkerExpiry, platform.WorkerAds, platform.WorkerClaims} {
+		if err := platform.ValidateWorkerPool(ctx, legacyPool, a); err == nil {
+			t.Fatalf("legacy commerce_worker login admitted as %s", a)
+		}
+		if unsafe, err := platform.OpenWorkerPool(ctx, legacy, a); err == nil {
+			unsafe.Close()
+			t.Fatalf("legacy commerce_worker login opened as %s", a)
+		}
+	}
+	if unsafe, err := platform.OpenWorkerPool(ctx, f.databaseURL, platform.WorkerClaims); err == nil {
 		unsafe.Close()
 		t.Fatal("owner admitted as worker")
 	}
@@ -163,66 +193,72 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	var safe bool
 	// Enumerate exact signatures, not just a count: an added overload must fail
 	// closed, and the shared private guard must never be callable by workers.
-	err = f.owner.QueryRow(ctx, `WITH approved(oid,worker_execute,owner,registrar_execute,runtime_execute,checkout_writer_execute,checkout_runtime_execute) AS (VALUES
-	 ('integration.claim_operation(uuid,integer,bytea)'::regprocedure::oid,true,'commerce_integration_writer',false,false,false,false),
-	 ('integration.complete_operation(uuid,bigint,bytea,text,text,text)'::regprocedure::oid,true,'commerce_integration_writer',false,false,false,false),
-	 ('integration.require_payment_query(uuid,bigint,bytea,text)'::regprocedure::oid,false,'commerce_integration_writer',false,false,false,false),
-	 ('integration.load_payment_query(uuid,bigint,bytea,text)'::regprocedure::oid,true,'commerce_integration_writer',false,false,false,false),
-	 ('integration.record_payment_query(uuid,bigint,bytea,text,jsonb,bigint)'::regprocedure::oid,true,'commerce_integration_writer',false,false,false,false),
-	 ('integration.finish_payment_query(uuid,bigint,bytea,text,text,text)'::regprocedure::oid,true,'commerce_integration_writer',false,false,false,false),
-	 ('integration.payment_job_queue(bigint)'::regprocedure::oid,false,'commerce_integration_writer',false,false,false,false),
-	 ('integration.route_payment_queue_v1()'::regprocedure::oid,false,'commerce_integration_writer',false,false,false,false),
-	 ('integration.payment_queue_ready()'::regprocedure::oid,true,'commerce_integration_writer',false,false,false,false),
-	 ('integration.guard_payment_job_family()'::regprocedure::oid,false,'commerce_integration_writer',false,false,false,false),
-	 ('integration.reject_legacy_family_job()'::regprocedure::oid,false,'commerce_integration_writer',false,false,false,false),
-	 ('integration.require_stripe_query(uuid,bigint,bytea,text)'::regprocedure::oid,false,'commerce_integration_writer',false,false,false,false),
-	 ('integration.load_stripe_credential(uuid,bigint,bytea,text)'::regprocedure::oid,true,'commerce_integration_writer',false,false,false,false),
-	 ('integration.load_stripe_session(uuid,bigint,bytea,text)'::regprocedure::oid,true,'commerce_integration_writer',false,false,false,false),
-	 ('integration.load_stripe_signal(uuid,bigint,bytea,text,bigint,uuid)'::regprocedure::oid,true,'commerce_integration_writer',false,false,false,false),
-	 ('integration.mark_stripe_create_sent(uuid,bigint,bytea,text,bytea)'::regprocedure::oid,true,'commerce_integration_writer',false,false,false,false),
-	 ('integration.note_stripe_expire(uuid,bigint,bytea,text)'::regprocedure::oid,true,'commerce_integration_writer',false,false,false,false),
-	 ('integration.record_stripe_observation(uuid,bigint,bytea,text,jsonb,bigint,text)'::regprocedure::oid,true,'commerce_integration_writer',false,false,false,false),
-	 ('integration.consume_stripe_signal(uuid,uuid,bigint,bytea,text,text)'::regprocedure::oid,true,'commerce_integration_writer',false,false,false,false),
-	 ('integration.finish_stripe_query(uuid,bigint,bytea,text,text)'::regprocedure::oid,true,'commerce_integration_writer',false,false,false,false),
-	 ('integration.require_stripe_registrar_scope(uuid,uuid,uuid)'::regprocedure::oid,false,'commerce_payment_registry_writer',false,false,false,false),
-	 ('integration.register_stripe_account(uuid,uuid,uuid,uuid,uuid,text,text,text,bytea,bytea)'::regprocedure::oid,false,'commerce_payment_registry_writer',true,false,false,false),
-	 ('integration.rotate_stripe_key(uuid,uuid,uuid,uuid,bigint,text,bytea,bytea)'::regprocedure::oid,false,'commerce_payment_registry_writer',true,false,false,false),
-	 ('integration.require_stripe_refund(uuid,bigint,bytea,text)'::regprocedure::oid,false,'commerce_integration_writer',false,false,false,false),
-	 ('integration.load_stripe_refund(uuid,bigint,bytea,text)'::regprocedure::oid,true,'commerce_integration_writer',false,false,false,false),
-	 ('integration.mark_stripe_refund_sent(uuid,bigint,bytea,text,bytea)'::regprocedure::oid,true,'commerce_integration_writer',false,false,false,false),
-	 ('integration.record_stripe_refund_observation(uuid,bigint,bytea,text,jsonb,bigint)'::regprocedure::oid,true,'commerce_integration_writer',false,false,false,false),
-	 ('integration.record_stripe_charge_observation(uuid,bigint,bytea,text,jsonb,bigint)'::regprocedure::oid,true,'commerce_integration_writer',false,false,false,false),
-	 ('integration.finish_stripe_refund(uuid,bigint,bytea,text,text)'::regprocedure::oid,true,'commerce_integration_writer',false,false,false,false),
+	err = f.owner.QueryRow(ctx, `WITH approved(oid,workers,owner,registrar_execute,runtime_execute,checkout_writer_execute,checkout_runtime_execute) AS (VALUES
+	 ('integration.claim_operation(uuid,integer,bytea)'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live','commerce_ads_worker','commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.complete_operation(uuid,bigint,bytea,text,text,text)'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live','commerce_ads_worker','commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.require_payment_query(uuid,bigint,bytea,text)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
+	 ('integration.load_payment_query(uuid,bigint,bytea,text)'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.record_payment_query(uuid,bigint,bytea,text,jsonb,bigint)'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.finish_payment_query(uuid,bigint,bytea,text,text,text)'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.payment_job_queue(bigint)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
+	 ('integration.route_payment_queue_v1()'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
+	 ('integration.payment_queue_ready()'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.guard_payment_job_family()'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
+	 ('integration.reject_legacy_family_job()'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
+	 ('integration.require_stripe_query(uuid,bigint,bytea,text)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
+	 ('integration.load_stripe_credential(uuid,bigint,bytea,text)'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.load_stripe_session(uuid,bigint,bytea,text)'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.load_stripe_signal(uuid,bigint,bytea,text,bigint,uuid)'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.mark_stripe_create_sent(uuid,bigint,bytea,text,bytea)'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.note_stripe_expire(uuid,bigint,bytea,text)'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.record_stripe_observation(uuid,bigint,bytea,text,jsonb,bigint,text)'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.consume_stripe_signal(uuid,uuid,bigint,bytea,text,text)'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.finish_stripe_query(uuid,bigint,bytea,text,text)'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.require_stripe_registrar_scope(uuid,uuid,uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_payment_registry_writer',false,false,false,false),
+	 ('integration.register_stripe_account(uuid,uuid,uuid,uuid,uuid,text,text,text,bytea,bytea)'::regprocedure::oid,ARRAY[]::text[],'commerce_payment_registry_writer',true,false,false,false),
+	 ('integration.rotate_stripe_key(uuid,uuid,uuid,uuid,bigint,text,bytea,bytea)'::regprocedure::oid,ARRAY[]::text[],'commerce_payment_registry_writer',true,false,false,false),
+	 ('integration.require_stripe_refund(uuid,bigint,bytea,text)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
+	 ('integration.load_stripe_refund(uuid,bigint,bytea,text)'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.mark_stripe_refund_sent(uuid,bigint,bytea,text,bytea)'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.record_stripe_refund_observation(uuid,bigint,bytea,text,jsonb,bigint)'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.record_stripe_charge_observation(uuid,bigint,bytea,text,jsonb,bigint)'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.finish_stripe_refund(uuid,bigint,bytea,text,text)'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live'],'commerce_integration_writer',false,false,false,false),
 	 -- meta-claims-intake-v1 (migration 0064 and post-River 0014): reply planning is intake-only, the Page-token
 	 -- loader is the dispatcher's only credential read, the registrar has its own role (not the payment registrar).
-	 ('integration.claim_reply_plannable(uuid)'::regprocedure::oid,false,'commerce_integration_writer',false,false,false,false),
-	 ('integration.plan_claim_reply(uuid,uuid,bytea,text,bigint)'::regprocedure::oid,false,'commerce_integration_writer',false,false,false,false),
-	 ('integration.load_meta_page_token(uuid,bigint,bytea)'::regprocedure::oid,true,'commerce_integration_writer',false,false,false,false),
-	 ('integration.register_meta_page_token(uuid,uuid,uuid,uuid,text,text,bigint,text,bytea,bytea,text[])'::regprocedure::oid,false,'commerce_integration_writer',false,false,false,false),
+	 ('integration.claim_reply_plannable(uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
+	 ('integration.plan_claim_reply(uuid,uuid,bytea,text,bigint)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
+	 ('integration.load_meta_page_token(uuid,bigint,bytea)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.register_meta_page_token(uuid,uuid,uuid,uuid,text,text,bigint,text,bytea,bytea,text[])'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
 	 -- R1 ruling F2 (migration 0066): the Meta registrar's binding definer, same owner/grant shape as the page-token one.
-	 ('integration.register_meta_binding(uuid,uuid,uuid,text,text)'::regprocedure::oid,false,'commerce_integration_writer',false,false,false,false),
-	 ('integration.guard_claims_intake_job()'::regprocedure::oid,false,'commerce_integration_writer',false,false,false,false),
-	 ('integration.guard_external_operation_job_link()'::regprocedure::oid,false,'commerce_integration_writer',false,false,false,false),
+	 ('integration.register_meta_binding(uuid,uuid,uuid,text,text)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
+	 ('integration.guard_claims_intake_job()'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
+	 ('integration.guard_external_operation_job_link()'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
 	 -- meta-ads-v1 (migration 0074, post-River 0015; unit ads-core): the ads token registrar is hash-authenticated and
 	 -- callable by the merchant runtime (runtime_execute), the loader is the dispatcher's only
 	 -- ads credential read, and the two River guards have no caller EXECUTE.
-	 ('integration.register_meta_ads_token(bytea,uuid,uuid,uuid,bigint)'::regprocedure::oid,false,'commerce_integration_writer',false,true,false,false),
-	 ('integration.load_meta_ads_token(uuid,bigint,bytea)'::regprocedure::oid,true,'commerce_integration_writer',false,false,false,false),
-	 ('integration.guard_ads_job()'::regprocedure::oid,false,'commerce_integration_writer',false,false,false,false),
-	 ('integration.guard_ads_job_link()'::regprocedure::oid,false,'commerce_integration_writer',false,false,false,false),
+	 ('integration.register_meta_ads_token(bytea,uuid,uuid,uuid,bigint)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
+	 ('integration.load_meta_ads_token(uuid,bigint,bytea)'::regprocedure::oid,ARRAY['commerce_ads_worker'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.guard_ads_job()'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
+	 ('integration.guard_ads_job_link()'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
 	 -- taiwan-cvs-logistics-v1 (migrations 0072/0073, unit cvs-core): +8 approved integration functions. Each declares its exact EXECUTE set; every other
 	 -- role stays refused by the equality below (the registrar, ingress and buyer roles never gain anything).
-	 ('integration.register_ecpay_logistics(bytea,uuid,text,bytea,bigint,text,text,text,text,bytea,bytea,boolean,text)'::regprocedure::oid,false,'commerce_integration_writer',false,true,false,false),
-	 ('integration.set_ecpay_logistics_enabled(bytea,uuid,text,bytea,bigint,boolean)'::regprocedure::oid,false,'commerce_integration_writer',false,true,false,false),
-	 ('integration.plan_cvs_create(uuid,uuid,uuid,smallint,uuid,uuid,uuid,bigint)'::regprocedure::oid,false,'commerce_integration_writer',false,false,true,false),
-	 ('integration.load_cvs_create(uuid,bigint,bytea,text)'::regprocedure::oid,true,'commerce_integration_writer',false,false,false,false),
-	 ('integration.finish_cvs_create(uuid,bigint,bytea,text,text,text,text,text,text,text)'::regprocedure::oid,true,'commerce_integration_writer',false,false,false,false),
-	 ('integration.load_ecpay_key_for_status(uuid)'::regprocedure::oid,false,'commerce_integration_writer',false,true,false,false),
-	 ('integration.load_ecpay_key_for_selection(uuid)'::regprocedure::oid,false,'commerce_integration_writer',false,true,false,true),
-	 ('integration.load_ecpay_key_for_merchant(bytea,uuid)'::regprocedure::oid,false,'commerce_integration_writer',false,true,false,false))
+	 ('integration.register_ecpay_logistics(bytea,uuid,text,bytea,bigint,text,text,text,text,bytea,bytea,boolean,text)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
+	 ('integration.set_ecpay_logistics_enabled(bytea,uuid,text,bytea,bigint,boolean)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
+	 ('integration.plan_cvs_create(uuid,uuid,uuid,smallint,uuid,uuid,uuid,bigint)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,true,false),
+	 ('integration.load_cvs_create(uuid,bigint,bytea,text)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.finish_cvs_create(uuid,bigint,bytea,text,text,text,text,text,text,text)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
+	 -- T21-02/03 (migration 0084): the lane classifier is evaluated by the four integration-reading workers inside their RLS
+	 -- policies; the two private gates run inside definers and have no caller EXECUTE.
+	 ('integration.operation_lane(text,text)'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live','commerce_ads_worker','commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.operation_authority_ok(text,text)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
+	 ('integration.profile_authority_ok(text)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
+	 ('integration.load_ecpay_key_for_status(uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
+	 ('integration.load_ecpay_key_for_selection(uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,true),
+	 ('integration.load_ecpay_key_for_merchant(bytea,uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false))
 	 SELECT count(*),bool_and(a.oid IS NOT NULL AND p.prosecdef AND p.proconfig = ARRAY['search_path=pg_catalog']
 	 AND pg_get_userbyid(p.proowner)=a.owner
-	 AND has_function_privilege('commerce_worker',p.oid,'EXECUTE')=a.worker_execute
+	 -- every worker authority holds EXACTLY the listed functions; the empty legacy commerce_worker none (T21-02)
+	 AND NOT EXISTS(SELECT 1 FROM unnest(ARRAY['commerce_payment_worker','commerce_payment_live','commerce_expiry_worker','commerce_ads_worker','commerce_claims_worker','commerce_worker']) r(name) WHERE has_function_privilege(r.name,p.oid,'EXECUTE') <> (r.name = ANY(a.workers)))
 	 AND has_function_privilege('commerce_payment_registrar',p.oid,'EXECUTE')=a.registrar_execute
 	 AND NOT has_function_privilege('commerce_stripe_ingress',p.oid,'EXECUTE')
 	 AND has_function_privilege('commerce_runtime',p.oid,'EXECUTE')=a.runtime_execute
@@ -234,7 +270,7 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 AND NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'))
 	 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 	 LEFT JOIN approved a ON a.oid=p.oid WHERE n.nspname='integration'`).Scan(&functions, &safe)
-	if err != nil || functions != 48 || !safe {
+	if err != nil || functions != 51 || !safe {
 		t.Fatalf("fixed function ACL: count=%d safe=%v err=%v", functions, safe, err)
 	}
 }
@@ -250,7 +286,8 @@ func TestPoolAuthorityCannotBeDisguisedWithStartupRole(t *testing.T) {
 		{"commerce_identity", platform.OpenIdentityPool},
 		{"commerce_buyer_runtime", platform.OpenBuyerPool},
 		{"commerce_buyer_issuer", platform.OpenBuyerIssuerPool},
-		{"commerce_worker", platform.OpenWorkerPool},
+		{waClaims, waOpener(platform.WorkerClaims)},
+		{waPayment, waOpener(platform.WorkerPayment)},
 	} {
 		t.Run(tc.role, func(t *testing.T) {
 			masked, err := url.Parse(f.databaseURL)
@@ -264,7 +301,7 @@ func TestPoolAuthorityCannotBeDisguisedWithStartupRole(t *testing.T) {
 				pool.Close()
 				t.Fatal("owner admitted under startup role")
 			}
-			if tc.role != "commerce_worker" {
+			if tc.role != waClaims && tc.role != waPayment {
 				return
 			}
 			// Independently prove the dangerous current_user/session_user split
@@ -275,7 +312,7 @@ func TestPoolAuthorityCannotBeDisguisedWithStartupRole(t *testing.T) {
 				t.Fatal("parse supplied fixture pool")
 			}
 			cfg.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
-				_, err := conn.Exec(ctx, `SET ROLE commerce_worker`)
+				_, err := conn.Exec(ctx, `SET ROLE `+tc.role)
 				return err
 			}
 			pool, err := pgxpool.NewWithConfig(ctx, cfg)
@@ -291,7 +328,7 @@ func TestPoolAuthorityCannotBeDisguisedWithStartupRole(t *testing.T) {
 			if same || role != tc.role {
 				t.Fatal("fixture did not disguise owner")
 			}
-			if err := platform.ValidateWorkerPool(ctx, pool); err == nil {
+			if err := platform.ValidateWorkerPool(ctx, pool, platform.WorkerClaims, platform.WorkerPayment); err == nil {
 				t.Fatal("supplied owner pool admitted under SET ROLE")
 			}
 			if err := pool.Ping(ctx); err != nil {
@@ -302,7 +339,7 @@ func TestPoolAuthorityCannotBeDisguisedWithStartupRole(t *testing.T) {
 }
 
 func TestT06PolicyOutcomeCannotErasePossibleRemoteEffect(t *testing.T) {
-	_, pool := t06AuthorityLogin(t, "commerce_worker")
+	_, pool := t06AuthorityLogin(t, waClaims)
 	ctx := context.Background()
 	id, _ := t06AuthorityOperation(t)
 	token := []byte(strings.Repeat("p", 32))
@@ -339,7 +376,7 @@ func TestT06PolicyOutcomeCannotErasePossibleRemoteEffect(t *testing.T) {
 func TestT06SQLLeaseOwnershipExpiryAndNoRedispatch(t *testing.T) {
 	f := fixture(t)
 	ctx := context.Background()
-	_, p := t06AuthorityLogin(t, "commerce_worker")
+	_, p := t06AuthorityLogin(t, waClaims)
 	id, _ := t06AuthorityOperation(t)
 	a, b := randomBytes(32), randomBytes(32)
 	c := t06AuthorityTake(t, p, id, a)
@@ -394,7 +431,7 @@ func TestT06SQLLeaseOwnershipExpiryAndNoRedispatch(t *testing.T) {
 func TestT06SQLConcurrentClaimAndBindingOutcomeFacts(t *testing.T) {
 	f := fixture(t)
 	ctx := context.Background()
-	_, p := t06AuthorityLogin(t, "commerce_worker")
+	_, p := t06AuthorityLogin(t, waClaims)
 	id, binding := t06AuthorityOperation(t)
 	tokens := [][]byte{randomBytes(32), randomBytes(32)}
 	results := make([]t06AuthorityClaim, 2)
@@ -469,7 +506,7 @@ func TestT06SQLConcurrentClaimAndBindingOutcomeFacts(t *testing.T) {
 func TestT06SQLEventFailureRollsBackClaimAndCompletion(t *testing.T) {
 	f := fixture(t)
 	ctx := context.Background()
-	_, p := t06AuthorityLogin(t, "commerce_worker")
+	_, p := t06AuthorityLogin(t, waClaims)
 	id, _ := t06AuthorityOperation(t)
 	token := randomBytes(32)
 	name := "t06_block_" + strings.ReplaceAll(randomUUID(), "-", "")
@@ -528,7 +565,7 @@ func (w *t06AuthorityWorker) Work(ctx context.Context, job *river.Job[t06Authori
 
 func TestT06OrdinaryWorkerStartsProcessesAndStops(t *testing.T) {
 	ctx := context.Background()
-	_, pool := t06AuthorityLogin(t, "commerce_worker")
+	_, pool := t06AuthorityLogin(t, waClaims)
 	queue := "t06_" + strings.ReplaceAll(randomUUID(), "-", "")
 	seen := make(chan int64, 2)
 	workers := river.NewWorkers()

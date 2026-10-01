@@ -39,7 +39,7 @@ func NewExpiryWorker(ctx context.Context, workerPool *pgxpool.Pool) (*ExpiryWork
 	if ctx == nil {
 		return nil, command.ErrInvalid
 	}
-	if err := platform.ValidateWorkerPool(ctx, workerPool); err != nil {
+	if err := platform.ValidateWorkerPool(ctx, workerPool, platform.WorkerExpiry); err != nil {
 		return nil, err
 	}
 	return &ExpiryWorker{pool: workerPool}, nil

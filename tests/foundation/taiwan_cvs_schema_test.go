@@ -208,7 +208,7 @@ type tcsFn struct {
 
 func tcsFunctions() []tcsFn {
 	const cw, iw = "commerce_checkout_writer", "commerce_integration_writer"
-	const rt, cr, wk = "commerce_runtime", "commerce_checkout_runtime", "commerce_worker"
+	const rt, cr, wk = "commerce_runtime", "commerce_checkout_runtime", waClaims // T21-02: the CVS create loaders belong to the claims worker only
 	return []tcsFn{
 		{"integration", "register_ecpay_logistics", iw, true, []string{rt}, false},
 		{"integration", "set_ecpay_logistics_enabled", iw, true, []string{rt}, false},
@@ -218,7 +218,7 @@ func tcsFunctions() []tcsFn {
 		{"fulfillment", "read_cvs_selection", cw, true, []string{cr}, false},
 		// contract 4.3 lists runtime, checkout_writer, worker; load_cvs_create (owner commerce_integration_writer) calls it, so that owner
 		// needs EXECUTE too: recorded as a contract gap, accepted here.
-		{"fulfillment", "ecpay_recipient_ok", "", false, []string{rt, cw, wk, iw}, false},
+		{"fulfillment", "ecpay_recipient_ok", "", false, []string{rt, cw, iw}, false}, // no worker: no Go caller and no fulfillment schema USAGE (0084 revoked the old commerce_worker grant)
 		{"fulfillment", "request_cvs_shipment", cw, true, []string{rt}, false},
 		{"integration", "plan_cvs_create", iw, true, []string{cw}, false},
 		{"fulfillment", "read_cvs_shipment_command", cw, true, []string{rt}, false},
@@ -695,7 +695,7 @@ func TestTaiwanCvsSchema(t *testing.T) {
 
 	t.Run("grant matrix and policies (one negative per role)", func(t *testing.T) {
 		const cw, iw, au = "commerce_checkout_writer", "commerce_integration_writer", "commerce_auth"
-		blind := []string{"commerce_runtime", "commerce_worker", "commerce_buyer_runtime", "commerce_buyer_issuer", "commerce_checkout_runtime"}
+		blind := []string{"commerce_runtime", waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_buyer_runtime", "commerce_buyer_issuer", "commerce_checkout_runtime"}
 		for _, tbl := range newTables {
 			for _, r := range blind {
 				for _, p := range []string{"SELECT", "INSERT", "UPDATE", "DELETE", "TRUNCATE", "REFERENCES", "TRIGGER"} {
@@ -781,7 +781,7 @@ func TestTaiwanCvsSchema(t *testing.T) {
 		}
 		// no policy of the new tables grants a role the contract keeps out
 		if n := countRows(t, f.owner, `SELECT count(*) FROM pg_policies WHERE schemaname IN ('fulfillment','integration') AND tablename IN ('cvs_selections','cvs_shipments','cvs_shipment_events','cvs_store_settings','ecpay_logistics_profiles')
-		   AND roles && ARRAY['commerce_runtime','commerce_worker','commerce_buyer_runtime','commerce_buyer_issuer','commerce_checkout_runtime','public']::name[]`); n != 0 {
+		   AND roles && ARRAY['commerce_runtime','commerce_worker','commerce_payment_worker','commerce_payment_live','commerce_expiry_worker','commerce_ads_worker','commerce_claims_worker','commerce_buyer_runtime','commerce_buyer_issuer','commerce_checkout_runtime','public']::name[]`); n != 0 {
 			t.Errorf("%d policies on the new tables target runtime/worker/buyer roles or PUBLIC", n)
 		}
 	})

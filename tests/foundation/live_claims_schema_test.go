@@ -310,7 +310,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			FROM pg_namespace n CROSS JOIN LATERAL aclexplode(n.nspacl) a WHERE n.nspname='claims' AND a.grantee<>n.nspowner`),
 			[]string{"commerce_buyer_runtime USAGE", "commerce_claims_writer USAGE", "commerce_runtime USAGE",
 				// meta-claims-intake-v1 §4.3 schema USAGE rows
-				"commerce_claims_intake USAGE", "commerce_integration_writer USAGE", "commerce_meta_writer USAGE", "commerce_worker USAGE",
+				"commerce_claims_intake USAGE", "commerce_integration_writer USAGE", "commerce_meta_writer USAGE", "commerce_claims_worker USAGE",
 				// customers-billing-v1 §3.1 (0078): the customer projection and the privacy writer read/relabel bound bundles
 				"commerce_auth USAGE", "commerce_privacy_writer USAGE",
 				// claims-retention-purge-v1 §4 schema USAGE rows
@@ -363,7 +363,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			"lease_meta_intake": {args: "", result: "SETOF claims.meta_intake", volatility: "v", acl: "commerce_claims_intake:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_claims_intake"},
 			"fail_meta_intake":  {args: "p_intake uuid, p_code text, p_final boolean", result: "void", volatility: "v", acl: "commerce_claims_intake:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_claims_intake"},
 			"issue_system_link": {args: "p_intake uuid, p_hash bytea", result: "timestamp with time zone", volatility: "v", acl: "commerce_claims_writer:EXECUTE,commerce_integration_writer:EXECUTE", caller: "commerce_integration_writer"},
-			"check_meta_reply":  {args: "p_operation uuid, p_hash bytea", result: "text", volatility: "s", acl: "commerce_claims_writer:EXECUTE,commerce_worker:EXECUTE", caller: "commerce_worker"},
+			"check_meta_reply":  {args: "p_operation uuid, p_hash bytea", result: "text", volatility: "s", acl: "commerce_claims_worker:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_claims_worker"},
 		}
 		rows, err := f.owner.Query(ctx, `SELECT p.proname::text,pg_get_function_identity_arguments(p.oid),pg_get_function_result(p.oid),p.prosecdef,pg_get_userbyid(p.proowner)::text,
 			coalesce(array_to_string(p.proconfig,','),''),p.provolatile::text,coalesce(obj_description(p.oid,'pg_proc'),''),
@@ -419,7 +419,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			       OR (r.rolname='commerce_claims_intake' AND p.proname IN ('intake_scope','lease_meta_intake','fail_meta_intake'))
 			       OR (r.rolname='commerce_integration_writer' AND p.proname IN ('intake_scope','issue_system_link'))
 			       OR (r.rolname='commerce_meta_writer' AND p.proname='insert_meta_intake')
-			       OR (r.rolname='commerce_worker' AND p.proname='check_meta_reply')
+			       OR (r.rolname='commerce_claims_worker' AND p.proname='check_meta_reply')
 			       -- claims-retention-purge-v1 §4: owner, job and operator rows (§6 clause 1)
 			       OR (r.rolname='commerce_retention_writer' AND p.proname IN ('run_retention','erase_actor','apply_actor_erasure','set_retention_policy','retention_status','replay_actor_erasures','links_not_purged'))
 			       OR (r.rolname='commerce_retention_job' AND p.proname IN ('run_retention','retention_status'))
@@ -688,7 +688,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 
 	t.Run("foreign-roles-denied", func(t *testing.T) {
 		roles := []string{"commerce_buyer_runtime", "commerce_buyer_issuer", "commerce_buyer_writer", "commerce_identity", "commerce_identity_writer", "commerce_auth",
-			"commerce_worker", "commerce_checkout_runtime", "commerce_checkout_writer", "commerce_hosted_runtime", "commerce_integration_writer", "commerce_inventory_writer",
+			waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_checkout_runtime", "commerce_checkout_writer", "commerce_hosted_runtime", "commerce_integration_writer", "commerce_inventory_writer",
 			"commerce_meta_ingress", "commerce_meta_registrar", "commerce_meta_curator", "commerce_meta_consumer", "commerce_meta_writer", "commerce_meta_worker",
 			"commerce_media_registrar", "commerce_media_writer", "commerce_media_worker", "commerce_media_executor", "commerce_media_recovery"}
 		for _, role := range roles {
@@ -896,6 +896,8 @@ func lcPopulatedUpgrade(t *testing.T) {
 	dependents := []string{"0064_meta_claims_intake.sql", "0074_meta_ads.sql", "0075_meta_ads_insights.sql",
 		"0078_customers_privacy.sql", "0079_platform_billing.sql", "0080_meta_capi.sql",
 		"post_river/0014_meta_claims_intake_river.sql", "post_river/0015_meta_ads_river.sql",
+		// 0084 (+ post-River 0018, worker-authority-split) move claims/ads/payment grants, so they need every file above.
+		"0084_worker_authorities.sql", "post_river/0018_worker_authorities.sql",
 		// 0071 (claims-retention-purge-v1) requires 0060+0064 (55000 precondition), so it is held back as well.
 		"0071_claims_retention.sql"}
 	for _, version := range dependents {
@@ -905,6 +907,7 @@ func lcPopulatedUpgrade(t *testing.T) {
 		}
 		mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES($1,$2)`, version, fmt.Sprintf("%x", sha256.Sum256(dependent)))
 	}
+	waPrecreateRoles(t, owner) // 0084 is held back above, but the current Apply's River grants name its roles
 	if err := migrations.Apply(ctx, owner); err != nil {
 		t.Fatalf("apply everything before 0060: %v", err)
 	}

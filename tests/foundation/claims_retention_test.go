@@ -3042,7 +3042,11 @@ var crValidators = []struct {
 	name, role string
 	validate   func(context.Context, *pgxpool.Pool) error
 }{
-	{"worker", "commerce_worker", platform.ValidateWorkerPool},
+	{"payment worker", waPayment, waValidator(platform.WorkerPayment)},
+	{"payment live worker", waLive, waValidator(platform.WorkerPaymentLive)},
+	{"expiry worker", waExpiry, waValidator(platform.WorkerExpiry)},
+	{"ads worker", waAds, waValidator(platform.WorkerAds)},
+	{"claims worker", waClaims, waValidator(platform.WorkerClaims)},
 	{"checkout", "commerce_checkout_runtime", platform.ValidateCheckoutPool},
 	{"buyer", "commerce_buyer_runtime", platform.ValidateBuyerPool},
 	{"buyer issuer", "commerce_buyer_issuer", platform.ValidateBuyerIssuerPool},
@@ -3222,7 +3226,12 @@ func TestClaimsRetentionCRP02Schema(t *testing.T) {
 		}
 		jobRejects := []poolCase{
 			{"job + operator (two retention authorities)", mixed(false, "commerce_retention_job", "commerce_retention_operator")},
-			{"job + worker", mixed(false, "commerce_retention_job", "commerce_worker")},
+			{"job + payment worker", mixed(false, "commerce_retention_job", waPayment)},
+			{"job + payment live worker", mixed(false, "commerce_retention_job", waLive)},
+			{"job + expiry worker", mixed(false, "commerce_retention_job", waExpiry)},
+			{"job + ads worker", mixed(false, "commerce_retention_job", waAds)},
+			{"job + claims worker", mixed(false, "commerce_retention_job", waClaims)},
+			{"job + legacy worker", mixed(false, "commerce_retention_job", waLegacy)},
 			{"job + runtime", mixed(false, "commerce_retention_job", "commerce_runtime")},
 			{"job + claims intake", mixed(false, "commerce_retention_job", "commerce_claims_intake")},
 			{"job + meta consumer", mixed(false, "commerce_retention_job", "commerce_meta_consumer")},
@@ -3231,7 +3240,12 @@ func TestClaimsRetentionCRP02Schema(t *testing.T) {
 			{"job with SET ROLE", mixed(true, "commerce_retention_job")},
 			{"definer owner alone", mixed(false, "commerce_retention_writer")},
 			{"definer owner with SET", mixed(true, "commerce_retention_writer")},
-			{"another authority (worker)", mixed(false, "commerce_worker")},
+			{"another authority (payment worker)", mixed(false, waPayment)},
+			{"another authority (payment live worker)", mixed(false, waLive)},
+			{"another authority (expiry worker)", mixed(false, waExpiry)},
+			{"another authority (ads worker)", mixed(false, waAds)},
+			{"another authority (claims worker)", mixed(false, waClaims)},
+			{"another authority (legacy worker)", mixed(false, waLegacy)},
 			{"the runtime pool", shared(f.runtime)},
 			{"the owner pool", shared(f.owner)},
 		}
@@ -3244,13 +3258,23 @@ func TestClaimsRetentionCRP02Schema(t *testing.T) {
 		}
 		operatorRejects := []poolCase{
 			{"operator + job", mixed(false, "commerce_retention_operator", "commerce_retention_job")},
-			{"operator + worker", mixed(false, "commerce_retention_operator", "commerce_worker")},
+			{"operator + payment worker", mixed(false, "commerce_retention_operator", waPayment)},
+			{"operator + payment live worker", mixed(false, "commerce_retention_operator", waLive)},
+			{"operator + expiry worker", mixed(false, "commerce_retention_operator", waExpiry)},
+			{"operator + ads worker", mixed(false, "commerce_retention_operator", waAds)},
+			{"operator + claims worker", mixed(false, "commerce_retention_operator", waClaims)},
+			{"operator + legacy worker", mixed(false, "commerce_retention_operator", waLegacy)},
 			{"operator + runtime", mixed(false, "commerce_retention_operator", "commerce_runtime")},
 			{"operator + meta worker", mixed(false, "commerce_retention_operator", "commerce_meta_worker")},
 			{"operator + definer owner", mixed(false, "commerce_retention_operator", "commerce_retention_writer")},
 			{"operator with SET ROLE", mixed(true, "commerce_retention_operator")},
 			{"definer owner alone", mixed(false, "commerce_retention_writer")},
-			{"another authority (worker)", mixed(false, "commerce_worker")},
+			{"another authority (payment worker)", mixed(false, waPayment)},
+			{"another authority (payment live worker)", mixed(false, waLive)},
+			{"another authority (expiry worker)", mixed(false, waExpiry)},
+			{"another authority (ads worker)", mixed(false, waAds)},
+			{"another authority (claims worker)", mixed(false, waClaims)},
+			{"another authority (legacy worker)", mixed(false, waLegacy)},
 			{"the runtime pool", shared(f.runtime)},
 			{"the owner pool", shared(f.owner)},
 		}

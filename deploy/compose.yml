@@ -443,7 +443,7 @@ services:
     environment:
       COMMERCE_CLAIMS_WORKER_ENABLED: "1"
       # Two logins, two authorities, one database: intake (claims apply + reply planning) and the
-      # main-schema external_operation_v1 dispatcher (commerce_worker).
+      # main-schema external_operation_v1 dispatcher (commerce_claims_worker).
       COMMERCE_CLAIMS_INTAKE_DATABASE_URL_FILE: /run/secrets/dsn_lc_claims_intake
       COMMERCE_WORKER_DATABASE_URL_FILE: /run/secrets/dsn_lc_claims_worker
       # U08 hourly retention purge on its own login (lc_retention_job); the operator login is never deployed.
@@ -476,7 +476,7 @@ services:
     depends_on: *after-db
     env_file: ["${LC_ENV_DIR:?set LC_ENV_DIR}/ads-worker.env"]   # COMMERCE_META_ADS_GRAPH_VERSION, COMMERCE_META_ADS_PARTNER_AGENT
     environment:
-      COMMERCE_ADS_WORKER_DATABASE_URL_FILE: /run/secrets/dsn_lc_ads_worker     # commerce_worker login (logins.tsv lc_ads_worker)
+      COMMERCE_ADS_WORKER_DATABASE_URL_FILE: /run/secrets/dsn_lc_ads_worker     # commerce_ads_worker login (logins.tsv lc_ads_worker)
       COMMERCE_META_ADS_TOKEN_HPKE_PRIVATE_KEYS_FILE: /run/secrets/commerce_meta_ads_hpke_private_keys_json
       COMMERCE_CAPI_EXTERNAL_ID_KEY_FILE: /run/secrets/commerce_capi_external_id_key   # C3 (ads-capi), ads-worker only
       GOMEMLIMIT: 200MiB

@@ -3,7 +3,7 @@
 //
 // It never edits or reorders an applied migration (a checksum mismatch stops the run), never runs
 // down-migrations, and never runs from the API or a worker: cmd/migrate is its only production
-// caller. Numbering: the current release branch owns 0060-0079; only the integrator merges
+// caller. Numbering: the current release branch owns 0060-0079 (0084 is integrator-assigned to worker-authority-split); only the integrator merges
 // migrations.
 package migrations
 
@@ -129,10 +129,17 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 	// River's ordinary worker login needs queue lifecycle/leader/client tables,
 	// but receives no identity or commerce authority. Reapply after upstream
 	// upgrades so only the actual River schema is covered (no default privileges).
-	if _, err = lockConn.Exec(ctx, `GRANT USAGE ON SCHEMA river TO commerce_worker;
-		GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river TO commerce_worker;
-		REVOKE ALL ON river.river_migration FROM commerce_worker;
-		GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river TO commerce_worker`); err != nil {
+	// T21-02: only the two workers that run a client on the main schema (claims-worker's default
+	// lane, ads-worker's queue ads) hold it; commerce_worker is an empty legacy role, so every
+	// Apply also strips whatever an older release granted it on the three legacy schemas
+	// (post_river/0018 then asserts it holds nothing).
+	if _, err = lockConn.Exec(ctx, `REVOKE ALL ON ALL TABLES IN SCHEMA river,river_payment,river_expiry FROM commerce_worker;
+		REVOKE ALL ON ALL SEQUENCES IN SCHEMA river,river_payment,river_expiry FROM commerce_worker;
+		REVOKE ALL ON SCHEMA river,river_payment,river_expiry FROM commerce_worker;
+		GRANT USAGE ON SCHEMA river TO commerce_claims_worker,commerce_ads_worker;
+		GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river TO commerce_claims_worker,commerce_ads_worker;
+		REVOKE ALL ON river.river_migration FROM commerce_claims_worker,commerce_ads_worker;
+		GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river TO commerce_claims_worker,commerce_ads_worker`); err != nil {
 		return err
 	}
 	// Application-owned River routing depends on upstream tables. Keep its
@@ -175,17 +182,22 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 		GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river_meta TO commerce_meta_worker`); err != nil {
 		return err
 	}
-	// Ordinary workers deliberately share SQL authority across legacy families;
-	// fixed schemas isolate native maintenance, not a compromised principal.
+	// Native family schemas isolate River maintenance; since T21-02 the SQL authority is split too:
+	// river_payment only for the two payment authorities (SANDBOX and LIVE), river_expiry only for the
+	// expiry worker, so a compromised ads/claims/expiry worker holds no payment queue privilege.
 	if _, err = postTx.Exec(ctx, `REVOKE ALL ON river.river_job FROM commerce_checkout_runtime,commerce_checkout_writer;
 		REVOKE UPDATE(kind) ON river.river_job FROM commerce_checkout_runtime;
 		REVOKE UPDATE(queue) ON river.river_job FROM commerce_checkout_writer;
 		REVOKE ALL ON river.river_job_id_seq FROM commerce_checkout_runtime;
 		REVOKE ALL ON SCHEMA river FROM commerce_checkout_runtime,commerce_checkout_writer;
-		GRANT USAGE ON SCHEMA river_payment,river_expiry TO commerce_worker;
-		GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river_payment,river_expiry TO commerce_worker;
-		REVOKE ALL ON river_payment.river_migration,river_expiry.river_migration FROM commerce_worker;
-		GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river_payment,river_expiry TO commerce_worker`); err != nil {
+		GRANT USAGE ON SCHEMA river_payment TO commerce_payment_worker,commerce_payment_live;
+		GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river_payment TO commerce_payment_worker,commerce_payment_live;
+		REVOKE ALL ON river_payment.river_migration FROM commerce_payment_worker,commerce_payment_live;
+		GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river_payment TO commerce_payment_worker,commerce_payment_live;
+		GRANT USAGE ON SCHEMA river_expiry TO commerce_expiry_worker;
+		GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river_expiry TO commerce_expiry_worker;
+		REVOKE ALL ON river_expiry.river_migration FROM commerce_expiry_worker;
+		GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river_expiry TO commerce_expiry_worker`); err != nil {
 		return err
 	}
 	return postTx.Commit(ctx)

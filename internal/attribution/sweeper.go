@@ -17,7 +17,7 @@ import (
 // each CAPTURED payment attempt that passed consent, environment and freshness rules, and purges stale browser contexts.
 // It plans only: the dispatcher (cmd/ads-worker) sends, and an UNKNOWN send is never re-planned (ads.capi_events is one
 // row per attempt, ever), because Meta documents no server-to-server dedup (F15) and a resend could double-count a sale.
-// SQL touched (EXECUTE commerce_worker): ads.plan_capi_candidates, ads.plan_capi_eligible, ads.plan_capi, ads.plan_capi_purge.
+// SQL touched (EXECUTE commerce_ads_worker): ads.plan_capi_candidates, ads.plan_capi_eligible, ads.plan_capi, ads.plan_capi_purge.
 // River: inserts the external_operation_v1 job on queue ads priority 3 (core.InsertOperationJobOn; post_river/0015 admits it).
 
 const (
@@ -43,7 +43,7 @@ func PeriodicJobs() []*river.PeriodicJob {
 		&river.PeriodicJobOpts{ID: kindSweep, RunOnStart: true})}
 }
 
-// AddWorkers registers the sweeper on w over the commerce_worker pool (also deletes stale capi_contexts).
+// AddWorkers registers the sweeper on w over the commerce_ads_worker pool (also deletes stale capi_contexts).
 func AddWorkers(w *river.Workers, pool *pgxpool.Pool) error {
 	if w == nil || pool == nil {
 		return command.ErrInvalid

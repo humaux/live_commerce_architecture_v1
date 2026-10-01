@@ -60,7 +60,7 @@ var (
 	taipei = time.FixedZone("Asia/Taipei", 8*3600)
 )
 
-// Routes returns the single ECPay CVS route. workerPool must be the commerce_worker pool
+// Routes returns the single ECPay CVS route. workerPool must be the commerce_claims_worker pool
 // (platform.ValidateWorkerPool): the dispatcher hands LoadSecret and Finish their own transactions, so
 // the pool is only validated here, which stops the route from being wired with an owner or mixed-role
 // pool. keys and client must be non-nil; the client's environment must be the deployment's.
@@ -68,7 +68,7 @@ func Routes(workerPool *pgxpool.Pool, keys *ecpay.Keyring, client *ecpay.Client,
 	if workerPool == nil || keys == nil || client == nil {
 		return nil, errConfig
 	}
-	if err := platform.ValidateWorkerPool(context.Background(), workerPool); err != nil {
+	if err := platform.ValidateWorkerPool(context.Background(), workerPool, platform.WorkerClaims); err != nil {
 		return nil, err
 	}
 	return newRoutes(keys, client, cfg)
@@ -171,7 +171,7 @@ func (a *adapter) loadSecret(ctx context.Context, tx pgx.Tx, claim core.SecretCl
 
 func (a *adapter) load(ctx context.Context, q queryRower, claim core.SecretClaim) (core.Secret, error) {
 	var l loadedShipment
-	// integration.load_cvs_create: lease-fenced, frozen credential version (§4.3); commerce_worker EXECUTE only.
+	// integration.load_cvs_create: lease-fenced, frozen credential version (§4.3); commerce_claims_worker EXECUTE only.
 	err := q.QueryRow(ctx, loadSQL, claim.OperationID, claim.Generation, claim.LeaseToken, claim.Mode).Scan(
 		&l.tenant, &l.store, &l.connection, &l.environment, &l.version, &l.merchantID, &l.keyID, &l.nonce, &l.ciphertext,
 		&l.endpoint, &l.subType, &l.receiverStore, &l.tradeNo, &l.tradeDate, &l.goods, &l.collection,

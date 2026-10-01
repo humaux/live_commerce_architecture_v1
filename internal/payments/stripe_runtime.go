@@ -98,7 +98,7 @@ func NewLiveStripeRuntime(ctx context.Context, pool *pgxpool.Pool, keys *account
 
 func newStripeRuntime(ctx context.Context, pool *pgxpool.Pool, keys *accounts.Keyring, profile string,
 	transport http.RoundTripper, live stripe.LiveApproval) (*StripeRuntime, error) {
-	if err := platform.ValidateWorkerPool(ctx, pool); err != nil {
+	if err := platform.ValidateWorkerPool(ctx, pool, WorkerAuthority(profile)); err != nil {
 		return nil, errStripeRuntimeDatabase
 	}
 	bounded, cancel := context.WithTimeout(ctx, 5*time.Second)

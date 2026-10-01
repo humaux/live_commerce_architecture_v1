@@ -206,7 +206,7 @@ func TestStripeRF03Schema(t *testing.T) {
 		for _, table := range []string{"payments.stripe_refunds", "payments.refund_facts"} {
 			srsMust(t, e, table+" FORCE RLS", `SELECT coalesce((SELECT relrowsecurity AND relforcerowsecurity FROM pg_class WHERE oid=to_regclass($1)),false)`, table)
 			srsMust(t, e, table+" refused to PUBLIC", `SELECT NOT EXISTS (SELECT 1 FROM pg_class c CROSS JOIN LATERAL aclexplode(COALESCE(c.relacl,acldefault('r',c.relowner))) acl WHERE c.oid=to_regclass($1) AND acl.grantee=0)`, table)
-			for _, role := range []string{"commerce_runtime", "commerce_worker", "commerce_checkout_runtime", "commerce_stripe_ingress"} {
+			for _, role := range []string{"commerce_runtime", waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_checkout_runtime", "commerce_stripe_ingress"} {
 				for _, p := range []string{"SELECT", "INSERT", "UPDATE", "DELETE"} {
 					srsPriv(t, e, role, table, p, false)
 				}
@@ -353,19 +353,19 @@ func TestStripeRF03Schema(t *testing.T) {
 			exec, deny []string
 		}
 		for _, f := range []fn{
-			{"payments.request_stripe_refund(bytea,uuid,uuid,text,bytea,bigint,text,bigint,uuid,bigint)", "commerce_checkout_writer", []string{"commerce_runtime"}, []string{"commerce_worker", "commerce_checkout_runtime"}},
-			{"payments.request_stripe_refund_refresh(bytea,uuid,uuid,uuid,uuid,bigint)", "commerce_checkout_writer", []string{"commerce_runtime"}, []string{"commerce_worker", "commerce_checkout_runtime"}},
-			{"integration.require_stripe_refund(uuid,bigint,bytea,text)", "commerce_integration_writer", nil, []string{"commerce_runtime", "commerce_worker"}},
-			{"integration.load_stripe_refund(uuid,bigint,bytea,text)", "commerce_integration_writer", []string{"commerce_worker"}, []string{"commerce_runtime", "commerce_checkout_runtime"}},
-			{"integration.mark_stripe_refund_sent(uuid,bigint,bytea,text,bytea)", "commerce_integration_writer", []string{"commerce_worker"}, []string{"commerce_runtime"}},
-			{"integration.record_stripe_refund_observation(uuid,bigint,bytea,text,jsonb,bigint)", "commerce_integration_writer", []string{"commerce_worker"}, []string{"commerce_runtime"}},
-			{"integration.record_stripe_charge_observation(uuid,bigint,bytea,text,jsonb,bigint)", "commerce_integration_writer", []string{"commerce_worker"}, []string{"commerce_runtime"}},
-			{"integration.finish_stripe_refund(uuid,bigint,bytea,text,text)", "commerce_integration_writer", []string{"commerce_worker"}, []string{"commerce_runtime"}},
-			{"payments.apply_stripe_refund(uuid,bytea)", "commerce_checkout_writer", nil, []string{"commerce_worker", "commerce_runtime"}},
-			{"payments.apply_stripe_charge(uuid,bytea)", "commerce_checkout_writer", nil, []string{"commerce_worker", "commerce_runtime"}},
-			{"payments.apply_stripe_observation(uuid,bytea)", "commerce_checkout_writer", nil, []string{"commerce_worker", "commerce_runtime"}},
-			{"payments.apply_capture(uuid,bytea)", "commerce_checkout_writer", []string{"commerce_worker"}, []string{"commerce_runtime"}},
-			{"identity.read_merchant_refunds(bytea,uuid,uuid)", "commerce_auth", []string{"commerce_runtime"}, []string{"commerce_worker"}},
+			{"payments.request_stripe_refund(bytea,uuid,uuid,text,bytea,bigint,text,bigint,uuid,bigint)", "commerce_checkout_writer", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_checkout_runtime"}},
+			{"payments.request_stripe_refund_refresh(bytea,uuid,uuid,uuid,uuid,bigint)", "commerce_checkout_writer", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_checkout_runtime"}},
+			{"integration.require_stripe_refund(uuid,bigint,bytea,text)", "commerce_integration_writer", nil, []string{"commerce_runtime", waPayment, waLive, waExpiry, waAds, waClaims, waLegacy}},
+			{"integration.load_stripe_refund(uuid,bigint,bytea,text)", "commerce_integration_writer", []string{waPayment, waLive}, []string{"commerce_runtime", "commerce_checkout_runtime", waExpiry, waAds, waClaims, waLegacy}},
+			{"integration.mark_stripe_refund_sent(uuid,bigint,bytea,text,bytea)", "commerce_integration_writer", []string{waPayment, waLive}, []string{"commerce_runtime", waExpiry, waAds, waClaims, waLegacy}},
+			{"integration.record_stripe_refund_observation(uuid,bigint,bytea,text,jsonb,bigint)", "commerce_integration_writer", []string{waPayment, waLive}, []string{"commerce_runtime", waExpiry, waAds, waClaims, waLegacy}},
+			{"integration.record_stripe_charge_observation(uuid,bigint,bytea,text,jsonb,bigint)", "commerce_integration_writer", []string{waPayment, waLive}, []string{"commerce_runtime", waExpiry, waAds, waClaims, waLegacy}},
+			{"integration.finish_stripe_refund(uuid,bigint,bytea,text,text)", "commerce_integration_writer", []string{waPayment, waLive}, []string{"commerce_runtime", waExpiry, waAds, waClaims, waLegacy}},
+			{"payments.apply_stripe_refund(uuid,bytea)", "commerce_checkout_writer", nil, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_runtime"}},
+			{"payments.apply_stripe_charge(uuid,bytea)", "commerce_checkout_writer", nil, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_runtime"}},
+			{"payments.apply_stripe_observation(uuid,bytea)", "commerce_checkout_writer", nil, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_runtime"}},
+			{"payments.apply_capture(uuid,bytea)", "commerce_checkout_writer", []string{waPayment, waLive}, []string{"commerce_runtime", waExpiry, waAds, waClaims, waLegacy}},
+			{"identity.read_merchant_refunds(bytea,uuid,uuid)", "commerce_auth", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy}},
 		} {
 			var ownerName string
 			var definer, fixed, publicExec bool

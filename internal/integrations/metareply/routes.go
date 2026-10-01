@@ -82,13 +82,13 @@ const GraphHost = graphHost
 type checkFunc func(ctx context.Context, operationID string, linkHash []byte) (string, error)
 
 // Routes returns the two dispatcher routes (facebook and instagram, meta.private_reply, service).
-// checkPool must be the commerce_worker pool (platform.ValidateWorkerPool) and is used for one
+// checkPool must be the commerce_claims_worker pool (platform.ValidateWorkerPool) and is used for one
 // STABLE statement per Check; no transaction is held across I/O.
 func Routes(checkPool *pgxpool.Pool, linkKey claims.ReplyLinkKey, pageKeys *PageTokenKeyring, cfg Config) ([]core.DispatchRoute, error) {
 	if checkPool == nil {
 		return nil, ErrConfig
 	}
-	if err := platform.ValidateWorkerPool(context.Background(), checkPool); err != nil {
+	if err := platform.ValidateWorkerPool(context.Background(), checkPool, platform.WorkerClaims); err != nil {
 		return nil, err
 	}
 	check := func(ctx context.Context, operationID string, linkHash []byte) (code string, err error) {
