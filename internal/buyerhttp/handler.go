@@ -102,12 +102,19 @@ const (
 	privacyExportRoute
 	privacyErasureRoute
 	mediaRoute // GET /v1/buyer/media/p/{product_id}/{image_id}, media.go: no buyer bearer
+	// catalog-core (catalogv2.go): public reads, no buyer bearer, origin + BFF key only.
+	collectionMediaRoute      // GET /v1/buyer/media/c/{collection_id}/{image_id}
+	catalogV2ProductsRoute    // GET /v1/buyer/catalog/v2/products
+	catalogV2ProductRoute     // GET /v1/buyer/catalog/v2/products/{slug_or_id}
+	catalogV2CollectionsRoute // GET /v1/buyer/catalog/v2/collections
+	catalogV2CollectionRoute  // GET /v1/buyer/catalog/v2/collections/{slug}
 )
 
 type route struct {
 	kind  routeKind
 	id    string
-	image string // mediaRoute only: the image id (id is the product id)
+	image string // media routes only: the image id (id is the product or collection id)
+	slug  string // catalog v2 detail routes: the slug (or product id) key
 }
 
 func matchRoute(path string) route {
@@ -148,6 +155,15 @@ func matchRoute(path string) route {
 	if cvs := matchCVSRoute(path); cvs.kind != unknownRoute {
 		return cvs
 	}
+	if rest, ok := strings.CutPrefix(path, v2Prefix); ok {
+		return matchCatalogV2(rest)
+	}
+	if rest, ok := strings.CutPrefix(path, "/v1/buyer/media/c/"); ok {
+		if collection, image, two := strings.Cut(rest, "/"); two && collection != "" && image != "" && !strings.Contains(image, "/") {
+			return route{kind: collectionMediaRoute, id: collection, image: image}
+		}
+		return route{}
+	}
 	if rest, ok := strings.CutPrefix(path, "/v1/buyer/media/p/"); ok {
 		if product, image, two := strings.Cut(rest, "/"); two && product != "" && image != "" && !strings.Contains(image, "/") {
 			return route{kind: mediaRoute, id: product, image: image}
@@ -185,7 +201,8 @@ func allowed(kind routeKind, method string) bool {
 		return method == http.MethodGet || method == http.MethodPost || method == http.MethodDelete
 	case bootstrapRoute, retireRoute:
 		return method == http.MethodPost
-	case catalogRoute, optionsRoute, ordersRoute, paymentRoute, mediaRoute:
+	case catalogRoute, optionsRoute, ordersRoute, paymentRoute, mediaRoute, collectionMediaRoute,
+		catalogV2ProductsRoute, catalogV2ProductRoute, catalogV2CollectionsRoute, catalogV2CollectionRoute:
 		return method == http.MethodGet
 	case cartRoute:
 		return method == http.MethodGet || method == http.MethodPut
@@ -230,7 +247,7 @@ func oneHeader(r *http.Request, name string) (string, bool) {
 
 func forbiddenInput(r *http.Request) bool {
 	queryRoute := r.URL != nil && r.Method == http.MethodGet && r.URL.EscapedPath() == r.URL.Path &&
-		(r.URL.Path == "/v1/buyer/catalog" || r.URL.Path == "/v1/buyer/checkout-options" || r.URL.Path == "/v1/buyer/orders")
+		(r.URL.Path == "/v1/buyer/catalog" || r.URL.Path == "/v1/buyer/checkout-options" || r.URL.Path == "/v1/buyer/orders" || r.URL.Path == v2Prefix+"products")
 	if r.URL == nil || r.URL.ForceQuery || (!queryRoute && r.URL.RawQuery != "") {
 		return true
 	}
@@ -440,8 +457,8 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			fail(http.StatusUnauthorized, "unauthorized")
 			return
 		}
-	} else if selected.kind == mediaRoute {
-		// Public bytes: a credential on this route is a mistake or an attack, never forwarded or honoured.
+	} else if isPublicRoute(selected.kind) {
+		// Public bytes and catalog v2 reads: a credential on this route is a mistake or an attack, never forwarded or honoured.
 		if len(r.Header.Values("Authorization")) != 0 {
 			fail(http.StatusForbidden, "forbidden")
 			return
@@ -485,6 +502,12 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 	}
 	if selected.kind == mediaRoute {
 		return h.mediaGet(ctx, w, r, selected)
+	}
+	if selected.kind == collectionMediaRoute {
+		return h.collectionMediaGet(ctx, w, r, selected)
+	}
+	if isCatalogV2(selected.kind) {
+		return h.catalogV2Get(ctx, w, r, selected)
 	}
 	if selected.kind == sessionRoute && r.Method == http.MethodPost {
 		if err := decodeJSON(r, &struct{}{}); err != nil {

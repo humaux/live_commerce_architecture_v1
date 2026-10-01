@@ -126,3 +126,30 @@ func TestMerchantOrdersTimestampIDCursor(t *testing.T) {
 		}
 	}
 }
+
+// catalog-core (migration 0086): collections and the merchant product list page by (created_at, id) like orders.
+func TestCatalogV2TimestampIDCursors(t *testing.T) {
+	stamp := "2026-10-01T04:05:06.123456Z"
+	digest := strings.Repeat("a", 64)
+	for _, b := range []Binding{
+		{TenantID: binding.TenantID, StoreID: binding.StoreID, Collection: "collections"},
+		{TenantID: binding.TenantID, StoreID: binding.StoreID, Collection: "catalog-products", Filter: digest},
+	} {
+		encoded, err := Encode(b, []string{stamp, key})
+		if err != nil {
+			t.Fatalf("%s: %v", b.Collection, err)
+		}
+		if _, keys, err := Decode(Request{Cursor: encoded}, b, 2); err != nil || keys[0] != stamp || keys[1] != key {
+			t.Fatalf("%s round trip: %v %v", b.Collection, keys, err)
+		}
+		if _, err := Encode(b, []string{key}); !errors.Is(err, command.ErrInvalid) {
+			t.Fatalf("%s accepted a single key", b.Collection)
+		}
+	}
+	if _, err := Encode(Binding{TenantID: binding.TenantID, StoreID: binding.StoreID, Collection: "catalog-products", Filter: "all"}, []string{stamp, key}); !errors.Is(err, command.ErrInvalid) {
+		t.Fatal("catalog-products accepted a non-digest filter")
+	}
+	if _, err := Encode(Binding{TenantID: binding.TenantID, StoreID: binding.StoreID, Collection: "collections", Filter: digest}, []string{stamp, key}); !errors.Is(err, command.ErrInvalid) {
+		t.Fatal("collections accepted a filter")
+	}
+}

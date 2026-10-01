@@ -35,6 +35,14 @@ const imagesRoot = `products/${uuid}/images`;
 const imageItem = `${imagesRoot}/${uuid}`;
 const imageWrites = `${imagesRoot}|${imageItem}/delete|${imagesRoot}/order`;
 const MAX_UPLOAD = 2.5 * 1024 * 1024; // CM3: BFF body cap; Go re-checks 2 MiB for the file itself and is the authority
+// catalog-core (storefront-v2 A, unit catalog-core): product list/detail + collections -> Go internal/httpapi/collections.go.
+// Exactly these resources: GET catalog-products (q,status,cursor,limit), GET products/{id}, collections CRUD, ordered
+// membership (PUT), one collection image (multipart upload, bytes preview, delete).
+const catalogProducts = "catalog-products";
+const collectionsRoot = "collections";
+const collectionItem = `collections/${uuid}`;
+const collectionImage = `${collectionItem}/image`;
+const catalogV2Writes = `${collectionsRoot}|${collectionItem}/delete|${collectionImage}|${collectionImage}/delete`;
 const orders = `orders(?:/${uuid})?`;
 // R3 storefront-publish: GET storefront (state + bound origins), POST storefront/publication {published, expected_version}
 // -> Go internal/httpapi/storefront.go. Domain binding has no merchant route (operator CLI cmd/store-admin).
@@ -49,14 +57,14 @@ const studioAction = `${studioDetail}/(?:rehearsal/(?:start|stop)|input/(?:start
 const studioAny = new RegExp(`^(?:live-sessions|${studioDetail}|${studioAction}|${studioInputRead}|${studioDetail}/${claimsSubpath})$`);
 const routes: Record<string, RegExp> = {
   GET: new RegExp(
-    `^(catalog-ledger|products|warehouses|inventory|products/${uuid}/skus|${purchaseEntry}|${storefrontRead}|${imagesRoot}|${imageItem}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy}|${orders}|live-sessions|${studioDetail}|${studioInputRead}|${claimsRoutes.GET}|${adsRoutes.GET})$`,
+    `^(catalog-ledger|${catalogProducts}|products|products/${uuid}|${collectionsRoot}|${collectionItem}|${collectionImage}|warehouses|inventory|products/${uuid}/skus|${purchaseEntry}|${storefrontRead}|${imagesRoot}|${imageItem}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy}|${orders}|live-sessions|${studioDetail}|${studioInputRead}|${claimsRoutes.GET}|${adsRoutes.GET})$`,
   ),
   POST: new RegExp(
-    `^(products|skus|warehouses|inventory/adjustments|products/${uuid}/archive|${storefrontWrite}|${imageWrites}|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets|live-sessions|${studioAction}|${claimsRoutes.POST}|${adsRoutes.POST})$`,
+    `^(products|skus|warehouses|inventory/adjustments|products/${uuid}/archive|${storefrontWrite}|${imageWrites}|${catalogV2Writes}|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets|live-sessions|${studioAction}|${claimsRoutes.POST}|${adsRoutes.POST})$`,
   ),
-  PATCH: new RegExp(`^(products/${uuid}|skus/${uuid}|${studioDetail}|${claimsRoutes.PATCH})$`),
+  PATCH: new RegExp(`^(products/${uuid}|${collectionItem}|skus/${uuid}|${studioDetail}|${claimsRoutes.PATCH})$`),
   // Studio PUT is only the comment-source bind (claims-request.ts); settings PUTs are the rest.
-  PUT: new RegExp(`^(${setting}|${policy}|${claimsRoutes.PUT}|${adsRoutes.PUT})$`),
+  PUT: new RegExp(`^(${setting}|${policy}|${collectionItem}/products|${claimsRoutes.PUT}|${adsRoutes.PUT})$`),
 };
 const exactStore = new RegExp(`^${uuid}$`);
 const inspectRoute = new RegExp(`^${inspect}$`);
@@ -68,6 +76,11 @@ const purchaseEntryRoute = new RegExp(`^${purchaseEntry}$`);
 const orderRoute = new RegExp(`^${orders}$`);
 const imagesRootRoute = new RegExp(`^${imagesRoot}$`);
 const imageItemRoute = new RegExp(`^${imageItem}$`);
+const collectionImageRoute = new RegExp(`^${collectionImage}$`);
+// catalog-core: only these two GETs carry a query (Go is the grammar authority; the BFF caps the key set).
+const catalogQueryRoute = new RegExp(`^(?:${catalogProducts}|${collectionsRoot})$`);
+const catalogQueryKeys = new Set(["q", "status", "cursor", "limit"]);
+const catalogV2Any = new RegExp(`^(?:${catalogProducts}|products/${uuid}|${collectionsRoot}|${collectionItem}|${collectionItem}/(?:delete|products|image|image/delete))$`);
 const imagesAny = new RegExp(`^(?:${imagesRoot}|${imageItem}|${imageItem}/delete|${imagesRoot}/order)$`);
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 type Context = { params: Promise<{ store: string; resource: string[] }> };
@@ -126,9 +139,26 @@ async function route(request: Request, context: Context) {
   if (exactResource && request.url.includes("?"))
     return error(422, "invalid_request");
   const url = new URL(request.url);
+  // catalog-core: a read carries no body or key; only the two list resources may carry a query, with known keys only.
+  if (catalogV2Any.test(path)) {
+    if (!catalogQueryRoute.test(path) || request.method !== "GET") {
+      if (request.url.includes("?")) return error(422, "invalid_request");
+    } else if (
+      request.url.endsWith("?") ||
+      [...url.searchParams.keys()].some((key) => !catalogQueryKeys.has(key)) ||
+      (path === collectionsRoot && (url.searchParams.has("q") || url.searchParams.has("status")))
+    )
+      return error(422, "invalid_request");
+    if (
+      request.method === "GET" &&
+      (request.body !== null || request.headers.has("transfer-encoding") || request.headers.has("idempotency-key") ||
+        (request.headers.has("content-length") && request.headers.get("content-length") !== "0"))
+    )
+      return error(422, "invalid_request");
+  }
   // Photo routes take no query; a read carries no body or key; the upload alone is multipart (checked below).
-  const imageUpload = request.method === "POST" && imagesRootRoute.test(path);
-  const imageBytes = request.method === "GET" && imageItemRoute.test(path);
+  const imageUpload = request.method === "POST" && (imagesRootRoute.test(path) || collectionImageRoute.test(path));
+  const imageBytes = request.method === "GET" && (imageItemRoute.test(path) || collectionImageRoute.test(path));
   if (imagesAny.test(path)) {
     if (request.url.includes("?")) return error(422, "invalid_request");
     if (
@@ -140,6 +170,7 @@ async function route(request: Request, context: Context) {
     if (imageUpload && Number(request.headers.get("content-length") ?? "0") > MAX_UPLOAD)
       return error(413, "invalid_request");
   }
+  if (imageUpload && Number(request.headers.get("content-length") ?? "0") > MAX_UPLOAD) return error(413, "invalid_request");
   if (studio) {
     if (!validStudioQuery(request.url, request.method === "GET" && (path === "live-sessions" || claimsCollection(path))))
       return error(422, "invalid_request");

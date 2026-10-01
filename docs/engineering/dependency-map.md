@@ -175,7 +175,7 @@ Package buyerhttp owns the private, BFF-only buyer transport (catalog, cart, quo
 
 ## `internal/catalog`
 
-Package catalog owns the merchant-scoped catalog transaction slice: products, SKUs, price history, the wide product/SKU ledger read projection (contracts/admin-ledger-v1.md) and the purchase-entry read, and the merchant product photos (images.go, migrations/0082).
+Package catalog owns the merchant-scoped catalog transaction slice: products (draft, active, archived), their slugs, SEO fields and option axes, SKUs (option values, compare-at price, price history), the wide product/SKU ledger read projection (contracts/admin-ledger-v1.md), the merchant product list/detail reads (productlist.go), merchant collections with their ordered membership and image (collections.go, migrations/0086), the purchase-entry read, and the merchant product photos (images.go, migrations/0082).
 
 - Depends on (internal): `internal/command`, `internal/domains`, `internal/pagination`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`

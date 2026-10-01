@@ -126,7 +126,8 @@ export function Ledger({
   const [entryError, setEntryError] = useState("");
   const [entryFeedback, setEntryFeedback] = useState("");
   const [query, setQuery] = useState(searchQuery);
-  const [section, setSection] = useState("products");
+  // catalog-core: the home ledger is the Inventory view; Products and Collections are their own pages (WorkspaceFrame).
+  const [section, setSection] = useState("inventory");
   const [confirming, setConfirming] = useState<"sku" | "product" | null>(null);
   const [pending, setPending] = useState<PendingCommand | null>(null),
     [busy, setBusy] = useState(false);
@@ -458,9 +459,12 @@ export function Ledger({
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     if (!productID)
+      // catalog-core: the quick-add stays a live product like before (a new product is a draft by default,
+      // contracts/storefront-v2.md A); the Products page is where a draft is built and published deliberately.
       command("product", "products", {
         name: data.get("name"),
         description: data.get("description"),
+        status: "active",
       });
     else
       command("sku", "skus", {

@@ -33,7 +33,9 @@ type rawResponse struct {
 
 func registerImageRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 	const images = "/v1/admin/stores/{store_id}/products/{product_id}/images"
-	mux.HandleFunc("POST "+images, uploadImageRoute(pool))
+	mux.HandleFunc("POST "+images, uploadRoute(pool, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, data []byte) (any, error) {
+		return catalog.UploadImage(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), data)
+	}))
 	mux.HandleFunc("GET "+images, scoped(pool, "catalog:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
 		return catalog.ListImages(ctx, tx, s, r.PathValue("product_id"))
 	}))
@@ -62,10 +64,11 @@ func writeRaw(w http.ResponseWriter, raw rawResponse) {
 	_, _ = w.Write(raw.body)
 }
 
-// uploadImageRoute reads the single multipart `file` part before any transaction opens (a slow client must not hold
+// uploadRoute reads the single multipart `file` part before any transaction opens (a slow client must not hold
 // a database transaction), but only after the Authorization header is at least well-formed; scoped then
-// authenticates for real. The part's filename and Content-Type are ignored: catalog.SniffImage decides the type.
-func uploadImageRoute(pool *pgxpool.Pool) http.HandlerFunc {
+// authenticates for real and runs store (catalog:write). The part's filename and Content-Type are ignored:
+// catalog.SniffImage decides the type. Shared by the product-photo and collection-image uploads.
+func uploadRoute(pool *pgxpool.Pool, store func(context.Context, pgx.Tx, platform.Scope, *http.Request, []byte) (any, error)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		header := r.Header.Get("Authorization")
 		if !strings.HasPrefix(header, "Bearer ") || strings.ContainsAny(strings.TrimPrefix(header, "Bearer "), " \t\r\n") {
@@ -84,7 +87,7 @@ func uploadImageRoute(pool *pgxpool.Pool) http.HandlerFunc {
 			return
 		}
 		scoped(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
-			return catalog.UploadImage(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), data)
+			return store(ctx, tx, s, r, data)
 		})(w, r)
 	}
 }

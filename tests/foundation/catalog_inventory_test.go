@@ -79,12 +79,52 @@ type t04Stock struct {
 	balances  []inventory.Balance
 }
 
+// t04PreV2Schema reports whether catalog.products predates migration 0086. The historical-schema fixtures (mcPre0029Fixture,
+// lriPre0032Fixture) run the CURRENT Go against older migrations; catalog.CreateProduct/CreateSKU write the 0086 columns
+// (slug, options, option_values, compare_at_minor, status draft), so on such a schema the fixture rows are inserted with
+// the pre-0086 statements instead. Test-only: the product code has no old-schema path.
+func t04PreV2Schema(t *testing.T, f *testFixture) bool {
+	t.Helper()
+	var has bool
+	if err := f.owner.QueryRow(context.Background(), `SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='catalog' AND table_name='products' AND column_name='slug')`).Scan(&has); err != nil {
+		t.Fatal(err)
+	}
+	return !has
+}
+
+func t04LegacyProduct(tx pgx.Tx, scope platform.Scope, name, description string) (catalog.Product, error) {
+	var p catalog.Product
+	err := tx.QueryRow(context.Background(), `INSERT INTO catalog.products(tenant_id,store_id,name,description) VALUES($1,$2,$3,$4) RETURNING id::text,name,description,status,version`,
+		scope.TenantID, scope.StoreID, name, description).Scan(&p.ID, &p.Name, &p.Description, &p.Status, &p.Version)
+	return p, err
+}
+
+func t04LegacySKU(tx pgx.Tx, scope platform.Scope, in catalog.SKUInput) (catalog.SKU, error) {
+	ctx := context.Background()
+	var s catalog.SKU
+	err := tx.QueryRow(ctx, `INSERT INTO catalog.skus(tenant_id,store_id,product_id,code,currency,price_minor,weight_grams,length_mm,width_mm,height_mm,origin_country,customs_name,hs_candidate)
+		SELECT $1,$2,$3,$4,st.currency,$5,$6,$7,$8,$9,$10,$11,$12 FROM control.stores st WHERE st.tenant_id=$1 AND st.id=$2
+		RETURNING id::text,product_id::text,code,status,currency,price_minor,version,weight_grams,length_mm,width_mm,height_mm,origin_country,customs_name,hs_candidate`,
+		scope.TenantID, scope.StoreID, in.ProductID, in.Code, in.PriceMinor, in.WeightGrams, in.LengthMM, in.WidthMM, in.HeightMM, in.OriginCountry, in.CustomsName, in.HSCandidate).
+		Scan(&s.ID, &s.ProductID, &s.Code, &s.Status, &s.Currency, &s.PriceMinor, &s.Version, &s.WeightGrams, &s.LengthMM, &s.WidthMM, &s.HeightMM, &s.OriginCountry, &s.CustomsName, &s.HSCandidate)
+	if err != nil {
+		return s, err
+	}
+	_, err = tx.Exec(ctx, `INSERT INTO catalog.price_history(tenant_id,store_id,sku_id,version,price_minor,currency,principal_id) VALUES($1,$2,$3,$4,$5,$6,$7)`,
+		scope.TenantID, scope.StoreID, s.ID, s.Version, s.PriceMinor, s.Currency, scope.PrincipalID)
+	return s, err
+}
+
 func t04CreateStock(t *testing.T, f *testFixture, token, store string, quantities ...int64) t04Stock {
 	t.Helper()
 	ctx := context.Background()
 	tag := t04Tag()
+	legacy := t04PreV2Schema(t, f)
 	product, err := t04Scoped(ctx, f, token, store, "catalog:write", func(tx pgx.Tx, scope platform.Scope) (catalog.Product, error) {
-		return catalog.CreateProduct(ctx, tx, scope, t04Key("product"), catalog.ProductInput{Name: "t04-" + tag, Description: "isolated test stock"})
+		if legacy {
+			return t04LegacyProduct(tx, scope, "t04-"+tag, "isolated test stock")
+		}
+		return catalog.CreateProduct(ctx, tx, scope, t04Key("product"), catalog.ProductInput{Name: "t04-" + tag, Description: "isolated test stock", Status: catalog.StatusActive})
 	})
 	if err != nil {
 		t.Fatalf("create product: %v", err)
@@ -98,11 +138,15 @@ func t04CreateStock(t *testing.T, f *testFixture, token, store string, quantitie
 	stock := t04Stock{product: product, warehouse: warehouse}
 	for i, quantity := range quantities {
 		sku, err := t04Scoped(ctx, f, token, store, "catalog:write", func(tx pgx.Tx, scope platform.Scope) (catalog.SKU, error) {
-			return catalog.CreateSKU(ctx, tx, scope, t04Key("sku"), catalog.SKUInput{
+			in := catalog.SKUInput{
 				ProductID: product.ID, Code: fmt.Sprintf("T04-%s-%d", tag, i), PriceMinor: 1250,
 				WeightGrams: 100, LengthMM: 10, WidthMM: 20, HeightMM: 30,
 				OriginCountry: "US", CustomsName: "test item", HSCandidate: "851840",
-			})
+			}
+			if legacy {
+				return t04LegacySKU(tx, scope, in)
+			}
+			return catalog.CreateSKU(ctx, tx, scope, t04Key("sku"), in)
 		})
 		if err != nil {
 			t.Fatalf("create SKU %d: %v", i, err)

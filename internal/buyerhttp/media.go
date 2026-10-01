@@ -54,6 +54,13 @@ func (h *handler) mediaGet(ctx context.Context, w http.ResponseWriter, r *http.R
 		return ctx.Err()
 	}
 	// ponytail: whole file in memory (<= 2 MiB by CHECK); stream from object storage when images leave PG.
+	writeImage(w, contentType, data, digest)
+	return nil
+}
+
+// writeImage answers public image bytes (product and collection photos): immutable cache because the id changes
+// whenever the content changes, nosniff and a locked-down CSP so the bytes can never run as a document.
+func writeImage(w http.ResponseWriter, contentType string, data, digest []byte) {
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("Content-Length", strconv.Itoa(len(data)))
 	w.Header().Set("Cache-Control", "public, max-age=86400, immutable")
@@ -62,5 +69,4 @@ func (h *handler) mediaGet(ctx context.Context, w http.ResponseWriter, r *http.R
 	w.Header().Set("ETag", `"`+hex.EncodeToString(digest)+`"`)
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(data)
-	return nil
 }
