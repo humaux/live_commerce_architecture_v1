@@ -68,7 +68,7 @@ var realWithDB = withDB
 func env(m map[string]string) func(string) string { return func(k string) string { return m[k] } }
 
 func TestBindHappyPathPrintsOneJSONLine(t *testing.T) {
-	q := &querier{r: row{raw: []byte(`{"domain_id":"9a2f6d1c-3b44-4c0a-8f55-1e6d7c8b9a22","version":1,"state":"ACTIVE","renewed":false}`)}}
+	q := &querier{r: row{raw: []byte(`{"domain_id":"9a2f6d1c-3b44-4c0a-8f55-1e6d7c8b9a22","version":1,"state":"ACTIVE","renewed":false,"rebound":true}`)}}
 	opened := fake(t, q)
 	var out bytes.Buffer
 	err := run(context.Background(), []string{"domain-bind", "--store", cliStore, "--origin", cliOrigin, "--evidence", "proof-ref",
@@ -76,7 +76,7 @@ func TestBindHappyPathPrintsOneJSONLine(t *testing.T) {
 	if err != nil || *opened != 1 {
 		t.Fatalf("err=%v opened=%d", err, *opened)
 	}
-	if got := out.String(); got != `{"domain_id":"9a2f6d1c-3b44-4c0a-8f55-1e6d7c8b9a22","version":1,"state":"ACTIVE","renewed":false}`+"\n" {
+	if got := out.String(); got != `{"domain_id":"9a2f6d1c-3b44-4c0a-8f55-1e6d7c8b9a22","version":1,"state":"ACTIVE","renewed":false,"rebound":true}`+"\n" {
 		t.Fatalf("stdout = %q", got)
 	}
 	if !strings.Contains(q.sql, "operator_bind_domain") {

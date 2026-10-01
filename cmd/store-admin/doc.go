@@ -2,11 +2,12 @@
 // the platform's act of binding a public origin to a store after it has verified ownership and TLS out of band.
 // Subcommands:
 //   - domain-bind --store <uuid> --origin https://host --evidence <ref> --valid-until <RFC 3339>: makes the origin
-//     ACTIVE for the store in one audited call (creates the row, or advances/renews a non-DETACHED one), stamping
+//     ACTIVE for the store in one audited call (creates the row, advances/renews a non-DETACHED one, or re-binds a
+//     DETACHED one when --evidence differs from the row's current reference), stamping
 //     ownership and TLS verification with the database clock. --valid-until is the TLS certificate notAfter
 //     (`openssl x509 -noout -enddate`, docs/runbooks/merchant-onboarding.md) and must lie within 400 days.
 //   - domain-suspend --origin https://host: SUSPENDED; the resolver denies the origin on its next request.
-//   - domain-detach  --origin https://host: DETACHED for good; the origin is never re-bound (contract).
+//   - domain-detach  --origin https://host: DETACHED; it re-binds only through domain-bind with new evidence (ruling).
 //   - status --store <uuid>: prints the store's publication state and domain rows (ids, states, versions, origins).
 //
 // It never prints a DSN, evidence text or driver message (stdout carries ids, versions and origins only, stderr one

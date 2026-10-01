@@ -87,7 +87,7 @@ deploy/scripts/ops-admin.sh store-admin status --store <store-uuid>   # publishe
 
 - `domain-bind` 一次调用创建或推进到 ACTIVE（时间戳由数据库时钟写入）并写审计 `operator.domain_bound`；对 ACTIVE 域名再次执行即证书续期（更新 `valid_until`，版本号 +1）。
   证书到期前续期：`valid_until` 一过，解析器立刻拒绝该域名（`serving=false`）。
-- `domain-suspend --origin https://host`：立即停止服务（可再次 `domain-bind` 恢复）；`domain-detach --origin https://host`：永久解绑，该 origin 不能再被绑定（数据库 origin 全局唯一，需要换域名）。
+- `domain-suspend --origin https://host`：立即停止服务（可再次 `domain-bind` 恢复）；`domain-detach --origin https://host`：解绑；该 origin 只能用**不同的** `--evidence` 重新执行 `domain-bind` 才能再次绑定（可绑定到另一家店，审计动作 `operator.domain_bound:rebind_from_detached`；证据相同则 `store_admin_domain_detached`）。
 - 一个部署目前只有一个 ACTIVE origin：Caddy 只服务 `LC_STORE_HOST`。每店一个域名需要 Caddy `on_demand_tls` 加由解析器支撑的 `ask` 接口（见 `cmd/store-admin` 的 ponytail 注释），不在本单元范围。
 - 退出码非 0 时 stderr 只有一个固定码：`store_admin_usage`（参数）、`store_admin_not_found`、`store_admin_domain_detached`、`store_admin_domain_owned_elsewhere`、`store_admin_no_owner_principal`、`store_admin_conflict`、`store_admin_failed`。
 

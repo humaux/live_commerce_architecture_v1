@@ -33,7 +33,8 @@ GRANT INSERT(tenant_id,store_id,published) ON control.storefront_publications TO
 GRANT UPDATE(published,version) ON control.storefront_publications TO commerce_storefront_writer;
 GRANT INSERT(tenant_id,store_id,origin,state,ownership_verified_at,tls_verified_at,valid_until,evidence_ref)
   ON control.storefront_domains TO commerce_storefront_writer;
-GRANT UPDATE(state,version,ownership_verified_at,tls_verified_at,valid_until,evidence_ref)
+-- tenant_id/store_id are updatable for exactly one path: operator_bind_domain re-binding a DETACHED origin (integrator ruling).
+GRANT UPDATE(tenant_id,store_id,state,version,ownership_verified_at,tls_verified_at,valid_until,evidence_ref)
   ON control.storefront_domains TO commerce_storefront_writer;
 GRANT SELECT(tenant_id,id,active) ON control.stores TO commerce_storefront_writer;
 -- Operator audit attribution: ops.audit_events.principal_id is NOT NULL, an operator has no principal, so the
@@ -50,7 +51,7 @@ CREATE POLICY storefront_writer_domains_update ON control.storefront_domains FOR
 CREATE POLICY storefront_writer_stores_read ON control.stores FOR SELECT TO commerce_storefront_writer USING (true);
 CREATE POLICY storefront_writer_audit_insert ON ops.audit_events FOR INSERT TO commerce_storefront_writer
  WITH CHECK (action IN ('merchant.storefront_published','merchant.storefront_unpublished',
-   'operator.domain_bound','operator.domain_suspended','operator.domain_detached'));
+   'operator.domain_bound','operator.domain_bound:rebind_from_detached','operator.domain_suspended','operator.domain_detached'));
 COMMENT ON POLICY storefront_writer_publications_read ON control.storefront_publications IS '0081: definer owner read (merchant read/toggle, operator status).';
 COMMENT ON POLICY storefront_writer_publications_insert ON control.storefront_publications IS '0081: first publish of a store (set_storefront_published inserts version 1).';
 COMMENT ON POLICY storefront_writer_publications_update ON control.storefront_publications IS '0081: publish/unpublish by compare-and-set on version (set_storefront_published).';
@@ -58,7 +59,7 @@ COMMENT ON POLICY storefront_writer_domains_read ON control.storefront_domains I
 COMMENT ON POLICY storefront_writer_domains_insert ON control.storefront_domains IS '0081: operator_bind_domain inserts a new origin directly ACTIVE with proof.';
 COMMENT ON POLICY storefront_writer_domains_update ON control.storefront_domains IS '0081: operator lifecycle moves (bind/renew, suspend, detach); each bumps version.';
 COMMENT ON POLICY storefront_writer_stores_read ON control.stores IS '0081: operator definers resolve tenant of a store id (tenant_id,id,active columns only).';
-COMMENT ON POLICY storefront_writer_audit_insert ON ops.audit_events IS '0081: the five fixed storefront audit actions only.';
+COMMENT ON POLICY storefront_writer_audit_insert ON ops.audit_events IS '0081: the six fixed storefront audit actions only (operator.domain_bound:rebind_from_detached marks a re-bind of a DETACHED origin).';
 
 -- ---------------------------------------------------------------------------------------
 -- control.read_storefront: merchant read of the publication state and the store's domains. integration:read.
@@ -159,11 +160,14 @@ COMMENT ON FUNCTION control.set_storefront_published(bytea,uuid,boolean,bigint) 
 -- ---------------------------------------------------------------------------------------
 -- control.operator_bind_domain: creates the origin directly ACTIVE, or advances an existing non-DETACHED row of the SAME
 -- store to ACTIVE (also the renewal path: re-binding an ACTIVE origin restamps the proof and bumps version).
--- A DETACHED origin is never re-bound by update (contract): PT409 domain_detached. 0020 makes origin globally UNIQUE, so
--- "a new row with renewed proof" for a detached origin is impossible without a schema decision; the safe answer is refuse.
+-- A DETACHED origin is never re-bound by a plain update. Integrator ruling: it may be re-bound only as a renewed-proof bind
+-- inside this definer: evidence_ref must differ from the row's current one (else PT409 domain_detached), both verification
+-- stamps and valid_until are renewed, tenant/store become the target's, version bumps and the audit action is
+-- operator.domain_bound:rebind_from_detached. A row in any other state belonging to a different store is PT409
+-- domain_owned_elsewhere. This is the only path that ever changes store_id.
 CREATE FUNCTION control.operator_bind_domain(p_store uuid,p_origin text,p_evidence text,p_valid_until timestamptz)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE v_tenant uuid; v_principal uuid; v_now timestamptz; v_row record; v_id uuid; v_version bigint; v_renewed boolean:=false;
+DECLARE v_tenant uuid; v_principal uuid; v_now timestamptz; v_row record; v_id uuid; v_version bigint; v_renewed boolean:=false; v_rebound boolean:=false;
 BEGIN
  IF p_store IS NULL OR p_origin IS NULL OR octet_length(p_origin) NOT BETWEEN 11 AND 261 OR right(p_origin,10)='.localhost'
   OR p_origin COLLATE "C" !~ '^https://([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]([a-z0-9-]{0,61}[a-z0-9])?$'
@@ -182,19 +186,25 @@ BEGIN
  IF NOT FOUND THEN RAISE EXCEPTION 'store has no owner principal' USING ERRCODE='PT409'; END IF;
  -- One writer per origin at a time (the unique index alone would turn the loser into an error after the proof work).
  PERFORM pg_advisory_xact_lock(hashtextextended('storefront-domain:'||p_origin,0));
- SELECT d.id,d.tenant_id,d.store_id,d.state,d.version INTO v_row FROM control.storefront_domains d WHERE d.origin=p_origin FOR UPDATE;
+ SELECT d.id,d.tenant_id,d.store_id,d.state,d.version,d.evidence_ref INTO v_row FROM control.storefront_domains d WHERE d.origin=p_origin FOR UPDATE;
  IF FOUND THEN
-  IF v_row.tenant_id<>v_tenant OR v_row.store_id<>p_store THEN RAISE EXCEPTION 'domain_owned_elsewhere' USING ERRCODE='PT409'; END IF;
-  IF v_row.state='DETACHED' THEN RAISE EXCEPTION 'domain_detached' USING ERRCODE='PT409'; END IF;
+  IF v_row.state='DETACHED' THEN
+   -- renewed proof required: the same evidence reference cannot revive a detached origin
+   IF v_row.evidence_ref IS NOT DISTINCT FROM p_evidence THEN RAISE EXCEPTION 'domain_detached' USING ERRCODE='PT409'; END IF;
+   v_rebound:=true;
+  ELSIF v_row.tenant_id<>v_tenant OR v_row.store_id<>p_store THEN
+   RAISE EXCEPTION 'domain_owned_elsewhere' USING ERRCODE='PT409';
+  END IF;
   v_renewed:=v_row.state='ACTIVE';
-  UPDATE control.storefront_domains SET state='ACTIVE',version=version+1,ownership_verified_at=v_now,tls_verified_at=v_now,
+  UPDATE control.storefront_domains SET tenant_id=v_tenant,store_id=p_store,state='ACTIVE',version=version+1,ownership_verified_at=v_now,tls_verified_at=v_now,
    valid_until=p_valid_until,evidence_ref=p_evidence WHERE id=v_row.id RETURNING id,version INTO v_id,v_version;
  ELSE
   INSERT INTO control.storefront_domains(tenant_id,store_id,origin,state,ownership_verified_at,tls_verified_at,valid_until,evidence_ref)
   VALUES(v_tenant,p_store,p_origin,'ACTIVE',v_now,v_now,p_valid_until,p_evidence) RETURNING id,version INTO v_id,v_version;
  END IF;
- INSERT INTO ops.audit_events(tenant_id,store_id,principal_id,action) VALUES(v_tenant,p_store,v_principal,'operator.domain_bound');
- RETURN jsonb_build_object('domain_id',v_id,'version',v_version,'state','ACTIVE','renewed',v_renewed);
+ INSERT INTO ops.audit_events(tenant_id,store_id,principal_id,action)
+ VALUES(v_tenant,p_store,v_principal,CASE WHEN v_rebound THEN 'operator.domain_bound:rebind_from_detached' ELSE 'operator.domain_bound' END);
+ RETURN jsonb_build_object('domain_id',v_id,'version',v_version,'state','ACTIVE','renewed',v_renewed,'rebound',v_rebound);
 END $$;
 
 -- control.operator_suspend_domain / operator_detach_domain: by origin. Suspend is reversible (bind again with new proof);
@@ -271,7 +281,7 @@ GRANT EXECUTE ON FUNCTION control.operator_suspend_domain(text) TO commerce_stor
 GRANT EXECUTE ON FUNCTION control.operator_detach_domain(text) TO commerce_storefront_registrar;
 GRANT EXECUTE ON FUNCTION control.operator_storefront_status(uuid) TO commerce_storefront_registrar;
 COMMENT ON FUNCTION control.operator_bind_domain(uuid,text,text,timestamptz) IS
- 'internal/storefrontadmin BindDomain, cmd/store-admin domain-bind only; EXECUTE commerce_storefront_registrar. Creates the origin ACTIVE or advances/renews a non-DETACHED row of the same store (stamps ownership/tls proof now, valid_until = TLS notAfter, evidence_ref), bumps version, audits operator.domain_bound. DETACHED origin and an origin of another store are PT409; the operator attests the proof, SQL cannot verify DNS/TLS. Never publishes the store (the merchant does).';
+ 'internal/storefrontadmin BindDomain, cmd/store-admin domain-bind only; EXECUTE commerce_storefront_registrar. Creates the origin ACTIVE or advances/renews a non-DETACHED row of the same store (stamps ownership/tls proof now, valid_until = TLS notAfter, evidence_ref), bumps version, audits operator.domain_bound. A DETACHED origin re-binds only with a different evidence_ref (any store; audit operator.domain_bound:rebind_from_detached, same evidence = PT409 domain_detached); a non-DETACHED origin of another store is PT409; the operator attests the proof, SQL cannot verify DNS/TLS. Never publishes the store (the merchant does).';
 COMMENT ON FUNCTION control.operator_suspend_domain(text) IS
  'internal/storefrontadmin SuspendDomain, cmd/store-admin domain-suspend only; EXECUTE commerce_storefront_registrar. Moves a non-DETACHED origin to SUSPENDED (resolver denies on the next request), bumps version, audits operator.domain_suspended; already SUSPENDED is a no-op.';
 COMMENT ON FUNCTION control.operator_detach_domain(text) IS

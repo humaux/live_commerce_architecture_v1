@@ -3,8 +3,8 @@
 // on control.operator_* is the authority check). The operator attests the ownership/TLS proof (--evidence,
 // --valid-until = certificate notAfter); nothing here can verify DNS or TLS.
 //
-// Non-goals: no merchant HTTP exposure, no publication write (merchant.go), no wildcard/on-demand TLS, no re-bind of
-// a DETACHED origin (SQL refuses: origin is globally UNIQUE and the contract forbids rebind by update).
+// Non-goals: no merchant HTTP exposure, no publication write (merchant.go), no wildcard/on-demand TLS. A DETACHED origin
+// re-binds only through BindDomain with a different --evidence (integrator ruling; the SQL enforces it).
 
 package storefrontadmin
 
@@ -23,7 +23,7 @@ import (
 
 // Operator-visible refusals of the bind lifecycle; the CLI prints a fixed code for each.
 var (
-	ErrDomainDetached       = errors.New("domain detached")
+	ErrDomainDetached       = errors.New("domain detached") // detach refused, or a re-bind with the same evidence_ref
 	ErrDomainOwnedElsewhere = errors.New("domain owned by another store")
 	ErrNoOwner              = errors.New("store has no owner principal")
 )
@@ -43,6 +43,7 @@ type BindResult struct {
 	Version  int64  `json:"version"`
 	State    string `json:"state"`
 	Renewed  bool   `json:"renewed"`
+	Rebound  bool   `json:"rebound"` // true: a DETACHED origin re-bound with renewed proof (any store)
 }
 
 // MoveResult is the outcome of suspend/detach; Changed is false when the origin already had the target state.
@@ -87,7 +88,7 @@ func ValidEvidence(s string) bool {
 	return visible
 }
 
-// BindDomain makes origin ACTIVE for the store (creating or advancing/renewing the row).
+// BindDomain makes origin ACTIVE for the store (creating, advancing/renewing, or re-binding a DETACHED row with new evidence).
 func BindDomain(ctx context.Context, q Querier, storeID, origin, evidence string, validUntil, now time.Time) (BindResult, error) {
 	if ctx == nil || q == nil || !command.ValidID(storeID) || !domains.ValidOrigin(origin) || !ValidEvidence(evidence) ||
 		!validUntil.After(now) || validUntil.After(now.Add(MaxProofLifetime)) {

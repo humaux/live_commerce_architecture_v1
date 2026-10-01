@@ -104,16 +104,23 @@ func TestBindDomainInputsFailBeforeTheDatabase(t *testing.T) {
 func TestBindDomainDecodesStrictly(t *testing.T) {
 	now := time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
 	until := now.Add(60 * 24 * time.Hour)
-	ok := &fakeQ{row: fakeRow{raw: []byte(`{"domain_id":"` + testDomain + `","version":2,"state":"ACTIVE","renewed":true}`)}}
+	ok := &fakeQ{row: fakeRow{raw: []byte(`{"domain_id":"` + testDomain + `","version":2,"state":"ACTIVE","renewed":true,"rebound":false}`)}}
 	out, err := BindDomain(context.Background(), ok, testStore, "https://shop.example.com", "proof", until, now)
 	if err != nil || out.DomainID != testDomain || out.Version != 2 || !out.Renewed {
 		t.Fatalf("got %+v, %v", out, err)
 	}
+	if out.Rebound {
+		t.Fatalf("rebound decoded true from false: %+v", out)
+	}
 	if ok.args[1] != "https://shop.example.com" || ok.args[3] != until.UTC() {
 		t.Fatalf("definer args = %v", ok.args)
 	}
+	reb := &fakeQ{row: fakeRow{raw: []byte(`{"domain_id":"` + testDomain + `","version":5,"state":"ACTIVE","renewed":false,"rebound":true}`)}}
+	if out, err := BindDomain(context.Background(), reb, testStore, "https://shop.example.com", "new-proof", until, now); err != nil || !out.Rebound || out.Version != 5 {
+		t.Fatalf("rebind result: %+v %v", out, err)
+	}
 	for name, raw := range map[string]string{
-		"unknown field": `{"domain_id":"` + testDomain + `","version":1,"state":"ACTIVE","renewed":false,"extra":1}`,
+		"unknown field": `{"domain_id":"` + testDomain + `","version":1,"state":"ACTIVE","renewed":false,"rebound":false,"extra":1}`,
 		"wrong state":   `{"domain_id":"` + testDomain + `","version":1,"state":"SUSPENDED","renewed":false}`,
 		"bad id":        `{"domain_id":"x","version":1,"state":"ACTIVE","renewed":false}`,
 		"zero version":  `{"domain_id":"` + testDomain + `","version":0,"state":"ACTIVE","renewed":false}`,

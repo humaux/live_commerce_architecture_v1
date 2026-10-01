@@ -133,7 +133,12 @@ production writer in two separate consents (rulings SP1-SP7):
   (future, at most 400 days). The origin grammar is the 0020 one (SQL regex = internal/domains.ValidOrigin, PR01 parity).
   Lifecycle moves: bind -> ACTIVE (from none/REQUESTED/OWNERSHIP_PENDING/TLS_PENDING/SUSPENDED/ACTIVE), suspend -> SUSPENDED,
   detach -> DETACHED; each real move bumps `version` and audits `operator.domain_bound|suspended|detached`. A DETACHED origin is
-  never re-bound (PT409 `domain_detached`); an origin of another store is PT409 `domain_owned_elsewhere`.
+  never re-bound by a plain update. Integrator ruling: `operator_bind_domain` on an existing DETACHED row is allowed only as a
+  renewed-proof bind inside the same definer: `evidence_ref` must differ from the row's current one (same evidence = PT409
+  `domain_detached`), ownership/TLS verification are re-stamped to now, `valid_until` comes from `--valid-until`,
+  `tenant_id`/`store_id` are set to the target store, `version` bumps and the audit action is
+  `operator.domain_bound:rebind_from_detached` (the result carries `rebound: true`). A row in any other state that belongs to a
+  different store is PT409 `domain_owned_elsewhere`. No other path ever changes `store_id`.
 - **Cache.** There is none: every write bumps `version` and the next `buyer.resolve_published_store` sees it (PR04), so nothing
   needs invalidating.
 - **Audit attribution.** `ops.audit_events.principal_id` is NOT NULL and an operator has no principal, so operator actions are
