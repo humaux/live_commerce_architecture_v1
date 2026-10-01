@@ -111,6 +111,9 @@ try {
   merchant.on("request", request => { if (new URL(request.url()).origin === process.env.COMMERCE_OIDC_ISSUER) sawIssuer = true; });
   await merchant.goto(`${adminOrigin}/en`);
   await merchant.getByRole("button", {name: "Sign in with identity service", exact: true}).click();
+  // 0094 (merchant-tools, storefront-v2 G1): the sign-in landing is the dashboard and the product ledger (Add product, SKU rows, purchase entry) moved to /[locale]/inventory.
+  await expect(merchant.getByTestId("dashboard-page")).toBeVisible();
+  await merchant.goto(`${adminOrigin}/en/inventory`);
   await expect(merchant.getByRole("button", {name: "Add product", exact: true})).toBeVisible();
   assert(sawIssuer, "real signed MOCK IdP browser redirect required");
   const name = `Joint browser product ${Date.now()}`, code = `JOINT-${Date.now()}`;
@@ -135,7 +138,7 @@ try {
   const locales = ["en", "zh-CN", "zh-TW"], urls = {};
   for (const locale of locales) {
     if (locale !== "en") {
-      await merchant.goto(`${adminOrigin}/${locale}`);
+      await merchant.goto(`${adminOrigin}/${locale}/inventory`);
       await merchant.getByRole("button", {name, exact: true}).click();
     }
     const input = merchant.getByTestId("purchase-entry").locator("input");
@@ -152,7 +155,7 @@ try {
   }
   assert.deepEqual(await control("facts"), afterSaves);
   pass("all three configured locale URLs serve actual Next documents with zero crawler effects");
-  await merchant.goto(`${adminOrigin}/en`);
+  await merchant.goto(`${adminOrigin}/en/inventory`);
   await merchant.getByRole("button", {name, exact: true}).click();
   await expect(merchant.getByTestId("purchase-entry").locator("input")).toHaveValue(urls.en);
   const buyer = await context.newPage();
@@ -213,7 +216,7 @@ try {
   await expect(buyer.getByTestId("store-closed")).toBeVisible();
   await expect(buyer.getByTestId("product-buy")).toHaveCount(0);
   assert.equal((await buyer.request.get(buyer.url())).status(), 404);
-  await merchant.goto(`${adminOrigin}/en`);
+  await merchant.goto(`${adminOrigin}/en/inventory`);
   await merchant.getByRole("button", {name, exact: true}).click();
   await expect(merchant.getByTestId("purchase-entry").getByRole("status")).toHaveText("No verified, published storefront address is available.");
   await expect(merchant.getByTestId("purchase-entry").locator("input")).toHaveCount(0);
