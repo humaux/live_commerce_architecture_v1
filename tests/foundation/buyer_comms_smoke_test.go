@@ -557,6 +557,7 @@ func TestGuestLookupSessionIsViewOnly(t *testing.T) {
 	g := func(method, path, key string, input any) bhResponse {
 		return e.bh.request(t, method, path, guest, key, input, nil)
 	}
+	// reads of its own order (status, payment status, bank-transfer instructions) are allowed; the payment / transfer GET may answer any non-403 of its own
 	for _, ok := range []string{"/v1/buyer/session", "/v1/buyer/orders/" + mine} {
 		if r := g("GET", ok, "", nil); r.status != 200 {
 			t.Errorf("GET %s with the guest session: %d %s", ok, r.status, r.body)
@@ -572,19 +573,29 @@ func TestGuestLookupSessionIsViewOnly(t *testing.T) {
 		{"POST", "/v1/buyer/privacy/export", nil},
 		{"POST", "/v1/buyer/privacy/erasure", map[string]string{"confirm": "ERASE"}},
 		{"PUT", "/v1/buyer/consents", map[string]any{"purpose": "ads_personalization", "channel": "web", "granted": true, "source": "settings"}},
-		{"GET", "/v1/buyer/orders/" + mine + "/payment", nil},
+		{"GET", "/v1/buyer/orders/" + other + "/payment", nil},
+		{"GET", "/v1/buyer/orders/" + other + "/bank-transfer", nil},
+		{"POST", "/v1/buyer/orders/" + mine + "/payment/handoff", nil},
+		{"PUT", "/v1/buyer/orders/" + mine + "/bank-transfer/proof", map[string]any{"last5": "12345", "amount_minor": 100, "paid_at": "2026-10-01T00:00:00Z"}},
 		{"POST", "/v1/buyer/orders/" + mine + "/payment/prepare", map[string]any{"method_code": "stripe_checkout", "method_version": 1, "locale": "en"}},
-		{"GET", "/v1/buyer/orders/" + mine + "/bank-transfer", nil},
 		{"GET", "/v1/buyer/cart", nil},
 		{"GET", "/v1/buyer/catalog", nil},
 	} {
 		key := ""
-		if tc.method != "GET" {
+		if tc.method != "GET" && !strings.HasSuffix(tc.path, "/handoff") { // handoff is keyless (ServeHTTP refuses a key before the view gate)
 			key = t04Key("bcm-view")
 		}
 		if r := g(tc.method, tc.path, key, tc.body); r.status != 403 {
 			t.Errorf("%s %s with the guest session: %d %s (want 403)", tc.method, tc.path, r.status, r.body)
 		}
+	}
+	// own order: GET payment status and bank-transfer instructions pass the gate (the bank_transfer order has no hosted payment, so that GET may be
+	// 404/409 from the route itself, never 403); the instructions are a 200
+	if r := g("GET", "/v1/buyer/orders/"+mine+"/payment", "", nil); r.status == 403 {
+		t.Errorf("GET payment of its own order must pass the view-only gate: %d %s", r.status, r.body)
+	}
+	if r := g("GET", "/v1/buyer/orders/"+mine+"/bank-transfer", "", nil); r.status != 200 {
+		t.Errorf("GET bank-transfer instructions of its own order: %d %s", r.status, r.body)
 	}
 	if n := e.count(`SELECT count(*) FROM customers.privacy_actions WHERE kind='ERASURE'`); n != 0 {
 		t.Errorf("no erasure may have started: %d", n)

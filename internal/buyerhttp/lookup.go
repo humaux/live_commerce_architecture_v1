@@ -165,15 +165,17 @@ func (h *handler) viewOnly(ctx context.Context, storeID, token string) (orderID 
 	return *view, true, nil
 }
 
-// viewAllowed is the whole allowlist of a view-only session: session status (GET), bootstrap, retire, logout (DELETE) and GET of its one order.
-// Everything else (order list, other orders, payment, bank transfer, CVS, claims, consents, privacy export / erasure, cart, checkout) is closed.
+// viewAllowed is the whole allowlist of a view-only session: session status (GET), bootstrap, retire, logout (DELETE) and GET of its one order,
+// that order's payment status and its bank-transfer instructions. Everything else (order list, other orders, any POST/PUT incl. payment prepare/handoff
+// and the transfer proof, CVS, claims, consents, privacy export / erasure, cart, checkout) is closed.
 func viewAllowed(selected route, method, viewOrder string) bool {
 	switch selected.kind {
 	case sessionRoute:
 		return method == http.MethodGet || method == http.MethodDelete
 	case bootstrapRoute, retireRoute:
 		return method == http.MethodPost
-	case orderRoute:
+	// the order, its payment status and its bank-transfer instructions: read-only GETs of the session's own order, so an unpaid order can be paid
+	case orderRoute, paymentRoute, routeTransferGet:
 		return method == http.MethodGet && selected.id == viewOrder
 	}
 	return false

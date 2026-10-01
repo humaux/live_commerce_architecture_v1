@@ -163,7 +163,8 @@ index range scan, one sha256 compare against the stored value or a dummy), so ne
 10-minute windows, counted before any lookup, per hashed key): 10 per client IP, 5 per order ref, 200 per store -> 429 `rate_limited` with
 Retry-After. The issued session is VIEW-ONLY (integrator ruling): `buyer.capability_sessions.view_order_id` names the one order it may read. The Go buyer
 handler classifies every authenticated request through `buyer.session_view_order` and, for a view-only session, allows only GET session, session
-bootstrap/retire/logout and GET `/v1/buyer/orders/{that order}`; every other route (order list, other orders, payment, bank transfer, CVS, claims,
+bootstrap/retire/logout and GET `/v1/buyer/orders/{that order}` plus, read-only, GET of that order's `/payment` status and `/bank-transfer`
+instructions; every other route (order list, other orders, any POST/PUT incl. payment prepare/handoff and the transfer proof, CVS, claims,
 consents, privacy export / erasure, cart, checkout) is 403 `forbidden` (default deny, so a new route is closed until listed). The checkout-issued
 capability (view_order_id NULL) keeps its rights.
 
