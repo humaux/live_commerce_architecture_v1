@@ -585,11 +585,14 @@ export function MerchantOrders({
   useEffect(() => {
     if (!fresh.size) return;
     const base = document.title;
-    document.title = `(${fresh.size}) ${base}`;
+    // orders.title: the tab badge names this page, not the static app/layout title
+    // (lib/copy.ts "Commerce workspace"); restoring `base` on cleanup keeps the
+    // layout title intact when the badge count drops back to zero.
+    document.title = `(${fresh.size}) ${c.title}`;
     return () => {
       document.title = base;
     };
-  }, [fresh.size]);
+  }, [fresh.size, c.title]);
 
   useEffect(() => {
     void load();
