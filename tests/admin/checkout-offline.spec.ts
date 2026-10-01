@@ -109,8 +109,12 @@ test("settings: the merchant sets bank details, the window and the free-shipping
   // step 3: the delivery policy's free-shipping threshold, then the service re-save that pins the new policy version
   await page.getByRole("button", { name: c.next, exact: true }).click();
   await page.getByRole("combobox", { name: c.market, exact: true }).selectOption(market);
+  // the saved policy must hydrate (its version is the CAS token of the save) before any field is edited
+  const policyRead = page.waitForResponse((r) => r.url().includes("/policy") && r.request().method() === "GET");
   await page.getByLabel(c.serviceCode, { exact: true }).fill(service);
+  expect((await policyRead).status()).toBe(200);
   const policyForm = page.getByTestId("settings-policy-form");
+  await expect(policyForm.getByLabel(c.shipping, { exact: true })).toHaveValue("0"); // hydrated from the saved policy
   await policyForm.getByLabel(c.shipping, { exact: true }).fill(fee);
   await expect(policyForm.getByTestId("settings-free-shipping")).toHaveValue("");
   await policyForm.getByTestId("settings-free-shipping").fill(threshold);
