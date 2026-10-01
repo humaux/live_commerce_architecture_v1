@@ -1,0 +1,46 @@
+# command: bash scripts/dev/test-focused.sh '^TestLiveToolsGate'   (D1 workaround armed via the flag file)
+# base commit: db36a06f9faf529225915199a0b73ad7e060a152; run by Kimi K3 on 2026-10-01
+# TEMPORARY PRODUCT MUTATION (reverted immediately after): internal/storefront/claim_price.go, applyLivePrices cart-line
+# query gained "AND false" — no cart line ever earns a live price. Proves the gate turns red when the live price stops
+# reaching even the legitimate claimant.
+# Result: exit=1, top-level PASS=4 FAIL=8 SKIP=0 (LTG01/02/03/03b/04/07/08 all red; the import/copy/role gates that never
+# price a claim stay green, as they must). After the run the mutation was reverted (git diff clean for that file).
+# (The D2 defect test passes under this mutation because the mutation suppresses ALL live pricing; that is expected and
+# does not weaken the D2 red evidence in pg-gate-defect-baseline-merged-base.log / pg-gate-green-withworkarounds-merged-base.log.)
+
+=== RUN   TestLiveToolsGateLivePriceOnlyThroughClaim
+    live_tools_gate_test.go:354: claimant of session 1: want live price 20000 ..., got {UnitPriceMinor:30000 PriceRule: ...}
+--- FAIL: TestLiveToolsGateLivePriceOnlyThroughClaim (1.23s)
+=== RUN   TestLiveToolsGateRawCartForgery
+    live_tools_gate_test.go:434: baseline: want live price 20000 ..., got {UnitPriceMinor:30000 PriceRule: ...}
+--- FAIL: TestLiveToolsGateRawCartForgery (0.34s)
+=== RUN   TestLiveToolsGateForgedClaimQuantityAboveTheClaim
+--- PASS: TestLiveToolsGateForgedClaimQuantityAboveTheClaim (0.32s)
+=== RUN   TestLiveToolsGateOfferLifecycleAndExpiry
+    live_tools_gate_test.go:507: baseline: want live price 20000 ..., got {UnitPriceMinor:30000 PriceRule: ...}
+--- FAIL: TestLiveToolsGateOfferLifecycleAndExpiry (0.31s)
+=== RUN   TestLiveToolsGateLinkExpiry
+    live_tools_gate_test.go:607: link about to expire: want live price 20000 ..., got {UnitPriceMinor:30000 ...}
+--- FAIL: TestLiveToolsGateLinkExpiry (0.31s)
+=== RUN   TestLiveToolsGateCheckoutPlacesClaimOriginCart
+    live_tools_gate_test.go:664: live claim: want live price 20000 ..., got {UnitPriceMinor:30000 ...}
+--- FAIL: TestLiveToolsGateCheckoutPlacesClaimOriginCart (0.40s)
+=== RUN   TestLiveToolsGateSnapshotsAndOrders
+    live_tools_gate_test.go:684: claim quote: want live price 20000 ..., got {UnitPriceMinor:30000 ...}
+--- FAIL: TestLiveToolsGateSnapshotsAndOrders (0.33s)
+=== RUN   TestLiveToolsGateLibraryImportCopy
+--- PASS: TestLiveToolsGateLibraryImportCopy (1.56s)
+=== RUN   TestLiveToolsGateConcurrentOfferCreation
+--- PASS: TestLiveToolsGateConcurrentOfferCreation (0.41s)
+=== RUN   TestLiveToolsGateRoleBoundaries
+--- PASS: TestLiveToolsGateRoleBoundaries (0.33s)
+=== RUN   TestLiveToolsGatePromotionOnLivePrice
+    live_tools_gate_test.go:1255: live line with a code: want live price 20000 ..., got {UnitPriceMinor:30000 ...}
+--- FAIL: TestLiveToolsGatePromotionOnLivePrice (0.35s)
+=== RUN   TestLiveToolsGateRefundsCappedAtPaid
+    live_tools_gate_test.go:1346: quote: want live price 20000 ..., got {UnitPriceMinor:30000 ...}
+--- FAIL: TestLiveToolsGateRefundsCappedAtPaid (2.75s)
+FAIL
+FAIL	livecommerce/tests/foundation	9.540s
+FAIL
+test-focused: top-level PASS=4 FAIL=8 SKIP=0 exit=1

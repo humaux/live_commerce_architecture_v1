@@ -1,0 +1,42 @@
+# command: bash scripts/dev/test-focused.sh '^TestLiveToolsGate'   mutations: none, NO D1 workaround
+# base commit: db36a06 (merge of r3/integration into unit/live-tools-tests); run by Kimi K3 on 2026-10-01
+# Purpose: defect red baseline on the MERGED base — proves D1 (checkout pool cannot read claims.live_prices) and D2
+# (forged claim_quantity above the claim) are both still present. B1 needs no patch here: migration 0093 fixed the
+# PUBLIC EXECUTE defaults. Expected reds: D2 + every test that places an order from a claim-origin cart.
+# exit=1, top-level PASS=5 FAIL=7 SKIP=0
+
+=== RUN   TestLiveToolsGateLivePriceOnlyThroughClaim
+--- PASS: TestLiveToolsGateLivePriceOnlyThroughClaim (1.44s)
+=== RUN   TestLiveToolsGateRawCartForgery
+--- PASS: TestLiveToolsGateRawCartForgery (0.35s)
+=== RUN   TestLiveToolsGateForgedClaimQuantityAboveTheClaim
+    live_tools_gate_test.go:483: DEFECT: 99 units were live-priced (20000 each) on a claim for 2 units: claim_quantity was taken from the cart line, never compared with claims.lines.quantity: {SKUID:d921738c-2a79-41d7-9d7d-a124d7612316 ProductID:b85b49d7... Quantity:99 UnitPriceMinor:20000 ... PriceRule:live_claim CatalogUnitPriceMinor:30000 ...}
+--- FAIL: TestLiveToolsGateForgedClaimQuantityAboveTheClaim (0.37s)
+=== RUN   TestLiveToolsGateOfferLifecycleAndExpiry
+    live_tools_gate_test.go:573: a live-price quote must fail closed as a conflict once its offer was paused (an order was placed, or the refusal was an infrastructure error): checkout database unavailable
+--- FAIL: TestLiveToolsGateOfferLifecycleAndExpiry (0.41s)
+=== RUN   TestLiveToolsGateLinkExpiry
+    live_tools_gate_test.go:611: a live-price quote must fail closed as a conflict once the link expired: checkout database unavailable
+--- FAIL: TestLiveToolsGateLinkExpiry (4.87s)
+=== RUN   TestLiveToolsGateCheckoutPlacesClaimOriginCart
+    live_tools_gate_test.go:645: DEFECT D1: checkout.Begin of a claim-origin cart failed on the checkout runtime pool: checkout database unavailable
+--- FAIL: TestLiveToolsGateCheckoutPlacesClaimOriginCart (0.42s)
+=== RUN   TestLiveToolsGateSnapshotsAndOrders
+    live_tools_gate_test.go:689: place a live-priced order: checkout database unavailable
+--- FAIL: TestLiveToolsGateSnapshotsAndOrders (0.30s)
+=== RUN   TestLiveToolsGateLibraryImportCopy
+--- PASS: TestLiveToolsGateLibraryImportCopy (1.92s)
+=== RUN   TestLiveToolsGateConcurrentOfferCreation
+--- PASS: TestLiveToolsGateConcurrentOfferCreation (0.74s)
+=== RUN   TestLiveToolsGateRoleBoundaries
+--- PASS: TestLiveToolsGateRoleBoundaries (1.02s)
+=== RUN   TestLiveToolsGatePromotionOnLivePrice
+    live_tools_gate_test.go:1286: placement of a live-priced + discounted quote: checkout database unavailable
+--- FAIL: TestLiveToolsGatePromotionOnLivePrice (1.13s)
+=== RUN   TestLiveToolsGateRefundsCappedAtPaid
+    live_tools_gate_test.go:1344: hold: checkout database unavailable
+--- FAIL: TestLiveToolsGateRefundsCappedAtPaid (2.66s)
+FAIL
+FAIL	livecommerce/tests/foundation	16.270s
+FAIL
+test-focused: top-level PASS=5 FAIL=7 SKIP=0 exit=1

@@ -134,6 +134,11 @@ Smoke S29m BLOCKED is accepted in the CI job (F11), not by release-gate.
 | `tests/e2e/deal-loop.spec.ts` | `--browser-e2e` |
 | `tests/e2e/live-tools.spec.ts` (driven by `TestBrowserLiveTools`, tests/foundation/browser_live_tools_test.go) | `--browser-e2e` (runs after the deal loop in the same mode: Studio library import + live price, signed MOCK Meta claim, pay at pickup at the live price, direct purchase at the normal price; zh-TW + en x desktop + 390 px; BROWSER, MOCK) |
 
+Note (independent live-tools test author, 2026-10-01): while defect D1 (`output/live-tools/tests/DEFECTS.md`, also `kimi-evidence/DEFECTS.md` on branch unit/live-tools-tests)
+is unfixed, `TestBrowserE2EDealLoop` in the same mode fails at create-order on any base that includes migration 0092 — the buyer's cart there is claim-origin
+and `checkout.Begin` hits the missing `claims` schema USAGE / `claims.live_prices` EXECUTE on the checkout runtime. That failure IS D1 (differential proof in
+`kimi-evidence/browser-green.log`), so the mode's exit code stays 1 until D1 is fixed in product code; the live-tools gate row above is `TestBrowserLiveTools`.
+
 The `--browser-admin-legacy` gate replaced a manual five-step procedure (`docs/implementation/
 2026-09-20-admin-ledger-acceptance.md` ss "Repeatable local run"): three of its specs had no runner
 after the identity work. Its specs write screenshots under `output/playwright/ledger-review/`
@@ -209,8 +214,9 @@ Not covered here (NOT_RUN): browser pages for `/[locale]/promotions` and the sto
 ## Focused PG gates of unit live-tools (R4, migration 0092; independent test author; REAL_PG + HTTP_PG, MOCK PSP for the refund test)
 
 Run with `bash scripts/dev/test-focused.sh '^TestLiveToolsGate'` (also part of the default T1 foundation run). `tests/foundation/live_tools_test.go` is the implementer's
-author smoke, not this gate. Tests that place an order from a claim-origin cart or use the Stripe fake need the two fixture workarounds documented in
-`output/live-tools/tests/DEFECTS.md` (D1 `LC_LTG_WORKAROUND_D1=1`, B1 base defect); without them those tests are red, which is the point.
+author smoke, not this gate. Tests that place an order from a claim-origin cart need the disclosed defect-D1 fixture documented in
+`output/live-tools/tests/DEFECTS.md` (armed by `LC_LTG_WORKAROUND_D1=1` or the gitignored flag file `output/live-tools/LTG_WORKAROUND_D1.on` containing `1`); without it those tests are red, which is the point.
+(The former base defect B1 — PUBLIC EXECUTE on two R4 trigger functions — is fixed on this base by migration 0093 and needs no patch.)
 
 | Test | Proves |
 | --- | --- |

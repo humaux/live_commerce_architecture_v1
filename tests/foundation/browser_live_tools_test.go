@@ -17,7 +17,8 @@ package foundation_test
 // Evidence labels: BROWSER, Meta = MOCK (signed synthetic webhook, fake Graph), IdP = signed MOCK, no PSP (pay at pickup), no provider/deployment
 // acceptance. Disclosed fixtures: catalog/stock/pricing/delivery/CVS settings through the store creator's own domain calls (no Studio UI for them
 // in R4), the Meta binding + route rows (owner registrar path, as the MCI and T12 gates), the storefront publication/domain rows.
-// LC_LTG_WORKAROUND_D1=1 applies the disclosed checkout-grant fixture of defect D1 (see DEFECTS.md); without it the order step is red.
+// LC_LTG_WORKAROUND_D1=1 (or the gitignored output/live-tools/LTG_WORKAROUND_D1.on flag file, same thing) applies the disclosed checkout-grant
+// fixture of defect D1 (see DEFECTS.md); without it the order step is red.
 
 import (
 	"bytes"

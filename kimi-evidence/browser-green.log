@@ -1,0 +1,44 @@
+# live-tools browser gate — GREEN run, worktree branch unit/live-tools-tests @ db36a06 (+ test-code changes of this branch; product code pristine: `git diff internal/` empty)
+# command: bash scripts/dev/test-local.sh --browser-e2e        mode exit code: 1 (see below), TestBrowserLiveTools: PASS
+# date: 2026-10-01; canonical run id output/playwright/live-tools/20261001T151032.356606000
+# D1 workaround armed (disclosed fixture grant, output/live-tools/LTG_WORKAROUND_D1.on = 1): without it every order-from-claim step is red, which is defect D1.
+#
+# Result: TestBrowserLiveTools PASS (30.10s) — 4/4 Playwright cells (zh-TW/en x desktop/390 px) green:
+#   merchant imports the store-level keyword library in Studio (importDone(n,0) per accumulating cell), sets the live price,
+#   opens the window, binds the MOCK Meta post; a signed comment claims keyword+2; the buyer opens the private-reply claim link,
+#   sees the live price (2 x 200 = 400), adds to cart, checks out pay_at_pickup at 400 (quote + order pages, never 600);
+#   a second buyer of the same SKU on the product page sees and pays the normal 300. Claim token never in storage nor in any URL.
+#   Screenshots + sha256 manifest in the run id above.
+#
+# TestBrowserLiveTools green is stable: PASS in runs 20261001T150556 (29.93s), 20261001T150829 (27.04s), 20261001T151032 (30.10s),
+#   and 20261001T151409 (27.06s) — 4/4 consecutive.
+#
+# The MODE exit code is 1 because TestBrowserE2EDealLoop (unit T12's gate, same mode, runs first) fails on the merged base
+# at create-order: the checkout POST never confirms, the storefront shows its designed idempotency-recovery alert
+# ("暫未確認結果。請重試以恢復同一筆請求" + "恢復上一筆請求") and the spec's order-section wait times out (15s).
+# Causality = defect D1, proven by differential runs on the same base:
+#   pristine product code, no checkout grants : deal loop FAIL 3/3 at create-order (run ids 20261001T150523, 20261001T150759, 20261001T151001)
+#   same code + temporary owner-pool GRANT USAGE ON SCHEMA claims + GRANT EXECUTE ON claims.live_prices TO commerce_checkout_runtime
+#     in the T12 driver (diagnostic, reverted; never committed): deal loop PASS 20.05s, whole mode exit 0 (run id 20261001T151349, task log bgi7cz0nb)
+#   (the deal loop's earlier passes at 14:44/15:01 had the `AND false` mutation applied, which skips live_prices entirely — consistent)
+# T12 stays red by design until D1 is fixed in product code; this branch does NOT arm the workaround in T12's driver.
+#
+# TestBrowserE2EDealLoopSandbox: SKIP (NOT_RUN — SANDBOX tier needs STRIPE_BROWSER=1 and STRIPE_SANDBOX=1 with the owner's test keys).
+#
+# ---- Go test output, canonical green run (key lines; TLS handshake noise = expected fake-Graph probing) ----
+130:=== RUN   TestBrowserE2EDealLoop
+149:    browser_e2e_test.go:193: T12 browser chain failed: exit status 1; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/live-tools-tests/output/playwright/e2e/20261001T151001.914393000 (defects.json lists product defects the chain recorded)
+150:--- FAIL: TestBrowserE2EDealLoop (30.44s)
+151:=== RUN   TestBrowserE2EDealLoopSandbox
+153:--- SKIP: TestBrowserE2EDealLoopSandbox (0.00s)
+154:=== RUN   TestBrowserLiveTools
+260:    browser_live_tools_test.go:156: LIVE-TOOLS BROWSER (MOCK Meta, pay at pickup): chromium desktop + 390 px x zh-TW + en passed; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/live-tools-tests/output/playwright/live-tools/20261001T151032.356606000
+261:--- PASS: TestBrowserLiveTools (30.10s)
+262:FAIL
+263:FAIL	livecommerce/tests/foundation	61.126s
+264:FAIL
+266:[exited with code 1]
+  ✓  3 tests/e2e/live-tools.spec.ts:111:3 › live tools en desktop: library import, live price, signed Meta claim, pay at pickup at the live price; direct purchase at the normal price (7.2s)
+  ✓  4 tests/e2e/live-tools.spec.ts:111:3 › live tools en mobile: library import, live price, signed Meta claim, pay at pickup at the live price; direct purchase at the normal price (6.6s)
+
+  4 passed (28.0s)

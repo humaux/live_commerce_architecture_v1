@@ -1,0 +1,48 @@
+# command: bash scripts/dev/test-focused.sh '^TestLiveToolsGate'   (D1 workaround armed via the gitignored flag file
+#   output/live-tools/LTG_WORKAROUND_D1.on — equivalent to LC_LTG_WORKAROUND_D1=1; the sandboxed runner cannot pass env)
+# base commit: db36a06f9faf529225915199a0b73ad7e060a152; run by Kimi K3 on 2026-10-01
+# Result: exit=1, top-level PASS=11 FAIL=1 SKIP=0. The single FAIL is DEFECT D2 (forged claim_quantity above the claim),
+# which stays red by design until the product is fixed. Every test logged the D1 workaround disclosure.
+# Note: the pre-merge B1 Stripe-registrar base defect needs no patch on this base (migration 0093 revoked the PUBLIC EXECUTEs).
+
+=== RUN   TestLiveToolsGateLivePriceOnlyThroughClaim
+    live_tools_gate_test.go:294: LC_LTG_WORKAROUND_D1 armed: checkout runtime granted claims USAGE + live_prices EXECUTE by the fixture (defect D1 masked, NOT acceptance)
+--- PASS: TestLiveToolsGateLivePriceOnlyThroughClaim (1.49s)
+=== RUN   TestLiveToolsGateRawCartForgery
+    live_tools_gate_test.go:429: LC_LTG_WORKAROUND_D1 armed: checkout runtime granted claims USAGE + live_prices EXECUTE by the fixture (defect D1 masked, NOT acceptance)
+--- PASS: TestLiveToolsGateRawCartForgery (0.43s)
+=== RUN   TestLiveToolsGateForgedClaimQuantityAboveTheClaim
+    live_tools_gate_test.go:483: LC_LTG_WORKAROUND_D1 armed: checkout runtime granted claims USAGE + live_prices EXECUTE by the fixture (defect D1 masked, NOT acceptance)
+    live_tools_gate_test.go:492: DEFECT: 99 units were live-priced (20000 each) on a claim for 2 units: claim_quantity was taken from the cart line, never compared with claims.lines.quantity: {Quantity:99 UnitPriceMinor:20000 PriceRule:live_claim CatalogUnitPriceMinor:30000 ...}
+--- FAIL: TestLiveToolsGateForgedClaimQuantityAboveTheClaim (0.37s)
+=== RUN   TestLiveToolsGateOfferLifecycleAndExpiry
+    live_tools_gate_test.go:502: LC_LTG_WORKAROUND_D1 armed: checkout runtime granted claims USAGE + live_prices EXECUTE by the fixture (defect D1 masked, NOT acceptance)
+--- PASS: TestLiveToolsGateOfferLifecycleAndExpiry (0.52s)
+=== RUN   TestLiveToolsGateLinkExpiry
+    live_tools_gate_test.go:600: LC_LTG_WORKAROUND_D1 armed: checkout runtime granted claims USAGE + live_prices EXECUTE by the fixture (defect D1 masked, NOT acceptance)
+--- PASS: TestLiveToolsGateLinkExpiry (4.91s)
+=== RUN   TestLiveToolsGateCheckoutPlacesClaimOriginCart
+    live_tools_gate_test.go:645: LC_LTG_WORKAROUND_D1 armed: checkout runtime granted claims USAGE + live_prices EXECUTE by the fixture (defect D1 masked, NOT acceptance)
+--- PASS: TestLiveToolsGateCheckoutPlacesClaimOriginCart (0.47s)
+=== RUN   TestLiveToolsGateSnapshotsAndOrders
+    live_tools_gate_test.go:679: LC_LTG_WORKAROUND_D1 armed: checkout runtime granted claims USAGE + live_prices EXECUTE by the fixture (defect D1 masked, NOT acceptance)
+--- PASS: TestLiveToolsGateSnapshotsAndOrders (0.60s)
+=== RUN   TestLiveToolsGateLibraryImportCopy
+    live_tools_gate_test.go:804: LC_LTG_WORKAROUND_D1 armed: checkout runtime granted claims USAGE + live_prices EXECUTE by the fixture (defect D1 masked, NOT acceptance)
+--- PASS: TestLiveToolsGateLibraryImportCopy (2.05s)
+=== RUN   TestLiveToolsGateConcurrentOfferCreation
+    live_tools_gate_test.go:1056: LC_LTG_WORKAROUND_D1 armed: checkout runtime granted claims USAGE + live_prices EXECUTE by the fixture (defect D1 masked, NOT acceptance)
+--- PASS: TestLiveToolsGateConcurrentOfferCreation (0.45s)
+=== RUN   TestLiveToolsGateRoleBoundaries
+    live_tools_gate_test.go:1196: LC_LTG_WORKAROUND_D1 armed: checkout runtime granted claims USAGE + live_prices EXECUTE by the fixture (defect D1 masked, NOT acceptance)
+--- PASS: TestLiveToolsGateRoleBoundaries (0.39s)
+=== RUN   TestLiveToolsGatePromotionOnLivePrice
+    live_tools_gate_test.go:1246: LC_LTG_WORKAROUND_D1 armed: checkout runtime granted claims USAGE + live_prices EXECUTE by the fixture (defect D1 masked, NOT acceptance)
+--- PASS: TestLiveToolsGatePromotionOnLivePrice (4.47s)
+=== RUN   TestLiveToolsGateRefundsCappedAtPaid
+    live_tools_gate_test.go:1339: LC_LTG_WORKAROUND_D1 armed: checkout runtime granted claims USAGE + live_prices EXECUTE by the fixture (defect D1 masked, NOT acceptance)
+--- PASS: TestLiveToolsGateRefundsCappedAtPaid (3.54s)
+FAIL
+FAIL	livecommerce/tests/foundation	21.304s
+FAIL
+test-focused: top-level PASS=11 FAIL=1 SKIP=0 exit=1
