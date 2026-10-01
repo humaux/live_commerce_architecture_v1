@@ -28,12 +28,21 @@ test("locales share the section count and per-section body count of every page",
   }
 });
 
-test("engineering ships no final text: every text is a draft or pending marker", () => {
+test("final text is only the owner-confirmed company facts (CR 81215167 name + registered address); nothing else is final", () => {
+  // Owner confirmed 2026-10-01 (certificate of incorporation + BR certificate). Engineering still never invents
+  // a commitment: every other text stays a draft or pending marker.
+  let finals = 0;
   for (const l of locales)
     for (const s of legalSlugs) {
       const p = legalPage(l, s);
-      for (const t of [p.updated, ...p.sections.flatMap((x) => x.body)]) assert.notEqual(t.kind, "final");
+      assert.notEqual(p.updated.kind, "final", `${l}/${s} effective date must stay owner text`);
+      for (const t of p.sections.flatMap((x) => x.body))
+        if (t.kind === "final") {
+          finals++;
+          assert.ok(/81215167|704 Prince Edward Road East/.test(t.text), `${l}/${s} unexpected final text: ${t.text}`);
+        }
     }
+  assert.equal(finals, 15); // privacy (name+address), terms (operator), contact (name+address) x 3 locales
 });
 
 test("footer has 6 unique hrefs: 5 legal slugs plus data-deletion, per locale", () => {
@@ -68,7 +77,7 @@ test("pendingOwnerText lists exactly the rendered markers and is written for the
   assert.ok(list.length > 0);
   for (const kind of ["pending", "draft"]) assert.ok(list.some((x) => x.kind === kind));
   const en = list.filter((x) => x.locale === "en" && x.kind === "pending").map((x) => x.what.toLowerCase());
-  for (const need of ["legal entity name", "registered business address", "support email", "support phone",
+  for (const need of ["support email", "support phone",
     "refund window", "return conditions", "cancellation rule", "shipping regions", "carriers", "lead time",
     "shipping fees", "governing law", "effective date", "business description"])
     assert.ok(en.some((w) => w.includes(need)), `owner list lacks: ${need}`);

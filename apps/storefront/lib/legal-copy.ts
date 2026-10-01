@@ -17,6 +17,10 @@ type Page = { title: string; updated: LegalText; sections: Section[] };
 
 const owner = (what: string): LegalText => ({ kind: "pending", text: what });
 const draft = (text: string): LegalText => ({ kind: "draft", text });
+// Owner-confirmed facts (2026-10-01: certificate of incorporation CR 81215167 + business registration
+// certificate 81215167-000-09-26-2, valid to 2027-09-10). Address kept exactly as registered (English).
+const fact = (text: string): LegalText => ({ kind: "final", text });
+const ADDRESS = "Rm 10, 23/F, New Trend Centre, 704 Prince Edward Road East, San Po Kong, Hong Kong";
 const sec = (heading: string, ...body: LegalText[]): Section => ({ heading, body });
 
 // Marker labels are bilingual in every locale so a reviewer of any language sees the same warning.
@@ -39,8 +43,8 @@ const en = (l: Locale): Record<LegalSlug, Page> => ({
     updated: owner("Policy effective date"),
     sections: [
       sec("Who we are",
-        owner("Legal entity name (proposed: 香港大碗貿易有限公司; confirm)"),
-        owner("Registered business address"),
+        fact("Hong Kong Da Wan Trading Limited (香港大碗貿易有限公司), a limited company incorporated in Hong Kong, company number 81215167."),
+        fact(`Registered address: ${ADDRESS}.`),
         owner("Privacy contact email")),
       sec("What we collect",
         draft("Order details: the items, quantities, prices and currency of your order, and its payment and delivery status."),
@@ -66,7 +70,7 @@ const en = (l: Locale): Record<LegalSlug, Page> => ({
     updated: owner("Terms effective date"),
     sections: [
       sec("About these terms",
-        owner("Legal entity name that sells and operates this store"),
+        fact("This store is sold and operated by Hong Kong Da Wan Trading Limited (香港大碗貿易有限公司), Hong Kong company number 81215167."),
         owner("Business description: the goods sold"),
         draft("By placing an order you agree to these terms and to the shipping, refund and privacy pages.")),
       sec("Ordering and prices",
@@ -116,10 +120,10 @@ const en = (l: Locale): Record<LegalSlug, Page> => ({
     updated: owner("Policy effective date"),
     sections: [
       sec("Operator",
-        owner("Legal entity name (proposed: 香港大碗貿易有限公司; confirm)"),
+        fact("Hong Kong Da Wan Trading Limited (香港大碗貿易有限公司), a limited company incorporated in Hong Kong, company number 81215167."),
         owner("Business description: the goods sold")),
       sec("How to reach us",
-        owner("Registered business address"),
+        fact(`Registered address: ${ADDRESS}.`),
         owner("Customer support email"),
         owner("Customer support phone")),
       sec("Response times", owner("Support hours and target response time")),
@@ -135,8 +139,8 @@ const zhTW = (l: Locale): Record<LegalSlug, Page> => ({
     updated: owner("政策生效日期"),
     sections: [
       sec("我們是誰",
-        owner("法律主體名稱（建議：香港大碗貿易有限公司，待確認）"),
-        owner("登記營業地址"),
+        fact("香港大碗貿易有限公司（Hong Kong Da Wan Trading Limited），於香港註冊成立之有限公司，公司編號 81215167。"),
+        fact(`登記地址：${ADDRESS}`),
         owner("隱私事務聯絡電子郵件")),
       sec("我們蒐集什麼",
         draft("訂單資料：訂單的商品、數量、價格與幣別，以及付款與出貨狀態。"),
@@ -162,7 +166,7 @@ const zhTW = (l: Locale): Record<LegalSlug, Page> => ({
     updated: owner("條款生效日期"),
     sections: [
       sec("關於本條款",
-        owner("銷售並營運本商店的法律主體名稱"),
+        fact("本商店由香港大碗貿易有限公司（Hong Kong Da Wan Trading Limited，香港公司編號 81215167）銷售及營運。"),
         owner("營業項目說明：所售商品"),
         draft("下單即表示您同意本條款，以及運送、退款與隱私權頁面的內容。")),
       sec("下單與價格",
@@ -212,10 +216,10 @@ const zhTW = (l: Locale): Record<LegalSlug, Page> => ({
     updated: owner("政策生效日期"),
     sections: [
       sec("營運主體",
-        owner("法律主體名稱（建議：香港大碗貿易有限公司，待確認）"),
+        fact("香港大碗貿易有限公司（Hong Kong Da Wan Trading Limited），於香港註冊成立之有限公司，公司編號 81215167。"),
         owner("營業項目說明：所售商品")),
       sec("聯絡方式",
-        owner("登記營業地址"),
+        fact(`登記地址：${ADDRESS}`),
         owner("客服電子郵件"),
         owner("客服電話")),
       sec("回覆時間", owner("客服時間與目標回覆時間")),
@@ -231,8 +235,8 @@ const zhCN = (l: Locale): Record<LegalSlug, Page> => ({
     updated: owner("政策生效日期"),
     sections: [
       sec("我们是谁",
-        owner("法律主体名称（建议：香港大碗貿易有限公司，待确认）"),
-        owner("注册营业地址"),
+        fact("香港大碗贸易有限公司（Hong Kong Da Wan Trading Limited），于香港注册成立的有限公司，公司编号 81215167。"),
+        fact(`注册地址：${ADDRESS}`),
         owner("隐私事务联系邮箱")),
       sec("我们收集什么",
         draft("订单信息：订单的商品、数量、价格与币种，以及付款与发货状态。"),
@@ -258,7 +262,7 @@ const zhCN = (l: Locale): Record<LegalSlug, Page> => ({
     updated: owner("条款生效日期"),
     sections: [
       sec("关于本条款",
-        owner("销售并运营本店铺的法律主体名称"),
+        fact("本店铺由香港大碗贸易有限公司（Hong Kong Da Wan Trading Limited，香港公司编号 81215167）销售及运营。"),
         owner("经营范围说明：所售商品"),
         draft("下单即表示您同意本条款，以及运送、退款与隐私页面的内容。")),
       sec("下单与价格",
@@ -308,10 +312,10 @@ const zhCN = (l: Locale): Record<LegalSlug, Page> => ({
     updated: owner("政策生效日期"),
     sections: [
       sec("运营主体",
-        owner("法律主体名称（建议：香港大碗貿易有限公司，待确认）"),
+        fact("香港大碗贸易有限公司（Hong Kong Da Wan Trading Limited），于香港注册成立的有限公司，公司编号 81215167。"),
         owner("经营范围说明：所售商品")),
       sec("联系方式",
-        owner("注册营业地址"),
+        fact(`注册地址：${ADDRESS}`),
         owner("客服邮箱"),
         owner("客服电话")),
       sec("响应时间", owner("客服时间与目标响应时间")),
