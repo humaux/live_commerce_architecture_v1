@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 
 const paths: Record<string, string> = {
+  dashboard: "M4 4h7v7H4zM13 4h7v4h-7zM13 11h7v9h-7zM4 14h7v6H4z",
   product: "M3 7l9-4 9 4-9 4-9-4zm0 0v11l9 4 9-4V7M12 11v11",
   inventory: "M3 9l9-6 9 6v12H3V9zm4 12v-9h10v9M7 16h10",
   orders: "M5 3h14v18l-3-2-4 2-4-2-3 2V3zm3 5h8M8 12h8",

@@ -125,7 +125,18 @@ after the identity work. Its specs write screenshots under `output/playwright/le
 | --- | --- | --- |
 | `apps/storefront/tests/*.test.mjs` | storefront buyer client/server, payment contract and return | CI, always |
 | `packages/i18n/tests/*.test.ts` | locale resolution and catalogs | CI, always |
+| `tests/admin/merchant-tools-model.test.ts` | merchant-tools (storefront-v2 G): strict dashboard / import / manual-order parsers, the manual-order body has no price field, BFF grammar, three-locale copy parity | CI, always |
 | `tests/media/r04-input-runner.test.mjs` | R04 local LiveKit input probe | needs `COMMERCE_R04_LIVEKIT_BINARY` (pinned binary). Without it `test-node.sh` prints `NOT_RUN` (CI does); `--require-r04` turns that into exit 2 |
+
+## Merchant tools (unit merchant-tools, contracts/storefront-v2.md section G, migration 0094)
+
+Author smokes on a real disposable PG through the real handlers (REAL_PG, run by T1 and focused with `bash scripts/dev/test-focused.sh 'TestMerchantTools'`):
+`tests/foundation/merchant_tools_csv_smoke_test.go` (MTC01-MTC04: CSV preview/commit/replay/update/export round trip, all-or-nothing, boundaries and authority, 5,000-row
+timing) and `tests/foundation/merchant_tools_order_smoke_test.go` (MTO01-MTO03: manual order through the real buyer path, dashboard numbers and finance reuse, the
+300 ms read on 10,000 orders). Go unit tests: `internal/merchanttools`, `internal/httpapi/merchanttools_test.go`. Browser MT12 (dashboard, import wizard, manual-order
+form, three locales, 375 px) is NOT_RUN: no browser mode exists yet; the landing moved from the ledger to the dashboard, so `tests/admin/ledger.spec.ts` and
+`visual-states.spec.ts` now open `/{locale}/inventory`. The buyer page that redeems the order link (`/{locale}/order-link`) belongs to storefront-shell: until it
+ships the link is generated but not redeemable (NOT_RUN).
 
 `tests/admin/claims-request.test.ts` and siblings are also run inside their browser mode (table above); `claim.test.mjs`
 runs in both places.

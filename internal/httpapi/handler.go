@@ -31,6 +31,7 @@ import (
 	"livecommerce/internal/inventory"
 	"livecommerce/internal/live"
 	"livecommerce/internal/merchantorders"
+	"livecommerce/internal/merchanttools"
 	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
 	"livecommerce/internal/storefrontadmin"
@@ -68,6 +69,9 @@ type Options struct {
 	// (stripe-live-enable-v1 §5.2, S5). Empty means SANDBOX so pre-LIVE callers keep their behavior; any other
 	// value not in {SANDBOX, LIVE} leaves the refund routes unmounted.
 	PaymentEnvironment string
+	// ManualOrders is the merchant-created order pipeline (merchant-tools, contract G3); cmd/api builds it with the buyer surface. nil
+	// (buyer surface off) keeps the route mounted and answering 503 manual_order_unavailable, so the admin page can say why.
+	ManualOrders *merchanttools.ManualOrders
 }
 
 func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
@@ -165,6 +169,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerBillingRoutes(mux, pool, configured.Billing)
 	registerCVSRoutes(mux, pool, configured.CVS)
 	registerOfflinePaymentRoutes(mux, pool)
+	registerMerchantToolsRoutes(mux, pool, configured.ManualOrders) // unit merchant-tools: storefront-v2 section G, merchanttools.go
 	foundation := platform.NewHandler(pool, platform.HandlerOptions{SessionStoreList: configured.SessionStoreList})
 	if configured.SessionStoreList {
 		mux.Handle("GET /v1/admin/stores", foundation)
