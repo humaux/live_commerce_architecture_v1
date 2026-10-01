@@ -19,14 +19,30 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"net"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/riverqueue/river"
+	"github.com/riverqueue/river/riverdriver/riverpgxv5"
+
 	"livecommerce/internal/buyerhttp"
+	"livecommerce/internal/httpapi"
+	"livecommerce/internal/identity"
+	"livecommerce/internal/identityhttp"
+	"livecommerce/internal/integrations/accounts"
+	core "livecommerce/internal/integrations/core"
+	"livecommerce/internal/oidclogin"
+	"livecommerce/internal/platform"
 )
 
 func bcoRequire(t *testing.T) {
@@ -57,7 +73,7 @@ func TestBrowserCheckoutOffline(t *testing.T) {
 		t.Fatalf("buyer HTTP constructor: %v", err)
 	}
 	buyerAPI := newHTTPServer(t, handler)
-	stack := brcStartAdmin(t, ctx, e, evidence)
+	stack := bcoStartAdmin(t, ctx, e, evidence)
 	adminEnv := func(phase string, extra map[string]string) map[string]string {
 		env := map[string]string{"LC_BROWSER_STORE": e.store(), "LC_OFF_PHASE": phase, "LC_BROWSER_PHASE": phase, "LC_OFF_BANK": cogBank, "LC_OFF_ACCOUNT": cogAcct,
 			"LC_OFF_THRESHOLD": "2500", "LC_OFF_FEE": "6000", "LC_OFF_MARKET": e.p.market.ID, "LC_OFF_SERVICE": e.p.delivery.Code, "LC_OFF_REASON": "amount does not match the transfer"}
@@ -222,4 +238,99 @@ func TestBrowserCheckoutOffline(t *testing.T) {
 		t.Errorf("%d of the four orders are CONFIRMED at the server total %d", n, total)
 	}
 	t.Logf("COB BROWSER (MOCK) merchant settings -> buyer checkout/proof -> merchant confirm/reject -> buyer sees result -> expiry released stock; evidence=%s", evidence)
+}
+
+// bcoStartAdmin is brcStartAdmin plus the merchant account service (the settings wizard reads provider-accounts, which answers 503 without it): the private Go API (identity + admin routes incl. the CVS routes) over the isolated database,
+// and the production admin Next build against it. The store creator is the principal the mock IdP subject maps to.
+func bcoStartAdmin(t *testing.T, ctx context.Context, e *tcvEnv, evidence string) *brfStack {
+	t.Helper()
+	root, err := filepath.Abs("../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	address := listener.Addr().String()
+	_ = listener.Close()
+	_, port, _ := net.SplitHostPort(address)
+	origin := browserFront(t, address) // https TLS front under LC_BROWSER_ENGINE=webkit, else http://address
+	f := e.p.f
+	idp := newBrowserIDP(t, origin+"/api/auth/callback")
+	mustExec(t, f.owner, `INSERT INTO identity.external_identities(issuer,subject,principal_id) VALUES($1,'browser-subject',$2)`, idp.server.URL, f.principalA)
+	role := "bco_" + strings.ReplaceAll(randomUUID(), "-", "")
+	password := randomToken()
+	mustExec(t, f.owner, `CREATE ROLE `+pgx.Identifier{role}.Sanitize()+` LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE IN ROLE commerce_identity PASSWORD '`+password+`'`)
+	t.Cleanup(func() { mustExec(t, f.owner, `DROP ROLE `+pgx.Identifier{role}.Sanitize()) })
+	u, err := url.Parse(f.databaseURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	u.User = url.UserPassword(role, password)
+	authority, err := platform.OpenIdentityPool(ctx, u.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(authority.Close)
+	provider, err := oidclogin.New(ctx, oidclogin.Config{Issuer: idp.server.URL, ClientID: browserClientID, RedirectURL: idp.redirect, AllowLoopbackForTests: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	service, err := identity.New(authority, observedBrowserProvider{Provider: provider, t: t}, identity.Policy{ProviderKey: "browser-checkout-offline-v1", SessionTTL: time.Hour, OnboardingEnabled: true, Currencies: []string{"TWD", "USD"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	bffKey := randomToken()
+	private, err := identityhttp.NewHandler(service, bffKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mux := http.NewServeMux()
+	mux.Handle("/v1/identity/", private)
+	// Insert-only dependency, no worker/provider is started; the random fixture keys stay in Go memory.
+	jobs, err := river.NewClient(riverpgxv5.New(f.runtime), &river.Config{Schema: "river"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	bindings, err := core.New(jobs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	accountKeys, err := accounts.NewKeyring("browser_fixture", map[string][]byte{"browser_fixture": randomBytes(32)}, randomBytes(32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	accountService, err := accounts.New(accountKeys, bindings)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mux.Handle("/", httpapi.NewHandler(f.runtime, httpapi.Options{SessionStoreList: true, CVS: e.cvs, Accounts: accountService}))
+	api := httptest.NewServer(mux)
+	t.Cleanup(api.Close)
+	nextLog := browserLog(t, filepath.Join(evidence, "admin-next.log"))
+	next := exec.CommandContext(ctx, "node", filepath.Join(root, "apps/admin/.next/standalone/apps/admin/server.js"))
+	next.Dir = root
+	next.Env = browserEnvironment(map[string]string{"HOSTNAME": "127.0.0.1", "PORT": port, "NODE_ENV": "production", "COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1",
+		"COMMERCE_PUBLIC_ORIGIN": origin, "COMMERCE_API_ORIGIN": api.URL, "COMMERCE_OIDC_ISSUER": idp.server.URL, "COMMERCE_BFF_KEY": bffKey, "COMMERCE_ONBOARDING_ENABLED": "1", "COMMERCE_ONBOARDING_CURRENCIES": "TWD,USD"})
+	next.Stdout, next.Stderr = nextLog, nextLog
+	next.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	if err := next.Start(); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = syscall.Kill(-next.Process.Pid, syscall.SIGKILL); _, _ = next.Process.Wait() })
+	client := &http.Client{Timeout: time.Second}
+	for attempt := 0; ; attempt++ {
+		if response, err := client.Get("http://" + address + "/api/stores"); err == nil {
+			_ = response.Body.Close()
+			if response.StatusCode == http.StatusUnauthorized {
+				break
+			}
+		}
+		if attempt > 100 {
+			t.Fatalf("admin Next readiness failed; evidence=%s", evidence)
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	return &brfStack{root: root, evidence: evidence, origin: origin, api: api}
 }
