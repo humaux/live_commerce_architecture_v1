@@ -110,8 +110,17 @@ try {
     const viewport = mobile ? "mobile" : "desktop";
     const ctx = await newContext(mobile), page = await ctx.newPage();
     await page.goto(`${store.origin}/${locale}/products/${store.product}`);
-    // a pay-at-pickup total must be a whole TWD amount (F20); the fixture SKU costs TWD 12.50, so two units
+    // a pay-at-pickup total must be a whole TWD amount (F20); the fixture SKU costs TWD 12.50, so two units.
+    // 0093 (storefront-integration): the product page only adds to the cart; delivery is chosen on /{locale}/checkout.
     await page.getByRole("button", { name: copy[locale].more, exact: true }).click();
+    await expect(page.getByTestId("add-to-cart")).toBeEnabled();
+    await page.getByTestId("add-to-cart").click();
+    await expect(page.getByTestId("cart-drawer")).toBeVisible();
+    await page.goto(`${store.origin}/${locale}/cart`);
+    await expect(page.getByTestId("cart-line")).toHaveCount(1);
+    await expect(page.getByTestId("cart-line-qty")).toHaveText("2");
+    await page.getByTestId("cart-checkout").click();
+    await page.waitForURL(`**/${locale}/checkout`);
     await page.getByRole("button", { name: copy[locale].delivery, exact: true }).click();
     // the delivery list: the CVS chain is offered; the card-only home option is not (nothing the buyer cannot pay for)
     await expect(page.locator("#delivery option", { hasText: copy[locale].chain })).toHaveCount(1); // options load asynchronously
