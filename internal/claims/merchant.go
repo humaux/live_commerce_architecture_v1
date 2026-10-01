@@ -32,11 +32,16 @@ type OfferInput struct {
 	Keyword             string `json:"keyword"`
 	SKUID               string `json:"sku_id"`
 	MaxQuantityPerClaim int64  `json:"max_quantity_per_claim"`
+	// LivePriceMinor (Live tools R4): optional live-only unit price, >= 1; absent or 0 = none.
+	LivePriceMinor *int64 `json:"live_price_minor,omitempty"`
 }
 type OfferUpdate struct {
 	ExpectedVersion     int64 `json:"expected_version"`
 	MaxQuantityPerClaim int64 `json:"max_quantity_per_claim"`
 	Active              bool  `json:"active"`
+	// LivePriceMinor (Live tools R4): nil = unchanged, 0 = clear, >= 1 = set. JSON null never reaches
+	// here (the strict claims decoder rejects it), so "clear" is the explicit 0.
+	LivePriceMinor *int64 `json:"live_price_minor,omitempty"`
 }
 type Offer struct {
 	ID                  string    `json:"offer_id"`
@@ -50,6 +55,11 @@ type Offer struct {
 	Version             int64     `json:"version"`
 	ActivatedAt         time.Time `json:"activated_at"`
 	UpdatedAt           time.Time `json:"updated_at"`
+	// Live tools (R4) display fields: the SKU catalog price and currency let Studio warn when the
+	// live price is higher; LivePriceMinor is null when the offer has none.
+	SKUPriceMinor  int64  `json:"sku_price_minor"`
+	Currency       string `json:"currency"`
+	LivePriceMinor *int64 `json:"live_price_minor"`
 }
 type WindowInput struct {
 	ExpectedVersion int64     `json:"expected_version"`
@@ -264,7 +274,8 @@ func validMode(mode MatchMode) bool { return mode == MatchExact || mode == Match
 // Called by M3.
 func CreateOffer(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key, sessionID string, in OfferInput) (Offer, error) {
 	keyword, ok := grammar.NormalizeKeyword(in.Keyword)
-	if !ok || !command.ValidID(sessionID) || !command.ValidID(in.SKUID) ||
+	livePrice, priceOK := normalizeLivePrice(in.LivePriceMinor)
+	if !ok || !priceOK || !command.ValidID(sessionID) || !command.ValidID(in.SKUID) ||
 		in.MaxQuantityPerClaim < 1 || in.MaxQuantityPerClaim > grammar.MaxQuantity {
 		return Offer{}, command.ErrInvalid
 	}
@@ -279,7 +290,8 @@ func CreateOffer(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, ke
 		Keyword             string `json:"keyword"`
 		SKUID               string `json:"sku_id"`
 		MaxQuantityPerClaim int64  `json:"max_quantity_per_claim"`
-	}{scope.PrincipalID, sessionID, keyword, in.SKUID, in.MaxQuantityPerClaim}
+		LivePriceMinor      *int64 `json:"live_price_minor,omitempty"`
+	}{scope.PrincipalID, sessionID, keyword, in.SKUID, in.MaxQuantityPerClaim, livePrice}
 	var out Offer
 	err := command.Run(ctx, tx, scope, "live.claim.offer.create", key, request, &out, func() error {
 		if err := waitAdvisory(ctx, tx, "claims-offers|"+scope.TenantID+"|"+scope.StoreID+"|"+sessionID); err != nil {
@@ -314,9 +326,9 @@ func CreateOffer(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, ke
 			return command.ErrConflict
 		}
 		var offerID string
-		err = tx.QueryRow(ctx, `INSERT INTO live.offers(tenant_id,store_id,session_id,keyword,sku_id,max_quantity_per_claim,principal_id)
-			VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id::text`,
-			scope.TenantID, scope.StoreID, sessionID, keyword, in.SKUID, in.MaxQuantityPerClaim, scope.PrincipalID).Scan(&offerID)
+		err = tx.QueryRow(ctx, `INSERT INTO live.offers(tenant_id,store_id,session_id,keyword,sku_id,max_quantity_per_claim,principal_id,live_price_minor)
+			VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id::text`,
+			scope.TenantID, scope.StoreID, sessionID, keyword, in.SKUID, in.MaxQuantityPerClaim, scope.PrincipalID, livePrice).Scan(&offerID)
 		if err != nil {
 			return mapError(err)
 		}
@@ -343,10 +355,12 @@ func CreateOffer(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, ke
 // ErrConflict while another active offer holds the SKU. Lowering max never rewrites
 // accepted lines. Called by M4.
 func UpdateOffer(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key, sessionID, offerID string, in OfferUpdate) (Offer, error) {
-	if !command.ValidID(sessionID) || !command.ValidID(offerID) || in.ExpectedVersion < 1 || in.ExpectedVersion == math.MaxInt64 ||
+	livePrice, priceOK := normalizeLivePrice(in.LivePriceMinor)
+	if !priceOK || !command.ValidID(sessionID) || !command.ValidID(offerID) || in.ExpectedVersion < 1 || in.ExpectedVersion == math.MaxInt64 ||
 		in.MaxQuantityPerClaim < 1 || in.MaxQuantityPerClaim > grammar.MaxQuantity {
 		return Offer{}, command.ErrInvalid
 	}
+	setPrice := in.LivePriceMinor != nil // absent = leave the stored price alone
 	if err := authorize(ctx, tx, scope, token, managePermission); err != nil {
 		return Offer{}, err
 	}
@@ -357,7 +371,9 @@ func UpdateOffer(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, ke
 		ExpectedVersion     int64  `json:"expected_version"`
 		MaxQuantityPerClaim int64  `json:"max_quantity_per_claim"`
 		Active              bool   `json:"active"`
-	}{scope.PrincipalID, sessionID, offerID, in.ExpectedVersion, in.MaxQuantityPerClaim, in.Active}
+		SetLivePrice        bool   `json:"set_live_price"`
+		LivePriceMinor      *int64 `json:"live_price_minor,omitempty"`
+	}{scope.PrincipalID, sessionID, offerID, in.ExpectedVersion, in.MaxQuantityPerClaim, in.Active, setPrice, livePrice}
 	var out Offer
 	err := command.Run(ctx, tx, scope, "live.claim.offer.update", key, request, &out, func() error {
 		var version int64
@@ -375,9 +391,10 @@ func UpdateOffer(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, ke
 		// In SET, "active" on the right-hand side is the pre-update value.
 		if _, err := tx.Exec(ctx, `UPDATE live.offers SET max_quantity_per_claim=$5,active=$6,
 			activated_at=CASE WHEN $6 AND NOT active THEN clock_timestamp() ELSE activated_at END,
+			live_price_minor=CASE WHEN $7::boolean THEN $8::bigint ELSE live_price_minor END,
 			version=version+1,updated_at=clock_timestamp()
 			WHERE tenant_id=$1 AND store_id=$2 AND session_id=$3 AND id=$4`,
-			scope.TenantID, scope.StoreID, sessionID, offerID, in.MaxQuantityPerClaim, in.Active); err != nil {
+			scope.TenantID, scope.StoreID, sessionID, offerID, in.MaxQuantityPerClaim, in.Active, setPrice, livePrice); err != nil {
 			return mapError(err)
 		}
 		offers, err := readOffers(ctx, tx, scope, sessionID, offerID)
@@ -396,12 +413,27 @@ func UpdateOffer(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, ke
 	return out, nil
 }
 
+// maxLivePriceMinor equals the offer CHECK and the checkout quote-line bound (migrations/0092, 0013).
+const maxLivePriceMinor = 1_000_000_000_000
+
+// normalizeLivePrice maps the wire value to the stored one: nil and 0 both mean "no live price"
+// (NULL); 1..1e12 is stored; anything else is invalid. Pure.
+func normalizeLivePrice(v *int64) (*int64, bool) {
+	if v == nil || *v == 0 {
+		return nil, true
+	}
+	if *v < 1 || *v > maxLivePriceMinor {
+		return nil, false
+	}
+	return v, true
+}
+
 // readOffers returns the session's offers ORDER BY keyword, or exactly one offer when
 // offerID is set (ErrNotFound if absent). SKU code and product name come from the catalog
 // package's tables (read-only display join, merchant RLS).
 func readOffers(ctx context.Context, tx pgx.Tx, scope platform.Scope, sessionID, offerID string) ([]Offer, error) {
 	rows, err := tx.Query(ctx, `SELECT o.id::text,o.session_id::text,o.keyword,o.sku_id::text,s.code,p.name,
-		o.max_quantity_per_claim,o.active,o.version,o.activated_at,o.updated_at
+		o.max_quantity_per_claim,o.active,o.version,o.activated_at,o.updated_at,s.price_minor,s.currency,o.live_price_minor
 		FROM live.offers o
 		JOIN catalog.skus s ON s.tenant_id=o.tenant_id AND s.store_id=o.store_id AND s.id=o.sku_id
 		JOIN catalog.products p ON p.tenant_id=s.tenant_id AND p.store_id=s.store_id AND p.id=s.product_id
@@ -415,7 +447,8 @@ func readOffers(ctx context.Context, tx pgx.Tx, scope platform.Scope, sessionID,
 	for rows.Next() {
 		var o Offer
 		if err := rows.Scan(&o.ID, &o.SessionID, &o.Keyword, &o.SKUID, &o.SKUCode, &o.ProductName,
-			&o.MaxQuantityPerClaim, &o.Active, &o.Version, &o.ActivatedAt, &o.UpdatedAt); err != nil {
+			&o.MaxQuantityPerClaim, &o.Active, &o.Version, &o.ActivatedAt, &o.UpdatedAt,
+			&o.SKUPriceMinor, &o.Currency, &o.LivePriceMinor); err != nil {
 			return nil, mapError(err)
 		}
 		offers = append(offers, o)

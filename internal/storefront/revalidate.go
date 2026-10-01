@@ -58,6 +58,11 @@ func RevalidateQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, quoteID stri
 	if err != nil {
 		return Quote{}, err
 	}
+	// The same overlay as CreateQuote: if the claim link expired (or the offer changed) since the quote,
+	// the live price no longer applies, the line differs from the snapshot and the buyer must re-quote.
+	if err = applyLivePrices(ctx, tx, s, cart.ID, currentLines); err != nil {
+		return Quote{}, err
+	}
 	if len(currentLines) != len(out.Lines) {
 		return Quote{}, command.ErrConflict
 	}
@@ -67,7 +72,9 @@ func RevalidateQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, quoteID stri
 		if quoted.SKUID != current.SKUID || quoted.ProductID != current.ProductID ||
 			quoted.Code != current.Code || quoted.Name != current.Name || quoted.Description != current.Description ||
 			quoted.SKUVersion != current.SKUVersion || quoted.ProductVersion != current.ProductVersion ||
-			quoted.Quantity != current.Quantity || quoted.UnitPriceMinor != current.UnitPriceMinor {
+			quoted.Quantity != current.Quantity || quoted.UnitPriceMinor != current.UnitPriceMinor ||
+			quoted.PriceRule != current.PriceRule || quoted.CatalogUnitPriceMinor != current.CatalogUnitPriceMinor ||
+			quoted.ClaimBundleID != current.ClaimBundleID || quoted.ClaimOfferID != current.ClaimOfferID {
 			return Quote{}, command.ErrConflict
 		}
 		inputs[i] = pricing.AmountLine{UnitPriceMinor: current.UnitPriceMinor, Quantity: current.Quantity}
