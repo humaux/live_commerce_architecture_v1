@@ -202,7 +202,7 @@ COMMENT ON FUNCTION checkout.redeem_order_link(uuid,uuid,bytea,bytea,bigint,byte
 -- link (sha256 of the token, 7 days); a repeat is a no-op (same order, same derived token hash).
 CREATE FUNCTION fulfillment.mark_order_merchant_manual(p_hash bytea,p_store uuid,p_order uuid,p_link bytea) RETURNS void
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE s record; v_source text; v_created timestamptz; v_owner uuid;
+DECLARE s record; v_source text; v_created timestamptz; v_owner uuid; v_now timestamptz:=clock_timestamp();
 BEGIN
  IF p_hash IS NULL OR octet_length(p_hash)<>32 OR p_store IS NULL OR p_order IS NULL OR p_link IS NULL OR octet_length(p_link)<>32
   OR current_setting('transaction_isolation')<>'read committed' THEN
@@ -220,8 +220,8 @@ BEGIN
   IF v_created<clock_timestamp()-interval '10 minutes' THEN RAISE EXCEPTION 'order not recent' USING ERRCODE='PT409'; END IF;
   UPDATE checkout.orders SET source='merchant_manual' WHERE tenant_id=s.tenant_id AND store_id=p_store AND id=p_order;
  END IF;
- INSERT INTO checkout.order_links(token_hash,tenant_id,store_id,owner_id,order_id,expires_at)
-  VALUES(p_link,s.tenant_id,p_store,v_owner,p_order,clock_timestamp()+interval '7 days') ON CONFLICT(token_hash) DO NOTHING;
+ INSERT INTO checkout.order_links(token_hash,tenant_id,store_id,owner_id,order_id,created_at,expires_at)
+  VALUES(p_link,s.tenant_id,p_store,v_owner,p_order,v_now,v_now+interval '7 days') ON CONFLICT(token_hash) DO NOTHING;
 END $$;
 ALTER FUNCTION fulfillment.mark_order_merchant_manual(bytea,uuid,uuid,bytea) OWNER TO commerce_checkout_writer;
 REVOKE ALL ON FUNCTION fulfillment.mark_order_merchant_manual(bytea,uuid,uuid,bytea) FROM PUBLIC;
