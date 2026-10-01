@@ -37,8 +37,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
-	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -87,31 +85,7 @@ func ltgNew(t *testing.T, opts ...tcvOpts) *ltgEnv {
 	// the merchant handler of the gate: claims routes (library/offers/import) + promotions + refunds + CVS settings
 	e.merchant = httpapi.NewHandler(e.p.f.runtime, httpapi.Options{CVS: e.cvs, RefundJobs: refunds, Studio: true, ClaimLabels: &labels})
 	h := &lcHarness{cqHarness: e.p.cqHarness, ctx: context.Background(), actor: e.p.f.principalA, token: e.token(), labels: labels}
-	ltgD1Workaround(t, e.p.f)
 	return &ltgEnv{tcvEnv: e, h: h, money: e.sku(ltgCatalog, 500)}
-}
-
-// ltgD1Workaround: DEFECT D1 (output/live-tools/tests/DEFECTS.md). storefront.RevalidateQuote, which checkout.Begin runs on the checkout runtime pool,
-// reads claims.live_prices for every cart that holds a claim-origin line, but migration 0092 grants EXECUTE (and migration 0060 schema USAGE) only to
-// commerce_buyer_runtime: Begin of ANY claim-origin cart fails with "permission denied for schema claims" -> "checkout database unavailable".
-// With the workaround armed this fixture (owner pool, disclosed) adds the two missing privileges so the REST of the money path can still be
-// verified. It is NEVER armed by an acceptance run: without it every test that places an order from a claim fails, which is the point.
-// Arming: env LC_LTG_WORKAROUND_D1=1, or (sandboxed runners that can only invoke the allowlisted scripts and cannot pass env) the gitignored
-// flag file output/live-tools/LTG_WORKAROUND_D1.on containing "1" — same disclosure, same effect, logged on every use either way.
-func ltgD1Workaround(t *testing.T, f *testFixture) {
-	t.Helper()
-	armed := os.Getenv("LC_LTG_WORKAROUND_D1") == "1"
-	if !armed {
-		// tests run with CWD=tests/foundation, so the repo root is ../..; output/ is the gitignored evidence area.
-		b, err := os.ReadFile(filepath.Join("..", "..", "output", "live-tools", "LTG_WORKAROUND_D1.on"))
-		armed = err == nil && strings.TrimSpace(string(b)) == "1"
-	}
-	if !armed {
-		return
-	}
-	mustExec(t, f.owner, `GRANT USAGE ON SCHEMA claims TO commerce_checkout_runtime`)
-	mustExec(t, f.owner, `GRANT EXECUTE ON FUNCTION claims.live_prices(uuid[],uuid[],uuid[]) TO commerce_checkout_runtime`)
-	t.Log("LC_LTG_WORKAROUND_D1 armed: checkout runtime granted claims USAGE + live_prices EXECUTE by the fixture (defect D1 masked, NOT acceptance)")
 }
 
 // session creates a draft with an OPEN window and one offer A1 on the money SKU (live price when price > 0).

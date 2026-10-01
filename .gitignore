@@ -13,7 +13,5 @@ node_modules/
 test-results/
 playwright-report/
 output/playwright/
-# live-tools gate: local-only defect-D1 workaround flag (see tests/foundation/live_tools_gate_test.go); never committed.
-output/live-tools/LTG_WORKAROUND_D1.on
 # Agent-tool isolated worktrees (Claude Code workflows); never repository content.
 .claude/worktrees/

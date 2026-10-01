@@ -1146,9 +1146,11 @@ Append-only; the §13 "Live-only price" row now points here. Binding for the liv
    line's origin only when the SKU is already in the cart with that origin **and** the new quantity is `<= claim_quantity`;
    otherwise the origin is dropped (normal price). A redeem that applies a line replaces that SKU's origin (last apply wins).
 5. **Quote authority.** `CreateQuote` and `RevalidateQuote` (the only unit-price code path) read the cart's origins and call
-   `claims.live_prices(...)` (definer, EXECUTE `commerce_buyer_runtime`). A row is returned only when ALL hold at
+   `claims.live_prices(bundles, offers, skus, quantities)` (definer, EXECUTE `commerce_buyer_runtime` for Quote and
+   `commerce_checkout_runtime` for `checkout.Begin`'s `RevalidateQuote`; migration 0103). A row is returned only when ALL hold at
    `clock_timestamp()`: the bundle is bound to the calling buyer; its `claims.links` row exists with `expires_at > now`; the
-   claim line (bundle, offer) exists for that SKU; the offer is `active`, belongs to the bundle's session, targets that SKU and
+   claim line (bundle, offer) exists for that SKU and its `quantity` is >= the cart line quantity (the SQL, not the cart's own
+   `claim_quantity`, is the authority); the offer is `active`, belongs to the bundle's session, targets that SKU and
    has `live_price_minor IS NOT NULL`. Otherwise the line is priced from `catalog.skus.price_minor`. A quote line carries
    `price_rule` (`"live_claim"`; absent = catalog), `catalog_unit_price_minor`, `claim_bundle_id`, `claim_offer_id`;
    `unit_price_minor` is the applied price. `pricing.ResolveUnitPrice` is the pure rule. The order snapshot embeds the quote

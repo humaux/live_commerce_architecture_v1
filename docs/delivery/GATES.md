@@ -145,10 +145,9 @@ Smoke S29m BLOCKED is accepted in the CI job (F11), not by release-gate.
 | `tests/e2e/deal-loop.spec.ts` | `--browser-e2e` |
 | `tests/e2e/live-tools.spec.ts` (driven by `TestBrowserLiveTools`, tests/foundation/browser_live_tools_test.go) | `--browser-e2e` (runs after the deal loop in the same mode: Studio library import + live price, signed MOCK Meta claim, pay at pickup at the live price, direct purchase at the normal price; zh-TW + en x desktop + 390 px; BROWSER, MOCK) |
 
-Note (independent live-tools test author, 2026-10-01): while defect D1 (`output/live-tools/tests/DEFECTS.md`, also `kimi-evidence/DEFECTS.md` on branch unit/live-tools-tests)
-is unfixed, `TestBrowserE2EDealLoop` in the same mode fails at create-order on any base that includes migration 0092 — the buyer's cart there is claim-origin
-and `checkout.Begin` hits the missing `claims` schema USAGE / `claims.live_prices` EXECUTE on the checkout runtime. That failure IS D1 (differential proof in
-`kimi-evidence/browser-green.log`), so the mode's exit code stays 1 until D1 is fixed in product code; the live-tools gate row above is `TestBrowserLiveTools`.
+Note: defect D1 of the independent live-tools gate (`output/live-tools/tests/DEFECTS.md`: `checkout.Begin` of a claim-origin cart failed on the
+checkout runtime, which also turned T12 red at create-order) and D2 (claim quantity not proven in SQL) are fixed by migration 0103; the gate runs
+with no grant fixture, and T12's Meta-reply dispatcher uses the claims-worker login (0096).
 
 The `--browser-admin-legacy` gate replaced a manual five-step procedure (`docs/implementation/
 2026-09-20-admin-ledger-acceptance.md` ss "Repeatable local run"): three of its specs had no runner

@@ -21,29 +21,33 @@ import (
 // its claim pays the catalog price for the whole line.
 func applyLivePrices(ctx context.Context, tx pgx.Tx, s buyer.Scope, cartID string, lines []QuoteLine) error {
 	// storefront.cart_lines (own table): origins of the lines in this cart.
-	rows, err := tx.Query(ctx, `SELECT sku_id::text,claim_bundle_id::text,claim_offer_id::text FROM storefront.cart_lines
+	rows, err := tx.Query(ctx, `SELECT sku_id::text,claim_bundle_id::text,claim_offer_id::text,quantity FROM storefront.cart_lines
 		WHERE tenant_id=$1 AND store_id=$2 AND owner_id=$3 AND cart_id=$4 AND claim_bundle_id IS NOT NULL AND quantity<=claim_quantity
 		ORDER BY sku_id`, s.TenantID, s.StoreID, s.OwnerID, cartID)
 	if err != nil {
 		return err
 	}
 	var skus, bundles, offers []string
+	var quantities []int64
 	for rows.Next() {
 		var sku, bundle, offer string
-		if err = rows.Scan(&sku, &bundle, &offer); err != nil {
+		var quantity int64
+		if err = rows.Scan(&sku, &bundle, &offer, &quantity); err != nil {
 			rows.Close()
 			return err
 		}
-		skus, bundles, offers = append(skus, sku), append(bundles, bundle), append(offers, offer)
+		skus, bundles, offers, quantities = append(skus, sku), append(bundles, bundle), append(offers, offer), append(quantities, quantity)
 	}
 	rows.Close()
 	if err = rows.Err(); err != nil || len(skus) == 0 {
 		return err
 	}
-	// claims.live_prices (definer, EXECUTE commerce_buyer_runtime, migrations/0092): returns a row only
-	// for origins bound to this buyer with an unexpired link and an active priced offer of that session.
+	// claims.live_prices (definer, EXECUTE commerce_buyer_runtime + commerce_checkout_runtime: Quote and checkout.Begin's
+	// RevalidateQuote both land here; migrations/0092, 0103): returns a row only for origins bound to this buyer with an
+	// unexpired link, a claim line covering the cart quantity (0103: the SQL, not claim_quantity, is the authority) and an
+	// active priced offer of that session.
 	priced, err := tx.Query(ctx, `SELECT sku_id::text,bundle_id::text,offer_id::text,live_price_minor
-		FROM claims.live_prices($1::uuid[],$2::uuid[],$3::uuid[])`, bundles, offers, skus)
+		FROM claims.live_prices($1::uuid[],$2::uuid[],$3::uuid[],$4::bigint[])`, bundles, offers, skus, quantities)
 	if err != nil {
 		return err
 	}
