@@ -897,23 +897,32 @@ func lcPopulatedUpgrade(t *testing.T) {
 	}
 	mustExec(t, owner, `CREATE TABLE public.lc_schema_migrations (version text PRIMARY KEY, checksum text NOT NULL, applied_at timestamptz NOT NULL DEFAULT now())`)
 	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0060_live_claims.sql',$1)`, fmt.Sprintf("%x", sha256.Sum256(body)))
-	// 0064 and post-River 0014 (meta-claims-intake-v1) build on 0060's tables and roles, so they are
-	// held back with it and applied on top of the populated data in the second phase below. The meta-ads
-	// migrations (0074/0075, post-River 0015) build on 0064's Page-token custody tables and 0074's role, so they
-	// are held back too (unit ads-core; nothing else about this gate changes).
-	// 0078 (customers-billing-v1) reads claims.bundles and 0079 reads live.claim_windows / claim_window_intervals,
-	// so both are held back with 0060 as well (0079 after 0078: it needs 0078's permission values). 0080 (ads-capi)
-	// builds on 0074 and 0078/0079, so it is held back with them.
-	dependents := []string{"0064_meta_claims_intake.sql", "0074_meta_ads.sql", "0075_meta_ads_insights.sql",
-		"0078_customers_privacy.sql", "0079_platform_billing.sql", "0080_meta_capi.sql",
-		"post_river/0014_meta_claims_intake_river.sql", "post_river/0015_meta_ads_river.sql",
-		// 0096 (+ post-River 0019, worker-authority-split) move claims/ads/payment grants, so they need every file above.
-		"0096_worker_authorities.sql", "post_river/0019_worker_authorities.sql",
-		// 0071 (claims-retention-purge-v1) requires 0060+0064 (55000 precondition), so it is held back as well.
-		"0071_claims_retention.sql",
-		// R3/R4 files that redefine 0078 definers (finance summary 0085/0088, erasure 0090/0091) or extend 0060 offers (0092)
-		// cannot run while 0078/0060 are held back; they are re-applied with them.
-		"0085_finance_pay_at_pickup.sql", "0088_checkout_offline.sql", "0089_staff_team.sql", "0090_buyer_comms.sql", "0091_promotions.sql", "0092_live_tools.sql", "0094_merchant_tools.sql", "0095_meta_connect.sql"}
+	// HELD BACK = derived from file numbers, never a hand list (the hand list went stale twice: 0097/0098 patch 0090's
+	// notify.claim_batch and failed when applied before it existed). Every numbered migration from 0064 on (the first
+	// that builds on 0060's tables and roles: meta-claims-intake) and every post_river file from 0014 on (its River half)
+	// is recorded in the ledger WITHOUT running; the second phase below runs them, in order, on top of the populated
+	// data, which is exactly the production upgrade path. 0061-0063 (Stripe PSP) and post_river 0012/0013 stay applied
+	// before: migrate.go's River grant block names commerce_stripe_ingress (created by 0061) on every Apply. The cutoff
+	// covers the ads/CAPI/customers/billing/retention files, the R3/R4 redefinitions (0085..0098) and whatever is added
+	// next; a new migration needs no edit here. Same rule as mciApplyWithout (meta_claims_intake_schema_test.go).
+	var dependents []string
+	numbered, _ := filepath.Glob("../../migrations/[0-9][0-9][0-9][0-9]_*.sql")
+	post, _ := filepath.Glob("../../migrations/post_river/[0-9][0-9][0-9][0-9]_*.sql")
+	sort.Strings(numbered)
+	sort.Strings(post)
+	for _, path := range numbered {
+		if filepath.Base(path)[:4] >= "0064" {
+			dependents = append(dependents, filepath.Base(path))
+		}
+	}
+	for _, path := range post {
+		if filepath.Base(path)[:4] >= "0014" {
+			dependents = append(dependents, "post_river/"+filepath.Base(path))
+		}
+	}
+	if len(dependents) < 20 {
+		t.Fatalf("derived only %d held-back migrations %v; the glob is broken", len(dependents), dependents)
+	}
 	for _, version := range dependents {
 		dependent, err := os.ReadFile(filepath.Join("../../migrations", version))
 		if err != nil {
