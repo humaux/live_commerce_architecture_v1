@@ -38,8 +38,10 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const listen = async server => { server.listen(0, "127.0.0.1"); await once(server, "listening"); return server.address().port; };
 const sha = buf => crypto.createHash("sha256").update(buf).digest("hex");
 const shots = [], uiErrors = [];
-// server numbers (minor units) -> the digits the pages show: 96000 -> "960.00", 100000 -> "1,000.00"
-const money = minor => (minor / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// server numbers (minor units) -> the digits the pages show. TWD is shown in whole dollars with thousands separators (96000 -> "960",
+// 100000 -> "1,000"); amt() matches the number as a whole token, with or without ".00", so "960" never matches inside "1,960".
+const money = minor => (minor / 100).toLocaleString("en-US");
+const amt = minor => new RegExp(`(^|[^0-9,.])${money(minor).replace(/,/g, "[,]")}(\\.00)?(?![0-9,])`);
 const taipeiWall = (offsetMs) => new Date(Date.now() + 8 * 3600e3 + offsetMs).toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm in Asia/Taipei
 // Expected buyer copy (apps/storefront/lib/promo-copy.ts). These strings are the product's wording of the contract codes promo_invalid / promo_min_subtotal.
 const copy = {
@@ -144,7 +146,7 @@ async function scenario(index, run) {
   }
   await buyer.goto(`${buyerOrigin}/${run.locale}/cart`);
   await expect(buyer.getByTestId("cart-line")).toHaveCount(2);
-  await expect(buyer.getByTestId("cart-subtotal")).toContainText(money(subtotal));
+  await expect(buyer.getByTestId("cart-subtotal")).toContainText(amt(subtotal));
   await buyer.getByTestId("cart-checkout").click();
   await buyer.waitForURL(`**/${run.locale}/products/Checkout`);
   await buyer.getByRole("button", { name: words.delivery, exact: true }).click();
@@ -154,7 +156,7 @@ async function scenario(index, run) {
   assert.equal((await quoted).status(), 200);
   const quotation = buyer.locator(".quotation");
   await expect(quotation).toBeVisible();
-  await expect(quotation).toContainText(money(subtotal + shipping)); // no code yet: goods + shipping
+  await expect(quotation).toContainText(amt(subtotal + shipping)); // no code yet: goods + shipping
   await expect(buyer.getByTestId("promo-code")).toBeVisible();
   pass(`${label} buyer: 2 products in the cart, checkout, delivery, quote without a code = goods + shipping`);
 
@@ -167,8 +169,8 @@ async function scenario(index, run) {
     assert.equal((await reply).status(), status, `${label} ${bad}`);
     await expect(buyer.getByTestId("promo-problem")).toHaveText(message);
     await expect(buyer.getByTestId("promo-applied")).toHaveCount(0);
-    await expect(quotation).toContainText(money(subtotal + shipping));
-    await expect(quotation).not.toContainText(money(total));
+    await expect(quotation).toContainText(amt(subtotal + shipping));
+    await expect(quotation).not.toContainText(amt(total));
   }
   await shot(buyer, "buyer-code-refused", run);
   pass(`${label} buyer: an unknown code and a below-minimum code show their own messages and change nothing`);
@@ -185,11 +187,11 @@ async function scenario(index, run) {
   assert.equal(body.amount.shipping_minor, shipping, "a code never touches shipping");
   assert.deepEqual([body.promotion.code, body.promotion.kind, body.promotion.percent], [cell.code, "percent", 10]);
   await expect(buyer.getByTestId("promo-applied")).toContainText(cell.code);
-  await expect(buyer.getByTestId("promo-applied")).toContainText(money(discount));
+  await expect(buyer.getByTestId("promo-applied")).toContainText(amt(discount));
   await expect(buyer.getByTestId("promo-problem")).toHaveCount(0);
-  await expect(quotation.locator("dl > div").filter({ hasText: words.discount })).toContainText(money(discount));
-  await expect(quotation.locator(".total")).toContainText(money(total));
-  await expect(buyer.locator(".purchase-footer")).toContainText(money(total));
+  await expect(quotation.locator("dl > div").filter({ hasText: words.discount })).toContainText(amt(discount));
+  await expect(quotation.locator(".total")).toContainText(amt(total));
+  await expect(buyer.locator(".purchase-footer")).toContainText(amt(total));
   await noOverflow(buyer, `${label} checkout with the code`);
   await shot(buyer, "buyer-code-applied", run);
   pass(`${label} buyer: the code (typed in lower case) is applied by the server quote: discount ${money(discount)}, shipping untouched, total ${money(total)} in the quotation and the footer`);
@@ -199,12 +201,12 @@ async function scenario(index, run) {
   await buyer.getByTestId("promo-remove").click();
   assert.equal((await removed).status(), 200);
   await expect(buyer.getByTestId("promo-applied")).toHaveCount(0);
-  await expect(quotation).toContainText(money(subtotal + shipping));
+  await expect(quotation).toContainText(amt(subtotal + shipping));
   const again = promoQuote();
   await buyer.getByTestId("promo-input").fill(cell.code);
   await buyer.getByTestId("promo-apply").click();
   assert.equal((await again).status(), 200);
-  await expect(quotation.locator(".total")).toContainText(money(total));
+  await expect(quotation.locator(".total")).toContainText(amt(total));
   pass(`${label} buyer: removing the code restores goods + shipping, applying it again restores ${money(total)}`);
 
   // address, bank_transfer, e-mail, place the order
@@ -220,9 +222,9 @@ async function scenario(index, run) {
   await expect(buyer.getByTestId("order-section")).toBeVisible({ timeout: 30000 });
   const orderId = (await buyer.getByTestId("order-id").innerText()).trim();
   assert.match(orderId, /^[a-f0-9-]{36}$/);
-  await expect(buyer.getByTestId("order-breakdown")).toContainText(money(discount));
-  await expect(buyer.getByTestId("order-breakdown")).toContainText(money(total));
-  await expect(buyer.getByTestId("transfer-amount")).toContainText(money(total));
+  await expect(buyer.getByTestId("order-breakdown")).toContainText(amt(discount));
+  await expect(buyer.getByTestId("order-section")).toContainText(amt(total)); // the breakdown lists shipping, tax and discount; the total is a sibling line
+  await expect(buyer.getByTestId("transfer-amount")).toContainText(amt(total));
   await expect(buyer.getByTestId("transfer-state")).toBeVisible();
   await shot(buyer, "buyer-order", run);
   pass(`${label} buyer: bank_transfer order ${orderId} placed; the order page and the amount to transfer are the discounted total ${money(total)}`);
@@ -241,10 +243,10 @@ async function scenario(index, run) {
   await merchant.getByTestId(`order-expand-${orderId}`).click();
   const detail = merchant.getByTestId("order-detail");
   await expect(detail).toBeVisible();
-  await expect(detail.locator(".orders-totals")).toContainText(money(discount));
-  await expect(detail.locator(".orders-totals")).toContainText(money(total));
-  await expect(detail.locator(".orders-totals")).toContainText(money(shipping));
-  await expect(merchant.getByTestId("order-transfer").getByTestId("transfer-amount")).toContainText(money(total));
+  await expect(detail.locator(".orders-totals")).toContainText(amt(discount));
+  await expect(detail.locator(".orders-totals")).toContainText(amt(total));
+  await expect(detail.locator(".orders-totals")).toContainText(amt(shipping));
+  await expect(merchant.getByTestId("order-transfer").getByTestId("transfer-amount")).toContainText(amt(total));
   await noOverflow(merchant, `${label} merchant order detail`);
   await shot(merchant, "admin-order", run);
   await merchant.getByTestId("transfer-confirm").click();
@@ -260,7 +262,7 @@ async function scenario(index, run) {
   await merchant.getByTestId("finance-show").click();
   const totalRow = merchant.getByTestId("finance-total-TWD");
   await expect(totalRow).toBeVisible({ timeout: 30000 });
-  await expect(totalRow.getByTestId("finance-transfer-confirmed")).toContainText(money(total * (index + 1))); // every earlier cell confirmed one more 960.00
+  await expect(totalRow.getByTestId("finance-transfer-confirmed")).toContainText(amt(total * (index + 1))); // every earlier cell confirmed one more 960.00
   await noOverflow(merchant, `${label} finance`);
   await shot(merchant, "admin-finance", run);
   await merchant.goto(`${adminOrigin}/${run.locale}/promotions`);

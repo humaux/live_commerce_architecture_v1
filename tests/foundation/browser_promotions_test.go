@@ -112,6 +112,7 @@ func TestBrowserPromotions(t *testing.T) {
 	}
 	fixtures, _ := json.Marshal(map[string]any{"cells": cells, "currency": "TWD", "store": e.store(), "delivery_en": in.NameEN, "delivery_hant": in.NameHant})
 
+	ordersBefore := countRows(t, f.owner, `SELECT count(*) FROM checkout.orders WHERE store_id=$1`, e.store()) // psSetup places one hold of its own
 	stack := brcStartAdmin(t, ctx, e, evidence)
 	cmd := exec.CommandContext(ctx, "node", "tests/storefront/promotions-gate.mjs")
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
@@ -196,8 +197,8 @@ func TestBrowserPromotions(t *testing.T) {
 		}
 		_ = fx
 	}
-	if n := countRows(t, owner, `SELECT count(*) FROM checkout.orders WHERE store_id=$1`, e.store()); n != len(matrix) {
-		t.Errorf("%d orders in the store, want exactly %d (one per cell: refused codes never placed an order)", n, len(matrix))
+	if n := countRows(t, owner, `SELECT count(*) FROM checkout.orders WHERE store_id=$1`, e.store()); n != ordersBefore+len(matrix) {
+		t.Errorf("%d orders in the store, want exactly %d + %d (one per cell: refused codes never placed an order)", n, ordersBefore, len(matrix))
 	}
 	if _, confirmedMinor, _, _ := e.pgFinance(); confirmedMinor != float64(96000*len(matrix)) {
 		t.Errorf("finance bank_transfer_confirmed_minor %v, want %d", confirmedMinor, 96000*len(matrix))
