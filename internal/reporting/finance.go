@@ -49,7 +49,7 @@ type FinanceRow struct {
 	NetMinor      int64  `json:"net_minor"`
 	// Pay-at-pickup money the carrier collected (ops-polish OP3, BD7): orders with payment_mode=pay_at_pickup and
 	// collection_state=COLLECTED on the UTC+8 day of collection. A different money path (the carrier remits, not a PSP), so it is
-	// never part of CapturedMinor or NetMinor. Zero until identity.read_finance_summary supplies it (decodeRows accepts both shapes).
+	// never part of CapturedMinor or NetMinor. Supplied by identity.read_finance_summary (migrations/0085); decodeRows also accepts the older 7-key shape.
 	PickupCollectedCount int64 `json:"pickup_collected_count"`
 	PickupCollectedMinor int64 `json:"pickup_collected_minor"`
 }
