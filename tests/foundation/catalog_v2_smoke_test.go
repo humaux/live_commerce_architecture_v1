@@ -447,7 +447,7 @@ func TestCatalogV2Smoke(t *testing.T) {
 		t.Fatal("active collection missing from the buyer list")
 	}
 	one := bhRead[map[string]any](t, h.request(t, "GET", "/v1/buyer/catalog/v2/collections/"+c.Slug, "", "", nil, nil), 200)
-	if one["title"] != "v2-"+tag+" New In" || len(one) != 4 {
+	if one["title"] != "v2-"+tag+" New In" || one["id"] != c.ID || len(one) != 5 { // id joined the read with the storefront-integration amendment (contract A, migration 0093)
 		t.Fatalf("collection detail: %v", one)
 	}
 	// detail of the product lists its active collections
