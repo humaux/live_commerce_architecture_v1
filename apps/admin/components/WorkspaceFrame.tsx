@@ -12,6 +12,7 @@ import { copy } from "@/lib/copy";
 import { csrfCookie, sessionBoundary } from "@/lib/settings-client";
 import { signalLogout } from "@/lib/session-events";
 import { customersCopy } from "@/lib/customers-copy";
+import { teamCopy } from "@/lib/team-copy";
 import { BillingBanner } from "./BillingBanner";
 import { Icon } from "./Icon";
 
@@ -51,6 +52,7 @@ export function WorkspaceFrame({
     ["finance", "orders", customersCopy[locale].nav.finance],
     ["billing", "settings", customersCopy[locale].nav.billing],
     ["ads", "meta", c.ads],
+    ["team", "support", teamCopy[locale].nav],
     ["settings", "settings", c.settings],
   ];
   function select(id: string) {
@@ -72,11 +74,11 @@ export function WorkspaceFrame({
       router.push(
         `/${locale}/studio${search.get("store") ? `?store=${encodeURIComponent(search.get("store")!)}` : ""}`,
       );
-    else if (id === "customers" || id === "finance" || id === "billing")
+    else if (id === "customers" || id === "finance" || id === "billing" || id === "team")
       router.push(
         `/${locale}/${id}${search.get("store") ? `?store=${encodeURIComponent(search.get("store")!)}` : ""}`,
       );
-    else if (["settings", "orders", "live", "ads", "customers", "finance", "billing"].includes(active))
+    else if (["settings", "orders", "live", "ads", "customers", "finance", "billing", "team"].includes(active))
       router.push(`/${locale}/`);
     else onSection?.(id);
   }
