@@ -15,6 +15,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -180,10 +181,18 @@ func TestOpsPolishOP1APIAssembly(t *testing.T) {
 	defer cancel()
 	// a quoted home order for the buyer h.cap (as TestBuyerHTTPOptionsDriveHomeCheckout does)
 	var row boptItem
-	for _, candidate := range boptRead(t, h, "").Items {
-		if candidate.MarketCode == h.market.Code {
-			row = candidate
+	// options are paginated and the shared fixture store accumulates markets across the suite: page like the sibling test
+	for query, pages := "", 0; row.MarketID == "" && pages < 100; pages++ {
+		page := boptRead(t, h, query)
+		for _, candidate := range page.Items {
+			if candidate.MarketCode == h.market.Code {
+				row = candidate
+			}
 		}
+		if page.NextCursor == "" {
+			break
+		}
+		query = "cursor=" + url.QueryEscape(page.NextCursor)
 	}
 	if row.MarketID == "" {
 		t.Fatal("no home option in the fixture")

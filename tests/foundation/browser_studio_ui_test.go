@@ -63,6 +63,8 @@ func TestBrowserStudioUIRealChain(t *testing.T) {
 		_, _ = h.lp.f.owner.Exec(context.Background(), `DELETE FROM identity.session_events WHERE session_id IN (SELECT id FROM identity.sessions WHERE principal_id=$1)`, h.lp.actor)
 	})
 	mustExec(t, h.lp.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'live:read')`, h.lp.f.tenantA, h.lp.f.storeA1, h.lp.limited)
+	// the spec leaves Studio through nav-orders; the role-aware nav (0089, apps/admin/lib/team-model.ts) shows it only with orders:read
+	mustExec(t, h.lp.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'orders:read') ON CONFLICT DO NOTHING`, h.lp.f.tenantA, h.lp.f.storeA1, h.lp.actor)
 	expiredToken := randomToken()
 	tx, err := h.lp.f.owner.Begin(ctx)
 	if err != nil {

@@ -688,6 +688,7 @@ func TestManualFulfilmentMF06Export(t *testing.T) {
 	t.Run("frozen values survive catalog, address and pickup edits", func(t *testing.T) {
 		mustExec(t, e.f.owner, `UPDATE catalog.products SET name='Renamed after checkout' WHERE id=$1`, base.s.p.stock.product.ID)
 		mustExec(t, e.f.owner, `UPDATE catalog.skus SET code='NEW-CODE',price_minor=99999 WHERE id=$1`, base.s.p.stock.skus[0].ID)
+		restoreStoreName(t, e.f.owner, base.store())
 		mustExec(t, e.f.owner, `UPDATE control.stores SET name='Renamed store after checkout' WHERE id=$1`, base.store())
 		if _, err := bdSet(e1.s.p.cqHarness, t04Key("mfh-new-dest"), storefront.DestinationInput{ExpectedVersion: e1.s.p.bcHarness.destination.Version, CartVersion: e1.s.p.bcHarness.input.CartVersion, Kind: "home", Country: "TW",
 			RecipientName: "New current recipient", Phone: "+886900000099", HomeAddress: storefront.HomeAddress{City: "Other city", Line1: "Other current address"}}); err != nil {

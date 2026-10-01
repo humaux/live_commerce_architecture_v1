@@ -856,6 +856,7 @@ func TestMerchantOrdersFrozenHistoryAfterMutableEdits(t *testing.T) {
 	// paths; the checkout-created order remains an immutable read snapshot.
 	mustExec(t, b.f.owner, `UPDATE catalog.products SET name='Renamed after checkout' WHERE id=$1`, b.stock.product.ID)
 	mustExec(t, b.f.owner, `UPDATE catalog.skus SET code='NEW-CODE',price_minor=99999 WHERE id=$1`, b.stock.skus[0].ID)
+	restoreStoreName(t, b.f.owner, b.f.storeA1)
 	mustExec(t, b.f.owner, `UPDATE control.stores SET name='Renamed store after checkout' WHERE id=$1`, b.f.storeA1)
 	newDestination, err := bdSet(b.cqHarness, t04Key("mo-new-current-destination"), storefront.DestinationInput{
 		ExpectedVersion: b.destination.Version,
@@ -876,4 +877,15 @@ func TestMerchantOrdersFrozenHistoryAfterMutableEdits(t *testing.T) {
 	if !reflect.DeepEqual(before, after) || !slices.Equal(beforeRaw, afterRaw) {
 		t.Fatalf("mutable catalog/destination/pickup rewrote order history: before=%+v after=%+v", before, after)
 	}
+}
+
+// restoreStoreName puts a shared fixture store's name back when the test ends: several suites rename storeA1 to prove
+// order snapshots are immutable, and later tests (store design SD07) read the live name as the default profile.
+func restoreStoreName(t *testing.T, owner *pgxpool.Pool, store string) {
+	t.Helper()
+	var name string
+	if err := owner.QueryRow(context.Background(), `SELECT name FROM control.stores WHERE id=$1`, store).Scan(&name); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _, _ = owner.Exec(context.Background(), `UPDATE control.stores SET name=$2 WHERE id=$1`, store, name) })
 }
