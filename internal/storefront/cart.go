@@ -4,6 +4,9 @@
 // It never reserves stock, accepts payment, resolves identity or calls providers. Quote is the only
 // price authority: the unit price is the catalog price, except for a cart line whose claim origin
 // claims.live_prices (SQL function of the claims package, no Go import) still honours (claim_price.go).
+// Used by internal/checkout: Begin calls RevalidateQuote and, after the order is written,
+// ConsumeLivePrices (claims.consume_live_prices, 0105), which records the claimed quantity the
+// order used so it cannot be priced live again while that order holds it.
 package storefront
 
 import (

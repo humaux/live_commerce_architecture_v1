@@ -5,8 +5,12 @@
 // the rule. The Quote stays the only charge authority (I05); the cart's live_unit_price_minor is
 // display-only.
 //
-// Non-goals: it never decides whether a claim is valid (claims.live_prices does, in SQL, at call
-// time), never writes, never accepts a price from a client, never touches stock.
+// ConsumeLivePrices (checkout.Begin only) records that a placed order used its live prices, so the
+// claimed quantity cannot be priced live again while that order holds it (R4S-01, migration 0105).
+//
+// Non-goals: it never decides whether a claim is valid (claims.live_prices / consume_live_prices do,
+// in SQL, at call time), never writes a cart or a price, never accepts a price from a client, never
+// touches stock.
 
 package storefront
 
@@ -15,6 +19,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"livecommerce/internal/buyer"
+	"livecommerce/internal/command"
 	"livecommerce/internal/pricing" // ResolveUnitPrice: the pure rule and the rule names.
 )
 
@@ -99,6 +104,31 @@ func applyLivePrices(ctx context.Context, tx pgx.Tx, s buyer.Scope, cartID strin
 		}
 		lines[i].UnitPriceMinor, lines[i].PriceRule = unit, rule
 		lines[i].CatalogUnitPriceMinor, lines[i].ClaimBundleID, lines[i].ClaimOfferID = catalog, l.bundle, l.offer
+	}
+	return nil
+}
+
+// ConsumeLivePrices must run in checkout.Begin's transaction right after checkout.begin_hold wrote
+// orderID from q. claims.consume_live_prices (definer, EXECUTE commerce_checkout_runtime, 0105) reads
+// the live_claim lines from the order's own quote, locks each claim line, re-checks the remaining
+// claimed quantity and writes one claims.live_price_uses row per line; PT409 (another order took the
+// units first) rolls the placement back. A quote without a live line makes no call.
+func ConsumeLivePrices(ctx context.Context, tx pgx.Tx, q Quote, orderID string) error {
+	want := 0
+	for _, l := range q.Lines {
+		if l.PriceRule == pricing.RuleLiveClaim {
+			want++
+		}
+	}
+	if want == 0 {
+		return nil
+	}
+	var got int
+	if err := tx.QueryRow(ctx, `SELECT claims.consume_live_prices($1::uuid)`, orderID).Scan(&got); err != nil {
+		return err
+	}
+	if got != want { // every live-priced line has its ledger row, or nothing is placed
+		return command.ErrConflict
 	}
 	return nil
 }

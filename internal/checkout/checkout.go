@@ -11,6 +11,9 @@
 // RESERVED for the merchant's window, the buyer submits transfer details (transfer.go), and only a merchant act (internal/merchantorders)
 // confirms it; the same ExpiryWorker releases an unpaid window. An optional buyer email is stored on the order.
 //
+// A live-priced (claim-origin) order consumes its claimed quantity in the Begin transaction through
+// storefront.ConsumeLivePrices (claims.consume_live_prices, migration 0105); cancellation releases it by state alone.
+//
 // It never computes prices (internal/pricing and the storefront snapshot do), never settles money on
 // a provider's word alone (payments.apply_capture is the single stock writer for captures), never
 // reads STRIPE_* secrets, never holds pay-at-pickup money, and never accepts a client-supplied amount.
@@ -347,6 +350,11 @@ func (s *Service) Begin(ctx context.Context, token, storeID, key string, in Inpu
 			out.JobID != job.Job.ID || !out.ExpiresAt.After(now) || !holdWithinBounds(mode, now, out.ExpiresAt) ||
 			out.PaymentMode != mode || out.CommercialState != commercialAtPlacement(mode) {
 			return command.ErrConflict
+		}
+		// R4S-01 (0105): the claimed quantity behind every live-priced line is consumed in this same transaction, so a second order can
+		// never re-use it; a PT409 (taken meanwhile) rolls the order, hold, expiry job and receipt back and the buyer re-quotes.
+		if err = storefront.ConsumeLivePrices(callCtx, tx, quote, orderID); err != nil {
+			return err
 		}
 		if in.BuyerEmail != "" {
 			// checkout.set_order_buyer_email: same transaction as the placement, so a rolled-back Begin leaves no email and a replay (receipt

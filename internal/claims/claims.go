@@ -26,6 +26,11 @@
 // Buyer binding, applied state and link hashes are written only by the NOLOGIN
 // commerce_claims_writer through claims.issue_link (merchant) and claims.redeem_link /
 // claims.mark_applied (buyer); claims.preview_link is the read-only buyer projection.
+// Live prices (0092/0103/0105) are SQL-only, no Go caller in this package: claims.live_prices
+// (used by internal/storefront Quote/RevalidateQuote) and claims.consume_live_prices, the only
+// writer of the claims.live_price_uses ledger (used by internal/checkout Begin through
+// storefront.ConsumeLivePrices, on the checkout pool). Both are owned by commerce_claims_writer,
+// which reads only order state and the buyer's own quote from checkout/storefront.
 //
 // Transactions: every exported function takes a caller-owned pgx.Tx (platform.WithScope
 // for merchant functions, buyer.WithScope for buyer functions, both READ COMMITTED) and
