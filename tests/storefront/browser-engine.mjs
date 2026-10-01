@@ -41,6 +41,7 @@ export const iosZoomOffenders = (page) => page.evaluate(() => {
 // access control checks." to the console as an error, although the page catches the rejection (buyer-client request(), the admin loaders). Playwright's
 // WebKit backend reports every javascript-error console message as a pageerror whose name is the text before the first ':' ("Fetch API cannot load
 // https") and whose message is the rest. Chromium keeps the strict pageerror count; a real uncaught exception keeps its own name (TypeError ...).
-// Excused for exactly that text on an own-origin /api/ URL and nothing else.
+// Excused for exactly that text on an own-origin /api/ URL, or on an own-origin Next RSC prefetch (a <Link> in the shell prefetches its target with
+// "?_rsc=<token>"; the admin dashboard landing prefetches several, and the next goto cancels them in flight), and nothing else.
 export const isWebkitCancelledFetch = (error) =>
-  engine === "webkit" && error.name === "Fetch API cannot load https" && /^\/[\w.:-]+\/api\/\S* due to access control checks\.$/.test(error.message);
+  engine === "webkit" && error.name === "Fetch API cannot load https" && /^\/[\w.:-]+\/(?:api\/\S*|\S*[?&]_rsc=[\w-]+) due to access control checks\.$/.test(error.message);

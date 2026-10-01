@@ -105,7 +105,7 @@ try {
   const context = await browser.newContext(ctxOpts({ignoreHTTPSErrors: true, viewport: {width: 390, height: 844}}));
   const merchant = await context.newPage();
   const uiErrors = [];
-  const uiError = error => { if (!isWebkitCancelledFetch(error)) uiErrors.push(error.name); };
+  const uiError = error => { if (!isWebkitCancelledFetch(error)) uiErrors.push(`${error.name}: ${error.message}`.slice(0, 300)); }; // the text, not only the name, so a failure says which request/exception
   context.on("page", page => page.on("pageerror", uiError));
   merchant.on("pageerror", uiError);
   let sawIssuer = false;
