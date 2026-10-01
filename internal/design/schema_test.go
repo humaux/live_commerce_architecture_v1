@@ -249,3 +249,41 @@ func TestTokenHash(t *testing.T) {
 		}
 	}
 }
+
+// D2: one rule for every plain-text field: no angle brackets, no HTML entities (raw or pre-escaped markup).
+func TestPlainTextFieldsRefuseHTML(t *testing.T) {
+	sections := func(d map[string]any) []any { return d["home"].(map[string]any)["sections"].([]any) }
+	setters := map[string]func(d map[string]any, v string){
+		"profile.name":         func(d map[string]any, v string) { d["profile"].(map[string]any)["name"] = v },
+		"profile.tagline":      func(d map[string]any, v string) { d["profile"].(map[string]any)["tagline"] = v },
+		"profile.announcement": func(d map[string]any, v string) { d["profile"].(map[string]any)["announcement"] = v },
+		"profile.contact.address": func(d map[string]any, v string) {
+			d["profile"].(map[string]any)["contact"].(map[string]any)["address"] = v
+		},
+		"nav.header[0].label": func(d map[string]any, v string) {
+			d["nav"].(map[string]any)["header"].([]any)[0].(map[string]any)["label"] = v
+		},
+		"nav.footer[0].label": func(d map[string]any, v string) {
+			d["nav"].(map[string]any)["footer"].([]any)[0].(map[string]any)["label"] = v
+		},
+		"home.sections[0].heading":    func(d map[string]any, v string) { sections(d)[0].(map[string]any)["heading"] = v },
+		"home.sections[0].subheading": func(d map[string]any, v string) { sections(d)[0].(map[string]any)["subheading"] = v },
+		"home.sections[0].cta_label":  func(d map[string]any, v string) { sections(d)[0].(map[string]any)["cta_label"] = v },
+		"pages[0].title":              func(d map[string]any, v string) { d["pages"].([]any)[0].(map[string]any)["title"] = v },
+	}
+	for path, set := range setters {
+		for _, payload := range []string{"<script>alert(1)</script>", `"><svg onload=alert(1)>`, "a > b", "&lt;script&gt;", "&#60;b&#62;", "&#x3c;i&#x3e;", "x &amp; y"} {
+			d := full()
+			set(d, payload)
+			wantPath(t, d, path)
+		}
+		d := full()
+		set(d, "Tom & Jerry 100% ok")
+		if _, _, err := normalize(t, d); err != nil {
+			t.Errorf("%s: plain ampersand text must pass: %v", path, err)
+		}
+	}
+	if _, _, err := Normalize(DefaultDocument("A &amp; <b>B</b>")); err != nil {
+		t.Fatalf("default document must validate for a hostile store name: %v", err)
+	}
+}

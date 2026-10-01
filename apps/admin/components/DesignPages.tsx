@@ -20,7 +20,7 @@ export function DesignPages({ pages, c, issue, onChange }: { pages: Page[]; c: D
       {pages.map((page, i) => {
         const problem = markdownProblem(page.body);
         return (
-          <section className="design-block" key={i} data-testid="design-page">
+          <section className="design-block" key={i} data-testid="design-page-block">
             <div className="design-block-head">
               <h3>{page.title || page.slug || `#${i + 1}`}</h3>
               <button type="button" aria-label={p.remove} title={p.remove} onClick={() => onChange(pages.filter((_, j) => j !== i))}>×</button>
