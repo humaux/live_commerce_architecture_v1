@@ -103,7 +103,7 @@ const en = {
   pageNotFound: "Page not found",
   collectionsEmpty: "No collections yet",
   photo: "Photo {n} of {total}",
-  noPhoto: "No photo",
+  noImage: "No image",
   save: "Save {amount}",
   priceFrom: "from {price}",
 };
@@ -209,7 +209,7 @@ const zhTW: Copy = {
   pageNotFound: "找不到頁面",
   collectionsEmpty: "目前沒有商品分類",
   photo: "第 {n} 張，共 {total} 張",
-  noPhoto: "尚無圖片",
+  noImage: "無圖片",
   save: "省 {amount}",
   priceFrom: "{price} 起",
 };
@@ -314,7 +314,7 @@ const zhCN: Copy = {
   pageNotFound: "找不到页面",
   collectionsEmpty: "目前没有商品分类",
   photo: "第 {n} 张，共 {total} 张",
-  noPhoto: "暂无图片",
+  noImage: "无图片",
   save: "省 {amount}",
   priceFrom: "{price} 起",
 };
