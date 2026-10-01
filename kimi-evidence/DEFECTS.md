@@ -21,3 +21,10 @@
 
 No other product defects found: MCG01/MCG02/MCG03(other subtests)/MCG04/MCG05/MCG06/MCG07 and the MCG08/MCG09 node gates all
 pass against the unmutated product (see the green logs in this directory).
+
+## D2 (P2, found by integrator running MCG10 browser gate 2026-10-01)
+Disconnect leaves the Page subscribed at Meta (fake graph `subscribed` stays true for the disconnected Page; spec line 265).
+Root cause: after the custody ruling (API seals with HPKE v2 and can never open a Page token) the API-side disconnect
+no longer calls DELETE /{page}/subscribed_apps. Fix direction: disconnect enqueues an unsubscribe job executed by
+claims-worker (the only holder of the private ring), best effort, audited; contract "Merchant connect (R4)" says
+disconnect DELETEs subscribed_apps best effort. Test kept failing: meta-connect-gate.spec.ts "...disconnect...".
