@@ -72,7 +72,7 @@ Token rules for every agent:
 
 ### Third-party models (owner 2026-10-01: Kimi subscription)
 
-Runner: `scripts/agents/kimi-agent.sh` (sandboxed: private HOME, no MCP, Bash allowlist, no secrets, worktree only).
+Runner: `scripts/agents/ext-agent.sh` (sandboxed: private HOME, no MCP, Bash allowlist, no secrets, worktree only).
 `KIMI_MODEL=k3` (K3, default) or `kimi-for-coding` (K2.8). Calibrated on real units 2026-10-01.
 
 | Work | Model |
