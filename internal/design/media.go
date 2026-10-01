@@ -125,7 +125,11 @@ func DeleteMedia(ctx context.Context, tx pgx.Tx, s platform.Scope, id string) (M
 	if !validScope(tx, s) || !command.ValidID(id) {
 		return MediaList{}, command.ErrInvalid
 	}
-	// The draft lock orders this against SaveDraft/Publish (a reference cannot appear between the check and the delete).
+	// Same lock order as SaveDraft (advisory -> draft row, see lockStore): a reference cannot appear between the check and
+	// the delete, even on a store whose first draft is being created right now.
+	if err := lockStore(ctx, tx, s); err != nil {
+		return MediaList{}, err
+	}
 	if _, _, err := lockDraft(ctx, tx, s); err != nil && !errors.Is(err, command.ErrNotFound) {
 		return MediaList{}, err
 	}

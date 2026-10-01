@@ -5,7 +5,7 @@ import { test } from "node:test";
 import {
   blankSection, cleanForSave, localIssues, moved, parseDraft, parseMediaList, parsePreviewToken, parseVersions, type DesignDocument,
 } from "../../apps/admin/lib/design-model.ts";
-import { designGetPaths, designPostPaths, designPutPaths, isDesignPath, isDesignUpload, validDesignRequest } from "../../apps/admin/lib/design-request.ts";
+import { designDetails, designGetPaths, designPostPaths, designPutPaths, isDesignPath, isDesignUpload, validDesignRequest } from "../../apps/admin/lib/design-request.ts";
 
 const IMG = "11111111-1111-4111-8111-111111111111";
 const doc = (): DesignDocument => ({
@@ -91,4 +91,10 @@ test("validDesignRequest refuses queries and bodies on reads, ignores other path
   assert.ok(!validDesignRequest(new Request("http://x/a/design/publish?x=1", { method: "POST", body: "{}" }), "design/publish"));
   assert.ok(validDesignRequest(new Request("http://x/a/design/publish", { method: "POST", body: "{}" }), "design/publish"));
   assert.ok(validDesignRequest(get("http://x/a/products?limit=1"), "products"));
+});
+
+test("designDetails forwards only a bounded {path, reason} pair", () => {
+  assert.deepEqual(designDetails({ path: "home.sections[2].heading", reason: "too long (max 80 characters)", extra: "x" }), { path: "home.sections[2].heading", reason: "too long (max 80 characters)" });
+  for (const bad of [null, "x", {}, { path: 1, reason: "r" }, { path: "a b", reason: "r" }, { path: "<x>", reason: "r" }, { path: "a".repeat(201), reason: "r" }, { path: "a", reason: "r".repeat(201) }, { path: "a", reason: "<script>" }])
+    assert.deepEqual(designDetails(bad), {}, JSON.stringify(bad));
 });

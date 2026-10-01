@@ -9,7 +9,7 @@ import {
   claimLinkRoute, claimsCollection, claimsRoutes, claimsSubpath, validClaimLink,
 } from "@/lib/claims-request";
 import {
-  DESIGN_MAX_JSON, designGetPaths, designPostPaths, designPutPaths, isDesignImageBytes, isDesignJsonPut, isDesignUpload, validDesignRequest,
+  DESIGN_MAX_JSON, designDetails, designGetPaths, designPostPaths, designPutPaths, isDesignImageBytes, isDesignJsonPut, isDesignPath, isDesignUpload, validDesignRequest,
 } from "@/lib/design-request";
 import { adsAny, adsBodyless, adsKeyless, adsRoutes, validAdsQuery, validIfMatch } from "@/lib/ads-request";
 import { parseStudioInput, parseStudioInputPrepared } from "@/lib/studio-model";
@@ -22,6 +22,7 @@ import {
   requireOrigin,
   readBody,
   safeError,
+  safeJSON,
   sessionToken,
 } from "@/lib/auth";
 
@@ -324,7 +325,12 @@ async function route(request: Request, context: Context) {
     clearAuthCookies(denied.headers);
     return denied;
   }
-  if (!response.ok) return safeError(response);
+  if (!response.ok) {
+    // store-design D3: a refused document (422) keeps only the closed {path, reason} pair so the editor can mark the field.
+    if (response.status === 422 && isDesignPath(path))
+      return localError(422, "invalid_request", undefined, designDetails((await safeJSON<{ details?: unknown }>(response))?.details));
+    return safeError(response);
+  }
   if (imageBytes) {
     // Preview bytes stream straight through, only as a validated raster type, never as a document.
     const type = (response.headers.get("content-type") ?? "").split(";", 1)[0].trim().toLowerCase();

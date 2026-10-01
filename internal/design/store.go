@@ -170,6 +170,13 @@ func SaveDraft(ctx context.Context, tx pgx.Tx, s platform.Scope, in SaveInput) (
 	if err != nil {
 		return out, err
 	}
+	// D1: lock first, check references second, inside this same transaction (see lockStore).
+	if err = lockStore(ctx, tx, s); err != nil {
+		return out, err
+	}
+	if _, _, err = lockDraft(ctx, tx, s); err != nil && !errors.Is(err, command.ErrNotFound) {
+		return out, err
+	}
 	if err = checkImages(ctx, tx, s, refs); err != nil {
 		return out, err
 	}
@@ -194,6 +201,16 @@ func SaveDraft(ctx context.Context, tx pgx.Tx, s platform.Scope, in SaveInput) (
 	out.Document = saved
 	out.PublishedVersion, err = liveVersion(ctx, tx, s)
 	return out, mapError(err)
+}
+
+// lockStore is the first lock of every path that checks image references against a write of the draft or of the media
+// (SaveDraft, DeleteMedia): one transaction-scoped advisory lock per store, taken BEFORE the draft row lock and before any
+// reference check, so "does the draft reference image X" and "delete image X" can never interleave (write skew, defect D1).
+// It also covers the first save, when no draft row exists yet to lock. Lock order everywhere: advisory -> draft row.
+// Publish/Rollback/preview take only the row lock and never wait on the advisory one, so no cycle is possible.
+func lockStore(ctx context.Context, tx pgx.Tx, s platform.Scope) error {
+	_, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('design.document|'||$1::text,0))`, s.StoreID)
+	return err
 }
 
 // lockDraft takes the per-store lock. ErrNotFound when no draft was ever saved (nothing can be published or rolled back).

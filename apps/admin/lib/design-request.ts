@@ -35,3 +35,15 @@ export function validDesignRequest(request: Request, path: string): boolean {
     (request.headers.has("content-length") && request.headers.get("content-length") !== "0")
   );
 }
+
+/**
+ * The only part of a Go 422 body the BFF forwards for design routes: the closed `{path, reason}` pair, bounded and
+ * character-restricted (a field path like `home.sections[2].heading` and a short server reason), nothing else.
+ */
+export function designDetails(details: unknown): Record<string, string> {
+  if (!details || typeof details !== "object") return {};
+  const { path, reason } = details as Record<string, unknown>;
+  if (typeof path !== "string" || typeof reason !== "string") return {};
+  if (!/^[A-Za-z0-9_.[\]]{1,200}$/.test(path) || reason.length > 200 || /[\u0000-\u001f<>]/.test(reason)) return {};
+  return { path, reason };
+}

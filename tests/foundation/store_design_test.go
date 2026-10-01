@@ -46,6 +46,11 @@ func TestStoreDesignRealPG(t *testing.T) {
 		mustExec(t, f.owner, `TRUNCATE design.preview_tokens, design.published_versions, design.store_media, design.documents`)
 	})
 	mustExec(t, f.owner, `TRUNCATE design.preview_tokens, design.published_versions, design.store_media, design.documents`)
+	// The shared fixture keeps audit rows of other tests: count only what this test adds.
+	var auditsBefore int
+	if err := f.owner.QueryRow(context.Background(), `SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action IN ('design.published','design.rolled_back')`, f.storeA1).Scan(&auditsBefore); err != nil {
+		t.Fatal(err)
+	}
 	admin := httpapi.NewHandler(f.runtime)
 	buyer := bhSetup(t)
 	base := "/v1/admin/stores/" + f.storeA1 + "/design"
@@ -249,7 +254,7 @@ func TestStoreDesignRealPG(t *testing.T) {
 		t.Fatal("published history must not be deletable")
 	}
 	var audits int
-	if err := f.owner.QueryRow(context.Background(), `SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action IN ('design.published','design.rolled_back')`, f.storeA1).Scan(&audits); err != nil || audits != 3 {
+	if err := f.owner.QueryRow(context.Background(), `SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action IN ('design.published','design.rolled_back')`, f.storeA1).Scan(&audits); err != nil || audits-auditsBefore != 3 {
 		t.Fatalf("audit rows = %d (%v)", audits, err)
 	}
 
