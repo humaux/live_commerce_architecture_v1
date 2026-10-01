@@ -30,6 +30,8 @@ type optionResponse struct {
 	StoreSearchURL  string   `json:"store_search_url,omitempty"`
 	Available       *bool    `json:"available,omitempty"`
 	Reason          string   `json:"reason,omitempty"`
+	// storefront-v2 §C: present only when payment_modes lists bank_transfer (the hold the order will keep, 6..168 hours).
+	TransferWindowHours int `json:"transfer_window_hours,omitempty"`
 }
 
 type optionsResponse struct {
@@ -47,6 +49,7 @@ func projectOptions(page pagination.Page[checkout.Option]) optionsResponse {
 			DeliveryKind: item.DeliveryKind, Mode: item.Mode, NameHans: item.NameHans, NameHant: item.NameHant,
 			NameEN: item.NameEN, SortOrder: item.SortOrder, PickupSelection: item.PickupSelection,
 			PaymentModes: item.PaymentModes, StoreSearchURL: item.StoreSearchURL, Available: item.Available, Reason: item.Reason,
+			TransferWindowHours: item.TransferWindowHours,
 		})
 	}
 	return out

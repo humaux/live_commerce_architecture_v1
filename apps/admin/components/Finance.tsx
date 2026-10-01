@@ -149,7 +149,7 @@ export function Finance({
                   <thead>
                     <tr>
                       <th>{c.day}</th><th>{c.currency}</th><th>{c.environment}</th>
-                      <th>{c.paidOrders}</th><th>{c.captured}</th><th>{c.refunded}</th><th>{c.net}</th><th>{c.pickupCollected}</th>
+                      <th>{c.paidOrders}</th><th>{c.captured}</th><th>{c.refunded}</th><th>{c.net}</th><th>{c.pickupCollected}</th><th>{c.transferConfirmed}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -187,6 +187,10 @@ function FinanceLine({ row, locale, c }: { row: FinanceRow; locale: Locale; c: (
       <td data-label={c.net}>{m(row.net_minor)}</td>
       {/* OP3: carrier-collected pay-at-pickup money; its own money path, never added to captured or net. */}
       <td data-label={c.pickupCollected}>{row.pickup_collected_count ? `${m(row.pickup_collected_minor)} (${row.pickup_collected_count})` : m(0)}</td>
+      {/* storefront-v2 §C: bank-transfer money the merchant confirmed (offline, server order total); its own money path too. */}
+      <td data-label={c.transferConfirmed} data-testid="finance-transfer-confirmed">
+        {row.bank_transfer_confirmed_count ? `${m(row.bank_transfer_confirmed_minor)} (${row.bank_transfer_confirmed_count})` : m(0)}
+      </td>
     </tr>
   );
 }

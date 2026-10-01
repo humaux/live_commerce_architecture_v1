@@ -5,7 +5,7 @@
 // CVS (contracts/taiwan-cvs-logistics-v1.md §16, cvs-core C4): summary/detail add pickup_source, payment_mode and
 // collection_state; a pay-at-pickup order is CONFIRMED with no payment (NOT_STARTED, no work item), so the payment
 // invariants below are relaxed for exactly that mode and nowhere else.
-const commercialStates = ["DRAFT", "AWAITING_PAYMENT", "CONFIRMED", "CANCELLED"] as const;
+const commercialStates = ["DRAFT", "AWAITING_PAYMENT", "AWAITING_TRANSFER", "CONFIRMED", "CANCELLED"] as const;
 // `shipped`/`unshipped` are server-side list filters (manual-fulfilment-v1 §5.1), not order states.
 export const orderStates = [
   "all",
@@ -30,7 +30,7 @@ export type WorkState = "NONE" | "READY" | "REVIEW_REQUIRED";
 // §16.1: where the pickup store came from (null for a home order).
 export const pickupSources = ["ecpay_directory", "buyer_entered", "merchant_attested"] as const;
 export type PickupSource = (typeof pickupSources)[number];
-export const paymentModes = ["card", "pay_at_pickup"] as const;
+export const paymentModes = ["card", "pay_at_pickup", "bank_transfer"] as const;
 export type PaymentMode = (typeof paymentModes)[number];
 export const collectionStates = ["PENDING", "COLLECTED", "RETURNED", "REFUNDED_OFFLINE", "CANCELLED", "RESTOCKED"] as const;
 export type CollectionState = (typeof collectionStates)[number];
@@ -215,6 +215,19 @@ export function parseOrderSummary(value: unknown): OrderSummary {
       throw new Error("unavailable");
     return row;
   }
+  // storefront-v2 §C bank_transfer: no payment attempt, refund or work item either (the offline fact lives in checkout.bank_transfers);
+  // AWAITING_TRANSFER until the merchant confirms (nothing shipped), CONFIRMED by the merchant's act, CANCELLED when the window ended.
+  if (row.payment_mode === "bank_transfer") {
+    if (row.payment_state !== "NOT_STARTED" || row.test_mode || row.work_state !== "NONE" ||
+      row.refunded_minor !== 0 || row.refund_pending_minor !== 0 ||
+      row.fulfillment_state === "PAID_ALLOCATION_FAILED" ||
+      (row.fulfillment_state === "CANCELLED") !== (row.commercial_state === "CANCELLED") ||
+      (row.commercial_state === "AWAITING_TRANSFER" && row.fulfillment_state !== "MANUAL_UNASSIGNED") ||
+      (["MERCHANT_SHIPPED", "PROVIDER_LABEL_CREATED"].includes(row.fulfillment_state) && row.commercial_state !== "CONFIRMED"))
+      throw new Error("unavailable");
+    return row;
+  }
+  if (row.commercial_state === "AWAITING_TRANSFER") throw new Error("unavailable"); // only a transfer order can wait for a transfer
   if (row.pickup_source === "buyer_entered" && row.fulfillment_state === "PROVIDER_LABEL_CREATED") throw new Error("unavailable");
   if ((row.payment_state === "NOT_STARTED" && (row.test_mode || row.work_state !== "NONE")) ||
     (row.fulfillment_state === "CANCELLED" && row.commercial_state !== "CANCELLED") ||

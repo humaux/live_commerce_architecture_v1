@@ -14,11 +14,14 @@ import { useEffect, useRef, useState } from "react";
 import OrderPayment from "./OrderPayment";
 import { ConsentChoices, noConsentChoices, submitCheckoutConsents } from "./ConsentChoices";
 import CvsPickup, { CvsOrderStatus, type PickupHandle } from "./CvsPickup";
+import BankTransfer from "./BankTransfer";
 import type { Locale } from "@live-commerce/i18n";
 import { BuyerClientError } from "../lib/buyer-client";
 import { carrierNames, orderCopy } from "../lib/order-copy";
 import { purchaseCopy } from "../lib/purchase-copy";
 import { cvsCopy } from "../lib/cvs-copy";
+import { bankTransferCopy } from "../lib/bank-transfer-copy";
+import { isTransferErrorCode, validBuyerEmail, type TransferErrorCode } from "../lib/bank-transfer-contract";
 import {
   isCvsErrorCode,
   isCvsKind,
@@ -127,6 +130,11 @@ export default function OrderFlow({
   // CVS (§16): payment mode, the picker's ensure() handle and the one refusal shown next to the create button.
   const [paymentMode, setPaymentMode] = useState<PaymentMode>("card");
   const [createError, setCreateError] = useState<CvsErrorCode | null>(null);
+  // storefront-v2 §C: optional buyer email, and the one bank-transfer refusal (bank_transfer_unavailable) shown next to the create button.
+  const [email, setEmail] = useState("");
+  const [emailInvalid, setEmailInvalid] = useState(false);
+  const [transferError, setTransferError] = useState<TransferErrorCode | null>(null);
+  const bank = bankTransferCopy[locale];
   const pickup = useRef<PickupHandle | null>(null);
   const cvsOption = option && isCvsKind(option.delivery_kind) ? (option as Option & { delivery_kind: CvsKind }) : null;
 
@@ -396,6 +404,33 @@ export default function OrderFlow({
               total={quote ? money(quote.amount.total_minor, quote.currency) : ""}
             />
           )}
+          {!cvsOption && (option?.payment_modes?.length ?? 0) > 1 && (
+            <fieldset className="sku-options wide" data-testid="home-payment-mode">
+              <legend>{bank.paymentLegend}</legend>
+              {(option?.payment_modes ?? []).map((mode) => (
+                // .address-fields label (grid) would win over .sku-row, so the row layout is stated inline (as in CvsPickup).
+                <label
+                  key={mode}
+                  className={mode === paymentMode ? "sku-row selected" : "sku-row"}
+                  style={{ display: "flex", gap: 16 }}
+                >
+                  <input
+                    type="radio"
+                    name="home_payment_mode"
+                    style={{ width: 20, height: 20, padding: 0, flex: "none" }}
+                    value={mode}
+                    checked={mode === paymentMode}
+                    onChange={() => {
+                      setPaymentMode(mode);
+                      setConfirmed(null);
+                      setTransferError(null);
+                    }}
+                  />
+                  <span>{mode === "bank_transfer" ? bank.payBank : bank.payCard}</span>
+                </label>
+              ))}
+            </fieldset>
+          )}
           {!cvsOption && inputs.map(([name, autoComplete, maxLength, required]) => (
             <label
               key={name}
@@ -442,6 +477,33 @@ export default function OrderFlow({
           {cvsCopy[locale].errors[createError]}
         </p>
       )}
+      {transferError && (
+        <p role="alert" data-testid="transfer-create-error">
+          {bank.errors[transferError]}
+        </p>
+      )}
+      <label className="buyer-email" data-testid="buyer-email">
+        <span>{bank.emailLabel}</span>
+        <input
+          name="buyer_email"
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          maxLength={254}
+          value={email}
+          disabled={busy || blocked}
+          onChange={(event) => {
+            setEmail(event.target.value);
+            setEmailInvalid(false);
+          }}
+        />
+        <small>{bank.emailHint}</small>
+      </label>
+      {emailInvalid && (
+        <p role="alert" data-testid="buyer-email-invalid">
+          {bank.emailInvalid}
+        </p>
+      )}
       <ConsentChoices locale={locale} value={consents} onChange={setConsents} disabled={busy || blocked} />
       <button
         data-testid="create-order"
@@ -451,6 +513,13 @@ export default function OrderFlow({
           void run(async (isCurrent) => {
             if (!quote || !confirmed || !option) return;
             const version = live.current;
+            // The email is optional; a non-empty invalid one stops here, before any request (Go and SQL re-validate).
+            const typed = email.trim();
+            if (typed !== "" && !validBuyerEmail(typed)) {
+              setEmailInvalid(true);
+              return;
+            }
+            setTransferError(null);
             try {
               const result = await writeCheckout(
                 context,
@@ -460,13 +529,19 @@ export default function OrderFlow({
                   cart,
                   confirmed,
                   Date.now(),
-                  cvsOption ? paymentMode : undefined,
+                  cvsOption || option.payment_modes !== undefined ? paymentMode : undefined,
+                  typed,
                 ),
               );
               void submitCheckoutConsents(context, consents); // never blocks the order (customers-billing-v1 U7)
               if (isCurrent() && version === live.current) onOrder(result);
             } catch (reason) {
               if (version === live.current) setConfirmed(null);
+              // A definite bank-transfer refusal (the store switched it off meanwhile) is shown here, not as a generic failure.
+              if (reason instanceof BuyerClientError && isTransferErrorCode(reason.detail)) {
+                if (version === live.current) setTransferError(reason.detail);
+                return;
+              }
               // A definite CVS/pay-at-pickup refusal (§16.2) is shown here, not as a generic failure.
               if (
                 cvsOption &&
@@ -481,14 +556,18 @@ export default function OrderFlow({
           })
         }
       >
-        {cvsOption && paymentMode === "pay_at_pickup"
-          ? cvsCopy[locale].createPickup
-          : copy.create}
+        {paymentMode === "bank_transfer" && option?.payment_modes?.includes("bank_transfer")
+          ? bank.createBank
+          : cvsOption && paymentMode === "pay_at_pickup"
+            ? cvsCopy[locale].createPickup
+            : copy.create}
       </button>
       <p className="order-note">
-        {cvsOption && paymentMode === "pay_at_pickup"
-          ? cvsCopy[locale].payAtPickupNote
-          : copy.unavailable}
+        {paymentMode === "bank_transfer" && option?.payment_modes?.includes("bank_transfer")
+          ? bank.bankNote(option.transfer_window_hours ?? 0)
+          : cvsOption && paymentMode === "pay_at_pickup"
+            ? cvsCopy[locale].payAtPickupNote
+            : copy.unavailable}
       </p>
     </section>
   );
@@ -690,8 +769,19 @@ export function OrderDetails({
           <p className="order-note">{copy.holdNote}</p>
         </>
       )}
-      {/* Pay-at-pickup is not a Stripe payment (§16.2): no payment read, no start, no refresh signal. */}
-      {order.payment_mode !== "pay_at_pickup" && (
+      {/* Bank transfer (storefront-v2 §C): the shop's account, a countdown and the proof form; the shop confirms, nothing here does. */}
+      {order.payment_mode === "bank_transfer" && (
+        <BankTransfer
+          key={`${context}:${order.order_id}:transfer`}
+          context={context}
+          orderID={order.order_id}
+          locale={locale}
+          money={money}
+          refreshToken={paymentRefresh}
+        />
+      )}
+      {/* Pay-at-pickup and bank transfer are not Stripe payments: no payment read, no start, no refresh signal. */}
+      {order.payment_mode !== "pay_at_pickup" && order.payment_mode !== "bank_transfer" && (
         <OrderPayment
           key={`${context}:${order.order_id}`}
           context={context}

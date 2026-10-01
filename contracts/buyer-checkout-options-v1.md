@@ -70,6 +70,15 @@ same condition holds (after the receipt lookup, so an exact replay still returns
 The per-store method check stays order-bound in `checkout.hosted_payment_view*`; this rule is
 the process-level gate and is not a per-store guarantee.
 
+## Bank transfer joins the payment modes (checkout-offline, amends this contract; storefront-v2 §C)
+
+When the store enabled bank transfer (`checkout.bank_transfer_settings`), `bank_transfer` is listed in `payment_modes` of every home row
+and, with `allow_cvs`, of every CVS row, together with `transfer_window_hours` (6..168, the hold the order will keep). A home row
+carries `payment_modes` only in that case (absent = card only, as before) and a home row is then offered even without card payment.
+`pay_at_pickup` is never listed on a home row. `checkout.Service.Begin` places the order `AWAITING_TRANSFER`; SQL refuses a disabled mode
+with coded 422 `bank_transfer_unavailable` (zero holds). Bank details are never part of the options: they appear only on the buyer's own
+order (`GET /v1/buyer/orders/{id}/bank-transfer`).
+
 ## Stable bounded pagination and query admission
 
 Keyset order is `(market_id UUID, country COLLATE C, delivery_code COLLATE C)`

@@ -38,6 +38,7 @@ import { Icon } from "./Icon";
 import { OrderRefunds } from "./OrderRefunds";
 import { OrderShipment } from "./OrderShipment";
 import { OrderCvsShipment } from "./OrderCvsShipment";
+import { OrderBankTransfer } from "./OrderBankTransfer";
 import "./orders.css";
 import "./order-actions.css";
 
@@ -245,6 +246,17 @@ function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy, section
       </div>
       {sections.boundary && (
         <section className="orders-sections">
+          {/* storefront-v2 §C: a bank-transfer order has no card payment to refund; the merchant decides the transfer here. */}
+          {detail.payment_mode === "bank_transfer" && (
+            <OrderBankTransfer
+              store={sections.store}
+              detail={detail}
+              locale={locale}
+              canDecide={sections.actions.refund}
+              boundary={sections.boundary}
+              onChanged={sections.onChanged}
+            />
+          )}
           {capturedPayment.includes(detail.payment_state) && (
             <OrderRefunds
               store={sections.store}
@@ -274,7 +286,9 @@ function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy, section
               // 0063 form's MD6 eligibility hint reads READY as "nothing blocks shipping"; for this mode that
               // hint is collection PENDING instead (hint only: record_manual_shipment re-checks in SQL).
               detail={
-                detail.payment_mode === "pay_at_pickup" && detail.collection_state === "PENDING"
+                (detail.payment_mode === "pay_at_pickup" && detail.collection_state === "PENDING") ||
+                // A confirmed bank-transfer order has no work item either; CONFIRMED here means the merchant confirmed it.
+                (detail.payment_mode === "bank_transfer" && detail.commercial_state === "CONFIRMED")
                   ? { ...detail, work_state: "READY" }
                   : detail
               }

@@ -17,7 +17,8 @@ export type CvsKind = (typeof CVS_KINDS)[number];
 export const isCvsKind = (v: unknown): v is CvsKind =>
   typeof v === "string" && (CVS_KINDS as readonly string[]).includes(v);
 
-export const PAYMENT_MODES = ["card", "pay_at_pickup"] as const;
+// storefront-v2 §C: bank_transfer is the third mode (order waits AWAITING_TRANSFER for the merchant; lib/bank-transfer.ts).
+export const PAYMENT_MODES = ["card", "pay_at_pickup", "bank_transfer"] as const;
 export type PaymentMode = (typeof PAYMENT_MODES)[number];
 export const isPaymentMode = (v: unknown): v is PaymentMode =>
   typeof v === "string" && (PAYMENT_MODES as readonly string[]).includes(v);
