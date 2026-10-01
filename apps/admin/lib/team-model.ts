@@ -82,3 +82,29 @@ export const teamCodes = new Set([
   "invalid_request", "invalid_email", "unauthorized", "forbidden", "not_found", "invite_invalid", "already_member",
   "last_owner", "too_many_invitations", "conflict", "unavailable", "retry_later",
 ]);
+
+// ---- role-aware navigation (WorkspaceFrame) ---------------------------------------------------------------------------
+// Entry id -> the permission its page needs. `team` is the owner role itself (no permission value, see migration 0089).
+// The data is the caller's own role/permissions from GET /api/stores (0089 list_session_stores); unknown (null) shows everything,
+// because this only hides entries the member could not use: Go still authorizes every request.
+export type NavAccess = { role: string | null; permissions: string[] } | null;
+const navNeeds: Record<string, string> = {
+  products: "catalog:read", inventory: "inventory:read", orders: "orders:read", live: "live:read", customers: "customers:read",
+  finance: "orders:read", billing: "billing:manage", ads: "ads:read", settings: "integration:read",
+  collections: "catalog:read", promotions: "pricing:read", design: "integration:read",
+};
+export function navVisible(id: string, access: NavAccess): boolean {
+  if (access === null) return true;
+  if (id === "team") return access.role === "owner";
+  const need = navNeeds[id];
+  return need === undefined || access.permissions.includes(need);
+}
+/** The caller's access in `storeId` (or the first store by id, like the page loaders) from a GET /api/stores answer; null when unknown. */
+export function navAccessFrom(body: unknown, storeId: string | null): NavAccess {
+  const items = body && typeof body === "object" ? (body as { items?: unknown }).items : null;
+  if (!Array.isArray(items)) return null;
+  const stores = items.filter((i): i is { id: string; role?: unknown; permissions?: unknown } => !!i && typeof i === "object" && typeof (i as { id?: unknown }).id === "string");
+  const store = storeId ? stores.find((s) => s.id === storeId) : [...stores].sort((a, b) => a.id.localeCompare(b.id))[0];
+  if (!store || !Array.isArray(store.permissions) || !store.permissions.every((p) => typeof p === "string")) return null;
+  return { role: typeof store.role === "string" ? store.role : null, permissions: store.permissions as string[] };
+}

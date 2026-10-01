@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   locales,
@@ -16,6 +16,7 @@ import { designCopy } from "@/lib/design-copy";
 import { teamCopy } from "@/lib/team-copy";
 import { catalogCopy } from "@/lib/catalog-v2-copy";
 import { promotionsCopy } from "@/lib/promotions-copy";
+import { navAccessFrom, navVisible, type NavAccess } from "@/lib/team-model";
 import { BillingBanner } from "./BillingBanner";
 import { Icon } from "./Icon";
 
@@ -44,6 +45,17 @@ export function WorkspaceFrame({
   const [signingOut, setSigningOut] = useState(false);
   const [signOutFailed, setSignOutFailed] = useState(false);
   const signOutBusy = useRef(false);
+  // Role-aware nav: the caller's role/permissions from GET /api/stores (-> Go /v1/admin/stores). Unknown = show everything.
+  const [access, setAccess] = useState<NavAccess>(null);
+  const storeParam = search.get("store");
+  useEffect(() => {
+    const abort = new AbortController();
+    fetch("/api/stores", { credentials: "same-origin", cache: "no-store", signal: abort.signal })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((body: unknown) => setAccess(navAccessFrom(body, storeParam)))
+      .catch(() => undefined);
+    return () => abort.abort();
+  }, [storeParam]);
   // catalog-media: website-service / Meta-messages / platform-support entries removed: they led to a "not connected"
   // placeholder panel. Re-add an entry only together with a real page.
   // catalog-core: products and collections are real pages; the ledger (home) stays reachable as Inventory.
@@ -131,7 +143,7 @@ export function WorkspaceFrame({
       <aside className={`rail ${navOpen ? "open" : ""}`}>
         <div className="brand">{c.title}</div>
         <nav aria-label={c.title}>
-          {nav.map(([id, icon, label]) => (
+          {nav.filter(([id]) => navVisible(id, access)).map(([id, icon, label]) => (
             <button
               key={id}
               type="button"

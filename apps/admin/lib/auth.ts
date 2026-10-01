@@ -491,7 +491,12 @@ export async function authenticatedStores(token: string) {
       typeof item === "object" &&
       /^[0-9a-f-]{36}$/.test(String((item as Store).id)) &&
       typeof (item as Store).name === "string" &&
-      /^[A-Z]{3}$/.test(String((item as Store).currency)),
+      /^[A-Z]{3}$/.test(String((item as Store).currency)) &&
+      // role/permissions are optional (mock servers omit them) but, when present, must be well-formed.
+      ((item as Store).role === undefined || (item as Store).role === null || typeof (item as Store).role === "string") &&
+      ((item as Store).permissions === undefined ||
+        (Array.isArray((item as Store).permissions) &&
+          (item as Store).permissions!.every((p) => typeof p === "string" && /^[a-z_]+:[a-z_]+$/.test(p)))),
   );
   if (stores.length !== body.items.length)
     return {
