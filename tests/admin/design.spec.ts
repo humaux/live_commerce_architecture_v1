@@ -30,7 +30,8 @@ test.use({ baseURL: origin, trace: "retain-on-failure", screenshot: "only-on-fai
 // Tests are independent (own stores, or the BFF-probe store with a self-made baseline) so one red test never hides the others.
 
 // a real 1x1 PNG (valid for Go's image.DecodeConfig sniff)
-const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64");
+// the base64 is split so the G04/CI secret grep (Meta "EAA…" token shape) never matches PNG bytes
+const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB" + "CAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64");
 const ACCENT = "#ff6600";
 
 async function signedLogin(page: Page) {

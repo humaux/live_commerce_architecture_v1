@@ -31,7 +31,7 @@ Command api owns the API process assembly: it loads each feature's configuration
 
 ## `cmd/claims-worker`
 
-Command claims-worker owns the T10c claims host (meta-claims-intake-v1 §5.3, IR-13): it runs the claims intake poller (internal/claimsintake) and the main-schema external_operation_v1 River worker whose only routes are the Meta private replies (internal/integrations/metareply).
+Command claims-worker owns the T10c claims host (meta-claims-intake-v1 §5.3, IR-13): it runs the claims intake poller (internal/claimsintake) and the main-schema external_operation_v1 River worker whose only routes are the Meta private replies (internal/integrations/metareply), and the merchant-disconnect unsubscribe jobs (metareply.Unsubscriber, migration 0100: one best-effort DELETE /{page-id}/subscribed_apps per disconnected Page).
 
 - Depends on (internal): `internal/claims`, `internal/claimsintake`, `internal/integrations/core`, `internal/integrations/meta/pagetoken/pageopen`, `internal/integrations/metareply`, `internal/integrations/shipping/ecpay`, `internal/integrations/shipping/ecpay/ecpayroute`, `internal/jobqueue`, `internal/platform`, `internal/retention`
 - Depends on (third-party): `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
@@ -323,7 +323,7 @@ Package metaoauth owns the Meta OAuth plumbing shared by the merchant ads connec
 
 - Depends on (internal): —
 - Depends on (third-party): —
-- Used by: `cmd/api`, `internal/ads`, `internal/integrations/meta_ads`, `internal/metaconnect`
+- Used by: `cmd/api`, `internal/ads`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/metaconnect`
 
 ## `internal/integrations/meta/pagetoken`
 
@@ -361,7 +361,7 @@ Package tokenopen owns the OPEN half of BISU token custody (meta-ads-v1 A-4, ads
 
 Package metareply owns the first Meta private reply of a keyword-claim bundle (meta-claims-intake-v1 §6.3, §7): the dispatcher routes (facebook|instagram, meta.private_reply, service), the per-store Page-token custody (AES-256-GCM seal/open and the registrar call), the operator route registration (RegisterRoute/DisableRoute: store binding + webhook route, R1 ruling F2) and the fixed reply text.
 
-- Depends on (internal): `internal/claims`, `internal/command`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta/pagetoken`, `internal/integrations/meta/pagetoken/pageopen`, `internal/platform`
+- Depends on (internal): `internal/claims`, `internal/command`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta/oauth`, `internal/integrations/meta/pagetoken`, `internal/integrations/meta/pagetoken/pageopen`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
 - Used by: `cmd/claims-worker`, `cmd/meta-admin`
 
