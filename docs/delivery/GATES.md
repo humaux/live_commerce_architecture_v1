@@ -143,6 +143,12 @@ Smoke S29m BLOCKED is accepted in the CI job (F11), not by release-gate.
 | `tests/admin/catalog-core.spec.ts` | `--browser-catalog-core` |
 | `tests/admin/checkout-offline.spec.ts`; `tests/storefront/offline-buyer.mjs` | `--browser-checkout-offline` (admin phases settings/review/confirm-a/final interleaved with the buyer script by file handshakes) |
 | `tests/e2e/deal-loop.spec.ts` | `--browser-e2e` |
+| `tests/e2e/live-tools.spec.ts` (driven by `TestBrowserLiveTools`, tests/foundation/browser_live_tools_test.go) | `--browser-e2e` (runs after the deal loop in the same mode: Studio library import + live price, signed MOCK Meta claim, pay at pickup at the live price, direct purchase at the normal price; zh-TW + en x desktop + 390 px; BROWSER, MOCK) |
+
+Note (independent live-tools test author, 2026-10-01): while defect D1 (`output/live-tools/tests/DEFECTS.md`, also `kimi-evidence/DEFECTS.md` on branch unit/live-tools-tests)
+is unfixed, `TestBrowserE2EDealLoop` in the same mode fails at create-order on any base that includes migration 0092 — the buyer's cart there is claim-origin
+and `checkout.Begin` hits the missing `claims` schema USAGE / `claims.live_prices` EXECUTE on the checkout runtime. That failure IS D1 (differential proof in
+`kimi-evidence/browser-green.log`), so the mode's exit code stays 1 until D1 is fixed in product code; the live-tools gate row above is `TestBrowserLiveTools`.
 
 The `--browser-admin-legacy` gate replaced a manual five-step procedure (`docs/implementation/
 2026-09-20-admin-ledger-acceptance.md` ss "Repeatable local run"): three of its specs had no runner
@@ -218,6 +224,26 @@ Run with `bash scripts/dev/test-focused.sh '^TestPromotion'` (also part of the d
 | `TestPromotionAdminGuards` | permissions, idempotent replay, duplicate code, stale version, rule violations, audit rows |
 
 Not covered here (NOT_RUN): browser pages for `/[locale]/promotions` and the storefront code field, real WebKit, and a Stripe SANDBOX payment of a discounted order.
+
+## Focused PG gates of unit live-tools (R4, migration 0092; independent test author; REAL_PG + HTTP_PG, MOCK PSP for the refund test)
+
+Run with `bash scripts/dev/test-focused.sh '^TestLiveToolsGate'` (also part of the default T1 foundation run). `tests/foundation/live_tools_test.go` is the implementer's
+author smoke, not this gate. Tests that place an order from a claim-origin cart need the disclosed defect-D1 fixture documented in
+`output/live-tools/tests/DEFECTS.md` (armed by `LC_LTG_WORKAROUND_D1=1` or the gitignored flag file `output/live-tools/LTG_WORKAROUND_D1.on` containing `1`); without it those tests are red, which is the point.
+(The former base defect B1 — PUBLIC EXECUTE on two R4 trigger functions — is fixed on this base by migration 0093 and needs no patch.)
+
+| Test | Proves |
+| --- | --- |
+| `TestLiveToolsGateLivePriceOnlyThroughClaim` | LTG01: a direct cart (domain and real buyer HTTP incl. forged body keys), another session's offer on the same SKU, a bundle bound to another buyer, raising the quantity above the claim and a price-less offer never earn a live price; the claimant does, with full price evidence (`price_rule`, catalog price, bundle, offer) |
+| `TestLiveToolsGateRawCartForgery` | LTG02: raw `cart_lines` writes as the buyer role: every malformed origin shape is a 23514, an unknown/foreign/cross-session origin and `claim_quantity` below the line quantity earn nothing |
+| `TestLiveToolsGateForgedClaimQuantityAboveTheClaim` | LTG02b: a forged `claim_quantity` above the claimed quantity must not earn the live price (defect D2: red until fixed) |
+| `TestLiveToolsGateOfferLifecycleAndExpiry`, `TestLiveToolsGateLinkExpiry` | LTG03: pause / clear / reprice through the real PATCH route end the live price at the next quote, a live quote cannot place an order afterwards (conflict, zero facts), the price lives exactly as long as the link |
+| `TestLiveToolsGateCheckoutPlacesClaimOriginCart` | LTG03b: `checkout.Begin` on the checkout runtime pool places a claim-origin cart at catalog and at live price (defect D1: red until fixed) |
+| `TestLiveToolsGateSnapshotsAndOrders` | LTG04: `price_rule` in quote and order snapshots (card DRAFT and pay_at_pickup), catalog snapshots byte-compatible, later offer edits never touch an order |
+| `TestLiveToolsGateLibraryImportCopy` | LTG05: library CRUD, import/copy conflicts as 200 data, never overwrite, price never copied, permissions, tenant isolation, replay, `session_full` boundary, audit |
+| `TestLiveToolsGateConcurrentOfferCreation` | LTG06: concurrent creates, concurrent imports and create-vs-import: no duplicate, no 5xx, no 409 for an import |
+| `TestLiveToolsGatePromotionOnLivePrice` | LTG07: a discount code applies once and on the live price (percent, fixed cap, min subtotal, expiry falls back to catalog), placement through `promotions.redeem` |
+| `TestLiveToolsGateRefundsCappedAtPaid` | LTG08: a live-priced, discounted order paid through the real capture path refunds at most what was paid |
 ## Real-PG gates of the R4 wave (T1 foundation; focused loop `bash scripts/dev/test-focused.sh '<regex>'`)
 | Test | Proves (REAL_PG, MOCK mailbox) | Focused run |
 | --- | --- | --- |
@@ -242,13 +268,9 @@ Independent gate (R4 tests, written from §E by a test author who is not the imp
 
 Not covered by the independent gate (NOT_RUN): real SMTP / a real mailbox, a buyer-visible mail locale other than zh-TW (the order snapshot carries none), WebKit run of the new mode (`LC_BROWSER_ENGINE=webkit` works for the mode but is not part of `--browser-webkit`), per-IP limit behind a real Caddy (the test edge plays it).
 ## Independent focused PG gates of unit promotions (R4 test author; storefront-v2 §F; REAL_PG, Stripe lines MOCK)
-
 `tests/foundation/promotions_gate_test.go`, written from the contract and not from the implementation or the author smoke above. Run with
 `bash scripts/dev/test-focused.sh '^TestPromoGate'` (also part of the default T1 foundation run). Each gate has one temporary-mutation red run on record
 (`output/promotions/tests/R*.log`, see `output/promotions/tests/SUMMARY.md`).
-
-| Test | Proves |
-| --- | --- |
 | `TestPromoGateMath` | percent 1/90 and fixed boundaries, the TWD whole-dollar floor (never up), a zero discount refused `promo_invalid`, a fixed code above the cart capped, goods never below zero, total = subtotal - discount + shipping, line discounts proportional and summing to the discount, admin bounds |
 | `TestPromoGateWindowAndMinimum` | minimum subtotal inclusive and compared with the PRE-discount subtotal (quote and Begin); `+08:00` Taipei wall times are real instants (valid, ended, not started); starts_at/ends_at crossed in real time |
 | `TestPromoGateShipping` | a code never discounts shipping (even one worth more than the cart); the free-shipping threshold compares the PRE-discount subtotal at, above and one unit below it |
@@ -260,6 +282,5 @@ Not covered by the independent gate (NOT_RUN): real SMTP / a real mailbox, a buy
 | `TestPromoGateStripeRefundCap` | card order through the real capture path (Stripe MOCK): captured = discounted total, Stripe session amount = discounted total, refund cap = paid amount (pre-discount and +1 dollar refused), finance captured |
 | `TestPromoGateAdminAuthority` | 401/403 for no, buyer, expired and revoked sessions; the five role bundles (owner/admin write, viewer reads, fulfilment and live_operator neither); no row written by a refused role; audit rows carry the principal |
 | `TestPromoGateIsolation` | same code text in two tenants and two stores; list/create/update refused across tenant and store and never leaked; a buyer only meets his own store's codes (indistinguishable from unknown) |
-
 `TestPromoGateStripeRefundCap` sets `pgStripeRevoke` (payment_runtime_test.go) to work around BASE defect B1 (two trigger functions keep PUBLIC EXECUTE and every
 Stripe login fails its privilege validation); see `output/promotions/tests/DEFECTS.md`.
