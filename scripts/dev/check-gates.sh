@@ -15,6 +15,12 @@ cd "$(git rev-parse --show-toplevel)"
 for s in scripts/dev/test-local.sh scripts/dev/test-node.sh scripts/dev/test-focused.sh scripts/dev/release-gate.sh; do
   bash -n "$s" || { echo "check-gates: $s does not parse (bash -n)" >&2; exit 1; }
 done
+# A merge can also duplicate a mode's run branch: only the first `elif` runs, so a later copy is dead code that silently
+# keeps stale commands (R4: the webkit..purchase-entry run branches existed three times, catalog-media twice with old text).
+dup_modes=$(grep -oE '^elif \[\[ "\$test_mode" == --[a-z0-9-]+ \]\]' scripts/dev/test-local.sh | sort | uniq -d)
+if [[ -n "$dup_modes" ]]; then
+  echo "check-gates: duplicated run branch in scripts/dev/test-local.sh: $dup_modes" >&2; exit 1
+fi
 # Worker-authority split (0096): no migration numbered after it may grant to the retired shared commerce_worker role
 # (a grant there reaches no worker login; post_river/0019 asserts the same at apply time — this fails earlier, in CI).
 for f in $(ls migrations/0*.sql | awk -F/ '$2 > "0096"'); do
