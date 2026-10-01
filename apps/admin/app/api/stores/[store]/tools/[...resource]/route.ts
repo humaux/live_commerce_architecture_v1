@@ -17,7 +17,7 @@ import {
   sessionToken,
 } from "@/lib/auth";
 import { fixtureSession } from "@/lib/backend";
-import { MAX_CSV_BYTES, parseImportResult, toolsRoute, validManualBody, type ToolsRoute } from "@/lib/merchant-tools-model";
+import { MAX_CSV_BYTES, parseImportResult, toolsRoute, validManualBody, validRegenerateBody, type ToolsRoute } from "@/lib/merchant-tools-model";
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const keyPattern = /^[A-Za-z0-9_.:-]{8,128}$/;
@@ -27,6 +27,7 @@ type Context = { params: Promise<{ store: string; resource: string[] }> };
 
 const budgets: Record<ToolsRoute, number> = {
   dashboard: 8000, export: 20000, "manual-options": 10000, "import-preview": 75000, "import-commit": 75000, "manual-place": 16000,
+  "manual-regenerate": 16000,
 };
 
 async function readCapped(request: Request, limit: number): Promise<Uint8Array | null> {
@@ -137,7 +138,7 @@ async function route(request: Request, context: Context) {
       } catch {
         return localError(400, "invalid_json");
       }
-      if (!validManualBody(parsed)) return localError(422, "invalid_request");
+      if (kind === "manual-regenerate" ? !validRegenerateBody(parsed) : !validManualBody(parsed)) return localError(422, "invalid_request");
       init.body = text;
       init.headers = { "Content-Type": "application/json", "Idempotency-Key": key };
     }

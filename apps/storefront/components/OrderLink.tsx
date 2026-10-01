@@ -14,10 +14,20 @@ import { orderLinkFragment, validLinkResult } from "../lib/order-link-contract";
 
 type View = "opening" | "refused" | "unavailable";
 
+// 32 random bytes as unpadded base64url (43 characters): the browser-bound proof. Minted once per fragment read and re-sent on a
+// retry, so the BFF derives the SAME capability token for the SAME browser (K3 F2: a lost response is replayed, never re-burned).
+function newProof(): string {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  let binary = "";
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
 export default function OrderLink({ locale }: { locale: Locale }) {
   const copy = orderLinkCopy[locale];
   const [view, setView] = useState<View>("opening");
-  const link = useRef<{ orderID: string; token: string } | null>(null);
+  const link = useRef<{ orderID: string; token: string; proof: string } | null>(null);
   const started = useRef(false);
 
   async function exchange() {
@@ -30,7 +40,7 @@ export default function OrderLink({ locale }: { locale: Locale }) {
         credentials: "same-origin",
         cache: "no-store",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ order_id: held.orderID, token: held.token }),
+        body: JSON.stringify({ order_id: held.orderID, token: held.token, proof: held.proof }),
       });
       if (response.status === 200) {
         const value: unknown = await response.json().catch(() => null);
@@ -54,7 +64,8 @@ export default function OrderLink({ locale }: { locale: Locale }) {
   useEffect(() => {
     if (started.current) return; // React strict mode runs effects twice: the fragment is read and posted once
     started.current = true;
-    link.current = orderLinkFragment(window.location.hash);
+    const parsed = orderLinkFragment(window.location.hash);
+    if (parsed) link.current = { ...parsed, proof: newProof() };
     // Gone from the address bar and history before anything else happens (also drops any query string).
     window.history.replaceState(null, "", window.location.pathname);
     void exchange();

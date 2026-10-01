@@ -148,7 +148,11 @@ try {
   assert.equal(await buyer.evaluate(() => location.href.includes("t=")), false);
   assert.deepEqual(leaked, [], "the link token never appears in any request URL or Referer");
   assert.equal(exchanges.length, 1, "the token is posted exactly once");
-  assert.deepEqual(JSON.parse(exchanges[0]), {order_id: body.order_id, token});
+  const posted = JSON.parse(exchanges[0]);
+  assert.deepEqual(Object.keys(posted).sort(), ["order_id", "proof", "token"], "the POST carries the browser-bound proof");
+  assert.equal(posted.order_id, body.order_id);
+  assert.equal(posted.token, token);
+  assert.match(posted.proof, /^[A-Za-z0-9_-]{43}$/, "the proof is a 43-character secret");
   const cookies = await buyerContext.cookies();
   const session = cookies.find(c => c.name === "__Host-commerce_buyer");
   assert(session && session.httpOnly && session.secure, "buyer cookie set HttpOnly+Secure by the BFF");
@@ -183,6 +187,30 @@ try {
   await expect(other.getByTestId("order-link-refused")).toBeVisible();
   await other.screenshot({path: path.join(evidence, "link-refused.png"), fullPage: true});
   pass("a used or malformed link is the same refusal page and sets no cookie");
+
+  // ---- regenerate: the merchant re-issues the link; the NEW link opens the order in a fresh browser, the OLD one stays refused -------------
+  const regenReply = merchant.waitForResponse(r => r.request().method() === "POST" && new URL(r.url()).pathname === `/api/stores/${process.env.LC_LINK_STORE}/tools/orders/manual/regenerate-link`);
+  await merchant.getByTestId("manual-order-regenerate").click();
+  assert.equal((await regenReply).status(), 201);
+  const newLink = (await merchant.getByTestId("manual-order-link").innerText()).trim();
+  assert.notEqual(newLink, link, "regenerate issues a different link");
+  const newFragment = new URL(newLink).hash;
+  const newToken = /&t=([A-Za-z0-9_-]{43})$/.exec(newFragment)?.[1];
+  assert(newToken && newToken !== token, "the regenerated link carries a fresh token");
+  await merchant.screenshot({path: path.join(evidence, "merchant-regenerated.png"), fullPage: true});
+  // the OLD link, still in a fresh browser, is refused (it is used AND now invalidated)
+  await other.goto(link);
+  await expect(other.getByTestId("order-link-refused")).toBeVisible();
+  // the NEW link opens the order in another fresh browser
+  const thirdContext = await browser.newContext(ctxOpts({ignoreHTTPSErrors: true, viewport: {width: 390, height: 844}}));
+  const third = await thirdContext.newPage();
+  third.on("pageerror", error => uiErrors.push(error.name));
+  await third.goto(newLink);
+  await third.waitForURL(url => url.pathname === `/zh-TW/orders/${body.order_id}`);
+  await expect(third.getByTestId("transfer-bank")).toBeVisible();
+  await third.screenshot({path: path.join(evidence, "buyer-regenerated-link.png"), fullPage: true});
+  pass("regenerate issues a working link and the old link stays refused");
+
   assert.deepEqual(uiErrors, []);
   pass("no page errors");
   await writeFile(path.join(evidence, "result.json"), JSON.stringify({cases, order_id: body.order_id, link_locale: "zh-TW", boundary: "production Next; signed MOCK IdP; synthetic local TLS/CONNECT; no provider or deployment DNS/TLS acceptance"}, null, 2), {mode: 0o600});

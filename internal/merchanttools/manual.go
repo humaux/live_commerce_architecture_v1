@@ -48,6 +48,7 @@ import (
 
 const (
 	manualOperation  = "merchanttools.order.manual"
+	relinkOperation  = "merchanttools.order.relink"
 	manualPermission = "inventory:reserve"
 	maxManualLines   = 50
 	maxManualQty     = 1000
@@ -130,6 +131,26 @@ type ManualResult struct {
 	BuyerLink *string `json:"buyer_link"`
 	LinkState string  `json:"link_state"`
 	Source    string  `json:"source"`
+}
+
+// ManualRegenerateInput is the exact POST orders/manual/regenerate-link body (K3 F2): the order whose buyer link is re-issued and the locale
+// of the link the storefront opens. The manual order's locale is NULL in the database (0097 only sets it for buyer checkout), so it travels here.
+type ManualRegenerateInput struct {
+	OrderID string `json:"order_id"`
+	Locale  string `json:"locale"`
+}
+
+// regenerateReceipt is what the command receipt keeps. It never holds the link or the token: both are re-derived from the Idempotency-Key, so
+// a replay returns the same link and a different key is a different link (the old one already invalidated in SQL).
+type regenerateReceipt struct {
+	OrderID string `json:"order_id"`
+}
+
+// RegenerateResult is the 201 (or replayed 200) body.
+type RegenerateResult struct {
+	regenerateReceipt
+	BuyerLink string `json:"buyer_link"`
+	Source    string `json:"source"`
 }
 
 // ManualOrders runs the pipeline. All pools belong to the process that built the buyer surface (cmd/api buildBuyerWithCVS).
@@ -357,6 +378,67 @@ func (m *ManualOrders) Place(ctx context.Context, token, storeID, key string, in
 		link := origin + "/" + in.Locale + "/order-link#o=" + receipt.OrderID + "&t=" + linkToken
 		out.BuyerLink = &link
 	}
+	return out, replayed, nil
+}
+
+// RegenerateLink re-issues a manual order's buyer link (K3 F2). It re-verifies the merchant bearer the same way Place does (inventory:reserve
+// via the scope, catalog:read via requireCatalog, the storefront origin via readOrigin), derives a NEW single-use link token from the
+// Idempotency-Key, invalidates every still-unused old link of the order and records the new one (fulfillment.regenerate_order_link, 0104). It is
+// idempotent by the key: a replay re-derives and returns the same link; a different key is a different link (the previous one already dead).
+func (m *ManualOrders) RegenerateLink(ctx context.Context, token, storeID, key string, in ManualRegenerateInput) (RegenerateResult, bool, error) {
+	if m == nil {
+		return RegenerateResult{}, false, ErrManualDisabled
+	}
+	if !command.ValidID(in.OrderID) || !slices.Contains(locales, in.Locale) {
+		return RegenerateResult{}, false, &Error{Status: http.StatusUnprocessableEntity, Code: "invalid_request"}
+	}
+	var receipt regenerateReceipt
+	var origin string
+	replayed := false
+	// The new link token is NOT the capability and NOT the old link: a fresh single-use secret derived from the key, exchanged by the storefront
+	// for a fresh capability of the order's owner (checkout.redeem_order_link); the old links are invalidated in SQL.
+	linkToken := m.capability("relink", storeID, key)
+	hash := sha256.Sum256([]byte(token))
+	linkHash := sha256.Sum256([]byte(linkToken))
+	err := platform.WithScope(ctx, m.pool, token, storeID, manualPermission, func(tx pgx.Tx, scope platform.Scope) error {
+		if inner := requireCatalog(ctx, tx, scope, token); inner != nil {
+			return inner
+		}
+		var state string
+		var inner error
+		if state, origin, inner = readOrigin(ctx, tx, token, scope); inner != nil {
+			return inner
+		}
+		if state != "configured" || !domains.ValidOrigin(origin) {
+			return ErrUnavailable // no published storefront origin: there is no buyer link to re-issue
+		}
+		// Probe: any receipt of this key (command.Run replays it; nothing is written).
+		inner = command.Run(ctx, tx, scope, relinkOperation, key, in, &receipt, func() error { return errNeedWork })
+		switch {
+		case inner == nil:
+			replayed = true
+		case errors.Is(inner, errNeedWork):
+			inner = nil
+		}
+		if inner != nil {
+			return inner
+		}
+		if replayed {
+			return nil
+		}
+		return command.Run(ctx, tx, scope, relinkOperation, key, in, &receipt, func() error {
+			if _, err := tx.Exec(ctx, `SELECT fulfillment.regenerate_order_link($1,$2::uuid,$3::uuid,$4)`, hash[:], storeID, in.OrderID, linkHash[:]); err != nil {
+				return err
+			}
+			receipt = regenerateReceipt{OrderID: in.OrderID}
+			return command.Audit(ctx, tx, scope, "order.manual_link_regenerated")
+		})
+	})
+	if err != nil {
+		return RegenerateResult{}, false, mapReceiptError(err)
+	}
+	out := RegenerateResult{regenerateReceipt: receipt, Source: "merchant_manual"}
+	out.BuyerLink = origin + "/" + in.Locale + "/order-link#o=" + receipt.OrderID + "&t=" + linkToken
 	return out, replayed, nil
 }
 

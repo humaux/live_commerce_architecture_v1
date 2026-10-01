@@ -178,13 +178,24 @@ export function manualBody(d: ManualDraft): Record<string, unknown> {
   };
 }
 
+// ---- manual link regenerate (G3, K3 F2) ------------------------------------------------------------------------------------
+export type RegenerateResult = { order_id: string; buyer_link: string; source: "merchant_manual" };
+export function parseRegenerateResult(value: unknown): RegenerateResult {
+  const v = object(value, ["order_id", "buyer_link", "source"]);
+  if (typeof v.order_id !== "string" || !canonicalUUID.test(v.order_id) || typeof v.buyer_link !== "string" || v.buyer_link.length > 400 ||
+    v.source !== "merchant_manual") throw fail();
+  const url = new URL(v.buyer_link);
+  if (url.protocol !== "https:" || url.search !== "" || !/^#o=[0-9a-f-]{36}&t=[A-Za-z0-9_-]{43}$/.test(url.hash) || !url.hash.includes(v.order_id)) throw fail();
+  return v as unknown as RegenerateResult;
+}
+
 // ---- BFF request grammar -----------------------------------------------------------------------------------------------------
-export type ToolsRoute = "dashboard" | "export" | "import-preview" | "import-commit" | "manual-options" | "manual-place";
+export type ToolsRoute = "dashboard" | "export" | "import-preview" | "import-commit" | "manual-options" | "manual-place" | "manual-regenerate";
 /** The only resources of the tools BFF, per method. Everything else is a 404 there. */
 export function toolsRoute(method: string, path: string): ToolsRoute | null {
   const table: Record<string, Record<string, ToolsRoute>> = {
     GET: { dashboard: "dashboard", "products/export.csv": "export", "orders/manual/options": "manual-options" },
-    POST: { "products/import/preview": "import-preview", "products/import/commit": "import-commit", "orders/manual": "manual-place" },
+    POST: { "products/import/preview": "import-preview", "products/import/commit": "import-commit", "orders/manual": "manual-place", "orders/manual/regenerate-link": "manual-regenerate" },
   };
   return table[method]?.[path] ?? null;
 }
@@ -200,4 +211,11 @@ export function validManualBody(body: unknown): boolean {
     return true;
   };
   return walk(body);
+}
+/** A regenerate-link body is JSON with exactly {order_id, locale}; the order id is a canonical UUID, the locale one of the three. */
+export function validRegenerateBody(body: unknown): boolean {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return false;
+  const v = body as Record<string, unknown>;
+  return Object.keys(v).sort().join(",") === "locale,order_id" && typeof v.order_id === "string" && canonicalUUID.test(v.order_id) &&
+    typeof v.locale === "string" && ["zh-CN", "zh-TW", "en"].includes(v.locale);
 }

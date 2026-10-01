@@ -15,6 +15,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"sync"
 	"testing"
 	"time"
@@ -180,6 +181,102 @@ func TestMerchantToolsOrderLinkExchange(t *testing.T) {
 		}
 		if last != "429/rate_limited" {
 			t.Fatalf("after 7 wrong attempts: %s", last)
+		}
+	})
+
+	t.Run("F2 idempotent re-delivery: the same bearer re-delivers the same order within 10 minutes; any other bearer is refused", func(t *testing.T) {
+		order5, linkToken5, _, _ := place("five")
+		bearer := randomToken()
+		ip := func(r *http.Request) { r.Header.Set("X-Commerce-Client-IP", "203.0.113.201") }
+		first := e.bh.request(t, "POST", "/v1/buyer/orders/link", bearer, "", map[string]any{"order_id": order5, "token": linkToken5}, ip)
+		if first.status != 200 {
+			t.Fatalf("first: %d %s", first.status, first.body)
+		}
+		// A lost response is retried with the SAME bearer (the BFF re-derives it from the browser-bound proof): the same order re-delivers.
+		second := e.bh.request(t, "POST", "/v1/buyer/orders/link", bearer, "", map[string]any{"order_id": order5, "token": linkToken5}, ip)
+		if second.status != 200 {
+			t.Fatalf("same-bearer replay: %d %s", second.status, second.body)
+		}
+		var re struct {
+			OrderID string `json:"order_id"`
+		}
+		if err := json.Unmarshal(second.body, &re); err != nil || re.OrderID != order5 {
+			t.Fatalf("re-delivery must name the same order: %q %v", re.OrderID, err)
+		}
+		// Exactly ONE capability session for that bearer: no new session, no second capability for a different browser.
+		if n := e.count(`SELECT count(*) FROM buyer.capability_sessions WHERE token_hash=$1`, func() []byte { h := sha256.Sum256([]byte(bearer)); return h[:] }()); n != 1 {
+			t.Fatalf("same-bearer replay must not mint a new session, got %d", n)
+		}
+		// A DIFFERENT bearer (a different browser-bound proof) is the identical refusal.
+		third := e.bh.request(t, "POST", "/v1/buyer/orders/link", randomToken(), "", map[string]any{"order_id": order5, "token": linkToken5}, ip)
+		if mtRefusalBody(t, third) != "404/not_found" {
+			t.Fatalf("different bearer: %s", mtRefusalBody(t, third))
+		}
+	})
+
+	t.Run("F2 regenerate: the merchant re-issues the link, the old one is dead and the new one works", func(t *testing.T) {
+		order6, linkToken6, _, _ := place("six")
+		key := t04Key("mtl-regen")
+		body, _ := json.Marshal(map[string]any{"order_id": order6, "locale": "zh-TW"})
+		w := a.call("POST", "/orders/manual/regenerate-link", key, "application/json", body)
+		if w.Code != 201 {
+			t.Fatalf("regenerate: %d %s", w.Code, w.Body.String())
+		}
+		var out map[string]any
+		_ = json.Unmarshal(w.Body.Bytes(), &out)
+		newLink, _ := out["buyer_link"].(string)
+		newOrder, newToken := e.mtLinkParts(newLink, "zh-TW")
+		if newOrder != order6 || newToken == linkToken6 {
+			t.Fatalf("regenerated link must name the same order with a fresh token: %q %q", newOrder, newToken)
+		}
+		// The old link is invalidated even before any use (marked redeemed), and no longer exchanges.
+		if n := e.count(`SELECT count(*) FROM checkout.order_links WHERE order_id=$1 AND redeemed_at IS NOT NULL`, order6); n != 1 {
+			t.Fatalf("regenerate must invalidate the old link, got %d redeemed rows", n)
+		}
+		if res, _ := e.mtRedeem(order6, linkToken6); mtRefusalBody(t, res) != "404/not_found" {
+			t.Fatalf("old link after regenerate: %s", mtRefusalBody(t, res))
+		}
+		// The new link works and marks it used.
+		if first, _ := e.mtRedeem(order6, newToken); first.status != 200 {
+			t.Fatalf("new link: %d %s", first.status, first.body)
+		}
+		if n := e.count(`SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='order.manual_link_regenerated'`, e.store()); n != 1 {
+			t.Fatalf("manual-link-regenerated audit rows: %d", n)
+		}
+		// A replay of the SAME key is a no-op returning the SAME link (200, not a fresh link).
+		w2 := a.call("POST", "/orders/manual/regenerate-link", key, "application/json", body)
+		if w2.Code != 200 {
+			t.Fatalf("regenerate replay: %d %s", w2.Code, w2.Body.String())
+		}
+		var out2 map[string]any
+		_ = json.Unmarshal(w2.Body.Bytes(), &out2)
+		if out2["buyer_link"] != newLink {
+			t.Fatalf("regenerate replay must return the same link, got %v want %v", out2["buyer_link"], newLink)
+		}
+	})
+
+	t.Run("F1 store-scoped IP throttle: one store's flood does not 429 another store behind the same IP", func(t *testing.T) {
+		ip := sha256.Sum256([]byte("203.0.113.99"))
+		contact := sha256.Sum256([]byte("nobody@example.test"))
+		tokenHash := sha256.Sum256([]byte(randomToken()))
+		storeB := randomUUID()
+		lookup := func(store, ref string) error {
+			var n int
+			return e.p.a.issuer.QueryRow(ctx, `SELECT count(*) FROM checkout.guest_order_lookup($1::uuid,$2,$3,$4,$5,$6::bigint,$7)`,
+				store, ref, "email", contact[:], tokenHash[:], int64(3600), ip[:]).Scan(&n)
+		}
+		// 10 hits is the per-store IP bucket limit; the order ref is varied so only the IP bucket accumulates.
+		for i := 0; i < 10; i++ {
+			if err := lookup(e.store(), fmt.Sprintf("%012x", i+1)); err != nil {
+				t.Fatalf("hit %d: %v", i+1, err)
+			}
+		}
+		if err := lookup(e.store(), fmt.Sprintf("%012x", 11)); sqlState(err) != "PT429" {
+			t.Fatalf("the 11th same-store hit must 429 on the IP bucket, got %v", err)
+		}
+		// The same edge IP against a DIFFERENT store is untouched: its own IP bucket is empty.
+		if err := lookup(storeB, fmt.Sprintf("%012x", 1)); err != nil {
+			t.Fatalf("another store must not inherit the flood: %v", err)
 		}
 	})
 }

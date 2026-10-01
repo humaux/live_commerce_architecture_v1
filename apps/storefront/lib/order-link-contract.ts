@@ -7,6 +7,9 @@ import { ORDER_ID } from "./lookup-contract.ts";
 
 /** 32 random bytes as unpadded base64url (43 characters). */
 export const LINK_TOKEN = /^[A-Za-z0-9_-]{43}$/;
+/** The browser-bound proof: 32 random bytes as unpadded base64url (43 characters), minted once per page load and re-sent on a retry.
+ *  The BFF derives the capability token from (link token, proof), so a lost response is replayed with the SAME capability (K3 F2). */
+export const LINK_PROOF = /^[A-Za-z0-9_-]{43}$/;
 
 /** Reads `#o=<order id>&t=<token>` from a location hash; anything else (extra keys, other order, bad token, query-like noise) is null. */
 export function orderLinkFragment(hash: string): { orderID: string; token: string } | null {
@@ -14,10 +17,11 @@ export function orderLinkFragment(hash: string): { orderID: string; token: strin
   return match && ORDER_ID.test(match[1]) && LINK_TOKEN.test(match[2]) ? { orderID: match[1], token: match[2] } : null;
 }
 
-export function validLinkBody(value: unknown): value is { order_id: string; token: string } {
+export function validLinkBody(value: unknown): value is { order_id: string; proof: string; token: string } {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const v = value as Record<string, unknown>;
-  return Object.keys(v).sort().join(",") === "order_id,token" && typeof v.order_id === "string" && ORDER_ID.test(v.order_id) &&
+  return Object.keys(v).sort().join(",") === "order_id,proof,token" && typeof v.order_id === "string" && ORDER_ID.test(v.order_id) &&
+    typeof v.proof === "string" && LINK_PROOF.test(v.proof) &&
     typeof v.token === "string" && LINK_TOKEN.test(v.token);
 }
 

@@ -708,7 +708,7 @@ const shapes: Record<Exclude<Route["body"], undefined>, Shape> = {
   },
   transferProof: { last5: "string", amount_minor: "integer", paid_at: "string" },
   lookup: { order_ref: "string", contact: "string" },
-  link: { order_id: "string", token: "string" },
+  link: { order_id: "string", token: "string", proof: "string" },
   cvsSelection: {
     cart_version: "integer",
     market_id: "string",
@@ -1022,16 +1022,21 @@ async function lookup(
   });
 }
 
-// POST /api/buyer/orders/link. Like lookup(): no cookie is read; a fresh capability token is minted exactly like session/prepare, Go exchanges the
-// single-use link token for a FULL capability of the order's owner registered with that token, and the cookie is set only when Go said 200 AND named
-// the same order the link did. The link token is forwarded once in the JSON body and never echoed or logged; every refusal is relayed as Go's code.
+// POST /api/buyer/orders/link. Like lookup(): no cookie is read; the capability token is DERIVED (not random) from the link token and the
+// browser-bound proof, so the SAME browser retrying a lost response re-presents the SAME token and Go re-delivers the SAME capability (K3 F2,
+// checkout.redeem_order_link's 10-minute idempotent window). Go exchanges the single-use link token for a FULL capability of the order's owner
+// registered with that token, and the cookie is set only when Go said 200 AND named the same order the link did. The link token is forwarded
+// once in the JSON body (the proof stays here — it is only the BFF's derivation secret) and never echoed or logged; every refusal is Go's code.
 async function orderLink(request: Request, cfg: Config, origin: string): Promise<Response> {
   if (request.headers.has("idempotency-key")) return failure(422, "invalid_request");
   const result = await bodyJSON(request, shapes.link);
   if (result.error) return result.error;
-  const named = (JSON.parse(result.body ?? "{}") as { order_id?: string }).order_id ?? "";
-  const token = randomBytes(32).toString("base64url");
-  const response = await upstream(request, cfg, origin, token, "orders/link", "POST", result.body, undefined, undefined, forwardedIP(request));
+  const parsed = JSON.parse(result.body ?? "{}") as { order_id?: string; token?: string; proof?: string };
+  const named = parsed.order_id ?? "";
+  // A different browser-bound proof yields a different capability token, so a second browser presenting a used link is still refused.
+  const token = mac(cfg, "orderlink-capability-v1", `${parsed.token ?? ""}\0${parsed.proof ?? ""}`).toString("base64url");
+  // Go still takes the exact {order_id, token} body of 0094: the proof never leaves the BFF.
+  const response = await upstream(request, cfg, origin, token, "orders/link", "POST", JSON.stringify({ order_id: named, token: parsed.token ?? "" }), undefined, undefined, forwardedIP(request));
   if (request.signal.aborted) return failure(503, "unavailable");
   if (!response.ok) {
     const refusal = await upstreamError(response);

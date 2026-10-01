@@ -103,7 +103,7 @@ func TestBrowserManualOrderLink(t *testing.T) {
 		OrderID string `json:"order_id"`
 		Cases   int    `json:"cases"`
 	}
-	if json.Unmarshal(data, &result) != nil || result.Cases != 7 || result.OrderID == "" {
+	if json.Unmarshal(data, &result) != nil || result.Cases != 8 || result.OrderID == "" {
 		t.Fatalf("missing exact browser gate results: %s", data)
 	}
 	// Independent PostgreSQL readback of what the browsers did.
@@ -116,11 +116,17 @@ func TestBrowserManualOrderLink(t *testing.T) {
 	if err := e.p.f.owner.QueryRow(ctx, `SELECT state,proof_last5 FROM checkout.bank_transfers WHERE order_id=$1`, result.OrderID).Scan(&tstate, &last5); err != nil || tstate != "SUBMITTED" || last5 != "12345" {
 		t.Fatalf("the buyer's transfer proof was not recorded: state=%q last5=%q err=%v", tstate, last5, err)
 	}
-	if n := e.count(`SELECT count(*) FROM checkout.order_links WHERE order_id=$1 AND redeemed_at IS NOT NULL`, result.OrderID); n != 1 {
-		t.Fatalf("the link must be marked used exactly once, got %d", n)
+	if n := e.count(`SELECT count(*) FROM checkout.order_links WHERE order_id=$1 AND redeemed_at IS NOT NULL`, result.OrderID); n != 2 {
+		t.Fatalf("the used link and the regenerated link must both be marked used, got %d", n)
+	}
+	if n := e.count(`SELECT count(DISTINCT token_hash) FROM checkout.order_links WHERE order_id=$1`, result.OrderID); n != 2 {
+		t.Fatalf("regenerate must issue a distinct second link token, got %d distinct tokens", n)
 	}
 	if n := e.count(`SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='order.manual_created'`, e.store()); n != 1 {
 		t.Fatalf("manual-order audit rows: %d", n)
+	}
+	if n := e.count(`SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='order.manual_link_regenerated'`, e.store()); n != 1 {
+		t.Fatalf("manual-link-regenerated audit rows: %d", n)
 	}
 	t.Logf("PASS: merchant UI manual order -> link -> fresh browser exchange -> bank details -> transfer proof; single use; cases=%d; evidence=%s", result.Cases, evidence)
 }

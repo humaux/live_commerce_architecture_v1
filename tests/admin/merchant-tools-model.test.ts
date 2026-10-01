@@ -4,8 +4,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
-  csvFileProblem, draftProblem, manualBody, parseDashboard, parseImportResult, parseManualOptions, parseManualResult, rowErrorCodes, toolsRoute,
-  validManualBody, MAX_CSV_BYTES, type ManualDraft, type ManualOption,
+  csvFileProblem, draftProblem, manualBody, parseDashboard, parseImportResult, parseManualOptions, parseManualResult, parseRegenerateResult, rowErrorCodes, toolsRoute,
+  validManualBody, validRegenerateBody, MAX_CSV_BYTES, type ManualDraft, type ManualOption,
 } from "../../apps/admin/lib/merchant-tools-model.ts";
 import { toolsCopy } from "../../apps/admin/lib/merchant-tools-copy.ts";
 
@@ -152,15 +152,31 @@ test("draft: first problem, and the body has no price-like field at all", () => 
   assert.equal(validManualBody({ ...body, delivery: { ...(body.delivery as object), shipping_fee: 0 } }), false);
 });
 
-test("BFF grammar: exactly the six tools resources", () => {
+test("BFF grammar: exactly the seven tools resources", () => {
   assert.equal(toolsRoute("GET", "dashboard"), "dashboard");
   assert.equal(toolsRoute("GET", "products/export.csv"), "export");
   assert.equal(toolsRoute("GET", "orders/manual/options"), "manual-options");
   assert.equal(toolsRoute("POST", "products/import/preview"), "import-preview");
   assert.equal(toolsRoute("POST", "products/import/commit"), "import-commit");
   assert.equal(toolsRoute("POST", "orders/manual"), "manual-place");
-  for (const [method, path] of [["POST", "dashboard"], ["GET", "orders/manual"], ["PUT", "orders/manual"], ["GET", "products"], ["GET", "dashboard/x"], ["DELETE", "dashboard"], ["GET", "../dashboard"]])
+  assert.equal(toolsRoute("POST", "orders/manual/regenerate-link"), "manual-regenerate");
+  for (const [method, path] of [["POST", "dashboard"], ["GET", "orders/manual"], ["PUT", "orders/manual"], ["GET", "products"], ["GET", "dashboard/x"], ["DELETE", "dashboard"], ["GET", "../dashboard"], ["GET", "orders/manual/regenerate-link"], ["PUT", "orders/manual/regenerate-link"]])
     assert.equal(toolsRoute(method, path), null, `${method} ${path}`);
+});
+
+test("regenerate body/result: exactly {order_id, locale} and a fresh https link naming that order", () => {
+  const body = { order_id: id, locale: "zh-TW" };
+  assert.ok(validRegenerateBody(body));
+  assert.equal(validRegenerateBody({ ...body, locale: "fr" }), false);
+  assert.equal(validRegenerateBody({ ...body, order_id: "nope" }), false);
+  assert.equal(validRegenerateBody({ ...body, extra: 1 }), false);
+  assert.equal(validRegenerateBody({ order_id: id }), false);
+  assert.equal(validRegenerateBody([]), false);
+  const result = parseRegenerateResult({ order_id: id, buyer_link: `https://shop.example.test/zh-TW/order-link#o=${id}&t=${"A".repeat(43)}`, source: "merchant_manual" });
+  assert.equal(result.order_id, id);
+  assert.equal(result.source, "merchant_manual");
+  assert.throws(() => parseRegenerateResult({ order_id: id, buyer_link: `https://shop.example.test/zh-TW/order-link#o=${id}&t=${"A".repeat(43)}`, source: "storefront" }));
+  assert.throws(() => parseRegenerateResult({ order_id: id, buyer_link: `https://shop.example.test/zh-TW/order-link#o=${id}&t=short`, source: "merchant_manual" }));
 });
 
 test("copy parity: every locale has every key, import rules and error codes", () => {
