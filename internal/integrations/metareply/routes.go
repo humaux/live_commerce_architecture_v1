@@ -105,7 +105,7 @@ func RoutesV2(checkPool *pgxpool.Pool, linkKey claims.ReplyLinkKey, pageKeys *Pa
 		err = checkPool.QueryRow(ctx, `SELECT claims.check_meta_reply($1::uuid,$2::bytea)`, operationID, linkHash).Scan(&code)
 		return code, err
 	}
-	// integration.meta_connect_mark_reauth (0095, commerce_worker): a Graph 190 flips the merchant's connect card to "reconnect".
+	// integration.meta_connect_mark_reauth (0095, commerce_claims_worker): a Graph 190 flips the merchant's connect card to "reconnect".
 	reauth := func(ctx context.Context, operationID string) {
 		_, _ = checkPool.Exec(ctx, `SELECT integration.meta_connect_mark_reauth($1::uuid)`, operationID)
 	}

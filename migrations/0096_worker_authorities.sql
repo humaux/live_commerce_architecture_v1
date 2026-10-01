@@ -330,7 +330,7 @@ REVOKE EXECUTE ON FUNCTION
  integration.finish_stripe_query(uuid,bigint,bytea,text,text),integration.consume_stripe_signal(uuid,uuid,bigint,bytea,text,text),
  integration.load_stripe_refund(uuid,bigint,bytea,text),integration.mark_stripe_refund_sent(uuid,bigint,bytea,text,bytea),
  integration.finish_stripe_refund(uuid,bigint,bytea,text,text),
- claims.check_meta_reply(uuid,bytea),integration.load_meta_page_token(uuid,bigint,bytea),
+ claims.check_meta_reply(uuid,bytea),integration.load_meta_page_token(uuid,bigint,bytea),integration.meta_connect_mark_reauth(uuid),
  integration.load_cvs_create(uuid,bigint,bytea,text),
  integration.finish_cvs_create(uuid,bigint,bytea,text,text,text,text,text,text,text),
  fulfillment.ecpay_recipient_ok(text,text),
@@ -359,7 +359,7 @@ GRANT EXECUTE ON FUNCTION
  TO commerce_payment_worker,commerce_payment_live;
 -- Claims worker: Meta private reply check + Page-token loader, ECPay CVS create loader/finish.
 GRANT EXECUTE ON FUNCTION
- claims.check_meta_reply(uuid,bytea),integration.load_meta_page_token(uuid,bigint,bytea),
+ claims.check_meta_reply(uuid,bytea),integration.load_meta_page_token(uuid,bigint,bytea),integration.meta_connect_mark_reauth(uuid),
  integration.load_cvs_create(uuid,bigint,bytea,text),
  integration.finish_cvs_create(uuid,bigint,bytea,text,text,text,text,text,text,text)
  TO commerce_claims_worker;
@@ -396,6 +396,7 @@ BEGIN
   ('integration.mark_stripe_refund_sent(uuid,bigint,bytea,text,bytea)','commerce_payment_worker/commerce_payment_live'),
   ('integration.finish_stripe_refund(uuid,bigint,bytea,text,text)','commerce_payment_worker/commerce_payment_live'),
   ('claims.check_meta_reply(uuid,bytea)','commerce_claims_worker'),
+  ('integration.meta_connect_mark_reauth(uuid)','commerce_claims_worker'),
   ('integration.load_meta_page_token(uuid,bigint,bytea)','commerce_claims_worker'),
   ('integration.load_cvs_create(uuid,bigint,bytea,text)','commerce_claims_worker'),
   ('integration.finish_cvs_create(uuid,bigint,bytea,text,text,text,text,text,text,text)','commerce_claims_worker'),

@@ -252,6 +252,20 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 ('integration.operation_lane(text,text)'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live','commerce_ads_worker','commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
 	 ('integration.operation_authority_ok(text,text)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
 	 ('integration.profile_authority_ok(text)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
+	 -- meta-connect (migration 0095): merchant-runtime EXECUTE definers (owner commerce_integration_writer);
+	 -- mark_reauth is the claims worker's (private-reply adapter on a Graph 190).
+	 ('integration.meta_connect_auth(bytea,uuid,text)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
+	 ('integration.meta_connect_begin(bytea,uuid,bytea)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
+	 ('integration.meta_connect_consume(bytea,uuid,bytea)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
+	 ('integration.meta_connect_put_result(bytea,uuid,uuid,jsonb,text[])'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
+	 ('integration.meta_connect_get_state(bytea,uuid,uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
+	 ('integration.meta_connect_prepare(bytea,uuid,uuid,text,boolean)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
+	 ('integration.meta_connect_head(bytea,uuid,uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
+	 ('integration.meta_connect_finish(bytea,uuid,uuid,text,uuid,bigint,text,bytea,bytea,uuid,bigint,text,bytea,bytea,text,text)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
+	 ('integration.meta_connect_put_credential(uuid,uuid,uuid,uuid,text,text,bigint,text,bytea,bytea,text[])'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
+	 ('integration.meta_connect_status(bytea,uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
+	 ('integration.meta_connect_disconnect(bytea,uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
+	 ('integration.meta_connect_mark_reauth(uuid)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
 	 ('integration.load_ecpay_key_for_status(uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
 	 ('integration.load_ecpay_key_for_selection(uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,true),
 	 ('integration.load_ecpay_key_for_merchant(bytea,uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false))
@@ -270,7 +284,7 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 AND NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'))
 	 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 	 LEFT JOIN approved a ON a.oid=p.oid WHERE n.nspname='integration'`).Scan(&functions, &safe)
-	if err != nil || functions != 51 || !safe {
+	if err != nil || functions != 63 || !safe {
 		t.Fatalf("fixed function ACL: count=%d safe=%v err=%v", functions, safe, err)
 	}
 }
