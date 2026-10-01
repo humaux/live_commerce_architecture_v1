@@ -266,6 +266,9 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 ('integration.meta_connect_status(bytea,uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
 	 ('integration.meta_connect_disconnect(bytea,uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
 	 ('integration.meta_connect_mark_reauth(uuid)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
+	 -- meta-connect D2 (migration 0100): the claims-worker's disconnect unsubscribe job (the only holder of the private HPKE ring);
+	 ('integration.claim_meta_unsubscribe()'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.finish_meta_unsubscribe(uuid,text,text)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
 	 ('integration.load_ecpay_key_for_status(uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
 	 ('integration.load_ecpay_key_for_selection(uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,true),
 	 ('integration.load_ecpay_key_for_merchant(bytea,uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false))
@@ -284,7 +287,7 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 AND NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'))
 	 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 	 LEFT JOIN approved a ON a.oid=p.oid WHERE n.nspname='integration'`).Scan(&functions, &safe)
-	if err != nil || functions != 63 || !safe {
+	if err != nil || functions != 65 || !safe {
 		t.Fatalf("fixed function ACL: count=%d safe=%v err=%v", functions, safe, err)
 	}
 }

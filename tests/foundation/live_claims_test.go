@@ -99,6 +99,7 @@ func lcPurgeSessions(t *testing.T, f *testFixture, principal string) {
 		`DELETE FROM claims.events WHERE session_id IN (` + sessions + `)`,
 		`DELETE FROM claims.lines WHERE session_id IN (` + sessions + `)`,
 		`DELETE FROM claims.bundles WHERE session_id IN (` + sessions + `)`,
+		`DELETE FROM live.claim_sources WHERE session_id IN (` + sessions + `)`, // a Studio claim source bound to a connected Page (meta-connect gate) references its window
 		`DELETE FROM live.claim_windows WHERE session_id IN (` + sessions + `)`,
 		`DELETE FROM live.offers WHERE session_id IN (` + sessions + `)`,
 		`DELETE FROM live.programs WHERE session_id IN (` + sessions + `)`,
