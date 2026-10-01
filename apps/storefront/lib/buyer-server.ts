@@ -5,6 +5,8 @@
 // CVS (taiwan-cvs-logistics-v1 §5.2, §16.1): exactly POST cvs-selections (keyed), GET cvs-selections/{id},
 // POST cvs-selections/{id}/verify (keyless, no body) and POST cvs-stores (keyed) -> Go internal/buyerhttp/cvs.go;
 // bodies and answers are re-validated with lib/cvs-contract.ts. No generic proxying.
+// Bank transfer (storefront-v2 §C): exactly GET orders/{id}/bank-transfer and PUT orders/{id}/bank-transfer/proof (keyed) ->
+// Go internal/buyerhttp/transfer.go; body and answer re-validated with lib/bank-transfer-contract.ts.
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { isIP } from "node:net";
 import {
@@ -28,6 +30,13 @@ import {
   validConsentResult,
   validErasureSummary,
 } from "./privacy-contract.ts";
+import {
+  TRANSFER_ERROR_CODES,
+  validBuyerEmail,
+  validProofBody,
+  validProofResult,
+  validTransferView,
+} from "./bank-transfer-contract.ts";
 import {
   CVS_ERROR_CODES,
   DEFINITE_CVS_CODES,
@@ -73,7 +82,8 @@ type Route = {
     | "consent"
     | "erasure"
     | "cvsSelection"
-    | "cvsStore";
+    | "cvsStore"
+    | "transferProof";
   query?: "catalog" | "options" | "orders";
   session?: string;
   payment?: "view" | "prepare" | "handoff" | "refresh" | "cancel";
@@ -85,6 +95,8 @@ type Route = {
   cvs?: "open" | "get" | "verify" | "store";
   keyless?: boolean;
   selectionID?: string;
+  // Bank-transfer order page (storefront-v2 §C): GET view, PUT proof (keyed).
+  transfer?: "view" | "proof";
 };
 
 const messages: Record<string, string> = {
@@ -107,6 +119,10 @@ const messages: Record<string, string> = {
   // taiwan-cvs-logistics-v1 §5.2/§16 refusals; the UI maps the code to text, these are generic fallbacks.
   ...Object.fromEntries(
     CVS_ERROR_CODES.map((code) => [code, "Request refused."]),
+  ),
+  // storefront-v2 §C bank-transfer refusals (422 from the buyer definers); the UI maps the code to text.
+  ...Object.fromEntries(
+    TRANSFER_ERROR_CODES.map((code) => [code, "Request refused."]),
   ),
 };
 
@@ -399,6 +415,24 @@ function route(
           : undefined,
     };
   }
+  const transfer = /^orders\/([^/]+)\/bank-transfer(?:\/(proof))?$/.exec(suffix);
+  if (transfer) {
+    if (!UUID.test(transfer[1])) return { known: true, invalidID: true };
+    const proof = transfer[2] === "proof";
+    return {
+      known: true,
+      route:
+        method === (proof ? "PUT" : "GET")
+          ? {
+              method,
+              privatePath: suffix,
+              body: proof ? "transferProof" : undefined,
+              transfer: proof ? "proof" : "view",
+              orderID: transfer[1],
+            }
+          : undefined,
+    };
+  }
   const selection = /^cvs-selections\/([^/]+)(?:\/(verify))?$/.exec(suffix);
   if (selection) {
     if (!UUID.test(selection[1])) return { known: true, invalidID: true };
@@ -647,7 +681,9 @@ const shapes: Record<Exclude<Route["body"], undefined>, Shape> = {
     service_version: "integer",
     allocation_version: "integer",
     payment_mode: "string",
+    buyer_email: "string",
   },
+  transferProof: { last5: "string", amount_minor: "integer", paid_at: "string" },
   cvsSelection: {
     cart_version: "integer",
     market_id: "string",
@@ -696,7 +732,12 @@ const UUID_TEXT = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}
 function extraShapeOK(shape: Shape, parsed: unknown): boolean {
   const v = parsed as Record<string, unknown>;
   if (shape === shapes.checkout)
-    return v.payment_mode === undefined || isPaymentMode(v.payment_mode);
+    return (
+      (v.payment_mode === undefined || isPaymentMode(v.payment_mode)) &&
+      (v.buyer_email === undefined || validBuyerEmail(v.buyer_email))
+    );
+  if (shape === shapes.transferProof)
+    return Object.keys(v).length === Object.keys(shape).length && validProofBody(v);
   if (shape !== shapes.cvsSelection && shape !== shapes.cvsStore) return true;
   if (
     Object.keys(v).length !== Object.keys(shape).length ||
@@ -1120,6 +1161,13 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
       ((target.cvs === "get" || target.cvs === "verify") &&
         (!validCvsSelection(data) ||
           (data as { selection_id: string }).selection_id !== target.selectionID)))
+  )
+    return fail(503, "unavailable");
+  if (
+    target.transfer &&
+    (response.status !== 200 ||
+      (target.transfer === "view" && !validTransferView(data, target.orderID!)) ||
+      (target.transfer === "proof" && !validProofResult(data, target.orderID!)))
   )
     return fail(503, "unavailable");
   if (

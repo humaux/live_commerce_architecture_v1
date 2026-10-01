@@ -54,6 +54,10 @@ type Policy struct {
 	TaxRateBPS      int64  `json:"tax_rate_bps"`
 	QuoteTTLSeconds int64  `json:"quote_ttl_seconds"`
 	Enabled         bool   `json:"enabled"`
+	// FreeShippingThresholdMinor (storefront-v2 §C): merchandise subtotal at or above which Calculate charges shipping 0; nil = never.
+	// It is part of the quote snapshot, so a quote keeps the outcome it was priced with. omitempty: a nil threshold leaves the key out, so a
+	// quote snapshot stored before 0088 still round-trips byte-equal through checkout.begin_hold's "quote changed" comparison.
+	FreeShippingThresholdMinor *int64 `json:"free_shipping_threshold_minor,omitempty"`
 }
 
 type PolicyInput struct {
@@ -70,6 +74,8 @@ type PolicyInput struct {
 	QuoteTTLSeconds  int64  `json:"quote_ttl_seconds"`
 	Enabled          bool   `json:"enabled"`
 	ConfigurationRef string `json:"configuration_ref"`
+	// FreeShippingThresholdMinor: optional (absent or null = no threshold). omitempty keeps the request digest of a pre-0088 body unchanged.
+	FreeShippingThresholdMinor *int64 `json:"free_shipping_threshold_minor,omitempty"`
 }
 
 type AmountLine struct {
@@ -198,12 +204,15 @@ func SetPolicy(ctx context.Context, tx pgx.Tx, scope platform.Scope, key string,
 		}
 		out = Policy{MarketID: in.MarketID, Country: in.Country, Method: in.Method, Currency: in.Currency,
 			ShippingMode: in.ShippingMode, TaxMode: in.TaxMode, TaxBasis: in.TaxBasis, Version: current + 1,
-			ShippingMinor: *in.ShippingMinor, TaxRateBPS: *in.TaxRateBPS, QuoteTTLSeconds: in.QuoteTTLSeconds, Enabled: in.Enabled}
+			ShippingMinor: *in.ShippingMinor, TaxRateBPS: *in.TaxRateBPS, QuoteTTLSeconds: in.QuoteTTLSeconds, Enabled: in.Enabled,
+			FreeShippingThresholdMinor: in.FreeShippingThresholdMinor}
 		_, err = tx.Exec(ctx, `INSERT INTO pricing.policy_versions(tenant_id,store_id,market_id,country,method,version,currency,
-			shipping_mode,shipping_minor,tax_mode,tax_basis,tax_rate_bps,quote_ttl_seconds,enabled,configuration_ref,principal_id)
-			VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`, scope.TenantID, scope.StoreID,
+			shipping_mode,shipping_minor,tax_mode,tax_basis,tax_rate_bps,quote_ttl_seconds,enabled,configuration_ref,principal_id,
+			free_shipping_threshold_minor)
+			VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`, scope.TenantID, scope.StoreID,
 			out.MarketID, out.Country, out.Method, out.Version, out.Currency, out.ShippingMode, out.ShippingMinor,
-			out.TaxMode, out.TaxBasis, out.TaxRateBPS, out.QuoteTTLSeconds, out.Enabled, in.ConfigurationRef, scope.PrincipalID)
+			out.TaxMode, out.TaxBasis, out.TaxRateBPS, out.QuoteTTLSeconds, out.Enabled, in.ConfigurationRef, scope.PrincipalID,
+			in.FreeShippingThresholdMinor)
 		if err != nil {
 			return mapError(err)
 		}
@@ -240,11 +249,11 @@ func LockCurrent(ctx context.Context, tx pgx.Tx, tenantID, storeID, marketID, co
 		return out, mapError(err)
 	}
 	err = tx.QueryRow(ctx, `SELECT market_id::text,country,method,currency,shipping_mode,tax_mode,tax_basis,
-		version,shipping_minor,tax_rate_bps,quote_ttl_seconds,enabled FROM pricing.policy_versions
+		version,shipping_minor,tax_rate_bps,quote_ttl_seconds,enabled,free_shipping_threshold_minor FROM pricing.policy_versions
 		WHERE tenant_id=$1 AND store_id=$2 AND market_id=$3 AND country=$4 AND method=$5 AND version=$6`,
 		tenantID, storeID, marketID, country, method, currentVersion).Scan(
 		&out.MarketID, &out.Country, &out.Method, &out.Currency, &out.ShippingMode, &out.TaxMode, &out.TaxBasis,
-		&out.Version, &out.ShippingMinor, &out.TaxRateBPS, &out.QuoteTTLSeconds, &out.Enabled)
+		&out.Version, &out.ShippingMinor, &out.TaxRateBPS, &out.QuoteTTLSeconds, &out.Enabled, &out.FreeShippingThresholdMinor)
 	if err != nil {
 		return out, mapError(err)
 	}
@@ -259,6 +268,7 @@ func Calculate(policy Policy, lines []AmountLine) (Calculation, error) {
 	if !validPolicy(policy) || len(lines) == 0 || len(lines) > 50 {
 		return Calculation{}, command.ErrInvalid
 	}
+	shipping := policy.ShippingMinor
 	for _, line := range lines {
 		subtotal, err := command.CheckMoney(line.UnitPriceMinor, line.Quantity)
 		if err != nil {
@@ -282,15 +292,21 @@ func Calculate(policy Policy, lines []AmountLine) (Calculation, error) {
 		}
 		result.Lines = append(result.Lines, LineAmount{SubtotalMinor: subtotal, TaxMinor: tax, TotalMinor: lineTotal})
 	}
+	// I05 / storefront-v2 §C: free shipping is decided here, from the server-side merchandise subtotal and the policy's threshold, never
+	// from a client value. Shipping 0 also zeroes the shipping tax below because both read this one variable.
+	if policy.FreeShippingThresholdMinor != nil && result.SubtotalMinor >= *policy.FreeShippingThresholdMinor {
+		shipping = 0
+	}
+	result.ShippingMinor = shipping
 	if policy.TaxBasis == "goods_and_shipping" {
-		result.ShippingTaxMinor = taxMinor(policy.ShippingMinor, policy.TaxRateBPS, policy.TaxMode)
+		result.ShippingTaxMinor = taxMinor(shipping, policy.TaxRateBPS, policy.TaxMode)
 	}
 	var err error
 	result.TaxMinor, err = addMoney(result.TaxMinor, result.ShippingTaxMinor)
 	if err != nil {
 		return Calculation{}, err
 	}
-	total, err := addMoney(result.SubtotalMinor, result.ShippingMinor)
+	total, err := addMoney(result.SubtotalMinor, shipping)
 	if err != nil {
 		return Calculation{}, err
 	}
@@ -308,14 +324,16 @@ func validPolicyInput(in PolicyInput) bool {
 		currencyPattern.MatchString(in.Currency) && countryPattern.MatchString(in.Country) && ValidMethod(in.Method) &&
 		in.ShippingMode == "country_flat" && validTax(in.TaxMode, in.TaxBasis, *in.TaxRateBPS) &&
 		*in.ShippingMinor >= 0 && *in.ShippingMinor <= command.MaxMoney && in.QuoteTTLSeconds >= 60 && in.QuoteTTLSeconds <= 1800 &&
-		printable(in.ConfigurationRef, 240)
+		printable(in.ConfigurationRef, 240) &&
+		(in.FreeShippingThresholdMinor == nil || (*in.FreeShippingThresholdMinor >= 0 && *in.FreeShippingThresholdMinor <= command.MaxMoney))
 }
 
 func validPolicy(p Policy) bool {
 	return command.ValidID(p.MarketID) && p.Version > 0 && p.Enabled && currencyPattern.MatchString(p.Currency) &&
 		countryPattern.MatchString(p.Country) && ValidMethod(p.Method) && p.ShippingMode == "country_flat" &&
 		p.ShippingMinor >= 0 && p.ShippingMinor <= command.MaxMoney && validTax(p.TaxMode, p.TaxBasis, p.TaxRateBPS) &&
-		p.QuoteTTLSeconds >= 60 && p.QuoteTTLSeconds <= 1800
+		p.QuoteTTLSeconds >= 60 && p.QuoteTTLSeconds <= 1800 &&
+		(p.FreeShippingThresholdMinor == nil || (*p.FreeShippingThresholdMinor >= 0 && *p.FreeShippingThresholdMinor <= command.MaxMoney))
 }
 
 func validTax(mode, basis string, bps int64) bool {

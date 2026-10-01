@@ -44,3 +44,46 @@ func TestValidMethodRemainsClosed(t *testing.T) {
 		}
 	}
 }
+
+// storefront-v2 §C: shipping is 0 (and its tax 0) exactly when the server-side merchandise subtotal reaches the policy threshold; nil never
+// waives it; the boundary is inclusive; everything else in the quote is unchanged.
+func TestCalculateFreeShippingThreshold(t *testing.T) {
+	policy := Policy{MarketID: "11111111-1111-4111-8111-111111111111", Country: "TW", Method: "home", Currency: "TWD", ShippingMode: "country_flat",
+		TaxMode: "exclusive", TaxBasis: "goods_and_shipping", Version: 1, ShippingMinor: 6000, TaxRateBPS: 500, QuoteTTLSeconds: 600, Enabled: true}
+	lines := []AmountLine{{UnitPriceMinor: 40000, Quantity: 1}, {UnitPriceMinor: 10000, Quantity: 1}} // subtotal 50000
+	at := func(v int64) *int64 { return &v }
+	for _, c := range []struct {
+		name      string
+		threshold *int64
+		shipping  int64
+		shipTax   int64
+	}{
+		{"no threshold keeps the flat fee", nil, 6000, 300},
+		{"below the threshold keeps the fee", at(50001), 6000, 300},
+		{"exactly at the threshold is free", at(50000), 0, 0},
+		{"above the subtotal is free", at(1), 0, 0},
+		{"zero threshold is always free", at(0), 0, 0},
+	} {
+		p := policy
+		p.FreeShippingThresholdMinor = c.threshold
+		got, err := Calculate(p, lines)
+		if err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+		if got.ShippingMinor != c.shipping || got.ShippingTaxMinor != c.shipTax || got.SubtotalMinor != 50000 {
+			t.Fatalf("%s: shipping %d tax %d subtotal %d", c.name, got.ShippingMinor, got.ShippingTaxMinor, got.SubtotalMinor)
+		}
+		// I05: the total always equals subtotal + shipping + goods tax + shipping tax (exclusive tax).
+		if want := got.SubtotalMinor + got.ShippingMinor + got.TaxMinor; got.TotalMinor != want {
+			t.Fatalf("%s: total %d want %d", c.name, got.TotalMinor, want)
+		}
+	}
+	bad := policy
+	bad.FreeShippingThresholdMinor = at(-1)
+	if _, err := Calculate(bad, lines); err == nil {
+		t.Fatal("a negative threshold must be refused")
+	}
+	if validPolicyInput(PolicyInput{}) {
+		t.Fatal("empty policy input accepted")
+	}
+}

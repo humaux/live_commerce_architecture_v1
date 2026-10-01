@@ -28,3 +28,15 @@ test("LGR02 everything else is refused: other methods, extra segments, case, tra
   ])
     assert.equal(logisticsRoute(method, path), null, `${method} ${path}`);
 });
+
+// checkout-offline (contracts/storefront-v2.md §C): the store-level bank-transfer settings resource.
+test("LGR03 bank-transfer-settings is one exact resource: GET read, PUT keyed command", () => {
+  assert.equal(logisticsRoute("GET", "bank-transfer-settings"), "get");
+  assert.equal(logisticsRoute("PUT", "bank-transfer-settings"), "command");
+  for (const [method, path] of [
+    ["POST", "bank-transfer-settings"], ["DELETE", "bank-transfer-settings"], ["GET", "bank-transfer-settings/"], ["GET", "bank-transfer-settings/x"],
+    ["GET", "logistics/bank-transfer-settings"], ["GET", "bank_transfer_settings"], ["GET", "Bank-Transfer-Settings"], ["PUT", "bank-transfer-settings?x=1"],
+    ["GET", "/bank-transfer-settings"],
+  ])
+    assert.equal(logisticsRoute(method, path), null, `${method} ${path}`);
+});

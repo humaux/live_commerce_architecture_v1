@@ -150,3 +150,24 @@ test("CVSR03 keyless-command carries a JSON body but never a key or chunked fram
   assert.equal(validKeylessCommandRequest(post({ "content-type": "application/json", "idempotency-key": "k-12345678" })), false);
   assert.equal(validKeylessCommandRequest(post({ "content-type": "application/json", "transfer-encoding": "chunked" })), false);
 });
+
+// --- checkout-offline: contracts/storefront-v2.md §C bank-transfer order resources ----------------------------------------------------
+test("BTR01 BFF grammar adds exactly the bank-transfer read and the three keyed decisions", () => {
+  const accepted: [string, string, string][] = [
+    ["GET", `orders/${O}/bank-transfer`, "get"],
+    ["POST", `orders/${O}/bank-transfer/confirm`, "command"],
+    ["POST", `orders/${O}/bank-transfer/reject`, "command"],
+    ["POST", `orders/${O}/bank-transfer/refund-offline`, "command"],
+  ];
+  for (const [method, path, kind] of accepted) assert.equal(orderActionRoute(method, path), kind, `${method} ${path}`);
+  for (const [method, path] of [
+    ["PUT", `orders/${O}/bank-transfer`], ["POST", `orders/${O}/bank-transfer`], ["DELETE", `orders/${O}/bank-transfer`],
+    ["GET", `orders/${O}/bank-transfer/confirm`], ["PUT", `orders/${O}/bank-transfer/confirm`], ["POST", `orders/${O}/bank-transfer/confirm/`],
+    ["POST", `orders/${O}/bank-transfer/approve`], ["POST", `orders/${O}/bank-transfer/cancel`], ["POST", `orders/${O}/bank-transfer/Confirm`],
+    ["POST", `orders/${O}/bank-transfer/refund`], ["POST", `orders/${O}/bank-transfer/confirm/x`], ["POST", `orders/${O}/bank-transfer/confirm?x=1`],
+    ["POST", `orders/not-a-uuid/bank-transfer/confirm`], ["GET", `orders/${O.toUpperCase()}/bank-transfer`], ["GET", "orders/bank-transfer"],
+    ["GET", `orders/${O}/banktransfer`], ["GET", `orders/${O}/bank_transfer`], ["GET", `orders/${O}/bank-transfer/`],
+  ])
+    assert.equal(orderActionRoute(method, path), null, `${method} ${path}`);
+  assert.equal(validOrdersQuery("https://x.test/api/stores/s/orders?state=AWAITING_TRANSFER", false), true);
+});

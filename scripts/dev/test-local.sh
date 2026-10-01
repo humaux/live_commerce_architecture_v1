@@ -109,6 +109,10 @@ if [[ "$test_mode" == --browser-merchant-orders-ui ]]; then
   test -f tests/admin/orders-ui.spec.ts
   # Pure model contract behind the UI (orders/refunds/shipments parsers); was run by no gate before.
   node --test --experimental-strip-types tests/admin/orders-model.test.ts
+  # checkout-offline (storefront-v2 §C): bank-transfer DTO parsers, copy parity and the finance row shape.
+  node --test --experimental-strip-types tests/admin/transfer-model.test.ts
+  # storefront-publish R3 (base defect found by check-gates: this tracked file was run by no gate).
+  node --test --experimental-strip-types tests/admin/storefront-model.test.ts
   mkdir -p output/playwright
 fi
 if [[ "$test_mode" == --browser-merchant-orders-bff ]]; then

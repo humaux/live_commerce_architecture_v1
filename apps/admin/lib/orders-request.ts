@@ -6,6 +6,7 @@ const states = new Set([
   "all",
   "DRAFT",
   "AWAITING_PAYMENT",
+  "AWAITING_TRANSFER",
   "CONFIRMED",
   "CANCELLED",
   "shipped",
@@ -55,6 +56,9 @@ const actionRoutes: [string, RegExp, OrderActionKind][] = [
   ["POST", new RegExp(`^orders/${uuid}/cvs-shipment/abandon$`), "command"],
   ["POST", new RegExp(`^orders/${uuid}/collection$`), "command"],
   ["POST", new RegExp(`^orders/${uuid}/pay-at-pickup-release$`), "command"],
+  // storefront-v2 §C bank transfer: detail read (orders:read) and the three audited decisions (payments:refund, keyed, body {} or {reason}).
+  ["GET", new RegExp(`^orders/${uuid}/bank-transfer$`), "get"],
+  ["POST", new RegExp(`^orders/${uuid}/bank-transfer/(?:confirm|reject|refund-offline)$`), "command"],
 ];
 export function orderActionRoute(method: string, path: string): OrderActionKind | null {
   return actionRoutes.find(([m, re]) => m === method && re.test(path))?.[2] ?? null;

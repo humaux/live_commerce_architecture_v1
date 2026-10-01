@@ -390,3 +390,34 @@ test("CVSA03 the cvs_pending list filter exists beside the older filters", () =>
   assert.ok(orderStates.includes("cvs_pending"));
   assert.ok(orderStates.includes("shipped") && orderStates.includes("unshipped"));
 });
+
+// --- checkout-offline: contracts/storefront-v2.md §C (bank_transfer, AWAITING_TRANSFER) -------------------------------------------
+// A transfer order has no payment attempt, work item or refund; it waits AWAITING_TRANSFER with nothing shipped, is CONFIRMED by the
+// merchant's act and CANCELLED when the window ends.
+const bank = { ...summary, commercial_state: "AWAITING_TRANSFER", fulfillment_state: "MANUAL_UNASSIGNED", payment_state: "NOT_STARTED", work_state: "NONE", payment_mode: "bank_transfer", collection_state: null, pickup_source: null };
+test("BTA01 bank-transfer summary: valid states, and every card or pickup invariant it must not borrow", () => {
+  for (const row of [
+    bank,
+    { ...bank, commercial_state: "CONFIRMED" },
+    { ...bank, commercial_state: "CONFIRMED", fulfillment_state: "MERCHANT_SHIPPED" },
+    { ...bank, commercial_state: "CANCELLED", fulfillment_state: "CANCELLED" },
+    { ...bank, pickup_source: "buyer_entered" }, // a CVS destination may pay by transfer
+  ])
+    assert.equal(parseOrderSummary(row).payment_mode, "bank_transfer", JSON.stringify(row));
+  for (const [name, row] of [
+    ["collection state on a transfer order", { ...bank, collection_state: "PENDING" }],
+    ["a payment attempt", { ...bank, payment_state: "CAPTURED", work_state: "READY" }],
+    ["a work item", { ...bank, work_state: "READY" }],
+    ["a refund", { ...bank, refunded_minor: 100 }],
+    ["test mode", { ...bank, test_mode: true }],
+    ["shipped while still awaiting the transfer", { ...bank, fulfillment_state: "MERCHANT_SHIPPED" }],
+    ["cancelled order with a live fulfillment", { ...bank, commercial_state: "CANCELLED" }],
+    ["allocation failure", { ...bank, commercial_state: "CONFIRMED", fulfillment_state: "PAID_ALLOCATION_FAILED" }],
+    ["label created before confirmation", { ...bank, fulfillment_state: "PROVIDER_LABEL_CREATED" }],
+  ] as const)
+    assert.throws(() => parseOrderSummary(row), /unavailable/, name);
+  // only a transfer order can wait for a transfer
+  assert.throws(() => parseOrderSummary({ ...bank, payment_mode: "card" }), /unavailable/);
+  assert.throws(() => parseOrderSummary({ ...pap, commercial_state: "AWAITING_TRANSFER" }), /unavailable/);
+  assert.ok(orderStates.includes("AWAITING_TRANSFER" as never));
+});

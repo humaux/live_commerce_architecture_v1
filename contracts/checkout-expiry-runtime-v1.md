@@ -126,3 +126,12 @@ this does not establish business expiry SLA under a crash. Operator observabilit
 capacity/recovery SLO, expiry reconciliation sweep for terminal failed jobs,
 external-operation production routes and authorized deployment remain separate
 release gates. Never silently change a failed/terminal job to claim acceptance.
+
+## AWAITING_TRANSFER holds (checkout-offline, amends this contract; storefront-v2 §C)
+
+A `bank_transfer` order keeps its reservation HELD for the merchant's window (6..168 h) instead of 15 minutes (`checkout.orders.expires_at`
+= placement + window, CHECK `orders_expiry_window`). The producer still inserts the generation-1 `checkout_expiry_v1` job at +15 minutes;
+`checkout.expire_held` answers `NOT_DUE` with the real due time and the worker snoozes to it, so no new job kind, queue or worker exists.
+At the due time `expire_held` releases the stock exactly like a card hold (SYSTEM_EXPIRY RELEASE rows, reservation EXPIRED, order
+CANCELLED) and marks the transfer row EXPIRED; a CONFIRMED order is `STALE`. A merchant confirm and the expiry race on the order row lock;
+the confirm refuses with 409 `transfer_window_closed` once the deadline has passed.

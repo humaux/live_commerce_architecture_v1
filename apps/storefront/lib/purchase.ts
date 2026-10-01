@@ -14,6 +14,7 @@ import {
   type CvsKind,
   type PaymentMode,
 } from "./cvs-contract.ts";
+import { validBuyerEmail } from "./bank-transfer-contract.ts";
 
 // Buyer purchase transport + strict validators for the BFF /api/buyer/* routes (cart, catalog,
 // checkout-options, quotes, destination, checkout, orders). Owns: request journals/CAS and the exact wire shapes.
@@ -53,8 +54,11 @@ export type Option = {
   sort_order: number;
   // CVS rows only (taiwan-cvs-logistics-v1 §5.1): how the store is chosen and which payment modes exist.
   pickup_selection?: "ecpay_map" | "buyer_entered";
+  // Home rows carry payment_modes only when the store enabled bank transfer (storefront-v2 §C); absent = card only.
   payment_modes?: PaymentMode[];
   store_search_url?: string;
+  // Present exactly when payment_modes lists bank_transfer: hours the stock stays reserved for the transfer (6..168).
+  transfer_window_hours?: number;
 };
 // A configured chain that cannot be sold yet (ECPay chain gate, §5.1): listed but disabled ("Coming soon").
 // Go sends only the identity/label fields plus available:false and a reason; versions are not needed.
@@ -172,8 +176,11 @@ export type CheckoutWrite = {
   cart_version: number;
   service_version: number;
   allocation_version: number;
-  // Only set for CVS options (§16.2); a home checkout body is unchanged and Go reads a missing mode as card.
+  // Set for CVS options (§16.2) and for a home option that offers several modes (storefront-v2 §C); a card-only home body is unchanged
+  // and Go reads a missing mode as card.
   payment_mode?: PaymentMode;
+  // Optional buyer email (storefront-v2 §C), trimmed, validated by validBuyerEmail; Go and the SQL CHECK re-validate.
+  buyer_email?: string;
 };
 // manual-fulfilment-v1 §3.1 carrier codes; a label, never an integration binding.
 export const CARRIER_CODES = [
@@ -200,7 +207,7 @@ export type Order = {
   order_id: string;
   cart_id: string;
   cart_version: number;
-  commercial_state: "DRAFT" | "AWAITING_PAYMENT" | "CONFIRMED" | "CANCELLED";
+  commercial_state: "DRAFT" | "AWAITING_PAYMENT" | "AWAITING_TRANSFER" | "CONFIRMED" | "CANCELLED";
   fulfillment_state:
     | "MANUAL_UNASSIGNED"
     | "CANCELLED"
@@ -295,6 +302,16 @@ export const validProduct = (v: unknown): v is Product =>
   currency(v.currency) &&
   integer(v.price_minor, 0, MAX_AMOUNT);
 const HOME_AND_CVS = ["home", "cvs_711", "cvs_familymart", "cvs_hilife", "cvs_okmart"];
+// payment_modes: 1..3 distinct known modes; transfer_window_hours (6..168) is present exactly when bank_transfer is listed.
+const validPaymentModes = (v: Record<string, unknown>, min: number) =>
+  Array.isArray(v.payment_modes) &&
+  v.payment_modes.length >= min &&
+  v.payment_modes.length <= 3 &&
+  v.payment_modes.every(isPaymentMode) &&
+  new Set(v.payment_modes).size === v.payment_modes.length &&
+  (v.payment_modes.includes("bank_transfer")
+    ? integer(v.transfer_window_hours, 6, 168)
+    : v.transfer_window_hours === undefined);
 const optionLabels = (v: Record<string, unknown>) =>
   [v.name_hans, v.name_hant, v.name_en].every((x) => typeof x === "string") &&
   integer(v.sort_order, -2147483648, 2147483647);
@@ -302,11 +319,7 @@ const optionLabels = (v: Record<string, unknown>) =>
 // own constants (cvs-contract.ts CVS_SEARCH_LINKS), never a server-supplied href.
 const validCvsOptionFields = (v: Record<string, unknown>) =>
   (v.pickup_selection === "ecpay_map" || v.pickup_selection === "buyer_entered") &&
-  Array.isArray(v.payment_modes) &&
-  v.payment_modes.length >= 1 &&
-  v.payment_modes.length <= 2 &&
-  v.payment_modes.every(isPaymentMode) &&
-  new Set(v.payment_modes).size === v.payment_modes.length &&
+  validPaymentModes(v, 1) &&
   (v.pickup_selection === "buyer_entered"
     ? typeof v.store_search_url === "string" &&
       v.store_search_url.startsWith("https://") &&
@@ -327,7 +340,12 @@ export const validOption = (v: unknown): v is Option =>
   optionLabels(v) &&
   (v.delivery_kind === "home"
     ? v.pickup_selection === undefined &&
-      v.payment_modes === undefined &&
+      (v.payment_modes === undefined
+        ? v.transfer_window_hours === undefined
+        : // Go lists modes on a home row only when the store enabled bank transfer, and never pay_at_pickup (CVS only).
+          validPaymentModes(v, 1) &&
+          (v.payment_modes as unknown[]).includes("bank_transfer") &&
+          !(v.payment_modes as unknown[]).includes("pay_at_pickup")) &&
       v.store_search_url === undefined
     : country(v.country) && v.country === "TW" && validCvsOptionFields(v));
 // {available:false, reason} rows keep only identity + labels (a chain the store configured but ECPay gates).
@@ -499,7 +517,7 @@ export const validOrder = (v: unknown): v is Order =>
   id(v.order_id) &&
   id(v.cart_id) &&
   integer(v.cart_version, 1) &&
-  ["DRAFT", "AWAITING_PAYMENT", "CONFIRMED", "CANCELLED"].includes(
+  ["DRAFT", "AWAITING_PAYMENT", "AWAITING_TRANSFER", "CONFIRMED", "CANCELLED"].includes(
     String(v.commercial_state),
   ) &&
   FULFILLMENT_STATES.includes(String(v.fulfillment_state)) &&
@@ -533,7 +551,7 @@ export const validOrderSummary = (v: unknown): v is OrderSummary =>
   id(v.order_id) &&
   id(v.cart_id) &&
   integer(v.cart_version, 1) &&
-  ["DRAFT", "AWAITING_PAYMENT", "CONFIRMED", "CANCELLED"].includes(
+  ["DRAFT", "AWAITING_PAYMENT", "AWAITING_TRANSFER", "CONFIRMED", "CANCELLED"].includes(
     String(v.commercial_state),
   ) &&
   FULFILLMENT_STATES.includes(String(v.fulfillment_state)) &&
@@ -605,8 +623,10 @@ const validCheckoutWrite = (v: unknown): v is CheckoutWrite =>
     "service_version",
     "allocation_version",
     ...(v.payment_mode === undefined ? [] : ["payment_mode"]),
+    ...(v.buyer_email === undefined ? [] : ["buyer_email"]),
   ]) &&
   (v.payment_mode === undefined || isPaymentMode(v.payment_mode)) &&
+  (v.buyer_email === undefined || validBuyerEmail(v.buyer_email)) &&
   id(v.quote_id) &&
   id(v.destination_id) &&
   integer(v.cart_version, 1) &&
@@ -620,8 +640,10 @@ export function checkoutInput(
   destination: Destination,
   now = Date.now(),
   paymentMode?: PaymentMode,
+  buyerEmail?: string,
 ): CheckoutWrite {
   const cvs = option.delivery_kind !== "home";
+  const email = buyerEmail?.trim() ?? "";
   if (
     !validQuote(quote) ||
     !validOption(option) ||
@@ -638,10 +660,13 @@ export function checkoutInput(
     (!cvs && option.mode !== "MANUAL") ||
     destination.kind !== option.delivery_kind ||
     (cvs && destination.pickup?.kind !== option.delivery_kind) ||
-    // payment_mode belongs to CVS rows only and must be one the row offers (§16.2, §5.1).
+    // payment_mode must be one the row offers (§16.2, §5.1); a home row names modes only when bank transfer is on (storefront-v2 §C).
     (cvs
       ? !(option.payment_modes ?? []).includes(paymentMode ?? "card")
-      : paymentMode !== undefined) ||
+      : option.payment_modes === undefined
+        ? paymentMode !== undefined
+        : !option.payment_modes.includes(paymentMode ?? "card")) ||
+    (email !== "" && !validBuyerEmail(email)) ||
     destination.cart_id !== cart.id ||
     destination.cart_version !== cart.version ||
     destination.country !== quote.country ||
@@ -656,7 +681,8 @@ export function checkoutInput(
     cart_version: cart.version,
     service_version: option.service_version,
     allocation_version: option.allocation_version,
-    ...(cvs ? { payment_mode: paymentMode ?? "card" } : {}),
+    ...(cvs || option.payment_modes !== undefined ? { payment_mode: paymentMode ?? "card" } : {}),
+    ...(email === "" ? {} : { buyer_email: email }),
   };
 }
 
@@ -1183,7 +1209,7 @@ function validCheckoutReceipt(
     return false;
   if (
     receipt.commercial_state !== undefined &&
-    !["DRAFT", "AWAITING_PAYMENT", "CONFIRMED", "CANCELLED"].includes(
+    !["DRAFT", "AWAITING_PAYMENT", "AWAITING_TRANSFER", "CONFIRMED", "CANCELLED"].includes(
       String(receipt.commercial_state),
     )
   )

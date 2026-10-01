@@ -127,7 +127,7 @@ func validBinding(b Binding) bool {
 	case "products", "warehouses", "inventory", "provider-accounts", "markets":
 		return b.ParentID == "" && b.Filter == ""
 	case "merchant-orders":
-		return b.ParentID == "" && (b.Filter == "all" || b.Filter == "DRAFT" || b.Filter == "AWAITING_PAYMENT" || b.Filter == "CONFIRMED" || b.Filter == "CANCELLED" || b.Filter == "shipped" || b.Filter == "unshipped")
+		return b.ParentID == "" && (b.Filter == "all" || b.Filter == "DRAFT" || b.Filter == "AWAITING_PAYMENT" || b.Filter == "AWAITING_TRANSFER" || b.Filter == "CONFIRMED" || b.Filter == "CANCELLED" || b.Filter == "shipped" || b.Filter == "unshipped")
 	case "live-sessions":
 		return b.ParentID == "" && b.Filter == ""
 	case "customers": // internal/customers.List: Filter is empty or the sha256 hex of the search text
