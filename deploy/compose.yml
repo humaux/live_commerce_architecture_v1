@@ -18,7 +18,8 @@
 #   LC_STRIPE_ENABLED when unset; the platform kill switch), LC_STRIPE_LIVE_ENABLED + LC_STRIPE_LIVE_APPROVAL_REF
 #   (the LIVE pair -> api and payment-worker-live; stripe-live-enable-v1 LD6/§5.2),
 #   LC_CVS_ECPAY_ENABLED (one switch -> api + claims-worker CVS_ECPAY_ENABLED; SANDBOX only,
-#   taiwan-cvs-logistics-v1 §12).
+#   taiwan-cvs-logistics-v1 §12), LC_BUYER_MAIL_ENABLED (-> expiry-worker COMMERCE_BUYER_MAIL_ENABLED; the buyer-mail loop,
+#   default 0; it reuses LC_SMTP_HOST/USERNAME, LC_MAIL_FROM, LC_MAIL_DAILY_CAP and the secret commerce_smtp_password).
 # Reads secrets: every row of deploy/secrets.manifest.tsv, mounted at /run/secrets/<name>
 #   (Compose non-swarm file secrets = read-only bind mounts that keep host modes 0440
 #   root:${LC_SECRETS_GID}); apps receive them only as NAME_FILE paths expanded by lcentry.
@@ -29,6 +30,8 @@
 #   R1 additions (unit deploy-release): claims-worker, Stripe ingress/keyring wiring, K_actor on
 #   meta-worker, and the operator one-shots stripe-admin / meta-admin (profile ops).
 #   R3 addition (unit storefront-publish): the operator one-shot store-admin (domain bind/suspend/detach/status).
+#   R4 additions (unit deploy-r4): expiry-worker SMTP wiring + egress network for the buyer-mail loop (off by default); every
+#   worker already runs on its OWN login (migrations/0096, deploy/postgres/logins.tsv) and smoke S03 now checks that wiring.
 # Change rules:
 #   * `environment:` = fixed WIRING (listeners, derived origins, *_FILE paths, ENABLED=1 of
 #     profile-gated workers). env/<svc>.env = per-service KNOBS only; preflight P06 fails if a
@@ -357,17 +360,30 @@ services:
   # (*_worker_ready, *_invalid_config, *_database*, *_start_failed) watched by smoke/watchdog.
   # -------------------------------------------------------------------------------------------
   expiry-worker:
+    # Checkout expiry (River) + the optional buyer/merchant mail outbox loop (cmd/expiry-worker/mail.go, storefront-v2 §E8).
+    # The loop runs only with LC_BUYER_MAIL_ENABLED=1 (default 0 until the owner flips it) and then dials ONLY the SMTP host
+    # (implicit TLS 465; the host is a compose.env value, never a request input). Same SMTP account, From and daily cap as the
+    # api login-code mail (LC_SMTP_*, LC_MAIL_DAILY_CAP), same owner secret commerce_smtp_password.
     <<: *go
     profiles: [app]
     command: ["/app/bin/expiry-worker"]
-    networks: [backend]          # DB only, no internet
+    # ponytail: `egress` is one shared bridge (payment/claims/ads workers use it too), so Compose cannot pin it to port 465; the
+    # process dials nothing but the SMTP host (and nothing at all while the mail loop is off). Host firewall egress rules per
+    # container are the upgrade path if a second tenant or an untrusted code path ever runs in this process.
+    networks: [backend, egress]
     depends_on: *after-db
     env_file: ["${LC_ENV_DIR:?set LC_ENV_DIR}/expiry-worker.env"]   # concurrency
     environment:
       COMMERCE_EXPIRY_WORKER_ENABLED: "1"
       COMMERCE_EXPIRY_WORKER_DATABASE_URL_FILE: /run/secrets/dsn_lc_expiry_worker
+      COMMERCE_BUYER_MAIL_ENABLED: ${LC_BUYER_MAIL_ENABLED:-0}
+      COMMERCE_SMTP_HOST: ${LC_SMTP_HOST:-}
+      COMMERCE_SMTP_USERNAME: ${LC_SMTP_USERNAME:-}
+      COMMERCE_MAIL_FROM: ${LC_MAIL_FROM:-}
+      COMMERCE_MAIL_DAILY_CAP: ${LC_MAIL_DAILY_CAP:-200}
+      COMMERCE_SMTP_PASSWORD_FILE: /run/secrets/commerce_smtp_password   # lcentry expands it; "__UNSET__" = not set (loop must stay off)
       GOMEMLIMIT: 200MiB
-    secrets: [dsn_lc_expiry_worker]
+    secrets: [dsn_lc_expiry_worker, commerce_smtp_password]
     cpus: 0.5
     mem_limit: 256m
 

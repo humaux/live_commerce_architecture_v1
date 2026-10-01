@@ -55,7 +55,7 @@ Internet ─80/443(+udp)─► edge-netns (pause) ── shared 127.0.0.1 ──
                                                                  ├ api :8080 (must be loopback)
                                                                  ├ admin :3100 (Next standalone)
                                                                  └ storefront :3200 (next start)
-backend (internal) : postgres :5432 ◄── api, expiry-worker, meta-worker, payment-worker-* (+egress: PAYUNi, api.stripe.com),
+backend (internal) : postgres :5432 ◄── api, expiry-worker (+egress: the SMTP host, only when LC_BUYER_MAIL_ENABLED=1), meta-worker, payment-worker-* (+egress: PAYUNi, api.stripe.com),
                      claims-worker (+egress: graph.facebook.com), ads-worker (+egress: graph.facebook.com)
 ops one-shots      : stripe-admin (backend + egress), meta-admin (backend), store-admin (backend; login lc_store_registrar, R3 storefront-publish) — profile ops, run only via ops-admin.sh
 pgsocket volume    : postgres ◄── migrate (network none), provision-logins, pg-ops (network none)
@@ -90,7 +90,7 @@ The media worker is **not deployed**, because it is MOCK-only (`worker_env.go:17
 | `scripts/ops-admin.sh` | Operator CLIs (`stripe-admin`, `meta-admin`, `store-admin`) as one-shot `ops` containers; prompts inputs without echo; refuses live keys and `--profile LIVE`; audit line without values |
 | `scripts/deploy.sh`, `pg-ops.sh` | first / upgrade / app-rollback (keeps compose.env `IMAGE_TAG` = deployed tag); DB operations wrapper incl. `rotate-superuser`, `pitr-cutover` |
 | `scripts/watchdog.sh`, `collect-diagnostics.sh` | Cron health checks W1–W10; incident bundle (secret-scanned) |
-| `scripts/smoke.sh`, `smoke-browser.mjs` | Acceptance `static` (S01–S06) / `full` (S07–S44, S10f/g, S13n) with evidence |
+| `scripts/smoke.sh`, `smoke-browser.mjs` | Acceptance `static` (S01–S06; S03 also checks login/secret/network wiring against `logins.tsv`) / `full` (S07–S44, S10a–q, S13n) with evidence |
 | `../scripts/dev/release-gate.sh` | R1 acceptance table over every tier (packet, build/vet, TS typecheck, secret grep, depmap, unit, foundation, every browser mode, smoke static/full); NOT_RUN when prerequisites are missing |
 | `host/crontab.example` | Backup + watchdog schedule |
 

@@ -57,6 +57,8 @@ Change rules: 命令必须与脚本保持一致；改脚本行为时同步本文
 2. 编辑 `/etc/live-commerce/env/*.env`。这些文件只放各服务自己的旋钮；compose.yml 里 `environment:` 已接好的变量不得重复定义（preflight P06 会拦截）：
    - `api.env`：OIDC client id、`COMMERCE_SESSION_TTL`、`COMMERCE_PAYMENT_PROFILE=SANDBOX`、`COMMERCE_STUDIO_ENABLED=1` + `COMMERCE_CLAIMS_ENABLED=1`（场次规划、关键词下单、认领来源；需要 `LC_IDENTITY_ENABLED=1`）、`COMMERCE_STUDIO_MEDIA_ENABLED=0`（必须为 0，P06 强制）。
    - `claims-worker.env`（R1 新增，升级时要从 `deploy/env/claims-worker.env.example` 复制）：`COMMERCE_META_GRAPH_VERSION`（**无默认值**，取 owner 用 MCI11 只读探测确认的 vNN.N；`CHANGE_ME` 会被 preflight P08 拒绝）。
+   - `compose.env` 的 `LC_BUYER_MAIL_ENABLED`（R4，缺省 0）：1 = expiry-worker 运行买家/商户通知邮件循环，复用 `LC_SMTP_HOST`/`LC_SMTP_USERNAME`/`LC_MAIL_FROM`/`LC_MAIL_DAILY_CAP` 和 owner 的 `commerce_smtp_password`，只连该 SMTP 主机（465 隐式 TLS）；preflight P06/P08/P09 检查。
+   - `api.env` 的 `COMMERCE_META_LOGIN_*`（R4，空 = 关）：见 §6.7。
    - `caddy.env`：真实的 `ACME_EMAIL`。`LC_ACME_CA` 要么保持注释，要么填 https URL，**不能留空**。
    - Stripe 有两个开关（stripe-live-enable-v1 LD6）：`compose.env` 的 `LC_STRIPE_ENABLED`（api 的 webhook 路由 + 当前 profile 的 payment worker 的 Stripe/退款派发）
      和 `LC_STRIPE_CHECKOUT_ENABLED`（只管买家结账，缺省跟随 `LC_STRIPE_ENABLED`；设为 0 并重启 api 即平台级停收，webhook 与 worker 继续对账）。
@@ -124,6 +126,34 @@ deploy/scripts/deploy.sh upgrade <tag>
 - 退出码 75 表示另一个迁移持有锁 718020260920。**不要循环重试**：先确认没有其他迁移在运行，再人工重试一次（见 incident.md §migrate）。
 - 已知风险 R3：`migrations.Apply` 内部超时 30 s，大数据量迁移前需要先由集成者调整（I4）。
 
+### 4.1 升级 4dc08b3 → R4（试点主机，保留真实 owner 数据，只能前向）
+
+范围：迁移 0081–0098 与 post_river 0018–0019（含 0096 worker 权限拆分）、expiry-worker 买家邮件循环（默认关）、meta-connect（默认关）、store-admin 注册员登录。
+没有 owner 在聊天里的明确批准，不得执行（AGENTS.md）。下面每一步都能在升级前离线检查；升级本身仍是 §4 的 `deploy.sh upgrade`。
+
+1. **取代码**：试点主机没有 GitHub 凭据，用 git bundle 把发布 SHA 带到 `/opt/live-commerce`（做法见 `output/deploy-gce/bootstrap.md`），`git checkout <发布SHA>`，`git status` 必须干净。
+2. **配置差异（都不是必填）**：与 4dc08b3 相比 `deploy/env/*.env.example` 只多了 `api.env` 的三个 `COMMERCE_META_LOGIN_*`（空 = 关）和 `compose.env` 的 `LC_BUYER_MAIL_ENABLED`（缺省 = 0）。
+   现有 `/etc/live-commerce/env/*.env` 与 `compose.env` 不改也能升级；升级后默认状态：meta-connect 关、买家邮件关。
+   同样不改：`COMPOSE_PROFILES`（试点 `db,app,payments-sandbox`）和 `LC_ENVIRONMENT`。
+3. **新密钥（幂等，只补缺失）**：`sudo deploy/scripts/secrets-init.sh`。相对 4dc08b3 恰好新增 5 个文件：
+   `pw_lc_store_registrar`、`dsn_lc_store_registrar`、`commerce_meta_page_hpke_private_keys_json`、`commerce_meta_page_hpke_public_keys_json`、`commerce_meta_page_hpke_active_key_id`
+   （输出 `created=5`；已有文件不会被覆盖）。**不需要**新的 owner 密钥：买家邮件复用已有的 `commerce_smtp_password`（compose 现在把它同时挂给 api 和 expiry-worker）。
+4. **离线预检**：`deploy/scripts/preflight.sh`（升级命令里还会再跑一次）。必须没有 FAIL；P03/P05 会检查新密钥的格式与 key id 对应，P04 检查公钥环 id == 私钥环 id。试点已知的 P11（staging CA 对 `LC_ENVIRONMENT=production`）是升级前就存在的状态，由 owner 决定，不要为升级顺手改它。
+5. **构建 + 升级**：`deploy/scripts/build-images.sh`（记下 `IMAGE_TAG=<sha12>`，`-dirty` 禁止）→ `deploy/scripts/deploy.sh upgrade <sha12>`。
+   脚本顺序：preflight → **强制备份** `pre-upgrade-<tag>`（失败则什么都不改）→ 停 api/admin/storefront 与全部 worker → migrate（0081–0098 + post_river 0018–0019）→ provision-logins → 写 IMAGE_TAG → `up -d` → 部署后检查。
+   0096 的切换没有新旧权限混用的窗口：迁移创建各 worker 的专属 authority，之后 provision-logins 为 5 个 worker 登录授予自己的 authority 并 `REVOKE commerce_worker`，所有 worker 此时都已停止，起来时用的已经是各自的专属登录。
+6. **升级后必查**（把输出存证据）：
+   - `deploy.sh` 退出码 0，日志里有 `post-check all lc-* containers run tag <sha12>` 和各 worker 的 `*_worker_ready`。
+   - provision-logins 输出每个登录一行 `membership=ok`，没有 `DRIFT`；新增 `login=lc_store_registrar ... membership=ok`；`registrars execute=ok`。
+   - `deploy/scripts/ops-admin.sh store-admin status --store <店铺uuid>` 能连上（注册员登录可用；店铺存在时输出发布状态，不存在时是 `store_admin_not_found`）。
+   - 店铺与商品数据仍在（admin 后台打开商品列表），并且 `deploy.sh` 日志的 `ledger_count before=<N> after=<N+19>`：17 个业务迁移（0081–0083、0085–0098；没有 0084）+ post_river 0018、0019。
+7. **之后由 owner 逐项开启，每项单独批准**（都不属于升级本身）：
+   - 买家邮件：确认 `commerce_smtp_password` 已是真值、`LC_SMTP_*`/`LC_MAIL_FROM` 正确 → compose.env 设 `LC_BUYER_MAIL_ENABLED=1` → `deploy/scripts/preflight.sh`（P06/P08/P09）→ 不要再跑 `deploy.sh upgrade`（tag 不变，会再次停机并备份），改用
+     `docker compose --project-directory deploy --env-file /etc/live-commerce/compose.env up -d --no-deps expiry-worker`（只重建 expiry-worker）→ 日志出现 `expiry_worker_ready` 且无 `expiry_worker_invalid_config`。关闭：改回 0 再执行同一条命令。
+   - meta-connect：§6.7（api.env 三个键 + `meta`、`claims` profile + 重启 api）。
+   - 商家域名绑定：`ops-admin.sh store-admin domain-bind`，见 `docs/runbooks/merchant-onboarding.md`。
+8. **应用回滚在这些迁移之后被拒绝**：`deploy.sh app-rollback <4dc08b3的tag>` 会因 ledger 行数变化而拒绝（§5），只能前向修复；仅当备份之后没有任何新的外部业务事实时，才由 owner 决定按 `backup-restore.md` 从 `pre-upgrade-<tag>` 恢复。升级前确认备份目录有该备份文件并记下路径。
+
 ## 5. 回滚决策树
 
 1. **与该 tag 上次部署时相比，ledger 行数没有变化** → `deploy/scripts/deploy.sh app-rollback <旧tag>`。
@@ -139,7 +169,7 @@ deploy/scripts/deploy.sh upgrade <tag>
 
 进程（compose 服务 → profile）：`api`/`admin`/`storefront`/`caddy`/`expiry-worker` → `app`；`payment-worker-sandbox` → `payments-sandbox`；
 `payment-worker-live` → `payments-live`；`meta-worker` → `meta`；`claims-worker` → `claims`；`postgres`/`migrate`/`provision-logins` → `db`；
-一次性运维任务 `stripe-admin`/`meta-admin`/`pg-ops` → `ops`（**不要写进 `COMPOSE_PROFILES`**，由 `ops-admin.sh`/`pg-ops.sh` 自行追加）。
+一次性运维任务 `stripe-admin`/`meta-admin`/`store-admin`/`pg-ops` → `ops`（**不要写进 `COMPOSE_PROFILES`**，由 `ops-admin.sh`/`pg-ops.sh` 自行追加）。
 `media-worker` **不是** compose 服务：LiveKit 全部硬编码 MOCK（`worker_env.go:174`，B5），见 `deploy/env/media-worker.env.example`（仅参考）。
 
 - **Phase A**：identity + accounts + buyer + payments **SANDBOX**（`COMPOSE_PROFILES=db,app,payments-sandbox`），加 Stripe SANDBOX（§6.1）。

@@ -112,7 +112,11 @@ authorities(name) AS (VALUES
   ('commerce_stripe_ingress'),('commerce_payment_registrar'),('commerce_claims_intake'),('commerce_storefront_registrar'),
   -- claims-retention-purge-v1 §4: the job authority (lc_retention_job) and the operator authority, which no
   -- provisioned login may reach (lc_retention_operator is created only by docs/runbooks/claims-data-deletion.md).
-  ('commerce_retention_job'),('commerce_retention_operator')),
+  ('commerce_retention_job'),('commerce_retention_operator'),
+  -- R4 definer owners (0082 catalog media, 0087 store design): NOLOGIN, owned functions only. No login is provisioned for them
+  -- (the api reaches them through SECURITY DEFINER functions as commerce_runtime / commerce_buyer_runtime), so any login that
+  -- becomes a member is drift. commerce_storefront_writer / commerce_staff_writer are caught by the *_writer check below.
+  ('commerce_catalog_media'),('commerce_design_reader')),
 checked AS (
   SELECT s.login, s.authority, s.grant_shape, r.oid AS login_oid,
          r.rolcanlogin, r.rolsuper, r.rolbypassrls, r.rolcreaterole, r.rolcreatedb, r.rolreplication, r.rolinherit,
