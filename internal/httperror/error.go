@@ -114,7 +114,7 @@ func write(w http.ResponseWriter, status int, code string, retryable bool) {
 		"cvs_attempt_in_flight": "A label request may already be at ECPay.", "not_abandonable": "This shipment can no longer be abandoned.",
 		"invalid_settings": "The convenience-store settings are not valid.", "not_pay_at_pickup": "The order is not a pay-at-pickup order.",
 		"not_shipped": "The order has not been shipped.", "collection_state_changed": "The collection state changed since it was loaded.",
-		"parcel_not_returned": "The parcel has not been returned yet.", "not_cancellable": "The order can no longer be cancelled.",
+		"parcel_not_returned": "The parcel has not been returned yet.", "parcel_not_picked_up": "The parcel has not been picked up yet.", "not_cancellable": "The order can no longer be cancelled.",
 		"idempotency_conflict": "This request key was already used for a different request.",
 		"bad_return_path":      "The return page is not allowed.", "bad_return_origin": "The storefront origin is not allowed.",
 		"service_unavailable": "This delivery service is not available.", "selection_replay_new_key": "Start the store selection again.",
