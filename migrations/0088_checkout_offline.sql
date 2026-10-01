@@ -62,14 +62,21 @@ CREATE UNIQUE INDEX checkout_one_active_cart_version ON checkout.orders(tenant_i
  WHERE commercial_state IN ('DRAFT','AWAITING_PAYMENT','AWAITING_TRANSFER','CONFIRMED');
 ALTER TABLE checkout.orders ADD COLUMN buyer_email text
  CHECK(buyer_email IS NULL OR (char_length(buyer_email) BETWEEN 3 AND 254 AND buyer_email ~ '^[^[:space:][:cntrl:]@]+@[^[:space:][:cntrl:]@]+$'));
-COMMENT ON COLUMN checkout.orders.buyer_email IS 'internal/checkout: optional buyer email captured at checkout for notifications (PII). Set once by checkout.set_order_buyer_email in the Begin transaction; exported by customers.buyer_export_orders and set NULL by customers.apply_erasure.';
+COMMENT ON COLUMN checkout.orders.buyer_email IS 'internal/checkout: optional buyer email captured at checkout for notifications (PII). Set once by checkout.set_order_buyer_email in the Begin transaction; exported by customers.buyer_export_orders and set NULL by customers.apply_erasure through checkout.clear_buyer_email.';
 -- The Begin transaction attaches the email through a definer (commerce_checkout_runtime has no UPDATE on orders).
 GRANT UPDATE(buyer_email) ON checkout.orders TO commerce_checkout_writer;
--- Erasure (0078 apply_erasure) clears it; the privacy writer already has the scope-keyed read policy.
-GRANT SELECT(buyer_email),UPDATE(buyer_email) ON checkout.orders TO commerce_privacy_writer;
-CREATE POLICY privacy_order_email_update ON checkout.orders FOR UPDATE TO commerce_privacy_writer
- USING(tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid AND store_id=nullif(current_setting('app.store_id',true),'')::uuid)
- WITH CHECK(tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid AND store_id=nullif(current_setting('app.store_id',true),'')::uuid);
+-- Erasure (0078 apply_erasure) clears it through checkout.clear_buyer_email below, NOT through a column grant: the frozen customers-billing-v1
+-- §3.1 privilege list of commerce_privacy_writer (enforced by TestCustomersBillingCB02Schema) stays exactly as it was.
+CREATE FUNCTION checkout.clear_buyer_email(p_tenant uuid,p_store uuid,p_owner uuid) RETURNS integer
+LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ WITH cleared AS (UPDATE checkout.orders SET buyer_email=NULL
+   WHERE tenant_id=p_tenant AND store_id=p_store AND owner_id=p_owner AND buyer_email IS NOT NULL RETURNING 1)
+ SELECT count(*)::integer FROM cleared
+$$;
+ALTER FUNCTION checkout.clear_buyer_email(uuid,uuid,uuid) OWNER TO commerce_checkout_writer;
+REVOKE ALL ON FUNCTION checkout.clear_buyer_email(uuid,uuid,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION checkout.clear_buyer_email(uuid,uuid,uuid) TO commerce_privacy_writer;
+COMMENT ON FUNCTION checkout.clear_buyer_email(uuid,uuid,uuid) IS 'customers.apply_erasure only (the definer of that function, commerce_privacy_writer, holds the sole EXECUTE): sets checkout.orders.buyer_email NULL for one owner and returns the row count. Non-goal: no other column, no authorization of its own (the caller holds the owner row lock and the scope).';
 
 -- ---------------------------------------------------------------------------------------------------
 -- C. Tables. Both FORCE RLS; only commerce_checkout_writer (the owner of every definer below) and, for finance, commerce_auth see them.
@@ -664,7 +671,7 @@ BEGIN
    '''currency'',o.currency,''total_minor'',o.total_minor,''payment_mode'',o.payment_mode,''buyer_email'',o.buyer_email,''snapshot'',o.snapshot-''allocation'',',1),
   ('customers.apply_erasure(uuid,uuid,uuid)',
    ' GET DIAGNOSTICS v_snapshots=ROW_COUNT;',
-   E' GET DIAGNOSTICS v_snapshots=ROW_COUNT;\n -- storefront-v2 §C: the optional buyer email on this owner''s orders (the summary keys stay unchanged).\n UPDATE checkout.orders o SET buyer_email=NULL WHERE o.tenant_id=p_tenant AND o.store_id=p_store AND o.owner_id=p_owner AND o.buyer_email IS NOT NULL;',1)
+   E' GET DIAGNOSTICS v_snapshots=ROW_COUNT;\n -- storefront-v2 §C: the optional buyer email on this owner''s orders (the summary keys stay unchanged).\n PERFORM checkout.clear_buyer_email(p_tenant,p_store,p_owner);',1)
  ) AS t(fn,needle,repl,expect) LOOP
   v_fn:=pg_get_functiondef(v_item.fn::regprocedure);
   IF (length(v_fn)-length(replace(v_fn,v_item.needle,'')))<>length(v_item.needle)*v_item.expect THEN
