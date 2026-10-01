@@ -110,8 +110,8 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	mux.HandleFunc("POST "+base+"/products", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.ProductInput) (any, error) {
 		return catalog.CreateProduct(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)
 	}))
-	mux.HandleFunc("PATCH "+base+"/products/{product_id}", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.ProductInput) (any, error) {
-		return catalog.UpdateProduct(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), in)
+	mux.HandleFunc("PATCH "+base+"/products/{product_id}", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.ProductPatch) (any, error) {
+		return catalog.PatchProduct(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), in)
 	}))
 	mux.HandleFunc("POST "+base+"/products/{product_id}/archive", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in versionInput) (any, error) {
 		return catalog.ArchiveProduct(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), in.ExpectedVersion)
@@ -145,6 +145,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	}))
 	registerImageRoutes(mux, pool)
 	registerDesignRoutes(mux, pool) // unit store-design: storefront-v2 section B, design.go
+	registerCatalogV2Routes(mux, pool)
 	registerSettingsRoutes(mux, pool)
 	registerSettingsDiscoveryRoutes(mux, pool)
 	registerStorefrontRoutes(mux, pool)

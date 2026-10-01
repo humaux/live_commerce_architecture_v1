@@ -227,7 +227,7 @@ func Reserve(ctx context.Context, tx pgx.Tx, scope platform.Scope, key string, l
 		Lines []Line `json:"lines"`
 	}{canonical}
 	err = command.Run(ctx, tx, scope, "inventory.reserve", key, request, &out, func() error {
-		if err := lockCatalogForLines(ctx, tx, scope, canonical); err != nil {
+		if err := lockCatalogForLines(ctx, tx, scope, canonical, false); err != nil {
 			return err
 		}
 		for _, line := range canonical {
@@ -328,7 +328,9 @@ func ReleaseReservation(ctx context.Context, tx pgx.Tx, scope platform.Scope, ke
 	return out, mapError(err)
 }
 
-func lockCatalogForLines(ctx context.Context, tx pgx.Tx, scope platform.Scope, lines []Line) error {
+// allowDraft lets a merchant adjust stock of a draft product before publishing it (catalog-core, storefront-v2 A);
+// a reservation (checkout) always requires an active product.
+func lockCatalogForLines(ctx context.Context, tx pgx.Tx, scope platform.Scope, lines []Line, allowDraft bool) error {
 	type pair struct{ product, sku string }
 	pairs := make([]pair, 0, len(lines))
 	seen := map[string]bool{}
@@ -362,7 +364,7 @@ func lockCatalogForLines(ctx context.Context, tx pgx.Tx, scope platform.Scope, l
 		if err := tx.QueryRow(ctx, `SELECT status FROM catalog.products WHERE tenant_id=$1 AND store_id=$2 AND id=$3 FOR SHARE`, scope.TenantID, scope.StoreID, product).Scan(&productStatus); err != nil {
 			return mapError(err)
 		}
-		if productStatus != "active" {
+		if productStatus != "active" && !(allowDraft && productStatus == "draft") {
 			return command.ErrConflict
 		}
 	}
@@ -378,8 +380,9 @@ func lockCatalogForLines(ctx context.Context, tx pgx.Tx, scope platform.Scope, l
 	return nil
 }
 
+// activeSKU is the AdjustOnHand guard: an active SKU of an active or draft product.
 func activeSKU(ctx context.Context, tx pgx.Tx, scope platform.Scope, skuID string) error {
-	return lockCatalogForLines(ctx, tx, scope, []Line{{SKUID: skuID}})
+	return lockCatalogForLines(ctx, tx, scope, []Line{{SKUID: skuID}}, true)
 }
 func activeWarehouse(ctx context.Context, tx pgx.Tx, scope platform.Scope, id string) error {
 	var active bool

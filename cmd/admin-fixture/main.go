@@ -158,7 +158,7 @@ func run() error {
 	for i, item := range samples {
 		var sku catalog.SKU
 		err = platform.WithScope(ctx, pool, token, store, "catalog:write", func(tx pgx.Tx, s platform.Scope) error {
-			product, e := catalog.CreateProduct(ctx, tx, s, fmt.Sprintf("fixture-product-%d", i), catalog.ProductInput{Name: item.name, Description: "本地隔离演示数据，非真实在售产品"})
+			product, e := catalog.CreateProduct(ctx, tx, s, fmt.Sprintf("fixture-product-%d", i), catalog.ProductInput{Name: item.name, Description: "本地隔离演示数据，非真实在售产品", Status: catalog.StatusActive})
 			if e != nil {
 				return e
 			}

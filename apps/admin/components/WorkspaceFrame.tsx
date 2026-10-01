@@ -14,6 +14,7 @@ import { signalLogout } from "@/lib/session-events";
 import { customersCopy } from "@/lib/customers-copy";
 import { designCopy } from "@/lib/design-copy";
 import { teamCopy } from "@/lib/team-copy";
+import { catalogCopy } from "@/lib/catalog-v2-copy";
 import { BillingBanner } from "./BillingBanner";
 import { Icon } from "./Icon";
 
@@ -44,8 +45,10 @@ export function WorkspaceFrame({
   const signOutBusy = useRef(false);
   // catalog-media: website-service / Meta-messages / platform-support entries removed: they led to a "not connected"
   // placeholder panel. Re-add an entry only together with a real page.
+  // catalog-core: products and collections are real pages; the ledger (home) stays reachable as Inventory.
   const nav = [
     ["products", "product", c.products],
+    ["collections", "product", catalogCopy[locale].nav.collections],
     ["inventory", "inventory", c.inventory],
     ["orders", "orders", c.orders],
     ["live", "live", c.live],
@@ -76,11 +79,15 @@ export function WorkspaceFrame({
       router.push(
         `/${locale}/studio${search.get("store") ? `?store=${encodeURIComponent(search.get("store")!)}` : ""}`,
       );
+    else if (id === "products" || id === "collections")
+      router.push(
+        `/${locale}/${id}${search.get("store") ? `?store=${encodeURIComponent(search.get("store")!)}` : ""}`,
+      );
     else if (id === "customers" || id === "finance" || id === "billing" || id === "design" || id === "team")
       router.push(
         `/${locale}/${id}${search.get("store") ? `?store=${encodeURIComponent(search.get("store")!)}` : ""}`,
       );
-    else if (["settings", "orders", "live", "ads", "customers", "finance", "billing", "design", "team"].includes(active))
+    else if (["settings", "orders", "live", "ads", "customers", "finance", "billing", "products", "collections", "design", "team"].includes(active))
       router.push(`/${locale}/`);
     else onSection?.(id);
   }

@@ -110,7 +110,7 @@ func scanImage(row pgx.Row, out *Image) error {
 	return row.Scan(&out.ID, &out.ProductID, &out.Position, &out.ContentType, &out.SizeBytes, &out.Width, &out.Height, &out.Version)
 }
 
-// UploadImage stores one validated photo at the next free position of an active product (CM3). The command
+// UploadImage stores one validated photo at the next free position of a draft or active product (CM3). The command
 // request is the file's SHA-256 + size, not its bytes (command.Run caps the request at 64 KiB), so a retry of the
 // same file under the same key replays the first Image and the same key with another file is ErrConflict.
 func UploadImage(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, productID string, data []byte) (out Image, err error) {
@@ -129,9 +129,9 @@ func UploadImage(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, prod
 		ContentType string `json:"content_type"`
 	}{productID, hex.EncodeToString(digest[:]), len(data), contentType}
 	err = command.Run(ctx, tx, scope, "catalog.image.upload", key, request, &out, func() error {
-		// activeProduct locks the product row: every image mutation of this product serializes here, so the count
+		// editableProduct locks the product row: every image mutation of this product serializes here, so the count
 		// below cannot race another upload, delete or reorder.
-		if err := activeProduct(ctx, tx, scope, productID); err != nil {
+		if _, err := editableProduct(ctx, tx, scope, productID); err != nil {
 			return err
 		}
 		var count int

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"livecommerce/internal/catalog"
@@ -52,7 +53,7 @@ func TestCatalogInventoryHTTPRealWorkflow(t *testing.T) {
 	var p, replay catalog.Product
 	request("POST", base+"/products", key, in, 200, &p)
 	request("POST", base+"/products", key, in, 200, &replay)
-	if p != replay || p.ID == "" || p.Version != 1 {
+	if !reflect.DeepEqual(p, replay) || p.ID == "" || p.Version != 1 {
 		t.Fatalf("bad create/replay: %+v %+v", p, replay)
 	}
 	in.Name = "Changed payload"
