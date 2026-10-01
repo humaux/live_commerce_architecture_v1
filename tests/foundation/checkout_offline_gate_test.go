@@ -483,6 +483,12 @@ func TestCogIsolation(t *testing.T) {
 		}
 	}
 	isWrite := func(r route) bool { return r.method != "GET" }
+	keyFor := func(r route) string { // a GET carries no Idempotency-Key (the transport refuses one with 422)
+		if isWrite(r) {
+			return t04Key("cog-iso")
+		}
+		return ""
+	}
 	var leaked []string
 	scan := func(label string, raw []byte) {
 		if s := string(raw); strings.Contains(s, cogAcct) || strings.Contains(s, cogBank) {
@@ -501,13 +507,13 @@ func TestCogIsolation(t *testing.T) {
 			if c.store == f.storeB || c.store == storeA2 {
 				// the settings routes of the caller's OWN store are legitimate (they never carry this store's data); the order routes are not
 				if strings.Contains(r.path, "bank-transfer-settings") {
-					st, _, raw := e.mcall(c.token, r.method, r.path, t04Key("cog-iso"), r.body)
+					st, _, raw := e.mcall(c.token, r.method, r.path, keyFor(r), r.body)
 					scan(c.name+" "+r.method+" "+r.path, raw)
 					_ = st
 					continue
 				}
 			}
-			st, _, raw := e.mcall(c.token, r.method, r.path, t04Key("cog-iso"), r.body)
+			st, _, raw := e.mcall(c.token, r.method, r.path, keyFor(r), r.body)
 			scan(c.name+" "+r.method+" "+r.path, raw)
 			if st != 403 && st != 404 {
 				t.Errorf("%s: %s %s answered %d, want 403/404", c.name, r.method, r.path, st)
@@ -515,13 +521,13 @@ func TestCogIsolation(t *testing.T) {
 		}
 	}
 	for _, r := range routes(e.store()) {
-		st, _, raw := e.mcall("", r.method, r.path, t04Key("cog-iso"), r.body)
+		st, _, raw := e.mcall("", r.method, r.path, keyFor(r), r.body)
 		scan("no token "+r.path, raw)
 		if st != 401 {
 			t.Errorf("no token: %s %s answered %d, want 401", r.method, r.path, st)
 		}
 		if isWrite(r) {
-			st, _, raw = e.mcall(readOnly, r.method, r.path, t04Key("cog-iso"), r.body)
+			st, _, raw = e.mcall(readOnly, r.method, r.path, keyFor(r), r.body)
 			scan("read-only member "+r.path, raw)
 			if st != 403 {
 				t.Errorf("read-only member: %s %s answered %d, want 403", r.method, r.path, st)
@@ -629,7 +635,8 @@ func TestCogIsolation(t *testing.T) {
 		}
 		for _, role := range roles {
 			for _, col := range []string{"account_number", "bank_name", "branch", "account_name", "proof_last5", "proof_amount_minor", "reject_reason"} {
-				if e.count(`SELECT CASE WHEN has_column_privilege($1,'checkout.bank_transfers',$2,'SELECT') THEN 1 ELSE 0 END`, role, col) == 1 {
+				// commerce_checkout_writer owns the definers that read and write these columns; nobody else may
+				if e.count(`SELECT CASE WHEN has_column_privilege($1,'checkout.bank_transfers',$2,'SELECT') THEN 1 ELSE 0 END`, role, col) == 1 && role != "commerce_checkout_writer" {
 					t.Errorf("role %s can SELECT checkout.bank_transfers.%s", role, col)
 				}
 			}
