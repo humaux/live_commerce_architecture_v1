@@ -54,7 +54,6 @@ export function Entry({
   passwordMode,
   oidc = true,
   path = "",
-  next = null,
 }: {
   locale: Locale;
   status: EntryStatus;
@@ -67,8 +66,6 @@ export function Entry({
   oidc?: boolean;
   // Page path below /<locale>/ kept when switching language ("" | "signup" | "reset").
   path?: string;
-  // invite-next: validated same-origin invite path (lib/invite-next.ts) PasswordAuth returns to after login.
-  next?: string | null;
 }) {
   const c = entryCopy[locale];
   // Native locale data labels currencies; the selected ISO value never changes.
@@ -382,7 +379,7 @@ export function Entry({
 
       <main className="entry-main">
         {status === "signed-out" && passwordMode ? (
-          <PasswordAuth locale={locale} mode={passwordMode} oidc={oidc} notice={message} next={next} />
+          <PasswordAuth locale={locale} mode={passwordMode} oidc={oidc} notice={message} />
         ) : status === "signed-out" ||
         status === "disabled" ||
         status === "unavailable" ? (

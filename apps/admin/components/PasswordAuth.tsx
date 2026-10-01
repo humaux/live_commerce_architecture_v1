@@ -11,7 +11,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { entryCopy, passwordCopy } from "@/lib/entry-copy";
-import { inviteNextPath } from "@/lib/invite-next";
+import { inviteNextFromHash, inviteNextHash } from "@/lib/invite-next";
 import {
   RESEND_COOLDOWN_SECONDS,
   fillCopy,
@@ -68,15 +68,11 @@ export function PasswordAuth({
   mode,
   oidc,
   notice,
-  next = null,
 }: {
   locale: Locale;
   mode: PasswordMode;
   oidc: boolean;
   notice: string;
-  // invite-next: validated same-origin invite path (lib/invite-next.ts) to return to after a
-  // successful sign-in/sign-up; re-validated here so a tampered query can never redirect off-site.
-  next?: string | null;
 }) {
   const c = passwordCopy[locale];
   const entry = entryCopy[locale];
@@ -92,8 +88,10 @@ export function PasswordAuth({
   const busyRef = useRef(false);
   const codeInput = useRef<HTMLInputElement>(null);
   const purpose = purposeOf[mode];
-  // invite-next: computed once so the render and the verify handler share one validated path.
-  const nextPath = inviteNextPath(next);
+  // invite-next: the validated invite path from the URL fragment (lib/invite-next.ts), read after mount because the server
+  // never sees a fragment; null = go to the dashboard.
+  const [nextPath, setNextPath] = useState<string | null>(null);
+  useEffect(() => setNextPath(inviteNextFromHash(window.location.hash)), []);
   const secondsLeft = Math.max(0, Math.ceil((resendAt - now) / 1000));
 
   useEffect(() => {
@@ -365,7 +363,7 @@ export function PasswordAuth({
               </a>{" "}
               ·{" "}
               {/* invite-next: keep the return-to target when switching to sign-up from an invite link. */}
-              <a href={nextPath ? `/${locale}/signup?next=${encodeURIComponent(nextPath)}` : `/${locale}/signup`} style={link}>
+              <a href={`/${locale}/signup${nextPath ? inviteNextHash(nextPath) : ""}`} style={link}>
                 {c.toSignup}
               </a>
             </>

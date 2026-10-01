@@ -7,6 +7,7 @@
 // a token, an invitation or an account exists. Standalone layout (the invitee has no workspace yet), no WorkspaceFrame.
 import { useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
+import { inviteNextHash } from "@/lib/invite-next";
 import { sessionBoundary } from "@/lib/settings-client";
 import { acceptInvite } from "@/lib/team-client";
 import { teamCopy } from "@/lib/team-copy";
@@ -64,10 +65,10 @@ export function TeamInvite({ locale, token, signedIn, passwordLogin }: { locale:
           <>
             <p data-testid="invite-need-login">{c.inviteNeedLogin}</p>
             <div className="customers-actions">
-              {/* invite-next: hand the invite path to sign-in/sign-up as `next`; both pages validate it with
-                  lib/invite-next.ts and redirect back only when it matches the invite pattern (no open redirect). */}
-              <a className="orders-export" href={`/${locale}/?next=${encodeURIComponent(`/${locale}/invite/${token}`)}`} data-testid="invite-signin">{c.signIn}</a>
-              {passwordLogin && <a className="orders-export" href={`/${locale}/signup?next=${encodeURIComponent(`/${locale}/invite/${token}`)}`} data-testid="invite-signup">{c.signUp}</a>}
+              {/* invite-next: hand the invite path to sign-in/sign-up in the URL fragment (never sent to a server, so the token
+                  stays out of request URLs/Referer/logs); PasswordAuth validates it with lib/invite-next.ts (no open redirect). */}
+              <a className="orders-export" href={`/${locale}/${inviteNextHash(`/${locale}/invite/${token}`)}`} data-testid="invite-signin">{c.signIn}</a>
+              {passwordLogin && <a className="orders-export" href={`/${locale}/signup${inviteNextHash(`/${locale}/invite/${token}`)}`} data-testid="invite-signup">{c.signUp}</a>}
             </div>
           </>
         )}

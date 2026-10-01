@@ -1,12 +1,13 @@
 // invite-next (apps/admin/lib/invite-next.ts): the safe "return to" validator behind the staff-invitation login flow.
-// The invite page (app/[locale]/invite/[token]/page.tsx) links to sign-in/sign-up with a `next` parameter; both the
+// The invite page (app/[locale]/invite/[token]/page.tsx) links to sign-in/sign-up with a `#next=` URL fragment (never a
+// query string: a fragment is not sent to any server, so the token stays out of request URLs/Referer/logs); both the
 // client (components/PasswordAuth.tsx) and the OIDC BFF (app/api/auth/login/route.ts -> callback) redirect to it ONLY
 // when it is a same-origin relative invite path. This suite pins the accepted shape and the hostile shapes that must
 // be rejected so `next` can never become an open redirect (absolute URL, protocol-relative //, backslashes, dot
 // segments, encoded variants, over/under-length tokens, wrong locale case). Run: node --test --experimental-strip-types tests/admin/invite-next.test.ts
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { INVITE_NEXT_PATTERN, inviteNextPath } from "../../apps/admin/lib/invite-next.ts";
+import { INVITE_NEXT_PATTERN, inviteNextFromHash, inviteNextHash, inviteNextPath } from "../../apps/admin/lib/invite-next.ts";
 
 const GOOD = "abcdefghijklmnopqrst123-_ABCDE"; // 33 chars, inside [20,200]
 
@@ -76,4 +77,27 @@ test("the token is an opaque invite token shape, never a URL", () => {
   // validator deliberately accepts the wider [20,200] alphabet so the BFF does not hard-fail when Go re-issues.
   assert.equal(inviteNextPath("/zh-CN/invite/" + "Ab3-x_9".repeat(6).slice(0, 42)), "/zh-CN/invite/" + "Ab3-x_9".repeat(6).slice(0, 42));
   assert.equal(inviteNextPath("/zh-CN/invite/" + GOOD + "/"), null, "trailing slash changes the path");
+});
+
+test("fragment carrier: round-trips the exact invite path, is never a query string, and rejects hostile fragments", () => {
+  for (const locale of ["zh-CN", "zh-TW", "en"]) {
+    const path = `/${locale}/invite/${GOOD}`;
+    const hash = inviteNextHash(path);
+    assert.ok(hash.startsWith("#next="), hash);
+    assert.equal(hash.includes("?"), false, "a fragment, not a query string");
+    assert.equal(inviteNextFromHash(hash), path);
+  }
+  const hostile = [
+    "",
+    "#",
+    "#next=",
+    "#other=" + encodeURIComponent(`/en/invite/${GOOD}`), // wrong key
+    "#next=" + encodeURIComponent("https://evil.com/en/invite/" + GOOD),
+    "#next=" + encodeURIComponent("//evil.com/en/invite/" + GOOD),
+    "#next=" + encodeURIComponent(`/en/../invite/${GOOD}`),
+    "#next=" + encodeURIComponent(`/en/invite/${GOOD}?x=1`),
+    "#next=" + encodeURIComponent("/en/invite/abc"),
+    "#next=%2Fen%2Finvite%2F%252e%252e", // double-encoded traversal
+  ];
+  for (const hash of hostile) assert.equal(inviteNextFromHash(hash), null, hash);
 });
