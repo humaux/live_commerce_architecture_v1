@@ -97,15 +97,15 @@ test("settings: the merchant sets bank details, the window and the free-shipping
   await card.getByTestId("transfer-branch").fill(bank.branch);
   await card.getByTestId("transfer-account-name").fill(bank.holder);
   await card.getByTestId("transfer-account-number").fill(bank.account);
-  await card.getByTestId("transfer-window").fill(bank.window);
-  await shot(page, "settings-bank", locale, "desktop");
-  await card.getByTestId("transfer-settings-save").click();
-  await expect(card.getByTestId("transfer-settings-notice")).toHaveText(tc.saved);
-  // an invalid window is refused with the field message and changes nothing
+  // an invalid window (5 h, the minimum is 6) is refused with the field message and nothing is saved
   await card.getByTestId("transfer-window").fill("5");
   await card.getByTestId("transfer-settings-save").click();
   await expect(card.getByTestId("transfer-settings-problem")).toHaveText(tc.invalid);
   await card.getByTestId("transfer-window").fill(bank.window);
+  await shot(page, "settings-bank", locale, "desktop");
+  await card.getByTestId("transfer-settings-save").click();
+  await expect(card.getByTestId("transfer-settings-notice")).toHaveText(tc.saved);
+  await expect(card.getByTestId("transfer-settings-problem")).toHaveCount(0);
   // step 3: the delivery policy's free-shipping threshold, then the service re-save that pins the new policy version
   await page.getByRole("button", { name: c.next, exact: true }).click();
   await page.getByRole("combobox", { name: c.market, exact: true }).selectOption(market);
