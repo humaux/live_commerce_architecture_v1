@@ -207,7 +207,8 @@ test("full chain: sign-up -> code -> onboarding -> logout -> sign-in -> code -> 
   await page.getByRole("button", { name: "建立內部工作區" }).click();
   expect((await created).status()).toBe(200);
   await page.getByRole("button", { name: "進入工作區" }).click();
-  await expect(page.getByRole("heading", { name: "商品與庫存" })).toBeVisible();
+  // merchant-tools G1 (migration 0094): the workspace landing is the dashboard; the stock ledger moved to /inventory.
+  await expect(page.getByRole("heading", { name: "總覽", level: 1 })).toBeVisible();
 
   // logout
   expect((await browserJSON(page, "/api/auth/logout", { method: "POST", body: {}, csrf: true })).status).toBe(204);
