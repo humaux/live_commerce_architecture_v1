@@ -1,0 +1,38 @@
+✔ callback redirect target is always a same-origin /<locale>/settings path whatever the cookies, store, code or error say (2.0445ms)
+✔ the binding cookie: exactly one canonical store uuid, path-scoped to the callback, HttpOnly, Lax, 10 minutes, Secure (0.106292ms)
+✔ callback query: exactly one code and one state within charset/length bounds; Meta's error=… and repeats are not forwarded (0.697375ms)
+✖ the dialog URL the BFF hands the browser is https://www.facebook.com only (1.814708ms)
+✔ callback error mapping only ever yields fixed codes, never an upstream message (0.150417ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 4
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 102.183209
+
+✖ failing tests:
+
+test at tests/admin/meta-connect-gate.test.ts:64:1
+✖ the dialog URL the BFF hands the browser is https://www.facebook.com only (1.814708ms)
+  AssertionError [ERR_ASSERTION]: accepted "http://www.facebook.com/v26.0/dialog/oauth"
+  + actual - expected
+  
+  + 'http://www.facebook.com/v26.0/dialog/oauth'
+  - null
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/meta-connect-tests/tests/admin/meta-connect-gate.test.ts:71:13)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'http://www.facebook.com/v26.0/dialog/oauth',
+    expected: null,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

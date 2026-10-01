@@ -1,0 +1,125 @@
+✔ positive control: a complete, valid configuration raises no META_LOGIN finding (476.6385ms)
+✔ feature off (COMMERCE_META_LOGIN_CONFIG_ID empty): no rule applies even with the other keys empty (250.367042ms)
+✔ P06: the Page route needs the webhook receiver (234.32775ms)
+✔ P06: sessions come from identity (125.581333ms)
+✔ P06: without the claims profile nobody sends the private replies (a WARN, not a FAIL) (95.542041ms)
+✖ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("abc") (103.402584ms)
+✖ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("12 34") (111.739875ms)
+✖ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("111111111111") (86.547333ms)
+✖ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("0x10") (102.361875ms)
+✖ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("-1") (90.475625ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (wrong host) (97.671625ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (http scheme) (140.4965ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (the ads callback path) (88.79225ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (trailing slash) (88.882375ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (query string) (91.731375ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (empty) (87.976875ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("26.0") (90.881917ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("v26") (92.24175ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("v26.0.1") (89.148416ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("latest") (86.696334ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("") (102.883917ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("v1000.0") (102.952334ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION accepts v26.0 (98.410208ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION accepts v22.0 (97.783291ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION accepts v99.9 (91.693542ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 20
+ℹ fail 5
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3219.037083
+
+✖ failing tests:
+
+test at tests/deploy/meta-connect-preflight.test.mjs:96:3
+✖ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("abc") (103.402584ms)
+  AssertionError [ERR_ASSERTION]: P08 PASS (rule summary)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/meta-connect-tests/tests/deploy/meta-connect-preflight.test.mjs:98:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/deploy/meta-connect-preflight.test.mjs:96:3
+✖ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("12 34") (111.739875ms)
+  AssertionError [ERR_ASSERTION]: P08 PASS (rule summary)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/meta-connect-tests/tests/deploy/meta-connect-preflight.test.mjs:98:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/deploy/meta-connect-preflight.test.mjs:96:3
+✖ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("111111111111") (86.547333ms)
+  AssertionError [ERR_ASSERTION]: P08 PASS (rule summary)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/meta-connect-tests/tests/deploy/meta-connect-preflight.test.mjs:98:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/deploy/meta-connect-preflight.test.mjs:96:3
+✖ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("0x10") (102.361875ms)
+  AssertionError [ERR_ASSERTION]: P08 PASS (rule summary)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/meta-connect-tests/tests/deploy/meta-connect-preflight.test.mjs:98:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/deploy/meta-connect-preflight.test.mjs:96:3
+✖ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("-1") (90.475625ms)
+  AssertionError [ERR_ASSERTION]: P08 PASS (rule summary)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/meta-connect-tests/tests/deploy/meta-connect-preflight.test.mjs:98:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

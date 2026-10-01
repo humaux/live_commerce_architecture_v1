@@ -243,8 +243,11 @@ if [[ "$test_mode" == --browser-meta-connect ]]; then
   # meta-connect (BROWSER, Meta = MOCK fake Graph): refuse a no-test success and run the pure model/request gates first.
   test -f tests/foundation/browser_meta_connect_test.go
   grep -q '^func TestBrowserMetaConnect' tests/foundation/browser_meta_connect_test.go
+  test -f tests/foundation/browser_meta_connect_gate_test.go
+  grep -q '^func TestBrowserMetaConnectGate' tests/foundation/browser_meta_connect_gate_test.go
   test -f tests/admin/meta-connect.spec.ts
-  node --test --experimental-strip-types tests/admin/meta-connect-model.test.ts
+  test -f tests/admin/meta-connect-gate.spec.ts
+  node --test --experimental-strip-types tests/admin/meta-connect-model.test.ts tests/admin/meta-connect-gate.test.ts
   mkdir -p output/playwright
 fi
 if [[ "$test_mode" == --browser-cvs ]]; then
@@ -544,7 +547,8 @@ elif [[ "$test_mode" == --browser-meta-ads ]]; then
   printf 'PASS: MA09a isolated admin Next, Go API + ads worker, PG; Meta = MOCK (fake Graph + the Facebook Login dialog answered by the browser route); not Meta, provider or deployment acceptance; MA09b buyer consent -> CAPI context runs against the production storefront Next build.\n'
 elif [[ "$test_mode" == --browser-meta-connect ]]; then
   LC_BROWSER_META_CONNECT_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1200s -run '^TestBrowserMetaConnect$' -v ./tests/foundation
-  printf 'PASS: meta-connect isolated admin Next, Go API with the metaconnect service, PG; Meta = MOCK (tests/metaconnect/fakegraph + the Facebook Login dialog answered by the browser route); merchant connects Page A + Instagram, a forged state and a missing permission are refused, disconnect and a Facebook-only reconnect, en/zh-TW/zh-CN, desktop + 390px; not Meta, provider or deployment acceptance; Meta SANDBOX/LIVE are NOT_RUN.\n'
+  LC_BROWSER_META_CONNECT_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1800s -run '^TestBrowserMetaConnectGate$' -v ./tests/foundation
+  printf 'PASS: meta-connect isolated admin Next, Go API with the metaconnect service, PG; Meta = MOCK (tests/metaconnect/fakegraph + the Facebook Login dialog answered by the browser route); merchant connects Page A + Instagram, a forged state and a missing permission are refused, disconnect and a Facebook-only reconnect, en/zh-TW/zh-CN, desktop + 390px; the independent gate (MCG10) adds the Studio claim-source picker, state replay and hostile-cookie callback refusals; not Meta, provider or deployment acceptance; Meta SANDBOX/LIVE are NOT_RUN.\n'
 elif [[ "$test_mode" == --browser-catalog-core ]]; then
   LC_BROWSER_CATALOG_CORE_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1700s -run '^TestBrowserCatalogCore$' -v ./tests/foundation
   printf 'PASS: CC12 isolated admin Next, Go API, PG; shopper view = the real buyer catalog v2 HTTP handler (not the storefront Next build); desktop + 390 px, en + zh-TW; not provider or deployment acceptance.\n'

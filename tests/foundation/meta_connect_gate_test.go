@@ -143,18 +143,24 @@ func TestMetaConnectGateState(t *testing.T) {
 	user := fakegraph.User{Permissions: mcnFullPerms, Pages: []fakegraph.Page{page}}
 	exchanges := func() int { return m.fake.Count("GET", "oauth/access_token") }
 
-	t.Run("state is bound to store AND principal: same Idempotency-Key, different principal/store -> different state", func(t *testing.T) {
-		_, tokA2 := lcPrincipal(t, f, f.tenantA, []string{f.storeA2}, "store:read", "integration:manage", "integration:read")
-		key := t04Key("mcg-samekey")
-		start := func(store, tok string) string {
-			r := httptestStart(t, m, store, tok, key)
-			return mcgDialogState(t, r)
-		}
-		a, b := start(m.store, m.token), start(f.storeA2, tokA2)
+	t.Run("state is bound to store AND principal: a keyed start replays only for its own principal; the key is another principal's conflict", func(t *testing.T) {
 		_, tokOther := lcPrincipal(t, f, f.tenantA, []string{f.storeA1}, "store:read", "integration:manage", "integration:read")
-		c := start(m.store, tokOther)
-		if a == b || a == c || b == c {
-			t.Fatalf("one Idempotency-Key produced the same OAuth state for different (store, principal): state must be bound to both")
+		key := t04Key("mcg-samekey")
+		a := httptestStart(t, m, m.store, m.token, key)
+		replay := httptestStart(t, m, m.store, m.token, key)
+		if mcgDialogState(t, a) != mcgDialogState(t, replay) || a.str("state_id") != replay.str("state_id") {
+			t.Fatalf("an Idempotency-Key replay returned a DIFFERENT state: %s vs %s", a.Raw, replay.Raw)
+		}
+		// The same key on the same store presented by another principal is a conflict, never a replay of the owner's receipt
+		// (the receipt fingerprint binds the principal).
+		if r := mcgRequest(m, m.store, tokOther, "POST", "/start", key); r.Status != 409 {
+			t.Fatalf("another principal reused the key on the same store: %d %s", r.Status, r.Raw)
+		}
+		// Fresh keys for other (store, principal) pairs start their own, different states.
+		_, tokA2 := lcPrincipal(t, f, f.tenantA, []string{f.storeA2}, "store:read", "integration:manage", "integration:read")
+		b, c := mcgDialogState(t, httptestStart(t, m, f.storeA2, tokA2, t04Key("mcg-b"))), mcgDialogState(t, httptestStart(t, m, m.store, tokOther, t04Key("mcg-c")))
+		if b == c || b == mcgDialogState(t, a) || c == mcgDialogState(t, a) {
+			t.Fatal("two (store, principal) pairs produced the same OAuth state")
 		}
 	})
 
@@ -262,9 +268,9 @@ func TestMetaConnectGateState(t *testing.T) {
 	t.Run("expiry (10 minutes): an aged state is refused 410 before Meta", func(t *testing.T) {
 		s := m.call("POST", "/start", true, nil)
 		state := mcgDialogState(t, s)
-		var life string
-		if err := f.owner.QueryRow(context.Background(), `SELECT (expires_at-created_at)::text FROM integration.meta_connect_states WHERE id=$1`, s.str("state_id")).Scan(&life); err != nil || life != "00:10:00" {
-			t.Fatalf("state lifetime = %q (%v), contract says 10 minutes", life, err)
+		var secs float64
+		if err := f.owner.QueryRow(context.Background(), `SELECT extract(epoch FROM expires_at-created_at) FROM integration.meta_connect_states WHERE id=$1`, s.str("state_id")).Scan(&secs); err != nil || secs < 595 || secs > 605 {
+			t.Fatalf("state lifetime = %.3fs (%v), contract says 10 minutes", secs, err)
 		}
 		mustExec(t, f.owner, `UPDATE integration.meta_connect_states SET created_at=created_at-interval '2 hours',expires_at=clock_timestamp()-interval '1 second' WHERE id=$1`, s.str("state_id"))
 		code := "SYNTH-CODE-" + t04Tag()
@@ -281,7 +287,7 @@ func TestMetaConnectGateState(t *testing.T) {
 	t.Run("expiry on the pick leg: an aged state refuses the pick with nothing enabled", func(t *testing.T) {
 		pg := mcnPage("MCG01 pick-expiry", false)
 		st := m.mcgFresh(m.store, m.token, fakegraph.User{Permissions: mcnFullPerms, Pages: []fakegraph.Page{pg}})
-		mustExec(t, f.owner, `UPDATE integration.meta_connect_states SET expires_at=clock_timestamp()-interval '1 second' WHERE id=$1`, st)
+		mustExec(t, f.owner, `UPDATE integration.meta_connect_states SET created_at=created_at-interval '2 hours',expires_at=clock_timestamp()-interval '1 second' WHERE id=$1`, st)
 		subs := m.fake.Count("POST", "/subscribed_apps")
 		if r := m.pick(st, pg.ID, false); r.Status != 410 {
 			t.Fatalf("pick of an expired state: %d %s", r.Status, r.Raw)
@@ -335,7 +341,9 @@ func httptestStart(t *testing.T, m *mcnEnv, store, tok, key string) mcnResp {
 
 func mcgRequest(m *mcnEnv, store, tok, method, path, key string) mcnResp {
 	req := httptest.NewRequest(method, "/v1/admin/stores/"+store+"/meta-connect"+path, nil)
-	req.Header.Set("Authorization", "Bearer "+tok)
+	if tok != "" {
+		req.Header.Set("Authorization", "Bearer "+tok)
+	}
 	if key != "" {
 		req.Header.Set("Idempotency-Key", key)
 	}
@@ -527,6 +535,7 @@ func TestMetaConnectGateOwnership(t *testing.T) {
 	})
 
 	t.Run("one store cannot hold two Pages: concurrent picks of two Pages -> one 201, the other refused", func(t *testing.T) {
+		defer m.reset() // unconditional: a failure must not cascade into the next subtests
 		p1, p2 := mcnPage("MCG03 twin 1", false), mcnPage("MCG03 twin 2", false)
 		user := fakegraph.User{Permissions: mcnFullPerms, Pages: []fakegraph.Page{p1, p2}}
 		s1, s2 := m.mcgFresh(m.store, m.token, user), m.mcgFresh(m.store, m.token, user)
@@ -549,10 +558,10 @@ func TestMetaConnectGateOwnership(t *testing.T) {
 		if n := m.count(`SELECT count(*) FROM integration.bindings WHERE store_id=$1 AND enabled AND external_asset_id=ANY($2)`, m.store, []string{p1.ID, p2.ID}); n != 1 {
 			t.Fatalf("%d enabled Page bindings on one store, want 1", n)
 		}
-		m.reset()
 	})
 
 	t.Run("same state picked twice concurrently: one 201, one refusal, one credential head", func(t *testing.T) {
+		defer m.reset()
 		page := mcnPage("MCG03 double", false)
 		st := m.mcgFresh(m.store, m.token, fakegraph.User{Permissions: mcnFullPerms, Pages: []fakegraph.Page{page}})
 		var wg sync.WaitGroup
@@ -574,7 +583,6 @@ func TestMetaConnectGateOwnership(t *testing.T) {
 		if n := m.count(`SELECT count(*) FROM integration.meta_page_heads h JOIN integration.bindings b ON b.id=h.binding_id WHERE b.external_asset_id=$1`, page.ID); n != 1 {
 			t.Fatalf("%d credential heads for the Page, want 1", n)
 		}
-		m.reset()
 	})
 
 	t.Run("Instagram present / absent: IG is bound only when present AND kept; asking for an absent IG is refused", func(t *testing.T) {
@@ -1115,11 +1123,19 @@ func TestMetaConnectGateRoles(t *testing.T) {
 			}
 		})
 	}
-	t.Run("no session: 401 on every route", func(t *testing.T) {
+	t.Run("no session: refused (401, or 422 when body validation runs first) and nothing is written", func(t *testing.T) {
+		states := m.count(`SELECT count(*) FROM integration.meta_connect_states`)
 		for _, c := range []struct{ method, path string }{{"POST", "/start"}, {"GET", "/status"}, {"POST", "/pick"}, {"POST", "/disconnect"}, {"GET", "/callback?code=a&state=" + strings.Repeat("A", 43)}} {
-			if r := m.callOn(m.store, "x", c.method, c.path, c.method == "POST", map[string]any{}); r.Status != 401 {
-				t.Errorf("%s %s without a session: %d", c.method, c.path, r.Status)
+			r := mcgRequest(m, m.store, "", c.method, c.path, "")
+			if r.Status != 401 && r.Status != 422 {
+				t.Errorf("%s %s without a session: %d %s", c.method, c.path, r.Status, r.Raw)
 			}
+			if r.Status == 200 || r.Status == 201 {
+				t.Errorf("%s %s without a session SUCCEEDED", c.method, c.path)
+			}
+		}
+		if n := m.count(`SELECT count(*) FROM integration.meta_connect_states`); n != states {
+			t.Errorf("an unauthenticated call wrote %d state rows", n-states)
 		}
 	})
 }
@@ -1195,8 +1211,11 @@ func TestMetaConnectGateAPICannotOpen(t *testing.T) {
 			}
 			return rest[:end[0]+1]
 		}
-		for _, svc := range []string{"api", "admin", "storefront", "meta-worker", "payment-worker", "expiry-worker", "ads-worker"} {
-			if b := block(svc); regexp.MustCompile(`(?i)hpke_private|PAGE_TOKEN_KEYS|commerce_meta_page_token_`).MatchString(b) {
+		for _, svc := range []string{"api", "admin", "storefront", "meta-worker", "payment-worker-sandbox", "payment-worker-live", "expiry-worker", "ads-worker"} {
+			// Only the PAGE-token opening secrets count here: the v1 AES ring (commerce_meta_page_token_keys_json) and the
+			// v2 HPKE private ring. The ads-worker's own ADS ring (commerce_meta_ads_hpke_private_keys_json) is a different
+			// custody domain (meta-ads-v1) and must not trip this guard.
+			if b := block(svc); regexp.MustCompile(`(?i)commerce_meta_page_token_|page_hpke_private`).MatchString(b) {
 				t.Errorf("compose service %s mounts a Page-token opening secret", svc)
 			}
 		}

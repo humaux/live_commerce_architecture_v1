@@ -1,0 +1,38 @@
+✔ callback redirect target is always a same-origin /<locale>/settings path whatever the cookies, store, code or error say (4.957709ms)
+✔ the binding cookie: exactly one canonical store uuid, path-scoped to the callback, HttpOnly, Lax, 10 minutes, Secure (0.334875ms)
+✔ callback query: exactly one code and one state within charset/length bounds; Meta's error=… and repeats are not forwarded (2.55325ms)
+✔ the dialog URL the BFF hands the browser is https://www.facebook.com only (0.591292ms)
+✔ callback error mapping only ever yields fixed codes, never an upstream message (1.830791ms)
+✔ positive control: a complete, valid configuration raises no META_LOGIN finding (403.15175ms)
+✔ feature off (COMMERCE_META_LOGIN_CONFIG_ID empty): no rule applies even with the other keys empty (178.908916ms)
+✔ P06: the Page route needs the webhook receiver (139.3885ms)
+✔ P06: sessions come from identity (128.571917ms)
+✔ P06: without the claims profile nobody sends the private replies (a WARN, not a FAIL) (120.819584ms)
+✔ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("abc") (109.361875ms)
+✔ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("12 34") (107.881834ms)
+✔ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("111111111111") (133.216ms)
+✔ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("0x10") (165.333ms)
+✔ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("-1") (109.706708ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (wrong host) (97.429667ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (http scheme) (100.817708ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (the ads callback path) (98.397167ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (trailing slash) (104.967334ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (query string) (102.846667ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (empty) (98.134916ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("26.0") (100.746792ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("v26") (100.52975ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("v26.0.1") (100.110208ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("latest") (97.997833ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("") (106.619209ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("v1000.0") (122.337209ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION accepts v26.0 (124.606541ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION accepts v22.0 (93.130708ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION accepts v99.9 (99.693958ms)
+ℹ tests 30
+ℹ suites 0
+ℹ pass 30
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3236.453667

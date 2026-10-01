@@ -1,0 +1,33 @@
+✔ positive control: a complete, valid configuration raises no META_LOGIN finding (241.211917ms)
+✔ feature off (COMMERCE_META_LOGIN_CONFIG_ID empty): no rule applies even with the other keys empty (101.721625ms)
+✔ P06: the Page route needs the webhook receiver (96.759ms)
+✔ P06: sessions come from identity (97.604542ms)
+✔ P06: without the claims profile nobody sends the private replies (a WARN, not a FAIL) (87.44425ms)
+✔ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("abc") (98.802959ms)
+✔ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("12 34") (98.329625ms)
+✔ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("111111111111") (96.355292ms)
+✔ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("0x10") (104.224417ms)
+✔ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("-1") (94.50475ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (wrong host) (107.221375ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (http scheme) (121.010666ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (the ads callback path) (97.778459ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (trailing slash) (99.880583ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (query string) (91.03525ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (empty) (89.976334ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("26.0") (92.65375ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("v26") (91.558542ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("v26.0.1") (90.74075ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("latest") (91.700167ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("") (88.205792ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("v1000.0") (85.582667ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION accepts v26.0 (88.279375ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION accepts v22.0 (99.706ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION accepts v99.9 (102.396625ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2605.935916

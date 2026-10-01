@@ -1,0 +1,13 @@
+✔ callback redirect target is always a same-origin /<locale>/settings path whatever the cookies, store, code or error say (2.297459ms)
+✔ the binding cookie: exactly one canonical store uuid, path-scoped to the callback, HttpOnly, Lax, 10 minutes, Secure (0.221958ms)
+✔ callback query: exactly one code and one state within charset/length bounds; Meta's error=… and repeats are not forwarded (0.847416ms)
+✔ the dialog URL the BFF hands the browser is https://www.facebook.com only (0.420333ms)
+✔ callback error mapping only ever yields fixed codes, never an upstream message (0.208792ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 87.791583
