@@ -12,6 +12,7 @@ package foundation_test
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -119,6 +120,7 @@ func TestPromotionQuoteApplication(t *testing.T) {
 		t.Fatalf("quote with a valid code: %v", err)
 	}
 	want := sub * 10 / 100
+	want -= want % 100 // TWD is charged in whole dollars: the discount is floored to a whole dollar (pricing.wholeStep)
 	if q.Promotion == nil || q.Promotion.Code != "SAVE10" || q.Promotion.Kind != "percent" || q.Promotion.Percent != 10 {
 		t.Fatalf("snapshot promotion: %+v", q.Promotion)
 	}
@@ -140,8 +142,8 @@ func TestPromotionQuoteApplication(t *testing.T) {
 		t.Fatalf("snapshot readback: %v %+v", err, got.Promotion)
 	}
 	// Fixed amount above the subtotal is capped at the subtotal: goods never go below zero.
-	e.proMust("BIGFIX", map[string]any{"kind": "fixed", "percent": nil, "fixed_minor": 99999999})
-	if q, err = b.quoteCode("bigfix"); err != nil || q.Amount.DiscountMinor != sub || q.Amount.TotalMinor != base.Amount.TotalMinor-sub {
+	e.proMust("BIGFIX", map[string]any{"kind": "fixed", "percent": nil, "fixed_minor": 99999900})
+	if q, err = b.quoteCode("bigfix"); err != nil || q.Amount.DiscountMinor != sub-sub%100 || q.Amount.TotalMinor != base.Amount.TotalMinor-(sub-sub%100) {
 		t.Fatalf("capped fixed: %v %+v", err, q.Amount)
 	}
 	// Every typed refusal is a coded 422 through the real buyer route; nothing is stored.
@@ -405,13 +407,14 @@ func TestPromotionAdminGuards(t *testing.T) {
 		t.Errorf("stale version: %d %v", st, out)
 	}
 	for name, over := range map[string]map[string]any{
-		"percent 91":           {"percent": 91},
-		"percent with fixed":   {"fixed_minor": 5},
-		"fixed without amount": {"kind": "fixed", "percent": nil},
-		"end before start":     {"starts_at": "2026-10-02T00:00:00+08:00", "ends_at": "2026-10-01T00:00:00+08:00"},
-		"zero total limit":     {"total_limit": 0},
-		"unknown status":       {"status": "deleted"},
-		"negative minimum":     {"min_subtotal_minor": -1},
+		"percent 91":                     {"percent": 91},
+		"percent with fixed":             {"fixed_minor": 5},
+		"fixed without amount":           {"kind": "fixed", "percent": nil},
+		"fixed not a whole dollar (TWD)": {"kind": "fixed", "percent": nil, "fixed_minor": 150},
+		"end before start":               {"starts_at": "2026-10-02T00:00:00+08:00", "ends_at": "2026-10-01T00:00:00+08:00"},
+		"zero total limit":               {"total_limit": 0},
+		"unknown status":                 {"status": "deleted"},
+		"negative minimum":               {"min_subtotal_minor": -1},
 	} {
 		if st, out := e.proUpdate(id, ver, over); st != 422 || out["code"] != "invalid_promotion" {
 			t.Errorf("%s: want 422 invalid_promotion, got %d %v", name, st, out)
@@ -428,4 +431,57 @@ func TestPromotionAdminGuards(t *testing.T) {
 	if n := e.count(`SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action IN ('promotions.created','promotions.updated')`, e.store()); n != 2 {
 		t.Errorf("audit rows: %d, want 2 (create, update; the replay writes none)", n)
 	}
+}
+
+// promotions.redeem reads the code id, version and discount from the ORDER snapshot; this test forges that snapshot (owner-pool fixture) and
+// proves SQL refuses a frozen effect that is not the code row's own terms or an impossible discount, which no Go path can produce.
+func TestPromotionRedeemRejectsForgedSnapshot(t *testing.T) {
+	e := tcvNew(t)
+	e.grantCreator("pricing:read", "pricing:write")
+	id, ver := e.proMust("REAL10", nil)
+	b := e.newBuyer()
+	res, err := b.beginQuote(mustQuote(t, b, ""))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var subtotal int64
+	if err = e.p.f.owner.QueryRow(context.Background(), `SELECT (snapshot#>>'{quote,amount,subtotal_minor}')::bigint FROM checkout.orders WHERE id=$1`, res.OrderID).Scan(&subtotal); err != nil {
+		t.Fatal(err)
+	}
+	hash := sha256.Sum256([]byte(b.cap.Token))
+	try := func(name, promotion string, discount int64, want string) {
+		t.Helper()
+		forged := fmt.Sprintf(`{"id":%q,"code":"REAL10","version":%d,%s}`, id, ver, promotion)
+		mustExec(t, e.p.f.owner, `UPDATE checkout.orders SET snapshot=jsonb_set(jsonb_set(snapshot,'{quote,promotion}',$2::jsonb,true),'{quote,amount,discount_minor}',to_jsonb($3::bigint)) WHERE id=$1`, res.OrderID, forged, discount)
+		tx, err := e.p.bcHarness.pool.Begin(context.Background())
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer tx.Rollback(context.Background())
+		_, err = tx.Exec(context.Background(), `SELECT promotions.redeem($1,$2::uuid,$3::uuid,NULL,NULL)`, hash[:], e.store(), res.OrderID)
+		if want == "" {
+			if err != nil {
+				t.Errorf("%s: want success, got %v", name, err)
+			}
+			return
+		}
+		if err == nil || !strings.Contains(err.Error(), want) {
+			t.Errorf("%s: want %s, got %v", name, want, err)
+		}
+	}
+	try("another percent than the code's", `"kind":"percent","percent":50`, subtotal/2, "promo_changed")
+	try("a fixed effect on a percent code", `"kind":"fixed","fixed_minor":100`, 100, "promo_changed")
+	try("discount above the code's own percent", `"kind":"percent","percent":10`, subtotal/10+100, "promo_changed")
+	try("discount above the subtotal", `"kind":"percent","percent":10`, subtotal+100, "promo_changed")
+	try("zero discount", `"kind":"percent","percent":10`, 0, "promo_changed")
+	try("the code's own terms", `"kind":"percent","percent":10`, subtotal/10-subtotal/10%100, "")
+}
+
+func mustQuote(t *testing.T, b *tcvBuyer, code string) storefront.Quote {
+	t.Helper()
+	q, err := b.quoteCode(code)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return q
 }

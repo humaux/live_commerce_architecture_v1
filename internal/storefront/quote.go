@@ -111,6 +111,11 @@ func CreateQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string, in Q
 		if err != nil {
 			return err
 		}
+		if promo != nil && amount.DiscountMinor == 0 {
+			// A code that takes nothing off this cart (a tiny cart rounded down to a whole currency unit) is refused rather than silently
+			// burning one of its uses on a zero discount. Same answer as an unknown code: nothing to enumerate.
+			return &promotions.Coded{Status: 422, Code: "promo_invalid"}
+		}
 		for i := range lines {
 			lines[i].Amount = amount.Lines[i]
 		}

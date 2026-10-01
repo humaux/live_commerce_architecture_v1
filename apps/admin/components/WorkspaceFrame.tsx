@@ -14,6 +14,7 @@ import { signalLogout } from "@/lib/session-events";
 import { customersCopy } from "@/lib/customers-copy";
 import { designCopy } from "@/lib/design-copy";
 import { teamCopy } from "@/lib/team-copy";
+import { promotionsCopy } from "@/lib/promotions-copy";
 import { BillingBanner } from "./BillingBanner";
 import { Icon } from "./Icon";
 
@@ -54,6 +55,7 @@ export function WorkspaceFrame({
     ["billing", "settings", customersCopy[locale].nav.billing],
     ["design", "product", designCopy[locale].title],
     ["ads", "meta", c.ads],
+    ["promotions", "orders", promotionsCopy[locale].nav],
     ["team", "support", teamCopy[locale].nav],
     ["settings", "settings", c.settings],
   ];
@@ -76,11 +78,11 @@ export function WorkspaceFrame({
       router.push(
         `/${locale}/studio${search.get("store") ? `?store=${encodeURIComponent(search.get("store")!)}` : ""}`,
       );
-    else if (id === "customers" || id === "finance" || id === "billing" || id === "design" || id === "team")
+    else if (id === "customers" || id === "finance" || id === "billing" || id === "design" || id === "team" || id === "promotions")
       router.push(
         `/${locale}/${id}${search.get("store") ? `?store=${encodeURIComponent(search.get("store")!)}` : ""}`,
       );
-    else if (["settings", "orders", "live", "ads", "customers", "finance", "billing", "design", "team"].includes(active))
+    else if (["settings", "orders", "live", "ads", "customers", "finance", "billing", "design", "team", "promotions"].includes(active))
       router.push(`/${locale}/`);
     else onSection?.(id);
   }

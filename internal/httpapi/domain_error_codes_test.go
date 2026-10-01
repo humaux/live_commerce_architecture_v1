@@ -10,6 +10,7 @@ import (
 	"livecommerce/internal/claims"
 	"livecommerce/internal/customers"
 	"livecommerce/internal/merchantorders"
+	"livecommerce/internal/promotions"
 )
 
 // Ruling 15 (refund-fulfilment-rulings.md): every §7.1 refund and §5.1 shipment code must reach the
@@ -43,6 +44,13 @@ func TestDomainErrorCodesReachJSONBody(t *testing.T) {
 			merchantorders.ErrInvalidURL:          "invalid_url",
 			merchantorders.ErrVoidRequiresShipped: "void_requires_shipped",
 			merchantorders.ErrInvalidVoid:         "invalid_void",
+		}},
+		// storefront-v2 §F: the merchant refusals of the promotions routes (offlineClassify serves them).
+		"promotions": {offlineClassify, map[error]string{
+			&promotions.Coded{Status: http.StatusConflict, Code: "promo_exists"}:                 "promo_exists",
+			&promotions.Coded{Status: http.StatusConflict, Code: "version_changed"}:              "version_changed",
+			&promotions.Coded{Status: http.StatusConflict, Code: "idempotency_conflict"}:         "idempotency_conflict",
+			&promotions.Coded{Status: http.StatusUnprocessableEntity, Code: "invalid_promotion"}: "invalid_promotion",
 		}},
 		"billing": {billingClassify, map[error]string{
 			billing.ErrSubscriptionExists: "subscription_exists",

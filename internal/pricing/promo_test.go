@@ -9,7 +9,8 @@ import (
 )
 
 func promoPolicy(mode string) Policy {
-	return Policy{MarketID: "11111111-1111-4111-8111-111111111111", Country: "TW", Method: "home", Currency: "TWD", ShippingMode: "country_flat",
+	// USD: step 1, so the generic math below is exact; the TWD whole-dollar rule has its own test.
+	return Policy{MarketID: "11111111-1111-4111-8111-111111111111", Country: "TW", Method: "home", Currency: "USD", ShippingMode: "country_flat",
 		TaxMode: mode, TaxBasis: "goods", Version: 1, ShippingMinor: 6000, TaxRateBPS: 500, QuoteTTLSeconds: 600, Enabled: true}
 }
 
@@ -147,6 +148,33 @@ func TestPromoRejectsMalformedEffects(t *testing.T) {
 	} {
 		if _, err := CalculateWith(promoPolicy("exclusive"), lines, promo); !errors.Is(err, command.ErrInvalid) {
 			t.Errorf("%s: err %v, want ErrInvalid", name, err)
+		}
+	}
+}
+
+// TWD is charged in whole dollars (stripe-psp-v1 D15, amount%100): a percent or fixed discount is rounded DOWN to a whole dollar, so a quote
+// whose goods and shipping are whole dollars stays payable after the discount. Never up: the buyer never gets more than the code promised.
+func TestCalculateWithPromoKeepsTWDWholeDollars(t *testing.T) {
+	p := promoPolicy("none")
+	p.Currency, p.TaxRateBPS = "TWD", 0
+	lines := []AmountLine{{UnitPriceMinor: 33300, Quantity: 1}, {UnitPriceMinor: 12700, Quantity: 2}} // 58700
+	for _, c := range []struct {
+		name     string
+		promo    Promo
+		discount int64
+	}{
+		{"percent floors to the dollar", Promo{Kind: "percent", Percent: 7}, 4100}, // 4109 -> 4100
+		{"percent already whole", Promo{Kind: "percent", Percent: 10}, 5800},       // 5870 -> 5800
+		{"fixed below a dollar step", Promo{Kind: "fixed", FixedMinor: 99}, 0},     // < 1 dollar
+		{"fixed whole", Promo{Kind: "fixed", FixedMinor: 20000}, 20000},
+		{"fixed capped", Promo{Kind: "fixed", FixedMinor: 99999999}, 58700 - 58700%100},
+	} {
+		got, err := CalculateWith(p, lines, &c.promo)
+		if err != nil || got.DiscountMinor != c.discount || got.DiscountMinor%100 != 0 {
+			t.Fatalf("%s: discount %d err %v, want %d", c.name, got.DiscountMinor, err, c.discount)
+		}
+		if got.TotalMinor%100 != 0 {
+			t.Fatalf("%s: total %d is not a whole dollar", c.name, got.TotalMinor)
 		}
 	}
 }

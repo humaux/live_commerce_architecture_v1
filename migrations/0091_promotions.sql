@@ -144,6 +144,7 @@ COMMENT ON FUNCTION promotions.quote_check(uuid,uuid,uuid,text,bigint) IS 'inter
 CREATE FUNCTION promotions.redeem(p_hash bytea,p_store uuid,p_order uuid,p_email_hash bytea,p_phone_hash bytea) RETURNS void
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE s record; o record; c promotions.codes; v_code uuid; v_version bigint; v_discount bigint; v_subtotal bigint; v_refusal text;
+ v_kind text; v_percent bigint; v_fixed bigint;
 BEGIN
  IF p_hash IS NULL OR octet_length(p_hash)<>32 OR p_store IS NULL OR p_order IS NULL
   OR (p_email_hash IS NOT NULL AND octet_length(p_email_hash)<>32) OR (p_phone_hash IS NOT NULL AND octet_length(p_phone_hash)<>32)
@@ -163,11 +164,20 @@ BEGIN
  v_subtotal:=(o.snapshot#>>'{quote,amount,subtotal_minor}')::bigint;
  IF v_code IS NULL OR v_version IS NULL OR v_discount IS NULL OR v_subtotal IS NULL THEN
   RAISE EXCEPTION 'order has no promotion' USING ERRCODE='PT400'; END IF;
+ v_kind:=o.snapshot#>>'{quote,promotion,kind}';
+ v_percent:=coalesce((o.snapshot#>>'{quote,promotion,percent}')::bigint,0);
+ v_fixed:=coalesce((o.snapshot#>>'{quote,promotion,fixed_minor}')::bigint,0);
  -- The serialisation point: every placement with this code waits here. The count below (READ COMMITTED: a fresh snapshot per statement)
  -- therefore sees every redemption committed before this one, so total_limit and per_buyer_limit cannot be oversubscribed.
  SELECT * INTO c FROM promotions.codes x WHERE x.tenant_id=s.tenant_id AND x.store_id=p_store AND x.id=v_code FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'promo_invalid' USING ERRCODE='PT422'; END IF;
  IF c.version<>v_version THEN RAISE EXCEPTION 'promo_changed' USING ERRCODE='PT422'; END IF;
+ -- Defence in depth for the money boundary (the buyer runtime may insert quote snapshots): the frozen effect must be the code row's own terms
+ -- and the discount must be a possible one. The amount itself is computed only by internal/pricing; this is a bound, not a second calculator.
+ IF v_kind IS DISTINCT FROM c.kind OR v_percent<>coalesce(c.percent,0) OR v_fixed<>coalesce(c.fixed_minor,0)
+  OR v_discount<1 OR v_discount>v_subtotal
+  OR (c.kind='percent' AND v_discount>v_subtotal*c.percent/100) OR (c.kind='fixed' AND v_discount>c.fixed_minor) THEN
+  RAISE EXCEPTION 'promo_changed' USING ERRCODE='PT422'; END IF;
  v_refusal:=promotions.refusal_for(c,v_subtotal,s.owner_id,p_email_hash,p_phone_hash);
  IF v_refusal IS NOT NULL THEN RAISE EXCEPTION '%',v_refusal USING ERRCODE='PT422'; END IF;
  INSERT INTO promotions.redemptions(tenant_id,store_id,code_id,order_id,owner_id,email_hash,phone_hash,discount_minor,created_at)
@@ -236,13 +246,13 @@ COMMENT ON FUNCTION promotions.admin_list(bytea,uuid) IS 'internal/promotions me
 
 -- Field validation shared by create and update. A bad body is a coded 422, never a constraint-violation 500.
 CREATE FUNCTION promotions.check_fields(p_kind text,p_percent integer,p_fixed bigint,p_min bigint,p_starts timestamptz,p_ends timestamptz,
- p_total integer,p_buyer integer,p_status text) RETURNS void
+ p_total integer,p_buyer integer,p_status text,p_step bigint) RETURNS void
 LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
 BEGIN
  IF p_kind IS NULL OR p_min IS NULL OR p_status IS NULL OR p_status NOT IN ('active','paused')
   OR p_kind NOT IN ('percent','fixed')
   OR (p_kind='percent' AND (p_percent IS NULL OR p_percent NOT BETWEEN 1 AND 90 OR p_fixed IS NOT NULL))
-  OR (p_kind='fixed' AND (p_fixed IS NULL OR p_fixed NOT BETWEEN 1 AND 1000000000000 OR p_percent IS NOT NULL))
+  OR (p_kind='fixed' AND (p_fixed IS NULL OR p_fixed NOT BETWEEN 1 AND 1000000000000 OR p_percent IS NOT NULL OR p_step IS NULL OR p_fixed%p_step<>0))
   OR p_min NOT BETWEEN 0 AND 1000000000000
   OR (p_starts IS NOT NULL AND NOT isfinite(p_starts)) OR (p_ends IS NOT NULL AND NOT isfinite(p_ends))
   OR (p_starts IS NOT NULL AND p_ends IS NOT NULL AND p_ends<=p_starts)
@@ -250,10 +260,10 @@ BEGIN
   OR (p_buyer IS NOT NULL AND p_buyer NOT BETWEEN 1 AND 1000000) THEN
   RAISE EXCEPTION 'invalid_promotion' USING ERRCODE='PT422'; END IF;
 END $$;
-ALTER FUNCTION promotions.check_fields(text,integer,bigint,bigint,timestamptz,timestamptz,integer,integer,text) OWNER TO commerce_checkout_writer;
-REVOKE ALL ON FUNCTION promotions.check_fields(text,integer,bigint,bigint,timestamptz,timestamptz,integer,integer,text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION promotions.check_fields(text,integer,bigint,bigint,timestamptz,timestamptz,integer,integer,text) TO commerce_checkout_writer;
-COMMENT ON FUNCTION promotions.check_fields(text,integer,bigint,bigint,timestamptz,timestamptz,integer,integer,text) IS 'internal/promotions: mirrors the promotions.codes CHECKs so a bad merchant body is PT422 invalid_promotion. Called only by admin_create / admin_update.';
+ALTER FUNCTION promotions.check_fields(text,integer,bigint,bigint,timestamptz,timestamptz,integer,integer,text,bigint) OWNER TO commerce_checkout_writer;
+REVOKE ALL ON FUNCTION promotions.check_fields(text,integer,bigint,bigint,timestamptz,timestamptz,integer,integer,text,bigint) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION promotions.check_fields(text,integer,bigint,bigint,timestamptz,timestamptz,integer,integer,text,bigint) TO commerce_checkout_writer;
+COMMENT ON FUNCTION promotions.check_fields(text,integer,bigint,bigint,timestamptz,timestamptz,integer,integer,text,bigint) IS 'internal/promotions: mirrors the promotions.codes CHECKs so a bad merchant body is PT422 invalid_promotion, and requires a fixed amount to be a whole multiple of the store currency step (p_step: 100 for TWD, which is charged in whole dollars, stripe-psp-v1 D15; 1 otherwise; mirrors internal/pricing wholeStep). Called only by admin_create / admin_update.';
 
 CREATE FUNCTION promotions.admin_create(p_hash bytea,p_store uuid,p_key text,p_request_hash bytea,p_code text,p_kind text,p_percent integer,
  p_fixed bigint,p_min bigint,p_starts timestamptz,p_ends timestamptz,p_total integer,p_buyer integer,p_status text) RETURNS jsonb
@@ -276,7 +286,8 @@ BEGIN
   IF v_saved<>p_request_hash THEN RAISE EXCEPTION 'idempotency_conflict' USING ERRCODE='PT409'; END IF;
  ELSE
   IF p_code IS NULL OR p_code !~ '^[A-Za-z0-9-]{3,24}$' THEN RAISE EXCEPTION 'invalid_promotion' USING ERRCODE='PT422'; END IF;
-  PERFORM promotions.check_fields(p_kind,p_percent,p_fixed,p_min,p_starts,p_ends,p_total,p_buyer,p_status);
+  PERFORM promotions.check_fields(p_kind,p_percent,p_fixed,p_min,p_starts,p_ends,p_total,p_buyer,p_status,
+   (SELECT CASE WHEN st.currency='TWD' THEN 100 ELSE 1 END FROM control.stores st WHERE st.tenant_id=s.tenant_id AND st.id=p_store));
   SELECT count(*) INTO v_count FROM promotions.codes x WHERE x.tenant_id=s.tenant_id AND x.store_id=p_store;
   IF v_count>=500 THEN RAISE EXCEPTION 'invalid_promotion' USING ERRCODE='PT422'; END IF;
   v_now:=clock_timestamp();
@@ -325,7 +336,8 @@ BEGIN
  IF FOUND THEN
   IF v_saved<>p_request_hash THEN RAISE EXCEPTION 'idempotency_conflict' USING ERRCODE='PT409'; END IF;
  ELSE
-  PERFORM promotions.check_fields(p_kind,p_percent,p_fixed,p_min,p_starts,p_ends,p_total,p_buyer,p_status);
+  PERFORM promotions.check_fields(p_kind,p_percent,p_fixed,p_min,p_starts,p_ends,p_total,p_buyer,p_status,
+   (SELECT CASE WHEN st.currency='TWD' THEN 100 ELSE 1 END FROM control.stores st WHERE st.tenant_id=s.tenant_id AND st.id=p_store));
   -- FOR UPDATE: waits for an in-flight redeem of this code, so the version bump and a placement never interleave.
   SELECT * INTO c FROM promotions.codes x WHERE x.tenant_id=s.tenant_id AND x.store_id=p_store AND x.id=p_id FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'not found' USING ERRCODE='PT404'; END IF;

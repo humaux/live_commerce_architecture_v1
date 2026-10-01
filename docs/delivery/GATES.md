@@ -123,9 +123,25 @@ after the identity work. Its specs write screenshots under `output/playwright/le
 
 | Suite | Covers | Note |
 | --- | --- | --- |
-| `apps/storefront/tests/*.test.mjs` | storefront buyer client/server, payment contract and return | CI, always |
+| `apps/storefront/tests/*.test.mjs` | storefront buyer client/server, payment contract and return; `promo.test.mjs` = discount-code contract, quote validator, journal grammar and BFF refusal relay (storefront-v2 §F, MOCK) | CI, always |
+| `tests/admin/promotions-model.test.ts` | admin discount-code parser, Taipei-time conversion, form-to-body builders, BFF route grammar and copy parity (storefront-v2 §F, MODEL_ONLY) | CI, always (named in `test-node.sh`) |
 | `packages/i18n/tests/*.test.ts` | locale resolution and catalogs | CI, always |
 | `tests/media/r04-input-runner.test.mjs` | R04 local LiveKit input probe | needs `COMMERCE_R04_LIVEKIT_BINARY` (pinned binary). Without it `test-node.sh` prints `NOT_RUN` (CI does); `--require-r04` turns that into exit 2 |
 
 `tests/admin/claims-request.test.ts` and siblings are also run inside their browser mode (table above); `claim.test.mjs`
 runs in both places.
+
+## Focused PG gates of unit promotions (storefront-v2 §F, migration 0091; REAL_PG, no PSP, no browser)
+
+Run with `bash scripts/dev/test-focused.sh '^TestPromotion'` (also part of the default T1 foundation run). Pure logic runs without Docker:
+`go test ./internal/pricing ./internal/promotions ./internal/buyerhttp ./internal/httpapi`.
+
+| Test | Proves |
+| --- | --- |
+| `TestPromotionQuoteApplication` | a code (any case) is priced inside the quote, frozen in the snapshot, shipping untouched, fixed amount capped at the subtotal, every typed refusal is a coded 422 through the real buyer route and stores no quote |
+| `TestPromotionAtomicLimit` | 6 concurrent placements of a `total_limit` 1 code place exactly one order (losers roll back whole); expiry releases the use with no hook |
+| `TestPromotionPerBuyerAndChange` | per-buyer limit by phone identity across two capabilities; `promo_changed` after a pause and `promo_expired` after a natural expiry leave zero facts |
+| `TestPromotionOrderMoney` | order total = discounted quote total, redemption + snapshot + merchant order view carry the discount; a free-shipping-threshold policy still places (RevalidateQuote pointer-compare regression) |
+| `TestPromotionAdminGuards` | permissions, idempotent replay, duplicate code, stale version, rule violations, audit rows |
+
+Not covered here (NOT_RUN): browser pages for `/[locale]/promotions` and the storefront code field, real WebKit, and a Stripe SANDBOX payment of a discounted order.

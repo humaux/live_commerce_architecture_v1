@@ -276,25 +276,39 @@ type Promo struct {
 	FixedMinor int64  `json:"fixed_minor,omitempty"`
 }
 
-// discountOn is the ONE place a code becomes money. I05: integer minor units only, floor rounding for percent, and the result never exceeds
-// the merchandise subtotal, so the goods charge cannot go below zero. Shipping is not an input: a code never discounts shipping.
-func (p Promo) discountOn(subtotal int64) (int64, error) {
-	if subtotal < 0 || subtotal > command.MaxMoney {
+// wholeStep is the smallest chargeable step of a currency in minor units. TWD is charged in whole dollars (stripe-psp-v1 D15 and the section 4
+// table: TWD 2500..99999900 step 100; PAYUNi amount%100=0), so a discount must not leave a fractional-dollar total that payment start would
+// refuse after the order was already placed. Every other currency of the closed allowlist charges at its minor unit.
+func wholeStep(currency string) int64 {
+	if currency == "TWD" {
+		return 100
+	}
+	return 1
+}
+
+// discountOn is the ONE place a code becomes money. I05: integer minor units only, floor rounding for percent, rounded DOWN to the currency's
+// chargeable step (whole dollars for TWD), and the result never exceeds the merchandise subtotal, so the goods charge cannot go below zero.
+// Shipping is not an input: a code never discounts shipping.
+func (p Promo) discountOn(subtotal, step int64) (int64, error) {
+	if subtotal < 0 || subtotal > command.MaxMoney || step < 1 {
 		return 0, command.ErrInvalid
 	}
+	var discount int64
 	switch p.Kind {
 	case "percent":
 		if p.Percent < 1 || p.Percent > 90 || p.FixedMinor != 0 {
 			return 0, command.ErrInvalid
 		}
-		return subtotal * p.Percent / 100, nil // subtotal <= 1e12 and percent <= 90: no overflow
+		discount = subtotal * p.Percent / 100 // subtotal <= 1e12 and percent <= 90: no overflow
 	case "fixed":
 		if p.FixedMinor < 1 || p.FixedMinor > command.MaxMoney || p.Percent != 0 {
 			return 0, command.ErrInvalid
 		}
-		return min(p.FixedMinor, subtotal), nil
+		discount = min(p.FixedMinor, subtotal)
+	default:
+		return 0, command.ErrInvalid
 	}
-	return 0, command.ErrInvalid
+	return discount - discount%step, nil
 }
 
 // allocateDiscount splits discount over the line subtotals proportionally (floor, then the leftover units one by one to the largest
@@ -350,7 +364,7 @@ func CalculateWith(policy Policy, lines []AmountLine, promo *Promo) (Calculation
 	}
 	if promo != nil {
 		var err error
-		if result.DiscountMinor, err = promo.discountOn(result.SubtotalMinor); err != nil {
+		if result.DiscountMinor, err = promo.discountOn(result.SubtotalMinor, wholeStep(policy.Currency)); err != nil {
 			return Calculation{}, err
 		}
 	}
