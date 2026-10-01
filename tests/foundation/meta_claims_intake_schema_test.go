@@ -149,6 +149,9 @@ func mciApplyWithout(t *testing.T, owner *pgxpool.Pool) {
 	adsNumbered, _ := filepath.Glob("../../migrations/[0-9][0-9][0-9][0-9]_meta_ads*.sql")
 	capiNumbered, _ := filepath.Glob("../../migrations/[0-9][0-9][0-9][0-9]_meta_capi.sql") // ads-capi 0080 builds on 0074's schema
 	adsNumbered = append(adsNumbered, capiNumbered...)
+	// 0089 (staff-team) derives role bundles from the full permission catalogue, which includes the ads permissions this
+	// gate never creates, so it is recorded without running exactly like the ads files it depends on.
+	adsNumbered = append(adsNumbered, "../../migrations/0089_staff_team.sql")
 	adsPost, _ := filepath.Glob("../../migrations/post_river/[0-9][0-9][0-9][0-9]_meta_ads_river.sql")
 	adsSkip := map[string]bool{}
 	for _, path := range append(adsNumbered, adsPost...) {

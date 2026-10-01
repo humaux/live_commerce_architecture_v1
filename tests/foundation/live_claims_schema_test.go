@@ -911,7 +911,7 @@ func lcPopulatedUpgrade(t *testing.T) {
 		"0071_claims_retention.sql",
 		// R3/R4 files that redefine 0078 definers (finance summary 0085/0088, erasure 0090/0091) or extend 0060 offers (0092)
 		// cannot run while 0078/0060 are held back; they are re-applied with them.
-		"0085_finance_pay_at_pickup.sql", "0088_checkout_offline.sql", "0090_buyer_comms.sql", "0091_promotions.sql", "0092_live_tools.sql"}
+		"0085_finance_pay_at_pickup.sql", "0088_checkout_offline.sql", "0089_staff_team.sql", "0090_buyer_comms.sql", "0091_promotions.sql", "0092_live_tools.sql"}
 	for _, version := range dependents {
 		dependent, err := os.ReadFile(filepath.Join("../../migrations", version))
 		if err != nil {
