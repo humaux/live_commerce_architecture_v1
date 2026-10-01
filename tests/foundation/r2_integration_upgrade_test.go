@@ -35,9 +35,10 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 		}
 	}
 	sort.Strings(r2)
-	// 0070..0080 without 0076 (never allocated) + post-River 0015..0017: a lane that drops or adds a file must update this.
-	if len(r2) != 13 {
-		t.Fatalf("R2 migration set = %d files %v, want 13", len(r2), r2)
+	// 0070..0080 without 0076 (never allocated) + 0082 (catalog-media, R3) + post-River 0015..0017: a lane that drops or adds a file
+	// must update this.
+	if len(r2) != 14 {
+		t.Fatalf("R2 migration set = %d files %v, want 14", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
