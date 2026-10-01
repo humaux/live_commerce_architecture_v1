@@ -318,7 +318,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				// customers-billing-v1 §3.1 (0078): the customer projection and the privacy writer read/relabel bound bundles
 				"commerce_auth USAGE", "commerce_privacy_writer USAGE",
 				// claims-retention-purge-v1 §4 schema USAGE rows
-				"commerce_retention_writer USAGE", "commerce_retention_job USAGE", "commerce_retention_operator USAGE"})
+				"commerce_retention_writer USAGE", "commerce_retention_job USAGE", "commerce_retention_operator USAGE",
+				// 0103 (D1): checkout.Begin's RevalidateQuote resolves claims.live_prices on the checkout pool
+				"commerce_checkout_runtime USAGE"})
 		var usage []bool
 		if err := f.owner.QueryRow(ctx, `SELECT ARRAY[has_schema_privilege('commerce_claims_writer','live','USAGE'),has_schema_privilege('commerce_claims_writer','identity','USAGE'),
 			has_schema_privilege('commerce_claims_writer','claims','USAGE')]`).Scan(&usage); err != nil || !usage[0] || !usage[1] || !usage[2] {
@@ -360,10 +362,12 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			"redeem_link": {args: "p_hash bytea, p_expected_version bigint", result: "TABLE(bundle_id uuid, bundle_version bigint, offer_id uuid, sku_id uuid, quantity integer, line_version bigint, pending boolean, offer_active boolean)",
 				volatility: "v", acl: "commerce_buyer_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_buyer_runtime"},
 			// live-tools 0092 ("Live tools (R4)" amendment rules 5-6): the buyer price definers.
-			"live_prices": {args: "p_bundles uuid[], p_offers uuid[], p_skus uuid[]", result: "TABLE(sku_id uuid, bundle_id uuid, offer_id uuid, live_price_minor bigint)",
-				volatility: "s", acl: "commerce_buyer_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_buyer_runtime"},
+			// 0101: VOLATILE (link expiry reads clock_timestamp()). 0103: the cart quantity argument (D2) and the checkout runtime
+			// (D1: checkout.Begin's RevalidateQuote prices claim origins on the checkout pool).
+			"live_prices": {args: "p_bundles uuid[], p_offers uuid[], p_skus uuid[], p_quantities bigint[]", result: "TABLE(sku_id uuid, bundle_id uuid, offer_id uuid, live_price_minor bigint)",
+				volatility: "v", acl: "commerce_buyer_runtime:EXECUTE,commerce_checkout_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_buyer_runtime"},
 			"preview_live_prices": {args: "p_hash bytea", result: "TABLE(keyword text, live_price_minor bigint)",
-				volatility: "s", acl: "commerce_buyer_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_buyer_runtime"},
+				volatility: "v", acl: "commerce_buyer_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_buyer_runtime"},
 			// meta-claims-intake-v1 §4.3 / §5 / §6.3: the six new claims-schema definers (all owned by commerce_claims_writer).
 			"intake_scope": {args: "", result: "TABLE(tenant_id uuid, store_id uuid, session_id uuid)", volatility: "s",
 				acl: "commerce_claims_intake:EXECUTE,commerce_claims_writer:EXECUTE,commerce_integration_writer:EXECUTE", caller: "commerce_claims_intake"},
@@ -425,6 +429,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			WHERE n.nspname='claims' AND r.rolname LIKE 'commerce\_%' AND has_function_privilege(r.oid,p.oid,'EXECUTE')
 			  AND NOT (r.rolname='commerce_claims_writer' OR (r.rolname='commerce_runtime' AND p.proname='issue_link')
 			       OR (r.rolname='commerce_buyer_runtime' AND p.proname IN ('preview_link','redeem_link','mark_applied','live_prices','preview_live_prices'))
+			       -- 0103 D1: checkout.Begin's RevalidateQuote; commerce_hosted_runtime inherits commerce_checkout_runtime (0025)
+			       OR (r.rolname IN ('commerce_checkout_runtime','commerce_hosted_runtime') AND p.proname='live_prices')
 			       OR (r.rolname='commerce_claims_intake' AND p.proname IN ('intake_scope','lease_meta_intake','fail_meta_intake'))
 			       OR (r.rolname='commerce_integration_writer' AND p.proname IN ('intake_scope','issue_system_link'))
 			       OR (r.rolname='commerce_meta_writer' AND p.proname='insert_meta_intake')
@@ -740,7 +746,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			  AND (has_function_privilege('commerce_runtime',p.oid,'EXECUTE') OR has_function_privilege('commerce_buyer_runtime',p.oid,'EXECUTE'))`),
 			[]string{"claims.issue_link(bytea,uuid,uuid,uuid,bigint,bytea,boolean)", "claims.mark_applied(uuid,uuid[],bigint[])", "claims.preview_link(bytea)", "claims.redeem_link(bytea,bigint)",
 				// live-tools 0092: buyer-runtime price definers (read-only; bound owner and link expiry are checked inside).
-				"claims.live_prices(uuid[],uuid[],uuid[])", "claims.preview_live_prices(bytea)",
+				"claims.live_prices(uuid[],uuid[],uuid[],bigint[])", "claims.preview_live_prices(bytea)",
 				// customers-billing-v1 §3.1 (0078): read-only projections of bound-bundle counts/time, no binding write.
 				"identity.read_merchant_customers(bytea,uuid,uuid,integer,timestamp with time zone,uuid,text)", "customers.buyer_read_privacy(bytea,uuid,boolean)"})
 		lcSameSet(t, "roles able to write owner_id", lcStrings(t, f.owner, `SELECT DISTINCT p.grantee::text FROM information_schema.column_privileges p

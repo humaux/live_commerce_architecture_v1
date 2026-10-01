@@ -675,7 +675,7 @@ func (x *e2eRun) provisionMeta(t *testing.T, h cqHarness) {
 	t.Cleanup(func() { e.stopConsumer() })
 	x.graph = newMciGraph(t)
 	// The dispatcher owns the default queue of the main river schema (where the intake commit inserts the reply job).
-	pool := x.e.pool // the payment worker's commerce_worker pool (one shared worker authority; see sampleConnections)
+	pool := waOpen(t, f, waClaims, platform.WorkerClaims) // the claims-worker authority login (0096 / T21-02): metareply.Routes + the dispatcher validate WorkerClaims
 	routes, err := metareply.Routes(pool, e.link, e.pageKeys, metareply.Config{GraphBaseURL: x.graph.srv.URL, GraphVersion: "v99.0", HTTPClient: x.graph.srv.Client()})
 	if err != nil {
 		t.Fatalf("metareply.Routes: %v", err)

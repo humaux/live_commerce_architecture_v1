@@ -288,9 +288,9 @@ func TestLiveToolsExpiryOffersAndForgedOrigin(t *testing.T) {
 	if _, err := checkoutRevalidate(h.cqHarness, buyer1, q.ID, cart.Version); !errors.Is(err, command.ErrConflict) {
 		t.Fatalf("revalidate after expiry must fail closed (conflict), got %v", err)
 	}
-	// Merchant roles can never call the buyer price function (EXECUTE is granted to the buyer runtime only).
+	// Merchant roles can never call the buyer price function (EXECUTE: buyer + checkout runtimes only, 0103).
 	err = h.do(h.token, f.storeA1, func(tx pgx.Tx, s platform.Scope) error {
-		_, e := tx.Exec(ctx, `SELECT * FROM claims.live_prices(ARRAY[$1]::uuid[],ARRAY[$2]::uuid[],ARRAY[$3]::uuid[])`, c1.BundleID, o1.ID, sku0)
+		_, e := tx.Exec(ctx, `SELECT * FROM claims.live_prices(ARRAY[$1]::uuid[],ARRAY[$2]::uuid[],ARRAY[$3]::uuid[],ARRAY[1]::bigint[])`, c1.BundleID, o1.ID, sku0)
 		return e
 	})
 	requirePGCode(t, err, "42501", "merchant EXECUTE on claims.live_prices")
@@ -434,7 +434,7 @@ func TestLiveToolsLibraryImportAndCopy(t *testing.T) {
 func TestLiveToolsVolatility(t *testing.T) {
 	h := lcSetup(t)
 	ctx := context.Background()
-	for _, fn := range []string{"claims.live_prices(uuid[],uuid[],uuid[])", "claims.preview_live_prices(bytea)"} {
+	for _, fn := range []string{"claims.live_prices(uuid[],uuid[],uuid[],bigint[])", "claims.preview_live_prices(bytea)"} {
 		var vol string
 		if err := h.f.owner.QueryRow(ctx, `SELECT provolatile::text FROM pg_proc WHERE oid=$1::regprocedure`, fn).Scan(&vol); err != nil || vol != "v" {
 			t.Fatalf("%s provolatile=%q (%v), want v", fn, vol, err)
