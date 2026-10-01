@@ -887,5 +887,7 @@ func restoreStoreName(t *testing.T, owner *pgxpool.Pool, store string) {
 	if err := owner.QueryRow(context.Background(), `SELECT name FROM control.stores WHERE id=$1`, store).Scan(&name); err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { _, _ = owner.Exec(context.Background(), `UPDATE control.stores SET name=$2 WHERE id=$1`, store, name) })
+	t.Cleanup(func() {
+		_, _ = owner.Exec(context.Background(), `UPDATE control.stores SET name=$2 WHERE id=$1`, store, name)
+	})
 }
