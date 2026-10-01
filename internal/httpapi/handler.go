@@ -144,6 +144,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 		return inventory.AdjustOnHand(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)
 	}))
 	registerImageRoutes(mux, pool)
+	registerDesignRoutes(mux, pool) // unit store-design: storefront-v2 section B, design.go
 	registerSettingsRoutes(mux, pool)
 	registerSettingsDiscoveryRoutes(mux, pool)
 	registerStorefrontRoutes(mux, pool)
