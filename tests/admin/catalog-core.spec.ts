@@ -111,7 +111,7 @@ for (const v of variants) {
       for (const label of [copy[L as "en" | "zh-TW"].products, cc.nav.collections, copy[L as "en" | "zh-TW"].inventory])
         await expect(rail.getByRole("button", { name: label, exact: true }), `nav entry ${label}`).toBeVisible();
       await rail.getByRole("button", { name: copy[L as "en" | "zh-TW"].inventory, exact: true }).click();
-      await expect(page).toHaveURL(new RegExp(`/${L}/?(\\?.*)?$`)); // the ledger (home) is still reachable
+      await expect(page).toHaveURL(new RegExp(`/${L}/inventory/?(\\?.*)?$`)); // the ledger is still reachable (0094 moved it from home to /inventory)
       await expect(page.getByTestId("nav-orders")).toBeAttached();
       await page.goto(url("/products"));
       await expect(page.getByTestId("products-page")).toBeVisible();

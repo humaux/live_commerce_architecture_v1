@@ -225,7 +225,8 @@ if [[ "$test_mode" == --browser-storefront-publish || "$test_mode" == --browser-
   # R3 storefront-publish KEY gate (BROWSER, MOCK edge): refuse a no-test success and run the pure card-model gate first.
   test -f tests/foundation/browser_storefront_publish_test.go
   grep -q '^func TestBrowserStorefrontPublish' tests/foundation/browser_storefront_publish_test.go
-  test -f tests/storefront/storefront-publish-gate.mjs tests/admin/design.spec.ts
+  test -f tests/storefront/storefront-publish-gate.mjs
+  test -f tests/admin/design.spec.ts
   node --test --experimental-strip-types tests/admin/storefront-model.test.ts tests/admin/design-gate.test.ts tests/admin/design-model.test.ts packages/markdown-lite/tests/index.test.ts
   mkdir -p output/playwright
 fi
