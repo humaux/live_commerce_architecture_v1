@@ -252,12 +252,23 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
           id: created.store_id,
           name: initialBody.store_name,
           currency: "TWD",
+          // staff-team (migration 0089, storefront-v2 §D): each item carries the caller's role and effective permissions; the
+          // initial-store creator is a full owner = the whole store_grants_permission_check catalogue, sorted by the SQL definer;
+          // pinned so a catalogue change is a deliberate edit here.
+          role: "owner",
+          permissions: [
+            "ads:approve", "ads:manage", "ads:read", "audit:read", "audit:write", "billing:manage", "catalog:read",
+            "catalog:write", "customers:privacy", "customers:read", "fulfillment:write", "integration:execute",
+            "integration:manage", "integration:read", "inventory:read", "inventory:reserve", "inventory:write", "live:manage",
+            "live:read", "orders:export", "orders:read", "payments:refund", "pricing:read", "pricing:write", "store:read",
+          ],
         },
       ],
     },
   });
   await page.getByRole("button", { name: "進入工作區" }).click();
-  await expect(page.getByRole("heading", { name: "商品與庫存" })).toBeVisible();
+  // merchant-tools G1 (migration 0094): the workspace landing is the dashboard; the stock ledger moved to /inventory.
+  await expect(page.getByRole("heading", { name: "總覽", level: 1 })).toBeVisible();
 
   const warehouses = await browserJSON(
     page,
