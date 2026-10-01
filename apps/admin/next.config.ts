@@ -1,5 +1,9 @@
 import type { NextConfig } from "next";
 
+// React's development build rebuilds call stacks with eval() (Next documents 'unsafe-eval' for `next dev`): without it the dev overlay opens a
+// permanent issue badge. Only the development server gets it; the production policy (next build/start) stays eval-free (R4S-04).
+const scriptSrc = process.env.NODE_ENV === "development" ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'" : "script-src 'self' 'unsafe-inline'";
+
 const config: NextConfig = {
   agentRules: false, // The repository owns its instruction hierarchy.
   devIndicators: false, // Do not cover merchant controls in local visual acceptance.
@@ -20,7 +24,7 @@ const config: NextConfig = {
           {
             key: "Content-Security-Policy",
             // R4S-04: same-origin sources only (no form-action: OAuth starts redirect off-site); nonce script-src is post-pilot.
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'",
+            value: `default-src 'self'; ${scriptSrc}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'`,
           },
         ],
       },
