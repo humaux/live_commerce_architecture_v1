@@ -429,7 +429,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			WHERE n.nspname='claims' AND r.rolname LIKE 'commerce\_%' AND has_function_privilege(r.oid,p.oid,'EXECUTE')
 			  AND NOT (r.rolname='commerce_claims_writer' OR (r.rolname='commerce_runtime' AND p.proname='issue_link')
 			       OR (r.rolname='commerce_buyer_runtime' AND p.proname IN ('preview_link','redeem_link','mark_applied','live_prices','preview_live_prices'))
-			       OR (r.rolname='commerce_checkout_runtime' AND p.proname='live_prices') -- 0103 D1
+			       -- 0103 D1: checkout.Begin's RevalidateQuote; commerce_hosted_runtime inherits commerce_checkout_runtime (0025)
+			       OR (r.rolname IN ('commerce_checkout_runtime','commerce_hosted_runtime') AND p.proname='live_prices')
 			       OR (r.rolname='commerce_claims_intake' AND p.proname IN ('intake_scope','lease_meta_intake','fail_meta_intake'))
 			       OR (r.rolname='commerce_integration_writer' AND p.proname IN ('intake_scope','issue_system_link'))
 			       OR (r.rolname='commerce_meta_writer' AND p.proname='insert_meta_intake')
