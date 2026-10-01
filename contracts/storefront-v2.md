@@ -118,7 +118,8 @@ Implemented as: `identity.store_staff` (role label) + `identity.staff_invitation
 `identity.staff_{list,invite,record_invite_mail,revoke_invite,set_role,remove,accept}` (EXECUTE commerce_identity only; owner commerce_staff_writer).
 Transport: `POST /v1/identity/staff/{list,invite,revoke-invite,set-role,remove,accept}` (BFF key + merchant bearer) behind
 `POST /api/team/{action}`; pages `/[locale]/team` and `/[locale]/invite/[token]`. Role bundles are `identity.staff_role_permissions(role)`
-(owner = all 25 permissions incl. billing:manage; admin = owner minus billing:manage; staff management = the owner role row itself).
+(owner = the whole live permission catalogue at grant time, incl. ads:* and billing:manage, the store creator included, existing owners backfilled; admin = catalogue minus billing:manage; viewer = every :read; staff management = the owner role row itself).
+Navigation: `GET /v1/admin/stores` items also carry the caller's `role` and effective `permissions`; the admin hides entries the member cannot use (display hint, Go authorizes every request). `/[locale]/invite/**` is served with real `Referrer-Policy: no-referrer` and `Cache-Control: no-store` headers.
 - Owner floor: every mutating definer checks it under a per-store advisory lock and a deferred constraint trigger re-checks at commit (direct DML cannot orphan a store).
 - Revoke = role row + store grants deleted, membership deactivated when no grant remains; `identity.resolve_access` therefore refuses on the next request.
 - Accept refusal is one generic PT404 `invite_invalid` (unknown/expired/revoked/used token, other email, OIDC-only account); PT409 `already_member` only for the caller's own membership.

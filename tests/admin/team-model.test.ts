@@ -82,3 +82,20 @@ test("copy: three locales carry the same keys and a label for every role", () =>
   assert.equal(teamCopy["zh-TW"].roleNames.live_operator, "直播營運");
   assert.equal(teamCopy.en.roleNames.fulfilment, "Fulfilment");
 });
+
+test("role-aware navigation: hides entries the member's permissions cannot use; unknown shows all; Team is owner-only", async () => {
+  const { navAccessFrom, navVisible } = await import("../../apps/admin/lib/team-model.ts");
+  const items = (permissions: string[], role: string | null) => ({ items: [{ id, name: "S", currency: "TWD", role, permissions }] });
+  const fulfilment = navAccessFrom(items(["store:read", "orders:read", "fulfillment:write", "orders:export", "inventory:read"], "fulfilment"), id);
+  assert.ok(navVisible("orders", fulfilment) && navVisible("inventory", fulfilment));
+  for (const hidden of ["team", "billing", "customers", "ads", "live", "products", "settings"]) assert.ok(!navVisible(hidden, fulfilment), hidden);
+  const owner = navAccessFrom(items(["store:read", "billing:manage", "orders:read", "catalog:read", "inventory:read", "live:read", "customers:read", "ads:read", "integration:read"], "owner"), null);
+  for (const shown of ["team", "billing", "orders", "ads", "settings"]) assert.ok(navVisible(shown, owner), shown);
+  const admin = navAccessFrom(items(["store:read", "orders:read"], "admin"), id);
+  assert.ok(!navVisible("team", admin) && !navVisible("billing", admin));
+  // unknown (mock server without permissions, bad body, other store) -> null -> everything stays visible; the server is the authority
+  assert.equal(navAccessFrom({ items: [{ id, name: "S", currency: "TWD" }] }, id), null);
+  assert.equal(navAccessFrom(items(["store:read"], "viewer"), "22222222-2222-4222-8222-222222222222"), null);
+  assert.equal(navAccessFrom(null, id), null);
+  assert.ok(navVisible("team", null) && navVisible("billing", null));
+});
