@@ -292,6 +292,8 @@ try {
   const small = (loc) => loc.evaluateAll((els) => els.map((e) => { const b = e.getBoundingClientRect(); return `${Math.round(b.width)}x${Math.round(b.height)}`; }).filter((t) => { const [w, h] = t.split("x").map(Number); return w < 44 || h < 44; }));
   // Footer content a fixed/sticky bottom bar could hide: scroll to the end, nothing in the viewport may sit under the bar, and the last footer line must be in view.
   const footerCovered = async (pg) => {
+    // The page height is still moving while cart lines and images load: wait until it is stable before looking at the end of the page.
+    let last = -1; for (let i = 0; i < 40; i++) { const h = await pg.evaluate(() => document.documentElement.scrollHeight); if (h === last) break; last = h; await pg.waitForTimeout(150); }
     await pg.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight)); await pg.waitForTimeout(300);
     const r = await pg.evaluate(() => {
       const items = [...document.querySelectorAll(".sf-footer a, .sf-footer__base p")], last = document.querySelector(".sf-footer__base p").getBoundingClientRect();
