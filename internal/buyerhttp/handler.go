@@ -45,6 +45,9 @@ type handler struct {
 	checkout *checkout.Service
 	payment  *checkout.HostedPaymentStarter
 	bffKey   string
+	// lookup.go (guest order lookup, storefront-v2 §E5): the issuer pool runs checkout.guest_order_lookup, ttl is the capability lifetime.
+	issuerPool *pgxpool.Pool
+	ttl        time.Duration
 }
 
 // New validates both borrowed authorities and builds the private transport.
@@ -70,7 +73,7 @@ func New(ctx context.Context, issuerPool, buyerPool *pgxpool.Pool, checkoutServi
 		return nil, err
 	}
 	return httperror.Middleware(&handler{resolver: resolver, issuer: issuer, pool: buyerPool,
-		checkout: checkoutService, payment: hosted, bffKey: bffKey}), nil
+		checkout: checkoutService, payment: hosted, bffKey: bffKey, issuerPool: issuerPool, ttl: ttl}), nil
 }
 
 type routeKind uint8
@@ -166,6 +169,9 @@ func matchRoute(path string) route {
 	if transfer := matchTransferRoute(path); transfer.kind != unknownRoute {
 		return transfer
 	}
+	if path == lookupPath {
+		return route{kind: routeLookup}
+	}
 	if image, ok := strings.CutPrefix(path, "/v1/buyer/media/s/"); ok {
 		if image != "" && !strings.Contains(image, "/") {
 			return route{kind: storeMediaRoute, image: image}
@@ -215,6 +221,9 @@ func allowed(kind routeKind, method string) bool {
 	}
 	if isTransferRoute(kind) {
 		return allowedTransfer(kind, method)
+	}
+	if kind == routeLookup {
+		return method == http.MethodPost
 	}
 	switch kind {
 	case sessionRoute:
@@ -462,7 +471,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	noReplayKey := issue || selected.kind == bootstrapRoute || selected.kind == retireRoute || isKeylessPaymentRoute(selected.kind) ||
-		selected.kind == routeCVSSelectionVerify
+		selected.kind == routeCVSSelectionVerify || selected.kind == routeLookup
 	write := r.Method == http.MethodPut || (r.Method == http.MethodPost && !noReplayKey)
 	key, valid := keyFor(r, noReplayKey, write)
 	// "clm:" cart.set keys are derived by claims.RedeemLink under the opposite lock order
@@ -496,6 +505,14 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		status, code := classify(err)
 		fail(status, code)
 		return
+	}
+	// View-only guest-lookup sessions (lookup.go): one gate for every route that takes a buyer bearer, before any route logic runs.
+	if token != "" {
+		if err = h.authorizeView(ctx, selected, r.Method, routeInfo.StoreID, token); err != nil {
+			status, code := classify(err)
+			fail(status, code)
+			return
+		}
 	}
 	// cvsHTTPError here, once for every route: a coded CVS refusal from any service (checkout Begin's pay-at-pickup PT422/PT429
 	// included) is answered with its code, never the generic retryable 503 (TCV15).
@@ -548,6 +565,9 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 			ExpiresAt time.Time `json:"expires_at"`
 		}{capability.Token, capability.ExpiresAt})
 		return nil
+	}
+	if selected.kind == routeLookup {
+		return h.orderLookup(ctx, w, r, storeID, token)
 	}
 	if selected.kind == bootstrapRoute {
 		if err := decodeJSON(r, &struct{}{}); err != nil {

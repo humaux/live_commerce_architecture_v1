@@ -157,6 +157,7 @@ SPW10 static deploy wiring (manifest, compose, ops-admin allowlist, provision-lo
 | `tests/admin/promotions-model.test.ts` | admin discount-code parser, Taipei-time conversion, form-to-body builders, BFF route grammar and copy parity (storefront-v2 §F, MODEL_ONLY) | CI, always (named in `test-node.sh`) |
 | `packages/i18n/tests/*.test.ts` | locale resolution and catalogs | CI, always |
 | `tests/admin/team-model.test.ts`, `tests/admin/team-bff.test.ts` | staff-team: request/answer grammar (author) and the real `/api/team/[action]` route against a loopback Go fake: exact Origin, double-submit CSRF, no query, strict body, BFF key + bearer forwarding, one call and never a retry, allow-listed error rebuild, token never echoed (independent gate) | CI, always |
+| `tests/admin/notify-model.test.ts` | buyer-comms: new-order mail opt-out model, BFF grammar entry, three-locale copy parity | CI, always (listed in `test-node.sh`) |
 | `tests/media/r04-input-runner.test.mjs` | R04 local LiveKit input probe | needs `COMMERCE_R04_LIVEKIT_BINARY` (pinned binary). Without it `test-node.sh` prints `NOT_RUN` (CI does); `--require-r04` turns that into exit 2 |
 
 `tests/admin/claims-request.test.ts` and siblings are also run inside their browser mode (table above); `claim.test.mjs`
@@ -180,3 +181,11 @@ Not covered here (NOT_RUN): browser pages for `/[locale]/promotions` and the sto
 | Test | Proves (REAL_PG, MOCK mailbox) | Focused run |
 | --- | --- | --- |
 | `tests/foundation/staff_team_gate_test.go` `TestStaffGate*` (SG01-SG08) | staff-team independent gate from contracts/storefront-v2.md §D: accept refusals identical and non-consuming (unknown/malformed/wrong e-mail/OIDC-only/expired/revoked/used), single use under concurrency and against revoke, 72 h CHECK, token bound to its store + role; the five role bundles exactly as §D for every permission of the live CHECK plus refund/billing/order-actions over the real HTTP handler; owner floor through the product, under concurrency and by direct DML (owner pool and `commerce_staff_writer`, deferred trigger); app logins cannot write staff tables; role change and revoke effective on the next request (concurrent hammer); only the owner manages the team, tenant/store scope server-side; token never in SQL text, bound args, rows, logs or API URLs; 17-action audit; mail locale/link/resend. NOT the author smoke `staff_team_smoke_test.go`. | `bash scripts/dev/test-focused.sh '^TestStaffGate'` |
+## Buyer communications (unit buyer-comms, contracts/storefront-v2.md §E, migration 0090)
+| Gate | Command | Label | Proves / does not prove |
+| --- | --- | --- | --- |
+| Go units | `go test ./internal/notify ./internal/buyerhttp ./cmd/expiry-worker` | MOCK | renderer (6 kinds x 3 locales, escaping, link rules), worker recording against a fake queue and mailer, lookup normalisation and route table, worker env validation. No database, no SMTP |
+| PG smoke | `bash scripts/dev/test-focused.sh 'TestBuyerCommsOutbox\|TestGuestOrderLookup\|TestNotifySettingsRoute'` | REAL_PG + MOCK mail | triggers inside the real order transactions, exactly-once keys, caps, UNKNOWN / retry / stale / erasure rows, guest lookup through the real buyer HTTP handler (match, identical 404, throttles, working capability), merchant toggle route. The mailer is a fake: no SMTP wire |
+| Node units | `bash scripts/dev/test-node.sh` | MOCK | storefront lookup contract + BFF route (`apps/storefront/tests/lookup.test.mjs`), admin toggle model |
+NOT_RUN: real SMTP delivery of buyer mail (the SMTP adapter has its own MOCK gate in `internal/mail`), a browser run of `/[locale]/orders/lookup`
+and `/[locale]/orders/{id}`, any SANDBOX or LIVE mailbox. The independent tester owns the gate tests; the PG smoke above is the author's.

@@ -13,6 +13,7 @@ import {
   type TransferDetail,
   type TransferSettings,
 } from "./transfer-model";
+import { parseNotifySettings, type NotifySettings } from "./notify-model";
 import {
   parseCvsSettings,
   parseCvsShipment,
@@ -137,3 +138,11 @@ export async function readTransfer(store: string, id: string, signal: AbortSigna
 // optimistic: callers re-GET after every answer (the answer body is not used).
 export const postTransferDecision = (store: string, id: string, action: TransferAction, key: string, body: string, boundary: string) =>
   write(store, "POST", `orders/${id}/bank-transfer/${action}`, key, body, boundary);
+
+// ---- new-order mail opt-out (contracts/storefront-v2.md §E6) -> Go internal/httpapi/notify.go -----------------------------------
+// Go GET notification-settings (integration:read): no stored row reads as on.
+export const readNotifySettings = (store: string, signal: AbortSignal): Promise<NotifySettings> =>
+  get(`/api/stores/${store}/notification-settings`, parseNotifySettings, signal);
+// Go PUT notification-settings (integration:manage): an idempotent set of the one flag; callers re-GET after every answer.
+export const putNotifySettings = (store: string, key: string, body: string, boundary: string) =>
+  write(store, "PUT", "notification-settings", key, body, boundary);
