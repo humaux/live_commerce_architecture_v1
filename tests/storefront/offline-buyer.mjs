@@ -218,7 +218,7 @@ try {
   const buyers = {};
   for (const p of plan) {
     const ctx = await newContext(p.mobile);
-    if (p.key === "A") await belowThreshold({ ctx, locale: p.locale });
+    if (p.key === "A") { const probe = await newContext(false); await belowThreshold({ ctx: probe, locale: p.locale }); await probe.close(); } // its own buyer: a quoted cart locks the quantity
     buyers[p.key] = await place({ ...p, label: `order ${p.key}`, ctx });
   }
   await writeFile(path.join(evidence, "orders.json"), JSON.stringify(Object.fromEntries(Object.entries(buyers).map(([k, v]) => [k, { id: v.id, locale: v.locale, mobile: v.mobile }])), null, 2));
