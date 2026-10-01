@@ -127,6 +127,8 @@ func write(w http.ResponseWriter, status int, code string, retryable bool) {
 		"invalid_proof": "The transfer details are not valid.", "invalid_reason": "The rejection reason is not valid.", "transfer_not_submitted": "The buyer has not submitted transfer details.",
 		"already_confirmed": "The transfer was already confirmed.", "already_refunded": "The transfer was already refunded.",
 		"transfer_not_confirmed": "The transfer has not been confirmed.",
+		// 0099 K3-02: the offline-refund restock choice.
+		"already_shipped": "The order was already handed over; its stock cannot be restocked here.", "restock_unavailable": "The reserved stock of this order cannot be released.",
 		// storefront-v2 §F (unit promotions): discount codes. The buyer codes are the 422s of the quote request and of BeginCheckout.
 		"promo_invalid": "This discount code is not valid.", "promo_not_started": "This discount code is not active yet.",
 		"promo_expired": "This discount code has expired.", "promo_min_subtotal": "The order is below the minimum amount for this discount code.",

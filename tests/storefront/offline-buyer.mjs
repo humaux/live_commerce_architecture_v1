@@ -26,6 +26,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { expect } from "@playwright/test";
 import { engine, launch, ctxOpts, phone, iosZoomOffenders } from "./browser-engine.mjs";
+import { reachCheckout } from "./shop-helpers.mjs";
 
 const env = (name) => {
   const value = process.env[name];
@@ -127,7 +128,8 @@ async function send(page, last5, minor) {
 async function belowThreshold(buyer) {
   // one unit is below the threshold: the flat fee applies (the threshold changes the price only from its boundary up)
   const { ctx, locale } = buyer, c = copy[locale], page = await ctx.newPage();
-  await page.goto(`${origin}/${locale}/products/${product}`);
+  // the product page is the storefront shell now: Add to cart -> /checkout (tests/storefront/shop-helpers.mjs), then the unchanged delivery steps
+  await reachCheckout(page, origin, locale, product);
   await page.getByRole("button", { name: c.delivery, exact: true }).click();
   const quoted = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/quotes" && r.request().method() === "POST");
   await page.getByRole("button", { name: c.quote, exact: true }).click();
@@ -140,8 +142,7 @@ async function belowThreshold(buyer) {
 async function place(buyer, store) {
   const { ctx, locale, mobile, label, email, pay } = buyer, c = copy[locale], viewport = mobile ? "mobile" : "desktop";
   const page = await ctx.newPage();
-  await page.goto(`${origin}/${locale}/products/${product}`);
-  await page.getByRole("button", { name: c.more, exact: true }).click(); // 2 units
+  await reachCheckout(page, origin, locale, product, { quantity: 2 }); // 2 units, bought through Add to cart (the shell replaced the product-page purchase panel)
   await page.getByRole("button", { name: c.delivery, exact: true }).click();
   const quoted = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/quotes" && r.request().method() === "POST");
   await page.getByRole("button", { name: c.quote, exact: true }).click();

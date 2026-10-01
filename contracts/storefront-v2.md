@@ -131,6 +131,8 @@ Admin routes (store:write — use the narrowest existing permission the settings
   hint). It lets the cart and the delivery step word "add X more for free delivery"; the quote stays the only authority on the amount charged.
 - Buyer email (optional, validated, ≤ 254) captured at checkout and stored on the order for
   notifications (PII: erasure/export paths of customers-privacy must include it).
+  AMENDMENT 2026-10-02 (checkout-offline fixes K3-03, migration 0099): the buyer's transfer proof (`proof_last5`, amount, paid_at) belongs to the buyer privacy export (key `bank_transfer_proof` on the order, `null` without a submission) and erasure clears `proof_last5` while the amount and paid_at stay as the financial record with no identity.
+- AMENDMENT 2026-10-02 (checkout-offline fixes K3-01/02/04, migration 0099): the transfer decisions of one Idempotency-Key serialize on a key-scoped advisory lock, so a key reused for another order is 409 `idempotency_conflict`, never a 5xx; `POST .../bank-transfer/refund-offline` takes `{}` (no stock change, as before) or `{"restock":bool}`, and `restock=true` releases the confirm allocation (one MERCHANT `DEALLOCATE` ledger row per line, audit `checkout.bank_transfer_refunded_offline_restock`) in the same transaction as the refund fact only while the order has not been handed to fulfilment, else 422 `already_shipped`; a confirm with no buyer submission stays allowed and answers `confirmed_without_proof:true`, adding the audit row `checkout.bank_transfer_confirmed_without_proof`, and the merchant dialog warns first.
 
 ## D. Staff (producer: unit staff-team, migration 0089)
 

@@ -106,7 +106,8 @@ func (e *tcvEnv) cogExpireUntilSettled(order string, within time.Duration) (stri
 	for {
 		var disposition string
 		var retry *time.Time
-		if err := e.p.worker.QueryRow(context.Background(), `SELECT disposition,retry_at FROM checkout.expire_held($1,1)`, order).Scan(&disposition, &retry); err != nil {
+		// T21-02: the expiry authority (commerce_expiry_worker) owns expire_held; the legacy commerce_worker holds nothing.
+		if err := e.p.expiry.QueryRow(context.Background(), `SELECT disposition,retry_at FROM checkout.expire_held($1,1)`, order).Scan(&disposition, &retry); err != nil {
 			return "", err
 		}
 		if disposition != "NOT_DUE" || time.Now().After(deadline) {
@@ -1081,7 +1082,7 @@ func TestCogTransferACL(t *testing.T) {
 		"checkout.read_transfer_offer(bytea,uuid)":                                                                      {"commerce_checkout_runtime"},
 		"checkout.set_order_buyer_email(bytea,uuid,uuid,text)":                                                          {"commerce_checkout_runtime"},
 		"checkout.clear_buyer_email(uuid,uuid,uuid)":                                                                    {"commerce_privacy_writer"},
-		"checkout.expire_held(uuid,bigint)":                                                                             {"commerce_worker"},
+		"checkout.expire_held(uuid,bigint)":                                                                             {"commerce_expiry_worker"},
 		"checkout.bank_transfer_json(uuid,uuid,uuid,boolean)":                                                           nil,
 	} {
 		got := grantees(sig)
@@ -1107,15 +1108,37 @@ func TestCogTransferACL(t *testing.T) {
 			}
 			return out
 		}
-		if got := names(`update\s+checkout\.bank_transfers`); fmt.Sprint(got) != "[checkout.expire_held checkout.submit_transfer_proof payments.decide_bank_transfer]" {
+		// 0099 K3-03: checkout.clear_buyer_email (erasure) also UPDATEs the table, but only proof_last5 (asserted below); it can never set a state.
+		if got := names(`update\s+checkout\.bank_transfers`); fmt.Sprint(got) != "[checkout.clear_buyer_email checkout.expire_held checkout.submit_transfer_proof payments.decide_bank_transfer]" {
 			t.Errorf("functions that UPDATE the transfer: %v", got)
+		}
+		if got := names(`update\s+checkout\.bank_transfers\s+set\s+proof_last5\s*=\s*null`); fmt.Sprint(got) != "[checkout.clear_buyer_email]" {
+			t.Errorf("functions that clear the proof: %v", got)
+		}
+		if got := names(`update\s+checkout\.bank_transfers\s+set\s+state`); fmt.Sprint(got) != "[checkout.expire_held checkout.submit_transfer_proof payments.decide_bank_transfer]" {
+			t.Errorf("functions that set a transfer state with their first assignment: %v (clear_buyer_email must never)", got)
 		}
 		if got := names(`set\s+state\s*=\s*'CONFIRMED'`); fmt.Sprint(got) != "[payments.decide_bank_transfer]" {
 			t.Errorf("functions that set a transfer CONFIRMED: %v (anything else is an auto-confirm path)", got)
 		}
-		if n := e.count(`SELECT count(*) FROM pg_trigger WHERE tgrelid='checkout.bank_transfers'::regclass AND NOT tgisinternal`); n != 0 {
-			t.Errorf("%d triggers on checkout.bank_transfers", n)
+		// 0090 buyer-comms: the one trigger is the refund notification outbox writer (AFTER UPDATE OF state, writes notify.outbox only); any other trigger fails here.
+		var triggers []string
+		trows, err := owner.Query(context.Background(), `SELECT tgname FROM pg_trigger WHERE tgrelid='checkout.bank_transfers'::regclass AND NOT tgisinternal ORDER BY 1`)
+		if err != nil {
+			t.Fatal(err)
 		}
+		defer trows.Close()
+		for trows.Next() {
+			var n string
+			if err := trows.Scan(&n); err != nil {
+				t.Fatal(err)
+			}
+			triggers = append(triggers, n)
+		}
+		if fmt.Sprint(triggers) != "[notify_transfer_refund]" {
+			t.Errorf("triggers on checkout.bank_transfers: %v", triggers)
+		}
+
 	})
 }
 

@@ -26,6 +26,7 @@ import (
 var (
 	offlineSettingsFields = []string{"expected_version", "enabled", "allow_cvs", "bank_name", "branch", "account_name", "account_number", "window_hours"}
 	offlineRejectFields   = []string{"reason"}
+	offlineRefundFields   = []string{"restock"}
 )
 
 func registerOfflinePaymentRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
@@ -50,24 +51,34 @@ func registerOfflinePaymentRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 			return merchantorders.ReadTransfer(ctx, tx, s, bearerToken(r), r.PathValue("order_id"))
 		})
 	}))
-	// confirm and refund-offline carry an empty JSON object: the order id in the path and the idempotency key are the whole request.
-	for _, action := range []struct{ path, name string }{{"/confirm", "confirm"}, {"/refund-offline", "refund_offline"}} {
-		mux.HandleFunc("POST "+order+action.path, cvsRoute(http.MethodPost, true, func(w http.ResponseWriter, r *http.Request) {
-			if _, ok := cvsStrictBody[struct{}](w, r, nil, nil); !ok {
-				return
-			}
-			offlineServe(w, r, pool, "payments:refund", func(ctx context.Context, tx pgx.Tx, s platform.Scope) (any, error) {
-				return merchantorders.DecideTransfer(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), r.PathValue("order_id"), action.name, nil)
-			})
-		}))
-	}
+	// confirm carries an empty JSON object: the order id in the path and the idempotency key are the whole request.
+	mux.HandleFunc("POST "+order+"/confirm", cvsRoute(http.MethodPost, true, func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := cvsStrictBody[struct{}](w, r, nil, nil); !ok {
+			return
+		}
+		offlineServe(w, r, pool, "payments:refund", func(ctx context.Context, tx pgx.Tx, s platform.Scope) (any, error) {
+			return merchantorders.DecideTransfer(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), r.PathValue("order_id"), "confirm", nil, false)
+		})
+	}))
+	// refund-offline carries the merchant's restock choice (K3-02): {} (= no stock change, the pre-0099 behaviour) or {"restock":bool};
+	// restock=true is always an explicit opt-in. A true flag is part of the idempotency digest, so flipping it under the same key is a
+	// 409 conflict, not a silent second act.
+	mux.HandleFunc("POST "+order+"/refund-offline", cvsRoute(http.MethodPost, true, func(w http.ResponseWriter, r *http.Request) {
+		in, _, ok := studioDecodeRaw[merchantorders.RefundOfflineInput](w, r, offlineRefundFields)
+		if !ok {
+			return
+		}
+		offlineServe(w, r, pool, "payments:refund", func(ctx context.Context, tx pgx.Tx, s platform.Scope) (any, error) {
+			return merchantorders.DecideTransfer(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), r.PathValue("order_id"), "refund_offline", nil, in.Restock)
+		})
+	}))
 	mux.HandleFunc("POST "+order+"/reject", cvsRoute(http.MethodPost, true, func(w http.ResponseWriter, r *http.Request) {
 		in, ok := cvsStrictBody[merchantorders.RejectInput](w, r, offlineRejectFields, nil)
 		if !ok {
 			return
 		}
 		offlineServe(w, r, pool, "payments:refund", func(ctx context.Context, tx pgx.Tx, s platform.Scope) (any, error) {
-			return merchantorders.DecideTransfer(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), r.PathValue("order_id"), "reject", &in.Reason)
+			return merchantorders.DecideTransfer(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), r.PathValue("order_id"), "reject", &in.Reason, false)
 		})
 	}))
 }

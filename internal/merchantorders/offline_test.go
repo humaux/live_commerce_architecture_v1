@@ -95,7 +95,7 @@ func TestDecideTransferRefusesBeforeSQL(t *testing.T) {
 		"control in reason":     {offKey, offOrder, "reject", &ctrl, "invalid_reason"},
 		"reason too long":       {offKey, offOrder, "reject", &long, "invalid_reason"},
 	} {
-		_, err := DecideTransfer(context.Background(), noTx{}, offScope(), token, c.key, c.order, c.action, c.reason)
+		_, err := DecideTransfer(context.Background(), noTx{}, offScope(), token, c.key, c.order, c.action, c.reason, false)
 		var coded *TransferError
 		switch {
 		case c.wantCode == "" && !errors.Is(err, command.ErrInvalid):
@@ -105,7 +105,7 @@ func TestDecideTransferRefusesBeforeSQL(t *testing.T) {
 		}
 	}
 	// A nil transaction is refused first, whatever the arguments.
-	if _, err := DecideTransfer(context.Background(), nil, offScope(), token, offKey, offOrder, "confirm", nil); !errors.Is(err, command.ErrInvalid) {
+	if _, err := DecideTransfer(context.Background(), nil, offScope(), token, offKey, offOrder, "confirm", nil, false); !errors.Is(err, command.ErrInvalid) {
 		t.Errorf("nil tx: %v", err)
 	}
 }

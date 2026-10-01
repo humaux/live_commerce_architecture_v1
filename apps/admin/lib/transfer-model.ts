@@ -108,7 +108,8 @@ export function parseTransferDetail(value: unknown, requestedID: string): Transf
 // ---- the three decisions -----------------------------------------------------------------------------------------------------
 export type TransferAction = "confirm" | "reject" | "refund-offline";
 export const confirmBody = () => "{}";
-export const refundBody = () => "{}";
+// {"restock":bool}: the merchant's explicit stock choice (K3-02); true is only honoured before shipment (the definer refuses with already_shipped).
+export const refundBody = (restock: boolean) => JSON.stringify({ restock });
 // null when the reason is empty or outside 1..200 characters (the SQL CHECK is the twin).
 export function rejectBody(reason: string): string | null {
   const text = reason.trim();
