@@ -94,6 +94,12 @@ Smoke S29m BLOCKED is accepted in the CI job (F11), not by release-gate.
 | `--live-media-runtime` | isolated actual media command, PG18 and local TLS runtime; no Cloud, LIVE intake or G06 acceptance | T2 subset | `bash scripts/dev/test-local.sh --live-media-runtime` |
 | `--studio-backend` | isolated Studio backend/API and local MOCK media gate; not BFF/browser, Cloud, LIVE intake or full Studio acceptance | T2 subset | `bash scripts/dev/test-local.sh --studio-backend` |
 
+## Independent unit gates in the foundation suite (T1/T2, `bash scripts/dev/test-focused.sh '<regex>'`)
+
+| Tests | Proves | Label |
+| --- | --- | --- |
+| `TestCog*` (`tests/foundation/checkout_offline_gate_test.go`) | checkout-offline (storefront-v2 §C) independent gates: confirm vs expiry race on two real sessions, offline refund bounds, tenant/store/buyer isolation and bank-detail visibility, stock numerics and the oversell gate, free-shipping boundary and snapshot immutability through real Begin, buyer email export/erasure, finance 0085+0088 columns, exact EXECUTE grantees and the single confirm path, never auto-confirm | REAL_PG, MOCK |
+
 ## Browser specs and the gate that runs each
 
 | Spec | Mode |
