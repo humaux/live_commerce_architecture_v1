@@ -102,6 +102,10 @@ const (
 	privacyExportRoute
 	privacyErasureRoute
 	mediaRoute // GET /v1/buyer/media/p/{product_id}/{image_id}, media.go: no buyer bearer
+	// store-design (design.go), all public reads: no buyer bearer, BFF key + verified origin only.
+	designPublishedRoute // GET /v1/buyer/design/published
+	designPreviewRoute   // GET /v1/buyer/design/preview, token in X-Commerce-Design-Preview
+	storeMediaRoute      // GET /v1/buyer/media/s/{image_id} (route.image; id is empty)
 )
 
 type route struct {
@@ -118,6 +122,10 @@ func matchRoute(path string) route {
 		return route{kind: bootstrapRoute}
 	case "/v1/buyer/session/retire":
 		return route{kind: retireRoute}
+	case designPublishedPath:
+		return route{kind: designPublishedRoute}
+	case designPreviewPath:
+		return route{kind: designPreviewRoute}
 	case "/v1/buyer/catalog":
 		return route{kind: catalogRoute}
 	case "/v1/buyer/checkout-options":
@@ -147,6 +155,12 @@ func matchRoute(path string) route {
 	}
 	if cvs := matchCVSRoute(path); cvs.kind != unknownRoute {
 		return cvs
+	}
+	if image, ok := strings.CutPrefix(path, "/v1/buyer/media/s/"); ok {
+		if image != "" && !strings.Contains(image, "/") {
+			return route{kind: storeMediaRoute, image: image}
+		}
+		return route{}
 	}
 	if rest, ok := strings.CutPrefix(path, "/v1/buyer/media/p/"); ok {
 		if product, image, two := strings.Cut(rest, "/"); two && product != "" && image != "" && !strings.Contains(image, "/") {
@@ -185,7 +199,7 @@ func allowed(kind routeKind, method string) bool {
 		return method == http.MethodGet || method == http.MethodPost || method == http.MethodDelete
 	case bootstrapRoute, retireRoute:
 		return method == http.MethodPost
-	case catalogRoute, optionsRoute, ordersRoute, paymentRoute, mediaRoute:
+	case catalogRoute, optionsRoute, ordersRoute, paymentRoute, mediaRoute, designPublishedRoute, designPreviewRoute, storeMediaRoute:
 		return method == http.MethodGet
 	case cartRoute:
 		return method == http.MethodGet || method == http.MethodPut
@@ -440,8 +454,8 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			fail(http.StatusUnauthorized, "unauthorized")
 			return
 		}
-	} else if selected.kind == mediaRoute {
-		// Public bytes: a credential on this route is a mistake or an attack, never forwarded or honoured.
+	} else if selected.kind == mediaRoute || isDesignRoute(selected.kind) {
+		// Public data: a credential on this route is a mistake or an attack, never forwarded or honoured.
 		if len(r.Header.Values("Authorization")) != 0 {
 			fail(http.StatusForbidden, "forbidden")
 			return
@@ -485,6 +499,9 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 	}
 	if selected.kind == mediaRoute {
 		return h.mediaGet(ctx, w, r, selected)
+	}
+	if isDesignRoute(selected.kind) {
+		return h.designGet(ctx, w, r, selected)
 	}
 	if selected.kind == sessionRoute && r.Method == http.MethodPost {
 		if err := decodeJSON(r, &struct{}{}); err != nil {

@@ -111,3 +111,29 @@ inventory:read), `fulfilment` (orders:read, fulfillment:write, orders:export, in
 store + role), invitee signs up / logs in with password auth and accepts; owner can change role or
 revoke (immediate: sessions of that membership stop authorizing on next request). At least one owner
 always remains. All actions audited.
+
+## B-acceptance (unit store-design, implemented; evidence labels per AGENTS.md)
+
+Wire facts the storefront-shell consumer needs (all additive to section B; migration 0087, Go `internal/design`):
+- Buyer reads (private Go routes behind the storefront BFF, BFF key + `X-Commerce-Storefront-Origin`, no buyer bearer,
+  no query string, GET only):
+  `GET /v1/buyer/design/published` -> `{"version": n, "document": {...}}`; a store with no published version answers
+  `version: 0` and the contract default (store name, accent `#247965`, one `product_grid`), never 404.
+  `GET /v1/buyer/design/preview` with header `X-Commerce-Design-Preview: <token>` -> same shape for the DRAFT, `Cache-Control:
+  no-store`. A missing, malformed, unknown, expired (15 min), other-store or stale token (the draft was saved after the token
+  was issued) is the same `404 not_found` as an unpublished store. The token travels in the header, never in a query string
+  between BFF and Go; the browser still uses `?preview=<token>` on the storefront URL.
+  `GET /v1/buyer/media/s/{image_id}` -> image bytes (`public, max-age=86400, immutable`, `nosniff`, sandbox CSP); 404 unless the
+  image belongs to the published store.
+- Documents returned to buyers are the server-normalised form: every nullable key present as `null`, `accent_color`
+  lower-case, strings trimmed; nav/home/pages always present.
+- Admin: `GET|PUT design/draft` (PUT body `{expected_version, document}`; `expected_version` 0 creates), `POST design/publish
+  {expected_draft_version}`, `GET design/versions`, `POST design/rollback {version}`, `POST design/preview-token {}`, media
+  `GET|POST design/media`, `GET design/media/{id}`, `POST design/media/{id}/delete`. Permissions `integration:read` /
+  `integration:manage` (the Settings storefront card's). 409 `conflict`: stale version, draft already live, rollback to the live
+  version, media still referenced by the draft or the live version, 60-image cap. 422 `invalid_request` carries
+  `details: {path, reason}` of the first offending field (`home.sections[2].heading`).
+- Rules chosen where section B was silent: containers (`nav`, `home`, `pages`, `profile.contact`) may be omitted; every leaf
+  without `|null` is required; `""` for a nullable string is stored as null; `cta_target` must be null unless `cta_kind` is
+  `collection`/`page`; `page` targets must be a page slug of the same document; page slugs unique; `line_url` accepts https
+  or `line://`; markdown bodies may be empty. Rollback publishes a copy as a new version and leaves the draft untouched.

@@ -8,6 +8,9 @@ import { validStudioInputToken, validStudioQuery } from "@/lib/studio-request";
 import {
   claimLinkRoute, claimsCollection, claimsRoutes, claimsSubpath, validClaimLink,
 } from "@/lib/claims-request";
+import {
+  DESIGN_MAX_JSON, designGetPaths, designPostPaths, designPutPaths, isDesignImageBytes, isDesignJsonPut, isDesignUpload, validDesignRequest,
+} from "@/lib/design-request";
 import { adsAny, adsBodyless, adsKeyless, adsRoutes, validAdsQuery, validIfMatch } from "@/lib/ads-request";
 import { parseStudioInput, parseStudioInputPrepared } from "@/lib/studio-model";
 import {
@@ -49,14 +52,14 @@ const studioAction = `${studioDetail}/(?:rehearsal/(?:start|stop)|input/(?:start
 const studioAny = new RegExp(`^(?:live-sessions|${studioDetail}|${studioAction}|${studioInputRead}|${studioDetail}/${claimsSubpath})$`);
 const routes: Record<string, RegExp> = {
   GET: new RegExp(
-    `^(catalog-ledger|products|warehouses|inventory|products/${uuid}/skus|${purchaseEntry}|${storefrontRead}|${imagesRoot}|${imageItem}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy}|${orders}|live-sessions|${studioDetail}|${studioInputRead}|${claimsRoutes.GET}|${adsRoutes.GET})$`,
+    `^(catalog-ledger|products|warehouses|inventory|products/${uuid}/skus|${purchaseEntry}|${storefrontRead}|${imagesRoot}|${imageItem}|${designGetPaths}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy}|${orders}|live-sessions|${studioDetail}|${studioInputRead}|${claimsRoutes.GET}|${adsRoutes.GET})$`,
   ),
   POST: new RegExp(
-    `^(products|skus|warehouses|inventory/adjustments|products/${uuid}/archive|${storefrontWrite}|${imageWrites}|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets|live-sessions|${studioAction}|${claimsRoutes.POST}|${adsRoutes.POST})$`,
+    `^(products|skus|warehouses|inventory/adjustments|products/${uuid}/archive|${storefrontWrite}|${imageWrites}|${designPostPaths}|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets|live-sessions|${studioAction}|${claimsRoutes.POST}|${adsRoutes.POST})$`,
   ),
   PATCH: new RegExp(`^(products/${uuid}|skus/${uuid}|${studioDetail}|${claimsRoutes.PATCH})$`),
   // Studio PUT is only the comment-source bind (claims-request.ts); settings PUTs are the rest.
-  PUT: new RegExp(`^(${setting}|${policy}|${claimsRoutes.PUT}|${adsRoutes.PUT})$`),
+  PUT: new RegExp(`^(${setting}|${policy}|${designPutPaths}|${claimsRoutes.PUT}|${adsRoutes.PUT})$`),
 };
 const exactStore = new RegExp(`^${uuid}$`);
 const inspectRoute = new RegExp(`^${inspect}$`);
@@ -127,8 +130,11 @@ async function route(request: Request, context: Context) {
     return error(422, "invalid_request");
   const url = new URL(request.url);
   // Photo routes take no query; a read carries no body or key; the upload alone is multipart (checked below).
-  const imageUpload = request.method === "POST" && imagesRootRoute.test(path);
-  const imageBytes = request.method === "GET" && imageItemRoute.test(path);
+  // store-design: design/media is the same multipart upload / raw-bytes read, with its own query/body rules (design-request.ts).
+  if (!validDesignRequest(request, path)) return error(422, "invalid_request");
+  const designJson = isDesignJsonPut(request.method, path);
+  const imageUpload = (request.method === "POST" && imagesRootRoute.test(path)) || isDesignUpload(request.method, path);
+  const imageBytes = (request.method === "GET" && imageItemRoute.test(path)) || isDesignImageBytes(request.method, path);
   if (imagesAny.test(path)) {
     if (request.url.includes("?")) return error(422, "invalid_request");
     if (
@@ -140,6 +146,8 @@ async function route(request: Request, context: Context) {
     if (imageUpload && Number(request.headers.get("content-length") ?? "0") > MAX_UPLOAD)
       return error(413, "invalid_request");
   }
+  if (isDesignUpload(request.method, path) && Number(request.headers.get("content-length") ?? "0") > MAX_UPLOAD)
+    return error(413, "invalid_request");
   if (studio) {
     if (!validStudioQuery(request.url, request.method === "GET" && (path === "live-sessions" || claimsCollection(path))))
       return error(422, "invalid_request");
@@ -246,7 +254,7 @@ async function route(request: Request, context: Context) {
         const part = await reader.read();
         if (part.done) break;
         size += part.value.byteLength;
-        if (size > (imageUpload ? MAX_UPLOAD : 65536)) {
+        if (size > (imageUpload ? MAX_UPLOAD : designJson ? DESIGN_MAX_JSON : 65536)) {
           await reader.cancel();
           return imageUpload ? error(413, "invalid_request") : error(400, "invalid_json");
         }
