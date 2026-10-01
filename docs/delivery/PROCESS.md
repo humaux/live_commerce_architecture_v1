@@ -70,6 +70,21 @@ Token rules for every agent:
   marks as already verified; cite the evidence file instead.
 - One PG test run at a time machine-wide: `scripts/dev/test-focused.sh` serializes itself.
 
+### Third-party models (owner 2026-10-01: Kimi subscription)
+
+Runner: `scripts/agents/kimi-agent.sh` (sandboxed: private HOME, no MCP, Bash allowlist, no secrets, worktree only).
+`KIMI_MODEL=k3` (K3, default) or `kimi-for-coding` (K2.8). Calibrated on real units 2026-10-01.
+
+| Work | Model |
+| --- | --- |
+| cross-family adversarial review (second opinion next to the Claude reviewer), independent test author, test design, long logs | K3 |
+| visual QA of browser screenshots, small UI / P2 fixes, gate registration, copy in three locales | K2.8 |
+| merges, contract rulings, final money/permission review, deploy and anything on a live host | Claude only |
+
+Before launching: `pnpm install --offline --frozen-lockfile` in the worktree and merge the integration branch into it
+(the sandbox cannot do either). Kimi output is reviewed by the integrator and passes the same gates as any unit;
+check browser specs that assert behaviour the change touches (K2.8 cannot run Playwright reliably).
+
 ## 4. Evidence labels (`AGENTS.md`)
 
 Every claim is one of DESIGN, MODEL_ONLY, MOCK, SANDBOX, LIVE, NOT_RUN. Zero tests matched, a
