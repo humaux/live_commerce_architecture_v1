@@ -87,7 +87,7 @@ function CollectionEditor({ locale, store, id, boundary, onChanged, onCreated, o
   const read = useGuardedRead<CollectionDetail | null>(`${store.id}|${id}`, creating ? async () => null : (signal) => readCollection(store.id, id, signal), null);
   if (read.status !== "ready") return <p className="orders-message" role="status">{read.status === "not-found" ? c.notFound : read.status === "loading" ? c.loading : c.unavailable}</p>;
   return (
-    <CollectionForm key={read.data?.version ?? 0} locale={locale} store={store} id={id} detail={read.data} boundary={read.boundary || boundary}
+    <CollectionForm key={id} locale={locale} store={store} id={id} detail={read.data} boundary={read.boundary || boundary}
       refresh={async () => { const ok = await read.refresh(); onChanged(); return ok; }} onCreated={onCreated} onDeleted={onDeleted} />
   );
 }
