@@ -6,7 +6,7 @@ test.describe.configure({ mode: "serial" });
 test("approved ledger reproduction and mobile table remain usable", async ({
   page,
 }) => {
-  await page.goto("/zh-CN");
+  await page.goto("/zh-CN/inventory");
   await expect(page.getByRole("heading", { name: "商品与库存" })).toBeVisible();
   await expect(page.locator("tbody tr")).toHaveCount(9);
   await expect(
@@ -45,21 +45,21 @@ test("approved ledger reproduction and mobile table remain usable", async ({
 test("locale routes preserve the scoped search and explicit choice", async ({
   page,
 }) => {
-  await page.goto("/zh-CN?q=HA-001-BE");
+  await page.goto("/zh-CN/inventory?q=HA-001-BE");
   await expect(page.locator("tbody tr")).toHaveCount(1);
   await page.getByRole("combobox", { name: "语言" }).selectOption("zh-TW");
-  await expect(page).toHaveURL(/\/zh-TW\?q=HA-001-BE/);
+  await expect(page).toHaveURL(/\/zh-TW\/inventory\?q=HA-001-BE/);
   await expect(page.getByRole("heading", { name: "商品與庫存" })).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("lang", "zh-TW");
   await page.getByRole("combobox", { name: "語言" }).selectOption("en");
   await expect(
     page.getByRole("heading", { name: "Products & inventory" }),
   ).toBeVisible();
-  await expect(page).toHaveURL(/\/en\?q=HA-001-BE/);
-  await page.goto("/?q=AC-002-BK");
-  await expect(page).toHaveURL(/\/en\?q=AC-002-BK/);
+  await expect(page).toHaveURL(/\/en\/inventory\?q=HA-001-BE/);
+  await page.goto("/inventory?q=AC-002-BK");
+  await expect(page).toHaveURL(/\/en\/inventory\?q=AC-002-BK/);
   await expect(page.locator("tbody tr")).toHaveCount(1);
-  await page.goto("/en?q=%25");
+  await page.goto("/en/inventory?q=%25");
   await expect(
     page.getByRole("heading", { name: "No matching SKUs" }),
   ).toBeVisible();
@@ -69,7 +69,7 @@ test("locale routes preserve the scoped search and explicit choice", async ({
 test("lost mutation response retries original key and payload only once", async ({
   page,
 }) => {
-  await page.goto("/en?q=AC-002-BK");
+  await page.goto("/en/inventory?q=AC-002-BK");
   await page
     .getByRole("radio", { name: "Select AC-002-BK", exact: true })
     .check();
@@ -114,7 +114,7 @@ test("uncertain command survives closing a tab and storage denial sends no write
   page,
   context,
 }) => {
-  await page.goto("/en?q=CB-005-TC");
+  await page.goto("/en/inventory?q=CB-005-TC");
   await page
     .getByRole("radio", { name: "Select CB-005-TC", exact: true })
     .check();
@@ -137,7 +137,7 @@ test("uncertain command survives closing a tab and storage denial sends no write
   ).toBeVisible();
   await page.close();
   const recovered = await context.newPage();
-  await recovered.goto("/en?q=CB-005-TC");
+  await recovered.goto("/en/inventory?q=CB-005-TC");
   await expect(
     recovered.getByRole("button", { name: "Retry", exact: true }),
   ).toBeVisible();
@@ -179,7 +179,7 @@ test("stale balance fails closed and refresh enables a new command", async ({
   page,
   request,
 }) => {
-  await page.goto("/en?q=HA-001-BE");
+  await page.goto("/en/inventory?q=HA-001-BE");
   await page
     .getByRole("radio", { name: "Select HA-001-BE", exact: true })
     .check();
@@ -230,7 +230,7 @@ test("create product then first SKU and read persisted zero balance", async ({
 }) => {
   const name = `Acceptance product ${Date.now()}`,
     code = `QA-${Date.now()}`;
-  await page.goto("/en");
+  await page.goto("/en/inventory");
   await page.getByRole("button", { name: "Add product", exact: true }).click();
   await page
     .getByRole("textbox", { name: "Product name", exact: true })
@@ -299,7 +299,7 @@ test("BFF rejects cross-store, foreign origin, route injection and oversized wri
     data: { name: "x".repeat(65537) },
   });
   expect(huge.status()).toBe(400);
-  await page.goto("/en");
+  await page.goto("/en/inventory");
   const html = await page.content();
   expect(html).not.toContain(process.env.COMMERCE_FIXTURE_TOKEN!);
 });
@@ -382,7 +382,7 @@ test("purchase-entry read failure keeps product and SKU write receipts", async (
       });
     },
   );
-  await page.goto("/en");
+  await page.goto("/en/inventory");
   await page.getByRole("button", { name: "Add product", exact: true }).click();
   await page
     .getByRole("textbox", { name: "Product name", exact: true })
@@ -438,7 +438,7 @@ test("catalog write denial reports permission without claiming a product was sav
       }),
     });
   });
-  await page.goto("/en");
+  await page.goto("/en/inventory");
   await page.getByRole("button", { name: "Add product", exact: true }).click();
   await page
     .getByRole("textbox", { name: "Product name", exact: true })
@@ -479,7 +479,7 @@ test("purchase controls recheck current state before copying or opening", async 
       });
     },
   );
-  await page.goto("/en");
+  await page.goto("/en/inventory");
   const panel = page.getByTestId("purchase-entry");
   await expect(
     panel.getByRole("button", { name: "Copy address" }),

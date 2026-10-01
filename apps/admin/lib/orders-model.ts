@@ -60,7 +60,12 @@ export type OrderSummary = {
   pickup_source: PickupSource | null;
   payment_mode: PaymentMode;
   collection_state: CollectionState | null;
+  // Where the order was created (merchant-tools, migration 0094): every buyer-placed order is "storefront"; the admin's Create Order is "merchant_manual".
+  // Absent on rows from endpoints that do not project it (customers detail); present on every merchant orders list/detail row (parseSourcedOrderSummary).
+  source?: OrderSource;
 };
+export const orderSources = ["storefront", "merchant_manual"] as const;
+export type OrderSource = (typeof orderSources)[number];
 export type OrderList = { items: OrderSummary[]; next_cursor: string };
 export type LineAmount = {
   subtotal_minor: number;
@@ -183,8 +188,18 @@ function phone(value: unknown): value is string {
   return digits >= 6 && digits <= 20;
 }
 
+/** A merchant-orders row that MUST carry its source (identity.read_order_sources, migration 0094): list, detail and dashboard rows. */
+export function parseSourcedOrderSummary(value: unknown): OrderSummary {
+  const row = parseOrderSummary(value);
+  if (row.source === undefined) throw new Error("unavailable");
+  return row;
+}
+
+// Accepts the 15 summary keys, or those plus `source` (merchant orders rows). The customers detail's order rows have no source.
 export function parseOrderSummary(value: unknown): OrderSummary {
-  const v = object(value, summaryKeys);
+  const sourced = !!value && typeof value === "object" && !Array.isArray(value) && Object.hasOwn(value, "source");
+  const v = object(value, sourced ? [...summaryKeys, "source"] : summaryKeys);
+  if (sourced && !oneOf(v.source, orderSources)) throw new Error("unavailable");
   if (!pattern(v.order_id, canonicalUUID) || !date(v.created_at) || !date(v.updated_at) ||
     v.updated_at < v.created_at || !pattern(v.currency, /^[A-Z]{3}$/) || !money(v.total_minor) ||
     !oneOf(v.commercial_state, commercialStates) ||
@@ -250,14 +265,14 @@ export function parseOrderList(value: unknown): OrderList {
   const v = object(value, ["items", "next_cursor"]);
   if (!Array.isArray(v.items) || v.items.length > 10 || typeof v.next_cursor !== "string" ||
     (v.next_cursor !== "" && !canonicalCursor.test(v.next_cursor))) throw new Error("unavailable");
-  const items = v.items.map(parseOrderSummary);
+  const items = v.items.map((item) => parseSourcedOrderSummary(item));
   if (new Set(items.map((item) => item.order_id)).size !== items.length) throw new Error("unavailable");
   return { items, next_cursor: v.next_cursor };
 }
 
 export function parseOrderDetail(value: unknown, requestedID: string): OrderDetail {
-  const v = object(value, [...summaryKeys, "country", "service_code", "items", "totals", "destination", "shipment"]);
-  const summary = parseOrderSummary(Object.fromEntries(summaryKeys.map((key) => [key, v[key]])));
+  const v = object(value, [...summaryKeys, "source", "country", "service_code", "items", "totals", "destination", "shipment"]);
+  const summary = parseSourcedOrderSummary(Object.fromEntries([...summaryKeys, "source"].map((key) => [key, v[key]])));
   if (summary.order_id !== requestedID || !pattern(v.country, /^[A-Z]{2}$/) ||
     !pattern(v.service_code, /^[a-z][a-z0-9_-]{0,39}$/) ||
     !Array.isArray(v.items) || v.items.length < 1 || v.items.length > 50) throw new Error("unavailable");

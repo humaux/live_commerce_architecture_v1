@@ -150,6 +150,10 @@ func write(w http.ResponseWriter, status int, code string, retryable bool) {
 		"billing_restricted":  "New claim windows are paused until billing is up to date.",
 		"subscription_exists": "This store already has a subscription.",
 		"no_billing_customer": "No billing account exists for this store yet.",
+		// storefront-v2 section G (unit merchant-tools): manual (merchant-created) orders and the product CSV export. Placement refusals reuse the
+		// 0088/CVS codes above (bank_transfer_unavailable, pay_at_pickup_unavailable, insufficient_inventory, idempotency_conflict, export_too_large).
+		"manual_order_unavailable": "Creating orders from the admin is not available on this deployment.",
+		"cvs_entry_unavailable":    "This convenience-store service needs the store to be chosen from the map.",
 	}
 	message, ok := messages[code]
 	if !ok {

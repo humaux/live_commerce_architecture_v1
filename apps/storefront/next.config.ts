@@ -31,10 +31,10 @@ const config: NextConfig = {
         ],
       },
       {
-        // The claim page holds a bearer link token in memory (live-keyword-claims-v1
+        // The claim page and the manual-order link page (storefront-v2 G3) hold a bearer link token in memory (live-keyword-claims-v1
         // §11.1): no Referer at all, and no scripts or connections beyond this origin.
         // Listed last so it overrides the shopping Referrer-Policy for this path only.
-        source: "/:locale(zh-CN|zh-TW|en)/claim",
+        source: "/:locale(zh-CN|zh-TW|en)/:page(claim|order-link)",
         headers: [
           { key: "Referrer-Policy", value: "no-referrer" },
           {

@@ -211,7 +211,14 @@ function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy, section
         <dl>
           <div>
             <dt>{c.commercial}</dt>
-            <dd>{badge(detail.commercial_state, c)}</dd>
+            <dd>
+              {badge(detail.commercial_state, c)}
+              {detail.source === "merchant_manual" && (
+                <span className="orders-badge" data-testid="order-detail-manual">
+                  {c.manualOrder}
+                </span>
+              )}
+            </dd>
           </div>
           <div>
             <dt>{c.payment}</dt>
@@ -933,6 +940,11 @@ function OrderRow({
             {isNew && (
               <span className="orders-badge" data-testid={`order-new-${row.order_id}`}>
                 {c.newOrder}
+              </span>
+            )}
+            {row.source === "merchant_manual" && (
+              <span className="orders-badge" data-testid={`order-manual-${row.order_id}`}>
+                {c.manualOrder}
               </span>
             )}
           </button>

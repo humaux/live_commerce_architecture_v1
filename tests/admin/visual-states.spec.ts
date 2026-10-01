@@ -5,7 +5,7 @@ test("ledger selection caret and scroll surface are authored and active", async 
   page,
 }) => {
   await mkdir("output/playwright/ledger-review", { recursive: true });
-  await page.goto("/en");
+  await page.goto("/en/inventory");
   const input = page.locator(".search-field input");
   await input.fill("Visible selection");
   await input.selectText();

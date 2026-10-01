@@ -21,16 +21,18 @@ import (
 	"livecommerce/internal/checkout"
 	"livecommerce/internal/fulfillment"
 	"livecommerce/internal/integrations/shipping/ecpay"
+	"livecommerce/internal/merchanttools"
 )
 
 var errCVSConfig = errors.New("invalid CVS configuration")
 
 // cvsParts is what buildCVS returns; every field may be nil/empty when the matching surface is not configured.
 type cvsParts struct {
-	Merchant           *fulfillment.CVS   // merchant routes (httpapi Options.CVS)
-	Buyer              *checkout.BuyerCVS // buyer routes and options (checkout.Service.WithBuyerCVS)
-	Hooks              http.Handler       // /v1/cvs/ecpay/ (404 handler when CVS_ECPAY_ENABLED is off)
-	PaymentEnvironment string             // "SANDBOX" | "LIVE" | "" for checkout.Service.WithPaymentEnvironment
+	Merchant           *fulfillment.CVS            // merchant routes (httpapi Options.CVS)
+	Buyer              *checkout.BuyerCVS          // buyer routes and options (checkout.Service.WithBuyerCVS)
+	Hooks              http.Handler                // /v1/cvs/ecpay/ (404 handler when CVS_ECPAY_ENABLED is off)
+	PaymentEnvironment string                      // "SANDBOX" | "LIVE" | "" for checkout.Service.WithPaymentEnvironment
+	Manual             *merchanttools.ManualOrders // merchant-tools admin Create Order (httpapi Options.ManualOrders); nil without the buyer surface
 }
 
 // cvsPaymentEnvironment maps COMMERCE_PAYMENT_PROFILE to the ECPay environment a deployment may hold (R2-3, stripe-live-enable LD1/LQ5).
