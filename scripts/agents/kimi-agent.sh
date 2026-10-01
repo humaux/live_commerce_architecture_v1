@@ -20,7 +20,7 @@ set -euo pipefail
 wt=${1:?worktree}; prompt=${2:?prompt file}; out=${3:?out dir}; effort=${4:-high}
 # KIMI_MODEL: k3 (default; flagship, 1M ctx, reasoning-only — judgment-heavier work) or kimi-for-coding (K2.8, coding/bulk).
 model=${KIMI_MODEL:-k3}; case "$model" in k3|kimi-for-coding) ;; *) echo "KIMI_MODEL must be k3 or kimi-for-coding" >&2; exit 2 ;; esac
-case "$effort" in low|high|max) ;; *) echo "effort must be low|high|max" >&2; exit 2 ;; esac
+case "$effort" in low) think=4000 ;; high) think=16000 ;; max) think=32000 ;; *) echo "effort must be low|high|max" >&2; exit 2 ;; esac
 wt=$(cd "$wt" && pwd); [[ "$wt" == */.worktrees/* ]] || { echo "refused: $wt is not under .worktrees/" >&2; exit 2; }
 [[ -r "$prompt" ]] || { echo "no prompt file" >&2; exit 2; }
 mkdir -p "$out"; out=$(cd "$out" && pwd); prompt=$(cd "$(dirname "$prompt")" && pwd)/$(basename "$prompt")
@@ -54,7 +54,7 @@ env -i PATH="/Users/luolimo/.local/share/fnm/node-versions/v24.15.0/installation
   DOCKER_CONFIG="$HOME/.docker" LC_TEST_LOCK_DIR="${TMPDIR:-/tmp}/lc-test-pg.lock" \
   ANTHROPIC_BASE_URL="https://api.kimi.com/coding/" ANTHROPIC_AUTH_TOKEN="$key" \
   ANTHROPIC_MODEL="$model" ANTHROPIC_SMALL_FAST_MODEL="$model" \
-  CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 DISABLE_AUTOUPDATER=1 MAX_THINKING_TOKENS="$([[ $effort == low ]] && echo 4000 || ([[ $effort == # Usage: [KIMI_MODEL=k3|kimi-for-coding] bash scripts/agents/kimi-agent.sh <worktree> <prompt-file> <out-dir> [effort low|high|max] ]] && echo 16000 || echo 32000))" \
+  CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 DISABLE_AUTOUPDATER=1 MAX_THINKING_TOKENS="$think" \
   claude -p "$(cat "$prompt")" --settings "$settings" --strict-mcp-config --mcp-config '{"mcpServers":{}}' \
     --permission-mode acceptEdits --output-format json >"$out/result.json" 2>"$out/stderr.log"
 status=$?
