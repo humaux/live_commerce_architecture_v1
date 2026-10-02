@@ -208,12 +208,14 @@ test("connect Page A with Instagram: dialog params, state cookie, 303 without co
   await page.setViewportSize({ width: 1586, height: 992 });
 });
 
-test("while connected the store keeps its Page: no second connect offer, reload shows the same card", async ({ page }) => {
+test("while connected the store keeps its Page: add and reauthorize are available, reload shows the same card", async ({ page }) => {
   await signedLogin(page);
   await openSettings(page);
   await expect(page.getByTestId("metaconnect-page")).toContainText(pageA.name);
   await expect(page.getByTestId("metaconnect-connect")).toHaveCount(0);
-  await expect(page.getByTestId("metaconnect-reconnect")).toHaveCount(0); // token active and far from expiry
+  // R5 replaces the old active-token restriction: deliberate reauthorization is available at any time.
+  await expect(page.getByTestId("metaconnect-reconnect")).toBeEnabled();
+  await expect(page.getByTestId("metaconnect-add")).toBeEnabled();
 });
 
 test("disconnect asks for confirmation, destroys the connection and the claims-worker unsubscribes the Page at Meta", async ({ page }) => {
