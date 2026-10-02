@@ -8,7 +8,8 @@ package foundation_test
 // P1-2 manual-fulfilment export lists COD orders without payment mode or the collect amount   -> TestHomeCodDefectMerchantExportAmount
 // P1-3 a shipment void/correction after collection breaks the collected-after-shipped rule
 //      and moves the collected cash to another finance day (day = orders.updated_at)         -> TestHomeCodDefectVoidAfterCollected,
-//                                                                                              TestHomeCodDefectFinanceDayDrift
+//                                                                                              TestHomeCodDefectFinanceDayDrift,
+//      erasure (or any other non-record_collection write) must not move the finance day      -> TestHomeCodDefectFinanceDayDriftErasure
 
 import (
 	"encoding/csv"
@@ -147,8 +148,8 @@ func TestHomeCodDefectFinanceDayDrift(t *testing.T) {
 	now := time.Now().In(tpe)
 	y := now.AddDate(0, 0, -1)
 	collectedAt := time.Date(y.Year(), y.Month(), y.Day(), 12, 0, 0, 0, tpe)
-	// disclosed owner-pool fixture: the collection was recorded yesterday at noon
-	mustExec(t, e.p.f.owner, `UPDATE checkout.orders SET updated_at=$2 WHERE id=$1`, order, collectedAt)
+	// disclosed owner-pool fixture: the collection was recorded yesterday at noon (updated_at and collected_at both say yesterday)
+	mustExec(t, e.p.f.owner, `UPDATE checkout.orders SET updated_at=$2, collected_at=$2 WHERE id=$1`, order, collectedAt)
 	prev, today := collectedAt.Format("2006-01-02"), now.Format("2006-01-02")
 	if n, m := e.hcrFinanceDay(prev, today, prev); n != 1 || m != 7500 {
 		t.Fatalf("setup: yesterday's COD row %d/%d, want 1/7500", n, m)
@@ -161,6 +162,38 @@ func TestHomeCodDefectFinanceDayDrift(t *testing.T) {
 	if n, m := e.hcrFinanceDay(prev, today, prev); n != 1 || m != 7500 {
 		t.Errorf("P1-3b: after a tracking correction (%d) yesterday's COD row is %d/%d, want 1/7500; today's row is %d/%d: collected cash moved days",
 			st, n, m, e.hcrFinanceCodDay(prev, today, today), e.hcrFinanceCodMinorDay(prev, today, today))
+	}
+}
+
+// HCD-P1-3b (red-first): the correction no-op closes record_manual_shipment, but any OTHER later write to a collected order's row —
+// an erasure anonymising the row is the canonical example — still rewrites updated_at. Finance must group the collected cash on
+// collected_at, so the cash stays on the day it was collected. Red on 75931ee (finance groups on updated_at, and collected_at does
+// not exist yet); green after collected_at is added and finance groups on it.
+func TestHomeCodDefectFinanceDayDriftErasure(t *testing.T) {
+	e := tcvNew(t)
+	e.grantCreator("orders:read", "fulfillment:write")
+	e.hcrEnable(50)
+	writer, _ := e.member("fulfillment:write", "orders:read")
+	order, _ := e.hcrPlace()
+	e.hcrShip(order)
+	if r := e.hcrRecord(writer, order, "PENDING", "collected"); r.status != 200 {
+		t.Fatalf("collected: %d %s", r.status, r.raw)
+	}
+	tpe := time.FixedZone("TPE", 8*3600)
+	now := time.Now().In(tpe)
+	y := now.AddDate(0, 0, -1)
+	collectedAt := time.Date(y.Year(), y.Month(), y.Day(), 12, 0, 0, 0, tpe)
+	// disclosed owner-pool fixture: the collection was recorded yesterday at noon (updated_at and collected_at both say yesterday)
+	mustExec(t, e.p.f.owner, `UPDATE checkout.orders SET updated_at=$2, collected_at=$2 WHERE id=$1`, order, collectedAt)
+	prev, today := collectedAt.Format("2006-01-02"), now.Format("2006-01-02")
+	if n, m := e.hcrFinanceDay(prev, today, prev); n != 1 || m != 7500 {
+		t.Fatalf("setup: yesterday's COD row %d/%d, want 1/7500", n, m)
+	}
+	// a later write to the order row that is not record_collection (an erasure anonymising the row rewrites updated_at only)
+	mustExec(t, e.p.f.owner, `UPDATE checkout.orders SET updated_at=$2 WHERE id=$1`, order, now)
+	if n, m := e.hcrFinanceDay(prev, today, prev); n != 1 || m != 7500 {
+		t.Errorf("P1-3b: after an erasure-style row rewrite yesterday's COD row is %d/%d, want 1/7500; today's row is %d/%d: collected cash moved days",
+			n, m, e.hcrFinanceCodDay(prev, today, today), e.hcrFinanceCodMinorDay(prev, today, today))
 	}
 }
 

@@ -9,7 +9,7 @@
 -- fulfillment.record_collection and inventory.release_pay_at_pickup UNCHANGED except that their payment_mode guards now admit
 -- 'cash_on_delivery' and the cancel guard admits AWAITING_COLLECTION; 'returned' restocks exactly once through the same
 -- ledger_pay_at_pickup_release_once index (0083 pattern) and 'collected' keeps the 0102 shipped-first guard. (4) finance:
--- identity.read_finance_summary gains the two COD collected columns (count + minor, environment LIVE, day = updated_at).
+-- identity.read_finance_summary gains the two COD collected columns (count + minor, environment LIVE, day = collected_at).
 -- (5) the merchant order list/export/dashboard and the unshipped index admit AWAITING_COLLECTION, the buyer and merchant
 -- notifications fire for COD placement/cancel, and the manual-shipment state guard admits a MERCHANT_SHIPPED order that is
 -- AWAITING_COLLECTION.
@@ -69,6 +69,15 @@ ALTER TABLE checkout.orders ADD COLUMN cod_carrier text
  CHECK(cod_carrier IS NULL OR cod_carrier IN ('black_cat','hsinchu'));
 ALTER TABLE checkout.orders ADD CONSTRAINT orders_cod_carrier CHECK((payment_mode='cash_on_delivery')=(cod_carrier IS NOT NULL));
 COMMENT ON COLUMN checkout.orders.cod_carrier IS 'internal/checkout (cash on delivery): the carrier label (black_cat 黑猫 / hsinchu 新竹) snapshotted at placement from checkout.cash_on_delivery_settings.carrier (manual fulfilment, no carrier API). Shown to the buyer; never part of the money path.';
+-- P1-3b: collected_at is the finance day for COD and pickup collected cash. Set once by fulfillment.record_collection and never
+-- overwritten by any later write (a return/refund, a tracking correction, or an erasure anonymising the row), so a collected order's
+-- cash stays on the day it was actually collected.
+ALTER TABLE checkout.orders ADD COLUMN collected_at timestamptz;
+COMMENT ON COLUMN checkout.orders.collected_at IS 'internal/fulfillment (cash on delivery / pay at pickup): the instant the order was recorded COLLECTED, set once by fulfillment.record_collection and never overwritten. identity.read_finance_summary groups COD and pickup collected cash on this day. NULL while the order is not collected.';
+-- Best-effort backfill for rows already COLLECTED before this column existed: updated_at was the collection transition at that time,
+-- so it is an estimate of the true collection instant (labelled approximation, not a promise of exactness).
+UPDATE checkout.orders SET collected_at=updated_at
+ WHERE collection_state='COLLECTED' AND collected_at IS NULL;
 -- R4-3 analogue: the per-store and per-owner open COD count (begin_hold) scans exactly this predicate.
 CREATE INDEX orders_cod_open ON checkout.orders(tenant_id,store_id,owner_id)
  WHERE payment_mode='cash_on_delivery' AND collection_state='PENDING' AND fulfillment_state='MANUAL_UNASSIGNED';
@@ -86,6 +95,8 @@ CREATE INDEX orders_unshipped ON checkout.orders(tenant_id,store_id,created_at,i
 GRANT SELECT(cod_surcharge_minor) ON checkout.orders TO commerce_auth;
 GRANT SELECT(cod_surcharge_minor,cod_carrier) ON checkout.orders TO commerce_checkout_runtime;
 GRANT SELECT(cod_carrier) ON checkout.orders TO commerce_auth;
+GRANT SELECT(collected_at) ON checkout.orders TO commerce_auth;
+GRANT UPDATE(collected_at) ON checkout.orders TO commerce_checkout_writer;
 
 -- ---------------------------------------------------------------------------------------------------
 -- B. Settings. FORCE RLS; only commerce_checkout_writer (the owner of every definer below) sees the rows; no commerce_auth or
@@ -328,7 +339,10 @@ BEGIN
     RAISE EXCEPTION 'collection_state_changed' USING ERRCODE='PT409'; END IF;
   END IF;
   v_now:=clock_timestamp();
-  UPDATE checkout.orders SET collection_state=v_to,updated_at=v_now WHERE tenant_id=s.tenant_id AND store_id=p_store AND id=p_order;
+  -- P1-3b: collected_at is set once, only on the collected transition, and never overwritten by return/refund (ELSE keeps it).
+  UPDATE checkout.orders SET collection_state=v_to,updated_at=v_now,
+   collected_at=CASE WHEN v_to='COLLECTED' THEN COALESCE(collected_at,v_now) ELSE collected_at END
+   WHERE tenant_id=s.tenant_id AND store_id=p_store AND id=p_order;
   INSERT INTO ops.audit_events(tenant_id,store_id,principal_id,action)
    VALUES(s.tenant_id,p_store,s.principal_id,'fulfillment.collection_recorded');
   v_response:=jsonb_build_object('order_id',p_order,'collection_state',v_to);
@@ -347,6 +361,24 @@ ALTER FUNCTION fulfillment.record_collection(bytea,uuid,uuid,text,bytea,text,tex
 REVOKE ALL ON FUNCTION fulfillment.record_collection(bytea,uuid,uuid,text,bytea,text,text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION fulfillment.record_collection(bytea,uuid,uuid,text,bytea,text,text) TO commerce_runtime;
 COMMENT ON FUNCTION fulfillment.record_collection(bytea,uuid,uuid,text,bytea,text,text) IS 'internal/fulfillment CVS.RecordCollection only; EXECUTE commerce_runtime. fulfillment:write; manual collected/returned/refunded_offline of a pay_at_pickup or cash_on_delivery order; no money movement, no ledger row. returned also requires fulfillment.cvs_parcel_returned (PT409 parcel_not_returned, T21-01); collected also requires fulfillment.cvs_parcel_picked_up (PT409 parcel_not_picked_up, T21-02).';
+
+-- P1-3b: ingest_ecpay_status (0083 body, patched in place rather than re-copied) is the OTHER pay_at_pickup COLLECTED writer
+-- (the signed ECPay 2067 status post). Its collected transition must also stamp collected_at once, or an API-collected pickup
+-- order would have collected_at NULL and finance (grouped on collected_at) would drop it.
+DO $$
+DECLARE v_item record; v_fn text;
+BEGIN
+ FOR v_item IN SELECT * FROM (VALUES
+  ('fulfillment.ingest_ecpay_status(uuid,bytea,text,text,text,text,text,text,text,text)',
+   'UPDATE checkout.orders SET collection_state=v_collect,updated_at=v_now',
+   'UPDATE checkout.orders SET collection_state=v_collect,updated_at=v_now,collected_at=CASE WHEN v_collect=''COLLECTED'' THEN COALESCE(collected_at,v_now) ELSE collected_at END',1)
+ ) AS t(fn,needle,repl,expect) LOOP
+  v_fn:=pg_get_functiondef(v_item.fn::regprocedure);
+  IF (length(v_fn)-length(replace(v_fn,v_item.needle,'')))<>length(v_item.needle)*v_item.expect THEN
+   RAISE EXCEPTION '% has an unexpected shape for patch %',v_item.fn,left(v_item.needle,60); END IF;
+  EXECUTE replace(v_fn,v_item.needle,v_item.repl);
+ END LOOP;
+END $$;
 
 -- release_pay_at_pickup (0083 body): cancel now accepts an AWAITING_COLLECTION COD order (unshipped) and the payment_mode guard
 -- admits cash_on_delivery; restock keeps the 0083 returned/restock-once shape (the ledger_pay_at_pickup_release_once index).
@@ -780,9 +812,9 @@ BEGIN
 END $$;
 
 -- ---------------------------------------------------------------------------------------------------
--- E. Finance (0088:689 body): the projection gains two COD keys. COD collected (order COLLECTED on the day its row last changed;
--- offline money is always environment LIVE; the collect amount is total_minor + the placement-time surcharge). Never part of
--- captured/net: the cash never touches a PSP.
+-- E. Finance (0088:689 body): the projection gains two COD keys and the pickup/COD day moves from updated_at to collected_at.
+-- COD collected (order COLLECTED on the day collected_at was set by record_collection; offline money is always environment LIVE;
+-- the collect amount is total_minor + the placement-time surcharge). Never part of captured/net: the cash never touches a PSP.
 -- ---------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION identity.read_finance_summary(p_hash bytea,p_store uuid,p_from date,p_to date)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -820,13 +852,13 @@ BEGIN
      AND later.refund_id=rf.refund_id AND later.kind IN ('FAILED','CANCELED') AND later.received_at>rf.received_at)
   GROUP BY 1,2,3
  ), pick AS (
-  SELECT (o.updated_at AT TIME ZONE 'Asia/Taipei')::date AS day,o.currency,
+  SELECT (o.collected_at AT TIME ZONE 'Asia/Taipei')::date AS day,o.currency,
    coalesce((SELECT c.environment FROM fulfillment.cvs_shipments c WHERE c.tenant_id=o.tenant_id AND c.store_id=o.store_id
      AND c.order_id=o.id ORDER BY c.attempt DESC LIMIT 1),'LIVE') AS environment,
    count(*)::bigint AS n,sum(o.total_minor)::bigint AS minor
   FROM checkout.orders o,lim
   WHERE o.tenant_id=s.tenant_id AND o.store_id=p_store AND o.payment_mode='pay_at_pickup' AND o.collection_state='COLLECTED'
-   AND o.updated_at>=lim.t0 AND o.updated_at<lim.t1
+   AND o.collected_at>=lim.t0 AND o.collected_at<lim.t1
   GROUP BY 1,2,3
  ), trf AS (
   SELECT (t.confirmed_at AT TIME ZONE 'Asia/Taipei')::date AS day,t.currency,'LIVE'::text AS environment,
@@ -836,13 +868,13 @@ BEGIN
    AND t.confirmed_at>=lim.t0 AND t.confirmed_at<lim.t1
   GROUP BY 1,2,3
  ), cod AS (
-  -- home-cod: the order total plus the placement-time surcharge of a COLLECTED cash_on_delivery order; no collected_at column
-  -- exists, so updated_at (set by the collecting transition) is the day while the order stays COLLECTED. Always environment LIVE.
-  SELECT (o.updated_at AT TIME ZONE 'Asia/Taipei')::date AS day,o.currency,'LIVE'::text AS environment,
+  -- home-cod: the order total plus the placement-time surcharge of a COLLECTED cash_on_delivery order, on the day collected_at was
+  -- set by record_collection (never moved by a later return/refund/correction/erasure). Always environment LIVE.
+  SELECT (o.collected_at AT TIME ZONE 'Asia/Taipei')::date AS day,o.currency,'LIVE'::text AS environment,
    count(*)::bigint AS n,sum(o.total_minor + o.cod_surcharge_minor)::bigint AS minor
   FROM checkout.orders o,lim
   WHERE o.tenant_id=s.tenant_id AND o.store_id=p_store AND o.payment_mode='cash_on_delivery' AND o.collection_state='COLLECTED'
-   AND o.updated_at>=lim.t0 AND o.updated_at<lim.t1
+   AND o.collected_at>=lim.t0 AND o.collected_at<lim.t1
   GROUP BY 1,2,3
  ), keys AS (
   SELECT day,currency,environment FROM cap UNION SELECT day,currency,environment FROM ref

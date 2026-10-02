@@ -11,7 +11,7 @@ package foundation_test
 // Never: the pay_at_pickup/CVS machine itself (TestCvs*), the browser gate, or the known defects (those are red-until-fixed in
 // home_cod_defect_test.go, named TestHomeCodDefect*, and described in REVIEW-home-cod.md).
 // Depends-on: the tcvEnv/tcvBuyer harness and the hcod* helpers of home_cod_test.go.
-// Owner-pool writes (disclosed fixtures): identity grants (tcvEnv.member), orders.updated_at (finance boundary), expiry ageing (cofAge).
+// Owner-pool writes (disclosed fixtures): identity grants (tcvEnv.member), orders.collected_at (finance boundary), expiry ageing (cofAge).
 
 import (
 	"context"
@@ -968,8 +968,9 @@ func TestHomeCodReviewIsolation(t *testing.T) {
 	}
 }
 
-// HCR11: finance date-range boundary. The day is the Taipei calendar day of updated_at; ranges are inclusive at both ends and
-// half-open on the instant: the first microsecond of a day belongs to it, the last microsecond of the previous day to the previous day.
+// HCR11: finance date-range boundary. The day is the Taipei calendar day of collected_at (set once by record_collection); ranges are
+// inclusive at both ends and half-open on the instant: the first microsecond of a day belongs to it, the last microsecond of the previous
+// day to the previous day.
 func TestHomeCodReviewFinanceBoundaries(t *testing.T) {
 	e := tcvNew(t)
 	ctx := context.Background()
@@ -986,7 +987,7 @@ func TestHomeCodReviewFinanceBoundaries(t *testing.T) {
 		if r := e.hcrRecord(writer, order, "PENDING", "collected"); r.status != 200 {
 			t.Fatalf("collect: %d %s", r.status, r.raw)
 		}
-		mustExec(t, e.p.f.owner, `UPDATE checkout.orders SET updated_at=$2 WHERE id=$1`, order, at)
+		mustExec(t, e.p.f.owner, `UPDATE checkout.orders SET collected_at=$2 WHERE id=$1`, order, at)
 		return order
 	}
 	collect(mid)                        // D        (first instant)
