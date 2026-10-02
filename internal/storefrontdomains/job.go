@@ -1,9 +1,9 @@
 // job.go is the River side of package storefrontdomains: the periodic job store_domain_verify_v1 that
 // cmd/claims-worker registers (NewWorker + PeriodicJob) and that runs VerifyPending on the dedicated
-// store-domain verify pool (lc_store_domain_verify -> commerce_storefront_registrar). This is the P0-2
-// production runner for the Decision 3 lifecycle (REQUESTED -> OWNERSHIP_PENDING -> TLS_PENDING -> ACTIVE):
-// there is no operator CLI sweep, only this job. Non-goals: no choice of rows (the SQL batch reads pick),
-// no policy, no scheduler of its own.
+// store-domain verify pool (lc_store_domain_verify -> commerce_storefront_verifier). This is the P0-2
+// production runner for the Decision 3 lifecycle (REQUESTED -> OWNERSHIP_PENDING -> TLS_PENDING -> ACTIVE)
+// plus the ACTIVE-merchant TLS renewal (N-P1-2): there is no operator CLI sweep, only this job. Non-goals:
+// no choice of rows (the SQL batch reads pick), no policy, no scheduler of its own.
 
 package storefrontdomains
 
@@ -33,7 +33,7 @@ func (JobArgs) InsertOpts() river.InsertOpts {
 }
 
 // verifyFunc is the unit-test seam; NewWorker wires it to VerifyPending.
-type verifyFunc func(context.Context, Querier, Resolver, TLSProber, time.Time, string) (int, int, error)
+type verifyFunc func(context.Context, Querier, Resolver, TLSProber, time.Time, string) (int, int, int, error)
 
 // Worker runs one sweep. The DNS attempt backs off per row (BackoffDelay), so the once-a-minute job only
 // retries rows whose backoff has elapsed; the 72 h expiry is enforced inside sweepDNS.
@@ -62,12 +62,12 @@ func (w *Worker) Work(ctx context.Context, _ *river.Job[JobArgs]) error {
 	if w == nil || w.verify == nil {
 		return errVerifyUsage
 	}
-	dnsAttempts, tlsCompleted, err := w.verify(ctx, w.pool, SystemResolver{}, SystemProber{}, time.Now(), w.baseDomain)
+	dnsAttempts, tlsCompleted, tlsRenewed, err := w.verify(ctx, w.pool, SystemResolver{}, SystemProber{}, time.Now(), w.baseDomain)
 	if err != nil {
 		return err
 	}
 	// One fixed line, numbers only.
-	slog.Info("store_domain_verify_run", "dns_attempts", dnsAttempts, "tls_completed", tlsCompleted)
+	slog.Info("store_domain_verify_run", "dns_attempts", dnsAttempts, "tls_completed", tlsCompleted, "tls_renewed", tlsRenewed)
 	return nil
 }
 

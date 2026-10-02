@@ -12,7 +12,7 @@ import (
 )
 
 // verify.go is the DNS + TLS verification the River periodic verify job (internal/storefrontdomains, P0-2) runs
-// against the commerce_storefront_registrar pool. Every external call is a seam: Resolver and TLSProber are faked
+// against the commerce_storefront_verifier pool. Every external call is a seam: Resolver and TLSProber are faked
 // in tests (match/mismatch/NXDOMAIN/timeout), so this package never dials DNS or TLS on its own in a test.
 
 // verifyWindow is the verification window the SQL writes into verify_deadline (requested_at + 72h, migration 0106).
@@ -104,9 +104,13 @@ func (SystemProber) Probe(ctx context.Context, host, nonce string, edge []string
 	return time.Time{}, lastErr
 }
 
-// probeEdge dials one edge address with SNI = host, verifies the chain, then GETs the per-row nonce path with
+// probeEdge is the per-edge seam of Probe; tests replace it to exercise the edge-iteration and first-success-wins
+// logic without dialing a real edge.
+var probeEdge = probeEdgeImpl
+
+// probeEdgeImpl dials one edge address with SNI = host, verifies the chain, then GETs the per-row nonce path with
 // Host = host and compares the response body to the nonce. It returns the leaf NotAfter.
-func probeEdge(ctx context.Context, addr, host, nonce string) (time.Time, error) {
+func probeEdgeImpl(ctx context.Context, addr, host, nonce string) (time.Time, error) {
 	var notAfter time.Time
 	client := &http.Client{
 		Timeout: 15 * time.Second,
@@ -251,21 +255,26 @@ type AdvanceResult struct {
 	DNSFailures int    `json:"dns_failures"`
 }
 
-// VerifyPending sweeps both queues once: REQUESTED rows still inside their window get a DNS attempt (respecting the
-// backoff), and TLS_PENDING rows get a TLS probe that completes them to ACTIVE with the certificate's notAfter.
-// The q here is the commerce_storefront_registrar pool (EXECUTE on the worker definers); baseDomain is the platform
-// base zone (LC_STORE_BASE_DOMAIN) used to build the CNAME target. It returns counts of DNS attempts and TLS
-// completions; the first hard error aborts.
-func VerifyPending(ctx context.Context, q Querier, r Resolver, p TLSProber, now time.Time, baseDomain string) (dnsAttempts, tlsCompleted int, err error) {
+// VerifyPending sweeps the three queues once: REQUESTED rows still inside their window get a DNS attempt (respecting
+// the backoff), TLS_PENDING rows get a TLS probe that completes them to ACTIVE with the certificate's notAfter, and
+// ACTIVE merchant rows in the last third of their cert window get a renewal probe (N-P1-2). The q here is the
+// commerce_storefront_verifier pool (EXECUTE on the worker definers); baseDomain is the platform base zone
+// (LC_STORE_BASE_DOMAIN) used to build the CNAME target. It returns counts of DNS attempts, TLS completions and TLS
+// renewals; the first hard error aborts.
+func VerifyPending(ctx context.Context, q Querier, r Resolver, p TLSProber, now time.Time, baseDomain string) (dnsAttempts, tlsCompleted, tlsRenewed int, err error) {
 	if ctx == nil || q == nil || r == nil || p == nil || !validHostname(strings.ToLower(baseDomain)) {
-		return 0, 0, errVerifyInvalid
+		return 0, 0, 0, errVerifyInvalid
 	}
 	dnsAttempts, err = sweepDNS(ctx, q, r, now, baseDomain)
 	if err != nil {
-		return dnsAttempts, 0, err
+		return dnsAttempts, 0, 0, err
 	}
 	tlsCompleted, err = sweepTLS(ctx, q, r, p, now, baseDomain)
-	return dnsAttempts, tlsCompleted, err
+	if err != nil {
+		return dnsAttempts, tlsCompleted, 0, err
+	}
+	tlsRenewed, err = sweepRenewals(ctx, q, p, now)
+	return dnsAttempts, tlsCompleted, tlsRenewed, err
 }
 
 func sweepDNS(ctx context.Context, q Querier, r Resolver, now time.Time, baseDomain string) (int, error) {
@@ -340,7 +349,7 @@ const MaxProofLifetime = 400 * 24 * time.Hour
 
 func dnsAdvance(ctx context.Context, q Querier, domainID string, matched bool) (AdvanceResult, error) {
 	var raw []byte
-	// control.store_domain_dns_advance (0106): EXECUTE commerce_storefront_registrar.
+	// control.store_domain_dns_advance (0106): EXECUTE commerce_storefront_verifier.
 	if err := q.QueryRow(ctx, `SELECT control.store_domain_dns_advance($1::uuid,$2)`, domainID, matched).Scan(&raw); err != nil {
 		return AdvanceResult{}, mapError(err)
 	}
@@ -360,7 +369,7 @@ type tlsResult struct {
 
 func tlsComplete(ctx context.Context, q Querier, domainID string, notAfter time.Time) (string, error) {
 	var raw []byte
-	// control.store_domain_tls_complete (0106): EXECUTE commerce_storefront_registrar; TLS_PENDING -> ACTIVE.
+	// control.store_domain_tls_complete (0106): EXECUTE commerce_storefront_verifier; TLS_PENDING -> ACTIVE.
 	if err := q.QueryRow(ctx, `SELECT control.store_domain_tls_complete($1::uuid,$2)`, domainID, notAfter.UTC()).Scan(&raw); err != nil {
 		return "", mapError(err)
 	}
@@ -410,6 +419,68 @@ func queryTLSProbes(ctx context.Context, q Querier) ([]tlsProbeRow, error) {
 		out = append(out, tlsProbeRow{DomainID: id, Hostname: strings.TrimPrefix(origin, "https://"), Nonce: nonce})
 	}
 	return out, rows.Err()
+}
+
+// tlsRenewRow is one ACTIVE merchant row due for a renewal probe (domain id, hostname, and the current valid_until
+// the SQL "last third" window is anchored on).
+type tlsRenewRow struct {
+	DomainID   string
+	Hostname   string
+	ValidUntil time.Time
+}
+
+func queryTLSRenewals(ctx context.Context, q Querier) ([]tlsRenewRow, error) {
+	rows, err := q.Query(ctx, `SELECT domain_id,origin,valid_until FROM control.next_store_domain_tls_renewal()`)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	defer rows.Close()
+	var out []tlsRenewRow
+	for rows.Next() {
+		var id, origin string
+		var validUntil time.Time
+		if err := rows.Scan(&id, &origin, &validUntil); err != nil {
+			return nil, mapError(err)
+		}
+		out = append(out, tlsRenewRow{DomainID: id, Hostname: strings.TrimPrefix(origin, "https://"), ValidUntil: validUntil})
+	}
+	return out, rows.Err()
+}
+
+// sweepRenewals re-probes ACTIVE merchant rows that the SQL surfaces in the last third of their cert window and
+// advances valid_until to the freshly observed notAfter, so a merchant domain never goes dark the moment its first
+// certificate expires (N-P1-2). A probe error or an out-of-window notAfter is skipped (the row is re-surfaced on the
+// next sweep); the renewal definer is verifier-scoped and never changes state (ACTIVE stays ACTIVE).
+func sweepRenewals(ctx context.Context, q Querier, p TLSProber, now time.Time) (int, error) {
+	rows, err := queryTLSRenewals(ctx, q)
+	if err != nil {
+		return 0, err
+	}
+	renewed := 0
+	for _, row := range rows {
+		notAfter, err := p.NotAfter(ctx, row.Hostname)
+		if err != nil || notAfter.IsZero() || !notAfter.After(now) || notAfter.After(now.Add(MaxProofLifetime)) {
+			continue // certificate not yet issued or out of the proof window
+		}
+		if _, err := tlsRenew(ctx, q, row.DomainID, notAfter); err != nil {
+			return renewed, err
+		}
+		renewed++
+	}
+	return renewed, nil
+}
+
+func tlsRenew(ctx context.Context, q Querier, domainID string, notAfter time.Time) (string, error) {
+	var raw []byte
+	// control.store_domain_tls_renew (0106): EXECUTE commerce_storefront_verifier; ACTIVE merchant-tls only.
+	if err := q.QueryRow(ctx, `SELECT control.store_domain_tls_renew($1::uuid,$2)`, domainID, notAfter.UTC()).Scan(&raw); err != nil {
+		return "", mapError(err)
+	}
+	var out tlsResult
+	if !strictDecode(raw, &out) || out.DomainID != domainID || out.State != "ACTIVE" || out.Version < 1 {
+		return "", ErrUnavailable
+	}
+	return out.State, nil
 }
 
 var errVerifyInvalid = errors.New("invalid verify request")

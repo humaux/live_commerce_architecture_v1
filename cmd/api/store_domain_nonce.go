@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"io"
 	"net"
 	"net/http"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"livecommerce/internal/httperror"
 )
@@ -14,12 +16,22 @@ import (
 // to this api for a TLS_PENDING host, and the worker fetches it with SNI = the host and compares the body.
 const noncePathPrefix = "/.well-known/lc-domain-check/"
 
+// nonceQuerier is the one call the nonce endpoint needs; *pgxpool.Pool satisfies it, tests fake it.
+type nonceQuerier interface {
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
 // buildStoreDomainNonceHandler builds the per-row TLS nonce endpoint on the runtime pool, which logs in as
 // commerce_runtime and holds EXECUTE on control.tls_pending_nonce (0106). It answers 200 with the nonce body only
 // when r.Host is a TLS_PENDING origin whose tls_nonce equals the path nonce; every other host, nonce or method is
 // 404 (fail closed, no oracle). The host comes from the edge-set Host (the SNI Caddy forwarded), never a header a
 // client controls beyond the SNI itself.
 func buildStoreDomainNonceHandler(pool *pgxpool.Pool) http.Handler {
+	return buildStoreDomainNonceHandlerOn(pool)
+}
+
+// buildStoreDomainNonceHandlerOn is buildStoreDomainNonceHandler over a nonceQuerier (test seam for the pool path).
+func buildStoreDomainNonceHandlerOn(q nonceQuerier) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			httperror.Write(w, http.StatusMethodNotAllowed, "method_not_allowed")
@@ -33,7 +45,7 @@ func buildStoreDomainNonceHandler(pool *pgxpool.Pool) http.Handler {
 		}
 		var ok bool
 		// control.tls_pending_nonce (0106): true only for a TLS_PENDING origin whose tls_nonce equals p_nonce.
-		if err := pool.QueryRow(r.Context(), `SELECT control.tls_pending_nonce($1, $2)`, host, nonce).Scan(&ok); err != nil {
+		if err := q.QueryRow(r.Context(), `SELECT control.tls_pending_nonce($1, $2)`, host, nonce).Scan(&ok); err != nil {
 			httperror.Write(w, http.StatusServiceUnavailable, "unavailable")
 			return
 		}

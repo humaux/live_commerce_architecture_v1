@@ -23,8 +23,8 @@ import (
 	"livecommerce/internal/storefrontdomains"
 )
 
-// sdFix wraps the merchant-scoped t06GoFixture with the two service logins the unit adds work to: the registrar
-// (worker transitions) and the buyer runtime (301 primary lookup). base is the platform base zone (LC_STORE_BASE_DOMAIN).
+// sdFix wraps the merchant-scoped t06GoFixture with the two service logins the unit adds work to: the verifier
+// (worker transitions + renewal) and the buyer runtime (301 primary lookup). base is the platform base zone (LC_STORE_BASE_DOMAIN).
 type sdFix struct {
 	t     *testing.T
 	f     *t06GoFixture
@@ -42,7 +42,7 @@ func sdSetup(t *testing.T) *sdFix {
 		t:     t,
 		f:     f,
 		b:     b,
-		reg:   miPool(t, b, "commerce_storefront_registrar"),
+		reg:   miPool(t, b, "commerce_storefront_verifier"),
 		buyer: miPool(t, b, "commerce_buyer_runtime"),
 		base:  "example.com",
 	}
@@ -447,10 +447,12 @@ var sdFns = []struct {
 	{"control.read_store_domains(bytea,uuid)", "commerce_storefront_writer", true, []string{"commerce_runtime"}},
 	{"control.suspend_merchant_domain(bytea,uuid,text)", "commerce_storefront_writer", true, []string{"commerce_runtime"}},
 	{"control.detach_merchant_domain(bytea,uuid,text)", "commerce_storefront_writer", true, []string{"commerce_runtime"}},
-	{"control.store_domain_dns_advance(uuid,boolean)", "commerce_storefront_writer", true, []string{"commerce_storefront_registrar"}},
-	{"control.store_domain_tls_complete(uuid,timestamptz)", "commerce_storefront_writer", true, []string{"commerce_storefront_registrar"}},
-	{"control.next_store_domain_dns_check()", "commerce_storefront_writer", true, []string{"commerce_storefront_registrar"}},
-	{"control.next_store_domain_tls_probe()", "commerce_storefront_writer", true, []string{"commerce_storefront_registrar"}},
+	{"control.store_domain_dns_advance(uuid,boolean)", "commerce_storefront_writer", true, []string{"commerce_storefront_verifier"}},
+	{"control.store_domain_tls_complete(uuid,timestamptz)", "commerce_storefront_writer", true, []string{"commerce_storefront_verifier"}},
+	{"control.next_store_domain_dns_check()", "commerce_storefront_writer", true, []string{"commerce_storefront_verifier"}},
+	{"control.next_store_domain_tls_probe()", "commerce_storefront_writer", true, []string{"commerce_storefront_verifier"}},
+	{"control.store_domain_tls_renew(uuid,timestamptz)", "commerce_storefront_writer", true, []string{"commerce_storefront_verifier"}},
+	{"control.next_store_domain_tls_renewal()", "commerce_storefront_writer", true, []string{"commerce_storefront_verifier"}},
 	{"control.resolve_storefront_ask(text)", "commerce_storefront_writer", true, []string{"commerce_runtime"}},
 	{"control.tls_pending_nonce(text,text)", "commerce_storefront_writer", true, []string{"commerce_runtime"}},
 	{"control.admitted_storefront_hosts()", "commerce_storefront_writer", true, []string{"commerce_runtime"}},
@@ -513,12 +515,51 @@ func TestStoreDomainsSDW06SchemaAndACLInventory(t *testing.T) {
 		has_table_privilege('commerce_identity','control.stores','SELECT,INSERT,UPDATE,DELETE') OR has_any_column_privilege('commerce_identity','control.stores','SELECT,INSERT,UPDATE')`).Scan(&identityUsage, &identityTable); err != nil || !identityUsage || identityTable {
 		t.Fatalf("commerce_identity control usage = %v, any stores privilege = %v (err=%v)", identityUsage, identityTable, err)
 	}
-	// The registrar and runtime authorities have no direct write to the domain rows (they reach them through definers).
-	for _, role := range []string{"commerce_storefront_registrar", "commerce_runtime"} {
+	// The registrar, verifier and runtime authorities have no direct write to the domain rows (they reach them through definers).
+	for _, role := range []string{"commerce_storefront_registrar", "commerce_runtime", "commerce_storefront_verifier"} {
 		var access bool
 		if err := o.QueryRow(ctx, `SELECT has_table_privilege($1,'control.storefront_domains','INSERT,UPDATE,DELETE') OR has_any_column_privilege($1,'control.storefront_domains','INSERT,UPDATE')`, role).Scan(&access); err != nil || access {
 			t.Fatalf("%s has direct write on storefront_domains (err=%v)", role, err)
 		}
+	}
+	// N-P1-1: the verifier holds EXECUTE on exactly the six worker definers (four transitions + two renewal) and
+	// nothing else anywhere — the WAS-style inventory. The sdFns loop above already proves the positive direction
+	// (each of the six lists the verifier); this proves the negative: any other EXECUTE is drift.
+	verifierFns := `ARRAY[
+		'control.store_domain_dns_advance(uuid,boolean)'::regprocedure,
+		'control.store_domain_tls_complete(uuid,timestamptz)'::regprocedure,
+		'control.next_store_domain_dns_check()'::regprocedure,
+		'control.next_store_domain_tls_probe()'::regprocedure,
+		'control.store_domain_tls_renew(uuid,timestamptz)'::regprocedure,
+		'control.next_store_domain_tls_renewal()'::regprocedure]`
+	var verifierExtra []string
+	// Explicit EXECUTE grants only (aclexplode), so PUBLIC-granted helpers (the river *_state_in_bitmask catalog
+	// functions) never read as verifier privileges — has_function_privilege would include them via PUBLIC.
+	vrows, err := o.Query(ctx, `SELECT p.oid::regprocedure::text
+		FROM pg_proc p
+		JOIN pg_namespace n ON n.oid=p.pronamespace
+		JOIN pg_roles r ON r.rolname='commerce_storefront_verifier'
+		CROSS JOIN LATERAL aclexplode(p.proacl) a
+		WHERE a.grantee=r.oid AND a.privilege_type='EXECUTE'
+		  AND NOT p.oid = ANY(`+verifierFns+`)
+		ORDER BY 1`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for vrows.Next() {
+		var fn string
+		if err := vrows.Scan(&fn); err != nil {
+			vrows.Close()
+			t.Fatal(err)
+		}
+		verifierExtra = append(verifierExtra, fn)
+	}
+	vrows.Close()
+	if err := vrows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	if len(verifierExtra) != 0 {
+		t.Fatalf("commerce_storefront_verifier holds unexpected EXECUTE: %v", verifierExtra)
 	}
 	// The 0081 audit policy still admits its original six actions plus the three merchant self-service ones (same policy).
 	var withCheck string

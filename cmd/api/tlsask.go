@@ -9,8 +9,8 @@ import (
 
 // buildTLSAskHandler builds the edge TLS ask endpoint (R5 unit store-domains, Decision 4) on the runtime pool,
 // which logs in as commerce_runtime and holds EXECUTE on control.resolve_storefront_ask (0106). The endpoint is
-// internal-network only (Caddy's on_demand_tls `ask http://api:<port>/internal/tls-ask`); the per-service rate
-// limit and negative cache live in internal/tlsask.
+// internal-network only (Caddy's on_demand_tls `ask http://api:<port>/internal/tls-ask`); the ask decision and its
+// 30-second in-memory admitted set live in internal/tlsask (P1-3 — no per-ask rate limit or negative cache).
 func buildTLSAskHandler(pool *pgxpool.Pool) (http.Handler, error) {
 	svc, err := tlsask.New(pool, tlsask.DefaultMaxPerMinute, tlsask.DefaultDenyTTL, tlsask.DefaultAllowTTL)
 	if err != nil {

@@ -71,9 +71,9 @@ func TestBrowserStoreDomains(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// The registrar login the DNS/TLS sweep runs on (lc_store_registrar grant shape, inherit_noset) — the same role the
-	// production worker (P0-2: still unwired, see REVIEW-store-domains.md) would use.
-	registrar := miPool(t, h.f, "commerce_storefront_registrar")
+	// The verifier login the DNS/TLS sweep runs on (lc_store_domain_verify grant shape, inherit_noset) — the same role
+	// the production worker (P0-2: still unwired, see REVIEW-store-domains.md) would use.
+	verifier := miPool(t, h.f, "commerce_storefront_verifier")
 
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -190,15 +190,15 @@ func TestBrowserStoreDomains(t *testing.T) {
 			dns.answer(in.Host, in.TXTName, in.TXTValue, in.CNAMETarget)
 			_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
 		case r.Method == "POST" && r.URL.Path == "/verify":
-			// One sweep of the production worker library (internal/storefrontdomains.VerifyPending) on the registrar
+			// One sweep of the production worker library (internal/storefrontdomains.VerifyPending) on the verifier
 			// login: REQUESTED -> OWNERSHIP_PENDING -> TLS_PENDING via the scripted public DNS, then the scripted TLS
 			// probe completes TLS_PENDING -> ACTIVE. Public DNS and certificate issuance are the MOCK seam.
-			attempts, completed, err := storefrontdomains.VerifyPending(r.Context(), registrar, dns, probe, time.Now(), baseDomain)
+			attempts, completed, renewed, err := storefrontdomains.VerifyPending(r.Context(), verifier, dns, probe, time.Now(), baseDomain)
 			if err != nil {
 				http.Error(w, "verify sweep failed", 502)
 				return
 			}
-			_ = json.NewEncoder(w).Encode(map[string]any{"dns_attempts": attempts, "tls_completed": completed})
+			_ = json.NewEncoder(w).Encode(map[string]any{"dns_attempts": attempts, "tls_completed": completed, "tls_renewed": renewed})
 		default:
 			http.NotFound(w, r)
 		}

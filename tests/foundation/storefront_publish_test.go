@@ -300,6 +300,18 @@ func TestStorefrontPublishSPW02UpgradeAfter0080(t *testing.T) {
 	}
 	db := mciStartPG(t)
 	mustExec(t, db, `CREATE TABLE public.lc_schema_migrations (version text PRIMARY KEY, checksum text NOT NULL, applied_at timestamptz NOT NULL DEFAULT now())`)
+	// migrate.go grants River privileges to the five 0096 worker-authority roles on every Apply; the 0080 head stops
+	// before 0096 creates them, so pre-create them here (the same attributes 0096 uses) — 0096's own DO block is
+	// idempotent and skips them when the full chain later runs.
+	mustExec(t, db, `DO $$
+	DECLARE r text;
+	BEGIN
+	 FOREACH r IN ARRAY ARRAY['commerce_payment_worker','commerce_payment_live','commerce_expiry_worker','commerce_ads_worker','commerce_claims_worker'] LOOP
+	  IF to_regrole(r) IS NULL THEN
+	   EXECUTE format('CREATE ROLE %I NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION',r);
+	  END IF;
+	 END LOOP;
+	END $$`)
 	for _, version := range upgrade {
 		body, err := os.ReadFile("../../migrations/" + version)
 		if err != nil {

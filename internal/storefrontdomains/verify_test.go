@@ -140,6 +140,7 @@ func TestVerifyPendingDNSMatchAdvancesToTLS(t *testing.T) {
 		rowsSeq: []*fakeRows{
 			{rows: [][]any{dnsCheckRow(now.Add(24*time.Hour), nil, 0)}},
 			{rows: [][]any{}}, // no TLS_PENDING rows
+			{rows: [][]any{}}, // no ACTIVE merchant rows due for renewal
 		},
 		rowSeq: []fakeRow{
 			{raw: []byte(`{"domain_id":"` + testDomain + `","state":"OWNERSHIP_PENDING","expired":false,"dns_failures":0}`)},
@@ -147,9 +148,9 @@ func TestVerifyPendingDNSMatchAdvancesToTLS(t *testing.T) {
 		},
 	}
 	r := fakeResolver{txt: []string{strings.Repeat("A", 43)}, cname: "stores.example.com."}
-	dns, tls, err := VerifyPending(context.Background(), q, r, fakeProber{}, now, "example.com")
-	if err != nil || dns != 1 || tls != 0 {
-		t.Fatalf("VerifyPending = %d, %d, %v; want 1, 0, nil", dns, tls, err)
+	dns, tls, renewed, err := VerifyPending(context.Background(), q, r, fakeProber{}, now, "example.com")
+	if err != nil || dns != 1 || tls != 0 || renewed != 0 {
+		t.Fatalf("VerifyPending = %d, %d, %d, %v; want 1, 0, 0, nil", dns, tls, renewed, err)
 	}
 	if q.calls != 2 {
 		t.Fatalf("dnsAdvance called %d times, want 2", q.calls)
@@ -170,12 +171,13 @@ func TestVerifyPendingSkipsExpiredAndBackedOff(t *testing.T) {
 				dnsCheckRow(now.Add(-time.Hour), nil, 0),       // expired (deadline past)
 				dnsCheckRow(now.Add(24*time.Hour), &recent, 2), // backed off (1m elapsed < 4m backoff)
 			}},
-			{rows: [][]any{}},
+			{rows: [][]any{}}, // no TLS_PENDING rows
+			{rows: [][]any{}}, // no ACTIVE merchant rows due for renewal
 		},
 	}
-	dns, tls, err := VerifyPending(context.Background(), q, fakeResolver{}, fakeProber{}, now, "example.com")
-	if err != nil || dns != 0 || tls != 0 {
-		t.Fatalf("VerifyPending = %d, %d, %v; want 0, 0, nil", dns, tls, err)
+	dns, tls, renewed, err := VerifyPending(context.Background(), q, fakeResolver{}, fakeProber{}, now, "example.com")
+	if err != nil || dns != 0 || tls != 0 || renewed != 0 {
+		t.Fatalf("VerifyPending = %d, %d, %d, %v; want 0, 0, 0, nil", dns, tls, renewed, err)
 	}
 	if q.calls != 0 {
 		t.Fatalf("no row should reach an advance, got %d", q.calls)
@@ -189,19 +191,20 @@ func TestVerifyPendingTLSCompletes(t *testing.T) {
 		rowsSeq: []*fakeRows{
 			{rows: [][]any{}}, // no DNS checks
 			{rows: [][]any{{testDomain, "https://shop.example.com", ""}}}, // one TLS_PENDING row (id, origin, nonce)
+			{rows: [][]any{}}, // no ACTIVE merchant rows due for renewal
 		},
 		rowSeq: []fakeRow{
 			{raw: []byte(`{"domain_id":"` + testDomain + `","state":"ACTIVE","version":5}`)},
 		},
 	}
-	dns, tls, err := VerifyPending(context.Background(), q, fakeResolver{}, fakeProber{notAfter: notAfter}, now, "example.com")
-	if err != nil || dns != 0 || tls != 1 {
-		t.Fatalf("VerifyPending = %d, %d, %v; want 0, 1, nil", dns, tls, err)
+	dns, tls, renewed, err := VerifyPending(context.Background(), q, fakeResolver{}, fakeProber{notAfter: notAfter}, now, "example.com")
+	if err != nil || dns != 0 || tls != 1 || renewed != 0 {
+		t.Fatalf("VerifyPending = %d, %d, %d, %v; want 0, 1, 0, nil", dns, tls, renewed, err)
 	}
 	if q.calls != 1 {
 		t.Fatalf("tlsComplete called %d times, want 1", q.calls)
 	}
-	if got := q.args[1].(time.Time); !got.Equal(notAfter.UTC()) {
+	if got := q.callArgs[0][1].(time.Time); !got.Equal(notAfter.UTC()) {
 		t.Fatalf("tls notAfter arg = %v", got)
 	}
 }
@@ -209,27 +212,113 @@ func TestVerifyPendingTLSCompletes(t *testing.T) {
 func TestVerifyPendingAbortsOnFirstError(t *testing.T) {
 	now := time.Date(2026, 10, 2, 12, 0, 0, 0, time.UTC)
 	q := &fakeTx{} // no rows configured -> the DNS batch read errors
-	dns, tls, err := VerifyPending(context.Background(), q, fakeResolver{}, fakeProber{}, now, "example.com")
-	if err == nil || dns != 0 || tls != 0 {
-		t.Fatalf("VerifyPending = %d, %d, %v; want 0, 0, error", dns, tls, err)
+	dns, tls, renewed, err := VerifyPending(context.Background(), q, fakeResolver{}, fakeProber{}, now, "example.com")
+	if err == nil || dns != 0 || tls != 0 || renewed != 0 {
+		t.Fatalf("VerifyPending = %d, %d, %d, %v; want 0, 0, 0, error", dns, tls, renewed, err)
 	}
 }
 
 func TestVerifyPendingInvalidInputs(t *testing.T) {
 	now := time.Date(2026, 10, 2, 12, 0, 0, 0, time.UTC)
-	if _, _, err := VerifyPending(context.Background(), nil, fakeResolver{}, fakeProber{}, now, "example.com"); err == nil {
+	if _, _, _, err := VerifyPending(context.Background(), nil, fakeResolver{}, fakeProber{}, now, "example.com"); err == nil {
 		t.Error("nil querier accepted")
 	}
-	if _, _, err := VerifyPending(context.Background(), &fakeTx{}, nil, fakeProber{}, now, "example.com"); err == nil {
+	if _, _, _, err := VerifyPending(context.Background(), &fakeTx{}, nil, fakeProber{}, now, "example.com"); err == nil {
 		t.Error("nil resolver accepted")
 	}
-	if _, _, err := VerifyPending(context.Background(), &fakeTx{}, fakeResolver{}, nil, now, "example.com"); err == nil {
+	if _, _, _, err := VerifyPending(context.Background(), &fakeTx{}, fakeResolver{}, nil, now, "example.com"); err == nil {
 		t.Error("nil prober accepted")
 	}
-	if _, _, err := VerifyPending(context.Background(), &fakeTx{}, fakeResolver{}, fakeProber{}, now, "localhost"); err == nil {
+	if _, _, _, err := VerifyPending(context.Background(), &fakeTx{}, fakeResolver{}, fakeProber{}, now, "localhost"); err == nil {
 		t.Error("bad base domain accepted")
 	}
-	if _, _, err := VerifyPending(nil, &fakeTx{}, fakeResolver{}, fakeProber{}, now, "example.com"); err == nil {
+	if _, _, _, err := VerifyPending(nil, &fakeTx{}, fakeResolver{}, fakeProber{}, now, "example.com"); err == nil {
 		t.Error("nil context accepted")
+	}
+}
+
+// --- renewal (N-P1-2) ---
+
+func TestVerifyPendingRenewsACTIVEMerchant(t *testing.T) {
+	now := time.Date(2026, 10, 2, 12, 0, 0, 0, time.UTC)
+	notAfter := now.Add(90 * 24 * time.Hour)
+	q := &fakeTx{
+		rowsSeq: []*fakeRows{
+			{rows: [][]any{}}, // no DNS checks
+			{rows: [][]any{}}, // no TLS_PENDING rows
+			{rows: [][]any{{testDomain, "https://shop.example.com", now.Add(30 * 24 * time.Hour)}}}, // one ACTIVE merchant row due
+		},
+		rowSeq: []fakeRow{
+			{raw: []byte(`{"domain_id":"` + testDomain + `","state":"ACTIVE","version":6}`)},
+		},
+	}
+	dns, tls, renewed, err := VerifyPending(context.Background(), q, fakeResolver{}, fakeProber{notAfter: notAfter}, now, "example.com")
+	if err != nil || dns != 0 || tls != 0 || renewed != 1 {
+		t.Fatalf("VerifyPending = %d, %d, %d, %v; want 0, 0, 1, nil", dns, tls, renewed, err)
+	}
+	if q.calls != 1 {
+		t.Fatalf("tlsRenew called %d times, want 1", q.calls)
+	}
+	if got := q.callArgs[0][1].(time.Time); !got.Equal(notAfter.UTC()) {
+		t.Fatalf("tlsRenew notAfter arg = %v", got)
+	}
+}
+
+func TestVerifyPendingSkipsRenewalOnProbeError(t *testing.T) {
+	now := time.Date(2026, 10, 2, 12, 0, 0, 0, time.UTC)
+	q := &fakeTx{
+		rowsSeq: []*fakeRows{
+			{rows: [][]any{}}, // no DNS checks
+			{rows: [][]any{}}, // no TLS_PENDING rows
+			{rows: [][]any{{testDomain, "https://shop.example.com", now.Add(30 * 24 * time.Hour)}}}, // one ACTIVE merchant row due
+		},
+	}
+	dns, tls, renewed, err := VerifyPending(context.Background(), q, fakeResolver{}, fakeProber{err: errors.New("dial timeout")}, now, "example.com")
+	if err != nil || dns != 0 || tls != 0 || renewed != 0 {
+		t.Fatalf("VerifyPending = %d, %d, %d, %v; want 0, 0, 0, nil", dns, tls, renewed, err)
+	}
+	if q.calls != 0 {
+		t.Fatalf("a probe error must skip the renew, got %d calls", q.calls)
+	}
+}
+
+// --- Probe seam (SystemProber.Probe) ---
+
+func TestSystemProberProbeInputs(t *testing.T) {
+	ctx := context.Background()
+	p := SystemProber{}
+	if _, err := p.Probe(ctx, "Shop.Example.com", "n", []string{"1.2.3.4"}); err == nil {
+		t.Error("uppercase host accepted")
+	}
+	if _, err := p.Probe(ctx, "shop.example.com", "", []string{"1.2.3.4"}); err == nil {
+		t.Error("empty nonce accepted")
+	}
+	if _, err := p.Probe(ctx, "shop.example.com", "n", nil); err == nil {
+		t.Error("nil edge accepted")
+	}
+	if _, err := p.Probe(ctx, "shop.example.com", "n", []string{"", ""}); err == nil {
+		t.Error("all-empty edge accepted")
+	}
+}
+
+func TestSystemProberProbeFirstSuccessWins(t *testing.T) {
+	ctx := context.Background()
+	old := probeEdge
+	defer func() { probeEdge = old }()
+	notAfter := time.Date(2026, 12, 1, 0, 0, 0, 0, time.UTC)
+	var dialed []string
+	probeEdge = func(_ context.Context, addr, host, nonce string) (time.Time, error) {
+		dialed = append(dialed, addr)
+		if addr == "203.0.113.1" {
+			return notAfter, nil
+		}
+		return time.Time{}, errors.New("unreachable")
+	}
+	got, err := (SystemProber{}).Probe(ctx, "shop.example.com", "nonce", []string{"198.51.100.1", "203.0.113.1", "203.0.113.9"})
+	if err != nil || !got.Equal(notAfter) {
+		t.Fatalf("Probe = %v, %v", got, err)
+	}
+	if len(dialed) != 2 || dialed[0] != "198.51.100.1" || dialed[1] != "203.0.113.1" {
+		t.Fatalf("dialed = %v, want the first two edges only (first success short-circuits)", dialed)
 	}
 }

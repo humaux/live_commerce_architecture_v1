@@ -6,14 +6,17 @@
 --   D2 platform address: ensure_store_platform_domain writes an ACTIVE https://<handle>.<base> row (evidence platform-subdomain);
 --      the platform owns that zone so ownership is implied and the merchant is reachable the moment they publish.
 --   D3 merchant self-service domain: request_merchant_domain (REQUESTED + TXT token + CNAME/A instructions), the DNS/TLS
---      worker transitions (registrar EXECUTE), merchant suspend/detach; one primary origin per store (merchant ACTIVE else platform).
+--      worker transitions (commerce_storefront_verifier EXECUTE, incl. the ACTIVE merchant TLS renewal), merchant
+--      suspend/detach; one primary origin per store (merchant ACTIVE else platform).
 --   D4 edge TLS ask: resolve_storefront_ask answers only ACTIVE or TLS_PENDING origins (Caddy on_demand_tls ask endpoint).
 --   D5 security: tokens/columns never logged by these definers (no token in audit rows).
 --   D6 forward-only; merchant definers follow the 0081 p_hash + resolve_access + WithScope re-check pattern (integration:manage).
 --
 -- Roles reused: commerce_identity_writer (owns handle helpers/trigger), commerce_storefront_writer (owns domain definers),
--- commerce_storefront_registrar (EXECUTE the DNS/TLS worker transitions), commerce_runtime (merchant domain routes),
--- commerce_identity (onboarding login, EXECUTE ensure_store_platform_domain), commerce_buyer_issuer (301 primary lookup).
+-- commerce_storefront_registrar (EXECUTE the operator bind/suspend/detach + the D2 platform backfill), commerce_runtime
+-- (merchant domain routes), commerce_identity (onboarding login, EXECUTE ensure_store_platform_domain),
+-- commerce_buyer_issuer (301 primary lookup). New: commerce_storefront_verifier (N-P1-1) — the narrow worker authority
+-- of the DNS/TLS verify sweep login (the four transitions + the TLS renewal), no operator authority.
 -- commerce_worker stays retired: nothing here grants to it.
 -- The onboarding login (commerce_identity) calls control.suggest_store_handle and control.ensure_store_platform_domain
 -- only; it needs USAGE on control to name them, and gains no table privilege from it.
@@ -234,7 +237,7 @@ COMMENT ON POLICY storefront_writer_audit_insert ON ops.audit_events IS
 -- ---------------------------------------------------------------------------------------
 -- D2: control.ensure_store_platform_domain. Idempotent writer of the ACTIVE platform subdomain row
 -- (https://<handle>.<base>, evidence platform-subdomain). Called by the identity onboarding flow right after
--- identity.create_initial_store (same tx, commerce_identity) and by backfill_platform_domains (registrar).
+-- identity.create_initial_store (same tx, commerce_identity) and by backfill_platform_domains (the migration-time backfill).
 -- The platform owns that zone so ownership/TLS are implied; valid_until is a 10-year formality because the
 -- wildcard certificate is Caddy-managed and auto-renews (no SQL renewal path exists). No audit row (not a
 -- merchant-visible write). Returns {handle, origin} (origin NULL when no base domain is configured).
@@ -301,7 +304,7 @@ ALTER FUNCTION control.backfill_platform_domains(text) OWNER TO commerce_storefr
 REVOKE ALL ON FUNCTION control.backfill_platform_domains(text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION control.backfill_platform_domains(text) TO commerce_storefront_registrar;
 COMMENT ON FUNCTION control.backfill_platform_domains(text) IS
- '0106 D2: one-shot backfill of the platform subdomain for every existing handled store (registrar/operator one-shot, idempotent). Returns the number of stores visited.';
+ '0106 D2: backfill of the platform subdomain for every existing handled store (idempotent; EXECUTE commerce_storefront_registrar). Called by the 0106 migration-time DO block (N-P1-3) so a deploy creates the rows for pre-existing stores, not a separate operator one-shot. Returns the number of stores visited.';
 
 -- ---------------------------------------------------------------------------------------
 -- D3 merchant request / read / suspend / detach. Same p_hash + resolve_access(integration:manage) + WithScope
@@ -463,10 +466,20 @@ COMMENT ON FUNCTION control.detach_merchant_domain(bytea,uuid,text) IS
  '0106 D3: internal/storefrontdomains Detach; EXECUTE commerce_runtime. integration:manage. Merchant finally detaches its own origin. Platform-bound origin = PT409 platform_domain (P2-8); DETACHED = no-op; another store''s origin = PT403.';
 
 -- ---------------------------------------------------------------------------------------
--- D3 worker transitions (EXECUTE commerce_storefront_registrar; driven by the River periodic verify job in
+-- D3 worker transitions (EXECUTE commerce_storefront_verifier; driven by the River periodic verify job in
 -- claims-worker, internal/storefrontdomains.VerifyPending): DNS advance (REQUESTED -> OWNERSHIP_PENDING ->
 -- TLS_PENDING), TLS completion (-> ACTIVE), and the two pending batch reads. No token leaves these functions.
 -- ---------------------------------------------------------------------------------------
+
+-- N-P1-1 (least privilege): the DNS/TLS verify sweep login lc_store_domain_verify joins this narrow authority, not the
+-- registrar. It holds EXECUTE only on the four worker transition definers below and the TLS-renewal definers that follow,
+-- plus USAGE on control to name them; it cannot reach the operator bind/suspend/detach functions (0081, registrar-only)
+-- or any table. Residual by design: like the registrar before it, it can advance any existing REQUESTED/TLS_PENDING row.
+CREATE ROLE commerce_storefront_verifier NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION;
+GRANT USAGE ON SCHEMA control TO commerce_storefront_verifier;
+COMMENT ON ROLE commerce_storefront_verifier IS
+ '0106 D3 (N-P1-1): narrow worker authority of the DNS/TLS verify sweep login lc_store_domain_verify (deploy/postgres/logins.tsv). EXECUTE only on the four verify transitions (store_domain_dns_advance, store_domain_tls_complete, next_store_domain_dns_check, next_store_domain_tls_probe) and the TLS-renewal definers (store_domain_tls_renew, next_store_domain_tls_renewal); no bind/suspend/detach, no operator authority, no table privilege.';
+
 CREATE FUNCTION control.store_domain_dns_advance(p_domain_id uuid,p_matched boolean)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE v_row record; v_now timestamptz; v_state text;
@@ -495,9 +508,9 @@ BEGIN
 END $$;
 ALTER FUNCTION control.store_domain_dns_advance(uuid,boolean) OWNER TO commerce_storefront_writer;
 REVOKE ALL ON FUNCTION control.store_domain_dns_advance(uuid,boolean) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION control.store_domain_dns_advance(uuid,boolean) TO commerce_storefront_registrar;
+GRANT EXECUTE ON FUNCTION control.store_domain_dns_advance(uuid,boolean) TO commerce_storefront_verifier;
 COMMENT ON FUNCTION control.store_domain_dns_advance(uuid,boolean) IS
- '0106 D3: worker DNS transition (EXECUTE commerce_storefront_registrar). match: REQUESTED -> OWNERSHIP_PENDING, OWNERSHIP_PENDING -> TLS_PENDING (sets a fresh tls_nonce for the edge nonce path); miss: last_checked_at + dns_failures+1. Returns the new state and whether the verify deadline has passed (expired).';
+ '0106 D3: worker DNS transition (EXECUTE commerce_storefront_verifier). match: REQUESTED -> OWNERSHIP_PENDING, OWNERSHIP_PENDING -> TLS_PENDING (sets a fresh tls_nonce for the edge nonce path); miss: last_checked_at + dns_failures+1. Returns the new state and whether the verify deadline has passed (expired).';
 
 CREATE FUNCTION control.store_domain_tls_complete(p_domain_id uuid,p_valid_until timestamptz)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -517,9 +530,9 @@ BEGIN
 END $$;
 ALTER FUNCTION control.store_domain_tls_complete(uuid,timestamptz) OWNER TO commerce_storefront_writer;
 REVOKE ALL ON FUNCTION control.store_domain_tls_complete(uuid,timestamptz) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION control.store_domain_tls_complete(uuid,timestamptz) TO commerce_storefront_registrar;
+GRANT EXECUTE ON FUNCTION control.store_domain_tls_complete(uuid,timestamptz) TO commerce_storefront_verifier;
 COMMENT ON FUNCTION control.store_domain_tls_complete(uuid,timestamptz) IS
- '0106 D3: worker TLS transition (EXECUTE commerce_storefront_registrar): TLS_PENDING -> ACTIVE with the probe''s certificate notAfter as valid_until (bounded 400 days), evidence merchant-tls, token and tls_nonce cleared.';
+ '0106 D3: worker TLS transition (EXECUTE commerce_storefront_verifier): TLS_PENDING -> ACTIVE with the probe''s certificate notAfter as valid_until (bounded 400 days), evidence merchant-tls, token and tls_nonce cleared.';
 
 CREATE FUNCTION control.next_store_domain_dns_check()
 RETURNS TABLE(domain_id uuid, origin text, hostname text, token text, state text, verify_deadline timestamptz, last_checked_at timestamptz, dns_failures integer)
@@ -531,9 +544,9 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
 $$;
 ALTER FUNCTION control.next_store_domain_dns_check() OWNER TO commerce_storefront_writer;
 REVOKE ALL ON FUNCTION control.next_store_domain_dns_check() FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION control.next_store_domain_dns_check() TO commerce_storefront_registrar;
+GRANT EXECUTE ON FUNCTION control.next_store_domain_dns_check() TO commerce_storefront_verifier;
 COMMENT ON FUNCTION control.next_store_domain_dns_check() IS
- '0106 D3: worker batch read (EXECUTE commerce_storefront_registrar): REQUESTED rows still inside their 72h window. Returns the hostname (origin without the https:// scheme) and token for the DNS lookup.';
+ '0106 D3: worker batch read (EXECUTE commerce_storefront_verifier): REQUESTED rows still inside their 72h window. Returns the hostname (origin without the https:// scheme) and token for the DNS lookup.';
 
 CREATE FUNCTION control.next_store_domain_tls_probe()
 RETURNS TABLE(domain_id uuid, origin text, nonce text)
@@ -542,9 +555,54 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
 $$;
 ALTER FUNCTION control.next_store_domain_tls_probe() OWNER TO commerce_storefront_writer;
 REVOKE ALL ON FUNCTION control.next_store_domain_tls_probe() FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION control.next_store_domain_tls_probe() TO commerce_storefront_registrar;
+GRANT EXECUTE ON FUNCTION control.next_store_domain_tls_probe() TO commerce_storefront_verifier;
 COMMENT ON FUNCTION control.next_store_domain_tls_probe() IS
- '0106 D3: worker batch read (EXECUTE commerce_storefront_registrar): TLS_PENDING rows with their per-row tls_nonce (the edge nonce path the probe fetches through the edge, P1-2); the TLS probe completes them.';
+ '0106 D3: worker batch read (EXECUTE commerce_storefront_verifier): TLS_PENDING rows with their per-row tls_nonce (the edge nonce path the probe fetches through the edge, P1-2); the TLS probe completes them.';
+
+-- ---------------------------------------------------------------------------------------
+-- D3 TLS renewal (N-P1-2): a merchant ACTIVE row must not go dark the moment its first certificate notAfter passes.
+-- The sweep re-probes ACTIVE merchant rows in the last third of their current cert window and advances valid_until to
+-- the freshly-observed notAfter through a verifier-scoped definer — renewal only, never a state change (ACTIVE stays
+-- ACTIVE, evidence stays merchant-tls). The platform subdomain's wildcard cert is Caddy-managed and auto-renews, so no
+-- SQL renewal path exists for it (its valid_until is a 10-year formality, D2).
+-- ---------------------------------------------------------------------------------------
+CREATE FUNCTION control.store_domain_tls_renew(p_domain_id uuid,p_valid_until timestamptz)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE v_row record; v_now timestamptz;
+BEGIN
+    IF p_domain_id IS NULL OR p_valid_until IS NULL OR NOT isfinite(p_valid_until) THEN
+        RAISE EXCEPTION 'invalid domain request' USING ERRCODE='PT400'; END IF;
+    v_now := clock_timestamp();
+    IF p_valid_until<=v_now OR p_valid_until>v_now+interval '400 days' THEN
+        RAISE EXCEPTION 'invalid domain request' USING ERRCODE='PT400'; END IF;
+    SELECT d.id,d.state,d.version,d.evidence_ref INTO v_row FROM control.storefront_domains d WHERE d.id=p_domain_id FOR UPDATE;
+    IF NOT FOUND THEN RAISE EXCEPTION 'domain not found' USING ERRCODE='PT404'; END IF;
+    IF v_row.state <> 'ACTIVE' OR v_row.evidence_ref <> 'merchant-tls' THEN
+        RAISE EXCEPTION 'domain not renewable' USING ERRCODE='PT409'; END IF;
+    UPDATE control.storefront_domains SET tls_verified_at=v_now,valid_until=p_valid_until,version=version+1 WHERE id=p_domain_id;
+    RETURN jsonb_build_object('domain_id',p_domain_id,'state','ACTIVE','version',v_row.version+1);
+END $$;
+ALTER FUNCTION control.store_domain_tls_renew(uuid,timestamptz) OWNER TO commerce_storefront_writer;
+REVOKE ALL ON FUNCTION control.store_domain_tls_renew(uuid,timestamptz) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION control.store_domain_tls_renew(uuid,timestamptz) TO commerce_storefront_verifier;
+COMMENT ON FUNCTION control.store_domain_tls_renew(uuid,timestamptz) IS
+ '0106 D3 (N-P1-2): worker TLS renewal (EXECUTE commerce_storefront_verifier): an ACTIVE merchant-tls row advances valid_until to a fresh probe notAfter (bounded 400 days) and tls_verified_at to now; state stays ACTIVE and evidence merchant-tls (renewal only, never a state change).';
+
+CREATE FUNCTION control.next_store_domain_tls_renewal()
+RETURNS TABLE(domain_id uuid, origin text, valid_until timestamptz)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+    SELECT d.id, d.origin, d.valid_until
+      FROM control.storefront_domains d
+     WHERE d.state='ACTIVE' AND d.evidence_ref='merchant-tls'
+       AND d.tls_verified_at IS NOT NULL AND d.valid_until > clock_timestamp()
+       AND clock_timestamp() > d.tls_verified_at + (d.valid_until - d.tls_verified_at) * 2 / 3
+     ORDER BY d.id
+$$;
+ALTER FUNCTION control.next_store_domain_tls_renewal() OWNER TO commerce_storefront_writer;
+REVOKE ALL ON FUNCTION control.next_store_domain_tls_renewal() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION control.next_store_domain_tls_renewal() TO commerce_storefront_verifier;
+COMMENT ON FUNCTION control.next_store_domain_tls_renewal() IS
+ '0106 D3 (N-P1-2): worker batch read (EXECUTE commerce_storefront_verifier): ACTIVE merchant-tls rows now in the last third of their cert window [tls_verified_at, valid_until] — the sweep re-probes them and renews via store_domain_tls_renew before they would go dark at notAfter.';
 
 -- P1-2: the edge serves /.well-known/lc-domain-check/<nonce> for a TLS_PENDING host and that path only. The api
 -- (commerce_runtime) checks host+nonce here; the worker dials the EDGE address with SNI = the host and compares the
@@ -620,3 +678,19 @@ REVOKE ALL ON FUNCTION control.resolve_primary_origin(text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION control.resolve_primary_origin(text) TO commerce_buyer_runtime;
 COMMENT ON FUNCTION control.resolve_primary_origin(text) IS
  '0106 D3: primary ACTIVE origin for the store of p_origin (merchant ACTIVE first, else platform subdomain); NULL when p_origin is not ACTIVE or is already primary (so no redirect). EXECUTE commerce_buyer_runtime (buyer design read pool) for the buyer-facing 301 lookup.';
+
+-- ---------------------------------------------------------------------------------------
+-- N-P1-3: the platform-origin backfill now runs at migration time, not as a separate operator one-shot — existing
+-- stores (e.g. the pilot) get their ACTIVE https://<handle>.<base> row on the same deploy that adds 0106. The base
+-- domain is the session-local GUC lc.store_base_domain (cmd/migrate sets it from LC_STORE_BASE_DOMAIN for the whole
+-- migration tx); when it is unset (e.g. a test fixture without the platform zone) the backfill is a no-op. Fresh
+-- databases have no stores here yet, so this is empty then too. Runs as the migration owner (the postgres superuser
+-- behind dsn_migrate_owner), so EXECUTE on the SECURITY DEFINER backfill_platform_domains is not an issue.
+-- ---------------------------------------------------------------------------------------
+DO $$
+DECLARE base text := current_setting('lc.store_base_domain', true);
+BEGIN
+    IF base IS NOT NULL AND btrim(base) <> '' THEN
+        PERFORM control.backfill_platform_domains(lower(btrim(base)));
+    END IF;
+END $$;

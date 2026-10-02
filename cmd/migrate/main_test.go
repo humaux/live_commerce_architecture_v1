@@ -15,6 +15,9 @@ func TestMigrateRejectsInvalidConfig(t *testing.T) {
 		"malformed": "postgres://%zz",
 	} {
 		getenv := func(key string) string {
+			if key == "LC_STORE_BASE_DOMAIN" {
+				return ""
+			}
 			if key != "COMMERCE_MIGRATE_DATABASE_URL" {
 				t.Fatalf("%s: unexpected env read %q", name, key)
 			}

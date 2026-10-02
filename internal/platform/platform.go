@@ -365,6 +365,17 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 		Scan(&storefrontRegistrar, &storefrontRegistrarUsage, &storefrontRegistrarSet); err != nil {
 		return fmt.Errorf("validate runtime role: %w", err)
 	}
+	// R5 store-domains (N-P1-1): the DNS/TLS verify sweep's narrow authority (commerce_storefront_verifier),
+	// which lc_store_domain_verify joins; the operator one-shot lc_store_registrar stays on the wider
+	// commerce_storefront_registrar. Same MEMBER + USAGE without SET shape as retention, and it joins the
+	// exactly-one rule below so any login that mixes it with another authority (or its definer owner) is rejected.
+	var storefrontVerifier, storefrontVerifierUsage, storefrontVerifierSet bool
+	if err := pool.QueryRow(ctx, `SELECT coalesce(pg_has_role(session_user, to_regrole('commerce_storefront_verifier'), 'MEMBER'),false),
+		coalesce(pg_has_role(session_user, to_regrole('commerce_storefront_verifier'), 'USAGE'),false),
+		coalesce(pg_has_role(session_user, to_regrole('commerce_storefront_verifier'), 'SET'),false)`).
+		Scan(&storefrontVerifier, &storefrontVerifierUsage, &storefrontVerifierSet); err != nil {
+		return fmt.Errorf("validate runtime role: %w", err)
+	}
 	// T21-02 worker authorities (migration 0096). The legacy commerce_worker above is empty and is a
 	// membership of its own, never a valid authority: a login still in it matches no pool kind.
 	var payWorker, payLive, expiryWorker, adsWorker, claimsWorker bool
@@ -388,7 +399,7 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 		"media_worker": mediaWorker, "media_executor": mediaExecutor, "media_recovery": mediaRecovery,
 		"stripe_ingress": stripeIngress, "stripe_registrar": stripeRegistrar, "claims_intake": claimsIntake,
 		"retention_job": retentionJob, "retention_operator": retentionOperator,
-		"storefront_registrar": storefrontRegistrar}
+		"storefront_registrar": storefrontRegistrar, "storefront_verifier": storefrontVerifier}
 	roleCount := 0
 	for _, member := range memberships {
 		if member {
@@ -421,6 +432,9 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 	}
 	if authority == "storefront_registrar" {
 		roleValid = roleValid && storefrontRegistrarUsage && !storefrontRegistrarSet && !systemAuthority
+	}
+	if authority == "storefront_verifier" {
+		roleValid = roleValid && storefrontVerifierUsage && !storefrontVerifierSet && !systemAuthority
 	}
 	if authority == "media_worker" {
 		roleValid = roleValid && mediaWorkerUsage && !mediaWorkerSet && !systemAuthority
