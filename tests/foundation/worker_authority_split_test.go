@@ -292,13 +292,12 @@ func TestWAS05ProfileFenceDerivedFromAuthority(t *testing.T) {
 	}
 }
 
-// WAS06 writes the effective privilege inventory of the six worker roles as TSV (role, kind, object, privilege) for the
-// before/after evidence of this unit. It asserts nothing; run with LC_WAS_INVENTORY=<file>.
+// WAS06 builds the effective privilege inventory of the six worker roles (role, kind, object, privilege) and asserts it is
+// not empty (the inventory query itself is part of the gate: a catalog change that breaks it fails here, not silently).
+// With LC_WAS_INVENTORY=<file> it also writes the TSV for the before/after evidence of the unit (the release gate never
+// accepts a bare SKIP, so the generator no longer skips without the variable).
 func TestWAS06PrivilegeInventory(t *testing.T) {
 	out := os.Getenv("LC_WAS_INVENTORY")
-	if out == "" {
-		t.Skip("LC_WAS_INVENTORY not set: evidence generator only")
-	}
 	f := fixture(t)
 	ctx := context.Background()
 	rows, err := f.owner.Query(ctx, `
@@ -333,6 +332,12 @@ func TestWAS06PrivilegeInventory(t *testing.T) {
 	}
 	if err := rows.Err(); err != nil {
 		t.Fatal(err)
+	}
+	if strings.Count(b.String(), "\n") < 2 {
+		t.Fatalf("worker privilege inventory is empty for %v", waAll)
+	}
+	if out == "" {
+		return
 	}
 	if err := os.WriteFile(out, []byte(b.String()), 0o600); err != nil {
 		t.Fatal(err)
