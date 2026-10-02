@@ -1,0 +1,29 @@
+=== RUN   TestProductEditorPE01SingleTransaction
+--- PASS: TestProductEditorPE01SingleTransaction (4.53s)
+=== RUN   TestProductEditorPE02Idempotency
+--- PASS: TestProductEditorPE02Idempotency (1.95s)
+=== RUN   TestProductEditorPE03KeywordAndSlugConflict
+--- PASS: TestProductEditorPE03KeywordAndSlugConflict (1.70s)
+=== RUN   TestProductEditorPE04TWDWholeDollar
+--- PASS: TestProductEditorPE04TWDWholeDollar (1.52s)
+=== RUN   TestProductEditorPE05UntrackedTrackedFlags
+--- PASS: TestProductEditorPE05UntrackedTrackedFlags (1.90s)
+=== RUN   TestProductEditorPE06ImagesCap
+--- PASS: TestProductEditorPE06ImagesCap (6.09s)
+=== RUN   TestProductEditorPE07DraftVisibility
+--- PASS: TestProductEditorPE07DraftVisibility (1.42s)
+=== RUN   TestProductEditorPE08AxisChangeArchives
+--- PASS: TestProductEditorPE08AxisChangeArchives (1.40s)
+=== RUN   TestProductEditorPE09StaleVersion
+--- PASS: TestProductEditorPE09StaleVersion (1.95s)
+=== RUN   TestProductEditorPE10Isolation
+--- PASS: TestProductEditorPE10Isolation (1.55s)
+=== RUN   TestProductEditorCopyCommand
+--- PASS: TestProductEditorCopyCommand (1.76s)
+=== RUN   TestProductEditorPE11BulkStatus
+--- PASS: TestProductEditorPE11BulkStatus (2.53s)
+=== RUN   TestProductEditorListSummaries
+--- PASS: TestProductEditorListSummaries (0.71s)
+PASS
+ok  	livecommerce/tests/foundation	30.753s
+test-focused: top-level PASS=13 FAIL=0 SKIP=0 exit=0
