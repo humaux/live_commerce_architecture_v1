@@ -90,6 +90,7 @@ async function shot(page, name, locale, viewport) {
       await page.setViewportSize({ width, height: width === 390 ? 844 : 992 });
       await page.evaluate(async () => { await document.fonts.ready; window.scrollTo({ top: 0, behavior: "instant" }); });
       await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+      await expect.poll(() => page.evaluate(() => window.scrollX)).toBe(0);
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${name} ${locale} overflow at ${width}`);
       await page.screenshot({ path: path.join(root, "output/home-cod-ui", `buyer-${name}-${locale}-${width}.png`), fullPage: false, animations: "disabled", scale: "css" });
       if (name === "checkout") {

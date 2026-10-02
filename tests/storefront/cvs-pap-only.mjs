@@ -136,7 +136,9 @@ try {
     const captureViewport = page.viewportSize();
     await page.setViewportSize({ width: mobile ? 390 : 1586, height: mobile ? 844 : 992 });
     await codUnavailable.scrollIntoViewIfNeeded();
-    await page.screenshot({ path: path.join(root, "output/home-cod-ui", `buyer-cvs-cod-disabled-${locale}-${mobile ? 390 : 1586}.png`), fullPage: false, animations: "disabled" });
+    const disabledCapture = await page.screenshot({ path: path.join(root, "output/home-cod-ui", `buyer-cvs-cod-disabled-${locale}-${mobile ? 390 : 1586}.png`), fullPage: false, animations: "disabled", scale: "css" });
+    assert.equal(disabledCapture.readUInt32BE(16), mobile ? 390 : 1586);
+    assert.equal(disabledCapture.readUInt32BE(20), mobile ? 844 : 992);
     await page.setViewportSize(captureViewport);
     // the payment mode is already pay-at-pickup: there is no card radio to flip back to, the create button already reads pay at pickup, and the
     // note beside it says no card is charged online. A single offered mode may need no radio at all; if one is drawn it must be the checked one.
