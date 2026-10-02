@@ -257,7 +257,7 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   // Back/forward below must cross a page that unmounts Studio if permitted.
   await page.getByTestId("nav-orders").click();
   await expect(page.getByTestId("merchant-orders")).toBeVisible();
-  await page.getByRole("button", { name: "Live workspace" }).click();
+  await page.getByTestId("nav-group-live").click();
   await expect(page.getByTestId("merchant-studio")).toBeVisible();
 
   // Fault applies only after the real Go write has committed; retry must
