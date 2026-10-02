@@ -384,6 +384,7 @@ BEGIN
      OR current_setting('app.principal_id',true) IS DISTINCT FROM s.principal_id::text THEN
         RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403'; END IF;
     SELECT coalesce(jsonb_agg(jsonb_build_object('origin',d.origin,'state',d.state,'version',d.version,
+      'kind',CASE WHEN d.evidence_ref='platform-subdomain' THEN 'platform' ELSE 'custom' END,
       'token',d.verification_token,
       'verify_deadline',CASE WHEN d.verify_deadline IS NULL THEN NULL ELSE to_char(d.verify_deadline AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"') END,
       'serving',coalesce(d.state='ACTIVE' AND d.valid_until>clock_timestamp(),false)) ORDER BY d.origin),'[]'::jsonb) INTO v_domains
@@ -394,7 +395,7 @@ ALTER FUNCTION control.read_store_domains(bytea,uuid) OWNER TO commerce_storefro
 REVOKE ALL ON FUNCTION control.read_store_domains(bytea,uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION control.read_store_domains(bytea,uuid) TO commerce_runtime;
 COMMENT ON FUNCTION control.read_store_domains(bytea,uuid) IS
- '0106 D3: internal/storefrontdomains Read; EXECUTE commerce_runtime (admin Settings GET storefront/domains). integration:read. Every domain row of the store (origin, state, version, token for pending rows, verify deadline, serving). The token is the merchant''s own; never logged.';
+ '0106 D3: internal/storefrontdomains Read; EXECUTE commerce_runtime (admin Settings GET storefront/domains). integration:read. Every domain row of the store (origin, state, version, kind — platform for the platform subdomain, custom otherwise, token for pending rows, verify deadline, serving). The token is the merchant''s own; never logged.';
 
 CREATE FUNCTION control.suspend_merchant_domain(p_hash bytea,p_store uuid,p_origin text)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$

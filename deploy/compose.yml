@@ -635,6 +635,8 @@ services:
       postgres: { condition: service_healthy }
     environment:
       COMMERCE_MIGRATE_DATABASE_URL_FILE: /run/secrets/dsn_migrate_owner
+      # 0106 backfills every existing store's platform origin https://<handle>.<base> from this; preflight P19 refuses an unset value.
+      LC_STORE_BASE_DOMAIN: ${LC_STORE_BASE_DOMAIN:-}
     secrets: [dsn_migrate_owner]
     volumes: ["pgsocket:/var/run/postgresql"]
     cpus: 1.0
