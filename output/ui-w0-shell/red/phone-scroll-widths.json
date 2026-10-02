@@ -1,0 +1,52 @@
+[
+  {
+    "viewport": 1100,
+    "scrollWidth": 830,
+    "clientWidth": 830
+  },
+  {
+    "viewport": 1024,
+    "scrollWidth": 754,
+    "clientWidth": 754
+  },
+  {
+    "viewport": 900,
+    "scrollWidth": 866,
+    "clientWidth": 866
+  },
+  {
+    "viewport": 820,
+    "scrollWidth": 786,
+    "clientWidth": 786
+  },
+  {
+    "viewport": 768,
+    "scrollWidth": 734,
+    "clientWidth": 734
+  },
+  {
+    "viewport": 740,
+    "scrollWidth": 706,
+    "clientWidth": 706
+  },
+  {
+    "viewport": 681,
+    "scrollWidth": 647,
+    "clientWidth": 647
+  },
+  {
+    "viewport": 390,
+    "scrollWidth": 356,
+    "clientWidth": 356
+  },
+  {
+    "viewport": 375,
+    "scrollWidth": 341,
+    "clientWidth": 341
+  },
+  {
+    "viewport": 360,
+    "scrollWidth": 326,
+    "clientWidth": 326
+  }
+]

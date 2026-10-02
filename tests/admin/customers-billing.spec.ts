@@ -14,6 +14,7 @@ import path from "node:path";
 import { billingCopy } from "../../apps/admin/lib/billing-copy";
 import { claimsCopy } from "../../apps/admin/lib/claims-copy";
 import { customersCopy } from "../../apps/admin/lib/customers-copy";
+import { shellCopy } from "../../apps/admin/src/shell-copy";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -44,7 +45,12 @@ const cc = claimsCopy.en;
 async function signedLogin(page: Page) {
   await page.goto(new URL("/en/", origin).toString());
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
+  await page.getByTestId("nav-orders").waitFor({ state: "attached" });
+  const menu = page.locator('button[aria-controls="workspace-navigation"]');
+  const drawer = await menu.isVisible();
+  if (drawer) await menu.click();
   await expect(page.getByTestId("nav-orders")).toBeVisible();
+  if (drawer) await page.keyboard.press("Escape");
 }
 async function ctl(resource: string) {
   const response = await fetch(`${control}/${resource}`, { method: "POST", headers: { "X-Gate-Key": controlKey } });
@@ -81,8 +87,9 @@ const keyOf = (headers: Record<string, string>) => headers["idempotency-key"] ??
 test("CB11 customers list: table, phone last 3 only, search by name and phone digits, no actor or PSP data, nav entries", async ({ page }) => {
   await signedLogin(page);
   // nav entries (integrator hook of WorkspaceFrame): buttons in the rail, each leads to its page
-  for (const section of ["customers", "finance", "billing"] as const)
-    await expect(page.getByRole("navigation").getByRole("button", { name: en.nav[section], exact: true })).toBeVisible();
+  await page.getByTestId("nav-group-settings").click();
+  for (const section of ["nav-group-customers", "nav-group-finance", "nav-billing"] as const)
+    await expect(page.getByTestId(section)).toBeVisible();
   await page.getByRole("navigation").getByRole("button", { name: en.nav.customers, exact: true }).click();
   await expect(page).toHaveURL(/\/en\/customers/);
   await page.goto(`/en/customers?store=${store}`);
@@ -458,10 +465,15 @@ test("CB11 permission fence: a member without customers:read / billing:manage se
       { name: "__Host-commerce_csrf", value: csrf, url, secure: true, httpOnly: false, sameSite: "Lax" },
     ]);
     await page.goto(`/en/customers?store=${store}`);
-    await expect(page.getByText(en.forbidden)).toBeVisible();
+    await expect(page.getByTestId("route-forbidden")).toBeVisible();
+    await expect(page.getByTestId("route-forbidden")).toContainText(shellCopy.en.forbidden);
     await expect(page.getByTestId("customers-table")).toHaveCount(0);
+    await expect(page.getByTestId("customers-page")).toHaveCount(0);
+    await expect(page.locator('[data-testid^="customer-row-"]')).toHaveCount(0);
+    await expect(page.getByText(/Synthetic Recipient/i)).toHaveCount(0);
     await page.goto(`/en/billing?store=${store}`);
-    await expect(page.getByText(bc.forbidden)).toBeVisible();
+    await expect(page.getByTestId("route-forbidden")).toBeVisible();
+    await expect(page.getByTestId("route-forbidden")).toContainText(shellCopy.en.forbidden);
     await expect(page.getByTestId("billing-standing")).toHaveCount(0);
     // finance reads under orders:read (contract 6, read_finance_summary): this member may see it, the store:read-only one may not
     await page.goto(`/en/finance?store=${store}`);
@@ -475,7 +487,8 @@ test("CB11 permission fence: a member without customers:read / billing:manage se
       ]);
       const bp = await bare.newPage();
       await bp.goto(new URL(`/en/finance?store=${store}`, origin).toString());
-      await expect(bp.getByText(en.financeForbidden)).toBeVisible();
+      await expect(bp.getByTestId("route-forbidden")).toBeVisible();
+      await expect(bp.getByTestId("route-forbidden")).toContainText(shellCopy.en.forbidden);
       await expect(bp.getByTestId("finance-table")).toHaveCount(0);
     } finally {
       await bare.close();

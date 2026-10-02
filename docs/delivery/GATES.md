@@ -8,6 +8,14 @@ MOCK, SANDBOX, LIVE, NOT_RUN): a pass here is only ever as strong as the label i
 
 ## Tiers
 
+### W0 UI architecture
+
+| Mode | Proves | Tier | Run |
+| --- | --- | --- | --- |
+| `--browser-admin-shell` | W0 G-UI2/G-UI4 responsive registry shell, 24 viewport/locale cases, role UX, switching and axe | MOCK | `bash scripts/dev/test-local.sh --browser-admin-shell` |
+
+`--browser-admin-shell`: `bash scripts/dev/test-local.sh --browser-admin-shell` builds production Next and runs `tests/admin/shell-runner.mjs` / `shell-browser.mjs` against isolated MOCK transport. G-UI2 covers eight widths × three locales, long store name, actual nav clicks, drawer focus, role-negative UI 403, store switch; G-UI4 uses dev-only axe-core on shell (serious/critical = 0). Go authorization is not proven by this MOCK: G-UI7 keeps the existing signed Go/PG gates. G-UI1/3/5 also run in check-gates and test-node: `shell-registry.test.ts`, `shell-architecture.test.mjs`; the b4223c8 allowance ceiling is immutable and the active list may shrink only.
+
 | Tier | What | Where it runs | Needs |
 | --- | --- | --- | --- |
 | T0 static | `check_packet.py`, `go vet`, secret-literal grep, `depmap.sh --check`, `check-pkgdocs.sh`, `check-gates.sh`, `test-node.sh` (Node unit suites) | CI (`.github/workflows/foundation.yml`) | Go, Python 3, Node 24 |

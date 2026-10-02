@@ -1,0 +1,55 @@
+{
+  "annotation": "Test-only DOM measurement overlay; CSS pixels, no image rescaling",
+  "measured": [
+    {
+      "label": "Close navigation",
+      "width": 52,
+      "height": 47
+    },
+    {
+      "label": "Overview",
+      "width": 204,
+      "height": 45
+    },
+    {
+      "label": "Live & posts",
+      "width": 204,
+      "height": 45
+    },
+    {
+      "label": "Orders & shipping",
+      "width": 204,
+      "height": 45
+    },
+    {
+      "label": "Products & inventory+",
+      "width": 204,
+      "height": 63.1875
+    },
+    {
+      "label": "Customers",
+      "width": 204,
+      "height": 45
+    },
+    {
+      "label": "Marketing+",
+      "width": 204,
+      "height": 45
+    },
+    {
+      "label": "Online store",
+      "width": 204,
+      "height": 45
+    },
+    {
+      "label": "Payments & reports",
+      "width": 204,
+      "height": 45
+    },
+    {
+      "label": "Settings+",
+      "width": 204,
+      "height": 45
+    }
+  ]
+}

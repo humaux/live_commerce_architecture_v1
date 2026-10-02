@@ -9,7 +9,6 @@ import { expect, test, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { customersCopy } from "../../apps/admin/lib/customers-copy";
 import { designCopy, fill } from "../../apps/admin/lib/design-copy";
 
 const required = (name: string) => {
@@ -37,7 +36,12 @@ const ACCENT = "#ff6600";
 async function signedLogin(page: Page) {
   await page.goto(new URL("/en/", origin).toString());
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
-  await expect(page.getByTestId("nav-orders")).toBeVisible();
+  await page.getByTestId("nav-group-storefront").waitFor({ state: "attached" });
+  const menu = page.locator('button[aria-controls="workspace-navigation"]');
+  const drawer = await menu.isVisible();
+  if (drawer) await menu.click();
+  await expect(page.getByTestId("nav-group-storefront")).toBeVisible();
+  if (drawer) await page.keyboard.press("Escape");
 }
 
 async function fitsWidth(page: Page) {
@@ -82,7 +86,6 @@ function watchErrors(page: Page) {
 for (const j of journeys) {
   test(`SDB01 merchant journey ${j.locale} ${j.viewport}: profile, logo, sections, page, save, guard, publish v1, edit, publish v2, rollback to v1`, async ({ page }) => {
     const c = designCopy[j.locale];
-    const nav = customersCopy[j.locale].nav;
     const name = `Gate Shop ${j.locale} ${j.viewport}`;
     const mobile = j.viewport === "mobile";
     await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 1586, height: 992 });
@@ -209,9 +212,11 @@ for (const j of journeys) {
 
     // ---- unsaved-changes guard (beforeunload hook, in-app navigation confirm: stay and leave) ----
     // at 390 px the rail is an off-canvas drawer behind the menu button; at desktop width it is always visible
-    const goCustomers = async () => {
-      if (mobile && (await page.locator("button.mobile-menu").getAttribute("aria-expanded")) !== "true") await page.locator("button.mobile-menu").click();
-      await page.getByRole("navigation").getByRole("button", { name: nav.customers, exact: true }).click();
+    // This fixture already has integration:read; navigation must exercise the dirty
+    // guard without granting a different domain solely to reach a destination.
+    const goSettings = async () => {
+      if (mobile && (await page.locator('button[aria-controls="workspace-navigation"]').getAttribute("aria-expanded")) !== "true") await page.locator('button[aria-controls="workspace-navigation"]').click();
+      await page.getByTestId("nav-group-settings").click();
     };
     const beforeUnloadPrevented = () => page.evaluate(() => { const e = new Event("beforeunload", { cancelable: true }); window.dispatchEvent(e); return e.defaultPrevented; });
     expect(await beforeUnloadPrevented(), "clean draft must not warn").toBe(false);
@@ -220,24 +225,30 @@ for (const j of journeys) {
     await expect(status).toContainText(c.unsaved);
     expect(await beforeUnloadPrevented(), "dirty draft must warn on unload").toBe(true);
     dlg.answer("dismiss");
-    await goCustomers();
+    await goSettings();
     await expect.poll(() => dlg.seen.filter((d) => d.message === c.guard).length).toBe(1);
     await expect(page).toHaveURL(new RegExp(`/${j.locale}/design`));
     await expect(page.getByLabel(c.profile.tagline, { exact: true })).toHaveValue("a tagline nobody saved");
+    // Canceling navigation leaves the modal drawer open. Return focus to the
+    // editor before editing; its inert content must not receive input behind it.
+    if (mobile) {
+      await page.keyboard.press("Escape");
+      await expect(page.locator('button[aria-controls="workspace-navigation"]')).toHaveAttribute("aria-expanded", "false");
+    }
     // undoing the edit makes the page clean again: no warning, navigation goes through without a dialog
     await page.getByLabel(c.profile.tagline, { exact: true }).fill("");
     await expect(status).toContainText(c.saved);
     expect(await beforeUnloadPrevented()).toBe(false);
     const before = dlg.seen.length;
-    await goCustomers();
-    await expect(page).toHaveURL(new RegExp(`/${j.locale}/customers`));
+    await goSettings();
+    await expect(page).toHaveURL(new RegExp(`/${j.locale}/settings`));
     expect(dlg.seen.length).toBe(before);
     // dirty again and leave on purpose: the edit is gone and the saved draft is what comes back
     await page.goto(`/${j.locale}/design?store=${j.id}`);
     await page.getByLabel(c.profile.tagline, { exact: true }).fill("discard me");
     dlg.answer("accept");
-    await goCustomers();
-    await expect(page).toHaveURL(new RegExp(`/${j.locale}/customers`));
+    await goSettings();
+    await expect(page).toHaveURL(new RegExp(`/${j.locale}/settings`));
     expect(dlg.seen.filter((d) => d.message === c.guard).length).toBe(2);
     await page.goto(`/${j.locale}/design?store=${j.id}`);
     await expect(status).toContainText(fill(c.draftVersion, { n: 1 }));

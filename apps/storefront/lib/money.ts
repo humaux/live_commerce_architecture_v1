@@ -5,17 +5,20 @@
 // comes from Intl (TWD = 2 in this system, JPY = 0) and whole amounts drop them, so a line, a subtotal and a total read alike.
 import type { Locale } from "@live-commerce/i18n";
 
+// The only Intl.NumberFormat construction of this file (G-UI3 legacy ceiling): every call below goes through it.
+const numberFormat = (locale: Locale, options: Intl.NumberFormatOptions) => new Intl.NumberFormat(locale, options);
+
 export function minorDigits(locale: Locale, currency: string): number {
-  return new Intl.NumberFormat(locale, { style: "currency", currency }).resolvedOptions().maximumFractionDigits ?? 2;
+  return numberFormat(locale, { style: "currency", currency }).resolvedOptions().maximumFractionDigits ?? 2;
 }
 
 export function formatMoney(locale: Locale, amount: number, currency: string): string {
   const digits = minorDigits(locale, currency);
-  if (currency === "TWD") return `NT$${new Intl.NumberFormat(locale, {
+  if (currency === "TWD") return `NT$${numberFormat(locale, {
     minimumFractionDigits: amount % 100 === 0 ? 0 : 2,
     maximumFractionDigits: 2,
   }).format(amount / 100)}`;
-  const formatter = new Intl.NumberFormat(locale, {
+  const formatter = numberFormat(locale, {
     style: "currency",
     currency,
     currencyDisplay: "symbol",

@@ -248,3 +248,17 @@ Studio B 在同一工作面保留场次列表、当前编辑器和事实状态�
 - **Don't** 合并聊天域、从语言推导市场/币种，或用乐观界面覆盖交易与权限真相。
 - **Don't** 引入 KPI 卡片墙、装饰性 hero、重阴影、玻璃效果、渐变文字或无语义动画。
 - **Don't** 把获批稿的单个场次数量、渠道清单或示例状态提升为所有工作面的固定内容。
+
+## W0 signed-in admin shell — scoped override (2026-10-02)
+
+This section supersedes only the legacy shell's geometry and palette above. Existing domain page bodies, their teal actions, forms and tables remain unchanged until their own units migrate.
+
+- Authority: `docs/delivery/units/ui-w0-shell.md` Decisions 1–6 and approved comp `01-admin-overview.png`; unsupported search, task centre, notification bell and message routes are intentionally absent.
+- Dark rail: **220px**, `#1F2937`; Settings is pinned below a separately scrollable navigation area. Ten registry groups define the order; groups without an accessible page do not render. Active entries use the orange accent with contrast-safe light text.
+- White top bar: real store selection, locale selection, help and account/sign-out. Store changes navigate to the new store's overview and unmount the previous page. No fictional KPI or provider-health status is introduced.
+- Below **1024px** the rail becomes a modal-style drawer: focus enters the close button, Tab stays inside, Escape closes, focus returns to the opener, and the work area is inert while open. At narrow widths the top bar wraps to two rows. Controls keep **44px** targets.
+- Tokens: brand `#FF6A00`, accessible brand text `#A84300`, page `#F5F6F8`, surface `#FFFFFF`, border `#E5E7EB`, text `#1F2937`, radius **8px**, spacing **4/8/12/16/24px**. Shell-only implementation lives in `packages/ui/src/tokens.css` and `AppShell.module.css`.
+- Typography: retain the existing compact system body face for this operational shell; long store names truncate only in the bounded switcher. Three locales are typed and key-parity tested.
+- Icons are authored SVG with current-color strokes; drawer motion respects reduced motion. No new shipping raster assets were produced.
+- Registry metadata owns navigation, breadcrumbs, page title and permission UX. Unknown access fails closed; Go remains the authority for data and writes.
+- Evidence: `output/ui-w0-shell/` contains eight widths × three locales and four drawer widths × three locales. These are **MOCK** shell captures, not provider, business-dashboard or deployment acceptance.

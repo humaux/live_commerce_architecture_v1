@@ -346,11 +346,12 @@ try {
       await openCard(merchant, locale, "desktop");
       await merchant.setViewportSize(viewport);
       if (size === "mobile") {
-        const menu = merchant.locator(".mobile-menu");
-        if (await menu.getAttribute("aria-expanded") === "true") await menu.click();
+        // W0 shell: the drawer button is addressed by its aria-controls id (the old .mobile-menu/.rail classes are gone); it only opens, Escape closes.
+        const menu = merchant.locator('button[aria-controls="workspace-navigation"]');
+        if (await menu.getAttribute("aria-expanded") === "true") await merchant.keyboard.press("Escape");
         await expect(menu).toHaveAttribute("aria-expanded", "false");
         // Wait for the actual off-canvas transition, not a screenshot-only CSS override.
-        await expect.poll(() => merchant.locator(".rail").evaluate(node => node.getBoundingClientRect().right)).toBeLessThanOrEqual(0);
+        await expect.poll(() => merchant.locator("#workspace-navigation").evaluate(node => node.getBoundingClientRect().right)).toBeLessThanOrEqual(0);
       }
       await expect(domainCard.getByTestId("storefront-domain-row")).toHaveCount(2);
       await domainCard.scrollIntoViewIfNeeded();
@@ -520,9 +521,9 @@ try {
     for (const [size, viewport] of Object.entries({ desktop: { width: 1586, height: 992 }, mobile: { width: 390, height: 844 } })) {
       await page.setViewportSize(viewport);
       if (size === "mobile") {
-        const menu = page.locator(".mobile-menu");
-        if (await menu.getAttribute("aria-expanded") === "true") await menu.click();
-        await expect.poll(() => page.locator(".rail").evaluate(node => node.getBoundingClientRect().right)).toBeLessThanOrEqual(0);
+        const menu = page.locator('button[aria-controls="workspace-navigation"]'); // W0 shell drawer button; it only opens, Escape closes
+        if (await menu.getAttribute("aria-expanded") === "true") await page.keyboard.press("Escape");
+        await expect.poll(() => page.locator("#workspace-navigation").evaluate(node => node.getBoundingClientRect().right)).toBeLessThanOrEqual(0);
       }
       await section.getByTestId("storefront-dns").scrollIntoViewIfNeeded();
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${locale} ${size} apex: no overflow`);

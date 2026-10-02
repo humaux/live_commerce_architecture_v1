@@ -1,0 +1,4 @@
+apps/admin/components/WorkspaceFrame.tsx 79ms
+apps/admin/app/[locale]/orders/cvs-print/page.tsx 5ms
+scripts/dev/ui-architecture-gate.mjs 20ms
+tests/admin/shell-architecture.test.mjs 3ms

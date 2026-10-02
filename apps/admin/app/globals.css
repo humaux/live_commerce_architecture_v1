@@ -224,117 +224,6 @@ fieldset {
 .skip-link:focus {
   top: 8px;
 }
-.workspace {
-  display: flex;
-  min-height: 100vh;
-}
-.rail {
-  width: 214px;
-  flex-shrink: 0;
-  min-height: 100vh;
-  background: var(--navy);
-  color: #f7faff;
-  display: flex;
-  flex-direction: column;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  /* 14 entries at 56px plus brand and sign-out exceed a 768px screen: the rail scrolls so Settings and Sign out stay reachable */
-  overflow-y: auto;
-}
-.rail > * {
-  flex-shrink: 0;
-}
-.rail > .nav-item:last-child {
-  margin-top: auto; /* Sign out sits at the bottom of the rail when there is room, right after the last entry when there is not */
-}
-.brand {
-  height: 70px;
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
-  font-size: 21px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  border-bottom: 1px solid #44607c;
-}
-.nav-item {
-  width: 100%;
-  height: 56px;
-  display: flex;
-  align-items: center;
-  gap: 19px;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: inherit;
-  padding: 0 24px;
-  text-align: left;
-  font-size: 16px;
-  font-weight: 400;
-  border-left: 4px solid transparent;
-}
-.nav-item.active {
-  background: #28567f;
-  border-left-color: #6ca7d3;
-  font-weight: 700;
-}
-.nav-item:hover:not(:disabled) {
-  background: #28567f;
-}
-.work-area {
-  flex: 1;
-  min-width: 0;
-}
-.topbar {
-  height: 66px;
-  display: flex;
-  gap: 20px;
-  align-items: center;
-  padding: 0 22px;
-  background: white;
-  border-bottom: 1px solid var(--line);
-}
-.store-label {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  font-weight: 700;
-  border: 1px solid var(--line);
-  padding: 10px 14px;
-  min-width: 188px;
-  border-radius: 5px;
-}
-.top-spacer {
-  flex: 1;
-}
-.language select {
-  border-color: transparent;
-  max-width: 150px;
-}
-.user-label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 13px;
-}
-.avatar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  width: 34px;
-  height: 34px;
-  background: #e9eef5;
-  color: #49627d;
-  font-weight: 700;
-}
-.mobile-menu {
-  display: none;
-}
-.main {
-  padding: 18px 18px 30px;
-}
 .heading-row {
   display: flex;
   align-items: flex-start;
@@ -833,17 +722,6 @@ code {
   }
 }
 @media (max-width: 1280px) {
-  .rail {
-    width: 185px;
-  }
-  .brand {
-    font-size: 18px;
-    padding: 0 15px;
-  }
-  .nav-item {
-    padding: 0 18px;
-    font-size: 14px;
-  }
   .inspector {
     flex-wrap: wrap;
     gap: 20px;
@@ -882,32 +760,6 @@ code {
   }
 }
 @media (max-width: 900px) {
-  .rail {
-    width: 165px;
-  }
-  .nav-item {
-    gap: 12px;
-    padding: 0 13px;
-  }
-  .brand {
-    font-size: 16px;
-    padding: 0 11px;
-  }
-  .topbar {
-    gap: 10px;
-    padding: 0 14px;
-  }
-  .store-label {
-    min-width: 0;
-    font-size: 12px;
-  }
-  .user-label {
-    font-size: 0;
-    gap: 0;
-  }
-  .main {
-    padding: 15px 12px;
-  }
   .heading-row {
     padding: 0;
   }
@@ -949,54 +801,6 @@ code {
   }
 }
 @media (max-width: 680px) {
-  .rail {
-    position: fixed;
-    z-index: 10;
-    top: 58px;
-    bottom: 0;
-    height: calc(100dvh - 58px);
-    min-height: 0; /* the base min-height: 100vh made the drawer 58px taller than the screen, so its last entry sat below the fold */
-    width: 214px;
-    transform: translateX(-100%);
-    transition: transform 0.15s ease;
-  }
-  .rail.open {
-    transform: translateX(0);
-  }
-  .rail .brand {
-    display: none;
-  }
-  .nav-item {
-    font-size: 15px;
-    padding: 0 20px;
-  }
-  .topbar {
-    height: 58px;
-    gap: 9px;
-    padding: 0 10px;
-  }
-  .mobile-menu {
-    display: inline-flex;
-  }
-  .store-label {
-    padding: 0;
-    border: 0;
-    font-size: 12px;
-    gap: 7px;
-  }
-  .store-label svg {
-    display: none;
-  }
-  .user-label {
-    display: none;
-  }
-  .language select {
-    max-width: 126px;
-    font-size: 12px;
-  }
-  .main {
-    padding: 17px 10px;
-  }
   .heading-row {
     gap: 12px;
   }
@@ -1148,9 +952,6 @@ code {
     gap: 12px;
   }
 }
-.topbar .mobile-menu {
-  display: none;
-}
 @media (min-width: 1281px) {
   .section-bar {
     margin-top: 0;
@@ -1186,9 +987,6 @@ code {
   }
 }
 @media (max-width: 680px) {
-  .topbar .mobile-menu {
-    display: inline-flex;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   *,

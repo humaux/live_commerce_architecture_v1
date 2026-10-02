@@ -1,0 +1,26 @@
+
+Running 19 tests using 1 worker
+
+(node:3516) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/admin/ledger.spec.ts:6:1 › approved ledger reproduction and mobile table remain usable (2.4s)
+  ✓   2 tests/admin/ledger.spec.ts:45:1 › locale routes preserve the scoped search and explicit choice (4.5s)
+  ✓   3 tests/admin/ledger.spec.ts:69:1 › lost mutation response retries original key and payload only once (1.5s)
+  ✓   4 tests/admin/ledger.spec.ts:113:1 › uncertain command survives closing a tab and storage denial sends no write (2.3s)
+  ✓   5 tests/admin/ledger.spec.ts:178:1 › stale balance fails closed and refresh enables a new command (1.1s)
+  ✓   6 tests/admin/ledger.spec.ts:231:1 › Add product leaves for the product editor; no inline create panel on the inventory page (1.6s)
+  ✓   7 tests/admin/ledger.spec.ts:244:1 › BFF rejects cross-store, foreign origin, route injection and oversized writes (627ms)
+  ✓   8 tests/admin/ledger.spec.ts:283:1 › purchase-entry proxy only accepts the scoped GET locale query (246ms)
+  ✓   9 tests/admin/ledger.spec.ts:330:1 › purchase-entry read failure says the product is unchanged, offers a refresh and sends no write (960ms)
+  ✓  10 tests/admin/ledger.spec.ts:366:1 › stock adjustment denial reports permission without claiming the inventory was updated (993ms)
+  ✓  11 tests/admin/ledger.spec.ts:402:1 › purchase controls recheck current state before copying or opening (1.2s)
+  ✓  12 tests/admin/ledger.spec.ts:469:3 › inventory tray has no overlap, clipping or overflow at 1366x768 (902ms)
+  ✓  13 tests/admin/ledger.spec.ts:469:3 › inventory tray has no overlap, clipping or overflow at 1586x992 (659ms)
+  ✓  14 tests/admin/ledger.spec.ts:469:3 › inventory tray has no overlap, clipping or overflow at 2000x1100 (704ms)
+  ✓  15 tests/admin/ledger.spec.ts:469:3 › inventory tray has no overlap, clipping or overflow at 375x812 (554ms)
+  ✓  16 tests/admin/ledger.spec.ts:525:1 › inventory tray keeps stock and read-only price; product editing lives on the product page (854ms)
+  ✓  17 tests/admin/ledger.spec.ts:556:1 › rail has no hard-coded channel status and scrolls to Settings and Sign out at 1366x768 (1.5s)
+  ✓  18 tests/admin/production.spec.ts:3:1 › production build has no env-bearer merchant session (333ms)
+  ✓  19 tests/admin/visual-states.spec.ts:33:1 › ledger selection caret and scroll surface are authored and active (1.3s)
+
+  19 passed (26.6s)

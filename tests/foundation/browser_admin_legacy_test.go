@@ -5,6 +5,7 @@ package foundation_test
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"net"
 	"net/http"
 	"os"
@@ -15,6 +16,8 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
 // ALG01 wires the admin ledger Playwright suite (ledger.spec.ts, production.spec.ts,
@@ -96,6 +99,39 @@ func TestBrowserAdminLedgerFixtureChain(t *testing.T) {
 	if fixtureEnv == nil || fixtureEnv["COMMERCE_FIXTURE_TOKEN"] == "" || fixtureEnv["COMMERCE_FIXTURE_STORE_ID"] == "" {
 		t.Fatalf("admin-fixture wrote no session; evidence: %s", evidence)
 	}
+	// The legacy reachability case opens Settings in the registry shell. Give
+	// this isolated fixture only its required read grant, never owner-wide access.
+	conn, err := pgx.Connect(ctx, guard)
+	if err != nil {
+		t.Fatal("ledger fixture permission connection failed")
+	}
+	defer conn.Close(context.Background())
+	grant, grantErr := conn.Exec(ctx, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission)
+		SELECT tenant_id,store_id,principal_id,'integration:read' FROM identity.store_grants
+		WHERE store_id=$1 AND permission='store:read' ON CONFLICT DO NOTHING`, fixtureEnv["COMMERCE_FIXTURE_STORE_ID"])
+	if grantErr != nil || grant.RowsAffected() != 1 {
+		t.Fatal("ledger fixture Settings read grant failed")
+	}
+	// This legacy bearer is not a signed-identity API session. Supply only the
+	// test shell metadata, using the real SQL projection under its runtime role.
+	// Catalog/stock requests continue through the unchanged Go fixture server.
+	if _, err := conn.Exec(ctx, `SET ROLE commerce_runtime`); err != nil {
+		t.Fatal("ledger identity runtime role unavailable")
+	}
+	var role string
+	if err := conn.QueryRow(ctx, `SELECT current_user`).Scan(&role); err != nil || role != "commerce_runtime" {
+		t.Fatal("ledger identity projection must use commerce_runtime")
+	}
+	hash := sha256.Sum256([]byte(fixtureEnv["COMMERCE_FIXTURE_TOKEN"]))
+	var identityJSON, identityStore string
+	var identityCount int
+	err = conn.QueryRow(ctx, `SELECT json_build_object('items',coalesce(json_agg(s),'[]'::json))::text,
+		count(*),coalesce(min(id::text),'') FROM
+		(SELECT id,name,currency,role,permissions FROM identity.list_session_stores($1)) s`, hash[:]).Scan(&identityJSON, &identityCount, &identityStore)
+	if err != nil || identityCount != 1 || identityStore != fixtureEnv["COMMERCE_FIXTURE_STORE_ID"] {
+		t.Fatal("ledger identity projection must contain exactly the fixture store")
+	}
+	_ = conn.Close(ctx)
 
 	// Dev Next with the fixture bearer (NODE_ENV must be development: apps/admin/lib/backend.ts).
 	nextEnvPath := filepath.Join(root, "apps/admin/next-env.d.ts")
@@ -130,7 +166,7 @@ func TestBrowserAdminLedgerFixtureChain(t *testing.T) {
 	waitHTTP(t, ctx, evidence, "http://127.0.0.1:3101/api/stores/00000000-0000-0000-0000-000000000001/products", "", http.StatusUnauthorized)
 
 	runPlaywright(t, ctx, root, evidence, "ledger", map[string]string{
-		"COMMERCE_FIXTURE_TOKEN": fixtureEnv["COMMERCE_FIXTURE_TOKEN"], "COMMERCE_FIXTURE_STORE_ID": fixtureEnv["COMMERCE_FIXTURE_STORE_ID"]})
+		"COMMERCE_FIXTURE_TOKEN": fixtureEnv["COMMERCE_FIXTURE_TOKEN"], "COMMERCE_FIXTURE_STORE_ID": fixtureEnv["COMMERCE_FIXTURE_STORE_ID"], "LC_LEDGER_IDENTITY": identityJSON})
 	t.Logf("PASS: admin-fixture PG + Go + dev Next (:3100) + packaged production Next (:3101); evidence=%s", evidence)
 }
 

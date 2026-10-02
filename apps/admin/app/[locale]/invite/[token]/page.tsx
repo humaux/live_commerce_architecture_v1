@@ -7,10 +7,13 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { isLocale } from "@live-commerce/i18n";
+import { routeMetadata } from "@/src/route-metadata";
 import { SESSION_COOKIE, authConfig, authenticatedStores, exactCookieHeader, isBase64URL32 } from "@/lib/auth";
 import { TeamInvite } from "@/components/TeamInvite";
 
-export const metadata: Metadata = { referrer: "no-referrer", robots: { index: false, follow: false } };
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  return { ...await routeMetadata("/invite/[token]", params), referrer: "no-referrer", robots: { index: false, follow: false } };
+}
 
 export default async function InvitePage({ params }: { params: Promise<{ locale: string; token: string }> }) {
   const { locale, token } = await params;

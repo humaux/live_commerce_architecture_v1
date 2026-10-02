@@ -1,0 +1,30 @@
+{
+  "annotation": "Test-only DOM measurement overlay; CSS pixels, no image rescaling",
+  "measured": [
+    {
+      "label": "Open navigation",
+      "width": 44,
+      "height": 44
+    },
+    {
+      "label": "Switch store",
+      "width": 314,
+      "height": 44
+    },
+    {
+      "label": "Language",
+      "width": 102,
+      "height": 44
+    },
+    {
+      "label": "Help",
+      "width": 54.796875,
+      "height": 44
+    },
+    {
+      "label": "Account",
+      "width": 76.59375,
+      "height": 44
+    }
+  ]
+}

@@ -4,7 +4,6 @@ import { isLocale } from "@live-commerce/i18n";
 import "../globals.css";
 
 export const metadata: Metadata = {
-  title: "Commerce workspace",
   robots: { index: false, follow: false },
 };
 export const dynamic = "force-dynamic";

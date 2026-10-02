@@ -53,3 +53,9 @@ type="file">` + `FormData`, the storefront gallery a plain `<img>`.
 | Meta Graph API / webhooks | `graph.facebook.com`, inbound `/v1/meta/webhooks/*` | `internal/integrations/meta` | `meta-*-v1.md` |
 | LiveKit (Egress / ingress) | configured per deployment | `internal/integrations/livekit`, `cmd/media-worker` | `livekit-*-v1.md` |
 | OIDC identity provider | owner choice (deploy blocker B2) | `internal/oidclogin` | `merchant-identity-v1.md` |
+
+## W0 shell test/runtime additions
+
+- `typescript-api` aliases TypeScript 6.0.3, dev-only: in-process compiler AST and module resolution for G-UI3/G-UI5 (including aliases, relative imports and re-exports). Build/typecheck remain on TypeScript 7.0.2, whose root export no longer exposes this API. No production bundle import.
+- `axe-core` 4.13.0, dev-only: required G-UI4 deterministic accessibility audit. Injected only by the isolated browser test; not shipped to shoppers/admin bundles. Official npm registry version verified 2026-10-02.
+- Internal `@live-commerce/ui` and `@live-commerce/format`: workspace packages, no new runtime vendor. UI uses the already pinned React 19.3.0 peer; existing helpers move to format. No generic table/forms library was added.

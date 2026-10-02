@@ -1,0 +1,3 @@
+packages/ui/src/AppShell.tsx 35ms
+tests/admin/shell-browser.mjs 27ms
+scripts/dev/ui-architecture-gate.mjs 11ms
