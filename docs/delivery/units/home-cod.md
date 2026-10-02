@@ -52,3 +52,10 @@ The reviewer's red tests (`TestHomeCodDefect*`) and hardening tests stay as writ
 - **P2-4:** the carrier label is shown.
 - **P2-5:** the buyer headline follows the collection state.
 - **Comps:** 04 and 09.
+
+### Rulings on the backend fix deviations (integrator, 2026-10-02; DEVIATIONS.md at 75931ee)
+- **P1-3b: NOT accepted.** Making a tracking correction a no-op closes the two known writers. Finance still groups on `orders.updated_at`, so any other later write to a collected order (e.g. erasure anonymising the row) still moves cash to another day. Implement the ruling: `collected_at` is set once by `record_collection`; finance groups COD and pickup on it; best-effort labelled backfill. Keep the correction no-op too.
+  - The reviewer's fixture `TestHomeCodDefectFinanceDayDrift` backdates `updated_at` to mean "collected yesterday at noon". Amend that one fixture line to backdate `collected_at` as well. This realigns the fixture with its stated intent; the assertion is unchanged, so it is not a weakening.
+  - Add a red-first test: erasure (or any other write to the order row) after collection must not move the finance day.
+- **P2-6: accepted.** The ECPay `ReceiverName` 4–10 width rule is a CVS label-field constraint. Manual home delivery has no such field. The name and TW-mobile reachability checks stay.
+- **P2-3: accepted.** The options request has no basket total, so the options DTO exposes `cod_max_minor` and the storefront hides an over-cap COD row. Begin remains the authority and refuses over-cap orders with its own code.
