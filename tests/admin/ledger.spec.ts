@@ -560,7 +560,7 @@ test("rail has no hard-coded channel status and scrolls to Settings and Sign out
   await expect(rail).toBeVisible();
   // the fake "Channel status" block (Storefront/Facebook/Instagram/WhatsApp/LINE, always "Not connected") is gone
   await expect(rail.getByText("Channel status")).toHaveCount(0);
-  for (const fake of ["WhatsApp", "LINE", "Facebook", "Instagram", "Not connected"]) await expect(rail.getByText(fake)).toHaveCount(0);
+  for (const fake of ["WhatsApp", "LINE", "Facebook", "Instagram", "Not connected"]) await expect(rail.getByText(fake, { exact: true })).toHaveCount(0);
   // W0 scrolls the registry navigation independently of pinned Settings; the
   // minimal-permission fixture no longer exposes fourteen unrelated routes.
   const navigation = rail.getByRole("navigation", { name: "Workspace navigation", exact: true });

@@ -15,7 +15,9 @@
   outline: 3px solid var(--ui-focus);
   outline-offset: 3px;
 }
-.shell ::selection {
+/* Chrome palette must not override selection inside unchanged domain pages. */
+.rail ::selection,
+.topbar ::selection {
   background: #ffdbbf;
   color: var(--ui-text);
 }

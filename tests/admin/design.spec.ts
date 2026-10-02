@@ -229,6 +229,12 @@ for (const j of journeys) {
     await expect.poll(() => dlg.seen.filter((d) => d.message === c.guard).length).toBe(1);
     await expect(page).toHaveURL(new RegExp(`/${j.locale}/design`));
     await expect(page.getByLabel(c.profile.tagline, { exact: true })).toHaveValue("a tagline nobody saved");
+    // Canceling navigation leaves the modal drawer open. Return focus to the
+    // editor before editing; its inert content must not receive input behind it.
+    if (mobile) {
+      await page.keyboard.press("Escape");
+      await expect(page.locator('button[aria-controls="workspace-navigation"]')).toHaveAttribute("aria-expanded", "false");
+    }
     // undoing the edit makes the page clean again: no warning, navigation goes through without a dialog
     await page.getByLabel(c.profile.tagline, { exact: true }).fill("");
     await expect(status).toContainText(c.saved);
