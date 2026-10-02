@@ -4174,7 +4174,11 @@ func TestClaimsRetentionCRP08RestoreReplay(t *testing.T) {
 	}
 	p.assertErased(t, srcOwner, "source after erasure")
 
-	restore := func(name string) (*pgxpool.Pool, *pgxpool.Pool, string) {
+	// Each restored database is dropped when ITS subtest ends (t is the subtest's): the throw-away PG has a 256 MiB tmpfs, and
+	// keeping all four restores (plus the source and the snapshot, ~25 MB each + the WAL of every template copy) to the end of the
+	// test filled it ("could not write to file pg_wal/xlogtemp: No space left on device" -> "unexpected EOF" on the next restore).
+	restore := func(t *testing.T, name string) (*pgxpool.Pool, *pgxpool.Pool, string) {
+		t.Helper()
 		if _, err := conn.Exec(ctx, `CREATE DATABASE `+name+` TEMPLATE `+snapshot); err != nil {
 			t.Fatalf("restore %s: %v", name, err)
 		}
@@ -4186,7 +4190,7 @@ func TestClaimsRetentionCRP08RestoreReplay(t *testing.T) {
 	t.Cleanup(func() { _, _ = conn.Exec(ctx, `DROP DATABASE IF EXISTS `+snapshot+` WITH (FORCE)`) })
 
 	t.Run("red-restore-without-replay-keeps-the-key", func(t *testing.T) {
-		ownerR, _, _ := restore("lc_crp08_red")
+		ownerR, _, _ := restore(t, "lc_crp08_red")
 		if n := crCount(t, ownerR, `SELECT count(*) FROM claims.bundles WHERE actor_key=$1 AND purged_at IS NULL`, keyP); n != 2 {
 			t.Fatalf("the restored snapshot has %d bundles with the erased key, want 2 (the RED state: the erasure is lost)", n)
 		}
@@ -4199,7 +4203,7 @@ func TestClaimsRetentionCRP08RestoreReplay(t *testing.T) {
 	})
 
 	t.Run("green-replay-from-log-rows-ignoring-the-hold", func(t *testing.T) {
-		ownerR, opR, _ := restore("lc_crp08_log")
+		ownerR, opR, _ := restore(t, "lc_crp08_log")
 		// a partial restore that kept the log: the tombstone rows are in retention_log, the data is the old snapshot
 		for _, ts := range tombstones {
 			var bt, bs, br any
@@ -4268,7 +4272,7 @@ func TestClaimsRetentionCRP08RestoreReplay(t *testing.T) {
 		// non-terminal-reply-operation limits of the §4 policies, which a replay lifts through a transaction-local flag
 		// set only inside claims.replay_actor_erasures. A snapshot taken while an intake row of the erased actor was
 		// PENDING (or its reply not yet terminal) must not keep the actor key or the comment_ref after the replay.
-		ownerR, opR, _ := restore("lc_crp08_residue")
+		ownerR, opR, _ := restore(t, "lc_crp08_residue")
 		for _, ts := range tombstones {
 			if ts.ActorDigest != nil {
 				mustExec(t, ownerR, `INSERT INTO claims.retention_log(kind,request_id,selector_digest,actor_digest,counts) VALUES('actor_erased',$1,$2,$3,'{"bundles":2}')`, ts.RequestID, ts.SelectorDigest, ts.ActorDigest)
@@ -4309,7 +4313,7 @@ func TestClaimsRetentionCRP08RestoreReplay(t *testing.T) {
 	})
 
 	t.Run("green-replay-from-an-external-tombstone-file-via-the-cli", func(t *testing.T) {
-		ownerR, _, dsn := restore("lc_crp08_file")
+		ownerR, _, dsn := restore(t, "lc_crp08_file")
 		// one tombstone is already in the restored log (must not be duplicated), the other one only in the external list
 		actorIdx, manualIdx := 0, 1
 		if tombstones[0].ActorDigest == nil {
