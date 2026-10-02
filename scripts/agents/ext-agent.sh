@@ -4,7 +4,7 @@
 #   K2.8 at 2026-10-01: 1M context, reasoning-only, image/video input) through the Claude Code CLI, which speaks the
 #   Anthropic Messages API that Kimi exposes at https://api.kimi.com/coding/. Used by the integrator to offload work
 #   that does not need the top tier (docs/delivery/PROCESS.md §3 "Third-party models").
-# Usage: [PROVIDER=kimi|deepseek] [MODEL=...] bash scripts/agents/ext-agent.sh <worktree> <prompt-file> <out-dir> [effort low|high|max]
+# Usage: [PROVIDER=kimi|deepseek] [MODEL=...] [RESUME=<session_id from a cut-off run's result.json>] bash scripts/agents/ext-agent.sh <worktree> <prompt-file> <out-dir> [effort low|high|max]
 #   kimi (subscription, 5-hour quota window): MODEL k3 (default) | kimi-for-coding (K2.8)
 #   deepseek (PAY-AS-YOU-GO, owner balance): MODEL deepseek-v4-pro (default) | deepseek-flash; refuses to start below
 #   DEEPSEEK_MIN_BALANCE_CNY (default 10, owner 2026-10-02), and a watchdog checks the balance every 60 s during the run and
@@ -80,7 +80,7 @@ env -i PATH="/Users/luolimo/.local/share/fnm/node-versions/v24.15.0/installation
   ANTHROPIC_BASE_URL="$base_url" ANTHROPIC_AUTH_TOKEN="$key" \
   ANTHROPIC_MODEL="$model" ANTHROPIC_SMALL_FAST_MODEL="$model" \
   CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 DISABLE_AUTOUPDATER=1 MAX_THINKING_TOKENS="$think" \
-  claude -p "$(cat "$prompt")" --settings "$settings" --strict-mcp-config --mcp-config '{"mcpServers":{}}' \
+  claude -p "$(cat "$prompt")" ${RESUME:+--resume "$RESUME"} --settings "$settings" --strict-mcp-config --mcp-config '{"mcpServers":{}}' \
     --permission-mode acceptEdits --output-format json >"$out/result.json" 2>"$out/stderr.log" &
 run_pid=$!
 if [[ $provider == deepseek ]]; then
