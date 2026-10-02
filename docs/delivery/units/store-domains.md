@@ -34,6 +34,7 @@ deploy/caddy/Caddyfile, deploy/scripts/preflight.sh (P17/P18), docs/runbooks/mer
    - The ask endpoint (Go, internal network only) answers 200 only for a hostname that is an ACTIVE platform subdomain or a merchant domain in TLS_PENDING or ACTIVE; it is rate-limited and caches negatives briefly.
    - Explicit hosts (admin, api, hooks, shop) keep their own blocks. Unknown hosts get no certificate (fail closed).
    - Owner DNS action: a DNS-only wildcard `*.<base>` to the edge IP, plus `stores.<base>`.
+   - **Done 2026-10-02** through the Cloudflare API (owner authorised it): zone xgdwm.com, `*.xgdwm.com` and `stores.xgdwm.com` as A records to 35.212.187.34, DNS-only, TTL 300. Verified via DoH. `LC_STORE_BASE_DOMAIN=xgdwm.com`.
 5. **Security** (架构.md §7.1):
    - Cookies stay host-only. No admin session on store hosts.
    - The resolver trusts only the edge-set Host.
