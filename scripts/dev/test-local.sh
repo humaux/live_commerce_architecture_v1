@@ -18,7 +18,8 @@ fi
 # W0 MOCK shell gate uses isolated synthetic sessions, never production credentials.
 if [[ "$test_mode" == --browser-admin-shell ]]; then
   mkdir -p output/ui-w0-shell
-  node --test --experimental-strip-types tests/admin/shell-registry.test.ts tests/admin/shell-architecture.test.mjs
+  # --test-reporter=spec pins the "ℹ pass N / ℹ fail F" summary that scripts/dev/release-gate.sh counts (B-browser-admin-shell has no go test events).
+  node --test --test-reporter=spec --experimental-strip-types tests/admin/shell-registry.test.ts tests/admin/shell-architecture.test.mjs
   pnpm --filter @live-commerce/admin build > output/ui-w0-shell/build.log 2>&1
   node tests/admin/shell-runner.mjs
   exit 0

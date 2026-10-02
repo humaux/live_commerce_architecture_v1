@@ -12,7 +12,8 @@
 #   (scripts/dev/test-node.sh, ruling F9), G07 the whole foundation
 #   package (real PG, race, vet: test-local.sh), then EVERY browser mode listed in test-local.sh's
 #   usage line (names containing "browser", plus --browser-e2e; --browser-webkit is its own B-browser-webkit row on Playwright
-#   WebKit, NOT_RUN when WebKit is not installed), SANDBOX modes only with the Stripe
+#   WebKit, NOT_RUN when WebKit is not installed; --browser-admin-shell emits no go test events and is counted from the node --test
+#   summary plus the Playwright matrix-case line, zero of either is FAIL), SANDBOX modes only with the Stripe
 #   TEST key present, then G90 deploy smoke static, G91 deploy smoke full and G99 (no gate rewrote a
 #   tracked .impeccable file, ruling F7; full runs only).
 # Usage: bash scripts/dev/release-gate.sh [--strict] [--list] [--only ID[,ID...]]
@@ -502,6 +503,17 @@ for m in $browser_modes; do
       record "$id" "$tier" PASS "$wk WebKit steps clean (buyer/order/payment/merchant-buyer/cvs/password-auth)" "$rc" "$LOG"
     else
       record "$id" "$tier" FAIL "browser-webkit exit 0 but only $wk/6 clean step lines: never PASS" "$rc" "$LOG"
+    fi
+  elif [[ "$m" == --browser-admin-shell ]]; then
+    # Node + Playwright only, no go test events (the W0 shell gate needs neither PG nor Docker). test-local.sh runs node --test with the spec
+    # reporter, whose summary has "ℹ pass N" / "ℹ fail F", then tests/admin/shell-browser.mjs prints "PASS G-UI2/G-UI4: N matrix cases ...".
+    # Both counts must be >= 1 with fail 0; an empty run or a failing test is never inferred PASS from the exit code alone.
+    np=$(awk '/^ℹ pass [0-9]+$/ {n=$3} END {print n+0}' "$LOG")
+    mc=$(sed -n 's/^PASS G-UI2\/G-UI4: \([0-9][0-9]*\) matrix cases.*/\1/p' "$LOG" | tail -1)
+    if ((np >= 1)) && grep -qE '^ℹ fail 0$' "$LOG" && [[ "${mc:-0}" -ge 1 ]]; then
+      record "$id" "$tier" PASS "$np Node tests + $mc browser matrix cases (W0 shell: G-UI2/G-UI4, MOCK)" "$rc" "$LOG"
+    else
+      record "$id" "$tier" FAIL "browser-admin-shell exit $rc but node pass=$np, browser matrix cases=${mc:-0}: zero tests or a failure is never PASS" "$rc" "$LOG"
     fi
   else
     read -r gp gf sn so <<<"$(judge_gotest "$LOG" "$OUT/$id.skipped" "$OUT/$id.skipped-other")"
