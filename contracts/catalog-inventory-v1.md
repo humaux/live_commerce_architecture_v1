@@ -2,6 +2,26 @@
 
 Status: CONTRACT_FROZEN; implementation/tests must independently prove it. Owner: integrator. No customer production writes. Payment/checkout/fulfillment gates remain NOT_RUN until their own implementation.
 
+## Amendment — A6 + product-editor rulings (2026-10-02, product-editor §f)
+
+- `SKU` and `SKUInput` gain `InventoryTracked bool` and `MaxPerOrder int64`
+  (JSON `inventory_tracked`, `max_per_order`; migration 0109). `inventory_tracked`
+  defaults true; when false the SKU is **untracked** (checkout Begin never locks or
+  deducts it) and `max_per_order` is REQUIRED in 1..999; when true `max_per_order`
+  must be absent (NULL). The CHECK is `(inventory_tracked AND max_per_order IS NULL)
+  OR (NOT inventory_tracked AND max_per_order BETWEEN 1 AND 999)`.
+- TWD whole-dollar: for store currency `TWD`, `price_minor` and `compare_at_minor`
+  (when present) must each satisfy `% 100 == 0`; refusal code `amount_not_whole_twd`.
+- Product images: cap is 12 per product (position 0..11; migration 0109 widens the
+  0082 CHECK; `internal/catalog.MaxImagesPerProduct = 12`).
+- A product **document save command** (create `product.save` / edit
+  `product.save:<id>` under one `internal/command.Run`) writes products, options,
+  SKUs (with `inventory_tracked`/`max_per_order`), stock opening/target, keyword and
+  collections in a single transaction keyed by Idempotency-Key; any failure rolls
+  everything back. Bulk status (≤100 ids, per-item result incl. `live_window_open`
+  refusal) and copy (draft, name +「（复制）」, fresh SKU codes, no images/keywords)
+  are separate commands. See §"Exact Go API" below.
+
 ## Boundary and invariants
 
 All Go domain functions take `(context.Context, pgx.Tx, platform.Scope, ...)`; callers resolve merchant session + fixed permission through `platform.WithScope`. No pool, HTTP headers, client tenant ID or provider calls in domains. Every returned error must abort the owning transaction. Public/buyer checkout requires its separate trusted scope contract, not these merchant routes.
@@ -25,8 +45,8 @@ Reservation states: HELD, PAYMENT_PENDING, COMMITTED, RELEASED, EXPIRED. This sl
 `internal/catalog` types (all exported DTO fields use snake_case JSON):
 - `Product{ID,Name,Description,Status string; Version int64}`
 - `ProductInput{Name,Description string; ExpectedVersion int64}`
-- `SKU{ID,ProductID,Code,Status,Currency string; PriceMinor,Version,WeightGrams,LengthMM,WidthMM,HeightMM int64; OriginCountry,CustomsName,HSCandidate string}`
-- `SKUInput{ProductID,Code string; PriceMinor,WeightGrams,LengthMM,WidthMM,HeightMM int64; OriginCountry,CustomsName,HSCandidate string; ExpectedVersion int64}`
+- `SKU{ID,ProductID,Code,Status,Currency string; PriceMinor,Version,WeightGrams,LengthMM,WidthMM,HeightMM int64; OriginCountry,CustomsName,HSCandidate string; InventoryTracked bool; MaxPerOrder int64}`
+- `SKUInput{ProductID,Code string; PriceMinor,WeightGrams,LengthMM,WidthMM,HeightMM int64; OriginCountry,CustomsName,HSCandidate string; InventoryTracked bool; MaxPerOrder int64; ExpectedVersion int64}`
 - `PriceInput{PriceMinor,ExpectedVersion int64}`
 - `CreateProduct(ctx,tx,scope,key string,in ProductInput)(Product,error)`
 - `UpdateProduct(ctx,tx,scope,key,id string,in ProductInput)(Product,error)`
@@ -37,6 +57,10 @@ Reservation states: HELD, PAYMENT_PENDING, COMMITTED, RELEASED, EXPIRED. This sl
 - `SetSKUPrice(ctx,tx,scope,key,id string,in PriceInput)(SKU,error)` updates SKU price/version and appends price_history; zero is legal.
 - `ArchiveSKU(ctx,tx,scope,key,id string,expectedVersion int64)(SKU,error)`
 - `ListSKUs(ctx,tx,scope,productID string)([]SKU,error)` maximum100, rejects foreign/missing product.
+- `SaveProductDocument(ctx,tx,scope,key string,in ProductDocumentInput)(ProductDocument,error)` — the A6 document command (create `product.save` / edit `product.save:<id>`): one transaction writing product + options + SKUs (incl. `inventory_tracked`/`max_per_order`) + stock opening/target + keyword + collections; a conflicting `expected_version` or any step failure rolls everything back; an axis change archives SKUs that have orders.
+- `BulkSetProductStatus(ctx,tx,scope,key string,in BulkStatusInput)([]BulkStatusItem,error)` — ≤100 ids, per-item result; a product whose live window is open is refused `live_window_open` per item, others proceed.
+- `CopyProduct(ctx,tx,scope,key,id string,in CopyInput)(Product,error)` — draft, name +「（复制）」, regenerated SKU codes, no images/keywords.
+- `ListProductSummaries(ctx,tx,scope,in ProductListRequest)(ProductListResult,error)` — `ProductListResult{Items []ProductSummary, NextCursor string, Total int, StatusCounts StatusCounts}` where `StatusCounts{Draft,Active,Archived int}`; each `ProductSummary` gains `Keyword string` (keyword of the product's first keyworded active SKU by id, empty if none), `InventoryTracked bool` (true only when every active SKU is `inventory_tracked`; empty/mixed reads false) and `UpdatedAt string` (UTC microsecond form). `Total` and `StatusCounts` match the search but not the status filter.
 
 `internal/inventory`:
 - `Warehouse{ID,Name string}`; `CreateWarehouse(ctx,tx,scope,key,name string)(Warehouse,error)`; `ListWarehouses(ctx,tx,scope)([]Warehouse,error)` limit100.
