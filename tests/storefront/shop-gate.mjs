@@ -287,8 +287,10 @@ try {
   assert((await raw("/robots.txt")).body.toString().includes("Disallow: /") && (await raw("/sitemap.xml")).status === 404);
   api.state.unpublished = false;
   api.state.down = true; const down = await raw("/zh-TW"); assert.equal(down.status, 500); api.state.down = false;
+  // R5 store-domains D3: a failed canonical-host resolver is fail-closed in the proxy (503 + Retry-After), never a rendered shop.
+  api.state.primaryDown = true; const resolverDown = await raw("/zh-TW"); assert.equal(resolverDown.status, 503); assert.equal(resolverDown.headers["retry-after"], "5"); api.state.primaryDown = false;
   await p.goto(`${origin}/zh-TW`); await expect(p.getByTestId("section-hero")).toBeVisible();
-  pass("SF10 unpublished store: branded closed 404, robots Disallow, no sitemap; upstream down -> 500 error state, recovers");
+  pass("SF10 unpublished store: branded closed 404, robots Disallow, no sitemap; upstream down -> 500 error state, resolver down -> 503 fail-closed, recovers");
 
   // ---- SF11 visual-QA polish (k3 report; every finding was reproduced in this browser first, see the commit log for which were capture artifacts) --
   // Each numbered part reports its own failure so one run lists everything that is still wrong.

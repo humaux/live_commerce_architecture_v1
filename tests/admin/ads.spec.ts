@@ -41,7 +41,8 @@ let copyDraft = "";
 async function signedLogin(page: Page) {
   await page.goto(new URL("/en/", origin).toString());
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
-  await expect(page.getByTestId("nav-orders")).toBeVisible();
+  // W0 shell: navigation is the permission-filtered registry; this fixture role holds ads permissions only, so its one group is Marketing (not Orders).
+  await expect(page.getByTestId("nav-group-marketing")).toBeVisible();
 }
 async function ctl(resource: string) {
   const response = await fetch(`${control}/${resource}`, { method: "POST", headers: { "X-Gate-Key": controlKey } });
@@ -124,7 +125,8 @@ test("MA09a connect through the fake FLfB dialog: dialog params, state cookie, 3
   recordBodies(page);
   await signedLogin(page);
   await openAds(page);
-  await expect(page.getByRole("navigation").getByRole("button", { name: en.title, exact: true })).toBeVisible();
+  // W0 registry: the fixture role holds ads:* only, so Marketing is a one-route group whose rail button is the current page (aria-current).
+  await expect(page.getByTestId("nav-group-marketing")).toHaveAttribute("aria-current", "page");
   await expect(page.getByTestId("ads-sandbox")).toHaveText(en.sandboxBanner); // AD9: the store is SANDBOX
   await expect(page.getByTestId("ads-conn-empty")).toHaveText(en.connEmpty);
   await expect(page.getByTestId("ads-budget-note")).toHaveText(en.budgetNote); // §12: never a real-time hard stop

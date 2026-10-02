@@ -153,7 +153,7 @@ function design(extra = {}) {
 // ---- server -------------------------------------------------------------------------------------------------------------
 export function createFakeApi({ port = 0, origin = "https://shop.example", bffKey }) {
   const products = buildCatalog();
-  const state = { requests: [], sessions: new Map(), carts: new Map(), receipts: new Map(), quotes: new Map(), unpublished: false, down: false, hideProductSlug: null, imagelessSlug: null, hiddenCollectionSlug: null, emptyCollectionSlug: null, designAccent: null };
+  const state = { requests: [], sessions: new Map(), carts: new Map(), receipts: new Map(), quotes: new Map(), unpublished: false, down: false, primaryDown: false, hideProductSlug: null, imagelessSlug: null, hiddenCollectionSlug: null, emptyCollectionSlug: null, designAccent: null };
   const idsOf = design()._ids;
   const imageSeeds = new Map([[idsOf.hero, ["hero", "wide"]], [idsOf.about, ["about", "square"]], [idsOf.logo, ["logo", "square"]], [uid(44), ["collection", "square"]]]);
   for (const p of products) for (const img of p.images) imageSeeds.set(img.id, [img.id, "portrait"]);
@@ -177,7 +177,10 @@ export function createFakeApi({ port = 0, origin = "https://shop.example", bffKe
     const chunks = []; for await (const c of req) chunks.push(c);
     const bodyText = Buffer.concat(chunks).toString("utf8");
     state.requests.push(`${req.method} ${url.pathname}${url.search}`);
-    if (state.down) return error(res, 503, "unavailable");
+    // `down` takes the page/BFF reads down (the pages' own error state); `primaryDown` takes only the canonical-host resolver down, which the
+    // storefront proxy must treat as fail-closed (503 + Retry-After, never a possibly non-canonical shop).
+    const resolver = url.pathname === "/v1/buyer/storefront/primary-origin";
+    if (resolver ? state.primaryDown : state.down) return error(res, 503, "unavailable");
     if (req.headers["x-commerce-buyer-bff-key"] !== bffKey) return error(res, 403, "forbidden");
     if (!url.pathname.startsWith("/v1/buyer/")) return error(res, 404, "not_found");
     const path = url.pathname.slice("/v1/buyer/".length);
@@ -185,6 +188,9 @@ export function createFakeApi({ port = 0, origin = "https://shop.example", bffKe
     const bearer = /^Bearer (.+)$/.exec(req.headers.authorization ?? "")?.[1];
 
     // public reads (no bearer)
+    // R5 store-domains D3: the storefront proxy asks Go for the primary origin before every page/BFF request and fails closed (503) on
+    // anything but 200/404/422. Go answers {"primary_origin": null} when the verified origin is already primary (no redirect).
+    if (path === "storefront/primary-origin") return json(res, 200, { primary_origin: null });
     if (path === "design/published" || path === "design/preview") {
       if (!sameOrigin) return error(res, 404, "not_found");
       if (path === "design/preview" && req.headers["x-commerce-design-preview"] !== PREVIEW_TOKEN) return error(res, 404, "not_found");

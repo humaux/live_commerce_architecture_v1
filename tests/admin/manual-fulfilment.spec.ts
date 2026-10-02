@@ -26,7 +26,7 @@ const restrictedToken = required("LC_BROWSER_RESTRICTED_TOKEN");
 const tracking = required("LC_BROWSER_TRACKING"); // leading zeroes on purpose
 const cookieName = "__Host-commerce_session";
 const csvHeader =
-  "order_id,created_at_utc,service_code,destination_kind,recipient_name,phone,country,region,city,postal_code,line1,line2,pickup_namespace,pickup_code,pickup_name,pickup_address,items,total_minor,currency,pickup_source";
+  "order_id,created_at_utc,service_code,destination_kind,recipient_name,phone,country,region,city,postal_code,line1,line2,pickup_namespace,pickup_code,pickup_name,pickup_address,items,total_minor,currency,pickup_source,payment_mode,collect_minor";
 
 const carrierNames = {
   en: ["7-ELEVEN", "FamilyMart", "Hi-Life", "OK mart", "SF Express", "Chunghwa Post", "Other"],

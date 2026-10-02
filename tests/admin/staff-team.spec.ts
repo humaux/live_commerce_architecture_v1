@@ -157,11 +157,12 @@ function watch(page: Page): Net {
   return net;
 }
 
-const navLabel = { team: { en: "Team", "zh-TW": "團隊" }, billing: { en: "Billing", "zh-TW": "帳單" } } as const;
-const navButton = (page: Page, label: string) => page.locator("aside nav").getByRole("button", { name: label, exact: true });
+// W0 shell: the rail is the registry-driven navigation; Team and Billing are sub-links of the Settings group with the registry ids
+// nav-team / nav-billing (the visible labels differ from the page titles and between locales, so the ids are the stable handle).
+const navEntry = (page: Page, id: "team" | "billing") => page.locator("[data-shell-rail]").getByTestId(`nav-${id}`);
 const roleWord = { en: "Fulfilment", "zh-TW": "履約" } as const;
 const subjectRe = { en: /invited/i, "zh-TW": /邀請/ } as const;
-const billingForbidden = { en: /permission to manage billing/, "zh-TW": /無權管理帳單/ } as const;
+const routeForbidden = { en: /403 · You do not have access to this page\./, "zh-TW": /403 · 你沒有存取此頁面的權限。/ } as const;
 
 const chains: { locale: Locale; vp: VP; first: boolean }[] = [
   { locale: "zh-TW", vp: "desktop", first: true },
@@ -190,8 +191,8 @@ for (const { locale, vp, first } of chains) {
       await expect(owner.page.getByTestId("team-members")).toBeVisible();
       await noHorizontalScroll(owner.page, "team page (owner)");
       // the owner is offered Team and Billing
-      await expect(navButton(owner.page, navLabel.team[locale])).toHaveCount(1);
-      await expect(navButton(owner.page, navLabel.billing[locale])).toHaveCount(1);
+      await expect(navEntry(owner.page, "team")).toHaveCount(1);
+      await expect(navEntry(owner.page, "billing")).toHaveCount(1);
       await shot(owner.page, "team-owner-empty", locale, vp);
 
       // ---- owner invites a fulfilment user from the Team page -------------------------------------------------------------
@@ -301,14 +302,16 @@ for (const { locale, vp, first } of chains) {
         expect(r.status, `fulfilment ${action} -> ${JSON.stringify(r.body)}`).toBe(403);
         expect(r.body.code).toBe("forbidden");
       }
-      // direct URLs: the Team page offers nothing, the Billing page says it is not permitted
+      // direct URLs: W0 registry routes Team and Billing to "owner", so a non-owner gets the shell's own 403 and the pages never mount
       await invitee.page.goto(`/${locale}/team?store=${storeId}`);
-      await expect(invitee.page.getByTestId("team-not-owner")).toBeVisible();
+      await expect(invitee.page.getByTestId("route-forbidden")).toContainText(routeForbidden[locale]);
+      await expect(invitee.page.getByTestId("team-page")).toHaveCount(0);
       await expect(invitee.page.getByTestId("team-invite-email")).toHaveCount(0);
       await expect(invitee.page.getByTestId("team-members")).toHaveCount(0);
       await shot(invitee.page, "team-direct-url-fulfilment", locale, vp);
       await invitee.page.goto(`/${locale}/billing?store=${storeId}`);
-      await expect(invitee.page.getByTestId("billing-page")).toContainText(billingForbidden[locale]);
+      await expect(invitee.page.getByTestId("route-forbidden")).toContainText(routeForbidden[locale]);
+      await expect(invitee.page.getByTestId("billing-page")).toHaveCount(0);
       await shot(invitee.page, "billing-direct-url-fulfilment", locale, vp);
 
       // ---- owner changes the role to viewer in the UI; the invitee's next request has the new bundle -------------------------
@@ -402,8 +405,8 @@ test("@defect role-aware navigation: a fulfilment user is not offered Team or Bi
     await invitee.page.goto(`/${locale}/orders?store=${storeId}`);
     await expect(invitee.page.getByTestId("nav-orders")).toBeVisible();
     await shot(invitee.page, "nav-fulfilment", locale, "desktop");
-    await expect(navButton(invitee.page, navLabel.team[locale]), "Team nav entry for a non-owner").toHaveCount(0);
-    await expect(navButton(invitee.page, navLabel.billing[locale]), "Billing nav entry for a non-owner").toHaveCount(0);
+    await expect(navEntry(invitee.page, "team"), "Team nav entry for a non-owner").toHaveCount(0);
+    await expect(navEntry(invitee.page, "billing"), "Billing nav entry for a non-owner").toHaveCount(0);
   } finally {
     await owner.context.close();
     await invitee.context.close();
