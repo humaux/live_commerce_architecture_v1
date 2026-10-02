@@ -153,10 +153,20 @@
 # from Host, so the same X-Forwarded-For overwrite as LC_STORE_HOST (P18) applies to every merchant domain.
 https:// {
 	import edge
+	# P0-4: on-demand TLS is per-site. The global on_demand_tls block only sets the ask and its rate limit;
+	# without this directive the catch-all never asks and an admitted host gets no certificate (fail closed).
+	tls {
+		on_demand
+	}
 	request_body {
 		max_size 1MB
 	}
 	request_header X-Forwarded-For {remote_host}
+	# P1-2: the per-row TLS proof path is answered by the api (control.tls_pending_nonce), not the storefront;
+	# it exists for TLS_PENDING hosts and that path only, so it routes to :8080 before the storefront fallback.
+	handle /.well-known/lc-domain-check/* {
+		reverse_proxy 127.0.0.1:8080
+	}
 	reverse_proxy 127.0.0.1:3200
 }
 

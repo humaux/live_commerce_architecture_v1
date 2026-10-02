@@ -44,6 +44,7 @@ lc_retention_job	commerce_retention_job	inherit_noset	core	claims-worker:COMMERC
 lc_stripe_registrar	commerce_payment_registrar	inherit_noset	core	stripe-admin:COMMERCE_STRIPE_REGISTRAR_DATABASE_URL	tests/foundation/stripe_authority_test.go:33(saRegistrarRole)
 lc_meta_registrar	commerce_meta_registrar	inherit_noset	core	meta-admin:COMMERCE_META_REGISTRAR_DATABASE_URL	tests/foundation/meta_inbox_test.go:47-48(miRole grant shape)
 lc_store_registrar	commerce_storefront_registrar	inherit_noset	core	store-admin:COMMERCE_STORE_REGISTRAR_DATABASE_URL	tests/foundation/meta_inbox_test.go:47-48(miRole grant shape)
+lc_store_domain_verify	commerce_storefront_registrar	inherit_noset	core	claims-worker:COMMERCE_STORE_VERIFY_DATABASE_URL	tests/foundation/store_domains_test.go(SDW06 registrar EXECUTE matrix)
 lc_ads_worker	commerce_ads_worker	in_role	core	ads-worker:COMMERCE_ADS_WORKER_DATABASE_URL	tests/foundation/worker_authority_split_test.go(WAS01 grant shape)+external_operation_test.go:112
 lc_media_worker	commerce_media_worker	inherit_noset	media	-	tests/foundation/studio_process_test.go:89-94
 lc_media_executor	commerce_media_executor	inherit_noset	media	-	tests/foundation/studio_process_test.go:89-94

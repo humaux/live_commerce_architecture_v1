@@ -473,6 +473,10 @@ services:
       COMMERCE_WORKER_DATABASE_URL_FILE: /run/secrets/dsn_lc_claims_worker
       # U08 hourly retention purge on its own login (lc_retention_job); the operator login is never deployed.
       COMMERCE_RETENTION_JOB_DATABASE_URL_FILE: /run/secrets/dsn_lc_retention_job
+      # R5 store-domains (P0-2): the DNS/TLS verify sweep runs here on its own login (lc_store_domain_verify).
+      # base domain = the platform zone stores.<base> CNAME target; same value the api uses for platform subdomains.
+      COMMERCE_STORE_VERIFY_DATABASE_URL_FILE: /run/secrets/dsn_lc_store_domain_verify
+      LC_STORE_BASE_DOMAIN: ${LC_STORE_BASE_DOMAIN:-}
       COMMERCE_CLAIMS_REPLY_LINK_KEY_FILE: /run/secrets/commerce_claims_reply_link_key
       COMMERCE_META_PAGE_TOKEN_KEYS_JSON_FILE: /run/secrets/commerce_meta_page_token_keys_json
       COMMERCE_META_PAGE_TOKEN_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_meta_page_token_active_key_id
@@ -488,7 +492,7 @@ services:
       COMMERCE_PAYMENT_PROFILE: SANDBOX
       ECPAY_LOGISTICS_KEYRING_FILE: /run/secrets/ecpay_logistics_keyring
       GOMEMLIMIT: 200MiB
-    secrets: [dsn_lc_claims_intake, dsn_lc_claims_worker, dsn_lc_retention_job, commerce_claims_reply_link_key, commerce_meta_page_token_keys_json, commerce_meta_page_token_active_key_id, commerce_meta_page_hpke_private_keys_json, ecpay_logistics_keyring]
+    secrets: [dsn_lc_claims_intake, dsn_lc_claims_worker, dsn_lc_retention_job, dsn_lc_store_domain_verify, commerce_claims_reply_link_key, commerce_meta_page_token_keys_json, commerce_meta_page_token_active_key_id, commerce_meta_page_hpke_private_keys_json, ecpay_logistics_keyring]
     cpus: 0.5
     mem_limit: 256m
 
@@ -675,6 +679,7 @@ services:
       - pw_lc_stripe_registrar
       - pw_lc_meta_registrar
       - pw_lc_store_registrar
+      - pw_lc_store_domain_verify
     volumes:
       - pgsocket:/var/run/postgresql
       - ./postgres/provision-logins.sh:/provision/provision-logins.sh:ro
@@ -747,6 +752,7 @@ secrets:
   pw_lc_stripe_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_stripe_registrar" }
   pw_lc_meta_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_meta_registrar" }
   pw_lc_store_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_store_registrar" }
+  pw_lc_store_domain_verify: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_store_domain_verify" }
   dsn_lc_api_runtime: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_api_runtime" }
   dsn_lc_api_identity: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_api_identity" }
   dsn_lc_api_buyer_issuer: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_api_buyer_issuer" }
@@ -766,6 +772,7 @@ secrets:
   dsn_lc_stripe_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_stripe_registrar" }
   dsn_lc_meta_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_meta_registrar" }
   dsn_lc_store_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_store_registrar" }
+  dsn_lc_store_domain_verify: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_store_domain_verify" }
   commerce_bff_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_bff_key" }
   commerce_claims_label_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_claims_label_key" }
   commerce_buyer_bff_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_buyer_bff_key" }

@@ -107,6 +107,16 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 	if err = tx.Commit(ctx); err != nil {
 		return err
 	}
+	// 0096_worker_authorities creates the worker-authority roles the River grants below reference
+	// (commerce_claims_worker / commerce_ads_worker / commerce_expiry_worker / commerce_payment_worker /
+	// commerce_payment_live). A partial apply that stops before 0096 (SPW02's "0080 head" upgrade test,
+	// which pre-marks the >= 0081 upgrade chain in the ledger) leaves those roles uncreated, so their
+	// grants must be deferred to the next Apply (which runs after 0096). In production the full chain is
+	// always applied, the roles exist, and every grant below runs on every Apply as before.
+	var workerAuthorities bool
+	if err := lockConn.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = ANY('{commerce_claims_worker,commerce_ads_worker,commerce_expiry_worker,commerce_payment_worker,commerce_payment_live}'))`).Scan(&workerAuthorities); err != nil {
+		return err
+	}
 	// River 006 adds an enum value needed by later steps. PostgreSQL requires
 	// committing that step before use; the upstream runner owns those boundaries.
 	// Independent native ledgers retain the 0031/0032 fail-closed readiness
@@ -135,12 +145,16 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 	// (post_river/0019 then asserts it holds nothing).
 	if _, err = lockConn.Exec(ctx, `REVOKE ALL ON ALL TABLES IN SCHEMA river,river_payment,river_expiry FROM commerce_worker;
 		REVOKE ALL ON ALL SEQUENCES IN SCHEMA river,river_payment,river_expiry FROM commerce_worker;
-		REVOKE ALL ON SCHEMA river,river_payment,river_expiry FROM commerce_worker;
-		GRANT USAGE ON SCHEMA river TO commerce_claims_worker,commerce_ads_worker;
-		GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river TO commerce_claims_worker,commerce_ads_worker;
-		REVOKE ALL ON river.river_migration FROM commerce_claims_worker,commerce_ads_worker;
-		GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river TO commerce_claims_worker,commerce_ads_worker`); err != nil {
+		REVOKE ALL ON SCHEMA river,river_payment,river_expiry FROM commerce_worker`); err != nil {
 		return err
+	}
+	if workerAuthorities {
+		if _, err = lockConn.Exec(ctx, `GRANT USAGE ON SCHEMA river TO commerce_claims_worker,commerce_ads_worker;
+			GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river TO commerce_claims_worker,commerce_ads_worker;
+			REVOKE ALL ON river.river_migration FROM commerce_claims_worker,commerce_ads_worker;
+			GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river TO commerce_claims_worker,commerce_ads_worker`); err != nil {
+			return err
+		}
 	}
 	// Application-owned River routing depends on upstream tables. Keep its
 	// backfill, trigger and checksum atomic, under the same session advisory lock.
@@ -189,16 +203,20 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 		REVOKE UPDATE(kind) ON river.river_job FROM commerce_checkout_runtime;
 		REVOKE UPDATE(queue) ON river.river_job FROM commerce_checkout_writer;
 		REVOKE ALL ON river.river_job_id_seq FROM commerce_checkout_runtime;
-		REVOKE ALL ON SCHEMA river FROM commerce_checkout_runtime,commerce_checkout_writer;
-		GRANT USAGE ON SCHEMA river_payment TO commerce_payment_worker,commerce_payment_live;
-		GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river_payment TO commerce_payment_worker,commerce_payment_live;
-		REVOKE ALL ON river_payment.river_migration FROM commerce_payment_worker,commerce_payment_live;
-		GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river_payment TO commerce_payment_worker,commerce_payment_live;
-		GRANT USAGE ON SCHEMA river_expiry TO commerce_expiry_worker;
-		GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river_expiry TO commerce_expiry_worker;
-		REVOKE ALL ON river_expiry.river_migration FROM commerce_expiry_worker;
-		GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river_expiry TO commerce_expiry_worker`); err != nil {
+		REVOKE ALL ON SCHEMA river FROM commerce_checkout_runtime,commerce_checkout_writer`); err != nil {
 		return err
+	}
+	if workerAuthorities {
+		if _, err = postTx.Exec(ctx, `GRANT USAGE ON SCHEMA river_payment TO commerce_payment_worker,commerce_payment_live;
+			GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river_payment TO commerce_payment_worker,commerce_payment_live;
+			REVOKE ALL ON river_payment.river_migration FROM commerce_payment_worker,commerce_payment_live;
+			GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river_payment TO commerce_payment_worker,commerce_payment_live;
+			GRANT USAGE ON SCHEMA river_expiry TO commerce_expiry_worker;
+			GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river_expiry TO commerce_expiry_worker;
+			REVOKE ALL ON river_expiry.river_migration FROM commerce_expiry_worker;
+			GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river_expiry TO commerce_expiry_worker`); err != nil {
+			return err
+		}
 	}
 	return postTx.Commit(ctx)
 }
