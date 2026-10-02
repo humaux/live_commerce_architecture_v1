@@ -166,7 +166,7 @@ func TestMerchantOrdersAuthorityAndOnboarding(t *testing.T) {
 		}
 	}
 	for table, want := range map[string][]string{
-		"checkout.orders":                {"collection_state", "commercial_state", "country", "created_at", "currency", "fulfillment_state", "id", "owner_id", "payment_mode", "service_code", "snapshot", "source", "store_id", "tenant_id", "total_minor", "updated_at"}, // 0094 (merchant-tools): +source for identity.read_order_sources; 0073 (taiwan-cvs C4): +collection_state, payment_mode for the merchant projection
+		"checkout.orders":                {"cod_carrier", "cod_surcharge_minor", "collected_at", "collection_state", "commercial_state", "country", "created_at", "currency", "fulfillment_state", "id", "owner_id", "payment_mode", "service_code", "snapshot", "source", "store_id", "tenant_id", "total_minor", "updated_at"}, // Exact approved 0107 home-COD/finance grants; no wildcard table read.
 		"checkout.payment_attempts":      {"amount_minor", "connection_id", "currency", "environment", "execution_profile", "id", "order_id", "owner_id", "store_id", "tenant_id"},
 		"payments.facts":                 {"amount_minor", "attempt_id", "connection_id", "currency", "environment", "execution_profile", "kind", "received_at", "store_id", "tenant_id"}, // 0078 adds received_at (BD7 finance day)
 		"payments.review_cases":          {"attempt_id", "reason", "store_id", "tenant_id"},                                                                                               // 0063 adds reason (MD6 review predicate)
@@ -334,7 +334,7 @@ func TestMerchantOrdersSQLProjectionAndIsolation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantKeys := []string{"collection_state", "commercial_state", "created_at", "currency", "fulfillment_state", "order_id", "payment_mode", "payment_state", "pickup_source", "refund_pending_minor", "refunded_minor", "test_mode", "total_minor", "updated_at", "work_state"} // 0063: stripe-refund-v1 §7.1 amounts
+	wantKeys := []string{"cod_collect_minor", "cod_surcharge_minor", "collection_state", "commercial_state", "created_at", "currency", "fulfillment_state", "order_id", "payment_mode", "payment_state", "pickup_source", "refund_pending_minor", "refunded_minor", "test_mode", "total_minor", "updated_at", "work_state"} // 0107 adds exactly the two COD amounts; the projection stays closed.
 	ids := map[string]bool{first.OrderID: false, second.OrderID: false}
 	for _, row := range rows {
 		id, _ := row["order_id"].(string)
@@ -423,11 +423,18 @@ func TestMerchantOrdersFinalSQLFenceAfterObservedDataLock(t *testing.T) {
 		{"missing detail after revoke", "PT401", "UPDATE identity.sessions SET revoked_at=clock_timestamp() WHERE token_hash=$1", randomUUID()},
 		{"foreign detail after revoke", "PT401", "UPDATE identity.sessions SET revoked_at=clock_timestamp() WHERE token_hash=$1", foreignOrder},
 		{"empty list after revoke", "PT401", "UPDATE identity.sessions SET revoked_at=clock_timestamp() WHERE token_hash=$1", ""},
+		{"v2 revoked session", "PT401", "UPDATE identity.sessions SET revoked_at=clock_timestamp() WHERE token_hash=$1", ""},
+		{"v2 missing orders grant", "PT403", "DELETE FROM identity.store_grants WHERE principal_id=$1 AND permission='orders:read'", ""},
+		{"v2 empty list after revoke", "PT401", "UPDATE identity.sessions SET revoked_at=clock_timestamp() WHERE token_hash=$1", ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			readSQL := moRead
+			if strings.HasPrefix(tc.name, "v2 ") {
+				readSQL = moReadV2
+			}
 			principal, token := randomUUID(), randomToken()
 			store := b.f.storeA1
-			if tc.name == "empty list after revoke" {
+			if strings.HasSuffix(tc.name, "empty list after revoke") {
 				store = b.f.storeA2
 			}
 			mustExec(t, b.f.owner, `INSERT INTO identity.principals(id) VALUES($1)`, principal)
@@ -444,7 +451,7 @@ func TestMerchantOrdersFinalSQLFenceAfterObservedDataLock(t *testing.T) {
 			if err = tx.Commit(ctx); err != nil {
 				t.Fatal(err)
 			}
-			_, err = moRead(ctx, b.f.runtime, token, b.f.tenantA, store, principal, tc.order, "all", 1)
+			_, err = readSQL(ctx, b.f.runtime, token, b.f.tenantA, store, principal, tc.order, "all", 1)
 			if tc.name == "missing detail after revoke" || tc.name == "foreign detail after revoke" {
 				if sqlState(err) != "PT404" {
 					t.Fatalf("pre-wait missing detail=%v", err)
@@ -480,7 +487,7 @@ func TestMerchantOrdersFinalSQLFenceAfterObservedDataLock(t *testing.T) {
 			}
 			done := make(chan error, 1)
 			go func() {
-				_, e := moRead(ctx, reader, token, b.f.tenantA, store, principal, tc.order, "all", 1)
+				_, e := readSQL(ctx, reader, token, b.f.tenantA, store, principal, tc.order, "all", 1)
 				done <- e
 			}()
 			waitForDatabaseLock(t, b.f.owner, name)
@@ -689,7 +696,7 @@ func TestMerchantOrdersHTTPPaginationPrivacyAndNoEffects(t *testing.T) {
 		t.Fatalf("all-buyers store page=%+v", full)
 	}
 	for _, item := range full.Items {
-		if len(item) != 16 { // 10 + refunded_minor, refund_pending_minor (0063) + pickup_source, payment_mode, collection_state (0073, taiwan-cvs C4) + source (0094, merchant-tools)
+		if len(item) != 18 { // v1 exact keys, including the two approved 0107 COD amounts; no v2 metadata on v1.
 			t.Fatalf("summary has extra keys: %+v", item)
 		}
 	}
@@ -725,7 +732,7 @@ func TestMerchantOrdersHTTPPaginationPrivacyAndNoEffects(t *testing.T) {
 	for _, orderID := range []string{q.hold.OrderID, second.OrderID} {
 		status, raw := request("GET", base+"/"+orderID, q.f.tokens["a"], nil, nil)
 		var detail map[string]any
-		if status != 200 || json.Unmarshal(raw, &detail) != nil || len(detail) != 22 { // 16 (incl. source, 0094) + refunded_minor, refund_pending_minor, shipment (0063) + the three CVS keys (0073)
+		if status != 200 || json.Unmarshal(raw, &detail) != nil || len(detail) != 24 { // Exact v1 detail plus two approved 0107 COD amounts.
 			t.Fatalf("detail %s status=%d body=%s", orderID, status, raw)
 		}
 		if _, leaked := detail["owner_id"]; leaked {
