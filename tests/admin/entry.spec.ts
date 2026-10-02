@@ -15,6 +15,8 @@ const receipt = {
   tenant_id: "22222222-2222-4222-8222-222222222222",
   store_id: storeID,
   warehouse_id: warehouseID,
+  handle: "browser-store",
+  storefront_origin: "https://browser-store.xgdwm.com",
 };
 
 type OnboardCall = { key: string; body: string };

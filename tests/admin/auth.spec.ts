@@ -82,6 +82,8 @@ const server = createServer(async (request, response) => {
           tenant_id: "22222222-2222-4222-8222-222222222222",
           store_id: storeID,
           warehouse_id: "33333333-3333-4333-8333-333333333333",
+          handle: "mock-store",
+          storefront_origin: "https://mock-store.xgdwm.com",
         }),
       );
       return;

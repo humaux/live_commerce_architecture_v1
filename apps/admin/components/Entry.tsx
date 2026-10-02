@@ -80,6 +80,9 @@ export function Entry({
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [handle, setHandle] = useState<{ suggested: string; available: boolean } | null>(null);
+  const [handleChecking, setHandleChecking] = useState(false);
+  const [created, setCreated] = useState<{ handle: string; storefront_origin: string } | null>(null);
   const storageKey = useRef("");
   const busyRef = useRef(false);
 
@@ -140,6 +143,46 @@ export function Entry({
       setReady(false);
     }
   }, [draft, step, pending, ready, status, onboardingEnabled, success]);
+
+  // R5 store-domains (Decision 1): live handle preview on the store-name step. Read-only, so no CSRF token;
+  // the DB trigger assigns the real handle from the same name on create. A failed/unavailable preview is
+  // simply omitted (the wizard stays usable), never treated as a blocking error.
+  useEffect(() => {
+    if (status !== "onboarding" || step !== 2 || success) return;
+    const name = draft.store_name.trim();
+    if (!name || [...name].length > 120) {
+      setHandle(null);
+      setHandleChecking(false);
+      return;
+    }
+    let live = true;
+    setHandleChecking(true);
+    const timer = setTimeout(() => {
+      fetch("/api/onboarding/handle-suggest", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ store_name: name }),
+        signal: AbortSignal.timeout(8000),
+      })
+        .then(async (response) => {
+          if (!live || !response.ok) return;
+          const body: unknown = await response.json();
+          if (!live || !body || typeof body !== "object") return;
+          const item = body as Record<string, unknown>;
+          if (typeof item.suggested === "string" && typeof item.available === "boolean")
+            setHandle({ suggested: item.suggested, available: item.available });
+        })
+        .catch(() => {})
+        .finally(() => {
+          if (live) setHandleChecking(false);
+        });
+    }, 400);
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+  }, [draft.store_name, step, status, success]);
 
   const locked = busy || pending !== null || !ready || success;
 
@@ -238,14 +281,17 @@ export function Entry({
         setError(c.failed);
         return;
       }
+      const receipt = body as Record<string, unknown>;
       if (
         !body ||
         typeof body !== "object" ||
         !["tenant_id", "store_id", "warehouse_id"].every((key) =>
-          /^[0-9a-f-]{36}$/.test(
-            String((body as Record<string, unknown>)[key] ?? ""),
-          ),
-        )
+          /^[0-9a-f-]{36}$/.test(String(receipt[key] ?? "")),
+        ) ||
+        typeof receipt.handle !== "string" ||
+        !/^[a-z0-9]([a-z0-9-]{1,28}[a-z0-9])$/.test(receipt.handle) ||
+        typeof receipt.storefront_origin !== "string" ||
+        (receipt.storefront_origin !== "" && !/^https:\/\/[a-z0-9]/i.test(receipt.storefront_origin))
       ) {
         setNotice(c.unknown);
         return;
@@ -253,6 +299,7 @@ export function Entry({
       clearJournal();
       setPending(null);
       setSuccess(true);
+      setCreated({ handle: receipt.handle, storefront_origin: receipt.storefront_origin });
       setNotice(c.success);
     } catch {
       setNotice(c.unknown);
@@ -538,6 +585,14 @@ export function Entry({
                       required
                     />
                   </label>
+                  {handleChecking ? (
+                    <p className="entry-handle" role="status">{c.handleChecking}</p>
+                  ) : handle ? (
+                    <p className="entry-handle" data-testid="entry-handle">
+                      {c.handlePreview}: <strong>{handle.suggested}</strong>{" "}
+                      {handle.available ? c.handleAvailable : c.handleTaken}
+                    </p>
+                  ) : null}
                   <label>
                     <span>{c.currency}</span>
                     <select
@@ -619,6 +674,21 @@ export function Entry({
                       </div>
                     </dl>
                   </div>
+                  {created && (
+                    <div className="entry-review" aria-label={c.storeAddress} data-testid="entry-address">
+                      <h3>{c.storeAddress}</h3>
+                      {created.storefront_origin ? (
+                        <p>
+                          <a href={created.storefront_origin} target="_blank" rel="noopener noreferrer">
+                            {created.storefront_origin}
+                          </a>
+                        </p>
+                      ) : (
+                        <p><strong>{created.handle}</strong></p>
+                      )}
+                      <p className="entry-final-hint">{c.storeAddressAuto}</p>
+                    </div>
+                  )}
                   <p className="entry-final-hint">{c.finalHint}</p>
                   <div className="entry-actions">
                     <button
