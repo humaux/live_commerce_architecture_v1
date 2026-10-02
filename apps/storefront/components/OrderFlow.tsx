@@ -15,12 +15,14 @@ import OrderPayment from "./OrderPayment";
 import { ConsentChoices, noConsentChoices, submitCheckoutConsents } from "./ConsentChoices";
 import CvsPickup, { CvsOrderStatus, type PickupHandle } from "./CvsPickup";
 import BankTransfer from "./BankTransfer";
+import { CodOrderStatus } from "./CodOrderStatus";
 import type { Locale } from "@live-commerce/i18n";
 import { BuyerClientError } from "../lib/buyer-client";
 import { carrierNames, orderCopy } from "../lib/order-copy";
 import { purchaseCopy } from "../lib/purchase-copy";
 import { cvsCopy } from "../lib/cvs-copy";
 import { bankTransferCopy } from "../lib/bank-transfer-copy";
+import { codCopy } from "../lib/cod-copy";
 import { isTransferErrorCode, validBuyerEmail, type TransferErrorCode } from "../lib/bank-transfer-contract";
 import { isPromoErrorCode, type PromoErrorCode } from "../lib/promo-contract";
 import { promoCopy } from "../lib/promo-copy";
@@ -138,6 +140,7 @@ export default function OrderFlow({
   const [transferError, setTransferError] = useState<TransferErrorCode | null>(null);
   const [promoError, setPromoError] = useState<PromoErrorCode | null>(null); // §F: the one discount-code refusal shown next to the create button
   const bank = bankTransferCopy[locale];
+  const cod = codCopy[locale];
   const pickup = useRef<PickupHandle | null>(null);
   const cvsOption = option && isCvsKind(option.delivery_kind) ? (option as Option & { delivery_kind: CvsKind }) : null;
 
@@ -432,7 +435,20 @@ export default function OrderFlow({
                       setTransferError(null);
                     }}
                   />
-                  <span>{mode === "bank_transfer" ? bank.payBank : bank.payCard}</span>
+                  <span>
+                    {mode === "bank_transfer"
+                      ? bank.payBank
+                      : mode === "cash_on_delivery"
+                        ? cod.codLabel(
+                            quote
+                              ? money(quote.amount.total_minor, quote.currency)
+                              : "",
+                            option && option.cod_surcharge_minor
+                              ? money(option.cod_surcharge_minor, option.currency)
+                              : null,
+                          )
+                        : bank.payCard}
+                  </span>
                 </label>
               ))}
             </fieldset>
@@ -583,16 +599,20 @@ export default function OrderFlow({
       >
         {paymentMode === "bank_transfer" && option?.payment_modes?.includes("bank_transfer")
           ? bank.createBank
-          : cvsOption && paymentMode === "pay_at_pickup"
-            ? cvsCopy[locale].createPickup
-            : copy.create}
+          : paymentMode === "cash_on_delivery" && option?.payment_modes?.includes("cash_on_delivery")
+            ? cod.createCod
+            : cvsOption && paymentMode === "pay_at_pickup"
+              ? cvsCopy[locale].createPickup
+              : copy.create}
       </button>
       <p className="order-note">
         {paymentMode === "bank_transfer" && option?.payment_modes?.includes("bank_transfer")
           ? bank.bankNote(option.transfer_window_hours ?? 0)
-          : cvsOption && paymentMode === "pay_at_pickup"
-            ? cvsCopy[locale].payAtPickupNote
-            : copy.unavailable}
+          : paymentMode === "cash_on_delivery" && option?.payment_modes?.includes("cash_on_delivery")
+            ? cod.codNote
+            : cvsOption && paymentMode === "pay_at_pickup"
+              ? cvsCopy[locale].payAtPickupNote
+              : copy.unavailable}
       </p>
     </section>
   );
@@ -778,7 +798,11 @@ export function OrderDetails({
         <br />
         {destination.country}
       </address>
-      <CvsOrderStatus order={order} locale={locale} money={money} />
+      {order.payment_mode === "cash_on_delivery" ? (
+        <CodOrderStatus order={order} locale={locale} />
+      ) : (
+        <CvsOrderStatus order={order} locale={locale} money={money} />
+      )}
       {order.shipment && (
         <ShipmentBlock shipment={order.shipment} locale={locale} />
       )}
@@ -805,8 +829,10 @@ export function OrderDetails({
           refreshToken={paymentRefresh}
         />
       )}
-      {/* Pay-at-pickup and bank transfer are not Stripe payments: no payment read, no start, no refresh signal. */}
-      {order.payment_mode !== "pay_at_pickup" && order.payment_mode !== "bank_transfer" && (
+      {/* Pay-at-pickup, bank transfer and cash-on-delivery are not Stripe payments: no payment read, no start, no refresh signal. */}
+      {order.payment_mode !== "pay_at_pickup" &&
+        order.payment_mode !== "bank_transfer" &&
+        order.payment_mode !== "cash_on_delivery" && (
         <OrderPayment
           key={`${context}:${order.order_id}`}
           context={context}

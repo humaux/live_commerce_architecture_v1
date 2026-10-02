@@ -129,6 +129,9 @@ func write(w http.ResponseWriter, status int, code string, retryable bool) {
 		"transfer_not_confirmed": "The transfer has not been confirmed.",
 		// 0099 K3-02: the offline-refund restock choice.
 		"already_shipped": "The order was already handed over; its stock cannot be restocked here.", "restock_unavailable": "The reserved stock of this order cannot be released.",
+		// home-cod R5 (migration 0107): cash_on_delivery placement refusals of the begin_hold COD branch.
+		"cash_on_delivery_unavailable": "Cash on delivery is not available for this order.", "cash_on_delivery_amount_exceeds": "The amount is outside the cash-on-delivery limit.",
+		"cash_on_delivery_limit": "Too many cash-on-delivery orders are open.",
 		// storefront-v2 §F (unit promotions): discount codes. The buyer codes are the 422s of the quote request and of BeginCheckout.
 		"promo_invalid": "This discount code is not valid.", "promo_not_started": "This discount code is not active yet.",
 		"promo_expired": "This discount code has expired.", "promo_min_subtotal": "The order is below the minimum amount for this discount code.",

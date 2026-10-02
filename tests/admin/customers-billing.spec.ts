@@ -286,9 +286,9 @@ test("CB11 finance: native date inputs, the 91-day rule, one summary table, the 
   expect(response.headers["content-disposition"]).toMatch(/^attachment; filename="finance-\d{4}-\d{2}-\d{2}-\d{4}-\d{2}-\d{2}\.csv"$/);
   expect(response.headers["cache-control"]).toContain("no-store");
   const csv = response.text.trim().split("\n");
-  expect(csv[0]).toBe("day,currency,environment,captured_count,captured_minor,refunded_minor,net_minor,pickup_collected_count,pickup_collected_minor,bank_transfer_confirmed_count,bank_transfer_confirmed_minor");
+  expect(csv[0]).toBe("day,currency,environment,captured_count,captured_minor,refunded_minor,net_minor,pickup_collected_count,pickup_collected_minor,bank_transfer_confirmed_count,bank_transfer_confirmed_minor,cod_collected_count,cod_collected_minor");
   expect(csv.length).toBeGreaterThanOrEqual(2);
-  for (const line of csv.slice(1)) expect(line).toMatch(/^\d{4}-\d{2}-\d{2},[A-Z]{3},[A-Z_]+,\d+,\d+,\d+,-?\d+,\d+,\d+,\d+,\d+$/);
+  for (const line of csv.slice(1)) expect(line).toMatch(/^\d{4}-\d{2}-\d{2},[A-Z]{3},[A-Z_]+,\d+,\d+,\d+,-?\d+,\d+,\d+,\d+,\d+,\d+,\d+$/);
   const [download] = await Promise.all([page.waitForEvent("download"), link.click()]);
   expect(download.suggestedFilename()).toMatch(/^finance-.*\.csv$/);
 });

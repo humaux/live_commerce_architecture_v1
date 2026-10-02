@@ -11,6 +11,10 @@
 // RESERVED for the merchant's window, the buyer submits transfer details (transfer.go), and only a merchant act (internal/merchantorders)
 // confirms it; the same ExpiryWorker releases an unpaid window. An optional buyer email is stored on the order.
 //
+// cash_on_delivery (home-cod R5, migration 0107 + post_river/0020) is the fourth mode: a home-delivery order waits AWAITING_COLLECTION with
+// its stock held as for pay_at_pickup (committed at placement, no online charge), the merchant ships it manually and records the carrier's
+// collection through the shared collection state machine (internal/fulfillment CVS.RecordCollection / Release).
+//
 // A live-priced (claim-origin) order consumes its claimed quantity in the Begin transaction through
 // storefront.ConsumeLivePrices (claims.consume_live_prices, migration 0105); cancellation releases it by state alone.
 //
@@ -82,6 +86,7 @@ type Input struct {
 	// PaymentMode is "card" (or empty, the same thing) or "pay_at_pickup" (§16.2, CVS destinations only; SQL decides).
 	// omitempty keeps the request digest of an old card request unchanged, so pre-upgrade replays still match.
 	// "bank_transfer" (storefront-v2 §C) places the order AWAITING_TRANSFER with the stock reserved for the merchant's window.
+	// "cash_on_delivery" (home-cod R5) places a home order AWAITING_COLLECTION with the stock held as for pay_at_pickup.
 	PaymentMode string `json:"payment_mode,omitempty"`
 	// BuyerEmail is optional (storefront-v2 §C), validated by validBuyerEmail and stored on the order for notifications (PII: customers
 	// export/erasure cover it). omitempty keeps pre-0088 request digests unchanged.
@@ -259,7 +264,7 @@ func (s *Service) Begin(ctx context.Context, token, storeID, key string, in Inpu
 		var active bool
 		err = tx.QueryRow(callCtx, `SELECT EXISTS(SELECT 1 FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2
 			AND owner_id=$3 AND cart_id=$4 AND cart_version=$5
-			AND commercial_state IN ('DRAFT','AWAITING_PAYMENT','AWAITING_TRANSFER','CONFIRMED'))`,
+			AND commercial_state IN ('DRAFT','AWAITING_PAYMENT','AWAITING_TRANSFER','CONFIRMED','AWAITING_COLLECTION'))`,
 			scope.TenantID, scope.StoreID, scope.OwnerID, quote.CartID, quote.CartVersion).Scan(&active)
 		if err != nil {
 			return err
@@ -457,9 +462,10 @@ func (s *Service) Get(ctx context.Context, token, storeID, orderID string) (Orde
 			view.UpdatedAt = view.UpdatedAt.UTC()
 			out.CVSShipment = &view
 		}
-		// payment_mode <=> collection_state (orders_payment_collection CHECK): only pay_at_pickup carries one; card and bank_transfer never do.
-		if (out.PaymentMode != "card" && out.PaymentMode != "pay_at_pickup" && out.PaymentMode != "bank_transfer") ||
-			(out.PaymentMode == "pay_at_pickup") != (out.CollectionState != nil) {
+		// payment_mode <=> collection_state (orders_payment_collection CHECK): only pay_at_pickup and cash_on_delivery carry one; card and
+		// bank_transfer never do.
+		if (out.PaymentMode != "card" && out.PaymentMode != "pay_at_pickup" && out.PaymentMode != "bank_transfer" && out.PaymentMode != "cash_on_delivery") ||
+			(out.PaymentMode == "pay_at_pickup" || out.PaymentMode == "cash_on_delivery") != (out.CollectionState != nil) {
 			return command.ErrConflict
 		}
 		return checkCapability(callCtx, tx, tokenHash[:], storeID, scope)
@@ -473,7 +479,7 @@ func (s *Service) Get(ctx context.Context, token, storeID, orderID string) (Orde
 func validInput(in Input) bool {
 	return command.ValidID(in.QuoteID) && command.ValidID(in.DestinationID) &&
 		in.CartVersion > 0 && in.ServiceVersion > 0 && in.AllocationVersion > 0 &&
-		(in.PaymentMode == "" || in.PaymentMode == "card" || in.PaymentMode == "pay_at_pickup" || in.PaymentMode == "bank_transfer") &&
+		(in.PaymentMode == "" || in.PaymentMode == "card" || in.PaymentMode == "pay_at_pickup" || in.PaymentMode == "bank_transfer" || in.PaymentMode == "cash_on_delivery") &&
 		validBuyerEmail(in.BuyerEmail) && validLocale(in.Locale)
 }
 
@@ -509,14 +515,17 @@ func holdWithinBounds(mode string, now, expires time.Time) bool {
 }
 
 // commercialAtPlacement is the order state begin_hold writes: pay_at_pickup orders are CONFIRMED at placement (§16.2, no Stripe
-// session); bank_transfer orders wait AWAITING_TRANSFER for the merchant (never auto-confirmed); card orders start DRAFT and are
-// confirmed by the captured payment.
+// session); bank_transfer orders wait AWAITING_TRANSFER for the merchant (never auto-confirmed); cash_on_delivery orders wait
+// AWAITING_COLLECTION for the carrier's delivery (home-cod R5, never CONFIRMED); card orders start DRAFT and are confirmed by the
+// captured payment.
 func commercialAtPlacement(mode string) string {
 	switch mode {
 	case "pay_at_pickup":
 		return "CONFIRMED"
 	case "bank_transfer":
 		return "AWAITING_TRANSFER"
+	case "cash_on_delivery":
+		return "AWAITING_COLLECTION"
 	}
 	return "DRAFT"
 }

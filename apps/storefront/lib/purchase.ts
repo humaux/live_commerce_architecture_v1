@@ -60,6 +60,10 @@ export type Option = {
   store_search_url?: string;
   // Present exactly when payment_modes lists bank_transfer: hours the stock stays reserved for the transfer (6..168).
   transfer_window_hours?: number;
+  // home-cod R5 (migration 0107): present on a home row that lists cash_on_delivery with a non-zero surcharge (Go's
+  // omitempty hides a zero surcharge); the whole-TWD surcharge in minor units the buyer pays on delivery on top of the
+  // order total. The quote stays the only authority on the order total (I05); this field only lets the UI show the fee.
+  cod_surcharge_minor?: number;
   // Per-policy free-delivery threshold in minor units (storefront-v2 §A/§C): Go emits it on every row (number or null,
   // internal/checkout/options.go; the MOCK fake of tests/storefront/shop-fake-api.mjs mirrors it). The cart page and the delivery step
   // show their "add X more for free delivery" hint only when a row carries a positive one. The quote still decides shipping, never this.
@@ -216,7 +220,7 @@ export type Order = {
   order_id: string;
   cart_id: string;
   cart_version: number;
-  commercial_state: "DRAFT" | "AWAITING_PAYMENT" | "AWAITING_TRANSFER" | "CONFIRMED" | "CANCELLED";
+  commercial_state: "DRAFT" | "AWAITING_PAYMENT" | "AWAITING_TRANSFER" | "AWAITING_COLLECTION" | "CONFIRMED" | "CANCELLED";
   fulfillment_state:
     | "MANUAL_UNASSIGNED"
     | "CANCELLED"
@@ -343,6 +347,13 @@ export const validOption = (v: unknown): v is Option =>
     v.free_shipping_threshold_minor === null ||
     integer(v.free_shipping_threshold_minor, 1, MAX_AMOUNT)) &&
   v.reason === undefined &&
+  // home-cod R5: the surcharge field appears only on a home row that offers cash_on_delivery (omitempty hides a zero fee).
+  (v.cod_surcharge_minor === undefined ||
+    (v.delivery_kind === "home" &&
+      Array.isArray(v.payment_modes) &&
+      (v.payment_modes as unknown[]).includes("cash_on_delivery") &&
+      integer(v.cod_surcharge_minor, 0, 100000) &&
+      (v.cod_surcharge_minor as number) % 100 === 0)) &&
   id(v.market_id) &&
   currency(v.currency) &&
   country(v.country) &&
@@ -356,9 +367,10 @@ export const validOption = (v: unknown): v is Option =>
     ? v.pickup_selection === undefined &&
       (v.payment_modes === undefined
         ? v.transfer_window_hours === undefined
-        : // Go lists modes on a home row only when the store enabled bank transfer, and never pay_at_pickup (CVS only).
+        : // Go lists modes on a home row only when the store enabled bank transfer or cash on delivery, and never pay_at_pickup (CVS only).
           validPaymentModes(v, 1) &&
-          (v.payment_modes as unknown[]).includes("bank_transfer") &&
+          ((v.payment_modes as unknown[]).includes("bank_transfer") ||
+            (v.payment_modes as unknown[]).includes("cash_on_delivery")) &&
           !(v.payment_modes as unknown[]).includes("pay_at_pickup")) &&
       v.store_search_url === undefined
     : country(v.country) && v.country === "TW" && validCvsOptionFields(v));
@@ -519,7 +531,8 @@ function validOrderCvs(v: Record<string, unknown>): boolean {
   const shipment = v.cvs_shipment ?? null;
   if (!isPaymentMode(mode)) return false;
   if (!(collection === null || isCollectionState(collection))) return false;
-  if ((mode === "pay_at_pickup") !== (collection !== null)) return false;
+  // §16.2 + home-cod R5: pay_at_pickup and cash_on_delivery orders both carry a collection state; card/transfer never do.
+  if ((mode === "pay_at_pickup" || mode === "cash_on_delivery") !== (collection !== null)) return false;
   if (shipment !== null && !validBuyerCvsShipment(shipment)) return false;
   const kind =
     record(v.snapshot) && record(v.snapshot.destination)
@@ -532,7 +545,7 @@ export const validOrder = (v: unknown): v is Order =>
   id(v.order_id) &&
   id(v.cart_id) &&
   integer(v.cart_version, 1) &&
-  ["DRAFT", "AWAITING_PAYMENT", "AWAITING_TRANSFER", "CONFIRMED", "CANCELLED"].includes(
+  ["DRAFT", "AWAITING_PAYMENT", "AWAITING_TRANSFER", "AWAITING_COLLECTION", "CONFIRMED", "CANCELLED"].includes(
     String(v.commercial_state),
   ) &&
   FULFILLMENT_STATES.includes(String(v.fulfillment_state)) &&
@@ -566,7 +579,7 @@ export const validOrderSummary = (v: unknown): v is OrderSummary =>
   id(v.order_id) &&
   id(v.cart_id) &&
   integer(v.cart_version, 1) &&
-  ["DRAFT", "AWAITING_PAYMENT", "AWAITING_TRANSFER", "CONFIRMED", "CANCELLED"].includes(
+  ["DRAFT", "AWAITING_PAYMENT", "AWAITING_TRANSFER", "AWAITING_COLLECTION", "CONFIRMED", "CANCELLED"].includes(
     String(v.commercial_state),
   ) &&
   FULFILLMENT_STATES.includes(String(v.fulfillment_state)) &&
@@ -1240,7 +1253,7 @@ function validCheckoutReceipt(
     return false;
   if (
     receipt.commercial_state !== undefined &&
-    !["DRAFT", "AWAITING_PAYMENT", "AWAITING_TRANSFER", "CONFIRMED", "CANCELLED"].includes(
+    !["DRAFT", "AWAITING_PAYMENT", "AWAITING_TRANSFER", "AWAITING_COLLECTION", "CONFIRMED", "CANCELLED"].includes(
       String(receipt.commercial_state),
     )
   )

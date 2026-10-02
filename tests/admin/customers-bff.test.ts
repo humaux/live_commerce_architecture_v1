@@ -191,7 +191,7 @@ const customer = () => ({
 const summary = {
   order_id: other, created_at: t0, updated_at: t0, currency: "TWD", total_minor: 2500, commercial_state: "CONFIRMED", fulfillment_state: "MANUAL_UNASSIGNED",
   payment_state: "CAPTURED", test_mode: true, work_state: "READY", refunded_minor: 0, refund_pending_minor: 0,
-  pickup_source: null, payment_mode: "card", collection_state: null, // taiwan-cvs-logistics-v1 C4 keys of merchantorders.Summary
+  pickup_source: null, payment_mode: "card", collection_state: null, cod_surcharge_minor: null, // merchantorders.Summary C4 keys + home-cod R5 surcharge
 };
 const detail = () => ({
   ...customer(),

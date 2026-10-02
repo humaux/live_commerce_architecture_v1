@@ -83,9 +83,10 @@ export function OrderShipment({
 
   // The head version is the CAS token. After a void the detail shows null, so the history's newest version is used.
   const expectedVersion = Math.max(head?.version ?? 0, ...(history ?? []).map((item) => item.version));
-  // Hint only (MD6): commercial CONFIRMED, work READY, unassigned, not fully refunded. The server decides.
+  // Hint only (MD6): commercial CONFIRMED (or AWAITING_COLLECTION for cash_on_delivery, which ships before it is collected), work READY,
+  // unassigned, not fully refunded. The server decides (fulfillment.manual_shipment_eligible).
   const eligible =
-    detail.commercial_state === "CONFIRMED" &&
+    (detail.commercial_state === "CONFIRMED" || detail.commercial_state === "AWAITING_COLLECTION") &&
     detail.fulfillment_state === "MANUAL_UNASSIGNED" &&
     detail.work_state === "READY" &&
     detail.refunded_minor + detail.refund_pending_minor < detail.total_minor;

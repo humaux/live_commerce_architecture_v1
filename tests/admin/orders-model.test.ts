@@ -33,6 +33,8 @@ const summary = {
   pickup_source: null,
   payment_mode: "card",
   collection_state: null,
+  // home-cod R5: the surcharge column is null for every non-cash_on_delivery mode (orders_cod_surcharge CHECK).
+  cod_surcharge_minor: null,
 };
 const detail = {
   ...summary,

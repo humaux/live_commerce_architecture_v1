@@ -35,6 +35,8 @@ type optionResponse struct {
 	TransferWindowHours int `json:"transfer_window_hours,omitempty"`
 	// storefront-v2 §C: the delivery policy's free-shipping threshold (minor units) or null; always present (a hint only, the quote decides).
 	FreeShippingThresholdMinor *int64 `json:"free_shipping_threshold_minor"`
+	// home-cod R5: present only on a home row whose payment_modes lists cash_on_delivery (the whole-TWD surcharge in minor units; 0 = none).
+	CodSurchargeMinor int64 `json:"cod_surcharge_minor,omitempty"`
 }
 
 type optionsResponse struct {
@@ -53,6 +55,7 @@ func projectOptions(page pagination.Page[checkout.Option]) optionsResponse {
 			NameEN: item.NameEN, SortOrder: item.SortOrder, PickupSelection: item.PickupSelection,
 			PaymentModes: item.PaymentModes, StoreSearchURL: item.StoreSearchURL, Available: item.Available, Reason: item.Reason,
 			TransferWindowHours: item.TransferWindowHours, FreeShippingThresholdMinor: item.FreeShippingThresholdMinor,
+			CodSurchargeMinor: item.CodSurchargeMinor,
 		})
 	}
 	return out

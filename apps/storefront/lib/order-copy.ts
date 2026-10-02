@@ -43,6 +43,7 @@ const en = {
   DRAFT: "Not paid",
   AWAITING_PAYMENT: "Payment pending",
   AWAITING_TRANSFER: "Waiting for bank transfer",
+  AWAITING_COLLECTION: "Waiting for cash on delivery",
   CONFIRMED: "Order confirmed",
   CANCELLED: "Order canceled",
   unavailable:
@@ -126,6 +127,7 @@ export const orderCopy: Record<Locale, Copy> = {
     DRAFT: "尚未付款",
     AWAITING_PAYMENT: "等待支付结果",
     AWAITING_TRANSFER: "等待银行转账",
+    AWAITING_COLLECTION: "等待货到付款",
     CONFIRMED: "订单已确认",
     CANCELLED: "订单已取消",
     unavailable: "此页面暂未开放支付。创建订单不会扣款。",
@@ -173,6 +175,7 @@ export const orderCopy: Record<Locale, Copy> = {
     DRAFT: "尚未付款",
     AWAITING_PAYMENT: "等待付款結果",
     AWAITING_TRANSFER: "等待銀行轉帳",
+    AWAITING_COLLECTION: "等待貨到付款",
     CONFIRMED: "訂單已確認",
     CANCELLED: "訂單已取消",
     unavailable: "此頁面暫未開放付款。建立訂單不會扣款。",

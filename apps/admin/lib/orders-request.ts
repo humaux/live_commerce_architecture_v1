@@ -7,6 +7,7 @@ const states = new Set([
   "DRAFT",
   "AWAITING_PAYMENT",
   "AWAITING_TRANSFER",
+  "AWAITING_COLLECTION",
   "CONFIRMED",
   "CANCELLED",
   "shipped",

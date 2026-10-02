@@ -261,7 +261,7 @@ func TestCutGMVSplitsWindowsAndNeverMixesCurrencies(t *testing.T) {
 		t.Fatalf("entries: %+v", got)
 	}
 	live := got[0]
-	if live.Currency != "TWD" || live.Environment != "LIVE" || live.Today != (ModeTotals{100, 20, 3}) || live.Last7Days != (ModeTotals{1100, 220, 33}) {
+	if live.Currency != "TWD" || live.Environment != "LIVE" || live.Today != (ModeTotals{CardMinor: 100, BankTransferMinor: 20, PayAtPickupMinor: 3}) || live.Last7Days != (ModeTotals{CardMinor: 1100, BankTransferMinor: 220, PayAtPickupMinor: 33}) {
 		t.Errorf("TWD LIVE: %+v", live)
 	}
 	if got[1].Environment != "SANDBOX" || got[1].Today.CardMinor != 7 || got[2].Currency != "USD" || got[2].Today != (ModeTotals{}) || got[2].Last7Days.CardMinor != 5 {

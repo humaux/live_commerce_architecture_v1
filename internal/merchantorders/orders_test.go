@@ -22,7 +22,7 @@ var scope = platform.Scope{TenantID: "11111111-1111-4111-8111-111111111111", Sto
 
 func summary() map[string]any {
 	return map[string]any{"order_id": orderID, "created_at": "2026-09-25T04:05:06.123456Z", "updated_at": "2026-09-25T04:06:06.123456Z", "currency": "TWD", "total_minor": 110, "commercial_state": "CONFIRMED", "fulfillment_state": "MANUAL_UNASSIGNED", "payment_state": "CAPTURED", "test_mode": true, "work_state": "READY", "refunded_minor": 0, "refund_pending_minor": 0,
-		"pickup_source": nil, "payment_mode": "card", "collection_state": nil}
+		"pickup_source": nil, "payment_mode": "card", "collection_state": nil, "cod_surcharge_minor": nil}
 }
 
 func detail() map[string]any {

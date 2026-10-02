@@ -463,14 +463,14 @@ func TestOpsPolishOP3Finance(t *testing.T) {
 			t.Fatalf("csv: %d %s", st, raw)
 		}
 		lines := strings.Split(strings.TrimRight(string(raw), "\r\n"), "\n")
-		if lines[0] != "day,currency,environment,captured_count,captured_minor,refunded_minor,net_minor,pickup_collected_count,pickup_collected_minor,bank_transfer_confirmed_count,bank_transfer_confirmed_minor" {
+		if lines[0] != "day,currency,environment,captured_count,captured_minor,refunded_minor,net_minor,pickup_collected_count,pickup_collected_minor,bank_transfer_confirmed_count,bank_transfer_confirmed_minor,cod_collected_count,cod_collected_minor" {
 			t.Fatalf("csv header %q", lines[0])
 		}
 		got := map[string]string{}
 		for _, l := range lines[1:] {
 			fields := strings.Split(strings.TrimSpace(l), ",")
-			if len(fields) != 11 {
-				t.Fatalf("csv row %q has %d columns, want 11", l, len(fields))
+			if len(fields) != 13 {
+				t.Fatalf("csv row %q has %d columns, want 13", l, len(fields))
 			}
 			got[fields[0]+"/"+fields[2]] = fields[7] + "/" + fields[8]
 		}

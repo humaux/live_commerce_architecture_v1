@@ -5,7 +5,7 @@
 // CVS (contracts/taiwan-cvs-logistics-v1.md §16, cvs-core C4): summary/detail add pickup_source, payment_mode and
 // collection_state; a pay-at-pickup order is CONFIRMED with no payment (NOT_STARTED, no work item), so the payment
 // invariants below are relaxed for exactly that mode and nowhere else.
-const commercialStates = ["DRAFT", "AWAITING_PAYMENT", "AWAITING_TRANSFER", "CONFIRMED", "CANCELLED"] as const;
+const commercialStates = ["DRAFT", "AWAITING_PAYMENT", "AWAITING_TRANSFER", "AWAITING_COLLECTION", "CONFIRMED", "CANCELLED"] as const;
 // `shipped`/`unshipped` are server-side list filters (manual-fulfilment-v1 §5.1), not order states.
 export const orderStates = [
   "all",
@@ -30,7 +30,7 @@ export type WorkState = "NONE" | "READY" | "REVIEW_REQUIRED";
 // §16.1: where the pickup store came from (null for a home order).
 export const pickupSources = ["ecpay_directory", "buyer_entered", "merchant_attested"] as const;
 export type PickupSource = (typeof pickupSources)[number];
-export const paymentModes = ["card", "pay_at_pickup", "bank_transfer"] as const;
+export const paymentModes = ["card", "pay_at_pickup", "bank_transfer", "cash_on_delivery"] as const;
 export type PaymentMode = (typeof paymentModes)[number];
 export const collectionStates = ["PENDING", "COLLECTED", "RETURNED", "REFUNDED_OFFLINE", "CANCELLED", "RESTOCKED"] as const;
 export type CollectionState = (typeof collectionStates)[number];
@@ -60,6 +60,8 @@ export type OrderSummary = {
   pickup_source: PickupSource | null;
   payment_mode: PaymentMode;
   collection_state: CollectionState | null;
+  // home-cod R5 (migration 0107): placement-time cash-on-delivery surcharge in minor units; null unless cash_on_delivery.
+  cod_surcharge_minor: number | null;
   // Where the order was created (merchant-tools, migration 0094): every buyer-placed order is "storefront"; the admin's Create Order is "merchant_manual".
   // Absent on rows from endpoints that do not project it (customers detail); present on every merchant orders list/detail row (parseSourcedOrderSummary).
   source?: OrderSource;
@@ -149,7 +151,7 @@ const maxMoney = 1_000_000_000_000;
 const summaryKeys = [
   "order_id", "created_at", "updated_at", "currency", "total_minor",
   "commercial_state", "fulfillment_state", "payment_state", "test_mode", "work_state",
-  "refunded_minor", "refund_pending_minor", "pickup_source", "payment_mode", "collection_state",
+  "refunded_minor", "refund_pending_minor", "pickup_source", "payment_mode", "collection_state", "cod_surcharge_minor",
 ];
 
 function object(value: unknown, keys: string[]): Record<string, unknown> {
@@ -209,13 +211,19 @@ export function parseOrderSummary(value: unknown): OrderSummary {
     !money(v.refunded_minor) || !money(v.refund_pending_minor) ||
     !(v.pickup_source === null || oneOf(v.pickup_source, pickupSources)) ||
     !oneOf(v.payment_mode, paymentModes) ||
-    !(v.collection_state === null || oneOf(v.collection_state, collectionStates)))
+    !(v.collection_state === null || oneOf(v.collection_state, collectionStates)) ||
+    !(v.cod_surcharge_minor === null || money(v.cod_surcharge_minor)))
     throw new Error("unavailable");
   const row = v as OrderSummary;
   // §16.2 schema CHECK: pay_at_pickup <=> collection_state set. Such an order never has a payment attempt, refund
   // or payment work item, so every payment-derived invariant is replaced by these (and only for this mode).
   const pap = row.payment_mode === "pay_at_pickup";
-  if (pap !== (row.collection_state !== null)) throw new Error("unavailable");
+  // home-cod R5: cash_on_delivery also carries a collection_state (the shared PENDING/COLLECTED/... machine), so the
+  // "collection_state set" schema CHECK now spans both offline modes, not pay_at_pickup alone.
+  const cod = row.payment_mode === "cash_on_delivery";
+  if ((pap || cod) !== (row.collection_state !== null)) throw new Error("unavailable");
+  // home-cod R5 schema CHECK (orders_cod_surcharge): the surcharge column is set iff payment_mode=cash_on_delivery.
+  if (cod !== (row.cod_surcharge_minor !== null)) throw new Error("unavailable");
   if (pap) {
     if (row.payment_state !== "NOT_STARTED" || row.test_mode || row.work_state === "REVIEW_REQUIRED" ||
       row.refunded_minor !== 0 || row.refund_pending_minor !== 0 || row.pickup_source === null ||
@@ -242,7 +250,20 @@ export function parseOrderSummary(value: unknown): OrderSummary {
       throw new Error("unavailable");
     return row;
   }
+  // home-cod R5: never a payment attempt, fact, refund or work item (the offline fact is the COLLECTED collection state). The order
+  // stays AWAITING_COLLECTION from placement through ship/collection, and only a release-cancel makes it CANCELLED.
+  if (row.payment_mode === "cash_on_delivery") {
+    const surcharge = row.cod_surcharge_minor;
+    if (row.payment_state !== "NOT_STARTED" || row.test_mode || row.work_state !== "NONE" ||
+      row.refunded_minor !== 0 || row.refund_pending_minor !== 0 ||
+      row.fulfillment_state === "PAID_ALLOCATION_FAILED" || row.collection_state === null ||
+      surcharge === null || surcharge < 0 || surcharge > 100000 || surcharge % 100 !== 0 ||
+      !(row.commercial_state === "AWAITING_COLLECTION" || (row.commercial_state === "CANCELLED" && row.fulfillment_state === "CANCELLED")))
+      throw new Error("unavailable");
+    return row;
+  }
   if (row.commercial_state === "AWAITING_TRANSFER") throw new Error("unavailable"); // only a transfer order can wait for a transfer
+  if (row.commercial_state === "AWAITING_COLLECTION") throw new Error("unavailable"); // only a cash_on_delivery order can wait for collection
   if (row.pickup_source === "buyer_entered" && row.fulfillment_state === "PROVIDER_LABEL_CREATED") throw new Error("unavailable");
   if ((row.payment_state === "NOT_STARTED" && (row.test_mode || row.work_state !== "NONE")) ||
     (row.fulfillment_state === "CANCELLED" && row.commercial_state !== "CANCELLED") ||

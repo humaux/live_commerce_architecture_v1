@@ -20,6 +20,7 @@ import type { Locale } from "@live-commerce/i18n";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { LogisticsSettings } from "./LogisticsSettings";
 import { BankTransferSettings } from "./BankTransferSettings";
+import { CodSettings } from "./CodSettings";
 import { NotifySettings } from "./NotifySettings";
 import { StorefrontSettings } from "./StorefrontSettings";
 import { MetaConnect } from "./MetaConnect";
@@ -1835,6 +1836,8 @@ export function SettingsWizard({
                   <LogisticsSettings store={store.id} locale={locale} />
                   {/* storefront-v2 §C: bank-transfer details and window (BFF bank-transfer-settings -> Go offline.go). */}
                   <BankTransferSettings store={store.id} locale={locale} />
+                  {/* home-cod R5: cash-on-delivery switch, cap, surcharge and carrier (BFF cash-on-delivery-settings -> Go cod.go). */}
+                  <CodSettings store={store.id} locale={locale} />
                   {/* storefront-v2 §E6: new-order email opt-out (BFF notification-settings -> Go notify.go). */}
                   <NotifySettings store={store.id} locale={locale} />
                   <div className="settings-actions">
