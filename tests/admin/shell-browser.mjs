@@ -270,6 +270,7 @@ export async function runShellGate({
     for (const [path, label] of [["/reset", "reset"], ["/signup", "signup"], [`/invite/${"a".repeat(43)}`, "invite"]]) {
       await page.goto(`${base}/${locale}${path}`);
       assert.equal(await page.title(), shellCopy[locale][label], "Public page title from registry");
+      if (label === "invite") assert.equal(await page.locator('meta[name="referrer"]').getAttribute("content"), "no-referrer", "Invite privacy metadata preserved");
     }
   }
   await writeFile(
