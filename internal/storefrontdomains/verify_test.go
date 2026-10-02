@@ -53,8 +53,10 @@ func TestVerifyDNS(t *testing.T) {
 			DNSResult{TXTFound: true, CNAMEMatch: true, Matched: true},
 		},
 		"txt+a record (apex)": {
+			// P1-1: the apex A record proves "pointed at us" only when it is a non-empty subset of the edge
+			// addresses stores.<base> serves (the fake resolver returns the same addrs for the edge lookup).
 			fakeResolver{txt: []string{token}, cnameErr: errors.New("nxdomain"), addrs: []string{"203.0.113.1"}},
-			DNSResult{TXTFound: true, AddrFound: true, Matched: true},
+			DNSResult{TXTFound: true, AddrFound: true, AddrMatch: true, Matched: true},
 		},
 		"txt only (not pointed)": {
 			fakeResolver{txt: []string{token}, cnameErr: errors.New("nxdomain"), addrsErr: errors.New("no addrs")},
@@ -186,7 +188,7 @@ func TestVerifyPendingTLSCompletes(t *testing.T) {
 	q := &fakeTx{
 		rowsSeq: []*fakeRows{
 			{rows: [][]any{}}, // no DNS checks
-			{rows: [][]any{{testDomain, "https://shop.example.com"}}}, // one TLS_PENDING row
+			{rows: [][]any{{testDomain, "https://shop.example.com", ""}}}, // one TLS_PENDING row (id, origin, nonce)
 		},
 		rowSeq: []fakeRow{
 			{raw: []byte(`{"domain_id":"` + testDomain + `","state":"ACTIVE","version":5}`)},

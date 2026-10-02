@@ -4,14 +4,16 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"io"
 	"net"
+	"net/http"
 	"strings"
 	"time"
 )
 
-// verify.go is the DNS + TLS verification the "worker" (the operator one-shot sweep, cmd/store-admin domain-verify)
-// runs against the commerce_storefront_registrar pool. Every external call is a seam: Resolver and TLSProber are
-// faked in tests (match/mismatch/NXDOMAIN/timeout), so this package never dials DNS or TLS on its own in a test.
+// verify.go is the DNS + TLS verification the River periodic verify job (internal/storefrontdomains, P0-2) runs
+// against the commerce_storefront_registrar pool. Every external call is a seam: Resolver and TLSProber are faked
+// in tests (match/mismatch/NXDOMAIN/timeout), so this package never dials DNS or TLS on its own in a test.
 
 // verifyWindow is the verification window the SQL writes into verify_deadline (requested_at + 72h, migration 0106).
 // The Go side only needs the resulting deadline: WithinDeadline checks now < deadline, so the constant documents the
@@ -28,10 +30,33 @@ type Resolver interface {
 	LookupAddr(ctx context.Context, host string) ([]string, error)
 }
 
+// SystemResolver is the production DNS resolver (net.DefaultResolver lookups).
+type SystemResolver struct{}
+
+func (SystemResolver) LookupTXT(ctx context.Context, name string) ([]string, error) {
+	return net.DefaultResolver.LookupTXT(ctx, name)
+}
+
+func (SystemResolver) LookupCNAME(ctx context.Context, host string) (string, error) {
+	return net.DefaultResolver.LookupCNAME(ctx, host)
+}
+
+func (SystemResolver) LookupAddr(ctx context.Context, host string) ([]string, error) {
+	return net.DefaultResolver.LookupHost(ctx, host)
+}
+
 // TLSProber reports the certificate notAfter for a hostname (the TLS proof); the real one dials TLS 1.2+ with
 // SNI and verification and returns the leaf's NotAfter.
 type TLSProber interface {
 	NotAfter(ctx context.Context, host string) (time.Time, error)
+}
+
+// NonceProber is the P1-2 seam: it dials the EDGE addresses with SNI = the host (never the merchant's DNS answer),
+// verifies the certificate, fetches the per-row nonce path through the edge and compares the body; it returns the
+// leaf's NotAfter on success. A prober that only reports NotAfter is the MOCK fallback used by the browser gate and
+// the pure-logic tests; the sweep prefers this interface when the prober implements it.
+type NonceProber interface {
+	Probe(ctx context.Context, host, nonce string, edge []string) (time.Time, error)
 }
 
 // SystemProber is the production prober; it verifies the chain (tls.Dial's default verification) and reports
@@ -56,12 +81,83 @@ func (SystemProber) NotAfter(ctx context.Context, host string) (time.Time, error
 	return certs[0].NotAfter, nil
 }
 
-// DNSResult is one verification attempt; Matched is true only when the TXT token matches AND the host points at us
-// (CNAME to stores.<base> or any A/AAAA record, per Decision 3).
+// Probe implements NonceProber: try each edge address until one presents a verified certificate and serves the
+// nonce path with a body equal to the nonce (Decision 3's per-row proof).
+func (SystemProber) Probe(ctx context.Context, host, nonce string, edge []string) (time.Time, error) {
+	if !validHostname(host) || nonce == "" {
+		return time.Time{}, errors.New("invalid tls probe request")
+	}
+	var lastErr error
+	for _, addr := range edge {
+		if addr == "" {
+			continue
+		}
+		notAfter, err := probeEdge(ctx, addr, host, nonce)
+		if err == nil {
+			return notAfter, nil
+		}
+		lastErr = err
+	}
+	if lastErr == nil {
+		lastErr = errors.New("no edge addresses")
+	}
+	return time.Time{}, lastErr
+}
+
+// probeEdge dials one edge address with SNI = host, verifies the chain, then GETs the per-row nonce path with
+// Host = host and compares the response body to the nonce. It returns the leaf NotAfter.
+func probeEdge(ctx context.Context, addr, host, nonce string) (time.Time, error) {
+	var notAfter time.Time
+	client := &http.Client{
+		Timeout: 15 * time.Second,
+		Transport: &http.Transport{
+			DialTLSContext: func(ctx context.Context, network, _ string) (net.Conn, error) {
+				d := &net.Dialer{Timeout: 10 * time.Second}
+				conn, err := tls.DialWithDialer(d, network, net.JoinHostPort(addr, "443"), &tls.Config{
+					MinVersion: tls.VersionTLS12,
+					ServerName: host,
+				})
+				if err != nil {
+					return nil, err
+				}
+				certs := conn.ConnectionState().PeerCertificates
+				if len(certs) == 0 {
+					_ = conn.Close()
+					return nil, errors.New("no peer certificate")
+				}
+				notAfter = certs[0].NotAfter
+				return conn, nil
+			},
+		},
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://"+host+"/.well-known/lc-domain-check/"+nonce, nil)
+	if err != nil {
+		return time.Time{}, err
+	}
+	req.Host = host
+	resp, err := client.Do(req)
+	if err != nil {
+		return time.Time{}, err
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 64))
+	if err != nil {
+		return time.Time{}, err
+	}
+	if resp.StatusCode != http.StatusOK || string(body) != nonce {
+		return time.Time{}, errors.New("tls nonce mismatch")
+	}
+	return notAfter, nil
+}
+
+// DNSResult is one verification attempt; Matched is true only when the TXT token matches AND the host points at us:
+// a CNAME to stores.<base>, or A/AAAA equal to the edge address set (an apex A record to the platform edge, P1-1).
+// AddrMatch is the edge-bound half: the host's addresses are a non-empty subset of the addresses stores.<base> serves.
 type DNSResult struct {
 	TXTFound   bool
 	CNAMEMatch bool
 	AddrFound  bool
+	AddrMatch  bool
 	Matched    bool
 }
 
@@ -85,11 +181,33 @@ func VerifyDNS(ctx context.Context, r Resolver, host, token, baseDomain string) 
 	if cname, err := r.LookupCNAME(ctx, host); err == nil {
 		out.CNAMEMatch = strings.EqualFold(strings.TrimSuffix(cname, "."), "stores."+baseDomain)
 	}
+	// An apex A/AAAA proves nothing by itself: it must be a non-empty subset of the platform edge addresses
+	// (P1-1/P18 — a proxied CNAME's anycast A records, or the merchant's own server, must be refused).
 	if addrs, err := r.LookupAddr(ctx, host); err == nil && len(addrs) > 0 {
 		out.AddrFound = true
+		if edge, err := r.LookupAddr(ctx, "stores."+baseDomain); err == nil && subsetOf(addrs, edge) {
+			out.AddrMatch = true
+		}
 	}
-	out.Matched = out.TXTFound && (out.CNAMEMatch || out.AddrFound)
+	out.Matched = out.TXTFound && (out.CNAMEMatch || out.AddrMatch)
 	return out, nil
+}
+
+// subsetOf reports whether every address in addrs (non-empty) is one of the edge addresses.
+func subsetOf(addrs, edge []string) bool {
+	if len(addrs) == 0 || len(edge) == 0 {
+		return false
+	}
+	inEdge := make(map[string]bool, len(edge))
+	for _, a := range edge {
+		inEdge[strings.ToLower(strings.TrimSpace(a))] = true
+	}
+	for _, a := range addrs {
+		if !inEdge[strings.ToLower(strings.TrimSpace(a))] {
+			return false
+		}
+	}
+	return true
 }
 
 // WithinDeadline reports whether the request is still inside its verification window: the row's verify_deadline
@@ -146,7 +264,7 @@ func VerifyPending(ctx context.Context, q Querier, r Resolver, p TLSProber, now 
 	if err != nil {
 		return dnsAttempts, 0, err
 	}
-	tlsCompleted, err = sweepTLS(ctx, q, p, now)
+	tlsCompleted, err = sweepTLS(ctx, q, r, p, now, baseDomain)
 	return dnsAttempts, tlsCompleted, err
 }
 
@@ -188,14 +306,23 @@ func sweepDNS(ctx context.Context, q Querier, r Resolver, now time.Time, baseDom
 	return attempts, nil
 }
 
-func sweepTLS(ctx context.Context, q Querier, p TLSProber, now time.Time) (int, error) {
+func sweepTLS(ctx context.Context, q Querier, r Resolver, p TLSProber, now time.Time, baseDomain string) (int, error) {
 	rows, err := queryTLSProbes(ctx, q)
 	if err != nil {
 		return 0, err
 	}
+	// The edge address set the nonce path is served from (stores.<base>). Resolution failing here is not fatal:
+	// a NotAfter-only prober (the browser MOCK and the pure-logic tests) does not use it.
+	edge, _ := r.LookupAddr(ctx, "stores."+baseDomain)
 	completed := 0
 	for _, row := range rows {
-		notAfter, err := p.NotAfter(ctx, row.Hostname)
+		var notAfter time.Time
+		var err error
+		if prober, ok := p.(NonceProber); ok {
+			notAfter, err = prober.Probe(ctx, row.Hostname, row.Nonce, edge)
+		} else {
+			notAfter, err = p.NotAfter(ctx, row.Hostname)
+		}
 		if err != nil || notAfter.IsZero() || !notAfter.After(now) || notAfter.After(now.Add(MaxProofLifetime)) {
 			continue // certificate not yet issued or out of the proof window
 		}
@@ -261,25 +388,26 @@ func queryDNSChecks(ctx context.Context, q Querier) ([]DNSCheck, error) {
 	return out, rows.Err()
 }
 
-// tlsProbeRow is one TLS_PENDING row (domain id + hostname derived from origin).
+// tlsProbeRow is one TLS_PENDING row (domain id, hostname derived from origin, and the per-row nonce).
 type tlsProbeRow struct {
 	DomainID string
 	Hostname string
+	Nonce    string
 }
 
 func queryTLSProbes(ctx context.Context, q Querier) ([]tlsProbeRow, error) {
-	rows, err := q.Query(ctx, `SELECT domain_id,origin FROM control.next_store_domain_tls_probe()`)
+	rows, err := q.Query(ctx, `SELECT domain_id,origin,nonce FROM control.next_store_domain_tls_probe()`)
 	if err != nil {
 		return nil, mapError(err)
 	}
 	defer rows.Close()
 	var out []tlsProbeRow
 	for rows.Next() {
-		var id, origin string
-		if err := rows.Scan(&id, &origin); err != nil {
+		var id, origin, nonce string
+		if err := rows.Scan(&id, &origin, &nonce); err != nil {
 			return nil, mapError(err)
 		}
-		out = append(out, tlsProbeRow{DomainID: id, Hostname: strings.TrimPrefix(origin, "https://")})
+		out = append(out, tlsProbeRow{DomainID: id, Hostname: strings.TrimPrefix(origin, "https://"), Nonce: nonce})
 	}
 	return out, rows.Err()
 }

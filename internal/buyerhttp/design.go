@@ -26,6 +26,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"livecommerce/internal/command"
 	"livecommerce/internal/design"
+	"livecommerce/internal/storefrontdomains"
 )
 
 const (
@@ -85,6 +86,24 @@ func (h *handler) designGet(ctx context.Context, w http.ResponseWriter, r *http.
 	}
 	if document == nil { // no published version yet: the contract default derived from the store name
 		document = design.DefaultDocument(storeName)
+	}
+	if selected.kind == designPublishedRoute {
+		// P0-3: the host resolution also returns the primary origin so the storefront can 301 non-primary ACTIVE
+		// origins (canonical) without a second call per request; the target comes only from the DB (no open redirect).
+		primary, err := storefrontdomains.PrimaryOrigin(ctx, tx, origin)
+		if err != nil {
+			return err
+		}
+		var po *string
+		if primary != "" {
+			po = &primary
+		}
+		writeOK(w, struct {
+			Version       int64           `json:"version"`
+			Document      json.RawMessage `json:"document"`
+			PrimaryOrigin *string         `json:"primary_origin"`
+		}{version, document, po})
+		return nil
 	}
 	writeOK(w, struct {
 		Version  int64           `json:"version"`

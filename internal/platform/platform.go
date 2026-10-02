@@ -354,6 +354,17 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 		Scan(&retentionJob, &retentionJobUsage, &retentionJobSet, &retentionOperator, &retentionOperatorUsage, &retentionOperatorSet); err != nil {
 		return fmt.Errorf("validate runtime role: %w", err)
 	}
+	// R5 store-domains (migration 0106): the DNS/TLS verify sweep (lc_store_domain_verify, inherit_noset)
+	// joins the NOLOGIN authority commerce_storefront_registrar, which the operator one-shot lc_store_registrar
+	// also joins. Same shape as retention: MEMBER + USAGE without SET, and the exactly-one rule below rejects
+	// any login that mixes it with another authority (or can reach its definer owner commerce_storefront_writer).
+	var storefrontRegistrar, storefrontRegistrarUsage, storefrontRegistrarSet bool
+	if err := pool.QueryRow(ctx, `SELECT coalesce(pg_has_role(session_user, to_regrole('commerce_storefront_registrar'), 'MEMBER'),false),
+		coalesce(pg_has_role(session_user, to_regrole('commerce_storefront_registrar'), 'USAGE'),false),
+		coalesce(pg_has_role(session_user, to_regrole('commerce_storefront_registrar'), 'SET'),false)`).
+		Scan(&storefrontRegistrar, &storefrontRegistrarUsage, &storefrontRegistrarSet); err != nil {
+		return fmt.Errorf("validate runtime role: %w", err)
+	}
 	// T21-02 worker authorities (migration 0096). The legacy commerce_worker above is empty and is a
 	// membership of its own, never a valid authority: a login still in it matches no pool kind.
 	var payWorker, payLive, expiryWorker, adsWorker, claimsWorker bool
@@ -376,7 +387,8 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 		"meta_worker": metaWorker, "media_registrar": mediaRegistrar,
 		"media_worker": mediaWorker, "media_executor": mediaExecutor, "media_recovery": mediaRecovery,
 		"stripe_ingress": stripeIngress, "stripe_registrar": stripeRegistrar, "claims_intake": claimsIntake,
-		"retention_job": retentionJob, "retention_operator": retentionOperator}
+		"retention_job": retentionJob, "retention_operator": retentionOperator,
+		"storefront_registrar": storefrontRegistrar}
 	roleCount := 0
 	for _, member := range memberships {
 		if member {
@@ -406,6 +418,9 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 	}
 	if authority == "retention_operator" {
 		roleValid = roleValid && retentionOperatorUsage && !retentionOperatorSet && !systemAuthority
+	}
+	if authority == "storefront_registrar" {
+		roleValid = roleValid && storefrontRegistrarUsage && !storefrontRegistrarSet && !systemAuthority
 	}
 	if authority == "media_worker" {
 		roleValid = roleValid && mediaWorkerUsage && !mediaWorkerSet && !systemAuthority

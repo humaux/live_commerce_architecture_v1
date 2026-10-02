@@ -142,6 +142,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	storeDomainNonceHandler := buildStoreDomainNonceHandler(pool)
 	if identityHandler != nil {
 		mux := http.NewServeMux()
 		mux.Handle("/v1/identity/", identityHandler)
@@ -160,6 +161,7 @@ func run() error {
 	handler = mountStripe(handler, stripeHandler)
 	handler = mountPlatformBilling(handler, billingWebhook)
 	handler = mountTLSAsk(handler, tlsAskHandler)
+	handler = mountStoreDomainNonce(handler, storeDomainNonceHandler)
 	stopStartup()
 	server := &http.Server{
 		Addr:              addr,

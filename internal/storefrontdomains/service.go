@@ -30,6 +30,7 @@ var (
 	ErrDomainOwnedElsewhere = errors.New("domain owned by another store")
 	ErrReservedHostname     = errors.New("hostname reserved by the platform")
 	ErrBaseDomainMissing    = errors.New("store base domain not configured")
+	ErrPlatformDomain       = errors.New("platform domain is not merchant-moveable")
 )
 
 // DNSInstructions are shown to the merchant once, at request time; nothing here is persisted.
@@ -247,6 +248,8 @@ func mapError(err error) error {
 				return ErrReservedHostname
 			case "base domain not configured":
 				return ErrBaseDomainMissing
+			case "platform_domain":
+				return ErrPlatformDomain
 			}
 			return command.ErrConflict
 		case "40001", "40P01", "55P03", "57014", "23505":

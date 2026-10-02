@@ -348,6 +348,7 @@ func TestMapError(t *testing.T) {
 		{pgErr("PT409", "domain_owned_elsewhere"), ErrDomainOwnedElsewhere},
 		{pgErr("PT409", "reserved hostname"), ErrReservedHostname},
 		{pgErr("PT409", "base domain not configured"), ErrBaseDomainMissing},
+		{pgErr("PT409", "platform_domain"), ErrPlatformDomain},
 		{pgErr("PT409", "version_conflict"), command.ErrConflict},
 		{pgErr("42501", "permission denied for function secret_name"), ErrUnavailable},
 		{errors.New("dial tcp 10.0.0.1: connection refused password=hunter2"), ErrUnavailable},
