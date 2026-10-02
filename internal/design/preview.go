@@ -64,7 +64,11 @@ func IssuePreviewToken(ctx context.Context, tx pgx.Tx, s platform.Scope) (Previe
 		s.TenantID, s.StoreID, maxLiveTokens-1); err != nil {
 		return out, mapError(err)
 	}
-	err = tx.QueryRow(ctx, `INSERT INTO design.preview_tokens(tenant_id,store_id,token_hash,draft_version,created_by) VALUES($1,$2,$3,$4,$5) RETURNING expires_at`,
+	// created_at and expires_at come from ONE clock reading: left to the column defaults they are two clock_timestamp() calls, and
+	// whenever a microsecond tick falls between them expires_at exceeds created_at+15min and the table CHECK refuses a legitimate
+	// request (~2% of issues, surfaced as 422 invalid_request with no details; the CHECK stays as the invariant).
+	err = tx.QueryRow(ctx, `INSERT INTO design.preview_tokens(tenant_id,store_id,token_hash,draft_version,created_by,created_at,expires_at)
+		SELECT $1::uuid,$2::uuid,$3::bytea,$4::bigint,$5::uuid,c.t,c.t+interval '15 minutes' FROM (SELECT clock_timestamp() AS t) c RETURNING expires_at`,
 		s.TenantID, s.StoreID, hash, version, s.PrincipalID).Scan(&out.ExpiresAt)
 	out.Token, out.DraftVersion = token, version
 	return out, mapError(err)

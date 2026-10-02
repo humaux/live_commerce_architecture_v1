@@ -408,6 +408,30 @@ func TestStoreDesignGate(t *testing.T) {
 	}
 }
 
+// TestStoreDesignPreviewTokenIssueNeverRefusesALegitimateRequest pins the flake behind "B preview token: 422" in the full
+// suite: design.preview_tokens CHECKed expires_at <= created_at + 15 minutes while the two column defaults were separate
+// clock_timestamp() calls, so about 2% of inserts (measured: 4372 of 200000 on the shared PG image) straddled a
+// microsecond and answered 422 invalid_request with no cause in the body. With the bug present 600 issues all succeed with
+// probability (1-0.02)^600 < 1e-5, so this fails essentially every run until the insert takes one clock reading.
+func TestStoreDesignPreviewTokenIssueNeverRefusesALegitimateRequest(t *testing.T) {
+	f := fixture(t)
+	sdgGrant(t, f, f.tokens["a"], f.storeA1, "integration:read", "integration:manage")
+	sdgReset(t, f)
+	t.Cleanup(func() { sdgReset(t, f) })
+	e := &sdgEnv{t: t, f: f, admin: httpapi.NewHandler(f.runtime), baseA: "/v1/admin/stores/" + f.storeA1 + "/design"}
+	e.must("PUT", e.baseA+"/draft", map[string]any{"expected_version": 0, "document": map[string]any{"profile": map[string]any{"name": "Gate Shop", "accent_color": "#247965"}}}, 200, nil)
+	refused := 0
+	for i := 0; i < 600; i++ {
+		if w := e.json(f.tokens["a"], "POST", e.baseA+"/preview-token", struct{}{}); w.Code != 200 {
+			refused++
+			t.Errorf("preview token #%d: %d %s", i, w.Code, w.Body.String())
+			if refused >= 5 {
+				t.Fatalf("stopping after %d refused issues out of %d", refused, i+1)
+			}
+		}
+	}
+}
+
 func sdgIsolation(t *testing.T, e *sdgEnv) {
 	f := e.f
 	img := e.image(e.baseA, f.tokens["a"], 5)
