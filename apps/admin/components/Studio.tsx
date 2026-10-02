@@ -143,15 +143,20 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
     !!shown && (form.id !== shown.draft.session_id || form.title !== shown.draft.title ||
       form.scheduled !== instantToTaipei(shown.draft.scheduled_at) || form.aspect !== shown.draft.aspect_ratio);
   if (newMode || shown) dirty.current = formDirty;
-  const volatile = useRef({ scope, scene, route, selectedID, form, newMode, actionError, formError });
-  volatile.current = { scope, scene, route, selectedID, form, newMode, actionError, formError };
+  const volatile = useRef({ scope, scene, route, selectedID, detailKey, form, newMode, actionError, formError });
+  volatile.current = { scope, scene, route, selectedID, detailKey, form, newMode, actionError, formError };
   const recoveryElsewhere = !!historyRecovery && !sameRecovery(historyRecovery, scope, scene);
   const recoveryGuard = hidden.current || sameRecovery(historyRecovery, scope, scene);
   const recoveryRoute = recoveryElsewhere ? historyRecovery?.route : null;
   useEffect(watchRecoverySession, []);
   useEffect(() => { explicitDeparture.current = false; }, [scope, scene]);
 
+  // D02 (G-UI8): `clear` must keep ONE identity for the life of the page. It used to close over scope and detailKey; detailKey carries the
+  // selected scene id, which comes from the page data, and loadPage resets that data on every run. So page data arriving changed `clear`, which
+  // re-created loadPage, whose effect reset the data again: an endless re-fetch of live-sessions (~370 a second) that never left "Loading scenes...".
+  // It now reads both from the latest render through `volatile`.
   const clear = useCallback((status: Status, block = false) => {
+    const { scope, detailKey } = volatile.current;
     revealEpoch.current++;
     pageEpoch.current++;
     detailEpoch.current++;
@@ -174,7 +179,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
       setPinnedScene({ scope: "", id: "" });
       setBusy(false);
     });
-  }, [scope, detailKey]);
+  }, []);
 
   function retainHistory() {
     if (explicitDeparture.current) return;
