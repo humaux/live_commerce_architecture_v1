@@ -291,7 +291,7 @@ test.describe("meta-connect independent browser gate", () => {
       await expect(page.locator("#metaconnect-cap")).toHaveText(c.capReached);
       await expect(page.getByTestId("metaconnect-reconnect")).toBeEnabled();
       await expect(page.getByTestId("metaconnect-last-event").first()).toContainText("16:30");
-      await page.getByTestId("metaconnect-card").scrollIntoViewIfNeeded();
+      await page.getByTestId("metaconnect-card").evaluate((el) => el.scrollIntoView({ block: "start" }));
       await shot(page, "MOCK-cap-ten", locale, "mobile");
       const first = page.getByTestId("metaconnect-row-900000");
       await first.getByTestId("metaconnect-disconnect").click();
@@ -479,9 +479,9 @@ test.describe("meta-connect independent browser gate", () => {
       await expect(page.getByTestId("metaconnect-status")).toHaveCount(2);
       await expect(page.getByTestId("metaconnect-count")).toHaveText(c.count.replace("{count}", "2").replace("{cap}", "10"));
       await expect(page.getByTestId("metaconnect-card")).toContainText(c.timezone);
-      await page.getByTestId("metaconnect-card").scrollIntoViewIfNeeded();
+      await page.getByTestId("metaconnect-card").evaluate((el) => el.scrollIntoView({ block: "start" }));
       await shot(page, "multi-pages", locale, view);
-      await page.getByTestId(`metaconnect-row-${pageB.id}`).scrollIntoViewIfNeeded();
+      await page.getByTestId(`metaconnect-row-${pageB.id}`).evaluate((el) => el.scrollIntoView({ block: "start" }));
       await shot(page, "multi-page-b", locale, view);
       const touch = await page.getByTestId("metaconnect-card").locator("button").evaluateAll((buttons) => buttons.every((b) => b.getBoundingClientRect().height >= 44));
       expect(touch).toBe(true);
@@ -491,7 +491,7 @@ test.describe("meta-connect independent browser gate", () => {
       await expect(selector.locator(`option[value="${pageA.id}"]`)).toContainText(pageA.name);
       await expect(selector.locator(`option[value="${pageB.id}"]`)).toContainText(pageB.name);
       await selector.selectOption(pageB.id);
-      await selector.scrollIntoViewIfNeeded();
+      await selector.evaluate((el) => el.parentElement?.scrollIntoView({ block: "start" }));
       await shot(page, "multi-studio", locale, view);
     }
     await openStudio(page, "en");
