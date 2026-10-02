@@ -161,6 +161,10 @@ try {
   assert(filtered.length >= 3 && filtered.every((n) => n >= 15 && n <= 20), `price filter leaked ${filtered}`);
   await expect(p.locator(".sf-filter")).toHaveAttribute("open", "");
   await p.goto(`${origin}/en/products`);
+  const categoryChips = p.getByTestId("collection-chips");
+  await expect(categoryChips).toBeVisible();
+  assert(await categoryChips.evaluate(el => el.scrollWidth <= el.clientWidth), "G4 chips scroll horizontally at 390px");
+  assert(await noOverflow(p), "G4 list overflows at 390px");
   assert.equal(await p.getByTestId("product-card").count(), 24); // page size
   await p.getByTestId("load-more").click();
   await expect.poll(() => p.getByTestId("product-card").count()).toBe(facts.active_count);
@@ -172,6 +176,10 @@ try {
   // ---- SFR04 product pages: variants, stock hints, sold out, 404s, redirects, gallery ------------------------------------------------------------
   await p.goto(`${origin}/en/products/${P("candle").slug}`);
   await expect(p.getByRole("heading", { level: 1 })).toHaveText(P("candle").title);
+  const related = p.getByTestId("related-products");
+  await expect(related).toBeVisible();
+  await expect(related.locator(`a[href$="/products/${P("diffuser").slug}"]`)).toHaveCount(1);
+  for (const key of ["candle", "draft", "retired"]) await expect(related.locator(`a[href$="/products/${P(key).slug}"]`)).toHaveCount(0);
   await expect(p.getByTestId("variant-price")).toHaveText(shop$(6800)); // opens on the cheapest in-stock variant
   await expect(p.getByTestId("stock-hint")).toContainText(COPY.inStock);
   await p.locator("label.sf-chip", { hasText: "300g" }).click();
@@ -179,11 +187,21 @@ try {
   await expect(p.getByTestId("stock-hint")).toContainText(COPY.lowStock); // 3 on hand
   assert(await noOverflow(p), "product overflows at 390px");
   await p.goto(`${origin}/en/products/${P("scarf").slug}`);
+  await expect(p.getByTestId("related-products")).toHaveCount(0);
   await expect(p.getByRole("radio", { name: "Black" })).toBeDisabled(); // 0 on hand
   await expect(p.getByTestId("variant-price")).toHaveText(shop$(14800)); await expect(p.locator(".sf-buy__price s")).toHaveText(shop$(19800));
   const strip = p.getByTestId("product-gallery").locator(".sf-gal__strip img");
   assert.equal(await strip.count(), 3);
   await expect.poll(() => loaded(strip.first())).toBe(true);
+  const enlarge = p.getByRole("button", { name: "Enlarge photo" });
+  await enlarge.click();
+  const photoDialog = p.locator(".sf-photo-dialog");
+  await expect(photoDialog).toBeVisible();
+  await p.keyboard.press("ArrowRight");
+  await expect(photoDialog.locator("img")).toHaveAttribute("src", await strip.nth(1).getAttribute("src"));
+  await p.keyboard.press("Escape");
+  await expect(photoDialog).not.toBeVisible();
+  await expect(enlarge).toBeFocused();
   await p.goto(`${origin}/en/products/${P("diffuser").slug}`);
   await expect(p.getByTestId("add-to-cart")).toBeDisabled(); await expect(p.getByTestId("buy-now")).toBeDisabled(); await expect(p.getByTestId("stock-hint")).toContainText(COPY.outOfStock);
   const id = P("dripper").id;

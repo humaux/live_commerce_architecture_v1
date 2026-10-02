@@ -153,7 +153,7 @@ function design(extra = {}) {
 // ---- server -------------------------------------------------------------------------------------------------------------
 export function createFakeApi({ port = 0, origin = "https://shop.example", bffKey }) {
   const products = buildCatalog();
-  const state = { requests: [], sessions: new Map(), carts: new Map(), receipts: new Map(), quotes: new Map(), unpublished: false, down: false, hideProductSlug: null, imagelessSlug: null };
+  const state = { requests: [], sessions: new Map(), carts: new Map(), receipts: new Map(), quotes: new Map(), unpublished: false, down: false, hideProductSlug: null, imagelessSlug: null, hiddenCollectionSlug: null, emptyCollectionSlug: null, designAccent: null };
   const idsOf = design()._ids;
   const imageSeeds = new Map([[idsOf.hero, ["hero", "wide"]], [idsOf.about, ["about", "square"]], [idsOf.logo, ["logo", "square"]], [uid(44), ["collection", "square"]]]);
   for (const p of products) for (const img of p.images) imageSeeds.set(img.id, [img.id, "portrait"]);
@@ -189,6 +189,7 @@ export function createFakeApi({ port = 0, origin = "https://shop.example", bffKe
       if (!sameOrigin) return error(res, 404, "not_found");
       if (path === "design/preview" && req.headers["x-commerce-design-preview"] !== PREVIEW_TOKEN) return error(res, 404, "not_found");
       const d = design(path === "design/preview" ? { heading: "【草稿】冬季新系列預告", profile: { announcement: "草稿預覽：新年檔期倒數中" } } : {});
+      if (state.designAccent) d.profile.accent_color = state.designAccent;
       delete d._ids;
       return json(res, 200, { version: path === "design/preview" ? 3 : 2, document: d });
     }
@@ -220,7 +221,7 @@ export function createFakeApi({ port = 0, origin = "https://shop.example", bffKe
         const slice = out.slice(offset, offset + limit);
         return json(res, 200, { store: { name: "晨光選物", currency: CURRENCY }, products: slice.map(({ c }) => c), next: offset + limit < out.length ? Buffer.from(String(offset + limit)).toString("base64url") : null });
       }
-      if (rest === "collections") return json(res, 200, { collections: COLLECTIONS.map((c) => ({ id: c.id, slug: c.slug, title: c.title, image_id: c.image, product_count: live().filter((p) => p.collections.includes(c.slug)).length })) });
+      if (rest === "collections") return json(res, 200, { collections: COLLECTIONS.filter(c => c.slug !== state.hiddenCollectionSlug).map((c) => ({ id: c.id, slug: c.slug, title: c.title, image_id: c.image, product_count: c.slug === state.emptyCollectionSlug ? 0 : live().filter((p) => p.collections.includes(c.slug)).length })) });
       const col = /^collections\/([a-z0-9-]+)$/.exec(rest);
       if (col) { const c = COLLECTIONS.find((x) => x.slug === col[1]); return c ? json(res, 200, { id: c.id, slug: c.slug, title: c.title, description: `${c.title}系列，每件都經過日常使用測試。`, image_id: c.image }) : error(res, 404, "not_found"); }
       const one = /^products\/([a-z0-9-]+)$/.exec(rest);

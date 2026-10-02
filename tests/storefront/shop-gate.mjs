@@ -20,6 +20,7 @@ import { expect } from "@playwright/test";
 import { launch, ctxOpts, iosZoomOffenders, engine } from "./browser-engine.mjs";
 import { createFakeApi, PREVIEW_TOKEN } from "./shop-fake-api.mjs";
 import { reachCheckout } from "./shop-helpers.mjs";
+import { checkR5 } from "./shop-r5-checks.mjs";
 
 const root = process.cwd();
 const evidence = process.env.LC_SHOP_EVIDENCE;
@@ -115,6 +116,10 @@ try {
   // Node fetch cannot reach shop.example; raw relay with the virtual host instead.
   const raw = (p, headers = {}) => relay(next.port, { url: p, method: "GET", headers: { host: HOST, ...headers } }, Buffer.alloc(0));
 
+  // Optional focused run for R5 screenshot/consumer checks; the default gate still runs all SF01-SF12 assertions.
+  if (process.env.LC_R5_ONLY === "1") {
+    await checkR5({ browser, api, origin, raw, evidence });
+  } else {
   // ---- SF01 home from the published document ---------------------------------------------------------------------------
   const pc = await phone(), p = await pc.newPage();
   const problems = [];
@@ -323,7 +328,13 @@ try {
     await np.goto(`${origin}/zh-TW/checkout`); await np.locator(".purchase-footer").waitFor(); await footerCovered(np);
   });
   for (const [label, ctx] of [["320", np], ["390", p]]) await part(`1 product phone bar ${label}`, async () => {
-    await ctx.goto(`${origin}/zh-TW/products/cedar-fig-candle`); await ctx.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight)); await expect(ctx.getByTestId("sticky-buy")).toBeVisible(); await footerCovered(ctx);
+    await ctx.goto(`${origin}/zh-TW/products/cedar-fig-candle`);
+    await ctx.getByTestId("add-to-cart").scrollIntoViewIfNeeded();
+    // The sticky bar is conditional on passing the inline actions, not on an early streamed page height.
+    await ctx.evaluate(() => { const actions = document.querySelector(".sf-buy__actions"); window.scrollTo(0, scrollY + actions.getBoundingClientRect().bottom + 16); });
+    await expect.poll(() => ctx.locator(".sf-buy__actions").evaluate(el => el.getBoundingClientRect().bottom)).toBeLessThan(0);
+    await expect(ctx.getByTestId("sticky-buy")).toBeVisible();
+    await footerCovered(ctx);
   });
   await narrow.close();
 
@@ -415,6 +426,9 @@ try {
 
   assert.deepEqual(problems, [], "client errors / hydration warnings on the phone page");
   pass("SF12 no page errors or hydration warnings across the whole phone walk-through");
+
+  await checkR5({ browser, api, origin, raw, evidence });
+  }
 
   console.log(`engine=${engine} cases=${cases} mode=${mode} MOCK`);
 } finally {

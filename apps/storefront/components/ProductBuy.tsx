@@ -34,10 +34,20 @@ export default function ProductBuy({ locale, product, currency }: { locale: Loca
 
   useEffect(() => {
     const el = actions.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
-    const observer = new IntersectionObserver(([entry]) => setSticky(!entry.isIntersecting && entry.boundingClientRect.top < 0), { threshold: 0 });
-    observer.observe(el);
-    return () => observer.disconnect();
+    if (!el) return;
+    let frame = 0;
+    const measure = () => { frame = 0; setSticky(el.getBoundingClientRect().bottom <= 0); };
+    // IntersectionObserver can miss a jump from below to above the viewport (both non-intersecting).
+    // Coalesce passive scroll/resize events into one position read per frame, including initial restored scroll.
+    const schedule = () => { if (!frame) frame = requestAnimationFrame(measure); };
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    schedule();
+    return () => {
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      cancelAnimationFrame(frame);
+    };
   }, []);
 
   function pick(axis: number, value: string) {

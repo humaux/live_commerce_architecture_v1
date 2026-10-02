@@ -172,6 +172,11 @@ async function place(buyer, store) {
   await expect(page.getByTestId("transfer-bank")).toContainText(bankName);
   await expect(page.getByTestId("transfer-amount")).toContainText(money(price).replace(/\.00$/, ""));
   await expect(page.getByTestId("transfer-deadline")).toContainText(c.hoursLeft);
+  const safety = view(page).locator(".sf-bank-fraud");
+  await expect(safety.locator(`a[href="/${locale}/legal/anti-fraud"]`)).toHaveCount(1);
+  await safety.scrollIntoViewIfNeeded();
+  await expect(safety).toBeVisible();
+  await page.screenshot({ path: path.join(evidence, `bank-safety-${locale}-${viewport}.png`), scale: "css" });
   await shot(page, "order-awaiting", locale, viewport);
   if (pay) {
     await send(page, "12345", price);
