@@ -1,0 +1,41 @@
+✔ handle suggestions explain reserved and format; fail closed on invalid responses (1.854209ms)
+✔ created address is a strict HTTPS origin matching the assigned handle (0.227083ms)
+✔ DNS instructions must name the requested origin and a bare hostname target (0.271167ms)
+✖ domain kind is authoritative and closed, not inferred from host or token (0.130083ms)
+✖ apex DNS retains every concrete IPv4/IPv6 address and rejects malformed values (0.089084ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 3
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 141.503375
+
+✖ failing tests:
+
+test at tests/admin/store-domains-ui.test.ts:27:1
+✖ domain kind is authoritative and closed, not inferred from host or token (0.130083ms)
+  Error: storefront_shape
+      at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/store-domains-ui/apps/admin/lib/storefront-model.ts:100:13
+      at Array.map (<anonymous>)
+      at parseStorefrontDomains (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/store-domains-ui/apps/admin/lib/storefront-model.ts:89:32)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/store-domains-ui/tests/admin/store-domains-ui.test.ts:29:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+
+test at tests/admin/store-domains-ui.test.ts:34:1
+✖ apex DNS retains every concrete IPv4/IPv6 address and rejects malformed values (0.089084ms)
+  Error: storefront_shape
+      at parseDomainRequest (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/store-domains-ui/apps/admin/lib/storefront-model.ts:128:11)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/store-domains-ui/tests/admin/store-domains-ui.test.ts:36:20)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)

@@ -1,0 +1,18 @@
+✔ handle suggestions explain reserved and format; fail closed on invalid responses (0.718417ms)
+✔ created address is a strict HTTPS origin matching the assigned handle (0.140625ms)
+✔ DNS instructions must name the requested origin and a bare hostname target (0.232208ms)
+✔ domain kind is authoritative and closed, not inferred from host or token (0.123834ms)
+✔ apex DNS retains every concrete IPv4/IPv6 address and rejects malformed values (0.52775ms)
+✔ pending domain journal preserves exact action/key/target; legacy or corrupt markers never replay (1.124834ms)
+✔ parses never-published, published and bound states (0.776166ms)
+✔ rejects anything outside the closed shape (0.787875ms)
+✔ parses the domain list and the one-time request instructions (0.226458ms)
+✔ rejects domain shapes outside the closed contract (0.416833ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 97.556209

@@ -14,14 +14,14 @@ This task inherits the incumbent Settings/onboarding shell; it does not replace 
 
 P1: domain input nested in the frozen publication card; separated into `storefront-domains-card`.
 P1: failed handle preview could display stale availability; clear prior result, abort obsolete fetch, show unconfirmed state.
-P0 backend dependency: the domain routes ignore Idempotency-Key. UI now persists a pending marker before any domain command, clears it only for a confirmed outcome, and never replays UNKNOWN. The same session remains read-only for domain writes across refresh until reconciliation. This is a containment boundary, not backend idempotency.
+Historical P0 dependency (closed by backend 727e355): domain writes originally ignored Idempotency-Key. The supplemental UI now journals the exact key/action/target before send, scoped to store + session hash. UNKNOWN permits only explicit same-command replay; refresh/reload remain read-only, and a failed replay cannot clear the original responsibility. Old marker-only records stay locked, because their request cannot be reconstructed safely.
 P2: DNS and lifecycle instructions were unstyled and unavailable for one-click copying; add scoped layout, copy feedback and merchant language.
 
-## Known backend-dependent item
+## Supplemental audit, 2026-10-02
 
-Item 2 is BLOCKED: domain rows contain no authoritative platform/custom discriminator. The UI cannot safely infer ownership class from hostname, token-null, ordering or serving status. Backend must expose per-row `kind` or `is_platform` from stored authority. Existing backend mutation rejection is retained; the platform row still has visible controls until the contract changes. No guessed workaround is shipped.
+Backend 727e355 now supplies authoritative `kind`. Platform rows display the address/type/status without suspend/detach buttons. No inference from hostname, token-null, ordering or serving status. Inspection of the first English mobile screenshot found type/status text touching; final source puts the type label on its own line.
 
-Apex DNS instructions also lack an edge IP. The UI copies TXT and shows explicit missing-IP guidance, never offers the CNAME hostname as an A value. A fully actionable apex record needs a backend value. Onboarding with no configured base reports internal workspace created but URL not ready, without inventing a buyer address.
+Apex DNS uses every literal IPv4/IPv6 value in `edge_addresses`, shows its A/AAAA type and host/value pair, and offers per-record copy plus all-record copy. Missing edge addresses still show explicit platform-confirmation guidance: the backend resolver is best effort, so an unavailable value is never invented or substituted with a CNAME hostname. Browser display/clipboard cases use clearly labelled synthetic addresses; real DNS resolution is outside this UI unit. Onboarding with no configured base still reports internal workspace created but URL not ready.
 
 ## Verification boundary
 
