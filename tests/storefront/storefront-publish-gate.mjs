@@ -17,6 +17,7 @@ import { createWriteStream } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { expect } from "@playwright/test";
+import { createProductInEditor, selectLedgerRow } from "./merchant-product.mjs"; // stop-bleed D01: products are created in the editor
 import { launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit
 
 const root = process.cwd(), evidence = process.env.LC_JOINT_EVIDENCE;
@@ -132,24 +133,15 @@ try {
   // 0094 (merchant-tools, storefront-v2 G1): the sign-in landing is the dashboard; the product ledger moved to /[locale]/inventory.
   await expect(merchant.getByTestId("dashboard-page")).toBeVisible();
   await merchant.goto(`${adminOrigin}/en/inventory`);
-  await expect(merchant.getByRole("button", { name: "Add product", exact: true })).toBeVisible();
+  // stop-bleed D01: "Add product" on the inventory page is a link to the full editor now (no inline quick-add panel)
+  await expect(merchant.getByRole("link", { name: "Add product", exact: true })).toBeVisible();
   assert(sawIssuer, "real signed MOCK IdP browser redirect required");
   const name = `Publish gate product ${Date.now()}`, code = `PUB-${Date.now()}`;
-  await merchant.getByRole("button", { name: "Add product", exact: true }).click();
-  await merchant.getByRole("textbox", { name: "Product name", exact: true }).fill(name);
-  await merchant.getByRole("textbox", { name: "Description", exact: true }).fill("Synthetic product for the storefront publication gate");
-  const productResponse = merchant.waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname === `/api/stores/${store}/products`);
-  await merchant.locator(".create-panel").getByRole("button", { name: "Add product", exact: true }).click();
-  const product = await (await productResponse).json();
-  await expect(merchant.getByRole("heading", { name: "Add first SKU", exact: true })).toBeVisible();
-  await merchant.getByRole("textbox", { name: "SKU code", exact: true }).fill(code);
-  await merchant.getByRole("spinbutton", { name: "Price in minor units", exact: true }).fill("12345");
-  const skuResponse = merchant.waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname === `/api/stores/${store}/skus`);
-  await merchant.locator(".create-panel").getByRole("button", { name: "Add first SKU", exact: true }).click();
-  const sku = await (await skuResponse).json();
-  assert.equal(sku.product_id, product.id);
-  await expect(merchant.locator(".create-panel")).toHaveCount(0);
-  // Nothing is published and nothing is bound: the merchant's own purchase-entry control says so.
+  // the product and its first SKU go through the product editor, the only creation UI (price typed in major units: 123.45 = 12345 minor)
+  const { product, sku } = await createProductInEditor(merchant, { adminOrigin, store, name, description: "Synthetic product for the storefront publication gate", code, price: "123.45" });
+  assert.equal(sku.price_minor, 12345);
+  // Nothing is published and nothing is bound: the merchant's own purchase-entry control (stock ledger, the selected product) says so.
+  await selectLedgerRow(merchant, { adminOrigin, code });
   await expect(merchant.getByTestId("purchase-entry").getByRole("status")).toHaveText("No verified, published storefront address is available.");
   const productUrl = locale => `${buyerOrigin}/${locale}/products/${product.id}`;
   pass("signed MOCK IdP; merchant created product + SKU in the UI; purchase entry reports no published address");

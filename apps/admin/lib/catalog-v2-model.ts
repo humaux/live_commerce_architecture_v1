@@ -3,7 +3,7 @@
 // collections.go, internal/catalog) plus the pure helpers the editor needs: the option-axis -> SKU matrix, the derived
 // variant title, and currency-aware price parsing. A parser refuses a malformed read (type, bounds); the server stays
 // the authority for every rule (slug uniqueness, option alignment, compare-at > price, versions). No network, no DOM.
-import { canonicalCursor, canonicalUUID } from "./orders-model.ts";
+import { canonicalCursor, canonicalUUID, wholeOnly } from "./orders-model.ts";
 
 export type OptionAxis = { name: string; values: string[] };
 export type ProductStatus = "draft" | "active" | "archived";
@@ -231,7 +231,8 @@ export function cleanAxes(axes: OptionAxis[]): { axes: OptionAxis[]; error: "" |
   return { axes: cleaned, error: dup ? "duplicate" : over ? "limit" : "" };
 }
 
-// Currency exponent from Intl (TWD 0, USD 2, ...), the same source `money()` formats with.
+// Currency exponent from Intl: the number of minor digits on the wire (TWD 2 in this system, so NT$60 is 6000; USD 2; JPY 0), the same
+// source `money()` divides by.
 export const fractionDigits = (currency: string) => {
   try {
     return new Intl.NumberFormat("en", { style: "currency", currency }).resolvedOptions().maximumFractionDigits ?? 2;
@@ -239,19 +240,26 @@ export const fractionDigits = (currency: string) => {
     return 2;
   }
 };
-// "12.5" -> 1250 (USD) / 13 is invalid for TWD only when fractional digits exceed the exponent. null = not a price.
+// wholeOnly(currency) (orders-model): TWD is typed and shown as WHOLE dollars although the wire is x100 (Go refuses price_minor % 100 != 0,
+// product-editor §c10); every other currency keeps its own decimals.
+// Major-unit text -> wire minor units: "60" -> 6000 (TWD), "12.5" -> 1250 (USD). null = not a price, or a fraction the currency does
+// not take ("60.5" for TWD, "1.5" for JPY).
 export function toMinor(input: string, currency: string): number | null {
   const digits = fractionDigits(currency);
   const m = /^(\d{1,12})(?:\.(\d{1,6}))?$/.exec(input.trim());
-  if (!m || (m[2] ?? "").length > digits) return null;
-  const minor = Number(m[1] + (m[2] ?? "").padEnd(digits, "0"));
+  const fraction = m?.[2] ?? "";
+  if (!m || fraction.length > (wholeOnly(currency) ? 0 : digits)) return null;
+  const minor = Number(m[1] + fraction.padEnd(digits, "0"));
   return Number.isSafeInteger(minor) && minor <= maxMoney ? minor : null;
 }
+// Wire minor units -> the text the merchant edits: 6000 -> "60" (TWD), 1250 -> "12.50" (USD). A legacy TWD amount with cents (50) stays
+// "0.50" so it is never shown as another price; toMinor then refuses it until it is retyped as whole dollars.
 export function fromMinor(minor: number, currency: string): string {
   const digits = fractionDigits(currency);
   if (digits === 0) return String(minor);
   const text = String(minor).padStart(digits + 1, "0");
-  return `${text.slice(0, -digits)}.${text.slice(-digits)}`;
+  const whole = text.slice(0, -digits), fraction = text.slice(-digits);
+  return wholeOnly(currency) && Number(fraction) === 0 ? whole : `${whole}.${fraction}`;
 }
 
 // Proposed SKU code for one option combination: product slug + the 1-based position of each value on its axis

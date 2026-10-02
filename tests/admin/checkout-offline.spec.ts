@@ -114,10 +114,12 @@ test("settings: the merchant sets bank details, the window and the free-shipping
   await page.getByLabel(c.serviceCode, { exact: true }).fill(service);
   expect((await policyRead).status()).toBe(200);
   const policyForm = page.getByTestId("settings-policy-form");
-  await expect(policyForm.getByLabel(c.shipping, { exact: true })).toHaveValue("0"); // hydrated from the saved policy
-  await policyForm.getByLabel(c.shipping, { exact: true }).fill(fee);
+  // stop-bleed D02: the settings money fields are NT$ whole dollars; the Go harness hands over minor units (LC_OFF_FEE 6000 = NT$60)
+  const dollars = (minor: string) => String(Number(minor) / 100);
+  await expect(policyForm.getByLabel(`${c.shipping} (NT$)`, { exact: true })).toHaveValue("0"); // hydrated from the saved policy
+  await policyForm.getByLabel(`${c.shipping} (NT$)`, { exact: true }).fill(dollars(fee));
   await expect(policyForm.getByTestId("settings-free-shipping")).toHaveValue("");
-  await policyForm.getByTestId("settings-free-shipping").fill(threshold);
+  await policyForm.getByTestId("settings-free-shipping").fill(dollars(threshold));
   await policyForm.getByLabel(new RegExp(`^${c.ref}`)).fill("R4 gate: free shipping at the subtotal");
   const enable = policyForm.getByLabel(c.policyEnabled, { exact: true });
   if (!(await enable.isChecked())) await enable.check();

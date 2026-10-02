@@ -27,10 +27,13 @@
 .customers-consent li > span:first-child { flex: 1 1 260px; }
 .customers-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
 .customers-erased { margin: 0 0 12px; padding: 12px 14px; border-radius: 5px; background: #e8eef5; color: #455c74; }
-.customers-page .orders-actions-table { min-width: 0; }
+/* D05: only a key/value table (row headers + one value column, class orders-kv-table) may shrink below order-actions.css's 540px and wrap
+   anywhere. Every other .orders-actions-table (promotions, team, billing plans, customer orders ...) keeps its 540px floor and scrolls inside
+   .orders-actions-scroll; the old blanket rule collapsed them to one character per line at 390px (and broke amounts in the customer orders table). */
+.customers-page .orders-kv-table { min-width: 0; }
 .customers-page .orders-actions-table > tbody > tr > th { height: auto; width: 42%; padding: 9px 10px; border-bottom: 1px solid var(--line); background: none; color: var(--ink); font-size: 13px; font-weight: 600; text-align: left; vertical-align: top; }
 .customers-page .orders-actions-table td:last-child, .customers-page .orders-actions-table th:last-child { text-align: left; }
-.customers-page .orders-actions-table td { white-space: normal; overflow-wrap: anywhere; }
+.customers-page .orders-kv-table td { white-space: normal; overflow-wrap: anywhere; }
 .customers-page dialog p { margin: 8px 0; }
 .customers-finance-controls input { min-width: 170px; }
 .customers-finance-table tfoot td { font-weight: 700; border-top: 2px solid var(--line); }

@@ -20,6 +20,7 @@ import {
   validTransferView,
   type ProofBody,
   type TransferErrorCode,
+  type TransferState,
   type TransferView,
 } from "../lib/bank-transfer-contract";
 
@@ -50,12 +51,15 @@ export default function BankTransfer({
   locale,
   money,
   refreshToken,
+  onState,
 }: {
   context: string;
   orderID: string;
   locale: Locale;
   money: Money;
   refreshToken: number;
+  // The latest transfer state read, so the order heading above can follow a confirmation or expiry (D06; settledCommercialState).
+  onState?: (state: TransferState) => void;
 }) {
   const copy = bankTransferCopy[locale];
   const [view, setView] = useState<TransferView | null>(null);
@@ -90,6 +94,10 @@ export default function BankTransfer({
       live.current++;
     };
   }, [load, refreshToken]);
+
+  useEffect(() => {
+    if (view) onState?.(view.state);
+  }, [view?.state]);
 
   // The countdown ticks locally; the server stays the authority on when the window ends (expiry releases the stock).
   useEffect(() => {
@@ -168,7 +176,8 @@ export default function BankTransfer({
       <p role="status" data-testid="transfer-state">
         {copy.stateLabel}: <strong>{copy.states[view.state]}</strong>
       </p>
-      {view.bank && (
+      {/* The shop's account and the amount due only while the buyer may still transfer: a confirmed, cancelled or expired order never asks again. */}
+      {view.bank && open(view.state) && (
         <>
           <p data-testid="transfer-amount">
             {copy.amountDue}: <strong>{money(view.amount_minor, view.currency)}</strong>

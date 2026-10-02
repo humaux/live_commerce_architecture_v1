@@ -12,15 +12,19 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import type { Store } from "@/lib/model";
 import { command, readStockVersion, readWarehouses, send } from "@/lib/catalog-v2-client";
+import { currencySign } from "@/lib/client";
 import {
   cleanAxes, codePattern, fromMinor, limits, parseBalance, parseCreated, proposedCode, sameValues, toMinor, variantMatrix, variantTitle,
   type OptionAxis, type ProductDetail, type Variant,
 } from "@/lib/catalog-v2-model";
 import { catalogCopy, errorText } from "@/lib/catalog-v2-copy";
 import { useWrite } from "@/lib/catalog-v2-write";
+import { wholeOnly } from "@/lib/orders-model";
 
 type Props = { locale: Locale; store: Store; detail: ProductDetail; boundary: string; refresh: () => Promise<boolean> };
 type AxisDraft = { name: string; values: string };
+// TWD takes whole dollars only (D02): its refusal says so instead of suggesting "12.50".
+const priceProblem = (c: { invalidPrice: string; invalidPriceWhole: string }, currency: string) => (wholeOnly(currency) ? c.invalidPriceWhole : c.invalidPrice);
 const toDraft = (axes: OptionAxis[]): AxisDraft[] => axes.map((a) => ({ name: a.name, values: a.values.join(", ") }));
 const fromDraft = (draft: AxisDraft[]): OptionAxis[] => draft.map((d) => ({ name: d.name, values: d.values.split(",") }));
 
@@ -108,9 +112,9 @@ function VariantRow({ v, locale, store, detail, boundary, refresh, write }: {
 
   function savePrice() {
     const p = toMinor(price, v.currency);
-    if (p === null) return write.fail(c.invalidPrice);
+    if (p === null) return write.fail(priceProblem(c, v.currency));
     const cmp = compare.trim() === "" ? null : toMinor(compare, v.currency);
-    if (compare.trim() !== "" && (cmp === null || cmp <= p)) return write.fail(cmp === null ? c.invalidPrice : c.invalidCompare);
+    if (compare.trim() !== "" && (cmp === null || cmp <= p)) return write.fail(cmp === null ? priceProblem(c, v.currency) : c.invalidCompare);
     void write.run(command("POST", `skus/${v.id}/price`, { price_minor: p, compare_at_minor: cmp, expected_version: v.version }), parseCreated, () => void refresh(), c.saved);
   }
   function saveCode() {
@@ -137,7 +141,7 @@ function VariantRow({ v, locale, store, detail, boundary, refresh, write }: {
             <button type="button" className="product-textbutton" data-testid={`variant-rename-${v.id}`} onClick={() => setRenaming(true)}>{v.code}</button>
           )}
         </td>
-        <td data-label={c.price}><input aria-label={c.price} inputMode="decimal" data-testid={`variant-price-${v.id}`} value={price} onChange={(e) => setPrice(e.target.value)} /> <small>{v.currency}</small></td>
+        <td data-label={c.price}><input aria-label={c.price} inputMode="decimal" data-testid={`variant-price-${v.id}`} value={price} onChange={(e) => setPrice(e.target.value)} /> <small>{currencySign(v.currency)}</small></td>
         <td data-label={c.compareAt}><input aria-label={c.compareAt} inputMode="decimal" data-testid={`variant-compare-${v.id}`} value={compare} onChange={(e) => setCompare(e.target.value)} />
           <button type="button" data-testid={`variant-save-${v.id}`} disabled={!dirty || write.busy} onClick={savePrice}>{c.saveVariant}</button></td>
         <td data-label={c.stock}>
@@ -226,7 +230,7 @@ function NewVariants({ locale, store, detail, rows, boundary, refresh }: {
     if (running.current) return;
     const codes = new Set<string>();
     for (const { row } of list) {
-      if (toMinor(row.price, store.currency) === null) return setMessage(c.invalidPrice);
+      if (toMinor(row.price, store.currency) === null) return setMessage(priceProblem(c, store.currency));
       if (!codePattern.test(row.code) || codes.has(row.code)) return setMessage(c.invalidCode);
       codes.add(row.code);
     }
@@ -262,7 +266,7 @@ function NewVariants({ locale, store, detail, rows, boundary, refresh }: {
               <tr key={id} data-testid={`new-variant-${i}`}>
                 <td data-label={c.variant}>{variantTitle(values)}</td>
                 <td data-label={c.code}><input aria-label={c.code} data-testid={`new-code-${i}`} value={row.code} maxLength={limits.code} onChange={(e) => edit(id, row, { code: e.target.value })} /></td>
-                <td data-label={c.price}><input aria-label={c.price} inputMode="decimal" data-testid={`new-price-${i}`} value={row.price} onChange={(e) => edit(id, row, { price: e.target.value })} /> <small>{store.currency}</small></td>
+                <td data-label={c.price}><input aria-label={c.price} inputMode="decimal" data-testid={`new-price-${i}`} value={row.price} onChange={(e) => edit(id, row, { price: e.target.value })} /> <small>{currencySign(store.currency)}</small></td>
               </tr>
             ))}
           </tbody>

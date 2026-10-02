@@ -225,47 +225,20 @@ test("stale balance fails closed and refresh enables a new command", async ({
   );
 });
 
-test("create product then first SKU and read persisted zero balance", async ({
+// stop-bleed D01 (product-editor §c9): the inline "quick add" (product, then first SKU) is gone from this page. A product is created in the
+// full editor (/products/new; the catalog-core gate drives that flow with a real session), so here "Add product" is a link and no create
+// panel exists to open.
+test("Add product leaves for the product editor; no inline create panel on the inventory page", async ({
   page,
 }) => {
-  const name = `Acceptance product ${Date.now()}`,
-    code = `QA-${Date.now()}`;
   await page.goto("/en/inventory");
-  await page.getByRole("button", { name: "Add product", exact: true }).click();
-  // catalog-media (ca11a58): the fixture's pre-selected row opens the inspector, whose product-edit form has its own
-  // "Product name"/"Description" fields; the create form is its own labelled region, so scope the locators to it.
-  const createPanel = page.locator(".create-panel");
-  await createPanel
-    .getByRole("textbox", { name: "Product name", exact: true })
-    .fill(name);
-  await createPanel
-    .getByRole("textbox", { name: "Description", exact: true })
-    .fill("Isolated acceptance fixture");
-  await page
-    .locator(".create-panel")
-    .getByRole("button", { name: "Add product", exact: true })
-    .click();
-  await expect(
-    page.getByRole("heading", { name: "Add first SKU" }),
-  ).toBeVisible();
-  await page.getByRole("textbox", { name: "SKU code" }).fill(code);
-  await page
-    .getByRole("spinbutton", { name: "Price in minor units" })
-    .fill("12345");
-  await page
-    .locator(".create-panel")
-    .getByRole("button", { name: "Add first SKU", exact: true })
-    .click();
   await expect(page.locator(".create-panel")).toHaveCount(0);
-  await page
-    .getByRole("textbox", { name: "Search product name or SKU" })
-    .fill(code);
-  await page.getByRole("button", { name: "Search", exact: true }).click();
-  await expect(page.locator("tbody tr")).toHaveCount(1);
-  await expect(page.getByRole("button", { name, exact: true })).toBeVisible();
-  await expect(page.locator("tbody .available-value")).toHaveText("0");
-  await page.reload();
-  await expect(page.getByRole("button", { name, exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add product", exact: true })).toHaveCount(0);
+  const add = page.getByRole("link", { name: "Add product", exact: true });
+  await expect(add).toHaveAttribute("href", /^\/en\/products\/new\?store=[0-9a-f-]{36}$/);
+  await add.click();
+  await expect(page).toHaveURL(/\/en\/products\/new\?store=[0-9a-f-]{36}$/);
+  await expect(page.locator(".create-panel")).toHaveCount(0);
 });
 
 test("BFF rejects cross-store, foreign origin, route injection and oversized writes", async ({
@@ -354,19 +327,13 @@ test("purchase-entry proxy only accepts the scoped GET locale query", async ({
   expect(post.status()).toBe(404);
 });
 
-test("purchase-entry read failure keeps product and SKU write receipts", async ({
+test("purchase-entry read failure says the product is unchanged, offers a refresh and sends no write", async ({
   page,
 }) => {
-  const name = `Entry read failure ${Date.now()}`;
-  const code = `PE-${Date.now()}`;
-  let productWrites = 0;
-  let skuWrites = 0;
+  let writes = 0;
   let reads = 0;
   page.on("request", (request) => {
-    const path = new URL(request.url()).pathname;
-    if (request.method() === "POST" && path.endsWith("/products"))
-      productWrites++;
-    if (request.method() === "POST" && path.endsWith("/skus")) skuWrites++;
+    if (request.method() === "POST") writes++;
   });
   await page.route(
     /\/api\/stores\/[^/]+\/products\/[^/]+\/purchase-entry\?locale=en$/,
@@ -385,50 +352,22 @@ test("purchase-entry read failure keeps product and SKU write receipts", async (
       });
     },
   );
-  await page.goto("/en/inventory");
-  await page.getByRole("button", { name: "Add product", exact: true }).click();
-  await page
-    .locator(".create-panel")
-    .getByRole("textbox", { name: "Product name", exact: true })
-    .fill(name);
-  await page
-    .locator(".create-panel")
-    .getByRole("button", { name: "Add product" })
-    .click();
-  await expect(
-    page.getByRole("heading", { name: "Add first SKU" }),
-  ).toBeVisible();
-  await expect(
-    page.getByTestId("purchase-entry").getByRole("alert"),
-  ).toContainText("saved product is unchanged");
-  await expect(page.locator(".message.success")).toContainText(
-    "Product saved. Add its first SKU below.",
-  );
-  await page.getByRole("textbox", { name: "SKU code" }).fill(code);
-  await page
-    .getByRole("spinbutton", { name: "Price in minor units" })
-    .fill("12345");
-  await page
-    .locator(".create-panel")
-    .getByRole("button", { name: "Add first SKU" })
-    .click();
-  await expect(
-    page.getByText("Product and SKU saved", { exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByTestId("purchase-entry").getByRole("alert"),
-  ).toContainText("saved product is unchanged");
-  expect(productWrites).toBe(1);
-  expect(skuWrites).toBe(1);
-  expect(reads).toBeGreaterThanOrEqual(2);
+  await page.goto("/en/inventory"); // the fixture pre-selects a row, which loads its purchase entry
+  const panel = page.getByTestId("purchase-entry");
+  await expect(panel.getByRole("alert")).toContainText("saved product is unchanged");
+  expect(reads).toBeGreaterThanOrEqual(1);
+  const before = reads;
+  await panel.getByRole("button", { name: "Refresh" }).click();
+  await expect.poll(() => reads).toBeGreaterThan(before);
+  await expect(panel.getByRole("alert")).toContainText("saved product is unchanged");
+  expect(writes).toBe(0);
 });
 
-test("catalog write denial reports permission without claiming a product was saved", async ({
+test("stock adjustment denial reports permission without claiming the inventory was updated", async ({
   page,
 }) => {
   let writes = 0;
-  await page.route(/\/api\/stores\/[^/]+\/products$/, async (route) => {
-    if (route.request().method() !== "POST") return route.continue();
+  await page.route("**/api/stores/*/inventory/adjustments", async (route) => {
     writes++;
     await route.fulfill({
       status: 403,
@@ -442,21 +381,20 @@ test("catalog write denial reports permission without claiming a product was sav
       }),
     });
   });
-  await page.goto("/en/inventory");
-  await page.getByRole("button", { name: "Add product", exact: true }).click();
+  await page.goto("/en/inventory?q=AC-002-BK");
   await page
-    .locator(".create-panel")
-    .getByRole("textbox", { name: "Product name", exact: true })
+    .getByRole("radio", { name: "Select AC-002-BK", exact: true })
+    .check();
+  await page.getByRole("spinbutton", { name: "Adjustment quantity" }).fill("1");
+  await page
+    .getByRole("textbox", { name: "Reason (required)" })
     .fill("Permission probe");
-  await page
-    .locator(".create-panel")
-    .getByRole("button", { name: "Add product" })
-    .click();
+  await page.getByRole("button", { name: "Confirm adjustment" }).click();
   await expect(page.locator('.message[role="alert"]')).toContainText(
     "cannot perform this action",
   );
   await expect(
-    page.getByText("Product saved. Add its first SKU below.", { exact: true }),
+    page.getByText("Inventory updated", { exact: true }),
   ).toHaveCount(0);
   expect(writes).toBe(1);
 });
@@ -513,4 +451,140 @@ test("purchase controls recheck current state before copying or opening", async 
   await panel.getByRole("button", { name: "Open purchase page" }).click();
   await expect(page).toHaveURL(/https:\/\/shop\.example\/en\/products\//);
   expect(reads).toBeGreaterThanOrEqual(4);
+});
+
+// ---- stop-bleed D01 (UI architecture v2 §10.7): the selected-row tray is stock only -----------------------------------
+// The tray used to carry product editing, price edit, photos and archive in one flex row that overflowed above 1280px
+// (REPORT-admin-vqa D01). It now keeps stock info, the explicit stock adjustment (reason required), the read-only price and a link
+// to the product page. Geometry is asserted on every visible atom of the tray at the owner/report sizes; screenshots go to
+// output/admin-ui-fixes/ (UI_SHOT_PHASE=before|after, default after).
+const shotPhase = process.env.UI_SHOT_PHASE ?? "after"; // "before" only captures screenshots on the pre-fix code
+
+for (const [width, height] of [
+  [1366, 768],
+  [1586, 992],
+  [2000, 1100],
+  [375, 812],
+] as const) {
+  test(`inventory tray has no overlap, clipping or overflow at ${width}x${height}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height });
+    await page.goto("/en/inventory");
+    const tray = page.locator("section.inspector");
+    await expect(tray).toBeVisible(); // the fixture pre-selects a row
+    await mkdir("output/admin-ui-fixes", { recursive: true });
+    await page.screenshot({
+      path: `output/admin-ui-fixes/${shotPhase}-d01-inventory-${width}.png`,
+      fullPage: true,
+      animations: "disabled",
+    });
+    if (shotPhase === "before") return; // capture-only run on the pre-fix code (the red run is recorded in the unit notes)
+    const geometry = await tray.evaluate((root) => {
+      const atoms = Array.from(
+        root.querySelectorAll<HTMLElement>(
+          "button, a, input, select, textarea, label, h2, dt, dd, p, small, .status, img, svg",
+        ),
+      ).filter((el) => {
+        const r = el.getBoundingClientRect();
+        return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden";
+      });
+      const box = (el: Element) => el.getBoundingClientRect();
+      const tr = box(root);
+      const problems: string[] = [];
+      const name = (el: HTMLElement) =>
+        `${el.tagName.toLowerCase()}${el.className ? "." + String(el.className).split(" ")[0] : ""}[${(el.textContent ?? "").trim().slice(0, 18)}]`;
+      for (const el of atoms) {
+        const r = box(el);
+        if (r.left < tr.left - 1 || r.right > tr.right + 1)
+          problems.push(`${name(el)} leaves the tray (${Math.round(r.left)}..${Math.round(r.right)} vs ${Math.round(tr.left)}..${Math.round(tr.right)})`);
+        if (r.right > innerWidth + 1 || r.left < -1)
+          problems.push(`${name(el)} leaves the viewport`);
+      }
+      for (let i = 0; i < atoms.length; i++)
+        for (let j = i + 1; j < atoms.length; j++) {
+          const a = atoms[i], b = atoms[j];
+          if (a.contains(b) || b.contains(a)) continue;
+          const ra = box(a), rb = box(b);
+          const w = Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left);
+          const h = Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top);
+          if (w > 2 && h > 2) problems.push(`${name(a)} overlaps ${name(b)} (${Math.round(w)}x${Math.round(h)})`);
+        }
+      return {
+        problems,
+        pageOverflow: document.documentElement.scrollWidth > innerWidth,
+        atoms: atoms.length,
+      };
+    });
+    expect(geometry.atoms).toBeGreaterThan(5);
+    expect(geometry.pageOverflow, "no horizontal page scroll").toBe(false);
+    expect(geometry.problems).toEqual([]);
+  });
+}
+
+test("inventory tray keeps stock and read-only price; product editing lives on the product page", async ({
+  page,
+}) => {
+  await page.goto("/en/inventory");
+  const tray = page.locator("section.inspector");
+  await expect(tray).toBeVisible();
+  // kept: stock info, the explicit adjustment with a required reason
+  await expect(tray.getByRole("heading", { name: "Inventory", exact: true })).toBeVisible();
+  await expect(tray.getByRole("spinbutton", { name: "Adjustment quantity" })).toBeVisible();
+  await expect(tray.getByRole("textbox", { name: "Reason (required)" })).toBeVisible();
+  await expect(tray.getByRole("button", { name: "Confirm adjustment" })).toBeVisible();
+  // read-only price in whole dollars, never minor units or decimals
+  const price = tray.getByTestId("tray-price");
+  await expect(price).toHaveText(/^Price: NT\$[\d,]+$/);
+  await expect(price.locator("input")).toHaveCount(0);
+  // the link to the product page
+  const edit = tray.getByRole("link", { name: "Edit product →" });
+  await expect(edit).toHaveAttribute("href", /^\/en\/products\/[0-9a-f-]{36}(\?store=[0-9a-f-]{36})?$/);
+  // removed (product-editor §c9): name/description/price/photo/archive editing and the inline quick-add panel
+  for (const id of ["product-edit", "price-edit", "archive-actions", "archive-sku", "archive-product", "photo-manager"])
+    await expect(tray.getByTestId(id), id).toHaveCount(0);
+  await expect(tray.locator("input[name=name], input[name=price], textarea[name=description]")).toHaveCount(0);
+  await expect(page.locator(".create-panel")).toHaveCount(0);
+  // the header "Add product" is a plain link to the full editor, not a panel toggle
+  const add = page.getByRole("link", { name: "Add product", exact: true });
+  await expect(add).toHaveAttribute("href", /^\/en\/products\/new(\?store=[0-9a-f-]{36})?$/);
+  await add.click();
+  await expect(page).toHaveURL(/\/en\/products\/new/);
+});
+
+// ---- stop-bleed D04 + M07/M08: no invented channel status, and the nav scrolls so Settings and Sign out stay reachable ---------------
+test("rail has no hard-coded channel status and scrolls to Settings and Sign out at 1366x768", async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.goto("/en/inventory");
+  const rail = page.locator("aside.rail");
+  await expect(rail).toBeVisible();
+  // the fake "Channel status" block (Storefront/Facebook/Instagram/WhatsApp/LINE, always "Not connected") is gone
+  await expect(rail.getByText("Channel status")).toHaveCount(0);
+  for (const fake of ["WhatsApp", "LINE", "Facebook", "Instagram", "Not connected"]) await expect(rail.getByText(fake)).toHaveCount(0);
+  // 14 entries + brand + Sign out are taller than 768px: the rail itself scrolls instead of clipping them
+  const geometry = await rail.evaluate((el) => ({ overflowY: getComputedStyle(el).overflowY, scrolls: el.scrollHeight > el.clientHeight, height: el.getBoundingClientRect().height }));
+  expect(geometry.overflowY).toBe("auto");
+  expect(geometry.scrolls, "this viewport really needs the scroll").toBe(true);
+  expect(geometry.height).toBeLessThanOrEqual(768);
+  await mkdir("output/admin-ui-fixes", { recursive: true });
+  await page.screenshot({ path: `output/admin-ui-fixes/${shotPhase}-d04-rail-top-1366x768.png`, animations: "disabled" });
+  for (const name of ["Settings", "Sign out"]) {
+    const button = rail.getByRole("button", { name, exact: true });
+    await button.scrollIntoViewIfNeeded();
+    await expect(button).toBeInViewport({ ratio: 1 });
+    // nothing paints over it: the element at its centre is the button (or inside it)
+    const hit = await button.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return top === el || el.contains(top);
+    });
+    expect(hit, `${name} is reachable (nothing covers it)`).toBe(true);
+  }
+  await page.screenshot({ path: `output/admin-ui-fixes/${shotPhase}-d04-rail-bottom-1366x768.png`, animations: "disabled" });
+  // the 375px drawer scrolls too
+  await page.setViewportSize({ width: 375, height: 667 });
+  await page.getByRole("button", { name: "Open navigation" }).click();
+  const drawer = page.locator("aside.rail");
+  await drawer.getByRole("button", { name: "Sign out", exact: true }).scrollIntoViewIfNeeded();
+  await expect(drawer.getByRole("button", { name: "Sign out", exact: true })).toBeInViewport({ ratio: 1 });
 });

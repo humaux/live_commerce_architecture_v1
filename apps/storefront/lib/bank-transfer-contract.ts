@@ -41,6 +41,16 @@ export type TransferView = {
   confirmed_at: string | null;
   refunded_at: string | null;
 };
+// Order heading (D06). The order read and the transfer read are two requests: the transfer view is polled every minute and has its own
+// refresh button, the order only reloads on "Refresh order". After the shop confirmed the payment (or the window ended) the order read
+// can still say AWAITING_TRANSFER, and the page then headed "Waiting for bank transfer" above "The shop confirmed your payment". A settled
+// transfer is the fresher fact: the heading follows it until the order read agrees. REFUNDED_OFFLINE only follows a confirmation.
+export type CommercialState = "DRAFT" | "AWAITING_PAYMENT" | "AWAITING_TRANSFER" | "CONFIRMED" | "CANCELLED";
+export function settledCommercialState(commercial: CommercialState, transfer: TransferState | null): CommercialState {
+  if (commercial !== "AWAITING_TRANSFER") return commercial;
+  if (transfer === "CONFIRMED" || transfer === "REFUNDED_OFFLINE") return "CONFIRMED";
+  return transfer === "EXPIRED" ? "CANCELLED" : commercial;
+}
 export type ProofBody = { last5: string; amount_minor: number; paid_at: string };
 export type ProofResult = { order_id: string; state: "SUBMITTED"; proof_count: number; submitted_at: string };
 

@@ -24,6 +24,9 @@ import { NotifySettings } from "./NotifySettings";
 import { StorefrontSettings } from "./StorefrontSettings";
 import { MetaConnect } from "./MetaConnect";
 import { availabilityReason, settingsCopy } from "@/lib/settings-copy";
+import { fromMinor, toMinor } from "@/lib/catalog-v2-model";
+import { currencySign } from "@/lib/client";
+import { wholeOnly } from "@/lib/orders-model";
 import {
   csrfCookie,
   integer,
@@ -76,13 +79,15 @@ type Draft = {
   nameEN: string;
   visible: boolean;
   sort: string;
+  // Money fields (min, max, shipping, freeShipping) are MAJOR-unit text of the market currency ("60" = NT$60); the wire minor amount is
+  // toMinor(text, currency) at submit time (D02). Draft version 1 held minor-unit text and is dropped on restore.
   min: string;
   max: string;
   serviceCode: string;
   serviceKind: Service["delivery_kind"];
   serviceMode: Service["mode"];
   shipping: string;
-  // "" = no free-shipping threshold (storefront-v2 §C); otherwise whole minor units.
+  // "" = no free-shipping threshold (storefront-v2 §C); otherwise major-unit text.
   freeShipping: string;
   taxMode: "none" | "inclusive" | "exclusive";
   taxBasis: "goods" | "goods_and_shipping";
@@ -115,7 +120,7 @@ const emptyDraft: Draft = {
   visible: false,
   sort: "10",
   min: "1",
-  max: "1000000000000",
+  max: "10000000000",
   serviceCode: "",
   serviceKind: "home",
   serviceMode: "MANUAL",
@@ -192,6 +197,11 @@ export function SettingsWizard({
   draftRef.current = draft;
   const accountsRef = useRef(accounts);
   accountsRef.current = accounts;
+  // Currency the money fields of a market are typed in (a market is created in the store currency; hydration runs in async callbacks).
+  const marketsRef = useRef(markets);
+  marketsRef.current = markets;
+  const currencyOf = (marketID: string) =>
+    marketsRef.current.find((item) => item.id === marketID)?.currency ?? store?.currency ?? "TWD";
   const stepRef = useRef(step);
   stepRef.current = step;
   const [methodListTarget, setMethodListTarget] = useState("");
@@ -280,8 +290,8 @@ export function SettingsWizard({
       nameEN: saved?.name_en ?? labels[2],
       visible: saved?.visible ?? false,
       sort: String(saved?.sort_order ?? 10),
-      min: String(saved?.min_amount_minor ?? 1),
-      max: String(saved?.max_amount_minor ?? 1000000000000),
+      min: saved ? fromMinor(saved.min_amount_minor, currencyOf(current.marketID)) : "1",
+      max: saved ? fromMinor(saved.max_amount_minor, currencyOf(current.marketID)) : "10000000000",
       methodObservation: {
         target: `${current.marketID}:TW:${current.methodCode}`,
         version: saved?.version ?? 0,
@@ -345,11 +355,11 @@ export function SettingsWizard({
   function hydratePolicy(current: Draft, saved: Policy | null): Draft {
     return {
       ...current,
-      shipping: String(saved?.shipping_minor ?? 0),
+      shipping: fromMinor(saved?.shipping_minor ?? 0, currencyOf(current.marketID)),
       freeShipping:
         saved?.free_shipping_threshold_minor == null
           ? ""
-          : String(saved.free_shipping_threshold_minor),
+          : fromMinor(saved.free_shipping_threshold_minor, currencyOf(current.marketID)),
       taxMode: saved?.tax_mode ?? "none",
       taxBasis: saved?.tax_basis ?? "goods",
       taxRate: String(saved?.tax_rate_bps ?? 0),
@@ -383,6 +393,7 @@ export function SettingsWizard({
       return c.session;
     if (value.code === "conflict") return c.conflict;
     if (value.code === "forbidden") return c.forbidden;
+    if (value.code === "invalid_money") return c.invalidMoney;
     if (value.code === "invalid_request" || value.code === "invalid_json")
       return c.invalid;
     return c.failed;
@@ -397,7 +408,7 @@ export function SettingsWizard({
   }
   function persistDraft(next: Draft, nextStep: number) {
     if (!draftKey.current) throw new Error("storage");
-    const encoded = JSON.stringify({ version: 1, draft: next, step: nextStep });
+    const encoded = JSON.stringify({ version: 2, draft: next, step: nextStep });
     sessionStorage.setItem(draftKey.current, encoded);
     if (sessionStorage.getItem(draftKey.current) !== encoded)
       throw new Error("storage");
@@ -524,14 +535,18 @@ export function SettingsWizard({
         journalKey.current = `commerce-settings-command:${store.id}:${hash}`;
         const rawDraft = sessionStorage.getItem(draftKey.current);
         const rawPending = localStorage.getItem(journalKey.current);
-        if (rawDraft) {
+        // A version-1 draft holds minor-unit money text ("6000" = NT$60 now): reading it as major units would multiply every amount by 100.
+        const legacyDraft =
+          !!rawDraft && (JSON.parse(rawDraft) as { version?: number }).version === 1;
+        if (legacyDraft) sessionStorage.removeItem(draftKey.current);
+        if (rawDraft && !legacyDraft) {
           const saved = JSON.parse(rawDraft) as {
             version?: number;
             draft?: Draft;
             step?: number;
           };
           if (
-            saved.version !== 1 ||
+            saved.version !== 2 ||
             !saved.draft ||
             ![1, 2, 3, 4].includes(saved.step ?? 0)
           )
@@ -1396,7 +1411,7 @@ export function SettingsWizard({
             visible: false,
             sort: "10",
             min: "1",
-            max: "1000000000000",
+            max: "10000000000",
           };
     try {
       saveDraft(next);
@@ -1408,8 +1423,12 @@ export function SettingsWizard({
   function methodSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const sort = integer(draft.sort, 0, 1000),
-      min = integer(draft.min, 1, 1000000000000),
-      max = integer(draft.max, 1, 1000000000000);
+      min = toMinor(draft.min, activeMarket?.currency ?? "TWD"),
+      max = toMinor(draft.max, activeMarket?.currency ?? "TWD");
+    if (activeMarket && wholeOnly(activeMarket.currency) && /[.,]/.test(draft.min + draft.max)) {
+      setError({ ...unknown, code: "invalid_money" }); // D02: NT$ limits are whole dollars; say so instead of "check the values"
+      return;
+    }
     if (
       !activeMarket ||
       !activeAccount ||
@@ -1418,6 +1437,7 @@ export function SettingsWizard({
       sort === null ||
       min === null ||
       max === null ||
+      min < 1 ||
       min > max ||
       !draft.nameHans.trim() ||
       !draft.nameHant.trim() ||
@@ -1486,15 +1506,20 @@ export function SettingsWizard({
   }
   function policySubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const shipping = integer(draft.shipping, 0, 1000000000000),
-      // Empty = no threshold; anything else must be whole minor units (the Go quote re-validates).
+    const currency = activeMarket?.currency ?? "TWD";
+    const shipping = toMinor(draft.shipping, currency),
+      // Empty = no threshold; anything else is major-unit text turned into minor units here (the Go quote re-validates).
       free =
         draft.freeShipping.trim() === ""
           ? null
-          : integer(draft.freeShipping, 0, 1000000000000),
+          : toMinor(draft.freeShipping, currency),
       tax = integer(draft.taxRate, 0, 10000),
       ttl = integer(draft.ttl, 60, 1800);
     const ref = draft.reference.trim();
+    if (wholeOnly(currency) && /[.,]/.test(draft.shipping + draft.freeShipping)) {
+      setError({ ...unknown, code: "invalid_money" }); // D02: NT$ fees are whole dollars
+      return;
+    }
     if (
       !activeMarket ||
       !validCountry(draft.country) ||
@@ -1683,8 +1708,8 @@ export function SettingsWizard({
   const needsPolicySave =
     !policy ||
     draft.reference.trim() !== "" ||
-    policy.shipping_minor !== Number(draft.shipping) ||
-    (policy.free_shipping_threshold_minor ?? "") !== (draft.freeShipping.trim() === "" ? "" : Number(draft.freeShipping)) ||
+    policy.shipping_minor !== toMinor(draft.shipping, currencyOf(draft.marketID)) ||
+    (policy.free_shipping_threshold_minor ?? "") !== (draft.freeShipping.trim() === "" ? "" : toMinor(draft.freeShipping, currencyOf(draft.marketID))) ||
     policy.tax_mode !== draft.taxMode ||
     policy.tax_basis !== draft.taxBasis ||
     policy.tax_rate_bps !== Number(draft.taxRate) ||
@@ -2187,10 +2212,11 @@ export function SettingsWizard({
                               />
                             </label>
                             <label>
-                              {c.minAmount}
+                              {`${c.minAmount} (${currencySign(activeMarket?.currency ?? "TWD")})`}
                               <input
-                                type="number"
-                                min="1"
+                                type="text"
+                                inputMode="decimal"
+                                autoComplete="off"
                                 required
                                 value={draft.min}
                                 onChange={(event) =>
@@ -2199,10 +2225,11 @@ export function SettingsWizard({
                               />
                             </label>
                             <label>
-                              {c.maxAmount}
+                              {`${c.maxAmount} (${currencySign(activeMarket?.currency ?? "TWD")})`}
                               <input
-                                type="number"
-                                min="1"
+                                type="text"
+                                inputMode="decimal"
+                                autoComplete="off"
                                 required
                                 value={draft.max}
                                 onChange={(event) =>
@@ -2368,10 +2395,11 @@ export function SettingsWizard({
                         >
                           <div className="settings-field-grid">
                             <label>
-                              {c.shipping}
+                              {`${c.shipping} (${currencySign(activeMarket?.currency ?? "TWD")})`}
                               <input
-                                type="number"
-                                min="0"
+                                type="text"
+                                inputMode="decimal"
+                                autoComplete="off"
                                 required
                                 value={draft.shipping}
                                 onChange={(event) =>
@@ -2380,10 +2408,11 @@ export function SettingsWizard({
                               />
                             </label>
                             <label>
-                              {c.freeShipping}
+                              {`${c.freeShipping} (${currencySign(activeMarket?.currency ?? "TWD")})`}
                               <input
-                                type="number"
-                                min="0"
+                                type="text"
+                                inputMode="decimal"
+                                autoComplete="off"
                                 data-testid="settings-free-shipping"
                                 value={draft.freeShipping}
                                 onChange={(event) =>

@@ -239,6 +239,14 @@ fieldset {
   position: sticky;
   top: 0;
   height: 100vh;
+  /* 14 entries at 56px plus brand and sign-out exceed a 768px screen: the rail scrolls so Settings and Sign out stay reachable */
+  overflow-y: auto;
+}
+.rail > * {
+  flex-shrink: 0;
+}
+.rail > .nav-item:last-child {
+  margin-top: auto; /* Sign out sits at the bottom of the rail when there is room, right after the last entry when there is not */
 }
 .brand {
   height: 70px;
@@ -273,34 +281,6 @@ fieldset {
 }
 .nav-item:hover:not(:disabled) {
   background: #28567f;
-}
-.channel-status {
-  margin-top: auto;
-  padding: 24px 20px 28px;
-  font-size: 12px;
-}
-.channel-status h2 {
-  font-size: 12px;
-  font-weight: 500;
-  margin-bottom: 15px;
-}
-.channel-status > div {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 16px;
-}
-.disconnected {
-  color: #dce5ef;
-}
-.disconnected:before {
-  content: "";
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #91a2b3;
-  margin-right: 6px;
 }
 .work-area {
   flex: 1;
@@ -384,6 +364,16 @@ fieldset {
   margin-top: 3px;
   white-space: nowrap;
   font-size: 15px;
+  /* a link to /products/new styled like the primary button */
+  box-sizing: border-box;
+  border: 1px solid var(--teal);
+  border-radius: 5px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.create-button[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 .section-bar {
   display: flex;
@@ -601,12 +591,13 @@ code {
 }
 .inspector {
   display: flex;
+  flex-wrap: wrap; /* D01: never one hard row; blocks wrap before they can leave the tray */
   align-items: center;
   gap: 26px;
   position: relative;
   min-height: 180px;
   margin-top: 9px;
-  padding: 24px 16px;
+  padding: 24px 44px 24px 16px; /* the right 44px keep the close button clear of the blocks */
   background: white;
   border: 1px solid var(--line);
   border-radius: 7px;
@@ -630,6 +621,14 @@ code {
   font-size: 12px;
   color: var(--muted);
   margin-bottom: 8px;
+}
+.tray-edit {
+  display: inline-block;
+  margin-top: 8px;
+  margin-left: 12px;
+  color: var(--focus);
+  font-size: 13px;
+  font-weight: 600;
 }
 .stock-summary {
   min-width: 280px;
@@ -670,8 +669,7 @@ code {
   gap: 13px;
   align-items: end;
 }
-.adjustment label,
-.create-panel label {
+.adjustment label {
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -786,28 +784,6 @@ code {
   align-items: center;
   gap: 20px;
 }
-.create-panel {
-  background: white;
-  border: 1px solid var(--line);
-  padding: 20px;
-  margin: 10px 0;
-  border-radius: 7px;
-}
-.create-panel p {
-  font-size: 13px;
-  color: var(--muted);
-  margin: 8px 0 16px;
-}
-.create-panel fieldset {
-  display: flex;
-  align-items: end;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-.create-panel label {
-  flex: 1;
-  min-width: 170px;
-}
 .empty-state {
   padding: 65px 25px;
   text-align: center;
@@ -917,10 +893,6 @@ code {
     font-size: 16px;
     padding: 0 11px;
   }
-  .channel-status {
-    padding: 20px 12px;
-    font-size: 10px;
-  }
   .topbar {
     gap: 10px;
     padding: 0 14px;
@@ -983,6 +955,7 @@ code {
     top: 58px;
     bottom: 0;
     height: calc(100dvh - 58px);
+    min-height: 0; /* the base min-height: 100vh made the drawer 58px taller than the screen, so its last entry sat below the fold */
     width: 214px;
     transform: translateX(-100%);
     transition: transform 0.15s ease;
@@ -996,10 +969,6 @@ code {
   .nav-item {
     font-size: 15px;
     padding: 0 20px;
-  }
-  .channel-status {
-    font-size: 12px;
-    padding: 24px 20px;
   }
   .topbar {
     height: 58px;
@@ -1125,7 +1094,7 @@ code {
     font-size: 11px;
   }
   .inspector {
-    padding: 21px 13px;
+    padding: 21px 44px 21px 13px;
     gap: 18px;
   }
   .selected-product {
@@ -1167,18 +1136,6 @@ code {
   .adjustment .primary {
     width: 100%;
     margin-top: 3px;
-  }
-  .create-panel {
-    padding: 16px;
-  }
-  .create-panel fieldset {
-    gap: 12px;
-  }
-  .create-panel label {
-    flex-basis: 100%;
-  }
-  .create-panel button {
-    flex: 1;
   }
   .skip-link {
     left: 10px;

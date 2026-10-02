@@ -48,10 +48,12 @@ const copy = {
   "zh-TW": {
     delivery: "選擇配送", quote: "取得目前總額", more: "增加數量", bank: "銀行轉帳", create: "送出訂單（銀行轉帳）", hoursLeft: /還剩 [56] 小時 \d+ 分鐘/,
     confirmed: "商家已確認收款", expired: "轉帳期限已結束，訂單已取消，庫存已釋出。", note: /6 小時/,
+    headConfirmed: "訂單已確認", headCancelled: "訂單已取消", headWaiting: "等待銀行轉帳",
   },
   en: {
     delivery: "Choose delivery", quote: "Get current total", more: "Increase quantity", bank: "Bank transfer", create: "Place order (bank transfer)", hoursLeft: /[56] h \d+ min left/,
     confirmed: "The shop confirmed your payment", expired: "The transfer window ended. This order was cancelled and the items were released.", note: /within 6 hours/,
+    headConfirmed: "Order confirmed", headCancelled: "Order canceled", headWaiting: "Waiting for bank transfer",
   },
 };
 const pii = { recipient_name: "Synthetic Gate Recipient", phone: "+886900000091", region: "Synthetic Region", city: "Synthetic City", postal_code: "99991", line1: "Synthetic Address Ninety One", line2: "Synthetic Unit Ninety Two" };
@@ -186,6 +188,21 @@ const api = (page, method, suffix) => page.evaluate(async ({ method, suffix }) =
   return { status: response.status, body: await response.json() };
 }, { method, suffix });
 async function refresh(page) { await page.getByTestId("transfer-refresh").click(); }
+// stop-bleed D06: only the transfer panel was refreshed (never "Refresh order"); the order heading must still agree with it. It used to keep
+// "Waiting for bank transfer" above "The shop confirmed your payment" / "...ended. This order was cancelled", and a confirmed order must not
+// show the account again.
+async function headingAgrees(page, locale, settled) {
+  const c = copy[locale], head = page.getByTestId("order-state");
+  if (process.env.UI_SHOT_PHASE === "before") { // capture-only run on the pre-fix code: what the page says, no assertion
+    console.log(`BEFORE D06 ${locale}: heading data-state=${await head.getAttribute("data-state")} text="${await head.innerText()}", bank details in the DOM: ${await page.getByTestId("transfer-bank").count()}`);
+    return;
+  }
+  await expect(head).toHaveAttribute("data-state", settled);
+  await expect(head).toHaveText(settled === "CONFIRMED" ? c.headConfirmed : c.headCancelled);
+  await expect(head).not.toContainText(c.headWaiting);
+  await expect(page.getByTestId("transfer-bank")).toHaveCount(0);
+  await expect(page.getByTestId("transfer-amount")).toHaveCount(0);
+}
 
 try {
   execFileSync("openssl", ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", path.join(certDir, "key.pem"), "-out", path.join(certDir, "cert.pem"), "-days", "1", "-subj", `/CN=${host}`], { stdio: "ignore" });
@@ -240,6 +257,7 @@ try {
       await expect(view(b.page)).toHaveAttribute("data-state", "CONFIRMED");
       await expect(view(b.page)).toContainText(c.confirmed);
       await expect(b.page.getByTestId("transfer-form")).toHaveCount(0);
+      await headingAgrees(b.page, b.locale, "CONFIRMED");
       const order = await api(b.page, "GET", `orders/${b.id}`);
       assert.equal(order.status, 200); assert.equal(order.body.commercial_state, "CONFIRMED", `order ${k} after the merchant confirmed`);
       await shot(b.page, "order-confirmed", b.locale, b.mobile ? "mobile" : "desktop");
@@ -255,6 +273,7 @@ try {
     const a = buyers.A; await refresh(a.page);
     await expect(view(a.page)).toHaveAttribute("data-state", "CONFIRMED");
     await expect(view(a.page)).toContainText(copy[a.locale].confirmed);
+    await headingAgrees(a.page, a.locale, "CONFIRMED");
     pass("order A: confirmed after the resubmission");
   }
   await signal("after2"); await waitGo("3");
@@ -264,6 +283,7 @@ try {
     await expect(view(e.page)).toContainText(c.expired);
     await expect(e.page.getByTestId("transfer-account-number")).toHaveCount(0); // the details are withdrawn once the window ended
     await expect(e.page.getByTestId("transfer-form")).toHaveCount(0);
+    await headingAgrees(e.page, e.locale, "CANCELLED");
     assert(!(await e.page.content()).includes(account), "the account number is still in the expired order's DOM");
     const cancelled = await api(e.page, "GET", `orders/${e.id}`); assert.equal(cancelled.body.commercial_state, "CANCELLED");
     await shot(e.page, "order-expired", e.locale, "desktop");

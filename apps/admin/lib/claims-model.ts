@@ -3,9 +3,10 @@
 // any extra, missing or ill-typed field before the UI renders it.
 // Non-goals: no fetching (claims-client.ts), no copy (claims-copy.ts), no business rule
 // (Go decides windows, offers, claims and links; the UI only displays their results).
-// Depends on: claims-request.ts (validClaimLink, shared with the BFF) only.
+// Depends on: claims-request.ts (validClaimLink, shared with the BFF) and orders-model.ts (wholeOnly: the TWD whole-dollar rule).
 
 import { validClaimLink, type ClaimLink } from "./claims-request.ts";
+import { wholeOnly } from "./orders-model.ts";
 
 export type MatchMode = "EXACT" | "KEYWORD_QTY_ONLY";
 export const persistedReasons = ["NO_MATCH", "UNKNOWN_KEYWORD", "OFFER_INACTIVE", "INVALID_QUANTITY",
@@ -230,6 +231,11 @@ export function parsePriceMinor(input: string, digits: number): number | null {
   if (!match || (match[2]?.length ?? 0) > digits) return null;
   const minor = Number(match[1] + (match[2] ?? "").padEnd(digits, "0"));
   return Number.isSafeInteger(minor) && minor >= 1 && minor <= 1e12 ? minor : null;
+}
+/** The live-price input of one currency: parsePriceMinor in its decimals, and TWD takes whole dollars only (6000, never 6050: Go refuses it). */
+export function parseLivePrice(input: string, currency: string): number | null {
+  const minor = parsePriceMinor(input, currencyDigits(currency));
+  return minor !== null && (!wholeOnly(currency) || minor % 100 === 0) ? minor : null;
 }
 /** 1250 (digits 2) -> "12.50"; 1250 (digits 0) -> "1250". */
 export function priceInputText(minor: number, digits: number): string {

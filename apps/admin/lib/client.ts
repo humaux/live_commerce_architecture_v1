@@ -47,14 +47,22 @@ export async function sendCommand(store: string, command: PendingCommand) {
   }
 }
 
+// The ONE money display of the admin. `minor` is the wire amount (TWD is x100 in this system: 6000 = NT$60). A whole amount reads
+// "NT$60", never "NT$60.00" or "$60.00"; real cents stay visible ("NT$0.50", "US$12.50") because rounding money is never display-only.
+// TWD always carries the "NT$" sign: Intl prints a bare "$" for zh-TW, which a merchant reads as US dollars (REPORT-admin-vqa D02).
+// Same rule as apps/storefront/lib/money.ts (the buyer sees the same text for the same amount).
+export const currencySign = (currency: string) => (currency === "TWD" ? "NT$" : currency);
 export function money(locale: string, currency: string, minor: number) {
+  const digits = new Intl.NumberFormat(locale, { style: "currency", currency }).resolvedOptions().maximumFractionDigits!;
   const formatter = new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
+    minimumFractionDigits: minor % 10 ** digits === 0 ? 0 : digits,
   });
-  return formatter.format(
-    minor / 10 ** formatter.resolvedOptions().maximumFractionDigits!,
-  );
+  return formatter
+    .formatToParts(minor / 10 ** digits)
+    .map((part) => (part.type === "currency" && currency === "TWD" ? currencySign(currency) : part.value))
+    .join("");
 }
 
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";

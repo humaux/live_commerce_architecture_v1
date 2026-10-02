@@ -13,6 +13,8 @@ import {
 } from "@/lib/studio-client";
 import type { AspectRatio, Draft, StudioDetail, StudioPage } from "@/lib/studio-model";
 import { studioCopy } from "@/lib/studio-copy";
+import { displayTime } from "@/lib/orders-model";
+import { instantToTaipei, taipeiToInstant } from "@/lib/promotions-model";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 
 type Status = "initial" | "loading" | "ready" | "hidden" | StudioErrorCode;
@@ -67,22 +69,16 @@ function studioURL(locale: Locale, store: string, cursor = "", scene = "") {
 }
 function formOf(draft: Draft): Form {
   return { id: draft.session_id, title: draft.title,
-    scheduled: utcMinute(draft.scheduled_at), aspect: draft.aspect_ratio };
-}
-function utcMinute(value: string | null) {
-  return value ? new Date(value).toISOString().slice(0, 16) : "";
-}
-function time(locale: Locale, value: string) {
-  return new Intl.DateTimeFormat(locale, { timeZone: "UTC", year: "numeric", month: "2-digit",
-    day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(value));
+    scheduled: instantToTaipei(draft.scheduled_at), aspect: draft.aspect_ratio };
 }
 function draftInput(form: Form): DraftInput | null {
   if (form.title.trim() !== form.title || Array.from(form.title).length < 1 ||
     Array.from(form.title).length > 200 || /[\p{Cc}]/u.test(form.title)) return null;
   if (form.scheduled) {
     if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(form.scheduled)) return null;
-    const date = new Date(`${form.scheduled}:00Z`);
-    if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0, 16) !== form.scheduled ||
+    // M06: the merchant types Taipei wall time (promotions-model helpers); the wire stays a UTC instant, as before.
+    const date = new Date(taipeiToInstant(form.scheduled) ?? NaN);
+    if (!Number.isFinite(date.getTime()) || instantToTaipei(date.toISOString()) !== form.scheduled ||
       date.getUTCFullYear() < 2000 || date.getUTCFullYear() > 2199) return null;
     return { title: form.title, scheduled_at: date.toISOString(), aspect_ratio: form.aspect };
   }
@@ -145,7 +141,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
   useEffect(() => { if (currentDetail.data) setMediaOn(currentDetail.data.media_enabled); }, [currentDetail.data]);
   const formDirty = newMode ? (form.title !== "" || form.scheduled !== "" || form.aspect !== blank.aspect) :
     !!shown && (form.id !== shown.draft.session_id || form.title !== shown.draft.title ||
-      form.scheduled !== utcMinute(shown.draft.scheduled_at) || form.aspect !== shown.draft.aspect_ratio);
+      form.scheduled !== instantToTaipei(shown.draft.scheduled_at) || form.aspect !== shown.draft.aspect_ratio);
   if (newMode || shown) dirty.current = formDirty;
   const volatile = useRef({ scope, scene, route, selectedID, form, newMode, actionError, formError });
   volatile.current = { scope, scene, route, selectedID, form, newMode, actionError, formError };
@@ -572,7 +568,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
     if (newMode) void perform("create", input, "");
     else if (shown?.can_manage && shown.draft.state === "DRAFT")
       void perform("edit", { ...input,
-        scheduled_at: form.scheduled === utcMinute(shown.draft.scheduled_at)
+        scheduled_at: form.scheduled === instantToTaipei(shown.draft.scheduled_at)
           ? shown.draft.scheduled_at : input.scheduled_at,
         expected_version: shown.draft.version }, shown.draft.session_id);
   }
@@ -629,7 +625,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
                 aria-current={!newMode && selectedID === item.session_id ? "true" : undefined}
                 onClick={() => { navigate(storeID, cursor, item.session_id); }}>
                 <strong>{item.title}</strong><span>{c.state[item.state as keyof typeof c.state] ?? item.state}</span>
-                <small>{item.scheduled_at ? time(locale, item.scheduled_at) + " UTC" : c.schedule}</small>
+                <small>{item.scheduled_at ? `${displayTime(locale, item.scheduled_at)} ${c.taipeiTime}` : c.schedule}</small>
               </button>)}
             </div>
             <div className="studio-pager">
@@ -678,7 +674,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
             <div className="studio-version">
               <h3>{c.version}</h3>
               {shown ? <div><strong>{c.state[shown.draft.state as keyof typeof c.state] ?? shown.draft.state} / {c.version} {shown.draft.version}</strong>
-                <span>{c.savedAt}: {time(locale, shown.draft.updated_at)}</span></div> : <p>{c.newDraft}</p>}
+                <span>{c.savedAt}: {displayTime(locale, shown.draft.updated_at)}</span></div> : <p>{c.newDraft}</p>}
             </div>
             {!canEdit && shown && !recoveryElsewhere && !recoveryGuard && <p className="studio-note">{shown.can_manage ? c.notDraftEditable : c.readOnly}</p>}
             {formDirty && <p className="studio-dirty">{c.unsaved}</p>}
@@ -697,7 +693,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
             <section className="studio-fact">
               <h3>{c.prepared}</h3>
               {prepared ? <>
-                <p className="studio-muted">{preparedCurrent ? `${c.preparedUntil}: ${time(locale, prepared.start_before)}` : c.expiredPrepared}</p>
+                <p className="studio-muted">{preparedCurrent ? `${c.preparedUntil}: ${displayTime(locale, prepared.start_before)}` : c.expiredPrepared}</p>
               </> : !attempt ? <p className="studio-muted">{c.noPrepared}</p> : null}
               {(prepared || attempt) && <><p className="studio-destination-label">{c.destinations}</p>
                 <ul>{(prepared?.destinations ?? attempt!.destinations).map((item) => <li key={item.ordinal}>
@@ -715,7 +711,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
                 <div><dt>{c.operation}</dt><dd>{c.operationState[attempt.operation_state as keyof typeof c.operationState] ?? attempt.operation_state}</dd></div>
                 <div><dt>{c.resource}</dt><dd>{c.resourceState[attempt.resource_state]}</dd></div>
                 <div><dt>{c.transport}</dt><dd>{attempt.transport_status || c.noTransport}</dd></div>
-                <div><dt>{c.statusAt}</dt><dd>{time(locale, attempt.updated_at)}</dd></div>
+                <div><dt>{c.statusAt}</dt><dd>{displayTime(locale, attempt.updated_at)}</dd></div>
                 {attempt.cleanup_required && <div><dt>{c.cleanup}</dt><dd>{c.yes}</dd></div>}
                 {attempt.stop_requested && <div><dt>{c.stopRequested}</dt><dd>{c.yes}</dd></div>}
                 {attempt.escalated && <div className="studio-escalated"><dt>{c.escalated}</dt><dd>{c.yes}</dd></div>}

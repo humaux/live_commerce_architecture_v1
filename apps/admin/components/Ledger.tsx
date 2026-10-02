@@ -1,19 +1,20 @@
 "use client";
 
-// Products & inventory workspace. BFF routes used (all -> Go internal/httpapi, scope from the merchant session):
-//   GET catalog-ledger (server page), GET products/{id}/purchase-entry, POST products|skus|inventory/adjustments,
-//   catalog-media: PATCH products/{id}, POST skus/{id}/price, POST skus|products/{id}/archive (journaled commands, the row's
-//   own expected_version) and the photo manager (ProductPhoto.tsx -> images routes). Never writes stock or prices outside
-//   those commands, and never trusts a client tenant/store id.
+// Stock ledger (/[locale]/inventory). BFF routes used (all -> Go internal/httpapi, scope from the merchant session):
+//   GET catalog-ledger (server page), GET products/{id}/purchase-entry, POST inventory/adjustments (journaled command with the
+//   row's own expected_version). Product editing (name, price, photos, archive, creation) lives only on /[locale]/products
+//   (product-editor §c9); this tray keeps stock info, the explicit stock adjustment, a read-only price and a link there.
+//   Never trusts a client tenant/store id.
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { type Locale } from "@live-commerce/i18n";
 import { copy, type Copy } from "@/lib/copy";
 import type { APIError, PurchaseEntry, WorkspaceData } from "@/lib/model";
 import { money, sendCommand, validJournalCommand, type PendingCommand } from "@/lib/client";
 import { imageURL } from "@/lib/images-client";
-import { ProductPhoto, ProductPhotoManager } from "./ProductPhoto";
+import { ProductPhoto } from "./ProductPhoto";
 import { Icon } from "./Icon";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 
@@ -111,11 +112,8 @@ export function Ledger({
       : "",
   );
   const selected = initial.rows.items.find((row) => row.sku_id === selectedID);
-  const [createOpen, setCreateOpen] = useState(false),
-    [productID, setProductID] = useState("");
-  const [lastSavedProductID, setLastSavedProductID] = useState("");
   const [entryRefresh, setEntryRefresh] = useState(0);
-  const entryProductID = selected?.product_id || productID || lastSavedProductID;
+  const entryProductID = selected?.product_id ?? "";
   const entryScope = `${initial.storeID}:${locale}:${selectedID}:${entryProductID}`;
   const currentEntryScope = useRef(entryScope);
   currentEntryScope.current = entryScope;
@@ -128,7 +126,6 @@ export function Ledger({
   const [query, setQuery] = useState(searchQuery);
   // catalog-core: the home ledger is the Inventory view; Products and Collections are their own pages (WorkspaceFrame).
   const [section, setSection] = useState("inventory");
-  const [confirming, setConfirming] = useState<"sku" | "product" | null>(null);
   const [pending, setPending] = useState<PendingCommand | null>(null),
     [busy, setBusy] = useState(false);
   const [journalReady, setJournalReady] = useState(false);
@@ -143,7 +140,6 @@ export function Ledger({
   const [warehouseLoading, setWarehouseLoading] = useState(false);
   const locked = busy || pending !== null || !journalReady;
   const key = `commerce-pending:${initial.storeID}`;
-  const formRef = useRef<HTMLFormElement>(null);
 
   // A server refresh may replace the search object without changing its query.
   // Preserve text being typed while that refresh completes.
@@ -161,15 +157,13 @@ export function Ledger({
       const saved = localStorage.getItem(key);
       if (saved) {
         const cmd: unknown = JSON.parse(saved);
-        // Known kind/resource pairs only (adds catalog-media edit, price and archive; lib/client.ts).
+        // Known kind/resource pairs only (lib/client.ts). A write journaled by an older build (product, sku, edit, price, archive)
+        // is still replayed with its original key and bytes so an uncertain write can never be duplicated.
         if (!validJournalCommand(cmd)) throw new Error("Invalid journal");
         setPending(cmd);
       }
-      const unfinished = localStorage.getItem(`${key}:product`);
-      if (unfinished) {
-        setProductID(unfinished);
-        setCreateOpen(true);
-      }
+      // The inline "quick add" that used this key is gone (product-editor §c9): drop the leftover half-created marker.
+      localStorage.removeItem(`${key}:product`);
       if (!navigator.locks) throw new Error("Cross-tab lock unavailable");
       setJournalReady(true);
     } catch {
@@ -182,7 +176,6 @@ export function Ledger({
       });
     }
   }, [key]);
-  useEffect(() => setConfirming(null), [selectedID]);
   useEffect(() => {
     if (!locked) return;
     const warn = (event: BeforeUnloadEvent) => {
@@ -308,7 +301,6 @@ export function Ledger({
       else params.delete(name);
     }
     select("");
-    setLastSavedProductID("");
     router.push(`${pathname}?${params}`);
   }
   async function submit(command: PendingCommand) {
@@ -344,33 +336,9 @@ export function Ledger({
           setError(result.body);
           return;
         }
-        if (command.kind === "product") {
-          localStorage.setItem(`${key}:product`, result.body.id);
-          select("");
-          setProductID(result.body.id);
-          setLastSavedProductID(result.body.id);
-          setEntryRefresh((current) => current + 1);
-          setCreateOpen(true);
-          setNotice(c.productSaved);
-        } else if (command.kind === "sku") {
-          localStorage.removeItem(`${key}:product`);
-          setLastSavedProductID(result.body.product_id);
-          setEntryRefresh((current) => current + 1);
-          setProductID("");
-          setCreateOpen(false);
-          setNotice(c.skuSaved);
-        } else if (command.kind === "edit") {
-          setNotice(c.productUpdated);
-        } else if (command.kind === "price") {
-          setNotice(c.priceUpdated);
-        } else if (command.kind === "archive") {
-          setConfirming(null);
-          setNotice(command.resource.startsWith("skus/") ? c.skuArchived : c.productArchived);
-        } else {
-          setDelta("0");
-          setReason("");
-          setNotice(c.success);
-        }
+        setDelta("0");
+        setReason("");
+        setNotice(c.success);
         localStorage.removeItem(key);
         setPending(null);
         router.refresh();
@@ -426,54 +394,6 @@ export function Ledger({
       reason: reason.trim(),
     });
   }
-  // catalog-media CM5: rename/describe, reprice and archive use the existing PATCH / price / archive routes with the
-  // row's own expected_version, through the same journaled command path as every other write.
-  function saveProduct(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!selected) return;
-    const data = new FormData(event.currentTarget);
-    const name = String(data.get("name") ?? "").trim();
-    if (!name) return setError(validationError);
-    command("edit", `products/${selected.product_id}`, {
-      name,
-      description: String(data.get("description") ?? ""),
-      expected_version: selected.product_version,
-    });
-  }
-  function changePrice(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!selected) return;
-    const price = Number(new FormData(event.currentTarget).get("price"));
-    if (!Number.isSafeInteger(price) || price < 0 || price > 1_000_000_000_000) return setError(validationError);
-    command("price", `skus/${selected.sku_id}/price`, { price_minor: price, expected_version: selected.sku_version });
-  }
-  function archive(kind: "sku" | "product") {
-    if (!selected) return;
-    command(
-      "archive",
-      kind === "sku" ? `skus/${selected.sku_id}/archive` : `products/${selected.product_id}/archive`,
-      { expected_version: kind === "sku" ? selected.sku_version : selected.product_version },
-    );
-  }
-  function create(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    if (!productID)
-      // catalog-core: the quick-add stays a live product like before (a new product is a draft by default,
-      // contracts/storefront-v2.md A); the Products page is where a draft is built and published deliberately.
-      command("product", "products", {
-        name: data.get("name"),
-        description: data.get("description"),
-        status: "active",
-      });
-    else
-      command("sku", "skus", {
-        product_id: productID,
-        code: data.get("code"),
-        price_minor: Number(data.get("price")),
-        expected_version: 0,
-      });
-  }
   async function moreWarehouses() {
     setWarehouseLoading(true);
     try {
@@ -498,14 +418,6 @@ export function Ledger({
       setWarehouseLoading(false);
     }
   }
-  const validationError: APIError = {
-    code: "invalid_request",
-    message: "",
-    request_id: "",
-    retryable: false,
-    details: {},
-  };
-
   return (
     <WorkspaceFrame
       locale={locale}
@@ -523,20 +435,18 @@ export function Ledger({
               <h1>{c.heading}</h1>
               <p>{c.subtitle}</p>
             </div>
-            <button
-              className="primary create-button"
-              disabled={!initial.storeID || locked}
-              onClick={() => {
-                setCreateOpen(!createOpen);
-                setTimeout(
-                  () => formRef.current?.querySelector("input")?.focus(),
-                  0,
-                );
-              }}
-            >
-              <Icon name="plus" size={18} />
-              {c.create}
-            </button>
+            {/* One way to create a product: the full editor (product-editor §c9); no inline quick-add on this page. */}
+            {initial.storeID && (
+              <Link
+                className="primary create-button"
+                href={`/${locale}/products/new?store=${initial.storeID}`}
+                aria-disabled={locked}
+                onClick={(event) => locked && event.preventDefault()}
+              >
+                <Icon name="plus" size={18} />
+                {c.create}
+              </Link>
+            )}
           </div>
           <div className="section-bar">
             <span>
@@ -567,52 +477,6 @@ export function Ledger({
               <span>{c.failed}</span>
               <button onClick={() => void submit(pending)}>{c.retry}</button>
             </div>
-          )}
-          {createOpen && (
-            <section className="create-panel" aria-label={c.create}>
-              <h2>{productID ? c.createSKU : c.create}</h2>
-              <p>{productID ? c.productSaved : c.createHint}</p>
-              <form ref={formRef} onSubmit={create}>
-                <fieldset disabled={locked}>
-                  {productID ? (
-                    <>
-                      <label>
-                        {c.skuCode}
-                        <input name="code" required maxLength={64} />
-                      </label>
-                      <label>
-                        {c.priceMinor}
-                        <input
-                          name="price"
-                          type="number"
-                          min="0"
-                          max="1000000000000"
-                          step="1"
-                          required
-                        />
-                      </label>
-                    </>
-                  ) : (
-                    <>
-                      <label>
-                        {c.name}
-                        <input name="name" required maxLength={120} />
-                      </label>
-                      <label>
-                        {c.description}
-                        <input name="description" maxLength={4000} />
-                      </label>
-                    </>
-                  )}
-                  <button className="primary" type="submit">
-                    {busy ? c.pending : productID ? c.createSKU : c.create}
-                  </button>
-                  <button type="button" onClick={() => setCreateOpen(false)}>
-                    {c.cancel}
-                  </button>
-                </fieldset>
-              </form>
-            </section>
           )}
           <section className="ledger-card" aria-label={c.heading}>
             <form
@@ -849,9 +713,16 @@ export function Ledger({
                 <div>
                   <h2>{selected.product_name}</h2>
                   <p>SKU: {selected.code}</p>
+                  {/* Display only: the price is edited on the product page, in whole major units (D02). */}
+                  <p data-testid="tray-price">
+                    {c.price}: {money(locale, selected.currency, selected.price_minor)}
+                  </p>
                   <span className={`status ${selected.status}`}>
                     {selected.status === "active" ? c.active : c.archived}
                   </span>
+                  <Link className="tray-edit" href={`/${locale}/products/${selected.product_id}${initial.storeID ? `?store=${initial.storeID}` : ""}`}>
+                    {c.editProduct}
+                  </Link>
                 </div>
               </div>
               <div className="stock-summary">
@@ -900,101 +771,6 @@ export function Ledger({
                 </fieldset>
                 <p className="audit-hint">{c.auditHint}</p>
               </form>
-              <form
-                className="adjustment"
-                key={`edit:${selected.product_id}:${selected.product_version}`}
-                onSubmit={saveProduct}
-                data-testid="product-edit"
-              >
-                <h2>{c.productDetails}</h2>
-                <fieldset disabled={locked || selected.product_status !== "active"}>
-                  <label>
-                    {c.name}
-                    <input name="name" required maxLength={120} defaultValue={selected.product_name} />
-                  </label>
-                  <label>
-                    {c.description}
-                    <textarea name="description" maxLength={8000} rows={3} defaultValue={selected.product_description} />
-                  </label>
-                  <button type="submit" className="primary">
-                    {busy ? c.pending : c.saveProduct}
-                  </button>
-                </fieldset>
-              </form>
-              <form
-                className="adjustment"
-                key={`price:${selected.sku_id}:${selected.sku_version}`}
-                onSubmit={changePrice}
-                data-testid="price-edit"
-              >
-                <h2>{c.changePrice}</h2>
-                <fieldset disabled={locked || selected.status !== "active"}>
-                  <label>
-                    {c.newPrice}
-                    <input
-                      name="price"
-                      type="number"
-                      min="0"
-                      max="1000000000000"
-                      step="1"
-                      required
-                      defaultValue={selected.price_minor}
-                    />
-                  </label>
-                  <button type="submit" className="primary">
-                    {busy ? c.pending : c.changePrice}
-                  </button>
-                </fieldset>
-              </form>
-              {initial.storeID && (
-                <ProductPhotoManager
-                  locale={locale}
-                  store={initial.storeID}
-                  productID={selected.product_id}
-                  productName={selected.product_name}
-                  code={selected.code}
-                  disabled={locked || selected.product_status !== "active"}
-                  onChanged={() => router.refresh()}
-                />
-              )}
-              <div className="adjustment" data-testid="archive-actions">
-                {confirming ? (
-                  <>
-                    <p role="alert">{confirming === "sku" ? c.confirmArchiveSku : c.confirmArchiveProduct}</p>
-                    <button
-                      type="button"
-                      className="primary"
-                      data-testid="confirm-archive"
-                      disabled={locked}
-                      onClick={() => archive(confirming)}
-                    >
-                      {busy ? c.pending : c.confirmArchive}
-                    </button>
-                    <button type="button" disabled={locked} onClick={() => setConfirming(null)}>
-                      {c.cancel}
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      data-testid="archive-sku"
-                      disabled={locked || selected.status !== "active"}
-                      onClick={() => setConfirming("sku")}
-                    >
-                      {c.archiveSku}
-                    </button>
-                    <button
-                      type="button"
-                      data-testid="archive-product"
-                      disabled={locked || selected.product_status !== "active"}
-                      onClick={() => setConfirming("product")}
-                    >
-                      {c.archiveProduct}
-                    </button>
-                  </>
-                )}
-              </div>
             </section>
           ) : !entryProductID ? (
             <p className="selection-hint">{c.choose}</p>

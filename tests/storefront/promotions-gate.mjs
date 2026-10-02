@@ -88,6 +88,8 @@ async function shot(page, name, run) {
   await page.screenshot({ path: file, fullPage: true });
   shots.push({ file: path.basename(file), sha256: sha(await readFile(file)), locale: run.locale, viewport: run.vp, page: name });
 }
+// UI_SHOT_PHASE=before: a capture-only run on the pre-fix code (stop-bleed): screenshots and the measured numbers, no assertion on D02/D05.
+const captureOnly = process.env.UI_SHOT_PHASE === "before";
 const noOverflow = async (page, label) => assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${label}: horizontal overflow`);
 
 async function signIn(merchant) {
@@ -126,9 +128,33 @@ async function scenario(index, run) {
   await merchant.goto(`${adminOrigin}/${run.locale}/promotions`);
   await expect(merchant.getByTestId("promotions-page")).toBeVisible();
   await expect(merchant.getByTestId("promotion-form")).toBeVisible();
+  // stop-bleed D02: NT$ amounts are whole dollars; a decimal is refused in the form with its own sentence and nothing is written
+  let writes = 0;
+  if (!captureOnly) {
+  const countWrites = request => { if (request.method() === "POST" && new URL(request.url()).pathname === `/api/stores/${fx.store}/promotions`) writes++; };
+  merchant.on("request", countWrites);
+  await merchant.getByTestId("promotion-code").fill("DECIMAL-CHECK");
+  await merchant.getByTestId("promotion-value").fill("10");
+  await merchant.getByTestId("promotion-min").fill("500.5");
+  await merchant.getByTestId("promotion-submit").click();
+  await expect(merchant.getByTestId("promotion-problem")).toHaveText(run.locale === "zh-TW" ? "新台幣金額為整數元，例如 500，請去掉小數。" : "NT$ amounts are whole dollars, for example 500. Remove the decimals.");
+  assert.equal(writes, 0, `${label} a TWD decimal reached the server`);
+  merchant.off("request", countWrites);
+  }
   await createCode(merchant, label, cell.code, 500, window);
   await createCode(merchant, label, cell.big_code, 5000, null);
   await noOverflow(merchant, `${label} promotions page`);
+  // stop-bleed D05: the list keeps its 540px floor and scrolls inside its own container; at 390px no cell collapses to one character per line
+  // (customers.css used to override min-width/overflow-wrap for every table on a customers-page).
+  const list = await merchant.getByTestId("promotions-table").evaluate(table => {
+    const code = table.querySelector("tbody tr td strong").getBoundingClientRect(), box = table.getBoundingClientRect();
+    return { width: box.width, codeHeight: code.height, codeWidth: code.width, codeChars: table.querySelector("tbody tr td strong").textContent.length };
+  });
+  if (captureOnly) console.log(`BEFORE D05 ${label}: promotions table width ${list.width}px, first code ${list.codeWidth}x${list.codeHeight}px (${list.codeChars} characters)`);
+  else {
+    assert(list.width >= 540, `${label} promotions table width ${list.width} < 540 (min-width override came back)`);
+    assert(list.codeHeight < 30, `${label} promotion code wraps onto several lines (${list.codeHeight}px high)`);
+  }
   await shot(merchant, "admin-promotions", run);
   const row = merchant.getByTestId("promotion-row").filter({ hasText: cell.code });
   await expect(row.getByTestId("promotion-used")).toHaveText("0");

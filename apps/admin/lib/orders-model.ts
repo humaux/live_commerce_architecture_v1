@@ -432,10 +432,13 @@ export function parseOrderActions(value: unknown): OrderActions {
   return v as OrderActions;
 }
 
-// UTC display used by every orders surface (the page states the time zone in its column headers).
+// Store-local time: every store of this release is a Taiwan store (Asia/Taipei, no DST), and the admin never shows UTC (M06). The wire stays
+// RFC 3339 UTC/offset instants; this zone is only how the merchant reads and types them. promotions-model's Taipei helpers share it.
+export const STORE_TIME_ZONE = "Asia/Taipei";
+// The ONE time display of the admin (orders, customers, billing, team, Studio, claims); pages label their columns "Taipei time".
 export function displayTime(locale: string, value: string) {
   return new Intl.DateTimeFormat(locale, {
-    timeZone: "UTC", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false,
+    timeZone: STORE_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false,
   }).format(new Date(value));
 }
 

@@ -16,7 +16,7 @@ const en = {
   feedBound: "Reading comments from the bound post",
   mockDetail: "Record what a buyer commented. Nothing is reserved, charged or sent until the buyer opens their link and checks out.",
   scene: "Scene", loading: "Loading claims…",
-  window: "Claim window", open: "Open", closed: "Closed", round: "Round", openedAt: "Opened (UTC)",
+  window: "Claim window", open: "Open", closed: "Closed", round: "Round", openedAt: "Opened (Taipei time)",
   openWindow: "Open claim window", closeWindow: "Close claim window",
   mode: "Quantity rule", modeExact: "Keyword = 1 · keyword+N = N", modeQty: "Keyword+N only",
   modeLocked: "Close the window to change the quantity rule.",
@@ -49,14 +49,14 @@ const en = {
   bundles: "Buyers and claim links", ref: "Ref", items: "Claimed items", cart: "Cart", link: "Link",
   noBundles: "No buyers yet. Accepted comments create them.", inCart: "In cart", notInCart: "Not in cart yet",
   bound: "Opened by a buyer", unbound: "Not opened yet", linkNone: "No link",
-  linkActive: (time: string) => `Active until ${time} UTC`, linkExpired: "Expired", issue: "Create link",
+  linkActive: (time: string) => `Active until ${time} (Taipei time)`, linkExpired: "Expired", issue: "Create link",
   rotate: "Replace link", release: "Release and replace", more: "Load more",
   releaseConfirm: "Release this buyer and replace the link? The old link stops working, and the next buyer to open the new link receives every item.",
   dialog: "One-time buyer link",
   dialogHint: "This link is shown only now. Paste it into your private message to the buyer. Don't show it on a stream or screen share.",
   buyerLanguage: "Buyer language", hidden: "Link hidden", reveal: "Reveal link", hide: "Hide link",
   copyLink: "Copy link", copyMessage: "Copy message", close: "Close and discard",
-  expires: (time: string) => `Expires ${time} UTC`, released: "The previous buyer was released.",
+  expires: (time: string) => `Expires ${time} (Taipei time)`, released: "The previous buyer was released.",
   replayed: "This link was already created, but its one-time link was not received here. Replace the link to get a new one.",
   noOrigin: "No verified, published storefront address is available.",
   readOnly: "Read-only access. Claim controls are unavailable.",
@@ -89,7 +89,7 @@ const en = {
   sourcePlatformLabel: "Platform",
   sourcePlatformAuto: "From the link",
   sourcePlatformHint: "Choose one for a bare numeric ID: this store has both a Facebook and an Instagram connection.",
-  sourceUpdated: "Updated (UTC)",
+  sourceUpdated: "Updated (Taipei time)",
   sourceUnavailable: "The comment source could not be loaded. Refresh to try again.",
   sourceForbidden: "You need permission to manage live scenes and integrations to change the comment source.",
   sourcePlatform: {
@@ -108,7 +108,7 @@ const en = {
   // Live tools (R4): keyword library, import / copy from a scene, live-only price.
   live: {
     livePrice: "Live price", livePriceNone: "None", livePriceHint: "Optional. Applies only to buyers who open their claim link, while that link is valid. Leave empty to use the normal price.",
-    livePriceInvalid: "Enter a price greater than 0, with the currency's decimal places.",
+    livePriceInvalid: "Enter a price greater than 0, with the currency's decimal places. NT$ prices are whole dollars, for example 60.",
     saveLivePrice: "Save price", clearLivePrice: "Clear price",
     higherWarning: (live: string, normal: string) => `Higher than the normal price (${live} vs ${normal}). Buyers pay the live price.`,
     normalPrice: (price: string) => `Normal price ${price}`,
@@ -149,7 +149,7 @@ export const claimsCopy: Record<Locale, ClaimsCopy> = {
     feedBound: "正在读取已绑定帖子的评论",
     mockDetail: "由你代为记录买家的评论。买家打开链接并结账之前，不会保留库存、扣款或发送任何消息。",
     scene: "场次", loading: "正在读取登记…",
-    window: "登记窗口", open: "开放中", closed: "已关闭", round: "轮次", openedAt: "开放时间（UTC）",
+    window: "登记窗口", open: "开放中", closed: "已关闭", round: "轮次", openedAt: "开放时间（台北时间）",
     openWindow: "开放登记窗口", closeWindow: "关闭登记窗口",
     mode: "数量规则", modeExact: "口令 = 1 件 · 口令+N = N 件", modeQty: "只接受口令+数量",
     modeLocked: "关闭窗口后才能修改数量规则。",
@@ -182,14 +182,14 @@ export const claimsCopy: Record<Locale, ClaimsCopy> = {
     bundles: "买家与登记链接", ref: "编号", items: "已登记商品", cart: "购物车", link: "链接",
     noBundles: "还没有买家。被接受的评论会建立买家。", inCart: "已加入购物车", notInCart: "尚未加入购物车",
     bound: "已有买家打开", unbound: "尚未打开", linkNone: "没有链接",
-    linkActive: (time: string) => `有效至 ${time} UTC`, linkExpired: "已过期", issue: "生成链接",
+    linkActive: (time: string) => `有效至 ${time}（台北时间）`, linkExpired: "已过期", issue: "生成链接",
     rotate: "更换链接", release: "解除并更换", more: "加载更多",
     releaseConfirm: "解除此买家并更换链接？旧链接会失效，下一位打开新链接的买家会收到全部商品。",
     dialog: "一次性买家链接",
     dialogHint: "链接只在此刻显示。请粘贴到给买家的私信中，不要在直播画面或屏幕共享中显示。",
     buyerLanguage: "买家语言", hidden: "链接已隐藏", reveal: "显示链接", hide: "隐藏链接",
     copyLink: "复制链接", copyMessage: "复制消息", close: "关闭并丢弃",
-    expires: (time: string) => `${time} UTC 过期`, released: "已解除之前的买家。",
+    expires: (time: string) => `${time}（台北时间）过期`, released: "已解除之前的买家。",
     replayed: "此链接先前已生成，但一次性链接没有送达这里。请更换链接以取得新的链接。",
     noOrigin: "没有已验证且已发布的店铺前台地址。",
     readOnly: "当前为只读权限，无法操作登记。",
@@ -222,7 +222,7 @@ export const claimsCopy: Record<Locale, ClaimsCopy> = {
     sourcePlatformLabel: "平台",
     sourcePlatformAuto: "按链接判断",
     sourcePlatformHint: "只粘贴数字 ID 时请选择：本店同时连接了 Facebook 和 Instagram。",
-    sourceUpdated: "更新时间（UTC）",
+    sourceUpdated: "更新时间（台北时间）",
     sourceUnavailable: "无法读取评论来源，请刷新后重试。",
     sourceForbidden: "修改评论来源需要管理直播场次和集成的权限。",
     sourcePlatform: {
@@ -240,7 +240,7 @@ export const claimsCopy: Record<Locale, ClaimsCopy> = {
     },
     live: {
       livePrice: "直播专属价", livePriceNone: "无", livePriceHint: "可选。仅对打开登记链接的买家、且链接仍有效时生效。留空则按原价。",
-      livePriceInvalid: "请输入大于 0 的价格，小数位数以币种为准。",
+      livePriceInvalid: "请输入大于 0 的价格，小数位数以币种为准。新台币价格为整数元，例如 60。",
       saveLivePrice: "保存价格", clearLivePrice: "清除价格",
       higherWarning: (live: string, normal: string) => `高于原价（${live} 对 ${normal}）。买家将按直播专属价付款。`,
       normalPrice: (price: string) => `原价 ${price}`,
@@ -277,7 +277,7 @@ export const claimsCopy: Record<Locale, ClaimsCopy> = {
     feedBound: "正在讀取已綁定貼文的留言",
     mockDetail: "由你代為記錄買家的留言。買家打開連結並結帳之前，不會保留庫存、扣款或傳送任何訊息。",
     scene: "場次", loading: "正在讀取登記…",
-    window: "登記窗口", open: "開放中", closed: "已關閉", round: "輪次", openedAt: "開放時間（UTC）",
+    window: "登記窗口", open: "開放中", closed: "已關閉", round: "輪次", openedAt: "開放時間（台北時間）",
     openWindow: "開放登記窗口", closeWindow: "關閉登記窗口",
     mode: "數量規則", modeExact: "關鍵字 = 1 件 · 關鍵字+N = N 件", modeQty: "只接受關鍵字+數量",
     modeLocked: "關閉窗口後才能修改數量規則。",
@@ -310,14 +310,14 @@ export const claimsCopy: Record<Locale, ClaimsCopy> = {
     bundles: "買家與登記連結", ref: "編號", items: "已登記商品", cart: "購物車", link: "連結",
     noBundles: "還沒有買家。被接受的留言會建立買家。", inCart: "已加入購物車", notInCart: "尚未加入購物車",
     bound: "已有買家打開", unbound: "尚未打開", linkNone: "沒有連結",
-    linkActive: (time: string) => `有效至 ${time} UTC`, linkExpired: "已過期", issue: "產生連結",
+    linkActive: (time: string) => `有效至 ${time}（台北時間）`, linkExpired: "已過期", issue: "產生連結",
     rotate: "更換連結", release: "解除並更換", more: "載入更多",
     releaseConfirm: "解除此買家並更換連結？舊連結會失效，下一位打開新連結的買家會收到全部商品。",
     dialog: "一次性買家連結",
     dialogHint: "連結只在此刻顯示。請貼到給買家的私訊中，不要在直播畫面或螢幕分享中顯示。",
     buyerLanguage: "買家語言", hidden: "連結已隱藏", reveal: "顯示連結", hide: "隱藏連結",
     copyLink: "複製連結", copyMessage: "複製訊息", close: "關閉並捨棄",
-    expires: (time: string) => `${time} UTC 到期`, released: "已解除先前的買家。",
+    expires: (time: string) => `${time}（台北時間）到期`, released: "已解除先前的買家。",
     replayed: "此連結先前已產生，但一次性連結沒有送達這裡。請更換連結以取得新的連結。",
     noOrigin: "沒有已驗證且已發布的商店前台位址。",
     readOnly: "目前為唯讀權限，無法操作登記。",
@@ -350,7 +350,7 @@ export const claimsCopy: Record<Locale, ClaimsCopy> = {
     sourcePlatformLabel: "平台",
     sourcePlatformAuto: "依連結判斷",
     sourcePlatformHint: "只貼上數字 ID 時請選擇：本店同時連接了 Facebook 和 Instagram。",
-    sourceUpdated: "更新時間（UTC）",
+    sourceUpdated: "更新時間（台北時間）",
     sourceUnavailable: "無法讀取留言來源，請重新整理後重試。",
     sourceForbidden: "修改留言來源需要管理直播場次和整合的權限。",
     sourcePlatform: {
@@ -368,7 +368,7 @@ export const claimsCopy: Record<Locale, ClaimsCopy> = {
     },
     live: {
       livePrice: "直播專屬價", livePriceNone: "無", livePriceHint: "選填。僅對開啟登記連結的買家、且連結仍有效時生效。留空則依原價。",
-      livePriceInvalid: "請輸入大於 0 的價格，小數位數依幣別而定。",
+      livePriceInvalid: "請輸入大於 0 的價格，小數位數依幣別而定。新台幣價格為整數元，例如 60。",
       saveLivePrice: "儲存價格", clearLivePrice: "清除價格",
       higherWarning: (live: string, normal: string) => `高於原價（${live} 對 ${normal}）。買家將依直播專屬價付款。`,
       normalPrice: (price: string) => `原價 ${price}`,
@@ -429,7 +429,7 @@ export function hostPrompt(language: Locale, mode: MatchMode, keyword: string) {
 
 /** The private message sent with a one-time link, in the buyer's language. Pure. */
 export function claimLinkMessage(language: Locale, url: string, expires: string) {
-  return language === "zh-TW" ? `你的留言登記已準備好。打開這個連結即可確認並加入購物車（有效至 ${expires} UTC）：${url}`
-    : language === "zh-CN" ? `你的评论登记已准备好。打开这个链接即可确认并加入购物车（有效至 ${expires} UTC）：${url}`
-    : `Your claimed items are ready. Open this link to review them and add them to your cart (valid until ${expires} UTC): ${url}`;
+  return language === "zh-TW" ? `你的留言登記已準備好。打開這個連結即可確認並加入購物車（有效至 ${expires} 台北時間）：${url}`
+    : language === "zh-CN" ? `你的评论登记已准备好。打开这个链接即可确认并加入购物车（有效至 ${expires} 台北时间）：${url}`
+    : `Your claimed items are ready. Open this link to review them and add them to your cart (valid until ${expires} Taipei time): ${url}`;
 }

@@ -222,11 +222,11 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
     .getByLabel("English name", { exact: true })
     .fill("Credit card");
   await paymentForm
-    .getByLabel("Minimum amount (minor units)", { exact: true })
-    .fill("100");
+    .getByLabel("Minimum amount (NT$)", { exact: true })
+    .fill("1"); // stop-bleed D02: money fields are NT$ whole dollars now (1 = 100 minor on the wire)
   await paymentForm
-    .getByLabel("Maximum amount (minor units)", { exact: true })
-    .fill("100000");
+    .getByLabel("Maximum amount (NT$)", { exact: true })
+    .fill("1000");
   const methodRequests: Array<{ key: string; body: string }> = [];
   let loseMethod = true;
   await page.route("**/payment-methods/payuni_credit", async (route) => {
@@ -446,15 +446,28 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   const policyForm = page.getByTestId("settings-policy-form");
   await page.getByLabel("Stable service code", { exact: true }).fill("home");
+  // stop-bleed D02: NT$ amounts are whole dollars; a decimal is refused locally with its own sentence and nothing is sent
+  let policyWrites = 0;
+  page.on("request", (r) => {
+    if (r.method() === "PUT" && r.url().includes("/policy")) policyWrites++;
+  });
   await policyForm
-    .getByLabel("Flat shipping (minor units)", { exact: true })
-    .fill("6000");
-  await policyForm
-    .getByRole("combobox", { name: "Tax mode", exact: true })
-    .selectOption("none");
+    .getByLabel("Flat shipping (NT$)", { exact: true })
+    .fill("60.5");
   await policyForm
     .getByLabel(/^Configuration reference \/ reason/)
     .fill("Fixture explicit merchant tariff; not provider validation");
+  await policyForm
+    .getByRole("button", { name: "Save pricing policy", exact: true })
+    .click();
+  await expect(page.getByText("NT$ amounts are whole dollars, for example 60.")).toBeVisible();
+  expect(policyWrites).toBe(0);
+  await policyForm
+    .getByLabel("Flat shipping (NT$)", { exact: true })
+    .fill("60");
+  await policyForm
+    .getByRole("combobox", { name: "Tax mode", exact: true })
+    .selectOption("none");
   await policyForm.getByLabel("Enable pricing policy", { exact: true }).check();
   await policyForm
     .getByRole("button", { name: "Save pricing policy", exact: true })
@@ -497,8 +510,8 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
   });
   await context.addCookies([{ ...originalCSRF, value: `${"X".repeat(42)}A` }]);
   await page
-    .getByLabel("Flat shipping (minor units)", { exact: true })
-    .fill("6100");
+    .getByLabel("Flat shipping (NT$)", { exact: true })
+    .fill("61");
   await page
     .getByLabel(/^Configuration reference \/ reason/)
     .fill("Must not be sent under changed session");
