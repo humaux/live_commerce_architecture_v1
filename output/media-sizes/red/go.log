@@ -1,0 +1,7 @@
+--- FAIL: TestMediaSizesAdmission (0.00s)
+    media_sizes_test.go:12: valid rendition rejected: ?w=360
+    media_sizes_test.go:12: valid rendition rejected: ?w=720
+    media_sizes_test.go:12: valid rendition rejected: ?w=1080
+FAIL
+FAIL	livecommerce/internal/buyerhttp	1.230s
+FAIL

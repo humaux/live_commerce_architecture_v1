@@ -1,0 +1,25 @@
+=== RUN   TestCatalogMediaSchemaSurface
+--- PASS: TestCatalogMediaSchemaSurface (2.09s)
+=== RUN   TestCatalogMediaRLSScope
+--- PASS: TestCatalogMediaRLSScope (0.25s)
+=== RUN   TestCatalogMediaLifecycle
+--- PASS: TestCatalogMediaLifecycle (0.57s)
+=== RUN   TestCatalogMediaSniff
+--- PASS: TestCatalogMediaSniff (0.56s)
+=== RUN   TestCatalogMediaBuyer404
+--- PASS: TestCatalogMediaBuyer404 (0.43s)
+=== RUN   TestCatalogMediaBuyerAuthority
+--- PASS: TestCatalogMediaBuyerAuthority (0.31s)
+=== RUN   TestCatalogMediaArchivedProduct
+--- PASS: TestCatalogMediaArchivedProduct (0.38s)
+=== RUN   TestCatalogV2Smoke
+--- PASS: TestCatalogV2Smoke (0.66s)
+=== RUN   TestT06WorkerAuthorityAndFunctionACL
+--- PASS: TestT06WorkerAuthorityAndFunctionACL (0.58s)
+=== RUN   TestMediaSizesLifecycleAndIsolation
+--- PASS: TestMediaSizesLifecycleAndIsolation (16.13s)
+=== RUN   TestR2IntegrationUpgradeFromReleaseHead
+--- PASS: TestR2IntegrationUpgradeFromReleaseHead (7.13s)
+PASS
+ok  	livecommerce/tests/foundation	31.090s
+test-focused: top-level PASS=11 FAIL=0 SKIP=0 exit=0

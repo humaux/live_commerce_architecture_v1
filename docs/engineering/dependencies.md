@@ -25,10 +25,10 @@ speaks the REST API directly so every parameter is reviewed and golden-tested).
 
 ### Historical baseline: product photos (catalog-media, migrations/0082)
 
-Photo validation uses only the Go standard library: `image.DecodeConfig` with the `image/jpeg` and `image/png` decoders
+At the catalog-media baseline, photo validation used only the Go standard library: `image.DecodeConfig` with the `image/jpeg` and `image/png` decoders
 (registered by blank import in `internal/catalog/images.go`) for width/height, plus magic-byte sniffing for JPEG, PNG and WebP.
-`golang.org/x/image/webp` is **not** in `go.mod` and was rejected: a decoder dependency is not worth the two numbers it would
-add (WebP width/height stay NULL, the browser sizes the image itself). Bytes are stored as uploaded, never re-encoded, so no
+`golang.org/x/image/webp` was **not** in `go.mod` and was rejected then: a decoder dependency was not worth the two numbers it would
+add (original WebP width/height remain NULL). Original bytes are still stored as uploaded, never replaced, and no
 imaging library (resize/thumbnail) was needed then. **S1 B supersedes that dependency decision for actual decoding/resizing**, while keeping original bytes and the merchant metadata shape. No npm package was added: the admin uploader is a native `<input
 type="file">` + `FormData`, the storefront gallery a plain `<img>`.
 

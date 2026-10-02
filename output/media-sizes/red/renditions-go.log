@@ -1,0 +1,11 @@
+# livecommerce/internal/catalog [livecommerce/internal/catalog.test]
+internal/catalog/image_sizes_test.go:19:16: undefined: MakeImageSizes
+internal/catalog/image_sizes_test.go:33:15: undefined: MakeImageSizes
+internal/catalog/image_sizes_test.go:42:12: undefined: MakeImageSizes
+internal/catalog/image_sizes_test.go:43:12: undefined: MakeImageSizes
+internal/catalog/image_sizes_test.go:45:12: undefined: MakeImageSizes
+internal/catalog/image_sizes_test.go:45:43: not enough arguments in call to jpegBytes
+	have (number, number)
+	want (*testing.T, int, int)
+FAIL	livecommerce/internal/catalog [build failed]
+FAIL

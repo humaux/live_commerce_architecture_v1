@@ -1,0 +1,12 @@
+browser engine: chromium
+MEDIA-SIZES after: bytes=60918 medianLCP=952; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/media-sizes/output/playwright/storefront/20261002T185506.144977000
+PASS SFR01 home renders the five section types from the published design (photos from PG), nav-less phone layout, accent, footer contact, newest-first grid
+PASS SFR02 title/canonical/Open Graph, Product JSON-LD (real price range, availability, absolute photos), sitemap = active products only, robots, noindex on cart and checkout
+PASS SFR03 collection tiles (photo via /media/c/{id}/{image} from PG), collection page, price sort, price filter, cursor load more to every active product, no draft/archived
+PASS SFR04 variants and stock hints from real stock, sold-out and out-of-stock variants not addable, compare-at, 3-photo gallery from PG, id URL 308 -> slug, draft/archived/unknown/removed /products/Checkout are 404
+PASS SFR05 cart subtotal and free-delivery hint from the real policy threshold (below: remaining amount; at/above: qualified), the quote charges the fee below it and 0 above it, options rows carry the threshold
+PASS SFR06 preview token shows the saved draft with banner/no-store/noindex; unknown token and a forged header fall back to the published design
+PASS SFR07 merchant unpublish through control.set_storefront_published closes the shop (branded closed page, 404 products, no sitemap) and republish reopens it
+PASS SFR08 UI chrome follows the locale while merchant text stays as entered; unknown locale is a 404
+PASS SFR09 /{locale}/checkout is the checkout page; no page errors or hydration warnings across the walk-through
+engine=chromium cases=9 REAL-STACK (SANDBOX)

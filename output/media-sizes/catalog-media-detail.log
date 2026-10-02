@@ -1,0 +1,21 @@
+browser engine: chromium
+PASS zh-TW/desktop two photos uploaded through the real file input
+PASS zh-TW/desktop reorder persisted: JPEG is the cover, PNG second, positions 0 and 1
+PASS zh-TW/desktop Ledger: rename, SKU price and SKU archive applied; real cover thumbnail shown
+PASS zh-TW/desktop home grid: renamed product, cover photo with the exact uploaded bytes, new lowest active price
+PASS zh-TW/desktop product page: gallery in the new order, new price, archived SKU gone
+PASS zh-TW/mobile two photos uploaded through the real file input
+PASS zh-TW/mobile reorder persisted: JPEG is the cover, PNG second, positions 0 and 1
+PASS zh-TW/mobile Ledger: rename, SKU price and SKU archive applied; real cover thumbnail shown
+PASS zh-TW/mobile home grid: renamed product, cover photo with the exact uploaded bytes, new lowest active price
+PASS zh-TW/mobile product page: gallery in the new order, new price, archived SKU gone
+PASS en/desktop two photos uploaded through the real file input
+PASS en/desktop reorder persisted: JPEG is the cover, PNG second, positions 0 and 1
+PASS en/desktop Ledger: rename, SKU price and SKU archive applied; real cover thumbnail shown
+PASS en/desktop home grid: renamed product, cover photo with the exact uploaded bytes, new lowest active price
+PASS en/desktop product page: gallery in the new order, new price, archived SKU gone
+PASS en/mobile two photos uploaded through the real file input
+PASS en/mobile reorder persisted: JPEG is the cover, PNG second, positions 0 and 1
+PASS en/mobile Ledger: rename, SKU price and SKU archive applied; real cover thumbnail shown
+PASS en/mobile home grid: renamed product, cover photo with the exact uploaded bytes, new lowest active price
+PASS en/mobile product page: gallery in the new order, new price, archived SKU gone
