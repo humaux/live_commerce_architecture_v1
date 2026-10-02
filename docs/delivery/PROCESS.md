@@ -80,6 +80,16 @@ Runner: `scripts/agents/ext-agent.sh` (sandboxed: private HOME, no MCP, Bash all
 | cross-family adversarial review (second opinion next to the Claude reviewer), independent test author, test design, long logs | K3 |
 | visual QA of browser screenshots, small UI / P2 fixes, gate registration, copy in three locales | K2.8 |
 | merges, contract rulings, final money/permission review, deploy and anything on a live host | Claude only |
+| well-specified Go/SQL/TS implementation against a frozen brief, independent test continuation, focused bug fixes (calibrated 2026-10-01/02: live-tools tests, 0102, cart live price, 0104 — all merged; ≈ ¥5-8 per unit) | DeepSeek V4-Pro (`PROVIDER=deepseek MODEL=deepseek-v4-pro`) |
+| text-only mechanical work: log summaries, inventories, renames. **Never images or visual QA** (owner 2026-10-02: Flash missed the blank-tile defect K3/K2.8 caught) | DeepSeek Flash |
+| browsing the owner's logged-in production consoles (SHOPLINE, Meta, Cloudflare) | Claude mid tier only (the sandbox has no network tools by design) |
+
+Default routing (owner 2026-10-02 "能使用 DeepSeek 或 Kimi 的使用"): implementation → DeepSeek V4-Pro; independent tests and
+cross-family review → K3; UI polish and visual QA → K2.8 (images: K3 or K2.8, never Flash); Claude sub-agents only where the
+sandbox cannot work (browser on logged-in consoles, merges, live hosts) or for the final money/security verdict (top tier).
+Concurrency: at most 4 sub-agents, at most 2 writers at once; Kimi at most 2 at once and the Pro plan's 5-hour quota runs out in
+~30-60 min of two parallel K3/K2.8 agents, so put K3 on the highest-value review/test first; DeepSeek has a ¥20 reserve guard
+in ext-agent.sh. Every agent records role, model, effort, base SHA, worktree and allowed paths in its delivery record.
 
 Before launching: `pnpm install --offline --frozen-lockfile` in the worktree and merge the integration branch into it
 (the sandbox cannot do either). Kimi output is reviewed by the integrator and passes the same gates as any unit;
