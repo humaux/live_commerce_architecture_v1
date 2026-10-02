@@ -259,3 +259,32 @@ func TestProjectOrderExactDisplayAndDraftOnlyExpiry(t *testing.T) {
 		t.Fatalf("empty display projection not canonical: %s", raw)
 	}
 }
+
+// home-cod R5 P2-4: cod_carrier is the placement-time carrier snapshot, present only on a cash_on_delivery order
+// (black_cat/hsinchu) and omitted (null) otherwise.
+func TestProjectOrderCodCarrier(t *testing.T) {
+	pending := "PENDING"
+	base := checkout.Order{
+		Result:          checkout.Result{OrderID: "order-1", Generation: 1, JobID: 1},
+		CommercialState: "AWAITING_COLLECTION", FulfillmentState: "MANUAL_UNASSIGNED",
+		PaymentMode: "cash_on_delivery", CollectionState: &pending,
+		CodCollectMinor: 7500, CodSurchargeMinor: 5000,
+	}
+	for _, carrier := range []string{"black_cat", "hsinchu"} {
+		order := base
+		order.CodCarrier = &carrier
+		raw, err := json.Marshal(projectOrder(order))
+		if err != nil || !strings.Contains(string(raw), `"cod_carrier":"`+carrier+`"`) {
+			t.Fatalf("COD order must expose cod_carrier %q: %s %v", carrier, raw, err)
+		}
+	}
+	nonCOD := base
+	nonCOD.PaymentMode = "card"
+	nonCOD.CollectionState = nil
+	nonCOD.CodCollectMinor, nonCOD.CodSurchargeMinor = 0, 0
+	nonCOD.CodCarrier = nil
+	raw, err := json.Marshal(projectOrder(nonCOD))
+	if err != nil || strings.Contains(string(raw), `"cod_carrier"`) {
+		t.Fatalf("a non-COD order must omit cod_carrier: %s %v", raw, err)
+	}
+}
