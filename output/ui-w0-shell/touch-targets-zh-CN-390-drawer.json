@@ -1,0 +1,55 @@
+{
+  "annotation": "Test-only DOM measurement overlay; CSS pixels, no image rescaling",
+  "measured": [
+    {
+      "label": "关闭导航",
+      "width": 52,
+      "height": 47
+    },
+    {
+      "label": "总览",
+      "width": 204,
+      "height": 45
+    },
+    {
+      "label": "直播与贴文",
+      "width": 204,
+      "height": 45
+    },
+    {
+      "label": "订单与发货",
+      "width": 204,
+      "height": 45
+    },
+    {
+      "label": "商品与库存+",
+      "width": 204,
+      "height": 45
+    },
+    {
+      "label": "顾客",
+      "width": 204,
+      "height": 45
+    },
+    {
+      "label": "营销优惠+",
+      "width": 204,
+      "height": 45
+    },
+    {
+      "label": "网店",
+      "width": 204,
+      "height": 45
+    },
+    {
+      "label": "收款与报表",
+      "width": 204,
+      "height": 45
+    },
+    {
+      "label": "设置+",
+      "width": 204,
+      "height": 45
+    }
+  ]
+}
