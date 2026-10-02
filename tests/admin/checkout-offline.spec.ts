@@ -46,7 +46,13 @@ async function shot(page: Page, name: string, locale: string, viewport: "desktop
 async function signedLogin(page: Page) {
   await page.goto(new URL("/en/", origin).toString());
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
+  // W0 shell: at 390px the registry navigation is a drawer; open it with the real menu button, see the entry, close it again.
+  await page.getByTestId("nav-orders").waitFor({ state: "attached" });
+  const menu = page.locator('button[aria-controls="workspace-navigation"]');
+  const drawer = await menu.isVisible();
+  if (drawer) await menu.click();
   await expect(page.getByTestId("nav-orders")).toBeVisible();
+  if (drawer) await page.keyboard.press("Escape");
 }
 async function merchant(browser: Browser, mobile: boolean): Promise<{ context: BrowserContext; page: Page }> {
   const context = await browser.newContext({ baseURL: origin, viewport: mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 }, isMobile: mobile, hasTouch: mobile });
