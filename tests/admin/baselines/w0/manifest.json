@@ -276,22 +276,6 @@
       "state": "优惠码\n\n买家在购物车或结账时输入的代码。优惠码只减商品金额，不减运费，一张订单只能用一个。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n\n优惠码暂时不可用，请重试。\n\n重试"
     },
     {
-      "route": "/reset",
-      "width": 1586,
-      "height": 992,
-      "file": "-reset-1586.png",
-      "sha256": "6da49da66f5096d9865f7c0ffe644c1b9173378bae621a632d722856dfa99a54",
-      "state": "总览\n\n今天需要你处理的事。日期按台北时间（UTC+8）计算。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n\n总览暂时无法使用，请重试。\n\n重试\n快速操作\n创建订单\n导入或导出商品\n库存"
-    },
-    {
-      "route": "/reset",
-      "width": 390,
-      "height": 844,
-      "file": "-reset-390.png",
-      "sha256": "901671976f4770d3cf1092fa9c05c92dd8731ff7fdce741ba0327857767a1f2b",
-      "state": "总览\n\n今天需要你处理的事。日期按台北时间（UTC+8）计算。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n\n总览暂时无法使用，请重试。\n\n重试\n快速操作\n创建订单\n导入或导出商品\n库存"
-    },
-    {
       "route": "/settings",
       "width": 1586,
       "height": 992,
@@ -306,22 +290,6 @@
       "file": "-settings-390.png",
       "sha256": "8d7671124ebda5d361b16f98c661d3879a3a1b23a7afdbab28aa1e746ac4ba5b",
       "state": "物流与收款设置\n\n配置您自己的收款账户与商家自行安排配送。\n\n1\n选择平台\n2\n连接账户\n3\n配置方式\n4\n检查状态\n请求失败，请检查权限或连接后重新读取。\n请求 ID: d1cfe6d0317d429792b954111e2aff79\n选择要配置的服务\n选择要配置的服务\nPAYUNi 收款\n使用您自己的 PAYUNi 商户账户。保存配置不代表可以正式收款。\n商家自行安排配送\n配送由商家在平台外安排；不会自动建单、购买面单、查询轨迹或保证送达。\n继续\n当前设置状态\n平台\nPAYUNi 收款\n所选市场\n未配置\n账户\n未配置\n收款方式\n未配置\n供应商资格\n未验证\n运行时可用性\n未检查\n继续\n\n使用您自己的 PAYUNi 商户账户。保存配置不代表可以正式收款。\n\n网店发布\n\n是否发布由你决定：发布后买家才能打开你的网店。只有平台同时绑定了你的店铺域名，买家才真正访问得到。\n\n无法加载此部分，请重试。\n\n重试\nFacebook 主页 / Instagram\n\n连接你自己的 Facebook 主页（及其 Instagram 账号），直播留言才会进入认领看板，买家也会收到私信认领链接。登录由你自己在 Facebook 完成，我们不会看到你的密码。\n\n无法加载此部分，请重试。\n\n重试"
-    },
-    {
-      "route": "/signup",
-      "width": 1586,
-      "height": 992,
-      "file": "-signup-1586.png",
-      "sha256": "6da49da66f5096d9865f7c0ffe644c1b9173378bae621a632d722856dfa99a54",
-      "state": "总览\n\n今天需要你处理的事。日期按台北时间（UTC+8）计算。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n\n总览暂时无法使用，请重试。\n\n重试\n快速操作\n创建订单\n导入或导出商品\n库存"
-    },
-    {
-      "route": "/signup",
-      "width": 390,
-      "height": 844,
-      "file": "-signup-390.png",
-      "sha256": "901671976f4770d3cf1092fa9c05c92dd8731ff7fdce741ba0327857767a1f2b",
-      "state": "总览\n\n今天需要你处理的事。日期按台北时间（UTC+8）计算。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n\n总览暂时无法使用，请重试。\n\n重试\n快速操作\n创建订单\n导入或导出商品\n库存"
     },
     {
       "route": "/studio",
@@ -370,6 +338,38 @@
       "file": "-team-390.png",
       "sha256": "cad0b65531fe3bab2b205e1f3a108758e5c6d6128be78a4ec3d96f2e9fa9c511",
       "state": "团队\n\n邀请成员加入这个店铺，并决定每个人能做什么。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n\n团队暂时不可用，请重试。\n\n重试"
+    },
+    {
+      "route": "/reset",
+      "width": 1586,
+      "height": 992,
+      "file": "-reset-1586.png",
+      "sha256": "0d0f1473e3b8ff8dc861799c0d2ca60fc6521116b512c57ffa39706e6577bc8f",
+      "state": "重置密码\n\n填写邮箱。若该邮箱可用，我们会发送 6 位验证码用于设置新密码。\n\n邮箱\n发送验证码\n\n返回登录"
+    },
+    {
+      "route": "/reset",
+      "width": 390,
+      "height": 844,
+      "file": "-reset-390.png",
+      "sha256": "16e59838576d28c8dbe5bfbdc4814fdba062970cf0e469199c109a83b0e8ff58",
+      "state": "重置密码\n\n填写邮箱。若该邮箱可用，我们会发送 6 位验证码用于设置新密码。\n\n邮箱\n发送验证码\n\n返回登录"
+    },
+    {
+      "route": "/signup",
+      "width": 1586,
+      "height": 992,
+      "file": "-signup-1586.png",
+      "sha256": "5702dd49eab37106005d4e1ab3f64230c3223fd45f44c3905204acdd0bf87e06",
+      "state": "创建商家账号\n\n填写邮箱并设置密码，我们会发送 6 位验证码来确认该邮箱。\n\n邮箱\n密码\n至少 12 个字符，请使用没有在其他地方用过的密码。\n发送验证码\n\n返回登录"
+    },
+    {
+      "route": "/signup",
+      "width": 390,
+      "height": 844,
+      "file": "-signup-390.png",
+      "sha256": "db22f62d7b00d55e770cd8fcb0fa3d1d094f2719fdec9a82537fb97ff3345133",
+      "state": "创建商家账号\n\n填写邮箱并设置密码，我们会发送 6 位验证码来确认该邮箱。\n\n邮箱\n密码\n至少 12 个字符，请使用没有在其他地方用过的密码。\n发送验证码\n\n返回登录"
     }
   ]
 }

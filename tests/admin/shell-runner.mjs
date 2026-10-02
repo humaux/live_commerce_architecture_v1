@@ -26,8 +26,13 @@ try {
   const page=await context.newPage();
   const routes=['/','/ads','/billing','/collections','/customers',`/customers/${entityID}`,'/design','/finance','/inventory',`/invite/${'A'.repeat(43)}`,'/orders','/orders/cvs-print','/orders/new','/products',`/products/${entityID}`,'/products/import','/promotions','/reset','/settings','/signup','/studio','/studio/claims','/team'];
   if(baseline) {
-    const manifest=[];
+    const publicOnly=process.argv.includes('--public-only');
+    const publicRoutes=['/reset','/signup'];
+    const manifest=publicOnly?JSON.parse(await readFile(`${output}/manifest.json`,'utf8')).manifest.filter(r=>!publicRoutes.includes(r.route)):[];
     for(const route of routes) for(const [width,height] of [[1586,992],[390,844]]) {
+      if(publicOnly&&!publicRoutes.includes(route)) continue;
+      if(publicRoutes.includes(route)) await context.clearCookies();
+      else await context.addCookies(['session','csrf'].map(kind=>({name:`__Host-commerce_${kind}`,value:f.token,domain:'127.0.0.1',path:'/',secure:true,httpOnly:kind==='session',sameSite:'Lax'})));
       await page.setViewportSize({width,height});
       const query=route==='/studio/claims'?`?store=${storeID}&scene=${entityID}`:'';
       const response=await page.goto(`${base}/zh-CN${route}${query}`,{waitUntil:'load'});
