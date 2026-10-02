@@ -17,14 +17,16 @@ async function createLongSkuFixture(request: APIRequestContext) {
       status: "active",
     },
   });
-  expect(product.status()).toBe(201);
+  // Existing catalog bodyRoute returns 200 for successful commands.
+  expect(product.status()).toBe(200);
   const { id } = await product.json();
   const code = "HA-RECHARGEABLE-BTE-BLUETOOTH-CHARGER-BLACK-TW-2026";
   const sku = await request.post(`/api/stores/${storeID}/skus`, {
     headers: { Origin: "http://127.0.0.1:3100", "Idempotency-Key": crypto.randomUUID() },
     data: { product_id: id, code, price_minor: 198000 },
   });
-  expect(sku.status()).toBe(201);
+  expect(sku.status()).toBe(200);
+  expect(await sku.json()).toMatchObject({ product_id: id, code });
   return code;
 }
 
