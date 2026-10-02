@@ -278,7 +278,7 @@ test.describe("meta-connect independent browser gate", () => {
       id: String(900000 + i), name: `Fixture Page ${i + 1}`, status: "active", instagram: null, permissions: ["pages_messaging"],
       connected_at: stamp, route_expires_at: "2027-10-01T08:30:00Z", last_event_at: stamp,
     })) };
-    await page.route(`**/meta-connect/status`, (route) => route.fulfill({ json: dto }));
+    await page.route(`**/meta-connect/status`, (route) => route.fulfill({ headers: { "cache-control": "private, no-store" }, json: dto }));
     await page.route(`**/meta-connect/disconnect`, (route) => route.fulfill({ status: 404, json: { code: "not_found" } }));
     await page.route(`**/meta-connect/pick`, (route) => route.fulfill({ status: 409, json: { code: "cap_exceeded" } }));
     await answerDialog(page);
@@ -331,9 +331,9 @@ test.describe("meta-connect independent browser gate", () => {
       route_expires_at: "2027-10-01T08:30:00Z", last_event_at: null }] };
     let release: () => void = () => {};
     const baseline = new Promise<void>((resolve) => { release = resolve; });
-    await page.route("**/meta-connect/status", async (route) => { await baseline; await route.fulfill({ json: old }); });
+    await page.route("**/meta-connect/status", async (route) => { await baseline; await route.fulfill({ headers: { "cache-control": "private, no-store" }, json: old }); });
     const stateID = "11111111-1111-4111-8111-111111111111";
-    await page.route(`**/meta-connect/states/${stateID}`, (route) => route.fulfill({ json: {
+    await page.route(`**/meta-connect/states/${stateID}`, (route) => route.fulfill({ headers: { "cache-control": "private, no-store" }, json: {
       state_id: stateID, expires_at: "2027-10-01T08:30:00Z", scopes: ["pages_messaging"],
       pages: [{ page_id: pageA.id, name: pageA.name, missing: [], ig_missing: [] }],
     } }));

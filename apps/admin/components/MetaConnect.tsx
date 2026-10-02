@@ -102,7 +102,7 @@ export function MetaConnect({ store, locale }: { store: string; locale: Locale }
   const fail = (code: string, unknown: boolean) => {
     setUncertain(unknown);
     if (!unknown) key.current = null;
-    setProblem(unknown ? c.uncertain : (c.errors[code] ?? c.errors.unavailable));
+    setProblem(unknown ? key.current?.kind === "connect" ? c.uncertainStart : c.uncertain : (c.errors[code] ?? c.errors.unavailable));
   };
 
   async function connect() {
@@ -193,7 +193,7 @@ export function MetaConnect({ store, locale }: { store: string; locale: Locale }
               aria-describedby={status.count >= status.cap ? "metaconnect-cap" : undefined}
               disabled={busy || !boundary || status.count >= status.cap || (uncertain && key.current?.kind !== "connect")}
               onClick={() => void connect()}>{busy ? c.connecting : status.connected ? c.add : c.connect}</button>
-            {status.connected && <button type="button" data-testid="metaconnect-reconnect" disabled={locked || !!confirming} onClick={() => void connect()}>{c.reconnect}</button>}
+            {status.connected && <button type="button" data-testid="metaconnect-reconnect" disabled={busy || !boundary || !!confirming || (uncertain && key.current?.kind !== "connect")} onClick={() => void connect()}>{c.reconnect}</button>}
           </div>
           {status.count >= status.cap && <p id="metaconnect-cap" className="settings-note">{c.capReached}</p>}
           {!status.connected && <p data-testid="metaconnect-none">{c.notConnected}</p>}

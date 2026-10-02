@@ -25,6 +25,7 @@ const en = {
   task_messaging: "Page access: Messaging", task_moderate: "Page access: Moderate comments",
   connectedNotice: "Connected. Comments on this Page now reach your claim board.", disconnectedNotice: "Disconnected.",
   uncertain: "The result is not known yet. Check connection status; the write will not be repeated. Other changes stay locked until confirmed.",
+  uncertainStart: "Facebook authorization could not be opened. Retry the same action to recover this authorization attempt; other changes are paused.",
   studioNone: "No Facebook Page is connected to this store yet.", studioLink: "Connect a Page in Settings",
   errors: {
     state_mismatch: "This connection attempt does not belong to this browser or was already used. Start again.",
@@ -68,6 +69,7 @@ const zhTW: MetaConnectCopy = {
   task_messaging: "主頁存取：訊息", task_moderate: "主頁存取：管理留言",
   connectedNotice: "已連接。此主頁的留言現在會進入你的認領看板。", disconnectedNotice: "已中斷連接。",
   uncertain: "結果尚不確定。請核對連接狀態；不會重送寫入，確認前暫停其他變更。",
+  uncertainStart: "尚未能開啟 Facebook 授權。請重試相同動作以恢復本次授權；其他變更已暫停。",
   studioNone: "這間店鋪尚未連接任何 Facebook 主頁。", studioLink: "前往設定連接主頁",
   errors: {
     state_mismatch: "此連接嘗試不屬於這個瀏覽器或已被使用，請重新開始。",
@@ -110,6 +112,7 @@ const zhCN: MetaConnectCopy = {
   task_messaging: "主页访问：消息", task_moderate: "主页访问：管理留言",
   connectedNotice: "已连接。此主页的留言现在会进入你的认领看板。", disconnectedNotice: "已断开连接。",
   uncertain: "结果尚不确定。请核对连接状态；不会重发写入，确认前暂停其他变更。",
+  uncertainStart: "尚未能打开 Facebook 授权。请重试相同动作以恢复本次授权；其他变更已暂停。",
   studioNone: "这家店铺尚未连接任何 Facebook 主页。", studioLink: "前往设置连接主页",
   errors: {
     state_mismatch: "此连接尝试不属于这个浏览器或已被使用，请重新开始。",
