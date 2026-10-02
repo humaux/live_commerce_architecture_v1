@@ -12,6 +12,8 @@ import { isLocale } from "@live-commerce/i18n";
 import PageHead from "../../../../components/PageHead";
 import ProductBuy from "../../../../components/ProductBuy";
 import ProductGallery from "../../../../components/ProductGallery";
+import RelatedProducts from "../../../../components/RelatedProducts";
+import ProductAssurance from "../../../../components/ProductAssurance";
 import { withPreview } from "../../../../lib/design";
 import { collectionPath, productImage, productPath } from "../../../../lib/routes";
 import { productJsonLd } from "../../../../lib/seo";
@@ -70,6 +72,7 @@ export default async function Page({ params }: { params: Params }) {
         <div className="sf-product__side">
           <h1 className="sf-product__title">{product.title}</h1>
           <ProductBuy locale={locale} product={product} currency={currency} />
+          <ProductAssurance locale={locale} policies={shop.draft ? [] : shop.design.pages.filter(p => ["shipping", "returns", "refunds"].includes(p.slug)).map(({ slug, title }) => ({ slug, title }))} />
         </div>
         <div className="sf-product__info">
           {product.description && (
@@ -92,6 +95,7 @@ export default async function Page({ params }: { params: Params }) {
           )}
         </div>
       </div>
+      <RelatedProducts locale={locale} product={product} preview={preview} />
     </main>
   );
 }

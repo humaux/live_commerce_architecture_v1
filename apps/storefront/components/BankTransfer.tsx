@@ -11,6 +11,7 @@ import type { Locale } from "@live-commerce/i18n";
 import { BuyerClientError, buyerRequest } from "../lib/buyer-client";
 import { assertPurchaseContext, readPurchase } from "../lib/purchase";
 import { bankTransferCopy } from "../lib/bank-transfer-copy";
+import { browseCopy } from "../lib/browse-copy";
 import {
   isTransferErrorCode,
   minorFromText,
@@ -165,6 +166,7 @@ export default function BankTransfer({
   return (
     <section data-testid="bank-transfer" data-state={view.state} aria-labelledby="bank-transfer-title">
       <h2 id="bank-transfer-title">{copy.title}</h2>
+      <p className="order-note sf-bank-fraud">{browseCopy[locale].fraudHint} <a href={`/${locale}/legal/anti-fraud`}>{browseCopy[locale].fraud}</a></p>
       <p role="status" data-testid="transfer-state">
         {copy.stateLabel}: <strong>{copy.states[view.state]}</strong>
       </p>

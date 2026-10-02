@@ -10,6 +10,7 @@ import type { Loaded, SearchParams } from "../lib/shop-list";
 import { shopCopy } from "../lib/shop-copy";
 import ListControls from "./ListControls";
 import ProductGrid from "./ProductGrid";
+import CollectionChips from "./CollectionChips";
 
 export default function ListBody({
   locale,
@@ -39,6 +40,7 @@ export default function ListBody({
   const showControls = list.products.length > 0 || loaded.filtered || loaded.form.sort !== "newest";
   return (
     <>
+      {!searching && <CollectionChips locale={locale} preview={preview} selected={loaded.query.collection} />}
       {showControls && <ListControls locale={locale} action={path} hidden={hidden} values={loaded.form} currency={list.store.currency} filtered={loaded.filtered} clearHref={clearHref} />}
       {list.products.length > 0 ? (
         <>

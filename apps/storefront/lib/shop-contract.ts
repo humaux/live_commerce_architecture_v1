@@ -37,6 +37,12 @@ export type ProductDetail = {
 export type CollectionCard = { id: string; slug: string; title: string; image_id: string | null; product_count: number };
 export type CollectionInfo = { id: string; slug: string; title: string; description: string; image_id: string | null };
 
+// Only Host-scoped PUBLIC catalog responses belong here, never an admin catalog or a global cache.
+export const relatedCards = (cards: ProductCard[], currentID: string): ProductCard[] =>
+  cards.filter((card, i) => card.id !== currentID && cards.findIndex((other) => other.id === card.id) === i).slice(0, 8);
+export const nonEmptyCollections = (collections: CollectionCard[]): CollectionCard[] =>
+  collections.filter((collection) => collection.product_count > 0);
+
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 const rec = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
 const str = (v: unknown, max = 100000): v is string => typeof v === "string" && v.length <= max;
