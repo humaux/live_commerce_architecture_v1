@@ -2,7 +2,7 @@ package catalog
 
 // images.go owns merchant product photos (docs/delivery/units/catalog-media.md CM1-CM3): validation of an
 // uploaded file at the trust boundary and the upload/list/read/delete/reorder commands on catalog.product_images
-// (migrations/0082). It never resizes or re-encodes (bytes are stored exactly as validated), never serves buyers
+// (migrations/0082). Original bytes stay exactly as validated; S1 image_sizes.go generates separate children (0111). Never serves buyers
 // (the buyer side reads through the catalog.buyer_* definers in internal/storefront and internal/buyerhttp), and
 // never trusts a client-supplied filename or Content-Type: the type is derived from the magic bytes.
 //
@@ -121,6 +121,10 @@ func UploadImage(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, prod
 	if err != nil {
 		return out, err
 	}
+	sizes, err := MakeImageSizes(ctx, data)
+	if err != nil {
+		return out, err
+	}
 	digest := sha256.Sum256(data)
 	request := struct {
 		ProductID   string `json:"product_id"`
@@ -146,6 +150,9 @@ func UploadImage(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, prod
 		if err := scanImage(tx.QueryRow(ctx, `INSERT INTO catalog.product_images(tenant_id,store_id,product_id,position,content_type,bytes,sha256,width,height)
 			VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING `+imageColumns,
 			scope.TenantID, scope.StoreID, productID, count, contentType, data, digest[:], width, height), &out); err != nil {
+			return err
+		}
+		if err := storeImageSizes(ctx, tx, scope, out.ID, sizes); err != nil {
 			return err
 		}
 		return command.Audit(ctx, tx, scope, "catalog.product.image_added")

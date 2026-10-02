@@ -282,7 +282,8 @@ func oneHeader(r *http.Request, name string) (string, bool) {
 
 func forbiddenInput(r *http.Request) bool {
 	queryRoute := r.URL != nil && r.Method == http.MethodGet && r.URL.EscapedPath() == r.URL.Path &&
-		(r.URL.Path == "/v1/buyer/catalog" || r.URL.Path == "/v1/buyer/checkout-options" || r.URL.Path == "/v1/buyer/orders" || r.URL.Path == v2Prefix+"products")
+		(r.URL.Path == "/v1/buyer/catalog" || r.URL.Path == "/v1/buyer/checkout-options" || r.URL.Path == "/v1/buyer/orders" || r.URL.Path == v2Prefix+"products" ||
+			(matchRoute(r.URL.Path).kind == mediaRoute && (r.URL.RawQuery == "w=360" || r.URL.RawQuery == "w=720" || r.URL.RawQuery == "w=1080")))
 	if r.URL == nil || r.URL.ForceQuery || (!queryRoute && r.URL.RawQuery != "") {
 		return true
 	}

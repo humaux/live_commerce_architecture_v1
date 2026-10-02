@@ -33,6 +33,9 @@ type rawResponse struct {
 
 func registerImageRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 	const images = "/v1/admin/stores/{store_id}/products/{product_id}/images"
+	mux.HandleFunc("POST "+images+"/{image_id}/renditions", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, _ struct{}) (any, error) {
+		return catalog.BackfillImageSizes(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), r.PathValue("image_id"))
+	}))
 	mux.HandleFunc("POST "+images, uploadRoute(pool, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, data []byte) (any, error) {
 		return catalog.UploadImage(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), data)
 	}))
