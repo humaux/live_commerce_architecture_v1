@@ -1,0 +1,67 @@
+✔ demonstration disclosure is explicit and local-only (1.619583ms)
+✔ cart selection preserves unrelated SKUs and the observed CAS version (16.907417ms)
+✔ minor amounts are bounded before multiplication, including zero (0.08525ms)
+✔ delivery identity includes country for one market and method (0.066666ms)
+✔ journal is bound to context and rejects PII/unknown fields (1.156667ms)
+✔ lost response replays exact key/body, then clears only after parsed receipt (24.542667ms)
+✔ RUI02 buyer order admits MERCHANT_SHIPPED only with a SHIPPED head; absent shipment ≡ null (0.634625ms)
+✔ RUI02 shipment shape negatives (incl. unsafe links) (0.240292ms)
+✔ RUI02 history summary admits MERCHANT_SHIPPED (a shipped order must not break the list) (0.074292ms)
+✔ CVSP01 options: CVS rows carry pickup_selection/payment_modes; unavailable rows are a separate shape (0.380625ms)
+✔ CVSP02 CVS destination write: TW only, pickup_id required, empty home address; home unchanged (2.032791ms)
+✔ CVSP03 checkoutInput: payment_mode only for CVS rows and only a mode the row offers (0.320292ms)
+✔ COD confirmation includes expected fee, enforces collect cap and validates immutable order money (0.233416ms)
+✔ CVSP04 buyer order: pay_at_pickup <=> collection_state; cvs_shipment only on a matching CVS destination (0.187834ms)
+✔ CVSP05 journal accepts a CVS destination marker and a checkout body with payment_mode, nothing else (0.168125ms)
+✖ summary decodes refunded, partially refunded, shipped and reviewed orders (Go projection invariants) (0.828417ms)
+✔ summary keys are exact: the pre-0062 ten-key shape and extra keys are refused (1.644541ms)
+✖ summary refuses every state combination the amended contract forbids (0.5875ms)
+✖ detail carries `shipment` (null or the exact seven-key SHIPPED object) and refuses anything else (1.470375ms)
+✔ state filters admit shipped and unshipped and nothing else new (0.48225ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 17
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 171.018625
+
+✖ failing tests:
+
+test at tests/admin/refund-bff.test.ts:75:1
+✖ summary decodes refunded, partially refunded, shipped and reviewed orders (Go projection invariants) (0.828417ms)
+  Error: unavailable
+      at object (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/home-cod-ui/apps/admin/lib/orders-model.ts:162:82)
+      at parseOrderSummary (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/home-cod-ui/apps/admin/lib/orders-model.ts:205:13)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/home-cod-ui/tests/admin/refund-bff.test.ts:89:42)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+
+test at tests/admin/refund-bff.test.ts:100:1
+✖ summary refuses every state combination the amended contract forbids (0.5875ms)
+  Error: unavailable
+      at object (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/home-cod-ui/apps/admin/lib/orders-model.ts:162:82)
+      at parseOrderSummary (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/home-cod-ui/apps/admin/lib/orders-model.ts:205:13)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/home-cod-ui/tests/admin/refund-bff.test.ts:102:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+
+test at tests/admin/refund-bff.test.ts:133:1
+✖ detail carries `shipment` (null or the exact seven-key SHIPPED object) and refuses anything else (1.470375ms)
+  Error: unavailable
+      at object (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/home-cod-ui/apps/admin/lib/orders-model.ts:162:82)
+      at parseOrderDetail (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/home-cod-ui/apps/admin/lib/orders-model.ts:301:13)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/home-cod-ui/tests/admin/refund-bff.test.ts:134:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
