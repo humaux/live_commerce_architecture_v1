@@ -417,3 +417,26 @@ edit:   PUT  products/{id}/document   (expected_version)
 - 待确认：复制是否带图片；上架是否必须有图；批量下架遇到开放直播窗口时的处理；定时上架是否进下一个单元。
 
 证据文件：`/Volumes/data/live_commerce_architecture_v1/output/r5-research/1688-publish/`（`02`/`03` 入口与类目页，`04` 列表，`06` 价格库存弹窗，`10`–`11-*` 编辑页各区，`12` 批量设置弹窗；`08` 是残留状态，不作证据）。
+## f. 集成者裁决与拆单（2026-10-02，R5 第二波）
+执行者按 PROCESS.md §3（owner 2026-10-02）：后端交 DeepSeek，`apps/` 下全部界面交 Codex，独立测试和审查交 K3。
+
+**裁决**
+1. **A6 不追踪库存**（owner 已批准）：SKU 级 `inventory_tracked boolean NOT NULL DEFAULT true`。
+   - 不追踪的 SKU：结账 Begin 不锁货也不扣减，每单数量受 SKU 的 `max_per_order`（1..999，不追踪时必填）约束。
+   - 追踪的 SKU：不超卖不变量不变。
+   - 合同修订写进 catalog 与 checkout 合同的对应小节。
+2. **迁移号 0109**（0106/0107/0108 已被 store-domains、home-cod、meta-multi-page 占用）。
+3. **批量下架遇到开放中的直播窗口**：该商品逐项返回 `live_window_open` 拒绝，其他商品照常处理。商家先结束场次再下架。不做「警告后强制」。
+4. **上架必须有图**：先只在界面强制，服务端不强制。
+5. **复制**：不复制图片和关键字。名称加「（复制）」，货号重新生成，状态为草稿。
+6. **TWD 整数元**：服务端对 TWD 的 `price_minor` 和 `compare_at_minor` 要求 `% 100 == 0`，拒绝码 `amount_not_whole_twd`。
+
+**拆单**
+- **product-core（DeepSeek，后端）**：c11 的 1–7。
+  - 商品文档保存命令走 `internal/command.Run`，要求 Idempotency-Key。
+  - 图片上限 12。
+  - 列表接口增加：状态计数、总数、关键字、追踪标记、更新时间。
+  - 批量改状态命令（≤100 个，逐项返回结果）和复制命令。
+  - 门禁：PE01–PE11 的 PG 和 Go 部分。
+- **product-core 独立测试（K3）**：并发（PE05、PE09）、幂等（PE02）、隔离（PE10）的对抗测试。
+- **product-ui（Codex）**：按视觉稿 02/03 做一页式新增和编辑页、矩阵和批量填充、完成度清单、列表的页签、勾选批量、行内快改和复制。门禁 PE12–PE17。
