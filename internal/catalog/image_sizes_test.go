@@ -63,6 +63,9 @@ func TestImageSizesNoUpscaleAndAlpha(t *testing.T) {
 		if decoded.Bounds().Dx() != 4 || decoded.Bounds().Dy() != 3 {
 			t.Fatal("small original upscaled")
 		}
+		if size.PixelWidth != decoded.Bounds().Dx() {
+			t.Fatal("srcset metadata must be decoded width")
+		}
 		r, g, b, _ := decoded.At(0, 0).RGBA()
 		if r < 64000 || g < 64000 || b < 64000 {
 			t.Fatal("transparent background must be white")

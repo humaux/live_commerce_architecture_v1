@@ -52,6 +52,20 @@ func TestMediaSizesLifecycleAndIsolation(t *testing.T) {
 	cmiCleanup(t, f, foreign)
 	fm := cmiMerchant{t: t, h: m.h, token: f.tokens["b"], store: f.storeB}
 	fi := fm.mustUpload(foreign, cmiPNG(t, 40, 30, 2), "x.png", "image/png")
+	small := m.mustUpload(product, v2PNG(t, 3), "small.png", "image/png")
+	var metadataCount, pixelWidth int
+	if err := h.a.runtime.QueryRow(ctx, `SELECT count(*) FROM catalog.buyer_image_sizes($1,$2::uuid[])`, h.origin, []string{img.ID, small.ID, fi.ID}).Scan(&metadataCount); err != nil || metadataCount != 6 {
+		t.Fatalf("scoped metadata includes only own images: count=%d err=%v", metadataCount, err)
+	}
+	if err := h.a.runtime.QueryRow(ctx, `SELECT pixel_width FROM catalog.buyer_image_sizes($1,$2::uuid[]) WHERE width=720`, h.origin, []string{small.ID}).Scan(&pixelWidth); err != nil || pixelWidth != 3 {
+		t.Fatalf("no-upscale actual descriptor=%d err=%v", pixelWidth, err)
+	}
+	for _, route := range []string{"/v1/buyer/catalog/v2/products", "/v1/buyer/catalog/v2/products/" + product} {
+		response := h.request(t, "GET", route, "", "", nil, nil)
+		if response.status != 200 || !bytes.Contains(response.body, []byte(`"pixel_width":360`)) {
+			t.Fatalf("catalog rendition metadata missing: status=%d body=%s", response.status, response.body)
+		}
+	}
 	for _, width := range []int{360, 720, 1080} {
 		for _, pair := range [][2]string{{foreign, fi.ID}, {product, fi.ID}, {foreign, img.ID}} {
 			if r := cmiGetMedia(t, h, h.origin, pair[0], fmt.Sprintf("%s?w=%d", pair[1], width), nil); r.status != 404 {
@@ -80,6 +94,9 @@ func TestMediaSizesLifecycleAndIsolation(t *testing.T) {
 	}
 	// Old-image fixture: source retained, no automatic public write. Then explicit repeat-safe backfill.
 	mustExec(t, f.owner, `DELETE FROM catalog.product_image_sizes WHERE image_id=$1`, img.ID)
+	if err := h.a.runtime.QueryRow(ctx, `SELECT count(*) FROM catalog.buyer_image_sizes($1,$2::uuid[])`, h.origin, []string{img.ID}).Scan(&metadataCount); err != nil || metadataCount != 0 {
+		t.Fatal("historical fallback must not advertise guessed srcset dimensions")
+	}
 	fallback := cmiGetMedia(t, h, h.origin, product, img.ID+"?w=360", nil)
 	if fallback.status != 200 || !bytes.Equal(fallback.body, original) || fallback.header.Get("Cache-Control") != "no-store" {
 		t.Fatal("old-image fallback must be uncached original")

@@ -24,9 +24,10 @@ const maxDecodedImagePixels = 20_000_000
 var imageDecodeSlots = make(chan struct{}, 2)
 
 type ImageSize struct {
-	Width  int
-	Bytes  []byte
-	SHA256 [32]byte
+	Width      int
+	PixelWidth int
+	Bytes      []byte
+	SHA256     [32]byte
 }
 
 // MakeImageSizes decodes once, limits compressed bytes/pixels/concurrency, preserves aspect and composites alpha on white.
@@ -73,7 +74,7 @@ func MakeImageSizes(ctx context.Context, data []byte) ([]ImageSize, error) {
 		if b.Len() > MaxImageBytes {
 			return nil, command.ErrInvalid
 		}
-		out = append(out, ImageSize{Width: bucket, Bytes: b.Bytes(), SHA256: sha256.Sum256(b.Bytes())})
+		out = append(out, ImageSize{Width: bucket, PixelWidth: width, Bytes: b.Bytes(), SHA256: sha256.Sum256(b.Bytes())})
 	}
 	return out, nil
 }
@@ -81,8 +82,8 @@ func MakeImageSizes(ctx context.Context, data []byte) ([]ImageSize, error) {
 // storeImageSizes may insert only into the authenticated parent scope, never replace previously published bytes.
 func storeImageSizes(ctx context.Context, tx pgx.Tx, scope platform.Scope, imageID string, sizes []ImageSize) error {
 	for _, size := range sizes {
-		if _, err := tx.Exec(ctx, `INSERT INTO catalog.product_image_sizes(tenant_id,store_id,image_id,width,bytes,sha256)
-   VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(tenant_id,store_id,image_id,width) DO NOTHING`, scope.TenantID, scope.StoreID, imageID, size.Width, size.Bytes, size.SHA256[:]); err != nil {
+		if _, err := tx.Exec(ctx, `INSERT INTO catalog.product_image_sizes(tenant_id,store_id,image_id,width,pixel_width,bytes,sha256)
+   VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(tenant_id,store_id,image_id,width) DO NOTHING`, scope.TenantID, scope.StoreID, imageID, size.Width, size.PixelWidth, size.Bytes, size.SHA256[:]); err != nil {
 			return err
 		}
 	}

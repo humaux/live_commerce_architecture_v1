@@ -11,6 +11,7 @@ Scope: product photos only. Original bytes and IDs remain unchanged. No Next ima
 - Existing images: **explicit one-time merchant-authorized backfill**, per image `POST /v1/admin/stores/{store}/products/{product}/images/{image}/renditions`, `{}`, `catalog:write`, Idempotency-Key. Same image command is repeat-safe; no production job is run by this unit. Choice avoids CPU work and database mutations triggered by anonymous reads. Invalid historical files return a bounded validation failure and remain intact.
 - Until backfill, valid width requests may serve the authorized original with **no-store**, never immutable. Once rendition bytes exist, their response is immutable for one day. Deleted/foreign/draft/unpublished images stay 404. Original URL remains original.
 - Native img srcset/sizes for grid, rail and gallery. Preserve eager first viewport images, aspect layout, alt text and full-resolution dialog zoom.
+- Catalog cards expose optional `cover_image_sizes`; detail images expose optional `sizes`: `[{width: 360|720|1080, pixel_width: actualDecodedWidth}]`. One bounded Host-scoped metadata read attaches these, without reading image bytes. HTML width descriptors use `pixel_width`, deduplicating small sources; absent metadata keeps original-only until backfill. Never pretend a 3px fixture is 360px. See [HTML source-set width requirement](https://html.spec.whatwg.org/multipage/images.html#srcset-attributes).
 
 ## Acceptance
 
