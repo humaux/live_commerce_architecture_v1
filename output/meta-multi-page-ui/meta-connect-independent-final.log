@@ -1,0 +1,62 @@
+
+Running 13 tests using 1 worker
+
+(node:90507) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/admin/meta-connect-gate.spec.ts:106:3 › meta-connect independent browser gate › zh-TW desktop: before any connection the Studio claim source points at the Settings card, and the link works (948ms)
+  ✓   2 tests/admin/meta-connect-gate.spec.ts:125:5 › meta-connect independent browser gate › zh-TW desktop: Settings -> connect (fake Meta) -> pick Page with Instagram -> card facts -> Studio picker offers it -> disconnect (1.4s)
+  ✓   3 tests/admin/meta-connect-gate.spec.ts:125:5 › meta-connect independent browser gate › en mobile: Settings -> connect (fake Meta) -> pick Page with Instagram -> card facts -> Studio picker offers it -> disconnect (1.2s)
+  ✓   4 tests/admin/meta-connect-gate.spec.ts:125:5 › meta-connect independent browser gate › en desktop: Settings -> connect (fake Meta) -> pick Page with Instagram -> card facts -> Studio picker offers it -> disconnect (1.2s)
+  ✓   5 tests/admin/meta-connect-gate.spec.ts:125:5 › meta-connect independent browser gate › zh-TW mobile: Settings -> connect (fake Meta) -> pick Page with Instagram -> card facts -> Studio picker offers it -> disconnect (1.2s)
+  ✓   6 tests/admin/meta-connect-gate.spec.ts:203:3 › meta-connect independent browser gate › the Studio comment source can be bound to the connected Page with a private reply (the sealed v2 token counts as the Page token) (924ms)
+  ✓   7 tests/admin/meta-connect-gate.spec.ts:231:3 › meta-connect independent browser gate › zh-TW mobile refusals: forged state, missing permission and missing Page task are explained in the card and nothing is connected (960ms)
+  ✓   8 tests/admin/meta-connect-gate.spec.ts:274:3 › meta-connect independent browser gate › MOCK UI boundaries: ten slots, cap/not-found in three languages, malformed start preserves its key (1.7s)
+  ✓   9 tests/admin/meta-connect-gate.spec.ts:326:3 › meta-connect independent browser gate › MOCK UNKNOWN: wait for the baseline, then an unchanged old Page cannot prove a lost write succeeded (448ms)
+  ✓  10 tests/admin/meta-connect-gate.spec.ts:356:3 › meta-connect independent browser gate › state replay: the same OAuth return opened again connects nothing, even with the binding cookie present (573ms)
+  ✓  11 tests/admin/meta-connect-gate.spec.ts:384:3 › meta-connect independent browser gate › a Next <Link> prefetch never rewrites the locale preference; a real navigation does (282ms)
+  ✓  12 tests/admin/meta-connect-gate.spec.ts:397:3 › meta-connect independent browser gate › no open redirect: whatever the cookies or query say, /api/meta/callback only ever redirects to /<locale>/settings (264ms)
+  ✘  13 tests/admin/meta-connect-gate.spec.ts:435:3 › meta-connect independent browser gate › multi-page: A + B are listed and selectable; lost pick/disconnect answers only read back; B disconnect leaves A usable (13.1s)
+
+
+  1) tests/admin/meta-connect-gate.spec.ts:435:3 › meta-connect independent browser gate › multi-page: A + B are listed and selectable; lost pick/disconnect answers only read back; B disconnect leaves A usable
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  getByTestId('claims-source-object')
+    Expected: "5493908871529951357_323456789012345"
+    Received: "3226695277345062261_223456789012345"
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toHaveText" getByTestId('claims-source-object') with timeout 10000ms
+      - waiting for getByTestId('claims-source-object')
+        24 × locator resolved to <dd data-testid="claims-source-object">3226695277345062261_223456789012345</dd>
+           - unexpected value "3226695277345062261_223456789012345"
+
+
+      529 |     await page.locator("#claims-source-input").fill("323456789012345");
+      530 |     await page.getByTestId("claims-source").getByRole("button", { name: claimsCopy.en.sourceSave }).click();
+    > 531 |     await expect(page.getByTestId("claims-source-object")).toHaveText(`${pageA.id}_323456789012345`);
+          |                                                            ^
+      532 |     await openSettings(page, "en");
+      533 |     await page.getByTestId("metaconnect-disconnect").click();
+      534 |     await page.getByTestId("metaconnect-confirm-yes").click();
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/meta-multi-page-ui/tests/admin/meta-connect-gate.spec.ts:531:60
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/meta-connect-gate/20261002T150204.927045000/results/meta-connect-gate-meta-con-c3099--disconnect-leaves-A-usable/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/meta-connect-gate/20261002T150204.927045000/results/meta-connect-gate-meta-con-c3099--disconnect-leaves-A-usable/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/meta-connect-gate/20261002T150204.927045000/results/meta-connect-gate-meta-con-c3099--disconnect-leaves-A-usable/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/meta-connect-gate/20261002T150204.927045000/results/meta-connect-gate-meta-con-c3099--disconnect-leaves-A-usable/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/admin/meta-connect-gate.spec.ts:435:3 › meta-connect independent browser gate › multi-page: A + B are listed and selectable; lost pick/disconnect answers only read back; B disconnect leaves A usable
+  12 passed (25.1s)

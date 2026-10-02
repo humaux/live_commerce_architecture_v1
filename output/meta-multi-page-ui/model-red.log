@@ -1,0 +1,45 @@
+✖ status: not connected, connected with and without Instagram, and every deviation throws (0.689083ms)
+✔ pick state: closed shape, optional Instagram keys come as a pair, id must match (1.115833ms)
+✔ route grammar: only status/states/pick/disconnect; start and callback are dedicated routes; no query; reads carry no body or key (27.059542ms)
+✔ connect cookie, body and callback redirect never carry code/state and only fixed codes (1.313333ms)
+✖ copy: three locales have the same keys and every Go error code has a message (0.28575ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 3
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 134.525625
+
+✖ failing tests:
+
+test at tests/admin/meta-connect-model.test.ts:16:1
+✖ status: not connected, connected with and without Instagram, and every deviation throws (0.689083ms)
+  Error: meta_connect_shape
+      at bad (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/meta-multi-page-ui/apps/admin/lib/meta-connect-model.ts:24:34)
+      at record (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/meta-multi-page-ui/apps/admin/lib/meta-connect-model.ts:28:73)
+      at parseStatus (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/meta-multi-page-ui/apps/admin/lib/meta-connect-model.ts:38:5)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/meta-multi-page-ui/tests/admin/meta-connect-model.test.ts:18:20)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+
+test at tests/admin/meta-connect-model.test.ts:92:1
+✖ copy: three locales have the same keys and every Go error code has a message (0.28575ms)
+  AssertionError [ERR_ASSERTION]: en:cap_exceeded
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/meta-multi-page-ui/tests/admin/meta-connect-model.test.ts:98:68)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

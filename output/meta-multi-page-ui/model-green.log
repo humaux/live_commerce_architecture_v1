@@ -1,0 +1,13 @@
+✔ status: not connected, connected with and without Instagram, and every deviation throws (2.3085ms)
+✔ pick state: closed shape, optional Instagram keys come as a pair, id must match (1.437958ms)
+✔ route grammar: only status/states/pick/disconnect; start and callback are dedicated routes; no query; reads carry no body or key (28.3535ms)
+✔ connect cookie, body and callback redirect never carry code/state and only fixed codes (0.310458ms)
+✔ copy: three locales have the same keys and every Go error code has a message (0.088ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 143.418

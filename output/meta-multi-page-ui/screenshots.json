@@ -1,0 +1,174 @@
+{
+  "source_sha": "9177d4e016d8f42927f5bb23b089032ed5b2d4cb",
+  "run": "output/playwright/meta-connect-gate/20261002T150204.927045000",
+  "files": [
+    {
+      "file": "MOCK-cap-ten-en-mobile.png",
+      "width": 390,
+      "height": 844,
+      "locale": "en",
+      "tier": "MOCK_UI_RESPONSE",
+      "sha256": "8cce815cb92211809db24b80db076a76b7f2c0a0b32409d7f12459567ed31de7"
+    },
+    {
+      "file": "MOCK-cap-ten-zh-CN-mobile.png",
+      "width": 390,
+      "height": 844,
+      "locale": "zh-CN",
+      "tier": "MOCK_UI_RESPONSE",
+      "sha256": "2738809bf99f014f39ec41496cdc5a1be068dceb978c69e2238c468c375d5f59"
+    },
+    {
+      "file": "MOCK-cap-ten-zh-TW-mobile.png",
+      "width": 390,
+      "height": 844,
+      "locale": "zh-TW",
+      "tier": "MOCK_UI_RESPONSE",
+      "sha256": "a226f6e887115f5b49d8a114136f0fb9fc8d2ec4744e53a51cbd068a21734e34"
+    },
+    {
+      "file": "multi-page-b-en-desktop.png",
+      "width": 1586,
+      "height": 992,
+      "locale": "en",
+      "tier": "BROWSER_REAL_PG_FAKE_META",
+      "sha256": "6fc90753a821a512fd66aa3b5660f1591d94421facc684ea8e84e24cea51cf57"
+    },
+    {
+      "file": "multi-page-b-en-mobile.png",
+      "width": 390,
+      "height": 844,
+      "locale": "en",
+      "tier": "BROWSER_REAL_PG_FAKE_META",
+      "sha256": "d1a4eb540d3af7af2adcb64c2703bc8d6c2f08a59d6f4f7600b15b6bf3727ba9"
+    },
+    {
+      "file": "multi-page-b-zh-CN-desktop.png",
+      "width": 1586,
+      "height": 992,
+      "locale": "zh-CN",
+      "tier": "BROWSER_REAL_PG_FAKE_META",
+      "sha256": "dad7f5344f30b71e655e62bd46930b89cb5e0058107bae9177f72346a49cc422"
+    },
+    {
+      "file": "multi-page-b-zh-CN-mobile.png",
+      "width": 390,
+      "height": 844,
+      "locale": "zh-CN",
+      "tier": "BROWSER_REAL_PG_FAKE_META",
+      "sha256": "49fcbf67a3b039d9bd12f0b9f6ea1dc63a03270018ba72d982cf78880bc8b1e3"
+    },
+    {
+      "file": "multi-page-b-zh-TW-desktop.png",
+      "width": 1586,
+      "height": 992,
+      "locale": "zh-TW",
+      "tier": "BROWSER_REAL_PG_FAKE_META",
+      "sha256": "53a98e99b26faf699749ff8f868f2b98aefeaa3a8e34af189c449f0dba76b9f8"
+    },
+    {
+      "file": "multi-page-b-zh-TW-mobile.png",
+      "width": 390,
+      "height": 844,
+      "locale": "zh-TW",
+      "tier": "BROWSER_REAL_PG_FAKE_META",
+      "sha256": "60dc9aa048a0af61d6cbbef65409ae6f7f623902c04f31e09087bd78201530fe"
+    },
+    {
+      "file": "multi-pages-en-desktop.png",
+      "width": 1586,
+      "height": 992,
+      "locale": "en",
+      "tier": "BROWSER_REAL_PG_FAKE_META",
+      "sha256": "534d093fa54927e31f24b717faf23ee09d772559ea8c9a3c16f1ed2725808463"
+    },
+    {
+      "file": "multi-pages-en-mobile.png",
+      "width": 390,
+      "height": 844,
+      "locale": "en",
+      "tier": "BROWSER_REAL_PG_FAKE_META",
+      "sha256": "23da7e8218bb8b5840f31805ab570076d40d62b9f1e9e5729822552c07b4e5fc"
+    },
+    {
+      "file": "multi-pages-zh-CN-desktop.png",
+      "width": 1586,
+      "height": 992,
+      "locale": "zh-CN",
+      "tier": "BROWSER_REAL_PG_FAKE_META",
+      "sha256": "7506eae86b2da529fc93b3dd2ac475fa3bb0350dd3a4bc1693903fd48ef2ad6e"
+    },
+    {
+      "file": "multi-pages-zh-CN-mobile.png",
+      "width": 390,
+      "height": 844,
+      "locale": "zh-CN",
+      "tier": "BROWSER_REAL_PG_FAKE_META",
+      "sha256": "680d8edfd67e98c866237cb31701d3964c8ee35e8fb02a75a732830ba90f5280"
+    },
+    {
+      "file": "multi-pages-zh-TW-desktop.png",
+      "width": 1586,
+      "height": 992,
+      "locale": "zh-TW",
+      "tier": "BROWSER_REAL_PG_FAKE_META",
+      "sha256": "cda19541a165efd046489bfb96e0e7603fa86fdba498f5613762e9593b23dfa8"
+    },
+    {
+      "file": "multi-pages-zh-TW-mobile.png",
+      "width": 390,
+      "height": 844,
+      "locale": "zh-TW",
+      "tier": "BROWSER_REAL_PG_FAKE_META",
+      "sha256": "fe3c17941891b99428a54abf57583fbaf2ccd12b76db88476f59e4837c95aadd"
+    },
+    {
+      "file": "multi-studio-en-desktop.png",
+      "width": 1586,
+      "height": 992,
+      "locale": "en",
+      "tier": "BROWSER_REAL_PG_FAKE_META",
+      "sha256": "44419545a9220848e6f105f15dd5f755ccfb7c3c9103fffd984f6be4d4135cd9"
+    },
+    {
+      "file": "multi-studio-en-mobile.png",
+      "width": 390,
+      "height": 844,
+      "locale": "en",
+      "tier": "BROWSER_REAL_PG_FAKE_META",
+      "sha256": "184c35e30d3b2236223c486e855e5a24f8e9026130625755e22b830b6e868853"
+    },
+    {
+      "file": "multi-studio-zh-CN-desktop.png",
+      "width": 1586,
+      "height": 992,
+      "locale": "zh-CN",
+      "tier": "BROWSER_REAL_PG_FAKE_META",
+      "sha256": "9f09ed8123e41499bea02aa218a7351ff0c03314cba78cca4ff9bcb7a67f1d93"
+    },
+    {
+      "file": "multi-studio-zh-CN-mobile.png",
+      "width": 390,
+      "height": 844,
+      "locale": "zh-CN",
+      "tier": "BROWSER_REAL_PG_FAKE_META",
+      "sha256": "68c398026592dda4e1462e2b35c8f9bf9980189b2093f3245fb7e42b8c9de053"
+    },
+    {
+      "file": "multi-studio-zh-TW-desktop.png",
+      "width": 1586,
+      "height": 992,
+      "locale": "zh-TW",
+      "tier": "BROWSER_REAL_PG_FAKE_META",
+      "sha256": "e21bcca1ae06526cba13adfdd60dcbfed3effa7bd2a23f6fbd81bdd0592c96ac"
+    },
+    {
+      "file": "multi-studio-zh-TW-mobile.png",
+      "width": 390,
+      "height": 844,
+      "locale": "zh-TW",
+      "tier": "BROWSER_REAL_PG_FAKE_META",
+      "sha256": "2b6efcfe912218b95f34cd3ef73f54fd6ffb9b743a34f85dbfddf59e05ccb494"
+    }
+  ]
+}
