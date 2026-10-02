@@ -1,5 +1,6 @@
 "use client";
-import { handleNameHint, parseHandleSuggestion, validStorefrontReceipt } from "@/lib/storefront-handle";
+import { handleNameHint, validStorefrontReceipt } from "@/lib/storefront-handle";
+import { suggestHandle } from "@/lib/onboarding-client";
 // Signed-out / onboarding shell for /[locale]/ and (signed-out only) /[locale]/signup, /[locale]/reset.
 // BFF routes called: POST /api/auth/login (OIDC) → /v1/identity/login/start, POST /api/auth/logout →
 // /v1/identity/logout, POST /api/onboarding/initial-store → /v1/identity/initial-store
@@ -163,21 +164,8 @@ export function Entry({
     const controller = new AbortController();
     setHandleChecking(true);
     const timer = setTimeout(() => {
-      fetch("/api/onboarding/handle-suggest", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ store_name: name }),
-        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(8000)]),
-      })
-        .then(async (response) => {
-          if (!live) return;
-          if (!response.ok) throw new Error("handle_unconfirmed");
-          const body: unknown = await response.json();
-          const suggestion = parseHandleSuggestion(body);
-          if (!suggestion) throw new Error("handle_unconfirmed");
-          if (live) setHandle(suggestion);
-        })
+      suggestHandle(name, controller.signal)
+        .then((suggestion) => { if (live) setHandle(suggestion); })
         .catch(() => { if (live) setHandleFailed(true); })
         .finally(() => {
           if (live) setHandleChecking(false);
