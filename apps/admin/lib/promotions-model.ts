@@ -1,3 +1,5 @@
+import { taipeiToInstant, instantToTaipei } from "../../../packages/format/src/index.ts";
+export { taipeiToInstant, instantToTaipei } from "../../../packages/format/src/index.ts";
 // Admin discount-code model (contracts/storefront-v2.md §F): strict parser for the DTO of Go internal/httpapi/promotions.go (BFF
 // `/api/stores/{store}/promotions[/{id}]`) and the pure form -> request-body builder that puts exactly the frozen keys on the wire.
 // It never decides a rule: SQL (migration 0091 check_fields / refusal_for) is the authority for every limit, window and amount; a parser only
@@ -62,24 +64,8 @@ export function parsePromotions(value: unknown): Promotion[] {
 }
 
 // ---- Asia/Taipei wall time <-> instant ----------------------------------------------------------------------------------------
-const WALL = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 // "2026-10-01T09:30" (datetime-local, Taipei) -> RFC 3339 instant; null when empty or not a real date.
-export function taipeiToInstant(wall: string): string | null | undefined {
-  const text = wall.trim();
-  if (text === "") return null;
-  if (!WALL.test(text)) return undefined;
-  const at = Date.parse(`${text}:00+08:00`);
-  return Number.isFinite(at) ? `${text}:00+08:00` : undefined;
-}
 // Instant -> "YYYY-MM-DDTHH:mm" in Asia/Taipei, the value a datetime-local input takes back.
-export function instantToTaipei(iso: string | null): string {
-  if (iso === null) return "";
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: STORE_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
-  }).formatToParts(new Date(iso));
-  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
-  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
-}
 
 // ---- form <-> body --------------------------------------------------------------------------------------------------------------
 export type PromoForm = {
