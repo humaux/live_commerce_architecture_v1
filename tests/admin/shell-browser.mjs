@@ -380,9 +380,24 @@ export async function runShellGate({
       .then((c) => c.some((x) => x.name === "__Host-commerce_session")),
     true,
   );
-  await page.goto(
+  const unknownStore = await page.goto(
     `${base}/en/products?store=99999999-9999-4999-8999-999999999999`,
   );
+  assert.equal(
+    unknownStore.status(),
+    404,
+    "server rejects an unknown store before mounting the shell",
+  );
+  assert.equal(await page.getByTestId("products-search").count(), 0);
+  await page.goto(`${base}/en/products?store=${storeID}`);
+  await ready("/products");
+  // Exercise the mounted shell's invalid-explicit-store boundary independently
+  // of the server loader's earlier 404 guard.
+  await page.evaluate(() => {
+    const url = new URL(location.href);
+    url.searchParams.set("store", "99999999-9999-4999-8999-999999999999");
+    history.replaceState(null, "", url);
+  });
   await page.getByTestId("route-forbidden").waitFor();
   assert.equal(
     await page.getByTestId("shell-store-brand").count(),
@@ -396,6 +411,7 @@ export async function runShellGate({
   );
   await page.goto(`${base}/en/studio?store=${storeID}`);
   await page.getByTestId("shell-session-expired").waitFor({ timeout: 5000 });
+  await page.waitForURL((url) => !url.searchParams.has("store"));
   assert.equal(
     await page.getByTestId("merchant-studio").count(),
     0,
@@ -428,8 +444,22 @@ export async function runShellGate({
   await page.unroute("**/api/stores");
   // Session notifications clear already-loaded chrome and block delayed reads.
   // Exercise the actual sender primitives, not a forged incoming MessageEvent.
+  let workspaceReads = 0;
+  const countWorkspaceRead = (request) => {
+    if (new URL(request.url()).pathname === "/api/stores") workspaceReads++;
+  };
+  page.on("request", countWorkspaceRead);
+  const settleUI = () =>
+    page.evaluate(
+      () =>
+        new Promise((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve)),
+        ),
+    );
   const noScopedChrome = async () => {
     await page.getByTestId("shell-session-expired").waitFor();
+    await page.waitForURL((url) => !url.searchParams.has("store"));
+    await settleUI();
     for (const selector of [
       "[data-testid=shell-store-selector]",
       "[data-testid=shell-store-brand]",
@@ -444,6 +474,7 @@ export async function runShellGate({
     await ready("/studio");
     const sender = await context.newPage();
     await sender.goto(`${base}/en/reset`);
+    const readsBefore = workspaceReads;
     if (mechanism === "focus") {
       await page.route("**/api/stores", (route) =>
         route.fulfill({ status: 401, json: { code: "unauthorized" } }),
@@ -464,29 +495,53 @@ export async function runShellGate({
         }
       }, mechanism);
     await noScopedChrome();
+    assert.equal(
+      workspaceReads,
+      readsBefore + (mechanism === "focus" ? 1 : 0),
+      "URL sanitization must not launch a fresh workspace read after " +
+        mechanism,
+    );
     if (mechanism === "focus") await page.unroute("**/api/stores");
     await sender.close();
   }
-  let releaseRead, startedRead;
+  let releaseRead, startedRead, settledRead;
   const pendingRead = new Promise((resolve) => {
     releaseRead = resolve;
   });
   const readStarted = new Promise((resolve) => {
     startedRead = resolve;
   });
+  const readSettled = new Promise((resolve) => {
+    settledRead = resolve;
+  });
   await page.route("**/api/stores", async (route) => {
     const response = await route.fetch();
     startedRead();
     await pendingRead;
-    await route.fulfill({ response }).catch(() => {}); // abort after logout is expected
+    try {
+      await route.fulfill({ response });
+    } catch {
+      // The browser request is aborted by logout; still await handler settlement.
+    } finally {
+      settledRead();
+    }
   });
   await page.goto(`${base}/en/studio?store=${storeID}`);
   await readStarted;
+  const readsBeforeLogout = workspaceReads;
   await page.evaluate(() =>
     window.dispatchEvent(new Event("commerce-session-logout")),
   );
   releaseRead();
+  await readSettled;
+  await settleUI();
   await noScopedChrome();
+  assert.equal(
+    workspaceReads,
+    readsBeforeLogout,
+    "delayed read and URL cleanup cannot revive the workspace",
+  );
+  page.off("request", countWorkspaceRead);
   await page.unroute("**/api/stores");
   await context.clearCookies();
   for (const locale of ["en", "zh-CN", "zh-TW"]) {

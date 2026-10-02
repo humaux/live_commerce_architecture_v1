@@ -54,6 +54,7 @@ export function WorkspaceFrame({
   const [signingOut, setSigningOut] = useState(false),
     [signOutFailed, setSignOutFailed] = useState(false);
   const busy = useRef(false);
+  const expired = useRef(false);
   const close = useCallback(() => setOpen(false), []);
   // Scope the result to its request key, even during the render before the next effect runs.
   const stores =
@@ -63,15 +64,28 @@ export function WorkspaceFrame({
   const allowed = route && canOpen(route, access);
   const nav = visibleGroups(access);
   useEffect(() => {
+    // URL changes must not revive this shell after a logout/401. Recovery uses
+    // the existing full-page sign-in link and creates a new shell instance.
+    if (expired.current) return;
     const abort = new AbortController();
     let current = true;
     const clearSession = () => {
+      expired.current = true;
       current = false;
       abort.abort();
       setData(null);
       setError("expired");
       setOpen(false);
       setExpanded(null);
+      const url = new URL(window.location.href);
+      if (url.searchParams.has("store")) {
+        url.searchParams.delete("store");
+        window.history.replaceState(
+          null,
+          "",
+          `${url.pathname}${url.search}${url.hash}`,
+        );
+      }
     };
     const onStorage = (event: StorageEvent) => {
       if (event.key === "commerce-session-logout") clearSession();
