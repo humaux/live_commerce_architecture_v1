@@ -82,6 +82,20 @@ const manifest = path.join(evidence, "screenshots.json");
 async function shot(page, name, locale, viewport) {
   const file = path.join(evidence, `home-cod-${name}-${locale}-${viewport}.png`);
   await page.screenshot({ path: file, fullPage: true });
+  if (name === "checkout" || name === "order-pending") {
+    const previous = page.viewportSize();
+    for (const width of [390, 1366, 1586]) {
+      await page.setViewportSize({ width, height: width === 390 ? 844 : 992 });
+      await page.evaluate(() => window.scrollTo(0, 0));
+      assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${name} ${locale} overflow at ${width}`);
+      await page.screenshot({ path: path.join(root, "output/home-cod-ui", `buyer-${name}-${locale}-${width}.png`), fullPage: false, animations: "disabled", scale: "css" });
+      if (name === "checkout") {
+        await page.getByTestId("checkout-cod-amount").scrollIntoViewIfNeeded();
+        await page.screenshot({ path: path.join(root, "output/home-cod-ui", `buyer-confirm-${locale}-${width}.png`), fullPage: false, animations: "disabled", scale: "css" });
+      }
+    }
+    await page.setViewportSize(previous);
+  }
   assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `horizontal overflow at ${viewport} ${locale} (${name})`);
   if (engine === "webkit" && viewport === "mobile") assert.deepEqual(await iosZoomOffenders(page), [], `iOS focus-zoom: form controls under 16px at ${viewport} ${locale}`);
   let list = []; try { list = JSON.parse(await readFile(manifest, "utf8")); } catch { /* first */ }
@@ -111,6 +125,13 @@ async function place(buyer) {
   const page = await ctx.newPage();
   await reachCheckout(page, origin, locale, product, { quantity: 2 }); // 2 units, whole-TWD subtotal
   await page.getByRole("button", { name: c.delivery, exact: true }).click();
+  const capRoute = async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    body.items = body.items.map((option) => option.payment_modes?.includes("cash_on_delivery") ? { ...option, cod_max_minor: 100 } : option);
+    await route.fulfill({ response, json: body });
+  };
+  if (label === "order A") await page.route("**/api/buyer/checkout-options?**", capRoute);
   const quoted = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/quotes" && r.request().method() === "POST");
   await page.getByRole("button", { name: c.quote, exact: true }).click();
   const quote = await (await quoted).json();
@@ -118,6 +139,14 @@ async function place(buyer) {
   assert.equal(quote.amount.shipping_minor, 0, `${label}: the fixture home policy is zero-fee`);
   assert.equal(quote.amount.total_minor, total, `${label}: total`);
   await expect(page.getByTestId("address-section")).toBeVisible();
+  if (label === "order A") {
+    await expect(page.getByTestId("cod-cap-unavailable")).toBeVisible();
+    await expect(page.locator('input[name="home_payment_mode"][value="cash_on_delivery"]')).toHaveCount(0);
+    await page.unroute("**/api/buyer/checkout-options?**", capRoute);
+    await page.getByRole("button", { name: "重新選擇配送", exact: true }).click();
+    await page.getByRole("button", { name: c.quote, exact: true }).click();
+    await expect(page.locator('input[name="home_payment_mode"][value="cash_on_delivery"]')).toBeVisible();
+  }
   for (const [key, value] of Object.entries(pii)) await page.locator(`input[name="${key}"]`).fill(value);
   // cash on delivery is offered only because the merchant enabled it: the mode row names the total plus the whole-TWD surcharge
   // (whole TWD amounts drop the decimals on every locale, so the label reads "TWD 25" / "NT$25", never "25.00")
@@ -135,7 +164,27 @@ async function place(buyer) {
   await expect(page.getByTestId("create-order")).toHaveText(c.createCod);
   await expect(page.locator(".order-note").filter({ hasText: c.note })).toBeVisible(); // no online charge
   await shot(page, "checkout", locale, viewport);
+  if (label === "order A") {
+    // MOCK one definite provider refusal on the real checkout flow; no upstream order is created.
+    let optionReads = 0;
+    const observe = (request) => { if (new URL(request.url()).pathname === "/api/buyer/checkout-options") optionReads++; };
+    page.on("request", observe);
+    await page.route("**/api/buyer/checkout", (route) => route.fulfill({
+      status: 409, contentType: "application/json",
+      headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" },
+      body: JSON.stringify({ code: "cod_surcharge_changed", retryable: false, message: "Fee changed", request_id: "0".repeat(32), details: {} }),
+    }), { times: 1 });
+    await page.getByTestId("create-order").click();
+    await expect(page.getByTestId("cod-checkout-error")).toBeVisible();
+    await expect(page.getByTestId("create-order")).toBeDisabled();
+    await expect.poll(() => optionReads).toBeGreaterThan(0);
+    await page.getByTestId("confirm-address").click();
+    await expect(page.getByTestId("create-order")).toBeEnabled();
+    page.off("request", observe);
+  }
+  const submitted = page.waitForRequest((request) => new URL(request.url()).pathname === "/api/buyer/checkout" && request.method() === "POST");
   await page.getByTestId("create-order").click();
+  assert.equal((await submitted).postDataJSON().expected_cod_surcharge_minor, surcharge, "buyer-confirmed fee is sent to the server");
   await expect(page.getByTestId("order-section")).toBeVisible({ timeout: 30000 });
   const id = (await page.getByTestId("order-id").innerText()).trim();
   assert.match(id, /^[a-f0-9-]{36}$/);
@@ -143,7 +192,27 @@ async function place(buyer) {
   const cod = page.getByTestId("order-cod");
   await expect(cod).toBeVisible({ timeout: 30000 });
   await expect(cod.getByTestId("order-cod-state")).toHaveAttribute("data-state", "PENDING");
+  await expect(cod.getByTestId("order-cod-amount")).toContainText(`NT$${(total + surcharge) / 100}`);
+  await expect(cod.getByTestId("order-cod-amount")).toContainText(`NT$${surcharge / 100}`);
+  await expect(page.locator("#order-title")).toHaveText(await cod.getByTestId("order-cod-state").innerText());
   await shot(page, "order-pending", locale, viewport);
+  if (label === "order A") {
+    const linked = await ctx.newPage();
+    for (const language of ["zh-TW", "zh-CN", "en"]) {
+      await linked.goto(`${origin}/${language}/orders/${id}`);
+      await expect(linked.getByTestId("order-cod-amount")).toContainText(`NT$${(total + surcharge) / 100}`);
+      await shot(linked, "order-pending", language, "desktop");
+    }
+    await linked.close();
+    const lookupContext = await newContext(false);
+    const lookupPage = await lookupContext.newPage();
+    await lookupPage.goto(`${origin}/${locale}/orders/lookup`);
+    await lookupPage.getByTestId("lookup-ref").fill(id);
+    await lookupPage.getByTestId("lookup-contact").fill(pii.phone);
+    await lookupPage.getByTestId("lookup-submit").click();
+    await expect(lookupPage.getByTestId("order-cod-amount")).toContainText(`NT$${(total + surcharge) / 100}`);
+    await lookupContext.close();
+  }
   pass(`${label} ${locale}/${viewport}: whole-TWD total ${total / 100}, surcharge ${surcharge / 100}, placed AWAITING_COLLECTION/PENDING`);
   return { ...buyer, page, id };
 }
@@ -194,6 +263,7 @@ try {
   {
     const a = buyers.A; await refresh(a.page);
     await expect(a.page.getByTestId("order-cod").getByTestId("order-cod-state")).toHaveAttribute("data-state", "COLLECTED");
+    await expect(a.page.locator("#order-title")).toHaveText(copy[a.locale].paid);
     await expect(a.page.getByTestId("order-cod")).toContainText(copy[a.locale].paid);
     const order = await api(a.page, "GET", `orders/${a.id}`);
     assert.equal(order.status, 200); assert.equal(order.body.commercial_state, "AWAITING_COLLECTION", "a collected COD order never becomes CONFIRMED");

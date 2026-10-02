@@ -110,6 +110,25 @@ test("settings: the merchant enables cash on delivery with a cap, surcharge and 
   await expect(again.getByTestId("cod-max")).toHaveValue("20000");
   await expect(again.getByTestId("cod-surcharge")).toHaveValue("50");
   await expect(again.getByTestId("cod-carrier")).toHaveValue("black_cat");
+  for (const language of ["zh-TW", "zh-CN", "en"] as const) {
+    await page.goto(new URL(`/${language}/settings?store=${store}`, origin).toString());
+    await page.getByRole("button", { name: new RegExp(settingsCopy[language].steps[1]) }).click();
+    await expect(page.getByTestId("cod-settings-card")).toBeVisible();
+    for (const width of [390, 1366, 1586]) {
+      await page.setViewportSize({ width, height: width === 390 ? 844 : 992 });
+      await page.getByTestId("cod-settings-card").scrollIntoViewIfNeeded();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+      for (const control of ["cod-max", "cod-surcharge", "cod-carrier", "cod-settings-save"]) {
+        const box = await page.getByTestId(control).boundingBox();
+        expect(box?.height, `${language} ${control} touch height`).toBeGreaterThanOrEqual(44);
+      }
+      await page.screenshot({ path: path.resolve("output/home-cod-ui", `admin-settings-${language}-${width}.png`), fullPage: false, animations: "disabled", scale: "css" });
+      expect(await page.getByTestId("cod-max").evaluate((input) => {
+        const r = input.getBoundingClientRect();
+        return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2) === input;
+      }), "the amount input must not be covered by the navigation rail").toBe(true);
+    }
+  }
   await context.close();
 });
 
@@ -119,6 +138,12 @@ test("ship-collect: the merchant records the manual shipment, then the collected
   const { context, page } = await merchant(browser, false);
   await openOrders(page, locale);
   const detail = await expand(page, order);
+  const pendingCod = detail.getByTestId("order-cod");
+  await expect(pendingCod.getByTestId("cod-collected")).toBeDisabled();
+  await expect(pendingCod).toContainText(codCopy[locale].notShipped);
+  const collectText = await pendingCod.getByTestId("cod-collect-amount").innerText();
+  expect(collectText).toMatch(/^NT\$[\d,]+$/);
+  await expect(detail.getByTestId("order-collect-amount")).toHaveText(collectText);
   // a COD order ships first (the manual record admits AWAITING_COLLECTION): sf_express, a plain tracking number
   const shipment = detail.getByTestId("order-shipment");
   await expect(shipment).toBeVisible();
@@ -134,10 +159,13 @@ test("ship-collect: the merchant records the manual shipment, then the collected
   const dialog = page.getByTestId("cod-dialog");
   await expect(dialog).toBeVisible();
   await expect(dialog.getByTestId("cod-confirm-text")).toContainText(/貨運/);
+  await expect(dialog.getByTestId("cod-confirm-amount")).toContainText(collectText);
   await shot(page, "collect-dialog", locale, "desktop");
   await dialog.getByTestId("cod-submit").click();
   await expect(cod.getByTestId("cod-collection-state")).toHaveAttribute("data-state", "COLLECTED");
   await expect(cod.getByTestId("cod-collected")).toHaveCount(0); // a collected order cannot be collected again
+  await expect(shipment.getByTestId("shipment-void")).toBeDisabled();
+  await expect(shipment.getByTestId("shipment-correct")).toBeEnabled();
   await shot(page, "collected", locale, "desktop");
   await context.close();
 });
