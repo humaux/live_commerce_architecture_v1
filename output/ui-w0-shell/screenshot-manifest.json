@@ -1,5 +1,5 @@
 {
-  "source": "a6449fb33ce3050d6e385b3453130b7e469bf0d0",
+  "source": "8abaaaa3abcb79712438a3cd2902b60d97c95e73",
   "tier": "MOCK",
   "count": 61,
   "files": [
@@ -115,7 +115,7 @@
       "file": "forbidden-en-1586.png",
       "width": 1586,
       "height": 992,
-      "sha256": "965676777a874aec277c0a6766dc9a99533a815e9f976f3393a8bf36564a9112"
+      "sha256": "86be87432d7a0be4732f454dc119d039004a7960c3fc391a5477e3591ae23c36"
     },
     {
       "file": "forbidden-en-390.png",
@@ -151,19 +151,19 @@
       "file": "session-expired-en.png",
       "width": 390,
       "height": 844,
-      "sha256": "1de08ac8e8b136054e42ebb58c71c2962e6b73fe32d52f79b723d3945a813c01"
+      "sha256": "78c46551e9cd7ab6d9c8f0b77eb32343302b8b814ce305177247fd765c4bf936"
     },
     {
       "file": "shell-en-1024x768.png",
       "width": 1024,
       "height": 768,
-      "sha256": "b40693e48378c1e04a233794438d4f784d605fad3758a537d189a611f3b9991a"
+      "sha256": "44077d37a7522b40f4a3161c48ad707b8874bb4b842727cb4849b20cd67b2866"
     },
     {
       "file": "shell-en-1366x768.png",
       "width": 1366,
       "height": 768,
-      "sha256": "13fa889ad1be0494758d1e525113bf8713bf9e521058af3264e8b7cc05681b6d"
+      "sha256": "0d08ed0a8d8340dea6a2268a81e85ea4587b67cfa7363a6f68539392887deff0"
     },
     {
       "file": "shell-en-1586x992.png",
@@ -193,7 +193,7 @@
       "file": "shell-en-390x844.png",
       "width": 390,
       "height": 844,
-      "sha256": "d2cb2eb824a9c5d2416ef48397ef4164d5e122fde7ae04979701385e7feacfd8"
+      "sha256": "1fe281b2914212009234abd69915fdf15e01483acc42f737109a8329aff2f920"
     },
     {
       "file": "shell-en-768x1024.png",
@@ -277,7 +277,7 @@
       "file": "shell-zh-TW-360x740.png",
       "width": 360,
       "height": 740,
-      "sha256": "8d70446c8d8c03be22a8058483035a41ac6ea0468075a89bb86d6c570cdefdaf"
+      "sha256": "6798c55b6d3715c91a277fcbd178239bbb7a5471729d065c8637dd6e0b34cced"
     },
     {
       "file": "shell-zh-TW-375x812.png",
@@ -343,7 +343,7 @@
       "file": "touch-targets-en-390-topbar.png",
       "width": 390,
       "height": 844,
-      "sha256": "4a4419c191a6ea8b5bd9fd20f4564bb09fdde8c33fdf4f20333e80afeddbcd39"
+      "sha256": "e7ab0987929daf5a64232b1f27ae9a5d9fb8485f34aad544e87ce523d5299846"
     },
     {
       "file": "touch-targets-zh-CN-390-drawer.png",
