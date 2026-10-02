@@ -80,7 +80,7 @@ export function ProductList({
             <p>{l.subtitle}</p>
           </div>
           <div className="product-heading-actions">
-            <Link className="product-link" href={`/${locale}/${sid ? `?store=${sid}` : ""}`} data-testid="products-ledger-link">{l.inventory}</Link>
+            <Link className="product-link" href={`/${locale}/inventory${sid ? `?store=${sid}` : ""}`} data-testid="products-ledger-link">{l.inventory}</Link>
             {store && (
               <Link className="product-primary" href={`/${locale}/products/new?store=${sid}`} data-testid="product-new">
                 <Icon name="product" size={18} />

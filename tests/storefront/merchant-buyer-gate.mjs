@@ -1,6 +1,7 @@
 // Causal gate: actual merchant UI -> admin BFF/Go/PG -> configured URL -> buyer
 // production Next. The only host mapping is this disposable TLS/CONNECT edge.
 import { openBuyerSession } from "./shop-helpers.mjs";
+import { createProductInEditor, selectLedgerRow } from "./merchant-product.mjs"; // stop-bleed D01: products are created in the editor
 import assert from "node:assert/strict";
 import http from "node:http";
 import https from "node:https";
@@ -115,24 +116,16 @@ try {
   // 0094 (merchant-tools, storefront-v2 G1): the sign-in landing is the dashboard and the product ledger (Add product, SKU rows, purchase entry) moved to /[locale]/inventory.
   await expect(merchant.getByTestId("dashboard-page")).toBeVisible();
   await merchant.goto(`${adminOrigin}/en/inventory`);
-  await expect(merchant.getByRole("button", {name: "Add product", exact: true})).toBeVisible();
+  // stop-bleed D01: "Add product" on the inventory page is a link to the full editor now (no inline quick-add panel)
+  await expect(merchant.getByRole("link", {name: "Add product", exact: true})).toBeVisible();
   assert(sawIssuer, "real signed MOCK IdP browser redirect required");
   const name = `Joint browser product ${Date.now()}`, code = `JOINT-${Date.now()}`;
-  await merchant.getByRole("button", {name: "Add product", exact: true}).click();
-  await merchant.getByRole("textbox", {name: "Product name", exact: true}).fill(name);
-  await merchant.getByRole("textbox", {name: "Description", exact: true}).fill("Synthetic merchant-created joint acceptance product");
-  const productResponse = merchant.waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname === `/api/stores/${process.env.LC_JOINT_STORE}/products`);
-  await merchant.locator(".create-panel").getByRole("button", {name: "Add product", exact: true}).click();
-  const productReply = await productResponse; assert.equal(productReply.status(), 200); const product = await productReply.json();
-  await expect(merchant.getByRole("heading", {name: "Add first SKU", exact: true})).toBeVisible();
-  await merchant.getByRole("textbox", {name: "SKU code", exact: true}).fill(code);
-  await merchant.getByRole("spinbutton", {name: "Price in minor units", exact: true}).fill("12345");
-  const skuResponse = merchant.waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname === `/api/stores/${process.env.LC_JOINT_STORE}/skus`);
-  await merchant.locator(".create-panel").getByRole("button", {name: "Add first SKU", exact: true}).click();
-  const skuReply = await skuResponse; assert.equal(skuReply.status(), 200); const sku = await skuReply.json();
-  assert.equal(sku.product_id, product.id); assert.equal(sku.price_minor, 12345);
-  await expect(merchant.locator(".create-panel")).toHaveCount(0);
-  await expect(merchant.locator("tbody tr").filter({has: merchant.getByRole("button", {name, exact: true})}).locator(".available-value")).toHaveText("0");
+  // the product and its first SKU go through the product editor, the only creation UI (price typed in major units: 123.45 = 12345 minor)
+  const {product, sku} = await createProductInEditor(merchant, {adminOrigin, store: process.env.LC_JOINT_STORE, name, description: "Synthetic merchant-created joint acceptance product", code, price: "123.45"});
+  assert.equal(sku.price_minor, 12345);
+  // back on the stock ledger: the new product has zero balance, and its purchase entry is the buyer URL
+  const ledgerRow = await selectLedgerRow(merchant, {adminOrigin, code});
+  await expect(ledgerRow.locator(".available-value")).toHaveText("0");
   await expect(merchant.getByTestId("purchase-entry").locator("input")).toHaveValue(`${buyerOrigin}/en/products/${product.id}`);
   pass("signed MOCK IdP and actual merchant product/SKU saves returned real scoped receipts");
   const afterSaves = await control("facts");

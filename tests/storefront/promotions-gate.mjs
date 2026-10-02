@@ -129,6 +129,14 @@ async function scenario(index, run) {
   await createCode(merchant, label, cell.code, 500, window);
   await createCode(merchant, label, cell.big_code, 5000, null);
   await noOverflow(merchant, `${label} promotions page`);
+  // stop-bleed D05: the list keeps its 540px floor and scrolls inside its own container; at 390px no cell collapses to one character per line
+  // (customers.css used to override min-width/overflow-wrap for every table on a customers-page).
+  const list = await merchant.getByTestId("promotions-table").evaluate(table => {
+    const code = table.querySelector("tbody tr td strong").getBoundingClientRect(), box = table.getBoundingClientRect();
+    return { width: box.width, codeHeight: code.height, codeWidth: code.width, codeChars: table.querySelector("tbody tr td strong").textContent.length };
+  });
+  assert(list.width >= 540, `${label} promotions table width ${list.width} < 540 (min-width override came back)`);
+  assert(list.codeHeight < 30, `${label} promotion code wraps onto several lines (${list.codeHeight}px high)`);
   await shot(merchant, "admin-promotions", run);
   const row = merchant.getByTestId("promotion-row").filter({ hasText: cell.code });
   await expect(row.getByTestId("promotion-used")).toHaveText("0");

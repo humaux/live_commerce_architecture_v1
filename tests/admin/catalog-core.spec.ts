@@ -106,6 +106,8 @@ for (const v of variants) {
       await expect(page.getByTestId("products-page")).toBeVisible();
       await expect(page.getByTestId("product-new")).toBeVisible();
       await expect(page.getByTestId("products-ledger-link")).toBeAttached();
+      // stop-bleed D03: the "stock ledger" link opens the inventory page, not the dashboard at /{locale}/
+      await expect(page.getByTestId("products-ledger-link")).toHaveAttribute("href", new RegExp(`^/${L}/inventory(\\?store=[0-9a-f-]{36})?$`));
       if (v.vp === "mobile") await page.getByRole("button", { name: copy[L as "en" | "zh-TW"].menu }).click();
       const rail = page.getByRole("navigation").first();
       for (const label of [copy[L as "en" | "zh-TW"].products, cc.nav.collections, copy[L as "en" | "zh-TW"].inventory])

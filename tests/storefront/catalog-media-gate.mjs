@@ -86,17 +86,18 @@ async function scenario(index, run) {
   merchant.on("pageerror", error => uiErrors.push(`${label} merchant ${error.name}: ${error.message}`));
   await merchant.goto(`${adminOrigin}/en`);
   await merchant.getByRole("button", {name: "Sign in with identity service", exact: true}).click();
-  // 0094 made /[locale]/ the merchant dashboard and the stock Ledger moved to /[locale]/inventory (nav "Inventory"):
-  // the SKU rows, the photo manager, the rename and the price/archive inspector all live there now.
-  await merchant.goto(`${adminOrigin}/en/inventory`);
+  // stop-bleed D01 (product-editor §c9): the Ledger (/[locale]/inventory) is stock only now. Photos, rename, SKU price and SKU archive are done in
+  // the product editor (/[locale]/products/{id}); the Ledger is where the results are read back (name, price, status, real cover thumbnail).
   const row = code => merchant.locator("tbody tr").filter({hasText: code});
-  const select = async code => { await row(code).locator("button.product-name").click(); await expect(merchant.getByTestId("photo-manager")).toBeVisible(); };
   const bff = (resource) => `/api/stores/${store}/${resource}`;
   const done = (method, resource) => merchant.waitForResponse(r => r.request().method() === method && new URL(r.url()).pathname === bff(resource));
+  const major = minor => minor % 100 === 0 ? String(minor / 100) : (minor / 100).toFixed(2); // the editor's price fields are major units (D02)
   await merchant.goto(`${adminOrigin}/${run.locale}/inventory`);
   await expect(row(fx.sku1.code)).toBeVisible();
   await expect(row(fx.sku2.code)).toBeVisible();
-  await select(fx.sku1.code);
+  await expect(merchant.getByTestId("photo-manager"), "the Ledger tray no longer edits photos").toHaveCount(0);
+  await merchant.goto(`${adminOrigin}/${run.locale}/products/${fx.product_id}?store=${store}`);
+  await expect(merchant.getByTestId("photo-manager")).toBeVisible();
   await expect(merchant.getByTestId("photo-row")).toHaveCount(0);
   // 1. upload two photos through the real file input (PNG first, JPEG second)
   for (const [n, file] of [[1, {name: "front.png", mimeType: "image/png", buffer: png}], [2, {name: "side.jpg", mimeType: "image/jpeg", buffer: jpg}]]) {
@@ -118,33 +119,32 @@ async function scenario(index, run) {
   assert.deepEqual(listed.body.items.map(i => [i.content_type, i.position]), [["image/jpeg", 0], ["image/png", 1]], `${label} order after reorder`);
   const ids = listed.body.items.map(i => i.id);
   pass(`${label} reorder persisted: JPEG is the cover, PNG second, positions 0 and 1`);
-  // 3. rename
-  const edit = merchant.getByTestId("product-edit");
-  await edit.locator("input[name=name]").fill(newName);
+  // 3. rename (the editor's basics form)
+  await merchant.getByTestId("product-name").fill(newName);
   const renamed = done("PATCH", `products/${fx.product_id}`);
-  await edit.locator("button[type=submit]").click();
+  await merchant.getByTestId("product-save").click();
   assert.equal((await renamed).status(), 200, `${label} rename`);
-  await expect(row(fx.sku1.code).locator("button.product-name")).toHaveText(newName);
-  // 4. SKU price
-  await select(fx.sku1.code);
-  const price = merchant.getByTestId("price-edit");
-  await price.locator("input[name=price]").fill(String(fx.sku1.price_new));
+  // 4. SKU price (the variant row, major units)
+  await merchant.getByTestId(`variant-price-${fx.sku1.id}`).fill(major(fx.sku1.price_new));
   const repriced = done("POST", `skus/${fx.sku1.id}/price`);
-  await price.locator("button[type=submit]").click();
+  await merchant.getByTestId(`variant-save-${fx.sku1.id}`).click();
   assert.equal((await repriced).status(), 200, `${label} price`);
-  await expect(row(fx.sku1.code)).toContainText(digits(fx.sku1.price_new));
-  // 5. archive the other SKU (confirm step), then the Ledger marks it archived
-  await select(fx.sku2.code);
-  await merchant.getByTestId("archive-sku").click();
+  // 5. archive the other SKU (confirm step in the same row)
+  await merchant.getByTestId(`variant-archive-${fx.sku2.id}`).click();
   const archived = done("POST", `skus/${fx.sku2.id}/archive`);
-  await merchant.getByTestId("confirm-archive").click();
+  await merchant.getByTestId(`variant-row-${fx.sku2.id}`).locator("button.danger").click();
   assert.equal((await archived).status(), 200, `${label} archive`);
-  // The status column is hidden by the baseline CSS at 390px, so the row state is asserted attached (not visible) and the inspector,
-  // which is visible on both viewports, shows the archived SKU's archive control disabled.
+  // ---- the Ledger reads the results back ----------------------------------------------------------------------------------------
+  await merchant.goto(`${adminOrigin}/${run.locale}/inventory`);
+  await expect(row(fx.sku1.code).locator("button.product-name")).toHaveText(newName);
+  await expect(row(fx.sku1.code)).toContainText(major(fx.sku1.price_new));
+  // The status column is hidden by the baseline CSS at 390px, so the row state is asserted attached (not visible); the tray, which is visible
+  // on both viewports, shows the archived SKU's stock adjustment disabled.
   // the row state lives in the status column; the mobile badge (.status.mobile-status) is a second copy, so scope to .status-col
   await expect(row(fx.sku2.code).locator(".status-col .status.archived")).toBeAttached();
   await expect(row(fx.sku1.code).locator(".status-col .status.active")).toBeAttached();
-  await expect(merchant.getByTestId("archive-sku")).toBeDisabled();
+  await row(fx.sku2.code).locator("button.product-name").click();
+  await expect(merchant.locator("section.inspector").getByRole("spinbutton")).toBeDisabled();
   if (run.vp === "desktop") await expect(row(fx.sku2.code).locator(".status-col .status.archived")).toBeVisible();
   await expect(row(fx.sku1.code).locator("[data-photo=real]")).toBeVisible(); // the Ledger shows the real cover
   assert.equal(await merchant.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${label} admin horizontal overflow`);

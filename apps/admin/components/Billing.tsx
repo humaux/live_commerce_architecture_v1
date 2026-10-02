@@ -231,7 +231,7 @@ function Sections({
       <section className="customers-section" aria-label={c.usageTitle}>
         <h2>{c.usageTitle}</h2>
         <div className="orders-actions-scroll">
-          <table className="orders-actions-table" data-testid="billing-usage">
+          <table className="orders-actions-table orders-kv-table" data-testid="billing-usage">
             <tbody>
               <tr><th scope="row">{c.usagePeriod}</th><td>{status.usage.period_start.slice(0, 10)} → {status.usage.period_end.slice(0, 10)}</td></tr>
               <tr><th scope="row">{c.paidOrders}</th><td>{status.usage.paid_orders}</td></tr>

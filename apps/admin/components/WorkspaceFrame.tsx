@@ -158,17 +158,6 @@ export function WorkspaceFrame({
             </button>
           ))}
         </nav>
-        <div className="channel-status">
-          <h2>{c.channels}</h2>
-          {[c.website, "Facebook", "Instagram", "WhatsApp", "LINE"].map(
-            (name) => (
-              <div key={name}>
-                <span>{name}</span>
-                <span className="disconnected">{c.notConnected}</span>
-              </div>
-            ),
-          )}
-        </div>
         {signOutFailed && (
           <p role="alert" style={{ padding: "0 20px", color: "#fff" }}>
             {c.signOutFailed}
