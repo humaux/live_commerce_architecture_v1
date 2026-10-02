@@ -15,7 +15,7 @@ import OrderPayment from "./OrderPayment";
 import { ConsentChoices, noConsentChoices, submitCheckoutConsents } from "./ConsentChoices";
 import CvsPickup, { CvsOrderStatus, type PickupHandle } from "./CvsPickup";
 import BankTransfer from "./BankTransfer";
-import { CodOrderStatus } from "./CodOrderStatus";
+import { CodAmount, CodOrderStatus } from "./CodOrderStatus";
 import type { Locale } from "@live-commerce/i18n";
 import { BuyerClientError } from "../lib/buyer-client";
 import { carrierNames, orderCopy } from "../lib/order-copy";
@@ -340,7 +340,7 @@ export default function OrderFlow({
       <p className="address-total">
         {quote && (
           <>
-            {purchaseCopy[locale].total}:{" "}
+            {purchaseCopy[locale].orderTotal}:{" "}
             <strong>{money(quote.amount.total_minor, quote.currency)}</strong>{" "}
             ·{" "}
           </>
@@ -542,7 +542,7 @@ export default function OrderFlow({
         <p role="status" data-testid="cod-cap-unavailable">{quote && quote.amount.total_minor % 100 !== 0 ? cod.wholeOnly : cod.capReached}</p>}
       {paymentMode === "cash_on_delivery" && option && quote && paymentChoices.includes("cash_on_delivery") && (
         <div className="cod-summary" data-testid="checkout-cod-amount">
-          <p className="cod-amount">{cod.due(money(quote.amount.total_minor + (option.cod_surcharge_minor ?? 0), "TWD"), money(option.cod_surcharge_minor ?? 0, "TWD"))}</p>
+          <p className="cod-amount"><CodAmount locale={locale} total={money(quote.amount.total_minor + (option.cod_surcharge_minor ?? 0), "TWD")} fee={money(option.cod_surcharge_minor ?? 0, "TWD")} /></p>
           {option.cod_carrier && <p className="order-note">{cod.manualCarrier(cod.carriers[option.cod_carrier])}</p>}
         </div>
       )}
@@ -788,8 +788,8 @@ export function OrderDetails({
           </div>
         ))}
       </dl>
-      <p className="order-total">
-        {common.total}{" "}
+      <p className={`order-total${order.payment_mode === "cash_on_delivery" ? " cod-order-subtotal" : ""}`}>
+        {common.orderTotal}{" "}
         <strong>
           {money(
             order.snapshot.quote.amount.total_minor,

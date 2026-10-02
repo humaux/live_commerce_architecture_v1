@@ -603,7 +603,7 @@ export default function CheckoutFlow({
                     </dd>
                   </div>
                   <div className="total">
-                    <dt>{copy.total}</dt>
+                    <dt>{copy.orderTotal}</dt>
                     <dd>{money(quote.amount.total_minor, quote.currency)}</dd>
                   </div>
                 </dl>
@@ -669,10 +669,10 @@ export default function CheckoutFlow({
         )}
       </main>
       {cart && cart.items.length > 0 && !historyOpen && !order && !orderLocked && (
-        <footer className="purchase-footer">
+        <footer className={`purchase-footer${quote ? " has-quote" : ""}`}>
           <div className="footer-inner">
             <div>
-              <span>{quote ? copy.total : copy.subtotal}</span>
+              <span>{quote ? copy.orderTotal : copy.subtotal}</span>
               <strong>
                 {quote
                   ? money(quote.amount.total_minor, quote.currency)

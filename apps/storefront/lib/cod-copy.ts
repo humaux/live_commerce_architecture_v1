@@ -6,9 +6,9 @@ import type { Locale } from "@live-commerce/i18n";
 import type { CollectionState } from "./cvs-contract";
 
 const en = {
-  due: (total: string, fee: string) => `Due on delivery ${total} (includes ${fee} cash-on-delivery fee)`,
+  due: "Due on delivery",
+  includesFee: (fee: string) => `(includes ${fee} cash-on-delivery fee)`,
   recorded: "Original collection amount",
-  settledAmount: (total: string, fee: string) => `Original amount ${total} (includes ${fee} cash-on-delivery fee)`,
   homeOnly: "Cash on delivery · Home delivery only",
   capReached: "Cash on delivery is unavailable: the amount including the fee exceeds this store's limit.",
   wholeOnly: "Cash on delivery requires a whole-dollar NT$ total. Choose another payment method.",
@@ -36,9 +36,9 @@ const en = {
 };
 
 const zhCN: typeof en = {
-  due: (total, fee) => `到货需付 ${total}（含货到付款手续费 ${fee}）`,
+  due: "到货需付",
+  includesFee: (fee) => `（含货到付款手续费 ${fee}）`,
   recorded: "原订单代收金额",
-  settledAmount: (total, fee) => `原订单代收金额 ${total}（含货到付款手续费 ${fee}）`,
   homeOnly: "货到付款 · 仅限宅配",
   capReached: "含手续费的代收金额超过店铺上限，无法选择货到付款。",
   wholeOnly: "货到付款仅接受整数台币金额，请选择其他付款方式。",
@@ -64,9 +64,9 @@ const zhCN: typeof en = {
 };
 
 const zhTW: typeof en = {
-  due: (total, fee) => `到貨需付 ${total}（含貨到付款手續費 ${fee}）`,
+  due: "到貨需付",
+  includesFee: (fee) => `（含貨到付款手續費 ${fee}）`,
   recorded: "原訂單代收金額",
-  settledAmount: (total, fee) => `原訂單代收金額 ${total}（含貨到付款手續費 ${fee}）`,
   homeOnly: "貨到付款 · 僅限宅配",
   capReached: "含手續費的代收金額超過商店上限，無法選擇貨到付款。",
   wholeOnly: "貨到付款僅接受整數台幣金額，請選擇其他付款方式。",

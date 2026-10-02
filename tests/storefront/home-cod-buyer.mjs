@@ -91,7 +91,22 @@ async function shot(page, name, locale, viewport) {
       await page.screenshot({ path: path.join(root, "output/home-cod-ui", `buyer-${name}-${locale}-${width}.png`), fullPage: false, animations: "disabled", scale: "css" });
       if (name === "checkout") {
         await page.getByTestId("checkout-cod-amount").scrollIntoViewIfNeeded();
+        assert(await page.locator(".purchase-footer strong").evaluate((el) => {
+          const amount = el.getBoundingClientRect();
+          const range = document.createRange(); range.selectNodeContents(el);
+          const text = range.getBoundingClientRect();
+          return text.left >= amount.left && text.right <= amount.right + 1 && text.right <= innerWidth && text.bottom <= innerHeight;
+        }), `${locale}/${width}: full footer amount is visible without wrapping or clipping`);
+        assert(await page.locator(".cod-amount strong").evaluate((el) => {
+          const footer = document.querySelector(".purchase-footer strong");
+          return footer && parseFloat(getComputedStyle(el).fontSize) > parseFloat(getComputedStyle(footer).fontSize);
+        }), `${locale}/${width}: carrier amount has primary visual emphasis`);
         await page.screenshot({ path: path.join(root, "output/home-cod-ui", `buyer-confirm-${locale}-${width}.png`), fullPage: false, animations: "disabled", scale: "css" });
+      } else {
+        assert(await page.locator(".cod-amount strong").evaluate((el) => {
+          const subtotal = document.querySelector(".order-total strong");
+          return subtotal && parseFloat(getComputedStyle(el).fontSize) > parseFloat(getComputedStyle(subtotal).fontSize);
+        }), `${locale}/${width}: collection amount is more prominent than the order subtotal`);
       }
     }
     await page.setViewportSize(previous);
