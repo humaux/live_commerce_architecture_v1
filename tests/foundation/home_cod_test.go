@@ -17,6 +17,7 @@ package foundation_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -405,4 +406,61 @@ func TestHomeCodReleaseAndACL(t *testing.T) {
 			t.Errorf("a second restock: want 409 and still exactly one DEALLOCATE row, got %d %s", st2, raw2)
 		}
 	})
+}
+
+// HCOD04: the buyer order DTO exposes the persisted checkout.orders.cod_carrier snapshot (black_cat/hsinchu) on a COD order,
+// under the existing buyer scope, never derived from the current settings. Red until checkout.Get reads cod_carrier.
+func TestHomeCodBuyerOrderCarrier(t *testing.T) {
+	e := tcvNew(t)
+	e.grantCreator("orders:read", "fulfillment:write")
+	if st, out := e.hcodSettings(0, true, 20000, 0, "black_cat"); st != 200 {
+		t.Fatalf("enable COD: %d %v", st, out)
+	}
+	b := e.newBuyer()
+	res, err := e.hcodPlace(b)
+	if err != nil {
+		t.Fatalf("place a COD order: %v", err)
+	}
+	r := b.req("GET", "/v1/buyer/orders/"+res.OrderID, "", nil, nil)
+	if r.status != 200 {
+		t.Fatalf("buyer order read: %d %s", r.status, r.body)
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(r.body, &doc); err != nil {
+		t.Fatalf("buyer order JSON: %v", err)
+	}
+	if got, ok := doc["cod_carrier"]; !ok || got != "black_cat" {
+		t.Errorf("buyer order cod_carrier = %v (present=%v), want the persisted snapshot black_cat; body=%s", got, ok, r.body)
+	}
+}
+
+// HCOD05: a COD order can be manually shipped with each COD carrier (black_cat/hsinchu) and the carrier is read back from the
+// persisted version row. Red until the Go manual-carrier allowlist admits both codes (SQL 0107 already does).
+func TestHomeCodManualCarrierRoundTrip(t *testing.T) {
+	e := tcvNew(t)
+	e.grantCreator("orders:read", "fulfillment:write")
+	if st, out := e.hcodSettings(0, true, 20000, 0, "black_cat"); st != 200 {
+		t.Fatalf("enable COD: %d %v", st, out)
+	}
+	for _, code := range []string{"black_cat", "hsinchu"} {
+		b := e.newBuyer()
+		res, err := e.hcodPlace(b)
+		if err != nil {
+			t.Fatalf("place a COD order for %s: %v", code, err)
+		}
+		order := res.OrderID
+		st, out, raw := e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/orders/"+order+"/shipment",
+			t04Key("hcod-carrier"), mfxShip(0, code, "HCOD"+strings.ToUpper(strings.ReplaceAll(code, "_", ""))))
+		if st != 200 {
+			t.Fatalf("ship a COD order with %s: %d %s", code, st, raw)
+		}
+		if got := tcvStr(out, "carrier_code"); got != code {
+			t.Errorf("shipment response carrier_code = %q, want %q", got, code)
+		}
+		var carrier string
+		if err := e.p.f.owner.QueryRow(context.Background(),
+			`SELECT carrier_code FROM fulfillment.manual_shipment_versions WHERE order_id=$1 AND status='SHIPPED'`, order).Scan(&carrier); err != nil || carrier != code {
+			t.Errorf("read back carrier_code = %q (err=%v), want %q", carrier, err, code)
+		}
+	}
 }

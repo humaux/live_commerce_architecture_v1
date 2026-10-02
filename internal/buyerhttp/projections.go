@@ -347,6 +347,9 @@ type orderResponse struct {
 	// into it, so the order page states 「到貨需付 NT$X（含貨到付款手續費 NT$Y）」.
 	CodCollectMinor   int64 `json:"cod_collect_minor,omitempty"`
 	CodSurchargeMinor int64 `json:"cod_surcharge_minor,omitempty"`
+	// CodCarrier (home-cod R5, P2-4): the placement-time carrier label (black_cat/hsinchu) of a cash_on_delivery order; present
+	// only on COD orders (null otherwise) and never derived from the current settings.
+	CodCarrier *string `json:"cod_carrier,omitempty"`
 }
 
 func projectOrder(order checkout.Order) orderResponse {
@@ -356,7 +359,7 @@ func projectOrder(order checkout.Order) orderResponse {
 		OrderID: order.OrderID, CommercialState: order.CommercialState, FulfillmentState: order.FulfillmentState,
 		CartID: quote.CartID, CartVersion: quote.CartVersion, Shipment: order.Shipment,
 		PaymentMode: order.PaymentMode, CollectionState: order.CollectionState, CVSShipment: order.CVSShipment,
-		CodCollectMinor: order.CodCollectMinor, CodSurchargeMinor: order.CodSurchargeMinor,
+		CodCollectMinor: order.CodCollectMinor, CodSurchargeMinor: order.CodSurchargeMinor, CodCarrier: order.CodCarrier,
 		Snapshot: orderSnapshotResponse{
 			Quote: orderQuoteResponse{
 				Currency: quote.Currency, Lines: projectQuoteLines(quote.Lines),

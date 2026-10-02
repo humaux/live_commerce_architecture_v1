@@ -141,6 +141,10 @@ type Order struct {
 	// 「到貨需付 NT$X（含貨到付款手續費 NT$Y）」. Zero for every other payment mode (omitted from the JSON).
 	CodCollectMinor   int64 `json:"cod_collect_minor,omitempty"`
 	CodSurchargeMinor int64 `json:"cod_surcharge_minor,omitempty"`
+	// CodCarrier (home-cod R5, P2-4) is the carrier label (black_cat 黑貓 / hsinchu 新竹) snapshotted at placement from
+	// checkout.cash_on_delivery_settings.carrier. Present only on cash_on_delivery orders (null otherwise); it is the order-time
+	// snapshot, never derived from the current settings.
+	CodCarrier *string `json:"cod_carrier,omitempty"`
 }
 
 // BuyerCVSShipment is the buyer's view of the current ECPay attempt (§5.3): state, chain, store name and code, never the
@@ -426,14 +430,15 @@ func (s *Service) Get(ctx context.Context, token, storeID, orderID string) (Orde
 	err := buyer.WithScope(ctx, s.pool, token, storeID, func(callCtx context.Context, tx pgx.Tx, scope buyer.Scope) error {
 		var snapshotJSON []byte
 		var codSurcharge *int64
+		var codCarrier *string
 		var totalMinor int64
 		err := tx.QueryRow(callCtx, `SELECT id::text,id::text,generation,expires_at,job_id,
 			commercial_state,fulfillment_state,snapshot,payment_mode,collection_state,
-			cod_surcharge_minor,total_minor FROM checkout.orders
+			cod_surcharge_minor,cod_carrier,total_minor FROM checkout.orders
 			WHERE tenant_id=$1 AND store_id=$2 AND owner_id=$3 AND id=$4`,
 			scope.TenantID, scope.StoreID, scope.OwnerID, orderID).Scan(&out.OrderID, &out.ReservationID,
 			&out.Generation, &out.ExpiresAt, &out.JobID, &out.CommercialState, &out.FulfillmentState, &snapshotJSON,
-			&out.PaymentMode, &out.CollectionState, &codSurcharge, &totalMinor)
+			&out.PaymentMode, &out.CollectionState, &codSurcharge, &codCarrier, &totalMinor)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return command.ErrNotFound
 		}
@@ -488,15 +493,16 @@ func (s *Service) Get(ctx context.Context, token, storeID, orderID string) (Orde
 			(out.PaymentMode == "pay_at_pickup" || out.PaymentMode == "cash_on_delivery") != (out.CollectionState != nil) {
 			return command.ErrConflict
 		}
-		// home-cod R5: the cash due on delivery is total_minor + cod_surcharge_minor for a COD order. Both are server-computed and a
-		// COD order always has the surcharge column set (orders_payment_collection keeps payment_mode <=> collection_state, and the
-		// placement snapshot always writes the surcharge), so a nil surcharge is drift.
+		// home-cod R5: the cash due on delivery is total_minor + cod_surcharge_minor for a COD order, and the carrier label is the
+		// placement-time snapshot (black_cat/hsinchu). All three are server-computed and a COD order always has the surcharge and
+		// carrier columns set (orders_cod_surcharge / orders_cod_carrier CHECKs), so a nil is drift; never derived from current settings.
 		if out.PaymentMode == "cash_on_delivery" {
-			if codSurcharge == nil {
+			if codSurcharge == nil || codCarrier == nil || (*codCarrier != "black_cat" && *codCarrier != "hsinchu") {
 				return command.ErrConflict
 			}
 			out.CodSurchargeMinor = *codSurcharge
 			out.CodCollectMinor = totalMinor + *codSurcharge
+			out.CodCarrier = codCarrier
 		}
 		return checkCapability(callCtx, tx, tokenHash[:], storeID, scope)
 	})
