@@ -199,12 +199,30 @@ func mcnPage(name string, withIG bool) fakegraph.Page {
 	return p
 }
 
-// reset disconnects whatever the store has so every subtest starts from "not connected" (404 = already clean).
+// reset disconnects every connected Page so each subtest starts from "not connected" (no rows = already clean).
 func (m *mcnEnv) reset() {
 	m.t.Helper()
-	if r := m.call("POST", "/disconnect", true, map[string]any{}); r.Status != 200 && r.Status != 404 {
-		m.t.Fatalf("reset disconnect: %d %s", r.Status, r.Raw)
+	for _, page := range m.pageList() {
+		id, _ := page["id"].(string)
+		if r := m.call("POST", "/disconnect", true, map[string]any{"page_id": id}); r.Status != 200 && r.Status != 404 {
+			m.t.Fatalf("reset disconnect %s: %d %s", id, r.Status, r.Raw)
+		}
 	}
+}
+
+// pageList returns the connected Pages of the status card (the pages array, each as a map), failing on any non-200.
+func (m *mcnEnv) pageList() []map[string]any {
+	m.t.Helper()
+	s := m.status()
+	if s.Status != 200 {
+		m.t.Fatalf("status: %d %s", s.Status, s.Raw)
+	}
+	raw, _ := s.JSON["pages"].([]any)
+	out := make([]map[string]any, 0, len(raw))
+	for _, p := range raw {
+		out = append(out, p.(map[string]any))
+	}
+	return out
 }
 
 // dispatcher is mciEnv.newDispatcher with the real metareply routes built over BOTH rings: the v1 AES keyring (operator CLI rows) and the
@@ -371,7 +389,7 @@ func TestMetaConnectFlow(t *testing.T) {
 			t.Fatalf("Facebook-only pick: %d %s", r.Status, r.Raw)
 		}
 		s := m.status()
-		if s.JSON["connected"] != true || s.JSON["instagram"] != nil {
+		if s.JSON["connected"] != true || m.pageList()[0]["instagram"] != nil {
 			t.Fatalf("status: %s", s.Raw)
 		}
 		if m.count(`SELECT count(*) FROM integration.bindings WHERE external_asset_id=$1`, page.IGID) != 0 {
@@ -414,13 +432,14 @@ func TestMetaConnectFlow(t *testing.T) {
 			}
 		}
 		s := m.status()
-		page, _ := s.JSON["page"].(map[string]any)
-		ig, _ := s.JSON["instagram"].(map[string]any)
-		if s.JSON["connected"] != true || s.JSON["status"] != "active" || page["id"] != pageA.ID || page["name"] != pageA.Name ||
-			ig["id"] != pageA.IGID || ig["username"] != pageA.IGName || s.JSON["last_event_at"] != nil || s.str("route_expires_at") == "" {
+		page := m.pageList()[0]
+		ig, _ := page["instagram"].(map[string]any)
+		if s.JSON["connected"] != true || len(m.pageList()) != 1 || s.JSON["count"] != float64(1) || s.JSON["cap"] != float64(10) ||
+			page["status"] != "active" || page["id"] != pageA.ID || page["name"] != pageA.Name ||
+			ig["id"] != pageA.IGID || ig["username"] != pageA.IGName || page["last_event_at"] != nil || page["route_expires_at"] == "" {
 			t.Fatalf("status card: %s", s.Raw)
 		}
-		perms := strings.Join(toStrings(s.JSON["permissions"]), ",")
+		perms := strings.Join(toStrings(page["permissions"]), ",")
 		for _, want := range []string{"pages_messaging", "pages_manage_metadata", "instagram_manage_comments"} {
 			if !strings.Contains(perms, want) {
 				t.Fatalf("permissions missing %s: %s", want, perms)
@@ -461,7 +480,7 @@ func TestMetaConnectFlow(t *testing.T) {
 				t.Fatal("a v2 row must not open under the v1 AES keyring")
 			}
 		}
-		// A state is single use for picks too, and a connected store refuses another Page until disconnect.
+		// A state is single use for picks too, and a second Page connects (multi-page: up to 10) without replacing the first.
 		if r := m.pick(state, pageA.ID, true); r.Status != 409 || r.code() != "state_used" {
 			t.Fatalf("second pick of a finished state: %d %s", r.Status, r.Raw)
 		}
@@ -469,8 +488,15 @@ func TestMetaConnectFlow(t *testing.T) {
 		if cb2.Status != 200 {
 			t.Fatalf("second callback: %d %s", cb2.Status, cb2.Raw)
 		}
-		if r := m.pick(st2, pageB.ID, false); r.Status != 409 || r.code() != "already_connected" {
-			t.Fatalf("other Page while connected: %d %s", r.Status, r.Raw)
+		if r := m.pick(st2, pageB.ID, false); r.Status != 201 {
+			t.Fatalf("second Page while connected: %d %s", r.Status, r.Raw)
+		}
+		if s := m.status(); s.JSON["count"] != float64(2) {
+			t.Fatalf("status after two Pages: %s", s.Raw)
+		}
+		// Both Pages are connected; disconnect Page B so the rest of the chain sees only Page A.
+		if r := m.call("POST", "/disconnect", true, map[string]any{"page_id": pageB.ID}); r.Status != 200 {
+			t.Fatalf("disconnect Page B: %d %s", r.Status, r.Raw)
 		}
 	})
 
@@ -525,8 +551,8 @@ func TestMetaConnectFlow(t *testing.T) {
 			}
 		}
 		// The card now shows the time of the last routed comment (meta_inbox.connect_last_event).
-		if s := m.status(); s.str("last_event_at") == "" {
-			t.Fatalf("status must report last_event_at after routed comments: %s", s.Raw)
+		if la, _ := m.pageList()[0]["last_event_at"].(string); la == "" {
+			t.Fatalf("status must report last_event_at after routed comments: %s", m.status().Raw)
 		}
 		// Graph 190 on a reply: the operation stays UNKNOWN (never re-sent) and the card flips to reauth_required.
 		r := e.planReply(t, false, "", "A1")
@@ -535,15 +561,18 @@ func TestMetaConnectFlow(t *testing.T) {
 		e.awaitOp(t, r.op, "UNKNOWN", 40*time.Second, "cancelled", "discarded")
 		g.setMode("ok")
 		deadline := time.Now().Add(5 * time.Second)
-		var s mcnResp
+		var st string
 		for time.Now().Before(deadline) {
-			if s = m.status(); s.JSON["status"] == "reauth_required" {
+			if pages := m.pageList(); len(pages) > 0 {
+				st, _ = pages[0]["status"].(string)
+			}
+			if st == "reauth_required" {
 				break
 			}
 			time.Sleep(20 * time.Millisecond) // polls the persisted flag; the dispatcher flips it right after the 400
 		}
-		if s.JSON["status"] != "reauth_required" {
-			t.Fatalf("card status after a Graph 190: %s", s.Raw)
+		if st != "reauth_required" {
+			t.Fatalf("card status after a Graph 190: %s", st)
 		}
 		// Reconnect with a rotated Page token: status active again, credential version 2, new token used for the next reply.
 		rotated := pageA
@@ -555,8 +584,8 @@ func TestMetaConnectFlow(t *testing.T) {
 		if p := m.pick(st, pageA.ID, true); p.Status != 201 {
 			t.Fatalf("reconnect pick: %d %s", p.Status, p.Raw)
 		}
-		if s = m.status(); s.JSON["status"] != "active" {
-			t.Fatalf("status after reconnect: %s", s.Raw)
+		if pages := m.pageList(); len(pages) != 1 || pages[0]["status"] != "active" {
+			t.Fatalf("status after reconnect: %s", m.status().Raw)
 		}
 		if m.count(`SELECT count(*) FROM integration.meta_page_heads WHERE binding_id=ANY($1::uuid[]) AND current_version=2`, []string{fbBinding, igBinding}) != 2 {
 			t.Fatal("reconnect must append credential version 2 for both bindings")
@@ -606,7 +635,7 @@ func TestMetaConnectFlow(t *testing.T) {
 		for _, c := range []struct {
 			method, path string
 			body         any
-		}{{"POST", "/start", nil}, {"POST", "/disconnect", map[string]any{}}} {
+		}{{"POST", "/start", nil}, {"POST", "/disconnect", map[string]any{"page_id": "1"}}} {
 			if r := m.callOn(m.store, viewer, c.method, c.path, true, c.body); r.Status != 403 {
 				t.Fatalf("viewer %s: %d %s", c.path, r.Status, r.Raw)
 			}
@@ -618,7 +647,7 @@ func TestMetaConnectFlow(t *testing.T) {
 
 	t.Run("disconnect destroys the token, stops intake and disables bindings (no Graph unsubscribe: the API cannot open a token)", func(t *testing.T) {
 		e := m.e
-		r := m.call("POST", "/disconnect", true, map[string]any{})
+		r := m.call("POST", "/disconnect", true, map[string]any{"page_id": pageA.ID})
 		if r.Status != 200 {
 			t.Fatalf("disconnect: %d %s", r.Status, r.Raw)
 		}
@@ -647,7 +676,7 @@ func TestMetaConnectFlow(t *testing.T) {
 		if m.count(`SELECT count(*) FROM meta_inbox.events WHERE asset_id=$1 AND disposition='QUARANTINED' AND created_at>clock_timestamp()-interval '1 minute'`, pageA.ID) < 1 {
 			t.Fatal("a comment on a disconnected Page must be quarantined")
 		}
-		if r := m.call("POST", "/disconnect", true, map[string]any{}); r.Status != 404 {
+		if r := m.call("POST", "/disconnect", true, map[string]any{"page_id": pageA.ID}); r.Status != 404 {
 			t.Fatalf("second disconnect: %d %s", r.Status, r.Raw)
 		}
 		// The Page stays owned by this store (it cannot silently move), and the same merchant can connect it again.

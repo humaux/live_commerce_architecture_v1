@@ -11,7 +11,7 @@ package foundation_test
 // Gates (ids are used by docs/delivery/GATES.md and output/meta-connect/tests/):
 //   MCG01 TestMetaConnectGateState        state: single use, expiry, bound to store + principal, no open redirect surface
 //   MCG02 TestMetaConnectGatePermissions  every missing permission / Page task / Instagram permission -> precise refusal, nothing enabled
-//   MCG03 TestMetaConnectGateOwnership    one Page <-> one store platform-wide incl. concurrent races, IG present / absent
+//   MCG03 TestMetaConnectGateOwnership    one Page -> one store platform-wide (a store holds up to 10 Pages) incl. concurrent races, IG present / absent
 //   MCG04 TestMetaConnectGateCustody      no plaintext token in any PG row / log / API response / audit; v2 opens only with the private ring
 //   MCG05 TestMetaConnectGateIntake       claims-worker opens and replies (MOCK); Graph 190 -> reauth_required -> reconnect; disconnect stops intake
 //   MCG06 TestMetaConnectGateRoles        only integration:manage roles (owner, admin) connect / disconnect
@@ -527,14 +527,14 @@ func TestMetaConnectGateOwnership(t *testing.T) {
 			}
 			// free every store for the next round
 			for _, s := range stores {
-				if r := m.callOn(s.store, s.tok, "POST", "/disconnect", true, map[string]any{}); r.Status != 200 && r.Status != 404 {
+				if r := m.callOn(s.store, s.tok, "POST", "/disconnect", true, map[string]any{"page_id": page.ID}); r.Status != 200 && r.Status != 404 {
 					t.Fatalf("round %d: disconnect: %d %s", round, r.Status, r.Raw)
 				}
 			}
 		}
 	})
 
-	t.Run("one store cannot hold two Pages: concurrent picks of two Pages -> one 201, the other refused", func(t *testing.T) {
+	t.Run("one store connects two different Pages concurrently: both 201, two bindings, two rows", func(t *testing.T) {
 		defer m.reset() // unconditional: a failure must not cascade into the next subtests
 		p1, p2 := mcnPage("MCG03 twin 1", false), mcnPage("MCG03 twin 2", false)
 		user := fakegraph.User{Permissions: mcnFullPerms, Pages: []fakegraph.Page{p1, p2}}
@@ -552,11 +552,14 @@ func TestMetaConnectGateOwnership(t *testing.T) {
 		}
 		close(gate)
 		wg.Wait()
-		if !((out[0].Status == 201 && out[1].Status == 409) || (out[0].Status == 409 && out[1].Status == 201)) {
-			t.Fatalf("two concurrent Page picks on one store: %v", statuses(out))
+		if out[0].Status != 201 || out[1].Status != 201 {
+			t.Fatalf("two concurrent Page picks on one store: %v %s %s", statuses(out), out[0].Raw, out[1].Raw)
 		}
-		if n := m.count(`SELECT count(*) FROM integration.bindings WHERE store_id=$1 AND enabled AND external_asset_id=ANY($2)`, m.store, []string{p1.ID, p2.ID}); n != 1 {
-			t.Fatalf("%d enabled Page bindings on one store, want 1", n)
+		if n := m.count(`SELECT count(*) FROM integration.bindings WHERE store_id=$1 AND enabled AND external_asset_id=ANY($2)`, m.store, []string{p1.ID, p2.ID}); n != 2 {
+			t.Fatalf("%d enabled Page bindings on one store, want 2", n)
+		}
+		if s := m.status(); s.JSON["count"] != float64(2) || s.JSON["cap"] != float64(10) {
+			t.Fatalf("status after two Pages: %s", s.Raw)
 		}
 	})
 
@@ -598,7 +601,7 @@ func TestMetaConnectGateOwnership(t *testing.T) {
 		if r := m.pick(st, noIG.ID, false); r.Status != 201 || r.JSON["instagram"] != false {
 			t.Fatalf("Facebook-only pick: %d %s", r.Status, r.Raw)
 		}
-		if s := m.status(); s.JSON["instagram"] != nil {
+		if s := m.status(); m.pageList()[0]["instagram"] != nil {
 			t.Fatalf("status shows an Instagram account for a Page without one: %s", s.Raw)
 		}
 		m.reset()
@@ -624,7 +627,7 @@ func TestMetaConnectGateOwnership(t *testing.T) {
 				t.Fatalf("%s %s: want one enabled binding + enabled route + credential v1", c.provider, c.asset)
 			}
 		}
-		if s := m.status(); s.str("last_event_at") != "" && s.JSON["last_event_at"] != nil {
+		if s := m.status(); m.pageList()[0]["last_event_at"] != nil {
 			t.Fatalf("a fresh connection must have no last_event_at: %s", s.Raw)
 		}
 		m.reset()
@@ -933,8 +936,8 @@ func TestMetaConnectGateIntake(t *testing.T) {
 				t.Fatalf("ig=%v: reply not sent with the connected token on the right asset: %+v", ig, posted)
 			}
 		}
-		if s := m.status(); s.JSON["last_event_at"] == nil || s.str("last_event_at") == "" {
-			t.Fatalf("card must show last_event_at after routed comments: %s", s.Raw)
+		if la, _ := m.pageList()[0]["last_event_at"].(string); la == "" {
+			t.Fatalf("card must show last_event_at after routed comments: %s", m.status().Raw)
 		}
 	})
 
@@ -945,8 +948,8 @@ func TestMetaConnectGateIntake(t *testing.T) {
 			d.run(t, r.op)
 			e.awaitOp(t, r.op, "UNKNOWN", 40*time.Second, "cancelled", "discarded", "completed")
 			g.setMode("ok")
-			if s := m.status(); s.JSON["status"] != "active" {
-				t.Fatalf("mode %s flipped the card to %v", mode, s.JSON["status"])
+			if pages := m.pageList(); len(pages) == 0 || pages[0]["status"] != "active" {
+				t.Fatalf("mode %s flipped the card", mode)
 			}
 		}
 		r := e.planReply(t, false, "", "A1")
@@ -955,7 +958,7 @@ func TestMetaConnectGateIntake(t *testing.T) {
 		e.awaitOp(t, r.op, "UNKNOWN", 40*time.Second, "cancelled", "discarded", "completed")
 		g.setMode("ok")
 		s := m.status()
-		if s.JSON["status"] != "reauth_required" {
+		if pages := m.pageList(); len(pages) == 0 || pages[0]["status"] != "reauth_required" {
 			t.Fatalf("Graph 190 must flip the card to reauth_required, got %s", s.Raw)
 		}
 		if s.JSON["connected"] != true {
@@ -974,8 +977,8 @@ func TestMetaConnectGateIntake(t *testing.T) {
 		if r := m.pick(st, page.ID, true); r.Status != 201 {
 			t.Fatalf("reconnect pick: %d %s", r.Status, r.Raw)
 		}
-		if s := m.status(); s.JSON["status"] != "active" {
-			t.Fatalf("status after reconnect: %s", s.Raw)
+		if pages := m.pageList(); len(pages) == 0 || pages[0]["status"] != "active" {
+			t.Fatalf("status after reconnect: %s", m.status().Raw)
 		}
 		if m.count(`SELECT count(*) FROM integration.bindings WHERE store_id=$1 AND external_asset_id=ANY($2)`, m.store, []string{page.ID, page.IGID}) != 2 {
 			t.Fatal("reconnect created a second binding row instead of reusing the first")
@@ -991,7 +994,7 @@ func TestMetaConnectGateIntake(t *testing.T) {
 
 	t.Run("disconnect stops intake: a webhook comment afterwards makes no claim, no reply operation and no Graph call", func(t *testing.T) {
 		bundlesBefore := e.bundleCount(t)
-		if r := m.call("POST", "/disconnect", true, map[string]any{}); r.Status != 200 {
+		if r := m.call("POST", "/disconnect", true, map[string]any{"page_id": page.ID}); r.Status != 200 {
 			t.Fatalf("disconnect: %d %s", r.Status, r.Raw)
 		}
 		if s := m.status(); s.JSON["connected"] != false {
@@ -1079,7 +1082,7 @@ func TestMetaConnectGateRoles(t *testing.T) {
 					t.Fatalf("%s callback: %d %s", role, cb.Status, cb.Raw)
 				}
 				// not connected yet in this subtest; disconnect on a clean store is 404, but must NOT be 403
-				if r := m.callOn(m.store, tok, "POST", "/disconnect", true, map[string]any{}); r.Status == 403 {
+				if r := m.callOn(m.store, tok, "POST", "/disconnect", true, map[string]any{"page_id": page.ID}); r.Status == 403 {
 					t.Fatalf("%s may disconnect but got 403", role)
 				}
 				return
@@ -1088,7 +1091,7 @@ func TestMetaConnectGateRoles(t *testing.T) {
 			for _, c := range []struct {
 				method, path string
 				body         any
-			}{{"POST", "/start", nil}, {"POST", "/disconnect", map[string]any{}},
+			}{{"POST", "/start", nil}, {"POST", "/disconnect", map[string]any{"page_id": page.ID}},
 				{"POST", "/pick", map[string]any{"state_id": randomUUID(), "page_id": page.ID, "include_instagram": false}},
 				{"GET", "/states/" + randomUUID(), nil}} {
 				r := m.callOn(m.store, tok, c.method, c.path, c.method == "POST", c.body)

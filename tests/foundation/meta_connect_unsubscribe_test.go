@@ -110,7 +110,7 @@ func TestMetaConnectUnsubscribe(t *testing.T) {
 		if !m.fake.Subscribed(page.ID) {
 			t.Fatal("the pick must subscribe the Page")
 		}
-		if r := m.call("POST", "/disconnect", true, map[string]any{}); r.Status != 200 {
+		if r := m.call("POST", "/disconnect", true, map[string]any{"page_id": page.ID}); r.Status != 200 {
 			t.Fatalf("disconnect: %d %s", r.Status, r.Raw)
 		}
 		if j := m.job(page.ID); j.State != "PENDING" || !j.Sealed || j.Attempts != 0 {
@@ -165,7 +165,7 @@ func TestMetaConnectUnsubscribe(t *testing.T) {
 			m.reset()
 			page := mcnPage("Unsub "+c.name, false)
 			m.connectPage(page)
-			if r := m.call("POST", "/disconnect", true, map[string]any{}); r.Status != 200 {
+			if r := m.call("POST", "/disconnect", true, map[string]any{"page_id": page.ID}); r.Status != 200 {
 				t.Fatalf("%s: disconnect: %d %s", c.name, r.Status, r.Raw)
 			}
 			var calls atomic.Int32
@@ -188,7 +188,7 @@ func TestMetaConnectUnsubscribe(t *testing.T) {
 		m.reset()
 		page := mcnPage("Unsub busy", false)
 		m.connectPage(page)
-		if r := m.call("POST", "/disconnect", true, map[string]any{}); r.Status != 200 {
+		if r := m.call("POST", "/disconnect", true, map[string]any{"page_id": page.ID}); r.Status != 200 {
 			t.Fatalf("disconnect: %d %s", r.Status, r.Raw)
 		}
 		audited := m.count(`SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='meta.connect.unsubscribe_failed'`, m.store)
@@ -222,7 +222,7 @@ func TestMetaConnectUnsubscribe(t *testing.T) {
 		m.reset()
 		page := mcnPage("Unsub noring", false)
 		m.connectPage(page)
-		if r := m.call("POST", "/disconnect", true, map[string]any{}); r.Status != 200 {
+		if r := m.call("POST", "/disconnect", true, map[string]any{"page_id": page.ID}); r.Status != 200 {
 			t.Fatalf("disconnect: %d %s", r.Status, r.Raw)
 		}
 		before := m.fake.Count("DELETE", "/subscribed_apps")
@@ -242,7 +242,7 @@ func TestMetaConnectUnsubscribe(t *testing.T) {
 		m.reset()
 		page := mcnPage("Unsub lease", false)
 		m.connectPage(page)
-		if r := m.call("POST", "/disconnect", true, map[string]any{}); r.Status != 200 {
+		if r := m.call("POST", "/disconnect", true, map[string]any{"page_id": page.ID}); r.Status != 200 {
 			t.Fatalf("disconnect: %d %s", r.Status, r.Raw)
 		}
 		mustExec(t, f.owner, `UPDATE integration.meta_unsubscribe_jobs SET state='LEASED',attempts=1,lease_until=clock_timestamp()-interval '1 second' WHERE store_id=$1 AND page_id=$2`, m.store, page.ID)
@@ -260,7 +260,7 @@ func TestMetaConnectUnsubscribe(t *testing.T) {
 		m.reset()
 		page := mcnPage("Unsub reconnect", false)
 		m.connectPage(page)
-		if r := m.call("POST", "/disconnect", true, map[string]any{}); r.Status != 200 {
+		if r := m.call("POST", "/disconnect", true, map[string]any{"page_id": page.ID}); r.Status != 200 {
 			t.Fatalf("disconnect: %d %s", r.Status, r.Raw)
 		}
 		m.connectPage(page)
