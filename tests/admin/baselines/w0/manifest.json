@@ -1,0 +1,375 @@
+{
+  "tier": "MOCK",
+  "base": "b4223c8",
+  "note": "Synthetic store; empty lists and explicitly unavailable detail endpoints. Not business-flow acceptance.",
+  "manifest": [
+    {
+      "route": "/",
+      "width": 1586,
+      "height": 992,
+      "file": "--1586.png",
+      "sha256": "6da49da66f5096d9865f7c0ffe644c1b9173378bae621a632d722856dfa99a54",
+      "state": "总览\n\n今天需要你处理的事。日期按台北时间（UTC+8）计算。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n\n总览暂时无法使用，请重试。\n\n重试\n快速操作\n创建订单\n导入或导出商品\n库存"
+    },
+    {
+      "route": "/",
+      "width": 390,
+      "height": 844,
+      "file": "--390.png",
+      "sha256": "901671976f4770d3cf1092fa9c05c92dd8731ff7fdce741ba0327857767a1f2b",
+      "state": "总览\n\n今天需要你处理的事。日期按台北时间（UTC+8）计算。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n\n总览暂时无法使用，请重试。\n\n重试\n快速操作\n创建订单\n导入或导出商品\n库存"
+    },
+    {
+      "route": "/ads",
+      "width": 1586,
+      "height": 992,
+      "file": "-ads-1586.png",
+      "sha256": "b598d6fa66eca6614c7ce64da70bd82359542dc5265c7c20d6af8c74705d1888",
+      "state": "广告\n\n连接 Meta 广告账号，创建加强帖文或商品导流广告，审批后发布并查看效果。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n刷新\n\n广告功能暂时无法使用，请重试。\n\n重试"
+    },
+    {
+      "route": "/ads",
+      "width": 390,
+      "height": 844,
+      "file": "-ads-390.png",
+      "sha256": "9373a1298f75d34e859d9cf6c0524c10dfbdb9a9c19aa4a60e0b22a3278b6cd2",
+      "state": "广告\n\n连接 Meta 广告账号，创建加强帖文或商品导流广告，审批后发布并查看效果。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n刷新\n\n广告功能暂时无法使用，请重试。\n\n重试"
+    },
+    {
+      "route": "/billing",
+      "width": 1586,
+      "height": 992,
+      "file": "-billing-1586.png",
+      "sha256": "48d5dbf12796177b4ed6eceb61a899115a738619a1d0c3c5cd6404af8564f25d",
+      "state": "账单\n\n本店的平台订阅、付款方式与用量。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n\n账单暂时无法使用，请重试。\n\n重试"
+    },
+    {
+      "route": "/billing",
+      "width": 390,
+      "height": 844,
+      "file": "-billing-390.png",
+      "sha256": "f2273f358cc35e44eede7c2da83b70eadf8bbc8990d39326c1b62c4cc0eb0aea",
+      "state": "账单\n\n本店的平台订阅、付款方式与用量。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n\n账单暂时无法使用，请重试。\n\n重试"
+    },
+    {
+      "route": "/collections",
+      "width": 1586,
+      "height": 992,
+      "file": "-collections-1586.png",
+      "sha256": "ba53856f9ba7645fcc105cc33cfe669a6915c32f51386b55550e06caf3fb2171",
+      "state": "商品集合\n\n把商品归入买家可浏览的页面，例如「新品」或「特价」。 — W0 合成測試店 · Synthetic baseline\n\n新增集合\n\n还没有集合。"
+    },
+    {
+      "route": "/collections",
+      "width": 390,
+      "height": 844,
+      "file": "-collections-390.png",
+      "sha256": "7ce2204d79c10314df29dda2d110594ce3df895e4a6d04d64f55782b5163801d",
+      "state": "商品集合\n\n把商品归入买家可浏览的页面，例如「新品」或「特价」。 — W0 合成測試店 · Synthetic baseline\n\n新增集合\n\n还没有集合。"
+    },
+    {
+      "route": "/customers",
+      "width": 1586,
+      "height": 992,
+      "file": "-customers-1586.png",
+      "sha256": "0d864b132380110a97f676b73321354586b1ac1e9e53aefb62bbde716cd2444f",
+      "state": "客户\n\n本店买家，及其订单、授权与隐私操作。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n按姓名或手机号码数字搜索\n搜索\n刷新\n\n姓名从开头匹配；手机号码按末尾数字搜索。\n\n客户\t订单\t已收款 / 已退款\t登记\t授权\t最近活动（台北时间）\n\n还没有客户。\n\n本页客户数: 0\n上一页\n下一页"
+    },
+    {
+      "route": "/customers",
+      "width": 390,
+      "height": 844,
+      "file": "-customers-390.png",
+      "sha256": "7dde89a79bb3db811e3896d266c882dde9e0569905a53870117e5110de5bc8b8",
+      "state": "客户\n\n本店买家，及其订单、授权与隐私操作。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n按姓名或手机号码数字搜索\n搜索\n刷新\n\n姓名从开头匹配；手机号码按末尾数字搜索。\n\n客户\t订单\t已收款 / 已退款\t登记\t授权\t最近活动（台北时间）\n\n还没有客户。\n\n本页客户数: 0\n上一页\n下一页"
+    },
+    {
+      "route": "/customers/33333333-3333-4333-8333-333333333333",
+      "width": 1586,
+      "height": 992,
+      "file": "-customers-detail-1586.png",
+      "sha256": "a443bf0d1ef42fc2fb346898f2f687824a20c4ccfb8e98f6d57bae8aab05639b",
+      "state": "客户\n\n本店买家，及其订单、授权与隐私操作。\n\n全部客户\n\n客户暂时无法使用，请重试。\n\n重试"
+    },
+    {
+      "route": "/customers/33333333-3333-4333-8333-333333333333",
+      "width": 390,
+      "height": 844,
+      "file": "-customers-detail-390.png",
+      "sha256": "0f3b40d0ca86043bf172505fbd62f629390663cf499a9fc5a04cbdb875b45c93",
+      "state": "客户\n\n本店买家，及其订单、授权与隐私操作。\n\n全部客户\n\n客户暂时无法使用，请重试。\n\n重试"
+    },
+    {
+      "route": "/design",
+      "width": 1586,
+      "height": 992,
+      "file": "-design-1586.png",
+      "sha256": "e0651872089d590b7250bf4c25e3d6cb1a0935fac8920c89148fa4d5950d1a8c",
+      "state": "店铺装修\n\n编辑店铺草稿，预览后再发布。买家只会看到已发布的版本。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n\n店铺装修暂时不可用，请重试。\n\n重试"
+    },
+    {
+      "route": "/design",
+      "width": 390,
+      "height": 844,
+      "file": "-design-390.png",
+      "sha256": "9b26660583246182be7a376177d51f8db1af14f02dd6bab28adba0ea427aadc9",
+      "state": "店铺装修\n\n编辑店铺草稿，预览后再发布。买家只会看到已发布的版本。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n\n店铺装修暂时不可用，请重试。\n\n重试"
+    },
+    {
+      "route": "/finance",
+      "width": 1586,
+      "height": 992,
+      "file": "-finance-1586.png",
+      "sha256": "653633f78d0573bee9f0996070ca8904ebc53a1ff79ff89a4104ac47ca641831",
+      "state": "财务\n\n按币种统计每日已收款与已退款金额。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n起始\n结束\n查看\n\nCSV 中的金额为整数，单位为币种的 1/100（例如 NT$60 导出为 6000），每个日期与币种一行。\n\n财务汇总暂时无法使用，请重试。\n\n重试"
+    },
+    {
+      "route": "/finance",
+      "width": 390,
+      "height": 844,
+      "file": "-finance-390.png",
+      "sha256": "8a8ee0a44796a01a2d826a6748ae116085c54a37cc801486454ed3d79c612a88",
+      "state": "财务\n\n按币种统计每日已收款与已退款金额。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n起始\n结束\n查看\n\nCSV 中的金额为整数，单位为币种的 1/100（例如 NT$60 导出为 6000），每个日期与币种一行。\n\n财务汇总暂时无法使用，请重试。\n\n重试"
+    },
+    {
+      "route": "/inventory",
+      "width": 1586,
+      "height": 992,
+      "file": "-inventory-1586.png",
+      "sha256": "719abb7e9ace275db2827b8f0d298c9ee69a71f944a6f64beadb795319bbba5b",
+      "state": "商品与库存\n\n核对 SKU 可售库存，为每次库存调整保留记录。\n\n新增商品\n库存 / SKU\n查询\n仓库\nSynthetic warehouse\n状态\n全部状态\n在售\n已归档\n重置\n刷新\n选择\n\t商品信息\tSKU\t售价\t现有\t预留\t可售\t状态\t操作\n没有符合条件的 SKU\n\n创建商品和 SKU，或调整搜索条件与仓库。\n\n选择一个 SKU，查看或调整库存。"
+    },
+    {
+      "route": "/inventory",
+      "width": 390,
+      "height": 844,
+      "file": "-inventory-390.png",
+      "sha256": "3c54fe03f86ab8a26e0629b564d6a244fa9b62b8031be03c2a8670428c9f0c40",
+      "state": "商品与库存\n\n核对 SKU 可售库存，为每次库存调整保留记录。\n\n新增商品\n库存 / SKU\n查询\n仓库\nSynthetic warehouse\n状态\n全部状态\n在售\n已归档\n重置\n刷新\n选择\n\t商品信息\t售价\t可售\n没有符合条件的 SKU\n\n创建商品和 SKU，或调整搜索条件与仓库。\n\n选择一个 SKU，查看或调整库存。"
+    },
+    {
+      "route": "/invite/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "width": 1586,
+      "height": 992,
+      "file": "-invite-token-1586.png",
+      "sha256": "6994b74a75fc7a60b46367bd6f3862f000444eb192c75ac781d9719c8730a55a",
+      "state": "团队\n\n您被邀请加入一个店铺团队。\n\n您必须用被邀请的邮箱地址登录。\n\n接受邀请"
+    },
+    {
+      "route": "/invite/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "width": 390,
+      "height": 844,
+      "file": "-invite-token-390.png",
+      "sha256": "4fdf9ceeb67de279a247dde3a00405babae2bcabf466d2f2883393ec4113bc94",
+      "state": "团队\n\n您被邀请加入一个店铺团队。\n\n您必须用被邀请的邮箱地址登录。\n\n接受邀请"
+    },
+    {
+      "route": "/orders",
+      "width": 1586,
+      "height": 992,
+      "file": "-orders-1586.png",
+      "sha256": "ba0f996619d72f658ecd86ec29d258cd34ab1df638650e2f35a599379dd0c24a",
+      "state": "订单\n\n查看已保存订单与结账时的固定资料。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n订单状态\n全部\n草稿\n待付款\n待转账\n已确认\n已取消\n已出货\n待出货\n已建单·待交寄\n刷新\n订单\t创建时间（台北时间）\t总额\t订单状态\t付款状态\n\n该店铺在此状态下没有订单。\n\n本页订单数: 0\n上一页\n下一页"
+    },
+    {
+      "route": "/orders",
+      "width": 390,
+      "height": 844,
+      "file": "-orders-390.png",
+      "sha256": "414c139356566ad254eb080c78c3fa3d3fc9320db12c5ce770264c1cd2adc247",
+      "state": "订单\n\n查看已保存订单与结账时的固定资料。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n订单状态\n全部\n草稿\n待付款\n待转账\n已确认\n已取消\n已出货\n待出货\n已建单·待交寄\n刷新\n订单\t创建时间（台北时间）\t总额\t订单状态\t付款状态\n\n该店铺在此状态下没有订单。\n\n本页订单数: 0\n上一页\n下一页"
+    },
+    {
+      "route": "/orders/cvs-print",
+      "width": 1586,
+      "height": 992,
+      "file": "-orders-cvs-print-1586.png",
+      "sha256": "3107635346ebe44ea4b0fb8d1308f2194791ff920833a24ad94cd95e7a463158",
+      "state": "列印门市托运单\n\n此链接无效，请从订单页打开。"
+    },
+    {
+      "route": "/orders/cvs-print",
+      "width": 390,
+      "height": 844,
+      "file": "-orders-cvs-print-390.png",
+      "sha256": "d664e3cf7a24336341c3d7cb3137c32cc6e4a6703a672727240f818c706a043f",
+      "state": "列印门市托运单\n\n此链接无效，请从订单页打开。"
+    },
+    {
+      "route": "/orders/new",
+      "width": 1586,
+      "height": 992,
+      "file": "-orders-new-1586.png",
+      "sha256": "e1531e5269fbeebfeba719eefacebd7389ef11dfc95a36243be0e9cbbbbeb57c",
+      "state": "创建订单\n\n用于聊天、电话或现场接到的订单。价格来自商品目录；库存与普通订单一样会被保留。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n\n此部署尚未开启从后台创建订单。"
+    },
+    {
+      "route": "/orders/new",
+      "width": 390,
+      "height": 844,
+      "file": "-orders-new-390.png",
+      "sha256": "17bb3300c53dbca96930a9dc4c130a7794b25f963c6d718799bea1922f94854b",
+      "state": "创建订单\n\n用于聊天、电话或现场接到的订单。价格来自商品目录；库存与普通订单一样会被保留。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n\n此部署尚未开启从后台创建订单。"
+    },
+    {
+      "route": "/products",
+      "width": 1586,
+      "height": 992,
+      "file": "-products-1586.png",
+      "sha256": "4b20955026e77621ef29b2e6b896ad5f00f007e9745ef12ae8134715a6fa6ce8",
+      "state": "商品\n\n本店全部商品，含价格、库存和买家是否可见。\n\n库存台账\n新增商品\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n搜索名称、网址标识或 SKU 编码\n状态\n全部\n草稿\n上架中\n已封存\n搜索\n\n还没有商品。新增第一个吧。\n\n回到第一页\n下一页"
+    },
+    {
+      "route": "/products",
+      "width": 390,
+      "height": 844,
+      "file": "-products-390.png",
+      "sha256": "e514738917766c8fbb7e0392b981a402625bf490f97286688ba2f28763fb26d1",
+      "state": "商品\n\n本店全部商品，含价格、库存和买家是否可见。\n\n库存台账\n新增商品\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n搜索名称、网址标识或 SKU 编码\n状态\n全部\n草稿\n上架中\n已封存\n搜索\n\n还没有商品。新增第一个吧。\n\n回到第一页\n下一页"
+    },
+    {
+      "route": "/products/33333333-3333-4333-8333-333333333333",
+      "width": 1586,
+      "height": 992,
+      "file": "-products-detail-1586.png",
+      "sha256": "de071e6cc2da7727b8da7e69f810623e122885053c3905d85104e153c76e7a24",
+      "state": "← 全部商品\n正在载入商品…\n\nW0 合成測試店 · Synthetic baseline\n\n商品暂时无法使用，请重试。\n\n重试"
+    },
+    {
+      "route": "/products/33333333-3333-4333-8333-333333333333",
+      "width": 390,
+      "height": 844,
+      "file": "-products-detail-390.png",
+      "sha256": "b1138f4d0875fbbf0fc23a7dc4981c6be3e81748e75ab54507587f306ea87e5d",
+      "state": "← 全部商品\n正在载入商品…\n\nW0 合成測試店 · Synthetic baseline\n\n商品暂时无法使用，请重试。\n\n重试"
+    },
+    {
+      "route": "/products/import",
+      "width": 1586,
+      "height": 992,
+      "file": "-products-import-1586.png",
+      "sha256": "e1495d6d4a0dfef1269be2fa075ff0a3f02aec72871c097a1e2846fbfdfa03cc",
+      "state": "导入与导出商品\n\n表格进、表格出。每个规格一行；绝不会删除任何数据。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n导出\n\n下载所有商品与规格，含价格、各仓库库存、分类与图片数量。\n\n下载 CSV\n导入\n\n选择相同列的 CSV。保存之前会列出所有问题；只要有一个问题，整份文件都不会导入。\n\n商品按 handle 对应，规格按 SKU 对应。新商品默认为草稿。\n库存列会把该仓库的现有数量设为此值；留空则不变。\n不会导入图片。价格使用店铺币种，例如 12.50。\n以 = + - 或 @ 开头的单元格导出时会加上单引号，导入时会去掉。\n\n最大 2 MiB、1,500 行。一次变更太多内容的文件（例如许多含多个仓库库存的新商品）会被拒绝，请拆分。\n\nCSV 文件\n检查文件\n导入此文件\n\n回到总览"
+    },
+    {
+      "route": "/products/import",
+      "width": 390,
+      "height": 844,
+      "file": "-products-import-390.png",
+      "sha256": "b0e2f57bc665385f54e3c2e13f2fbb9418f2e6bf2dfba42d8ac5c512b6798dd7",
+      "state": "导入与导出商品\n\n表格进、表格出。每个规格一行；绝不会删除任何数据。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n导出\n\n下载所有商品与规格，含价格、各仓库库存、分类与图片数量。\n\n下载 CSV\n导入\n\n选择相同列的 CSV。保存之前会列出所有问题；只要有一个问题，整份文件都不会导入。\n\n商品按 handle 对应，规格按 SKU 对应。新商品默认为草稿。\n库存列会把该仓库的现有数量设为此值；留空则不变。\n不会导入图片。价格使用店铺币种，例如 12.50。\n以 = + - 或 @ 开头的单元格导出时会加上单引号，导入时会去掉。\n\n最大 2 MiB、1,500 行。一次变更太多内容的文件（例如许多含多个仓库库存的新商品）会被拒绝，请拆分。\n\nCSV 文件\n检查文件\n导入此文件\n\n回到总览"
+    },
+    {
+      "route": "/promotions",
+      "width": 1586,
+      "height": 992,
+      "file": "-promotions-1586.png",
+      "sha256": "aad977808dbe10ff5a768fae2fc18def40a0701f81c1a99e06192b90be19fb5b",
+      "state": "优惠码\n\n买家在购物车或结账时输入的代码。优惠码只减商品金额，不减运费，一张订单只能用一个。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n\n优惠码暂时不可用，请重试。\n\n重试"
+    },
+    {
+      "route": "/promotions",
+      "width": 390,
+      "height": 844,
+      "file": "-promotions-390.png",
+      "sha256": "a389275be74f755531ba5fcf19f753d7baa76e07958b52ca4ddf5aec67172496",
+      "state": "优惠码\n\n买家在购物车或结账时输入的代码。优惠码只减商品金额，不减运费，一张订单只能用一个。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n\n优惠码暂时不可用，请重试。\n\n重试"
+    },
+    {
+      "route": "/reset",
+      "width": 1586,
+      "height": 992,
+      "file": "-reset-1586.png",
+      "sha256": "6da49da66f5096d9865f7c0ffe644c1b9173378bae621a632d722856dfa99a54",
+      "state": "总览\n\n今天需要你处理的事。日期按台北时间（UTC+8）计算。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n\n总览暂时无法使用，请重试。\n\n重试\n快速操作\n创建订单\n导入或导出商品\n库存"
+    },
+    {
+      "route": "/reset",
+      "width": 390,
+      "height": 844,
+      "file": "-reset-390.png",
+      "sha256": "901671976f4770d3cf1092fa9c05c92dd8731ff7fdce741ba0327857767a1f2b",
+      "state": "总览\n\n今天需要你处理的事。日期按台北时间（UTC+8）计算。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n\n总览暂时无法使用，请重试。\n\n重试\n快速操作\n创建订单\n导入或导出商品\n库存"
+    },
+    {
+      "route": "/settings",
+      "width": 1586,
+      "height": 992,
+      "file": "-settings-1586.png",
+      "sha256": "0baa0d149b60a65c8a3533896f707ec1d17fb28956987757922f91aa1ff6995d",
+      "state": "物流与收款设置\n\n配置您自己的收款账户与商家自行安排配送。\n\n1\n选择平台\n2\n连接账户\n3\n配置方式\n4\n检查状态\n请求失败，请检查权限或连接后重新读取。\n请求 ID: f80332911bff40dd98b6f512a43d1c78\n选择要配置的服务\n选择要配置的服务\nPAYUNi 收款\n使用您自己的 PAYUNi 商户账户。保存配置不代表可以正式收款。\n商家自行安排配送\n配送由商家在平台外安排；不会自动建单、购买面单、查询轨迹或保证送达。\n继续\n当前设置状态\n平台\nPAYUNi 收款\n所选市场\n未配置\n账户\n未配置\n收款方式\n未配置\n供应商资格\n未验证\n运行时可用性\n未检查\n继续\n\n使用您自己的 PAYUNi 商户账户。保存配置不代表可以正式收款。\n\n网店发布\n\n是否发布由你决定：发布后买家才能打开你的网店。只有平台同时绑定了你的店铺域名，买家才真正访问得到。\n\n无法加载此部分，请重试。\n\n重试\nFacebook 主页 / Instagram\n\n连接你自己的 Facebook 主页（及其 Instagram 账号），直播留言才会进入认领看板，买家也会收到私信认领链接。登录由你自己在 Facebook 完成，我们不会看到你的密码。\n\n无法加载此部分，请重试。\n\n重试"
+    },
+    {
+      "route": "/settings",
+      "width": 390,
+      "height": 844,
+      "file": "-settings-390.png",
+      "sha256": "8d7671124ebda5d361b16f98c661d3879a3a1b23a7afdbab28aa1e746ac4ba5b",
+      "state": "物流与收款设置\n\n配置您自己的收款账户与商家自行安排配送。\n\n1\n选择平台\n2\n连接账户\n3\n配置方式\n4\n检查状态\n请求失败，请检查权限或连接后重新读取。\n请求 ID: d1cfe6d0317d429792b954111e2aff79\n选择要配置的服务\n选择要配置的服务\nPAYUNi 收款\n使用您自己的 PAYUNi 商户账户。保存配置不代表可以正式收款。\n商家自行安排配送\n配送由商家在平台外安排；不会自动建单、购买面单、查询轨迹或保证送达。\n继续\n当前设置状态\n平台\nPAYUNi 收款\n所选市场\n未配置\n账户\n未配置\n收款方式\n未配置\n供应商资格\n未验证\n运行时可用性\n未检查\n继续\n\n使用您自己的 PAYUNi 商户账户。保存配置不代表可以正式收款。\n\n网店发布\n\n是否发布由你决定：发布后买家才能打开你的网店。只有平台同时绑定了你的店铺域名，买家才真正访问得到。\n\n无法加载此部分，请重试。\n\n重试\nFacebook 主页 / Instagram\n\n连接你自己的 Facebook 主页（及其 Instagram 账号），直播留言才会进入认领看板，买家也会收到私信认领链接。登录由你自己在 Facebook 完成，我们不会看到你的密码。\n\n无法加载此部分，请重试。\n\n重试"
+    },
+    {
+      "route": "/signup",
+      "width": 1586,
+      "height": 992,
+      "file": "-signup-1586.png",
+      "sha256": "6da49da66f5096d9865f7c0ffe644c1b9173378bae621a632d722856dfa99a54",
+      "state": "总览\n\n今天需要你处理的事。日期按台北时间（UTC+8）计算。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n\n总览暂时无法使用，请重试。\n\n重试\n快速操作\n创建订单\n导入或导出商品\n库存"
+    },
+    {
+      "route": "/signup",
+      "width": 390,
+      "height": 844,
+      "file": "-signup-390.png",
+      "sha256": "901671976f4770d3cf1092fa9c05c92dd8731ff7fdce741ba0327857767a1f2b",
+      "state": "总览\n\n今天需要你处理的事。日期按台北时间（UTC+8）计算。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n\n总览暂时无法使用，请重试。\n\n重试\n快速操作\n创建订单\n导入或导出商品\n库存"
+    },
+    {
+      "route": "/studio",
+      "width": 1586,
+      "height": 992,
+      "file": "-studio-1586.png",
+      "sha256": "79c36dffac4e37cd5004d4555d0e76b1388dc1b17b18ebc24ad042285500fab9",
+      "state": "直播工作室\n\n准备直播场次：商品、评论认领与订单集中处理。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n刷新事实\n＋ 新建场次\n场次\n\n暂无场次。先建立草稿来规划直播。\n\n场次设置\n\n先保存节目，再核对模拟演练授权。\n\n选择场次后编辑。"
+    },
+    {
+      "route": "/studio",
+      "width": 390,
+      "height": 844,
+      "file": "-studio-390.png",
+      "sha256": "dfe1a9da8c148be87fcc333dae845e0df780cbcea20a154560112b85218a1088",
+      "state": "直播工作室\n\n准备直播场次：商品、评论认领与订单集中处理。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n刷新事实\n＋ 新建场次\n场次\n\n暂无场次。先建立草稿来规划直播。\n\n场次设置\n\n先保存节目，再核对模拟演练授权。\n\n选择场次后编辑。"
+    },
+    {
+      "route": "/studio/claims",
+      "width": 1586,
+      "height": 992,
+      "file": "-studio-claims-1586.png",
+      "sha256": "6c8b955f335b97844c5aec3742554cb846988871e8b74ca73af0e91a0af99ef5",
+      "state": "直播工作室\n›\n评论口令登记\n评论口令登记\n刷新事实\n\n由你代为记录买家的评论。买家打开链接并结账之前，不会保留库存、扣款或发送任何消息。\n\n登记暂时无法读取，请刷新后重试。"
+    },
+    {
+      "route": "/studio/claims",
+      "width": 390,
+      "height": 844,
+      "file": "-studio-claims-390.png",
+      "sha256": "c3125c9f6305782dc8e8df8658f9a2379e587bb7bac10d6392f19afe4ff55691",
+      "state": "直播工作室\n›\n评论口令登记\n评论口令登记\n刷新事实\n\n由你代为记录买家的评论。买家打开链接并结账之前，不会保留库存、扣款或发送任何消息。\n\n登记暂时无法读取，请刷新后重试。"
+    },
+    {
+      "route": "/team",
+      "width": 1586,
+      "height": 992,
+      "file": "-team-1586.png",
+      "sha256": "bdda441f09fa069cf0101da13a360a3cf33fcfafe5e607e34ddedc2f8c6abb32",
+      "state": "团队\n\n邀请成员加入这个店铺，并决定每个人能做什么。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n\n团队暂时不可用，请重试。\n\n重试"
+    },
+    {
+      "route": "/team",
+      "width": 390,
+      "height": 844,
+      "file": "-team-390.png",
+      "sha256": "cad0b65531fe3bab2b205e1f3a108758e5c6d6128be78a4ec3d96f2e9fa9c511",
+      "state": "团队\n\n邀请成员加入这个店铺，并决定每个人能做什么。\n\n店铺\nW0 合成測試店 · Synthetic baseline\nA very long English store name for accessible workspace switching without overlap\n\n团队暂时不可用，请重试。\n\n重试"
+    }
+  ]
+}
