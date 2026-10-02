@@ -1,0 +1,478 @@
+package foundation_test
+
+// product_document_k3_test.go: K3 adversarial gates for unit product-core (docs/delivery/units/product-editor.md §f
+// "product-core 独立测试（K3）：并发（PE05、PE09）、幂等（PE02）、隔离（PE10）的对抗测试"). Independent of the
+// implementer; written against contracts/invariants.json I01–I04 and the §f rulings. Every test here names the
+// assertion it would catch if the named guard were removed (mutation-proven; evidence in output/product-core-tests/).
+// Evidence label: REAL_PG (fresh PG 18.6 container via scripts/dev/test-focused.sh).
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"sync"
+	"testing"
+
+	"github.com/jackc/pgx/v5"
+	"livecommerce/internal/catalog"
+	"livecommerce/internal/checkout"
+	"livecommerce/internal/command"
+	"livecommerce/internal/fulfillment"
+	"livecommerce/internal/platform"
+	"livecommerce/internal/storefront"
+)
+
+// k3Doc saves a product document through the real document command (merchant scope, catalog:write).
+func k3Doc(t *testing.T, f *testFixture, key string, in catalog.ProductDocumentInput) (catalog.ProductDocument, error) {
+	t.Helper()
+	return t04Scoped(context.Background(), f, f.tokens["a"], f.storeA1, "catalog:write",
+		func(tx pgx.Tx, s platform.Scope) (catalog.ProductDocument, error) {
+			return catalog.SaveProductDocument(context.Background(), tx, s, key, in)
+		})
+}
+
+// k3Buyer is one prepared buyer: cart + home destination + quote, ready to Begin.
+func k3Buyer(t *testing.T, b bcHarness, items []storefront.Item) bcHarness {
+	t.Helper()
+	b.prepare(t, mustIssue(t, b.cqHarness.service, b.f.storeA1), items)
+	return b
+}
+
+// k3RaceBegins fires one Begin per prepared buyer at the same instant and returns per-buyer results.
+func k3RaceBegins(buyers []bcHarness, keys []string) ([]checkout.Result, []error) {
+	start := make(chan struct{})
+	results := make([]checkout.Result, len(buyers))
+	errs := make([]error, len(buyers))
+	var wg sync.WaitGroup
+	for i := range buyers {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			<-start
+			results[i], errs[i] = buyers[i].begin(keys[i])
+		}(i)
+	}
+	close(start)
+	wg.Wait()
+	return results, errs
+}
+
+// ---- PE05 adversarial (A6): 100 concurrent orders on one untracked SKU, all within max_per_order, all succeed ----
+//
+// Mutation anchors: (M1) drop `AND inventory_tracked` in planLocked -> the untracked SKU enters the plan, has no
+// balance row, and every order fails; (M2) drop the PT422 max_per_order guard in post_river/0021 -> the over-cap
+// buyer below succeeds. Both were run red and reverted (output/product-core-tests/).
+
+func TestProductEditorK3UntrackedConcurrentOrders(t *testing.T) {
+	b := bcSetup(t)
+	cap2 := int64(2)
+	doc, err := k3Doc(t, b.f, t04Key("k3-doc"), catalog.ProductDocumentInput{
+		Name: "k3 untracked " + t04Tag(), Status: catalog.StatusActive,
+		SKUs: []catalog.DocumentSKUInput{{PriceMinor: 1250, Stock: &catalog.DocumentStock{Mode: "untracked", MaxPerOrder: &cap2}}},
+	})
+	if err != nil || len(doc.SKUs) != 1 {
+		t.Fatalf("untracked document: %+v %v", doc, err)
+	}
+	sku := doc.SKUs[0]
+	if sku.InventoryTracked || sku.MaxPerOrder == nil || *sku.MaxPerOrder != 2 {
+		t.Fatalf("untracked flags: %+v", sku)
+	}
+
+	const n = 100
+	buyers := make([]bcHarness, n)
+	keys := make([]string, n)
+	for i := range buyers {
+		buyers[i] = k3Buyer(t, b, []storefront.Item{{SKUID: sku.ID, Quantity: 2}}) // exactly max_per_order
+		keys[i] = t04Key("k3-begin")
+	}
+	results, errs := k3RaceBegins(buyers, keys)
+	orders := make([]string, 0, n)
+	for i := range buyers {
+		if errs[i] != nil {
+			t.Fatalf("untracked order %d refused: %v (an untracked SKU within max_per_order must never see stock refusal)", i, errs[i])
+		}
+		orders = append(orders, results[i].OrderID)
+	}
+	// 100 distinct orders placed; the untracked SKU was never locked or deducted.
+	seen := map[string]bool{}
+	for _, id := range orders {
+		if seen[id] {
+			t.Fatalf("duplicate order id %s", id)
+		}
+		seen[id] = true
+	}
+	if got := countRows(t, b.f.owner, `SELECT count(*) FROM inventory.ledger WHERE sku_id=$1`, sku.ID); got != 0 {
+		t.Fatalf("untracked SKU has %d ledger rows, want 0 (never locked/deducted)", got)
+	}
+	if got := countRows(t, b.f.owner, `SELECT count(*) FROM inventory.reservation_lines WHERE sku_id=$1`, sku.ID); got != 0 {
+		t.Fatalf("untracked SKU has %d reservation lines, want 0", got)
+	}
+	if got := countRows(t, b.f.owner, `SELECT count(*) FROM inventory.balances WHERE sku_id=$1`, sku.ID); got != 0 {
+		t.Fatalf("untracked SKU has %d balance rows, want 0", got)
+	}
+	if got := countRows(t, b.f.owner, `SELECT count(*) FROM inventory.reservations WHERE id=ANY($1::uuid[])`, orders); got != n {
+		t.Fatalf("reservations=%d want %d (one HELD row per order, with zero lines)", got, n)
+	}
+
+	// The same SKU over max_per_order is refused by begin_hold (PT422 max_per_order_exceeded), never placed.
+	over := k3Buyer(t, b, []storefront.Item{{SKUID: sku.ID, Quantity: 3}})
+	_, err = over.begin(t04Key("k3-over"))
+	var cvs *fulfillment.CVSError
+	if !errors.As(err, &cvs) || cvs.Code != "max_per_order_exceeded" {
+		t.Fatalf("over-cap order: err=%v want 422 max_per_order_exceeded", err)
+	}
+	if got := countRows(t, b.f.owner, `SELECT count(*) FROM checkout.orders WHERE owner_id=$1`, over.cap.Scope.OwnerID); got != 0 {
+		t.Fatalf("over-cap refusal left %d orders", got)
+	}
+}
+
+// ---- PE05 adversarial: the last unit of a tracked SKU sells exactly once under 50 concurrent buyers -------------
+
+func TestProductEditorK3TrackedLastUnitFiftyBuyers(t *testing.T) {
+	b := bcSetup(t)
+	mustExec(t, b.f.owner, `UPDATE inventory.balances SET on_hand=1 WHERE warehouse_id=$1 AND sku_id=$2`,
+		b.stock.warehouse.ID, b.stock.skus[0].ID)
+	const n = 50
+	buyers := make([]bcHarness, n)
+	keys := make([]string, n)
+	for i := range buyers {
+		buyers[i] = k3Buyer(t, b, []storefront.Item{{SKUID: b.stock.skus[0].ID, Quantity: 1}})
+		keys[i] = t04Key("k3-last")
+	}
+	_, errs := k3RaceBegins(buyers, keys)
+	wins, short := 0, 0
+	for i, err := range errs {
+		switch {
+		case err == nil:
+			wins++
+		case errors.Is(err, command.ErrInsufficient):
+			short++
+		default:
+			t.Fatalf("buyer %d: unexpected error %v", i, err)
+		}
+	}
+	if wins != 1 || short != n-1 {
+		t.Fatalf("last unit: wins=%d insufficient=%d, want 1 and %d (oversell!)", wins, short, n-1)
+	}
+	var onHand, reserved int64
+	if err := b.f.owner.QueryRow(context.Background(),
+		`SELECT on_hand,reserved FROM inventory.balances WHERE warehouse_id=$1 AND sku_id=$2`,
+		b.stock.warehouse.ID, b.stock.skus[0].ID).Scan(&onHand, &reserved); err != nil {
+		t.Fatal(err)
+	}
+	if onHand != 1 || reserved != 1 {
+		t.Fatalf("balance after race: on_hand=%d reserved=%d, want 1/1 (I03)", onHand, reserved)
+	}
+}
+
+// ---- PE09 adversarial: two concurrent edits with the same expected_version — one wins, the other 409s -----------
+//
+// Mutation anchor (M3): drop the `cur.Version != in.ExpectedVersion` pre-check in applyProductEdit -> the loser
+// still fails (the UPDATE's WHERE version= backstop) but as 404/ErrNotFound instead of 409, and this test goes red.
+
+func TestProductEditorK3ConcurrentSameVersionEdits(t *testing.T) {
+	e := ccNew(t)
+	var p pdProduct
+	e.docCreate(e.key("p"), pdDoc{Name: e.name("K3 race"), Description: "", SKUs: []pdSKU{{PriceMinor: 1000}}}, &p)
+
+	nameA, nameB := e.name("K3 winner A"), e.name("K3 winner B")
+	edit := func(name string) pdDoc {
+		return pdDoc{ID: p.ID, Name: name, Description: "", ExpectedVersion: p.Version,
+			SKUs: []pdSKU{{ID: p.SKUs[0].ID, PriceMinor: 1000}}}
+	}
+	type outcome struct {
+		status int
+		body   []byte
+	}
+	run := func(name, key string, ch chan<- outcome) {
+		status, body := e.a.call("PUT", "/products/"+p.ID+"/document", key, edit(name))
+		ch <- outcome{status, body}
+	}
+	chA, chB := make(chan outcome, 1), make(chan outcome, 1)
+	start := make(chan struct{})
+	go func() { <-start; run(nameA, e.key("edit-a"), chA) }()
+	go func() { <-start; run(nameB, e.key("edit-b"), chB) }()
+	close(start)
+	a, b := <-chA, <-chB
+
+	byName := map[string]outcome{nameA: a, nameB: b}
+	var winner string
+	for name, o := range byName {
+		if o.status == 200 {
+			winner = name
+		} else if o.status != 409 {
+			t.Fatalf("edit %q: status=%d body=%s, want 200 or 409", name, o.status, o.body)
+		}
+	}
+	if winner == "" {
+		t.Fatalf("both edits lost: a=%d b=%d (a version race must not deadlock the command)", a.status, b.status)
+	}
+	var cur struct {
+		Name    string `json:"name"`
+		Version int64  `json:"version"`
+	}
+	e.a.ok("GET", "/products/"+p.ID, "", nil, &cur)
+	if cur.Version != 2 || cur.Name != winner {
+		t.Fatalf("final state: name=%q version=%d, want winner %q at version 2 (no silent overwrite)", cur.Name, cur.Version, winner)
+	}
+}
+
+// ---- PE02 adversarial: the same Idempotency-Key under concurrency ----------------------------------------------
+
+func TestProductEditorK3ConcurrentIdempotentReplay(t *testing.T) {
+	e := ccNew(t)
+	key := e.key("idem")
+	name := e.name("K3 idem")
+	doc := pdDoc{Name: name, Description: "same bytes", SKUs: []pdSKU{{PriceMinor: 1000}}}
+	auditBefore := t04Count(t, e.h.f, `SELECT count(*) FROM ops.audit_events WHERE action='catalog.product.saved' AND store_id=$1`, e.h.f.storeA1)
+
+	// 8 concurrent identical requests: all replay the one winner; exactly one product, one receipt, one audit row.
+	const n = 8
+	type outcome struct {
+		status int
+		body   []byte
+	}
+	ch := make(chan outcome, n)
+	start := make(chan struct{})
+	for i := 0; i < n; i++ {
+		go func() {
+			<-start
+			status, body := e.a.call("POST", "/products/document", key, doc)
+			ch <- outcome{status, body}
+		}()
+	}
+	close(start)
+	var firstID string
+	for i := 0; i < n; i++ {
+		o := <-ch
+		if o.status != 200 {
+			t.Fatalf("replay %d: status=%d body=%s", i, o.status, o.body)
+		}
+		var got pdProduct
+		if err := json.Unmarshal(o.body, &got); err != nil || got.ID == "" {
+			t.Fatalf("replay %d: decode %v body=%s", i, err, o.body)
+		}
+		if firstID == "" {
+			firstID = got.ID
+		} else if got.ID != firstID {
+			t.Fatalf("replay %d: id=%s want %s (a key replay must return the first result)", i, got.ID, firstID)
+		}
+	}
+	if got := countRows(t, e.h.f.owner, `SELECT count(*) FROM catalog.products WHERE name=$1`, name); got != 1 {
+		t.Fatalf("products with the idem name: %d want 1", got)
+	}
+	if got := countRows(t, e.h.f.owner, `SELECT count(*) FROM ops.command_results WHERE idempotency_key=$1`, key); got != 1 {
+		t.Fatalf("command results for the key: %d want 1", got)
+	}
+	if got := t04Count(t, e.h.f, `SELECT count(*) FROM ops.audit_events WHERE action='catalog.product.saved' AND store_id=$1`, e.h.f.storeA1) - auditBefore; got != 1 {
+		t.Fatalf("audit rows written by the storm: %d want 1 (a replay never re-audits)", got)
+	}
+
+	// The same key with different bytes, raced against the original bytes: exactly one side wins, the other is 409.
+	key2 := e.key("idem2")
+	changed := doc
+	changed.Name = e.name("K3 idem changed")
+	chA, chB := make(chan outcome, 1), make(chan outcome, 1)
+	start2 := make(chan struct{})
+	go func() { <-start2; s, b := e.a.call("POST", "/products/document", key2, doc); chA <- outcome{s, b} }()
+	go func() { <-start2; s, b := e.a.call("POST", "/products/document", key2, changed); chB <- outcome{s, b} }()
+	close(start2)
+	oa, ob := <-chA, <-chB
+	statuses := map[int]int{oa.status: 1, ob.status: 1}
+	if statuses[200] != 1 || statuses[409] != 1 {
+		t.Fatalf("same key, different bytes, concurrent: statuses %d and %d, want one 200 and one 409 (I02)", oa.status, ob.status)
+	}
+}
+
+// ---- A6 switch under load: tracked -> untracked while a HELD reservation is open --------------------------------
+
+func TestProductEditorK3TrackedToUntrackedWithOpenHold(t *testing.T) {
+	b := bcSetup(t) // prepared buyer holds 2 of skus[0] (on_hand 10)
+	held, err := b.begin(t04Key("k3-hold"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	balance := func() (int64, int64) {
+		t.Helper()
+		var onHand, reserved int64
+		if err := b.f.owner.QueryRow(context.Background(),
+			`SELECT on_hand,reserved FROM inventory.balances WHERE warehouse_id=$1 AND sku_id=$2`,
+			b.stock.warehouse.ID, b.stock.skus[0].ID).Scan(&onHand, &reserved); err != nil {
+			t.Fatal(err)
+		}
+		return onHand, reserved
+	}
+	if onHand, reserved := balance(); onHand != 10 || reserved != 2 {
+		t.Fatalf("before switch: on_hand=%d reserved=%d want 10/2", onHand, reserved)
+	}
+	sku, other := b.stock.skus[0], b.stock.skus[1]
+	product := b.stock.product
+	ledgerRows := func() int {
+		t.Helper()
+		return countRows(t, b.f.owner, `SELECT count(*) FROM inventory.ledger WHERE sku_id=$1`, sku.ID)
+	}
+	before := ledgerRows()
+
+	// The merchant re-axes the SKU to untracked while the hold is open. The hold must survive untouched.
+	cap3 := int64(3)
+	doc, err := k3Doc(t, b.f, t04Key("k3-flip"), catalog.ProductDocumentInput{
+		ID: product.ID, Name: product.Name, Status: catalog.StatusActive, ExpectedVersion: product.Version,
+		SKUs: []catalog.DocumentSKUInput{
+			{ID: sku.ID, PriceMinor: sku.PriceMinor, Stock: &catalog.DocumentStock{Mode: "untracked", MaxPerOrder: &cap3}},
+			{ID: other.ID, PriceMinor: other.PriceMinor},
+		},
+	})
+	if err != nil {
+		t.Fatalf("tracked->untracked switch with an open hold: %v", err)
+	}
+	var flipped *catalog.SKU
+	for i := range doc.SKUs {
+		if doc.SKUs[i].ID == sku.ID {
+			flipped = &doc.SKUs[i]
+		}
+	}
+	if flipped == nil || flipped.InventoryTracked || flipped.MaxPerOrder == nil || *flipped.MaxPerOrder != 3 {
+		t.Fatalf("flipped SKU: %+v", flipped)
+	}
+	if onHand, reserved := balance(); onHand != 10 || reserved != 2 {
+		t.Fatalf("the switch touched the open hold: on_hand=%d reserved=%d want 10/2", onHand, reserved)
+	}
+
+	// New orders no longer lock stock: qty 3 (at cap) places with zero new ledger rows; qty 4 is refused.
+	at := k3Buyer(t, b, []storefront.Item{{SKUID: sku.ID, Quantity: 3}})
+	placed, err := at.begin(t04Key("k3-at-cap"))
+	if err != nil {
+		t.Fatalf("untracked order at cap after switch: %v", err)
+	}
+	if after := ledgerRows(); after != before {
+		t.Fatalf("untracked order wrote ledger rows: before=%d after=%d", before, after)
+	}
+	if got := countRows(t, b.f.owner, `SELECT count(*) FROM inventory.reservation_lines WHERE reservation_id=$1`, placed.OrderID); got != 0 {
+		t.Fatalf("untracked order has %d reservation lines, want 0", got)
+	}
+	if onHand, reserved := balance(); onHand != 10 || reserved != 2 {
+		t.Fatalf("untracked order touched the balance: on_hand=%d reserved=%d want 10/2", onHand, reserved)
+	}
+	over := k3Buyer(t, b, []storefront.Item{{SKUID: sku.ID, Quantity: 4}})
+	_, err = over.begin(t04Key("k3-over"))
+	var cvs *fulfillment.CVSError
+	if !errors.As(err, &cvs) || cvs.Code != "max_per_order_exceeded" {
+		t.Fatalf("over-cap after switch: err=%v want max_per_order_exceeded", err)
+	}
+
+	// The open hold still works end to end: the real expiry definer (checkout.expire_held, expiry worker) releases it
+	// even though the SKU flipped to untracked after the hold was taken. (The merchant ReleaseReservation is fenced off
+	// checkout-owned reservations by design, migrations/0013.)
+	bcDue(t, b, held)
+	if got := bcExpire(t, b, held, 1); got != "EXPIRED" {
+		t.Fatalf("expiry of the pre-switch hold: %s want EXPIRED", got)
+	}
+	if onHand, reserved := balance(); onHand != 10 || reserved != 0 {
+		t.Fatalf("after expiry: on_hand=%d reserved=%d want 10/0", onHand, reserved)
+	}
+
+	// Switching back to tracked restores the invariant surface (cap gone, target stock against the live balance).
+	back, err := k3Doc(t, b.f, t04Key("k3-back"), catalog.ProductDocumentInput{
+		ID: product.ID, Name: product.Name, Status: catalog.StatusActive, ExpectedVersion: doc.Product.Version,
+		WarehouseID: b.stock.warehouse.ID, // two active warehouses in this fixture: the target-stock write needs the explicit one
+		SKUs: []catalog.DocumentSKUInput{
+			{ID: sku.ID, PriceMinor: sku.PriceMinor, Stock: &catalog.DocumentStock{Mode: "tracked", TargetQty: ptr64(10)}},
+			{ID: other.ID, PriceMinor: other.PriceMinor},
+		},
+	})
+	if err != nil {
+		t.Fatalf("untracked->tracked switch-back: %v", err)
+	}
+	for i := range back.SKUs {
+		if back.SKUs[i].ID == sku.ID && (!back.SKUs[i].InventoryTracked || back.SKUs[i].MaxPerOrder != nil) {
+			t.Fatalf("switched-back SKU: %+v", back.SKUs[i])
+		}
+	}
+	// The mode switches never write stock: the only ledger rows are the fixture ADJUST, the hold RESERVE and its RELEASE.
+	if got := countRows(t, b.f.owner, `SELECT count(*) FROM inventory.ledger WHERE sku_id=$1 AND kind='ADJUST'`, sku.ID); got != 1 {
+		t.Fatalf("the mode switches must never write stock: ADJUST rows=%d want 1 (the fixture opening)", got)
+	}
+	if after := ledgerRows(); after != before+1 { // +1 RELEASE of the pre-switch hold
+		t.Fatalf("ledger rows after release: %d want %d", after, before+1)
+	}
+}
+
+// ---- PE10 adversarial: cross-store 404/not_found on every new route + honest list counts + draft purchase refusal
+
+func TestProductEditorK3IsolationNewRoutes(t *testing.T) {
+	e := ccNew(t)
+	var p pdProduct
+	e.docCreate(e.key("p"), pdDoc{Name: e.name("K3 isolation"), Description: "", SKUs: []pdSKU{{PriceMinor: 1000}}}, &p)
+
+	other := ccAdmin{t: t, h: e.srv, token: e.h.f.tokens["b"], store: e.h.f.storeB}
+	// copy of a foreign product: 404, and nothing created in store B
+	other.refuse(404, "POST", "/products/"+p.ID+"/copy", e.key("copy"), map[string]any{"expected_version": p.Version})
+	// bulk-status naming a real foreign id: per-item not_found, the target untouched
+	var items []pdBulkItem
+	other.ok("POST", "/products/bulk-status", e.key("bulk"), map[string]any{"ids": []string{p.ID}, "status": "archived"}, &items)
+	if len(items) != 1 || items[0].Err != "not_found" || items[0].Status != "" {
+		t.Fatalf("cross-store bulk item: %+v want per-item not_found", items)
+	}
+	var cur struct {
+		Status string `json:"status"`
+	}
+	e.a.ok("GET", "/products/"+p.ID, "", nil, &cur)
+	if cur.Status != "draft" {
+		t.Fatalf("the foreign bulk write changed the product: status=%q want draft", cur.Status)
+	}
+	// the merchant list and its tallies are store-scoped: store B sees nothing of store A's tag
+	var listB pdList
+	other.ok("GET", "/catalog-products?q="+e.tag, "", nil, &listB)
+	if listB.Total != 0 || len(listB.Items) != 0 || listB.StatusCounts.Draft != 0 || listB.StatusCounts.Active != 0 || listB.StatusCounts.Archived != 0 {
+		t.Fatalf("store B list leaks store A rows: %+v", listB)
+	}
+	// purchase entry: a buyer cannot put the draft product's SKU into a cart (PE07's 购买入口 half)
+	if st := e.cartPut(e.buyerToken(), p.SKUs[0].ID); st == 200 {
+		t.Fatal("a draft product's SKU entered a buyer cart")
+	}
+}
+
+// ---- P2-3 pin: the idempotency key is scoped to (tenant, store, operation), NOT to the actor --------------------
+// Frozen 0002 command.Run behavior shared by every command; this test pins it so a future actor-scoping amendment
+// flips this test on purpose, not by accident. REVIEW-product-core.md P2-3.
+
+func TestProductEditorK3IdempotencyKeyScopeIsStoreNotActor(t *testing.T) {
+	e := ccNew(t)
+	_, token2 := lcPrincipal(t, e.h.f, e.h.f.tenantA, []string{e.h.f.storeA1}, "store:read", "catalog:write")
+	second := ccAdmin{t: t, h: e.srv, token: token2, store: e.h.f.storeA1}
+
+	key := e.key("actor")
+	doc := pdDoc{Name: e.name("K3 actor"), Description: "", SKUs: []pdSKU{{PriceMinor: 1000}}}
+	var first pdProduct
+	e.a.ok("POST", "/products/document", key, doc, &first)
+
+	// A different actor of the same store with the same key and the same bytes gets the first actor's result.
+	var replay pdProduct
+	second.ok("POST", "/products/document", key, doc, &replay)
+	if replay.ID != first.ID {
+		t.Fatalf("cross-actor replay id=%s want %s (the key is store-scoped, not actor-scoped)", replay.ID, first.ID)
+	}
+	// Same key, different bytes, different actor: 409.
+	changed := doc
+	changed.Description = "different actor, different bytes"
+	second.refuse(409, "POST", "/products/document", key, changed)
+}
+
+// ---- P2-1 pin: the 0109 CHECK treats NULL as pass, so untracked + NULL max_per_order is storable, and
+// ---- begin_hold then enforces NO per-order bound on it. Only out-of-band SQL can produce this row today
+// ---- (the document command validates 1..999). When the integrator tightens the CHECK (REVIEW P2-1), the UPDATE
+// ---- below fails 23514 and this test must be flipped to expect the refusal.
+
+func TestProductEditorK3UntrackedNullCapGap(t *testing.T) {
+	b := bcSetup(t)
+	mustExec(t, b.f.owner, `UPDATE catalog.skus SET inventory_tracked=false, max_per_order=NULL WHERE id=$1`, b.stock.skus[0].ID)
+	big := k3Buyer(t, b, []storefront.Item{{SKUID: b.stock.skus[0].ID, Quantity: 1_000_000}}) // far over any cap
+	if _, err := big.begin(t04Key("k3-nullcap")); err != nil {
+		t.Fatalf("P2-1 pin: untracked+NULL cap currently places UNBOUNDED orders; begin: %v", err)
+	}
+	if got := countRows(t, b.f.owner, `SELECT count(*) FROM inventory.ledger WHERE sku_id=$1 AND kind='RESERVE'`, b.stock.skus[0].ID); got != 0 {
+		t.Fatalf("the unbounded order reserved stock: %d rows", got)
+	}
+}
+
+func ptr64(v int64) *int64 { return &v }
