@@ -100,7 +100,8 @@ func TestCvsNoIframeAndPrivacy(t *testing.T) {
 				t.Errorf("%s: X-Frame-Options DENY was removed", rel)
 			}
 			// the top-level map POST needs form-action entries; they must be the two exact map endpoints, never a wildcard host
-			for _, m := range regexp.MustCompile(`https?://[^\s"';]*ecpay[^\s"';]*|\*\.ecpay[^\s"';]*`).FindAllString(now, -1) {
+			// backtick is a delimiter too: next.config.ts builds the policy as a template literal (dev-only 'unsafe-eval')
+			for _, m := range regexp.MustCompile("https?://[^\\s\"'`;]*ecpay[^\\s\"'`;]*|\\*\\.ecpay[^\\s\"'`;]*").FindAllString(now, -1) {
 				if m != "https://logistics-stage.ecpay.com.tw/Express/map" && m != "https://logistics.ecpay.com.tw/Express/map" {
 					t.Errorf("%s: an ECPay CSP source other than the two map endpoints: %s", rel, m)
 				}
