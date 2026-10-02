@@ -26,6 +26,7 @@ const (
 	testStore     = "3f1b0c9e-5a77-4d1e-9d2a-0a7f4c2b9e11"
 	testPrincipal = "9a2f6d1c-3b44-4c0a-8f55-1e6d7c8b9a22"
 	testDomain    = "2c8e4f0a-6b7d-4e1f-8a3c-5d9e0f1a2b3c"
+	idemKey       = "store-domain-test-key-0001"
 )
 
 // --- fakes shared with verify_test.go ---
@@ -182,12 +183,12 @@ func TestRequestInputsFailBeforeTheDatabase(t *testing.T) {
 		"under base":    {&fakeTx{}, scope, token, "shop.example.com", "example.com", ErrReservedHostname},
 		"exact base":    {&fakeTx{}, scope, token, "example.com", "example.com", ErrReservedHostname},
 	} {
-		_, err := Request(context.Background(), tc.tx, tc.scope, tc.token, tc.host, tc.base)
+		_, err := Request(context.Background(), tc.tx, tc.scope, tc.token, idemKey, tc.host, tc.base, nil)
 		if !errors.Is(err, tc.want) {
 			t.Errorf("%s: err = %v, want %v", name, err, tc.want)
 		}
 	}
-	if _, err := Request(nil, &fakeTx{}, scope, token, "shop.example.com", "example.com"); !errors.Is(err, command.ErrInvalid) {
+	if _, err := Request(nil, &fakeTx{}, scope, token, idemKey, "shop.example.com", "example.com", nil); !errors.Is(err, command.ErrInvalid) {
 		t.Errorf("nil context: %v", err)
 	}
 }
@@ -201,14 +202,14 @@ func TestRequestSuccess(t *testing.T) {
 		return fakeRow{raw: []byte(`{"domain_id":"` + testDomain + `","version":1,"state":"REQUESTED","origin":"https://` + host + `",` +
 			`"dns":{"txt_name":"_lc-verify.` + host + `","txt_value":"` + verification + `","cname_target":"stores.example.com","apex":false}}`)}
 	}}
-	out, err := Request(context.Background(), q, scope, token, host, "example.com")
-	if err != nil {
-		t.Fatalf("Request: %v", err)
+	var out RequestResult
+	if err := requestEntry(context.Background(), q, scope, token, host, "example.com", nil, &out); err != nil {
+		t.Fatalf("requestEntry: %v", err)
 	}
 	if out.DomainID != testDomain || out.Version != 1 || out.State != "REQUESTED" || out.Origin != "https://"+host {
 		t.Fatalf("Request result = %+v", out)
 	}
-	if out.DNS.TXTName != "_lc-verify."+host || out.DNS.CNAMETarget != "stores.example.com" || out.DNS.Apex {
+	if out.DNS.TXTName != "_lc-verify."+host || out.DNS.CNAMETarget != "stores.example.com" || out.DNS.Apex || len(out.DNS.EdgeAddresses) != 0 {
 		t.Fatalf("DNS instructions = %+v", out.DNS)
 	}
 	if out.DNS.TXTValue != q.args[4].(string) {
@@ -216,6 +217,25 @@ func TestRequestSuccess(t *testing.T) {
 	}
 	if q.args[2] != host || q.args[3] != "example.com" {
 		t.Fatalf("definer args = %v", q.args)
+	}
+}
+
+func TestRequestEntryAttachesEdgeForApex(t *testing.T) {
+	scope := validScope()
+	token := strings.Repeat("t", 43)
+	const host = "example.net"
+	edge := []string{"203.0.113.10", "2001:db8::10"}
+	q := &fakeTx{rowFn: func(args []any) fakeRow {
+		verification := args[4].(string)
+		return fakeRow{raw: []byte(`{"domain_id":"` + testDomain + `","version":1,"state":"REQUESTED","origin":"https://` + host + `",` +
+			`"dns":{"txt_name":"_lc-verify.` + host + `","txt_value":"` + verification + `","cname_target":"stores.example.com","apex":true}}`)}
+	}}
+	var out RequestResult
+	if err := requestEntry(context.Background(), q, scope, token, host, "example.com", edge, &out); err != nil {
+		t.Fatalf("requestEntry: %v", err)
+	}
+	if !out.DNS.Apex || len(out.DNS.EdgeAddresses) != 2 || out.DNS.EdgeAddresses[0] != edge[0] || out.DNS.EdgeAddresses[1] != edge[1] {
+		t.Fatalf("apex edge = %+v, want %v", out.DNS, edge)
 	}
 }
 
@@ -230,7 +250,8 @@ func TestRequestRejectsBadDefinerAnswer(t *testing.T) {
 		"bad domain id":  `{"domain_id":"x","version":1,"state":"REQUESTED","origin":"https://` + host + `","dns":{"txt_name":"_lc-verify.` + host + `","txt_value":"x","cname_target":"stores.example.com","apex":false}}`,
 	} {
 		q := &fakeTx{row: fakeRow{raw: []byte(raw)}}
-		if _, err := Request(context.Background(), q, scope, token, host, "example.com"); !errors.Is(err, ErrUnavailable) {
+		var out RequestResult
+		if err := requestEntry(context.Background(), q, scope, token, host, "example.com", nil, &out); !errors.Is(err, ErrUnavailable) {
 			t.Errorf("%s: err = %v, want ErrUnavailable", name, err)
 		}
 	}
@@ -241,11 +262,14 @@ func TestReadDecodesAndValidates(t *testing.T) {
 	token := strings.Repeat("t", 43)
 	goodToken := strings.Repeat("A", 43)
 	ok := &fakeTx{row: fakeRow{raw: []byte(`{"domains":[` +
-		`{"origin":"https://shop.example.com","state":"ACTIVE","version":4,"token":null,"verify_deadline":null,"serving":true},` +
-		`{"origin":"https://old.example.com","state":"REQUESTED","version":2,"token":"` + goodToken + `","verify_deadline":"2027-01-01T00:00:00Z","serving":false}]}`)}}
+		`{"origin":"https://shop.example.com","state":"ACTIVE","version":4,"kind":"platform","token":null,"verify_deadline":null,"serving":true},` +
+		`{"origin":"https://old.example.com","state":"REQUESTED","version":2,"kind":"custom","token":"` + goodToken + `","verify_deadline":"2027-01-01T00:00:00Z","serving":false}]}`)}}
 	out, err := Read(context.Background(), ok, scope, token)
 	if err != nil || len(out.Domains) != 2 || !out.Domains[0].Serving || out.Domains[0].Token != nil {
 		t.Fatalf("Read = %+v, %v", out, err)
+	}
+	if out.Domains[0].Kind != "platform" || out.Domains[1].Kind != "custom" {
+		t.Fatalf("kinds = %q %q", out.Domains[0].Kind, out.Domains[1].Kind)
 	}
 	if out.Domains[1].Token == nil || *out.Domains[1].Token != goodToken {
 		t.Fatalf("pending token = %+v", out.Domains[1].Token)
@@ -259,8 +283,9 @@ func TestReadDecodesAndValidates(t *testing.T) {
 		t.Fatalf("empty Read = %+v, %v", out, err)
 	}
 	for name, raw := range map[string]string{
-		"bad token":  `{"domains":[{"origin":"https://shop.example.com","state":"REQUESTED","version":2,"token":"short","verify_deadline":null,"serving":false}]}`,
-		"bad origin": `{"domains":[{"origin":"http://shop.example.com","state":"REQUESTED","version":2,"token":null,"verify_deadline":null,"serving":false}]}`,
+		"bad token":  `{"domains":[{"origin":"https://shop.example.com","state":"REQUESTED","version":2,"kind":"custom","token":"short","verify_deadline":null,"serving":false}]}`,
+		"bad origin": `{"domains":[{"origin":"http://shop.example.com","state":"REQUESTED","version":2,"kind":"custom","token":null,"verify_deadline":null,"serving":false}]}`,
+		"bad kind":   `{"domains":[{"origin":"https://shop.example.com","state":"REQUESTED","version":2,"kind":"other","token":null,"verify_deadline":null,"serving":false}]}`,
 		"nil list":   `{"domains":null}`,
 		"unknown":    `{"domains":[],"extra":1}`,
 	} {
@@ -277,8 +302,8 @@ func TestSuspendDetach(t *testing.T) {
 	origin := "https://shop.example.com"
 
 	sus := &fakeTx{row: fakeRow{raw: []byte(`{"domain_id":"` + testDomain + `","version":3,"state":"SUSPENDED","changed":true}`)}}
-	out, err := Suspend(context.Background(), sus, scope, token, origin)
-	if err != nil || !out.Changed || out.Version != 3 || out.State != "SUSPENDED" {
+	var out MoveResult
+	if err := moveEntry(context.Background(), sus, scope, token, origin, `SELECT control.suspend_merchant_domain($1,$2::uuid,$3)`, "SUSPENDED", &out); err != nil || !out.Changed || out.Version != 3 || out.State != "SUSPENDED" {
 		t.Fatalf("Suspend = %+v, %v", out, err)
 	}
 	if sus.args[2] != origin {
@@ -286,18 +311,22 @@ func TestSuspendDetach(t *testing.T) {
 	}
 
 	det := &fakeTx{row: fakeRow{raw: []byte(`{"domain_id":"` + testDomain + `","version":4,"state":"DETACHED","changed":true}`)}}
-	if out, err := Detach(context.Background(), det, scope, token, origin); err != nil || out.State != "DETACHED" {
+	if err := moveEntry(context.Background(), det, scope, token, origin, `SELECT control.detach_merchant_domain($1,$2::uuid,$3)`, "DETACHED", &out); err != nil || out.State != "DETACHED" {
 		t.Fatalf("Detach = %+v, %v", out, err)
 	}
 
 	// a definer answering the wrong target state must not be reported as the requested one
-	if _, err := Suspend(context.Background(), det, scope, token, origin); !errors.Is(err, ErrUnavailable) {
+	if err := moveEntry(context.Background(), det, scope, token, origin, `SELECT control.suspend_merchant_domain($1,$2::uuid,$3)`, "SUSPENDED", &out); !errors.Is(err, ErrUnavailable) {
 		t.Fatalf("suspend with DETACHED answer: %v", err)
 	}
 
+	// invalid origins are refused before any command.Run/definer work (public Suspend/Detach, no Exec needed).
 	for _, bad := range []string{"", "http://shop.example.com", "https://localhost", "shop.example.com"} {
-		if _, err := Suspend(context.Background(), &fakeTx{}, scope, token, bad); !errors.Is(err, command.ErrInvalid) {
+		if _, err := Suspend(context.Background(), &fakeTx{}, scope, token, idemKey, bad); !errors.Is(err, command.ErrInvalid) {
 			t.Errorf("origin %q: %v", bad, err)
+		}
+		if _, err := Detach(context.Background(), &fakeTx{}, scope, token, idemKey, bad); !errors.Is(err, command.ErrInvalid) {
+			t.Errorf("detach origin %q: %v", bad, err)
 		}
 	}
 }

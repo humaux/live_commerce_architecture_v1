@@ -60,11 +60,18 @@ func (s *sdFix) merchant(perm, token, store string, fn func(pgx.Tx, platform.Sco
 	return platform.WithScope(context.Background(), s.b.runtime, token, store, perm, fn)
 }
 
+// request issues Request with a fresh Idempotency-Key per call (a new merchant action = a new key, so a lifecycle
+// re-request after suspend/detach rotates the token instead of replaying the first result).
 func (s *sdFix) request(token, store, host string) (storefrontdomains.RequestResult, error) {
+	return s.requestKey(token, store, host, "req-"+randomUUID())
+}
+
+// requestKey issues Request with an explicit Idempotency-Key (the idempotency gate replays a fixed key).
+func (s *sdFix) requestKey(token, store, host, key string) (storefrontdomains.RequestResult, error) {
 	var out storefrontdomains.RequestResult
 	err := s.merchant("integration:manage", token, store, func(tx pgx.Tx, sc platform.Scope) error {
 		var e error
-		out, e = storefrontdomains.Request(context.Background(), tx, sc, token, host, s.base)
+		out, e = storefrontdomains.Request(context.Background(), tx, sc, token, key, host, s.base, nil)
 		return e
 	})
 	return out, err
@@ -84,7 +91,7 @@ func (s *sdFix) suspend(token, store, origin string) (storefrontdomains.MoveResu
 	var out storefrontdomains.MoveResult
 	err := s.merchant("integration:manage", token, store, func(tx pgx.Tx, sc platform.Scope) error {
 		var e error
-		out, e = storefrontdomains.Suspend(context.Background(), tx, sc, token, origin)
+		out, e = storefrontdomains.Suspend(context.Background(), tx, sc, token, "sus-"+randomUUID(), origin)
 		return e
 	})
 	return out, err
@@ -94,7 +101,7 @@ func (s *sdFix) detach(token, store, origin string) (storefrontdomains.MoveResul
 	var out storefrontdomains.MoveResult
 	err := s.merchant("integration:manage", token, store, func(tx pgx.Tx, sc platform.Scope) error {
 		var e error
-		out, e = storefrontdomains.Detach(context.Background(), tx, sc, token, origin)
+		out, e = storefrontdomains.Detach(context.Background(), tx, sc, token, "det-"+randomUUID(), origin)
 		return e
 	})
 	return out, err
@@ -572,6 +579,121 @@ func TestStoreDomainsSDW06SchemaAndACLInventory(t *testing.T) {
 		if !strings.Contains(withCheck, "'"+action+"'") {
 			t.Fatalf("audit policy lost %s: %s", action, withCheck)
 		}
+	}
+}
+
+// TestStoreDomainsIdempotency is the P0/I02 gate: a merchant domain write reached through the service runs in
+// command.Run, so the same key+body replays the first result without rotating the TXT token/version or adding an
+// audit row, and the same key with a different body is refused (receipt hash mismatch -> ErrConflict) with no write.
+func TestStoreDomainsIdempotency(t *testing.T) {
+	s := sdSetup(t)
+	ctx := context.Background()
+	o := s.b.owner
+	host := sdHost()
+	origin := "https://" + host
+	key := "idem-" + randomUUID()
+
+	first, err := s.requestKey(s.f.token, s.f.store, host, key)
+	if err != nil || first.State != "REQUESTED" {
+		t.Fatalf("first request: %+v %v", first, err)
+	}
+	state, token := domainState(t, o, origin)
+	var version int64
+	if err := o.QueryRow(ctx, `SELECT version FROM control.storefront_domains WHERE origin=$1`, origin).Scan(&version); err != nil {
+		t.Fatal(err)
+	}
+	if state != "REQUESTED" || token == nil || version != 1 {
+		t.Fatalf("first row = state %q token %v version %d", state, token, version)
+	}
+
+	// Same key + same body replays the first result: the row (token/version) and the audit trail do not change.
+	replay, err := s.requestKey(s.f.token, s.f.store, host, key)
+	if err != nil {
+		t.Fatalf("replay: %v", err)
+	}
+	if replay.DomainID != first.DomainID || replay.Version != first.Version || replay.DNS.TXTValue != first.DNS.TXTValue {
+		t.Fatalf("replay = %+v, want the first result %+v", replay, first)
+	}
+	replayState, replayToken := domainState(t, o, origin)
+	var replayVersion int64
+	if err := o.QueryRow(ctx, `SELECT version FROM control.storefront_domains WHERE origin=$1`, origin).Scan(&replayVersion); err != nil {
+		t.Fatal(err)
+	}
+	if replayState != "REQUESTED" || replayToken == nil || *replayToken != *token || replayVersion != version {
+		t.Fatalf("replay row = state %q token %v version %d, want unchanged", replayState, replayToken, replayVersion)
+	}
+	if n := countRows(t, o, `SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='merchant.domain_requested'`, s.f.store); n != 1 {
+		t.Fatalf("audit rows after replay = %d, want 1", n)
+	}
+
+	// Same key + a different body is refused, and writes nothing.
+	if _, err := s.requestKey(s.f.token, s.f.store, sdHost(), key); !errors.Is(err, command.ErrConflict) {
+		t.Fatalf("same key different body: %v, want ErrConflict", err)
+	}
+	if n := countRows(t, o, `SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='merchant.domain_requested'`, s.f.store); n != 1 {
+		t.Fatalf("audit rows after conflict = %d, want 1", n)
+	}
+}
+
+// TestStoreDomainsMerchantViewKind is the DTO kind gate: the read DTO carries an authoritative kind (platform for the
+// platform subdomain row, custom for a merchant row) from the row's evidence, so the UI can hide suspend/detach on the
+// platform row without inferring it from the suffix.
+func TestStoreDomainsMerchantViewKind(t *testing.T) {
+	s := sdSetup(t)
+	o := s.b.owner
+	_, platform := platformOrigin(t, o, s.f.store, s.base)
+	host := sdHost()
+	origin := "https://" + host
+	if _, err := s.request(s.f.token, s.f.store, host); err != nil {
+		t.Fatal(err)
+	}
+	rd, err := s.read(s.f.token, s.f.store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	byOrigin := make(map[string]storefrontdomains.DomainRow, len(rd.Domains))
+	for _, d := range rd.Domains {
+		byOrigin[d.Origin] = d
+	}
+	if d := byOrigin[platform]; d.Kind != "platform" {
+		t.Fatalf("platform row %q kind = %q, want platform", platform, d.Kind)
+	}
+	if d := byOrigin[origin]; d.Kind != "custom" {
+		t.Fatalf("merchant row %q kind = %q, want custom", origin, d.Kind)
+	}
+}
+
+// TestStoreDomainsApexEdgeInstructions is the apex DNS-instruction gate: an apex host's request returns the edge
+// A/AAAA set the verifier accepts (the same stores.<base> source), while a CNAME host keeps only the CNAME target.
+func TestStoreDomainsApexEdgeInstructions(t *testing.T) {
+	s := sdSetup(t)
+	apexHost := "apex-" + strings.ReplaceAll(randomUUID(), "-", "")[:12] + ".net"
+	edge := []string{"203.0.113.10", "2001:db8::10"}
+
+	var out storefrontdomains.RequestResult
+	if err := s.merchant("integration:manage", s.f.token, s.f.store, func(tx pgx.Tx, sc platform.Scope) error {
+		var e error
+		out, e = storefrontdomains.Request(context.Background(), tx, sc, s.f.token, "apex-"+randomUUID(), apexHost, s.base, edge)
+		return e
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if !out.DNS.Apex || len(out.DNS.EdgeAddresses) != 2 || out.DNS.EdgeAddresses[0] != edge[0] || out.DNS.EdgeAddresses[1] != edge[1] {
+		t.Fatalf("apex instructions = %+v, want apex with edge %v", out.DNS, edge)
+	}
+
+	// A CNAME host keeps the CNAME instruction and no edge addresses.
+	cname := sdHost()
+	var cnameOut storefrontdomains.RequestResult
+	if err := s.merchant("integration:manage", s.f.token, s.f.store, func(tx pgx.Tx, sc platform.Scope) error {
+		var e error
+		cnameOut, e = storefrontdomains.Request(context.Background(), tx, sc, s.f.token, "cname-"+randomUUID(), cname, s.base, edge)
+		return e
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if cnameOut.DNS.Apex || len(cnameOut.DNS.EdgeAddresses) != 0 || cnameOut.DNS.CNAMETarget != "stores."+s.base {
+		t.Fatalf("cname instructions = %+v, want CNAME only", cnameOut.DNS)
 	}
 }
 

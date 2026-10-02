@@ -14,6 +14,9 @@
 //	POST /v1/admin/stores/{store_id}/storefront/domains/detach   integration:manage -> storefrontdomains.Detach
 //	     body {"origin": "https://..."}.
 //
+// The three write routes require Idempotency-Key exactly once (receipt grammar, command.Run idempotency) and the
+// read forbids it; the key is rejected before any transaction opens.
+//
 // Behind them: admin BFF apps/admin/app/api/stores/[store]/[...resource]/route.ts (GET storefront, POST
 // storefront/publication) and the Settings card apps/admin/components/StorefrontSettings.tsx.
 // Store scope comes from the verified bearer only (platform.WithScope); the definers re-verify it in SQL.
@@ -25,7 +28,11 @@ package httpapi
 
 import (
 	"context"
+	"encoding/json"
+	"io"
+	"mime"
 	"net/http"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -63,16 +70,75 @@ func registerStorefrontRoutes(mux *http.ServeMux, pool *pgxpool.Pool, baseDomain
 		return storefrontadmin.SetPublished(ctx, tx, s, bearerToken(r), *in.Published, *in.ExpectedVersion)
 	})))
 	const domains = base + "/domains"
-	mux.HandleFunc("GET "+domains, exactResourceRoute(scoped(pool, "integration:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
+	mux.HandleFunc("GET "+domains, exactResourceRoute(storefrontDomainUnkeyed(scoped(pool, "integration:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
 		return storefrontdomains.Read(ctx, tx, s, bearerToken(r))
-	})))
-	mux.HandleFunc("POST "+domains, exactResourceRoute(bodyRoute(pool, "integration:manage", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in domainRequestInput) (any, error) {
-		return storefrontdomains.Request(ctx, tx, s, bearerToken(r), in.Hostname, baseDomain)
-	})))
-	mux.HandleFunc("POST "+domains+"/suspend", exactResourceRoute(bodyRoute(pool, "integration:manage", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in domainOriginInput) (any, error) {
-		return storefrontdomains.Suspend(ctx, tx, s, bearerToken(r), in.Origin)
-	})))
-	mux.HandleFunc("POST "+domains+"/detach", exactResourceRoute(bodyRoute(pool, "integration:manage", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in domainOriginInput) (any, error) {
-		return storefrontdomains.Detach(ctx, tx, s, bearerToken(r), in.Origin)
-	})))
+	}))))
+	mux.HandleFunc("POST "+domains, exactResourceRoute(storefrontDomainKeyed(storefrontDomainRequest(pool, baseDomain))))
+	mux.HandleFunc("POST "+domains+"/suspend", exactResourceRoute(storefrontDomainKeyed(bodyRoute(pool, "integration:manage", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in domainOriginInput) (any, error) {
+		return storefrontdomains.Suspend(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), in.Origin)
+	}))))
+	mux.HandleFunc("POST "+domains+"/detach", exactResourceRoute(storefrontDomainKeyed(bodyRoute(pool, "integration:manage", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in domainOriginInput) (any, error) {
+		return storefrontdomains.Detach(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), in.Origin)
+	}))))
+}
+
+// storefrontDomainKeyed requires Idempotency-Key exactly once in the receipt grammar (claimsKey, the same grammar
+// command.Run re-checks) on the three domain write routes, before any transaction opens.
+func storefrontDomainKeyed(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		keys := r.Header.Values("Idempotency-Key")
+		if len(keys) != 1 || !claimsKey.MatchString(keys[0]) {
+			respondError(w, http.StatusUnprocessableEntity, "invalid_request")
+			return
+		}
+		next(w, r)
+	}
+}
+
+// storefrontDomainUnkeyed forbids Idempotency-Key on the domain read route.
+func storefrontDomainUnkeyed(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if len(r.Header.Values("Idempotency-Key")) != 0 {
+			respondError(w, http.StatusUnprocessableEntity, "invalid_request")
+			return
+		}
+		next(w, r)
+	}
+}
+
+// storefrontDomainRequest is POST /domains: the strict body decode (same boundary as bodyRoute), the edge address
+// resolution outside the transaction, then the scoped call into storefrontdomains.Request. The edge set is the same
+// source the verifier accepts (resolved addresses of stores.<base>), resolved best-effort and attached only for an
+// apex host by the service; a failed resolution just leaves the apex instruction without addresses.
+func storefrontDomainRequest(pool *pgxpool.Pool, baseDomain string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		media, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+		if err != nil || media != "application/json" {
+			respondError(w, http.StatusUnsupportedMediaType, "json_required")
+			return
+		}
+		r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
+		defer r.Body.Close()
+		var in domainRequestInput
+		dec := json.NewDecoder(r.Body)
+		dec.DisallowUnknownFields()
+		if err = dec.Decode(&in); err != nil {
+			respondError(w, http.StatusBadRequest, "invalid_json")
+			return
+		}
+		var extra any
+		if err = dec.Decode(&extra); err != io.EOF {
+			respondError(w, http.StatusBadRequest, "invalid_json")
+			return
+		}
+		var edge []string
+		if baseDomain != "" {
+			ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+			edge, _ = storefrontdomains.SystemResolver{}.LookupAddr(ctx, "stores."+baseDomain)
+			cancel()
+		}
+		scoped(pool, "integration:manage", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
+			return storefrontdomains.Request(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), in.Hostname, baseDomain, edge)
+		})(w, r)
+	}
 }
