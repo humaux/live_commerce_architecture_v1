@@ -270,11 +270,60 @@ try {
   const rowFor = host => list.getByTestId("storefront-domain-row").filter({ hasText: host });
   await expect(rowFor(platformHost)).toHaveAttribute("data-state", "ACTIVE");
   await expect(rowFor(platformHost)).toContainText(DOMAINS_ZHCN.states.ACTIVE);
+  await expect(rowFor(platformHost)).toHaveAttribute("data-kind", "platform");
+  await expect(rowFor(platformHost).getByRole("button")).toHaveCount(0);
+  const actionKeys = new Set();
+  async function loseNextDomainResult(resource) {
+    const url = `${adminOrigin}/api/stores/${store}/${resource}`;
+    const sent = [], responses = [];
+    const handler = async route => {
+      const req = route.request();
+      if (req.method() !== "POST") {
+        assert.equal(req.headers()["idempotency-key"], undefined, "reads never carry a key");
+        return route.continue();
+      }
+      sent.push({ key: req.headers()["idempotency-key"], body: req.postData() });
+      assert.match(sent.at(-1).key, /^storefront-domain-[0-9a-f-]{36}$/);
+      const upstream = await route.fetch(); // real Next BFF -> Go -> PG commit
+      assert.equal(upstream.status(), 200);
+      responses.push(await upstream.json());
+      if (sent.length === 1) return route.fulfill({ response: upstream, body: "{" }); // lose the committed result, not the request
+      return route.fulfill({ response: upstream });
+    };
+    await merchant.route(url, handler);
+    return async () => {
+      await expect(domainCard.getByTestId("storefront-domain-unconfirmed")).toBeVisible();
+      await expect(domainCard.getByTestId("storefront-domain-submit")).toBeDisabled();
+      const committed = await dbFacts(store);
+      await merchant.reload();
+      await expect(domainCard.getByTestId("storefront-domain-unconfirmed")).toBeVisible();
+      await expect(domainCard.getByTestId("storefront-domain-submit")).toBeDisabled();
+      // Reload and status refresh remain read-only. Only an explicit retry can resend.
+      const read = merchant.waitForResponse(r => r.request().method() === "GET" && r.url() === `${adminOrigin}/api/stores/${store}/storefront/domains`);
+      await domainCard.getByTestId("storefront-domain-unconfirmed").getByRole("button").last().click();
+      assert.equal((await read).request().headers()["idempotency-key"], undefined);
+      assert.equal(sent.length, 1, "UNKNOWN never auto-replays on reload or refresh");
+      const replay = merchant.waitForResponse(r => r.request().method() === "POST" && r.url() === url);
+      await domainCard.getByTestId("storefront-domain-retry").click();
+      assert.equal((await replay).status(), 200);
+      await expect(domainCard.getByTestId("storefront-domain-unconfirmed")).toHaveCount(0);
+      assert.equal(sent.length, 2, "exactly one explicit replay");
+      assert.deepEqual(sent[1], sent[0], "UNKNOWN replay uses the identical key and body after reload");
+      assert.deepEqual(responses[1], responses[0], "duplicate submission returns the exact saved result, including TXT");
+      assert.deepEqual(await dbFacts(store), committed, "replay never increments version or adds an audit event");
+      assert(!actionKeys.has(sent[0].key), "each new user action gets a fresh key");
+      actionKeys.add(sent[0].key);
+      await merchant.unroute(url, handler);
+      pass(`${resource}: committed result lost, explicit same-key replay after reload, exact response and unchanged PG facts`);
+    };
+  }
+  const finishRequestReplay = await loseNextDomainResult("storefront/domains");
   await domainCard.getByTestId("storefront-domain-request").getByRole("textbox", { name: DOMAINS_ZHCN.hostnameLabel }).fill(customHost);
   const requested = merchant.waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname === `/api/stores/${store}/storefront/domains`);
   await domainCard.getByTestId("storefront-domain-submit").click();
   const requestResponse = await requested;
   assert.equal(requestResponse.status(), 200, "domain request POST");
+  await finishRequestReplay();
   const dns = domainCard.getByTestId("storefront-dns");
   await expect(dns).toBeVisible();
   await expect(dns).toContainText(DOMAINS_ZHCN.dnsTitle);
@@ -283,6 +332,8 @@ try {
   assert.match(token, /^[A-Za-z0-9_-]{43}$/, "the one-time TXT token");
   await expect(domainCard.getByTestId("storefront-dns-cname")).toContainText(`stores.${BASE}`);
   await expect(rowFor(customHost)).toHaveAttribute("data-state", "REQUESTED");
+  await expect(rowFor(customHost)).toHaveAttribute("data-kind", "custom");
+  assert.equal((await merchant.request.get(`${adminOrigin}/api/stores/${store}/storefront/domains`, { headers: { "Idempotency-Key": [...actionKeys][0] } })).status(), 422, "read routes reject keys");
   await merchant.screenshot({ path: path.join(evidence, "domains-zh-CN-desktop-dns.png"), fullPage: true });
   await merchant.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   await domainCard.getByTestId("storefront-dns-copy").click();
@@ -362,10 +413,12 @@ try {
   card = await openCard(merchant, "zh-CN", "desktop");
   await rowFor(customHost).getByTestId("storefront-domain-suspend").click();
   await expect(domainCard.getByTestId("storefront-domain-confirm")).toBeVisible();
+  const finishSuspendReplay = await loseNextDomainResult("storefront/domains/suspend");
   const suspended = merchant.waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname === `/api/stores/${store}/storefront/domains/suspend`);
   await domainCard.getByTestId("storefront-domain-confirm-yes").click();
   const suspendResponse = await suspended;
   assert.equal(suspendResponse.status(), 200, "domain suspend POST");
+  await finishSuspendReplay();
   await expect(rowFor(customHost)).toHaveAttribute("data-state", "SUSPENDED");
   audit.push("merchant.domain_suspended");
   await notFound(customOrigin, "zh-CN", "desktop", "merchant suspended the custom domain");
@@ -375,9 +428,12 @@ try {
   // ---- detach: final; the host never resolves for this store again --------------------------------------------------
   await rowFor(customHost).getByTestId("storefront-domain-detach").click();
   await expect(domainCard.getByTestId("storefront-domain-confirm")).toBeVisible();
+  const finishDetachReplay = await loseNextDomainResult("storefront/domains/detach");
   const detached = merchant.waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname === `/api/stores/${store}/storefront/domains/detach`);
   await domainCard.getByTestId("storefront-domain-confirm-yes").click();
   assert.equal((await detached).status(), 200, "domain detach POST");
+  await finishDetachReplay();
+  assert.equal(actionKeys.size, 3, "request/suspend/detach are distinct user actions");
   await expect(rowFor(customHost)).toHaveAttribute("data-state", "DETACHED");
   await merchant.screenshot({ path: path.join(evidence, "domains-zh-CN-desktop-detached.png"), fullPage: true });
   audit.push("merchant.domain_detached");
@@ -390,8 +446,8 @@ try {
   await notFound(platformOrigin, "en", "desktop", "merchant unpublished", "buyer-en-desktop-unpublished.png");
   pass("unpublish (en, desktop): platform origin 404");
 
-  // MOCK lost-result boundary: Go does not deduplicate domain writes yet. Never
-  // blind-replay an UNKNOWN request, even after reloading this session's page.
+  // MOCK unavailable-service boundary: never blind-replay UNKNOWN on reload or
+  // status refresh. Only an explicit same-operation retry may send it again.
   let uncertainPosts = 0;
   await merchant.route(`**/api/stores/${store}/storefront/domains`, route => {
     if (route.request().method() !== "POST") return route.continue();
@@ -411,6 +467,14 @@ try {
   for (const button of await list.getByTestId("storefront-domain-row").getByRole("button").all()) await expect(button).toBeDisabled();
   await merchant.unroute(`**/api/stores/${store}/storefront/domains`);
   pass("MOCK lost result: pending write persists across reload; reads work, domain writes stay paused");
+  await merchant.evaluate(store => {
+    for (const key of Object.keys(sessionStorage)) if (key.startsWith(`commerce-domain-pending:${store}:`)) sessionStorage.setItem(key, "pending");
+  }, store);
+  await merchant.reload();
+  await expect(domainCard.getByTestId("storefront-domain-unconfirmed")).toBeVisible();
+  await expect(domainCard.getByTestId("storefront-domain-retry")).toHaveCount(0);
+  await expect(domainCard.getByTestId("storefront-domain-submit")).toBeDisabled();
+  pass("legacy marker-only UNKNOWN stays locked; no guessed key/body replay");
 
   // ---- final facts --------------------------------------------------------------------------------------------------
   facts = await dbFacts(store);
@@ -420,6 +484,56 @@ try {
   assert.deepEqual(facts.domains.map(d => [d.origin, d.state]), [[platformOrigin, "ACTIVE"], [customOrigin, "DETACHED"]]);
   assert.deepEqual(uiErrors, []);
   pass("PG facts: handle + platform row from onboarding, publication version 2, custom DETACHED, audit trail equals the driven actions");
+
+  // MOCK DTO rendering only: the real-stack fixture deliberately has no public
+  // apex DNS. Exercise every returned address and the clipboard in each locale,
+  // without changing the two real domain rows checked independently by Go.
+  const apexHost = "example.net";
+  const edgeAddresses = ["203.0.113.10", "203.0.113.11", "2001:db8::10"];
+  const apex = { domain_id: "11111111-1111-4111-8111-111111111111", origin: `https://${apexHost}`, state: "REQUESTED", version: 1, dns: { txt_name: `_lc-verify.${apexHost}`, txt_value: "A".repeat(43), cname_target: `stores.${BASE}`, apex: true, edge_addresses: edgeAddresses } };
+  for (const locale of ["zh-TW", "zh-CN", "en"]) {
+    const page = await merchantContext.newPage();
+    await page.route(`**/api/stores/${store}/storefront/domains`, route => {
+      if (route.request().method() !== "POST") return route.continue();
+      assert.equal(JSON.parse(route.request().postData()).hostname, apexHost);
+      assert.match(route.request().headers()["idempotency-key"], /^storefront-domain-[0-9a-f-]{36}$/);
+      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(apex) });
+    });
+    await openCard(page, locale, "desktop");
+    const section = page.getByTestId("storefront-domains-card");
+    await section.getByRole("textbox").fill(apexHost);
+    await section.getByTestId("storefront-domain-submit").click();
+    const records = section.getByTestId("storefront-dns-address");
+    await expect(records).toHaveCount(3);
+    for (const [index, address] of edgeAddresses.entries()) {
+      const type = address.includes(":") ? "AAAA" : "A";
+      await expect(records.nth(index).locator("dt")).toHaveText(type);
+      await expect(records.nth(index).locator("code")).toHaveText(`${apexHost} → ${address}`);
+      await records.nth(index).getByRole("button").click();
+      await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(`${type} ${apexHost} → ${address}`);
+    }
+    await section.getByTestId("storefront-dns-copy").click();
+    await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toContain(`AAAA ${apexHost} → ${edgeAddresses[2]}`);
+    const copied = await page.evaluate(() => navigator.clipboard.readText());
+    for (const address of edgeAddresses) assert(copied.includes(address));
+    assert(copied.includes(apex.dns.txt_name) && copied.includes(apex.dns.txt_value));
+    for (const [size, viewport] of Object.entries({ desktop: { width: 1586, height: 992 }, mobile: { width: 390, height: 844 } })) {
+      await page.setViewportSize(viewport);
+      if (size === "mobile") {
+        const menu = page.locator(".mobile-menu");
+        if (await menu.getAttribute("aria-expanded") === "true") await menu.click();
+        await expect.poll(() => page.locator(".rail").evaluate(node => node.getBoundingClientRect().right)).toBeLessThanOrEqual(0);
+      }
+      await section.getByTestId("storefront-dns").scrollIntoViewIfNeeded();
+      assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${locale} ${size} apex: no overflow`);
+      for (const button of await records.getByRole("button").all()) assert((await button.boundingBox()).height >= 44, "copy target >=44px");
+      await page.screenshot({ path: path.join(evidence, `domains-apex-MOCK-${locale}-${size}.png`) });
+    }
+    await page.close();
+  }
+  assert.deepEqual(await dbFacts(store), facts, "MOCK apex display does not mutate actual domain rows");
+  assert.deepEqual(uiErrors, []);
+  pass("MOCK apex DTO: every A/AAAA record copies exactly; three locales desktop/mobile, no overflow, 44px");
   await writeFile(path.join(evidence, "result.json"), JSON.stringify({ cases, store_id: store, tenant_id: receipt.tenant_id, handle: receipt.handle, origin: platformOrigin, custom_origin: customOrigin, locales: ["en", "zh-TW", "zh-CN"], viewports: ["desktop", "390px"], audit_expected: audit, contract_failures: contractFailures, boundary: "production Next; signed MOCK IdP; scripted public DNS + certificate probe on the production VerifyPending library; synthetic TLS/CONNECT edge; no deployment DNS/TLS, CA or provider acceptance" }, null, 2), { mode: 0o600 });
   assert.deepEqual(contractFailures, [], `contract checkpoints failed:\n${contractFailures.join("\n")}`);
 } catch (error) {

@@ -19,13 +19,12 @@ import {
   setPublication,
   type StorefrontState,
 } from "@/lib/storefront-client";
-import type { DomainRequestResult, StorefrontDomains } from "@/lib/storefront-model";
+import { dnsAddressType, type DomainRequestResult, type StorefrontDomains } from "@/lib/storefront-model";
+import { parseDomainCommand, validDomainHostname, type DomainCommand } from "@/lib/storefront-command";
 import { storefrontCopy } from "@/lib/storefront-copy";
 import "./settings.css";
 
 type Load = "loading" | "ready" | "hidden" | "error";
-
-const hostnameShape = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 
 function hostOf(origin: string) {
   return origin.slice("https://".length);
@@ -59,8 +58,7 @@ function StorefrontSettingsForStore({ store, locale }: { store: string; locale: 
   const [journalReady, setJournalReady] = useState(false);
   const journalKey = useRef("");
   const pending = useRef<{ key: string; published: boolean } | null>(null);
-  const domainCommand = useRef<{ key: string; hostname: string } | null>(null);
-  const moveCommand = useRef<{ key: string; origin: string; action: "suspend" | "detach" } | null>(null);
+  const domainCommand = useRef<DomainCommand | null>(null);
   const domainBusy = useRef(false);
 
   // The session fence captured when the card loads: writeSettings refuses to send if the session changed since.
@@ -71,7 +69,9 @@ function StorefrontSettingsForStore({ store, locale }: { store: string; locale: 
       setBoundary(value);
       journalKey.current = `commerce-domain-pending:${store}:${value}`;
       try {
-        setUnconfirmed(sessionStorage.getItem(journalKey.current) !== null);
+        const saved = sessionStorage.getItem(journalKey.current);
+        domainCommand.current = parseDomainCommand(saved);
+        setUnconfirmed(saved !== null);
         setJournalReady(true);
       } catch { setJournalReady(false); }
     }, () => { if (live) setBoundary(""); });
@@ -142,20 +142,26 @@ function StorefrontSettingsForStore({ store, locale }: { store: string; locale: 
     setTick((value) => value + 1); // re-GET: the server's state, never our guess
   }
 
-  function validHostname(value: string) {
-    return value.length <= 253 && hostnameShape.test(value);
-  }
-
-  function beginDomainWrite() {
-    // The current Go endpoints do NOT deduplicate keys. Preserve an unresolved
-    // write across reloads; never offer a blind replay, even with the same key.
-    if (!journalReady || unconfirmed || !journalKey.current) return false;
+  function beginDomainWrite(command: DomainCommand, retry: boolean) {
+    // Persist before sending. Only explicit replay of the exact journal crosses
+    // UNKNOWN. Old marker-only records remain locked for reconciliation.
+    if (!journalReady || !journalKey.current || (!retry && unconfirmed)) return false;
     try {
-      if (sessionStorage.getItem(journalKey.current) !== null) {
+      const saved = sessionStorage.getItem(journalKey.current);
+      if (retry) {
+        const restored = parseDomainCommand(saved);
+        if (!restored || JSON.stringify(restored) !== JSON.stringify(command)) {
+          domainCommand.current = null;
+          setUnconfirmed(true);
+          return false;
+        }
+      } else if (saved !== null) {
+        domainCommand.current = parseDomainCommand(saved);
         setUnconfirmed(true);
         return false;
       }
-      sessionStorage.setItem(journalKey.current, "pending");
+      sessionStorage.setItem(journalKey.current, JSON.stringify(command));
+      domainCommand.current = command;
       return true;
     } catch { setJournalReady(false); return false; }
   }
@@ -163,7 +169,7 @@ function StorefrontSettingsForStore({ store, locale }: { store: string; locale: 
   function endDomainWrite(uncertain: boolean) {
     setUnconfirmed(uncertain);
     if (!uncertain) {
-      try { sessionStorage.removeItem(journalKey.current); }
+      try { sessionStorage.removeItem(journalKey.current); domainCommand.current = null; }
       catch { setUnconfirmed(true); setJournalReady(false); }
     }
   }
@@ -171,67 +177,56 @@ function StorefrontSettingsForStore({ store, locale }: { store: string; locale: 
   async function submitDomain(event: FormEvent) {
     event.preventDefault();
     const proposed = hostname.trim().toLowerCase();
-    if (domainBusy.current) return;
-    if (moveCommand.current) { setRequestProblem(sc.uncertain); return; }
+    if (domainBusy.current || domainCommand.current) return;
     setRequestProblem("");
-    if (!validHostname(proposed)) {
+    if (!validDomainHostname(proposed)) {
       setRequestProblem(sc.domains.errors.invalid_request);
       return;
     }
-    if (!beginDomainWrite()) return;
-    domainCommand.current ??= { key: `storefront-domain-${crypto.randomUUID()}`, hostname: proposed };
+    await runDomainCommand({ version: 1, key: `storefront-domain-${crypto.randomUUID()}`, action: "request", hostname: proposed });
+  }
+
+  async function runDomainCommand(command: DomainCommand, retry = false) {
+    if (domainBusy.current || !beginDomainWrite(command, retry)) return;
     domainBusy.current = true;
-    setRequesting(true);
-    const result = await requestDomain(store, domainCommand.current.key, proposed, boundary);
-    endDomainWrite(!result.ok && result.uncertain);
+    setRequesting(command.action === "request");
+    setMoveBusy(command.action !== "request");
+    setRequestProblem("");
+    const result: { ok: true; result?: DomainRequestResult } | { ok: false; code: string; uncertain: boolean } = command.action === "request"
+      ? await requestDomain(store, command.key, command.hostname, boundary)
+      : await moveDomain(store, command.key, command.origin, command.action, boundary);
+    // A rejected retry does not disprove the original write. Preserve it until
+    // the backend confirms replay, including when the session has expired.
+    endDomainWrite(!result.ok && (result.uncertain || retry));
     domainBusy.current = false;
     setRequesting(false);
+    setMoveBusy(false);
+    setMoving(null);
     if (result.ok) {
-      domainCommand.current = null;
-      setDns(result.result);
-      setCopyNotice("");
-      setHostname("");
-      setTick((value) => value + 1); // the list now shows the REQUESTED row
+      if (result.result) {
+        setDns(result.result);
+        setCopyNotice("");
+        setHostname("");
+      }
     } else {
-      if (!result.uncertain) domainCommand.current = null;
-      setDns(null);
-      if (result.uncertain) setRequestProblem(sc.domains.unconfirmed);
-      else if (result.code === "forbidden") setRequestProblem(sc.domains.errors.forbidden);
-      else setRequestProblem(sc.domains.errors[result.code] ?? sc.domains.errors.unavailable);
-      setTick((value) => value + 1); // the server may have applied it; re-read either way
+      if (command.action === "request") setDns(null);
+      if (!result.uncertain) setRequestProblem(sc.domains.errors[result.code] ?? sc.domains.errors.unavailable);
     }
+    setTick((value) => value + 1); // never optimistic: read authoritative state
   }
 
   async function confirmMove() {
-    if (domainBusy.current || !moving) return;
-    if (domainCommand.current) { setRequestProblem(sc.uncertain); return; }
-    if (!beginDomainWrite()) return;
-    if (moveCommand.current && (moveCommand.current.origin !== moving.origin || moveCommand.current.action !== moving.action)) {
-      setMoving({ origin: moveCommand.current.origin, action: moveCommand.current.action });
-      return;
-    }
-    moveCommand.current ??= { key: `storefront-move-${crypto.randomUUID()}`, ...moving };
-    domainBusy.current = true;
-    setMoveBusy(true);
-    setRequestProblem("");
-    const command = moveCommand.current;
-    const result = await moveDomain(store, command.key, command.origin, command.action, boundary);
-    endDomainWrite(!result.ok && result.uncertain);
-    domainBusy.current = false;
-    setMoveBusy(false);
-    if (result.ok || !result.uncertain) {
-      moveCommand.current = null;
-      setMoving(null);
-    } else { setMoving(null); setRequestProblem(sc.domains.unconfirmed); }
-    if (!result.ok && !result.uncertain) {
-      if (result.code === "forbidden") setRequestProblem(sc.domains.errors.forbidden);
-      else setRequestProblem(sc.domains.errors[result.code] ?? sc.domains.errors.unavailable);
-    }
-    setTick((value) => value + 1); // re-GET: the server's state, never our guess
+    if (domainBusy.current || !moving || domainCommand.current) return;
+    await runDomainCommand({ version: 1, key: `storefront-domain-${crypto.randomUUID()}`, ...moving });
+  }
+
+  async function copyDNS(records: string) {
+    try { await navigator.clipboard.writeText(records); setCopyNotice(sc.domains.copied); }
+    catch { setCopyNotice(sc.domains.copyFailed); }
   }
 
   const domainRows = domains?.domains ?? [];
-  const domainsLocked = !journalReady || unconfirmed || requesting || moveBusy || domainCommand.current !== null || moveCommand.current !== null;
+  const domainsLocked = !journalReady || unconfirmed || requesting || moveBusy || domainCommand.current !== null;
   const moveable = (row: { state: string }) =>
     row.state === "REQUESTED" || row.state === "OWNERSHIP_PENDING" || row.state === "TLS_PENDING" || row.state === "ACTIVE";
 
@@ -311,14 +306,20 @@ function StorefrontSettingsForStore({ store, locale }: { store: string; locale: 
           <h2 className="settings-section-title settings-subtitle">{sc.domains.title}</h2>
           <p className="settings-note">{sc.domains.intro}</p>
           {(!journalReady || unconfirmed) && <div className="settings-warning" role="status" data-testid="storefront-domain-unconfirmed">
-            <p>{unconfirmed ? sc.domains.unconfirmed : sc.domains.storageUnavailable}</p>
+            <p>{!journalReady ? sc.domains.storageUnavailable : domainCommand.current ? sc.domains.unconfirmed : sc.domains.legacyUnconfirmed}</p>
+            {unconfirmed && journalReady && domainCommand.current && <>
+              <p className="storefront-domain-origin">{sc.domains[domainCommand.current.action]}: {domainCommand.current.action === "request" ? domainCommand.current.hostname : domainCommand.current.origin}</p>
+              <button type="button" data-testid="storefront-domain-retry" disabled={requesting || moveBusy}
+                onClick={() => { if (domainCommand.current) void runDomainCommand(domainCommand.current, true); }}>{sc.domains.retry}</button>
+            </>}
             <button type="button" onClick={() => setTick(value => value + 1)}>{sc.domains.refresh}</button>
           </div>}
           <ul className="storefront-domain-list">
             {domainRows.map((row) => (
-              <li key={row.origin} className="storefront-domain-row" data-testid="storefront-domain-row" data-state={row.state}>
+              <li key={row.origin} className="storefront-domain-row" data-testid="storefront-domain-row" data-state={row.state} data-kind={row.kind}>
                 <span className="storefront-domain-origin" data-testid="storefront-domain-origin">
                   <a href={row.origin} target="_blank" rel="noopener noreferrer">{row.origin}</a>
+                  {row.kind === "platform" && <span className="settings-note">{sc.domains.platform}</span>}
                   {row.serving && <span className="storefront-domain-badge">{sc.domains.serving}</span>}
                 </span>
                 <span className="storefront-domain-state" data-testid="storefront-domain-state">{sc.domains.states[row.state]}</span>
@@ -328,7 +329,7 @@ function StorefrontSettingsForStore({ store, locale }: { store: string; locale: 
                     <code>{sc.domains.dnsTxtValue}: {row.token}</code>
                   </div>
                 )}
-                <div className="storefront-domain-actions">
+                {row.kind === "custom" && <div className="storefront-domain-actions">
                   {moveable(row) && (
                     <button type="button" data-testid="storefront-domain-suspend" disabled={domainsLocked}
                       onClick={() => { setRequestProblem(""); setMoving({ origin: row.origin, action: "suspend" }); }}>
@@ -341,7 +342,7 @@ function StorefrontSettingsForStore({ store, locale }: { store: string; locale: 
                       {sc.domains.detach}
                     </button>
                   )}
-                </div>
+                </div>}
               </li>
             ))}
             {domainRows.length === 0 && (
@@ -380,7 +381,13 @@ function StorefrontSettingsForStore({ store, locale }: { store: string; locale: 
                   <dt>{sc.domains.dnsTxtValue}</dt>
                   <dd><code data-testid="storefront-dns-txt-value">{dns.dns.txt_value}</code></dd>
                 </div>
-                {dns.dns.apex ? (
+                {dns.dns.apex && dns.dns.edge_addresses?.length ? dns.dns.edge_addresses.map((address, index) => (
+                  <div key={`${index}-${address}`} data-testid="storefront-dns-address">
+                    <dt>{dnsAddressType(address)}</dt>
+                    <dd><code>{hostOf(dns.origin)} → {address}</code></dd>
+                    <dd><button type="button" aria-label={`${sc.domains.copyRecord}: ${dnsAddressType(address)} ${address}`} onClick={() => copyDNS(`${dnsAddressType(address)} ${hostOf(dns.origin)} → ${address}`)}>{sc.domains.copyRecord}</button></dd>
+                  </div>
+                )) : dns.dns.apex ? (
                   <div>
                     <dt>{sc.domains.dnsApex}</dt>
                     <dd><code data-testid="storefront-dns-apex">{hostOf(dns.origin)}</code></dd>
@@ -394,13 +401,10 @@ function StorefrontSettingsForStore({ store, locale }: { store: string; locale: 
                 )}
               </dl>
               <p className="settings-note">{sc.domains.verifying}</p>
-              <button type="button" data-testid="storefront-dns-copy" onClick={async () => {
-                try {
-                  const addressRecord = dns.dns.apex ? sc.domains.dnsApexNote : `CNAME ${hostOf(dns.origin)} → ${dns.dns.cname_target}`;
+              <button type="button" data-testid="storefront-dns-copy" onClick={() => {
+                  const addressRecord = dns.dns.apex ? dns.dns.edge_addresses?.length ? dns.dns.edge_addresses.map(address => `${dnsAddressType(address)} ${hostOf(dns.origin)} → ${address}`).join("\n") : sc.domains.dnsApexNote : `CNAME ${hostOf(dns.origin)} → ${dns.dns.cname_target}`;
                   const records = `TXT ${dns.dns.txt_name}\n${dns.dns.txt_value}\n${addressRecord}`;
-                  await navigator.clipboard.writeText(records);
-                  setCopyNotice(sc.domains.copied);
-                } catch { setCopyNotice(sc.domains.copyFailed); }
+                  void copyDNS(records);
               }}>{sc.domains.copy}</button>
               <p role="status" className="settings-note">{copyNotice}</p>
             </div>
@@ -411,7 +415,7 @@ function StorefrontSettingsForStore({ store, locale }: { store: string; locale: 
               <p>{moving.action === "suspend" ? sc.domains.confirmSuspend : sc.domains.confirmDetach}</p>
               <p className="storefront-domain-origin"><strong>{moving.origin}</strong></p>
               <div className="settings-actions">
-                <button type="button" disabled={moveBusy || moveCommand.current !== null} onClick={() => setMoving(null)}>{sc.cancel}</button>
+                <button type="button" disabled={moveBusy || domainCommand.current !== null} onClick={() => setMoving(null)}>{sc.cancel}</button>
                 <button className="primary" type="button" data-testid="storefront-domain-confirm-yes" disabled={moveBusy}
                   onClick={() => void confirmMove()}>
                   {moveBusy ? sc.saving : sc.confirm}
