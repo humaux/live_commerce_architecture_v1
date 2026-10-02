@@ -82,7 +82,7 @@ import (
 	"livecommerce/internal/pricing"
 )
 
-// e2eProduct is the one synthetic product; the buyer's total is 2 x 1250 = 2500 minor (NT$25.00 with a zero delivery fee
+// e2eProduct is the one synthetic product; the buyer's total is 2 x 1250 = 2500 minor (NT$25 with a zero delivery fee
 // and no tax: the smallest TWD amount Stripe accepted in the SANDBOX probe, stripe-psp-v1 §0.1).
 const (
 	e2eProductName = "Synthetic e2e product"

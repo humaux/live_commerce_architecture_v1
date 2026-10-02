@@ -38,7 +38,9 @@ const L = "zh-TW" as const;
 const pii = { recipient_name: "Synthetic Gate Recipient", phone: "+886900000091", region: "Synthetic Region", city: "Synthetic City", postal_code: "99991",
   line1: "Synthetic Address Ninety One", line2: "Synthetic Unit Ninety Two" };
 const refundMinor = 1000;
-const money = (minor: number) => (minor / 100).toFixed(2);
+// The admin renders TWD through packages/format money(): "NT$" + whole amount, fraction digits only when the minor amount has them
+// (2500 -> "NT$25", 1550 -> "NT$15.50"). The substring stays as strict as before: the sign plus the exact amount.
+const money = (minor: number) => `NT$${minor % 100 === 0 ? minor / 100 : (minor / 100).toFixed(2)}`;
 
 async function act(name: string, body: Record<string, unknown> = {}) {
   const response = await fetch(`${control}/act?name=${name}`, { method: "POST", headers: { "X-Gate-Key": controlKey, "content-type": "application/json" }, body: JSON.stringify(body) });
@@ -255,7 +257,7 @@ test("T12 deal loop: wizard store, Studio, claim source, signed Meta comment, pr
   await expect(buyer.getByTestId("payment-status")).toHaveAttribute("data-state", "NOT_STARTED");
   await act("check", { name: "ordered", order });
   await buyerShots(buyer, "buyer-order-created");
-  pass("the buyer checks out the claimed cart (home delivery; the storefront states that convenience-store pickup is not connected yet): one unpaid order, total NT$25.00, 2 units held");
+  pass("the buyer checks out the claimed cart (home delivery; the storefront states that convenience-store pickup is not connected yet): one unpaid order, total NT$25, 2 units held");
 
   // ------------------------------------------------------------------------------------------------ 7. pay (Stripe MOCK)
   const pay = paymentCopy[L];
@@ -344,7 +346,7 @@ test("T12 deal loop: wizard store, Studio, claim source, signed Meta comment, pr
   await expect(buyer.getByTestId("refund-succeeded")).toContainText(pay.refunded.split("{amount}")[0].trim());
   await expect(buyer.getByTestId("payment-status")).toHaveAttribute("data-state", "PARTIALLY_REFUNDED");
   await buyerShots(buyer, "buyer-refunded");
-  pass("the merchant issues a partial refund (NT$10.00); the real worker settles it at the fake Stripe; the merchant sees SUCCEEDED and the re_ id, the buyer sees the refunded amount, the order and the stock are unchanged");
+  pass("the merchant issues a partial refund (NT$10); the real worker settles it at the fake Stripe; the merchant sees SUCCEEDED and the re_ id, the buyer sees the refunded amount, the order and the stock are unchanged");
 
   // ------------------------------------------------------------------------------------------------ 11. isolation, storage, console
   await act("isolation");
