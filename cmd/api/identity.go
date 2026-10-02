@@ -92,6 +92,9 @@ func loadIdentityConfig(getenv func(string) string) (identityConfig, error) {
 			c.policy.Currencies = append(c.policy.Currencies, currency)
 		}
 	}
+	// R5 store-domains: the platform base zone (e.g. xgdwm.com) the onboarding flow writes the ACTIVE platform
+	// subdomain for. Empty leaves onboarding unchanged (handle only, no domain row).
+	c.policy.StoreBaseDomain = strings.ToLower(strings.TrimSpace(getenv("LC_STORE_BASE_DOMAIN")))
 	if c.dsn == "" || !identityhttp.ValidSecret(c.bffKey) || len(c.policy.ProviderKey) > 128 || (c.policy.OnboardingEnabled && len(c.policy.Currencies) == 0) {
 		return c, errors.New("incomplete identity configuration")
 	}

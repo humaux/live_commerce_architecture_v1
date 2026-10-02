@@ -6,7 +6,8 @@
 // worker starts. It must never run inside an API or worker process.
 // Env: COMMERCE_MIGRATE_DATABASE_URL, the migration-owner DSN. In the
 // reference deployment that is the bootstrap superuser over the PostgreSQL
-// unix socket. Never pass an API/worker DSN.
+// unix socket. Never pass an API/worker DSN. LC_STORE_BASE_DOMAIN (optional) is
+// the platform store base zone handed to 0106's migration-time backfill.
 // Exit: 0 applied or no-op; 1 failed; 2 invalid config; 75 another migration
 // holds advisory lock 718020260920 (retry later, never in a loop).
 // Logs: fixed tokens only (migrate_applied, migrate_failed code=<SQLSTATE>,
@@ -38,6 +39,11 @@ func main() {
 
 func run(ctx context.Context, getenv func(string) string) int {
 	dsn := getenv("COMMERCE_MIGRATE_DATABASE_URL")
+	baseDomain := getenv("LC_STORE_BASE_DOMAIN")
+	if strings.TrimSpace(baseDomain) == "" {
+		// Visible, not silent: 0106's platform-origin backfill is a no-op without a base zone (preflight P19 fails it in deploys).
+		slog.Warn("migrate_store_base_domain_unset", "effect", "no platform origin backfill")
+	}
 	if strings.TrimSpace(dsn) == "" || len(dsn) > 8192 {
 		slog.Error("migrate_invalid_config")
 		return 2
@@ -57,7 +63,7 @@ func run(ctx context.Context, getenv func(string) string) int {
 		return 1
 	}
 	defer pool.Close()
-	switch err := migrations.Apply(ctx, pool); {
+	switch err := migrations.ApplyWithBaseDomain(ctx, pool, baseDomain); {
 	case err == nil:
 		slog.Info("migrate_applied")
 		return 0

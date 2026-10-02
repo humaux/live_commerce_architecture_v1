@@ -1,0 +1,15 @@
+{
+  "source_sha": "f351f44a7b888e17d5e54e110127254fceef213a",
+  "worktree": "/Volumes/data/live_commerce_architecture_v1/.worktrees/store-domains-ui",
+  "gates": [
+    {"command": "bash scripts/dev/test-node.sh", "exit_code": 0, "log": "final-node.log", "passed": 279},
+    {"command": "pnpm --filter admin exec tsc --noEmit", "exit_code": 0, "log": "final-admin-tsc.log"},
+    {"command": "pnpm --filter storefront exec tsc --noEmit", "exit_code": 0, "log": "final-storefront-tsc.log"},
+    {"command": "bash scripts/dev/check-gates.sh", "exit_code": 0, "log": "final-check-gates.log"},
+    {"command": "bash scripts/dev/test-local.sh --browser-store-domains", "exit_code": 0, "log": "final-browser-domains.log", "cases": 23},
+    {"command": "bash scripts/dev/test-local.sh --browser-storefront-publish", "exit_code": 0, "log": "final-browser-publish.log", "cases": 23},
+    {"command": "bash scripts/dev/test-local.sh --browser-identity", "exit_code": 0, "log": "final-browser-identity.log", "go_tests": 3}
+  ],
+  "not_run": ["r04 input runner pinned binary unavailable", "production DNS/TLS/Caddy", "cross-session/tab recovery", "WebKit/Firefox", "full release gates"],
+  "boundary": "Production Next + Go + isolated real PG; signed MOCK IdP, scripted DNS/TLS and synthetic edge. Apex DTO screenshot and clipboard matrix separately MOCK. No production changes."
+}

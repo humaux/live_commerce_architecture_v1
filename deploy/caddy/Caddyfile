@@ -34,6 +34,15 @@
 		output stdout
 		format json
 	}
+	# R5 store-domains (Decision 4): on-demand TLS for the platform subdomains (*.<LC_STORE_BASE_DOMAIN>) and
+	# merchant-owned domains, all served by the catch-all https:// site below. A certificate is issued only after
+	# the internal ask endpoint admits the host (an ACTIVE platform/merchant origin or a TLS_PENDING merchant
+	# origin); every other host gets no certificate (fail closed). The ask's in-memory admitted set in Go
+	# (internal/tlsask) is the only limiter: Caddy 2.11 dropped the on_demand_tls `interval`/`burst` knobs, so
+	# they are absent here. The URL is Caddy's on_demand_tls ask form: {host} is replaced by the hostname.
+	on_demand_tls {
+		ask http://127.0.0.1:8080/internal/tls-ask?domain={host}
+	}
 }
 
 (edge) {
@@ -60,6 +69,9 @@
 	# can carry those URLs as well. Other parameters stay visible (e.g. hub.challenge) for triage.
 	# Verified by smoke S40 (canary values through the hooks and admin hosts; none may reach any
 	# container log). Add a parameter here whenever a route starts taking a secret in its query.
+	# R5 store-domains: the per-row TLS proof nonce is a PATH segment (/.well-known/lc-domain-check/<nonce>,
+	# Decision 3), not a query parameter, so it is rewritten by the regexp filter below — the nonce must
+	# never reach the json-file logs either (collect-diagnostics.sh bundles them).
 	# Contains client IPs: retention is owner decision O8.
 	log {
 		output stdout
@@ -77,6 +89,10 @@
 					replace password REDACTED
 					replace new_password REDACTED
 					replace email REDACTED
+				}
+				request>uri regexp {
+					pattern /\.well-known/lc-domain-check/[^/?]+
+					replace /.well-known/lc-domain-check/REDACTED
 				}
 				request>headers>Referer query {
 					replace hub.verify_token REDACTED
@@ -133,6 +149,30 @@
 	# store's bucket. Caddy's no-trusted_proxies default already replaces it; this pins the rule for review, and
 	# preflight P18 proves no CDN sits in front (DNS-only), so {remote_host} is the real buyer address.
 	request_header X-Forwarded-For {remote_host}
+	reverse_proxy 127.0.0.1:3200
+}
+
+# R5 store-domains (Decision 4): the catch-all serves the storefront for every hostname the on_demand_tls ask
+# admits — the platform subdomains (*.<LC_STORE_BASE_DOMAIN>) and merchant-owned domains. The explicit hosts
+# above (admin, api, hooks, shop) are more specific and keep their own blocks, so this never shadows them; an
+# unadmitted host never gets a certificate and the handshake fails closed. The storefront derives its origin
+# from Host, so the same X-Forwarded-For overwrite as LC_STORE_HOST (P18) applies to every merchant domain.
+https:// {
+	import edge
+	# P0-4: on-demand TLS is per-site. The global on_demand_tls block only sets the ask;
+	# without this directive the catch-all never asks and an admitted host gets no certificate (fail closed).
+	tls {
+		on_demand
+	}
+	request_body {
+		max_size 1MB
+	}
+	request_header X-Forwarded-For {remote_host}
+	# P1-2: the per-row TLS proof path is answered by the api (control.tls_pending_nonce), not the storefront;
+	# it exists for TLS_PENDING hosts and that path only, so it routes to :8080 before the storefront fallback.
+	handle /.well-known/lc-domain-check/* {
+		reverse_proxy 127.0.0.1:8080
+	}
 	reverse_proxy 127.0.0.1:3200
 }
 

@@ -110,6 +110,7 @@ authorities(name) AS (VALUES
   ('commerce_meta_curator'),('commerce_meta_consumer'),('commerce_meta_worker'),('commerce_media_registrar'),
   ('commerce_media_worker'),('commerce_media_executor'),('commerce_media_recovery'),
   ('commerce_stripe_ingress'),('commerce_payment_registrar'),('commerce_claims_intake'),('commerce_storefront_registrar'),
+  ('commerce_storefront_verifier'),
   -- claims-retention-purge-v1 §4: the job authority (lc_retention_job) and the operator authority, which no
   -- provisioned login may reach (lc_retention_operator is created only by docs/runbooks/claims-data-deletion.md).
   ('commerce_retention_job'),('commerce_retention_operator'),

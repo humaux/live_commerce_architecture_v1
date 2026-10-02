@@ -109,6 +109,7 @@ const (
 	designPublishedRoute // GET /v1/buyer/design/published
 	designPreviewRoute   // GET /v1/buyer/design/preview, token in X-Commerce-Design-Preview
 	storeMediaRoute      // GET /v1/buyer/media/s/{image_id} (route.image; id is empty)
+	primaryOriginRoute   // GET /v1/buyer/storefront/primary-origin (R5 store-domains D3): no buyer bearer
 	// catalog-core (catalogv2.go): public reads, no buyer bearer, origin + BFF key only.
 	collectionMediaRoute      // GET /v1/buyer/media/c/{collection_id}/{image_id}
 	catalogV2ProductsRoute    // GET /v1/buyer/catalog/v2/products
@@ -136,6 +137,8 @@ func matchRoute(path string) route {
 		return route{kind: designPublishedRoute}
 	case designPreviewPath:
 		return route{kind: designPreviewRoute}
+	case primaryOriginPath:
+		return route{kind: primaryOriginRoute}
 	case "/v1/buyer/catalog":
 		return route{kind: catalogRoute}
 	case "/v1/buyer/checkout-options":
@@ -234,7 +237,7 @@ func allowed(kind routeKind, method string) bool {
 	case bootstrapRoute, retireRoute:
 		return method == http.MethodPost
 	case catalogRoute, optionsRoute, ordersRoute, paymentRoute, mediaRoute, designPublishedRoute, designPreviewRoute, storeMediaRoute, collectionMediaRoute,
-		catalogV2ProductsRoute, catalogV2ProductRoute, catalogV2CollectionsRoute, catalogV2CollectionRoute:
+		catalogV2ProductsRoute, catalogV2ProductRoute, catalogV2CollectionsRoute, catalogV2CollectionRoute, primaryOriginRoute:
 		return method == http.MethodGet
 	case cartRoute:
 		return method == http.MethodGet || method == http.MethodPut
@@ -551,6 +554,9 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 	}
 	if isCatalogV2(selected.kind) {
 		return h.catalogV2Get(ctx, w, r, selected)
+	}
+	if selected.kind == primaryOriginRoute {
+		return h.primaryOriginGet(ctx, w, r)
 	}
 	if selected.kind == sessionRoute && r.Method == http.MethodPost {
 		if err := decodeJSON(r, &struct{}{}); err != nil {

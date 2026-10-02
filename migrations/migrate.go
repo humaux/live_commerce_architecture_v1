@@ -33,6 +33,17 @@ var ErrMigrationBusy = errors.New("another migration is running")
 // Apply requires an explicitly provisioned migration-owner pool, never the API pool.
 // Embedded numbered SQL files apply in lexical order; old checksums never change.
 func Apply(ctx context.Context, pool *pgxpool.Pool) error {
+	return apply(ctx, pool, "")
+}
+
+// ApplyWithBaseDomain is Apply with the platform store base zone set for the migration transaction
+// (lc.store_base_domain GUC), so 0106's migration-time platform-origin backfill (N-P1-3) can run.
+// cmd/migrate is its only caller; an empty baseDomain skips the GUC and the backfill is a no-op.
+func ApplyWithBaseDomain(ctx context.Context, pool *pgxpool.Pool, baseDomain string) error {
+	return apply(ctx, pool, baseDomain)
+}
+
+func apply(ctx context.Context, pool *pgxpool.Pool, baseDomain string) error {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	// Only the lock winner detaches a dedicated connection across upstream
@@ -63,6 +74,13 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 	tx, err := lockConn.Begin(ctx)
 	if err != nil {
 		return err
+	}
+	if baseDomain != "" {
+		// is_local=true == SET LOCAL: the GUC is visible to every SQL statement in this migration tx
+		// (including 0106's migration-time backfill DO block) and vanishes at COMMIT.
+		if _, err = tx.Exec(ctx, `SELECT set_config('lc.store_base_domain', $1, true)`, baseDomain); err != nil {
+			return err
+		}
 	}
 	defer func() {
 		cleanup, stop := context.WithTimeout(context.Background(), 2*time.Second)
@@ -107,6 +125,10 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 	if err = tx.Commit(ctx); err != nil {
 		return err
 	}
+	// 0096_worker_authorities creates the worker-authority roles the River grants below reference
+	// (commerce_claims_worker / commerce_ads_worker / commerce_expiry_worker / commerce_payment_worker /
+	// commerce_payment_live). SPW02's "0080 head" upgrade test pre-creates those five roles before its
+	// partial apply, so the grants below run unconditionally on every Apply (798a136 behaviour).
 	// River 006 adds an enum value needed by later steps. PostgreSQL requires
 	// committing that step before use; the upstream runner owns those boundaries.
 	// Independent native ledgers retain the 0031/0032 fail-closed readiness
@@ -135,8 +157,10 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 	// (post_river/0019 then asserts it holds nothing).
 	if _, err = lockConn.Exec(ctx, `REVOKE ALL ON ALL TABLES IN SCHEMA river,river_payment,river_expiry FROM commerce_worker;
 		REVOKE ALL ON ALL SEQUENCES IN SCHEMA river,river_payment,river_expiry FROM commerce_worker;
-		REVOKE ALL ON SCHEMA river,river_payment,river_expiry FROM commerce_worker;
-		GRANT USAGE ON SCHEMA river TO commerce_claims_worker,commerce_ads_worker;
+		REVOKE ALL ON SCHEMA river,river_payment,river_expiry FROM commerce_worker`); err != nil {
+		return err
+	}
+	if _, err = lockConn.Exec(ctx, `GRANT USAGE ON SCHEMA river TO commerce_claims_worker,commerce_ads_worker;
 		GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river TO commerce_claims_worker,commerce_ads_worker;
 		REVOKE ALL ON river.river_migration FROM commerce_claims_worker,commerce_ads_worker;
 		GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river TO commerce_claims_worker,commerce_ads_worker`); err != nil {
@@ -189,8 +213,10 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 		REVOKE UPDATE(kind) ON river.river_job FROM commerce_checkout_runtime;
 		REVOKE UPDATE(queue) ON river.river_job FROM commerce_checkout_writer;
 		REVOKE ALL ON river.river_job_id_seq FROM commerce_checkout_runtime;
-		REVOKE ALL ON SCHEMA river FROM commerce_checkout_runtime,commerce_checkout_writer;
-		GRANT USAGE ON SCHEMA river_payment TO commerce_payment_worker,commerce_payment_live;
+		REVOKE ALL ON SCHEMA river FROM commerce_checkout_runtime,commerce_checkout_writer`); err != nil {
+		return err
+	}
+	if _, err = postTx.Exec(ctx, `GRANT USAGE ON SCHEMA river_payment TO commerce_payment_worker,commerce_payment_live;
 		GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river_payment TO commerce_payment_worker,commerce_payment_live;
 		REVOKE ALL ON river_payment.river_migration FROM commerce_payment_worker,commerce_payment_live;
 		GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river_payment TO commerce_payment_worker,commerce_payment_live;

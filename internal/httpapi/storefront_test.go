@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"livecommerce/internal/storefrontadmin"
+	"livecommerce/internal/storefrontdomains"
 )
 
 func TestStorefrontTransportRulesBeforeDatabase(t *testing.T) {
@@ -34,8 +35,13 @@ func TestStorefrontTransportRulesBeforeDatabase(t *testing.T) {
 		{"POST not json", "POST", base + "/publication", `nope`, nil, 400},
 		{"POST on the read resource", "POST", base, body, nil, 405},
 		{"GET on the write resource", "GET", base + "/publication", "", nil, 405},
-		// the operator half has no merchant route of any spelling
-		{"no domain route POST", "POST", base + "/domains", body, nil, 404},
+		// R5 store-domains: the merchant self-service domain routes (Decision 3) are merchant HTTP, not operator CLI.
+		{"GET domains admitted", "GET", base + "/domains", "", nil, 401},
+		{"GET domains query", "GET", base + "/domains?x=1", "", nil, 422},
+		{"POST domains admitted", "POST", base + "/domains", `{"hostname":"shop.example.com"}`, nil, 401},
+		{"POST domains unknown key", "POST", base + "/domains", `{"published":true,"expected_version":0}`, nil, 400},
+		{"POST domains suspend admitted", "POST", base + "/domains/suspend", `{"origin":"https://shop.example.com"}`, nil, 401},
+		{"POST domains detach admitted", "POST", base + "/domains/detach", `{"origin":"https://shop.example.com"}`, nil, 401},
 		{"no domain route PUT", "PUT", base + "/domain", body, nil, 404},
 		{"no domain bind", "POST", base + "/domains/bind", body, nil, 404},
 	} {
@@ -54,5 +60,25 @@ func TestStorefrontUnavailableMapsTo503(t *testing.T) {
 	}
 	if status, _ := classify(errors.New("other")); status != http.StatusInternalServerError {
 		t.Fatalf("unmapped error = %d", status)
+	}
+}
+
+func TestStorefrontDomainsErrorMapping(t *testing.T) {
+	for _, tc := range []struct {
+		err    error
+		status int
+		code   string
+	}{
+		{storefrontdomains.ErrUnavailable, http.StatusServiceUnavailable, "unavailable"},
+		{storefrontdomains.ErrBaseDomainMissing, http.StatusServiceUnavailable, "unavailable"},
+		{storefrontdomains.ErrReservedHostname, http.StatusUnprocessableEntity, "invalid_request"},
+		{storefrontdomains.ErrDomainActive, http.StatusConflict, "conflict"},
+		{storefrontdomains.ErrDomainSuspended, http.StatusConflict, "conflict"},
+		{storefrontdomains.ErrDomainDetached, http.StatusConflict, "conflict"},
+		{storefrontdomains.ErrDomainOwnedElsewhere, http.StatusConflict, "conflict"},
+	} {
+		if status, code := classify(tc.err); status != tc.status || code != tc.code {
+			t.Fatalf("classify(%v) = %d %s, want %d %s", tc.err, status, code, tc.status, tc.code)
+		}
 	}
 }

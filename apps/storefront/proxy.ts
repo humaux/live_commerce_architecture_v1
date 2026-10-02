@@ -1,4 +1,5 @@
-// Preview-mode plumbing for the storefront pages. BFF/Go: none (no upstream call here).
+// Canonical-host routing uses Go's /v1/buyer/storefront/primary-origin before page/BFF work.
+// Preview-mode plumbing for the storefront pages follows after that server-authoritative check.
 // Why a proxy: a layout cannot read searchParams, but the shell (announcement, header, footer, accent) must render the DRAFT
 // design when the merchant opens "?preview=<token>" (contracts/storefront-v2.md section B). So this copies a well-formed
 // token into the request header x-shop-preview (lib/shop-upstream.ts previewToken reads it) and ALWAYS deletes any
@@ -8,10 +9,13 @@
 // Preview responses are never cacheable and never indexable: Cache-Control: no-store + X-Robots-Tag: noindex.
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { canonicalRedirect } from "./lib/primary-origin";
 
 const TOKEN = /^[A-Za-z0-9_-]{43}$/;
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
+  const canonical = await canonicalRedirect(request);
+  if (canonical) return canonical;
   const headers = new Headers(request.headers);
   headers.delete("x-shop-preview");
   headers.delete("x-shop-locale");
@@ -29,4 +33,7 @@ export function proxy(request: NextRequest) {
   return response;
 }
 
-export const config = { matcher: ["/:locale(zh-CN|zh-TW|en)", "/:locale(zh-CN|zh-TW|en)/:path*"] };
+// Only the TLS ownership protocol is exempt: it must remain reachable on its
+// exact SNI host (including TLS_PENDING). All buyer GET/HEAD routes canonicalize,
+// including static assets, media and API reads; writes are never redirected.
+export const config = { matcher: ["/((?!\\.well-known/lc-domain-check/).*)"] };

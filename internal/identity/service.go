@@ -19,6 +19,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"regexp"
@@ -59,6 +60,9 @@ type Policy struct {
 	SessionTTL        time.Duration
 	OnboardingEnabled bool
 	Currencies        []string
+	// StoreBaseDomain is the platform base zone (LC_STORE_BASE_DOMAIN) the onboarding flow writes the
+	// ACTIVE platform subdomain for (https://<handle>.<base>). Empty = assign the handle only, no domain row.
+	StoreBaseDomain string
 }
 
 type Service struct {
@@ -172,6 +176,16 @@ type Store struct {
 	TenantID    string `json:"tenant_id"`
 	StoreID     string `json:"store_id"`
 	WarehouseID string `json:"warehouse_id"`
+	// Handle is the store's platform handle (https://<handle>.<base>), assigned by the DB trigger from the name.
+	Handle string `json:"handle"`
+	// StorefrontOrigin is the ACTIVE platform subdomain written at onboarding ("" when no base domain is set).
+	StorefrontOrigin string `json:"storefront_origin"`
+}
+
+// SuggestedHandle is the onboarding slug preview + live availability (no write).
+type SuggestedHandle struct {
+	Suggested string `json:"suggested"`
+	Available bool   `json:"available"`
 }
 
 func (s *Service) CreateInitialStore(ctx context.Context, token, key string, input StoreRequest) (Store, error) {
@@ -191,7 +205,28 @@ func (s *Service) CreateInitialStore(ctx context.Context, token, key string, inp
 	hash := sha256.Sum256(canonical)
 	var result Store
 	err := s.transaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
-		return tx.QueryRow(ctx, `SELECT tenant_id::text,store_id::text,warehouse_id::text FROM identity.create_initial_store($1,$2,$3,$4,$5,$6,$7)`, digest(token), key, hash[:], input.TenantName, input.StoreName, input.WarehouseName, input.Currency).Scan(&result.TenantID, &result.StoreID, &result.WarehouseID)
+		if err := tx.QueryRow(ctx, `SELECT tenant_id::text,store_id::text,warehouse_id::text FROM identity.create_initial_store($1,$2,$3,$4,$5,$6,$7)`, digest(token), key, hash[:], input.TenantName, input.StoreName, input.WarehouseName, input.Currency).Scan(&result.TenantID, &result.StoreID, &result.WarehouseID); err != nil {
+			return err
+		}
+		// control.ensure_store_platform_domain (0106, owner commerce_storefront_writer, EXECUTE commerce_identity): the
+		// store's ACTIVE platform subdomain. Cross-domain call from the identity login to a storefront definer, so the
+		// identity authority gains no direct write to control.storefront_domains. Returns the assigned handle too.
+		var raw []byte
+		if err := tx.QueryRow(ctx, `SELECT control.ensure_store_platform_domain($1::uuid,$2)`, result.StoreID, s.policy.StoreBaseDomain).Scan(&raw); err != nil {
+			return err
+		}
+		var pd struct {
+			Handle string  `json:"handle"`
+			Origin *string `json:"origin"`
+		}
+		if err := json.Unmarshal(raw, &pd); err != nil {
+			return err
+		}
+		result.Handle = pd.Handle
+		if pd.Origin != nil {
+			result.StorefrontOrigin = *pd.Origin
+		}
+		return nil
 	})
 	err = translateError(err)
 	if errors.Is(err, ErrUnauthorized) || errors.Is(err, ErrConflict) {
@@ -201,6 +236,29 @@ func (s *Service) CreateInitialStore(ctx context.Context, token, key string, inp
 		return Store{}, ErrUnavailable
 	}
 	return result, nil
+}
+
+// SuggestStoreHandle previews the handle slug the onboarding wizard would assign for a store name and whether it is
+// still free (Decision 1 "suggests slug, checks availability live"). It never writes: the DB trigger assigns the real
+// handle from the same name on create, suffixing on collision. The nonce is only the store-<id8> fallback preview.
+func (s *Service) SuggestStoreHandle(ctx context.Context, name string) (SuggestedHandle, error) {
+	name = strings.TrimSpace(name)
+	if !validName(name) {
+		return SuggestedHandle{}, ErrInvalid
+	}
+	var raw []byte
+	err := s.transaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
+		// control.suggest_store_handle (0106, owner commerce_identity_writer, EXECUTE commerce_identity): slug + availability.
+		return tx.QueryRow(ctx, `SELECT control.suggest_store_handle($1,$2)`, name, randomNonce()).Scan(&raw)
+	})
+	if err != nil {
+		return SuggestedHandle{}, ErrUnavailable
+	}
+	var out SuggestedHandle
+	if err := json.Unmarshal(raw, &out); err != nil || out.Suggested == "" {
+		return SuggestedHandle{}, ErrUnavailable
+	}
+	return out, nil
 }
 
 func (s *Service) Logout(ctx context.Context, token string) error {
@@ -266,6 +324,12 @@ func randomToken() string {
 	b := make([]byte, 32)
 	_, _ = rand.Read(b)
 	return base64.RawURLEncoding.EncodeToString(b)
+}
+
+func randomNonce() string {
+	b := make([]byte, 16)
+	_, _ = rand.Read(b)
+	return hex.EncodeToString(b)
 }
 func digest(s string) []byte { hash := sha256.Sum256([]byte(s)); return hash[:] }
 func validToken(s string) bool {

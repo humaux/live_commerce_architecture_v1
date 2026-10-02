@@ -51,9 +51,12 @@ const collectionImage = `${collectionItem}/image`;
 const catalogV2Writes = `${collectionsRoot}|${collectionItem}/delete|${collectionImage}|${collectionImage}/delete`;
 const orders = `orders(?:/${uuid})?`;
 // R3 storefront-publish: GET storefront (state + bound origins), POST storefront/publication {published, expected_version}
-// -> Go internal/httpapi/storefront.go. Domain binding has no merchant route (operator CLI cmd/store-admin).
+// -> Go internal/httpapi/storefront.go.
+// R5 store-domains (Decision 3): the merchant self-service domain routes on the same card -> the same Go file.
 const storefrontRead = "storefront";
 const storefrontWrite = "storefront/publication";
+const storefrontDomains = "storefront/domains";
+const storefrontDomainMove = "storefront/domains/(?:suspend|detach)";
 const studioDetail = `live-sessions/${uuid}`;
 const studioInput = `${studioDetail}/input(?:/(?:start|token|prepared))?`;
 const studioInputRead = `${studioDetail}/input(?:/prepared)?`;
@@ -63,10 +66,10 @@ const studioAction = `${studioDetail}/(?:rehearsal/(?:start|stop)|input/(?:start
 const studioAny = new RegExp(`^(?:live-sessions|${studioDetail}|${studioAction}|${studioInputRead}|${studioDetail}/${claimsSubpath})$`);
 const routes: Record<string, RegExp> = {
   GET: new RegExp(
-    `^(catalog-ledger|${catalogProducts}|products|products/${uuid}|${collectionsRoot}|${collectionItem}|${collectionImage}|warehouses|inventory|products/${uuid}/skus|${purchaseEntry}|${storefrontRead}|${imagesRoot}|${imageItem}|${designGetPaths}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy}|${orders}|live-sessions|${studioDetail}|${studioInputRead}|${claimsRoutes.GET}|${adsRoutes.GET}|${metaConnectRoutes.GET})$`,
+    `^(catalog-ledger|${catalogProducts}|products|products/${uuid}|${collectionsRoot}|${collectionItem}|${collectionImage}|warehouses|inventory|products/${uuid}/skus|${purchaseEntry}|${storefrontRead}|${storefrontDomains}|${imagesRoot}|${imageItem}|${designGetPaths}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy}|${orders}|live-sessions|${studioDetail}|${studioInputRead}|${claimsRoutes.GET}|${adsRoutes.GET}|${metaConnectRoutes.GET})$`,
   ),
   POST: new RegExp(
-    `^(products|skus|warehouses|inventory/adjustments|products/${uuid}/archive|${storefrontWrite}|${imageWrites}|${designPostPaths}|${catalogV2Writes}|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets|live-sessions|${studioAction}|${claimsRoutes.POST}|${adsRoutes.POST}|${metaConnectRoutes.POST})$`,
+    `^(products|skus|warehouses|inventory/adjustments|products/${uuid}/archive|${storefrontWrite}|${storefrontDomains}|${storefrontDomainMove}|${imageWrites}|${designPostPaths}|${catalogV2Writes}|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets|live-sessions|${studioAction}|${claimsRoutes.POST}|${adsRoutes.POST}|${metaConnectRoutes.POST})$`,
   ),
   PATCH: new RegExp(`^(products/${uuid}|${collectionItem}|skus/${uuid}|${studioDetail}|${claimsRoutes.PATCH})$`),
   // Studio PUT is only the comment-source bind (claims-request.ts); settings PUTs are the rest.
@@ -138,7 +141,12 @@ async function route(request: Request, context: Context) {
     return error(422, "invalid_request");
   // URL.search drops an empty trailing '?'. Exact resources must reject that too;
   // Only collection GETs inherit the bounded pagination parser in Go.
-  const storefront = path === storefrontRead || path === storefrontWrite;
+  const storefrontDomainMoveRoute = new RegExp(`^${storefrontDomainMove}$`);
+  const storefront =
+    path === storefrontRead ||
+    path === storefrontWrite ||
+    path === storefrontDomains ||
+    storefrontDomainMoveRoute.test(path);
   const exactResource =
     storefront ||
     ((path === "markets" || path.startsWith("markets/")) &&
@@ -195,9 +203,9 @@ async function route(request: Request, context: Context) {
         (request.headers.has("content-length") && request.headers.get("content-length") !== "0"))
     ) return error(422, "invalid_request");
   }
-  // The storefront GET carries no body, key or transfer-encoding (no query: exactResource above).
+  // The storefront GET (state and domains) carries no body, key or transfer-encoding (no query: exactResource above).
   if (
-    request.method === "GET" && path === storefrontRead &&
+    request.method === "GET" && (path === storefrontRead || path === storefrontDomains) &&
     (request.body !== null || request.headers.has("transfer-encoding") || request.headers.has("idempotency-key") ||
       (request.headers.has("content-length") && request.headers.get("content-length") !== "0"))
   )

@@ -30,6 +30,7 @@ type service interface {
 	Start(context.Context) (identity.Flow, error)
 	Complete(context.Context, string, string, string) (identity.Session, error)
 	CreateInitialStore(context.Context, string, string, identity.StoreRequest) (identity.Store, error)
+	SuggestStoreHandle(context.Context, string) (identity.SuggestedHandle, error)
 	Logout(context.Context, string) error
 }
 
@@ -86,6 +87,20 @@ func NewHandler(s service, bffKey string) (http.Handler, error) {
 			return
 		}
 		result, err := s.CreateInitialStore(r.Context(), token, r.Header.Get("Idempotency-Key"), in)
+		if err != nil {
+			failure(w, err)
+			return
+		}
+		respond(w, result)
+	})
+	mux.HandleFunc("POST /v1/identity/handle-suggest", func(w http.ResponseWriter, r *http.Request) {
+		var in struct {
+			StoreName string `json:"store_name"`
+		}
+		if !body(w, r, &in) {
+			return
+		}
+		result, err := s.SuggestStoreHandle(r.Context(), in.StoreName)
 		if err != nil {
 			failure(w, err)
 			return

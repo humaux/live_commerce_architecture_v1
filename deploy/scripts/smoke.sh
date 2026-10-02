@@ -173,11 +173,17 @@ PY
       -v "$LC_DEPLOY_DIR/caddy/Caddyfile:/etc/caddy/Caddyfile:ro")
     if runc S05 docker run "${cargs[@]}" "$img" caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile &&
       docker run "${cargs[@]}" "$img" caddy fmt /etc/caddy/Caddyfile >"$EV/logs/S05.fmt" 2>>"$EV/logs/S05.log" &&
-      cmp -s "$EV/logs/S05.fmt" "$LC_DEPLOY_DIR/caddy/Caddyfile"; then
-      rec S05 PASS "caddy validate + fmt (image ${img%%@*})"
+      cmp -s "$EV/logs/S05.fmt" "$LC_DEPLOY_DIR/caddy/Caddyfile" &&
+      # R5 store-domains P0-4: real Caddy parse (not a static grep of the Caddyfile) must show the catch-all
+      # site's automation policy as on_demand:true. `adapt` expands the config the way caddy run will load it,
+      # so a dropped `tls { on_demand }` (or one on the wrong site) fails here. The global on_demand_tls ask
+      # is an object ("on_demand": {...}), so the boolean true matches only the per-site directive.
+      docker run "${cargs[@]}" "$img" caddy adapt --config /etc/caddy/Caddyfile --adapter caddyfile --pretty >"$EV/logs/S05.adapt.json" 2>>"$EV/logs/S05.log" &&
+      grep -Eq '"on_demand"[[:space:]]*:[[:space:]]*true' "$EV/logs/S05.adapt.json"; then
+      rec S05 PASS "caddy validate + fmt + adapt(on_demand) (image ${img%%@*})"
     else
       diff "$LC_DEPLOY_DIR/caddy/Caddyfile" "$EV/logs/S05.fmt" >>"$EV/logs/S05.log" 2>&1 || true
-      rec S05 FAIL "caddy validate/fmt (logs/S05.log)"
+      rec S05 FAIL "caddy validate/fmt/adapt-on_demand (logs/S05.log)"
     fi
   else
     rec S05 NOT_RUN "docker not available"
