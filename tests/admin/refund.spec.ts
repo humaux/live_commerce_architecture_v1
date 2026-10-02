@@ -28,6 +28,8 @@ const partial = Number(required("LC_BROWSER_PARTIAL")); // minor units, a multip
 const phase = required("LC_BROWSER_PHASE");
 const cookieName = "__Host-commerce_session";
 const money = (minor: number) => (minor / 100).toFixed(2);
+// stop-bleed D02: the admin shows a whole TWD amount as "NT$25" (no ".00"), cents only when there are cents (lib/client.ts money())
+const shown = (minor: number) => new RegExp(`NT\\$${minor % 100 === 0 ? minor / 100 : (minor / 100).toFixed(2)}(?![\\d.,])`);
 
 const ui = {
   refundSection: /refund|退款/i,
@@ -140,7 +142,7 @@ test.describe(() => {
     const posts = watchRefundPosts(page);
     const detail = await expand(page);
     // numbers before: captured / refunded / in progress / refundable
-    await expect(detail).toContainText(money(captured));
+    await expect(detail).toContainText(shown(captured));
     const before = posts.length;
     await refundThroughDialog(page, detail, partial, captured);
     expect(posts.length - before).toBe(1);
@@ -151,7 +153,7 @@ test.describe(() => {
     expect(body).toMatchObject({ amount_minor: partial, reason: "requested_by_customer", expected_refundable_minor: captured });
     // state comes from GET: the refund is in progress (held pending at the provider), refundable shrank
     await expect(inProgress(detail)).toBeVisible();
-    await expect(detail).toContainText(money(captured - partial));
+    await expect(detail).toContainText(shown(captured - partial));
     await expect(settled(detail)).toHaveCount(0);
     // Refresh on a non-terminal refund is offered and answers without an error banner (throttle => retry later).
     // The page never polls (refund-fulfilment-ui brief: "Refresh button per non-terminal refund"); a refresh re-GETs the
@@ -183,7 +185,7 @@ test.describe(() => {
       if (await refresh.count()) await refresh.first().click();
       await expect(settled(detail)).toBeVisible({ timeout: 3_000 });
     }).toPass({ timeout: 60_000, intervals: [1_000, 3_000, 5_000] });
-    await expect(detail).toContainText(money(captured - partial));
+    await expect(detail).toContainText(shown(captured - partial));
     await refundThroughDialog(page, detail, captured - partial, captured - partial);
     const body = JSON.parse(posts[posts.length - 1].body ?? "{}") as Record<string, unknown>;
     expect(body).toMatchObject({ amount_minor: captured - partial, expected_refundable_minor: captured - partial });
@@ -195,7 +197,7 @@ test.describe(() => {
       await expect(detail.locator('[data-state="REFUNDED"]').first()).toBeVisible({ timeout: 3_000 });
     }).toPass({ timeout: 60_000, intervals: [1_000, 3_000, 5_000] });
     await expect(detail.getByRole("button", { name: ui.refundAction })).toHaveCount(0); // nothing refundable left
-    await expect(detail).toContainText(money(captured));
+    await expect(detail).toContainText(shown(captured));
     // stock and order state are untouched by a refund: still a confirmed order awaiting the merchant's fulfilment
     await expect(detail.locator('[data-state="CONFIRMED"]').first()).toBeVisible();
     await expect(detail.locator('[data-state="MANUAL_UNASSIGNED"]').first()).toBeVisible();
@@ -207,7 +209,7 @@ test.describe(() => {
     await openOrders(page, "en");
     const detail = await expand(page);
     await expect(detail).toContainText(ui.refundSection);
-    await expect(detail).toContainText(money(captured));
+    await expect(detail).toContainText(shown(captured));
     await expect(detail.getByRole("button", { name: ui.refundAction })).toHaveCount(0);
     await expect(detail.getByRole("button", { name: ui.refresh })).toHaveCount(0);
     const status = await page.evaluate(async ({ store: s, order: o }) => {
@@ -222,7 +224,7 @@ test.describe(() => {
       await signedLogin(page);
       await openOrders(page, locale);
       const detail = await expand(page);
-      await expect(detail).toContainText(money(captured));
+      await expect(detail).toContainText(shown(captured));
       await page.setViewportSize({ width: 1586, height: 992 });
       await shot(page, "refund", locale, "desktop");
       await page.setViewportSize({ width: 390, height: 844 });

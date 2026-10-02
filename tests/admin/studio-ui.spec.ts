@@ -116,10 +116,10 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
   await expect(page.getByText("Prepared rehearsal authority")).toBeVisible();
   await expect(page.getByRole("button", { name: "Start MOCK rehearsal" })).toBeEnabled();
-  const schedule = page.getByLabel("Scheduled time (UTC, optional)");
+  const schedule = page.getByLabel("Scheduled time (Taipei time, optional)");
   await expect(schedule).toHaveAttribute("type", "text");
   await expect(schedule).toHaveAttribute("placeholder", "YYYY-MM-DDTHH:mm");
-  const picker = page.getByLabel("Choose scheduled date and time (UTC)");
+  const picker = page.getByLabel("Choose scheduled date and time (Taipei time)");
   await expect(page.locator(".studio-schedule-picker")).toBeVisible();
   await expect(picker).toHaveAttribute("type", "datetime-local");
   await expect(picker).toBeEnabled();
@@ -135,15 +135,15 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await schedule.fill("2030-02-30T00:00");
   const beforeInvalid = createRequests.length;
   await page.getByRole("button", { name: "Create draft" }).click();
-  await expect(page.getByText("Enter a valid UTC time from year 2000 through 2199, or leave it blank.")).toBeVisible();
+  await expect(page.getByText("Enter a valid Taipei time from year 2000 through 2199, or leave it blank.")).toBeVisible();
   expect(createRequests).toHaveLength(beforeInvalid);
-  await schedule.fill("2030-01-01T00:00");
+  await schedule.fill("2030-01-01T08:00");
   await page.getByLabel("Canvas ratio").selectOption("16:9");
   const beforeCreateURL = page.url();
   await page.getByRole("button", { name: "Create draft" }).click();
   await expect.poll(() => page.url()).not.toBe(beforeCreateURL);
   await expect(page.getByLabel("Scene name")).toHaveValue("STU04 browser-created scene");
-  await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue("2030-01-01T00:00");
+  await expect(page.getByLabel("Scheduled time (Taipei time, optional)")).toHaveValue("2030-01-01T08:00");
   const createdURL = page.url();
   expect(createdURL).toMatch(/scene=[0-9a-f-]{36}/);
   await expect(page.getByText("No current prepared authority", { exact: false })).toBeVisible();
@@ -155,7 +155,7 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await expect(page.getByText("STU04 browser-edited scene").first()).toBeVisible();
   await page.reload();
   await expect(page.getByLabel("Scene name")).toHaveValue("STU04 browser-edited scene");
-  await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue("2030-01-01T00:00");
+  await expect(page.getByLabel("Scheduled time (Taipei time, optional)")).toHaveValue("2030-01-01T08:00");
 
   // Native Chromium popups are not page DOM dialogs. A screenshot between
   // click and keys redirects them to the input, so capture after selection.
@@ -165,20 +165,20 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await page.keyboard.press("Enter");
   const picked = await picker.inputValue();
   expect(picked).toMatch(/^\d{4}-\d\d-\d\dT\d\d:\d\d$/);
-  expect(picked).not.toBe("2030-01-01T00:00");
-  await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue(picked);
+  expect(picked).not.toBe("2030-01-01T08:00");
+  await expect(page.getByLabel("Scheduled time (Taipei time, optional)")).toHaveValue(picked);
   await page.screenshot({ path: `${evidence}/en-native-calendar-selected.png`, fullPage: false });
   const beforePickerVersion = await displayedVersion(page);
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect.poll(() => displayedVersion(page)).toBe(beforePickerVersion + 1);
   await page.reload();
-  await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue(picked);
-  await page.getByLabel("Scheduled time (UTC, optional)").fill("2030-01-01T00:00");
+  await expect(page.getByLabel("Scheduled time (Taipei time, optional)")).toHaveValue(picked);
+  await page.getByLabel("Scheduled time (Taipei time, optional)").fill("2030-01-01T08:00");
   const beforeRestoreVersion = await displayedVersion(page);
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect.poll(() => displayedVersion(page)).toBe(beforeRestoreVersion + 1);
   await page.reload();
-  await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue("2030-01-01T00:00");
+  await expect(page.getByLabel("Scheduled time (Taipei time, optional)")).toHaveValue("2030-01-01T08:00");
 
   // Two real signed UI views race on the same version. The stale tab must
   // report a conflict, not overwrite the newer persisted edit.
@@ -247,7 +247,7 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await expect(page.getByText("STU04 phone-edited scene").first()).toBeVisible();
   await page.reload();
   await expect(page.getByLabel("Scene name")).toHaveValue("STU04 phone-edited scene");
-  await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue("2030-01-01T00:00");
+  await expect(page.getByLabel("Scheduled time (Taipei time, optional)")).toHaveValue("2030-01-01T08:00");
   await page.setViewportSize({ width: 1586, height: 992 });
 
   // Establish a real Orders→Studio route boundary before the uncertain write.
@@ -371,7 +371,7 @@ test("STU04 read-only and expired sessions cannot mutate", async ({ browser }) =
   await expect(page.getByRole("button", { name: "Start MOCK rehearsal" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Request stop" })).toBeDisabled();
   await expect(page.getByLabel("Scene name")).toBeDisabled();
-  await expect(page.getByLabel("Choose scheduled date and time (UTC)")).toBeDisabled();
+  await expect(page.getByLabel("Choose scheduled date and time (Taipei time)")).toBeDisabled();
   await expect(page.getByRole("button", { name: /New scene/ })).toBeDisabled();
   await context.close();
   const expired = await browser.newContext({ baseURL: origin });

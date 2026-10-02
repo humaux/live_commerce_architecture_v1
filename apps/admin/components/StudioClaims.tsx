@@ -37,9 +37,11 @@ import {
 import type { ClaimSource, SourcePlatform } from "@/lib/claim-source-model";
 import { claimSourceBody, claimSourceInputMax, validClaimSourceInput, type ClaimSourceForm } from "@/lib/claims-request";
 import {
-  currencyDigits, parsePriceMinor, persistedReasons, priceInputText, type Board, type Bundle, type CatalogProduct, type CatalogSKU,
+  parseLivePrice, persistedReasons, type Board, type Bundle, type CatalogProduct, type CatalogSKU,
   type ImportResult, type LibraryEntry, type ManualResult, type MatchMode, type Offer,
 } from "@/lib/claims-model";
+import { fromMinor } from "@/lib/catalog-v2-model";
+import { displayTime } from "@/lib/orders-model";
 import { claimLinkMessage, claimsCopy, hostPrompt } from "@/lib/claims-copy";
 import { studioCopy } from "@/lib/studio-copy";
 import { metaConnectCopy } from "@/lib/meta-connect-copy";
@@ -55,10 +57,6 @@ type Pending = { action: Action; key: string; run: (key: string, boundary: strin
 type Facts = { detail: StudioDetail; board: Board; bundles: Bundle[]; next: string; source: ClaimSource | null; platforms: SourcePlatform[]; sourceError: StudioErrorCode | null; library: LibraryEntry[] | null };
 type Issued = { ref: string; origin: string; token: string | null; generation: number; expiresAt: string; released: boolean; replayed: boolean };
 
-function time(locale: Locale, value: string) {
-  return new Intl.DateTimeFormat(locale, { timeZone: "UTC", year: "numeric", month: "2-digit",
-    day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(value));
-}
 // A label beside (not around) its control keeps the accessible name exactly the label
 // text, so a select's option text never leaks into it.
 function Field({ id, label, hint, children }: { id: string; label: string; hint?: string; children: ReactNode }) {
@@ -322,7 +320,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
     if (!offerForm.sku) return setActionError({ action: "offer", code: "form", message: c.skuRequired });
     // Live price is optional; empty = none. Parsed in the SKU's own currency decimals (Go re-validates).
     const sku = skus.find((item) => item.id === offerForm.sku);
-    const live = offerForm.live.trim() === "" ? null : parsePriceMinor(offerForm.live, currencyDigits(sku?.currency ?? "USD"));
+    const live = offerForm.live.trim() === "" ? null : parseLivePrice(offerForm.live, sku?.currency ?? "USD");
     if (offerForm.live.trim() !== "" && live === null) return setActionError({ action: "offer", code: "form", message: c.live.livePriceInvalid });
     const body = { keyword, sku_id: offerForm.sku, max_quantity_per_claim: max, ...(live === null ? {} : { live_price_minor: live }) };
     void perform("offer", async (key, current) => {
@@ -342,7 +340,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
   // are re-sent unchanged from the loaded offer (the version CAS guards against a concurrent edit).
   function saveLivePrice(offer: Offer, text: string) {
     const clear = text.trim() === "";
-    const minor = clear ? 0 : parsePriceMinor(text, currencyDigits(offer.currency));
+    const minor = clear ? 0 : parseLivePrice(text, offer.currency);
     if (minor === null) return setActionError({ action: "update", code: "form", message: c.live.livePriceInvalid });
     const body = { expected_version: offer.version, max_quantity_per_claim: offer.max_quantity_per_claim, active: offer.active, live_price_minor: minor };
     void perform("update", async (key, current) => {
@@ -433,7 +431,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
 
   const link = issued?.token ? `${issued.origin}/${buyerLocale}/claim#t=${issued.token}` : "";
   const masked = issued ? `${issued.origin}/${buyerLocale}/claim#t=••••••••` : "";
-  const expiresText = issued ? time(locale, issued.expiresAt) : "";
+  const expiresText = issued ? displayTime(locale, issued.expiresAt) : "";
   const back = `/${locale}/studio?store=${encodeURIComponent(storeID)}&scene=${encodeURIComponent(scene)}`;
 
   return <WorkspaceFrame locale={locale} storeName={store?.name ?? shared.noStore} active="live" onBeforeNavigate={() => { setIssued(null); return true; }}>
@@ -470,7 +468,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
             </div>
             <dl className="claims-facts">
               <div><dt>{c.round}</dt><dd>{claimWindow.generation}</dd></div>
-              {claimWindow.state === "OPEN" && claimWindow.opened_at && <div><dt>{c.openedAt}</dt><dd>{time(locale, claimWindow.opened_at)}</dd></div>}
+              {claimWindow.state === "OPEN" && claimWindow.opened_at && <div><dt>{c.openedAt}</dt><dd>{displayTime(locale, claimWindow.opened_at)}</dd></div>}
             </dl>
             <Field id="claims-mode" label={c.mode}>
               <select id="claims-mode" value={claimWindow.state === "OPEN" ? claimWindow.match_mode : modeDraft} disabled={blocked || claimWindow.state === "OPEN"}
@@ -519,7 +517,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
                   <div><dt>{c.sourceVerification}</dt><dd data-testid="claims-source-verified">{source.verified ? c.sourceVerified : c.sourceUnverified}</dd></div>
                   <div><dt>{c.sourceCount}</dt><dd data-testid="claims-source-count">{source.intake_count}</dd></div>
                   <div><dt>{c.sourceCapped}</dt><dd data-testid="claims-source-capped">{source.intake_capped}</dd></div>
-                  <div><dt>{c.sourceUpdated}</dt><dd>{time(locale, source.updated_at)}</dd></div>
+                  <div><dt>{c.sourceUpdated}</dt><dd>{displayTime(locale, source.updated_at)}</dd></div>
                 </dl> : <p className="claims-muted" role="status" data-testid="claims-source-none">{c.sourceNone}</p>}
                 {/* No Meta binding on this store (platforms empty): point at the Settings connect card instead of a dead end. */}
                 {facts.platforms.length === 0 && <p className="claims-muted" role="status" data-testid="claims-source-connect">
@@ -578,8 +576,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
                   <thead><tr><th scope="col">{c.keyword}</th><th scope="col">{c.product}</th><th scope="col">{c.maxPerClaim}</th><th scope="col">{c.live.livePrice}</th><th scope="col">{c.status}</th><th scope="col">{c.actions}</th></tr></thead>
                   <tbody>{board.offers.map((offer) => {
                     const limit = limits[offer.offer_id] ?? String(offer.max_quantity_per_claim);
-                    const digits = currencyDigits(offer.currency);
-                    const savedPrice = offer.live_price_minor === null ? "" : priceInputText(offer.live_price_minor, digits);
+                    const savedPrice = offer.live_price_minor === null ? "" : fromMinor(offer.live_price_minor, offer.currency);
                     const price = prices[offer.offer_id] ?? savedPrice;
                     return <tr key={offer.offer_id} data-testid={`offer-${offer.keyword}`}>
                       <th scope="row" className="claims-keyword">{offer.keyword}</th>
@@ -692,7 +689,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
                 <td><span className="claims-product">{bundle.platform === "manual" ? bundle.label : c.sourcePlatform[bundle.platform]}</span><small>{bundle.bound ? c.bound : c.unbound}</small></td>
                 <td><ul className="claims-lines">{bundle.lines.map((line) => <li key={line.offer_id}>
                   <strong>{line.keyword} × {line.quantity}</strong><small>{line.applied ? c.inCart : c.notInCart}</small></li>)}</ul></td>
-                <td>{bundle.link.state === "ACTIVE" && bundle.link.expires_at ? c.linkActive(time(locale, bundle.link.expires_at))
+                <td>{bundle.link.state === "ACTIVE" && bundle.link.expires_at ? c.linkActive(displayTime(locale, bundle.link.expires_at))
                   : bundle.link.state === "EXPIRED" ? c.linkExpired : c.linkNone}</td>
                 <td className="claims-row-actions">
                   <button type="button" disabled={blocked} onClick={() => void issue(bundle, false)}>

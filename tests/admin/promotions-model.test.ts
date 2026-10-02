@@ -71,20 +71,25 @@ test("PRM03 create body: normalised code, major units to minor units, optional f
 });
 
 test("PRM04 update + toggle: version CAS key, form round trip, pause keeps every other field", () => {
-  const p = parsePromotion(row({ kind: "fixed", percent: null, fixed_minor: 25050, min_subtotal_minor: 100000, starts_at: "2026-10-01T01:00:00+00:00", total_limit: 5, version: 3 }));
+  // stop-bleed D02: a TWD amount is whole dollars (25000 = NT$250); an amount with cents round-trips as "250.50" and is refused until retyped whole
+  const p = parsePromotion(row({ kind: "fixed", percent: null, fixed_minor: 25000, min_subtotal_minor: 100000, starts_at: "2026-10-01T01:00:00+00:00", total_limit: 5, version: 3 }));
   const form = formFrom(p, "TWD");
-  assert.equal(form.value, "250.50");
+  assert.equal(form.value, "250");
   assert.equal(form.minSubtotal, "1000");
   assert.equal(form.startsAt, "2026-10-01T09:00");
   const body = updateBody(form, "TWD", p.version);
   assert.equal(body?.expected_version, 3);
-  assert.equal(body?.fixed_minor, 25050);
+  assert.equal(body?.fixed_minor, 25000);
   assert.equal(body?.starts_at, "2026-10-01T09:00:00+08:00");
   assert.equal(updateBody(form, "TWD", 0), undefined);
+  const cents = formFrom(parsePromotion(row({ kind: "fixed", percent: null, fixed_minor: 25050, version: 3 })), "TWD");
+  assert.equal(cents.value, "250.50");
+  assert.equal(updateBody(cents, "TWD", 3), undefined, "TWD cents are refused");
+  assert.equal(updateBody(cents, "USD", 3)?.fixed_minor, 25050, "other currencies keep their decimals");
   const t = toggleBody(p);
   assert.equal(t.status, "paused");
   assert.equal(t.expected_version, 3);
-  assert.equal(t.fixed_minor, 25050);
+  assert.equal(t.fixed_minor, 25000);
   assert.equal(toggleBody(parsePromotion(row({ status: "paused" }))).status, "active");
 });
 

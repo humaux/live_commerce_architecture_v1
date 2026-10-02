@@ -3,7 +3,7 @@
 // It never decides a rule: SQL (migration 0091 check_fields / refusal_for) is the authority for every limit, window and amount; a parser only
 // refuses a malformed read and the builder only stops an obviously invalid body before it is sent. Times: the merchant types Asia/Taipei wall
 // time; the wire carries RFC 3339 with +08:00 (Taiwan has no DST), the page shows the instant back in Asia/Taipei.
-import { amountToMinor, minorToInput } from "./orders-model.ts";
+import { amountToMinor, minorToInput, STORE_TIME_ZONE, wholeOnly } from "./orders-model.ts";
 
 export type PromoKind = "percent" | "fixed";
 export type PromoStatus = "active" | "paused";
@@ -75,7 +75,7 @@ export function taipeiToInstant(wall: string): string | null | undefined {
 export function instantToTaipei(iso: string | null): string {
   if (iso === null) return "";
   const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Taipei", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+    timeZone: STORE_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
   }).formatToParts(new Date(iso));
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
   return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
@@ -123,8 +123,10 @@ export function promoFields(f: PromoForm, currency: string): PromoFields | undef
   const endsAt = taipeiToInstant(f.endsAt);
   const total = optionalCount(f.totalLimit, 1_000_000_000);
   const buyer = optionalCount(f.perBuyerLimit, 1_000_000);
+  // D02: a TWD amount is whole dollars (x100 on the wire); "12.50" is refused here, with its own message in the form.
+  const cents = wholeOnly(currency) && ((fixed ?? 0) % 100 !== 0 || (min ?? 0) % 100 !== 0);
   if (
-    (f.kind === "percent" && (percent === null || percent < 1 || percent > 90)) || (f.kind === "fixed" && (fixed === null || fixed < 1)) ||
+    cents || (f.kind === "percent" && (percent === null || percent < 1 || percent > 90)) || (f.kind === "fixed" && (fixed === null || fixed < 1)) ||
     min === null || startsAt === undefined || endsAt === undefined || total === undefined || buyer === undefined ||
     (startsAt !== null && endsAt !== null && Date.parse(endsAt) <= Date.parse(startsAt))
   )

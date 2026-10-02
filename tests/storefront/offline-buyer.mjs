@@ -193,6 +193,10 @@ async function refresh(page) { await page.getByTestId("transfer-refresh").click(
 // show the account again.
 async function headingAgrees(page, locale, settled) {
   const c = copy[locale], head = page.getByTestId("order-state");
+  if (process.env.UI_SHOT_PHASE === "before") { // capture-only run on the pre-fix code: what the page says, no assertion
+    console.log(`BEFORE D06 ${locale}: heading data-state=${await head.getAttribute("data-state")} text="${await head.innerText()}", bank details in the DOM: ${await page.getByTestId("transfer-bank").count()}`);
+    return;
+  }
   await expect(head).toHaveAttribute("data-state", settled);
   await expect(head).toHaveText(settled === "CONFIRMED" ? c.headConfirmed : c.headCancelled);
   await expect(head).not.toContainText(c.headWaiting);

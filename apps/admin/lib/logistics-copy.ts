@@ -92,7 +92,7 @@ const en = {
   printUnsupported: "OK mart has no printable label. Give the code at the store.",
   attemptTitle: "Attempt",
   state: "State",
-  updated: "Updated (UTC)",
+  updated: "Updated (Taipei time)",
   goods: "Goods amount",
   collect: "To collect",
   events: "Timeline",
@@ -226,7 +226,7 @@ export const logisticsCopy: Record<Locale, LogisticsCopy> = {
     code: "寄件代码", codeMissing: "此处没有代码，请到绿界后台查看。",
     printButton: "列印托运单", printThermal: "A6 热感应尺寸", printHint: "会在新分页打开绿界的托运单页面。",
     printUnsupported: "OK超商没有可列印的托运单，请到门市出示代码。",
-    attemptTitle: "第几次寄件", state: "状态", updated: "更新时间（UTC）", goods: "商品金额", collect: "代收金额",
+    attemptTitle: "第几次寄件", state: "状态", updated: "更新时间（台北时间）", goods: "商品金额", collect: "代收金额",
     events: "时间线", noEvents: "尚无事件。",
     shipmentStates: {
       REQUESTED: "已提交", UNKNOWN: "结果未确认", FAILED: "失败", ABANDONED: "已放弃", CREATED: "已建单",
@@ -312,7 +312,7 @@ export const logisticsCopy: Record<Locale, LogisticsCopy> = {
     code: "寄件代碼", codeMissing: "此處沒有代碼，請到綠界後台查看。",
     printButton: "列印託運單", printThermal: "A6 熱感應尺寸", printHint: "會在新分頁開啟綠界的託運單頁面。",
     printUnsupported: "OK超商沒有可列印的託運單，請到門市出示代碼。",
-    attemptTitle: "第幾次寄件", state: "狀態", updated: "更新時間（UTC）", goods: "商品金額", collect: "代收金額",
+    attemptTitle: "第幾次寄件", state: "狀態", updated: "更新時間（台北時間）", goods: "商品金額", collect: "代收金額",
     events: "時間線", noEvents: "尚無事件。",
     shipmentStates: {
       REQUESTED: "已送出", UNKNOWN: "結果未確認", FAILED: "失敗", ABANDONED: "已放棄", CREATED: "已建單",

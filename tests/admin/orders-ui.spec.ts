@@ -239,8 +239,9 @@ test("MOU01/04 real login, cursor pagination, financial state and frozen detail"
         await expect(
           detail.locator(`[data-state="${state}"]`).first(),
         ).toBeVisible();
+      // stop-bleed D02: a whole TWD amount reads "NT$25" (no ".00"); an amount with cents keeps them ("NT$12.50")
       await expect(detail.locator(".orders-grand dd")).toContainText(
-        mode === "expired" ? "12.50" : "25.00",
+        mode === "expired" ? /NT\$12\.50/ : /NT\$25(?![\d.,])/,
       );
       await expect(detail).toContainText("Synthetic home address");
       await noPersistentOrderBody(page);

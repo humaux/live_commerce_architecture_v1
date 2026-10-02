@@ -9,7 +9,8 @@
 import { useRef, useState, type FormEvent } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import type { Store } from "@/lib/model";
-import { money } from "@/lib/client";
+import { currencySign, money } from "@/lib/client";
+import { wholeOnly } from "@/lib/orders-model";
 import { useGuardedRead, type ReadCode } from "@/lib/customers-client";
 import { createPromotion, readPromotions, updatePromotion, type PromoWrite } from "@/lib/promotions-client";
 import {
@@ -112,16 +113,18 @@ function Sections({
     }
     await refresh(); // the list, the versions and the usage counts always come from the server
   }
+  // D02: NT$ amounts are whole dollars; a typed decimal gets its own sentence instead of the generic "check the form".
+  const invalidText = () => (wholeOnly(store.currency) && /[.,]/.test((form.kind === "fixed" ? form.value : "") + form.minSubtotal) ? c.invalidWhole : c.invalid);
   function submit(event: FormEvent) {
     event.preventDefault();
     if (editing) {
       const body = updateBody(form, store.currency, editing.version);
-      if (!body) return setProblem(c.invalid);
+      if (!body) return setProblem(invalidText());
       const text = JSON.stringify(body);
       void run("save", text, (key) => updatePromotion(store.id, editing.id, key, body, boundary), c.saved);
     } else {
       const body = createBody(form, store.currency);
-      if (!body) return setProblem(c.invalid);
+      if (!body) return setProblem(invalidText());
       const text = JSON.stringify(body);
       void run("create", text, (key) => createPromotion(store.id, key, body, boundary), c.created);
     }
@@ -154,11 +157,11 @@ function Sections({
             </select>
           </label>
           <label>
-            {form.kind === "percent" ? c.valuePercent : `${c.valueFixed} (${store.currency})`}
+            {form.kind === "percent" ? c.valuePercent : `${c.valueFixed} (${currencySign(store.currency)})`}
             <input data-testid="promotion-value" required inputMode="decimal" autoComplete="off" value={form.value} onChange={(event) => set("value", event.target.value)} />
           </label>
           <label>
-            {`${c.minSubtotal} (${store.currency})`}
+            {`${c.minSubtotal} (${currencySign(store.currency)})`}
             <input data-testid="promotion-min" inputMode="decimal" autoComplete="off" value={form.minSubtotal} onChange={(event) => set("minSubtotal", event.target.value)} />
             <small>{c.minSubtotalHint}</small>
           </label>

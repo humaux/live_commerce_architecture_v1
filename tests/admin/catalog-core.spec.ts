@@ -170,7 +170,17 @@ for (const v of variants) {
       await page.getByTestId("new-variants-create").click();
       await expect(page.getByTestId("new-variants-message")).toBeVisible();
       const price = (i: number) => 10 + 2 * i; // 10, 12 ... 20 in major units = 1000 ... 2000 minor
+      // stop-bleed D02: a TWD price is typed and shown as whole dollars ("10"), any other currency keeps two decimals ("10.00"); the
+      // currency sign sits next to the input ("NT$" for TWD)
+      const whole = (await page.getByTestId("new-price-0").locator("xpath=following-sibling::small").first().innerText()).trim() === "NT$";
+      const shownPrice = (minor: number) => (whole ? String(minor / 100) : `${minor / 100}.00`);
       for (let i = 0; i < 6; i++) await page.getByTestId(`new-price-${i}`).fill(String(price(i)));
+      if (whole) {
+        await page.getByTestId("new-price-0").fill("10.5");
+        await page.getByTestId("new-variants-create").click();
+        await expect(page.getByTestId("new-variants-message"), "a TWD decimal is refused with its own sentence").toContainText(cc.edit.invalidPriceWhole);
+        await page.getByTestId("new-price-0").fill(String(price(0)));
+      }
       // Diagnostic switch only (LC_BROWSER_DIAGNOSTIC=codes, never set by the gate): type unique SKU codes, to look past defect P1-2 (default
       // codes of non-ASCII option values collide, SKU codes are unique per store). The gate itself uses the codes the editor proposes.
       if (diagnostic.has("codes")) for (let i = 0; i < 6; i++) await page.getByTestId(`new-code-${i}`).fill(`${uniq}-v${i}`);
@@ -186,7 +196,7 @@ for (const v of variants) {
         idByTitle[(await rows.nth(i).locator("td").first().innerText()).trim()] = id;
       }
       const priceOf = (title: string) => 1000 + 200 * titles.indexOf(title);
-      for (const t of titles) await expect(page.getByTestId(`variant-price-${idByTitle[t]}`)).toHaveValue(`${priceOf(t) / 100}.00`);
+      for (const t of titles) await expect(page.getByTestId(`variant-price-${idByTitle[t]}`)).toHaveValue(shownPrice(priceOf(t)));
       expect((await list(uniq)).body.products, "still draft").toHaveLength(0);
 
       // ---- compare-at: must exceed the price (shown, nothing saved), then valid on one variant ----
@@ -196,8 +206,8 @@ for (const v of variants) {
       await expect(page.getByTestId("variants-message")).toBeVisible();
       await page.getByTestId(`variant-compare-${cheapest}`).fill("25");
       await page.getByTestId(`variant-save-${cheapest}`).click();
-      await expect(page.getByTestId(`variant-compare-${cheapest}`)).toHaveValue("25.00");
-      await expect(page.getByTestId(`variant-price-${cheapest}`)).toHaveValue("10.00");
+      await expect(page.getByTestId(`variant-compare-${cheapest}`)).toHaveValue(shownPrice(2500));
+      await expect(page.getByTestId(`variant-price-${cheapest}`)).toHaveValue(shownPrice(1000));
 
       // ---- stock: 10 / 3 / 0 / 6 / 5 / 0 (in, low, out, in, low, out), the delta must be a non-zero integer ----
       const stock = [10, 3, 0, 6, 5, 0];

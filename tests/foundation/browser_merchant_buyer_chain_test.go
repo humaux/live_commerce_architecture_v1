@@ -176,8 +176,10 @@ func TestBrowserMerchantBuyerRealChain(t *testing.T) {
 			t.Fatalf("unexpected purchase side effect in %s", table)
 		}
 	}
-	if after["ops.command_results"]-before["ops.command_results"] != 2 {
-		t.Fatal("expected exactly two merchant command receipts")
+	// stop-bleed D01: the product is made in the product editor (no inline quick-add any more): create (a draft), first SKU, then the activation PATCH.
+	// The old quick-add created the product live in its single receipt, hence the former two.
+	if after["ops.command_results"]-before["ops.command_results"] != 3 {
+		t.Fatal("expected exactly three merchant command receipts (product create, first SKU, product activation)")
 	}
 	if countRows(t, h.f.owner, `SELECT count(*) FROM identity.sessions WHERE principal_id=$1 AND audience='merchant'`, principal) != 1 || countRows(t, h.f.owner, `SELECT count(*) FROM control.storefront_publications WHERE store_id=$1 AND published`, h.f.storeA1) != 0 {
 		t.Fatal("real merchant session or unpublish readback failed")
