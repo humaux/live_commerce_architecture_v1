@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -309,17 +310,36 @@ type Picked struct {
 	Instagram bool   `json:"instagram"`
 }
 
+// pickReceipt is what command.Run saves for a pick replay: only the Page it bound (never the token).
+type pickReceipt struct {
+	PageID    string `json:"page_id"`
+	Instagram bool   `json:"instagram"`
+}
+
+// pickRequest is the pick command fingerprint; the principal is bound in so a replay by another principal is a conflict, not a replay.
+type pickRequest struct {
+	PrincipalID      string `json:"principal_id"`
+	StateID          string `json:"state_id"`
+	PageID           string `json:"page_id"`
+	IncludeInstagram bool   `json:"include_instagram"`
+}
+
+// errPickProbe is the sentinel Pick's replay probe returns from command.Run's function: "no receipt yet, run the pick".
+var errPickProbe = errors.New("no pick receipt yet")
+
 type prepared struct {
 	Page pageEntry `json:"page"`
 }
 
 // Pick binds the chosen Page. Order (a failure at any step leaves nothing half-enabled):
+//  0. probe tx: a same-key replay returns the saved receipt (and reaches no Meta); a different body under the key conflicts;
 //  1. tx: meta_connect_prepare validates state, permissions, one-store-per-Page and returns the pick row;
 //  2. network (no tx): re-read /me/accounts for the Page token and re-verify tasks, POST subscribed_apps;
-//  3. tx: bindings (core), seal the Page token per binding, meta_connect_finish writes credentials + routes + connection.
+//  3. tx: bindings (core), seal the Page token per binding, meta_connect_finish writes credentials + routes + connection, and the
+//     command receipt (command.Run) so a retry of the same key replays this result instead of re-running the state.
 //
 // A crash after step 2 leaves a Meta-side subscription without a route: events for it are quarantined, harmless.
-func (s *Service) Pick(ctx context.Context, pool *pgxpool.Pool, token, storeID string, in PickInput) (Picked, error) {
+func (s *Service) Pick(ctx context.Context, pool *pgxpool.Pool, token, storeID, key string, in PickInput) (Picked, error) {
 	if s == nil || pool == nil {
 		return Picked{}, platform.ErrUnauthorized
 	}
@@ -330,8 +350,31 @@ func (s *Service) Pick(ctx context.Context, pool *pgxpool.Pool, token, storeID s
 	if !command.ValidID(in.StateID) || !digits.MatchString(in.PageID) {
 		return Picked{}, refusal("invalid_request")
 	}
-	var prep prepared
+	request := pickRequest{StateID: in.StateID, PageID: in.PageID, IncludeInstagram: in.IncludeInstagram}
+	// Probe: nothing is written and no Meta is reached; a receipt under this key replays (same body) or conflicts (different body).
+	var receipt pickReceipt
+	replayed := false
 	var scope platform.Scope
+	err = platform.WithScope(ctx, pool, token, storeID, "integration:manage", func(tx pgx.Tx, sc platform.Scope) error {
+		scope = sc
+		request.PrincipalID = sc.PrincipalID
+		inner := command.Run(ctx, tx, sc, "meta.connect.pick", key, request, &receipt, func() error { return errPickProbe })
+		switch {
+		case inner == nil:
+			replayed = true
+		case errors.Is(inner, errPickProbe):
+			inner = nil
+		}
+		return inner
+	})
+	if err != nil {
+		return Picked{}, mapError(err)
+	}
+	if replayed {
+		return Picked{PageID: receipt.PageID, Instagram: receipt.Instagram}, nil
+	}
+
+	var prep prepared
 	err = platform.WithScope(ctx, pool, token, storeID, "integration:manage", func(tx pgx.Tx, sc platform.Scope) error {
 		scope = sc
 		var raw string
@@ -367,35 +410,38 @@ func (s *Service) Pick(ctx context.Context, pool *pgxpool.Pool, token, storeID s
 	}
 
 	err = platform.WithScope(ctx, pool, token, storeID, "integration:manage", func(tx pgx.Tx, sc platform.Scope) error {
-		fb, err := s.bind(ctx, tx, sc, token, hash, in.StateID, "facebook", in.PageID, pageToken)
-		if err != nil {
-			return err
-		}
-		ig := sealed{}
-		if igID != "" {
-			if ig, err = s.bind(ctx, tx, sc, token, hash, in.StateID, "instagram", igID, pageToken); err != nil {
+		return command.Run(ctx, tx, sc, "meta.connect.pick", key, request, &receipt, func() error {
+			fb, err := s.bind(ctx, tx, sc, token, hash, in.StateID, "facebook", in.PageID, pageToken)
+			if err != nil {
 				return err
 			}
-		}
-		// integration.meta_connect_finish: credentials (head CAS), routes, connection row, state done.
-		var igBinding, igKey any
-		var igExpected any
-		var igNonce, igCT any
-		if igID != "" {
-			igBinding, igExpected, igKey, igNonce, igCT = ig.binding, ig.expected, ig.keyID, ig.nonce, ig.ct
-		}
-		if _, e := tx.Exec(ctx, `SELECT integration.meta_connect_finish($1,$2,$3,$4,$5::uuid,$6,$7,$8,$9,$10::uuid,$11::bigint,$12::text,$13::bytea,$14::bytea,$15,$16)`,
-			hash, storeID, in.StateID, in.PageID, fb.binding, fb.expected, fb.keyID, fb.nonce, fb.ct,
-			igBinding, igExpected, igKey, igNonce, igCT, s.cfg.PageAppID, s.cfg.IGAppID); e != nil {
-			return e
-		}
-		return command.Audit(ctx, tx, sc, "meta.connect.page_connected")
+			ig := sealed{}
+			if igID != "" {
+				if ig, err = s.bind(ctx, tx, sc, token, hash, in.StateID, "instagram", igID, pageToken); err != nil {
+					return err
+				}
+			}
+			// integration.meta_connect_finish: credentials (head CAS), routes, connection row, state done.
+			var igBinding, igKey any
+			var igExpected any
+			var igNonce, igCT any
+			if igID != "" {
+				igBinding, igExpected, igKey, igNonce, igCT = ig.binding, ig.expected, ig.keyID, ig.nonce, ig.ct
+			}
+			if _, e := tx.Exec(ctx, `SELECT integration.meta_connect_finish($1,$2,$3,$4,$5::uuid,$6,$7,$8,$9,$10::uuid,$11::bigint,$12::text,$13::bytea,$14::bytea,$15,$16)`,
+				hash, storeID, in.StateID, in.PageID, fb.binding, fb.expected, fb.keyID, fb.nonce, fb.ct,
+				igBinding, igExpected, igKey, igNonce, igCT, s.cfg.PageAppID, s.cfg.IGAppID); e != nil {
+				return e
+			}
+			receipt = pickReceipt{PageID: in.PageID, Instagram: igID != ""}
+			return command.Audit(ctx, tx, sc, "meta.connect.page_connected")
+		})
 	})
 	if err != nil {
 		return Picked{}, mapError(err)
 	}
 	s.drop(in.StateID) // the user token is zeroed as soon as the pick committed
-	return Picked{PageID: in.PageID, Instagram: igID != ""}, nil
+	return Picked{PageID: receipt.PageID, Instagram: receipt.Instagram}, nil
 }
 
 // sealed is one binding's sealed Page credential, ready for meta_connect_finish.
@@ -459,11 +505,24 @@ type disconnected struct {
 	IGBinding *string `json:"ig_binding"`
 }
 
+// disconnectReceipt is what command.Run saves for a disconnect replay: a Page id only (never a token or binding id).
+type disconnectReceipt struct {
+	PageID string `json:"page_id"`
+}
+
+// disconnectRequest is the disconnect command fingerprint; the principal is bound in so a replay by another principal conflicts.
+type disconnectRequest struct {
+	PrincipalID string `json:"principal_id"`
+	PageID      string `json:"page_id"`
+}
+
 // Disconnect destroys ONE Page's sealed credentials, disables its routes and bindings and deletes its connection row in ONE
-// transaction (meta_connect_disconnect + core.SetBindingEnabled). This process makes no Graph unsubscribe (it can seal a Page token but
-// never open one): meta_connect_disconnect enqueues a durable job (migration 0100) for that Page that the claims-worker, the only holder
-// of the private ring, executes best effort (metareply.Unsubscriber). Until it runs, the disabled route only yields quarantined events.
-func (s *Service) Disconnect(ctx context.Context, pool *pgxpool.Pool, token, storeID, pageID string) error {
+// transaction (meta_connect_disconnect + core.SetBindingEnabled), wrapped in command.Run so a retry of the same Idempotency-Key
+// replays the finished result (and never re-enqueues the unsubscribe job or re-disables an already-disabled binding). This process makes
+// no Graph unsubscribe (it can seal a Page token but never open one): meta_connect_disconnect enqueues a durable job (migration 0100) for
+// that Page that the claims-worker, the only holder of the private ring, executes best effort (metareply.Unsubscriber). Until it runs,
+// the disabled route only yields quarantined events.
+func (s *Service) Disconnect(ctx context.Context, pool *pgxpool.Pool, token, storeID, key, pageID string) error {
 	if s == nil || pool == nil {
 		return platform.ErrUnauthorized
 	}
@@ -474,36 +533,42 @@ func (s *Service) Disconnect(ctx context.Context, pool *pgxpool.Pool, token, sto
 	if err != nil {
 		return err
 	}
-	var out disconnected
+	request := disconnectRequest{PageID: pageID}
+	var receipt disconnectReceipt
 	err = platform.WithScope(ctx, pool, token, storeID, "integration:manage", func(tx pgx.Tx, sc platform.Scope) error {
-		var raw string
-		// integration.meta_connect_disconnect: deletes heads and versions, disables routes, deletes the connection row (ids only back).
-		if e := tx.QueryRow(ctx, `SELECT integration.meta_connect_disconnect($1,$2,$3)::text`, hash, storeID, pageID).Scan(&raw); e != nil {
-			return e
-		}
-		if e := json.Unmarshal([]byte(raw), &out); e != nil {
-			return e
-		}
-		ids := []string{out.FBBinding}
-		if out.IGBinding != nil {
-			ids = append(ids, *out.IGBinding)
-		}
-		for _, id := range ids {
-			var version int64
-			var enabled bool
-			if e := tx.QueryRow(ctx, `SELECT semantic_version,enabled FROM integration.bindings WHERE tenant_id=$1 AND store_id=$2 AND id=$3`,
-				sc.TenantID, sc.StoreID, id).Scan(&version, &enabled); e != nil {
+		request.PrincipalID = sc.PrincipalID
+		return command.Run(ctx, tx, sc, "meta.connect.disconnect", key, request, &receipt, func() error {
+			var out disconnected
+			var raw string
+			// integration.meta_connect_disconnect: deletes heads and versions, disables routes, deletes the connection row (ids only back).
+			if e := tx.QueryRow(ctx, `SELECT integration.meta_connect_disconnect($1,$2,$3)::text`, hash, storeID, pageID).Scan(&raw); e != nil {
 				return e
 			}
-			if !enabled {
-				continue
-			}
-			sum := sha256.Sum256([]byte(id + "|" + strconv.FormatInt(version, 10) + "|disable"))
-			if _, e := s.core.SetBindingEnabled(ctx, tx, sc, token, "mcd-"+hex.EncodeToString(sum[:16]), id, version, false); e != nil {
+			if e := json.Unmarshal([]byte(raw), &out); e != nil {
 				return e
 			}
-		}
-		return command.Audit(ctx, tx, sc, "meta.connect.disconnected")
+			ids := []string{out.FBBinding}
+			if out.IGBinding != nil {
+				ids = append(ids, *out.IGBinding)
+			}
+			for _, id := range ids {
+				var version int64
+				var enabled bool
+				if e := tx.QueryRow(ctx, `SELECT semantic_version,enabled FROM integration.bindings WHERE tenant_id=$1 AND store_id=$2 AND id=$3`,
+					sc.TenantID, sc.StoreID, id).Scan(&version, &enabled); e != nil {
+					return e
+				}
+				if !enabled {
+					continue
+				}
+				sum := sha256.Sum256([]byte(id + "|" + strconv.FormatInt(version, 10) + "|disable"))
+				if _, e := s.core.SetBindingEnabled(ctx, tx, sc, token, "mcd-"+hex.EncodeToString(sum[:16]), id, version, false); e != nil {
+					return e
+				}
+			}
+			receipt = disconnectReceipt{PageID: pageID}
+			return command.Audit(ctx, tx, sc, "meta.connect.disconnected")
+		})
 	})
 	if err != nil {
 		return mapError(err)
