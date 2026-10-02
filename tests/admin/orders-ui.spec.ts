@@ -690,7 +690,7 @@ test("MOU05 approved inline comp at desktop/mobile in three locales and page-two
           .map((animation) => animation.finished.catch(() => undefined)),
       ),
     );
-    const rail = await page.locator(".rail").evaluate((element) => ({
+    const rail = await page.locator("[data-shell-rail]").evaluate((element) => ({
       open: element.classList.contains("open"),
       right: element.getBoundingClientRect().right,
     }));

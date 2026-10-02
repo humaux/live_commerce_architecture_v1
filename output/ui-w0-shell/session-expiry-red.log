@@ -1,0 +1,31 @@
+✔ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (363.127458ms)
+✔ G-UI3/G-UI5 negatives: new formatter, component fetch, >800 lines and wider allowance fail (0.44125ms)
+✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (6.466958ms)
+✔ G-UI1 copy key parity: no missing or extra key in any locale (0.15025ms)
+✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.240958ms)
+✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.135417ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 599.501416
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.waitFor: Timeout 5000ms exceeded.
+Call log:
+[2m  - waiting for getByTestId('shell-session-expired') to be visible[22m
+
+    at runShellGate (/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-w0-shell/tests/admin/shell-browser.mjs:271:51)
+    at async file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ui-w0-shell/tests/admin/shell-runner.mjs:184:7 {
+  log: [
+    "  - waiting for getByTestId('shell-session-expired') to be visible"
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.15.0

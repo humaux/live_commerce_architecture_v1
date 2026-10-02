@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures/ledger-identity";
 import { mkdir } from "node:fs/promises";
 
 test.describe.configure({ mode: "serial" });
@@ -556,20 +556,28 @@ test("inventory tray keeps stock and read-only price; product editing lives on t
 test("rail has no hard-coded channel status and scrolls to Settings and Sign out at 1366x768", async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 768 });
   await page.goto("/en/inventory");
-  const rail = page.locator("aside.rail");
+  const rail = page.locator("aside[data-shell-rail]");
   await expect(rail).toBeVisible();
   // the fake "Channel status" block (Storefront/Facebook/Instagram/WhatsApp/LINE, always "Not connected") is gone
   await expect(rail.getByText("Channel status")).toHaveCount(0);
-  for (const fake of ["WhatsApp", "LINE", "Facebook", "Instagram", "Not connected"]) await expect(rail.getByText(fake)).toHaveCount(0);
-  // 14 entries + brand + Sign out are taller than 768px: the rail itself scrolls instead of clipping them
-  const geometry = await rail.evaluate((el) => ({ overflowY: getComputedStyle(el).overflowY, scrolls: el.scrollHeight > el.clientHeight, height: el.getBoundingClientRect().height }));
+  for (const fake of ["WhatsApp", "LINE", "Facebook", "Instagram", "Not connected"]) await expect(rail.getByText(fake, { exact: true })).toHaveCount(0);
+  // W0 scrolls the registry navigation independently of pinned Settings; the
+  // minimal-permission fixture no longer exposes fourteen unrelated routes.
+  const navigation = rail.getByRole("navigation", { name: "Workspace navigation", exact: true });
+  const geometry = await navigation.evaluate((el) => ({ overflowY: getComputedStyle(el).overflowY, height: el.getBoundingClientRect().height }));
   expect(geometry.overflowY).toBe("auto");
-  expect(geometry.scrolls, "this viewport really needs the scroll").toBe(true);
   expect(geometry.height).toBeLessThanOrEqual(768);
+  // Exercise real overflow with this role's small route set, without injecting
+  // fake entries or granting more domains merely to make the rail tall.
+  await page.setViewportSize({ width: 1366, height: 300 });
+  expect(await navigation.evaluate((el) => el.scrollHeight > el.clientHeight), "the constrained viewport really needs the scroll").toBe(true);
+  await page.getByTestId("nav-inventory").evaluate((el) => el.scrollIntoView({ block: "center", inline: "nearest" }));
+  await expect(page.getByTestId("nav-inventory")).toBeInViewport({ ratio: 1 });
+  await page.setViewportSize({ width: 1366, height: 768 });
   await mkdir("output/admin-ui-fixes", { recursive: true });
   await page.screenshot({ path: `output/admin-ui-fixes/${shotPhase}-d04-rail-top-1366x768.png`, animations: "disabled" });
-  for (const name of ["Settings", "Sign out"]) {
-    const button = rail.getByRole("button", { name, exact: true });
+  await page.locator("summary").filter({ hasText: /^Account$/ }).click();
+  for (const [name, button] of [["Settings", page.getByTestId("nav-group-settings")], ["Sign out", page.getByTestId("workspace-sign-out")]] as const) {
     await button.scrollIntoViewIfNeeded();
     await expect(button).toBeInViewport({ ratio: 1 });
     // nothing paints over it: the element at its centre is the button (or inside it)
@@ -581,10 +589,14 @@ test("rail has no hard-coded channel status and scrolls to Settings and Sign out
     expect(hit, `${name} is reachable (nothing covers it)`).toBe(true);
   }
   await page.screenshot({ path: `output/admin-ui-fixes/${shotPhase}-d04-rail-bottom-1366x768.png`, animations: "disabled" });
-  // the 375px drawer scrolls too
+  await page.locator("summary").filter({ hasText: /^Account$/ }).click();
+  // Settings stays in the drawer; Sign out lives in the reachable top-bar menu.
   await page.setViewportSize({ width: 375, height: 667 });
   await page.getByRole("button", { name: "Open navigation" }).click();
-  const drawer = page.locator("aside.rail");
-  await drawer.getByRole("button", { name: "Sign out", exact: true }).scrollIntoViewIfNeeded();
-  await expect(drawer.getByRole("button", { name: "Sign out", exact: true })).toBeInViewport({ ratio: 1 });
+  const drawer = page.locator("aside[data-shell-rail]");
+  await drawer.getByTestId("nav-group-settings").scrollIntoViewIfNeeded();
+  await expect(drawer.getByTestId("nav-group-settings")).toBeInViewport({ ratio: 1 });
+  await page.keyboard.press("Escape");
+  await page.locator("summary").filter({ hasText: /^Account$/ }).click();
+  await expect(page.getByTestId("workspace-sign-out")).toBeInViewport({ ratio: 1 });
 });

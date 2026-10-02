@@ -108,7 +108,8 @@ func TestBrowserOpsPolishAdmin(t *testing.T) {
 	root, _ := filepath.Abs("../..")
 	evidence := brfEvidence(t, root, "ops-polish-admin")
 	e := tcvNew(t, tcvOpts{origin: "https://ops.example"})
-	e.grantCreator("orders:read", "orders:export", "fulfillment:write", "integration:manage", "integration:read")
+	// OP4 opens Studio; the shell and real endpoint both require live:read.
+	e.grantCreator("orders:read", "orders:export", "fulfillment:write", "integration:manage", "integration:read", "live:read")
 	e.cvsSettings(tcvAllChains, true, "20000", 500)
 	manual, _, _ := e.service("cvs_711", "MANUAL", 0)
 

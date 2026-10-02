@@ -12,7 +12,7 @@ const config: NextConfig = {
   // The orders proxy must see raw '?' and percent escapes before Next rewrites URLs.
   skipProxyUrlNormalize: true,
   output: "standalone",
-  transpilePackages: ["@live-commerce/i18n"],
+  transpilePackages: ["@live-commerce/i18n", "@live-commerce/ui", "@live-commerce/format"],
   async headers() {
     return [
       {

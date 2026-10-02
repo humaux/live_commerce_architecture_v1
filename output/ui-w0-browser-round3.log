@@ -1,0 +1,27 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: 44px shell targets
++ actual - expected
+
++ [
++   'W0 合成測試店 · Synthetic baselineA very long English store name for accessible workspace switching without overlap'
++ ]
+- []
+
+    at runShellGate (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ui-w0-shell/tests/admin/shell-browser.mjs:40:14)
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at process.processImmediate (node:internal/timers:472:9)
+    at async file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ui-w0-shell/tests/admin/shell-runner.mjs:50:11 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: [
+    'W0 合成測試店 · Synthetic baselineA very long English store name for accessible workspace switching without overlap'
+  ],
+  expected: [],
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.15.0

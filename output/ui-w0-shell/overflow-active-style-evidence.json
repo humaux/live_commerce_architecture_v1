@@ -1,0 +1,23 @@
+{
+  "styles": {
+    "selectionStart": 0,
+    "selectionEnd": 17,
+    "selectionBackground": "rgb(201, 230, 222)",
+    "selectionColor": "rgb(20, 41, 66)",
+    "caretColor": "rgb(36, 121, 101)",
+    "focused": true
+  },
+  "caret": {
+    "start": 17,
+    "end": 17,
+    "focused": true
+  },
+  "overflowWidth": 1024,
+  "scroll": {
+    "scrollWidth": 795,
+    "clientWidth": 754,
+    "scrollLeft": 41,
+    "scrollbarColor": "rgb(113, 134, 158) rgb(237, 242, 247)",
+    "scrollbarWidth": "thin"
+  }
+}

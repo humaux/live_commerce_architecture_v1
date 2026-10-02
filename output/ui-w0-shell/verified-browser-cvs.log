@@ -1,0 +1,164 @@
+✔ LGM01 ECPay card DTO: exact keys, enabled implies checked, https status url, no secret field (0.712584ms)
+✔ LGM02 connect body carries exactly the frozen keys and refuses malformed input before the wire (0.667917ms)
+✔ LGM03 CVS settings DTO and body follow the §16.5 ranges (0.850625ms)
+✔ LGM04 order CVS shipment DTO: exact frozen keys, no PII/trade number, current attempt must exist (0.761375ms)
+✔ LGM05 submit, collection and release answers (0.212375ms)
+✔ LGM06 print form: only the two ECPay logistics hosts and the four documented print paths (0.248167ms)
+✔ LGM07 request bodies carry exactly the frozen keys (0.10625ms)
+✔ LGM08 pay-at-pickup action hints follow §16.4/§16.8 (SQL stays the authority) (0.084917ms)
+✔ LGM09 a CREATED label is offered for abandon only after its validity window (0.087583ms)
+✔ LGR01 the grammar admits exactly the five logistics routes with their header policy (0.431125ms)
+✔ LGR02 everything else is refused: other methods, extra segments, case, traversal, neighbours (0.133709ms)
+✔ LGR03 bank-transfer-settings is one exact resource: GET read, PUT keyed command (0.064958ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 104.784208
+
+> live-commerce-workspace@ build:storefront /Volumes/data/live_commerce_architecture_v1/.worktrees/ui-w0-shell
+> pnpm --filter @live-commerce/storefront build
+
+
+> @live-commerce/storefront@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/ui-w0-shell/apps/storefront
+> next build
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 128ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 940ms
+  Running TypeScript ...
+  Finished TypeScript in 314ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/2) ...
+✓ Generating static pages using 9 workers (2/2) in 42ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/cart
+├ ƒ /[locale]/checkout
+├ ƒ /[locale]/claim
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/collections/[slug]
+├ ƒ /[locale]/data-deletion
+├ ƒ /[locale]/legal/[slug]
+├ ƒ /[locale]/order-link
+├ ƒ /[locale]/orders/[orderID]
+├ ƒ /[locale]/orders/lookup
+├ ƒ /[locale]/pages/[slug]
+├ ƒ /[locale]/privacy
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[slug]
+├ ƒ /[locale]/search
+├ ƒ /api/buyer/[...path]
+├ ƒ /api/shop/product/[key]
+├ ƒ /api/shop/products
+├ ƒ /feeds/meta.csv
+├ ƒ /media/c/[collectionID]/[imageID]
+├ ƒ /media/p/[productID]/[imageID]
+├ ƒ /media/s/[imageID]
+├ ƒ /payment/return
+├ ƒ /products/[productID]
+├ ƒ /robots.txt
+└ ƒ /sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+> live-commerce-workspace@ build:admin /Volumes/data/live_commerce_architecture_v1/.worktrees/ui-w0-shell
+> pnpm --filter @live-commerce/admin build
+
+
+> @live-commerce/admin@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/ui-w0-shell/apps/admin
+> next build && node ../../scripts/dev/package-admin.mjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 17ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 967ms
+  Running TypeScript ...
+  Finished TypeScript in 210ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/15) ...
+  Generating static pages using 9 workers (3/15) 
+  Generating static pages using 9 workers (7/15) 
+  Generating static pages using 9 workers (11/15) 
+✓ Generating static pages using 9 workers (15/15) in 74ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/ads
+├ ƒ /[locale]/billing
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/customers
+├ ƒ /[locale]/customers/[customer]
+├ ƒ /[locale]/design
+├ ƒ /[locale]/finance
+├ ƒ /[locale]/inventory
+├ ƒ /[locale]/invite/[token]
+├ ƒ /[locale]/orders
+├ ƒ /[locale]/orders/cvs-print
+├ ƒ /[locale]/orders/new
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[product]
+├ ƒ /[locale]/products/import
+├ ƒ /[locale]/promotions
+├ ƒ /[locale]/reset
+├ ƒ /[locale]/settings
+├ ƒ /[locale]/signup
+├ ƒ /[locale]/studio
+├ ƒ /[locale]/studio/claims
+├ ƒ /[locale]/team
+├ ƒ /api/ads/meta/callback
+├ ƒ /api/ads/meta/connect
+├ ƒ /api/auth/callback
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/password/login
+├ ƒ /api/auth/password/reset
+├ ƒ /api/auth/password/signup
+├ ƒ /api/auth/password/verify
+├ ƒ /api/meta/callback
+├ ƒ /api/meta/connect
+├ ƒ /api/onboarding/initial-store
+├ ƒ /api/stores
+├ ƒ /api/stores/[store]/[...resource]
+├ ƒ /api/stores/[store]/tools/[...resource]
+└ ƒ /api/team/[action]
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Packaged standalone admin server and static assets.
+=== RUN   TestBrowserTaiwanCvs
+=== RUN   TestBrowserTaiwanCvs/MOCK
+    browser_taiwan_cvs_test.go:221: TCV08 BROWSER (MOCK) buyer half + TCV14 buyer_entered UI half passed; screenshots hashed; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-w0-shell/output/playwright/taiwan-cvs/20261002T134256.445905000
+=== RUN   TestBrowserTaiwanCvs/SANDBOX
+    browser_taiwan_cvs_test.go:55: NOT_RUN: the SANDBOX variant (stage map + Stripe 4242) needs ECPAY_LOGISTICS_SANDBOX=1 STRIPE_SANDBOX=1 STRIPE_BROWSER=1 and the owner's test keys
+=== RUN   TestBrowserTaiwanCvs/WebKit
+2026/10/02 21:43:51 http: proxy error: context canceled
+    browser_taiwan_cvs_test.go:221: TCV08 BROWSER (MOCK) buyer half + TCV14 buyer_entered UI half passed; screenshots hashed; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-w0-shell/output/playwright/taiwan-cvs/20261002T134324.373483000
+--- PASS: TestBrowserTaiwanCvs (63.12s)
+    --- PASS: TestBrowserTaiwanCvs/MOCK (27.72s)
+    --- SKIP: TestBrowserTaiwanCvs/SANDBOX (0.00s)
+    --- PASS: TestBrowserTaiwanCvs/WebKit (35.40s)
+PASS
+ok  	livecommerce/tests/foundation	65.836s
+PASS: TCV08 MOCK isolated admin + storefront Next, Go, PG, ecpaytest fake map/Create and signed status posts; SANDBOX and WebKit variants are NOT_RUN unless the go test log says otherwise; not provider or deployment acceptance.

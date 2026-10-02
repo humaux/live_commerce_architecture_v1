@@ -108,11 +108,11 @@ for (const v of variants) {
       await expect(page.getByTestId("products-ledger-link")).toBeAttached();
       // stop-bleed D03: the "stock ledger" link opens the inventory page, not the dashboard at /{locale}/
       await expect(page.getByTestId("products-ledger-link")).toHaveAttribute("href", new RegExp(`^/${L}/inventory(\\?store=[0-9a-f-]{36})?$`));
-      if (v.vp === "mobile") await page.getByRole("button", { name: copy[L as "en" | "zh-TW"].menu }).click();
-      const rail = page.getByRole("navigation").first();
-      for (const label of [copy[L as "en" | "zh-TW"].products, cc.nav.collections, copy[L as "en" | "zh-TW"].inventory])
-        await expect(rail.getByRole("button", { name: label, exact: true }), `nav entry ${label}`).toBeVisible();
-      await rail.getByRole("button", { name: copy[L as "en" | "zh-TW"].inventory, exact: true }).click();
+      if (v.vp === "mobile") await page.locator('button[aria-controls="workspace-navigation"]').click();
+      const rail = page.locator("[data-shell-rail]");
+      for (const id of ["products", "collections", "inventory"])
+        await expect(rail.getByTestId(`nav-${id}`), `nav entry ${id}`).toBeVisible();
+      await rail.getByTestId("nav-inventory").click();
       await expect(page).toHaveURL(new RegExp(`/${L}/inventory/?(\\?.*)?$`)); // the ledger is still reachable (0094 moved it from home to /inventory)
       await expect(page.getByTestId("nav-orders")).toBeAttached();
       await page.goto(url("/products"));

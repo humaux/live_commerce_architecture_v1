@@ -2,6 +2,7 @@ import { expect, test, type Page, type BrowserContext } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import { parseDraft } from "../../apps/admin/lib/studio-model";
+import { shellCopy } from "../../apps/admin/src/shell-copy";
 import { nativePage } from "./fixtures/native-device";
 
 const required = (name: string) => {
@@ -26,8 +27,11 @@ test.setTimeout(240_000);
 async function signedLogin(page: Page) {
   await page.goto(new URL("/en/", origin).toString());
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
-  await expect(page.getByRole("button", { name: "Live workspace" })).toBeVisible();
-  await page.getByRole("button", { name: "Live workspace" }).click();
+  await page.getByTestId("nav-group-live").waitFor({ state: "attached" });
+  const menu = page.locator('button[aria-controls="workspace-navigation"]');
+  if (await menu.isVisible()) await menu.click();
+  await expect(page.getByTestId("nav-group-live")).toBeVisible();
+  await page.getByTestId("nav-group-live").click();
   await expect(page.getByTestId("merchant-studio")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Live Studio" })).toBeVisible();
 }
@@ -85,7 +89,7 @@ async function screenshot(page: Page, name: string, width: number, height: numbe
   if (width <= 680) {
     // A desktop-to-phone resize animates the fixed rail off-screen; capture
     // only its settled position, never a partially obscured first viewport.
-    await expect.poll(() => page.locator(".rail").evaluate((rail) =>
+    await expect.poll(() => page.locator("[data-shell-rail]").evaluate((rail) =>
       Math.ceil(rail.getBoundingClientRect().right))).toBeLessThanOrEqual(0);
   }
   await page.evaluate(() => window.scrollTo(0, 0));
@@ -254,7 +258,7 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   // Back/forward below must cross a page that unmounts Studio if permitted.
   await page.getByTestId("nav-orders").click();
   await expect(page.getByTestId("merchant-orders")).toBeVisible();
-  await page.getByRole("button", { name: "Live workspace" }).click();
+  await page.getByTestId("nav-group-live").click();
   await expect(page.getByTestId("merchant-studio")).toBeVisible();
 
   // Fault applies only after the real Go write has committed; retry must
@@ -378,8 +382,16 @@ test("STU04 read-only and expired sessions cannot mutate", async ({ browser }) =
   await setSession(expired, expiredToken);
   const expiredPage = await expired.newPage();
   await expiredPage.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
-  await expect(expiredPage.getByText("Sign in again to open Studio.").first()).toBeVisible();
+  await expect(expiredPage.getByTestId("shell-session-expired")).toContainText(shellCopy.en.sessionExpired);
+  await expect(expiredPage.getByTestId("merchant-studio")).toHaveCount(0);
   await expect(expiredPage.getByRole("button", { name: "Start MOCK rehearsal" })).toHaveCount(0);
+  const recovery = expiredPage.getByTestId("shell-sign-in");
+  await expect(recovery).toHaveText(shellCopy.en.signIn);
+  await expect(recovery).toHaveAttribute("href", "/en");
+  await recovery.click();
+  await expect(expiredPage).toHaveURL(new URL("/en", origin).toString());
+  await expect(expiredPage.getByRole("button", { name: "Sign in with identity service" })).toBeVisible();
+  await expect(expiredPage.getByTestId("merchant-studio")).toHaveCount(0);
   await expired.close();
 });
 

@@ -1,0 +1,10 @@
+✔ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (304.329208ms)
+✔ G-UI3/G-UI5 negatives: new formatter, component fetch, >800 lines and wider allowance fail (0.409375ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 457.9445

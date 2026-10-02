@@ -1,0 +1,1 @@
+{"name":"@live-commerce/ui","private":true,"type":"module","exports":"./src/AppShell.tsx","peerDependencies":{"react":"19.3.0"},"devDependencies":{"@types/react":"19.3.0"}}

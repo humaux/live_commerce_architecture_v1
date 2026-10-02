@@ -1,0 +1,15 @@
+✔ D02 TWD input: whole dollars only, x100 on the wire (11.96575ms)
+✔ D02 TWD edit text: whole dollars have no decimals; a legacy amount with cents is never shown as another price (0.212041ms)
+✔ D02 display: NT$ without decimals in every language, cents only when there are cents (4.144459ms)
+✔ D02 live-price input (Studio claims): TWD whole dollars, other currencies their decimals (0.151667ms)
+✔ D02 discount code amounts: TWD whole dollars, a decimal is refused before it is sent (0.263792ms)
+✔ D02 no admin copy or component says 'minor units' to the merchant (37.84525ms)
+✔ M06 time: Asia/Taipei everywhere, labelled, never UTC (7.397542ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 154.440667

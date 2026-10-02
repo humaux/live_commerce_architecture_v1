@@ -1,0 +1,30 @@
+{
+  "annotation": "Test-only DOM measurement overlay; CSS pixels, no image rescaling",
+  "measured": [
+    {
+      "label": "開啟導覽",
+      "width": 44,
+      "height": 44
+    },
+    {
+      "label": "切換商店",
+      "width": 314,
+      "height": 44
+    },
+    {
+      "label": "語言",
+      "width": 102,
+      "height": 44
+    },
+    {
+      "label": "說明",
+      "width": 54,
+      "height": 44
+    },
+    {
+      "label": "帳號",
+      "width": 54,
+      "height": 44
+    }
+  ]
+}

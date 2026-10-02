@@ -1,0 +1,30 @@
+{
+  "annotation": "Test-only DOM measurement overlay; CSS pixels, no image rescaling",
+  "measured": [
+    {
+      "label": "打开导航",
+      "width": 44,
+      "height": 44
+    },
+    {
+      "label": "切换店铺",
+      "width": 314,
+      "height": 44
+    },
+    {
+      "label": "语言",
+      "width": 102,
+      "height": 44
+    },
+    {
+      "label": "帮助",
+      "width": 54,
+      "height": 44
+    },
+    {
+      "label": "账号",
+      "width": 54,
+      "height": 44
+    }
+  ]
+}

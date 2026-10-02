@@ -1,11 +1,43 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures/ledger-identity";
 import { mkdir, writeFile } from "node:fs/promises";
+import type { APIRequestContext } from "@playwright/test";
+
+// This spec alone adds a realistic variant code to the disposable Go/PG
+// fixture. The real catalog projection and intrinsic table layout must create
+// the overflow; no DOM, CSS or API read response is overridden. The Go harness
+// removes the whole isolated fixture after the suite, including this product.
+async function createLongSkuFixture(request: APIRequestContext) {
+  const storeID = process.env.COMMERCE_FIXTURE_STORE_ID;
+  expect(storeID).toBeTruthy();
+  const product = await request.post(`/api/stores/${storeID}/products`, {
+    headers: { Origin: "http://127.0.0.1:3100", "Idempotency-Key": crypto.randomUUID() },
+    data: {
+      name: "Rechargeable behind-the-ear hearing aid with charging case",
+      description: "Isolated browser fixture, not a real merchant product",
+      status: "active",
+    },
+  });
+  // Existing catalog bodyRoute returns 200 for successful commands.
+  expect(product.status()).toBe(200);
+  const { id } = await product.json();
+  const code = "HA-RECHARGEABLE-BTE-BLUETOOTH-CHARGER-BLACK-TW-2026";
+  const sku = await request.post(`/api/stores/${storeID}/skus`, {
+    headers: { Origin: "http://127.0.0.1:3100", "Idempotency-Key": crypto.randomUUID() },
+    data: { product_id: id, code, price_minor: 198000 },
+  });
+  expect(sku.status()).toBe(200);
+  expect(await sku.json()).toMatchObject({ product_id: id, code });
+  return code;
+}
 
 test("ledger selection caret and scroll surface are authored and active", async ({
   page,
+  request,
 }) => {
+  const longSKU = await createLongSkuFixture(request);
   await mkdir("output/playwright/ledger-review", { recursive: true });
   await page.goto("/en/inventory");
+  await expect(page.getByRole("radio", { name: `Select ${longSKU}`, exact: true })).toBeVisible();
   const input = page.locator(".search-field input");
   await input.fill("Visible selection");
   await input.selectText();
@@ -49,8 +81,11 @@ test("ledger selection caret and scroll surface are authored and active", async 
   // Use real responsive widths; never inject a fake overflow or scrollbar.
   const table = page.locator(".table-scroll");
   let overflowWidth = 0;
-  for (const width of [1100, 900, 820, 740, 681]) {
+  const viewportMeasurements = [];
+  // Include the W0 fixed-rail boundary; below 1024 the drawer frees table width.
+  for (const width of [1100, 1024, 900, 820, 740, 681]) {
     await page.setViewportSize({ width, height: 992 });
+    viewportMeasurements.push(await table.evaluate((element) => ({ viewport: innerWidth, scrollWidth: element.scrollWidth, clientWidth: element.clientWidth })));
     if (
       await table.evaluate(
         (element) => element.scrollWidth > element.clientWidth,
@@ -60,6 +95,7 @@ test("ledger selection caret and scroll surface are authored and active", async 
       break;
     }
   }
+  await writeFile("output/playwright/ledger-review/scroll-widths.json", JSON.stringify(viewportMeasurements, null, 2) + "\n");
   expect(overflowWidth).toBeGreaterThan(0);
   await table.hover();
   await page.mouse.wheel(120, 0);

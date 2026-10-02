@@ -116,7 +116,7 @@ const server = createServer(async (request, response) => {
     response.end(
       JSON.stringify({
         items: storeCreated
-          ? [{ id: storeID, name: "Wizard store", currency: "TWD" }]
+          ? [{ id: storeID, name: "Wizard store", currency: "TWD", role: null, permissions: ["store:read", "orders:read"] }]
           : [],
       }),
     );

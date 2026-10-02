@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { isLocale } from "@live-commerce/i18n";
 import { canonicalUUID } from "@/lib/orders-model";
 import { CvsPrint } from "./CvsPrint";
+import { WorkspaceFrame } from "@/components/WorkspaceFrame";
 
 export default async function CvsPrintPage({
   params,
@@ -17,7 +18,12 @@ export default async function CvsPrintPage({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const query = await searchParams;
-  if (Object.keys(query).some((key) => !["store", "order", "thermal"].includes(key))) notFound();
+  if (
+    Object.keys(query).some(
+      (key) => !["store", "order", "thermal"].includes(key),
+    )
+  )
+    notFound();
   const single = (key: string) => {
     const value = query[key];
     return typeof value === "string" ? value : "";
@@ -26,6 +32,18 @@ export default async function CvsPrintPage({
   const order = single("order");
   const thermal = single("thermal");
   // Invalid links render the client's "not valid" message instead of a bare 404 so the merchant knows what to do.
-  const valid = canonicalUUID.test(store) && canonicalUUID.test(order) && (thermal === "0" || thermal === "1");
-  return <CvsPrint locale={locale} store={valid ? store : ""} order={valid ? order : ""} thermal={thermal === "1"} />;
+  const valid =
+    canonicalUUID.test(store) &&
+    canonicalUUID.test(order) &&
+    (thermal === "0" || thermal === "1");
+  return (
+    <WorkspaceFrame locale={locale} storeName="" active="orders">
+      <CvsPrint
+        locale={locale}
+        store={valid ? store : ""}
+        order={valid ? order : ""}
+        thermal={thermal === "1"}
+      />
+    </WorkspaceFrame>
+  );
 }

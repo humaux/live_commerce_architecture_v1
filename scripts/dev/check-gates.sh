@@ -11,6 +11,9 @@
 # Usage: bash scripts/dev/check-gates.sh   (exit 1 on any finding)
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
+# UI W0 G-UI1 registry/parity and G-UI3/G-UI5 architecture ratchet.
+node --test --experimental-strip-types tests/admin/shell-registry.test.ts tests/admin/shell-architecture.test.mjs
+node scripts/dev/ui-architecture-gate.mjs
 # Syntax first: a merge can leave a gate script that no longer parses (R4: a lost `fi` broke every mode).
 for s in scripts/dev/test-local.sh scripts/dev/test-node.sh scripts/dev/test-focused.sh scripts/dev/release-gate.sh; do
   bash -n "$s" || { echo "check-gates: $s does not parse (bash -n)" >&2; exit 1; }

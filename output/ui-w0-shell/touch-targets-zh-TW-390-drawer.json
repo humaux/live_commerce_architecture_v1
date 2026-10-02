@@ -1,0 +1,55 @@
+{
+  "annotation": "Test-only DOM measurement overlay; CSS pixels, no image rescaling",
+  "measured": [
+    {
+      "label": "關閉導覽",
+      "width": 52,
+      "height": 47
+    },
+    {
+      "label": "總覽",
+      "width": 204,
+      "height": 45
+    },
+    {
+      "label": "直播與貼文",
+      "width": 204,
+      "height": 45
+    },
+    {
+      "label": "訂單與出貨",
+      "width": 204,
+      "height": 45
+    },
+    {
+      "label": "商品與庫存+",
+      "width": 204,
+      "height": 45
+    },
+    {
+      "label": "顧客",
+      "width": 204,
+      "height": 45
+    },
+    {
+      "label": "行銷優惠+",
+      "width": 204,
+      "height": 45
+    },
+    {
+      "label": "網路商店",
+      "width": 204,
+      "height": 45
+    },
+    {
+      "label": "收款與報表",
+      "width": 204,
+      "height": 45
+    },
+    {
+      "label": "設定+",
+      "width": 204,
+      "height": 45
+    }
+  ]
+}

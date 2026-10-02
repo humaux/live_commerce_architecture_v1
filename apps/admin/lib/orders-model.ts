@@ -1,3 +1,5 @@
+import { STORE_TIME_ZONE, displayTime, minorDigits, wholeOnly, amountToMinor, minorToInput } from "../../../packages/format/src/index.ts";
+export { STORE_TIME_ZONE, displayTime, minorDigits, wholeOnly, amountToMinor, minorToInput } from "../../../packages/format/src/index.ts";
 // Admin order model: strict parsers for the merchant-orders DTOs (BFF `/api/stores/{store}/orders*`
 // -> Go `internal/merchantorders`, `internal/httpapi/{orders,refunds,shipments}.go`).
 // Invariants mirror merchant-orders-v1 as amended by stripe-refund-v1 §7.1 and manual-fulfilment-v1 §5.1;
@@ -461,33 +463,10 @@ export function parseOrderActions(value: unknown): OrderActions {
 
 // Store-local time: every store of this release is a Taiwan store (Asia/Taipei, no DST), and the admin never shows UTC (M06). The wire stays
 // RFC 3339 UTC/offset instants; this zone is only how the merchant reads and types them. promotions-model's Taipei helpers share it.
-export const STORE_TIME_ZONE = "Asia/Taipei";
 // The ONE time display of the admin (orders, customers, billing, team, Studio, claims); pages label their columns "Taipei time".
-export function displayTime(locale: string, value: string) {
-  return new Intl.DateTimeFormat(locale, {
-    timeZone: STORE_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false,
-  }).format(new Date(value));
-}
 
 // Refund amount entry. The server is the money authority (stripe-refund-v1 §4.2 step rule, I05); these helpers only
 // turn typed major units into minor units and give an early hint. TWD refunds are whole dollars = multiples of 100 minor.
-export function minorDigits(currency: string) {
-  return new Intl.NumberFormat("en", { style: "currency", currency }).resolvedOptions().maximumFractionDigits ?? 2;
-}
-export const wholeOnly = (currency: string) => currency === "TWD";
-export function amountToMinor(text: string, currency: string): number | null {
-  const digits = minorDigits(currency);
-  const match = new RegExp(digits === 0 ? "^(\\d{1,12})()$" : `^(\\d{1,12})(?:\\.(\\d{1,${digits}}))?$`).exec(text.trim());
-  if (!match) return null;
-  const minor = Number(match[1]) * 10 ** digits + Number((match[2] ?? "").padEnd(digits, "0") || 0);
-  return Number.isSafeInteger(minor) && minor <= maxMoney ? minor : null;
-}
-export function minorToInput(minor: number, currency: string) {
-  const digits = minorDigits(currency);
-  const whole = Math.floor(minor / 10 ** digits);
-  const fraction = String(minor % 10 ** digits).padStart(digits, "0");
-  return digits === 0 || (wholeOnly(currency) && Number(fraction) === 0) ? String(whole) : `${whole}.${fraction}`;
-}
 export function refundAmountOK(minor: number | null, refundable: number, currency: string): minor is number {
   return minor !== null && minor >= 1 && minor <= refundable && (!wholeOnly(currency) || minor % 100 === 0);
 }

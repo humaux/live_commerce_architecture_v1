@@ -1,0 +1,62 @@
+✔ the four constructs render (1.4695ms)
+✔ XSS payloads stay inert text (0.5085ms)
+✔ fuzz: any string over a hostile alphabet renders only whitelisted tags (10.450917ms)
+✔ validator mirrors the Go rules (0.31025ms)
+✔ SDN1 allowlist: exactly the contract routes, per method (0.565292ms)
+✔ SDN1 allowlist: traversal, case, suffix and prefix tricks never match (0.229458ms)
+✔ SDN1 request shape: no query string anywhere, reads carry no body, key, length or transfer-encoding (15.566584ms)
+✔ SDN1 cap: 260 KiB = Go's 256 KiB document + 4 KiB envelope, and a body of exactly the cap is still below it (0.059542ms)
+✔ SDN2 renderer: every XSS payload comes out as whitelisted tags and escaped text only (0.712166ms)
+✔ SDN2 renderer: escape-first means the merchant's text never becomes markup (0.094833ms)
+✔ SDN2 renderer: fuzz (seeded) never produces a tag outside the whitelist (10.06ms)
+✔ SDN2 client validator rejects what the server rejects (HTML, non-https links, `<` anywhere) (0.203833ms)
+✔ cleanForSave turns cleared fields into null but keeps an empty body (0.451ms)
+✔ localIssues names each missing mandatory value by server path (0.512083ms)
+✔ moved swaps neighbours and ignores out-of-range moves (0.173042ms)
+✔ parsers accept the exact Go shapes and refuse extra or missing keys (0.830625ms)
+✔ BFF allowlist covers exactly the design resources (0.325875ms)
+✔ validDesignRequest refuses queries and bodies on reads, ignores other paths (14.741291ms)
+✔ designDetails forwards only a bounded {path, reason} pair (0.156125ms)
+✔ parses never-published, published and bound states (0.790583ms)
+✔ rejects anything outside the closed shape (0.568584ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 111.541375
+
+> live-commerce-workspace@ build:admin /Volumes/data/live_commerce_architecture_v1/.worktrees/ui-w0-shell
+> pnpm --filter @live-commerce/admin build
+
+
+> @live-commerce/admin@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/ui-w0-shell/apps/admin
+> next build && node ../../scripts/dev/package-admin.mjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 14ms
+
+  Creating an optimized production build ...
+
+> Build error occurred
+Error: Turbopack build failed with 1 error:
+./apps/admin/app/[locale]/invite/[token]/page.tsx:11:14
+Error: "metadata" and "generateMetadata" cannot be exported at the same time, please keep one of them. Read more: https://nextjs.org/docs/app/api-reference/file-conventions/metadata
+  [90m 9 |[0m [36mimport[0m { isLocale } [36mfrom[0m [32m"@live-commerce/i18n"[0m;
+  [90m10 |[0m [36mimport[0m { routeMetadata } [36mfrom[0m [32m"@/src/route-metadata"[0m;
+[31m[1m>[0m [90m11 |[0m [36mexport[0m [36mconst[0m generateMetadata = ({ params }: { params: [33mPromise[0m<{ locale: string }> }) => r...
+  [90m   |[0m              [31m[1m^^^^^^^^^^^^^^^^[0m
+  [90m12 |[0m [36mimport[0m { [33mSESSION_COOKIE[0m, authConfig, authenticatedStores, exactCookieHeader, isBase64URL32...
+  [90m13 |[0m [36mimport[0m { [33mTeamInvite[0m } [36mfrom[0m [32m"@/components/TeamInvite"[0m;
+  [90m14 |[0m
+
+Ecmascript file had an error
+
+
+    at <unknown> (./apps/admin/app/[locale]/invite/[token]/page.tsx:11:14)
+/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-w0-shell/apps/admin:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @live-commerce/admin@ build: `next build && node ../../scripts/dev/package-admin.mjs`
+Exit status 1
+ ELIFECYCLE  Command failed with exit code 1.
