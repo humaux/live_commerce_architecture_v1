@@ -301,9 +301,13 @@ test.describe("meta-connect independent browser gate", () => {
     await expect(page.getByTestId("metaconnect-pick")).toHaveCount(0);
     expect(picks).toBe(1);
     await page.unroute(`**/meta-connect/pick`);
-    const status = await page.request.get(`/api/stores/${store}/meta-connect/status`);
-    expect(status.status()).toBe(200);
-    const dto = await status.json();
+    // Use the browser's secure-cookie session, not APIRequestContext's HTTP cookie policy.
+    const status = await page.evaluate(async (store) => {
+      const response = await fetch(`/api/stores/${store}/meta-connect/status`, { credentials: "same-origin" });
+      return { code: response.status, dto: await response.json() };
+    }, store);
+    expect(status.code).toBe(200);
+    const dto = status.dto;
     expect(dto).toMatchObject({ connected: true, count: 2, cap: 10 });
     expect(dto.pages.map((p: { id: string }) => p.id).sort()).toEqual([pageA.id, pageB.id].sort());
     for (const locale of ["zh-TW", "zh-CN", "en"] as const) for (const view of ["desktop", "mobile"] as const) {
