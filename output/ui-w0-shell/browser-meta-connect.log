@@ -1,0 +1,99 @@
+✔ callback redirect target is always a same-origin /<locale>/settings path whatever the cookies, store, code or error say (2.457542ms)
+✔ the binding cookie: exactly one canonical store uuid, path-scoped to the callback, HttpOnly, Lax, 10 minutes, Secure (0.188583ms)
+✔ callback query: exactly one code and one state within charset/length bounds; Meta's error=… and repeats are not forwarded (0.628958ms)
+✔ the dialog URL the BFF hands the browser is https://www.facebook.com only (0.132667ms)
+✔ callback error mapping only ever yields fixed codes, never an upstream message (0.399833ms)
+✔ status: not connected, connected with and without Instagram, and every deviation throws (2.171708ms)
+✔ pick state: closed shape, optional Instagram keys come as a pair, id must match (0.386708ms)
+✔ route grammar: only status/states/pick/disconnect; start and callback are dedicated routes; no query; reads carry no body or key (13.357667ms)
+✔ connect cookie, body and callback redirect never carry code/state and only fixed codes (0.302291ms)
+✔ copy: three locales have the same keys and every Go error code has a message (0.099958ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 150.095375
+
+> live-commerce-workspace@ build:admin /Volumes/data/live_commerce_architecture_v1/.worktrees/ui-w0-shell
+> pnpm --filter @live-commerce/admin build
+
+
+> @live-commerce/admin@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/ui-w0-shell/apps/admin
+> next build && node ../../scripts/dev/package-admin.mjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 118ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1214ms
+  Running TypeScript ...
+  Finished TypeScript in 346ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/15) ...
+  Generating static pages using 9 workers (3/15) 
+  Generating static pages using 9 workers (7/15) 
+  Generating static pages using 9 workers (11/15) 
+✓ Generating static pages using 9 workers (15/15) in 111ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/ads
+├ ƒ /[locale]/billing
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/customers
+├ ƒ /[locale]/customers/[customer]
+├ ƒ /[locale]/design
+├ ƒ /[locale]/finance
+├ ƒ /[locale]/inventory
+├ ƒ /[locale]/invite/[token]
+├ ƒ /[locale]/orders
+├ ƒ /[locale]/orders/cvs-print
+├ ƒ /[locale]/orders/new
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[product]
+├ ƒ /[locale]/products/import
+├ ƒ /[locale]/promotions
+├ ƒ /[locale]/reset
+├ ƒ /[locale]/settings
+├ ƒ /[locale]/signup
+├ ƒ /[locale]/studio
+├ ƒ /[locale]/studio/claims
+├ ƒ /[locale]/team
+├ ƒ /api/ads/meta/callback
+├ ƒ /api/ads/meta/connect
+├ ƒ /api/auth/callback
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/password/login
+├ ƒ /api/auth/password/reset
+├ ƒ /api/auth/password/signup
+├ ƒ /api/auth/password/verify
+├ ƒ /api/meta/callback
+├ ƒ /api/meta/connect
+├ ƒ /api/onboarding/initial-store
+├ ƒ /api/stores
+├ ƒ /api/stores/[store]/[...resource]
+├ ƒ /api/stores/[store]/tools/[...resource]
+└ ƒ /api/team/[action]
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Packaged standalone admin server and static assets.
+=== RUN   TestBrowserMetaConnectGate
+    browser_meta_connect_gate_test.go:150: admin browser gate failed: exit status 1; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-w0-shell/output/playwright/meta-connect-gate/20261002T100826.680374000
+--- FAIL: TestBrowserMetaConnectGate (16.47s)
+=== RUN   TestBrowserMetaConnect
+    browser_meta_connect_test.go:126: admin browser gate failed: exit status 1; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-w0-shell/output/playwright/meta-connect/20261002T100842.093029000
+--- FAIL: TestBrowserMetaConnect (12.18s)
+FAIL
+FAIL	livecommerce/tests/foundation	30.165s
+FAIL

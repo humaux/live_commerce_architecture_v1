@@ -1,0 +1,12 @@
+▲ Next.js 16.3.5 (Turbopack)
+- Local:         http://127.0.0.1:51318
+- Network:       http://127.0.0.1:51318
+✓ Ready in 444ms
+✓ Running next.config.ts took 130ms
+
+ GET /en/reset 200 in 585ms (next.js: 345ms, proxy.ts: 121ms, application-code: 118ms)
+ GET /zh-CN/reset 200 in 22ms (next.js: 4ms, proxy.ts: 1.8ms, application-code: 16ms)
+ GET /zh-CN/reset 200 in 21ms (next.js: 3ms, proxy.ts: 1.2ms, application-code: 17ms)
+ GET /zh-CN/signup 200 in 346ms (next.js: 325ms, proxy.ts: 3ms, application-code: 18ms)
+ GET /zh-CN/signup 200 in 22ms (next.js: 3ms, proxy.ts: 1.6ms, application-code: 18ms)
+[?25h

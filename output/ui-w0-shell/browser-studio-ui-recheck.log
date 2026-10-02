@@ -1,0 +1,33 @@
+
+> live-commerce-workspace@ build:admin /Volumes/data/live_commerce_architecture_v1/.worktrees/ui-w0-shell
+> pnpm --filter @live-commerce/admin build
+
+
+> @live-commerce/admin@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/ui-w0-shell/apps/admin
+> next build && node ../../scripts/dev/package-admin.mjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 11ms
+
+  Creating an optimized production build ...
+
+> Build error occurred
+Error: Turbopack build failed with 1 error:
+./apps/admin/app/[locale]/invite/[token]/page.tsx:11:14
+Error: "metadata" and "generateMetadata" cannot be exported at the same time, please keep one of them. Read more: https://nextjs.org/docs/app/api-reference/file-conventions/metadata
+  [90m 9 |[0m [36mimport[0m { isLocale } [36mfrom[0m [32m"@live-commerce/i18n"[0m;
+  [90m10 |[0m [36mimport[0m { routeMetadata } [36mfrom[0m [32m"@/src/route-metadata"[0m;
+[31m[1m>[0m [90m11 |[0m [36mexport[0m [36mconst[0m generateMetadata = ({ params }: { params: [33mPromise[0m<{ locale: string }> }) => r...
+  [90m   |[0m              [31m[1m^^^^^^^^^^^^^^^^[0m
+  [90m12 |[0m [36mimport[0m { [33mSESSION_COOKIE[0m, authConfig, authenticatedStores, exactCookieHeader, isBase64URL32...
+  [90m13 |[0m [36mimport[0m { [33mTeamInvite[0m } [36mfrom[0m [32m"@/components/TeamInvite"[0m;
+  [90m14 |[0m
+
+Ecmascript file had an error
+
+
+    at <unknown> (./apps/admin/app/[locale]/invite/[token]/page.tsx:11:14)
+/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-w0-shell/apps/admin:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @live-commerce/admin@ build: `next build && node ../../scripts/dev/package-admin.mjs`
+Exit status 1
+ ELIFECYCLE  Command failed with exit code 1.
