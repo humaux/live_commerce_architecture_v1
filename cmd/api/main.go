@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -135,7 +136,12 @@ func run() error {
 		paymentEnvironment = env
 	}
 	handler := httpapi.NewHandler(pool, httpapi.Options{SessionStoreList: identityConfig.enabled, Accounts: accountService, Studio: studioConfig.enabled, Live: studioPlanner,
-		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs, Ads: adsService, MetaConnect: metaConnect, Billing: billingService, CVS: cvs.Merchant, PaymentEnvironment: paymentEnvironment, ManualOrders: cvs.Manual})
+		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs, Ads: adsService, MetaConnect: metaConnect, Billing: billingService, CVS: cvs.Merchant, PaymentEnvironment: paymentEnvironment, ManualOrders: cvs.Manual,
+		StoreBaseDomain: strings.ToLower(strings.TrimSpace(os.Getenv("LC_STORE_BASE_DOMAIN")))})
+	tlsAskHandler, err := buildTLSAskHandler(pool)
+	if err != nil {
+		return err
+	}
 	if identityHandler != nil {
 		mux := http.NewServeMux()
 		mux.Handle("/v1/identity/", identityHandler)
@@ -153,6 +159,7 @@ func run() error {
 	handler = mountMeta(handler, metaHandler)
 	handler = mountStripe(handler, stripeHandler)
 	handler = mountPlatformBilling(handler, billingWebhook)
+	handler = mountTLSAsk(handler, tlsAskHandler)
 	stopStartup()
 	server := &http.Server{
 		Addr:              addr,
