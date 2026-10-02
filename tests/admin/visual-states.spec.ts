@@ -49,8 +49,11 @@ test("ledger selection caret and scroll surface are authored and active", async 
   // Use real responsive widths; never inject a fake overflow or scrollbar.
   const table = page.locator(".table-scroll");
   let overflowWidth = 0;
-  for (const width of [1100, 900, 820, 740, 681]) {
+  const viewportMeasurements = [];
+  // Include the W0 fixed-rail boundary; below 1024 the drawer frees table width.
+  for (const width of [1100, 1024, 900, 820, 740, 681]) {
     await page.setViewportSize({ width, height: 992 });
+    viewportMeasurements.push(await table.evaluate((element) => ({ viewport: innerWidth, scrollWidth: element.scrollWidth, clientWidth: element.clientWidth })));
     if (
       await table.evaluate(
         (element) => element.scrollWidth > element.clientWidth,
@@ -60,6 +63,7 @@ test("ledger selection caret and scroll surface are authored and active", async 
       break;
     }
   }
+  await writeFile("output/playwright/ledger-review/scroll-widths.json", JSON.stringify(viewportMeasurements, null, 2) + "\n");
   expect(overflowWidth).toBeGreaterThan(0);
   await table.hover();
   await page.mouse.wheel(120, 0);

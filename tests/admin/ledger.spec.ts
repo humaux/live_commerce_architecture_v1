@@ -571,7 +571,7 @@ test("rail has no hard-coded channel status and scrolls to Settings and Sign out
   // fake entries or granting more domains merely to make the rail tall.
   await page.setViewportSize({ width: 1366, height: 300 });
   expect(await navigation.evaluate((el) => el.scrollHeight > el.clientHeight), "the constrained viewport really needs the scroll").toBe(true);
-  await page.getByTestId("nav-inventory").scrollIntoViewIfNeeded();
+  await page.getByTestId("nav-inventory").evaluate((el) => el.scrollIntoView({ block: "center", inline: "nearest" }));
   await expect(page.getByTestId("nav-inventory")).toBeInViewport({ ratio: 1 });
   await page.setViewportSize({ width: 1366, height: 768 });
   await mkdir("output/admin-ui-fixes", { recursive: true });
