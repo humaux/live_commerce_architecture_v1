@@ -75,6 +75,9 @@ type Summary struct {
 	// payment_mode=cash_on_delivery (the buyer pays it on delivery on top of TotalMinor). Read-only projection of
 	// identity.read_merchant_orders.
 	CodSurchargeMinor *int64 `json:"cod_surcharge_minor"`
+	// CodCollectMinor (home-cod R5, P1-2) is the cash due on delivery = TotalMinor + CodSurchargeMinor; null unless
+	// payment_mode=cash_on_delivery (the SQL CASE nulls it otherwise). Read-only projection of identity.read_merchant_orders.
+	CodCollectMinor *int64 `json:"cod_collect_minor"`
 	// Source is where the order was created: storefront (every buyer-placed order) or merchant_manual (admin Create Order, unit
 	// merchant-tools, migration 0094). It is NOT part of identity.read_merchant_orders: attachSources reads it per page through
 	// identity.read_order_sources, so the older projection definers stay untouched.
@@ -308,6 +311,10 @@ func matchesState(state string, v Summary) bool {
 	case "cvs_pending":
 		// C4: the forwarder's daily drop list (the SQL adds "current attempt CREATED").
 		return v.FulfillmentState == "PROVIDER_LABEL_CREATED"
+	case "AWAITING_COLLECTION":
+		// home-cod R5 (P2-5): the awaiting-collection list is the COD order still PENDING (commercial_state stays
+		// AWAITING_COLLECTION through ship/collection, so the filter keys on collection_state, not commercial_state).
+		return v.CommercialState == "AWAITING_COLLECTION" && v.CollectionState != nil && *v.CollectionState == "PENDING"
 	}
 	return v.CommercialState == state
 }
@@ -320,10 +327,10 @@ func decodeArray(raw []byte, max int) ([]json.RawMessage, error) {
 	return objects, nil
 }
 
-var summaryKeys = []string{"order_id", "created_at", "updated_at", "currency", "total_minor", "commercial_state", "fulfillment_state", "payment_state", "test_mode", "work_state", "refunded_minor", "refund_pending_minor", "pickup_source", "payment_mode", "collection_state", "cod_surcharge_minor"}
+var summaryKeys = []string{"order_id", "created_at", "updated_at", "currency", "total_minor", "commercial_state", "fulfillment_state", "payment_state", "test_mode", "work_state", "refunded_minor", "refund_pending_minor", "pickup_source", "payment_mode", "collection_state", "cod_surcharge_minor", "cod_collect_minor"}
 
 // summaryNullable are the summary keys whose value may be an explicit JSON null (the key itself is still required).
-var summaryNullable = []string{"pickup_source", "collection_state", "cod_surcharge_minor"}
+var summaryNullable = []string{"pickup_source", "collection_state", "cod_surcharge_minor", "cod_collect_minor"}
 
 func decodeSummary(raw json.RawMessage) (Summary, error) {
 	if _, err := exactNullable(raw, summaryNullable, summaryKeys...); err != nil {
@@ -366,6 +373,10 @@ func validSummary(v Summary) bool {
 		return false
 	}
 	if !money(v.RefundedMinor) || !money(v.RefundPendingMinor) || v.RefundedMinor+v.RefundPendingMinor > v.TotalMinor {
+		return false
+	}
+	// home-cod R5 (P1-2): cod_collect_minor is present exactly on COD orders (the SQL CASE nulls it otherwise).
+	if (v.PaymentMode == "cash_on_delivery") != (v.CodCollectMinor != nil) {
 		return false
 	}
 	// I05: refund amounts and payment_state come from the same SQL facts, so they must agree.
@@ -423,6 +434,7 @@ func validSummary(v Summary) bool {
 		return v.PaymentState == "NOT_STARTED" && v.WorkState == "NONE" && v.RefundedMinor == 0 && v.RefundPendingMinor == 0 && !v.TestMode &&
 			v.FulfillmentState != "PAID_ALLOCATION_FAILED" &&
 			v.CodSurchargeMinor != nil && *v.CodSurchargeMinor >= 0 && *v.CodSurchargeMinor <= 100000 && *v.CodSurchargeMinor%100 == 0 &&
+			*v.CodCollectMinor == v.TotalMinor+*v.CodSurchargeMinor &&
 			(v.CommercialState == "AWAITING_COLLECTION" || (v.CommercialState == "CANCELLED" && v.FulfillmentState == "CANCELLED"))
 	}
 	if v.CommercialState == "AWAITING_TRANSFER" {

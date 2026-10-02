@@ -61,6 +61,13 @@ type Option struct {
 	// the store's whole-TWD COD surcharge in minor units the buyer pays on delivery on top of the order total (0 = no surcharge).
 	// The quote stays the only authority on the order total (I05); this field only lets the storefront show the surcharge.
 	CodSurchargeMinor int64 `json:"cod_surcharge_minor,omitempty"`
+	// CodCarrier (home-cod R5, P2-4) is the carrier label of the COD offer (black_cat / hsinchu; manual fulfilment, never a carrier
+	// API) and is snapshotted on the order at placement. Present only alongside CodSurchargeMinor.
+	CodCarrier string `json:"cod_carrier,omitempty"`
+	// CodMaxMinor (home-cod R5, P2-3) is the store's whole-TWD per-order COD cap (total + surcharge may not exceed it) in minor
+	// units. The options request has no basket, so the server cannot omit COD from a row whose total + surcharge would exceed the
+	// cap here; exposing the cap lets the storefront make that call before the buyer reaches Begin.
+	CodMaxMinor int64 `json:"cod_max_minor,omitempty"`
 }
 
 // transferOffer is checkout.read_transfer_offer: the store's bank-transfer switch, whether CVS destinations may use it, and the window.
@@ -315,6 +322,8 @@ func (s *Service) decorateCVS(ctx context.Context, tx pgx.Tx, tokenHash []byte, 
 			}
 			if cod.enabled {
 				option.CodSurchargeMinor = int64(cod.surchargeTWD) * 100
+				option.CodCarrier = cod.carrier
+				option.CodMaxMinor = int64(cod.maxTWD) * 100
 			}
 			if !s.noCard || transfer.enabled || cod.enabled {
 				items = append(items, option)
