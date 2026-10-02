@@ -156,8 +156,14 @@ func TestBrowserMetaConnectGate(t *testing.T) {
 	if n := owned(`SELECT count(*) FROM integration.meta_page_credentials c WHERE c.store_id=$1`, store); n != 0 {
 		t.Errorf("%d sealed credentials left for the store after disconnect", n)
 	}
-	if n := owned(`SELECT count(*) FROM integration.bindings WHERE store_id=$1 AND external_asset_id=ANY($2)`, store, []string{pageB.ID, pageC.ID, pageD.ID}); n != 0 {
+	// R5 meta-multi-page: the spec now connects Page B next to A and then disconnects B (brief Gate), so B keeps a disabled
+	// binding row as history; the never-picked / refused Pages C and D must still have no binding row at all, and B must have
+	// no enabled binding (the enabled-count check above) and no sealed credential (checked here per Page).
+	if n := owned(`SELECT count(*) FROM integration.bindings WHERE store_id=$1 AND external_asset_id=ANY($2)`, store, []string{pageC.ID, pageD.ID}); n != 0 {
 		t.Errorf("the unpicked / refused Pages left %d bindings", n)
+	}
+	if n := owned(`SELECT count(*) FROM integration.bindings WHERE store_id=$1 AND external_asset_id=$2 AND enabled`, store, pageB.ID); n != 0 {
+		t.Errorf("disconnected Page B still has %d enabled bindings", n)
 	}
 	for action, min := range map[string]int{"meta.connect.started": 9, "meta.connect.callback": 7, "meta.connect.page_connected": 5, "meta.connect.disconnected": 5} {
 		if n := owned(`SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action=$2 AND principal_id=$3`, store, action, principal); n < min {

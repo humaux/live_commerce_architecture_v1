@@ -60,6 +60,7 @@ func crNewWorkerEnv(t *testing.T, f *testFixture) *crWorkerEnv {
 	intake, _, _ := crLoginDSN(t, f, false, "commerce_claims_intake")
 	worker, workerUser, _ := crLoginDSN(t, f, false, waClaims)
 	job, jobUser, jobPassword := crLoginDSN(t, f, false, "commerce_retention_job")
+	verifier, _, _ := crLoginDSN(t, f, false, "commerce_storefront_verifier")
 	w.workerUser, w.jobUser, w.jobDSNSecret = workerUser, jobUser, jobPassword
 	w.env = []string{
 		"COMMERCE_CLAIMS_WORKER_ENABLED=1",
@@ -70,6 +71,10 @@ func crNewWorkerEnv(t *testing.T, f *testFixture) *crWorkerEnv {
 		"COMMERCE_META_PAGE_TOKEN_ACTIVE_KEY_ID=pt_key_1",
 		`COMMERCE_META_PAGE_TOKEN_KEYS_JSON={"keys":[{"id":"pt_key_1","key_base64":"` + base64.StdEncoding.EncodeToString(w.pageKeyRaw) + `"}]}`,
 		"COMMERCE_META_GRAPH_VERSION=v99.0",
+		// R5 store-domains: the claims-worker also runs the domain verify sweep and refuses to start without its narrow
+		// verifier login and the platform base zone (appended last: tests index the earlier entries by position).
+		"COMMERCE_STORE_VERIFY_DATABASE_URL=" + verifier,
+		"LC_STORE_BASE_DOMAIN=example.com",
 	}
 	return w
 }

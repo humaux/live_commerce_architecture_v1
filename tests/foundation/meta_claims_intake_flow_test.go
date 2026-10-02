@@ -1000,6 +1000,9 @@ func (e *mciEnv) workerEnv(t *testing.T, graphURL string) []string {
 		"COMMERCE_META_PAGE_TOKEN_ACTIVE_KEY_ID=pt_key_1",
 		`COMMERCE_META_PAGE_TOKEN_KEYS_JSON={"keys":[{"id":"pt_key_1","key_base64":"` + base64.StdEncoding.EncodeToString(e.pageKeyRaw) + `"}]}`,
 		"COMMERCE_META_GRAPH_VERSION=v99.0",
+		// R5 store-domains: the claims-worker also runs the domain verify sweep (narrow verifier login + platform base zone).
+		"COMMERCE_STORE_VERIFY_DATABASE_URL=" + miRole(t, f, "commerce_storefront_verifier"),
+		"LC_STORE_BASE_DOMAIN=example.com",
 	}
 	if graphURL != "" {
 		env = append(env, "COMMERCE_META_GRAPH_BASE_URL="+graphURL)
