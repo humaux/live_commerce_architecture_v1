@@ -43,6 +43,64 @@ export async function runShellGate({
     )
       await page.locator('[aria-controls="workspace-navigation"]').click();
   };
+  const annotatedTargets = async (name, selector) => {
+    const measured = await page.locator(selector).evaluateAll((elements) =>
+      elements.map((el, index) => {
+        const r = el.getBoundingClientRect();
+        const box = document.createElement("div");
+        box.dataset.w0Measurement = "true";
+        Object.assign(box.style, {
+          position: "fixed",
+          left: `${r.x}px`,
+          top: `${r.y}px`,
+          width: `${r.width}px`,
+          height: `${r.height}px`,
+          outline: "2px solid #b42318",
+          zIndex: "9999",
+          pointerEvents: "none",
+        });
+        const label = document.createElement("span");
+        label.textContent = `${index + 1}: ${Math.round(r.width)} × ${Math.round(r.height)} px`;
+        Object.assign(label.style, {
+          position: "absolute",
+          left: "0",
+          bottom: "0",
+          color: "#b42318",
+          background: "white",
+          font: "bold 10px/12px sans-serif",
+        });
+        box.append(label);
+        document.body.append(box);
+        return {
+          label: el.getAttribute("aria-label") || el.textContent?.trim(),
+          width: r.width,
+          height: r.height,
+        };
+      }),
+    );
+    assert.ok(measured.length > 0);
+    for (const target of measured)
+      assert.ok(
+        target.width >= 43.9 && target.height >= 43.9,
+        "44px measured shell target",
+      );
+    await shot(name);
+    await writeFile(
+      `${output}/${name}.json`,
+      JSON.stringify(
+        {
+          annotation:
+            "Test-only DOM measurement overlay; CSS pixels, no image rescaling",
+          measured,
+        },
+        null,
+        2,
+      ) + "\n",
+    );
+    await page
+      .locator("[data-w0-measurement]")
+      .evaluateAll((elements) => elements.forEach((el) => el.remove()));
+  };
   const geometry = async () => {
     const result = await page.evaluate(() => {
       const top = document.querySelector("[data-shell-topbar]"),
@@ -81,6 +139,25 @@ export async function runShellGate({
       await page.setViewportSize({ width, height });
       await page.goto(`${base}/${locale}/?store=${otherID}`);
       await ready();
+      const brand = page.getByTestId("shell-store-name");
+      assert.equal(
+        await brand.textContent(),
+        "A very long English store name for accessible workspace switching without overlap",
+      );
+      assert.deepEqual(
+        await brand.evaluate((el) => ({
+          overflow: getComputedStyle(el).overflow,
+          textOverflow: getComputedStyle(el).textOverflow,
+          whiteSpace: getComputedStyle(el).whiteSpace,
+          clipped: el.scrollWidth > el.clientWidth,
+        })),
+        {
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+          clipped: true,
+        },
+      );
       await geometry();
       await shot(`shell-${locale}-${width}x${height}`);
       // Browser-level audit of shell only. Old page-body findings belong to later domain units.
@@ -121,6 +198,11 @@ export async function runShellGate({
       }
       if (width < 1024) {
         const menu = page.locator('[aria-controls="workspace-navigation"]');
+        if (width === 390)
+          await annotatedTargets(
+            `touch-targets-${locale}-390-topbar`,
+            "[data-shell-topbar] button:visible,[data-shell-topbar] select:visible,[data-shell-topbar] summary:visible",
+          );
         await menu.click();
         await page.locator("[data-shell-rail]").waitFor({ state: "visible" });
         await page.keyboard.press("Shift+Tab");
@@ -139,6 +221,11 @@ export async function runShellGate({
         );
         await menu.click();
         await shot(`drawer-${locale}-${width}x${height}`);
+        if (width === 390)
+          await annotatedTargets(
+            `touch-targets-${locale}-390-drawer`,
+            "[data-shell-rail] button:visible",
+          );
         const small = await page
           .locator(
             "[data-shell-rail] button:visible,[data-shell-topbar] button:visible,[data-shell-topbar] select:visible,[data-shell-topbar] summary:visible",
@@ -203,6 +290,23 @@ export async function runShellGate({
             url.pathname === `/${locale}/${id === "studio" ? "studio" : id}`,
         );
         await ready(`/${id}`);
+        if (id === "inventory" && (width === 1586 || width === 390)) {
+          await openMenu();
+          assert.equal(
+            await page
+              .getByTestId("nav-group-catalog")
+              .getAttribute("aria-expanded"),
+            "true",
+          );
+          assert.equal(
+            await page
+              .getByTestId("nav-inventory")
+              .getAttribute("aria-current"),
+            "page",
+          );
+          await shot(`subroute-expanded-${locale}-${width}`);
+          if (width < 1024) await page.keyboard.press("Escape");
+        }
         assert.equal(
           await page.getByTestId("route-forbidden").count(),
           0,
@@ -215,6 +319,8 @@ export async function runShellGate({
       await account.locator("summary").click();
       await page.getByTestId("workspace-sign-out").scrollIntoViewIfNeeded();
       assert.ok(await page.getByTestId("workspace-sign-out").isVisible());
+      if (width === 1586 || width === 390)
+        await shot(`account-open-${locale}-${width}`);
       evidence.push({
         locale,
         width,
@@ -235,11 +341,20 @@ export async function runShellGate({
   }
   f.state.role = "staff";
   f.state.permissions = ["orders:read"];
-  await page.goto(`${base}/en/products?store=${storeID}`);
-  await page.getByTestId("route-forbidden").waitFor();
-  assert.equal(await page.getByTestId("nav-group-catalog").count(), 0);
-  assert.equal(await page.getByTestId("products-search").count(), 0);
-  assert.match(await page.title(), /Products/);
+  for (const locale of ["zh-CN", "zh-TW", "en"]) {
+    for (const [width, height] of [
+      [1586, 992],
+      [390, 844],
+    ]) {
+      await page.setViewportSize({ width, height });
+      await page.goto(`${base}/${locale}/products?store=${storeID}`);
+      await page.getByTestId("route-forbidden").waitFor();
+      assert.equal(await page.getByTestId("nav-group-catalog").count(), 0);
+      assert.equal(await page.getByTestId("products-search").count(), 0);
+      assert.equal(await page.title(), shellCopy[locale].products);
+      await shot(`forbidden-${locale}-${width}`);
+    }
+  }
   f.state.role = "owner";
   await page.goto(`${base}/en/products?store=${storeID}`);
   await ready("/products");
@@ -265,6 +380,16 @@ export async function runShellGate({
       .then((c) => c.some((x) => x.name === "__Host-commerce_session")),
     true,
   );
+  await page.goto(
+    `${base}/en/products?store=99999999-9999-4999-8999-999999999999`,
+  );
+  await page.getByTestId("route-forbidden").waitFor();
+  assert.equal(
+    await page.getByTestId("shell-store-brand").count(),
+    0,
+    "invalid explicit store cannot fall back to another store",
+  );
+  assert.equal(await page.getByTestId("shell-store-selector").count(), 0);
   // A failed identity request must not confuse session expiry with a transient outage.
   await page.route("**/api/stores", (route) =>
     route.fulfill({ status: 401, json: { code: "unauthorized" } }),
@@ -280,8 +405,88 @@ export async function runShellGate({
     await page.getByTestId("shell-sign-in").getAttribute("href"),
     "/en",
   );
-  assert.ok((await page.getByTestId("shell-sign-in").boundingBox()).height >= 44);
+  assert.ok(
+    (await page.getByTestId("shell-sign-in").boundingBox()).height >= 44,
+  );
+  for (const selector of [
+    "[data-testid=shell-store-selector]",
+    "[data-testid=shell-store-brand]",
+    "[data-shell-route]",
+    "[data-shell-rail] nav",
+  ]) {
+    assert.equal(
+      await page.locator(selector).count(),
+      0,
+      "expired session clears scoped chrome: " + selector,
+    );
+  }
+  assert.equal(
+    (await page.locator("body").innerText()).includes("Synthetic baseline"),
+    false,
+  );
   await page.screenshot({ path: `${output}/session-expired-en.png` });
+  await page.unroute("**/api/stores");
+  // Session notifications clear already-loaded chrome and block delayed reads.
+  // Exercise the actual sender primitives, not a forged incoming MessageEvent.
+  const noScopedChrome = async () => {
+    await page.getByTestId("shell-session-expired").waitFor();
+    for (const selector of [
+      "[data-testid=shell-store-selector]",
+      "[data-testid=shell-store-brand]",
+      "[data-shell-route]",
+      "[data-testid=merchant-studio]",
+      "[data-shell-rail] nav",
+    ])
+      assert.equal(await page.locator(selector).count(), 0, selector);
+  };
+  for (const mechanism of ["local", "broadcast", "storage", "focus"]) {
+    await page.goto(`${base}/en/studio?store=${storeID}`);
+    await ready("/studio");
+    const sender = await context.newPage();
+    await sender.goto(`${base}/en/reset`);
+    if (mechanism === "focus") {
+      await page.route("**/api/stores", (route) =>
+        route.fulfill({ status: 401, json: { code: "unauthorized" } }),
+      );
+      await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    } else if (mechanism === "local")
+      await page.evaluate(() =>
+        window.dispatchEvent(new Event("commerce-session-logout")),
+      );
+    else
+      await sender.evaluate((kind) => {
+        if (kind === "storage")
+          localStorage.setItem("commerce-session-logout", crypto.randomUUID());
+        else {
+          const channel = new BroadcastChannel("commerce-session");
+          channel.postMessage({ type: "logout" });
+          channel.close();
+        }
+      }, mechanism);
+    await noScopedChrome();
+    if (mechanism === "focus") await page.unroute("**/api/stores");
+    await sender.close();
+  }
+  let releaseRead, startedRead;
+  const pendingRead = new Promise((resolve) => {
+    releaseRead = resolve;
+  });
+  const readStarted = new Promise((resolve) => {
+    startedRead = resolve;
+  });
+  await page.route("**/api/stores", async (route) => {
+    const response = await route.fetch();
+    startedRead();
+    await pendingRead;
+    await route.fulfill({ response }).catch(() => {}); // abort after logout is expected
+  });
+  await page.goto(`${base}/en/studio?store=${storeID}`);
+  await readStarted;
+  await page.evaluate(() =>
+    window.dispatchEvent(new Event("commerce-session-logout")),
+  );
+  releaseRead();
+  await noScopedChrome();
   await page.unroute("**/api/stores");
   await context.clearCookies();
   for (const locale of ["en", "zh-CN", "zh-TW"]) {

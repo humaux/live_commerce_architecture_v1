@@ -25,7 +25,6 @@ import { Icon } from "./Icon";
 
 export function WorkspaceFrame({
   locale,
-  storeName,
   active,
   locked = false,
   onBeforeNavigate,
@@ -57,7 +56,8 @@ export function WorkspaceFrame({
   const busy = useRef(false);
   const close = useCallback(() => setOpen(false), []);
   // Scope the result to its request key, even during the render before the next effect runs.
-  const stores = data?.key === storeParam ? data.stores : [];
+  const stores =
+    !error && !signingOut && data?.key === storeParam ? data.stores : [];
   const access = navAccessFrom({ items: stores }, storeParam);
   const route = matchRoute(pathname.replace(/^\/(zh-CN|zh-TW|en)/, "") || "/");
   const allowed = route && canOpen(route, access);
@@ -65,24 +65,60 @@ export function WorkspaceFrame({
   useEffect(() => {
     const abort = new AbortController();
     let current = true;
+    const clearSession = () => {
+      current = false;
+      abort.abort();
+      setData(null);
+      setError("expired");
+      setOpen(false);
+      setExpanded(null);
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === "commerce-session-logout") clearSession();
+    };
+    let channel: BroadcastChannel | null = null;
+    try {
+      channel = new BroadcastChannel("commerce-session");
+      channel.onmessage = (event: MessageEvent) => {
+        if (event.data?.type === "logout") clearSession();
+      };
+    } catch {
+      // Same-tab and storage notifications remain available.
+    }
+    window.addEventListener("commerce-session-logout", clearSession);
+    window.addEventListener("storage", onStorage);
     setError(null);
     setData(null);
-    readWorkspace(abort.signal)
-      .then((stores) => {
-        if (current) setData({ key: storeParam, stores });
-      })
-      .catch((cause: unknown) => {
-        if (current && !abort.signal.aborted)
-          setError(
-            cause instanceof Error &&
+    const refresh = () =>
+      readWorkspace(abort.signal)
+        .then((stores) => {
+          if (current) {
+            setData({ key: storeParam, stores });
+            setError(null);
+          }
+        })
+        .catch((cause: unknown) => {
+          if (current && !abort.signal.aborted) {
+            if (
+              cause instanceof Error &&
               cause.message === "workspace_session_expired"
-              ? "expired"
-              : "unavailable",
-          );
-      });
+            )
+              clearSession();
+            else setError("unavailable");
+          }
+        });
+    const onFocus = () => {
+      if (current) void refresh();
+    };
+    void refresh();
+    window.addEventListener("focus", onFocus);
     return () => {
       current = false;
       abort.abort();
+      window.removeEventListener("commerce-session-logout", clearSession);
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("focus", onFocus);
+      channel?.close();
     };
   }, [storeParam, retry]);
   useEffect(() => {
@@ -163,12 +199,18 @@ export function WorkspaceFrame({
       </div>
     );
   }
-  const selectedStore =
-    stores.find((store) => store.id === storeParam) ??
-    [...stores].sort((a, b) => a.id.localeCompare(b.id))[0];
+  const selectedStore = storeParam
+    ? stores.find((store) => store.id === storeParam)
+    : [...stores].sort((a, b) => a.id.localeCompare(b.id))[0];
   return (
     <>
-      <title>{route ? c[route.labelKey] : "Commerce workspace"}</title>
+      <title>
+        {error === "expired" || signingOut
+          ? c.signIn
+          : route
+            ? c[route.labelKey]
+            : "Commerce workspace"}
+      </title>
       <AppShell
         open={open}
         close={close}
@@ -176,13 +218,27 @@ export function WorkspaceFrame({
         skipLabel={c.skip}
         rail={
           <>
-            <div className={s.brand}>
-              <Icon name="inventory" />
-              <span>{c.navigation}</span>
-            </div>
-            <nav className={s.navigation} aria-label={c.navigation}>
-              {nav.filter((g) => g.id !== "settings").map(groupView)}
-            </nav>
+            {selectedStore && (
+              <div className={s.brand} data-testid="shell-store-brand">
+                <span className={s.brandMark} aria-hidden="true">
+                  {Array.from(selectedStore.name.trim())[0]?.toLocaleUpperCase(
+                    locale,
+                  )}
+                </span>
+                <span
+                  className={s.brandName}
+                  data-testid="shell-store-name"
+                  title={selectedStore.name}
+                >
+                  {selectedStore.name}
+                </span>
+              </div>
+            )}
+            {nav.length > 0 && (
+              <nav className={s.navigation} aria-label={c.navigation}>
+                {nav.filter((g) => g.id !== "settings").map(groupView)}
+              </nav>
+            )}
             {nav.some((g) => g.id === "settings") && (
               <nav className={s.bottom} aria-label={c.settings}>
                 {nav.filter((g) => g.id === "settings").map(groupView)}
@@ -202,31 +258,29 @@ export function WorkspaceFrame({
             >
               <Icon name="menu" />
             </button>
-            <label className={s.store}>
-              <span className="sr-only">{c.store}</span>
-              <select
-                aria-label={c.store}
-                data-testid="shell-store-selector"
-                value={selectedStore?.id ?? ""}
-                disabled={locked || !stores.length}
-                onChange={(e) => {
-                  if (before())
-                    window.location.assign(
-                      `/${locale}/?store=${encodeURIComponent(e.target.value)}`,
-                    );
-                }}
-              >
-                {stores.length ? (
-                  stores.map((store) => (
+            {selectedStore && (
+              <label className={s.store}>
+                <span className="sr-only">{c.store}</span>
+                <select
+                  aria-label={c.store}
+                  data-testid="shell-store-selector"
+                  value={selectedStore?.id ?? ""}
+                  disabled={locked || !stores.length}
+                  onChange={(e) => {
+                    if (before())
+                      window.location.assign(
+                        `/${locale}/?store=${encodeURIComponent(e.target.value)}`,
+                      );
+                  }}
+                >
+                  {stores.map((store) => (
                     <option value={store.id} key={store.id}>
                       {store.name}
                     </option>
-                  ))
-                ) : (
-                  <option value="">{storeName}</option>
-                )}
-              </select>
-            </label>
+                  ))}
+                </select>
+              </label>
+            )}
             <label>
               <span className="sr-only">{c.language}</span>
               <select
@@ -239,7 +293,9 @@ export function WorkspaceFrame({
                     router.push(
                       localizedPath(
                         e.target.value as Locale,
-                        `${pathname}?${search}`,
+                        error === "expired" || signingOut
+                          ? "/"
+                          : `${pathname}?${search}`,
                       ),
                     );
                 }}
@@ -274,7 +330,7 @@ export function WorkspaceFrame({
           </>
         }
       >
-        {route && (
+        {route && selectedStore && (
           <nav
             className={s.crumbs}
             data-shell-route={route.path}

@@ -51,11 +51,22 @@
   display: flex;
   gap: 12px;
   align-items: center;
-  overflow-wrap: anywhere;
+  min-width: 0;
 }
-.brand svg {
-  color: var(--ui-brand);
-  flex-shrink: 0;
+.brandMark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 32px;
+  height: 32px;
+  border-radius: var(--ui-radius);
+  color: white;
+  background: var(--ui-brand-text);
+}
+.brandName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .navigation {
   min-height: 0;

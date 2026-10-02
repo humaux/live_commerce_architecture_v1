@@ -183,9 +183,11 @@ try {
     try {
       await runShellGate({ page, context, f, base, output, storeID });
     } catch (error) {
-      await page.screenshot({ path: `${output}/failure.png` });
+      const red = `${output}/red/run-${Date.now()}`;
+      await mkdir(red, { recursive: true });
+      await page.screenshot({ path: `${red}/failure.png` });
       await writeFile(
-        `${output}/failure.txt`,
+        `${red}/failure.txt`,
         await page.locator("body").innerText(),
       );
       throw error;
