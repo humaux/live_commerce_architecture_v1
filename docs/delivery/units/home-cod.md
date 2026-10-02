@@ -27,7 +27,7 @@ Read: contracts/taiwan-cvs-logistics-v1.md §16 (the pay_at_pickup collection st
 ## Review rulings (integrator, 2026-10-02) — independent review `REVIEW-home-cod.md` at f4edfc7 (0 P0, 4 P1, 11 P2)
 The reviewer's red tests (`TestHomeCodDefect*`) and hardening tests stay as written; the fix makes them green. Split per the routing rule: the backend (Go/SQL) goes to DeepSeek, then everything under `apps/` goes to Codex.
 
-**Backend (DeepSeek), forward migration 0108_home_cod_fixes.sql.** 0107 is unreleased, but a new file keeps the reviewer's evidence reproducible. Renumber at merge if meta-multi-page lands first.
+**Backend (DeepSeek), edits 0107 and post_river/0020 in place.** Both are unreleased: the pilot runs 351089f, and the reviewer's evidence stays reproducible from f4edfc7. 0108 stays reserved for meta-multi-page.
 - **P1-1 / P2-7:** the buyer order DTO (order page, order link, guest lookup) exposes `cod_collect_minor` = total + surcharge for COD orders through a buyer-readable projection. Placed and shipped mails print it.
 - **P1-2:** the unshipped export appends two columns at the end, `payment_mode` and `collect_minor`. This is a contract amendment: appending is backward compatible, and the B19 precedent applies. The merchant order DTO carries `cod_collect_minor`.
 - **P1-3a / P2-9:** `record_manual_shipment` refuses VOID once `collection_state` ≠ PENDING (COD and pay_at_pickup). A tracking-number correction stays allowed but must not change any state.
