@@ -45,6 +45,9 @@ import { displayTime } from "@/lib/orders-model";
 import { claimLinkMessage, claimsCopy, hostPrompt } from "@/lib/claims-copy";
 import { studioCopy } from "@/lib/studio-copy";
 import { metaConnectCopy } from "@/lib/meta-connect-copy";
+import { readStatus as readMetaStatus, type ConnectStatus } from "@/lib/meta-connect-client";
+import { OrderReadError } from "@/lib/orders-client";
+import { pageSourceInput } from "@/lib/meta-page-source";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import "./claims.css";
 
@@ -54,7 +57,7 @@ type ActionError = { action: Action; code: StudioErrorCode | "no-origin" | "form
 type Pending = { action: Action; key: string; run: (key: string, boundary: string) => Promise<void> };
 // source is read on its own: a failing source read (sourceError) never hides the rest of the panel.
 // library is read on its own too (null = it could not be read); scenes feed "copy offers from".
-type Facts = { detail: StudioDetail; board: Board; bundles: Bundle[]; next: string; source: ClaimSource | null; platforms: SourcePlatform[]; sourceError: StudioErrorCode | null; library: LibraryEntry[] | null };
+type Facts = { detail: StudioDetail; board: Board; bundles: Bundle[]; next: string; source: ClaimSource | null; platforms: SourcePlatform[]; sourceError: StudioErrorCode | null; library: LibraryEntry[] | null; meta: ConnectStatus | null };
 type Issued = { ref: string; origin: string; token: string | null; generation: number; expiresAt: string; released: boolean; replayed: boolean };
 
 // A label beside (not around) its control keeps the accessible name exactly the label
@@ -107,6 +110,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
   const [buyerLocale, setBuyerLocale] = useState<Locale>(locale);
   const [revealed, setRevealed] = useState(false);
   const [sourceForm, setSourceForm] = useState<ClaimSourceForm>(() => sourceFormOf(null, locale));
+  const [sourcePage, setSourcePage] = useState("");
   const sourceDirty = useRef(false);
   const boundary = useRef("");
   const pending = useRef<Pending | null>(null);
@@ -135,17 +139,24 @@ export function StudioClaims({ locale, store, scene, initialError }: {
     setStatus((value) => value === "ready" ? value : "loading");
     try {
       const before = await sessionBoundary().catch(() => { throw new StudioError("signed-out"); });
-      const [detail, board, page, library, source] = await Promise.all([readStudioDetail(storeID, scene, abort.signal),
+      const [detail, board, page, library, source, meta] = await Promise.all([readStudioDetail(storeID, scene, abort.signal),
         readClaimsBoard(storeID, scene, abort.signal), readClaimBundles(storeID, scene, "", abort.signal),
         readKeywordLibrary(storeID, scene, abort.signal).catch((error) => { if (codeOf(error) === "signed-out") throw error; return null; }),
         readClaimSource(storeID, scene, abort.signal).then((value) => ({ value, error: null as StudioErrorCode | null }),
-          (error) => { if (codeOf(error) === "signed-out") throw error; return { value: { source: null, platforms: [] as SourcePlatform[] }, error: codeOf(error) as StudioErrorCode | null }; })]);
+          (error) => { if (codeOf(error) === "signed-out") throw error; return { value: { source: null, platforms: [] as SourcePlatform[] }, error: codeOf(error) as StudioErrorCode | null }; }),
+        readMetaStatus(storeID, abort.signal).catch((error) => {
+          if (error instanceof OrderReadError && error.code === "signed-out") throw new StudioError("signed-out");
+          return null;
+        })]);
       if (current !== epoch.current || abort.signal.aborted) return;
       if ((await sessionBoundary().catch(() => "")) !== before) throw new StudioError("signed-out");
       boundary.current = before;
-      setFacts({ detail, board, bundles: page.items, next: page.next_cursor, source: source.value.source, platforms: source.value.platforms, sourceError: source.error, library });
+      setFacts({ detail, board, bundles: page.items, next: page.next_cursor, source: source.value.source, platforms: source.value.platforms, sourceError: source.error, library, meta });
       // Other saves re-read the facts too; never overwrite what the merchant is still typing.
-      if (!sourceDirty.current) setSourceForm(sourceFormOf(source.value.source, locale));
+      if (!sourceDirty.current) {
+        setSourceForm(sourceFormOf(source.value.source, locale));
+        setSourcePage(source.value.source?.platform === "facebook" && meta?.pages.some((p) => p.id === source.value.source?.asset_id) ? source.value.source.asset_id : "");
+      }
       setModeDraft(board.window.match_mode);
       setStatus("ready");
     } catch (error) {
@@ -277,7 +288,8 @@ export function StudioClaims({ locale, store, scene, initialError }: {
   const source = facts?.source ?? null;
   const sourceSaved = sourceFormOf(source, locale);
   const sourceChanged = !source || sourceForm.input.trim() !== sourceSaved.input || sourceForm.private_reply !== sourceSaved.private_reply ||
-    sourceForm.reply_locale !== sourceSaved.reply_locale || sourceForm.active !== sourceSaved.active || sourceForm.platform !== sourceSaved.platform;
+    sourceForm.reply_locale !== sourceSaved.reply_locale || sourceForm.active !== sourceSaved.active || sourceForm.platform !== sourceSaved.platform ||
+    (!!sourcePage && sourcePage !== source?.asset_id);
   // Ruling p: the platform select exists only when the store has both an enabled Facebook and Instagram binding.
   const platformChoice = facts?.platforms.length === 2;
   // Ruling t: the banner says whether comments are read automatically (active source) or how to start.
@@ -294,8 +306,11 @@ export function StudioClaims({ locale, store, scene, initialError }: {
     if (!validClaimSourceInput(sourceForm.input)) return setActionError({ action: "source", code: "form", message: c.sourceInputInvalid });
     // expected_version 0 = first bind; a later save must match the version this panel read.
     // Without the select, only the saved source's own id carries its platform; a new paste lets Go decide.
-    const platform = platformChoice ? sourceForm.platform : source && sourceForm.input.trim() === source.source_object_id ? source.platform : "";
-    const body = claimSourceBody({ ...sourceForm, platform }, source?.version ?? 0);
+    const page = sourcePage ? facts?.meta?.pages.find((p) => p.id === sourcePage && p.status === "active") : null;
+    const input = sourcePage ? page && pageSourceInput(sourceForm.input, page.id) : sourceForm.input;
+    if (!input) return setActionError({ action: "source", code: "form", message: metaConnectCopy[locale].studioPageMismatch });
+    const platform = sourcePage ? "facebook" : platformChoice ? sourceForm.platform : source && sourceForm.input.trim() === source.source_object_id ? source.platform : "";
+    const body = claimSourceBody({ ...sourceForm, input, platform }, source?.version ?? 0);
     void perform("source", async (key, current) => { await putClaimSource(storeID, scene, body, key, current); sourceDirty.current = false; });
   }
   function toggleWindow() {
@@ -523,6 +538,16 @@ export function StudioClaims({ locale, store, scene, initialError }: {
                 {facts.platforms.length === 0 && <p className="claims-muted" role="status" data-testid="claims-source-connect">
                   {metaConnectCopy[locale].studioNone} <a href={`/${locale}/settings?store=${storeID}`}>{metaConnectCopy[locale].studioLink}</a></p>}
                 <form className="claims-form claims-source-form" onSubmit={(event) => { event.preventDefault(); saveSource(); }}>
+                  {facts.meta === null && <p role="status" className="claims-muted">{metaConnectCopy[locale].unavailable}</p>}
+                  {!!facts.meta?.pages.length && <Field id="claims-source-page" label={metaConnectCopy[locale].studioPage} hint={metaConnectCopy[locale].studioPageHint}>
+                    <select id="claims-source-page" value={sourcePage} disabled={sourceLocked} aria-describedby="claims-source-page-hint"
+                      onChange={(event) => { setSourcePage(event.target.value); editSource({ platform: event.target.value ? "facebook" : "" }); }}>
+                      <option value="">{metaConnectCopy[locale].studioPageAuto}</option>
+                      {facts.meta.pages.map((page) => <optgroup key={page.id} label={page.name || page.id}>
+                        <option value={page.id} disabled={page.status !== "active"}>{page.name || page.id} · {page.id}{page.status !== "active" ? ` · ${metaConnectCopy[locale].reconnect}` : ""}</option>
+                      </optgroup>)}
+                    </select>
+                  </Field>}
                   <Field id="claims-source-input" label={c.sourceInput} hint={c.sourceInputHint}>
                     <input id="claims-source-input" value={sourceForm.input} maxLength={claimSourceInputMax} autoComplete="off" spellCheck={false}
                       disabled={sourceLocked} aria-describedby="claims-source-input-hint"
@@ -530,7 +555,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
                       onChange={(event) => editSource({ input: event.target.value })} /></Field>
                   {platformChoice && <Field id="claims-source-platform" label={c.sourcePlatformLabel} hint={c.sourcePlatformHint}>
                     <select id="claims-source-platform" value={sourceForm.platform} disabled={sourceLocked} aria-describedby="claims-source-platform-hint"
-                      onChange={(event) => editSource({ platform: event.target.value as ClaimSourceForm["platform"] })}>
+                      onChange={(event) => { setSourcePage(""); editSource({ platform: event.target.value as ClaimSourceForm["platform"] }); }}>
                       <option value="">{c.sourcePlatformAuto}</option>
                       {(["facebook", "instagram"] as const).map((item) => <option key={item} value={item}>{c.sourcePlatform[item]}</option>)}</select></Field>}
                   <Field id="claims-source-locale" label={c.sourceReplyLocale}>

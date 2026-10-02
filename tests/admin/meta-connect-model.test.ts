@@ -9,21 +9,44 @@ import {
   storeFromCookie, validMetaConnectRequest,
 } from "../../apps/admin/lib/meta-connect-request.ts";
 import { metaConnectCopy } from "../../apps/admin/lib/meta-connect-copy.ts";
+import { pageSourceInput } from "../../apps/admin/lib/meta-page-source.ts";
 
 const uuid = "abcdefab-1111-4111-8111-11111111abcd";
 const stamp = "2026-10-01T08:30:00.123456Z";
 
+test("selected Page qualifies only a bare Facebook id, never rewrites another Page or external URL", () => {
+  assert.equal(pageSourceInput(" 456 ", "123"), "123_456");
+  assert.equal(pageSourceInput("123_456", "123"), "123_456");
+  for (const path of ["posts", "videos"]) {
+    const link = `https://www.facebook.com/123/${path}/456?foo=bar#comment`;
+    assert.equal(pageSourceInput(link, "123"), link);
+  }
+  for (const input of ["9_456", "https://www.facebook.com/9/posts/456", "https://evil.example/123/posts/456",
+    "https://facebook.com@evil.example/123/posts/456", "https://www.facebook.com/name/posts/456", "javascript:123",
+    "https://fb.watch/123", "https://instagram.com/reel/abcdef", "123_456_other", "https://facebook.com:444/123/posts/456"]) {
+    assert.equal(pageSourceInput(input, "123"), null, input);
+  }
+  assert.equal(pageSourceInput("456", "bad"), null);
+});
+
 test("status: not connected, connected with and without Instagram, and every deviation throws", () => {
-  assert.deepEqual(parseStatus({ connected: false }), { connected: false });
-  const ok = {
-    connected: true, status: "active", page: { id: "123", name: "Shop" }, instagram: null, permissions: ["pages_messaging"],
+  const empty = { connected: false, count: 0, cap: 10, pages: [] };
+  assert.deepEqual(parseStatus(empty), empty);
+  const page = {
+    id: "123", name: "Shop", status: "active", instagram: null, permissions: ["pages_messaging"],
     connected_at: stamp, route_expires_at: stamp, last_event_at: null,
   };
+  const ok = { connected: true, count: 1, cap: 10, pages: [page] };
   assert.equal(parseStatus(ok).connected, true);
-  assert.equal(parseStatus({ ...ok, instagram: { id: "9", username: "shop_ig" }, status: "reauth_required", last_event_at: stamp }).connected, true);
+  const second = { ...page, id: "456", instagram: { id: "9", username: "shop_ig" }, status: "reauth_required", last_event_at: stamp };
+  assert.deepEqual(parseStatus({ ...ok, count: 2, pages: [page, second] }).pages, [page, second]);
   for (const bad of [
-    { connected: false, extra: 1 }, { ...ok, status: "gone" }, { ...ok, page: { id: "abc", name: "x" } }, { ...ok, permissions: ["Bad Name"] },
-    { ...ok, connected_at: "yesterday" }, { ...ok, token: "SENTINEL" }, { ...ok, instagram: { id: "9" } }, null, [], "x",
+    { connected: false }, { ...empty, extra: 1 }, { ...ok, pages: [{ ...page, status: "gone" }] },
+    { ...ok, pages: [{ ...page, id: "abc" }] }, { ...ok, pages: [{ ...page, permissions: ["Bad Name"] }] },
+    { ...ok, pages: [{ ...page, connected_at: "yesterday" }] }, { ...ok, token: "SENTINEL" },
+    { ...ok, pages: [{ ...page, instagram: { id: "9" } }] }, { ...ok, pages: [{ ...page, token: "SENTINEL" }] },
+    { ...ok, count: 2 }, { ...ok, connected: false }, { ...empty, connected: true }, { ...ok, cap: 11 },
+    { ...ok, count: 2, pages: [page, page] }, { ...ok, count: 11, pages: Array.from({ length: 11 }, (_, i) => ({ ...page, id: String(i) })) }, null, [], "x",
   ]) assert.throws(() => parseStatus(bad), /meta_connect_shape/);
 });
 
@@ -87,7 +110,7 @@ test("copy: three locales have the same keys and every Go error code has a messa
   assert.equal(keys(metaConnectCopy["zh-TW"]), keys(metaConnectCopy.en));
   assert.equal(keys(metaConnectCopy["zh-CN"]), keys(metaConnectCopy.en));
   for (const code of ["state_mismatch", "state_expired", "state_used", "meta_connect_failed", "denied", "missing_permission", "not_in_pick_list", "page_taken",
-    "already_connected", "forbidden", "unauthorized", "unavailable"]) {
+    "cap_exceeded", "not_found", "forbidden", "unauthorized", "unavailable"]) {
     for (const locale of ["en", "zh-TW", "zh-CN"] as const) assert.ok(metaConnectCopy[locale].errors[code], `${locale}:${code}`);
   }
 });

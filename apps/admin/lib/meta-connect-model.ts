@@ -1,19 +1,18 @@
 // Closed parsers for the merchant Page / Instagram connect answers (internal/httpapi/meta_connect.go -> integration.meta_connect_status
-// and meta_connect_get_state, migration 0095). Shared by lib/meta-connect-client.ts and tests/admin/meta-connect-model.test.ts.
+// and meta_connect_get_state, migrations 0095/0108). Shared by lib/meta-connect-client.ts and tests/admin/meta-connect-model.test.ts.
 // Pure: no fetch, no React; any unknown or missing key, bad id or bad stamp throws (reads as "unavailable", never as state).
 
-export type ConnectStatus =
-  | { connected: false }
-  | {
-      connected: true;
-      status: "active" | "reauth_required";
-      page: { id: string; name: string };
-      instagram: { id: string; username: string } | null;
-      permissions: string[];
-      connected_at: string;
-      route_expires_at: string;
-      last_event_at: string | null;
-    };
+export type ConnectedPage = {
+  id: string;
+  name: string;
+  status: "active" | "reauth_required";
+  instagram: { id: string; username: string } | null;
+  permissions: string[];
+  connected_at: string;
+  route_expires_at: string;
+  last_event_at: string | null;
+};
+export type ConnectStatus = { connected: boolean; count: number; cap: 10; pages: ConnectedPage[] };
 export type PickPage = { page_id: string; name: string; ig_id?: string; ig_username?: string; missing: string[]; ig_missing: string[] };
 export type PickState = { state_id: string; expires_at: string; scopes: string[]; pages: PickPage[] };
 
@@ -34,25 +33,26 @@ const label = (value: unknown) => (typeof value === "string" && value.length <= 
 const time = (value: unknown) => (typeof value === "string" && stamp.test(value) && Number.isFinite(Date.parse(value)) ? value : bad());
 
 export function parseStatus(value: unknown): ConnectStatus {
-  if (value && typeof value === "object" && (value as Record<string, unknown>).connected === false) {
-    record(value, ["connected"]);
-    return { connected: false };
-  }
-  const row = record(value, ["connected", "status", "page", "instagram", "permissions", "connected_at", "route_expires_at", "last_event_at"]);
-  if (row.connected !== true || (row.status !== "active" && row.status !== "reauth_required")) bad();
-  const page = record(row.page, ["id", "name"]);
-  if (typeof page.id !== "string" || !digits.test(page.id)) bad();
-  let instagram: { id: string; username: string } | null = null;
-  if (row.instagram !== null) {
-    const ig = record(row.instagram, ["id", "username"]);
-    if (typeof ig.id !== "string" || !digits.test(ig.id)) bad();
-    instagram = { id: ig.id as string, username: label(ig.username) };
-  }
-  return {
-    connected: true, status: row.status as "active" | "reauth_required", page: { id: page.id as string, name: label(page.name) }, instagram,
-    permissions: names(row.permissions, 64), connected_at: time(row.connected_at), route_expires_at: time(row.route_expires_at),
-    last_event_at: row.last_event_at === null ? null : time(row.last_event_at),
-  };
+  const envelope = record(value, ["connected", "count", "cap", "pages"]);
+  if (!Array.isArray(envelope.pages) || envelope.cap !== 10 || envelope.pages.length > 10 ||
+    envelope.count !== envelope.pages.length || envelope.connected !== (envelope.pages.length > 0)) bad();
+  const pages = (envelope.pages as unknown[]).map((value): ConnectedPage => {
+    const row = record(value, ["id", "name", "status", "instagram", "permissions", "connected_at", "route_expires_at", "last_event_at"]);
+    if ((row.status !== "active" && row.status !== "reauth_required") || typeof row.id !== "string" || !digits.test(row.id)) bad();
+    let instagram: { id: string; username: string } | null = null;
+    if (row.instagram !== null) {
+      const ig = record(row.instagram, ["id", "username"]);
+      if (typeof ig.id !== "string" || !digits.test(ig.id)) bad();
+      instagram = { id: ig.id as string, username: label(ig.username) };
+    }
+    return {
+      id: row.id as string, name: label(row.name), status: row.status as ConnectedPage["status"], instagram,
+      permissions: names(row.permissions, 64), connected_at: time(row.connected_at), route_expires_at: time(row.route_expires_at),
+      last_event_at: row.last_event_at === null ? null : time(row.last_event_at),
+    };
+  });
+  if (new Set(pages.map((p) => p.id)).size !== pages.length) bad();
+  return { connected: pages.length > 0, count: pages.length, cap: 10, pages };
 }
 
 export function parsePickState(value: unknown, id: string): PickState {
