@@ -53,7 +53,11 @@ async function shot(page: Page, name: string, fullPage = true) {
 }
 async function merchantShot(page: Page, name: string) {
   if ((page.viewportSize()?.width ?? 0) <= 680)
-    await expect.poll(() => page.locator(".rail").evaluate((rail) => Math.ceil(rail.getBoundingClientRect().right))).toBeLessThanOrEqual(0);
+    // W0 shell: the mobile navigation is the #workspace-navigation drawer (the old .rail is gone); closed means hidden or off-screen.
+    await expect.poll(async () => {
+      const nav = page.locator("#workspace-navigation");
+      return (await nav.isVisible()) ? nav.evaluate((el) => Math.ceil(el.getBoundingClientRect().right)) : 0;
+    }).toBeLessThanOrEqual(0);
   await shot(page, name, false);
 }
 
