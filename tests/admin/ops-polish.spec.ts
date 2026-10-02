@@ -194,6 +194,24 @@ const removedNav: Record<string, string[]> = {
   "zh-CN": ["网站客服", "Meta 消息", "平台支持"],
   "zh-TW": ["網站客服", "Meta 訊息", "平台支援"],
 };
+async function assertRegistryNavigation(page: Page, locale: string) {
+  const nav = page.locator("[data-shell-rail]");
+  // Exact authorized groups replace the obsolete nine flat-button assumption.
+  // Do not grant Customers, add placeholder routes, or derive expected IDs from
+  // the implementation registry: these are the fixture's independent contract.
+  await expect.poll(() => nav.locator('button[data-testid^="nav-"]').evaluateAll(
+    (buttons) => buttons.map((button) => button.getAttribute("data-testid")),
+  )).toEqual([
+    "nav-group-overview", "nav-group-live", "nav-orders", "nav-group-catalog",
+    "nav-group-marketing", "nav-group-storefront", "nav-group-finance", "nav-group-settings",
+  ]);
+  await nav.getByTestId("nav-group-catalog").click();
+  for (const id of ["products", "collections", "inventory"]) await expect(nav.getByTestId(`nav-${id}`)).toBeVisible();
+  await expect(nav.locator('button[data-testid^="nav-"]')).toHaveCount(11);
+  for (const id of ["nav-group-messages", "nav-group-customers", "nav-siteChat", "nav-meta", "nav-support", "nav-billing", "nav-team"]) await expect(nav.getByTestId(id)).toHaveCount(0);
+  const labels = (await nav.getByRole("button").allInnerTexts()).map((s) => s.trim());
+  for (const dead of removedNav[locale]) expect(labels, `nav still lists "${dead}"`).not.toContain(dead);
+}
 for (const locale of ["en", "zh-CN", "zh-TW"]) {
   test(`OP4 Studio subtitle is neutral and the dead nav entries are gone in ${locale}`, async ({ page }) => {
     await signedLogin(page);
@@ -204,10 +222,7 @@ for (const locale of ["en", "zh-CN", "zh-TW"]) {
     const text = (await heading.innerText()).trim();
     expect(text, "the Studio heading must carry a subtitle line").toMatch(/\n./);
     expect(text, "the local rehearsal wording must be gone").not.toMatch(/MOCK|rehears|演练|演練|模拟|模擬|local/i);
-    const nav = page.locator("[data-shell-rail]");
-    const labels = (await nav.getByRole("button").allInnerTexts()).map((s) => s.trim());
-    for (const dead of removedNav[locale]) expect(labels, `nav still lists "${dead}"`).not.toContain(dead);
-    expect(labels.length, `remaining nav entries ${JSON.stringify(labels)}`).toBe(9);
+    await assertRegistryNavigation(page, locale);
     // none of the remaining entries is a placeholder panel
     await expect(page.getByText(/not connected in the current build|当前版本尚未连接|目前版本尚未連線|目前版本尚未连接/)).toHaveCount(0);
   });
@@ -216,9 +231,7 @@ test("OP4 the same nav on the orders page", async ({ page }) => {
   await signedLogin(page);
   for (const locale of ["en", "zh-CN", "zh-TW"]) {
     await openOrders(page, locale);
-    const labels = (await page.locator("[data-shell-rail]").getByRole("button").allInnerTexts()).map((s) => s.trim());
-    for (const dead of removedNav[locale]) expect(labels).not.toContain(dead);
-    expect(labels.length).toBe(9);
+    await assertRegistryNavigation(page, locale);
   }
 });
 

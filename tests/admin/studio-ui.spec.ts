@@ -2,6 +2,7 @@ import { expect, test, type Page, type BrowserContext } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import { parseDraft } from "../../apps/admin/lib/studio-model";
+import { shellCopy } from "../../apps/admin/src/shell-copy";
 import { nativePage } from "./fixtures/native-device";
 
 const required = (name: string) => {
@@ -381,8 +382,16 @@ test("STU04 read-only and expired sessions cannot mutate", async ({ browser }) =
   await setSession(expired, expiredToken);
   const expiredPage = await expired.newPage();
   await expiredPage.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
-  await expect(expiredPage.getByText("Sign in again to open Studio.").first()).toBeVisible();
+  await expect(expiredPage.getByTestId("shell-session-expired")).toContainText(shellCopy.en.sessionExpired);
+  await expect(expiredPage.getByTestId("merchant-studio")).toHaveCount(0);
   await expect(expiredPage.getByRole("button", { name: "Start MOCK rehearsal" })).toHaveCount(0);
+  const recovery = expiredPage.getByTestId("shell-sign-in");
+  await expect(recovery).toHaveText(shellCopy.en.signIn);
+  await expect(recovery).toHaveAttribute("href", "/en");
+  await recovery.click();
+  await expect(expiredPage).toHaveURL(new URL("/en", origin).toString());
+  await expect(expiredPage.getByRole("button", { name: "Sign in with identity service" })).toBeVisible();
+  await expect(expiredPage.getByTestId("merchant-studio")).toHaveCount(0);
   await expired.close();
 });
 

@@ -14,6 +14,7 @@ import path from "node:path";
 import { billingCopy } from "../../apps/admin/lib/billing-copy";
 import { claimsCopy } from "../../apps/admin/lib/claims-copy";
 import { customersCopy } from "../../apps/admin/lib/customers-copy";
+import { shellCopy } from "../../apps/admin/src/shell-copy";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -464,10 +465,15 @@ test("CB11 permission fence: a member without customers:read / billing:manage se
       { name: "__Host-commerce_csrf", value: csrf, url, secure: true, httpOnly: false, sameSite: "Lax" },
     ]);
     await page.goto(`/en/customers?store=${store}`);
-    await expect(page.getByText(en.forbidden)).toBeVisible();
+    await expect(page.getByTestId("route-forbidden")).toBeVisible();
+    await expect(page.getByTestId("route-forbidden")).toContainText(shellCopy.en.forbidden);
     await expect(page.getByTestId("customers-table")).toHaveCount(0);
+    await expect(page.getByTestId("customers-page")).toHaveCount(0);
+    await expect(page.locator('[data-testid^="customer-row-"]')).toHaveCount(0);
+    await expect(page.getByText(/Synthetic Recipient/i)).toHaveCount(0);
     await page.goto(`/en/billing?store=${store}`);
-    await expect(page.getByText(bc.forbidden)).toBeVisible();
+    await expect(page.getByTestId("route-forbidden")).toBeVisible();
+    await expect(page.getByTestId("route-forbidden")).toContainText(shellCopy.en.forbidden);
     await expect(page.getByTestId("billing-standing")).toHaveCount(0);
     // finance reads under orders:read (contract 6, read_finance_summary): this member may see it, the store:read-only one may not
     await page.goto(`/en/finance?store=${store}`);
@@ -481,7 +487,8 @@ test("CB11 permission fence: a member without customers:read / billing:manage se
       ]);
       const bp = await bare.newPage();
       await bp.goto(new URL(`/en/finance?store=${store}`, origin).toString());
-      await expect(bp.getByText(en.financeForbidden)).toBeVisible();
+      await expect(bp.getByTestId("route-forbidden")).toBeVisible();
+      await expect(bp.getByTestId("route-forbidden")).toContainText(shellCopy.en.forbidden);
       await expect(bp.getByTestId("finance-table")).toHaveCount(0);
     } finally {
       await bare.close();
