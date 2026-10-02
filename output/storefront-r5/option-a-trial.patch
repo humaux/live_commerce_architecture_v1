@@ -1,0 +1,71 @@
+diff --git a/apps/storefront/components/ProductCard.tsx b/apps/storefront/components/ProductCard.tsx
+index 494a154..0d682ae 100644
+--- a/apps/storefront/components/ProductCard.tsx
++++ b/apps/storefront/components/ProductCard.tsx
+@@ -3,6 +3,7 @@
+ // catalog-v2 list (Go): "from" when SKU prices differ, strike-through compare-at only when it is above the price.
+ // The whole card is one link named by title + price; the photo is decorative (alt="").
+ import Link from "next/link";
++import Image from "next/image";
+ import type { Locale } from "@live-commerce/i18n";
+ import { withPreview } from "../lib/design";
+ import { formatMoney } from "../lib/money";
+@@ -33,7 +34,7 @@ export default function ProductCardView({
+       <Link className="sf-card__link" href={withPreview(productPath(locale, card.slug), preview)}>
+         <span className="sf-card__media">
+           {card.cover_image_id ? (
+-            <img src={productImage(card.id, card.cover_image_id)} alt="" loading={eager ? "eager" : "lazy"} decoding="async" />
++            <Image src={productImage(card.id, card.cover_image_id)} alt="" fill sizes="(min-width:1080px) 25vw, (min-width:720px) 33vw, 50vw" loading={eager ? "eager" : "lazy"} />
+           ) : (
+             // No photo: a picture glyph and the locale label keep the 4/5 media box recognisable as "no image" (not a broken load);
+             // the box is a labelled image, the title below stays the card's accessible name.
+diff --git a/apps/storefront/components/ProductGallery.tsx b/apps/storefront/components/ProductGallery.tsx
+index 0a14532..2fd90da 100644
+--- a/apps/storefront/components/ProductGallery.tsx
++++ b/apps/storefront/components/ProductGallery.tsx
+@@ -6,6 +6,7 @@
+ // (app/media/p/[productID]/[imageID]/route.ts -> Go /v1/buyer/media/p/...). Without photos it shows a neutral placeholder so
+ // the page layout does not collapse. Non-goals: no zoom/lightbox, no video.
+ import { useRef, useState } from "react";
++import Image from "next/image";
+ import type { Locale } from "@live-commerce/i18n";
+ import { productImage } from "../lib/routes";
+ import { fmt, shopCopy } from "../lib/shop-copy";
+@@ -53,12 +54,13 @@ export default function ProductGallery({
+         }}
+       >
+         {images.map((image, i) => (
+-          <img
++          <Image
+             key={image.id}
+             src={productImage(productID, image.id)}
+             alt={i === 0 ? name : ""}
+-            width={image.width ?? undefined}
+-            height={image.height ?? undefined}
++            width={image.width ?? 1080}
++            height={image.height ?? 1350}
++            sizes="(min-width:900px) 50vw, 100vw"
+             loading={i === 0 ? "eager" : "lazy"}
+             fetchPriority={i === 0 ? "high" : undefined}
+             decoding="async"
+@@ -73,7 +75,7 @@ export default function ProductGallery({
+           <div className="sf-gal__thumbs">
+             {images.map((image, i) => (
+               <button key={image.id} type="button" aria-label={fmt(copy.photo, { n: i + 1, total: images.length })} aria-current={i === index} onClick={() => go(i)}>
+-                <img src={productImage(productID, image.id)} alt="" loading="lazy" />
++                <Image src={productImage(productID, image.id)} width={80} height={100} sizes="80px" alt="" loading="lazy" />
+               </button>
+             ))}
+           </div>
+diff --git a/apps/storefront/next.config.ts b/apps/storefront/next.config.ts
+index bf330e0..24b7a1f 100644
+--- a/apps/storefront/next.config.ts
++++ b/apps/storefront/next.config.ts
+@@ -11,6 +11,7 @@ const config: NextConfig = {
+   devIndicators: false,
+   poweredByHeader: false,
+   reactStrictMode: true,
++  images: { localPatterns: [{ pathname: "/media/**", search: "" }] },
+   async headers() {
+     return [
+       {

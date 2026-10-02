@@ -1,0 +1,2 @@
+page preflight {"status":200,"bytes":54200}
+{"phase":"before","exitCode":0,"samples":[{"bytes":64754,"lcpMs":492},{"bytes":64754,"lcpMs":408},{"bytes":64754,"lcpMs":380}]}
