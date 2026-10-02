@@ -38,7 +38,7 @@
 
 | 编号 | 改动 | 执行者 |
 |---|---|---|
-| S1 | 图片按尺寸输出（先试 next/image 加 sharp） | Codex（unit storefront-r5，与 S2–S5、S7 同批） |
+| S1 | 图片按尺寸输出。next/image 方案已否决（Codex 实测：内部取图丢 Host，缓存键不含 Host 有串店风险，证据 41e2be8）；改为 Go 上传时生成 360/720/1080 并支持 `?w=` | 后端 DeepSeek，前台 srcset Codex |
 | S2 | 商品页显示配送、付款、退货说明 | Codex（storefront-r5） |
 | S3 | 相关商品 | Codex（storefront-r5） |
 | S4 | 列表页分类 chips | Codex（storefront-r5） |
