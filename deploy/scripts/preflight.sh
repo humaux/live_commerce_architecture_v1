@@ -654,6 +654,27 @@ if ((online)); then
       echo "P18 PASS LC_STORE_HOST resolves only to this host"
     fi
   fi
+  # R5 store-domains (Decision 4): on-demand TLS serves every merchant platform subdomain (*.<LC_STORE_BASE_DOMAIN>)
+  # and stores.<base> from the edge (deploy/caddy/Caddyfile on_demand_tls ask). The owner's DNS action is a
+  # DNS-only wildcard + stores.<base> A record; a Cloudflare-proxied (orange-cloud) name resolves to Cloudflare
+  # anycast addresses, none of which are this host's, so "every address is ours" is the same DNS-only proof as
+  # P17/P18. A canary label proves the wildcard actually exists (a missing wildcard makes getent fail). Both
+  # names must resolve ONLY to this host; a non-resolving or foreign address fails the gate.
+  if [[ -n "${LC_STORE_BASE_DOMAIN:-}" && "${LC_ENVIRONMENT:-}" != smoke ]]; then
+    mine=" $(hostname -I 2>/dev/null) ${LC_PUBLIC_IP:-} "
+    for name in "stores.${LC_STORE_BASE_DOMAIN}" "preflight-canary.${LC_STORE_BASE_DOMAIN}"; do
+      addrs=$(getent ahosts "$name" 2>/dev/null | awk '{print $1}' | sort -u | tr '\n' ' ')
+      foreign=0
+      [[ -n "$addrs" ]] || foreign=1
+      for a in $addrs; do [[ "$mine" == *" $a "* ]] || foreign=1; done
+      if ((foreign)); then
+        echo "P19 FAIL $name must resolve only to this host (DNS-only wildcard *.${LC_STORE_BASE_DOMAIN}, no Cloudflare proxy) so on-demand TLS serves merchant domains"
+        fail=1
+      else
+        echo "P19 PASS $name resolves only to this host"
+      fi
+    done
+  fi
   if command -v timedatectl >/dev/null 2>&1 && [[ "$(timedatectl show -p NTPSynchronized --value 2>/dev/null)" == yes ]]; then
     echo "P16 PASS clock synchronized"
   elif [[ "${LC_ENVIRONMENT:-}" == smoke ]]; then

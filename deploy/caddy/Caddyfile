@@ -34,6 +34,16 @@
 		output stdout
 		format json
 	}
+	# R5 store-domains (Decision 4): on-demand TLS for the platform subdomains (*.<LC_STORE_BASE_DOMAIN>) and
+	# merchant-owned domains, all served by the catch-all https:// site below. A certificate is issued only after
+	# the internal ask endpoint admits the host (an ACTIVE platform/merchant origin or a TLS_PENDING merchant
+	# origin); every other host gets no certificate (fail closed). The ask is rate-limited and negative-cached
+	# in Go (internal/tlsask). The URL is Caddy's on_demand_tls ask form: {host} is replaced by the hostname.
+	on_demand_tls {
+		ask http://127.0.0.1:8080/internal/tls-ask?domain={host}
+		interval 2m
+		burst 5
+	}
 }
 
 (edge) {
@@ -132,6 +142,20 @@
 	# edge must OVERWRITE (never append) X-Forwarded-For — a client-supplied value would otherwise pick another
 	# store's bucket. Caddy's no-trusted_proxies default already replaces it; this pins the rule for review, and
 	# preflight P18 proves no CDN sits in front (DNS-only), so {remote_host} is the real buyer address.
+	request_header X-Forwarded-For {remote_host}
+	reverse_proxy 127.0.0.1:3200
+}
+
+# R5 store-domains (Decision 4): the catch-all serves the storefront for every hostname the on_demand_tls ask
+# admits — the platform subdomains (*.<LC_STORE_BASE_DOMAIN>) and merchant-owned domains. The explicit hosts
+# above (admin, api, hooks, shop) are more specific and keep their own blocks, so this never shadows them; an
+# unadmitted host never gets a certificate and the handshake fails closed. The storefront derives its origin
+# from Host, so the same X-Forwarded-For overwrite as LC_STORE_HOST (P18) applies to every merchant domain.
+https:// {
+	import edge
+	request_body {
+		max_size 1MB
+	}
 	request_header X-Forwarded-For {remote_host}
 	reverse_proxy 127.0.0.1:3200
 }
