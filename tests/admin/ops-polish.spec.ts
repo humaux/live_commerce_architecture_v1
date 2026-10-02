@@ -204,7 +204,7 @@ for (const locale of ["en", "zh-CN", "zh-TW"]) {
     const text = (await heading.innerText()).trim();
     expect(text, "the Studio heading must carry a subtitle line").toMatch(/\n./);
     expect(text, "the local rehearsal wording must be gone").not.toMatch(/MOCK|rehears|演练|演練|模拟|模擬|local/i);
-    const nav = page.getByRole("navigation").first();
+    const nav = page.locator("[data-shell-rail]");
     const labels = (await nav.getByRole("button").allInnerTexts()).map((s) => s.trim());
     for (const dead of removedNav[locale]) expect(labels, `nav still lists "${dead}"`).not.toContain(dead);
     expect(labels.length, `remaining nav entries ${JSON.stringify(labels)}`).toBe(9);
@@ -216,7 +216,7 @@ test("OP4 the same nav on the orders page", async ({ page }) => {
   await signedLogin(page);
   for (const locale of ["en", "zh-CN", "zh-TW"]) {
     await openOrders(page, locale);
-    const labels = (await page.getByRole("navigation").first().getByRole("button").allInnerTexts()).map((s) => s.trim());
+    const labels = (await page.locator("[data-shell-rail]").getByRole("button").allInnerTexts()).map((s) => s.trim());
     for (const dead of removedNav[locale]) expect(labels).not.toContain(dead);
     expect(labels.length).toBe(9);
   }

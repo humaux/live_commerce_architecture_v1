@@ -1,0 +1,84 @@
+{
+  "apps/admin/components/Ads.tsx": {
+    "format": 2
+  },
+  "apps/admin/components/BillingBanner.tsx": {
+    "fetch": 1
+  },
+  "apps/admin/components/Design.tsx": {
+    "format": 1
+  },
+  "apps/admin/components/Entry.tsx": {
+    "fetch": 3
+  },
+  "apps/admin/components/Ledger.tsx": {
+    "fetch": 2,
+    "lines": 849
+  },
+  "apps/admin/components/ManualOrder.tsx": {
+    "format": 1
+  },
+  "apps/admin/components/MerchantOrders.tsx": {
+    "lines": 982
+  },
+  "apps/admin/components/MetaConnect.tsx": {
+    "format": 1
+  },
+  "apps/admin/components/PasswordAuth.tsx": {
+    "fetch": 1
+  },
+  "apps/admin/components/SettingsWizard.tsx": {
+    "fetch": 1,
+    "lines": 2818
+  },
+  "apps/admin/lib/ads-model.ts": {
+    "format": 1
+  },
+  "apps/admin/lib/claims-model.ts": {
+    "format": 1
+  },
+  "apps/storefront/app/[locale]/orders/lookup/LookupForm.tsx": {
+    "fetch": 1
+  },
+  "apps/storefront/app/feeds/meta.csv/route.ts": {
+    "fetch": 1
+  },
+  "apps/storefront/components/BankTransfer.tsx": {
+    "format": 1
+  },
+  "apps/storefront/components/ClaimLink.tsx": {
+    "format": 1
+  },
+  "apps/storefront/components/OrderFlow.tsx": {
+    "format": 1,
+    "lines": 854
+  },
+  "apps/storefront/components/OrderHistory.tsx": {
+    "format": 1
+  },
+  "apps/storefront/components/OrderLink.tsx": {
+    "fetch": 1
+  },
+  "apps/storefront/components/ProductGrid.tsx": {
+    "fetch": 1
+  },
+  "apps/storefront/lib/buyer-server.ts": {
+    "fetch": 1,
+    "lines": 1331
+  },
+  "apps/storefront/lib/cart-details.ts": {
+    "fetch": 1
+  },
+  "apps/storefront/lib/media-proxy.ts": {
+    "fetch": 1
+  },
+  "apps/storefront/lib/money.ts": {
+    "format": 2
+  },
+  "apps/storefront/lib/purchase.ts": {
+    "lines": 1316
+  },
+  "apps/storefront/lib/shop-upstream.ts": {
+    "fetch": 1
+  }
+}

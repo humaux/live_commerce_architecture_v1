@@ -556,7 +556,7 @@ test("inventory tray keeps stock and read-only price; product editing lives on t
 test("rail has no hard-coded channel status and scrolls to Settings and Sign out at 1366x768", async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 768 });
   await page.goto("/en/inventory");
-  const rail = page.locator("aside.rail");
+  const rail = page.locator("aside[data-shell-rail]");
   await expect(rail).toBeVisible();
   // the fake "Channel status" block (Storefront/Facebook/Instagram/WhatsApp/LINE, always "Not connected") is gone
   await expect(rail.getByText("Channel status")).toHaveCount(0);
@@ -584,7 +584,7 @@ test("rail has no hard-coded channel status and scrolls to Settings and Sign out
   // the 375px drawer scrolls too
   await page.setViewportSize({ width: 375, height: 667 });
   await page.getByRole("button", { name: "Open navigation" }).click();
-  const drawer = page.locator("aside.rail");
+  const drawer = page.locator("aside[data-shell-rail]");
   await drawer.getByRole("button", { name: "Sign out", exact: true }).scrollIntoViewIfNeeded();
   await expect(drawer.getByRole("button", { name: "Sign out", exact: true })).toBeInViewport({ ratio: 1 });
 });

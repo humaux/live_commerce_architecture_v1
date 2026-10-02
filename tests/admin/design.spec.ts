@@ -210,7 +210,7 @@ for (const j of journeys) {
     // ---- unsaved-changes guard (beforeunload hook, in-app navigation confirm: stay and leave) ----
     // at 390 px the rail is an off-canvas drawer behind the menu button; at desktop width it is always visible
     const goCustomers = async () => {
-      if (mobile && (await page.locator("button.mobile-menu").getAttribute("aria-expanded")) !== "true") await page.locator("button.mobile-menu").click();
+      if (mobile && (await page.locator('button[aria-controls="workspace-navigation"]').getAttribute("aria-expanded")) !== "true") await page.locator('button[aria-controls="workspace-navigation"]').click();
       await page.getByRole("navigation").getByRole("button", { name: nav.customers, exact: true }).click();
     };
     const beforeUnloadPrevented = () => page.evaluate(() => { const e = new Event("beforeunload", { cancelable: true }); window.dispatchEvent(e); return e.defaultPrevented; });

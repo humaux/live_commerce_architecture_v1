@@ -81,8 +81,9 @@ const keyOf = (headers: Record<string, string>) => headers["idempotency-key"] ??
 test("CB11 customers list: table, phone last 3 only, search by name and phone digits, no actor or PSP data, nav entries", async ({ page }) => {
   await signedLogin(page);
   // nav entries (integrator hook of WorkspaceFrame): buttons in the rail, each leads to its page
-  for (const section of ["customers", "finance", "billing"] as const)
-    await expect(page.getByRole("navigation").getByRole("button", { name: en.nav[section], exact: true })).toBeVisible();
+  await page.getByTestId("nav-group-settings").click();
+  for (const section of ["nav-group-customers", "nav-group-finance", "nav-billing"] as const)
+    await expect(page.getByTestId(section)).toBeVisible();
   await page.getByRole("navigation").getByRole("button", { name: en.nav.customers, exact: true }).click();
   await expect(page).toHaveURL(/\/en\/customers/);
   await page.goto(`/en/customers?store=${store}`);

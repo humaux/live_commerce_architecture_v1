@@ -9,6 +9,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@live-commerce/ui": "workspace:*",
+    "@live-commerce/format": "workspace:*",
     "@live-commerce/i18n": "workspace:*",
     "next": "16.3.5",
     "react": "19.3.0",

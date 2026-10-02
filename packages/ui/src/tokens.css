@@ -1,0 +1,22 @@
+:root {
+  --ui-brand: #ff6a00;
+  --ui-brand-text: #a84300;
+  --ui-page: #f5f6f8;
+  --ui-surface: #fff;
+  --ui-border: #e5e7eb;
+  --ui-text: #1f2937;
+  --ui-muted: #566171;
+  --ui-rail: #1f2937;
+  --ui-danger: #b42318;
+  --ui-success: #166534;
+  --ui-warning: #854d0e;
+  --ui-focus: #1d4ed8;
+  --ui-radius: 8px;
+  --ui-space-1: 4px;
+  --ui-space-2: 8px;
+  --ui-space-3: 12px;
+  --ui-space-4: 16px;
+  --ui-space-6: 24px;
+  --ui-target: 44px;
+  --ui-rail-width: 220px;
+}

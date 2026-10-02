@@ -85,7 +85,7 @@ async function screenshot(page: Page, name: string, width: number, height: numbe
   if (width <= 680) {
     // A desktop-to-phone resize animates the fixed rail off-screen; capture
     // only its settled position, never a partially obscured first viewport.
-    await expect.poll(() => page.locator(".rail").evaluate((rail) =>
+    await expect.poll(() => page.locator("[data-shell-rail]").evaluate((rail) =>
       Math.ceil(rail.getBoundingClientRect().right))).toBeLessThanOrEqual(0);
   }
   await page.evaluate(() => window.scrollTo(0, 0));
