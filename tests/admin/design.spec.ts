@@ -37,7 +37,12 @@ const ACCENT = "#ff6600";
 async function signedLogin(page: Page) {
   await page.goto(new URL("/en/", origin).toString());
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
-  await expect(page.getByTestId("nav-orders")).toBeVisible();
+  await page.getByTestId("nav-group-storefront").waitFor({ state: "attached" });
+  const menu = page.locator('button[aria-controls="workspace-navigation"]');
+  const drawer = await menu.isVisible();
+  if (drawer) await menu.click();
+  await expect(page.getByTestId("nav-group-storefront")).toBeVisible();
+  if (drawer) await page.keyboard.press("Escape");
 }
 
 async function fitsWidth(page: Page) {
