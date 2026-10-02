@@ -45,7 +45,7 @@ const CARD = {
   "zh-TW": { title: /網店發佈/, published: "已發佈", unpublished: "未發佈", publish: "發佈網店", unpublish: "取消發佈", savedPub: "已發佈。", savedUnpub: "已取消發佈。", live: /已上線：買家可以打開你的網店/ },
   "zh-CN": { title: /网店发布/, published: "已发布", unpublished: "未发布", publish: "发布网店", unpublish: "取消发布", savedPub: "已发布。", savedUnpub: "已取消发布。", live: /已上线：买家可以打开你的网店/ },
 };
-const DOMAINS_ZHCN = { title: "店铺网址", hostnameLabel: "域名", request: "请求校验", dnsTitle: "需要添加的 DNS 记录", platform: "平台网址", serving: "正在服务买家", suspend: "暂停", detach: "解绑", states: { REQUESTED: "等待 DNS", ACTIVE: "已生效", SUSPENDED: "已暂停", DETACHED: "已解绑" } };
+const DOMAINS_ZHCN = { title: "店铺网址", hostnameLabel: "域名", request: "请求校验", dnsTitle: "需要添加的 DNS 记录", platform: "平台网址", serving: "正在服务买家", suspend: "暂停", detach: "解绑", states: { REQUESTED: "等待 DNS 设置", ACTIVE: "已启用", SUSPENDED: "已暂停", DETACHED: "已解绑" } };
 async function control(pathname, init = {}) {
   const response = await fetch(`${process.env.LC_JOINT_CONTROL}${pathname}`, { ...init, headers: { "X-Gate-Key": process.env.LC_JOINT_CONTROL_KEY, "Content-Type": "application/json", ...(init.headers || {}) } });
   assert.equal(response.status, 200, `control ${pathname}`);
@@ -143,6 +143,33 @@ try {
   const previewHandle = (await preview.locator("strong").innerText()).trim();
   assert.match(previewHandle, /^[a-z0-9]([a-z0-9-]{1,28}[a-z0-9])$/, `suggested handle ${previewHandle}`);
   assert(previewHandle.startsWith("gate-store-"), "the English store name drives the slug");
+  // Regression: after a good result, a failed lookup must never revive the previous name's availability.
+  await merchant.route("**/api/onboarding/handle-suggest", route => route.fulfill({ status: 503, contentType: "application/json", body: '{"code":"retry_later"}' }));
+  await merchant.locator("input[name=store_name]").fill("Another Store");
+  await expect(merchant.getByTestId("entry-handle-failed")).toBeVisible();
+  await expect(preview).toHaveCount(0);
+  await merchant.unroute("**/api/onboarding/handle-suggest");
+  // Deferred old-name result cannot overwrite the current successful query.
+  let releaseOld;
+  let finishOld;
+  const oldResponse = new Promise(resolve => { releaseOld = resolve; });
+  const oldFinished = new Promise(resolve => { finishOld = resolve; });
+  await merchant.route("**/api/onboarding/handle-suggest", async route => {
+    if (route.request().postDataJSON().store_name !== "Old Store") return route.continue();
+    await oldResponse;
+    await route.fulfill({ status: 200, contentType: "application/json", body: '{"suggested":"old-store","available":true}' }).catch(() => {});
+    finishOld();
+  });
+  const oldRequest = merchant.waitForRequest(request => request.url().endsWith("/api/onboarding/handle-suggest") && request.postDataJSON().store_name === "Old Store");
+  await merchant.locator("input[name=store_name]").fill("Old Store");
+  await oldRequest;
+  await merchant.locator("input[name=store_name]").fill(storeName);
+  await expect(preview.locator("strong")).toHaveText(previewHandle);
+  releaseOld();
+  await oldFinished;
+  await merchant.unroute("**/api/onboarding/handle-suggest");
+  await expect(preview.locator("strong")).toHaveText(previewHandle);
+  pass("handle preview: failed query clears old availability; stale response cannot replace the current suggestion");
   await expect(merchant.locator("select[name=currency]")).toHaveValue("USD");
   await merchant.getByRole("button", { name: ENTRY.nextWarehouse, exact: true }).click();
   await merchant.locator("input[name=warehouse_name]").fill("Main warehouse");
@@ -235,25 +262,51 @@ try {
   const customHost = `shop-${suffix}.example.net`;
   const customOrigin = `https://${customHost}`;
   card = await openCard(merchant, "zh-CN", "desktop");
-  const list = card.getByTestId("storefront-domains");
+  const domainCard = merchant.getByTestId("storefront-domains-card");
+  await expect(card.locator("input")).toHaveCount(0); // same invariant as the frozen R3 driver
+  const list = domainCard.getByTestId("storefront-domains");
   await expect(list).toBeVisible();
   await expect(list.getByRole("heading", { name: DOMAINS_ZHCN.title, exact: true })).toBeVisible();
   const rowFor = host => list.getByTestId("storefront-domain-row").filter({ hasText: host });
   await expect(rowFor(platformHost)).toHaveAttribute("data-state", "ACTIVE");
   await expect(rowFor(platformHost)).toContainText(DOMAINS_ZHCN.states.ACTIVE);
-  await card.getByTestId("storefront-domain-request").getByRole("textbox", { name: DOMAINS_ZHCN.hostnameLabel }).fill(customHost);
+  await domainCard.getByTestId("storefront-domain-request").getByRole("textbox", { name: DOMAINS_ZHCN.hostnameLabel }).fill(customHost);
   const requested = merchant.waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname === `/api/stores/${store}/storefront/domains`);
-  await card.getByTestId("storefront-domain-submit").click();
-  assert.equal((await requested).status(), 200, "domain request POST");
-  const dns = card.getByTestId("storefront-dns");
+  await domainCard.getByTestId("storefront-domain-submit").click();
+  const requestResponse = await requested;
+  assert.equal(requestResponse.status(), 200, "domain request POST");
+  const dns = domainCard.getByTestId("storefront-dns");
   await expect(dns).toBeVisible();
   await expect(dns).toContainText(DOMAINS_ZHCN.dnsTitle);
-  await expect(card.getByTestId("storefront-dns-txt-name")).toHaveText(`_lc-verify.${customHost}`);
-  const token = (await card.getByTestId("storefront-dns-txt-value").innerText()).trim();
+  await expect(domainCard.getByTestId("storefront-dns-txt-name")).toHaveText(`_lc-verify.${customHost}`);
+  const token = (await domainCard.getByTestId("storefront-dns-txt-value").innerText()).trim();
   assert.match(token, /^[A-Za-z0-9_-]{43}$/, "the one-time TXT token");
-  await expect(card.getByTestId("storefront-dns-cname")).toContainText(`stores.${BASE}`);
+  await expect(domainCard.getByTestId("storefront-dns-cname")).toContainText(`stores.${BASE}`);
   await expect(rowFor(customHost)).toHaveAttribute("data-state", "REQUESTED");
   await merchant.screenshot({ path: path.join(evidence, "domains-zh-CN-desktop-dns.png"), fullPage: true });
+  await merchant.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await domainCard.getByTestId("storefront-dns-copy").click();
+  await expect(domainCard).toContainText("DNS 设置说明已复制。");
+  const clipboard = await merchant.evaluate(() => navigator.clipboard.readText());
+  assert(clipboard.includes(`_lc-verify.${customHost}`) && clipboard.includes(token) && clipboard.includes(`stores.${BASE}`));
+  // User-requested matrix, in addition to all original driver screenshots/assertions.
+  for (const locale of ["zh-TW", "zh-CN", "en"]) {
+    for (const [size, viewport] of Object.entries({ desktop: { width: 1586, height: 992 }, mobile: { width: 390, height: 844 } })) {
+      await openCard(merchant, locale, "desktop");
+      await merchant.setViewportSize(viewport);
+      if (size === "mobile") {
+        const menu = merchant.locator(".mobile-menu");
+        if (await menu.getAttribute("aria-expanded") === "true") await menu.click();
+        await expect(menu).toHaveAttribute("aria-expanded", "false");
+        // Wait for the actual off-canvas transition, not a screenshot-only CSS override.
+        await expect.poll(() => merchant.locator(".rail").evaluate(node => node.getBoundingClientRect().right)).toBeLessThanOrEqual(0);
+      }
+      await expect(domainCard.getByTestId("storefront-domain-row")).toHaveCount(2);
+      await domainCard.scrollIntoViewIfNeeded();
+      assert(await merchant.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${locale} ${size}: no overflow`);
+      await merchant.screenshot({ path: path.join(evidence, `domains-${locale}-${size}.png`) });
+    }
+  }
   audit.push("merchant.domain_requested");
   pass("custom domain requested (zh-CN, desktop): TXT name/value + CNAME instructions shown once, row REQUESTED");
 
@@ -276,6 +329,7 @@ try {
     // a cross-origin 301 whose Location is the primary origin, with the final document served there).
     const hops = [];
     let request = response.request();
+    while (request.redirectedFrom()) request = request.redirectedFrom(); // inspect the first hop, not only the final 200
     while (request) {
       const answer = await request.response();
       if (answer) hops.push({ status: answer.status(), location: answer.headers().location || "" });
@@ -288,14 +342,30 @@ try {
     }
     pass("platform subdomain 301s to the primary custom origin");
   });
+  await anonymous("desktop", async page => {
+    for (const method of ["GET", "HEAD"]) {
+      const suffix = "/zh-TW/products?query=a%2Fb&query=c+d&next=https%3A%2F%2Fevil.example";
+      const answer = await page.request.fetch(platformOrigin + suffix, { method, maxRedirects: 0 });
+      assert.equal(answer.status(), 301);
+      assert.equal(answer.headers().location, customOrigin + suffix, `${method}: exact path/query preserved`);
+      const primary = await page.request.fetch(customOrigin + "/zh-TW", { method, maxRedirects: 0 });
+      assert.notEqual(primary.status(), 301, `${method}: no primary-domain loop`);
+      for (const pathname of ["/_next/static/domain-probe.js", "/_next/image?url=%2Fphoto.png&w=390&q=75", "/media/p/not-a-product", "/api/buyer/session", "/zh-TW/"]) {
+        const asset = await page.request.fetch(platformOrigin + pathname, { method, maxRedirects: 0 });
+        assert.equal(asset.status(), 301, `${method} ${pathname}: all ACTIVE alias reads canonicalize`);
+        assert.equal(asset.headers().location, customOrigin + pathname);
+      }
+    }
+  });
 
   // ---- suspend: the custom host closes, the platform origin takes buyers back --------------------------------------
   card = await openCard(merchant, "zh-CN", "desktop");
   await rowFor(customHost).getByTestId("storefront-domain-suspend").click();
-  await expect(card.getByTestId("storefront-domain-confirm")).toBeVisible();
+  await expect(domainCard.getByTestId("storefront-domain-confirm")).toBeVisible();
   const suspended = merchant.waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname === `/api/stores/${store}/storefront/domains/suspend`);
-  await card.getByTestId("storefront-domain-confirm-yes").click();
-  assert.equal((await suspended).status(), 200, "domain suspend POST");
+  await domainCard.getByTestId("storefront-domain-confirm-yes").click();
+  const suspendResponse = await suspended;
+  assert.equal(suspendResponse.status(), 200, "domain suspend POST");
   await expect(rowFor(customHost)).toHaveAttribute("data-state", "SUSPENDED");
   audit.push("merchant.domain_suspended");
   await notFound(customOrigin, "zh-CN", "desktop", "merchant suspended the custom domain");
@@ -304,9 +374,9 @@ try {
 
   // ---- detach: final; the host never resolves for this store again --------------------------------------------------
   await rowFor(customHost).getByTestId("storefront-domain-detach").click();
-  await expect(card.getByTestId("storefront-domain-confirm")).toBeVisible();
+  await expect(domainCard.getByTestId("storefront-domain-confirm")).toBeVisible();
   const detached = merchant.waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname === `/api/stores/${store}/storefront/domains/detach`);
-  await card.getByTestId("storefront-domain-confirm-yes").click();
+  await domainCard.getByTestId("storefront-domain-confirm-yes").click();
   assert.equal((await detached).status(), 200, "domain detach POST");
   await expect(rowFor(customHost)).toHaveAttribute("data-state", "DETACHED");
   await merchant.screenshot({ path: path.join(evidence, "domains-zh-CN-desktop-detached.png"), fullPage: true });
@@ -319,6 +389,28 @@ try {
   await toggle(card, "en", false);
   await notFound(platformOrigin, "en", "desktop", "merchant unpublished", "buyer-en-desktop-unpublished.png");
   pass("unpublish (en, desktop): platform origin 404");
+
+  // MOCK lost-result boundary: Go does not deduplicate domain writes yet. Never
+  // blind-replay an UNKNOWN request, even after reloading this session's page.
+  let uncertainPosts = 0;
+  await merchant.route(`**/api/stores/${store}/storefront/domains`, route => {
+    if (route.request().method() !== "POST") return route.continue();
+    uncertainPosts++;
+    return route.fulfill({ status: 503, contentType: "application/json", body: '{"code":"retry_later"}' });
+  });
+  await domainCard.getByRole("textbox").fill(`unconfirmed-${suffix}.example.net`);
+  await domainCard.getByTestId("storefront-domain-submit").click();
+  await expect(domainCard.getByTestId("storefront-domain-unconfirmed")).toBeVisible();
+  await expect(domainCard.getByTestId("storefront-domain-submit")).toBeDisabled();
+  await merchant.reload();
+  await expect(domainCard.getByTestId("storefront-domain-unconfirmed")).toBeVisible();
+  await expect(domainCard.getByTestId("storefront-domain-submit")).toBeDisabled();
+  await domainCard.getByRole("button", { name: "Refresh status", exact: true }).click();
+  await expect(list.getByTestId("storefront-domain-row")).toHaveCount(2);
+  assert.equal(uncertainPosts, 1, "UNKNOWN is never automatically or manually re-sent after reload");
+  for (const button of await list.getByTestId("storefront-domain-row").getByRole("button").all()) await expect(button).toBeDisabled();
+  await merchant.unroute(`**/api/stores/${store}/storefront/domains`);
+  pass("MOCK lost result: pending write persists across reload; reads work, domain writes stay paused");
 
   // ---- final facts --------------------------------------------------------------------------------------------------
   facts = await dbFacts(store);
