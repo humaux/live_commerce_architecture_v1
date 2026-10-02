@@ -8,6 +8,7 @@ export async function readWorkspace(signal: AbortSignal): Promise<Store[]> {
     cache: "no-store",
     signal,
   });
+  if (response.status === 401) throw new Error("workspace_session_expired");
   if (!response.ok) throw new Error("workspace_unavailable");
   const body: unknown = await response.json();
   if (

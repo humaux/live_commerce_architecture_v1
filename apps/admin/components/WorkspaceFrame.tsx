@@ -48,7 +48,7 @@ export function WorkspaceFrame({
     key: string | null;
     stores: Store[];
   } | null>(null);
-  const [error, setError] = useState(false),
+  const [error, setError] = useState<"expired" | "unavailable" | null>(null),
     [retry, setRetry] = useState(0);
   const [open, setOpen] = useState(false),
     [expanded, setExpanded] = useState<string | null>(null);
@@ -65,14 +65,20 @@ export function WorkspaceFrame({
   useEffect(() => {
     const abort = new AbortController();
     let current = true;
-    setError(false);
+    setError(null);
     setData(null);
     readWorkspace(abort.signal)
       .then((stores) => {
         if (current) setData({ key: storeParam, stores });
       })
-      .catch(() => {
-        if (current && !abort.signal.aborted) setError(true);
+      .catch((cause: unknown) => {
+        if (current && !abort.signal.aborted)
+          setError(
+            cause instanceof Error &&
+              cause.message === "workspace_session_expired"
+              ? "expired"
+              : "unavailable",
+          );
       });
     return () => {
       current = false;
@@ -294,9 +300,21 @@ export function WorkspaceFrame({
           </nav>
         )}
         {error ? (
-          <div className={s.status} role="alert">
-            <p>{c.unavailable}</p>
-            <button onClick={() => setRetry((n) => n + 1)}>{c.retry}</button>
+          <div
+            className={s.status}
+            role="alert"
+            data-testid={
+              error === "expired" ? "shell-session-expired" : undefined
+            }
+          >
+            <p>{error === "expired" ? c.sessionExpired : c.unavailable}</p>
+            {error === "expired" ? (
+              <a data-testid="shell-sign-in" href={localizedPath(locale, "/")}>
+                {c.signIn}
+              </a>
+            ) : (
+              <button onClick={() => setRetry((n) => n + 1)}>{c.retry}</button>
+            )}
           </div>
         ) : !data || data.key !== storeParam ? (
           <p role="status">{c.loading}</p>

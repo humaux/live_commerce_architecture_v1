@@ -211,6 +211,12 @@
 .status button {
   min-height: 44px;
 }
+.status a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px;
+}
 .backdrop {
   position: fixed;
   inset: 0;

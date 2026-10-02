@@ -265,12 +265,43 @@ export async function runShellGate({
       .then((c) => c.some((x) => x.name === "__Host-commerce_session")),
     true,
   );
+  // A failed identity request must not confuse session expiry with a transient outage.
+  await page.route("**/api/stores", (route) =>
+    route.fulfill({ status: 401, json: { code: "unauthorized" } }),
+  );
+  await page.goto(`${base}/en/studio?store=${storeID}`);
+  await page.getByTestId("shell-session-expired").waitFor({ timeout: 5000 });
+  assert.equal(
+    await page.getByTestId("merchant-studio").count(),
+    0,
+    "expired session cannot mount domain content",
+  );
+  assert.equal(
+    await page.getByTestId("shell-sign-in").getAttribute("href"),
+    "/en",
+  );
+  assert.ok((await page.getByTestId("shell-sign-in").boundingBox()).height >= 44);
+  await page.screenshot({ path: `${output}/session-expired-en.png` });
+  await page.unroute("**/api/stores");
   await context.clearCookies();
   for (const locale of ["en", "zh-CN", "zh-TW"]) {
-    for (const [path, label] of [["/reset", "reset"], ["/signup", "signup"], [`/invite/${"a".repeat(43)}`, "invite"]]) {
+    for (const [path, label] of [
+      ["/reset", "reset"],
+      ["/signup", "signup"],
+      [`/invite/${"a".repeat(43)}`, "invite"],
+    ]) {
       await page.goto(`${base}/${locale}${path}`);
-      assert.equal(await page.title(), shellCopy[locale][label], "Public page title from registry");
-      if (label === "invite") assert.equal(await page.locator('meta[name="referrer"]').getAttribute("content"), "no-referrer", "Invite privacy metadata preserved");
+      assert.equal(
+        await page.title(),
+        shellCopy[locale][label],
+        "Public page title from registry",
+      );
+      if (label === "invite")
+        assert.equal(
+          await page.locator('meta[name="referrer"]').getAttribute("content"),
+          "no-referrer",
+          "Invite privacy metadata preserved",
+        );
     }
   }
   await writeFile(
@@ -283,6 +314,8 @@ export async function runShellGate({
         storeSwitch: "hard-navigation clears old page",
         backendAuthorization: "NOT_PROVEN_BY_THIS_MOCK",
         publicTitles: "9 registry title checks passed",
+        sessionExpiry:
+          "401 has dedicated sign-in recovery; domain remains unmounted",
       },
       null,
       2,
