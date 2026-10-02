@@ -478,6 +478,11 @@ h2 {
   color: var(--muted);
   font-size: 14px;
 }
+
+.cod-summary { border-block: 1px solid var(--line, #e4e7ec); padding: 12px 0; margin: 16px 0; }
+.cod-amount { font-size: 1.125rem; font-weight: 650; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.address-fields .cod-home-only { display: flex; align-items: center; gap: 12px; min-height: 44px; color: #667085; }
+.address-fields .cod-home-only input { width: 20px; height: 20px; flex: none; }
 .order-id {
   overflow-wrap: anywhere;
 }

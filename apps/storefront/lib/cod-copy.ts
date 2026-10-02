@@ -6,6 +6,17 @@ import type { Locale } from "@live-commerce/i18n";
 import type { CollectionState } from "./cvs-contract";
 
 const en = {
+  due: (total: string, fee: string) => `Due on delivery ${total} (includes ${fee} cash-on-delivery fee)`,
+  recorded: "Original collection amount",
+  settledAmount: (total: string, fee: string) => `Original amount ${total} (includes ${fee} cash-on-delivery fee)`,
+  homeOnly: "Cash on delivery · Home delivery only",
+  capReached: "Cash on delivery is unavailable: the amount including the fee exceeds this store's limit.",
+  wholeOnly: "Cash on delivery requires a whole-dollar NT$ total. Choose another payment method.",
+  changed: "The delivery fee changed. Review the updated amount and confirm your address again before placing the order.",
+  unavailable: "Cash on delivery is no longer available. Choose another payment method.",
+  limit: "You have reached the limit for unpaid delivery orders. Contact the seller before placing another order.",
+  manualCarrier: (carrier: string) => `Manual shipping · ${carrier}`,
+  carriers: { black_cat: "Black Cat", hsinchu: "Hsinchu" },
   // checkout choice: {total} is the order total, {surcharge} the whole-TWD fee (null = none).
   codLabel: (total: string, surcharge: string | null) =>
     surcharge ? `Cash on delivery ${total} + ${surcharge} fee` : `Cash on delivery ${total}`,
@@ -25,6 +36,17 @@ const en = {
 };
 
 const zhCN: typeof en = {
+  due: (total, fee) => `到货需付 ${total}（含货到付款手续费 ${fee}）`,
+  recorded: "原订单代收金额",
+  settledAmount: (total, fee) => `原订单代收金额 ${total}（含货到付款手续费 ${fee}）`,
+  homeOnly: "货到付款 · 仅限宅配",
+  capReached: "含手续费的代收金额超过店铺上限，无法选择货到付款。",
+  wholeOnly: "货到付款仅接受整数台币金额，请选择其他付款方式。",
+  changed: "货到付款手续费已变更。请核对新金额，并重新确认收货地址后下单。",
+  unavailable: "此店铺已暂停货到付款，请选择其他付款方式。",
+  limit: "未完成的货到付款订单已达上限，请联系商家后再下单。",
+  manualCarrier: (carrier) => `手工出货 · ${carrier}`,
+  carriers: { black_cat: "黑猫", hsinchu: "新竹" },
   codLabel: (total, surcharge) =>
     surcharge ? `货到付款 ${total} + ${surcharge} 手续费` : `货到付款 ${total}`,
   createCod: "提交订单（货到付款）",
@@ -42,6 +64,17 @@ const zhCN: typeof en = {
 };
 
 const zhTW: typeof en = {
+  due: (total, fee) => `到貨需付 ${total}（含貨到付款手續費 ${fee}）`,
+  recorded: "原訂單代收金額",
+  settledAmount: (total, fee) => `原訂單代收金額 ${total}（含貨到付款手續費 ${fee}）`,
+  homeOnly: "貨到付款 · 僅限宅配",
+  capReached: "含手續費的代收金額超過商店上限，無法選擇貨到付款。",
+  wholeOnly: "貨到付款僅接受整數台幣金額，請選擇其他付款方式。",
+  changed: "貨到付款手續費已變更。請核對新金額，並重新確認收貨地址後下單。",
+  unavailable: "此商店已暫停貨到付款，請選擇其他付款方式。",
+  limit: "未完成的貨到付款訂單已達上限，請聯絡商家後再下單。",
+  manualCarrier: (carrier) => `手工出貨 · ${carrier}`,
+  carriers: { black_cat: "黑貓", hsinchu: "新竹" },
   codLabel: (total, surcharge) =>
     surcharge ? `貨到付款 ${total} + ${surcharge} 手續費` : `貨到付款 ${total}`,
   createCod: "送出訂單（貨到付款）",

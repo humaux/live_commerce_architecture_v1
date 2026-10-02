@@ -610,9 +610,10 @@ export default function CheckoutFlow({
                 <p>
                   {copy.expires}{" "}
                   {new Intl.DateTimeFormat(locale, {
+                    timeZone: "Asia/Taipei",
                     dateStyle: "short",
                     timeStyle: "short",
-                  }).format(new Date(quote.expires_at))}
+                  }).format(new Date(quote.expires_at))} · {copy.taipeiTime}
                 </p>
                 <p>{copy.noPayment}</p>
                 {/* storefront-v2 §F: discount code; re-quotes this cart + delivery through writePurchase and replaces the quote. */}

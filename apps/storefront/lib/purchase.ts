@@ -64,6 +64,8 @@ export type Option = {
   // omitempty hides a zero surcharge); the whole-TWD surcharge in minor units the buyer pays on delivery on top of the
   // order total. The quote stays the only authority on the order total (I05); this field only lets the UI show the fee.
   cod_surcharge_minor?: number;
+  cod_max_minor?: number;
+  cod_carrier?: "black_cat" | "hsinchu";
   // Per-policy free-delivery threshold in minor units (storefront-v2 §A/§C): Go emits it on every row (number or null,
   // internal/checkout/options.go; the MOCK fake of tests/storefront/shop-fake-api.mjs mirrors it). The cart page and the delivery step
   // show their "add X more for free delivery" hint only when a row carries a positive one. The quote still decides shipping, never this.
@@ -194,6 +196,7 @@ export type CheckoutWrite = {
   payment_mode?: PaymentMode;
   // Optional buyer email (storefront-v2 §C), trimmed, validated by validBuyerEmail; Go and the SQL CHECK re-validate.
   buyer_email?: string;
+  expected_cod_surcharge_minor?: number;
 };
 // manual-fulfilment-v1 §3.1 carrier codes; a label, never an integration binding.
 export const CARRIER_CODES = [
@@ -233,6 +236,8 @@ export type Order = {
   // an order from before the CVS release still validates. pay_at_pickup <=> collection_state != null.
   payment_mode?: PaymentMode;
   collection_state?: CollectionState | null;
+  cod_collect_minor?: number;
+  cod_surcharge_minor?: number;
   cvs_shipment?: BuyerCvsShipment | null;
   hold_expires_at?: string;
   snapshot: {
@@ -342,6 +347,12 @@ const validCvsOptionFields = (v: Record<string, unknown>) =>
     : v.store_search_url === undefined);
 export const validOption = (v: unknown): v is Option =>
   record(v) &&
+  (Array.isArray(v.payment_modes) && v.payment_modes.includes("cash_on_delivery")
+    ? v.delivery_kind === "home" && v.country === "TW" && v.currency === "TWD" &&
+      v.mode === "MANUAL" && integer(v.cod_max_minor, 100, 2_000_000) &&
+      (v.cod_max_minor as number) % 100 === 0 &&
+      ["black_cat", "hsinchu"].includes(String(v.cod_carrier))
+    : v.cod_max_minor === undefined && v.cod_carrier === undefined) &&
   (v.available === undefined || v.available === true) &&
   (v.free_shipping_threshold_minor === undefined ||
     v.free_shipping_threshold_minor === null ||
@@ -540,6 +551,19 @@ function validOrderCvs(v: Record<string, unknown>): boolean {
       : undefined;
   return shipment === null || (isCvsKind(kind) && shipment.chain === kind);
 }
+function validCodAmount(v: Record<string, unknown>): boolean {
+  if (v.payment_mode !== "cash_on_delivery") {
+    return v.cod_collect_minor === undefined && v.cod_surcharge_minor === undefined;
+  }
+  if (!record(v.snapshot) || !validQuoteSummary(v.snapshot.quote)) return false;
+  const quote = v.snapshot.quote;
+  const fee = v.cod_surcharge_minor ?? 0;
+  const collect = v.cod_collect_minor ?? 0; // Go omits zero values.
+  return quote.currency === "TWD" && quote.amount.total_minor % 100 === 0 &&
+    integer(fee, 0, 100000) && (fee as number) % 100 === 0 &&
+    integer(collect, 0, MAX_AMOUNT) &&
+    collect === quote.amount.total_minor + (fee as number);
+}
 export const validOrder = (v: unknown): v is Order =>
   record(v) &&
   id(v.order_id) &&
@@ -551,6 +575,7 @@ export const validOrder = (v: unknown): v is Order =>
   FULFILLMENT_STATES.includes(String(v.fulfillment_state)) &&
   validShipment(v.shipment, v.fulfillment_state) &&
   validOrderCvs(v) &&
+  validCodAmount(v) &&
   (v.commercial_state === "DRAFT"
     ? timestamp(v.hold_expires_at)
     : v.hold_expires_at === undefined) &&
@@ -652,14 +677,26 @@ const validCheckoutWrite = (v: unknown): v is CheckoutWrite =>
     "allocation_version",
     ...(v.payment_mode === undefined ? [] : ["payment_mode"]),
     ...(v.buyer_email === undefined ? [] : ["buyer_email"]),
+    ...(v.expected_cod_surcharge_minor === undefined ? [] : ["expected_cod_surcharge_minor"]),
   ]) &&
   (v.payment_mode === undefined || isPaymentMode(v.payment_mode)) &&
+  (v.payment_mode === "cash_on_delivery"
+    ? integer(v.expected_cod_surcharge_minor, 0, 100000) && (v.expected_cod_surcharge_minor as number) % 100 === 0
+    : v.expected_cod_surcharge_minor === undefined) &&
   (v.buyer_email === undefined || validBuyerEmail(v.buyer_email)) &&
   id(v.quote_id) &&
   id(v.destination_id) &&
   integer(v.cart_version, 1) &&
   integer(v.service_version, 1) &&
   integer(v.allocation_version, 1);
+
+// Display eligibility only. The server still enforces the cap and computes every amount.
+export function offeredPaymentModes(option: Option, total: number): PaymentMode[] {
+  return (option.payment_modes ?? ["card"]).filter((mode) => mode !== "cash_on_delivery" ||
+    (integer(total, 0, MAX_AMOUNT) && total % 100 === 0 && option.currency === "TWD" &&
+      Number.isSafeInteger(total + (option.cod_surcharge_minor ?? 0)) &&
+      total + (option.cod_surcharge_minor ?? 0) <= (option.cod_max_minor ?? -1)));
+}
 
 export function checkoutInput(
   quote: Quote,
@@ -695,6 +732,7 @@ export function checkoutInput(
         ? paymentMode !== undefined
         : !option.payment_modes.includes(paymentMode ?? "card")) ||
     (email !== "" && !validBuyerEmail(email)) ||
+    !offeredPaymentModes(option, quote.amount.total_minor).includes(paymentMode ?? "card") ||
     destination.cart_id !== cart.id ||
     destination.cart_version !== cart.version ||
     destination.country !== quote.country ||
@@ -711,6 +749,7 @@ export function checkoutInput(
     allocation_version: option.allocation_version,
     ...(cvs || option.payment_modes !== undefined ? { payment_mode: paymentMode ?? "card" } : {}),
     ...(email === "" ? {} : { buyer_email: email }),
+    ...(paymentMode === "cash_on_delivery" ? { expected_cod_surcharge_minor: option.cod_surcharge_minor ?? 0 } : {}),
   };
 }
 

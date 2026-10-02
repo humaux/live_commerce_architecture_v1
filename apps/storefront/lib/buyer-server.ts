@@ -704,6 +704,7 @@ const shapes: Record<Exclude<Route["body"], undefined>, Shape> = {
     service_version: "integer",
     allocation_version: "integer",
     payment_mode: "string",
+    expected_cod_surcharge_minor: "integer",
     buyer_email: "string",
   },
   transferProof: { last5: "string", amount_minor: "integer", paid_at: "string" },

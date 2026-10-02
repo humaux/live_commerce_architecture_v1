@@ -445,6 +445,10 @@ test("CVS BFF: contract refusal codes pass through; pay_at_pickup_limit is a def
     const checkout = { quote_id: cid(4), destination_id: cid(5), cart_version: 2, service_version: 1, allocation_version: 1, payment_mode: "pay_at_pickup" };
     for (const next of [
       { status: 429, code: "pay_at_pickup_limit" },
+      { status: 429, code: "cash_on_delivery_limit" },
+      { status: 422, code: "cash_on_delivery_unavailable" },
+      { status: 422, code: "cash_on_delivery_amount_exceeds" },
+      { status: 409, code: "cod_surcharge_changed" },
       { status: 422, code: "pay_at_pickup_unavailable" },
       { status: 422, code: "pay_at_pickup_amount_exceeds" },
       { status: 422, code: "cvs_recipient_rejected" },
@@ -457,6 +461,9 @@ test("CVS BFF: contract refusal codes pass through; pay_at_pickup_limit is a def
       assert.equal(body.retryable, false, `${next.code} committed nothing, never "retry"`);
     }
     assert.equal(calls.at(-1).body, JSON.stringify(checkout), "payment_mode is forwarded");
+    const codCheckout = { ...checkout, payment_mode: "cash_on_delivery", expected_cod_surcharge_minor: 5000 };
+    await cvsCall(s, "POST", "checkout", { body: JSON.stringify(codCheckout), key: "cod-fee-key-01" });
+    assert.equal(calls.at(-1).body, JSON.stringify(codCheckout), "expected fee is forwarded unchanged");
     // an ordinary rate limit stays retryable; an unlisted code degrades to unavailable
     refusal = { status: 429, code: "rate_limited" };
     response = await cvsCall(s, "POST", "checkout", { body: JSON.stringify(checkout), key: "checkout-key-02" });

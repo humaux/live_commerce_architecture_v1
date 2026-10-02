@@ -217,6 +217,7 @@ test("RUI02 history summary admits MERCHANT_SHIPPED (a shipped order must not br
 // ---- CVS pickup / pay-at-pickup validators (taiwan-cvs-logistics-v1 §5.1, §5.3, §16.1-§16.2) ----------------
 import {
   checkoutInput,
+  offeredPaymentModes,
   isUnavailable,
   validDestination,
   validDestinationWrite,
@@ -351,6 +352,29 @@ const cvsOrder = (extra = {}, dest = {}) => ({
   ...extra,
 });
 const cvsShipment = { state: "CREATED", chain: "cvs_711", store_name: "S", store_code: "123456", updated_at: "2026-09-30T01:02:03Z" };
+
+test("COD confirmation includes expected fee, enforces collect cap and validates immutable order money", () => {
+  const opt = { ...homeOption, payment_modes: ["card", "cash_on_delivery"], cod_carrier: "black_cat", cod_max_minor: 2000000, cod_surcharge_minor: 5000 };
+  assert.equal(validOption(opt), true);
+  for (const patch of [{ cod_max_minor: undefined }, { cod_max_minor: 100.5 }, { cod_carrier: "other" }, { currency: "USD" }, { delivery_kind: "cvs_711" }])
+    assert.equal(validOption({ ...opt, ...patch }), false);
+  assert.deepEqual(offeredPaymentModes(opt, 1995000), ["card", "cash_on_delivery"]);
+  assert.deepEqual(offeredPaymentModes(opt, 1995100), ["card"]);
+  assert.deepEqual(offeredPaymentModes(opt, 100.5), ["card"]);
+  const quote = { ...cq, method: homeOption.method };
+  const head = {
+    ...(({ pickup_id, expected_version, ...d }) => d)(cvsWrite), kind: "home", id: cu(61), version: 1, cart_id: cu(1),
+    home_address: { region: "", city: "C", postal_code: "", line1: "L", line2: "" }, selected_at: new Date().toISOString(), expires_at: soon,
+  };
+  const body = checkoutInput(quote, opt, ccart, head, Date.now(), "cash_on_delivery");
+  assert.equal(body.expected_cod_surcharge_minor, 5000);
+  assert.equal(checkoutInput(quote, { ...opt, cod_surcharge_minor: undefined }, ccart, head, Date.now(), "cash_on_delivery").expected_cod_surcharge_minor, 0);
+  assert.throws(() => checkoutInput(quote, { ...opt, cod_max_minor: 100 }, ccart, head, Date.now(), "cash_on_delivery"));
+  const order = cvsOrder({ payment_mode: "cash_on_delivery", collection_state: "PENDING", cod_surcharge_minor: 5000, cod_collect_minor: cq.amount.total_minor + 5000 }, { kind: "home", pickup: undefined });
+  assert.equal(validOrder(order), true);
+  for (const patch of [{ cod_collect_minor: undefined }, { cod_collect_minor: cq.amount.total_minor }, { cod_surcharge_minor: 0.1 }, { payment_mode: "card", collection_state: null }])
+    assert.equal(validOrder({ ...order, ...patch }), false);
+});
 
 test("CVSP04 buyer order: pay_at_pickup <=> collection_state; cvs_shipment only on a matching CVS destination", () => {
   assert.equal(validOrder(cvsOrder({ payment_mode: "pay_at_pickup", collection_state: "PENDING", cvs_shipment: null })), true);

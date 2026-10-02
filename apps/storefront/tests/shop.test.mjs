@@ -145,8 +145,8 @@ test("seo: sitemap escapes and carries hreflang; robots refuses everything for a
 });
 
 test("money: whole amounts drop cents, minor digits come from the currency, filters round-trip", () => {
-  assert.equal(nb(formatMoney("zh-TW", 98000, "TWD")), "TWD 980");
-  assert.equal(nb(formatMoney("zh-TW", 98050, "TWD")), "TWD 980.50");
+  assert.equal(nb(formatMoney("zh-TW", 98000, "TWD")), "NT$980");
+  assert.equal(nb(formatMoney("zh-TW", 98050, "TWD")), "NT$980.50");
   assert.equal(nb(formatMoney("en", 98000, "TWD")), "NT$980");
   assert.equal(majorToMinor("zh-TW", "TWD", "980"), 98000);
   assert.equal(majorToMinor("zh-TW", "TWD", "12.5"), 1250);

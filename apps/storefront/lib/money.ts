@@ -11,6 +11,10 @@ export function minorDigits(locale: Locale, currency: string): number {
 
 export function formatMoney(locale: Locale, amount: number, currency: string): string {
   const digits = minorDigits(locale, currency);
+  if (currency === "TWD") return `NT$${new Intl.NumberFormat(locale, {
+    minimumFractionDigits: amount % 100 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(amount / 100)}`;
   const formatter = new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
