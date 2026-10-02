@@ -419,6 +419,7 @@
 .storefront-domain-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 20px 0; border-bottom: 1px solid var(--line); }
 .storefront-domain-origin { flex: 1 1 260px; min-width: 0; overflow-wrap: anywhere; }
 .storefront-domain-origin a { display: block; font-weight: 600; }
+.storefront-domain-kind { display: block; margin-top: 6px; }
 .storefront-domains-card a { color: var(--ink); text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .storefront-domains-card a:hover { color: #b94700; }
 .storefront-domain-badge { display: inline-block; margin-top: 6px; font-size: 12px; color: #247052; }

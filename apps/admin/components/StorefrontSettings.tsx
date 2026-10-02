@@ -319,7 +319,7 @@ function StorefrontSettingsForStore({ store, locale }: { store: string; locale: 
               <li key={row.origin} className="storefront-domain-row" data-testid="storefront-domain-row" data-state={row.state} data-kind={row.kind}>
                 <span className="storefront-domain-origin" data-testid="storefront-domain-origin">
                   <a href={row.origin} target="_blank" rel="noopener noreferrer">{row.origin}</a>
-                  {row.kind === "platform" && <span className="settings-note">{sc.domains.platform}</span>}
+                  {row.kind === "platform" && <span className="storefront-domain-kind settings-note">{sc.domains.platform}</span>}
                   {row.serving && <span className="storefront-domain-badge">{sc.domains.serving}</span>}
                 </span>
                 <span className="storefront-domain-state" data-testid="storefront-domain-state">{sc.domains.states[row.state]}</span>
