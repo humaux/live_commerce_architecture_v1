@@ -24,7 +24,7 @@ const summary = () => ({
   updated_at: "2026-09-20T00:00:00.000000Z", currency: "TWD", total_minor: 1000, commercial_state: "AWAITING_PAYMENT",
   fulfillment_state: "MANUAL_UNASSIGNED", payment_state: "PENDING", test_mode: true, work_state: "NONE",
   refunded_minor: 0, refund_pending_minor: 0,
-  pickup_source: null, payment_mode: "card", collection_state: null, cod_surcharge_minor: null, // merchantorders.Summary C4 keys + home-cod R5 surcharge
+  pickup_source: null, payment_mode: "card", collection_state: null, cod_surcharge_minor: null, cod_collect_minor: null, // merchantorders.Summary C4 keys + home-cod R5 projection
 });
 const detail = () => ({
   ...customer(), orders: [summary()],

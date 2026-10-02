@@ -20,6 +20,7 @@ import {
 } from "@/lib/logistics-model";
 import { logisticsCopy, logisticsError } from "@/lib/logistics-copy";
 import { codCopy } from "@/lib/cod-copy";
+import { money } from "@/lib/client";
 import type { OrderDetail } from "@/lib/orders-model";
 import type { OrdersCopy } from "@/lib/orders-copy";
 import "./order-actions.css";
@@ -66,6 +67,7 @@ export function OrderCodCollection({
   const actions = collectionActions(collection, detail.fulfillment_state);
 
   function begin(action: Action) {
+    if (!actions[action] || busy || !canWrite) return;
     pending.current = { key: `cod-${crypto.randomUUID()}`, body: null };
     setProblem("");
     setUncertain(false);
@@ -126,6 +128,8 @@ export function OrderCodCollection({
       <h2>{cc.orderTitle}</h2>
       {collection && (
         <dl className="orders-facts">
+          <div><dt>{cc.collectAmount}</dt><dd data-testid="cod-collect-amount">{money(locale, detail.currency, detail.cod_collect_minor ?? 0)}</dd></div>
+          <div><dt>{cc.surcharge}</dt><dd>{money(locale, detail.currency, detail.cod_surcharge_minor ?? 0)}</dd></div>
           <div>
             <dt>{cc.orderState}</dt>
             <dd data-testid="cod-collection-state" data-state={collection}>{cc.orderStates[collection]}</dd>
@@ -135,7 +139,7 @@ export function OrderCodCollection({
       <p className="orders-hint">{cc.orderNote}</p>
       {canWrite && (
         <div className="orders-form-actions">
-          {actions.collected && <button type="button" data-testid="cod-collected" onClick={() => begin("collected")}>{cc.collected}</button>}
+          {collection === "PENDING" && <button type="button" data-testid="cod-collected" disabled={!actions.collected || busy} aria-describedby={!actions.collected ? `cod-dispatch-${orderID}` : undefined} onClick={() => begin("collected")}>{cc.collected}</button>}
           {actions.returned && <button type="button" data-testid="cod-returned" onClick={() => begin("returned")}>{cc.returned}</button>}
           {actions.refunded_offline && (
             <button type="button" data-testid="cod-refunded-offline" onClick={() => begin("refunded_offline")}>{cc.refundedOffline}</button>
@@ -145,11 +149,14 @@ export function OrderCodCollection({
         </div>
       )}
       {notice && <p className="orders-notice" role="status" data-testid="cod-notice">{notice}</p>}
+      {canWrite && collection === "PENDING" && !actions.collected && <p id={`cod-dispatch-${orderID}`} className="orders-hint">{cc.notShipped}</p>}
       <dialog ref={dialog} className="orders-dialog" aria-labelledby={`cod-title-${orderID}`} data-testid="cod-dialog" onClose={() => { if (open) finish(); }}>
         {open && (
           <form onSubmit={(event) => { event.preventDefault(); void send(); }}>
             <h2 id={`cod-title-${orderID}`}>{lc.confirmTitle}</h2>
             <p data-testid="cod-confirm-text">{confirmText(open)}</p>
+            <p className="cod-amount" data-testid="cod-confirm-amount">{cc.collectAmount}: {money(locale, detail.currency, detail.cod_collect_minor ?? 0)}</p>
+            <p className="orders-hint">{cc.surcharge}: {money(locale, detail.currency, detail.cod_surcharge_minor ?? 0)}</p>
             {problem && <p className="orders-bad" role="alert" data-testid="cod-problem">{problem}</p>}
             <div className="orders-dialog-actions">
               <button type="button" onClick={finish}>{uncertain ? lc.close : lc.cancel}</button>

@@ -62,6 +62,8 @@ export type OrderSummary = {
   collection_state: CollectionState | null;
   // home-cod R5 (migration 0107): placement-time cash-on-delivery surcharge in minor units; null unless cash_on_delivery.
   cod_surcharge_minor: number | null;
+  // Server projection includes the placement-time fee; never use the order subtotal as the carrier's cash amount.
+  cod_collect_minor: number | null;
   // Where the order was created (merchant-tools, migration 0094): every buyer-placed order is "storefront"; the admin's Create Order is "merchant_manual".
   // Absent on rows from endpoints that do not project it (customers detail); present on every merchant orders list/detail row (parseSourcedOrderSummary).
   source?: OrderSource;
@@ -151,7 +153,7 @@ const maxMoney = 1_000_000_000_000;
 const summaryKeys = [
   "order_id", "created_at", "updated_at", "currency", "total_minor",
   "commercial_state", "fulfillment_state", "payment_state", "test_mode", "work_state",
-  "refunded_minor", "refund_pending_minor", "pickup_source", "payment_mode", "collection_state", "cod_surcharge_minor",
+  "refunded_minor", "refund_pending_minor", "pickup_source", "payment_mode", "collection_state", "cod_surcharge_minor", "cod_collect_minor",
 ];
 
 function object(value: unknown, keys: string[]): Record<string, unknown> {
@@ -197,7 +199,7 @@ export function parseSourcedOrderSummary(value: unknown): OrderSummary {
   return row;
 }
 
-// Accepts the 15 summary keys, or those plus `source` (merchant orders rows). The customers detail's order rows have no source.
+// Closed summary projection, optionally plus source; the customers detail's order rows have no source.
 export function parseOrderSummary(value: unknown): OrderSummary {
   const sourced = !!value && typeof value === "object" && !Array.isArray(value) && Object.hasOwn(value, "source");
   const v = object(value, sourced ? [...summaryKeys, "source"] : summaryKeys);
@@ -212,7 +214,8 @@ export function parseOrderSummary(value: unknown): OrderSummary {
     !(v.pickup_source === null || oneOf(v.pickup_source, pickupSources)) ||
     !oneOf(v.payment_mode, paymentModes) ||
     !(v.collection_state === null || oneOf(v.collection_state, collectionStates)) ||
-    !(v.cod_surcharge_minor === null || money(v.cod_surcharge_minor)))
+    !(v.cod_surcharge_minor === null || money(v.cod_surcharge_minor)) ||
+    !(v.cod_collect_minor === null || money(v.cod_collect_minor)))
     throw new Error("unavailable");
   const row = v as OrderSummary;
   // §16.2 schema CHECK: pay_at_pickup <=> collection_state set. Such an order never has a payment attempt, refund
@@ -224,6 +227,9 @@ export function parseOrderSummary(value: unknown): OrderSummary {
   if ((pap || cod) !== (row.collection_state !== null)) throw new Error("unavailable");
   // home-cod R5 schema CHECK (orders_cod_surcharge): the surcharge column is set iff payment_mode=cash_on_delivery.
   if (cod !== (row.cod_surcharge_minor !== null)) throw new Error("unavailable");
+  // I05: this is a consistency check of two server facts, never a client-defined charge.
+  if (cod !== (row.cod_collect_minor !== null) ||
+    (cod && row.cod_collect_minor !== add(row.total_minor, row.cod_surcharge_minor!))) throw new Error("unavailable");
   if (pap) {
     if (row.payment_state !== "NOT_STARTED" || row.test_mode || row.work_state === "REVIEW_REQUIRED" ||
       row.refunded_minor !== 0 || row.refund_pending_minor !== 0 || row.pickup_source === null ||
@@ -453,10 +459,10 @@ export function parseOrderActions(value: unknown): OrderActions {
   return v as OrderActions;
 }
 
-// UTC display used by every orders surface (the page states the time zone in its column headers).
+// All order surfaces use Taipei time; their column headers explicitly name it.
 export function displayTime(locale: string, value: string) {
   return new Intl.DateTimeFormat(locale, {
-    timeZone: "UTC", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false,
+    timeZone: "Asia/Taipei", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false,
   }).format(new Date(value));
 }
 

@@ -33,6 +33,7 @@ import {
   type OrderSummary,
 } from "@/lib/orders-model";
 import { ordersCopy, type OrdersCopy } from "@/lib/orders-copy";
+import { codCopy } from "@/lib/cod-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { Icon } from "./Icon";
 import { OrderRefunds } from "./OrderRefunds";
@@ -245,6 +246,7 @@ function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy, section
               </dd>
             </div>
           )}
+          {detail.payment_mode === "cash_on_delivery" && <div><dt>{codCopy[locale].collectAmount}</dt><dd data-testid="order-collect-amount">{amount(locale, detail.currency, detail.cod_collect_minor ?? 0)}</dd></div>}
         </dl>
         {detail.test_mode && (
           <p className="orders-test" data-testid="order-test-mode">
@@ -967,6 +969,7 @@ function OrderRow({
         <td data-label={c.created}>{displayTime(locale, row.created_at)}</td>
         <td data-label={c.total}>
           {amount(locale, row.currency, row.total_minor)}
+          {row.payment_mode === "cash_on_delivery" && <strong className="orders-cod-amount" data-testid="order-row-collect">{codCopy[locale].collectAmount}: {amount(locale, row.currency, row.cod_collect_minor ?? 0)}</strong>}
         </td>
         <td data-label={c.commercial}>{badge(row.commercial_state, c)}</td>
         <td data-label={c.payment}>

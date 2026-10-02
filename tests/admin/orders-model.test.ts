@@ -35,7 +35,18 @@ const summary = {
   collection_state: null,
   // home-cod R5: the surcharge column is null for every non-cash_on_delivery mode (orders_cod_surcharge CHECK).
   cod_surcharge_minor: null,
+  cod_collect_minor: null,
 };
+test("COD collect projection admits the server amount and rejects inconsistent money", () => {
+  const cod = { ...summary, total_minor: 2500, payment_mode: "cash_on_delivery", commercial_state: "AWAITING_COLLECTION", collection_state: "PENDING", cod_surcharge_minor: 5000, cod_collect_minor: 7500 };
+  assert.equal(parseOrderSummary(cod).cod_collect_minor, 7500);
+  for (const amount of [null, -1, 7500.5, 2500, 7501, Number.MAX_SAFE_INTEGER + 1]) {
+    assert.throws(() => parseOrderSummary({ ...cod, cod_collect_minor: amount }), /unavailable/);
+  }
+  assert.throws(() => parseOrderSummary({ ...summary, cod_collect_minor: 7500 }), /unavailable/);
+  const { cod_collect_minor: _missing, ...missing } = cod;
+  assert.throws(() => parseOrderSummary(missing), /unavailable/);
+});
 const detail = {
   ...summary,
   shipment: null,

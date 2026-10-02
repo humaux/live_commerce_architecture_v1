@@ -48,6 +48,10 @@ export async function sendCommand(store: string, command: PendingCommand) {
 }
 
 export function money(locale: string, currency: string, minor: number) {
+  if (currency === "TWD") return `NT$${new Intl.NumberFormat(locale, {
+    minimumFractionDigits: minor % 100 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(minor / 100)}`;
   const formatter = new Intl.NumberFormat(locale, {
     style: "currency",
     currency,

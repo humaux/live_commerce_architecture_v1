@@ -5,12 +5,15 @@
 import type { Locale } from "@live-commerce/i18n";
 
 const en = {
+  collectAmount: "Amount to collect",
+  surcharge: "Included cash-on-delivery fee",
+  notShipped: "Record manual shipment first. Cash cannot be marked collected before dispatch.",
   setTitle: "Cash on delivery",
   setIntro:
     "Let buyers pay the carrier when the parcel is delivered. The order is placed with no online charge and the stock reserved; you mark the parcel shipped, then record the cash the carrier hands back.",
   setEnabled: "Offer cash on delivery at checkout",
   setMax: "Per-order amount cap (TWD)",
-  setMaxHint: "Cash on delivery is offered only up to this whole-TWD order total (1–20000).",
+  setMaxHint: "Maximum amount including the delivery collection fee. Enter whole NT$ (1–20,000).",
   setSurcharge: "Surcharge (TWD)",
   setSurchargeHint: "Optional whole-TWD amount added to what the buyer pays the carrier (0–1000).",
   setCarrier: "Carrier",
@@ -62,11 +65,14 @@ const en = {
 };
 
 const zhCN: typeof en = {
+  collectAmount: "代收金额",
+  surcharge: "内含货到付款手续费",
+  notShipped: "请先记录手工出货。未出货前不能标记为已代收。",
   setTitle: "货到付款",
   setIntro: "让买家在包裹送达时向货运公司付款。下单时不收取任何在线费用，库存会先保留；你标记出货后，再记录货运公司交回的现金。",
   setEnabled: "在结账时提供货到付款",
   setMax: "单笔金额上限（TWD）",
-  setMaxHint: "订单总额为整数 TWD 且不超过此上限时才提供货到付款（1–20000）。",
+  setMaxHint: "上限含货到付款手续费。按元输入，只收整数 NT$（1–20,000）。",
   setSurcharge: "手续费（TWD）",
   setSurchargeHint: "选填的整数 TWD 金额，加到买家付给货运公司的款项中（0–1000）。",
   setCarrier: "货运业者",
@@ -117,11 +123,14 @@ const zhCN: typeof en = {
 };
 
 const zhTW: typeof en = {
+  collectAmount: "代收金額",
+  surcharge: "內含貨到付款手續費",
+  notShipped: "請先記錄手工出貨。未出貨前不能標記為已代收。",
   setTitle: "貨到付款",
   setIntro: "讓買家在包裹送達時向貨運公司付款。下單時不收取任何線上費用，庫存會先保留；你標記出貨後，再記錄貨運公司交回的現金。",
   setEnabled: "在結帳時提供貨到付款",
   setMax: "單筆金額上限（TWD）",
-  setMaxHint: "訂單總額為整數 TWD 且不超過此上限時才提供貨到付款（1–20000）。",
+  setMaxHint: "上限含貨到付款手續費。按元輸入，只收整數 NT$（1–20,000）。",
   setSurcharge: "手續費（TWD）",
   setSurchargeHint: "選填的整數 TWD 金額，加到買家付給貨運公司的款項中（0–1000）。",
   setCarrier: "貨運業者",
