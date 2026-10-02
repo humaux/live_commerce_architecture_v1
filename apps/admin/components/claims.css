@@ -32,6 +32,7 @@
 #claims-source-page { min-height: 44px; }
 .claims-rail > .claims-field { margin-top: 20px; }
 .claims-muted { color: var(--muted); }
+.claims-refreshed { align-self: center; color: var(--muted); font-size: 13px; }
 .claims-rail > .claims-muted { margin-top: 8px; font-size: 13px; }
 .claims-window-action { width: 100%; min-height: 45px; margin-top: 18px; }
 .claims-stats, .claims-prompt { margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--line); }

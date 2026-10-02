@@ -33,6 +33,16 @@ export function displayTime(locale: string, value: string) {
     hour12: false,
   }).format(new Date(value));
 }
+/** Store-timezone wall clock to the second, for "updated at" feedback stamps (displayTime stops at the minute). */
+export function displayClock(locale: string, value: string | number | Date) {
+  return new Intl.DateTimeFormat(locale, {
+    timeZone: STORE_TIME_ZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).format(new Date(value));
+}
 export function minorDigits(currency: string) {
   return (
     new Intl.NumberFormat("en", {

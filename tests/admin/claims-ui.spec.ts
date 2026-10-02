@@ -9,6 +9,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { claimsCopy, hostPrompt } from "../../apps/admin/lib/claims-copy";
+import { studioCopy } from "../../apps/admin/lib/studio-copy";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -272,6 +273,27 @@ test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MO
   await expect(merchant.getByText("MOCK capture — comments are not read automatically yet")).toHaveCount(0);
   await expect(merchant.getByTestId("claims-window-state")).toHaveText("Closed");
   pass("signed MOCK IdP merchant opens Studio › Claims for the scene with the bind-a-post banner");
+
+  // D03 (G-UI8 click sweep): "Refresh facts" re-reads six endpoints and used to change nothing on screen. A click must be answered: a busy label
+  // while the reads run, then the time (Taipei, to the second) the facts were read. The board read is slowed only to make the busy state observable.
+  const refresh = merchant.locator("button.studio-refresh");
+  await expect(refresh).toHaveText(studioCopy.en.refresh);
+  await expect(merchant.getByText(/Facts refreshed at/)).toHaveCount(0); // nothing was refreshed by the user yet
+  let slowBoard = true;
+  const boardRead = /\/api\/stores\/[^/]+\/live-sessions\/[^/]+\/claims$/;
+  await merchant.route(boardRead, async (route) => {
+    if (slowBoard) await new Promise((resolve) => setTimeout(resolve, 900));
+    await route.continue();
+  });
+  await merchant.getByRole("button", { name: "Refresh facts" }).click();
+  await expect(refresh).toBeDisabled();
+  await expect(refresh).toHaveText("Refreshing…");
+  await expect(merchant.getByText(/^Facts refreshed at \d{2}:\d{2}:\d{2}$/)).toBeVisible();
+  await expect(refresh).toBeEnabled();
+  await expect(refresh).toHaveText(studioCopy.en.refresh);
+  slowBoard = false;
+  await merchant.unroute(boardRead);
+  pass("Refresh facts: busy label while the reads run, then 'Facts refreshed at hh:mm:ss' (D03)");
 
   await merchant.getByRole("button", { name: "Open claim window" }).click();
   await expect(merchant.getByTestId("claims-window-state")).toHaveText("Open");
