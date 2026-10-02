@@ -471,7 +471,7 @@ Package merchanttools owns three admin-side tools of contracts/storefront-v2.md 
 
 ## `internal/metaconnect`
 
-Package metaconnect owns the merchant self-serve connection of a Facebook Page (and its Instagram account) to a store (contracts/meta-claims-intake-v1.md "Merchant connect (R4)", unit meta-connect): the Facebook Login for Business start and callback, the Page pick list, the one-transaction bind (sealed Page credential + binding + webhook route + connection row) and the disconnect.
+Package metaconnect owns the merchant self-serve connection of Facebook Pages (up to 10 per store, each with its optional Instagram account) to a store (contracts/meta-claims-intake-v1.md "Merchant connect (R4)", unit meta-connect): the Facebook Login for Business start and callback, the Page pick list, the one-transaction bind (sealed Page credential + binding + webhook route + connection row) and the per-Page disconnect.
 
 - Depends on (internal): `internal/command`, `internal/integrations/core`, `internal/integrations/meta/oauth`, `internal/integrations/meta/pagetoken`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`

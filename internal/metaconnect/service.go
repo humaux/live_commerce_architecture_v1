@@ -267,7 +267,8 @@ func (s *Service) GetState(ctx context.Context, tx pgx.Tx, scope platform.Scope,
 	return queryJSON(ctx, tx, `SELECT integration.meta_connect_get_state($1,$2,$3)::text`, hash, scope.StoreID, stateID)
 }
 
-// Status is the card: Page, Instagram, granted permissions, token status, last routed webhook (meta_connect_status).
+// Status is the card: the connected Pages (up to 10), their Instagram accounts, granted permissions, token status and last
+// routed webhook (meta_connect_status).
 func (s *Service) Status(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string) (json.RawMessage, error) {
 	hash, err := tokenHash(token)
 	if err != nil {
@@ -458,13 +459,16 @@ type disconnected struct {
 	IGBinding *string `json:"ig_binding"`
 }
 
-// Disconnect destroys the sealed Page credentials, disables the routes and the bindings and deletes the connection row in ONE
+// Disconnect destroys ONE Page's sealed credentials, disables its routes and bindings and deletes its connection row in ONE
 // transaction (meta_connect_disconnect + core.SetBindingEnabled). This process makes no Graph unsubscribe (it can seal a Page token but
-// never open one): meta_connect_disconnect enqueues a durable job (migration 0100) that the claims-worker, the only holder of the private
-// ring, executes best effort (metareply.Unsubscriber). Until it runs, the disabled route only yields quarantined events.
-func (s *Service) Disconnect(ctx context.Context, pool *pgxpool.Pool, token, storeID string) error {
+// never open one): meta_connect_disconnect enqueues a durable job (migration 0100) for that Page that the claims-worker, the only holder
+// of the private ring, executes best effort (metareply.Unsubscriber). Until it runs, the disabled route only yields quarantined events.
+func (s *Service) Disconnect(ctx context.Context, pool *pgxpool.Pool, token, storeID, pageID string) error {
 	if s == nil || pool == nil {
 		return platform.ErrUnauthorized
+	}
+	if !digits.MatchString(pageID) {
+		return refusal("invalid_request")
 	}
 	hash, err := tokenHash(token)
 	if err != nil {
@@ -474,7 +478,7 @@ func (s *Service) Disconnect(ctx context.Context, pool *pgxpool.Pool, token, sto
 	err = platform.WithScope(ctx, pool, token, storeID, "integration:manage", func(tx pgx.Tx, sc platform.Scope) error {
 		var raw string
 		// integration.meta_connect_disconnect: deletes heads and versions, disables routes, deletes the connection row (ids only back).
-		if e := tx.QueryRow(ctx, `SELECT integration.meta_connect_disconnect($1,$2)::text`, hash, storeID).Scan(&raw); e != nil {
+		if e := tx.QueryRow(ctx, `SELECT integration.meta_connect_disconnect($1,$2,$3)::text`, hash, storeID, pageID).Scan(&raw); e != nil {
 			return e
 		}
 		if e := json.Unmarshal([]byte(raw), &out); e != nil {

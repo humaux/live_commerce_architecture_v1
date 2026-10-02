@@ -33,8 +33,8 @@ var frozenStatus = map[string]int{
 	"unauthorized": http.StatusUnauthorized, "forbidden": http.StatusForbidden, "not_found": http.StatusNotFound,
 	"invalid_request": http.StatusUnprocessableEntity, "not_in_pick_list": http.StatusUnprocessableEntity,
 	"missing_permission": http.StatusUnprocessableEntity,
-	"state_mismatch":     http.StatusConflict, "state_used": http.StatusConflict, "state_expired": http.StatusGone,
-	"already_connected": http.StatusConflict, "page_taken": http.StatusConflict, "binding_disabled": http.StatusConflict,
+	"state_mismatch": http.StatusConflict, "state_used": http.StatusConflict, "state_expired": http.StatusGone,
+	"cap_exceeded": http.StatusConflict, "page_taken": http.StatusConflict, "binding_disabled": http.StatusConflict,
 	"conflict": http.StatusConflict,
 }
 
