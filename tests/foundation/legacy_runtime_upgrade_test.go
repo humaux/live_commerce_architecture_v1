@@ -457,8 +457,13 @@ func TestLegacyRuntimeIsolationPopulatedUpgrade(t *testing.T) {
 	// historical order keeps all old values and acquires exactly those keys. Documented later additive columns (each a nullable
 	// or defaulted ADD COLUMN, so a historical order acquires only its default): 0088 buyer_email NULL (storefront-v2 section C),
 	// 0094 source 'storefront' (section G, merchant-created orders are the only other value), 0097 locale NULL (order-locale unit;
-	// the Begin of a fixture order ran against the lriShims no-op set_order_locale, so no locale was ever stored).
-	const addedOrderKeys = `{"payment_mode":"card","collection_state":null,"buyer_email":null,"source":"storefront","locale":null}`
+	// the Begin of a fixture order ran against the lriShims no-op set_order_locale, so no locale was ever stored),
+	// 0107 home-cod: cod_surcharge_minor NULL and cod_carrier NULL (both set only on cash_on_delivery orders) and collected_at NULL.
+	// collected_at is the one 0107 column that is not a plain ADD COLUMN: the migration runs a labelled best-effort backfill
+	// (collected_at=updated_at) for rows already collection_state='COLLECTED'. Every fixture order here is a historical card order
+	// (collection_state NULL), so the backfill matches no row and collected_at stays NULL; a card order that DID gain a non-null
+	// collected_at, or any other changed value, still fails the equality below.
+	const addedOrderKeys = `{"payment_mode":"card","collection_state":null,"buyer_email":null,"source":"storefront","locale":null,"cod_surcharge_minor":null,"cod_carrier":null,"collected_at":null}`
 	var expectedOrders string
 	if err := f.owner.QueryRow(ctx, `SELECT coalesce(jsonb_agg(
 	 value || $2::jsonb

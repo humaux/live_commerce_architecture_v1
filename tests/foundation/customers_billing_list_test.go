@@ -663,7 +663,7 @@ func TestCustomersBillingCB03List(t *testing.T) {
 		if _, err := fin(noRead, s1, today, today); !errors.Is(err, platform.ErrForbidden) {
 			t.Errorf("finance without orders:read: %v, want ErrForbidden", err)
 		}
-		// OP3 (0085): a COLLECTED pay-at-pickup order counts on the Taipei day of orders.updated_at, in its own columns, environment LIVE
+		// OP3 (0085, day moved to collected_at by 0107 P1-3b): a COLLECTED pay-at-pickup order counts on the Taipei day of orders.collected_at, in its own columns, environment LIVE
 		// when the order has no cvs_shipments row, and never in captured/net. Alice's order is flipped and restored (session_replication_role
 		// skips the CVS guard triggers; the orders_payment_collection CHECK still holds because both columns change together).
 		var total int64
@@ -671,7 +671,7 @@ func TestCustomersBillingCB03List(t *testing.T) {
 		if err := e.f.owner.QueryRow(ctx, `SELECT total_minor,updated_at FROM checkout.orders WHERE id=$1`, alice.order).Scan(&total, &prevUpdated); err != nil {
 			t.Fatal(err)
 		}
-		age(`UPDATE checkout.orders SET payment_mode='pay_at_pickup',collection_state='COLLECTED',updated_at=timestamptz '2026-01-16 16:30:00+00' WHERE id=$1`, alice.order)
+		age(`UPDATE checkout.orders SET payment_mode='pay_at_pickup',collection_state='COLLECTED',updated_at=timestamptz '2026-01-16 16:30:00+00',collected_at=timestamptz '2026-01-16 16:30:00+00' WHERE id=$1`, alice.order)
 		pickup, err := fin(tok1, s1, "2026-01-15", "2026-01-18")
 		if err != nil {
 			t.Fatal(err)
@@ -694,7 +694,7 @@ func TestCustomersBillingCB03List(t *testing.T) {
 		if gone, err := fin(tok1, s1, "2026-01-15", "2026-01-18"); err != nil || len(gone.Rows) != 3 {
 			t.Errorf("a REFUNDED_OFFLINE order must leave the collected column: %+v %v", gone.Rows, err)
 		}
-		age(`UPDATE checkout.orders SET payment_mode='card',collection_state=NULL,updated_at=$2 WHERE id=$1`, alice.order, prevUpdated)
+		age(`UPDATE checkout.orders SET payment_mode='card',collection_state=NULL,updated_at=$2,collected_at=NULL WHERE id=$1`, alice.order, prevUpdated)
 	})
 
 	// Lane-close review P2: buyer.issue_capability creates an owner per anonymous visitor, so a list that scans every
