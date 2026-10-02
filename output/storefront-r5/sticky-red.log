@@ -1,0 +1,191 @@
+browser engine: chromium
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+ExpectError: expect(locator).toBeVisible() failed
+
+Locator: getByTestId('sticky-buy')
+Expected: visible
+Timeout: 5000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "toBeVisible" getByTestId('sticky-buy') with timeout 5000ms
+  - waiting for getByTestId('sticky-buy')
+
+    at captureRawStack (/Volumes/data/live_commerce_architecture_v1/.worktrees/storefront-r5/node_modules/.pnpm/playwright-core@1.63.0/node_modules/playwright-core/lib/coreBundle.js:8588:17)
+    at callMatcherAsStep (/Volumes/data/live_commerce_architecture_v1/.worktrees/storefront-r5/node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/lib/matchers/expect.js:13310:57)
+    at Object.toBeVisible (/Volumes/data/live_commerce_architecture_v1/.worktrees/storefront-r5/node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/lib/matchers/expect.js:13302:23)
+    at checkR5 (/Volumes/data/live_commerce_architecture_v1/.worktrees/storefront-r5/tests/storefront/shop-r5-checks.mjs:86:47)
+    at async file:///Volumes/data/live_commerce_architecture_v1/.worktrees/storefront-r5/tests/storefront/shop-gate.mjs:121:5 {
+  matcherResult: {
+    message: 'expect(locator).toBeVisible() failed\n' +
+      '\n' +
+      "Locator: getByTestId('sticky-buy')\n" +
+      'Expected: visible\n' +
+      'Timeout: 5000ms\n' +
+      'Error: element(s) not found\n' +
+      '\n' +
+      'Call log:\n' +
+      `  - Expect "toBeVisible" getByTestId('sticky-buy') with timeout 5000ms\n` +
+      "  - waiting for getByTestId('sticky-buy')\n",
+    pass: false,
+    actual: undefined,
+    name: 'toBeVisible',
+    expected: 'visible',
+    log: [
+      `  - Expect "toBeVisible" getByTestId('sticky-buy') with timeout 5000ms`,
+      "  - waiting for getByTestId('sticky-buy')"
+    ],
+    timeout: 5000,
+    ariaSnapshot: '- link "Skip to content":\n' +
+      '  - /url: "#main"\n' +
+      '- paragraph: 全館滿 NT$1,500 免運 · 週四晚間 8 點直播開賣\n' +
+      '- banner:\n' +
+      '  - button "Menu"\n' +
+      '  - link "晨光選物":\n' +
+      '    - /url: /en\n' +
+      '  - link "Search":\n' +
+      '    - /url: /en/search\n' +
+      '  - button "Cart, 1 items"\n' +
+      '- main:\n' +
+      '  - navigation "Breadcrumb":\n' +
+      '    - list:\n' +
+      '      - listitem:\n' +
+      '        - link "Home":\n' +
+      '          - /url: /en\n' +
+      '      - listitem:\n' +
+      '        - link "All products":\n' +
+      '          - /url: /en/products\n' +
+      '      - listitem: 雪松無花果香氛蠟燭\n' +
+      '  - group "雪松無花果香氛蠟燭":\n' +
+      '    - img "雪松無花果香氛蠟燭"\n' +
+      '  - button "Enlarge photo"\n' +
+      '  - heading "雪松無花果香氛蠟燭" [level=1]\n' +
+      '  - text: NT$680\n' +
+      '  - group "容量 180g":\n' +
+      '    - text: 容量 180g\n' +
+      '    - radio "180g" [checked]\n' +
+      '    - text: 180g\n' +
+      '    - radio "300g"\n' +
+      '    - text: 300g\n' +
+      '  - status: In stock\n' +
+      '  - text: Quantity\n' +
+      '  - button "Decrease quantity" [disabled]\n' +
+      '  - textbox "Quantity": "1"\n' +
+      '  - button "Increase quantity"\n' +
+      '  - button "Add to cart"\n' +
+      '  - button "Buy now"\n' +
+      '  - status\n' +
+      '  - complementary:\n' +
+      '    - term: Delivery\n' +
+      '    - definition:\n' +
+      '      - text: Taiwan home delivery\n' +
+      '      - link "運送說明":\n' +
+      '        - /url: /en/pages/shipping\n' +
+      '    - paragraph: Available methods depend on your destination and are confirmed at checkout.\n' +
+      '  - region "Description":\n' +
+      '    - heading "Description" [level=2]\n' +
+      '    - paragraph: 以大豆蠟手工灌注，燃燒時帶有雪松木的乾燥溫度與熟無花果的微甜。 燃燒時間約 40 小時（300g）。 請在平穩的桌面上使用，首次點燃建議燃燒至表面全融。\n' +
+      '  - region "In collections":\n' +
+      '    - heading "In collections" [level=2]\n' +
+      '    - list:\n' +
+      '      - listitem:\n' +
+      '        - link "居家香氛":\n' +
+      '          - /url: /en/collections/home-fragrance\n' +
+      '  - region "In the same collection":\n' +
+      '    - heading "In the same collection" [level=2]\n' +
+      '    - list:\n' +
+      '      - listitem:\n' +
+      '        - link "鑄鐵小烤盤 NT$1,270":\n' +
+      '          - /url: /en/products/item-30\n' +
+      '      - listitem:\n' +
+      '        - link "山茶皂 NT$1,060":\n' +
+      '          - /url: /en/products/item-27\n' +
+      '      - listitem:\n' +
+      '        - link "玻璃花瓶 NT$850":\n' +
+      '          - /url: /en/products/item-24\n' +
+      '      - listitem:\n' +
+      '        - link "陶製筷架組 NT$640":\n' +
+      '          - /url: /en/products/item-21\n' +
+      '      - listitem:\n' +
+      '        - link "Sold out 棉麻桌旗 NT$430":\n' +
+      '          - /url: /en/products/item-18\n' +
+      '      - listitem:\n' +
+      '        - link "燕麥色陶瓷湯匙 NT$220":\n' +
+      '          - /url: /en/products/item-15\n' +
+      '      - listitem:\n' +
+      '        - link "迷你香氛噴霧 NT$480":\n' +
+      '          - /url: /en/products/mini-room-spray\n' +
+      '      - listitem:\n' +
+      '        - link "Sold out 擴香竹籤禮盒 NT$890":\n' +
+      '          - /url: /en/products/reed-diffuser-box\n' +
+      '- contentinfo:\n' +
+      '  - region "晨光選物":\n' +
+      '    - paragraph: 晨光選物\n' +
+      '    - paragraph: 為日常挑選安靜好用的小物\n' +
+      '    - list "Contact":\n' +
+      '      - listitem:\n' +
+      '        - link "02-2345-6789":\n' +
+      '          - /url: tel:0223456789\n' +
+      '      - listitem:\n' +
+      '        - link "hello@morninglight.example":\n' +
+      '          - /url: mailto:hello@morninglight.example\n' +
+      '      - listitem: 台北市大安區和平東路一段 100 號\n' +
+      '      - listitem:\n' +
+      '        - link "LINE":\n' +
+      '          - /url: https://line.me/R/ti/p/@morninglight\n' +
+      '      - listitem:\n' +
+      '        - link "Facebook":\n' +
+      '          - /url: https://www.facebook.com/morninglight.example\n' +
+      '      - listitem:\n' +
+      '        - link "Instagram":\n' +
+      '          - /url: https://www.instagram.com/morninglight.example\n' +
+      '  - navigation "Shop":\n' +
+      '    - list:\n' +
+      '      - listitem:\n' +
+      '        - link "關於我們":\n' +
+      '          - /url: /en/pages/about\n' +
+      '      - listitem:\n' +
+      '        - link "運送說明":\n' +
+      '          - /url: /en/pages/shipping\n' +
+      '      - listitem:\n' +
+      '        - link "商品分類":\n' +
+      '          - /url: /en/collections/knitwear\n' +
+      '  - navigation "Legal":\n' +
+      '    - list:\n' +
+      '      - listitem:\n' +
+      '        - link "Privacy Policy":\n' +
+      '          - /url: /en/legal/privacy\n' +
+      '      - listitem:\n' +
+      '        - link "Terms of Service":\n' +
+      '          - /url: /en/legal/terms\n' +
+      '      - listitem:\n' +
+      '        - link "Refunds, Returns and Cancellation":\n' +
+      '          - /url: /en/legal/refunds\n' +
+      '      - listitem:\n' +
+      '        - link "Shipping":\n' +
+      '          - /url: /en/legal/shipping\n' +
+      '      - listitem:\n' +
+      '        - link "Contact":\n' +
+      '          - /url: /en/legal/contact\n' +
+      '      - listitem:\n' +
+      '        - link "Shop safely":\n' +
+      '          - /url: /en/legal/anti-fraud\n' +
+      '      - listitem:\n' +
+      '        - link "Data deletion":\n' +
+      '          - /url: /en/data-deletion\n' +
+      '  - navigation "Language":\n' +
+      '    - link "简体中文":\n' +
+      '      - /url: /zh-CN/products/cedar-fig-candle\n' +
+      '    - link "繁體中文":\n' +
+      '      - /url: /zh-TW/products/cedar-fig-candle\n' +
+      '    - link "English":\n' +
+      '      - /url: /en/products/cedar-fig-candle\n' +
+      '  - paragraph: © 2026 晨光選物\n' +
+      '- alert'
+  }
+}
+
+Node.js v24.15.0

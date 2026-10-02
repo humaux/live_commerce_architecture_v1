@@ -102,6 +102,10 @@ export async function checkR5({ browser, api, origin, raw, evidence }) {
       for (const [name, target] of [["assurance", p.getByTestId("product-assurance")], ["related", p.getByTestId("related-products")], ["footer", p.locator(".sf-footer__legal")]]) {
         await target.scrollIntoViewIfNeeded();
         await expect(target).toBeVisible();
+        await p.evaluate(async () => {
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+          await Promise.all([...document.querySelectorAll(".sf-sticky")].flatMap(el => el.getAnimations()).map(animation => animation.finished.catch(() => {})));
+        });
         await p.screenshot({ path: path.join(out, `${name}-${locale}-390x844.png`), scale: "css" });
       }
       await p.goto(`${origin}/${locale}/legal/anti-fraud`);

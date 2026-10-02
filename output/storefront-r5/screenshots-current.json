@@ -1,0 +1,132 @@
+{
+  "date": "2026-10-02",
+  "scope": "R5 current UI only; excludes historical G1 after-* failure screenshots",
+  "shots": [
+    {
+      "file": "anti-fraud-en-390x844.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "20abd8f01cfe753c171851bb687a018a3a99caf2f1c0f1bbcbe8b74ab75b87db"
+    },
+    {
+      "file": "anti-fraud-zh-TW-390x844.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "c545937518d188d4cb3c10b76a7959c0a40eb88df24bca44ad46394a301bdc61"
+    },
+    {
+      "file": "assurance-en-390x844.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "f301b37fec133a07b55a23493d1438650838c031f777b2c56f5c4205c1968baf"
+    },
+    {
+      "file": "assurance-zh-TW-390x844.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "65294975434228f23bd8a7580ddad52d186ade8ac634dc9d997035b406a146d5"
+    },
+    {
+      "file": "bank-safety-en-desktop.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "6000150d9b03917d09d52f4743a8bd0f7c9589529e51465d3876a55735ebc295"
+    },
+    {
+      "file": "bank-safety-en-mobile.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "eba49f9ac675b5e5fb1ea2605b9200ca3d95e88608f659b2e620a84b707c1eaa"
+    },
+    {
+      "file": "bank-safety-zh-TW-desktop.png",
+      "width": 1440,
+      "height": 900,
+      "sha256": "b2ed1602b32b3bc8330a566047c945555a8a1338922c1edc2e432e021925950e"
+    },
+    {
+      "file": "bank-safety-zh-TW-mobile.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "2a5ec9f785be650273888c354ae3e0d83d506f36a2f1a13b52f046933e1d1cda"
+    },
+    {
+      "file": "footer-en-390x844.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "e47fbd5aa8409e5d4a68071aa11a74b8c5c435e3da8fe8681bbca8c539f87348"
+    },
+    {
+      "file": "footer-zh-TW-390x844.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "be76c4dcfbc22d6a5af988c75deec9de54a721f7d3adc3bd82fa7448a0c4054e"
+    },
+    {
+      "file": "gallery-en-desktop.png",
+      "width": 1586,
+      "height": 992,
+      "sha256": "5c0dfa2e9d2b15ff80e02c22353db36a288860eae80064b547e1fcc99e2610ab"
+    },
+    {
+      "file": "product-en-1586x992.png",
+      "width": 1586,
+      "height": 992,
+      "sha256": "684cf2befc5e6011286b05e2224f5a7959f9014b6ec6179c810c8fd27a30201d"
+    },
+    {
+      "file": "product-en-390x844.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "0e291ed3ef5e45979d4ff13247440537fc685d60a39d1ce52acf970236b6b949"
+    },
+    {
+      "file": "product-zh-TW-1586x992.png",
+      "width": 1586,
+      "height": 992,
+      "sha256": "4c15f8afe17172b4d79cc7a622ad56d9d3aa5a665f885e7cd2efd7b92116461b"
+    },
+    {
+      "file": "product-zh-TW-390x844.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "25f4e32ac1f7c37b5cae61c13c181254185383fbb9bab1ce9a2841d6e0688ccb"
+    },
+    {
+      "file": "products-en-1586x992.png",
+      "width": 1586,
+      "height": 992,
+      "sha256": "2b41bf77ea856c79805ecf2cf956f0a9814fce12f07eaf596dbcbc255f2075ca"
+    },
+    {
+      "file": "products-en-390x844.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "2cc1a8cdbf1882f0dd3b3f26c3722aa43f7cb504998091493eeaa3bbc37c1aa5"
+    },
+    {
+      "file": "products-zh-TW-1586x992.png",
+      "width": 1586,
+      "height": 992,
+      "sha256": "254130390e51a300ed6f0ef1129d907292b40fce075c9e61d2a0a23b35dc3d30"
+    },
+    {
+      "file": "products-zh-TW-390x844.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "d36067ec5668c99be1b28719eff48f8c69714546efd5143b5a1469df3fa8af31"
+    },
+    {
+      "file": "related-en-390x844.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "ff2fe9d1e9a6f95c1a02368a41e997867bf057374553e24370d5fe5f11ba8177"
+    },
+    {
+      "file": "related-zh-TW-390x844.png",
+      "width": 390,
+      "height": 844,
+      "sha256": "8e784049d031b9c70d5dd44a9bd20ef4180961106c1488e4de9f9068dd624ec4"
+    }
+  ]
+}

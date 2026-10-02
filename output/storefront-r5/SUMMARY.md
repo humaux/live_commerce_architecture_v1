@@ -1,94 +1,104 @@
-# storefront-r5 — BLOCKED（G1 方案 A 失败，按指示停止）
+# storefront-r5 — UI LOCAL_VERIFIED；G1 DEFERRED
 
-日期：2026-10-02。**本单未完成 UI 交付，不可据此合并功能或发布。**
-
-## 结论
-
-已实际尝试 `next/image` + 已安装的 Sharp，并对同一 fixture 做前后测量。
-**构建成功，但运行失败：原图 200，优化图片 400，首屏 4 张商品图全部破图。**
-触发派单中「A 不行就停下来报告，不做 B」的停止条件。已撤回全部试验性应用改动，并重建、复测恢复后的原图版本；没有把破图代码留给集成者。
+日期：2026-10-02。**G2 / G3 / G4 / G5 / G8 已实现并通过本地验收；等待 Claude 集成终审，不代表生产发布准入。** G1 方案 A 已否决，方案 B 由后端单元承担，本单保留原生 img。
 
 ## 工作区与提交
 
-- 唯一修改目录：`/Volumes/data/live_commerce_architecture_v1/.worktrees/storefront-r5`
-- 分支：`unit/storefront-r5`
-- 基线：`aca14d7b7794c22950ffffe9f1714117235b2675`
-- 证据提交：`41e2be869db270a165d41984e260a5d4c417556c` — `test(storefront): record blocked next image host probe`
-- 本 SUMMARY 单独作为交接文档提交；其提交由 `git log -1 -- output/storefront-r5/SUMMARY.md` 定位。
-- 保留的改动仅为 `output/storefront-r5/` 内的重现脚本、试验补丁、日志、JSON 和截图。`apps/storefront` 相对基线无 diff。
-- 没有改 Go、SQL、依赖或锁文件；没有改主 checkout、其他 worktree、OrderFlow.tsx；没有 push、merge、部署或访问生产主机/凭据。
+- 唯一写入工作区：`/Volumes/data/live_commerce_architecture_v1/.worktrees/storefront-r5`，分支 `unit/storefront-r5`。
+- 原基线：`aca14d7b7794c22950ffffe9f1714117235b2675`；续作起点：`1b7e3a51f0b1847f6a33e3b5dee4ce721f56d0a3`。
+- 保留 G1 证据提交：`41e2be869db270a165d41984e260a5d4c417556c`、`1b7e3a51f0b1847f6a33e3b5dee4ce721f56d0a3`。
+- `a170583bdc7a92f9b014af8a43996b2955845f8c`：五项 UI、三语文案和单测。
+- `069637cbd64c92230800f940bd427b9e5770625a`：统一 NT$ 显示及金额精度测试。
+- `a3ccc2fa43577b910118edd04f412af4980f4750`：浏览器验收、图库/分类/防诈骗覆盖，及实测发现的手机底栏快速滚动修复。
+- 本报告和最终截图等待动画稳定的测试补充另作证据提交；用 `git log -1 -- output/storefront-r5/SUMMARY.md` 定位。各提交均带指定 Co-Authored-By 尾注。
+- 未改 Go、SQL、依赖锁文件、OrderFlow.tsx、主 checkout 或其他 worktree；未 push、merge、部署或读取生产密钥。
 
-## 各项状态
+## 逐项交付
 
-| 项目 | 状态 | 结果 |
+| 项目 | 状态 / 实现 SHA | 结果与边界 |
 |---|---|---|
-| G1 图片按尺寸输出 | **FAIL / BLOCKED** | A 已试验，运行失败；源代码已恢复。没有尝试 B。 |
-| G2 ProductAssurance | NOT_STARTED | 遵守 G1 失败停止条件，未新增配送/付款/退货说明。 |
-| G3 同系列商品 | NOT_STARTED | 未实现；排除当前商品/草稿/别店商品的红绿断言 NOT_RUN。 |
-| G4 分类 chips | NOT_STARTED | 未实现；390px 分类交互验收 NOT_RUN。 |
-| G5 三语防诈骗 | NOT_STARTED | 未改 legal/footer/BankTransfer，未动 OrderFlow。 |
-| G8 图库放大 | NOT_STARTED | 只试验过图库图片组件转换，已撤回；未实现放大。 |
-| 视觉稿 09、橙色/NT$、44px、三语 | NOT_IMPLEMENTED | 已读取并核对 README 的规则优先级；截图是基线/失败诊断，不是新视觉稿落地。 |
-| 收藏计数、虚拟账号 | NOT_IMPLEMENTED | 保持明确排除。 |
+| G1 | **DEFERRED** / 上述两条原证据提交 | A 的内部取图不带 Host，且缓存键没有 Host；B（Go 上传时生成尺寸、media ?w=）归后端。本单没有实现 B。 |
+| G2 | **LOCAL_VERIFIED** / a170583 | ProductAssurance 只读现有 buyer session 的 checkout-options；过滤 unavailable，逐页读完，付款方式只取明确返回的 payment_modes；不推断信用卡、不使用库存保留时间作为送达时间。展示已发布商家 shipping / returns / refunds 页面链接，不捏造退货承诺。 |
+| G3 | **LOCAL_VERIFIED** / a170583、a3ccc2f | 复用 Host-scoped 公共目录和现有 ProductCard / Rail；取当前商品首个系列，排除当前商品、去重、最多 8 件；无系列/无其他商品/接口失败则隐藏。草稿和别店隔离由既有 Go 公共接口保证，不从后台目录补数据。 |
+| G4 | **LOCAL_VERIFIED** / a170583、a3ccc2f | 列表页分类来自公共 collections，仅显示 product_count > 0；隐藏分类不回填，390px chips 换行，无横向溢出；保留选中态与预览参数。 |
+| G5 | **LOCAL_VERIFIED** / a170583、a3ccc2f | /{locale}/legal/anti-fraud 三语通用防诈骗指南、页脚入口、BankTransfer 一行提示和链接。与既有五份需 owner 审定的政策模型分开，未改变其草稿门禁；OrderFlow 未改。 |
+| G8 | **LOCAL_VERIFIED** / a170583、a3ccc2f | 原生 img + dialog 放大；上一张/下一张、方向键、Esc、关闭后焦点返回；无图不显示放大入口；打开期间锁定背景滚动。 |
+| 视觉约束 | **LOCAL_VERIFIED** / a170583、069637c | 白底、商家橙色主题、44px 控件、三语 UI；TWD 全语言显示 NT$，整数无 .00，但真实分金额仍保留，绝不为视觉稿舍入。收藏数、虚拟账号均未实现。 |
 
-## G1 根因与证据
+G2 有意限制：匿名纯浏览不会为说明块新建会话；无会话时只显示已发布政策链接。接口失败、不完整分页、重复游标或超过 10 页时隐藏方式，购买功能保持可用；没有承诺只为预览新增后端匿名接口。缺少商家退货页面时隐藏该项，不写默认期限。
 
-1. `apps/storefront/lib/media-proxy.ts:27–28` 用 `request.headers.get("host")` 选店；没有有效 Host 就返回非图片的 404。直接请求 fixture 原图：本店 **200**，其他 Host **404**。
-2. 已安装 Next **16.3.5** 的 `dist/server/image-optimizer.js:1034–1044`，相对路径走 `fetchInternalImage()`。创建内部 request mock 时传了 url/method/socket，但**没有传 headers**。`dist/server/lib/mock-request.js:424` 的默认值是 `headers = {}`。
-3. 因而 `/media/p/...` 内部请求没有原 storefront Host，选店失败；优化器收到非图片响应，再对外返回 **400**：`The requested resource isn't a valid image.`
-4. Sharp **0.35.4** 已从 Next 的依赖范围成功 resolve 且 require；这不是“未安装 Sharp”问题。Node 实跑版本 **v24.15.0**。
-5. 另一个需要未来设计覆盖的 **SOURCE 风险**：Next 的优化缓存键在 `image-optimizer.js:690–697` 只含版本、href、width、quality、mimeType，没有 Host。**本轮没有复现跨店缓存泄漏**：本店优化本身已失败，无法形成有效 warm-cache，所以缓存隔离实测为 NOT_RUN。不能靠补一个 Host 就直接放行。
+## 必跑门禁（最终源码实跑）
 
-这里证明的是**本单所指定的相对 `/media/**` 方案 A 不成立**，不推断所有纯前端方案都不可能。是否另行评估其他选店/缓存设计或方案 B，由集成者裁决后重新定界；本单没有增加后端工作。
+工作目录均为本工作区。表中退出码来自实际进程，不把构建成功当浏览器通过。
 
-### 同 fixture、390px 首屏对比
-
-对象：`https://shop.example/zh-TW/products`（本机合成 TLS edge）；390×844、DPR 2、每阶段 3 个新 browser context。
-fixture SHA256：`3634d2aea38ce21150a00946c082e299f76234b576a5a3f0d31c8cff29d2f764`。
-
-| 阶段 | 首屏成功图片 body 字节/次 | 成功加载 | 结论 |
-|---|---:|---:|---|
-| 原生 img，初始基线 | 64,754 / 64,754 / 64,754 | 4/4 | `before-initial.json` |
-| next/image 方案 A | 0 / 0 / 0 | 0/4 | 每张返回 400，另有 172 字节错误正文/次；**不是节省 100%** |
-| 撤回后恢复确认 | 64,754 / 64,754 / 64,754 | 4/4 | `before.json`，恢复正常 |
-
-测量只统计初始 viewport 内实际图片的成功 HTTP 响应正文，并按 currentSrc 去重；不统计整页预加载或 HTTP header。原始 JSON 保留每个资源的 URL、状态、字节和 SHA256。
-**70% 降幅 gate：FAIL；有效降幅为 null。LCP 非劣化：NOT_VERIFIED**，破图时的文字/空框 paint 不能与原图 LCP 比较。三轮时间原值见 `COMMANDS.md` 和 JSON；没有夸大噪声样本。
-
-## 门禁实跑
-
-| 命令 | 退出码 | 判定 |
+| 命令 | 退出码 | 证据 / 层级 |
 |---|---:|---|
-| `bash scripts/dev/test-node.sh` | **0** | 270 PASS / 0 FAIL / 0 SKIP；另行声明的 R04 二进制测试因变量未配置 NOT_RUN。 |
-| `pnpm --filter storefront exec tsc --noEmit` | **0** | 恢复后的源代码通过。 |
-| `bash scripts/dev/check-gates.sh` | **0** | 55 个模式有登记，现有跟踪测试有执行入口。 |
-| `bash scripts/dev/test-local.sh --browser-storefront` | **NOT_RUN** | G1 失败后按停止条件中止，不以自制 MOCK probe 替代。 |
-| `bash scripts/dev/test-local.sh --browser-catalog-media` | **NOT_RUN** | 同上。 |
-| `bash scripts/dev/test-local.sh --browser-storefront-publish` | **NOT_RUN** | 同上。 |
-| 原始 / 方案 A / 恢复后 `pnpm run build:storefront` | **0 / 0 / 0** | 构建通过不等于图片工作。 |
-| 原图 / A / 恢复后 image-spike | **0 / 1 / 0** | 真实本地浏览器 + Next，Go 为 MOCK；不是 PG/生产通过。 |
-| `node --check output/storefront-r5/image-spike.mjs` | **0** | 包含最后加入的 phase/LCP guard 的最终脚本语法检查。 |
+| `bash scripts/dev/test-node.sh` | **0** | `test-node-final-rerun.log`；273 PASS，0 FAIL。R04 二进制测试单独 NOT_RUN，见下。 |
+| `pnpm --filter storefront exec tsc --noEmit` | **0** | `tsc-final-rerun.log`（成功为空输出）。 |
+| `bash scripts/dev/check-gates.sh` | **0** | `check-gates-accepted.log`；55 个模式；新增测试已进入 Git index 后检查。 |
+| `bash scripts/dev/test-local.sh --browser-storefront` | **0** | `browser-storefront-accepted.log`；SFR01–09，真实 Go / 隔离 PG / production Next，本机合成 TLS edge。 |
+| `bash scripts/dev/test-local.sh --browser-catalog-media` | **0** | `browser-catalog-media-accepted.log`；20 cases，zh-TW/en × 桌面/390px；真实 Go/PG，MOCK IdP。 |
+| `bash scripts/dev/test-local.sh --browser-storefront-publish` | **0** | `browser-storefront-publish-accepted.log`；23 cases，真实 Go/PG，MOCK IdP，无 owner-seeded publication/domain。 |
 
-全部命令、证据文件、边界和前置 harness 失败详见 [COMMANDS.md](./COMMANDS.md)。最终脚本新增的 phase/LCP 防误判断言仅语法检查，未为了该 guard 再重启已停止的方案 A；不隐瞒这一 NOT_RUN。
+真实浏览器详细工件相对于 worktree：
+
+- `output/playwright/storefront/20261002T084805.218244000`
+- `output/playwright/catalog-media/20261002T084833.191939000`
+- `output/playwright/storefront-publish-1598106694`
+
+### 红→绿及补充验收
+
+- `node --experimental-strip-types --test apps/storefront/tests/storefront-r5.test.mjs`：
+  初次 **1**（G3/G4 两个断言失败，`red-g3-g4.log`）→ 最终 **0**（3 PASS，`green-g3-g4-accepted.log`）。
+  单测验证排当前/去重/空系列与空分类；**不宣称纯函数测试证明数据库租户隔离**。
+- 真实 SFR04 额外断言同系列不含当前、draft、retired；无系列隐藏。SFR03 额外检查 390px 分类与页面均无横向溢出。
+- 全量 MOCK：
+  `LC_SHOP_EVIDENCE="$PWD/output/storefront-r5/mock-sticky-green" LC_R5_SHOTS="$PWD/output/storefront-r5" node tests/storefront/shop-gate.mjs`
+  → **0**，`browser-r5-sticky-green.log`：SF01–12 全过，再通过 R5 隐藏/空分类、撤回商品、foreign Host、明确 payment_modes/分页/503/不 bootstrap、三语指南和图库检查。
+- 额外转账真实链：
+  `bash scripts/dev/test-local.sh --browser-checkout-offline` → **0**，`browser-checkout-offline.log`；
+  本地真实 Go/PG 合成订单、模拟身份，无 PSP/真实付款。三语中的 zh-TW/en、桌面/390px 检查转账提示入口；截图来自 `output/playwright/checkout-offline/20261002T083523.246847000`。
+  此补充链在最后 ProductBuy 快速滚动修复前运行，BankTransfer 源码此后未改。
+- 最终截图补捕：
+  `LC_R5_ONLY=1 LC_SHOP_EVIDENCE="$PWD/output/storefront-r5/captures-settled" LC_R5_SHOTS="$PWD/output/storefront-r5" node tests/storefront/shop-gate.mjs`
+  → **0**，`browser-captures-settled.log`。它仅跑 R5，输出 cases=0 指没有重复 SF01–12；不拿它代替全量门禁。
+
+## 实测缺陷、失败记录与复核
+
+1. 独立源码审查指出指南误混入商家政策草稿、退款标签混同退货、options 未翻页、图库可访问语义缺 role；均已修复并定向复核无剩余 P1。Humaux：`66f4db6f-f93e-4a2f-bbee-4d63af3e63ac`。
+2. 全 MOCK 暴露既有 ProductBuy 的 IntersectionObserver 漏掉快速跳滚：actions 从视口下方直接到上方，两端均不相交，可能无回调。独立反例记录 bottom=-1221.75、scrollY=2320、无浏览器错误但无 sticky；`sticky-red.log` **1** 与 `sticky-red/sticky-position.json` 保留。
+   改为 passive scroll/resize + rAF 每帧一次位置测量，初始化及清理齐全；全量 MOCK 转 **0**。原可见性/页脚遮挡断言全部保留，测试增加真正滚过 actions 的前置断言；没有改阈值。独立根因复核：`5673d07c-cdc3-4577-9397-625f1de30833`。
+3. 早期 `browser-r5-mock.log` 的配送字段超时未单独证明根因；后续同一 SF05/SF11 全量通过。早期 `browser-r5-full-{final,confirmed}.log` 的底栏失败由上述反例闭环。
+4. 初期新增防诈骗链接断言把页脚当前语言入口也算入重复链接，已精确限定政策导航且仍断言恰好一个；保留 `mock-diagnostic/` 的 DOM/错误/截图。早期类型收窄报错、启动/流式渲染等待失败也保留日志；最终类型检查及完整门禁通过。
+5. impeccable audit-first 检查重复结构；复用现有卡片、横向产品轨道及原生 dialog，不引入新组件库。一次机械 detector 退出 **2**，仅既有 `sf-free__bar` 的 width transition 警告（`design-detect.json`），该行本单未改；不是全站“零问题”声明。
+6. 独立视觉复核 disposition **ship（仅本次视觉范围）**：首轮 9 张首屏/图库、补充 12 张页底/安全/银行截图已检查，原 recapture 覆盖项解除，无新增视觉修改。英文长文继续向下滚动；不代表真实设备或生产行为复验。reviewer 已存 Humaux research「storefront-r5 独立视觉终审补充：原 recapture 覆盖项解除」。
 
 ## 截图
 
-以下 **4 张 after 截图是失败诊断**，不代表已实现视觉稿 09。尺寸为 PNG 实际 CSS 像素（非 2× DPR 导出），已检查：
+PNG 实际像素和 SHA256 见 `screenshots-current.json`；当前 UI 共 21 张，均在本目录：
 
-- `after-products-zh-TW-390x844.png`
-- `after-products-en-390x844.png`
-- `after-products-zh-TW-1586x992.png`
-- `after-products-en-1586x992.png`
-- `before-products-zh-TW-390x844.png`：撤回并重建后的正常原图对照。
+- `product-{zh-TW,en}-{390x844,1586x992}.png`：商品页四组合。
+- `products-{zh-TW,en}-{390x844,1586x992}.png`：列表页四组合。
+- `gallery-en-desktop.png`：1586×992 原生放大。
+- `{assurance,related,footer,anti-fraud}-{zh-TW,en}-390x844.png`：补齐页底状态。
+- `bank-safety-{zh-TW,en}-{mobile,desktop}.png`：额外转账提示；mobile 390×844，已有银行门禁 desktop 1440×900（不替代上面的必需 1586×992 截图）。
+- 页面使用合成商品/订单 fixture，不是生产客户数据。橙色截图来自隔离 fixture 的商家主题；不会强改已有商家的品牌色。英文 UI 保留商家输入的中文商品文案是既有契约。
+- 原 `after-products-*.png` 是 **G1 破图诊断**，不得当当前 UI 验收图。历史 `COMMANDS.md` 也仅记录 G1 阶段。
 
-没有为了凑视觉验收改 fixture 的商家名称/商品内容、CSS 或主题；原 fixture 的绿色主题不是本单承诺落地的橙色稿。
+## G1 历史性能证据与延期
 
-## 审计、独立复核与清理
+同一原 fixture、390×844，原图三轮均 64,754 bytes / 4 张成功；A 三轮 0 张成功、优化请求 400；恢复原图后仍 64,754 bytes / 4 张成功。**0 bytes 是失败，不是压缩收益**。原始 `before-initial.json`、`after.json`、`before.json` 和旧证据提交保留。方案 B 性能收益、本次新 UI 图片性能对比与 LCP 非劣化均 **NOT_RUN / NOT_VERIFIED**，不得沿用旧 fixture 的结果冒充后端 B 通过。
 
-- impeccable audit-first：先读现有 Card/Gallery、shop.css 和模板真实数据关系；商品网格重复是目录本身的语义，不据此新增卡片或重复 CTA。发现原图无尺寸变体的性能缺口；本轮新问题 P1 为优化后破图。G1 失败后未展开 G2–G8 的全页面 A11y/视觉评分。
-- ponytail / frontend-architect：复用现有 fixture、原生 Next 路由与已装 Sharp，没有引入转换服务、loader 框架或依赖。试验失败后未留下补丁绕路。
-- 机械 detector 退出 0（`ui-detector-trial.json`），但它不能证明网络图片可用；不作为放行依据。
-- 主执行：Codex root；运行时没有向本单暴露可核实的 root 精确模型名/推理档位，不臆填。只读独立审查：`r5_image_audit`，explorer，明确指定 **gpt-6-luna / medium**，同一基线，只读、无递归、无进程或文件写入。
-- 独立证据复核 Humaux：`3132b690-abeb-4238-a36e-821feb2cc534`，标题 `R5 G1 Option A runtime failure and independent probe review`。早期 Sharp 误判已更正并软覆盖。
-- 子进程/端口/browser/API/edge/自建 TLS 目录均由 probe 的 finally 关闭回收；保留失败记录。没有启动 PG 容器、没有占用/绕过机器级 PG gate 锁，没有清共享缓存。
-- Humaux 已存失败结论，画布 `agent:codex-storefront-r5` 明确 BLOCKED。该单由 Claude 决定后续范围；不能把本报告当“六项 UI 全部完成”。
+## NOT_RUN / 局限 / 交接
+
+- G1 B 全部后端实现及尺寸/跨 Host 缓存验收：DEFERRED 给后端单元。
+- SANDBOX / LIVE 支付、生产部署、DNS/TLS/Caddy、真实买家或真实物流：NOT_RUN。
+- Safari/WebKit、Firefox、实体手机、真实辅助技术：NOT_RUN；本轮 Chromium + 390px viewport，另有旧门禁 320px。
+- zh-CN 文案/路由已功能与单测验证；zh-CN 独立截图 NOT_RUN（派单只要求 zh-TW/en）。
+- R04 livekit runner：`COMMERCE_R04_LIVEKIT_BINARY` 未配置，NOT_RUN；不涉及本 UI 单元。
+- 第二个**已发布**真实租户商品全生命周期隔离：本单未新增 Go fixture，NOT_RUN；有公共接口作用域源码核查、真实 draft/retired 排除和 MOCK foreign Host 拒绝，不扩大宣称覆盖。
+- 同系列只取首个系列；公共接口不可用则隐藏。G2 无会话或方式接口不可用时不显示方式，是有意 fail-closed，不伪造默认选项。
+- 主执行 Codex root（UI 写入）；运行时未暴露可核实的精确 root 模型/档位，不臆填。只读探索/源码复核：r5_gate_paths、r5_image_audit，explorer，gpt-6-luna / medium；独立视觉：r5_visual_review，explorer，gpt-6.1-sol / medium。均无递归委派、无文件写入，基线同本单。
+- write_paths：本 worktree 的 `apps/storefront/**`、`tests/storefront/**`、`output/storefront-r5/**`；测试脚本在本 worktree 下生成隔离构建/浏览器证据。没有改 contracts / Go / SQL / OrderFlow。
+- 进程、浏览器、合成 edge 和 PG 容器由脚本 finally/trap 回收；收尾未见属于 storefront-r5 的监听进程，未清理其他任务资源；失败证据全部保留。未删除用户数据或共享缓存。
+- 代码增量索引已提交，ProductAssurance / relatedCards / CollectionChips / ProductGallery / BankTransfer / ProductBuy 已关联决策/修复记忆。Humaux 与本单画布随交付更新；Claude 仍负责独立集成终审与发布决策。

@@ -1,0 +1,3 @@
+browser engine: chromium
+PASS R5 extra MOCK: categories hidden/empty, related excludes current/withdrawn, foreign Host, assurance explicit-only/failure/no-bootstrap, three-language safety page, gallery, 8 exact-size captures
+engine=chromium cases=0 mode=start MOCK
