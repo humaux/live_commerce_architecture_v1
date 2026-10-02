@@ -80,7 +80,9 @@ export async function requestDomain(
     if (result.error !== null || result.uncertain || result.value === null || result.value === undefined)
       return { ok: false, code: result.error?.code ?? "retry_later", uncertain: result.uncertain };
     try {
-      return { ok: true, result: parseDomainRequest(result.value) };
+      const parsed = parseDomainRequest(result.value);
+      if (parsed.origin !== `https://${hostname}`) throw new Error("storefront_shape");
+      return { ok: true, result: parsed };
     } catch {
       return { ok: false, code: "retry_later", uncertain: true };
     }

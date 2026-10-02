@@ -121,9 +121,9 @@ export function parseDomainRequest(value: unknown): DomainRequestResult {
     typeof item.version !== "number" || !Number.isSafeInteger(item.version) || item.version < 1 ||
     item.state !== "REQUESTED" ||
     typeof item.origin !== "string" || !originShape.test(item.origin) ||
-    typeof dns.txt_name !== "string" || !dns.txt_name.startsWith("_lc-verify.") ||
+    typeof dns.txt_name !== "string" || dns.txt_name !== `_lc-verify.${item.origin.slice(8)}` ||
     typeof dns.txt_value !== "string" || !tokenShape.test(dns.txt_value) ||
-    typeof dns.cname_target !== "string" || typeof dns.apex !== "boolean"
+    typeof dns.cname_target !== "string" || !originShape.test(`https://${dns.cname_target}`) || typeof dns.apex !== "boolean"
   )
     throw new Error("storefront_shape");
   return {

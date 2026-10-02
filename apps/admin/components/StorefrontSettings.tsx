@@ -2,7 +2,7 @@
 
 // Settings -> 网店发布 card (mounted by SettingsWizard.tsx below the setup steps): shows whether the store is published,
 // the current serving origin (read-only), and a publish / unpublish button with an inline confirm. R5 store-domains
-// (Decision 3) adds the merchant self-service domain list on the same card: GET/POST storefront/domains and POST
+// (Decision 3) adds an independent merchant domain settings section: GET/POST storefront/domains and POST
 // storefront/domains/{suspend,detach} (lib/storefront-client.ts -> Go internal/httpapi/storefront.go). A GET 403 hides the
 // card (no integration:read); a stale version (409 conflict) reloads it. Nothing is optimistic: publication and move writes
 // re-GET. The domain-request response is the one exception: its one-time DNS instructions (TXT token) appear only there,
@@ -32,6 +32,11 @@ function hostOf(origin: string) {
 }
 
 export function StorefrontSettings({ store, locale }: { store: string; locale: Locale }) {
+  // Do not carry a DNS token, confirmation or uncertain command into another store.
+  return <StorefrontSettingsForStore key={store} store={store} locale={locale} />;
+}
+
+function StorefrontSettingsForStore({ store, locale }: { store: string; locale: Locale }) {
   const sc = storefrontCopy[locale];
   const [load, setLoad] = useState<Load>("loading");
   const [state, setState] = useState<StorefrontState | null>(null);
@@ -49,16 +54,27 @@ export function StorefrontSettings({ store, locale }: { store: string; locale: L
   const [dns, setDns] = useState<DomainRequestResult | null>(null);
   const [moving, setMoving] = useState<{ origin: string; action: "suspend" | "detach" } | null>(null);
   const [moveBusy, setMoveBusy] = useState(false);
+  const [copyNotice, setCopyNotice] = useState("");
+  const [unconfirmed, setUnconfirmed] = useState(false);
+  const [journalReady, setJournalReady] = useState(false);
+  const journalKey = useRef("");
   const pending = useRef<{ key: string; published: boolean } | null>(null);
-  const domainKey = useRef("");
+  const domainCommand = useRef<{ key: string; hostname: string } | null>(null);
+  const moveCommand = useRef<{ key: string; origin: string; action: "suspend" | "detach" } | null>(null);
+  const domainBusy = useRef(false);
 
   // The session fence captured when the card loads: writeSettings refuses to send if the session changed since.
   useEffect(() => {
     let live = true;
-    sessionBoundary().then(
-      (value) => live && setBoundary(value),
-      () => live && setBoundary(""),
-    );
+    sessionBoundary().then((value) => {
+      if (!live) return;
+      setBoundary(value);
+      journalKey.current = `commerce-domain-pending:${store}:${value}`;
+      try {
+        setUnconfirmed(sessionStorage.getItem(journalKey.current) !== null);
+        setJournalReady(true);
+      } catch { setJournalReady(false); }
+    }, () => { if (live) setBoundary(""); });
     return () => {
       live = false;
     };
@@ -68,6 +84,7 @@ export function StorefrontSettings({ store, locale }: { store: string; locale: L
     const active = new AbortController();
     readStorefront(store, active.signal).then(
       (value) => {
+        if (active.signal.aborted) return;
         setState(value);
         setLoad("ready");
       },
@@ -84,6 +101,7 @@ export function StorefrontSettings({ store, locale }: { store: string; locale: L
     const active = new AbortController();
     readDomains(store, active.signal).then(
       (value) => {
+        if (active.signal.aborted) return;
         setDomains(value);
         setDomainsLoad("ready");
       },
@@ -128,27 +146,56 @@ export function StorefrontSettings({ store, locale }: { store: string; locale: L
     return value.length <= 253 && hostnameShape.test(value);
   }
 
+  function beginDomainWrite() {
+    // The current Go endpoints do NOT deduplicate keys. Preserve an unresolved
+    // write across reloads; never offer a blind replay, even with the same key.
+    if (!journalReady || unconfirmed || !journalKey.current) return false;
+    try {
+      if (sessionStorage.getItem(journalKey.current) !== null) {
+        setUnconfirmed(true);
+        return false;
+      }
+      sessionStorage.setItem(journalKey.current, "pending");
+      return true;
+    } catch { setJournalReady(false); return false; }
+  }
+
+  function endDomainWrite(uncertain: boolean) {
+    setUnconfirmed(uncertain);
+    if (!uncertain) {
+      try { sessionStorage.removeItem(journalKey.current); }
+      catch { setUnconfirmed(true); setJournalReady(false); }
+    }
+  }
+
   async function submitDomain(event: FormEvent) {
     event.preventDefault();
     const proposed = hostname.trim().toLowerCase();
-    if (requesting || moveBusy) return;
+    if (domainBusy.current) return;
+    if (moveCommand.current) { setRequestProblem(sc.uncertain); return; }
     setRequestProblem("");
     if (!validHostname(proposed)) {
       setRequestProblem(sc.domains.errors.invalid_request);
       return;
     }
-    if (!domainKey.current) domainKey.current = `storefront-domain-${crypto.randomUUID()}`;
+    if (!beginDomainWrite()) return;
+    domainCommand.current ??= { key: `storefront-domain-${crypto.randomUUID()}`, hostname: proposed };
+    domainBusy.current = true;
     setRequesting(true);
-    const result = await requestDomain(store, domainKey.current, proposed, boundary);
+    const result = await requestDomain(store, domainCommand.current.key, proposed, boundary);
+    endDomainWrite(!result.ok && result.uncertain);
+    domainBusy.current = false;
     setRequesting(false);
     if (result.ok) {
+      domainCommand.current = null;
       setDns(result.result);
+      setCopyNotice("");
       setHostname("");
       setTick((value) => value + 1); // the list now shows the REQUESTED row
     } else {
-      domainKey.current = "";
+      if (!result.uncertain) domainCommand.current = null;
       setDns(null);
-      if (result.uncertain) setRequestProblem(sc.uncertain);
+      if (result.uncertain) setRequestProblem(sc.domains.unconfirmed);
       else if (result.code === "forbidden") setRequestProblem(sc.domains.errors.forbidden);
       else setRequestProblem(sc.domains.errors[result.code] ?? sc.domains.errors.unavailable);
       setTick((value) => value + 1); // the server may have applied it; re-read either way
@@ -156,12 +203,26 @@ export function StorefrontSettings({ store, locale }: { store: string; locale: L
   }
 
   async function confirmMove() {
-    if (moveBusy || !moving) return;
+    if (domainBusy.current || !moving) return;
+    if (domainCommand.current) { setRequestProblem(sc.uncertain); return; }
+    if (!beginDomainWrite()) return;
+    if (moveCommand.current && (moveCommand.current.origin !== moving.origin || moveCommand.current.action !== moving.action)) {
+      setMoving({ origin: moveCommand.current.origin, action: moveCommand.current.action });
+      return;
+    }
+    moveCommand.current ??= { key: `storefront-move-${crypto.randomUUID()}`, ...moving };
+    domainBusy.current = true;
     setMoveBusy(true);
     setRequestProblem("");
-    const result = await moveDomain(store, `storefront-move-${crypto.randomUUID()}`, moving.origin, moving.action, boundary);
+    const command = moveCommand.current;
+    const result = await moveDomain(store, command.key, command.origin, command.action, boundary);
+    endDomainWrite(!result.ok && result.uncertain);
+    domainBusy.current = false;
     setMoveBusy(false);
-    setMoving(null);
+    if (result.ok || !result.uncertain) {
+      moveCommand.current = null;
+      setMoving(null);
+    } else { setMoving(null); setRequestProblem(sc.domains.unconfirmed); }
     if (!result.ok && !result.uncertain) {
       if (result.code === "forbidden") setRequestProblem(sc.domains.errors.forbidden);
       else setRequestProblem(sc.domains.errors[result.code] ?? sc.domains.errors.unavailable);
@@ -170,10 +231,12 @@ export function StorefrontSettings({ store, locale }: { store: string; locale: L
   }
 
   const domainRows = domains?.domains ?? [];
+  const domainsLocked = !journalReady || unconfirmed || requesting || moveBusy || domainCommand.current !== null || moveCommand.current !== null;
   const moveable = (row: { state: string }) =>
     row.state === "REQUESTED" || row.state === "OWNERSHIP_PENDING" || row.state === "TLS_PENDING" || row.state === "ACTIVE";
 
   return (
+    <>
     <section className="settings-fields storefront-card" data-testid="storefront-card" aria-labelledby="storefront-title">
       <h2 id="storefront-title" className="settings-section-title settings-subtitle">{sc.title}</h2>
       <p className="settings-note">{sc.intro}</p>
@@ -240,11 +303,17 @@ export function StorefrontSettings({ store, locale }: { store: string; locale: L
       )}
       {problem && <p className="settings-warning" role="alert" data-testid="storefront-problem">{problem}</p>}
       {notice && <p className="message pending" role="status" data-testid="storefront-notice">{notice}</p>}
-
+    </section>
+    {domainsLoad !== "hidden" && <section className="settings-fields storefront-domains-card" data-testid="storefront-domains-card" aria-label={sc.domains.title}>
+      {domainsLoad === "loading" && <p role="status">{sc.loading}</p>}
       {domainsLoad === "ready" && domains && (
         <div className="storefront-domains" data-testid="storefront-domains">
-          <h3 className="settings-subtitle">{sc.domains.title}</h3>
+          <h2 className="settings-section-title settings-subtitle">{sc.domains.title}</h2>
           <p className="settings-note">{sc.domains.intro}</p>
+          {(!journalReady || unconfirmed) && <div className="settings-warning" role="status" data-testid="storefront-domain-unconfirmed">
+            <p>{unconfirmed ? sc.domains.unconfirmed : sc.domains.storageUnavailable}</p>
+            <button type="button" onClick={() => setTick(value => value + 1)}>{sc.domains.refresh}</button>
+          </div>}
           <ul className="storefront-domain-list">
             {domainRows.map((row) => (
               <li key={row.origin} className="storefront-domain-row" data-testid="storefront-domain-row" data-state={row.state}>
@@ -261,13 +330,13 @@ export function StorefrontSettings({ store, locale }: { store: string; locale: L
                 )}
                 <div className="storefront-domain-actions">
                   {moveable(row) && (
-                    <button type="button" data-testid="storefront-domain-suspend" disabled={moveBusy}
+                    <button type="button" data-testid="storefront-domain-suspend" disabled={domainsLocked}
                       onClick={() => { setRequestProblem(""); setMoving({ origin: row.origin, action: "suspend" }); }}>
                       {sc.domains.suspend}
                     </button>
                   )}
                   {row.state !== "DETACHED" && (
-                    <button type="button" data-testid="storefront-domain-detach" disabled={moveBusy}
+                    <button type="button" data-testid="storefront-domain-detach" disabled={domainsLocked}
                       onClick={() => { setRequestProblem(""); setMoving({ origin: row.origin, action: "detach" }); }}>
                       {sc.domains.detach}
                     </button>
@@ -290,10 +359,10 @@ export function StorefrontSettings({ store, locale }: { store: string; locale: L
                 placeholder={sc.domains.hostnamePlaceholder}
                 autoCapitalize="none"
                 spellCheck={false}
-                disabled={requesting || moveBusy}
+                disabled={domainsLocked}
               />
             </label>
-            <button className="primary" type="submit" data-testid="storefront-domain-submit" disabled={requesting || moveBusy}>
+            <button className="primary" type="submit" data-testid="storefront-domain-submit" disabled={domainsLocked}>
               {requesting ? sc.domains.requesting : sc.domains.request}
             </button>
           </form>
@@ -314,7 +383,7 @@ export function StorefrontSettings({ store, locale }: { store: string; locale: L
                 {dns.dns.apex ? (
                   <div>
                     <dt>{sc.domains.dnsApex}</dt>
-                    <dd><code data-testid="storefront-dns-apex">{hostOf(dns.origin)} → {dns.dns.cname_target}</code></dd>
+                    <dd><code data-testid="storefront-dns-apex">{hostOf(dns.origin)}</code></dd>
                     <dd className="settings-note">{sc.domains.dnsApexNote}</dd>
                   </div>
                 ) : (
@@ -325,14 +394,24 @@ export function StorefrontSettings({ store, locale }: { store: string; locale: L
                 )}
               </dl>
               <p className="settings-note">{sc.domains.verifying}</p>
+              <button type="button" data-testid="storefront-dns-copy" onClick={async () => {
+                try {
+                  const addressRecord = dns.dns.apex ? sc.domains.dnsApexNote : `CNAME ${hostOf(dns.origin)} → ${dns.dns.cname_target}`;
+                  const records = `TXT ${dns.dns.txt_name}\n${dns.dns.txt_value}\n${addressRecord}`;
+                  await navigator.clipboard.writeText(records);
+                  setCopyNotice(sc.domains.copied);
+                } catch { setCopyNotice(sc.domains.copyFailed); }
+              }}>{sc.domains.copy}</button>
+              <p role="status" className="settings-note">{copyNotice}</p>
             </div>
           )}
 
           {moving && (
             <div className="settings-pending" role="alertdialog" aria-label={sc.domains[moving.action]} data-testid="storefront-domain-confirm">
               <p>{moving.action === "suspend" ? sc.domains.confirmSuspend : sc.domains.confirmDetach}</p>
+              <p className="storefront-domain-origin"><strong>{moving.origin}</strong></p>
               <div className="settings-actions">
-                <button type="button" disabled={moveBusy} onClick={() => setMoving(null)}>{sc.cancel}</button>
+                <button type="button" disabled={moveBusy || moveCommand.current !== null} onClick={() => setMoving(null)}>{sc.cancel}</button>
                 <button className="primary" type="button" data-testid="storefront-domain-confirm-yes" disabled={moveBusy}
                   onClick={() => void confirmMove()}>
                   {moveBusy ? sc.saving : sc.confirm}
@@ -350,6 +429,7 @@ export function StorefrontSettings({ store, locale }: { store: string; locale: L
           <button type="button" onClick={() => setTick((value) => value + 1)}>{sc.retry}</button>
         </div>
       )}
-    </section>
+    </section>}
+    </>
   );
 }
