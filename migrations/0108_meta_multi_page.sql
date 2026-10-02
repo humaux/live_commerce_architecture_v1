@@ -191,6 +191,10 @@ DECLARE a record; c integration.meta_connections;
 BEGIN
  IF p_page IS NULL OR p_page !~ '^[0-9]{1,40}$' THEN RAISE EXCEPTION 'invalid_request' USING ERRCODE='MC422'; END IF;
  SELECT * INTO a FROM integration.meta_connect_auth(p_hash,p_store,'integration:manage');
+ -- D2 (0100, fixed 0108): serialize with meta_connect_finish on the SAME per-store advisory lock. Without it, a disconnect
+ -- racing a reconnect of the same Page could enqueue its unsubscribe job AFTER finish already superseded the pending jobs but
+ -- BEFORE finish's INSERT: the worker would then DELETE /{page}/subscribed_apps for a Page the DB shows as connected.
+ PERFORM pg_advisory_xact_lock(hashtextextended(jsonb_build_array('meta-connect-store',a.out_tenant,p_store)::text,0));
  SELECT * INTO c FROM integration.meta_connections x WHERE x.tenant_id=a.out_tenant AND x.store_id=p_store AND x.page_id=p_page FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'not_found' USING ERRCODE='MC404'; END IF;
  -- D2 (0100): hand this Page's head sealed token to the claims-worker (the only process that can open it) before it is destroyed here.
@@ -213,4 +217,82 @@ REVOKE ALL ON FUNCTION integration.meta_connect_disconnect(bytea,uuid,text) FROM
 GRANT EXECUTE ON FUNCTION integration.meta_connect_disconnect(bytea,uuid,text) TO commerce_runtime;
 
 COMMENT ON FUNCTION integration.meta_connect_disconnect(bytea,uuid,text) IS
- 'integration owner; caller internal/metaconnect.Service.Disconnect. One transaction for ONE Page: enqueues that Page''s unsubscribe job (0100 D2, a copy of the head sealed token for the claims-worker), destroys every credential head/version of its bindings, disables its routes, deletes its connection row; the caller then disables the bindings. Refusals: not_found (MC404), invalid_request (MC422).';
+ 'integration owner; caller internal/metaconnect.Service.Disconnect. One transaction for ONE Page, serialized with meta_connect_finish on the per-store advisory lock (0100 D1): enqueues that Page''s unsubscribe job (0100 D2, a copy of the head sealed token for the claims-worker), destroys every credential head/version of its bindings, disables its routes, deletes its connection row; the caller then disables the bindings. Refusals: not_found (MC404), invalid_request (MC422).';
+
+-- ---------------------------------------------------------------------------------------
+-- D3 (B1): live.put_claim_source (0064) — a deactivation may retire a source whose route was
+-- disabled by a Page disconnect. 0064 is released, so the function is CREATE OR REPLACE'd here
+-- (0108, unreleased, edited in place). The only change: an ACTIVE source still requires an
+-- enabled (object, asset) route of this very store, but a deactivation (p_active=false) resolves
+-- to this store's binding even when that route is already disabled — it never relaxes the
+-- tenant/store scope, the principal_holds(live:manage,integration:execute) check, the version CAS
+-- or the private_reply page-credential check, and a NEW (active) source still needs an enabled route.
+-- ---------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION live.put_claim_source(p_session uuid,p_object text,p_asset text,p_object_id text,
+ p_private_reply boolean,p_locale text,p_active boolean,p_expected_version bigint)
+RETURNS uuid LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE v_tenant uuid; v_store uuid; v_principal uuid; v_bindings uuid[]; b record; v_id uuid; v_version bigint;
+BEGIN
+ IF current_setting('transaction_isolation')<>'read committed'
+  OR coalesce(current_setting('app.tenant_id',true),'') !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+  OR coalesce(current_setting('app.store_id',true),'') !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+  OR coalesce(current_setting('app.principal_id',true),'') !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+  OR nullif(current_setting('app.buyer_id',true),'') IS NOT NULL
+  OR p_session IS NULL OR p_object IS NULL OR p_object NOT IN ('page','instagram')
+  OR p_asset IS NULL OR p_asset !~ '^[0-9]{1,40}$' OR p_object_id IS NULL OR p_object_id !~ '^[0-9_]{1,80}$'
+  OR p_private_reply IS NULL OR p_locale IS NULL OR p_locale NOT IN ('zh-TW','zh-CN','en')
+  OR p_active IS NULL OR p_expected_version IS NULL OR p_expected_version<0 OR p_expected_version>=9223372036854775807 THEN
+  RAISE EXCEPTION 'invalid claim source' USING ERRCODE='22023';
+ END IF;
+ v_tenant:=current_setting('app.tenant_id')::uuid;
+ v_store:=current_setting('app.store_id')::uuid;
+ v_principal:=current_setting('app.principal_id')::uuid;
+ IF NOT identity.principal_holds(v_tenant,v_store,v_principal,ARRAY['live:manage','integration:execute']) THEN
+  RAISE EXCEPTION 'claim source access unavailable' USING ERRCODE='PT403';
+ END IF;
+ -- (object, asset) must resolve to this very store's binding; several apps may route one asset, but they must all point at
+ -- one binding. An ACTIVE source additionally requires the route to be enabled; a deactivation (p_active=false) must still
+ -- resolve to this store's binding, but the route may already have been disabled by a Page disconnect (0108 multi-page), so
+ -- its enabled flag is not required then. Scope, ownership, version CAS and private_reply checks are unchanged below.
+ IF p_active THEN
+  SELECT array_agg(DISTINCT r.binding_id) INTO v_bindings FROM meta_inbox.routes r
+   WHERE r.tenant_id=v_tenant AND r.store_id=v_store AND r.object=p_object AND r.asset_id=p_asset AND r.enabled;
+ ELSE
+  SELECT array_agg(DISTINCT r.binding_id) INTO v_bindings FROM meta_inbox.routes r
+   WHERE r.tenant_id=v_tenant AND r.store_id=v_store AND r.object=p_object AND r.asset_id=p_asset;
+ END IF;
+ IF v_bindings IS NULL OR cardinality(v_bindings)<>1 THEN
+  RAISE EXCEPTION 'claim source route mismatch' USING ERRCODE='PT409';
+ END IF;
+ SELECT x.id,x.provider,x.external_asset_id,x.semantic_version,x.enabled INTO b FROM integration.bindings x
+  WHERE x.tenant_id=v_tenant AND x.store_id=v_store AND x.id=v_bindings[1];
+ IF NOT FOUND OR b.provider<>(CASE p_object WHEN 'page' THEN 'facebook' ELSE 'instagram' END)
+  OR b.external_asset_id<>p_asset OR (p_active AND NOT b.enabled) THEN
+  RAISE EXCEPTION 'claim source binding mismatch' USING ERRCODE='PT409';
+ END IF;
+ IF p_private_reply AND NOT EXISTS(SELECT 1 FROM integration.meta_page_heads h
+  WHERE h.tenant_id=v_tenant AND h.store_id=v_store AND h.binding_id=b.id) THEN
+  RAISE EXCEPTION 'claim source has no page credential' USING ERRCODE='PT409';
+ END IF;
+ SELECT s.id,s.version INTO v_id,v_version FROM live.claim_sources s
+  WHERE s.tenant_id=v_tenant AND s.store_id=v_store AND s.session_id=p_session AND s.object=p_object
+   AND s.asset_id=p_asset AND s.source_object_id=p_object_id FOR UPDATE;
+ IF NOT FOUND THEN
+  IF p_expected_version<>0 THEN RAISE EXCEPTION 'claim source version changed' USING ERRCODE='PT409'; END IF;
+  INSERT INTO live.claim_sources(tenant_id,store_id,session_id,platform,binding_id,binding_version,object,asset_id,
+   source_object_id,private_reply,reply_locale,active,version,principal_id)
+  VALUES(v_tenant,v_store,p_session,b.provider,b.id,b.semantic_version,p_object,p_asset,p_object_id,p_private_reply,
+   p_locale,p_active,1,v_principal) RETURNING id INTO v_id;
+ ELSE
+  IF v_version<>p_expected_version THEN RAISE EXCEPTION 'claim source version changed' USING ERRCODE='PT409'; END IF;
+  UPDATE live.claim_sources s SET binding_id=b.id,binding_version=b.semantic_version,private_reply=p_private_reply,
+   reply_locale=p_locale,active=p_active,version=s.version+1,principal_id=v_principal,updated_at=clock_timestamp()
+   WHERE s.tenant_id=v_tenant AND s.store_id=v_store AND s.id=v_id;
+ END IF;
+ RETURN v_id;
+END $$;
+ALTER FUNCTION live.put_claim_source(uuid,text,text,text,boolean,text,boolean,bigint) OWNER TO commerce_claims_writer;
+REVOKE ALL ON FUNCTION live.put_claim_source(uuid,text,text,text,boolean,text,boolean,bigint) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION live.put_claim_source(uuid,text,text,text,boolean,text,boolean,bigint) TO commerce_runtime;
+COMMENT ON FUNCTION live.put_claim_source(uuid,text,text,text,boolean,text,boolean,bigint) IS
+ 'internal/claims (T12 admin route); EXECUTE commerce_runtime only. Merchant-transaction guard, principal_holds(live:manage,integration:execute), route/binding checks (0108: an ACTIVE source needs an enabled route; a deactivation may retire a source whose route a Page disconnect already disabled), CAS on version (0 creates). One active source per (object, asset, object id) globally.';

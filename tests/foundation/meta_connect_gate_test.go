@@ -491,7 +491,9 @@ func TestMetaConnectGateOwnership(t *testing.T) {
 					}
 					winners = i
 				case 409:
-					if r.code() != "page_taken" && r.code() != "already_connected" {
+					// 0108 removed already_connected; the only loser refusal left is page_taken (a tolerated
+					// already_connected would mask a regression that re-introduced the old single-Page refusal).
+					if r.code() != "page_taken" {
 						t.Errorf("round %d: loser %d code %q, want page_taken", round, i, r.code())
 					}
 					for _, id := range []string{f.storeA1, f.storeA2, f.storeB, f.tenantA, f.tenantB} {

@@ -62,7 +62,7 @@ func registerMetaConnectRoutes(mux *http.ServeMux, pool *pgxpool.Pool, svc *meta
 			return
 		}
 		metaConnectLong(w, r, func(ctx context.Context) (any, int, error) {
-			out, err := svc.Pick(ctx, pool, bearerToken(r), r.PathValue("store_id"), in)
+			out, err := svc.Pick(ctx, pool, bearerToken(r), r.PathValue("store_id"), r.Header.Get("Idempotency-Key"), in)
 			return out, http.StatusCreated, err
 		})
 	}))
@@ -75,7 +75,7 @@ func registerMetaConnectRoutes(mux *http.ServeMux, pool *pgxpool.Pool, svc *meta
 		}
 		metaConnectLong(w, r, func(ctx context.Context) (any, int, error) {
 			return map[string]bool{"disconnected": true}, http.StatusOK,
-				svc.Disconnect(ctx, pool, bearerToken(r), r.PathValue("store_id"), in.PageID)
+				svc.Disconnect(ctx, pool, bearerToken(r), r.PathValue("store_id"), r.Header.Get("Idempotency-Key"), in.PageID)
 		})
 	}))
 	for _, suffix := range fallbacks {
