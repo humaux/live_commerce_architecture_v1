@@ -45,7 +45,8 @@ export type TransferView = {
 // refresh button, the order only reloads on "Refresh order". After the shop confirmed the payment (or the window ended) the order read
 // can still say AWAITING_TRANSFER, and the page then headed "Waiting for bank transfer" above "The shop confirmed your payment". A settled
 // transfer is the fresher fact: the heading follows it until the order read agrees. REFUNDED_OFFLINE only follows a confirmation.
-export type CommercialState = "DRAFT" | "AWAITING_PAYMENT" | "AWAITING_TRANSFER" | "CONFIRMED" | "CANCELLED";
+// AWAITING_COLLECTION (pay_at_pickup / home-cod cash on delivery) passes through settledCommercialState unchanged.
+export type CommercialState = "DRAFT" | "AWAITING_PAYMENT" | "AWAITING_TRANSFER" | "AWAITING_COLLECTION" | "CONFIRMED" | "CANCELLED";
 export function settledCommercialState(commercial: CommercialState, transfer: TransferState | null): CommercialState {
   if (commercial !== "AWAITING_TRANSFER") return commercial;
   if (transfer === "CONFIRMED" || transfer === "REFUNDED_OFFLINE") return "CONFIRMED";

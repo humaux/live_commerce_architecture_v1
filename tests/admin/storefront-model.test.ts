@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { parseStorefront } from "../../apps/admin/lib/storefront-model.ts";
+import {
+  parseDomainRequest,
+  parseStorefront,
+  parseStorefrontDomains,
+} from "../../apps/admin/lib/storefront-model.ts";
 
 // Synthetic values only. Contract: published-storefront-resolver-v1 "Writer (R3)" (Go storefrontadmin.State).
 const domain = { origin: "https://shop.example.com", valid_until: "2027-01-01T00:00:00Z", serving: true };
@@ -31,4 +35,54 @@ test("rejects anything outside the closed shape", () => {
     { published: false, version: 1, domains: [{ ...domain, serving: "true" }] },
   ];
   for (const value of bad) assert.throws(() => parseStorefront(value), /storefront_shape/, JSON.stringify(value));
+});
+
+// R5 store-domains (Decision 3): the merchant domain read + write shapes (Go storefrontdomains.Read/Request).
+const token = "A".repeat(43);
+const domainRow = { origin: "https://shop.example.com", kind: "custom", state: "REQUESTED", version: 1, token, verify_deadline: "2027-01-01T00:00:00Z", serving: false };
+const domainRequest = {
+  domain_id: "11111111-1111-4111-8111-111111111111",
+  version: 1,
+  state: "REQUESTED",
+  origin: "https://shop.example.com",
+  dns: { txt_name: "_lc-verify.shop.example.com", txt_value: token, cname_target: "stores.xgdwm.com", apex: false },
+};
+
+test("parses the domain list and the one-time request instructions", () => {
+  assert.deepEqual(parseStorefrontDomains({ domains: [domainRow] }), { domains: [domainRow] });
+  assert.equal(
+    parseStorefrontDomains({ domains: [{ ...domainRow, state: "ACTIVE", token: null, verify_deadline: null, serving: true }] }).domains[0].serving,
+    true,
+  );
+  assert.deepEqual(parseDomainRequest(domainRequest), domainRequest);
+  assert.equal(parseDomainRequest({ ...domainRequest, dns: { ...domainRequest.dns, apex: true } }).dns.apex, true);
+});
+
+test("rejects domain shapes outside the closed contract", () => {
+  const badDomains: unknown[] = [
+    null, [], "x", {},
+    { domains: [{ origin: domainRow.origin, state: domainRow.state, version: domainRow.version }] }, // missing token/verify_deadline/serving keys on the row
+    { domains: [{ ...domainRow, extra: 1 }] },
+    { domains: [{ ...domainRow, state: "BROKEN" }] },
+    { domains: [{ ...domainRow, version: 0 }] },
+    { domains: [{ ...domainRow, origin: "http://shop.example.com" }] },
+    { domains: [{ ...domainRow, token: "short" }] },
+    { domains: [{ ...domainRow, verify_deadline: "tomorrow" }] },
+    { domains: [{ ...domainRow, serving: "true" }] },
+    { domains: Array.from({ length: 101 }, () => domainRow) },
+  ];
+  for (const value of badDomains) assert.throws(() => parseStorefrontDomains(value), /storefront_shape/, JSON.stringify(value));
+  const badRequests: unknown[] = [
+    null, [], "x", {},
+    { ...domainRequest, extra: 1 },
+    { ...domainRequest, domain_id: "not-a-uuid" },
+    { ...domainRequest, version: 0 },
+    { ...domainRequest, state: "ACTIVE" },
+    { ...domainRequest, origin: "https://Shop.example.com" },
+    { ...domainRequest, dns: { ...domainRequest.dns, txt_name: "verify.shop.example.com" } },
+    { ...domainRequest, dns: { ...domainRequest.dns, txt_value: "short" } },
+    { ...domainRequest, dns: { ...domainRequest.dns, cname_target: 7 } },
+    { ...domainRequest, dns: { ...domainRequest.dns, apex: "true" } },
+  ];
+  for (const value of badRequests) assert.throws(() => parseDomainRequest(value), /storefront_shape/, JSON.stringify(value));
 });

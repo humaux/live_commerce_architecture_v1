@@ -21,6 +21,7 @@ const (
 	dsnSentinel1 = "sentinel-intake-7c1"
 	dsnSentinel2 = "sentinel-worker-7c2"
 	dsnSentinel3 = "sentinel-retention-7c3"
+	dsnSentinel4 = "sentinel-storeverify-7c4"
 )
 
 // syntheticDSN builds a test-only DSN with net/url so no source line is a credential-shaped
@@ -37,6 +38,8 @@ func testEnv() map[string]string {
 		"COMMERCE_CLAIMS_INTAKE_DATABASE_URL":    syntheticDSN("intake", dsnSentinel1),
 		"COMMERCE_WORKER_DATABASE_URL":           syntheticDSN("worker", dsnSentinel2),
 		"COMMERCE_RETENTION_JOB_DATABASE_URL":    syntheticDSN("retention", dsnSentinel3),
+		"COMMERCE_STORE_VERIFY_DATABASE_URL":     syntheticDSN("storeverify", dsnSentinel4),
+		"LC_STORE_BASE_DOMAIN":                   "example.com",
 		"COMMERCE_CLAIMS_REPLY_LINK_KEY":         b64(7),
 		"COMMERCE_META_PAGE_TOKEN_ACTIVE_KEY_ID": "pt-1",
 		"COMMERCE_META_PAGE_TOKEN_KEYS_JSON":     `{"keys":[{"id":"pt-1","key_base64":"` + b64(8) + `"}]}`,
@@ -99,11 +102,14 @@ func TestOnlyDocumentedVariablesAreRead(t *testing.T) {
 
 func TestConfigRejections(t *testing.T) {
 	bad := map[string]func(map[string]string){
-		"missing intake dsn":    func(v map[string]string) { delete(v, "COMMERCE_CLAIMS_INTAKE_DATABASE_URL") },
-		"blank worker dsn":      func(v map[string]string) { v["COMMERCE_WORKER_DATABASE_URL"] = "  " },
-		"missing retention dsn": func(v map[string]string) { delete(v, "COMMERCE_RETENTION_JOB_DATABASE_URL") },
-		"huge dsn":              func(v map[string]string) { v["COMMERCE_WORKER_DATABASE_URL"] = strings.Repeat("x", 8193) },
-		"missing link key":      func(v map[string]string) { delete(v, "COMMERCE_CLAIMS_REPLY_LINK_KEY") },
+		"missing intake dsn":       func(v map[string]string) { delete(v, "COMMERCE_CLAIMS_INTAKE_DATABASE_URL") },
+		"blank worker dsn":         func(v map[string]string) { v["COMMERCE_WORKER_DATABASE_URL"] = "  " },
+		"missing retention dsn":    func(v map[string]string) { delete(v, "COMMERCE_RETENTION_JOB_DATABASE_URL") },
+		"missing store verify dsn": func(v map[string]string) { delete(v, "COMMERCE_STORE_VERIFY_DATABASE_URL") },
+		"blank store verify dsn":   func(v map[string]string) { v["COMMERCE_STORE_VERIFY_DATABASE_URL"] = "  " },
+		"bad base domain":          func(v map[string]string) { v["LC_STORE_BASE_DOMAIN"] = "Not_A_Host!" },
+		"huge dsn":                 func(v map[string]string) { v["COMMERCE_WORKER_DATABASE_URL"] = strings.Repeat("x", 8193) },
+		"missing link key":         func(v map[string]string) { delete(v, "COMMERCE_CLAIMS_REPLY_LINK_KEY") },
 		"short link key": func(v map[string]string) {
 			v["COMMERCE_CLAIMS_REPLY_LINK_KEY"] = base64.StdEncoding.EncodeToString([]byte("short"))
 		},
@@ -136,7 +142,7 @@ func TestConfigNeverRendersSecrets(t *testing.T) {
 	}
 	blob, _ := json.Marshal(c)
 	for _, rendered := range []string{fmt.Sprint(c), fmt.Sprintf("%+v", c), fmt.Sprintf("%#v", c), string(blob)} {
-		for _, secret := range []string{"sentinel-intake-7c1", "sentinel-worker-7c2", dsnSentinel3, v["COMMERCE_CLAIMS_REPLY_LINK_KEY"], b64(8)} {
+		for _, secret := range []string{"sentinel-intake-7c1", "sentinel-worker-7c2", dsnSentinel3, dsnSentinel4, v["COMMERCE_CLAIMS_REPLY_LINK_KEY"], b64(8)} {
 			if strings.Contains(rendered, secret) {
 				t.Fatalf("config rendering leaked a secret: %s", rendered)
 			}
@@ -154,7 +160,7 @@ func TestValidEnvironmentFailsClosedWithoutLeaking(t *testing.T) {
 	if !errors.Is(err, errWorkerDatabase) {
 		t.Fatalf("got %v", err)
 	}
-	for _, banned := range []string{dsnSentinel1, dsnSentinel2, "synthetic.invalid", "intake", "postgres://"} {
+	for _, banned := range []string{dsnSentinel1, dsnSentinel2, dsnSentinel3, dsnSentinel4, "synthetic.invalid", "intake", "postgres://"} {
 		if strings.Contains(err.Error(), banned) {
 			t.Fatalf("error leaked %q", banned)
 		}

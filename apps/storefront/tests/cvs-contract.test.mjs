@@ -277,7 +277,7 @@ test("CVS10 error codes: field mapping, definite refusals, official links are ht
   assert.equal(isCvsErrorCode("pay_at_pickup_limit"), true);
   assert.equal(isCvsErrorCode("rate_limited"), false);
   assert.equal(CVS_ERROR_CODES.every((c) => /^[a-z_]{1,64}$/.test(c)), true, "matches the client definiteError code charset");
-  assert.deepEqual(DEFINITE_CVS_CODES, ["pay_at_pickup_limit"]);
+  assert.deepEqual(DEFINITE_CVS_CODES, ["pay_at_pickup_limit", "cash_on_delivery_limit"]);
   for (const url of Object.values(CVS_SEARCH_LINKS)) assert.match(url, /^https:\/\/[a-z0-9.-]+\//);
   assert.deepEqual(Object.keys(CVS_SEARCH_LINKS).sort(), ["cvs_711", "cvs_familymart", "cvs_hilife", "cvs_okmart"]);
 });

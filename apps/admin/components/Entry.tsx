@@ -1,4 +1,5 @@
 "use client";
+import { handleNameHint, parseHandleSuggestion, validStorefrontReceipt } from "@/lib/storefront-handle";
 // Signed-out / onboarding shell for /[locale]/ and (signed-out only) /[locale]/signup, /[locale]/reset.
 // BFF routes called: POST /api/auth/login (OIDC) → /v1/identity/login/start, POST /api/auth/logout →
 // /v1/identity/logout, POST /api/onboarding/initial-store → /v1/identity/initial-store
@@ -80,6 +81,10 @@ export function Entry({
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [handle, setHandle] = useState<{ suggested: string; available: boolean } | null>(null);
+  const [handleChecking, setHandleChecking] = useState(false);
+  const [handleFailed, setHandleFailed] = useState(false);
+  const [created, setCreated] = useState<{ handle: string; storefront_origin: string } | null>(null);
   const storageKey = useRef("");
   const busyRef = useRef(false);
 
@@ -140,6 +145,50 @@ export function Entry({
       setReady(false);
     }
   }, [draft, step, pending, ready, status, onboardingEnabled, success]);
+
+  // R5 store-domains (Decision 1): live handle preview on the store-name step. Read-only, so no CSRF token;
+  // the DB trigger assigns the real handle from the same name on create. A failed/unavailable preview is
+  // explicitly unconfirmed (the wizard stays usable), never replaced with an older result.
+  useEffect(() => {
+    if (status !== "onboarding" || step !== 2 || success) return;
+    const name = draft.store_name.trim();
+    setHandle(null);
+    setHandleFailed(false);
+    if (!name || [...name].length > 120) {
+      setHandle(null);
+      setHandleChecking(false);
+      return;
+    }
+    let live = true;
+    const controller = new AbortController();
+    setHandleChecking(true);
+    const timer = setTimeout(() => {
+      fetch("/api/onboarding/handle-suggest", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ store_name: name }),
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(8000)]),
+      })
+        .then(async (response) => {
+          if (!live) return;
+          if (!response.ok) throw new Error("handle_unconfirmed");
+          const body: unknown = await response.json();
+          const suggestion = parseHandleSuggestion(body);
+          if (!suggestion) throw new Error("handle_unconfirmed");
+          if (live) setHandle(suggestion);
+        })
+        .catch(() => { if (live) setHandleFailed(true); })
+        .finally(() => {
+          if (live) setHandleChecking(false);
+        });
+    }, 400);
+    return () => {
+      live = false;
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [draft.store_name, step, status, success]);
 
   const locked = busy || pending !== null || !ready || success;
 
@@ -238,14 +287,15 @@ export function Entry({
         setError(c.failed);
         return;
       }
+      const receipt = body as Record<string, unknown>;
       if (
         !body ||
         typeof body !== "object" ||
         !["tenant_id", "store_id", "warehouse_id"].every((key) =>
-          /^[0-9a-f-]{36}$/.test(
-            String((body as Record<string, unknown>)[key] ?? ""),
-          ),
-        )
+          /^[0-9a-f-]{36}$/.test(String(receipt[key] ?? "")),
+        ) ||
+        typeof receipt.handle !== "string" || typeof receipt.storefront_origin !== "string" ||
+        !validStorefrontReceipt(receipt.handle, receipt.storefront_origin)
       ) {
         setNotice(c.unknown);
         return;
@@ -253,7 +303,8 @@ export function Entry({
       clearJournal();
       setPending(null);
       setSuccess(true);
-      setNotice(c.success);
+      setCreated({ handle: receipt.handle, storefront_origin: receipt.storefront_origin });
+      setNotice(receipt.storefront_origin ? c.success : c.addressPending);
     } catch {
       setNotice(c.unknown);
     } finally {
@@ -527,7 +578,8 @@ export function Entry({
                   <label>
                     <span>{c.storeName}</span>
                     <input
-                      name="store_name"
+                name="store_name"
+                aria-describedby="entry-handle-help"
                       value={draft.store_name}
                       onChange={(event) =>
                         update("store_name", event.target.value)
@@ -538,6 +590,18 @@ export function Entry({
                       required
                     />
                   </label>
+                  <p className="entry-handle" id="entry-handle-help">{c.handleHelp}</p>
+                  {draft.store_name.trim() && handleNameHint(draft.store_name) && (
+                    <p className="entry-handle" role="status">{handleNameHint(draft.store_name) === "reserved" ? c.handleReserved : c.handleFormat}</p>
+                  )}
+                  {handleChecking ? (
+                    <p className="entry-handle" role="status">{c.handleChecking}</p>
+                  ) : handle ? (
+                    <p className="entry-handle" data-testid="entry-handle" role="status">
+                      {c.handlePreview}: <strong>{handle.suggested}</strong>{" "}
+                      {handle.available ? c.handleAvailable : c.handleTaken}
+                    </p>
+                  ) : handleFailed ? <p className="entry-handle" role="status" data-testid="entry-handle-failed">{c.handleFailed}</p> : null}
                   <label>
                     <span>{c.currency}</span>
                     <select
@@ -619,6 +683,21 @@ export function Entry({
                       </div>
                     </dl>
                   </div>
+                  {created && (
+                    <div className="entry-review" aria-label={c.storeAddress} data-testid="entry-address">
+                      <h3>{c.storeAddress}</h3>
+                      {created.storefront_origin ? (
+                        <p>
+                          <a href={created.storefront_origin} target="_blank" rel="noopener noreferrer">
+                            {created.storefront_origin}
+                          </a>
+                        </p>
+                      ) : (
+                        <p><strong>{created.handle}</strong></p>
+                      )}
+                      <p className="entry-final-hint">{c.storeAddressAuto}</p>
+                    </div>
+                  )}
                   <p className="entry-final-hint">{c.finalHint}</p>
                   <div className="entry-actions">
                     <button

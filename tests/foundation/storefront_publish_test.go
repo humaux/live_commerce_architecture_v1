@@ -276,40 +276,70 @@ func TestStorefrontPublishSPW01SchemaAndGrants(t *testing.T) {
 func TestStorefrontPublishSPW02UpgradeAfter0080(t *testing.T) {
 	ctx := context.Background()
 	numbered, _ := filepath.Glob("../../migrations/[0-9][0-9][0-9][0-9]_*.sql")
-	const v81 = "0081_storefront_publish.sql"
-	var found bool
+	postRiver, _ := filepath.Glob("../../migrations/post_river/[0-9][0-9][0-9][0-9]_*.sql")
+	// The "0080 release head" is every top-level migration < 0081 and every post-River migration < 0017;
+	// everything later is the upgrade chain under test. post_river/0017 (taiwan_cvs), 0018 (checkout_offline)
+	// and 0019 (worker_authorities) belong to top-level units 0083+/0088/0096, i.e. the >= 0081 chain, so they
+	// are pre-marked with the top-level migrations that own them. Pre-mark the whole upgrade chain in the ledger
+	// so the first Apply stops at the 0080 head, then delete those marks and apply the whole chain twice. This
+	// proves the full upgrade from the 0080 head, not just 0081 in isolation.
+	var upgrade []string
 	for _, p := range numbered {
-		if filepath.Base(p) == v81 {
-			found = true
+		if base := filepath.Base(p); base >= "0081_" {
+			upgrade = append(upgrade, base)
 		}
 	}
-	if !found {
-		t.Fatalf("migrations/%s not present", v81)
+	for _, p := range postRiver {
+		if base := filepath.Base(p); base >= "0017_" {
+			upgrade = append(upgrade, "post_river/"+base)
+		}
+	}
+	sort.Strings(upgrade)
+	if len(upgrade) == 0 {
+		t.Fatal("no migrations in the >= 0081 upgrade chain found")
 	}
 	db := mciStartPG(t)
-	body, err := os.ReadFile("../../migrations/" + v81)
-	if err != nil {
-		t.Fatal(err)
-	}
 	mustExec(t, db, `CREATE TABLE public.lc_schema_migrations (version text PRIMARY KEY, checksum text NOT NULL, applied_at timestamptz NOT NULL DEFAULT now())`)
-	mustExec(t, db, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES($1,$2)`, v81, fmt.Sprintf("%x", sha256.Sum256(body)))
-	if err := migrations.Apply(ctx, db); err != nil { // every other migration, i.e. the 0080 head
+	// migrate.go grants River privileges to the five 0096 worker-authority roles on every Apply; the 0080 head stops
+	// before 0096 creates them, so pre-create them here (the same attributes 0096 uses) — 0096's own DO block is
+	// idempotent and skips them when the full chain later runs.
+	mustExec(t, db, `DO $$
+	DECLARE r text;
+	BEGIN
+	 FOREACH r IN ARRAY ARRAY['commerce_payment_worker','commerce_payment_live','commerce_expiry_worker','commerce_ads_worker','commerce_claims_worker'] LOOP
+	  IF to_regrole(r) IS NULL THEN
+	   EXECUTE format('CREATE ROLE %I NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION',r);
+	  END IF;
+	 END LOOP;
+	END $$`)
+	for _, version := range upgrade {
+		body, err := os.ReadFile("../../migrations/" + version)
+		if err != nil {
+			t.Fatal(err)
+		}
+		mustExec(t, db, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES($1,$2)`, version, fmt.Sprintf("%x", sha256.Sum256(body)))
+	}
+	if err := migrations.Apply(ctx, db); err != nil { // the 0080 head
 		t.Fatalf("0080 head: %v", err)
 	}
-	if n := countRows(t, db, `SELECT count(*) FROM pg_proc WHERE proname IN ('set_storefront_published','operator_bind_domain')`) + countRows(t, db, `SELECT count(*) FROM pg_roles WHERE rolname LIKE 'commerce\_storefront\_%'`); n != 0 {
-		t.Fatalf("the 0080 head already holds %d 0081 objects: the ledger pre-mark did not isolate 0081", n)
+	if n := countRows(t, db, `SELECT count(*) FROM pg_proc WHERE proname IN ('set_storefront_published','operator_bind_domain','store_handle_reserved')`) + countRows(t, db, `SELECT count(*) FROM pg_roles WHERE rolname LIKE 'commerce\_storefront\_%'`); n != 0 {
+		t.Fatalf("the 0080 head already holds %d post-0080 objects: the ledger pre-mark did not isolate the upgrade chain", n)
 	}
 	if n := countRows(t, db, `SELECT count(*) FROM public.lc_schema_migrations WHERE version LIKE '0080\_%'`); n != 1 {
 		t.Fatalf("the 0080 head must hold 0080_meta_capi.sql in its ledger, has %d rows", n)
 	}
-	mustExec(t, db, `DELETE FROM public.lc_schema_migrations WHERE version=$1`, v81)
+	for _, version := range upgrade {
+		mustExec(t, db, `DELETE FROM public.lc_schema_migrations WHERE version=$1`, version)
+	}
 	for i := 0; i < 2; i++ { // the second Apply must be a no-op
 		if err := migrations.Apply(ctx, db); err != nil {
-			t.Fatalf("0081 upgrade apply %d: %v", i+1, err)
+			t.Fatalf("0081+ upgrade apply %d: %v", i+1, err)
 		}
 	}
-	if n := countRows(t, db, `SELECT count(*) FROM public.lc_schema_migrations WHERE version=$1`, v81); n != 1 {
-		t.Fatalf("ledger rows for 0081 = %d", n)
+	for _, version := range upgrade {
+		if n := countRows(t, db, `SELECT count(*) FROM public.lc_schema_migrations WHERE version=$1`, version); n != 1 {
+			t.Fatalf("ledger rows for %s = %d, want 1", version, n)
+		}
 	}
 	spAssertSchema(t, db)
 	// The registrar authority can actually run its definer after an upgrade (not only hold the grant).

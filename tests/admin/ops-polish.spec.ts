@@ -251,8 +251,8 @@ test("OP3 finance page shows a separate pay-at-pickup column in every locale; CS
   }, new URL(href!, origin).toString());
   expect(csv.status).toBe(200);
   const lines = csv.text.trim().split(/\r?\n/);
-  // 0088 (checkout-offline) appended the bank-transfer columns
-  expect(lines[0]).toBe("day,currency,environment,captured_count,captured_minor,refunded_minor,net_minor,pickup_collected_count,pickup_collected_minor,bank_transfer_confirmed_count,bank_transfer_confirmed_minor");
+  // 0088 (checkout-offline) appended the bank-transfer columns; 0107 (home-cod) appended the COD columns
+  expect(lines[0]).toBe("day,currency,environment,captured_count,captured_minor,refunded_minor,net_minor,pickup_collected_count,pickup_collected_minor,bank_transfer_confirmed_count,bank_transfer_confirmed_minor,cod_collected_count,cod_collected_minor");
   const mine = lines.slice(1).find((l) => l.startsWith(`${today},TWD,LIVE`));
-  expect(mine, `no LIVE row for ${today}: ${lines.join(" | ")}`).toBe(`${today},TWD,LIVE,0,0,0,0,${seed.collected.length},${seed.collectedMinor},0,0`);
+  expect(mine, `no LIVE row for ${today}: ${lines.join(" | ")}`).toBe(`${today},TWD,LIVE,0,0,0,0,${seed.collected.length},${seed.collectedMinor},0,0,0,0`);
 });

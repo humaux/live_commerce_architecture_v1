@@ -37,6 +37,10 @@ func (s *fakeService) CreateInitialStore(ctx context.Context, token, key string,
 	s.request = in
 	return identity.Store{TenantID: "tenant", StoreID: "store", WarehouseID: "warehouse"}, s.err
 }
+func (s *fakeService) SuggestStoreHandle(ctx context.Context, name string) (identity.SuggestedHandle, error) {
+	s.calls++
+	return identity.SuggestedHandle{Suggested: "suggested", Available: true}, s.err
+}
 func (s *fakeService) Logout(ctx context.Context, token string) error {
 	s.calls++
 	s.token = token

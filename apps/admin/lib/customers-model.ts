@@ -59,6 +59,9 @@ export type FinanceRow = {
   // storefront-v2 §C: bank-transfer money the merchant confirmed that day (offline, at the server order total); separate from captured/net.
   bank_transfer_confirmed_count: number;
   bank_transfer_confirmed_minor: number;
+  // home-cod R5: cash-on-delivery money the carrier collected that day (order total + surcharge); separate from captured/net.
+  cod_collected_count: number;
+  cod_collected_minor: number;
 };
 export type FinanceSummary = { from: string; to: string; timezone: string; rows: FinanceRow[]; totals: FinanceRow[] };
 export type ErasureSummary = {
@@ -188,13 +191,15 @@ export function parseErasureSummary(value: unknown): ErasureSummary {
 const rowKeys = ["day", "currency", "environment", "captured_count", "captured_minor", "refunded_minor", "net_minor"];
 const pickupKeys = ["pickup_collected_count", "pickup_collected_minor"];
 const transferKeys = ["bank_transfer_confirmed_count", "bank_transfer_confirmed_minor"];
+const codKeys = ["cod_collected_count", "cod_collected_minor"];
 function parseFinanceRow(value: unknown, total: boolean): FinanceRow {
-  // The three shapes of the Go row (internal/reporting decodeRows): 7 keys (before the pay-at-pickup columns), 9, or 11 (plus the
-  // bank-transfer pair); a half pair is refused by object().
+  // The four shapes of the Go row (internal/reporting decodeRows): 7 keys (before the pay-at-pickup columns), 9, 11 (plus the
+  // bank-transfer pair), or 13 (plus the cash-on-delivery pair); a half pair is refused by object().
   const has = (keys: string[]) => !!value && typeof value === "object" && keys.some((key) => key in (value as object));
-  const wire = [...rowKeys, ...(has(pickupKeys) || has(transferKeys) ? pickupKeys : []), ...(has(transferKeys) ? transferKeys : [])];
+  const wire = [...rowKeys, ...(has(pickupKeys) || has(transferKeys) || has(codKeys) ? pickupKeys : []), ...(has(transferKeys) ? transferKeys : []), ...(has(codKeys) ? codKeys : [])];
   const v: Record<string, unknown> = {
     pickup_collected_count: 0, pickup_collected_minor: 0, bank_transfer_confirmed_count: 0, bank_transfer_confirmed_minor: 0,
+    cod_collected_count: 0, cod_collected_minor: 0,
     ...object(value, wire),
   };
   if (!(total ? v.day === "" : typeof v.day === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v.day)) ||
@@ -203,6 +208,7 @@ function parseFinanceRow(value: unknown, total: boolean): FinanceRow {
     !count(v.captured_count) || !count(v.captured_minor) || !count(v.refunded_minor) ||
     !count(v.pickup_collected_count) || !count(v.pickup_collected_minor) ||
     !count(v.bank_transfer_confirmed_count) || !count(v.bank_transfer_confirmed_minor) ||
+    !count(v.cod_collected_count) || !count(v.cod_collected_minor) ||
     !Number.isSafeInteger(v.net_minor) || Math.abs(v.net_minor as number) > maxMoney ||
     // I05: net is exactly captured minus refunded; a report that disagrees with itself is refused, not shown.
     v.net_minor !== (v.captured_minor as number) - (v.refunded_minor as number)) throw new Error("unavailable");

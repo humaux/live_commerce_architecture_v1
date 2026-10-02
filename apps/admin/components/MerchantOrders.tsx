@@ -33,12 +33,14 @@ import {
   type OrderSummary,
 } from "@/lib/orders-model";
 import { ordersCopy, type OrdersCopy } from "@/lib/orders-copy";
+import { codCopy } from "@/lib/cod-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { Icon } from "./Icon";
 import { OrderRefunds } from "./OrderRefunds";
 import { OrderShipment } from "./OrderShipment";
 import { OrderCvsShipment } from "./OrderCvsShipment";
 import { OrderBankTransfer } from "./OrderBankTransfer";
+import { OrderCodCollection } from "./OrderCodCollection";
 import "./orders.css";
 import "./order-actions.css";
 
@@ -240,10 +242,13 @@ function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy, section
             <div>
               <dt>{c.collectionLabel}</dt>
               <dd data-testid="order-collection-state" data-state={detail.collection_state}>
-                {c.collectionStates[detail.collection_state]}
+                {detail.payment_mode === "cash_on_delivery"
+                  ? codCopy[locale].orderStates[detail.collection_state]
+                  : c.collectionStates[detail.collection_state]}
               </dd>
             </div>
           )}
+          {detail.payment_mode === "cash_on_delivery" && <div><dt>{codCopy[locale].collectAmount}</dt><dd data-testid="order-collect-amount">{amount(locale, detail.currency, detail.cod_collect_minor ?? 0)}</dd></div>}
         </dl>
         {detail.test_mode && (
           <p className="orders-test" data-testid="order-test-mode">
@@ -286,16 +291,30 @@ function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy, section
               onChanged={sections.onChanged}
             />
           )}
-          {detail.commercial_state === "CONFIRMED" && (
+          {/* home-cod R5: COD shares the collection state machine; the panel sits where the pickup panel would (home, not pickup). */}
+          {detail.payment_mode === "cash_on_delivery" && (
+            <OrderCodCollection
+              store={sections.store}
+              detail={detail}
+              locale={locale}
+              c={c}
+              canWrite={sections.actions.fulfillment_write}
+              boundary={sections.boundary}
+              onChanged={sections.onChanged}
+            />
+          )}
+          {(detail.commercial_state === "CONFIRMED" || detail.payment_mode === "cash_on_delivery") && (
             <OrderShipment
               store={sections.store}
               // A pay-at-pickup order never has a payment work item, so its list-side work_state is NONE. The
-              // 0063 form's MD6 eligibility hint reads READY as "nothing blocks shipping"; for this mode that
+              // 0063 form's MD6 eligibility hint reads READY as "nothing blocks shipping"; for that mode that
               // hint is collection PENDING instead (hint only: record_manual_shipment re-checks in SQL).
               detail={
                 (detail.payment_mode === "pay_at_pickup" && detail.collection_state === "PENDING") ||
                 // A confirmed bank-transfer order has no work item either; CONFIRMED here means the merchant confirmed it.
-                (detail.payment_mode === "bank_transfer" && detail.commercial_state === "CONFIRMED")
+                (detail.payment_mode === "bank_transfer" && detail.commercial_state === "CONFIRMED") ||
+                // A cash-on-delivery order stays AWAITING_COLLECTION with no work item; READY here means "nothing blocks shipping".
+                (detail.payment_mode === "cash_on_delivery" && detail.collection_state === "PENDING")
                   ? { ...detail, work_state: "READY" }
                   : detail
               }
@@ -952,6 +971,7 @@ function OrderRow({
         <td data-label={c.created}>{displayTime(locale, row.created_at)}</td>
         <td data-label={c.total}>
           {amount(locale, row.currency, row.total_minor)}
+          {row.payment_mode === "cash_on_delivery" && <strong className="orders-cod-amount" data-testid="order-row-collect">{codCopy[locale].collectAmount}: {amount(locale, row.currency, row.cod_collect_minor ?? 0)}</strong>}
         </td>
         <td data-label={c.commercial}>{badge(row.commercial_state, c)}</td>
         <td data-label={c.payment}>

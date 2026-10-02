@@ -15,6 +15,9 @@ const routes: [string, RegExp, LogisticsKind][] = [
   // storefront-v2 §C: the store's bank-transfer settings (Go internal/httpapi/offline.go; integration:read / integration:manage).
   ["GET", /^bank-transfer-settings$/, "get"],
   ["PUT", /^bank-transfer-settings$/, "command"],
+  // home-cod R5 (migration 0107): the store's cash-on-delivery settings (Go internal/httpapi/cod.go; integration:read / integration:manage).
+  ["GET", /^cash-on-delivery-settings$/, "get"],
+  ["PUT", /^cash-on-delivery-settings$/, "command"],
   // storefront-v2 §E6: the new-order mail opt-out (Go internal/httpapi/notify.go; integration:read / integration:manage).
   ["GET", /^notification-settings$/, "get"],
   ["PUT", /^notification-settings$/, "command"],

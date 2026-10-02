@@ -65,7 +65,7 @@ func isCatalogV2(kind routeKind) bool {
 
 // isPublicRoute: routes answered without a buyer capability (origin + BFF key only).
 func isPublicRoute(kind routeKind) bool {
-	return kind == mediaRoute || kind == collectionMediaRoute || isCatalogV2(kind)
+	return kind == mediaRoute || kind == collectionMediaRoute || isCatalogV2(kind) || kind == primaryOriginRoute
 }
 
 type v2Store struct {

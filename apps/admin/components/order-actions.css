@@ -11,6 +11,11 @@
 .orders-facts > div { display: grid; gap: 3px; min-width: 0; }
 .orders-facts dt { color: var(--orders-muted); font-size: 12px; }
 .orders-facts dd { margin: 0; overflow-wrap: anywhere; font-weight: 600; }
+.orders-cod-amount { display: block; font-size: 12px; line-height: 1.5; margin-top: 4px; font-variant-numeric: tabular-nums; }
+[data-testid="cod-settings-card"] input, [data-testid="cod-settings-card"] select, [data-testid="cod-settings-card"] button,
+[data-testid="order-cod"] button { min-height: 44px; }
+[data-testid="cod-settings-card"] input[type="checkbox"] { min-height: 0; }
+[data-testid="cod-settings-card"] .settings-check { min-height: 44px; }
 /* position:relative makes the scroller the containing block of the visually hidden header, so it cannot widen the page. */
 .orders-actions-scroll { position: relative; overflow-x: auto; margin: 0 0 14px; }
 /* globals.css sets fixed layout, percentage column widths, 53px cells and cell borders on every table;

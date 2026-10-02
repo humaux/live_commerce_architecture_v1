@@ -13,14 +13,14 @@ const fail = () => new Error("unavailable");
 const money = (v: unknown): v is number => Number.isSafeInteger(v) && (v as number) >= 0 && (v as number) <= maxMoney;
 
 // ---- dashboard (G1) ----------------------------------------------------------------------------------------------------------
-export type ModeTotals = { card_minor: number; bank_transfer_minor: number; pay_at_pickup_minor: number };
+export type ModeTotals = { card_minor: number; bank_transfer_minor: number; pay_at_pickup_minor: number; cod_minor: number };
 export type Gmv = { currency: string; environment: string; today: ModeTotals; last_7_days: ModeTotals };
 export type Dashboard = {
   generated_at: string; timezone: "Asia/Taipei"; orders: { today: number; last_7_days: number }; gmv: Gmv[];
   todos: { awaiting_transfer_confirmation: number; to_ship: number; cvs_awaiting_label: number; low_stock_skus: number; open_refunds: number };
   latest_orders: OrderSummary[];
 };
-const modeKeys = ["card_minor", "bank_transfer_minor", "pay_at_pickup_minor"];
+const modeKeys = ["card_minor", "bank_transfer_minor", "pay_at_pickup_minor", "cod_minor"];
 function totals(value: unknown): ModeTotals {
   const v = object(value, modeKeys);
   if (!modeKeys.every((key) => money(v[key]))) throw fail();

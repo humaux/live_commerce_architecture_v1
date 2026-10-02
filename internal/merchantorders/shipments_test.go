@@ -32,7 +32,7 @@ func TestNormalizeShipmentRules(t *testing.T) {
 			t.Fatalf("carrier %s rejected: %v", code, err)
 		}
 	}
-	if len(carrierCodes) != 7 {
+	if len(carrierCodes) != 9 {
 		t.Fatalf("carrier list drifted: %v", carrierCodes)
 	}
 	// Leading zeroes and the exact tracking bytes survive; surrounding space is trimmed.
@@ -125,6 +125,29 @@ func TestNormalizeShipmentRules(t *testing.T) {
 		v.VoidReason = sp(reason)
 		if _, err = NormalizeShipment(v); err != nil {
 			t.Fatalf("reason %s: %v", reason, err)
+		}
+	}
+}
+
+// Manual carrier allowlist (home-cod R5, migration 0107): black_cat (黑貓) and hsinchu (新竹) are the two COD carrier
+// labels and must round-trip through the shipment input (NormalizeShipment) AND output (decodeVersion/validShipmentFields)
+// validation, so a COD order can be shipped with each and read back. Red until carrierCodes admits them.
+func TestManualShipmentHomeCodCarriers(t *testing.T) {
+	for _, code := range []string{"black_cat", "hsinchu"} {
+		in := shippedInput()
+		in.CarrierCode = sp(code)
+		out, err := NormalizeShipment(in)
+		if err != nil {
+			t.Fatalf("carrier %s rejected on input: %v", code, err)
+		}
+		if out.CarrierCode == nil || *out.CarrierCode != code {
+			t.Fatalf("carrier %s not canonicalized on input: %v", code, out.CarrierCode)
+		}
+		ver := shipmentVersion("SHIPPED")
+		ver["carrier_code"] = code
+		got, err := decodeVersion(raw(ver))
+		if err != nil || got.CarrierCode != code {
+			t.Fatalf("carrier %s rejected on output: %v %+v", code, err, got)
 		}
 	}
 }

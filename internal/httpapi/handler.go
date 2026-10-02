@@ -36,6 +36,7 @@ import (
 	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
 	"livecommerce/internal/storefrontadmin"
+	"livecommerce/internal/storefrontdomains"
 )
 
 // NewHandler keeps transport validation separate from domain invariants. There
@@ -76,6 +77,9 @@ type Options struct {
 	// ManualOrders is the merchant-created order pipeline (merchant-tools, contract G3); cmd/api builds it with the buyer surface. nil
 	// (buyer surface off) keeps the route mounted and answering 503 manual_order_unavailable, so the admin page can say why.
 	ManualOrders *merchanttools.ManualOrders
+	// StoreBaseDomain is the platform base zone (LC_STORE_BASE_DOMAIN) the merchant domain request builds CNAME targets from
+	// and refuses hostnames under (R5 unit store-domains). Empty leaves the request route mounted and answering 422.
+	StoreBaseDomain string
 }
 
 func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
@@ -172,7 +176,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerCatalogV2Routes(mux, pool)
 	registerSettingsRoutes(mux, pool)
 	registerSettingsDiscoveryRoutes(mux, pool)
-	registerStorefrontRoutes(mux, pool)
+	registerStorefrontRoutes(mux, pool, configured.StoreBaseDomain)
 	registerAccountRoutes(mux, pool, configured.Accounts)
 	registerOrderRoutes(mux, pool)
 	registerStudioRoutes(mux, pool, configured.Studio || configured.Live != nil, configured.Live, configured.BrowserInput)
@@ -190,6 +194,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerBillingRoutes(mux, pool, configured.Billing)
 	registerCVSRoutes(mux, pool, configured.CVS)
 	registerOfflinePaymentRoutes(mux, pool)
+	registerCodPaymentRoutes(mux, pool)                             // unit home-cod: cash-on-delivery settings, cod.go
 	registerMerchantToolsRoutes(mux, pool, configured.ManualOrders) // unit merchant-tools: storefront-v2 section G, merchanttools.go
 	registerPromotionRoutes(mux, pool)
 	registerNotifySettingsRoutes(mux, pool)
@@ -373,6 +378,13 @@ func classify(err error) (int, string) {
 		return http.StatusServiceUnavailable, "unavailable"
 	case errors.Is(err, storefrontadmin.ErrUnavailable):
 		return http.StatusServiceUnavailable, "unavailable"
+	case errors.Is(err, storefrontdomains.ErrUnavailable), errors.Is(err, storefrontdomains.ErrBaseDomainMissing):
+		return http.StatusServiceUnavailable, "unavailable"
+	case errors.Is(err, storefrontdomains.ErrReservedHostname):
+		return http.StatusUnprocessableEntity, "invalid_request"
+	case errors.Is(err, storefrontdomains.ErrDomainActive), errors.Is(err, storefrontdomains.ErrDomainSuspended),
+		errors.Is(err, storefrontdomains.ErrDomainDetached), errors.Is(err, storefrontdomains.ErrDomainOwnedElsewhere):
+		return http.StatusConflict, "conflict"
 	case errors.Is(err, live.ErrStudioProjection):
 		return http.StatusServiceUnavailable, "unavailable"
 	case errors.Is(err, platform.ErrScopeNotFound):

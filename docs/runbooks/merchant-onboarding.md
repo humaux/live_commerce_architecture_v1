@@ -79,31 +79,44 @@ Change rules: 命令必须与 deploy/scripts/ops-admin.sh 和 cmd/*-admin 的子
 
 ## 5. 域名与证书
 
-四个域名解析到部署主机后，Caddy 自动签发证书（首次演练可在 `caddy.env` 打开 staging CA，正式签发前注释掉）。
-商家自有域名（品牌域名指向 storefront）不在 R1/R3 范围：storefront 的 origin 由 `LC_STORE_HOST` 推导，Caddy 只服务这四个名字（不匹配的 Host 不转发）。
+四个平台主机名（`LC_ADMIN_HOST`、`LC_STORE_HOST`、`LC_API_HOST`、`LC_HOOKS_HOST`）解析到部署主机后，Caddy 自动签发证书（首次演练可在 `caddy.env` 打开 staging CA，正式签发前注释掉）。
+R5 起（迁移 0106，store-domains 单元）每间店铺自动获得自己的网址，商家也能自助绑定自有域名；`LC_STORE_HOST` 只保留为平台的“shop”主机名。
 
-### 5.1 店铺上线：两步、两个不同的同意（R3 storefront-publish，迁移 0081）
+### 5.1 店铺网址：自动分配 + 商家自助域名（R5 store-domains，迁移 0106）
 
-买家能打开店铺（storefront、购买入口、认领链接、Meta 私信里的购物车链接）需要**同时**满足两件事，缺一个都是 404：
+买家能打开店铺需要店铺**已发布**，且至少有一个 **ACTIVE** 域名（缺一个都是 404）：
 
-1. **商家发布**：商家在后台「设置」→「网店发布」卡片点「发布」并确认（需要 `integration:manage`）。这是商家的同意，运维不代做；取消发布同一张卡片。
-2. **平台绑定域名**：域名所有权和 TLS 的证明是平台的，不是商家的，只能由运维用 CLI 完成（没有商家 HTTP 路由）。
+1. **平台子域名（自动，无需运维）**：商家 onboarding 创建店铺时，系统按英文店名自动分配店铺 handle 并写入
+   ACTIVE 的 `https://<handle>.<LC_STORE_BASE_DOMAIN>`（证据 `platform-subdomain`）。只要商家在「设置」→「网店发布」卡片点「发布」，买家立刻可达，**没有运维步骤**。
+2. **商家自有域名（自助）**：持有 `integration:manage` 的 owner/admin 在「设置」→「网店发布」输入主机名，系统生成
+   TXT 校验令牌并显示要添加的 DNS 记录（`TXT _lc-verify.<host> = <token>`；`CNAME <host> → stores.<LC_STORE_BASE_DOMAIN>`，apex 用 A 记录指向边缘 IP）。
+   DNS 核验 worker 用退避重试（上限 72h）验证 TXT 与 CNAME/A，成功后经 OWNERSHIP_PENDING → TLS_PENDING → ACTIVE 自动上线。
+   暂停/解绑也由 owner/admin 在同一张卡片自助完成（解绑后该域名不再服务）；**平台子域名行除外**——它的暂停/解绑是拒绝的（P2-8），只有运维能通过下面的 break-glass CLI 解绑。主域名优先为商家域名：后端 `resolve_primary_origin` 返回它（目标只来自数据库）；浏览器侧「非主 ACTIVE 域名 301 到主域名」的跳转依赖 storefront 应用接线，是 UI 后续项（`--browser-store-domains` 的 301 步骤为 RED）。
+3. **运维 CLI（break-glass）**：`store-admin domain-bind`/`domain-suspend`/`domain-detach` 保留为代商家修复/续证时的
+   break-glass（证据、400 天上限、退出码同 0081）；普通 onboarding **不再需要** `domain-bind`。handle 变更在店铺发布过之后只能由运维操作。
    证书 `notAfter` 就是 `--valid-until`（RFC 3339，必须在未来且不超过 400 天）；`--evidence` 是你留存证明的引用（工单号、DNS 检查日期、证书指纹），不要写密钥。
 
-```sh
-set -a; . /etc/live-commerce/compose.env; set +a        # 取得 LC_STORE_HOST
-VALID_UNTIL="$(date -u -d "$(echo | openssl s_client -connect "$LC_STORE_HOST:443" -servername "$LC_STORE_HOST" 2>/dev/null \
-  | openssl x509 -noout -enddate | cut -d= -f2)" +%Y-%m-%dT%H:%M:%SZ)"
-deploy/scripts/ops-admin.sh store-admin domain-bind --store <store-uuid> --origin "https://$LC_STORE_HOST" \
-  --evidence "<工单/检查引用>" --valid-until "$VALID_UNTIL"
-deploy/scripts/ops-admin.sh store-admin status --store <store-uuid>   # published、domains[].serving 都为 true 才算上线
-```
+   ```sh
+   set -a; . /etc/live-commerce/compose.env; set +a          # 取得 LC_STORE_HOST / LC_STORE_BASE_DOMAIN
+   HOST="shop.example.com"                                    # 商家的自有域名（或平台 shop 主机名）
+   VALID_UNTIL="$(date -u -d "$(echo | openssl s_client -connect "$HOST:443" -servername "$HOST" 2>/dev/null \
+     | openssl x509 -noout -enddate | cut -d= -f2)" +%Y-%m-%dT%H:%M:%SZ)"
+   deploy/scripts/ops-admin.sh store-admin domain-bind --store <store-uuid> --origin "https://$HOST" \
+     --evidence "<工单/检查引用>" --valid-until "$VALID_UNTIL"
+   deploy/scripts/ops-admin.sh store-admin status --store <store-uuid>   # domains[].serving 为 true 才算上线
+   ```
 
-- `domain-bind` 一次调用创建或推进到 ACTIVE（时间戳由数据库时钟写入）并写审计 `operator.domain_bound`；对 ACTIVE 域名再次执行即证书续期（更新 `valid_until`，版本号 +1）。
-  证书到期前续期：`valid_until` 一过，解析器立刻拒绝该域名（`serving=false`）。
-- `domain-suspend --origin https://host`：立即停止服务（可再次 `domain-bind` 恢复）；`domain-detach --origin https://host`：解绑；该 origin 只能用**不同的** `--evidence` 重新执行 `domain-bind` 才能再次绑定（可绑定到另一家店，审计动作 `operator.domain_bound:rebind_from_detached`；证据相同则 `store_admin_domain_detached`）。
-- 一个部署目前只有一个 ACTIVE origin：Caddy 只服务 `LC_STORE_HOST`。每店一个域名需要 Caddy `on_demand_tls` 加由解析器支撑的 `ask` 接口（见 `cmd/store-admin` 的 ponytail 注释），不在本单元范围。
-- 退出码非 0 时 stderr 只有一个固定码：`store_admin_usage`（参数）、`store_admin_not_found`、`store_admin_domain_detached`、`store_admin_domain_owned_elsewhere`、`store_admin_no_owner_principal`、`store_admin_conflict`、`store_admin_failed`。
+### 5.2 owner 前置：边缘泛域名 DNS（仅 owner，工程无法代办）
+
+Caddy `on_demand_tls`（deploy/caddy/Caddyfile）用 `ask http://api:8080/internal/tls-ask` 只为 ACTIVE/TLS_PENDING 的域名签发证书，
+所以边缘必须有一条 **DNS-only 泛域名 A 记录**把 `*.<LC_STORE_BASE_DOMAIN>` 与 `stores.<LC_STORE_BASE_DOMAIN>` 指向部署主机（preflight P19 校验）：
+
+| # | 记录 | 值 | 谁 |
+|---|---|---|---|
+| D1 | `*.xgdwm.com` | 边缘公网 IP（DNS-only，TTL 300，**不要开 Cloudflare 代理**） | owner |
+| D2 | `stores.xgdwm.com` | 同上 | owner |
+
+已完成 2026-10-02（owner 授权，Cloudflare API）：zone `xgdwm.com` 的 `*.xgdwm.com` 与 `stores.xgdwm.com` 两条 A 记录（DNS-only）已创建并经 DoH 验证；`LC_STORE_BASE_DOMAIN=xgdwm.com`。
 
 ## 6. 接入后检查
 

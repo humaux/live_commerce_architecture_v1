@@ -8,6 +8,8 @@ export type StorefrontState = { published: boolean; version: number; domains: St
 
 const originShape = /^https:\/\/(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 const stamp = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
+const tokenShape = /^[A-Za-z0-9_-]{43}$/;
+const uuidShape = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const record = (value: unknown): Record<string, unknown> | null =>
   value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 const sameKeys = (item: Record<string, unknown>, keys: string[]) =>
@@ -33,4 +35,116 @@ export function parseStorefront(value: unknown): StorefrontState {
     return { origin: d.origin, valid_until: d.valid_until, serving: d.serving };
   });
   return { published: item.published, version: item.version, domains };
+}
+
+// R5 store-domains (Decision 3): the merchant self-service domain read + write shapes (Go
+// internal/storefrontdomains). Same strict-parser rule as above: any drift throws, never renders.
+export type MerchantDomainState =
+  | "REQUESTED"
+  | "OWNERSHIP_PENDING"
+  | "TLS_PENDING"
+  | "ACTIVE"
+  | "SUSPENDED"
+  | "DETACHED";
+
+export type StorefrontDomainRow = {
+  origin: string;
+  kind: "platform" | "custom";
+  state: MerchantDomainState;
+  version: number;
+  token: string | null;
+  verify_deadline: string | null;
+  serving: boolean;
+};
+
+export type StorefrontDomains = { domains: StorefrontDomainRow[] };
+
+export type DNSInstructions = {
+  txt_name: string;
+  txt_value: string;
+  cname_target: string;
+  apex: boolean;
+  edge_addresses?: string[];
+};
+
+export type DomainRequestResult = {
+  domain_id: string;
+  version: number;
+  state: "REQUESTED";
+  origin: string;
+  dns: DNSInstructions;
+};
+
+const domainStates = new Set<MerchantDomainState>([
+  "REQUESTED",
+  "OWNERSHIP_PENDING",
+  "TLS_PENDING",
+  "ACTIVE",
+  "SUSPENDED",
+  "DETACHED",
+]);
+
+export function parseStorefrontDomains(value: unknown): StorefrontDomains {
+  const item = record(value);
+  if (!item || !sameKeys(item, ["domains"]) || !Array.isArray(item.domains) || item.domains.length > 100)
+    throw new Error("storefront_shape");
+  const domains = item.domains.map((entry): StorefrontDomainRow => {
+    const d = record(entry);
+    if (
+      !d || !sameKeys(d, ["origin", "kind", "state", "version", "token", "verify_deadline", "serving"]) ||
+      (d.kind !== "platform" && d.kind !== "custom") ||
+      typeof d.origin !== "string" || d.origin.length > 261 || !originShape.test(d.origin) ||
+      typeof d.state !== "string" || !domainStates.has(d.state as MerchantDomainState) ||
+      typeof d.version !== "number" || !Number.isSafeInteger(d.version) || d.version < 1 ||
+      (d.token !== null && (typeof d.token !== "string" || !tokenShape.test(d.token))) ||
+      (d.verify_deadline !== null && (typeof d.verify_deadline !== "string" || !stamp.test(d.verify_deadline))) ||
+      typeof d.serving !== "boolean"
+    )
+      throw new Error("storefront_shape");
+    return {
+      origin: d.origin,
+      kind: d.kind,
+      state: d.state as MerchantDomainState,
+      version: d.version,
+      token: d.token as string | null,
+      verify_deadline: d.verify_deadline as string | null,
+      serving: d.serving,
+    };
+  });
+  return { domains };
+}
+
+// The DNS instructions are shown once, at request time; the write response is the only place they appear.
+export function parseDomainRequest(value: unknown): DomainRequestResult {
+  const item = record(value);
+  const dns = record(item?.dns);
+  if (
+    !item || !sameKeys(item, ["domain_id", "version", "state", "origin", "dns"]) ||
+    !dns || !sameKeys(dns, ["txt_name", "txt_value", "cname_target", "apex", ...("edge_addresses" in dns ? ["edge_addresses"] : [])]) ||
+    ("edge_addresses" in dns && (dns.apex !== true || !Array.isArray(dns.edge_addresses) || dns.edge_addresses.length > 100 || dns.edge_addresses.some(address => dnsAddressType(address) === null))) ||
+    typeof item.domain_id !== "string" || !uuidShape.test(item.domain_id) ||
+    typeof item.version !== "number" || !Number.isSafeInteger(item.version) || item.version < 1 ||
+    item.state !== "REQUESTED" ||
+    typeof item.origin !== "string" || !originShape.test(item.origin) ||
+    typeof dns.txt_name !== "string" || dns.txt_name !== `_lc-verify.${item.origin.slice(8)}` ||
+    typeof dns.txt_value !== "string" || !tokenShape.test(dns.txt_value) ||
+    typeof dns.cname_target !== "string" || !originShape.test(`https://${dns.cname_target}`) || typeof dns.apex !== "boolean"
+  )
+    throw new Error("storefront_shape");
+  return {
+    domain_id: item.domain_id,
+    version: item.version,
+    state: "REQUESTED",
+    origin: item.origin,
+    dns: { txt_name: dns.txt_name, txt_value: dns.txt_value, cname_target: dns.cname_target, apex: dns.apex,
+      ...("edge_addresses" in dns ? { edge_addresses: dns.edge_addresses as string[] } : {}) },
+  };
+}
+
+// DNS values must be literal addresses, never hostnames, URLs, ports or CIDRs.
+export function dnsAddressType(value: unknown): "A" | "AAAA" | null {
+  if (typeof value !== "string") return null;
+  if (/^(?:0|[1-9]\d{0,2})(?:\.(?:0|[1-9]\d{0,2})){3}$/.test(value) && value.split(".").every(part => Number(part) <= 255)) return "A";
+  if (!value.includes(":") || !/^[\da-fA-F:.]+$/.test(value)) return null;
+  try { new URL(`https://[${value}]/`); return "AAAA"; } catch { return null; }
 }

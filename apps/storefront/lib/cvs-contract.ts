@@ -18,7 +18,8 @@ export const isCvsKind = (v: unknown): v is CvsKind =>
   typeof v === "string" && (CVS_KINDS as readonly string[]).includes(v);
 
 // storefront-v2 §C: bank_transfer is the third mode (order waits AWAITING_TRANSFER for the merchant; lib/bank-transfer.ts).
-export const PAYMENT_MODES = ["card", "pay_at_pickup", "bank_transfer"] as const;
+// home-cod R5: cash_on_delivery is the fourth mode (a home-delivery order waits AWAITING_COLLECTION for the carrier).
+export const PAYMENT_MODES = ["card", "pay_at_pickup", "bank_transfer", "cash_on_delivery"] as const;
 export type PaymentMode = (typeof PAYMENT_MODES)[number];
 export const isPaymentMode = (v: unknown): v is PaymentMode =>
   typeof v === "string" && (PAYMENT_MODES as readonly string[]).includes(v);
@@ -353,6 +354,10 @@ export const CVS_ERROR_CODES = [
   "pay_at_pickup_unavailable",
   "pay_at_pickup_amount_exceeds",
   "pay_at_pickup_limit",
+  "cash_on_delivery_unavailable",
+  "cash_on_delivery_amount_exceeds",
+  "cash_on_delivery_limit",
+  "cod_surcharge_changed",
   "card_unavailable", // ops-polish OP1: Begin refuses a card order when this deployment takes no card payment
 ] as const;
 export type CvsErrorCode = (typeof CVS_ERROR_CODES)[number];
@@ -360,7 +365,7 @@ export const isCvsErrorCode = (v: unknown): v is CvsErrorCode =>
   typeof v === "string" && (CVS_ERROR_CODES as readonly string[]).includes(v);
 // Definite refusals: nothing was committed even when the HTTP status is 429, so the client must not treat
 // them as an uncertain outcome that locks the purchase (see buyer-server failure()).
-export const DEFINITE_CVS_CODES: readonly string[] = ["pay_at_pickup_limit"];
+export const DEFINITE_CVS_CODES: readonly string[] = ["pay_at_pickup_limit", "cash_on_delivery_limit"];
 
 // Which input a code belongs to, so the message renders next to it.
 export function errorField(

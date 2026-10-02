@@ -19,6 +19,7 @@ import (
 
 	"livecommerce/internal/claims"
 	"livecommerce/internal/claimsintake"
+	"livecommerce/internal/domains"
 	"livecommerce/internal/integrations/core"
 	"livecommerce/internal/integrations/meta/pagetoken/pageopen"
 	"livecommerce/internal/integrations/metareply"
@@ -27,6 +28,7 @@ import (
 	"livecommerce/internal/jobqueue"
 	"livecommerce/internal/platform"
 	"livecommerce/internal/retention"
+	"livecommerce/internal/storefrontdomains"
 )
 
 var (
@@ -38,14 +40,16 @@ var (
 )
 
 type workerConfig struct {
-	enabled      bool
-	intakeDSN    string
-	workerDSN    string
-	retentionDSN string
-	linkKey      claims.ReplyLinkKey
-	pageKeys     *metareply.PageTokenKeyring
-	pageOpen     *pageopen.Keyring // HPKE private ring of meta-page-token-v2 (merchant connect); nil = v2 credentials are denied
-	graph        metareply.Config
+	enabled               bool
+	intakeDSN             string
+	workerDSN             string
+	retentionDSN          string
+	storeVerifyDSN        string
+	storeVerifyBaseDomain string
+	linkKey               claims.ReplyLinkKey
+	pageKeys              *metareply.PageTokenKeyring
+	pageOpen              *pageopen.Keyring // HPKE private ring of meta-page-token-v2 (merchant connect); nil = v2 credentials are denied
+	graph                 metareply.Config
 	// ECPay CVS route (taiwan-cvs-logistics-v1 §7.4): registered only when ecpayCfg.Enabled.
 	ecpayCfg    ecpay.Config
 	ecpayKeys   *ecpay.Keyring
@@ -88,7 +92,13 @@ func loadConfig(getenv func(string) string) (workerConfig, error) {
 	c.workerDSN = getenv("COMMERCE_WORKER_DATABASE_URL")
 	// U08 (claims-retention-purge-v1 §5): the hourly purge job runs on its own login, required whenever the worker is on.
 	c.retentionDSN = getenv("COMMERCE_RETENTION_JOB_DATABASE_URL")
-	if !validDSN(c.intakeDSN) || !validDSN(c.workerDSN) || !validDSN(c.retentionDSN) {
+	// R5 store-domains (P0-2): the DNS/TLS verify sweep runs here on its own login; base domain = the platform zone.
+	c.storeVerifyDSN = getenv("COMMERCE_STORE_VERIFY_DATABASE_URL")
+	c.storeVerifyBaseDomain = strings.ToLower(strings.TrimSpace(getenv("LC_STORE_BASE_DOMAIN")))
+	if !validDSN(c.intakeDSN) || !validDSN(c.workerDSN) || !validDSN(c.retentionDSN) || !validDSN(c.storeVerifyDSN) {
+		return workerConfig{}, errWorkerConfig
+	}
+	if !domains.ValidOrigin("https://" + c.storeVerifyBaseDomain) {
 		return workerConfig{}, errWorkerConfig
 	}
 	raw, err := base64.StdEncoding.DecodeString(getenv("COMMERCE_CLAIMS_REPLY_LINK_KEY"))
@@ -180,6 +190,19 @@ func run(ctx context.Context, getenv func(string) string) error {
 	if err != nil {
 		return errWorkerDatabase
 	}
+	// platform.OpenStoreDomainVerifyPool: admission of lc_store_domain_verify (exactly one authority); the sweep's only SQL.
+	storeVerifyPool, err := platform.OpenStoreDomainVerifyPool(startup, c.storeVerifyDSN)
+	if err != nil {
+		return errWorkerDatabase
+	}
+	defer storeVerifyPool.Close()
+	if !sameDatabase(startup, storeVerifyPool, workerPool) {
+		return errWorkerDatabase // the sweep must run against the database whose rows it advances
+	}
+	storeVerifyWorker, err := storefrontdomains.NewWorker(storeVerifyPool, c.storeVerifyBaseDomain)
+	if err != nil {
+		return errWorkerDatabase
+	}
 	routes, err := metareply.RoutesV2(workerPool, c.linkKey, c.pageKeys, c.pageOpen, c.graph)
 	if err != nil {
 		return errWorkerRoutes
@@ -207,12 +230,14 @@ func run(ctx context.Context, getenv func(string) string) error {
 	workers := river.NewWorkers()
 	river.AddWorker(workers, dispatcher)
 	river.AddWorker(workers, retentionWorker)
+	river.AddWorker(workers, storeVerifyWorker)
 	// Default queue of the main river schema: the only queue external_operation_v1 jobs use. A stuck job
 	// (crash mid-dispatch) is rescued after one minute so a reply is not stranded for River's default hour.
 	client, err := river.NewClient(riverpgxv5.New(workerPool), &river.Config{
 		Schema: "river", Workers: workers, RescueStuckJobsAfter: retention.RescueWindow,
 		// U08: hourly + on start, unique per hour (retention.JobArgs.InsertOpts); inserted by commerce_claims_worker (IR-4).
-		PeriodicJobs: []*river.PeriodicJob{retention.PeriodicJob()},
+		// R5 store-domains (P0-2): once a minute + on start (storefrontdomains.PeriodicJob).
+		PeriodicJobs: []*river.PeriodicJob{retention.PeriodicJob(), storefrontdomains.PeriodicJob()},
 		Queues:       map[string]river.QueueConfig{river.QueueDefault: {MaxWorkers: 4}},
 		Logger:       slog.New(slog.NewTextHandler(io.Discard, nil)),
 	})

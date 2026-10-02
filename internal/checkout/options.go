@@ -57,6 +57,17 @@ type Option struct {
 	// policy has none, and also when it is 0 ("always free" needs no progress hint; the buyer UI accepts positive integers or null).
 	// The quote stays the only authority on the amount charged (I05): a stale hint can mislead copy, never money.
 	FreeShippingThresholdMinor *int64 `json:"free_shipping_threshold_minor"`
+	// CodSurchargeMinor (home-cod R5, migration 0107) is present only on a home row whose PaymentModes includes "cash_on_delivery":
+	// the store's whole-TWD COD surcharge in minor units the buyer pays on delivery on top of the order total (0 = no surcharge).
+	// The quote stays the only authority on the order total (I05); this field only lets the storefront show the surcharge.
+	CodSurchargeMinor int64 `json:"cod_surcharge_minor,omitempty"`
+	// CodCarrier (home-cod R5, P2-4) is the carrier label of the COD offer (black_cat / hsinchu; manual fulfilment, never a carrier
+	// API) and is snapshotted on the order at placement. Present only alongside CodSurchargeMinor.
+	CodCarrier string `json:"cod_carrier,omitempty"`
+	// CodMaxMinor (home-cod R5, P2-3) is the store's whole-TWD per-order COD cap (total + surcharge may not exceed it) in minor
+	// units. The options request has no basket, so the server cannot omit COD from a row whose total + surcharge would exceed the
+	// cap here; exposing the cap lets the storefront make that call before the buyer reaches Begin.
+	CodMaxMinor int64 `json:"cod_max_minor,omitempty"`
 }
 
 // transferOffer is checkout.read_transfer_offer: the store's bank-transfer switch, whether CVS destinations may use it, and the window.
@@ -64,6 +75,16 @@ type Option struct {
 type transferOffer struct {
 	enabled, allowCVS bool
 	windowHours       int
+}
+
+// codOffer is checkout.read_cod_offer (home-cod R5, migration 0107): the store's cash-on-delivery switch, the whole-TWD surcharge,
+// the carrier label (manual fulfilment, never a carrier API) and the per-order cap. Home rows only; it never carries money details
+// beyond the public offer.
+type codOffer struct {
+	enabled      bool
+	surchargeTWD int
+	carrier      string
+	maxTWD       int
 }
 
 type optionsCursor struct {
@@ -220,7 +241,12 @@ func (s *Service) ListOptions(ctx context.Context, token, storeID string, in Opt
 			tokenHash[:], storeID).Scan(&offer.enabled, &offer.allowCVS, &offer.windowHours); err != nil {
 			return err
 		}
-		items, err := s.decorateCVS(callCtx, tx, tokenHash[:], storeID, fetched, offer)
+		var cod codOffer
+		if err = tx.QueryRow(callCtx, `SELECT enabled,surcharge_twd,carrier,max_twd FROM checkout.read_cod_offer($1,$2::uuid)`,
+			tokenHash[:], storeID).Scan(&cod.enabled, &cod.surchargeTWD, &cod.carrier, &cod.maxTWD); err != nil {
+			return err
+		}
+		items, err := s.decorateCVS(callCtx, tx, tokenHash[:], storeID, fetched, offer, cod)
 		if err != nil {
 			return err
 		}
@@ -253,13 +279,14 @@ var cvsSearchURLs = map[string]string{
 // decorateCVS adds the §5.1/§16.5 CVS fields to the fetched rows and drops the rows the store did not configure. Store mode and
 // settings are read only through fulfillment.read_cvs_offer (no table access, buyer scope from the capability); non-CVS rows pass
 // unchanged. CVS_ECPAY_ENABLED is the process kill switch: an ecpay_map store is then temporarily_unavailable, never buyer_entered.
-func (s *Service) decorateCVS(ctx context.Context, tx pgx.Tx, tokenHash []byte, storeID string, rows []Option, transfer transferOffer) ([]Option, error) {
+// cod is the home cash-on-delivery offer (home-cod R5): a home row lists "cash_on_delivery" while the store enables it.
+func (s *Service) decorateCVS(ctx context.Context, tx pgx.Tx, tokenHash []byte, storeID string, rows []Option, transfer transferOffer, cod codOffer) ([]Option, error) {
 	items := make([]Option, 0, len(rows))
 	hasCVS := false
 	for _, option := range rows {
 		hasCVS = hasCVS || option.DeliveryKind != "home"
 	}
-	if !hasCVS && !transfer.enabled {
+	if !hasCVS && !transfer.enabled && !cod.enabled {
 		if s.noCard {
 			return items, nil // home rows are card-only (OP1): nothing payable, nothing offered
 		}
@@ -285,12 +312,20 @@ func (s *Service) decorateCVS(ctx context.Context, tx pgx.Tx, tokenHash []byte, 
 	ecpayOn := s.cvs != nil && s.cvs.cfg.ECPay.Enabled
 	for _, option := range rows {
 		if option.DeliveryKind == "home" {
-			// Home rows are card-only unless the store enabled bank transfer; then they list their modes like a CVS row does.
+			// Home rows are card-only unless the store enabled bank transfer or cash on delivery (home-cod R5); then they list their
+			// modes like a CVS row does.
+			if transfer.enabled || cod.enabled {
+				option.PaymentModes = paymentModes(!s.noCard, false, transfer.enabled, cod.enabled)
+			}
 			if transfer.enabled {
-				option.PaymentModes = paymentModes(!s.noCard, false, true)
 				option.TransferWindowHours = transfer.windowHours
 			}
-			if !s.noCard || transfer.enabled {
+			if cod.enabled {
+				option.CodSurchargeMinor = int64(cod.surchargeTWD) * 100
+				option.CodCarrier = cod.carrier
+				option.CodMaxMinor = int64(cod.maxTWD) * 100
+			}
+			if !s.noCard || transfer.enabled || cod.enabled {
 				items = append(items, option)
 			}
 			continue
@@ -304,7 +339,7 @@ func (s *Service) decorateCVS(ctx context.Context, tx pgx.Tx, tokenHash []byte, 
 		}
 		option.PickupSelection = offer.selection
 		bank := transfer.enabled && transfer.allowCVS
-		option.PaymentModes = paymentModes(!s.noCard, offer.pap && offer.papMax != nil, bank)
+		option.PaymentModes = paymentModes(!s.noCard, offer.pap && offer.papMax != nil, bank, false) // cash on delivery is home-only
 		if len(option.PaymentModes) == 0 {
 			continue // OP1: no payment mode can be completed, so the buyer is not offered this chain
 		}
@@ -322,10 +357,10 @@ func (s *Service) decorateCVS(ctx context.Context, tx pgx.Tx, tokenHash []byte, 
 	return items, nil
 }
 
-// paymentModes lists what a buyer can complete on a row: card while the process can take it, pay_at_pickup / bank_transfer when the
-// store enabled them (the caller decides destination eligibility).
-func paymentModes(card, payAtPickup, bankTransfer bool) []string {
-	modes := make([]string, 0, 3)
+// paymentModes lists what a buyer can complete on a row: card while the process can take it, pay_at_pickup / bank_transfer /
+// cash_on_delivery when the store enabled them (the caller decides destination eligibility).
+func paymentModes(card, payAtPickup, bankTransfer, cashOnDelivery bool) []string {
+	modes := make([]string, 0, 4)
 	if card {
 		modes = append(modes, "card")
 	}
@@ -334,6 +369,9 @@ func paymentModes(card, payAtPickup, bankTransfer bool) []string {
 	}
 	if bankTransfer {
 		modes = append(modes, "bank_transfer")
+	}
+	if cashOnDelivery {
+		modes = append(modes, "cash_on_delivery")
 	}
 	return modes
 }

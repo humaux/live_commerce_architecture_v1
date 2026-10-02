@@ -11,6 +11,10 @@
 // RESERVED for the merchant's window, the buyer submits transfer details (transfer.go), and only a merchant act (internal/merchantorders)
 // confirms it; the same ExpiryWorker releases an unpaid window. An optional buyer email is stored on the order.
 //
+// cash_on_delivery (home-cod R5, migration 0107 + post_river/0020) is the fourth mode: a home-delivery order waits AWAITING_COLLECTION with
+// its stock held as for pay_at_pickup (committed at placement, no online charge), the merchant ships it manually and records the carrier's
+// collection through the shared collection state machine (internal/fulfillment CVS.RecordCollection / Release).
+//
 // A live-priced (claim-origin) order consumes its claimed quantity in the Begin transaction through
 // storefront.ConsumeLivePrices (claims.consume_live_prices, migration 0105); cancellation releases it by state alone.
 //
@@ -82,6 +86,7 @@ type Input struct {
 	// PaymentMode is "card" (or empty, the same thing) or "pay_at_pickup" (§16.2, CVS destinations only; SQL decides).
 	// omitempty keeps the request digest of an old card request unchanged, so pre-upgrade replays still match.
 	// "bank_transfer" (storefront-v2 §C) places the order AWAITING_TRANSFER with the stock reserved for the merchant's window.
+	// "cash_on_delivery" (home-cod R5) places a home order AWAITING_COLLECTION with the stock held as for pay_at_pickup.
 	PaymentMode string `json:"payment_mode,omitempty"`
 	// BuyerEmail is optional (storefront-v2 §C), validated by validBuyerEmail and stored on the order for notifications (PII: customers
 	// export/erasure cover it). omitempty keeps pre-0088 request digests unchanged.
@@ -90,6 +95,10 @@ type Input struct {
 	// Validated by validInput and persisted on the order (checkout.orders.locale, migration 0097) so buyer notification
 	// mails render in the buyer's own language (internal/notify localeOf). omitempty keeps old request digests unchanged.
 	Locale string `json:"locale,omitempty"`
+	// ExpectedCodSurchargeMinor (home-cod R5, P2-1) is the COD surcharge the buyer was shown at options/quote time, echoed back so
+	// begin_hold can refuse (PT409 cod_surcharge_changed) when the merchant changed it between quote and begin. nil/absent means the
+	// snapshot stays a 4-key object and no re-quote check runs; omitempty keeps pre-0107 request digests unchanged.
+	ExpectedCodSurchargeMinor *int64 `json:"expected_cod_surcharge_minor,omitempty"`
 }
 
 type Result struct {
@@ -109,6 +118,9 @@ type Snapshot struct {
 	Destination storefront.Destination `json:"destination"`
 	Service     fulfillment.Service    `json:"service"`
 	Allocation  fulfillment.Allocation `json:"allocation"`
+	// ExpectedCodSurchargeMinor (home-cod R5, P2-1) is the 5th snapshot key, present only on cash_on_delivery orders that echo the
+	// shown surcharge; begin_hold compares it to the current setting and refuses PT409 cod_surcharge_changed on a mismatch.
+	ExpectedCodSurchargeMinor *int64 `json:"expected_cod_surcharge_minor,omitempty"`
 }
 
 type Order struct {
@@ -124,6 +136,15 @@ type Order struct {
 	PaymentMode     string            `json:"payment_mode"`
 	CollectionState *string           `json:"collection_state"`
 	CVSShipment     *BuyerCVSShipment `json:"cvs_shipment"`
+	// CodCollectMinor / CodSurchargeMinor (home-cod R5, migration 0107) are present only on cash_on_delivery orders: the cash due
+	// on delivery (total_minor + cod_surcharge_minor) and the surcharge folded into it, so the order page and the mails can state
+	// 「到貨需付 NT$X（含貨到付款手續費 NT$Y）」. Zero for every other payment mode (omitted from the JSON).
+	CodCollectMinor   int64 `json:"cod_collect_minor,omitempty"`
+	CodSurchargeMinor int64 `json:"cod_surcharge_minor,omitempty"`
+	// CodCarrier (home-cod R5, P2-4) is the carrier label (black_cat 黑貓 / hsinchu 新竹) snapshotted at placement from
+	// checkout.cash_on_delivery_settings.carrier. Present only on cash_on_delivery orders (null otherwise); it is the order-time
+	// snapshot, never derived from the current settings.
+	CodCarrier *string `json:"cod_carrier,omitempty"`
 }
 
 // BuyerCVSShipment is the buyer's view of the current ECPay attempt (§5.3): state, chain, store name and code, never the
@@ -259,7 +280,7 @@ func (s *Service) Begin(ctx context.Context, token, storeID, key string, in Inpu
 		var active bool
 		err = tx.QueryRow(callCtx, `SELECT EXISTS(SELECT 1 FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2
 			AND owner_id=$3 AND cart_id=$4 AND cart_version=$5
-			AND commercial_state IN ('DRAFT','AWAITING_PAYMENT','AWAITING_TRANSFER','CONFIRMED'))`,
+			AND commercial_state IN ('DRAFT','AWAITING_PAYMENT','AWAITING_TRANSFER','CONFIRMED','AWAITING_COLLECTION'))`,
 			scope.TenantID, scope.StoreID, scope.OwnerID, quote.CartID, quote.CartVersion).Scan(&active)
 		if err != nil {
 			return err
@@ -325,7 +346,12 @@ func (s *Service) Begin(ctx context.Context, token, storeID, key string, in Inpu
 		if err != nil {
 			return err
 		}
-		snapshotJSON, err := json.Marshal(Snapshot{Quote: quote, Destination: destination, Service: service, Allocation: allocation})
+		snapshot := Snapshot{Quote: quote, Destination: destination, Service: service, Allocation: allocation}
+		if mode == "cash_on_delivery" {
+			// P2-1: pass the surcharge the buyer was shown through as the 5th snapshot key (begin_hold re-checks it, PT409 on change).
+			snapshot.ExpectedCodSurchargeMinor = in.ExpectedCodSurchargeMinor
+		}
+		snapshotJSON, err := json.Marshal(snapshot)
 		if err != nil {
 			return command.ErrInvalid
 		}
@@ -403,12 +429,16 @@ func (s *Service) Get(ctx context.Context, token, storeID, orderID string) (Orde
 	tokenHash := sha256.Sum256([]byte(token))
 	err := buyer.WithScope(ctx, s.pool, token, storeID, func(callCtx context.Context, tx pgx.Tx, scope buyer.Scope) error {
 		var snapshotJSON []byte
+		var codSurcharge *int64
+		var codCarrier *string
+		var totalMinor int64
 		err := tx.QueryRow(callCtx, `SELECT id::text,id::text,generation,expires_at,job_id,
-			commercial_state,fulfillment_state,snapshot,payment_mode,collection_state FROM checkout.orders
+			commercial_state,fulfillment_state,snapshot,payment_mode,collection_state,
+			cod_surcharge_minor,cod_carrier,total_minor FROM checkout.orders
 			WHERE tenant_id=$1 AND store_id=$2 AND owner_id=$3 AND id=$4`,
 			scope.TenantID, scope.StoreID, scope.OwnerID, orderID).Scan(&out.OrderID, &out.ReservationID,
 			&out.Generation, &out.ExpiresAt, &out.JobID, &out.CommercialState, &out.FulfillmentState, &snapshotJSON,
-			&out.PaymentMode, &out.CollectionState)
+			&out.PaymentMode, &out.CollectionState, &codSurcharge, &codCarrier, &totalMinor)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return command.ErrNotFound
 		}
@@ -457,10 +487,22 @@ func (s *Service) Get(ctx context.Context, token, storeID, orderID string) (Orde
 			view.UpdatedAt = view.UpdatedAt.UTC()
 			out.CVSShipment = &view
 		}
-		// payment_mode <=> collection_state (orders_payment_collection CHECK): only pay_at_pickup carries one; card and bank_transfer never do.
-		if (out.PaymentMode != "card" && out.PaymentMode != "pay_at_pickup" && out.PaymentMode != "bank_transfer") ||
-			(out.PaymentMode == "pay_at_pickup") != (out.CollectionState != nil) {
+		// payment_mode <=> collection_state (orders_payment_collection CHECK): only pay_at_pickup and cash_on_delivery carry one; card and
+		// bank_transfer never do.
+		if (out.PaymentMode != "card" && out.PaymentMode != "pay_at_pickup" && out.PaymentMode != "bank_transfer" && out.PaymentMode != "cash_on_delivery") ||
+			(out.PaymentMode == "pay_at_pickup" || out.PaymentMode == "cash_on_delivery") != (out.CollectionState != nil) {
 			return command.ErrConflict
+		}
+		// home-cod R5: the cash due on delivery is total_minor + cod_surcharge_minor for a COD order, and the carrier label is the
+		// placement-time snapshot (black_cat/hsinchu). All three are server-computed and a COD order always has the surcharge and
+		// carrier columns set (orders_cod_surcharge / orders_cod_carrier CHECKs), so a nil is drift; never derived from current settings.
+		if out.PaymentMode == "cash_on_delivery" {
+			if codSurcharge == nil || codCarrier == nil || (*codCarrier != "black_cat" && *codCarrier != "hsinchu") {
+				return command.ErrConflict
+			}
+			out.CodSurchargeMinor = *codSurcharge
+			out.CodCollectMinor = totalMinor + *codSurcharge
+			out.CodCarrier = codCarrier
 		}
 		return checkCapability(callCtx, tx, tokenHash[:], storeID, scope)
 	})
@@ -473,7 +515,7 @@ func (s *Service) Get(ctx context.Context, token, storeID, orderID string) (Orde
 func validInput(in Input) bool {
 	return command.ValidID(in.QuoteID) && command.ValidID(in.DestinationID) &&
 		in.CartVersion > 0 && in.ServiceVersion > 0 && in.AllocationVersion > 0 &&
-		(in.PaymentMode == "" || in.PaymentMode == "card" || in.PaymentMode == "pay_at_pickup" || in.PaymentMode == "bank_transfer") &&
+		(in.PaymentMode == "" || in.PaymentMode == "card" || in.PaymentMode == "pay_at_pickup" || in.PaymentMode == "bank_transfer" || in.PaymentMode == "cash_on_delivery") &&
 		validBuyerEmail(in.BuyerEmail) && validLocale(in.Locale)
 }
 
@@ -509,14 +551,17 @@ func holdWithinBounds(mode string, now, expires time.Time) bool {
 }
 
 // commercialAtPlacement is the order state begin_hold writes: pay_at_pickup orders are CONFIRMED at placement (§16.2, no Stripe
-// session); bank_transfer orders wait AWAITING_TRANSFER for the merchant (never auto-confirmed); card orders start DRAFT and are
-// confirmed by the captured payment.
+// session); bank_transfer orders wait AWAITING_TRANSFER for the merchant (never auto-confirmed); cash_on_delivery orders wait
+// AWAITING_COLLECTION for the carrier's delivery (home-cod R5, never CONFIRMED); card orders start DRAFT and are confirmed by the
+// captured payment.
 func commercialAtPlacement(mode string) string {
 	switch mode {
 	case "pay_at_pickup":
 		return "CONFIRMED"
 	case "bank_transfer":
 		return "AWAITING_TRANSFER"
+	case "cash_on_delivery":
+		return "AWAITING_COLLECTION"
 	}
 	return "DRAFT"
 }
@@ -602,6 +647,10 @@ func safeError(ctx context.Context, err error) error {
 		case "PT404":
 			return command.ErrNotFound
 		case "PT409":
+			// P2-1: a coded PT409 (cod_surcharge_changed) is a re-quote signal surfaced to the buyer, not a plain conflict.
+			if cvsCode.MatchString(pgErr.Message) {
+				return &fulfillment.CVSError{Status: 409, Code: pgErr.Message}
+			}
 			return command.ErrConflict
 		}
 	}

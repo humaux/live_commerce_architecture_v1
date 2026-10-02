@@ -35,6 +35,12 @@ type optionResponse struct {
 	TransferWindowHours int `json:"transfer_window_hours,omitempty"`
 	// storefront-v2 §C: the delivery policy's free-shipping threshold (minor units) or null; always present (a hint only, the quote decides).
 	FreeShippingThresholdMinor *int64 `json:"free_shipping_threshold_minor"`
+	// home-cod R5: present only on a home row whose payment_modes lists cash_on_delivery (the whole-TWD surcharge in minor units; 0 = none).
+	CodSurchargeMinor int64 `json:"cod_surcharge_minor,omitempty"`
+	// home-cod R5 (P2-4/P2-3): the COD carrier label and the whole-TWD per-order cap in minor units, present only alongside
+	// cod_surcharge_minor. The cap lets the storefront omit COD from a row it knows will exceed it (the options request has no basket).
+	CodCarrier  string `json:"cod_carrier,omitempty"`
+	CodMaxMinor int64  `json:"cod_max_minor,omitempty"`
 }
 
 type optionsResponse struct {
@@ -53,6 +59,7 @@ func projectOptions(page pagination.Page[checkout.Option]) optionsResponse {
 			NameEN: item.NameEN, SortOrder: item.SortOrder, PickupSelection: item.PickupSelection,
 			PaymentModes: item.PaymentModes, StoreSearchURL: item.StoreSearchURL, Available: item.Available, Reason: item.Reason,
 			TransferWindowHours: item.TransferWindowHours, FreeShippingThresholdMinor: item.FreeShippingThresholdMinor,
+			CodSurchargeMinor: item.CodSurchargeMinor, CodCarrier: item.CodCarrier, CodMaxMinor: item.CodMaxMinor,
 		})
 	}
 	return out
@@ -336,6 +343,13 @@ type orderResponse struct {
 	PaymentMode     string                     `json:"payment_mode"`
 	CollectionState *string                    `json:"collection_state"`
 	CVSShipment     *checkout.BuyerCVSShipment `json:"cvs_shipment"`
+	// home-cod R5: present only on cash_on_delivery orders — the cash due on delivery (total + surcharge) and the surcharge folded
+	// into it, so the order page states 「到貨需付 NT$X（含貨到付款手續費 NT$Y）」.
+	CodCollectMinor   int64 `json:"cod_collect_minor,omitempty"`
+	CodSurchargeMinor int64 `json:"cod_surcharge_minor,omitempty"`
+	// CodCarrier (home-cod R5, P2-4): the placement-time carrier label (black_cat/hsinchu) of a cash_on_delivery order; present
+	// only on COD orders (null otherwise) and never derived from the current settings.
+	CodCarrier *string `json:"cod_carrier,omitempty"`
 }
 
 func projectOrder(order checkout.Order) orderResponse {
@@ -345,6 +359,7 @@ func projectOrder(order checkout.Order) orderResponse {
 		OrderID: order.OrderID, CommercialState: order.CommercialState, FulfillmentState: order.FulfillmentState,
 		CartID: quote.CartID, CartVersion: quote.CartVersion, Shipment: order.Shipment,
 		PaymentMode: order.PaymentMode, CollectionState: order.CollectionState, CVSShipment: order.CVSShipment,
+		CodCollectMinor: order.CodCollectMinor, CodSurchargeMinor: order.CodSurchargeMinor, CodCarrier: order.CodCarrier,
 		Snapshot: orderSnapshotResponse{
 			Quote: orderQuoteResponse{
 				Currency: quote.Currency, Lines: projectQuoteLines(quote.Lines),
