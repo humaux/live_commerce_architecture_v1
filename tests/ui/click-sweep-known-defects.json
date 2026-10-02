@@ -1,0 +1,48 @@
+[
+  {
+    "id": "D01-manual-order-cod-parse",
+    "app": "admin",
+    "route": "/orders/new",
+    "kind": "page-error-state",
+    "severity": "P1",
+    "owner_unit": "home-cod",
+    "summary": "Manual order page opens in 'creating orders from the admin is not turned on for this deployment' as soon as cash on delivery is enabled: Go lists payment_modes containing cash_on_delivery, apps/admin/lib/merchant-tools-model.ts manualPaymentModes does not, so parseManualOptions throws and the page treats it as 'not configured'. The merchant cannot create a manual order at all."
+  },
+  {
+    "id": "D02-studio-request-storm",
+    "app": "admin",
+    "route": "/studio",
+    "kind": [
+      "request-storm",
+      "page-error-state"
+    ],
+    "severity": "P1",
+    "owner_unit": "studio-ui",
+    "flaky": true,
+    "summary": "/studio re-fetches GET live-sessions?limit=20 (and the scene read) about 370 times per second, aborting each request, and never leaves 'Loading scenes...' (measured 2137 requests in 6 s on a store with one scene; reproduces on some loads only). The page is unusable and floods the BFF/Go API."
+  },
+  {
+    "id": "D03-claims-refresh-silent",
+    "app": "admin",
+    "route": "/studio/claims",
+    "kind": "no-effect",
+    "control": [
+      "Refresh facts",
+      "重新整理事實"
+    ],
+    "severity": "P2",
+    "owner_unit": "live-claims",
+    "summary": "'Refresh facts' re-reads six endpoints but shows no feedback (no loading state, timestamp or notice): the click looks like it did nothing."
+  },
+  {
+    "id": "D04-product-save-silent",
+    "app": "admin",
+    "route": "/products/[product]",
+    "kind": "no-effect",
+    "control": "product-save",
+    "severity": "P2",
+    "owner_unit": "catalog-core",
+    "flaky": true,
+    "summary": "'Save changes' on an unchanged product sends no request and shows no message (no 'nothing to save' notice, button stays enabled). It only appears to react when the form remounts after a first real change."
+  }
+]
