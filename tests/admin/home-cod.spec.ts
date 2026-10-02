@@ -61,6 +61,7 @@ async function openOrders(page: Page, locale: string) {
     if ((await selector.inputValue()) !== store) await selector.selectOption(store);
   }
   await expect(page.getByTestId("orders-table")).toBeVisible();
+  await expect(page.getByTestId("orders-table")).toContainText("UTC+8");
 }
 async function expand(page: Page, id: string): Promise<Locator> {
   for (let pageNo = 0; pageNo < 5; pageNo++) {
@@ -98,10 +99,10 @@ test("settings: the merchant enables cash on delivery with a cap, surcharge and 
   await card.getByTestId("cod-settings-save").click();
   await expect(card.getByTestId("cod-settings-problem")).toHaveText(cc.invalid);
   await card.getByTestId("cod-surcharge").fill("50");
-  await shot(page, "settings-cod", locale, "desktop");
   await card.getByTestId("cod-settings-save").click();
   await expect(card.getByTestId("cod-settings-notice")).toHaveText(cc.saved);
   await expect(card.getByTestId("cod-settings-problem")).toHaveCount(0);
+  await shot(page, "settings-cod", locale, "desktop");
   // read back from the server after a reload: the card carries the saved values
   await page.reload();
   await page.getByRole("button", { name: new RegExp(c.steps[1]) }).click(); // the draft keeps the wizard on step 3: back to step 2
@@ -144,11 +145,13 @@ test("ship-collect: the merchant records the manual shipment, then the collected
   const collectText = await pendingCod.getByTestId("cod-collect-amount").innerText();
   expect(collectText).toMatch(/^NT\$[\d,]+$/);
   await expect(detail.getByTestId("order-collect-amount")).toHaveText(collectText);
-  // a COD order ships first (the manual record admits AWAITING_COLLECTION): sf_express, a plain tracking number
+  await expect(detail.getByTestId("order-collection-state")).toHaveText(codCopy[locale].orderStates.PENDING);
+  // Manual shipment, not a carrier API call: use the checkout carrier.
   const shipment = detail.getByTestId("order-shipment");
   await expect(shipment).toBeVisible();
-  await shipment.getByTestId("ship-carrier").selectOption("sf_express");
-  await shipment.getByTestId("ship-tracking").fill("SF1234567890");
+  await expect(shipment.getByTestId("ship-carrier").locator('option[value="hsinchu"]')).toHaveCount(1);
+  await shipment.getByTestId("ship-carrier").selectOption("black_cat");
+  await shipment.getByTestId("ship-tracking").fill("BC1234567890");
   await shot(page, "ship", locale, "desktop");
   await shipment.getByTestId("shipment-submit").click();
   await expect(shipment.getByTestId("shipment-record")).toBeVisible();
@@ -163,6 +166,7 @@ test("ship-collect: the merchant records the manual shipment, then the collected
   await shot(page, "collect-dialog", locale, "desktop");
   await dialog.getByTestId("cod-submit").click();
   await expect(cod.getByTestId("cod-collection-state")).toHaveAttribute("data-state", "COLLECTED");
+  await expect(detail.getByTestId("order-collection-state")).toHaveText(codCopy[locale].orderStates.COLLECTED);
   await expect(cod.getByTestId("cod-collected")).toHaveCount(0); // a collected order cannot be collected again
   await expect(shipment.getByTestId("shipment-void")).toBeDisabled();
   await expect(shipment.getByTestId("shipment-correct")).toBeEnabled();

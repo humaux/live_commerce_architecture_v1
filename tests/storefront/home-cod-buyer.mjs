@@ -80,13 +80,16 @@ async function startNext() {
 }
 const manifest = path.join(evidence, "screenshots.json");
 async function shot(page, name, locale, viewport) {
+  await expect(page.locator("html")).toHaveAttribute("lang", locale);
+  assert.equal(new URL(page.url()).pathname.split("/")[1], locale, "screenshot filename locale matches the displayed route");
   const file = path.join(evidence, `home-cod-${name}-${locale}-${viewport}.png`);
   await page.screenshot({ path: file, fullPage: true });
   if (name === "checkout" || name === "order-pending") {
     const previous = page.viewportSize();
     for (const width of [390, 1366, 1586]) {
       await page.setViewportSize({ width, height: width === 390 ? 844 : 992 });
-      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.evaluate(async () => { await document.fonts.ready; window.scrollTo({ top: 0, behavior: "instant" }); });
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${name} ${locale} overflow at ${width}`);
       await page.screenshot({ path: path.join(root, "output/home-cod-ui", `buyer-${name}-${locale}-${width}.png`), fullPage: false, animations: "disabled", scale: "css" });
       if (name === "checkout") {
@@ -209,6 +212,7 @@ async function place(buyer) {
   await expect(cod.getByTestId("order-cod-state")).toHaveAttribute("data-state", "PENDING");
   await expect(cod.getByTestId("order-cod-amount")).toContainText(`NT$${(total + surcharge) / 100}`);
   await expect(cod.getByTestId("order-cod-amount")).toContainText(`NT$${surcharge / 100}`);
+  await expect(cod.getByTestId("order-cod-carrier")).toContainText(locale === "en" ? "Black Cat" : "黑貓");
   await expect(page.locator("#order-title")).toHaveText(await cod.getByTestId("order-cod-state").innerText());
   await shot(page, "order-pending", locale, viewport);
   if (label === "order A") {
@@ -216,6 +220,7 @@ async function place(buyer) {
     for (const language of ["zh-TW", "zh-CN", "en"]) {
       await linked.goto(`${origin}/${language}/orders/${id}`);
       await expect(linked.getByTestId("order-cod-amount")).toContainText(`NT$${(total + surcharge) / 100}`);
+      await expect(linked.getByTestId("order-cod-carrier")).toContainText({ "zh-TW": "黑貓", "zh-CN": "黑猫", en: "Black Cat" }[language]);
       await shot(linked, "order-pending", language, "desktop");
     }
     await linked.close();
@@ -226,6 +231,7 @@ async function place(buyer) {
     await lookupPage.getByTestId("lookup-contact").fill(pii.phone);
     await lookupPage.getByTestId("lookup-submit").click();
     await expect(lookupPage.getByTestId("order-cod-amount")).toContainText(`NT$${(total + surcharge) / 100}`);
+    await expect(lookupPage.getByTestId("order-cod-carrier")).toContainText("黑貓");
     await lookupContext.close();
   }
   pass(`${label} ${locale}/${viewport}: whole-TWD total ${total / 100}, surcharge ${surcharge / 100}, placed AWAITING_COLLECTION/PENDING`);
@@ -283,6 +289,8 @@ try {
     const order = await api(a.page, "GET", `orders/${a.id}`);
     assert.equal(order.status, 200); assert.equal(order.body.commercial_state, "AWAITING_COLLECTION", "a collected COD order never becomes CONFIRMED");
     assert.equal(order.body.collection_state, "COLLECTED");
+    assert.equal(order.body.cod_carrier, "black_cat");
+    assert.equal(order.body.shipment.carrier_code, "black_cat");
     await shot(a.page, "order-collected", a.locale, "desktop");
     for (const k of ["B", "C", "D"]) {
       const b = buyers[k]; await refresh(b.page);
@@ -291,6 +299,35 @@ try {
       assert.equal(o.body.collection_state, "PENDING");
     }
     pass("order A: COLLECTED and still AWAITING_COLLECTION; B, C, D: still PENDING");
+    // UI-only terminal projections. Do not mutate the four real PG orders that the parent gate reconciles.
+    // These screenshots prove translated rendering, NOT real terminal-state transitions.
+    const terminalTitles = {
+      "zh-TW": { RETURNED: "未取貨 — 已退回", REFUNDED_OFFLINE: "商家已在本站之外退款", CANCELLED: "商家已取消此訂單" },
+      en: { RETURNED: "Not collected — returned", REFUNDED_OFFLINE: "Refunded by the seller outside this site", CANCELLED: "The seller canceled this order" },
+    };
+    for (const locale of ["zh-TW", "en"]) {
+      const preview = await a.ctx.newPage();
+      let state = "RETURNED";
+      await preview.route(`**/api/buyer/orders/${a.id}`, async (route) => {
+        const body = { ...order.body, collection_state: state };
+        if (state === "CANCELLED") Object.assign(body, { commercial_state: "CANCELLED", fulfillment_state: "CANCELLED", shipment: null });
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
+      });
+      for (const terminal of Object.keys(terminalTitles[locale])) {
+        state = terminal;
+        await preview.goto(`${origin}/${locale}/orders/${a.id}`);
+        await expect(preview.locator("#order-title")).toHaveText(terminalTitles[locale][state]);
+        await expect(preview.getByTestId("order-cod-carrier")).toContainText(locale === "en" ? "Black Cat" : "黑貓");
+        for (const width of [390, 1586]) {
+          await preview.setViewportSize({ width, height: width === 390 ? 844 : 992 });
+          await preview.evaluate(async () => { await document.fonts.ready; window.scrollTo({ top: 0, behavior: "instant" }); });
+          assert(await preview.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+          await preview.screenshot({ path: path.join(root, "output/home-cod-ui", `buyer-${state.toLowerCase()}-mock-${locale}-${width}.png`), fullPage: false, animations: "disabled" });
+        }
+      }
+      await preview.close();
+    }
+    pass("MOCK terminal buyer headings: RETURNED / REFUNDED_OFFLINE / CANCELLED, zh-TW/en at 390/1586");
   }
   await signal("done");
 } finally {

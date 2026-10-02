@@ -130,6 +130,14 @@ try {
     await page.locator("#delivery").selectOption({ label: `${copy[locale].chain} · TW` });
     await page.getByRole("button", { name: copy[locale].quote, exact: true }).click();
     await expect(page.getByTestId("address-section")).toBeVisible();
+    const codUnavailable = page.locator(".cod-home-only");
+    await expect(codUnavailable.getByRole("radio")).toBeDisabled();
+    await expect(codUnavailable).toContainText(locale === "en" ? "Home delivery only" : "僅限宅配");
+    const captureViewport = page.viewportSize();
+    await page.setViewportSize({ width: mobile ? 390 : 1586, height: mobile ? 844 : 992 });
+    await codUnavailable.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: path.join(root, "output/home-cod-ui", `buyer-cvs-cod-disabled-${locale}-${mobile ? 390 : 1586}.png`), fullPage: false, animations: "disabled" });
+    await page.setViewportSize(captureViewport);
     // the payment mode is already pay-at-pickup: there is no card radio to flip back to, the create button already reads pay at pickup, and the
     // note beside it says no card is charged online. A single offered mode may need no radio at all; if one is drawn it must be the checked one.
     assert.equal(await page.getByRole("radio", { name: copy[locale].card }).count(), 0, `${locale}/${viewport}: a card radio is offered`);
