@@ -7,7 +7,9 @@
 # Usage: [PROVIDER=kimi|deepseek] [MODEL=...] bash scripts/agents/ext-agent.sh <worktree> <prompt-file> <out-dir> [effort low|high|max]
 #   kimi (subscription, 5-hour quota window): MODEL k3 (default) | kimi-for-coding (K2.8)
 #   deepseek (PAY-AS-YOU-GO, owner balance): MODEL deepseek-v4-pro (default) | deepseek-flash; refuses to start below
-#   DEEPSEEK_MIN_BALANCE_CNY (default 20) and records the balance before/after in <out>/cost.txt.
+#   DEEPSEEK_MIN_BALANCE_CNY (default 10, owner 2026-10-02), and a watchdog checks the balance every 60 s during the run and
+#   stops the run when it falls below the reserve. Either case writes <repo>/output/ext-agents/DEEPSEEK_LOW_BALANCE (balance,
+#   time, task) so the integrator notifies the owner to top up; records the balance before/after in <out>/cost.txt.
 # Reads secrets: ~/.config/livecommerce/kimi.env (KIMI_CODE_API_KEY) or deepseek.env (DEEPSEEK_API_KEY), mode 0600, outside the repo. Never printed,
 #   never passed on argv (env only), never written under the repo.
 # Isolation (the reason this script exists — a third-party model must not inherit the owner's powers):
@@ -54,10 +56,18 @@ cat >"$settings" <<JSON
   }
 }
 JSON
+# main checkout root (the shared output/ evidence area), resolved from the git common dir so worktrees agree
+repo_root=$(cd "$(git -C "$(dirname "$0")" rev-parse --git-common-dir)/.." && pwd)
 balance() { curl -s --max-time 20 -H "Authorization: Bearer $key" https://api.deepseek.com/user/balance | python3 -c 'import json,sys;print(json.load(sys.stdin)["balance_infos"][0]["total_balance"])'; }
 if [[ $provider == deepseek ]]; then
   before=$(balance); echo "deepseek balance before: $before CNY" >"$out/cost.txt"
-  python3 -c "import sys; sys.exit(0 if float('$before') >= float('${DEEPSEEK_MIN_BALANCE_CNY:-20}') else 1)" || { echo "refused: DeepSeek balance $before CNY below reserve ${DEEPSEEK_MIN_BALANCE_CNY:-20}" >&2; exit 2; }
+  reserve=${DEEPSEEK_MIN_BALANCE_CNY:-10}
+  low_marker="$repo_root/output/ext-agents/DEEPSEEK_LOW_BALANCE"
+  below() { python3 -c "import sys; sys.exit(0 if float('$1') < float('$reserve') else 1)"; }
+  if below "$before"; then
+    printf 'balance=%s reserve=%s time=%s task=%s state=refused\n' "$before" "$reserve" "$(date '+%F %T')" "$out" >>"$low_marker"
+    echo "refused: DeepSeek balance $before CNY below reserve $reserve" >&2; exit 2
+  fi
 fi
 cd "$wt"
 set +e  # the model run may fail (quota, budget); the cost accounting below must still run
@@ -70,7 +80,23 @@ env -i PATH="/Users/luolimo/.local/share/fnm/node-versions/v24.15.0/installation
   ANTHROPIC_MODEL="$model" ANTHROPIC_SMALL_FAST_MODEL="$model" \
   CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 DISABLE_AUTOUPDATER=1 MAX_THINKING_TOKENS="$think" \
   claude -p "$(cat "$prompt")" --settings "$settings" --strict-mcp-config --mcp-config '{"mcpServers":{}}' \
-    --permission-mode acceptEdits --output-format json >"$out/result.json" 2>"$out/stderr.log"
+    --permission-mode acceptEdits --output-format json >"$out/result.json" 2>"$out/stderr.log" &
+run_pid=$!
+if [[ $provider == deepseek ]]; then
+  # Watchdog: stop the run (not the machine) once the owner's balance drops below the reserve; the marker tells the integrator.
+  while kill -0 "$run_pid" 2>/dev/null; do
+    sleep 60
+    kill -0 "$run_pid" 2>/dev/null || break
+    now=$(balance 2>/dev/null) || continue
+    if [[ -n $now ]] && below "$now"; then
+      printf 'balance=%s reserve=%s time=%s task=%s state=stopped\n' "$now" "$reserve" "$(date '+%F %T')" "$out" >>"$low_marker"
+      pkill -TERM -P "$run_pid" 2>/dev/null; kill -TERM "$run_pid" 2>/dev/null
+      echo "stopped: DeepSeek balance $now CNY below reserve $reserve" >&2
+      break
+    fi
+  done
+fi
+wait "$run_pid"
 status=$?
 set -e
 [[ $provider == deepseek ]] && { after=$(balance); echo "deepseek balance after: $after CNY (run cost ≈ $(python3 -c "print(round(float('$before')-float('$after'),2))") CNY)" >>"$out/cost.txt"; cat "$out/cost.txt"; }
