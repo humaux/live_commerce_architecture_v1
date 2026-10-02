@@ -16,6 +16,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { catalogCopy } from "../../apps/admin/lib/catalog-v2-copy";
 import { copy } from "../../apps/admin/lib/copy";
+import { registerProductEditorAcceptance } from "./product-editor.acceptance";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -84,6 +85,9 @@ const variants = [
   { key: "d", locale: "en", viewport: { width: 1586, height: 992 }, vp: "desktop" as const },
   { key: "m", locale: "zh-TW", viewport: { width: 390, height: 844 }, vp: "mobile" as const },
 ];
+
+// Additive product-editor gate: never removes or weakens the frozen CC12 cases below.
+if (process.env.PRODUCT_EDITOR_ACCEPTANCE === "1") registerProductEditorAcceptance();
 
 for (const v of variants) {
   test.describe(`CC12 ${v.vp} ${v.locale}`, () => {
