@@ -5,7 +5,7 @@
 import { useCallback, useRef, useState } from "react";
 import { send, type Command, type Outcome } from "./catalog-v2-client";
 
-export type WriteMessage = { kind: "error" | "success" | "uncertain"; text: string };
+export type WriteMessage = { kind: "error" | "success" | "uncertain" | "info"; text: string };
 type Pending = { cmd: Command; run: (cmd: Command) => Promise<boolean> };
 
 export function useWrite(store: string, boundary: string, errorText: (code: string) => string, uncertainText: string) {
@@ -57,9 +57,10 @@ export function useWrite(store: string, boundary: string, errorText: (code: stri
   }, []);
 
   const fail = useCallback((text: string) => setMessage({ kind: "error", text }), []);
+  const notice = useCallback((text: string) => setMessage({ kind: "info", text }), []); // neutral answer to a click that sends nothing
   const dismiss = useCallback(() => {
     pending.current = null;
     setMessage(null);
   }, []);
-  return { busy, message, run, retry, fail, dismiss };
+  return { busy, message, run, retry, fail, notice, dismiss };
 }

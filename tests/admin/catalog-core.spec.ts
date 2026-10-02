@@ -133,6 +133,12 @@ for (const v of variants) {
       await expect(page.getByTestId("product-form")).toBeVisible();
       await expect(page.getByTestId("product-status")).toHaveValue("draft");
       await expect(page.getByTestId("product-slug")).toHaveValue(`${uniq}-linen-tee`);
+      // D04 (G-UI8 click sweep): Save on an unchanged form sent nothing and said nothing, so the click looked dead. It still sends nothing (no
+      // version bump), but the merchant is told there is nothing to save, and a real change afterwards saves as before.
+      const patchesBefore = writes.filter((w) => w.method === "PATCH").length;
+      await page.getByTestId("product-save").click();
+      await expect(page.getByTestId("product-message")).toContainText(L === "en" ? "No changes" : "沒有變更");
+      expect(writes.filter((w) => w.method === "PATCH"), "an unchanged form sends no PATCH").toHaveLength(patchesBefore);
       await expect(page.locator(".product-editor b"), "no raw HTML from merchant text").toHaveCount(0);
       // SEO counters (character counts against the 70 / 160 limits)
       await page.getByTestId("product-seo-title").fill("Linen tee, soft");
