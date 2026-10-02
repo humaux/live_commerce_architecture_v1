@@ -636,13 +636,13 @@ func TestCustomersBillingCB03List(t *testing.T) {
 			t.Fatalf("csv: %v", err)
 		}
 		lines := strings.Split(strings.TrimRight(string(raw), "\r\n"), "\n")
-		if lines[0] != "day,currency,environment,captured_count,captured_minor,refunded_minor,net_minor,pickup_collected_count,pickup_collected_minor,bank_transfer_confirmed_count,bank_transfer_confirmed_minor" {
+		if lines[0] != "day,currency,environment,captured_count,captured_minor,refunded_minor,net_minor,pickup_collected_count,pickup_collected_minor,bank_transfer_confirmed_count,bank_transfer_confirmed_minor,cod_collected_count,cod_collected_minor" {
 			t.Fatalf("csv header %q", lines[0])
 		}
 		csvDays := map[string]string{}
 		for _, l := range lines[1:] {
 			f := strings.Split(strings.TrimSpace(l), ",")
-			if len(f) != 11 { // OP3 added the two pay-at-pickup columns, storefront-v2 §C the two bank-transfer ones
+			if len(f) != 13 { // OP3 added the two pay-at-pickup columns, storefront-v2 §C the two bank-transfer ones, home-cod R5 the two COD ones
 				t.Fatalf("csv row %q has %d columns", l, len(f))
 			}
 			csvDays[f[0]] = f[3] + "/" + f[4] + "/" + f[5] + "/" + f[6]

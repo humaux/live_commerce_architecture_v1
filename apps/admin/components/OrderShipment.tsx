@@ -83,13 +83,15 @@ export function OrderShipment({
 
   // The head version is the CAS token. After a void the detail shows null, so the history's newest version is used.
   const expectedVersion = Math.max(head?.version ?? 0, ...(history ?? []).map((item) => item.version));
-  // Hint only (MD6): commercial CONFIRMED, work READY, unassigned, not fully refunded. The server decides.
+  // Hint only (MD6): commercial CONFIRMED (or AWAITING_COLLECTION for cash_on_delivery, which ships before it is collected), work READY,
+  // unassigned, not fully refunded. The server decides (fulfillment.manual_shipment_eligible).
   const eligible =
-    detail.commercial_state === "CONFIRMED" &&
+    (detail.commercial_state === "CONFIRMED" || detail.commercial_state === "AWAITING_COLLECTION") &&
     detail.fulfillment_state === "MANUAL_UNASSIGNED" &&
     detail.work_state === "READY" &&
     detail.refunded_minor + detail.refund_pending_minor < detail.total_minor;
   const latestNote = [...(history ?? [])].reverse().find((item) => item.status === "SHIPPED" && item.version === head?.version)?.note ?? "";
+  const collectionRecorded = detail.payment_mode === "cash_on_delivery" && detail.collection_state !== "PENDING";
 
   function fillFrom(shipment: Shipment | null) {
     setCarrier(shipment?.carrier_code ?? "");
@@ -99,6 +101,7 @@ export function OrderShipment({
     setNote(shipment ? latestNote : "");
   }
   function choose(next: "record" | "correct" | "void") {
+    if (next === "void" && collectionRecorded) return;
     pending.current = null;
     setProblem("");
     setUncertain(false);
@@ -119,6 +122,7 @@ export function OrderShipment({
     if (busy) return;
     let body: string;
     if (mode === "void") {
+      if (collectionRecorded) { setProblem(c.shipVoidCollection); return; }
       // manual-fulfilment-v1 §5.1 (A1): a void body nulls every carrier/tracking/note field.
       body = JSON.stringify({
         expected_version: expectedVersion, status: "VOIDED", carrier_code: null, carrier_name: null,
@@ -260,12 +264,13 @@ export function OrderShipment({
           <button type="button" className="orders-compact" data-testid="shipment-correct" disabled={status !== "ready"} onClick={() => choose("correct")}>
             {c.shipCorrect}
           </button>
-          <button type="button" className="orders-compact" data-testid="shipment-void" disabled={status !== "ready"} onClick={() => choose("void")}>
+          <button type="button" className="orders-compact" data-testid="shipment-void" disabled={status !== "ready" || collectionRecorded} aria-describedby={collectionRecorded ? `shipment-collection-${orderID}` : undefined} onClick={() => choose("void")}>
             {c.shipVoid}
           </button>
         </div>
       )}
       {canWrite && !head && !eligible && <p className="orders-hint" data-testid="shipment-ineligible">{c.shipNotEligible}</p>}
+      {canWrite && head && collectionRecorded && <p className="orders-hint" id={`shipment-collection-${orderID}`}>{c.shipVoidCollection}</p>}
       {canWrite && status === "ready" && ((!head && eligible) || (head && mode !== "record")) && form}
       {notice && <p className="orders-notice" role="status" data-testid="shipment-notice">{notice}</p>}
       {history && (

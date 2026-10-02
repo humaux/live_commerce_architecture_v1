@@ -1015,29 +1015,31 @@ func TestCogFinanceBothColumns(t *testing.T) {
 			t.Errorf("pickup %v/%v (want 1/%d), transfer %v/%v (want 1/%d), captured %v net %v (want 0/0)", pc, pm, pickupTotal, tc, tm, transferTotal, cap, net)
 		}
 	})
-	t.Run("the CSV export has all 11 columns with the same figures", func(t *testing.T) {
+	t.Run("the CSV export has all 13 columns with the same figures", func(t *testing.T) {
 		today := time.Now().In(time.FixedZone("TPE", 8*3600))
 		from, to := today.AddDate(0, 0, -1).Format("2006-01-02"), today.AddDate(0, 0, 1).Format("2006-01-02")
 		raw := e.financeCSV(from, to)
 		lines := strings.Split(strings.TrimRight(raw, "\r\n"), "\n")
-		if !strings.HasSuffix(lines[0], "pickup_collected_count,pickup_collected_minor,bank_transfer_confirmed_count,bank_transfer_confirmed_minor") {
+		if !strings.HasSuffix(lines[0], "pickup_collected_count,pickup_collected_minor,bank_transfer_confirmed_count,bank_transfer_confirmed_minor,cod_collected_count,cod_collected_minor") {
 			t.Fatalf("csv header %q", lines[0])
 		}
-		var pc, pm, tc, tm int64
+		var pc, pm, tc, tm, co, com int64
 		for _, l := range lines[1:] {
 			c := strings.Split(strings.TrimSpace(l), ",")
-			if len(c) != 11 {
+			if len(c) != 13 {
 				t.Fatalf("csv row %q has %d columns", l, len(c))
 			}
-			var a, b, cc, d int64
+			var a, b, cc, d, e, ff int64
 			fmt.Sscan(c[7], &a)
 			fmt.Sscan(c[8], &b)
 			fmt.Sscan(c[9], &cc)
 			fmt.Sscan(c[10], &d)
-			pc, pm, tc, tm = pc+a, pm+b, tc+cc, tm+d
+			fmt.Sscan(c[11], &e)
+			fmt.Sscan(c[12], &ff)
+			pc, pm, tc, tm, co, com = pc+a, pm+b, tc+cc, tm+d, co+e, com+ff
 		}
-		if pc != 1 || pm != pickupTotal || tc != 1 || tm != transferTotal {
-			t.Errorf("csv pickup %d/%d transfer %d/%d, want 1/%d and 1/%d", pc, pm, tc, tm, pickupTotal, transferTotal)
+		if pc != 1 || pm != pickupTotal || tc != 1 || tm != transferTotal || co != 0 || com != 0 {
+			t.Errorf("csv pickup %d/%d transfer %d/%d cod %d/%d, want 1/%d, 1/%d and 0/0", pc, pm, tc, tm, co, com, pickupTotal, transferTotal)
 		}
 	})
 	t.Run("an offline refund takes the transfer out of the confirmed column and leaves the pickup column alone", func(t *testing.T) {

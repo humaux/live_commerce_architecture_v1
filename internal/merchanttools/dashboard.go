@@ -37,6 +37,7 @@ type ModeTotals struct {
 	CardMinor         int64 `json:"card_minor"`
 	BankTransferMinor int64 `json:"bank_transfer_minor"`
 	PayAtPickupMinor  int64 `json:"pay_at_pickup_minor"`
+	CodMinor          int64 `json:"cod_minor"`
 }
 
 // GMV is one (currency, environment) entry; never summed with another.
@@ -131,7 +132,7 @@ func Dashboard(ctx context.Context, tx pgx.Tx, scope platform.Scope, token strin
 }
 
 // cutGMV folds finance day rows into one entry per (currency, environment): the row of `today` feeds both windows, every other row of
-// the seven-day range feeds the 7-day window only. card = captured, bank = confirmed transfers, pickup = collected.
+// the seven-day range feeds the 7-day window only. card = captured, bank = confirmed transfers, pickup = collected, cod = collected.
 func cutGMV(rows []reporting.FinanceRow, today string) []GMV {
 	index := map[[2]string]int{}
 	out := []GMV{}
@@ -147,6 +148,7 @@ func cutGMV(rows []reporting.FinanceRow, today string) []GMV {
 			m.CardMinor += r.CapturedMinor
 			m.BankTransferMinor += r.BankTransferConfirmedMinor
 			m.PayAtPickupMinor += r.PickupCollectedMinor
+			m.CodMinor += r.CodCollectedMinor
 		}
 		add(&out[i].Last7Days)
 		if r.Day == today {

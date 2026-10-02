@@ -5,6 +5,14 @@
 // REQUESTED/UNKNOWN/FAILED/ABANDONED read as one "processing" text (no error detail), chain names per U2.
 import type { Locale } from "@live-commerce/i18n";
 import type { CvsErrorCode, CvsKind } from "./cvs-contract";
+import { codCopy } from "./cod-copy";
+
+const codErrors = (locale: Locale) => ({
+  cash_on_delivery_unavailable: codCopy[locale].unavailable,
+  cash_on_delivery_amount_exceeds: codCopy[locale].capReached,
+  cash_on_delivery_limit: codCopy[locale].limit,
+  cod_surcharge_changed: codCopy[locale].changed,
+});
 
 const en = {
   // chain labels (U2)
@@ -79,6 +87,7 @@ const en = {
   invalidStore: "Check the store number, name and address.",
   unavailable: "This pickup option is not available right now.",
   errors: {
+    ...codErrors("en"),
     bad_return_path: "This page cannot receive the store choice. Reload and try again.",
     bad_return_origin: "This page cannot receive the store choice. Reload and try again.",
     service_unavailable: "This chain is not available right now. Choose another delivery option.",
@@ -187,6 +196,7 @@ export const cvsCopy: Record<Locale, Copy> = {
     invalidStore: "请检查店号、店名与地址。",
     unavailable: "此取货方式暂时无法使用。",
     errors: {
+      ...codErrors("zh-CN"),
       bad_return_path: "此页面无法接收门市选择，请重新加载后再试。",
       bad_return_origin: "此页面无法接收门市选择，请重新加载后再试。",
       service_unavailable: "此超商暂时无法使用，请改选其他配送方式。",
@@ -289,6 +299,7 @@ export const cvsCopy: Record<Locale, Copy> = {
     invalidStore: "請檢查店號、店名與地址。",
     unavailable: "此取貨方式暫時無法使用。",
     errors: {
+      ...codErrors("zh-TW"),
       bad_return_path: "此頁面無法接收門市選擇，請重新載入後再試。",
       bad_return_origin: "此頁面無法接收門市選擇，請重新載入後再試。",
       service_unavailable: "此超商暫時無法使用，請改選其他配送方式。",

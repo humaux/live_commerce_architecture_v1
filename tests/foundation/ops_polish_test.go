@@ -3,8 +3,9 @@ package foundation_test
 // ops-polish independent gates OP1 (honest card option) and OP3 (pay-at-pickup money in finance), written from
 // docs/delivery/units/ops-polish.md and the contract sentences it amends (buyer-checkout-options-v1 OP1 rule, customers-billing-v1 BD7),
 // not from the implementation. Prefix `opp`. Tier REAL_PG + HTTP_PG; MOCK ECPay (ecpaytest fake) and MOCK Stripe (rfx fake).
-// Owner-pool writes (disclosed fixtures): identity grants (tcvEnv), and aging checkout.orders.updated_at / payments.facts.received_at /
-// fulfillment.cvs_shipments.environment with session_replication_role=replica so a day boundary can be placed exactly; the order states
+// Owner-pool writes (disclosed fixtures): identity grants (tcvEnv), and aging checkout.orders.collected_at (and updated_at for the
+// non-collected controls) / payments.facts.received_at / fulfillment.cvs_shipments.environment with session_replication_role=replica so
+// a day boundary can be placed exactly; the order states
 // themselves (COLLECTED, REFUNDED_OFFLINE, captured) come from the real merchant routes, signed ECPay status posts and the Stripe capture path.
 //
 // OP1 here is the in-process half (checkout.Service.WithoutCardPayment, the one switch cmd/api turns on when COMMERCE_BUYER_PAYMENT_ENABLED
@@ -268,6 +269,10 @@ func TestOpsPolishOP3Finance(t *testing.T) {
 		t.Helper()
 		age(`UPDATE checkout.orders SET updated_at=$2::timestamptz WHERE id=$1`, order, ts)
 	}
+	setCollected := func(order, ts string) {
+		t.Helper()
+		age(`UPDATE checkout.orders SET collected_at=$2::timestamptz WHERE id=$1`, order, ts)
+	}
 	total := func(order string) int64 {
 		var n int64
 		if err := f.owner.QueryRow(ctx, `SELECT total_minor FROM checkout.orders WHERE id=$1`, order).Scan(&n); err != nil {
@@ -338,14 +343,14 @@ func TestOpsPolishOP3Finance(t *testing.T) {
 		t.Fatal("setup: zero totals")
 	}
 
-	// ---- place every transition on an exact UTC+8 boundary (instants are UTC) ----
-	setUpdated(m5, "2026-01-14 15:59:59+00") // 2026-01-14 23:59:59 Taipei
-	setUpdated(m1, "2026-01-15 15:59:59+00") // 2026-01-15 23:59:59 Taipei: last second of the 15th
-	setUpdated(m2, "2026-01-15 16:00:00+00") // 2026-01-16 00:00:00 Taipei: first second of the 16th
-	setUpdated(m3, "2026-01-16 04:00:00+00") // REFUNDED_OFFLINE: must never count
-	setUpdated(m4, "2026-01-16 04:00:00+00") // PENDING: must never count
-	setUpdated(s1, "2026-01-16 15:59:59+00") // 2026-01-16 23:59:59 Taipei
-	setUpdated(s2, "2026-01-16 16:00:00+00") // 2026-01-17 00:00:00 Taipei
+	// ---- place every collected transition on an exact UTC+8 boundary (instants are UTC); finance groups pickup on collected_at ----
+	setCollected(m5, "2026-01-14 15:59:59+00") // 2026-01-14 23:59:59 Taipei
+	setCollected(m1, "2026-01-15 15:59:59+00") // 2026-01-15 23:59:59 Taipei: last second of the 15th
+	setCollected(m2, "2026-01-15 16:00:00+00") // 2026-01-16 00:00:00 Taipei: first second of the 16th
+	setUpdated(m3, "2026-01-16 04:00:00+00")   // REFUNDED_OFFLINE: must never count
+	setUpdated(m4, "2026-01-16 04:00:00+00")   // PENDING: must never count
+	setCollected(s1, "2026-01-16 15:59:59+00") // 2026-01-16 23:59:59 Taipei
+	setCollected(s2, "2026-01-16 16:00:00+00") // 2026-01-17 00:00:00 Taipei
 	setUpdated(card, "2026-01-16 02:00:00+00")
 	age(`UPDATE payments.facts SET received_at=timestamptz '2026-01-16 02:00:00+00' WHERE kind='CAPTURED' AND attempt_id IN (SELECT id FROM checkout.payment_attempts WHERE order_id=$1)`, card)
 	cardTotal := tm(card)
@@ -463,14 +468,14 @@ func TestOpsPolishOP3Finance(t *testing.T) {
 			t.Fatalf("csv: %d %s", st, raw)
 		}
 		lines := strings.Split(strings.TrimRight(string(raw), "\r\n"), "\n")
-		if lines[0] != "day,currency,environment,captured_count,captured_minor,refunded_minor,net_minor,pickup_collected_count,pickup_collected_minor,bank_transfer_confirmed_count,bank_transfer_confirmed_minor" {
+		if lines[0] != "day,currency,environment,captured_count,captured_minor,refunded_minor,net_minor,pickup_collected_count,pickup_collected_minor,bank_transfer_confirmed_count,bank_transfer_confirmed_minor,cod_collected_count,cod_collected_minor" {
 			t.Fatalf("csv header %q", lines[0])
 		}
 		got := map[string]string{}
 		for _, l := range lines[1:] {
 			fields := strings.Split(strings.TrimSpace(l), ",")
-			if len(fields) != 11 {
-				t.Fatalf("csv row %q has %d columns, want 11", l, len(fields))
+			if len(fields) != 13 {
+				t.Fatalf("csv row %q has %d columns, want 13", l, len(fields))
 			}
 			got[fields[0]+"/"+fields[2]] = fields[7] + "/" + fields[8]
 		}

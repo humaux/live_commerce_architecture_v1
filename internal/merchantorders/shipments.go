@@ -44,7 +44,11 @@ var (
 // always wins over a template.
 var carrierTrackingTemplates = map[string]string{}
 
-var carrierCodes = []string{"seven_eleven_cvs", "familymart_cvs", "hilife_cvs", "okmart_cvs", "sf_express", "chunghwa_post", "other"}
+// carrierCodes is the closed manual-shipment carrier vocabulary (contract §3): the CVS chains, the two home-delivery
+// couriers of home-cod R5 (black_cat 黑貓 / hsinchu 新竹, migration 0107 — manual fulfilment, no carrier API) and "other".
+// It is the single source for both the input (NormalizeShipment) and output (validShipmentFields) validation; the SQL CHECK
+// on fulfillment.manual_shipment_versions.carrier_code (0107) is its twin.
+var carrierCodes = []string{"seven_eleven_cvs", "familymart_cvs", "hilife_cvs", "okmart_cvs", "sf_express", "chunghwa_post", "black_cat", "hsinchu", "other"}
 var voidReasons = []string{"wrong_order", "wrong_tracking", "not_dispatched", "other"}
 var trackingNumber = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9 -]{0,63}$`)
 

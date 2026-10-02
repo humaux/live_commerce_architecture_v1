@@ -902,7 +902,7 @@ func (c *CVS) Release(ctx context.Context, token, storeID, key, orderID string, 
 			return err
 		}
 		if out.OrderID != orderID || !collectionStates[out.CollectionState] || out.ReleasedLines < 0 ||
-			(out.CommercialState != "CONFIRMED" && out.CommercialState != "CANCELLED") {
+			(out.CommercialState != "CONFIRMED" && out.CommercialState != "CANCELLED" && out.CommercialState != "AWAITING_COLLECTION") {
 			return ErrCVSProjection
 		}
 		return nil

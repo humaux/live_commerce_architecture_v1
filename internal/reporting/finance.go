@@ -57,6 +57,13 @@ type FinanceRow struct {
 	// so it is never part of CapturedMinor or NetMinor; always environment LIVE. An offline refund removes the order from the column.
 	BankTransferConfirmedCount int64 `json:"bank_transfer_confirmed_count"`
 	BankTransferConfirmedMinor int64 `json:"bank_transfer_confirmed_minor"`
+	// Cash-on-delivery money the carrier collected on delivery (home-cod R5, migration 0107): orders with
+	// payment_mode=cash_on_delivery and collection_state=COLLECTED on the UTC+8 day of collection, at the server order total plus the
+	// placement-time surcharge (total_minor + cod_surcharge_minor). A different money path (the carrier remits, not a PSP), so it is never
+	// part of CapturedMinor or NetMinor; always environment LIVE. Supplied by identity.read_finance_summary; decodeRows also accepts the
+	// older 7/9/11-key shapes.
+	CodCollectedCount int64 `json:"cod_collected_count"`
+	CodCollectedMinor int64 `json:"cod_collected_minor"`
 }
 
 // FinanceSummary: Totals hold one row per (currency, environment) with Day == "".
@@ -139,13 +146,14 @@ func decodeRows(raw []byte, from, to string) ([]FinanceRow, error) {
 	rows := make([]FinanceRow, 0, len(objects))
 	for _, object := range objects {
 		var fields map[string]json.RawMessage
-		// 7 keys: the BD7 projection; 9: plus the two pay-at-pickup keys; 11: plus the two bank-transfer keys (each pair both or neither, in
-		// that order). Anything else is drift.
-		if json.Unmarshal(object, &fields) != nil || (len(fields) != 7 && len(fields) != 9 && len(fields) != 11) {
+		// 7 keys: the BD7 projection; 9: plus the two pay-at-pickup keys; 11: plus the two bank-transfer keys; 13: plus the two
+		// cash-on-delivery keys (each pair both or neither, in that order). Anything else is drift.
+		if json.Unmarshal(object, &fields) != nil || (len(fields) != 7 && len(fields) != 9 && len(fields) != 11 && len(fields) != 13) {
 			return nil, ErrUnavailable
 		}
 		if len(fields) >= 9 && (fields["pickup_collected_count"] == nil || fields["pickup_collected_minor"] == nil) ||
-			len(fields) == 11 && (fields["bank_transfer_confirmed_count"] == nil || fields["bank_transfer_confirmed_minor"] == nil) {
+			len(fields) == 11 && (fields["bank_transfer_confirmed_count"] == nil || fields["bank_transfer_confirmed_minor"] == nil) ||
+			len(fields) == 13 && (fields["cod_collected_count"] == nil || fields["cod_collected_minor"] == nil) {
 			return nil, ErrUnavailable
 		}
 		var row FinanceRow
@@ -168,7 +176,8 @@ func validRow(r FinanceRow, from, to string) bool {
 		r.CapturedCount >= 0 && r.CapturedMinor >= 0 && r.RefundedMinor >= 0 &&
 		(r.CapturedCount > 0 || r.CapturedMinor == 0) && r.NetMinor == r.CapturedMinor-r.RefundedMinor &&
 		r.PickupCollectedCount >= 0 && r.PickupCollectedMinor >= 0 && (r.PickupCollectedCount > 0 || r.PickupCollectedMinor == 0) &&
-		r.BankTransferConfirmedCount >= 0 && r.BankTransferConfirmedMinor >= 0 && (r.BankTransferConfirmedCount > 0 || r.BankTransferConfirmedMinor == 0)
+		r.BankTransferConfirmedCount >= 0 && r.BankTransferConfirmedMinor >= 0 && (r.BankTransferConfirmedCount > 0 || r.BankTransferConfirmedMinor == 0) &&
+		r.CodCollectedCount >= 0 && r.CodCollectedMinor >= 0 && (r.CodCollectedCount > 0 || r.CodCollectedMinor == 0)
 }
 
 func rowLess(a, b FinanceRow) bool {
@@ -201,6 +210,8 @@ func Totals(rows []FinanceRow) []FinanceRow {
 		t.PickupCollectedMinor += r.PickupCollectedMinor
 		t.BankTransferConfirmedCount += r.BankTransferConfirmedCount
 		t.BankTransferConfirmedMinor += r.BankTransferConfirmedMinor
+		t.CodCollectedCount += r.CodCollectedCount
+		t.CodCollectedMinor += r.CodCollectedMinor
 	}
 	out := make([]FinanceRow, 0, len(sums))
 	for _, t := range sums {
@@ -210,20 +221,22 @@ func Totals(rows []FinanceRow) []FinanceRow {
 	return out
 }
 
-// CSV renders the D13 columns plus the two pay-at-pickup columns (OP3) and the two bank-transfer confirmed columns with a header row. Every field is a date, a 3-letter currency, a closed
-// environment word or an integer, so no field can start a spreadsheet formula.
+// CSV renders the D13 columns plus the two pay-at-pickup columns (OP3), the two bank-transfer confirmed columns and the two cash-on-delivery
+// collected columns with a header row. Every field is a date, a 3-letter currency, a closed environment word or an integer, so no field can
+// start a spreadsheet formula.
 func CSV(rows []FinanceRow) ([]byte, error) {
 	var buf bytes.Buffer
 	w := csv.NewWriter(&buf)
 	if err := w.Write([]string{"day", "currency", "environment", "captured_count", "captured_minor", "refunded_minor", "net_minor", "pickup_collected_count", "pickup_collected_minor",
-		"bank_transfer_confirmed_count", "bank_transfer_confirmed_minor"}); err != nil {
+		"bank_transfer_confirmed_count", "bank_transfer_confirmed_minor", "cod_collected_count", "cod_collected_minor"}); err != nil {
 		return nil, err
 	}
 	for _, r := range rows {
 		if err := w.Write([]string{r.Day, r.Currency, r.Environment, strconv.FormatInt(r.CapturedCount, 10),
 			strconv.FormatInt(r.CapturedMinor, 10), strconv.FormatInt(r.RefundedMinor, 10), strconv.FormatInt(r.NetMinor, 10),
 			strconv.FormatInt(r.PickupCollectedCount, 10), strconv.FormatInt(r.PickupCollectedMinor, 10),
-			strconv.FormatInt(r.BankTransferConfirmedCount, 10), strconv.FormatInt(r.BankTransferConfirmedMinor, 10)}); err != nil {
+			strconv.FormatInt(r.BankTransferConfirmedCount, 10), strconv.FormatInt(r.BankTransferConfirmedMinor, 10),
+			strconv.FormatInt(r.CodCollectedCount, 10), strconv.FormatInt(r.CodCollectedMinor, 10)}); err != nil {
 			return nil, err
 		}
 	}

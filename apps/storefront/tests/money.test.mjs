@@ -1,6 +1,6 @@
 // Money display of the storefront (display only; Go decides every amount). One formatter, lib/money.ts formatMoney, serves the shop
-// window, the cart, the checkout bar and quotation, the order screens and the claim page, so one amount never reads "TWD 2,560" on a
-// line and "TWD 2,560.00" on the total (visual QA finding 4). The source guard fails if a component builds its own currency formatter again.
+// window, the cart, the checkout bar and quotation, the order screens and the claim page, so one amount never reads "NT$2,560" on a
+// line and "NT$2,560.00" on the total (visual QA finding 4). The source guard fails if a component builds its own currency formatter again.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";

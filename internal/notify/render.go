@@ -29,23 +29,26 @@ const DefaultLocale = "zh-TW"
 
 // Payload is the jsonb notify.claim_batch returns for one send (one buyer mail, or one merchant batch). Pointer fields are NULL in SQL.
 type Payload struct {
-	BatchID     string    `json:"batch_id"`
-	Kind        string    `json:"kind"`
-	OrderID     string    `json:"order_id"`
-	To          []string  `json:"to"`
-	StoreName   string    `json:"store_name"`
-	Locale      *string   `json:"locale"`
-	Origin      *string   `json:"origin"`
-	TotalMinor  int64     `json:"total_minor"`
-	Currency    string    `json:"currency"`
-	PaymentMode string    `json:"payment_mode"`
-	ExpiresAt   time.Time `json:"expires_at"`
-	Bank        *Bank     `json:"bank"`
-	Pickup      *Pickup   `json:"pickup"`
-	Shipment    *Shipment `json:"shipment"`
-	CVS         *CVSInfo  `json:"cvs"`
-	Count       int       `json:"count"`
-	OrderIDs    []string  `json:"order_ids"`
+	BatchID     string   `json:"batch_id"`
+	Kind        string   `json:"kind"`
+	OrderID     string   `json:"order_id"`
+	To          []string `json:"to"`
+	StoreName   string   `json:"store_name"`
+	Locale      *string  `json:"locale"`
+	Origin      *string  `json:"origin"`
+	TotalMinor  int64    `json:"total_minor"`
+	Currency    string   `json:"currency"`
+	PaymentMode string   `json:"payment_mode"`
+	// CodCollectMinor (home-cod R5, P1-1/P2-7) is the cash due on delivery (total + surcharge); present only on COD orders
+	// (claim_batch nulls it otherwise). The placed/shipped mail prints it.
+	CodCollectMinor *int64    `json:"cod_collect_minor"`
+	ExpiresAt       time.Time `json:"expires_at"`
+	Bank            *Bank     `json:"bank"`
+	Pickup          *Pickup   `json:"pickup"`
+	Shipment        *Shipment `json:"shipment"`
+	CVS             *CVSInfo  `json:"cvs"`
+	Count           int       `json:"count"`
+	OrderIDs        []string  `json:"order_ids"`
 }
 
 // Bank is the order's own bank snapshot (checkout.bank_transfers), shown only in the buyer's own placed mail.
@@ -78,13 +81,13 @@ type CVSInfo struct {
 type copyText struct {
 	subject map[string]string // kind -> subject format; %s = store name
 	intro   map[string]string // kind -> first line
-	lbl     struct{ order, total, bank, branch, account, number, deadline, pickup, carrier, tracking, link, view, auto, newOrders, orders string }
+	lbl     struct{ order, total, collect, bank, branch, account, number, deadline, pickup, carrier, tracking, link, view, auto, newOrders, orders string }
 }
 
 var carrierNames = map[string]map[string]string{
-	"zh-TW": {"seven_eleven_cvs": "7-ELEVEN 超商", "familymart_cvs": "全家超商", "hilife_cvs": "萊爾富超商", "okmart_cvs": "OK 超商", "sf_express": "順豐速運", "chunghwa_post": "中華郵政"},
-	"zh-CN": {"seven_eleven_cvs": "7-ELEVEN 便利店", "familymart_cvs": "全家便利店", "hilife_cvs": "莱尔富便利店", "okmart_cvs": "OK 便利店", "sf_express": "顺丰速运", "chunghwa_post": "中华邮政"},
-	"en":    {"seven_eleven_cvs": "7-ELEVEN", "familymart_cvs": "FamilyMart", "hilife_cvs": "Hi-Life", "okmart_cvs": "OK Mart", "sf_express": "SF Express", "chunghwa_post": "Chunghwa Post"},
+	"zh-TW": {"seven_eleven_cvs": "7-ELEVEN 超商", "familymart_cvs": "全家超商", "hilife_cvs": "萊爾富超商", "okmart_cvs": "OK 超商", "sf_express": "順豐速運", "chunghwa_post": "中華郵政", "black_cat": "黑貓宅急便", "hsinchu": "新竹物流"},
+	"zh-CN": {"seven_eleven_cvs": "7-ELEVEN 便利店", "familymart_cvs": "全家便利店", "hilife_cvs": "莱尔富便利店", "okmart_cvs": "OK 便利店", "sf_express": "顺丰速运", "chunghwa_post": "中华邮政", "black_cat": "黑猫宅急便", "hsinchu": "新竹物流"},
+	"en":    {"seven_eleven_cvs": "7-ELEVEN", "familymart_cvs": "FamilyMart", "hilife_cvs": "Hi-Life", "okmart_cvs": "OK Mart", "sf_express": "SF Express", "chunghwa_post": "Chunghwa Post", "black_cat": "Black Cat", "hsinchu": "HCT"},
 }
 
 var copies = map[string]copyText{
@@ -94,7 +97,7 @@ var copies = map[string]copyText{
 			intro: map[string]string{KindPlaced: "感謝您的訂購，我們已收到您的訂單。", KindPaid: "我們已確認收到您的付款，將盡快為您安排出貨。",
 				KindShipped: "您的訂單已出貨。", KindCancelled: "您的訂單已取消（含逾期未付款），保留的商品已釋出。", KindRefunded: "您的訂單已完成退款，實際入帳時間依發卡行或銀行而定。"},
 		}
-		c.lbl.order, c.lbl.total, c.lbl.bank, c.lbl.branch, c.lbl.account, c.lbl.number = "訂單編號", "訂單金額", "匯款銀行", "分行", "戶名", "帳號"
+		c.lbl.order, c.lbl.total, c.lbl.collect, c.lbl.bank, c.lbl.branch, c.lbl.account, c.lbl.number = "訂單編號", "訂單金額", "貨到付款金額", "匯款銀行", "分行", "戶名", "帳號"
 		c.lbl.deadline, c.lbl.pickup, c.lbl.carrier, c.lbl.tracking, c.lbl.link, c.lbl.view = "請於此時間前完成匯款", "取貨門市", "物流", "追蹤編號", "追蹤連結", "查看訂單"
 		c.lbl.auto, c.lbl.newOrders, c.lbl.orders = "這是系統自動寄出的訂單通知，請勿直接回覆。", "新訂單通知", "訂單編號"
 		return c
@@ -105,7 +108,7 @@ var copies = map[string]copyText{
 			intro: map[string]string{KindPlaced: "感谢您的订购，我们已收到您的订单。", KindPaid: "我们已确认收到您的付款，将尽快为您安排发货。",
 				KindShipped: "您的订单已发货。", KindCancelled: "您的订单已取消（含逾期未付款），保留的商品已释放。", KindRefunded: "您的订单已完成退款，实际到账时间取决于发卡行或银行。"},
 		}
-		c.lbl.order, c.lbl.total, c.lbl.bank, c.lbl.branch, c.lbl.account, c.lbl.number = "订单编号", "订单金额", "汇款银行", "分行", "户名", "账号"
+		c.lbl.order, c.lbl.total, c.lbl.collect, c.lbl.bank, c.lbl.branch, c.lbl.account, c.lbl.number = "订单编号", "订单金额", "货到付款金额", "汇款银行", "分行", "户名", "账号"
 		c.lbl.deadline, c.lbl.pickup, c.lbl.carrier, c.lbl.tracking, c.lbl.link, c.lbl.view = "请在此时间前完成汇款", "取货门店", "物流", "追踪编号", "追踪链接", "查看订单"
 		c.lbl.auto, c.lbl.newOrders, c.lbl.orders = "这是系统自动发送的订单通知，请勿直接回复。", "新订单通知", "订单编号"
 		return c
@@ -117,7 +120,7 @@ var copies = map[string]copyText{
 				KindShipped: "Your order has shipped.", KindCancelled: "Your order was cancelled (including a missed payment deadline) and the reserved items were released.",
 				KindRefunded: "Your order has been refunded. When the money arrives depends on your card issuer or bank."},
 		}
-		c.lbl.order, c.lbl.total, c.lbl.bank, c.lbl.branch, c.lbl.account, c.lbl.number = "Order number", "Order total", "Bank", "Branch", "Account name", "Account number"
+		c.lbl.order, c.lbl.total, c.lbl.collect, c.lbl.bank, c.lbl.branch, c.lbl.account, c.lbl.number = "Order number", "Order total", "Cash on delivery", "Bank", "Branch", "Account name", "Account number"
 		c.lbl.deadline, c.lbl.pickup, c.lbl.carrier, c.lbl.tracking, c.lbl.link, c.lbl.view = "Please transfer before", "Pickup store", "Carrier", "Tracking number", "Tracking link", "View your order"
 		c.lbl.auto, c.lbl.newOrders, c.lbl.orders = "This is an automatic order notification; please do not reply.", "New orders", "Order numbers"
 		return c
@@ -239,6 +242,10 @@ func Render(p Payload) []mail.Message {
 		}
 		subject, intro = strings.Replace(format, "%s", store, 1), c.intro[p.Kind]
 		lines = append(lines, line{c.lbl.order, no}, line{c.lbl.total, Money(p.TotalMinor, p.Currency)})
+		if p.CodCollectMinor != nil {
+			// home-cod R5 (P1-1/P2-7): the cash due on delivery (total + surcharge) on a COD order's mails.
+			lines = append(lines, line{c.lbl.collect, Money(*p.CodCollectMinor, p.Currency)})
+		}
 		if p.Kind == KindPlaced && p.Bank != nil {
 			lines = append(lines, line{c.lbl.bank, clean(p.Bank.BankName, 60)})
 			if b := clean(p.Bank.Branch, 60); b != "" {

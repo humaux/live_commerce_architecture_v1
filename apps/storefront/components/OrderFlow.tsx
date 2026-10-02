@@ -15,12 +15,14 @@ import OrderPayment from "./OrderPayment";
 import { ConsentChoices, noConsentChoices, submitCheckoutConsents } from "./ConsentChoices";
 import CvsPickup, { CvsOrderStatus, type PickupHandle } from "./CvsPickup";
 import BankTransfer from "./BankTransfer";
+import { CodAmount, CodOrderStatus } from "./CodOrderStatus";
 import type { Locale } from "@live-commerce/i18n";
 import { BuyerClientError } from "../lib/buyer-client";
 import { carrierNames, orderCopy } from "../lib/order-copy";
 import { purchaseCopy } from "../lib/purchase-copy";
 import { cvsCopy } from "../lib/cvs-copy";
 import { bankTransferCopy } from "../lib/bank-transfer-copy";
+import { codCopy } from "../lib/cod-copy";
 import {
   isTransferErrorCode,
   settledCommercialState,
@@ -40,6 +42,7 @@ import {
 } from "../lib/cvs-contract";
 import {
   checkoutInput,
+  offeredPaymentModes,
   currentDestination,
   pendingPurchase,
   purchasePage,
@@ -138,14 +141,18 @@ export default function OrderFlow({
   // CVS (§16): payment mode, the picker's ensure() handle and the one refusal shown next to the create button.
   const [paymentMode, setPaymentMode] = useState<PaymentMode>("card");
   const [createError, setCreateError] = useState<CvsErrorCode | null>(null);
+  const [codError, setCodError] = useState<string | null>(null);
+  const [optionRefresh, setOptionRefresh] = useState(0);
   // storefront-v2 §C: optional buyer email, and the one bank-transfer refusal (bank_transfer_unavailable) shown next to the create button.
   const [email, setEmail] = useState("");
   const [emailInvalid, setEmailInvalid] = useState(false);
   const [transferError, setTransferError] = useState<TransferErrorCode | null>(null);
   const [promoError, setPromoError] = useState<PromoErrorCode | null>(null); // §F: the one discount-code refusal shown next to the create button
   const bank = bankTransferCopy[locale];
+  const cod = codCopy[locale];
   const pickup = useRef<PickupHandle | null>(null);
   const cvsOption = option && isCvsKind(option.delivery_kind) ? (option as Option & { delivery_kind: CvsKind }) : null;
+  const paymentChoices = option && quote ? offeredPaymentModes(option, quote.amount.total_minor) : [];
 
   useEffect(() => {
     const version = ++live.current;
@@ -198,7 +205,7 @@ export default function OrderFlow({
         if (version !== live.current) return;
         setOption(found);
         // OP1: card may not be offered (no payment service); keep the buyer's mode only if this row still offers it, else pre-select its first.
-        const offered = found.payment_modes;
+        const offered = offeredPaymentModes(found, quote.amount.total_minor);
         if (offered?.length) setPaymentMode((current) => (offered.includes(current) ? current : offered[0]));
         // Options can arrive after the buyer edits or confirms a recovered
         // address. Never hydrate fields/head again from that older snapshot.
@@ -223,7 +230,7 @@ export default function OrderFlow({
       window.clearTimeout(timer);
       attempt.current = null;
     };
-  }, [context, quote?.id, country, cart.id, cart.version]);
+  }, [context, quote?.id, country, cart.id, cart.version, optionRefresh]);
 
   useEffect(() => {
     let active = true;
@@ -339,7 +346,7 @@ export default function OrderFlow({
       <p className="address-total">
         {quote && (
           <>
-            {purchaseCopy[locale].total}:{" "}
+            {purchaseCopy[locale].orderTotal}:{" "}
             <strong>{money(quote.amount.total_minor, quote.currency)}</strong>{" "}
             ·{" "}
           </>
@@ -416,15 +423,16 @@ export default function OrderFlow({
               total={quote ? money(quote.amount.total_minor, quote.currency) : ""}
             />
           )}
-          {!cvsOption && (option?.payment_modes?.length ?? 0) > 1 && (
+          {cvsOption && <label className="sku-row cod-home-only"><input type="radio" disabled aria-label={cod.homeOnly} />{cod.homeOnly}</label>}
+          {!cvsOption && option?.payment_modes && (
             <fieldset className="sku-options wide" data-testid="home-payment-mode">
               <legend>{bank.paymentLegend}</legend>
-              {(option?.payment_modes ?? []).map((mode) => (
+              {paymentChoices.map((mode) => (
                 // .address-fields label (grid) would win over .sku-row, so the row layout is stated inline (as in CvsPickup).
                 <label
                   key={mode}
                   className={mode === paymentMode ? "sku-row selected" : "sku-row"}
-                  style={{ display: "flex", gap: 16 }}
+                  style={{ display: "flex", gap: 16, minHeight: 44 }}
                 >
                   <input
                     type="radio"
@@ -436,9 +444,23 @@ export default function OrderFlow({
                       setPaymentMode(mode);
                       setConfirmed(null);
                       setTransferError(null);
+                      setCodError(null);
                     }}
                   />
-                  <span>{mode === "bank_transfer" ? bank.payBank : bank.payCard}</span>
+                  <span>
+                    {mode === "bank_transfer"
+                      ? bank.payBank
+                      : mode === "cash_on_delivery"
+                        ? cod.codLabel(
+                            quote
+                              ? money(quote.amount.total_minor, quote.currency)
+                              : "",
+                            option && option.cod_surcharge_minor
+                              ? money(option.cod_surcharge_minor, option.currency)
+                              : null,
+                          )
+                        : bank.payCard}
+                  </span>
                 </label>
               ))}
             </fieldset>
@@ -522,6 +544,15 @@ export default function OrderFlow({
         </p>
       )}
       <ConsentChoices locale={locale} value={consents} onChange={setConsents} disabled={busy || blocked} />
+      {option?.payment_modes?.includes("cash_on_delivery") && !paymentChoices.includes("cash_on_delivery") &&
+        <p role="status" data-testid="cod-cap-unavailable">{quote && quote.amount.total_minor % 100 !== 0 ? cod.wholeOnly : cod.capReached}</p>}
+      {paymentMode === "cash_on_delivery" && option && quote && paymentChoices.includes("cash_on_delivery") && (
+        <div className="cod-summary" data-testid="checkout-cod-amount">
+          <p className="cod-amount"><CodAmount locale={locale} total={money(quote.amount.total_minor + (option.cod_surcharge_minor ?? 0), "TWD")} fee={money(option.cod_surcharge_minor ?? 0, "TWD")} /></p>
+          {option.cod_carrier && <p className="order-note">{cod.manualCarrier(cod.carriers[option.cod_carrier])}</p>}
+        </div>
+      )}
+      {codError && <p role="alert" data-testid="cod-checkout-error">{codError}</p>}
       {/* Why the button below is disabled, in words (never colour alone): the address must be confirmed first. */}
       {needsConfirm && (
         <p id="create-order-hint" className="order-note" data-testid="create-order-hint">
@@ -532,7 +563,7 @@ export default function OrderFlow({
         data-testid="create-order"
         className="primary create-order"
         aria-describedby={needsConfirm ? "create-order-hint" : undefined}
-        disabled={busy || blocked || expired || !confirmed || !option}
+        disabled={busy || blocked || expired || !confirmed || !option || !paymentChoices.includes(paymentMode)}
         onClick={() =>
           void run(async (isCurrent) => {
             if (!quote || !confirmed || !option) return;
@@ -545,6 +576,7 @@ export default function OrderFlow({
             }
             setTransferError(null);
             setPromoError(null);
+            setCodError(null);
             try {
               const result = await writeCheckout(
                 context,
@@ -562,6 +594,14 @@ export default function OrderFlow({
               if (isCurrent() && version === live.current) onOrder(result);
             } catch (reason) {
               if (version === live.current) setConfirmed(null);
+              if (reason instanceof BuyerClientError && ["cash_on_delivery_unavailable", "cash_on_delivery_amount_exceeds", "cash_on_delivery_limit", "cod_surcharge_changed"].includes(reason.detail ?? "")) {
+                if (version === live.current) {
+                  setCodError(reason.detail === "cod_surcharge_changed" ? cod.changed : reason.detail === "cash_on_delivery_amount_exceeds" ? cod.capReached : reason.detail === "cash_on_delivery_limit" ? cod.limit : cod.unavailable);
+                  setOption(null);
+                  setOptionRefresh((value) => value + 1);
+                }
+                return;
+              }
               // storefront-v2 §F: a definite discount-code refusal at placement (edited, paused, expired or used up since the quote). No order
               // exists; the quotation's code field above re-applies or removes it.
               if (reason instanceof BuyerClientError && isPromoErrorCode(reason.detail)) {
@@ -589,16 +629,20 @@ export default function OrderFlow({
       >
         {paymentMode === "bank_transfer" && option?.payment_modes?.includes("bank_transfer")
           ? bank.createBank
-          : cvsOption && paymentMode === "pay_at_pickup"
-            ? cvsCopy[locale].createPickup
-            : copy.create}
+          : paymentMode === "cash_on_delivery" && option?.payment_modes?.includes("cash_on_delivery")
+            ? cod.createCod
+            : cvsOption && paymentMode === "pay_at_pickup"
+              ? cvsCopy[locale].createPickup
+              : copy.create}
       </button>
       <p className="order-note">
         {paymentMode === "bank_transfer" && option?.payment_modes?.includes("bank_transfer")
           ? bank.bankNote(option.transfer_window_hours ?? 0)
-          : cvsOption && paymentMode === "pay_at_pickup"
-            ? cvsCopy[locale].payAtPickupNote
-            : copy.unavailable}
+          : paymentMode === "cash_on_delivery" && option?.payment_modes?.includes("cash_on_delivery")
+            ? cod.codNote
+            : cvsOption && paymentMode === "pay_at_pickup"
+              ? cvsCopy[locale].payAtPickupNote
+              : copy.unavailable}
       </p>
     </section>
   );
@@ -709,13 +753,13 @@ export function OrderDetails({
       data-testid="order-section"
       aria-labelledby="order-title"
     >
-      <h1 id="order-title">{copy.order}</h1>
+      <h1 id="order-title">{order.payment_mode === "cash_on_delivery" && order.collection_state ? codCopy[locale].orderStates[order.collection_state] : copy.order}</h1>
       <p
         className="order-state"
         data-testid="order-state"
         data-state={shownState}
       >
-        {copy[shownState]}
+        {order.payment_mode === "cash_on_delivery" ? codCopy[locale].orderTitle : copy[shownState]}
       </p>
       <p>
         {copy.orderID}:{" "}
@@ -723,6 +767,7 @@ export function OrderDetails({
           {order.order_id}
         </span>
       </p>
+      {order.payment_mode === "cash_on_delivery" && <CodOrderStatus order={order} locale={locale} />}
       <ul className="order-lines">
         {order.snapshot.quote.lines.map((line) => (
           <li key={line.sku_id}>
@@ -757,8 +802,8 @@ export function OrderDetails({
           </div>
         ))}
       </dl>
-      <p className="order-total">
-        {common.total}{" "}
+      <p className={`order-total${order.payment_mode === "cash_on_delivery" ? " cod-order-subtotal" : ""}`}>
+        {common.orderTotal}{" "}
         <strong>
           {money(
             order.snapshot.quote.amount.total_minor,
@@ -792,7 +837,9 @@ export function OrderDetails({
         <br />
         {destination.country}
       </address>
-      <CvsOrderStatus order={order} locale={locale} money={money} />
+      {order.payment_mode !== "cash_on_delivery" && (
+        <CvsOrderStatus order={order} locale={locale} money={money} />
+      )}
       {order.shipment && (
         <ShipmentBlock shipment={order.shipment} locale={locale} />
       )}
@@ -801,9 +848,10 @@ export function OrderDetails({
           <p>
             {copy.hold}{" "}
             {new Intl.DateTimeFormat(locale, {
+              timeZone: "Asia/Taipei",
               dateStyle: "short",
               timeStyle: "short",
-            }).format(new Date(order.hold_expires_at))}
+            }).format(new Date(order.hold_expires_at))} · {common.taipeiTime}
           </p>
           <p className="order-note">{copy.holdNote}</p>
         </>
@@ -820,8 +868,10 @@ export function OrderDetails({
           onState={setTransferState}
         />
       )}
-      {/* Pay-at-pickup and bank transfer are not Stripe payments: no payment read, no start, no refresh signal. */}
-      {order.payment_mode !== "pay_at_pickup" && order.payment_mode !== "bank_transfer" && (
+      {/* Pay-at-pickup, bank transfer and cash-on-delivery are not Stripe payments: no payment read, no start, no refresh signal. */}
+      {order.payment_mode !== "pay_at_pickup" &&
+        order.payment_mode !== "bank_transfer" &&
+        order.payment_mode !== "cash_on_delivery" && (
         <OrderPayment
           key={`${context}:${order.order_id}`}
           context={context}

@@ -95,6 +95,30 @@ func TestBuyerHTTPOptionsProjectionCarriesTransferWindow(t *testing.T) {
 	}
 }
 
+// home-cod R5: cod_surcharge_minor reaches the buyer on a home row that lists cash_on_delivery (0 surcharge = omitted).
+func TestBuyerHTTPOptionsProjectionCarriesCodSurcharge(t *testing.T) {
+	page := pagination.Page[checkout.Option]{Items: []checkout.Option{
+		{DeliveryKind: "home", PaymentModes: []string{"card", "cash_on_delivery"}, CodSurchargeMinor: 5000},
+		{DeliveryKind: "home", PaymentModes: []string{"card"}},
+	}}
+	raw, err := json.Marshal(projectOptions(page))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var body struct {
+		Items []map[string]json.RawMessage `json:"items"`
+	}
+	if err = json.Unmarshal(raw, &body); err != nil || len(body.Items) != 2 {
+		t.Fatalf("projection: %v %s", err, raw)
+	}
+	if string(body.Items[0]["cod_surcharge_minor"]) != "5000" {
+		t.Errorf("a cash_on_delivery home row carries its surcharge: %s", raw)
+	}
+	if _, present := body.Items[1]["cod_surcharge_minor"]; present {
+		t.Errorf("a non-COD row must not carry a surcharge: %s", raw)
+	}
+}
+
 // storefront-v2 §C: free_shipping_threshold_minor is always present on an option row (a number or null), never omitted.
 func TestBuyerHTTPOptionsProjectionCarriesFreeShippingThreshold(t *testing.T) {
 	threshold := int64(150000)

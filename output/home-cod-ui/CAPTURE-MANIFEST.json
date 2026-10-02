@@ -1,0 +1,373 @@
+{
+  "source_sha": "c5f47771",
+  "files": [
+    {
+      "file": "admin-settings-en-1366.png",
+      "width": 1366,
+      "height": 992,
+      "bytes": 129149,
+      "sha256": "3b49a16a1a8465da89a9b8f1043dac6b8c40cda5625c5368cff6f50c4b2aabb0",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "admin-settings-en-1586.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 130756,
+      "sha256": "7edab2db94ace7daf93fd139fb45cdfad16296adbc0bfd4f4eb3c9c22c83a8fc",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "admin-settings-en-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 56217,
+      "sha256": "4c78ce870f4e143e660c7cdbef56698c2c432a6c8b43f0f29573f9160455acf4",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "admin-settings-zh-CN-1366.png",
+      "width": 1366,
+      "height": 992,
+      "bytes": 128707,
+      "sha256": "a61919909677e7610b1d44ac9319a29b23d23240f0891d60d4119f49ec36c817",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "admin-settings-zh-CN-1586.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 129880,
+      "sha256": "289f1f9a9ab69790e4f527611b50849e1edf96a3d95a85e8fb93838883fa5944",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "admin-settings-zh-CN-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 58796,
+      "sha256": "61af3deb7bc94fdf06e0b00f7d3a32ace34f7ffa11ecf9af2a830d1ad13fcf33",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "admin-settings-zh-TW-1366.png",
+      "width": 1366,
+      "height": 992,
+      "bytes": 132126,
+      "sha256": "95522e33a2f7c0d8cf4de6ae35fb18ce1761822ca279b8e243f1adc303abf343",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "admin-settings-zh-TW-1586.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 133125,
+      "sha256": "268456c578868f54e375f30cb4d79a76bd13c9ab5ed853386874097ebd085141",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "admin-settings-zh-TW-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 60765,
+      "sha256": "6386f38906a4f74e5ce6ad2eedc4ec9ed31e341226d82ae058e3b0e66ae0131f",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "buyer-cancelled-mock-en-1586.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 91197,
+      "sha256": "c9b120b2bca30e147601b6c0aada8d97f542d70c5001b39a71fb6e9c0ed10c77",
+      "scope": "MOCK terminal response projection only"
+    },
+    {
+      "file": "buyer-cancelled-mock-en-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 62616,
+      "sha256": "ea0b04bc7085a8ac04a57a45cb6163dc9a7a969541d6c9a94e7f7bfcd5d02be1",
+      "scope": "MOCK terminal response projection only"
+    },
+    {
+      "file": "buyer-cancelled-mock-zh-TW-1586.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 90885,
+      "sha256": "498360a5fbfa93285d9a74dac1d2f35935651efd0aca356dba9014799944149a",
+      "scope": "MOCK terminal response projection only"
+    },
+    {
+      "file": "buyer-cancelled-mock-zh-TW-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 64705,
+      "sha256": "93b9575ed801a0583dddc9bc8e09fe1b0eb3ca41e0e65150710e7c24f69189da",
+      "scope": "MOCK terminal response projection only"
+    },
+    {
+      "file": "buyer-checkout-en-1366.png",
+      "width": 1366,
+      "height": 992,
+      "bytes": 67295,
+      "sha256": "7e093bcd05241dac1dbc5e932e456f685ae6c3082d60e799849ef1b92727f44e",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "buyer-checkout-en-1586.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 68443,
+      "sha256": "9df20540c543d68995726554c26830b7d7109928c858f7808804f9e6af6d55f7",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "buyer-checkout-en-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 50977,
+      "sha256": "e773b637415c79c292de81598f4a07d863c44bdac911689778735f50914fef1a",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "buyer-checkout-zh-TW-1366.png",
+      "width": 1366,
+      "height": 992,
+      "bytes": 66936,
+      "sha256": "78771d905fbdaf24b43634587a900fb752546d65a3582543833fa2879e74ce53",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "buyer-checkout-zh-TW-1586.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 68048,
+      "sha256": "9a1f2445fc344285d8923e931355e89bce4549e652e00e2ea42edf83d4940d77",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "buyer-checkout-zh-TW-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 50553,
+      "sha256": "5b2a802b4e8429ce1aae72781145abcee483c155b82b65dd19f8489581046736",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "buyer-confirm-en-1366.png",
+      "width": 1366,
+      "height": 992,
+      "bytes": 96784,
+      "sha256": "bb8524ab6bc018f4aaa973615194e8e1faaac7e2b66da7ea31acc4783a09bcdd",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "buyer-confirm-en-1586.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 98448,
+      "sha256": "207fc5776ca8ea4b5b5f07010f616346b5b022d72c8b09c4231804b2bd222203",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "buyer-confirm-en-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 65329,
+      "sha256": "aedac4722bb10e748b153205deeac5e9e3a87c4378e642e4b03ac1a49528c192",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "buyer-confirm-zh-TW-1366.png",
+      "width": 1366,
+      "height": 992,
+      "bytes": 109810,
+      "sha256": "58c2dde6a15f7f0de9b8a31dd65bbd977a7bd30e6137d4a4749d2d0aa84239cd",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "buyer-confirm-zh-TW-1586.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 111713,
+      "sha256": "ef24d1bf3525422176bb1bb2d0836d80fb67ce0536d340ad2345c2d433fa3e0a",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "buyer-confirm-zh-TW-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 78796,
+      "sha256": "222aecddeb94e3d6a8ad6178590928572a8b6a90c960e03909366983b6b844d6",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "buyer-cvs-cod-disabled-en-1586.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 93162,
+      "sha256": "cc5b7dcbb35e7865235725e07364320c941fe6ef386df438a44a24e95f63396d",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "buyer-cvs-cod-disabled-en-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 48707,
+      "sha256": "9be0aa11114a8f56b3e7f43b04ea7883ca0f0b20c300a2c0b7226bd6f6851736",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "buyer-cvs-cod-disabled-zh-TW-1586.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 112316,
+      "sha256": "6d9a74b40e96f99785975eaa81f4ecc0b2bc03438b615a886ad823910eb306d9",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "buyer-cvs-cod-disabled-zh-TW-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 50325,
+      "sha256": "f51523431afe0ab64c96b6f4cba324b322738bedd0df536b49f2d1fee21ed5c0",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "buyer-order-pending-en-1366.png",
+      "width": 1366,
+      "height": 992,
+      "bytes": 92800,
+      "sha256": "29be684661f371150c7b3b2350a2eefc4f47a41165f12a191b7509fa85aed8b3",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "buyer-order-pending-en-1586.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 94233,
+      "sha256": "d1a456cceda7e592f6404a72dd039ccdf6a2cfae9f7d70501e103cdfeb035d02",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "buyer-order-pending-en-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 66621,
+      "sha256": "1131a0f9f1425129e6e666989c187c1c3c715c895907a51e8580eccbbcec2884",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "buyer-order-pending-zh-CN-1366.png",
+      "width": 1366,
+      "height": 992,
+      "bytes": 103520,
+      "sha256": "16260432b5aee527b7c356543304950f1ed442f16a69cb951b110f9dc2585d62",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "buyer-order-pending-zh-CN-1586.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 105184,
+      "sha256": "70b58fe1e7f21d152def913ddf38b0f5d1cb5e2342b28a7c6346f56e0d50ad79",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "buyer-order-pending-zh-CN-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 71665,
+      "sha256": "b5e00ae62a15f270f2fe21a7b0556ce18aca5eb5317d64156be3d09076e95ebd",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "buyer-order-pending-zh-TW-1366.png",
+      "width": 1366,
+      "height": 992,
+      "bytes": 97935,
+      "sha256": "ebc071cd8faa83011b7f7b15beb220827a01ff67d65fdf88bb19639208148761",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "buyer-order-pending-zh-TW-1586.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 99464,
+      "sha256": "51c29db64eb99051c7f1e7ae56626b561e0ec035221365f90527fbafdfd91de2",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "buyer-order-pending-zh-TW-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 73491,
+      "sha256": "270ba33763003753388661fa2e38c4a3c3372a93b3ca5cdf4f211e0a9a5de9b7",
+      "scope": "isolated browser gate; MOCK external providers"
+    },
+    {
+      "file": "buyer-refunded_offline-mock-en-1586.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 98488,
+      "sha256": "2bc233cb671ebec9f052b25b4fdfd199ccf132781902fb6ebf6eca72344736d4",
+      "scope": "MOCK terminal response projection only"
+    },
+    {
+      "file": "buyer-refunded_offline-mock-en-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 63090,
+      "sha256": "4db631e951275c3c0ee16e6fc2a95346867638ba7d2803b3e6b4041c0d52f7dc",
+      "scope": "MOCK terminal response projection only"
+    },
+    {
+      "file": "buyer-refunded_offline-mock-zh-TW-1586.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 97638,
+      "sha256": "bbc945435aebf5d0b22268dcd16362d604c4c84209fe8e20e3637e73e9a534d6",
+      "scope": "MOCK terminal response projection only"
+    },
+    {
+      "file": "buyer-refunded_offline-mock-zh-TW-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 67309,
+      "sha256": "493e496c92dff54c20258cbc4ceab5caee1c0fa982c36e09fc915c020393840a",
+      "scope": "MOCK terminal response projection only"
+    },
+    {
+      "file": "buyer-returned-mock-en-1586.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 93640,
+      "sha256": "5a249fb5cfbddd38745cd3cf6da7fc14637d2b828841cde52561f36d7cb0291d",
+      "scope": "MOCK terminal response projection only"
+    },
+    {
+      "file": "buyer-returned-mock-en-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 61233,
+      "sha256": "3e3a60378455de14dd63a612800d0d7e69fa801bcfc6af6caf269b3a68f6ac7f",
+      "scope": "MOCK terminal response projection only"
+    },
+    {
+      "file": "buyer-returned-mock-zh-TW-1586.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 91249,
+      "sha256": "b8d140e1dfd95c57c8b47562197e9110c1b7330a5d89c0d109d9200c788388ed",
+      "scope": "MOCK terminal response projection only"
+    },
+    {
+      "file": "buyer-returned-mock-zh-TW-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 62475,
+      "sha256": "4ce4a3980fd4c20f90cc23a6aced248e422516c4effa3b351df20702e202ecde",
+      "scope": "MOCK terminal response projection only"
+    }
+  ]
+}

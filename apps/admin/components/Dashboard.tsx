@@ -108,7 +108,7 @@ export function Dashboard({
                       </caption>
                       <thead><tr><th scope="col" /><th scope="col" className="num">{c.today}</th><th scope="col" className="num">{c.week}</th></tr></thead>
                       <tbody>
-                        {([["card", c.card, "card_minor"], ["bank", c.bank, "bank_transfer_minor"], ["pickup", c.pickup, "pay_at_pickup_minor"]] as const).map(([id, label, key]) => (
+                        {([["card", c.card, "card_minor"], ["bank", c.bank, "bank_transfer_minor"], ["pickup", c.pickup, "pay_at_pickup_minor"], ["cod", c.cod, "cod_minor"]] as const).map(([id, label, key]) => (
                           <tr key={id}>
                             <th scope="row">{label}</th>
                             <td className="num">{money(locale, g.currency, g.today[key])}</td>

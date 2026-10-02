@@ -107,10 +107,10 @@ func TestCSV(t *testing.T) {
 		t.Fatal(err)
 	}
 	lines := strings.Split(strings.TrimSuffix(string(body), "\n"), "\n")
-	if lines[0] != "day,currency,environment,captured_count,captured_minor,refunded_minor,net_minor,pickup_collected_count,pickup_collected_minor,bank_transfer_confirmed_count,bank_transfer_confirmed_minor" || len(lines) != 5 {
+	if lines[0] != "day,currency,environment,captured_count,captured_minor,refunded_minor,net_minor,pickup_collected_count,pickup_collected_minor,bank_transfer_confirmed_count,bank_transfer_confirmed_minor,cod_collected_count,cod_collected_minor" || len(lines) != 5 {
 		t.Fatalf("%q", lines)
 	}
-	if lines[3] != "2026-09-02,TWD,LIVE,0,0,200,-200,0,0,0,0" {
+	if lines[3] != "2026-09-02,TWD,LIVE,0,0,200,-200,0,0,0,0,0,0" {
 		t.Fatalf("negative net line: %q", lines[3])
 	}
 	for _, line := range lines[1:] {
@@ -121,6 +121,40 @@ func TestCSV(t *testing.T) {
 	empty, _ := CSV(nil)
 	if strings.Count(string(empty), "\n") != 1 {
 		t.Fatalf("empty csv should be the header only: %q", empty)
+	}
+}
+
+// home-cod R5 (migration 0107): the cash-on-delivery keys come as a third pair after the pickup and transfer pairs (13 keys), are
+// summed per (currency, environment), stay out of captured/net, and are exported; a half pair or a COD pair without both earlier pairs is drift.
+func TestCodCollectedColumns(t *testing.T) {
+	row := func(day string, n, minor int) string {
+		return `{"day":"` + day + `","currency":"TWD","environment":"LIVE","captured_count":0,"captured_minor":0,"refunded_minor":0,"net_minor":0,` +
+			`"pickup_collected_count":0,"pickup_collected_minor":0,` +
+			`"bank_transfer_confirmed_count":0,"bank_transfer_confirmed_minor":0,` +
+			`"cod_collected_count":` + strconv.Itoa(n) + `,"cod_collected_minor":` + strconv.Itoa(minor) + `}`
+	}
+	rows, err := decodeRows([]byte("["+row("2026-09-01", 2, 7000)+","+row("2026-09-02", 1, 3000)+"]"), "2026-09-01", "2026-09-02")
+	if err != nil || len(rows) != 2 {
+		t.Fatalf("%v %v", rows, err)
+	}
+	total := Totals(rows)[0]
+	if total.CodCollectedCount != 3 || total.CodCollectedMinor != 10000 || total.CapturedMinor != 0 || total.NetMinor != 0 {
+		t.Fatalf("cod money must be its own column, outside captured and net: %+v", total)
+	}
+	body, _ := CSV(rows)
+	if !strings.Contains(string(body), "2026-09-01,TWD,LIVE,0,0,0,0,0,0,0,0,2,7000\n") {
+		t.Fatalf("csv: %q", body)
+	}
+	for name, bad := range map[string]string{
+		"one cod key only":    strings.Replace(row("2026-09-01", 1, 100), `,"cod_collected_count":1`, ``, 1),
+		"negative cod":        row("2026-09-01", 1, -100),
+		"cod amount no count": row("2026-09-01", 0, 100),
+		"cod pair without earlier pairs": strings.Replace(strings.Replace(row("2026-09-01", 1, 100),
+			`"pickup_collected_count":0,`, ``, 1), `"pickup_collected_minor":0,`, `"x":0,`, 1),
+	} {
+		if _, err := decodeRows([]byte("["+bad+"]"), "2026-09-01", "2026-09-02"); !errors.Is(err, ErrUnavailable) {
+			t.Fatalf("%s accepted: %v", name, err)
+		}
 	}
 }
 
@@ -163,7 +197,7 @@ func TestPickupCollectedColumns(t *testing.T) {
 		t.Fatalf("pickup money must be its own column, outside captured and net: %+v", total)
 	}
 	body, _ := CSV(rows)
-	if !strings.Contains(string(body), "2026-09-01,TWD,SANDBOX,1,1000,0,1000,2,700,0,0\n") {
+	if !strings.Contains(string(body), "2026-09-01,TWD,SANDBOX,1,1000,0,1000,2,700,0,0,0,0\n") {
 		t.Fatalf("csv: %q", body)
 	}
 	for name, bad := range map[string]string{
@@ -194,7 +228,7 @@ func TestBankTransferConfirmedColumns(t *testing.T) {
 		t.Fatalf("transfer money must be its own column, outside captured and net: %+v", total)
 	}
 	body, _ := CSV(rows)
-	if !strings.Contains(string(body), "2026-09-01,TWD,LIVE,0,0,0,0,0,0,2,7000\n") {
+	if !strings.Contains(string(body), "2026-09-01,TWD,LIVE,0,0,0,0,0,0,2,7000,0,0\n") {
 		t.Fatalf("csv: %q", body)
 	}
 	for name, bad := range map[string]string{

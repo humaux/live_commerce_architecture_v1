@@ -249,12 +249,13 @@ func mfuRecords(t *testing.T, raw []byte) [][]string {
 	return recs
 }
 
-const mfuHeader = "order_id,created_at_utc,service_code,destination_kind,recipient_name,phone,country,region,city,postal_code,line1,line2,pickup_namespace,pickup_code,pickup_name,pickup_address,items,total_minor,currency,pickup_source"
+const mfuHeader = "order_id,created_at_utc,service_code,destination_kind,recipient_name,phone,country,region,city,postal_code,line1,line2,pickup_namespace,pickup_code,pickup_name,pickup_address,items,total_minor,currency,pickup_source,payment_mode,collect_minor"
 
 // mfuCSVCases is the CSV-encoder half of MF01 (subtest "csv" of TestManualFulfilmentMF01Validation).
 func mfuCSVCases(t *testing.T) {
 	base := merchantorders.ExportRow{OrderID: "11111111-1111-4111-8111-111111111111", CreatedAtUTC: "2026-09-29T01:02:03Z", ServiceCode: "home", DestinationKind: "home",
-		RecipientName: "王小明", Phone: "0912345678", Country: "TW", City: "台北市", PostalCode: "100", Line1: "中正路 1 號", Items: "SKU-1×2; SKU-2×1", TotalMinor: 12300, Currency: "TWD"}
+		RecipientName: "王小明", Phone: "0912345678", Country: "TW", City: "台北市", PostalCode: "100", Line1: "中正路 1 號", Items: "SKU-1×2; SKU-2×1", TotalMinor: 12300, Currency: "TWD",
+		PaymentMode: "card", CollectMinor: 12300}
 	raw := mfuCSV(t, []merchantorders.ExportRow{base})
 	if !bytes.HasPrefix(raw, []byte{0xEF, 0xBB, 0xBF}) {
 		t.Fatal("no UTF-8 BOM")
@@ -266,10 +267,10 @@ func mfuCSVCases(t *testing.T) {
 		t.Fatalf("header mismatch: %q", raw)
 	}
 	recs := mfuRecords(t, raw)
-	if len(recs) != 2 || len(recs[1]) != 20 {
+	if len(recs) != 2 || len(recs[1]) != 22 {
 		t.Fatalf("shape: %d records, %d columns", len(recs), len(recs[len(recs)-1]))
 	}
-	want := []string{base.OrderID, base.CreatedAtUTC, "home", "home", "王小明", "0912345678", "TW", "", "台北市", "100", "中正路 1 號", "", "", "", "", "", "SKU-1×2; SKU-2×1", "12300", "TWD", ""} // + pickup_source (0073, taiwan-cvs C4): empty for a home row
+	want := []string{base.OrderID, base.CreatedAtUTC, "home", "home", "王小明", "0912345678", "TW", "", "台北市", "100", "中正路 1 號", "", "", "", "", "", "SKU-1×2; SKU-2×1", "12300", "TWD", "", "card", "12300"} // + pickup_source (0073, taiwan-cvs C4) empty for a home row; + payment_mode/collect_minor (home-cod R5 P1-2)
 	for i, w := range want {
 		if recs[1][i] != w {
 			t.Fatalf("column %d (%s) = %q want %q", i, strings.Split(mfuHeader, ",")[i], recs[1][i], w)

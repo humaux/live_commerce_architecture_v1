@@ -14,6 +14,7 @@ import {
   type TransferSettings,
 } from "./transfer-model";
 import { parseNotifySettings, type NotifySettings } from "./notify-model";
+import { parseCodSettings, type CodSettings } from "./cod-model";
 import {
   parseCvsSettings,
   parseCvsShipment,
@@ -138,6 +139,14 @@ export async function readTransfer(store: string, id: string, signal: AbortSigna
 // optimistic: callers re-GET after every answer (the answer body is not used).
 export const postTransferDecision = (store: string, id: string, action: TransferAction, key: string, body: string, boundary: string) =>
   write(store, "POST", `orders/${id}/bank-transfer/${action}`, key, body, boundary);
+
+// ---- cash on delivery (home-cod R5, migration 0107) -> Go internal/httpapi/cod.go -----------------------------------------------
+// Go GET cash-on-delivery-settings (integration:read): defaults at version 0 when the store never saved any.
+export const readCodSettings = (store: string, signal: AbortSignal): Promise<CodSettings> =>
+  get(`/api/stores/${store}/cash-on-delivery-settings`, parseCodSettings, signal);
+// Go PUT cash-on-delivery-settings (integration:manage): version CAS (0 inserts); a change never touches placed orders.
+export const putCodSettings = (store: string, key: string, body: string, boundary: string) =>
+  write(store, "PUT", "cash-on-delivery-settings", key, body, boundary);
 
 // ---- new-order mail opt-out (contracts/storefront-v2.md §E6) -> Go internal/httpapi/notify.go -----------------------------------
 // Go GET notification-settings (integration:read): no stored row reads as on.

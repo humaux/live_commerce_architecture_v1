@@ -1,0 +1,28 @@
+✔ demonstration disclosure is explicit and local-only (0.913958ms)
+✔ cart selection preserves unrelated SKUs and the observed CAS version (5.946541ms)
+✔ minor amounts are bounded before multiplication, including zero (0.087667ms)
+✔ delivery identity includes country for one market and method (0.0665ms)
+✔ journal is bound to context and rejects PII/unknown fields (0.21225ms)
+✔ lost response replays exact key/body, then clears only after parsed receipt (13.505167ms)
+✔ RUI02 buyer order admits MERCHANT_SHIPPED only with a SHIPPED head; absent shipment ≡ null (0.431292ms)
+✔ RUI02 shipment shape negatives (incl. unsafe links) (0.2215ms)
+✔ RUI02 history summary admits MERCHANT_SHIPPED (a shipped order must not break the list) (0.067333ms)
+✔ CVSP01 options: CVS rows carry pickup_selection/payment_modes; unavailable rows are a separate shape (0.339ms)
+✔ CVSP02 CVS destination write: TW only, pickup_id required, empty home address; home unchanged (2.023416ms)
+✔ CVSP03 checkoutInput: payment_mode only for CVS rows and only a mode the row offers (0.338542ms)
+✔ COD confirmation includes expected fee, enforces collect cap and validates immutable order money (0.302375ms)
+✔ CVSP04 buyer order: pay_at_pickup <=> collection_state; cvs_shipment only on a matching CVS destination (0.225125ms)
+✔ CVSP05 journal accepts a CVS destination marker and a checkout body with payment_mode, nothing else (0.189ms)
+✔ summary decodes refunded, partially refunded, shipped and reviewed orders (Go projection invariants) (2.310833ms)
+✔ summary keys are exact: the pre-0062 ten-key shape and extra keys are refused (0.255417ms)
+✔ summary refuses every state combination the amended contract forbids (1.024542ms)
+✔ detail carries `shipment` (null or the exact seven-key SHIPPED object) and refuses anything else (2.6325ms)
+✔ state filters admit shipped and unshipped and nothing else new (0.465833ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 146.101709

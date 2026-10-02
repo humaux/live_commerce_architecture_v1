@@ -178,6 +178,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerBillingRoutes(mux, pool, configured.Billing)
 	registerCVSRoutes(mux, pool, configured.CVS)
 	registerOfflinePaymentRoutes(mux, pool)
+	registerCodPaymentRoutes(mux, pool)                             // unit home-cod: cash-on-delivery settings, cod.go
 	registerMerchantToolsRoutes(mux, pool, configured.ManualOrders) // unit merchant-tools: storefront-v2 section G, merchanttools.go
 	registerPromotionRoutes(mux, pool)
 	registerNotifySettingsRoutes(mux, pool)

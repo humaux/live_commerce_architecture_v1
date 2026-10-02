@@ -6,6 +6,7 @@ import type { Locale } from "@live-commerce/i18n";
 import { browseCopy } from "../lib/browse-copy";
 import { bankTransferCopy } from "../lib/bank-transfer-copy";
 import { cvsCopy } from "../lib/cvs-copy";
+import { codCopy } from "../lib/cod-copy";
 import { isUnavailable, purchasePage, validOptionRow, type Option } from "../lib/purchase";
 import { useCart } from "./CartProvider";
 
@@ -40,7 +41,7 @@ export default function ProductAssurance({ locale, policies }: {
   const field = locale === "zh-TW" ? "name_hant" : locale === "zh-CN" ? "name_hans" : "name_en";
   const delivery = [...new Set(rows.map(row => row[field]).filter(Boolean))];
   const modes = [...new Set(rows.flatMap(row => row.payment_modes ?? []))];
-  const paymentLabels = { card: bankTransferCopy[locale].payCard, bank_transfer: bankTransferCopy[locale].payBank, pay_at_pickup: cvsCopy[locale].payAtPickup };
+  const paymentLabels = { card: bankTransferCopy[locale].payCard, bank_transfer: bankTransferCopy[locale].payBank, pay_at_pickup: cvsCopy[locale].payAtPickup, cash_on_delivery: codCopy[locale].orderTitle };
   const copy = browseCopy[locale];
   const shipping = policies.find(policy => policy.slug === "shipping");
   if (!delivery.length && !policies.length) return null;

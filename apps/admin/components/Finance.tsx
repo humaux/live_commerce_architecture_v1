@@ -149,7 +149,7 @@ export function Finance({
                   <thead>
                     <tr>
                       <th>{c.day}</th><th>{c.currency}</th><th>{c.environment}</th>
-                      <th>{c.paidOrders}</th><th>{c.captured}</th><th>{c.refunded}</th><th>{c.net}</th><th>{c.pickupCollected}</th><th>{c.transferConfirmed}</th>
+                      <th>{c.paidOrders}</th><th>{c.captured}</th><th>{c.refunded}</th><th>{c.net}</th><th>{c.pickupCollected}</th><th>{c.transferConfirmed}</th><th>{c.codCollected}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -190,6 +190,10 @@ function FinanceLine({ row, locale, c }: { row: FinanceRow; locale: Locale; c: (
       {/* storefront-v2 §C: bank-transfer money the merchant confirmed (offline, server order total); its own money path too. */}
       <td data-label={c.transferConfirmed} data-testid="finance-transfer-confirmed">
         {row.bank_transfer_confirmed_count ? `${m(row.bank_transfer_confirmed_minor)} (${row.bank_transfer_confirmed_count})` : m(0)}
+      </td>
+      {/* home-cod R5: cash-on-delivery money the carrier collected (offline, order total + surcharge); its own money path too. */}
+      <td data-label={c.codCollected} data-testid="finance-cod-collected">
+        {row.cod_collected_count ? `${m(row.cod_collected_minor)} (${row.cod_collected_count})` : m(0)}
       </td>
     </tr>
   );
