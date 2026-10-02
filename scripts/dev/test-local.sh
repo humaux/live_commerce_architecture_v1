@@ -383,13 +383,16 @@ POSTGRES_PASSWORD="$(openssl rand -hex 24)"
 # same memcg as the server processes, so 512m OOM-killed postgres mid-suite on
 # Linux hosts/CI (observed 2026-09-28: memcg OOM -> "database system is in
 # recovery mode"). 1g keeps the same tmpfs/shared_buffers/max_connections gate.
+# Disk: the whole foundation suite shares this one data directory. PostgreSQL's default max_wal_size (1GB) lets pg_wal outgrow the
+# tmpfs during bulk fixtures (R4 gate: "No space left on device" cascaded ~240 G07 failures), so WAL is capped at 96MB (checkpoints
+# recycle it) and the tmpfs is 320 MiB; both stay well inside --memory=1g.
 docker run -d --pull=never --name "$test_container" \
   --label "livecommerce.fixture=$test_container" --memory=1g --cpus=1 --pids-limit=128 \
-  --tmpfs /var/lib/postgresql:rw,size=268435456 \
+  --tmpfs /var/lib/postgresql:rw,size=335544320 \
   -e POSTGRES_PASSWORD -e POSTGRES_DB=lc_foundation_test \
   -p 127.0.0.1::5432 \
   postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 \
-  -c shared_buffers=32MB -c max_connections=60 >/dev/null
+  -c shared_buffers=32MB -c max_connections=60 -c max_wal_size=96MB -c min_wal_size=32MB >/dev/null
 test_owned=1
 # The image starts a socket-only temporary server during initdb, then stops it.
 # TCP readiness must wait for the final server; socket pg_isready can race createdb.
@@ -416,11 +419,11 @@ fresh_pg() {
   fi
   docker run -d --pull=never --name "$test_container" \
     --label "livecommerce.fixture=$test_container" --memory=1g --cpus=1 --pids-limit=128 \
-    --tmpfs /var/lib/postgresql:rw,size=268435456 \
+    --tmpfs /var/lib/postgresql:rw,size=335544320 \
     -e POSTGRES_PASSWORD -e POSTGRES_DB=lc_foundation_test \
     -p 127.0.0.1::5432 \
     postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 \
-    -c shared_buffers=32MB -c max_connections=60 >/dev/null
+    -c shared_buffers=32MB -c max_connections=60 -c max_wal_size=96MB -c min_wal_size=32MB >/dev/null
   for ((attempt=0; attempt<40; attempt++)); do
     if docker exec "$test_container" pg_isready -h 127.0.0.1 -U postgres -d lc_foundation_test >/dev/null 2>&1; then break; fi
     sleep 0.5
