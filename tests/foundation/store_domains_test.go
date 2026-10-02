@@ -11,6 +11,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -570,5 +572,33 @@ func TestStoreDomainsSDW06SchemaAndACLInventory(t *testing.T) {
 		if !strings.Contains(withCheck, "'"+action+"'") {
 			t.Fatalf("audit policy lost %s: %s", action, withCheck)
 		}
+	}
+}
+
+// TestStoreDomainsDeployPassesBaseDomainToMigrate (K3 final review P1): the migrate one-shot must receive LC_STORE_BASE_DOMAIN,
+// otherwise 0106's platform-origin backfill silently no-ops in a deploy and existing stores (the pilot) get no https://<handle>.<base>;
+// and preflight must FAIL (not skip) when the value is unset outside smoke.
+func TestStoreDomainsDeployPassesBaseDomainToMigrate(t *testing.T) {
+	read := func(p string) string {
+		b, err := os.ReadFile("../../" + p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(b)
+	}
+	compose := read("deploy/compose.yml")
+	start := strings.Index(compose, "\n  migrate:\n")
+	if start < 0 {
+		t.Fatal("compose has no migrate service")
+	}
+	rest := compose[start+1:]
+	if end := regexp.MustCompile(`\n  [a-z][a-z0-9-]*:\n`).FindStringIndex(rest[1:]); end != nil {
+		rest = rest[:end[0]+1]
+	}
+	if !strings.Contains(rest, "LC_STORE_BASE_DOMAIN: ${LC_STORE_BASE_DOMAIN") {
+		t.Fatal("compose migrate service does not pass LC_STORE_BASE_DOMAIN: 0106 backfill would silently skip existing stores")
+	}
+	if !strings.Contains(read("deploy/scripts/preflight.sh"), `P19 FAIL LC_STORE_BASE_DOMAIN is unset`) {
+		t.Fatal("preflight does not fail an unset LC_STORE_BASE_DOMAIN")
 	}
 }

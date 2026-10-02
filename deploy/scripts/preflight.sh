@@ -660,6 +660,12 @@ if ((online)); then
   # anycast addresses, none of which are this host's, so "every address is ours" is the same DNS-only proof as
   # P17/P18. A canary label proves the wildcard actually exists (a missing wildcard makes getent fail). Both
   # names must resolve ONLY to this host; a non-resolving or foreign address fails the gate.
+  # Unset is a FAIL, not a skip: migrate (0106) backfills existing stores' platform origins from it, and an unset value
+  # would leave e.g. the pilot store without https://<handle>.<base> while every step exits 0 (K3 final review, P1).
+  if [[ -z "${LC_STORE_BASE_DOMAIN:-}" && "${LC_ENVIRONMENT:-}" != smoke ]]; then
+    echo "P19 FAIL LC_STORE_BASE_DOMAIN is unset: store platform origins cannot be created (migrate 0106 backfill, api onboarding)"
+    fail=1
+  fi
   if [[ -n "${LC_STORE_BASE_DOMAIN:-}" && "${LC_ENVIRONMENT:-}" != smoke ]]; then
     mine=" $(hostname -I 2>/dev/null) ${LC_PUBLIC_IP:-} "
     for name in "stores.${LC_STORE_BASE_DOMAIN}" "preflight-canary.${LC_STORE_BASE_DOMAIN}"; do

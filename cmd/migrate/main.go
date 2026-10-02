@@ -40,6 +40,10 @@ func main() {
 func run(ctx context.Context, getenv func(string) string) int {
 	dsn := getenv("COMMERCE_MIGRATE_DATABASE_URL")
 	baseDomain := getenv("LC_STORE_BASE_DOMAIN")
+	if strings.TrimSpace(baseDomain) == "" {
+		// Visible, not silent: 0106's platform-origin backfill is a no-op without a base zone (preflight P19 fails it in deploys).
+		slog.Warn("migrate_store_base_domain_unset", "effect", "no platform origin backfill")
+	}
 	if strings.TrimSpace(dsn) == "" || len(dsn) > 8192 {
 		slog.Error("migrate_invalid_config")
 		return 2
