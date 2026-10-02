@@ -464,3 +464,58 @@ func TestHomeCodManualCarrierRoundTrip(t *testing.T) {
 		}
 	}
 }
+
+// HCOD06 (review P2-11): erasure waits while a SHIPPED but uncollected cash_on_delivery order is in flight, because the carrier's cash
+// reconciliation still needs the recipient snapshot; it proceeds before shipping (the order is only AWAITING_COLLECTION) and after
+// collection. Another owner's in-flight order never blocks. The check is the narrow definer checkout.has_inflight_collection:
+// commerce_privacy_writer holds NO payment_mode/collection_state/fulfillment_state column grant (customers-billing-v1 D-S2 frozen list).
+func TestHomeCodErasureWaitsForShippedUncollected(t *testing.T) {
+	e := tcvNew(t)
+	e.grantCreator("orders:read", "fulfillment:write")
+	if st, out := e.hcodSettings(0, true, 20000, 50, "black_cat"); st != 200 {
+		t.Fatalf("enable COD: %d %v", st, out)
+	}
+	writer, _ := e.member("fulfillment:write", "orders:read")
+	erase := func(b *tcvBuyer, key string) bhResponse {
+		return b.req("POST", "/v1/buyer/privacy/erasure", t04Key(key), map[string]any{"confirm": "ERASE"}, nil)
+	}
+
+	shipped := e.newBuyer()
+	res, err := e.hcodPlace(shipped)
+	if err != nil {
+		t.Fatal(err)
+	}
+	idle := e.newBuyer()
+	if _, err := e.hcodPlace(idle); err != nil {
+		t.Fatal(err)
+	}
+	if st, _, raw := e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/orders/"+res.OrderID+"/shipment", t04Key("hcod-erase-ship"), mfxShip(0, "sf_express", "TRACKERASE1")); st != 200 {
+		t.Fatalf("manual shipment: %d %s", st, raw)
+	}
+	if got := erase(shipped, "hcod-erase-blocked"); got.status != 409 || cofCode(cofJSON(t, got.body)) != "erasure_blocked" {
+		t.Fatalf("a shipped, uncollected COD order must block erasure: %d %s", got.status, got.body)
+	}
+	if n := e.count(`SELECT count(*) FROM customers.privacy_actions WHERE kind='ERASURE' AND owner_id=$1`, shipped.cap.Scope.OwnerID); n != 0 {
+		t.Errorf("a blocked erasure wrote %d tombstone(s)", n)
+	}
+	// owner scoping + the shipped predicate: another owner whose COD order is still unshipped erases freely
+	if got := erase(idle, "hcod-erase-idle"); got.status != 200 {
+		t.Errorf("an unshipped COD order (AWAITING_COLLECTION) must not block erasure, and another owner's in-flight order never does: %d %s", got.status, got.body)
+	}
+	if st, _, raw := e.record(writer, res.OrderID, t04Key("hcod-erase-col"), "PENDING", "collected"); st != 200 {
+		t.Fatalf("collected: %d %s", st, raw)
+	}
+	if got := erase(shipped, "hcod-erase-after"); got.status != 200 {
+		t.Errorf("erasure after the cash was collected: %d %s", got.status, got.body)
+	}
+	// least privilege: the writer has no column on the three order-state columns; the predicate is the only path
+	for _, col := range []string{"payment_mode", "collection_state", "fulfillment_state"} {
+		var has bool
+		if err := e.p.f.owner.QueryRow(context.Background(), `SELECT has_column_privilege('commerce_privacy_writer','checkout.orders',$1,'SELECT')`, col).Scan(&has); err != nil {
+			t.Fatal(err)
+		}
+		if has {
+			t.Errorf("commerce_privacy_writer holds SELECT(%s) on checkout.orders", col)
+		}
+	}
+}

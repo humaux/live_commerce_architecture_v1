@@ -166,7 +166,7 @@ func TestMerchantOrdersAuthorityAndOnboarding(t *testing.T) {
 		}
 	}
 	for table, want := range map[string][]string{
-		"checkout.orders":                {"collection_state", "commercial_state", "country", "created_at", "currency", "fulfillment_state", "id", "owner_id", "payment_mode", "service_code", "snapshot", "source", "store_id", "tenant_id", "total_minor", "updated_at"}, // 0094 (merchant-tools): +source for identity.read_order_sources; 0073 (taiwan-cvs C4): +collection_state, payment_mode for the merchant projection
+		"checkout.orders":                {"cod_surcharge_minor", "collected_at", "collection_state", "commercial_state", "country", "created_at", "currency", "fulfillment_state", "id", "owner_id", "payment_mode", "service_code", "snapshot", "source", "store_id", "tenant_id", "total_minor", "updated_at"}, // 0094 (merchant-tools): +source for identity.read_order_sources; 0073 (taiwan-cvs C4): +collection_state, payment_mode for the merchant projection; 0107 (home-cod R5, contracts/merchant-orders-v1.md amendment): +cod_surcharge_minor (merchant DTO cod_surcharge_minor/cod_collect_minor, finance COD column) and +collected_at (finance day of COD/pickup cash); cod_carrier is NOT granted
 		"checkout.payment_attempts":      {"amount_minor", "connection_id", "currency", "environment", "execution_profile", "id", "order_id", "owner_id", "store_id", "tenant_id"},
 		"payments.facts":                 {"amount_minor", "attempt_id", "connection_id", "currency", "environment", "execution_profile", "kind", "received_at", "store_id", "tenant_id"}, // 0078 adds received_at (BD7 finance day)
 		"payments.review_cases":          {"attempt_id", "reason", "store_id", "tenant_id"},                                                                                               // 0063 adds reason (MD6 review predicate)
@@ -334,7 +334,7 @@ func TestMerchantOrdersSQLProjectionAndIsolation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantKeys := []string{"collection_state", "commercial_state", "created_at", "currency", "fulfillment_state", "order_id", "payment_mode", "payment_state", "pickup_source", "refund_pending_minor", "refunded_minor", "test_mode", "total_minor", "updated_at", "work_state"} // 0063: stripe-refund-v1 §7.1 amounts
+	wantKeys := []string{"cod_collect_minor", "cod_surcharge_minor", "collection_state", "commercial_state", "created_at", "currency", "fulfillment_state", "order_id", "payment_mode", "payment_state", "pickup_source", "refund_pending_minor", "refunded_minor", "test_mode", "total_minor", "updated_at", "work_state"} // 0063: stripe-refund-v1 §7.1 amounts; 0107 (home-cod R5, contracts/merchant-orders-v1.md amendment): +cod_collect_minor, cod_surcharge_minor (null unless cash_on_delivery)
 	ids := map[string]bool{first.OrderID: false, second.OrderID: false}
 	for _, row := range rows {
 		id, _ := row["order_id"].(string)
@@ -689,7 +689,7 @@ func TestMerchantOrdersHTTPPaginationPrivacyAndNoEffects(t *testing.T) {
 		t.Fatalf("all-buyers store page=%+v", full)
 	}
 	for _, item := range full.Items {
-		if len(item) != 16 { // 10 + refunded_minor, refund_pending_minor (0063) + pickup_source, payment_mode, collection_state (0073, taiwan-cvs C4) + source (0094, merchant-tools)
+		if len(item) != 18 { // 10 + refunded_minor, refund_pending_minor (0063) + pickup_source, payment_mode, collection_state (0073, taiwan-cvs C4) + source (0094, merchant-tools) + cod_surcharge_minor, cod_collect_minor (0107, home-cod R5)
 			t.Fatalf("summary has extra keys: %+v", item)
 		}
 	}
@@ -725,7 +725,7 @@ func TestMerchantOrdersHTTPPaginationPrivacyAndNoEffects(t *testing.T) {
 	for _, orderID := range []string{q.hold.OrderID, second.OrderID} {
 		status, raw := request("GET", base+"/"+orderID, q.f.tokens["a"], nil, nil)
 		var detail map[string]any
-		if status != 200 || json.Unmarshal(raw, &detail) != nil || len(detail) != 22 { // 16 (incl. source, 0094) + refunded_minor, refund_pending_minor, shipment (0063) + the three CVS keys (0073)
+		if status != 200 || json.Unmarshal(raw, &detail) != nil || len(detail) != 24 { // 16 (incl. source, 0094) + refunded_minor, refund_pending_minor, shipment (0063) + the three CVS keys (0073) + cod_surcharge_minor, cod_collect_minor (0107, home-cod R5 amendment)
 			t.Fatalf("detail %s status=%d body=%s", orderID, status, raw)
 		}
 		if _, leaked := detail["owner_id"]; leaked {

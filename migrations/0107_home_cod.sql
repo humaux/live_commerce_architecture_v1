@@ -90,12 +90,12 @@ DROP INDEX checkout.orders_unshipped;
 CREATE INDEX orders_unshipped ON checkout.orders(tenant_id,store_id,created_at,id)
  WHERE commercial_state IN ('CONFIRMED','AWAITING_COLLECTION') AND fulfillment_state='MANUAL_UNASSIGNED';
 -- finance (identity.read_finance_summary, owner commerce_auth) and the merchant order list (read_merchant_orders, owner commerce_auth)
--- both read the surcharge column; the buyer order projection (commerce_checkout_runtime, P1-1) reads the surcharge to compute
--- cod_collect_minor, and both roles read the snapshotted carrier (P2-4).
-GRANT SELECT(cod_surcharge_minor) ON checkout.orders TO commerce_auth;
+-- both read the surcharge column, and finance groups COD/pickup cash on collected_at; the buyer order projection
+-- (commerce_checkout_runtime, P1-1) reads the surcharge to compute cod_collect_minor and the snapshotted carrier (P2-4).
+-- commerce_auth gets exactly cod_surcharge_minor and collected_at (contracts/merchant-orders-v1.md, amendment R5 home-cod): no
+-- function owned by commerce_auth reads cod_carrier (the merchant DTO has no carrier key), so it is NOT granted to commerce_auth.
+GRANT SELECT(cod_surcharge_minor,collected_at) ON checkout.orders TO commerce_auth;
 GRANT SELECT(cod_surcharge_minor,cod_carrier) ON checkout.orders TO commerce_checkout_runtime;
-GRANT SELECT(cod_carrier) ON checkout.orders TO commerce_auth;
-GRANT SELECT(collected_at) ON checkout.orders TO commerce_auth;
 GRANT UPDATE(collected_at) ON checkout.orders TO commerce_checkout_writer;
 
 -- ---------------------------------------------------------------------------------------------------
@@ -927,16 +927,27 @@ END $$;
 -- order is carrying the recipient snapshot the carrier's cash reconciliation needs, so erasure waits
 -- while it is in flight (shipped: fulfillment_state MERCHANT_SHIPPED or PROVIDER_LABEL_CREATED, and
 -- collection_state PENDING — the same "shipped" predicate record_collection gates collected on). The CD7
--- refusal gains a third EXISTS; the three columns it reads are granted to the function's definer.
+-- refusal gains one more disjunct. Least privilege (customers-billing-v1 §3.1 / D-S2 freeze the column list of
+-- commerce_privacy_writer on checkout.orders): erase_owner does NOT get payment_mode/collection_state/fulfillment_state
+-- column SELECT; it calls this narrow boolean predicate, a SECURITY DEFINER owned like its checkout siblings by
+-- commerce_checkout_writer (which already reads checkout.orders), search_path pinned, EXECUTE only to commerce_privacy_writer.
 -- ---------------------------------------------------------------------------------------------------
-GRANT SELECT(payment_mode,collection_state,fulfillment_state) ON checkout.orders TO commerce_privacy_writer;
+CREATE FUNCTION checkout.has_inflight_collection(p_tenant uuid,p_store uuid,p_owner uuid) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ SELECT EXISTS(SELECT 1 FROM checkout.orders o WHERE o.tenant_id=p_tenant AND o.store_id=p_store AND o.owner_id=p_owner
+  AND o.payment_mode IN ('cash_on_delivery','pay_at_pickup') AND o.collection_state='PENDING'
+  AND o.fulfillment_state IN ('MERCHANT_SHIPPED','PROVIDER_LABEL_CREATED'))
+$$;
+ALTER FUNCTION checkout.has_inflight_collection(uuid,uuid,uuid) OWNER TO commerce_checkout_writer;
+REVOKE ALL ON FUNCTION checkout.has_inflight_collection(uuid,uuid,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION checkout.has_inflight_collection(uuid,uuid,uuid) TO commerce_privacy_writer;
 DO $$
 DECLARE v_item record; v_fn text;
 BEGIN
  FOR v_item IN SELECT * FROM (VALUES
   ('customers.erase_owner(bytea,uuid,uuid,text,uuid)',
    'AND o.commercial_state IN (''DRAFT'',''AWAITING_PAYMENT'',''AWAITING_TRANSFER'') AND o.expires_at>clock_timestamp())',
-   E'AND o.commercial_state IN (''DRAFT'',''AWAITING_PAYMENT'',''AWAITING_TRANSFER'') AND o.expires_at>clock_timestamp())\n   OR EXISTS(SELECT 1 FROM checkout.orders o WHERE o.tenant_id=v_tenant AND o.store_id=p_store AND o.owner_id=v_owner\n    AND o.payment_mode IN (''cash_on_delivery'',''pay_at_pickup'') AND o.collection_state=''PENDING'' AND o.fulfillment_state IN (''MERCHANT_SHIPPED'',''PROVIDER_LABEL_CREATED''))',1)
+   E'AND o.commercial_state IN (''DRAFT'',''AWAITING_PAYMENT'',''AWAITING_TRANSFER'') AND o.expires_at>clock_timestamp())\n   OR checkout.has_inflight_collection(v_tenant,p_store,v_owner)',1)
  ) AS t(fn,needle,repl,expect) LOOP
   v_fn:=pg_get_functiondef(v_item.fn::regprocedure);
   IF (length(v_fn)-length(replace(v_fn,v_item.needle,'')))<>length(v_item.needle)*v_item.expect THEN
@@ -954,5 +965,6 @@ COMMENT ON COLUMN checkout.cash_on_delivery_settings.surcharge_twd IS 'Optional 
 COMMENT ON COLUMN checkout.cash_on_delivery_settings.carrier IS 'Manual-fulfilment label (black_cat 黑猫 / hsinchu 新竹) shown to the buyer at checkout and the merchant on the order; never a carrier API integration.';
 COMMENT ON FUNCTION payments.read_cash_on_delivery_settings(bytea,uuid) IS 'internal/merchantorders only; EXECUTE commerce_runtime. integration:read, GUCs from resolve_access, fresh final fence. No row = off at version 0.';
 COMMENT ON FUNCTION payments.set_cash_on_delivery_settings(bytea,uuid,text,bytea,bigint,boolean,integer,integer,text) IS 'internal/merchantorders only; EXECUTE commerce_runtime. integration:manage, version CAS (0 inserts), idempotent receipt in ops.command_results, one audit row checkout.cash_on_delivery_settings_changed. Never touches placed orders.';
+COMMENT ON FUNCTION checkout.has_inflight_collection(uuid,uuid,uuid) IS 'internal/customers erasure only (customers.erase_owner, owner commerce_privacy_writer); EXECUTE commerce_privacy_writer. True when the owner has a shipped (MERCHANT_SHIPPED or PROVIDER_LABEL_CREATED) cash_on_delivery or pay_at_pickup order still collection_state PENDING. Narrow predicate so the privacy writer holds no payment_mode/collection_state/fulfillment_state column grant; never returns row data.';
 COMMENT ON FUNCTION checkout.read_cod_offer(bytea,uuid) IS 'internal/checkout options only; EXECUTE commerce_checkout_runtime. Buyer-scope read of enabled/surcharge_twd/carrier/max_twd; never money details beyond the public offer.';
 COMMENT ON FUNCTION identity.read_finance_summary(bytea,uuid,date,date) IS 'internal/reporting only; EXECUTE commerce_runtime. orders:read; daily captured/refunded/net by currency and environment plus the pay-at-pickup collected, bank-transfer confirmed and cash-on-delivery collected columns (never part of captured/net).';

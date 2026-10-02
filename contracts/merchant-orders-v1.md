@@ -155,3 +155,18 @@ Dedicated permission + one safe projection avoids exposing raw checkout rows or
 reusing a buyer token. No new database, role service or cross-module HTTP call.
 Upgrade signals: real order volume/query plans require measured index tuning;
 multi-attempt/refund features must deliberately extend the read-state contract.
+
+## Amendment: cash-on-delivery fields (home-cod R5, migration 0107; amends this contract)
+
+The merchant must see the cash a cash_on_delivery order collects (owner ruling, home-cod P1-2), so the safe projection and the
+`commerce_auth` column list grow by exactly the fields below; nothing else of the COD data model is exposed.
+
+- Summary/detail keys, always present, JSON `null` unless `payment_mode='cash_on_delivery'`: `cod_surcharge_minor` (the placement-time
+  whole-TWD surcharge, 0..100000, multiple of 100, never folded into `total_minor`) and `cod_collect_minor` (= `total_minor` +
+  `cod_surcharge_minor`, the cash due on delivery). The strict Go validator refuses a COD row whose collect amount is not that sum.
+  The summary key set is therefore the earlier list plus these two (`collection_state`, `payment_mode`, `pickup_source` and
+  `refunded_minor`/`refund_pending_minor` were added by 0073/0063; `source` by 0094 on the HTTP row).
+- `commerce_auth` SELECT on `checkout.orders` gains exactly `cod_surcharge_minor` (the two keys above and the finance COD column) and
+  `collected_at` (the Asia/Taipei finance day of collected COD and pay-at-pickup cash in `identity.read_finance_summary`, which this
+  role owns; it is set once by `fulfillment.record_collection` and never read for a merchant DTO key). `cod_carrier` is NOT granted:
+  the merchant DTO carries no carrier key and no `commerce_auth` function reads it. Least privilege: any further column needs a new amendment.
