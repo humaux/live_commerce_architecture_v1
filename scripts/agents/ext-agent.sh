@@ -21,6 +21,7 @@
 #   - The worktree must be a dedicated git worktree under .worktrees/ (refused otherwise).
 # Never: production hosts, deploys, secrets, buyer PII, merges into release branches (integrator only).
 # Status: MODEL_ONLY until calibrated on real units (see docs/delivery/PROCESS.md §3).
+{ # bash reads a script while running it: the braces make it parse the whole file first, so editing this file mid-run cannot corrupt a run
 set -euo pipefail
 wt=${1:?worktree}; prompt=${2:?prompt file}; out=${3:?out dir}; effort=${4:-high}
 provider=${PROVIDER:-kimi}
@@ -106,3 +107,4 @@ d=json.load(open(sys.argv[1])); print("kimi-agent:", "error" if d.get("is_error"
 print((d.get("result") or "")[-1500:])
 PY
 exit $status
+}
