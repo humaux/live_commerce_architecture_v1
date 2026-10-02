@@ -59,12 +59,18 @@ func buildStoreDomainNonceHandlerOn(q nonceQuerier) http.Handler {
 	})
 }
 
-// mountStoreDomainNonce serves /.well-known/lc-domain-check/* from nonce and everything else from next.
+// mountStoreDomainNonce serves /.well-known/lc-domain-check/* from nonce and everything else from next. It is the OUTERMOST
+// wrapper in main.go, so it must never be a ServeMux: a mux cleans "//" and ".." and answers 307/301 to the canonical path
+// before mountMeta/mountStripe/mountPlatformBilling (which reserve their namespaces precisely to see the original, uncleaned
+// request and refuse aliases with 404) can run. Match the literal prefix and hand every other request on untouched, like mountTLSAsk.
 func mountStoreDomainNonce(next, nonce http.Handler) http.Handler {
-	mux := http.NewServeMux()
-	mux.Handle(noncePathPrefix, nonce)
-	mux.Handle("/", next)
-	return mux
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, noncePathPrefix) {
+			nonce.ServeHTTP(w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // nonceFromPath returns the single nonce segment of /.well-known/lc-domain-check/<nonce>, or "" when the path is

@@ -141,4 +141,15 @@ func TestMountStoreDomainNonce(t *testing.T) {
 	if rr.Code != http.StatusTeapot {
 		t.Errorf("fallthrough = %d, want 418", rr.Code)
 	}
+	// Non-canonical paths must reach next with the ORIGINAL path: a ServeMux here would answer 307 to the cleaned path and the
+	// namespace reservations inside (mountMeta, mountStripe, ...) could never refuse the alias (release gate r5 MetaRuntime alias).
+	for _, alias := range []string{"/v1//meta/webhooks/1/page", "/x/../v1/meta/webhooks/1/page", "/.well-known//lc-domain-check/x"} {
+		rr = httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, "http://example.test/", nil)
+		req.URL.Path = alias
+		mux.ServeHTTP(rr, req)
+		if rr.Code != http.StatusTeapot || rr.Header().Get("Location") != "" {
+			t.Errorf("alias %q = %d location %q, want an untouched pass-through (418, no redirect)", alias, rr.Code, rr.Header().Get("Location"))
+		}
+	}
 }
