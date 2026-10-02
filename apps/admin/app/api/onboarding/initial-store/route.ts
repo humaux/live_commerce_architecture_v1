@@ -10,11 +10,10 @@ import {
   safeError,
   sessionToken,
 } from "@/lib/auth";
+import { validStorefrontReceipt } from "@/lib/storefront-handle";
 
 const names = ["tenant_name", "store_name", "warehouse_name"] as const;
 // R5 store-domains (Decisions 1-2): the Go response also carries the assigned handle and the ACTIVE platform subdomain.
-const handleShape = /^[a-z0-9]([a-z0-9-]{1,28}[a-z0-9])$/;
-const originShape = /^https:\/\/(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 
 export async function POST(request: Request) {
   if (!authConfig) return disabledResponse();
@@ -65,9 +64,7 @@ export async function POST(request: Request) {
     Object.keys(result).sort().join(",") !==
       resultKeys.slice().sort().join(",") ||
     ["tenant_id", "store_id", "warehouse_id"].some((key) => !/^[0-9a-f-]{36}$/.test(String(result[key]))) ||
-    typeof result.handle !== "string" || !handleShape.test(result.handle) ||
-    typeof result.storefront_origin !== "string" ||
-    (result.storefront_origin !== "" && !originShape.test(result.storefront_origin))
+    !validStorefrontReceipt(result.handle, result.storefront_origin)
   )
     return localError(503, "retry_later");
   return Response.json(result, {

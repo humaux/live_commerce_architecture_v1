@@ -1,4 +1,5 @@
 "use client";
+import { handleNameHint, parseHandleSuggestion, validStorefrontReceipt } from "@/lib/storefront-handle";
 // Signed-out / onboarding shell for /[locale]/ and (signed-out only) /[locale]/signup, /[locale]/reset.
 // BFF routes called: POST /api/auth/login (OIDC) → /v1/identity/login/start, POST /api/auth/logout →
 // /v1/identity/logout, POST /api/onboarding/initial-store → /v1/identity/initial-store
@@ -82,6 +83,7 @@ export function Entry({
   const [success, setSuccess] = useState(false);
   const [handle, setHandle] = useState<{ suggested: string; available: boolean } | null>(null);
   const [handleChecking, setHandleChecking] = useState(false);
+  const [handleFailed, setHandleFailed] = useState(false);
   const [created, setCreated] = useState<{ handle: string; storefront_origin: string } | null>(null);
   const storageKey = useRef("");
   const busyRef = useRef(false);
@@ -146,16 +148,19 @@ export function Entry({
 
   // R5 store-domains (Decision 1): live handle preview on the store-name step. Read-only, so no CSRF token;
   // the DB trigger assigns the real handle from the same name on create. A failed/unavailable preview is
-  // simply omitted (the wizard stays usable), never treated as a blocking error.
+  // explicitly unconfirmed (the wizard stays usable), never replaced with an older result.
   useEffect(() => {
     if (status !== "onboarding" || step !== 2 || success) return;
     const name = draft.store_name.trim();
+    setHandle(null);
+    setHandleFailed(false);
     if (!name || [...name].length > 120) {
       setHandle(null);
       setHandleChecking(false);
       return;
     }
     let live = true;
+    const controller = new AbortController();
     setHandleChecking(true);
     const timer = setTimeout(() => {
       fetch("/api/onboarding/handle-suggest", {
@@ -163,23 +168,24 @@ export function Entry({
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ store_name: name }),
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(8000)]),
       })
         .then(async (response) => {
-          if (!live || !response.ok) return;
+          if (!live) return;
+          if (!response.ok) throw new Error("handle_unconfirmed");
           const body: unknown = await response.json();
-          if (!live || !body || typeof body !== "object") return;
-          const item = body as Record<string, unknown>;
-          if (typeof item.suggested === "string" && typeof item.available === "boolean")
-            setHandle({ suggested: item.suggested, available: item.available });
+          const suggestion = parseHandleSuggestion(body);
+          if (!suggestion) throw new Error("handle_unconfirmed");
+          if (live) setHandle(suggestion);
         })
-        .catch(() => {})
+        .catch(() => { if (live) setHandleFailed(true); })
         .finally(() => {
           if (live) setHandleChecking(false);
         });
     }, 400);
     return () => {
       live = false;
+      controller.abort();
       clearTimeout(timer);
     };
   }, [draft.store_name, step, status, success]);
@@ -288,10 +294,8 @@ export function Entry({
         !["tenant_id", "store_id", "warehouse_id"].every((key) =>
           /^[0-9a-f-]{36}$/.test(String(receipt[key] ?? "")),
         ) ||
-        typeof receipt.handle !== "string" ||
-        !/^[a-z0-9]([a-z0-9-]{1,28}[a-z0-9])$/.test(receipt.handle) ||
-        typeof receipt.storefront_origin !== "string" ||
-        (receipt.storefront_origin !== "" && !/^https:\/\/[a-z0-9]/i.test(receipt.storefront_origin))
+        typeof receipt.handle !== "string" || typeof receipt.storefront_origin !== "string" ||
+        !validStorefrontReceipt(receipt.handle, receipt.storefront_origin)
       ) {
         setNotice(c.unknown);
         return;
@@ -300,7 +304,7 @@ export function Entry({
       setPending(null);
       setSuccess(true);
       setCreated({ handle: receipt.handle, storefront_origin: receipt.storefront_origin });
-      setNotice(c.success);
+      setNotice(receipt.storefront_origin ? c.success : c.addressPending);
     } catch {
       setNotice(c.unknown);
     } finally {
@@ -574,7 +578,8 @@ export function Entry({
                   <label>
                     <span>{c.storeName}</span>
                     <input
-                      name="store_name"
+                name="store_name"
+                aria-describedby="entry-handle-help"
                       value={draft.store_name}
                       onChange={(event) =>
                         update("store_name", event.target.value)
@@ -585,14 +590,18 @@ export function Entry({
                       required
                     />
                   </label>
+                  <p className="entry-handle" id="entry-handle-help">{c.handleHelp}</p>
+                  {draft.store_name.trim() && handleNameHint(draft.store_name) && (
+                    <p className="entry-handle" role="status">{handleNameHint(draft.store_name) === "reserved" ? c.handleReserved : c.handleFormat}</p>
+                  )}
                   {handleChecking ? (
                     <p className="entry-handle" role="status">{c.handleChecking}</p>
                   ) : handle ? (
-                    <p className="entry-handle" data-testid="entry-handle">
+                    <p className="entry-handle" data-testid="entry-handle" role="status">
                       {c.handlePreview}: <strong>{handle.suggested}</strong>{" "}
                       {handle.available ? c.handleAvailable : c.handleTaken}
                     </p>
-                  ) : null}
+                  ) : handleFailed ? <p className="entry-handle" role="status" data-testid="entry-handle-failed">{c.handleFailed}</p> : null}
                   <label>
                     <span>{c.currency}</span>
                     <select
