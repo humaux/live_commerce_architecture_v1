@@ -188,7 +188,7 @@ func TestCatalogCoreCC01PopulatedUpgrade(t *testing.T) {
 	if got := digest("catalog.products", newCols...); got != productsBefore {
 		t.Error("0086 changed populated catalog.products columns it does not own")
 	}
-	if got := digest("catalog.skus", "option_values", "compare_at_minor"); got != skusBefore {
+	if got := digest("catalog.skus", "option_values", "compare_at_minor", "inventory_tracked", "max_per_order"); got != skusBefore {
 		t.Error("0086 changed populated catalog.skus columns it does not own")
 	}
 	if digest("inventory.balances") != balancesBefore {

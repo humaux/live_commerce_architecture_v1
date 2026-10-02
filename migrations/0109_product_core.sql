@@ -8,7 +8,10 @@
 --
 -- A6 shape (why the CHECK is asymmetric): a tracked SKU keeps the no-oversell invariant, so it carries no per-order
 -- cap (max_per_order is NULL); an untracked SKU is never locked/deducted, so it MUST carry max_per_order 1..999 to
--- bound a single order. DEFAULT true keeps every pre-A6 SKU (which has balances) tracked. Forward-only: migrate.go
+-- bound a single order. The `IS NOT NULL` on the untracked disjunct makes the CHECK 3VL-safe: without it,
+-- inventory_tracked=false AND max_per_order=NULL evaluates the whole CHECK to NULL, which SQL treats as pass, so an
+-- untracked SKU could be stored with no cap and become unbounded at checkout. DEFAULT true keeps every pre-A6 SKU
+-- (which has balances) tracked. Forward-only: migrate.go
 -- never edits or re-runs an applied file, so this is a new numbered file, not a change to 0002/0082.
 --
 -- Non-goals: no change to the buyer storefront definers (the merchant list reads inventory_tracked directly as
@@ -21,7 +24,7 @@ ALTER TABLE catalog.skus
     ADD COLUMN max_per_order integer,
     ADD CONSTRAINT skus_inventory_max_per_order CHECK (
         (inventory_tracked AND max_per_order IS NULL)
-        OR (NOT inventory_tracked AND max_per_order BETWEEN 1 AND 999));
+        OR (NOT inventory_tracked AND max_per_order IS NOT NULL AND max_per_order BETWEEN 1 AND 999));
 
 -- commerce_runtime is the only writer of these columns; the checkout roles already hold table-level SELECT on
 -- catalog.skus (0013), which covers new columns automatically, so no new checkout grant is needed.

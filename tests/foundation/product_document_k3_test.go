@@ -10,8 +10,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"sync"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
 	"livecommerce/internal/catalog"
@@ -458,20 +460,118 @@ func TestProductEditorK3IdempotencyKeyScopeIsStoreNotActor(t *testing.T) {
 	second.refuse(409, "POST", "/products/document", key, changed)
 }
 
-// ---- P2-1 pin: the 0109 CHECK treats NULL as pass, so untracked + NULL max_per_order is storable, and
-// ---- begin_hold then enforces NO per-order bound on it. Only out-of-band SQL can produce this row today
-// ---- (the document command validates 1..999). When the integrator tightens the CHECK (REVIEW P2-1), the UPDATE
-// ---- below fails 23514 and this test must be flipped to expect the refusal.
+// ---- P2-1: the 0109 CHECK is 3VL-safe (untracked + NULL max_per_order is refused with 23514), and begin_hold
+// ---- refuses an untracked line whose cap is NULL as max_per_order_exceeded (defence in depth) even when the row
+// ---- exists out-of-band.
 
 func TestProductEditorK3UntrackedNullCapGap(t *testing.T) {
 	b := bcSetup(t)
+	// The tightened CHECK: an untracked SKU can never be stored with a NULL max_per_order.
+	if _, err := b.f.owner.Exec(context.Background(),
+		`UPDATE catalog.skus SET inventory_tracked=false, max_per_order=NULL WHERE id=$1`, b.stock.skus[0].ID); err == nil {
+		t.Fatal("P2-1: untracked + NULL max_per_order was stored; the 3VL-safe CHECK must refuse it (23514)")
+	} else if pgCode(err) != "23514" {
+		t.Fatalf("untracked+NULL cap: err=%v, want 23514 CHECK violation", err)
+	}
+	// Defence in depth: drop the CHECK (the only way to reach the state out-of-band) and prove begin_hold still
+	// refuses the NULL cap instead of placing an unbounded order.
+	const restore = `ALTER TABLE catalog.skus ADD CONSTRAINT skus_inventory_max_per_order CHECK (
+		(inventory_tracked AND max_per_order IS NULL)
+		OR (NOT inventory_tracked AND max_per_order IS NOT NULL AND max_per_order BETWEEN 1 AND 999))`
+	mustExec(t, b.f.owner, `ALTER TABLE catalog.skus DROP CONSTRAINT skus_inventory_max_per_order`)
+	t.Cleanup(func() {
+		if _, err := b.f.owner.Exec(context.Background(), `UPDATE catalog.skus SET inventory_tracked=true, max_per_order=NULL WHERE id=$1`, b.stock.skus[0].ID); err != nil {
+			t.Errorf("restore fixture SKU: %v", err)
+		}
+		if _, err := b.f.owner.Exec(context.Background(), restore); err != nil {
+			t.Errorf("restore skus_inventory_max_per_order: %v", err)
+		}
+	})
 	mustExec(t, b.f.owner, `UPDATE catalog.skus SET inventory_tracked=false, max_per_order=NULL WHERE id=$1`, b.stock.skus[0].ID)
 	big := k3Buyer(t, b, []storefront.Item{{SKUID: b.stock.skus[0].ID, Quantity: 1_000_000}}) // far over any cap
-	if _, err := big.begin(t04Key("k3-nullcap")); err != nil {
-		t.Fatalf("P2-1 pin: untracked+NULL cap currently places UNBOUNDED orders; begin: %v", err)
+	_, err := big.begin(t04Key("k3-nullcap"))
+	var cvs *fulfillment.CVSError
+	if !errors.As(err, &cvs) || cvs.Code != "max_per_order_exceeded" {
+		t.Fatalf("untracked+NULL cap must be refused by begin_hold: err=%v want 422 max_per_order_exceeded", err)
 	}
-	if got := countRows(t, b.f.owner, `SELECT count(*) FROM inventory.ledger WHERE sku_id=$1 AND kind='RESERVE'`, b.stock.skus[0].ID); got != 0 {
-		t.Fatalf("the unbounded order reserved stock: %d rows", got)
+	if got := countRows(t, b.f.owner, `SELECT count(*) FROM checkout.orders WHERE owner_id=$1`, big.cap.Scope.OwnerID); got != 0 {
+		t.Fatalf("the refused unbounded order left %d orders", got)
+	}
+}
+
+// ---- P2-2: an axis change that archives an omitted SKU releases its keyword in the same transaction, so the
+// ---- keyword becomes reusable by a fresh SKU of the new document (no keyword_taken rollback).
+
+func TestProductEditorK3AxisChangeReleasesKeyword(t *testing.T) {
+	e := ccNew(t)
+	kw := pdKeyword()
+	var doc pdProduct
+	e.docCreate(e.key("p"), pdDoc{Name: e.name("K3 axis"), Description: "", Status: "active",
+		SKUs: []pdSKU{{PriceMinor: 1000, Keyword: kw}, {PriceMinor: 2000}}}, &doc)
+	if len(doc.SKUs) != 2 {
+		t.Fatalf("create: %+v", doc)
+	}
+	var skuA, skuB pdSKUOut
+	for _, s := range doc.SKUs {
+		switch s.PriceMinor {
+		case 1000:
+			skuA = s
+		case 2000:
+			skuB = s
+		}
+	}
+	if skuA.ID == "" || skuB.ID == "" {
+		t.Fatalf("create SKUs: %+v", doc.SKUs)
+	}
+	if countRows(t, e.h.f.owner, `SELECT count(*) FROM live.keyword_library WHERE sku_id=$1 AND keyword=$2`, skuA.ID, kw) != 1 {
+		t.Fatalf("skuA must hold keyword %s", kw)
+	}
+	// Re-axe: the new document omits skuA (archived) and adds a fresh SKU that reuses the keyword. Before the release,
+	// the writeKeyword taken-check sees it still on skuA and rolls the whole save back with keyword_taken.
+	var edited pdProduct
+	e.docEdit(doc.ID, e.key("edit"), pdDoc{Name: doc.Name, Status: "active", ExpectedVersion: doc.Version,
+		SKUs: []pdSKU{{ID: skuB.ID, PriceMinor: 2000}, {PriceMinor: 3000, Keyword: kw}}}, &edited)
+	// skuA is archived, its keyword released, and the keyword is reused by the fresh SKU.
+	var status string
+	if err := e.h.f.owner.QueryRow(context.Background(), `SELECT status FROM catalog.skus WHERE id=$1`, skuA.ID).Scan(&status); err != nil || status != "archived" {
+		t.Fatalf("omitted skuA status=%q err=%v, want archived", status, err)
+	}
+	if got := countRows(t, e.h.f.owner, `SELECT count(*) FROM live.keyword_library WHERE sku_id=$1 AND keyword=$2`, skuA.ID, kw); got != 0 {
+		t.Fatalf("skuA keyword %s was not released: %d rows", kw, got)
+	}
+	var holder string
+	if err := e.h.f.owner.QueryRow(context.Background(), `SELECT sku_id::text FROM live.keyword_library WHERE keyword=$1`, kw).Scan(&holder); err != nil {
+		t.Fatalf("keyword %s holder: %v", kw, err)
+	}
+	if holder == skuA.ID {
+		t.Fatalf("keyword %s is still held by the archived SKU %s", kw, holder)
+	}
+	if holder == skuB.ID {
+		t.Fatalf("keyword %s moved to a referenced SKU %s, want a fresh SKU", kw, holder)
+	}
+}
+
+// ---- P2-5: copy clamps the source name so name +「（复制）」 stays within the 120-rune CHECK instead of a bare 422.
+
+func TestProductEditorK3CopyClampsLongName(t *testing.T) {
+	e := ccNew(t)
+	name := e.tag + strings.Repeat("x", 120-len(e.tag)) // exactly 120 runes, tag-prefixed so ccNew's cleanup catches it
+	if got := utf8.RuneCountInString(name); got != 120 {
+		t.Fatalf("test name is %d runes, want 120", got)
+	}
+	var src pdProduct
+	e.docCreate(e.key("p"), pdDoc{Name: name, Description: "", SKUs: []pdSKU{{PriceMinor: 1000}}}, &src)
+	if src.Name != name {
+		t.Fatalf("source name %q, want the 120-rune input", src.Name)
+	}
+	var copy pdProduct
+	e.a.ok("POST", "/products/"+src.ID+"/copy", e.key("copy"), map[string]any{"expected_version": src.Version}, &copy)
+	want := name[:120-utf8.RuneCountInString("（复制）")] + "（复制）" // 116 + 4 = 120 runes, not a 23514 -> 422
+	if copy.Name != want {
+		t.Fatalf("copy name %q (%d runes), want the 120-rune clamp %q", copy.Name, utf8.RuneCountInString(copy.Name), want)
+	}
+	if got := utf8.RuneCountInString(copy.Name); got != 120 {
+		t.Fatalf("copy name is %d runes, want 120", got)
 	}
 }
 

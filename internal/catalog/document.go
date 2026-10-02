@@ -35,6 +35,7 @@ const (
 	reasonOpeningStock      = "期初库存"          // create: initial on-hand
 	reasonTargetStock       = "后台编辑"          // edit: server-computed target delta (ruling §f)
 	auditDocumentSaved      = "catalog.product.saved"
+	copyNameSuffix          = "（复制）" // copy: name suffix (§f ruling 5), 4 runes
 )
 
 // ProductDocumentInput is the create body and the full-replace edit body. ExpectedVersion 0 means create (ID empty); a
@@ -173,6 +174,25 @@ func SaveProductDocument(ctx context.Context, tx pgx.Tx, scope platform.Scope, k
 			return err
 		}
 		referenced := map[string]bool{}
+		for _, entry := range in.SKUs {
+			if entry.ID != "" {
+				referenced[entry.ID] = true
+			}
+		}
+		// Full replace: every existing active SKU not referenced by the document is archived (this is also how an axis
+		// change retires the SKUs the new document omits). Its keyword is released in the same transaction, and BEFORE
+		// the new SKUs are written, so a new SKU can reuse an omitted SKU's keyword instead of rolling back keyword_taken.
+		for id, sku := range existing {
+			if referenced[id] {
+				continue
+			}
+			if err := archiveSKURow(ctx, tx, scope, id, sku.Version); err != nil {
+				return err
+			}
+			if err := writeKeyword(ctx, tx, scope, id, ""); err != nil {
+				return err
+			}
+		}
 		warehouse := in.WarehouseID
 		for _, entry := range in.SKUs {
 			stock := normalizeStock(entry.Stock)
@@ -185,9 +205,6 @@ func SaveProductDocument(ctx context.Context, tx pgx.Tx, scope platform.Scope, k
 			}
 			if err := checkWholeTWD(currency, entry.PriceMinor, entry.CompareAtMinor); err != nil {
 				return err
-			}
-			if entry.ID != "" {
-				referenced[entry.ID] = true
 			}
 			sku, created, err := writeSKU(ctx, tx, scope, productID, prod.Slug, currency, entry, values, stock, in.WeightGrams, in.LengthMM, in.WidthMM, in.HeightMM)
 			if err != nil {
@@ -208,16 +225,6 @@ func SaveProductDocument(ctx context.Context, tx pgx.Tx, scope platform.Scope, k
 				}
 			}
 			if err := writeKeyword(ctx, tx, scope, sku.ID, entry.Keyword); err != nil {
-				return err
-			}
-		}
-		// Full replace: every existing active SKU not referenced by the document is archived (this is also how an axis
-		// change retires the SKUs the new document omits). The product lock serializes against concurrent SKU mutation.
-		for id, sku := range existing {
-			if referenced[id] {
-				continue
-			}
-			if err := archiveSKURow(ctx, tx, scope, id, sku.Version); err != nil {
 				return err
 			}
 		}
@@ -490,8 +497,13 @@ func writeSKU(ctx context.Context, tx pgx.Tx, scope platform.Scope, productID, s
 	return out, true, nil
 }
 
-// freeSKUCode returns a store-unique SKU code derived from the product slug (slug, slug-2, ...), like freeSlug.
+// freeSKUCode returns a store-unique SKU code derived from the product slug (slug, slug-2, ...), like freeSlug. The SKU
+// code CHECK allows 64 chars while the slug allows 80, so the base is clamped first; without it a long product name
+// (slug > 64) would generate an 80-char code and fail 23514 -> a bare 422 on create/copy.
 func freeSKUCode(ctx context.Context, tx pgx.Tx, scope platform.Scope, base string) (string, error) {
+	if len(base) > 64 {
+		base = strings.TrimRight(base[:64], "-")
+	}
 	for n := 1; n <= 50; n++ {
 		candidate := base
 		if n > 1 {
@@ -762,7 +774,13 @@ func CopyProduct(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, id s
 		if src.Version != in.ExpectedVersion {
 			return command.ErrConflict
 		}
-		name := src.Name + "（复制）"
+		// Clamp the source name so name + suffix stays within the 120-rune name CHECK (0002 catalog.products.name): a
+		// 117–120-rune source would otherwise make the INSERT fail 23514 -> a bare 422. src.Name is always <=120 runes.
+		name := src.Name
+		if max := 120 - utf8Count(copyNameSuffix); utf8Count(name) > max {
+			name = string([]rune(name)[:max])
+		}
+		name += copyNameSuffix
 		slug, err := freeSlug(ctx, tx, scope, "catalog.products", Slugify(name))
 		if err != nil {
 			return err

@@ -334,10 +334,12 @@ BEGIN
    RAISE EXCEPTION 'invalid quote lines' USING ERRCODE='PT400'; END IF;
  END LOOP;
  -- A6: an untracked SKU is absent from the plan, so its per-order cap is its only quantity bound; enforce it here
- -- against the live SKU row (a tracked SKU is bounded by the stock lock above and has no max_per_order).
+ -- against the live SKU row (a tracked SKU is bounded by the stock lock above and has no max_per_order). The
+ -- max_per_order IS NULL disjunct is defence-in-depth: the 0109 CHECK forbids an untracked SKU with a NULL cap, but
+ -- if one ever exists out-of-band, q.quantity > NULL is NULL (not true) and the line would otherwise pass unbounded.
  IF EXISTS(SELECT 1 FROM jsonb_to_recordset(v_quote.snapshot->'lines') AS q(sku_id uuid,quantity bigint)
    JOIN catalog.skus s ON s.tenant_id=v_tenant AND s.store_id=p_store AND s.id=q.sku_id
-   WHERE NOT s.inventory_tracked AND q.quantity>s.max_per_order) THEN
+   WHERE NOT s.inventory_tracked AND (s.max_per_order IS NULL OR q.quantity>s.max_per_order)) THEN
   RAISE EXCEPTION 'max_per_order_exceeded' USING ERRCODE='PT422'; END IF;
 
  -- Final time follows every row and advisory wait. An expiry job is a

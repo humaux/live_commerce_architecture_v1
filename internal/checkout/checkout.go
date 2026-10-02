@@ -321,7 +321,7 @@ func (s *Service) Begin(ctx context.Context, token, storeID, key string, in Inpu
 		if allocation.Version != in.AllocationVersion || len(allocation.WarehouseIDs) == 0 {
 			return command.ErrConflict
 		}
-		plan, err := planLocked(callCtx, tx, allocation, quote)
+		plan, err := planLocked(callCtx, tx, scope, allocation, quote)
 		if err != nil {
 			return err
 		}
@@ -736,7 +736,7 @@ func lockAllocation(ctx context.Context, tx pgx.Tx, scope buyer.Scope, marketID,
 	return out, nil
 }
 
-func planLocked(ctx context.Context, tx pgx.Tx, allocation fulfillment.Allocation, quote storefront.Quote) ([]inventory.Line, error) {
+func planLocked(ctx context.Context, tx pgx.Tx, scope buyer.Scope, allocation fulfillment.Allocation, quote storefront.Quote) ([]inventory.Line, error) {
 	warehouses := sortedIDs(allocation.WarehouseIDs)
 	for _, id := range warehouses {
 		var active bool
@@ -750,14 +750,15 @@ func planLocked(ctx context.Context, tx pgx.Tx, allocation fulfillment.Allocatio
 	}
 	// A6: only tracked SKUs are locked and deducted; an untracked SKU stays in the quote but is absent from the plan,
 	// and its per-order cap (max_per_order) is enforced by checkout.begin_hold against the live SKU row (single, race-free
-	// authority). The flags are read through the same checkout_runtime_read scoped policy as the balances.
+	// authority). The tenant/store predicate is explicit (not RLS alone), so the tracked filter stays scoped even if the
+	// checkout_runtime_read policy drifts; it fails closed to an empty plan otherwise.
 	ids := make([]string, 0, len(quote.Lines))
 	for _, line := range quote.Lines {
 		ids = append(ids, line.SKUID)
 	}
 	tracked := make(map[string]bool, len(ids))
 	if len(ids) > 0 {
-		rows, err := tx.Query(ctx, `SELECT id::text FROM catalog.skus WHERE id=ANY($1::uuid[]) AND inventory_tracked`, ids)
+		rows, err := tx.Query(ctx, `SELECT id::text FROM catalog.skus WHERE tenant_id=$1 AND store_id=$2 AND id=ANY($3::uuid[]) AND inventory_tracked`, scope.TenantID, scope.StoreID, ids)
 		if err != nil {
 			return nil, err
 		}
