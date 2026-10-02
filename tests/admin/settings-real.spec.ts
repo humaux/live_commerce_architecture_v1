@@ -53,7 +53,10 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
   await page
     .getByRole("button", { name: "Open workspace", exact: true })
     .click();
-  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  // W0 shell: the owner sees Settings, Team and Billing under the Settings group, so the group button expands it and the
+  // Settings entry (registry id "settings") is the real click that opens the wizard.
+  await page.getByTestId("nav-group-settings").click();
+  await page.getByTestId("nav-settings").click();
   await expect(page.getByTestId("settings-wizard")).toBeVisible();
   await page.getByLabel("PAYUNi payment", { exact: true }).check();
   await page.getByRole("button", { name: "Continue", exact: true }).click();
@@ -108,7 +111,7 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
   await page.setViewportSize({ width: 390, height: 844 });
   await expect
     .poll(async () => {
-      const rail = await page.locator(".rail").boundingBox();
+      const rail = await page.locator("#workspace-navigation").boundingBox(); // W0 shell rail (off-canvas drawer at 390px)
       return rail ? Math.round(rail.x + rail.width) : 0;
     })
     .toBeLessThanOrEqual(0);
