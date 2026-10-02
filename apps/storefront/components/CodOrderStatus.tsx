@@ -24,7 +24,7 @@ export function CodOrderStatus({ order, locale }: { order: Order; locale: Locale
         <CodAmount locale={locale} total={formatMoney(locale, order.cod_collect_minor ?? 0, "TWD")} fee={formatMoney(locale, order.cod_surcharge_minor ?? 0, "TWD")} pending={collection === "PENDING"} />
       </p>
       <p data-testid="order-cod-state" data-state={collection}>{copy.orderStates[collection]}</p>
-      {order.cod_carrier && <p className="order-note" data-testid="order-cod-carrier">{copy.manualCarrier(copy.carriers[order.cod_carrier])}</p>}
+      {order.cod_carrier && <p className="order-note" data-testid="order-cod-carrier">{copy.orderedCarrier(copy.carriers[order.cod_carrier])}</p>}
       {collection === "PENDING" && <p className="order-note">{copy.orderNote}</p>}
     </section>
   );

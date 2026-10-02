@@ -16,6 +16,7 @@ const en = {
   unavailable: "Cash on delivery is no longer available. Choose another payment method.",
   limit: "You have reached the limit for unpaid delivery orders. Contact the seller before placing another order.",
   manualCarrier: (carrier: string) => `Manual shipping · ${carrier}`,
+  orderedCarrier: (carrier: string) => `Carrier at checkout · ${carrier} (manual shipping)`,
   carriers: { black_cat: "Black Cat", hsinchu: "Hsinchu" },
   // checkout choice: {total} is the order total, {surcharge} the whole-TWD fee (null = none).
   codLabel: (total: string, surcharge: string | null) =>
@@ -46,6 +47,7 @@ const zhCN: typeof en = {
   unavailable: "此店铺已暂停货到付款，请选择其他付款方式。",
   limit: "未完成的货到付款订单已达上限，请联系商家后再下单。",
   manualCarrier: (carrier) => `手工出货 · ${carrier}`,
+  orderedCarrier: (carrier) => `下单时的物流商 · ${carrier}（手工出货）`,
   carriers: { black_cat: "黑猫", hsinchu: "新竹" },
   codLabel: (total, surcharge) =>
     surcharge ? `货到付款 ${total} + ${surcharge} 手续费` : `货到付款 ${total}`,
@@ -74,6 +76,7 @@ const zhTW: typeof en = {
   unavailable: "此商店已暫停貨到付款，請選擇其他付款方式。",
   limit: "未完成的貨到付款訂單已達上限，請聯絡商家後再下單。",
   manualCarrier: (carrier) => `手工出貨 · ${carrier}`,
+  orderedCarrier: (carrier) => `下單時的物流商 · ${carrier}（手工出貨）`,
   carriers: { black_cat: "黑貓", hsinchu: "新竹" },
   codLabel: (total, surcharge) =>
     surcharge ? `貨到付款 ${total} + ${surcharge} 手續費` : `貨到付款 ${total}`,

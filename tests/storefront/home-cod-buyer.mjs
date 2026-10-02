@@ -309,7 +309,8 @@ try {
       const preview = await a.ctx.newPage();
       let state = "RETURNED";
       await preview.route(`**/api/buyer/orders/${a.id}`, async (route) => {
-        const body = { ...order.body, collection_state: state };
+        // Different snapshot vs recorded shipment proves we display the order-time carrier, not shipment/settings.
+        const body = { ...order.body, cod_carrier: "hsinchu", collection_state: state };
         if (state === "CANCELLED") Object.assign(body, { commercial_state: "CANCELLED", fulfillment_state: "CANCELLED", shipment: null });
         await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
       });
@@ -317,7 +318,7 @@ try {
         state = terminal;
         await preview.goto(`${origin}/${locale}/orders/${a.id}`);
         await expect(preview.locator("#order-title")).toHaveText(terminalTitles[locale][state]);
-        await expect(preview.getByTestId("order-cod-carrier")).toContainText(locale === "en" ? "Black Cat" : "黑貓");
+        await expect(preview.getByTestId("order-cod-carrier")).toContainText(locale === "en" ? "Carrier at checkout · Hsinchu" : "下單時的物流商 · 新竹");
         for (const width of [390, 1586]) {
           await preview.setViewportSize({ width, height: width === 390 ? 844 : 992 });
           await preview.evaluate(async () => { await document.fonts.ready; window.scrollTo({ top: 0, behavior: "instant" }); });
