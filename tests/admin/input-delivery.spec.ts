@@ -63,6 +63,7 @@ test(
 
       // All credentials are attached by Chromium to same-origin fetches. JWTs
       // remain local to the page function; only safe booleans/statuses return.
+      // G-UI8 audit [FIXTURE/SETUP]: token-transport probe: JWTs stay in the page function, only statuses/booleans return (the subject is the BFF/Go token chain, not a UI control)
       const result = await page.evaluate(
         async ({
           base,
@@ -356,17 +357,20 @@ test(
         "X-CSRF-Token": csrfCookie.value,
         "Idempotency-Key": `brw05-origin-${phase}`,
       };
+      // G-UI8 audit [FIXTURE/SETUP]: negative probe: a forged/hostile request no UI can send; the server, not the UI, must refuse (UI click paths of the same route are covered elsewhere) (forged Origin)
       const control = await context.request.post(probe, {
         headers: { ...headers, Origin: origin },
         data: probeBody,
       });
       assert.equal(control.status(), 200);
+      // G-UI8 audit [FIXTURE/SETUP]: negative probe: a forged/hostile request no UI can send; the server, not the UI, must refuse (UI click paths of the same route are covered elsewhere) (forged Origin)
       const badOrigin = await context.request.post(probe, {
         headers: { ...headers, Origin: "https://attacker.invalid" },
         data: probeBody,
       });
       assert.equal(badOrigin.status(), 403);
 
+      // G-UI8 audit [FIXTURE/SETUP]: negative probe: a forged/hostile request no UI can send; the server, not the UI, must refuse (UI click paths of the same route are covered elsewhere) (closed-session replay
       const closed = await page.evaluate(
         async ({ base, attempt, phase }) => {
           const csrf =

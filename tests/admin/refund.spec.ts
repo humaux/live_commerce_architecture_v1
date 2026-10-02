@@ -92,6 +92,7 @@ const manifestPath = path.join(evidence, "screenshots.json");
 async function shot(page: Page, name: string, locale: string, viewport: "desktop" | "mobile") {
   const file = path.join(evidence, `${name}-${locale}-${viewport}.png`);
   await page.screenshot({ path: file, fullPage: false });
+  // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
   let manifest: unknown[] = [];
   try {
@@ -212,6 +213,7 @@ test.describe(() => {
     await expect(detail).toContainText(shown(captured));
     await expect(detail.getByRole("button", { name: ui.refundAction })).toHaveCount(0);
     await expect(detail.getByRole("button", { name: ui.refresh })).toHaveCount(0);
+    // G-UI8 audit [FIXTURE/SETUP]: negative probe: a forged/hostile request no UI can send; the server, not the UI, must refuse (UI click paths of the same route are covered elsewhere) (restricted role refund 
     const status = await page.evaluate(async ({ store: s, order: o }) => {
       const r = await fetch(`/api/stores/${s}/orders/${o}/refunds`, { method: "POST", headers: { "content-type": "application/json", "Idempotency-Key": "rf11-restricted-key", "X-CSRF-Token": document.cookie.split("; ").find((c) => c.startsWith("__Host-commerce_csrf="))?.slice(21) ?? "" }, body: JSON.stringify({ amount_minor: 100, reason: "duplicate", expected_refundable_minor: 0 }) });
       return r.status;

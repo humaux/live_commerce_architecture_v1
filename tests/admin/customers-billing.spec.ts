@@ -58,6 +58,7 @@ async function ctl(resource: string) {
 }
 const financeDay = (offset = 0) => new Date(Date.now() + 8 * 3600_000 + offset * 86_400_000).toISOString().slice(0, 10);
 async function fitsWidth(page: Page) {
+  // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
 }
 const manifestPath = path.join(evidence, "screenshots.json");
@@ -79,6 +80,7 @@ async function noSecrets(page: Page) {
   for (const secret of [actorKey, phoneFull, phoneFull.slice(-9), "cs_test_", "cus_", "sub_", "acct_", "fakebearer"]) expect(html).not.toContain(secret);
 }
 async function storageLacks(page: Page, needles: string[]) {
+  // G-UI8 audit [READ/MEASURE]: scans client storage for secrets/PII (read only)
   const stored = await page.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage } }));
   for (const needle of needles) expect(stored).not.toContain(needle);
 }
@@ -284,6 +286,7 @@ test("CB11 finance: native date inputs, the 91-day rule, one summary table, the 
   expect(new URL(href, origin).searchParams.get("from")).toBe(financeDay(-2));
   expect(new URL(href, origin).searchParams.get("to")).toBe(financeDay(0));
   // in-page fetch: the Secure __Host- session cookie is sent by the browser, not by the APIRequestContext jar over http
+  // G-UI8 audit [READ/MEASURE]: reads the CSV the Export link serves (same-origin GET; the link itself is clicked right after)
   const response = await page.evaluate(async (u) => {
     const r = await fetch(u, { credentials: "same-origin" });
     return { status: r.status, headers: Object.fromEntries(r.headers.entries()), text: await r.text() };

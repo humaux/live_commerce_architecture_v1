@@ -41,7 +41,11 @@ let copyDraft = "";
 async function signedLogin(page: Page) {
   await page.goto(new URL("/en/", origin).toString());
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
-  await expect(page.getByTestId("nav-orders")).toBeVisible();
+  // W0 shell: navigation is the permission-filtered registry; this fixture role holds ads permissions only, so its one group is Marketing (not Orders).
+  await expect(page.getByTestId("nav-group-marketing")).toBeVisible();
+  // A role without Overview (orders:read) lands on its first permitted page, never on a 403 whose way back loops.
+  await expect(page).toHaveURL(/\/en\/ads(\?|$)/);
+  await expect(page.getByTestId("route-forbidden")).toHaveCount(0);
 }
 async function ctl(resource: string) {
   const response = await fetch(`${control}/${resource}`, { method: "POST", headers: { "X-Gate-Key": controlKey } });
@@ -59,6 +63,7 @@ async function graph() {
   };
 }
 async function fitsWidth(page: Page) {
+  // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
 }
 const manifestPath = path.join(evidence, "screenshots.json");
@@ -77,6 +82,7 @@ async function shot(page: Page, name: string, locale: string, viewport: "desktop
 }
 async function noSecrets(page: Page) {
   const html = await page.content();
+  // G-UI8 audit [READ/MEASURE]: scans client storage for secrets/PII (read only)
   const stored = await page.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage }, cookie: document.cookie }));
   for (const secret of secrets) {
     expect(html).not.toContain(secret);
@@ -122,7 +128,8 @@ test("MA09a connect through the fake FLfB dialog: dialog params, state cookie, 3
   recordBodies(page);
   await signedLogin(page);
   await openAds(page);
-  await expect(page.getByRole("navigation").getByRole("button", { name: en.title, exact: true })).toBeVisible();
+  // W0 registry: the fixture role holds ads:* only, so Marketing is a one-route group whose rail button is the current page (aria-current).
+  await expect(page.getByTestId("nav-group-marketing")).toHaveAttribute("aria-current", "page");
   await expect(page.getByTestId("ads-sandbox")).toHaveText(en.sandboxBanner); // AD9: the store is SANDBOX
   await expect(page.getByTestId("ads-conn-empty")).toHaveText(en.connEmpty);
   await expect(page.getByTestId("ads-budget-note")).toHaveText(en.budgetNote); // §12: never a real-time hard stop

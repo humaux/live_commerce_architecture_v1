@@ -54,6 +54,7 @@ async function openSettings(page: Page, locale = "en") {
   await expect(page.getByTestId("metaconnect-card")).toBeVisible();
 }
 async function fitsWidth(page: Page) {
+  // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
 }
 const manifestPath = path.join(evidence, "screenshots.json");
@@ -74,6 +75,7 @@ async function shot(page: Page, name: string, locale: string, viewport: "desktop
 async function noSecrets(page: Page) {
   const secrets = (await (await ctl("secrets")).json()) as string[];
   const html = await page.content();
+  // G-UI8 audit [READ/MEASURE]: scans client storage for secrets/PII (read only)
   const stored = await page.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage }, cookie: document.cookie }));
   for (const secret of secrets) {
     expect(html).not.toContain(secret);

@@ -92,6 +92,7 @@ const manifest = path.join(evidence, "screenshots.json");
 async function shot(page, name, locale, viewport) {
   const file = path.join(evidence, `cvs-${name}-${locale}-${viewport}.png`);
   await page.screenshot({ path: file, fullPage: true });
+  // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
   assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `horizontal overflow at ${viewport} ${locale}`);
   // Engine-specific by nature: the focus-zoom rule exists only on iOS Safari, so it is asserted on the iPhone profile (webkit, phone viewport) only.
   if (engine === "webkit" && viewport === "mobile") assert.deepEqual(await iosZoomOffenders(page), [], `iOS focus-zoom: form controls under 16px at ${viewport} ${locale}`);

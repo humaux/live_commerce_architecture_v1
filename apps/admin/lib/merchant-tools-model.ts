@@ -89,20 +89,30 @@ export function csvFileProblem(name: string, size: number): "empty" | "too_large
 }
 
 // ---- manual order (G3) -------------------------------------------------------------------------------------------------------
-export const manualPaymentModes = ["bank_transfer", "pay_at_pickup"] as const;
+export const manualPaymentModes = ["bank_transfer", "pay_at_pickup", "cash_on_delivery"] as const;
 export type ManualPaymentMode = (typeof manualPaymentModes)[number];
+/** The order state begin_hold writes per mode (internal/checkout commercialAtPlacement): a COD order waits for the carrier, never CONFIRMED. */
+const placementState = { bank_transfer: "AWAITING_TRANSFER", pay_at_pickup: "CONFIRMED", cash_on_delivery: "AWAITING_COLLECTION" } as const;
 export type ManualOption = {
   option_key: string; market_id: string; country: string; delivery_code: string; delivery_kind: string; mode: string;
   name_hans: string; name_hant: string; name_en: string; currency: string; service_version: number; allocation_version: number;
   payment_modes: ManualPaymentMode[]; pickup_selection: "ecpay_map" | "buyer_entered" | null;
+  // home-cod R5 (internal/checkout/options.go): only on a home row that lists cash_on_delivery. Whole TWD in minor units; the surcharge is omitted at 0.
+  cod_surcharge_minor?: number; cod_carrier?: "black_cat" | "hsinchu"; cod_max_minor?: number;
 };
+const optionKeys = ["option_key", "market_id", "country", "delivery_code", "delivery_kind", "mode", "name_hans", "name_hant", "name_en",
+  "currency", "service_version", "allocation_version", "payment_modes", "pickup_selection"];
+const codOptionKeys = ["cod_surcharge_minor", "cod_carrier", "cod_max_minor"];
+const wholeTWD = (v: unknown, min: number, max: number) => Number.isSafeInteger(v) && (v as number) >= min && (v as number) <= max && (v as number) % 100 === 0;
 export const optionKeyPattern = /^[0-9a-f-]{36}\|[A-Z]{2}\|[a-z][a-z0-9_-]{0,39}$/;
 export function parseManualOptions(value: unknown): ManualOption[] {
   const v = object(value, ["options"]);
   if (!Array.isArray(v.options) || v.options.length > 200) throw fail();
   return v.options.map((item): ManualOption => {
-    const o = object(item, ["option_key", "market_id", "country", "delivery_code", "delivery_kind", "mode", "name_hans", "name_hant", "name_en",
-      "currency", "service_version", "allocation_version", "payment_modes", "pickup_selection"]);
+    if (!item || typeof item !== "object" || Array.isArray(item)) throw fail();
+    const raw = item as Record<string, unknown>;
+    // The cod_* keys are optional on the wire; everything else is the exact frozen key set.
+    const o = object(Object.fromEntries(Object.entries(raw).filter(([k]) => !codOptionKeys.includes(k))), optionKeys);
     if (typeof o.option_key !== "string" || !optionKeyPattern.test(o.option_key) || typeof o.market_id !== "string" || !canonicalUUID.test(o.market_id) ||
       !/^[A-Z]{2}$/.test(String(o.country)) || !/^[a-z][a-z0-9_-]{0,39}$/.test(String(o.delivery_code)) ||
       !(o.delivery_kind === "home" || /^cvs_[a-z0-9]+$/.test(String(o.delivery_kind))) || typeof o.mode !== "string" ||
@@ -111,20 +121,26 @@ export function parseManualOptions(value: unknown): ManualOption[] {
       !o.payment_modes.every((m) => (manualPaymentModes as readonly string[]).includes(String(m))) ||
       !(o.pickup_selection === null || o.pickup_selection === "ecpay_map" || o.pickup_selection === "buyer_entered") ||
       o.option_key !== `${o.market_id}|${o.country}|${o.delivery_code}`) throw fail();
-    return o as unknown as ManualOption;
+    // Cash on delivery: home delivery only, and the offer (carrier, cap in whole NT$ up to 20,000, fee in whole NT$ up to 1,000) travels with the mode.
+    if (o.payment_modes.includes("cash_on_delivery")) {
+      if (o.delivery_kind !== "home" || !wholeTWD(raw.cod_max_minor, 100, 2_000_000) || !(raw.cod_carrier === "black_cat" || raw.cod_carrier === "hsinchu") ||
+        (raw.cod_surcharge_minor !== undefined && !wholeTWD(raw.cod_surcharge_minor, 0, 100_000))) throw fail();
+    } else if (codOptionKeys.some((k) => k in raw)) throw fail();
+    return raw as unknown as ManualOption;
   });
 }
 
 export type ManualResult = {
-  order_id: string; commercial_state: "AWAITING_TRANSFER" | "CONFIRMED"; payment_mode: ManualPaymentMode; total_minor: number; currency: string;
+  order_id: string; commercial_state: "AWAITING_TRANSFER" | "CONFIRMED" | "AWAITING_COLLECTION"; payment_mode: ManualPaymentMode; total_minor: number; currency: string;
   expires_at: string; buyer_link: string | null; link_state: "configured" | "storefront_unavailable" | "domain_selection_required"; source: "merchant_manual";
 };
 export function parseManualResult(value: unknown): ManualResult {
   const v = object(value, ["order_id", "commercial_state", "payment_mode", "total_minor", "currency", "expires_at", "buyer_link", "link_state", "source"]);
-  if (typeof v.order_id !== "string" || !canonicalUUID.test(v.order_id) || !["AWAITING_TRANSFER", "CONFIRMED"].includes(String(v.commercial_state)) ||
-    !(manualPaymentModes as readonly string[]).includes(String(v.payment_mode)) || !money(v.total_minor) || !/^[A-Z]{3}$/.test(String(v.currency)) ||
+  if (typeof v.order_id !== "string" || !canonicalUUID.test(v.order_id) ||
+    !(manualPaymentModes as readonly string[]).includes(String(v.payment_mode)) || v.commercial_state !== placementState[v.payment_mode as ManualPaymentMode] ||
+    !money(v.total_minor) || !/^[A-Z]{3}$/.test(String(v.currency)) ||
     !isInstant(v.expires_at) || !["configured", "storefront_unavailable", "domain_selection_required"].includes(String(v.link_state)) ||
-    v.source !== "merchant_manual" || (v.commercial_state === "CONFIRMED") !== (v.payment_mode === "pay_at_pickup")) throw fail();
+    v.source !== "merchant_manual") throw fail();
   // The link is an https URL whose fragment carries the order id and a 43-character capability; nothing else is accepted.
   if (v.link_state === "configured") {
     if (typeof v.buyer_link !== "string" || v.buyer_link.length > 400) throw fail();
@@ -154,6 +170,7 @@ export function draftProblem(d: ManualDraft): DraftProblem | null {
   if (d.email.trim() !== "" && !(d.email.trim().length <= 254 && /^[^\s@]+@[^\s@]+$/.test(d.email.trim()))) return "email";
   if (!d.option) return "delivery";
   if (d.mode === "" || !d.option.payment_modes.includes(d.mode)) return "mode";
+  if (d.mode === "cash_on_delivery" && d.option.delivery_kind !== "home") return "mode"; // COD is home delivery only
   if (d.option.delivery_kind === "home") {
     if (d.home.city.trim() === "" || d.home.line1.trim() === "") return "address";
   } else if (d.cvs.store_code.trim() === "" || d.cvs.store_name.trim() === "" || Array.from(d.cvs.store_address.trim()).length < 5) return "store";

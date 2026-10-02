@@ -46,6 +46,7 @@ async function setSession(context: BrowserContext, token: string) {
 }
 
 async function storageIsSafe(page: Page) {
+  // G-UI8 audit [READ/MEASURE]: scans client storage for secrets/PII (read only) + CacheStorage names
   const value = await page.evaluate(async () => JSON.stringify({
     local: { ...localStorage }, session: { ...sessionStorage },
     caches: "caches" in window ? await caches.keys() : [],
@@ -57,7 +58,9 @@ async function storageIsSafe(page: Page) {
 
 async function hideAndReveal(page: Page) {
   await page.bringToFront();
+  // G-UI8 audit [READ/MEASURE]: reads document.visibilityState
   await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("visible");
+  // G-UI8 audit [READ/MEASURE]: installs a read-only visibilitychange recorder (isTrusted evidence)
   await page.evaluate(() => {
     const observed = window as typeof window & { studioVisibility?: { state: string; trusted: boolean }[] };
     observed.studioVisibility = [];
@@ -68,10 +71,13 @@ async function hideAndReveal(page: Page) {
   try {
     await other.goto("about:blank");
     await other.bringToFront();
+    // G-UI8 audit [READ/MEASURE]: reads document.visibilityState
     await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("hidden");
     await expect(page.getByLabel("Scene name")).toHaveCount(0);
     await page.bringToFront();
+    // G-UI8 audit [READ/MEASURE]: reads document.visibilityState
     await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("visible");
+    // G-UI8 audit [READ/MEASURE]: reads the recorded native visibility events
     const events = await page.evaluate(() =>
       (window as typeof window & { studioVisibility?: { state: string; trusted: boolean }[] }).studioVisibility);
     expect(events).toEqual([{ state: "hidden", trusted: true }, { state: "visible", trusted: true }]);
@@ -92,8 +98,11 @@ async function screenshot(page: Page, name: string, width: number, height: numbe
     await expect.poll(() => page.locator("[data-shell-rail]").evaluate((rail) =>
       Math.ceil(rail.getBoundingClientRect().right))).toBeLessThanOrEqual(0);
   }
+  // G-UI8 audit [FIXTURE/SETUP]: scrolls to the top before a screenshot (viewport positioning)
   await page.evaluate(() => window.scrollTo(0, 0));
+  // G-UI8 audit [READ/MEASURE]: reads scrollY
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
   await page.screenshot({ path: `${evidence}/${name}.png`, fullPage: false, animations: "disabled" });
   if (width <= 680)
@@ -290,6 +299,7 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await expect(page.getByText("Public status unverified").first()).toBeVisible();
   await storageIsSafe(page);
 
+  // G-UI8 audit [FIXTURE/SETUP]: negative probe: a forged/hostile request no UI can send; the server, not the UI, must refuse (UI click paths of the same route are covered elsewhere) (POST without CSRF)
   const csrfDenied = await page.evaluate(async (target) => {
     const response = await fetch(target, { method: "POST", credentials: "same-origin", cache: "no-store",
       headers: { "Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID() },
@@ -348,6 +358,29 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
     bffRequests: authHeaders.length, locales: ["en", "zh-CN", "zh-TW"],
     viewports: ["1586x992", "390x844"], createdURL, csrfStatus: csrfDenied.status,
   }), { mode: 0o600 });
+});
+
+// D02 (G-UI8 click sweep): /studio with NO ?scene= used to re-fetch live-sessions about 370 times a second and never leave "Loading scenes..."
+// (the first scene id comes from the page data, which each reload of the page effect reset). Every STU04 case above passes ?scene=, so only a
+// landing without a scene exposes it: sign in, click Live, open the store that has scenes and reload that bare route several times, counting
+// the reads while the page settles.
+test("STU05 the Studio route without a scene settles: live-sessions reads stay bounded across reloads and the first scene opens", async ({ page }) => {
+  const reads: string[] = [];
+  page.on("request", (request) => {
+    if (request.method() === "GET" && /\/api\/stores\/[^/]+\/live-sessions(\?|$)/.test(request.url())) reads.push(request.url());
+  });
+  await signedLogin(page); // clicks the Live nav group
+  for (let round = 0; round < 4; round++) {
+    reads.length = 0;
+    if (round === 0) await page.goto(`/en/studio?store=${store}`);
+    else await page.reload();
+    await expect(page.getByText("Loading scenes…")).toHaveCount(0);
+    await expect(page.locator(".studio-scene-list .studio-scene").first()).toBeVisible();
+    await expect(page.getByLabel("Scene name")).toBeVisible(); // the first scene is opened without a ?scene= in the URL
+    // G-UI8 settle window: a looping page keeps issuing reads here; a settled one issues none (the scene list read plus a handful of detail reads at most).
+    await page.waitForTimeout(2500);
+    expect(reads.length, `round ${round}: live-sessions GETs while the bare Studio route settled`).toBeLessThanOrEqual(6);
+  }
 });
 
 test("STU04 exact draft timestamp parser accepts offsets without admitting malformed dates", () => {

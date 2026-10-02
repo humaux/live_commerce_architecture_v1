@@ -228,6 +228,22 @@ func TestValidateManualRefusesWhatTheBuyerPathWouldNotTake(t *testing.T) {
 	}
 }
 
+// home-cod R5: the options list (the buyer checkout options with card removed) offers cash_on_delivery on a COD-enabled home row, so the
+// placement validator must accept the very mode its own options advertise (D01 of the G-UI8 sweep: it answered 422 invalid_request).
+func TestValidateManualAcceptsCashOnDelivery(t *testing.T) {
+	in := validManual()
+	in.PaymentMode = "cash_on_delivery"
+	if _, err := ValidateManual(in); err != nil {
+		t.Fatalf("cash_on_delivery refused: %v", err)
+	}
+	for _, mode := range []string{"", "card", "cash_on_delivery ", "CASH_ON_DELIVERY", "cod"} {
+		in.PaymentMode = mode
+		if _, err := ValidateManual(in); err == nil {
+			t.Errorf("payment mode %q accepted", mode)
+		}
+	}
+}
+
 func TestCapabilityDerivationIsDeterministicScopedAndValid(t *testing.T) {
 	m := &ManualOrders{secret: bytes.Repeat([]byte{7}, 43)}
 	a, b := m.capability("order", "store-1", "key-1"), m.capability("order", "store-1", "key-1")

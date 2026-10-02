@@ -88,9 +88,13 @@ async function shot(page, name, locale, viewport) {
     const previous = page.viewportSize();
     for (const width of [390, 1366, 1586]) {
       await page.setViewportSize({ width, height: width === 390 ? 844 : 992 });
+      // G-UI8 audit [FIXTURE/SETUP]: waits for fonts and scrolls to the top before the geometry measurement (viewport positioning)
       await page.evaluate(async () => { await document.fonts.ready; window.scrollTo({ top: 0, behavior: "instant" }); });
+      // G-UI8 audit [READ/MEASURE]: reads scrollY
       await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+      // G-UI8 audit [READ/MEASURE]: reads scrollX
       await expect.poll(() => page.evaluate(() => window.scrollX)).toBe(0);
+      // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${name} ${locale} overflow at ${width}`);
       await page.screenshot({ path: path.join(root, "output/home-cod-ui", `buyer-${name}-${locale}-${width}.png`), fullPage: false, animations: "disabled", scale: "css" });
       if (name === "checkout") {
@@ -115,6 +119,7 @@ async function shot(page, name, locale, viewport) {
     }
     await page.setViewportSize(previous);
   }
+  // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
   assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `horizontal overflow at ${viewport} ${locale} (${name})`);
   if (engine === "webkit" && viewport === "mobile") assert.deepEqual(await iosZoomOffenders(page), [], `iOS focus-zoom: form controls under 16px at ${viewport} ${locale}`);
   let list = []; try { list = JSON.parse(await readFile(manifest, "utf8")); } catch { /* first */ }
@@ -238,6 +243,7 @@ async function place(buyer) {
   pass(`${label} ${locale}/${viewport}: whole-TWD total ${total / 100}, surcharge ${surcharge / 100}, placed AWAITING_COLLECTION/PENDING`);
   return { ...buyer, page, id };
 }
+// G-UI8 audit [READ/MEASURE]: same-origin GET read of server state through the BFF (no state change)
 const api = (page, method, suffix) => page.evaluate(async ({ method, suffix }) => {
   const session = await (await fetch("/api/buyer/session", { cache: "no-store" })).json();
   const response = await fetch(`/api/buyer/${suffix}`, { method, headers: { "X-Buyer-Context": session.context } });

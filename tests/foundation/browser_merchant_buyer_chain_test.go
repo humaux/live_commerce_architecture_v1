@@ -64,8 +64,10 @@ func TestBrowserMerchantBuyerRealChain(t *testing.T) {
 	mustExec(t, h.f.owner, `INSERT INTO identity.principals(id) VALUES($1)`, principal)
 	mustExec(t, h.f.owner, `INSERT INTO identity.memberships(tenant_id,principal_id) VALUES($1,$2)`, h.f.tenantA, principal)
 	mustExec(t, h.f.owner, `INSERT INTO identity.external_identities(issuer,subject,principal_id) VALUES($1,'browser-subject',$2)`, idp.server.URL, principal)
+	// orders:read is the W0 registry permission of the Overview route (apps/admin/src/features/overview/routes.ts) and the Go dashboard
+	// authority (storefront-v2 G1 MT02): without it the sign-in landing is the shell's 403, not the dashboard this gate asserts.
 	mustExec(t, h.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission)
-		SELECT $1,$2,$3,p FROM unnest(ARRAY['store:read','catalog:read','catalog:write','inventory:read']) p`, h.f.tenantA, h.f.storeA1, principal)
+		SELECT $1,$2,$3,p FROM unnest(ARRAY['store:read','catalog:read','catalog:write','inventory:read','orders:read']) p`, h.f.tenantA, h.f.storeA1, principal)
 	_, foreignProduct := bcatForeignStore(t, h, h.f.tenantB)
 	adminKey := randomToken()
 	private, err := identityhttp.NewHandler(service, adminKey)

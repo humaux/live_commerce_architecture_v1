@@ -63,6 +63,9 @@ export function WorkspaceFrame({
   const route = matchRoute(pathname.replace(/^\/(zh-CN|zh-TW|en)/, "") || "/");
   const allowed = route && canOpen(route, access);
   const nav = visibleGroups(access);
+  // The first page this role may open, in registry order. A role without Overview (orders:read, e.g. marketing- or
+  // catalog-only staff) lands there instead of a 403 whose way back pointed at the same 403.
+  const home = nav[0]?.routes[0]?.path ?? "/";
   useEffect(() => {
     // URL changes must not revive this shell after a logout/401. Recovery uses
     // the existing full-page sign-in link and creates a new shell instance.
@@ -149,6 +152,10 @@ export function WorkspaceFrame({
       `/${locale}${path === "/" ? "" : path}${storeParam ? `?store=${encodeURIComponent(storeParam)}` : ""}`,
     );
   }
+  useEffect(() => {
+    if (data && data.key === storeParam && route?.path === "/" && !allowed && home !== "/")
+      router.replace(`/${locale}${home}${storeParam ? `?store=${encodeURIComponent(storeParam)}` : ""}`);
+  }, [data, storeParam, route, allowed, home, locale, router]);
   async function signOut() {
     if (locked || busy.current) return;
     busy.current = true;
@@ -391,7 +398,7 @@ export function WorkspaceFrame({
         ) : !allowed ? (
           <div className={s.status} data-testid="route-forbidden">
             <h1>{c.forbidden}</h1>
-            <button onClick={() => navigate("/")}>{c.back}</button>
+            <button data-testid="route-forbidden-home" onClick={() => navigate(home)}>{c.back}</button>
           </div>
         ) : (
           <>

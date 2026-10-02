@@ -29,6 +29,7 @@ export const phoneName = engine === "webkit" ? "iPhone 15" : "Pixel 7";
 
 // iOS Safari zooms the whole page when a text-like form control with a computed font-size under 16px takes focus, and never zooms back by
 // itself: a real iPhone-only defect that no overflow or visibility assertion sees. Returns "tag[name]#id 14px" for every visible offender.
+// G-UI8 audit [READ/MEASURE]: reads form-control font sizes (iOS focus-zoom check)
 export const iosZoomOffenders = (page) => page.evaluate(() => {
   const skip = new Set(["hidden", "checkbox", "radio", "button", "submit", "reset", "range", "file", "image", "color"]);
   return [...document.querySelectorAll("input, select, textarea")].filter((el) => {

@@ -208,6 +208,7 @@ try {
     await expect(page.getByTestId("store-closed")).toBeVisible();
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(CLOSED[locale]);
     await expect(page.getByTestId("home-empty")).toHaveCount(0);
+    // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${why}: horizontal overflow`);
     if (shot) await page.screenshot({ path: path.join(evidence, shot), fullPage: true });
     pass(`buyer sees the not-found page at ${origin} (${locale}, ${view}): ${why}`);
@@ -217,8 +218,10 @@ try {
     assert.equal(response.status(), 200, `${why}: the published store answers 200`);
     await expect(page.getByTestId("home-empty")).toBeVisible(); // a brand-new store has the default empty home (no design sections)
     await expect(page.getByTestId("store-closed")).toHaveCount(0);
+    // G-UI8 audit [READ/MEASURE]: same-origin GET read of server state through the BFF (no state change) (buyer session)
     const session = await page.evaluate(async () => { const r = await fetch("/api/buyer/session"); return { status: r.status, body: await r.json() }; });
     assert.equal(session.status, 200, `${why}: the buyer API answers on a published origin`);
+    // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${why}: horizontal overflow`);
     if (shot) await page.screenshot({ path: path.join(evidence, shot), fullPage: true });
     pass(`anonymous buyer is served at ${origin} (${locale}, ${view}): ${why}`);
@@ -511,10 +514,13 @@ try {
       await expect(records.nth(index).locator("dt")).toHaveText(type);
       await expect(records.nth(index).locator("code")).toHaveText(`${apexHost} → ${address}`);
       await records.nth(index).getByRole("button").click();
+      // G-UI8 audit [READ/MEASURE]: reads the clipboard after the real Copy click (read only)
       await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(`${type} ${apexHost} → ${address}`);
     }
     await section.getByTestId("storefront-dns-copy").click();
+    // G-UI8 audit [READ/MEASURE]: reads the clipboard after the real Copy click (read only)
     await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toContain(`AAAA ${apexHost} → ${edgeAddresses[2]}`);
+    // G-UI8 audit [READ/MEASURE]: reads the clipboard after the real Copy click (read only)
     const copied = await page.evaluate(() => navigator.clipboard.readText());
     for (const address of edgeAddresses) assert(copied.includes(address));
     assert(copied.includes(apex.dns.txt_name) && copied.includes(apex.dns.txt_value));
@@ -526,6 +532,7 @@ try {
         await expect.poll(() => page.locator("#workspace-navigation").evaluate(node => node.getBoundingClientRect().right)).toBeLessThanOrEqual(0);
       }
       await section.getByTestId("storefront-dns").scrollIntoViewIfNeeded();
+      // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${locale} ${size} apex: no overflow`);
       for (const button of await records.getByRole("button").all()) assert((await button.boundingBox()).height >= 44, "copy target >=44px");
       await page.screenshot({ path: path.join(evidence, `domains-apex-MOCK-${locale}-${size}.png`) });

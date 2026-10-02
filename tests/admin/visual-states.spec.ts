@@ -9,6 +9,7 @@ import type { APIRequestContext } from "@playwright/test";
 async function createLongSkuFixture(request: APIRequestContext) {
   const storeID = process.env.COMMERCE_FIXTURE_STORE_ID;
   expect(storeID).toBeTruthy();
+  // G-UI8 audit [FIXTURE/SETUP]: fixture: creates the long-name product through the merchant BFF API
   const product = await request.post(`/api/stores/${storeID}/products`, {
     headers: { Origin: "http://127.0.0.1:3100", "Idempotency-Key": crypto.randomUUID() },
     data: {
@@ -21,6 +22,7 @@ async function createLongSkuFixture(request: APIRequestContext) {
   expect(product.status()).toBe(200);
   const { id } = await product.json();
   const code = "HA-RECHARGEABLE-BTE-BLUETOOTH-CHARGER-BLACK-TW-2026";
+  // G-UI8 audit [FIXTURE/SETUP]: fixture: creates its SKU through the merchant BFF API
   const sku = await request.post(`/api/stores/${storeID}/skus`, {
     headers: { Origin: "http://127.0.0.1:3100", "Idempotency-Key": crypto.randomUUID() },
     data: { product_id: id, code, price_minor: 198000 },

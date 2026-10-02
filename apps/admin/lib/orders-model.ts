@@ -1,5 +1,5 @@
-import { STORE_TIME_ZONE, displayTime, minorDigits, wholeOnly, amountToMinor, minorToInput } from "../../../packages/format/src/index.ts";
-export { STORE_TIME_ZONE, displayTime, minorDigits, wholeOnly, amountToMinor, minorToInput } from "../../../packages/format/src/index.ts";
+import { STORE_TIME_ZONE, displayTime, displayClock, minorDigits, wholeOnly, amountToMinor, minorToInput } from "../../../packages/format/src/index.ts";
+export { STORE_TIME_ZONE, displayTime, displayClock, minorDigits, wholeOnly, amountToMinor, minorToInput } from "../../../packages/format/src/index.ts";
 // Admin order model: strict parsers for the merchant-orders DTOs (BFF `/api/stores/{store}/orders*`
 // -> Go `internal/merchantorders`, `internal/httpapi/{orders,refunds,shipments}.go`).
 // Invariants mirror merchant-orders-v1 as amended by stripe-refund-v1 §7.1 and manual-fulfilment-v1 §5.1;

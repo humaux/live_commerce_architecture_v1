@@ -86,10 +86,10 @@ function Messages({ write, locale }: { write: ReturnType<typeof useWrite>; local
   const m = write.message;
   if (!m) return null;
   return (
-    <div className={`message ${m.kind === "success" ? "success" : "error"}`} role={m.kind === "success" ? "status" : "alert"} data-testid="product-message">
+    <div className={`message${m.kind === "info" ? "" : m.kind === "success" ? " success" : " error"}`} role={m.kind === "success" || m.kind === "info" ? "status" : "alert"} data-testid="product-message">
       <span>{m.text}</span>
       {m.kind === "uncertain" && <button type="button" data-testid="product-retry" disabled={write.busy} onClick={() => void write.retry()}>{c.retry}</button>}
-      {m.kind !== "success" && <button type="button" onClick={write.dismiss}>{c.dismiss}</button>}
+      {m.kind !== "success" && m.kind !== "info" && <button type="button" onClick={write.dismiss}>{c.dismiss}</button>}
     </div>
   );
 }
@@ -156,7 +156,7 @@ function Basics({ locale, store, detail, boundary, refresh }: {
     if (status !== detail.status) body.status = status;
     if (seoTitle !== detail.seo_title) body.seo_title = seoTitle;
     if (seoDescription !== detail.seo_description) body.seo_description = seoDescription;
-    if (Object.keys(body).length === 1) return; // nothing changed: no request, no version bump
+    if (Object.keys(body).length === 1) return write.notice(c.noChanges); // nothing changed: no request, no version bump, but never a silent click
     void write.run(command("PATCH", `products/${detail.id}`, body), parseCreated, () => void refresh(), c.saved);
   }
   return (

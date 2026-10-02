@@ -52,7 +52,7 @@ const en = {
   signIn: "Sign in again",
   retry: "Try again",
   forbidden: "403 · You do not have access to this page.",
-  back: "Back to overview",
+  back: "Go to a page you can open",
 };
 export type ShellCopy = typeof en;
 export type ShellLabel = keyof ShellCopy;
@@ -109,7 +109,7 @@ const zhCN: ShellCopy = {
   signIn: "重新登录",
   retry: "重试",
   forbidden: "403 · 你没有访问此页面的权限。",
-  back: "返回总览",
+  back: "前往可用页面",
 };
 const zhTW: ShellCopy = {
   overview: "總覽",
@@ -164,6 +164,6 @@ const zhTW: ShellCopy = {
   signIn: "重新登入",
   retry: "重試",
   forbidden: "403 · 你沒有存取此頁面的權限。",
-  back: "返回總覽",
+  back: "前往可用頁面",
 };
 export const shellCopy = { en, "zh-CN": zhCN, "zh-TW": zhTW };

@@ -105,6 +105,7 @@ async function cookieValue(context: BrowserContext, name: string) {
 }
 
 async function browserJSON(page: Page, path: string, options: { method?: string; body?: unknown; csrf?: boolean } = {}) {
+  // G-UI8 audit [FIXTURE/SETUP]: API-contract helper (password BFF session/CSRF shape); the sign-up/sign-in/reset UI is click-driven in the same spec
   return page.evaluate(
     async ({ path, options, csrfName }) => {
       const headers = new Headers();
@@ -130,6 +131,7 @@ async function shot(page: Page, name: string, locale: string, viewport: string) 
 }
 
 async function noHorizontalScroll(page: Page) {
+  // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow, "no horizontal page scroll").toBeLessThanOrEqual(0);
 }

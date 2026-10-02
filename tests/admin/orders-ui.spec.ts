@@ -68,6 +68,7 @@ async function session(context: BrowserContext, token: string) {
 }
 
 async function browserRead(page: Page, path: string) {
+  // G-UI8 audit [READ/MEASURE]: same-origin GET read of server state through the BFF (no state change)
   return page.evaluate(async (target) => {
     const response = await fetch(target, {
       credentials: "same-origin",
@@ -126,6 +127,7 @@ async function noPII(page: Page) {
 }
 
 async function noPersistentOrderBody(page: Page) {
+  // G-UI8 audit [READ/MEASURE]: scans client storage for secrets/PII (read only) + CacheStorage names
   const storage = await page.evaluate(async () => {
     const cacheNames = "caches" in window ? await caches.keys() : [];
     return JSON.stringify({
@@ -178,6 +180,7 @@ async function expand(page: Page, id: string) {
 
 async function screenshot(page: Page, file: string) {
   await page.screenshot({ path: file, fullPage: false });
+  // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
   const width = await page.evaluate(
     () => document.documentElement.scrollWidth - innerWidth,
   );
@@ -363,7 +366,9 @@ test("MOU03 controlled delayed detail, pagehide, history and cross-tab logout", 
     "aria-label",
     new RegExp(ids.authorized),
   );
+  // G-UI8 audit [EXTERNAL-MOCK]: injects a pagehide(persisted) lifecycle event: the default headless page cannot enter the bfcache by input; the real goto/goBack path follows and MOU03 uses the native device
   const clearedOnHide = await page.evaluate(() => {
+    // G-UI8 audit [EXTERNAL-MOCK]: dispatchEvent(pagehide) of the injected lifecycle event above
     window.dispatchEvent(
       new PageTransitionEvent("pagehide", { persisted: true }),
     );
@@ -372,6 +377,7 @@ test("MOU03 controlled delayed detail, pagehide, history and cross-tab logout", 
   expect(clearedOnHide).toBe(true);
   const reappear = await page.getByTestId("order-detail").count();
   expect(reappear).toBe(0);
+  // G-UI8 audit [READ/MEASURE]: reads the native pageshow journal length
   const beforeHistory = await page.evaluate(
     () =>
       JSON.parse(sessionStorage.getItem("mou-native-pageshows") ?? "[]")
@@ -386,6 +392,7 @@ test("MOU03 controlled delayed detail, pagehide, history and cross-tab logout", 
   // a pageshow for /en/orders must have been logged after the history length recorded before leaving.
   await expect(async () => {
     expect(
+      // G-UI8 audit [READ/MEASURE]: reads the native pageshow journal
       await page.evaluate(
         (before) =>
           (
@@ -396,6 +403,7 @@ test("MOU03 controlled delayed detail, pagehide, history and cross-tab logout", 
       ),
     ).toBe(true);
   }).toPass({ timeout: 10_000 });
+  // G-UI8 audit [READ/MEASURE]: reads the native pageshow journal
   const nativeEvents = await page.evaluate(
     (before) =>
       (
@@ -407,6 +415,7 @@ test("MOU03 controlled delayed detail, pagehide, history and cross-tab logout", 
   );
   const returnEvent = nativeEvents.find((event) => event.path === "/en/orders");
   expect(returnEvent).toBeDefined();
+  // G-UI8 audit [READ/MEASURE]: reads Navigation Timing notRestoredReasons
   const notRestoredReasons = await page.evaluate(() => {
     const navigation = performance.getEntriesByType("navigation")[0] as
       PerformanceNavigationTiming & {
@@ -438,9 +447,9 @@ test("MOU03 controlled delayed detail, pagehide, history and cross-tab logout", 
   await expect(page.getByTestId("order-detail")).toContainText(
     "Synthetic Buyer",
   );
-  await otherTab
-    .getByTestId("workspace-sign-out")
-    .evaluate((button: HTMLElement) => button.click());
+  // The user signs out in the other tab by the real path: Account menu -> Sign out (the button lives inside the closed Account disclosure).
+  await otherTab.locator("header[data-shell-topbar] summary", { hasText: /^Account$/ }).click();
+  await otherTab.getByTestId("workspace-sign-out").click();
   await expect(page.getByTestId("order-detail")).toHaveCount(0);
   await noPII(page);
   await otherTab.close();
@@ -456,7 +465,9 @@ test("MOU03 actual visibility hide clears PII and visible return needs fresh aut
     await expect(page.getByTestId("order-detail")).toContainText("Synthetic Buyer");
     const beforeHide = await detailCalls(page);
     await page.bringToFront();
+    // G-UI8 audit [READ/MEASURE]: reads document.visibilityState (the tab switch itself is native: bringToFront on the native device)
     await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("visible");
+    // G-UI8 audit [READ/MEASURE]: installs a read-only visibilitychange recorder (isTrusted evidence)
     await page.evaluate(() => {
       const observed = window as typeof window & { mouVisibility?: { state: string; trusted: boolean }[] };
       observed.mouVisibility = [];
@@ -466,6 +477,7 @@ test("MOU03 actual visibility hide clears PII and visible return needs fresh aut
     cover = await page.context().newPage();
     await cover.goto(new URL("/en/settings", origin).toString());
     await cover.bringToFront();
+    // G-UI8 audit [READ/MEASURE]: reads document.visibilityState
     await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("hidden");
     await noPII(page);
     const whileHidden = await detailCalls(page);
@@ -480,6 +492,7 @@ test("MOU03 actual visibility hide clears PII and visible return needs fresh aut
       await route.fulfill({ response: real });
     });
     await page.bringToFront();
+    // G-UI8 audit [READ/MEASURE]: reads document.visibilityState
     await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("visible");
     await intercepted;
     await noPII(page);
@@ -487,6 +500,7 @@ test("MOU03 actual visibility hide clears PII and visible return needs fresh aut
     await expect(page.getByTestId("order-detail")).toContainText("Synthetic Buyer");
     const afterReturn = await detailCalls(page);
     expect(afterReturn).toBeGreaterThan(whileHidden);
+    // G-UI8 audit [READ/MEASURE]: reads the recorded native visibility events
     const events = await page.evaluate(() =>
       (window as typeof window & { mouVisibility?: { state: string; trusted: boolean }[] }).mouVisibility);
     expect(events).toEqual([{ state: "hidden", trusted: true }, { state: "visible", trusted: true }]);
@@ -618,6 +632,7 @@ test("MOU03 delayed old success/error cannot repaint store, filter, locale or ne
   await page.getByTestId(`order-expand-${foreignOrder}`).click();
   await oldSession.intercepted;
   await session(context, noOrdersToken);
+  // G-UI8 audit [EXTERNAL-MOCK]: injects a window focus event after the session cookie changed: the default headless page cannot receive OS focus; native visibility/focus returns are covered by MOU03
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   oldSession.release();
   await oldSession.remove();
@@ -655,6 +670,7 @@ test("MOU05 approved inline comp at desktop/mobile in three locales and page-two
       new RegExp(ids.pickup),
     );
     await page.setViewportSize({ width: 1586, height: 992 });
+    // G-UI8 audit [READ/MEASURE]: waits for CSS animations to finish before measuring (read/wait)
     await page.evaluate(() =>
       Promise.all(
         document
@@ -686,6 +702,7 @@ test("MOU05 approved inline comp at desktop/mobile in three locales and page-two
       testInfo.outputPath(`inline-${locale}-1586x992.png`),
     );
     await page.setViewportSize({ width: 390, height: 844 });
+    // G-UI8 audit [READ/MEASURE]: waits for CSS animations to finish before measuring (read/wait)
     await page.evaluate(() =>
       Promise.all(
         document
@@ -710,6 +727,7 @@ test("MOU05 approved inline comp at desktop/mobile in three locales and page-two
     expect(mobileDetail.width).toBeGreaterThanOrEqual(320);
     expect(mobileDetail.recipientWidth).toBeGreaterThanOrEqual(120);
     await paymentBadgesFit(page);
+    // G-UI8 audit [FIXTURE/SETUP]: scrolls to the top before a screenshot (viewport positioning)
     await page.evaluate(() => window.scrollTo(0, 0));
     await screenshot(page, testInfo.outputPath(`inline-${locale}-390x844.png`));
     await page

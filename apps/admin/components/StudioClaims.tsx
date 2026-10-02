@@ -41,7 +41,7 @@ import {
   type ImportResult, type LibraryEntry, type ManualResult, type MatchMode, type Offer,
 } from "@/lib/claims-model";
 import { fromMinor } from "@/lib/catalog-v2-model";
-import { displayTime } from "@/lib/orders-model";
+import { displayClock, displayTime } from "@/lib/orders-model";
 import { claimLinkMessage, claimsCopy, hostPrompt } from "@/lib/claims-copy";
 import { studioCopy } from "@/lib/studio-copy";
 import { metaConnectCopy } from "@/lib/meta-connect-copy";
@@ -105,6 +105,8 @@ export function StudioClaims({ locale, store, scene, initialError }: {
   const [promptKeyword, setPromptKeyword] = useState("");
   const [copied, setCopied] = useState("");
   const [busy, setBusy] = useState<Action | null>(null);
+  const [refreshing, setRefreshing] = useState(false); // "Refresh facts" is re-reading; refreshedAt = when the last user refresh finished (D03)
+  const [refreshedAt, setRefreshedAt] = useState<number | null>(null);
   const [actionError, setActionError] = useState<ActionError | null>(null);
   const [issued, setIssued] = useState<Issued | null>(null);
   const [buyerLocale, setBuyerLocale] = useState<Locale>(locale);
@@ -130,8 +132,9 @@ export function StudioClaims({ locale, store, scene, initialError }: {
     setStatus("signed-out");
   }, []);
 
-  const load = useCallback(async () => {
-    if (initialError || !storeID || !scene) return;
+  // Resolves true once the facts of this call were applied (false: nothing to read, superseded by a newer read, or failed).
+  const load = useCallback(async (): Promise<boolean> => {
+    if (initialError || !storeID || !scene) return false;
     const current = ++epoch.current;
     controller.current?.abort();
     const abort = new AbortController();
@@ -148,7 +151,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
           if (error instanceof OrderReadError && error.code === "signed-out") throw new StudioError("signed-out");
           return null;
         })]);
-      if (current !== epoch.current || abort.signal.aborted) return;
+      if (current !== epoch.current || abort.signal.aborted) return false;
       if ((await sessionBoundary().catch(() => "")) !== before) throw new StudioError("signed-out");
       boundary.current = before;
       setFacts({ detail, board, bundles: page.items, next: page.next_cursor, source: source.value.source, platforms: source.value.platforms, sourceError: source.error, library, meta });
@@ -159,11 +162,13 @@ export function StudioClaims({ locale, store, scene, initialError }: {
       }
       setModeDraft(board.window.match_mode);
       setStatus("ready");
+      return true;
     } catch (error) {
-      if (current !== epoch.current || abort.signal.aborted) return;
+      if (current !== epoch.current || abort.signal.aborted) return false;
       const code = codeOf(error);
       if (code === "signed-out") signOut();
       else setStatus(code);
+      return false;
     }
   }, [initialError, storeID, scene, signOut, locale]);
 
@@ -438,6 +443,17 @@ export function StudioClaims({ locale, store, scene, initialError }: {
     try { await navigator.clipboard.writeText(value); setCopied(what); }
     catch { setCopied(""); }
   }
+  async function refreshFacts() {
+    if (refreshing) return;
+    // Every claims write is CAS- or absolute-quantity safe, so after reading the facts again a fresh submit may replace an unknown earlier one.
+    pending.current = null;
+    sourceDirty.current = false;
+    setActionError(null);
+    setRefreshing(true);
+    const applied = await load();
+    setRefreshing(false);
+    if (applied) setRefreshedAt(Date.now());
+  }
   function closeDialog() {
     dialog.current?.close();
     setIssued(null);
@@ -461,14 +477,10 @@ export function StudioClaims({ locale, store, scene, initialError }: {
           {facts && <p>{c.scene}: {facts.detail.draft.title}</p>}
         </div>
         <div className="studio-heading-actions">
-          <button type="button" className="studio-refresh" disabled={!!busy} onClick={() => {
-            // Every claims write is CAS- or absolute-quantity safe, so after reading the
-            // facts again a fresh submit may replace an unknown earlier one.
-            pending.current = null;
-            sourceDirty.current = false;
-            setActionError(null);
-            void load();
-          }}>{shared.refresh}</button>
+          {refreshedAt !== null && !refreshing && <span className="claims-refreshed" role="status">{c.refreshedAt(displayClock(locale, refreshedAt))}</span>}
+          <button type="button" className="studio-refresh" disabled={!!busy || refreshing} aria-busy={refreshing} onClick={() => void refreshFacts()}>
+            {refreshing ? c.refreshing : shared.refresh}
+          </button>
         </div>
       </header>
       <div className="claims-mock" role="note">{feed && <strong data-testid="claims-feed">{feed}</strong>}<p>{c.mockDetail}</p></div>

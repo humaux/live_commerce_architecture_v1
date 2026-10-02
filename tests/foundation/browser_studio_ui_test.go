@@ -268,7 +268,7 @@ func TestBrowserStudioUIRealChain(t *testing.T) {
 		t.Errorf("UTC schedule shifted on title edit: instant=%s err=%v evidence=%s", scheduled.UTC().Format(time.RFC3339), err, evidence)
 	}
 	var issued int
-	if err := h.lp.f.owner.QueryRow(ctx, `SELECT count(*) FROM identity.sessions s JOIN identity.session_events ev ON ev.session_id=s.id AND ev.action='session.issued' JOIN identity.external_identities e ON e.principal_id=s.principal_id WHERE e.issuer=$1 AND e.subject='browser-subject' AND s.token_hash<>$2`, idp.server.URL, tokenHash(h.lp.token)).Scan(&issued); err != nil || issued != 4 {
+	if err := h.lp.f.owner.QueryRow(ctx, `SELECT count(*) FROM identity.sessions s JOIN identity.session_events ev ON ev.session_id=s.id AND ev.action='session.issued' JOIN identity.external_identities e ON e.principal_id=s.principal_id WHERE e.issuer=$1 AND e.subject='browser-subject' AND s.token_hash<>$2`, idp.server.URL, tokenHash(h.lp.token)).Scan(&issued); err != nil || issued != 5 { // 5: STU04 x2 native + swapped login + the main case, and STU05 (bare Studio route, D02)
 		t.Errorf("signed browser login count=%d err=%v evidence=%s", issued, err, evidence)
 	}
 	var resource string

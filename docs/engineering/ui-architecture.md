@@ -302,6 +302,7 @@ apps/storefront/
   - 无控制台错误、无 5xx；
   - 无「点了没反应」的控件，无元素遮挡导致点不到。
 - 每个 UI 单元的 SUMMARY 附点击台账（页面、控件、操作、期望、实际、通过/失败）。
+- 实现：`bash scripts/dev/test-local.sh --browser-click-sweep`（`tests/ui/click-sweep*.mjs`，说明与 NOT_RUN 见 `docs/delivery/GATES.md`）。台账输出到 `output/ui-click-sweep/ledger.{json,md}`；未修复的缺陷登记在 `tests/ui/click-sweep-known-defects.json`（每条有 owner unit，门禁在清单清空前保持红色，不是白名单）。
 
 ### 10.7 迁移顺序（替换 §7；否决「后台全部改完才动前台」）
 

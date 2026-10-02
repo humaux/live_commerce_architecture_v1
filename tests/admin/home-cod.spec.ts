@@ -32,6 +32,7 @@ const manifestPath = path.join(evidence, "screenshots.json");
 async function shot(page: Page, name: string, locale: string, viewport: "desktop" | "mobile") {
   const file = path.join(evidence, `home-cod-admin-${name}-${locale}-${viewport}.png`);
   await page.screenshot({ path: file, fullPage: false, animations: "disabled" });
+  // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
   let manifest: unknown[] = [];
   try {
@@ -119,6 +120,7 @@ test("settings: the merchant enables cash on delivery with a cap, surcharge and 
     for (const width of [390, 1366, 1586]) {
       await page.setViewportSize({ width, height: width === 390 ? 844 : 992 });
       await page.getByTestId("cod-settings-card").scrollIntoViewIfNeeded();
+      // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
       expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
       for (const control of ["cod-max", "cod-surcharge", "cod-carrier", "cod-settings-save"]) {
         const box = await page.getByTestId(control).boundingBox();

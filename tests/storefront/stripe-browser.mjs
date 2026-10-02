@@ -174,6 +174,7 @@ async function newOrder(page,{pay=true}={}){
   await page.getByTestId("create-order").click();await ex(page.getByTestId("order-section")).toBeVisible();
   const id=(await page.getByTestId("order-id").innerText()).trim();assert.match(id,/^[0-9a-f-]{36}$/);orders.push(id);
   await ex(page.getByTestId("order-payment")).toBeVisible();await ex(page.getByTestId("payment-status")).toHaveAttribute("data-state","NOT_STARTED");
+  // G-UI8 audit [READ/MEASURE]: same-origin GET read of server state through the BFF (no state change) (payment view)
   const payment=await page.evaluate(async orderID=>{
     const session=await(await fetch("/api/buyer/session",{cache:"no-store"})).json();
     const response=await fetch(`/api/buyer/orders/${orderID}/payment`,{headers:{"X-Buyer-Context":session.context},cache:"no-store"});
@@ -216,9 +217,11 @@ async function cancelViaUI(page,l,{keyboard=false}={}){
   assert.equal(dialog.type,"confirm");assert.equal(dialog.message,LOC[l].cancelConfirm);
 }
 async function keyboardTo(page,name){
+  // G-UI8 audit [FIXTURE/SETUP]: blurs and scrolls to the top so the keyboard Tab walk starts at the page start (positioning)
   await page.evaluate(()=>{document.activeElement?.blur?.();window.scrollTo(0,0);});
   for(let i=0;i<150;i++){
     await page.keyboard.press("Tab");
+    // G-UI8 audit [READ/MEASURE]: reads the focused button's name
     if(await page.evaluate(()=>{const a=document.activeElement;return a&&a.tagName==="BUTTON"?a.textContent.trim():"";})===name)return;
   }
   throw new Error("keyboard focus never reached the named button");
@@ -254,8 +257,10 @@ async function scanSurfaces(pages,ctxs){
 }
 // The scan must be able to fail (PROCESS §2.4): an injected URL in localStorage is detected.
 async function scanSelfTest(page,ctxs){
+  // G-UI8 audit [FIXTURE/SETUP]: scan self-test: injects a Stripe URL into localStorage so the leak scan must be able to fail (PROCESS 2.4)
   await page.evaluate(()=>localStorage.setItem("__scan_selftest","https://checkout.stripe.com/c/pay/cs_test_selftest"));
   const bad=await scanSurfaces([page],ctxs);
+  // G-UI8 audit [FIXTURE/SETUP]: removes the self-test key
   await page.evaluate(()=>localStorage.removeItem("__scan_selftest"));
   assert.equal(bad.clean,false,"SU08 scan cannot fail");assert(bad.found.localStorage,"SU08 scan missed the injected URL");
   passed("SU08 scan self-test: injected localStorage URL is detected");
@@ -411,12 +416,15 @@ async function su07(){
   const l="en";
   // 1. popup blocked: zero BFF calls, marker absent, alert shown, no facts changed
   let id=await newOrder(page);const before=await control(id),callsBefore=calls.length;
+  // G-UI8 audit [EXTERNAL-MOCK]: stubs window.open to null: a popup blocker is browser policy the harness cannot click away
   await page.evaluate(()=>{window.__nativeOpen=window.open;window.open=()=>null;});
   await payBtn(page,l).click();
   await ex(page.getByRole("alert").filter({hasText:LOC.en.blocked})).toBeVisible();
   assert.equal(calls.slice(callsBefore).filter(x=>x.method==="POST").length,0,"blocked popup: zero BFF POSTs");
   assert.deepEqual(await control(id),before);
+  // G-UI8 audit [READ/MEASURE]: reads whether the payment marker exists
   assert.equal(await page.evaluate(id=>Object.keys(localStorage).some(k=>k.endsWith(`:${id}`)&&k.startsWith("commerce-order-payment-v1:")),id),false);
+  // G-UI8 audit [EXTERNAL-MOCK]: restores window.open
   await page.evaluate(()=>{window.open=window.__nativeOpen;});
   passed("SU07 popup blocked => `blocked`, zero BFF calls, no marker, no facts");
   // 2. child closed => Continue reuses the same session
@@ -467,7 +475,9 @@ async function su09(){
   const c=await context(cfg.mobile),page=await c.newPage(),vp=cfg.mobile?"mobile":"desktop";
   await page.goto(product);await scanSelfTest(page,[c]);
   const three=async(row)=>{for(const loc of ["zh-CN","zh-TW","en"]){await setLocale(page,loc);await shot(page.getByTestId("order-payment"),`su09-${vp}-${row}-${loc}`,"MOCK");}await setLocale(page,"en");};
+  // G-UI8 audit [READ/MEASURE]: reads the length of the aria-live recorder buffer
   const liveLen=()=>page.evaluate(()=>window.__live.length);
+  // G-UI8 audit [READ/MEASURE]: reads the aria-live recorder buffer
   const noDupes=async(from)=>{const live=(await page.evaluate(i=>window.__live.slice(i),from));for(let i=1;i<live.length;i++)assert(!(live[i].text===live[i-1].text&&live[i].role===live[i-1].role&&live[i].t-live[i-1].t<1500),`announcement repeated: ${live[i].role} ${JSON.stringify(live.map(x=>[x.role,x.text.slice(0,30)]))}`);return live.length;};
   // roles and names, three locales
   let id=await newOrder(page);

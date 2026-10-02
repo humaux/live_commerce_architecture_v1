@@ -230,6 +230,7 @@ test("approved wizard step two matches desktop and mobile compositions", async (
     animations: "disabled",
   });
   expect(
+    // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
@@ -283,6 +284,7 @@ test("three-locale mobile long names and normal text meet the finish gate", asyn
       .textContent();
     expect(label).toMatch(/^TWD · .+/);
     expect(
+      // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
@@ -300,6 +302,7 @@ test("three-locale mobile long names and normal text meet the finish gate", asyn
   }
   // Check actual computed foreground/background pairs, including inherited
   // transparent backgrounds, rather than merely asserting selected hex tokens.
+  // G-UI8 audit [READ/MEASURE]: computes rendered foreground/background contrast ratios (read only)
   const ratios = await page.evaluate(() => {
     function luminance(color: string) {
       const rgb = color
@@ -382,6 +385,7 @@ test("401 clears the old session-bound draft before reauthentication", async ({
   await login(page);
   await reachLastStep(page);
   expect(
+    // G-UI8 audit [READ/MEASURE]: reads whether the onboarding journal key exists in sessionStorage
     await page.evaluate(() =>
       Object.keys(sessionStorage).some((key) =>
         key.startsWith("commerce-onboarding:"),
@@ -394,6 +398,7 @@ test("401 clears the old session-bound draft before reauthentication", async ({
     "工作階段已過期",
   );
   expect(
+    // G-UI8 audit [READ/MEASURE]: reads whether the onboarding journal key exists in sessionStorage
     await page.evaluate(() =>
       Object.keys(sessionStorage).some((key) =>
         key.startsWith("commerce-onboarding:"),
@@ -411,6 +416,7 @@ test("a stale tab never sends its draft after another account replaces the cooki
 }) => {
   await login(page);
   await reachLastStep(page);
+  // G-UI8 audit [READ/MEASURE]: reads sessionStorage keys
   const oldKeys = await page.evaluate(() => Object.keys(sessionStorage));
   expect(oldKeys.some((key) => key.startsWith("commerce-onboarding:"))).toBe(
     true,
@@ -439,6 +445,7 @@ test("a stale tab never sends its draft after another account replaces the cooki
   await expect(page.getByLabel("商戶名稱")).toHaveValue("");
   expect(onboardingCalls).toHaveLength(0);
   expect(logoutCalls).toBe(0);
+  // G-UI8 audit [READ/MEASURE]: reads the onboarding journal
   const journals = await page.evaluate(() =>
     Object.entries(sessionStorage)
       .filter(([key]) => key.startsWith("commerce-onboarding:"))

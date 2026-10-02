@@ -1,7 +1,7 @@
 "use client";
 
 // Create an order from the admin (/{locale}/orders/new): the merchant picks SKUs and quantities, types the customer and the delivery,
-// chooses bank transfer or pay at pickup (never card) and gets the order plus a buyer link to paste into LINE or Messenger.
+// chooses bank transfer, pay at pickup or (home delivery) cash on delivery (never card) and gets the order plus a buyer link to paste into LINE or Messenger.
 // BFF /api/stores/{store}/tools/{orders/manual/options, orders/manual} -> Go internal/httpapi/merchanttools.go -> internal/merchanttools
 // (contract storefront-v2 G3). Products and variants come from the existing catalog reads (BFF catalog-products, products/{id}).
 // There is NO price field anywhere in this form or in the request: the server quotes from the catalog (I05), so the displayed unit prices are
@@ -19,6 +19,7 @@ import { sessionBoundary } from "@/lib/settings-client";
 import { placeManualOrder, readManualOptions, regenerateManualLink } from "@/lib/merchant-tools-client";
 import { draftProblem, manualBody, type ManualDraft, type ManualOption, type ManualPaymentMode, type ManualResult } from "@/lib/merchant-tools-model";
 import { toolsCopy } from "@/lib/merchant-tools-copy";
+import { codCopy } from "@/lib/cod-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import "./orders.css";
 import "./customers.css";
@@ -55,6 +56,7 @@ export function ManualOrder({
   const [failure, setFailure] = useState("");
   const [uncertain, setUncertain] = useState(false);
   const [placed, setPlaced] = useState<ManualResult | null>(null);
+  const [codDue, setCodDue] = useState<number | null>(null); // total + fee the carrier collects (COD orders only), from the options the order was placed with
   const [copied, setCopied] = useState(false);
   const [regenBusy, setRegenBusy] = useState(false);
   const [regenFailure, setRegenFailure] = useState("");
@@ -86,6 +88,7 @@ export function ManualOrder({
     const outcome = await placeManualOrder(store.id, attempt.current.key, body, boundary);
     setBusy(false);
     if (outcome.ok) {
+      setCodDue(outcome.value.payment_mode === "cash_on_delivery" ? outcome.value.total_minor + (option?.cod_surcharge_minor ?? 0) : null);
       setPlaced(outcome.value);
       return;
     }
@@ -94,7 +97,7 @@ export function ManualOrder({
     if (!outcome.uncertain) attempt.current = null; // a definite refusal: the next send is a new attempt
   }
   function reset() {
-    setPlaced(null); setLines([]); setName(""); setPhone(""); setEmail(""); setHome(blankHome); setCVS(blankCVS);
+    setPlaced(null); setCodDue(null); setLines([]); setName(""); setPhone(""); setEmail(""); setHome(blankHome); setCVS(blankCVS);
     setOptionKey(""); setMode(""); setFailure(""); setUncertain(false); setCopied(false); attempt.current = null;
     setRegenFailure(""); regen.current = null;
   }
@@ -143,11 +146,12 @@ export function ManualOrder({
         {placed && store && (
           <section className="mt-card" data-testid="manual-order-result" aria-label={c.created}>
             <h2>{c.created}</h2>
-            <p className="mt-ok" role="status">{placed.commercial_state === "AWAITING_TRANSFER" ? c.waiting : c.confirmed}</p>
+            <p className="mt-ok" role="status">{placed.commercial_state === "AWAITING_TRANSFER" ? c.waiting : placed.commercial_state === "AWAITING_COLLECTION" ? c.waitingCollection : c.confirmed}</p>
             <dl className="mt-stats">
               <div><dt>{c.orderId}</dt><dd style={{ fontSize: 14 }}>{placed.order_id.slice(0, 8)}</dd></div>
               <div><dt>{c.total}</dt><dd>{money(locale, placed.currency, placed.total_minor)}</dd></div>
-              <div><dt>{c.expires}</dt><dd style={{ fontSize: 14 }}>{new Date(placed.expires_at).toLocaleString(locale)}</dd></div>
+              {codDue !== null && <div data-testid="manual-order-cod-due"><dt>{c.codDue}</dt><dd>{money(locale, placed.currency, codDue)}</dd></div>}
+              {placed.payment_mode === "bank_transfer" && <div><dt>{c.expires}</dt><dd style={{ fontSize: 14 }}>{new Date(placed.expires_at).toLocaleString(locale)}</dd></div>}
             </dl>
             <h3>{c.linkTitle}</h3>
             {placed.buyer_link ? (
@@ -217,9 +221,15 @@ export function ManualOrder({
               {option ? option.payment_modes.map((m) => (
                 <label key={m} className="mt-radio">
                   <input type="radio" name="mode" value={m} checked={mode === m} onChange={() => setMode(m)} data-testid={`mo-mode-${m}`} />
-                  {m === "bank_transfer" ? c.bank : c.pickup}
+                  {m === "bank_transfer" ? c.bank : m === "cash_on_delivery" ? c.cod : c.pickup}
                 </label>
               )) : <p className="mt-note">{c.choose}</p>}
+              {mode === "cash_on_delivery" && option?.cod_max_minor !== undefined && option.cod_carrier && (
+                <p className="mt-note" data-testid="mo-cod-note">
+                  {c.codNote(money(locale, option.currency, option.cod_surcharge_minor ?? 0), money(locale, option.currency, option.cod_max_minor),
+                    option.cod_carrier === "black_cat" ? codCopy[locale].carrierBlackCat : codCopy[locale].carrierHsinchu)}
+                </p>
+              )}
               <p className="mt-note">{c.noCard}</p>
               <label className="mt-field" style={{ marginTop: 14, maxWidth: 260 }}>
                 {c.linkTitle}
