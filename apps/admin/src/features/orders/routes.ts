@@ -18,7 +18,7 @@ export const ordersRoutes = [
     group: "orders",
     labelKey: "orderNew",
     icon: "orders",
-    permission: "orders:write",
+    permission: "inventory:reserve", // what Go guards a manual order with (migration 0094); there is no orders:write
     template: "form",
     nav: false,
     spec: "tests/admin/shell-browser.mjs",

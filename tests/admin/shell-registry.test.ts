@@ -59,6 +59,25 @@ test("G-UI2 staff without catalog:read cannot see products/inventory or open a p
     false,
   );
 });
+// --browser-manual-order sweep: /orders/new was guarded by "orders:write", a permission that exists nowhere in Go or SQL, so no store member except
+// the owner could ever open the manual-order page (every other role got the shell's 403). Go guards a manual order with inventory:reserve
+// (migration 0094: "no new permission"; the BFF also needs catalog:read), so that is what the registry must name.
+test("G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve", () => {
+  const backend = [...walk("migrations"), ...walk("internal")]
+    .filter((file) => /\.(sql|go)$/.test(file) && !file.endsWith("_test.go"))
+    .map((file) => readFileSync(file, "utf8"))
+    .join("\n");
+  for (const route of routes)
+    if (route.permission && route.permission !== "owner")
+      assert.ok(
+        backend.includes(`'${route.permission}'`) || backend.includes(`"${route.permission}"`),
+        `${route.id}: "${route.permission}" is not a permission Go or SQL knows`,
+      );
+  const manual = matchRoute("/orders/new")!;
+  assert.equal(manual.permission, "inventory:reserve");
+  assert.equal(canOpen(manual, { role: "staff", permissions: ["inventory:reserve"] }), true);
+  assert.equal(canOpen(manual, { role: "staff", permissions: ["orders:read"] }), false);
+});
 test("G-UI1 dynamic and public routes match, details never appear as navigation", () => {
   assert.equal(matchRoute("/customers/id")?.id, "customer-detail");
   assert.equal(matchRoute("/products/import")?.id, "product-import");

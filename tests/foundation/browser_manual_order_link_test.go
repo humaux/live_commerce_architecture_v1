@@ -43,6 +43,11 @@ func TestBrowserManualOrderLink(t *testing.T) {
 	// The published origin of the store IS the buyer origin the script's TLS/CONNECT edge serves, so the link the merchant UI shows is openable.
 	e, _, _ := mtOrderEnv(t, tcvOpts{origin: "https://buyer.example"})
 	mustExec(t, e.p.f.owner, `UPDATE catalog.products SET name='Synthetic manual order product' WHERE id=$1`, e.p.stock.product.ID)
+	// home-cod R5: the store also offers cash on delivery (NT$50 collection fee, NT$20,000 cap, 黑貓), so the manual options list carries
+	// cash_on_delivery on the home row. Before the D01 fix that one unknown mode made the admin refuse the whole list.
+	if status, out := e.hcodSettings(0, true, 20000, 50, "black_cat"); status != 200 {
+		t.Fatalf("enable cash on delivery: %d %v", status, out)
+	}
 
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -100,10 +105,11 @@ func TestBrowserManualOrderLink(t *testing.T) {
 		t.Fatal(err)
 	}
 	var result struct {
-		OrderID string `json:"order_id"`
-		Cases   int    `json:"cases"`
+		OrderID    string `json:"order_id"`
+		CodOrderID string `json:"cod_order_id"`
+		Cases      int    `json:"cases"`
 	}
-	if json.Unmarshal(data, &result) != nil || result.Cases != 8 || result.OrderID == "" {
+	if json.Unmarshal(data, &result) != nil || result.Cases != 10 || result.OrderID == "" || result.CodOrderID == "" {
 		t.Fatalf("missing exact browser gate results: %s", data)
 	}
 	// Independent PostgreSQL readback of what the browsers did.
@@ -122,7 +128,20 @@ func TestBrowserManualOrderLink(t *testing.T) {
 	if n := e.count(`SELECT count(DISTINCT token_hash) FROM checkout.order_links WHERE order_id=$1`, result.OrderID); n != 2 {
 		t.Fatalf("regenerate must issue a distinct second link token, got %d distinct tokens", n)
 	}
-	if n := e.count(`SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='order.manual_created'`, e.store()); n != 1 {
+	// The cash-on-delivery manual order the merchant created by clicks: committed (not reserved), waiting for the carrier, nothing charged online.
+	var codSource, codState, codMode string
+	var codCollection *string
+	var codSurcharge, codTotal int64
+	if err := e.p.f.owner.QueryRow(ctx, `SELECT source,commercial_state,payment_mode,collection_state,cod_surcharge_minor,total_minor FROM checkout.orders WHERE id=$1 AND store_id=$2`,
+		result.CodOrderID, e.store()).Scan(&codSource, &codState, &codMode, &codCollection, &codSurcharge, &codTotal); err != nil ||
+		codSource != "merchant_manual" || codState != "AWAITING_COLLECTION" || codMode != "cash_on_delivery" || codCollection == nil || *codCollection != "PENDING" ||
+		codSurcharge != 5000 || codTotal != 2500 {
+		t.Fatalf("cash-on-delivery order readback: source=%q state=%q mode=%q collection=%v surcharge=%d total=%d err=%v", codSource, codState, codMode, codCollection, codSurcharge, codTotal, err)
+	}
+	if n := e.count(`SELECT count(*) FROM checkout.payment_attempts WHERE order_id=$1`, result.CodOrderID); n != 0 {
+		t.Fatalf("a cash-on-delivery manual order must create no payment attempt, got %d", n)
+	}
+	if n := e.count(`SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='order.manual_created'`, e.store()); n != 2 {
 		t.Fatalf("manual-order audit rows: %d", n)
 	}
 	if n := e.count(`SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='order.manual_link_regenerated'`, e.store()); n != 1 {

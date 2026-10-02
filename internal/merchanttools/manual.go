@@ -113,6 +113,11 @@ type ManualOption struct {
 	AllocationVersion int64    `json:"allocation_version"`
 	PaymentModes      []string `json:"payment_modes"`
 	PickupSelection   *string  `json:"pickup_selection"`
+	// home-cod R5 (migration 0107): present only on a home row whose PaymentModes lists "cash_on_delivery", copied from the checkout option.
+	// Whole TWD in minor units; CodSurchargeMinor is omitted at 0, CodCarrier and CodMaxMinor are always there. The quote stays the only price.
+	CodSurchargeMinor int64  `json:"cod_surcharge_minor,omitempty"`
+	CodCarrier        string `json:"cod_carrier,omitempty"`
+	CodMaxMinor       int64  `json:"cod_max_minor,omitempty"`
 }
 
 // manualReceipt is what the command receipt keeps. It never holds the capability: the link is re-derived from the Idempotency-Key.
@@ -205,7 +210,9 @@ func ValidateManual(in ManualInput) (ManualInput, error) {
 		(in.Customer.Email != "" && (len(in.Customer.Email) > 254 || !emailRx.MatchString(in.Customer.Email))) {
 		return in, bad
 	}
-	if (in.PaymentMode != "bank_transfer" && in.PaymentMode != "pay_at_pickup") || !slices.Contains(locales, in.Locale) ||
+	// cash_on_delivery (home-cod R5) is a mode the options list offers on a COD-enabled home row; Place then holds it to the chosen row's modes
+	// (home delivery only) and begin_hold applies the whole-TWD total and the per-order cap.
+	if (in.PaymentMode != "bank_transfer" && in.PaymentMode != "pay_at_pickup" && in.PaymentMode != "cash_on_delivery") || !slices.Contains(locales, in.Locale) ||
 		!optionKeyRx.MatchString(in.Delivery.OptionKey) || (in.Delivery.HomeAddress == nil) == (in.Delivery.CVS == nil) {
 		return in, bad
 	}
@@ -300,7 +307,8 @@ func (m *ManualOrders) options(ctx context.Context, capability, storeID string) 
 			}
 			out = append(out, ManualOption{OptionKey: o.MarketID + "|" + o.Country + "|" + o.DeliveryCode, MarketID: o.MarketID, Country: o.Country,
 				DeliveryCode: o.DeliveryCode, DeliveryKind: o.DeliveryKind, Mode: o.Mode, NameHans: o.NameHans, NameHant: o.NameHant, NameEN: o.NameEN,
-				Currency: o.Currency, ServiceVersion: o.ServiceVersion, AllocationVersion: o.AllocationVersion, PaymentModes: modes, PickupSelection: selection})
+				Currency: o.Currency, ServiceVersion: o.ServiceVersion, AllocationVersion: o.AllocationVersion, PaymentModes: modes, PickupSelection: selection,
+				CodSurchargeMinor: o.CodSurchargeMinor, CodCarrier: o.CodCarrier, CodMaxMinor: o.CodMaxMinor})
 		}
 		if got.NextCursor == "" {
 			return out, nil

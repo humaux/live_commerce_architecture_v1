@@ -211,9 +211,58 @@ try {
   await third.screenshot({path: path.join(evidence, "buyer-regenerated-link.png"), fullPage: true});
   pass("regenerate issues a working link and the old link stays refused");
 
+  // ---- home-cod: the merchant creates a CASH-ON-DELIVERY order by real clicks (G-UI8 defect D01) ---------------------------------------------
+  // The store offers COD (NT$50 collection fee, NT$20,000 cap), so the options list carries "cash_on_delivery" on the home row. The page used to
+  // refuse that one unknown mode and show "creating orders is not turned on" instead of the whole form.
+  await merchant.getByTestId("manual-order-another").click();
+  await expect(merchant.getByTestId("manual-order-form")).toBeVisible();
+  await merchant.getByTestId("mo-search").fill(process.env.LC_LINK_PRODUCT_NAME);
+  await merchant.getByTestId("mo-search-button").click();
+  await merchant.locator(".mt-results li").first().getByRole("button", {name: "Add", exact: true}).first().click();
+  await merchant.locator(".mt-variants li").first().getByRole("button", {name: "Add", exact: true}).click();
+  await merchant.getByTestId("mo-lines").getByRole("spinbutton").fill("2"); // 2 x 12.50 = 25.00: a COD total must be whole dollars
+  await merchant.getByTestId("mo-name").fill("Browser COD Buyer");
+  await merchant.getByTestId("mo-phone").fill("0912345678");
+  await merchant.getByTestId("mo-option").selectOption(home);
+  await expect(merchant.getByTestId("mo-mode-cash_on_delivery")).toBeVisible();
+  await expect(merchant.getByTestId("mo-mode-bank_transfer")).toBeVisible();
+  await merchant.getByTestId("mo-city").fill("Taipei");
+  await merchant.getByTestId("mo-line1").fill("2 Browser Road");
+  await merchant.getByTestId("mo-mode-cash_on_delivery").check();
+  await expect(merchant.getByTestId("mo-cod-note")).toContainText("NT$50"); // the collection fee the carrier adds at the door
+  await expect(merchant.getByTestId("mo-cod-note")).toContainText("NT$20,000"); // and the per-order cap, both whole NT$
+  const codPlaced = merchant.waitForResponse(r => r.request().method() === "POST" && new URL(r.url()).pathname === `/api/stores/${process.env.LC_LINK_STORE}/tools/orders/manual`);
+  await merchant.getByTestId("manual-order-submit").click();
+  const codReply = await codPlaced;
+  assert.equal(codReply.status(), 201);
+  const codBody = await codReply.json();
+  assert.equal(codBody.commercial_state, "AWAITING_COLLECTION");
+  assert.equal(codBody.payment_mode, "cash_on_delivery");
+  assert.equal(codBody.total_minor, 2500);
+  assert.equal(codBody.source, "merchant_manual");
+  await expect(merchant.getByTestId("manual-order-result")).toBeVisible();
+  await expect(merchant.getByTestId("manual-order-cod-due")).toContainText("NT$75"); // total NT$25 + fee NT$50: what the carrier collects
+  await expect(merchant.getByTestId("manual-order-result")).toContainText("Waiting for cash on delivery");
+  const codLink = (await merchant.getByTestId("manual-order-link").innerText()).trim();
+  assert.equal(codLink, codBody.buyer_link);
+  await merchant.screenshot({path: path.join(evidence, "merchant-created-cod.png"), fullPage: true});
+  pass("merchant created a manual cash-on-delivery order in the admin UI (whole-NT$ fee and cap shown, cash due NT$75) and got the buyer link");
+
+  const codBuyerContext = await browser.newContext(ctxOpts({ignoreHTTPSErrors: true, viewport: {width: 390, height: 844}}));
+  const codBuyer = await codBuyerContext.newPage();
+  codBuyer.on("pageerror", error => uiErrors.push(error.name));
+  await codBuyer.goto(codLink);
+  await codBuyer.waitForURL(url => url.pathname === `/zh-TW/orders/${codBody.order_id}`);
+  await expect(codBuyer.getByTestId("order-cod")).toBeVisible();
+  await expect(codBuyer.getByTestId("order-cod-amount")).toContainText("NT$75");
+  await expect(codBuyer.getByTestId("order-cod-state")).toHaveAttribute("data-state", "PENDING");
+  await expect(codBuyer.getByTestId("transfer-bank")).toHaveCount(0); // a COD order has no bank-transfer panel
+  await codBuyer.screenshot({path: path.join(evidence, "buyer-order-cod.png"), fullPage: true});
+  pass("the buyer opens the COD link and sees the cash due on delivery (NT$75) waiting for the carrier");
+
   assert.deepEqual(uiErrors, []);
   pass("no page errors");
-  await writeFile(path.join(evidence, "result.json"), JSON.stringify({cases, order_id: body.order_id, link_locale: "zh-TW", boundary: "production Next; signed MOCK IdP; synthetic local TLS/CONNECT; no provider or deployment DNS/TLS acceptance"}, null, 2), {mode: 0o600});
+  await writeFile(path.join(evidence, "result.json"), JSON.stringify({cases, order_id: body.order_id, cod_order_id: codBody.order_id, link_locale: "zh-TW", boundary: "production Next; signed MOCK IdP; synthetic local TLS/CONNECT; no provider or deployment DNS/TLS acceptance"}, null, 2), {mode: 0o600});
 } catch (error) {
   if (browser) for (const context of browser.contexts()) for (const [index, page] of context.pages().entries()) {
     await page.screenshot({path: path.join(evidence, `failure-${context.pages().length}-${index}.png`), fullPage: true}).catch(() => {});

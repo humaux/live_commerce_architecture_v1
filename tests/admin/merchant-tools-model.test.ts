@@ -87,7 +87,43 @@ const option = (over: Partial<ManualOption> = {}): ManualOption => ({
   payment_modes: ["bank_transfer"], pickup_selection: null, ...over,
 });
 
-test("manual options: only bank_transfer / pay_at_pickup, key must equal market|country|code", () => {
+// home-cod R5 (migration 0107, internal/checkout/options.go): a home row of a COD-enabled store lists "cash_on_delivery" and carries the offer as
+// whole-TWD amounts in minor units (cod_surcharge_minor is omitted at 0; cod_carrier and cod_max_minor are always there). Go's manual options
+// pass these rows through with card removed (internal/merchanttools/manual.go), so this parser has to accept exactly that shape.
+const codOption = (over: Record<string, unknown> = {}) => option({
+  payment_modes: ["bank_transfer", "cash_on_delivery"], ...({ cod_surcharge_minor: 5000, cod_carrier: "black_cat", cod_max_minor: 2000000, ...over } as object),
+});
+
+test("manual options: a COD home row parses with its offer (D01: the page used to refuse the whole list)", () => {
+  const parsed = parseManualOptions({ options: [option(), codOption()] });
+  assert.deepEqual(parsed[1].payment_modes, ["bank_transfer", "cash_on_delivery"]);
+  assert.equal(parsed[1].cod_surcharge_minor, 5000);
+  assert.equal(parsed[1].cod_max_minor, 2000000);
+  assert.equal(parsed[1].cod_carrier, "black_cat");
+  // a zero surcharge is omitted on the wire (omitempty); the carrier and the cap are still there
+  const free = parseManualOptions({ options: [(() => { const o = codOption() as Record<string, unknown>; delete o.cod_surcharge_minor; return o; })()] })[0];
+  assert.equal(free.cod_surcharge_minor, undefined);
+  assert.equal(free.cod_carrier, "black_cat");
+  // COD as the only mode of a row (a store with bank transfer off) is fine too
+  const only = option({ payment_modes: ["cash_on_delivery"], ...({ cod_carrier: "hsinchu", cod_max_minor: 100 } as object) });
+  assert.deepEqual(parseManualOptions({ options: [only] })[0].payment_modes, ["cash_on_delivery"]);
+  for (const bad of [
+    option({ payment_modes: ["cash_on_delivery"] }), // the offer fields are required with the mode
+    codOption({ cod_carrier: "dhl" }),
+    codOption({ cod_carrier: undefined }),
+    codOption({ cod_max_minor: 0 }),
+    codOption({ cod_max_minor: 2000100 }), // above the 20,000 NT$ ceiling
+    codOption({ cod_max_minor: 150 }), // whole NT$ only
+    codOption({ cod_surcharge_minor: 5050 }), // whole NT$ only
+    codOption({ cod_surcharge_minor: 100100 }), // above the 1,000 NT$ ceiling
+    codOption({ cod_surcharge_minor: -100 }),
+    option({ payment_modes: ["bank_transfer"], ...({ cod_max_minor: 100 } as object) }), // offer fields without the mode
+    codOption({ delivery_kind: "cvs_711", pickup_selection: "buyer_entered" }), // COD is home delivery only
+    codOption({ extra: 1 }),
+  ]) assert.throws(() => parseManualOptions({ options: [bad] }), /unavailable/);
+});
+
+test("manual options: only bank_transfer / pay_at_pickup / cash_on_delivery, key must equal market|country|code", () => {
   assert.equal(parseManualOptions({ options: [option()] })[0].delivery_kind, "home");
   assert.equal(parseManualOptions({ options: [] }).length, 0);
   for (const bad of [
@@ -109,6 +145,8 @@ test("manual result: link is https with the order id and a 43-char capability in
   assert.equal(parseManualResult(result()).order_id, id);
   assert.equal(parseManualResult(result({ buyer_link: null, link_state: "storefront_unavailable" })).buyer_link, null);
   assert.equal(parseManualResult(result({ commercial_state: "CONFIRMED", payment_mode: "pay_at_pickup" })).commercial_state, "CONFIRMED");
+  // home-cod: a COD order waits AWAITING_COLLECTION (never CONFIRMED) and the other modes keep their placement states
+  assert.equal(parseManualResult(result({ commercial_state: "AWAITING_COLLECTION", payment_mode: "cash_on_delivery" })).payment_mode, "cash_on_delivery");
   for (const bad of [
     result({ buyer_link: `http://shop.example.test/x#o=${id}&t=${"A".repeat(43)}` }),
     result({ buyer_link: `https://shop.example.test/x?t=${"A".repeat(43)}#o=${id}&t=${"A".repeat(43)}` }),
@@ -118,6 +156,9 @@ test("manual result: link is https with the order id and a 43-char capability in
     result({ link_state: "configured", buyer_link: null }),
     result({ source: "storefront" }),
     result({ commercial_state: "CONFIRMED" }), // CONFIRMED at placement only for pay_at_pickup
+    result({ commercial_state: "CONFIRMED", payment_mode: "cash_on_delivery" }), // COD is never CONFIRMED at placement
+    result({ commercial_state: "AWAITING_COLLECTION" }), // bank transfer waits AWAITING_TRANSFER
+    result({ commercial_state: "AWAITING_TRANSFER", payment_mode: "cash_on_delivery" }),
     result({ payment_mode: "card" }),
   ]) assert.throws(() => parseManualResult(bad), /unavailable/);
 });
@@ -137,6 +178,14 @@ test("draft: first problem, and the body has no price-like field at all", () => 
   assert.equal(draftProblem(draft({ email: "nope" })), "email");
   assert.equal(draftProblem(draft({ option: null })), "delivery");
   assert.equal(draftProblem(draft({ mode: "pay_at_pickup" })), "mode");
+  // COD: the chosen row must list it, and it is only ever for a home delivery
+  const cod = codOption() as ManualOption;
+  assert.equal(draftProblem(draft({ option: cod, mode: "cash_on_delivery" })), null);
+  assert.equal(draftProblem(draft({ option: option(), mode: "cash_on_delivery" })), "mode");
+  const cvsCod = { ...cod, delivery_kind: "cvs_711", pickup_selection: "buyer_entered" } as ManualOption;
+  assert.equal(draftProblem(draft({ option: cvsCod, mode: "cash_on_delivery", cvs: { store_code: "123456", store_name: "S", store_address: "Taipei City" } })), "mode");
+  assert.equal(manualBody(draft({ option: cod, mode: "cash_on_delivery" })).payment_mode, "cash_on_delivery");
+  assert.ok(validManualBody(manualBody(draft({ option: cod, mode: "cash_on_delivery" }))));
   assert.equal(draftProblem(draft({ home: { region: "", city: "", postal_code: "", line1: "x", line2: "" } })), "address");
   const cvs = option({ delivery_kind: "cvs_711", payment_modes: ["bank_transfer", "pay_at_pickup"], pickup_selection: "buyer_entered" });
   assert.equal(draftProblem(draft({ option: cvs })), "store");
@@ -188,7 +237,8 @@ test("copy parity: every locale has every key, import rules and error codes", ()
   for (const locale of ["zh-CN", "zh-TW"] as const) assert.deepEqual(shape(toolsCopy[locale]).sort(), reference, locale);
   for (const locale of ["zh-CN", "zh-TW", "en"] as const) {
     for (const code of rowErrorCodes) assert.ok(toolsCopy[locale].importer.codes[code], `${locale} import code ${code}`);
-    for (const code of ["invalid_request", "conflict", "insufficient_inventory", "idempotency_conflict", "bank_transfer_unavailable", "pay_at_pickup_unavailable", "pay_at_pickup_amount_exceeds", "cvs_entry_unavailable", "default"])
+    for (const code of ["invalid_request", "conflict", "insufficient_inventory", "idempotency_conflict", "bank_transfer_unavailable", "pay_at_pickup_unavailable", "pay_at_pickup_amount_exceeds", "cvs_entry_unavailable",
+      "cash_on_delivery_unavailable", "cash_on_delivery_amount_exceeds", "cash_on_delivery_limit", "default"])
       assert.ok(toolsCopy[locale].manual.errors[code], `${locale} manual error ${code}`);
     for (const kind of ["home", "cvs_711", "cvs_familymart", "cvs_hilife", "cvs_okmart"]) assert.ok(toolsCopy[locale].manual.kinds[kind], `${locale} kind ${kind}`);
   }
