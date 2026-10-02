@@ -63,6 +63,12 @@ ALTER TABLE checkout.orders ADD COLUMN cod_surcharge_minor bigint
  CHECK(cod_surcharge_minor IS NULL OR (cod_surcharge_minor>=0 AND cod_surcharge_minor<=100000 AND cod_surcharge_minor%100=0));
 ALTER TABLE checkout.orders ADD CONSTRAINT orders_cod_surcharge CHECK((payment_mode='cash_on_delivery')=(cod_surcharge_minor IS NOT NULL));
 COMMENT ON COLUMN checkout.orders.cod_surcharge_minor IS 'internal/checkout (cash on delivery): the whole-TWD COD surcharge in minor units (0..100000, %100=0), snapshot at placement from checkout.cash_on_delivery_settings.surcharge_twd. The buyer pays total_minor + cod_surcharge_minor on delivery. Read by identity.read_finance_summary and the merchant order projection; never part of total_minor.';
+-- P2-4: the carrier label (black_cat 黑猫 / hsinchu 新竹) is snapshotted at placement too, so a later settings change never
+-- moves a placed order's carrier. Read by the buyer order projection and the options DTO; never part of the money path.
+ALTER TABLE checkout.orders ADD COLUMN cod_carrier text
+ CHECK(cod_carrier IS NULL OR cod_carrier IN ('black_cat','hsinchu'));
+ALTER TABLE checkout.orders ADD CONSTRAINT orders_cod_carrier CHECK((payment_mode='cash_on_delivery')=(cod_carrier IS NOT NULL));
+COMMENT ON COLUMN checkout.orders.cod_carrier IS 'internal/checkout (cash on delivery): the carrier label (black_cat 黑猫 / hsinchu 新竹) snapshotted at placement from checkout.cash_on_delivery_settings.carrier (manual fulfilment, no carrier API). Shown to the buyer; never part of the money path.';
 -- R4-3 analogue: the per-store and per-owner open COD count (begin_hold) scans exactly this predicate.
 CREATE INDEX orders_cod_open ON checkout.orders(tenant_id,store_id,owner_id)
  WHERE payment_mode='cash_on_delivery' AND collection_state='PENDING' AND fulfillment_state='MANUAL_UNASSIGNED';
@@ -75,8 +81,11 @@ DROP INDEX checkout.orders_unshipped;
 CREATE INDEX orders_unshipped ON checkout.orders(tenant_id,store_id,created_at,id)
  WHERE commercial_state IN ('CONFIRMED','AWAITING_COLLECTION') AND fulfillment_state='MANUAL_UNASSIGNED';
 -- finance (identity.read_finance_summary, owner commerce_auth) and the merchant order list (read_merchant_orders, owner commerce_auth)
--- both read the surcharge column.
+-- both read the surcharge column; the buyer order projection (commerce_checkout_runtime, P1-1) reads the surcharge to compute
+-- cod_collect_minor, and both roles read the snapshotted carrier (P2-4).
 GRANT SELECT(cod_surcharge_minor) ON checkout.orders TO commerce_auth;
+GRANT SELECT(cod_surcharge_minor,cod_carrier) ON checkout.orders TO commerce_checkout_runtime;
+GRANT SELECT(cod_carrier) ON checkout.orders TO commerce_auth;
 
 -- ---------------------------------------------------------------------------------------------------
 -- B. Settings. FORCE RLS; only commerce_checkout_writer (the owner of every definer below) sees the rows; no commerce_auth or
@@ -187,7 +196,7 @@ GRANT EXECUTE ON FUNCTION payments.set_cash_on_delivery_settings(bytea,uuid,text
 -- Buyer options: is the mode on, what is the surcharge and carrier, and what is the cap (read_transfer_offer pattern, no secrets).
 CREATE FUNCTION checkout.read_cod_offer(p_hash bytea,p_store uuid)
 RETURNS TABLE(enabled boolean,surcharge_twd integer,carrier text,max_twd integer)
-LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE v_scope record; c record;
 BEGIN
  IF p_hash IS NULL OR octet_length(p_hash)<>32 OR p_store IS NULL THEN RAISE EXCEPTION 'invalid offer read' USING ERRCODE='PT400'; END IF;
@@ -514,6 +523,163 @@ END $$;
 ALTER FUNCTION fulfillment.guard_manual_shipment_state() OWNER TO commerce_checkout_writer;
 REVOKE ALL ON FUNCTION fulfillment.guard_manual_shipment_state() FROM PUBLIC;
 
+-- record_manual_shipment (0063 body, P1-3a/P2-9 + P2-4): the command now also reads collection_state so a VOID after collection
+-- (COLLECTED/RETURNED/REFUNDED_OFFLINE/CANCELLED/RESTOCKED — COD and pay_at_pickup alike) is refused with PT409
+-- collection_state_changed. Without it, a ship -> collect -> void sequence books cash for a parcel that is no longer shipped and can
+-- never be shipped again (order_money_shippable refuses a non-PENDING collection), defeating the 0102 collected-only-after-shipped
+-- guard after the fact. A tracking-number correction stays allowed at any time and never touches the order row (P1-3b: rewriting
+-- updated_at would move the collected cash to another finance day). The manual carrier enum also gains black_cat/hsinchu (P2-4).
+CREATE OR REPLACE FUNCTION fulfillment.record_manual_shipment(p_hash bytea,p_store uuid,p_order uuid,p_key text,
+ p_request_hash bytea,p_expected_version bigint,p_status text,p_carrier_code text,p_carrier_name text,
+ p_tracking_number text,p_tracking_url text,p_note text,p_void_reason text)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE s record; v_final record; v_expiry timestamptz; v_owner uuid; v_fulfillment text; v_collection text;
+ v_head bigint; v_head_status text; v_prev record; v_row record; v_now timestamptz; v_action text;
+ v_saved bytea; v_response jsonb; v_replay boolean:=false; v_fail_code text; v_fail_msg text;
+BEGIN
+ IF p_hash IS NULL OR octet_length(p_hash)<>32 OR p_store IS NULL OR p_order IS NULL
+  OR p_key IS NULL OR p_key !~ '^[A-Za-z0-9_.:-]{8,128}$'
+  OR p_request_hash IS NULL OR octet_length(p_request_hash)<>32
+  OR p_expected_version IS NULL OR p_expected_version<0 OR p_expected_version>=9223372036854775807
+  OR p_status IS NULL OR p_status NOT IN ('SHIPPED','VOIDED')
+  OR current_setting('transaction_isolation')<>'read committed' THEN
+  RAISE EXCEPTION 'invalid shipment request' USING ERRCODE='PT400'; END IF;
+ -- Authorize before any lock; the GUCs below then come from this result, never from the caller.
+ SELECT * INTO s FROM identity.resolve_access(p_hash,p_store,'fulfillment:write');
+ IF s.access_status='unauthorized' THEN RAISE EXCEPTION 'unauthorized' USING ERRCODE='PT401'; END IF;
+ IF s.access_status='not_found' THEN RAISE EXCEPTION 'not found' USING ERRCODE='PT404'; END IF;
+ IF s.access_status IS DISTINCT FROM 'ok' THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403'; END IF;
+ PERFORM set_config('app.tenant_id',s.tenant_id::text,true),set_config('app.store_id',p_store::text,true),
+  set_config('app.principal_id',s.principal_id::text,true);
+ -- State-independent body rules (void-body rule, contract §5.1): no lock and no state involved.
+ IF p_status='VOIDED' THEN
+  IF p_carrier_code IS NOT NULL OR p_carrier_name IS NOT NULL OR p_tracking_number IS NOT NULL
+   OR p_tracking_url IS NOT NULL OR p_note IS NOT NULL OR p_void_reason IS NULL
+   OR p_void_reason NOT IN ('wrong_order','wrong_tracking','not_dispatched','other') THEN
+   RAISE EXCEPTION 'invalid_void' USING ERRCODE='PT422'; END IF;
+ ELSE
+  IF p_void_reason IS NOT NULL THEN RAISE EXCEPTION 'invalid_void' USING ERRCODE='PT422'; END IF;
+  IF p_carrier_code IS NULL OR p_carrier_code NOT IN ('seven_eleven_cvs','familymart_cvs','hilife_cvs','okmart_cvs',
+   'sf_express','chunghwa_post','black_cat','hsinchu','other') OR (p_carrier_code='other' AND p_carrier_name IS NULL) THEN
+   RAISE EXCEPTION 'invalid_carrier' USING ERRCODE='PT422'; END IF;
+  IF p_tracking_number IS NULL OR p_tracking_number !~ '^[A-Za-z0-9][A-Za-z0-9 -]{0,63}$' OR p_tracking_number ~ ' $' THEN
+   RAISE EXCEPTION 'invalid_tracking' USING ERRCODE='PT422'; END IF;
+  IF p_tracking_url IS NOT NULL AND (octet_length(p_tracking_url)>512 OR p_tracking_url !~ '^https://([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]([a-zA-Z0-9-]*[a-zA-Z0-9])?([/?][!-~]*)?$') THEN
+   RAISE EXCEPTION 'invalid_url' USING ERRCODE='PT422'; END IF;
+ END IF;
+
+ -- Lock order (contract §4.1): order -> work/refund reads (no lock: a refund request holds this same
+ -- order lock, so held capacity cannot grow under us) -> head.
+ SELECT o.owner_id,o.fulfillment_state,o.collection_state INTO v_owner,v_fulfillment,v_collection FROM checkout.orders o
+  WHERE o.tenant_id=s.tenant_id AND o.store_id=p_store AND o.id=p_order FOR UPDATE;
+ IF NOT FOUND THEN
+  v_fail_code:='PT404'; v_fail_msg:='order not found';
+ ELSE
+  PERFORM set_config('app.buyer_id',v_owner::text,true);
+  SELECT c.request_hash,c.response INTO v_saved,v_response FROM ops.command_results c
+   WHERE c.tenant_id=s.tenant_id AND c.store_id=p_store
+    AND c.operation='fulfillment.manual_shipment.record' AND c.idempotency_key=p_key;
+  IF FOUND THEN
+   IF v_saved<>p_request_hash THEN v_fail_code:='PT409'; v_fail_msg:='idempotency_conflict';
+   ELSE v_replay:=true; END IF;
+  ELSE
+   SELECT h.current_version INTO v_head FROM fulfillment.manual_shipment_heads h
+    WHERE h.tenant_id=s.tenant_id AND h.store_id=p_store AND h.order_id=p_order FOR UPDATE;
+   IF v_head IS NOT NULL THEN
+    SELECT v.status INTO v_head_status FROM fulfillment.manual_shipment_versions v
+     WHERE v.tenant_id=s.tenant_id AND v.store_id=p_store AND v.order_id=p_order AND v.version=v_head;
+   END IF;
+   IF coalesce(v_head,0)<>p_expected_version THEN
+    v_fail_code:='PT409'; v_fail_msg:='version_changed';
+   ELSIF p_status='VOIDED' THEN
+    IF v_collection IS NOT NULL AND v_collection<>'PENDING' THEN
+     v_fail_code:='PT409'; v_fail_msg:='collection_state_changed';
+    ELSIF v_head_status IS DISTINCT FROM 'SHIPPED' OR v_fulfillment<>'MERCHANT_SHIPPED' THEN
+     v_fail_code:='PT422'; v_fail_msg:='void_requires_shipped';
+    ELSE v_action:='fulfillment.shipment_voided'; END IF;
+   ELSIF v_head_status='SHIPPED' AND v_fulfillment='MERCHANT_SHIPPED' THEN
+    v_action:='fulfillment.shipment_corrected';   -- MD7: correction needs no MD6 re-check
+   ELSIF NOT fulfillment.manual_shipment_eligible(s.tenant_id,p_store,p_order) THEN
+    v_fail_code:='PT422'; v_fail_msg:='not_shippable';
+   ELSE v_action:='fulfillment.shipment_recorded'; END IF;
+  END IF;
+ END IF;
+
+ IF v_fail_code IS NULL AND NOT v_replay THEN
+  IF p_status='VOIDED' THEN
+   -- A void copies the carrier and tracking of the version it voids (history reads without joins).
+   SELECT v.carrier_code,v.carrier_name,v.tracking_number,v.tracking_url INTO v_prev
+    FROM fulfillment.manual_shipment_versions v
+    WHERE v.tenant_id=s.tenant_id AND v.store_id=p_store AND v.order_id=p_order AND v.version=v_head;
+   INSERT INTO fulfillment.manual_shipment_versions(tenant_id,store_id,owner_id,order_id,version,status,
+    carrier_code,carrier_name,tracking_number,tracking_url,note,void_reason,principal_id)
+   VALUES(s.tenant_id,p_store,v_owner,p_order,v_head+1,'VOIDED',v_prev.carrier_code,v_prev.carrier_name,
+    v_prev.tracking_number,v_prev.tracking_url,NULL,p_void_reason,s.principal_id)
+   RETURNING * INTO v_row;
+  ELSE
+   INSERT INTO fulfillment.manual_shipment_versions(tenant_id,store_id,owner_id,order_id,version,status,
+    carrier_code,carrier_name,tracking_number,tracking_url,note,void_reason,principal_id)
+   VALUES(s.tenant_id,p_store,v_owner,p_order,coalesce(v_head,0)+1,'SHIPPED',p_carrier_code,p_carrier_name,
+    p_tracking_number,p_tracking_url,p_note,NULL,s.principal_id)
+   RETURNING * INTO v_row;
+  END IF;
+  v_now:=clock_timestamp();
+  IF v_head IS NULL THEN
+   INSERT INTO fulfillment.manual_shipment_heads(tenant_id,store_id,owner_id,order_id,current_version,updated_at)
+   VALUES(s.tenant_id,p_store,v_owner,p_order,v_row.version,v_now);
+  ELSE
+   UPDATE fulfillment.manual_shipment_heads h SET current_version=v_row.version,updated_at=v_now
+    WHERE h.tenant_id=s.tenant_id AND h.store_id=p_store AND h.order_id=p_order;
+  END IF;
+  -- §11.5 n/a: fulfilment state only; no stock, ledger, reservation or payment write (MD2, RD6). A correction (P1-3b) never
+  -- rewrites the order row: a later write would move the collected cash to another finance day (finance groups on updated_at).
+  IF v_action<>'fulfillment.shipment_corrected' THEN
+   UPDATE checkout.orders o SET fulfillment_state=CASE WHEN p_status='SHIPPED' THEN 'MERCHANT_SHIPPED' ELSE 'MANUAL_UNASSIGNED' END,
+    updated_at=v_now
+    WHERE o.tenant_id=s.tenant_id AND o.store_id=p_store AND o.owner_id=v_owner AND o.id=p_order;
+  END IF;
+  INSERT INTO ops.audit_events(tenant_id,store_id,principal_id,action) VALUES(s.tenant_id,p_store,s.principal_id,v_action);
+  v_response:=jsonb_build_object('version',v_row.version,'status',v_row.status,'carrier_code',v_row.carrier_code,
+   'carrier_name',v_row.carrier_name,'tracking_number',v_row.tracking_number,'tracking_url',v_row.tracking_url,
+   'recorded_at',to_char(v_row.recorded_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+   'note',v_row.note,'void_reason',v_row.void_reason,'principal_id',v_row.principal_id);
+  INSERT INTO ops.command_results(tenant_id,store_id,operation,idempotency_key,request_hash,response,principal_id)
+  VALUES(s.tenant_id,p_store,'fulfillment.manual_shipment.record',p_key,p_request_hash,v_response,s.principal_id);
+ END IF;
+
+ -- Final authority after every lock wait and write, also on the refusal paths (no post-revocation
+ -- existence oracle). A failure here aborts the transaction, so no row survives.
+ SELECT * INTO v_final FROM identity.resolve_access(p_hash,p_store,'fulfillment:write');
+ SELECT se.expires_at INTO v_expiry FROM identity.sessions se
+  WHERE se.token_hash=p_hash AND se.audience='merchant' AND se.revoked_at IS NULL;
+ IF v_final.access_status='unauthorized' OR v_expiry IS NULL OR v_expiry<=clock_timestamp() THEN
+  RAISE EXCEPTION 'unauthorized' USING ERRCODE='PT401'; END IF;
+ IF v_final.access_status='not_found' THEN RAISE EXCEPTION 'not found' USING ERRCODE='PT404'; END IF;
+ IF v_final.access_status<>'ok' OR v_final.tenant_id IS DISTINCT FROM s.tenant_id
+  OR v_final.principal_id IS DISTINCT FROM s.principal_id
+  OR v_final.authz_revision IS DISTINCT FROM s.authz_revision THEN
+  RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403'; END IF;
+ IF v_fail_code IS NOT NULL THEN RAISE EXCEPTION '%',v_fail_msg USING ERRCODE=v_fail_code; END IF;
+ RETURN v_response;
+END $$;
+ALTER FUNCTION fulfillment.record_manual_shipment(bytea,uuid,uuid,text,bytea,bigint,text,text,text,text,text,text,text) OWNER TO commerce_checkout_writer;
+REVOKE ALL ON FUNCTION fulfillment.record_manual_shipment(bytea,uuid,uuid,text,bytea,bigint,text,text,text,text,text,text,text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION fulfillment.record_manual_shipment(bytea,uuid,uuid,text,bytea,bigint,text,text,text,text,text,text,text) TO commerce_runtime;
+
+-- P2-4: the manual-shipment carrier enum gains black_cat/hsinchu (0063:59 column CHECK widened by shape).
+DO $$
+DECLARE v_def text;
+BEGIN
+ SELECT pg_get_constraintdef(c.oid) INTO v_def FROM pg_constraint c
+  WHERE c.conrelid='fulfillment.manual_shipment_versions'::regclass AND c.conname='manual_shipment_versions_carrier_code_check';
+ IF v_def IS NULL OR v_def NOT LIKE '%''seven_eleven_cvs''%' OR v_def NOT LIKE '%''chunghwa_post''%'
+  OR v_def NOT LIKE '%''other''%' OR v_def LIKE '%''black_cat''%' OR v_def LIKE '%''hsinchu''%' THEN
+  RAISE EXCEPTION 'manual_shipment_versions_carrier_code_check has an unexpected shape: %',v_def; END IF;
+ ALTER TABLE fulfillment.manual_shipment_versions DROP CONSTRAINT manual_shipment_versions_carrier_code_check;
+ ALTER TABLE fulfillment.manual_shipment_versions ADD CONSTRAINT manual_shipment_versions_carrier_code_check
+  CHECK(carrier_code IN ('seven_eleven_cvs','familymart_cvs','hilife_cvs','okmart_cvs','sf_express','chunghwa_post','black_cat','hsinchu','other'));
+END $$;
+
 -- notify.on_order_insert (0090 body): a cash_on_delivery order placed AWAITING_COLLECTION is "placed" exactly like pay_at_pickup.
 CREATE OR REPLACE FUNCTION notify.on_order_insert() RETURNS trigger
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -573,23 +739,32 @@ DO $$
 DECLARE v_item record; v_fn text;
 BEGIN
  FOR v_item IN SELECT * FROM (VALUES
-  -- Both the p_state validation list (0073:1971) and the p_state filter (0073:1996) carry the same post-0088
-  -- 'AWAITING_TRANSFER','CONFIRMED' pair; one patch with expect=2 widens both to admit AWAITING_COLLECTION.
+  -- P2-5: the validation list admits AWAITING_COLLECTION and the filter matches it on collection_state PENDING (not on
+  -- commercial_state, which stays AWAITING_COLLECTION after COLLECTED/RETURNED/... by design). Two expect=1 patches, not the
+  -- one expect=2 pair, because the filter now diverges from the validation list.
   ('identity.read_merchant_orders(bytea,uuid,uuid,integer,timestamptz,uuid,text)',
-   '''AWAITING_TRANSFER'',''CONFIRMED''',
-   '''AWAITING_TRANSFER'',''AWAITING_COLLECTION'',''CONFIRMED''',2),
+   'NOT IN (''all'',''DRAFT'',''AWAITING_PAYMENT'',''AWAITING_TRANSFER'',''CONFIRMED'',''CANCELLED'',''shipped'',''unshipped'',''cvs_pending'')',
+   'NOT IN (''all'',''DRAFT'',''AWAITING_PAYMENT'',''AWAITING_TRANSFER'',''AWAITING_COLLECTION'',''CONFIRMED'',''CANCELLED'',''shipped'',''unshipped'',''cvs_pending'')',1),
+  ('identity.read_merchant_orders(bytea,uuid,uuid,integer,timestamptz,uuid,text)',
+   '(p_state IN (''DRAFT'',''AWAITING_PAYMENT'',''AWAITING_TRANSFER'',''CONFIRMED'',''CANCELLED'') AND o.commercial_state=p_state)',
+   '(p_state IN (''DRAFT'',''AWAITING_PAYMENT'',''AWAITING_TRANSFER'',''CONFIRMED'',''CANCELLED'') AND o.commercial_state=p_state) OR (p_state=''AWAITING_COLLECTION'' AND o.commercial_state=''AWAITING_COLLECTION'' AND o.collection_state=''PENDING'')',1),
   ('identity.read_merchant_orders(bytea,uuid,uuid,integer,timestamptz,uuid,text)',
    '(p_state=''unshipped'' AND o.commercial_state=''CONFIRMED'' AND o.fulfillment_state=''MANUAL_UNASSIGNED''',
    '(p_state=''unshipped'' AND o.commercial_state IN (''CONFIRMED'',''AWAITING_COLLECTION'') AND o.fulfillment_state=''MANUAL_UNASSIGNED''',1),
   ('identity.read_merchant_orders(bytea,uuid,uuid,integer,timestamptz,uuid,text)',
    'o.payment_mode,o.collection_state,o.snapshot#>>''{destination,pickup,verification_kind}'' AS pickup_vk,',
    'o.payment_mode,o.collection_state,o.cod_surcharge_minor,o.snapshot#>>''{destination,pickup,verification_kind}'' AS pickup_vk,',1),
+  -- P1-2: the merchant order DTO also carries cod_collect_minor = total + surcharge (the collect amount), next to the surcharge.
   ('identity.read_merchant_orders(bytea,uuid,uuid,integer,timestamptz,uuid,text)',
    ',''payment_mode'',o.payment_mode,''collection_state'',o.collection_state,',
-   ',''payment_mode'',o.payment_mode,''collection_state'',o.collection_state,''cod_surcharge_minor'',o.cod_surcharge_minor,',1),
+   ',''payment_mode'',o.payment_mode,''collection_state'',o.collection_state,''cod_surcharge_minor'',o.cod_surcharge_minor,''cod_collect_minor'',CASE WHEN o.payment_mode=''cash_on_delivery'' THEN o.total_minor+coalesce(o.cod_surcharge_minor,0) END,',1),
   ('identity.export_unshipped_orders(bytea,uuid,integer)',
    'AND o.commercial_state=''CONFIRMED''',
    'AND o.commercial_state IN (''CONFIRMED'',''AWAITING_COLLECTION'')',1),
+  -- P1-2: the unshipped export appends payment_mode and collect_minor after pickup_source (B19: appending is backward compatible).
+  ('identity.export_unshipped_orders(bytea,uuid,integer)',
+   'WHEN ''MANUAL_ATTESTED'' THEN ''merchant_attested'' ELSE '''' END)',
+   'WHEN ''MANUAL_ATTESTED'' THEN ''merchant_attested'' ELSE '''' END,''payment_mode'',o.payment_mode,''collect_minor'',o.total_minor+coalesce(o.cod_surcharge_minor,0))',1),
   ('identity.dashboard_todos(bytea,uuid)',
    'AND o.commercial_state=''CONFIRMED'' AND o.fulfillment_state=''MANUAL_UNASSIGNED''',
    'AND o.commercial_state IN (''CONFIRMED'',''AWAITING_COLLECTION'') AND o.fulfillment_state=''MANUAL_UNASSIGNED''',1),
@@ -691,6 +866,51 @@ BEGIN
  IF v_auth_error IS NOT NULL THEN RAISE EXCEPTION 'finance read access denied' USING ERRCODE=v_auth_error; END IF;
  IF octet_length(v_rows::text)>1048576 THEN RAISE EXCEPTION 'finance read unavailable' USING ERRCODE='PT503'; END IF;
  RETURN v_rows;
+END $$;
+
+-- ---------------------------------------------------------------------------------------------------
+-- F. Buyer mails (0098:19 body): the placed/shipped COD mail states the cash due on delivery. Two patches — read the
+-- surcharge snapshot into the o record, then fold it into a cod_collect_minor payload key (null for non-COD orders).
+-- ---------------------------------------------------------------------------------------------------
+DO $$
+DECLARE v_item record; v_fn text;
+BEGIN
+ FOR v_item IN SELECT * FROM (VALUES
+  ('notify.claim_batch(integer,integer,integer)',
+   'k.owner_id,k.buyer_email,k.payment_mode,k.commercial_state,k.total_minor,k.currency,k.expires_at,k.destination_id,k.locale',
+   'k.owner_id,k.buyer_email,k.payment_mode,k.commercial_state,k.total_minor,k.currency,k.expires_at,k.destination_id,k.locale,k.cod_surcharge_minor',1),
+  ('notify.claim_batch(integer,integer,integer)',
+   '''total_minor'',o.total_minor,''currency'',o.currency,''payment_mode'',o.payment_mode,',
+   '''total_minor'',o.total_minor,''currency'',o.currency,''payment_mode'',o.payment_mode,''cod_collect_minor'',CASE WHEN o.payment_mode=''cash_on_delivery'' THEN o.total_minor+coalesce(o.cod_surcharge_minor,0) END,',1)
+ ) AS t(fn,needle,repl,expect) LOOP
+  v_fn:=pg_get_functiondef(v_item.fn::regprocedure);
+  IF (length(v_fn)-length(replace(v_fn,v_item.needle,'')))<>length(v_item.needle)*v_item.expect THEN
+   RAISE EXCEPTION '% has an unexpected shape for patch %',v_item.fn,left(v_item.needle,60); END IF;
+  EXECUTE replace(v_fn,v_item.needle,v_item.repl);
+ END LOOP;
+END $$;
+
+-- ---------------------------------------------------------------------------------------------------
+-- G. Erasure in-flight guard (0078:515 body, P2-11): a shipped-but-uncollected COD or pay_at_pickup
+-- order is carrying the recipient snapshot the carrier's cash reconciliation needs, so erasure waits
+-- while it is in flight (shipped: fulfillment_state MERCHANT_SHIPPED or PROVIDER_LABEL_CREATED, and
+-- collection_state PENDING — the same "shipped" predicate record_collection gates collected on). The CD7
+-- refusal gains a third EXISTS; the three columns it reads are granted to the function's definer.
+-- ---------------------------------------------------------------------------------------------------
+GRANT SELECT(payment_mode,collection_state,fulfillment_state) ON checkout.orders TO commerce_privacy_writer;
+DO $$
+DECLARE v_item record; v_fn text;
+BEGIN
+ FOR v_item IN SELECT * FROM (VALUES
+  ('customers.erase_owner(bytea,uuid,uuid,text,uuid)',
+   'AND o.commercial_state IN (''DRAFT'',''AWAITING_PAYMENT'',''AWAITING_TRANSFER'') AND o.expires_at>clock_timestamp())',
+   E'AND o.commercial_state IN (''DRAFT'',''AWAITING_PAYMENT'',''AWAITING_TRANSFER'') AND o.expires_at>clock_timestamp())\n   OR EXISTS(SELECT 1 FROM checkout.orders o WHERE o.tenant_id=v_tenant AND o.store_id=p_store AND o.owner_id=v_owner\n    AND o.payment_mode IN (''cash_on_delivery'',''pay_at_pickup'') AND o.collection_state=''PENDING'' AND o.fulfillment_state IN (''MERCHANT_SHIPPED'',''PROVIDER_LABEL_CREATED''))',1)
+ ) AS t(fn,needle,repl,expect) LOOP
+  v_fn:=pg_get_functiondef(v_item.fn::regprocedure);
+  IF (length(v_fn)-length(replace(v_fn,v_item.needle,'')))<>length(v_item.needle)*v_item.expect THEN
+   RAISE EXCEPTION '% has an unexpected shape for patch %',v_item.fn,left(v_item.needle,60); END IF;
+  EXECUTE replace(v_fn,v_item.needle,v_item.repl);
+ END LOOP;
 END $$;
 
 -- ---------------------------------------------------------------------------------------------------

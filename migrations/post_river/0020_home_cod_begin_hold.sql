@@ -33,7 +33,7 @@ DECLARE v_scope record; v_tenant uuid; v_owner uuid; v_session uuid;
  v_profile record; v_profiled boolean:=false; v_settings record; v_subtotal bigint; v_total bigint; v_ns text[];
  v_dir boolean:=false; v_api boolean:=false; v_pap boolean:=false; v_sub text;
  v_bt boolean:=false; v_bank record; v_hold interval:=interval '15 minutes';
- v_cod boolean:=false; v_cod_settings record; v_cod_surcharge bigint;
+ v_cod boolean:=false; v_cod_settings record; v_cod_surcharge bigint; v_expected_surcharge bigint; v_cod_carrier text;
 BEGIN
  IF p_hash IS NULL OR octet_length(p_hash)<>32 OR p_store IS NULL OR p_order IS NULL
     OR p_key IS NULL OR p_key !~ '^[A-Za-z0-9_.:-]{8,128}$'
@@ -46,7 +46,8 @@ BEGIN
     OR jsonb_typeof(p_snapshot->'destination')<>'object'
     OR jsonb_typeof(p_snapshot->'service')<>'object'
     OR jsonb_typeof(p_snapshot->'allocation')<>'object'
-    OR (SELECT count(*) FROM jsonb_object_keys(p_snapshot))<>4 THEN
+    OR (SELECT count(*) FROM jsonb_object_keys(p_snapshot)) NOT BETWEEN 4 AND 5
+    OR ((SELECT count(*) FROM jsonb_object_keys(p_snapshot))=5 AND NOT p_snapshot ? 'expected_cod_surcharge_minor') THEN
   RAISE EXCEPTION 'invalid checkout input' USING ERRCODE='PT400';
  END IF;
  SELECT * INTO v_scope FROM buyer.resolve_scope(p_hash,p_store);
@@ -231,7 +232,7 @@ BEGIN
  -- COMMITTED at placement (like pay_at_pickup), so expiry is moot.
  v_cod:=p_payment_mode='cash_on_delivery';
  IF v_cod THEN
-  IF v_dest.kind<>'home' THEN
+  IF v_dest.kind<>'home' OR v_quote.country<>'TW' THEN
    RAISE EXCEPTION 'cash_on_delivery_unavailable' USING ERRCODE='PT422'; END IF;
   SELECT c.enabled,c.max_twd,c.surcharge_twd,c.carrier INTO v_cod_settings
    FROM checkout.cash_on_delivery_settings c WHERE c.tenant_id=v_tenant AND c.store_id=p_store FOR UPDATE;
@@ -239,9 +240,25 @@ BEGIN
    RAISE EXCEPTION 'cash_on_delivery_unavailable' USING ERRCODE='PT422'; END IF;
   v_total:=(v_quote.snapshot->'amount'->>'total_minor')::bigint;
   v_cod_surcharge:=v_cod_settings.surcharge_twd::bigint*100;
+  v_cod_carrier:=v_cod_settings.carrier;
+  -- P2-1: the buyer re-quotes when the surcharge they were shown changed (the snapshot carries the shown value only when the
+  -- storefront sent it). Checked before the amount test so a settings change surfaces as a re-quote, never as a cap refusal.
+  v_expected_surcharge:=(p_snapshot->>'expected_cod_surcharge_minor')::bigint;
+  IF v_expected_surcharge IS NOT NULL AND v_expected_surcharge<>v_cod_surcharge THEN
+   RAISE EXCEPTION 'cod_surcharge_changed' USING ERRCODE='PT409'; END IF;
   IF v_total IS NULL OR v_total%100<>0 OR v_total NOT BETWEEN 100 AND 2000000
    OR v_total+v_cod_surcharge>v_cod_settings.max_twd::bigint*100 THEN
    RAISE EXCEPTION 'cash_on_delivery_amount_exceeds' USING ERRCODE='PT422'; END IF;
+  -- P2-6: a reachable recipient before committing stock — a real name (letters/CJK/full-width, no digits/symbols/emoji,
+  -- spaces only between words) and a Taiwan mobile. This is fulfillment.ecpay_recipient_ok without ECPay's 4..10-wide
+  -- ReceiverName label-field rule (home delivery has no such field), so a Latin name like the harness "Synthetic Buyer"
+  -- stays valid while a junk name/phone still refuses before stock is committed.
+  IF v_dest.recipient_name IS NULL OR v_dest.phone IS NULL
+   OR v_dest.recipient_name !~ '^[A-Za-z㐀-䶿一-鿿豈-﫿Ａ-Ｚａ-ｚ]+( [A-Za-z㐀-䶿一-鿿豈-﫿Ａ-Ｚａ-ｚ]+)*$'
+   OR (CASE WHEN regexp_replace(v_dest.phone,'[ ()-]','','g') ~ '^\+8869[0-9]{8}$'
+       THEN '0'||substr(regexp_replace(v_dest.phone,'[ ()-]','','g'),5)
+       ELSE regexp_replace(v_dest.phone,'[ ()-]','','g') END) !~ '^09[0-9]{8}$' THEN
+   RAISE EXCEPTION 'cvs_recipient_rejected' USING ERRCODE='PT422'; END IF;
   -- The pay_at_pickup open-orders cap (cvs_store_settings.pay_at_pickup_max_open, default 20) is the shared cap on anonymous
   -- unshipped offline orders; COD adds its own store+owner predicate on the orders_cod_open partial index.
   IF (SELECT count(*) FROM checkout.orders x WHERE x.tenant_id=v_tenant AND x.store_id=p_store
@@ -341,12 +358,13 @@ BEGIN
   'commercial_state',CASE WHEN v_pap THEN 'CONFIRMED' WHEN v_bt THEN 'AWAITING_TRANSFER' WHEN v_cod THEN 'AWAITING_COLLECTION' ELSE 'DRAFT' END);
  INSERT INTO checkout.orders(tenant_id,store_id,owner_id,id,creator_session_id,cart_id,cart_version,
   quote_id,destination_id,market_id,country,service_code,service_version,allocation_version,
-  currency,total_minor,cod_surcharge_minor,commercial_state,fulfillment_state,generation,expires_at,job_id,snapshot,created_at,updated_at,
+  currency,total_minor,cod_surcharge_minor,cod_carrier,commercial_state,fulfillment_state,generation,expires_at,job_id,snapshot,created_at,updated_at,
   payment_mode,collection_state)
  VALUES(v_tenant,p_store,v_owner,p_order,v_session,v_cart.id,v_cart.version,v_quote.id,v_dest.id,
   v_quote.market_id,v_quote.country,v_service.code,v_service.version,v_allocation.version,
   v_quote.currency,(v_quote.snapshot->'amount'->>'total_minor')::bigint,
   CASE WHEN v_cod THEN v_cod_surcharge END,
+  v_cod_carrier,
   CASE WHEN v_pap THEN 'CONFIRMED' WHEN v_bt THEN 'AWAITING_TRANSFER' WHEN v_cod THEN 'AWAITING_COLLECTION' ELSE 'DRAFT' END,
   'MANUAL_UNASSIGNED',1,v_expires,p_job_id,p_snapshot,v_now,v_now,
   p_payment_mode,CASE WHEN v_pap OR v_cod THEN 'PENDING' END);
