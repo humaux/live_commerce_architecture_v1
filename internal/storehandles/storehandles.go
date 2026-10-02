@@ -6,7 +6,9 @@
 //
 // Owns: handle format, the reserved-word list, the slug and the store-<id8> fallback.
 // Never: writes the database (assignment/suffix live in control.assign_store_handle; availability in
-//   control.suggest_store_handle), verifies DNS/TLS, or resolves origins (internal/domains).
+//
+//	control.suggest_store_handle), verifies DNS/TLS, or resolves origins (internal/domains).
+//
 // Depends on: nothing.
 // Used by: internal/identity (onboarding preview), internal/storefrontdomains (hostname/base validation).
 package storehandles
@@ -91,11 +93,13 @@ func Fallback(id string) string {
 	return "store-" + h[:8]
 }
 
-// Suggest is the onboarding preview: the slug, or the store-<id8> fallback when the slug is not a valid
-// handle. It truncates to the DB length and re-trims, exactly as control.suggest_store_handle does.
+// Suggest is the onboarding preview: the slug, or the store-<id8> fallback when the slug is empty, too short
+// or reserved. It then truncates to the DB length and re-trims, exactly as control.suggest_store_handle does.
+// The first check mirrors the SQL (empty / length<3 / reserved), NOT Valid, so a long slug is truncated to 30
+// instead of falling back — the two must stay in parity.
 func Suggest(name, id string) string {
 	s := Slug(name)
-	if !Valid(s) {
+	if s == "" || len(s) < 3 || Reserved(s) {
 		s = Fallback(id)
 		if s == "" {
 			return ""

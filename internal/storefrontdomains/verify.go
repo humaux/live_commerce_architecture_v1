@@ -13,8 +13,9 @@ import (
 // runs against the commerce_storefront_registrar pool. Every external call is a seam: Resolver and TLSProber are
 // faked in tests (match/mismatch/NXDOMAIN/timeout), so this package never dials DNS or TLS on its own in a test.
 
-// verifyWindow bounds DNS verification: requested_at + 72h (the SQL verify_deadline). Past it the row stops being
-// returned by control.next_store_domain_dns_check and the merchant re-requests for a fresh token.
+// verifyWindow is the verification window the SQL writes into verify_deadline (requested_at + 72h, migration 0106).
+// The Go side only needs the resulting deadline: WithinDeadline checks now < deadline, so the constant documents the
+// window length rather than computing it.
 const verifyWindow = 72 * time.Hour
 
 // maxBackoff caps the exponential DNS backoff; the sweep is bounded to one run per 30 minutes per host after 6 failures.
@@ -91,9 +92,10 @@ func VerifyDNS(ctx context.Context, r Resolver, host, token, baseDomain string) 
 	return out, nil
 }
 
-// WithinDeadline reports whether the request is still inside its 72h verification window.
-func WithinDeadline(requestedAt, now time.Time) bool {
-	return !requestedAt.IsZero() && !now.Before(requestedAt) && now.Sub(requestedAt) <= verifyWindow
+// WithinDeadline reports whether the request is still inside its verification window: the row's verify_deadline
+// (requested_at + 72h, written by request_merchant_domain) has not yet passed. sweepDNS passes the deadline directly.
+func WithinDeadline(deadline, now time.Time) bool {
+	return !deadline.IsZero() && now.Before(deadline)
 }
 
 // BackoffDelay is the DNS retry delay: 1 minute, doubling per consecutive failure, capped at 30 minutes.
@@ -125,10 +127,10 @@ type DNSCheck struct {
 
 // AdvanceResult is the worker transition outcome (state after the move, plus expiry).
 type AdvanceResult struct {
-	DomainID    string
-	State       string
-	Expired     bool
-	DNSFailures int
+	DomainID    string `json:"domain_id"`
+	State       string `json:"state"`
+	Expired     bool   `json:"expired"`
+	DNSFailures int    `json:"dns_failures"`
 }
 
 // VerifyPending sweeps both queues once: REQUESTED rows still inside their window get a DNS attempt (respecting the

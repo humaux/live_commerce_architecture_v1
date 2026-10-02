@@ -448,7 +448,7 @@ BEGIN
     v_now := clock_timestamp();
     IF p_valid_until<=v_now OR p_valid_until>v_now+interval '400 days' THEN
         RAISE EXCEPTION 'invalid domain request' USING ERRCODE='PT400'; END IF;
-    SELECT d.id,d.state INTO v_row FROM control.storefront_domains d WHERE d.id=p_domain_id FOR UPDATE;
+    SELECT d.id,d.state,d.version INTO v_row FROM control.storefront_domains d WHERE d.id=p_domain_id FOR UPDATE;
     IF NOT FOUND THEN RAISE EXCEPTION 'domain not found' USING ERRCODE='PT404'; END IF;
     IF v_row.state <> 'TLS_PENDING' THEN RAISE EXCEPTION 'domain not pending tls' USING ERRCODE='PT409'; END IF;
     UPDATE control.storefront_domains SET state='ACTIVE',tls_verified_at=v_now,valid_until=p_valid_until,

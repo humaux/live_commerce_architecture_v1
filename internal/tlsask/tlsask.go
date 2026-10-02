@@ -77,8 +77,9 @@ func (s *Service) Allow(ctx context.Context, host string) (bool, error) {
 	return allowed, nil
 }
 
-// Handler serves GET /internal/tls-ask?domain=<host>: 200 when allowed, 404 otherwise, 429 when rate-limited.
-// The only query key is `domain` (Caddy's on_demand_tls format); anything else is 422.
+// Handler serves GET /internal/tls-ask?domain=<host>: 200 when allowed, 404 when denied, unknown or rate-limited
+// (fail closed — a burst above the per-service limit reads as "not eligible", never as a scan signal), 503 on a
+// database error. The only query key is `domain` (Caddy's on_demand_tls format); anything else is 422.
 func (s *Service) Handler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
