@@ -12,6 +12,7 @@ import { shopCopy } from "../lib/shop-copy";
 import { ChevronLeftIcon, ChevronRightIcon } from "./icons";
 
 export default function Rail({ locale, children }: { locale: Locale; children: ReactNode }) {
+  // ProductCard children use placement="rail" so native image sizes match the rail's 58% / 24% slots.
   const copy = shopCopy[locale];
   const list = useRef<HTMLUListElement>(null);
   const [edge, setEdge] = useState({ start: false, end: false });

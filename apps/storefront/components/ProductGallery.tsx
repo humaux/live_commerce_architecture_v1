@@ -7,7 +7,8 @@
 // the page layout does not collapse. Zoom uses a native dialog; images stay on the Host-scoped media proxy.
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
-import { productImage } from "../lib/routes";
+import { productImage, productImageSet } from "../lib/routes";
+import type { ProductDetail } from "../lib/shop-contract";
 import { fmt, shopCopy } from "../lib/shop-copy";
 import { ChevronLeftIcon, ChevronRightIcon, CloseIcon, ImageIcon, SearchIcon } from "./icons";
 import { browseCopy } from "../lib/browse-copy";
@@ -21,7 +22,7 @@ export default function ProductGallery({
   locale: Locale;
   productID: string;
   name: string;
-  images: { id: string; width: number | null; height: number | null }[];
+  images: ProductDetail["images"];
 }) {
   const copy = shopCopy[locale];
   const strip = useRef<HTMLDivElement>(null);
@@ -71,6 +72,8 @@ export default function ProductGallery({
           <img
             key={image.id}
             src={productImage(productID, image.id)}
+            srcSet={productImageSet(productID, image.id, image.sizes)}
+            sizes="(min-width: 1280px) 608px, (min-width: 900px) 50vw, 100vw"
             alt={i === 0 ? name : ""}
             width={image.width ?? undefined}
             height={image.height ?? undefined}
@@ -110,7 +113,7 @@ export default function ProductGallery({
           <div className="sf-gal__thumbs">
             {images.map((image, i) => (
               <button key={image.id} type="button" aria-label={fmt(copy.photo, { n: i + 1, total: images.length })} aria-current={i === index} onClick={() => go(i)}>
-                <img src={productImage(productID, image.id)} alt="" loading="lazy" />
+                <img src={productImage(productID, image.id)} srcSet={productImageSet(productID, image.id, image.sizes)} sizes="64px" alt="" loading="lazy" />
               </button>
             ))}
           </div>

@@ -19,6 +19,7 @@ import path from "node:path";
 import { expect } from "@playwright/test";
 import { launch, ctxOpts, iosZoomOffenders, engine } from "./browser-engine.mjs";
 import { shopCopy } from "../../apps/storefront/lib/shop-copy.ts";
+import { measureMediaSizes } from "./media-sizes-perf.mjs";
 
 const env = (name) => { const v = process.env[name]; assert(v, `${name} is required`); return v; };
 const root = process.cwd(), evidence = env("LC_SFR_EVIDENCE");
@@ -91,6 +92,7 @@ try {
   });
   const proxyPort = await listen(proxy);
   browser = await launch({ headless: true, proxy: { server: `http://127.0.0.1:${proxyPort}` } });
+  await measureMediaSizes({ browser, origin, evidence, ctxOpts });
   const phone = () => browser.newContext(ctxOpts({ ignoreHTTPSErrors: true, viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: "en" }));
   const noOverflow = (p) => p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
   const raw = (p, headers = {}) => relay(next.port, { url: p, method: "GET", headers: { host: HOST, ...headers } }, Buffer.alloc(0));
@@ -116,6 +118,10 @@ try {
   const featured = await p.getByTestId("section-featured").getByTestId("product-card").allTextContents();
   assert.equal(featured.length, facts.collections.find((c) => c.slug === "home-fragrance").active_products);
   assert(featured.some((t) => t.includes(P("candle").title)) && featured.some((t) => t.includes(P("diffuser").title)));
+  const railPhoto = p.getByTestId("section-featured").getByTestId("product-card").first().locator("img");
+  await railPhoto.scrollIntoViewIfNeeded(); await expect.poll(() => loaded(railPhoto)).toBe(true);
+  assert.match(await railPhoto.evaluate(img => new URL(img.currentSrc).search), /^\?w=(360|720|1080)$/);
+  await expect(railPhoto).toHaveAttribute("sizes", /58vw/);
   assert(await noOverflow(p), "home overflows at 390px"); assert.deepEqual(await iosZoomOffenders(p), []);
   pass("SFR01 home renders the five section types from the published design (photos from PG), nav-less phone layout, accent, footer contact, newest-first grid");
 
@@ -193,6 +199,7 @@ try {
   const strip = p.getByTestId("product-gallery").locator(".sf-gal__strip img");
   assert.equal(await strip.count(), 3);
   await expect.poll(() => loaded(strip.first())).toBe(true);
+  assert.match(await strip.first().evaluate(img => new URL(img.currentSrc).search), /^\?w=(360|720|1080)$/);
   const enlarge = p.getByRole("button", { name: "Enlarge photo" });
   await enlarge.click();
   const photoDialog = p.locator(".sf-photo-dialog");

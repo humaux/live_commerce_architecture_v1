@@ -21,14 +21,16 @@ function fail(status: number, code: string): Response {
 export const notFound = () => fail(404, "not_found");
 
 export async function proxyImage(request: Request, upstreamPath: string): Promise<Response> {
-  if (new URL(request.url).search !== "") return fail(404, "not_found");
+  const query = new URL(request.url).search;
+  // S1: only product rendition widths are public; no caller-controlled store or arbitrary optimizer URL.
+  if (query && (!upstreamPath.startsWith("/v1/buyer/media/p/") || !/^\?w=(360|720|1080)$/.test(query))) return fail(404, "not_found");
   const cfg = upstreamConfig(process.env);
   if (!cfg) return fail(503, "unavailable");
   const origin = candidateOrigin(request.headers.get("host"));
   if (!origin) return fail(404, "not_found");
   let upstream: Response;
   try {
-    upstream = await fetch(`${cfg.api}${upstreamPath}`, {
+    upstream = await fetch(`${cfg.api}${upstreamPath}${query}`, {
       method: "GET",
       headers: {
         Accept: "image/jpeg, image/png, image/webp",
@@ -51,7 +53,8 @@ export async function proxyImage(request: Request, upstreamPath: string): Promis
     status: 200,
     headers: {
       "Content-Type": type,
-      "Cache-Control": "public, max-age=86400, immutable",
+      // Historical images may have no sizes yet. Never cache those fallback bytes as an immutable rendition.
+      "Cache-Control": query && upstream.headers.get("X-Commerce-Image-Rendition") !== "1" ? "no-store" : "public, max-age=86400, immutable",
       "Content-Security-Policy": "default-src 'none'; sandbox",
       "X-Content-Type-Options": "nosniff",
     },
