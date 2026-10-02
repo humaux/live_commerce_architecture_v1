@@ -370,8 +370,12 @@ test("COD confirmation includes expected fee, enforces collect cap and validates
   assert.equal(body.expected_cod_surcharge_minor, 5000);
   assert.equal(checkoutInput(quote, { ...opt, cod_surcharge_minor: undefined }, ccart, head, Date.now(), "cash_on_delivery").expected_cod_surcharge_minor, 0);
   assert.throws(() => checkoutInput(quote, { ...opt, cod_max_minor: 100 }, ccart, head, Date.now(), "cash_on_delivery"));
-  const order = cvsOrder({ payment_mode: "cash_on_delivery", collection_state: "PENDING", cod_surcharge_minor: 5000, cod_collect_minor: cq.amount.total_minor + 5000 }, { kind: "home", pickup: undefined });
+  const order = cvsOrder({ payment_mode: "cash_on_delivery", collection_state: "PENDING", cod_carrier: "black_cat", cod_surcharge_minor: 5000, cod_collect_minor: cq.amount.total_minor + 5000 }, { kind: "home", pickup: undefined });
   assert.equal(validOrder(order), true);
+  assert.equal(validOrder({ ...order, cod_carrier: "hsinchu" }), true);
+  for (const carrier of [undefined, null, "sf_express", "BLACK_CAT", {}, 42])
+    assert.equal(validOrder({ ...order, cod_carrier: carrier }), false, "COD requires its validated order-time carrier");
+  assert.equal(validOrder(cvsOrder({ cod_carrier: "black_cat" })), false, "non-COD cannot carry a COD carrier");
   for (const patch of [{ cod_collect_minor: undefined }, { cod_collect_minor: cq.amount.total_minor }, { cod_surcharge_minor: 0.1 }, { payment_mode: "card", collection_state: null }])
     assert.equal(validOrder({ ...order, ...patch }), false);
 });

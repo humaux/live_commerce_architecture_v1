@@ -159,6 +159,8 @@ const en = {
     hilife_cvs: "Hi-Life",
     okmart_cvs: "OK mart",
     sf_express: "SF Express",
+    black_cat: "Black Cat",
+    hsinchu: "Hsinchu",
     chunghwa_post: "Chunghwa Post",
     other: "Other",
   },
@@ -295,7 +297,7 @@ export const ordersCopy: Record<Locale, OrdersCopy> = {
     voidReasons: { wrong_order: "订单错误", wrong_tracking: "追踪单号错误", not_dispatched: "包裹未寄出", other: "其他" },
     carriers: {
       seven_eleven_cvs: "7-ELEVEN 交货便", familymart_cvs: "全家 店到店", hilife_cvs: "莱尔富", okmart_cvs: "OK mart",
-      sf_express: "顺丰速运", chunghwa_post: "中华邮政", other: "其他",
+      sf_express: "顺丰速运", black_cat: "黑猫", hsinchu: "新竹", chunghwa_post: "中华邮政", other: "其他",
     },
     errors: {
       refundable_changed: "可退款金额已变更，请核对新金额后重试。", exceeds_refundable: "金额超过剩余可退款金额。",
@@ -387,7 +389,7 @@ export const ordersCopy: Record<Locale, OrdersCopy> = {
     voidReasons: { wrong_order: "訂單錯誤", wrong_tracking: "追蹤單號錯誤", not_dispatched: "包裹未寄出", other: "其他" },
     carriers: {
       seven_eleven_cvs: "7-ELEVEN 交貨便", familymart_cvs: "全家 店到店", hilife_cvs: "萊爾富", okmart_cvs: "OK mart",
-      sf_express: "順豐速運", chunghwa_post: "中華郵政", other: "其他",
+      sf_express: "順豐速運", black_cat: "黑貓", hsinchu: "新竹", chunghwa_post: "中華郵政", other: "其他",
     },
     errors: {
       refundable_changed: "可退款金額已變更，請核對新金額後重試。", exceeds_refundable: "金額超過剩餘可退款金額。",

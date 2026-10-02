@@ -34,6 +34,8 @@ const base = {
   pickup_source: null,
   payment_mode: "card",
   collection_state: null,
+  cod_surcharge_minor: null,
+  cod_collect_minor: null,
   source: "storefront", // migration 0094: every merchant orders row carries its source
 };
 const row =(change: Record<string, unknown>) => ({ ...base, ...change });
@@ -138,7 +140,7 @@ test("detail carries `shipment` (null or the exact seven-key SHIPPED object) and
   assert.equal(parsed.shipment.carrier_code, "seven_eleven_cvs");
   const named = { ...shipped, shipment: { ...shipment, carrier_code: "other", carrier_name: "黑貓宅急便" } };
   assert.equal((parseOrderDetail(named, id) as unknown as { shipment: { carrier_name: string } }).shipment.carrier_name, "黑貓宅急便");
-  for (const code of ["seven_eleven_cvs", "familymart_cvs", "hilife_cvs", "okmart_cvs", "sf_express", "chunghwa_post"])
+  for (const code of ["seven_eleven_cvs", "familymart_cvs", "hilife_cvs", "okmart_cvs", "sf_express", "black_cat", "hsinchu", "chunghwa_post"])
     assert.doesNotThrow(() => parseOrderDetail({ ...shipped, shipment: { ...shipment, carrier_code: code } }, id), code);
   const { shipment: _omit, ...withoutKey } = detailBase;
   const badShipments: Array<[string, unknown]> = [

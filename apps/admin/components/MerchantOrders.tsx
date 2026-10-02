@@ -242,7 +242,9 @@ function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy, section
             <div>
               <dt>{c.collectionLabel}</dt>
               <dd data-testid="order-collection-state" data-state={detail.collection_state}>
-                {c.collectionStates[detail.collection_state]}
+                {detail.payment_mode === "cash_on_delivery"
+                  ? codCopy[locale].orderStates[detail.collection_state]
+                  : c.collectionStates[detail.collection_state]}
               </dd>
             </div>
           )}

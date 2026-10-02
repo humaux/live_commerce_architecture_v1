@@ -205,6 +205,8 @@ export const CARRIER_CODES = [
   "hilife_cvs",
   "okmart_cvs",
   "sf_express",
+  "black_cat",
+  "hsinchu",
   "chunghwa_post",
   "other",
 ] as const;
@@ -238,6 +240,8 @@ export type Order = {
   collection_state?: CollectionState | null;
   cod_collect_minor?: number;
   cod_surcharge_minor?: number;
+  // Immutable order-time carrier; never substitute the store's current COD settings.
+  cod_carrier?: "black_cat" | "hsinchu" | null;
   cvs_shipment?: BuyerCvsShipment | null;
   hold_expires_at?: string;
   snapshot: {
@@ -553,8 +557,10 @@ function validOrderCvs(v: Record<string, unknown>): boolean {
 }
 function validCodAmount(v: Record<string, unknown>): boolean {
   if (v.payment_mode !== "cash_on_delivery") {
-    return v.cod_collect_minor === undefined && v.cod_surcharge_minor === undefined;
+    return v.cod_collect_minor === undefined && v.cod_surcharge_minor === undefined &&
+      (v.cod_carrier === undefined || v.cod_carrier === null);
   }
+  if (v.cod_carrier !== "black_cat" && v.cod_carrier !== "hsinchu") return false;
   if (!record(v.snapshot) || !validQuoteSummary(v.snapshot.quote)) return false;
   const quote = v.snapshot.quote;
   const fee = v.cod_surcharge_minor ?? 0;

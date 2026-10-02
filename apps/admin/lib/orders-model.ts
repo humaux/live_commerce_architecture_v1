@@ -117,7 +117,7 @@ export type Destination = {
   pickup: Pickup | null;
 };
 export const carrierCodes = [
-  "seven_eleven_cvs", "familymart_cvs", "hilife_cvs", "okmart_cvs", "sf_express", "chunghwa_post", "other",
+  "seven_eleven_cvs", "familymart_cvs", "hilife_cvs", "okmart_cvs", "sf_express", "black_cat", "hsinchu", "chunghwa_post", "other",
 ] as const;
 export type CarrierCode = (typeof carrierCodes)[number];
 export const voidReasons = ["wrong_order", "wrong_tracking", "not_dispatched", "other"] as const;
