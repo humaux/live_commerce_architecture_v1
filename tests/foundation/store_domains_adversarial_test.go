@@ -374,25 +374,25 @@ func TestStoreDomainsSDW12CaddyOnDemandEnabled(t *testing.T) {
 }
 
 func TestStoreDomainsSDW13VerifySweepHasProductionRunner(t *testing.T) {
-	// P0-2 (REVIEW): Decision 3's "worker job verifies DNS with backoff ... a TLS probe then moves it to
-	// ACTIVE" needs a runner in the deployed system. storefrontdomains.VerifyPending currently has no
-	// caller outside tests and cmd/store-admin (verify.go:12's own comment names `domain-verify`) has no
-	// such subcommand — a merchant domain can never leave REQUESTED in production.
-	main, err := os.ReadFile("../../cmd/store-admin/main.go")
+	// P0-2 (REVIEW, ruled): Decision 3's "worker job verifies DNS with backoff ... a TLS probe then moves it to
+	// ACTIVE" needs a runner in the deployed system — a merchant domain must be able to leave REQUESTED in
+	// production. The binding ruling fixes this as a River periodic job in the existing claims-worker, NOT a
+	// `store-admin domain-verify` CLI (that CLI is explicitly forbidden). Assert the real runner is wired.
+	main, err := os.ReadFile("../../cmd/claims-worker/main.go")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(main), `"domain-verify"`) {
-		t.Errorf(`P0-2: cmd/store-admin has no "domain-verify" subcommand; storefrontdomains.VerifyPending has no production runner`)
+	if !strings.Contains(string(main), "storefrontdomains.NewWorker") ||
+		!strings.Contains(string(main), "storefrontdomains.PeriodicJob()") {
+		t.Errorf(`P0-2: cmd/claims-worker does not register the store-domain verify sweep (NewWorker + PeriodicJob); VerifyPending has no production runner`)
 	}
-	// And when it exists, the operator surface must admit it (SPW10's frozen allowlist is amended in the
-	// same integrator change — asserted here so the wiring cannot be forgotten twice).
-	ops, err := os.ReadFile("../../deploy/scripts/ops-admin.sh")
+	// The forbidden operator one-shot must not exist (the fix is the worker, not a store-admin subcommand).
+	admin, err := os.ReadFile("../../cmd/store-admin/main.go")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(ops), "store-admin:domain-verify") {
-		t.Errorf(`P0-2: ops-admin.sh does not admit "store-admin:domain-verify"`)
+	if strings.Contains(string(admin), `"domain-verify"`) {
+		t.Errorf(`P0-2: cmd/store-admin must not claim a "domain-verify" subcommand; the sweep runs as the claims-worker River job`)
 	}
 }
 

@@ -91,9 +91,20 @@ R5 起（迁移 0106，store-domains 单元）每间店铺自动获得自己的�
 2. **商家自有域名（自助）**：持有 `integration:manage` 的 owner/admin 在「设置」→「网店发布」输入主机名，系统生成
    TXT 校验令牌并显示要添加的 DNS 记录（`TXT _lc-verify.<host> = <token>`；`CNAME <host> → stores.<LC_STORE_BASE_DOMAIN>`，apex 用 A 记录指向边缘 IP）。
    DNS 核验 worker 用退避重试（上限 72h）验证 TXT 与 CNAME/A，成功后经 OWNERSHIP_PENDING → TLS_PENDING → ACTIVE 自动上线。
-   暂停/解绑也由 owner/admin 在同一张卡片自助完成（解绑后该域名不再服务；主域名优先为商家域名，非主 ACTIVE 域名 301 到主域名）。
+   暂停/解绑也由 owner/admin 在同一张卡片自助完成（解绑后该域名不再服务）；**平台子域名行除外**——它的暂停/解绑是拒绝的（P2-8），只有运维能通过下面的 break-glass CLI 解绑。主域名优先为商家域名：后端 `resolve_primary_origin` 返回它（目标只来自数据库）；浏览器侧「非主 ACTIVE 域名 301 到主域名」的跳转依赖 storefront 应用接线，是 UI 后续项（`--browser-store-domains` 的 301 步骤为 RED）。
 3. **运维 CLI（break-glass）**：`store-admin domain-bind`/`domain-suspend`/`domain-detach` 保留为代商家修复/续证时的
    break-glass（证据、400 天上限、退出码同 0081）；普通 onboarding **不再需要** `domain-bind`。handle 变更在店铺发布过之后只能由运维操作。
+   证书 `notAfter` 就是 `--valid-until`（RFC 3339，必须在未来且不超过 400 天）；`--evidence` 是你留存证明的引用（工单号、DNS 检查日期、证书指纹），不要写密钥。
+
+   ```sh
+   set -a; . /etc/live-commerce/compose.env; set +a          # 取得 LC_STORE_HOST / LC_STORE_BASE_DOMAIN
+   HOST="shop.example.com"                                    # 商家的自有域名（或平台 shop 主机名）
+   VALID_UNTIL="$(date -u -d "$(echo | openssl s_client -connect "$HOST:443" -servername "$HOST" 2>/dev/null \
+     | openssl x509 -noout -enddate | cut -d= -f2)" +%Y-%m-%dT%H:%M:%SZ)"
+   deploy/scripts/ops-admin.sh store-admin domain-bind --store <store-uuid> --origin "https://$HOST" \
+     --evidence "<工单/检查引用>" --valid-until "$VALID_UNTIL"
+   deploy/scripts/ops-admin.sh store-admin status --store <store-uuid>   # domains[].serving 为 true 才算上线
+   ```
 
 ### 5.2 owner 前置：边缘泛域名 DNS（仅 owner，工程无法代办）
 

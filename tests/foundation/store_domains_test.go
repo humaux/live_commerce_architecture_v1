@@ -356,9 +356,9 @@ func TestStoreDomainsSDW04RefusalsAndOwnerOnly(t *testing.T) {
 	if state, _ := domainState(t, o, origin); state != "SUSPENDED" {
 		t.Fatalf("suspend did not persist: %q", state)
 	}
-	// A suspended row refuses a re-request of the same host by its owner (PT409 domain_suspended).
-	if _, err := s.request(s.f.token, s.f.store, host); !errors.Is(err, storefrontdomains.ErrDomainSuspended) {
-		t.Fatalf("re-request of SUSPENDED: %v, want ErrDomainSuspended", err)
+	// P2-3: the owner can re-request their own SUSPENDED domain; it returns to REQUESTED with a fresh token.
+	if again, err := s.request(s.f.token, s.f.store, host); err != nil || again.State != "REQUESTED" || again.Origin != origin {
+		t.Fatalf("re-request of SUSPENDED: %+v %v, want REQUESTED", again, err)
 	}
 	// Detach is final for the owner path.
 	mv, err = s.detach(s.f.token, s.f.store, origin)
@@ -436,10 +436,12 @@ var sdFns = []struct {
 	{"control.store_handle_reserved(text)", "commerce_identity_writer", false, nil},
 	{"control.slug_store_handle(text)", "commerce_identity_writer", false, nil},
 	{"control.store_handle_valid(text)", "commerce_identity_writer", false, nil},
+	{"control.store_handle_taken(text)", "commerce_storefront_writer", true, []string{"commerce_identity_writer"}},
 	{"control.assign_store_handle(text,uuid)", "commerce_identity_writer", true, nil},
 	{"control.stores_handle_default()", "commerce_identity_writer", true, nil},
+	{"control.stores_handle_changed()", "commerce_storefront_writer", true, nil},
 	{"control.suggest_store_handle(text,text)", "commerce_identity_writer", true, []string{"commerce_identity"}},
-	{"control.ensure_store_platform_domain(uuid,text)", "commerce_storefront_writer", true, []string{"commerce_identity", "commerce_runtime", "commerce_storefront_registrar"}},
+	{"control.ensure_store_platform_domain(uuid,text)", "commerce_storefront_writer", true, []string{"commerce_identity", "commerce_storefront_registrar"}},
 	{"control.backfill_platform_domains(text)", "commerce_storefront_writer", true, []string{"commerce_storefront_registrar"}},
 	{"control.request_merchant_domain(bytea,uuid,text,text,text)", "commerce_storefront_writer", true, []string{"commerce_runtime"}},
 	{"control.read_store_domains(bytea,uuid)", "commerce_storefront_writer", true, []string{"commerce_runtime"}},
@@ -450,6 +452,8 @@ var sdFns = []struct {
 	{"control.next_store_domain_dns_check()", "commerce_storefront_writer", true, []string{"commerce_storefront_registrar"}},
 	{"control.next_store_domain_tls_probe()", "commerce_storefront_writer", true, []string{"commerce_storefront_registrar"}},
 	{"control.resolve_storefront_ask(text)", "commerce_storefront_writer", true, []string{"commerce_runtime"}},
+	{"control.tls_pending_nonce(text,text)", "commerce_storefront_writer", true, []string{"commerce_runtime"}},
+	{"control.admitted_storefront_hosts()", "commerce_storefront_writer", true, []string{"commerce_runtime"}},
 	{"control.resolve_primary_origin(text)", "commerce_storefront_writer", true, []string{"commerce_buyer_runtime"}},
 }
 
@@ -485,6 +489,10 @@ func TestStoreDomainsSDW06SchemaAndACLInventory(t *testing.T) {
 	// The BEFORE INSERT trigger exists and runs the handle default.
 	if n := countRows(t, o, `SELECT count(*) FROM pg_trigger WHERE tgname='stores_handle_before_insert' AND tgrelid='control.stores'::regclass AND NOT tgisinternal`); n != 1 {
 		t.Fatalf("stores_handle_before_insert = %d triggers, want 1", n)
+	}
+	// The AFTER UPDATE trigger detaches the old platform origin on a handle change (P1-4).
+	if n := countRows(t, o, `SELECT count(*) FROM pg_trigger WHERE tgname='stores_handle_after_update' AND tgrelid='control.stores'::regclass AND NOT tgisinternal`); n != 1 {
+		t.Fatalf("stores_handle_after_update = %d triggers, want 1", n)
 	}
 	// The handle column shape: nullable text, the format CHECK, the partial unique index.
 	var nullable bool

@@ -33,7 +33,7 @@ Command api owns the API process assembly: it loads each feature's configuration
 
 Command claims-worker owns the T10c claims host (meta-claims-intake-v1 §5.3, IR-13): it runs the claims intake poller (internal/claimsintake) and the main-schema external_operation_v1 River worker whose only routes are the Meta private replies (internal/integrations/metareply), and the merchant-disconnect unsubscribe jobs (metareply.Unsubscriber, migration 0100: one best-effort DELETE /{page-id}/subscribed_apps per disconnected Page).
 
-- Depends on (internal): `internal/claims`, `internal/claimsintake`, `internal/integrations/core`, `internal/integrations/meta/pagetoken/pageopen`, `internal/integrations/metareply`, `internal/integrations/shipping/ecpay`, `internal/integrations/shipping/ecpay/ecpayroute`, `internal/jobqueue`, `internal/platform`, `internal/retention`
+- Depends on (internal): `internal/claims`, `internal/claimsintake`, `internal/domains`, `internal/integrations/core`, `internal/integrations/meta/pagetoken/pageopen`, `internal/integrations/metareply`, `internal/integrations/shipping/ecpay`, `internal/integrations/shipping/ecpay/ecpayroute`, `internal/jobqueue`, `internal/platform`, `internal/retention`, `internal/storefrontdomains`
 - Depends on (third-party): `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
 - Used by: — (entry point or unused)
 
@@ -243,7 +243,7 @@ Package domains owns resolving a published storefront from an exact, trusted ori
 
 - Depends on (internal): `internal/command`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
-- Used by: `cmd/store-admin`, `internal/buyerhttp`, `internal/catalog`, `internal/merchanttools`, `internal/storefrontadmin`, `internal/storefrontdomains`, `internal/tlsask`
+- Used by: `cmd/claims-worker`, `cmd/store-admin`, `internal/buyerhttp`, `internal/catalog`, `internal/merchanttools`, `internal/storefrontadmin`, `internal/storefrontdomains`, `internal/tlsask`
 
 ## `internal/fulfillment`
 
@@ -586,8 +586,8 @@ Package storefrontadmin owns the production writer of storefront publication and
 Package storefrontdomains owns the merchant self-service domain lifecycle and the platform-primary redirect (R5 unit store-domains, Decision 3): a merchant requests a custom hostname (REQUESTED + a TXT verification token + DNS instructions), the DNS/TLS worker verifies the proof and completes it to ACTIVE, and every non-primary ACTIVE origin 301s to the store's primary origin (the merchant domain when ACTIVE, else the platform subdomain).
 
 - Depends on (internal): `internal/command`, `internal/domains`, `internal/platform`
-- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
-- Used by: `internal/buyerhttp`, `internal/httpapi`
+- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`
+- Used by: `cmd/claims-worker`, `internal/buyerhttp`, `internal/httpapi`
 
 ## `internal/storehandles`
 
@@ -599,7 +599,7 @@ Package storehandles owns the store handle grammar (R5 unit store-domains, Decis
 
 ## `internal/tlsask`
 
-Package tlsask owns the edge TLS ask endpoint (R5 unit store-domains, Decision 4): Caddy's on_demand_tls `ask http://api:<port>/internal/tls-ask` calls it before issuing a certificate, and it answers 200 only for a hostname that maps to an ACTIVE origin or a merchant origin in TLS_PENDING — every other host fails closed.
+Package tlsask owns the edge TLS ask endpoint (R5 unit store-domains, Decision 4): Caddy's on_demand_tls `ask http://api:<port>/internal/tls-ask` calls it before issuing a certificate, and it answers 200 only for a hostname that maps to an ACTIVE in-window origin or a merchant origin in TLS_PENDING — every other host fails closed.
 
 - Depends on (internal): `internal/domains`, `internal/httperror`
 - Depends on (third-party): `github.com/jackc/pgx/v5`
