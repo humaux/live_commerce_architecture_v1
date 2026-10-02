@@ -189,7 +189,7 @@ export const entryCopy: Record<Locale, EntryCopy> = {
     handleReserved: "此名稱為平台保留詞，系統會建議其他商店 ID。",
     handleFormat: "此名稱無法產生 3–30 位商店 ID。請使用英文店名，或由系統分配其他 ID。",
     handleFailed: "暫時無法確認是否可用。修改店名可重新檢查，建立時會再次驗證最終 ID。",
-    addressPending: "後台工作區已建立，但商店網址尚未就緒。請聯絡平台完成網域設定後再發佈，目前沒有可供買家造訪的網址。",
+    addressPending: "內部工作區已建立，但商店網址尚未就緒。請聯絡平台完成網域設定後再發佈，目前沒有可供買家造訪的網址。",
     handleChecking: "正在檢查可用性…",
     handleAvailable: "可用",
     handleTaken: "已被佔用，將自動加上編號",
