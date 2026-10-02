@@ -250,7 +250,8 @@ test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MO
   merchant.on("pageerror", (error) => pageErrors.push(error.message));
   await merchant.goto(`${origin}/en/`);
   await merchant.getByRole("button", { name: "Sign in with identity service" }).click();
-  await expect(merchant.getByRole("button", { name: "Live workspace" })).toBeVisible();
+  // W0 shell: signed in = the registry-driven "live" navigation group is present (the old flat "Live workspace" entry is gone).
+  await expect(merchant.getByTestId(/^nav(-group)?-live/).first()).toBeVisible();
   await merchant.goto(`${origin}/en/studio?store=${store}&scene=${session}`);
   await expect(merchant.getByTestId("merchant-studio")).toBeVisible();
   // R1 ruling G2: the harness runs planning-only Studio (media off), so the API reports
