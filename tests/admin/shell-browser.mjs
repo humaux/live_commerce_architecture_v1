@@ -95,6 +95,29 @@ export async function runShellGate({
           .map((v) => ({ id: v.id, nodes: v.nodes.map((n) => n.target) }));
       });
       assert.deepEqual(axe, [], `${locale} ${width}: axe`);
+      if (width >= 1024) {
+        await page.locator("[data-shell-rail] button:visible").first().focus();
+        const order = [];
+        for (let step = 0; step < 32 && order.at(-1) !== "main"; step++) {
+          const region = await page.evaluate(() => {
+            const active = document.activeElement;
+            return active?.closest("[data-shell-rail]")
+              ? "rail"
+              : active?.closest("[data-shell-topbar]")
+                ? "topbar"
+                : active?.closest("main")
+                  ? "main"
+                  : "outside";
+          });
+          if (region !== order.at(-1)) order.push(region);
+          await page.keyboard.press("Tab");
+        }
+        assert.deepEqual(
+          order,
+          ["rail", "topbar", "main"],
+          "G-UI4 keyboard focus order",
+        );
+      }
       if (width < 1024) {
         const menu = page.locator('[aria-controls="workspace-navigation"]');
         await menu.click();

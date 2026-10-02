@@ -3,6 +3,7 @@ import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { createRequire } from "node:module";
 import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
 // TS 7 keeps the build CLI; this dev-only alias supplies the in-process compiler API.
 const ts = createRequire(import.meta.url)("typescript-api");
 const compilerOptions = {
@@ -123,6 +124,24 @@ export function architectureGate() {
   );
   const errors = validateAllowances(allowed, basis),
     warnings = [];
+  // Also pin monotonicity to committed history: removing a waiver cannot be undone
+  // just because the original b4223c8 ceiling used to allow it.
+  for (const ref of ["HEAD", "HEAD^"]) {
+    try {
+      const previous = JSON.parse(
+        execFileSync(
+          "git",
+          ["show", `${ref}:tests/admin/ui-legacy-allowlist.json`],
+          { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+        ),
+      );
+      errors.push(
+        ...validateAllowances(allowed, previous).map((e) => `${ref}: ${e}`),
+      );
+    } catch {
+      /* first introduction has no previous allowlist */
+    }
+  }
   const sources = Object.fromEntries(
     ["apps/admin", "apps/storefront", "packages/ui", "packages/format"]
       .flatMap(walk)

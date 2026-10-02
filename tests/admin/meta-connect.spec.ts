@@ -37,7 +37,12 @@ const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 async function signedLogin(page: Page) {
   await page.goto(new URL("/en/", origin).toString());
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
+  await page.getByTestId("nav-orders").waitFor({ state: "attached" });
+  const menu = page.locator('button[aria-controls="workspace-navigation"]');
+  const drawer = await menu.isVisible();
+  if (drawer) await menu.click();
   await expect(page.getByTestId("nav-orders")).toBeVisible();
+  if (drawer) await page.keyboard.press("Escape");
 }
 async function ctl(resource: string) {
   const response = await fetch(`${control}/${resource}`, { method: "POST", headers: { "X-Gate-Key": controlKey } });

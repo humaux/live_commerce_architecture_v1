@@ -567,7 +567,11 @@ elif [[ "$test_mode" == --browser-refund-fulfilment ]]; then
 elif [[ "$test_mode" == --browser-customers-billing ]]; then
   LC_BROWSER_CUSTOMERS_BILLING_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1700s -run '^TestBrowserCustomersBilling$' -v ./tests/foundation
   printf 'PASS: CB11 isolated admin + storefront Next, Go, PG, real worker; platform billing = MOCK (independent billingtest fake, Stripe pages answered in the browser); not provider or deployment acceptance; CB10 SANDBOX and CB12 LIVE are NOT_RUN.\n'
-elif [[ "$test_mode" == --browser-storefront-publish || "$test_mode" == --browser-design ]]; then
+elif [[ "$test_mode" == --browser-design ]]; then
+  node --test --experimental-strip-types tests/admin/design-model.test.ts tests/admin/design-gate.test.ts
+  LC_BROWSER_STORE_DESIGN_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1700s -run '^TestBrowserStoreDesign$' -v ./tests/foundation
+  printf 'PASS: store-design editor browser, signed MOCK IdP and isolated PG; not storefront rendering or production acceptance.\n'
+elif [[ "$test_mode" == --browser-storefront-publish ]]; then
   LC_BROWSER_STOREFRONT_PUBLISH_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=900s -run '^TestBrowserStorefrontPublish$' -v ./tests/foundation
   printf 'PASS: R3 storefront-publish: isolated admin + storefront Next, Go, PG with NO owner-seeded publication/domain row; the merchant publishes with the Settings card (en/zh-TW, desktop + 390px), the built cmd/store-admin executable binds/suspends/detaches/re-binds the origin, a fresh anonymous buyer browser sees the product or the not-found page on https://buyer.example; signed MOCK IdP + synthetic TLS/CONNECT edge, ownership/TLS evidence is an unverified reference; not DNS/TLS, Caddy or provider acceptance.\n'
 elif [[ "$test_mode" == --browser-meta-ads ]]; then

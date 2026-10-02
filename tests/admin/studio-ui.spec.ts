@@ -26,8 +26,11 @@ test.setTimeout(240_000);
 async function signedLogin(page: Page) {
   await page.goto(new URL("/en/", origin).toString());
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
-  await expect(page.getByRole("button", { name: "Live workspace" })).toBeVisible();
-  await page.getByRole("button", { name: "Live workspace" }).click();
+  await page.getByTestId("nav-group-live").waitFor({ state: "attached" });
+  const menu = page.locator('button[aria-controls="workspace-navigation"]');
+  if (await menu.isVisible()) await menu.click();
+  await expect(page.getByTestId("nav-group-live")).toBeVisible();
+  await page.getByTestId("nav-group-live").click();
   await expect(page.getByTestId("merchant-studio")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Live Studio" })).toBeVisible();
 }
