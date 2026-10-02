@@ -21,7 +21,13 @@ import { carrierNames, orderCopy } from "../lib/order-copy";
 import { purchaseCopy } from "../lib/purchase-copy";
 import { cvsCopy } from "../lib/cvs-copy";
 import { bankTransferCopy } from "../lib/bank-transfer-copy";
-import { isTransferErrorCode, validBuyerEmail, type TransferErrorCode } from "../lib/bank-transfer-contract";
+import {
+  isTransferErrorCode,
+  settledCommercialState,
+  validBuyerEmail,
+  type TransferErrorCode,
+  type TransferState,
+} from "../lib/bank-transfer-contract";
 import { isPromoErrorCode, type PromoErrorCode } from "../lib/promo-contract";
 import { promoCopy } from "../lib/promo-copy";
 import {
@@ -684,6 +690,14 @@ export function OrderDetails({
   isSelected: () => boolean;
 }) {
   const [paymentRefresh, setPaymentRefresh] = useState(0);
+  // D06: the transfer panel reports its state; a confirmed/expired transfer settles the heading before the order read catches up, and
+  // that disagreement triggers one order reload so the order itself (hold line, shipment, history) agrees.
+  const [transferState, setTransferState] = useState<TransferState | null>(null);
+  const shownState = settledCommercialState(order.commercial_state, transferState);
+  const stale = shownState !== order.commercial_state;
+  useEffect(() => {
+    if (stale) refresh();
+  }, [stale]);
   // OrderPayment registers here only while a Stripe attempt is live (payment/refresh signal).
   const paymentSignalRef = useRef<(() => Promise<void>) | null>(null);
   const copy = orderCopy[locale],
@@ -699,9 +713,9 @@ export function OrderDetails({
       <p
         className="order-state"
         data-testid="order-state"
-        data-state={order.commercial_state}
+        data-state={shownState}
       >
-        {copy[order.commercial_state]}
+        {copy[shownState]}
       </p>
       <p>
         {copy.orderID}:{" "}
@@ -782,7 +796,7 @@ export function OrderDetails({
       {order.shipment && (
         <ShipmentBlock shipment={order.shipment} locale={locale} />
       )}
-      {order.hold_expires_at && (
+      {order.hold_expires_at && !stale && (
         <>
           <p>
             {copy.hold}{" "}
@@ -803,6 +817,7 @@ export function OrderDetails({
           locale={locale}
           money={money}
           refreshToken={paymentRefresh}
+          onState={setTransferState}
         />
       )}
       {/* Pay-at-pickup and bank transfer are not Stripe payments: no payment read, no start, no refresh signal. */}

@@ -3,6 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   minorFromText,
+  settledCommercialState,
   transferCountdown,
   validBuyerEmail,
   validProofBody,
@@ -303,4 +304,16 @@ test("BFF: transfer refusal codes pass through as definite 422; checkout accepts
   } finally {
     globalThis.fetch = old;
   }
+});
+
+test("D06 order heading follows a settled transfer: never 'waiting for transfer' above a confirmed or expired one", () => {
+  // the order read lags the transfer read: AWAITING_TRANSFER + a settled transfer must not head the page "waiting"
+  assert.equal(settledCommercialState("AWAITING_TRANSFER", "CONFIRMED"), "CONFIRMED");
+  assert.equal(settledCommercialState("AWAITING_TRANSFER", "REFUNDED_OFFLINE"), "CONFIRMED"); // a refund only follows a confirmation
+  assert.equal(settledCommercialState("AWAITING_TRANSFER", "EXPIRED"), "CANCELLED");
+  // still open (or not read yet): the order's own word stands
+  for (const open of ["AWAITING", "SUBMITTED", "REJECTED", null]) assert.equal(settledCommercialState("AWAITING_TRANSFER", open), "AWAITING_TRANSFER", String(open));
+  // the order read is the authority once it agrees or says anything else; the transfer never overrides it
+  for (const state of ["DRAFT", "AWAITING_PAYMENT", "CONFIRMED", "CANCELLED"])
+    for (const transfer of ["AWAITING", "CONFIRMED", "EXPIRED", null]) assert.equal(settledCommercialState(state, transfer), state, `${state}/${transfer}`);
 });
