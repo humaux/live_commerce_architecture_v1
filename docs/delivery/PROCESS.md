@@ -89,7 +89,8 @@ Default routing (owner 2026-10-02 "能使用 DeepSeek 或 Kimi 的使用"): back
 sandbox cannot work (browser on logged-in consoles, merges, live hosts) or for the final money/security verdict (top tier).
 Concurrency: at most 4 sub-agents, at most 2 writers at once; Kimi at most 2 at once and the Pro plan's 5-hour quota runs out in
 ~30-90 min of two parallel K3/K2.8 agents (2026-10-02: both cut off), so run large Kimi units one at a time and resume a cut-off run with
-`RESUME=<session_id>`; DeepSeek has a ¥10 reserve guard
+`RESUME=<session_id>` — or, when the quota is out and the work is on the critical path, hand it to a Claude mid-tier sub-agent
+(at most 3; owner 2026-10-02 "DeepSeek、kimi、Claude一起使用"); DeepSeek has a ¥10 reserve guard
 in ext-agent.sh. Every agent records role, model, effort, base SHA, worktree and allowed paths in its delivery record.
 
 Before launching: `pnpm install --offline --frozen-lockfile` in the worktree and merge the integration branch into it
