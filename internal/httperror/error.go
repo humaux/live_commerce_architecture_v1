@@ -81,7 +81,7 @@ func write(w http.ResponseWriter, status int, code string, retryable bool) {
 		// internal/metaconnect TestFrozenCodesSurviveHTTPError guards the drift.
 		"state_used":         "That Meta connection attempt was already completed.",
 		"missing_permission": "A required Facebook permission or Page access is missing.",
-		"already_connected":  "This store already has a Facebook Page connected.",
+		"cap_exceeded":       "This store has reached the limit of 10 connected Facebook Pages.",
 		"page_taken":         "That Facebook Page is already connected to another store.",
 		// stripe-refund-v1 §7.1 (ruling 15: unknown codes were rewritten to "internal").
 		"refundable_changed":    "Refundable amount changed since it was loaded.",

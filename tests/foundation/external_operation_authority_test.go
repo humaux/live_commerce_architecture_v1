@@ -264,7 +264,7 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 ('integration.meta_connect_finish(bytea,uuid,uuid,text,uuid,bigint,text,bytea,bytea,uuid,bigint,text,bytea,bytea,text,text)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
 	 ('integration.meta_connect_put_credential(uuid,uuid,uuid,uuid,text,text,bigint,text,bytea,bytea,text[])'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
 	 ('integration.meta_connect_status(bytea,uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
-	 ('integration.meta_connect_disconnect(bytea,uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
+	 ('integration.meta_connect_disconnect(bytea,uuid,text)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
 	 ('integration.meta_connect_mark_reauth(uuid)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
 	 -- meta-connect D2 (migration 0100): the claims-worker's disconnect unsubscribe job (the only holder of the private HPKE ring);
 	 ('integration.claim_meta_unsubscribe()'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),

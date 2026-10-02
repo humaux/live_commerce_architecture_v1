@@ -24,6 +24,7 @@ import (
 )
 
 var metaConnectPickFields = []string{"state_id", "page_id", "include_instagram"}
+var metaConnectDisconnectFields = []string{"page_id"}
 
 // registerMetaConnectRoutes mounts the connect surface; a nil service leaves it unmounted (cmd/api builds it only when
 // COMMERCE_META_LOGIN_CONFIG_ID and the Meta app are configured).
@@ -61,16 +62,20 @@ func registerMetaConnectRoutes(mux *http.ServeMux, pool *pgxpool.Pool, svc *meta
 			return
 		}
 		metaConnectLong(w, r, func(ctx context.Context) (any, int, error) {
-			out, err := svc.Pick(ctx, pool, bearerToken(r), r.PathValue("store_id"), in)
+			out, err := svc.Pick(ctx, pool, bearerToken(r), r.PathValue("store_id"), r.Header.Get("Idempotency-Key"), in)
 			return out, http.StatusCreated, err
 		})
 	}))
 	mux.HandleFunc("POST "+base+"/disconnect", adsRoute(http.MethodPost, true, false, func(w http.ResponseWriter, r *http.Request) {
-		if _, ok := claimsBody[struct{}](w, r, nil, nil); !ok { // exactly `{}`: the generic BFF always posts a JSON body
+		in, ok := claimsBody[struct {
+			PageID string `json:"page_id"`
+		}](w, r, metaConnectDisconnectFields, nil)
+		if !ok {
 			return
 		}
 		metaConnectLong(w, r, func(ctx context.Context) (any, int, error) {
-			return map[string]bool{"disconnected": true}, http.StatusOK, svc.Disconnect(ctx, pool, bearerToken(r), r.PathValue("store_id"))
+			return map[string]bool{"disconnected": true}, http.StatusOK,
+				svc.Disconnect(ctx, pool, bearerToken(r), r.PathValue("store_id"), r.Header.Get("Idempotency-Key"), in.PageID)
 		})
 	}))
 	for _, suffix := range fallbacks {

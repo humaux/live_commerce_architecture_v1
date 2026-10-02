@@ -32,8 +32,9 @@ async function send(store: string, resource: string, key: string, body: string, 
 // Go POST meta-connect/pick {state_id, page_id, include_instagram}
 export const postPick = (store: string, key: string, stateID: string, pageID: string, includeInstagram: boolean, boundary: string) =>
   send(store, "meta-connect/pick", key, JSON.stringify({ state_id: stateID, page_id: pageID, include_instagram: includeInstagram }), boundary);
-// Go POST meta-connect/disconnect {}
-export const postDisconnect = (store: string, key: string, boundary: string) => send(store, "meta-connect/disconnect", key, "{}", boundary);
+// Go POST meta-connect/disconnect {page_id}: never disconnect the entire store.
+export const postDisconnect = (store: string, key: string, pageID: string, boundary: string) =>
+  send(store, "meta-connect/disconnect", key, JSON.stringify({ page_id: pageID }), boundary);
 
 // BFF POST /api/meta/connect -> Go POST meta-connect/start; answers {dialog_url} (checked to be exactly www.facebook.com).
 export async function postConnect(store: string, key: string, boundary: string): Promise<WriteResult<string>> {
@@ -58,7 +59,7 @@ export async function postConnect(store: string, key: string, boundary: string):
     return { ok: false, code, uncertain: response.status >= 500 };
   }
   const url = safeDialogURL(value && typeof value === "object" ? (value as Record<string, unknown>).dialog_url : null);
-  return url ? { ok: true, value: url } : { ok: false, code: "retry_later", uncertain: false };
+  return url ? { ok: true, value: url } : { ok: false, code: "retry_later", uncertain: true };
 }
 
 export const newKey = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;

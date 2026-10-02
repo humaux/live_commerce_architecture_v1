@@ -252,16 +252,27 @@ func loadSource(ctx context.Context, tx pgx.Tx, scope platform.Scope, sessionID 
 		scope.TenantID, scope.StoreID, sessionID))
 }
 
-// resolveBinding picks the store's single enabled Meta binding for the pasted platform (a bare
-// numeric id may belong to either platform: exactly one enabled Meta binding overall).
+// resolveBinding picks the store's enabled Meta binding for the pasted platform (a bare
+// numeric id may belong to either platform: exactly one enabled Meta binding overall). A
+// Facebook URL or "<page>_<post>" paste carries its numeric Page id: the query is pinned to
+// that Page so one Page among several (multi-page, migration 0108) resolves instead of
+// ErrBindingAmbiguous; a Page NAME stays unpinned (it can never equal a numeric asset id, so
+// objectFor's ref.Page != asset check still refuses it as input_invalid).
 func resolveBinding(ctx context.Context, tx pgx.Tx, scope platform.Scope, ref ClaimSourceRef) (provider, asset string, err error) {
 	providers := []string{"facebook", "instagram"}
 	if ref.Platform != "" {
 		providers = []string{ref.Platform}
 	}
-	rows, err := tx.Query(ctx, `SELECT provider,external_asset_id FROM integration.bindings
-		WHERE tenant_id=$1 AND store_id=$2 AND enabled AND provider=ANY($3) ORDER BY provider,external_asset_id LIMIT 2`,
-		scope.TenantID, scope.StoreID, providers)
+	const cols = `provider,external_asset_id FROM integration.bindings
+		WHERE tenant_id=$1 AND store_id=$2 AND enabled AND provider=ANY($3)`
+	var rows pgx.Rows
+	if digitsRe.MatchString(ref.Page) {
+		rows, err = tx.Query(ctx, `SELECT `+cols+` AND external_asset_id=$4 ORDER BY provider,external_asset_id LIMIT 2`,
+			scope.TenantID, scope.StoreID, providers, ref.Page)
+	} else {
+		rows, err = tx.Query(ctx, `SELECT `+cols+` ORDER BY provider,external_asset_id LIMIT 2`,
+			scope.TenantID, scope.StoreID, providers)
+	}
 	if err != nil {
 		return "", "", mapError(err)
 	}

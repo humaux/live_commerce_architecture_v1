@@ -29,6 +29,7 @@
 .claims-field { display: grid; gap: 7px; min-width: 0; }
 .claims-field > label { font-weight: 600; }
 .claims-field input, .claims-field select { width: 100%; min-width: 0; }
+#claims-source-page { min-height: 44px; }
 .claims-rail > .claims-field { margin-top: 20px; }
 .claims-muted { color: var(--muted); }
 .claims-rail > .claims-muted { margin-top: 8px; font-size: 13px; }

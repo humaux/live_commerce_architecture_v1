@@ -2813,7 +2813,7 @@ export function SettingsWizard({
         </div>
         {store && <StorefrontSettings store={store.id} locale={locale} />}
         {/* Facebook Page / Instagram connect: BFF /api/meta/*, /api/stores/{store}/meta-connect/* -> Go internal/httpapi/meta_connect.go */}
-        {store && <MetaConnect store={store.id} locale={locale} />}
+        {store && <MetaConnect key={store.id} store={store.id} locale={locale} />}
       </div>
     </WorkspaceFrame>
   );
