@@ -363,9 +363,6 @@ func CreateSKU(ctx context.Context, tx pgx.Tx, scope platform.Scope, key string,
 		if err != nil {
 			return err
 		}
-		if err := checkWholeTWD(currency, in.PriceMinor, in.CompareAtMinor); err != nil {
-			return err
-		}
 		err = tx.QueryRow(ctx, `INSERT INTO catalog.skus(tenant_id,store_id,product_id,code,currency,price_minor,weight_grams,length_mm,width_mm,height_mm,origin_country,customs_name,hs_candidate,option_values,compare_at_minor)
 			VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
 			RETURNING `+skuColumns,
@@ -452,9 +449,6 @@ func SetSKUPrice(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, id s
 		// is a merchant error to fix by sending compare_at_minor (or null) in the same request.
 		if compare != nil && *compare <= in.PriceMinor {
 			return command.ErrInvalid
-		}
-		if err := checkWholeTWD(current.Currency, in.PriceMinor, compare); err != nil {
-			return err
 		}
 		if err := tx.QueryRow(ctx, `UPDATE catalog.skus SET price_minor=$3,compare_at_minor=$6,version=version+1,updated_at=clock_timestamp()
 			WHERE tenant_id=$1 AND store_id=$2 AND id=$4 AND version=$5

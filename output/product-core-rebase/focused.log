@@ -1,0 +1,442 @@
+=== RUN   TestCheckoutQuoteMatchingReadOnlyAndAuthority
+--- PASS: TestCheckoutQuoteMatchingReadOnlyAndAuthority (1.65s)
+=== RUN   TestCheckoutQuoteRejectsCurrentStateDrift
+=== RUN   TestCheckoutQuoteRejectsCurrentStateDrift/cart
+=== RUN   TestCheckoutQuoteRejectsCurrentStateDrift/quantity-without-version
+=== RUN   TestCheckoutQuoteRejectsCurrentStateDrift/sku-price
+=== RUN   TestCheckoutQuoteRejectsCurrentStateDrift/sku-version
+=== RUN   TestCheckoutQuoteRejectsCurrentStateDrift/sku-inactive
+=== RUN   TestCheckoutQuoteRejectsCurrentStateDrift/product-name
+=== RUN   TestCheckoutQuoteRejectsCurrentStateDrift/product-version
+=== RUN   TestCheckoutQuoteRejectsCurrentStateDrift/product-inactive
+=== RUN   TestCheckoutQuoteRejectsCurrentStateDrift/market-version
+=== RUN   TestCheckoutQuoteRejectsCurrentStateDrift/market-inactive
+=== RUN   TestCheckoutQuoteRejectsCurrentStateDrift/policy-version
+=== RUN   TestCheckoutQuoteRejectsCurrentStateDrift/policy-disabled
+--- PASS: TestCheckoutQuoteRejectsCurrentStateDrift (3.00s)
+    --- PASS: TestCheckoutQuoteRejectsCurrentStateDrift/cart (0.24s)
+    --- PASS: TestCheckoutQuoteRejectsCurrentStateDrift/quantity-without-version (0.23s)
+    --- PASS: TestCheckoutQuoteRejectsCurrentStateDrift/sku-price (0.21s)
+    --- PASS: TestCheckoutQuoteRejectsCurrentStateDrift/sku-version (0.26s)
+    --- PASS: TestCheckoutQuoteRejectsCurrentStateDrift/sku-inactive (0.21s)
+    --- PASS: TestCheckoutQuoteRejectsCurrentStateDrift/product-name (0.25s)
+    --- PASS: TestCheckoutQuoteRejectsCurrentStateDrift/product-version (0.27s)
+    --- PASS: TestCheckoutQuoteRejectsCurrentStateDrift/product-inactive (0.24s)
+    --- PASS: TestCheckoutQuoteRejectsCurrentStateDrift/market-version (0.31s)
+    --- PASS: TestCheckoutQuoteRejectsCurrentStateDrift/market-inactive (0.27s)
+    --- PASS: TestCheckoutQuoteRejectsCurrentStateDrift/policy-version (0.27s)
+    --- PASS: TestCheckoutQuoteRejectsCurrentStateDrift/policy-disabled (0.25s)
+=== RUN   TestCheckoutQuoteRejectsForgedSnapshotAndTime
+=== RUN   TestCheckoutQuoteRejectsForgedSnapshotAndTime/price
+=== RUN   TestCheckoutQuoteRejectsForgedSnapshotAndTime/quantity
+=== RUN   TestCheckoutQuoteRejectsForgedSnapshotAndTime/line-tax
+=== RUN   TestCheckoutQuoteRejectsForgedSnapshotAndTime/line-discount
+=== RUN   TestCheckoutQuoteRejectsForgedSnapshotAndTime/discount
+=== RUN   TestCheckoutQuoteRejectsForgedSnapshotAndTime/subtotal
+=== RUN   TestCheckoutQuoteRejectsForgedSnapshotAndTime/aggregate-tax
+=== RUN   TestCheckoutQuoteRejectsForgedSnapshotAndTime/shipping
+=== RUN   TestCheckoutQuoteRejectsForgedSnapshotAndTime/shipping-tax
+=== RUN   TestCheckoutQuoteRejectsForgedSnapshotAndTime/total
+=== RUN   TestCheckoutQuoteRejectsForgedSnapshotAndTime/amount-lines
+=== RUN   TestCheckoutQuoteRejectsForgedSnapshotAndTime/empty-lines
+=== RUN   TestCheckoutQuoteRejectsForgedSnapshotAndTime/sku-identity
+=== RUN   TestCheckoutQuoteRejectsForgedSnapshotAndTime/policy-money
+=== RUN   TestCheckoutQuoteRejectsForgedSnapshotAndTime/policy-tax
+=== RUN   TestCheckoutQuoteRejectsForgedSnapshotAndTime/name
+=== RUN   TestCheckoutQuoteRejectsForgedSnapshotAndTime/description
+=== RUN   TestCheckoutQuoteRejectsForgedSnapshotAndTime/malformed-type
+=== RUN   TestCheckoutQuoteRejectsForgedSnapshotAndTime/expired
+=== RUN   TestCheckoutQuoteRejectsForgedSnapshotAndTime/future
+=== RUN   TestCheckoutQuoteRejectsForgedSnapshotAndTime/ttl
+--- PASS: TestCheckoutQuoteRejectsForgedSnapshotAndTime (5.10s)
+    --- PASS: TestCheckoutQuoteRejectsForgedSnapshotAndTime/price (0.24s)
+    --- PASS: TestCheckoutQuoteRejectsForgedSnapshotAndTime/quantity (0.23s)
+    --- PASS: TestCheckoutQuoteRejectsForgedSnapshotAndTime/line-tax (0.20s)
+    --- PASS: TestCheckoutQuoteRejectsForgedSnapshotAndTime/line-discount (0.22s)
+    --- PASS: TestCheckoutQuoteRejectsForgedSnapshotAndTime/discount (0.20s)
+    --- PASS: TestCheckoutQuoteRejectsForgedSnapshotAndTime/subtotal (0.23s)
+    --- PASS: TestCheckoutQuoteRejectsForgedSnapshotAndTime/aggregate-tax (0.21s)
+    --- PASS: TestCheckoutQuoteRejectsForgedSnapshotAndTime/shipping (0.26s)
+    --- PASS: TestCheckoutQuoteRejectsForgedSnapshotAndTime/shipping-tax (0.25s)
+    --- PASS: TestCheckoutQuoteRejectsForgedSnapshotAndTime/total (0.32s)
+    --- PASS: TestCheckoutQuoteRejectsForgedSnapshotAndTime/amount-lines (0.20s)
+    --- PASS: TestCheckoutQuoteRejectsForgedSnapshotAndTime/empty-lines (0.16s)
+    --- PASS: TestCheckoutQuoteRejectsForgedSnapshotAndTime/sku-identity (0.16s)
+    --- PASS: TestCheckoutQuoteRejectsForgedSnapshotAndTime/policy-money (0.19s)
+    --- PASS: TestCheckoutQuoteRejectsForgedSnapshotAndTime/policy-tax (0.28s)
+    --- PASS: TestCheckoutQuoteRejectsForgedSnapshotAndTime/name (0.24s)
+    --- PASS: TestCheckoutQuoteRejectsForgedSnapshotAndTime/description (0.20s)
+    --- PASS: TestCheckoutQuoteRejectsForgedSnapshotAndTime/malformed-type (0.26s)
+    --- PASS: TestCheckoutQuoteRejectsForgedSnapshotAndTime/expired (0.36s)
+    --- PASS: TestCheckoutQuoteRejectsForgedSnapshotAndTime/future (0.34s)
+    --- PASS: TestCheckoutQuoteRejectsForgedSnapshotAndTime/ttl (0.34s)
+=== RUN   TestCheckoutQuoteRetainsLocksUntilCallerEnds
+=== RUN   TestCheckoutQuoteRetainsLocksUntilCallerEnds/cart
+=== RUN   TestCheckoutQuoteRetainsLocksUntilCallerEnds/policy
+=== RUN   TestCheckoutQuoteRetainsLocksUntilCallerEnds/product
+=== RUN   TestCheckoutQuoteRetainsLocksUntilCallerEnds/sku
+--- PASS: TestCheckoutQuoteRetainsLocksUntilCallerEnds (1.75s)
+    --- PASS: TestCheckoutQuoteRetainsLocksUntilCallerEnds/cart (0.91s)
+    --- PASS: TestCheckoutQuoteRetainsLocksUntilCallerEnds/policy (0.44s)
+    --- PASS: TestCheckoutQuoteRetainsLocksUntilCallerEnds/product (0.24s)
+    --- PASS: TestCheckoutQuoteRetainsLocksUntilCallerEnds/sku (0.16s)
+=== RUN   TestCheckoutQuoteRechecksClockAndStateAfterWaiting
+=== RUN   TestCheckoutQuoteRechecksClockAndStateAfterWaiting/expire
+=== RUN   TestCheckoutQuoteRechecksClockAndStateAfterWaiting/price-change
+=== RUN   TestCheckoutQuoteRechecksClockAndStateAfterWaiting/cancel
+--- PASS: TestCheckoutQuoteRechecksClockAndStateAfterWaiting (2.67s)
+    --- PASS: TestCheckoutQuoteRechecksClockAndStateAfterWaiting/expire (2.17s)
+    --- PASS: TestCheckoutQuoteRechecksClockAndStateAfterWaiting/price-change (0.27s)
+    --- PASS: TestCheckoutQuoteRechecksClockAndStateAfterWaiting/cancel (0.23s)
+=== RUN   TestT06WorkerAuthorityAndFunctionACL
+--- PASS: TestT06WorkerAuthorityAndFunctionACL (0.58s)
+=== RUN   TestHomeCodDefectBuyerOrderAmount
+--- PASS: TestHomeCodDefectBuyerOrderAmount (0.48s)
+=== RUN   TestHomeCodDefectMerchantExportAmount
+2026/10/02 23:39:02 INFO orders.export_unshipped store_id=ecd5ba95-d075-4fc7-bcec-7e48d21a49af rows=1 truncated=false duration_ms=7
+--- PASS: TestHomeCodDefectMerchantExportAmount (0.40s)
+=== RUN   TestHomeCodDefectVoidAfterCollected
+--- PASS: TestHomeCodDefectVoidAfterCollected (0.44s)
+=== RUN   TestHomeCodDefectFinanceDayDrift
+--- PASS: TestHomeCodDefectFinanceDayDrift (1.24s)
+=== RUN   TestHomeCodDefectFinanceDayDriftErasure
+--- PASS: TestHomeCodDefectFinanceDayDriftErasure (0.43s)
+=== RUN   TestHomeCodReviewTamperedAmounts
+=== RUN   TestHomeCodReviewTamperedAmounts/extra_money_keys:_refused_with_no_rows,_or_accepted_with_the_server_surcharge_and_total
+=== RUN   TestHomeCodReviewTamperedAmounts/payment_mode_spelled_any_other_way_is_refused_with_no_rows
+--- PASS: TestHomeCodReviewTamperedAmounts (0.95s)
+    --- PASS: TestHomeCodReviewTamperedAmounts/extra_money_keys:_refused_with_no_rows,_or_accepted_with_the_server_surcharge_and_total (0.29s)
+    --- PASS: TestHomeCodReviewTamperedAmounts/payment_mode_spelled_any_other_way_is_refused_with_no_rows (0.19s)
+=== RUN   TestHomeCodReviewCvsDestinationRefusedOverHTTP
+--- PASS: TestHomeCodReviewCvsDestinationRefusedOverHTTP (0.53s)
+=== RUN   TestHomeCodReviewSettingChangedAfterQuote
+--- PASS: TestHomeCodReviewSettingChangedAfterQuote (0.73s)
+=== RUN   TestHomeCodReviewCapBoundary
+--- PASS: TestHomeCodReviewCapBoundary (0.65s)
+=== RUN   TestHomeCodReviewSurchargeSnapshot
+--- PASS: TestHomeCodReviewSurchargeSnapshot (0.52s)
+=== RUN   TestHomeCodReviewConcurrency
+=== RUN   TestHomeCodReviewConcurrency/two_concurrent_returned_records_(two_keys):_one_200,_one_409,_one_audit_row
+=== RUN   TestHomeCodReviewConcurrency/two_concurrent_restocks_(two_keys):_one_200,_one_409,_exactly_one_DEALLOCATE,_allocation_released_once
+=== RUN   TestHomeCodReviewConcurrency/two_concurrent_restocks_with_the_SAME_key:_both_answer_200_with_one_identical_body,_one_DEALLOCATE
+=== RUN   TestHomeCodReviewConcurrency/cancel_racing_the_manual_shipment:_never_CANCELLED_and_MERCHANT_SHIPPED_at_once
+=== RUN   TestHomeCodReviewConcurrency/two_concurrent_Begins_with_one_open_slot_left:_exactly_one_order,_the_other_429_cash_on_delivery_limit
+--- PASS: TestHomeCodReviewConcurrency (1.06s)
+    --- PASS: TestHomeCodReviewConcurrency/two_concurrent_returned_records_(two_keys):_one_200,_one_409,_one_audit_row (0.11s)
+    --- PASS: TestHomeCodReviewConcurrency/two_concurrent_restocks_(two_keys):_one_200,_one_409,_exactly_one_DEALLOCATE,_allocation_released_once (0.10s)
+    --- PASS: TestHomeCodReviewConcurrency/two_concurrent_restocks_with_the_SAME_key:_both_answer_200_with_one_identical_body,_one_DEALLOCATE (0.07s)
+    --- PASS: TestHomeCodReviewConcurrency/cancel_racing_the_manual_shipment:_never_CANCELLED_and_MERCHANT_SHIPPED_at_once (0.26s)
+    --- PASS: TestHomeCodReviewConcurrency/two_concurrent_Begins_with_one_open_slot_left:_exactly_one_order,_the_other_429_cash_on_delivery_limit (0.12s)
+=== RUN   TestHomeCodReviewTransitionMatrix
+=== RUN   TestHomeCodReviewTransitionMatrix/PENDING_and_unshipped
+=== RUN   TestHomeCodReviewTransitionMatrix/COLLECTED_then_REFUNDED_OFFLINE:_terminal
+=== RUN   TestHomeCodReviewTransitionMatrix/RETURNED_then_RESTOCKED:_terminal
+=== RUN   TestHomeCodReviewTransitionMatrix/CANCELLED:_terminal,_never_shippable
+=== RUN   TestHomeCodReviewTransitionMatrix/shipped_PENDING:_cancel_is_refused_as_not_cancellable,_restock_as_a_stale_expectation
+--- PASS: TestHomeCodReviewTransitionMatrix (0.82s)
+    --- PASS: TestHomeCodReviewTransitionMatrix/PENDING_and_unshipped (0.06s)
+    --- PASS: TestHomeCodReviewTransitionMatrix/COLLECTED_then_REFUNDED_OFFLINE:_terminal (0.17s)
+    --- PASS: TestHomeCodReviewTransitionMatrix/RETURNED_then_RESTOCKED:_terminal (0.08s)
+    --- PASS: TestHomeCodReviewTransitionMatrix/CANCELLED:_terminal,_never_shippable (0.08s)
+    --- PASS: TestHomeCodReviewTransitionMatrix/shipped_PENDING:_cancel_is_refused_as_not_cancellable,_restock_as_a_stale_expectation (0.05s)
+=== RUN   TestHomeCodReviewStockHoldAndNoPayment
+=== RUN   TestHomeCodReviewStockHoldAndNoPayment/the_expiry_job_reaches_STALE:_stock_and_reservation_untouched,_order_still_AWAITING_COLLECTION
+=== RUN   TestHomeCodReviewStockHoldAndNoPayment/start_payment_refuses_a_COD_order_and_leaves_no_attempt
+=== RUN   TestHomeCodReviewStockHoldAndNoPayment/a_card_refund_can_never_be_requested_for_a_COD_order
+--- PASS: TestHomeCodReviewStockHoldAndNoPayment (0.42s)
+    --- PASS: TestHomeCodReviewStockHoldAndNoPayment/the_expiry_job_reaches_STALE:_stock_and_reservation_untouched,_order_still_AWAITING_COLLECTION (0.01s)
+    --- PASS: TestHomeCodReviewStockHoldAndNoPayment/start_payment_refuses_a_COD_order_and_leaves_no_attempt (0.01s)
+    --- PASS: TestHomeCodReviewStockHoldAndNoPayment/a_card_refund_can_never_be_requested_for_a_COD_order (0.01s)
+=== RUN   TestHomeCodReviewSharedStateMachine
+--- PASS: TestHomeCodReviewSharedStateMachine (0.38s)
+=== RUN   TestHomeCodReviewACLInventory
+--- PASS: TestHomeCodReviewACLInventory (0.48s)
+=== RUN   TestHomeCodReviewIsolation
+--- PASS: TestHomeCodReviewIsolation (0.46s)
+=== RUN   TestHomeCodReviewFinanceBoundaries
+--- PASS: TestHomeCodReviewFinanceBoundaries (0.99s)
+=== RUN   TestHomeCodReviewIdempotentRetries
+--- PASS: TestHomeCodReviewIdempotentRetries (0.49s)
+=== RUN   TestHomeCodReviewSettingsWire
+--- PASS: TestHomeCodReviewSettingsWire (0.41s)
+=== RUN   TestHomeCodReviewSchemaInvariants
+--- PASS: TestHomeCodReviewSchemaInvariants (0.59s)
+=== RUN   TestHomeCodReviewLedgerGuard
+--- PASS: TestHomeCodReviewLedgerGuard (0.47s)
+=== RUN   TestHomeCodLifecycle
+=== RUN   TestHomeCodLifecycle/settings:_default_off,_create_with_surcharge,_invalid_bodies,_replay,_one_audit
+=== RUN   TestHomeCodLifecycle/buyer_options:_the_home_row_lists_cash_on_delivery_with_the_surcharge,_CVS_rows_never_do
+=== RUN   TestHomeCodLifecycle/placement:_AWAITING_COLLECTION,_committed_stock,_surcharge_snapshot,_no_payment
+=== RUN   TestHomeCodLifecycle/collected_only_after_shipping;_finance_carries_the_COD_columns;_refunded_offline_from_COLLECTED
+--- PASS: TestHomeCodLifecycle (0.48s)
+    --- PASS: TestHomeCodLifecycle/settings:_default_off,_create_with_surcharge,_invalid_bodies,_replay,_one_audit (0.02s)
+    --- PASS: TestHomeCodLifecycle/buyer_options:_the_home_row_lists_cash_on_delivery_with_the_surcharge,_CVS_rows_never_do (0.06s)
+    --- PASS: TestHomeCodLifecycle/placement:_AWAITING_COLLECTION,_committed_stock,_surcharge_snapshot,_no_payment (0.04s)
+    --- PASS: TestHomeCodLifecycle/collected_only_after_shipping;_finance_carries_the_COD_columns;_refunded_offline_from_COLLECTED (0.07s)
+=== RUN   TestHomeCodEligibility
+=== RUN   TestHomeCodEligibility/unavailable:_no_settings_row,_then_a_CVS_destination
+=== RUN   TestHomeCodEligibility/amount:_whole-TWD_only,_and_total_+_surcharge_never_above_the_cap
+=== RUN   TestHomeCodEligibility/limit:_one_open_COD_order_per_owner,_then_the_shared_store-wide_cap
+--- PASS: TestHomeCodEligibility (0.68s)
+    --- PASS: TestHomeCodEligibility/unavailable:_no_settings_row,_then_a_CVS_destination (0.12s)
+    --- PASS: TestHomeCodEligibility/amount:_whole-TWD_only,_and_total_+_surcharge_never_above_the_cap (0.16s)
+    --- PASS: TestHomeCodEligibility/limit:_one_open_COD_order_per_owner,_then_the_shared_store-wide_cap (0.10s)
+=== RUN   TestHomeCodReleaseAndACL
+=== RUN   TestHomeCodReleaseAndACL/ACL:_settings_read/manage_and_collection_write_are_permission_gated
+=== RUN   TestHomeCodReleaseAndACL/cancel_a_PENDING_unshipped_COD_order:_CANCELLED_+_one_DEALLOCATE,_replay_and_stale
+=== RUN   TestHomeCodReleaseAndACL/restock:_ship_->_returned_->_RESTOCKED_once;_a_second_restock_is_refused
+--- PASS: TestHomeCodReleaseAndACL (0.50s)
+    --- PASS: TestHomeCodReleaseAndACL/ACL:_settings_read/manage_and_collection_write_are_permission_gated (0.07s)
+    --- PASS: TestHomeCodReleaseAndACL/cancel_a_PENDING_unshipped_COD_order:_CANCELLED_+_one_DEALLOCATE,_replay_and_stale (0.09s)
+    --- PASS: TestHomeCodReleaseAndACL/restock:_ship_->_returned_->_RESTOCKED_once;_a_second_restock_is_refused (0.05s)
+=== RUN   TestHomeCodBuyerOrderCarrier
+--- PASS: TestHomeCodBuyerOrderCarrier (0.60s)
+=== RUN   TestHomeCodManualCarrierRoundTrip
+--- PASS: TestHomeCodManualCarrierRoundTrip (1.00s)
+=== RUN   TestHomeCodAndUntrackedCoexist
+--- PASS: TestHomeCodAndUntrackedCoexist (0.76s)
+=== RUN   TestProductEditorPE01SingleTransaction
+--- PASS: TestProductEditorPE01SingleTransaction (0.50s)
+=== RUN   TestProductEditorPE02Idempotency
+--- PASS: TestProductEditorPE02Idempotency (0.52s)
+=== RUN   TestProductEditorPE03KeywordAndSlugConflict
+--- PASS: TestProductEditorPE03KeywordAndSlugConflict (0.64s)
+=== RUN   TestProductEditorPE04TWDWholeDollar
+--- PASS: TestProductEditorPE04TWDWholeDollar (0.65s)
+=== RUN   TestProductEditorPE05UntrackedTrackedFlags
+--- PASS: TestProductEditorPE05UntrackedTrackedFlags (0.50s)
+=== RUN   TestProductEditorPE06ImagesCap
+--- PASS: TestProductEditorPE06ImagesCap (0.80s)
+=== RUN   TestProductEditorPE07DraftVisibility
+--- PASS: TestProductEditorPE07DraftVisibility (0.75s)
+=== RUN   TestProductEditorPE08AxisChangeArchives
+--- PASS: TestProductEditorPE08AxisChangeArchives (0.69s)
+=== RUN   TestProductEditorPE09StaleVersion
+--- PASS: TestProductEditorPE09StaleVersion (0.55s)
+=== RUN   TestProductEditorPE10Isolation
+--- PASS: TestProductEditorPE10Isolation (0.70s)
+=== RUN   TestProductEditorCopyCommand
+--- PASS: TestProductEditorCopyCommand (0.41s)
+=== RUN   TestProductEditorPE11BulkStatus
+--- PASS: TestProductEditorPE11BulkStatus (0.78s)
+=== RUN   TestProductEditorListSummaries
+--- PASS: TestProductEditorListSummaries (0.63s)
+=== RUN   TestR2IntegrationUpgradeFromReleaseHead
+--- PASS: TestR2IntegrationUpgradeFromReleaseHead (5.12s)
+=== RUN   TestCvsBeginGuards
+=== RUN   TestCvsBeginGuards/API_service_+_verified_pickup_succeeds
+=== RUN   TestCvsBeginGuards/amount_boundaries_in_TWD_minor_units_(0061_x100_convention)
+=== RUN   TestCvsBeginGuards/recipient_rule_(F5)_refuses_before_any_hold
+=== RUN   TestCvsBeginGuards/environment:_LIVE_deployment_with_a_SANDBOX_ECPay_profile_refuses,_zero_holds_and_payment_attempts
+=== RUN   TestCvsBeginGuards/disabled_profile,_unqualified_credential,_stale_pickup:_refused_with_zero_holds
+=== RUN   TestCvsBeginGuards/regressions:_MANUAL_home_and_MANUAL_ATTESTED_CVS_still_Begin
+--- PASS: TestCvsBeginGuards (1.51s)
+    --- PASS: TestCvsBeginGuards/API_service_+_verified_pickup_succeeds (0.12s)
+    --- PASS: TestCvsBeginGuards/amount_boundaries_in_TWD_minor_units_(0061_x100_convention) (0.34s)
+    --- PASS: TestCvsBeginGuards/recipient_rule_(F5)_refuses_before_any_hold (0.27s)
+    --- PASS: TestCvsBeginGuards/environment:_LIVE_deployment_with_a_SANDBOX_ECPay_profile_refuses,_zero_holds_and_payment_attempts (0.07s)
+    --- PASS: TestCvsBeginGuards/disabled_profile,_unqualified_credential,_stale_pickup:_refused_with_zero_holds (0.16s)
+    --- PASS: TestCvsBeginGuards/regressions:_MANUAL_home_and_MANUAL_ATTESTED_CVS_still_Begin (0.10s)
+=== RUN   TestCvsOptions
+=== RUN   TestCvsOptions/no_profile:_buyer_entered_rows,_payment_modes_card_only
+=== RUN   TestCvsOptions/payment_modes_includes_pay_at_pickup_only_when_enabled;_only_enabled_chains_are_listed
+=== RUN   TestCvsOptions/hidden_/_disabled_service_variants_are_not_listed
+=== RUN   TestCvsOptions/enabled_qualified_profile:_ecpay_map_rows;_OK_and_Hi-Life_coming_soon_until_verified
+=== RUN   TestCvsOptions/CVS_ECPAY_ENABLED=0_with_an_enabled_profile:_temporarily_unavailable,_never_buyer_entered_(X9)
+=== RUN   TestCvsOptions/disabling_the_profile_falls_back_to_buyer_entered_(X9:_mode_is_SQL-only)
+--- PASS: TestCvsOptions (0.76s)
+    --- PASS: TestCvsOptions/no_profile:_buyer_entered_rows,_payment_modes_card_only (0.04s)
+    --- PASS: TestCvsOptions/payment_modes_includes_pay_at_pickup_only_when_enabled;_only_enabled_chains_are_listed (0.20s)
+    --- PASS: TestCvsOptions/hidden_/_disabled_service_variants_are_not_listed (0.04s)
+    --- PASS: TestCvsOptions/enabled_qualified_profile:_ecpay_map_rows;_OK_and_Hi-Life_coming_soon_until_verified (0.02s)
+    --- PASS: TestCvsOptions/CVS_ECPAY_ENABLED=0_with_an_enabled_profile:_temporarily_unavailable,_never_buyer_entered_(X9) (0.02s)
+    --- PASS: TestCvsOptions/disabling_the_profile_falls_back_to_buyer_entered_(X9:_mode_is_SQL-only) (0.01s)
+=== RUN   TestCvsBuyerEnteredStore
+=== RUN   TestCvsBuyerEnteredStore/options:_buyer_entered_mode_with_the_four_official_search_links
+=== RUN   TestCvsBuyerEnteredStore/per-chain_store-code_table_(shared_golden),_leading_zeros_kept
+=== RUN   TestCvsBuyerEnteredStore/SQL_twin_of_the_store-code_table:_the_definer_itself_checks_the_format_(Go_validation_bypassed)
+=== RUN   TestCvsBuyerEnteredStore/name_and_address_bounds,_control_characters,_trimming
+=== RUN   TestCvsBuyerEnteredStore/stored_version:_BUYER_ENTERED,_NULL_principal,_buyer_namespace,_24_h,_reuse_vs_new_version
+=== RUN   TestCvsBuyerEnteredStore/request_guards:_stale_cart,_unknown_service,_rate_limit,_idempotency_header
+=== RUN   TestCvsBuyerEnteredStore/rate_limit:_20_entries_per_owner_per_hour,_then_429_with_Retry-After_(§16.1)
+=== RUN   TestCvsBuyerEnteredStore/buyer_B_cannot_read_or_bump_buyer_A's_head_(both_buyer_roles)
+=== RUN   TestCvsBuyerEnteredStore/pay-at-pickup_order_carries_the_buyer_entered_label;_never_reused_as_verified
+--- PASS: TestCvsBuyerEnteredStore (1.07s)
+    --- PASS: TestCvsBuyerEnteredStore/options:_buyer_entered_mode_with_the_four_official_search_links (0.06s)
+    --- PASS: TestCvsBuyerEnteredStore/per-chain_store-code_table_(shared_golden),_leading_zeros_kept (0.09s)
+    --- PASS: TestCvsBuyerEnteredStore/SQL_twin_of_the_store-code_table:_the_definer_itself_checks_the_format_(Go_validation_bypassed) (0.07s)
+    --- PASS: TestCvsBuyerEnteredStore/name_and_address_bounds,_control_characters,_trimming (0.05s)
+    --- PASS: TestCvsBuyerEnteredStore/stored_version:_BUYER_ENTERED,_NULL_principal,_buyer_namespace,_24_h,_reuse_vs_new_version (0.04s)
+    --- PASS: TestCvsBuyerEnteredStore/request_guards:_stale_cart,_unknown_service,_rate_limit,_idempotency_header (0.03s)
+    --- PASS: TestCvsBuyerEnteredStore/rate_limit:_20_entries_per_owner_per_hour,_then_429_with_Retry-After_(§16.1) (0.08s)
+    --- PASS: TestCvsBuyerEnteredStore/buyer_B_cannot_read_or_bump_buyer_A's_head_(both_buyer_roles) (0.08s)
+    --- PASS: TestCvsBuyerEnteredStore/pay-at-pickup_order_carries_the_buyer_entered_label;_never_reused_as_verified (0.19s)
+=== RUN   TestCvsCloseDispatchWindow
+=== RUN   TestCvsCloseDispatchWindow/a_card_refund_is_refused_while_the_label_operation_is_DISPATCHING_(the_Create_may_be_on_the_wire)
+--- PASS: TestCvsCloseDispatchWindow (3.36s)
+    --- PASS: TestCvsCloseDispatchWindow/a_card_refund_is_refused_while_the_label_operation_is_DISPATCHING_(the_Create_may_be_on_the_wire) (0.03s)
+=== RUN   TestCvsCloseLoadWaitsForOrderLock
+--- PASS: TestCvsCloseLoadWaitsForOrderLock (4.87s)
+=== RUN   TestCvsCloseOperationInsertScope
+--- PASS: TestCvsCloseOperationInsertScope (0.49s)
+=== RUN   TestCvsCollectedGuardT2102
+=== RUN   TestCvsCollectedGuardT2102/manual_path:_no_ECPay_attempt_->_collected_allowed,_predicate_true,_replay_idempotent
+=== RUN   TestCvsCollectedGuardT2102/ECPay_path:_collected_refused_at_AT_DC_/_AT_STORE_/_UNCLAIMED,_allowed_at_PICKED_UP,_replay_idempotent
+--- PASS: TestCvsCollectedGuardT2102 (3.48s)
+    --- PASS: TestCvsCollectedGuardT2102/manual_path:_no_ECPay_attempt_->_collected_allowed,_predicate_true,_replay_idempotent (0.08s)
+    --- PASS: TestCvsCollectedGuardT2102/ECPay_path:_collected_refused_at_AT_DC_/_AT_STORE_/_UNCLAIMED,_allowed_at_PICKED_UP,_replay_idempotent (0.95s)
+=== RUN   TestCvsNoIframeAndPrivacy
+=== RUN   TestCvsNoIframeAndPrivacy/CSP_frame-src_is_unchanged_and_no_ECPay_frame_exists
+=== RUN   TestCvsNoIframeAndPrivacy/only_the_ecpay_package_names_ECPay_hosts_in_code;_no_iframe,_target_or_window.open_in_the_map_picker
+=== RUN   TestCvsNoIframeAndPrivacy/no_key,_recipient_or_trade-number_identifier_in_a_logging_statement_of_the_CVS_code
+=== RUN   TestCvsNoIframeAndPrivacy/PROCESS_section_5:_package_comments_and_app_file_headers
+--- PASS: TestCvsNoIframeAndPrivacy (0.40s)
+    --- PASS: TestCvsNoIframeAndPrivacy/CSP_frame-src_is_unchanged_and_no_ECPay_frame_exists (0.06s)
+    --- PASS: TestCvsNoIframeAndPrivacy/only_the_ecpay_package_names_ECPay_hosts_in_code;_no_iframe,_target_or_window.open_in_the_map_picker (0.22s)
+    --- PASS: TestCvsNoIframeAndPrivacy/no_key,_recipient_or_trade-number_identifier_in_a_logging_statement_of_the_CVS_code (0.09s)
+    --- PASS: TestCvsNoIframeAndPrivacy/PROCESS_section_5:_package_comments_and_app_file_headers (0.03s)
+=== RUN   TestCvsChildWorker
+--- PASS: TestCvsChildWorker (0.00s)
+=== RUN   TestCvsPayAtPickupBegin
+=== RUN   TestCvsPayAtPickupBegin/Begin_writes:_CONFIRMED_order,_COMMITTED_reservation,_RESERVE+ALLOCATE_ledger_rows,_no_payment
+=== RUN   TestCvsPayAtPickupBegin/amount_cap:_total_=_cap_accepted,_+NT$1_/_non-whole_/_>_NT$20000_refused_(pay_at_pickup_amount_exceeds)
+=== RUN   TestCvsPayAtPickupBegin/unavailable:_setting_off,_chain_not_enabled,_home_destination_->_pay_at_pickup_unavailable_with_zero_holds
+=== RUN   TestCvsPayAtPickupBegin/C3_recipient_rule:_golden_table_through_SQL_and_through_Begin
+=== RUN   TestCvsPayAtPickupBegin/shippability,_manual_shipment_and_refunds
+=== RUN   TestCvsPayAtPickupBegin/ledger_guard:_a_BUYER_ALLOCATE_for_a_card_order_is_refused_(42501)
+=== RUN   TestCvsPayAtPickupBegin/open-order_limit:_max_open_store-wide,_one_per_owner,_two_concurrent_Begins_at_max_open-1_yield_one_order_(round_4)
+=== RUN   TestCvsPayAtPickupBegin/over_the_real_buyer_HTTP_route:_coded_refusals,_never_a_retryable_503
+=== RUN   TestCvsPayAtPickupBegin/payment_mode_is_a_closed_vocabulary
+--- PASS: TestCvsPayAtPickupBegin (4.27s)
+    --- PASS: TestCvsPayAtPickupBegin/Begin_writes:_CONFIRMED_order,_COMMITTED_reservation,_RESERVE+ALLOCATE_ledger_rows,_no_payment (0.09s)
+    --- PASS: TestCvsPayAtPickupBegin/amount_cap:_total_=_cap_accepted,_+NT$1_/_non-whole_/_>_NT$20000_refused_(pay_at_pickup_amount_exceeds) (0.31s)
+    --- PASS: TestCvsPayAtPickupBegin/unavailable:_setting_off,_chain_not_enabled,_home_destination_->_pay_at_pickup_unavailable_with_zero_holds (0.14s)
+    --- PASS: TestCvsPayAtPickupBegin/C3_recipient_rule:_golden_table_through_SQL_and_through_Begin (0.45s)
+    --- PASS: TestCvsPayAtPickupBegin/shippability,_manual_shipment_and_refunds (0.07s)
+    --- PASS: TestCvsPayAtPickupBegin/ledger_guard:_a_BUYER_ALLOCATE_for_a_card_order_is_refused_(42501) (0.00s)
+    --- PASS: TestCvsPayAtPickupBegin/open-order_limit:_max_open_store-wide,_one_per_owner,_two_concurrent_Begins_at_max_open-1_yield_one_order_(round_4) (0.70s)
+    --- PASS: TestCvsPayAtPickupBegin/over_the_real_buyer_HTTP_route:_coded_refusals,_never_a_retryable_503 (0.14s)
+    --- PASS: TestCvsPayAtPickupBegin/payment_mode_is_a_closed_vocabulary (0.04s)
+=== RUN   TestCvsCollectionStatus
+=== RUN   TestCvsCollectionStatus/frozen_collection_amount_=_goods_amount_=_total/100;_Create_carries_IsCollection=Y_+_CollectionAmount_(card:_N)
+=== RUN   TestCvsCollectionStatus/signed_pickup_and_return_codes_per_subtype:_state,_collection_state,_audit,_no_money_rows
+=== RUN   TestCvsCollectionStatus/merchant_collection_action:_permissions,_states,_replay,_conflicts
+=== RUN   TestCvsCollectionStatus/request_with_another_environment's_pickup_namespace:_cvs_environment_mismatch
+--- PASS: TestCvsCollectionStatus (14.36s)
+    --- PASS: TestCvsCollectionStatus/frozen_collection_amount_=_goods_amount_=_total/100;_Create_carries_IsCollection=Y_+_CollectionAmount_(card:_N) (3.12s)
+    --- PASS: TestCvsCollectionStatus/signed_pickup_and_return_codes_per_subtype:_state,_collection_state,_audit,_no_money_rows (6.37s)
+    --- PASS: TestCvsCollectionStatus/merchant_collection_action:_permissions,_states,_replay,_conflicts (2.12s)
+    --- PASS: TestCvsCollectionStatus/request_with_another_environment's_pickup_namespace:_cvs_environment_mismatch (0.07s)
+=== RUN   TestCvsPayAtPickupRelease
+=== RUN   TestCvsPayAtPickupRelease/cancel_a_PENDING_unshipped_order:_states,_DEALLOCATE_rows,_balance,_audit,_no_provider_rows;_replay_and_conflicts
+=== RUN   TestCvsPayAtPickupRelease/the_freed_slot_lets_a_Begin_at_max_open_succeed
+=== RUN   TestCvsPayAtPickupRelease/refusals:_card_order,_orders:read_only,_revoked_member_replay,_stale_state,_manual_shipment
+=== RUN   TestCvsPayAtPickupRelease/restock:_merchant_returned_->_RESTOCKED;_PENDING/COLLECTED_refused;_replay
+=== RUN   TestCvsPayAtPickupRelease/two_concurrent_releases_of_one_order:_exactly_one
+=== RUN   TestCvsPayAtPickupRelease/direct_ledger_writes_are_refused;_guards_hold
+=== RUN   TestCvsPayAtPickupRelease/ECPay_attempts:_in_flight,_CREATED,_2098_re-delivery,_ABANDONED_late_report,_3020_restock
+--- PASS: TestCvsPayAtPickupRelease (20.66s)
+    --- PASS: TestCvsPayAtPickupRelease/cancel_a_PENDING_unshipped_order:_states,_DEALLOCATE_rows,_balance,_audit,_no_provider_rows;_replay_and_conflicts (0.09s)
+    --- PASS: TestCvsPayAtPickupRelease/the_freed_slot_lets_a_Begin_at_max_open_succeed (0.15s)
+    --- PASS: TestCvsPayAtPickupRelease/refusals:_card_order,_orders:read_only,_revoked_member_replay,_stale_state,_manual_shipment (1.06s)
+    --- PASS: TestCvsPayAtPickupRelease/restock:_merchant_returned_->_RESTOCKED;_PENDING/COLLECTED_refused;_replay (0.13s)
+    --- PASS: TestCvsPayAtPickupRelease/two_concurrent_releases_of_one_order:_exactly_one (0.07s)
+    --- PASS: TestCvsPayAtPickupRelease/direct_ledger_writes_are_refused;_guards_hold (0.08s)
+    --- PASS: TestCvsPayAtPickupRelease/ECPay_attempts:_in_flight,_CREATED,_2098_re-delivery,_ABANDONED_late_report,_3020_restock (15.15s)
+=== RUN   TestCvsRestockGuardT2101
+=== RUN   TestCvsRestockGuardT2101/manual_path:_MERCHANT_SHIPPED_with_no_ECPay_attempt:_returned_then_restock_allowed,_numeric,_replay_once
+=== RUN   TestCvsRestockGuardT2101/7-ELEVEN_2030,2073,2074,2098,2067_ends_COLLECTED:_no_DEALLOCATE,_restock_refused,_stock_untouched,_replays_inert
+=== RUN   TestCvsRestockGuardT2101/2074_->_restock_allowed;_2098_then_2067_on_a_RESTOCKED_order_stay_RESTOCKED_with_no_stock_or_audit_change
+=== RUN   TestCvsRestockGuardT2101/2098_cycles:_each_2074->2098_reverts_once;_a_repeated_2098_does_not;_the_final_2074_restocks
+=== RUN   TestCvsRestockGuardT2101/predicate_matrix:_true_only_for_UNCLAIMED,_FAILED-only_and_ABANDONED-only;_false_for_REQUESTED/UNKNOWN/CREATED/AT_DC/AT_STORE/PICKED_UP
+=== RUN   TestCvsRestockGuardT2101/merchant_returned_while_CREATED_/_AT_STORE_refused;_at_UNCLAIMED_allowed_and_a_later_2098_reverts_it
+=== RUN   TestCvsRestockGuardT2101/FAILED_attempt_then_manual_shipment_(MERCHANT_SHIPPED):_returned_then_restock_allowed
+=== RUN   TestCvsRestockGuardT2101/FamilyMart_3020_restock_allowed;_3022_->_COLLECTED_refused;_2098_is_not_a_FamilyMart_code_(event_only,_no_revert)
+--- PASS: TestCvsRestockGuardT2101 (28.28s)
+    --- PASS: TestCvsRestockGuardT2101/manual_path:_MERCHANT_SHIPPED_with_no_ECPay_attempt:_returned_then_restock_allowed,_numeric,_replay_once (0.09s)
+    --- PASS: TestCvsRestockGuardT2101/7-ELEVEN_2030,2073,2074,2098,2067_ends_COLLECTED:_no_DEALLOCATE,_restock_refused,_stock_untouched,_replays_inert (0.97s)
+    --- PASS: TestCvsRestockGuardT2101/2074_->_restock_allowed;_2098_then_2067_on_a_RESTOCKED_order_stay_RESTOCKED_with_no_stock_or_audit_change (1.01s)
+    --- PASS: TestCvsRestockGuardT2101/2098_cycles:_each_2074->2098_reverts_once;_a_repeated_2098_does_not;_the_final_2074_restocks (1.13s)
+    --- PASS: TestCvsRestockGuardT2101/predicate_matrix:_true_only_for_UNCLAIMED,_FAILED-only_and_ABANDONED-only;_false_for_REQUESTED/UNKNOWN/CREATED/AT_DC/AT_STORE/PICKED_UP (18.05s)
+    --- PASS: TestCvsRestockGuardT2101/merchant_returned_while_CREATED_/_AT_STORE_refused;_at_UNCLAIMED_allowed_and_a_later_2098_reverts_it (0.99s)
+    --- PASS: TestCvsRestockGuardT2101/FAILED_attempt_then_manual_shipment_(MERCHANT_SHIPPED):_returned_then_restock_allowed (0.97s)
+    --- PASS: TestCvsRestockGuardT2101/FamilyMart_3020_restock_allowed;_3022_->_COLLECTED_refused;_2098_is_not_a_FamilyMart_code_(event_only,_no_revert) (2.24s)
+=== RUN   TestCvsSelectionFlow
+=== RUN   TestCvsSelectionFlow/open_->_return_->_verify_->_pickup_source_->_destination_->_Begin
+=== RUN   TestCvsSelectionFlow/return_check_order:_a_wrong_nonce_writes_nothing,_however_wrong_the_rest_is
+=== RUN   TestCvsSelectionFlow/rejections:_expired,_merchant/subtype_mismatch,_store_id_length,_not_in_directory;_zero_pickup_rows
+=== RUN   TestCvsSelectionFlow/forged_name/address_never_reach_the_pickup_row;_leading_zeros_preserved
+=== RUN   TestCvsSelectionFlow/other_owner_or_session_cannot_read_or_verify_a_selection
+=== RUN   TestCvsSelectionFlow/pickup_reuse_vs_a_new_version;_an_expiring_head_is_not_reused
+=== RUN   TestCvsSelectionFlow/late_or_replayed_return_after_a_newer_selection_cannot_change_the_destination_(head_CAS)
+=== RUN   TestCvsSelectionFlow/return_path_allowlist_and_the_fixed_return_origin
+=== RUN   TestCvsSelectionFlow/hooks:_unknown_selection_404_without_Location;_oversize,_duplicate_keys_and_other_content_types_refused
+=== RUN   TestCvsSelectionFlow/stores_and_environments
+=== RUN   TestCvsSelectionFlow/stores_and_environments/two_stores_on_two_ACTIVE_domains:_each_303_lands_on_its_own_store's_origin
+=== RUN   TestCvsSelectionFlow/stores_and_environments/open_with_a_profile_whose_environment_differs_from_the_deployment:_service_unavailable
+=== RUN   TestCvsSelectionFlow/stores_and_environments/SANDBOX_and_LIVE_selections_produce_different_namespaces
+=== RUN   TestCvsSelectionFlow/open-selection_limit:_10_OPEN_per_owner_and_cart,_then_429_(§4.3)
+--- PASS: TestCvsSelectionFlow (3.17s)
+    --- PASS: TestCvsSelectionFlow/open_->_return_->_verify_->_pickup_source_->_destination_->_Begin (0.09s)
+    --- PASS: TestCvsSelectionFlow/return_check_order:_a_wrong_nonce_writes_nothing,_however_wrong_the_rest_is (0.07s)
+    --- PASS: TestCvsSelectionFlow/rejections:_expired,_merchant/subtype_mismatch,_store_id_length,_not_in_directory;_zero_pickup_rows (0.32s)
+    --- PASS: TestCvsSelectionFlow/forged_name/address_never_reach_the_pickup_row;_leading_zeros_preserved (0.03s)
+    --- PASS: TestCvsSelectionFlow/other_owner_or_session_cannot_read_or_verify_a_selection (0.06s)
+    --- PASS: TestCvsSelectionFlow/pickup_reuse_vs_a_new_version;_an_expiring_head_is_not_reused (0.13s)
+    --- PASS: TestCvsSelectionFlow/late_or_replayed_return_after_a_newer_selection_cannot_change_the_destination_(head_CAS) (0.05s)
+    --- PASS: TestCvsSelectionFlow/return_path_allowlist_and_the_fixed_return_origin (0.05s)
+    --- PASS: TestCvsSelectionFlow/hooks:_unknown_selection_404_without_Location;_oversize,_duplicate_keys_and_other_content_types_refused (0.03s)
+    --- PASS: TestCvsSelectionFlow/stores_and_environments (1.22s)
+        --- PASS: TestCvsSelectionFlow/stores_and_environments/two_stores_on_two_ACTIVE_domains:_each_303_lands_on_its_own_store's_origin (0.07s)
+        --- PASS: TestCvsSelectionFlow/stores_and_environments/open_with_a_profile_whose_environment_differs_from_the_deployment:_service_unavailable (0.03s)
+        --- PASS: TestCvsSelectionFlow/stores_and_environments/SANDBOX_and_LIVE_selections_produce_different_namespaces (0.43s)
+    --- PASS: TestCvsSelectionFlow/open-selection_limit:_10_OPEN_per_owner_and_cart,_then_429_(§4.3) (0.07s)
+=== RUN   TestCvsShipmentLifecycle
+=== RUN   TestCvsShipmentLifecycle/request:_job_+_operation_+_shipment_in_one_tx,_replay_adds_nothing,_fulfillment:write_suffices
+=== RUN   TestCvsShipmentLifecycle/Create_classification_through_the_dispatcher;_UNKNOWN_never_re-Creates;_codes_are_normalised_by_Finish
+=== RUN   TestCvsShipmentLifecycle/UNKNOWN:_abandon_needs_the_acknowledgement;_a_query_that_finds_the_trade_applies_CREATED_(409_ecpay_trade_found)
+=== RUN   TestCvsShipmentLifecycle/1-hour_settle_rule:_stale_DISPATCHING_operation_=>_UNKNOWN,_abandon,_a_late_Finish_is_event_+_duplicate_label_risk_only
+=== RUN   TestCvsShipmentLifecycle/blocked_before_dispatch:_refund_committed_after_the_request,_binding_changed,_LIVE_without_the_flag
+=== RUN   TestCvsShipmentLifecycle/refused_requests:_unpaid,_manual-shipped,_other_store,_concurrent_duplicates
+=== RUN   TestCvsShipmentLifecycle/abandon_rules:_lapse_window_by_subtype,_fresh_created-only_query,_stale_query
+=== RUN   TestCvsShipmentLifecycle/real_child-process_kill_after_the_fake_records_the_create;_restart_->_one_create,_Query_recovers_CREATED
+=== RUN   TestCvsShipmentLifecycle/LIVE_without_CVS_ECPAY_LIVE_CREATE:_BLOCKED_POLICY,_zero_requests,_FAILED_ecpay.not_sent.*,_a_new_attempt_is_allowed
+=== RUN   TestCvsShipmentLifecycle/PII,_keys_and_trade_numbers_are_absent_from_operations,_job_args,_events_and_logs
+--- PASS: TestCvsShipmentLifecycle (44.27s)
+    --- PASS: TestCvsShipmentLifecycle/request:_job_+_operation_+_shipment_in_one_tx,_replay_adds_nothing,_fulfillment:write_suffices (0.24s)
+    --- PASS: TestCvsShipmentLifecycle/Create_classification_through_the_dispatcher;_UNKNOWN_never_re-Creates;_codes_are_normalised_by_Finish (16.56s)
+    --- PASS: TestCvsShipmentLifecycle/UNKNOWN:_abandon_needs_the_acknowledgement;_a_query_that_finds_the_trade_applies_CREATED_(409_ecpay_trade_found) (4.78s)
+    --- PASS: TestCvsShipmentLifecycle/1-hour_settle_rule:_stale_DISPATCHING_operation_=>_UNKNOWN,_abandon,_a_late_Finish_is_event_+_duplicate_label_risk_only (0.10s)
+    --- PASS: TestCvsShipmentLifecycle/blocked_before_dispatch:_refund_committed_after_the_request,_binding_changed,_LIVE_without_the_flag (3.74s)
+    --- PASS: TestCvsShipmentLifecycle/refused_requests:_unpaid,_manual-shipped,_other_store,_concurrent_duplicates (0.30s)
+    --- PASS: TestCvsShipmentLifecycle/abandon_rules:_lapse_window_by_subtype,_fresh_created-only_query,_stale_query (4.44s)
+    --- PASS: TestCvsShipmentLifecycle/real_child-process_kill_after_the_fake_records_the_create;_restart_->_one_create,_Query_recovers_CREATED (8.96s)
+    --- PASS: TestCvsShipmentLifecycle/LIVE_without_CVS_ECPAY_LIVE_CREATE:_BLOCKED_POLICY,_zero_requests,_FAILED_ecpay.not_sent.*,_a_new_attempt_is_allowed (1.72s)
+    --- PASS: TestCvsShipmentLifecycle/PII,_keys_and_trade_numbers_are_absent_from_operations,_job_args,_events_and_logs (0.38s)
+=== RUN   TestCvsStatusIngress
+=== RUN   TestCvsStatusIngress/every_F7_code_per_subtype:_exact_transitions;_foreign-chain_codes_and_jumps_are_event_only
+=== RUN   TestCvsStatusIngress/duplicate_body:_one_event,_still_1|OK
+=== RUN   TestCvsStatusIngress/bad_MAC,_wrong_MerchantID,_unknown_endpoint,_wrong_method:_no_rows,_no_1|OK
+=== RUN   TestCvsStatusIngress/an_extra_unknown_field_is_MAC-covered,_then_dropped
+=== RUN   TestCvsStatusIngress/non-conforming_UpdateStatusDate/RtnCode_and_a_500-char_RtnMsg_with_control_characters:_stored_NULL/truncated,_1|OK
+=== RUN   TestCvsStatusIngress/status_for_a_REQUESTED_attempt:_503_without_1|OK,_no_row
+=== RUN   TestCvsStatusIngress/a_report_for_an_ABANDONED_attempt_while_attempt_2_is_live:_one_event,_duplicate_label_risk,_no_state_change
+=== RUN   TestCvsStatusIngress/1|OK_only_after_COMMIT_(fault_injected_at_COMMIT)
+=== RUN   TestCvsStatusIngress/body_over_16_KiB,_duplicate_keys_and_a_stalled_body_are_rejected
+=== RUN   TestCvsStatusIngress/per-endpoint_concurrency_cap_4
+=== RUN   TestCvsStatusIngress/recipient_fields_are_never_persisted
+--- PASS: TestCvsStatusIngress (31.21s)
+    --- PASS: TestCvsStatusIngress/every_F7_code_per_subtype:_exact_transitions;_foreign-chain_codes_and_jumps_are_event_only (6.42s)
+    --- PASS: TestCvsStatusIngress/duplicate_body:_one_event,_still_1|OK (0.96s)
+    --- PASS: TestCvsStatusIngress/bad_MAC,_wrong_MerchantID,_unknown_endpoint,_wrong_method:_no_rows,_no_1|OK (1.06s)
+    --- PASS: TestCvsStatusIngress/an_extra_unknown_field_is_MAC-covered,_then_dropped (1.01s)
+    --- PASS: TestCvsStatusIngress/non-conforming_UpdateStatusDate/RtnCode_and_a_500-char_RtnMsg_with_control_characters:_stored_NULL/truncated,_1|OK (1.06s)
+    --- PASS: TestCvsStatusIngress/status_for_a_REQUESTED_attempt:_503_without_1|OK,_no_row (0.10s)
+    --- PASS: TestCvsStatusIngress/a_report_for_an_ABANDONED_attempt_while_attempt_2_is_live:_one_event,_duplicate_label_risk,_no_state_change (11.36s)
+    --- PASS: TestCvsStatusIngress/1|OK_only_after_COMMIT_(fault_injected_at_COMMIT) (1.08s)
+    --- PASS: TestCvsStatusIngress/body_over_16_KiB,_duplicate_keys_and_a_stalled_body_are_rejected (6.54s)
+    --- PASS: TestCvsStatusIngress/per-endpoint_concurrency_cap_4 (1.10s)
+    --- PASS: TestCvsStatusIngress/recipient_fields_are_never_persisted (0.01s)
+PASS
+ok  	livecommerce/tests/foundation	208.797s
+test-focused: top-level PASS=63 FAIL=0 SKIP=0 exit=0

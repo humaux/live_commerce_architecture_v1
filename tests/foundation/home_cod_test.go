@@ -464,3 +464,69 @@ func TestHomeCodManualCarrierRoundTrip(t *testing.T) {
 		}
 	}
 }
+
+// HCOD06: regression for the post_river/0020 -> 0021 rebase. After the full migration chain, a cash_on_delivery order
+// (home-cod path) AND an all-untracked (A6) card order must both place in the same DB with their own rules: the COD order
+// carries the collect amount (total + surcharge) and stays AWAITING_COLLECTION / collection PENDING, and the untracked
+// order holds no stock (empty plan: no reservation lines, no ledger rows, and the SKU has no balance row). Red against a
+// 0021 that was written over the pre-home-cod 0018 body (which drops cash_on_delivery, so this COD placement fails PT400).
+func TestHomeCodAndUntrackedCoexist(t *testing.T) {
+	e := tcvNew(t)
+	ctx := context.Background()
+	if st, out := e.hcodSettings(0, true, 20000, 50, "black_cat"); st != 200 {
+		t.Fatalf("enable COD: %d %v", st, out)
+	}
+
+	// (1) home-cod path: place a cash_on_delivery order and assert its collect amount and state survive the rebase.
+	b := e.newBuyer()
+	res, err := e.hcodPlace(b)
+	if err != nil {
+		t.Fatalf("COD Begin after the 0020->0021 rebase: %v", err)
+	}
+	commercial, fulfilment, mode, collection, total, surcharge := e.hcodRow(res.OrderID)
+	if commercial != "AWAITING_COLLECTION" || fulfilment != "MANUAL_UNASSIGNED" || mode != "cash_on_delivery" ||
+		collection == nil || *collection != "PENDING" || total != 2500 || surcharge != 5000 {
+		t.Errorf("COD order row: %s/%s/%s/%v total=%d surcharge=%d (collect amount %d)",
+			commercial, fulfilment, mode, collection, total, surcharge, total+surcharge)
+	}
+
+	// (2) A6 path: an active untracked SKU (no balance row), then place a card order that must not lock or deduct it.
+	body, err := json.Marshal(pdDoc{
+		Name: "rebase-untracked-" + t04Tag(), Description: "", Status: "active", WarehouseID: e.p.stock.warehouse.ID,
+		SKUs: []pdSKU{{PriceMinor: 1000, Stock: &pdStock{Mode: "untracked", MaxPerOrder: pdI64(5)}}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	st, _, raw := e.mcall(e.token(), "POST", "/v1/admin/stores/"+e.store()+"/products/document", t04Key("rebase-untracked"), string(body))
+	if st != 200 {
+		t.Fatalf("create untracked SKU: %d %s", st, raw)
+	}
+	var product pdProduct
+	if err := json.Unmarshal(raw, &product); err != nil || len(product.SKUs) != 1 {
+		t.Fatalf("untracked document response: %v %s", err, raw)
+	}
+	untracked := product.SKUs[0].ID
+	if product.SKUs[0].InventoryTracked || product.SKUs[0].MaxPerOrder == nil || *product.SKUs[0].MaxPerOrder != 5 {
+		t.Fatalf("untracked SKU flags: %+v", product.SKUs[0])
+	}
+	if n := e.count(`SELECT count(*) FROM inventory.balances WHERE sku_id=$1`, untracked); n != 0 {
+		t.Fatalf("an untracked SKU must have no balance row: %d", n)
+	}
+	ub := e.newBuyer(storefront.Item{SKUID: untracked, Quantity: 1})
+	in := ub.h.input
+	in.PaymentMode = "card"
+	ures, err := e.svc.Begin(ctx, ub.cap.Token, e.store(), t04Key("rebase-untracked-begin"), in)
+	if err != nil {
+		t.Fatalf("untracked Begin: %v", err)
+	}
+	if ures.PaymentMode != "card" || ures.CommercialState != "DRAFT" {
+		t.Errorf("untracked order receipt: %+v", ures)
+	}
+	if n := e.count(`SELECT count(*) FROM inventory.reservation_lines WHERE reservation_id=$1`, ures.ReservationID); n != 0 {
+		t.Errorf("an untracked order must write no reservation lines, got %d", n)
+	}
+	if n := e.count(`SELECT count(*) FROM inventory.ledger WHERE reservation_id=$1`, ures.ReservationID); n != 0 {
+		t.Errorf("an untracked order must write no ledger rows, got %d", n)
+	}
+}

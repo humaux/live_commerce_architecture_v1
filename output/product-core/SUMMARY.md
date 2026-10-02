@@ -7,7 +7,7 @@ Scope: Go + SQL + contracts + PG/Go tests only; nothing under `apps/` was touche
 
 | §f item | Status | Where |
 |---|---|---|
-| A6 `inventory_tracked` + `max_per_order` | DONE | `migrations/0109_product_core.sql` (column + CHECK + image-cap widen + grants), `catalog.SKU`/`document.go` `normalizeStock`/`writeSKU`, checkout `planLocked` drops untracked, `post_river/0020_product_core_begin_hold.sql` (0..800 plan, tracked-only conservation, PT422 `max_per_order_exceeded`) |
+| A6 `inventory_tracked` + `max_per_order` | DONE | `migrations/0109_product_core.sql` (column + CHECK + image-cap widen + grants), `catalog.SKU`/`document.go` `normalizeStock`/`writeSKU`, checkout `planLocked` drops untracked, `post_river/0021_product_core_begin_hold.sql` (0..800 plan, tracked-only conservation, PT422 `max_per_order_exceeded`; rebuilt on top of the home-cod 0020 body) |
 | Document save (create/edit, one transaction) | DONE | `internal/catalog/document.go` `SaveProductDocument` — operations `product.save` / `product.save:<id>` via `internal/command.Run`; products+options+SKUs+stock+keyword+collections in one tx; conflict rolls back everything; axis change archives ordered SKUs |
 | Images cap 12 | DONE | migration 0109 CHECK + `internal/catalog/images.go` (8→12); `images-client.ts` deferred to product-ui (Codex) |
 | TWD whole-dollar | DONE | `catalog.checkWholeTWD`, refusal `amount_not_whole_twd` (422) |
