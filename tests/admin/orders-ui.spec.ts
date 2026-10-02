@@ -381,9 +381,12 @@ test("MOU03 controlled delayed detail, pagehide, history and cross-tab logout", 
   // A restored document does not emit a new load event.
   await page.goBack({ waitUntil: "commit" });
   // Commit precedes pageshow on both cached and freshly loaded returns.
-  await expect
-    .poll(() =>
-      page.evaluate(
+  // goBack(commit) can leave the first evaluate in the document that is being replaced ("Execution context was destroyed", ~1 run
+  // in 3 under machine load), and expect.poll does not retry a thrown evaluate. toPass does; the assertion itself is unchanged:
+  // a pageshow for /en/orders must have been logged after the history length recorded before leaving.
+  await expect(async () => {
+    expect(
+      await page.evaluate(
         (before) =>
           (
             JSON.parse(sessionStorage.getItem("mou-native-pageshows") ?? "[]") as
@@ -391,8 +394,8 @@ test("MOU03 controlled delayed detail, pagehide, history and cross-tab logout", 
           ).slice(before).some((event) => event.path === "/en/orders"),
         beforeHistory,
       ),
-    )
-    .toBe(true);
+    ).toBe(true);
+  }).toPass({ timeout: 10_000 });
   const nativeEvents = await page.evaluate(
     (before) =>
       (
