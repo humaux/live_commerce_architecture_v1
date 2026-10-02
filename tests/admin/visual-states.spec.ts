@@ -1,11 +1,41 @@
 import { test, expect } from "./fixtures/ledger-identity";
 import { mkdir, writeFile } from "node:fs/promises";
+import type { APIRequestContext } from "@playwright/test";
+
+// This spec alone adds a realistic variant code to the disposable Go/PG
+// fixture. The real catalog projection and intrinsic table layout must create
+// the overflow; no DOM, CSS or API read response is overridden. The Go harness
+// removes the whole isolated fixture after the suite, including this product.
+async function createLongSkuFixture(request: APIRequestContext) {
+  const storeID = process.env.COMMERCE_FIXTURE_STORE_ID;
+  expect(storeID).toBeTruthy();
+  const product = await request.post(`/api/stores/${storeID}/products`, {
+    headers: { Origin: "http://127.0.0.1:3100", "Idempotency-Key": crypto.randomUUID() },
+    data: {
+      name: "Rechargeable behind-the-ear hearing aid with charging case",
+      description: "Isolated browser fixture, not a real merchant product",
+      status: "active",
+    },
+  });
+  expect(product.status()).toBe(201);
+  const { id } = await product.json();
+  const code = "HA-RECHARGEABLE-BTE-BLUETOOTH-CHARGER-BLACK-TW-2026";
+  const sku = await request.post(`/api/stores/${storeID}/skus`, {
+    headers: { Origin: "http://127.0.0.1:3100", "Idempotency-Key": crypto.randomUUID() },
+    data: { product_id: id, code, price_minor: 198000 },
+  });
+  expect(sku.status()).toBe(201);
+  return code;
+}
 
 test("ledger selection caret and scroll surface are authored and active", async ({
   page,
+  request,
 }) => {
+  const longSKU = await createLongSkuFixture(request);
   await mkdir("output/playwright/ledger-review", { recursive: true });
   await page.goto("/en/inventory");
+  await expect(page.getByRole("radio", { name: `Select ${longSKU}`, exact: true })).toBeVisible();
   const input = page.locator(".search-field input");
   await input.fill("Visible selection");
   await input.selectText();
