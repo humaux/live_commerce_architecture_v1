@@ -2,7 +2,7 @@
 // fenced command (lib/catalog-v2-client send), shows the server's answer as a message and, when the outcome is uncertain
 // (5xx / lost answer), keeps the command so `retry` re-sends the SAME key and bytes: a lost response may have committed,
 // and a fresh command would apply twice. Server state is never guessed: the caller's `done` re-reads what the screen shows.
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { send, type Command, type Outcome } from "./catalog-v2-client";
 
 export type WriteMessage = {
@@ -20,6 +20,7 @@ export function useWrite(
   boundary: string,
   errorText: (code: string) => string,
   uncertainText: string,
+  recoveryText?: string,
 ) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<WriteMessage | null>(null);
@@ -28,6 +29,22 @@ export function useWrite(
   const scope = `${store}|${boundary}`;
   const currentScope = useRef(scope);
   currentScope.current = scope;
+  const fenceKey = recoveryText ? `catalog-command-pending:${store}` : null;
+  const [fenceReady, setFenceReady] = useState(!recoveryText);
+  const [recoveryBlocked, setRecoveryBlocked] = useState(false);
+  useEffect(() => {
+    if (!fenceKey) return;
+    let blocked = true;
+    try {
+      blocked = sessionStorage.getItem(fenceKey) !== null;
+    } catch {
+      /* fail closed */
+    }
+    setRecoveryBlocked(blocked);
+    setMessage(blocked ? { kind: "uncertain", text: recoveryText! } : null);
+    pending.current = null;
+    setFenceReady(true);
+  }, [fenceKey, recoveryText, boundary]);
 
   const run = useCallback(
     async <T>(
@@ -37,7 +54,17 @@ export function useWrite(
       okText: string,
       errors?: Record<string, string>,
     ): Promise<boolean> => {
-      if (inFlight.current) return false;
+      if (inFlight.current || pending.current || !fenceReady || recoveryBlocked)
+        return false;
+      if (fenceKey) {
+        try {
+          sessionStorage.setItem(fenceKey, cmd.key);
+        } catch {
+          setRecoveryBlocked(true);
+          setMessage({ kind: "uncertain", text: recoveryText! });
+          return false;
+        }
+      }
       inFlight.current = true;
       setBusy(true);
       setMessage(null);
@@ -46,6 +73,7 @@ export function useWrite(
         if (currentScope.current !== scope) return false;
         if (outcome.ok) {
           pending.current = null;
+          if (fenceKey) sessionStorage.removeItem(fenceKey);
           await done(outcome.value);
           setMessage({ kind: "success", text: okText });
           return true;
@@ -53,6 +81,7 @@ export function useWrite(
         pending.current = outcome.uncertain
           ? { cmd: c, scope, run: attempt }
           : null;
+        if (!outcome.uncertain && fenceKey) sessionStorage.removeItem(fenceKey);
         setMessage(
           outcome.uncertain
             ? { kind: "uncertain", text: uncertainText }
@@ -65,12 +94,28 @@ export function useWrite(
       };
       try {
         return await attempt(cmd);
+      } catch {
+        if (currentScope.current === scope) {
+          pending.current = { cmd, scope, run: attempt };
+          setMessage({ kind: "uncertain", text: uncertainText });
+        }
+        return false;
       } finally {
         inFlight.current = false;
         setBusy(false);
       }
     },
-    [boundary, errorText, store, uncertainText, scope],
+    [
+      boundary,
+      errorText,
+      store,
+      uncertainText,
+      scope,
+      fenceKey,
+      fenceReady,
+      recoveryBlocked,
+      recoveryText,
+    ],
   );
 
   const retry = useCallback(async () => {
@@ -100,5 +145,14 @@ export function useWrite(
     pending.current = null;
     setMessage(null);
   }, []);
-  return { busy, message, run, retry, fail, dismiss };
+  return {
+    busy: busy || !fenceReady,
+    message,
+    run,
+    retry,
+    fail,
+    dismiss,
+    canRetry:
+      !!pending.current && pending.current.scope === scope && !recoveryBlocked,
+  };
 }

@@ -280,6 +280,49 @@ export function registerProductEditorAcceptance() {
       await page.reload();
       await expect(page.locator(".product-status-draft")).toHaveCount(3);
       await shot("batch-result-en-1586");
+      // Fault injection: server commits a copy, but the browser loses that response.
+      // After reload the receipt fence must prevent sending a fresh-key duplicate.
+      const copyPattern = `**/products/${id}/copy`;
+      await page.route(copyPattern, async (route) => {
+        await route.fetch();
+        await route.abort("failed");
+      });
+      const beforeUnknown = writes.length;
+      await page
+        .getByTestId(`product-row-${id}`)
+        .getByRole("button", { name: "Copy", exact: true })
+        .click();
+      await expect(
+        page.getByRole("button", {
+          name: productEditorCopy.en.retry,
+          exact: true,
+        }),
+      ).toBeVisible();
+      await page.reload();
+      await expect(
+        page.getByText(productEditorCopy.en.listRecoveryRequired, {
+          exact: true,
+        }),
+      ).toBeVisible();
+      await expect(
+        page
+          .getByTestId(`product-row-${id}`)
+          .getByRole("button", { name: "Copy", exact: true }),
+      ).toBeDisabled();
+      expect(
+        writes
+          .slice(beforeUnknown)
+          .filter((r) => r.path.endsWith(`/${id}/copy`)),
+      ).toHaveLength(1);
+      await page.unroute(copyPattern);
+      ledger.push({
+        page: "list",
+        control: "copy response loss/reload",
+        action: "click then injected lost response, reload",
+        expected: "one committed command; recovery fence blocks duplicate",
+        actual: "PASS",
+        tier: "FAULT_INJECTED+REAL_PG",
+      });
       ledger.push({
         page: "list",
         control: "copy/select all/unpublish",

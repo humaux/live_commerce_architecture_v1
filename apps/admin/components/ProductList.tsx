@@ -130,6 +130,7 @@ export function ProductList({
     read.boundary,
     (code) => (code in pc ? pc[code as keyof typeof pc] : pc.failed),
     pc.uncertain,
+    pc.listRecoveryRequired,
   );
   const locked = write.busy || write.message?.kind === "uncertain";
   const rows = (page?.items ?? [])
@@ -451,7 +452,7 @@ export function ProductList({
             {write.message && (
               <div className="orders-message" role="status">
                 <p>{write.message.text}</p>
-                {write.message.kind === "uncertain" && (
+                {write.message.kind === "uncertain" && write.canRetry && (
                   <button
                     type="button"
                     disabled={write.busy}

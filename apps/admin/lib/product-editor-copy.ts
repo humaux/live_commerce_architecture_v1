@@ -144,6 +144,8 @@ const en = {
   priceAsc: "Price: low to high",
   stockAsc: "Inventory: low to high",
   mixedTracking: "Includes untracked variants",
+  listRecoveryRequired:
+    "A previous catalogue command still needs reconciliation. Do not copy or submit it again. Ask an administrator to confirm its receipt before continuing; only the command identifier was retained.",
   total: "Products",
   cap: "Select up to 100 products per action.",
   membership: "Adding to a collection preserves its existing products.",
@@ -281,6 +283,8 @@ const zhTW: Copy = {
   priceAsc: "價格由低到高",
   stockAsc: "庫存由低到高",
   mixedTracking: "含不追蹤數量的規格",
+  listRecoveryRequired:
+    "先前的商品命令仍待核對，請勿重複複製或提交。請管理員核對回執後再繼續；系統只保留命令編號。",
   total: "商品數",
   cap: "每次最多選取 100 個商品。",
   membership: "加入分類時會保留該分類原有商品。",
@@ -417,6 +421,8 @@ const zhCN: Copy = {
   priceAsc: "价格从低到高",
   stockAsc: "库存从低到高",
   mixedTracking: "含不追踪数量的规格",
+  listRecoveryRequired:
+    "先前的商品命令仍待核对，请勿重复复制或提交。请管理员核对回执后再继续；系统只保留命令编号。",
   total: "商品数",
   cap: "每次最多选择 100 个商品。",
   membership: "加入分类时会保留该分类原有商品。",
