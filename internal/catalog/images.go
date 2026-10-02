@@ -28,8 +28,8 @@ import (
 const (
 	// MaxImageBytes is the per-photo cap (CM1); the SQL CHECK octet_length(bytes) repeats it.
 	MaxImageBytes = 2 << 20
-	// MaxImagesPerProduct matches the position CHECK 0..7 in migrations/0082.
-	MaxImagesPerProduct = 8
+	// MaxImagesPerProduct matches the position CHECK 0..11 in migrations/0082 (widened by 0109, product-editor §f).
+	MaxImagesPerProduct = 12
 	maxImageDimension   = 20000
 )
 

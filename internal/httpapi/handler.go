@@ -118,6 +118,22 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	mux.HandleFunc("POST "+base+"/products", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.ProductInput) (any, error) {
 		return catalog.CreateProduct(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)
 	}))
+	// product-editor §f (unit product-core): the idempotent document save command. Create is POST /products/document (not
+	// POST /products, which stays catalog-core's frozen quick-add CreateProduct route — see output/product-core/DEVIATIONS.md);
+	// edit is PUT /products/{id}/document.
+	mux.HandleFunc("POST "+base+"/products/document", bodyRouteAs(pool, "catalog:write", catalogClassify, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.ProductDocumentInput) (any, error) {
+		return catalog.SaveProductDocument(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)
+	}))
+	mux.HandleFunc("PUT "+base+"/products/{product_id}/document", bodyRouteAs(pool, "catalog:write", catalogClassify, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.ProductDocumentInput) (any, error) {
+		in.ID = r.PathValue("product_id")
+		return catalog.SaveProductDocument(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)
+	}))
+	mux.HandleFunc("POST "+base+"/products/bulk-status", bodyRouteAs(pool, "catalog:write", catalogClassify, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.BulkStatusInput) (any, error) {
+		return catalog.BulkSetProductStatus(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)
+	}))
+	mux.HandleFunc("POST "+base+"/products/{product_id}/copy", bodyRouteAs(pool, "catalog:write", catalogClassify, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.CopyInput) (any, error) {
+		return catalog.CopyProduct(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), in)
+	}))
 	mux.HandleFunc("PATCH "+base+"/products/{product_id}", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.ProductPatch) (any, error) {
 		return catalog.PatchProduct(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), in)
 	}))
@@ -279,6 +295,12 @@ func parsePage(raw string) (pagination.Request, error) {
 // bodyRoute rejects unknown fields/trailing values and caps allocation before
 // opening a database transaction. It never logs bodies or bearer credentials.
 func bodyRoute[T any](pool *pgxpool.Pool, permission string, fn func(context.Context, pgx.Tx, platform.Scope, *http.Request, T) (any, error)) http.HandlerFunc {
+	return bodyRouteAs(pool, permission, classify, fn)
+}
+
+// bodyRouteAs is bodyRoute with a route family's own error classifier (the catalog document command needs catalogClassify
+// so its refusal codes — amount_not_whole_twd / keyword_taken / live_window_open — do not read "internal").
+func bodyRouteAs[T any](pool *pgxpool.Pool, permission string, classifier func(error) (int, string), fn func(context.Context, pgx.Tx, platform.Scope, *http.Request, T) (any, error)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		media, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 		if err != nil || media != "application/json" {
@@ -299,7 +321,7 @@ func bodyRoute[T any](pool *pgxpool.Pool, permission string, fn func(context.Con
 			respondError(w, http.StatusBadRequest, "invalid_json")
 			return
 		}
-		scoped(pool, permission, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
+		scopedAs(pool, permission, classifier, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
 			return fn(ctx, tx, s, r, in)
 		})(w, r)
 	}
@@ -384,6 +406,17 @@ func classify(err error) (int, string) {
 		}
 	}
 	return http.StatusInternalServerError, "internal"
+}
+
+// catalogClassify maps the catalog document command's coded refusals (internal/catalog coded.go) to their transport codes
+// before falling back to the shared classifier. Without this, amount_not_whole_twd / keyword_taken / live_window_open would
+// all read "internal" because a *catalog.Error matches none of the sentinel cases above.
+func catalogClassify(err error) (int, string) {
+	var coded *catalog.Error
+	if errors.As(err, &coded) {
+		return coded.Status, coded.Code
+	}
+	return classify(err)
 }
 
 func respondError(w http.ResponseWriter, status int, code string) {

@@ -156,6 +156,11 @@ func write(w http.ResponseWriter, status int, code string, retryable bool) {
 		// 0088/CVS codes above (bank_transfer_unavailable, pay_at_pickup_unavailable, insufficient_inventory, idempotency_conflict, export_too_large).
 		"manual_order_unavailable": "Creating orders from the admin is not available on this deployment.",
 		"cvs_entry_unavailable":    "This convenience-store service needs the store to be chosen from the map.",
+		// product-editor §f (unit product-core, internal/catalog coded.go): the A6 document command refusals. Every catalog
+		// code must be listed here or the merchant sees "internal" (catalogClassify checks *catalog.Error first).
+		"amount_not_whole_twd": "For TWD the price must be a whole dollar.",
+		"keyword_taken":        "That keyword is already used by another SKU.",
+		"live_window_open":     "This product cannot be unlisted while its live window is open.",
 	}
 	message, ok := messages[code]
 	if !ok {

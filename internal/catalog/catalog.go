@@ -85,6 +85,11 @@ type SKU struct {
 	OptionValues   []string `json:"option_values"`
 	Title          string   `json:"title"`
 	CompareAtMinor *int64   `json:"compare_at_minor"`
+	// InventoryTracked is the A6 flag (migration 0109): true = tracked (checkout Begin locks and deducts stock, no
+	// per-order cap); false = untracked (checkout skips the lock/deduct and enforces MaxPerOrder). MaxPerOrder is the
+	// per-order cap, set only when untracked (NULL for tracked).
+	InventoryTracked bool   `json:"inventory_tracked"`
+	MaxPerOrder      *int64 `json:"max_per_order,omitempty"`
 }
 
 type SKUInput struct {
@@ -328,7 +333,7 @@ func ListProductsPage(ctx context.Context, tx pgx.Tx, scope platform.Scope, requ
 }
 
 // skuColumns is the one SKU projection; skuFields is its Scan target list (same order).
-const skuColumns = `id::text,product_id::text,code,status,currency,price_minor,version,weight_grams,length_mm,width_mm,height_mm,origin_country,customs_name,hs_candidate,option_values,compare_at_minor`
+const skuColumns = `id::text,product_id::text,code,status,currency,price_minor,version,weight_grams,length_mm,width_mm,height_mm,origin_country,customs_name,hs_candidate,option_values,compare_at_minor,inventory_tracked,max_per_order`
 
 func CreateSKU(ctx context.Context, tx pgx.Tx, scope platform.Scope, key string, in SKUInput) (out SKU, err error) {
 	if !validSKUInput(in, false) {
@@ -356,6 +361,9 @@ func CreateSKU(ctx context.Context, tx pgx.Tx, scope platform.Scope, key string,
 		}
 		currency, err := storeCurrency(ctx, tx, scope)
 		if err != nil {
+			return err
+		}
+		if err := checkWholeTWD(currency, in.PriceMinor, in.CompareAtMinor); err != nil {
 			return err
 		}
 		err = tx.QueryRow(ctx, `INSERT INTO catalog.skus(tenant_id,store_id,product_id,code,currency,price_minor,weight_grams,length_mm,width_mm,height_mm,origin_country,customs_name,hs_candidate,option_values,compare_at_minor)
@@ -444,6 +452,9 @@ func SetSKUPrice(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, id s
 		// is a merchant error to fix by sending compare_at_minor (or null) in the same request.
 		if compare != nil && *compare <= in.PriceMinor {
 			return command.ErrInvalid
+		}
+		if err := checkWholeTWD(current.Currency, in.PriceMinor, compare); err != nil {
+			return err
 		}
 		if err := tx.QueryRow(ctx, `UPDATE catalog.skus SET price_minor=$3,compare_at_minor=$6,version=version+1,updated_at=clock_timestamp()
 			WHERE tenant_id=$1 AND store_id=$2 AND id=$4 AND version=$5
@@ -619,6 +630,19 @@ func storeCurrency(ctx context.Context, tx pgx.Tx, scope platform.Scope) (string
 	return c, mapError(err)
 }
 
+// checkWholeTWD refuses a TWD price or compare-at that is not a whole dollar (product-editor §f ruling 6). A currency
+// other than TWD is never checked (minor units may be cents there); compare may be nil. This is a Go check, not a DB
+// CHECK, so legacy non-whole TWD rows do not block migration 0109.
+func checkWholeTWD(currency string, priceMinor int64, compare *int64) error {
+	if currency != "TWD" {
+		return nil
+	}
+	if priceMinor%100 != 0 || (compare != nil && *compare%100 != 0) {
+		return ErrAmountNotWholeTWD
+	}
+	return nil
+}
+
 // appendPriceHistory keeps the create price (version 1) and later price changes
 // in the same append-only stream, before the command result/audit can commit.
 func appendPriceHistory(ctx context.Context, tx pgx.Tx, scope platform.Scope, sku SKU) error {
@@ -627,7 +651,7 @@ func appendPriceHistory(ctx context.Context, tx pgx.Tx, scope platform.Scope, sk
 	return err
 }
 func skuFields(s *SKU) []any {
-	return []any{&s.ID, &s.ProductID, &s.Code, &s.Status, &s.Currency, &s.PriceMinor, &s.Version, &s.WeightGrams, &s.LengthMM, &s.WidthMM, &s.HeightMM, &s.OriginCountry, &s.CustomsName, &s.HSCandidate, &s.OptionValues, &s.CompareAtMinor}
+	return []any{&s.ID, &s.ProductID, &s.Code, &s.Status, &s.Currency, &s.PriceMinor, &s.Version, &s.WeightGrams, &s.LengthMM, &s.WidthMM, &s.HeightMM, &s.OriginCountry, &s.CustomsName, &s.HSCandidate, &s.OptionValues, &s.CompareAtMinor, &s.InventoryTracked, &s.MaxPerOrder}
 }
 
 // finishSKU derives Title (never stored) and keeps OptionValues non-nil for JSON.

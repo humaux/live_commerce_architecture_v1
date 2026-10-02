@@ -699,11 +699,46 @@ func planLocked(ctx context.Context, tx pgx.Tx, allocation fulfillment.Allocatio
 			return nil, err
 		}
 	}
+	// A6: only tracked SKUs are locked and deducted; an untracked SKU stays in the quote but is absent from the plan,
+	// and its per-order cap (max_per_order) is enforced by checkout.begin_hold against the live SKU row (single, race-free
+	// authority). The flags are read through the same checkout_runtime_read scoped policy as the balances.
+	ids := make([]string, 0, len(quote.Lines))
+	for _, line := range quote.Lines {
+		ids = append(ids, line.SKUID)
+	}
+	tracked := make(map[string]bool, len(ids))
+	if len(ids) > 0 {
+		rows, err := tx.Query(ctx, `SELECT id::text FROM catalog.skus WHERE id=ANY($1::uuid[]) AND inventory_tracked`, ids)
+		if err != nil {
+			return nil, err
+		}
+		for rows.Next() {
+			var id string
+			if err := rows.Scan(&id); err != nil {
+				rows.Close()
+				return nil, err
+			}
+			tracked[id] = true
+		}
+		if err := rows.Err(); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		rows.Close()
+	}
 	demands := make([]inventory.Demand, 0, len(quote.Lines))
 	skus := make([]string, 0, len(quote.Lines))
 	for _, line := range quote.Lines {
+		if !tracked[line.SKUID] {
+			continue
+		}
 		demands = append(demands, inventory.Demand{SKUID: line.SKUID, Quantity: line.Quantity})
 		skus = append(skus, line.SKUID)
+	}
+	if len(demands) == 0 {
+		// Every line is untracked: nothing to lock or deduct. The plan must stay a non-nil [] so begin_hold's
+		// jsonb_typeof(p_lines)='array' gate passes (a nil slice marshals to null).
+		return []inventory.Line{}, nil
 	}
 	sort.Strings(skus)
 	balances := make([]inventory.Balance, 0, len(warehouses)*len(skus))
