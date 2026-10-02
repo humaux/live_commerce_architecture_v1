@@ -1,0 +1,2 @@
+page preflight {"status":200,"bytes":97176}
+{"phase":"after","exitCode":1,"samples":[{"bytes":0,"lcpMs":212},{"bytes":0,"lcpMs":104},{"bytes":0,"lcpMs":96}],"isolation":{"rawOwnerStatus":200,"rawForeignStatus":404,"optimizedOwnerStatus":400,"optimizedForeignStatus":400,"optimizedOwnerBody":"The requested resource isn't a valid image.","warmCacheTest":"NOT_RUN: owner optimization failed"},"imageReduction":null}

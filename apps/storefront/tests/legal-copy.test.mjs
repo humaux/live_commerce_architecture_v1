@@ -45,13 +45,13 @@ test("final text is only the owner-confirmed company facts (CR 81215167 name + r
   assert.equal(finals, 15); // privacy (name+address), terms (operator), contact (name+address) x 3 locales
 });
 
-test("footer has 6 unique hrefs: 5 legal slugs plus data-deletion, per locale", () => {
+test("footer has 7 unique hrefs: 5 policies, anti-fraud guidance and data-deletion, per locale", () => {
   for (const l of locales) {
     const links = legalFooterLinks(l);
-    assert.equal(new Set(links.map((x) => x.href)).size, 6);
+    assert.equal(new Set(links.map((x) => x.href)).size, 7);
     assert.deepEqual(
       links.map((x) => x.href),
-      [...legalSlugs.map((s) => `/${l}/legal/${s}`), `/${l}/data-deletion`],
+      [...legalSlugs.map((s) => `/${l}/legal/${s}`), `/${l}/legal/anti-fraud`, `/${l}/data-deletion`],
     );
     assert.ok(links.every((x) => x.label.length > 0));
   }

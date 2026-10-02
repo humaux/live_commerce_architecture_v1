@@ -1,0 +1,20 @@
+✔ every locale x page has a title, an updated line and at least one section (0.711584ms)
+✔ locales share the section count and per-section body count of every page (0.664916ms)
+✔ final text is only the owner-confirmed company facts (CR 81215167 name + registered address); nothing else is final (0.263375ms)
+✔ footer has 7 unique hrefs: 5 policies, anti-fraud guidance and data-deletion, per locale (0.4415ms)
+✔ data-deletion path is named in the privacy page of every locale (0.195ms)
+✔ pendingOwnerText lists exactly the rendered markers and is written for the owner (1.963375ms)
+✔ TWD whole amounts show no decimals in every locale and at every magnitude (line, subtotal, total, zero) (12.832791ms)
+✔ cents appear only when there are cents, then always as two digits; the minor-unit arithmetic is untouched (0.235ms)
+✔ digits come from the currency: JPY none, USD two when there are cents (0.13375ms)
+✔ one formatter: no component, page or lib builds a currency Intl.NumberFormat outside lib/money.ts (80.370666ms)
+✔ G3: same-series cards exclude the current product and never invent absent draft/foreign products (0.671042ms)
+✔ G4: category chips omit empty collections; hidden collections absent from the public API stay absent (0.074917ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 220.766708

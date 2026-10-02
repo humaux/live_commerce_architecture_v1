@@ -11,7 +11,7 @@ import { formatMoney } from "../lib/money.ts";
 const nb = (s) => s.replace(/ /g, " ");
 
 test("TWD whole amounts show no decimals in every locale and at every magnitude (line, subtotal, total, zero)", () => {
-  for (const [locale, prefix] of [["zh-TW", "TWD "], ["zh-CN", "NT$"], ["en", "NT$"]]) {
+  for (const [locale, prefix] of [["zh-TW", "NT$"], ["zh-CN", "NT$"], ["en", "NT$"]]) {
     assert.equal(nb(formatMoney(locale, 256000, "TWD")), `${prefix}2,560`);
     assert.equal(nb(formatMoney(locale, 128000, "TWD")), `${prefix}1,280`);
     assert.equal(nb(formatMoney(locale, 0, "TWD")), `${prefix}0`);
@@ -20,12 +20,12 @@ test("TWD whole amounts show no decimals in every locale and at every magnitude 
 });
 
 test("cents appear only when there are cents, then always as two digits; the minor-unit arithmetic is untouched", () => {
-  assert.equal(nb(formatMoney("zh-TW", 1250, "TWD")), "TWD 12.50");
-  assert.equal(nb(formatMoney("zh-TW", 1205, "TWD")), "TWD 12.05");
+  assert.equal(nb(formatMoney("zh-TW", 1250, "TWD")), "NT$12.50");
+  assert.equal(nb(formatMoney("zh-TW", 1205, "TWD")), "NT$12.05");
   // The caller multiplies in minor units; the formatter only renders. 2 x 1280.00 and 1280.50 + 1280.50 agree with the line total.
   const unit = 128000, qty = 2;
   assert.equal(formatMoney("zh-TW", unit * qty, "TWD"), formatMoney("zh-TW", 256000, "TWD"));
-  assert.equal(nb(formatMoney("zh-TW", 128050 * 2, "TWD")), "TWD 2,561");
+  assert.equal(nb(formatMoney("zh-TW", 128050 * 2, "TWD")), "NT$2,561");
 });
 
 test("digits come from the currency: JPY none, USD two when there are cents", () => {

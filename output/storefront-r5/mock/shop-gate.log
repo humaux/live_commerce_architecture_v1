@@ -1,0 +1,11 @@
+browser engine: chromium
+PASS SF01 home renders the five section types, announcement, nav, footer contact, accent variable (390 + 1280, no overflow, no iOS zoom)
+PASS SF02 title/canonical/Open Graph(absolute image)/Product JSON-LD, sitemap lists active products only, robots, noindex on cart
+PASS SF03 collections grid, sort select, price filter keeps its inputs open, cursor load more reaches all 30 products
+PASS SF04 variant chips resolve price/stock, sold-out cannot be added, two SKUs added, drawer, cart edit/remove, free-delivery hint (MOCK field), reload keeps cart
+PASS SF05 cart -> Checkout page -> delivery -> quotation reaches the existing order flow (order placement itself: existing gates)
+PASS SF06 search by title and by SKU code; empty result state
+PASS SF07 id URL redirects permanently to the slug, draft/hidden product and unknown collection are branded 404s
+PASS SF08 preview token shows the draft with banner/no-store/noindex and keeps it across nav; unknown token and forged header fall back to published
+PASS SF09 UI chrome follows the locale (en, zh-CN) while merchant text stays as entered
+PASS SF10 unpublished store: branded closed 404, robots Disallow, no sitemap; upstream down -> 500 error state, recovers

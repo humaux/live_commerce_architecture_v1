@@ -8,6 +8,7 @@
 // exists only after the owner pastes/approves it. No consent capture, no deletion execution, no
 // per-store text (W1: one platform-level set for the owner's own store, 香港大碗貿易有限公司).
 import type { Locale } from "@live-commerce/i18n";
+import { browseCopy } from "./browse-copy.ts";
 
 export const legalSlugs = ["privacy", "terms", "refunds", "shipping", "contact"] as const;
 export type LegalSlug = (typeof legalSlugs)[number];
@@ -333,6 +334,7 @@ export function legalPage(locale: Locale, slug: LegalSlug): Page {
 export function legalFooterLinks(locale: Locale): { href: string; label: string }[] {
   return [
     ...legalSlugs.map((slug) => ({ href: `/${locale}/legal/${slug}`, label: legalPage(locale, slug).title })),
+    { href: `/${locale}/legal/anti-fraud`, label: browseCopy[locale].fraud },
     { href: `/${locale}/data-deletion`, label: chrome[locale].deletion },
   ];
 }

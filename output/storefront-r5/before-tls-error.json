@@ -1,0 +1,13 @@
+{
+  "phase": "before",
+  "tier": "MOCK",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "dpr": 2,
+  "path": "/zh-TW/products",
+  "runs": [],
+  "fixtureSHA256": "3634d2aea38ce21150a00946c082e299f76234b576a5a3f0d31c8cff29d2f764",
+  "error": "page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"https://shop.example/zh-TW/products\", waiting until \"networkidle\"\u001b[22m\n"
+}

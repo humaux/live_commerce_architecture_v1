@@ -1,0 +1,1 @@
+{"phase":"before","exitCode":1,"samples":[],"error":"The argument 'stdio' is invalid. Received WriteStream {\n  fd: null,\n  path: '/Volumes/data/live_commerce_architecture_v1/.worktrees/storefront-r5/output/storefront-r5/bef..."}

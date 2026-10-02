@@ -1,0 +1,13 @@
+{
+  "phase": "before",
+  "tier": "MOCK",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "dpr": 2,
+  "path": "/zh-TW/products",
+  "runs": [],
+  "fixtureSHA256": "3634d2aea38ce21150a00946c082e299f76234b576a5a3f0d31c8cff29d2f764",
+  "error": "The argument 'stdio' is invalid. Received WriteStream {\n  fd: null,\n  path: '/Volumes/data/live_commerce_architecture_v1/.worktrees/storefront-r5/output/storefront-r5/bef..."
+}
