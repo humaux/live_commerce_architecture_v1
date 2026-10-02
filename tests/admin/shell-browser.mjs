@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { otherID } from "./shell-fixture.mjs";
+import { shellCopy } from "../../apps/admin/src/shell-copy.ts";
 const require = createRequire(import.meta.url);
 const sizes = [
   [1366, 768],
@@ -264,6 +265,13 @@ export async function runShellGate({
       .then((c) => c.some((x) => x.name === "__Host-commerce_session")),
     true,
   );
+  await context.clearCookies();
+  for (const locale of ["en", "zh-CN", "zh-TW"]) {
+    for (const [path, label] of [["/reset", "reset"], ["/signup", "signup"], [`/invite/${"a".repeat(43)}`, "invite"]]) {
+      await page.goto(`${base}/${locale}${path}`);
+      assert.equal(await page.title(), shellCopy[locale][label], "Public page title from registry");
+    }
+  }
   await writeFile(
     `${output}/browser-results.json`,
     JSON.stringify(
@@ -273,6 +281,7 @@ export async function runShellGate({
         role: "pass UI403",
         storeSwitch: "hard-navigation clears old page",
         backendAuthorization: "NOT_PROVEN_BY_THIS_MOCK",
+        publicTitles: "9 registry title checks passed",
       },
       null,
       2,

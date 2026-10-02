@@ -239,6 +239,10 @@ if [[ "$test_mode" == --browser-storefront-publish || "$test_mode" == --browser-
   node --test --experimental-strip-types tests/admin/storefront-model.test.ts tests/admin/design-gate.test.ts tests/admin/design-model.test.ts packages/markdown-lite/tests/index.test.ts
   mkdir -p output/playwright
 fi
+if [[ "$test_mode" == --browser-design ]]; then
+  test -f tests/foundation/browser_store_design_test.go
+  grep -q '^func TestBrowserStoreDesign' tests/foundation/browser_store_design_test.go
+fi
 if [[ "$test_mode" == --browser-meta-ads ]]; then
   # MA09a (BROWSER, Meta = MOCK): refuse a no-test success and run the pure model/request gates first.
   test -f tests/foundation/browser_meta_ads_test.go

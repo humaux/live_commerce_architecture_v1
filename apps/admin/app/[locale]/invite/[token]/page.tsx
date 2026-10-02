@@ -7,6 +7,8 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { isLocale } from "@live-commerce/i18n";
+import { routeMetadata } from "@/src/route-metadata";
+export const generateMetadata = ({ params }: { params: Promise<{ locale: string }> }) => routeMetadata("/invite/[token]", params);
 import { SESSION_COOKIE, authConfig, authenticatedStores, exactCookieHeader, isBase64URL32 } from "@/lib/auth";
 import { TeamInvite } from "@/components/TeamInvite";
 

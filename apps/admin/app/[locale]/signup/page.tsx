@@ -13,6 +13,8 @@ import {
 } from "@/lib/auth";
 import { onboardingPolicy } from "@/lib/backend";
 import { Entry } from "@/components/Entry";
+import { routeMetadata } from "@/src/route-metadata";
+export const generateMetadata = ({ params }: { params: Promise<{ locale: string }> }) => routeMetadata("/signup", params);
 
 export default async function Page({
   params,
