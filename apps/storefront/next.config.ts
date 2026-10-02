@@ -11,6 +11,9 @@ const config: NextConfig = {
   devIndicators: false,
   poweredByHeader: false,
   reactStrictMode: true,
+  // Canonical-host 301 owns the first redirect; keep the buyer's path/query intact.
+  skipTrailingSlashRedirect: true,
+  skipProxyUrlNormalize: true,
   async headers() {
     return [
       {
