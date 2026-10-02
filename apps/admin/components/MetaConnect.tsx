@@ -114,7 +114,7 @@ export function MetaConnect({ store, locale }: { store: string; locale: Locale }
     inFlight.current = false; setBusy(false); fail(result.code, result.uncertain);
   }
   async function submitPick() {
-    if (inFlight.current || uncertain || !pick) return;
+    if (inFlight.current || uncertain || !pick || load !== "ready" || !status) return;
     const page = pick.pages.find((p) => p.page_id === chosen);
     if (!page || !pickable(page, false)) return;
     inFlight.current = true; setBusy(true); setProblem(""); setNotice("");
@@ -178,7 +178,7 @@ export function MetaConnect({ store, locale }: { store: string; locale: Locale }
           ))}
           <div className="settings-actions">
             <button type="button" disabled={locked} onClick={() => { key.current = null; setPick(null); setProblem(""); }}>{c.pickCancel}</button>
-            <button className="primary" type="button" data-testid="metaconnect-pick-submit" disabled={locked || !chosenPage || chosenPage.missing.length > 0} onClick={() => void submitPick()}>
+            <button className="primary" type="button" data-testid="metaconnect-pick-submit" disabled={locked || load !== "ready" || !status || !chosenPage || chosenPage.missing.length > 0} onClick={() => void submitPick()}>
               {busy ? c.saving : c.pickSubmit}
             </button>
           </div>

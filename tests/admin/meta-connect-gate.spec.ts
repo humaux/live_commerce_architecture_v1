@@ -270,6 +270,168 @@ test.describe("meta-connect independent browser gate", () => {
     expect(pageC.id && pageC.name).toBeTruthy();
   });
 
+
+  test("MOCK UI boundaries: ten slots, cap/not-found in three languages, malformed start preserves its key", async ({ page }) => {
+    await signedLogin(page);
+    const stamp = "2026-10-01T08:30:00Z";
+    const dto = { connected: true, count: 10, cap: 10, pages: Array.from({ length: 10 }, (_, i) => ({
+      id: String(900000 + i), name: `Fixture Page ${i + 1}`, status: "active", instagram: null, permissions: ["pages_messaging"],
+      connected_at: stamp, route_expires_at: "2027-10-01T08:30:00Z", last_event_at: stamp,
+    })) };
+    await page.route(`**/meta-connect/status`, (route) => route.fulfill({ json: dto }));
+    await page.route(`**/meta-connect/disconnect`, (route) => route.fulfill({ status: 404, json: { code: "not_found" } }));
+    await page.route(`**/meta-connect/pick`, (route) => route.fulfill({ status: 409, json: { code: "cap_exceeded" } }));
+    await answerDialog(page);
+    answer = { profile: "full" };
+    for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
+      const c = metaConnectCopy[locale];
+      await page.setViewportSize(sizes.mobile);
+      await openSettings(page, locale);
+      await expect(page.getByTestId("metaconnect-add")).toBeDisabled();
+      await expect(page.locator("#metaconnect-cap")).toHaveText(c.capReached);
+      await expect(page.getByTestId("metaconnect-reconnect")).toBeEnabled();
+      await expect(page.getByTestId("metaconnect-last-event").first()).toContainText("16:30");
+      await page.getByTestId("metaconnect-card").scrollIntoViewIfNeeded();
+      await shot(page, "MOCK-cap-ten", locale, "mobile");
+      const first = page.getByTestId("metaconnect-row-900000");
+      await first.getByTestId("metaconnect-disconnect").click();
+      await first.getByTestId("metaconnect-confirm-yes").click();
+      await expect(page.getByTestId("metaconnect-error")).toHaveText(c.errors.not_found);
+      await page.getByTestId("metaconnect-reconnect").click();
+      await page.getByTestId(`metaconnect-pick-${pageA.id}`).check();
+      await page.getByTestId("metaconnect-pick-submit").click();
+      await expect(page.getByTestId("metaconnect-error")).toHaveText(c.errors.cap_exceeded);
+    }
+    await page.unroute(`**/meta-connect/status`);
+    await page.unroute(`**/meta-connect/pick`);
+    await page.unroute(`**/meta-connect/disconnect`);
+    await openSettings(page, "en");
+    const starts: string[] = [];
+    await page.route("**/api/meta/connect", async (route) => {
+      starts.push(route.request().headers()["idempotency-key"]);
+      if (starts.length === 1) await route.fulfill({ status: 200, contentType: "application/json", body: "{" });
+      else await route.continue();
+    });
+    await page.getByTestId("metaconnect-connect").click();
+    await expect(page.getByTestId("metaconnect-error")).toBeVisible();
+    await page.getByTestId("metaconnect-connect").click();
+    await expect(page.getByTestId("metaconnect-pick")).toBeVisible();
+    expect(starts).toHaveLength(2);
+    expect(starts[0]).toBeTruthy();
+    expect(starts[0]).toBe(starts[1]);
+    await page.getByRole("button", { name: metaConnectCopy.en.pickCancel }).click();
+    await expect(page.getByTestId("metaconnect-none")).toBeVisible();
+  });
+
+  test("MOCK UNKNOWN: wait for the baseline, then an unchanged old Page cannot prove a lost write succeeded", async ({ page }) => {
+    await signedLogin(page);
+    const stamp = "2026-10-01T08:30:00Z";
+    const old = { connected: true, count: 1, cap: 10, pages: [{ id: pageA.id, name: pageA.name,
+      status: "active", instagram: null, permissions: ["pages_messaging"], connected_at: stamp,
+      route_expires_at: "2027-10-01T08:30:00Z", last_event_at: null }] };
+    let release: () => void = () => {};
+    const baseline = new Promise<void>((resolve) => { release = resolve; });
+    await page.route("**/meta-connect/status", async (route) => { await baseline; await route.fulfill({ json: old }); });
+    const stateID = "11111111-1111-4111-8111-111111111111";
+    await page.route(`**/meta-connect/states/${stateID}`, (route) => route.fulfill({ json: {
+      state_id: stateID, expires_at: "2027-10-01T08:30:00Z", scopes: ["pages_messaging"],
+      pages: [{ page_id: pageA.id, name: pageA.name, missing: [], ig_missing: [] }],
+    } }));
+    let attempts = 0;
+    await page.route("**/meta-connect/pick", async (route) => { attempts++; await route.abort("failed"); });
+    await page.goto(`/en/settings?store=${store}&meta_connect=${stateID}`);
+    await expect(page.getByTestId("metaconnect-pick")).toBeVisible();
+    await expect(page.getByTestId("metaconnect-pick-submit")).toBeDisabled();
+    expect(attempts).toBe(0);
+    release();
+    await expect(page.getByTestId("metaconnect-pick-submit")).toBeEnabled();
+    await page.getByTestId("metaconnect-pick-submit").click();
+    await expect(page.getByTestId("metaconnect-error")).toHaveText(metaConnectCopy.en.uncertain);
+    await page.getByTestId("metaconnect-readback").click();
+    await expect(page.getByTestId("metaconnect-pick-submit")).toBeDisabled();
+    await expect(page.getByTestId("metaconnect-notice")).toHaveCount(0);
+    expect(attempts).toBe(1);
+  });
+
+  test("state replay: the same OAuth return opened again connects nothing, even with the binding cookie present", async ({ page }) => {
+    const c = metaConnectCopy.en;
+    await signedLogin(page);
+    await openSettings(page, "en");
+    await answerDialog(page);
+    answer = { profile: "fbonly" };
+    await page.getByTestId("metaconnect-connect").click();
+    await expect(page.getByTestId("metaconnect-pick")).toBeVisible({ timeout: 30_000 });
+    const replay = lastCallback!;
+    expect(replay).toContain("/api/meta/callback?code=");
+    await page.getByRole("button", { name: c.pickCancel }).click(); // abandon: nothing connected yet
+    await expect(page.getByTestId("metaconnect-none")).toBeVisible();
+    // Re-open the identical return URL (as a back button / history entry / copied link would) with and without the cookie.
+    for (const withCookie of [false, true]) {
+      await page.context().clearCookies({ name: "lc_meta_connect" });
+      if (withCookie) await page.context().addCookies([{ name: "lc_meta_connect", value: store, url: `${origin}/api/meta/callback` }]);
+      await page.goto(replay);
+      await page.waitForURL(/\/settings/);
+      await expect(page.getByTestId("metaconnect-error")).toHaveText(c.errors.state_mismatch, { timeout: 30_000 });
+      await expect(page.getByTestId("metaconnect-none")).toBeVisible();
+      expect(page.url()).not.toMatch(/code=|state=/);
+    }
+    expect((await facts()).connections).toBe(0);
+    await page.getByTestId("metaconnect-connect").waitFor();
+  });
+
+  // Root cause of the zh-TW mobile notice that came back in English: the dashboard's <Link> prefetches of /en/... answered a few ms after the
+  // navigation to /zh-TW/settings and their Set-Cookie flipped commerce_locale back to en; /api/meta/callback reads that cookie.
+  test("a Next <Link> prefetch never rewrites the locale preference; a real navigation does", async ({ page }) => {
+    await signedLogin(page);
+    const locale = async (path: string, headers: Record<string, string>) => {
+      const response = await page.request.get(`${origin}${path}`, { headers, maxRedirects: 0 });
+      expect(response.status(), path).toBe(200);
+      return response.headersArray().filter((h) => h.name.toLowerCase() === "set-cookie" && h.value.startsWith("commerce_locale=")).map((h) => h.value.split(";")[0]);
+    };
+    expect(await locale(`/zh-TW/settings?store=${store}`, { "next-router-prefetch": "1" })).toEqual([]);
+    expect(await locale(`/zh-TW/settings?store=${store}`, { "sec-purpose": "prefetch" })).toEqual([]);
+    expect(await locale(`/zh-TW/settings?store=${store}`, {})).toEqual(["commerce_locale=zh-TW"]);
+    expect(await locale(`/en/settings?store=${store}`, {})).toEqual(["commerce_locale=en"]);
+  });
+
+  test("no open redirect: whatever the cookies or query say, /api/meta/callback only ever redirects to /<locale>/settings", async ({ page }) => {
+    await signedLogin(page);
+    const state = "A".repeat(43);
+    const hostile = ["//evil.example", "https://evil.example", "/\\evil.example", "javascript:alert(1)", "evil.example"];
+    const cases: { name: string; cookies: { name: string; value: string }[]; query: string }[] = [
+      { name: "no binding cookie", cookies: [], query: `code=abc&state=${state}` },
+      { name: "extra redirect params", cookies: [{ name: "lc_meta_connect", value: store }], query: `code=abc&state=${state}&redirect_uri=https://evil.example&next=//evil.example&return_to=https://evil.example` },
+      { name: "Meta error", cookies: [{ name: "lc_meta_connect", value: store }], query: "error=access_denied&error_reason=user_denied" },
+      { name: "no code", cookies: [{ name: "lc_meta_connect", value: store }], query: `state=${state}` },
+      ...hostile.flatMap((h) => [
+        { name: `hostile store cookie ${h}`, cookies: [{ name: "lc_meta_connect", value: h }], query: `code=abc&state=${state}` },
+        { name: `hostile locale cookie ${h}`, cookies: [{ name: "lc_meta_connect", value: store }, { name: "commerce_locale", value: h }], query: `code=abc&state=${state}` },
+      ]),
+    ];
+    for (const item of cases) {
+      await page.context().clearCookies({ name: "lc_meta_connect" });
+      for (const cookie of item.cookies) {
+        try {
+          await page.context().addCookies([{ name: cookie.name, value: cookie.value, url: cookie.name === "lc_meta_connect" ? `${origin}/api/meta/callback` : origin }]);
+        } catch {
+          /* the browser refused to store a malformed cookie value: that is itself a safe outcome */
+        }
+      }
+      const response = await page.request.get(`${origin}/api/meta/callback?${item.query}`, { maxRedirects: 0 });
+      expect(response.status(), item.name).toBe(303);
+      const location = response.headers()["location"] ?? "";
+      expect(location, `${item.name}: ${location}`).toMatch(safeRedirect);
+      expect(location).not.toMatch(/evil|code=|state=|^\/\//);
+      expect(response.headers()["referrer-policy"], item.name).toBe("no-referrer");
+      expect(response.headers()["cache-control"] ?? "", item.name).toMatch(/no-store/);
+    }
+    await page.context().clearCookies({ name: "commerce_locale" });
+    // The start BFF only ever answers a Facebook dialog URL and refuses a query string or a foreign store.
+    const bad = await page.request.post(`${origin}/api/meta/connect?next=https://evil.example`, { data: { store }, headers: { "idempotency-key": "gate-key-1234567890" } });
+    expect(bad.status()).toBeGreaterThanOrEqual(400);
+    expect(bad.headers()["location"] ?? "").toBe("");
+  });
+
   test("multi-page: A + B are listed and selectable; lost pick/disconnect answers only read back; B disconnect leaves A usable", async ({ page }) => {
     await signedLogin(page);
     await openSettings(page, "en");
@@ -375,136 +537,5 @@ test.describe("meta-connect independent browser gate", () => {
     expect(writes.every((w) => w.key.length >= 8)).toBe(true);
     expect(new Set(writes.map((w) => w.key)).size).toBe(writes.length);
     await noSecrets(page);
-  });
-
-  test("MOCK UI boundaries: ten slots, cap/not-found in three languages, malformed start preserves its key", async ({ page }) => {
-    await signedLogin(page);
-    const stamp = "2026-10-01T08:30:00Z";
-    const dto = { connected: true, count: 10, cap: 10, pages: Array.from({ length: 10 }, (_, i) => ({
-      id: String(900000 + i), name: `Fixture Page ${i + 1}`, status: "active", instagram: null, permissions: ["pages_messaging"],
-      connected_at: stamp, route_expires_at: "2027-10-01T08:30:00Z", last_event_at: stamp,
-    })) };
-    await page.route(`**/meta-connect/status`, (route) => route.fulfill({ json: dto }));
-    await page.route(`**/meta-connect/disconnect`, (route) => route.fulfill({ status: 404, json: { code: "not_found" } }));
-    await page.route(`**/meta-connect/pick`, (route) => route.fulfill({ status: 409, json: { code: "cap_exceeded" } }));
-    await answerDialog(page);
-    answer = { profile: "full" };
-    for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
-      const c = metaConnectCopy[locale];
-      await page.setViewportSize(sizes.mobile);
-      await openSettings(page, locale);
-      await expect(page.getByTestId("metaconnect-add")).toBeDisabled();
-      await expect(page.locator("#metaconnect-cap")).toHaveText(c.capReached);
-      await expect(page.getByTestId("metaconnect-reconnect")).toBeEnabled();
-      await expect(page.getByTestId("metaconnect-last-event").first()).toContainText("16:30");
-      await page.getByTestId("metaconnect-card").scrollIntoViewIfNeeded();
-      await shot(page, "MOCK-cap-ten", locale, "mobile");
-      const first = page.getByTestId("metaconnect-row-900000");
-      await first.getByTestId("metaconnect-disconnect").click();
-      await first.getByTestId("metaconnect-confirm-yes").click();
-      await expect(page.getByTestId("metaconnect-error")).toHaveText(c.errors.not_found);
-      await page.getByTestId("metaconnect-reconnect").click();
-      await page.getByTestId(`metaconnect-pick-${pageA.id}`).check();
-      await page.getByTestId("metaconnect-pick-submit").click();
-      await expect(page.getByTestId("metaconnect-error")).toHaveText(c.errors.cap_exceeded);
-    }
-    await page.unroute(`**/meta-connect/status`);
-    await page.unroute(`**/meta-connect/pick`);
-    await page.unroute(`**/meta-connect/disconnect`);
-    await openSettings(page, "en");
-    const starts: string[] = [];
-    await page.route("**/api/meta/connect", async (route) => {
-      starts.push(route.request().headers()["idempotency-key"]);
-      if (starts.length === 1) await route.fulfill({ status: 200, contentType: "application/json", body: "{" });
-      else await route.continue();
-    });
-    await page.getByTestId("metaconnect-connect").click();
-    await expect(page.getByTestId("metaconnect-error")).toBeVisible();
-    await page.getByTestId("metaconnect-connect").click();
-    await expect(page.getByTestId("metaconnect-pick")).toBeVisible();
-    expect(starts).toHaveLength(2);
-    expect(starts[0]).toBeTruthy();
-    expect(starts[0]).toBe(starts[1]);
-    await page.getByRole("button", { name: metaConnectCopy.en.pickCancel }).click();
-    await expect(page.getByTestId("metaconnect-none")).toBeVisible();
-  });
-
-  test("state replay: the same OAuth return opened again connects nothing, even with the binding cookie present", async ({ page }) => {
-    const c = metaConnectCopy.en;
-    await signedLogin(page);
-    await openSettings(page, "en");
-    await answerDialog(page);
-    answer = { profile: "fbonly" };
-    await page.getByTestId("metaconnect-connect").click();
-    await expect(page.getByTestId("metaconnect-pick")).toBeVisible({ timeout: 30_000 });
-    const replay = lastCallback!;
-    expect(replay).toContain("/api/meta/callback?code=");
-    await page.getByRole("button", { name: c.pickCancel }).click(); // abandon: nothing connected yet
-    await expect(page.getByTestId("metaconnect-none")).toBeVisible();
-    // Re-open the identical return URL (as a back button / history entry / copied link would) with and without the cookie.
-    for (const withCookie of [false, true]) {
-      await page.context().clearCookies({ name: "lc_meta_connect" });
-      if (withCookie) await page.context().addCookies([{ name: "lc_meta_connect", value: store, url: `${origin}/api/meta/callback` }]);
-      await page.goto(replay);
-      await page.waitForURL(/\/settings/);
-      await expect(page.getByTestId("metaconnect-error")).toHaveText(c.errors.state_mismatch, { timeout: 30_000 });
-      await expect(page.getByTestId("metaconnect-none")).toBeVisible();
-      expect(page.url()).not.toMatch(/code=|state=/);
-    }
-    expect((await facts()).connections).toBe(0);
-    await page.getByTestId("metaconnect-connect").waitFor();
-  });
-
-  // Root cause of the zh-TW mobile notice that came back in English: the dashboard's <Link> prefetches of /en/... answered a few ms after the
-  // navigation to /zh-TW/settings and their Set-Cookie flipped commerce_locale back to en; /api/meta/callback reads that cookie.
-  test("a Next <Link> prefetch never rewrites the locale preference; a real navigation does", async ({ page }) => {
-    await signedLogin(page);
-    const locale = async (path: string, headers: Record<string, string>) => {
-      const response = await page.request.get(`${origin}${path}`, { headers, maxRedirects: 0 });
-      expect(response.status(), path).toBe(200);
-      return response.headersArray().filter((h) => h.name.toLowerCase() === "set-cookie" && h.value.startsWith("commerce_locale=")).map((h) => h.value.split(";")[0]);
-    };
-    expect(await locale(`/zh-TW/settings?store=${store}`, { "next-router-prefetch": "1" })).toEqual([]);
-    expect(await locale(`/zh-TW/settings?store=${store}`, { "sec-purpose": "prefetch" })).toEqual([]);
-    expect(await locale(`/zh-TW/settings?store=${store}`, {})).toEqual(["commerce_locale=zh-TW"]);
-    expect(await locale(`/en/settings?store=${store}`, {})).toEqual(["commerce_locale=en"]);
-  });
-
-  test("no open redirect: whatever the cookies or query say, /api/meta/callback only ever redirects to /<locale>/settings", async ({ page }) => {
-    await signedLogin(page);
-    const state = "A".repeat(43);
-    const hostile = ["//evil.example", "https://evil.example", "/\\evil.example", "javascript:alert(1)", "evil.example"];
-    const cases: { name: string; cookies: { name: string; value: string }[]; query: string }[] = [
-      { name: "no binding cookie", cookies: [], query: `code=abc&state=${state}` },
-      { name: "extra redirect params", cookies: [{ name: "lc_meta_connect", value: store }], query: `code=abc&state=${state}&redirect_uri=https://evil.example&next=//evil.example&return_to=https://evil.example` },
-      { name: "Meta error", cookies: [{ name: "lc_meta_connect", value: store }], query: "error=access_denied&error_reason=user_denied" },
-      { name: "no code", cookies: [{ name: "lc_meta_connect", value: store }], query: `state=${state}` },
-      ...hostile.flatMap((h) => [
-        { name: `hostile store cookie ${h}`, cookies: [{ name: "lc_meta_connect", value: h }], query: `code=abc&state=${state}` },
-        { name: `hostile locale cookie ${h}`, cookies: [{ name: "lc_meta_connect", value: store }, { name: "commerce_locale", value: h }], query: `code=abc&state=${state}` },
-      ]),
-    ];
-    for (const item of cases) {
-      await page.context().clearCookies({ name: "lc_meta_connect" });
-      for (const cookie of item.cookies) {
-        try {
-          await page.context().addCookies([{ name: cookie.name, value: cookie.value, url: cookie.name === "lc_meta_connect" ? `${origin}/api/meta/callback` : origin }]);
-        } catch {
-          /* the browser refused to store a malformed cookie value: that is itself a safe outcome */
-        }
-      }
-      const response = await page.request.get(`${origin}/api/meta/callback?${item.query}`, { maxRedirects: 0 });
-      expect(response.status(), item.name).toBe(303);
-      const location = response.headers()["location"] ?? "";
-      expect(location, `${item.name}: ${location}`).toMatch(safeRedirect);
-      expect(location).not.toMatch(/evil|code=|state=|^\/\//);
-      expect(response.headers()["referrer-policy"], item.name).toBe("no-referrer");
-      expect(response.headers()["cache-control"] ?? "", item.name).toMatch(/no-store/);
-    }
-    await page.context().clearCookies({ name: "commerce_locale" });
-    // The start BFF only ever answers a Facebook dialog URL and refuses a query string or a foreign store.
-    const bad = await page.request.post(`${origin}/api/meta/connect?next=https://evil.example`, { data: { store }, headers: { "idempotency-key": "gate-key-1234567890" } });
-    expect(bad.status()).toBeGreaterThanOrEqual(400);
-    expect(bad.headers()["location"] ?? "").toBe("");
   });
 });
