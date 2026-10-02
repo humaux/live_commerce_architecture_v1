@@ -41,6 +41,9 @@ mkdir -p "$out"; out=$(cd "$out" && pwd); prompt=$(cd "$(dirname "$prompt")" && 
 key=$(. "$key_file"; printf %s "${!key_var}")
 sandbox_home="$HOME/.kimi-agent-home"; mkdir -p "$sandbox_home/.claude"; chmod 700 "$sandbox_home"
 settings="$out/kimi-settings.json"
+# owner 2026-10-02: DeepSeek never does UI/visual work — no write under apps/ (relative to the worktree cwd, and absolute)
+ui_deny=""; [[ $provider == deepseek ]] && ui_deny=', "Edit(apps/**)", "Write(apps/**)", "Edit(/'"$wt"'/apps/**)", "Write(/'"$wt"'/apps/**)"'
+base_sha=$(git -C "$wt" rev-parse HEAD)
 cat >"$settings" <<JSON
 {
   "permissions": {
@@ -53,7 +56,7 @@ cat >"$settings" <<JSON
       "Bash(ls:*)", "Bash(wc:*)", "Bash(grep:*)", "Bash(sed -n:*)", "Bash(head:*)", "Bash(tail:*)"],
     "deny": ["Read(/Users/luolimo/.ssh/**)", "Read(/Users/luolimo/.config/**)", "Read(/Users/luolimo/Downloads/**)",
       "Read(/Users/luolimo/Desktop/**)", "Read(/Users/luolimo/.claude/**)", "Read(/etc/**)",
-      "Bash(ssh:*)", "Bash(scp:*)", "Bash(curl:*)", "Bash(wget:*)", "Bash(git push:*)", "Bash(git merge:*)"]
+      "Bash(ssh:*)", "Bash(scp:*)", "Bash(curl:*)", "Bash(wget:*)", "Bash(git push:*)", "Bash(git merge:*)"${ui_deny}]
   }
 }
 JSON
@@ -101,6 +104,9 @@ wait "$run_pid"
 status=$?
 set -e
 [[ $provider == deepseek ]] && { after=$(balance); echo "deepseek balance after: $after CNY (run cost ≈ $(python3 -c "print(round(float('$before')-float('$after'),2))") CNY)" >>"$out/cost.txt"; cat "$out/cost.txt"; }
+if [[ $provider == deepseek ]] && [[ -n $(git -C "$wt" diff --name-only "$base_sha" -- apps/) ]]; then
+  echo "REJECT: DeepSeek changed apps/ (UI is K2.8 only):" >&2; git -C "$wt" diff --name-only "$base_sha" -- apps/ >&2; status=3
+fi
 python3 - "$out/result.json" <<'PY' || true
 import json,sys
 d=json.load(open(sys.argv[1])); print("kimi-agent:", "error" if d.get("is_error") else "ok", "turns=%s cost_usd=%s" % (d.get("num_turns"), d.get("total_cost_usd")))
