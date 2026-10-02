@@ -2,6 +2,7 @@
 // -> Go `internal/httpapi/{orders,refunds,shipments,cvs}.go`. No generic proxying: every resource is listed.
 // CVS (contracts/taiwan-cvs-logistics-v1.md §8, §16.4, §16.8): GET|POST orders/{id}/cvs-shipment,
 // POST .../cvs-shipment/{print-form|abandon}, POST orders/{id}/{collection|pay-at-pickup-release}.
+import { validOrdersV2Query } from "./orders-v2.ts";
 const states = new Set([
   "all",
   "DRAFT",
@@ -21,6 +22,7 @@ export function validOrdersQuery(rawURL: string, detail: boolean) {
   const at = rawURL.indexOf("?");
   if (at < 0) return true;
   if (detail) return false;
+  if (new URLSearchParams(rawURL.slice(at + 1)).get("view") === "v2") return validOrdersV2Query(rawURL.slice(at + 1));
   const seen = new Set<string>();
   for (const segment of rawURL.slice(at + 1).split("&")) {
     const match = /^(limit|cursor|state)=([A-Za-z0-9_-]+)$/.exec(segment);

@@ -1,0 +1,47 @@
+"use client";
+
+// Read-only query form. Values navigate through the URL; totals are exclusively server projections.
+import { useEffect, useState, type FormEvent } from "react";
+import type { Locale } from "@live-commerce/i18n";
+import { deliveries, emptyFilters, modes, validOrderFilters, type OrderFilters, type OrderSession } from "@/lib/orders-v2";
+import { ordersV2Copy } from "@/lib/orders-v2-copy";
+
+export function OrderListFilters({ locale, filters, sessions, disabled, onApply }: {
+  locale: Locale; filters: OrderFilters; sessions: OrderSession[]; disabled: boolean;
+  onApply: (next: OrderFilters) => void;
+}) {
+  const c = ordersV2Copy[locale];
+  const [draft, setDraft] = useState(filters);
+  const [invalid, setInvalid] = useState(false);
+  const [expanded, setExpanded] = useState(true);
+  useEffect(() => {
+    const mobile = window.matchMedia("(max-width: 680px)");
+    const resize = () => setExpanded(!mobile.matches);
+    resize();
+    mobile.addEventListener("change", resize);
+    return () => mobile.removeEventListener("change", resize);
+  }, []);
+  const change = (key: keyof OrderFilters, value: string) => { setDraft(old => ({ ...old, [key]: value })); setInvalid(false); };
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const next = { ...draft, q: draft.q.trim() };
+    if (!validOrderFilters(next)) { setInvalid(true); return; }
+    onApply(next);
+  }
+  return <form className="orders-v2-filters" data-testid="orders-v2-filters" onSubmit={submit}>
+    <label className="orders-v2-search">{c.search}
+      <input type="search" data-testid="orders-search" value={draft.q} maxLength={160} onChange={e => change("q", e.target.value)} aria-describedby="orders-search-hint" />
+      <small id="orders-search-hint">{c.hint}</small>
+    </label>
+    <button type="button" className="orders-v2-filter-toggle" data-testid="orders-more-filters" aria-expanded={expanded} aria-controls="orders-secondary-filters" onClick={() => setExpanded(value => !value)}>{expanded ? c.lessFilters : c.moreFilters}</button>
+    <div id="orders-secondary-filters" className="orders-v2-secondary" hidden={!expanded}>
+    <label>{c.payment}<select data-testid="orders-payment-filter" value={draft.payment_mode} onChange={e => change("payment_mode", e.target.value)}><option value="">{c.all}</option>{modes.map(mode => <option key={mode} value={mode}>{c.modes[mode]}</option>)}</select></label>
+    <label>{c.delivery}<select data-testid="orders-delivery-filter" value={draft.delivery} onChange={e => change("delivery", e.target.value)}><option value="">{c.all}</option>{deliveries.map(kind => <option key={kind} value={kind}>{c.deliveries[kind]}</option>)}</select></label>
+    <label>{c.session}<select data-testid="orders-session-filter" value={draft.session_id} onChange={e => change("session_id", e.target.value)}><option value="">{c.all}</option>{sessions.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
+    <label>{c.from}<input data-testid="orders-from" type="date" lang={locale} min="2000-01-01" max="2199-12-31" value={draft.from} onChange={e => change("from", e.target.value)} /><small>{c.dateHint}</small></label>
+    <label>{c.to}<input data-testid="orders-to" type="date" lang={locale} min="2000-01-01" max="2199-12-31" value={draft.to} onChange={e => change("to", e.target.value)} /><small>{c.dateHint}</small></label>
+    </div>
+    <div className="orders-v2-filter-actions"><button type="submit" data-testid="orders-apply" disabled={disabled}>{c.apply}</button><button type="button" data-testid="orders-reset" disabled={disabled} onClick={() => { setDraft(emptyFilters); setInvalid(false); onApply(emptyFilters); }}>{c.reset}</button></div>
+    {invalid && <p role="alert">{c.invalid}</p>}
+  </form>;
+}

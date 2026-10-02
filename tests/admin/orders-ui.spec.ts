@@ -1,5 +1,6 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
-import { writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import * as http from "node:http";
 import { nativePage } from "./fixtures/native-device";
 
@@ -26,6 +27,7 @@ const expiredToken = required("LC_BROWSER_EXPIRED_TOKEN");
 const revokedToken = required("LC_BROWSER_REVOKED_TOKEN");
 const cookieName = "__Host-commerce_session";
 const pii = ["Synthetic Buyer", "+886900000001", "Synthetic home address"];
+const v2Evidence = resolve(evidence, "../../../orders-v2");
 
 test.use({
   baseURL: origin,
@@ -50,6 +52,11 @@ async function signedLogin(page: Page) {
   const selector = page.getByTestId("store-selector");
   if ((await selector.inputValue()) !== store)
     await selector.selectOption(store);
+  await expect(page.getByTestId("orders-table")).toBeVisible();
+  // These frozen MOU scenarios explicitly inspect drafts. v2's default is tested
+  // separately; choose the all-states inspection scope via the actual control.
+  await page.getByTestId("state-filter").selectOption("all");
+  await expect(page).toHaveURL(/state=all/);
   await expect(page.getByTestId("orders-table")).toBeVisible();
   expect(await detailCalls(page)).toBe(before);
 }
@@ -177,7 +184,7 @@ async function expand(page: Page, id: string) {
 }
 
 async function screenshot(page: Page, file: string) {
-  await page.screenshot({ path: file, fullPage: false });
+  await page.screenshot({ path: file, fullPage: false, animations: "disabled" });
   const width = await page.evaluate(
     () => document.documentElement.scrollWidth - innerWidth,
   );
@@ -295,6 +302,7 @@ test("MOU02 two principals, store authority and invalid sessions never reveal PI
     403,
   );
   await page.goto(`/en/orders?store=${foreignStore}`);
+  await page.getByTestId("state-filter").selectOption("all"); // explicit access to the foreign-store draft, only with its authorized principal
   await expand(page, foreignOrder);
   await session(context, noOrdersToken);
   await page.goto(`/en/orders?store=${store}`);
@@ -437,7 +445,7 @@ test("MOU03 controlled delayed detail, pagehide, history and cross-tab logout", 
   );
   await otherTab
     .getByTestId("workspace-sign-out")
-    .evaluate((button: HTMLElement) => button.click());
+    .click();
   await expect(page.getByTestId("order-detail")).toHaveCount(0);
   await noPII(page);
   await otherTab.close();
@@ -624,7 +632,7 @@ test("MOU03 delayed old success/error cannot repaint store, filter, locale or ne
 async function paymentBadgesFit(page: Page) {
   // Global fixed-table column rules must never hide "authorized, not captured".
   const badges = await page
-    .locator(".orders-table > tbody > tr:not(.orders-detail-row) > td:last-child .orders-badge")
+    .locator("[data-testid=order-payment-cell] .orders-badge")
     .evaluateAll((elements) => elements.map((element) => {
       const cell = element.closest("td")!.getBoundingClientRect();
       const badge = element.getBoundingClientRect();
@@ -637,6 +645,131 @@ async function paymentBadgesFit(page: Page) {
   expect(badges.length).toBeGreaterThan(0);
   expect(badges.filter((badge) => !badge.withinCell || !badge.textFits)).toEqual([]);
 }
+
+test("MOU07 v2 private search, SQL queues, filters and three-language ledger", async ({ page }) => {
+  test.setTimeout(120_000);
+  await mkdir(v2Evidence, { recursive: true });
+  await signedLogin(page);
+  const clicks: Array<{control:string; result:string}> = [];
+  async function apply(control: string, action: () => Promise<unknown>) {
+    const response = page.waitForResponse(r => r.url().includes(`/api/stores/${store}/orders`) && r.url().includes("view=v2")).then(async r => { expect(r.status(), control).toBe(200); expect(r.headers()["cache-control"]).toBe("private, no-store"); return r.json(); });
+    await action();
+    const data = await response;
+    await expect(page.getByTestId("orders-total")).toHaveText(`Matching orders: ${data.total}`);
+    for (const [bucket, count] of Object.entries(data.counts)) await expect(page.getByTestId(`orders-count-${bucket}`)).toHaveText(String(count));
+    clicks.push({ control, result: `visible SQL total ${data.total}; counts match response` });
+    return data;
+  }
+  await apply("default hide drafts", () => page.getByTestId("state-filter").selectOption("active"));
+  await expect(page.getByTestId(`order-row-${ids.draft0}`)).toHaveCount(0);
+  for (const bucket of ["unpaid","transfer_review","ready_to_ship","ready_to_consign","shipped","completed","cancelled","all"]) {
+    await apply(`queue ${bucket}`, () => page.getByTestId(`orders-bucket-${bucket}`).click());
+    await expect(page.getByTestId(`orders-bucket-${bucket}`)).toHaveAttribute("aria-pressed","true");
+  }
+  for (const [label, query, target] of [["order",ids.shipped,ids.shipped],["tracking","SYNTHETIC-MOU-TRACK",ids.shipped],["phone last4","0001",ids.shipped],["recipient","Synthetic Buyer",ids.shipped],["frozen SKU",frozenSKU,ids.shipped]] as const) {
+    await page.getByTestId("orders-search").fill(query);
+    const data = await apply(`search ${label}`, () => page.getByTestId("orders-apply").click());
+    expect(data.total).toBeGreaterThan(0);
+    await expect(page.getByTestId(`order-row-${target}`)).toBeVisible();
+    expect(new URL(page.url()).searchParams.has("q")).toBe(false);
+    await noPII(page);
+  }
+  await page.reload();
+  await expect(page.getByTestId("orders-search")).toHaveValue(""); // deliberate privacy rule, not storage
+  clicks.push({control:"refresh private search",result:"query cleared, not persisted in URL or storage"});
+  for (const payment of ["cash_on_delivery","bank_transfer","pay_at_pickup","card"]) {
+    await page.getByTestId("orders-payment-filter").selectOption(payment);
+    await apply(`payment ${payment}`, () => page.getByTestId("orders-apply").click());
+    await expect(page).toHaveURL(new RegExp(`payment_mode=${payment}`));
+  }
+  await page.getByTestId("orders-delivery-filter").selectOption("home");
+  await apply("delivery home", () => page.getByTestId("orders-apply").click());
+  await page.reload();
+  await expect(page.getByTestId("orders-payment-filter")).toHaveValue("card");
+  await expect(page.getByTestId("orders-delivery-filter")).toHaveValue("home");
+  await apply("reset filters", () => page.getByTestId("orders-reset").click());
+  await apply("inspect drafts for recorded live claim", () => page.getByTestId("state-filter").selectOption("all"));
+  await page.getByTestId("orders-session-filter").selectOption(ids.live_session);
+  const live = await apply("live session", () => page.getByTestId("orders-apply").click());
+  expect(live.total).toBe(1);
+  await expect(page.getByTestId(`order-row-${ids.live_order}`)).toContainText("Live claim");
+  await page.reload();
+  await expect(page.getByTestId("orders-session-filter")).toHaveValue(ids.live_session);
+  await apply("reset live filter", () => page.getByTestId("orders-reset").click());
+  const today = new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Taipei",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+  await page.getByTestId("orders-from").fill(today);
+  await page.getByTestId("orders-to").fill(today);
+  const dated = await apply("Taipei day", () => page.getByTestId("orders-apply").click());
+  expect(dated.total).toBeGreaterThan(0);
+  await page.reload();
+  await expect(page.getByTestId("orders-from")).toHaveValue(today);
+  await expect(page.getByTestId("orders-to")).toHaveValue(today);
+  await apply("reset before visual acceptance", () => page.getByTestId("orders-reset").click());
+  await apply("active ledger", () => page.getByTestId("state-filter").selectOption("active"));
+  for (const locale of ["zh-TW","zh-CN","en"]) {
+    await page.getByTestId("locale-switch").selectOption(locale);
+    await expect(page.getByTestId("orders-table")).toBeVisible();
+    for (const [width,height] of [[1586,992],[390,844]]) {
+      await page.setViewportSize({width,height});
+      if (width === 390) {
+        // Real responsive transition must finish; never screenshot a half-open rail.
+        await expect.poll(() => page.locator(".rail").evaluate(node => node.getBoundingClientRect().right)).toBeLessThanOrEqual(0);
+        const more = page.getByTestId("orders-more-filters");
+        await expect(more).toHaveAttribute("aria-expanded", "false");
+        await expect(page.getByTestId("orders-payment-filter")).toBeHidden();
+        await more.click();
+        await expect(more).toHaveAttribute("aria-expanded", "true");
+        await page.getByTestId("orders-payment-filter").selectOption("card");
+        await page.getByTestId("orders-apply").click();
+        await expect(page).toHaveURL(/payment_mode=card/);
+        await expect(more).toHaveAttribute("aria-expanded", "false");
+        await more.click();
+        await expect(page.getByTestId("orders-payment-filter")).toHaveValue("card");
+        await expect(page.getByTestId("orders-from")).toBeVisible();
+        await page.getByTestId("orders-reset").click();
+        await expect(page).not.toHaveURL(/payment_mode=/);
+        await expect(more).toHaveAttribute("aria-expanded", "false");
+      }
+      await page.getByRole("heading",{level:1}).scrollIntoViewIfNeeded();
+      await screenshot(page,resolve(v2Evidence,`orders-${locale}-${width}x${height}.png`));
+      if (width === 390) {
+        const row = await page.locator('[data-testid^="order-expand-"]').first().boundingBox();
+        expect(row).not.toBeNull();
+        expect(row!.y).toBeLessThan(height); // The first order, not only a filter form, is in the initial viewport.
+        clicks.push({control:`mobile secondary filters ${locale}`, result:"native toggle, select, apply, reopen persisted value, reset; first order above fold"});
+      }
+      await page.getByTestId("orders-table").scrollIntoViewIfNeeded();
+      await screenshot(page,resolve(v2Evidence,`ledger-${locale}-${width}x${height}.png`));
+    }
+  }
+  await writeFile(resolve(v2Evidence,"click-ledger.json"),JSON.stringify(clicks,null,2));
+});
+
+for (const privateCursor of [false, true]) test(`MOU08 authoritative poll denial clears list and full detail (private cursor=${privateCursor})`, async ({page}) => {
+  test.setTimeout(60_000);
+  await signedLogin(page);
+  if (privateCursor) {
+    await page.getByTestId("orders-search").fill("0001");
+    const searchResponse = page.waitForResponse(r => r.request().method() === "POST" && r.url().includes("/orders/search?") && r.status() === 200);
+    await page.getByTestId("orders-apply").click();
+    await searchResponse;
+    await expect(page.getByTestId("orders-next")).toBeEnabled();
+    const nextResponse = page.waitForResponse(r => r.request().method() === "POST" && r.url().includes("cursor=") && r.status() === 200);
+    await page.getByTestId("orders-next").click();
+    const next = await (await nextResponse).json();
+    await expect(page.getByTestId(`order-expand-${next.items[0].order_id}`)).toBeVisible();
+    await page.getByTestId(`order-expand-${next.items[0].order_id}`).click();
+    expect(new URL(page.url()).searchParams.has("q")).toBe(false);
+    expect(new URL(page.url()).searchParams.has("cursor")).toBe(false);
+  } else await expand(page,ids.captured);
+  await expect(page.getByTestId("order-detail")).toContainText("Synthetic home address");
+  // Explicit fault injection of a backend permission revocation. No DOM events or synthetic clicks.
+  await page.route(`**/api/stores/${store}/orders${privateCursor ? "/search" : ""}?*`,route=>route.fulfill({status:403,contentType:"application/json",headers:{"cache-control":"private, no-store"},body:'{"code":"forbidden"}'}));
+  await expect(page.getByTestId("orders-table")).toHaveCount(0,{timeout:25_000});
+  await expect(page.getByTestId("order-detail")).toHaveCount(0);
+  await expect(page.getByTestId("merchant-orders")).toContainText("This account does not have permission to read orders.");
+  await noPII(page);
+});
 
 test("MOU05 approved inline comp at desktop/mobile in three locales and page-two locale context", async ({
   page,

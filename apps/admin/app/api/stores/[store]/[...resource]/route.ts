@@ -69,7 +69,7 @@ const routes: Record<string, RegExp> = {
     `^(catalog-ledger|${catalogProducts}|products|products/${uuid}|${collectionsRoot}|${collectionItem}|${collectionImage}|warehouses|inventory|products/${uuid}/skus|${purchaseEntry}|${storefrontRead}|${storefrontDomains}|${imagesRoot}|${imageItem}|${designGetPaths}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy}|${orders}|live-sessions|${studioDetail}|${studioInputRead}|${claimsRoutes.GET}|${adsRoutes.GET}|${metaConnectRoutes.GET})$`,
   ),
   POST: new RegExp(
-    `^(products|skus|warehouses|inventory/adjustments|products/${uuid}/archive|${storefrontWrite}|${storefrontDomains}|${storefrontDomainMove}|${imageWrites}|${designPostPaths}|${catalogV2Writes}|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets|live-sessions|${studioAction}|${claimsRoutes.POST}|${adsRoutes.POST}|${metaConnectRoutes.POST})$`,
+    `^(orders/search|products|skus|warehouses|inventory/adjustments|products/${uuid}/archive|${storefrontWrite}|${storefrontDomains}|${storefrontDomainMove}|${imageWrites}|${designPostPaths}|${catalogV2Writes}|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets|live-sessions|${studioAction}|${claimsRoutes.POST}|${adsRoutes.POST}|${metaConnectRoutes.POST})$`,
   ),
   PATCH: new RegExp(`^(products/${uuid}|${collectionItem}|skus/${uuid}|${studioDetail}|${claimsRoutes.PATCH})$`),
   // Studio PUT is only the comment-source bind (claims-request.ts); settings PUTs are the rest.
@@ -116,6 +116,8 @@ async function route(request: Request, context: Context) {
   if (!exactStore.test(store) || (!routes[request.method]?.test(path) && !action && !customers && !logistic))
     return error(404, "not_found");
   const order = request.method === "GET" && orderRoute.test(path);
+  const orderSearch = request.method === "POST" && path === "orders/search";
+  if (orderSearch && (!validOrdersQuery(request.url, false) || !new URL(request.url).searchParams.has("view") || request.headers.has("idempotency-key") || request.headers.has("transfer-encoding") || Number(request.headers.get("content-length") ?? "0") > 1024)) return error(422,"invalid_request");
   const accountRoute = path.startsWith("provider-accounts");
   const inspection = request.method === "POST" && inspectRoute.test(path);
   // Ads (adsRoutes): session/store authority only, and only `ads/report` may carry a query (from,to).
@@ -124,7 +126,7 @@ async function route(request: Request, context: Context) {
   // Merchant Page/Instagram connect (meta-connect-request.ts): exact resources, no query; a read carries no body or key.
   if (metaConnectAny.test(path) && !validMetaConnectRequest(request)) return error(422, "invalid_request");
   // New setup routes require actual session/store authority, never a shared fixture.
-  if ((studio || order || action || customers || logistic || accountRoute || ads || discoveryRoute.test(path)) && !authConfig)
+  if ((studio || order || orderSearch || action || customers || logistic || accountRoute || ads || discoveryRoute.test(path)) && !authConfig)
     return error(404, "not_found");
   // Query grammar, Idempotency-Key presence and empty/JSON body declaration (keyless: billing POSTs; bodyless: export, portal).
   if (customers && !validCustomersRequest(customers, request)) return error(422, "invalid_request");
@@ -238,7 +240,7 @@ async function route(request: Request, context: Context) {
     token = sessionToken(request) ?? undefined;
     if (!token) {
       const denied = error(401, "unauthorized");
-      if (order || action || customers || logistic) clearAuthCookies(denied.headers);
+      if (order || orderSearch || action || customers || logistic) clearAuthCookies(denied.headers);
       return denied;
     }
     if (
@@ -277,7 +279,7 @@ async function route(request: Request, context: Context) {
       return error(415, "json_required");
     const key = request.headers.get("idempotency-key") ?? "";
     // Billing POSTs are keyless by contract (§6), print-form is a keyless command; every other command needs its key.
-    const keyless = customers === "checkout" || customers === "portal" || action === "keyless-command";
+    const keyless = orderSearch || customers === "checkout" || customers === "portal" || action === "keyless-command";
     if (!inspection && !keyless && !/^[A-Za-z0-9_.:-]{8,128}$/.test(key))
       return error(422, "invalid_request");
     const customersBodyless = customers === "export" || customers === "portal";
@@ -299,7 +301,7 @@ async function route(request: Request, context: Context) {
         const part = await reader.read();
         if (part.done) break;
         size += part.value.byteLength;
-        if (size > (imageUpload ? MAX_UPLOAD : designJson ? DESIGN_MAX_JSON : 65536)) {
+        if (size > (orderSearch ? 1024 : imageUpload ? MAX_UPLOAD : designJson ? DESIGN_MAX_JSON : 65536)) {
           await reader.cancel();
           return imageUpload ? error(413, "invalid_request") : error(400, "invalid_json");
         }
@@ -431,7 +433,7 @@ async function route(request: Request, context: Context) {
     status: response.status,
     headers: {
       "Content-Type": "application/json",
-      "Cache-Control": order || action || customers || logistic || storefront || metaConnectAny.test(path) ? "private, no-store" : "no-store",
+      "Cache-Control": order || orderSearch || action || customers || logistic || storefront || metaConnectAny.test(path) ? "private, no-store" : "no-store",
       "X-Request-ID": response.headers.get("x-request-id") ?? "",
     },
   });
