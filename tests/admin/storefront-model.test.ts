@@ -39,7 +39,7 @@ test("rejects anything outside the closed shape", () => {
 
 // R5 store-domains (Decision 3): the merchant domain read + write shapes (Go storefrontdomains.Read/Request).
 const token = "A".repeat(43);
-const domainRow = { origin: "https://shop.example.com", state: "REQUESTED", version: 1, token, verify_deadline: "2027-01-01T00:00:00Z", serving: false };
+const domainRow = { origin: "https://shop.example.com", kind: "custom", state: "REQUESTED", version: 1, token, verify_deadline: "2027-01-01T00:00:00Z", serving: false };
 const domainRequest = {
   domain_id: "11111111-1111-4111-8111-111111111111",
   version: 1,

@@ -49,6 +49,7 @@ export type MerchantDomainState =
 
 export type StorefrontDomainRow = {
   origin: string;
+  kind: "platform" | "custom";
   state: MerchantDomainState;
   version: number;
   token: string | null;
@@ -63,6 +64,7 @@ export type DNSInstructions = {
   txt_value: string;
   cname_target: string;
   apex: boolean;
+  edge_addresses?: string[];
 };
 
 export type DomainRequestResult = {
@@ -89,7 +91,8 @@ export function parseStorefrontDomains(value: unknown): StorefrontDomains {
   const domains = item.domains.map((entry): StorefrontDomainRow => {
     const d = record(entry);
     if (
-      !d || !sameKeys(d, ["origin", "state", "version", "token", "verify_deadline", "serving"]) ||
+      !d || !sameKeys(d, ["origin", "kind", "state", "version", "token", "verify_deadline", "serving"]) ||
+      (d.kind !== "platform" && d.kind !== "custom") ||
       typeof d.origin !== "string" || d.origin.length > 261 || !originShape.test(d.origin) ||
       typeof d.state !== "string" || !domainStates.has(d.state as MerchantDomainState) ||
       typeof d.version !== "number" || !Number.isSafeInteger(d.version) || d.version < 1 ||
@@ -100,6 +103,7 @@ export function parseStorefrontDomains(value: unknown): StorefrontDomains {
       throw new Error("storefront_shape");
     return {
       origin: d.origin,
+      kind: d.kind,
       state: d.state as MerchantDomainState,
       version: d.version,
       token: d.token as string | null,
@@ -116,7 +120,8 @@ export function parseDomainRequest(value: unknown): DomainRequestResult {
   const dns = record(item?.dns);
   if (
     !item || !sameKeys(item, ["domain_id", "version", "state", "origin", "dns"]) ||
-    !dns || !sameKeys(dns, ["txt_name", "txt_value", "cname_target", "apex"]) ||
+    !dns || !sameKeys(dns, ["txt_name", "txt_value", "cname_target", "apex", ...("edge_addresses" in dns ? ["edge_addresses"] : [])]) ||
+    ("edge_addresses" in dns && (dns.apex !== true || !Array.isArray(dns.edge_addresses) || dns.edge_addresses.length > 100 || dns.edge_addresses.some(address => dnsAddressType(address) === null))) ||
     typeof item.domain_id !== "string" || !uuidShape.test(item.domain_id) ||
     typeof item.version !== "number" || !Number.isSafeInteger(item.version) || item.version < 1 ||
     item.state !== "REQUESTED" ||
@@ -131,6 +136,15 @@ export function parseDomainRequest(value: unknown): DomainRequestResult {
     version: item.version,
     state: "REQUESTED",
     origin: item.origin,
-    dns: { txt_name: dns.txt_name, txt_value: dns.txt_value, cname_target: dns.cname_target, apex: dns.apex },
+    dns: { txt_name: dns.txt_name, txt_value: dns.txt_value, cname_target: dns.cname_target, apex: dns.apex,
+      ...("edge_addresses" in dns ? { edge_addresses: dns.edge_addresses as string[] } : {}) },
   };
+}
+
+// DNS values must be literal addresses, never hostnames, URLs, ports or CIDRs.
+export function dnsAddressType(value: unknown): "A" | "AAAA" | null {
+  if (typeof value !== "string") return null;
+  if (/^(?:0|[1-9]\d{0,2})(?:\.(?:0|[1-9]\d{0,2})){3}$/.test(value) && value.split(".").every(part => Number(part) <= 255)) return "A";
+  if (!value.includes(":") || !/^[\da-fA-F:.]+$/.test(value)) return null;
+  try { new URL(`https://[${value}]/`); return "AAAA"; } catch { return null; }
 }
