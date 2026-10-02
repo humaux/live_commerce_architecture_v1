@@ -27,6 +27,7 @@ test("approved ledger reproduction and mobile table remain usable", async ({
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByRole("button", { name: "打开导航" })).toBeVisible();
   expect(
+    // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
@@ -191,6 +192,7 @@ test("stale balance fails closed and refresh enables a new command", async ({
     `/api/stores/${storeID}/catalog-ledger?warehouse_id=${warehouse}&q=HA-001-BE`,
   );
   const row = (await ledger.json()).items[0];
+  // G-UI8 audit [FIXTURE/SETUP]: a second operator's concurrent write (stale-version fixture for the conflict UI)
   const changed = await request.post(
     `/api/stores/${storeID}/inventory/adjustments`,
     {
@@ -251,6 +253,7 @@ test("BFF rejects cross-store, foreign origin, route injection and oversized wri
     "/api/stores/00000000-0000-0000-0000-000000000000/products",
   );
   expect(cross.status()).toBe(404);
+  // G-UI8 audit [FIXTURE/SETUP]: negative probe: a forged/hostile request no UI can send; the server, not the UI, must refuse (UI click paths of the same route are covered elsewhere)
   const foreign = await request.post(`/api/stores/${storeID}/products`, {
     headers: {
       Origin: "https://example.invalid",
@@ -267,6 +270,7 @@ test("BFF rejects cross-store, foreign origin, route injection and oversized wri
   const wrongMethod = await request.delete(`/api/stores/${storeID}/products`);
   expect(wrongMethod.status()).toBe(405);
   expect((await wrongMethod.json()).code).toBe("method_not_allowed");
+  // G-UI8 audit [FIXTURE/SETUP]: negative probe: a forged/hostile request no UI can send; the server, not the UI, must refuse (UI click paths of the same route are covered elsewhere)
   const huge = await request.post(`/api/stores/${storeID}/products`, {
     headers: {
       Origin: "http://127.0.0.1:3100",
@@ -323,6 +327,7 @@ test("purchase-entry proxy only accepts the scoped GET locale query", async ({
     headers: { "Idempotency-Key": "unexpected-key" },
   });
   expect(key.status()).toBe(422);
+  // G-UI8 audit [FIXTURE/SETUP]: negative probe: a forged/hostile request no UI can send; the server, not the UI, must refuse (UI click paths of the same route are covered elsewhere)
   const post = await request.post(`${path}?locale=en`, { data: {} });
   expect(post.status()).toBe(404);
 });

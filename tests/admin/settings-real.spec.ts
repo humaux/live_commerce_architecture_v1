@@ -7,6 +7,7 @@ test.use({ baseURL: origin, trace: "off", actionTimeout: 10_000 });
 test.describe.configure({ timeout: 90_000 });
 
 async function noSecrets(page: Page, secrets: string[]) {
+  // G-UI8 audit [READ/MEASURE]: scans client storage for secrets/PII (read only)
   const storage = await page.evaluate(() =>
     JSON.stringify({
       local: { ...localStorage },
@@ -65,6 +66,7 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
   await expect(
     page.getByText("Loading saved configuration…", { exact: true }),
   ).toBeHidden();
+  // G-UI8 audit [READ/MEASURE]: computes rendered text contrast (read only)
   const renderedStyle = await page.evaluate(() => {
     const subtitle = document.querySelector(".settings-heading p")!;
     const color = getComputedStyle(subtitle).color;
@@ -116,6 +118,7 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
     })
     .toBeLessThanOrEqual(0);
   expect(
+    // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
@@ -278,6 +281,7 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
   await paymentForm
     .getByLabel("English name", { exact: true })
     .fill("Local unsaved name");
+  // G-UI8 audit [FIXTURE/SETUP]: a concurrent write by another operator (stale-form fixture)
   const concurrent = await page.evaluate(async (store) => {
     const prefix = `/api/stores/${store}/markets`;
     const markets = await (await fetch(prefix)).json();
@@ -524,21 +528,13 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
   await expect(page.getByText(/Your session changed\./)).toBeVisible();
   expect(changedSessionWrites).toBe(0);
   await context.addCookies([originalCSRF]);
-  // End the real session through the BFF, after proving old-tab writes stayed zero.
-  const logout = await page.evaluate(async () => {
-    const csrf =
-      document.cookie
-        .split(";")
-        .map((part) => part.trim())
-        .find((part) => part.startsWith("__Host-commerce_csrf="))
-        ?.split("=")[1] ?? "";
-    return (
-      await fetch("/api/auth/logout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf },
-        body: "{}",
-      })
-    ).status;
-  });
+  // End the real session the way the merchant does, after proving old-tab writes stayed zero: Account menu -> Sign out (a real click path; the
+  // BFF answer is read from the response the click triggers).
+  await page.locator("header[data-shell-topbar] summary", { hasText: /^Account$/ }).click();
+  const [logoutResponse] = await Promise.all([
+    page.waitForResponse((r) => new URL(r.url()).pathname === "/api/auth/logout" && r.request().method() === "POST"),
+    page.getByTestId("workspace-sign-out").click(),
+  ]);
+  const logout = logoutResponse.status();
   expect(logout).toBe(204);
 });

@@ -85,6 +85,7 @@ async function person(browser: import("@playwright/test").Browser, vp: VP) {
 }
 
 async function browserJSON(page: Page, path: string, options: { method?: string; body?: unknown; csrf?: boolean; headers?: Record<string, string> } = {}) {
+  // G-UI8 audit [FIXTURE/SETUP]: API-contract helper: reads, the createStore setup POST (onboarding wizard UI is click-driven in entry.spec) and forbidden-action probes of a role the UI does not offer
   return page.evaluate(
     async ({ path, options, csrfName }) => {
       const headers = new Headers(options.headers ?? {});
@@ -111,6 +112,7 @@ async function shot(page: Page, name: string, locale: string, vp: string) {
   appendFileSync(join(evidenceDir!, "screenshots.jsonl"), JSON.stringify({ name, locale, viewport: vp, sha256: createHash("sha256").update(png).digest("hex") }) + "\n");
 }
 async function noHorizontalScroll(page: Page, what: string) {
+  // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow, `${what}: no horizontal page scroll`).toBeLessThanOrEqual(0);
 }

@@ -80,6 +80,7 @@ const manifest = path.join(evidence, "screenshots.json");
 async function shot(page, name, locale, viewport) {
   const file = path.join(evidence, `${name}-${locale}-${viewport}.png`);
   await page.screenshot({ path: file, fullPage: true });
+  // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
   assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `horizontal overflow at ${viewport} ${locale}`);
   let list = []; try { list = JSON.parse(await readFile(manifest, "utf8")); } catch { /* first */ }
   list.push({ File: path.basename(file), Sha256: createHash("sha256").update(await readFile(file)).digest("hex"), Locale: locale, Viewport: viewport });
@@ -140,6 +141,7 @@ try {
         assert(/Shipped by the seller/i.test(text), "missing 'Shipped by the seller'");
         const copy = page.getByRole("button", { name: /copy/i }).first();
         await expect(copy).toBeVisible();
+        // G-UI8 audit [READ/MEASURE]: reads the clipboard after the real Copy click (read only)
         if (!mobile) { await copy.click(); assert.equal(await page.evaluate(() => navigator.clipboard.readText()), tracking); }
       }
       await shot(page, "shipment-buyer", locale, mobile ? "mobile" : "desktop");

@@ -57,6 +57,7 @@ async function facts() {
   return (await (await ctl("facts")).json()) as { subscribed: Record<string, boolean>; bindings: number; routes: number; heads: number; connections: number };
 }
 async function fitsWidth(page: Page) {
+  // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
 }
 const manifestPath = path.join(evidence, "screenshots.json");
@@ -76,6 +77,7 @@ async function shot(page: Page, name: string, locale: string, view: View) {
 async function noSecrets(page: Page) {
   const secrets = (await (await ctl("secrets")).json()) as string[];
   const html = await page.content();
+  // G-UI8 audit [READ/MEASURE]: scans client storage for secrets/PII (read only)
   const stored = await page.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage }, cookie: document.cookie }));
   for (const secret of secrets) {
     expect(html).not.toContain(secret);
@@ -432,6 +434,7 @@ test.describe("meta-connect independent browser gate", () => {
     }
     await page.context().clearCookies({ name: "commerce_locale" });
     // The start BFF only ever answers a Facebook dialog URL and refuses a query string or a foreign store.
+    // G-UI8 audit [FIXTURE/SETUP]: negative probe: a forged/hostile request no UI can send; the server, not the UI, must refuse (UI click paths of the same route are covered elsewhere) (open-redirect ?next=)
     const bad = await page.request.post(`${origin}/api/meta/connect?next=https://evil.example`, { data: { store }, headers: { "idempotency-key": "gate-key-1234567890" } });
     expect(bad.status()).toBeGreaterThanOrEqual(400);
     expect(bad.headers()["location"] ?? "").toBe("");
@@ -469,6 +472,7 @@ test.describe("meta-connect independent browser gate", () => {
     expect(picks).toBe(1);
     await page.unroute(`**/meta-connect/pick`);
     // Use the browser's secure-cookie session, not APIRequestContext's HTTP cookie policy.
+    // G-UI8 audit [READ/MEASURE]: same-origin GET read of server state through the BFF (no state change) (status DTO)
     const status = await page.evaluate(async (store) => {
       const response = await fetch(`/api/stores/${store}/meta-connect/status`, { credentials: "same-origin" });
       return { code: response.status, dto: await response.json() };

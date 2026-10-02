@@ -38,6 +38,7 @@ export async function switchLocale(page, locale) {
 // session only at the first cart write, and a cart write waits for the cross-tab purchase Web Lock, which a gate that holds a payment prepare in
 // another tab must not wait for. Returns the active session context.
 export async function openBuyerSession(page) {
+  // G-UI8 audit [FIXTURE/SETUP]: opens the buyer session the way the old page did on load (the shell creates it at the first cart write); gates that only need a session call it
   return page.evaluate(async () => {
     const call = async (method, suffix, context) => {
       const headers = { "Content-Type": "application/json" };

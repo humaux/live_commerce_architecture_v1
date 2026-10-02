@@ -81,6 +81,7 @@ async function makeOrder(page){
   await page.getByTestId("create-order").click();await expect(page.getByTestId("order-section")).toBeVisible();
   const id=(await page.getByTestId("order-id").innerText()).trim();assert.match(id,/^[0-9a-f-]{36}$/);
   await expect(page.getByTestId("order-payment")).toBeVisible();await expect(page.getByTestId("payment-status")).toHaveAttribute("data-state","NOT_STARTED");
+  // G-UI8 audit [READ/MEASURE]: same-origin GET read of server state through the BFF (no state change) (payment view)
   const payment=await page.evaluate(async orderID=>{
     const session=await(await fetch("/api/buyer/session",{cache:"no-store"})).json();
     const response=await fetch(`/api/buyer/orders/${orderID}/payment`,{headers:{"X-Buyer-Context":session.context},cache:"no-store"});
@@ -92,10 +93,12 @@ async function makeOrder(page){
   await expect(page.getByTestId("payment-test-mode")).toBeVisible();return id;
 }
 async function paymentMarker(page,id){
+  // G-UI8 audit [READ/MEASURE]: reads the payment marker from localStorage
   return page.evaluate(id=>{const key=Object.keys(localStorage).find(k=>k.endsWith(`:${id}`)&&k.startsWith("commerce-order-payment-v1:"));return key?JSON.parse(localStorage.getItem(key)):null;},id);
 }
 function paymentCalls(id,step){return calls.filter(x=>x.path===`/api/buyer/orders/${id}/payment/${step}`&&x.method==="POST");}
 async function storageSafe(page){
+  // G-UI8 audit [READ/MEASURE]: scans client storage for secrets/PII (read only)
   assert.equal(await page.evaluate(()=>{const text=JSON.stringify(localStorage);return /EncryptInfo|HashInfo|mock-account|recipient_name|phone/.test(text);}),false);
   await expect(page.locator('form[action*="payuni.com.tw"]')).toHaveCount(0);
 }
@@ -139,12 +142,15 @@ try{
   await page.getByTestId("continue-shopping").click();await expect(page.getByTestId("checkout-empty")).toBeVisible(); // continued: empty cart
   const b=await makeOrder(page);assert.notEqual(a,b);
   const initial=await control();assert.equal(initial.attempts,0);assert.equal(initial.pages,0);
+  // G-UI8 audit [EXTERNAL-MOCK]: stubs window.open to null: a popup blocker is browser policy the harness cannot click away
   await page.evaluate(()=>{window.__nativeOpen=window.open;window.open=()=>null;});
   await page.getByTestId("pay-order").click();await expect(page.getByTestId("payment-error")).toBeVisible();
   assert.deepEqual(await control(),initial);assert.equal(await paymentMarker(page,b),null);passed("BPU02 blocked child causes zero prepare/take");
+  // G-UI8 audit [EXTERNAL-MOCK]: stubs window.open to a closing child: a popup that closes at once (browser behaviour)
   await page.evaluate(()=>{window.open=(...args)=>{const target=window.__nativeOpen(...args);target?.close();return target;};});
   await page.getByTestId("pay-order").click();await expect(page.getByTestId("payment-error")).toBeVisible();
   assert.deepEqual(await control(),initial);assert.equal(await paymentMarker(page,b),null);passed("BPU02 closed child causes zero prepare/take");
+  // G-UI8 audit [EXTERNAL-MOCK]: restores window.open
   await page.evaluate(()=>{window.open=window.__nativeOpen;});
   postOrder=b;const firstPrepare=arm(`/api/buyer/orders/${b}/payment/prepare`,"hold");
   const pop=page.waitForEvent("popup");await page.getByTestId("pay-order").click();const child=await pop;
@@ -200,6 +206,7 @@ try{
   await expect(page.getByTestId("order-id")).toHaveText(b);
   await page.getByTestId("continue-shopping").click();await expect(page.getByTestId("checkout-empty")).toBeVisible(); // let the continuation settle before the language link navigates away
   await switchLocale(page,"en");await expect(page.getByTestId("checkout-empty")).toBeVisible();const d=await makeOrder(page);
+  // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
   await page.setViewportSize({width:390,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   await page.getByTestId("order-payment").screenshot({path:path.join(evidence,"mobile-payment-ready.png")});
   const lostPrepare=arm(`/api/buyer/orders/${d}/payment/prepare`,"partial");const preparePopup=page.waitForEvent("popup");

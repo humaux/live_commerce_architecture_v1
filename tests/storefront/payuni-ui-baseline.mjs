@@ -74,6 +74,7 @@ async function capture(page,vp,stateName,loc,keepLocale=false){
   const dom=normalize(await el.evaluate(n=>n.outerHTML));
   // Fonts (CJK fallback) can land between two frames: accept a screenshot only once two consecutive
   // captures are byte-identical, so the hash reflects layout, not a font-load race.
+  // G-UI8 audit [READ/MEASURE]: waits for web fonts (read/wait)
   await page.evaluate(()=>document.fonts.ready);
   let shot=await el.screenshot();
   for(let i=0;i<8;i++){await pause(250);const again=await el.screenshot();if(again.equals(shot))break;shot=again;}

@@ -161,10 +161,13 @@ try {
     await expect(page.getByTestId("product-buy")).toHaveCount(0);
     await expect(page.getByRole("radio")).toHaveCount(0);
     await expect(page.getByRole("heading", { name, exact: true })).toHaveCount(0);
+    // G-UI8 audit [READ/MEASURE]: same-origin GET read of server state through the BFF (no state change) (buyer session)
     const state = await page.evaluate(async () => { const response = await fetch("/api/buyer/session"); return { status: response.status, body: await response.json() }; });
     assert.notEqual(state.body.state, "active", `${why}: buyer session must not be active`);
+    // G-UI8 audit [READ/MEASURE]: same-origin GET read of server state through the BFF (no state change) (catalog)
     const catalog = await page.evaluate(async id => { const response = await fetch(`/api/buyer/catalog?product_id=${id}`); return { status: response.status, body: await response.json() }; }, product.id);
     assert(!JSON.stringify(catalog.body).includes(code), `${why}: product leaked through the buyer catalog`);
+    // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${why}: horizontal overflow`);
     if (shot) await page.screenshot({ path: path.join(evidence, shot), fullPage: true });
     pass(`buyer sees the not-found page (${locale}, ${view}): ${why}`);
@@ -177,9 +180,11 @@ try {
     await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
     await expect(page.getByTestId("product-buy")).toHaveAttribute("data-sku", sku.id);
     await expect(page.getByTestId("variant-price")).toContainText("123.45");
+    // G-UI8 audit [READ/MEASURE]: same-origin GET read of server state through the BFF (no state change) (buyer session)
     const session = await page.evaluate(async () => { const r = await fetch("/api/buyer/session"); return { status: r.status, body: await r.json() }; });
     assert.equal(session.status, 200, `${why}: the buyer API answers on a published origin`);
     assert(["absent", "active"].includes(session.body.state), `${why}: unexpected buyer session state ${session.body.state}`);
+    // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${why}: horizontal overflow`);
     if (shot) await page.screenshot({ path: path.join(evidence, shot), fullPage: true });
     pass(`anonymous buyer sees the product on ${buyerOrigin} (${locale}, ${view}): ${why}`);

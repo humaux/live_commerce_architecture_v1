@@ -168,11 +168,14 @@ try {
     assert.equal(await page.getByTestId("product-buy").getAttribute("data-sku"), sku.id);
     await expect(page.getByTestId("variant-price")).toHaveText(new Intl.NumberFormat(locale, {style: "currency", currency: sku.currency}).format(123.45));
     await openBuyerSession(page); // the shell opens a buyer session at the first cart write, not on view: open it as the old page did on load
+    // G-UI8 audit [READ/MEASURE]: same-origin GET read of server state through the BFF (no state change) (buyer session)
     const state = await page.evaluate(async () => (await fetch("/api/buyer/session")).json());
     assert.equal(state.state, "active");
+    // G-UI8 audit [READ/MEASURE]: same-origin GET read of server state through the BFF (no state change) (catalog)
     const catalog = await page.evaluate(async ({product, context}) => { const response = await fetch(`/api/buyer/catalog?product_id=${product}`, {headers: {"X-Buyer-Context": context}}); return {status: response.status, body: await response.json()}; }, {product: product.id, context: state.context});
     assert.equal(catalog.status, 200);
     assert.deepEqual(catalog.body.items.map(item => [item.product_id, item.sku_id, item.sku_code, item.price_minor, item.currency]), [[product.id, sku.id, code, 12345, sku.currency]]);
+    // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     if (locale === "en") await page.screenshot({path: path.join(evidence, "buyer-from-merchant-mobile.png"), fullPage: true});
     pass(`${locale} exact configured URL has persisted product, SKU, price and mobile scope`);

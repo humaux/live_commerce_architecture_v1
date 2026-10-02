@@ -42,6 +42,7 @@ async function signedLogin(page: Page) {
   await expect(page.getByTestId("nav-orders")).toBeAttached();
 }
 async function fitsWidth(page: Page) {
+  // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), "no horizontal page scroll").toBeLessThanOrEqual(1);
 }
 async function shot(page: Page, name: string, locale: string, viewport: "desktop" | "mobile") {

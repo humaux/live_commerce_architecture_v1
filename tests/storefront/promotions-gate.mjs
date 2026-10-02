@@ -90,6 +90,7 @@ async function shot(page, name, run) {
 }
 // UI_SHOT_PHASE=before: a capture-only run on the pre-fix code (stop-bleed): screenshots and the measured numbers, no assertion on D02/D05.
 const captureOnly = process.env.UI_SHOT_PHASE === "before";
+// G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
 const noOverflow = async (page, label) => assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${label}: horizontal overflow`);
 
 async function signIn(merchant) {

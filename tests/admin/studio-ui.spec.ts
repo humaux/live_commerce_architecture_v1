@@ -46,6 +46,7 @@ async function setSession(context: BrowserContext, token: string) {
 }
 
 async function storageIsSafe(page: Page) {
+  // G-UI8 audit [READ/MEASURE]: scans client storage for secrets/PII (read only) + CacheStorage names
   const value = await page.evaluate(async () => JSON.stringify({
     local: { ...localStorage }, session: { ...sessionStorage },
     caches: "caches" in window ? await caches.keys() : [],
@@ -57,7 +58,9 @@ async function storageIsSafe(page: Page) {
 
 async function hideAndReveal(page: Page) {
   await page.bringToFront();
+  // G-UI8 audit [READ/MEASURE]: reads document.visibilityState
   await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("visible");
+  // G-UI8 audit [READ/MEASURE]: installs a read-only visibilitychange recorder (isTrusted evidence)
   await page.evaluate(() => {
     const observed = window as typeof window & { studioVisibility?: { state: string; trusted: boolean }[] };
     observed.studioVisibility = [];
@@ -68,10 +71,13 @@ async function hideAndReveal(page: Page) {
   try {
     await other.goto("about:blank");
     await other.bringToFront();
+    // G-UI8 audit [READ/MEASURE]: reads document.visibilityState
     await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("hidden");
     await expect(page.getByLabel("Scene name")).toHaveCount(0);
     await page.bringToFront();
+    // G-UI8 audit [READ/MEASURE]: reads document.visibilityState
     await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("visible");
+    // G-UI8 audit [READ/MEASURE]: reads the recorded native visibility events
     const events = await page.evaluate(() =>
       (window as typeof window & { studioVisibility?: { state: string; trusted: boolean }[] }).studioVisibility);
     expect(events).toEqual([{ state: "hidden", trusted: true }, { state: "visible", trusted: true }]);
@@ -92,8 +98,11 @@ async function screenshot(page: Page, name: string, width: number, height: numbe
     await expect.poll(() => page.locator("[data-shell-rail]").evaluate((rail) =>
       Math.ceil(rail.getBoundingClientRect().right))).toBeLessThanOrEqual(0);
   }
+  // G-UI8 audit [FIXTURE/SETUP]: scrolls to the top before a screenshot (viewport positioning)
   await page.evaluate(() => window.scrollTo(0, 0));
+  // G-UI8 audit [READ/MEASURE]: reads scrollY
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
   await page.screenshot({ path: `${evidence}/${name}.png`, fullPage: false, animations: "disabled" });
   if (width <= 680)
@@ -290,6 +299,7 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await expect(page.getByText("Public status unverified").first()).toBeVisible();
   await storageIsSafe(page);
 
+  // G-UI8 audit [FIXTURE/SETUP]: negative probe: a forged/hostile request no UI can send; the server, not the UI, must refuse (UI click paths of the same route are covered elsewhere) (POST without CSRF)
   const csrfDenied = await page.evaluate(async (target) => {
     const response = await fetch(target, { method: "POST", credentials: "same-origin", cache: "no-store",
       headers: { "Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID() },

@@ -194,7 +194,7 @@ try {
   await p.goto(`${origin}/zh-TW/products/cedar-fig-candle`);
   await expect(p.getByRole("heading", { level: 1 })).toHaveText("雪松無花果香氛蠟燭");
   const before = await p.getByTestId("variant-price").textContent();
-  await p.getByRole("radio", { name: "300g" }).check({ force: true });
+  await p.locator("label.sf-chip", { has: p.getByRole("radio", { name: "300g" }) }).click(); // a shopper taps the visible chip (the radio inside is visually hidden): a real click, no force
   await expect(p.getByTestId("variant-price")).not.toHaveText(before);
   await expect(p.getByTestId("stock-hint")).toContainText("僅剩少量");
   assert(await noOverflow(p), "product overflows at 390px"); assert.deepEqual(await iosZoomOffenders(p), []);

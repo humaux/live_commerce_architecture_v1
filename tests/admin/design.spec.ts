@@ -45,6 +45,7 @@ async function signedLogin(page: Page) {
 }
 
 async function fitsWidth(page: Page) {
+  // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), "no horizontal page scroll").toBeLessThanOrEqual(1);
 }
 
@@ -182,6 +183,7 @@ for (const j of journeys) {
     await expect(preview.locator("img")).toHaveCount(0);
     await expect(preview.locator("a")).toHaveCount(0);
     expect(await preview.evaluate((el) => el.innerHTML)).not.toContain("<img");
+    // G-UI8 audit [READ/MEASURE]: reads the XSS canary flag the hostile markdown must not set
     expect(await page.evaluate(() => (window as unknown as { __xss?: number }).__xss)).toBeUndefined();
     await page.getByTestId("design-save").click();
     await expect(note).toHaveText(c.needsSave); // slug "Bad Slug" is refused before anything is sent
@@ -218,6 +220,7 @@ for (const j of journeys) {
       if (mobile && (await page.locator('button[aria-controls="workspace-navigation"]').getAttribute("aria-expanded")) !== "true") await page.locator('button[aria-controls="workspace-navigation"]').click();
       await page.getByTestId("nav-group-settings").click();
     };
+    // G-UI8 audit [READ/MEASURE]: reads whether the page registered a blocking beforeunload guard (synthetic event only measures defaultPrevented); the real navigation click follows in goSettings()
     const beforeUnloadPrevented = () => page.evaluate(() => { const e = new Event("beforeunload", { cancelable: true }); window.dispatchEvent(e); return e.defaultPrevented; });
     expect(await beforeUnloadPrevented(), "clean draft must not warn").toBe(false);
     await page.getByTestId("design-tab-profile").click();
@@ -328,6 +331,7 @@ type Call = { method: string; path: string; length: number; leaked: boolean };
 const goCalls = async (): Promise<Call[]> => (await fetch(`${apiOrigin}/__test/design-calls`)).json() as Promise<Call[]>;
 type Probe = { method: string; path: string; body?: string; headers?: Record<string, string>; multipart?: { size: number; bytes?: number[]; type: string }; csrf?: boolean | string; key?: boolean; creds?: RequestCredentials };
 async function probe(page: Page, p: Probe) {
+  // G-UI8 audit [FIXTURE/SETUP]: negative probe: a forged/hostile request no UI can send; the server, not the UI, must refuse (UI click paths of the same route are covered elsewhere) (probe() helper)
   return page.evaluate(async (q) => {
     const csrf = document.cookie.split(";").map((s) => s.trim()).find((s) => s.startsWith("__Host-commerce_csrf="))?.split("=")[1] ?? "";
     const headers: Record<string, string> = { ...(q.headers ?? {}) };

@@ -95,7 +95,9 @@ try {
             assert.equal(await page.locator("h1").count(), 1, "exactly one h1");
             assert((await page.locator("h1").innerText()).trim().length > 0, "empty h1");
             assert((await page.locator("h2").count()) >= 1, "no h2 section");
+            // G-UI8 audit [READ/MEASURE]: reads <html lang>
             assert.equal(await page.evaluate(() => document.documentElement.lang), locale, "<html lang>");
+            // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
             const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
             assert(overflow <= 0, `horizontal scroll by ${overflow}px`);
             const found = await page.locator("[data-owner-text]").evaluateAll((els) => els.map((e) => e.getAttribute("data-owner-text")));

@@ -5,6 +5,7 @@
 // test through the real buyer path on demand (LC_OPP_PLACE_URL), so the real list route is what returns them. Locators avoid implementation test ids
 // except the two the baseline already had (order-expand-{id}, state-filter) and the page roots.
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { nativePage } from "./fixtures/native-device";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -14,6 +15,7 @@ const required = (name: string) => {
 const origin = required("LC_BROWSER_PUBLIC_ORIGIN");
 const store = required("LC_BROWSER_STORE");
 const placeURL = required("LC_OPP_PLACE_URL");
+const evidence = required("LC_BROWSER_EVIDENCE");
 const seed = JSON.parse(required("LC_OPP_SEED")) as { pending: string[]; collected: string[]; collectedMinor: number };
 
 test.use({ baseURL: origin, trace: "retain-on-failure", screenshot: "only-on-failure" });
@@ -72,103 +74,120 @@ async function runUntilPoll(page: Page, probe: Probe, maxMs = 21_000, step = 250
   await expect.poll(() => probe.inflight).toBe(0);
   return advanced;
 }
-const setVisibility = (page: Page, state: "hidden" | "visible") =>
-  page.evaluate((value) => {
-    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => value });
-    Object.defineProperty(document, "hidden", { configurable: true, get: () => value === "hidden" });
-    document.dispatchEvent(new Event("visibilitychange"));
-  }, state);
+// OP2 hides and shows the tab for real: this test runs on the native device (a real Chromium window; Playwright's default headless page has no tab switching),
+// a second tab brought to the front hides it and bringing it back shows it again, so document.visibilityState and the visibilitychange events are the browser's own.
 
-test("OP2 live order feed: 20 s poll, no overlap, pause when hidden, new marker, (N) title, filters kept", async ({ page }) => {
+test("OP2 live order feed: 20 s poll, no overlap, pause when hidden, new marker, (N) title, filters kept", async () => {
   test.setTimeout(240_000);
-  const probe = await probeList(page);
-  await page.clock.install();
-  await signedLogin(page);
-  await openOrders(page, "en", "CONFIRMED");
-  const baseTitle = await page.title();
-  expect(baseTitle).not.toMatch(/^\(\d+\)/);
-  // the merchant's own context: a filter and an opened order
-  const [openId] = seed.pending;
-  await page.getByTestId(`order-expand-${openId}`).click();
-  await expect(page.getByTestId("order-detail")).toBeVisible();
-  const urlBefore = page.url();
-  for (const id of [...seed.pending, ...seed.collected]) await expect(row(page, id)).toBeVisible();
-  // no marker on anything the merchant already saw
-  await expect(page.getByText(/^New$/)).toHaveCount(0);
+  const native = await nativePage(evidence, "ops-op2-profile-");
+  const page = native.page;
+  let cover: Page | undefined;
+  const setVisibility = async (target: Page, state: "hidden" | "visible") => {
+    if (state === "hidden") {
+      cover = await target.context().newPage();
+      await cover.goto("about:blank");
+      await cover.bringToFront();
+    } else {
+      await target.bringToFront();
+      await cover?.close().catch(() => {});
+      cover = undefined;
+    }
+    await expect.poll(() => target.evaluate(() => document.visibilityState)).toBe(state); // read: the browser's own visibility
+  };
+  try {
+    const probe = await probeList(page);
+    await page.clock.install();
+    await signedLogin(page);
+    await openOrders(page, "en", "CONFIRMED");
+    const baseTitle = await page.title();
+    expect(baseTitle).not.toMatch(/^\(\d+\)/);
+    // the merchant's own context: a filter and an opened order
+    const [openId] = seed.pending;
+    await page.getByTestId(`order-expand-${openId}`).click();
+    await expect(page.getByTestId("order-detail")).toBeVisible();
+    const urlBefore = page.url();
+    for (const id of [...seed.pending, ...seed.collected]) await expect(row(page, id)).toBeVisible();
+    // no marker on anything the merchant already saw
+    await expect(page.getByText(/^New$/)).toHaveCount(0);
 
-  // from here time moves only when the test says so
-  await page.clock.pauseAt(new Date((await page.evaluate(() => Date.now())) + 100));
-  await pause(300);
-  const idle = probe.calls.length;
-  const one = await placeOrder();
-  const firstWithin = await runUntilPoll(page, probe);
-  expect(firstWithin, "the first poll must fire within one 20 s interval of the mount").toBeLessThanOrEqual(20_250);
-  expect(probe.calls.length).toBe(idle + 1);
-  // the cadence: nothing for 19 s after a poll, exactly one more by 20.5 s
-  const afterFirst = probe.calls.length;
-  await page.clock.runFor(19_000);
-  await pause(300);
-  expect(probe.calls.length, "a poll fired before 19 s had passed since the previous one").toBe(afterFirst);
-  await page.clock.runFor(1_500);
-  await expect.poll(() => probe.calls.length, { message: "the next poll must fire at 20 s" }).toBe(afterFirst + 1);
-  await expect.poll(() => probe.inflight).toBe(0);
+    // from here time moves only when the test says so
+    // G-UI8 audit [READ/MEASURE]: reads Date.now() to anchor the fake clock
+    await page.clock.pauseAt(new Date((await page.evaluate(() => Date.now())) + 100));
+    await pause(300);
+    const idle = probe.calls.length;
+    const one = await placeOrder();
+    const firstWithin = await runUntilPoll(page, probe);
+    expect(firstWithin, "the first poll must fire within one 20 s interval of the mount").toBeLessThanOrEqual(20_250);
+    expect(probe.calls.length).toBe(idle + 1);
+    // the cadence: nothing for 19 s after a poll, exactly one more by 20.5 s
+    const afterFirst = probe.calls.length;
+    await page.clock.runFor(19_000);
+    await pause(300);
+    expect(probe.calls.length, "a poll fired before 19 s had passed since the previous one").toBe(afterFirst);
+    await page.clock.runFor(1_500);
+    await expect.poll(() => probe.calls.length, { message: "the next poll must fire at 20 s" }).toBe(afterFirst + 1);
+    await expect.poll(() => probe.inflight).toBe(0);
 
-  // the new order carries a visible marker and the tab title the count; the seen orders do not
-  await expect(marker(page, one, /^New$/)).toBeVisible();
-  await expect(page.getByText(/^New$/)).toHaveCount(1);
-  await expect.poll(() => page.title()).toMatch(/^\(1\) /);
-  // brief OP2: the badge names the orders page ("(N) 訂單"), not the static layout title (fixed by agent/kimi-p2-ui)
-  expect(await page.title()).toMatch(/^\(1\) (Orders|订单|訂單)$/);
-  // filters and the open order are exactly as the merchant left them
-  expect(page.url()).toBe(urlBefore);
-  await expect(page.getByTestId("state-filter")).toHaveValue("CONFIRMED");
-  await expect(page.getByTestId("order-detail")).toBeVisible();
-  await expect(page.getByTestId(`order-expand-${openId}`)).toHaveAttribute("aria-expanded", "true");
+    // the new order carries a visible marker and the tab title the count; the seen orders do not
+    await expect(marker(page, one, /^New$/)).toBeVisible();
+    await expect(page.getByText(/^New$/)).toHaveCount(1);
+    await expect.poll(() => page.title()).toMatch(/^\(1\) /);
+    // brief OP2: the badge names the orders page ("(N) 訂單"), not the static layout title (fixed by agent/kimi-p2-ui)
+    expect(await page.title()).toMatch(/^\(1\) (Orders|订单|訂單)$/);
+    // filters and the open order are exactly as the merchant left them
+    expect(page.url()).toBe(urlBefore);
+    await expect(page.getByTestId("state-filter")).toHaveValue("CONFIRMED");
+    await expect(page.getByTestId("order-detail")).toBeVisible();
+    await expect(page.getByTestId(`order-expand-${openId}`)).toHaveAttribute("aria-expanded", "true");
 
-  // opening the new order acknowledges it: marker and count go away
-  await page.getByTestId(`order-expand-${one}`).click();
-  await expect(page.getByText(/^New$/)).toHaveCount(0);
-  await expect.poll(() => page.title()).toBe(baseTitle);
+    // opening the new order acknowledges it: marker and count go away
+    await page.getByTestId(`order-expand-${one}`).click();
+    await expect(page.getByText(/^New$/)).toHaveCount(0);
+    await expect.poll(() => page.title()).toBe(baseTitle);
 
-  // two more orders: the count is cumulative over unseen orders
-  const two = [await placeOrder(), await placeOrder()];
-  await runUntilPoll(page, probe);
-  for (const id of two) await expect(marker(page, id, /^New$/)).toBeVisible();
-  await expect.poll(() => page.title()).toMatch(/^\(2\) (Orders|订单|訂單)$/);
+    // two more orders: the count is cumulative over unseen orders
+    const two = [await placeOrder(), await placeOrder()];
+    await runUntilPoll(page, probe);
+    for (const id of two) await expect(marker(page, id, /^New$/)).toBeVisible();
+    await expect.poll(() => page.title()).toMatch(/^\(2\) (Orders|订单|訂單)$/);
 
-  // never overlapping: a slow list, three more intervals pass while it is in flight, still exactly one request
-  probe.hold = 1_500;
-  const beforeSlow = probe.calls.length;
-  await page.clock.runFor(20_000);
-  await expect.poll(() => probe.inflight).toBe(1);
-  await page.clock.runFor(60_000);
-  await pause(200);
-  expect(probe.calls.length, "a second list request started while the first was in flight").toBe(beforeSlow + 1);
-  await expect.poll(() => probe.inflight, { timeout: 10_000 }).toBe(0);
-  probe.hold = 0;
-  expect(probe.maxInflight).toBe(1);
+    // never overlapping: a slow list, three more intervals pass while it is in flight, still exactly one request
+    probe.hold = 1_500;
+    const beforeSlow = probe.calls.length;
+    await page.clock.runFor(20_000);
+    await expect.poll(() => probe.inflight).toBe(1);
+    await page.clock.runFor(60_000);
+    await pause(200);
+    expect(probe.calls.length, "a second list request started while the first was in flight").toBe(beforeSlow + 1);
+    await expect.poll(() => probe.inflight, { timeout: 10_000 }).toBe(0);
+    probe.hold = 0;
+    expect(probe.maxInflight).toBe(1);
 
-  // paused while hidden: long hidden spells fire no list request at all
-  await setVisibility(page, "hidden");
-  await pause(300);
-  const hiddenAt = probe.calls.length;
-  await page.clock.runFor(120_000);
-  await pause(400);
-  expect(probe.calls.length, "list requests were made while the tab was hidden").toBe(hiddenAt);
-  const whileHidden = await placeOrder();
-  await page.clock.runFor(60_000);
-  await pause(300);
-  expect(probe.calls.length).toBe(hiddenAt);
-  // coming back reads the list at once and the order that arrived meanwhile is marked
-  await setVisibility(page, "visible");
-  await expect.poll(() => probe.calls.length, { timeout: 15_000 }).toBeGreaterThan(hiddenAt);
-  await expect(marker(page, whileHidden, /^New$/)).toBeVisible({ timeout: 15_000 });
-  await expect.poll(() => page.title()).toMatch(/^\(\d+\) /);
-  // and the cadence resumes
-  const resumed = await placeOrder();
-  await runUntilPoll(page, probe);
-  await expect(marker(page, resumed, /^New$/)).toBeVisible();
-  expect(probe.maxInflight).toBe(1);
+    // paused while hidden: long hidden spells fire no list request at all
+    await setVisibility(page, "hidden");
+    await pause(300);
+    const hiddenAt = probe.calls.length;
+    await page.clock.runFor(120_000);
+    await pause(400);
+    expect(probe.calls.length, "list requests were made while the tab was hidden").toBe(hiddenAt);
+    const whileHidden = await placeOrder();
+    await page.clock.runFor(60_000);
+    await pause(300);
+    expect(probe.calls.length).toBe(hiddenAt);
+    // coming back reads the list at once and the order that arrived meanwhile is marked
+    await setVisibility(page, "visible");
+    await expect.poll(() => probe.calls.length, { timeout: 15_000 }).toBeGreaterThan(hiddenAt);
+    await expect(marker(page, whileHidden, /^New$/)).toBeVisible({ timeout: 15_000 });
+    await expect.poll(() => page.title()).toMatch(/^\(\d+\) /);
+    // and the cadence resumes
+    const resumed = await placeOrder();
+    await runUntilPoll(page, probe);
+    await expect(marker(page, resumed, /^New$/)).toBeVisible();
+    expect(probe.maxInflight).toBe(1);
+  } finally {
+    await cover?.close().catch(() => {});
+    await native.close();
+  }
 });
 
 for (const [locale, word] of [["zh-TW", /^新$/], ["zh-CN", /^新$/]] as const) {
@@ -179,6 +198,7 @@ for (const [locale, word] of [["zh-TW", /^新$/], ["zh-CN", /^新$/]] as const) 
     await signedLogin(page);
     await openOrders(page, locale);
     const baseTitle = await page.title();
+    // G-UI8 audit [READ/MEASURE]: reads Date.now() to anchor the fake clock
     await page.clock.pauseAt(new Date((await page.evaluate(() => Date.now())) + 100));
     await pause(300);
     const id = await placeOrder();
@@ -258,6 +278,7 @@ test("OP3 finance page shows a separate pay-at-pickup column in every locale; CS
   const href = await page.getByTestId("finance-csv").getAttribute("href");
   expect(href).toBeTruthy();
   // in-page fetch: the Secure __Host- session cookie is sent by the browser, not by the APIRequestContext jar over http
+  // G-UI8 audit [READ/MEASURE]: same-origin GET read of server state through the BFF (no state change) (finance CSV)
   const csv = await page.evaluate(async (u) => {
     const r = await fetch(u, { credentials: "same-origin" });
     return { status: r.status, text: await r.text() };

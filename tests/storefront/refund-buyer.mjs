@@ -84,6 +84,7 @@ const manifest = path.join(evidence, "screenshots.json");
 async function shot(page, name, locale, viewport) {
   const file = path.join(evidence, `${name}-${locale}-${viewport}.png`);
   await page.screenshot({ path: file, fullPage: true });
+  // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
   assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `horizontal overflow at ${viewport} ${locale}`);
   let list = []; try { list = JSON.parse(await readFile(manifest, "utf8")); } catch { /* first */ }
   list.push({ File: path.basename(file), Sha256: createHash("sha256").update(await readFile(file)).digest("hex"), Locale: locale, Viewport: viewport });
@@ -97,6 +98,7 @@ async function openOrder(page, locale) {
 }
 // the buyer payment view through the storefront BFF (the same request the page makes)
 async function paymentView(page) {
+  // G-UI8 audit [READ/MEASURE]: same-origin GET read of server state through the BFF (no state change) (payment view)
   return page.evaluate(async (id) => {
     const session = await (await fetch("/api/buyer/session", { cache: "no-store" })).json();
     const response = await fetch(`/api/buyer/orders/${id}/payment`, { headers: { "X-Buyer-Context": session.context }, cache: "no-store" });

@@ -40,10 +40,12 @@ async function controlCall(resource: string, init: RequestInit = {}) {
   return response.json() as Promise<Record<string, number>>;
 }
 async function storageLacks(page: Page, secrets: string[]) {
+  // G-UI8 audit [READ/MEASURE]: scans client storage for secrets/PII (read only)
   const stored = await page.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage } }));
   for (const secret of secrets) expect(stored).not.toContain(secret);
 }
 async function fitsWidth(page: Page) {
+  // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 }
 // Buyer pages have no fixed chrome, so they are captured whole; the admin shell has a

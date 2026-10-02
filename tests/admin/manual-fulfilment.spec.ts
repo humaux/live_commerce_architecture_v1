@@ -108,6 +108,7 @@ const manifestPath = path.join(evidence, "screenshots.json");
 async function shot(page: Page, name: string, locale: string, viewport: "desktop" | "mobile") {
   const file = path.join(evidence, `${name}-${locale}-${viewport}.png`);
   await page.screenshot({ path: file, fullPage: false });
+  // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
   let manifest: unknown[] = [];
   try {
@@ -215,6 +216,7 @@ test("MF07 export downloads a CSV that opens with the expected header and lists 
   expect(text).not.toContain(shipOrder); // shipped in the previous test
   expect(text).not.toContain(draftOrder); // a DRAFT order is never eligible
   // the file is not kept by the page
+  // G-UI8 audit [READ/MEASURE]: scans client storage for secrets/PII (read only)
   const storage = await page.evaluate(() => JSON.stringify({ l: { ...localStorage }, s: { ...sessionStorage } }));
   expect(storage).not.toContain("recipient_name");
   expect(storage).not.toContain(csvHeader);
@@ -233,11 +235,13 @@ test("MF07 a member without fulfillment:write / orders:export sees no shipment a
   await expect(page.getByRole("link", { name: ui.exportButton })).toHaveCount(0);
   await expect(page.getByRole("button", { name: ui.exportButton })).toHaveCount(0);
   // the BFF still refuses writes and export for that session (server is the authority)
+  // G-UI8 audit [FIXTURE/SETUP]: negative probe: a forged/hostile request no UI can send; the server, not the UI, must refuse (UI click paths of the same route are covered elsewhere) (restricted role)
   const put = await page.evaluate(async ({ store, order }) => {
     const r = await fetch(`/api/stores/${store}/orders/${order}/shipment`, { method: "PUT", headers: { "content-type": "application/json", "Idempotency-Key": "mf07-restricted-key", "X-CSRF-Token": document.cookie.split("; ").find((c) => c.startsWith("__Host-commerce_csrf="))?.slice(21) ?? "" }, body: "{}" });
     return r.status;
   }, { store, order: reshipOrder });
   expect([403, 422, 401]).toContain(put);
+  // G-UI8 audit [READ/MEASURE]: same-origin GET read of server state through the BFF (no state change) (restricted role export status)
   const csv = await page.evaluate(async (s) => (await fetch(`/api/stores/${s}/orders/unshipped.csv`)).status, store);
   expect(csv).toBe(403);
 });
