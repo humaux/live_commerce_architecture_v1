@@ -50,8 +50,14 @@ func TestMerchantOrdersV2DomainReadAuthority(t *testing.T) {
 		})
 	}
 	var body string
-	if err := f.owner.QueryRow(ctx, `SELECT prosrc FROM pg_proc WHERE oid='identity.read_merchant_orders_v2(bytea,uuid,integer,timestamptz,uuid,text,text,text,text,text,uuid,timestamptz,timestamptz)'::regprocedure`).Scan(&body); err != nil {
+	var config []string
+	if err := f.owner.QueryRow(ctx, `SELECT prosrc,coalesce(proconfig,'{}') FROM pg_proc WHERE oid='identity.read_merchant_orders_v2(bytea,uuid,integer,timestamptz,uuid,text,text,text,text,text,uuid,timestamptz,timestamptz)'::regprocedure`).Scan(&body, &config); err != nil {
 		t.Fatal(err)
+	}
+	// The reader's single statement is costed far above PG's JIT thresholds; with jit on every call spent 0.3-0.7 s compiling
+	// (the 10k search gate's intermittent >1 s). The function-level setting is the guard, so it must not be dropped.
+	if !slices.Equal(config, []string{"search_path=pg_catalog", "jit=off"}) {
+		t.Fatalf("v2 reader proconfig=%v, want search_path=pg_catalog and jit=off", config)
 	}
 	for _, table := range []string{"claims.live_price_uses", "claims.bundles", "live.sessions", "fulfillment.cvs_shipments"} {
 		if strings.Contains(body, table) {
@@ -180,5 +186,16 @@ func TestMerchantOrdersV2DomainReadScope(t *testing.T) {
 	}
 	if err := json.Unmarshal(response.Body.Bytes(), &page); err != nil || response.Code != 200 || page.Total != 1 || len(page.Items) != 1 || page.Items[0].ID != cvsOrder {
 		t.Fatalf("CVS tracking search: status=%d body=%s err=%v", response.Code, response.Body.String(), err)
+	}
+	// Queue counts read the same labelled CVS state: the real CREATED label is the store's one consign task and not yet shipped.
+	list := httptest.NewRequest("GET", "/v1/admin/stores/"+e.store()+"/orders?view=v2&limit=100", nil)
+	list.Header.Set("Authorization", "Bearer "+e.token())
+	listed := httptest.NewRecorder()
+	e.merchant.ServeHTTP(listed, list)
+	var queues struct {
+		Counts map[string]int `json:"counts"`
+	}
+	if err := json.Unmarshal(listed.Body.Bytes(), &queues); err != nil || listed.Code != 200 || queues.Counts["ready_to_consign"] != 1 || queues.Counts["shipped"] != 0 {
+		t.Fatalf("CVS queue counts: status=%d body=%s err=%v", listed.Code, listed.Body.String(), err)
 	}
 }
