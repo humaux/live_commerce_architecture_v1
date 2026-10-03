@@ -1,0 +1,146 @@
+[
+  {
+    "File": "ads-connection-zh-TW-desktop.png",
+    "Sha256": "d4da22b1025a728ae7911a0322097888dc90ae1472eb46fc1be9b1fab691cdb9",
+    "Locale": "zh-TW",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "ads-detail-zh-TW-desktop.png",
+    "Sha256": "18c58604ef6d7b7b859380795eae4a96e68df4380b6c359b70567fc6eebd1034",
+    "Locale": "zh-TW",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "ads-report-zh-TW-desktop.png",
+    "Sha256": "574e3bf3201c3a19304d0cb2112f46a14652af687e2bc324387d80f40b902253",
+    "Locale": "zh-TW",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "ads-connection-zh-TW-mobile.png",
+    "Sha256": "e76c5efb89058a92b23c05032b0c9c51d4f43af72fd86be7ef77d5ac34c572b2",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "ads-detail-zh-TW-mobile.png",
+    "Sha256": "7e6b9ea1410a3845483e26c3dfc5ffba2b4ad6d71752b5c85f3cc2c96ca04f1f",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "ads-report-zh-TW-mobile.png",
+    "Sha256": "6a75eccd1f099ae5068d6ed83a491d64969ea49be0a189b0bd1a5832ed34ab25",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "ads-connection-zh-CN-desktop.png",
+    "Sha256": "b993dd0714088583d6ec4206b8d37ab2e10616fe185bdbaec7b80725bba6e43f",
+    "Locale": "zh-CN",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "ads-detail-zh-CN-desktop.png",
+    "Sha256": "304051580d9202387cba98a133ba33f1bf3f7f41d4f9d38bfc01a14d158ee507",
+    "Locale": "zh-CN",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "ads-report-zh-CN-desktop.png",
+    "Sha256": "bbbb1804d6bfe23e0c55641626f9b974a7d12945ad9b43f54c7af5d61cf28ef4",
+    "Locale": "zh-CN",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "ads-connection-zh-CN-mobile.png",
+    "Sha256": "2545ff1ea6c675bdcd65709a032cd36b183aa13dde95b6a49639d43f2648b8e5",
+    "Locale": "zh-CN",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "ads-detail-zh-CN-mobile.png",
+    "Sha256": "2eb1f3311c1130840250309277c84a80794e988af337a1cf062a206465352455",
+    "Locale": "zh-CN",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "ads-report-zh-CN-mobile.png",
+    "Sha256": "8553a03bf01c88f83d843f8b966df88f1a3dd1798524539f4d67a2c952e364aa",
+    "Locale": "zh-CN",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "ads-connection-en-desktop.png",
+    "Sha256": "80f0763aa95dc041e22275bd6e7ebe4232e3f1154229d846daeea9d681b4c59c",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "ads-detail-en-desktop.png",
+    "Sha256": "4a2509418b72c6e84289de442581c2f38cd36d6c0576dfba4dd704d3158a4c65",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "ads-report-en-desktop.png",
+    "Sha256": "f7fb5cd91f76de89d6d5bf1d87b9411a5973ccf73f48b4a448de9a26421af99d",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "ads-connection-en-mobile.png",
+    "Sha256": "9d5eaf8c3b42ce68aefb9cb2c4bacf9e6da87438bae830f6b954dbff892e22ed",
+    "Locale": "en",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "ads-detail-en-mobile.png",
+    "Sha256": "2374b19d9b770f2e88f46e1dd8680af144e9f5801b44b6c0f88991fdd0408084",
+    "Locale": "en",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "ads-report-en-mobile.png",
+    "Sha256": "2ed3c74ea1ac469c9a1a30c6aaf139cf6ca63369008b2e173a6ff4fc09e8bd2d",
+    "Locale": "en",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "meta-original-refusal-zh-TW-desktop.png",
+    "Sha256": "bbba730ba19b131228207f6b65cec761154065e4eabd6f3c03cd252de1c4e5fa",
+    "Locale": "zh-TW",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "meta-original-refusal-zh-TW-mobile.png",
+    "Sha256": "af97213a6eeb3cd5afac7df44f6eb0a872abf59c280ae17392c9c19ee96918f0",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "meta-original-refusal-zh-CN-desktop.png",
+    "Sha256": "6d5e160c342424aa3df4b90e69bdfcbaf2a7c7228fc9e71b8490c8f6519a85f9",
+    "Locale": "zh-CN",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "meta-original-refusal-zh-CN-mobile.png",
+    "Sha256": "4c15b2852c0e9ac0e435574be80e7cc6ec78336933958fa8c4e3ebf03775cc38",
+    "Locale": "zh-CN",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "meta-original-refusal-en-desktop.png",
+    "Sha256": "5152ba2a16d618c4b0f14a5a776dea15e5c86b2e274bc49b077f29c906d6434a",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "meta-original-refusal-en-mobile.png",
+    "Sha256": "2007414dd468ea1acffe71e1206cef18e060193b49b8f19ef05bbb99fd3601d0",
+    "Locale": "en",
+    "Viewport": "mobile"
+  }
+]

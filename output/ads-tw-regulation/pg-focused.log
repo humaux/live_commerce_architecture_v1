@@ -1,0 +1,7 @@
+# livecommerce/tests/foundation [livecommerce/tests/foundation.test]
+tests/foundation/meta_ads_taiwan_test.go:12:7: undefined: newAdsEnv
+tests/foundation/meta_ads_taiwan_test.go:12:20: undefined: adsOpts
+tests/foundation/meta_ads_taiwan_test.go:14:18: undefined: adsDraftIn
+FAIL	livecommerce/tests/foundation [build failed]
+FAIL
+test-focused: top-level PASS=0 FAIL=0 SKIP=0 exit=1

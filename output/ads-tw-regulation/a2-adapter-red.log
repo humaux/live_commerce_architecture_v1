@@ -1,0 +1,19 @@
+--- FAIL: TestRegionalAdsetDeclarations (0.01s)
+    --- FAIL: TestRegionalAdsetDeclarations/BOOST_POST["SG"] (0.00s)
+        regulation_test.go:34: category = <nil>; want []interface {}{"SINGAPORE_UNIVERSAL"}
+    --- FAIL: TestRegionalAdsetDeclarations/BOOST_POST["SG","TW"] (0.00s)
+        regulation_test.go:34: category = []interface {}{"TAIWAN_UNIVERSAL"}; want []interface {}{"TAIWAN_UNIVERSAL", "SINGAPORE_UNIVERSAL"}
+    --- FAIL: TestRegionalAdsetDeclarations/PRODUCT_TRAFFIC["SG"] (0.00s)
+        regulation_test.go:34: category = <nil>; want []interface {}{"SINGAPORE_UNIVERSAL"}
+    --- FAIL: TestRegionalAdsetDeclarations/PRODUCT_TRAFFIC["SG","TW"] (0.00s)
+        regulation_test.go:34: category = []interface {}{"TAIWAN_UNIVERSAL"}; want []interface {}{"TAIWAN_UNIVERSAL", "SINGAPORE_UNIVERSAL"}
+--- FAIL: TestGraphRejectionOriginalMessage (0.00s)
+    --- FAIL: TestGraphRejectionOriginalMessage/unverified (0.00s)
+        regulation_test.go:64: dispatch = {State:FAILED_FINAL Code:tw_advertiser_unverified ProviderReference: Detail:<nil>}, <nil>; want {State:FAILED_FINAL Code:graph_100 ProviderReference: Detail:{UserMessage:Meta 原文 & details}} (one POST)
+    --- FAIL: TestGraphRejectionOriginalMessage/server_uncertainty (0.00s)
+        regulation_test.go:64: dispatch = {State:UNKNOWN Code:graph_unconfirmed ProviderReference: Detail:<nil>}, <nil>; want {State:UNKNOWN Code:graph_100 ProviderReference: Detail:<nil>} (one POST)
+--- FAIL: TestPlainUserMessage (0.00s)
+    regulation_test.go:107: bounded envelope = {State:FAILED_FINAL Code:graph_100 ProviderReference: Detail:<nil>}
+FAIL
+FAIL	livecommerce/internal/integrations/meta_ads	0.415s
+FAIL

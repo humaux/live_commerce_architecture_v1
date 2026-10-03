@@ -1,0 +1,15 @@
+--- FAIL: TestTaiwanAdsetCategory (0.00s)
+    --- FAIL: TestTaiwanAdsetCategory/BOOST_POST["TW"] (0.00s)
+        taiwan_test.go:27: TW category = <nil>
+    --- FAIL: TestTaiwanAdsetCategory/BOOST_POST["HK","TW"] (0.00s)
+        taiwan_test.go:27: TW category = <nil>
+    --- FAIL: TestTaiwanAdsetCategory/PRODUCT_TRAFFIC["TW"] (0.00s)
+        taiwan_test.go:27: TW category = <nil>
+    --- FAIL: TestTaiwanAdsetCategory/PRODUCT_TRAFFIC["HK","TW"] (0.00s)
+        taiwan_test.go:27: TW category = <nil>
+--- FAIL: TestTaiwanAdvertiserRejection (0.00s)
+    --- FAIL: TestTaiwanAdvertiserRejection/unverified (0.00s)
+        taiwan_test.go:56: dispatch = {State:FAILED_FINAL Code:graph_100 ProviderReference: Detail:<nil>}, <nil>; want {State:FAILED_FINAL Code:tw_advertiser_unverified ProviderReference: Detail:<nil>} (one POST)
+FAIL
+FAIL	livecommerce/internal/integrations/meta_ads	0.457s
+FAIL
