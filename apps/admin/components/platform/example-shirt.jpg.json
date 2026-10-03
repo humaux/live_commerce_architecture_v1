@@ -1,0 +1,10 @@
+{
+  "source": "built-in image_gen",
+  "created": "2026-10-04",
+  "purpose": "Fictional garment thumbnail in the labelled public workflow illustration; not a merchant product or integration claim.",
+  "prompt": "Use case: product-mockup. Asset type: a tiny square synthetic product thumbnail inside a clearly labelled product workflow example on DaWan Live public website. Generate a single plain dark charcoal cotton crew-neck T-shirt, neatly laid flat, full front view, photographed straight overhead against a clean warm off-white background. Realistic soft fabric folds, dimensional natural shadow, subtle cotton texture, short sleeves symmetrical. Entire garment visible with generous margin so it works at 70 pixels wide. Soft studio daylight. No person, no mannequin, no hanger, no brand, no writing, no logo, no labels, no watermarks. This is illustrative fictional merchandise, not a specific real merchant's product.",
+  "source_sha256": "ec3778ffcc64d0f962230e68dfc57d7e3504df245a1d02b7648a2fbf050487ed",
+  "asset_sha256": "acb5d6e6f3ad3da9635f366e2ca06cacb521bd4bbfe1c21744a8b36412e27830",
+  "processing": "Existing Next sharp dependency: uniform resize to 192 by 192; JPEG quality 85; no crop or compositing.",
+  "bytes": 4645
+}

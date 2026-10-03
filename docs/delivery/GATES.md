@@ -127,6 +127,10 @@ Smoke S29m BLOCKED is accepted in the CI job (F11), not by release-gate.
 
 ## Browser specs and the gate that runs each
 
+| Mode | Proves | Label | Command |
+| --- | --- | --- | --- |
+| `--browser-platform-site` | PS1 operator SSR facts, PS2 public pages and real-click navigation (390/1586, three locales), PS4 optional domain tag; production admin Next over a local Host-preserving bridge. PS3 is separately `node tests/deploy/platform-edge.mjs`. Also run by `--browser-click-sweep`. | MOCK browser / production build; no live deployment | `bash scripts/dev/test-local.sh --browser-platform-site` |
+
 | Spec | Mode |
 | --- | --- |
 | `tests/admin/auth-real.spec.ts`, `settings-real.spec.ts` | `--browser-identity` |

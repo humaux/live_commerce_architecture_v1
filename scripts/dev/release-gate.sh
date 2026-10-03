@@ -510,6 +510,13 @@ for m in $browser_modes; do
     else
       record "$id" "$tier" FAIL "browser-webkit exit 0 but only $wk/6 clean step lines: never PASS" "$rc" "$LOG"
     fi
+  elif [[ "$m" == --browser-platform-site ]]; then
+    np=$(awk '/^ℹ pass [0-9]+$/ {n=$3} END {print n+0}' "$LOG")
+    if ((np >= 1)) && grep -qE '^ℹ fail 0$' "$LOG" && grep -q '^PASS PS1/PS2/PS4: 30 page cases, 15 SSR cases, 16 tag cases,' "$LOG"; then
+      record "$id" "$tier" PASS "platform node + 30 real-click pages + SSR/tag matrix (local MOCK transport)" "$rc" "$LOG"
+    else
+      record "$id" "$tier" FAIL "platform-site missing Node/SSR/browser/tag evidence" "$rc" "$LOG"
+    fi
   elif [[ "$m" == --browser-admin-shell ]]; then
     # Node + Playwright only, no go test events (the W0 shell gate needs neither PG nor Docker). test-local.sh runs node --test with the spec
     # reporter, whose summary has "ℹ pass N" / "ℹ fail F", then tests/admin/shell-browser.mjs prints "PASS G-UI2/G-UI4: N matrix cases ...".

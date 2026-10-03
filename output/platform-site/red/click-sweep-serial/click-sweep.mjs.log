@@ -1,0 +1,239 @@
+browser engine: chromium
+[   2s] stack up; admin http://127.0.0.1:51631, storefront https://buyer.example (Next :51647); 23 registry routes; workers=3 sample=3
+[   2s] /studio desktop/zh-TW [main] 6 controls, 6 classes sampled
+[   2s] /studio/claims desktop/zh-TW [main] 16 controls, 16 classes sampled
+[   2s] / desktop/zh-TW [skip] 1 controls, 1 classes sampled
+[  10s] admin /studio desktop/zh-TW done
+[  11s] /studio mobile/zh-TW [main] 6 controls, 6 classes sampled
+[  13s] / desktop/zh-TW [topbar] 4 controls, 4 classes sampled
+[  19s] admin /studio mobile/zh-TW done
+[  19s] /studio desktop/en [main] 6 controls, 6 classes sampled
+[  22s] admin /studio/claims desktop/zh-TW done
+[  22s] / desktop/zh-TW [rail] 9 controls, 9 classes sampled
+[  23s] /studio/claims mobile/zh-TW [main] 16 controls, 16 classes sampled
+[  27s] admin /studio desktop/en done
+[  28s] /orders desktop/zh-TW [main] 22 controls, 20 classes sampled
+[  35s] / desktop/zh-TW [main] 16 controls, 16 classes sampled
+[  43s] admin /studio/claims mobile/zh-TW done
+[  43s] /studio/claims desktop/en [main] 16 controls, 16 classes sampled
+[  53s] admin /orders desktop/zh-TW done
+[  54s] /orders mobile/zh-TW [main] 16 controls, 14 classes sampled
+[  58s] admin / desktop/zh-TW done
+[  58s] / mobile/zh-TW [skip] 1 controls, 1 classes sampled
+[  63s] admin /studio/claims desktop/en done
+[  64s] /orders/new desktop/zh-TW [main] 5 controls, 5 classes sampled
+[  69s] / mobile/zh-TW [topbar] 5 controls, 5 classes sampled
+[  70s] admin /orders/new desktop/zh-TW done
+[  71s] /orders/new mobile/zh-TW [main] 5 controls, 5 classes sampled
+[  72s] admin /orders mobile/zh-TW done
+[  73s] /orders desktop/en [main] 22 controls, 20 classes sampled
+[  77s] admin /orders/new mobile/zh-TW done
+[  77s] /orders/new desktop/en [main] 5 controls, 5 classes sampled
+[  80s] / mobile/zh-TW [rail] 10 controls, 10 classes sampled
+[  83s] admin /orders/new desktop/en done
+[  84s] admin /orders/cvs-print desktop/zh-TW done
+[  85s] admin /orders/cvs-print mobile/zh-TW done
+[  85s] admin /orders/cvs-print desktop/en done
+[  86s] /products desktop/zh-TW [main] 27 controls, 27 classes sampled
+[  96s] / mobile/zh-TW [main] 16 controls, 16 classes sampled
+[  98s] admin /orders desktop/en done
+[  99s] /products/[product] desktop/zh-TW [main] 36 controls, 36 classes sampled
+[ 118s] admin / mobile/zh-TW done
+[ 118s] / desktop/en [skip] 1 controls, 1 classes sampled
+[ 123s] admin /products desktop/zh-TW done
+[ 123s] /products mobile/zh-TW [main] 27 controls, 27 classes sampled
+[ 129s] / desktop/en [topbar] 4 controls, 4 classes sampled
+[ 138s] / desktop/en [rail] 9 controls, 9 classes sampled
+[ 151s] admin /products/[product] desktop/zh-TW done
+[ 151s] / desktop/en [main] 16 controls, 16 classes sampled
+[ 151s] /products/[product] mobile/zh-TW [main] 27 controls, 27 classes sampled
+[ 160s] admin /products mobile/zh-TW done
+[ 161s] /products desktop/en [main] 27 controls, 27 classes sampled
+[ 173s] admin / desktop/en done
+[ 174s] /collections desktop/zh-TW [main] 4 controls, 4 classes sampled
+[ 179s] admin /collections desktop/zh-TW done
+[ 180s] /collections mobile/zh-TW [main] 4 controls, 4 classes sampled
+[ 185s] admin /collections mobile/zh-TW done
+[ 186s] /collections desktop/en [main] 4 controls, 4 classes sampled
+[ 190s] admin /products/[product] mobile/zh-TW done
+[ 191s] admin /collections desktop/en done
+[ 191s] /products/[product] desktop/en [main] 36 controls, 36 classes sampled
+[ 192s] /inventory desktop/zh-TW [main] 16 controls, 16 classes sampled
+[ 198s] admin /products desktop/en done
+[ 198s] /products/import desktop/zh-TW [main] 3 controls, 3 classes sampled
+[ 203s] admin /products/import desktop/zh-TW done
+[ 203s] /products/import mobile/zh-TW [main] 3 controls, 3 classes sampled
+[ 207s] admin /products/import mobile/zh-TW done
+[ 208s] /products/import desktop/en [main] 3 controls, 3 classes sampled
+[ 212s] admin /products/import desktop/en done
+[ 212s] /customers desktop/zh-TW [main] 9 controls, 9 classes sampled
+[ 213s] admin /inventory desktop/zh-TW done
+[ 214s] /inventory mobile/zh-TW [main] 13 controls, 13 classes sampled
+[ 225s] admin /customers desktop/zh-TW done
+[ 226s] /customers mobile/zh-TW [main] 9 controls, 9 classes sampled
+[ 231s] admin /inventory mobile/zh-TW done
+[ 232s] /inventory desktop/en [main] 16 controls, 16 classes sampled
+[ 238s] admin /customers mobile/zh-TW done
+[ 239s] /customers desktop/en [main] 9 controls, 9 classes sampled
+[ 244s] admin /products/[product] desktop/en done
+[ 245s] /customers/[customer] desktop/zh-TW [main] 5 controls, 5 classes sampled
+[ 251s] admin /customers desktop/en done
+[ 252s] admin /customers/[customer] desktop/zh-TW done
+[ 252s] /promotions desktop/zh-TW [main] 5 controls, 5 classes sampled
+[ 252s] /customers/[customer] mobile/zh-TW [main] 5 controls, 5 classes sampled
+[ 253s] admin /inventory desktop/en done
+[ 253s] /ads desktop/zh-TW [main] 8 controls, 8 classes sampled
+[ 258s] admin /promotions desktop/zh-TW done
+[ 259s] /promotions mobile/zh-TW [main] 3 controls, 3 classes sampled
+[ 259s] admin /customers/[customer] mobile/zh-TW done
+[ 260s] /customers/[customer] desktop/en [main] 5 controls, 5 classes sampled
+[ 262s] admin /promotions mobile/zh-TW done
+[ 263s] /promotions desktop/en [main] 5 controls, 5 classes sampled
+[ 264s] admin /ads desktop/zh-TW done
+[ 264s] /ads mobile/zh-TW [main] 8 controls, 8 classes sampled
+[ 267s] admin /customers/[customer] desktop/en done
+[ 267s] /design desktop/zh-TW [main] 9 controls, 9 classes sampled
+[ 269s] admin /promotions desktop/en done
+[ 270s] /finance desktop/zh-TW [main] 3 controls, 3 classes sampled
+[ 274s] admin /finance desktop/zh-TW done
+[ 275s] /finance mobile/zh-TW [main] 3 controls, 3 classes sampled
+[ 275s] admin /ads mobile/zh-TW done
+[ 275s] /ads desktop/en [main] 8 controls, 8 classes sampled
+[ 279s] admin /finance mobile/zh-TW done
+[ 280s] /finance desktop/en [main] 3 controls, 3 classes sampled
+[ 282s] admin /design desktop/zh-TW done
+[ 283s] /design mobile/zh-TW [main] 9 controls, 9 classes sampled
+[ 284s] admin /finance desktop/en done
+[ 284s] /settings desktop/zh-TW [main] 14 controls, 14 classes sampled
+[ 286s] admin /ads desktop/en done
+[ 286s] /team desktop/zh-TW [main] 5 controls, 5 classes sampled
+[ 292s] admin /team desktop/zh-TW done
+[ 293s] /team mobile/zh-TW [main] 4 controls, 4 classes sampled
+[ 298s] admin /team mobile/zh-TW done
+[ 298s] admin /design mobile/zh-TW done
+[ 298s] /team desktop/en [main] 5 controls, 5 classes sampled
+[ 298s] /design desktop/en [main] 9 controls, 9 classes sampled
+[ 304s] admin /team desktop/en done
+[ 305s] /billing desktop/zh-TW [main] 2 controls, 2 classes sampled
+[ 308s] admin /billing desktop/zh-TW done
+[ 308s] /billing mobile/zh-TW [main] 2 controls, 2 classes sampled
+[ 309s] admin /settings desktop/zh-TW done
+[ 310s] /settings mobile/zh-TW [main] 14 controls, 14 classes sampled
+[ 311s] admin /billing mobile/zh-TW done
+[ 312s] /billing desktop/en [main] 2 controls, 2 classes sampled
+[ 313s] admin /design desktop/en done
+[ 314s] /invite/[token] desktop/zh-TW [main] 2 controls, 2 classes sampled
+[ 314s] admin /billing desktop/en done
+[ 315s] /reset desktop/zh-TW [main] 3 controls, 3 classes sampled
+[ 316s] admin /invite/[token] desktop/zh-TW done
+[ 317s] /invite/[token] mobile/zh-TW [main] 2 controls, 2 classes sampled
+[ 319s] admin /reset desktop/zh-TW done
+[ 319s] admin /invite/[token] mobile/zh-TW done
+[ 319s] /reset mobile/zh-TW [main] 3 controls, 3 classes sampled
+[ 320s] /invite/[token] desktop/en [main] 2 controls, 2 classes sampled
+[ 322s] admin /invite/[token] desktop/en done
+[ 323s] /signup desktop/zh-TW [main] 3 controls, 3 classes sampled
+[ 323s] admin /reset mobile/zh-TW done
+[ 324s] /reset desktop/en [main] 3 controls, 3 classes sampled
+[ 327s] admin /signup desktop/zh-TW done
+[ 327s] /signup mobile/zh-TW [main] 3 controls, 3 classes sampled
+[ 327s] admin /reset desktop/en done
+[ 331s] admin /signup mobile/zh-TW done
+[ 331s] /signup desktop/en [main] 3 controls, 3 classes sampled
+[ 335s] admin /settings mobile/zh-TW done
+[ 335s] admin /signup desktop/en done
+[ 335s] /settings desktop/en [main] 14 controls, 14 classes sampled
+[ 360s] admin /settings desktop/en done
+[ 369s] /cart desktop/zh-TW [main] 5 controls, 5 classes sampled
+[ 369s] /cart mobile/zh-TW [main] 5 controls, 5 classes sampled
+[ 370s] /cart desktop/en [main] 5 controls, 5 classes sampled
+[ 408s] /checkout desktop/en [main] 4 controls, 4 classes sampled
+[ 408s] /checkout desktop/zh-TW [main] 4 controls, 4 classes sampled
+[ 408s] /checkout mobile/zh-TW [main] 4 controls, 4 classes sampled
+[ 429s] /orders/[orderID] desktop/zh-TW [main] 1 controls, 1 classes sampled
+[ 429s] /orders/[orderID] mobile/zh-TW [main] 1 controls, 1 classes sampled
+[ 436s] /orders/[orderID] desktop/en [main] 1 controls, 1 classes sampled
+[ 438s] / desktop/zh-TW [chrome] 23 controls, 23 classes sampled
+[ 438s] / mobile/zh-TW [chrome] 21 controls, 21 classes sampled
+[ 445s] / desktop/en [chrome] 23 controls, 23 classes sampled
+[ 500s] / mobile/zh-TW [main] 7 controls, 7 classes sampled
+[ 502s] / desktop/en [main] 7 controls, 7 classes sampled
+[ 503s] / desktop/zh-TW [main] 7 controls, 7 classes sampled
+[ 513s] /products desktop/zh-TW [main] 9 controls, 9 classes sampled
+[ 518s] /products mobile/zh-TW [main] 9 controls, 9 classes sampled
+[ 520s] /products desktop/en [main] 9 controls, 9 classes sampled
+[ 538s] /collections desktop/zh-TW [main] 3 controls, 3 classes sampled
+[ 544s] /collections/[slug] desktop/zh-TW [main] 9 controls, 9 classes sampled
+[ 550s] /collections mobile/zh-TW [main] 3 controls, 3 classes sampled
+[ 553s] /collections desktop/en [main] 3 controls, 3 classes sampled
+[ 564s] /collections/[slug] mobile/zh-TW [main] 9 controls, 9 classes sampled
+[ 570s] /collections/[slug] desktop/en [main] 9 controls, 9 classes sampled
+[ 589s] /products/[slug] desktop/zh-TW [main] 9 controls, 9 classes sampled
+[ 593s] /products/[slug] mobile/zh-TW [main] 9 controls, 9 classes sampled
+[ 595s] /products/[slug] desktop/en [main] 9 controls, 9 classes sampled
+[ 604s] /search desktop/zh-TW [main] 7 controls, 7 classes sampled
+[ 608s] /search mobile/zh-TW [main] 7 controls, 7 classes sampled
+[ 618s] /search desktop/en [main] 7 controls, 7 classes sampled
+[ 620s] /orders/lookup desktop/zh-TW [main] 1 controls, 1 classes sampled
+[ 622s] /order-link desktop/zh-TW [main] 1 controls, 1 classes sampled
+[ 631s] /claim desktop/zh-TW [main] 1 controls, 1 classes sampled
+[ 631s] /orders/lookup mobile/zh-TW [main] 1 controls, 1 classes sampled
+[ 633s] /orders/lookup desktop/en [main] 1 controls, 1 classes sampled
+[ 633s] /legal/anti-fraud desktop/zh-TW [main] 2 controls, 2 classes sampled
+[ 634s] /order-link mobile/zh-TW [main] 1 controls, 1 classes sampled
+[ 635s] /order-link desktop/en [main] 1 controls, 1 classes sampled
+[ 637s] /claim desktop/en [main] 1 controls, 1 classes sampled
+[ 637s] /legal/[slug] desktop/zh-TW [main] 0 controls, 0 classes sampled
+[ 638s] /privacy desktop/zh-TW [main] 5 controls, 5 classes sampled
+[ 639s] /legal/anti-fraud desktop/en [main] 2 controls, 2 classes sampled
+[ 642s] /legal/[slug] desktop/en [main] 0 controls, 0 classes sampled
+[ 642s] /privacy desktop/en [main] 5 controls, 5 classes sampled
+[ 643s] /claim mobile/zh-TW [main] 1 controls, 1 classes sampled
+[ 644s] /legal/anti-fraud mobile/zh-TW [main] 2 controls, 2 classes sampled
+[ 648s] /legal/[slug] mobile/zh-TW [main] 0 controls, 0 classes sampled
+[ 648s] /privacy mobile/zh-TW [main] 5 controls, 5 classes sampled
+[ 667s] /data-deletion desktop/zh-TW [main] 4 controls, 4 classes sampled
+[ 669s] /data-deletion mobile/zh-TW [main] 4 controls, 4 classes sampled
+[ 671s] /data-deletion desktop/en [main] 4 controls, 4 classes sampled
+[ 676s] /pages/[slug] desktop/zh-TW [main] 1 controls, 1 classes sampled
+[ 691s] /pages/[slug] desktop/en [main] 1 controls, 1 classes sampled
+[ 698s] /pages/[slug] mobile/zh-TW [main] 1 controls, 1 classes sampled
+[ 701s] J1 catalog response 200 /api/stores/26dc24c3-776c-4adf-943d-128f1b2b0eec/warehouses: {"items":[{"id":"f1238ddb-7737-4521-8dd7-21aecab84a0e","name":"t04-5e91716e6a9c"}],"next_cursor":""}
+[ 701s] J1 catalog response 200 /api/stores/26dc24c3-776c-4adf-943d-128f1b2b0eec/products/document: {"id":"504edb53-7729-4cbc-af0a-04f7990febe7","name":"Sweep Journey Tee 50cb4b6c5bff","description":"Synthetic click-sweep journey product","status":"draft","version":1,"slug":"sweep-journey-tee-50cb4b6c5bff","seo_title":"","seo_description":"","options":[{"name":"Size","values":["S","M"]}],"skus":[{"id":"d798a855-7ba4-43ac-a1c6-2f60fd2a5fa1","product_id":"504edb53-7729-4cbc-af0a-04f7990febe7","code":"sweep-journey-tee-50cb4b6c5bff","status":"active","currency":"TWD","price_minor":45000,"version":1,"weight_grams":0,"length_mm":0,"width_mm":0,"height_mm":0,"origin_country":"","customs_name":"","hs_candidate":"","option_values":["S"],"title":"S","compare_at_minor":null,"inventory_tracked":true},{"id":"49b7dd0e-4ab2-433a-aaad-e76aeb71a6f4","product_id":"504edb53-7729-4cbc-af0a-04f7990febe7","code":"sweep-journey-tee-50cb4b6c5bff-2","status":"active","currency":"TWD","price_minor":48000,"version":1,"weight_grams":0,"length_mm":0,"width_mm":0,"height_mm":0,"origin_country":"","customs_name":"","hs_candidate":"","option_values":["M"],"title":"M","compare_at_minor":null,"inventory_tracked":true}]}
+[ 702s] J1 catalog response 200 /api/stores/26dc24c3-776c-4adf-943d-128f1b2b0eec/warehouses: {"items":[{"id":"f1238ddb-7737-4521-8dd7-21aecab84a0e","name":"t04-5e91716e6a9c"}],"next_cursor":""}
+[ 707s] 120 page/viewport/locale units opened (32 with a page-load failure), 983 control clicks (960 pass, 3 fail, 20 skip), 18 journey steps (18 pass, 0 fail); failures: known 0, new 35; stale known-defect entries 0.
+NEW FAIL storefront /collections desktop/en [main] "S Sweep wear 2 products" click-error: click failed: locator.click: Timeout 4000ms exceeded. Call log: [2m - waiting for locator('#main').first().locator('button, a[href], [role="button"], [role="tab"], [role="menuitem"], [role="switch"], [role="checkbox"], [role="radio"], [role="link"], select, summary, input[ (output/ui-click-sweep/screenshots/r00947.png)
+NEW FAIL storefront /collections/[slug] mobile/zh-TW [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /zh-TW/collections/sweep-home ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) ; http5xx: 503 GET /zh-TW/collections/sweep-wear ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unava (output/ui-click-sweep/screenshots/r00948.png)
+NEW FAIL storefront /collections/[slug] mobile/zh-TW [main] "首頁" no-effect: no visible change within 3 s (output/ui-click-sweep/screenshots/r00949.png)
+NEW FAIL storefront /collections/[slug] desktop/en [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /_next/static/chunks/3tjd_epang8sh.js ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) ; console-error: Refused to execute script from 'https://buyer.example/_next/static/chunks/3tjd_epang8sh.js' because its MIME type ('') is  (output/ui-click-sweep/screenshots/r00951.png)
+NEW FAIL storefront /products/[slug] desktop/zh-TW [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /api/buyer/cart ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) (output/ui-click-sweep/screenshots/r00970.png)
+NEW FAIL storefront /products/[slug] mobile/zh-TW [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /zh-TW/collections/sweep-home ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) ; http5xx: 503 GET /zh-TW/collections/sweep-wear ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unava (output/ui-click-sweep/screenshots/r00978.png)
+NEW FAIL storefront /products/[slug] desktop/en [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /_next/static/chunks/3tjd_epang8sh.js ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) ; console-error: Refused to execute script from 'https://buyer.example/_next/static/chunks/3tjd_epang8sh.js' because its MIME type ('') is  (output/ui-click-sweep/screenshots/r00982.png)
+NEW FAIL storefront /search desktop/zh-TW [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /api/buyer/cart ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) (output/ui-click-sweep/screenshots/r01000.png)
+NEW FAIL storefront /search mobile/zh-TW [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /zh-TW/collections/sweep-home ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) ; http5xx: 503 GET /zh-TW/collections/sweep-wear ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unava (output/ui-click-sweep/screenshots/r01007.png)
+NEW FAIL storefront /search desktop/en [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /_next/static/chunks/3tjd_epang8sh.js ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) ; console-error: Refused to execute script from 'https://buyer.example/_next/static/chunks/3tjd_epang8sh.js' because its MIME type ('') is  (output/ui-click-sweep/screenshots/r01017.png)
+NEW FAIL storefront /orders/lookup desktop/zh-TW [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /api/buyer/cart ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) (output/ui-click-sweep/screenshots/r01021.png)
+NEW FAIL storefront /order-link desktop/zh-TW [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /api/buyer/cart ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) (output/ui-click-sweep/screenshots/r01025.png)
+NEW FAIL storefront /claim desktop/zh-TW [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /api/buyer/cart ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) (output/ui-click-sweep/screenshots/r01039.png)
+NEW FAIL storefront /orders/lookup mobile/zh-TW [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /zh-TW/collections/sweep-home ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) ; http5xx: 503 GET /zh-TW/collections/sweep-wear ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unava (output/ui-click-sweep/screenshots/r01040.png)
+NEW FAIL storefront /orders/lookup desktop/en [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /_next/static/chunks/3tjd_epang8sh.js ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) ; console-error: Refused to execute script from 'https://buyer.example/_next/static/chunks/3tjd_epang8sh.js' because its MIME type ('') is  (output/ui-click-sweep/screenshots/r01043.png)
+NEW FAIL storefront /legal/anti-fraud desktop/zh-TW [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /api/buyer/cart ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) (output/ui-click-sweep/screenshots/r01044.png)
+NEW FAIL storefront /order-link mobile/zh-TW [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /zh-TW/collections/sweep-home ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) ; http5xx: 503 GET /zh-TW/collections/sweep-wear ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unava (output/ui-click-sweep/screenshots/r01046.png)
+NEW FAIL storefront /order-link desktop/en [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /_next/static/chunks/3tjd_epang8sh.js ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) ; console-error: Refused to execute script from 'https://buyer.example/_next/static/chunks/3tjd_epang8sh.js' because its MIME type ('') is  (output/ui-click-sweep/screenshots/r01049.png)
+NEW FAIL storefront /claim desktop/en [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /_next/static/chunks/3tjd_epang8sh.js ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) ; console-error: Refused to execute script from 'https://buyer.example/_next/static/chunks/3tjd_epang8sh.js' because its MIME type ('') is  (output/ui-click-sweep/screenshots/r01052.png)
+NEW FAIL storefront /legal/[slug] desktop/zh-TW [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /api/buyer/cart ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) (output/ui-click-sweep/screenshots/r01054.png)
+NEW FAIL storefront /privacy desktop/zh-TW [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /api/buyer/cart ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) (output/ui-click-sweep/screenshots/r01055.png)
+NEW FAIL storefront /legal/anti-fraud desktop/en [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /_next/static/chunks/3tjd_epang8sh.js ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) ; console-error: Refused to execute script from 'https://buyer.example/_next/static/chunks/3tjd_epang8sh.js' because its MIME type ('') is  (output/ui-click-sweep/screenshots/r01057.png)
+NEW FAIL storefront /legal/[slug] desktop/en [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /_next/static/chunks/3tjd_epang8sh.js ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) ; console-error: Refused to execute script from 'https://buyer.example/_next/static/chunks/3tjd_epang8sh.js' because its MIME type ('') is  (output/ui-click-sweep/screenshots/r01061.png)
+NEW FAIL storefront /privacy desktop/en [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /_next/static/chunks/3tjd_epang8sh.js ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) ; console-error: Refused to execute script from 'https://buyer.example/_next/static/chunks/3tjd_epang8sh.js' because its MIME type ('') is  (output/ui-click-sweep/screenshots/r01062.png)
+NEW FAIL storefront /claim mobile/zh-TW [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /zh-TW/collections/sweep-home ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) ; http5xx: 503 GET /zh-TW/collections/sweep-wear ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unava (output/ui-click-sweep/screenshots/r01063.png)
+NEW FAIL storefront /legal/anti-fraud mobile/zh-TW [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /zh-TW/collections/sweep-home ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) ; http5xx: 503 GET /zh-TW/collections/sweep-wear ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unava (output/ui-click-sweep/screenshots/r01067.png)
+NEW FAIL storefront /legal/[slug] mobile/zh-TW [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /zh-TW/collections/sweep-home ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) ; http5xx: 503 GET /zh-TW/collections/sweep-wear ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unava (output/ui-click-sweep/screenshots/r01070.png)
+NEW FAIL storefront /privacy mobile/zh-TW [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /zh-TW/collections/sweep-home ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) ; http5xx: 503 GET /zh-TW/collections/sweep-wear ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unava (output/ui-click-sweep/screenshots/r01071.png)
+NEW FAIL storefront /data-deletion desktop/zh-TW [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /api/buyer/cart ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) (output/ui-click-sweep/screenshots/r01080.png)
+NEW FAIL storefront /data-deletion mobile/zh-TW [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /zh-TW/collections/sweep-home ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) ; http5xx: 503 GET /zh-TW/collections/sweep-wear ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unava (output/ui-click-sweep/screenshots/r01084.png)
+NEW FAIL storefront /data-deletion desktop/en [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /_next/static/chunks/3tjd_epang8sh.js ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) ; console-error: Refused to execute script from 'https://buyer.example/_next/static/chunks/3tjd_epang8sh.js' because its MIME type ('') is  (output/ui-click-sweep/screenshots/r01087.png)
+NEW FAIL storefront /pages/[slug] desktop/zh-TW [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /api/buyer/cart ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) (output/ui-click-sweep/screenshots/r01094.png)
+NEW FAIL storefront /pages/[slug] desktop/zh-TW [main] "首頁" no-effect: no visible change within 3 s (output/ui-click-sweep/screenshots/r01097.png)
+NEW FAIL storefront /pages/[slug] desktop/en [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /_next/static/chunks/3tjd_epang8sh.js ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) ; console-error: Refused to execute script from 'https://buyer.example/_next/static/chunks/3tjd_epang8sh.js' because its MIME type ('') is  (output/ui-click-sweep/screenshots/r01100.png)
+NEW FAIL storefront /pages/[slug] mobile/zh-TW [page] "(page load)" http5xx: HTTP 200 | http5xx: 503 GET /zh-TW/collections/sweep-home ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unavailable) ; http5xx: 503 GET /zh-TW/collections/sweep-wear ; console-error: Failed to load resource: the server responded with a status of 503 (Service Unava (output/ui-click-sweep/screenshots/r01102.png)

@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-04T03:10:58+08:00",
+  "title": "Design System: DaWan Live public platform",
+  "extensions": {
+    "colorMeta": {
+      "canvas": { "role": "neutral", "displayName": "White canvas" },
+      "ink": { "role": "neutral", "displayName": "Slate ink" },
+      "action": { "role": "primary", "displayName": "Action orange" },
+      "focus": { "role": "primary", "displayName": "Burnt orange focus" }
+    },
+    "breakpoints": [{ "name": "compact", "value": "1000px" }, { "name": "stacked", "value": "680px" }],
+    "shadows": [],
+    "motion": []
+  },
+  "components": [
+    {
+      "name": "Primary link", "kind": "button", "refersTo": "primary-link",
+      "description": "Navigation to the configured merchant application; not a form submission.",
+      "html": "<a class=\"ds-primary\" href=\"#main\">Create merchant account</a>",
+      "css": ".ds-primary{display:inline-flex;align-items:center;justify-content:center;background:#ff6a00;color:#1f2937;font:750 20px system-ui;text-decoration:none;min-height:56px;padding:10px 32px;border-radius:8px}.ds-primary:focus-visible{outline:3px solid #a84300;outline-offset:4px}"
+    },
+    {
+      "name": "Language navigation", "kind": "nav",
+      "description": "Current document preserved across the three public locales.",
+      "html": "<nav class=\"ds-languages\"><a href=\"#main\" aria-current=\"page\">繁體中文</a><a href=\"#main\">简体中文</a><a href=\"#main\">EN</a></nav>",
+      "css": ".ds-languages{display:flex;gap:4px;font:16px system-ui}.ds-languages a{display:grid;place-items:center;min-width:44px;min-height:44px;padding:4px 10px;color:#1f2937;text-decoration:none}.ds-languages [aria-current]{color:#a84300;font-weight:750;box-shadow:inset 0 -2px #ff6a00}.ds-languages a:focus-visible{outline:3px solid #a84300;outline-offset:4px}"
+    },
+    {
+      "name": "Static workflow panel", "kind": "card",
+      "description": "Noninteractive labelled product illustration, not an available integration control.",
+      "html": "<section class=\"ds-preview\"><strong>Merchant storefront</strong><p>Product illustration</p></section>",
+      "css": ".ds-preview{border:1px solid #dde3e9;border-radius:8px;padding:16px;color:#1f2937;background:#fff;font:16px/1.6 system-ui}"
+    }
+  ],
+  "narrative": {
+    "northStar": "From comments to orders",
+    "overview": "This public surface explains a product workflow, then lets visitors inspect the operator's policies and open the separate merchant application. It extends the approved A composition without replacing the root ledger/W0 design system. The brief and actual rendered public pages, not the generated comp's incidental data, define this boundary.",
+    "keyCharacteristics": ["White canvas", "Slate type", "Orange actions", "Flat workflow examples", "Complete operator attribution"],
+    "rules": [{ "name": "The Contrast Rule", "body": "Orange primary links use dark text; footer focus indicators use a lighter outline against slate.", "section": "colors" }],
+    "dos": ["Do preserve locale choice, visible keyboard focus and 44px touch targets.", "Do keep diagram examples separate from connection status and commercial claims.", "Do read hosts and public contact details from configuration."],
+    "donts": ["Don't transfer this marketing composition into the merchant storefront or W0 shell.", "Don't treat demo names, prices, status labels or the garment as reusable product evidence."]
+  }
+}

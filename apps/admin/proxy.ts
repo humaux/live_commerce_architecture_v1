@@ -7,10 +7,13 @@ import {
 import { validOrdersQuery } from "./lib/orders-request";
 import { validStudioQuery } from "./lib/studio-request";
 import { claimsCollection, claimsSubpath } from "./lib/claims-request";
+import { platformRoute, requestHostname } from "./lib/company";
 
 const uuid = "[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}";
 const orderPath = new RegExp(`^/api/stores/${uuid}/orders(?:/${uuid})?$`);
-const studioPath = new RegExp(`^/api/stores/${uuid}/live-sessions(?:/${uuid}(?:/(?:rehearsal/(?:start|stop)|input(?:/(?:start|token|prepared))?|${claimsSubpath}))?)?$`);
+const studioPath = new RegExp(
+  `^/api/stores/${uuid}/live-sessions(?:/${uuid}(?:/(?:rehearsal/(?:start|stop)|input(?:/(?:start|token|prepared))?|${claimsSubpath}))?)?$`,
+);
 const storePrefix = new RegExp(`^/api/stores/${uuid}/`);
 const studioPrefix = new RegExp(`^/api/stores/${uuid}/live-sessions(?:/|$)`);
 
@@ -18,6 +21,31 @@ const studioPrefix = new RegExp(`^/api/stores/${uuid}/live-sessions(?:/|$)`);
 // Other requests still receive only the existing locale routing preference.
 export function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
+  // The edge supplies the real Host unchanged; forwarded headers are never authority.
+  const publicHost = requestHostname(process.env.LC_PLATFORM_HOST);
+  const actualHost = requestHostname(request.headers.get("host"));
+  // www redirects only at the edge. Never let its casing/dot/port variants
+  // fall through to the admin entry if the internal listener is contacted.
+  if (publicHost && actualHost === `www.${publicHost}`)
+    return new NextResponse(null, { status: 404 });
+  if (publicHost && actualHost === publicHost) {
+    if (request.method !== "GET" && request.method !== "HEAD")
+      return new NextResponse(null, { status: 404 });
+    const route = platformRoute(path);
+    const special = path === "/robots.txt" || path === "/sitemap.xml";
+    if (!route && !special) return new NextResponse(null, { status: 404 });
+    // Like production admin (compose), the public-site harness listens on localhost
+    // so Next can relativise its normalised origin instead of self-proxying.
+    const target = request.nextUrl.clone();
+    target.pathname = special
+      ? `/site${path}`
+      : `/site/${route!.locale}/${route!.page}`;
+    return NextResponse.rewrite(target);
+  }
+  if (path === "/site" || path.startsWith("/site/"))
+    return new NextResponse(null, { status: 404 });
+  // Before the public-site matcher was added this path bypassed locale routing.
+  if (path === "/robots.txt") return NextResponse.next();
   if (path.startsWith("/api/")) {
     let decoded: string;
     try {
@@ -43,19 +71,53 @@ export function proxy(request: NextRequest) {
         );
       }
     }
-    if (studioPrefix.test(decoded) && (path !== decoded || !studioPath.test(decoded))) {
+    if (
+      studioPrefix.test(decoded) &&
+      (path !== decoded || !studioPath.test(decoded))
+    ) {
       const requestID = crypto.randomUUID().replaceAll("-", "");
       return NextResponse.json(
-        { code: "not_found", message: "Resource not found.", request_id: requestID, retryable: false, details: {} },
-        { status: 404, headers: { "Cache-Control": "private, no-store", "X-Request-ID": requestID } },
+        {
+          code: "not_found",
+          message: "Resource not found.",
+          request_id: requestID,
+          retryable: false,
+          details: {},
+        },
+        {
+          status: 404,
+          headers: {
+            "Cache-Control": "private, no-store",
+            "X-Request-ID": requestID,
+          },
+        },
       );
     }
-    if (studioPath.test(decoded) && !validStudioQuery(request.url, request.method === "GET" &&
-      (decoded.endsWith("/live-sessions") || claimsCollection(decoded.replace(storePrefix, ""))))) {
+    if (
+      studioPath.test(decoded) &&
+      !validStudioQuery(
+        request.url,
+        request.method === "GET" &&
+          (decoded.endsWith("/live-sessions") ||
+            claimsCollection(decoded.replace(storePrefix, ""))),
+      )
+    ) {
       const requestID = crypto.randomUUID().replaceAll("-", "");
       return NextResponse.json(
-        { code: "invalid_request", message: "Invalid request.", request_id: requestID, retryable: false, details: {} },
-        { status: 422, headers: { "Cache-Control": "private, no-store", "X-Request-ID": requestID } },
+        {
+          code: "invalid_request",
+          message: "Invalid request.",
+          request_id: requestID,
+          retryable: false,
+          details: {},
+        },
+        {
+          status: 422,
+          headers: {
+            "Cache-Control": "private, no-store",
+            "X-Request-ID": requestID,
+          },
+        },
       );
     }
     return NextResponse.next();
@@ -80,7 +142,13 @@ export function proxy(request: NextRequest) {
   // A <Link> prefetch is not the person choosing a language. Its response must not rewrite the preference: a dashboard's /en prefetches
   // landing a few ms after a navigation to /zh-TW/... flipped the cookie back to en, and the OAuth callback (which reads it) then
   // returned the merchant to /en/settings.
-  const prefetch = request.headers.has("next-router-prefetch") || /prefetch/i.test(request.headers.get("sec-purpose") ?? request.headers.get("purpose") ?? "");
+  const prefetch =
+    request.headers.has("next-router-prefetch") ||
+    /prefetch/i.test(
+      request.headers.get("sec-purpose") ??
+        request.headers.get("purpose") ??
+        "",
+    );
   if (!prefetch)
     response.cookies.set("commerce_locale", locale, {
       sameSite: "lax",
@@ -104,5 +172,6 @@ export const config = {
     // Only the store BFF has guards here. Matching /api/auth/* or /api/onboarding/* made Next buffer
     // their request bodies before the route's streaming size limit ran (identity-mock red run).
     "/api/stores/:path*",
+    "/robots.txt",
   ],
 };

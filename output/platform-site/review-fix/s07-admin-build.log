@@ -1,0 +1,2 @@
+2026-10-03T19:56:24Z build-images.sh INFO: building lc-platform-review-admin:ps-fix-20261004
+deploy/scripts/build-images.sh: line 103: net_args[@]: unbound variable

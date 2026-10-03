@@ -1,0 +1,19 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: The input did not match the regular expression /DaWan Live/. Input:
+
+'404\nThis page could not be found.'
+
+    at matrix (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/tests/admin/platform-runner.mjs:86:14)
+    at async file:///Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/tests/admin/platform-runner.mjs:111:5 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: '404\nThis page could not be found.',
+  expected: /DaWan Live/,
+  operator: 'match',
+  diff: 'simple'
+}
+
+Node.js v24.15.0

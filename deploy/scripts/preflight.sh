@@ -74,7 +74,7 @@ prod = env_name == "production"
 # ---- P01 compose.env ------------------------------------------------------------------------
 required = ["COMPOSE_PROJECT_NAME", "COMPOSE_PROFILES", "IMAGE_TAG", "LC_IMAGE_PREFIX", "LC_ENVIRONMENT",
             "LC_BIND_ADDR", "LC_HTTP_PORT", "LC_HTTPS_PORT", "LC_ADMIN_HOST", "LC_STORE_HOST",
-            "LC_API_HOST", "LC_HOOKS_HOST", "LC_ENV_DIR", "LC_SECRETS_DIR", "LC_SECRETS_GID",
+            "LC_API_HOST", "LC_HOOKS_HOST", "LC_PLATFORM_HOST", "LC_COMPANY_CONTACT_EMAIL", "LC_ENV_DIR", "LC_SECRETS_DIR", "LC_SECRETS_GID",
             "LC_BACKUP_DIR", "LC_PG_HOST", "LC_PG_SSLMODE", "LC_IDENTITY_ENABLED", "LC_ONBOARDING_ENABLED",
             "LC_BUYER_ENABLED", "LC_BUYER_SESSION_TTL_SECONDS"]
 for k in required:
@@ -83,7 +83,7 @@ rec("P01", env_name in ("production", "staging", "smoke"), "LC_ENVIRONMENT")
 rec("P01", re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,62}", E.get("COMPOSE_PROJECT_NAME", "")) is not None, "COMPOSE_PROJECT_NAME")
 rec("P01", "CHANGE_ME" not in E.get("IMAGE_TAG", "CHANGE_ME") and re.fullmatch(r"[A-Za-z0-9._-]{1,64}", E.get("IMAGE_TAG", "")) is not None, "IMAGE_TAG")
 fqdn = re.compile(r"(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{0,61}[a-z0-9]")
-hosts = {k: E.get(k, "") for k in ("LC_ADMIN_HOST", "LC_STORE_HOST", "LC_API_HOST", "LC_HOOKS_HOST")}
+hosts = {k: E.get(k, "") for k in ("LC_ADMIN_HOST", "LC_STORE_HOST", "LC_API_HOST", "LC_HOOKS_HOST", "LC_PLATFORM_HOST")}
 for k, h in hosts.items():
     ok = fqdn.fullmatch(h) is not None
     if not smoke:
@@ -91,7 +91,10 @@ for k, h in hosts.items():
     if prod:
         ok = ok and not (h == "example.com" or h.endswith(".example.com") or h.endswith(".example"))
     rec("P01", ok, k)
-rec("P01", len(set(hosts.values())) == 4, "LC_*_HOST distinct")
+rec("P01", len(set(hosts.values())) == 5 and "www." + E.get("LC_PLATFORM_HOST", "") not in hosts.values(), "LC_*_HOST distinct (including public www)")
+email = E.get("LC_COMPANY_CONTACT_EMAIL", "")
+rec("P01", len(email) <= 254 and re.fullmatch(r"[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", email) is not None, "LC_COMPANY_CONTACT_EMAIL")
+rec("P01", re.fullmatch(r"[A-Za-z0-9_-]{0,256}", E.get("LC_META_DOMAIN_VERIFICATION", "")) is not None, "LC_META_DOMAIN_VERIFICATION")
 
 # ---- P02 secrets dir/file modes ----------------------------------------------------------------
 sdir = E.get("LC_SECRETS_DIR", "")
@@ -594,7 +597,7 @@ if ((online)); then
     echo "P14 SKIP smoke uses *.localhost"
   else
     mine=" $(hostname -I 2>/dev/null) ${LC_PUBLIC_IP:-} "
-    for h in LC_ADMIN_HOST LC_STORE_HOST LC_API_HOST LC_HOOKS_HOST; do
+    for h in LC_ADMIN_HOST LC_STORE_HOST LC_API_HOST LC_HOOKS_HOST LC_PLATFORM_HOST; do
       addrs=$(getent ahosts "${!h}" 2>/dev/null | awk '{print $1}' | sort -u | tr '\n' ' ')
       hit=0
       for a in $addrs; do [[ "$mine" == *" $a "* ]] && hit=1; done

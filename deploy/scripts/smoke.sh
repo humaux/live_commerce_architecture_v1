@@ -168,7 +168,7 @@ PY
     img="${LC_IMAGE_PREFIX:-lc}-caddy:${SMOKE_TAG:-none}"
     docker image inspect "$img" >/dev/null 2>&1 ||
       img=$(sed -n 's/^ARG CADDY_IMAGE=//p' "$LC_DEPLOY_DIR/docker/caddy.Dockerfile")
-    local cargs=(--rm --network none -e LC_ADMIN_HOST=admin.localhost -e LC_STORE_HOST=shop.localhost
+    local cargs=(--rm --network none -e LC_PLATFORM_HOST=platform.localhost -e LC_ADMIN_HOST=admin.localhost -e LC_STORE_HOST=shop.localhost
       -e LC_API_HOST=api.localhost -e LC_HOOKS_HOST=hooks.localhost -e ACME_EMAIL=smoke@example.com
       -v "$LC_DEPLOY_DIR/caddy/Caddyfile:/etc/caddy/Caddyfile:ro")
     if runc S05 docker run "${cargs[@]}" "$img" caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile &&
@@ -225,6 +225,8 @@ LC_BIND_ADDR=127.0.0.1
 LC_HTTP_PORT=${LC_SMOKE_HTTP_PORT:-80}
 LC_HTTPS_PORT=${LC_SMOKE_HTTPS_PORT:-443}
 LC_ADMIN_HOST=admin.localhost
+LC_PLATFORM_HOST=platform.localhost
+LC_COMPANY_CONTACT_EMAIL=contact@example.invalid
 LC_STORE_HOST=shop.localhost
 LC_API_HOST=api.localhost
 LC_HOOKS_HOST=hooks.localhost
@@ -286,6 +288,9 @@ full_cases() {
   PROJECT=${PROJECT//[^a-z0-9_-]/-}
 
   # S07 build
+  # The runtime fixture is created after S08; admin's build-time public config
+  # must already use those same synthetic values, never an operator's live env.
+  export LC_PLATFORM_HOST=platform.localhost LC_ADMIN_HOST=admin.localhost LC_COMPANY_CONTACT_EMAIL=contact@example.invalid
   rc=0
   runc S07 "$LC_SCRIPTS_DIR/build-images.sh" --tag "$SMOKE_TAG" --evidence "$EV" || rc=$?
   if ((rc == 3)); then

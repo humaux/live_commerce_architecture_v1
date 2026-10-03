@@ -94,8 +94,13 @@ default)
 esac
 
 build() { # name dockerfile context
+  local public_args=()
+  if [[ "$1" == admin ]]; then
+    : "${LC_PLATFORM_HOST:?set LC_PLATFORM_HOST}" "${LC_ADMIN_HOST:?set LC_ADMIN_HOST}" "${LC_COMPANY_CONTACT_EMAIL:?set LC_COMPANY_CONTACT_EMAIL}"
+    public_args=(--build-arg LC_PLATFORM_HOST --build-arg LC_ADMIN_HOST --build-arg LC_COMPANY_CONTACT_EMAIL)
+  fi
   lc_info "building $prefix-$1:$tag${net_args[*]:+ (${net_args[*]})}"
-  docker build --pull=false "${net_args[@]}" -f "$2" -t "$prefix-$1:$tag" --build-arg "GIT_SHA=$sha" "${proxy_args[@]}" "$3"
+  docker build --pull=false "${net_args[@]}" -f "$2" -t "$prefix-$1:$tag" --build-arg "GIT_SHA=$sha" "${proxy_args[@]}" "${public_args[@]}" "$3"
 }
 for img in "${only[@]}"; do
   case "$img" in

@@ -11,6 +11,16 @@
 # Usage: bash scripts/dev/check-gates.sh   (exit 1 on any finding)
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
+# PS1: changing platform domains must be configuration-only. Include all UI/legal
+# source files, never build output, documentation examples, or test fixtures.
+if rg -ni 'xgdwm[.]com' apps/admin apps/storefront --glob '*.{ts,tsx,js,jsx,mjs,md,mdx,html,css}' --glob '!**/node_modules/**' --glob '!**/.next/**' --glob '!**/tests/**'; then
+  echo 'check-gates: PS1 hard-coded platform domain in UI/legal source' >&2
+  exit 1
+else
+  rg_exit=$?
+  # 1 means no match; a missing tool or unreadable source must fail closed.
+  [[ "$rg_exit" == 1 ]] || exit "$rg_exit"
+fi
 # UI W0 G-UI1 registry/parity and G-UI3/G-UI5 architecture ratchet.
 node --test --experimental-strip-types tests/admin/shell-registry.test.ts tests/admin/shell-architecture.test.mjs
 node scripts/dev/ui-architecture-gate.mjs

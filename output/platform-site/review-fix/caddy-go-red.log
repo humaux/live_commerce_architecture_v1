@@ -1,0 +1,7 @@
+--- FAIL: TestCaddyfileLoadsOnPinnedCaddy (0.90s)
+    caddyfile_test.go:46: caddy validate failed (exit exit status 1):
+        {"level":"info","ts":1791056993.9857006,"msg":"using config from stdin"}
+        Error: adapting config using caddyfile: server block without any key is global configuration, and if used, it must be first
+FAIL
+FAIL	livecommerce/internal/storefrontdomains	1.268s
+FAIL
