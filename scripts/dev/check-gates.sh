@@ -13,13 +13,17 @@ set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 # PS1: changing platform domains must be configuration-only. Include all UI/legal
 # source files, never build output, documentation examples, or test fixtures.
-if rg -ni 'xgdwm[.]com' apps/admin apps/storefront --glob '*.{ts,tsx,js,jsx,mjs,md,mdx,html,css}' --glob '!**/node_modules/**' --glob '!**/.next/**' --glob '!**/tests/**'; then
+# git grep (always present here, unlike rg) over tracked files only: build output and node_modules are never tracked.
+if git grep -niI -e 'xgdwm[.]com' -- 'apps/admin/*.ts' 'apps/admin/*.tsx' 'apps/admin/*.js' 'apps/admin/*.jsx' 'apps/admin/*.mjs' \
+  'apps/admin/*.md' 'apps/admin/*.mdx' 'apps/admin/*.html' 'apps/admin/*.css' 'apps/storefront/*.ts' 'apps/storefront/*.tsx' \
+  'apps/storefront/*.js' 'apps/storefront/*.jsx' 'apps/storefront/*.mjs' 'apps/storefront/*.md' 'apps/storefront/*.mdx' \
+  'apps/storefront/*.html' 'apps/storefront/*.css' ':!**/tests/**'; then
   echo 'check-gates: PS1 hard-coded platform domain in UI/legal source' >&2
   exit 1
 else
-  rg_exit=$?
-  # 1 means no match; a missing tool or unreadable source must fail closed.
-  [[ "$rg_exit" == 1 ]] || exit "$rg_exit"
+  grep_exit=$?
+  # 1 means no match; any other status (bad pathspec, unreadable repo) must fail closed.
+  [[ "$grep_exit" == 1 ]] || exit "$grep_exit"
 fi
 # UI W0 G-UI1 registry/parity and G-UI3/G-UI5 architecture ratchet.
 node --test --experimental-strip-types tests/admin/shell-registry.test.ts tests/admin/shell-architecture.test.mjs
