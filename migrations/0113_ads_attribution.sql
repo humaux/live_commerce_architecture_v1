@@ -78,7 +78,7 @@ REVOKE ALL ON FUNCTION claims.order_comment_posts(uuid,uuid,uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION claims.order_comment_posts(uuid,uuid,uuid) TO commerce_checkout_writer;
 COMMENT ON FUNCTION claims.order_comment_posts(uuid,uuid,uuid) IS 'internal/attribution R6: checkout definer only, exact accepted claim version to intake comment to post; never session fan-out or actor data.';
 
-GRANT USAGE ON SCHEMA ads,customers TO commerce_checkout_writer;
+GRANT USAGE ON SCHEMA ads TO commerce_checkout_writer;
 CREATE FUNCTION ads.attribution_match(p_tenant uuid,p_store uuid,p_draft uuid,p_post text,p_at timestamptz)
 RETURNS TABLE(draft_id uuid) LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
  SELECT d.id FROM ads.campaign_drafts d
@@ -97,7 +97,8 @@ ALTER FUNCTION ads.attribution_match(uuid,uuid,uuid,text,timestamptz) OWNER TO c
 REVOKE ALL ON FUNCTION ads.attribution_match(uuid,uuid,uuid,text,timestamptz) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION ads.attribution_match(uuid,uuid,uuid,text,timestamptz) TO commerce_checkout_writer;
 COMMENT ON FUNCTION ads.attribution_match(uuid,uuid,uuid,text,timestamptz) IS 'internal/attribution: checkout-only same-store draft existence or actual successful boost interval, no inferred paid-comment identity.';
-GRANT EXECUTE ON FUNCTION customers.consent_allows(uuid,uuid,uuid,text,text) TO commerce_checkout_writer;
+-- Consent remains inside the ads-owned eligibility helper below. Checkout
+-- receives only its boolean result, never direct customers-domain authority.
 
 CREATE FUNCTION ads.capi_ip_needed(p_tenant uuid,p_store uuid,p_owner uuid,p_attempt uuid) RETURNS boolean
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
