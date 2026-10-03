@@ -6,7 +6,13 @@
 // (internal/httpapi/collections.go, catalog:read + inventory:read; internal/catalog.ListProductSummaries). Cover bytes:
 // GET .../products/{id}/images/{image} (existing photo preview). Read lifecycle (session fence, cleared when hidden or
 // signed out) is useGuardedRead. The wide per-warehouse view stays on the Inventory ledger, linked from the heading.
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Locale } from "@live-commerce/i18n";
@@ -34,6 +40,7 @@ import { displayTime } from "@/lib/orders-model";
 import { imageURL } from "@/lib/images-client";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { ProductPhoto } from "./ProductPhoto";
+import { ProductQuickEdit } from "./ProductQuickEdit";
 import { Icon } from "./Icon";
 import "./orders.css";
 import "./ProductAdmin.css";
@@ -58,7 +65,6 @@ export const editHref = (locale: Locale, store: string, id: string) =>
 
 export function ProductList({
   locale,
-  stores,
   store,
   q,
   status,
@@ -82,8 +88,12 @@ export function ProductList({
   const [draft, setDraft] = useState(q);
   const previous = useRef<string[]>([]);
   const [selected, setSelected] = useState<string[]>([]),
-    [filter, setFilter] = useState(""),
-    [sort, setSort] = useState("newest"),
+    [quick, setQuick] = useState<{
+      id: string;
+      field: "price" | "stock";
+      inline: boolean;
+      store: string;
+    } | null>(null),
     [results, setResults] = useState<BulkResult[]>([]),
     [collections, setCollections] = useState<Collection[] | null>(null),
     [collection, setCollection] = useState(""),
@@ -121,6 +131,7 @@ export function ProductList({
   const sid = store?.id ?? "";
   useEffect(() => {
     setSelected([]);
+    setQuick(null);
     setResults([]);
     setCollections(null);
     setCollection("");
@@ -132,29 +143,8 @@ export function ProductList({
     pc.uncertain,
     pc.listRecoveryRequired,
   );
-  const locked = write.busy || write.message?.kind === "uncertain";
-  const rows = (page?.items ?? [])
-    .filter((row) =>
-      filter === "soldOut"
-        ? row.inventory_tracked && row.sku_count > 0 && row.available <= 0
-        : filter === "lowStock"
-          ? row.inventory_tracked &&
-            row.sku_count > 0 &&
-            row.available >= 0 &&
-            row.available <= 5
-          : filter === "noImage"
-            ? !row.cover_image_id
-            : filter === "noKeyword"
-              ? !row.keyword
-              : true,
-    )
-    .sort((a, b) =>
-      sort === "priceAsc"
-        ? (a.price_min_minor ?? Infinity) - (b.price_min_minor ?? Infinity)
-        : sort === "stockAsc"
-          ? a.available - b.available
-          : Date.parse(b.updated_at) - Date.parse(a.updated_at),
-    );
+  const locked = write.busy || write.message?.kind === "uncertain" || !!quick;
+  const rows = page?.items ?? [];
   async function bulkStatus(target: ProductStatus) {
     if (locked || !selected.length) return;
     if (
@@ -289,26 +279,6 @@ export function ProductList({
           ))}
         </div>
         <form className="orders-controls" role="search" onSubmit={search}>
-          {stores.length > 1 && (
-            <label>
-              {l.store}
-              <select
-                data-testid="store-selector"
-                disabled={locked}
-                value={sid}
-                onChange={(e) => {
-                  previous.current = [];
-                  go(e.target.value, "", "all", "");
-                }}
-              >
-                {stores.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
           <label className="product-search">
             {l.search}
             <input
@@ -356,33 +326,6 @@ export function ProductList({
         )}
         {read.status === "ready" && page && (
           <>
-            <div className="pe-filters">
-              {(["soldOut", "lowStock", "noImage", "noKeyword"] as const).map(
-                (f) => (
-                  <button
-                    key={f}
-                    type="button"
-                    aria-pressed={filter === f}
-                    onClick={() => {
-                      setFilter(filter === f ? "" : f);
-                      setSelected([]);
-                    }}
-                  >
-                    {pc[f]}
-                  </button>
-                ),
-              )}
-              <select
-                aria-label={pc.newest}
-                value={sort}
-                onChange={(e) => setSort(e.target.value)}
-              >
-                <option value="newest">{pc.newest}</option>
-                <option value="priceAsc">{pc.priceAsc}</option>
-                <option value="stockAsc">{pc.stockAsc}</option>
-              </select>
-            </div>
-            <p className="pe-hint">{pc.currentPage}</p>
             {selected.length > 0 && (
               <div className="pe-batch" data-testid="product-batch">
                 <strong>
@@ -529,13 +472,41 @@ export function ProductList({
                         locale={locale}
                         store={sid}
                         selected={selected.includes(row.id)}
-                        locked={locked}
+                        locked={locked || !!quick}
                         toggle={() =>
                           setSelected((now) =>
                             now.includes(row.id)
                               ? now.filter((id) => id !== row.id)
                               : [...now, row.id].slice(0, 100),
                           )
+                        }
+                        quick={(field) =>
+                          setQuick({
+                            id: row.id,
+                            field,
+                            inline: row.sku_count === 1,
+                            store: sid,
+                          })
+                        }
+                        inlineField={
+                          quick?.inline && quick.id === row.id
+                            ? quick.field
+                            : undefined
+                        }
+                        inlineEditor={
+                          quick?.inline && quick.id === row.id ? (
+                            <ProductQuickEdit
+                              key={quick.id + quick.field}
+                              inline
+                              store={sid}
+                              id={quick.id}
+                              field={quick.field}
+                              locale={locale}
+                              boundary={read.boundary}
+                              refresh={read.refresh}
+                              close={() => setQuick(null)}
+                            />
+                          ) : null
                         }
                         duplicate={() => void duplicate(row)}
                       />
@@ -546,7 +517,7 @@ export function ProductList({
             )}
             {rows.length === 0 && (
               <p className="orders-message" role="status" aria-live="polite">
-                {q || status !== "all" || filter ? l.emptySearch : l.empty}
+                {q || status !== "all" ? l.emptySearch : l.empty}
               </p>
             )}
             <footer className="orders-pager">
@@ -580,6 +551,21 @@ export function ProductList({
           </>
         )}
       </div>
+      {quick &&
+        quick.store === sid &&
+        read.status === "ready" &&
+        !quick.inline && (
+          <ProductQuickEdit
+            key={sid + read.boundary + quick.id + quick.field}
+            store={sid}
+            id={quick.id}
+            field={quick.field}
+            locale={locale}
+            boundary={read.boundary}
+            refresh={read.refresh}
+            close={() => setQuick(null)}
+          />
+        )}
     </WorkspaceFrame>
   );
 }
@@ -592,6 +578,9 @@ function Row({
   locked,
   toggle,
   duplicate,
+  quick,
+  inlineField,
+  inlineEditor,
 }: {
   row: ProductSummary;
   locale: Locale;
@@ -600,6 +589,9 @@ function Row({
   locked: boolean;
   toggle: () => void;
   duplicate: () => void;
+  quick: (field: "price" | "stock") => void;
+  inlineField?: "price" | "stock";
+  inlineEditor?: ReactNode;
 }) {
   const c = catalogCopy[locale];
   const pc = productEditorCopy[locale];
@@ -655,7 +647,19 @@ function Row({
           {c.status[row.status]}
         </span>
       </td>
-      <td data-label={l.price}>{price}</td>
+      <td data-label={l.price}>
+        {price}
+        <button
+          type="button"
+          data-testid="quick-price"
+          disabled={locked || row.sku_count === 0}
+          aria-label={`${pc.editPrice}: ${row.name}`}
+          onClick={() => quick("price")}
+        >
+          ✎
+        </button>
+        {inlineField === "price" && inlineEditor}
+      </td>
       <td data-label={l.stock}>
         {row.sku_count === 0 ? (
           "—"
@@ -670,6 +674,16 @@ function Row({
         ) : (
           l.units(row.available)
         )}
+        <button
+          type="button"
+          data-testid="quick-stock"
+          disabled={locked || row.sku_count === 0}
+          aria-label={`${pc.editStock}: ${row.name}`}
+          onClick={() => quick("stock")}
+        >
+          ✎
+        </button>
+        {inlineField === "stock" && inlineEditor}
       </td>
       <td data-label={pc.updated}>{displayTime(locale, row.updated_at)}</td>
       <td>

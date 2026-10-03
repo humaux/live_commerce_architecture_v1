@@ -17,13 +17,14 @@ import {
   newRow,
   rowKey,
   syncMatrix,
-  safeEditProblem,
+  draftFromDetail,
   type DraftRow,
   type ProductDraft,
 } from "@/lib/product-document";
 import { useProductDocument } from "@/lib/use-product-document";
 import { productEditorCopy } from "@/lib/product-editor-copy";
 import { ProductDocumentMedia, type DraftPhoto } from "./ProductDocumentMedia";
+import { ProductPhotoManager } from "./ProductPhoto";
 import { ProductDocumentVariants } from "./ProductDocumentVariants";
 const emptyDraft = (): ProductDraft => ({
   name: "",
@@ -42,29 +43,7 @@ const emptyDraft = (): ProductDraft => ({
 });
 function initialDraft(detail: ProductDetail | null): ProductDraft {
   if (!detail) return emptyDraft();
-  const rows = detail.skus.map((s) => ({
-    ...newRow(s.option_values),
-    id: s.id,
-    price: fromMinor(s.price_minor, s.currency),
-    compare:
-      s.compare_at_minor === null
-        ? ""
-        : fromMinor(s.compare_at_minor, s.currency),
-    quantity: String(s.available),
-    code: s.code,
-    tracked: s.inventory_tracked,
-    max: s.max_per_order === null ? "" : String(s.max_per_order),
-  }));
-  return {
-    ...emptyDraft(),
-    name: detail.name,
-    description: detail.description,
-    slug: detail.slug,
-    seo_title: detail.seo_title,
-    seo_description: detail.seo_description,
-    axes: detail.options,
-    rows: detail.options.length ? syncMatrix(detail.options, rows) : rows,
-  };
+  return draftFromDetail(detail);
 }
 export function ProductDocumentForm({
   locale,
@@ -81,30 +60,31 @@ export function ProductDocumentForm({
 }) {
   const c = productEditorCopy[locale],
     sign = currencySign(store.currency),
-    write = useProductDocument(store.id, store.currency, boundary, c);
+    write = useProductDocument(store.id, store.currency, boundary, c, detail);
   const [draft, setDraft] = useState<ProductDraft>(() => initialDraft(detail)),
     [photos, setPhotos] = useState<DraftPhoto[]>([]),
     [collections, setCollections] = useState<Collection[]>([]),
     [warehouses, setWarehouses] = useState<{ id: string; name: string }[]>([]);
   const [collectionQuery, setCollectionQuery] = useState(""),
+    [targetStatus, setTargetStatus] = useState<"draft" | "active" | "archived">(
+      detail?.status ?? "draft",
+    ),
     [section, setSection] = useState("media"),
     [axisError, setAxisError] = useState("");
   const initial = useRef(JSON.stringify(initialDraft(detail))),
     urlPhotos = useRef<DraftPhoto[]>([]),
     rowArchive = useRef<DraftRow[]>([]);
-  const editBlocked = mode === "edit" && !!safeEditProblem(),
-    disabled =
-      editBlocked ||
-      !write.fenceReady ||
-      write.recoveryBlocked ||
-      write.busy ||
-      write.pending ||
-      !!write.done;
+  const disabled =
+    !write.fenceReady ||
+    write.recoveryBlocked ||
+    write.busy ||
+    write.pending ||
+    !!write.done;
   const dirty =
-    !editBlocked &&
     !write.done &&
     (JSON.stringify(draft) !== initial.current ||
-      photos.length > 0 ||
+      (!!detail && targetStatus !== (write.savedDetail ?? detail).status) ||
+      photos.some((p) => !!p.file) ||
       write.pending);
   const sections = [
     "media",
@@ -115,6 +95,28 @@ export function ProductDocumentForm({
     "shipping",
     "seo",
   ] as const;
+  useEffect(() => {
+    if (write.savedDetail) {
+      const fresh = draftFromDetail(write.savedDetail);
+      setDraft(fresh);
+      setTargetStatus(write.savedDetail.status);
+      initial.current = JSON.stringify(fresh);
+      rowArchive.current = [];
+    }
+  }, [write.savedDetail]);
+  const refreshPhotos = () => {
+    if (detail)
+      void listImages(store.id, detail.id).then((r) => {
+        if (r.items)
+          setPhotos(
+            r.items.map((p) => ({
+              key: p.id,
+              id: p.id,
+              url: imageURL(store.id, detail.id, p.id),
+            })),
+          );
+      });
+  };
   useEffect(() => {
     urlPhotos.current = photos;
   }, [photos]);
@@ -210,7 +212,12 @@ export function ProductDocumentForm({
       rowArchive.current = [...draft.rows, ...rowArchive.current].filter(
         (r) => !rows.some((n) => rowKey(n) === rowKey(r)),
       );
-      change({ axes, rows });
+      change({
+        axes,
+        rows: detail
+          ? rows.map((r) => (r.id ? r : { ...r, quantity: r.quantity || "0" }))
+          : rows,
+      });
       setAxisError("");
     } catch {
       change({ axes });
@@ -252,17 +259,33 @@ export function ProductDocumentForm({
       ?.focus({ preventScroll: true });
     setSection(id);
   }
-  const save = (publish: boolean) => {
+  const save = (publish: boolean, requestedStatus = targetStatus) => {
     if (!disabled) {
       if (axisError) write.setMessage(axisError);
       else if (
+        mode === "create" &&
         draft.rows.some((r) => r.tracked && Number(r.quantity) > 0) &&
         warehouses.length !== 1 &&
         !draft.warehouse
       ) {
         write.setMessage(c.chooseWarehouse);
         focus("shipping");
-      } else write.save(draft, photos, publish);
+      } else if (
+        detail &&
+        (rowArchive.current.some((r) => r.id) ||
+          draft.rows.some((r) => r.id && !r.active)) &&
+        !window.confirm(c.archiveRows)
+      )
+        return;
+      else
+        write.save(
+          draft,
+          photos,
+          publish || (mode === "edit" && requestedStatus === "active"),
+          mode === "edit" && requestedStatus !== "archived"
+            ? requestedStatus
+            : undefined,
+        );
     }
   };
   return (
@@ -335,25 +358,50 @@ export function ProductDocumentForm({
         </section>
       </aside>
       <div className="pe-fields">
-        {editBlocked && (
-          <p
-            className="orders-message"
-            role="alert"
-            data-testid="document-edit-blocked"
-          >
-            {c.editBlocked}
-          </p>
+        {detail ? (
+          <section id="media" className="product-section pe-media">
+            <ProductPhotoManager
+              locale={locale}
+              store={store.id}
+              productID={detail.id}
+              productName={draft.name}
+              code={draft.rows[0]?.code ?? ""}
+              disabled={disabled}
+              onChanged={refreshPhotos}
+            />
+          </section>
+        ) : (
+          <ProductDocumentMedia
+            photos={photos}
+            setPhotos={setPhotos}
+            disabled={disabled}
+            c={c}
+            fail={write.setMessage}
+          />
         )}
-        <ProductDocumentMedia
-          photos={photos}
-          setPhotos={setPhotos}
-          disabled={disabled}
-          c={c}
-          fail={write.setMessage}
-        />
         <fieldset disabled={disabled} className="pe-fieldset">
           <section id="basics" className="product-section product-form">
             <h2>{c.basics}</h2>
+            {detail && (
+              <label>
+                {c.visibility}
+                <select
+                  data-testid="product-status"
+                  value={targetStatus}
+                  onChange={(e) =>
+                    setTargetStatus(e.target.value as "draft" | "active")
+                  }
+                >
+                  <option value="draft">{c.draftStatus}</option>
+                  <option value="active">{c.activeStatus}</option>
+                  {targetStatus === "archived" && (
+                    <option value="archived" disabled>
+                      {c.archive}
+                    </option>
+                  )}
+                </select>
+              </label>
+            )}
             <label>
               {c.name}
               <input
@@ -374,7 +422,7 @@ export function ProductDocumentForm({
                 onChange={(e) => change({ description: e.target.value })}
               />
             </label>
-            {!draft.axes.length && (
+            {draft.rows.length <= 1 && !draft.axes.length && (
               <label>
                 {c.keyword}
                 <input
@@ -385,13 +433,11 @@ export function ProductDocumentForm({
                     setRow({ keyword: e.target.value.toUpperCase() })
                   }
                 />
-                <small>
-                  {editBlocked ? c.unavailableKeyword : c.keywordHelp}
-                </small>
+                <small>{c.keywordHelp}</small>
               </label>
             )}
           </section>
-          {!draft.axes.length && (
+          {draft.rows.length <= 1 && !draft.axes.length && (
             <section id="pricing" className="product-section product-form">
               <h2>{c.pricing}</h2>
               <div className="pe-two">
@@ -436,9 +482,10 @@ export function ProductDocumentForm({
                 </label>
               </div>
               <label>
-                {row.tracked ? c.quantity : c.max}
+                {row.tracked ? (detail ? c.targetQty : c.quantity) : c.max}
                 <input
                   data-testid={row.tracked ? "product-quantity" : "product-max"}
+                  disabled={!!detail && row.tracked && !detail.warehouse_id}
                   inputMode="numeric"
                   value={row.tracked ? row.quantity : row.max}
                   onChange={(e) =>
@@ -450,12 +497,21 @@ export function ProductDocumentForm({
                   }
                 />
               </label>
+              {detail && !detail.warehouse_id && (
+                <p className="pe-hint">
+                  {c.warehouse_required}{" "}
+                  <Link href={`/${locale}/inventory?store=${store.id}`}>
+                    {c.inventoryLink}
+                  </Link>
+                </p>
+              )}
               <details>
                 <summary>{c.advanced}</summary>
                 <label>
                   {c.code}
                   <input
                     value={row.code}
+                    disabled={!!row.id}
                     maxLength={64}
                     placeholder={c.generated}
                     onChange={(e) => setRow({ code: e.target.value })}
@@ -472,8 +528,22 @@ export function ProductDocumentForm({
             setAxes={setAxes}
             setRows={(rows) => change({ rows })}
             disabled={disabled}
+            inventoryDisabled={!!detail && !detail.warehouse_id}
           />
           {axisError && <p role="alert">{axisError}</p>}
+          {rowArchive.current.filter((r) => r.id).length > 0 && (
+            <p role="status">
+              {c.archiveRows}: {rowArchive.current.filter((r) => r.id).length}
+            </p>
+          )}
+          {detail && draft.axes.length > 0 && !detail.warehouse_id && (
+            <p>
+              {c.warehouse_required}{" "}
+              <Link href={`/${locale}/inventory?store=${store.id}`}>
+                {c.inventoryLink}
+              </Link>
+            </p>
+          )}
           <section id="collections" className="product-section product-form">
             <h2>{c.collections}</h2>
             <label>
@@ -516,36 +586,66 @@ export function ProductDocumentForm({
           <details id="shipping" className="product-section">
             <summary>{c.shipping}</summary>
             <p className="pe-hint">{c.shippingHelp}</p>
-            <div className="product-form pe-two">
-              {(["weight", "length", "width", "height"] as const).map((key) => (
-                <label key={key}>
-                  {c[key]}
-                  <input
-                    value={draft[key]}
-                    inputMode="decimal"
-                    onChange={(e) => change({ [key]: e.target.value })}
-                  />
-                </label>
-              ))}
-              {warehouses.length > 1 && (
-                <label>
-                  {c.warehouse}
-                  <select
-                    value={draft.warehouse}
-                    onChange={(e) => change({ warehouse: e.target.value })}
-                  >
-                    <option value="">{c.chooseWarehouse}</option>
-                    {warehouses.map((w) => (
-                      <option key={w.id} value={w.id}>
-                        {w.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-            </div>
+            {detail ? (
+              draft.rows.map((sku, i) => (
+                <div key={sku.id ?? i} className="product-form pe-two">
+                  <h3>{sku.values.join(" / ") || sku.code}</h3>
+                  {(["weight", "length", "width", "height"] as const).map(
+                    (key) => (
+                      <label key={key}>
+                        {c[key]}
+                        <input
+                          data-testid={`shipping-${key}-${i}`}
+                          inputMode="decimal"
+                          value={sku[key] ?? ""}
+                          onChange={(e) =>
+                            change({
+                              rows: draft.rows.map((r, n) =>
+                                n === i ? { ...r, [key]: e.target.value } : r,
+                              ),
+                            })
+                          }
+                        />
+                      </label>
+                    ),
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="product-form pe-two">
+                {(["weight", "length", "width", "height"] as const).map(
+                  (key) => (
+                    <label key={key}>
+                      {c[key]}
+                      <input
+                        value={draft[key]}
+                        inputMode="decimal"
+                        onChange={(e) => change({ [key]: e.target.value })}
+                      />
+                    </label>
+                  ),
+                )}
+                {warehouses.length > 1 && (
+                  <label>
+                    {c.warehouse}
+                    <select
+                      data-testid="product-warehouse"
+                      value={draft.warehouse}
+                      onChange={(e) => change({ warehouse: e.target.value })}
+                    >
+                      <option value="">{c.chooseWarehouse}</option>
+                      {warehouses.map((w) => (
+                        <option key={w.id} value={w.id}>
+                          {w.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+              </div>
+            )}
           </details>
-          <details id="seo" className="product-section">
+          <details id="seo" className="product-section product-seo">
             <summary>{c.seo}</summary>
             <div className="product-form">
               <label>
@@ -566,7 +666,9 @@ export function ProductDocumentForm({
                   maxLength={70}
                   onChange={(e) => change({ seo_title: e.target.value })}
                 />
-                <small>{Array.from(draft.seo_title).length} / 70</small>
+                <small className="product-count">
+                  {Array.from(draft.seo_title).length} / 70
+                </small>
               </label>
               <label>
                 {c.seoDescription}
@@ -577,7 +679,9 @@ export function ProductDocumentForm({
                   maxLength={160}
                   onChange={(e) => change({ seo_description: e.target.value })}
                 />
-                <small>{Array.from(draft.seo_description).length} / 160</small>
+                <small className="product-count">
+                  {Array.from(draft.seo_description).length} / 160
+                </small>
               </label>
             </div>
           </details>
@@ -662,11 +766,21 @@ export function ProductDocumentForm({
         <div>
           <button
             type="submit"
-            data-testid="product-create"
+            data-testid={mode === "create" ? "product-create" : "product-save"}
             disabled={disabled}
           >
             {mode === "create" ? c.saveDraft : c.save}
           </button>
+          {(write.savedDetail ?? detail)?.status === "active" && (
+            <button
+              type="button"
+              disabled={disabled}
+              data-testid="product-unpublish"
+              onClick={() => save(false, "draft")}
+            >
+              {c.unpublish}
+            </button>
+          )}
           <button
             className="product-primary"
             type="button"

@@ -2,8 +2,10 @@
 import {
   cleanAxes,
   toMinor,
+  fromMinor,
   variantMatrix,
   type OptionAxis,
+  type ProductDetail,
 } from "./catalog-v2-model.ts";
 
 export type DraftRow = {
@@ -17,6 +19,10 @@ export type DraftRow = {
   code: string;
   keyword: string;
   active: boolean;
+  weight?: string;
+  length?: string;
+  width?: string;
+  height?: string;
 };
 export type ProductDraft = {
   name: string;
@@ -169,7 +175,151 @@ export function createDocument(draft: ProductDraft, currency: string) {
 // 39bb8ec full-replace edit would clear keywords not returned by GET, overwrite per-SKU dimensions,
 // and treats target_qty=0 as no adjustment. No client-side guess or legacy second writer is safe.
 // Remove this guard only when the backend edit/read contract is corrected and PE14 proves preservation.
-export const safeEditProblem = () => "document_readback_incomplete" as const;
+export const safeEditProblem = (detail?: ProductDetail) =>
+  detail ? "" : "document_readback_incomplete";
+
+export function draftFromDetail(detail: ProductDetail): ProductDraft {
+  return {
+    name: detail.name,
+    description: detail.description,
+    slug: detail.slug,
+    seo_title: detail.seo_title,
+    seo_description: detail.seo_description,
+    axes: detail.options,
+    collections: detail.collection_ids,
+    warehouse: detail.warehouse_id ?? "",
+    weight: "",
+    length: "",
+    width: "",
+    height: "",
+    rows: detail.skus.map((s) => ({
+      ...newRow(s.option_values),
+      id: s.id,
+      code: s.code,
+      price: fromMinor(s.price_minor, s.currency),
+      compare:
+        s.compare_at_minor === null
+          ? ""
+          : fromMinor(s.compare_at_minor, s.currency),
+      tracked: s.inventory_tracked,
+      max: s.max_per_order === null ? "" : String(s.max_per_order),
+      quantity: s.on_hand === null ? "" : String(s.on_hand),
+      keyword: s.keyword,
+      weight: String(s.weight_grams),
+      length: String(s.length_mm / 10),
+      width: String(s.width_mm / 10),
+      height: String(s.height_mm / 10),
+    })),
+  };
+}
+
+// §g: compare with the authoritative read; omit unchanged fields, never reconstruct a full replacement.
+export function editDocument(
+  draft: ProductDraft,
+  detail: ProductDetail,
+  currency: string,
+  status?: "draft" | "active",
+) {
+  const before = draftFromDetail(detail),
+    patch: Record<string, unknown> = { expected_version: detail.version };
+  for (const key of [
+    "name",
+    "description",
+    "slug",
+    "seo_title",
+    "seo_description",
+  ] as const)
+    if (draft[key] !== before[key]) patch[key] = draft[key];
+  if (status && status !== detail.status) patch.status = status;
+  if (JSON.stringify(draft.axes) !== JSON.stringify(before.axes)) {
+    const cleaned = cleanAxes(draft.axes);
+    if (cleaned.error) throw new Error("invalid_options");
+    patch.options = cleaned.axes;
+  }
+  if (
+    JSON.stringify([...draft.collections].sort()) !==
+    JSON.stringify([...before.collections].sort())
+  )
+    patch.collection_ids = draft.collections;
+  const rows: Record<string, unknown>[] = [];
+  for (const row of draft.rows) {
+    const old = before.rows.find((s) => s.id === row.id);
+    if (!old) {
+      const serialized = createDocument(
+        {
+          ...draft,
+          rows: [row],
+          weight: row.weight ?? "",
+          length: row.length ?? "",
+          width: row.width ?? "",
+          height: row.height ?? "",
+        },
+        currency,
+      );
+      rows.push({
+        ...serialized.skus[0],
+        weight_grams: serialized.weight_grams,
+        length_mm: serialized.length_mm,
+        width_mm: serialized.width_mm,
+        height_mm: serialized.height_mm,
+      });
+      continue;
+    }
+    const change: Record<string, unknown> = { id: row.id };
+    for (const [field, wire] of [
+      ["price", "price_minor"],
+      ["compare", "compare_at_minor"],
+    ] as const)
+      if (row[field] !== old[field]) {
+        const amount =
+          field === "compare" && !row.compare.trim()
+            ? null
+            : toMinor(row[field], currency);
+        if (amount === null && !(field === "compare" && !row.compare.trim()))
+          throw new Error("invalid_price");
+        change[wire] = amount;
+      }
+    if (row.keyword !== old.keyword)
+      change.keyword = row.keyword.trim().toUpperCase();
+    if (row.active !== old.active) change.active = row.active;
+    if (JSON.stringify(row.values) !== JSON.stringify(old.values))
+      change.option_values = row.values;
+    const stock: Record<string, unknown> = {};
+    if (row.tracked !== old.tracked)
+      stock.mode = row.tracked ? "tracked" : "untracked";
+    if (row.tracked && row.quantity !== old.quantity) {
+      if (!detail.warehouse_id) throw new Error("warehouse_required");
+      stock.target_qty = count(row.quantity);
+    }
+    if (!row.tracked && (row.max !== old.max || row.tracked !== old.tracked)) {
+      const max = count(row.max, 999);
+      if (max < 1) throw new Error("invalid_stock");
+      stock.max_per_order = max;
+    }
+    if (Object.keys(stock).length) change.stock = stock;
+    for (const [field, wire] of [
+      ["weight", "weight_grams"],
+      ["length", "length_mm"],
+      ["width", "width_mm"],
+      ["height", "height_mm"],
+    ] as const)
+      if (row[field] !== old[field]) {
+        const value = row[field] ?? "";
+        if (field === "weight") change[wire] = count(value || "0");
+        else {
+          if (!/^\d+(\.\d)?$/.test(value || "0") || Number(value) > 100000)
+            throw new Error("invalid_dimensions");
+          change[wire] = Math.round(Number(value) * 10);
+        }
+      }
+    if (Object.keys(change).length > 1) rows.push(change);
+  }
+  for (const old of before.rows)
+    if (!draft.rows.some((r) => r.id === old.id))
+      rows.push({ id: old.id, active: false });
+  if (rows.length) patch.skus = rows;
+  return patch;
+}
 
 export type BulkResult = { id: string; status?: string; error?: string };
 export function parseBulk(value: unknown): BulkResult[] {

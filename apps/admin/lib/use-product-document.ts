@@ -6,6 +6,7 @@ import { parseCreated, type ProductDetail } from "./catalog-v2-model";
 import { listImages, validImageList } from "./images-client";
 import {
   createDocument,
+  editDocument,
   parseBulk,
   type ProductDraft,
 } from "./product-document";
@@ -13,6 +14,8 @@ import { uploadDocumentImage } from "./product-media-client";
 import type { ProductEditorCopy } from "./product-editor-copy";
 import type { DraftPhoto } from "../components/ProductDocumentMedia";
 type Workflow = {
+  edit?: boolean;
+  expectedStatus?: string;
   create: Command;
   photos: DraftPhoto[];
   publish: boolean;
@@ -28,7 +31,10 @@ export function useProductDocument(
   currency: string,
   boundary: string,
   c: ProductEditorCopy,
+  detail?: ProductDetail | null,
 ) {
+  const [savedDetail, setSavedDetail] = useState<ProductDetail | null>(null);
+  const baseline = savedDetail ?? detail;
   const [busy, setBusy] = useState(false),
     [pending, setPending] = useState(false),
     [done, setDone] = useState<ProductDetail | null>(null),
@@ -37,7 +43,7 @@ export function useProductDocument(
     running = useRef(false);
   // A receipt fence, NOT a draft cache: no form values, media, credentials or personal data.
   // Losing the page must not turn an UNKNOWN creation into permission to create it again.
-  const fenceKey = `product-document-pending:${store}`;
+  const fenceKey = `product-document-pending:${store}${detail ? `:${detail.id}` : ""}`;
   const [fenceReady, setFenceReady] = useState(false),
     [recoveryBlocked, setRecoveryBlocked] = useState(false);
   useEffect(() => {
@@ -136,10 +142,14 @@ export function useProductDocument(
       );
       if (
         confirmed.id !== op.id ||
-        confirmed.status !== (op.publish ? "active" : "draft")
+        confirmed.status !==
+          (op.expectedStatus ?? (op.publish ? "active" : "draft"))
       )
         throw new Error("unconfirmed");
-      setDone(confirmed);
+      if (op.edit) {
+        setSavedDetail(confirmed);
+        workflow.current = null;
+      } else setDone(confirmed);
       sessionStorage.removeItem(fenceKey);
       setPending(false);
       setMessage(op.publish ? c.published : c.saved);
@@ -150,7 +160,12 @@ export function useProductDocument(
       setBusy(false);
     }
   }
-  function save(draft: ProductDraft, photos: DraftPhoto[], publish: boolean) {
+  function save(
+    draft: ProductDraft,
+    photos: DraftPhoto[],
+    publish: boolean,
+    status?: "draft" | "active",
+  ) {
     if (
       !fenceReady ||
       recoveryBlocked ||
@@ -160,7 +175,7 @@ export function useProductDocument(
       running.current
     )
       return;
-    if (publish && !photos.length) {
+    if (publish && baseline?.status !== "active" && !photos.length) {
       setMessage(c.imageRequired);
       return;
     }
@@ -169,11 +184,22 @@ export function useProductDocument(
       return;
     }
     try {
-      const body = createDocument(draft, currency);
+      const target = publish ? "active" : status;
+      const body = baseline
+        ? editDocument(draft, baseline, currency, target)
+        : createDocument(draft, currency);
+      if (baseline && Object.keys(body).length === 1) {
+        setMessage(c.noChanges);
+        return;
+      }
       workflow.current = {
-        create: command("POST", "products/document", body),
-        photos: [...photos],
-        publish,
+        create: baseline
+          ? command("PUT", `products/${baseline.id}/document`, body)
+          : command("POST", "products/document", body),
+        edit: !!baseline,
+        expectedStatus: baseline ? (target ?? baseline.status) : undefined,
+        photos: baseline ? [] : [...photos],
+        publish: baseline ? false : publish,
         uploaded: [],
       };
       sessionStorage.setItem(fenceKey, workflow.current.create.key);
@@ -189,6 +215,7 @@ export function useProductDocument(
     fenceReady,
     recoveryBlocked,
     done,
+    savedDetail,
     message,
     setMessage,
     save,

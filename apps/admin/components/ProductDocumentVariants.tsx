@@ -16,6 +16,7 @@ export function ProductDocumentVariants({
   disabled,
   c,
   sign,
+  inventoryDisabled = false,
 }: {
   axes: OptionAxis[];
   rows: DraftRow[];
@@ -24,6 +25,7 @@ export function ProductDocumentVariants({
   disabled: boolean;
   c: ProductEditorCopy;
   sign: string;
+  inventoryDisabled?: boolean;
 }) {
   const [bulk, setBulk] = useState<BulkField | null>(null),
     [notice, setNotice] = useState("");
@@ -91,7 +93,7 @@ export function ProductDocumentVariants({
       >
         {c.addAxis}
       </button>
-      {axes.length > 0 && (
+      {(axes.length > 0 || rows.length > 1) && (
         <>
           <p className="pe-hint">{rows.length} / 100</p>
           <div className="pe-bulk-controls">
@@ -104,7 +106,9 @@ export function ProductDocumentVariants({
                       triggers.current[field] = el;
                     }}
                     data-testid={`bulk-${field}`}
-                    disabled={disabled}
+                    disabled={
+                      disabled || (field === "quantity" && inventoryDisabled)
+                    }
                     aria-expanded={bulk === field}
                     onClick={() => setBulk(bulk === field ? null : field)}
                   >
@@ -150,6 +154,7 @@ export function ProductDocumentVariants({
               <div
                 className="pe-matrix-row"
                 data-testid={`matrix-row-${i}`}
+                data-sku-id={row.id}
                 key={JSON.stringify(row.values)}
               >
                 <div>
@@ -171,6 +176,7 @@ export function ProductDocumentVariants({
                   <span>{c.compare}</span>
                   <input
                     aria-label={`${c.compare} ${i + 1}`}
+                    data-testid={`matrix-compare-${i}`}
                     inputMode="decimal"
                     value={row.compare}
                     disabled={disabled}
@@ -190,12 +196,19 @@ export function ProductDocumentVariants({
                     {c.untracked}
                   </label>
                   <label>
-                    <span>{row.tracked ? c.quantity : c.max}</span>
+                    <span>
+                      {row.tracked
+                        ? row.id
+                          ? c.targetQty
+                          : c.quantity
+                        : c.max}
+                    </span>
                     <input
-                      aria-label={`${row.tracked ? c.quantity : c.max} ${i + 1}`}
+                      aria-label={`${row.tracked ? (row.id ? c.targetQty : c.quantity) : c.max} ${i + 1}`}
+                      data-testid={`matrix-quantity-${i}`}
                       inputMode="numeric"
                       value={row.tracked ? row.quantity : row.max}
-                      disabled={disabled}
+                      disabled={disabled || (row.tracked && inventoryDisabled)}
                       onChange={(e) =>
                         changeRow(
                           i,
@@ -211,10 +224,11 @@ export function ProductDocumentVariants({
                   <span>{c.code}</span>
                   <input
                     aria-label={`${c.code} ${i + 1}`}
+                    data-testid={`matrix-code-${i}`}
                     value={row.code}
+                    disabled={disabled || !!row.id}
                     maxLength={64}
                     placeholder={c.generated}
-                    disabled={disabled}
                     onChange={(e) => changeRow(i, { code: e.target.value })}
                   />
                 </label>
@@ -233,6 +247,7 @@ export function ProductDocumentVariants({
                 <label className="pe-check">
                   <input
                     aria-label={`${c.active} ${i + 1}`}
+                    data-testid={`matrix-active-${i}`}
                     type="checkbox"
                     checked={row.active}
                     disabled={disabled}

@@ -38,6 +38,9 @@ export type Variant = {
   available: number;
   inventory_tracked: boolean;
   max_per_order: number | null;
+  keyword: string;
+  on_hand: number | null;
+  committed: number | null;
   // Logistics/customs fields the SKU PATCH replaces as a whole: the editor must send them back unchanged.
   weight_grams: number;
   length_mm: number;
@@ -58,6 +61,8 @@ export type ProductDetail = {
   seo_description: string;
   options: OptionAxis[];
   skus: Variant[];
+  collection_ids: string[];
+  warehouse_id: string | null;
 };
 export type CollectionStatus = "active" | "hidden";
 export type CollectionSort = "manual" | "newest" | "price_asc" | "price_desc";
@@ -154,6 +159,7 @@ export function parseVariant(v: unknown): Variant {
     compare_at_minor: nullable(r.compare_at_minor, (x) => int(x, 1, maxMoney)), option_values: list(r.option_values, limits.axes, (x) => str(x, limits.axisValue, 1)),
     version: int(r.version, 1, Number.MAX_SAFE_INTEGER), currency: str(r.currency, 3, 3), available: int(r.available, -maxMoney, maxMoney),
     inventory_tracked: boolean(r.inventory_tracked), max_per_order: r.max_per_order == null ? null : int(r.max_per_order, 1, 999),
+    keyword: str(r.keyword, 16), on_hand: nullable(r.on_hand, (x) => int(x, 0, maxMoney)), committed: nullable(r.committed, (x) => int(x, 0, maxMoney)),
     weight_grams: int(r.weight_grams, 0, 1_000_000_000), length_mm: int(r.length_mm, 0, 1_000_000), width_mm: int(r.width_mm, 0, 1_000_000),
     height_mm: int(r.height_mm, 0, 1_000_000), origin_country: str(r.origin_country, 2), customs_name: str(r.customs_name, 240), hs_candidate: str(r.hs_candidate, 12),
   };
@@ -165,6 +171,7 @@ export function parseProduct(v: unknown): ProductDetail {
     status: oneOf(r.status, statuses), version: int(r.version, 1, Number.MAX_SAFE_INTEGER), seo_title: str(r.seo_title, limits.seoTitle),
     seo_description: str(r.seo_description, limits.seoDescription), options: list(r.options, limits.axes, parseAxis),
     skus: list(r.skus, 200, parseVariant),
+    collection_ids: list(r.collection_ids, 10000, uuid), warehouse_id: nullable(r.warehouse_id, uuid),
   };
 }
 // Create/patch/price/archive answers only need to be well-formed objects with an id: the editor re-reads after every write.

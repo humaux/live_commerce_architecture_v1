@@ -19,6 +19,8 @@
   display: grid;
   gap: 16px;
   min-width: 0;
+  max-height:calc(100dvh - 164px);
+  overflow-y:auto;
 }
 .pe-index nav,
 .pe-index section {
@@ -59,7 +61,7 @@
   background: none;
   text-align: left;
   padding: 4px;
-  min-height: 36px;
+  min-height: 44px;
 }
 .pe-index p {
   font-size: 13px;
@@ -97,6 +99,7 @@
 .pe-document textarea {
   caret-color: var(--pe-accent);
 }
+.pe-document textarea { font:inherit; padding:10px 12px; border:1px solid var(--pe-rule); border-radius:5px; color:inherit; }
 .pe-document input[type="checkbox"],
 .pe-document input[type="radio"] {
   min-height: 20px;
@@ -306,7 +309,7 @@
   position: fixed;
   bottom: 0;
   right: 0;
-  width: calc(100% - 214px);
+  width: calc(100% - var(--ui-rail-width, 220px));
   z-index: 12;
   padding: 12px 24px;
   box-sizing: border-box;
@@ -317,6 +320,9 @@
   justify-content: space-between;
   gap: 12px;
 }
+@media(max-width:1023px) { .pe-savebar { width:100%; } }
+.pe-quick.pe-quick-inline { position:static; margin:12px 0 0; width:100%; min-width:0; max-width:100%; max-height:none; border-radius:8px; padding:12px; }
+.pe-quick-inline .pe-two { grid-template-columns:1fr; }
 .pe-savebar > div {
   display: flex;
   gap: 10px;
@@ -395,6 +401,7 @@
 }
 .pe-catalog button {
   min-height: 44px;
+  min-width: 44px;
 }
 .pe-catalog .pe-row-actions {
   display: flex;
@@ -450,6 +457,8 @@
   }
   .pe-index {
     position: static;
+    max-height:none;
+    overflow:visible;
   }
   .pe-index nav {
     display: flex;
@@ -464,7 +473,7 @@
     display: none;
   }
   .pe-savebar {
-    width: calc(100% - 165px);
+    width: 100%;
   }
 }
 @media (max-width: 680px) {
@@ -519,3 +528,14 @@
     width: auto;
   }
 }
+.pe-quick { width: min(720px, calc(100vw - 32px)); max-height: 85dvh; border: 1px solid var(--border); border-radius: 8px; padding: 20px; color: inherit; }
+.pe-quick::backdrop { background: rgb(0 0 0 / 35%); }
+.pe-quick header, .pe-quick footer { display:flex; gap:12px; justify-content:space-between; align-items:center; }
+.pe-quick fieldset { margin:16px 0; border:1px solid var(--border); border-radius:8px; padding:16px; }
+.pe-quick label { display:grid; gap:6px; }
+.pe-quick button, .pe-quick input { min-height:44px; }
+.pe-quick input { width:100%; min-width:0; }
+.pe-quick .pe-check { display:flex; align-items:center; }
+.pe-quick .pe-check input { width:auto; }
+.pe-quick footer { justify-content:flex-end; }
+@media(max-width:600px) { .pe-quick { margin:auto 0 0; width:100%; max-width:100%; border-radius:12px 12px 0 0; } .pe-quick .pe-two {grid-template-columns:1fr;} }

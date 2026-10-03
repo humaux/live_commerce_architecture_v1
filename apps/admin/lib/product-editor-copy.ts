@@ -1,5 +1,9 @@
 import type { Locale } from "@live-commerce/i18n";
 const en = {
+  visibility: "Visibility", draftStatus: "Draft", activeStatus: "Active",
+  loading: "Loading product…", noChanges: "No changes to save.", targetQty: "Resulting on-hand", onHand: "On hand", committed: "Committed", delta: "Add / subtract", inventoryLink: "Open inventory",
+  warehouse_required: "Resulting inventory requires exactly one active warehouse. Adjust stock in Inventory for this store.",
+  insufficient: "Resulting stock cannot be below committed units. Check the current inventory and try again.",
   media: "Product images",
   basics: "Basic information",
   pricing: "Price & inventory",
@@ -104,7 +108,7 @@ const en = {
     "This keyword is already used. Choose a unique keyword for each variant.",
   amount_not_whole_twd: "TWD prices must be whole dollars.",
   live_window_open:
-    "This product belongs to an open live ordering window. Close the ordering window before changing its status.",
+    "This product belongs to an open live ordering window. Close the ordering window before unpublishing, archiving variants, or changing / clearing their keywords. Price changes are allowed.",
   not_found: "This product no longer exists or is not accessible.",
   editBlocked:
     "Editing is temporarily unavailable: the product API cannot yet preserve all existing keywords, collection membership and per-variant shipping fields. No changes will be sent.",
@@ -152,6 +156,10 @@ const en = {
 };
 type Copy = typeof en;
 const zhTW: Copy = {
+  visibility: "顯示狀態", draftStatus: "草稿", activeStatus: "上架中",
+  loading: "正在讀取商品…", noChanges: "沒有需要儲存的修改。", targetQty: "改後庫存", onHand: "現有庫存", committed: "已承諾數量", delta: "增加／減少", inventoryLink: "前往庫存",
+  warehouse_required: "改後庫存需要恰好一個啟用倉庫。請前往庫存頁按倉調整。",
+  insufficient: "改後庫存不能低於已承諾數量。請核對目前庫存後再試。",
   media: "商品圖片",
   basics: "基本資訊",
   pricing: "價格與庫存",
@@ -245,7 +253,7 @@ const zhTW: Copy = {
   keyword_taken: "關鍵字已被使用，請為每個規格選擇店內唯一的關鍵字。",
   amount_not_whole_twd: "台幣售價必須是整數元。",
   live_window_open:
-    "商品仍在開放收單的直播場次中，請先關閉收單窗口再更改狀態。",
+    "商品仍在開放收單的直播場次中。請先關閉收單窗口，再下架、封存規格或修改／清空關鍵字；改價仍可進行。",
   not_found: "商品已不存在，或你沒有存取權限。",
   editBlocked:
     "暫時無法編輯：商品 API 尚無法完整保留既有關鍵字、分類和各規格物流欄位，不會送出任何修改。",
@@ -290,6 +298,10 @@ const zhTW: Copy = {
   membership: "加入分類時會保留該分類原有商品。",
 };
 const zhCN: Copy = {
+  visibility: "显示状态", draftStatus: "草稿", activeStatus: "上架中",
+  loading: "正在读取商品…", noChanges: "没有需要保存的修改。", targetQty: "改后库存", onHand: "现有库存", committed: "已承诺数量", delta: "增加／减少", inventoryLink: "前往库存",
+  warehouse_required: "改后库存需要恰好一个启用仓库。请前往库存页按仓调整。",
+  insufficient: "改后库存不能低于已承诺数量。请核对目前库存后再试。",
   media: "商品图片",
   basics: "基本信息",
   pricing: "价格与库存",
@@ -383,7 +395,7 @@ const zhCN: Copy = {
   keyword_taken: "关键字已被使用，请为每个规格选择店内唯一的关键字。",
   amount_not_whole_twd: "台币售价必须是整数元。",
   live_window_open:
-    "商品仍在开放收单的直播场次中，请先关闭收单窗口再更改状态。",
+    "商品仍在开放收单的直播场次中。请先关闭收单窗口，再下架、封存规格或修改／清空关键字；改价仍可进行。",
   not_found: "商品已不存在，或你没有访问权限。",
   editBlocked:
     "暂时无法编辑：商品 API 尚无法完整保留已有关键字、分类和各规格物流字段，不会发送任何修改。",
