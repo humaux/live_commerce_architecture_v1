@@ -14,6 +14,8 @@ import {
 import { platformCopy } from "../../apps/admin/lib/platform-copy.ts";
 import { platformLegal } from "../../apps/admin/lib/platform-legal.ts";
 import { readFileSync } from "node:fs";
+import * as platformCompany from "../../apps/admin/lib/company.ts";
+import { metaConnectCopy } from "../../apps/admin/lib/meta-connect-copy.ts";
 
 const env = {
   NODE_ENV: "production",
@@ -21,6 +23,49 @@ const env = {
   LC_ADMIN_HOST: "admin.example.invalid",
   LC_COMPANY_CONTACT_EMAIL: "contact@example.invalid",
 };
+test("PS review: actual Host matching normalizes case, port and a terminal DNS dot, never forwarded authority", () => {
+  assert.equal(typeof platformCompany.requestHostname, "function");
+  for (const value of [
+    "PLATFORM.Example.Invalid",
+    "platform.example.invalid.",
+    "PLATFORM.EXAMPLE.INVALID.:443",
+  ])
+    assert.equal(
+      platformCompany.requestHostname(value),
+      "platform.example.invalid",
+    );
+  for (const value of [
+    null,
+    "",
+    "https://platform.example.invalid",
+    "platform.example.invalid@evil.invalid",
+    "platform.example.invalid:invalid",
+    "platform.example.invalid:99999",
+    "platform.example.invalid..",
+    "platform.example.invalid,evil.invalid",
+  ])
+    assert.equal(platformCompany.requestHostname(value), null);
+});
+test("PS review: all privacy/terms disclose actual Messenger and Instagram processing; deletion uses exact UI labels", () => {
+  for (const locale of platformLocales) {
+    for (const page of ["privacy", "terms"] as const) {
+      const copy = platformLegal[locale][page]
+        .map(([, text]) => text)
+        .join(" ");
+      assert.ok(copy.includes("Messenger"), `${locale}/${page}: Messenger`);
+      assert.ok(copy.includes("Instagram"), `${locale}/${page}: Instagram`);
+    }
+    const deletion = platformLegal[locale]["data-deletion"][0][1];
+    assert.ok(
+      deletion.includes(metaConnectCopy[locale].title),
+      `${locale}: exact settings card`,
+    );
+    assert.ok(
+      deletion.includes(metaConnectCopy[locale].disconnect),
+      `${locale}: exact disconnect button`,
+    );
+  }
+});
 test("PS1 legal identity is one untranslated source", () => {
   assert.equal(company.productName, "DaWan Live");
   assert.equal(company.legalEnglish, "Hong Kong Da Wan Trading Limited");

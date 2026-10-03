@@ -35,6 +35,19 @@ export function platformPath(
 }
 
 type Env = Record<string, string | undefined>;
+// Compare only the actual Host authority. DNS casing, a terminal dot and a
+// numeric port do not change the hostname; URL/userinfo/forwarded syntax does.
+export function requestHostname(
+  value: string | null | undefined,
+): string | null {
+  const parsed = /^([^:]+)(?::([0-9]{1,5}))?$/.exec(value ?? "");
+  if (!parsed || (parsed[2] && Number(parsed[2]) > 65535)) return null;
+  try {
+    return host(parsed[1].replace(/\.$/, ""), "Host");
+  } catch {
+    return null;
+  }
+}
 function host(value: string | undefined, name: string): string {
   // Config, never the request or forwarded Host, supplies canonical/CTA origins.
   const parsed = value?.toLowerCase() ?? "";

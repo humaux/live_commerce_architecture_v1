@@ -1,8 +1,8 @@
-import { companyConfig } from "../../../../lib/company";
+import { companyConfig, requestHostname } from "../../../../lib/company";
 export const dynamic = "force-dynamic";
 export function GET(request: Request) {
   const cfg = companyConfig();
-  if (request.headers.get("host")?.split(":")[0] !== cfg.platformHost)
+  if (requestHostname(request.headers.get("host")) !== cfg.platformHost)
     return new Response("User-agent: *\nDisallow: /\n", {
       headers: { "Content-Type": "text/plain" },
     });

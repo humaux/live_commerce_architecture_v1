@@ -7,7 +7,7 @@ import {
 import { validOrdersQuery } from "./lib/orders-request";
 import { validStudioQuery } from "./lib/studio-request";
 import { claimsCollection, claimsSubpath } from "./lib/claims-request";
-import { platformRoute } from "./lib/company";
+import { platformRoute, requestHostname } from "./lib/company";
 
 const uuid = "[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}";
 const orderPath = new RegExp(`^/api/stores/${uuid}/orders(?:/${uuid})?$`);
@@ -22,8 +22,13 @@ const studioPrefix = new RegExp(`^/api/stores/${uuid}/live-sessions(?:/|$)`);
 export function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   // The edge supplies the real Host unchanged; forwarded headers are never authority.
-  const publicHost = process.env.LC_PLATFORM_HOST;
-  if (publicHost && request.headers.get("host")?.split(":")[0] === publicHost) {
+  const publicHost = requestHostname(process.env.LC_PLATFORM_HOST);
+  const actualHost = requestHostname(request.headers.get("host"));
+  // www redirects only at the edge. Never let its casing/dot/port variants
+  // fall through to the admin entry if the internal listener is contacted.
+  if (publicHost && actualHost === `www.${publicHost}`)
+    return new NextResponse(null, { status: 404 });
+  if (publicHost && actualHost === publicHost) {
     if (request.method !== "GET" && request.method !== "HEAD")
       return new NextResponse(null, { status: 404 });
     const route = platformRoute(path);
@@ -39,6 +44,8 @@ export function proxy(request: NextRequest) {
   }
   if (path === "/site" || path.startsWith("/site/"))
     return new NextResponse(null, { status: 404 });
+  // Before the public-site matcher was added this path bypassed locale routing.
+  if (path === "/robots.txt") return NextResponse.next();
   if (path.startsWith("/api/")) {
     let decoded: string;
     try {

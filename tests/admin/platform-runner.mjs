@@ -361,6 +361,49 @@ try {
       }
     for (const route of ["/en/orders", "/site/en/home", "/api/stores/fake"])
       assert.equal((await get(s.p, host, route)).status, 404);
+    // Review P2: actual Host normalization must apply to every public entry,
+    // not only the rewrite (the layout, robots and sitemap repeat the guard).
+    for (const candidate of [
+      host.toUpperCase(),
+      `${host}.`,
+      `${host}:8443`,
+      `${host.toUpperCase()}.:443`,
+    ]) {
+      for (const route of [
+        "/zh-CN",
+        "/privacy",
+        "/robots.txt",
+        "/sitemap.xml",
+      ]) {
+        const response = await get(s.p, candidate, route);
+        assert.equal(response.status, 200, `${candidate}${route}`);
+        assert.equal(
+          response.headers["set-cookie"],
+          undefined,
+          "never enter the admin locale flow",
+        );
+        assert.equal(response.headers.location, undefined);
+        if (route === "/robots.txt")
+          assert.match(response.body.toString(), /Allow: \/\n/);
+        else if (route === "/sitemap.xml")
+          assert.match(response.body.toString(), /<urlset/);
+        else assert.ok(response.body.toString().includes('class="ps-body"'));
+      }
+    }
+    for (const candidate of [
+      `www.${host}`,
+      `WWW.${host.toUpperCase()}.`,
+      `www.${host}:443`,
+    ])
+      assert.equal(
+        (await get(s.p, candidate, "/zh-CN")).status,
+        404,
+        "www is edge-only; no admin fallback",
+      );
+    const adminRobots = await get(s.p, adminHost, "/robots.txt");
+    assert.equal(adminRobots.status, 404, "preserve admin robots behavior");
+    assert.equal(adminRobots.headers.location, undefined);
+    assert.equal(adminRobots.headers["set-cookie"], undefined);
     assert.equal(
       (await get(s.p, adminHost, "/site/en/home", { "x-forwarded-host": host }))
         .status,

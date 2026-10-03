@@ -16,7 +16,7 @@ export const platformLegal: Record<PlatformLocale, Documents> = {
       ],
       [
         "Meta 連接與使用目的",
-        "商家明確授權並連接後，我們按已授予的權限處理專頁、留言、直播影片、廣告帳戶及洞察資料，用於留言收單、訂單跟進和商家啟用的廣告功能。我們不要求 Facebook 或 Instagram 密碼，不出售 Meta 資料。轉換事件僅按商家啟用的功能及買家同意處理。",
+        "商家明確授權並連接後，我們按已授予的權限處理 Facebook 專頁及已連結的 Instagram 帳戶資料、貼文與直播留言、Messenger 訊息及 Instagram 私訊，包括識別碼、姓名或用戶名稱及文字內容，用於留言收單及訂單跟進。在平台權限及訊息規則允許時，系統代表商家以私訊回覆留言，提供訂單認領連結。我們亦處理商家啟用的廣告帳戶及洞察資料。不要求 Facebook 或 Instagram 密碼，不出售 Meta 資料。轉換事件僅按商家啟用的功能及買家同意處理。",
       ],
       [
         "服務提供者與跨境處理",
@@ -24,7 +24,7 @@ export const platformLegal: Record<PlatformLocale, Documents> = {
       ],
       [
         "Cookie 與安全",
-        "登入、請求驗證及語言選擇使用必要的 cookie 或本機儲存。此平台官网不安裝 Meta Pixel 或分析追蹤器。我們以店鋪權限隔離、存取控制及加密憑據保護資料；沒有任何系統能保證零風險。",
+        "登入、請求驗證及語言選擇使用必要的 cookie 或本機儲存。此平台官網不安裝 Meta Pixel 或分析追蹤器。我們以店鋪權限隔離、存取控制及加密憑據保護資料；沒有任何系統能保證零風險。",
       ],
       [
         "保留與刪除",
@@ -38,7 +38,7 @@ export const platformLegal: Record<PlatformLocale, Documents> = {
     terms: [
       [
         "服務與營運者",
-        "本服務提供商家網店、商品與庫存、Facebook 留言收單、訂單管理及按設定啟用的收款、物流和廣告工作流程。營運公司及登記資料列於本頁。功能受帳戶權限、商家設定及第三方審核限制；本網站的流程圖僅為產品示意。",
+        "本服務提供商家網店、商品與庫存、Facebook 及已連結 Instagram 帳戶的留言收單、訂單管理及按設定啟用的收款、物流和廣告工作流程。經商家授權，系統處理 Messenger 訊息及 Instagram 私訊，並按平台權限及訊息規則，以私訊回覆留言並提供訂單認領連結。營運公司及登記資料列於本頁。功能受帳戶權限、商家設定及第三方審核限制；本網站的流程圖僅為產品示意。",
       ],
       [
         "商家責任",
@@ -60,7 +60,7 @@ export const platformLegal: Record<PlatformLocale, Documents> = {
     "data-deletion": [
       [
         "1. 停止 Meta 連接",
-        "商家可登入後台，在「設定 → Facebook」找到已連接的專頁，按「斷開」並確認。這會停止該專頁的新留言收單；第三方取消訂閱仍可能需要處理。你也可在 Meta 的應用程式或商務整合設定撤銷授權。斷開不會自動刪除既有訂單。",
+        "商家可登入後台，在「設定 → Facebook 主頁 / Instagram」找到已連接的專頁，按「中斷連接」並確認。這會停止該專頁的新留言收單；第三方取消訂閱仍可能需要處理。你也可在 Meta 的應用程式或商務整合設定撤銷授權。中斷連接不會自動刪除既有訂單。",
       ],
       [
         "2. 提交刪除請求",
@@ -90,7 +90,7 @@ export const platformLegal: Record<PlatformLocale, Documents> = {
       ],
       [
         "Meta 连接与使用目的",
-        "商家明确授权并连接后，我们按已授予的权限处理主页、留言、直播视频、广告账户及洞察资料，用于留言收单、订单跟进和商家启用的广告功能。我们不要求 Facebook 或 Instagram 密码，不出售 Meta 资料。转化事件仅按商家启用的功能及买家同意处理。",
+        "商家明确授权并连接后，我们按已授予的权限处理 Facebook 主页及已关联的 Instagram 账户资料、帖子与直播留言、Messenger 消息及 Instagram 私信，包括标识符、姓名或用户名及文字内容，用于留言收单及订单跟进。在平台权限及消息规则允许时，系统代表商家以私信回复留言，提供订单认领链接。我们亦处理商家启用的广告账户及洞察资料。不要求 Facebook 或 Instagram 密码，不出售 Meta 资料。转化事件仅按商家启用的功能及买家同意处理。",
       ],
       [
         "服务提供者与跨境处理",
@@ -112,7 +112,7 @@ export const platformLegal: Record<PlatformLocale, Documents> = {
     terms: [
       [
         "服务与运营者",
-        "本服务提供商家网店、商品与库存、Facebook 留言收单、订单管理及按设置启用的收款、物流和广告工作流程。运营公司及登记资料列于本页。功能受账户权限、商家设置及第三方审核限制；本网站的流程图仅为产品示意。",
+        "本服务提供商家网店、商品与库存、Facebook 及已关联 Instagram 账户的留言收单、订单管理及按设置启用的收款、物流和广告工作流程。经商家授权，系统处理 Messenger 消息及 Instagram 私信，并按平台权限及消息规则，以私信回复留言并提供订单认领链接。运营公司及登记资料列于本页。功能受账户权限、商家设置及第三方审核限制；本网站的流程图仅为产品示意。",
       ],
       [
         "商家责任",
@@ -134,7 +134,7 @@ export const platformLegal: Record<PlatformLocale, Documents> = {
     "data-deletion": [
       [
         "1. 停止 Meta 连接",
-        "商家可登录后台，在「设置 → Facebook」找到已连接的主页，按「断开」并确认。这会停止该主页的新留言收单；第三方取消订阅仍可能需要处理。你也可在 Meta 的应用或商务集成设置撤销授权。断开不会自动删除现有订单。",
+        "商家可登录后台，在「设置 → Facebook 主页 / Instagram」找到已连接的主页，按「断开连接」并确认。这会停止该主页的新留言收单；第三方取消订阅仍可能需要处理。你也可在 Meta 的应用或商务集成设置撤销授权。断开连接不会自动删除现有订单。",
       ],
       [
         "2. 提交删除请求",
@@ -164,7 +164,7 @@ export const platformLegal: Record<PlatformLocale, Documents> = {
       ],
       [
         "Meta connections and purposes",
-        "After a merchant explicitly connects and authorises an account, we process the permitted Pages, comments, live videos, ad accounts and insights for comment ordering, order follow-up and enabled advertising features. We do not request Facebook or Instagram passwords or sell Meta data. Conversion events are processed only for enabled features and with buyer consent.",
+        "After a merchant explicitly connects and authorises an account, we process permitted Facebook Page and linked Instagram account details, post and live-video comments, Messenger messages and Instagram direct messages, including identifiers, names or usernames and text, for comment ordering and order follow-up. Where platform permissions and messaging rules allow, we reply privately to comments on the merchant’s behalf with order-claim links. We also process enabled ad accounts and insights. We do not request Facebook or Instagram passwords or sell Meta data. Conversion events are processed only for enabled features and with buyer consent.",
       ],
       [
         "Providers and cross-border processing",
@@ -186,7 +186,7 @@ export const platformLegal: Record<PlatformLocale, Documents> = {
     terms: [
       [
         "Service and operator",
-        "The service provides merchant storefronts, products and inventory, Facebook comment ordering, order management and configured payment, logistics and advertising workflows. The operator’s registered details appear on this page. Features depend on account permissions, merchant setup and third-party approval. Website workflow diagrams are product illustrations only.",
+        "The service provides merchant storefronts, products and inventory, Facebook and linked Instagram comment ordering, order management and configured payment, logistics and advertising workflows. With merchant authorisation, it processes Messenger messages and Instagram direct messages and sends private replies to comments with order-claim links, subject to platform permissions and messaging rules. The operator’s registered details appear on this page. Features depend on account permissions, merchant setup and third-party approval. Website workflow diagrams are product illustrations only.",
       ],
       [
         "Merchant responsibilities",
@@ -208,7 +208,7 @@ export const platformLegal: Record<PlatformLocale, Documents> = {
     "data-deletion": [
       [
         "1. Disconnect Meta",
-        "Sign in to the merchant admin and open Settings → Facebook. Find the connected Page, select Disconnect and confirm. This stops new comment intake for that Page; third-party unsubscription may still need processing. You can also revoke access in Meta’s apps or business integrations settings. Disconnecting does not automatically delete existing orders.",
+        "Sign in to the merchant admin and open Settings → Facebook Page / Instagram. Find the connected Page, select Disconnect and confirm. This stops new comment intake for that Page; third-party unsubscription may still need processing. You can also revoke access in Meta’s apps or business integrations settings. Disconnecting does not automatically delete existing orders.",
       ],
       [
         "2. Request deletion",

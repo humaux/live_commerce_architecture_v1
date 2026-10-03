@@ -1,6 +1,10 @@
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
-import { companyConfig, platformLocales } from "../../../../lib/company";
+import {
+  companyConfig,
+  platformLocales,
+  requestHostname,
+} from "../../../../lib/company";
 import "../../../../components/platform/platform.css";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +28,7 @@ export default async function PublicLayout({
   const h = await headers();
   if (
     !platformLocales.some((v) => v === locale) ||
-    h.get("host")?.split(":")[0] !== companyConfig().platformHost
+    requestHostname(h.get("host")) !== companyConfig().platformHost
   )
     notFound();
   return (
