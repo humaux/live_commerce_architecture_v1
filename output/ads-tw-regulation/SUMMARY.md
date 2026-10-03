@@ -32,7 +32,7 @@ All later changes after `5845431c` are tests/contracts only: `git diff 5845431c 
 | `pnpm --filter admin exec tsc --noEmit` | 0 | a5-admin-tsc.log |
 | `bash scripts/dev/test-focused.sh '^(TestMetaAds\|TestAds\|TestR2IntegrationUpgradeFromReleaseHead\|TestT06WorkerAuthorityAndFunctionACL)'` | 0 | a5-focused-final.log;23PASS/0FAIL/4sandboxSKIP; exact required regex |
 | `bash scripts/dev/test-local.sh --browser-meta-ads` | 0 | a5-browser-meta-final.log;2 Go tests PASS,30.126s;Playwright original8+new1 PASS, no scenario skipped |
-| `bash scripts/dev/test-local.sh --browser-click-sweep` | 0 | a2-browser-click-sweep.log at5845431c, product-identical to final;120units,993clicksPASS/0FAIL/18SKIP,18journey stepsPASS |
+| `bash scripts/dev/test-local.sh --browser-click-sweep` | 0 | a2-browser-click-sweep.log at5845431c, product-identical to final;120units,1011 click-ledger entries:993PASS/0FAIL/18SKIP;18journey stepsPASS |
 | `bash scripts/dev/release-gate.sh --strict --only G07` | 0 | a5-g07.log / release-gate-a5/;6517 tests/subtests PASS,0FAIL;1965 top-level PASS,10 top-level SKIP;foundation3270.101s |
 | `bash scripts/dev/release-gate.sh --strict --only G04` | 0 | final-static/results.tsv; source and staged evidence scanned, no key-shaped literal |
 
@@ -66,6 +66,7 @@ Root owns this unit's adapter/CAPI completion hook, migration0112, Ads UI/model/
 - Composed guard final actual-diff review and independent2tests/15fixtures exit0, P2closed — `2e6f8444-64fc-49b3-948c-b75ee1986267`.
 - Two-phase browser diff reviewed, no original assertions weakened — Humaux title `Ads MA09a two-phase activation assertion review at 7745ead`.
 - Unchanged order latency impact review — `6814e5c4-27b8-4d00-bd0d-5f84fefcfc5b`.
+- Final G07/G04 evidence review:6517PASS/0FAIL,13 accepted skips; cleanup and output-only staging agree with artifacts; no pending-state wording remains — Humaux title `Ads Taiwan final G07/G04 evidence audit b7afdf1d`.
 Reviewers did not run PG/browser/fullG07; root ran recorded gates. Code graph and memory links updated for implementation and guards.
 
 Cleanup: the final runner exited0 and reported removal of its isolated PG fixture; the unit-private `child-pg.lock` is absent. A post-run cwd inspection found only the inspection shell/tools in this worktree, no leftover unit server/test process. The subsequently running foundation process belonged to `r5-gate-b0f835c`; it and all foreign locks/processes were left untouched.
