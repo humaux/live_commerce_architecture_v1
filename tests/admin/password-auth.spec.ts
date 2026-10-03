@@ -197,17 +197,25 @@ test("full chain: sign-up -> code -> onboarding -> logout -> sign-in -> code -> 
   expect(meta(csrfName)).toEqual([{ httpOnly: false, secure: true, sameSite: "Lax", path: "/" }]);
   const firstSession = await cookieValue(context, sessionName);
 
-  // onboarding (existing UI, unchanged by password auth)
+  // Real registration assigns a number, never previews a name-derived address.
   expect(await browserJSON(page, "/api/stores")).toEqual({ status: 200, body: { items: [] } });
   await page.getByLabel("商戶名稱").fill("Browser Merchant");
   await page.getByRole("button", { name: "下一步：商店設定" }).click();
   await page.getByLabel("商店名稱").fill("Browser Store");
+  await expect(page.locator("#entry-number-help")).toHaveText("系統會自動分配店鋪編號。");
+  await expect(page.getByTestId("entry-handle")).toHaveCount(0);
+  await expect(page.getByTestId("entry-address")).toHaveCount(0);
   await page.getByLabel("交易幣別").selectOption("TWD");
   await page.getByRole("button", { name: "下一步：庫存倉" }).click();
   await page.getByLabel("初始庫存倉名稱").fill("Browser Warehouse");
   const created = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/onboarding/initial-store");
   await page.getByRole("button", { name: "建立內部工作區" }).click();
-  expect((await created).status()).toBe(200);
+  const createdResponse = await created;
+  expect(createdResponse.status()).toBe(200);
+  const storeReceipt = await createdResponse.json();
+  expect(storeReceipt.handle).toMatch(/^[1-9][0-9]{7}$/);
+  expect(storeReceipt.storefront_origin).toBe(`https://${storeReceipt.handle}.example.com`);
+  await expect(page.getByTestId("entry-address").getByRole("link")).toHaveText(storeReceipt.storefront_origin);
   await page.getByRole("button", { name: "進入工作區" }).click();
   // merchant-tools G1 (migration 0094): the workspace landing is the dashboard; the stock ledger moved to /inventory.
   await expect(page.getByRole("heading", { name: "總覽", level: 1 })).toBeVisible();

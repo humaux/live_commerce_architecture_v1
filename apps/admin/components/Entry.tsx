@@ -1,6 +1,5 @@
 "use client";
-import { handleNameHint, validStorefrontReceipt } from "@/lib/storefront-handle";
-import { suggestHandle } from "@/lib/onboarding-client";
+import { validStorefrontReceipt } from "@/lib/storefront-handle";
 // Signed-out / onboarding shell for /[locale]/ and (signed-out only) /[locale]/signup, /[locale]/reset.
 // BFF routes called: POST /api/auth/login (OIDC) → /v1/identity/login/start, POST /api/auth/logout →
 // /v1/identity/logout, POST /api/onboarding/initial-store → /v1/identity/initial-store
@@ -82,9 +81,6 @@ export function Entry({
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [handle, setHandle] = useState<{ suggested: string; available: boolean } | null>(null);
-  const [handleChecking, setHandleChecking] = useState(false);
-  const [handleFailed, setHandleFailed] = useState(false);
   const [created, setCreated] = useState<{ handle: string; storefront_origin: string } | null>(null);
   const storageKey = useRef("");
   const busyRef = useRef(false);
@@ -146,37 +142,6 @@ export function Entry({
       setReady(false);
     }
   }, [draft, step, pending, ready, status, onboardingEnabled, success]);
-
-  // R5 store-domains (Decision 1): live handle preview on the store-name step. Read-only, so no CSRF token;
-  // the DB trigger assigns the real handle from the same name on create. A failed/unavailable preview is
-  // explicitly unconfirmed (the wizard stays usable), never replaced with an older result.
-  useEffect(() => {
-    if (status !== "onboarding" || step !== 2 || success) return;
-    const name = draft.store_name.trim();
-    setHandle(null);
-    setHandleFailed(false);
-    if (!name || [...name].length > 120) {
-      setHandle(null);
-      setHandleChecking(false);
-      return;
-    }
-    let live = true;
-    const controller = new AbortController();
-    setHandleChecking(true);
-    const timer = setTimeout(() => {
-      suggestHandle(name, controller.signal)
-        .then((suggestion) => { if (live) setHandle(suggestion); })
-        .catch(() => { if (live) setHandleFailed(true); })
-        .finally(() => {
-          if (live) setHandleChecking(false);
-        });
-    }, 400);
-    return () => {
-      live = false;
-      controller.abort();
-      clearTimeout(timer);
-    };
-  }, [draft.store_name, step, status, success]);
 
   const locked = busy || pending !== null || !ready || success;
 
@@ -566,8 +531,8 @@ export function Entry({
                   <label>
                     <span>{c.storeName}</span>
                     <input
-                name="store_name"
-                aria-describedby="entry-handle-help"
+                      name="store_name"
+                      aria-describedby="entry-number-help"
                       value={draft.store_name}
                       onChange={(event) =>
                         update("store_name", event.target.value)
@@ -578,18 +543,7 @@ export function Entry({
                       required
                     />
                   </label>
-                  <p className="entry-handle" id="entry-handle-help">{c.handleHelp}</p>
-                  {draft.store_name.trim() && handleNameHint(draft.store_name) && (
-                    <p className="entry-handle" role="status">{handleNameHint(draft.store_name) === "reserved" ? c.handleReserved : c.handleFormat}</p>
-                  )}
-                  {handleChecking ? (
-                    <p className="entry-handle" role="status">{c.handleChecking}</p>
-                  ) : handle ? (
-                    <p className="entry-handle" data-testid="entry-handle" role="status">
-                      {c.handlePreview}: <strong>{handle.suggested}</strong>{" "}
-                      {handle.available ? c.handleAvailable : c.handleTaken}
-                    </p>
-                  ) : handleFailed ? <p className="entry-handle" role="status" data-testid="entry-handle-failed">{c.handleFailed}</p> : null}
+                  <p className="entry-handle" id="entry-number-help">{c.storeNumberHelp}</p>
                   <label>
                     <span>{c.currency}</span>
                     <select

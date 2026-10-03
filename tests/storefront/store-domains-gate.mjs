@@ -1,7 +1,7 @@
 // R5 store-domains KEY acceptance gate (driver of TestBrowserStoreDomains; BROWSER, MOCK edge + scripted public DNS/TLS).
 // Production shape: no owner-seeded store/publication/domain row for the signing-in merchant. Actors:
 //   merchant  real Chromium/WebKit on the production admin Next (signed MOCK IdP, fresh principal with zero
-//             memberships): runs the onboarding wizard with an English store name (live handle preview, receipt
+//             memberships): runs the onboarding wizard (no address preview; server-allocated numeric receipt
 //             shows https://<handle>.<base>), publishes from the Settings card (zh-TW, 390px), requests a custom
 //             domain (zh-CN, desktop), follows the DNS instructions, then suspends / detaches it and unpublishes;
 //   platform  the production VerifyPending worker library on the registrar login, driven once through the runner-only
@@ -39,7 +39,7 @@ const VIEW = { desktop: { width: 1280, height: 900 }, "390px": { width: 390, hei
 const hosts = new Set(); // the CONNECT proxy's allowlist: exactly the buyer hosts this gate has bound so far
 // Expected copy per locale, written from the unit brief and copy files, not the components under test.
 const CLOSED = { en: "This shop is not open yet", "zh-TW": "商店尚未開張", "zh-CN": "商店尚未开张" };
-const ENTRY = { signIn: "Sign in with identity service", title: "Create your first workspace", nextStore: "Next: store settings", nextWarehouse: "Next: warehouse", create: "Create internal workspace", openWorkspace: "Open workspace", handlePreview: "Your store ID", handleAvailable: "available" };
+const ENTRY = { signIn: "Sign in with identity service", title: "Create your first workspace", nextStore: "Next: store settings", nextWarehouse: "Next: warehouse", create: "Create internal workspace", openWorkspace: "Open workspace", storeNumberHelp: "The system will automatically assign a store number." };
 const CARD = {
   en: { title: /Storefront/i, published: "Published", unpublished: "Not published", publish: "Publish storefront", unpublish: "Unpublish storefront", savedPub: "Published.", savedUnpub: "Unpublished.", live: /Live: buyers can open your store/ },
   "zh-TW": { title: /網店發佈/, published: "已發佈", unpublished: "未發佈", publish: "發佈網店", unpublish: "取消發佈", savedPub: "已發佈。", savedUnpub: "已取消發佈。", live: /已上線：買家可以打開你的網店/ },
@@ -126,6 +126,8 @@ try {
   merchantContext.on("page", page => page.on("pageerror", error => uiErrors.push(error.name)));
   const merchant = await merchantContext.newPage();
   let sawIssuer = false;
+  const suggestionRequests = [];
+  merchant.on("request", request => { if (new URL(request.url()).pathname === "/api/onboarding/handle-suggest") suggestionRequests.push(request.url()); });
   merchant.on("request", request => { if (new URL(request.url()).origin === process.env.COMMERCE_OIDC_ISSUER) sawIssuer = true; });
   const suffix = Math.random().toString(36).slice(2, 8);
   const storeName = `Gate Store ${suffix}`;
@@ -136,40 +138,9 @@ try {
   await merchant.locator("input[name=tenant_name]").fill(`Gate Merchant ${suffix}`);
   await merchant.getByRole("button", { name: ENTRY.nextStore, exact: true }).click();
   await merchant.locator("input[name=store_name]").fill(storeName);
-  const preview = merchant.getByTestId("entry-handle"); // Decision 1: live slug suggestion on the store-name step
-  await expect(preview).toBeVisible();
-  await expect(preview).toContainText(ENTRY.handlePreview);
-  await expect(preview).toContainText(ENTRY.handleAvailable);
-  const previewHandle = (await preview.locator("strong").innerText()).trim();
-  assert.match(previewHandle, /^[a-z0-9]([a-z0-9-]{1,28}[a-z0-9])$/, `suggested handle ${previewHandle}`);
-  assert(previewHandle.startsWith("gate-store-"), "the English store name drives the slug");
-  // Regression: after a good result, a failed lookup must never revive the previous name's availability.
-  await merchant.route("**/api/onboarding/handle-suggest", route => route.fulfill({ status: 503, contentType: "application/json", body: '{"code":"retry_later"}' }));
-  await merchant.locator("input[name=store_name]").fill("Another Store");
-  await expect(merchant.getByTestId("entry-handle-failed")).toBeVisible();
-  await expect(preview).toHaveCount(0);
-  await merchant.unroute("**/api/onboarding/handle-suggest");
-  // Deferred old-name result cannot overwrite the current successful query.
-  let releaseOld;
-  let finishOld;
-  const oldResponse = new Promise(resolve => { releaseOld = resolve; });
-  const oldFinished = new Promise(resolve => { finishOld = resolve; });
-  await merchant.route("**/api/onboarding/handle-suggest", async route => {
-    if (route.request().postDataJSON().store_name !== "Old Store") return route.continue();
-    await oldResponse;
-    await route.fulfill({ status: 200, contentType: "application/json", body: '{"suggested":"old-store","available":true}' }).catch(() => {});
-    finishOld();
-  });
-  const oldRequest = merchant.waitForRequest(request => request.url().endsWith("/api/onboarding/handle-suggest") && request.postDataJSON().store_name === "Old Store");
-  await merchant.locator("input[name=store_name]").fill("Old Store");
-  await oldRequest;
-  await merchant.locator("input[name=store_name]").fill(storeName);
-  await expect(preview.locator("strong")).toHaveText(previewHandle);
-  releaseOld();
-  await oldFinished;
-  await merchant.unroute("**/api/onboarding/handle-suggest");
-  await expect(preview.locator("strong")).toHaveText(previewHandle);
-  pass("handle preview: failed query clears old availability; stale response cannot replace the current suggestion");
+  await expect(merchant.locator("#entry-number-help")).toHaveText(ENTRY.storeNumberHelp);
+  await expect(merchant.getByTestId("entry-handle")).toHaveCount(0);
+  await expect(merchant.getByTestId("entry-address")).toHaveCount(0);
   await expect(merchant.locator("select[name=currency]")).toHaveValue("USD");
   await merchant.getByRole("button", { name: ENTRY.nextWarehouse, exact: true }).click();
   await merchant.locator("input[name=warehouse_name]").fill("Main warehouse");
@@ -177,7 +148,8 @@ try {
   await merchant.getByRole("button", { name: ENTRY.create, exact: true }).click();
   const receipt = await (await created).json();
   assert.match(receipt.store_id, /^[0-9a-f-]{36}$/); assert.match(receipt.tenant_id, /^[0-9a-f-]{36}$/);
-  assert.equal(receipt.handle, previewHandle, "the DB trigger assigns the handle the wizard previewed");
+  assert.match(receipt.handle, /^[1-9][0-9]{7}$/, "the DB trigger assigns a random numeric store number");
+  assert.equal(suggestionRequests.length, 0, "registration must not call the removed suggestion endpoint");
   const store = receipt.store_id;
   const platformOrigin = `https://${receipt.handle}.${BASE}`;
   assert.equal(receipt.storefront_origin, platformOrigin, "Decision 2: the ACTIVE platform subdomain on the receipt");
@@ -188,7 +160,7 @@ try {
   await merchant.getByRole("button", { name: ENTRY.openWorkspace, exact: true }).click();
   await expect(merchant.getByTestId("dashboard-page")).toBeVisible();
   audit.push("merchant.store_created");
-  pass("signed MOCK IdP; onboarding wizard (en, desktop): live handle preview, receipt shows the platform origin, workspace opens");
+  pass("signed MOCK IdP; onboarding wizard (en, desktop): no preview or suggestion call; receipt shows allocated numeric origin, workspace opens");
 
   // ---- platform subdomain is ACTIVE at onboarding; nothing is published ------------------------------------------
   const platformHost = `${receipt.handle}.${BASE}`;
