@@ -11,17 +11,46 @@ COMMENT ON INDEX checkout.orders_phone_suffix_read IS 'internal/merchantorders v
 COMMENT ON INDEX checkout.orders_method_date_read IS 'internal/merchantorders v2 scoped payment/date keyset read; no state writes.';
 COMMENT ON INDEX fulfillment.shipment_tracking_read IS 'internal/merchantorders v2 current-head tracking lookup; old/voided versions do not match.';
 
-GRANT USAGE ON SCHEMA claims,live TO commerce_auth;
-GRANT SELECT(tenant_id,store_id,order_id,bundle_id) ON claims.live_price_uses TO commerce_auth;
-GRANT SELECT(tenant_id,store_id,id,session_id) ON claims.bundles TO commerce_auth;
-GRANT SELECT(tenant_id,store_id,id,title,created_at) ON live.sessions TO commerce_auth;
-GRANT SELECT(provider_logistics_id,shipment_no) ON fulfillment.cvs_shipments TO commerce_auth;
-CREATE POLICY orders_v2_price_use_read ON claims.live_price_uses FOR SELECT TO commerce_auth USING
- (tenant_id::text=current_setting('app.tenant_id',true) AND store_id::text=current_setting('app.store_id',true));
-CREATE POLICY orders_v2_bundle_read ON claims.bundles FOR SELECT TO commerce_auth USING
- (tenant_id::text=current_setting('app.tenant_id',true) AND store_id::text=current_setting('app.store_id',true));
-CREATE POLICY orders_v2_session_read ON live.sessions FOR SELECT TO commerce_auth USING
- (tenant_id::text=current_setting('app.tenant_id',true) AND store_id::text=current_setting('app.store_id',true));
+-- CB03 boundary: the domain owns its projection. The authentication definer
+-- receives EXECUTE, never new table/column privileges or domain RLS policies.
+-- Placement evidence only: do not expose actors, bundle owners or claim lines.
+CREATE FUNCTION claims.order_live_sources(p_tenant uuid,p_store uuid,p_orders uuid[])
+RETURNS TABLE(order_id uuid,session_id uuid)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ SELECT DISTINCT u.order_id,b.session_id
+ FROM claims.live_price_uses u JOIN claims.bundles b
+  ON b.tenant_id=u.tenant_id AND b.store_id=u.store_id AND b.id=u.bundle_id
+ WHERE u.tenant_id=p_tenant AND u.store_id=p_store AND u.order_id=ANY(p_orders)
+  AND b.tenant_id=p_tenant AND b.store_id=p_store
+$$;
+ALTER FUNCTION claims.order_live_sources(uuid,uuid,uuid[]) OWNER TO commerce_claims_writer;
+REVOKE ALL ON FUNCTION claims.order_live_sources(uuid,uuid,uuid[]) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION claims.order_live_sources(uuid,uuid,uuid[]) TO commerce_auth;
+COMMENT ON FUNCTION claims.order_live_sources(uuid,uuid,uuid[]) IS 'internal/claims: commerce_auth-only scoped order provenance, no binding writes or consumption details (0110 ACL ruling).';
+
+CREATE FUNCTION live.order_session_labels(p_tenant uuid,p_store uuid,p_sessions uuid[])
+RETURNS TABLE(session_id uuid,name text,session_created_at timestamptz)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ SELECT s.id,s.title,s.created_at FROM live.sessions s
+ WHERE s.tenant_id=p_tenant AND s.store_id=p_store AND s.id=ANY(p_sessions)
+$$;
+ALTER FUNCTION live.order_session_labels(uuid,uuid,uuid[]) OWNER TO commerce_media_writer;
+REVOKE ALL ON FUNCTION live.order_session_labels(uuid,uuid,uuid[]) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION live.order_session_labels(uuid,uuid,uuid[]) TO commerce_auth;
+COMMENT ON FUNCTION live.order_session_labels(uuid,uuid,uuid[]) IS 'internal/merchantorders: commerce_auth-only scoped session labels and choice ordering; domain-owned read (0110 ACL ruling).';
+
+CREATE FUNCTION fulfillment.order_cvs_tracking(p_tenant uuid,p_store uuid,p_orders uuid[])
+RETURNS TABLE(order_id uuid,state text,provider_logistics_id text,shipment_no text)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ SELECT DISTINCT ON (c.order_id) c.order_id,c.state,c.provider_logistics_id,c.shipment_no
+ FROM fulfillment.cvs_shipments c
+ WHERE c.tenant_id=p_tenant AND c.store_id=p_store AND c.order_id=ANY(p_orders)
+ ORDER BY c.order_id,c.attempt DESC
+$$;
+ALTER FUNCTION fulfillment.order_cvs_tracking(uuid,uuid,uuid[]) OWNER TO commerce_checkout_writer;
+REVOKE ALL ON FUNCTION fulfillment.order_cvs_tracking(uuid,uuid,uuid[]) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION fulfillment.order_cvs_tracking(uuid,uuid,uuid[]) TO commerce_auth;
+COMMENT ON FUNCTION fulfillment.order_cvs_tracking(uuid,uuid,uuid[]) IS 'internal/merchantorders: commerce_auth-only scoped latest CVS state/tracking, no credentials, recipient or payload (0110 ACL ruling).';
 
 DO $migration$
 DECLARE body text; before_owned integer; after_owned integer; needle text; replacement text;
@@ -48,13 +77,19 @@ BEGIN
  after_owned:=position(' ), projected AS (' IN body);
  IF before_owned=0 OR after_owned<=before_owned THEN RAISE EXCEPTION 'orders-v2 owned projection drift'; END IF;
  replacement:=$query$
- WITH linked AS MATERIALIZED (
-  -- claims.live_price_uses is placement evidence, not inferred visitor attribution.
-  SELECT DISTINCT u.order_id,b.session_id,ls.title AS name,ls.created_at AS session_created_at
-  FROM claims.live_price_uses u JOIN claims.bundles b
-   ON b.tenant_id=u.tenant_id AND b.store_id=u.store_id AND b.id=u.bundle_id
-  JOIN live.sessions ls ON ls.tenant_id=b.tenant_id AND ls.store_id=b.store_id AND ls.id=b.session_id
-  WHERE u.tenant_id=s.tenant_id AND u.store_id=p_store
+ WITH order_ids AS MATERIALIZED (
+  SELECT coalesce(array_agg(id),'{}'::uuid[]) AS ids FROM checkout.orders
+  WHERE tenant_id=s.tenant_id AND store_id=p_store
+ ), sources AS MATERIALIZED (
+  SELECT src.order_id,src.session_id FROM order_ids ids
+  CROSS JOIN LATERAL claims.order_live_sources(s.tenant_id,p_store,ids.ids) src
+ ), linked AS MATERIALIZED (
+  SELECT src.order_id,src.session_id,ls.name,ls.session_created_at FROM sources src
+  JOIN live.order_session_labels(s.tenant_id,p_store,
+    ARRAY(SELECT DISTINCT session_id FROM sources)) ls ON ls.session_id=src.session_id
+ ), cvs AS MATERIALIZED (
+  SELECT c.order_id,c.state,c.provider_logistics_id,c.shipment_no FROM order_ids ids
+  CROSS JOIN LATERAL fulfillment.order_cvs_tracking(s.tenant_id,p_store,ids.ids) c
  ), filtered AS MATERIALIZED (
   SELECT o.id,o.tenant_id,o.store_id,o.owner_id,o.created_at,o.updated_at,o.currency,
    o.total_minor,o.commercial_state,o.fulfillment_state,o.country,o.service_code,
@@ -87,9 +122,7 @@ BEGIN
    o.commercial_state='CANCELLED' AS cancelled
   FROM checkout.orders o
   LEFT JOIN checkout.bank_transfers bt ON bt.tenant_id=o.tenant_id AND bt.store_id=o.store_id AND bt.order_id=o.id
-  LEFT JOIN LATERAL (SELECT c.state,c.provider_logistics_id,c.shipment_no FROM fulfillment.cvs_shipments c
-   WHERE c.tenant_id=o.tenant_id AND c.store_id=o.store_id AND c.order_id=o.id
-   ORDER BY c.attempt DESC LIMIT 1) cs ON true
+  LEFT JOIN cvs cs ON cs.order_id=o.id
   WHERE o.tenant_id=s.tenant_id AND o.store_id=p_store
    AND (p_payment='' OR o.payment_mode=p_payment)
    AND (p_delivery='' OR CASE WHEN o.snapshot#>>'{destination,kind}'='home' THEN 'home'

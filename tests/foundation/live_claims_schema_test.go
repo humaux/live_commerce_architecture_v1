@@ -318,7 +318,10 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				// live-tools 0092: the buyer price definers it owns.
 				"claims.live_prices", "claims.preview_live_prices",
 				// 0105 (R4S-01): the consumption definer it owns.
-				"claims.consume_live_prices"})
+				"claims.consume_live_prices",
+				// 0110 ACL ruling: domain-owned order provenance projection; only
+				// commerce_auth gets EXECUTE, never consumption-table privileges.
+				"claims.order_live_sources"})
 		lcSameSet(t, "schema claims ACL", lcStrings(t, f.owner, `SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END||' '||a.privilege_type
 			FROM pg_namespace n CROSS JOIN LATERAL aclexplode(n.nspacl) a WHERE n.nspname='claims' AND a.grantee<>n.nspowner`),
 			[]string{"commerce_buyer_runtime USAGE", "commerce_claims_writer USAGE", "commerce_runtime USAGE",
@@ -379,6 +382,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				volatility: "v", acl: "commerce_buyer_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_buyer_runtime"},
 			// 0105 (R4S-01): the only ledger writer, called by checkout.Begin on the checkout pool (never the buyer pool).
 			"consume_live_prices": {args: "p_order uuid", result: "integer", volatility: "v", acl: "commerce_checkout_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_checkout_runtime"},
+			// 0110 ACL ruling: one narrow internal read capability, no new table grants.
+			"order_live_sources": {args: "p_tenant uuid, p_store uuid, p_orders uuid[]", result: "TABLE(order_id uuid, session_id uuid)",
+				volatility: "s", acl: "commerce_auth:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_auth"},
 			// meta-claims-intake-v1 §4.3 / §5 / §6.3: the six new claims-schema definers (all owned by commerce_claims_writer).
 			"intake_scope": {args: "", result: "TABLE(tenant_id uuid, store_id uuid, session_id uuid)", volatility: "s",
 				acl: "commerce_claims_intake:EXECUTE,commerce_claims_writer:EXECUTE,commerce_integration_writer:EXECUTE", caller: "commerce_claims_intake"},
@@ -433,8 +439,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		}
 		// Four T10 definers + six meta-claims-intake-v1 claims definers + live.put_claim_source and the
 		// live.claim_windows interval trigger function (§2, §4).
-		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 15 {
-			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its fifteen functions (twelve + live-tools live_prices, preview_live_prices + 0105 consume_live_prices)", n)
+		// 0110 adds exactly order_live_sources, owned by the domain rather than auth.
+		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 16 {
+			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its sixteen functions (previous fifteen + 0110 order_live_sources)", n)
 		}
 		denied := lcStrings(t, f.owner, `SELECT r.rolname||' '||p.proname FROM pg_roles r CROSS JOIN pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 			WHERE n.nspname='claims' AND r.rolname LIKE 'commerce\_%' AND has_function_privilege(r.oid,p.oid,'EXECUTE')
@@ -444,6 +451,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			       OR (r.rolname IN ('commerce_checkout_runtime','commerce_hosted_runtime') AND p.proname='live_prices')
 			       -- 0105 (R4S-01): checkout.Begin consumes the claimed quantity on the same pool
 			       OR (r.rolname IN ('commerce_checkout_runtime','commerce_hosted_runtime') AND p.proname='consume_live_prices')
+			       -- 0110 ACL ruling: authenticated merchant projection only; not runtime-callable.
+			       OR (r.rolname='commerce_auth' AND p.proname='order_live_sources')
 			       OR (r.rolname='commerce_claims_intake' AND p.proname IN ('intake_scope','lease_meta_intake','fail_meta_intake'))
 			       OR (r.rolname='commerce_integration_writer' AND p.proname IN ('intake_scope','issue_system_link'))
 			       OR (r.rolname='commerce_meta_writer' AND p.proname='insert_meta_intake')
@@ -753,15 +762,19 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 
 	t.Run("release-only-with-rotation", func(t *testing.T) {
 		// Catalog enumeration: every function a runtime or buyer-runtime login can execute
-		// that references claims.bundles or claims.links is one of the four definers.
+		// that references claims.bundles or claims.links is explicitly enumerated.
+		// 0110 adds one internal commerce_auth-only read helper to this audit;
+		// it is NOT a new runtime/buyer-runtime entry point (see V2DomainReadAuthority).
 		lcSameSet(t, "functions reaching claims bindings/links", lcStrings(t, f.owner, `SELECT p.oid::regprocedure::text FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 			WHERE n.nspname NOT IN ('pg_catalog','information_schema') AND p.prosrc ~* 'claims\.(bundles|links)'
-			  AND (has_function_privilege('commerce_runtime',p.oid,'EXECUTE') OR has_function_privilege('commerce_buyer_runtime',p.oid,'EXECUTE'))`),
+			  AND (has_function_privilege('commerce_runtime',p.oid,'EXECUTE') OR has_function_privilege('commerce_buyer_runtime',p.oid,'EXECUTE')
+			    OR p.oid='claims.order_live_sources(uuid,uuid,uuid[])'::regprocedure)`),
 			[]string{"claims.issue_link(bytea,uuid,uuid,uuid,bigint,bytea,boolean)", "claims.mark_applied(uuid,uuid[],bigint[])", "claims.preview_link(bytea)", "claims.redeem_link(bytea,bigint)",
 				// live-tools 0092: buyer-runtime price definers (read-only; bound owner and link expiry are checked inside).
 				"claims.live_prices(uuid[],uuid[],uuid[],bigint[])", "claims.preview_live_prices(bytea)",
 				// customers-billing-v1 §3.1 (0078): read-only projections of bound-bundle counts/time, no binding write.
-				"identity.read_merchant_customers(bytea,uuid,uuid,integer,timestamp with time zone,uuid,text)", "customers.buyer_read_privacy(bytea,uuid,boolean)"})
+				"identity.read_merchant_customers(bytea,uuid,uuid,integer,timestamp with time zone,uuid,text)", "customers.buyer_read_privacy(bytea,uuid,boolean)",
+				"claims.order_live_sources(uuid,uuid,uuid[])"})
 		lcSameSet(t, "roles able to write owner_id", lcStrings(t, f.owner, `SELECT DISTINCT p.grantee::text FROM information_schema.column_privileges p
 			WHERE p.table_schema='claims' AND p.table_name='bundles' AND p.column_name IN ('owner_id','bound_at') AND p.privilege_type='UPDATE'
 			  AND p.grantee::text<>(SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='claims.bundles'::regclass)`),

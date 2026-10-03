@@ -170,3 +170,26 @@ The merchant must see the cash a cash_on_delivery order collects (owner ruling, 
   `collected_at` (the Asia/Taipei finance day of collected COD and pay-at-pickup cash in `identity.read_finance_summary`, which this
   role owns; it is set once by `fulfillment.record_collection` and never read for a merchant DTO key). `cod_carrier` is NOT granted:
   the merchant DTO carries no carrier key and no `commerce_auth` function reads it. Least privilege: any further column needs a new amendment.
+
+## Amendment: orders-v2 domain read boundary (unpublished 0110, ACL ruling)
+
+The authenticated v2 reader retains its initial and final `orders:read` fences.
+Its live placement provenance and CVS tracking searches use three internal read
+helpers, following `checkout.has_inflight_collection` (CB03), not cross-domain
+table grants or new RLS policies for `commerce_auth`:
+
+- `claims.order_live_sources(tenant, store, order_ids uuid[])`: distinct order/session IDs,
+  owned by `commerce_claims_writer`. No actors, claim lines, bundle owners or quantities.
+- `live.order_session_labels(tenant, store, session_ids uuid[])`: ID, title and creation
+  time (for the existing latest-100 session choices), owned by `commerce_media_writer`.
+- `fulfillment.order_cvs_tracking(tenant, store, order_ids uuid[])`: latest attempt's
+  order ID, state, shipment number and provider tracking ID, owned by `commerce_checkout_writer`.
+
+Each is STABLE, SECURITY DEFINER, `search_path=pg_catalog`, with explicit tenant/store
+and requested-ID predicates; PUBLIC is revoked and only `commerce_auth` receives
+EXECUTE. Runtime and buyer logins cannot call them. Empty/null ID arrays return no rows.
+The authenticated reader supplies server-derived scope and batches IDs per statement.
+Existing pre-0110 customer/CVS metadata grants remain unchanged; no additional direct
+access to the consumption ledger, session table or CVS tracking columns is allowed.
+KC03 explicitly enumerates the new claims helper, including its owner's implicit
+EXECUTE; its frozen table/column ACLs, LPC06 and TCV02 remain unchanged.
