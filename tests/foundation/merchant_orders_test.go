@@ -423,11 +423,18 @@ func TestMerchantOrdersFinalSQLFenceAfterObservedDataLock(t *testing.T) {
 		{"missing detail after revoke", "PT401", "UPDATE identity.sessions SET revoked_at=clock_timestamp() WHERE token_hash=$1", randomUUID()},
 		{"foreign detail after revoke", "PT401", "UPDATE identity.sessions SET revoked_at=clock_timestamp() WHERE token_hash=$1", foreignOrder},
 		{"empty list after revoke", "PT401", "UPDATE identity.sessions SET revoked_at=clock_timestamp() WHERE token_hash=$1", ""},
+		{"v2 revoked session", "PT401", "UPDATE identity.sessions SET revoked_at=clock_timestamp() WHERE token_hash=$1", ""},
+		{"v2 missing orders grant", "PT403", "DELETE FROM identity.store_grants WHERE principal_id=$1 AND permission='orders:read'", ""},
+		{"v2 empty list after revoke", "PT401", "UPDATE identity.sessions SET revoked_at=clock_timestamp() WHERE token_hash=$1", ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			readSQL := moRead
+			if strings.HasPrefix(tc.name, "v2 ") {
+				readSQL = moReadV2
+			}
 			principal, token := randomUUID(), randomToken()
 			store := b.f.storeA1
-			if tc.name == "empty list after revoke" {
+			if strings.HasSuffix(tc.name, "empty list after revoke") {
 				store = b.f.storeA2
 			}
 			mustExec(t, b.f.owner, `INSERT INTO identity.principals(id) VALUES($1)`, principal)
@@ -444,7 +451,7 @@ func TestMerchantOrdersFinalSQLFenceAfterObservedDataLock(t *testing.T) {
 			if err = tx.Commit(ctx); err != nil {
 				t.Fatal(err)
 			}
-			_, err = moRead(ctx, b.f.runtime, token, b.f.tenantA, store, principal, tc.order, "all", 1)
+			_, err = readSQL(ctx, b.f.runtime, token, b.f.tenantA, store, principal, tc.order, "all", 1)
 			if tc.name == "missing detail after revoke" || tc.name == "foreign detail after revoke" {
 				if sqlState(err) != "PT404" {
 					t.Fatalf("pre-wait missing detail=%v", err)
@@ -480,7 +487,7 @@ func TestMerchantOrdersFinalSQLFenceAfterObservedDataLock(t *testing.T) {
 			}
 			done := make(chan error, 1)
 			go func() {
-				_, e := moRead(ctx, reader, token, b.f.tenantA, store, principal, tc.order, "all", 1)
+				_, e := readSQL(ctx, reader, token, b.f.tenantA, store, principal, tc.order, "all", 1)
 				done <- e
 			}()
 			waitForDatabaseLock(t, b.f.owner, name)

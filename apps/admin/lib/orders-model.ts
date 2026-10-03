@@ -10,6 +10,7 @@ export { STORE_TIME_ZONE, displayTime, displayClock, minorDigits, wholeOnly, amo
 const commercialStates = ["DRAFT", "AWAITING_PAYMENT", "AWAITING_TRANSFER", "AWAITING_COLLECTION", "CONFIRMED", "CANCELLED"] as const;
 // `shipped`/`unshipped` are server-side list filters (manual-fulfilment-v1 §5.1), not order states.
 export const orderStates = [
+  "active",
   "all",
   ...commercialStates,
   "shipped",

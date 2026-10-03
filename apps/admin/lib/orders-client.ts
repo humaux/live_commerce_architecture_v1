@@ -2,6 +2,7 @@
 // -> Go `internal/httpapi/{orders,refunds,shipments}.go`. Reads parse the frozen DTOs; writes reuse writeSettings
 // (cookie CSRF + session fence + Idempotency-Key) and never trust their own response body for state (re-GET instead).
 import { csrfCookie, safeError, sessionBoundary, writeSettings } from "./settings-client";
+import { appendOrderFilters, parseOrderListV2, type OrderFilters } from "./orders-v2";
 import {
   parseOrderActions,
   parseOrderDetail,
@@ -19,11 +20,12 @@ export class OrderReadError extends Error {
 }
 
 // Shared by logistics-client.ts (same BFF envelope: private/no-store JSON, 401/403/404 mapped to a read code).
-export async function read(path: string, signal: AbortSignal): Promise<unknown> {
+export async function read(path: string, signal: AbortSignal, search?: string): Promise<unknown> {
   let response: Response;
   try {
     response = await fetch(path, {
-      method: "GET",
+      method: search ? "POST" : "GET",
+      ...(search ? { headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfCookie() }, body: JSON.stringify({ q: search }) } : {}),
       cache: "no-store",
       credentials: "same-origin",
       signal,
@@ -57,6 +59,20 @@ export async function readOrderList(store: string, state: OrderFilter, cursor: s
 export async function readOrderDetail(store: string, id: string, signal: AbortSignal) {
   try {
     return parseOrderDetail(await read(`/api/stores/${store}/orders/${id}`, signal), id);
+  } catch (error) {
+    if (error instanceof OrderReadError) throw error;
+    throw new OrderReadError("unavailable");
+  }
+}
+
+export async function readOrderListV2(store: string, state: OrderFilter, cursor: string, signal: AbortSignal, filters: OrderFilters) {
+  const query = new URLSearchParams({ view: "v2", limit: "10", state });
+  if (cursor) query.set("cursor", cursor);
+  appendOrderFilters(query, filters);
+  try {
+    const page = parseOrderListV2(await read(`/api/stores/${store}/orders${filters.q ? "/search" : ""}?${query}`, signal, filters.q));
+    if (page.total !== page.counts[filters.bucket]) throw new Error("count mismatch");
+    return page;
   } catch (error) {
     if (error instanceof OrderReadError) throw error;
     throw new OrderReadError("unavailable");

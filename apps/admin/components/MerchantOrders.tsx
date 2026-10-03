@@ -8,7 +8,7 @@
 // 0063 section in the same inline row; the list filter `cvs_pending` is one more state in the existing filter.
 // Live feel (ops-polish OP2): while the tab is visible the first page is re-read from the same list route every POLL_MS; ids not seen
 // before get a "new" marker and the tab title a count. No new route, no websocket, no notification API.
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 import type { Locale } from "@live-commerce/i18n";
@@ -18,7 +18,7 @@ import {
   exportUnshippedHref,
   readOrderActions,
   readOrderDetail,
-  readOrderList,
+  readOrderListV2,
   OrderReadError,
   type OrderReadCode,
 } from "@/lib/orders-client";
@@ -28,16 +28,19 @@ import {
   type OrderActions,
   type OrderDetail,
   type OrderFilter,
-  type OrderList,
   type OrderSummary,
 } from "@/lib/orders-model";
 import { ordersCopy, type OrdersCopy } from "@/lib/orders-copy";
 import { codCopy } from "@/lib/cod-copy";
+import { appendOrderFilters, buckets, emptyFilters, type OrderFilters, type OrderListV2, type OrderSummaryV2 } from "@/lib/orders-v2";
+import { ordersV2Copy } from "@/lib/orders-v2-copy";
+import { OrderListFilters } from "./OrderListFilters";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { amount, badge, detailPanel, type Sections } from "./OrderDetailPanel";
 import { Icon } from "./Icon";
 import "./orders.css";
 import "./order-actions.css";
+import "./orders-v2.css";
 
 const POLL_MS = 20_000;
 const noActions: OrderActions = { refund: false, fulfillment_write: false, orders_export: false };
@@ -46,7 +49,7 @@ type Status = "initial" | "loading" | "ready" | "hidden" | OrderReadCode;
 type View = {
   key: string;
   status: Status;
-  page: OrderList | null;
+  page: OrderListV2 | null;
   detail: OrderDetail | null;
   detailStatus: Status;
 };
@@ -57,12 +60,14 @@ function url(
   state: OrderFilter,
   cursor: string,
   order: string,
+  filters: OrderFilters,
 ) {
   const params = new URLSearchParams();
   if (store) params.set("store", store);
-  if (state !== "all") params.set("state", state);
-  if (cursor) params.set("cursor", cursor);
+  if (state !== "active") params.set("state", state);
+  if (cursor && !filters.q) params.set("cursor", cursor);
   if (order) params.set("order", order);
+  appendOrderFilters(params, filters);
   return `/${locale}/orders${params.size ? `?${params}` : ""}`;
 }
 
@@ -71,8 +76,9 @@ export function MerchantOrders({
   stores,
   store,
   state,
+  filters: routeFilters,
   order,
-  cursor,
+  cursor: routeCursor,
   initialError,
   renderKey,
 }: {
@@ -80,15 +86,22 @@ export function MerchantOrders({
   stores: Store[];
   store: Store | null;
   state: OrderFilter;
+  filters: OrderFilters;
   order: string;
   cursor: string;
   initialError: OrderReadCode | null;
   renderKey: string;
 }) {
   const c = ordersCopy[locale];
+  const v2 = ordersV2Copy[locale];
+  // Search text may identify a buyer. Memory only: never URL/history/storage.
+  const [search, setSearch] = useState({ store: store?.id ?? "", value: "", cursor: "" });
+  const cursor = search.store === store?.id && search.value ? search.cursor : routeCursor;
+  const filters = useMemo(() => ({ ...routeFilters, q: search.store === store?.id ? search.value : "" }), [routeFilters, search, store?.id]);
+  const filterKey = JSON.stringify(filters);
   const router = useRouter();
   const [refresh, setRefresh] = useState(0);
-  const key = `${renderKey}|${locale}|${store?.id ?? ""}|${state}|${cursor}|${order}|${initialError ?? ""}|${refresh}`;
+  const key = `${renderKey}|${locale}|${store?.id ?? ""}|${state}|${filterKey}|${cursor}|${order}|${initialError ?? ""}|${refresh}`;
   const [view, setView] = useState<View>({
     key: "",
     status: "initial",
@@ -109,7 +122,8 @@ export function MerchantOrders({
   const polling = useRef(false);
   const [fresh, setFresh] = useState<ReadonlySet<string>>(new Set());
   const current =
-    view.key === key && (!cookie.current || csrfCookie() === cookie.current)
+    (blocked.current && ["signed-out", "forbidden", "not-found"].includes(view.status)) ||
+    (view.key === key && (!cookie.current || csrfCookie() === cookie.current))
       ? view
       : {
           key,
@@ -124,6 +138,7 @@ export function MerchantOrders({
       generation.current++;
       controller.current?.abort();
       cookie.current = "";
+      if (status === "signed-out" || status === "forbidden" || status === "not-found") setSearch({ store: "", value: "", cursor: "" });
       if (block) {
         blocked.current = true;
         seen.current = null;
@@ -145,9 +160,9 @@ export function MerchantOrders({
 
   // Marks rows not seen before in this store+filter scope (first page only; later pages are not "newest"). A scope change starts clean.
   const noteSeen = useCallback(
-    (page: OrderList) => {
+    (page: OrderListV2) => {
       if (!store || cursor) return;
-      const scope = `${store.id}|${state}`;
+      const scope = `${store.id}|${state}|${filterKey}`;
       if (seen.current?.scope !== scope) {
         seen.current = { scope, ids: new Set(page.items.map((row) => row.order_id)) };
         setFresh(new Set());
@@ -159,7 +174,7 @@ export function MerchantOrders({
       added.forEach((id) => known.add(id));
       setFresh((old) => new Set([...old, ...added]));
     },
-    [store, state, cursor],
+    [store, state, cursor, filterKey],
   );
 
   const load = useCallback(async () => {
@@ -208,7 +223,7 @@ export function MerchantOrders({
         active.signal.aborted
       )
         return;
-      const page = await readOrderList(store.id, state, cursor, active.signal);
+      const page = await readOrderListV2(store.id, state, cursor, active.signal, filters);
       if (!(await stillCurrent(boundary)))
         throw new OrderReadError("signed-out");
       session.current = boundary; // The cookie is a change fence, not authority; BFF just authorized this read.
@@ -263,7 +278,7 @@ export function MerchantOrders({
         detailStatus: code,
       });
     }
-  }, [key, initialError, store, state, cursor, order, noteSeen]);
+  }, [key, initialError, store, state, cursor, order, noteSeen, filters]);
 
   // Permission probe for the action buttons only; every write is re-authorized by Go. A failed probe hides actions.
   useEffect(() => {
@@ -287,7 +302,7 @@ export function MerchantOrders({
     const signal = controller.current?.signal ?? new AbortController().signal;
     try {
       const [page, detail] = await Promise.all([
-        readOrderList(store.id, state, cursor, signal),
+        readOrderListV2(store.id, state, cursor, signal, filters),
         readOrderDetail(store.id, order, signal),
       ]);
       if (
@@ -308,21 +323,22 @@ export function MerchantOrders({
           : previous,
       );
       return true;
-    } catch {
+    } catch (error) {
+      if (generation.current === epoch && !signal.aborted && error instanceof OrderReadError && error.code !== "unavailable") clear(error.code, true);
       return false;
     }
-  }, [key, store, state, cursor, order]);
+  }, [key, store, state, cursor, order, filters, clear]);
 
   // ponytail: polling; switch to SSE once more than ~50 merchant tabs hold this page open at once.
   // Same guards as reload(): never while hidden/blocked, never overlapping, dropped if the session or load epoch changed.
   const poll = useCallback(async () => {
-    if (!store || cursor || hidden.current || blocked.current || !session.current || polling.current) return;
+    if (!store || hidden.current || blocked.current || !session.current || polling.current) return;
     polling.current = true;
     const epoch = generation.current;
     const boundary = session.current;
     const signal = controller.current?.signal ?? new AbortController().signal;
     try {
-      const page = await readOrderList(store.id, state, "", signal);
+      const page = await readOrderListV2(store.id, state, "", signal, filters);
       if (
         generation.current !== epoch ||
         hidden.current ||
@@ -330,15 +346,18 @@ export function MerchantOrders({
         (await sessionBoundary()) !== boundary
       )
         return;
+      // Later pages still probe authority, but never replace their rows with page one.
+      if (cursor) return;
       noteSeen(page);
       // Only the rows change: filters, scroll position, the open detail and the cursor stack stay as the merchant left them.
       setView((old) => (old.key === key && old.status === "ready" && old.page ? { ...old, page } : old));
-    } catch {
-      /* the next tick retries; a failed poll must not replace a good list with an error */
+    } catch (error) {
+      // Transient transport failure can retry; an authoritative denial clears PII immediately.
+      if (generation.current === epoch && !signal.aborted && error instanceof OrderReadError && error.code !== "unavailable") clear(error.code, true);
     } finally {
       polling.current = false;
     }
-  }, [key, store, state, cursor, noteSeen]);
+  }, [key, store, state, cursor, noteSeen, filters, clear]);
   useEffect(() => {
     const timer = window.setInterval(() => void poll(), POLL_MS);
     return () => window.clearInterval(timer);
@@ -429,9 +448,14 @@ export function MerchantOrders({
     nextState: OrderFilter,
     nextCursor: string,
     nextOrder: string,
+    nextFilters: OrderFilters = filters,
   ) {
     clear("loading");
-    router.push(url(locale, nextStore, nextState, nextCursor, nextOrder));
+    const searchChanged = search.store !== nextStore || search.value !== nextFilters.q || search.cursor !== nextCursor;
+    setSearch(old => old.store === nextStore && old.value === nextFilters.q && old.cursor === nextCursor ? old : { store: nextStore, value: nextFilters.q, cursor: nextCursor });
+    const destination = url(locale, nextStore, nextState, nextCursor, nextOrder, nextFilters);
+    if (destination !== window.location.pathname + window.location.search) router.push(destination);
+    else if (!searchChanged) setRefresh(value => value + 1);
   }
   function choose(row: OrderSummary) {
     if (fresh.has(row.order_id)) setFresh((old) => new Set([...old].filter((id) => id !== row.order_id)));
@@ -476,7 +500,7 @@ export function MerchantOrders({
       storeName={store?.name ?? c.noStore}
       active="orders"
     >
-      <div className="orders-page" data-testid="merchant-orders">
+      <div className="orders-page orders-v2" data-testid="merchant-orders">
         <header className="orders-heading">
           <h1>{c.title}</h1>
           <p>{c.subtitle}</p>
@@ -490,7 +514,7 @@ export function MerchantOrders({
                 value={store?.id ?? ""}
                 onChange={(event) => {
                   previous.current = [];
-                  navigate(event.target.value, state, "", "");
+                  navigate(event.target.value, state, "", "", emptyFilters);
                 }}
               >
                 {stores.map((item) => (
@@ -571,15 +595,27 @@ export function MerchantOrders({
           )}
         {current.status === "ready" && current.page && (
           <>
+            <OrderListFilters key={`${store?.id}|${filterKey}`} locale={locale} filters={filters} sessions={current.page.sessions} disabled={false}
+              onApply={next => { previous.current = []; navigate(store?.id ?? "", state, "", "", next); }} />
+            <nav className="orders-v2-tabs" aria-label={v2.counts} data-testid="orders-tabs">
+              {buckets.map(bucket => <button type="button" key={bucket} data-testid={`orders-bucket-${bucket}`} aria-pressed={filters.bucket === bucket}
+                onClick={() => { previous.current = []; navigate(store?.id ?? "", "active", "", "", { ...filters, bucket }); }}>
+                {v2.tabs[bucket]} <span data-testid={`orders-count-${bucket}`}>{current.page!.counts[bucket]}</span>
+              </button>)}
+            </nav>
+            <p className="orders-v2-total" data-testid="orders-total">{v2.total}: {current.page.total}</p>
+            {filters.bucket === "completed" && <p className="orders-v2-note">{v2.completedNote}</p>}
             <div className="orders-table-scroll">
               <table className="orders-table" data-testid="orders-table">
                 <thead>
                   <tr>
                     <th>{c.order}</th>
                     <th>{c.created}</th>
+                    <th>{v2.recipient}</th>
                     <th>{c.total}</th>
-                    <th>{c.commercial}</th>
-                    <th>{c.payment}</th>
+                    <th>{v2.paymentColumn}</th>
+                    <th>{v2.deliveryColumn}</th>
+                    <th>{v2.source}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -659,7 +695,7 @@ function OrderRow({
   detailStatus,
   sections,
 }: {
-  row: OrderSummary;
+  row: OrderSummaryV2;
   c: OrdersCopy;
   locale: Locale;
   selected: boolean;
@@ -669,6 +705,7 @@ function OrderRow({
   detailStatus: Status;
   sections: Sections | null;
 }) {
+  const v2 = ordersV2Copy[locale];
   return (
     <>
       <tr
@@ -689,7 +726,7 @@ function OrderRow({
               style={{ transform: selected ? "rotate(90deg)" : undefined }}
             />
             <span>
-              {row.order_id.slice(0, 4)}…{row.order_id.slice(-4)}
+              {row.order_number}
             </span>
             {isNew && (
               <span className="orders-badge" data-testid={`order-new-${row.order_id}`}>
@@ -704,19 +741,23 @@ function OrderRow({
           </button>
         </td>
         <td data-label={c.created}>{displayTime(locale, row.created_at)}</td>
+        <td data-label={v2.recipient}>{row.recipient_masked}</td>
         <td data-label={c.total}>
           {amount(locale, row.currency, row.total_minor)}
           {row.payment_mode === "cash_on_delivery" && <strong className="orders-cod-amount" data-testid="order-row-collect">{codCopy[locale].collectAmount}: {amount(locale, row.currency, row.cod_collect_minor ?? 0)}</strong>}
         </td>
-        <td data-label={c.commercial}>{badge(row.commercial_state, c)}</td>
-        <td data-label={c.payment}>
+        <td data-label={v2.paymentColumn} data-testid="order-payment-cell">
+          <span>{v2.modes[row.payment_mode]}</span>
           {badge(row.payment_state, c)}
+          {(row.payment_mode === "cash_on_delivery" || row.payment_mode === "pay_at_pickup") && <span>{row.collection_state === "COLLECTED" ? v2.collected : v2.pendingCollection}</span>}
           {row.test_mode && <span className="orders-test">{c.test}</span>}
         </td>
+        <td data-label={v2.deliveryColumn}><span>{v2.deliveries[row.delivery_kind]}</span>{badge(row.fulfillment_state, c)}{badge(row.commercial_state, c)}</td>
+        <td data-label={v2.source}>{row.live_sessions.length ? <><span>{v2.live}</span>{row.live_sessions.map(s => <span key={s.id}>{s.name}</span>)}</> : row.source === "merchant_manual" ? v2.manual : v2.storefront}</td>
       </tr>
       {selected && (
         <tr className="orders-detail-row">
-          <td colSpan={5}>
+          <td colSpan={7}>
             {detail && sections ? (
               detailPanel(detail, locale, c, sections)
             ) : (

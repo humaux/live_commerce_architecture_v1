@@ -1,0 +1,7 @@
+=== RUN   TestMerchantOrdersV2ReadContract
+    merchant_orders_v2_test.go:21: v2 read status=422 body={"code":"invalid_request","message":"Request validation failed.","request_id":"b7aa2d03f5f017fbf18f5ed127085381","retryable":false,"details":{}}
+--- FAIL: TestMerchantOrdersV2ReadContract (4.46s)
+FAIL
+FAIL	livecommerce/tests/foundation	5.434s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
