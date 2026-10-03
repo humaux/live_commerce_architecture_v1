@@ -280,6 +280,12 @@ export function editDocument(
       });
       continue;
     }
+    // b77eeb11: an archive entry is exclusive. Discard even invalid edits on
+    // this retired row; only the remaining active rows participate in edits.
+    if (!row.active && old.active) {
+      rows.push({ id: row.id, active: false });
+      continue;
+    }
     const change: Record<string, unknown> = { id: row.id };
     for (const [field, wire] of [
       ["price", "price_minor"],
