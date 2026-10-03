@@ -591,7 +591,7 @@ Package storefrontdomains owns the merchant self-service domain lifecycle and th
 
 ## `internal/storehandles`
 
-Package storehandles owns the store handle grammar (R5 unit store-domains, Decision 1): the platform-wide, lower-case ASCII slug under which a store is addressed at https://<handle>.<LC_STORE_BASE_DOMAIN>.
+Package storehandles owns the explicit operator handle grammar and reserved names.
 
 - Depends on (internal): —
 - Depends on (third-party): —
