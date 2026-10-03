@@ -207,7 +207,9 @@ export function ProductQuickEdit({
                             autoFocus={i === 0}
                             data-testid={`quick-delta-${i}`}
                             inputMode="text"
-                            disabled={!detail.warehouse_id}
+                            disabled={
+                              !detail.warehouse_id || sku.on_hand === null
+                            }
                             value={
                               deltas[sku.id] ??
                               (row.quantity !== "" && sku.on_hand !== null
@@ -223,6 +225,9 @@ export function ProductQuickEdit({
                                 });
                             }}
                           />
+                          {sku.on_hand === null && (
+                            <small>{c.deltaUnavailable}</small>
+                          )}
                         </label>
                         <label>
                           {c.targetQty}

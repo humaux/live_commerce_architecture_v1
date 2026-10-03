@@ -143,6 +143,8 @@ const en = {
   unpublish: "Unpublish to draft",
   unpublishConfirm:
     "Unpublish this product? Shoppers will no longer be able to buy it.",
+  deltaUnavailable:
+    "The current quantity is unknown. Save an explicit target before using add/subtract.",
   archive: "Archive",
   addCollection: "Add to collection",
   copy: "Copy",
@@ -295,6 +297,7 @@ const zhTW: Copy = {
   publishSelected: "上架",
   unpublish: "下架轉草稿",
   unpublishConfirm: "確定下架此商品？買家將無法再購買此商品。",
+  deltaUnavailable: "目前數量未知，請先儲存明確的改後庫存，再使用加減調整。",
   archive: "封存",
   addCollection: "加入分類",
   copy: "複製",
@@ -446,6 +449,7 @@ const zhCN: Copy = {
   publishSelected: "上架",
   unpublish: "下架转草稿",
   unpublishConfirm: "确定下架此商品？买家将无法再购买此商品。",
+  deltaUnavailable: "当前数量未知，请先保存明确的改后库存，再使用加减调整。",
   archive: "封存",
   addCollection: "加入分类",
   copy: "复制",

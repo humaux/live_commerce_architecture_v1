@@ -51,6 +51,7 @@ export function ProductDocumentForm({
     [photos, setPhotos] = useState<DraftPhoto[]>([]),
     [collections, setCollections] = useState<Collection[]>([]),
     [warehouses, setWarehouses] = useState<{ id: string; name: string }[]>([]);
+  const [referencesReady, setReferencesReady] = useState(false);
   const [collectionQuery, setCollectionQuery] = useState(""),
     [targetStatus, setTargetStatus] = useState<"draft" | "active" | "archived">(
       detail?.status ?? "draft",
@@ -61,6 +62,7 @@ export function ProductDocumentForm({
     urlPhotos = useRef<DraftPhoto[]>([]),
     rowArchive = useRef<DraftRow[]>([]);
   const disabled =
+    !referencesReady ||
     !write.fenceReady ||
     write.recoveryBlocked ||
     write.busy ||
@@ -116,6 +118,7 @@ export function ProductDocumentForm({
   );
   useEffect(() => {
     const abort = new AbortController();
+    setReferencesReady(false);
     void Promise.all([
       readCollections(store.id, abort.signal),
       readWarehouses(store.id, abort.signal),
@@ -124,6 +127,7 @@ export function ProductDocumentForm({
         if (!abort.signal.aborted) {
           setCollections(col.items);
           setWarehouses(wh);
+          setReferencesReady(true);
         }
       })
       .catch(() => {
