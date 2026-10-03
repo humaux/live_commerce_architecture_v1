@@ -87,10 +87,78 @@ BEGIN
   SELECT src.order_id,src.session_id,ls.name,ls.session_created_at FROM sources src
   JOIN live.order_session_labels(s.tenant_id,p_store,
     ARRAY(SELECT DISTINCT session_id FROM sources)) ls ON ls.session_id=src.session_id
+ ), scan AS MATERIALIZED (
+  -- One pass over the store's orders on cheap row facts. The snapshot is read only by the delivery filter and by q;
+  -- the q forms are OR-ed substring/exact matches (recipient and SKU have no usable index), so they share this pass.
+  -- Display values and the CVS/live helpers are NOT computed here: only the page and the labelled orders need them.
+  SELECT o.id,o.tenant_id,o.store_id,o.created_at,o.commercial_state,o.fulfillment_state,o.payment_mode,o.collection_state,
+   p_query<>'' AND (
+     position(lower(p_query) IN lower('LC-'||replace(o.id::text,'-','')))>0
+     OR o.id::text=p_query
+     OR position(lower(p_query) IN lower(sn.j#>>'{destination,recipient_name}'))>0
+     OR (p_query ~ '^[0-9]{4}$' AND o.id IN (SELECT ph.id FROM checkout.orders ph WHERE ph.tenant_id=s.tenant_id
+       AND ph.store_id=p_store AND right(ph.snapshot#>>'{destination,phone}',4)=p_query))
+     OR EXISTS(SELECT 1 FROM jsonb_array_elements(sn.j#>'{quote,lines}') line
+       WHERE position(lower(p_query) IN lower(line->>'code'))>0)
+     OR EXISTS(SELECT 1 FROM fulfillment.manual_shipment_heads h JOIN fulfillment.manual_shipment_versions v
+       ON v.tenant_id=h.tenant_id AND v.store_id=h.store_id AND v.order_id=h.order_id AND v.version=h.current_version
+       WHERE h.tenant_id=o.tenant_id AND h.store_id=o.store_id AND h.order_id=o.id AND v.status='SHIPPED'
+         AND v.tracking_number=p_query)) AS q_hit
+  FROM checkout.orders o
+  -- #> '{}' is the whole jsonb, detoasted once per row (the snapshot is pglz-compressed; every path operator on the raw column
+  -- would decompress it again). OFFSET 0 keeps the lateral from being pulled up and re-evaluated per use.
+  CROSS JOIN LATERAL (SELECT CASE WHEN p_query<>'' OR p_delivery<>'' THEN o.snapshot#>'{}' END AS j OFFSET 0) sn
+  WHERE o.tenant_id=s.tenant_id AND o.store_id=p_store
+   AND (p_payment='' OR o.payment_mode=p_payment)
+   AND (p_delivery='' OR CASE WHEN sn.j#>>'{destination,kind}'='home' THEN 'home'
+     ELSE sn.j#>>'{destination,pickup,kind}' END=p_delivery)
+   AND (p_session IS NULL OR o.id IN (SELECT l.order_id FROM linked l WHERE l.session_id=p_session))
+   AND (p_from IS NULL OR o.created_at>=p_from) AND (p_to IS NULL OR o.created_at<p_to)
  ), cvs AS MATERIALIZED (
-  SELECT c.order_id,c.state,c.provider_logistics_id,c.shipment_no FROM order_ids ids
-  CROSS JOIN LATERAL fulfillment.order_cvs_tracking(s.tenant_id,p_store,ids.ids) c
+  -- Invariant I13 (0072, deferred constraint trigger): fulfillment_state=PROVIDER_LABEL_CREATED <=> some shipment is in
+  -- CREATED..UNCLAIMED. Every use of a CVS state below (consign/shipped/completed flags, the tracking match) needs such a
+  -- state, so only labelled orders can differ from "no shipment"; other orders skip the helper without changing a result.
+  SELECT c.order_id,c.state,c.provider_logistics_id,c.shipment_no
+  FROM (SELECT coalesce(array_agg(id),'{}'::uuid[]) AS ids FROM scan
+    WHERE fulfillment_state='PROVIDER_LABEL_CREATED') lab
+  CROSS JOIN LATERAL fulfillment.order_cvs_tracking(s.tenant_id,p_store,lab.ids) c
  ), filtered AS MATERIALIZED (
+  SELECT o.id,o.tenant_id,o.store_id,o.created_at,o.commercial_state,o.fulfillment_state,o.payment_mode,o.collection_state,
+   o.commercial_state NOT IN ('DRAFT','CANCELLED') AND
+     ((o.payment_mode='card' AND o.commercial_state<>'CONFIRMED') OR
+      (o.payment_mode='bank_transfer' AND o.commercial_state='AWAITING_TRANSFER' AND bt.state<>'SUBMITTED') OR
+      (o.payment_mode IN ('cash_on_delivery','pay_at_pickup') AND o.collection_state='PENDING')) AS unpaid,
+   o.commercial_state='AWAITING_TRANSFER' AND bt.state='SUBMITTED' AS transfer_review,
+   o.commercial_state IN ('CONFIRMED','AWAITING_COLLECTION') AND o.fulfillment_state='MANUAL_UNASSIGNED'
+     AND fulfillment.manual_shipment_eligible(o.tenant_id,o.store_id,o.id) AS ready_to_ship,
+   o.fulfillment_state='PROVIDER_LABEL_CREATED' AND cs.state='CREATED' AS ready_to_consign,
+   o.fulfillment_state='MERCHANT_SHIPPED' OR cs.state IN ('AT_DC','AT_STORE','PICKED_UP') AS shipped,
+   o.commercial_state<>'CANCELLED' AND (o.collection_state='COLLECTED' OR
+     (cs.state='PICKED_UP' AND o.payment_mode IN ('card','bank_transfer')
+       AND fulfillment.order_money_shippable(o.tenant_id,o.store_id,o.id))) AS completed,
+   o.commercial_state='CANCELLED' AS cancelled
+  FROM scan o
+  LEFT JOIN checkout.bank_transfers bt ON bt.tenant_id=o.tenant_id AND bt.store_id=o.store_id AND bt.order_id=o.id
+  LEFT JOIN cvs cs ON cs.order_id=o.id
+  WHERE p_query='' OR o.q_hit
+   OR (cs.state IN ('CREATED','AT_DC','AT_STORE','PICKED_UP','UNCLAIMED')
+     AND (cs.shipment_no=p_query OR cs.provider_logistics_id=p_query))
+ ), matched AS MATERIALIZED (
+  SELECT * FROM filtered WHERE p_state='all' OR (p_state='active' AND commercial_state<>'DRAFT')
+   OR (p_state IN ('DRAFT','AWAITING_PAYMENT','AWAITING_TRANSFER','CONFIRMED','CANCELLED') AND commercial_state=p_state)
+   OR (p_state='AWAITING_COLLECTION' AND commercial_state='AWAITING_COLLECTION' AND collection_state='PENDING')
+   OR (p_state='shipped' AND shipped) OR (p_state='unshipped' AND ready_to_ship)
+   OR (p_state='cvs_pending' AND ready_to_consign)
+ ), bucketed AS MATERIALIZED (
+  SELECT * FROM matched WHERE p_bucket='all' OR (p_bucket='unpaid' AND unpaid)
+   OR (p_bucket='transfer_review' AND transfer_review) OR (p_bucket='ready_to_ship' AND ready_to_ship)
+   OR (p_bucket='ready_to_consign' AND ready_to_consign) OR (p_bucket='shipped' AND shipped)
+   OR (p_bucket='completed' AND completed) OR (p_bucket='cancelled' AND cancelled)
+ ), paged AS MATERIALIZED (
+  SELECT id FROM bucketed WHERE p_after_id IS NULL OR (created_at,id)<(p_after_created_at,p_after_id)
+  ORDER BY created_at DESC,id DESC LIMIT p_limit
+ ), owned AS MATERIALIZED (
+  -- Row display values (snapshot-derived, live sessions) only for the page.
   SELECT o.id,o.tenant_id,o.store_id,o.owner_id,o.created_at,o.updated_at,o.currency,
    o.total_minor,o.commercial_state,o.fulfillment_state,o.country,o.service_code,
    o.payment_mode,o.collection_state,o.cod_surcharge_minor,o.source,
@@ -106,55 +174,8 @@ BEGIN
      WHEN o.snapshot#>>'{destination,pickup,kind}' IN ('cvs_711','cvs_familymart','cvs_hilife','cvs_okmart')
        THEN o.snapshot#>>'{destination,pickup,kind}' ELSE 'unknown' END AS delivery_kind,
    coalesce((SELECT jsonb_agg(jsonb_build_object('id',l.session_id,'name',l.name) ORDER BY l.session_id)
-     FROM linked l WHERE l.order_id=o.id),'[]'::jsonb) AS live_sessions,
-   o.commercial_state NOT IN ('DRAFT','CANCELLED') AND
-     ((o.payment_mode='card' AND o.commercial_state<>'CONFIRMED') OR
-      (o.payment_mode='bank_transfer' AND o.commercial_state='AWAITING_TRANSFER' AND bt.state<>'SUBMITTED') OR
-      (o.payment_mode IN ('cash_on_delivery','pay_at_pickup') AND o.collection_state='PENDING')) AS unpaid,
-   o.commercial_state='AWAITING_TRANSFER' AND bt.state='SUBMITTED' AS transfer_review,
-   o.commercial_state IN ('CONFIRMED','AWAITING_COLLECTION') AND o.fulfillment_state='MANUAL_UNASSIGNED'
-     AND fulfillment.manual_shipment_eligible(o.tenant_id,o.store_id,o.id) AS ready_to_ship,
-   o.fulfillment_state='PROVIDER_LABEL_CREATED' AND cs.state='CREATED' AS ready_to_consign,
-   o.fulfillment_state='MERCHANT_SHIPPED' OR cs.state IN ('AT_DC','AT_STORE','PICKED_UP') AS shipped,
-   o.commercial_state<>'CANCELLED' AND (o.collection_state='COLLECTED' OR
-     (cs.state='PICKED_UP' AND o.payment_mode IN ('card','bank_transfer')
-       AND fulfillment.order_money_shippable(o.tenant_id,o.store_id,o.id))) AS completed,
-   o.commercial_state='CANCELLED' AS cancelled
-  FROM checkout.orders o
-  LEFT JOIN checkout.bank_transfers bt ON bt.tenant_id=o.tenant_id AND bt.store_id=o.store_id AND bt.order_id=o.id
-  LEFT JOIN cvs cs ON cs.order_id=o.id
-  WHERE o.tenant_id=s.tenant_id AND o.store_id=p_store
-   AND (p_payment='' OR o.payment_mode=p_payment)
-   AND (p_delivery='' OR CASE WHEN o.snapshot#>>'{destination,kind}'='home' THEN 'home'
-     ELSE o.snapshot#>>'{destination,pickup,kind}' END=p_delivery)
-   AND (p_session IS NULL OR EXISTS(SELECT 1 FROM linked l WHERE l.order_id=o.id AND l.session_id=p_session))
-   AND (p_from IS NULL OR o.created_at>=p_from) AND (p_to IS NULL OR o.created_at<p_to)
-   AND (p_query='' OR position(lower(p_query) IN lower('LC-'||replace(o.id::text,'-','')))>0
-     OR o.id::text=p_query
-     OR position(lower(p_query) IN lower(o.snapshot#>>'{destination,recipient_name}'))>0
-     OR (p_query ~ '^[0-9]{4}$' AND right(o.snapshot#>>'{destination,phone}',4)=p_query)
-     OR EXISTS(SELECT 1 FROM jsonb_array_elements(o.snapshot#>'{quote,lines}') line
-       WHERE position(lower(p_query) IN lower(line->>'code'))>0)
-     OR EXISTS(SELECT 1 FROM fulfillment.manual_shipment_heads h JOIN fulfillment.manual_shipment_versions v
-       ON v.tenant_id=h.tenant_id AND v.store_id=h.store_id AND v.order_id=h.order_id AND v.version=h.current_version
-       WHERE h.tenant_id=o.tenant_id AND h.store_id=o.store_id AND h.order_id=o.id AND v.status='SHIPPED'
-         AND v.tracking_number=p_query)
-     OR (cs.state IN ('CREATED','AT_DC','AT_STORE','PICKED_UP','UNCLAIMED')
-       AND (cs.shipment_no=p_query OR cs.provider_logistics_id=p_query)))
- ), matched AS MATERIALIZED (
-  SELECT * FROM filtered WHERE p_state='all' OR (p_state='active' AND commercial_state<>'DRAFT')
-   OR (p_state IN ('DRAFT','AWAITING_PAYMENT','AWAITING_TRANSFER','CONFIRMED','CANCELLED') AND commercial_state=p_state)
-   OR (p_state='AWAITING_COLLECTION' AND commercial_state='AWAITING_COLLECTION' AND collection_state='PENDING')
-   OR (p_state='shipped' AND shipped) OR (p_state='unshipped' AND ready_to_ship)
-   OR (p_state='cvs_pending' AND ready_to_consign)
- ), bucketed AS MATERIALIZED (
-  SELECT * FROM matched WHERE p_bucket='all' OR (p_bucket='unpaid' AND unpaid)
-   OR (p_bucket='transfer_review' AND transfer_review) OR (p_bucket='ready_to_ship' AND ready_to_ship)
-   OR (p_bucket='ready_to_consign' AND ready_to_consign) OR (p_bucket='shipped' AND shipped)
-   OR (p_bucket='completed' AND completed) OR (p_bucket='cancelled' AND cancelled)
- ), owned AS MATERIALIZED (
-  SELECT * FROM bucketed WHERE p_after_id IS NULL OR (created_at,id)<(p_after_created_at,p_after_id)
-  ORDER BY created_at DESC,id DESC LIMIT p_limit
+     FROM linked l WHERE l.order_id=o.id),'[]'::jsonb) AS live_sessions
+  FROM paged p JOIN checkout.orders o ON o.tenant_id=s.tenant_id AND o.store_id=p_store AND o.id=p.id
 $query$;
  body:=substring(body FROM 1 FOR before_owned-1)||replacement||substring(body FROM after_owned);
  needle:='''order_id'',o.id,''created_at''';

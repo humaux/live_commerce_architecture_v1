@@ -187,4 +187,15 @@ func TestMerchantOrdersV2DomainReadScope(t *testing.T) {
 	if err := json.Unmarshal(response.Body.Bytes(), &page); err != nil || response.Code != 200 || page.Total != 1 || len(page.Items) != 1 || page.Items[0].ID != cvsOrder {
 		t.Fatalf("CVS tracking search: status=%d body=%s err=%v", response.Code, response.Body.String(), err)
 	}
+	// Queue counts read the same labelled CVS state: the real CREATED label is the store's one consign task and not yet shipped.
+	list := httptest.NewRequest("GET", "/v1/admin/stores/"+e.store()+"/orders?view=v2&limit=100", nil)
+	list.Header.Set("Authorization", "Bearer "+e.token())
+	listed := httptest.NewRecorder()
+	e.merchant.ServeHTTP(listed, list)
+	var queues struct {
+		Counts map[string]int `json:"counts"`
+	}
+	if err := json.Unmarshal(listed.Body.Bytes(), &queues); err != nil || listed.Code != 200 || queues.Counts["ready_to_consign"] != 1 || queues.Counts["shipped"] != 0 {
+		t.Fatalf("CVS queue counts: status=%d body=%s err=%v", listed.Code, listed.Body.String(), err)
+	}
 }
