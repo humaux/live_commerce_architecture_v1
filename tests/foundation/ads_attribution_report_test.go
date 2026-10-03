@@ -111,6 +111,11 @@ func atReportClaims(t *testing.T, o rfxOrder) *mciEnv {
 	}
 	mustExec(t, f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) SELECT $1,$2,$3,p FROM unnest(ARRAY['integration:execute','integration:manage']) p ON CONFLICT DO NOTHING`, f.tenantA, f.storeA1, h.actor)
 	m.session = h.draft(t, f.storeA1)
+	t.Cleanup(func() {
+		// Delete this fixture's aggregate snapshot before the shared session purge.
+		mustExec(t, f.owner, `DELETE FROM ads.live_audience_snapshots WHERE tenant_id=$1 AND store_id=$2 AND session_id=$3`, f.tenantA, f.storeA1, m.session)
+		m.cleanup()
+	})
 	h.open(t, m.session, claims.MatchExact)
 	m.sku = h.stock.skus[0].ID
 	m.offer = h.offer(t, m.session, "A1", m.sku, 5)
@@ -160,7 +165,13 @@ func atNewReportEnv(t *testing.T) *atReportEnv {
 	caps := []buyer.Capability{mustIssue(t, m.h.service, p.f.storeA1), p.cap, mustIssue(t, m.h.service, p.f.storeA1)}
 	for i, cap := range caps {
 		at := mciSoon()
-		sent := m.postFBTo(t, m.postID, "", "", "A1", &at, nil, true)
+		comment := "A1"
+		if i < 2 {
+			// Match canonical Stripe fixtures: 2 x 1250 meets the real TWD
+			// whole-dollar/minimum-amount contract. COD has no Stripe minimum.
+			comment = "A1+2"
+		}
+		sent := m.postFBTo(t, m.postID, "", "", comment, &at, nil, true)
 		m.apply(t)
 		intake := m.mustIntake(t, "page", m.pageAsset, sent.comment)
 		if intake.State != "APPLIED" {
@@ -184,7 +195,7 @@ func atNewReportEnv(t *testing.T) *atReportEnv {
 	}
 	m.h.closeWindow(t, m.session)
 	offline := &tcvEnv{t: t, p: p, svc: p.bcHarness.service, merchant: httpapi.NewHandler(p.f.runtime, httpapi.Options{})}
-	r.grant(t, r.base, "payments:manage", "payments:refund", "orders:read", "fulfillment:write")
+	r.grant(t, r.base, "integration:manage", "payments:refund", "orders:read", "fulfillment:write")
 	if st, _ := offline.hcodSettings(0, true, 20000, 50, "black_cat"); st != 200 {
 		t.Fatalf("COD settings=%d", st)
 	}
@@ -283,7 +294,7 @@ func atNewReportEnv(t *testing.T) *atReportEnv {
 	if err := p.f.owner.QueryRow(context.Background(), `SELECT snapshot#>>'{quote,lines,0,name}' FROM checkout.orders WHERE id=$1`, x.paid.order).Scan(&productName); err != nil {
 		t.Fatal(err)
 	}
-	x.expected = map[string]any{"orders": 3, "net_minor": x.paid.captured - 100 + x.returning.captured, "pending_orders": 1, "pending_minor": pending, "spend_minor": 1730, "meta_purchases": 9, "meta_value_minor": 90000, "comments": 3, "claims": 3, "checkout_links": 3, "paid_orders": 2, "ambiguous_orders": 2, "new_buyers": 1, "returning_buyers": 1, "counties": []map[string]any{{"name": "臺北市", "orders": 1, "net_minor": x.paid.captured - 100}, {"name": "—", "orders": 1, "net_minor": x.returning.captured}}, "top_products": []map[string]any{{"name": productName, "quantity": 2}}}
+	x.expected = map[string]any{"orders": 3, "net_minor": x.paid.captured - 100 + x.returning.captured, "pending_orders": 1, "pending_minor": pending, "spend_minor": 1730, "meta_purchases": 9, "meta_value_minor": 90000, "comments": 3, "claims": 3, "checkout_links": 3, "paid_orders": 2, "ambiguous_orders": 2, "new_buyers": 1, "returning_buyers": 1, "counties": []map[string]any{{"name": "臺北市", "orders": 1, "net_minor": x.paid.captured - 100}, {"name": "—", "orders": 1, "net_minor": x.returning.captured}}, "top_products": []map[string]any{{"name": productName, "quantity": 4}}}
 	return x
 }
 

@@ -96,7 +96,7 @@ func TestBrowserAdsAttributionCheckout(t *testing.T) {
 	// Browser places six distinct real orders (three locales x two sizes).
 	// Configuration uses actual merchant settings, and all writes occur before
 	// the read-only control server exists. No endpoint fabricates an order.
-	for _, permission := range []string{"payments:manage", "orders:read", "fulfillment:write"} {
+	for _, permission := range []string{"integration:manage", "orders:read", "fulfillment:write"} {
 		mustExec(t, c.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING`, c.tenant, c.store, c.creator, permission)
 	}
 	offline := &tcvEnv{t: t, p: c.p.psHarness, merchant: httpapi.NewHandler(c.f.runtime, httpapi.Options{})}
