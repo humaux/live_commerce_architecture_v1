@@ -581,7 +581,7 @@ test("MOU03 labeled fault injection: invalid DTO, non-JSON and network failure r
   }
 });
 
-test("MOU03 delayed old success/error cannot repaint store, filter, locale or new session", async ({
+test("MOU03 delayed old success/error cannot repaint filter, locale or new session; shell store switch cancels the in-flight old-store read", async ({
   page,
   context,
 }) => {
@@ -619,8 +619,10 @@ test("MOU03 delayed old success/error cannot repaint store, filter, locale or ne
     return { intercepted, release, remove: () => page.unroute(path, handler) };
   }
   const oldStore = await delayed(`**/api/stores/${store}/orders?*`, false);
-  // Shell switching performs full navigation, canceling the old request. The
-  // filter/locale cases below still exercise late-response generation fences.
+  // This subcase proves only that the shell store switch (a full navigation) cancels the
+  // in-flight old-store read: the late response is never observed repainting. It does NOT
+  // prove the in-page generation fence for a store change, because a store can no longer
+  // change in-page. The filter/locale cases below exercise the late-response generation fences.
   await page.getByTestId("state-filter").selectOption("DRAFT");
   await oldStore.intercepted;
   await switchOrderStore(page, foreignStore);
