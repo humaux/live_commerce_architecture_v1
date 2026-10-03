@@ -1,0 +1,35 @@
+✔ D1, D6, R7: exact amounts and sources remain independent, account days stay labelled (2.960666ms)
+✔ R8: null stays unknown and unauthorised / insufficient remain different states (0.216541ms)
+✔ I12 forged / missing frozen fields never silently become zeros (0.633542ms)
+✔ only whitelisted aggregates survive: extra identifiers and HTML are never interpreted (0.088166ms)
+✔ attribution is a read-only BFF resource with exact bounded query grammar (0.320667ms)
+✖ audience-read is exactly the new local intention POST and never a data GET or queried write (0.302084ms)
+✔ route fails closed without ads:read and is not a duplicate navigation entry; locale keys match (0.127083ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 6
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 103.898417
+
+✖ failing tests:
+
+test at tests/admin/attribution.test.ts:132:1
+✖ audience-read is exactly the new local intention POST and never a data GET or queried write (0.302084ms)
+  AssertionError [ERR_ASSERTION]: Go audience-read rejects any body
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/tests/admin/attribution.test.ts:135:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'ads/sessions/22222222-2222-4222-8222-222222222222/audience-read',
+    expected: /^ads\/drafts\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/(?:pause|end)$/,
+    operator: 'match',
+    diff: 'simple'
+  }

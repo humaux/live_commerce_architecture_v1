@@ -1,0 +1,57 @@
+=== RUN   TestAdsAttributionAT1AtomicRollback
+--- PASS: TestAdsAttributionAT1AtomicRollback (1.29s)
+=== RUN   TestAdsAttributionAT2PayloadAndTerminalIP
+=== RUN   TestAdsAttributionAT2PayloadAndTerminalIP/consented
+=== RUN   TestAdsAttributionAT2PayloadAndTerminalIP/refused
+--- PASS: TestAdsAttributionAT2PayloadAndTerminalIP (4.39s)
+    --- PASS: TestAdsAttributionAT2PayloadAndTerminalIP/consented (1.76s)
+    --- PASS: TestAdsAttributionAT2PayloadAndTerminalIP/refused (2.63s)
+=== RUN   TestAdsAttributionR3NoOperationPurge
+=== RUN   TestAdsAttributionR3NoOperationPurge/no_consent
+=== RUN   TestAdsAttributionR3NoOperationPurge/disabled
+=== RUN   TestAdsAttributionR3NoOperationPurge/expired
+=== RUN   TestAdsAttributionR3NoOperationPurge/cancelled
+--- PASS: TestAdsAttributionR3NoOperationPurge (1.65s)
+    --- PASS: TestAdsAttributionR3NoOperationPurge/no_consent (0.42s)
+    --- PASS: TestAdsAttributionR3NoOperationPurge/disabled (0.39s)
+    --- PASS: TestAdsAttributionR3NoOperationPurge/expired (0.42s)
+    --- PASS: TestAdsAttributionR3NoOperationPurge/cancelled (0.42s)
+=== RUN   TestAdsAttributionR2ScopeAndACL
+--- PASS: TestAdsAttributionR2ScopeAndACL (0.45s)
+=== RUN   TestAdsAttributionR9BeginNeverFails
+=== RUN   TestAdsAttributionR9BeginNeverFails/legitimate_click
+=== RUN   TestAdsAttributionR9BeginNeverFails/garbage
+=== RUN   TestAdsAttributionR9BeginNeverFails/expired
+=== RUN   TestAdsAttributionR9BeginNeverFails/foreign
+=== RUN   TestAdsAttributionR9BeginNeverFails/missing
+--- PASS: TestAdsAttributionR9BeginNeverFails (1.83s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/legitimate_click (0.39s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/garbage (0.33s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/expired (0.32s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/foreign (0.44s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/missing (0.36s)
+=== RUN   TestAdsAttributionR9RefusalCommitsUnchanged
+=== RUN   TestAdsAttributionR9RefusalCommitsUnchanged/older_than_one_minute
+=== RUN   TestAdsAttributionR9RefusalCommitsUnchanged/same_buyer_other_session
+=== RUN   TestAdsAttributionR9RefusalCommitsUnchanged/other_store
+=== RUN   TestAdsAttributionR9RefusalCommitsUnchanged/second_freeze
+=== RUN   TestAdsAttributionR9RefusalCommitsUnchanged/garbage_timestamp
+--- PASS: TestAdsAttributionR9RefusalCommitsUnchanged (1.96s)
+    --- PASS: TestAdsAttributionR9RefusalCommitsUnchanged/older_than_one_minute (0.39s)
+    --- PASS: TestAdsAttributionR9RefusalCommitsUnchanged/same_buyer_other_session (0.43s)
+    --- PASS: TestAdsAttributionR9RefusalCommitsUnchanged/other_store (0.45s)
+    --- PASS: TestAdsAttributionR9RefusalCommitsUnchanged/second_freeze (0.35s)
+    --- PASS: TestAdsAttributionR9RefusalCommitsUnchanged/garbage_timestamp (0.35s)
+=== RUN   TestAdsAttributionR9MalformedServerParameters
+=== RUN   TestAdsAttributionR9MalformedServerParameters/short_hash
+=== RUN   TestAdsAttributionR9MalformedServerParameters/NULL_hash
+=== RUN   TestAdsAttributionR9MalformedServerParameters/NULL_store
+=== RUN   TestAdsAttributionR9MalformedServerParameters/NULL_order
+--- PASS: TestAdsAttributionR9MalformedServerParameters (0.22s)
+    --- PASS: TestAdsAttributionR9MalformedServerParameters/short_hash (0.00s)
+    --- PASS: TestAdsAttributionR9MalformedServerParameters/NULL_hash (0.00s)
+    --- PASS: TestAdsAttributionR9MalformedServerParameters/NULL_store (0.00s)
+    --- PASS: TestAdsAttributionR9MalformedServerParameters/NULL_order (0.00s)
+PASS
+ok  	livecommerce/tests/foundation	13.517s
+test-focused: top-level PASS=7 FAIL=0 SKIP=0 exit=0
