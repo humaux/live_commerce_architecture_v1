@@ -493,6 +493,9 @@ REVOKE ALL ON ads.live_audience_snapshots FROM PUBLIC;
 GRANT SELECT,INSERT,UPDATE ON ads.live_audience_snapshots TO commerce_ads_writer;
 CREATE POLICY ads_audience_owner ON ads.live_audience_snapshots TO commerce_ads_writer USING(true) WITH CHECK(true);
 COMMENT ON TABLE ads.live_audience_snapshots IS 'internal/ads D9 latest bounded aggregate for an exactly bound video; no buyer or person-level demographic join; only lease-fenced completion writes.';
+CREATE POLICY audience_plan_insert ON integration.operations FOR INSERT TO commerce_integration_writer
+ WITH CHECK (state='READY' AND generation=0 AND actor_kind='MERCHANT' AND provider='facebook'
+  AND purpose='service' AND action='meta.live_insights');
 
 CREATE FUNCTION integration.plan_meta_audience(p_hash bytea,p_store uuid,p_session uuid,p_operation uuid,p_job bigint) RETURNS jsonb
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -613,7 +616,8 @@ END $patch$;
 DO $comments$
 DECLARE c record;
 BEGIN
- FOR c IN SELECT column_name FROM information_schema.columns WHERE table_schema='orders' AND table_name='order_attribution' LOOP
-  EXECUTE format('COMMENT ON COLUMN orders.order_attribution.%I IS %L',c.column_name,'internal/attribution R2: private store-scoped measurement; only domain definers, never buyer/merchant raw export.');
+ FOR c IN SELECT table_schema,table_name,column_name FROM information_schema.columns
+  WHERE (table_schema,table_name) IN (('orders','order_attribution'),('claims','order_origins'),('ads','insights_breakdowns'),('ads','live_audience_snapshots')) LOOP
+  EXECUTE format('COMMENT ON COLUMN %I.%I.%I IS %L',c.table_schema,c.table_name,c.column_name,'internal/attribution: domain-owned scoped measurement; raw identifiers never exported, merchant reads aggregate projections only.');
  END LOOP;
 END $comments$;
