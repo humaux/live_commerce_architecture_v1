@@ -21,8 +21,11 @@ export type ProductSummary = {
   currency: string;
   sku_count: number;
   available: number;
+  keyword: string;
+  inventory_tracked: boolean;
+  updated_at: string;
 };
-export type ProductSummaryPage = { items: ProductSummary[]; next_cursor: string };
+export type ProductSummaryPage = { items: ProductSummary[]; next_cursor: string; total: number; status_counts: Record<ProductStatus, number> };
 export type Variant = {
   id: string;
   code: string;
@@ -33,6 +36,8 @@ export type Variant = {
   version: number;
   currency: string;
   available: number;
+  inventory_tracked: boolean;
+  max_per_order: number | null;
   // Logistics/customs fields the SKU PATCH replaces as a whole: the editor must send them back unchanged.
   weight_grams: number;
   length_mm: number;
@@ -91,6 +96,8 @@ export const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const codePattern = /^[A-Za-z0-9_.-]{1,64}$/;
 
 type Rec = Record<string, unknown>;
+const boolean = (v: unknown): boolean => { if (typeof v !== "boolean") throw new Error("invalid"); return v; };
+const timestamp = (v: unknown): string => { if (typeof v !== "string" || !Number.isFinite(Date.parse(v))) throw new Error("invalid"); return v; };
 const rec = (v: unknown): Rec => {
   if (!v || typeof v !== "object" || Array.isArray(v)) throw new Error("invalid");
   return v as Rec;
@@ -129,13 +136,16 @@ export function parseSummary(v: unknown): ProductSummary {
     version: int(r.version, 1, Number.MAX_SAFE_INTEGER), cover_image_id: nullable(r.cover_image_id, uuid),
     price_min_minor: nullable(r.price_min_minor, (x) => int(x, 0, maxMoney)), price_max_minor: nullable(r.price_max_minor, (x) => int(x, 0, maxMoney)),
     currency: str(r.currency, 3), sku_count: int(r.sku_count, 0, 1000), available: int(r.available, -maxMoney, maxMoney),
+    keyword: str(r.keyword, 16), inventory_tracked: boolean(r.inventory_tracked), updated_at: timestamp(r.updated_at),
   };
 }
 export function parseSummaryPage(v: unknown): ProductSummaryPage {
   const r = rec(v);
   const next = typeof r.next_cursor === "string" ? r.next_cursor : "";
   if (next && !canonicalCursor.test(next)) throw new Error("invalid");
-  return { items: list(r.items, 100, parseSummary), next_cursor: next };
+  const counts = rec(r.status_counts);
+  return { items: list(r.items, 100, parseSummary), next_cursor: next, total: int(r.total, 0, Number.MAX_SAFE_INTEGER),
+    status_counts: { draft: int(counts.draft, 0, Number.MAX_SAFE_INTEGER), active: int(counts.active, 0, Number.MAX_SAFE_INTEGER), archived: int(counts.archived, 0, Number.MAX_SAFE_INTEGER) } };
 }
 export function parseVariant(v: unknown): Variant {
   const r = rec(v);
@@ -143,6 +153,7 @@ export function parseVariant(v: unknown): Variant {
     id: uuid(r.id), code: str(r.code, limits.code, 1), title: str(r.title, 200, 1), price_minor: int(r.price_minor, 0, maxMoney),
     compare_at_minor: nullable(r.compare_at_minor, (x) => int(x, 1, maxMoney)), option_values: list(r.option_values, limits.axes, (x) => str(x, limits.axisValue, 1)),
     version: int(r.version, 1, Number.MAX_SAFE_INTEGER), currency: str(r.currency, 3, 3), available: int(r.available, -maxMoney, maxMoney),
+    inventory_tracked: boolean(r.inventory_tracked), max_per_order: r.max_per_order == null ? null : int(r.max_per_order, 1, 999),
     weight_grams: int(r.weight_grams, 0, 1_000_000_000), length_mm: int(r.length_mm, 0, 1_000_000), width_mm: int(r.width_mm, 0, 1_000_000),
     height_mm: int(r.height_mm, 0, 1_000_000), origin_country: str(r.origin_country, 2), customs_name: str(r.customs_name, 240), hs_candidate: str(r.hs_candidate, 12),
   };

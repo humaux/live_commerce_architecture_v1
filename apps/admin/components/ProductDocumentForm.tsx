@@ -1,0 +1,683 @@
+"use client";
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import type { Locale } from "@live-commerce/i18n";
+import type { Store } from "@/lib/model";
+import { currencySign } from "@/lib/client";
+import { readCollections, readWarehouses } from "@/lib/catalog-v2-client";
+import {
+  fromMinor,
+  toMinor,
+  type Collection,
+  type OptionAxis,
+  type ProductDetail,
+} from "@/lib/catalog-v2-model";
+import { imageURL, listImages } from "@/lib/images-client";
+import {
+  newRow,
+  rowKey,
+  syncMatrix,
+  safeEditProblem,
+  type DraftRow,
+  type ProductDraft,
+} from "@/lib/product-document";
+import { useProductDocument } from "@/lib/use-product-document";
+import { productEditorCopy } from "@/lib/product-editor-copy";
+import { ProductDocumentMedia, type DraftPhoto } from "./ProductDocumentMedia";
+import { ProductDocumentVariants } from "./ProductDocumentVariants";
+const emptyDraft = (): ProductDraft => ({
+  name: "",
+  description: "",
+  slug: "",
+  seo_title: "",
+  seo_description: "",
+  axes: [],
+  rows: [newRow([])],
+  collections: [],
+  weight: "",
+  length: "",
+  width: "",
+  height: "",
+  warehouse: "",
+});
+function initialDraft(detail: ProductDetail | null): ProductDraft {
+  if (!detail) return emptyDraft();
+  const rows = detail.skus.map((s) => ({
+    ...newRow(s.option_values),
+    id: s.id,
+    price: fromMinor(s.price_minor, s.currency),
+    compare:
+      s.compare_at_minor === null
+        ? ""
+        : fromMinor(s.compare_at_minor, s.currency),
+    quantity: String(s.available),
+    code: s.code,
+    tracked: s.inventory_tracked,
+    max: s.max_per_order === null ? "" : String(s.max_per_order),
+  }));
+  return {
+    ...emptyDraft(),
+    name: detail.name,
+    description: detail.description,
+    slug: detail.slug,
+    seo_title: detail.seo_title,
+    seo_description: detail.seo_description,
+    axes: detail.options,
+    rows: detail.options.length ? syncMatrix(detail.options, rows) : rows,
+  };
+}
+export function ProductDocumentForm({
+  locale,
+  store,
+  mode,
+  detail,
+  boundary,
+}: {
+  locale: Locale;
+  store: Store;
+  mode: "create" | "edit";
+  detail: ProductDetail | null;
+  boundary: string;
+}) {
+  const c = productEditorCopy[locale],
+    sign = currencySign(store.currency),
+    write = useProductDocument(store.id, store.currency, boundary, c);
+  const [draft, setDraft] = useState<ProductDraft>(() => initialDraft(detail)),
+    [photos, setPhotos] = useState<DraftPhoto[]>([]),
+    [collections, setCollections] = useState<Collection[]>([]),
+    [warehouses, setWarehouses] = useState<{ id: string; name: string }[]>([]);
+  const [collectionQuery, setCollectionQuery] = useState(""),
+    [section, setSection] = useState("media"),
+    [axisError, setAxisError] = useState("");
+  const initial = useRef(JSON.stringify(initialDraft(detail))),
+    urlPhotos = useRef<DraftPhoto[]>([]),
+    rowArchive = useRef<DraftRow[]>([]);
+  const editBlocked = mode === "edit" && !!safeEditProblem(),
+    disabled =
+      editBlocked ||
+      !write.fenceReady ||
+      write.recoveryBlocked ||
+      write.busy ||
+      write.pending ||
+      !!write.done;
+  const dirty =
+    !editBlocked &&
+    !write.done &&
+    (JSON.stringify(draft) !== initial.current ||
+      photos.length > 0 ||
+      write.pending);
+  const sections = [
+    "media",
+    "basics",
+    "pricing",
+    "variants",
+    "collections",
+    "shipping",
+    "seo",
+  ] as const;
+  useEffect(() => {
+    urlPhotos.current = photos;
+  }, [photos]);
+  useEffect(
+    () => () => {
+      urlPhotos.current.forEach((p) => {
+        if (p.file) URL.revokeObjectURL(p.url);
+      });
+    },
+    [],
+  );
+  useEffect(() => {
+    const abort = new AbortController();
+    void Promise.all([
+      readCollections(store.id, abort.signal),
+      readWarehouses(store.id, abort.signal),
+    ])
+      .then(([col, wh]) => {
+        if (!abort.signal.aborted) {
+          setCollections(col.items);
+          setWarehouses(wh);
+        }
+      })
+      .catch(() => {
+        if (!abort.signal.aborted) write.setMessage(c.failed);
+      });
+    if (detail)
+      void listImages(store.id, detail.id, abort.signal).then((result) => {
+        if (!abort.signal.aborted && result.items)
+          setPhotos(
+            result.items.map((p) => ({
+              key: p.id,
+              id: p.id,
+              url: imageURL(store.id, detail.id, p.id),
+            })),
+          );
+      });
+    return () => abort.abort();
+  }, [store.id, detail, c.failed]);
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    const leave = (event: MouseEvent) => {
+      const anchor = (event.target as Element)?.closest("a");
+      if (
+        anchor?.href &&
+        new URL(anchor.href).origin +
+          new URL(anchor.href).pathname +
+          new URL(anchor.href).search !==
+          window.location.origin +
+            window.location.pathname +
+            window.location.search &&
+        (write.pending || !window.confirm(c.leave))
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (write.pending) write.setMessage(c.uncertain);
+      }
+    };
+    window.addEventListener("beforeunload", warn);
+    document.addEventListener("click", leave, true);
+    return () => {
+      window.removeEventListener("beforeunload", warn);
+      document.removeEventListener("click", leave, true);
+    };
+  }, [dirty, c.leave, c.uncertain, write.pending]);
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const seen = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (seen[0]) setSection(seen[0].target.id);
+      },
+      { rootMargin: "-10% 0px -65% 0px" },
+    );
+    sections.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, []);
+  function change(patch: Partial<ProductDraft>) {
+    setDraft((now) => ({ ...now, ...patch }));
+    write.setMessage("");
+  }
+  function setAxes(axes: OptionAxis[]) {
+    try {
+      const rows = syncMatrix(
+        axes.filter((a) => a.name.trim() && a.values.length),
+        [...draft.rows, ...rowArchive.current],
+      );
+      rowArchive.current = [...draft.rows, ...rowArchive.current].filter(
+        (r) => !rows.some((n) => rowKey(n) === rowKey(r)),
+      );
+      change({ axes, rows });
+      setAxisError("");
+    } catch {
+      change({ axes });
+      setAxisError(c.matrixLimit);
+    }
+  }
+  const setRow = (patch: Partial<DraftRow>) =>
+      change({
+        rows: draft.rows.map((r, i) => (i === 0 ? { ...r, ...patch } : r)),
+      }),
+    row = draft.rows[0] ?? newRow([]);
+  const requirements = [
+    { key: "media", label: c.images, ok: photos.length > 0 },
+    { key: "basics", label: c.name, ok: !!draft.name.trim() },
+    {
+      key: "pricing",
+      label: c.price,
+      ok:
+        draft.rows.length > 0 &&
+        draft.rows.every((r) => toMinor(r.price, store.currency) !== null),
+    },
+    {
+      key: "pricing",
+      label: c.stock,
+      ok:
+        draft.rows.length > 0 &&
+        draft.rows.every((r) =>
+          r.tracked ? /^\d+$/.test(r.quantity) : /^[1-9]\d{0,2}$/.test(r.max),
+        ),
+    },
+  ];
+  function focus(id: string) {
+    const target =
+      document.getElementById(id) ?? document.getElementById("variants");
+    if (target instanceof HTMLDetailsElement) target.open = true;
+    target?.scrollIntoView({ block: "start" });
+    target
+      ?.querySelector<HTMLElement>("input,textarea,button")
+      ?.focus({ preventScroll: true });
+    setSection(id);
+  }
+  const save = (publish: boolean) => {
+    if (!disabled) {
+      if (axisError) write.setMessage(axisError);
+      else if (
+        draft.rows.some((r) => r.tracked && Number(r.quantity) > 0) &&
+        warehouses.length !== 1 &&
+        !draft.warehouse
+      ) {
+        write.setMessage(c.chooseWarehouse);
+        focus("shipping");
+      } else write.save(draft, photos, publish);
+    }
+  };
+  return (
+    <form
+      className="pe-document"
+      data-testid={mode === "create" ? "product-create-form" : "product-form"}
+      onSubmit={(e) => {
+        e.preventDefault();
+        save(false);
+      }}
+    >
+      <aside className="pe-index">
+        <nav aria-label={c.progress}>
+          {sections.map((id) => (
+            <button
+              type="button"
+              aria-current={section === id ? "location" : undefined}
+              key={id}
+              onClick={() => focus(id)}
+            >
+              {c[id]}
+            </button>
+          ))}
+        </nav>
+        <section>
+          <h2>{c.progress}</h2>
+          <h3>{c.required}</h3>
+          {requirements.map((r, i) => (
+            <button
+              className="pe-readiness"
+              key={i}
+              type="button"
+              onClick={() => focus(r.key)}
+            >
+              <span>{r.label}</span>
+              <span aria-label={r.ok ? c.success : c.required}>
+                {r.ok ? "✓" : "○"}
+              </span>
+            </button>
+          ))}
+          <p>
+            {c.missing}: {requirements.filter((r) => !r.ok).length}
+          </p>
+          <h3>{c.recommended}</h3>
+          {[
+            { key: "media", label: c.images, ok: photos.length >= 3 },
+            { key: "basics", label: c.description, ok: !!draft.description },
+            {
+              key: "collections",
+              label: c.collections,
+              ok: !!draft.collections.length,
+            },
+            {
+              key: "basics",
+              label: c.keyword,
+              ok: draft.rows.some((r) => !!r.keyword),
+            },
+            { key: "seo", label: c.seo, ok: !!draft.seo_title },
+          ].map((r) => (
+            <button
+              type="button"
+              className="pe-readiness"
+              key={r.label}
+              onClick={() => focus(r.key)}
+            >
+              <span>{r.label}</span>
+              <span>{r.ok ? "✓" : "○"}</span>
+            </button>
+          ))}
+        </section>
+      </aside>
+      <div className="pe-fields">
+        {editBlocked && (
+          <p
+            className="orders-message"
+            role="alert"
+            data-testid="document-edit-blocked"
+          >
+            {c.editBlocked}
+          </p>
+        )}
+        <ProductDocumentMedia
+          photos={photos}
+          setPhotos={setPhotos}
+          disabled={disabled}
+          c={c}
+          fail={write.setMessage}
+        />
+        <fieldset disabled={disabled} className="pe-fieldset">
+          <section id="basics" className="product-section product-form">
+            <h2>{c.basics}</h2>
+            <label>
+              {c.name}
+              <input
+                data-testid="product-name"
+                value={draft.name}
+                maxLength={120}
+                onChange={(e) => change({ name: e.target.value })}
+              />
+              <small>{Array.from(draft.name).length} / 120</small>
+            </label>
+            <label>
+              {c.description}
+              <textarea
+                data-testid="product-description"
+                rows={3}
+                value={draft.description}
+                maxLength={8000}
+                onChange={(e) => change({ description: e.target.value })}
+              />
+            </label>
+            {!draft.axes.length && (
+              <label>
+                {c.keyword}
+                <input
+                  data-testid="product-keyword"
+                  value={row.keyword}
+                  maxLength={16}
+                  onChange={(e) =>
+                    setRow({ keyword: e.target.value.toUpperCase() })
+                  }
+                />
+                <small>
+                  {editBlocked ? c.unavailableKeyword : c.keywordHelp}
+                </small>
+              </label>
+            )}
+          </section>
+          {!draft.axes.length && (
+            <section id="pricing" className="product-section product-form">
+              <h2>{c.pricing}</h2>
+              <div className="pe-two">
+                <label>
+                  {c.price} ({sign})
+                  <input
+                    data-testid="product-price"
+                    inputMode="decimal"
+                    value={row.price}
+                    onChange={(e) => setRow({ price: e.target.value })}
+                  />
+                </label>
+                <label>
+                  {c.compare} ({sign})
+                  <input
+                    data-testid="product-compare"
+                    inputMode="decimal"
+                    value={row.compare}
+                    onChange={(e) => setRow({ compare: e.target.value })}
+                  />
+                </label>
+              </div>
+              <div className="pe-stock-mode">
+                <label className="pe-check">
+                  <input
+                    type="radio"
+                    name="stock-mode"
+                    checked={row.tracked}
+                    onChange={() => setRow({ tracked: true })}
+                  />
+                  {c.tracked}
+                </label>
+                <label className="pe-check">
+                  <input
+                    data-testid="product-untracked"
+                    type="radio"
+                    name="stock-mode"
+                    checked={!row.tracked}
+                    onChange={() => setRow({ tracked: false })}
+                  />
+                  {c.untracked}
+                </label>
+              </div>
+              <label>
+                {row.tracked ? c.quantity : c.max}
+                <input
+                  data-testid={row.tracked ? "product-quantity" : "product-max"}
+                  inputMode="numeric"
+                  value={row.tracked ? row.quantity : row.max}
+                  onChange={(e) =>
+                    setRow(
+                      row.tracked
+                        ? { quantity: e.target.value }
+                        : { max: e.target.value },
+                    )
+                  }
+                />
+              </label>
+              <details>
+                <summary>{c.advanced}</summary>
+                <label>
+                  {c.code}
+                  <input
+                    value={row.code}
+                    maxLength={64}
+                    placeholder={c.generated}
+                    onChange={(e) => setRow({ code: e.target.value })}
+                  />
+                </label>
+              </details>
+            </section>
+          )}
+          <ProductDocumentVariants
+            c={c}
+            sign={sign}
+            axes={draft.axes}
+            rows={draft.rows}
+            setAxes={setAxes}
+            setRows={(rows) => change({ rows })}
+            disabled={disabled}
+          />
+          {axisError && <p role="alert">{axisError}</p>}
+          <section id="collections" className="product-section product-form">
+            <h2>{c.collections}</h2>
+            <label>
+              {c.searchCollections}
+              <input
+                type="search"
+                value={collectionQuery}
+                onChange={(e) => setCollectionQuery(e.target.value)}
+              />
+            </label>
+            <div className="pe-collections">
+              {collections
+                .filter((col) =>
+                  col.title
+                    .toLocaleLowerCase()
+                    .includes(collectionQuery.toLocaleLowerCase()),
+                )
+                .map((col) => (
+                  <label className="pe-check" key={col.id}>
+                    <input
+                      type="checkbox"
+                      checked={draft.collections.includes(col.id)}
+                      onChange={(e) =>
+                        change({
+                          collections: e.target.checked
+                            ? [...draft.collections, col.id]
+                            : draft.collections.filter((id) => id !== col.id),
+                        })
+                      }
+                    />
+                    {col.title}
+                  </label>
+                ))}
+            </div>
+            {!collections.length && <p>{c.noCollections}</p>}
+            <Link href={`/${locale}/collections?store=${store.id}`}>
+              {c.manageCollections}
+            </Link>
+          </section>
+          <details id="shipping" className="product-section">
+            <summary>{c.shipping}</summary>
+            <p className="pe-hint">{c.shippingHelp}</p>
+            <div className="product-form pe-two">
+              {(["weight", "length", "width", "height"] as const).map((key) => (
+                <label key={key}>
+                  {c[key]}
+                  <input
+                    value={draft[key]}
+                    inputMode="decimal"
+                    onChange={(e) => change({ [key]: e.target.value })}
+                  />
+                </label>
+              ))}
+              {warehouses.length > 1 && (
+                <label>
+                  {c.warehouse}
+                  <select
+                    value={draft.warehouse}
+                    onChange={(e) => change({ warehouse: e.target.value })}
+                  >
+                    <option value="">{c.chooseWarehouse}</option>
+                    {warehouses.map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+            </div>
+          </details>
+          <details id="seo" className="product-section">
+            <summary>{c.seo}</summary>
+            <div className="product-form">
+              <label>
+                {c.slug}
+                <input
+                  data-testid="product-slug"
+                  value={draft.slug}
+                  maxLength={80}
+                  placeholder={c.generated}
+                  onChange={(e) => change({ slug: e.target.value })}
+                />
+              </label>
+              <label>
+                {c.seoTitle}
+                <input
+                  data-testid="product-seo-title"
+                  value={draft.seo_title}
+                  maxLength={70}
+                  onChange={(e) => change({ seo_title: e.target.value })}
+                />
+                <small>{Array.from(draft.seo_title).length} / 70</small>
+              </label>
+              <label>
+                {c.seoDescription}
+                <textarea
+                  rows={3}
+                  data-testid="product-seo-description"
+                  value={draft.seo_description}
+                  maxLength={160}
+                  onChange={(e) => change({ seo_description: e.target.value })}
+                />
+                <small>{Array.from(draft.seo_description).length} / 160</small>
+              </label>
+            </div>
+          </details>
+        </fieldset>
+        {write.message && (
+          <div
+            className="orders-message"
+            role={write.done ? "status" : "alert"}
+            data-testid="product-message"
+          >
+            <p>{write.message}</p>
+            {write.pending && !write.busy && (
+              <button
+                type="button"
+                data-testid="product-retry"
+                onClick={() => void write.retry()}
+              >
+                {c.retry}
+              </button>
+            )}
+          </div>
+        )}
+        {write.done && (
+          <section
+            className="product-section"
+            data-testid="product-save-result"
+          >
+            <h2>{write.done.name}</h2>
+            <p>{c.storeUnpublished}</p>
+            <div className="pe-actions">
+              <Link href={`/${locale}/settings?store=${store.id}`}>
+                {c.settings}
+              </Link>
+              <Link
+                href={`/${locale}/products/${write.done.id}?store=${store.id}`}
+              >
+                {c.save}
+              </Link>
+              <Link href={`/${locale}/products?store=${store.id}`}>
+                {c.back}
+              </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  write.reset();
+                  setDraft(emptyDraft());
+                  setPhotos([]);
+                  photos.forEach((p) => {
+                    if (p.file) URL.revokeObjectURL(p.url);
+                  });
+                  initial.current = JSON.stringify(emptyDraft());
+                }}
+              >
+                {c.another}
+              </button>
+              {draft.rows.some((r) => !!r.keyword) && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    void navigator.clipboard
+                      .writeText(
+                        draft.rows
+                          .filter((r) => r.keyword)
+                          .map((r) => r.keyword)
+                          .join("\n"),
+                      )
+                      .then(() => write.setMessage(c.copied))
+                      .catch(() => write.setMessage(c.failed))
+                  }
+                >
+                  {c.copyKeyword}
+                </button>
+              )}
+            </div>
+          </section>
+        )}
+      </div>
+      <footer className="pe-savebar">
+        <span>
+          {write.busy ? c.saving : dirty ? c.dirty : write.done ? c.saved : ""}
+        </span>
+        <div>
+          <button
+            type="submit"
+            data-testid="product-create"
+            disabled={disabled}
+          >
+            {mode === "create" ? c.saveDraft : c.save}
+          </button>
+          <button
+            className="product-primary"
+            type="button"
+            data-testid="product-publish"
+            disabled={disabled}
+            onClick={() => save(true)}
+          >
+            {c.publish}
+          </button>
+        </div>
+      </footer>
+    </form>
+  );
+}
