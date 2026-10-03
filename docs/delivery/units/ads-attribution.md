@@ -188,3 +188,13 @@ These answer `output/ads-attribution/SUMMARY.md` (2ca36a7c), "Design boundaries"
   - Daily figures stay on Meta's account days. When the account time zone is not `Asia/Taipei`, the report states it (「Meta 帳戶時區：X」) and does not relabel those days as Taipei days.
 - **R8 Live audience.** Your checkpoint statement is accepted as written: empty means 「觀眾數不足，Meta 未提供輪廓」, not zero; age/gender figures are view time, not people; there is no buyer join.
 - **Gates.** AT1–AT9 are unchanged. AT1 adds the R5 cases: 90-day `fbp` stable across a later click after 7 days, no cookies without ad params, no touch without `lc_ad`. AT2/AT3 add the R3 and R4 cases.
+- **R9 Creation guard for `orders.freeze_attribution`** (2026-10-04, answering checkpoint 4b338a89 BLOCKED PT404). Drop both the xmin guard and the transaction-lock guard. **Reuse the existing 0088 `checkout.set_order_buyer_email` guard verbatim.** That function already does the same job, writing once into an order inside the placing Begin, and is proven on the live checkout path.
+  - Call `buyer.resolve_scope(p_hash,p_store)`.
+  - The order must match `tenant_id`, `store_id`, `owner_id=s.owner_id`, `id`, and `creator_session_id=s.session_id`, with `created_at>=clock_timestamp()-interval '1 minute'`.
+  - Write once with `INSERT … ON CONFLICT (order_id) DO NOTHING`.
+  - Begin always creates the order it passes: Go generates the id, `begin_hold` must echo it, and replays are resolved before this point. So the guard holds for every real Begin, and a historical or foreign order can never match.
+  - **Attribution never fails checkout.** An ineligible order, an expired, foreign or invalid touch, or a missing touch all write no row and raise nothing. PT400 remains only for malformed server-side parameters, the same as buyer email.
+  - **Gates:**
+    - a legitimate Begin writes the row;
+    - an order older than one minute, another session's order, another store's order, and a second freeze all write nothing and still let Begin commit;
+    - a Begin with a garbage, expired or foreign touch commits with no row.
