@@ -1,0 +1,1 @@
+usage: release-gate.sh [--strict] [--list] [--only ID[,ID...]]

@@ -93,12 +93,11 @@ test("PE14 on_hand is not available, zero target is transmitted, ambiguous wareh
     /warehouse/,
   );
 });
-test("PE14 explicit clears and archive are present, shipping is per SKU only", () => {
+test("PE14 explicit clears and shipping remain per SKU on an active row", () => {
   const draft = draftFromDetail(detail);
   draft.collections = [];
   draft.rows[0].keyword = "";
   draft.rows[0].compare = "";
-  draft.rows[0].active = false;
   draft.rows[0].weight = "50";
   assert.deepEqual(editDocument(draft, detail, "TWD"), {
     expected_version: 4,
@@ -108,11 +107,41 @@ test("PE14 explicit clears and archive are present, shipping is per SKU only", (
         id: detail.skus[0].id,
         compare_at_minor: null,
         keyword: "",
-        active: false,
         weight_grams: 50,
       },
     ],
   });
+});
+test("PE14 archive supersedes every other edit on that SKU (b77eeb11)", () => {
+  const draft = draftFromDetail(detail);
+  draft.collections = [];
+  Object.assign(draft.rows[0], {
+    active: false,
+    price: "80",
+    compare: "",
+    keyword: "",
+    quantity: "0",
+    weight: "50",
+    length: "4",
+    width: "5",
+    height: "6",
+  });
+  assert.deepEqual(editDocument(draft, detail, "TWD"), {
+    expected_version: 4,
+    collection_ids: [],
+    skus: [{ id: detail.skus[0].id, active: false }],
+  });
+  // Discarded edits must not even be validated: they are not part of this command.
+  draft.rows[0].price = "invalid";
+  draft.rows[0].quantity = "invalid";
+  assert.deepEqual(
+    editDocument(draft, { ...detail, warehouse_id: null }, "TWD"),
+    {
+      expected_version: 4,
+      collection_ids: [],
+      skus: [{ id: detail.skus[0].id, active: false }],
+    },
+  );
 });
 test("PE14 no-op has no command fields and changed axes explicitly archive omitted variants", () => {
   const draft = draftFromDetail(detail);

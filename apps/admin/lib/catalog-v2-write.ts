@@ -78,6 +78,14 @@ export function useWrite(
           setMessage({ kind: "success", text: okText });
           return true;
         }
+        if (outcome.reconcile) {
+          // No authoritative receipt: preserve the durable key across reload.
+          // A changed/denied session must reconcile, not keep retrying blindly.
+          pending.current = null;
+          setRecoveryBlocked(true);
+          setMessage({ kind: "uncertain", text: recoveryText ?? uncertainText });
+          return false;
+        }
         pending.current = outcome.uncertain
           ? { cmd: c, scope, run: attempt }
           : null;

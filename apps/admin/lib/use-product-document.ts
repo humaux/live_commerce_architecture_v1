@@ -1,7 +1,13 @@
 "use client";
 // One staged user action. Committed stages never repeat; an UNKNOWN stage retains exact bytes/key.
 import { useEffect, useRef, useState } from "react";
-import { command, readProduct, send, type Command } from "./catalog-v2-client";
+import {
+  command,
+  readProduct,
+  send,
+  type Command,
+  type Outcome,
+} from "./catalog-v2-client";
 import { parseCreated, type ProductDetail } from "./catalog-v2-model";
 import { listImages, validImageList } from "./images-client";
 import {
@@ -59,9 +65,17 @@ export function useProductDocument(
   }, [fenceKey, c.recoveryRequired]);
   const failCode = (code: string) =>
     setMessage(code in c ? c[code as keyof ProductEditorCopy] : c.failed);
+  function failOutcome(result: Extract<Outcome<unknown>, { ok: false }>) {
+    if (result.reconcile) {
+      // Auth refusal cannot resolve any earlier UNKNOWN stage. Preserve the
+      // workflow receipt fence and stop automatic or user-triggered retries.
+      setRecoveryBlocked(true);
+      setMessage(c.recoveryRequired);
+    } else failCode(result.uncertain ? "uncertain" : result.code);
+  }
   async function retry() {
     const op = workflow.current;
-    if (!op || running.current) return;
+    if (!op || running.current || recoveryBlocked) return;
     running.current = true;
     setBusy(true);
     setMessage("");
@@ -69,12 +83,12 @@ export function useProductDocument(
       if (!op.id) {
         const result = await send(store, op.create, boundary, parseCreated);
         if (!result.ok) {
-          if (!result.uncertain) {
+          if (!result.uncertain && !result.reconcile) {
             sessionStorage.removeItem(fenceKey);
             workflow.current = null;
             setPending(false);
           }
-          failCode(result.uncertain ? "uncertain" : result.code);
+          failOutcome(result);
           return;
         }
         op.id = result.value.id;
@@ -89,7 +103,7 @@ export function useProductDocument(
           boundary,
         );
         if (!result.ok) {
-          failCode(result.uncertain ? "uncertain" : result.code);
+          failOutcome(result);
           return;
         }
         op.uploaded.push(result.value.id);
@@ -103,7 +117,7 @@ export function useProductDocument(
           return v;
         });
         if (!result.ok) {
-          failCode(result.uncertain ? "uncertain" : result.code);
+          failOutcome(result);
           return;
         }
         op.ordered = true;
@@ -120,7 +134,7 @@ export function useProductDocument(
         });
         const result = await send(store, op.publication, boundary, parseBulk);
         if (!result.ok) {
-          failCode(result.uncertain ? "uncertain" : result.code);
+          failOutcome(result);
           return;
         }
         if (result.value[0]?.error) {

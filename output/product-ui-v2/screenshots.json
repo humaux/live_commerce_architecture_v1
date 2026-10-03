@@ -1,232 +1,232 @@
 [
   {
-    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/list-zh-TW-1366.png",
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2-fix/output/product-ui-v2/list-zh-TW-1366.png",
     "geometry": {
       "scrollY": 0,
       "width": 1366,
       "height": 768,
       "topbarY": 0
     },
-    "sha256": "e8035da0bdc76cb70bbc66ca6e0fa262544de34cb41a20aea6e7b2718821ef49"
+    "sha256": "51a7f01bf2e59172e3e06ff625f084da0611e09c80de0acd36cd7b04be70e68a"
   },
   {
-    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/editor-zh-TW-1366.png",
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2-fix/output/product-ui-v2/editor-zh-TW-1366.png",
     "geometry": {
       "scrollY": 0,
       "width": 1366,
       "height": 768,
       "topbarY": 0
     },
-    "sha256": "5eea098431d5dd200b13372d5027aad5e568eac72b1680b8a4b463cab5fcb1a2"
+    "sha256": "aab0b6a67c782a3e0cd264adf70ade1710a0d2270f852902b9209ca9e1ad9239"
   },
   {
-    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/list-zh-TW-1586.png",
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2-fix/output/product-ui-v2/list-zh-TW-1586.png",
     "geometry": {
       "scrollY": 0,
       "width": 1586,
       "height": 992,
       "topbarY": 0
     },
-    "sha256": "d4b43bdda4b6ce8ebdf76b20a928bbe6500a2966d6cb8f5634c7444aabd833ea"
+    "sha256": "01b3ac8ba2613e17ed860833d809c2cfe990bd1ce4ad5492dd87cdf533d23660"
   },
   {
-    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/editor-zh-TW-1586.png",
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2-fix/output/product-ui-v2/editor-zh-TW-1586.png",
     "geometry": {
       "scrollY": 0,
       "width": 1586,
       "height": 992,
       "topbarY": 0
     },
-    "sha256": "f18d1c96fde28b805c7986d9825def65a2c4e00071d379db8ea637e711efee01"
+    "sha256": "55b646ce6dcdcc4e35abd97cdd38e265ab1841cdca4516791d5879d55eb4eae8"
   },
   {
-    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/list-zh-TW-375.png",
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2-fix/output/product-ui-v2/list-zh-TW-375.png",
     "geometry": {
       "scrollY": 0,
       "width": 375,
       "height": 812,
       "topbarY": 0
     },
-    "sha256": "d7dbaa26a02a3b348209ab3bf6e1fb1ed8b78531e392e204940e85f6ac6a95e1"
+    "sha256": "b253910c39a1c0524ca4c426031d89350e36ad66bef9fb8b1df39fa721f9315b"
   },
   {
-    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/editor-zh-TW-375.png",
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2-fix/output/product-ui-v2/editor-zh-TW-375.png",
     "geometry": {
       "scrollY": 0,
       "width": 375,
       "height": 812,
       "topbarY": 0
     },
-    "sha256": "974279a1ff69def4d0b24c04ee24d2a8a87fc5139a770762075ca2be1be96eeb"
+    "sha256": "7fd2f79a88214d8b8bd2b23895b849fc254c937db2c0f52c7fd30ac9aed3905d"
   },
   {
-    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/list-zh-CN-1366.png",
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2-fix/output/product-ui-v2/list-zh-CN-1366.png",
     "geometry": {
       "scrollY": 0,
       "width": 1366,
       "height": 768,
       "topbarY": 0
     },
-    "sha256": "ced43d8026a0dcb7e568cd7d001cee5f6f6d6190a3148ddff5284241695edac5"
+    "sha256": "88d24fff802e80c59b6cf1313053383da33e1dd00570a6608c3199de458fbd62"
   },
   {
-    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/editor-zh-CN-1366.png",
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2-fix/output/product-ui-v2/editor-zh-CN-1366.png",
     "geometry": {
       "scrollY": 0,
       "width": 1366,
       "height": 768,
       "topbarY": 0
     },
-    "sha256": "feeee13664ac34062abc2c738591972f03150110432be694ec812afadc2153ac"
+    "sha256": "494373772eb8a90cd2a9535dd61f0092d4f22536be2017b3358d0a8157cc30fc"
   },
   {
-    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/list-zh-CN-1586.png",
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2-fix/output/product-ui-v2/list-zh-CN-1586.png",
     "geometry": {
       "scrollY": 0,
       "width": 1586,
       "height": 992,
       "topbarY": 0
     },
-    "sha256": "ea668d8e5c0b59de6ffa36c9f7f09e2ed407084e9001b4fe55c66eb60185e5ec"
+    "sha256": "92512026b738b2af55fcfca91a006c636d24a3971309e3ffbb5d81ce0d4c770e"
   },
   {
-    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/editor-zh-CN-1586.png",
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2-fix/output/product-ui-v2/editor-zh-CN-1586.png",
     "geometry": {
       "scrollY": 0,
       "width": 1586,
       "height": 992,
       "topbarY": 0
     },
-    "sha256": "4f58501102e9946087508926a89183169b255471c56a6cae2146782e879da734"
+    "sha256": "5e4320618cf89ea9013f08920ad196858b246d14f294916c8732c72870e67be5"
   },
   {
-    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/list-zh-CN-375.png",
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2-fix/output/product-ui-v2/list-zh-CN-375.png",
     "geometry": {
       "scrollY": 0,
       "width": 375,
       "height": 812,
       "topbarY": 0
     },
-    "sha256": "ee906d7dc44a4aaeec8b1f6b30079e4c27e0677ac6eae4345eb02410421a0942"
+    "sha256": "23515849963c575694d7dc906d33dd0bf7998cff4272f804ca5d275189a92a17"
   },
   {
-    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/editor-zh-CN-375.png",
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2-fix/output/product-ui-v2/editor-zh-CN-375.png",
     "geometry": {
       "scrollY": 0,
       "width": 375,
       "height": 812,
       "topbarY": 0
     },
-    "sha256": "ec7eefc443c0fe9777f04da3cadba4c478a2aeb390f2e4c2301b2bfa9a3cf59a"
+    "sha256": "270fb9148fb493bf867844e2a2e7d0ef4bd9740bdd6ad94c6cd21e0b1db74c88"
   },
   {
-    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/list-en-1366.png",
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2-fix/output/product-ui-v2/list-en-1366.png",
     "geometry": {
       "scrollY": 0,
       "width": 1366,
       "height": 768,
       "topbarY": 0
     },
-    "sha256": "58877d40625f1d0ffb4c0d1403c505a4372dda11b60ba20a231cc4b7a75df9e3"
+    "sha256": "5dc2bf6a17456109bf0d25e82a7416e62d6094c1ff3c209b7e172a138e6f699d"
   },
   {
-    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/editor-en-1366.png",
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2-fix/output/product-ui-v2/editor-en-1366.png",
     "geometry": {
       "scrollY": 0,
       "width": 1366,
       "height": 768,
       "topbarY": 0
     },
-    "sha256": "fc5f7d0ea4c914930006f1af795824923380fc356c6eb14cc6602a7c8bb7949e"
+    "sha256": "807211db5df662ef6ab8b106a9eb36ba339fe30651b96e9867ea1ad7f381c467"
   },
   {
-    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/list-en-1586.png",
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2-fix/output/product-ui-v2/list-en-1586.png",
     "geometry": {
       "scrollY": 0,
       "width": 1586,
       "height": 992,
       "topbarY": 0
     },
-    "sha256": "712afcb415d102be1c61a6b12fb7ec38476893f479777264ed924b0bb7e61eaa"
+    "sha256": "8d82b3a563d3085c39fdfee138507037288d172d61266ef2842cb710e5184862"
   },
   {
-    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/editor-en-1586.png",
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2-fix/output/product-ui-v2/editor-en-1586.png",
     "geometry": {
       "scrollY": 0,
       "width": 1586,
       "height": 992,
       "topbarY": 0
     },
-    "sha256": "62f56faa52b72e0677727089a29c30eec175d0eba2e86bdb0d4ed21b490265fa"
+    "sha256": "3bde36eb82a024252addb639d438ba1683c20ce5d4175b0638731a4ba9d32c7a"
   },
   {
-    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/list-en-375.png",
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2-fix/output/product-ui-v2/list-en-375.png",
     "geometry": {
       "scrollY": 0,
       "width": 375,
       "height": 812,
       "topbarY": 0
     },
-    "sha256": "93331e8b8b1af5c8900c39e822ec38f698dfc0afadee8b798e7da897feff9b09"
+    "sha256": "19bbb393c634e0993de58ad7c7cee8308a953f6625e5198715ff0cccfe0534e1"
   },
   {
-    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/editor-en-375.png",
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2-fix/output/product-ui-v2/editor-en-375.png",
     "geometry": {
       "scrollY": 0,
       "width": 375,
       "height": 812,
       "topbarY": 0
     },
-    "sha256": "d84c16135bf7e144f84afd61086510b1dfb0069ab8da5652a0ca57b4dac5e09e"
+    "sha256": "2a106cb82cb8d9b824f2eea6ec60c575351c3b4213d27f274c29edc3370826a3"
   },
   {
-    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/matrix-en-1586.png",
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2-fix/output/product-ui-v2/matrix-en-1586.png",
     "geometry": {
       "scrollY": 2189,
       "width": 1586,
       "height": 992,
       "topbarY": -2189
     },
-    "sha256": "f7c853cce17dd83db03caae6c62875d13c01afda2d5fa687d530e46ab8cc24d9"
+    "sha256": "1dd16f8c5d7294f7bf5c929f76fd7581013b1b61e9837fd986db5d3181a7eaa2"
   },
   {
-    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/batch-result-en-1586.png",
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2-fix/output/product-ui-v2/batch-result-en-1586.png",
     "geometry": {
       "scrollY": 0,
       "width": 1586,
       "height": 992,
       "topbarY": 0
     },
-    "sha256": "5c44b35c5f23e68b35f431319f47c1737ef21887df14d4b39428699ec297b0ab"
+    "sha256": "3fd1bc9704ef78014a91d70f0883a22d3745d1c3a1bcc390cb89659cecb94c37"
   },
   {
-    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/inventory-en-1366.png",
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2-fix/output/product-ui-v2/inventory-en-1366.png",
     "geometry": {
       "scrollY": 0,
       "width": 1366,
       "height": 768,
       "topbarY": 0
     },
-    "sha256": "195ee2ae594bfb5de04dada5888696ea51007046b2c4003ff98e3bdb2b3f2724"
+    "sha256": "d7f330770d13792a35084bbf0bb7648c8a18c35fba9af4de69a915cbea7c509e"
   },
   {
-    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/inventory-en-1586.png",
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2-fix/output/product-ui-v2/inventory-en-1586.png",
     "geometry": {
       "scrollY": 0,
       "width": 1586,
       "height": 992,
       "topbarY": 0
     },
-    "sha256": "8c01cc6ef31b21e59fe700b30a58ab39e5dfc757913f17ddafb58829c96fa614"
+    "sha256": "9e4b47e62be5364e937d8aea0e2ee4a6592b0c4d13c6ae2fd553c886b1b68744"
   },
   {
-    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/editor-bottom-en-375.png",
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2-fix/output/product-ui-v2/editor-bottom-en-375.png",
     "geometry": {
-      "scrollY": 1649,
+      "scrollY": 1657,
       "width": 375,
       "height": 812,
-      "topbarY": -1649
+      "topbarY": -1657
     },
-    "sha256": "24ab6a23c54b0216ac376147288a672f06baa506a9ea4c1e3ab5ee140071ee38"
+    "sha256": "f03380629baa776398658f864f1cc3c6bd304dac0cfc9a6b19f277125954d133"
   }
 ]

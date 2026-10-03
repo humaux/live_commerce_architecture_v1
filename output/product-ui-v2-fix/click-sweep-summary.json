@@ -1,0 +1,135 @@
+{
+  "summary": {
+    "generated": "2026-10-03T07:57:37.964Z",
+    "engine": "chromium",
+    "line": "120 page/viewport/locale units opened (0 with a page-load failure), 997 control clicks (977 pass, 0 fail, 20 skip), 18 journey steps (18 pass, 0 fail); failures: known 0, new 0; stale known-defect entries 0.",
+    "counts": {
+      "pages": 120,
+      "loads": {
+        "total": 120,
+        "fail": 0
+      },
+      "controls": {
+        "total": 997,
+        "pass": 977,
+        "fail": 0,
+        "skip": 20
+      },
+      "journeys": {
+        "total": 18,
+        "pass": 18,
+        "fail": 0,
+        "skip": 0
+      }
+    },
+    "failures": [],
+    "stale": []
+  },
+  "skips": [
+    {
+      "page": "/",
+      "control": "切換商店",
+      "actual": "select has a single option"
+    },
+    {
+      "page": "/studio/claims",
+      "control": "買家",
+      "actual": "select has a single option"
+    },
+    {
+      "page": "/",
+      "control": "登出",
+      "actual": "not clicked here: it would revoke the sweep's own session"
+    },
+    {
+      "page": "/orders",
+      "control": "直播場次",
+      "actual": "select has a single option"
+    },
+    {
+      "page": "/studio/claims",
+      "control": "買家",
+      "actual": "select has a single option"
+    },
+    {
+      "page": "/studio/claims",
+      "control": "Buyer",
+      "actual": "select has a single option"
+    },
+    {
+      "page": "/",
+      "control": "切換商店",
+      "actual": "select has a single option"
+    },
+    {
+      "page": "/",
+      "control": "登出",
+      "actual": "not clicked here: it would revoke the sweep's own session"
+    },
+    {
+      "page": "/orders",
+      "control": "Live session",
+      "actual": "select has a single option"
+    },
+    {
+      "page": "/products",
+      "control": "儲存修改",
+      "actual": "not pressed (the dialog's cancel path is exercised by the restore)"
+    },
+    {
+      "page": "/",
+      "control": "Switch store",
+      "actual": "select has a single option"
+    },
+    {
+      "page": "/",
+      "control": "Sign out",
+      "actual": "not clicked here: it would revoke the sweep's own session"
+    },
+    {
+      "page": "/products",
+      "control": "Save changes",
+      "actual": "not pressed (the dialog's cancel path is exercised by the restore)"
+    },
+    {
+      "page": "/products",
+      "control": "Save changes",
+      "actual": "not pressed (the dialog's cancel path is exercised by the restore)"
+    },
+    {
+      "page": "/inventory",
+      "control": "倉庫",
+      "actual": "select has a single option"
+    },
+    {
+      "page": "/inventory",
+      "control": "倉庫",
+      "actual": "select has a single option"
+    },
+    {
+      "page": "/inventory",
+      "control": "Warehouse",
+      "actual": "select has a single option"
+    },
+    {
+      "page": "/ads",
+      "control": "資料集請先連結廣告帳號與資料集才能開啟。",
+      "actual": "select has a single option"
+    },
+    {
+      "page": "/ads",
+      "control": "資料集請先連結廣告帳號與資料集才能開啟。",
+      "actual": "select has a single option"
+    },
+    {
+      "page": "/ads",
+      "control": "DatasetConnect a dataset with an ad account to turn this on.",
+      "actual": "select has a single option"
+    },
+    {
+      "page": "/live",
+      "control": "(not implemented)",
+      "actual": "apps/storefront/app/[locale] has no live route in this base; nothing to click"
+    }
+  ]
+}

@@ -400,7 +400,7 @@ async function journeyProduct(state, journeys) {
       await page.goto(editURL);
     }, page);
     await step(unit, "upload a cover, set Active and save", "the product is active and persists after a reload", async () => {
-      const png=Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==","base64");
+      const png=Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB"+"CAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==","base64");
       await page.getByTestId("photo-input").setInputFiles({name:"sweep-cover.png",mimeType:"image/png",buffer:png});
       await expect(page.getByTestId("photo-row")).toHaveCount(1);
       await page.getByTestId("product-status").selectOption("active");

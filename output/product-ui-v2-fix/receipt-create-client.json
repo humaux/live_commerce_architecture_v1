@@ -1,0 +1,10 @@
+{
+  "page": "create",
+  "control": "save/copy → retry → reload",
+  "denial": "client",
+  "expected": "one commit, original key retained, fresh write disabled",
+  "requests": 1,
+  "committed": 1,
+  "tier": "FAULT_INJECTED+REAL_PG",
+  "status": "PASS"
+}
