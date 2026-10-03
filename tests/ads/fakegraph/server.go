@@ -63,19 +63,20 @@ const (
 
 // Fault is one programmed misbehaviour; it fires Times times (0 = once) on the first request that matches.
 type Fault struct {
-	Route   string // exact route name; "" any
-	Method  string // "" any
-	Body    string // substring of the request body; "" any
-	Path    string // substring of the path; "" any
-	Kind    FaultKind
-	Effect  bool
-	HTTP    int // FaultGraphError only, default 400
-	Code    int // FaultGraphError only
-	Subcode int // FaultGraphError only, omitted when zero
-	Times   int
-	Hold    chan struct{} // FaultHold only
-	Arrived chan struct{} // FaultHold only (buffered; a non-blocking send)
-	used    int
+	Route       string // exact route name; "" any
+	Method      string // "" any
+	Body        string // substring of the request body; "" any
+	Path        string // substring of the path; "" any
+	Kind        FaultKind
+	Effect      bool
+	HTTP        int    // FaultGraphError only, default 400
+	Code        int    // FaultGraphError only
+	Subcode     int    // FaultGraphError only, omitted when zero
+	UserMessage string // FaultGraphError: synthetic merchant-facing Meta text
+	Times       int
+	Hold        chan struct{} // FaultHold only
+	Arrived     chan struct{} // FaultHold only (buffered; a non-blocking send)
+	used        int
 }
 
 // Req is one captured request.
@@ -348,9 +349,16 @@ func (s *Server) campaignOfLocked(o *Object) *Object {
 // ---------------------------------------------------------------------------------------------------------------------
 
 func graphError(w http.ResponseWriter, status, code int, msg string, subcode ...int) {
+	graphUserError(w, status, code, msg, "", subcode...)
+}
+
+func graphUserError(w http.ResponseWriter, status, code int, msg, userMessage string, subcode ...int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	err := map[string]any{"message": msg, "type": "OAuthException", "code": code, "fbtrace_id": "SYNTHTRACE"}
+	if userMessage != "" {
+		err["error_user_msg"] = userMessage
+	}
 	if len(subcode) > 0 && subcode[0] != 0 {
 		err["error_subcode"] = subcode[0]
 	}
@@ -516,7 +524,7 @@ func (s *Server) applyFault(w http.ResponseWriter, r *http.Request, f *Fault) in
 		if st == 0 {
 			st = 400
 		}
-		graphError(w, st, f.Code, "synthetic graph error", f.Subcode)
+		graphUserError(w, st, f.Code, "synthetic graph error", f.UserMessage, f.Subcode)
 		return st
 	case FaultGarbled:
 		_, _ = w.Write([]byte("<html>not json"))

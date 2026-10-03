@@ -109,8 +109,8 @@ Rejected alternatives:
 | F20 | Sandbox ad account: one per app; no delivery, no spend; "Insights API is currently not supported"; API only. | <https://developers.facebook.com/blog/post/2023/06/21/marketing-api-sandbox-capability-now-re-enabled/> |
 | F21 | BUC rate limits per ad account; header `X-Business-Use-Case-Usage` with `estimated_time_to_regain_access`; error 80004 (search excerpt). | <https://developers.facebook.com/docs/marketing-api/overview/rate-limiting/> |
 | F22 | Ad set `status`/`configured_status`: "The status set at the ad set level. It can be different from the effective status due to its parent campaign"; `effective_status` includes `CAMPAIGN_PAUSED` (fetched 2026-09-30). | <https://developers.facebook.com/docs/marketing-api/reference/ad-campaign/> |
-| F23 | Targeting includes TW: send `regional_regulated_categories=["TAIWAN_UNIVERSAL"]`; omit it when TW is absent. Without the category, owner sandbox validate-only returned subcode 3858498. We omit `regional_regulation_identities` and use the merchant's verified Ads Manager beneficiary/payer defaults. | Owner SANDBOX evidence and integrator ruling 2026-10-03, `docs/delivery/units/ads-graph.md` final section; reference <https://developers.facebook.com/docs/marketing-api/reference/ad-campaign/>. |
-| F24 | Category present but advertiser unverified: Graph code 100 / subcode 3858495. A proven 4xx create refusal is `FAILED_FINAL/tw_advertiser_unverified`. Show Taiwan verification/default beneficiary and payer guidance, the help link, and an explicit new-attempt retry (§5.3). | Owner SANDBOX evidence and integrator ruling 2026-10-03; merchant help <https://www.facebook.com/business/help/983527276402621> (current help fetch required login; no claim of re-verifying its contents). |
+| F23 | `regional_regulated_categories` is generated from the verified declaration table: TW → `TAIWAN_UNIVERSAL`, SG → `SINGAPORE_UNIVERSAL`. Send the union for multi-country targeting; omit the field for countries absent from the table (including HK). Do not send `regional_regulation_identities`. This is a required Meta request parameter, not platform-authored regional policy. | Owner 20-country SANDBOX validate-only probe 2026-10-03 and `ads-graph.md` Amendment 2. |
+| F24 | Preserve every parsed Graph refusal's `graph_<code>` and its `error_user_msg` as plain text, strip HTML and non-printing controls, cap at 300 Unicode code points, and do not translate or substitute platform-authored guidance. Never expose `error.message`, trace IDs or raw envelopes. Missing user text stays absent. Proven 4xx creates/reads remain FAILED_FINAL; status writes and uncertain results remain UNKNOWN. | Owner final ruling 2026-10-03, `ads-graph.md` Amendment 2; MOCK tests must prove original wording reaches the merchant in all UI locales. |
 
 Closed by the owner's 2026-10-03 sandbox validate-only probes: U1 `special_ad_categories=[]` is
 accepted for "none"; U2 the `POST_ENGAGEMENT` / `IMPRESSIONS` pair, `LOWEST_COST_WITHOUT_CAP`, lifetime
@@ -145,11 +145,10 @@ unverified sandbox refusal check; HK retains the full-chain control. This unit d
 - Host `graph.facebook.com` only (constructor rejects others; tests use an `httptest` base URL flag like `metareply.Config`). Version from config (A-9).
 - Every call bounded by the dispatcher `CallTimeout`; token only from `LoadSecret` (AD11); redacted formatters.
 - **Money conversion (I05):** `metaBudget(currency, amount_minor)`: TWD → `amount_minor/100` only when `amount_minor % 100 == 0`, else `ErrNotWholeUnit` (never truncates; Meta offset 1, F19); USD/HKD → `amount_minor`; any other currency → `ErrUnsupportedCurrency`. `spendMinor(currency, s)`: Meta's decimal `spend` string (account currency) → exact decimal parse × 100 for TWD/USD/HKD; more than 2 fraction digits, sign, exponent or non-digits → error (op FAILED_FINAL `bad_spend`, never rounded).
-- **Classification, creates** (`create_campaign|adset|creative|ad`): 2xx with an `id` → SUCCEEDED + provider_reference; HTTP 4xx with a parseable Graph `error` body → FAILED_FINAL `graph_<error.code>`, except codes 4/17/613/80004 → FAILED_FINAL `rate_limited` (retry = new publish attempt, §5.3); timeout, 5xx, transport error, unparseable body → UNKNOWN. U8 is closed by MA-S1 negative probes.
-  Code 100 with subcode 3858495 is the additional F24 exception: `FAILED_FINAL/tw_advertiser_unverified`.
+- **Classification, creates** (`create_campaign|adset|creative|ad`): 2xx with an `id` → SUCCEEDED + provider_reference; HTTP 4xx with a parseable Graph `error` body → FAILED_FINAL `graph_<error.code>` (including 4/17/613/80004; retry = new publish attempt, §5.3); timeout, 5xx, transport error, unparseable body → UNKNOWN. Parsed errors on uncertain HTTP responses still retain the generic Graph code/text without changing UNKNOWN. U8 is closed by MA-S1 negative probes; F24 changes presentation, not the external-side-effect safety boundary.
   The same specific rejection code is available on reads; the activate/pause UNKNOWN rule below is unchanged.
 - **Classification, `activate`/`pause`:** 2xx `{"success":true}` → SUCCEEDED; **any other response → UNKNOWN**, reconciled by `GET /{campaign_id}?fields=status,effective_status`; never FAILED_FINAL (a rate-limited or rejected status POST does not prove the campaign's state).
-- **Classification, reads** (`preflight_account`, `read_insights`): 2xx parsed → SUCCEEDED with the result in `provider_reference` (grammar below); 4xx with error body → FAILED_FINAL `graph_<code>`/`rate_limited` (a read has no effect; the planner plans the next seq); else UNKNOWN, and Reconcile simply repeats the read.
+- **Classification, reads** (`preflight_account`, `read_insights`): 2xx parsed → SUCCEEDED with the result in `provider_reference` (grammar below); 4xx with error body → FAILED_FINAL `graph_<code>` (a read has no effect; the planner plans the next seq); else UNKNOWN, and Reconcile simply repeats the read. Status/create reconciliation remains UNKNOWN on refusal and retains the generic code/user text.
 - **Read results** (`provider_reference`, ≤255 chars, `^v1(;[a-z]{2,3}=[A-Za-z0-9_./+-]{1,40}){1,9}$`): preflight `v1;st=<account_status>;cur=<ISO>;fund=<0|1>;tz=<timezone_name>`; insights (one day) `v1;es=<campaign effective_status>;sp=<spend decimal>;im=<int>;cl=<int>;pu=<int|na>;pv=<decimal|na>;cur=<ISO>;tz=<tz>`. `# ponytail: results ride in provider_reference (no schema change); add an operation result column if a read ever needs >255 chars.`
 - **Reconcile** (query only, token via A-10): create ops: `GET /{parent}/{campaigns|adsets|ads}?fields=id,name&limit=100` (creatives under `act_{id}/adcreatives`), ≤10 pages, exact tag `lc-<op uuid>`: one match → SUCCEEDED; zero → stays UNKNOWN (never recreate); >1 → UNKNOWN `duplicate_remote_objects` + review. `activate`/`pause`: status GET matches target → SUCCEEDED, else UNKNOWN. Reads: repeat the read. CAPI: returns UNKNOWN unchanged (no query API; AD8) and needs no secret (plain `Reconcile`).
 - CAPI: `POST /{pixel_id}/events` with exactly one event, `partner_agent` = config constant, `test_event_code` = store `capi_test_event_code` iff SANDBOX; 2xx with `events_received==1` → SUCCEEDED; 4xx with error body → FAILED_FINAL; else UNKNOWN.
@@ -356,7 +355,17 @@ draft guidance select the most recently completed FAILED_FINAL op in the current
 do not infer recency from kind-sorted array order or show a previous attempt's failure. Normal
 completion also writes that code to `integration.operation_events.reason_code`; a concurrent binding
 change may instead annotate the event as `completed_binding_changed` while `ops[].code` correctly
-retains Meta's operation outcome. No new event endpoint, grant or migration is needed for F24.
+retains Meta's operation outcome. Amendment 2 requires a durable text projection (migration 0112,
+provisional unit reservation): `ads.operation_refusals`, one latest row per operation. The existing
+completion transaction runs `ads.finish_operation_refusal` before Complete with the exact operation,
+generation, token, mode and expiry fence. Its owner is `commerce_ads_writer`; only `commerce_ads_worker`
+gets EXECUTE, no runtime/worker direct table access or cross-domain UPDATE privilege. Success clears
+the row; reads filter to matching current generation/code and FAILED_FINAL/UNKNOWN. The operation's
+retention also deletes the projection through its scoped foreign key. This is not an audit history.
+Draft `ops[].error_user_msg` and settings `recent_refusals[]` return the original sanitized wording;
+the latter contains at most twenty operations (including insights and CAPI), with operation_id,
+action, code, state and updated_at. No new endpoint, arbitrary links, platform policy explanation,
+or automatic write retry. Existing merchant `ads:read` authorization and store boundaries apply.
 
 ### 5.1 Draft status (derived, never stored as a mutable column)
 
@@ -411,7 +420,7 @@ persisted.
 Per draft whose campaign id is pinned (any derived status, incl. UNKNOWN) and `ends_at + 3 days ≥ today`:
 plans one `meta.ads.read_insights` op per day in `[max(start, today−3), today]` (semantic key
 `ads:ins:<draft>:<yyyy-mm-dd>:<yyyymmddhh plan hour>`, principal = the attempt's approver) + an
-`ads.insight_reads` row, in one transaction. The op performs `GET /{campaign_id}/insights?level=campaign&fields=spend,impressions,clicks,actions,action_values&time_range={"since":day,"until":day}` and `GET /{campaign_id}?fields=effective_status`. The advance sweeper (§6.3) ingests SUCCEEDED reads via `ads.put_insights_day` (`spendMinor`, §3), sets `final` for days ≤ today−28, and plans auto-pause (AD7). Rate-limited reads (FAILED_FINAL `rate_limited`) are simply re-planned next hour. `# ponytail: one sync GET per day per op; switch to async report runs when a call exceeds CallTimeout`.
+`ads.insight_reads` row, in one transaction. The op performs `GET /{campaign_id}/insights?level=campaign&fields=spend,impressions,clicks,actions,action_values&time_range={"since":day,"until":day}` and `GET /{campaign_id}?fields=effective_status`. The advance sweeper (§6.3) ingests SUCCEEDED reads via `ads.put_insights_day` (`spendMinor`, §3), sets `final` for days ≤ today−28, and plans auto-pause (AD7). Rate-limited reads (FAILED_FINAL `graph_4` / `graph_17` / `graph_613` / `graph_80004`) are simply re-planned next hour. `# ponytail: one sync GET per day per op; switch to async report runs when a call exceeds CallTimeout`.
 
 ### 6.3 Advance sweeper `ads_publish_advance_v1` (periodic 30 s, ≤ 50 drafts per run)
 
