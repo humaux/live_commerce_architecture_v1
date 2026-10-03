@@ -163,6 +163,7 @@ deploy/scripts/deploy.sh upgrade <tag>
 1. **取代码**：同 §4.1 第 1 步，用 git bundle 带发布 SHA 到 `/opt/live-commerce`，`git status` 必须干净。
 2. **配置差异**：
    - `compose.env` **必须新增** `LC_STORE_BASE_DOMAIN=xgdwm.com`（P19 在缺失时 FAIL）。compose 会把它传给 api、claims-worker 和 migrate。
+   - **platform-site 公开联系邮箱（owner 已确认）**：pilot 的 `compose.env` 取值为 `LC_COMPANY_CONTACT_EMAIL=ailun@xgdwm.com`。应用只从环境变量读取，不设默认值、不在 UI 或法律文本中写死邮箱。`deploy/env/compose.env.example` 仅放注释示例；测试 fixture 统一使用 `contact@example.invalid`。此项是配置说明，不代表官网已通过上线门禁或已在 pilot 生效；随 platform-site 交付并获准部署时再配置、核对实际页面。
    - DNS（2026-10-02 已完成，只核对）：`*.xgdwm.com` 与 `stores.xgdwm.com` 均为 A 记录指向本机、DNS-only、TTL 300。
    - 其余 `*.env` 不改也能升级；货到付款默认关（商家在设置里开），meta-connect 维持原状。第二波不新增环境变量或密钥。
    - 旧商品图片不会自动生成渲染图（没有后台扫描）：前台继续用原图，与升级前相同。新上传的图片在上传时生成。逐张补生成目前只有接口 `POST …/products/{id}/images/{image}/renditions`（catalog:write、幂等、记审计），后台按钮尚未提供（待办）。
