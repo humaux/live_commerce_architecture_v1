@@ -1,0 +1,32 @@
+✔ PS1 legal identity is one untranslated source (0.303708ms)
+✖ PS1 contact and hosts come only from configuration; production fails closed (0.938125ms)
+✔ PS2 public routes default to zh-TW, restrict page/locale, and never include admin (0.747ms)
+✔ PS4 optional Meta verification value never has a fake default (0.074334ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 3
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 75.3025
+
+✖ failing tests:
+
+test at tests/admin/platform-site.test.ts:17:1
+✖ PS1 contact and hosts come only from configuration; production fails closed (0.938125ms)
+  AssertionError [ERR_ASSERTION]: Missing expected exception.
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/tests/admin/platform-site.test.ts:23:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'throws',
+    diff: 'simple'
+  }

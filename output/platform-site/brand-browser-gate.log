@@ -1,0 +1,17 @@
+✔ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (265.884125ms)
+✔ G-UI3/G-UI5 negatives: new formatter, component fetch, >800 lines and wider allowance fail (0.447083ms)
+✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (1.610375ms)
+✔ G-UI1 copy key parity: no missing or extra key in any locale (0.085292ms)
+✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.178875ms)
+✔ G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve (116.753958ms)
+✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.193708ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 403.634625
+PASS G-UI2/G-UI4: 24 matrix cases, role negative, store switch, axe shell audit
+PASS platform-brand: 24 real-click/reload cases, 18 screenshots; MOCK not platform-site PS2
