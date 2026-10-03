@@ -119,6 +119,7 @@ catalogue = [  # (row id glob, item glob, reason)
     ("*", "*TestBrowserRefund*SANDBOX*", "G4 RF11(b) covered by RF10 via the API (G07z)"),
     ("*", "*TestBrowserE2EDealLoopSandbox*", "F12 T12 SANDBOX tier covered by SP18"),
     ("B-stripe-browser+", "*SP17*", "G4 SP17 real webhook delivery: Dashboard test event after deploy"),
+    ("B-browser-cvs+", "*TestBrowserTaiwanCvs/SANDBOX*", "owner 2026-10-03: no ECPay CVS sandbox membership yet; TCV08 MOCK + WebKit cover the flow"),
     ("G06s", "*TestStripe*Sandbox", "runs in G07z with the Stripe test key"),
     ("G07+", "TestStripe*Sandbox", "runs in G07z with the Stripe test key"),
     ("G07+", "TestStripeSP21Registrar/sandbox_probe*", "runs in G07z with the Stripe test key"),
