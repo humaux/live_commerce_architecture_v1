@@ -210,6 +210,8 @@ async function matrix(s) {
           path: `${output}/${name}-${locale}-${width}.png`,
           fullPage: true,
         });
+        if (name === "home" && locale === "zh-TW" && width === 1586)
+          await page.screenshot({ path: ".impeccable/review/hero-repro.png" });
         ledger.push({
           locale,
           width,
