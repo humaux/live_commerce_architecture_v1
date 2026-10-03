@@ -1,0 +1,2249 @@
+{
+	"admin": {
+		"listen": "unix//run/caddy/admin.sock"
+	},
+	"logging": {
+		"logs": {
+			"default": {
+				"writer": {
+					"output": "stdout"
+				},
+				"encoder": {
+					"format": "json"
+				},
+				"exclude": [
+					"http.log.access.log0",
+					"http.log.access.log1",
+					"http.log.access.log2",
+					"http.log.access.log3",
+					"http.log.access.log4",
+					"http.log.access.log5",
+					"http.log.access.log6"
+				]
+			},
+			"log0": {
+				"writer": {
+					"output": "stdout"
+				},
+				"encoder": {
+					"fields": {
+						"request\u003eheaders\u003eReferer": {
+							"actions": [
+								{
+									"parameter": "hub.verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "hub_verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "code",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "state",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "access_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "id_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "new_password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "email",
+									"type": "replace",
+									"value": "REDACTED"
+								}
+							],
+							"filter": "query"
+						},
+						"request\u003euri": {
+							"filter": "regexp"
+						},
+						"resp_headers\u003eLocation": {
+							"actions": [
+								{
+									"parameter": "hub.verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "hub_verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "code",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "state",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "access_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "id_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "new_password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "email",
+									"type": "replace",
+									"value": "REDACTED"
+								}
+							],
+							"filter": "query"
+						}
+					},
+					"format": "filter",
+					"wrap": {
+						"format": "json"
+					}
+				},
+				"include": [
+					"http.log.access.log0"
+				]
+			},
+			"log1": {
+				"writer": {
+					"output": "stdout"
+				},
+				"encoder": {
+					"fields": {
+						"request\u003eheaders\u003eReferer": {
+							"actions": [
+								{
+									"parameter": "hub.verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "hub_verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "code",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "state",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "access_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "id_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "new_password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "email",
+									"type": "replace",
+									"value": "REDACTED"
+								}
+							],
+							"filter": "query"
+						},
+						"request\u003euri": {
+							"filter": "regexp"
+						},
+						"resp_headers\u003eLocation": {
+							"actions": [
+								{
+									"parameter": "hub.verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "hub_verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "code",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "state",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "access_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "id_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "new_password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "email",
+									"type": "replace",
+									"value": "REDACTED"
+								}
+							],
+							"filter": "query"
+						}
+					},
+					"format": "filter",
+					"wrap": {
+						"format": "json"
+					}
+				},
+				"include": [
+					"http.log.access.log1"
+				]
+			},
+			"log2": {
+				"writer": {
+					"output": "stdout"
+				},
+				"encoder": {
+					"fields": {
+						"request\u003eheaders\u003eReferer": {
+							"actions": [
+								{
+									"parameter": "hub.verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "hub_verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "code",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "state",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "access_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "id_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "new_password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "email",
+									"type": "replace",
+									"value": "REDACTED"
+								}
+							],
+							"filter": "query"
+						},
+						"request\u003euri": {
+							"filter": "regexp"
+						},
+						"resp_headers\u003eLocation": {
+							"actions": [
+								{
+									"parameter": "hub.verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "hub_verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "code",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "state",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "access_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "id_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "new_password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "email",
+									"type": "replace",
+									"value": "REDACTED"
+								}
+							],
+							"filter": "query"
+						}
+					},
+					"format": "filter",
+					"wrap": {
+						"format": "json"
+					}
+				},
+				"include": [
+					"http.log.access.log2"
+				]
+			},
+			"log3": {
+				"writer": {
+					"output": "stdout"
+				},
+				"encoder": {
+					"fields": {
+						"request\u003eheaders\u003eReferer": {
+							"actions": [
+								{
+									"parameter": "hub.verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "hub_verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "code",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "state",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "access_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "id_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "new_password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "email",
+									"type": "replace",
+									"value": "REDACTED"
+								}
+							],
+							"filter": "query"
+						},
+						"request\u003euri": {
+							"filter": "regexp"
+						},
+						"resp_headers\u003eLocation": {
+							"actions": [
+								{
+									"parameter": "hub.verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "hub_verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "code",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "state",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "access_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "id_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "new_password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "email",
+									"type": "replace",
+									"value": "REDACTED"
+								}
+							],
+							"filter": "query"
+						}
+					},
+					"format": "filter",
+					"wrap": {
+						"format": "json"
+					}
+				},
+				"include": [
+					"http.log.access.log3"
+				]
+			},
+			"log4": {
+				"writer": {
+					"output": "stdout"
+				},
+				"encoder": {
+					"fields": {
+						"request\u003eheaders\u003eReferer": {
+							"actions": [
+								{
+									"parameter": "hub.verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "hub_verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "code",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "state",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "access_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "id_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "new_password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "email",
+									"type": "replace",
+									"value": "REDACTED"
+								}
+							],
+							"filter": "query"
+						},
+						"request\u003euri": {
+							"filter": "regexp"
+						},
+						"resp_headers\u003eLocation": {
+							"actions": [
+								{
+									"parameter": "hub.verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "hub_verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "code",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "state",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "access_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "id_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "new_password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "email",
+									"type": "replace",
+									"value": "REDACTED"
+								}
+							],
+							"filter": "query"
+						}
+					},
+					"format": "filter",
+					"wrap": {
+						"format": "json"
+					}
+				},
+				"include": [
+					"http.log.access.log4"
+				]
+			},
+			"log5": {
+				"writer": {
+					"output": "stdout"
+				},
+				"encoder": {
+					"fields": {
+						"request\u003eheaders\u003eReferer": {
+							"actions": [
+								{
+									"parameter": "hub.verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "hub_verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "code",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "state",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "access_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "id_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "new_password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "email",
+									"type": "replace",
+									"value": "REDACTED"
+								}
+							],
+							"filter": "query"
+						},
+						"request\u003euri": {
+							"filter": "regexp"
+						},
+						"resp_headers\u003eLocation": {
+							"actions": [
+								{
+									"parameter": "hub.verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "hub_verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "code",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "state",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "access_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "id_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "new_password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "email",
+									"type": "replace",
+									"value": "REDACTED"
+								}
+							],
+							"filter": "query"
+						}
+					},
+					"format": "filter",
+					"wrap": {
+						"format": "json"
+					}
+				},
+				"include": [
+					"http.log.access.log5"
+				]
+			},
+			"log6": {
+				"writer": {
+					"output": "stdout"
+				},
+				"encoder": {
+					"fields": {
+						"request\u003eheaders\u003eReferer": {
+							"actions": [
+								{
+									"parameter": "hub.verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "hub_verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "code",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "state",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "access_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "id_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "new_password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "email",
+									"type": "replace",
+									"value": "REDACTED"
+								}
+							],
+							"filter": "query"
+						},
+						"request\u003euri": {
+							"filter": "regexp"
+						},
+						"resp_headers\u003eLocation": {
+							"actions": [
+								{
+									"parameter": "hub.verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "hub_verify_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "code",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "state",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "access_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "id_token",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "new_password",
+									"type": "replace",
+									"value": "REDACTED"
+								},
+								{
+									"parameter": "email",
+									"type": "replace",
+									"value": "REDACTED"
+								}
+							],
+							"filter": "query"
+						}
+					},
+					"format": "filter",
+					"wrap": {
+						"format": "json"
+					}
+				},
+				"include": [
+					"http.log.access.log6"
+				]
+			}
+		}
+	},
+	"apps": {
+		"http": {
+			"servers": {
+				"srv0": {
+					"listen": [
+						"127.0.0.1:2080"
+					],
+					"read_header_timeout": 10000000000,
+					"idle_timeout": 120000000000,
+					"routes": [
+						{
+							"match": [
+								{
+									"host": [
+										"127.0.0.1"
+									]
+								}
+							],
+							"handle": [
+								{
+									"handler": "subroute",
+									"routes": [
+										{
+											"group": "group21",
+											"handle": [
+												{
+													"handler": "subroute",
+													"routes": [
+														{
+															"handle": [
+																{
+																	"body": "ok",
+																	"handler": "static_response",
+																	"status_code": 200
+																}
+															]
+														}
+													]
+												}
+											],
+											"match": [
+												{
+													"path": [
+														"/healthz"
+													]
+												}
+											]
+										},
+										{
+											"group": "group21",
+											"handle": [
+												{
+													"handler": "subroute",
+													"routes": [
+														{
+															"handle": [
+																{
+																	"handler": "static_response",
+																	"status_code": 404
+																}
+															]
+														}
+													]
+												}
+											]
+										}
+									]
+								}
+							],
+							"terminal": true
+						}
+					],
+					"automatic_https": {
+						"skip": [
+							"127.0.0.1"
+						]
+					}
+				},
+				"srv1": {
+					"listen": [
+						":443"
+					],
+					"read_header_timeout": 10000000000,
+					"idle_timeout": 120000000000,
+					"routes": [
+						{
+							"match": [
+								{
+									"host": [
+										"www.platform.localhost"
+									]
+								}
+							],
+							"handle": [
+								{
+									"handler": "subroute",
+									"routes": [
+										{
+											"handle": [
+												{
+													"handler": "headers",
+													"response": {
+														"deferred": true,
+														"delete": [
+															"Server"
+														],
+														"set": {
+															"Strict-Transport-Security": [
+																"max-age=31536000"
+															]
+														}
+													}
+												},
+												{
+													"handler": "static_response",
+													"headers": {
+														"Location": [
+															"https://platform.localhost{http.request.uri}"
+														]
+													},
+													"status_code": 301
+												},
+												{
+													"encodings": {
+														"gzip": {},
+														"zstd": {}
+													},
+													"handler": "encode",
+													"prefer": [
+														"zstd",
+														"gzip"
+													]
+												}
+											]
+										}
+									]
+								}
+							],
+							"terminal": true
+						},
+						{
+							"match": [
+								{
+									"host": [
+										"platform.localhost"
+									]
+								}
+							],
+							"handle": [
+								{
+									"handler": "subroute",
+									"routes": [
+										{
+											"handle": [
+												{
+													"handler": "headers",
+													"response": {
+														"deferred": true,
+														"delete": [
+															"Server"
+														],
+														"set": {
+															"Strict-Transport-Security": [
+																"max-age=31536000"
+															]
+														}
+													}
+												},
+												{
+													"encodings": {
+														"gzip": {},
+														"zstd": {}
+													},
+													"handler": "encode",
+													"prefer": [
+														"zstd",
+														"gzip"
+													]
+												}
+											]
+										},
+										{
+											"group": "group24",
+											"handle": [
+												{
+													"handler": "subroute",
+													"routes": [
+														{
+															"handle": [
+																{
+																	"handler": "reverse_proxy",
+																	"upstreams": [
+																		{
+																			"dial": "127.0.0.1:3100"
+																		}
+																	]
+																}
+															]
+														}
+													]
+												}
+											],
+											"match": [
+												{
+													"method": [
+														"GET",
+														"HEAD"
+													],
+													"path": [
+														"/",
+														"/zh-TW",
+														"/zh-CN",
+														"/en",
+														"/privacy",
+														"/terms",
+														"/data-deletion",
+														"/contact",
+														"/zh-TW/privacy",
+														"/zh-TW/terms",
+														"/zh-TW/data-deletion",
+														"/zh-TW/contact",
+														"/zh-CN/privacy",
+														"/zh-CN/terms",
+														"/zh-CN/data-deletion",
+														"/zh-CN/contact",
+														"/en/privacy",
+														"/en/terms",
+														"/en/data-deletion",
+														"/en/contact",
+														"/robots.txt",
+														"/sitemap.xml",
+														"/_next/static/*"
+													]
+												}
+											]
+										},
+										{
+											"group": "group24",
+											"handle": [
+												{
+													"handler": "subroute",
+													"routes": [
+														{
+															"handle": [
+																{
+																	"handler": "static_response",
+																	"status_code": 404
+																}
+															]
+														}
+													]
+												}
+											]
+										}
+									]
+								}
+							],
+							"terminal": true
+						},
+						{
+							"match": [
+								{
+									"host": [
+										"admin.localhost"
+									]
+								}
+							],
+							"handle": [
+								{
+									"handler": "subroute",
+									"routes": [
+										{
+											"handle": [
+												{
+													"handler": "headers",
+													"response": {
+														"deferred": true,
+														"delete": [
+															"Server"
+														],
+														"set": {
+															"Strict-Transport-Security": [
+																"max-age=31536000"
+															]
+														}
+													}
+												},
+												{
+													"handler": "request_body",
+													"max_size": 1000000
+												},
+												{
+													"encodings": {
+														"gzip": {},
+														"zstd": {}
+													},
+													"handler": "encode",
+													"prefer": [
+														"zstd",
+														"gzip"
+													]
+												},
+												{
+													"handler": "reverse_proxy",
+													"upstreams": [
+														{
+															"dial": "127.0.0.1:3100"
+														}
+													]
+												}
+											]
+										}
+									]
+								}
+							],
+							"terminal": true
+						},
+						{
+							"match": [
+								{
+									"host": [
+										"hooks.localhost"
+									]
+								}
+							],
+							"handle": [
+								{
+									"handler": "subroute",
+									"routes": [
+										{
+											"handle": [
+												{
+													"handler": "headers",
+													"response": {
+														"deferred": true,
+														"delete": [
+															"Server"
+														],
+														"set": {
+															"Strict-Transport-Security": [
+																"max-age=31536000"
+															]
+														}
+													}
+												},
+												{
+													"handler": "request_body",
+													"max_size": 2000000
+												},
+												{
+													"handler": "headers",
+													"request": {
+														"delete": [
+															"Authorization"
+														]
+													}
+												},
+												{
+													"handler": "headers",
+													"request": {
+														"delete": [
+															"X-Commerce-BFF-Key"
+														]
+													}
+												},
+												{
+													"handler": "headers",
+													"request": {
+														"delete": [
+															"X-Commerce-Buyer-BFF-Key"
+														]
+													}
+												},
+												{
+													"encodings": {
+														"gzip": {},
+														"zstd": {}
+													},
+													"handler": "encode",
+													"prefer": [
+														"zstd",
+														"gzip"
+													]
+												}
+											]
+										},
+										{
+											"group": "group27",
+											"handle": [
+												{
+													"handler": "subroute",
+													"routes": [
+														{
+															"handle": [
+																{
+																	"handler": "reverse_proxy",
+																	"upstreams": [
+																		{
+																			"dial": "127.0.0.1:8080"
+																		}
+																	]
+																}
+															]
+														}
+													]
+												}
+											],
+											"match": [
+												{
+													"path": [
+														"/v1/platform/stripe/webhook"
+													]
+												}
+											]
+										},
+										{
+											"group": "group27",
+											"handle": [
+												{
+													"handler": "subroute",
+													"routes": [
+														{
+															"handle": [
+																{
+																	"handler": "reverse_proxy",
+																	"upstreams": [
+																		{
+																			"dial": "127.0.0.1:8080"
+																		}
+																	]
+																}
+															]
+														}
+													]
+												}
+											],
+											"match": [
+												{
+													"path": [
+														"/v1/cvs/ecpay/map-return/*"
+													]
+												}
+											]
+										},
+										{
+											"group": "group27",
+											"handle": [
+												{
+													"handler": "subroute",
+													"routes": [
+														{
+															"handle": [
+																{
+																	"handler": "reverse_proxy",
+																	"upstreams": [
+																		{
+																			"dial": "127.0.0.1:8080"
+																		}
+																	]
+																}
+															]
+														}
+													]
+												}
+											],
+											"match": [
+												{
+													"path": [
+														"/v1/cvs/ecpay/status/*"
+													]
+												}
+											]
+										},
+										{
+											"group": "group27",
+											"handle": [
+												{
+													"handler": "subroute",
+													"routes": [
+														{
+															"handle": [
+																{
+																	"handler": "reverse_proxy",
+																	"upstreams": [
+																		{
+																			"dial": "127.0.0.1:8080"
+																		}
+																	]
+																}
+															]
+														}
+													]
+												}
+											],
+											"match": [
+												{
+													"path": [
+														"/v1/stripe/webhook/*"
+													]
+												}
+											]
+										},
+										{
+											"group": "group27",
+											"handle": [
+												{
+													"handler": "subroute",
+													"routes": [
+														{
+															"handle": [
+																{
+																	"handler": "reverse_proxy",
+																	"upstreams": [
+																		{
+																			"dial": "127.0.0.1:8080"
+																		}
+																	]
+																}
+															]
+														}
+													]
+												}
+											],
+											"match": [
+												{
+													"path": [
+														"/v1/meta/webhooks/*"
+													]
+												}
+											]
+										},
+										{
+											"group": "group27",
+											"handle": [
+												{
+													"handler": "subroute",
+													"routes": [
+														{
+															"handle": [
+																{
+																	"handler": "static_response",
+																	"status_code": 404
+																}
+															]
+														}
+													]
+												}
+											],
+											"match": [
+												{
+													"path": [
+														"/payuni/notify"
+													]
+												}
+											]
+										},
+										{
+											"group": "group27",
+											"handle": [
+												{
+													"handler": "subroute",
+													"routes": [
+														{
+															"handle": [
+																{
+																	"handler": "static_response",
+																	"status_code": 404
+																}
+															]
+														}
+													]
+												}
+											]
+										}
+									]
+								}
+							],
+							"terminal": true
+						},
+						{
+							"match": [
+								{
+									"host": [
+										"shop.localhost"
+									]
+								}
+							],
+							"handle": [
+								{
+									"handler": "subroute",
+									"routes": [
+										{
+											"handle": [
+												{
+													"handler": "headers",
+													"response": {
+														"deferred": true,
+														"delete": [
+															"Server"
+														],
+														"set": {
+															"Strict-Transport-Security": [
+																"max-age=31536000"
+															]
+														}
+													}
+												},
+												{
+													"handler": "request_body",
+													"max_size": 1000000
+												},
+												{
+													"handler": "headers",
+													"request": {
+														"set": {
+															"X-Forwarded-For": [
+																"{http.request.remote.host}"
+															]
+														}
+													}
+												},
+												{
+													"encodings": {
+														"gzip": {},
+														"zstd": {}
+													},
+													"handler": "encode",
+													"prefer": [
+														"zstd",
+														"gzip"
+													]
+												},
+												{
+													"handler": "reverse_proxy",
+													"upstreams": [
+														{
+															"dial": "127.0.0.1:3200"
+														}
+													]
+												}
+											]
+										}
+									]
+								}
+							],
+							"terminal": true
+						},
+						{
+							"match": [
+								{
+									"host": [
+										"api.localhost"
+									]
+								}
+							],
+							"handle": [
+								{
+									"handler": "subroute",
+									"routes": [
+										{
+											"handle": [
+												{
+													"handler": "headers",
+													"response": {
+														"deferred": true,
+														"delete": [
+															"Server"
+														],
+														"set": {
+															"Strict-Transport-Security": [
+																"max-age=31536000"
+															]
+														}
+													}
+												},
+												{
+													"encodings": {
+														"gzip": {},
+														"zstd": {}
+													},
+													"handler": "encode",
+													"prefer": [
+														"zstd",
+														"gzip"
+													]
+												}
+											]
+										},
+										{
+											"group": "group30",
+											"handle": [
+												{
+													"handler": "subroute",
+													"routes": [
+														{
+															"handle": [
+																{
+																	"handler": "reverse_proxy",
+																	"upstreams": [
+																		{
+																			"dial": "127.0.0.1:8080"
+																		}
+																	]
+																}
+															]
+														}
+													]
+												}
+											],
+											"match": [
+												{
+													"path": [
+														"/healthz"
+													]
+												}
+											]
+										},
+										{
+											"group": "group30",
+											"handle": [
+												{
+													"handler": "subroute",
+													"routes": [
+														{
+															"handle": [
+																{
+																	"handler": "static_response",
+																	"status_code": 404
+																}
+															]
+														}
+													]
+												}
+											]
+										}
+									]
+								}
+							],
+							"terminal": true
+						},
+						{
+							"handle": [
+								{
+									"handler": "subroute",
+									"routes": [
+										{
+											"handle": [
+												{
+													"handler": "headers",
+													"response": {
+														"deferred": true,
+														"delete": [
+															"Server"
+														],
+														"set": {
+															"Strict-Transport-Security": [
+																"max-age=31536000"
+															]
+														}
+													}
+												},
+												{
+													"handler": "request_body",
+													"max_size": 1000000
+												},
+												{
+													"handler": "headers",
+													"request": {
+														"set": {
+															"X-Forwarded-For": [
+																"{http.request.remote.host}"
+															]
+														}
+													}
+												},
+												{
+													"encodings": {
+														"gzip": {},
+														"zstd": {}
+													},
+													"handler": "encode",
+													"prefer": [
+														"zstd",
+														"gzip"
+													]
+												}
+											]
+										},
+										{
+											"handle": [
+												{
+													"handler": "subroute",
+													"routes": [
+														{
+															"handle": [
+																{
+																	"handler": "reverse_proxy",
+																	"upstreams": [
+																		{
+																			"dial": "127.0.0.1:8080"
+																		}
+																	]
+																}
+															]
+														}
+													]
+												}
+											],
+											"match": [
+												{
+													"path": [
+														"/.well-known/lc-domain-check/*"
+													]
+												}
+											]
+										},
+										{
+											"handle": [
+												{
+													"handler": "reverse_proxy",
+													"upstreams": [
+														{
+															"dial": "127.0.0.1:3200"
+														}
+													]
+												}
+											]
+										}
+									]
+								}
+							],
+							"terminal": true
+						}
+					],
+					"errors": {
+						"routes": [
+							{
+								"match": [
+									{
+										"host": [
+											"www.platform.localhost"
+										]
+									}
+								],
+								"handle": [
+									{
+										"handler": "subroute",
+										"routes": [
+											{
+												"handle": [
+													{
+														"handler": "subroute",
+														"routes": [
+															{
+																"handle": [
+																	{
+																		"handler": "headers",
+																		"response": {
+																			"set": {
+																				"Retry-After": [
+																					"60"
+																				]
+																			}
+																		}
+																	},
+																	{
+																		"handler": "headers",
+																		"response": {
+																			"set": {
+																				"Content-Type": [
+																					"text/plain; charset=utf-8"
+																				]
+																			}
+																		}
+																	},
+																	{
+																		"body": "Service temporarily unavailable. 服务维护中，请稍后再试。",
+																		"handler": "static_response",
+																		"status_code": 503
+																	}
+																]
+															}
+														]
+													}
+												],
+												"match": [
+													{
+														"expression": "{http.error.status_code} in [502, 503, 504]"
+													}
+												]
+											}
+										]
+									}
+								],
+								"terminal": true
+							},
+							{
+								"match": [
+									{
+										"host": [
+											"platform.localhost"
+										]
+									}
+								],
+								"handle": [
+									{
+										"handler": "subroute",
+										"routes": [
+											{
+												"handle": [
+													{
+														"handler": "subroute",
+														"routes": [
+															{
+																"handle": [
+																	{
+																		"handler": "headers",
+																		"response": {
+																			"set": {
+																				"Retry-After": [
+																					"60"
+																				]
+																			}
+																		}
+																	},
+																	{
+																		"handler": "headers",
+																		"response": {
+																			"set": {
+																				"Content-Type": [
+																					"text/plain; charset=utf-8"
+																				]
+																			}
+																		}
+																	},
+																	{
+																		"body": "Service temporarily unavailable. 服务维护中，请稍后再试。",
+																		"handler": "static_response",
+																		"status_code": 503
+																	}
+																]
+															}
+														]
+													}
+												],
+												"match": [
+													{
+														"expression": "{http.error.status_code} in [502, 503, 504]"
+													}
+												]
+											}
+										]
+									}
+								],
+								"terminal": true
+							},
+							{
+								"match": [
+									{
+										"host": [
+											"admin.localhost"
+										]
+									}
+								],
+								"handle": [
+									{
+										"handler": "subroute",
+										"routes": [
+											{
+												"handle": [
+													{
+														"handler": "subroute",
+														"routes": [
+															{
+																"handle": [
+																	{
+																		"handler": "headers",
+																		"response": {
+																			"set": {
+																				"Retry-After": [
+																					"60"
+																				]
+																			}
+																		}
+																	},
+																	{
+																		"handler": "headers",
+																		"response": {
+																			"set": {
+																				"Content-Type": [
+																					"text/plain; charset=utf-8"
+																				]
+																			}
+																		}
+																	},
+																	{
+																		"body": "Service temporarily unavailable. 服务维护中，请稍后再试。",
+																		"handler": "static_response",
+																		"status_code": 503
+																	}
+																]
+															}
+														]
+													}
+												],
+												"match": [
+													{
+														"expression": "{http.error.status_code} in [502, 503, 504]"
+													}
+												]
+											}
+										]
+									}
+								],
+								"terminal": true
+							},
+							{
+								"match": [
+									{
+										"host": [
+											"hooks.localhost"
+										]
+									}
+								],
+								"handle": [
+									{
+										"handler": "subroute",
+										"routes": [
+											{
+												"handle": [
+													{
+														"handler": "subroute",
+														"routes": [
+															{
+																"handle": [
+																	{
+																		"handler": "headers",
+																		"response": {
+																			"set": {
+																				"Retry-After": [
+																					"60"
+																				]
+																			}
+																		}
+																	},
+																	{
+																		"handler": "headers",
+																		"response": {
+																			"set": {
+																				"Content-Type": [
+																					"text/plain; charset=utf-8"
+																				]
+																			}
+																		}
+																	},
+																	{
+																		"body": "Service temporarily unavailable. 服务维护中，请稍后再试。",
+																		"handler": "static_response",
+																		"status_code": 503
+																	}
+																]
+															}
+														]
+													}
+												],
+												"match": [
+													{
+														"expression": "{http.error.status_code} in [502, 503, 504]"
+													}
+												]
+											}
+										]
+									}
+								],
+								"terminal": true
+							},
+							{
+								"match": [
+									{
+										"host": [
+											"shop.localhost"
+										]
+									}
+								],
+								"handle": [
+									{
+										"handler": "subroute",
+										"routes": [
+											{
+												"handle": [
+													{
+														"handler": "subroute",
+														"routes": [
+															{
+																"handle": [
+																	{
+																		"handler": "headers",
+																		"response": {
+																			"set": {
+																				"Retry-After": [
+																					"60"
+																				]
+																			}
+																		}
+																	},
+																	{
+																		"handler": "headers",
+																		"response": {
+																			"set": {
+																				"Content-Type": [
+																					"text/plain; charset=utf-8"
+																				]
+																			}
+																		}
+																	},
+																	{
+																		"body": "Service temporarily unavailable. 服务维护中，请稍后再试。",
+																		"handler": "static_response",
+																		"status_code": 503
+																	}
+																]
+															}
+														]
+													}
+												],
+												"match": [
+													{
+														"expression": "{http.error.status_code} in [502, 503, 504]"
+													}
+												]
+											}
+										]
+									}
+								],
+								"terminal": true
+							},
+							{
+								"match": [
+									{
+										"host": [
+											"api.localhost"
+										]
+									}
+								],
+								"handle": [
+									{
+										"handler": "subroute",
+										"routes": [
+											{
+												"handle": [
+													{
+														"handler": "subroute",
+														"routes": [
+															{
+																"handle": [
+																	{
+																		"handler": "headers",
+																		"response": {
+																			"set": {
+																				"Retry-After": [
+																					"60"
+																				]
+																			}
+																		}
+																	},
+																	{
+																		"handler": "headers",
+																		"response": {
+																			"set": {
+																				"Content-Type": [
+																					"text/plain; charset=utf-8"
+																				]
+																			}
+																		}
+																	},
+																	{
+																		"body": "Service temporarily unavailable. 服务维护中，请稍后再试。",
+																		"handler": "static_response",
+																		"status_code": 503
+																	}
+																]
+															}
+														]
+													}
+												],
+												"match": [
+													{
+														"expression": "{http.error.status_code} in [502, 503, 504]"
+													}
+												]
+											}
+										]
+									}
+								],
+								"terminal": true
+							},
+							{
+								"handle": [
+									{
+										"handler": "subroute",
+										"routes": [
+											{
+												"handle": [
+													{
+														"handler": "subroute",
+														"routes": [
+															{
+																"handle": [
+																	{
+																		"handler": "headers",
+																		"response": {
+																			"set": {
+																				"Retry-After": [
+																					"60"
+																				]
+																			}
+																		}
+																	},
+																	{
+																		"handler": "headers",
+																		"response": {
+																			"set": {
+																				"Content-Type": [
+																					"text/plain; charset=utf-8"
+																				]
+																			}
+																		}
+																	},
+																	{
+																		"body": "Service temporarily unavailable. 服务维护中，请稍后再试。",
+																		"handler": "static_response",
+																		"status_code": 503
+																	}
+																]
+															}
+														]
+													}
+												],
+												"match": [
+													{
+														"expression": "{http.error.status_code} in [502, 503, 504]"
+													}
+												]
+											}
+										]
+									}
+								],
+								"terminal": true
+							}
+						]
+					},
+					"tls_connection_policies": [
+						{}
+					],
+					"logs": {
+						"default_logger_name": "log4",
+						"logger_names": {
+							"admin.localhost": [
+								"log2"
+							],
+							"api.localhost": [
+								"log5"
+							],
+							"hooks.localhost": [
+								"log6"
+							],
+							"platform.localhost": [
+								"log0"
+							],
+							"shop.localhost": [
+								"log3"
+							],
+							"www.platform.localhost": [
+								"log1"
+							]
+						}
+					}
+				}
+			}
+		},
+		"pki": {
+			"certificate_authorities": {
+				"local": {
+					"install_trust": false
+				}
+			}
+		},
+		"tls": {
+			"automation": {
+				"policies": [
+					{
+						"subjects": [
+							"www.platform.localhost",
+							"platform.localhost",
+							"admin.localhost",
+							"hooks.localhost",
+							"shop.localhost",
+							"api.localhost"
+						]
+					},
+					{
+						"issuers": [
+							{
+								"ca": "https://acme-v02.api.letsencrypt.org/directory",
+								"email": "contact@example.invalid",
+								"module": "acme"
+							}
+						],
+						"on_demand": true
+					}
+				],
+				"on_demand": {
+					"permission": {
+						"endpoint": "http://127.0.0.1:8080/internal/tls-ask?domain={host}",
+						"module": "http"
+					}
+				}
+			}
+		}
+	}
+}

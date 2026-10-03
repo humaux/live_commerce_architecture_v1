@@ -1,76 +1,115 @@
-# platform-site — admin branding delivered; public website NOT COMPLETE
+# platform-site — approved A implemented; PS1–PS4 PASS; PS5 BLOCKED
 
-Base: `c2f41c91ac38aa2da9db0e39b0fcba207e33cc5c` (`r3/integration`).
-Branch: `unit/platform-site`. Worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site`.
+Date: 2026-10-04 (Asia/Shanghai). Branch: `unit/platform-site`.
+Worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site`.
+Base: `c2f41c91ac38aa2da9db0e39b0fcba207e33cc5c`. Final implementation: `8f567049`.
+This replaces the historical pre-approval checkpoint; its earlier evidence remains in Git and the named logs.
 
-Preparation commit: `5d4efcc7`; contact-validator review fix: `f38a673e`; unapproved composition checkpoint: `44a33705`; admin branding implementation/tests: `2e91c529`; public mailbox documentation: `9fa55342`.
+## Result and scope
 
-## Status
+- Owner-approved **A「從留言到訂單」**: DaWan Live and sign-in at the top, headline plus Facebook comment → merchant storefront → order management. The flow is explicitly a product illustration; it does not promise every merchant is connected. Company details are below the home first viewport, not in the hero.
+- Public `/`, `/privacy`, `/terms`, `/data-deletion`, `/contact`, each in zh-TW / zh-CN / en; server-rendered, crawlable, canonical/hreflang plus robots and 15-URL sitemap.
+- One company source in `apps/admin/lib/company.ts`: exact legal names, company/BRC numbers, dates and un-translated registered address from the owner-approved brief. Full facts appear in every public footer and every legal/contact body. No directors' personal details used.
+- Product brand stays untranslated. Prior commits also apply it to auth titles/entry, W0 rail and operator attribution; merchant storefront branding is untouched.
+- Host/email configuration remains env-only. No real-looking default mailbox. Missing production contact config fails the build. The pilot email appears only in the authorized deploy runbook; test fixtures use `contact@example.invalid`.
+- Public routing uses the actual Host, a path allowlist and a separate public root layout. It does not expose BFF/API or internal rewrite routes on the platform host, and does not expand the existing auth-body proxy matcher.
+- Optional domain-verification tag is absent when unset; when set it renders exactly once on each locale's apex home page, never a legal page or admin page.
+- Caddy platform block and www 301, compose/admin build arguments, preflight, smoke fixture and runbook are delivered. No migration, Go/SQL, production configuration, DNS, Meta settings, mail delivery, push, merge or deployment.
 
-- Read current platform-site brief including DaWan Live owner ruling, company facts, env-only contact email and host requirements.
-- Created the requested isolated worktree; `pnpm install --offline`: exit 0.
-- Single `company.ts` identity source now drives admin Entry, signup/reset titles and W0 rail branding. Reusable operator footer uses the exact English attribution. Product name remains untranslated. Removed obsolete translated entry-brand keys. Merchant storefront source was not changed.
-- Signup/reset titles use server route metadata; root login uses Entry's title only when that entry surface is mounted. Exact single-title assertions cover browser navigation and reload. Authenticated dashboard titles remain unchanged.
-- Latest owner supplement: public contact email **confirmed as `ailun@xgdwm.com`**. `LC_COMPANY_CONTACT_EMAIL` still has no default. Config helper validates env-only hosts/email, but production-build/public routing integration is **not yet implemented**; no claim of complete env/build acceptance.
-- Added fail-closed, case-insensitive UI/legal domain grep to check-gates. A temporary uppercase domain literal caused exit 1; after removing that exact test file the final gate passed. Tests and documentation examples remain outside this UI/legal scan.
-- Audited route conflict: existing admin locale layout is non-indexable and session-oriented. Public pages need their own root layout under a public group plus a host-specific internal rewrite. Keep streaming BFF body limits intact; do not blindly expand the proxy matcher across auth endpoints.
-- Three composition proposals generated using built-in image_gen, referenced to approved W0 comp 01. **None approved yet.** Exact prompts are in JSON sidecars and embedded PNG metadata. They are composition references only: generated demonstration data, copyright years, and absolute delivery claims are not approved product copy.
-- Waiting for visual direction selection (A workflow / B product + operator / C task guide); impeccable requires approval before implementing this new public surface. The narrow owner-brand amendment reused the incumbent admin structure via frontend-architect/impeccable refinement; it did not require a new admin layout. No public page, deployment, DNS or Meta configuration is claimed.
+**Legal text: 需 owner/律師審閱.** It describes current account/Meta/buyer/payment processing, manual email deletion requests and retention obligations. It invents no signed-request callback or fixed deletion SLA. This is a draft, not a certification of legal compliance.
 
-## Commands and evidence
+## Logical commits
 
-| Command | Exit | Evidence / scope |
+| Commit | Change |
+|---|---|
+| `5d4efcc7`, `f38a673e` | Company/config/route contract and contact validation |
+| `2e91c529` | DaWan Live auth and W0 branding; merchant brand unchanged |
+| `9fa55342`, `5baf3176` | Owner-confirmed mailbox runbook/example and review evidence |
+| `b12c4e7f` | Approved A, three-locale public/legal pages, routing, metadata, synthetic illustrative garment |
+| `e7ce99f1` | Caddy, compose/build/preflight/smoke/runbook and PS3 fixture |
+| `38cee4d8` | Formal public browser mode, strict release-gate registration, shared test queue |
+| `f626bb71` | Source-backed public-surface DESIGN and sidecar, without replacing the W0 design system |
+| `8f567049` | First-viewport proof in addition to full-page captures |
+
+All commits have `Co-Authored-By: Codex <noreply@openai.com>`. Earlier proposal/checkpoint commits remain in history; they are not the current acceptance state.
+
+## PS1–PS5 evidence
+
+| Gate | Status | Evidence |
+|---|---|---|
+| PS1 | PASS (LOCAL) | 7 focused Node cases within the 336-case Node run; 15 rendered company/SSR checks; actual production build missing email exits 1 as required |
+| PS2 | PASS (LOCAL/MOCK) | 30 page/viewport/language cases, 390 actual clicks plus 30 reloads; no horizontal overflow; real document navigation, language changes, admin links, skip link, mailto activation |
+| PS3 | PASS (LOCAL Caddy TLS / MOCK upstream) | Pinned Caddy adapt/validate/fmt plus 22 requests: platform pages/static, rejected API/internal paths/POST/forwarded-host spoof, HEAD, www 301 preserving path/query, admin host |
+| PS4 | PASS (LOCAL) | 16 verification-tag cases, unset and set; production-Next crawler checks |
+| PS5 | **BLOCKED / NOT ALL GREEN** | Node/tsc/check-gates are green. Serial full click-sweep exits 1 on existing merchant-storefront routes: 120 pages / 32 load failures, 983 controls / 960 pass / 3 fail / 20 skip; 18 journeys pass. Public-matrix standalone result is separate, not a replacement. |
+
+## Commands and exit codes
+
+All commands below run in this worktree. Browser queue uses `LC_TEST_LOCK_WAIT=14400`; no foreign lock was removed or process terminated.
+
+| Command | Exit | Count / artifact |
 |---|---:|---|
-| `pnpm install --offline` | 0 | 49 offline packages; lockfile unchanged |
-| `node --test --experimental-strip-types tests/admin/platform-site.test.ts` before module | 1 | `ps1-red.log`: missing implementation; prerequisite red only |
-| same focused test after module | 0 | `ps1-green.log`: 4 PASS, 0 FAIL, 0 SKIP; config and route parsing only |
-| same test with email-format review negatives, pre-fix | 1 | `config-review-red.log`: malformed dot-address accepted |
-| same test after validator fix | 0 | `config-review-green.log`: 4 PASS, 0 FAIL, 0 SKIP |
-| focused test with new title contract, before implementation | 1 | `brand-red.log`: missing brandedTitle export |
-| same focused test after implementation | 0 | `brand-green.log`: 5 PASS, 0 FAIL, 0 SKIP |
-| `bash scripts/dev/check-gates.sh` with temporary uppercase domain violation | 1 | `brand-domain-red.log`: hardcoded host detected; witness then removed |
-| `bash scripts/dev/check-gates.sh` final source | 0 | `brand-check-gates.log`: 60 modes, all documented; architecture ratchet PASS |
-| `bash scripts/dev/test-node.sh` final source | 0 | `brand-test-node.log`: 334 PASS, 0 FAIL, 0 SKIP across executed suites; LiveKit binary-specific file NOT_RUN |
-| `pnpm --filter admin exec tsc --noEmit` final source | 0 | `brand-tsc.log` (empty successful output) |
-| `LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh --browser-admin-shell` first run | 1 | `brand-browser-red.log`: old exact reset title expected no brand; updated exact assertion per owner contract, invitation title untouched |
-| same browser command, final source | 0 | `brand-browser-gate.log`: W0 24 matrix cases + role negative/store switch/axe; branding 24 real-click/reload cases |
-| impeccable changed-target detector (once) | 2 | `brand-design-detect.json`: one warning on pre-existing Arial at globals.css:10; retained incumbent font, no new finding |
-| `git diff --cached --check` implementation | 0 | Source/test staged diff clean; generated build logs may contain terminal CR progress formatting |
+| `pnpm install --offline` (workspace setup) | 0 | Lockfile unchanged |
+| `bash scripts/dev/test-node.sh` (final implementation) | 0 | 336 PASS / 0 FAIL / 0 SKIP across executed suites; `test-node.log` |
+| `pnpm --filter admin exec tsc --noEmit` | 0 | `admin-tsc.log` |
+| `bash scripts/dev/check-gates.sh` | 0 | 61 documented modes, tracked tests routed; existing allowlist warnings retained; `check-gates.log` |
+| `pnpm --filter admin build` with synthetic required host/contact env | 0 | `build.log` |
+| `pnpm --filter admin build` with `LC_COMPANY_CONTACT_EMAIL` unset | **1 (expected)** | Fails on `LC_COMPANY_CONTACT_EMAIL`; `ps1-missing-env.log` |
+| `LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh --browser-platform-site` | 0 | `browser-platform-site-final.log`, `ps-browser-result.json`, `click-ledger.json` |
+| `node tests/deploy/platform-edge.mjs` | 0 | 22 requests; `ps3.log`, `ps3-edge.json`, Caddy artifacts |
+| `LC_COMPANY_CONTACT_EMAIL=contact@example.invalid docker compose --env-file deploy/env/compose.env.example -f deploy/compose.yml config --no-env-resolution --quiet` | 0 | `compose-config.log` |
+| `bash scripts/dev/release-gate.sh --list` | 0 | Includes `B-browser-platform-site` and `B-browser-click-sweep`; listing, not full strict acceptance |
+| Shell syntax checks for modified dev/deploy scripts; Node syntax checks for new runners | 0 | LOCAL static validation |
+| `LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh --browser-click-sweep` (serial final) | **1** | `click-sweep-final.log`; 711.03 s; 120 pages / 32 load failures, 983 controls / 960 pass / 3 fail / 20 skip; 18 journeys PASS |
+| Impeccable changed-public-target detector (once) | 0 | `design-detect.json`: [] |
+| Raster provenance scan | 0 | One generated raster, no missing sidecar; `raster-provenance.log` |
+| `git diff --check` (source) | 0 | No source whitespace errors |
 
-## Scope of verification / NOT_RUN
+The earlier brand-only `--browser-admin-shell` run also exited 0: W0 24-case matrix, role negative/store switch/axe, plus 24 brand click/reload cases. See `brand-browser-gate.log` and `brand-browser/`. This is prior-commit regression evidence, not a rerun of the final public source.
 
-- **LOCAL/MOCK**, not SANDBOX or LIVE. Browser runner uses existing MOCK identity and packaged Next app. No emails, form submission, real registration, provider operations or production processes.
-- `brand-browser/brand-click-ledger.json`: 18 page navigation/reload checks plus 6 real language-selector changes; 18 screenshots (signin/signup/reset × zh-TW/zh-CN/en × 390×844/1586×992).
-- W0 regression screenshots/logs remain under `output/ui-w0-shell/`; first red run is preserved under its `red/` directory. They are fresh brand-state evidence, not modifications to frozen `tests/admin/baselines/w0/`.
-- PS1 full public rendered identity and missing-config production-build rejection: **NOT_RUN**. PS2 public website browser: **NOT_RUN**. PS3 Caddy: **NOT_RUN**. PS4 public verification tag: **NOT_RUN**.
-- PS5 static/Node/admin tsc subset PASS; full public click-sweep: **NOT_RUN**. The passing auth-brand browser is not a replacement for PS2.
-- `tests/media/r04-input-runner.test.mjs`: **NOT_RUN**, `COMMERCE_R04_LIVEKIT_BINARY` unset (test-node explicitly reports it).
-- No migrations or Go/SQL changes; full G07 not run for this UI-only slice. No push, merge, deployment, host/DNS or secret changes.
+## Red → green / retained failures
 
-## Next
+- PS1 initially failed on missing implementation; contact-format negative test then caught a malformed dot-address; branded-title contract and uppercase hardcoded-domain witness each failed before their respective fixes. Logs are retained (`ps1-red.log`, `config-review-red.log`, `brand-red.log`, `brand-domain-red.log`).
+- PS3 fixture initially returned empty 200 because the mock upstream matched a loopback Host rather than the preserved platform Host; a second run hit a stale Docker Desktop bind-mounted file after rewrite. Read-only independent diagnosis confirmed both. Hostless loopback fixture and a distinct immutable runtime Caddyfile fixed the fixture; final 22 checks passed. Red logs: `red/ps3-fixture.log`, `red/caddy-fixture.log`.
+- First full click-sweep exited 1: 120 pages / 1 load failure; 984 controls / 957 pass / 1 fail / 26 skip; 18 journeys passed. **Author-caused same-worktree Next rebuild overlap** invalidated active static chunks. Evidence is under `red/click-sweep-concurrent-build/`. Public test mode now joins the same machine-level queue; final rerun is strictly serial. No test assertion or threshold was relaxed.
+- Corrected the public click ledger's source reset after independent review. Reloads are reported separately, not inflated into click count. Mailto activation is not proof of OS mail handling or email delivery.
+- Serial rerun also failed, with a different signature: merchant-storefront 503s for collections, cart and a static JS chunk; the admin matrix and 18 journey steps passed. Complete red logs/ledger and all 35 failure captures are under `red/click-sweep-serial/`. There was no parallel Next build in this rerun. `git diff c2f41c91..HEAD -- apps/storefront internal tests/ui/click-sweep.mjs tests/foundation/browser_click_sweep_test.go` is empty; this does not by itself prove a baseline failure, and a baseline full sweep was NOT_RUN.
+- Diagnostic boundary: `apps/storefront/lib/primary-origin.ts` returns 503 when its server-authoritative origin resolver fails; the synthetic relay's catch returns 502 instead. Storefront Next output has startup only, so the precise failing upstream response/timeout is not captured. The sweep's reused storefront monitor reads `since(0)` for each page and therefore propagates earlier errors into later page records. **32 failed page records are not evidence of 32 independent faults.** Do not weaken that gate or the canonical-host security check to make this unit pass. The integrator must adjudicate the existing-path failure/instrumentation before PS5 can be green.
+- The combined sweep stops before its final public stage when the legacy suite fails. The formal standalone public mode was rerun on final source; its result is recorded separately above. No assertion or frozen known-defect list was changed.
 
-1. Record chosen comp and approved sidecar; implement pages with actual contract-derived copy.
-2. Add public host allowlist/routing, metadata/robots/sitemap and production configuration validation. Reuse the delivered company identity/footer in public pages.
-3. Caddy/compose/preflight/runbook changes; register and run PS1–PS5 and click-sweep; independent review.
-4. Final logical commits, evidence and Humaux/canvas update. Do not push, merge or deploy.
+## Screenshots and visual review
 
-Legal content on eventual delivery: **需 owner/律師審閱**. This checkpoint contains no drafted legal policy.
+- 30 final full-page captures in this directory: `{home,privacy,terms,data-deletion,contact}-{zh-TW,zh-CN,en}-{390,1586}.png`.
+- Browser viewports are 390×844 and 1586×992; full-page image heights can exceed the viewport.
+- First-viewport proof: `.impeccable/review/hero-repro.png`. Initial pre-finish hero retained as `hero-initial-before-finish.png`.
+- Two static garment previews are generated illustrative material, not merchant/product evidence. Source prompt and hashes live next to `apps/admin/components/platform/example-shirt.jpg`.
+- Fresh read-only visual review inspected all 30 captures, then only the six affected home captures after one bounded correction batch. Final disposition **ship** for those findings; no new visual regression reported. No independent Quality Bar card was available, so no design-ceiling claim is made.
+- Scoped security review found no P0/P1; its P2 click-source issue was corrected and closed. See `REVIEW.md`.
 
-## Owner contact-mailbox supplement (2026-10-04)
+Impeccable influenced the approved-A implementation, audit-first scope, bounded visual finish and separate public design record. Frontend-architect guided shared configuration/component boundaries. Playwright supplied real browser evidence. Specialized Impeccable reviewer/documenter roles were unavailable; fresh generic read-only agents used the role references and are explicitly identified, not represented as specialized agents.
 
-- `9fa55342` adds only documentation: commented sample `# LC_COMPANY_CONTACT_EMAIL=contact@example.invalid` in `deploy/env/compose.env.example`, and owner-confirmed pilot value `LC_COMPANY_CONTACT_EMAIL=ailun@xgdwm.com` in deploy runbook §4.2. The comment is not an active env assignment.
-- `company.ts` runtime is unchanged: reads env only and rejects a missing/invalid email. Existing valid fixture remains `contact@example.invalid`; no real public mailbox was added to tests or UI source. No UI/layout, runtime, secret, actual compose.env or mail/DNS configuration changed.
-- LOCAL doc assertion: commented example exists, no active default assignment, §4.2 contains the confirmed pilot value. Before patch **exit 1** (`contact-docs-red.log`); after patch **exit 0** (`contact-docs-green.log`).
-- `node --test --experimental-strip-types tests/admin/platform-site.test.ts`: **exit 0**, 5 PASS / 0 FAIL / 0 SKIP (`contact-config.log`).
-- `bash scripts/dev/check-gates.sh`: **exit 0**, 60 documented modes and architecture checks PASS (`contact-check-gates.log`). `git diff --cached --check`: **exit 0**.
-- Independent read-only review by `platform_brand_review` (explorer, gpt-6-luna / medium, base `f4fecd19`, same worktree, no write paths): exact delta through `9fa55342` reviewed, no P1/P2. Confirmed env-only runtime and synthetic fixture unchanged; pilot note does not imply activation.
-- Full Node, tsc, browser and full PS1–PS5 are **NOT_RUN for this documentation-only supplement**; previously recorded brand results remain evidence of that source revision, not a new full-site acceptance. No live deployment or mail-delivery test was run.
+## Collaboration and ownership
 
-## Collaboration
+Root owns all writes in this isolated worktree; base SHA above. No code edits in other checkouts. Read-only agents had no write paths and did not run independent shared builds:
+- `ps_routes`, `ps_gates`: explorer, gpt-6-luna/medium, route and fixture diagnostics.
+- `ps_security_final`: security_reviewer, gpt-6.1-sol/high, scoped security/source review.
+- `ps_visual_finish`: default, gpt-6.1-sol/medium, fresh bounded visual review.
+- `ps_documenter`: default, gpt-6-luna/medium, source-backed reusable-rule extraction.
+- `ps_evidence_check`: test_worker, gpt-6-luna/medium, read-only artifact/count consistency check; no mismatch in PS1–PS4.
+Their findings were stored in Humaux. The integrator's separate final acceptance is still to be scheduled.
 
-Root author Codex, base SHA above, only this worktree source write paths; no other checkout code changes.
-Read-only explorers `ps_routes` and `ps_gates`: gpt-6-luna / medium; same base and worktree; allowed write paths none. Their findings are research, not gate acceptance.
-Independent preparatory-source review by `ps_routes`: no P0/P1 within the two files only; email-format caveat addressed with red/green evidence above.
-Independent brand-diff review by `platform_brand_review` (explorer, gpt-6-luna / medium; same base/worktree, no write paths): no evidence-backed P1/P2 in scoped source. Supplemental visual pass inspected all 18 auth images: correct dimensions/page names, nonblank, brand/operator readable, no clipping or overlap; mobile attribution wraps cleanly. Reviewer did not rerun the browser suite and did not approve the deferred homepage.
-Root inspected six representative auth captures across all three locales and both sizes: correct pages, readable attribution, no overlap/clipping. Browser asserts no horizontal overflow and one exact title after reload for every auth case.
-The local design-choice server is retained intentionally for pending selection: `http://127.0.0.1:58620/`, key `880ef0da`. The browser runner closed its owned Next, fixture and browser processes; no database process was started by this slice.
+## NOT_RUN / release boundary
+
+- LIVE/SANDBOX deployment, real DNS/TLS issuance, Meta domain/business/App Review configuration, real registrations, emails or provider operations: **NOT_RUN**.
+- Full Docker application image build / full production compose startup / full preflight against real hosts: **NOT_RUN**. Local actual Caddy and compose syntax/config are separately passed above.
+- Full strict release gate and full G07: **NOT_RUN**; no migration/SQL/ACL change in this unit. The release catalog registration was checked.
+- Optional `tests/media/r04-input-runner.test.mjs`: **NOT_RUN**, `COMMERCE_R04_LIVEKIT_BINARY` unset; test-node explicitly reports it.
+- No claim that Meta will approve the business or application. Owner/legal review, deployment and integrator independent acceptance remain outside local delivery.
+- Final local delivery remains **blocked only on PS5**, not represented as complete release acceptance. Independent integrator review and a green complete sweep remain required. The last standalone public retest on `8f567049` exited 0 with the same 30 pages / 390 clicks / 30 reloads, and refreshed the first-viewport proof. Root inspected that proof: company facts remain below the first viewport.
+- Runners closed their owned Next/browser/fixture processes. The choice server on port 58620 was already absent (`lsof` exit 1, no listener); no unrelated service was stopped. No task-owned public runner/Next process remained in the postflight process check. No shared cache was deleted.
+
+## Handoff stop line
+
+1. PS5 is not waived. Preserve both red sweeps; before another full rerun, collect the first primary-origin resolver status/latency/error in the existing merchant-storefront test fixture. It is not available in the retained startup-only Next log.
+2. The integrator should separately decide the correction to the existing monitor's per-page event attribution while retaining the first real 503 as a failure. No changes to that old runner or the canonical security guard were made in this unit.
+3. Re-run the complete click-sweep after the underlying failure is understood. Standalone PS1–PS4 green results do not replace it. Then perform the integrator's independent review and owner/legal review before any authorized deployment.

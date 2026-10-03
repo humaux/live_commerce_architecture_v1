@@ -1,0 +1,16 @@
+✔ PS1 legal identity is one untranslated source (0.773041ms)
+✔ PS1 contact and hosts come only from configuration; production fails closed (0.437167ms)
+✔ PS2 public routes default to zh-TW, restrict page/locale, and never include admin (1.877791ms)
+✔ PS4 optional Meta verification value never has a fake default (0.093167ms)
+✔ PS1 every locale uses the same product name in auth page titles (0.065458ms)
+✔ PS1 public page copy has three complete locales, no invented operator identity or contact (0.232583ms)
+✔ PS1 production build validates config; public data is not bundled through NEXT_PUBLIC (0.895833ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 93.663541
+PASS PS1/PS2/PS4: 30 page cases, 15 SSR cases, 16 tag cases, 390 real clicks and 30 reloads

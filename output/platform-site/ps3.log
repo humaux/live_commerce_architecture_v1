@@ -1,0 +1,1 @@
+PASS PS3: pinned Caddy validate + fmt + adapt; 22 edge requests, www 301 path/query, actual Host preserved; MOCK upstream

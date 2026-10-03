@@ -1,0 +1,98 @@
+{
+  "tier": "LOCAL Caddy TLS / MOCK upstream",
+  "cases": [
+    {
+      "url": "/",
+      "method": "GET",
+      "result": 200
+    },
+    {
+      "url": "/privacy",
+      "method": "GET",
+      "result": 200
+    },
+    {
+      "url": "/terms",
+      "method": "GET",
+      "result": 200
+    },
+    {
+      "url": "/data-deletion",
+      "method": "GET",
+      "result": 200
+    },
+    {
+      "url": "/contact",
+      "method": "GET",
+      "result": 200
+    },
+    {
+      "url": "/en",
+      "method": "GET",
+      "result": 200
+    },
+    {
+      "url": "/zh-CN/contact",
+      "method": "GET",
+      "result": 200
+    },
+    {
+      "url": "/robots.txt",
+      "method": "GET",
+      "result": 200
+    },
+    {
+      "url": "/sitemap.xml",
+      "method": "GET",
+      "result": 200
+    },
+    {
+      "url": "/_next/static/test.css",
+      "method": "GET",
+      "result": 200
+    },
+    {
+      "url": "/api",
+      "result": 404
+    },
+    {
+      "url": "/api/auth/login",
+      "result": 404
+    },
+    {
+      "url": "/api/auth/password/signup",
+      "result": 404
+    },
+    {
+      "url": "/api/stores",
+      "result": 404
+    },
+    {
+      "url": "/site/en/home",
+      "result": 404
+    },
+    {
+      "url": "/en/orders",
+      "result": 404
+    },
+    {
+      "url": "/en/../api/auth/login",
+      "result": 404
+    }
+  ],
+  "head": 200,
+  "post": 404,
+  "spoofedForwardedHost": 404,
+  "www": {
+    "status": 301,
+    "headers": {
+      "alt-svc": "h3=\":443\"; ma=2592000",
+      "location": "https://platform.localhost/en/privacy?from=review&x=1",
+      "strict-transport-security": "max-age=31536000",
+      "date": "Sat, 03 Oct 2026 19:07:57 GMT",
+      "content-length": "0"
+    },
+    "text": ""
+  },
+  "admin": 200
+}
