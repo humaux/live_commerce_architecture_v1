@@ -278,7 +278,7 @@ func TestCreateClassificationTable(t *testing.T) {
 		"4xx unparseable body":   {status(400, `oops`), unconfirmed()},
 		"4xx without code":       {status(400, `{"error":{}}`), unconfirmed()},
 		"5xx":                    {status(500, `{}`), unconfirmed()},
-		"5xx with graph error":   {status(500, errBody(100)), unconfirmed()},
+		"5xx with graph error":   {status(500, errBody(100)), unknown("graph_100")},
 		"3xx":                    {status(302, ``), unconfirmed()},
 	} {
 		c, f := newFake(t, tc.h)
@@ -311,9 +311,9 @@ func TestActivatePauseNeverFailedFinal(t *testing.T) {
 			"success true":    {reply200(`{"success":true}`), core.Outcome{State: "SUCCEEDED", Code: "graph_success"}},
 			"success false":   {reply200(`{"success":false}`), unconfirmed()},
 			"2xx other":       {reply200(`{"id":"1"}`), unconfirmed()},
-			"4xx graph error": {status(400, errBody), unconfirmed()},
-			"rate limited":    {status(429, `{"error":{"code":80004}}`), unconfirmed()},
-			"code 613":        {status(400, `{"error":{"code":613}}`), unconfirmed()},
+			"4xx graph error": {status(400, errBody), unknown("graph_100")},
+			"rate limited":    {status(429, `{"error":{"code":80004}}`), unknown("rate_limited")},
+			"code 613":        {status(400, `{"error":{"code":613}}`), unknown("rate_limited")},
 			"5xx":             {status(503, ``), unconfirmed()},
 			"unparseable":     {reply200(`<html>`), unconfirmed()},
 		} {
@@ -372,7 +372,7 @@ func TestReconcileCreateByTag(t *testing.T) {
 			_, _ = io.WriteString(w, page("CUR1", true, mine))
 		}, unknown("duplicate_remote_objects"), 2},
 		"page cap 10": {func(c call, w http.ResponseWriter) { _, _ = io.WriteString(w, page("CURX", true, other)) }, unknown("reconcile_unproven"), 10},
-		"graph 4xx":   {status(400, `{"error":{"code":190}}`), unconfirmed(), 1}, // never FAILED_FINAL in reconcile
+		"graph 4xx":   {status(400, `{"error":{"code":190}}`), unknown("graph_190"), 1}, // never FAILED_FINAL in reconcile
 		"unparseable": {reply200(`nope`), unconfirmed(), 1},
 	} {
 		c, f := newFake(t, tc.h)
@@ -426,7 +426,7 @@ func TestReconcileStatusGET(t *testing.T) {
 		}
 	}
 	c, _ := newFake(t, status(400, `{"error":{"code":100}}`))
-	if out, _ := c.reconcile(context.Background(), dreq(ActionPause, statusBody), secret); out != unconfirmed() {
+	if out, _ := c.reconcile(context.Background(), dreq(ActionPause, statusBody), secret); out != unknown("graph_100") {
 		t.Errorf("rejected GET = %+v (must stay UNKNOWN)", out)
 	}
 }
@@ -515,7 +515,7 @@ func TestReadInsights(t *testing.T) {
 	if out, _ := c.dispatch(context.Background(), dreq(ActionReadInsights, body), secret); out != unconfirmed() {
 		t.Fatalf("two rows = %+v", out)
 	}
-	// Rate limited read is a rejected read: FAILED_FINAL rate_limited, the planner plans the next seq.
+	// Rejected reads retain Meta's code; the planner still plans the next seq.
 	c, _ = newFake(t, status(429, `{"error":{"code":80004}}`))
 	if out, _ := c.dispatch(context.Background(), dreq(ActionReadInsights, body), secret); out != failedFinal("rate_limited") {
 		t.Fatalf("rate limited = %+v", out)

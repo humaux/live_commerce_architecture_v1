@@ -1,0 +1,7 @@
+=== RUN   TestMetaAdsOriginalRefusalDraftReason
+    meta_ads_taiwan_test.go:38: authenticated GET did not expose latest failed attempt code and original sanitized Meta text: {"id":"c9d90975-fe9f-4aa4-a8c9-69b7b6b07ca9","ops":[{"seq":1,"code":"graph_created","kind":"campaign","state":"SUCCEEDED","attempt":1,"updated_at":"2026-10-03T14:37:56.419137Z"},{"seq":1,"code":"graph_100","kind":"adset","state":"FAILED_FINAL","attempt":1,"updated_at":"2026-10-03T14:37:57.339201Z"}],"remote":{"campaign_id":"120000000000001"},"status":"FAILED","age_max":65,"age_min":18,"ends_at":"2026-10-04T16:37:56.000000Z","currency":"TWD","revision":1,"template":"BOOST_POST","countries":["TW"],"starts_at":"2026-10-03T16:37:56.000000Z","created_at":"2026-10-03T14:37:56.351764Z","source_ref":"7771286540679_631495863392","ad_binding_id":"6f5bc806-5bec-4cec-a060-ce9d87a94f12","ads_manager_url":"https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=9171593987572\u0026selected_campaign_ids=120000000000001","publish_attempt":1,"approved_revision":1,"identity_binding_id":"aca61d7f-5f88-486c-a7c5-3be757ab32f9","lifetime_budget_minor":300000}
+--- FAIL: TestMetaAdsOriginalRefusalDraftReason (2.49s)
+FAIL
+FAIL	livecommerce/tests/foundation	3.200s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

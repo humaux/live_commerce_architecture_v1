@@ -169,6 +169,8 @@ func TestBrowserMetaAds(t *testing.T) {
 			http.Error(w, err.Error(), 500)
 		}
 		switch r.URL.Path {
+		case "/reject/meta":
+			e.g.Inject(fakegraph.Fault{Route: fakegraph.RouteCreateAdset, Kind: fakegraph.FaultGraphError, Code: 100, Subcode: 3858495, UserMessage: "<b>Meta original:</b> 請完成驗證 &amp; retry.<script>private()</script>"})
 		case "/oauth/code": // a fresh single-use authorization code that exchanges for the BISU token
 			codes++
 			code := fmt.Sprintf("SYNTH-CODE-%d-%s", codes, t04Tag())
@@ -301,6 +303,30 @@ func TestBrowserMetaAds(t *testing.T) {
 	}
 	if n := count(`SELECT count(*) FROM ads.remote_objects r JOIN integration.operations o ON o.id=r.operation_id WHERE r.store_id=$1 AND r.kind='activate' AND o.state='SUCCEEDED'`, e.store); n != 1 {
 		t.Errorf("MA09a: %d SUCCEEDED activates, want exactly 1 (the copy was never published)", n)
+	}
+	// Preserve the frozen store-wide assertion above. The new refusal/retry journey
+	// runs only afterwards, with exact per-draft counts and a recheck of old drafts.
+	var priorDrafts []string
+	if err := e.f.owner.QueryRow(ctx, `SELECT array_agg(id) FROM ads.campaign_drafts WHERE store_id=$1`, e.store).Scan(&priorDrafts); err != nil {
+		t.Fatal(err)
+	}
+	env["LC_BROWSER_PHASE"] = "original-refusal"
+	brfPlaywright(t, ctx, stack, []string{"ads.spec.ts"}, env)
+	var newDrafts int
+	var retryDraft string
+	if err := e.f.owner.QueryRow(ctx, `SELECT count(*),coalesce(min(id::text),'') FROM ads.campaign_drafts WHERE store_id=$1 AND NOT(id=ANY($2::uuid[]))`, e.store, priorDrafts).Scan(&newDrafts, &retryDraft); err != nil {
+		t.Fatal(err)
+	}
+	if newDrafts != 1 {
+		t.Fatalf("MA09a original-refusal: created %d drafts, want exactly1", newDrafts)
+	}
+	for _, kind := range []string{"activate", "pause"} {
+		if n := count(`SELECT count(*) FROM ads.remote_objects r JOIN integration.operations o ON o.id=r.operation_id WHERE r.store_id=$1 AND r.draft_id=$2 AND r.kind=$3 AND o.state='SUCCEEDED'`, e.store, retryDraft, kind); n != 1 {
+			t.Errorf("MA09a original-refusal: %d SUCCEEDED %s, want exactly1", n, kind)
+		}
+	}
+	if n := count(`SELECT count(*) FROM ads.remote_objects r JOIN integration.operations o ON o.id=r.operation_id WHERE r.store_id=$1 AND r.draft_id=ANY($2::uuid[]) AND r.kind='activate' AND o.state='SUCCEEDED'`, e.store, priorDrafts); n != 1 {
+		t.Errorf("MA09a original-refusal changed prior drafts: %d activates, want exactly1 (copy still unpublished)", n)
 	}
 	for action, min := range map[string]int{"ads.meta.connect_started": 1, "ads.meta.connected": 1, "ads.meta.bound": 1, "ads.draft.approved": 1} {
 		if n := count(`SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action=$2 AND principal_id=$3`, e.store, action, e.creator); n < min {

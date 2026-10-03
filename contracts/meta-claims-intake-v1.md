@@ -602,6 +602,13 @@ after the callback returns. It is never passed to Check or Reconcile. `ErrPolicy
 capture a read-only pool of the dispatcher's own role for Check; "all DB transactions have
 ended before callbacks" continues to mean dispatcher-owned transactions.
 
+Later contracted Finish hooks (taiwan-cvs-logistics-v1 R-7a and meta-ads-v1 F24) also receive
+`SecretClaim` solely as a lease fence inside the completion transaction. The ads exception is
+`internal/integrations/meta_ads/finish.go:FinishRefusal`, which executes only
+`ads.finish_operation_refusal`; it cannot load credentials or expose the claim to ordinary
+Check/Dispatch/Reconcile callbacks. MCI10 checks the actual call and rejects moved/renamed
+functions, loader additions, unused SQL text, aliases and escaping claims.
+
 ## 7. Page-token custody (stripe §0.2 pattern, adapted)
 
 - Page access tokens are **per store per binding**, never environment-global. 0064 adds

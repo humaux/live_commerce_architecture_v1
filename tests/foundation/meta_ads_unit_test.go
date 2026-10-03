@@ -482,7 +482,7 @@ func TestMetaAdsMA01Classification(t *testing.T) {
 		if out, _ = dispatch(ins()); out.State != "FAILED_FINAL" || out.Code != "bad_spend" {
 			t.Errorf("1e3 spend: %+v", out)
 		}
-		// 4xx error body -> FAILED_FINAL graph_<code>/rate_limited; anything else -> UNKNOWN
+		// Amendment 2: every parsed refusal retains graph_<code>, except contract §3 throttling (rate_limited); state safety is unchanged.
 		for name, fl := range map[string]fakegraph.Fault{
 			"graph_100":    {Route: fakegraph.RouteAccountGet, Kind: fakegraph.FaultGraphError, Code: 100},
 			"rate_limited": {Route: fakegraph.RouteAccountGet, Kind: fakegraph.FaultGraphError, Code: 80004, HTTP: 400},

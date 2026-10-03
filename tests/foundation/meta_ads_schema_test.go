@@ -230,7 +230,8 @@ func TestMetaAdsMA02Schema(t *testing.T) {
 			}
 		}
 		// worker: check/advance/insights/planner/ingest/loader functions only, none authenticating a merchant hash
-		workerOK := regexp.MustCompile(`^(ads\.(check_[a-z]+|advance_[a-z]+|insights_[a-z]+|pending_insight_reads|put_insights_day|plan_capi[a-z_]*|purge_oauth_states|canonical_draft|capi_user_data)|integration\.load_meta_ads_token)$`)
+		// Amendment 2 adds exactly one lease-fenced Finish projection, not table access.
+		workerOK := regexp.MustCompile(`^(ads\.(check_[a-z]+|advance_[a-z]+|insights_[a-z]+|pending_insight_reads|put_insights_day|plan_capi[a-z_]*|purge_oauth_states|canonical_draft|capi_user_data|finish_operation_refusal)|integration\.load_meta_ads_token)$`)
 		for _, a := range adsOnly(waAds) {
 			if a == "schema:ads:USAGE" {
 				continue
@@ -239,7 +240,7 @@ func TestMetaAdsMA02Schema(t *testing.T) {
 				t.Errorf("commerce_ads_worker holds %s (§4.4: Check, sweepers, ingestion, loader only)", a)
 			}
 		}
-		for _, must := range []string{"ads.check_create", "ads.check_activate", "ads.check_read", "ads.check_capi", "ads.advance_next", "ads.advance_plan", "ads.put_insights_day", "ads.plan_capi", "integration.load_meta_ads_token", "ads.capi_user_data"} {
+		for _, must := range []string{"ads.check_create", "ads.check_activate", "ads.check_read", "ads.check_capi", "ads.advance_next", "ads.advance_plan", "ads.put_insights_day", "ads.plan_capi", "integration.load_meta_ads_token", "ads.capi_user_data", "ads.finish_operation_refusal"} {
 			found := false
 			for _, a := range adsOnly(waAds) {
 				found = found || (strings.HasPrefix(a, "func:") && fnName(a) == must)

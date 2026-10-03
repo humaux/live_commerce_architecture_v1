@@ -1,0 +1,37 @@
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/contracted_Finish
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/moved_file
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/renamed_function
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/Check_callback
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/Dispatch_callback
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/Reconcile_callback
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/alias
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/loader_substituted
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/loader_added
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/comment_only
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/unused_literal_only
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/wrong_fence
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/claim_escapes
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/renamed_callback_with_unused_loader_literal
+    meta_claims_intake_guards_test.go:399: exception allowed=true, want false
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/moved_callback_with_unused_loader_literal
+    meta_claims_intake_guards_test.go:399: exception allowed=true, want false
+--- FAIL: TestMetaClaimsMCI10AdsRefusalFinishException (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/contracted_Finish (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/moved_file (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/renamed_function (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/Check_callback (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/Dispatch_callback (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/Reconcile_callback (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/alias (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/loader_substituted (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/loader_added (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/comment_only (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/unused_literal_only (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/wrong_fence (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/claim_escapes (0.00s)
+    --- FAIL: TestMetaClaimsMCI10AdsRefusalFinishException/renamed_callback_with_unused_loader_literal (0.00s)
+    --- FAIL: TestMetaClaimsMCI10AdsRefusalFinishException/moved_callback_with_unused_loader_literal (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	0.632s
+FAIL

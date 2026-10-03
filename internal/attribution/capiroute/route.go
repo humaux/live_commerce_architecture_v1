@@ -93,6 +93,7 @@ func (r *route) dispatchRoute() core.DispatchRoute {
 		Provider: metaads.ProviderDataset, Action: actionPurchase, Purpose: purposeMarket,
 		Check: r.check, LoadSecret: r.loadSecret, DispatchWithSecret: r.dispatch,
 		Reconcile: r.reconcile,
+		Finish:    metaads.FinishRefusal,
 	}
 }
 

@@ -1,0 +1,5 @@
+G07                      REAL_PG    FAIL     test-local.sh exit 1
+release-gate  commit=5845431c8369  dirty_files=3  modes_in_test-local=60  evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-tw-regulation/output/ads-tw-regulation/release-gate
+ID                       TIER       STATUS   NOTE
+G07                      REAL_PG    FAIL     test-local.sh exit 1
+OVERALL: FAIL (1 FAIL, 0 NOT_RUN [0 accepted, 0 UNACCEPTED], 0 PASS) [subset via --only: not a release verdict]
