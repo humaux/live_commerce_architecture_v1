@@ -75,5 +75,7 @@ isolation, scoped/filter-bound cursors, invalid requests, no full list PII,
 read-only fingerprints, role ACLs and a blocked-query revocation fence. Record
 pre-implementation RED then GREEN. Preserve MOU01–06 assertions; legacy draft
 inspection explicitly selects all rather than silently relying on defaults.
+The reader is created with `jit=off` (one statement costed above PG's JIT thresholds; JIT compile was
+0.3-0.7 s of every call, the cause of the intermittent >1 s on the 10k gate).
 Add real-click MOU07, all controls, refresh persistence, three locales at
 390/1586, screenshot/click ledger. Run requested node/tsc/gates/depmap/focused PG.

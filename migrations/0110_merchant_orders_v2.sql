@@ -176,9 +176,12 @@ $query$;
    FROM (SELECT DISTINCT session_id,name,session_created_at FROM linked ORDER BY session_created_at DESC,session_id DESC LIMIT 100) choices)
  ) INTO v_result;
 $aggregate$);
- EXECUTE 'CREATE FUNCTION identity.read_merchant_orders_v2(p_hash bytea,p_store uuid,p_limit integer,p_after_created_at timestamptz,p_after_id uuid,p_state text,p_bucket text,p_query text,p_payment text,p_delivery text,p_session uuid,p_from timestamptz,p_to timestamptz) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS '||quote_literal(body);
+ -- jit=off: this one statement is costed far above jit_above_cost/jit_optimize_above_cost (correlated per-row subplans over
+ -- the store's orders), so with the default jit=on every call compiled ~190 LLVM functions: 0.3-0.7 s of a 0.8 s call
+ -- (EXPLAIN ANALYZE "JIT: Total ~700 ms") for a result of a few rows. Intermittent >1 s on the 10k gate; OLTP read, never JIT.
+ EXECUTE 'CREATE FUNCTION identity.read_merchant_orders_v2(p_hash bytea,p_store uuid,p_limit integer,p_after_created_at timestamptz,p_after_id uuid,p_state text,p_bucket text,p_query text,p_payment text,p_delivery text,p_session uuid,p_from timestamptz,p_to timestamptz) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog SET jit=off AS '||quote_literal(body);
 END $migration$;
 ALTER FUNCTION identity.read_merchant_orders_v2(bytea,uuid,integer,timestamptz,uuid,text,text,text,text,text,uuid,timestamptz,timestamptz) OWNER TO commerce_auth;
 REVOKE ALL ON FUNCTION identity.read_merchant_orders_v2(bytea,uuid,integer,timestamptz,uuid,text,text,text,text,text,uuid,timestamptz,timestamptz) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION identity.read_merchant_orders_v2(bytea,uuid,integer,timestamptz,uuid,text,text,text,text,text,uuid,timestamptz,timestamptz) TO commerce_runtime;
-COMMENT ON FUNCTION identity.read_merchant_orders_v2(bytea,uuid,integer,timestamptz,uuid,text,text,text,text,text,uuid,timestamptz,timestamptz) IS 'internal/merchantorders ListV2 only; runtime execute, commerce_auth owner. Single-statement scoped filtered page and SQL counts; final fresh orders:read fence. No PII list, money/state writes, provider calls or new transaction engine.';
+COMMENT ON FUNCTION identity.read_merchant_orders_v2(bytea,uuid,integer,timestamptz,uuid,text,text,text,text,text,uuid,timestamptz,timestamptz) IS 'internal/merchantorders ListV2 only; runtime execute, commerce_auth owner. Single-statement scoped filtered page and SQL counts; final fresh orders:read fence. No PII list, money/state writes, provider calls or new transaction engine. jit=off (JIT compile cost 0.3-0.7 s per call).';

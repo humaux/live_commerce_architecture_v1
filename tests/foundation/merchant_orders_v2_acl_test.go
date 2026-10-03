@@ -50,8 +50,14 @@ func TestMerchantOrdersV2DomainReadAuthority(t *testing.T) {
 		})
 	}
 	var body string
-	if err := f.owner.QueryRow(ctx, `SELECT prosrc FROM pg_proc WHERE oid='identity.read_merchant_orders_v2(bytea,uuid,integer,timestamptz,uuid,text,text,text,text,text,uuid,timestamptz,timestamptz)'::regprocedure`).Scan(&body); err != nil {
+	var config []string
+	if err := f.owner.QueryRow(ctx, `SELECT prosrc,coalesce(proconfig,'{}') FROM pg_proc WHERE oid='identity.read_merchant_orders_v2(bytea,uuid,integer,timestamptz,uuid,text,text,text,text,text,uuid,timestamptz,timestamptz)'::regprocedure`).Scan(&body, &config); err != nil {
 		t.Fatal(err)
+	}
+	// The reader's single statement is costed far above PG's JIT thresholds; with jit on every call spent 0.3-0.7 s compiling
+	// (the 10k search gate's intermittent >1 s). The function-level setting is the guard, so it must not be dropped.
+	if !slices.Equal(config, []string{"search_path=pg_catalog", "jit=off"}) {
+		t.Fatalf("v2 reader proconfig=%v, want search_path=pg_catalog and jit=off", config)
 	}
 	for _, table := range []string{"claims.live_price_uses", "claims.bundles", "live.sessions", "fulfillment.cvs_shipments"} {
 		if strings.Contains(body, table) {
