@@ -1716,7 +1716,7 @@ func TestMetaAdsMA07Insights(t *testing.T) {
 		}
 	})
 
-	t.Run("rate-limited read: FAILED_FINAL rate_limited, re-planned in a later hour, then ingested", func(t *testing.T) {
+	t.Run("rate-limited read: FAILED_FINAL graph_80004, re-planned in a later hour, then ingested", func(t *testing.T) {
 		e := newAdsEnv(t, adsOpts{})
 		d, camp := e.activeDraft(300000)
 		e.g.SetInsights(camp, taipeiDay(0), fakegraph.Insights{Spend: "10.00", Impressions: "5", Clicks: "1"})
@@ -1725,7 +1725,7 @@ func TestMetaAdsMA07Insights(t *testing.T) {
 		e.settle()
 		limited := 0
 		for _, r := range e.reads(d) {
-			if r.State == "FAILED_FINAL" && r.Code == "rate_limited" {
+			if r.State == "FAILED_FINAL" && r.Code == "graph_80004" {
 				limited++
 			}
 		}

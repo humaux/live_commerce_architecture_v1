@@ -111,8 +111,11 @@ func TestMetaAdsSandboxS1(t *testing.T) {
 	adset := r.call(t, "meta.ads.create_adset", account, token, fmt.Sprintf(`{"v":1,"draft_id":%q,"attempt":1,"name":"lc-{OP}","campaign_id":%q,"template":"BOOST_POST","currency":"TWD","lifetime_budget_minor":300000,"start_time":%q,"end_time":%q,"countries":[%q],"age_min":18,"age_max":65}`, draft, camp.ProviderReference, start, end, country), false)
 	if country == "TW" {
 		// MA-S1 TW is the unverified sandbox case; HK remains the full-chain control.
-		if adset.State != "FAILED_FINAL" || adset.Code != "tw_advertiser_unverified" {
-			t.Fatalf("TW unverified advertiser must expose tw_advertiser_unverified (not graph_100): %+v", adset)
+		if adset.State != "FAILED_FINAL" || adset.Code != "graph_100" {
+			t.Fatalf("TW unverified advertiser must retain Meta graph_100: %+v", adset)
+		}
+		if refusal, ok := adset.Detail.(metaads.GraphRefusal); !ok || refusal.UserMessage == "" {
+			t.Fatal("TW refusal must retain Meta error_user_msg (without logging provider text)")
 		}
 		t.Log("TW verification refusal confirmed; campaign remains PAUSED; no activation attempted")
 		return

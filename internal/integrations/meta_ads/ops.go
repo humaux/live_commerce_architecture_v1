@@ -199,12 +199,8 @@ func buildCreate(req core.DispatchRequest) (createSpec, bool) {
 				"age_min": r.AgeMin, "age_max": r.AgeMax},
 			"status": statusActive, // AD3: children ACTIVE under a PAUSED campaign (effective CAMPAIGN_PAUSED)
 		}
-		for _, country := range r.Countries {
-			if country == "TW" {
-				// Use the advertiser's Ads Manager beneficiary/payer defaults (F23/F24).
-				payload["regional_regulated_categories"] = []string{"TAIWAN_UNIVERSAL"}
-				break
-			}
+		if categories := regulatedCategories(r.Countries); len(categories) > 0 {
+			payload["regional_regulated_categories"] = categories
 		}
 		return createSpec{path: account + "/adsets", listPath: r.CampaignID + "/adsets", name: tag, payload: payload}, true
 	case ActionCreateCreative:
@@ -347,7 +343,7 @@ func (c *Client) reconcile(ctx context.Context, req core.DispatchRequest, secret
 		}
 		rep, err := c.g.do(ctx, http.MethodGet, r.CampaignID, url.Values{"fields": {"status,effective_status"}}, token, nil)
 		if err != nil || !rep.ok() {
-			return unconfirmed(), nil // a rejected status GET proves nothing about the campaign
+			return reconcileFailure(rep, err), nil // a rejected status GET proves nothing about the campaign
 		}
 		var doc struct {
 			Status string `json:"status"`
@@ -377,7 +373,7 @@ func (c *Client) reconcileCreate(ctx context.Context, spec createSpec, token []b
 		}
 		rep, err := c.g.do(ctx, http.MethodGet, spec.listPath, q, token, nil)
 		if err != nil || !rep.ok() {
-			return unconfirmed()
+			return reconcileFailure(rep, err)
 		}
 		var doc struct {
 			Data []struct {

@@ -13,40 +13,24 @@ import (
 	"livecommerce/internal/integrations/core"
 )
 
-// Graph error codes that mean "throttled", not "rejected" (contract §3: FAILED_FINAL `rate_limited`,
-// a retry is a new publish attempt, §5.3). Sources: F13 insights best practices (code 4) and F21
-// rate limiting (BUC, 80004), retrieved 2026-09-29:
-// https://developers.facebook.com/docs/marketing-api/insights/best-practices/
-// https://developers.facebook.com/docs/marketing-api/overview/rate-limiting/
-// Codes 17 (user-level) and 613 (custom-level) are named by contract §3; same pages, same date.
-const (
-	codeAppLimit    = 4
-	codeUserLimit   = 17
-	codeCustomLimit = 613
-	codeBUCLimit    = 80004
-	// codeInvalidParameter (100) is the generic "invalid parameter" error (also the U9 dev-mode
-	// creative failure, subcode 1885183). Only the proven Taiwan verification subcode gets
-	// actionable merchant guidance; other invalid parameters remain graph_100.
-	codeInvalidParameter    = 100
-	subcodeTaiwanUnverified = 3858495
-)
-
 func unknown(code string) core.Outcome     { return core.Outcome{State: "UNKNOWN", Code: code} }
 func failedFinal(code string) core.Outcome { return core.Outcome{State: "FAILED_FINAL", Code: code} }
 func unconfirmed() core.Outcome            { return unknown("graph_unconfirmed") }
 
-// graphErrorCode extracts the numeric code/subcode without exposing Graph's raw message.
-func graphErrorCode(body []byte) (int, int, bool) {
+// Only the numeric code and user-facing message leave the Graph envelope.
+func graphErrorCode(body []byte) (int, string, bool) {
 	var doc struct {
 		Error *struct {
-			Code    int `json:"code"`
-			Subcode int `json:"error_subcode"`
+			Code        int             `json:"code"`
+			UserMessage json.RawMessage `json:"error_user_msg"`
 		} `json:"error"`
 	}
 	if json.Unmarshal(body, &doc) != nil || doc.Error == nil || doc.Error.Code < 1 || doc.Error.Code > 999999 {
-		return 0, 0, false
+		return 0, "", false
 	}
-	return doc.Error.Code, doc.Error.Subcode, true
+	var message string
+	_ = json.Unmarshal(doc.Error.UserMessage, &message)
+	return doc.Error.Code, PlainUserMessage(message), true
 }
 
 // rejection is the FAILED_FINAL outcome for a 4xx Graph error body, or ok=false when the response is
@@ -55,18 +39,15 @@ func rejection(rep reply, err error) (core.Outcome, bool) {
 	if err != nil || rep.status < 400 || rep.status > 499 {
 		return core.Outcome{}, false
 	}
-	code, subcode, ok := graphErrorCode(rep.body)
+	code, message, ok := graphErrorCode(rep.body)
 	if !ok {
 		return core.Outcome{}, false
 	}
-	if code == codeInvalidParameter && subcode == subcodeTaiwanUnverified {
-		return failedFinal("tw_advertiser_unverified"), true
+	out := failedFinal("graph_" + strconv.Itoa(code))
+	if message != "" {
+		out.Detail = GraphRefusal{UserMessage: message}
 	}
-	switch code {
-	case codeAppLimit, codeUserLimit, codeCustomLimit, codeBUCLimit:
-		return failedFinal("rate_limited"), true
-	}
-	return failedFinal("graph_" + strconv.Itoa(code)), true
+	return out, true
 }
 
 // failureOutcome classifies a response that is not the expected 2xx for a create or a read.
@@ -74,7 +55,24 @@ func failureOutcome(rep reply, err error) core.Outcome {
 	if out, ok := rejection(rep, err); ok {
 		return out
 	}
+	if err == nil && !rep.ok() {
+		if code, message, ok := graphErrorCode(rep.body); ok {
+			out := unknown("graph_" + strconv.Itoa(code))
+			if message != "" {
+				out.Detail = GraphRefusal{UserMessage: message}
+			}
+			return out
+		}
+	}
 	return unconfirmed()
+}
+
+// A reconcile refusal may carry merchant-facing evidence, but cannot prove that
+// an earlier write had no effect. Never promote it to FAILED_FINAL.
+func reconcileFailure(rep reply, err error) core.Outcome {
+	out := failureOutcome(rep, err)
+	out.State = "UNKNOWN"
+	return out
 }
 
 // classifyCreate: 2xx with a numeric `id` is SUCCEEDED with the id as provider_reference (it becomes
@@ -101,7 +99,7 @@ func classifyStatusPost(rep reply, err error) core.Outcome {
 			return core.Outcome{State: "SUCCEEDED", Code: "graph_success"}
 		}
 	}
-	return unconfirmed()
+	return reconcileFailure(rep, err)
 }
 
 // numericField returns a string-typed digits-only member of a JSON object.

@@ -340,10 +340,10 @@ func TestMetaAdsMA01Classification(t *testing.T) {
 		}{
 			{"graph 100 -> graph_100", fakegraph.Fault{Route: fakegraph.RouteCreateCampaign, Kind: fakegraph.FaultGraphError, Code: 100}, "FAILED_FINAL", "graph_100"},
 			{"graph 190 -> graph_190", fakegraph.Fault{Route: fakegraph.RouteCreateCampaign, Kind: fakegraph.FaultGraphError, Code: 190, HTTP: 401}, "FAILED_FINAL", "graph_190"},
-			{"code 4 -> rate_limited", fakegraph.Fault{Route: fakegraph.RouteCreateCampaign, Kind: fakegraph.FaultGraphError, Code: 4, HTTP: 429}, "FAILED_FINAL", "rate_limited"},
-			{"code 17 -> rate_limited", fakegraph.Fault{Route: fakegraph.RouteCreateCampaign, Kind: fakegraph.FaultGraphError, Code: 17}, "FAILED_FINAL", "rate_limited"},
-			{"code 613 -> rate_limited", fakegraph.Fault{Route: fakegraph.RouteCreateCampaign, Kind: fakegraph.FaultGraphError, Code: 613}, "FAILED_FINAL", "rate_limited"},
-			{"code 80004 -> rate_limited", fakegraph.Fault{Route: fakegraph.RouteCreateCampaign, Kind: fakegraph.FaultGraphError, Code: 80004}, "FAILED_FINAL", "rate_limited"},
+			{"code 4 -> graph_4", fakegraph.Fault{Route: fakegraph.RouteCreateCampaign, Kind: fakegraph.FaultGraphError, Code: 4, HTTP: 429}, "FAILED_FINAL", "graph_4"},
+			{"code 17 -> graph_17", fakegraph.Fault{Route: fakegraph.RouteCreateCampaign, Kind: fakegraph.FaultGraphError, Code: 17}, "FAILED_FINAL", "graph_17"},
+			{"code 613 -> graph_613", fakegraph.Fault{Route: fakegraph.RouteCreateCampaign, Kind: fakegraph.FaultGraphError, Code: 613}, "FAILED_FINAL", "graph_613"},
+			{"code 80004 -> graph_80004", fakegraph.Fault{Route: fakegraph.RouteCreateCampaign, Kind: fakegraph.FaultGraphError, Code: 80004}, "FAILED_FINAL", "graph_80004"},
 			{"timeout (no effect) -> UNKNOWN", fakegraph.Fault{Route: fakegraph.RouteCreateCampaign, Kind: fakegraph.FaultTimeout}, "UNKNOWN", ""},
 			{"timeout after create -> UNKNOWN", fakegraph.Fault{Route: fakegraph.RouteCreateCampaign, Kind: fakegraph.FaultTimeout, Effect: true}, "UNKNOWN", ""},
 			{"503 after create -> UNKNOWN", fakegraph.Fault{Route: fakegraph.RouteCreateCampaign, Kind: fakegraph.Fault5xx, Effect: true}, "UNKNOWN", ""},
@@ -482,10 +482,10 @@ func TestMetaAdsMA01Classification(t *testing.T) {
 		if out, _ = dispatch(ins()); out.State != "FAILED_FINAL" || out.Code != "bad_spend" {
 			t.Errorf("1e3 spend: %+v", out)
 		}
-		// 4xx error body -> FAILED_FINAL graph_<code>/rate_limited; anything else -> UNKNOWN
+		// Amendment 2: every parsed refusal retains graph_<code>; state safety is unchanged.
 		for name, fl := range map[string]fakegraph.Fault{
-			"graph_100":    {Route: fakegraph.RouteAccountGet, Kind: fakegraph.FaultGraphError, Code: 100},
-			"rate_limited": {Route: fakegraph.RouteAccountGet, Kind: fakegraph.FaultGraphError, Code: 80004, HTTP: 400},
+			"graph_100":   {Route: fakegraph.RouteAccountGet, Kind: fakegraph.FaultGraphError, Code: 100},
+			"graph_80004": {Route: fakegraph.RouteAccountGet, Kind: fakegraph.FaultGraphError, Code: 80004, HTTP: 400},
 		} {
 			g.ClearFaults()
 			g.Inject(fl)
