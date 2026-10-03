@@ -288,6 +288,9 @@ full_cases() {
   PROJECT=${PROJECT//[^a-z0-9_-]/-}
 
   # S07 build
+  # The runtime fixture is created after S08; admin's build-time public config
+  # must already use those same synthetic values, never an operator's live env.
+  export LC_PLATFORM_HOST=platform.localhost LC_ADMIN_HOST=admin.localhost LC_COMPANY_CONTACT_EMAIL=contact@example.invalid
   rc=0
   runc S07 "$LC_SCRIPTS_DIR/build-images.sh" --tag "$SMOKE_TAG" --evidence "$EV" || rc=$?
   if ((rc == 3)); then

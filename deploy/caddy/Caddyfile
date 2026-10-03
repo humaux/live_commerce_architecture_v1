@@ -132,6 +132,15 @@
 # Public platform site (same Next standalone process; separate host allowlist).
 {$LC_PLATFORM_HOST} {
 	import edge
+	# Canonicalize only known documents. Unknown/admin/API paths remain denied.
+	@publicSlash {
+		method GET HEAD
+		expression !{http.request.uri.path}.endsWith('//')
+		path_regexp publicSlash ^(/(?:(?:zh-TW|zh-CN|en)(?:/(?:privacy|terms|data-deletion|contact))?|privacy|terms|data-deletion|contact))/$
+	}
+	handle @publicSlash {
+		redir {re.publicSlash.1}{?query} 301
+	}
 	# The public host never exposes the admin BFF. Keep this before the proxy:
 	# /api/auth is deliberately excluded from Next's body-buffering proxy matcher.
 	@public {

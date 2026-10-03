@@ -171,6 +171,41 @@ try {
     evidence.push({ url, method: "GET", result: 200 });
   }
   assert.equal((await edge(vars.LC_PLATFORM_HOST, "/", "HEAD")).status, 200);
+  // Review P2: only known public documents canonicalize; queries stay byte-for-byte.
+  for (const url of [
+    "/privacy/",
+    "/terms/",
+    "/data-deletion/",
+    "/contact/",
+    "/en/",
+    "/zh-CN/",
+    "/zh-TW/",
+    "/en/privacy/",
+    "/zh-CN/terms/",
+    "/zh-TW/data-deletion/",
+  ]) {
+    for (const method of ["GET", "HEAD"]) {
+      const query = "?from=review&x=%2F";
+      const response = await edge(vars.LC_PLATFORM_HOST, url + query, method);
+      assert.equal(response.status, 301, `${method} ${url}`);
+      assert.equal(response.headers.location, url.slice(0, -1) + query);
+      evidence.push({
+        url: url + query,
+        method,
+        result: response.status,
+        location: response.headers.location,
+      });
+    }
+  }
+  for (const url of ["/api/", "/site/", "/en/orders/", "/privacy//"]) {
+    assert.equal((await edge(vars.LC_PLATFORM_HOST, url)).status, 404, url);
+    evidence.push({ url, method: "GET", result: 404 });
+  }
+  assert.equal(
+    (await edge(vars.LC_PLATFORM_HOST, "/privacy/", "POST")).status,
+    404,
+  );
+  evidence.push({ url: "/privacy/", method: "POST", result: 404 });
   for (const url of [
     "/api",
     "/api/auth/login",
