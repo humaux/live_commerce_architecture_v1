@@ -32,7 +32,7 @@ Buyer reads (Go private buyer routes behind the storefront BFF, published-origin
 - `GET catalog/v2/products?collection=<slug>&q=<text ≤ 60>&sort=newest|price_asc|price_desc|title&min=<minor>&max=<minor>&after=<cursor>&limit=≤48`
   → `{store:{name, currency}, products:[{id, slug, title, price_min_minor, price_max_minor, compare_at_min_minor|null, cover_image_id|null, in_stock: bool}], next: cursor|null}`.
   `q` matches title/description/SKU code, case-insensitive literal (escape LIKE), active only.
-- `GET catalog/v2/products/{slug_or_id}` → `{id, slug, title, description, seo:{title, description}, images:[{id,width,height}], options:[{name, values[]}], variants:[{sku_id, title, option_values[], price_minor, compare_at_minor|null, stock: in|low|out}], collections:[{slug,title}]}`; 404 identical for unknown/draft/archived/foreign store.
+- `GET catalog/v2/products/{slug_or_id}` → `{id, slug, title, description, seo:{title, description}, images:[{id,width,height,sizes?}], options:[{name, values[]}], variants:[{sku_id, title, option_values[], price_minor, compare_at_minor|null, stock: in|low|out}], collections:[{slug,title}]}`; 404 identical for unknown/draft/archived/foreign store. `sizes` (optional, present once renditions exist) is defined by contracts/media-sizes-v1.md.
 - `GET catalog/v2/collections` → `{collections:[{id, slug, title, image_id|null, product_count}]}` (active only, count of active products).
 - `GET catalog/v2/collections/{slug}` → `{id, slug, title, description, image_id|null}` (products via the list route with `collection=`).
   AMENDMENT 2026-10-01 (unit storefront-integration, migration 0093): both reads also return `id` (the collection uuid). The photo URL is

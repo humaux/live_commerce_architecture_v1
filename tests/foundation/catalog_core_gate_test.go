@@ -573,13 +573,20 @@ func TestCatalogCoreCC02DraftLifecycle(t *testing.T) {
 	if got != want {
 		t.Fatalf("active product must be reachable everywhere: got %+v want %+v", got, want)
 	}
-	// the detail carries the photo as {id,width,height} (contract A), sniffed from the bytes (the fixture PNG is 3x2)
+	// the detail carries the photo as {id,width,height} (contract A), sniffed from the bytes (the fixture PNG is 3x2), plus
+	// the renditions an upload produces (contracts/media-sizes-v1.md amends A with optional sizes): a 3px source is 3w in
+	// every bucket, never 360w.
 	var top map[string]json.RawMessage
 	_ = json.Unmarshal(e.buyer("/v1/buyer/catalog/v2/products/"+p.ID).body, &top)
 	var imgs []map[string]json.RawMessage
 	_ = json.Unmarshal(top["images"], &imgs)
-	if len(imgs) != 1 || !reflect.DeepEqual(ccKeys(imgs[0]), []string{"height", "id", "width"}) {
-		t.Fatalf("detail images must be [{id,width,height}]: %s", top["images"])
+	if len(imgs) != 1 || !reflect.DeepEqual(ccKeys(imgs[0]), []string{"height", "id", "sizes", "width"}) {
+		t.Fatalf("detail images must be [{id,width,height,sizes}]: %s", top["images"])
+	}
+	var sizes []map[string]int
+	if err := json.Unmarshal(imgs[0]["sizes"], &sizes); err != nil || !reflect.DeepEqual(sizes, []map[string]int{
+		{"width": 360, "pixel_width": 3}, {"width": 720, "pixel_width": 3}, {"width": 1080, "pixel_width": 3}}) {
+		t.Fatalf("detail image sizes must be the three buckets at the actual 3px width: %s (%v)", imgs[0]["sizes"], err)
 	}
 	if det, _ := e.detail(p.ID); len(det.Images) != 1 || det.Images[0].ID != imageID || det.Images[0].Width == nil || *det.Images[0].Width != 3 || det.Images[0].Height == nil || *det.Images[0].Height != 2 {
 		t.Fatalf("detail image id/width/height: %+v", det.Images)
