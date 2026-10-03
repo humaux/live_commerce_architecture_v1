@@ -129,3 +129,23 @@ api env; `deploy/secrets.manifest.tsv` rows for the G3 files; Caddy access-log e
 ## Order / Return
 Author at dispatch; compile after F0/F1; PG runs after F2 (ads-core merged). Return SHA, model/reasoning,
 base, paths, commands + exits + counts, evidence, G1–G6 handling, UNKNOWNs touched, risks, NOT_RUN.
+
+## Integrator ruling (2026-10-03): Taiwan ad regulation found by SANDBOX MA-S1
+Evidence: owner sandbox ad account `act_1094780649810303`, validate-only probes. Logs are in `output/meta-ads-sandbox/` and contain no tokens.
+- **Campaign create.** Meta requires `is_adset_budget_sharing_enabled` when there is no campaign budget (code 100, subcode 4834011). Fixed in 431a443a by sending `false`.
+- **U1 and U2 are closed.** `special_ad_categories=[]` is accepted. The `POST_ENGAGEMENT`/`IMPRESSIONS` pair with `LOWEST_COST_WITHOUT_CAP` plus a lifetime budget and schedule validates; the HK control passed validate-only.
+- **New fact: any ad set targeting TW must carry `regional_regulated_categories=["TAIWAN_UNIVERSAL"]`.** Without it Meta returns subcode 3858498. With it but without a verified advertiser it returns subcode 3858495, "缺少广告主：请提供经过验证的广告主". The beneficiary and payer come either from the merchant's Ads Manager default (after Meta's Taiwan advertiser verification) or from per-ad-set `regional_regulation_identities` {`taiwan_universal_beneficiary`, `taiwan_universal_payer`}.
+
+**Ruling.**
+1. The adapter adds `regional_regulated_categories: ["TAIWAN_UNIVERSAL"]` to every ad set whose countries include `TW`, and only then. It does not send `regional_regulation_identities` yet: the merchant's verified Ads Manager default is used (YAGNI; add a picker when a merchant needs a non-default beneficiary).
+2. Code 100 with subcode 3858495 maps to `FAILED_FINAL` with code `tw_advertiser_unverified` instead of the generic `graph_100`. The ads API exposes the latest failed operation's reason code for the draft if it does not already.
+3. Merchant UI, three locales:
+   - On that code, show "請先在 Meta 完成台灣廣告主驗證，並在廣告管理員設定預設的受益人與付款人" with a link to Meta's help page https://www.facebook.com/business/help/983527276402621, plus a retry path.
+   - The ads setup checklist gains the same step.
+   - The UI never shows a generic failure for this case.
+4. Tests:
+   - Adapter unit tests: TW adds the category, HK does not; subcode 3858495 maps to `tw_advertiser_unverified`, red first.
+   - Ads PG/flow test: the failed draft exposes the code.
+   - Browser: the message and link are visible after a MOCK refusal, checked with real clicks in three locales.
+   - Sandbox: `META_ADS_SANDBOX_COUNTRY=TW` must end in `tw_advertiser_unverified`, never `graph_100`.
+5. Contract `meta-ads-v1.md` gains F-rows for both facts; U-rows are closed or added accordingly.
