@@ -141,8 +141,10 @@ func buildCreate(req core.DispatchRequest) (createSpec, bool) {
 		if !decodeStrict(req.Request, &r) || !r.valid() || r.Name != tag || objectiveByName[r.Objective] == "" {
 			return createSpec{}, false
 		}
+		// is_adset_budget_sharing_enabled: required when the campaign has no campaign budget (F8; SANDBOX 2026-10-03 refused
+		// the create with error_subcode 4834011 without it). false: each ad set spends exactly the merchant's own budget.
 		payload := map[string]any{"name": tag, "objective": r.Objective, "status": statusPaused,
-			"special_ad_categories": specialAdCategories}
+			"special_ad_categories": specialAdCategories, "is_adset_budget_sharing_enabled": false}
 		if _, err := MetaBudget(r.Currency, 0); err != nil || r.SpendCapMinor < 0 {
 			return createSpec{}, false
 		}

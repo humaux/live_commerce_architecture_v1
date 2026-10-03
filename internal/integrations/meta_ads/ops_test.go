@@ -125,6 +125,10 @@ func TestCreateRequestsAreExactAndPaused(t *testing.T) {
 	if _, has := camp["spend_cap"]; has {
 		t.Fatal("spend_cap must be omitted when 0")
 	}
+	// F8 (SANDBOX 2026-10-03, error_subcode 4834011): without a campaign budget Meta requires an explicit boolean here.
+	if v, ok := camp["is_adset_budget_sharing_enabled"].(bool); !ok || v {
+		t.Fatalf("is_adset_budget_sharing_enabled = %#v (must be false: each ad set spends exactly its own budget)", camp["is_adset_budget_sharing_enabled"])
+	}
 	adset := calls[1].body
 	// I05: TWD 1234500 minor is NT$12345, Meta offset 1.
 	if adset["lifetime_budget"] != float64(12345) || adset["status"] != "ACTIVE" || adset["optimization_goal"] != "POST_ENGAGEMENT" ||
