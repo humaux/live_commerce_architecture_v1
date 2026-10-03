@@ -1,0 +1,22 @@
+(node:3724) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ UNKNOWN retry client authorization loss requires reconciliation, not a fresh command (7.29225ms)
+✔ UNKNOWN retry 401 authorization loss requires reconciliation, not a fresh command (23.094125ms)
+✔ UNKNOWN retry 403 authorization loss requires reconciliation, not a fresh command (0.662167ms)
+✔ a conclusive command rejection stays distinct from authorization loss (0.754625ms)
+(node:3725) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ PE14 new edit SKU carries its own shipping and clears no existing fields (31.138584ms)
+✔ PE14 patch changes only price and preserves unmentioned fields (0.319542ms)
+✔ PE14 on_hand is not available, zero target is transmitted, ambiguous warehouse refuses (0.437875ms)
+✔ PE14 explicit clears and shipping remain per SKU on an active row (0.148875ms)
+✔ PE14 archive supersedes every other edit on that SKU (b77eeb11) (0.395709ms)
+✔ PE14 no-op has no command fields and changed axes explicitly archive omitted variants (0.226167ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 197.031083

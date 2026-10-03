@@ -1,0 +1,8 @@
+{
+  "page": "product edit",
+  "control": "bulk price / Active / save",
+  "action": "real clicks then reload",
+  "expected": "200 once; archive-only row; remaining price80",
+  "tier": "REAL_PG+BROWSER",
+  "status": "PASS"
+}

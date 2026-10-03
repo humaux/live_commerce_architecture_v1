@@ -1,0 +1,4 @@
+release-gate  commit=56a32b381c89  dirty_files=2  modes_in_test-local=59  evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2-fix/output/product-ui-v2-fix/red/g04
+ID                       TIER       STATUS   NOTE
+G04                      STATIC     FAIL     key-shaped literal in the files listed in the log (counts per file)
+OVERALL: FAIL (1 FAIL, 0 NOT_RUN [0 accepted, 0 UNACCEPTED], 0 PASS) [subset via --only: not a release verdict]

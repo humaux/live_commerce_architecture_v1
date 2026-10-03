@@ -1,0 +1,17 @@
+
+Running 10 tests using 1 worker
+
+(node:14762) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/admin/product-editor.acceptance.ts:10:3 › PE12-17 document workflow, matrix, list actions and click ledger (12.0s)
+  ✓   2 tests/admin/product-review.acceptance.ts:45:3 › review: bulk price 80 plus archive sends exclusive archive entry and persists (1.2s)
+  ✓   3 tests/admin/product-review.acceptance.ts:120:5 › review: create UNKNOWN then client preserves receipt fence after reload (796ms)
+  ✓   4 tests/admin/product-review.acceptance.ts:120:5 › review: create UNKNOWN then 401 preserves receipt fence after reload (837ms)
+  ✓   5 tests/admin/product-review.acceptance.ts:120:5 › review: create UNKNOWN then 403 preserves receipt fence after reload (833ms)
+  ✓   6 tests/admin/product-review.acceptance.ts:120:5 › review: copy UNKNOWN then client preserves receipt fence after reload (1.2s)
+  ✓   7 tests/admin/product-review.acceptance.ts:120:5 › review: copy UNKNOWN then 401 preserves receipt fence after reload (1.3s)
+  ✓   8 tests/admin/product-review.acceptance.ts:120:5 › review: copy UNKNOWN then 403 preserves receipt fence after reload (1.2s)
+  ✓   9 tests/admin/product-review.acceptance.ts:120:5 › review: order UNKNOWN then 403 preserves receipt fence after reload (976ms)
+  ✓  10 tests/admin/product-review.acceptance.ts:120:5 › review: publish UNKNOWN then 403 preserves receipt fence after reload (944ms)
+
+  10 passed (22.1s)
