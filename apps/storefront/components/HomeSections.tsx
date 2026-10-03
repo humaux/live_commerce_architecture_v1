@@ -91,7 +91,7 @@ async function FeaturedSection({ section, locale, preview }: { section: Extract<
       </div>
       <Rail locale={locale}>
         {result.value.products.map((card) => (
-          <ProductCardView key={card.id} locale={locale} card={card} currency={result.value.store.currency} preview={preview} />
+          <ProductCardView key={card.id} locale={locale} card={card} currency={result.value.store.currency} preview={preview} placement="rail" />
         ))}
       </Rail>
     </section>

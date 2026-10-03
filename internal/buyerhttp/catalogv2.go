@@ -73,14 +73,15 @@ type v2Store struct {
 	Currency string `json:"currency"`
 }
 type v2Card struct {
-	ID           string  `json:"id"`
-	Slug         string  `json:"slug"`
-	Title        string  `json:"title"`
-	PriceMin     int64   `json:"price_min_minor"`
-	PriceMax     int64   `json:"price_max_minor"`
-	CompareAtMin *int64  `json:"compare_at_min_minor"`
-	CoverImageID *string `json:"cover_image_id"`
-	InStock      bool    `json:"in_stock"`
+	ID              string        `json:"id"`
+	Slug            string        `json:"slug"`
+	Title           string        `json:"title"`
+	PriceMin        int64         `json:"price_min_minor"`
+	PriceMax        int64         `json:"price_max_minor"`
+	CompareAtMin    *int64        `json:"compare_at_min_minor"`
+	CoverImageID    *string       `json:"cover_image_id"`
+	CoverImageSizes []v2ImageSize `json:"cover_image_sizes,omitempty"`
+	InStock         bool          `json:"in_stock"`
 }
 type v2List struct {
 	Store    v2Store  `json:"store"`
@@ -88,9 +89,14 @@ type v2List struct {
 	Next     *string  `json:"next"`
 }
 type v2Image struct {
-	ID     string `json:"id"`
-	Width  *int   `json:"width"`
-	Height *int   `json:"height"`
+	ID     string        `json:"id"`
+	Width  *int          `json:"width"`
+	Height *int          `json:"height"`
+	Sizes  []v2ImageSize `json:"sizes,omitempty"`
+}
+type v2ImageSize struct {
+	Width      int `json:"width"`
+	PixelWidth int `json:"pixel_width"`
 }
 type v2Axis struct {
 	Name   string   `json:"name"`
@@ -305,8 +311,61 @@ func (h *handler) catalogV2Get(ctx context.Context, w http.ResponseWriter, r *ht
 	if err != nil {
 		return err
 	}
+	if err := attachV2ImageSizes(ctx, tx, origin, out); err != nil {
+		return mapPublicCatalogError(err)
+	}
 	w.Header().Set("Cache-Control", "no-store")
 	writeOK(w, out)
+	return nil
+}
+
+// Use persisted decoded dimensions, not the bucket as a guessed srcset descriptor. No metadata means original-only.
+func attachV2ImageSizes(ctx context.Context, tx pgx.Tx, origin string, out any) error {
+	ids := []string{}
+	switch value := out.(type) {
+	case v2List:
+		for _, p := range value.Products {
+			if p.CoverImageID != nil {
+				ids = append(ids, *p.CoverImageID)
+			}
+		}
+	case v2Detail:
+		for _, i := range value.Images {
+			ids = append(ids, i.ID)
+		}
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	rows, err := tx.Query(ctx, `SELECT image_id::text,width,pixel_width FROM catalog.buyer_image_sizes($1::text,$2::uuid[])`, origin, ids)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	sizes := map[string][]v2ImageSize{}
+	for rows.Next() {
+		var id string
+		var size v2ImageSize
+		if err := rows.Scan(&id, &size.Width, &size.PixelWidth); err != nil {
+			return err
+		}
+		sizes[id] = append(sizes[id], size)
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	switch value := out.(type) {
+	case v2List:
+		for i := range value.Products {
+			if id := value.Products[i].CoverImageID; id != nil {
+				value.Products[i].CoverImageSizes = sizes[*id]
+			}
+		}
+	case v2Detail:
+		for i := range value.Images {
+			value.Images[i].Sizes = sizes[value.Images[i].ID]
+		}
+	}
 	return nil
 }
 

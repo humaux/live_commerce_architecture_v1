@@ -17,7 +17,7 @@ package foundation_test
 import (
 	"bytes"
 	"context"
-	"encoding/binary"
+	"encoding/base64"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
@@ -76,15 +76,11 @@ func cmiJPEG(t *testing.T, w, h int, seed uint8) []byte {
 	return b.Bytes()
 }
 
-// cmiWebP is a RIFF....WEBP container with a VP8L chunk; the contract only asks for the magic bytes (WebP dimensions stay null).
+// cmiWebP is now a real lossless 4x3 WebP: S1 decodes uploads, not just RIFF headers.
+// Original-format/NULL-metadata assertions below remain unchanged. Corrupt RIFF is tested separately by TestImageSizesRejectCorruptAndBudget.
 func cmiWebP(seed uint8) []byte {
-	payload := bytes.Repeat([]byte{seed}, 16)
-	body := append([]byte("WEBPVP8L"), 0, 0, 0, 0)
-	binary.LittleEndian.PutUint32(body[8:], uint32(len(payload)))
-	body = append(body, payload...)
-	head := []byte("RIFF\x00\x00\x00\x00")
-	binary.LittleEndian.PutUint32(head[4:], uint32(len(body)))
-	return append(head, body...)
+	data, _ := base64.StdEncoding.DecodeString("UklGRh4AAABXRUJQVlA4TBEAAAAvA4AAAAdQqIKUsf+BiOh/AAA=")
+	return data
 }
 
 // cmiPadded is a real JPEG padded with zero bytes to exactly n bytes (stdlib DecodeConfig reads only the header).

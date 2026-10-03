@@ -6,7 +6,7 @@ import Link from "next/link";
 import type { Locale } from "@live-commerce/i18n";
 import { withPreview } from "../lib/design";
 import { formatMoney } from "../lib/money";
-import { productImage, productPath } from "../lib/routes";
+import { productImage, productImageSet, productCardSizes, productRailSizes, productPath } from "../lib/routes";
 import type { ProductCard as Card } from "../lib/shop-contract";
 import { fmt, shopCopy } from "../lib/shop-copy";
 import { ImageIcon } from "./icons";
@@ -17,12 +17,14 @@ export default function ProductCardView({
   currency,
   preview,
   eager = false,
+  placement = "grid",
 }: {
   locale: Locale;
   card: Card;
   currency: string;
   preview: string | null;
   eager?: boolean;
+  placement?: "grid" | "rail";
 }) {
   const copy = shopCopy[locale];
   const onSale = card.compare_at_min_minor !== null && card.compare_at_min_minor > card.price_min_minor;
@@ -33,7 +35,7 @@ export default function ProductCardView({
       <Link className="sf-card__link" href={withPreview(productPath(locale, card.slug), preview)}>
         <span className="sf-card__media">
           {card.cover_image_id ? (
-            <img src={productImage(card.id, card.cover_image_id)} alt="" loading={eager ? "eager" : "lazy"} decoding="async" />
+            <img src={productImage(card.id, card.cover_image_id)} srcSet={productImageSet(card.id, card.cover_image_id, card.cover_image_sizes)} sizes={placement === "rail" ? productRailSizes : productCardSizes} alt="" loading={eager ? "eager" : "lazy"} decoding="async" />
           ) : (
             // No photo: a picture glyph and the locale label keep the 4/5 media box recognisable as "no image" (not a broken load);
             // the box is a labelled image, the title below stays the card's accessible name.

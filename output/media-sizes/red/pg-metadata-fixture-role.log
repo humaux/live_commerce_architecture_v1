@@ -1,0 +1,27 @@
+=== RUN   TestCatalogMediaSchemaSurface
+--- PASS: TestCatalogMediaSchemaSurface (1.71s)
+=== RUN   TestCatalogMediaRLSScope
+--- PASS: TestCatalogMediaRLSScope (0.25s)
+=== RUN   TestCatalogMediaLifecycle
+--- PASS: TestCatalogMediaLifecycle (0.41s)
+=== RUN   TestCatalogMediaSniff
+--- PASS: TestCatalogMediaSniff (0.50s)
+=== RUN   TestCatalogMediaBuyer404
+--- PASS: TestCatalogMediaBuyer404 (0.38s)
+=== RUN   TestCatalogMediaBuyerAuthority
+--- PASS: TestCatalogMediaBuyerAuthority (0.25s)
+=== RUN   TestCatalogMediaArchivedProduct
+--- PASS: TestCatalogMediaArchivedProduct (0.28s)
+=== RUN   TestCatalogV2Smoke
+--- PASS: TestCatalogV2Smoke (0.51s)
+=== RUN   TestT06WorkerAuthorityAndFunctionACL
+--- PASS: TestT06WorkerAuthorityAndFunctionACL (0.53s)
+=== RUN   TestMediaSizesLifecycleAndIsolation
+    media_sizes_test.go:58: scoped metadata includes only own images: count=0 err=ERROR: permission denied for function buyer_image_sizes (SQLSTATE 42501)
+--- FAIL: TestMediaSizesLifecycleAndIsolation (6.65s)
+=== RUN   TestR2IntegrationUpgradeFromReleaseHead
+--- PASS: TestR2IntegrationUpgradeFromReleaseHead (4.66s)
+FAIL
+FAIL	livecommerce/tests/foundation	17.742s
+FAIL
+test-focused: top-level PASS=10 FAIL=1 SKIP=0 exit=1

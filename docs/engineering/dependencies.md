@@ -15,6 +15,7 @@ speaks the REST API directly so every parameter is reviewed and golden-tested).
 | Module | Version | Why | Imported by | Rejected alternatives |
 | --- | --- | --- | --- | --- |
 | `github.com/jackc/pgx/v5` | v5.11.0 | PostgreSQL driver + pool; native types, `COPY`, per-tx GUCs needed for RLS scope | nearly every `internal/*` package and `cmd/*` (see dependency-map) | `database/sql` + lib/pq (no pool control, maintenance mode); ORMs (hide SQL the contracts freeze) |
+| `golang.org/x/image` | v0.46.0 | S1 B now needs real WebP decoding and maintained Catmull-Rom resampling; stdlib still encodes JPEG. Bounded 20MP decoding, no external process | `internal/catalog` (`image_sizes.go`) | hand-written resampler/WebP decoder; Next optimizer (Host and cache-key isolation failure). Official API: https://pkg.go.dev/golang.org/x/image/draw and https://pkg.go.dev/golang.org/x/image/webp |
 | `github.com/riverqueue/river` (+ `riverdriver/riverpgxv5`, `rivertype`) | v0.40.0 | Durable jobs in the same PG transaction as the business write (outbox without a second system) | `internal/jobqueue`, `internal/payments`, `internal/checkout`, `internal/live`, `internal/integrations/{core,meta}`, `cmd/api` | Kafka/Redis queues (forbidden by ADR baseline); hand-rolled `SKIP LOCKED` table (reinventing retries/leases) |
 | `github.com/coreos/go-oidc/v3` | v3.21.0 | OIDC ID-token verification for merchant login (JWKS, issuer, audience) | `internal/oidclogin` | Hand-written JWT verification (security risk); a hosted auth SDK (vendor lock-in) |
 | `golang.org/x/oauth2` | v0.37.0 | Authorization-code + PKCE exchange for OIDC | `internal/oidclogin` | Hand-written token exchange |
@@ -22,13 +23,13 @@ speaks the REST API directly so every parameter is reviewed and golden-tested).
 | `golang.org/x/sys` (`cpu`, indirect) | v0.48.0 | Pulled in by `golang.org/x/crypto/blake2b` (used by `argon2`) for CPU feature detection on amd64 only; missing from go.sum it broke the linux/amd64 image build while arm64 dev builds passed (2026-10-01) | indirect via `golang.org/x/crypto` | none (transitive requirement of x/crypto) |
 | `golang.org/x/text` (`unicode/norm`) | v0.42.0 (raised from v0.39.0 by x/crypto v0.57.0's requirement, MVS) | NFC-normalize merchant-typed carrier names before storing/comparing (manual-fulfilment-v1 §3.1, ruling 20); was already an indirect dependency | `internal/merchantorders`; `internal/identity` (auth-core: NFC-normalize passwords before Argon2id, merchant-password-auth-v1 PD11, so the same typed password hashes identically across IMEs/OSes) | Refusing non-NFC input (hostile to CJK IMEs); hand-written Unicode tables |
 
-### No module added: product photos (catalog-media, migrations/0082)
+### Historical baseline: product photos (catalog-media, migrations/0082)
 
-Photo validation uses only the Go standard library: `image.DecodeConfig` with the `image/jpeg` and `image/png` decoders
+At the catalog-media baseline, photo validation used only the Go standard library: `image.DecodeConfig` with the `image/jpeg` and `image/png` decoders
 (registered by blank import in `internal/catalog/images.go`) for width/height, plus magic-byte sniffing for JPEG, PNG and WebP.
-`golang.org/x/image/webp` is **not** in `go.mod` and was rejected: a decoder dependency is not worth the two numbers it would
-add (WebP width/height stay NULL, the browser sizes the image itself). Bytes are stored as uploaded, never re-encoded, so no
-imaging library (resize/thumbnail) is needed either. No npm package was added: the admin uploader is a native `<input
+`golang.org/x/image/webp` was **not** in `go.mod` and was rejected then: a decoder dependency was not worth the two numbers it would
+add (original WebP width/height remain NULL). Original bytes are still stored as uploaded, never replaced, and no
+imaging library (resize/thumbnail) was needed then. **S1 B supersedes that dependency decision for actual decoding/resizing**, while keeping original bytes and the merchant metadata shape. No npm package was added: the admin uploader is a native `<input
 type="file">` + `FormData`, the storefront gallery a plain `<img>`.
 
 ## npm packages (`package.json`, `apps/*/package.json`)

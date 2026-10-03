@@ -173,7 +173,12 @@ func TestBrowserStorefront(t *testing.T) {
 			}
 		}
 		for n := 0; n < p.Images; n++ {
-			data, ctype := v2Multipart(t, v2PNG(t, uint8(10+n+i)))
+			// S1 performance uses this exact deterministic unpadded source both before and after.
+			photo := v2PNG(t, uint8(10+n+i))
+			if os.Getenv("LC_MEDIA_SIZES_PHASE") != "" {
+				photo = cmiJPEG(t, 1440, 1800, uint8(10+n+i))
+			}
+			data, ctype := v2Multipart(t, photo)
 			admin.raw("POST", "/products/"+p.ID+"/images", t04Key("sfr-img"), data, ctype, 200, nil)
 		}
 		if p.Status == "archived" {
@@ -356,6 +361,7 @@ func TestBrowserStorefront(t *testing.T) {
 	}()
 	cmd.Dir = root
 	cmd.Env = browserEnvironment(map[string]string{
+		"LC_MEDIA_SIZES_PHASE":       os.Getenv("LC_MEDIA_SIZES_PHASE"),
 		"COMMERCE_BUYER_WEB_ENABLED": "1", "COMMERCE_BUYER_API_ORIGIN": h.server.URL, "COMMERCE_BUYER_BFF_KEY": h.key,
 		"COMMERCE_BUYER_COOKIE_KEY": brToken(), "COMMERCE_BUYER_SESSION_TTL": "3600",
 		"LC_SFR_EVIDENCE": evidence, "LC_SFR_FACTS": factsFile, "LC_SFR_CONTROL": control.URL, "LC_SFR_CONTROL_KEY": controlKey,

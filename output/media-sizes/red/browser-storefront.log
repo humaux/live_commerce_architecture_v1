@@ -1,0 +1,7 @@
+=== RUN   TestBrowserStorefront
+    browser_storefront_test.go:370: storefront real-stack gate failed: exit status 1; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/media-sizes/output/playwright/storefront/20261002T183204.324339000
+--- FAIL: TestBrowserStorefront (125.81s)
+FAIL
+FAIL	livecommerce/tests/foundation	127.430s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

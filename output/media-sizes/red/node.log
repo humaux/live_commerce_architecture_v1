@@ -1,0 +1,29 @@
+✖ MS1 product rendition allowlist preserves trusted Host and never forwards buyer cookies (23.342417ms)
+✔ MS2 invalid, duplicate, extra, encoded widths and non-product variants fail before fetch (1.00825ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 1
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 121.830708
+
+✖ failing tests:
+
+test at apps/storefront/tests/media-sizes.test.mjs:12:1
+✖ MS1 product rendition allowlist preserves trusted Host and never forwards buyer cookies (23.342417ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  404 !== 200
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/media-sizes/apps/storefront/tests/media-sizes.test.mjs:24:48)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 404,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

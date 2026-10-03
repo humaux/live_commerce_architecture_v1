@@ -39,7 +39,8 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// must update this. 0081 storefront-publish has its own upgrade gate TestStorefrontPublishSPW02UpgradeAfter0080. 0097
 	// (buyer-comms order locale) is the 29th file; 0101 (promotion/live-tools volatility + buyer-principal fence) adds one more file; 0100 (meta-connect D1/D2) one more; 0102 (cvs collected guard) one more; 0103 (live-claim checkout) one more; 0104 (authz: store-scoped lookup throttle + order-link idempotent replay + regenerate) one more; 0105 (live-price consumption ledger, R4S-01) one more; 0106 (store domains: handle + platform subdomain + merchant self-service domain) one more; 0107 (home-cod cash-on-delivery, R5) one more; post-River 0020 (home-cod begin_hold) one more; 0108 (meta-multi-page: up to 10 Pages per store) one more.
 	// 0110 adds only the orders-v2 read projection and its scoped indexes.
-	if len(r2) != 44 {
+	// 0111 adds product image renditions (S1 B); keep an exact migration-set count.
+	if len(r2) != 45 {
 		t.Fatalf("R2 migration set = %d files %v, want 43", len(r2), r2)
 	}
 

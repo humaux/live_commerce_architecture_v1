@@ -1,0 +1,12 @@
+✔ MS4 srcset descriptors use actual decoded widths and deduplicate small renditions (0.334375ms)
+✔ MS1 product rendition allowlist preserves trusted Host and never forwards buyer cookies (12.88375ms)
+✔ MS2 invalid, duplicate, extra, encoded widths and non-product variants fail before fetch (0.738958ms)
+✔ MS3 old-image fallback is never promoted to immutable; committed variants are cacheable (0.618416ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 85.36775

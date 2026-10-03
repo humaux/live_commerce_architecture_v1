@@ -165,7 +165,14 @@ async function scenario(index, run) {
   const cover = card.locator("img");
   await expect(cover).toHaveAttribute("src", `/media/p/${fx.product_id}/${ids[0]}`);
   await cover.scrollIntoViewIfNeeded();
-  await expect.poll(() => cover.evaluate(e => e.complete && e.naturalWidth), {timeout: 10000}).toBe(64); // the JPEG (64px wide), not the PNG (40px)
+  // srcset density-corrects naturalWidth; inspect decoded bytes to retain the exact 64px (not 40px PNG) assertion.
+  await expect.poll(() => cover.evaluate(async e => {
+    if (!e.complete || e.naturalWidth === 0) return 0;
+    const bitmap = await createImageBitmap(await (await fetch(e.currentSrc)).blob());
+    const width = bitmap.width; bitmap.close(); return width;
+  }), {timeout: 10000}).toBe(64);
+  await expect(cover).toHaveAttribute("srcset", /\?w=360 64w$/); // actual pixel width, duplicates removed for this small source
+  assert.match(await cover.evaluate(e => new URL(e.currentSrc).search), /^\?w=(360|720|1080)$/);
   await expect(card).toContainText(digits(fx.sku1.price_new));
   for (const stale of [fx.sku2.price, fx.sku1.price_old]) await expect(card).not.toContainText(digits(stale));
   const wire = async (src) => buyer.evaluate(async src => {
@@ -177,6 +184,11 @@ async function scenario(index, run) {
   assert.deepEqual([cover0.status, cover0.type, cover0.sha], [200, "image/jpeg", sha(jpg)], `${label} cover bytes`);
   assert.deepEqual([cover1.status, cover1.type, cover1.sha], [200, "image/png", sha(png)], `${label} second photo bytes`);
   for (const w of [cover0, cover1]) { assert.equal(w.cache, "public, max-age=86400, immutable"); assert.equal(w.nosniff, "nosniff"); }
+  for (const width of [360, 720, 1080]) {
+    const variant = await wire(`/media/p/${fx.product_id}/${ids[0]}?w=${width}`);
+    assert.deepEqual([variant.status, variant.type, variant.cache], [200, "image/jpeg", "public, max-age=86400, immutable"]);
+  }
+  assert.equal((await wire(`/media/p/${fx.product_id}/${ids[0]}?w=640`)).status, 404);
   const stranger = await wire(`/media/p/${fx.product_id}/${crypto.randomUUID()}`);
   assert.equal(stranger.status, 404, `${label} unknown image is 404`);
   assert.equal(await buyer.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${label} home horizontal overflow`);

@@ -1,0 +1,86 @@
+✔ design: garbage and hostile documents collapse to the safe default shape (1.069334ms)
+✔ design: links, preview token propagation, nav resolution (0.111458ms)
+✔ design: any merchant accent yields readable button text and link colour (WCAG AA) (0.212541ms)
+✔ variants: resolution, disabled out-of-stock combinations, initial choice, price bounds (0.134833ms)
+✔ catalog-v2 parsers accept the frozen shapes and refuse drift (0.335875ms)
+✔ free-delivery progress words the hint only when a threshold exists (0.060084ms)
+✔ list query: only whitelisted, canonical values survive (0.200417ms)
+✔ seo: JSON-LD cannot break out of its script tag; offers reflect stock and price range (7.965833ms)
+✔ seo: sitemap escapes and carries hreflang; robots refuses everything for a closed host (0.154708ms)
+✔ money: whole amounts drop cents, minor digits come from the currency, filters round-trip (0.32825ms)
+✔ cart line write: replaces one line, keeps the others, 0 removes, CAS version is the one shown (0.681375ms)
+✔ cart problems map to buyer-facing classes without leaking transport detail (0.074791ms)
+✔ checkout options accept the optional free-shipping threshold only as a positive integer or null (0.136667ms)
+✔ no-image placeholder copy: exactly the locale label a photo-less card or gallery renders (0.042792ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 96.666084
+
+> live-commerce-workspace@ build:storefront /Volumes/data/live_commerce_architecture_v1/.worktrees/media-sizes
+> pnpm --filter @live-commerce/storefront build
+
+
+> @live-commerce/storefront@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/media-sizes/apps/storefront
+> next build
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 99ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 888ms
+  Running TypeScript ...
+  Finished TypeScript in 324ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/2) ...
+✓ Generating static pages using 9 workers (2/2) in 40ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/cart
+├ ƒ /[locale]/checkout
+├ ƒ /[locale]/claim
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/collections/[slug]
+├ ƒ /[locale]/data-deletion
+├ ƒ /[locale]/legal/[slug]
+├ ƒ /[locale]/legal/anti-fraud
+├ ƒ /[locale]/order-link
+├ ƒ /[locale]/orders/[orderID]
+├ ƒ /[locale]/orders/lookup
+├ ƒ /[locale]/pages/[slug]
+├ ƒ /[locale]/privacy
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[slug]
+├ ƒ /[locale]/search
+├ ƒ /api/buyer/[...path]
+├ ƒ /api/shop/product/[key]
+├ ƒ /api/shop/products
+├ ƒ /feeds/meta.csv
+├ ƒ /media/c/[collectionID]/[imageID]
+├ ƒ /media/p/[productID]/[imageID]
+├ ƒ /media/s/[imageID]
+├ ƒ /payment/return
+├ ƒ /products/[productID]
+├ ƒ /robots.txt
+└ ƒ /sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+=== RUN   TestBrowserStorefront
+    browser_storefront_test.go:399: PASS: real-stack storefront shell; 28 active products, 2 collections; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/media-sizes/output/playwright/storefront/20261002T185124.660871000
+--- PASS: TestBrowserStorefront (13.15s)
+PASS
+ok  	livecommerce/tests/foundation	14.840s
+PASS: SFR01-SFR09 buyer storefront shell on the REAL stack (production Next + real Go buyer API + isolated PG; shop built through the admin API, published through the migration 0081 definers; checkout path, free-shipping threshold and collection photo ids from the producers); synthetic CONNECT edge, no provider, no device. The MOCK sibling: LC_SHOP_MOCK=1 bash scripts/dev/test-local.sh --browser-storefront.

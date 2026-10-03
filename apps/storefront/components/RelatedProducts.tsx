@@ -17,6 +17,6 @@ export default async function RelatedProducts({ locale, product, preview }: {
   if (!cards.length) return null;
   return <section className="sf-related" aria-labelledby="sf-related-title" data-testid="related-products">
     <h2 id="sf-related-title">{browseCopy[locale].related}</h2>
-    <Rail locale={locale}>{cards.map(card => <ProductCard key={card.id} locale={locale} card={card} currency={result.value.store.currency} preview={preview} />)}</Rail>
+    <Rail locale={locale}>{cards.map(card => <ProductCard key={card.id} locale={locale} card={card} currency={result.value.store.currency} preview={preview} placement="rail" />)}</Rail>
   </section>;
 }

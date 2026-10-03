@@ -36,8 +36,16 @@ func (h *handler) mediaGet(ctx context.Context, w http.ResponseWriter, r *http.R
 	defer func() { _ = tx.Rollback(context.WithoutCancel(ctx)) }()
 	var contentType string
 	var data, digest []byte
-	err = tx.QueryRow(ctx, `SELECT content_type,bytes,sha256 FROM catalog.buyer_media_image($1::text,$2::uuid,$3::uuid)`,
-		r.Header.Get("X-Commerce-Storefront-Origin"), selected.id, selected.image).Scan(&contentType, &data, &digest)
+	isRendition := false
+	width := r.URL.Query().Get("w") // admitted only as the exact raw query w=360|720|1080 by forbiddenInput
+	if width != "" {
+		w, _ := strconv.Atoi(width)
+		err = tx.QueryRow(ctx, `SELECT content_type,bytes,sha256,is_rendition FROM catalog.buyer_media_image_size($1::text,$2::uuid,$3::uuid,$4::integer)`,
+			r.Header.Get("X-Commerce-Storefront-Origin"), selected.id, selected.image, w).Scan(&contentType, &data, &digest, &isRendition)
+	} else {
+		err = tx.QueryRow(ctx, `SELECT content_type,bytes,sha256 FROM catalog.buyer_media_image($1::text,$2::uuid,$3::uuid)`,
+			r.Header.Get("X-Commerce-Storefront-Origin"), selected.id, selected.image).Scan(&contentType, &data, &digest)
+	}
 	if err != nil {
 		var pg *pgconn.PgError
 		if errors.As(err, &pg) {
@@ -54,6 +62,13 @@ func (h *handler) mediaGet(ctx context.Context, w http.ResponseWriter, r *http.R
 		return ctx.Err()
 	}
 	// ponytail: whole file in memory (<= 2 MiB by CHECK); stream from object storage when images leave PG.
+	if width != "" {
+		if isRendition {
+			w.Header().Set("X-Commerce-Image-Rendition", "1")
+		} else {
+			w.Header().Set("X-Commerce-Image-Rendition", "0")
+		}
+	}
 	writeImage(w, contentType, data, digest)
 	return nil
 }
@@ -63,7 +78,11 @@ func (h *handler) mediaGet(ctx context.Context, w http.ResponseWriter, r *http.R
 func writeImage(w http.ResponseWriter, contentType string, data, digest []byte) {
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("Content-Length", strconv.Itoa(len(data)))
-	w.Header().Set("Cache-Control", "public, max-age=86400, immutable")
+	if w.Header().Get("X-Commerce-Image-Rendition") == "0" {
+		w.Header().Set("Cache-Control", "no-store")
+	} else {
+		w.Header().Set("Cache-Control", "public, max-age=86400, immutable")
+	}
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Content-Security-Policy", "default-src 'none'; sandbox")
 	w.Header().Set("ETag", `"`+hex.EncodeToString(digest)+`"`)

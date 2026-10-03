@@ -4,6 +4,7 @@
 // They never decide price/stock (Go does) and never accept a field the contract does not list.
 
 export type StockHint = "in" | "low" | "out";
+export type ImageSize = { width: 360 | 720 | 1080; pixel_width: number };
 export type ProductCard = {
   id: string;
   slug: string;
@@ -12,6 +13,7 @@ export type ProductCard = {
   price_max_minor: number;
   compare_at_min_minor: number | null;
   cover_image_id: string | null;
+  cover_image_sizes?: ImageSize[];
   in_stock: boolean;
 };
 export type ProductList = { store: { name: string; currency: string }; products: ProductCard[]; next: string | null };
@@ -29,7 +31,7 @@ export type ProductDetail = {
   title: string;
   description: string;
   seo: { title: string; description: string };
-  images: { id: string; width: number | null; height: number | null }[];
+  images: { id: string; width: number | null; height: number | null; sizes?: ImageSize[] }[];
   options: { name: string; values: string[] }[];
   variants: Variant[];
   collections: { slug: string; title: string }[];
@@ -50,10 +52,23 @@ const money = (v: unknown): v is number => typeof v === "number" && Number.isSaf
 const maybe = <T>(v: unknown, ok: (x: unknown) => x is T): v is T | null => v === null || ok(v);
 const uuid = (v: unknown): v is string => typeof v === "string" && UUID.test(v);
 const dim = (v: unknown): v is number => typeof v === "number" && Number.isInteger(v) && v > 0 && v < 100000;
+function imageSizes(v: unknown): ImageSize[] | null {
+  if (v === undefined) return [];
+  if (!Array.isArray(v) || v.length > 3) return null;
+  const seen = new Set<number>();
+  const out: ImageSize[] = [];
+  for (const s of v) {
+    if (!rec(s) || (s.width !== 360 && s.width !== 720 && s.width !== 1080) || !dim(s.pixel_width) || s.pixel_width > s.width || seen.has(s.width)) return null;
+    seen.add(s.width); out.push({width: s.width, pixel_width: s.pixel_width});
+  }
+  return out;
+}
 
 function card(v: unknown): ProductCard | null {
   if (!rec(v) || !uuid(v.id) || !str(v.slug, 80) || !str(v.title, 300) || !money(v.price_min_minor) || !money(v.price_max_minor)) return null;
   if (!maybe(v.compare_at_min_minor, money) || !maybe(v.cover_image_id, uuid) || typeof v.in_stock !== "boolean") return null;
+  const sizes = imageSizes(v.cover_image_sizes);
+  if (!sizes) return null;
   return {
     id: v.id,
     slug: v.slug,
@@ -62,6 +77,7 @@ function card(v: unknown): ProductCard | null {
     price_max_minor: v.price_max_minor,
     compare_at_min_minor: v.compare_at_min_minor as number | null,
     cover_image_id: v.cover_image_id as string | null,
+    ...(sizes.length ? {cover_image_sizes: sizes} : {}),
     in_stock: v.in_stock,
   };
 }
@@ -86,7 +102,9 @@ export function parseProductDetail(v: unknown): ProductDetail | null {
   const images: ProductDetail["images"] = [];
   for (const i of v.images) {
     if (!rec(i) || !uuid(i.id) || !maybe(i.width, dim) || !maybe(i.height, dim)) return null;
-    images.push({ id: i.id, width: i.width as number | null, height: i.height as number | null });
+    const sizes = imageSizes(i.sizes);
+    if (!sizes) return null;
+    images.push({ id: i.id, width: i.width as number | null, height: i.height as number | null, ...(sizes.length ? {sizes} : {}) });
   }
   const options: ProductDetail["options"] = [];
   for (const o of v.options) {

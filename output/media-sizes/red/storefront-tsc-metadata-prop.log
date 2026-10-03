@@ -1,0 +1,5 @@
+components/ProductGallery.tsx(74,64): error TS2339: Property 'sizes' does not exist on type '{ id: string; width: number | null; height: number | null; }'.
+components/ProductGallery.tsx(115,113): error TS2339: Property 'sizes' does not exist on type '{ id: string; width: number | null; height: number | null; }'.
+undefined
+/Volumes/data/live_commerce_architecture_v1/.worktrees/media-sizes/apps/storefront:
+ ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command failed with exit code 1: tsc --noEmit

@@ -1,0 +1,29 @@
+=== RUN   TestCatalogMediaSchemaSurface
+--- PASS: TestCatalogMediaSchemaSurface (1.73s)
+=== RUN   TestCatalogMediaRLSScope
+--- PASS: TestCatalogMediaRLSScope (0.32s)
+=== RUN   TestCatalogMediaLifecycle
+    catalog_media_test.go:838: public Cache-Control "no-store"
+    catalog_media_test.go:838: public Cache-Control "no-store"
+    catalog_media_test.go:838: public Cache-Control "no-store"
+--- FAIL: TestCatalogMediaLifecycle (0.49s)
+=== RUN   TestCatalogMediaSniff
+--- PASS: TestCatalogMediaSniff (0.49s)
+=== RUN   TestCatalogMediaBuyer404
+--- PASS: TestCatalogMediaBuyer404 (0.36s)
+=== RUN   TestCatalogMediaBuyerAuthority
+--- PASS: TestCatalogMediaBuyerAuthority (0.42s)
+=== RUN   TestCatalogMediaArchivedProduct
+--- PASS: TestCatalogMediaArchivedProduct (0.60s)
+=== RUN   TestT06WorkerAuthorityAndFunctionACL
+--- PASS: TestT06WorkerAuthorityAndFunctionACL (1.15s)
+=== RUN   TestMediaSizesLifecycleAndIsolation
+    media_sizes_test.go:40: committed rendition cache policy
+--- FAIL: TestMediaSizesLifecycleAndIsolation (7.46s)
+=== RUN   TestR2IntegrationUpgradeFromReleaseHead
+    r2_integration_upgrade_test.go:42: R2 migration set = 43 files [0070_merchant_password_auth.sql 0071_claims_retention.sql 0072_taiwan_cvs_logistics.sql 0073_taiwan_cvs_functions.sql 0074_meta_ads.sql 0075_meta_ads_insights.sql 0077_stripe_live_enable.sql 0078_customers_privacy.sql 0079_platform_billing.sql 0080_meta_capi.sql 0081_storefront_publish.sql 0082_product_images.sql 0083_cvs_restock_guard.sql 0085_finance_pay_at_pickup.sql 0086_catalog_v2.sql 0087_store_design.sql 0088_checkout_offline.sql 0089_staff_team.sql 0090_buyer_comms.sql 0091_promotions.sql 0092_live_tools.sql 0093_storefront_integration.sql 0094_merchant_tools.sql 0095_meta_connect.sql 0096_worker_authorities.sql 0097_order_locale.sql 0098_buyer_comms_fixes.sql 0099_checkout_offline_fixes.sql 0100_meta_connect_fixes.sql 0101_promotion_live_fixes.sql 0102_cvs_collected_guard.sql 0103_claim_checkout_live_price.sql 0104_authz_ip_scope_link_replay.sql 0105_claim_live_price_uses.sql 0106_store_domains.sql 0107_home_cod.sql 0111_product_image_sizes.sql post_river/0015_meta_ads_river.sql post_river/0016_stripe_live.sql post_river/0017_taiwan_cvs_begin_hold.sql post_river/0018_checkout_offline_begin_hold.sql post_river/0019_worker_authorities.sql post_river/0020_home_cod_begin_hold.sql], want 42
+--- FAIL: TestR2IntegrationUpgradeFromReleaseHead (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	13.820s
+FAIL
+test-focused: top-level PASS=7 FAIL=3 SKIP=0 exit=1
