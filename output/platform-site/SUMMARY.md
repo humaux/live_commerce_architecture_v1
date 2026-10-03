@@ -3,7 +3,7 @@
 Base: `c2f41c91ac38aa2da9db0e39b0fcba207e33cc5c` (`r3/integration`).
 Branch: `unit/platform-site`. Worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site`.
 
-Preparation commit: `5d4efcc7`; contact-validator review fix: `f38a673e`; unapproved composition checkpoint: `44a33705`; admin branding implementation/tests: `2e91c529`.
+Preparation commit: `5d4efcc7`; contact-validator review fix: `f38a673e`; unapproved composition checkpoint: `44a33705`; admin branding implementation/tests: `2e91c529`; public mailbox documentation: `9fa55342`.
 
 ## Status
 
@@ -11,7 +11,7 @@ Preparation commit: `5d4efcc7`; contact-validator review fix: `f38a673e`; unappr
 - Created the requested isolated worktree; `pnpm install --offline`: exit 0.
 - Single `company.ts` identity source now drives admin Entry, signup/reset titles and W0 rail branding. Reusable operator footer uses the exact English attribution. Product name remains untranslated. Removed obsolete translated entry-brand keys. Merchant storefront source was not changed.
 - Signup/reset titles use server route metadata; root login uses Entry's title only when that entry surface is mounted. Exact single-title assertions cover browser navigation and reload. Authenticated dashboard titles remain unchanged.
-- Latest owner supplement: public contact email **awaits confirmation**. `LC_COMPANY_CONTACT_EMAIL` has no default. Config helper validates env-only hosts/email, but production-build/public routing integration is **not yet implemented**; no claim of complete env/build acceptance.
+- Latest owner supplement: public contact email **confirmed as `ailun@xgdwm.com`**. `LC_COMPANY_CONTACT_EMAIL` still has no default. Config helper validates env-only hosts/email, but production-build/public routing integration is **not yet implemented**; no claim of complete env/build acceptance.
 - Added fail-closed, case-insensitive UI/legal domain grep to check-gates. A temporary uppercase domain literal caused exit 1; after removing that exact test file the final gate passed. Tests and documentation examples remain outside this UI/legal scan.
 - Audited route conflict: existing admin locale layout is non-indexable and session-oriented. Public pages need their own root layout under a public group plus a host-specific internal rewrite. Keep streaming BFF body limits intact; do not blindly expand the proxy matcher across auth endpoints.
 - Three composition proposals generated using built-in image_gen, referenced to approved W0 comp 01. **None approved yet.** Exact prompts are in JSON sidecars and embedded PNG metadata. They are composition references only: generated demonstration data, copyright years, and absolute delivery claims are not approved product copy.
@@ -55,6 +55,16 @@ Preparation commit: `5d4efcc7`; contact-validator review fix: `f38a673e`; unappr
 4. Final logical commits, evidence and Humaux/canvas update. Do not push, merge or deploy.
 
 Legal content on eventual delivery: **需 owner/律師審閱**. This checkpoint contains no drafted legal policy.
+
+## Owner contact-mailbox supplement (2026-10-04)
+
+- `9fa55342` adds only documentation: commented sample `# LC_COMPANY_CONTACT_EMAIL=contact@example.invalid` in `deploy/env/compose.env.example`, and owner-confirmed pilot value `LC_COMPANY_CONTACT_EMAIL=ailun@xgdwm.com` in deploy runbook §4.2. The comment is not an active env assignment.
+- `company.ts` runtime is unchanged: reads env only and rejects a missing/invalid email. Existing valid fixture remains `contact@example.invalid`; no real public mailbox was added to tests or UI source. No UI/layout, runtime, secret, actual compose.env or mail/DNS configuration changed.
+- LOCAL doc assertion: commented example exists, no active default assignment, §4.2 contains the confirmed pilot value. Before patch **exit 1** (`contact-docs-red.log`); after patch **exit 0** (`contact-docs-green.log`).
+- `node --test --experimental-strip-types tests/admin/platform-site.test.ts`: **exit 0**, 5 PASS / 0 FAIL / 0 SKIP (`contact-config.log`).
+- `bash scripts/dev/check-gates.sh`: **exit 0**, 60 documented modes and architecture checks PASS (`contact-check-gates.log`). `git diff --cached --check`: **exit 0**.
+- Independent read-only review by `platform_brand_review` (explorer, gpt-6-luna / medium, base `f4fecd19`, same worktree, no write paths): exact delta through `9fa55342` reviewed, no P1/P2. Confirmed env-only runtime and synthetic fixture unchanged; pilot note does not imply activation.
+- Full Node, tsc, browser and full PS1–PS5 are **NOT_RUN for this documentation-only supplement**; previously recorded brand results remain evidence of that source revision, not a new full-site acceptance. No live deployment or mail-delivery test was run.
 
 ## Collaboration
 
