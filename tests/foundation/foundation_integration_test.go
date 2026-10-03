@@ -182,29 +182,34 @@ func (f *testFixture) seed(ctx context.Context) error {
 		return err
 	}
 	now := time.Now().UTC()
-	if err := insertSession(ctx, tx, f.tokens["a"], f.principalA, "merchant", now.Add(time.Hour), nil); err != nil {
+	if err := insertSession(ctx, tx, f.tokens["a"], f.principalA, "merchant", now.Add(fixtureSessionTTL), nil); err != nil {
 		return err
 	}
-	if err := insertSession(ctx, tx, f.tokens["a2"], principalA2, "merchant", now.Add(time.Hour), nil); err != nil {
+	if err := insertSession(ctx, tx, f.tokens["a2"], principalA2, "merchant", now.Add(fixtureSessionTTL), nil); err != nil {
 		return err
 	}
-	if err := insertSession(ctx, tx, f.tokens["b"], principalB, "merchant", now.Add(time.Hour), nil); err != nil {
+	if err := insertSession(ctx, tx, f.tokens["b"], principalB, "merchant", now.Add(fixtureSessionTTL), nil); err != nil {
 		return err
 	}
 	if err := insertSession(ctx, tx, f.tokens["expired"], f.principalA, "merchant", now.Add(-time.Minute), nil); err != nil {
 		return err
 	}
-	if err := insertSession(ctx, tx, f.tokens["revoked"], f.principalA, "merchant", now.Add(time.Hour), now); err != nil {
+	if err := insertSession(ctx, tx, f.tokens["revoked"], f.principalA, "merchant", now.Add(fixtureSessionTTL), now); err != nil {
 		return err
 	}
-	if err := insertSession(ctx, tx, f.tokens["buyer"], f.principalA, "buyer", now.Add(time.Hour), nil); err != nil {
+	if err := insertSession(ctx, tx, f.tokens["buyer"], f.principalA, "buyer", now.Add(fixtureSessionTTL), nil); err != nil {
 		return err
 	}
-	if err := insertSession(ctx, tx, f.tokens["revoked_grant"], principalRevokedGrant, "merchant", now.Add(time.Hour), nil); err != nil {
+	if err := insertSession(ctx, tx, f.tokens["revoked_grant"], principalRevokedGrant, "merchant", now.Add(fixtureSessionTTL), nil); err != nil {
 		return err
 	}
 	return tx.Commit(ctx)
 }
+
+// fixtureSessionTTL is the lifetime of the shared fixture's live sessions. They are created once per test binary
+// (fixtureOnce) and must outlive the whole REAL_PG run: with a 1-hour lifetime a slow release-gate G07 run (>1 h
+// before store_design/t04 tests) turned every later fixture request into "unauthorized" (2026-10-03, r5-final-2a12e6c).
+const fixtureSessionTTL = 24 * time.Hour
 
 func insertSession(ctx context.Context, tx pgx.Tx, token, principal, audience string, expires time.Time, revoked any) error {
 	hash := sha256.Sum256([]byte(token))
