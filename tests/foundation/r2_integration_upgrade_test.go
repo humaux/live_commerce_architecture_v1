@@ -41,7 +41,7 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0110 adds only the orders-v2 read projection and its scoped indexes.
 	// 0111 adds product image renditions (S1 B); keep an exact migration-set count.
 	if len(r2) != 45 {
-		t.Fatalf("R2 migration set = %d files %v, want 43", len(r2), r2)
+		t.Fatalf("R2 migration set = %d files %v, want 45", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
