@@ -165,13 +165,9 @@ func atNewReportEnv(t *testing.T) *atReportEnv {
 	caps := []buyer.Capability{mustIssue(t, m.h.service, p.f.storeA1), p.cap, mustIssue(t, m.h.service, p.f.storeA1)}
 	for i, cap := range caps {
 		at := mciSoon()
-		comment := "A1"
-		if i < 2 {
-			// Match canonical Stripe fixtures: 2 x 1250 meets the real TWD
-			// whole-dollar/minimum-amount contract. COD has no Stripe minimum.
-			comment = "A1+2"
-		}
-		sent := m.postFBTo(t, m.postID, "", "", comment, &at, nil, true)
+		// 2 x 1250 meets Stripe's minimum and the whole-TWD contract shared
+		// by card and cash-on-delivery orders; never weaken either guard.
+		sent := m.postFBTo(t, m.postID, "", "", "A1+2", &at, nil, true)
 		m.apply(t)
 		intake := m.mustIntake(t, "page", m.pageAsset, sent.comment)
 		if intake.State != "APPLIED" {
