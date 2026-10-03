@@ -74,7 +74,7 @@ func lriPre0032Fixture(t *testing.T) *testFixture {
 // when it is absent, exactly like the begin_hold shim in lriPre0032Fixture. Every legacy gate upgrades through
 // lriApply, which drops the shims whose migration is not yet recorded right before Apply (the real ADD COLUMN / CREATE
 // FUNCTION have no IF NOT EXISTS). Column shims only ever hold NULL (no legacy fixture sets a threshold or a claim
-// origin); lriApply refuses to drop one that holds data (held = SQL returning the count of non-NULL values).
+// origin; the 0109 flag shim only ever holds its default true); lriApply refuses to drop one that holds data (held = SQL returning the count of non-default values).
 var lriShims = []struct{ migration, exists, add, held, drop string }{
 	{"0088_checkout_offline.sql",
 		`SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='pricing' AND table_name='policy_versions' AND column_name='free_shipping_threshold_minor')`,
@@ -94,6 +94,13 @@ var lriShims = []struct{ migration, exists, add, held, drop string }{
 		 GRANT EXECUTE ON FUNCTION checkout.set_order_locale(bytea,uuid,uuid,text) TO commerce_checkout_runtime`,
 		``,
 		`DROP FUNCTION checkout.set_order_locale(bytea,uuid,uuid,text)`},
+	// internal/checkout planLocked filters the lock plan by catalog.skus.inventory_tracked (A6, 0109 product-core). The
+	// shim holds only the real default (true = tracked, the pre-0109 behaviour); 0109 adds the column with its CHECK.
+	{"0109_product_core.sql",
+		`SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='catalog' AND table_name='skus' AND column_name='inventory_tracked')`,
+		`ALTER TABLE catalog.skus ADD COLUMN inventory_tracked boolean NOT NULL DEFAULT true`,
+		`SELECT count(*) FROM catalog.skus WHERE NOT inventory_tracked`,
+		`ALTER TABLE catalog.skus DROP COLUMN inventory_tracked`},
 }
 
 // lriAddShims adds every missing shim (idempotent). Called by the shared policy writer, so any historical fixture that
