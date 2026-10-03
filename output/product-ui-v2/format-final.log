@@ -1,0 +1,8 @@
+apps/admin/components/ProductDocumentForm.tsx 223ms
+apps/admin/components/ProductDocumentVariants.tsx 51ms
+apps/admin/components/ProductList.tsx 42ms
+apps/admin/components/ProductQuickEdit.tsx 30ms (unchanged)
+apps/admin/lib/product-document.ts 46ms (unchanged)
+apps/admin/lib/use-product-document.ts 20ms (unchanged)
+tests/admin/product-editor.acceptance.ts 71ms
+tests/admin/product-patch.test.ts 6ms (unchanged)

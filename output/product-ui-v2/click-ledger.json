@@ -1,0 +1,181 @@
+[
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 1366,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 1586,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 375,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 1366,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 1586,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 375,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 1366,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 1586,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 375,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "editor",
+    "control": "shell and page leave guard",
+    "action": "click + dismiss",
+    "expected": "one confirmation per navigation; draft retained",
+    "actual": "PASS"
+  },
+  {
+    "page": "create",
+    "control": "3 file inputs/reorder/publish double click",
+    "action": "setInputFiles click dblclick reload",
+    "expected": "one document,3 uploads,one order; persisted NT$60 and untracked cap3",
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG; buyer HTTP readback"
+  },
+  {
+    "page": "matrix",
+    "control": "axes/bulk only empty/stock/save",
+    "action": "click fill Enter reload",
+    "expected": "12 local rows, preserved first price60, others80; persisted",
+    "actual": "PASS"
+  },
+  {
+    "page": "list",
+    "control": "copy/select all/unpublish",
+    "action": "click check reload",
+    "expected": "copy persisted;3 results;all3draft",
+    "actual": "PASS"
+  },
+  {
+    "page": "inventory",
+    "control": "product inspector",
+    "action": "click",
+    "expected": "read-only price, no name/price/image editor; link to product editor",
+    "actual": "PASS"
+  },
+  {
+    "page": "edit",
+    "control": "price and save",
+    "action": "fill click reload",
+    "expected": "one minimal patch; cap and images preserved",
+    "actual": "PASS"
+  },
+  {
+    "page": "list",
+    "control": "single/multi SKU pencils, inventory delta and zero",
+    "action": "click fill Enter Escape reload",
+    "expected": "one patch per save, stock0 persists, twelve-SKU popover and focus return",
+    "actual": "PASS"
+  },
+  {
+    "page": "edit",
+    "control": "ambiguous warehouse",
+    "action": "read-only response MOCK + visible disabled field",
+    "expected": "no available fallback, disabled target and inventory link",
+    "actual": "PASS (MOCK read contract)"
+  },
+  {
+    "page": "edit",
+    "locale": "zh-TW",
+    "control": "live-window keyword refusal",
+    "action": "click + MOCK 409",
+    "expected": "explicit translated safety refusal",
+    "actual": "PASS (MOCK response; real rule covered by PG PE21)"
+  },
+  {
+    "page": "edit",
+    "locale": "zh-CN",
+    "control": "live-window keyword refusal",
+    "action": "click + MOCK 409",
+    "expected": "explicit translated safety refusal",
+    "actual": "PASS (MOCK response; real rule covered by PG PE21)"
+  },
+  {
+    "page": "edit",
+    "locale": "en",
+    "control": "live-window keyword refusal",
+    "action": "click + MOCK 409",
+    "expected": "explicit translated safety refusal",
+    "actual": "PASS (MOCK response; real rule covered by PG PE21)"
+  },
+  {
+    "page": "list",
+    "control": "copy response loss/reload",
+    "action": "click then injected lost response, reload",
+    "expected": "one committed command; recovery fence blocks duplicate",
+    "actual": "PASS",
+    "tier": "FAULT_INJECTED+REAL_PG"
+  }
+]

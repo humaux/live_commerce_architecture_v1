@@ -1,0 +1,232 @@
+[
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/list-zh-TW-1366.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1366,
+      "height": 768,
+      "topbarY": 0
+    },
+    "sha256": "e8035da0bdc76cb70bbc66ca6e0fa262544de34cb41a20aea6e7b2718821ef49"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/editor-zh-TW-1366.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1366,
+      "height": 768,
+      "topbarY": 0
+    },
+    "sha256": "5eea098431d5dd200b13372d5027aad5e568eac72b1680b8a4b463cab5fcb1a2"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/list-zh-TW-1586.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "d4b43bdda4b6ce8ebdf76b20a928bbe6500a2966d6cb8f5634c7444aabd833ea"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/editor-zh-TW-1586.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "f18d1c96fde28b805c7986d9825def65a2c4e00071d379db8ea637e711efee01"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/list-zh-TW-375.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 375,
+      "height": 812,
+      "topbarY": 0
+    },
+    "sha256": "d7dbaa26a02a3b348209ab3bf6e1fb1ed8b78531e392e204940e85f6ac6a95e1"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/editor-zh-TW-375.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 375,
+      "height": 812,
+      "topbarY": 0
+    },
+    "sha256": "974279a1ff69def4d0b24c04ee24d2a8a87fc5139a770762075ca2be1be96eeb"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/list-zh-CN-1366.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1366,
+      "height": 768,
+      "topbarY": 0
+    },
+    "sha256": "ced43d8026a0dcb7e568cd7d001cee5f6f6d6190a3148ddff5284241695edac5"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/editor-zh-CN-1366.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1366,
+      "height": 768,
+      "topbarY": 0
+    },
+    "sha256": "feeee13664ac34062abc2c738591972f03150110432be694ec812afadc2153ac"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/list-zh-CN-1586.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "ea668d8e5c0b59de6ffa36c9f7f09e2ed407084e9001b4fe55c66eb60185e5ec"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/editor-zh-CN-1586.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "4f58501102e9946087508926a89183169b255471c56a6cae2146782e879da734"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/list-zh-CN-375.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 375,
+      "height": 812,
+      "topbarY": 0
+    },
+    "sha256": "ee906d7dc44a4aaeec8b1f6b30079e4c27e0677ac6eae4345eb02410421a0942"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/editor-zh-CN-375.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 375,
+      "height": 812,
+      "topbarY": 0
+    },
+    "sha256": "ec7eefc443c0fe9777f04da3cadba4c478a2aeb390f2e4c2301b2bfa9a3cf59a"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/list-en-1366.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1366,
+      "height": 768,
+      "topbarY": 0
+    },
+    "sha256": "58877d40625f1d0ffb4c0d1403c505a4372dda11b60ba20a231cc4b7a75df9e3"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/editor-en-1366.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1366,
+      "height": 768,
+      "topbarY": 0
+    },
+    "sha256": "fc5f7d0ea4c914930006f1af795824923380fc356c6eb14cc6602a7c8bb7949e"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/list-en-1586.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "712afcb415d102be1c61a6b12fb7ec38476893f479777264ed924b0bb7e61eaa"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/editor-en-1586.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "62f56faa52b72e0677727089a29c30eec175d0eba2e86bdb0d4ed21b490265fa"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/list-en-375.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 375,
+      "height": 812,
+      "topbarY": 0
+    },
+    "sha256": "93331e8b8b1af5c8900c39e822ec38f698dfc0afadee8b798e7da897feff9b09"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/editor-en-375.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 375,
+      "height": 812,
+      "topbarY": 0
+    },
+    "sha256": "d84c16135bf7e144f84afd61086510b1dfb0069ab8da5652a0ca57b4dac5e09e"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/matrix-en-1586.png",
+    "geometry": {
+      "scrollY": 2189,
+      "width": 1586,
+      "height": 992,
+      "topbarY": -2189
+    },
+    "sha256": "f7c853cce17dd83db03caae6c62875d13c01afda2d5fa687d530e46ab8cc24d9"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/batch-result-en-1586.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "5c44b35c5f23e68b35f431319f47c1737ef21887df14d4b39428699ec297b0ab"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/inventory-en-1366.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1366,
+      "height": 768,
+      "topbarY": 0
+    },
+    "sha256": "195ee2ae594bfb5de04dada5888696ea51007046b2c4003ff98e3bdb2b3f2724"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/inventory-en-1586.png",
+    "geometry": {
+      "scrollY": 0,
+      "width": 1586,
+      "height": 992,
+      "topbarY": 0
+    },
+    "sha256": "8c01cc6ef31b21e59fe700b30a58ab39e5dfc757913f17ddafb58829c96fa614"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/product-ui-v2/editor-bottom-en-375.png",
+    "geometry": {
+      "scrollY": 1649,
+      "width": 375,
+      "height": 812,
+      "topbarY": -1649
+    },
+    "sha256": "24ab6a23c54b0216ac376147288a672f06baa506a9ea4c1e3ab5ee140071ee38"
+  }
+]

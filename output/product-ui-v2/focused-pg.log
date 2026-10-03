@@ -1,0 +1,161 @@
+=== RUN   TestCatalogCoreCC11bConcurrency
+--- PASS: TestCatalogCoreCC11bConcurrency (1.42s)
+=== RUN   TestCatalogCoreCC04bSKUPatchOptionValues
+--- PASS: TestCatalogCoreCC04bSKUPatchOptionValues (0.33s)
+=== RUN   TestCatalogCoreCC10bUnpublishedStore
+--- PASS: TestCatalogCoreCC10bUnpublishedStore (0.30s)
+=== RUN   TestCatalogCoreCC12aAdminList
+--- PASS: TestCatalogCoreCC12aAdminList (0.35s)
+=== RUN   TestCatalogCoreCC12bAdminSearchLiteral
+--- PASS: TestCatalogCoreCC12bAdminSearchLiteral (0.30s)
+=== RUN   TestCatalogCoreCC02DraftLifecycle
+    catalog_core_gate_test.go:582: detail images must be [{id,width,height}]: [{"id":"ac45094c-9a09-413e-a305-40621b383d5e","width":3,"height":2,"sizes":[{"width":360,"pixel_width":3},{"width":720,"pixel_width":3},{"width":1080,"pixel_width":3}]}]
+--- FAIL: TestCatalogCoreCC02DraftLifecycle (0.40s)
+=== RUN   TestCatalogCoreCC03SlugRules
+--- PASS: TestCatalogCoreCC03SlugRules (0.35s)
+=== RUN   TestCatalogCoreCC04OptionsAndVariants
+--- PASS: TestCatalogCoreCC04OptionsAndVariants (0.38s)
+=== RUN   TestCatalogCoreCC05CompareAt
+--- PASS: TestCatalogCoreCC05CompareAt (0.32s)
+=== RUN   TestCatalogCoreCC06BuyerList
+--- PASS: TestCatalogCoreCC06BuyerList (0.53s)
+=== RUN   TestCatalogCoreCC07StockHints
+--- PASS: TestCatalogCoreCC07StockHints (0.42s)
+=== RUN   TestCatalogCoreCC08Collections
+--- PASS: TestCatalogCoreCC08Collections (0.55s)
+=== RUN   TestCatalogCoreCC09CollectionImage
+--- PASS: TestCatalogCoreCC09CollectionImage (0.42s)
+=== RUN   TestCatalogCoreCC10IsolationAndAuthority
+--- PASS: TestCatalogCoreCC10IsolationAndAuthority (0.40s)
+=== RUN   TestCatalogCoreCC11Idempotency
+--- PASS: TestCatalogCoreCC11Idempotency (0.41s)
+=== RUN   TestCatalogCoreCC01PopulatedUpgrade
+--- PASS: TestCatalogCoreCC01PopulatedUpgrade (2.24s)
+=== RUN   TestCatalogInventoryHTTPRealWorkflow
+--- PASS: TestCatalogInventoryHTTPRealWorkflow (0.14s)
+=== RUN   TestCatalogHTTPPermissionIsRouteOwned
+--- PASS: TestCatalogHTTPPermissionIsRouteOwned (0.01s)
+=== RUN   TestCatalogLedgerProjectionPaginationAndBalanceTruth
+--- PASS: TestCatalogLedgerProjectionPaginationAndBalanceTruth (0.21s)
+=== RUN   TestCatalogLedgerSearchTreatsPercentAndUnderscoreLiterally
+=== RUN   TestCatalogLedgerSearchTreatsPercentAndUnderscoreLiterally/%25
+=== RUN   TestCatalogLedgerSearchTreatsPercentAndUnderscoreLiterally/_
+--- PASS: TestCatalogLedgerSearchTreatsPercentAndUnderscoreLiterally (0.16s)
+    --- PASS: TestCatalogLedgerSearchTreatsPercentAndUnderscoreLiterally/%25 (0.00s)
+    --- PASS: TestCatalogLedgerSearchTreatsPercentAndUnderscoreLiterally/_ (0.00s)
+=== RUN   TestCatalogLedgerCursorBindsWarehouseAndFilters
+=== RUN   TestCatalogLedgerCursorBindsWarehouseAndFilters/warehouse
+=== RUN   TestCatalogLedgerCursorBindsWarehouseAndFilters/query
+=== RUN   TestCatalogLedgerCursorBindsWarehouseAndFilters/status
+--- PASS: TestCatalogLedgerCursorBindsWarehouseAndFilters (0.15s)
+    --- PASS: TestCatalogLedgerCursorBindsWarehouseAndFilters/warehouse (0.00s)
+    --- PASS: TestCatalogLedgerCursorBindsWarehouseAndFilters/query (0.00s)
+    --- PASS: TestCatalogLedgerCursorBindsWarehouseAndFilters/status (0.00s)
+=== RUN   TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix
+=== RUN   TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/missing_inventory_read
+=== RUN   TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/missing_catalog_read
+=== RUN   TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/cross_store
+=== RUN   TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/foreign_warehouse
+=== RUN   TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/missing_warehouse
+=== RUN   TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/invalid_query_0
+=== RUN   TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/invalid_query_1
+=== RUN   TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/invalid_query_2
+=== RUN   TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/invalid_query_3
+=== RUN   TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/invalid_query_4
+=== RUN   TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/invalid_query_5
+=== RUN   TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/invalid_query_6
+=== RUN   TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/invalid_query_7
+=== RUN   TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/invalid_query_8
+--- PASS: TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix (0.21s)
+    --- PASS: TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/missing_inventory_read (0.00s)
+    --- PASS: TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/missing_catalog_read (0.00s)
+    --- PASS: TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/cross_store (0.00s)
+    --- PASS: TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/foreign_warehouse (0.00s)
+    --- PASS: TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/missing_warehouse (0.00s)
+    --- PASS: TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/invalid_query_0 (0.00s)
+    --- PASS: TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/invalid_query_1 (0.00s)
+    --- PASS: TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/invalid_query_2 (0.00s)
+    --- PASS: TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/invalid_query_3 (0.00s)
+    --- PASS: TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/invalid_query_4 (0.00s)
+    --- PASS: TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/invalid_query_5 (0.00s)
+    --- PASS: TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/invalid_query_6 (0.00s)
+    --- PASS: TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/invalid_query_7 (0.00s)
+    --- PASS: TestCatalogLedgerHTTPPermissionIsolationAndQueryMatrix/invalid_query_8 (0.00s)
+=== RUN   TestCatalogMediaSchemaSurface
+--- PASS: TestCatalogMediaSchemaSurface (0.52s)
+=== RUN   TestCatalogMediaRLSScope
+--- PASS: TestCatalogMediaRLSScope (0.27s)
+=== RUN   TestCatalogMediaLifecycle
+--- PASS: TestCatalogMediaLifecycle (0.53s)
+=== RUN   TestCatalogMediaSniff
+--- PASS: TestCatalogMediaSniff (0.42s)
+=== RUN   TestCatalogMediaBuyer404
+--- PASS: TestCatalogMediaBuyer404 (0.37s)
+=== RUN   TestCatalogMediaBuyerAuthority
+--- PASS: TestCatalogMediaBuyerAuthority (0.26s)
+=== RUN   TestCatalogMediaArchivedProduct
+--- PASS: TestCatalogMediaArchivedProduct (0.31s)
+=== RUN   TestCatalogV2Smoke
+--- PASS: TestCatalogV2Smoke (0.62s)
+=== RUN   TestProductEditorK3UntrackedConcurrentOrders
+--- PASS: TestProductEditorK3UntrackedConcurrentOrders (2.75s)
+=== RUN   TestProductEditorK3TrackedLastUnitFiftyBuyers
+--- PASS: TestProductEditorK3TrackedLastUnitFiftyBuyers (1.91s)
+=== RUN   TestProductEditorK3ConcurrentSameVersionEdits
+--- PASS: TestProductEditorK3ConcurrentSameVersionEdits (0.42s)
+=== RUN   TestProductEditorK3ConcurrentIdempotentReplay
+--- PASS: TestProductEditorK3ConcurrentIdempotentReplay (0.54s)
+=== RUN   TestProductEditorK3TrackedToUntrackedWithOpenHold
+--- PASS: TestProductEditorK3TrackedToUntrackedWithOpenHold (0.40s)
+=== RUN   TestProductEditorK3IsolationNewRoutes
+--- PASS: TestProductEditorK3IsolationNewRoutes (0.29s)
+=== RUN   TestProductEditorK3IdempotencyKeyScopeIsStoreNotActor
+--- PASS: TestProductEditorK3IdempotencyKeyScopeIsStoreNotActor (0.28s)
+=== RUN   TestProductEditorK3UntrackedNullCapGap
+--- PASS: TestProductEditorK3UntrackedNullCapGap (0.27s)
+=== RUN   TestProductEditorK3AxisChangeReleasesKeyword
+--- PASS: TestProductEditorK3AxisChangeReleasesKeyword (0.28s)
+=== RUN   TestProductEditorK3CopyClampsLongName
+--- PASS: TestProductEditorK3CopyClampsLongName (0.25s)
+=== RUN   TestProductEditorPE01SingleTransaction
+--- PASS: TestProductEditorPE01SingleTransaction (0.29s)
+=== RUN   TestProductEditorPE02Idempotency
+--- PASS: TestProductEditorPE02Idempotency (0.26s)
+=== RUN   TestProductEditorPE03KeywordAndSlugConflict
+--- PASS: TestProductEditorPE03KeywordAndSlugConflict (0.27s)
+=== RUN   TestProductEditorPE04TWDWholeDollar
+--- PASS: TestProductEditorPE04TWDWholeDollar (0.26s)
+=== RUN   TestProductEditorPE05UntrackedTrackedFlags
+--- PASS: TestProductEditorPE05UntrackedTrackedFlags (0.26s)
+=== RUN   TestProductEditorPE06ImagesCap
+--- PASS: TestProductEditorPE06ImagesCap (0.37s)
+=== RUN   TestProductEditorPE07DraftVisibility
+--- PASS: TestProductEditorPE07DraftVisibility (0.35s)
+=== RUN   TestProductEditorPE08AxisChangeArchives
+--- PASS: TestProductEditorPE08AxisChangeArchives (0.36s)
+=== RUN   TestProductEditorPE09StaleVersion
+--- PASS: TestProductEditorPE09StaleVersion (0.28s)
+=== RUN   TestProductEditorPE10Isolation
+--- PASS: TestProductEditorPE10Isolation (0.25s)
+=== RUN   TestProductEditorCopyCommand
+--- PASS: TestProductEditorCopyCommand (0.28s)
+=== RUN   TestProductEditorPE11BulkStatus
+--- PASS: TestProductEditorPE11BulkStatus (0.32s)
+=== RUN   TestProductEditorListSummaries
+--- PASS: TestProductEditorListSummaries (0.28s)
+=== RUN   TestProductEditorPE18PriceOnlyEditPreservesEverything
+--- PASS: TestProductEditorPE18PriceOnlyEditPreservesEverything (0.27s)
+=== RUN   TestProductEditorPE19TargetQtyZero
+--- PASS: TestProductEditorPE19TargetQtyZero (0.30s)
+=== RUN   TestProductEditorPE20AxisChangeRequiresExplicitArchive
+--- PASS: TestProductEditorPE20AxisChangeRequiresExplicitArchive (0.27s)
+=== RUN   TestProductEditorPE21LiveWindowEditRefusals
+--- PASS: TestProductEditorPE21LiveWindowEditRefusals (0.27s)
+=== RUN   TestProductEditorPE22DetailFields
+--- PASS: TestProductEditorPE22DetailFields (0.28s)
+=== RUN   TestProductEditorPE23TopLevelLogisticsInvalid
+--- PASS: TestProductEditorPE23TopLevelLogisticsInvalid (0.26s)
+FAIL
+FAIL	livecommerce/tests/foundation	27.155s
+FAIL
+test-focused: top-level PASS=58 FAIL=1 SKIP=0 exit=1
