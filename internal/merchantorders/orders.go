@@ -268,6 +268,8 @@ func mapError(err error) error {
 	var pg *pgconn.PgError
 	if errors.As(err, &pg) {
 		switch pg.Code {
+		case "PT400":
+			return command.ErrInvalid
 		case "PT401":
 			return platform.ErrUnauthorized
 		case "PT403":
