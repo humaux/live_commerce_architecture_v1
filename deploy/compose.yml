@@ -162,6 +162,8 @@ services:
       COMMERCE_BREACH_CHECK: ${LC_BREACH_CHECK:-hibp}
       COMMERCE_ONBOARDING_ENABLED: ${LC_ONBOARDING_ENABLED:-0}
       COMMERCE_ONBOARDING_CURRENCIES: ${LC_ONBOARDING_CURRENCIES:-}
+      # R5 store-domains: onboarding assigns https://<handle>.<base> and the domain card builds DNS instructions from it.
+      LC_STORE_BASE_DOMAIN: ${LC_STORE_BASE_DOMAIN:-}
       COMMERCE_BUYER_ENABLED: ${LC_BUYER_ENABLED:-0}
       COMMERCE_BUYER_SESSION_TTL: ${LC_BUYER_SESSION_TTL_SECONDS:-2592000}s   # Go duration
       # OIDC redirect = <origin>/api/auth/callback (cmd/api/identity.go:59).

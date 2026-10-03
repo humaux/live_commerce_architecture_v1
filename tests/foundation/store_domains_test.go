@@ -720,6 +720,20 @@ func TestStoreDomainsDeployPassesBaseDomainToMigrate(t *testing.T) {
 	if !strings.Contains(rest, "LC_STORE_BASE_DOMAIN: ${LC_STORE_BASE_DOMAIN") {
 		t.Fatal("compose migrate service does not pass LC_STORE_BASE_DOMAIN: 0106 backfill would silently skip existing stores")
 	}
+	// The api (onboarding handle + platform origin, merchant DNS instructions) and the claims-worker (verify sweep) read it too.
+	for _, svc := range []string{"api", "claims-worker"} {
+		start := strings.Index(compose, "\n  "+svc+":\n")
+		if start < 0 {
+			t.Fatalf("compose has no %s service", svc)
+		}
+		block := compose[start+1:]
+		if end := regexp.MustCompile(`\n  [a-z][a-z0-9-]*:\n`).FindStringIndex(block[1:]); end != nil {
+			block = block[:end[0]+1]
+		}
+		if !strings.Contains(block, "LC_STORE_BASE_DOMAIN: ${LC_STORE_BASE_DOMAIN") {
+			t.Fatalf("compose %s service does not pass LC_STORE_BASE_DOMAIN", svc)
+		}
+	}
 	if !strings.Contains(read("deploy/scripts/preflight.sh"), `P19 FAIL LC_STORE_BASE_DOMAIN is unset`) {
 		t.Fatal("preflight does not fail an unset LC_STORE_BASE_DOMAIN")
 	}
