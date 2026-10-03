@@ -48,6 +48,14 @@ escalates to the integrator instead of looping (`AGENTS.md`).
    ("try to break it"). P0/P1 block merge.
 6. **Integrate** (integrator): merge into the release branch, run the affected focused suites,
    push, let CI run the full suite. Record evidence (§4). Update `contracts/tasks.json`.
+   - **Full G07 is mandatory** (`release-gate.sh --strict --only G07`) for any unit that touches `migrations/`,
+     a GRANT/POLICY/definer, or the checkout/storefront runtime path — in the unit's own acceptance AND right after
+     the integrator's merge, not only at the final gate. Focused regexes miss other domains' frozen ACL inventories
+     (`*_schema_test`, consumption-ledger ACL) and the historical-fixture shims (`lriShims`) that legacy upgrade
+     gates need when current Go reads a new column (R5 wave 2: 11 G07 failures nobody had run).
+   - A reviewer of a grant change greps every ACL/schema inventory test for the touched tables and roles.
+   - When the integrator tightens a contract rule (even validation only), grep the clients that build that payload
+     and notify every in-flight unit that calls it before merging.
 7. **Record**: Humaux memory (`fix`/`decision`/`rejected`), canvas step update.
 
 ## 3. Agents, models and token economy
