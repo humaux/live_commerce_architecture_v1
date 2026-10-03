@@ -148,7 +148,7 @@ Merchants buy FB ads mainly to bring viewers into their FB live selling, so the 
 - **Insights restate for about 72h.** Provisional marking as in D7.
 
 ## Split (PROCESS §2)
-- **Migration 0112**, reserved: order snapshot attribution field (inside the existing JSON snapshot if it fits the contract; otherwise a narrow column), touch capture and report definer reads.
+- **Migration 0113**, reserved (0112 went to ads-tw-regulation, the refusal projection): order snapshot attribution field (inside the existing JSON snapshot if it fits the contract; otherwise a narrow column), touch capture and report definer reads.
 - **Backend and UI together: Codex** (owner allows full-stack for Codex; DeepSeek balance is near its reserve):
   - capture in the storefront BFF;
   - freezing at Begin;
