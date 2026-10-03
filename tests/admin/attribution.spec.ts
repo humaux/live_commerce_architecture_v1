@@ -438,7 +438,7 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
         });
         await page.getByTestId("attribution-from").fill("2020-01-01");
         await page.getByTestId("attribution-apply").click();
-        await expect(page.getByRole("alert")).toHaveText(c.invalid);
+        await expect(page.getByTestId("ads-attribution").getByRole("alert")).toHaveText(c.invalid);
         ledger.push({
           control: "invalid range",
           action: "fill/click",
