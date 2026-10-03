@@ -1,8 +1,13 @@
 import type { NextConfig } from "next";
+import { PHASE_PRODUCTION_BUILD } from "next/constants";
+import { companyConfig } from "./lib/company";
 
 // React's development build rebuilds call stacks with eval() (Next documents 'unsafe-eval' for `next dev`): without it the dev overlay opens a
 // permanent issue badge. Only the development server gets it; the production policy (next build/start) stays eval-free (R4S-04).
-const scriptSrc = process.env.NODE_ENV === "development" ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'" : "script-src 'self' 'unsafe-inline'";
+const scriptSrc =
+  process.env.NODE_ENV === "development"
+    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+    : "script-src 'self' 'unsafe-inline'";
 
 const config: NextConfig = {
   agentRules: false, // The repository owns its instruction hierarchy.
@@ -12,7 +17,11 @@ const config: NextConfig = {
   // The orders proxy must see raw '?' and percent escapes before Next rewrites URLs.
   skipProxyUrlNormalize: true,
   output: "standalone",
-  transpilePackages: ["@live-commerce/i18n", "@live-commerce/ui", "@live-commerce/format"],
+  transpilePackages: [
+    "@live-commerce/i18n",
+    "@live-commerce/ui",
+    "@live-commerce/format",
+  ],
   async headers() {
     return [
       {
@@ -52,4 +61,9 @@ const config: NextConfig = {
     ];
   },
 };
-export default config;
+export default function nextConfig(phase: string): NextConfig {
+  // Public operator facts must be supplied deliberately to production builds.
+  // No NEXT_PUBLIC binding: runtime env remains authoritative after a domain move.
+  if (phase === PHASE_PRODUCTION_BUILD) companyConfig();
+  return config;
+}
