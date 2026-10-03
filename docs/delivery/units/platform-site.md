@@ -65,3 +65,14 @@ No Meta data-deletion callback (signed_request) exists. An instructions URL sati
    - App domain `xgdwm.com`
    - Website `https://xgdwm.com`
 5. Business verification: use the CI and BRC documents. The legal name and address on the site must match them exactly.
+
+## Owner ruling (2026-10-04): product name "DaWan Live"
+- **The product name is `DaWan Live`.** It is a constant in `apps/admin/lib/company.ts` (`productName`), next to the legal entity. It is never translated, and it reads the same in all three locales.
+- **Where it appears:**
+  - the platform-site header, `<title>` and copy;
+  - the admin login, signup and reset pages: brand text above the form, and `<title>` as "DaWan Live · <page>";
+  - the W0 shell rail header;
+  - the line "DaWan Live is operated by Hong Kong Da Wan Trading Limited" in every platform footer and in the platform legal pages.
+- **Where it does not appear:** merchant storefronts keep the merchant's own brand. There is no "Powered by" badge for now (YAGNI; ask the owner first).
+- **Domain:** the owner will buy `dawanlive.com` later. All hosts stay env-driven (`LC_PLATFORM_HOST`, `LC_ADMIN_HOST`, `LC_STORE_BASE_DOMAIN`), so a move is an env + DNS + Meta-settings change, with no code. Hard-coding `xgdwm.com` in UI or legal copy is forbidden: render hosts from config.
+- **Gate:** PS1 additionally asserts the product name and the "operated by" line come from `company.ts`. A grep gate checks that no UI or legal copy contains a literal `xgdwm.com`.
