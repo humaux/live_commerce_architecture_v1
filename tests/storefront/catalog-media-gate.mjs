@@ -121,19 +121,23 @@ async function scenario(index, run) {
   pass(`${label} reorder persisted: JPEG is the cover, PNG second, positions 0 and 1`);
   // 3. rename (the editor's basics form)
   await merchant.getByTestId("product-name").fill(newName);
-  const renamed = done("PATCH", `products/${fx.product_id}`);
+  const renamed = done("PUT", `products/${fx.product_id}/document`);
   await merchant.getByTestId("product-save").click();
   assert.equal((await renamed).status(), 200, `${label} rename`);
+  await expect(merchant.getByTestId("product-save")).toBeEnabled(); await merchant.reload();
   // 4. SKU price (the variant row, major units)
-  await merchant.getByTestId(`variant-price-${fx.sku1.id}`).fill(major(fx.sku1.price_new));
-  const repriced = done("POST", `skus/${fx.sku1.id}/price`);
-  await merchant.getByTestId(`variant-save-${fx.sku1.id}`).click();
+  await merchant.locator(`[data-sku-id="${fx.sku1.id}"]`).locator('[data-testid^="new-price-"]').fill(major(fx.sku1.price_new));
+  const repriced = done("PUT", `products/${fx.product_id}/document`);
+  await merchant.getByTestId("product-save").click();
   assert.equal((await repriced).status(), 200, `${label} price`);
+  await expect(merchant.getByTestId("product-save")).toBeEnabled(); await merchant.reload();
   // 5. archive the other SKU (confirm step in the same row)
-  await merchant.getByTestId(`variant-archive-${fx.sku2.id}`).click();
-  const archived = done("POST", `skus/${fx.sku2.id}/archive`);
-  await merchant.getByTestId(`variant-row-${fx.sku2.id}`).locator("button.danger").click();
+  await merchant.locator(`[data-sku-id="${fx.sku2.id}"]`).locator('[data-testid^="matrix-active-"]').uncheck();
+  const archived = done("PUT", `products/${fx.product_id}/document`);
+  merchant.once("dialog", d=>d.accept());
+  await merchant.getByTestId("product-save").click();
   assert.equal((await archived).status(), 200, `${label} archive`);
+  await expect(merchant.getByTestId("product-save")).toBeEnabled(); await merchant.reload();
   // ---- the Ledger reads the results back ----------------------------------------------------------------------------------------
   await merchant.goto(`${adminOrigin}/${run.locale}/inventory`);
   await expect(row(fx.sku1.code).locator("button.product-name")).toHaveText(newName);

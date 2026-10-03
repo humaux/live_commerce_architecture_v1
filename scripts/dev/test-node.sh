@@ -12,7 +12,7 @@ if [[ "$#" -gt 1 ]] || [[ "$#" -eq 1 && "$1" != --require-r04 ]]; then
 fi
 node --test --experimental-strip-types apps/storefront/tests/*.test.mjs packages/i18n/tests/*.test.ts packages/markdown-lite/tests/*.test.ts tests/admin/design-model.test.ts tests/admin/team-model.test.ts tests/admin/design-gate.test.ts tests/admin/promotions-model.test.ts tests/admin/team-bff.test.ts tests/admin/notify-model.test.ts tests/admin/meta-connect-model.test.ts tests/admin/merchant-tools-model.test.ts tests/admin/meta-connect-gate.test.ts tests/deploy/meta-connect-preflight.test.mjs tests/admin/invite-next.test.ts tests/admin/money-time-model.test.ts tests/admin/store-domains-ui.test.ts tests/admin/shell-registry.test.ts tests/admin/shell-architecture.test.mjs tests/ui/click-sweep-lib.test.mjs
 node --test --experimental-strip-types tests/admin/orders-v2.test.ts
-node --test --experimental-strip-types tests/admin/product-document.test.ts
+node --test --experimental-strip-types tests/admin/product-document.test.ts tests/admin/product-patch.test.ts
 if [[ -n "${COMMERCE_R04_LIVEKIT_BINARY:-}" ]]; then
   node --test tests/media/r04-input-runner.test.mjs
 else

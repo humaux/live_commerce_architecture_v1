@@ -125,6 +125,13 @@ func ccbStartAdmin(t *testing.T, ctx context.Context, f *testFixture, principal,
 
 func TestBrowserCatalogCore(t *testing.T) {
 	ccbRequire(t)
+	if os.Getenv("PRODUCT_EDITOR_ACCEPTANCE") == "1" {
+		t.Run("PE12-17-TWD", func(t *testing.T) { runCatalogCoreBrowser(t, true) })
+	}
+	t.Run("CC12-frozen", func(t *testing.T) { runCatalogCoreBrowser(t, false) })
+}
+
+func runCatalogCoreBrowser(t *testing.T, productEditor bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), 24*time.Minute)
 	defer cancel()
 	t04Fixture(t)
@@ -132,6 +139,20 @@ func TestBrowserCatalogCore(t *testing.T) {
 	f := h.f
 	tag := "cc" + strings.ToLower(t04Tag())
 	store, tenant := f.storeA1, f.tenantA
+	principal := f.principalA
+	if productEditor {
+		// Use the existing isolated TWD tenant, never mutate a store currency
+		// beneath its markets/SKUs or change frozen CC12 monetary assertions.
+		store, tenant = f.storeB, f.tenantB
+		if err := f.owner.QueryRow(ctx, `SELECT principal_id::text FROM identity.sessions WHERE token_hash=$1`, tokenHash(f.tokens["b"])).Scan(&principal); err != nil {
+			t.Fatal(err)
+		}
+		bhPublish(t, h.bcHarness, "https://pe-buyer.example", tenant, store)
+		h.origin = "https://pe-buyer.example"
+		mustExec(t, f.owner, `INSERT INTO inventory.warehouses(tenant_id,store_id,name) SELECT $1,$2,'PE fixture warehouse' WHERE NOT EXISTS(SELECT 1 FROM inventory.warehouses WHERE tenant_id=$1 AND store_id=$2 AND active)`, tenant, store)
+	}
+	// Synthetic one-warehouse store for §g target_qty UI. Multi-warehouse refusal is covered separately by PE22 and UI negatives.
+	mustExec(t, f.owner, `UPDATE inventory.warehouses SET active=(id=(SELECT id FROM inventory.warehouses WHERE tenant_id=$1 AND store_id=$2 AND active ORDER BY id LIMIT 1)) WHERE tenant_id=$1 AND store_id=$2`, tenant, store)
 	t.Cleanup(func() {
 		mustExec(t, f.owner, `UPDATE catalog.products SET status='archived' WHERE tenant_id=$1 AND store_id=$2 AND name LIKE $3`, tenant, store, tag+"%")
 		mustExec(t, f.owner, `UPDATE catalog.collections SET status='hidden' WHERE tenant_id=$1 AND store_id=$2 AND title LIKE $3`, tenant, store, tag+"%")
@@ -173,12 +194,32 @@ func TestBrowserCatalogCore(t *testing.T) {
 
 	root, _ := filepath.Abs("../..")
 	evidence := brfEvidence(t, root, "catalog-core")
-	stack := ccbStartAdmin(t, ctx, f, f.principalA, evidence)
-	env := map[string]string{"LC_BROWSER_STORE": store, "LC_BROWSER_TAG": tag, "LC_BROWSER_CONTROL": control.URL, "LC_BROWSER_CONTROL_KEY": controlKey}
+	adminFixture := *f
+	adminFixture.tenantA, adminFixture.storeA1 = tenant, store
+	stack := ccbStartAdmin(t, ctx, &adminFixture, principal, evidence)
+	peFlag := "0"
+	if productEditor {
+		peFlag = "1"
+	}
+	env := map[string]string{"LC_BROWSER_STORE": store, "LC_BROWSER_TAG": tag, "LC_BROWSER_CONTROL": control.URL, "LC_BROWSER_CONTROL_KEY": controlKey, "PRODUCT_EDITOR_ACCEPTANCE": peFlag}
 	if d := os.Getenv("LC_BROWSER_DIAGNOSTIC"); d != "" { // diagnostic only, see the spec: never part of the gate
 		env["LC_BROWSER_DIAGNOSTIC"] = d
 	}
 	brfPlaywright(t, ctx, stack, []string{"catalog-core.spec.ts"}, env)
+	if productEditor {
+		prefix := "pe" + tag
+		if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.products WHERE tenant_id=$1 AND store_id=$2 AND name LIKE $3`, tenant, store, prefix+"%"); n != 4 {
+			t.Fatalf("PE: expected 4 products including the single committed lost-response copy, got %d", n)
+		}
+		if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.skus s JOIN catalog.products p ON p.id=s.product_id WHERE p.tenant_id=$1 AND p.store_id=$2 AND p.name=$3 AND s.price_minor=8000 AND s.currency='TWD' AND s.inventory_tracked`, tenant, store, prefix+" single"); n != 1 {
+			t.Fatal("PE: exact TWD single SKU readback failed")
+		}
+		if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.skus s JOIN catalog.products p ON p.id=s.product_id WHERE p.tenant_id=$1 AND p.store_id=$2 AND p.name=$3`, tenant, store, prefix+" matrix"); n != 12 {
+			t.Fatal("PE: matrix does not have 12 persisted SKUs")
+		}
+		t.Logf("PASS PE12-17: TWD tenant, exact product/SKU readback; evidence=%s", evidence)
+		return
+	}
 
 	// ---- PG facts after the browser run: the UI drove real, audited, versioned commands ----
 	count := func(q string, args ...any) int { return countRows(t, f.owner, q, args...) }
