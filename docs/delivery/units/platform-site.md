@@ -76,3 +76,6 @@ No Meta data-deletion callback (signed_request) exists. An instructions URL sati
 - **Where it does not appear:** merchant storefronts keep the merchant's own brand. There is no "Powered by" badge for now (YAGNI; ask the owner first).
 - **Domain:** the owner will buy `dawanlive.com` later. All hosts stay env-driven (`LC_PLATFORM_HOST`, `LC_ADMIN_HOST`, `LC_STORE_BASE_DOMAIN`), so a move is an env + DNS + Meta-settings change, with no code. Hard-coding `xgdwm.com` in UI or legal copy is forbidden: render hosts from config.
 - **Gate:** PS1 additionally asserts the product name and the "operated by" line come from `company.ts`. A grep gate checks that no UI or legal copy contains a literal `xgdwm.com`.
+
+
+Owner 2026-10-04: public contact email `ailun@xgdwm.com` (Spacemail mailbox) -> `LC_COMPANY_CONTACT_EMAIL` on the pilot.
