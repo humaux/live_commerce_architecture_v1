@@ -808,7 +808,7 @@ func TestBuyerCommsCardCaptureAndStripeRefundTriggers(t *testing.T) {
 			refund := randomUUID()
 			must(`INSERT INTO payments.stripe_refunds(tenant_id,store_id,id,attempt_id,order_id,owner_id,principal_id,environment,account_id,credential_version,payment_intent_id,
 			  currency,amount_minor,reason,create_params,requested_at,resend_until) VALUES($1,$2,$3,$4,$5,$6,$7,'SANDBOX','acct_TestBcm0001',1,'pi_test_bcm','TWD',$8,'requested_by_customer','{}',
-			  clock_timestamp(),clock_timestamp()+interval '20 hours')`, e.tenant(), e.store(), refund, attempt, order, owner, f.principalA, amount)
+			  now(),now()+interval '20 hours')`, e.tenant(), e.store(), refund, attempt, order, owner, f.principalA, amount)
 			must(`INSERT INTO payments.refund_facts(tenant_id,store_id,refund_id,attempt_id,kind,amount_minor,currency,stripe_refund_id,source_report_hash)
 			  VALUES($1,$2,$3,$4,'SUCCEEDED',$5,'TWD',$6,sha256($7::bytea))`, e.tenant(), e.store(), refund, attempt, amount, "re_test_bcm_"+string(rune('a'+i)), []byte(refund))
 			if rows(tx, "refunded") != 1 {

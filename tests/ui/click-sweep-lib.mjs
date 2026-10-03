@@ -145,6 +145,10 @@ export const INIT_SCRIPT = `(() => {
   };
 })();`;
 
+// protocolHrefOK: tel: is + and 6-15 digits (spaces, hyphens and parentheses allowed); mailto: is one plain address.
+export const protocolHrefOK = (href) => /^tel:\+[0-9][0-9 ()\-]{5,20}$/i.test(href) && href.replace(/\D/g, "").length <= 15
+  || /^mailto:[^@\s?]+@[^@\s?]+\.[^@\s?]+$/i.test(href);
+
 // ---- monitor: console / page errors / 5xx / dialogs / popups / downloads / external navigation, per context ----------------------------------------------------
 export function monitor(context, { allowedHosts, onExternal }) {
   const m = { events: [], inflight: new Map(), seen: new Set(), seenAt: new Map() };
@@ -336,6 +340,12 @@ export async function sweepControl(ctx, desc, classSize, opts = {}) {
   else if (irreversible && blocked.length) { row.note = `request ${blocked.join(", ")} blocked by the sweep (not executed)`; if (!effects.length) row.actual = row.note; }
   else if (destructive && blocked.length && !row.layer && !row.dialogText) { row.result = "fail"; row.failure = "destructive-without-confirmation"; row.actual = `fired ${blocked.join(", ")} with no confirmation step (request blocked by the sweep)`; }
   else if (!effects.length && desc.current) { row.note = "already the current item: no change expected"; row.actual = "no change (the current item)"; }
+  // tel:/mailto: hand off to the OS protocol handler, which headless Chromium neither opens nor reports. The real click still
+  // ran (errors above still fail); the observable contract is a well-formed href, so a malformed one stays a failure.
+  else if (!effects.length && desc.tag === "a" && /^(tel|mailto):/i.test(desc.href)) {
+    if (protocolHrefOK(desc.href)) { row.note = "protocol handler link: href verified, OS handler not observable headless"; row.actual = `no in-page change (${desc.href.split(":")[0]}: link)`; }
+    else { row.result = "fail"; row.failure = "bad-protocol-href"; row.actual = `malformed ${desc.href.slice(0, 80)}`; }
+  }
   else if (!effects.length && !(irreversible && blocked.length)) { row.result = "fail"; row.failure = "no-effect"; }
   if (guard && !blocked.length && effects.length && row.result === "pass") row.note = destructive ? (row.layer || row.dialogText ? "confirmation shown, then cancelled" : "inline change only; no request fired") : "";
   if (guard) {

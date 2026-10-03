@@ -2,7 +2,7 @@
 // Run by scripts/dev/test-node.sh and by `test-local.sh --browser-click-sweep` before any build.
 import assert from "node:assert/strict";
 import test from "node:test";
-import { classKey, isDestructive, isIrreversible, isSignOut, matchKnown, renderMarkdown, CANCEL_RE } from "./click-sweep-lib.mjs";
+import { classKey, isDestructive, isIrreversible, isSignOut, matchKnown, renderMarkdown, CANCEL_RE, protocolHrefOK } from "./click-sweep-lib.mjs";
 
 test("destructive / irreversible / sign-out classification (owner list, en + zh)", () => {
   for (const name of ["Delete product", "刪除商品", "删除", "Archive", "封存", "Void shipment", "作廢", "Disconnect Page", "斷開連線", "Refund", "退款", "Cancel order", "取消訂單", "Publish", "上架", "Unpublish", "revoke invite", "Remove staff", "取消發佈", "解除綁定", "中斷連接", "Suspend", "Detach"])
@@ -37,4 +37,9 @@ test("the markdown ledger has one row per interaction and names the verdict", ()
   const md = renderMarkdown(rows, { generated: "now", line: "2 rows" });
   assert.match(md, /\| r00001 \| admin \| \/orders \| desktop \| en \| main \| Next \\\| page/);
   assert.match(md, /FAIL no-effect/); assert.match(md, /\[1 of 4 alike\]/);
+});
+
+test("protocolHrefOK accepts well-formed tel:/mailto: and rejects malformed ones", () => {
+  for (const ok of ["tel:+886223456789", "tel:+886 2 2345 6789", "mailto:support@example.com"]) assert.equal(protocolHrefOK(ok), true, ok);
+  for (const bad of ["tel:", "tel:12345", "tel:+88622345678901234567", "tel:+886abc", "mailto:", "mailto:a@b", "mailto:a@b.com?subject=x", "javascript:alert(1)"]) assert.equal(protocolHrefOK(bad), false, bad);
 });
