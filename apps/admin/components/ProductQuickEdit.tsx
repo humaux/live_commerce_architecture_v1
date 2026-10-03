@@ -6,6 +6,7 @@ import type { ProductDetail } from "@/lib/catalog-v2-model";
 import { parseCreated } from "@/lib/catalog-v2-model";
 import { command, readProduct } from "@/lib/catalog-v2-client";
 import { useWrite } from "@/lib/catalog-v2-write";
+import { useProductLeaveGuard } from "@/lib/use-product-leave-guard";
 import {
   draftFromDetail,
   editDocument,
@@ -47,6 +48,16 @@ export function ProductQuickEdit({
     c.listRecoveryRequired,
   );
   const locked = write.busy || write.message?.kind === "uncertain";
+  useProductLeaveGuard(
+    {
+      locked,
+      dirty:
+        !!detail &&
+        !!draft &&
+        JSON.stringify(draft) !== JSON.stringify(draftFromDetail(detail)),
+    },
+    c.leave,
+  );
   useEffect(() => {
     const el = dialog.current;
     const trigger = document.activeElement as HTMLElement;

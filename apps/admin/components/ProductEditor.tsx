@@ -1,11 +1,17 @@
 "use client";
 // Approved 03: one document form. The old PATCH/ProductVariants writer is retired.
 import Link from "next/link";
+import { useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import type { Store } from "@/lib/model";
 import { useGuardedRead, type ReadCode } from "@/lib/customers-client";
 import { readProduct } from "@/lib/catalog-v2-client";
 import { catalogCopy } from "@/lib/catalog-v2-copy";
+import { productEditorCopy } from "@/lib/product-editor-copy";
+import {
+  useProductLeaveGuard,
+  type ProductNavigationState,
+} from "@/lib/use-product-leave-guard";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { ProductDocumentForm } from "./ProductDocumentForm";
 import "./orders.css";
@@ -27,6 +33,14 @@ export function ProductEditor({
 }) {
   const c = catalogCopy[locale],
     creating = productID === "new";
+  const [navigation, setNavigation] = useState<ProductNavigationState>({
+    dirty: false,
+    locked: false,
+  });
+  const beforeNavigate = useProductLeaveGuard(
+    navigation,
+    productEditorCopy[locale].leave,
+  );
   const read = useGuardedRead(
     `${renderKey}|${locale}|${store?.id ?? ""}|${productID}`,
     store
@@ -51,6 +65,8 @@ export function ProductEditor({
       locale={locale}
       storeName={store?.name ?? c.list.noStore}
       active="products"
+      locked={navigation.locked}
+      onBeforeNavigate={beforeNavigate}
     >
       <div
         className="orders-page product-admin product-editor pe-page"
@@ -87,6 +103,7 @@ export function ProductEditor({
             mode={creating ? "create" : "edit"}
             detail={read.data ?? null}
             boundary={read.boundary}
+            onNavigationChange={setNavigation}
           />
         )}
       </div>

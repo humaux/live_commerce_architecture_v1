@@ -23,6 +23,7 @@ import {
   type ProductDraft,
 } from "@/lib/product-document";
 import { useProductDocument } from "@/lib/use-product-document";
+import type { ProductNavigationState } from "@/lib/use-product-leave-guard";
 import { productEditorCopy } from "@/lib/product-editor-copy";
 import { ProductDocumentMedia, type DraftPhoto } from "./ProductDocumentMedia";
 import { ProductPhotoManager } from "./ProductPhoto";
@@ -37,12 +38,14 @@ export function ProductDocumentForm({
   mode,
   detail,
   boundary,
+  onNavigationChange,
 }: {
   locale: Locale;
   store: Store;
   mode: "create" | "edit";
   detail: ProductDetail | null;
   boundary: string;
+  onNavigationChange: (state: ProductNavigationState) => void;
 }) {
   const c = productEditorCopy[locale],
     sign = currencySign(store.currency),
@@ -147,32 +150,18 @@ export function ProductDocumentForm({
     return () => abort.abort();
   }, [store.id, detail, c.failed]);
   useEffect(() => {
-    if (!dirty) return;
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
-    const leave = (event: MouseEvent) => {
-      const anchor = (event.target as Element)?.closest("a");
-      if (
-        anchor?.href &&
-        new URL(anchor.href).origin +
-          new URL(anchor.href).pathname +
-          new URL(anchor.href).search !==
-          window.location.origin +
-            window.location.pathname +
-            window.location.search &&
-        (write.pending || !window.confirm(c.leave))
-      ) {
-        event.preventDefault();
-        event.stopPropagation();
-        if (write.pending) write.setMessage(c.uncertain);
-      }
-    };
-    window.addEventListener("beforeunload", warn);
-    document.addEventListener("click", leave, true);
-    return () => {
-      window.removeEventListener("beforeunload", warn);
-      document.removeEventListener("click", leave, true);
-    };
-  }, [dirty, c.leave, c.uncertain, write.pending]);
+    onNavigationChange({
+      dirty,
+      locked: write.busy || write.pending || write.recoveryBlocked,
+    });
+    return () => onNavigationChange({ dirty: false, locked: false });
+  }, [
+    dirty,
+    write.busy,
+    write.pending,
+    write.recoveryBlocked,
+    onNavigationChange,
+  ]);
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {

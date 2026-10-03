@@ -36,6 +36,7 @@ import { catalogCopy } from "@/lib/catalog-v2-copy";
 import { productEditorCopy } from "@/lib/product-editor-copy";
 import { parseBulk, type BulkResult } from "@/lib/product-document";
 import { useWrite } from "@/lib/catalog-v2-write";
+import { useProductLeaveGuard } from "@/lib/use-product-leave-guard";
 import { displayTime } from "@/lib/orders-model";
 import { imageURL } from "@/lib/images-client";
 import { WorkspaceFrame } from "./WorkspaceFrame";
@@ -144,6 +145,10 @@ export function ProductList({
     pc.listRecoveryRequired,
   );
   const locked = write.busy || write.message?.kind === "uncertain" || !!quick;
+  useProductLeaveGuard(
+    { dirty: false, locked: write.busy || write.message?.kind === "uncertain" },
+    pc.leave,
+  );
   const rows = page?.items ?? [];
   async function bulkStatus(target: ProductStatus) {
     if (locked || !selected.length) return;
@@ -229,6 +234,7 @@ export function ProductList({
       locale={locale}
       storeName={store?.name ?? l.noStore}
       active="products"
+      locked={locked}
     >
       <div
         className="orders-page product-admin pe-catalog"

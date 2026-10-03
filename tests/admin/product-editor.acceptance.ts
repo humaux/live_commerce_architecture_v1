@@ -55,12 +55,29 @@ export function registerProductEditorAcceptance() {
     const shot = async (name: string) => {
       const file = path.join(out, `${name}.png`);
       if (/^(list|editor)-(zh-TW|zh-CN|en)-/.test(name)) {
-        await page.mouse.wheel(0, -10000);
+        await page
+          .locator("header[data-shell-topbar]")
+          .scrollIntoViewIfNeeded();
         await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
+        await expect
+          .poll(
+            async () =>
+              (await page.locator("header[data-shell-topbar]").boundingBox())
+                ?.y,
+          )
+          .toBe(0);
       }
       await page.screenshot({ path: file, animations: "disabled" });
       shots.push({
         file,
+        geometry: await page.evaluate(() => ({
+          scrollY,
+          width: innerWidth,
+          height: innerHeight,
+          topbarY: document
+            .querySelector("header[data-shell-topbar]")
+            ?.getBoundingClientRect().y,
+        })),
         sha256: createHash("sha256")
           .update(await readFile(file))
           .digest("hex"),
@@ -158,6 +175,39 @@ export function registerProductEditorAcceptance() {
         }
       }
       await page.setViewportSize({ width: 1586, height: 992 });
+      const dirtyURL = page.url();
+      let leavePrompts = 0;
+      page.removeAllListeners("dialog");
+      page.on("dialog", (dialog) => {
+        leavePrompts++;
+        void dialog.dismiss();
+      });
+      await page.getByTestId("nav-products").click();
+      await expect.poll(() => leavePrompts).toBe(1);
+      await expect(page).toHaveURL(dirtyURL);
+      await expect(page.getByTestId("product-price")).toHaveValue("60");
+      await page.getByTestId("product-back").click();
+      await expect.poll(() => leavePrompts).toBe(2);
+      await expect(page).toHaveURL(dirtyURL);
+      page.removeAllListeners("dialog");
+      const hardLeavePrompts: string[] = [];
+      page.on("dialog", (dialog) => {
+        hardLeavePrompts.push(dialog.type());
+        void dialog.accept();
+      });
+      // Re-select the fixture store through the actual shell control; it performs a hard navigation.
+      await page.getByTestId("shell-store-selector").selectOption(store);
+      await page.waitForURL((value) => /^\/en\/?$/.test(value.pathname));
+      expect(hardLeavePrompts).toEqual(["confirm"]);
+      page.removeAllListeners("dialog");
+      page.on("dialog", (dialog) => void dialog.accept());
+      ledger.push({
+        page: "editor",
+        control: "shell and page leave guard",
+        action: "click + dismiss",
+        expected: "one confirmation per navigation; draft retained",
+        actual: "PASS",
+      });
       await page.goto(url("en", "products/new"));
       await page.goto(url("en", "collections"));
       await page.getByTestId("collection-new").click();
@@ -455,9 +505,19 @@ export function registerProductEditorAcceptance() {
       const single = page.getByTestId(`product-row-${id}`);
       const quickStart = writes.length;
       await single.getByTestId("quick-price").click();
+      await expect(page.getByTestId("shell-store-selector")).toBeDisabled();
+      const quickURL = page.url();
       await page.getByTestId("quick-price-0").fill("90");
+      page.removeAllListeners("dialog");
+      page.on("dialog", (dialog) => void dialog.dismiss());
+      await page.getByTestId("products-ledger-link").click();
+      await expect(page).toHaveURL(quickURL);
+      await expect(page.getByTestId("quick-price-0")).toBeVisible();
+      page.removeAllListeners("dialog");
+      page.on("dialog", (dialog) => void dialog.accept());
       await page.getByTestId("quick-price-0").press("Enter");
       await expect(page.getByTestId("product-quick-edit")).toHaveCount(0);
+      await expect(page.getByTestId("shell-store-selector")).toBeEnabled();
       await page.reload();
       await expect(single).toContainText("90");
       expect(
@@ -562,7 +622,7 @@ export function registerProductEditorAcceptance() {
           control: "live-window keyword refusal",
           action: "click + MOCK 409",
           expected: "explicit translated safety refusal",
-          actual: "PASS (MOCK response; real rule covered by PG PE23)",
+          actual: "PASS (MOCK response; real rule covered by PG PE21)",
         });
       }
       await page.unroute(documentPattern);
@@ -591,6 +651,10 @@ export function registerProductEditorAcceptance() {
           exact: true,
         }),
       ).toBeVisible();
+      await expect(page.getByTestId("shell-store-selector")).toBeDisabled();
+      const recoveryURL = page.url();
+      await page.getByTestId("product-new").click();
+      await expect(page).toHaveURL(recoveryURL);
       await expect(
         page
           .getByTestId(`product-row-${id}`)
