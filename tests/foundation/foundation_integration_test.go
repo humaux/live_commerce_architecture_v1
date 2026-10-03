@@ -318,6 +318,20 @@ func TestMigrationBusyFailsFastWithoutLeakingSingleConnectionPool(t *testing.T) 
 	if err := migrations.Apply(ctx, singlePool); err != nil {
 		t.Fatalf("Apply after lock release: %v", err)
 	}
+	// Apply must hand the lock back before it returns: an Apply right after another (fixtures, deploy retries) once
+	// saw ErrMigrationBusy because closing the hijacked connection frees the session lock only when the backend exits.
+	for i := 0; i < 20; i++ {
+		if err := migrations.Apply(ctx, singlePool); err != nil {
+			t.Fatalf("back-to-back Apply %d: %v", i, err)
+		}
+		var free bool
+		if err := holder.QueryRow(ctx, `SELECT pg_try_advisory_lock(718020260920)`).Scan(&free); err != nil || !free {
+			t.Fatalf("migration lock still held right after Apply %d returned: free=%t err=%v", i, free, err)
+		}
+		if _, err := holder.Exec(ctx, `SELECT pg_advisory_unlock(718020260920)`); err != nil {
+			t.Fatal(err)
+		}
+	}
 }
 
 func TestOpenPoolRejectsLoginThatInheritsAuthPrivileges(t *testing.T) {

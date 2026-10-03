@@ -69,7 +69,10 @@ func apply(ctx context.Context, pool *pgxpool.Pool, baseDomain string) error {
 	defer func() {
 		cleanup, stop := context.WithTimeout(context.Background(), 2*time.Second)
 		defer stop()
-		_ = lockConn.Close(cleanup) // Closing also releases the session advisory lock.
+		// Release explicitly first: the server frees a session lock only when the closed backend exits, so an Apply
+		// right after this one could still see it held (ErrMigrationBusy). If the unlock fails, Close still frees it.
+		_, _ = lockConn.Exec(cleanup, `SELECT pg_advisory_unlock(718020260920)`)
+		_ = lockConn.Close(cleanup)
 	}()
 	tx, err := lockConn.Begin(ctx)
 	if err != nil {
