@@ -1,0 +1,7 @@
+=== RUN   TestStoreDomainsNumericConcurrentCandidateCollision
+    store_number_test.go:179: second allocator never waited on the candidate lock
+--- FAIL: TestStoreDomainsNumericConcurrentCandidateCollision (6.14s)
+FAIL
+FAIL	livecommerce/tests/foundation	6.865s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

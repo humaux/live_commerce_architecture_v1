@@ -1,0 +1,10 @@
+=== RUN   TestStoreDomainsBackfillsPre0106Stores
+    store_domains_backfill_test.go:54: pre-0106 store must receive a random eight-digit number, got "backfill-store"
+--- FAIL: TestStoreDomainsBackfillsPre0106Stores (3.74s)
+=== RUN   TestStoreDomainsSDW01HandleFormatReservedUniquenessSuffix
+    store_domains_test.go:195: assign_store_handle numeric ID = "acme-shop", <nil>
+--- FAIL: TestStoreDomainsSDW01HandleFormatReservedUniquenessSuffix (0.94s)
+FAIL
+FAIL	livecommerce/tests/foundation	5.396s
+FAIL
+test-focused: top-level PASS=0 FAIL=2 SKIP=0 exit=1

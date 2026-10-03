@@ -1,0 +1,4 @@
+release-gate  commit=da2faeed7f1b  dirty_files=68  modes_in_test-local=60  evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/store-number/output/store-number/artifact-secret-check
+ID                       TIER       STATUS   NOTE
+G04                      STATIC     PASS     no key-shaped literal (sk_/rk_/pk_/whsec_/EAA/inline-password DSN)
+OVERALL: PASS (1 PASS) [subset via --only: not a release verdict]

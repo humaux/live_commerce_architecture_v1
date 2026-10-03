@@ -1,0 +1,64 @@
+=== RUN   TestStoreDomainsNumericConcurrentCreation
+    store_number_test.go:41: invalid or duplicate number "store-0838c4a8"
+    store_number_test.go:41: invalid or duplicate number "store-5560d0f2"
+    store_number_test.go:41: invalid or duplicate number "store-ca8cbe19"
+    store_number_test.go:41: invalid or duplicate number "store-b8692780"
+    store_number_test.go:41: invalid or duplicate number "store-7edc709a"
+    store_number_test.go:41: invalid or duplicate number "store-5a9c5a1b"
+    store_number_test.go:41: invalid or duplicate number "store-87ec5ebc"
+    store_number_test.go:41: invalid or duplicate number "store-3def5ccb"
+    store_number_test.go:41: invalid or duplicate number "store-ba439de1"
+    store_number_test.go:41: invalid or duplicate number "store-e796b55c"
+    store_number_test.go:41: invalid or duplicate number "store-3f28ef1e"
+    store_number_test.go:41: invalid or duplicate number "store-261cd42c"
+    store_number_test.go:41: invalid or duplicate number "store-b09f29b6"
+    store_number_test.go:41: invalid or duplicate number "store-453feda6"
+    store_number_test.go:41: invalid or duplicate number "store-71554ef4"
+    store_number_test.go:41: invalid or duplicate number "store-bb6e02ff"
+    store_number_test.go:41: invalid or duplicate number "store-aeabf0be"
+    store_number_test.go:41: invalid or duplicate number "store-c7d624cb"
+    store_number_test.go:41: invalid or duplicate number "store-5d41c342"
+    store_number_test.go:41: invalid or duplicate number "store-e3795753"
+    store_number_test.go:41: invalid or duplicate number "store-6a9d31d5"
+    store_number_test.go:41: invalid or duplicate number "store-7a462d69"
+    store_number_test.go:41: invalid or duplicate number "store-908adcc6"
+    store_number_test.go:41: invalid or duplicate number "store-1a72f7a4"
+    store_number_test.go:41: invalid or duplicate number "store-f988d821"
+    store_number_test.go:41: invalid or duplicate number "store-124d6ee6"
+    store_number_test.go:41: invalid or duplicate number "store-10523a87"
+    store_number_test.go:41: invalid or duplicate number "store-e2d752c0"
+    store_number_test.go:41: invalid or duplicate number "store-fff24a34"
+    store_number_test.go:41: invalid or duplicate number "store-65eb3ecb"
+    store_number_test.go:41: invalid or duplicate number "store-96dafec2"
+    store_number_test.go:41: invalid or duplicate number "store-f87b080a"
+    store_number_test.go:41: invalid or duplicate number "store-cc686300"
+    store_number_test.go:41: invalid or duplicate number "store-b670e488"
+    store_number_test.go:41: invalid or duplicate number "store-3db16a2b"
+    store_number_test.go:41: invalid or duplicate number "store-cce4ede3"
+    store_number_test.go:41: invalid or duplicate number "store-c2db91c7"
+    store_number_test.go:41: invalid or duplicate number "store-82d34b6c"
+    store_number_test.go:41: invalid or duplicate number "store-adfd73a2"
+    store_number_test.go:41: invalid or duplicate number "store-438a4723"
+    store_number_test.go:41: invalid or duplicate number "store-6f973fd7"
+    store_number_test.go:41: invalid or duplicate number "store-be5e275c"
+    store_number_test.go:41: invalid or duplicate number "store-7842a445"
+    store_number_test.go:41: invalid or duplicate number "store-a08c33a7"
+    store_number_test.go:41: invalid or duplicate number "store-28de4b65"
+    store_number_test.go:41: invalid or duplicate number "store-d29a1e84"
+    store_number_test.go:41: invalid or duplicate number "store-3e17941d"
+    store_number_test.go:41: invalid or duplicate number "store-8b11ccaf"
+    store_number_test.go:41: invalid or duplicate number "store-449848ca"
+    store_number_test.go:41: invalid or duplicate number "store-916f8073"
+--- FAIL: TestStoreDomainsNumericConcurrentCreation (1.14s)
+=== RUN   TestStoreDomainsNumericCandidateRetryAndBound
+=== RUN   TestStoreDomainsNumericCandidateRetryAndBound/exhausted=false
+    store_number_test.go:112: must skip occupied store and serving origin: got "any-name", <nil>; want third draw "25473566"
+=== RUN   TestStoreDomainsNumericCandidateRetryAndBound/exhausted=true
+    store_number_test.go:109: 50 occupied draws: got "any-name", <nil>; want PT409
+--- FAIL: TestStoreDomainsNumericCandidateRetryAndBound (0.06s)
+    --- FAIL: TestStoreDomainsNumericCandidateRetryAndBound/exhausted=false (0.01s)
+    --- FAIL: TestStoreDomainsNumericCandidateRetryAndBound/exhausted=true (0.01s)
+FAIL
+FAIL	livecommerce/tests/foundation	3.316s
+FAIL
+test-focused: top-level PASS=0 FAIL=2 SKIP=0 exit=1
