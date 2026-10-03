@@ -29,7 +29,7 @@ import (
 // PrivacyPolicyVersion is the deployed privacy notice version (D4/Q8). It is a Go constant, not env: the notice
 // text and its version ship together, and the storefront notice carries the same literal. The server writes it
 // into every buyer consent event; a request can never name a version (CD4).
-const PrivacyPolicyVersion = "lc-2026-10-attribution"
+const PrivacyPolicyVersion = "lc-2026-10"
 
 // Consent vocabulary (CD4, Q12). Only these two (purpose, channel) pairs exist.
 const (

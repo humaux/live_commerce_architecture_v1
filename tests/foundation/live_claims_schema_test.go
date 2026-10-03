@@ -230,7 +230,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		add(rt, "claims.events", "SELECT", cols("claims.events")...)
 		add(rt, "claims.events", "INSERT", cols("claims.events")...)
 		add(rt, "claims.links", "SELECT", "tenant_id", "store_id", "bundle_id", "generation", "issued_at", "expires_at")
-		add(wr, "claims.links", "SELECT", "tenant_id", "store_id", "bundle_id", "token_hash", "generation", "expires_at")
+		// 0113 D9: the domain-owned aggregate counts links by issued_at; no runtime token access changes.
+		add(wr, "claims.links", "SELECT", "tenant_id", "store_id", "bundle_id", "token_hash", "generation", "expires_at", "issued_at")
 		add(wr, "claims.links", "INSERT", "tenant_id", "store_id", "bundle_id", "token_hash", "generation", "issued_at", "expires_at", "principal_id")
 		add(wr, "claims.links", "UPDATE", "token_hash", "generation", "issued_at", "expires_at", "principal_id")
 		// 0113 R6: immutable anonymous origin ledger, writer-only; runtime

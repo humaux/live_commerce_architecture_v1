@@ -39,6 +39,12 @@ ALTER TABLE claims.order_origins FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON claims.order_origins FROM PUBLIC;
 GRANT SELECT,INSERT ON claims.order_origins TO commerce_claims_writer;
 GRANT SELECT(offer_id,line_version,quantity,occurred_at) ON claims.events TO commerce_claims_writer;
+GRANT SELECT(issued_at) ON claims.links TO commerce_claims_writer;
+-- Private attribution helpers run in an authenticated merchant/buyer scope, not
+-- the principal-less intake worker scope. No login gains new table privileges.
+CREATE POLICY attribution_event_scope ON claims.events FOR SELECT TO commerce_claims_writer
+ USING (tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid
+  AND store_id=nullif(current_setting('app.store_id',true),'')::uuid);
 CREATE POLICY claims_origin_owner ON claims.order_origins TO commerce_claims_writer USING(true) WITH CHECK(true);
 COMMENT ON TABLE claims.order_origins IS 'internal/claims: immutable consumed cart origin to order association independent of live discounts; anonymous event version/post/session facts, no buyer identity or comment text. No claim FK so retention can erase source bindings.';
 CREATE FUNCTION claims.capture_order_origins(p_tenant uuid,p_store uuid,p_owner uuid,p_order uuid,p_origins jsonb) RETURNS void
@@ -505,15 +511,15 @@ DECLARE a record;s record;b record;j record;n integer;req jsonb;
 BEGIN
  SELECT * INTO a FROM ads.auth(p_hash,p_store,ARRAY['ads:read','live:read']);
  SELECT count(*) INTO n FROM claims.attribution_sources(a.out_tenant,p_store,p_session);
- IF n<>1 THEN RAISE EXCEPTION 'live audience source unavailable' USING ERRCODE='PT422'; END IF;
+ IF n<>1 THEN PERFORM ads.deny('source_not_owned'); END IF;
  SELECT * INTO s FROM claims.attribution_sources(a.out_tenant,p_store,p_session);
  SELECT * INTO b FROM integration.bindings x WHERE x.tenant_id=a.out_tenant AND x.store_id=p_store AND x.id=s.binding_id FOR SHARE;
- IF NOT FOUND OR NOT b.enabled OR b.provider<>'facebook' OR b.external_asset_id<>s.asset_id THEN RAISE EXCEPTION 'live audience binding unavailable' USING ERRCODE='PT422'; END IF;
+ IF NOT FOUND OR NOT b.enabled OR b.provider<>'facebook' OR b.external_asset_id<>s.asset_id THEN PERFORM ads.deny('source_not_owned'); END IF;
  IF NOT EXISTS(SELECT 1 FROM integration.meta_page_heads h JOIN integration.meta_page_credentials c
   ON c.tenant_id=h.tenant_id AND c.store_id=h.store_id AND c.binding_id=h.binding_id AND c.version=h.current_version
   WHERE h.tenant_id=a.out_tenant AND h.store_id=p_store AND h.binding_id=b.id
    AND c.scopes_attested @> ARRAY['read_insights','pages_read_engagement']) THEN
-  RAISE EXCEPTION 'live audience permission missing' USING ERRCODE='42501'; END IF;
+  PERFORM ads.deny('forbidden'); END IF;
  SELECT * INTO j FROM river.river_job x WHERE x.id=p_job AND x.kind='external_operation_v1' AND x.queue='default'
   AND x.args=jsonb_build_object('operation_id',p_operation::text,'version',1) AND x.xmin=pg_current_xact_id()::xid;
  IF NOT FOUND THEN RAISE EXCEPTION 'live audience job mismatch' USING ERRCODE='22023'; END IF;

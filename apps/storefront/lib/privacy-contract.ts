@@ -9,7 +9,7 @@
 
 // Must equal internal/customers.PrivacyPolicyVersion (customers-core D4): the notice text and its version ship together,
 // so changing the notice is a code change in both places.
-export const LC_PRIVACY_POLICY_VERSION = "lc-2026-10-attribution";
+export const LC_PRIVACY_POLICY_VERSION = "lc-2026-10";
 
 export type ConsentPurpose = "marketing_messages" | "ads_personalization";
 export type ConsentChannel = "meta_dm" | "meta_ads";
