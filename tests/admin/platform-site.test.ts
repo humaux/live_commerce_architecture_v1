@@ -206,3 +206,16 @@ test("PS1 production build validates config; public data is not bundled through 
     assert.ok(!component.includes("dangerouslySetInnerHTML"));
   }
 });
+test("PS review: admin image installs the manifests for its workspace dependencies before building", () => {
+  const dockerfile = readFileSync("deploy/docker/admin.Dockerfile", "utf8");
+  const install = dockerfile.indexOf("pnpm install --frozen-lockfile");
+  assert.ok(install > 0);
+  const manifest = JSON.parse(readFileSync("apps/admin/package.json", "utf8"));
+  for (const [name, version] of Object.entries(manifest.dependencies)) {
+    if (version !== "workspace:*") continue;
+    const folder = name.replace("@live-commerce/", "");
+    const copy = `COPY packages/${folder}/package.json packages/${folder}/`;
+    const position = dockerfile.indexOf(copy);
+    assert.ok(position >= 0 && position < install, copy);
+  }
+});
