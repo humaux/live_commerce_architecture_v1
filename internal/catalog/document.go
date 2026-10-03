@@ -556,6 +556,12 @@ func validDocumentPatch(in ProductDocumentPatch) bool {
 // validPatchSKUFields checks the present fields of an id-carrying patch entry in isolation. Cross-field checks that need
 // the current value (compare_at > price, whole-TWD, tracked/untracked cap rules) run at write time in patchExistingSKU.
 func validPatchSKUFields(e *DocumentSKUPatch) bool {
+	// An archive entry carries only id + active:false: any other field would be silently dropped, so it is refused.
+	if e.Active != nil && !*e.Active && (e.OptionValues != nil || e.PriceMinor != nil || e.CompareAtMinor.Set ||
+		e.OriginCountry != nil || e.CustomsName != nil || e.HSCandidate != nil || e.Stock != nil || e.Keyword.Set ||
+		e.WeightGrams != nil || e.LengthMM != nil || e.WidthMM != nil || e.HeightMM != nil) {
+		return false
+	}
 	if e.PriceMinor != nil && (*e.PriceMinor < 0 || *e.PriceMinor > command.MaxMoney) {
 		return false
 	}
@@ -639,6 +645,10 @@ func applySKUPatch(ctx context.Context, tx pgx.Tx, scope platform.Scope, product
 		} else if e.OptionValues != nil {
 			final[e.ID] = *e.OptionValues
 		}
+	}
+	// The edit may not leave more active SKUs than create allows (ListSKUs and the detail read assume the cap).
+	if len(final)+len(newValues) > maxActiveSKUsPerProduct {
+		return nil, command.ErrInvalid
 	}
 	// Combination uniqueness applies to non-empty combinations only, as on create and in the 0086 partial index: an
 	// axis-less product may hold several SKUs with no option values.

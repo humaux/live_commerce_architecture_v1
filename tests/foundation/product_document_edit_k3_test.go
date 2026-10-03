@@ -9,6 +9,7 @@ package foundation_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"sync"
 	"testing"
@@ -508,5 +509,52 @@ func TestProductEditK3DuplicateCombinationViaPatch(t *testing.T) {
 	}
 	if got := countRows(t, e.h.f.owner, `SELECT count(*) FROM catalog.skus WHERE product_id=$1 AND option_values='{Blue}' AND status='active'`, p.ID); got != 1 {
 		t.Fatalf("active [Blue] SKUs: %d want exactly 1", got)
+	}
+}
+
+// P2-2 (integrator ruling): an active:false entry carries only id + active. Combining it with another field is 422 and the
+// whole patch rolls back — never a silent drop of the other fields.
+func TestProductEditArchiveWithOtherFieldsInvalid(t *testing.T) {
+	e := ccNew(t)
+	var p pdProduct
+	e.docCreate(e.key("p"), pdDoc{Name: e.name("archive+price"), Description: "",
+		SKUs: []pdSKU{{PriceMinor: 1000}, {PriceMinor: 2000}}}, &p)
+	sku := p.SKUs[0].ID
+	e.refuseCode(422, "invalid_request", "PUT", "/products/"+p.ID+"/document", e.key("bad"),
+		pdPatch{ExpectedVersion: p.Version, SKUs: &[]pdSKUPatch{{ID: sku, Active: pdBool(false), PriceMinor: pdI64(3000)}}})
+	if s := pdeReadSKU(t, e, sku); s.Version != 1 {
+		t.Fatalf("the refused archive+price patch touched the SKU: %+v", s)
+	}
+	var archived pdProduct
+	e.docEdit(p.ID, e.key("ok"), pdPatch{ExpectedVersion: p.Version, SKUs: &[]pdSKUPatch{{ID: sku, Active: pdBool(false)}}}, &archived)
+	if len(archived.SKUs) != 1 {
+		t.Fatalf("archive-only patch: %+v", archived.SKUs)
+	}
+}
+
+// P2-3 (integrator ruling): an edit may not leave more than 100 active SKUs (the create cap, the ListSKUs contract and the
+// detail read all assume it). Archiving one and adding one in the same patch stays at 100 and is accepted.
+func TestProductEditActiveSKUCap(t *testing.T) {
+	e := ccNew(t)
+	skus := make([]pdSKU, 100)
+	for i := range skus {
+		// explicit codes: generated codes for axis-less SKUs try only 50 suffixes per base (freeSKUCode)
+		skus[i] = pdSKU{PriceMinor: 1000, Code: fmt.Sprintf("%s-cap-%03d", e.tag, i)}
+	}
+	var p pdProduct
+	e.docCreate(e.key("p"), pdDoc{Name: e.name("cap"), Description: "", SKUs: skus}, &p)
+	if len(p.SKUs) != 100 {
+		t.Fatalf("create 100: %d", len(p.SKUs))
+	}
+	e.refuseCode(422, "invalid_request", "PUT", "/products/"+p.ID+"/document", e.key("101"),
+		pdPatch{ExpectedVersion: p.Version, SKUs: &[]pdSKUPatch{{PriceMinor: pdI64(1000)}}})
+	if got := countRows(t, e.h.f.owner, `SELECT count(*) FROM catalog.skus WHERE product_id=$1 AND status='active'`, p.ID); got != 100 {
+		t.Fatalf("active SKUs after refused 101st: %d", got)
+	}
+	var swapped pdProduct
+	e.docEdit(p.ID, e.key("swap"), pdPatch{ExpectedVersion: p.Version,
+		SKUs: &[]pdSKUPatch{{ID: p.SKUs[0].ID, Active: pdBool(false)}, {PriceMinor: pdI64(2000)}}}, &swapped)
+	if len(swapped.SKUs) != 100 {
+		t.Fatalf("archive one + add one: %d active", len(swapped.SKUs))
 	}
 }
