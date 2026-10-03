@@ -155,6 +155,30 @@ deploy/scripts/deploy.sh upgrade <tag>
    - 商家域名绑定：`ops-admin.sh store-admin domain-bind`，见 `docs/runbooks/merchant-onboarding.md`。
 8. **应用回滚在这些迁移之后被拒绝**：`deploy.sh app-rollback <4dc08b3的tag>` 会因 ledger 行数变化而拒绝（§5），只能前向修复；仅当备份之后没有任何新的外部业务事实时，才由 owner 决定按 `backup-restore.md` 从 `pre-upgrade-<tag>` 恢复。升级前确认备份目录有该备份文件并记下路径。
 
+### 4.2 升级 R4 351089f → R5（试点主机，保留真实 owner 数据，只能前向）
+
+范围：迁移 0106（店铺 handle、平台子域、商家自有域名、证书按需签发、`store-admin handle-set`）、0107 + post_river 0020（宅配货到付款、`collected_at` 财务日期锚点）、0108（一个店铺最多 10 个 Facebook 专页）；后台 W0 新外壳（注册表导航）、止血包（金额按元、台北时间）、前台 R5（配送付款说明、同系列、分类条、防诈骗页、图库放大）。
+没有 owner 在聊天里的明确批准，不得执行（AGENTS.md）。
+
+1. **取代码**：同 §4.1 第 1 步，用 git bundle 带发布 SHA 到 `/opt/live-commerce`，`git status` 必须干净。
+2. **配置差异**：
+   - `compose.env` **必须新增** `LC_STORE_BASE_DOMAIN=xgdwm.com`（P19 在缺失时 FAIL）。compose 会把它传给 api、claims-worker 和 migrate。
+   - DNS（2026-10-02 已完成，只核对）：`*.xgdwm.com` 与 `stores.xgdwm.com` 均为 A 记录指向本机、DNS-only、TTL 300。
+   - 其余 `*.env` 不改也能升级；货到付款默认关（商家在设置里开），meta-connect 维持原状。
+3. **新密钥（幂等，只补缺失）**：`sudo deploy/scripts/secrets-init.sh`，相对 351089f 新增 `pw_lc_store_domain_verify`、`dsn_lc_store_domain_verify`（claims-worker 的域名验证登录，只有 `commerce_storefront_verifier` 的 6 个验证函数）。
+4. **离线预检**：`deploy/scripts/preflight.sh` 不能有 FAIL；新增 P19（`stores.<base>` 与通配必须只解析到本机）。
+5. **构建 + 升级**：`deploy/scripts/build-images.sh` → `deploy/scripts/deploy.sh upgrade <sha12>`。脚本顺序同 §4.1：preflight → 强制备份 `pre-upgrade-<tag>` → 停服务 → migrate（0106–0108 + post_river 0020，0106 会给已有店铺按店名补 handle 和平台子域）→ provision-logins（新增 `lc_store_domain_verify`）→ `up -d` → 部署后检查。Caddy 随 `up -d` 加载新 Caddyfile（按需证书只发给白名单中的主机）。
+6. **升级后必查**：
+   - `deploy.sh` 退出码 0；`ledger_count before=<N> after=<N+4>`（0106、0107、0108、post_river 0020）。
+   - provision-logins 有 `login=lc_store_domain_verify ... membership=ok`，`registrars execute=ok`（店铺注册员 EXECUTE 数为 5），无 `DRIFT`。
+   - claims-worker 日志有就绪行且无 `claims_worker_invalid_config`。
+   - `ops-admin.sh store-admin status --store <店铺uuid>` 显示平台地址 `https://<handle>.xgdwm.com`。
+   - 店铺、商品、订单数据仍在。
+7. **设定店铺英文 ID（owner 提供）**：店铺尚未发布时执行
+   `deploy/scripts/ops-admin.sh store-admin handle-set <店铺uuid> <英文ID>`（同一事务里解绑旧平台地址、建立新地址；保留字、已占用、格式错误会被拒绝）。之后 `store-admin status` 确认新地址。
+8. **之后由 owner 逐项开启，每项单独批准**：发布店面（设置 > 网店 > 发布，买家开始能访问 `https://<英文ID>.xgdwm.com`）、货到付款（设置 > 配送）、商家自有域名（设置 > 网店 > 域名）、meta-connect（§6.7）。
+9. **回滚**：同 §4.1 第 8 步，迁移之后应用回滚被拒绝，只能前向修复；必要时由 owner 决定从 `pre-upgrade-<tag>` 恢复。
+
 ## 5. 回滚决策树
 
 1. **与该 tag 上次部署时相比，ledger 行数没有变化** → `deploy/scripts/deploy.sh app-rollback <旧tag>`。
