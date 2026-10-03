@@ -36,8 +36,8 @@ func registerImageRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 	mux.HandleFunc("POST "+images+"/{image_id}/renditions", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, _ struct{}) (any, error) {
 		return catalog.BackfillImageSizes(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), r.PathValue("image_id"))
 	}))
-	mux.HandleFunc("POST "+images, uploadRoute(pool, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, data []byte) (any, error) {
-		return catalog.UploadImage(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), data)
+	mux.HandleFunc("POST "+images, uploadRoute(pool, catalog.MakeImageSizes, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, data []byte, sizes []catalog.ImageSize) (any, error) {
+		return catalog.UploadImage(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), data, sizes)
 	}))
 	mux.HandleFunc("GET "+images, scoped(pool, "catalog:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
 		return catalog.ListImages(ctx, tx, s, r.PathValue("product_id"))
@@ -73,7 +73,9 @@ func writeRaw(w http.ResponseWriter, raw rawResponse) {
 // (a slow client must not hold one), and the final scoped call re-runs the same check inside the store transaction.
 // The part's filename and Content-Type are ignored: catalog.SniffImage decides the type. Shared by the
 // product-photo and collection-image uploads.
-func uploadRoute(pool *pgxpool.Pool, store func(context.Context, pgx.Tx, platform.Scope, *http.Request, []byte) (any, error)) http.HandlerFunc {
+// prepare runs on the file after auth and body read but BEFORE the transaction opens (CPU-bound decode work must not
+// hold a pool connection); its result is handed to store.
+func uploadRoute[P any](pool *pgxpool.Pool, prepare func(context.Context, []byte) (P, error), store func(context.Context, pgx.Tx, platform.Scope, *http.Request, []byte, P) (any, error)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		header := r.Header.Get("Authorization")
 		if !strings.HasPrefix(header, "Bearer ") || strings.ContainsAny(strings.TrimPrefix(header, "Bearer "), " \t\r\n") {
@@ -98,11 +100,20 @@ func uploadRoute(pool *pgxpool.Pool, store func(context.Context, pgx.Tx, platfor
 			respondError(w, status, "invalid_request")
 			return
 		}
+		prepared, err := prepare(r.Context(), data)
+		if err != nil {
+			status, code := classify(err)
+			respondError(w, status, code)
+			return
+		}
 		scoped(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
-			return store(ctx, tx, s, r, data)
+			return store(ctx, tx, s, r, data, prepared)
 		})(w, r)
 	}
 }
+
+// noPrepare is the prepare step of uploads that need none.
+func noPrepare(context.Context, []byte) (struct{}, error) { return struct{}{}, nil }
 
 // readSingleFile returns the bytes of the one `file` part, or the HTTP status to refuse with (0 = ok): 413 when the
 // body or the file is over the cap, 422 for any other malformation (no part, another field name, a second part).

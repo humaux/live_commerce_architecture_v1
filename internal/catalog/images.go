@@ -112,16 +112,13 @@ func scanImage(row pgx.Row, out *Image) error {
 
 // UploadImage stores one validated photo at the next free position of a draft or active product (CM3). The command
 // request is the file's SHA-256 + size, not its bytes (command.Run caps the request at 64 KiB), so a retry of the
-// same file under the same key replays the first Image and the same key with another file is ErrConflict.
-func UploadImage(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, productID string, data []byte) (out Image, err error) {
+// same file under the same key replays the first Image and the same key with another file is ErrConflict. sizes are
+// MakeImageSizes(data), computed by the caller BEFORE the transaction opens (decoding must not hold a pool connection).
+func UploadImage(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, productID string, data []byte, sizes []ImageSize) (out Image, err error) {
 	if !command.ValidID(productID) {
 		return out, command.ErrInvalid
 	}
 	contentType, width, height, err := SniffImage(data)
-	if err != nil {
-		return out, err
-	}
-	sizes, err := MakeImageSizes(ctx, data)
 	if err != nil {
 		return out, err
 	}

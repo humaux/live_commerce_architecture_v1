@@ -104,10 +104,10 @@ func TestImageCommandsRejectBeforeSQL(t *testing.T) {
 	scope := platform.Scope{TenantID: "00000000-0000-0000-0000-000000000001", StoreID: "00000000-0000-0000-0000-000000000002", PrincipalID: "00000000-0000-0000-0000-000000000003"}
 	ctx := context.Background()
 	good := "00000000-0000-0000-0000-0000000000aa"
-	if _, err := UploadImage(ctx, nil, scope, "key-12345678", "not-a-uuid", pngBytes(t, 2, 2)); !errors.Is(err, command.ErrInvalid) {
+	if _, err := UploadImage(ctx, nil, scope, "key-12345678", "not-a-uuid", pngBytes(t, 2, 2), nil); !errors.Is(err, command.ErrInvalid) {
 		t.Errorf("upload bad product: %v", err)
 	}
-	if _, err := UploadImage(ctx, nil, scope, "key-12345678", good, []byte("GIF89a")); !errors.Is(err, command.ErrInvalid) {
+	if _, err := UploadImage(ctx, nil, scope, "key-12345678", good, []byte("GIF89a"), nil); !errors.Is(err, command.ErrInvalid) {
 		t.Errorf("upload non-image: %v", err)
 	}
 	if _, err := DeleteImage(ctx, nil, scope, "key-12345678", good, "x"); !errors.Is(err, command.ErrInvalid) {

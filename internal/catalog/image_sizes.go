@@ -18,10 +18,22 @@ import (
 	"livecommerce/internal/platform"
 )
 
-const maxDecodedImagePixels = 20_000_000
+const (
+	maxDecodedImagePixels = 20_000_000
+	// maxDecodedImageBytes bounds the decoded source (20 MP at 4 bytes/pixel), so a 16-bit source (8 bytes/pixel) is
+	// capped at 10 MP. Estimated from DecodeConfig before any pixel allocation.
+	maxDecodedImageBytes = 80 << 20
+	// maxScaleScratchBytes bounds x/image/draw's kernel scratch, which is dst_width*src_height*32 bytes
+	// ([][4]float64 in draw/scale.go) and is NOT bounded by the pixel cap: a 1000x20000 detail strip would need
+	// 610 MiB. Fits CatmullRom for a 20 MP portrait phone photo at the 1080 bucket (1620*3648*32 = 180 MiB).
+	maxScaleScratchBytes = 192 << 20
+)
 
-// Each active decode can allocate at most ~80 MiB for RGBA plus bounded output. Waiting respects request cancellation.
-var imageDecodeSlots = make(chan struct{}, 2)
+// One decode at a time: source ≤ 80 MiB + one scratch ≤ 192 MiB + the 1080 rendition (and its oriented copy). Measured
+// live heap growth (TestImageSizesMemoryBudget): 20 MP EXIF-6 portrait JPEG ~216 MiB, 1000x20000 strip ~209 MiB, under the
+// api's GOMEMLIMIT 410 MiB / mem_limit 512m (deploy/compose.yml). Waiting respects request cancellation; the upload path
+// decodes before opening its DB transaction, so waiters do not hold pool connections.
+var imageDecodeSlots = make(chan struct{}, 1)
 
 type ImageSize struct {
 	Width      int
@@ -40,7 +52,8 @@ func MakeImageSizes(ctx context.Context, data []byte) ([]ImageSize, error) {
 		return nil, err
 	}
 	cfg, _, err := image.DecodeConfig(bytes.NewReader(data))
-	if err != nil || cfg.Width < 1 || cfg.Height < 1 || cfg.Width > maxImageDimension || cfg.Height > maxImageDimension || int64(cfg.Width)*int64(cfg.Height) > maxDecodedImagePixels {
+	if err != nil || cfg.Width < 1 || cfg.Height < 1 || cfg.Width > maxImageDimension || cfg.Height > maxImageDimension || int64(cfg.Width)*int64(cfg.Height) > maxDecodedImagePixels ||
+		int64(cfg.Width)*int64(cfg.Height)*decodedBytesPerPixel(cfg.ColorModel) > maxDecodedImageBytes {
 		return nil, command.ErrInvalid
 	}
 	select {
@@ -56,17 +69,44 @@ func MakeImageSizes(ctx context.Context, data []byte) ([]ImageSize, error) {
 	if source.Bounds().Dx() != cfg.Width || source.Bounds().Dy() != cfg.Height {
 		return nil, command.ErrInvalid
 	}
-	source = orientPhoto(source, jpegOrientation(data))
-	out := make([]ImageSize, 0, 3)
-	for _, bucket := range []int{360, 720, 1080} {
+	// Scale the raw (unrotated) pixels, then rotate only the small rendition: the oriented view reads through the
+	// generic At() path, which on a full-size source cost seconds of CPU per upload.
+	orientation := jpegOrientation(data)
+	sw, sh := cfg.Width, cfg.Height
+	transposed := orientation >= 5 && orientation <= 8
+	if transposed {
+		sw, sh = sh, sw // oriented width/height
+	}
+	// Largest first, each smaller rendition scaled from the previous one: only the first step reads the full-size source
+	// (one big scratch, and the source becomes collectable), and 720/360 are short CatmullRom steps of 1.5x/2x.
+	buckets := []int{1080, 720, 360}
+	out := make([]ImageSize, len(buckets))
+	var from image.Image = source
+	for i, bucket := range buckets {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		width := min(bucket, source.Bounds().Dx())
-		height := max(1, source.Bounds().Dy()*width/source.Bounds().Dx())
-		target := image.NewRGBA(image.Rect(0, 0, width, height))
-		draw.Draw(target, target.Bounds(), image.NewUniform(color.White), image.Point{}, draw.Src)
-		draw.CatmullRom.Scale(target, target.Bounds(), source, source.Bounds(), draw.Over, nil)
+		width := min(bucket, sw)
+		height := max(1, sh*width/sw)
+		rawW, rawH := width, height
+		if transposed {
+			rawW, rawH = height, width
+		}
+		raw := image.NewRGBA(image.Rect(0, 0, rawW, rawH))
+		draw.Draw(raw, raw.Bounds(), image.NewUniform(color.White), image.Point{}, draw.Src)
+		var scaler draw.Scaler = draw.CatmullRom
+		if int64(rawW)*int64(from.Bounds().Dy())*32 > maxScaleScratchBytes {
+			// ponytail: ApproxBiLinear needs no scratch but aliases beyond ~2x; only tall strips/extreme aspects land
+			// here. Scale in overlapping horizontal stripes if their rendition quality matters.
+			scaler = draw.ApproxBiLinear
+		}
+		scaler.Scale(raw, raw.Bounds(), from, from.Bounds(), draw.Over, nil)
+		from = raw
+		target := raw
+		if orientation >= 2 && orientation <= 8 {
+			target = image.NewRGBA(image.Rect(0, 0, width, height))
+			draw.Draw(target, target.Bounds(), orientPhoto(raw, orientation), image.Point{}, draw.Src)
+		}
 		var b bytes.Buffer
 		if err := jpeg.Encode(&b, target, &jpeg.Options{Quality: 82}); err != nil {
 			return nil, err
@@ -74,9 +114,18 @@ func MakeImageSizes(ctx context.Context, data []byte) ([]ImageSize, error) {
 		if b.Len() > MaxImageBytes {
 			return nil, command.ErrInvalid
 		}
-		out = append(out, ImageSize{Width: bucket, PixelWidth: width, Bytes: b.Bytes(), SHA256: sha256.Sum256(b.Bytes())})
+		out[len(buckets)-1-i] = ImageSize{Width: bucket, PixelWidth: width, Bytes: b.Bytes(), SHA256: sha256.Sum256(b.Bytes())}
 	}
 	return out, nil
+}
+
+// decodedBytesPerPixel is the decoded-buffer cost per pixel: 16-bit models decode to 8 bytes, everything else to at most 4.
+func decodedBytesPerPixel(m color.Model) int64 {
+	switch m {
+	case color.RGBA64Model, color.NRGBA64Model, color.Gray16Model, color.Alpha16Model:
+		return 8
+	}
+	return 4
 }
 
 // storeImageSizes may insert only into the authenticated parent scope, never replace previously published bytes.

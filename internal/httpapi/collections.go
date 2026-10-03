@@ -66,7 +66,7 @@ func registerCatalogV2Routes(mux *http.ServeMux, pool *pgxpool.Pool) {
 	mux.HandleFunc("PUT "+collections+"/{collection_id}/products", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.CollectionProductsInput) (any, error) {
 		return catalog.SetCollectionProducts(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("collection_id"), in)
 	}))
-	mux.HandleFunc("POST "+collections+"/{collection_id}/image", uploadRoute(pool, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, data []byte) (any, error) {
+	mux.HandleFunc("POST "+collections+"/{collection_id}/image", uploadRoute(pool, noPrepare, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, data []byte, _ struct{}) (any, error) {
 		return catalog.UploadCollectionImage(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("collection_id"), data)
 	}))
 	mux.HandleFunc("GET "+collections+"/{collection_id}/image", scoped(pool, "catalog:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
