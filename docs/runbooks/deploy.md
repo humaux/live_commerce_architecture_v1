@@ -165,7 +165,7 @@ deploy/scripts/deploy.sh upgrade <tag>
    - `compose.env` **必须新增** `LC_STORE_BASE_DOMAIN=xgdwm.com`（P19 在缺失时 FAIL）。compose 会把它传给 api、claims-worker 和 migrate。
    - DNS（2026-10-02 已完成，只核对）：`*.xgdwm.com` 与 `stores.xgdwm.com` 均为 A 记录指向本机、DNS-only、TTL 300。
    - 其余 `*.env` 不改也能升级；货到付款默认关（商家在设置里开），meta-connect 维持原状。第二波不新增环境变量或密钥。
-   - 旧商品图片不会自动生成渲染图（没有后台扫描）：前台继续用原图，直到商家在商品页对某张图执行「生成多尺寸」（逐张、幂等、记审计）。新上传的图片在上传时生成。
+   - 旧商品图片不会自动生成渲染图（没有后台扫描）：前台继续用原图，与升级前相同。新上传的图片在上传时生成。逐张补生成目前只有接口 `POST …/products/{id}/images/{image}/renditions`（catalog:write、幂等、记审计），后台按钮尚未提供（待办）。
 3. **新密钥（幂等，只补缺失）**：`sudo deploy/scripts/secrets-init.sh`，相对 351089f 新增 `pw_lc_store_domain_verify`、`dsn_lc_store_domain_verify`（claims-worker 的域名验证登录，只有 `commerce_storefront_verifier` 的 6 个验证函数）。
 4. **离线预检**：`deploy/scripts/preflight.sh` 不能有 FAIL；新增 P19（`stores.<base>` 与通配必须只解析到本机）。
 5. **构建 + 升级**：`deploy/scripts/build-images.sh` → `deploy/scripts/deploy.sh upgrade <sha12>`。脚本顺序同 §4.1：preflight → 强制备份 `pre-upgrade-<tag>` → 停服务 → migrate（0106–0111 + post_river 0020、0021，0106 会给已有店铺按店名补 handle 和平台子域；0109 把已有 SKU 设为追踪库存，行为不变）→ provision-logins（新增 `lc_store_domain_verify`）→ `up -d` → 部署后检查。Caddy 随 `up -d` 加载新 Caddyfile（按需证书只发给白名单中的主机）。
