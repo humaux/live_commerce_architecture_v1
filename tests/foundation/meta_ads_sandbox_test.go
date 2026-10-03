@@ -95,11 +95,20 @@ func TestMetaAdsSandboxS1(t *testing.T) {
 	r := sandboxRoutesFor(t)
 	draft := randomUUID()
 	start, end := time.Now().UTC().Add(2*time.Hour).Format(time.RFC3339), time.Now().UTC().Add(26*time.Hour).Format(time.RFC3339)
+	// TW is the product default. A sandbox user cannot hold Meta's Taiwan advertiser verification (TAIWAN_UNIVERSAL needs a
+	// verified beneficiary/payer, subcode 3858495), so the owner may run the rest of the flow with another country.
+	country := os.Getenv("META_ADS_SANDBOX_COUNTRY")
+	if country == "" {
+		country = "TW"
+	}
+	if len(country) != 2 || strings.ToUpper(country) != country {
+		t.Fatalf("BLOCKED: META_ADS_SANDBOX_COUNTRY must be a 2-letter upper-case code")
+	}
 	camp := r.call(t, "meta.ads.create_campaign", account, token, fmt.Sprintf(`{"v":1,"draft_id":%q,"attempt":1,"name":"lc-{OP}","objective":"OUTCOME_ENGAGEMENT","currency":"TWD","spend_cap_minor":0}`, draft), false)
 	if camp.State != "SUCCEEDED" {
 		t.Fatalf("U1/U8 create campaign PAUSED: %+v", camp)
 	}
-	adset := r.call(t, "meta.ads.create_adset", account, token, fmt.Sprintf(`{"v":1,"draft_id":%q,"attempt":1,"name":"lc-{OP}","campaign_id":%q,"template":"BOOST_POST","currency":"TWD","lifetime_budget_minor":300000,"start_time":%q,"end_time":%q,"countries":["TW"],"age_min":18,"age_max":65}`, draft, camp.ProviderReference, start, end), false)
+	adset := r.call(t, "meta.ads.create_adset", account, token, fmt.Sprintf(`{"v":1,"draft_id":%q,"attempt":1,"name":"lc-{OP}","campaign_id":%q,"template":"BOOST_POST","currency":"TWD","lifetime_budget_minor":300000,"start_time":%q,"end_time":%q,"countries":[%q],"age_min":18,"age_max":65}`, draft, camp.ProviderReference, start, end, country), false)
 	if adset.State != "SUCCEEDED" {
 		t.Fatalf("U2 create ad set (optimization_goal/billing_event pair): %+v", adset)
 	}
