@@ -169,6 +169,8 @@ func TestBrowserMetaAds(t *testing.T) {
 			http.Error(w, err.Error(), 500)
 		}
 		switch r.URL.Path {
+		case "/reject/meta":
+			e.g.Inject(fakegraph.Fault{Route: fakegraph.RouteCreateAdset, Kind: fakegraph.FaultGraphError, Code: 100, Subcode: 3858495, UserMessage: "<b>Meta original:</b> 請完成驗證 &amp; retry.<script>private()</script>"})
 		case "/oauth/code": // a fresh single-use authorization code that exchanges for the BISU token
 			codes++
 			code := fmt.Sprintf("SYNTH-CODE-%d-%s", codes, t04Tag())
@@ -181,9 +183,6 @@ func TestBrowserMetaAds(t *testing.T) {
 				fail(err)
 				return
 			}
-		case "/reject/taiwan":
-			// Runner-only MOCK: one proven Graph refusal, never a production account.
-			e.g.Inject(fakegraph.Fault{Route: fakegraph.RouteCreateAdset, Kind: fakegraph.FaultGraphError, Code: 100, Subcode: 3858495})
 		case "/drive":
 			if err := e.driveSafe(14); err != nil {
 				fail(err)

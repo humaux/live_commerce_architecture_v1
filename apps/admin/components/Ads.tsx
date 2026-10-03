@@ -22,7 +22,6 @@ import {
 import {
   accountReady, adsManagerHref, buildDraftInput, canApprove, canCopy, canEdit, canEnd, canPause, canPublish, capiBody, copyForm,
   emptyForm, formFromDraft, formatMinor, hasRemote, localDate, maxReportDays, validCapi, validReportWindow, dayMs,
-  draftFailureCode, taiwanVerificationHelp,
   type AdsCode, type ConnectError, type ConnectState, type Draft, type DraftForm as FormState, type PickItem, type Report, type Settings,
   type Template,
 } from "@/lib/ads-model";
@@ -329,7 +328,7 @@ export function Ads({
                           </td>
                           <td data-label={c.colBudget}>{formatMinor(locale, d.currency, d.lifetime_budget_minor)}</td>
                           <td data-label={c.colSchedule}>{when(locale, d.starts_at, "—")} → {when(locale, d.ends_at, "—")}</td>
-                          <td data-label={c.colStatus}><Badge c={c} d={d} /></td>
+                          <td data-label={c.colStatus}><Badge c={c} status={d.status} /></td>
                           <td data-label={c.colCreated}>{when(locale, d.created_at, "—")}</td>
                         </tr>
                       ))}
@@ -355,8 +354,8 @@ export function Ads({
   );
 }
 
-function Badge({ c, d }: { c: AdsCopy; d: Draft }) {
-  return <span className={`ads-badge ads-badge-${d.status.toLowerCase()}`} data-state={d.status}>{draftFailureCode(d) === "tw_advertiser_unverified" ? c.twStatus : c.statuses[d.status]}</span>;
+function Badge({ c, status }: { c: AdsCopy; status: Draft["status"] }) {
+  return <span className={`ads-badge ads-badge-${status.toLowerCase()}`} data-state={status}>{c.statuses[status]}</span>;
 }
 
 // ---------- connection ----------
@@ -378,14 +377,13 @@ function ConnectionSection({
         </button>
       </div>
       <p className="ads-note">{c.connectHint}</p>
-      <details data-testid="ads-setup-checklist">
-        <summary>{c.setupChecklist}</summary>
-        <ol>
-          <li>{c.setupAccount}</li>
-          <li>{c.setupBilling}</li>
-          <li>{c.setupTaiwan} <a href={taiwanVerificationHelp} target="_blank" rel="noopener noreferrer">{c.twHelp}</a></li>
-        </ol>
-      </details>
+      {settings.recent_refusals.length > 0 && <div data-testid="ads-meta-refusals">
+        <h3>{c.metaResponse}</h3>
+        <ul className="ads-list">{settings.recent_refusals.map((r) => <li key={r.operation_id}>
+          <small>{r.action} · {r.code} · {when(locale,r.updated_at,"—")}</small>
+          <p className="ads-meta-message">{r.error_user_msg}</p>
+        </li>)}</ul>
+      </div>}
       {connectError && (
         <div className="ads-bad" role="alert" data-testid="ads-connect-error">
           {c.connectErrors[connectError]} <button type="button" className="ads-inline" onClick={startAgain}>{c.startAgain}</button>
@@ -584,7 +582,6 @@ function DraftDetail({
   setConfirmEnd: (v: boolean) => void; onEdit: () => void; onCopy: () => void; act: (d: Draft, a: "approve" | "publish" | "pause" | "end") => void;
 }) {
   const link = d.ads_manager_url ? adsManagerHref(d.ads_manager_url) : null;
-  const taiwanUnverified = draftFailureCode(d) === "tw_advertiser_unverified";
   const working = busy !== "";
   const remote: [string, string | null][] = [
     [c.remoteCampaign, d.remote.campaign_id], [c.remoteAdset, d.remote.adset_id], [c.remoteCreative, d.remote.creative_id], [c.remoteAd, d.remote.ad_id],
@@ -592,13 +589,10 @@ function DraftDetail({
   return (
     <section className="ads-detail" aria-label={`${c.detailTitle} ${d.id}`} data-testid="ads-detail" data-status={d.status}>
       <div className="ads-detail-head">
-        <h3>{c.templates[d.template]} <Badge c={c} d={d} /></h3>
+        <h3>{c.templates[d.template]} <Badge c={c} status={d.status} /></h3>
         {link && <a href={link} target="_blank" rel="noopener noreferrer" data-testid="ads-manager-link">{c.adsManager}</a>}
       </div>
       {d.status === "UNKNOWN" && <p className="ads-bad" role="status" data-testid="ads-unknown-help">{c.checkAdsManager}</p>}
-      {taiwanUnverified && <p className="ads-bad" role="alert" data-testid="ads-tw-verification">
-        {c.twVerification}{" "}<a href={taiwanVerificationHelp} target="_blank" rel="noopener noreferrer" data-testid="ads-tw-help">{c.twHelp}</a>
-      </p>}
       <dl className="ads-facts">
         <div><dt>{c.budget}</dt><dd>{formatMinor(locale, d.currency, d.lifetime_budget_minor)}</dd></div>
         <div><dt>{c.starts}</dt><dd>{when(locale, d.starts_at, "—")}</dd></div>
@@ -612,7 +606,7 @@ function DraftDetail({
       <div className="ads-actions" data-testid="ads-actions">
         {canEdit(d) && <button type="button" onClick={onEdit} disabled={working || formOpen} data-testid="ads-edit">{c.edit}</button>}
         {canApprove(d) && <button type="button" className="primary" onClick={() => act(d, "approve")} disabled={working || allowanceOff} data-testid="ads-approve">{busy === `approve:${d.id}` ? c.sending : c.approve}</button>}
-        {canPublish(d) && <button type="button" className="primary" onClick={() => act(d, "publish")} disabled={working || allowanceOff} data-testid="ads-publish">{busy === `publish:${d.id}` ? c.sending : taiwanUnverified ? c.twRetry : d.status === "FAILED" ? c.republish : c.publish}</button>}
+        {canPublish(d) && <button type="button" className="primary" onClick={() => act(d, "publish")} disabled={working || allowanceOff} data-testid="ads-publish">{busy === `publish:${d.id}` ? c.sending : d.status === "FAILED" ? c.republish : c.publish}</button>}
         {canPause(d) && <button type="button" onClick={() => act(d, "pause")} disabled={working} data-testid="ads-pause">{busy === `pause:${d.id}` ? c.sending : c.pause}</button>}
         {canEnd(d) && !confirmEnd && <button type="button" onClick={() => setConfirmEnd(true)} disabled={working} data-testid="ads-end">{c.end}</button>}
         {canCopy(d) && <button type="button" onClick={onCopy} disabled={working || formOpen} data-testid="ads-copy">{c.copy}</button>}
@@ -645,7 +639,9 @@ function DraftDetail({
                 <tr key={`${o.kind}:${o.attempt}:${o.seq}`}>
                   <td data-label={c.opKind}><span className="ads-mono">{o.kind}</span>{o.seq > 1 ? ` #${o.seq}` : ""}</td>
                   <td data-label={c.opAttempt}>{o.attempt}</td>
-                  <td data-label={c.opState}>{o.state === "FAILED_FINAL" && o.code === "tw_advertiser_unverified" ? c.twStatus : c.opStates[o.state]}{o.code ? <small className="ads-mono"> {o.code}</small> : null}</td>
+                  <td data-label={c.opState}>{c.opStates[o.state]}{o.code ? <small className="ads-mono"> {o.code}</small> : null}
+                    {o.error_user_msg && <p className="ads-meta-message" data-testid="ads-meta-message">{o.error_user_msg}</p>}
+                  </td>
                   <td data-label={c.opUpdated}>{when(locale, o.updated_at, "—")}</td>
                 </tr>
               ))}

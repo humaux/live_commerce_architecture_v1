@@ -25,10 +25,6 @@
 .ads-section h3 { font-size: 14px; margin: 16px 0 8px; }
 .ads-section h4 { font-size: 13px; margin: 18px 0 8px; color: var(--ads-muted); }
 .ads-section button { min-height: 40px; }
-[data-testid="ads-setup-checklist"] summary { min-height: 44px; align-content: center; cursor: pointer; }
-[data-testid="ads-setup-checklist"] li { margin-block: 8px; }
-[data-testid="ads-tw-help"] { display: inline-flex; min-height: 44px; align-items: center; }
-[data-testid="ads-publish"] { min-height: 44px; }
 .ads-section button.primary { background: var(--teal); border-color: var(--teal); color: #fff; }
 .ads-section button.primary:hover:not(:disabled) { background: #1c6554; color: #fff; }
 .ads-inline { min-height: 0; padding: 2px 8px; margin-left: 8px; font-size: 13px; }
@@ -108,3 +104,4 @@
   .ads-actions button { flex: 1 1 140px; }
 }
 .ads-ops > tbody > tr > td:first-child { min-width: 190px; overflow-wrap: anywhere; }
+.ads-meta-message { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 60ch; }

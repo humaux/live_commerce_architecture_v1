@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   accountReady, adsCodes, adsErrorCode, adsLocalCodes, adsManagerHref, adsServerCodes, adsSessionCodes, buildDraftInput, canApprove,
-  canCopy, canEdit, canEnd, canPause, canPublish, capiBody, connectErrors, copyForm, draftStatuses, draftFailureCode, emptyForm, epochToLocal,
+  canCopy, canEdit, canEnd, canPause, canPublish, capiBody, connectErrors, copyForm, draftStatuses, emptyForm, epochToLocal,
   formatMinor, formFromDraft, minorToWhole, opStates, parseConnectState, parseCountries, parseDraft, parseDraftList, parseReport,
   parseSettings, validCapi, validDate, validReportWindow, validSource, wholeToMinor, AdsParseError, type Draft, type DraftForm,
 } from "../../apps/admin/lib/ads-model.ts";
@@ -32,15 +32,17 @@ function draftJSON(over: Record<string, unknown> = {}) {
   };
 }
 
-test("Taiwan guidance uses the latest failed operation of the current attempt, never stale history or kind ordering", () => {
-  const op = { kind: "adset", seq: 1, attempt: 1, state: "FAILED_FINAL", code: "tw_advertiser_unverified", updated_at: ts };
-  const draft = parseDraft(draftJSON({ status: "FAILED", ops: [op] }));
-  assert.equal(draftFailureCode(draft), "tw_advertiser_unverified");
-  assert.equal(draftFailureCode({ ...draft, publish_attempt: 2 }), null);
-  assert.equal(draftFailureCode({ ...draft, status: "SUBMITTING" }), null);
-  const later = { ...draft.ops[0], kind: "campaign", code: "graph_190", updated_at: "2026-10-01T03:03:04Z" };
-  assert.equal(draftFailureCode({ ...draft, ops: [later, ...draft.ops] }), "graph_190");
-  assert.equal(draftFailureCode({ ...draft, ops: [{ ...later, state: "UNKNOWN" }, ...draft.ops] }), "tw_advertiser_unverified");
+test("Meta rejection wording is preserved as bounded Unicode text, never translated", () => {
+  const op = {kind:"adset",seq:1,attempt:1,state:"FAILED_FINAL",code:"graph_100",updated_at:ts};
+  for (const message of ["Meta 原文 & details\n第二行", "😀".repeat(300), "<literal text>"]) {
+    const draft = parseDraft(draftJSON({ops:[{...op,error_user_msg:message}]}));
+    assert.equal(draft.ops[0].error_user_msg,message);
+    assert.equal(draft.ops[0].code,"graph_100");
+  }
+  assert.equal(parseDraft(draftJSON({ops:[op]})).ops[0].error_user_msg,null);
+  for (const value of ["臺".repeat(301), "private\u0000text", {}, 4]) {
+    assert.throws(()=>parseDraft(draftJSON({ops:[{...op,error_user_msg:value}]})),AdsParseError);
+  }
 });
 
 test("frozen error codes: model list equals the frozen list, each is read from both error shapes", () => {
@@ -265,6 +267,11 @@ test("settings parser: environment enum, connections, identities, capi", () => {
   assert.equal(s.max_active_budget_minor, 0);
   assert.equal(s.capi.dataset_binding_id, null);
   assert.equal(s.sandbox_ad_account, null);
+  assert.deepEqual(s.recent_refusals,[]);
+  const refusal={operation_id:uuid(8),action:"meta.capi.purchase",state:"UNKNOWN",code:"graph_100",error_user_msg:"Meta 原文",updated_at:ts};
+  assert.deepEqual(parseSettings({...good,recent_refusals:[refusal]}).recent_refusals,[refusal]);
+  assert.throws(()=>parseSettings({...good,recent_refusals:[{...refusal,code:"regional_unverified"}]}),AdsParseError);
+  assert.throws(()=>parseSettings({...good,recent_refusals:Array(21).fill(refusal)}),AdsParseError);
   assert.equal(parseSettings({ ...good, environment: "LIVE", sandbox_ad_account: "act_9", capi: { enabled: true, dataset_binding_id: uuid(4), test_event_code: "TEST1" } }).capi.test_event_code, "TEST1");
   assert.throws(() => parseSettings({ ...good, environment: "PROD" }), AdsParseError);
   assert.throws(() => parseSettings({ ...good, max_active_budget_minor: "0" }), AdsParseError);

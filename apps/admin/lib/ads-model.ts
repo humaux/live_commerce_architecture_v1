@@ -71,6 +71,14 @@ function optStr(o: Rec, key: string, max = 256): string | null {
   if (v === undefined || v === null || v === "") return null;
   return str(o, key, max);
 }
+// Meta wording is not translated. Unicode code points match the server's 300
+// character cap; line breaks are permitted and the view renders a text node.
+function metaMessage(o: Rec): string | null {
+  const value = o.error_user_msg;
+  if (value === undefined || value === null || value === "") return null;
+  if (typeof value !== "string" || Array.from(value).length > 300 || /[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/.test(value)) throw new AdsParseError("error_user_msg");
+  return value;
+}
 function int(o: Rec, key: string, min = 0, max = maxMinor): number {
   const v = o[key];
   if (typeof v !== "number" || !Number.isSafeInteger(v) || v < min || v > max) throw new AdsParseError(key);
@@ -131,6 +139,7 @@ export type Settings = {
   capi: { enabled: boolean; dataset_binding_id: string | null; test_event_code: string | null };
   connections: Connection[];
   identities: Identity[];
+  recent_refusals: { operation_id: string; action: string; code: string; state: OpState; error_user_msg: string; updated_at: string }[];
 };
 const providerName = /^[a-z][a-z0-9_]{0,39}$/;
 export function parseSettings(value: unknown): Settings {
@@ -143,6 +152,12 @@ export function parseSettings(value: unknown): Settings {
     allowance_currency: allowanceCurrency,
     max_active_budget_minor: int(o, "max_active_budget_minor"),
     sandbox_ad_account: optStr(o, "sandbox_ad_account", 64),
+    recent_refusals: list(o.recent_refusals ?? [], "recent_refusals", 20, (item) => {
+      const r = rec(item, "refusal");
+      const message = metaMessage(r), resultCode = str(r, "code", 64), action = str(r,"action",64);
+      if (!message || !/^graph_[1-9][0-9]{0,5}$/.test(resultCode) || !/^meta\.(ads\.[a-z_]+|capi\.purchase)$/.test(action)) throw new AdsParseError("refusal");
+      return {operation_id:uuid(r,"operation_id"),action,code:resultCode,state:oneOf(r,"state",["FAILED_FINAL","UNKNOWN"] as const),error_user_msg:message,updated_at:ts(r,"updated_at")};
+    }),
     capi: {
       enabled: bool(capi, "enabled"),
       dataset_binding_id: capi.dataset_binding_id === undefined || capi.dataset_binding_id === null ? null : uuid(capi, "dataset_binding_id"),
@@ -195,7 +210,7 @@ export function parseConnectState(value: unknown, expectedID: string): ConnectSt
 
 // ---------- drafts ----------
 export type Remote = { campaign_id: string | null; adset_id: string | null; creative_id: string | null; ad_id: string | null };
-export type Op = { kind: string; seq: number; attempt: number; state: OpState; code: string | null; updated_at: string };
+export type Op = { kind: string; seq: number; attempt: number; state: OpState; code: string | null; error_user_msg: string | null; updated_at: string };
 export type DraftInput = {
   ad_binding_id: string; identity_binding_id: string; template: Template; source_ref: string; currency: string;
   lifetime_budget_minor: number; starts_at: string; ends_at: string; countries: string[]; age_min: number; age_max: number;
@@ -251,7 +266,7 @@ export function parseDraft(value: unknown): Draft {
       if (!/^[a-z][a-z0-9_.]{0,63}$/.test(kind)) throw new AdsParseError("op.kind");
       return {
         kind, seq: int(p, "seq", 0, 1000), attempt: int(p, "attempt", 0, 1000),
-        state: oneOf(p, "state", opStates), code: c, updated_at: ts(p, "updated_at"),
+        state: oneOf(p, "state", opStates), code: c, error_user_msg: metaMessage(p), updated_at: ts(p, "updated_at"),
       };
     }),
     ads_manager_url: url !== null && adsManagerHref(url) !== null ? url : null,
@@ -279,16 +294,6 @@ export function hasRemote(d: Pick<Draft, "remote">): boolean {
 }
 // UI hints only (the server re-authorizes and re-validates every action).
 export const canEdit = (d: Draft) => d.status === "DRAFT";
-// ops are ordered by kind, not completion time. Never surface a past attempt's refusal.
-export function draftFailureCode(d: Draft): string | null {
-  if (d.status !== "FAILED") return null;
-  const latest = d.ops.reduce<Op | null>((last, op) => {
-    if (op.attempt !== d.publish_attempt || op.state !== "FAILED_FINAL") return last;
-    return !last || Date.parse(op.updated_at) >= Date.parse(last.updated_at) ? op : last;
-  }, null);
-  return latest?.code ?? null;
-}
-export const taiwanVerificationHelp = "https://www.facebook.com/business/help/983527276402621";
 export const canApprove = (d: Draft) => d.status === "DRAFT";
 export const canPublish = (d: Draft) => d.status === "APPROVED" || d.status === "FAILED";
 export const canPause = (d: Draft) => hasRemote(d) && d.status !== "ENDED";
