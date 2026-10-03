@@ -1,0 +1,148 @@
+
+Running 10 tests using 1 worker
+
+(node:16054) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/admin/orders-ui.spec.ts:208:1 › MOU01/04 real login, cursor pagination, financial state and frozen detail (3.6s)
+  ✘   2 tests/admin/orders-ui.spec.ts:284:1 › MOU02 two principals, store authority and invalid sessions never reveal PII (10.8s)
+(node:16119) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   3 tests/admin/orders-ui.spec.ts:341:1 › MOU03 controlled delayed detail, pagehide, history and cross-tab logout (2.0s)
+  ✓   4 tests/admin/orders-ui.spec.ts:479:1 › MOU03 actual visibility hide clears PII and visible return needs fresh authorized detail (2.1s)
+  ✓   5 tests/admin/orders-ui.spec.ts:538:1 › MOU03 labeled fault injection: invalid DTO, non-JSON and network failure recover via real retry (1.4s)
+  ✘   6 tests/admin/orders-ui.spec.ts:581:1 › MOU03 delayed old success/error cannot repaint store, filter, locale or new session (10.9s)
+(node:16232) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   7 tests/admin/orders-ui.spec.ts:683:1 › MOU07 v2 private search, SQL queues, filters and three-language ledger (11.1s)
+(node:16296) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   8 tests/admin/orders-ui.spec.ts:834:44 › MOU08 authoritative poll denial clears list and full detail (private cursor=false) (21.5s)
+  ✓   9 tests/admin/orders-ui.spec.ts:834:44 › MOU08 authoritative poll denial clears list and full detail (private cursor=true) (21.5s)
+  ✓  10 tests/admin/orders-ui.spec.ts:860:1 › MOU05 approved inline comp at desktop/mobile in three locales and page-two locale context (3.4s)
+
+
+  1) tests/admin/orders-ui.spec.ts:284:1 › MOU02 two principals, store authority and invalid sessions never reveal PII 
+
+    Error: expect(page).toHaveURL(expected) failed
+
+    Expected pattern: /\/en\/\?store=4daed7f9-a175-4875-970b-fb9bd911089b$/
+    Received string:  "http://127.0.0.1:50841/en?store=4daed7f9-a175-4875-970b-fb9bd911089b"
+    Timeout: 10000ms
+
+    Call log:
+      - Expect "toHaveURL" with timeout 10000ms
+        - waiting for navigation to finish...
+        - navigated to "http://127.0.0.1:50841/en?store=4daed7f9-a175-4875-970b-fb9bd911089b"
+        24 × locator resolved to <html lang="en">…</html>
+           - unexpected value "http://127.0.0.1:50841/en?store=4daed7f9-a175-4875-970b-fb9bd911089b"
+
+
+      65 |   // W0 owns store navigation: a real switch goes through overview, not a page-local setter.
+      66 |   await page.getByTestId("shell-store-selector").selectOption(next);
+    > 67 |   await expect(page).toHaveURL(new RegExp(`/en/\\?store=${next}$`));
+         |                      ^
+      68 |   await expect(page.getByTestId("merchant-orders")).toHaveCount(0);
+      69 |   await page.getByTestId("nav-orders").click();
+      70 |   await expect(page).toHaveURL(new RegExp(`/en/orders\\?store=${next}$`));
+        at switchOrderStore (/Volumes/data/live_commerce_architecture_v1/.worktrees/orders-v2-fix/tests/admin/orders-ui.spec.ts:67:22)
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/orders-v2-fix/tests/admin/orders-ui.spec.ts:295:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/merchant-orders-c-browser/20261003T052423.936974000/results/orders-ui-MOU02-two-princi-0f84f-d-sessions-never-reveal-PII/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/merchant-orders-c-browser/20261003T052423.936974000/results/orders-ui-MOU02-two-princi-0f84f-d-sessions-never-reveal-PII/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/merchant-orders-c-browser/20261003T052423.936974000/results/orders-ui-MOU02-two-princi-0f84f-d-sessions-never-reveal-PII/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/merchant-orders-c-browser/20261003T052423.936974000/results/orders-ui-MOU02-two-princi-0f84f-d-sessions-never-reveal-PII/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests/admin/orders-ui.spec.ts:581:1 › MOU03 delayed old success/error cannot repaint store, filter, locale or new session 
+
+    Error: expect(page).toHaveURL(expected) failed
+
+    Expected pattern: /\/en\/\?store=4daed7f9-a175-4875-970b-fb9bd911089b$/
+    Received string:  "http://127.0.0.1:50841/en?store=4daed7f9-a175-4875-970b-fb9bd911089b"
+    Timeout: 10000ms
+
+    Call log:
+      - Expect "toHaveURL" with timeout 10000ms
+        - waiting for navigation to finish...
+        - navigated to "http://127.0.0.1:50841/en?store=4daed7f9-a175-4875-970b-fb9bd911089b"
+        24 × locator resolved to <html lang="en">…</html>
+           - unexpected value "http://127.0.0.1:50841/en?store=4daed7f9-a175-4875-970b-fb9bd911089b"
+
+
+      65 |   // W0 owns store navigation: a real switch goes through overview, not a page-local setter.
+      66 |   await page.getByTestId("shell-store-selector").selectOption(next);
+    > 67 |   await expect(page).toHaveURL(new RegExp(`/en/\\?store=${next}$`));
+         |                      ^
+      68 |   await expect(page.getByTestId("merchant-orders")).toHaveCount(0);
+      69 |   await page.getByTestId("nav-orders").click();
+      70 |   await expect(page).toHaveURL(new RegExp(`/en/orders\\?store=${next}$`));
+        at switchOrderStore (/Volumes/data/live_commerce_architecture_v1/.worktrees/orders-v2-fix/tests/admin/orders-ui.spec.ts:67:22)
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/orders-v2-fix/tests/admin/orders-ui.spec.ts:623:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/merchant-orders-c-browser/20261003T052423.936974000/results/orders-ui-MOU03-delayed-ol-aa221-ilter-locale-or-new-session/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/merchant-orders-c-browser/20261003T052423.936974000/results/orders-ui-MOU03-delayed-ol-aa221-ilter-locale-or-new-session/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/merchant-orders-c-browser/20261003T052423.936974000/results/orders-ui-MOU03-delayed-ol-aa221-ilter-locale-or-new-session/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/merchant-orders-c-browser/20261003T052423.936974000/results/orders-ui-MOU03-delayed-ol-aa221-ilter-locale-or-new-session/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) tests/admin/orders-ui.spec.ts:683:1 › MOU07 v2 private search, SQL queues, filters and three-language ledger 
+
+    Error: expect(page).toHaveURL(expected) failed
+
+    Expected pattern: /\/en\/\?store=4daed7f9-a175-4875-970b-fb9bd911089b$/
+    Received string:  "http://127.0.0.1:50841/en?store=4daed7f9-a175-4875-970b-fb9bd911089b"
+    Timeout: 10000ms
+
+    Call log:
+      - Expect "toHaveURL" with timeout 10000ms
+        - waiting for navigation to finish...
+        - navigated to "http://127.0.0.1:50841/en?store=4daed7f9-a175-4875-970b-fb9bd911089b"
+        24 × locator resolved to <html lang="en">…</html>
+           - unexpected value "http://127.0.0.1:50841/en?store=4daed7f9-a175-4875-970b-fb9bd911089b"
+
+
+      65 |   // W0 owns store navigation: a real switch goes through overview, not a page-local setter.
+      66 |   await page.getByTestId("shell-store-selector").selectOption(next);
+    > 67 |   await expect(page).toHaveURL(new RegExp(`/en/\\?store=${next}$`));
+         |                      ^
+      68 |   await expect(page.getByTestId("merchant-orders")).toHaveCount(0);
+      69 |   await page.getByTestId("nav-orders").click();
+      70 |   await expect(page).toHaveURL(new RegExp(`/en/orders\\?store=${next}$`));
+        at switchOrderStore (/Volumes/data/live_commerce_architecture_v1/.worktrees/orders-v2-fix/tests/admin/orders-ui.spec.ts:67:22)
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/orders-v2-fix/tests/admin/orders-ui.spec.ts:688:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/merchant-orders-c-browser/20261003T052423.936974000/results/orders-ui-MOU07-v2-private-680dc-s-and-three-language-ledger/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/merchant-orders-c-browser/20261003T052423.936974000/results/orders-ui-MOU07-v2-private-680dc-s-and-three-language-ledger/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/merchant-orders-c-browser/20261003T052423.936974000/results/orders-ui-MOU07-v2-private-680dc-s-and-three-language-ledger/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/merchant-orders-c-browser/20261003T052423.936974000/results/orders-ui-MOU07-v2-private-680dc-s-and-three-language-ledger/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3 failed
+    tests/admin/orders-ui.spec.ts:284:1 › MOU02 two principals, store authority and invalid sessions never reveal PII 
+    tests/admin/orders-ui.spec.ts:581:1 › MOU03 delayed old success/error cannot repaint store, filter, locale or new session 
+    tests/admin/orders-ui.spec.ts:683:1 › MOU07 v2 private search, SQL queues, filters and three-language ledger 
+  7 passed (1.5m)

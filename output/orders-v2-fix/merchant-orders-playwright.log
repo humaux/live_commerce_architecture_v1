@@ -1,0 +1,17 @@
+
+Running 10 tests using 1 worker
+
+(node:20365) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/admin/orders-ui.spec.ts:211:1 › MOU01/04 real login, cursor pagination, financial state and frozen detail (3.0s)
+  ✓   2 tests/admin/orders-ui.spec.ts:287:1 › MOU02 two principals, store authority and invalid sessions never reveal PII (1.7s)
+  ✓   3 tests/admin/orders-ui.spec.ts:344:1 › MOU03 controlled delayed detail, pagehide, history and cross-tab logout (1.6s)
+  ✓   4 tests/admin/orders-ui.spec.ts:482:1 › MOU03 actual visibility hide clears PII and visible return needs fresh authorized detail (1.6s)
+  ✓   5 tests/admin/orders-ui.spec.ts:541:1 › MOU03 labeled fault injection: invalid DTO, non-JSON and network failure recover via real retry (1.2s)
+  ✓   6 tests/admin/orders-ui.spec.ts:584:1 › MOU03 delayed old success/error cannot repaint store, filter, locale or new session (996ms)
+  ✓   7 tests/admin/orders-ui.spec.ts:686:1 › MOU07 v2 private search, SQL queues, filters and three-language ledger (9.1s)
+  ✓   8 tests/admin/orders-ui.spec.ts:843:44 › MOU08 authoritative poll denial clears list and full detail (private cursor=false) (21.2s)
+  ✓   9 tests/admin/orders-ui.spec.ts:843:44 › MOU08 authoritative poll denial clears list and full detail (private cursor=true) (21.4s)
+  ✓  10 tests/admin/orders-ui.spec.ts:869:1 › MOU05 approved inline comp at desktop/mobile in three locales and page-two locale context (3.2s)
+
+  10 passed (1.1m)

@@ -1,0 +1,322 @@
+[
+  {
+    "page": "Orders",
+    "control": "shell store A → B → reload B → A",
+    "action": "shell store A → B → reload B → A",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "real shell selection + Orders navigation; selected store persisted; other store rows absent in both directions",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "explicit cancelled state",
+    "action": "explicit cancelled state",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 2; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "cancelled queue retains state",
+    "action": "cancelled queue retains state",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 2; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "all queue retains state",
+    "action": "all queue retains state",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 2; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "default hide drafts",
+    "action": "default hide drafts",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 7; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "queue unpaid",
+    "action": "queue unpaid",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 3; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "queue transfer_review",
+    "action": "queue transfer_review",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 0; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "queue ready_to_ship",
+    "action": "queue ready_to_ship",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 1; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "queue ready_to_consign",
+    "action": "queue ready_to_consign",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 0; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "queue shipped",
+    "action": "queue shipped",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 1; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "queue completed",
+    "action": "queue completed",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 0; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "queue cancelled",
+    "action": "queue cancelled",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 2; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "queue all",
+    "action": "queue all",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 7; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "search order",
+    "action": "search order",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 1; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "search tracking",
+    "action": "search tracking",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 1; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "search phone last4",
+    "action": "search phone last4",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 7; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "search recipient",
+    "action": "search recipient",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 7; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "search frozen SKU",
+    "action": "search frozen SKU",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 7; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "refresh private search",
+    "action": "refresh private search",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "query cleared, not persisted in URL or storage",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "payment cash_on_delivery",
+    "action": "payment cash_on_delivery",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 0; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "payment bank_transfer",
+    "action": "payment bank_transfer",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 0; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "payment pay_at_pickup",
+    "action": "payment pay_at_pickup",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 0; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "payment card",
+    "action": "payment card",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 7; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "delivery home",
+    "action": "delivery home",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 7; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "reset filters",
+    "action": "reset filters",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 7; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "inspect drafts for recorded live claim",
+    "action": "inspect drafts for recorded live claim",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 20; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "live session",
+    "action": "live session",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 1; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "reset live filter",
+    "action": "reset live filter",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 20; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "Taipei day",
+    "action": "Taipei day",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 20; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "reset before visual acceptance",
+    "action": "reset before visual acceptance",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 20; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "active ledger",
+    "action": "active ledger",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "visible SQL total 7; counts match response",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "mobile refresh zh-TW",
+    "action": "mobile refresh zh-TW",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "open secondary controls, real refresh/readback, collapse",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "horizontal queue zh-TW",
+    "action": "horizontal queue zh-TW",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "real horizontal wheel then click, single row, 44px targets, cancelled visible after reload; returned to all",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "mobile secondary filters zh-TW",
+    "action": "mobile secondary filters zh-TW",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "native toggle, select, apply, reopen persisted value, reset; first order y=612.7890625 < 844",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "mobile refresh zh-CN",
+    "action": "mobile refresh zh-CN",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "open secondary controls, real refresh/readback, collapse",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "horizontal queue zh-CN",
+    "action": "horizontal queue zh-CN",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "real horizontal wheel then click, single row, 44px targets, cancelled visible after reload; returned to all",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "mobile secondary filters zh-CN",
+    "action": "mobile secondary filters zh-CN",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "native toggle, select, apply, reopen persisted value, reset; first order y=612.7890625 < 844",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "mobile refresh en",
+    "action": "mobile refresh en",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "open secondary controls, real refresh/readback, collapse",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "horizontal queue en",
+    "action": "horizontal queue en",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "real horizontal wheel then click, single row, 44px targets, cancelled visible after reload; returned to all",
+    "status": "PASS"
+  },
+  {
+    "page": "Orders",
+    "control": "mobile secondary filters en",
+    "action": "mobile secondary filters en",
+    "expected": "Assertions and persisted readback described by the named scenario pass",
+    "actual": "native toggle, select, apply, reopen persisted value, reset; first order y=604.7890625 < 844",
+    "status": "PASS"
+  }
+]

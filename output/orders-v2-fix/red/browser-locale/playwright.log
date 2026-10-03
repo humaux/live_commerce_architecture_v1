@@ -1,0 +1,53 @@
+
+Running 10 tests using 1 worker
+
+(node:19124) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/admin/orders-ui.spec.ts:211:1 › MOU01/04 real login, cursor pagination, financial state and frozen detail (4.9s)
+  ✓   2 tests/admin/orders-ui.spec.ts:287:1 › MOU02 two principals, store authority and invalid sessions never reveal PII (2.3s)
+  ✓   3 tests/admin/orders-ui.spec.ts:344:1 › MOU03 controlled delayed detail, pagehide, history and cross-tab logout (2.4s)
+  ✓   4 tests/admin/orders-ui.spec.ts:482:1 › MOU03 actual visibility hide clears PII and visible return needs fresh authorized detail (3.5s)
+  ✓   5 tests/admin/orders-ui.spec.ts:541:1 › MOU03 labeled fault injection: invalid DTO, non-JSON and network failure recover via real retry (2.0s)
+  ✓   6 tests/admin/orders-ui.spec.ts:584:1 › MOU03 delayed old success/error cannot repaint store, filter, locale or new session (1.6s)
+  ✘   7 tests/admin/orders-ui.spec.ts:686:1 › MOU07 v2 private search, SQL queues, filters and three-language ledger (7.5s)
+(node:19610) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   8 tests/admin/orders-ui.spec.ts:841:44 › MOU08 authoritative poll denial clears list and full detail (private cursor=false) (21.5s)
+  ✓   9 tests/admin/orders-ui.spec.ts:841:44 › MOU08 authoritative poll denial clears list and full detail (private cursor=true) (21.4s)
+  ✓  10 tests/admin/orders-ui.spec.ts:867:1 › MOU05 approved inline comp at desktop/mobile in three locales and page-two locale context (4.2s)
+
+
+  1) tests/admin/orders-ui.spec.ts:686:1 › MOU07 v2 private search, SQL queues, filters and three-language ledger 
+
+    Error: locator.scrollIntoViewIfNeeded: Element is not attached to the DOM
+    Call log:
+      - attempting scroll into view action
+        - waiting for element to be stable
+
+
+      824 |       }
+      825 |       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    > 826 |       await page.getByRole("heading",{level:1}).scrollIntoViewIfNeeded();
+          |                                                 ^
+      827 |       await screenshot(page,resolve(v2Evidence,`orders-${locale}-${width}x${height}.png`));
+      828 |       if (width === 390) {
+      829 |         const row = await page.locator('[data-testid^="order-expand-"]').first().boundingBox();
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/orders-v2-fix/tests/admin/orders-ui.spec.ts:826:49
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/merchant-orders-c-browser/20261003T053046.172161000/results/orders-ui-MOU07-v2-private-680dc-s-and-three-language-ledger/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/merchant-orders-c-browser/20261003T053046.172161000/results/orders-ui-MOU07-v2-private-680dc-s-and-three-language-ledger/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/merchant-orders-c-browser/20261003T053046.172161000/results/orders-ui-MOU07-v2-private-680dc-s-and-three-language-ledger/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/merchant-orders-c-browser/20261003T053046.172161000/results/orders-ui-MOU07-v2-private-680dc-s-and-three-language-ledger/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/admin/orders-ui.spec.ts:686:1 › MOU07 v2 private search, SQL queues, filters and three-language ledger 
+  9 passed (1.3m)
