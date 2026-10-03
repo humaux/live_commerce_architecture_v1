@@ -92,9 +92,9 @@ func atReportClaims(t *testing.T, o rfxOrder) *mciEnv {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p.verifier, err = meta.NewVerifier(meta.Config{AppID: miApp, Object: "page", AppSecret: miSecret, VerifyToken: "synthetic-at9"})
+	p.verifier, err = meta.NewVerifier(meta.Config{AppID: miApp, Object: "page", AppSecret: miSecret, VerifyToken: "synthetic-at9-verify-token"})
 	if err != nil {
-		t.Fatal(err)
+		t.Fatal("AT9 synthetic webhook verifier:", err)
 	}
 	p.handler, err = meta.NewInboxHandler(p.verifier, inbox)
 	if err != nil {
