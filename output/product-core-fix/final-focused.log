@@ -1,0 +1,56 @@
+# final-focused.log — product-core fix round (tail: product-editor + R2 + summary)
+# Full run: bash scripts/dev/test-focused.sh '^(TestProductEditor|TestProductDocument|TestCatalog|TestCheckout|TestHomeCod|TestLive|TestR2IntegrationUpgradeFromReleaseHead|TestT06WorkerAuthorityAndFunctionACL)'
+# REAL_PG (LC_TEST_DATABASE_ALLOWED=1). Elapsed 822.533s. Top-level PASS=221 FAIL=0 SKIP=0 exit=0.
+# (Early suites — TestCatalog/TestCheckout/TestHomeCod/TestProductDocument/TestT06 — scrolled past; the summary line below is authoritative.)
+
+=== RUN   TestProductEditorK3UntrackedConcurrentOrders
+--- PASS: TestProductEditorK3UntrackedConcurrentOrders (2.29s)
+=== RUN   TestProductEditorK3TrackedLastUnitFiftyBuyers
+--- PASS: TestProductEditorK3TrackedLastUnitFiftyBuyers (1.19s)
+=== RUN   TestProductEditorK3ConcurrentSameVersionEdits
+--- PASS: TestProductEditorK3ConcurrentSameVersionEdits (0.23s)
+=== RUN   TestProductEditorK3ConcurrentIdempotentReplay
+--- PASS: TestProductEditorK3ConcurrentIdempotentReplay (0.29s)
+=== RUN   TestProductEditorK3TrackedToUntrackedWithOpenHold
+--- PASS: TestProductEditorK3TrackedToUntrackedWithOpenHold (0.36s)
+=== RUN   TestProductEditorK3IsolationNewRoutes
+--- PASS: TestProductEditorK3IsolationNewRoutes (0.31s)
+=== RUN   TestProductEditorK3IdempotencyKeyScopeIsStoreNotActor
+--- PASS: TestProductEditorK3IdempotencyKeyScopeIsStoreNotActor (0.24s)
+=== RUN   TestProductEditorK3UntrackedNullCapGap
+--- PASS: TestProductEditorK3UntrackedNullCapGap (0.28s)
+=== RUN   TestProductEditorK3AxisChangeReleasesKeyword
+--- PASS: TestProductEditorK3AxisChangeReleasesKeyword (0.29s)
+=== RUN   TestProductEditorK3CopyClampsLongName
+--- PASS: TestProductEditorK3CopyClampsLongName (0.37s)
+=== RUN   TestProductEditorPE01SingleTransaction
+--- PASS: TestProductEditorPE01SingleTransaction (0.32s)
+=== RUN   TestProductEditorPE02Idempotency
+--- PASS: TestProductEditorPE02Idempotency (0.24s)
+=== RUN   TestProductEditorPE03KeywordAndSlugConflict
+--- PASS: TestProductEditorPE03KeywordAndSlugConflict (0.25s)
+=== RUN   TestProductEditorPE04TWDWholeDollar
+--- PASS: TestProductEditorPE04TWDWholeDollar (0.24s)
+=== RUN   TestProductEditorPE05UntrackedTrackedFlags
+--- PASS: TestProductEditorPE05UntrackedTrackedFlags (0.25s)
+=== RUN   TestProductEditorPE06ImagesCap
+--- PASS: TestProductEditorPE06ImagesCap (0.30s)
+=== RUN   TestProductEditorPE07DraftVisibility
+--- PASS: TestProductEditorPE07DraftVisibility (0.27s)
+=== RUN   TestProductEditorPE08AxisChangeArchives
+--- PASS: TestProductEditorPE08AxisChangeArchives (0.25s)
+=== RUN   TestProductEditorPE09StaleVersion
+--- PASS: TestProductEditorPE09StaleVersion (0.24s)
+=== RUN   TestProductEditorPE10Isolation
+--- PASS: TestProductEditorPE10Isolation (0.23s)
+=== RUN   TestProductEditorCopyCommand
+--- PASS: TestProductEditorCopyCommand (0.25s)
+=== RUN   TestProductEditorPE11BulkStatus
+--- PASS: TestProductEditorPE11BulkStatus (0.29s)
+=== RUN   TestProductEditorListSummaries
+--- PASS: TestProductEditorListSummaries (0.26s)
+=== RUN   TestR2IntegrationUpgradeFromReleaseHead
+--- PASS: TestR2IntegrationUpgradeFromReleaseHead (3.88s)
+PASS
+ok  	livecommerce/tests/foundation	822.533s
+test-focused: top-level PASS=221 FAIL=0 SKIP=0 exit=0

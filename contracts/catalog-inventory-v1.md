@@ -2,6 +2,57 @@
 
 Status: CONTRACT_FROZEN; implementation/tests must independently prove it. Owner: integrator. No customer production writes. Payment/checkout/fulfillment gates remain NOT_RUN until their own implementation.
 
+## Amendment — A6 + product-editor rulings (2026-10-02, product-editor §f)
+
+- `SKU` and `SKUInput` gain `InventoryTracked bool` and `MaxPerOrder int64`
+  (JSON `inventory_tracked`, `max_per_order`; migration 0109). `inventory_tracked`
+  defaults true; when false the SKU is **untracked** (checkout Begin never locks or
+  deducts it) and `max_per_order` is REQUIRED in 1..999; when true `max_per_order`
+  must be absent (NULL). The CHECK is `(inventory_tracked AND max_per_order IS NULL)
+  OR (NOT inventory_tracked AND max_per_order BETWEEN 1 AND 999)`.
+- TWD whole-dollar: for store currency `TWD`, `price_minor` and `compare_at_minor`
+  (when present) must each satisfy `% 100 == 0`; refusal code `amount_not_whole_twd`.
+- Product images: cap is 12 per product (position 0..11; migration 0109 widens the
+  0082 CHECK; `internal/catalog.MaxImagesPerProduct = 12`).
+- A product **document save command** (create `product.save` / edit
+  `product.save:<id>` under one `internal/command.Run`) writes products, options,
+  SKUs (with `inventory_tracked`/`max_per_order`), stock opening/target, keyword and
+  collections in a single transaction keyed by Idempotency-Key; any failure rolls
+  everything back. Bulk status (≤100 ids, per-item result incl. `live_window_open`
+  refusal) and copy (draft, name +「（复制）」, fresh SKU codes, no images/keywords)
+  are separate commands. See §"Exact Go API" below.
+
+## Amendment — product-editor §g (merge-patch edit, 2026-10-03)
+
+- The document command is split: `SaveProductDocument` is **create-only**
+  (`product.save`; `ExpectedVersion == 0` and empty ID); `SaveProductEdit` is the
+  merge-patch **edit** (`product.save:<id>` with hyphens stripped, `PUT
+  /products/{id}/document`). The patch is presence-aware: an absent top-level field
+  keeps the stored value; `name/description/status/slug/seo_title/seo_description`
+  pointers set it, `collection_ids: []` clears membership, `options` replaces axes.
+  Top-level `weight_grams/length_mm/width_mm/height_mm` are create-only — present in an
+  edit is `invalid_request` (422). An unmentioned SKU is left untouched; archiving is
+  only ever an explicit `active:false`.
+- `skus` entries: an id-carrying entry patches only the present fields in place
+  (`code` is not patchable and is absent from the patch type); an entry without id is a
+  new SKU validated exactly like a create SKU (`price_minor` required, `opening_qty`
+  not `target_qty`). Per-SKU logistics (`weight_grams/length_mm/width_mm/height_mm`)
+  are patchable at SKU level; `compare_at_minor` and `keyword` are `Opt` (absent keeps,
+  null clears, a value sets). `stock.target_qty` present — **including 0** — sets the
+  final on-hand (server computes the delta, reason 后台编辑, resolving the store's
+  single active warehouse; `invalid_request` when 0 or >1 active warehouses); below the
+  committed amount (`reserved+allocated+unavailable`) is `insufficient_inventory` (409).
+- §g.5 live-window: unlisting a product (`status != active`), archiving a SKU
+  (`active:false`) or touching a SKU's keyword while an OPEN claim window has an active
+  offer on it is refused `live_window_open` (409) and rolls the whole edit back; a price
+  change is allowed.
+- `GetProductDetail` returns `collection_ids` (all, position order), `warehouse_id`
+  (the store's single active warehouse, null when 0 or >1), and per-SKU
+  `keyword`/`on_hand`/`committed` (`on_hand`,`committed` null unless `warehouse_id` is
+  non-null; `committed = reserved+allocated+unavailable`; `available` remains the
+  all-warehouse sum). Edit audits `catalog.product.edited.<field>` /
+  `catalog.sku.edited.<field>` / `catalog.sku.created` (field names only, no values).
+
 ## Boundary and invariants
 
 All Go domain functions take `(context.Context, pgx.Tx, platform.Scope, ...)`; callers resolve merchant session + fixed permission through `platform.WithScope`. No pool, HTTP headers, client tenant ID or provider calls in domains. Every returned error must abort the owning transaction. Public/buyer checkout requires its separate trusted scope contract, not these merchant routes.
@@ -25,8 +76,8 @@ Reservation states: HELD, PAYMENT_PENDING, COMMITTED, RELEASED, EXPIRED. This sl
 `internal/catalog` types (all exported DTO fields use snake_case JSON):
 - `Product{ID,Name,Description,Status string; Version int64}`
 - `ProductInput{Name,Description string; ExpectedVersion int64}`
-- `SKU{ID,ProductID,Code,Status,Currency string; PriceMinor,Version,WeightGrams,LengthMM,WidthMM,HeightMM int64; OriginCountry,CustomsName,HSCandidate string}`
-- `SKUInput{ProductID,Code string; PriceMinor,WeightGrams,LengthMM,WidthMM,HeightMM int64; OriginCountry,CustomsName,HSCandidate string; ExpectedVersion int64}`
+- `SKU{ID,ProductID,Code,Status,Currency string; PriceMinor,Version,WeightGrams,LengthMM,WidthMM,HeightMM int64; OriginCountry,CustomsName,HSCandidate string; InventoryTracked bool; MaxPerOrder int64}`
+- `SKUInput{ProductID,Code string; PriceMinor,WeightGrams,LengthMM,WidthMM,HeightMM int64; OriginCountry,CustomsName,HSCandidate string; InventoryTracked bool; MaxPerOrder int64; ExpectedVersion int64}`
 - `PriceInput{PriceMinor,ExpectedVersion int64}`
 - `CreateProduct(ctx,tx,scope,key string,in ProductInput)(Product,error)`
 - `UpdateProduct(ctx,tx,scope,key,id string,in ProductInput)(Product,error)`
@@ -37,6 +88,12 @@ Reservation states: HELD, PAYMENT_PENDING, COMMITTED, RELEASED, EXPIRED. This sl
 - `SetSKUPrice(ctx,tx,scope,key,id string,in PriceInput)(SKU,error)` updates SKU price/version and appends price_history; zero is legal.
 - `ArchiveSKU(ctx,tx,scope,key,id string,expectedVersion int64)(SKU,error)`
 - `ListSKUs(ctx,tx,scope,productID string)([]SKU,error)` maximum100, rejects foreign/missing product.
+- `SaveProductDocument(ctx,tx,scope,key string,in ProductDocumentInput)(ProductDocument,error)` — the A6 document **create** (`product.save`): one transaction writing product + options + SKUs (incl. `inventory_tracked`/`max_per_order`) + stock opening + keyword + collections; `ExpectedVersion != 0` or a non-empty ID is `ErrInvalid`. Any step failure rolls everything back.
+- `SaveProductEdit(ctx,tx,scope,key,id string,in ProductDocumentPatch)(ProductDocument,error)` — the §g merge-patch **edit** (`product.save:<id>`): presence-aware top-level fields, per-SKU in-place patches, `target_qty` (incl. 0), per-SKU logistics, live-window refusals (`live_window_open`), `insufficient_inventory` below committed. `ProductDocumentPatch{ID string; Name,Description,Status,Slug,SEOTitle,SEODescription *string; Options *[]OptionAxis; SKUs *[]DocumentSKUPatch; CollectionIDs *[]string; WeightGrams,LengthMM,WidthMM,HeightMM *int64; ExpectedVersion int64}`; `DocumentSKUPatch{ID string; OptionValues *[]string; PriceMinor *int64; CompareAtMinor Opt[int64]; OriginCountry,CustomsName,HSCandidate *string; Stock *DocumentStock; Keyword Opt[string]; Active *bool; WeightGrams,LengthMM,WidthMM,HeightMM *int64}`.
+- `GetProductDetail(ctx,tx,scope,id string)(ProductDetail,error)` — `ProductDetail` embeds `Product` and adds `CollectionIDs []string`, `WarehouseID *string` and `SKUs []SKUStock`; `SKUStock` embeds `SKU` and adds `Available int64`, `Keyword string`, `OnHand *int64`, `Committed *int64` (see §g amendment).
+- `BulkSetProductStatus(ctx,tx,scope,key string,in BulkStatusInput)([]BulkStatusItem,error)` — ≤100 ids, per-item result; a product whose live window is open is refused `live_window_open` per item, others proceed.
+- `CopyProduct(ctx,tx,scope,key,id string,in CopyInput)(Product,error)` — draft, name +「（复制）」, regenerated SKU codes, no images/keywords.
+- `ListProductSummaries(ctx,tx,scope,in ProductListRequest)(ProductListResult,error)` — `ProductListResult{Items []ProductSummary, NextCursor string, Total int, StatusCounts StatusCounts}` where `StatusCounts{Draft,Active,Archived int}`; each `ProductSummary` gains `Keyword string` (keyword of the product's first keyworded active SKU by id, empty if none), `InventoryTracked bool` (true only when every active SKU is `inventory_tracked`; empty/mixed reads false) and `UpdatedAt string` (UTC microsecond form). `Total` and `StatusCounts` match the search but not the status filter.
 
 `internal/inventory`:
 - `Warehouse{ID,Name string}`; `CreateWarehouse(ctx,tx,scope,key,name string)(Warehouse,error)`; `ListWarehouses(ctx,tx,scope)([]Warehouse,error)` limit100.

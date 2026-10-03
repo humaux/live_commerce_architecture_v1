@@ -8,6 +8,21 @@ credit-card start transaction with MOCK qualification. Actual provider payment,
 public purchase HTTP/UI and production worker assembly remain unimplemented.
 The contract was frozen at `1641699`, based on `71c7623`.
 
+## Amendment — A6 untracked inventory (2026-10-02, product-editor §f ruling 1)
+
+Each SKU now carries `catalog.skus.inventory_tracked boolean NOT NULL DEFAULT true` and
+`max_per_order integer` (migration 0109; CHECK: tracked → `max_per_order` NULL,
+untracked → 1..999). An **untracked** SKU is charged in the Quote but never locked or
+deducted at Begin: `planLocked` drops it from the plan, so an order whose lines are all
+untracked sends an empty plan (`[]`, accepted by `begin_hold` whose plan count bound is
+widened to 0..800). Plan-to-quote conservation in `begin_hold` compares tracked SKUs
+only (`JOIN catalog.skus WHERE inventory_tracked`); an untracked line is bounded solely
+by its `max_per_order`, and exceeding it raises `PT422` `max_per_order_exceeded` (buyer
+code `max_per_order_exceeded`). A **tracked** SKU keeps the no-oversell invariant
+unchanged: it is locked by `inventory.lock_balance`, reserved as before, and carries no
+per-order cap. The order/reservation/receipt facts are still created for an
+all-untracked order (zero reservation/ledger lines, no stock moved).
+
 ## Decisions
 
 1. Keep the existing Go `pricing.Calculate` as the single calculator. Implement
@@ -125,9 +140,11 @@ Independent preflight: Humaux `b1a34f48-3f8b-438e-9e16-ee6fe5f40ec2`.
 - SQL entrypoint `checkout.begin_hold(bytea,uuid,text,bytea,uuid,jsonb,jsonb,bigint)`
   takes token hash, store, key, request digest, generated order UUID, Snapshot,
   allocated lines, expiry job ID; returns Result JSON. `p_lines` uses existing
-  `inventory.Line` JSON (`warehouse_id`, `sku_id`, `quantity`). It is executable
-  only by checkout runtime and owned by private checkout writer. Inputs are from
-  trusted Go, not a public SQL command. No arbitrary URLs/provider actions.
+  `inventory.Line` JSON (`warehouse_id`, `sku_id`, `quantity`). Under A6 the plan
+  holds tracked SKUs only and may be empty; an untracked line over its
+  `max_per_order` is a `PT422 max_per_order_exceeded`. It is executable only by
+  checkout runtime and owned by private checkout writer. Inputs are from trusted
+  Go, not a public SQL command. No arbitrary URLs/provider actions.
 - SQL `checkout.expire_held(uuid,bigint)` takes order ID and expected generation,
   returning one `(disposition text,retry_at timestamptz)` row: `EXPIRED`, `STALE`
   (missing/terminal/changed generation), or `NOT_DUE`. Only ordinary worker may

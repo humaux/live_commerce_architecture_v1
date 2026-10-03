@@ -1,0 +1,8 @@
+$ bash scripts/dev/test-focused.sh 'TestHomeCodAndUntrackedCoexist' ./tests/foundation
+=== RUN   TestHomeCodAndUntrackedCoexist
+    home_cod_test.go:484: COD Begin after the 0020->0021 rebase: invalid request
+--- FAIL: TestHomeCodAndUntrackedCoexist (3.20s)
+FAIL
+FAIL	livecommerce/tests/foundation	5.143s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

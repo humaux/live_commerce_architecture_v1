@@ -8,7 +8,7 @@ package foundation_test
 //	TestCatalogMediaSchemaSurface   0082 applied: FORCE RLS, role, definer owner/EXECUTE/search_path, exact grants, CHECK/UNIQUE/FK.
 //	TestCatalogMediaRLSScope        commerce_runtime sees and writes only its own store's rows (policy scope_access).
 //	TestCatalogMediaLifecycle       upload -> list -> merchant bytes -> buyer catalog images -> public bytes + headers -> Meta feed
-//	                                image_link -> reorder -> delete renumbering -> 8-photo cap (9th = 409) -> idempotent replay.
+//	                                image_link -> reorder -> delete renumbering -> 12-photo cap (13th = 409) -> idempotent replay.
 //	TestCatalogMediaSniff           magic-byte truth: SVG/GIF/garbage/PNG-as-JPEG/2 MiB / 2 MiB+1 and the multipart grammar.
 //	TestCatalogMediaBuyer404        BCAT07: unpublished, unknown, other-product, cross-store, cross-tenant and archived are one 404.
 //	TestCatalogMediaBuyerAuthority  the media route takes the BFF key + origin only (Authorization 403, query/cookie/body 422).
@@ -591,7 +591,7 @@ func TestCatalogMediaSchemaSurface(t *testing.T) {
 		sha   []byte
 		store string
 	}{
-		"position 8":                  {8, "image/png", small, sha, f.storeA1},
+		"position 12":                 {12, "image/png", small, sha, f.storeA1},
 		"position -1":                 {-1, "image/png", small, sha, f.storeA1},
 		"content type gif":            {0, "image/gif", small, sha, f.storeA1},
 		"content type svg":            {0, "image/svg+xml", small, sha, f.storeA1},
@@ -915,17 +915,17 @@ func TestCatalogMediaLifecycle(t *testing.T) {
 		t.Fatalf("%d image rows remain, want 2", n)
 	}
 
-	// Cap: 8 photos; the 9th is 409 and stores nothing; positions are exactly 0..7.
-	for seed := uint8(100); len(m.list(product)) < 8; seed++ {
+	// Cap: 12 photos; the 13th is 409 and stores nothing; positions are exactly 0..11.
+	for seed := uint8(100); len(m.list(product)) < 12; seed++ {
 		m.mustUpload(product, cmiPNG(t, 6, 6, seed), "fill.png", "image/png")
 	}
 	full := m.list(product)
 	cmiRequireContiguous(t, full)
-	if w := m.upload(product, t04Key("cmi-ninth"), cmiFile("nine.png", "image/png", cmiPNG(t, 6, 6, 250))); w.Code != 409 {
-		t.Fatalf("9th photo: %d %s, want 409", w.Code, w.Body.String())
+	if w := m.upload(product, t04Key("cmi-thirteenth"), cmiFile("thirteen.png", "image/png", cmiPNG(t, 6, 6, 250))); w.Code != 409 {
+		t.Fatalf("13th photo: %d %s, want 409", w.Code, w.Body.String())
 	}
-	if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.product_images WHERE product_id=$1`, product); n != 8 {
-		t.Fatalf("%d rows after the refused 9th, want 8", n)
+	if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.product_images WHERE product_id=$1`, product); n != 12 {
+		t.Fatalf("%d rows after the refused 13th, want 12", n)
 	}
 	// Deleting one frees a slot again and renumbers.
 	if w := m.remove(product, full[3].ID, t04Key("cmi-rm-mid")); w.Code != 200 {
@@ -933,8 +933,8 @@ func TestCatalogMediaLifecycle(t *testing.T) {
 	}
 	cmiRequireContiguous(t, m.list(product))
 	m.mustUpload(product, cmiPNG(t, 6, 6, 251), "again.png", "image/png")
-	if n := len(m.list(product)); n != 8 {
-		t.Fatalf("%d after delete+upload, want 8", n)
+	if n := len(m.list(product)); n != 12 {
+		t.Fatalf("%d after delete+upload, want 12", n)
 	}
 	cmiRequireContiguous(t, m.list(product))
 }
