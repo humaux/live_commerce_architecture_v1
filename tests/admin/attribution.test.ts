@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { parseAttributionReport } from "../../apps/admin/lib/attribution-model.ts";
 import { attributionCopy } from "../../apps/admin/lib/attribution-copy.ts";
-import { adsRoutes, validAdsQuery } from "../../apps/admin/lib/ads-request.ts";
+import { adsRoutes, adsBodyless, adsKeyless, validAdsQuery } from "../../apps/admin/lib/ads-request.ts";
 import { canOpen, matchRoute } from "../../apps/admin/src/routes.ts";
 import { attributionFixture } from "./attribution.fixture.ts";
 
@@ -132,6 +132,10 @@ test("attribution is a read-only BFF resource with exact bounded query grammar",
 test("audience-read is exactly the new local intention POST and never a data GET or queried write", () => {
   const path = `ads/sessions/${attributionFixture.sessions[0].session_id}/audience-read`;
   assert.match(path, new RegExp(`^${adsRoutes.POST}$`));
+  assert.match(path, adsBodyless, "Go audience-read rejects any body");
+  assert.doesNotMatch(path, adsKeyless, "audience-read still needs its idempotency key");
+  assert.doesNotMatch(`${path}/extra`, adsBodyless);
+  assert.doesNotMatch(path.replace("audience-read", "unknown"), adsBodyless);
   for (const method of ["GET", "PUT"] as const)
     assert.doesNotMatch(path, new RegExp(`^${adsRoutes[method]}$`));
   assert.equal(validAdsQuery("https://local.invalid", path), true);

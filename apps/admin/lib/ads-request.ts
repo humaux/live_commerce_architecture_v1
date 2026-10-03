@@ -16,9 +16,9 @@ export const adsRoutes = {
   PUT: `ads/(?:drafts/${uuid}|capi)`,
 } as const;
 export const adsAny = new RegExp(`^(?:${adsRoutes.GET}|${adsRoutes.POST}|${adsRoutes.PUT})$`);
-// Go ads.go transport: pause/end are bodiless (adsNoBody -> 422 on any body), approve is keyless (adsRoute keyed=false ->
+// Go ads.go transport: pause/end/audience-read are bodiless (adsNoBody -> 422 on any body), approve is keyless (adsRoute keyed=false ->
 // 422 on an Idempotency-Key). The page still posts `{}` + a key through the generic JSON BFF; the BFF drops them for these.
-export const adsBodyless = new RegExp(`^ads/drafts/${uuid}/(?:pause|end)$`);
+export const adsBodyless = new RegExp(`^ads/(?:drafts/${uuid}/(?:pause|end)|sessions/${uuid}/audience-read)$`);
 export const adsKeyless = new RegExp(`^ads/drafts/${uuid}/approve$`);
 const reportRoute = /^ads\/(?:report|attribution)$/;
 

@@ -324,7 +324,7 @@ async function route(request: Request, context: Context) {
     const ifMatch = request.headers.get("if-match");
     const draftPut = request.method === "PUT" && /^ads\/drafts\//.test(path);
     if (draftPut && !validIfMatch(ifMatch)) return error(422, "invalid_request");
-    // ads pause/end: the browser sends "{}", the Go route takes no body.
+    // ads pause/end/audience-read: the browser sends "{}", Go takes no body.
     const adsNoBody = adsBodyless.test(path);
     if (adsNoBody) {
       if (init.body !== "{}") return error(422, "invalid_request");
