@@ -446,6 +446,22 @@ SHA-256, omitted if not normalizable), `external_id` = SHA-256(hex(HMAC(store ke
 stores always add `test_event_code`. Also deletes `ads.capi_contexts` rows older than 8 days or whose
 consent is no longer allowed.
 
+### 6.5 First-party attribution and aggregate audience reads (0113)
+
+Implementation authority: `docs/delivery/units/ads-attribution.md`, including Amendment 1. This does not change the 0112 refusal projection or §3 `rate_limited` classification.
+
+- First-party signed, host-only, HttpOnly/Secure/Lax `lc_fbp` and `lc_fbc` are created only on ad landings. `fbp` is stable with a rolling 90-day lifetime; only a new `fbclid` replaces `fbc`. The independent `lc_ad_touch` needs a valid `lc_ad` and expires after seven days. The authenticated buyer BFF supplies the touch and IP, not the public JSON request.
+- Begin freezes factual attribution in `orders.order_attribution`, separate from the immutable financial snapshot. Valid browser click takes precedence. The exact redeemed claim version links through intake to its post even without a discounted live price. Several simultaneous boosts on one post keep `draft_id=NULL`; they are not split across ads.
+- Erasure clears all three matching-context fields. Terminal/not-eligible CAPI clears only IP; the existing bounded CAPI purge also handles abandoned/ineligible orders. Consent is rechecked at the final lease-fenced data read. Phone/email normalization and hashing occur in worker memory. Event ID is unchanged.
+- `ads.insights_breakdowns` replaces a complete campaign-day partition on reread. Dimensions remain separate. Hourly buckets are absolute timestamps; daily figures retain Meta account day and timezone. Order aggregates use the Taipei order-created cohort and known refund facts, with uncollected offline orders separate. The two sources are never added.
+- Buyer distribution is county-only: home region/city must exactly match a Taiwan county allowlist; pickup addresses contribute only a recognized county prefix. Unknown values yield `—`, never address/name strings. No age/gender is collected for a buyer.
+- `GET /v1/admin/stores/{store_id}/ads/attribution?from=YYYY-MM-DD&to=YYYY-MM-DD` requires `ads:read`, a maximum 92-day window, and returns drafts and sessions. The admin BFF exposes `/api/stores/{store_id}/ads/attribution`. No provider call occurs during a report read.
+- `POST /v1/admin/stores/{store_id}/ads/sessions/{session_id}/audience-read` has an empty JSON body and mandatory `Idempotency-Key`. It requires `ads:read` and `live:read`, exactly one active bound Facebook Page source, and attested `read_insights`/`pages_read_engagement`. It returns a queued operation, not data. Missing scope is `403 forbidden`; unusable source is `422 source_not_owned`. Its BFF mirrors under `/api/stores/…`.
+- The existing claims worker alone opens Page credentials for `facebook/meta.live_insights/service`. It resolves the bound post via Page live videos and performs aggregate GETs. It never mutates Meta. Snapshot completion is lease/policy fenced; overlapping reads are ordered by request time. Missing demographic aggregates are “insufficient”, not zero. View-time buckets are not people and are never joined to buyer records.
+- Narrow source, order and aggregate helpers execute as existing domain owners. No runtime receives raw attribution, event, Page credential or buyer-field table grants. `commerce_claims_writer` gains only the event-version/quantity/time columns and link `issued_at` needed for its own scoped provenance and aggregate helpers; existing caller authorization and token restrictions remain.
+
+Acceptance is AT1–AT9. MOCK/REAL_PG/browser results must be distinguished from AT6 SANDBOX and AT9 LIVE reads; missing owner dataset/test code or `read_insights` remains NOT_RUN, never a claimed success.
+
 ## 7. HTTP (Go private API; admin BFF mirrors under `/api/admin/`, buyer BFF under `/api/buyer/`)
 
 | Route | Permission | Notes |
