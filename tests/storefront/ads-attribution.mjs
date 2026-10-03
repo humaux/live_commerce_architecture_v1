@@ -425,7 +425,7 @@ async function place(locale, width) {
     .check();
   record(locale, width, "fill synthetic address and choose bank transfer");
   const destinationWait = page.waitForResponse((response) =>
-    isResponse(response, "destination", "POST"),
+    isResponse(response, "destination", "PUT"),
   );
   await click(
     page,
