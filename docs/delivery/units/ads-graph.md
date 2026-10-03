@@ -173,3 +173,12 @@ The owner asked for other countries to be covered by reusing Meta's own regulati
      - 3858498 / 3858550 → `regional_category_missing`, which should never happen after item 1.
    - Any other Graph refusal surfaces Meta's own `error_user_msg` (plain text, ≤300 characters, HTML stripped) to the merchant, beside our code. That message is how Meta's ad law reaches the merchant; we do not paraphrase it.
 5. **Merchant guidance.** The guidance from the first ruling (verify in Meta and set the default beneficiary/payer, plus the help link) applies to every `regional_advertiser_unverified` country.
+
+### Amendment 2 (2026-10-03, owner): no rules of our own — Meta decides, we pass Meta's answer through
+The owner's position: "Anything Meta's API disallows, we cannot allow anyway — so why build a second set?" Accepted. This supersedes items 2–5 of Amendment 1 and items 2–3 of the first ruling.
+
+Keep only what the API itself requires of the caller:
+1. **Declaration field.** `regional_regulated_categories` is a request parameter that Meta requires the caller to declare and does not infer. The table stays with the two verified rows (TW → `TAIWAN_UNIVERSAL`, SG → `SINGAPORE_UNIVERSAL`). It is a parameter mapping like currency, not a rule.
+2. **Pass refusals through.** Every Graph refusal shows Meta's own `error_user_msg` to the merchant: plain text, ≤300 characters, HTML stripped. That message already carries Meta's help link (for example the Taiwan advertiser verification page). The code stays the generic `graph_<code>`.
+
+**Removed:** the TH age pre-check, the EU refusal, the special codes `tw_advertiser_unverified` / `regional_*`, and the custom guidance copy. Meta's message is the guidance.
