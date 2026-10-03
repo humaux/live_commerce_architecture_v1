@@ -5,7 +5,6 @@
 import type { Locale } from "@live-commerce/i18n";
 
 const en = {
-  product: "Live commerce workspace",
   manage: "Workspace setup",
   account: "Merchant account",
   language: "Language",
@@ -81,7 +80,6 @@ export type EntryCopy = typeof en;
 export const entryCopy: Record<Locale, EntryCopy> = {
   en,
   "zh-CN": {
-    product: "直播商家工作台",
     manage: "工作区管理",
     account: "商家账号",
     language: "语言",
@@ -141,7 +139,6 @@ export const entryCopy: Record<Locale, EntryCopy> = {
     success: "内部工作区已创建；店铺尚未发布，支付和物流尚未接通。",
   },
   "zh-TW": {
-    product: "直播商家工作台",
     manage: "工作區管理",
     account: "商家帳號",
     language: "語言",

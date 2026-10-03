@@ -131,6 +131,7 @@ func newRoutes(cfg Config, keys TokenOpener, check func(context.Context, core.Di
 			LoadSecret:          LoadSecret(ProviderAds, keys),
 			DispatchWithSecret:  client.dispatch,
 			ReconcileWithSecret: client.reconcile,
+			Finish:              FinishRefusal,
 		})
 	}
 	return routes, nil

@@ -14,13 +14,40 @@ for (const f of ["migrations/0074_meta_ads.sql", "migrations/0080_meta_capi.sql"
 
 const port = await new Promise((res) => { const s = createServer().listen(0, "127.0.0.1", () => { const p = s.address().port; s.close(() => res(p)); }); });
 const child = spawn("pnpm", ["--filter", "@live-commerce/storefront", "exec", "next", "start", "--hostname", "127.0.0.1", "--port", String(port)], {
-  env: { ...process.env, COMMERCE_BUYER_WEB_ENABLED: "0" }, stdio: ["ignore", "pipe", "pipe"],
+  env: { ...process.env, COMMERCE_BUYER_WEB_ENABLED: "0" }, stdio: ["ignore", "pipe", "pipe"], detached: process.platform !== "win32",
 });
 let log = "";
 child.stdout.on("data", (d) => (log += d));
 child.stderr.on("data", (d) => (log += d));
-const stop = () => child.kill("SIGTERM");
-process.on("exit", stop);
+let closed = false;
+const closedPromise = new Promise((resolve) => child.once("close", () => { closed = true; resolve(); }));
+// pnpm and the local Node launcher can each fork: terminate only this test's
+// detached process group and wait for its inherited pipes, not just pnpm's PID.
+const signal = (sig) => {
+  if (!child.pid) return;
+  try { if (process.platform === "win32") child.kill(sig); else process.kill(-child.pid, sig); }
+  catch (err) { if (err.code !== "ESRCH") throw err; }
+};
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const groupAlive = () => {
+  if (!child.pid) return false;
+  if (process.platform === "win32") return !closed;
+  try { process.kill(-child.pid,0); return true; } catch (err) { if(err.code === "ESRCH") return false; throw err; }
+};
+async function waitStopped() {
+  const deadline = Date.now()+3000;
+  while ((!closed || groupAlive()) && Date.now()<deadline) await delay(50);
+}
+const emergencyStop = () => signal("SIGKILL");
+process.on("exit", emergencyStop);
+async function stop() {
+  signal("SIGTERM");
+  await waitStopped();
+  if (!closed || groupAlive()) { signal("SIGKILL"); await waitStopped(); }
+  if (!closed || groupAlive()) throw new Error("AL1 cleanup failed: owned process group did not close");
+  await closedPromise;
+  process.off("exit", emergencyStop);
+}
 try {
   const base = `http://127.0.0.1:${port}`;
   for (let i = 0; ; i++) {
@@ -31,4 +58,4 @@ try {
   if (res.status !== 308) throw new Error(`AL1 FAIL: GET /products/${id} -> ${res.status}, expected a permanent redirect`);
   if (res.headers.get("location") !== `/zh-TW/products/${id}`) throw new Error(`AL1 FAIL: redirected to ${res.headers.get("location")}`);
   console.log(`AL1 PASS: /products/${id} -> 308 ${res.headers.get("location")} (second hop to the slug page: SF07)`);
-} finally { stop(); }
+} finally { await stop(); }

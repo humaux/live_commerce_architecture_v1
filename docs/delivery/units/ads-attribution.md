@@ -160,3 +160,31 @@ Merchants buy FB ads mainly to bring viewers into their FB live selling, so the 
   - the D9 breakdown sweeper and the live insights read;
   - the 直播復盤 page.
 - **Independent review:** a non-author agent, with the security focus on cookies, PII and cross-store isolation.
+
+## Amendment 1 (integrator, 2026-10-04): rulings on the checkpoint's open boundaries
+These answer `output/ads-attribution/SUMMARY.md` (2ca36a7c), "Design boundaries". They are technical rulings within D1–D9, not new product scope.
+
+- **R1 Migration.** It is **0113**. 0112 is `meta_ads_refusal_text` (ads-tw, already in r3/integration). Before continuing, merge r3/integration (≥ d1d3b5a3; contains b7afdf1d) into `unit/ads-attribution`, and keep the 0112 refusal fields.
+- **R2 Storage, which replaces "inside the snapshot".** `customers.apply_erasure` keeps order snapshots for legal retention, so the pseudonyms must not live inside the immutable snapshot. Use one narrow table per order, `orders.order_attribution`, with these columns:
+  - `order_id` PK/FK, `store_id`;
+  - `path` (`ad_click` | `boosted_post`), `draft_id` (nullable), `post_id` (nullable), `clicked_at` (nullable), `frozen_at`;
+  - `fbc`, `fbp`, `client_ip` (all nullable).
+
+  It is written once, at Begin and in the same transaction; claim-path rows are written when the claim becomes an order. It is RLS-scoped by store. No order means no row.
+- **R3 Erasure and IP retention.** `customers.apply_erasure` sets `fbc`, `fbp` and `client_ip` to NULL for the erased buyer's orders, and keeps `path`, `draft_id`, `post_id` and the timestamps, which are aggregate facts and not personal.
+  - `client_ip` exists only for CAPI. It is set to NULL when that order's CAPI attempt reaches a terminal state (sent, final failure, or not consented / not eligible).
+  - Each rule has one PG test.
+- **R4 Precedence and ambiguity, with no invented precision.**
+  - **Click beats post.** A valid 7-day `ad_click` touch beats `boosted_post`, because it is a fact about this browser.
+  - **Several drafts on the same post.** If several drafts promoting the same post were live at the claim time, write `path=boosted_post`, `post_id` set, `draft_id=NULL`. Per-draft reports exclude it. The 直播復盤 shows it under that post, labelled 「多個推廣同時進行，未分配到單一廣告」. It is never split and never duplicated.
+- **R5 Cookies.**
+  - **`lc_fbp`** is a browser identifier, independent of the touch. It is created only on an ad landing (`lc_ad` or `fbclid` present), so non-ad visitors get no ad cookies. Its lifetime is **90 days rolling** (Meta's `_fbp` default) and is refreshed on each ad landing. The 7-day rule applies only to the touch. This resolves the P2 `red-fbp-lifetime` case, so turn that test green.
+  - **`lc_fbc`** is replaced only when a new `fbclid` arrives, with a 90-day lifetime. Landing with `lc_ad` but no `fbclid` updates the touch and keeps any existing `lc_fbc`. Landing with `fbclid` but no `lc_ad` sets `lc_fbc`/`lc_fbp` and writes no touch: there is no draft to credit, so nothing is invented.
+  - All cookies are httpOnly, Secure and SameSite=Lax, with Host set to the store host only (no Domain attribute). Signed values are fine.
+- **R6 Post identity.** Comment-path attribution joins the specific claim → its intake comment → that comment's post id. It never uses `claims.order_live_sources` session-wide fan-out.
+- **R7 Time axis.**
+  - Read the ad account's `timezone_name` once per sweep and store it with the snapshots.
+  - Hourly buckets are converted to absolute timestamps before they are overlaid on the session timeline.
+  - Daily figures stay on Meta's account days. When the account time zone is not `Asia/Taipei`, the report states it (「Meta 帳戶時區：X」) and does not relabel those days as Taipei days.
+- **R8 Live audience.** Your checkpoint statement is accepted as written: empty means 「觀眾數不足，Meta 未提供輪廓」, not zero; age/gender figures are view time, not people; there is no buyer join.
+- **Gates.** AT1–AT9 are unchanged. AT1 adds the R5 cases: 90-day `fbp` stable across a later click after 7 days, no cookies without ad params, no touch without `lc_ad`. AT2/AT3 add the R3 and R4 cases.

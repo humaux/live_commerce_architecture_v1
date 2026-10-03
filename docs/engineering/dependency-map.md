@@ -346,7 +346,7 @@ Package pageopen owns the OPEN half of meta-page-token-v2 custody: the HPKE priv
 Package metaads owns every Meta Graph wire call of the ads product (contracts/meta-ads-v1.md §3): the eight meta_ads dispatcher routes (create_campaign, create_adset, create_creative, create_ad, preflight_account, activate, pause, read_insights), the CAPI event POST (Client.PostEvent, called by the ads-capi route), the merchant OAuth connect (OAuth.Connect: code exchange, client business, granted permissions, ad-account/dataset pick list, HPKE seal), the Meta money conversions (I05), the read-result grammar carried in integration.operations.provider_reference, and the seal side of token custody (SealKeys: public keys only).
 
 - Depends on (internal): `internal/ads`, `internal/command`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta/oauth`, `internal/platform`
-- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`
+- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`, `golang.org/x/net/html`
 - Used by: `cmd/ads-worker`, `cmd/api`, `internal/attribution/capiroute`, `internal/integrations/meta/pagetoken/pageopen`, `internal/integrations/meta_ads/tokenopen`
 
 ## `internal/integrations/meta_ads/tokenopen`

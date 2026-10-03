@@ -1,0 +1,25 @@
+file:///Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/tests/admin/platform-site.test.ts:4
+import { company, companyConfig, operatedBy, platformRoute, brandedTitle } from "../../apps/admin/lib/company.ts";
+                                                            ^^^^^^^^^^^^
+SyntaxError: The requested module '../../apps/admin/lib/company.ts' does not provide an export named 'brandedTitle'
+    at #asyncInstantiate (node:internal/modules/esm/module_job:326:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:429:5)
+    at async node:internal/modules/esm/loader:639:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.15.0
+✖ tests/admin/platform-site.test.ts (77.802ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 84.302083
+
+✖ failing tests:
+
+test at tests/admin/platform-site.test.ts:1:1
+✖ tests/admin/platform-site.test.ts (77.802ms)
+  'test failed'

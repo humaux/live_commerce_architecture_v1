@@ -377,6 +377,13 @@ function ConnectionSection({
         </button>
       </div>
       <p className="ads-note">{c.connectHint}</p>
+      {settings.recent_refusals.length > 0 && <div data-testid="ads-meta-refusals">
+        <h3>{c.metaResponse}</h3>
+        <ul className="ads-list">{settings.recent_refusals.map((r) => <li key={r.operation_id}>
+          <small>{r.action} · {r.code} · {when(locale,r.updated_at,"—")}</small>
+          <p className="ads-meta-message">{r.error_user_msg}</p>
+        </li>)}</ul>
+      </div>}
       {connectError && (
         <div className="ads-bad" role="alert" data-testid="ads-connect-error">
           {c.connectErrors[connectError]} <button type="button" className="ads-inline" onClick={startAgain}>{c.startAgain}</button>
@@ -632,7 +639,9 @@ function DraftDetail({
                 <tr key={`${o.kind}:${o.attempt}:${o.seq}`}>
                   <td data-label={c.opKind}><span className="ads-mono">{o.kind}</span>{o.seq > 1 ? ` #${o.seq}` : ""}</td>
                   <td data-label={c.opAttempt}>{o.attempt}</td>
-                  <td data-label={c.opState}>{c.opStates[o.state]}{o.code ? <small className="ads-mono"> {o.code}</small> : null}</td>
+                  <td data-label={c.opState}>{c.opStates[o.state]}{o.code ? <small className="ads-mono"> {o.code}</small> : null}
+                    {o.error_user_msg && <p className="ads-meta-message" data-testid="ads-meta-message">{o.error_user_msg}</p>}
+                  </td>
                   <td data-label={c.opUpdated}>{when(locale, o.updated_at, "—")}</td>
                 </tr>
               ))}

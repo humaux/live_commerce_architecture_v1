@@ -1,0 +1,22 @@
+✔ Taiwan guidance uses the latest failed operation of the current attempt, never stale history or kind ordering (0.801917ms)
+✔ frozen error codes: model list equals the frozen list, each is read from both error shapes (0.44925ms)
+✔ copy: every code, status, op state and connect error has text in all three locales (0.283958ms)
+✔ copy never calls a budget a hard stop and never offers resume (0.234542ms)
+✔ draft: every §5.1 status parses; unknown status/template/op state is an error, never guessed (0.555834ms)
+✔ draft: optional fields, remote ids and the Ads Manager link (0.166833ms)
+✔ action hints: pause whenever a remote id exists and not ENDED; a paused draft is only ever copied (X7) (0.189625ms)
+✔ money: whole units to minor with integer math; TWD must be whole (8.413875ms)
+✔ draft input: exact 11-key body and every local rule (0.887167ms)
+✔ draft form round trip and X7 copy (blank schedule, no id, no revision) (0.171625ms)
+✔ settings parser: environment enum, connections, identities, capi (0.237833ms)
+✔ connect state parser: pick list kinds and id match (0.116ms)
+✔ report: three separate blocks, orders may be null, no combined figure (0.247666ms)
+✔ capi body and validation (0.080625ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 93.577375

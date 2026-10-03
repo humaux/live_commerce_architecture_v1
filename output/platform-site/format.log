@@ -1,0 +1,12 @@
+apps/admin/components/platform/platform.css 42ms
+apps/admin/components/platform/PlatformDocument.tsx 49ms
+apps/admin/components/platform/PlatformHome.tsx 11ms
+[error] No files matching the pattern were found: "apps/admin/app/(public)/**/*.{tsx,ts}".
+apps/admin/lib/platform-copy.ts 7ms
+apps/admin/lib/platform-legal.ts 6ms
+apps/admin/lib/company.ts 7ms
+apps/admin/next.config.ts 3ms
+apps/admin/proxy.ts 12ms
+tests/admin/platform-runner.mjs 46ms
+tests/deploy/platform-edge.mjs 8ms
+tests/admin/platform-site.test.ts 8ms

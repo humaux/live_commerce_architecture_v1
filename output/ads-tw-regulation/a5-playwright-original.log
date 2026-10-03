@@ -1,0 +1,15 @@
+
+Running 8 tests using 1 worker
+
+(node:79660) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/admin/ads.spec.ts:129:1 › MA09a flow › MA09a connect through the fake FLfB dialog: dialog params, state cookie, 303 without code/state, pick list, bind, sealed token never in the browser (1.2s)
+  ✓  2 tests/admin/ads.spec.ts:229:1 › MA09a flow › MA09a state_mismatch, state_expired, meta_connect_failed and Start again: fixed codes, never a guess, the code is not exchanged on a mismatch (1.1s)
+  ✓  3 tests/admin/ads.spec.ts:287:1 › MA09a flow › MA09a draft -> approve -> publish -> pause -> copy: statuses, one keyed request each, the campaign is only ever switched by activate and pause, X7 no resume (7.9s)
+  ✓  4 tests/admin/ads.spec.ts:394:1 › MA09a flow › MA09a allowance off (O4) disables approve with the copy; SANDBOX banner follows the environment (AD9) (622ms)
+  ✓  5 tests/admin/ads.spec.ts:417:1 › MA09a flow › MA09a report: three separate blocks with window, timezone and fetched_at, no combined figure, budget is not a hard stop (438ms)
+  ✓  6 tests/admin/ads.spec.ts:439:1 › MA09a flow › MA09a three locales, desktop 1586x992 and 390 px: no horizontal scroll, screenshots hashed (2.1s)
+  ✓  7 tests/admin/ads.spec.ts:467:3 › MA09a frozen responses reach the merchant › MA09a a refused command reaches the merchant with its frozen code (over_allowance at approve) (590ms)
+  ✓  8 tests/admin/ads.spec.ts:486:3 › MA09a frozen responses reach the merchant › MA09a a report window without any insights still renders the three blocks (zeros, not fetched), not an error (477ms)
+
+  8 passed (14.9s)

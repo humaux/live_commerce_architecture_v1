@@ -30,6 +30,7 @@ const configId = required("LC_BROWSER_CONFIG_ID");
 const redirect = required("LC_BROWSER_REDIRECT");
 const graphVersion = required("LC_BROWSER_GRAPH_VERSION");
 const secrets: string[] = JSON.parse(required("LC_BROWSER_SECRETS"));
+const refusalPhase = process.env.LC_BROWSER_PHASE === "original-refusal";
 
 test.use({ baseURL: origin, trace: "retain-on-failure", screenshot: "only-on-failure" });
 
@@ -121,6 +122,7 @@ function recordBodies(page: Page) {
   });
 }
 
+if (!refusalPhase) {
 test.describe("MA09a flow", () => {
 test.describe.configure({ mode: "serial" });
 
@@ -494,3 +496,52 @@ test.describe("MA09a frozen responses reach the merchant", () => {
     await expect(page.getByTestId("ads-report")).not.toContainText(en.unavailable);
   });
 });
+}
+
+// Go first verifies every frozen single-activation assertion, then starts this
+// phase and checks its newly created draft independently. Neither suite is skipped.
+if (refusalPhase) {
+test("MA09a Meta refusal original text survives refresh in three locales and permits an explicit retry", async ({page}) => {
+  await signedLogin(page);
+  await openAds(page);
+  await page.getByTestId("ads-new-draft").click();
+  await page.getByTestId("ads-f-source").fill(`${pageAsset}_1234567890`);
+  await page.getByTestId("ads-f-budget").fill("3000");
+  await page.getByTestId("ads-f-starts").fill(localInput(3*3600_000));
+  await page.getByTestId("ads-f-ends").fill(localInput(27*3600_000));
+  const saved = page.waitForResponse(r=>r.request().method()==="POST" && /\/ads\/drafts$/.test(new URL(r.url()).pathname));
+  await page.getByTestId("ads-f-save").click();
+  const created = await saved;
+  expect(created.status()).toBe(201);
+  const {id} = await created.json();
+  expect(id).toMatch(uuidRe);
+  await page.getByTestId("ads-approve").click();
+  await expect(page.getByTestId("ads-detail")).toHaveAttribute("data-status","APPROVED");
+  await ctl("reject/meta");
+  await page.getByTestId("ads-publish").click();
+  await driveUntil(page,"FAILED");
+  const original = "Meta original: 請完成驗證 & retry.";
+  for (const locale of ["zh-TW","zh-CN","en"] as const) {
+    for (const viewport of ["desktop","mobile"] as const) {
+      await page.setViewportSize(viewport==="desktop" ? {width:1586,height:992} : {width:390,height:844});
+      await page.goto(`${origin}/${locale}/ads?store=${store}&draft=${id}`);
+      const message=page.getByTestId("ads-meta-message");
+      await expect(message).toHaveText(original);
+      await expect(page.getByTestId("ads-ops")).toContainText("graph_100");
+      await expect(page.getByTestId("ads-meta-refusals")).toContainText(original);
+      await expect(message.locator("script,b,a")).toHaveCount(0);
+      await page.reload();
+      await expect(message).toHaveText(original);
+      await message.scrollIntoViewIfNeeded();
+      await shot(page,"meta-original-refusal",locale,viewport);
+    }
+  }
+  const retry = page.waitForResponse(r=>r.request().method()==="POST" && /\/publish$/.test(new URL(r.url()).pathname));
+  await page.getByTestId("ads-publish").click();
+  expect((await retry).status()).toBe(200);
+  await driveUntil(page,"ACTIVE");
+  await page.getByTestId("ads-pause").click();
+  await driveUntil(page,"PAUSED");
+  await noSecrets(page);
+});
+}

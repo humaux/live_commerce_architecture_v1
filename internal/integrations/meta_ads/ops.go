@@ -191,14 +191,18 @@ func buildCreate(req core.DispatchRequest) (createSpec, bool) {
 		if err != nil {
 			return createSpec{}, false
 		}
-		return createSpec{path: account + "/adsets", listPath: r.CampaignID + "/adsets", name: tag, payload: map[string]any{
+		payload := map[string]any{
 			"name": tag, "campaign_id": r.CampaignID, "lifetime_budget": budget,
 			"start_time": start.Format(time.RFC3339), "end_time": end.Format(time.RFC3339),
 			"billing_event": pair[1], "optimization_goal": pair[0], "bid_strategy": bidStrategy,
 			"targeting": map[string]any{"geo_locations": map[string]any{"countries": r.Countries},
 				"age_min": r.AgeMin, "age_max": r.AgeMax},
 			"status": statusActive, // AD3: children ACTIVE under a PAUSED campaign (effective CAMPAIGN_PAUSED)
-		}}, true
+		}
+		if categories := regulatedCategories(r.Countries); len(categories) > 0 {
+			payload["regional_regulated_categories"] = categories
+		}
+		return createSpec{path: account + "/adsets", listPath: r.CampaignID + "/adsets", name: tag, payload: payload}, true
 	case ActionCreateCreative:
 		var r struct {
 			baseReq
@@ -339,7 +343,7 @@ func (c *Client) reconcile(ctx context.Context, req core.DispatchRequest, secret
 		}
 		rep, err := c.g.do(ctx, http.MethodGet, r.CampaignID, url.Values{"fields": {"status,effective_status"}}, token, nil)
 		if err != nil || !rep.ok() {
-			return unconfirmed(), nil // a rejected status GET proves nothing about the campaign
+			return reconcileFailure(rep, err), nil // a rejected status GET proves nothing about the campaign
 		}
 		var doc struct {
 			Status string `json:"status"`
@@ -369,7 +373,7 @@ func (c *Client) reconcileCreate(ctx context.Context, spec createSpec, token []b
 		}
 		rep, err := c.g.do(ctx, http.MethodGet, spec.listPath, q, token, nil)
 		if err != nil || !rep.ok() {
-			return unconfirmed()
+			return reconcileFailure(rep, err)
 		}
 		var doc struct {
 			Data []struct {

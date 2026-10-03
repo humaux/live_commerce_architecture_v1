@@ -1,0 +1,3155 @@
+{
+  "tier": "MOCK transport / production Next / real Chromium",
+  "rows": [
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "home",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "home",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "home",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "home",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "home",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "home",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "home",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "home",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "home",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "home",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "home",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "home",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "home",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "privacy",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "privacy",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "privacy",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "privacy",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "privacy",
+      "action": "mailto 2 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "privacy",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "privacy",
+      "action": ".ps-back",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "privacy",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "privacy",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "privacy",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "privacy",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "privacy",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "privacy",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "privacy",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "privacy",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "terms",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "terms",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "terms",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "terms",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "terms",
+      "action": "mailto 2 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "terms",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "terms",
+      "action": ".ps-back",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "terms",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "terms",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "terms",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "terms",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "terms",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "terms",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "terms",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "terms",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "mailto 2 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "data-deletion",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "data-deletion",
+      "action": ".ps-back",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "data-deletion",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "contact",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "contact",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "contact",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "contact",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "contact",
+      "action": "mailto 2 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "contact",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "contact",
+      "action": ".ps-back",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "contact",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "contact",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "contact",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "contact",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "contact",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "contact",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "contact",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "contact",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "home",
+      "action": "sign in on admin host",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "page": "home",
+      "action": "register on admin host",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "home",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "home",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "home",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "home",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "home",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "home",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "home",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "home",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "home",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "home",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "home",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "home",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "home",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "privacy",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "privacy",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "privacy",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "privacy",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "privacy",
+      "action": "mailto 2 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "privacy",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "privacy",
+      "action": ".ps-back",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "privacy",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "privacy",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "privacy",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "privacy",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "privacy",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "privacy",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "privacy",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "privacy",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "terms",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "terms",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "terms",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "terms",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "terms",
+      "action": "mailto 2 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "terms",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "terms",
+      "action": ".ps-back",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "terms",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "terms",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "terms",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "terms",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "terms",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "terms",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "terms",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "terms",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "mailto 2 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": ".ps-back",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "contact",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "contact",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "contact",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "contact",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "contact",
+      "action": "mailto 2 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "contact",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "contact",
+      "action": ".ps-back",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "contact",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "contact",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "contact",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "contact",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "contact",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "contact",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "contact",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "contact",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "home",
+      "action": "sign in on admin host",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "page": "home",
+      "action": "register on admin host",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "home",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "home",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "home",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "home",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "home",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "home",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "home",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "home",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "home",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "home",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "home",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "home",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "home",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "privacy",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "privacy",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "privacy",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "privacy",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "privacy",
+      "action": "mailto 2 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "privacy",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "privacy",
+      "action": ".ps-back",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "privacy",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "privacy",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "privacy",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "privacy",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "privacy",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "privacy",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "privacy",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "privacy",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "terms",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "terms",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "terms",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "terms",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "terms",
+      "action": "mailto 2 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "terms",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "terms",
+      "action": ".ps-back",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "terms",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "terms",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "terms",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "terms",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "terms",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "terms",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "terms",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "terms",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "mailto 2 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "data-deletion",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "data-deletion",
+      "action": ".ps-back",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "data-deletion",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "contact",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "contact",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "contact",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "contact",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "contact",
+      "action": "mailto 2 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "contact",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "contact",
+      "action": ".ps-back",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "contact",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "contact",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "contact",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "contact",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "contact",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "contact",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "contact",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "contact",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "home",
+      "action": "sign in on admin host",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "page": "home",
+      "action": "register on admin host",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "home",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "home",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "home",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "home",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "home",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "home",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "home",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "home",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "home",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "home",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "home",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "home",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "home",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "privacy",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "privacy",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "privacy",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "privacy",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "privacy",
+      "action": "mailto 2 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "privacy",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "privacy",
+      "action": ".ps-back",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "privacy",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "privacy",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "privacy",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "privacy",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "privacy",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "privacy",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "privacy",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "privacy",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "terms",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "terms",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "terms",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "terms",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "terms",
+      "action": "mailto 2 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "terms",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "terms",
+      "action": ".ps-back",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "terms",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "terms",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "terms",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "terms",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "terms",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "terms",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "terms",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "terms",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "mailto 2 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": ".ps-back",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "contact",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "contact",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "contact",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "contact",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "contact",
+      "action": "mailto 2 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "contact",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "contact",
+      "action": ".ps-back",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "contact",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "contact",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "contact",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "contact",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "contact",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "contact",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "contact",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "contact",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "home",
+      "action": "sign in on admin host",
+      "result": "PASS"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "page": "home",
+      "action": "register on admin host",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "home",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "home",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "home",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "home",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "home",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "home",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "home",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "home",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "home",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "home",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "home",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "home",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "home",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "privacy",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "privacy",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "privacy",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "privacy",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "privacy",
+      "action": "mailto 2 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "privacy",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "privacy",
+      "action": ".ps-back",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "privacy",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "privacy",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "privacy",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "privacy",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "privacy",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "privacy",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "privacy",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "privacy",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "terms",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "terms",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "terms",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "terms",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "terms",
+      "action": "mailto 2 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "terms",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "terms",
+      "action": ".ps-back",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "terms",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "terms",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "terms",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "terms",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "terms",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "terms",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "terms",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "terms",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "mailto 2 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "data-deletion",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "data-deletion",
+      "action": ".ps-back",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "data-deletion",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "data-deletion",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "contact",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "contact",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "contact",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "contact",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "contact",
+      "action": "mailto 2 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "contact",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "contact",
+      "action": ".ps-back",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "contact",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "contact",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "contact",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "contact",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "contact",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "contact",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "contact",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "contact",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "home",
+      "action": "sign in on admin host",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "page": "home",
+      "action": "register on admin host",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "home",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "home",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "home",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "home",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "home",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "home",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "home",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "home",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "home",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "home",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "home",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "home",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "home",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "privacy",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "privacy",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "privacy",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "privacy",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "privacy",
+      "action": "mailto 2 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "privacy",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "privacy",
+      "action": ".ps-back",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "privacy",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "privacy",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "privacy",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "privacy",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "privacy",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "privacy",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "privacy",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "privacy",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "terms",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "terms",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "terms",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "terms",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "terms",
+      "action": "mailto 2 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "terms",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "terms",
+      "action": ".ps-back",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "terms",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "terms",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "terms",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "terms",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "terms",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "terms",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "terms",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "terms",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "mailto 2 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": ".ps-back",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "data-deletion",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "contact",
+      "action": "render",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "contact",
+      "action": "reload",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "contact",
+      "action": "skip to main",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "contact",
+      "action": "mailto 1 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "contact",
+      "action": "mailto 2 (handler only; no email sent)",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "contact",
+      "action": ".ps-brand",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "contact",
+      "action": ".ps-back",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "contact",
+      "action": ".ps-login",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "contact",
+      "action": "footer → privacy",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "contact",
+      "action": "footer → terms",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "contact",
+      "action": "footer → data-deletion",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "contact",
+      "action": "footer → contact",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "contact",
+      "action": "locale → zh-TW",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "contact",
+      "action": "locale → zh-CN",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "contact",
+      "action": "locale → en",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "home",
+      "action": "sign in on admin host",
+      "result": "PASS"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "page": "home",
+      "action": "register on admin host",
+      "result": "PASS"
+    }
+  ]
+}

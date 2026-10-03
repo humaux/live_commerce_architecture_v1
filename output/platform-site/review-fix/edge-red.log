@@ -1,0 +1,19 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: GET /privacy/
+
+404 !== 301
+
+    at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/tests/deploy/platform-edge.mjs:179:14
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 404,
+  expected: 301,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.15.0

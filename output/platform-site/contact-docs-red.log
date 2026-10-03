@@ -1,0 +1,274 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: The input did not match the regular expression /^# LC_COMPANY_CONTACT_EMAIL=contact@example\.invalid$/m. Input:
+
+'# File: deploy/env/compose.env.example -> copy to /etc/live-commerce/compose.env (0640 root:root)\n' +
+  '# Purpose: the ONLY home of cross-service values (deploy-design §11.1). deploy/compose.yml\n' +
+  '#   interpolates them into wiring (hosts -> Caddy sites and origins, one TTL -> api "<N>s" and\n' +
+  '#   storefront "<N>", shared flags -> api + admin + storefront) so services cannot diverge.\n' +
+  '# Runs as/in: read on the host by `docker compose --env-file` (through deploy/scripts/lib.sh\n' +
+  '#   lc_compose) and by every deploy/scripts/*.sh via lc_load_env. Never mounted into containers.\n' +
+  '# Reads secrets: none. This file must NEVER contain a secret; secrets are files in LC_SECRETS_DIR.\n' +
+  '# Used by: compose.yml (all services), preflight.sh (P01, P06, P08, P11-P14), secrets-init.sh\n' +
+  '#   (LC_SECRETS_DIR/GID, LC_PG_HOST/SSLMODE for DSNs), deploy.sh, pg-ops.sh, watchdog.sh, smoke.sh.\n' +
+  '# Status: DESIGN. Placeholders only (example.com, CHANGE_ME); preflight P01/P11 refuse them\n' +
+  '#   in production.\n' +
+  '# Change rules: KEY=VALUE lines, no inline comments, no `export`. The shell environment\n' +
+  '#   overrides this file (Compose precedence); deploy.sh uses that to pass IMAGE_TAG for\n' +
+  '#   upgrade/rollback AND rewrites the IMAGE_TAG line here (atomic rename, owner/mode kept) just\n' +
+  '#   before `up -d`, so every other Compose entry point resolves the deployed tag (review P1).\n' +
+  '\n' +
+  '# --- Compose -------------------------------------------------------------------------------\n' +
+  'COMPOSE_PROJECT_NAME=live-commerce\n' +
+  '# db,app = single host. Add payments-sandbox (Phase A) or payments-live (Phase B, owner\n' +
+  '# approval), meta (comment intake; needs commerce_meta_apps_json), claims (claims-worker: the ONLY\n' +
+  '# process that sends Meta private replies; add it only with owner approval for real sends), ads (ads-worker:\n' +
+  '# the ONLY Meta ad-account writer; add it together with api.env COMMERCE_META_ADS_APP_ID, after 0080, ruling B15).\n' +
+  '# pg-ops.sh and ops-admin.sh add `ops` by themselves; never list `ops` here.\n' +
+  'COMPOSE_PROFILES=db,app,payments-sandbox\n' +
+  '# git sha12 of the images built by deploy/scripts/build-images.sh (lc-go/admin/storefront/caddy).\n' +
+  '# Maintained by deploy.sh first|upgrade|app-rollback; do not edit by hand (watchdog W10 = drift).\n' +
+  'IMAGE_TAG=CHANGE_ME_GIT_SHA12\n' +
+  'LC_IMAGE_PREFIX=lc\n' +
+  '# production | staging | smoke (smoke relaxes host-name and owner checks; never on a real host).\n' +
+  'LC_ENVIRONMENT=production\n' +
+  '\n' +
+  '# --- Edge (published by the edge-netns container) ------------------------------------------\n' +
+  'LC_BIND_ADDR=0.0.0.0\n' +
+  'LC_HTTP_PORT=80\n' +
+  'LC_HTTPS_PORT=443\n' +
+  '# Lowercase FQDNs, all distinct, DNS A/AAAA -> this host (preflight P14).\n' +
+  'LC_ADMIN_HOST=admin.example.com\n' +
+  'LC_STORE_HOST=shop.example.com\n' +
+  'LC_API_HOST=api.example.com\n' +
+  'LC_HOOKS_HOST=hooks.example.com\n' +
+  '# R5 store-domains: the platform base zone; every store is served at https://<handle>.<LC_STORE_BASE_DOMAIN>.\n' +
+  '# Required outside smoke (preflight P19 FAILs when unset). DNS-only wildcard *.<base> and stores.<base> -> this host.\n' +
+  'LC_STORE_BASE_DOMAIN=example.com\n' +
+  "# Optional: this host's public IP for preflight P14 when the host sits behind NAT.\n" +
+  'LC_PUBLIC_IP=\n' +
+  '\n' +
+  '# --- Host paths ----------------------------------------------------------------------------\n' +
+  'LC_ENV_DIR=/etc/live-commerce/env\n' +
+  'LC_SECRETS_DIR=/etc/live-commerce/secrets\n' +
+  'LC_SECRETS_GID=10500\n' +
+  'LC_BACKUP_DIR=/var/backups/live-commerce\n' +
+  'LC_STATE_DIR=/var/lib/live-commerce\n' +
+  '\n' +
+  '# --- Database addressing (used by secrets-init.sh to derive DSN secret files) ----------------\n' +
+  '# Single host: postgres + disable (traffic never leaves the internal backend network).\n' +
+  '# Two hosts: DB private IP + verify-full (preflight P12).\n' +
+  'LC_PG_HOST=postgres\n' +
+  'LC_PG_SSLMODE=disable\n' +
+  '\n' +
+  '# --- Shared feature flags (0|1) ------------------------------------------------------------\n' +
+  'LC_IDENTITY_ENABLED=1\n' +
+  "# OIDC issuer URL of the owner's IdP (blocker B2, owner decision O2).\n" +
+  'LC_OIDC_ISSUER=https://idp.example.com/\n' +
+  '\n' +
+  '# Merchant email + password login with an emailed one-time code (contracts/merchant-password-auth-v1.md).\n' +
+  '# 0 = off (OIDC above stays required). 1 = on: OIDC becomes optional (leave LC_OIDC_ISSUER empty for\n' +
+  '# password-only), and the SMTP settings below plus secrets commerce_auth_pepper (generated) and\n' +
+  '# commerce_smtp_password (owner-supplied SMTP authorization code of a DEDICATED sending mailbox) are required.\n' +
+  "# The admin host must stay DNS-only (no Cloudflare proxy) while this is 1: per-IP limits read the edge's\n" +
+  '# X-Forwarded-For (preflight rule "admin host resolves only to this host").\n' +
+  'LC_PASSWORD_LOGIN_ENABLED=0\n' +
+  "# Implicit-TLS SMTP on 465. First configuration: smtp.qq.com with the mailbox's full address as username;\n" +
+  '# upgrade path smtp.exmail.qq.com. LC_MAIL_FROM must carry exactly the LC_SMTP_USERNAME address.\n' +
+  'LC_SMTP_HOST=smtp.qq.com\n' +
+  'LC_SMTP_USERNAME=CHANGE_ME_SENDER@qq.com\n' +
+  'LC_MAIL_FROM=xgdwm <CHANGE_ME_SENDER@qq.com>\n' +
+  "# Deployment-wide mail budget per UTC+8 day (20-100000). The mailbox's real daily cap is UNKNOWN until measured.\n" +
+  'LC_MAIL_DAILY_CAP=200\n' +
+  '# Buyer/merchant notification mail (storefront-v2 §E8): 1 = expiry-worker runs the mail outbox loop with the SMTP settings above\n' +
+  '# (LC_SMTP_HOST/USERNAME, LC_MAIL_FROM, LC_MAIL_DAILY_CAP, secret commerce_smtp_password) and dials only that SMTP host. 0 (default) =\n' +
+  '# no loop, no outbound connection. Independent of LC_PASSWORD_LOGIN_ENABLED, but it needs the same owner-supplied mailbox and secret\n' +
+  '# (preflight P08 grammar + P09). The owner flips it; do not set 1 before the mailbox exists.\n' +
+  'LC_BUYER_MAIL_ENABLED=0\n' +
+  '# hibp = refuse breached passwords via the k-anonymity range API (fails open); off is refused outside loopback tests.\n' +
+  'LC_BREACH_CHECK=hibp\n' +
+  'LC_ONBOARDING_ENABLED=1\n' +
+  'LC_ONBOARDING_CURRENCIES=TWD\n' +
+  'LC_BUYER_ENABLED=1\n' +
+  '# 60..2592000 seconds; api receives "<N>s", storefront "<N>".\n' +
+  'LC_BUYER_SESSION_TTL_SECONDS=2592000\n' +
+  '# Stripe (stripe-psp-v1, stripe-live-enable-v1 LD6): LC_STRIPE_ENABLED=1 = api webhook route and the payment\n' +
+  "# worker's Stripe/refund dispatch for the deployed profile. Needs COMMERCE_PAYMENT_PROFILE=SANDBOX (api.env) and the\n" +
+  '# payments-sandbox profile, or LIVE + payments-live + the LIVE pair below (preflight P06 checks both directions).\n' +
+  'LC_STRIPE_ENABLED=1\n' +
+  '# Platform kill switch: buyer Stripe checkout only. Unset = follows LC_STRIPE_ENABLED; 0 + deploy.sh removes Stripe\n' +
+  '# from the hosted checkout while webhook and worker keep reconciling (docs/runbooks/stripe-live.md §3).\n' +
+  '#LC_STRIPE_CHECKOUT_ENABLED=1\n' +
+  "# LIVE pair (both or neither): set ONLY for a LIVE deployment, after the owner's written approval; the ref points to\n" +
+  '# that message (LQ8: owner-chat:<YYYY-MM-DD>:stripe-live:<store-slug>). Keys never go here (ops-admin.sh <NAME>_FILE).\n' +
+  '#LC_STRIPE_LIVE_ENABLED=1\n' +
+  '#LC_STRIPE_LIVE_APPROVAL_REF=owner-chat:YYYY-MM-DD:stripe-live:store-slug\n' +
+  '# Platform-fee billing (customers-billing-v1 T17): unset = off; 1 = api serves GET/POST billing and the\n' +
+  '# platform webhook POST /v1/platform/stripe/webhook. Needs the owner-supplied secret files\n' +
+  '# commerce_platform_stripe_secret_key (sk_test_/rk_test_ only, SANDBOX) and\n' +
+  '# commerce_platform_stripe_webhook_secret, plus the plan price ids below (not secrets).\n' +
+  '# LC_BILLING_ENABLED=1\n' +
+  '# LC_BILLING_PRICE_IDS=price_REPLACE_ME\n' +
+  '# ECPay logistics switch (taiwan-cvs-logistics-v1 §12): 1 = api ECPay map/connect/status routes + the claims-worker\n' +
+  '# ecpay.cvs_create route. Needs COMMERCE_PAYMENT_PROFILE=SANDBOX (api.env; LIVE ECPay is not enabled in this release),\n' +
+  '# the claims profile (the create route runs in claims-worker) and the owner-supplied ecpay_logistics_keyring secret\n' +
+  '# (preflight P06/P09). 0 (pilot default, X11): ECPay routes answer 404; buyer-entered stores and pay-at-pickup keep working.\n' +
+  'LC_CVS_ECPAY_ENABLED=0\n' +
+  '\n' +
+  '# --- Readiness gates -----------------------------------------------------------------------\n' +
+  '# 0 = live.media_plan_ready() is informational (LiveKit media not deployable, COMMERCE_STUDIO_MEDIA_ENABLED=0; the gate is also\n' +
+  '# false on every LOGICALLY restored DB, see deploy/postgres/ops/verify.sql). Set 1 only once\n' +
+  '# Studio/media are deployable and the gate is restore-stable (REQUIRES_INTEGRATOR).\n' +
+  'LC_REQUIRE_MEDIA_GATE=0\n' +
+  '# claims-retention-purge-v1 §10(5): with the claims profile on, deploy.sh post-checks run\n' +
+  "# `retention-admin status` on the claims-worker's retention-job login and require a purge run in the last\n" +
+  "# 26 h and (1, default) enforced=1. 0 only under waiver W1 (owner's own pilot store, before the\n" +
+  '# owner-approved `policy-set --enforced=true`; docs/runbooks/claims-data-deletion.md); never with a second merchant.\n' +
+  'LC_REQUIRE_RETENTION_ENFORCED=1\n' +
+  '\n' +
+  '# --- Alerts (optional) ---------------------------------------------------------------------\n' +
+  '# watchdog.sh POSTs only failing check ids (never values) here when set.\n' +
+  'LC_ALERT_WEBHOOK_URL=\n'
+
+    at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/[eval1]:1:146
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at async node:internal/modules/esm/loader:246:26
+    at async ModuleLoader.executeModuleJob (node:internal/modules/esm/loader:243:20)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: '# File: deploy/env/compose.env.example -> copy to /etc/live-commerce/compose.env (0640 root:root)\n' +
+    '# Purpose: the ONLY home of cross-service values (deploy-design §11.1). deploy/compose.yml\n' +
+    '#   interpolates them into wiring (hosts -> Caddy sites and origins, one TTL -> api "<N>s" and\n' +
+    '#   storefront "<N>", shared flags -> api + admin + storefront) so services cannot diverge.\n' +
+    '# Runs as/in: read on the host by `docker compose --env-file` (through deploy/scripts/lib.sh\n' +
+    '#   lc_compose) and by every deploy/scripts/*.sh via lc_load_env. Never mounted into containers.\n' +
+    '# Reads secrets: none. This file must NEVER contain a secret; secrets are files in LC_SECRETS_DIR.\n' +
+    '# Used by: compose.yml (all services), preflight.sh (P01, P06, P08, P11-P14), secrets-init.sh\n' +
+    '#   (LC_SECRETS_DIR/GID, LC_PG_HOST/SSLMODE for DSNs), deploy.sh, pg-ops.sh, watchdog.sh, smoke.sh.\n' +
+    '# Status: DESIGN. Placeholders only (example.com, CHANGE_ME); preflight P01/P11 refuse them\n' +
+    '#   in production.\n' +
+    '# Change rules: KEY=VALUE lines, no inline comments, no `export`. The shell environment\n' +
+    '#   overrides this file (Compose precedence); deploy.sh uses that to pass IMAGE_TAG for\n' +
+    '#   upgrade/rollback AND rewrites the IMAGE_TAG line here (atomic rename, owner/mode kept) just\n' +
+    '#   before `up -d`, so every other Compose entry point resolves the deployed tag (review P1).\n' +
+    '\n' +
+    '# --- Compose -------------------------------------------------------------------------------\n' +
+    'COMPOSE_PROJECT_NAME=live-commerce\n' +
+    '# db,app = single host. Add payments-sandbox (Phase A) or payments-live (Phase B, owner\n' +
+    '# approval), meta (comment intake; needs commerce_meta_apps_json), claims (claims-worker: the ONLY\n' +
+    '# process that sends Meta private replies; add it only with owner approval for real sends), ads (ads-worker:\n' +
+    '# the ONLY Meta ad-account writer; add it together with api.env COMMERCE_META_ADS_APP_ID, after 0080, ruling B15).\n' +
+    '# pg-ops.sh and ops-admin.sh add `ops` by themselves; never list `ops` here.\n' +
+    'COMPOSE_PROFILES=db,app,payments-sandbox\n' +
+    '# git sha12 of the images built by deploy/scripts/build-images.sh (lc-go/admin/storefront/caddy).\n' +
+    '# Maintained by deploy.sh first|upgrade|app-rollback; do not edit by hand (watchdog W10 = drift).\n' +
+    'IMAGE_TAG=CHANGE_ME_GIT_SHA12\n' +
+    'LC_IMAGE_PREFIX=lc\n' +
+    '# production | staging | smoke (smoke relaxes host-name and owner checks; never on a real host).\n' +
+    'LC_ENVIRONMENT=production\n' +
+    '\n' +
+    '# --- Edge (published by the edge-netns container) ------------------------------------------\n' +
+    'LC_BIND_ADDR=0.0.0.0\n' +
+    'LC_HTTP_PORT=80\n' +
+    'LC_HTTPS_PORT=443\n' +
+    '# Lowercase FQDNs, all distinct, DNS A/AAAA -> this host (preflight P14).\n' +
+    'LC_ADMIN_HOST=admin.example.com\n' +
+    'LC_STORE_HOST=shop.example.com\n' +
+    'LC_API_HOST=api.example.com\n' +
+    'LC_HOOKS_HOST=hooks.example.com\n' +
+    '# R5 store-domains: the platform base zone; every store is served at https://<handle>.<LC_STORE_BASE_DOMAIN>.\n' +
+    '# Required outside smoke (preflight P19 FAILs when unset). DNS-only wildcard *.<base> and stores.<base> -> this host.\n' +
+    'LC_STORE_BASE_DOMAIN=example.com\n' +
+    "# Optional: this host's public IP for preflight P14 when the host sits behind NAT.\n" +
+    'LC_PUBLIC_IP=\n' +
+    '\n' +
+    '# --- Host paths ----------------------------------------------------------------------------\n' +
+    'LC_ENV_DIR=/etc/live-commerce/env\n' +
+    'LC_SECRETS_DIR=/etc/live-commerce/secrets\n' +
+    'LC_SECRETS_GID=10500\n' +
+    'LC_BACKUP_DIR=/var/backups/live-commerce\n' +
+    'LC_STATE_DIR=/var/lib/live-commerce\n' +
+    '\n' +
+    '# --- Database addressing (used by secrets-init.sh to derive DSN secret files) ----------------\n' +
+    '# Single host: postgres + disable (traffic never leaves the internal backend network).\n' +
+    '# Two hosts: DB private IP + verify-full (preflight P12).\n' +
+    'LC_PG_HOST=postgres\n' +
+    'LC_PG_SSLMODE=disable\n' +
+    '\n' +
+    '# --- Shared feature flags (0|1) ------------------------------------------------------------\n' +
+    'LC_IDENTITY_ENABLED=1\n' +
+    "# OIDC issuer URL of the owner's IdP (blocker B2, owner decision O2).\n" +
+    'LC_OIDC_ISSUER=https://idp.example.com/\n' +
+    '\n' +
+    '# Merchant email + password login with an emailed one-time code (contracts/merchant-password-auth-v1.md).\n' +
+    '# 0 = off (OIDC above stays required). 1 = on: OIDC becomes optional (leave LC_OIDC_ISSUER empty for\n' +
+    '# password-only), and the SMTP settings below plus secrets commerce_auth_pepper (generated) and\n' +
+    '# commerce_smtp_password (owner-supplied SMTP authorization code of a DEDICATED sending mailbox) are required.\n' +
+    "# The admin host must stay DNS-only (no Cloudflare proxy) while this is 1: per-IP limits read the edge's\n" +
+    '# X-Forwarded-For (preflight rule "admin host resolves only to this host").\n' +
+    'LC_PASSWORD_LOGIN_ENABLED=0\n' +
+    "# Implicit-TLS SMTP on 465. First configuration: smtp.qq.com with the mailbox's full address as username;\n" +
+    '# upgrade path smtp.exmail.qq.com. LC_MAIL_FROM must carry exactly the LC_SMTP_USERNAME address.\n' +
+    'LC_SMTP_HOST=smtp.qq.com\n' +
+    'LC_SMTP_USERNAME=CHANGE_ME_SENDER@qq.com\n' +
+    'LC_MAIL_FROM=xgdwm <CHANGE_ME_SENDER@qq.com>\n' +
+    "# Deployment-wide mail budget per UTC+8 day (20-100000). The mailbox's real daily cap is UNKNOWN until measured.\n" +
+    'LC_MAIL_DAILY_CAP=200\n' +
+    '# Buyer/merchant notification mail (storefront-v2 §E8): 1 = expiry-worker runs the mail outbox loop with the SMTP settings above\n' +
+    '# (LC_SMTP_HOST/USERNAME, LC_MAIL_FROM, LC_MAIL_DAILY_CAP, secret commerce_smtp_password) and dials only that SMTP host. 0 (default) =\n' +
+    '# no loop, no outbound connection. Independent of LC_PASSWORD_LOGIN_ENABLED, but it needs the same owner-supplied mailbox and secret\n' +
+    '# (preflight P08 grammar + P09). The owner flips it; do not set 1 before the mailbox exists.\n' +
+    'LC_BUYER_MAIL_ENABLED=0\n' +
+    '# hibp = refuse breached passwords via the k-anonymity range API (fails open); off is refused outside loopback tests.\n' +
+    'LC_BREACH_CHECK=hibp\n' +
+    'LC_ONBOARDING_ENABLED=1\n' +
+    'LC_ONBOARDING_CURRENCIES=TWD\n' +
+    'LC_BUYER_ENABLED=1\n' +
+    '# 60..2592000 seconds; api receives "<N>s", storefront "<N>".\n' +
+    'LC_BUYER_SESSION_TTL_SECONDS=2592000\n' +
+    '# Stripe (stripe-psp-v1, stripe-live-enable-v1 LD6): LC_STRIPE_ENABLED=1 = api webhook route and the payment\n' +
+    "# worker's Stripe/refund dispatch for the deployed profile. Needs COMMERCE_PAYMENT_PROFILE=SANDBOX (api.env) and the\n" +
+    '# payments-sandbox profile, or LIVE + payments-live + the LIVE pair below (preflight P06 checks both directions).\n' +
+    'LC_STRIPE_ENABLED=1\n' +
+    '# Platform kill switch: buyer Stripe checkout only. Unset = follows LC_STRIPE_ENABLED; 0 + deploy.sh removes Stripe\n' +
+    '# from the hosted checkout while webhook and worker keep reconciling (docs/runbooks/stripe-live.md §3).\n' +
+    '#LC_STRIPE_CHECKOUT_ENABLED=1\n' +
+    "# LIVE pair (both or neither): set ONLY for a LIVE deployment, after the owner's written approval; the ref points to\n" +
+    '# that message (LQ8: owner-chat:<YYYY-MM-DD>:stripe-live:<store-slug>). Keys never go here (ops-admin.sh <NAME>_FILE).\n' +
+    '#LC_STRIPE_LIVE_ENABLED=1\n' +
+    '#LC_STRIPE_LIVE_APPROVAL_REF=owner-chat:YYYY-MM-DD:stripe-live:store-slug\n' +
+    '# Platform-fee billing (customers-billing-v1 T17): unset = off; 1 = api serves GET/POST billing and the\n' +
+    '# platform webhook POST /v1/platform/stripe/webhook. Needs the owner-supplied secret files\n' +
+    '# commerce_platform_stripe_secret_key (sk_test_/rk_test_ only, SANDBOX) and\n' +
+    '# commerce_platform_stripe_webhook_secret, plus the plan price ids below (not secrets).\n' +
+    '# LC_BILLING_ENABLED=1\n' +
+    '# LC_BILLING_PRICE_IDS=price_REPLACE_ME\n' +
+    '# ECPay logistics switch (taiwan-cvs-logistics-v1 §12): 1 = api ECPay map/connect/status routes + the claims-worker\n' +
+    '# ecpay.cvs_create route. Needs COMMERCE_PAYMENT_PROFILE=SANDBOX (api.env; LIVE ECPay is not enabled in this release),\n' +
+    '# the claims profile (the create route runs in claims-worker) and the owner-supplied ecpay_logistics_keyring secret\n' +
+    '# (preflight P06/P09). 0 (pilot default, X11): ECPay routes answer 404; buyer-entered stores and pay-at-pickup keep working.\n' +
+    'LC_CVS_ECPAY_ENABLED=0\n' +
+    '\n' +
+    '# --- Readiness gates -----------------------------------------------------------------------\n' +
+    '# 0 = live.media_plan_ready() is informational (LiveKit media not deployable, COMMERCE_STUDIO_MEDIA_ENABLED=0; the gate is also\n' +
+    '# false on every LOGICALLY restored DB, see deploy/postgres/ops/verify.sql). Set 1 only once\n' +
+    '# Studio/media are deployable and the gate is restore-stable (REQUIRES_INTEGRATOR).\n' +
+    'LC_REQUIRE_MEDIA_GATE=0\n' +
+    '# claims-retention-purge-v1 §10(5): with the claims profile on, deploy.sh post-checks run\n' +
+    "# `retention-admin status` on the claims-worker's retention-job login and require a purge run in the last\n" +
+    "# 26 h and (1, default) enforced=1. 0 only under waiver W1 (owner's own pilot store, before the\n" +
+    '# owner-approved `policy-set --enforced=true`; docs/runbooks/claims-data-deletion.md); never with a second merchant.\n' +
+    'LC_REQUIRE_RETENTION_ENFORCED=1\n' +
+    '\n' +
+    '# --- Alerts (optional) ---------------------------------------------------------------------\n' +
+    '# watchdog.sh POSTs only failing check ids (never values) here when set.\n' +
+    'LC_ALERT_WEBHOOK_URL=\n',
+  expected: /^# LC_COMPANY_CONTACT_EMAIL=contact@example\.invalid$/m,
+  operator: 'match',
+  diff: 'simple'
+}
+
+Node.js v24.15.0

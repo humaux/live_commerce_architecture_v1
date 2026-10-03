@@ -1,0 +1,9 @@
+file:///Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/tests/deploy/platform-edge.mjs:39
+  for (let n = 0; n < 40; n++) { try { if ((await edge(vars.LC_PLATFORM_HOST, "/")).status === 200) break; } catch {} if (n === 39) throw new Error("Caddy not ready"); await new Promise(r => setTimeout(r, 250)); }
+                                                                                                                                          ^
+
+Error: Caddy not ready
+    at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/tests/deploy/platform-edge.mjs:39:139
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+Node.js v24.15.0

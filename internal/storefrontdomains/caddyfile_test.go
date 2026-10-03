@@ -32,6 +32,7 @@ func TestCaddyfileLoadsOnPinnedCaddy(t *testing.T) {
 	envArgs := []string{
 		"-e", "ACME_EMAIL=gate@example.com",
 		"-e", "LC_ADMIN_HOST=admin.localhost",
+		"-e", "LC_PLATFORM_HOST=platform.localhost",
 		"-e", "LC_STORE_HOST=shop.localhost",
 		"-e", "LC_API_HOST=api.localhost",
 		"-e", "LC_HOOKS_HOST=hooks.localhost",

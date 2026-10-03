@@ -32,6 +32,19 @@ function draftJSON(over: Record<string, unknown> = {}) {
   };
 }
 
+test("Meta rejection wording is preserved as bounded Unicode text, never translated", () => {
+  const op = {kind:"adset",seq:1,attempt:1,state:"FAILED_FINAL",code:"graph_100",updated_at:ts};
+  for (const message of ["Meta 原文 & details\n第二行", "😀".repeat(300), "<literal text>"]) {
+    const draft = parseDraft(draftJSON({ops:[{...op,error_user_msg:message}]}));
+    assert.equal(draft.ops[0].error_user_msg,message);
+    assert.equal(draft.ops[0].code,"graph_100");
+  }
+  assert.equal(parseDraft(draftJSON({ops:[op]})).ops[0].error_user_msg,null);
+  for (const value of ["臺".repeat(301), "private\u0000text", {}, 4]) {
+    assert.throws(()=>parseDraft(draftJSON({ops:[{...op,error_user_msg:value}]})),AdsParseError);
+  }
+});
+
 test("frozen error codes: model list equals the frozen list, each is read from both error shapes", () => {
   assert.deepEqual([...adsServerCodes], frozenCodes);
   for (const code of frozenCodes) {
@@ -254,6 +267,11 @@ test("settings parser: environment enum, connections, identities, capi", () => {
   assert.equal(s.max_active_budget_minor, 0);
   assert.equal(s.capi.dataset_binding_id, null);
   assert.equal(s.sandbox_ad_account, null);
+  assert.deepEqual(s.recent_refusals,[]);
+  const refusal={operation_id:uuid(8),action:"meta.capi.purchase",state:"UNKNOWN",code:"graph_100",error_user_msg:"Meta 原文",updated_at:ts};
+  assert.deepEqual(parseSettings({...good,recent_refusals:[refusal]}).recent_refusals,[refusal]);
+  assert.throws(()=>parseSettings({...good,recent_refusals:[{...refusal,code:"regional_unverified"}]}),AdsParseError);
+  assert.throws(()=>parseSettings({...good,recent_refusals:Array(21).fill(refusal)}),AdsParseError);
   assert.equal(parseSettings({ ...good, environment: "LIVE", sandbox_ad_account: "act_9", capi: { enabled: true, dataset_binding_id: uuid(4), test_event_code: "TEST1" } }).capi.test_event_code, "TEST1");
   assert.throws(() => parseSettings({ ...good, environment: "PROD" }), AdsParseError);
   assert.throws(() => parseSettings({ ...good, max_active_budget_minor: "0" }), AdsParseError);

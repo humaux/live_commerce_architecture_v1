@@ -1,0 +1,196 @@
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from admin.Dockerfile
+#1 transferring dockerfile: 5.20kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/node:24.15.0-trixie-slim@sha256:291be77873bc04731968cacf82f0fcef17cee8cf200c6b6951e2bcab41560eb7
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/golang:1.27.1-trixie@sha256:433790e515d27dc6003e847e644cc0af956985cf315c1c58a3b73ee2dd305183
+#3 DONE 0.0s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 1.50kB done
+#4 DONE 0.0s
+
+#5 [lcentry 1/5] FROM docker.io/library/golang:1.27.1-trixie@sha256:433790e515d27dc6003e847e644cc0af956985cf315c1c58a3b73ee2dd305183
+#5 resolve docker.io/library/golang:1.27.1-trixie@sha256:433790e515d27dc6003e847e644cc0af956985cf315c1c58a3b73ee2dd305183 0.0s done
+#5 DONE 0.0s
+
+#6 [base 1/3] FROM docker.io/library/node:24.15.0-trixie-slim@sha256:291be77873bc04731968cacf82f0fcef17cee8cf200c6b6951e2bcab41560eb7
+#6 resolve docker.io/library/node:24.15.0-trixie-slim@sha256:291be77873bc04731968cacf82f0fcef17cee8cf200c6b6951e2bcab41560eb7 0.0s done
+#6 CACHED
+
+#7 [internal] load build context
+#7 transferring context: 18.51kB 0.0s done
+#7 DONE 0.0s
+
+#8 [deps 2/7] COPY apps/admin/package.json apps/admin/
+#8 CACHED
+
+#9 [base 2/3] RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
+#9 CACHED
+
+#10 [deps 3/7] COPY apps/storefront/package.json apps/storefront/
+#10 CACHED
+
+#11 [deps 1/7] COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+#11 CACHED
+
+#12 [base 3/3] WORKDIR /app
+#12 CACHED
+
+#13 [lcentry 4/5] COPY deploy/tools/lcentry ./deploy/tools/lcentry
+#13 CACHED
+
+#14 [lcentry 2/5] WORKDIR /src
+#14 CACHED
+
+#15 [lcentry 3/5] COPY go.mod go.sum ./
+#15 CACHED
+
+#16 [deps 4/7] COPY packages/i18n/package.json packages/i18n/
+#16 CACHED
+
+#17 [lcentry 5/5] RUN go build -buildvcs=false -ldflags=-buildid= -o /out/lcentry ./deploy/tools/lcentry
+#17 CACHED
+
+#18 [deps 5/7] COPY packages/ui/package.json packages/ui/
+#18 DONE 0.0s
+
+#19 [deps 6/7] COPY packages/format/package.json packages/format/
+#19 DONE 0.0s
+
+#20 [deps 7/7] RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile --store-dir /pnpm/store
+#20 0.503 Scope: all 6 workspace projects
+#20 0.517 Lockfile is up to date, resolution step is skipped
+#20 0.525 Progress: resolved 1, reused 0, downloaded 0, added 0
+#20 0.538 Packages: +49
+#20 0.538 +++++++++++++++++++++++++++++++++++++++++++++++++
+#20 1.526 Progress: resolved 49, reused 49, downloaded 0, added 17
+#20 2.532 Progress: resolved 49, reused 49, downloaded 0, added 47
+#20 3.533 Progress: resolved 49, reused 49, downloaded 0, added 48
+#20 4.393 Progress: resolved 49, reused 49, downloaded 0, added 49, done
+#20 4.481 
+#20 4.481 devDependencies:
+#20 4.481 + @playwright/test 1.63.0
+#20 4.481 + axe-core 4.13.0
+#20 4.481 + livekit-client 2.22.3
+#20 4.481 + prettier 3.9.8
+#20 4.481 + typescript 7.0.2
+#20 4.481 + typescript-api <- typescript 6.0.3
+#20 4.481 
+#20 4.498 Done in 4.2s using pnpm v10.33.0
+#20 DONE 4.6s
+
+#21 [build 1/4] COPY packages ./packages
+#21 DONE 0.1s
+
+#22 [build 2/4] COPY apps/admin ./apps/admin
+#22 DONE 0.1s
+
+#23 [build 3/4] COPY scripts/dev/package-admin.mjs ./scripts/dev/package-admin.mjs
+#23 DONE 0.0s
+
+#24 [build 4/4] RUN LC_PLATFORM_HOST="platform.localhost" LC_ADMIN_HOST="admin.localhost" LC_COMPANY_CONTACT_EMAIL="contact@example.invalid" COMMERCE_IDENTITY_ENABLED=0 COMMERCE_FIXTURE_ENABLED=0 pnpm run build:admin
+#24 0.312 
+#24 0.312 > live-commerce-workspace@ build:admin /app
+#24 0.312 > pnpm --filter @live-commerce/admin build
+#24 0.312 
+#24 0.530 
+#24 0.530 > @live-commerce/admin@ build /app/apps/admin
+#24 0.530 > next build && node ../../scripts/dev/package-admin.mjs
+#24 0.530 
+#24 0.776 ▲ Next.js 16.3.5 (Turbopack)
+#24 0.810 ✓ Running next.config.ts took 34ms
+#24 0.811 ⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+#24 0.832 
+#24 0.854   Creating an optimized production build ...
+#24 10.10 ✓ Compiled successfully in 9.1s
+#24 10.19   Running TypeScript ...
+#24 12.43   Finished TypeScript in 2.2s ...
+#24 12.46   Collecting page data using 9 workers ...
+#24 13.25   Generating static pages using 9 workers (0/15) ...
+#24 13.26   Generating static pages using 9 workers (3/15) 
+#24 13.30   Generating static pages using 9 workers (7/15) 
+#24 13.30   Generating static pages using 9 workers (11/15) 
+#24 13.31 ✓ Generating static pages using 9 workers (15/15) in 58ms
+#24 13.33   Finalizing page optimization ...
+#24 13.84 
+#24 13.84 Route (app)
+#24 13.84 ┌ ○ /_not-found
+#24 13.84 ├ ƒ /[locale]
+#24 13.84 ├ ƒ /[locale]/ads
+#24 13.84 ├ ƒ /[locale]/billing
+#24 13.84 ├ ƒ /[locale]/collections
+#24 13.84 ├ ƒ /[locale]/customers
+#24 13.84 ├ ƒ /[locale]/customers/[customer]
+#24 13.84 ├ ƒ /[locale]/design
+#24 13.84 ├ ƒ /[locale]/finance
+#24 13.84 ├ ƒ /[locale]/inventory
+#24 13.84 ├ ƒ /[locale]/invite/[token]
+#24 13.84 ├ ƒ /[locale]/orders
+#24 13.84 ├ ƒ /[locale]/orders/cvs-print
+#24 13.84 ├ ƒ /[locale]/orders/new
+#24 13.84 ├ ƒ /[locale]/products
+#24 13.84 ├ ƒ /[locale]/products/[product]
+#24 13.84 ├ ƒ /[locale]/products/import
+#24 13.84 ├ ƒ /[locale]/promotions
+#24 13.84 ├ ƒ /[locale]/reset
+#24 13.84 ├ ƒ /[locale]/settings
+#24 13.84 ├ ƒ /[locale]/signup
+#24 13.84 ├ ƒ /[locale]/studio
+#24 13.84 ├ ƒ /[locale]/studio/claims
+#24 13.84 ├ ƒ /[locale]/team
+#24 13.84 ├ ƒ /api/ads/meta/callback
+#24 13.84 ├ ƒ /api/ads/meta/connect
+#24 13.84 ├ ƒ /api/auth/callback
+#24 13.84 ├ ƒ /api/auth/login
+#24 13.84 ├ ƒ /api/auth/logout
+#24 13.84 ├ ƒ /api/auth/password/login
+#24 13.84 ├ ƒ /api/auth/password/reset
+#24 13.84 ├ ƒ /api/auth/password/signup
+#24 13.84 ├ ƒ /api/auth/password/verify
+#24 13.84 ├ ƒ /api/meta/callback
+#24 13.84 ├ ƒ /api/meta/connect
+#24 13.84 ├ ƒ /api/onboarding/initial-store
+#24 13.84 ├ ƒ /api/stores
+#24 13.84 ├ ƒ /api/stores/[store]/[...resource]
+#24 13.84 ├ ƒ /api/stores/[store]/tools/[...resource]
+#24 13.84 ├ ƒ /api/team/[action]
+#24 13.84 ├ ƒ /site/[locale]/[page]
+#24 13.84 ├ ƒ /site/robots.txt
+#24 13.84 └ ƒ /site/sitemap.xml
+#24 13.84 
+#24 13.84 
+#24 13.84 ƒ Proxy (Middleware)
+#24 13.84 
+#24 13.84 ○  (Static)   prerendered as static content
+#24 13.84 ƒ  (Dynamic)  server-rendered on demand
+#24 13.84 
+#24 13.91 Packaged standalone admin server and static assets.
+#24 DONE 14.3s
+
+#25 [stage-4 2/4] COPY --from=build /app/apps/admin/.next/standalone/ /app/
+#25 DONE 0.2s
+
+#26 [stage-4 3/4] COPY --from=lcentry /out/lcentry /usr/local/bin/lcentry
+#26 DONE 0.1s
+
+#27 [stage-4 4/4] WORKDIR /app/apps/admin
+#27 DONE 0.1s
+
+#28 exporting to image
+#28 exporting layers
+#28 exporting layers 0.8s done
+#28 exporting manifest sha256:25ccda2713d99417c405fad9b91eb02a048a6e5e037c6c15f16a274f822c0589 done
+#28 exporting config sha256:3d5d04871b1a9a79b4d578c6e86d0856cd71651ddec14110f36758da201a703b done
+#28 exporting attestation manifest sha256:9ee003352439617ff6ab67f621d26a38a7bdbfb7451fabd0afb3507e0bf7789e 0.0s done
+#28 exporting manifest list sha256:aa074013af541c64aaf06800653741b19035e6c5a4136c5efd918bb46ea7df38 done
+#28 naming to docker.io/library/lc-platform-review-admin:ps-fix-20261004 done
+#28 unpacking to docker.io/library/lc-platform-review-admin:ps-fix-20261004
+#28 unpacking to docker.io/library/lc-platform-review-admin:ps-fix-20261004 0.3s done
+#28 DONE 1.1s
+
+View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/yhk4b72f5j78b09cd6unc7ugy
