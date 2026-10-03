@@ -128,9 +128,8 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	mux.HandleFunc("POST "+base+"/products/document", bodyRouteAs(pool, "catalog:write", catalogClassify, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.ProductDocumentInput) (any, error) {
 		return catalog.SaveProductDocument(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)
 	}))
-	mux.HandleFunc("PUT "+base+"/products/{product_id}/document", bodyRouteAs(pool, "catalog:write", catalogClassify, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.ProductDocumentInput) (any, error) {
-		in.ID = r.PathValue("product_id")
-		return catalog.SaveProductDocument(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)
+	mux.HandleFunc("PUT "+base+"/products/{product_id}/document", bodyRouteAs(pool, "catalog:write", catalogClassify, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.ProductDocumentPatch) (any, error) {
+		return catalog.SaveProductEdit(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), in)
 	}))
 	mux.HandleFunc("POST "+base+"/products/bulk-status", bodyRouteAs(pool, "catalog:write", catalogClassify, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.BulkStatusInput) (any, error) {
 		return catalog.BulkSetProductStatus(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)

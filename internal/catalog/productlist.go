@@ -2,9 +2,10 @@ package catalog
 
 // productlist.go owns the merchant product list and product detail reads behind the admin Products pages
 // (docs/delivery/units/catalog-core.md): one row per product with search, status filter, cover thumbnail, active
-// price range and stock summed over all warehouses; and one product with its SKUs and per-SKU stock. Read-only; the
-// wide per-warehouse inventory view stays in ledger.go. Tables: catalog.products, catalog.skus,
-// catalog.product_images, inventory.balances (commerce_runtime, scope_access). It never writes stock.
+// price range and stock summed over all warehouses; and one product with its SKUs, per-SKU stock/keyword, collection ids
+// and the single-warehouse on_hand/committed (product-editor §g.4). Read-only; the wide per-warehouse inventory view stays
+// in ledger.go. Tables: catalog.products, catalog.skus, catalog.collection_products, catalog.product_images,
+// inventory.balances, live.keyword_library (commerce_runtime, scope_access). It never writes stock.
 
 import (
 	"context"
@@ -162,37 +163,111 @@ func ListProductSummaries(ctx context.Context, tx pgx.Tx, scope platform.Scope, 
 	return out, err
 }
 
-// ProductDetail is the editor's read: the product, its photos' ids come from ListImages, and every non-archived SKU
-// with its stock summed over all warehouses.
+// ProductDetail is the editor's read (product-editor §g.4): the product, every collection id it belongs to (all of them,
+// no pagination), the store's single active warehouse (null when 0 or >1), and every active SKU with its all-warehouse
+// available, its keyword ("" when none) and — only when warehouse_id is non-null — its on_hand and committed
+// (reserved+allocated+unavailable) taken from that warehouse (null when no balance row).
 type ProductDetail struct {
 	Product
-	SKUs []SKUStock `json:"skus"`
+	CollectionIDs []string   `json:"collection_ids"`
+	WarehouseID   *string    `json:"warehouse_id"`
+	SKUs          []SKUStock `json:"skus"`
 }
 
-// SKUStock is a SKU plus its all-warehouse available quantity.
+// SKUStock is a SKU plus its all-warehouse available quantity, its keyword, and its single-warehouse on_hand/committed.
 type SKUStock struct {
 	SKU
-	Available int64 `json:"available"`
+	Available int64  `json:"available"`
+	Keyword   string `json:"keyword"`
+	OnHand    *int64 `json:"on_hand"`
+	Committed *int64 `json:"committed"`
 }
 
 // GetProductDetail reads a product (any status) with its active SKUs (<= 100, maxActiveSKUsPerProduct).
 func GetProductDetail(ctx context.Context, tx pgx.Tx, scope platform.Scope, id string) (ProductDetail, error) {
-	d := ProductDetail{SKUs: []SKUStock{}}
+	d := ProductDetail{SKUs: []SKUStock{}, CollectionIDs: []string{}}
 	var err error
 	if d.Product, err = GetProduct(ctx, tx, scope, id); err != nil {
 		return d, err
 	}
-	rows, err := tx.Query(ctx, `SELECT `+prefixed("s", skuColumns)+`,coalesce(b.avail,0)::bigint FROM catalog.skus s
-		LEFT JOIN LATERAL (SELECT sum(x.on_hand-x.reserved-x.allocated-x.unavailable) avail FROM inventory.balances x
-			WHERE x.tenant_id=s.tenant_id AND x.store_id=s.store_id AND x.sku_id=s.id) b ON true
-		WHERE s.tenant_id=$1 AND s.store_id=$2 AND s.product_id=$3 AND s.status='active' ORDER BY s.created_at,s.id LIMIT 200`, scope.TenantID, scope.StoreID, id)
+	crows, err := tx.Query(ctx, `SELECT collection_id::text FROM catalog.collection_products WHERE tenant_id=$1 AND store_id=$2 AND product_id=$3 ORDER BY position,collection_id`,
+		scope.TenantID, scope.StoreID, id)
+	if err != nil {
+		return d, mapError(err)
+	}
+	for crows.Next() {
+		var cid string
+		if err := crows.Scan(&cid); err != nil {
+			crows.Close()
+			return d, err
+		}
+		d.CollectionIDs = append(d.CollectionIDs, cid)
+	}
+	if err := crows.Err(); err != nil {
+		crows.Close()
+		return d, mapError(err)
+	}
+	crows.Close()
+
+	// warehouse_id: the single active warehouse, else null (0 or >1 active warehouses).
+	var warehouseID *string
+	whs, err := tx.Query(ctx, `SELECT id::text FROM inventory.warehouses WHERE tenant_id=$1 AND store_id=$2 AND active ORDER BY id`,
+		scope.TenantID, scope.StoreID)
+	if err != nil {
+		return d, mapError(err)
+	}
+	whList := []string{}
+	for whs.Next() {
+		var w string
+		if err := whs.Scan(&w); err != nil {
+			whs.Close()
+			return d, err
+		}
+		whList = append(whList, w)
+	}
+	if err := whs.Err(); err != nil {
+		whs.Close()
+		return d, mapError(err)
+	}
+	whs.Close()
+	if len(whList) == 1 {
+		warehouseID = &whList[0]
+	}
+	d.WarehouseID = warehouseID
+
+	// on_hand/committed come from the single warehouse (null when 0 or >1 active warehouses); available is summed over all
+	// warehouses and keyword is the SKU's library keyword ("" when none).
+	var rows pgx.Rows
+	if warehouseID != nil {
+		rows, err = tx.Query(ctx, `SELECT `+prefixed("s", skuColumns)+`,
+				coalesce(b.avail,0)::bigint,coalesce(k.keyword,''),bal.on_hand,(bal.reserved+bal.allocated+bal.unavailable)
+			FROM catalog.skus s
+			LEFT JOIN LATERAL (SELECT sum(x.on_hand-x.reserved-x.allocated-x.unavailable) avail FROM inventory.balances x
+				WHERE x.tenant_id=s.tenant_id AND x.store_id=s.store_id AND x.sku_id=s.id) b ON true
+			LEFT JOIN LATERAL (SELECT l.keyword FROM live.keyword_library l
+				WHERE l.tenant_id=s.tenant_id AND l.store_id=s.store_id AND l.sku_id=s.id) k ON true
+			LEFT JOIN inventory.balances bal ON bal.tenant_id=s.tenant_id AND bal.store_id=s.store_id AND bal.sku_id=s.id
+				AND bal.warehouse_id=$3
+			WHERE s.tenant_id=$1 AND s.store_id=$2 AND s.product_id=$4 AND s.status='active' ORDER BY s.created_at,s.id LIMIT 200`,
+			scope.TenantID, scope.StoreID, *warehouseID, id)
+	} else {
+		rows, err = tx.Query(ctx, `SELECT `+prefixed("s", skuColumns)+`,
+				coalesce(b.avail,0)::bigint,coalesce(k.keyword,''),NULL::bigint,NULL::bigint
+			FROM catalog.skus s
+			LEFT JOIN LATERAL (SELECT sum(x.on_hand-x.reserved-x.allocated-x.unavailable) avail FROM inventory.balances x
+				WHERE x.tenant_id=s.tenant_id AND x.store_id=s.store_id AND x.sku_id=s.id) b ON true
+			LEFT JOIN LATERAL (SELECT l.keyword FROM live.keyword_library l
+				WHERE l.tenant_id=s.tenant_id AND l.store_id=s.store_id AND l.sku_id=s.id) k ON true
+			WHERE s.tenant_id=$1 AND s.store_id=$2 AND s.product_id=$3 AND s.status='active' ORDER BY s.created_at,s.id LIMIT 200`,
+			scope.TenantID, scope.StoreID, id)
+	}
 	if err != nil {
 		return d, mapError(err)
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var s SKUStock
-		if err := rows.Scan(append(skuFields(&s.SKU), &s.Available)...); err != nil {
+		if err := rows.Scan(append(skuFields(&s.SKU), &s.Available, &s.Keyword, &s.OnHand, &s.Committed)...); err != nil {
 			return d, err
 		}
 		finishSKU(&s.SKU)

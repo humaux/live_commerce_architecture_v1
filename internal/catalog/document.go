@@ -1,9 +1,11 @@
 package catalog
 
-// document.go owns the product-editor document save command (docs/delivery/units/product-editor.md §f; the A6 amendment of
-// contracts/catalog-inventory-v1.md): one idempotent command that writes a product, its option axes, SKUs (with
-// inventory_tracked/max_per_order), stock opening/target, keyword and collection membership in a single transaction, plus
-// the bulk status and copy commands.
+// document.go owns the product-editor document save command (docs/delivery/units/product-editor.md §f create and §g
+// merge-patch edit; the A6 amendment of contracts/catalog-inventory-v1.md): two idempotent commands that write a product,
+// its option axes, SKUs (with inventory_tracked/max_per_order), stock opening/target, keyword and collection membership in
+// a single transaction, plus the bulk status and copy commands. Create (SaveProductDocument) takes the whole document;
+// edit (SaveProductEdit) is a presence-aware merge patch — an absent field keeps its value, an absent SKU is untouched,
+// and a SKU is archived only by an explicit active:false.
 //
 // Layering and cross-domain writes: the command runs under the merchant runtime (commerce_runtime) and writes catalog
 // tables, live.keyword_library (the claims keyword vocabulary, via the shared pure grammar package; the DB CHECK is the
@@ -38,8 +40,8 @@ const (
 	copyNameSuffix          = "（复制）" // copy: name suffix (§f ruling 5), 4 runes
 )
 
-// ProductDocumentInput is the create body and the full-replace edit body. ExpectedVersion 0 means create (ID empty); a
-// positive version means edit (ID is the product being replaced). WarehouseID is optional: empty resolves the store's single
+// ProductDocumentInput is the create body (POST /products/document). ExpectedVersion must be 0 and ID empty; edits use
+// ProductDocumentPatch (SaveProductEdit), never this type. WarehouseID is optional: empty resolves the store's single
 // active warehouse when stock is written (required when the store has 0 or >1 active warehouses).
 type ProductDocumentInput struct {
 	ID             string             `json:"id,omitempty"`
@@ -62,10 +64,9 @@ type ProductDocumentInput struct {
 	ExpectedVersion int64 `json:"expected_version"`
 }
 
-// DocumentSKUInput is one SKU of the document. ID is set only on edit (the SKU to update in place); an entry without ID
-// is created. OptionValues is the full combination; Code is generated from the product slug when empty. Stock carries the
-// tracked/untracked mode and the opening (create) or target (edit) on-hand quantity. Keyword is the store keyword (cleared
-// when empty). Active is nil or true -> active; false -> archived.
+// DocumentSKUInput is one SKU of the create document: a whole SKU. OptionValues is the full combination; Code is generated
+// from the product slug when empty. Stock carries the tracked/untracked mode and the opening on-hand quantity. Keyword is
+// the store keyword (cleared when empty). Active is nil or true -> active; false -> archived.
 type DocumentSKUInput struct {
 	ID             string         `json:"id,omitempty"`
 	OptionValues   []string       `json:"option_values,omitempty"`
@@ -114,29 +115,71 @@ type CopyInput struct {
 	ExpectedVersion int64 `json:"expected_version"`
 }
 
-// SaveProductDocument writes a product document (create product.save / edit product.save:<id>) in one command.Run. It is a
-// full replace: every SKU in the document is created or updated in place, and an existing active SKU that is not referenced
-// is archived (an axis change archives any SKU the new document omits, so order history stays intact and the 0086 partial
-// combination index frees the slot). Any failure — a conflicting expected_version, a taken keyword or slug, a bad amount —
-// rolls the whole transaction back.
+// ProductDocumentPatch is the merge-patch edit body (PUT /products/{id}/document, product-editor §g). Top-level fields are
+// presence-aware: nil leaves the stored value, a pointer sets it (Slug "" keeps the current slug). CollectionIDs nil leaves
+// membership alone; [] clears it. SKUs nil leaves every SKU untouched; present patches the id-carrying entries and creates
+// the rest (an unmentioned active SKU is left alone — archiving is only ever an explicit active:false). WeightGrams and
+// Length/Width/HeightMM are create-only (§g.3): any of them present in an edit is ErrInvalid, so they stay fields here to
+// reach the documented 422 instead of a bare unknown-field 400.
+type ProductDocumentPatch struct {
+	ID              string              `json:"id,omitempty"`
+	Name            *string             `json:"name,omitempty"`
+	Description     *string             `json:"description,omitempty"`
+	Status          *string             `json:"status,omitempty"` // nil keeps; "draft"/"active" sets (never "archived")
+	Slug            *string             `json:"slug,omitempty"`
+	SEOTitle        *string             `json:"seo_title,omitempty"`
+	SEODescription  *string             `json:"seo_description,omitempty"`
+	Options         *[]OptionAxis       `json:"options,omitempty"`
+	SKUs            *[]DocumentSKUPatch `json:"skus,omitempty"`
+	CollectionIDs   *[]string           `json:"collection_ids,omitempty"`
+	WeightGrams     *int64              `json:"weight_grams,omitempty"` // create-only; present in an edit -> ErrInvalid (§g.3)
+	LengthMM        *int64              `json:"length_mm,omitempty"`    // create-only; present in an edit -> ErrInvalid (§g.3)
+	WidthMM         *int64              `json:"width_mm,omitempty"`     // create-only; present in an edit -> ErrInvalid (§g.3)
+	HeightMM        *int64              `json:"height_mm,omitempty"`    // create-only; present in an edit -> ErrInvalid (§g.3)
+	ExpectedVersion int64               `json:"expected_version"`
+}
+
+// DocumentSKUPatch is one entry of the edit's skus array. ID present patches that SKU in place (only the fields present;
+// active:false archives and releases its keyword); ID absent creates a new SKU (validated exactly like a create SKU and
+// using opening_qty, not target_qty). Stock reuses DocumentStock: on an existing SKU only target_qty is meaningful (present,
+// including 0, sets the final on-hand), on a new SKU only opening_qty. Keyword is Opt: absent keeps, null or "" clears, a
+// value sets. CompareAtMinor is Opt: absent keeps, null clears, a value sets. PriceMinor is required on a new SKU and, when
+// present on an existing one, must stay below CompareAtMinor.
+type DocumentSKUPatch struct {
+	ID             string         `json:"id,omitempty"`
+	OptionValues   *[]string      `json:"option_values,omitempty"`
+	PriceMinor     *int64         `json:"price_minor,omitempty"`
+	CompareAtMinor Opt[int64]     `json:"compare_at_minor,omitzero"`
+	OriginCountry  *string        `json:"origin_country,omitempty"`
+	CustomsName    *string        `json:"customs_name,omitempty"`
+	HSCandidate    *string        `json:"hs_candidate,omitempty"`
+	Stock          *DocumentStock `json:"stock,omitempty"`
+	Keyword        Opt[string]    `json:"keyword,omitzero"`
+	Active         *bool          `json:"active,omitempty"`
+	WeightGrams    *int64         `json:"weight_grams,omitempty"` // per-SKU logistics (§g.3)
+	LengthMM       *int64         `json:"length_mm,omitempty"`
+	WidthMM        *int64         `json:"width_mm,omitempty"`
+	HeightMM       *int64         `json:"height_mm,omitempty"`
+}
+
+// SaveProductDocument writes a product document (create product.save) in one command.Run. It is a whole document: every SKU
+// in the body is created and any failure — a taken keyword or slug, a bad amount — rolls the whole transaction back. Edit is
+// SaveProductEdit (merge patch), not this function.
 func SaveProductDocument(ctx context.Context, tx pgx.Tx, scope platform.Scope, key string, in ProductDocumentInput) (out ProductDocument, err error) {
-	updating := in.ExpectedVersion >= 1
-	if !validDocumentInput(in, updating) {
+	if in.ExpectedVersion != 0 || in.ID != "" {
 		return out, command.ErrInvalid
 	}
-	productID := in.ID
+	if !validDocumentInput(in) {
+		return out, command.ErrInvalid
+	}
 	status := in.Status
 	if status == "" {
 		status = StatusDraft
 	}
-	operation := documentCreateOperation
-	if updating {
-		operation = documentEditOperation + strings.ReplaceAll(productID, "-", "")
-	}
 	// Canonical request: the validated input with defaults the hash must see (DB-derived values — generated codes, the
 	// resolved warehouse — stay out, so a replay with the same bytes still replays the first result).
 	request := canonicalDocumentRequest(in, status)
-	err = command.Run(ctx, tx, scope, operation, key, request, &out, func() error {
+	err = command.Run(ctx, tx, scope, documentCreateOperation, key, request, &out, func() error {
 		currency, err := storeCurrency(ctx, tx, scope)
 		if err != nil {
 			return err
@@ -145,54 +188,22 @@ func SaveProductDocument(ctx context.Context, tx pgx.Tx, scope platform.Scope, k
 		if axes == nil {
 			axes = []OptionAxis{}
 		}
-		var prod Product
-		if updating {
-			prod, err = applyProductEdit(ctx, tx, scope, productID, in, status, axes)
+		slugPtr := &in.Slug
+		if in.Slug == "" {
+			slugPtr, err = freeSlug(ctx, tx, scope, "catalog.products", Slugify(in.Name))
 			if err != nil {
 				return err
 			}
-		} else {
-			slugPtr := &in.Slug
-			if in.Slug == "" {
-				slugPtr, err = freeSlug(ctx, tx, scope, "catalog.products", Slugify(in.Name))
-				if err != nil {
-					return err
-				}
-			}
-			err = tx.QueryRow(ctx, `INSERT INTO catalog.products(tenant_id,store_id,name,description,status,slug,seo_title,seo_description,options)
-				VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING `+productColumns,
-				scope.TenantID, scope.StoreID, in.Name, in.Description, status, slugPtr, in.SEOTitle, in.SEODescription, axes).Scan(productFields(&prod)...)
-			if err != nil {
-				return err
-			}
-			finishProduct(&prod)
 		}
-		out.Product = prod
-		productID = prod.ID
-		existing, err := loadActiveSKUs(ctx, tx, scope, productID)
+		var prod Product
+		err = tx.QueryRow(ctx, `INSERT INTO catalog.products(tenant_id,store_id,name,description,status,slug,seo_title,seo_description,options)
+			VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING `+productColumns,
+			scope.TenantID, scope.StoreID, in.Name, in.Description, status, slugPtr, in.SEOTitle, in.SEODescription, axes).Scan(productFields(&prod)...)
 		if err != nil {
 			return err
 		}
-		referenced := map[string]bool{}
-		for _, entry := range in.SKUs {
-			if entry.ID != "" {
-				referenced[entry.ID] = true
-			}
-		}
-		// Full replace: every existing active SKU not referenced by the document is archived (this is also how an axis
-		// change retires the SKUs the new document omits). Its keyword is released in the same transaction, and BEFORE
-		// the new SKUs are written, so a new SKU can reuse an omitted SKU's keyword instead of rolling back keyword_taken.
-		for id, sku := range existing {
-			if referenced[id] {
-				continue
-			}
-			if err := archiveSKURow(ctx, tx, scope, id, sku.Version); err != nil {
-				return err
-			}
-			if err := writeKeyword(ctx, tx, scope, id, ""); err != nil {
-				return err
-			}
-		}
+		finishProduct(&prod)
+		out.Product = prod
 		warehouse := in.WarehouseID
 		for _, entry := range in.SKUs {
 			stock := normalizeStock(entry.Stock)
@@ -206,21 +217,18 @@ func SaveProductDocument(ctx context.Context, tx pgx.Tx, scope platform.Scope, k
 			if err := checkWholeTWD(currency, entry.PriceMinor, entry.CompareAtMinor); err != nil {
 				return err
 			}
-			sku, created, err := writeSKU(ctx, tx, scope, productID, prod.Slug, currency, entry, values, stock, in.WeightGrams, in.LengthMM, in.WidthMM, in.HeightMM)
+			sku, created, err := writeSKU(ctx, tx, scope, prod.ID, prod.Slug, currency, entry, values, stock, in.WeightGrams, in.LengthMM, in.WidthMM, in.HeightMM)
 			if err != nil {
 				return err
 			}
-			if stock.tracked && stock.qty != nil && *stock.qty != 0 {
+			// Create writes opening_qty only; a nonzero opening writes the initial balance, an opening of 0 writes nothing.
+			if created && stock.tracked && stock.qty != nil && *stock.qty != 0 {
 				if warehouse == "" {
 					if warehouse, err = resolveWarehouse(ctx, tx, scope, ""); err != nil {
 						return err
 					}
 				}
-				if created {
-					if err := writeOpeningStock(ctx, tx, scope, warehouse, sku.ID, *stock.qty, operation, key); err != nil {
-						return err
-					}
-				} else if err := writeTargetStock(ctx, tx, scope, warehouse, sku.ID, *stock.qty, operation, key); err != nil {
+				if err := writeOpeningStock(ctx, tx, scope, warehouse, sku.ID, *stock.qty, documentCreateOperation, key); err != nil {
 					return err
 				}
 			}
@@ -228,10 +236,10 @@ func SaveProductDocument(ctx context.Context, tx pgx.Tx, scope platform.Scope, k
 				return err
 			}
 		}
-		if err := setProductCollections(ctx, tx, scope, productID, in.CollectionIDs); err != nil {
+		if err := setProductCollections(ctx, tx, scope, prod.ID, in.CollectionIDs); err != nil {
 			return err
 		}
-		out.SKUs, err = loadActiveSKUsOrdered(ctx, tx, scope, productID)
+		out.SKUs, err = loadActiveSKUsOrdered(ctx, tx, scope, prod.ID)
 		if err != nil {
 			return err
 		}
@@ -288,13 +296,12 @@ func canonicalDocumentRequest(in ProductDocumentInput, status string) ProductDoc
 	return in
 }
 
-// validDocumentInput is the create/edit grammar. Callers already canonicalize status.
-func validDocumentInput(in ProductDocumentInput, updating bool) bool {
+// validDocumentInput is the create grammar. Callers already canonicalize status.
+func validDocumentInput(in ProductDocumentInput) bool {
 	if !validName(in.Name) || !validDescription(in.Description) ||
 		(in.Status != "" && in.Status != StatusDraft && in.Status != StatusActive) ||
 		(in.Slug != "" && !validSlug(in.Slug)) || !validSEO(in.SEOTitle, in.SEODescription) ||
-		!validOptions(in.Options) || (!updating && in.ExpectedVersion != 0) || (updating && in.ExpectedVersion < 1) ||
-		(updating && !command.ValidID(in.ID)) || (!updating && in.ID != "") ||
+		!validOptions(in.Options) || in.ExpectedVersion != 0 || in.ID != "" ||
 		len(in.SKUs) < 1 || len(in.SKUs) > maxActiveSKUsPerProduct ||
 		len(in.CollectionIDs) > maxCollectionProducts || (in.WarehouseID != "" && !command.ValidID(in.WarehouseID)) ||
 		in.WeightGrams < 0 || in.WeightGrams > command.MaxQuantity ||
@@ -302,10 +309,9 @@ func validDocumentInput(in ProductDocumentInput, updating bool) bool {
 		in.HeightMM < 0 || in.HeightMM > 1_000_000 {
 		return false
 	}
-	seenIDs := map[string]bool{}
 	seenValues := map[string]bool{}
 	for _, e := range in.SKUs {
-		if (e.ID != "" && (!command.ValidID(e.ID) || seenIDs[e.ID])) ||
+		if (e.ID != "" && !command.ValidID(e.ID)) ||
 			(e.Code != "" && !skuCodePattern.MatchString(e.Code)) ||
 			e.PriceMinor < 0 || e.PriceMinor > command.MaxMoney ||
 			(e.CompareAtMinor != nil && (*e.CompareAtMinor <= e.PriceMinor || *e.CompareAtMinor > command.MaxMoney)) ||
@@ -313,9 +319,6 @@ func validDocumentInput(in ProductDocumentInput, updating bool) bool {
 			utf8Count(e.CustomsName) > 240 || (e.HSCandidate != "" && !hsPattern.MatchString(e.HSCandidate)) ||
 			len(e.OptionValues) > 3 {
 			return false
-		}
-		if e.ID != "" {
-			seenIDs[e.ID] = true
 		}
 		if len(e.OptionValues) > 0 {
 			k := strings.Join(e.OptionValues, "\x00")
@@ -339,16 +342,10 @@ func validDocumentInput(in ProductDocumentInput, updating bool) bool {
 			} else if e.Stock.MaxPerOrder != nil {
 				return false // tracked SKUs carry no per-order cap
 			}
-			if !updating && e.Stock.TargetQty != nil {
+			if e.Stock.TargetQty != nil {
 				return false // create writes opening_qty only
 			}
-			if updating && e.Stock.OpeningQty != nil {
-				return false // edit writes target_qty only
-			}
 			if e.Stock.OpeningQty != nil && *e.Stock.OpeningQty < 0 {
-				return false
-			}
-			if e.Stock.TargetQty != nil && *e.Stock.TargetQty < 0 {
 				return false
 			}
 		}
@@ -356,39 +353,645 @@ func validDocumentInput(in ProductDocumentInput, updating bool) bool {
 	return true
 }
 
-// applyProductEdit locks the product, verifies the optimistic version, and writes the scalar fields and axes. An omitted
-// slug keeps the current one (full-replace but the slug is part of the product's public identity).
-func applyProductEdit(ctx context.Context, tx pgx.Tx, scope platform.Scope, id string, in ProductDocumentInput, status string, axes []OptionAxis) (Product, error) {
-	var out Product
-	if err := lockProduct(ctx, tx, scope, id); err != nil {
-		return out, err
+// SaveProductEdit applies a merge-patch edit (product.save:<id>, PUT products/{id}/document, product-editor §g) in one
+// command.Run. Top-level fields are presence-aware (absent keeps the value; collection_ids: [] clears); skus absent leaves
+// every SKU untouched, skus present patches the id-carrying entries and creates the rest, and an unmentioned SKU stays as
+// it is. Archiving is only ever an explicit active:false. Any failure — a stale expected_version, an axis change that
+// strands an active SKU, an edit to an open live window — rolls the whole transaction back.
+func SaveProductEdit(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, id string, in ProductDocumentPatch) (out ProductDocument, err error) {
+	in.ID = id
+	if !validDocumentPatch(in) {
+		return out, command.ErrInvalid
 	}
-	var cur Product
-	if err := tx.QueryRow(ctx, `SELECT `+productColumns+` FROM catalog.products WHERE tenant_id=$1 AND store_id=$2 AND id=$3`,
-		scope.TenantID, scope.StoreID, id).Scan(productFields(&cur)...); err != nil {
-		return out, mapError(err)
-	}
-	if cur.Version != in.ExpectedVersion {
-		return out, command.ErrConflict
-	}
-	if cur.Status == StatusArchived {
-		return out, command.ErrConflict
-	}
-	slug := in.Slug
-	if slug == "" {
-		slug = cur.Slug
-	}
-	err := tx.QueryRow(ctx, `UPDATE catalog.products SET name=$3,description=$4,status=$5,slug=$6,seo_title=$7,seo_description=$8,options=$9,version=version+1,updated_at=clock_timestamp()
-		WHERE tenant_id=$1 AND store_id=$2 AND id=$10 AND version=$11 RETURNING `+productColumns,
-		scope.TenantID, scope.StoreID, in.Name, in.Description, status, slug, in.SEOTitle, in.SEODescription, axes, id, in.ExpectedVersion).Scan(productFields(&out)...)
-	if err != nil {
-		return out, mapError(err)
-	}
-	finishProduct(&out)
-	return out, nil
+	operation := documentEditOperation + strings.ReplaceAll(id, "-", "")
+	err = command.Run(ctx, tx, scope, operation, key, in, &out, func() error {
+		currency, err := storeCurrency(ctx, tx, scope)
+		if err != nil {
+			return err
+		}
+		if err := lockProduct(ctx, tx, scope, id); err != nil {
+			return err
+		}
+		var cur Product
+		if err := tx.QueryRow(ctx, `SELECT `+productColumns+` FROM catalog.products WHERE tenant_id=$1 AND store_id=$2 AND id=$3`,
+			scope.TenantID, scope.StoreID, id).Scan(productFields(&cur)...); err != nil {
+			return mapError(err)
+		}
+		if cur.Version != in.ExpectedVersion {
+			return command.ErrConflict
+		}
+		if cur.Status == StatusArchived {
+			return command.ErrConflict
+		}
+		finishProduct(&cur)
+
+		name, description, status, slug, seoTitle, seoDesc := cur.Name, cur.Description, cur.Status, cur.Slug, cur.SEOTitle, cur.SEODescription
+		axes := cur.Options
+		changed := []string{}
+		if in.Name != nil {
+			name, changed = *in.Name, append(changed, "catalog.product.edited.name")
+		}
+		if in.Description != nil {
+			description, changed = *in.Description, append(changed, "catalog.product.edited.description")
+		}
+		if in.Status != nil {
+			status, changed = *in.Status, append(changed, "catalog.product.edited.status")
+		}
+		if in.Slug != nil && *in.Slug != "" {
+			slug, changed = *in.Slug, append(changed, "catalog.product.edited.slug")
+		}
+		if in.SEOTitle != nil {
+			seoTitle, changed = *in.SEOTitle, append(changed, "catalog.product.edited.seo_title")
+		}
+		if in.SEODescription != nil {
+			seoDesc, changed = *in.SEODescription, append(changed, "catalog.product.edited.seo_description")
+		}
+		if in.Options != nil {
+			axes, changed = *in.Options, append(changed, "catalog.product.edited.options")
+		}
+
+		// §g.5: unlisting a product (status != active) while an OPEN claim window has an active offer on one of its SKUs
+		// is refused live_window_open; listing to active is always allowed.
+		if in.Status != nil && status != StatusActive {
+			open, err := liveWindowOpenForProduct(ctx, tx, scope, id)
+			if err != nil {
+				return err
+			}
+			if open {
+				return ErrLiveWindowOpen
+			}
+		}
+
+		err = tx.QueryRow(ctx, `UPDATE catalog.products SET name=$3,description=$4,status=$5,slug=$6,seo_title=$7,seo_description=$8,options=$9,version=version+1,updated_at=clock_timestamp()
+			WHERE tenant_id=$1 AND store_id=$2 AND id=$10 AND version=$11 RETURNING `+productColumns,
+			scope.TenantID, scope.StoreID, name, description, status, slug, seoTitle, seoDesc, axes, id, in.ExpectedVersion).Scan(productFields(&out.Product)...)
+		if err != nil {
+			return mapError(err)
+		}
+		finishProduct(&out.Product)
+
+		if in.SKUs != nil {
+			skuChanged, err := applySKUPatch(ctx, tx, scope, id, out.Product.Slug, currency, axes, *in.SKUs, operation, key)
+			if err != nil {
+				return err
+			}
+			changed = append(changed, skuChanged...)
+		}
+		if in.CollectionIDs != nil {
+			if err := setProductCollections(ctx, tx, scope, id, *in.CollectionIDs); err != nil {
+				return err
+			}
+			changed = append(changed, "catalog.product.edited.collection_ids")
+		}
+		out.SKUs, err = loadActiveSKUsOrdered(ctx, tx, scope, id)
+		if err != nil {
+			return err
+		}
+		return auditDocumentEdit(ctx, tx, scope, changed)
+	})
+	finishProduct(&out.Product)
+	return out, mapError(err)
 }
 
-// loadActiveSKUs returns the product's active SKUs keyed by id (for the full-replace archive decision).
+// auditDocumentEdit writes one ops.audit_events row per changed field name (never a value): catalog.product.edited.<field>
+// for top-level fields and catalog.sku.edited.<field> / catalog.sku.created for SKU changes. Replay never re-audits.
+func auditDocumentEdit(ctx context.Context, tx pgx.Tx, scope platform.Scope, actions []string) error {
+	sort.Strings(actions)
+	for _, a := range actions {
+		if err := command.Audit(ctx, tx, scope, a); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// liveWindowOpenForProduct reports whether an OPEN claim window has an active offer on one of the product's SKUs
+// (product-editor §f ruling 3 / §g.5): the reason an unlist is refused live_window_open.
+func liveWindowOpenForProduct(ctx context.Context, tx pgx.Tx, scope platform.Scope, productID string) (bool, error) {
+	var open bool
+	err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM live.claim_windows w
+		JOIN live.offers o ON o.tenant_id=w.tenant_id AND o.store_id=w.store_id AND o.session_id=w.session_id
+		JOIN catalog.skus s ON s.tenant_id=o.tenant_id AND s.store_id=o.store_id AND s.id=o.sku_id
+		WHERE w.tenant_id=$1 AND w.store_id=$2 AND w.state='OPEN' AND o.active AND s.product_id=$3)`,
+		scope.TenantID, scope.StoreID, productID).Scan(&open)
+	return open, err
+}
+
+// liveWindowOpenForSKU reports whether an OPEN claim window has an active offer on skuID.
+func liveWindowOpenForSKU(ctx context.Context, tx pgx.Tx, scope platform.Scope, skuID string) (bool, error) {
+	var open bool
+	err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM live.claim_windows w
+		JOIN live.offers o ON o.tenant_id=w.tenant_id AND o.store_id=w.store_id AND o.session_id=w.session_id
+		WHERE w.tenant_id=$1 AND w.store_id=$2 AND w.state='OPEN' AND o.active AND o.sku_id=$3)`,
+		scope.TenantID, scope.StoreID, skuID).Scan(&open)
+	return open, err
+}
+
+// validDocumentPatch is the edit grammar (§g): presence-aware top-level fields and per-SKU patches. Top-level logistics are
+// create-only (§g.3); an id-carrying entry has a valid unique id with its present fields checked in isolation (cross-field
+// checks that need the current value run at write time), and a new entry is validated by validateNewSKUPatch.
+func validDocumentPatch(in ProductDocumentPatch) bool {
+	if in.ExpectedVersion < 1 || !command.ValidID(in.ID) {
+		return false
+	}
+	if in.WeightGrams != nil || in.LengthMM != nil || in.WidthMM != nil || in.HeightMM != nil {
+		return false // §g.3: top-level logistics are create-only
+	}
+	if in.Name != nil && !validName(*in.Name) {
+		return false
+	}
+	if in.Description != nil && !validDescription(*in.Description) {
+		return false
+	}
+	if in.Status != nil && *in.Status != StatusDraft && *in.Status != StatusActive {
+		return false
+	}
+	if in.Slug != nil && *in.Slug != "" && !validSlug(*in.Slug) {
+		return false
+	}
+	if in.SEOTitle != nil && utf8Count(*in.SEOTitle) > 70 {
+		return false
+	}
+	if in.SEODescription != nil && utf8Count(*in.SEODescription) > 160 {
+		return false
+	}
+	if in.Options != nil && !validOptions(*in.Options) {
+		return false
+	}
+	if in.CollectionIDs != nil && len(*in.CollectionIDs) > maxCollectionProducts {
+		return false
+	}
+	if in.SKUs != nil && len(*in.SKUs) > maxActiveSKUsPerProduct {
+		return false
+	}
+	seenIDs := map[string]bool{}
+	if in.SKUs != nil {
+		for i := range *in.SKUs {
+			e := &(*in.SKUs)[i]
+			if e.ID == "" {
+				continue // a new SKU is validated by validateNewSKUPatch
+			}
+			if !command.ValidID(e.ID) || seenIDs[e.ID] || !validPatchSKUFields(e) {
+				return false
+			}
+			seenIDs[e.ID] = true
+		}
+	}
+	return true
+}
+
+// validPatchSKUFields checks the present fields of an id-carrying patch entry in isolation. Cross-field checks that need
+// the current value (compare_at > price, whole-TWD, tracked/untracked cap rules) run at write time in patchExistingSKU.
+func validPatchSKUFields(e *DocumentSKUPatch) bool {
+	if e.PriceMinor != nil && (*e.PriceMinor < 0 || *e.PriceMinor > command.MaxMoney) {
+		return false
+	}
+	if e.CompareAtMinor.Set && e.CompareAtMinor.Val != nil && *e.CompareAtMinor.Val > command.MaxMoney {
+		return false
+	}
+	if e.OriginCountry != nil && *e.OriginCountry != "" && !countryPattern.MatchString(*e.OriginCountry) {
+		return false
+	}
+	if e.CustomsName != nil && utf8Count(*e.CustomsName) > 240 {
+		return false
+	}
+	if e.HSCandidate != nil && *e.HSCandidate != "" && !hsPattern.MatchString(*e.HSCandidate) {
+		return false
+	}
+	if e.OptionValues != nil && len(*e.OptionValues) > 3 {
+		return false
+	}
+	if e.WeightGrams != nil && (*e.WeightGrams < 0 || *e.WeightGrams > command.MaxQuantity) {
+		return false
+	}
+	for _, p := range []*int64{e.LengthMM, e.WidthMM, e.HeightMM} {
+		if p != nil && (*p < 0 || *p > 1_000_000) {
+			return false
+		}
+	}
+	if e.Stock != nil {
+		s := e.Stock
+		if s.Mode != "" && s.Mode != "tracked" && s.Mode != "untracked" {
+			return false
+		}
+		if s.OpeningQty != nil {
+			return false // edit writes target_qty only (§g.2)
+		}
+		if s.TargetQty != nil && *s.TargetQty < 0 {
+			return false
+		}
+		if s.MaxPerOrder != nil && (*s.MaxPerOrder < 1 || *s.MaxPerOrder > 999) {
+			return false
+		}
+	}
+	return true
+}
+
+// applySKUPatch applies the patch's SKU entries: id-carrying entries patch only the fields that are present (unmentioned
+// fields keep their stored values; active:false archives and releases the keyword), entries without id are new SKUs with
+// the create validation. After an options change every still-active SKU must fit the new axes and no two may share a
+// combination, else the whole command is ErrInvalid. Returns the audit action names of the SKU changes.
+func applySKUPatch(ctx context.Context, tx pgx.Tx, scope platform.Scope, productID, slug, currency string, axes []OptionAxis, entries []DocumentSKUPatch, operation, key string) ([]string, error) {
+	existing, err := loadActiveSKUs(ctx, tx, scope, productID)
+	if err != nil {
+		return nil, err
+	}
+	// Resolve the final active option-value set for the fit + duplicate checks: existing SKUs kept active (with their patch
+	// values) plus the new active SKUs. Archived SKUs are dropped before the check.
+	final := map[string][]string{}
+	for id, s := range existing {
+		final[id] = s.OptionValues
+	}
+	newValues := [][]string{}
+	for _, e := range entries {
+		if e.ID == "" {
+			if err := validateNewSKUPatch(e); err != nil {
+				return nil, err
+			}
+			if e.Active == nil || *e.Active {
+				values := []string{}
+				if e.OptionValues != nil {
+					values = *e.OptionValues
+				}
+				newValues = append(newValues, values)
+			}
+			continue
+		}
+		_, ok := existing[e.ID]
+		if !ok {
+			return nil, command.ErrNotFound
+		}
+		if e.Active != nil && !*e.Active {
+			delete(final, e.ID)
+		} else if e.OptionValues != nil {
+			final[e.ID] = *e.OptionValues
+		}
+	}
+	// Combination uniqueness applies to non-empty combinations only, as on create and in the 0086 partial index: an
+	// axis-less product may hold several SKUs with no option values.
+	seen := map[string]bool{}
+	for _, values := range final {
+		if !valuesFit(axes, values) {
+			return nil, command.ErrInvalid // §g.1: an active SKU stranded by the new axes
+		}
+		if len(values) > 0 {
+			seen[strings.Join(values, "\x00")] = true
+		}
+	}
+	for _, values := range newValues {
+		if !valuesFit(axes, values) {
+			return nil, command.ErrInvalid
+		}
+		k := strings.Join(values, "\x00")
+		if len(values) > 0 && seen[k] {
+			return nil, command.ErrInvalid // two active SKUs with the same combination
+		}
+		seen[k] = true
+	}
+
+	// §g.5: archiving a SKU or touching the keyword of a SKU inside an OPEN window is refused per item, whole rollback.
+	for _, e := range entries {
+		if e.ID == "" {
+			continue
+		}
+		if (e.Active != nil && !*e.Active) || e.Keyword.Set {
+			open, err := liveWindowOpenForSKU(ctx, tx, scope, e.ID)
+			if err != nil {
+				return nil, err
+			}
+			if open {
+				return nil, ErrLiveWindowOpen
+			}
+		}
+	}
+
+	warehouse := ""
+	actions := []string{}
+	for _, e := range entries {
+		if e.ID == "" {
+			values := []string{}
+			if e.OptionValues != nil {
+				values = *e.OptionValues
+			}
+			if !valuesFit(axes, values) {
+				return nil, command.ErrInvalid // matches create: every SKU, active or archived, must fit the axes
+			}
+			price := int64(0)
+			if e.PriceMinor != nil {
+				price = *e.PriceMinor
+			}
+			var compare *int64
+			if e.CompareAtMinor.Set {
+				compare = e.CompareAtMinor.Val
+			}
+			if err := checkWholeTWD(currency, price, compare); err != nil {
+				return nil, err
+			}
+			stock := (*DocumentStock)(nil)
+			if e.Stock != nil {
+				s := *e.Stock
+				stock = &s
+			}
+			origin, customs, hs := "", "", ""
+			if e.OriginCountry != nil {
+				origin = *e.OriginCountry
+			}
+			if e.CustomsName != nil {
+				customs = *e.CustomsName
+			}
+			if e.HSCandidate != nil {
+				hs = *e.HSCandidate
+			}
+			weight, length, width, height := int64(0), int64(0), int64(0), int64(0)
+			if e.WeightGrams != nil {
+				weight = *e.WeightGrams
+			}
+			if e.LengthMM != nil {
+				length = *e.LengthMM
+			}
+			if e.WidthMM != nil {
+				width = *e.WidthMM
+			}
+			if e.HeightMM != nil {
+				height = *e.HeightMM
+			}
+			entry := DocumentSKUInput{
+				PriceMinor: price, CompareAtMinor: compare, OriginCountry: origin, CustomsName: customs, HSCandidate: hs,
+				Stock: stock, Active: e.Active,
+			}
+			rs := normalizeStock(stock)
+			sku, created, err := writeSKU(ctx, tx, scope, productID, slug, currency, entry, values, rs, weight, length, width, height)
+			if err != nil {
+				return nil, err
+			}
+			if created && rs.tracked && rs.qty != nil && *rs.qty != 0 {
+				if warehouse == "" {
+					if warehouse, err = resolveWarehouse(ctx, tx, scope, ""); err != nil {
+						return nil, err
+					}
+				}
+				if err := writeOpeningStock(ctx, tx, scope, warehouse, sku.ID, *rs.qty, operation, key); err != nil {
+					return nil, err
+				}
+			}
+			if e.Keyword.Set {
+				kw := ""
+				if e.Keyword.Val != nil {
+					kw = *e.Keyword.Val
+				}
+				if err := writeKeyword(ctx, tx, scope, sku.ID, kw); err != nil {
+					return nil, err
+				}
+			}
+			actions = append(actions, "catalog.sku.created")
+			continue
+		}
+		_, changed, err := patchExistingSKU(ctx, tx, scope, productID, currency, e, &warehouse, operation, key)
+		if err != nil {
+			return nil, err
+		}
+		actions = append(actions, changed...)
+	}
+	return actions, nil
+}
+
+// validateNewSKUPatch applies the create grammar to a patch entry without an id (§g.1: a new SKU is validated exactly like
+// a create SKU): price_minor required, option_values <= 3, and the create stock rules (opening_qty only, untracked requires
+// max_per_order 1..999 and never carries a quantity).
+func validateNewSKUPatch(e DocumentSKUPatch) error {
+	if e.PriceMinor == nil || *e.PriceMinor < 0 || *e.PriceMinor > command.MaxMoney {
+		return command.ErrInvalid
+	}
+	if e.CompareAtMinor.Set && e.CompareAtMinor.Val != nil && (*e.CompareAtMinor.Val <= *e.PriceMinor || *e.CompareAtMinor.Val > command.MaxMoney) {
+		return command.ErrInvalid
+	}
+	if e.OriginCountry != nil && *e.OriginCountry != "" && !countryPattern.MatchString(*e.OriginCountry) {
+		return command.ErrInvalid
+	}
+	if e.CustomsName != nil && utf8Count(*e.CustomsName) > 240 {
+		return command.ErrInvalid
+	}
+	if e.HSCandidate != nil && *e.HSCandidate != "" && !hsPattern.MatchString(*e.HSCandidate) {
+		return command.ErrInvalid
+	}
+	if e.OptionValues != nil && len(*e.OptionValues) > 3 {
+		return command.ErrInvalid
+	}
+	if e.WeightGrams != nil && (*e.WeightGrams < 0 || *e.WeightGrams > command.MaxQuantity) {
+		return command.ErrInvalid
+	}
+	for _, p := range []*int64{e.LengthMM, e.WidthMM, e.HeightMM} {
+		if p != nil && (*p < 0 || *p > 1_000_000) {
+			return command.ErrInvalid
+		}
+	}
+	if e.Stock != nil {
+		s := e.Stock
+		if s.Mode != "" && s.Mode != "tracked" && s.Mode != "untracked" {
+			return command.ErrInvalid
+		}
+		untracked := s.Mode == "untracked"
+		if untracked {
+			if s.MaxPerOrder == nil || *s.MaxPerOrder < 1 || *s.MaxPerOrder > 999 {
+				return command.ErrInvalid
+			}
+			if s.OpeningQty != nil || s.TargetQty != nil {
+				return command.ErrInvalid
+			}
+		} else if s.MaxPerOrder != nil {
+			return command.ErrInvalid // a tracked SKU carries no per-order cap
+		}
+		if s.TargetQty != nil {
+			return command.ErrInvalid // a new SKU writes opening_qty only
+		}
+		if s.OpeningQty != nil && (*s.OpeningQty < 0 || *s.OpeningQty > command.MaxQuantity) {
+			return command.ErrInvalid
+		}
+	}
+	return nil
+}
+
+// patchExistingSKU locks one id-carrying entry's SKU and applies only the fields present in the entry; an active:false
+// archives it and releases its keyword. The target_qty write (§g.2) resolves the store's single active warehouse through the
+// caller's warehouse accumulator. Returns the audit action names of the SKU's changed fields.
+func patchExistingSKU(ctx context.Context, tx pgx.Tx, scope platform.Scope, productID, currency string, e DocumentSKUPatch, warehouse *string, operation, key string) (SKU, []string, error) {
+	var cur SKU
+	err := tx.QueryRow(ctx, `SELECT `+skuColumns+` FROM catalog.skus WHERE tenant_id=$1 AND store_id=$2 AND id=$3 AND product_id=$4 AND status='active' FOR UPDATE`,
+		scope.TenantID, scope.StoreID, e.ID, productID).Scan(skuFields(&cur)...)
+	if err != nil {
+		return cur, nil, mapError(err)
+	}
+	finishSKU(&cur)
+
+	if e.Active != nil && !*e.Active {
+		if err := archiveSKURow(ctx, tx, scope, cur.ID, cur.Version); err != nil {
+			return cur, nil, err
+		}
+		cur.Status = StatusArchived
+		cur.Version++
+		if err := writeKeyword(ctx, tx, scope, cur.ID, ""); err != nil {
+			return cur, nil, err
+		}
+		return cur, []string{"catalog.sku.edited.active"}, nil
+	}
+
+	changes := map[string]bool{}
+	mark := func(field string) { changes["catalog.sku.edited."+field] = true }
+
+	price := cur.PriceMinor
+	if e.PriceMinor != nil {
+		price = *e.PriceMinor
+		mark("price_minor")
+	}
+	compare := cur.CompareAtMinor
+	if e.CompareAtMinor.Set {
+		compare = e.CompareAtMinor.Val
+		mark("compare_at_minor")
+	}
+	values := cur.OptionValues
+	if e.OptionValues != nil {
+		values = *e.OptionValues
+		mark("option_values")
+	}
+	weight := cur.WeightGrams
+	if e.WeightGrams != nil {
+		weight = *e.WeightGrams
+		mark("weight_grams")
+	}
+	length := cur.LengthMM
+	if e.LengthMM != nil {
+		length = *e.LengthMM
+		mark("length_mm")
+	}
+	width := cur.WidthMM
+	if e.WidthMM != nil {
+		width = *e.WidthMM
+		mark("width_mm")
+	}
+	height := cur.HeightMM
+	if e.HeightMM != nil {
+		height = *e.HeightMM
+		mark("height_mm")
+	}
+	origin := cur.OriginCountry
+	if e.OriginCountry != nil {
+		origin = *e.OriginCountry
+		mark("origin_country")
+	}
+	customs := cur.CustomsName
+	if e.CustomsName != nil {
+		customs = *e.CustomsName
+		mark("customs_name")
+	}
+	hs := cur.HSCandidate
+	if e.HSCandidate != nil {
+		hs = *e.HSCandidate
+		mark("hs_candidate")
+	}
+
+	tracked := cur.InventoryTracked
+	maxPerOrder := cur.MaxPerOrder
+	var targetQty *int64
+	if e.Stock != nil {
+		s := e.Stock
+		if s.Mode == "tracked" {
+			tracked, maxPerOrder = true, nil
+			mark("stock")
+		} else if s.Mode == "untracked" {
+			tracked = false
+			mark("stock")
+		}
+		if s.MaxPerOrder != nil {
+			maxPerOrder = s.MaxPerOrder
+			mark("stock")
+		}
+		if s.TargetQty != nil {
+			targetQty = s.TargetQty
+			mark("stock")
+		}
+	}
+
+	// resolved-value validation (only the present fields; the untouched values were already valid at create time).
+	if price < 0 || price > command.MaxMoney || (compare != nil && (*compare <= price || *compare > command.MaxMoney)) {
+		return cur, nil, command.ErrInvalid
+	}
+	if err := checkWholeTWD(currency, price, compare); err != nil {
+		return cur, nil, err
+	}
+	if origin != "" && !countryPattern.MatchString(origin) {
+		return cur, nil, command.ErrInvalid
+	}
+	if utf8Count(customs) > 240 {
+		return cur, nil, command.ErrInvalid
+	}
+	if hs != "" && !hsPattern.MatchString(hs) {
+		return cur, nil, command.ErrInvalid
+	}
+	if len(values) > 3 {
+		return cur, nil, command.ErrInvalid
+	}
+	if weight < 0 || weight > command.MaxQuantity || length < 0 || length > 1_000_000 || width < 0 || width > 1_000_000 || height < 0 || height > 1_000_000 {
+		return cur, nil, command.ErrInvalid
+	}
+	if !tracked {
+		if maxPerOrder == nil || *maxPerOrder < 1 || *maxPerOrder > 999 {
+			return cur, nil, command.ErrInvalid
+		}
+		if targetQty != nil {
+			return cur, nil, command.ErrInvalid // an untracked SKU never carries a quantity
+		}
+	} else if maxPerOrder != nil {
+		return cur, nil, command.ErrInvalid // a tracked SKU carries no per-order cap
+	}
+	if targetQty != nil && (*targetQty < 0 || *targetQty > command.MaxQuantity) {
+		return cur, nil, command.ErrInvalid
+	}
+
+	var out SKU
+	err = tx.QueryRow(ctx, `UPDATE catalog.skus SET price_minor=$3,compare_at_minor=$4,weight_grams=$5,length_mm=$6,width_mm=$7,height_mm=$8,origin_country=$9,customs_name=$10,hs_candidate=$11,option_values=$12,inventory_tracked=$13,max_per_order=$14,version=version+1,updated_at=clock_timestamp()
+		WHERE tenant_id=$1 AND store_id=$2 AND id=$15 AND version=$16 RETURNING `+skuColumns,
+		scope.TenantID, scope.StoreID, price, compare, weight, length, width, height, origin, customs, hs, values, tracked, maxPerOrder, cur.ID, cur.Version).Scan(skuFields(&out)...)
+	if err != nil {
+		return cur, nil, mapError(err)
+	}
+	finishSKU(&out)
+	if cur.PriceMinor != price {
+		if err := appendPriceHistory(ctx, tx, scope, out); err != nil {
+			return cur, nil, err
+		}
+	}
+	if e.Keyword.Set {
+		mark("keyword")
+		kw := ""
+		if e.Keyword.Val != nil {
+			kw = *e.Keyword.Val
+		}
+		if err := writeKeyword(ctx, tx, scope, out.ID, kw); err != nil {
+			return cur, nil, err
+		}
+	}
+	// §g.2: target_qty present, including 0, sets the final on-hand; absent leaves it alone.
+	if targetQty != nil {
+		if *warehouse == "" {
+			var err error
+			if *warehouse, err = resolveWarehouse(ctx, tx, scope, ""); err != nil {
+				return cur, nil, err
+			}
+		}
+		if err := writeTargetStock(ctx, tx, scope, *warehouse, out.ID, *targetQty, operation, key); err != nil {
+			return cur, nil, err
+		}
+	}
+
+	actions := make([]string, 0, len(changes))
+	for a := range changes {
+		actions = append(actions, a)
+	}
+	sort.Strings(actions)
+	return out, actions, nil
+}
+
+// loadActiveSKUs returns the product's active SKUs keyed by id (for the merge-patch resolve + archive decision).
 func loadActiveSKUs(ctx context.Context, tx pgx.Tx, scope platform.Scope, productID string) (map[string]SKU, error) {
 	rows, err := tx.Query(ctx, `SELECT `+skuColumns+` FROM catalog.skus WHERE tenant_id=$1 AND store_id=$2 AND product_id=$3 AND status='active'`,
 		scope.TenantID, scope.StoreID, productID)
@@ -736,12 +1339,8 @@ func setOneProductStatus(ctx context.Context, tx pgx.Tx, scope platform.Scope, i
 		return err
 	}
 	if status != StatusActive {
-		var open bool
-		if err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM live.claim_windows w
-			JOIN live.offers o ON o.tenant_id=w.tenant_id AND o.store_id=w.store_id AND o.session_id=w.session_id
-			JOIN catalog.skus s ON s.tenant_id=o.tenant_id AND s.store_id=o.store_id AND s.id=o.sku_id
-			WHERE w.tenant_id=$1 AND w.store_id=$2 AND w.state='OPEN' AND o.active AND s.product_id=$3)`,
-			scope.TenantID, scope.StoreID, id).Scan(&open); err != nil {
+		open, err := liveWindowOpenForProduct(ctx, tx, scope, id)
+		if err != nil {
 			return err
 		}
 		if open {

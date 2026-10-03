@@ -83,6 +83,29 @@ type pdSKUOut struct {
 	MaxPerOrder      *int64   `json:"max_per_order"`
 }
 
+// pdDetail is the merchant GET /products/{id} detail shape (product-editor §g.4).
+type pdDetail struct {
+	ID            string        `json:"id"`
+	Name          string        `json:"name"`
+	Description   string        `json:"description"`
+	Status        string        `json:"status"`
+	Version       int64         `json:"version"`
+	Slug          string        `json:"slug"`
+	Options       []ccAxis      `json:"options"`
+	CollectionIDs []string      `json:"collection_ids"`
+	WarehouseID   *string       `json:"warehouse_id"`
+	SKUs          []pdDetailSKU `json:"skus"`
+}
+
+type pdDetailSKU struct {
+	ID         string `json:"id"`
+	PriceMinor int64  `json:"price_minor"`
+	Keyword    string `json:"keyword"`
+	OnHand     *int64 `json:"on_hand"`
+	Committed  *int64 `json:"committed"`
+	Available  int64  `json:"available"`
+}
+
 type pdBulkItem struct {
 	ID     string `json:"id"`
 	Status string `json:"status"`
@@ -107,7 +130,48 @@ type pdList struct {
 	} `json:"status_counts"`
 }
 
-func pdI64(v int64) *int64 { return &v }
+func pdI64(v int64) *int64   { return &v }
+func pdStr(v string) *string { return &v }
+func pdBool(v bool) *bool    { return &v }
+
+// ---- edit (merge-patch) DTOs (product-editor §g) ------------------------------------------------------------------
+
+// pdPatch mirrors internal/catalog.ProductDocumentPatch: pointers mark presence, so absent keeps the value and [] clears.
+type pdPatch struct {
+	ID              string        `json:"id,omitempty"`
+	Name            *string       `json:"name,omitempty"`
+	Description     *string       `json:"description,omitempty"`
+	Status          *string       `json:"status,omitempty"`
+	Slug            *string       `json:"slug,omitempty"`
+	SEOTitle        *string       `json:"seo_title,omitempty"`
+	SEODescription  *string       `json:"seo_description,omitempty"`
+	Options         *[]ccAxis     `json:"options,omitempty"`
+	SKUs            *[]pdSKUPatch `json:"skus,omitempty"`
+	CollectionIDs   *[]string     `json:"collection_ids,omitempty"`
+	WeightGrams     *int64        `json:"weight_grams,omitempty"`
+	LengthMM        *int64        `json:"length_mm,omitempty"`
+	WidthMM         *int64        `json:"width_mm,omitempty"`
+	HeightMM        *int64        `json:"height_mm,omitempty"`
+	ExpectedVersion int64         `json:"expected_version"`
+}
+
+// pdSKUPatch mirrors internal/catalog.DocumentSKUPatch: id present patches in place, id absent creates a new SKU.
+type pdSKUPatch struct {
+	ID             string    `json:"id,omitempty"`
+	OptionValues   *[]string `json:"option_values,omitempty"`
+	PriceMinor     *int64    `json:"price_minor,omitempty"`
+	CompareAtMinor *int64    `json:"compare_at_minor,omitempty"`
+	OriginCountry  *string   `json:"origin_country,omitempty"`
+	CustomsName    *string   `json:"customs_name,omitempty"`
+	HSCandidate    *string   `json:"hs_candidate,omitempty"`
+	Stock          *pdStock  `json:"stock,omitempty"`
+	Keyword        *string   `json:"keyword,omitempty"`
+	Active         *bool     `json:"active,omitempty"`
+	WeightGrams    *int64    `json:"weight_grams,omitempty"`
+	LengthMM       *int64    `json:"length_mm,omitempty"`
+	WidthMM        *int64    `json:"width_mm,omitempty"`
+	HeightMM       *int64    `json:"height_mm,omitempty"`
+}
 
 // pdKeyword is a store-unique keyword in the live.keyword_library grammar (^[A-Z0-9]{1,16}$).
 func pdKeyword() string { return "K" + strings.ToUpper(t04Tag())[:10] }
@@ -119,7 +183,7 @@ func (e *ccEnv) docCreate(key string, in pdDoc, out *pdProduct) {
 	e.a.ok("POST", "/products/document", key, in, out)
 }
 
-func (e *ccEnv) docEdit(id, key string, in pdDoc, out *pdProduct) {
+func (e *ccEnv) docEdit(id, key string, in pdPatch, out *pdProduct) {
 	e.t.Helper()
 	e.a.ok("PUT", "/products/"+id+"/document", key, in, out)
 }
@@ -129,7 +193,7 @@ func (e *ccEnv) docCreateRefuse(want int, key string, in pdDoc) {
 	e.a.refuse(want, "POST", "/products/document", key, in)
 }
 
-func (e *ccEnv) docEditRefuse(want int, id, key string, in pdDoc) {
+func (e *ccEnv) docEditRefuse(want int, id, key string, in pdPatch) {
 	e.t.Helper()
 	e.a.refuse(want, "PUT", "/products/"+id+"/document", key, in)
 }
@@ -179,8 +243,29 @@ func (e *ccEnv) seedLiveWindow(skuID string) {
 	}
 	mustExec(e.t, e.h.f.owner, `INSERT INTO live.claim_windows(tenant_id,store_id,session_id,state,match_mode,generation,opened_at,principal_id)
 		VALUES($1,$2,$3,'OPEN','EXACT',1,clock_timestamp(),$4)`, tenant, e.h.f.storeA1, session, principal)
+	// storeA1 allows one OPEN window (live_claim_window_one_open) and is shared by every gate: close it after the test.
+	e.t.Cleanup(func() {
+		mustExec(e.t, e.h.f.owner, `UPDATE live.claim_windows SET state='CLOSED',closed_at=clock_timestamp() WHERE session_id=$1 AND state='OPEN'`, session)
+	})
 	mustExec(e.t, e.h.f.owner, `INSERT INTO live.offers(tenant_id,store_id,session_id,keyword,sku_id,max_quantity_per_claim,active,principal_id)
 		VALUES($1,$2,$3,'PE11',$4,5,true,$5)`, tenant, e.h.f.storeA1, session, skuID, principal)
+}
+
+// onlyWarehouse deactivates every other ACTIVE warehouse of the shared fixture store, so the store reads exactly one active
+// warehouse (resolveWarehouse("")/GetProductDetail single-warehouse branches). Cleanup reactivates only the warehouses it
+// deactivated: other gates deliberately leave storeA1 warehouses inactive, and the full G07 suite shares this store.
+func (e *ccEnv) onlyWarehouse(keep string) {
+	e.t.Helper()
+	ctx := context.Background()
+	var ids []string
+	if err := e.h.f.owner.QueryRow(ctx, `WITH off AS (UPDATE inventory.warehouses SET active=false
+		WHERE store_id=$1 AND id<>$2 AND active RETURNING id::text) SELECT coalesce(array_agg(id),'{}') FROM off`,
+		e.h.f.storeA1, keep).Scan(&ids); err != nil {
+		e.t.Fatal(err)
+	}
+	e.t.Cleanup(func() {
+		mustExec(e.t, e.h.f.owner, `UPDATE inventory.warehouses SET active=true WHERE store_id=$1 AND id=ANY($2::uuid[])`, e.h.f.storeA1, ids)
+	})
 }
 
 // ---- PE01 single transaction: one save writes product + SKUs + stock + keyword + collections; any failure leaves nothing
@@ -474,10 +559,10 @@ func TestProductEditorPE07DraftVisibility(t *testing.T) {
 	}
 	assertHidden("draft")
 
-	// publish (full-replace edit keeps the SKU active) -> visible
-	edit := pdDoc{
-		ID: p.ID, Name: doc.Name, Description: doc.Description, Status: "active", ExpectedVersion: p.Version,
-		SKUs: []pdSKU{{ID: p.SKUs[0].ID, PriceMinor: 1000}},
+	// publish (merge-patch edit: present fields set, the SKU price present keeps it active) -> visible
+	edit := pdPatch{
+		ID: p.ID, Name: pdStr(doc.Name), Description: pdStr(doc.Description), Status: pdStr("active"), ExpectedVersion: p.Version,
+		SKUs: &[]pdSKUPatch{{ID: p.SKUs[0].ID, PriceMinor: pdI64(1000)}},
 	}
 	var active pdProduct
 	e.docEdit(p.ID, e.key("edit"), edit, &active)
@@ -496,14 +581,14 @@ func TestProductEditorPE07DraftVisibility(t *testing.T) {
 
 	// back to draft -> hidden again
 	back := edit
-	back.Status = "draft"
+	back.Status = pdStr("draft")
 	back.ExpectedVersion = active.Version
-	back.SKUs = []pdSKU{{ID: p.SKUs[0].ID, PriceMinor: 1000}}
+	back.SKUs = &[]pdSKUPatch{{ID: p.SKUs[0].ID, PriceMinor: pdI64(1000)}}
 	e.docEdit(p.ID, e.key("unlist"), back, &active)
 	assertHidden("re-drafted")
 }
 
-// ---- PE08 axis change archives the stranded SKUs and the freed combination can be recreated ---------------------------
+// ---- PE08 axis change archives the explicitly-retired SKUs and the freed combination can be recreated -----------------
 
 func TestProductEditorPE08AxisChangeArchives(t *testing.T) {
 	e := ccNew(t)
@@ -521,12 +606,17 @@ func TestProductEditorPE08AxisChangeArchives(t *testing.T) {
 	}
 	red, blue := p.SKUs[0].ID, p.SKUs[1].ID
 
-	// axis change to a single Green value: Red and Blue are omitted -> archived (soft delete, order history kept).
+	// axis change to a single Green value: Red and Blue must be explicitly archived (merge-patch: omission alone keeps
+	// them, and they would no longer fit the new axes, so §g.1 requires active:false — the stranded case is PE20).
 	var after pdProduct
-	e.docEdit(p.ID, e.key("axis"), pdDoc{
-		ID: p.ID, Name: e.name("PE08 axis"), Description: "", ExpectedVersion: p.Version,
-		Options: []ccAxis{{Name: "Color", Values: []string{"Green"}}},
-		SKUs:    []pdSKU{{OptionValues: []string{"Green"}, PriceMinor: 1200}},
+	e.docEdit(p.ID, e.key("axis"), pdPatch{
+		ID: p.ID, Name: pdStr(e.name("PE08 axis")), Description: pdStr(""), ExpectedVersion: p.Version,
+		Options: &[]ccAxis{{Name: "Color", Values: []string{"Green"}}},
+		SKUs: &[]pdSKUPatch{
+			{ID: red, Active: pdBool(false)},
+			{ID: blue, Active: pdBool(false)},
+			{OptionValues: &[]string{"Green"}, PriceMinor: pdI64(1200)},
+		},
 	}, &after)
 	if len(after.Options) != 1 || len(after.Options[0].Values) != 1 || after.Options[0].Values[0] != "Green" {
 		t.Fatalf("options after axis change: %+v", after.Options)
@@ -543,12 +633,12 @@ func TestProductEditorPE08AxisChangeArchives(t *testing.T) {
 
 	// the freed combination can be recreated (new SKU id, not the archived one).
 	var rebuilt pdProduct
-	e.docEdit(p.ID, e.key("recreate"), pdDoc{
-		ID: p.ID, Name: e.name("PE08 axis"), Description: "", ExpectedVersion: after.Version,
-		Options: []ccAxis{{Name: "Color", Values: []string{"Green", "Red"}}},
-		SKUs: []pdSKU{
-			{ID: after.SKUs[0].ID, OptionValues: []string{"Green"}, PriceMinor: 1200},
-			{OptionValues: []string{"Red"}, PriceMinor: 1300},
+	e.docEdit(p.ID, e.key("recreate"), pdPatch{
+		ID: p.ID, Name: pdStr(e.name("PE08 axis")), Description: pdStr(""), ExpectedVersion: after.Version,
+		Options: &[]ccAxis{{Name: "Color", Values: []string{"Green", "Red"}}},
+		SKUs: &[]pdSKUPatch{
+			{ID: after.SKUs[0].ID, OptionValues: &[]string{"Green"}, PriceMinor: pdI64(1200)},
+			{OptionValues: &[]string{"Red"}, PriceMinor: pdI64(1300)},
 		},
 	}, &rebuilt)
 	if len(rebuilt.SKUs) != 2 {
@@ -569,17 +659,17 @@ func TestProductEditorPE09StaleVersion(t *testing.T) {
 	e.docCreate(e.key("p"), pdDoc{Name: e.name("PE09 v1"), Description: "", SKUs: []pdSKU{{PriceMinor: 1000}}}, &p)
 
 	var v2 pdProduct
-	e.docEdit(p.ID, e.key("edit"), pdDoc{
-		ID: p.ID, Name: e.name("PE09 v2"), Description: "", ExpectedVersion: p.Version,
-		SKUs: []pdSKU{{ID: p.SKUs[0].ID, PriceMinor: 1000}},
+	e.docEdit(p.ID, e.key("edit"), pdPatch{
+		ID: p.ID, Name: pdStr(e.name("PE09 v2")), Description: pdStr(""), ExpectedVersion: p.Version,
+		SKUs: &[]pdSKUPatch{{ID: p.SKUs[0].ID, PriceMinor: pdI64(1000)}},
 	}, &v2)
 	if v2.Version != 2 {
 		t.Fatalf("edit version=%d want 2", v2.Version)
 	}
 	// the now-stale version 1 must be refused
-	e.docEditRefuse(409, p.ID, e.key("stale"), pdDoc{
-		ID: p.ID, Name: e.name("PE09 stale"), Description: "", ExpectedVersion: 1,
-		SKUs: []pdSKU{{ID: p.SKUs[0].ID, PriceMinor: 1000}},
+	e.docEditRefuse(409, p.ID, e.key("stale"), pdPatch{
+		ID: p.ID, Name: pdStr(e.name("PE09 stale")), Description: pdStr(""), ExpectedVersion: 1,
+		SKUs: &[]pdSKUPatch{{ID: p.SKUs[0].ID, PriceMinor: pdI64(1000)}},
 	})
 	var cur struct {
 		Name    string `json:"name"`
@@ -599,9 +689,9 @@ func TestProductEditorPE10Isolation(t *testing.T) {
 	e.docCreate(e.key("p"), pdDoc{Name: e.name("PE10 mine"), Description: "", SKUs: []pdSKU{{PriceMinor: 1000}}}, &p)
 
 	other := ccAdmin{t: t, h: e.srv, token: e.h.f.tokens["b"], store: e.h.f.storeB}
-	other.refuse(404, "PUT", "/products/"+p.ID+"/document", e.key("x"), pdDoc{
-		ID: p.ID, Name: e.name("PE10 foreign"), Description: "", ExpectedVersion: p.Version,
-		SKUs: []pdSKU{{ID: p.SKUs[0].ID, PriceMinor: 1000}},
+	other.refuse(404, "PUT", "/products/"+p.ID+"/document", e.key("x"), pdPatch{
+		ID: p.ID, Name: pdStr(e.name("PE10 foreign")), Description: pdStr(""), ExpectedVersion: p.Version,
+		SKUs: &[]pdSKUPatch{{ID: p.SKUs[0].ID, PriceMinor: pdI64(1000)}},
 	})
 	other.refuse(404, "GET", "/products/"+p.ID, "", nil)
 }
@@ -790,4 +880,234 @@ func TestProductEditorListSummaries(t *testing.T) {
 	if onlyActive.Total != 2 || onlyActive.StatusCounts.Active != 1 {
 		t.Fatalf("tallies must ignore the status filter: %+v", onlyActive)
 	}
+}
+
+// ---- PE18 merge-patch: a price-only edit leaves every other field, keyword, collection and SKU untouched ---------------
+
+func TestProductEditorPE18PriceOnlyEditPreservesEverything(t *testing.T) {
+	e := ccNew(t)
+	kw := pdKeyword()
+	col := e.collection("PE18 col", nil)
+	doc := pdDoc{
+		Name: e.name("PE18 keep"), Description: "desc", Status: "active",
+		Options:       []ccAxis{{Name: "Color", Values: []string{"Red", "Blue"}}},
+		CollectionIDs: []string{col.ID},
+		WarehouseID:   e.wh1,
+		SKUs: []pdSKU{
+			{OptionValues: []string{"Red"}, PriceMinor: 1000, Keyword: kw, Stock: &pdStock{Mode: "tracked", OpeningQty: pdI64(5)}, OriginCountry: "US"},
+			{OptionValues: []string{"Blue"}, PriceMinor: 2000, Stock: &pdStock{Mode: "untracked", MaxPerOrder: pdI64(3)}},
+		},
+	}
+	var p pdProduct
+	e.docCreate(e.key("p"), doc, &p)
+	red, blue := p.SKUs[0].ID, p.SKUs[1].ID
+
+	var edited pdProduct
+	e.docEdit(p.ID, e.key("edit"), pdPatch{ID: p.ID, ExpectedVersion: p.Version,
+		SKUs: &[]pdSKUPatch{{ID: red, PriceMinor: pdI64(1500)}}}, &edited)
+	if edited.Version != 2 {
+		t.Fatalf("price-only edit version=%d want 2", edited.Version)
+	}
+
+	var d pdDetail
+	e.a.ok("GET", "/products/"+p.ID, "", nil, &d)
+	if d.Name != doc.Name || d.Description != "desc" || d.Status != "active" {
+		t.Fatalf("price-only edit changed name/desc/status: %+v", d)
+	}
+	if len(d.Options) != 1 || d.Options[0].Name != "Color" || len(d.Options[0].Values) != 2 {
+		t.Fatalf("price-only edit changed options: %+v", d.Options)
+	}
+	if len(d.CollectionIDs) != 1 || d.CollectionIDs[0] != col.ID {
+		t.Fatalf("price-only edit changed collections: %+v", d.CollectionIDs)
+	}
+	byID := map[string]pdDetailSKU{}
+	for _, s := range d.SKUs {
+		byID[s.ID] = s
+	}
+	if byID[red].PriceMinor != 1500 {
+		t.Fatalf("red price=%d want 1500", byID[red].PriceMinor)
+	}
+	if byID[blue].PriceMinor != 2000 || byID[blue].Keyword != "" {
+		t.Fatalf("other SKU must be untouched: %+v", byID[blue])
+	}
+	if byID[red].Keyword != kw {
+		t.Fatalf("red keyword must be preserved: %q want %q", byID[red].Keyword, kw)
+	}
+	// the keyword row and the other SKU's flags/stock are untouched
+	if countRows(t, e.h.f.owner, `SELECT count(*) FROM live.keyword_library WHERE sku_id=$1 AND keyword=$2`, red, kw) != 1 {
+		t.Fatal("red keyword row must survive a price-only edit")
+	}
+	if countRows(t, e.h.f.owner, `SELECT count(*) FROM catalog.skus WHERE id=$1 AND price_minor=2000 AND inventory_tracked=false AND max_per_order=3`, blue) != 1 {
+		t.Fatal("the other SKU's price/flags must be untouched")
+	}
+	if on, ok := e.pdBalance(red); !ok || on != 5 {
+		t.Fatalf("red balance=(%d,%t) want (5,true)", on, ok)
+	}
+}
+
+// ---- PE19 target_qty present (incl 0) sets on-hand; below the committed amount is insufficient -------------------------
+
+func TestProductEditorPE19TargetQtyZero(t *testing.T) {
+	e := ccNew(t)
+	var p pdProduct
+	e.docCreate(e.key("p"), pdDoc{Name: e.name("PE19 target"), Description: "", WarehouseID: e.wh1,
+		SKUs: []pdSKU{{PriceMinor: 1000, Stock: &pdStock{Mode: "tracked", OpeningQty: pdI64(10)}}}}, &p)
+	sku := p.SKUs[0].ID
+	if on, ok := e.pdBalance(sku); !ok || on != 10 {
+		t.Fatalf("opening balance=(%d,%t) want (10,true)", on, ok)
+	}
+	e.onlyWarehouse(e.wh1) // target_qty resolves the store's single active warehouse
+
+	// target_qty present, including 0, sets the final on-hand (§g.2 fixes the old *qty != 0 skip).
+	var v2 pdProduct
+	e.docEdit(p.ID, e.key("zero"), pdPatch{ID: p.ID, ExpectedVersion: p.Version,
+		SKUs: &[]pdSKUPatch{{ID: sku, Stock: &pdStock{TargetQty: pdI64(0)}}}}, &v2)
+	if on, ok := e.pdBalance(sku); !ok || on != 0 {
+		t.Fatalf("after target_qty 0 balance=(%d,%t) want (0,true)", on, ok)
+	}
+
+	// Restore 10, reserve 3 out-of-band, then try to target below the committed 3 -> insufficient, whole rollback.
+	e.docEdit(p.ID, e.key("up"), pdPatch{ID: p.ID, ExpectedVersion: v2.Version,
+		SKUs: &[]pdSKUPatch{{ID: sku, Stock: &pdStock{TargetQty: pdI64(10)}}}}, &v2)
+	mustExec(t, e.h.f.owner, `UPDATE inventory.balances SET reserved=3 WHERE warehouse_id=$1 AND sku_id=$2`, e.wh1, sku)
+	e.refuseCode(409, "insufficient_inventory", "PUT", "/products/"+p.ID+"/document", e.key("low"),
+		pdPatch{ID: p.ID, ExpectedVersion: v2.Version,
+			SKUs: &[]pdSKUPatch{{ID: sku, Stock: &pdStock{TargetQty: pdI64(2)}}}})
+	if on, _ := e.pdBalance(sku); on != 10 {
+		t.Fatalf("insufficient edit must not change on_hand: %d want 10", on)
+	}
+	if countRows(t, e.h.f.owner, `SELECT count(*) FROM inventory.ledger WHERE sku_id=$1 AND command_key=$2`, sku, "low") != 0 {
+		t.Fatal("the insufficient edit must leave no ledger rows")
+	}
+}
+
+// ---- PE20 changing axes without retiring the stranded SKUs is invalid and rolls back -----------------------------------
+
+func TestProductEditorPE20AxisChangeRequiresExplicitArchive(t *testing.T) {
+	e := ccNew(t)
+	var p pdProduct
+	e.docCreate(e.key("p"), pdDoc{
+		Name: e.name("PE20 axis"), Description: "", WarehouseID: e.wh1,
+		Options: []ccAxis{{Name: "Color", Values: []string{"Red", "Blue"}}},
+		SKUs: []pdSKU{
+			{OptionValues: []string{"Red"}, PriceMinor: 1000, Stock: &pdStock{Mode: "tracked", OpeningQty: pdI64(1)}},
+			{OptionValues: []string{"Blue"}, PriceMinor: 1100, Stock: &pdStock{Mode: "tracked", OpeningQty: pdI64(1)}},
+		},
+	}, &p)
+
+	// options -> Green while Red/Blue stay active (no active:false): they no longer fit -> invalid, whole rollback.
+	e.docEditRefuse(422, p.ID, e.key("axis"), pdPatch{ID: p.ID, ExpectedVersion: p.Version,
+		Options: &[]ccAxis{{Name: "Color", Values: []string{"Green"}}},
+		SKUs:    &[]pdSKUPatch{{OptionValues: &[]string{"Green"}, PriceMinor: pdI64(1200)}},
+	})
+	var d pdDetail
+	e.a.ok("GET", "/products/"+p.ID, "", nil, &d)
+	if len(d.Options) != 1 || len(d.Options[0].Values) != 2 || d.Options[0].Values[0] != "Red" {
+		t.Fatalf("PE20 rollback must keep the old axes: %+v", d.Options)
+	}
+	if countRows(t, e.h.f.owner, `SELECT count(*) FROM catalog.skus WHERE product_id=$1 AND status='active'`, p.ID) != 2 {
+		t.Fatal("PE20 rollback must keep both active SKUs")
+	}
+	if countRows(t, e.h.f.owner, `SELECT count(*) FROM catalog.skus WHERE product_id=$1 AND status='archived'`, p.ID) != 0 {
+		t.Fatal("PE20 must not archive anything")
+	}
+}
+
+// ---- PE21 open live window: keyword touch / active:false / unlist are refused, a price change is allowed ---------------
+
+func TestProductEditorPE21LiveWindowEditRefusals(t *testing.T) {
+	e := ccNew(t)
+	kw := pdKeyword()
+	var p pdProduct
+	e.docCreate(e.key("p"), pdDoc{Name: e.name("PE21 live"), Description: "", Status: "active",
+		SKUs: []pdSKU{{PriceMinor: 1000, Keyword: kw}, {PriceMinor: 2000}}}, &p)
+	skuA := p.SKUs[0].ID
+	e.seedLiveWindow(skuA)
+
+	// clearing the windowed SKU's keyword -> live_window_open
+	e.refuseCode(409, "live_window_open", "PUT", "/products/"+p.ID+"/document", e.key("kw"),
+		pdPatch{ID: p.ID, ExpectedVersion: p.Version, SKUs: &[]pdSKUPatch{{ID: skuA, Keyword: pdStr("")}}})
+	// archiving the windowed SKU -> live_window_open
+	e.refuseCode(409, "live_window_open", "PUT", "/products/"+p.ID+"/document", e.key("arch"),
+		pdPatch{ID: p.ID, ExpectedVersion: p.Version, SKUs: &[]pdSKUPatch{{ID: skuA, Active: pdBool(false)}}})
+	// unlisting the product -> live_window_open
+	e.refuseCode(409, "live_window_open", "PUT", "/products/"+p.ID+"/document", e.key("unlist"),
+		pdPatch{ID: p.ID, ExpectedVersion: p.Version, Status: pdStr("draft")})
+
+	// a price change on the windowed SKU is allowed (§g.5: the live price is per-session anyway)
+	var v2 pdProduct
+	e.docEdit(p.ID, e.key("price"), pdPatch{ID: p.ID, ExpectedVersion: p.Version,
+		SKUs: &[]pdSKUPatch{{ID: skuA, PriceMinor: pdI64(1500)}}}, &v2)
+	for _, s := range v2.SKUs {
+		if s.ID == skuA && s.PriceMinor != 1500 {
+			t.Fatalf("windowed SKU price=%d want 1500", s.PriceMinor)
+		}
+	}
+	// the keyword row survived the refused edits
+	if countRows(t, e.h.f.owner, `SELECT count(*) FROM live.keyword_library WHERE sku_id=$1 AND keyword=$2`, skuA, kw) != 1 {
+		t.Fatal("the refused edits must not have cleared the keyword")
+	}
+}
+
+// ---- PE22 detail: keyword, collection_ids, warehouse_id, on_hand, committed (null when >1 warehouse) -------------------
+
+func TestProductEditorPE22DetailFields(t *testing.T) {
+	e := ccNew(t)
+	kw := pdKeyword()
+	col := e.collection("PE22 col", nil)
+	var p pdProduct
+	e.docCreate(e.key("p"), pdDoc{
+		Name: e.name("PE22 detail"), Description: "", Status: "active",
+		CollectionIDs: []string{col.ID}, WarehouseID: e.wh1,
+		SKUs: []pdSKU{{PriceMinor: 1000, Keyword: kw, Stock: &pdStock{Mode: "tracked", OpeningQty: pdI64(7)}}},
+	}, &p)
+
+	// two active warehouses (ccNew default): warehouse_id null, on_hand/committed null, available still summed.
+	var d pdDetail
+	e.a.ok("GET", "/products/"+p.ID, "", nil, &d)
+	if len(d.CollectionIDs) != 1 || d.CollectionIDs[0] != col.ID {
+		t.Fatalf("collection_ids: %+v want [%s]", d.CollectionIDs, col.ID)
+	}
+	if d.WarehouseID != nil {
+		t.Fatalf("two warehouses must read warehouse_id null, got %q", *d.WarehouseID)
+	}
+	if len(d.SKUs) != 1 {
+		t.Fatalf("SKU count=%d want 1", len(d.SKUs))
+	}
+	if d.SKUs[0].Keyword != kw {
+		t.Fatalf("SKU keyword=%q want %q", d.SKUs[0].Keyword, kw)
+	}
+	if d.SKUs[0].OnHand != nil || d.SKUs[0].Committed != nil {
+		t.Fatalf("multi-warehouse on_hand/committed must be null: %+v", d.SKUs[0])
+	}
+	if d.SKUs[0].Available != 7 {
+		t.Fatalf("available=%d want 7", d.SKUs[0].Available)
+	}
+
+	// exactly one active warehouse: warehouse_id is that warehouse, on_hand/committed read from it.
+	e.onlyWarehouse(e.wh1)
+	var d1 pdDetail
+	e.a.ok("GET", "/products/"+p.ID, "", nil, &d1)
+	if d1.WarehouseID == nil || *d1.WarehouseID != e.wh1 {
+		t.Fatalf("single warehouse must read %q, got %v", e.wh1, d1.WarehouseID)
+	}
+	if d1.SKUs[0].OnHand == nil || *d1.SKUs[0].OnHand != 7 {
+		t.Fatalf("on_hand=%v want 7", d1.SKUs[0].OnHand)
+	}
+	if d1.SKUs[0].Committed == nil || *d1.SKUs[0].Committed != 0 {
+		t.Fatalf("committed=%v want 0", d1.SKUs[0].Committed)
+	}
+}
+
+// ---- PE23 top-level logistics in an edit request are invalid -----------------------------------------------------------
+
+func TestProductEditorPE23TopLevelLogisticsInvalid(t *testing.T) {
+	e := ccNew(t)
+	var p pdProduct
+	e.docCreate(e.key("p"), pdDoc{Name: e.name("PE23 logistics"), Description: "", SKUs: []pdSKU{{PriceMinor: 1000}}}, &p)
+
+	e.docEditRefuse(422, p.ID, e.key("w"), pdPatch{ID: p.ID, ExpectedVersion: p.Version, WeightGrams: pdI64(100)})
+	e.docEditRefuse(422, p.ID, e.key("l"), pdPatch{ID: p.ID, ExpectedVersion: p.Version, LengthMM: pdI64(10)})
+	e.docEditRefuse(422, p.ID, e.key("wi"), pdPatch{ID: p.ID, ExpectedVersion: p.Version, WidthMM: pdI64(10)})
+	e.docEditRefuse(422, p.ID, e.key("h"), pdPatch{ID: p.ID, ExpectedVersion: p.Version, HeightMM: pdI64(10)})
 }

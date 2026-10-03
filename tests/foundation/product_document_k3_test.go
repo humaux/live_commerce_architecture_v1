@@ -33,6 +33,15 @@ func k3Doc(t *testing.T, f *testFixture, key string, in catalog.ProductDocumentI
 		})
 }
 
+// k3Edit applies a merge-patch edit through the real edit command (merchant scope, catalog:write).
+func k3Edit(t *testing.T, f *testFixture, key, id string, in catalog.ProductDocumentPatch) (catalog.ProductDocument, error) {
+	t.Helper()
+	return t04Scoped(context.Background(), f, f.tokens["a"], f.storeA1, "catalog:write",
+		func(tx pgx.Tx, s platform.Scope) (catalog.ProductDocument, error) {
+			return catalog.SaveProductEdit(context.Background(), tx, s, key, id, in)
+		})
+}
+
 // k3Buyer is one prepared buyer: cart + home destination + quote, ready to Begin.
 func k3Buyer(t *testing.T, b bcHarness, items []storefront.Item) bcHarness {
 	t.Helper()
@@ -178,9 +187,9 @@ func TestProductEditorK3ConcurrentSameVersionEdits(t *testing.T) {
 	e.docCreate(e.key("p"), pdDoc{Name: e.name("K3 race"), Description: "", SKUs: []pdSKU{{PriceMinor: 1000}}}, &p)
 
 	nameA, nameB := e.name("K3 winner A"), e.name("K3 winner B")
-	edit := func(name string) pdDoc {
-		return pdDoc{ID: p.ID, Name: name, Description: "", ExpectedVersion: p.Version,
-			SKUs: []pdSKU{{ID: p.SKUs[0].ID, PriceMinor: 1000}}}
+	edit := func(name string) pdPatch {
+		return pdPatch{ID: p.ID, Name: pdStr(name), Description: pdStr(""), ExpectedVersion: p.Version,
+			SKUs: &[]pdSKUPatch{{ID: p.SKUs[0].ID, PriceMinor: pdI64(1000)}}}
 	}
 	type outcome struct {
 		status int
@@ -317,11 +326,11 @@ func TestProductEditorK3TrackedToUntrackedWithOpenHold(t *testing.T) {
 
 	// The merchant re-axes the SKU to untracked while the hold is open. The hold must survive untouched.
 	cap3 := int64(3)
-	doc, err := k3Doc(t, b.f, t04Key("k3-flip"), catalog.ProductDocumentInput{
-		ID: product.ID, Name: product.Name, Status: catalog.StatusActive, ExpectedVersion: product.Version,
-		SKUs: []catalog.DocumentSKUInput{
-			{ID: sku.ID, PriceMinor: sku.PriceMinor, Stock: &catalog.DocumentStock{Mode: "untracked", MaxPerOrder: &cap3}},
-			{ID: other.ID, PriceMinor: other.PriceMinor},
+	doc, err := k3Edit(t, b.f, t04Key("k3-flip"), product.ID, catalog.ProductDocumentPatch{
+		Name: pdStr(product.Name), Status: pdStr(catalog.StatusActive), ExpectedVersion: product.Version,
+		SKUs: &[]catalog.DocumentSKUPatch{
+			{ID: sku.ID, PriceMinor: &sku.PriceMinor, Stock: &catalog.DocumentStock{Mode: "untracked", MaxPerOrder: &cap3}},
+			{ID: other.ID, PriceMinor: &other.PriceMinor},
 		},
 	})
 	if err != nil {
@@ -373,13 +382,13 @@ func TestProductEditorK3TrackedToUntrackedWithOpenHold(t *testing.T) {
 		t.Fatalf("after expiry: on_hand=%d reserved=%d want 10/0", onHand, reserved)
 	}
 
-	// Switching back to tracked restores the invariant surface (cap gone, target stock against the live balance).
-	back, err := k3Doc(t, b.f, t04Key("k3-back"), catalog.ProductDocumentInput{
-		ID: product.ID, Name: product.Name, Status: catalog.StatusActive, ExpectedVersion: doc.Product.Version,
-		WarehouseID: b.stock.warehouse.ID, // two active warehouses in this fixture: the target-stock write needs the explicit one
-		SKUs: []catalog.DocumentSKUInput{
-			{ID: sku.ID, PriceMinor: sku.PriceMinor, Stock: &catalog.DocumentStock{Mode: "tracked", TargetQty: ptr64(10)}},
-			{ID: other.ID, PriceMinor: other.PriceMinor},
+	// Switching back to tracked restores the invariant surface (cap gone). The merge-patch edit has no warehouse_id and the
+	// fixture keeps two active warehouses, so target_qty cannot be written here; the mode-only switch never writes stock.
+	back, err := k3Edit(t, b.f, t04Key("k3-back"), product.ID, catalog.ProductDocumentPatch{
+		Name: pdStr(product.Name), Status: pdStr(catalog.StatusActive), ExpectedVersion: doc.Product.Version,
+		SKUs: &[]catalog.DocumentSKUPatch{
+			{ID: sku.ID, PriceMinor: &sku.PriceMinor, Stock: &catalog.DocumentStock{Mode: "tracked"}},
+			{ID: other.ID, PriceMinor: &other.PriceMinor},
 		},
 	})
 	if err != nil {
@@ -499,8 +508,8 @@ func TestProductEditorK3UntrackedNullCapGap(t *testing.T) {
 	}
 }
 
-// ---- P2-2: an axis change that archives an omitted SKU releases its keyword in the same transaction, so the
-// ---- keyword becomes reusable by a fresh SKU of the new document (no keyword_taken rollback).
+// ---- P2-2: an explicitly-archived SKU (active:false) releases its keyword in the same transaction, so the
+// ---- keyword becomes reusable by a fresh SKU of the same edit (no keyword_taken rollback).
 
 func TestProductEditorK3AxisChangeReleasesKeyword(t *testing.T) {
 	e := ccNew(t)
@@ -526,11 +535,15 @@ func TestProductEditorK3AxisChangeReleasesKeyword(t *testing.T) {
 	if countRows(t, e.h.f.owner, `SELECT count(*) FROM live.keyword_library WHERE sku_id=$1 AND keyword=$2`, skuA.ID, kw) != 1 {
 		t.Fatalf("skuA must hold keyword %s", kw)
 	}
-	// Re-axe: the new document omits skuA (archived) and adds a fresh SKU that reuses the keyword. Before the release,
-	// the writeKeyword taken-check sees it still on skuA and rolls the whole save back with keyword_taken.
+	// Re-axe: skuA is explicitly archived (merge-patch, §g.1 — omission would leave it active) and a fresh SKU reuses its
+	// keyword. The archive releases the keyword in the same transaction BEFORE the new SKU is written, so no keyword_taken.
 	var edited pdProduct
-	e.docEdit(doc.ID, e.key("edit"), pdDoc{Name: doc.Name, Status: "active", ExpectedVersion: doc.Version,
-		SKUs: []pdSKU{{ID: skuB.ID, PriceMinor: 2000}, {PriceMinor: 3000, Keyword: kw}}}, &edited)
+	e.docEdit(doc.ID, e.key("edit"), pdPatch{Name: pdStr(doc.Name), Status: pdStr("active"), ExpectedVersion: doc.Version,
+		SKUs: &[]pdSKUPatch{
+			{ID: skuA.ID, Active: pdBool(false)},
+			{ID: skuB.ID, PriceMinor: pdI64(2000)},
+			{PriceMinor: pdI64(3000), Keyword: pdStr(kw)},
+		}}, &edited)
 	// skuA is archived, its keyword released, and the keyword is reused by the fresh SKU.
 	var status string
 	if err := e.h.f.owner.QueryRow(context.Background(), `SELECT status FROM catalog.skus WHERE id=$1`, skuA.ID).Scan(&status); err != nil || status != "archived" {
@@ -574,5 +587,3 @@ func TestProductEditorK3CopyClampsLongName(t *testing.T) {
 		t.Fatalf("copy name is %d runes, want 120", got)
 	}
 }
-
-func ptr64(v int64) *int64 { return &v }
