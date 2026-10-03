@@ -61,6 +61,7 @@ const en = {
     "Your personal details were removed from this store's saved orders and your choices were withdrawn. The store keeps order, payment and shipping records for legal retention and may still contact you about existing orders.",
   noticeTitle: "Privacy notice",
   noticeItems: [
+    "Ad landings use first-party measurement cookies with pseudonymous browser identifiers, not names or contact details. With your permission, these signals accompany purchase events sent to Meta.",
     "This store uses your name, phone, address and order history to sell to you and deliver your orders.",
     "With your permission, it may message you about offers on Messenger or Instagram DM.",
     "With your permission, purchase events may be sent to Meta to measure and personalize ads. Events already sent cannot be recalled.",
@@ -138,6 +139,7 @@ export const privacyCopy: Record<Locale, PrivacyCopy> = {
       "你的个人信息已从本店已保存的订单中移除，你的选择也已撤回。店铺会按法定保存要求保留订单、付款与出货记录，并仍可能就现有订单联系你。",
     noticeTitle: "隐私声明",
     noticeItems: [
+      "广告落地页使用第一方衡量 Cookie，保存化名浏览器标识而非姓名或联系方式。经你许可，这些信号会随购买事件传送给 Meta。",
       "本店使用你的姓名、手机、地址与订单记录向你销售并配送订单。",
       "经你许可，店铺可能通过 Messenger 或 Instagram 私信向你发送优惠消息。",
       "经你许可，购买事件可能发送给 Meta，用于衡量和个性化广告；已发送的事件无法撤回。",
@@ -207,6 +209,7 @@ export const privacyCopy: Record<Locale, PrivacyCopy> = {
       "你的個人資料已從本店已儲存的訂單中移除，你的選擇也已撤回。店鋪會依法定保存要求保留訂單、付款與出貨紀錄，並仍可能就現有訂單聯絡你。",
     noticeTitle: "隱私聲明",
     noticeItems: [
+      "廣告落地頁使用第一方衡量 Cookie，保存化名瀏覽器識別碼而非姓名或聯絡資料。經你許可，這些訊號會隨購買事件傳送給 Meta。",
       "本店使用你的姓名、手機、地址與訂單紀錄向你銷售並配送訂單。",
       "經你許可，店鋪可能透過 Messenger 或 Instagram 私訊向你發送優惠訊息。",
       "經你許可，購買事件可能傳送給 Meta，用於衡量和個人化廣告；已傳送的事件無法撤回。",

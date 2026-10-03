@@ -11,7 +11,7 @@ const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 // meta/callback (those two are the dedicated routes). Fragments, spliced into the `[...resource]` method table
 // like `claimsRoutes`; the BFF forwards each path unchanged.
 export const adsRoutes = {
-  GET: `ads/(?:settings|report|drafts(?:/${uuid})?|meta/states/${uuid})`,
+  GET: `ads/(?:settings|report|attribution|drafts(?:/${uuid})?|meta/states/${uuid})`,
   POST: `ads/(?:meta/bindings|drafts|drafts/${uuid}/(?:approve|publish|pause|end))`,
   PUT: `ads/(?:drafts/${uuid}|capi)`,
 } as const;
@@ -20,9 +20,9 @@ export const adsAny = new RegExp(`^(?:${adsRoutes.GET}|${adsRoutes.POST}|${adsRo
 // 422 on an Idempotency-Key). The page still posts `{}` + a key through the generic JSON BFF; the BFF drops them for these.
 export const adsBodyless = new RegExp(`^ads/drafts/${uuid}/(?:pause|end)$`);
 export const adsKeyless = new RegExp(`^ads/drafts/${uuid}/approve$`);
-const reportRoute = /^ads\/report$/;
+const reportRoute = /^ads\/(?:report|attribution)$/;
 
-/** Raw-URL query rule, checked before Next drops an empty '?': only `ads/report` has a query. */
+/** Raw-URL query rule, checked before Next drops an empty '?': frozen report reads require from/to. */
 export function validAdsQuery(rawURL: string, path: string): boolean {
   const at = rawURL.indexOf("?");
   if (at < 0) return !reportRoute.test(path); // report without from/to is not a valid request
